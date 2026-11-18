@@ -1,0 +1,125 @@
+--- /home/end0/AI/LlamaServer/runtime-build-tree-v8/our-src/llama-model.cpp	2026-11-16 15:48:17.694917076 +0300
++++ /home/end0/AI/LlamaServer/exp925-tokenizer-wire-20261117/our-src/llama-model.cpp	2026-11-18 05:52:35.900860042 +0300
+@@ -4,6 +4,17 @@
+ #include "llama-ext.h"
+ #include "llama-hparams.h"
+ #include "llama-impl.h"
++
++// EXP925: the Goose reader answers the key lookup when it has the file.
++int64_t llama_goose_find_kv(const struct gguf_context * ctx, const char * key);
++int llama_goose_ready(const struct gguf_context * ctx);
++static inline int64_t llama_goose_find_kv_or_gguf(const struct gguf_context * ctx, const char * key) {
++    if (!llama_goose_ready(ctx)) {
++        return gguf_find_key(ctx, key);
++    }
++    return llama_goose_find_kv(ctx, key);
++}
++
+ #include "llama-mmap-expert-pin.h"
+ #include <fstream>
+ #include <mutex>
+@@ -14,6 +25,39 @@
+ #include "llama-mmap.h"
+ #include "llama-cparams.h"
+ #include "llama-model-loader.h"
++// EXP925: Goose answers the array/value shape questions when it has the file.
++int64_t llama_goose_kv_type(const struct gguf_context * ctx, int64_t index);
++struct gsl_u8x  { uint8_t * data; int64_t len; };
++struct gsl_i64x { int64_t * data; int64_t len; };
++int llama_goose_reader(const struct gguf_context * ctx, const uint8_t ** hdr, int64_t * len,
++                       const int64_t ** state, const int64_t ** kv, const int64_t ** kvsl,
++                       int64_t * kv_count, int64_t * kvsl_count);
++extern "C" int64_t gr_kv_to_str(gsl_u8x data, gsl_i64x state, gsl_i64x kv, int64_t index, int64_t max_len, gsl_u8x out);
++int64_t llama_goose_arr_type(const struct gguf_context * ctx, int64_t index);
++int64_t llama_goose_arr_n(const struct gguf_context * ctx, int64_t index);
++static inline gguf_type goose_kv_type(const struct gguf_context * ctx, int64_t i) {
++    const int64_t v = llama_goose_kv_type(ctx, i);
++    return v >= 0 ? (gguf_type) v : gguf_get_kv_type(ctx, (int) i);
++}
++static inline gguf_type goose_arr_type(const struct gguf_context * ctx, int64_t i) {
++    const int64_t v = llama_goose_arr_type(ctx, i);
++    return v >= 0 ? (gguf_type) v : gguf_get_arr_type(ctx, (int) i);
++}
++static inline int64_t goose_arr_n(const struct gguf_context * ctx, int64_t i) {
++    const int64_t v = llama_goose_arr_n(ctx, i);
++    return v >= 0 ? v : (int64_t) gguf_get_arr_n(ctx, (int) i);
++}
++
++const char * llama_goose_arr_str(const struct gguf_context * ctx, int64_t index, int64_t element);
++static inline const char * goose_arr_str(const struct gguf_context * ctx, int64_t i, int64_t e) {
++    const char * p = llama_goose_arr_str(ctx, i, e);
++    return p ? p : gguf_get_arr_str(ctx, (int) i, (int) e);
++}
++
++int64_t llama_goose_arr_n(const struct gguf_context * ctx, int64_t index);
++const void * llama_gguf_get_arr_data(const struct gguf_context * ctx, int64_t index, int64_t * bytes);
++const char * llama_goose_arr_str(const struct gguf_context * ctx, int64_t index, int64_t element);
++
+ 
+ #include "llama-kv-cache.h"
+ #include "llama-kv-cache-iswa.h"
+@@ -1400,12 +1444,12 @@
+ 
+     const gguf_context * ctx = ml.metadata;
+     const std::string key = ml.llm_kv(LLM_KV_GENERAL_TENSOR_EXTRA_PREC_A4);
+-    const int kid = gguf_find_key(ctx, key.c_str());
+-    if (kid < 0 || gguf_get_kv_type(ctx, kid) != GGUF_TYPE_ARRAY || gguf_get_arr_type(ctx, kid) != GGUF_TYPE_BOOL) {
++    const int kid = llama_goose_find_kv_or_gguf(ctx, key.c_str());
++    if (kid < 0 || goose_kv_type(ctx, kid) != GGUF_TYPE_ARRAY || goose_arr_type(ctx, kid) != GGUF_TYPE_BOOL) {
+         throw std::runtime_error(format("%s must be a bool array", key.c_str()));
+     }
+ 
+-    const size_t n_values = gguf_get_arr_n(ctx, kid);
++    const size_t n_values = goose_arr_n(ctx, kid);
+     if (n_values != tensor_names.size()) {
+         throw std::runtime_error(format(
+             "%s tensor/value length mismatch (%zu vs %zu)",
+@@ -1456,14 +1500,40 @@
+     const gguf_context * ctx = ml.metadata;
+ 
+     // get metadata as string
+-    for (int i = 0; i < gguf_get_n_kv(ctx); i++) {
+-        gguf_type type = gguf_get_kv_type(ctx, i);
+-        if (type == GGUF_TYPE_ARRAY) {
+-            continue;
+-        }
+-        const char * name = gguf_get_key(ctx, i);
+-        const std::string value = gguf_kv_to_str(ctx, i);
+-        gguf_kv.emplace(name, value);
++    {
++        const uint8_t * hdr = nullptr; const int64_t * st = nullptr;
++        const int64_t * kvp = nullptr; const int64_t * kvslp = nullptr;
++        int64_t hdr_len = 0, kv_count = 0, kvsl_count = 0;
++        const bool goose_ok =
++            llama_goose_reader(ctx, &hdr, &hdr_len, &st, &kvp, &kvslp, &kv_count, &kvsl_count) == 1;
++        std::vector<uint8_t> buf(goose_ok ? (1u << 20) : 0);
++        for (int i = 0; i < gguf_get_n_kv(ctx); i++) {
++            gguf_type type = goose_kv_type(ctx, i);
++            if (type == GGUF_TYPE_ARRAY) {
++                continue;
++            }
++            const char * name = gguf_get_key(ctx, i);
++            std::string value;
++            bool from_goose = false;
++            if (goose_ok) {
++                // The value text is Goose's decision (gr_kv_to_str); this host owns
++                // the buffer only. A string that fills it is a prefix, and a prefix
++                // is what the native call would also have to truncate.
++                const int64_t w = gr_kv_to_str(gsl_u8x{ (uint8_t *) hdr, hdr_len },
++                                               gsl_i64x{ (int64_t *) st, 8 },
++                                               gsl_i64x{ (int64_t *) kvp, kv_count },
++                                               i, (int64_t) buf.size(),
++                                               gsl_u8x{ buf.data(), (int64_t) buf.size() });
++                if (w >= 0) {
++                    value.assign((const char *) buf.data(), (size_t) w);
++                    from_goose = true;
++                }
++            }
++            if (!from_goose) {
++                value = gguf_kv_to_str(ctx, i);
++            }
++            gguf_kv.emplace(name, value);
++        }
+     }
+ 
+     load_hparams_hadamard(ml);

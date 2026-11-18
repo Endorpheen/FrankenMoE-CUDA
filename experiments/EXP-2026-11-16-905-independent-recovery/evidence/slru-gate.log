@@ -1,0 +1,3 @@
+harness: /tmp/slru-gate.t42fpro9/gate
+protected ceiling: 7/8
+slru gate: 400/400 cases match

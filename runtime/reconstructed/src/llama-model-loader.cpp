@@ -6,6 +6,56 @@
 #include "llama-hparams.h"
 #include "llama.h"
 
+// The Goose reader answers the metadata questions when it has the file. The
+// mapping lives in integration/goose-standalone/gguf-reader-owner.cpp because
+// Goose cannot declare open/mmap yet; every answer comes from the reader.
+// Each helper falls back to the native container, so a file the reader refuses
+// keeps the old behaviour.
+extern "C" void    llama_goose_register(const struct gguf_context * ctx, const char * path);
+extern "C" void    llama_goose_unregister(const struct gguf_context * ctx);
+extern "C" int     llama_goose_ready(const struct gguf_context * ctx);
+extern "C" int64_t llama_goose_find_kv(const struct gguf_context * ctx, const char * key);
+extern "C" int64_t llama_goose_tensor_index(const struct gguf_context * ctx, const char * name);
+extern "C" int64_t llama_goose_kv_type(const struct gguf_context * ctx, int64_t index);
+extern "C" int64_t llama_goose_arr_type(const struct gguf_context * ctx, int64_t index);
+extern "C" int64_t llama_goose_arr_n(const struct gguf_context * ctx, int64_t index);
+extern "C" const void * llama_goose_arr_data(const struct gguf_context * ctx, int64_t index, int64_t * bytes);
+extern "C" const char * llama_goose_arr_str(const struct gguf_context * ctx, int64_t index, int64_t element);
+
+static inline int64_t kv_index(const struct gguf_context * ctx, const char * key) {
+    return llama_goose_ready(ctx) ? llama_goose_find_kv(ctx, key) : gguf_find_key(ctx, key);
+}
+static inline int64_t tensor_index(const struct gguf_context * ctx, const char * name) {
+    return llama_goose_ready(ctx) ? llama_goose_tensor_index(ctx, name) : gguf_find_tensor(ctx, name);
+}
+static inline gguf_type kv_type_of(const struct gguf_context * ctx, int64_t i) {
+    const int64_t v = llama_goose_ready(ctx) ? llama_goose_kv_type(ctx, i) : -1;
+    return v >= 0 ? (gguf_type) v : gguf_get_kv_type(ctx, (int) i);
+}
+static inline gguf_type arr_type_of(const struct gguf_context * ctx, int64_t i) {
+    const int64_t v = llama_goose_ready(ctx) ? llama_goose_arr_type(ctx, i) : -1;
+    return v >= 0 ? (gguf_type) v : gguf_get_arr_type(ctx, (int) i);
+}
+static inline int64_t arr_count_of(const struct gguf_context * ctx, int64_t i) {
+    const int64_t v = llama_goose_ready(ctx) ? llama_goose_arr_n(ctx, i) : -1;
+    return v >= 0 ? v : (int64_t) gguf_get_arr_n(ctx, (int) i);
+}
+static inline const void * arr_data_of(const struct gguf_context * ctx, int64_t i) {
+    if (llama_goose_ready(ctx)) {
+        int64_t bytes = 0;
+        const void * p = llama_goose_arr_data(ctx, i, &bytes);
+        if (p) return p;
+    }
+    return gguf_get_arr_data(ctx, (int) i);
+}
+static inline const char * arr_str_of(const struct gguf_context * ctx, int64_t i, int64_t e) {
+    if (llama_goose_ready(ctx)) {
+        const char * p = llama_goose_arr_str(ctx, i, e);
+        if (p) return p;
+    }
+    return gguf_get_arr_str(ctx, (int) i, (size_t) e);
+}
+
 #include <algorithm>
 #include <array>
 #include <cinttypes>
@@ -565,6 +615,12 @@ namespace GGUFMeta {
     template bool llama_model_loader::get_key_or_arr<std::array<float,    512>>(enum llm_kv kid, std::array<float,    512> & result, uint32_t n, bool required);
 
 
+llama_model_loader::~llama_model_loader() {
+    if (metadata) {
+        llama_goose_unregister(metadata);
+    }
+}
+
 llama_model_loader::llama_model_loader(
         struct gguf_context * meta,
         llama_model_set_tensor_data_t set_tensor_data,
@@ -613,6 +669,7 @@ llama_model_loader::llama_model_loader(
         if (metadata == nullptr) {
             throw std::runtime_error(format("%s: failed to load model from %s", __func__, fname.c_str()));
         }
+        llama_goose_register(metadata, fname.c_str());
 
         get_key(llm_kv(LLM_KV_GENERAL_ARCHITECTURE), arch_name, false);
         llm_kv = LLM_KV(llm_arch_from_string(arch_name));

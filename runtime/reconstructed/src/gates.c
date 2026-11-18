@@ -8,8 +8,12 @@ static int goose_on(const char * name) {
 }
 int fg286m_enabled(void) { return goose_on("GGML_GOOSE_MMAP_BOOK"); }
 int fg262a_enabled(void) { return goose_on("GGML_GOOSE_MOE_CACHE_ADMIT"); }
-int fg263c_enabled(void) { return goose_on("GGML_GOOSE_MOE_CACHE_COPY"); }
 int fg756s_enabled(void) { return goose_on("GGML_GOOSE_MOE_SLRU"); }
+
+// The QWEN35 tokenizer path (EXP954-956): vocabulary questions, BPE tokenisation and
+// piece decoding are answered by the Goose engine. On by default; GGML_GOOSE_TOKENIZER=0
+// restores the native bodies exactly, which is what the rollback arm of EXP957 checks.
+int goose_tok_enabled(void) { return goose_on("GGML_GOOSE_TOKENIZER"); }
 
 // The SLRU protected-segment ceiling, as num/den. Default 7/8: EXP-757 measured hit rate 83.7 -> 84.8% and
 // upload -6.7% against the native 1/2, with identical answers at 128/256/512. Setting

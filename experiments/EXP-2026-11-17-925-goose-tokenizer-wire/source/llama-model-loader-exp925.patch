@@ -1,0 +1,324 @@
+--- /home/end0/AI/LlamaServer/runtime-build-tree-v8/our-src/llama-model-loader.h	2026-11-16 15:48:17.697798953 +0300
++++ our-src/llama-model-loader.h	2026-11-17 15:21:26.747270997 +0300
+@@ -27,6 +27,14 @@
+ 
+ const char * llama_file_version_name(llama_fver version);
+ 
++// EXP925: the Goose GGUF reader answers the loader's tensor lookup.
++int64_t llama_goose_tensor_index(const struct gguf_context * ctx, const char * name);
++int64_t llama_goose_find_kv(const struct gguf_context * ctx, const char * key);
++int llama_goose_ready(const struct gguf_context * ctx);
++int64_t llama_goose_kv_type(const struct gguf_context * ctx, int64_t index);
++int64_t llama_goose_arr_type(const struct gguf_context * ctx, int64_t index);
++int64_t llama_goose_arr_n(const struct gguf_context * ctx, int64_t index);
++
+ struct llama_model_loader {
+     // Holds information on a model weight
+     struct llama_tensor_weight {
+@@ -36,7 +44,10 @@
+         ggml_tensor * tensor;
+ 
+         llama_tensor_weight(const llama_file * file, uint16_t idx, const struct gguf_context * gguf_ctx, ggml_tensor * tensor) : idx(idx), tensor(tensor) {
+-            const int tensor_idx = gguf_find_tensor(gguf_ctx,  ggml_get_name(tensor));
++            int64_t tensor_idx = llama_goose_tensor_index(gguf_ctx, ggml_get_name(tensor));
++            if (tensor_idx < 0) {
++                tensor_idx = gguf_find_tensor(gguf_ctx,  ggml_get_name(tensor));
++            }
+             if (tensor_idx < 0) {
+                 throw std::runtime_error(format("tensor '%s' not found in the model", ggml_get_name(tensor)));
+             }
+--- /home/end0/AI/LlamaServer/runtime-build-tree-v8/our-src/llama-model-loader.cpp	2026-11-16 15:48:17.695022273 +0300
++++ our-src/llama-model-loader.cpp	2026-11-17 15:21:46.439767384 +0300
+@@ -1,4 +1,144 @@
+ #include "llama-model-loader.h"
++// EXP925: Goose answers the array/value shape questions when it has the file.
++int64_t llama_goose_kv_type(const struct gguf_context * ctx, int64_t index);
++int64_t llama_goose_arr_type(const struct gguf_context * ctx, int64_t index);
++int64_t llama_goose_arr_n(const struct gguf_context * ctx, int64_t index);
++static inline gguf_type goose_kv_type(const struct gguf_context * ctx, int64_t i) {
++    const int64_t v = llama_goose_kv_type(ctx, i);
++    return v >= 0 ? (gguf_type) v : gguf_get_kv_type(ctx, (int) i);
++}
++static inline gguf_type goose_arr_type(const struct gguf_context * ctx, int64_t i) {
++    const int64_t v = llama_goose_arr_type(ctx, i);
++    return v >= 0 ? (gguf_type) v : gguf_get_arr_type(ctx, (int) i);
++}
++static inline int64_t goose_arr_n(const struct gguf_context * ctx, int64_t i) {
++    const int64_t v = llama_goose_arr_n(ctx, i);
++    return v >= 0 ? v : (int64_t) gguf_get_arr_n(ctx, (int) i);
++}
++
++// EXP925: the Goose GGUF reader (EXP919) answers the loader's tensor lookup.
++#include <fcntl.h>
++#include <sys/mman.h>
++#include <sys/stat.h>
++#include <unistd.h>
++#include <map>
++#include <mutex>
++
++struct gsl_u8x  { uint8_t * data; int64_t len; };
++struct gsl_i64x { int64_t * data; int64_t len; };
++extern "C" void    fg919_goose_init(int argc, char ** argv);
++extern "C" int64_t gr_parse(gsl_u8x data, int64_t file_bytes, gsl_i64x state, gsl_i64x kv, gsl_i64x tensors,
++                            gsl_i64x kv_slots, gsl_i64x tensor_slots);
++extern "C" int64_t gr_find_tensor(gsl_u8x data, gsl_i64x state, gsl_i64x tensors, gsl_i64x slots, gsl_u8x key);
++extern "C" int64_t gr_find_kv(gsl_u8x data, gsl_i64x state, gsl_i64x kv, gsl_i64x slots, gsl_u8x key);
++extern "C" int64_t gr_kv_type(gsl_i64x state, gsl_i64x kv, int64_t index);
++extern "C" int64_t gr_arr_type(gsl_i64x state, gsl_i64x kv, int64_t index);
++extern "C" int64_t gr_arr_n(gsl_i64x state, gsl_i64x kv, int64_t index);
++
++struct goose_meta {
++    void * hdr = nullptr;
++    int64_t len = 0;
++    int64_t fd = -1;
++    std::vector<int64_t> state, kv, tens, kvsl, tensl;
++    bool ok = false;
++    ~goose_meta() { if (hdr && hdr != MAP_FAILED) munmap(hdr, (size_t) len); if (fd >= 0) close(fd); }
++};
++
++static std::mutex g_goose_mu;
++static std::map<const void *, std::unique_ptr<goose_meta>> g_goose_metas;
++
++static inline int64_t llama_goose_find_kv_or_gguf(const struct gguf_context * ctx, const char * key) {
++    if (!llama_goose_ready(ctx)) {
++        return gguf_find_key(ctx, key);
++    }
++    // the Goose table holds every key of the file, so -1 means "absent" there too
++    return llama_goose_find_kv(ctx, key);
++}
++
++static void goose_register(const struct gguf_context * ctx, const char * path) {
++    static bool inited = false;
++    std::lock_guard<std::mutex> lock(g_goose_mu);
++    if (!inited) { fg919_goose_init(0, nullptr); inited = true; }
++    auto m = std::make_unique<goose_meta>();
++    struct stat st{};
++    m->fd = open(path, O_RDONLY);
++    if (m->fd >= 0 && fstat(m->fd, &st) == 0) {
++        m->len = st.st_size < 67108864 ? (int64_t) st.st_size : 67108864;
++        m->hdr = mmap(nullptr, (size_t) m->len, PROT_READ, MAP_PRIVATE, m->fd, 0);
++        if (m->hdr != MAP_FAILED) {
++            m->state.assign(8, 0); m->kv.assign(256 * 8, 0); m->tens.assign(2048 * 12, 0);
++            m->kvsl.assign(512, 0); m->tensl.assign(8192, 0);
++            m->ok = gr_parse(gsl_u8x{ (uint8_t *) m->hdr, m->len }, st.st_size,
++                             gsl_i64x{ m->state.data(), 8 }, gsl_i64x{ m->kv.data(), (int64_t) m->kv.size() },
++                             gsl_i64x{ m->tens.data(), (int64_t) m->tens.size() },
++                             gsl_i64x{ m->kvsl.data(), (int64_t) m->kvsl.size() },
++                             gsl_i64x{ m->tensl.data(), (int64_t) m->tensl.size() }) == 0;
++        }
++    }
++    LLAMA_LOG_INFO("%s: ctx=%p ok=%d\n", __func__, (const void *) ctx, m->ok ? 1 : 0);
++    g_goose_metas[ctx] = std::move(m);
++}
++
++static const goose_meta * goose_meta_of(const struct gguf_context * ctx) {
++    auto it = g_goose_metas.find(ctx);
++    return (it == g_goose_metas.end() || !it->second->ok) ? nullptr : it->second.get();
++}
++
++int64_t llama_goose_kv_type(const struct gguf_context * ctx, int64_t index) {
++    std::lock_guard<std::mutex> lock(g_goose_mu);
++    const goose_meta * m = goose_meta_of(ctx);
++    if (!m) return -1;
++    return gr_kv_type(gsl_i64x{ (int64_t *) m->state.data(), 8 }, gsl_i64x{ (int64_t *) m->kv.data(), (int64_t) m->kv.size() }, index);
++}
++
++int64_t llama_goose_arr_type(const struct gguf_context * ctx, int64_t index) {
++    std::lock_guard<std::mutex> lock(g_goose_mu);
++    const goose_meta * m = goose_meta_of(ctx);
++    if (!m) return -1;
++    return gr_arr_type(gsl_i64x{ (int64_t *) m->state.data(), 8 }, gsl_i64x{ (int64_t *) m->kv.data(), (int64_t) m->kv.size() }, index);
++}
++
++int64_t llama_goose_arr_n(const struct gguf_context * ctx, int64_t index) {
++    std::lock_guard<std::mutex> lock(g_goose_mu);
++    const goose_meta * m = goose_meta_of(ctx);
++    if (!m) return -1;
++    return gr_arr_n(gsl_i64x{ (int64_t *) m->state.data(), 8 }, gsl_i64x{ (int64_t *) m->kv.data(), (int64_t) m->kv.size() }, index);
++}
++
++int llama_goose_ready(const struct gguf_context * ctx) {
++    std::lock_guard<std::mutex> lock(g_goose_mu);
++    auto it = g_goose_metas.find(ctx);
++    return (it != g_goose_metas.end() && it->second->ok) ? 1 : 0;
++}
++
++int64_t llama_goose_find_kv(const struct gguf_context * ctx, const char * key) {
++    std::lock_guard<std::mutex> lock(g_goose_mu);
++    auto it = g_goose_metas.find(ctx);
++    if (it == g_goose_metas.end() || !it->second->ok) {
++        return -1;
++    }
++    goose_meta & m = *it->second;
++    if (getenv("EXP925_MUTATE_KV")) { return -1; }
++    return gr_find_kv(gsl_u8x{ (uint8_t *) m.hdr, m.len }, gsl_i64x{ m.state.data(), 8 },
++                      gsl_i64x{ m.kv.data(), (int64_t) m.kv.size() },
++                      gsl_i64x{ m.kvsl.data(), (int64_t) m.kvsl.size() },
++                      gsl_u8x{ (uint8_t *) key, (int64_t) std::strlen(key) });
++}
++
++int64_t llama_goose_tensor_index(const struct gguf_context * ctx, const char * name) {
++    std::lock_guard<std::mutex> lock(g_goose_mu);
++    auto it = g_goose_metas.find(ctx);
++    if (it == g_goose_metas.end() || !it->second->ok) {
++        return -1;
++    }
++    goose_meta & m = *it->second;
++    if (getenv("EXP925_MUTATE_LOOKUP")) { return -1; }
++    return gr_find_tensor(gsl_u8x{ (uint8_t *) m.hdr, m.len }, gsl_i64x{ m.state.data(), 8 },
++                          gsl_i64x{ m.tens.data(), (int64_t) m.tens.size() },
++                          gsl_i64x{ m.tensl.data(), (int64_t) m.tensl.size() },
++                          gsl_u8x{ (uint8_t *) name, (int64_t) std::strlen(name) });
++}
++
+ 
+ #include "ggml-alloc.h"
+ #include "ggml.h"
+@@ -181,10 +321,10 @@
+         public:
+         static constexpr gguf_type gt = GGUF_TYPE_ARRAY;
+         static ArrayInfo getter(const gguf_context *ctx, const int k) {
+-            const enum gguf_type arr_type = gguf_get_arr_type(ctx, k);
++            const enum gguf_type arr_type = goose_arr_type(ctx, k);
+             return ArrayInfo {
+                 arr_type,
+-                gguf_get_arr_n(ctx, k),
++                goose_arr_n(ctx, k),
+                 arr_type == GGUF_TYPE_STRING ? nullptr : gguf_get_arr_data(ctx, k),
+             };
+         }
+@@ -196,7 +336,7 @@
+ 
+         public:
+         static T get_kv(const gguf_context * ctx, const int k) {
+-            const enum gguf_type kt = gguf_get_kv_type(ctx, k);
++            const enum gguf_type kt = goose_kv_type(ctx, k);
+ 
+             if (kt != GKV::gt) {
+                 throw std::runtime_error(format("key %s has wrong type %s but expected type %s",
+@@ -296,7 +436,7 @@
+         }
+ 
+         static bool set(const gguf_context * ctx, const char * key, T & target, const struct llama_model_kv_override * ovrd = nullptr) {
+-            return set(ctx, gguf_find_key(ctx, key), target, ovrd);
++            return set(ctx, llama_goose_find_kv_or_gguf(ctx, key), target, ovrd);
+         }
+ 
+         static bool set(const gguf_context * ctx, const std::string & key, T & target, const struct llama_model_kv_override * ovrd = nullptr) {
+@@ -308,7 +448,7 @@
+     template<typename T>
+     typename std::enable_if<std::is_integral<T>::value, bool>::type
+     llama_model_loader::get_arr_n(const std::string & key, T & result, bool required) {
+-        const int kid = gguf_find_key(metadata, key.c_str());
++        const int kid = llama_goose_find_kv_or_gguf(metadata, key.c_str());
+ 
+         if (kid < 0) {
+             if (required) {
+@@ -338,9 +478,9 @@
+     template<typename T>
+     bool llama_model_loader::get_arr(const std::string & key, std::vector<T> & result, bool required) {
+         const gguf_context * ctx = metadata;
+-        const int kid = gguf_find_key(ctx, key.c_str());
++        const int64_t kid = llama_goose_find_kv_or_gguf(ctx, key.c_str());
+ 
+-        if (kid < 0 || gguf_get_kv_type(ctx, kid) != GGUF_TYPE_ARRAY) {
++        if (kid < 0 || goose_kv_type(ctx, kid) != GGUF_TYPE_ARRAY) {
+             if (required) {
+                 throw std::runtime_error(format("array key not found in model: %s", key.c_str()));
+             }
+@@ -366,7 +506,7 @@
+         }
+ 
+         if constexpr (std::is_same<T, std::string>::value) {
+-            const size_t n_items = gguf_get_arr_n(ctx, kid);
++            const size_t n_items = goose_arr_n(ctx, kid);
+             result.clear();
+ 
+             for (size_t i = 0; i < n_items; i++) {
+@@ -384,9 +524,9 @@
+     template<typename T, size_t N_MAX>
+     bool llama_model_loader::get_arr(const std::string & key, std::array<T, N_MAX> & result, bool required) {
+         const gguf_context * ctx = metadata;
+-        const int kid = gguf_find_key(ctx, key.c_str());
++        const int64_t kid = llama_goose_find_kv_or_gguf(ctx, key.c_str());
+ 
+-        if (kid < 0 || gguf_get_kv_type(ctx, kid) != GGUF_TYPE_ARRAY) {
++        if (kid < 0 || goose_kv_type(ctx, kid) != GGUF_TYPE_ARRAY) {
+             if (required) {
+                 throw std::runtime_error(format("array key not found in model: %s", key.c_str()));
+             }
+@@ -417,7 +557,7 @@
+         }
+ 
+         if constexpr (std::is_same<T, std::string>::value) {
+-            const size_t n_items = gguf_get_arr_n(ctx, kid);
++            const size_t n_items = goose_arr_n(ctx, kid);
+ 
+             for (size_t i = 0; i < n_items; i++) {
+                 const T value = gguf_get_arr_str(ctx, kid, i);
+@@ -491,7 +631,7 @@
+     // get array of n <= N_MAX elements, or a single element repeated n times
+     template<typename T, size_t N_MAX>
+     bool llama_model_loader::get_key_or_arr(const std::string & key, std::array<T, N_MAX> & result, uint32_t n, bool required) {
+-        const int kid = gguf_find_key(metadata, key.c_str());
++        const int kid = llama_goose_find_kv_or_gguf(metadata, key.c_str());
+ 
+         if (kid < 0) {
+             if (required) {
+@@ -505,7 +645,7 @@
+             throw std::runtime_error(format("n > N_MAX: %u > %u for key %s", n, (uint32_t) N_MAX, key.c_str()));
+         }
+ 
+-        if (gguf_get_kv_type(metadata, kid) == GGUF_TYPE_ARRAY) {
++        if (goose_kv_type(metadata, kid) == GGUF_TYPE_ARRAY) {
+             struct GGUFMeta::ArrayInfo arr_info =
+                 GGUFMeta::GKV<GGUFMeta::ArrayInfo>::get_kv(metadata, kid);
+ 
+@@ -539,7 +679,7 @@
+     bool llama_model_loader::get_key_or_arr(enum llm_kv kid, uint32_t & result, bool required) {
+         const std::string key = llm_kv(kid);
+ 
+-        const int id = gguf_find_key(metadata, key.c_str());
++        const int id = llama_goose_find_kv_or_gguf(metadata, key.c_str());
+ 
+         if (id < 0) {
+             if (required) {
+@@ -549,7 +689,7 @@
+         }
+ 
+         // throw and error if type is an array
+-        if (gguf_get_kv_type(metadata, id) == GGUF_TYPE_ARRAY) {
++        if (goose_kv_type(metadata, id) == GGUF_TYPE_ARRAY) {
+             if (required) {
+                 throw std::runtime_error(format("expected scalar, found array for key: %s", key.c_str()));
+             }
+@@ -609,6 +749,7 @@
+         };
+ 
+         metadata_ptr.reset(gguf_init_from_file(fname.c_str(), params));
++        if (metadata_ptr) { goose_register(metadata_ptr.get(), fname.c_str()); }
+         metadata = metadata_ptr.get();
+         if (metadata == nullptr) {
+             throw std::runtime_error(format("%s: failed to load model from %s", __func__, fname.c_str()));
+@@ -676,7 +817,7 @@
+ 
+                 // check idx
+                 {
+-                    const int kid = gguf_find_key(ctx_gguf.get(), kv_split_no.c_str());
++                    const int64_t kid = llama_goose_find_kv_or_gguf(ctx_gguf.get(), kv_split_no.c_str());
+                     if (kid < 0) {
+                         throw std::runtime_error(format("missing key %s in GGUF split %s", kv_split_no.c_str(), fname_split));
+                     }
+@@ -850,10 +991,10 @@
+ 
+         for (int i = 0; i < n_kv; i++) {
+             const char * name           = gguf_get_key(metadata, i);
+-            const enum gguf_type type   = gguf_get_kv_type(metadata, i);
++            const enum gguf_type type   = goose_kv_type(metadata, i);
+             const std::string type_name =
+                 type == GGUF_TYPE_ARRAY
+-                ? format("%s[%s,%zu]", gguf_type_name(type), gguf_type_name(gguf_get_arr_type(metadata, i)), gguf_get_arr_n(metadata, i))
++                ? format("%s[%s,%zu]", gguf_type_name(type), gguf_type_name(goose_arr_type(metadata, i)), goose_arr_n(metadata, i))
+                 : gguf_type_name(type);
+ 
+             const size_t MAX_VALUE_LEN = 40;

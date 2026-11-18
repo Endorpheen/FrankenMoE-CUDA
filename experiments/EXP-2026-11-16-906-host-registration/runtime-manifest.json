@@ -1,0 +1,38 @@
+{
+  "libggml-base.so.0": {
+    "sha256": "23363cbd74857db91d4fdc3712b2bb32adf42893075fa5139011f439d0abcdb7",
+    "bytes": 922008
+  },
+  "libllama-server-impl.so": {
+    "sha256": "ae400a505df8c81d8d3b39d651dad0d9e2c50380ba0828b0fcbf8242d2d57c14",
+    "bytes": 4436192
+  },
+  "libllama-common.so.0": {
+    "sha256": "864db114d46e785b4da2ab03462d88992aab5bafdf57cd6acf5ed8ce73c3d11a",
+    "bytes": 6537800
+  },
+  "libllama.so.0": {
+    "sha256": "4eba824255f06ab1fb8e5b6a9e98ae7bd0706773abc8bf86547d86b60cde98ac",
+    "bytes": 5766688
+  },
+  "llama-server": {
+    "sha256": "3e4437d9f3e906278944a765bd0ab0e1cc0a96b20c441fe3ea37aa5cc0934237",
+    "bytes": 17880
+  },
+  "libggml-cuda.so.0": {
+    "sha256": "17e79510f37817400c1b268e401d16eb2f392d1ef7f3da979d5ccf975cb32240",
+    "bytes": 212501528
+  },
+  "libmtmd.so.0": {
+    "sha256": "c5709b513baa189086e5d7ca2b2acb3d45d1ced98d5eb17c5382d16305f86186",
+    "bytes": 2089400
+  },
+  "libggml-cpu.so.0": {
+    "sha256": "33baf1f3ab8c2bfff6a543f9e1164c3d7c15ea443c0b96cc0c6c80dc972d50d6",
+    "bytes": 1402048
+  },
+  "libggml.so.0": {
+    "sha256": "997d76362473a01ace7721edc17ccc0e34250e27b7e7d1e26e7c9662da46f86c",
+    "bytes": 56200
+  }
+}

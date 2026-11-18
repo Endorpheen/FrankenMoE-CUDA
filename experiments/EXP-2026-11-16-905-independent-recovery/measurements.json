@@ -1,0 +1,126 @@
+{
+  "status": "FUNCTIONAL_RECOVERY_CONFIRMED_SPEED_PARITY_NOT_ACCEPTED",
+  "model": "Apex-35B-V1.0-Q4_K_M.gguf",
+  "model_sha256": "c3b92d94cd03a7730ad45cc45de8c753e369e0228b2f5d83d819ce2ea6ab3355",
+  "source_base_commit": "7c4f8ae37193890820f09686faadb85a9949e78e",
+  "reference_decode": [
+    47.34,
+    47.32,
+    47.64
+  ],
+  "reference_prefill": [
+    2317,
+    2515,
+    2508.6
+  ],
+  "median_decode": 39.658980436272515,
+  "median_prefill": 1837.8083976466028,
+  "results": [
+    {
+      "run": "recovery-accept-a-20261116-231157",
+      "response": "r1.json",
+      "cache_n": 0,
+      "prompt_n": 32768,
+      "prompt_ms": 17232.66,
+      "prompt_per_token_ms": 0.5258990478515625,
+      "prompt_per_second": 1901.5056294269139,
+      "predicted_n": 512,
+      "predicted_ms": 12512.792,
+      "predicted_per_token_ms": 24.48687279843444,
+      "predicted_per_second": 40.83820781165387,
+      "content_sha256": "c2ff42cc1219ea4dfe6d69f02e008d0f90c0fc56260736a0aafb82cec362924f",
+      "tokens_match_reference": true,
+      "client_seconds": 29.77575
+    },
+    {
+      "run": "recovery-accept-a-20261116-231157",
+      "response": "r2.json",
+      "cache_n": 0,
+      "prompt_n": 32768,
+      "prompt_ms": 18654.229,
+      "prompt_per_token_ms": 0.5692818908691406,
+      "prompt_per_second": 1756.5989996155831,
+      "predicted_n": 512,
+      "predicted_ms": 14911.637,
+      "predicted_per_token_ms": 29.181285714285714,
+      "predicted_per_second": 34.26853805521151,
+      "content_sha256": "c2ff42cc1219ea4dfe6d69f02e008d0f90c0fc56260736a0aafb82cec362924f",
+      "tokens_match_reference": true,
+      "client_seconds": 33.593719
+    },
+    {
+      "run": "recovery-accept-a-20261116-231157",
+      "response": "r3.json",
+      "cache_n": 0,
+      "prompt_n": 32768,
+      "prompt_ms": 18470.094,
+      "prompt_per_token_ms": 0.5636625366210938,
+      "prompt_per_second": 1774.1111658662917,
+      "predicted_n": 512,
+      "predicted_ms": 13985.851,
+      "predicted_per_token_ms": 27.36957142857143,
+      "predicted_per_second": 36.53692578306462,
+      "content_sha256": "c2ff42cc1219ea4dfe6d69f02e008d0f90c0fc56260736a0aafb82cec362924f",
+      "tokens_match_reference": true,
+      "client_seconds": 32.483461
+    },
+    {
+      "run": "recovery-accept-b-20261116-231351",
+      "response": "r1.json",
+      "cache_n": 0,
+      "prompt_n": 32768,
+      "prompt_ms": 17144.824,
+      "prompt_per_token_ms": 0.523218505859375,
+      "prompt_per_second": 1911.2473828836037,
+      "predicted_n": 512,
+      "predicted_ms": 12194.004,
+      "predicted_per_token_ms": 23.863021526418787,
+      "predicted_per_second": 41.905841592310445,
+      "content_sha256": "c2ff42cc1219ea4dfe6d69f02e008d0f90c0fc56260736a0aafb82cec362924f",
+      "tokens_match_reference": true,
+      "client_seconds": 29.367588
+    },
+    {
+      "run": "recovery-accept-b-20261116-231351",
+      "response": "r2.json",
+      "cache_n": 0,
+      "prompt_n": 32768,
+      "prompt_ms": 18846.046,
+      "prompt_per_token_ms": 0.5751356811523437,
+      "prompt_per_second": 1738.720153819003,
+      "predicted_n": 512,
+      "predicted_ms": 13279.711,
+      "predicted_per_token_ms": 25.9876927592955,
+      "predicted_per_second": 38.47975306089116,
+      "content_sha256": "c2ff42cc1219ea4dfe6d69f02e008d0f90c0fc56260736a0aafb82cec362924f",
+      "tokens_match_reference": true,
+      "client_seconds": 32.152803
+    },
+    {
+      "run": "recovery-accept-b-20261116-231351",
+      "response": "r3.json",
+      "cache_n": 0,
+      "prompt_n": 32768,
+      "prompt_ms": 14910.795,
+      "prompt_per_token_ms": 0.4550413513183594,
+      "prompt_per_second": 2197.602475253667,
+      "predicted_n": 512,
+      "predicted_ms": 12375.728,
+      "predicted_per_token_ms": 24.2186457925636,
+      "predicted_per_second": 41.29050024370284,
+      "content_sha256": "c2ff42cc1219ea4dfe6d69f02e008d0f90c0fc56260736a0aafb82cec362924f",
+      "tokens_match_reference": true,
+      "client_seconds": 27.312937
+    }
+  ],
+  "process_swap_kib": 0,
+  "system_swapout_pages_delta": [
+    0,
+    0
+  ],
+  "gguf_residency_percent": [
+    100,
+    100
+  ],
+  "subsequent_work": "Paused at Igor request for manual testing. No host-registration/default change implemented."
+}

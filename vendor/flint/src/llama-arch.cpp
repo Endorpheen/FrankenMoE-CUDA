@@ -116,6 +116,7 @@ static const std::map<llm_arch, const char *> LLM_ARCH_NAMES = {
     { LLM_ARCH_BAILINGMOE,       "bailingmoe"       },
     { LLM_ARCH_BAILINGMOE2,      "bailingmoe2"      },
     { LLM_ARCH_BAILINGMOE3,      "bailingmoe3"      },
+    { LLM_ARCH_MAXWELL,          "maxwell_moe"      },
     { LLM_ARCH_DOTS1,            "dots1"            },
     { LLM_ARCH_DOTS3NOTE,        "dots3note"        },
     { LLM_ARCH_ARCEE,            "arcee"            },
@@ -320,6 +321,10 @@ static const std::map<llm_kv, const char *> LLM_KV_NAMES = {
     { LLM_KV_HYPER_CONNECTION_COUNT,                 "%s.hyper_connection.count"                 },
     { LLM_KV_HYPER_CONNECTION_SINKHORN_ITERATIONS,   "%s.hyper_connection.sinkhorn_iterations"   },
     { LLM_KV_HYPER_CONNECTION_EPSILON,               "%s.hyper_connection.epsilon"               },
+    { LLM_KV_MAXWELL_BSGQA_BLOCK_SIZE,               "%s.block_sparse_gqa.block_size"            },
+    { LLM_KV_MAXWELL_BSGQA_SUPPORT_BLOCKS,           "%s.block_sparse_gqa.total_support_blocks"  },
+    { LLM_KV_MAXWELL_BSGQA_PREFIX_WINDOW,            "%s.block_sparse_gqa.prefix_window_size"    },
+    { LLM_KV_MAXWELL_BSGQA_REMOTE_BLOCKS,            "%s.block_sparse_gqa.num_remote_blocks"     },
     { LLM_KV_HYPER_CONNECTION_MAGNITUDE,             "%s.hyper_connection.magnitude"             },
     { LLM_KV_HYPER_CONNECTION_LOW_RANK,              "%s.hyper_connection.low_rank"              },
 

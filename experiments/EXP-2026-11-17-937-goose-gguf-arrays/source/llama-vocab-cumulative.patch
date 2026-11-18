@@ -1,0 +1,476 @@
+--- /home/end0/AI/LlamaServer/runtime-build-tree-v8/our-src/llama-vocab.cpp	2026-11-16 15:48:17.695288321 +0300
++++ /home/end0/AI/LlamaServer/exp925-tokenizer-wire-20261117/our-src/llama-vocab.cpp	2026-11-18 01:14:51.644872717 +0300
+@@ -3,7 +3,48 @@
+ #include "ggml.h"
+ #include "gguf.h"
+ #include "llama-impl.h"
++
++// EXP925: the Goose reader answers the key lookup when it has the file.
++int64_t llama_goose_find_kv(const struct gguf_context * ctx, const char * key);
++int llama_goose_ready(const struct gguf_context * ctx);
++static inline int64_t llama_goose_find_kv_or_gguf(const struct gguf_context * ctx, const char * key) {
++    if (!llama_goose_ready(ctx)) {
++        return gguf_find_key(ctx, key);
++    }
++    return llama_goose_find_kv(ctx, key);
++}
++
+ #include "llama-model-loader.h"
++// EXP925: Goose answers the array/value shape questions when it has the file.
++int64_t llama_goose_kv_type(const struct gguf_context * ctx, int64_t index);
++int64_t llama_goose_arr_type(const struct gguf_context * ctx, int64_t index);
++int64_t llama_goose_arr_n(const struct gguf_context * ctx, int64_t index);
++static inline gguf_type goose_kv_type(const struct gguf_context * ctx, int64_t i) {
++    const int64_t v = llama_goose_kv_type(ctx, i);
++    return v >= 0 ? (gguf_type) v : gguf_get_kv_type(ctx, (int) i);
++}
++static inline gguf_type goose_arr_type(const struct gguf_context * ctx, int64_t i) {
++    const int64_t v = llama_goose_arr_type(ctx, i);
++    return v >= 0 ? (gguf_type) v : gguf_get_arr_type(ctx, (int) i);
++}
++static inline int64_t goose_arr_n(const struct gguf_context * ctx, int64_t i) {
++    const int64_t v = llama_goose_arr_n(ctx, i);
++    return v >= 0 ? v : (int64_t) gguf_get_arr_n(ctx, (int) i);
++}
++
++const char * llama_goose_arr_str(const struct gguf_context * ctx, int64_t index, int64_t element);
++int llama_goose_reader(const struct gguf_context * ctx, const uint8_t ** hdr, int64_t * len,
++                       const int64_t ** state, const int64_t ** kv, const int64_t ** kvsl,
++                       int64_t * kv_count, int64_t * kvsl_count);
++static inline const char * goose_arr_str(const struct gguf_context * ctx, int64_t i, int64_t e) {
++    const char * p = llama_goose_arr_str(ctx, i, e);
++    return p ? p : gguf_get_arr_str(ctx, (int) i, (int) e);
++}
++
++int64_t llama_goose_arr_n(const struct gguf_context * ctx, int64_t index);
++const void * llama_gguf_get_arr_data(const struct gguf_context * ctx, int64_t index, int64_t * bytes);
++const char * llama_goose_arr_str(const struct gguf_context * ctx, int64_t index, int64_t element);
++
+ 
+ #include "unicode.h"
+ 
+@@ -42,6 +83,30 @@
+ 
+ 
+ // Goose detokenization piece copy (EXP213). GGML_GOOSE_PIECE=0 restores _try_copy.
++// EXP925: full Goose tokenizer/detokenizer object (EXP920). It owns the piece
++// bytes; the C++ side keeps the containers. The ABI is the compiler's own
++// {data,len} pair, so the declarations below mirror the generated header.
++struct gsl_u8  { uint8_t * data; int64_t len; };
++struct gsl_i64 { int64_t * data; int64_t len; };
++extern "C" int64_t bt_build(gsl_u8 gguf, gsl_i64 tok_off, gsl_i64 tok_len, gsl_i64 tok_slots,
++                            gsl_i64 mrg_off, gsl_i64 mrg_len, gsl_i64 mrg_slots, gsl_i64 stats);
++extern "C" int64_t bt_bpe(gsl_u8 text, gsl_u8 gguf, gsl_i64 tok_off, gsl_i64 tok_len, gsl_i64 tok_slots,
++                          gsl_i64 mrg_off, gsl_i64 mrg_len, gsl_i64 mrg_slots, gsl_i64 ids, int64_t nout,
++                          gsl_i64 cpts, gsl_i64 seg, gsl_u8 enc, gsl_i64 sym, gsl_i64 heap, gsl_i64 hc,
++                          gsl_i64 info);
++extern "C" int64_t bt_special_order(gsl_u8 gguf, gsl_i64 tok_off, gsl_i64 tok_len, gsl_i64 attr, gsl_i64 order);
++extern "C" int64_t bt_tokenize(gsl_u8 gguf, gsl_i64 tok_off, gsl_i64 tok_len, gsl_i64 tok_slots,
++                              gsl_i64 mrg_off, gsl_i64 mrg_len, gsl_i64 mrg_slots,
++                              gsl_i64 order, int64_t n_special, gsl_u8 text, gsl_i64 ids, int64_t special,
++                              gsl_i64 cpts, gsl_i64 seg, gsl_u8 enc, gsl_i64 sym, gsl_i64 heap, gsl_i64 hc, gsl_i64 info);
++extern "C" int64_t bt_prepare_need(gsl_u8 data, gsl_i64 state, gsl_i64 kv, int64_t tok_index, int64_t mrg_index, gsl_i64 need);
++extern "C" int64_t bt_prepare_from_gguf(gsl_u8 data, gsl_i64 state, gsl_i64 kv, int64_t tok_index, int64_t mrg_index,
++                                       gsl_u8 blob, gsl_i64 tok_off, gsl_i64 tok_len, gsl_i64 tok_slots,
++                                       gsl_i64 mrg_off, gsl_i64 mrg_len, gsl_i64 mrg_slots, gsl_i64 need);
++extern "C" int64_t gr_find_kv(gsl_u8 data, gsl_i64 state, gsl_i64 kv, gsl_i64 kv_slots, gsl_u8 key);
++extern "C" int64_t bt_token_to_piece(gsl_u8 gguf, gsl_i64 tok_off, gsl_i64 tok_len, gsl_i64 attr,
++                                     int64_t token, gsl_u8 out, int64_t at, int64_t lstrip,
++                                     int64_t special, int64_t escape_ws);
+ extern "C" int fg213p_enabled(void);
+ extern "C" int64_t fg213p_try_copy(uint64_t src, int64_t size, int64_t lstrip,
+                                    uint64_t dst, int64_t avail);
+@@ -2158,6 +2223,20 @@
+ 
+     std::vector<llama_token> cache_special_tokens;
+     std::vector<std::string> cache_token_to_piece; // llama_token_to_piece(special = true);
++
++    // EXP925: the Goose piece table. The texts are flattened into one buffer so
++    // the Goose module can address them as spans, exactly as it does over a GGUF.
++    std::string        goose_blob;
++    std::vector<int64_t> goose_off, goose_len, goose_attr, goose_slots, goose_mrg_slots{0, 0};
++    std::vector<int64_t> goose_order;
++    int64_t              goose_n_special = 0;
++    std::string          goose_mrg_blob;
++    std::vector<int64_t> goose_mrg_off, goose_mrg_len;
++    bool                 goose_bpe_ready = false;
++    bool               goose_ready = false;
++    void goose_prepare(const struct gguf_context * ctx);
++    const struct gguf_context * g_goose_ctx = nullptr;
++
+     struct pair_hash {
+         size_t operator()(const std::pair<std::string, std::string> & p) const {
+             return std::hash<std::string>{}(p.first) ^  //create some hash for pair
+@@ -2307,7 +2386,7 @@
+             type = LLAMA_VOCAB_TYPE_BPE;
+ 
+             // read bpe merges and populate bpe ranks
+-            const int merges_keyidx = gguf_find_key(ctx, kv(LLM_KV_TOKENIZER_MERGES).c_str());
++            const int merges_keyidx = llama_goose_find_kv_or_gguf(ctx, kv(LLM_KV_TOKENIZER_MERGES).c_str());
+             // Kimi-K2 uses custom tokenization without traditional BPE merges
+             const bool is_kimi_k2 = (tokenizer_pre == "kimi-k2");
+ 
+@@ -2318,14 +2397,14 @@
+                 // Kimi-K2 doesn't need merges, skip
+                 LLAMA_LOG_INFO("%s: Kimi-K2 tokenizer detected, skipping BPE merges\n", __func__);
+             } else {
+-                if (gguf_get_kv_type(ctx, merges_keyidx) != GGUF_TYPE_ARRAY ||
+-                    gguf_get_arr_type(ctx, merges_keyidx) != GGUF_TYPE_STRING) {
++                if (goose_kv_type(ctx, merges_keyidx) != GGUF_TYPE_ARRAY ||
++                    goose_arr_type(ctx, merges_keyidx) != GGUF_TYPE_STRING) {
+                     throw std::runtime_error(format("invalid gguf type for %s", kv(LLM_KV_TOKENIZER_MERGES).c_str()));
+                 }
+-                const int n_merges = gguf_get_arr_n(ctx, merges_keyidx);
++                const int n_merges = goose_arr_n(ctx, merges_keyidx);
+                 bpe_ranks.reserve(n_merges);
+                 for (int i = 0; i < n_merges; i++) {
+-                    const char * word = gguf_get_arr_str(ctx, merges_keyidx, i);
++                    const char * word = goose_arr_str(ctx, merges_keyidx, i);
+                     //GGML_ASSERT(unicode_cpts_from_utf8(word).size() > 0);
+ 
+                     std::string first;
+@@ -2360,17 +2439,17 @@
+             special_pad_id  = 0;
+             special_mask_id = LLAMA_TOKEN_NULL;
+ 
+-            const int precompiled_charsmap_keyidx = gguf_find_key(ctx, kv(LLM_KV_TOKENIZER_PRECOMPILED_CHARSMAP).c_str());
++            const int precompiled_charsmap_keyidx = llama_goose_find_kv_or_gguf(ctx, kv(LLM_KV_TOKENIZER_PRECOMPILED_CHARSMAP).c_str());
+             if (precompiled_charsmap_keyidx != -1) {
+-                if (gguf_get_kv_type(ctx, precompiled_charsmap_keyidx) != GGUF_TYPE_ARRAY) {
++                if (goose_kv_type(ctx, precompiled_charsmap_keyidx) != GGUF_TYPE_ARRAY) {
+                     throw std::runtime_error(format("invalid gguf type for %s", kv(LLM_KV_TOKENIZER_PRECOMPILED_CHARSMAP).c_str()));
+                 }
+-                const gguf_type pc_type = gguf_get_arr_type(ctx, precompiled_charsmap_keyidx);
++                const gguf_type pc_type = goose_arr_type(ctx, precompiled_charsmap_keyidx);
+                 if (pc_type != GGUF_TYPE_INT8 && pc_type != GGUF_TYPE_UINT8) {
+                     throw std::runtime_error(format("invalid gguf type for %s", kv(LLM_KV_TOKENIZER_PRECOMPILED_CHARSMAP).c_str()));
+                 }
+ 
+-                const size_t n_precompiled_charsmap = gguf_get_arr_n(ctx, precompiled_charsmap_keyidx);
++                const size_t n_precompiled_charsmap = goose_arr_n(ctx, precompiled_charsmap_keyidx);
+                 const char * pc = (const char *) gguf_get_arr_data(ctx, precompiled_charsmap_keyidx);
+                 precompiled_charsmap.assign(pc, pc + n_precompiled_charsmap);
+                 if (precompiled_charsmap.size() < sizeof(uint32_t)) {
+@@ -2425,19 +2504,19 @@
+             type = LLAMA_VOCAB_TYPE_BPE;
+ 
+             // read bpe merges and populate bpe ranks
+-            const int merges_keyidx = gguf_find_key(ctx, kv(LLM_KV_TOKENIZER_MERGES).c_str());
++            const int merges_keyidx = llama_goose_find_kv_or_gguf(ctx, kv(LLM_KV_TOKENIZER_MERGES).c_str());
+             if (merges_keyidx == -1) {
+                 throw std::runtime_error("cannot find tokenizer merges in model file\n");
+             }
+             {
+-                if (gguf_get_kv_type(ctx, merges_keyidx) != GGUF_TYPE_ARRAY ||
+-                    gguf_get_arr_type(ctx, merges_keyidx) != GGUF_TYPE_STRING) {
++                if (goose_kv_type(ctx, merges_keyidx) != GGUF_TYPE_ARRAY ||
++                    goose_arr_type(ctx, merges_keyidx) != GGUF_TYPE_STRING) {
+                     throw std::runtime_error(format("invalid gguf type for %s", kv(LLM_KV_TOKENIZER_MERGES).c_str()));
+                 }
+-                const int n_merges = gguf_get_arr_n(ctx, merges_keyidx);
++                const int n_merges = goose_arr_n(ctx, merges_keyidx);
+                 bpe_ranks.reserve(n_merges);
+                 for (int i = 0; i < n_merges; i++) {
+-                    const char * word = gguf_get_arr_str(ctx, merges_keyidx, i);
++                    const char * word = goose_arr_str(ctx, merges_keyidx, i);
+ 
+                     std::string first;
+                     std::string second;
+@@ -2784,29 +2863,29 @@
+         ml.get_key(LLM_KV_TOKENIZER_REMOVE_EXTRA_WS, remove_extra_whitespaces, false);
+     }
+ 
+-    const int token_idx = gguf_find_key(ctx, kv(LLM_KV_TOKENIZER_LIST).c_str());
++    const int token_idx = llama_goose_find_kv_or_gguf(ctx, kv(LLM_KV_TOKENIZER_LIST).c_str());
+     if (token_idx == -1) {
+         throw std::runtime_error("cannot find tokenizer vocab in model file\n");
+     }
+ 
+-    if (gguf_get_kv_type(ctx, token_idx) != GGUF_TYPE_ARRAY ||
+-        gguf_get_arr_type(ctx, token_idx) != GGUF_TYPE_STRING) {
++    if (goose_kv_type(ctx, token_idx) != GGUF_TYPE_ARRAY ||
++        goose_arr_type(ctx, token_idx) != GGUF_TYPE_STRING) {
+         throw std::runtime_error(format("invalid gguf type for %s", kv(LLM_KV_TOKENIZER_LIST).c_str()));
+     }
+ 
+-    const uint32_t n_tokens = gguf_get_arr_n(ctx, token_idx);
++    const uint32_t n_tokens = goose_arr_n(ctx, token_idx);
+ 
+     const float * scores = nullptr;
+     const int * iscores = nullptr;
+-    const int score_idx = gguf_find_key(ctx, kv(LLM_KV_TOKENIZER_SCORES).c_str());
++    const int score_idx = llama_goose_find_kv_or_gguf(ctx, kv(LLM_KV_TOKENIZER_SCORES).c_str());
+     if (score_idx != -1) {
+-        const gguf_type kv_type = gguf_get_kv_type(ctx, score_idx);
+-        const gguf_type arr_type = kv_type == GGUF_TYPE_ARRAY ? gguf_get_arr_type(ctx, score_idx) : GGUF_TYPE_COUNT;
++        const gguf_type kv_type = goose_kv_type(ctx, score_idx);
++        const gguf_type arr_type = kv_type == GGUF_TYPE_ARRAY ? goose_arr_type(ctx, score_idx) : GGUF_TYPE_COUNT;
+         if (arr_type != GGUF_TYPE_INT32 &&
+             arr_type != GGUF_TYPE_FLOAT32) {
+             throw std::runtime_error(format("invalid gguf type for %s", kv(LLM_KV_TOKENIZER_SCORES).c_str()));
+         }
+-        const uint32_t n_scores = gguf_get_arr_n(ctx, score_idx);
++        const uint32_t n_scores = goose_arr_n(ctx, score_idx);
+         if (n_scores < n_tokens) {
+             throw std::runtime_error("Index out of array bounds for scores (" + std::to_string(n_scores) + " < " + std::to_string(n_tokens) + ")\n");
+         }
+@@ -2818,13 +2897,13 @@
+     }
+ 
+     const int * toktypes = nullptr;
+-    const int toktype_idx = gguf_find_key(ctx, kv(LLM_KV_TOKENIZER_TOKEN_TYPE).c_str());
++    const int toktype_idx = llama_goose_find_kv_or_gguf(ctx, kv(LLM_KV_TOKENIZER_TOKEN_TYPE).c_str());
+     if (toktype_idx != -1) {
+-        if (gguf_get_kv_type(ctx, toktype_idx) != GGUF_TYPE_ARRAY ||
+-            gguf_get_arr_type(ctx, toktype_idx) != GGUF_TYPE_INT32) {
++        if (goose_kv_type(ctx, toktype_idx) != GGUF_TYPE_ARRAY ||
++            goose_arr_type(ctx, toktype_idx) != GGUF_TYPE_INT32) {
+             throw std::runtime_error(format("invalid gguf type for %s", kv(LLM_KV_TOKENIZER_TOKEN_TYPE).c_str()));
+         }
+-        const uint32_t n_toktypes = gguf_get_arr_n(ctx, toktype_idx);
++        const uint32_t n_toktypes = goose_arr_n(ctx, toktype_idx);
+         if (n_toktypes < n_tokens) {
+             throw std::runtime_error("Index out of array bounds for toktypes (" + std::to_string(n_toktypes) + " < " + std::to_string(n_tokens) + ")\n");
+         }
+@@ -2835,7 +2914,7 @@
+     token_to_id.reserve(n_tokens);
+ 
+     for (uint32_t i = 0; i < n_tokens; i++) {
+-        std::string word = gguf_get_arr_str(ctx, token_idx, i);
++        std::string word = goose_arr_str(ctx, token_idx, i);
+         if (word.empty()) {
+             LLAMA_LOG_WARN("%s: empty token at index %u\n", __func__, i);
+             word = "[EMPTY_" + std::to_string(i) + "]";
+@@ -3001,13 +3080,13 @@
+ 
+         // suppress tokens
+         {
+-            const int suppress_idx = gguf_find_key(ctx, kv(LLM_KV_TOKENIZER_SUPPRESS_TOKENS).c_str());
++            const int suppress_idx = llama_goose_find_kv_or_gguf(ctx, kv(LLM_KV_TOKENIZER_SUPPRESS_TOKENS).c_str());
+             if (suppress_idx != -1) {
+-                if (gguf_get_kv_type(ctx, suppress_idx) != GGUF_TYPE_ARRAY ||
+-                    gguf_get_arr_type(ctx, suppress_idx) != GGUF_TYPE_INT32) {
++                if (goose_kv_type(ctx, suppress_idx) != GGUF_TYPE_ARRAY ||
++                    goose_arr_type(ctx, suppress_idx) != GGUF_TYPE_INT32) {
+                     throw std::runtime_error(format("invalid gguf type for %s", kv(LLM_KV_TOKENIZER_SUPPRESS_TOKENS).c_str()));
+                 }
+-                const int n = gguf_get_arr_n(ctx, suppress_idx);
++                const int n = goose_arr_n(ctx, suppress_idx);
+                 const int32_t * data = (const int32_t *) gguf_get_arr_data(ctx, suppress_idx);
+                 // drop out-of-range ids
+                 suppress_tokens.reserve(n);
+@@ -3407,6 +3486,9 @@
+ 
+         std::swap(cache_token_to_piece, cache);
+ 
++        // EXP925: build the Goose piece table from the same texts.
++        goose_prepare(ctx);
++
+         LLAMA_LOG_INFO("%s: token to piece cache size = %.4f MB\n", __func__, size_cache / 1024.0 / 1024.0);
+     }
+ 
+@@ -3728,6 +3810,136 @@
+ }
+ 
+ // NOTE: avoid ever using this except for building the token_to_piece caches
++void llama_vocab::impl::goose_prepare(const struct gguf_context * ctx) {
++    g_goose_ctx = ctx;
++    if (goose_ready) {
++        return;
++    }
++    LLAMA_LOG_INFO("%s: type=%d pre=%d bpe_ranks=%zu\n", __func__, (int) type, (int) pre_type, bpe_ranks.size());
++    const size_t n = id_to_token.size();
++
++    // The vocabulary layout (blob, offsets, lengths, slot sizes, merge block) is
++    // decided by the Goose engine over the parsed GGUF header. This function only
++    // sizes and owns the buffers.
++    const int64_t * state = nullptr; const int64_t * kv = nullptr; const int64_t * kvsl = nullptr;
++    const uint8_t * hdr = nullptr; int64_t hdr_len = 0, kv_count = 0, kvsl_count = 0;
++    if (llama_goose_reader(g_goose_ctx, &hdr, &hdr_len, &state, &kv, &kvsl, &kv_count, &kvsl_count) != 1) {
++        LLAMA_LOG_WARN("%s: no Goose reader for this context, piece path stays native\n", __func__);
++        return;
++    }
++    const int64_t tok_i = gr_find_kv(gsl_u8{ (uint8_t *) hdr, hdr_len }, gsl_i64{ (int64_t *) state, 8 },
++                                     gsl_i64{ (int64_t *) kv, kv_count }, gsl_i64{ (int64_t *) kvsl, kvsl_count },
++                                     gsl_u8{ (uint8_t *) "tokenizer.ggml.tokens", 21 });
++    const int64_t mrg_i = gr_find_kv(gsl_u8{ (uint8_t *) hdr, hdr_len }, gsl_i64{ (int64_t *) state, 8 },
++                                     gsl_i64{ (int64_t *) kv, kv_count }, gsl_i64{ (int64_t *) kvsl, kvsl_count },
++                                     gsl_u8{ (uint8_t *) "tokenizer.ggml.merges", 21 });
++    if (tok_i < 0 || mrg_i < 0) {
++        LLAMA_LOG_WARN("%s: tokenizer arrays not found by Goose (tok=%lld mrg=%lld)\n",
++                       __func__, (long long) tok_i, (long long) mrg_i);
++        return;
++    }
++    int64_t need[5] = {0, 0, 0, 0, 0};
++    if (bt_prepare_need(gsl_u8{ (uint8_t *) hdr, hdr_len }, gsl_i64{ (int64_t *) state, 8 },
++                        gsl_i64{ (int64_t *) kv, kv_count }, tok_i, mrg_i, gsl_i64{ need, 5 }) != 0) {
++        LLAMA_LOG_WARN("%s: Goose layout rejected the tokenizer arrays\n", __func__);
++        return;
++    }
++    goose_blob.assign((size_t) need[0], '\0');
++    goose_off.assign((size_t) need[1], 0);
++    goose_len.assign((size_t) need[1], 0);
++    goose_slots.assign((size_t) need[3], 0);
++    goose_mrg_off.assign((size_t) need[2], 0);
++    goose_mrg_len.assign((size_t) need[2], 0);
++    goose_mrg_slots.assign((size_t) need[4], 0);
++    if (bt_prepare_from_gguf(gsl_u8{ (uint8_t *) hdr, hdr_len }, gsl_i64{ (int64_t *) state, 8 },
++                             gsl_i64{ (int64_t *) kv, kv_count }, tok_i, mrg_i,
++                             gsl_u8{ (uint8_t *) goose_blob.data(), (int64_t) goose_blob.size() },
++                             gsl_i64{ goose_off.data(), (int64_t) goose_off.size() },
++                             gsl_i64{ goose_len.data(), (int64_t) goose_len.size() },
++                             gsl_i64{ goose_slots.data(), (int64_t) goose_slots.size() },
++                             gsl_i64{ goose_mrg_off.data(), (int64_t) goose_mrg_off.size() },
++                             gsl_i64{ goose_mrg_len.data(), (int64_t) goose_mrg_len.size() },
++                             gsl_i64{ goose_mrg_slots.data(), (int64_t) goose_mrg_slots.size() },
++                             gsl_i64{ need, 5 }) != 0) {
++        LLAMA_LOG_WARN("%s: Goose layout failed to fill the tables\n", __func__);
++        return;
++    }
++    goose_attr.assign((size_t) need[1], 0);
++    for (size_t i = 0; i < (size_t) need[1] && i < n; ++i) {
++        goose_attr[i] = (int64_t) (uint8_t) id_to_token[i].attr;
++    }
++    int64_t stats[4] = {0, 0, 0, 0};
++    const int64_t rc = bt_build(gsl_u8{ (uint8_t *) goose_blob.data(), (int64_t) goose_blob.size() },
++                                gsl_i64{ goose_off.data(), (int64_t) goose_off.size() },
++                                gsl_i64{ goose_len.data(), (int64_t) goose_len.size() },
++                                gsl_i64{ goose_slots.data(), (int64_t) goose_slots.size() },
++                                gsl_i64{ goose_mrg_off.data(), (int64_t) goose_mrg_off.size() },
++                                gsl_i64{ goose_mrg_len.data(), (int64_t) goose_mrg_len.size() },
++                                gsl_i64{ goose_mrg_slots.data(), (int64_t) goose_mrg_slots.size() },
++                                gsl_i64{ stats, 4 });
++    goose_ready = (rc == 0);
++
++    // Special-token order for bt_tokenize: ids whose text is a special token,
++    // longest text first, decided by Goose.
++    if (goose_ready) {
++        goose_order.assign(goose_off.size(), 0);
++        goose_n_special = bt_special_order(gsl_u8{ (uint8_t *) goose_blob.data(), (int64_t) goose_blob.size() },
++                                           gsl_i64{ goose_off.data(), (int64_t) goose_off.size() },
++                                           gsl_i64{ goose_len.data(), (int64_t) goose_len.size() },
++                                           gsl_i64{ goose_attr.data(), (int64_t) goose_attr.size() },
++                                           gsl_i64{ goose_order.data(), (int64_t) goose_order.size() });
++        if (goose_n_special < 0) {
++            goose_n_special = 0;
++        }
++    }
++
++    // EXP925: the merge table, indexed by rank, exactly as the C++ map stores it.
++    if (goose_ready && !bpe_ranks.empty()) {
++        int max_rank = -1;
++        for (const auto & it : bpe_ranks) {
++            max_rank = std::max(max_rank, it.second);
++        }
++        std::vector<std::string> merges((size_t) max_rank + 1);
++        for (const auto & it : bpe_ranks) {
++            merges[(size_t) it.second] = it.first.first + " " + it.first.second;
++        }
++        goose_mrg_off.assign(merges.size(), 0);
++        goose_mrg_len.assign(merges.size(), 0);
++        goose_mrg_blob.clear();
++        for (size_t i = 0; i < merges.size(); ++i) {
++            goose_mrg_off[i] = (int64_t) goose_mrg_blob.size();
++            goose_mrg_len[i] = (int64_t) merges[i].size();
++            goose_mrg_blob += merges[i];
++        }
++        size_t mslots = 1;
++        while (mslots < 2 * merges.size()) {
++            mslots <<= 1;
++        }
++        // bt_build addresses tokens and merges in ONE buffer: append the merge
++        // texts and shift their offsets past the token texts.
++        const int64_t mbase = (int64_t) goose_blob.size();
++        goose_blob += goose_mrg_blob;
++        for (size_t i = 0; i < goose_mrg_off.size(); ++i) {
++            goose_mrg_off[i] += mbase;
++        }
++        goose_mrg_blob.clear();
++        goose_mrg_slots.assign(mslots, 0);
++        int64_t stats2[4] = {0, 0, 0, 0};
++        const int64_t bt_rc = bt_build(
++            gsl_u8{ (uint8_t *) goose_blob.data(), (int64_t) goose_blob.size() },
++            gsl_i64{ goose_off.data(), (int64_t) n },
++            gsl_i64{ goose_len.data(), (int64_t) n },
++            gsl_i64{ const_cast<int64_t *>(goose_slots.data()), (int64_t) goose_slots.size() },
++            gsl_i64{ const_cast<int64_t *>(goose_mrg_off.data()), (int64_t) goose_mrg_off.size() },
++            gsl_i64{ const_cast<int64_t *>(goose_mrg_len.data()), (int64_t) goose_mrg_len.size() },
++            gsl_i64{ const_cast<int64_t *>(goose_mrg_slots.data()), (int64_t) goose_mrg_slots.size() },
++            gsl_i64{ stats2, 4 });
++        goose_bpe_ready = (bt_rc == 0);
++        LLAMA_LOG_INFO("%s: Goose token tables: %zu tokens, %zu merges\n", __func__, n, merges.size());
++        LLAMA_LOG_INFO("%s: Goose bpe build rc=%d ready=%d\n", __func__, (int) bt_rc, goose_bpe_ready ? 1 : 0);
++    }
++}
++
+ std::string llama_vocab::impl::token_to_piece_for_cache(llama_token token, bool special) const {
+     std::string piece;
+     piece.resize(piece.capacity());  // using string internal cache
+@@ -3868,7 +4080,47 @@
+ #ifdef PRETOKENIZERDEBUG
+                         LLAMA_LOG_WARN("TT: (%ld %ld %ld) '%s'\n", text.length(), fragment.offset, fragment.length, text.c_str());
+ #endif
+-                        session->tokenize(text, output);
++                        static bool live_logged = false;
++                        if (goose_bpe_ready && !live_logged) {
++                            live_logged = true;
++                            LLAMA_LOG_INFO("%s: Goose tokenizer path live (special=%lld)\n", __func__, (long long) goose_n_special);
++                        }
++                        if (goose_bpe_ready) {
++                            const int64_t L = (int64_t) text.size();
++                            std::vector<int64_t> ids((size_t) L * 4 + 64);
++                            std::vector<int64_t> cpts((size_t) L + 1), seg(4 * ((size_t) L + 1));
++                            std::vector<uint8_t> enc(8 * ((size_t) L + 1));
++                            std::vector<int64_t> sym(24 * ((size_t) L + 1)), heap(15 * ((size_t) L + 1) + 40);
++                            int64_t hcb[2] = {0, 0}, inf[8] = {0, 0, 0, 0, 0, 0, 0, 0};
++                            const int64_t got = bt_tokenize(
++                                gsl_u8{ (uint8_t *) goose_blob.data(), (int64_t) goose_blob.size() },
++                                gsl_i64{ const_cast<int64_t *>(goose_off.data()), (int64_t) goose_off.size() },
++                                gsl_i64{ const_cast<int64_t *>(goose_len.data()), (int64_t) goose_len.size() },
++                                gsl_i64{ const_cast<int64_t *>(goose_slots.data()), (int64_t) goose_slots.size() },
++                                gsl_i64{ const_cast<int64_t *>(goose_mrg_off.data()), (int64_t) goose_mrg_off.size() },
++                                gsl_i64{ const_cast<int64_t *>(goose_mrg_len.data()), (int64_t) goose_mrg_len.size() },
++                                gsl_i64{ const_cast<int64_t *>(goose_mrg_slots.data()), (int64_t) goose_mrg_slots.size() },
++                                gsl_i64{ const_cast<int64_t *>(goose_order.data()), (int64_t) goose_order.size() }, goose_n_special,
++                                // the fragment buffer already separated special tokens, so
++                                // this call only sees raw text
++                                gsl_u8{ (uint8_t *) text.data(), L },
++                                gsl_i64{ ids.data(), (int64_t) ids.size() }, 0,
++                                gsl_i64{ cpts.data(), (int64_t) cpts.size() },
++                                gsl_i64{ seg.data(), (int64_t) seg.size() },
++                                gsl_u8{ enc.data(), (int64_t) enc.size() },
++                                gsl_i64{ sym.data(), (int64_t) sym.size() },
++                                gsl_i64{ heap.data(), (int64_t) heap.size() },
++                                gsl_i64{ hcb, 2 }, gsl_i64{ inf, 8 });
++                            if (got < 0) {
++                                session->tokenize(text, output);
++                            } else {
++                                for (int64_t k = 0; k < got; ++k) {
++                                    output.push_back((llama_token) ids[(size_t) k]);
++                                }
++                            }
++                        } else {
++                            session->tokenize(text, output);
++                        }
+                     } else { // if (fragment.type == FRAGMENT_BUFFER_VARIANT_TYPE_TOKEN)
+                         session->append(fragment.token, output);
+                     }
+@@ -4045,6 +4297,18 @@
+         return 0;
+     }
+ 
++    if (goose_ready && token >= 0 && (size_t) token < goose_off.size()) {
++        const int64_t n = bt_token_to_piece(
++            gsl_u8{ (uint8_t *) goose_blob.data(), (int64_t) goose_blob.size() },
++            gsl_i64{ const_cast<int64_t *>(goose_off.data()), (int64_t) goose_off.size() },
++            gsl_i64{ const_cast<int64_t *>(goose_len.data()), (int64_t) goose_len.size() },
++            gsl_i64{ const_cast<int64_t *>(goose_attr.data()), (int64_t) goose_attr.size() },
++            (int64_t) token,
++            gsl_u8{ (uint8_t *) buf, (int64_t) length },
++            0, (int64_t) lstrip, special ? 1 : 0, escape_whitespaces ? 1 : 0);
++        return (int32_t) n;
++    }
++
+     // copy piece chars to output text buffer
+     // skip up to 'lstrip' leading spaces before copying
+     auto _try_copy = [=] (const char * token, size_t size) -> int32_t {

@@ -1,0 +1,26 @@
+sources: /home/end0/AI/FrankenMoE-CUDA/runtime/reconstructed/src
+/home/end0/AI/FrankenMoE-CUDA/goose/cpu/goose-moe-cache-slru.goose:33: warning: redundant `as i64`: 4 fits i64 here
+/home/end0/AI/FrankenMoE-CUDA/goose/cpu/goose-moe-cache-slru.goose:37: warning: redundant `as i64`: 4 fits i64 here
+/home/end0/AI/FrankenMoE-CUDA/goose/cpu/goose-moe-cache-slru.goose:74: warning: redundant `as i64`: 1 fits i64 here
+/home/end0/AI/FrankenMoE-CUDA/goose/cpu/goose-moe-cache-slru.goose:76: warning: redundant `as i64`: 0 fits i64 here
+/home/end0/AI/FrankenMoE-CUDA/goose/cpu/goose-moe-cache-slru.goose:118: warning: redundant `as i64`: 1 fits i64 here
+/home/end0/AI/FrankenMoE-CUDA/goose/cpu/goose-moe-cache-slru.goose:185: warning: redundant `as i64`: 0 fits i64 here
+slru-policy.o  6032 B
+slru-runtime.o 63528 B
+slru-shim.o    2384 B
+exports:       goose_init slru_plan 
+built llama-batch.cpp
+built llama-context.cpp
+built llama-graph.cpp
+built llama-hparams.cpp
+built llama-kv-cache.cpp
+built llama-model.cpp
+built llama-memory-recurrent.cpp
+built llama-memory-hybrid.cpp
+built llama-model-loader.cpp
+built llama-sampler.cpp
+built llama-vocab.cpp
+built llama-moe-cache.cpp
+built unicode.cpp
+modules needed: fg199k fg200g fg201l fg202t fg204x fg205g fg206d fg209i fg210k fg212s fg213p fg215u fg216e fg217c fg218t fg227n fg228e fg229i fg230s fg231a fg232r fg233c fg237s fg238q fg239b fg240q fg241u fg242o fg243c fg244s fg262a fg263c fg286m fg291b fg345w fg367s fg373s fg375s fg376s fg377s fg380s fg381s fg382s fg383s fg384s fg385s fg386s fg387s fg388s fg389s fg390s fg391s fg392s fg393s fg394s fg395s fg396s fg397s fg398s fg401s fg402s fg403s fg404s fg405s fg406s fg408s fg756s
+module not found: fg262a

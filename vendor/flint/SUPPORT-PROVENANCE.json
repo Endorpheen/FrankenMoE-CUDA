@@ -1,0 +1,1276 @@
+{
+  "source": "llama.cpp-flint-cuda",
+  "base_commit": "1b44e307",
+  "purpose": "Rebuild GGML/CUDA, common and the HTTP server from sources; no binary inputs",
+  "files": [
+    {
+      "path": "CMakeLists.txt",
+      "upstream_sha256": "22d9a3e112e2b01d43a3ed514a249f38244f931a3c1c53dc2738794249714f91",
+      "sha256": "22d9a3e112e2b01d43a3ed514a249f38244f931a3c1c53dc2738794249714f91"
+    },
+    {
+      "path": "cmake/arm64-apple-clang.cmake",
+      "upstream_sha256": "80d01144241c7a45d1c35461aab1256364f8c7e714c3401a8097a567a8179e03",
+      "sha256": "80d01144241c7a45d1c35461aab1256364f8c7e714c3401a8097a567a8179e03"
+    },
+    {
+      "path": "cmake/license.cmake",
+      "upstream_sha256": "083515dff8a9b8696e348c7c616934e53941a7db30e1b3f092576632e9a2d1d4",
+      "sha256": "083515dff8a9b8696e348c7c616934e53941a7db30e1b3f092576632e9a2d1d4"
+    },
+    {
+      "path": "cmake/download-models.cmake",
+      "upstream_sha256": "6cf1368093d7207c5ddd40f8c9841e50621b71e57d2fd0c13afda3b84a973eb0",
+      "sha256": "6cf1368093d7207c5ddd40f8c9841e50621b71e57d2fd0c13afda3b84a973eb0"
+    },
+    {
+      "path": "cmake/common.cmake",
+      "upstream_sha256": "3f81f000e986f9bd2c05d97dfb6a5d3748f6a873e67ffaf8ee260ed44260e459",
+      "sha256": "3f81f000e986f9bd2c05d97dfb6a5d3748f6a873e67ffaf8ee260ed44260e459"
+    },
+    {
+      "path": "cmake/build-info.cmake",
+      "upstream_sha256": "d5cb300d2a3665eac85370617853a143a4f4a7884977f83d0635b18699f93eee",
+      "sha256": "d5cb300d2a3665eac85370617853a143a4f4a7884977f83d0635b18699f93eee"
+    },
+    {
+      "path": "cmake/x64-windows-llvm.cmake",
+      "upstream_sha256": "416e1385f9ac92ff29e2158da8b1894ae2cfccc3bb024eb46c3b937cb42477a8",
+      "sha256": "416e1385f9ac92ff29e2158da8b1894ae2cfccc3bb024eb46c3b937cb42477a8"
+    },
+    {
+      "path": "cmake/git-vars.cmake",
+      "upstream_sha256": "411507be4e991f2afc0007905a95bbf848176a282189d0e27d7df1d48974290d",
+      "sha256": "411507be4e991f2afc0007905a95bbf848176a282189d0e27d7df1d48974290d"
+    },
+    {
+      "path": "cmake/llama-config.cmake.in",
+      "upstream_sha256": "6a9d5df19143efe938bcd4fb5ff5a73cf6dcc81e26bbf132d9f6aca21b888b43",
+      "sha256": "6a9d5df19143efe938bcd4fb5ff5a73cf6dcc81e26bbf132d9f6aca21b888b43"
+    },
+    {
+      "path": "cmake/riscv64-spacemit-linux-gnu-gcc.cmake",
+      "upstream_sha256": "6a2ef73adf92ed68c38820b7503d3e423f27c426306ef4cfaea5d88b4eb51cb8",
+      "sha256": "6a2ef73adf92ed68c38820b7503d3e423f27c426306ef4cfaea5d88b4eb51cb8"
+    },
+    {
+      "path": "cmake/arm64-linux-clang.cmake",
+      "upstream_sha256": "feb7bd04443531e2287638c23a8d1873203d72a2da95e03f9c28433b27e24bd1",
+      "sha256": "feb7bd04443531e2287638c23a8d1873203d72a2da95e03f9c28433b27e24bd1"
+    },
+    {
+      "path": "cmake/arm64-windows-msvc-cuda.cmake",
+      "upstream_sha256": "e79eb3e2729f20f4a12938c237916eacffd0855e2ebc0eca1900786a9d43f259",
+      "sha256": "e79eb3e2729f20f4a12938c237916eacffd0855e2ebc0eca1900786a9d43f259"
+    },
+    {
+      "path": "cmake/llama.pc.in",
+      "upstream_sha256": "738a35bfe973f9c5c990e67f92b20bc438a4c2a93bde5a9e45536c0d269006ef",
+      "sha256": "738a35bfe973f9c5c990e67f92b20bc438a4c2a93bde5a9e45536c0d269006ef"
+    },
+    {
+      "path": "cmake/arm64-windows-llvm.cmake",
+      "upstream_sha256": "f0a603529ab01d7f87b9774f6ac6a6998ec660cb975927859917034e1a8f6319",
+      "sha256": "f0a603529ab01d7f87b9774f6ac6a6998ec660cb975927859917034e1a8f6319"
+    },
+    {
+      "path": "common/fit.cpp",
+      "upstream_sha256": "1f83da2a5dc460b893373365e07341695be80d6c662e53679032a138cce4dd58",
+      "sha256": "1f83da2a5dc460b893373365e07341695be80d6c662e53679032a138cce4dd58"
+    },
+    {
+      "path": "common/llguidance.cpp",
+      "upstream_sha256": "b6a51674d5e27e505d3d015f7c0407a62dc49c8519f734d2de9c94ae284e5a8e",
+      "sha256": "b6a51674d5e27e505d3d015f7c0407a62dc49c8519f734d2de9c94ae284e5a8e"
+    },
+    {
+      "path": "common/download.h",
+      "upstream_sha256": "e098a236835099ce01b76d7739ff609001b1a00a652f0b18840e23b7716c11fe",
+      "sha256": "e098a236835099ce01b76d7739ff609001b1a00a652f0b18840e23b7716c11fe"
+    },
+    {
+      "path": "common/common.h",
+      "upstream_sha256": "8a7f061798220ab82cefa378f7f2c4e0c854da3275a96258afd6255c54683fd9",
+      "sha256": "8a7f061798220ab82cefa378f7f2c4e0c854da3275a96258afd6255c54683fd9"
+    },
+    {
+      "path": "common/chat-diff-analyzer.cpp",
+      "upstream_sha256": "5acb9907c78a66685e4f43327e9f700db3325fefb8991c1212d713a412469297",
+      "sha256": "5acb9907c78a66685e4f43327e9f700db3325fefb8991c1212d713a412469297"
+    },
+    {
+      "path": "common/chat-auto-parser.h",
+      "upstream_sha256": "c774fcc02980529671793e110118ecfccb1e3c48eac52c852ce354922f599b52",
+      "sha256": "c774fcc02980529671793e110118ecfccb1e3c48eac52c852ce354922f599b52"
+    },
+    {
+      "path": "common/chat.cpp",
+      "upstream_sha256": "3793510ff80015d575777f01f9edcf8a58d859188d4f988190a02c50763bab49",
+      "sha256": "3793510ff80015d575777f01f9edcf8a58d859188d4f988190a02c50763bab49"
+    },
+    {
+      "path": "common/http.h",
+      "upstream_sha256": "949e44f9c592d1f894818765d8bf433e3cfd183430696464e4965447643d2de1",
+      "sha256": "949e44f9c592d1f894818765d8bf433e3cfd183430696464e4965447643d2de1"
+    },
+    {
+      "path": "common/unicode.cpp",
+      "upstream_sha256": "191c00abab788e59e83e29fb877047fcbac1f4d6088c5e9962d38ac2e694686c",
+      "sha256": "191c00abab788e59e83e29fb877047fcbac1f4d6088c5e9962d38ac2e694686c"
+    },
+    {
+      "path": "common/ngram-map.cpp",
+      "upstream_sha256": "e216b3a607204e75d1c9a2e9c61473b5d3abdc95c794d55c6e62ced7f7f1aed7",
+      "sha256": "e216b3a607204e75d1c9a2e9c61473b5d3abdc95c794d55c6e62ced7f7f1aed7"
+    },
+    {
+      "path": "common/hf-cache.h",
+      "upstream_sha256": "8a59c532c78921783d749e503060196126a0bda12e6acb72b8c062c0e863cdd4",
+      "sha256": "8a59c532c78921783d749e503060196126a0bda12e6acb72b8c062c0e863cdd4"
+    },
+    {
+      "path": "common/log.cpp",
+      "upstream_sha256": "f345a4af8c06177313437693657f7493ff197ad99e70a45f18f12aa7d261e671",
+      "sha256": "f345a4af8c06177313437693657f7493ff197ad99e70a45f18f12aa7d261e671"
+    },
+    {
+      "path": "common/ngram-map.h",
+      "upstream_sha256": "39decafa216df72bc77783c4d3ca659cc19e587d661e9149b8d0c2a3dff4fbe2",
+      "sha256": "39decafa216df72bc77783c4d3ca659cc19e587d661e9149b8d0c2a3dff4fbe2"
+    },
+    {
+      "path": "common/peg-parser.cpp",
+      "upstream_sha256": "b4bb62b63c83d00fdb3f02d1c2e1eb19396b3e67a5a27f032b81d10d6c6a9046",
+      "sha256": "b4bb62b63c83d00fdb3f02d1c2e1eb19396b3e67a5a27f032b81d10d6c6a9046"
+    },
+    {
+      "path": "common/fit.h",
+      "upstream_sha256": "907048c4fb974c0b405ffd4400d338c70e19f54f6983bc1ac3ec17174fcf3347",
+      "sha256": "907048c4fb974c0b405ffd4400d338c70e19f54f6983bc1ac3ec17174fcf3347"
+    },
+    {
+      "path": "common/chat-peg-parser.h",
+      "upstream_sha256": "9a9eeef7f7eb190f8191d2bd12cf6beebece29e307714e01c405eaa87c8da918",
+      "sha256": "9a9eeef7f7eb190f8191d2bd12cf6beebece29e307714e01c405eaa87c8da918"
+    },
+    {
+      "path": "common/ngram-mod.cpp",
+      "upstream_sha256": "06ed2b6d42854f42b74a2fb940a5b5bf405c619fa0d40f81cf8ca18b566104f7",
+      "sha256": "06ed2b6d42854f42b74a2fb940a5b5bf405c619fa0d40f81cf8ca18b566104f7"
+    },
+    {
+      "path": "common/trie.h",
+      "upstream_sha256": "391806c154f074d63e208f5a79d4d19df07592a645d860bb2c845525afda898e",
+      "sha256": "391806c154f074d63e208f5a79d4d19df07592a645d860bb2c845525afda898e"
+    },
+    {
+      "path": "common/preset.cpp",
+      "upstream_sha256": "636f9d0f9da757f64da00b62478c89a4336b069d77782ba282b37f921f328cd2",
+      "sha256": "636f9d0f9da757f64da00b62478c89a4336b069d77782ba282b37f921f328cd2"
+    },
+    {
+      "path": "common/imatrix-loader.h",
+      "upstream_sha256": "8c234ab44071191b5f6951c2658d652b35605a2617e7af4c1e7daba656d591eb",
+      "sha256": "8c234ab44071191b5f6951c2658d652b35605a2617e7af4c1e7daba656d591eb"
+    },
+    {
+      "path": "common/sampling.h",
+      "upstream_sha256": "63faa4ccb76fd466d3b5d86b14bc84a890bafa1f972fc46f66230eeb3384ce29",
+      "sha256": "63faa4ccb76fd466d3b5d86b14bc84a890bafa1f972fc46f66230eeb3384ce29"
+    },
+    {
+      "path": "common/arg.h",
+      "upstream_sha256": "42f21df75ada0e5bba795a40edc02724f0e0be03db288b64eed6057c1dfa261b",
+      "sha256": "42f21df75ada0e5bba795a40edc02724f0e0be03db288b64eed6057c1dfa261b"
+    },
+    {
+      "path": "common/sampling.cpp",
+      "upstream_sha256": "e88c45dfdc58ef2e86b5519aac68c83ced333952ade7d4bd8fca5f1ce5bbea02",
+      "sha256": "e88c45dfdc58ef2e86b5519aac68c83ced333952ade7d4bd8fca5f1ce5bbea02"
+    },
+    {
+      "path": "common/chat-auto-parser-generator.cpp",
+      "upstream_sha256": "493e37757dde63ffc6f93a7584152156583c11ab64e6d090661c1b3a28f412c7",
+      "sha256": "493e37757dde63ffc6f93a7584152156583c11ab64e6d090661c1b3a28f412c7"
+    },
+    {
+      "path": "common/ngram-cache.cpp",
+      "upstream_sha256": "4dde8f63a6336db760443fd32573efdbff5fc77e97bd7f3313177aed56c47b27",
+      "sha256": "4dde8f63a6336db760443fd32573efdbff5fc77e97bd7f3313177aed56c47b27"
+    },
+    {
+      "path": "common/preset.h",
+      "upstream_sha256": "ec0f5014821f2894f39cef96503cf36b84baf73742aa425f419eb2a5bd0e32f3",
+      "sha256": "ec0f5014821f2894f39cef96503cf36b84baf73742aa425f419eb2a5bd0e32f3"
+    },
+    {
+      "path": "common/trie.cpp",
+      "upstream_sha256": "807cac6c6296ca294397360fbfdd5f19a65fb7c50a587c8b56094261eec5acb2",
+      "sha256": "807cac6c6296ca294397360fbfdd5f19a65fb7c50a587c8b56094261eec5acb2"
+    },
+    {
+      "path": "common/json-schema.cpp",
+      "upstream_sha256": "68ba2adbb6e0578c0d89e99cc9a9a7aa9c0b554b555bcd3908da71789045509d",
+      "sha256": "68ba2adbb6e0578c0d89e99cc9a9a7aa9c0b554b555bcd3908da71789045509d"
+    },
+    {
+      "path": "common/log.h",
+      "upstream_sha256": "e99f07f5b64288aaece28955ed9f97c2ed8dc9c0375af3e253fc5c682637a014",
+      "sha256": "e99f07f5b64288aaece28955ed9f97c2ed8dc9c0375af3e253fc5c682637a014"
+    },
+    {
+      "path": "common/debug.h",
+      "upstream_sha256": "2346ae58df3cfa982afc8bcef4baf979131c768f7197956d36412bfe32215719",
+      "sha256": "2346ae58df3cfa982afc8bcef4baf979131c768f7197956d36412bfe32215719"
+    },
+    {
+      "path": "common/chat.h",
+      "upstream_sha256": "72efd31e0bc82d653bc28e18bb14299d255623c3be052dafe8f40bb6fa6a9ca5",
+      "sha256": "72efd31e0bc82d653bc28e18bb14299d255623c3be052dafe8f40bb6fa6a9ca5"
+    },
+    {
+      "path": "common/console.h",
+      "upstream_sha256": "36498a46cda4a0daedf3cc6962c03db07c4cb8228e6304a3bbb711e1df2847cb",
+      "sha256": "36498a46cda4a0daedf3cc6962c03db07c4cb8228e6304a3bbb711e1df2847cb"
+    },
+    {
+      "path": "common/speculative.cpp",
+      "upstream_sha256": "a44f75019b0b95917aeb7c5432313b71fcf97c207014b232908e20aaa8800be6",
+      "sha256": "a44f75019b0b95917aeb7c5432313b71fcf97c207014b232908e20aaa8800be6"
+    },
+    {
+      "path": "common/json.h",
+      "upstream_sha256": "a352f31307f1be2bdb34c027b876f42a1c5d1ea775cc8e4f11d703b16c40d22f",
+      "sha256": "a352f31307f1be2bdb34c027b876f42a1c5d1ea775cc8e4f11d703b16c40d22f"
+    },
+    {
+      "path": "common/speculative.h",
+      "upstream_sha256": "554d1cb37d277b703cd03201711bd86bdf2cedbca10b951dc7b8876960c560fc",
+      "sha256": "554d1cb37d277b703cd03201711bd86bdf2cedbca10b951dc7b8876960c560fc"
+    },
+    {
+      "path": "common/base64.hpp",
+      "upstream_sha256": "57f595aa0a206c4dec9a84b90a3416028a242da4dd8f219afc0859a6ccb7efe7",
+      "sha256": "57f595aa0a206c4dec9a84b90a3416028a242da4dd8f219afc0859a6ccb7efe7"
+    },
+    {
+      "path": "common/subproc.cpp",
+      "upstream_sha256": "5a9e0d0e4ca4441cac5ac57af1622ff4a6dcdd598dcecd0f28079d95dca81ffa",
+      "sha256": "5a9e0d0e4ca4441cac5ac57af1622ff4a6dcdd598dcecd0f28079d95dca81ffa"
+    },
+    {
+      "path": "common/reasoning-budget.h",
+      "upstream_sha256": "bef856179c9e76b779139e6fd712199aab2efd3e49facbe8ed6e8691dee69cd8",
+      "sha256": "bef856179c9e76b779139e6fd712199aab2efd3e49facbe8ed6e8691dee69cd8"
+    },
+    {
+      "path": "common/ngram-cache.h",
+      "upstream_sha256": "91ec39f1e523e410c8af1aa48a904fc99893223f4197ac4474a5f2d49a4ad60f",
+      "sha256": "91ec39f1e523e410c8af1aa48a904fc99893223f4197ac4474a5f2d49a4ad60f"
+    },
+    {
+      "path": "common/reasoning-budget.cpp",
+      "upstream_sha256": "55c730c85e7e2353d44542b5582a0046ffc503aa828cbd58f2bc6a7d957b48b2",
+      "sha256": "55c730c85e7e2353d44542b5582a0046ffc503aa828cbd58f2bc6a7d957b48b2"
+    },
+    {
+      "path": "common/json-schema-to-grammar.h",
+      "upstream_sha256": "7dc12dd8b3513b97293f22c2f87f0918e476fac3ba8895e8cb9671110401ea07",
+      "sha256": "7dc12dd8b3513b97293f22c2f87f0918e476fac3ba8895e8cb9671110401ea07"
+    },
+    {
+      "path": "common/CMakeLists.txt",
+      "upstream_sha256": "67cedba04a44face1177e3aa9fc192712873dda0b30bde1ab356007dcde0d9f1",
+      "sha256": "67cedba04a44face1177e3aa9fc192712873dda0b30bde1ab356007dcde0d9f1"
+    },
+    {
+      "path": "common/subproc.h",
+      "upstream_sha256": "ac5f9d21b53d11c4763f5fb1ff8c7c8b516ab680d178c6ee39004f561e3c028f",
+      "sha256": "ac5f9d21b53d11c4763f5fb1ff8c7c8b516ab680d178c6ee39004f561e3c028f"
+    },
+    {
+      "path": "common/json-schema-to-grammar.cpp",
+      "upstream_sha256": "d5a82fff5d611abd1198ff27c328b20376ffe9f110b4771d579c8bd20c70541f",
+      "sha256": "d5a82fff5d611abd1198ff27c328b20376ffe9f110b4771d579c8bd20c70541f"
+    },
+    {
+      "path": "common/unicode.h",
+      "upstream_sha256": "219b9257ac567a3e6bcf0f552c9a9ddc01d46a15eb4d2829ae5e069e643f0ec5",
+      "sha256": "219b9257ac567a3e6bcf0f552c9a9ddc01d46a15eb4d2829ae5e069e643f0ec5"
+    },
+    {
+      "path": "common/peg-parser.h",
+      "upstream_sha256": "ebbc0ed2a432e1b70c61b669f9f60bb377eecb175deb5df4125380337cf6070f",
+      "sha256": "ebbc0ed2a432e1b70c61b669f9f60bb377eecb175deb5df4125380337cf6070f"
+    },
+    {
+      "path": "common/console.cpp",
+      "upstream_sha256": "46dd0d4fea49250c69e6f7249ca75f9f3fb2e01fafc49cca830cced6a12a7ac9",
+      "sha256": "46dd0d4fea49250c69e6f7249ca75f9f3fb2e01fafc49cca830cced6a12a7ac9"
+    },
+    {
+      "path": "common/arg.cpp",
+      "upstream_sha256": "bf4c58c189a774f2308acfe88e4ec5cebb0c43f60cf05cef4c5b2b9affd5822d",
+      "sha256": "bf4c58c189a774f2308acfe88e4ec5cebb0c43f60cf05cef4c5b2b9affd5822d"
+    },
+    {
+      "path": "common/download.cpp",
+      "upstream_sha256": "08374edafb1362be46f4c5abdf65e41d11664f32d3c0c7c209480da172838304",
+      "sha256": "08374edafb1362be46f4c5abdf65e41d11664f32d3c0c7c209480da172838304"
+    },
+    {
+      "path": "common/hf-cache.cpp",
+      "upstream_sha256": "c1f11f1e55d8f624abbdc73344be3258c66bb0f80ae6d8ea8595ce9308603faf",
+      "sha256": "c1f11f1e55d8f624abbdc73344be3258c66bb0f80ae6d8ea8595ce9308603faf"
+    },
+    {
+      "path": "common/imatrix-loader.cpp",
+      "upstream_sha256": "416f8cb0b76164d8b961eb31c04aea402a94306de10250a2263f0807716f9bd6",
+      "sha256": "416f8cb0b76164d8b961eb31c04aea402a94306de10250a2263f0807716f9bd6"
+    },
+    {
+      "path": "common/json-schema.h",
+      "upstream_sha256": "57933a181ec0e84cbba1abea7fd898dc03e452d7de1a35795b787cee679d02af",
+      "sha256": "57933a181ec0e84cbba1abea7fd898dc03e452d7de1a35795b787cee679d02af"
+    },
+    {
+      "path": "common/common.cpp",
+      "upstream_sha256": "b5ad4e435394d2563803b7a7650f0475c5b5bcc52ff8d4db700e32de237d0bd2",
+      "sha256": "b5ad4e435394d2563803b7a7650f0475c5b5bcc52ff8d4db700e32de237d0bd2"
+    },
+    {
+      "path": "common/debug.cpp",
+      "upstream_sha256": "95c3d817b30793a12cfb10ab7821a80357b7f69674156710d29fb28e417e4a6f",
+      "sha256": "95c3d817b30793a12cfb10ab7821a80357b7f69674156710d29fb28e417e4a6f"
+    },
+    {
+      "path": "common/chat-auto-parser-helpers.h",
+      "upstream_sha256": "a2866e5411ab5c23171db7214fa9aa60171b52ed4737bd37ce66f828d8683998",
+      "sha256": "a2866e5411ab5c23171db7214fa9aa60171b52ed4737bd37ce66f828d8683998"
+    },
+    {
+      "path": "common/build-info.h",
+      "upstream_sha256": "184dab4cba9a945a5fac69b6818e4f593e34d5ca762357b8b30f7520a745f7ec",
+      "sha256": "184dab4cba9a945a5fac69b6818e4f593e34d5ca762357b8b30f7520a745f7ec"
+    },
+    {
+      "path": "common/json.cpp",
+      "upstream_sha256": "d8c556445cef8e7c93b0857f6ca7ae7ebd8295f169403ac66641b72f6b0598f2",
+      "sha256": "d8c556445cef8e7c93b0857f6ca7ae7ebd8295f169403ac66641b72f6b0598f2"
+    },
+    {
+      "path": "common/build-info.cpp.in",
+      "upstream_sha256": "e5157603f0dbaf1dc61a6be530a2ea5124644baed3170d32ea4bbcc645ef7ea6",
+      "sha256": "e5157603f0dbaf1dc61a6be530a2ea5124644baed3170d32ea4bbcc645ef7ea6"
+    },
+    {
+      "path": "common/chat-peg-parser.cpp",
+      "upstream_sha256": "895755d892a759fdf96c9c5b67202f2201228d286ddfe1b7b699d07f063cebec",
+      "sha256": "895755d892a759fdf96c9c5b67202f2201228d286ddfe1b7b699d07f063cebec"
+    },
+    {
+      "path": "common/ngram-mod.h",
+      "upstream_sha256": "bf676fd31f89e7a557f960461f60afe8182799c8974ce9be32fc6f1b00669e20",
+      "sha256": "bf676fd31f89e7a557f960461f60afe8182799c8974ce9be32fc6f1b00669e20"
+    },
+    {
+      "path": "common/chat-auto-parser-helpers.cpp",
+      "upstream_sha256": "074aafd6537a8c91b8cc2c01a497bb474dec0c755798efd15006b6cf0f140fce",
+      "sha256": "074aafd6537a8c91b8cc2c01a497bb474dec0c755798efd15006b6cf0f140fce"
+    },
+    {
+      "path": "common/jinja/caps.h",
+      "upstream_sha256": "50b2c243067d236480dbf7fcaafa30a7a5b70d770b0671d6b4168f122548b75a",
+      "sha256": "50b2c243067d236480dbf7fcaafa30a7a5b70d770b0671d6b4168f122548b75a"
+    },
+    {
+      "path": "common/jinja/lexer.h",
+      "upstream_sha256": "93aecd72cc952fab08f657aa2a70e9f58421672b19d3179f8bdf555e683a1cc7",
+      "sha256": "93aecd72cc952fab08f657aa2a70e9f58421672b19d3179f8bdf555e683a1cc7"
+    },
+    {
+      "path": "common/jinja/string.h",
+      "upstream_sha256": "d32ad2a319398b8dbc1cc43b39dd10ab2eb0ce2eae9d0eaf3c2162777dd615dc",
+      "sha256": "d32ad2a319398b8dbc1cc43b39dd10ab2eb0ce2eae9d0eaf3c2162777dd615dc"
+    },
+    {
+      "path": "common/jinja/value.h",
+      "upstream_sha256": "6fae65f5eb4b1c07bf2e4a900799982fd40bba8d9db8333aba564463fca553b5",
+      "sha256": "6fae65f5eb4b1c07bf2e4a900799982fd40bba8d9db8333aba564463fca553b5"
+    },
+    {
+      "path": "common/jinja/runtime.h",
+      "upstream_sha256": "c816c0e75d9b7f9f8e11c3280285c81086563026b02ed74767adf4448fbfbbab",
+      "sha256": "c816c0e75d9b7f9f8e11c3280285c81086563026b02ed74767adf4448fbfbbab"
+    },
+    {
+      "path": "common/jinja/parser.h",
+      "upstream_sha256": "6225eb759da910f3dd7753aed71c6938131cfa04c609d744e6f1390396422316",
+      "sha256": "6225eb759da910f3dd7753aed71c6938131cfa04c609d744e6f1390396422316"
+    },
+    {
+      "path": "common/jinja/runtime.cpp",
+      "upstream_sha256": "d846f033f16185d24b733233cf61aca296e312f8a08a7765bd38b30e963b8524",
+      "sha256": "d846f033f16185d24b733233cf61aca296e312f8a08a7765bd38b30e963b8524"
+    },
+    {
+      "path": "common/jinja/value.cpp",
+      "upstream_sha256": "54f77cce3a3a2313a61def34d58dca2863af8c0ba0a8c0d821c15a443875c928",
+      "sha256": "54f77cce3a3a2313a61def34d58dca2863af8c0ba0a8c0d821c15a443875c928"
+    },
+    {
+      "path": "common/jinja/parser.cpp",
+      "upstream_sha256": "5a1da297892cf62e9e412c954e0a9e74401d0df13c7acc113887b6d081e8a62d",
+      "sha256": "5a1da297892cf62e9e412c954e0a9e74401d0df13c7acc113887b6d081e8a62d"
+    },
+    {
+      "path": "common/jinja/lexer.cpp",
+      "upstream_sha256": "ca5674297a3788d6893cf2e83812bce7e32354800ab65e34ee78d334a28892c1",
+      "sha256": "ca5674297a3788d6893cf2e83812bce7e32354800ab65e34ee78d334a28892c1"
+    },
+    {
+      "path": "common/jinja/string.cpp",
+      "upstream_sha256": "6b1b13dea3f94c4d542c15250f793abd638839733fd96a9da6704bfdab662e86",
+      "sha256": "6b1b13dea3f94c4d542c15250f793abd638839733fd96a9da6704bfdab662e86"
+    },
+    {
+      "path": "common/jinja/utils.h",
+      "upstream_sha256": "61ae8bc57a7a551bdfb294a23a0ef8b5ba8e3cf4d695389f0f0797e2d7689781",
+      "sha256": "61ae8bc57a7a551bdfb294a23a0ef8b5ba8e3cf4d695389f0f0797e2d7689781"
+    },
+    {
+      "path": "common/jinja/caps.cpp",
+      "upstream_sha256": "2d01c0abd618302ec7e853b9a7cdc04e3febe59194a584d7f347ba5defbca601",
+      "sha256": "2d01c0abd618302ec7e853b9a7cdc04e3febe59194a584d7f347ba5defbca601"
+    },
+    {
+      "path": "common/parsers/parsers.cpp",
+      "upstream_sha256": "a51449b7f70d8b8010a1112afbd5668d9d73d9c83ebe6dd33c2667cf7793ca15",
+      "sha256": "a51449b7f70d8b8010a1112afbd5668d9d73d9c83ebe6dd33c2667cf7793ca15"
+    },
+    {
+      "path": "common/parsers/qwen3-coder.cpp",
+      "upstream_sha256": "4de4eb4ee5f8c8a4e12d94e76bede23c1d44c0afb91bc95f298d6302ac2b1832",
+      "sha256": "4de4eb4ee5f8c8a4e12d94e76bede23c1d44c0afb91bc95f298d6302ac2b1832"
+    },
+    {
+      "path": "common/parsers/functionary-v3-2.cpp",
+      "upstream_sha256": "3ab6f1f24298a102db387b7b66e9f1e872c13bfa9bc886c543048c4483721213",
+      "sha256": "3ab6f1f24298a102db387b7b66e9f1e872c13bfa9bc886c543048c4483721213"
+    },
+    {
+      "path": "common/parsers/harmony-xml.cpp",
+      "upstream_sha256": "b5934dc9e6ad09344aec8ccb8c0fe977a800494509daefc8b4e43336abc5c770",
+      "sha256": "b5934dc9e6ad09344aec8ccb8c0fe977a800494509daefc8b4e43336abc5c770"
+    },
+    {
+      "path": "common/parsers/muse-spark.cpp",
+      "upstream_sha256": "b443c22418e299040c595b87449b3bbed92720283ae44aad14d03a1606270bd3",
+      "sha256": "b443c22418e299040c595b87449b3bbed92720283ae44aad14d03a1606270bd3"
+    },
+    {
+      "path": "common/parsers/ling3.cpp",
+      "upstream_sha256": "edea7c67fe52fb5931307d9220c6746bea26019fff04d85c1403eea70758b28d",
+      "sha256": "edea7c67fe52fb5931307d9220c6746bea26019fff04d85c1403eea70758b28d"
+    },
+    {
+      "path": "common/parsers/gpt-oss.cpp",
+      "upstream_sha256": "b2cde5948a6a461a7c77b72e8f01a81df6838a76ac3be6bb9b7d1811d579e298",
+      "sha256": "b2cde5948a6a461a7c77b72e8f01a81df6838a76ac3be6bb9b7d1811d579e298"
+    },
+    {
+      "path": "common/parsers/lfm2.cpp",
+      "upstream_sha256": "d6c964f706b6c8192e559e788fba52ede9baf45eeb4964a8e656c00ba6e5e5dc",
+      "sha256": "d6c964f706b6c8192e559e788fba52ede9baf45eeb4964a8e656c00ba6e5e5dc"
+    },
+    {
+      "path": "common/parsers/cohere2moe.cpp",
+      "upstream_sha256": "824bf9302ac673f069bae5c349ef49aa87cfa704a8cf8674441bc858998d19a0",
+      "sha256": "824bf9302ac673f069bae5c349ef49aa87cfa704a8cf8674441bc858998d19a0"
+    },
+    {
+      "path": "common/parsers/gemma4.cpp",
+      "upstream_sha256": "b1c2348ebfc8541b4fc42a621e2f0f80306b8136f806fc20d31273409e2860b9",
+      "sha256": "b1c2348ebfc8541b4fc42a621e2f0f80306b8136f806fc20d31273409e2860b9"
+    },
+    {
+      "path": "common/parsers/k2-horizon.cpp",
+      "upstream_sha256": "dd8820ebd687f5efd0731dfcc33f14a7bc89e133a6bb6d2f1d6cd367aaa3fdaf",
+      "sha256": "dd8820ebd687f5efd0731dfcc33f14a7bc89e133a6bb6d2f1d6cd367aaa3fdaf"
+    },
+    {
+      "path": "common/parsers/minicpm5.cpp",
+      "upstream_sha256": "23f2a760aa672400e315d9890279a63bbfdd0d412d7ae5a36471ad71b9a59282",
+      "sha256": "23f2a760aa672400e315d9890279a63bbfdd0d412d7ae5a36471ad71b9a59282"
+    },
+    {
+      "path": "common/parsers/translate-gemma.cpp",
+      "upstream_sha256": "9039df49aaf67dd641cfbe23226b10a502f3c048f74a8a8e933a5d3f21c6b565",
+      "sha256": "9039df49aaf67dd641cfbe23226b10a502f3c048f74a8a8e933a5d3f21c6b565"
+    },
+    {
+      "path": "common/parsers/sources.cmake",
+      "upstream_sha256": "c2fab372ca14b7ed47406ff03a8cbab0d09bbcabfdd97d4a2f72587ef6df5c94",
+      "sha256": "c2fab372ca14b7ed47406ff03a8cbab0d09bbcabfdd97d4a2f72587ef6df5c94"
+    },
+    {
+      "path": "common/parsers/muse-glimmer.cpp",
+      "upstream_sha256": "8ce346e0e48e74128da7a5fb21e375d1b873cf7623ca26378eda334e381a6717",
+      "sha256": "8ce346e0e48e74128da7a5fb21e375d1b873cf7623ca26378eda334e381a6717"
+    },
+    {
+      "path": "common/parsers/minimax-m3.cpp",
+      "upstream_sha256": "3f335b93c94345c2fe48ff47463d057396f505f6e1b50e1e320b9f88655e566d",
+      "sha256": "3f335b93c94345c2fe48ff47463d057396f505f6e1b50e1e320b9f88655e566d"
+    },
+    {
+      "path": "common/parsers/deepseek.cpp",
+      "upstream_sha256": "17388577a6406911d2dcc948a0795cc666cd89bade44e99b5b9ab6e9351fed1a",
+      "sha256": "17388577a6406911d2dcc948a0795cc666cd89bade44e99b5b9ab6e9351fed1a"
+    },
+    {
+      "path": "common/parsers/parsers.h",
+      "upstream_sha256": "4ea1ed0be0f2a2649c218cbfb61cc12529b71aa90bd1f43d9393d5de4da35714",
+      "sha256": "4ea1ed0be0f2a2649c218cbfb61cc12529b71aa90bd1f43d9393d5de4da35714"
+    },
+    {
+      "path": "common/parsers/gigachat-v3.cpp",
+      "upstream_sha256": "a9196ccf0863fdd9b97604b8fedc989eef536d0dccb26975f91f949b27b942aa",
+      "sha256": "a9196ccf0863fdd9b97604b8fedc989eef536d0dccb26975f91f949b27b942aa"
+    },
+    {
+      "path": "common/parsers/kimi-k2.cpp",
+      "upstream_sha256": "b49edbc29059c14f83b809e402350ea585a52bf28de28fa95d2a23b82c4a0efd",
+      "sha256": "b49edbc29059c14f83b809e402350ea585a52bf28de28fa95d2a23b82c4a0efd"
+    },
+    {
+      "path": "common/parsers/llm-jp-harmony.cpp",
+      "upstream_sha256": "7c5606346a0f14339df098614f23633e474e99a266ebd8d69032aa3484d10de1",
+      "sha256": "7c5606346a0f14339df098614f23633e474e99a266ebd8d69032aa3484d10de1"
+    },
+    {
+      "path": "common/parsers/kimi-k3.cpp",
+      "upstream_sha256": "57227dee6ab0336647f498eede250d58d6dbfab22d60b7e0903ccc83d7287085",
+      "sha256": "57227dee6ab0336647f498eede250d58d6dbfab22d60b7e0903ccc83d7287085"
+    },
+    {
+      "path": "common/parsers/ministral3.cpp",
+      "upstream_sha256": "c7392cc1688483b0b4fa197b99a00c765e16e09d0d34d70b47025b44f6630805",
+      "sha256": "c7392cc1688483b0b4fa197b99a00c765e16e09d0d34d70b47025b44f6630805"
+    },
+    {
+      "path": "vendor/CMakeLists.txt",
+      "upstream_sha256": "97242b05cf7d56231b05afa991036260025b9d6fe4f003dbc997dd7f5d2be06b",
+      "sha256": "97242b05cf7d56231b05afa991036260025b9d6fe4f003dbc997dd7f5d2be06b"
+    },
+    {
+      "path": "vendor/hash/hash.cpp",
+      "upstream_sha256": "083a5a64f04667a78a03d09ce3e8499defa88f7b0aedace049749c97366d8b47",
+      "sha256": "083a5a64f04667a78a03d09ce3e8499defa88f7b0aedace049749c97366d8b47"
+    },
+    {
+      "path": "vendor/hash/hash.h",
+      "upstream_sha256": "63f7f0f5c1e8f1d98187af2dc37ad938863730fad59bca1f0d0573ad7272b549",
+      "sha256": "63f7f0f5c1e8f1d98187af2dc37ad938863730fad59bca1f0d0573ad7272b549"
+    },
+    {
+      "path": "vendor/hash/CMakeLists.txt",
+      "upstream_sha256": "80d1dd6d096d84375b94290ce75e447a8ba5ce2d6664e4cc3104eb1f0ff02919",
+      "sha256": "80d1dd6d096d84375b94290ce75e447a8ba5ce2d6664e4cc3104eb1f0ff02919"
+    },
+    {
+      "path": "vendor/nlohmann/json.hpp",
+      "upstream_sha256": "08f19bbcc66ff3082f5caf58867b1232987dba98d82e2b29d870722fce42776b",
+      "sha256": "08f19bbcc66ff3082f5caf58867b1232987dba98d82e2b29d870722fce42776b"
+    },
+    {
+      "path": "vendor/nlohmann/json_fwd.hpp",
+      "upstream_sha256": "fb6aa70cbece087f37ab4685c182b287c53be54f785f981b9db9d30d2d028b37",
+      "sha256": "fb6aa70cbece087f37ab4685c182b287c53be54f785f981b9db9d30d2d028b37"
+    },
+    {
+      "path": "vendor/nlohmann/CMakeLists.txt",
+      "upstream_sha256": "1b8d383ce777413f3659548cd51b48af094b39134622ed08bbc474c406b621ce",
+      "sha256": "1b8d383ce777413f3659548cd51b48af094b39134622ed08bbc474c406b621ce"
+    },
+    {
+      "path": "vendor/stb/stb_image.h",
+      "upstream_sha256": "594c2fe35d49488b4382dbfaec8f98366defca819d916ac95becf3e75f4200b3",
+      "sha256": "594c2fe35d49488b4382dbfaec8f98366defca819d916ac95becf3e75f4200b3"
+    },
+    {
+      "path": "vendor/stb/CMakeLists.txt",
+      "upstream_sha256": "02786b5b71407d289165dc70e23c710e40fe2f7c98fb0900ed0940ac51938c54",
+      "sha256": "02786b5b71407d289165dc70e23c710e40fe2f7c98fb0900ed0940ac51938c54"
+    },
+    {
+      "path": "vendor/miniaudio/CMakeLists.txt",
+      "upstream_sha256": "9a3543fefb18a888e3da5ef0d4d50a0cb966e6805b3be6dfbfe807bf481ea1ad",
+      "sha256": "9a3543fefb18a888e3da5ef0d4d50a0cb966e6805b3be6dfbfe807bf481ea1ad"
+    },
+    {
+      "path": "vendor/miniaudio/miniaudio.h",
+      "upstream_sha256": "ac7af4de748b7e26b777f37e01cee313a308a7296a3eb080e2906b320cc55c89",
+      "sha256": "ac7af4de748b7e26b777f37e01cee313a308a7296a3eb080e2906b320cc55c89"
+    },
+    {
+      "path": "vendor/sheredom/subprocess.h",
+      "upstream_sha256": "ddec448cb93c2a5096f914a5b796f707dcf0a9e91591ca13000d210200160cb1",
+      "sha256": "ddec448cb93c2a5096f914a5b796f707dcf0a9e91591ca13000d210200160cb1"
+    },
+    {
+      "path": "vendor/sheredom/CMakeLists.txt",
+      "upstream_sha256": "a3fa72186159c3fe9760756f58563e4c7d653e5dc9f188be3e1ca254174ca34c",
+      "sha256": "a3fa72186159c3fe9760756f58563e4c7d653e5dc9f188be3e1ca254174ca34c"
+    },
+    {
+      "path": "vendor/cpp-httplib/httplib.cpp",
+      "upstream_sha256": "516c58994baa9bcc3b5616f453710c0b4d2d341ac473f788fcfb029f8548caa5",
+      "sha256": "516c58994baa9bcc3b5616f453710c0b4d2d341ac473f788fcfb029f8548caa5"
+    },
+    {
+      "path": "vendor/cpp-httplib/CMakeLists.txt",
+      "upstream_sha256": "87b8e40a11ca754578927ca66c3948b2a4902ab0b01038d8cb9e0b8af843f8f6",
+      "sha256": "87b8e40a11ca754578927ca66c3948b2a4902ab0b01038d8cb9e0b8af843f8f6"
+    },
+    {
+      "path": "vendor/cpp-httplib/httplib.h",
+      "upstream_sha256": "a595e3f0d864e1606f9455ed4a8738de66fc8ef4abf7164e6570fe0e0393080b",
+      "sha256": "a595e3f0d864e1606f9455ed4a8738de66fc8ef4abf7164e6570fe0e0393080b"
+    },
+    {
+      "path": "vendor/cpp-httplib/LICENSE",
+      "upstream_sha256": "4b45cbe16d7b71b89ae6127e26e0d90a029198ca5e958ad8e3d0b8bbed364d8b",
+      "sha256": "4b45cbe16d7b71b89ae6127e26e0d90a029198ca5e958ad8e3d0b8bbed364d8b"
+    },
+    {
+      "path": "vendor/hash/sha256/sha256.h",
+      "upstream_sha256": "6086b0330eafe9ddef74072738290bc268b2dcccae16bc6d6cde84dc7585ca07",
+      "sha256": "6086b0330eafe9ddef74072738290bc268b2dcccae16bc6d6cde84dc7585ca07"
+    },
+    {
+      "path": "vendor/hash/sha256/LICENSE",
+      "upstream_sha256": "b81d0022ca6367918c67b57e9647d3513ee58809fd4b0ef0b3492f1356bced25",
+      "sha256": "b81d0022ca6367918c67b57e9647d3513ee58809fd4b0ef0b3492f1356bced25"
+    },
+    {
+      "path": "vendor/hash/sha256/sha256.c",
+      "upstream_sha256": "ba7a8ea69ad125385db28ef17e77be4a09dfdc30bb9532c30b259baaf670129c",
+      "sha256": "ba7a8ea69ad125385db28ef17e77be4a09dfdc30bb9532c30b259baaf670129c"
+    },
+    {
+      "path": "vendor/hash/sha1/sha1.h",
+      "upstream_sha256": "aded220220587c5a409dfa04f4bc2e760bd5bc81ac74af830aceb5bde7bc43e6",
+      "sha256": "aded220220587c5a409dfa04f4bc2e760bd5bc81ac74af830aceb5bde7bc43e6"
+    },
+    {
+      "path": "vendor/hash/sha1/sha1.c",
+      "upstream_sha256": "6de78afb7c2e54ccbd742c0307015db4dceaa64d85533709f99de05074d639e4",
+      "sha256": "6de78afb7c2e54ccbd742c0307015db4dceaa64d85533709f99de05074d639e4"
+    },
+    {
+      "path": "vendor/hash/xxhash/LICENSE",
+      "upstream_sha256": "6ffedbc0f7878612d2b23589f1ff2ab15633e1df7963a5d9fc750ec5500c7e7a",
+      "sha256": "6ffedbc0f7878612d2b23589f1ff2ab15633e1df7963a5d9fc750ec5500c7e7a"
+    },
+    {
+      "path": "vendor/hash/xxhash/xxhash.h",
+      "upstream_sha256": "1d5a18c925f71a9c2d8424742df47492f846f9890e3e8c55d201e4729d9e3d6d",
+      "sha256": "1d5a18c925f71a9c2d8424742df47492f846f9890e3e8c55d201e4729d9e3d6d"
+    },
+    {
+      "path": "vendor/hash/xxhash/xxhash.c",
+      "upstream_sha256": "5c3591fe6e6c86a619eb26760e9520e37a6fd5152882ab5ad93f912e2a855966",
+      "sha256": "5c3591fe6e6c86a619eb26760e9520e37a6fd5152882ab5ad93f912e2a855966"
+    },
+    {
+      "path": "vendor/hash/rotate-bits/LICENSE.md",
+      "upstream_sha256": "ca0b44aec101afb6b46f4c39b23369fa06a64fb9c0add37c2689d702156fee55",
+      "sha256": "ca0b44aec101afb6b46f4c39b23369fa06a64fb9c0add37c2689d702156fee55"
+    },
+    {
+      "path": "vendor/hash/rotate-bits/rotate-bits.h",
+      "upstream_sha256": "4a100f5e9b6bdc3e780bec38caeaec7f0edc87cf06b69b5bc1f87c2c867bdf23",
+      "sha256": "4a100f5e9b6bdc3e780bec38caeaec7f0edc87cf06b69b5bc1f87c2c867bdf23"
+    },
+    {
+      "path": "tools/mtmd/mtmd.h",
+      "upstream_sha256": "49d64698185ca7c65f7b66982606189e80c64a63a699c2050efe73b90e82ac98",
+      "sha256": "49d64698185ca7c65f7b66982606189e80c64a63a699c2050efe73b90e82ac98"
+    },
+    {
+      "path": "tools/mtmd/mtmd-helper-common.h",
+      "upstream_sha256": "c17979a922799c60124cc5b3834857c54189076a81ca2741abfbdc430a92dd0d",
+      "sha256": "c17979a922799c60124cc5b3834857c54189076a81ca2741abfbdc430a92dd0d"
+    },
+    {
+      "path": "tools/mtmd/mtmd-cli.cpp",
+      "upstream_sha256": "72c9163dcc2e0e491c74b6b0ee15406765e6e4c1b868ea1d3e73c2a87c9369d3",
+      "sha256": "72c9163dcc2e0e491c74b6b0ee15406765e6e4c1b868ea1d3e73c2a87c9369d3"
+    },
+    {
+      "path": "tools/mtmd/mtmd-image.cpp",
+      "upstream_sha256": "9d967520092c2be6ea40f26e948c61a6adb974e678dac52ce561bb7454268535",
+      "sha256": "9d967520092c2be6ea40f26e948c61a6adb974e678dac52ce561bb7454268535"
+    },
+    {
+      "path": "tools/mtmd/mtmd-helper.cpp",
+      "upstream_sha256": "fd24441c391d1d8669bc865c27fc64ee76ffdec0f0df9737ed3a1097a9ee2f08",
+      "sha256": "fd24441c391d1d8669bc865c27fc64ee76ffdec0f0df9737ed3a1097a9ee2f08"
+    },
+    {
+      "path": "tools/mtmd/mtmd-audio.h",
+      "upstream_sha256": "b3f306e60561a971173f3888038731b710322f3a0cc7f3aa162c7c697b0c22a9",
+      "sha256": "b3f306e60561a971173f3888038731b710322f3a0cc7f3aa162c7c697b0c22a9"
+    },
+    {
+      "path": "tools/mtmd/requirements.txt",
+      "upstream_sha256": "8937646f1aaf049ff67b3994525ed415870e4dd3bfa3fc3d2d06159fa52018aa",
+      "sha256": "8937646f1aaf049ff67b3994525ed415870e4dd3bfa3fc3d2d06159fa52018aa"
+    },
+    {
+      "path": "tools/mtmd/mtmd-audio.cpp",
+      "upstream_sha256": "1b071c199b1d9e18f184c0658937dd612e075aa3d8a44ab110de03578b1c192f",
+      "sha256": "1b071c199b1d9e18f184c0658937dd612e075aa3d8a44ab110de03578b1c192f"
+    },
+    {
+      "path": "tools/mtmd/clip-model.h",
+      "upstream_sha256": "f1d8e4f2a7df40f1b82b8d889fd841800a88f35583c85f970c8007e31883d98b",
+      "sha256": "f1d8e4f2a7df40f1b82b8d889fd841800a88f35583c85f970c8007e31883d98b"
+    },
+    {
+      "path": "tools/mtmd/mtmd-image.h",
+      "upstream_sha256": "405367f2011dd1cf438b5e3033eaa85523cb7a90a9edbe64c14a6d3319613f46",
+      "sha256": "405367f2011dd1cf438b5e3033eaa85523cb7a90a9edbe64c14a6d3319613f46"
+    },
+    {
+      "path": "tools/mtmd/deprecation-warning.cpp",
+      "upstream_sha256": "7b890a95c953477e825e78ca6089a6f3d7d11d07dd97248c0c1764e4ed25a5de",
+      "sha256": "7b890a95c953477e825e78ca6089a6f3d7d11d07dd97248c0c1764e4ed25a5de"
+    },
+    {
+      "path": "tools/mtmd/CMakeLists.txt",
+      "upstream_sha256": "bfbc6d34fee4d28dd0b72de0006a7c6a0d039a631042903f1d3119c653ea7119",
+      "sha256": "bfbc6d34fee4d28dd0b72de0006a7c6a0d039a631042903f1d3119c653ea7119"
+    },
+    {
+      "path": "tools/mtmd/clip.h",
+      "upstream_sha256": "c3c7c57eb7bdea4ce092de237552caa235d46126415c14e54857729294610658",
+      "sha256": "c3c7c57eb7bdea4ce092de237552caa235d46126415c14e54857729294610658"
+    },
+    {
+      "path": "tools/mtmd/clip-impl.h",
+      "upstream_sha256": "7ac40325b03d37c2e053b29f3e0d2266018ca198be0a9944996a3b532dd0093f",
+      "sha256": "7ac40325b03d37c2e053b29f3e0d2266018ca198be0a9944996a3b532dd0093f"
+    },
+    {
+      "path": "tools/mtmd/clip-graph.h",
+      "upstream_sha256": "c53fec0d29ee1327d78a01d1b4c51dea776448d7515dd92fc59f83ccde0dc41e",
+      "sha256": "c53fec0d29ee1327d78a01d1b4c51dea776448d7515dd92fc59f83ccde0dc41e"
+    },
+    {
+      "path": "tools/mtmd/mtmd-helper-gen.cpp",
+      "upstream_sha256": "9dddd845427b5521bf38a585eb238aeee5feca7218efd309306a8f08234ffaaf",
+      "sha256": "9dddd845427b5521bf38a585eb238aeee5feca7218efd309306a8f08234ffaaf"
+    },
+    {
+      "path": "tools/mtmd/mtmd-internal.h",
+      "upstream_sha256": "b89a15d559fc30d21b8b26f6020d67433ccb857d257ade0c5c33a042a253de9b",
+      "sha256": "b89a15d559fc30d21b8b26f6020d67433ccb857d257ade0c5c33a042a253de9b"
+    },
+    {
+      "path": "tools/mtmd/mtmd-helper.h",
+      "upstream_sha256": "971822a6c1b629bf6c4a5a2477e22e8a5cef1e4944939f6f6433baed9ef70a15",
+      "sha256": "971822a6c1b629bf6c4a5a2477e22e8a5cef1e4944939f6f6433baed9ef70a15"
+    },
+    {
+      "path": "tools/mtmd/mtmd.cpp",
+      "upstream_sha256": "eaf6b86b909c22c3eadb0df07e8308db516ca508cda9582f3db9ee4066e473aa",
+      "sha256": "eaf6b86b909c22c3eadb0df07e8308db516ca508cda9582f3db9ee4066e473aa"
+    },
+    {
+      "path": "tools/mtmd/clip.cpp",
+      "upstream_sha256": "8a790f49cff800cce3743e45975a1a6ff3640cd8bd6cd7184f9ed7cc7d3f15b5",
+      "sha256": "8a790f49cff800cce3743e45975a1a6ff3640cd8bd6cd7184f9ed7cc7d3f15b5"
+    },
+    {
+      "path": "tools/mtmd/debug/mtmd-debug.cpp",
+      "upstream_sha256": "1b4729dfa0f73cf107da7981060cd05b44bde9e7ad2bdce2dd44dc34ccd09e99",
+      "sha256": "1b4729dfa0f73cf107da7981060cd05b44bde9e7ad2bdce2dd44dc34ccd09e99"
+    },
+    {
+      "path": "tools/mtmd/debug/mtmd-debug.h",
+      "upstream_sha256": "38f6ff31eabd791e5d9233b7b0c8abf0e31297219c4859da2b5899a51e18882f",
+      "sha256": "38f6ff31eabd791e5d9233b7b0c8abf0e31297219c4859da2b5899a51e18882f"
+    },
+    {
+      "path": "tools/mtmd/models/granite-speech.cpp",
+      "upstream_sha256": "63da0778b81fc9f92306870a2fcece4f0104245bdbdd54e1753a2a8fb9f6b16f",
+      "sha256": "63da0778b81fc9f92306870a2fcece4f0104245bdbdd54e1753a2a8fb9f6b16f"
+    },
+    {
+      "path": "tools/mtmd/models/minicpmv.cpp",
+      "upstream_sha256": "c8a3ef9badfef5f09437fc9eb47ba4b77d4aa1ae6bdfeb3481966c85a1a08aab",
+      "sha256": "c8a3ef9badfef5f09437fc9eb47ba4b77d4aa1ae6bdfeb3481966c85a1a08aab"
+    },
+    {
+      "path": "tools/mtmd/models/llava.cpp",
+      "upstream_sha256": "b150542a0adf4945c90b21cfca317edc975941c0a7b5cb7cc3139fc9a5d55cf0",
+      "sha256": "b150542a0adf4945c90b21cfca317edc975941c0a7b5cb7cc3139fc9a5d55cf0"
+    },
+    {
+      "path": "tools/mtmd/models/gemma4ua.cpp",
+      "upstream_sha256": "b7706fb22440f956742be3f71f4eb1f502d2f24280bde71ec96f034fce66067d",
+      "sha256": "b7706fb22440f956742be3f71f4eb1f502d2f24280bde71ec96f034fce66067d"
+    },
+    {
+      "path": "tools/mtmd/models/qwen2vl.cpp",
+      "upstream_sha256": "1c31b7d36269a0f0783594b9486c016d066451d4624b991e1585273d4d1fb766",
+      "sha256": "1c31b7d36269a0f0783594b9486c016d066451d4624b991e1585273d4d1fb766"
+    },
+    {
+      "path": "tools/mtmd/models/kimivl.cpp",
+      "upstream_sha256": "4b7b2598130afd9b15f3edcaf471eba9089d001cd7a6f4e4d33afd4ab3be5e38",
+      "sha256": "4b7b2598130afd9b15f3edcaf471eba9089d001cd7a6f4e4d33afd4ab3be5e38"
+    },
+    {
+      "path": "tools/mtmd/models/qwen3tts-spkenc.cpp",
+      "upstream_sha256": "c839acbd9c5acec2681ee4e8214bf156b2c6a4b32a01c3efe000ea4f131d929c",
+      "sha256": "c839acbd9c5acec2681ee4e8214bf156b2c6a4b32a01c3efe000ea4f131d929c"
+    },
+    {
+      "path": "tools/mtmd/models/deepseek4v.cpp",
+      "upstream_sha256": "0c1b286778737f2e26fdd9438c3281e5a25061d7a2141e9bd05317979e72c4c9",
+      "sha256": "0c1b286778737f2e26fdd9438c3281e5a25061d7a2141e9bd05317979e72c4c9"
+    },
+    {
+      "path": "tools/mtmd/models/qwen3tts-gen.cpp",
+      "upstream_sha256": "cd1c11746ecc4e1bc02d00c41ce8e53a2da93d7b5a623baa7893ede8ba496ec4",
+      "sha256": "cd1c11746ecc4e1bc02d00c41ce8e53a2da93d7b5a623baa7893ede8ba496ec4"
+    },
+    {
+      "path": "tools/mtmd/models/gemma4v.cpp",
+      "upstream_sha256": "776bc47dacb61ad815bc867c584590a13842147991d79947882087d7690dd6ac",
+      "sha256": "776bc47dacb61ad815bc867c584590a13842147991d79947882087d7690dd6ac"
+    },
+    {
+      "path": "tools/mtmd/models/hunyuanvl.cpp",
+      "upstream_sha256": "87e7d4c5d4edd71f06f5807e6d9752620646146e045413a3edf70c86fe8e5150",
+      "sha256": "87e7d4c5d4edd71f06f5807e6d9752620646146e045413a3edf70c86fe8e5150"
+    },
+    {
+      "path": "tools/mtmd/models/models.h",
+      "upstream_sha256": "cff8e84cc0115d4728506d99f60165282a689654a1fc91bc75bbe791bc975d7f",
+      "sha256": "cff8e84cc0115d4728506d99f60165282a689654a1fc91bc75bbe791bc975d7f"
+    },
+    {
+      "path": "tools/mtmd/models/granite4-vision.cpp",
+      "upstream_sha256": "f64fa002cf578380395f7d838c805aa7bfd1cada03d0adabea11824de4b31551",
+      "sha256": "f64fa002cf578380395f7d838c805aa7bfd1cada03d0adabea11824de4b31551"
+    },
+    {
+      "path": "tools/mtmd/models/glm4v.cpp",
+      "upstream_sha256": "6e850f92a914165b6ba6f48f29ae806091df03c1b2fe9ad8b44e225e88875ce2",
+      "sha256": "6e850f92a914165b6ba6f48f29ae806091df03c1b2fe9ad8b44e225e88875ce2"
+    },
+    {
+      "path": "tools/mtmd/models/pockettts-gen.cpp",
+      "upstream_sha256": "868d568e3f0f7ad58c0ec3c0a2c063cdeef2ab1a7b85605bc4deb6233cb2e452",
+      "sha256": "868d568e3f0f7ad58c0ec3c0a2c063cdeef2ab1a7b85605bc4deb6233cb2e452"
+    },
+    {
+      "path": "tools/mtmd/models/qwen3a.cpp",
+      "upstream_sha256": "be9a27e837ee6641b1269d42d5d2f904d39b9b1e830543129bcc3cb224745b4b",
+      "sha256": "be9a27e837ee6641b1269d42d5d2f904d39b9b1e830543129bcc3cb224745b4b"
+    },
+    {
+      "path": "tools/mtmd/models/ling3vl.cpp",
+      "upstream_sha256": "0184476d575a0680f3a18bd27fc3b312c4f9946e22fa44829642a22757b381db",
+      "sha256": "0184476d575a0680f3a18bd27fc3b312c4f9946e22fa44829642a22757b381db"
+    },
+    {
+      "path": "tools/mtmd/models/step3vl.cpp",
+      "upstream_sha256": "02e7726e286650a9500ec9432ad3a43192620fd4cf42e1e918bff6c1e6918b5a",
+      "sha256": "02e7726e286650a9500ec9432ad3a43192620fd4cf42e1e918bff6c1e6918b5a"
+    },
+    {
+      "path": "tools/mtmd/models/youtuvl.cpp",
+      "upstream_sha256": "b6c08d90ed9332c49b35eb199d8281e334da0ea37397f1de4f7587dd02d23468",
+      "sha256": "b6c08d90ed9332c49b35eb199d8281e334da0ea37397f1de4f7587dd02d23468"
+    },
+    {
+      "path": "tools/mtmd/models/dotsocr.cpp",
+      "upstream_sha256": "c0c35144bae11313473a95862458e645f9a7732386bd5cfe0bc2d4959fafbd54",
+      "sha256": "c0c35144bae11313473a95862458e645f9a7732386bd5cfe0bc2d4959fafbd54"
+    },
+    {
+      "path": "tools/mtmd/models/deepseekocr.cpp",
+      "upstream_sha256": "b55ff9610a6f2a9ffaf26c4c648d6fb896aada5e211604147e773d91728b6199",
+      "sha256": "b55ff9610a6f2a9ffaf26c4c648d6fb896aada5e211604147e773d91728b6199"
+    },
+    {
+      "path": "tools/mtmd/models/parakeet.cpp",
+      "upstream_sha256": "0c1b9fbd78cf8a340bd63998291dc6d77945996cb79e2533fb656cf77a45df53",
+      "sha256": "0c1b9fbd78cf8a340bd63998291dc6d77945996cb79e2533fb656cf77a45df53"
+    },
+    {
+      "path": "tools/mtmd/models/gemma4a.cpp",
+      "upstream_sha256": "d1f01f480b481c85508ddc8df5e9d26d9cfd40546aa305884706d01e2fe1ebec",
+      "sha256": "d1f01f480b481c85508ddc8df5e9d26d9cfd40546aa305884706d01e2fe1ebec"
+    },
+    {
+      "path": "tools/mtmd/models/pockettts-seanet.cpp",
+      "upstream_sha256": "45e80f86fab07723458adacf974c07144731ff1f9e75ba03870565864c2a72de",
+      "sha256": "45e80f86fab07723458adacf974c07144731ff1f9e75ba03870565864c2a72de"
+    },
+    {
+      "path": "tools/mtmd/models/nemotron-omni.cpp",
+      "upstream_sha256": "237650c6cb34bcdba7bbee75ccef919d86767693d9b3cea3386c9f338a5e34b7",
+      "sha256": "237650c6cb34bcdba7bbee75ccef919d86767693d9b3cea3386c9f338a5e34b7"
+    },
+    {
+      "path": "tools/mtmd/models/muse-spark-audio.cpp",
+      "upstream_sha256": "329f80fe44052c4cc6abb095a57ffe953c6917d893f5ab2270c20752cbda41e1",
+      "sha256": "329f80fe44052c4cc6abb095a57ffe953c6917d893f5ab2270c20752cbda41e1"
+    },
+    {
+      "path": "tools/mtmd/models/internvl.cpp",
+      "upstream_sha256": "1e8c245a0e36f822e6ff6b8b709e1f262b5a87625ab6a0d399dab349951b456c",
+      "sha256": "1e8c245a0e36f822e6ff6b8b709e1f262b5a87625ab6a0d399dab349951b456c"
+    },
+    {
+      "path": "tools/mtmd/models/muse-glimmer.cpp",
+      "upstream_sha256": "4744cd823f5a4c5ae59cddcfb6f93e75708b5014795632c561e866985352cb92",
+      "sha256": "4744cd823f5a4c5ae59cddcfb6f93e75708b5014795632c561e866985352cb92"
+    },
+    {
+      "path": "tools/mtmd/models/paddleocr.cpp",
+      "upstream_sha256": "f7aa6b5ca067eab54d25da240decf224c16b99251cd72972e57a8f7559f40939",
+      "sha256": "f7aa6b5ca067eab54d25da240decf224c16b99251cd72972e57a8f7559f40939"
+    },
+    {
+      "path": "tools/mtmd/models/minimax-m3.cpp",
+      "upstream_sha256": "bce099cbd652ef5acd6c9d8693d59b6e8a0b0b74b1462056906978eb81c5cd11",
+      "sha256": "bce099cbd652ef5acd6c9d8693d59b6e8a0b0b74b1462056906978eb81c5cd11"
+    },
+    {
+      "path": "tools/mtmd/models/deepseekocr2.cpp",
+      "upstream_sha256": "e828b8c49b6431710b84ec318650dc792a22fd711cb5fc2b4e52ef0b57373ccf",
+      "sha256": "e828b8c49b6431710b84ec318650dc792a22fd711cb5fc2b4e52ef0b57373ccf"
+    },
+    {
+      "path": "tools/mtmd/models/voxtral-rt.cpp",
+      "upstream_sha256": "a20898cb158f5e1b6b8ff9a113a472f6114295b37d4d917f32856d3e6c25107a",
+      "sha256": "a20898cb158f5e1b6b8ff9a113a472f6114295b37d4d917f32856d3e6c25107a"
+    },
+    {
+      "path": "tools/mtmd/models/siglip.cpp",
+      "upstream_sha256": "5b7c773c3730626d42b7a24ad7bca9c0c937c8b28ceb7253163fb6d582015015",
+      "sha256": "5b7c773c3730626d42b7a24ad7bca9c0c937c8b28ceb7253163fb6d582015015"
+    },
+    {
+      "path": "tools/mtmd/models/llama4.cpp",
+      "upstream_sha256": "0697403992a6d9ef39c4f283ff8eb822e5dc00d7317eaedeebc15c2c9119b044",
+      "sha256": "0697403992a6d9ef39c4f283ff8eb822e5dc00d7317eaedeebc15c2c9119b044"
+    },
+    {
+      "path": "tools/mtmd/models/mimovl.cpp",
+      "upstream_sha256": "6832ae01a25cc3c6e30d4bcc59f3555e42978d5b0d88cfb43db5aedef322e23c",
+      "sha256": "6832ae01a25cc3c6e30d4bcc59f3555e42978d5b0d88cfb43db5aedef322e23c"
+    },
+    {
+      "path": "tools/mtmd/models/qwen3vl.cpp",
+      "upstream_sha256": "5a248956cc965ec1229538585f66a0010fa03a5d5dd164bd495c522ecede0c7b",
+      "sha256": "5a248956cc965ec1229538585f66a0010fa03a5d5dd164bd495c522ecede0c7b"
+    },
+    {
+      "path": "tools/mtmd/models/pockettts-spkenc.cpp",
+      "upstream_sha256": "38ee33d9d628b6507dadeb0d1724ac59e2991bee11ec4f1074a7961ca1e5eb04",
+      "sha256": "38ee33d9d628b6507dadeb0d1724ac59e2991bee11ec4f1074a7961ca1e5eb04"
+    },
+    {
+      "path": "tools/mtmd/models/kimik25.cpp",
+      "upstream_sha256": "dec0c548c252d6251f5a7e37a9f32777a9cf1951d7efada35b60c51d30424d37",
+      "sha256": "dec0c548c252d6251f5a7e37a9f32777a9cf1951d7efada35b60c51d30424d37"
+    },
+    {
+      "path": "tools/mtmd/models/nemotron-v2-vl.cpp",
+      "upstream_sha256": "0a6241340d7801a9b973c26e3e8ec9c3f29b9c661d3f802077218f9c135d9688",
+      "sha256": "0a6241340d7801a9b973c26e3e8ec9c3f29b9c661d3f802077218f9c135d9688"
+    },
+    {
+      "path": "tools/mtmd/models/gemma4uv.cpp",
+      "upstream_sha256": "ca6d97f359897f8d12bbece629d6e9e5edb5ef04266ea2924e09dfc6eaeee370",
+      "sha256": "ca6d97f359897f8d12bbece629d6e9e5edb5ef04266ea2924e09dfc6eaeee370"
+    },
+    {
+      "path": "tools/mtmd/models/yasa2.cpp",
+      "upstream_sha256": "7ed9ef51c4c53ef351badda04fe2c686ad10ba6bbc89bb96a14e63e2c605f10b",
+      "sha256": "7ed9ef51c4c53ef351badda04fe2c686ad10ba6bbc89bb96a14e63e2c605f10b"
+    },
+    {
+      "path": "tools/mtmd/models/whisper-enc.cpp",
+      "upstream_sha256": "f91127469e9a9c3f7b5b096db6bccd4073738aa829ca35709fe2f46c5e5c3b57",
+      "sha256": "f91127469e9a9c3f7b5b096db6bccd4073738aa829ca35709fe2f46c5e5c3b57"
+    },
+    {
+      "path": "tools/mtmd/models/dots3note.cpp",
+      "upstream_sha256": "c446d501af8d915667ae53152a09c565cc0edfda9b5294162da87d94f0b8ea19",
+      "sha256": "c446d501af8d915667ae53152a09c565cc0edfda9b5294162da87d94f0b8ea19"
+    },
+    {
+      "path": "tools/mtmd/models/pixtral.cpp",
+      "upstream_sha256": "cae02d2f2edf0a625afac954ff1aabcba3ad66488a0728c90dced8584a3666eb",
+      "sha256": "cae02d2f2edf0a625afac954ff1aabcba3ad66488a0728c90dced8584a3666eb"
+    },
+    {
+      "path": "tools/mtmd/models/exaone4_5.cpp",
+      "upstream_sha256": "f50f10708eda189b66dbdf29e6f1890685cdf221dd8c3504ae1eeaf17a88f5fd",
+      "sha256": "f50f10708eda189b66dbdf29e6f1890685cdf221dd8c3504ae1eeaf17a88f5fd"
+    },
+    {
+      "path": "tools/mtmd/models/cogvlm.cpp",
+      "upstream_sha256": "6406a79c4b9bbf94e10daffe85c082ce50a7ea1c18bec4537a8930c0b7fa6431",
+      "sha256": "6406a79c4b9bbf94e10daffe85c082ce50a7ea1c18bec4537a8930c0b7fa6431"
+    },
+    {
+      "path": "tools/mtmd/models/conformer.cpp",
+      "upstream_sha256": "ce7b3f75383bcd1ce1e9fcd7f0b36a8dc5f72e86640bbfca67a5cffedaa78d78",
+      "sha256": "ce7b3f75383bcd1ce1e9fcd7f0b36a8dc5f72e86640bbfca67a5cffedaa78d78"
+    },
+    {
+      "path": "tools/mtmd/models/mimo-audio.cpp",
+      "upstream_sha256": "2f5c338b0c04c133d655580fc6a465bd009e66727e5dc164d0c557447f28d294",
+      "sha256": "2f5c338b0c04c133d655580fc6a465bd009e66727e5dc164d0c557447f28d294"
+    },
+    {
+      "path": "tools/mtmd/models/mobilenetv5.cpp",
+      "upstream_sha256": "52ad7007e5a9d6b3fd7c57d38fe4b7b307525853062aa5ab5731092b03d8c141",
+      "sha256": "52ad7007e5a9d6b3fd7c57d38fe4b7b307525853062aa5ab5731092b03d8c141"
+    },
+    {
+      "path": "tools/mtmd/tests/tests-requirements.txt",
+      "upstream_sha256": "5e6fcf884ee5ee54ed1c03f052c4ab456fb6eda196becadb129b8d7a596d3cfd",
+      "sha256": "5e6fcf884ee5ee54ed1c03f052c4ab456fb6eda196becadb129b8d7a596d3cfd"
+    },
+    {
+      "path": "tools/mtmd/tests/test-1-ground-truth.txt",
+      "upstream_sha256": "6d4195935927e7fd6dfd7e8800c630a3fbde4882dca2a1b236d2e6bcaa957469",
+      "sha256": "6d4195935927e7fd6dfd7e8800c630a3fbde4882dca2a1b236d2e6bcaa957469"
+    },
+    {
+      "path": "tools/server/server-schema.h",
+      "upstream_sha256": "71bc84029c9755296a2561a510fb58b667c44218d4a1db671bc13b7641a31183",
+      "sha256": "71bc84029c9755296a2561a510fb58b667c44218d4a1db671bc13b7641a31183"
+    },
+    {
+      "path": "tools/server/server-mcp.cpp",
+      "upstream_sha256": "bb7aceb1f612a237ccbaa3949925558ca8a1481103d2bf4a169990c3599f7be0",
+      "sha256": "bb7aceb1f612a237ccbaa3949925558ca8a1481103d2bf4a169990c3599f7be0"
+    },
+    {
+      "path": "tools/server/server-chat.cpp",
+      "upstream_sha256": "5a4acc9bceea18879cd8c7a9454029fd535fb317c1d500ac684c5a2e6bf9b34c",
+      "sha256": "5a4acc9bceea18879cd8c7a9454029fd535fb317c1d500ac684c5a2e6bf9b34c"
+    },
+    {
+      "path": "tools/server/server-tools.cpp",
+      "upstream_sha256": "9213d2c45718bd3703a3d788b0cb7aad4d9722397f102962838fa23a123b3f4d",
+      "sha256": "9213d2c45718bd3703a3d788b0cb7aad4d9722397f102962838fa23a123b3f4d"
+    },
+    {
+      "path": "tools/server/server-http.cpp",
+      "upstream_sha256": "aad15b757323f36b81235182c4a0a35d448399012ae3ef4fed9902b716fa17ea",
+      "sha256": "aad15b757323f36b81235182c4a0a35d448399012ae3ef4fed9902b716fa17ea"
+    },
+    {
+      "path": "tools/server/server-decision.cpp",
+      "upstream_sha256": "09c485e006e904d27b7f9fbb7858ad5392d99096e5e5db6cbaaf42c50284dc12",
+      "sha256": "09c485e006e904d27b7f9fbb7858ad5392d99096e5e5db6cbaaf42c50284dc12"
+    },
+    {
+      "path": "tools/server/server.cpp",
+      "upstream_sha256": "fd923203db4014dd83d543a3f04db54d29083db9bbbd8c1db16a1610a28fa23f",
+      "sha256": "fd923203db4014dd83d543a3f04db54d29083db9bbbd8c1db16a1610a28fa23f"
+    },
+    {
+      "path": "tools/server/server-context.cpp",
+      "upstream_sha256": "e808b66076eefbe0bd9a31c6f8716db1bc784ee5dce1385c14fe40fd5377befe",
+      "sha256": "e808b66076eefbe0bd9a31c6f8716db1bc784ee5dce1385c14fe40fd5377befe"
+    },
+    {
+      "path": "tools/server/server-common.h",
+      "upstream_sha256": "f2d93b30299d1e84c8c15c502ef72295085079f314aa39ecda369ca069775da3",
+      "sha256": "f2d93b30299d1e84c8c15c502ef72295085079f314aa39ecda369ca069775da3"
+    },
+    {
+      "path": "tools/server/main.cpp",
+      "upstream_sha256": "7ec684588e04538c5f9d44cda54e67780cf68b19c3c2660699df632f5c55fe4c",
+      "sha256": "7ec684588e04538c5f9d44cda54e67780cf68b19c3c2660699df632f5c55fe4c"
+    },
+    {
+      "path": "tools/server/server-stream.cpp",
+      "upstream_sha256": "96cea95271afcb6e359fd5666c3de93e1dc9c94b35b7d961ca3e9d9854575b1a",
+      "sha256": "96cea95271afcb6e359fd5666c3de93e1dc9c94b35b7d961ca3e9d9854575b1a"
+    },
+    {
+      "path": "tools/server/server-chat.h",
+      "upstream_sha256": "cf75156087e4abe3e6879617abfccbe84561daa00de300396606c9bc99801d41",
+      "sha256": "cf75156087e4abe3e6879617abfccbe84561daa00de300396606c9bc99801d41"
+    },
+    {
+      "path": "tools/server/server-common.cpp",
+      "upstream_sha256": "6f0b8d370cf7c4bfde1c76216b42f50a11206310738958afe239ade619a29045",
+      "sha256": "6f0b8d370cf7c4bfde1c76216b42f50a11206310738958afe239ade619a29045"
+    },
+    {
+      "path": "tools/server/server-tools.h",
+      "upstream_sha256": "497713579fbf6436dd0ceb927e6b541bc22ed88a65d4d04d929bbbc6914e91e9",
+      "sha256": "497713579fbf6436dd0ceb927e6b541bc22ed88a65d4d04d929bbbc6914e91e9"
+    },
+    {
+      "path": "tools/server/server-models.cpp",
+      "upstream_sha256": "0d3b907d2e8b99a32f2c17c8359bf6741ec717d3e0a889c22afc94149c794190",
+      "sha256": "0d3b907d2e8b99a32f2c17c8359bf6741ec717d3e0a889c22afc94149c794190"
+    },
+    {
+      "path": "tools/server/CMakeLists.txt",
+      "upstream_sha256": "c786719a24176b0ea90a4c7813c3d87bf4a41cfd83bac351caa1fae766181a46",
+      "sha256": "a1e9de69fa7fd1e71789163d34fbc0749d1906908718d517a4115a0c156c0a1c"
+    },
+    {
+      "path": "tools/server/server-queue.h",
+      "upstream_sha256": "d77a3eac479e8ad772b325db643225ea3e68a9715709e375d859295c31161924",
+      "sha256": "d77a3eac479e8ad772b325db643225ea3e68a9715709e375d859295c31161924"
+    },
+    {
+      "path": "tools/server/server-http.h",
+      "upstream_sha256": "29c53f7ffde226edf3e6f48463e4807f7e554ca12e476099f90e0ff18142978d",
+      "sha256": "29c53f7ffde226edf3e6f48463e4807f7e554ca12e476099f90e0ff18142978d"
+    },
+    {
+      "path": "tools/server/server-cors-proxy.h",
+      "upstream_sha256": "e8ccea63c108de65a8cdf2f8f42577fda0b70ac2a3521585f610609afe693814",
+      "sha256": "e8ccea63c108de65a8cdf2f8f42577fda0b70ac2a3521585f610609afe693814"
+    },
+    {
+      "path": "tools/server/server-schema.cpp",
+      "upstream_sha256": "ea1a97eabc480df134178f52301b845e8403cffd17a2096a484b9faa2be1c31a",
+      "sha256": "ea1a97eabc480df134178f52301b845e8403cffd17a2096a484b9faa2be1c31a"
+    },
+    {
+      "path": "tools/server/server-task.h",
+      "upstream_sha256": "68c28c4c7b4226cc4b6c4ce53a9979bfe3f43c468558b394b6e108553748e417",
+      "sha256": "68c28c4c7b4226cc4b6c4ce53a9979bfe3f43c468558b394b6e108553748e417"
+    },
+    {
+      "path": "tools/server/server-mcp.h",
+      "upstream_sha256": "a324510c266fa20cab849d4c2be88ee36e546870b157f3c4215293c3c5cf5dcf",
+      "sha256": "a324510c266fa20cab849d4c2be88ee36e546870b157f3c4215293c3c5cf5dcf"
+    },
+    {
+      "path": "tools/server/server-decision.h",
+      "upstream_sha256": "c59aa5ccf50d8bc9af693bee33667caf1eeb4b43c6e155cb26c7fc4573c28fd2",
+      "sha256": "c59aa5ccf50d8bc9af693bee33667caf1eeb4b43c6e155cb26c7fc4573c28fd2"
+    },
+    {
+      "path": "tools/server/server-models.h",
+      "upstream_sha256": "c3533d9f025666fb5446011ce6d2ab8a762ef507b24a08664ad4e240a6ef2338",
+      "sha256": "c3533d9f025666fb5446011ce6d2ab8a762ef507b24a08664ad4e240a6ef2338"
+    },
+    {
+      "path": "tools/server/server-context.h",
+      "upstream_sha256": "6824d2727b8f8243d00694e2ae32219fc850ffcdd3d1525645907e699dc1543a",
+      "sha256": "6824d2727b8f8243d00694e2ae32219fc850ffcdd3d1525645907e699dc1543a"
+    },
+    {
+      "path": "tools/server/server-stream.h",
+      "upstream_sha256": "01986f4c46882f94f5c08c5d481cb47e30150c312c927219d3eefc34f5a67fed",
+      "sha256": "01986f4c46882f94f5c08c5d481cb47e30150c312c927219d3eefc34f5a67fed"
+    },
+    {
+      "path": "tools/server/server-task.cpp",
+      "upstream_sha256": "d7901c9609a6fe8c859a3777d45a37148e335bb73984313ba08a339d558382ef",
+      "sha256": "d7901c9609a6fe8c859a3777d45a37148e335bb73984313ba08a339d558382ef"
+    },
+    {
+      "path": "tools/server/server-connect.cpp",
+      "upstream_sha256": "2a505b295d649e6e0e70840d0f949a66b06d18269282294e5fb804e0460cc9df",
+      "sha256": "2a505b295d649e6e0e70840d0f949a66b06d18269282294e5fb804e0460cc9df"
+    },
+    {
+      "path": "tools/server/server-connect.h",
+      "upstream_sha256": "7b101e8c7fad00d6f2f9871ee6ae7e576d99bc1dd32f014e0c18e9cfcb5f6b52",
+      "sha256": "7b101e8c7fad00d6f2f9871ee6ae7e576d99bc1dd32f014e0c18e9cfcb5f6b52"
+    },
+    {
+      "path": "tools/server/server-queue.cpp",
+      "upstream_sha256": "65c4a0e8f95900e46f0e20e4f0dd156e34881cbd23615911e2de7777e90ad653",
+      "sha256": "65c4a0e8f95900e46f0e20e4f0dd156e34881cbd23615911e2de7777e90ad653"
+    },
+    {
+      "path": "tools/server/bench/requirements.txt",
+      "upstream_sha256": "105cc90e6706a1296b93e961f24783cc455dfbbe6c6c9acf19d1a9a524e9eee1",
+      "sha256": "105cc90e6706a1296b93e961f24783cc455dfbbe6c6c9acf19d1a9a524e9eee1"
+    },
+    {
+      "path": "tools/server/tests/requirements.txt",
+      "upstream_sha256": "50cc9867a20702157d92afae756ad8845b5494e9d2d68a71df38e7537b2930fb",
+      "sha256": "50cc9867a20702157d92afae756ad8845b5494e9d2d68a71df38e7537b2930fb"
+    },
+    {
+      "path": "tools/server/bench/speed-bench/requirements.txt",
+      "upstream_sha256": "af61baf90f1ee3421845076ff594159b3656062132ed1522470154bccaf7e635",
+      "sha256": "af61baf90f1ee3421845076ff594159b3656062132ed1522470154bccaf7e635"
+    },
+    {
+      "path": "ggml/CMakeLists.txt",
+      "upstream_sha256": "aedecbcad995197e5d912aa9f789520df6463c737c095e5c12b5d5dfbf02980e",
+      "sha256": "aedecbcad995197e5d912aa9f789520df6463c737c095e5c12b5d5dfbf02980e"
+    },
+    {
+      "path": "scripts/ui-assets.cmake",
+      "upstream_sha256": "d3abf3ced6aa329a000b6c0df9c19fabfa83581d95f90b1cdd686007edb5fa8e",
+      "sha256": "d3abf3ced6aa329a000b6c0df9c19fabfa83581d95f90b1cdd686007edb5fa8e"
+    },
+    {
+      "path": "tools/ui/CMakeLists.txt",
+      "upstream_sha256": "51b6c585fab1dcb59a44aad2bf81b927fa3e62a6ac33308a82f93b604ff6bf72",
+      "sha256": "51b6c585fab1dcb59a44aad2bf81b927fa3e62a6ac33308a82f93b604ff6bf72"
+    },
+    {
+      "path": "tools/ui/ui.cpp.in",
+      "upstream_sha256": "f23eb7c1b26992138f8f69e7bf45533ae8928de849f26839c0a9c6456043b1ea",
+      "sha256": "f23eb7c1b26992138f8f69e7bf45533ae8928de849f26839c0a9c6456043b1ea"
+    },
+    {
+      "path": "tools/ui/ui.h.in",
+      "upstream_sha256": "9153477cacbcef7d44eb43bf02610cc6e131cc749e63f36b28a609cde51244f6",
+      "sha256": "9153477cacbcef7d44eb43bf02610cc6e131cc749e63f36b28a609cde51244f6"
+    },
+    {
+      "path": "ggml/cmake/GitVars.cmake",
+      "upstream_sha256": "411507be4e991f2afc0007905a95bbf848176a282189d0e27d7df1d48974290d",
+      "sha256": "411507be4e991f2afc0007905a95bbf848176a282189d0e27d7df1d48974290d"
+    },
+    {
+      "path": "ggml/cmake/FindNCCL.cmake",
+      "upstream_sha256": "496ad9fbb75ce307f8142ed2dc8fa1ea1baaaef70e51b8d0b153ebd191b650f8",
+      "sha256": "496ad9fbb75ce307f8142ed2dc8fa1ea1baaaef70e51b8d0b153ebd191b650f8"
+    },
+    {
+      "path": "ggml/cmake/common.cmake",
+      "upstream_sha256": "b4e0804e36d6295889da4df37e1c0902149c24101d84a6b043e136922b643956",
+      "sha256": "b4e0804e36d6295889da4df37e1c0902149c24101d84a6b043e136922b643956"
+    },
+    {
+      "path": "ggml/cmake/ggml-config.cmake.in",
+      "upstream_sha256": "021c2a163b30e5c4b2130540fbd76f9f0d6a61b756ccc33c2ed9a48936181264",
+      "sha256": "021c2a163b30e5c4b2130540fbd76f9f0d6a61b756ccc33c2ed9a48936181264"
+    }
+  ],
+  "local_changes": {
+    "tools/CMakeLists.txt": "Select only mtmd, UI and server dependencies.",
+    "tools/server/CMakeLists.txt": "Use the existing merged server context/queue and compile their accepted Goose bridges from source."
+  }
+}

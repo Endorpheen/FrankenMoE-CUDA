@@ -29,16 +29,21 @@ H=$OUT/main.h
 OBJ=$OUT/main.o
 mkdir -p "$OUT"
 
-# Accepted canonical modules. Model builders stay out: they are per-architecture
-# alternatives, not one unit. Checked 2026-11-15: qwen35moe.goose, qwen3next.goose
-# and the other arch builders import base/model_graph.goose, whose fail/ensure
-# collide with the canonical ones in a shared unit. An Apex graph build therefore
-# needs a per-architecture unit of its own, not a bigger common one.
+# Accepted common modules and the current Qwen3.5 standalone capabilities
+# (shape plan, QG split, attention and persistent Q4 KV). Other architecture alternatives
+# remain separate. Compiling this unit alone does not execute a model.
 MODULES=(
     goose/model/goose-model-graph.goose
     goose/model/qwen35moe.goose
     goose/model/qgate-split.goose
+    goose/model/qwen35-attention.goose
+    goose/model/qwen35-kv.goose
     goose/model/gdn-ops.goose
+    goose/model/qwen35-gdn.goose
+    goose/model/qwen35-trunk.goose
+    goose/model/gguf-reader.goose
+    goose/model/model-ownership.goose
+    goose/model/qwen35-model-loader.goose
     goose/model/goose-model-loader.goose
     goose/model/file-io.goose
     goose/model/arch-registry.goose
@@ -72,6 +77,7 @@ MODULES=(
     goose/model/control-vectors.goose
     goose/model/lora-apply.goose
     goose/model/special-partition.goose
+    goose/sampling/sampler-chain-full.goose
     goose/misc/common-strings.goose
     goose/misc/edge0-pack-index.goose
     goose/misc/release-plan.goose
@@ -116,6 +122,15 @@ MODULES=(
     goose/misc/perplexity-plan.goose
     goose/misc/kv-turn-state.goose
     goose/misc/tallies.goose
+    goose/misc/unicode-tables.goose
+    goose/misc/unicode-text.goose
+    goose/misc/pretokenizer-qwen35.goose
+    goose/model/bpe-tokenize.goose
+    goose/model/bpe-detokenize.goose
+    goose/model/tokenizer-engine.goose
+    goose/model/gguf-format.goose
+    goose/model/special-partition.goose
+    goose/sampling/sampler-chain-full.goose
     goose/misc/goose-tokenizer.goose
     goose/misc/prefill-plan.goose
     goose/misc/trace-frame-order.goose
@@ -139,6 +154,7 @@ MODULES=(
     goose/server/http-url-policy.goose
     goose/server/jsonparse.goose
     goose/server/route-table.goose
+    goose/server/http-listener.goose
     goose/server/web-assets.goose
     goose/server/mime-table.goose
     goose/server/asset-etag.goose
@@ -158,6 +174,12 @@ MODULES=(
     goose/json/peg-invalid.goose
     goose/json/visit.goose
     goose/json/refs.goose
+    goose/misc/unicode-tables.goose
+    goose/misc/unicode-text.goose
+    goose/misc/pretokenizer-qwen35.goose
+    goose/model/bpe-tokenize.goose
+    goose/model/bpe-detokenize.goose
+    goose/model/bpe-load.goose
 )
 
 echo "[1/5] compose ${#MODULES[@]} modules"

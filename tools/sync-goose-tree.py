@@ -32,6 +32,48 @@ EXPERIMENTS = ROOT / "experiments"
 LEDGER = ROOT / "docs/goose-migration/tasks.json"
 
 CANONICAL_SOURCES = [
+    ("sampling/sampler-chain-full.goose", "EXP-2026-11-17-921-goose-sampler", "source/sampler-chain-full.goose",
+     "src/llama-sampler.cpp (MT19937, canonical double draw, top-k/top-p/min-p/temp/dist)",
+     "207 comparisons vs llama_sampler_chain / 0 mismatches; MT19937 700 draws x 3 seeds; 5 mutants rejected"),
+    ("misc/unicode-tables.goose", "EXP-2026-11-17-920-goose-tokenizer", "source/unicode-tables.goose",
+     "src/unicode-data.cpp (derived codepoint flag array and lowercase map, generated)",
+     "3512 flag ranges and 1433 lowercase entries; every reader/tokenizer gate uses them"),
+    ("misc/unicode-text.goose", "EXP-2026-11-17-920-goose-tokenizer", "source/unicode-text.goose",
+     "src/unicode.cpp (unicode_cpt_from_utf8 recovery, unicode_cpt_to_utf8, byte maps)",
+     "tokenizer gate:496640 pieces /70 id cases exact;invalid UTF-8 recovery corpus"),
+    ("misc/pretokenizer-qwen35.goose", "EXP-2026-11-17-920-goose-tokenizer", "source/pretokenizer-qwen35.goose",
+     "src/unicode.cpp (unicode_regex_split_custom_qwen35 and unicode_byte_encoding_process)",
+     "tokenizer gate:Russian/English/code/CJK/emoji/whitespace ids exact;split-marks mutant rejected"),
+    ("model/bpe-tokenize.goose", "EXP-2026-11-17-920-goose-tokenizer", "source/bpe-tokenize.goose",
+     "src/llama-vocab.cpp (BPE session, token/merge maps, attribute passes, EOG set)",
+     "tokenizer gate:70 cases/11017 ids exact;tables 248320/247587;eog 5/0;merge-stale mutant rejected"),
+    ("model/bpe-detokenize.goose", "EXP-2026-11-17-920-goose-tokenizer", "source/bpe-detokenize.goose",
+     "src/llama-vocab.cpp (token_to_piece and detokenize)",
+     "tokenizer gate:496640 pieces and 140 detokenize calls exact;byte-map mutant rejected"),
+    ("model/gguf-reader.goose", "EXP-2026-11-17-919-goose-model-reader", "source/reader.goose",
+     "ggml/src/gguf.cpp (bounded typed GGUF v2/v3 engine reader and name indexes)",
+     "Apex/Edge0 skeleton/PLE full header parity;334 synthetic checks;full-hash collision control;4 reader mutants;libc-only build"),
+    ("model/model-ownership.goose", "EXP-2026-11-17-919-goose-model-reader", "source/ownership.goose",
+     "ggml/src/ggml.c (direct context POD ABI and tensor clear; existing host byte-store reused)",
+     "native24-byte x86_64 init ABI;CPU/no-alloc contexts;full-model owned parameter storage"),
+    ("model/qwen35-model-loader.goose", "EXP-2026-11-17-919-goose-model-reader", "source/model.goose",
+     "src/models/qwen35moe.cpp and src/llama-model-loader.cpp (config/names/binding/lifetime;mapping remains borrowed)",
+     "733 bindings/native query count0;79 ownership/failure checks;3 model mutants;full40-layer exact logits/checkpoint replay"),
+    ("model/qwen35-trunk.goose", "EXP-2026-11-17-918-goose-moe-trunk", "source/runtime.goose",
+     "src/models/qwen35moe.cpp and src/llama-graph.cpp (full trunk/MoE graph and borrowed tensor binding)",
+     "40 real layers/logits /3 rebuilt steps with checkpoint replay /12 FFN cases /24 binder bounds /6 semantic mutants"),
+    ("model/qwen35-gdn.goose", "EXP-2026-11-17-917-goose-real-gdn", "source/runtime.goose",
+     "src/models/qwen35moe.cpp and src/models/delta-net-base.cpp (single-stream fused GDN layer/state)",
+     "8 real-weight steps /7239360 exact F32 values /210 invalid inputs /115 host-config checks /5 mutations"),
+    ("model/qwen35-kv.goose", "EXP-2026-11-17-914-goose-q4-kv", "source/cache.goose",
+     "src/llama-kv-cache.cpp (single-stream compact Q4_0 cache and host checkpoint policy)",
+     "6 exact real-weight steps / 1 aborted graph / 49 planner + 50 host checks / 42 invalid layouts / 6 mutations"),
+    ("model/qwen35-attention.goose", "EXP-2026-11-17-913-goose-real-attention", "source/attention.goose",
+     "src/models/qwen35moe.cpp and src/llama-graph.cpp (single-stream attention branch; persistent KV pending)",
+     "8 real-weight cases / 29 stages / 1069056 exact F32-F16 values / 6 mutations; 124-module composition"),
+    ("cpu/goose-graph-builders.goose", "EXP-2026-11-17-917-goose-real-gdn", "source/graph-builders.goose",
+     "ggml/src/ggml.c (typed/legacy constructors; strided-row RMS support)",
+     "36 modes /558 tensors /10408 checks per route and rollback; real GDN strided RMS numerical parity"),
     ("chat/parse-params.goose", "EXP-2026-11-14-575-p9-06-arena-load", "source/parse_params.goose",
      "common/peg-parser.cpp (arena load) and runtime chat_parse.cpp", "10 cases / 58 values / 0 failures, 15/15 mutations"),
     ("chat/jsonparse.goose", "EXP-2026-11-13-493-p7-09-json-parser", "source/jsonparse.goose",
@@ -578,6 +620,18 @@ def destination(targets: list[str], experiment: str, count: int, relative: Path)
 
 def build(check: bool, force: bool = False) -> int:
     ledger = ledger_map()
+    manifest = json.loads((GOOSE / "MANIFEST.json").read_text())
+    integrated = {}
+    for row in manifest["entries"]:
+        revision = row.get("integration_commit")
+        if revision:
+            target = row["goose"]
+            blob = subprocess.check_output(
+                ["git", "show", f"{revision}:goose/{target}"], cwd=ROOT,
+            )
+            if hashlib.sha256(blob).hexdigest() != row["sha256"]:
+                raise ValueError(f"invalid integrated source: {target}")
+            integrated[target] = (row, blob)
     canonical = {}
     for target, experiment, source, native, gate in CANONICAL_SOURCES:
         path = EXPERIMENTS / experiment / source
@@ -591,6 +645,7 @@ def build(check: bool, force: bool = False) -> int:
             "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
             "gate": gate,
         }
+    canonical.update({target: row for target, (row, _) in integrated.items()})
 
     entries = []
     written = 0
@@ -611,9 +666,15 @@ def build(check: bool, force: bool = False) -> int:
             if stale.is_dir() and stale.name != "_archive":
                 shutil.rmtree(stale)
         for target, experiment, source, native, gate in CANONICAL_SOURCES:
+            if target in integrated:
+                continue
             path = GOOSE / target
             path.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(EXPERIMENTS / experiment / source, path)
+        for target, (_, blob) in integrated.items():
+            path = GOOSE / target
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(blob)
     for folder in sorted(EXPERIMENTS.iterdir()):
         if not folder.is_dir() or not folder.name.startswith("EXP-"):
             continue

@@ -47,15 +47,17 @@ cleanup() {
             kill -0 "${SRV_PID}" 2>/dev/null || break
             sleep 0.5
         done
-        kill -KILL -- "-${SRV_PID}" 2>/dev/null || true
+        if kill -0 "${SRV_PID}" 2>/dev/null; then
+            kill -KILL -- "-${SRV_PID}" 2>/dev/null || true
+        fi
         wait "${SRV_PID}" 2>/dev/null || true
     fi
     # verify the port is released by the pid that owned it, not by name
     for _ in 1 2 3 4 5; do
-        ss -ltn 2>/dev/null | grep -qE ":${PORT}\$" || break
+        [ -n "$(ss -H -ltn "sport = :${PORT}" 2>/dev/null)" ] || break
         sleep 1
     done
-    if ss -ltn 2>/dev/null | grep -qE ":${PORT}\$"; then
+    if [ -n "$(ss -H -ltn "sport = :${PORT}" 2>/dev/null)" ]; then
         OWNER=$(ss -ltnp 2>/dev/null | awk -v p=":${PORT}" '$4 ~ p' | grep -oE 'pid=[0-9]+' | head -1)
         echo "PORT ${PORT} STILL HELD after cleanup (${OWNER:-unknown owner})" | tee -a "${RUNDIR}/run.log"
     else
@@ -70,7 +72,7 @@ trap cleanup EXIT INT TERM
 PORT=${APEX_PORT:-9101}
 
 # 3. Real inspection before starting anything.
-if ss -ltn 2>/dev/null | grep -qE ":${PORT}\$"; then
+if [ -n "$(ss -H -ltn "sport = :${PORT}" 2>/dev/null)" ]; then
     OWNER=$(ss -ltnp 2>/dev/null | awk -v p=":${PORT}" '$4 ~ p' | grep -oE 'pid=[0-9]+' | head -1)
     echo "REFUSING: port ${PORT} already owned (${OWNER:-unknown})" | tee -a "${RUNDIR}/run.log"
     exit 2
@@ -87,10 +89,32 @@ MODEL=${MODEL:-/home/end0/AI/LocalAI/Models/Apex-35B-V1.0-Q4_K_M.gguf}
 [ -x /tmp/res ] && /tmp/res "${MODEL}" | tee -a "${RUNDIR}/run.log" || true
 
 W=/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/reconstructed/build
-SRV=${W}/stage-run/llama-server
+SERVER_DIR=${APEX_SERVER_DIR:-${W}/stage-run}
+SRV=${SERVER_DIR}/llama-server
+REQUEST=${APEX_REQUEST:-/tmp/req512.json}
+REQUEST_COUNT=${APEX_REQUEST_COUNT:-3}
+ENDPOINT=${APEX_ENDPOINT:-completion}
+[[ "$ENDPOINT" = completion || "$ENDPOINT" = v1/chat/completions ]] || exit 2
+[[ "$REQUEST_COUNT" =~ ^[1-9][0-9]*$ ]] || exit 2
+[[ "$PORT" = 9101 ]] || { echo "Apex requires port 9101"; exit 2; }
+[[ -x "$SRV" && -f "$REQUEST" ]] || { echo "missing server or request"; exit 2; }
+export LD_LIBRARY_PATH="$SERVER_DIR"
+unset LD_PRELOAD
+ARGS=(-m "$MODEL" --alias Apex-35B-V1.0 -c 262144 -ngl all -fit off --cpu-moe
+      -fa on -ctk q4_0 -ctv q4_0 -b "$B" -ub "$UB" -t 8 -tb 16
+      --cpu-mask 0f0f --cpu-mask-batch ffff --cpu-strict 1 --cpu-strict-batch 1
+      --poll 0 -np 1 --cache-ram 0 --ctx-checkpoints 32 --load-mode mmap
+      --spec-type none --jinja --temp 1 --top-p 0.95 --top-k 20 --min-p 0
+      --host 127.0.0.1 --port "$PORT" --moe-cache-mib "$CACHE")
+printf '%s\n' "$SRV" "${ARGS[@]}" > "${RUNDIR}/argv.txt"
+sha256sum "$REQUEST" "$SERVER_DIR"/*.so* "$SRV" > "${RUNDIR}/SHA256SUMS"
+ldd "$SRV" > "${RUNDIR}/dependencies.txt"
+cp "$REQUEST" "${RUNDIR}/request.json"
+cat /proc/vmstat > "${RUNDIR}/vmstat-prelaunch.txt"
+cat /proc/meminfo > "${RUNDIR}/meminfo-prelaunch.txt"
 
 # 5. own process group: setsid, so the group id is the server's pid and only it is terminated.
-setsid "${SRV}" $(tr '\n' ' ' < /tmp/l5-guarded2_512.argv | sed 's|^[^ ]*||; s|--port 8950|--port '"${PORT}"'|') \
+setsid env LD_PRELOAD="${APEX_DEBUG_PRELOAD:-}" "${SRV}" "${ARGS[@]}" \
     > "${RUNDIR}/server.log" 2>&1 &
 SRV_PID=$!
 echo "[$(date +%H:%M:%S)] server pid ${SRV_PID} (own process group)" | tee -a "${RUNDIR}/run.log"
@@ -99,6 +123,7 @@ READY=0
 for _ in $(seq 1 120); do
     if curl -s -m 2 "http://127.0.0.1:${PORT}/health" 2>/dev/null | grep -q ok; then READY=1; break; fi
     kill -0 "${SRV_PID}" 2>/dev/null || break
+    cat "/proc/${SRV_PID}/maps" > "${RUNDIR}/maps.txt" 2>/dev/null || true
     sleep 2
 done
 
@@ -114,21 +139,45 @@ if [ "${READY}" -ne 1 ]; then
 fi
 echo "[$(date +%H:%M:%S)] server ready" | tee -a "${RUNDIR}/run.log"
 
-for i in 1 2 3; do
-    curl -s -m 1800 -X POST "http://127.0.0.1:${PORT}/completion" -H 'Content-Type: application/json' \
-        --data-binary @/tmp/req512.json -o "${RUNDIR}/r${i}.json" || true
+cat "/proc/${SRV_PID}/maps" > "${RUNDIR}/maps.txt"
+cat "/proc/${SRV_PID}/status" > "${RUNDIR}/status-ready.txt"
+cat /proc/vmstat > "${RUNDIR}/vmstat-before.txt"
+cat /proc/meminfo > "${RUNDIR}/meminfo-ready.txt"
+nvidia-smi --query-gpu=memory.used,memory.total --format=csv,noheader > "${RUNDIR}/vram-ready.txt"
+for ((i=1; i<=REQUEST_COUNT; i++)); do
+    curl -fsS -m 1800 -X POST "http://127.0.0.1:${PORT}/${ENDPOINT}" -H 'Content-Type: application/json' \
+        --data-binary @"${REQUEST}" -o "${RUNDIR}/r${i}.json" \
+        -w '%{time_total}\n' > "${RUNDIR}/client-${i}-seconds.txt"
+    if [ -n "${APEX_EXPECT_REFERENCE:-}" ]; then
+        python3 - "${RUNDIR}/r${i}.json" "${APEX_EXPECT_REFERENCE}" <<'PY'
+import json, sys
+actual, expected = (json.load(open(p)) for p in sys.argv[1:])
+if actual.get("content") != expected["content"] or actual.get("tokens") != expected["tokens"]:
+    raise SystemExit("control response mismatch: stopping the lifecycle")
+print("control content/token gate passed")
+PY
+    fi
 done
+cat "/proc/${SRV_PID}/status" > "${RUNDIR}/status-after.txt"
+cat /proc/vmstat > "${RUNDIR}/vmstat-after.txt"
+cat /proc/meminfo > "${RUNDIR}/meminfo-after.txt"
+nvidia-smi --query-gpu=memory.used,memory.total --format=csv,noheader > "${RUNDIR}/vram-after.txt"
 
 python3 - "${RUNDIR}" <<'PY'
 import json, hashlib, statistics, sys, pathlib
 d = pathlib.Path(sys.argv[1]); dec, pre, hs = [], [], set()
-for i in (1, 2, 3):
+for path in sorted(d.glob('r[0-9]*.json')):
     try:
-        r = json.load(open(d/f"r{i}.json")); t = r["timings"]
+        r = json.load(open(path)); t = r["timings"]
         dec.append(round(t["predicted_per_second"], 2)); pre.append(round(t["prompt_per_second"], 1))
-        hs.add(hashlib.sha256(r["content"].encode()).hexdigest()[:12])
-    except Exception:
-        pass
+        content = r.get("content")
+        if content is None:
+            content = r["choices"][0]["message"].get("content") or ""
+        if not content:
+            raise ValueError("empty generated content")
+        hs.add(hashlib.sha256(content.encode()).hexdigest()[:12])
+    except Exception as exc:
+        raise SystemExit(f"invalid response {path}: {exc}")
 out = f"decode {dec} prefill {pre} sha {hs}"
 (d/"summary.txt").write_text(out + "\n")
 print(out)

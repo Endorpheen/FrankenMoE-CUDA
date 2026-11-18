@@ -2,30 +2,55 @@
 
 FrankenMoE-CUDA runs Mixture-of-Experts models that do not fit in GPU memory on
 one consumer GPU. The runtime is derived from `llama.cpp` and is being migrated,
-module by module, to **Goose**, the project's own language. The reference model
-is **Apex-35B-V1.0 Q4_K_M** on a Ryzen 9 5950X, 64 GB RAM and an RTX 4070 12 GB.
+module by module, to the **Goose** programming language. The reference model is
+**Apex-35B-V1.0 Q4_K_M** on a Ryzen 9 5950X, 64 GB RAM and an RTX 4070 12 GB.
 
 ## Performance headline
 
-**Decode is 40.7% faster than the llama.cpp C++ control on Apex-35B Q4_K_M:**
-29.59 → 41.62 tok/s on one RTX 4070 with a 32K prompt. The gain comes from
-keeping 3584 MiB of experts on the GPU (`--moe-cache-mib 3584`); without it the
-same build is at parity (29–33 tok/s). Prefill in the same recorded runs is
-2918.90 → 2228.76 tok/s (−23.6%), shown as measured rather than hidden.
-Configuration, sources and content hashes are below.
+**Accepted Apex reference (EXP906, 2026-11-16): 55.5176 tok/s decode and
+2625.2066 tok/s prefill** on one RTX 4070 12 GB, Apex-35B-V1.0 Q4_K_M, fixed
+32768-token prompt / 512 generated, `--cpu-moe --moe-cache-mib 4992`.
+The exact binary set, every SHA256 and the launch flags are pinned in
+[`docs/reference/apex-exp906/manifest.json`](docs/reference/apex-exp906/manifest.json);
+`tools/verify-apex-reference.sh` refuses to measure against anything else.
+
+**Maxwell-V1-Flash Q4_0 (our 21.42 GB quant): 65.92 tok/s decode and
+1895.80 tok/s prefill** on the same GPU at 2048/128 with identical flags, warm
+medians of three, against Apex at 46.11 / 1348.55 on that same load (+43.0%
+decode, +40.6% prefill, +8.2% RAM, +6.0% VRAM). Maxwell is verified to 4096
+tokens; Apex keeps the 262144-token context. Details in
+[`experiments/EXP-2026-11-17-934-maxwell-real-weights/`](experiments/EXP-2026-11-17-934-maxwell-real-weights/README.md).
 
 ## Releases
 
+**[exp906-runtime-v1.0](https://github.com/Endorpheen/FrankenMoE-CUDA/releases/tag/exp906-runtime-v1.0)
+(Latest)** — byte copy of the accepted Apex EXP906 runtime: `llama-server`,
+`libllama*.so.0`, the Goose components and the accepted CUDA library
+(`17e79510f378…`). Asset `exp906-runtime-linux-x86_64.tar.gz`, 80,623,245 bytes,
+SHA256 `05f7b1b75d6fc15b65543b29a4751ff5066d3da08fa04787d18a6499ec1ce18f`.
+Weights are not included.
+
 [v0.1.0](https://github.com/Endorpheen/FrankenMoE-CUDA/releases/tag/v0.1.0) is
-the first tagged snapshot: the Goose sources, the status document and a runtime
-bundle (`goose-runtime-v0.1.0-linux-x86_64.tar.zst`, 438 MB, SHA256
-`50cd2233…`). Only the newest runtime archive is kept on GitHub; older release
-notes stay without the heavy asset.
+the first tagged snapshot (Goose sources and an older runtime bundle).
 
 The current state and the open work are in
 [`docs/goose-migration/STATUS.md`](docs/goose-migration/STATUS.md).
 
-## Apex performance — 2026-11-13 baseline
+## Accepted Apex reference — EXP906
+
+| item | value |
+|---|---|
+| runtime | `apex-independent-fast-20261116/run/` (byte copy, pinned by manifest) |
+| prefill | **2625.2066 tok/s** |
+| decode | **55.5176 tok/s** |
+| RSS / VRAM | 21350.9 MiB / 11468 MiB |
+| CUDA library | sha256 `17e79510f37817400c1b268e401d16eb2f392d1ef7f3da979d5ccf975cb32240` |
+| answer hash | `c2ff42cc1219ea4dfe6d69f02e008d0f90c0fc56260736a0aafb82cec362924f` |
+
+Any other build is a candidate. It is compared to this manifest under identical
+flags, never treated as a reference.
+
+## Apex performance — 2026-11-13 baseline (historical)
 
 Canonical configuration, fixed profile, one request:
 
@@ -77,9 +102,25 @@ claimed as an improvement.
 These are single-request decode numbers. Aggregate throughput across slots is a
 separate metric and is not claimed here.
 
+## Maxwell-V1-Flash (Q4_0)
+
+Independent 4-bit quantisation of `maxwell-model/Maxwell-V1-Flash`
+(maxwell_moe: 45 layers, 256 experts, top-12 sigmoid router with expert bias,
+4 mHC residual streams, block-sparse GQA) built by our own converter. Every
+2-D weight is Q4_0 (ggml reference packing); 1-D tensors stay F32 and the mHC
+projections F16. GGUF 21,418,677,984 bytes, sha256
+`8d53f1e39d9b1940f2639b364a01c420aec99cbf26320f1fdeb8a662945c11f3`.
+
+Verified on real weights: loads in 3.0 s, `decode rc=0`, coherent greedy text,
+Goose FG counters active, accepted CUDA library. Verified context is 4096
+tokens; above it the runtime refuses until the block-sparse indexer lands.
+Block-sparse path, MTP head and chat-parser output for this template are open
+items, stated in the experiment card.
+
 ## Goose migration
 
-All 4061 Goose sources are in one tree, grouped by subsystem:
+All Goose sources are in one tree, grouped by subsystem (890 active files):
+
 
 | directory | files | subsystem |
 |---|---:|---|
@@ -100,7 +141,7 @@ A complete module keeps the name of the native file it replaces
 named after the decision it implements (`goose/server/route-table.goose`).
 `goose/MANIFEST.json` records the experiment, native path, gate result and
 SHA256 of every file. `tools/sync-goose-tree.py` rebuilds the tree and
-`tools/check-goose-tree.py` verifies it (4061 entries, green).
+`tools/check-goose-tree.py` verifies it; 4222 `.goose` files exist including the archive, 890 outside it.
 
 The C++ transport is still present: the Goose modules are compiled to `.so` and
 linked into the llama.cpp-derived runtime. That is a hybrid by design until the

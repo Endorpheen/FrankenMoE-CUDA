@@ -1,0 +1,762 @@
+{
+  "experiment": "EXP-2026-11-17-919-goose-model-reader",
+  "source_checkpoint": "2b4bb5fe3223ec736d35d069e9e82f5394081bbb",
+  "verdict": "ACCEPTED_TYPED_READER_MAPPED_MODEL_PLAN_CONTEXT_LIFETIME_NOT_INDEPENDENT_ENGINE",
+  "source_sha256": {
+    "experiments/EXP-2026-11-17-919-goose-model-reader/source/model.goose": "42e7d6429400f6562f0183c4c0917bb07d77635160220d7cec6988a58e8b0610",
+    "experiments/EXP-2026-11-17-919-goose-model-reader/source/ownership.goose": "9bf5f4852c71d6bb4cb6dfae7d32f7a97c2e2558755981b7951c00abd1eeef0e",
+    "experiments/EXP-2026-11-17-919-goose-model-reader/source/reader.goose": "cf3268965e0846accf3c7274870cb8936c8e8f6bc0c08d5a810b02137b098cd2"
+  },
+  "pure_reader_dependencies": [
+    "libc"
+  ],
+  "real_reader_cases": {
+    "Apex": {
+      "metadata": 52,
+      "tensors": 753,
+      "data_offset": 10990944,
+      "checks": 745935
+    },
+    "Edge0-skeleton": {
+      "metadata": 57,
+      "tensors": 1079,
+      "data_offset": 11012448,
+      "checks": 746699
+    },
+    "Edge0-PLE": {
+      "metadata": 5,
+      "tensors": 1,
+      "data_offset": 352,
+      "checks": 23
+    }
+  },
+  "synthetic_checks": 334,
+  "ownership_checks": 79,
+  "semantic_mutants": [
+    {
+      "name": "publish",
+      "log": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/probe-publish/gate.log",
+      "sha256": "560566a390a09cd3595e59530aeb548c6d8b01e6e87162c811b29afadbdf6411"
+    },
+    {
+      "name": "payload",
+      "log": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/probe-payload/gate.log",
+      "sha256": "84bebd856ab35032ff7b10e3641a8c4fa15c802e8ab6284dfb8a1520dc1862b7"
+    },
+    {
+      "name": "array-span",
+      "log": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/probe-array-span/gate.log",
+      "sha256": "77fbbdc1a16de5afbd105342745b6fd52dfde262c39a77c98b9f1654fece2d05"
+    },
+    {
+      "name": "hash-only",
+      "log": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/probe-hash-only/gate.log",
+      "sha256": "4149c0844423ac30802af5b59dc6a180099cf11ed642b6312d94548df8c47d6a"
+    },
+    {
+      "name": "inventory",
+      "log": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v4/probe-inventory/gate.log",
+      "sha256": "3c1e5d44fbac6e2a8e05d02a7ff7070e95a88645f6fa13a82021959998af74f9"
+    },
+    {
+      "name": "live-frame",
+      "log": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v4/probe-live-frame/gate.log",
+      "sha256": "c10aa700ffd5a791153b544808ceb106051742ac62fff1653e8338128056b1c1"
+    },
+    {
+      "name": "rope-bytes",
+      "log": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v4/probe-rope-bytes/gate.log",
+      "sha256": "4ff41518668824a4ad3ab5cf683e97baecbf18f956e279e1080ba0dc244a2f64"
+    }
+  ],
+  "full_hash_collision_control": true,
+  "candidate_native_GGUF_name_queries": 0,
+  "mapped_weights": 733,
+  "full_model_layers": 40,
+  "full_model_steps": 3,
+  "frame_values_exact": 2502720,
+  "logits_exact": 1241600,
+  "checkpoint_replay": true,
+  "full_model_fixture_RSS_KiB": 3810980,
+  "full_model_process_swap_KiB": 0,
+  "full_model_resource_bound": {
+    "RSS_KiB": 4194304,
+    "seconds": 180
+  },
+  "main_modules": 130,
+  "main_specializations": 4125,
+  "main_globals": 1110,
+  "main_duplicates": 0,
+  "main_C_bytes": 19411012,
+  "main_object_bytes": 4959432,
+  "new_native_runtime_adapter_bodies": 0,
+  "reused_memory_primitive": {
+    "name": "qz_st_u8",
+    "source": "integration/m1/host/goose_host.c",
+    "source_sha256": "4715ea5a43b210eaaac2538c750d1e17d262419d21aeb6c7b37defe9628b9058",
+    "component_link": "exact existing helper/export bodies extracted for isolated gate;production uses single existing shared definition"
+  },
+  "context_ABI": "pinned Linux x86_64 little-endian native init POD24 bytes;both allocation policies verified",
+  "foreign_slice_probe": {
+    "source": "tests/foreign-slice.goose",
+    "log": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/foreign-slice-check.log",
+    "sha256": "feda9c51d1479d379905b7f131233b0a702ed1e13fb08ce6555eec76723dd275",
+    "result": "expected refusal:extern slice result unsupported;other OS designs not disproven"
+  },
+  "remaining": [
+    "borrowed mapping/input/table storage",
+    "standalone CLI/generation/session failure atomicity",
+    "tokenizer/sampling/real-task quality",
+    "native GGML/POD/math/CPU and libstdc++",
+    "CUDA/backend/cache and protected32K/512 speed"
+  ],
+  "cpp_retention": {
+    "replaced_and_removed_lines": 0,
+    "dead_deleted_lines": 0,
+    "baseline_closure_cpp_lines": 248213,
+    "baseline_closure_cpp_files": 350,
+    "minimum_necessary_subset": null,
+    "audit_log": "Backup/exp919-goose-model-reader/retention-audit.log",
+    "audit_sha256": "e865d8b47e1c66c941b29bcb39d60b5be5a5fa7af669f6b1beeecd837e6e6dae"
+  },
+  "model_server_runs": 0,
+  "GPU_runs": 0,
+  "performance_comparison": null,
+  "artifacts": [
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/foreign-slice-check.log",
+      "bytes": 732,
+      "sha256": "feda9c51d1479d379905b7f131233b0a702ed1e13fb08ce6555eec76723dd275"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/main-object/build.log",
+      "bytes": 1025965,
+      "sha256": "4e9bfd02cc8e3aa2b16bd7f749815b5c444552911a2d3b4ff0be2c8796cb6b23"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/main-object/inputs.json",
+      "bytes": 17475,
+      "sha256": "4509bbfedacd88d0b820838bf0a1c2da5fe15aecc0b41dd2fc19255d4b49da3b"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/main-object/main.c",
+      "bytes": 19411012,
+      "sha256": "63d01347d836f2a2694c0a993f26460f9c1f0a440a0f747a95f30c28d7f8e315"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/main-object/main.goose",
+      "bytes": 3470042,
+      "sha256": "eb83fce042134826b7bcfd015c507d04a2234ea37d8f8045cc5b60e0dbb1b34f"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/main-object/main.h",
+      "bytes": 152773,
+      "sha256": "d4ca4f5afc8ffa0745941da89d92ea944c0a2561172d1d49b32618541a71c3dd"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/main-object/main.o",
+      "bytes": 4959432,
+      "sha256": "987b1814b4ccac6ee677341348defd0715a4b4fc4a79de66ca891c7963a30a2f"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model/check.log",
+      "bytes": 44838,
+      "sha256": "1b20d3aa2e830be06848faf876f27e16263e568cb390b4dd5bd52793c2fd28bf"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model/unit.goose",
+      "bytes": 135162,
+      "sha256": "d5fe3191a8a1ba9b3a3626f5b0db08fc1400e72914108e08191fb22d6d4d9166"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v2/bindings.o",
+      "bytes": 52928,
+      "sha256": "1a7ce16758fe0da5e724d23780fc13cc34564f8bed28e4fdb307f409f380ca06"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v2/inputs.json",
+      "bytes": 2268,
+      "sha256": "0a7f6513d7996c4ffedb170b789138764afcaf3c24d5827dd254ddd2699328d3"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v2/model-build.log",
+      "bytes": 44141,
+      "sha256": "60a4cc64ebea45257842ab334c8822a6471ebad7083eee09adc15ef1acc836e3"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v2/model-check.log",
+      "bytes": 44670,
+      "sha256": "1e1f2f96c4cb84e22d1ed8b8c76eabe2958e726254dca219f61d2bddbf75d954"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v2/model.so",
+      "bytes": 907128,
+      "sha256": "65f85289d360c858841606e0f2b3f831df96a72081b81cf1766176503b8a692b"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v2/runtime.c",
+      "bytes": 814009,
+      "sha256": "58343a28e76fd3f88a05197c25ec24a2fa0354495125f7a22c275c1f69204038"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v2/runtime.h",
+      "bytes": 14618,
+      "sha256": "8c07f53be24c2e3d72003dd18a0d62ee3debcf2ab76a6b40e089b9da01e62f3d"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v2/unit.goose",
+      "bytes": 135898,
+      "sha256": "74c1e535706427199070a77ac123faf70e053e39499d38e3f581f03e54d0cffd"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v3/bindings.o",
+      "bytes": 52928,
+      "sha256": "1a7ce16758fe0da5e724d23780fc13cc34564f8bed28e4fdb307f409f380ca06"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v3/existing-byte-store.c",
+      "bytes": 239,
+      "sha256": "cd43b86914d095312dd1607f070fe250416d29708bf6cfc09583362f18c1881b"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v3/existing-byte-store.o",
+      "bytes": 5472,
+      "sha256": "acf88c48c9642d93d8a290e5da46a3278e6b05e6e0491bf3d740187d9785fe7b"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v3/inputs.json",
+      "bytes": 2268,
+      "sha256": "2541a27b609bf2d25fa07a6072eed96a27c6f1ce76a629283381ce406f9c92cb"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v3/loader-fixture.log",
+      "bytes": 1763,
+      "sha256": "9877052a81942ef6efe7b90b68a13d7e93c89b2498db4a4e356c8d51d88e8770"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v3/loader-gate",
+      "bytes": 944384,
+      "sha256": "d7ae3915209406e597328c5bb5da9e680bbed3900895439a7def0efceb96b63c"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v3/loader-gate-fixture-provenance.json",
+      "bytes": 448,
+      "sha256": "082b0fab0a6c5b91ce5ee650d159b1d9b510d8ebaeda7925c4b95f647f66ac82"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v3/loader-gate-gdn-oracle.hpp",
+      "bytes": 2311,
+      "sha256": "ee0875f3d3364c8364799a04b4a96cd4d73f4c55d59feb40266e6b67b1e6c142"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v3/loader-gate.cpp",
+      "bytes": 30295,
+      "sha256": "70b85d475fdf25dcaef0f3c883b7c71109101d2c43b4383ac0fc4ae7cad11f79"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v3/model-build.log",
+      "bytes": 44467,
+      "sha256": "0f26861edbe38d37963c2d0f8932f15dac704a8d872d1449ea5958947351346a"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v3/model-check.log",
+      "bytes": 44670,
+      "sha256": "268c2a705e9f593795aea501f71fd984234f16ac3702ec3266a40b0f5f87344a"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v3/model-gate.log",
+      "bytes": 1002,
+      "sha256": "6b46f1020a568c97fb01ae612fce6fe77aafa2359b3d847671d699df309a6229"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v3/model.so",
+      "bytes": 910144,
+      "sha256": "afa3f26b9d64f97a39fddf2fb3e7c8cd7169f93dda98a102db4c123da748c28a"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v3/runtime.c",
+      "bytes": 815535,
+      "sha256": "77d0146b8a50f2945d4b8d3a64d1eaba01c190efb9b7da577267bc06a2efbd98"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v3/runtime.h",
+      "bytes": 14618,
+      "sha256": "8c07f53be24c2e3d72003dd18a0d62ee3debcf2ab76a6b40e089b9da01e62f3d"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v3/unit.goose",
+      "bytes": 136521,
+      "sha256": "44ddc8ffcc59f36033db17244072571d45a83ab2e377a7671b6510b8bfd4485b"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v4/bindings.o",
+      "bytes": 52928,
+      "sha256": "1a7ce16758fe0da5e724d23780fc13cc34564f8bed28e4fdb307f409f380ca06"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v4/contracts-rope.log",
+      "bytes": 299,
+      "sha256": "3ad2866aa59b4487672933a349982df60dfe30128f843a9a972df1d8edf6ee36"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v4/contracts.log",
+      "bytes": 299,
+      "sha256": "4212204b4bf58ad74dc97e81358abfcf8a7451a0443c2b5a0e40f91dab005ca6"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v4/existing-byte-store.c",
+      "bytes": 239,
+      "sha256": "cd43b86914d095312dd1607f070fe250416d29708bf6cfc09583362f18c1881b"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v4/existing-byte-store.o",
+      "bytes": 5472,
+      "sha256": "2261afceabdc6906f19c70095ddc5d3f8450302203e8fd6af119718888924df9"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v4/inputs.json",
+      "bytes": 2268,
+      "sha256": "66ef383c9cd42feca0f4b44a5a4e4cd3d863793c67f10636608a899dac964cc3"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v4/loader-gate",
+      "bytes": 948888,
+      "sha256": "5d49da03df7eee339cefeebcb89ebc98bac47d355fc6c49d731046685fcb527a"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v4/loader-gate-fixture-provenance.json",
+      "bytes": 448,
+      "sha256": "adb7d0c5bce0489530eb7604b8cd0333a166accee2c0a09702701207608b199b"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v4/loader-gate-gdn-oracle.hpp",
+      "bytes": 2311,
+      "sha256": "ee0875f3d3364c8364799a04b4a96cd4d73f4c55d59feb40266e6b67b1e6c142"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v4/loader-gate.cpp",
+      "bytes": 30359,
+      "sha256": "00d48e89b42c7534ef31e6194534aa42a42d371a5482e0463ed66d8dfaee0ff5"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v4/model-build.log",
+      "bytes": 44467,
+      "sha256": "e00ba0412375ce9e25f0b900f056a17301dbc7655ab5719290b5a4561cb93975"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v4/model-check.log",
+      "bytes": 44670,
+      "sha256": "2ac4bf66f473576aa01979740fb118f7db46da513c807d42e6f39b922a37a14e"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v4/model-fixture.log",
+      "bytes": 1772,
+      "sha256": "774018cd08f924f662e39de2d132b359ae60dd8ece67d319f24e8daa1e0eb881"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v4/model-gate.log",
+      "bytes": 1002,
+      "sha256": "1c42822ca8e527a25ad01214f2e9a8c3655bb7abaed59915c8f6987b38efbe27"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v4/model.so",
+      "bytes": 921376,
+      "sha256": "309f90e6053a8c13711c75ae023aba30ce58f1801f01d70ef5e5062385491870"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v4/probe-inventory/gate.log",
+      "bytes": 98740,
+      "sha256": "3c1e5d44fbac6e2a8e05d02a7ff7070e95a88645f6fa13a82021959998af74f9"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v4/probe-inventory/model.so",
+      "bytes": 1061808,
+      "sha256": "7071c23ffa599a70f7785e3fd1bc0ac353e0cde487d40a143e7c455d6e411636"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v4/probe-inventory/runtime.c",
+      "bytes": 820211,
+      "sha256": "ffefeec570032be0286ab516752c786c182c7b68cc94b873860e88dea8d1e3b2"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v4/probe-inventory/runtime.h",
+      "bytes": 14618,
+      "sha256": "8c07f53be24c2e3d72003dd18a0d62ee3debcf2ab76a6b40e089b9da01e62f3d"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v4/probe-inventory/unit.goose",
+      "bytes": 137484,
+      "sha256": "110dce9256f30c56af833e3c057b739e7656d8bf94bba5bc41cdc0362d619362"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v4/probe-live-frame/gate.log",
+      "bytes": 99106,
+      "sha256": "c10aa700ffd5a791153b544808ceb106051742ac62fff1653e8338128056b1c1"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v4/probe-live-frame/model.so",
+      "bytes": 1062584,
+      "sha256": "71f69f697308520315aa11b1d62deb3cb84ee07d6fcce76fd09db60be7c22027"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v4/probe-live-frame/runtime.c",
+      "bytes": 822432,
+      "sha256": "8e1fbd6029375de1bf7fb3cafbc3ec60c8fcd1975f8cadc58c1e8a7ec1d4b8c0"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v4/probe-live-frame/runtime.h",
+      "bytes": 14618,
+      "sha256": "8c07f53be24c2e3d72003dd18a0d62ee3debcf2ab76a6b40e089b9da01e62f3d"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v4/probe-live-frame/unit.goose",
+      "bytes": 137490,
+      "sha256": "7a8070854441bacff5cce0e637a048b0605fa3d190f4c3522f0d8bb51bdb0e4f"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v4/probe-rope-bytes/gate.log",
+      "bytes": 99096,
+      "sha256": "4ff41518668824a4ad3ab5cf683e97baecbf18f956e279e1080ba0dc244a2f64"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v4/probe-rope-bytes/model.so",
+      "bytes": 1062616,
+      "sha256": "bff523e473ee541751e915fa3a85a305424cd80f618961d0b5ccb4b6daa25781"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v4/probe-rope-bytes/runtime.c",
+      "bytes": 822588,
+      "sha256": "d4a96e10fc414811ba11d2cb41675c3bdf74faa20f62b456f55f27d294a167b7"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v4/probe-rope-bytes/runtime.h",
+      "bytes": 14618,
+      "sha256": "8c07f53be24c2e3d72003dd18a0d62ee3debcf2ab76a6b40e089b9da01e62f3d"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v4/probe-rope-bytes/unit.goose",
+      "bytes": 137504,
+      "sha256": "4b3ecfbba2d4ded402c3d255ddbe52e84e47dcdaf954dc0c84c3d40e7f8cf991"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v4/runtime.c",
+      "bytes": 822506,
+      "sha256": "383d57f5648cfe3ba6ecb233c81b8bb8ab66706f861e3cefbead0909dde6426f"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v4/runtime.h",
+      "bytes": 14618,
+      "sha256": "8c07f53be24c2e3d72003dd18a0d62ee3debcf2ab76a6b40e089b9da01e62f3d"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/model-v4/unit.goose",
+      "bytes": 137498,
+      "sha256": "cb9df47963924da5b138a1944b75e4a71db878f3d9d87140d881e3ae0188a62b"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/ownership",
+      "bytes": 43776,
+      "sha256": "90e53b0d475c294fe73a857bf7b42abd5e006ffde7b7c9d2594f92e4599a2128"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/ownership.log",
+      "bytes": 1943,
+      "sha256": "92cd75ded816a028b48ac149eb0ac80e014e395013a1536a34964c9b622e8b7a"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader/check.log",
+      "bytes": 41421,
+      "sha256": "3bc011fe5e80cd3c7548f4a245ad2a8f559a3297c0523cb2531fb6038d9f6b2c"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader/inputs.json",
+      "bytes": 443,
+      "sha256": "2700f401b8c6f121b197d328fcdb941cafdf5246659d1ea2fe35cf6b01d8e193"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader/unit.goose",
+      "bytes": 47834,
+      "sha256": "8adb5e60f1070d9bc87e3428bc139659057e43901d75b8e41796a5803774ee91"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v2/apex.log",
+      "bytes": 466,
+      "sha256": "b151712fa27988f8d6feb7c52e27ba4bf79eb9133a57a85eb0f0d7a9c62bb66b"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v2/build.log",
+      "bytes": 43937,
+      "sha256": "f289ee7ef3b8d9a822eac2512689fb4959bc693b643973129ba0891a59aefb9c"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v2/check.log",
+      "bytes": 42375,
+      "sha256": "0aefb7425d01bb41057c78af4a8bd3987f5cb378c8f133de06fcdd7acd8dfb33"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v2/edge-ple.log",
+      "bytes": 440,
+      "sha256": "49fac60a9b57aa3440da33f300e3a8c151f9f59e5cf3d50dd112a12c3a0f9110"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v2/edge-skeleton.log",
+      "bytes": 470,
+      "sha256": "79e3e73c06369bde2bbf8a031d40ebc95655d6569298c1ce1929460a55e224ff"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v2/inputs.json",
+      "bytes": 525,
+      "sha256": "5ee9bae6509e2c20a0d0624a232f0a30f7a75fe6b1951c03fca20fdb171d52af"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v2/reader.so",
+      "bytes": 301560,
+      "sha256": "57332d001ed398f69ed41dc7c9beb60c5302eae4205d0fb7394eb09ad166de00"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v2/runtime.c",
+      "bytes": 366793,
+      "sha256": "d8471e7e7d57bb4e59e44e3e842f9f1f00b5db0e7b4891bcf5ec361ebbb527d3"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v2/runtime.h",
+      "bytes": 7081,
+      "sha256": "8f248e9c7013d5172f2b00d6285ebaae27b90c40164644489c9d8d506c912988"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v2/synthetic.log",
+      "bytes": 394,
+      "sha256": "e0c1cd91417d5b6ac3c06efc8b4d62bc8f4f4cdb925d38c6331d13db76bd792e"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v2/unit.goose",
+      "bytes": 47994,
+      "sha256": "f769b6211f3289643ea99cb94a4220bacb4589299335a907eeb6e61144839858"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v2/valid-synthetic.gguf",
+      "bytes": 1088,
+      "sha256": "170a60623166f6cd3bc2e861fcedd7b2308dfaf5f6e01e2031e143d4cc61e2bb"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/apex.log",
+      "bytes": 466,
+      "sha256": "cd842da93af6a05799d5791fe9e54e030982ab0452da5f7b43f91f6ad1867af8"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/build.log",
+      "bytes": 43937,
+      "sha256": "8d579f11b5b925d8da168d10b4560174a45c1d04fd0ee242de1116cca29a873f"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/check.log",
+      "bytes": 42375,
+      "sha256": "0487a1b73e8ef5b3e59895adf4281dd7e6256143cb59993deb7807249e28c397"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/edge-ple.log",
+      "bytes": 440,
+      "sha256": "109383e058f85f9e44a3e394111f9c4f694dbcd44fab4f060e50b3b63828cf6c"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/edge-skeleton.log",
+      "bytes": 470,
+      "sha256": "592be828d2fd26fa848b4beaec889dc33b05f7ae44d22bfb6a8e959d1bf66b56"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/inputs.json",
+      "bytes": 525,
+      "sha256": "a92879aeb24fc2a249abacc1712a09ee1c7c314d5bf8d13cde90313a99f88c6c"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/probe-array-span/gate.log",
+      "bytes": 96617,
+      "sha256": "77fbbdc1a16de5afbd105342745b6fd52dfde262c39a77c98b9f1654fece2d05"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/probe-array-span/reader.so",
+      "bytes": 639296,
+      "sha256": "240fe8883166b60fef4116ad9e7458d5df86b6bdaf208d0985cca4e523b64451"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/probe-array-span/runtime.c",
+      "bytes": 368015,
+      "sha256": "1b9c3341ec18c43a93932f42b7d4fd7ef033c75b20e87a113552324f52b432ac"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/probe-array-span/runtime.h",
+      "bytes": 7081,
+      "sha256": "8f248e9c7013d5172f2b00d6285ebaae27b90c40164644489c9d8d506c912988"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/probe-array-span/unit.goose",
+      "bytes": 48671,
+      "sha256": "6c0cdb57033feabcabd2a34be19b29988e520bb34a3abf16554fed48fd1af1a4"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/probe-array-span/valid-synthetic.gguf",
+      "bytes": 1088,
+      "sha256": "170a60623166f6cd3bc2e861fcedd7b2308dfaf5f6e01e2031e143d4cc61e2bb"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/probe-constant-hash/gate.log",
+      "bytes": 96806,
+      "sha256": "89c2431042b8a95f005e265e87e836482805d80c6546cdcae063189319ae6bcd"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/probe-constant-hash/reader.so",
+      "bytes": 638576,
+      "sha256": "cdfcfb6c7e938cd2db0ce02d22a6d5f9dcbdfef8399d757a9771b1ebd2d0193b"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/probe-constant-hash/runtime.c",
+      "bytes": 366000,
+      "sha256": "633c57771d2a2a2320a8f0ae9f10f059c50864e15861498286d0aa7eb3f97402"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/probe-constant-hash/runtime.h",
+      "bytes": 7081,
+      "sha256": "8f248e9c7013d5172f2b00d6285ebaae27b90c40164644489c9d8d506c912988"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/probe-constant-hash/unit.goose",
+      "bytes": 48535,
+      "sha256": "7aa829fa3f4d2e65e2871ca81bbc5fede88ce005eeb593c20904a9ebb2b105be"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/probe-constant-hash/valid-synthetic.gguf",
+      "bytes": 1088,
+      "sha256": "170a60623166f6cd3bc2e861fcedd7b2308dfaf5f6e01e2031e143d4cc61e2bb"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/probe-hash-only/gate.log",
+      "bytes": 95238,
+      "sha256": "4149c0844423ac30802af5b59dc6a180099cf11ed642b6312d94548df8c47d6a"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/probe-hash-only/reader.so",
+      "bytes": 637880,
+      "sha256": "d25dd4894ba94a6d6737f3837b47c445d21fba92f7763a34a3f94802bd40b860"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/probe-hash-only/runtime.c",
+      "bytes": 364192,
+      "sha256": "df085cd34606c5848cbfa3c0a8145822dd126b5cccdea6af2c836c811f2da38b"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/probe-hash-only/runtime.h",
+      "bytes": 7081,
+      "sha256": "8f248e9c7013d5172f2b00d6285ebaae27b90c40164644489c9d8d506c912988"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/probe-hash-only/unit.goose",
+      "bytes": 48438,
+      "sha256": "c6ef298a65b571dd8bacdbdac2a81f16fab91e9825fed941ab1f05f9b021aa5a"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/probe-hash-only/valid-synthetic.gguf",
+      "bytes": 1088,
+      "sha256": "170a60623166f6cd3bc2e861fcedd7b2308dfaf5f6e01e2031e143d4cc61e2bb"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/probe-payload/gate.log",
+      "bytes": 94375,
+      "sha256": "84bebd856ab35032ff7b10e3641a8c4fa15c802e8ab6284dfb8a1520dc1862b7"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/probe-payload/reader.so",
+      "bytes": 639280,
+      "sha256": "71a68296eabcbf5109413e6877b017d1dcf03c50f448fa89a60e762b9c2e3a00"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/probe-payload/runtime.c",
+      "bytes": 367868,
+      "sha256": "34182a521e6dc0aa669f89d6876b6091262bc9f61e76ea510acd424d1fb3b18c"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/probe-payload/runtime.h",
+      "bytes": 7081,
+      "sha256": "8f248e9c7013d5172f2b00d6285ebaae27b90c40164644489c9d8d506c912988"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/probe-payload/unit.goose",
+      "bytes": 48644,
+      "sha256": "0ef3e7734f9a1546d86c7318e9663074320457f520d3061aa37ec2132a788550"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/probe-publish/gate.log",
+      "bytes": 94560,
+      "sha256": "560566a390a09cd3595e59530aeb548c6d8b01e6e87162c811b29afadbdf6411"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/probe-publish/reader.so",
+      "bytes": 639288,
+      "sha256": "da805f63aa4498612a7624ec85c8f9115fc0fb05b9bafff4f9649a9e22b04e36"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/probe-publish/runtime.c",
+      "bytes": 368011,
+      "sha256": "fb1ca6233b6e013cef8faaeef9d9fa442928fde1c3e13c3151c33f7708c7983a"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/probe-publish/runtime.h",
+      "bytes": 7081,
+      "sha256": "8f248e9c7013d5172f2b00d6285ebaae27b90c40164644489c9d8d506c912988"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/probe-publish/unit.goose",
+      "bytes": 48673,
+      "sha256": "f990d368f2d976fc8419b7809ca8b8fd4aa6b12b6d512c405ced3f82496f8b39"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/probe-publish/valid-synthetic.gguf",
+      "bytes": 1088,
+      "sha256": "170a60623166f6cd3bc2e861fcedd7b2308dfaf5f6e01e2031e143d4cc61e2bb"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/reader.so",
+      "bytes": 302152,
+      "sha256": "5a70fa12c5e42971e58666b761d6395b66576045deceaca709862a6765a19bea"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/runtime.c",
+      "bytes": 367981,
+      "sha256": "de4588f760a083b158f3a7ea5d53671eb2a2ba082b408af7e0a208a1bd3d4987"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/runtime.h",
+      "bytes": 7081,
+      "sha256": "8f248e9c7013d5172f2b00d6285ebaae27b90c40164644489c9d8d506c912988"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/synthetic-extra.log",
+      "bytes": 437,
+      "sha256": "fda6a9c66543c4d86f857b0cd7e20bf187e1498d1d41ad0b2977236bc3960a4e"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/synthetic.log",
+      "bytes": 394,
+      "sha256": "c64d285f594772101f39fcc91f7d0fb3a2dd71edfdbd91b9fb0d5f527ad338bb"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/unit.goose",
+      "bytes": 48671,
+      "sha256": "afef314cba26d9e1630fa37da08527afee88426276f0fe630b1229e21f8bd054"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/reader-v3/valid-synthetic.gguf",
+      "bytes": 1088,
+      "sha256": "170a60623166f6cd3bc2e861fcedd7b2308dfaf5f6e01e2031e143d4cc61e2bb"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/runtime.c",
+      "bytes": 159582,
+      "sha256": "2fe2cc592b52a3d3718ed07cfe1bd25d050ecde2721ea7de92e2424ce4d7942a"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp919-goose-model-reader-20261117/runtime.h",
+      "bytes": 790,
+      "sha256": "853fc2ce0626af9a0cc97c9399509665b43c34d7cd8f20b6bb387db3d45ee508"
+    }
+  ]
+}

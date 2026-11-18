@@ -1,0 +1,132 @@
+{
+  "base_commit": "c56830257235c2bb8da88a278632f90ccbff1432",
+  "status": "ACCEPTED_REAL_WEIGHT_ATTENTION_COMPONENT_NOT_FULL_MODEL",
+  "cases": 8,
+  "stages_per_case": 29,
+  "exact_F32_F16_values": 1069056,
+  "weight_payload_bytes": 15624192,
+  "embedding_payload_bytes": 3456,
+  "whole_model_sha256_verified": true,
+  "model_sha256": "c3b92d94cd03a7730ad45cc45de8c753e369e0228b2f5d83d819ce2ea6ab3355",
+  "packet_reads_during_Goose_branch": 0,
+  "positive_packet_control": true,
+  "mutations_killed": 6,
+  "cpu_compute_threads": 4,
+  "integrated_gate_maxrss_KiB": 59068,
+  "full_main_modules": 124,
+  "full_main_typecheck": "PASS",
+  "model_server_runs": 0,
+  "persistent_Q4_KV_tested": false,
+  "artifacts": [
+    {
+      "path": "/home/end0/AI/LlamaServer/exp913-goose-real-attention-20261117/model-proof.json",
+      "bytes": 392,
+      "sha256": "fe58a54ea6e2e383b073314e324e69d53a9f6c5981db0bdaa3a0a3efa880d027"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp913-goose-real-attention-20261117/model-hash.log",
+      "bytes": 509,
+      "sha256": "30f6035e67008907eab517e33fb6e72557afcbfb0ce0b1d36be3b87b7447b3a5"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp913-goose-real-attention-20261117/build-inputs.json",
+      "bytes": 861,
+      "sha256": "e35d8fd55b1a3d876d6380d87269ceacb97bab6574f6b6afa2c7bfb21222e524"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp913-goose-real-attention-20261117/check.log",
+      "bytes": 1556,
+      "sha256": "ec2c712a1881a416289a2599645839c215acbe2f50c3b350bbbb25194d17cec8"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp913-goose-real-attention-20261117/build.log",
+      "bytes": 2346,
+      "sha256": "68cb8f97b9501805be704075a9e8d902bc0a07dc7b91bf575ee9655ed90bb606"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp913-goose-real-attention-20261117/fixture.log",
+      "bytes": 693,
+      "sha256": "e11582ca3ddc8f7b5e74d63470e37aef28a646f3b8adf4a78a63266590ee89e1"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp913-goose-real-attention-20261117/gate.log",
+      "bytes": 2627,
+      "sha256": "ea07c60e9a744b347d1dec3074561cae81a5fd709ff3d8d943f9ea3348b501d4"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp913-goose-real-attention-20261117/mutations.log",
+      "bytes": 29173,
+      "sha256": "41a7f89c1501a027112d32af0c0b7f84070cd10ae4038f4067d6ace4b484dd08"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp913-goose-real-attention-20261117/tree-check.log",
+      "bytes": 3783,
+      "sha256": "c1b40d6c59c1b1b7d0cf91a907b18e9febd73e3ad198208086f3c46144348746"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp913-goose-real-attention-20261117/attention.so",
+      "bytes": 336752,
+      "sha256": "d1fb640da9f8e0b0cab5916c1a22afc9a3248ff7b0f3c944b0ae984e4fd9a87b"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp913-goose-real-attention-20261117/integrated/attention.so",
+      "bytes": 334296,
+      "sha256": "e2a4054f2592282f080eb4f16848d6acc92ae213224d235d256c06984e955395"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp913-goose-real-attention-20261117/integrated/build-inputs.json",
+      "bytes": 861,
+      "sha256": "3f717fa838c4a41be2721ebb2c591ce9223471e23e1f0e835ca911f4348a4eb7"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp913-goose-real-attention-20261117/integrated/integrate.log",
+      "bytes": 4336,
+      "sha256": "af90990231c99bd27f30d0c1f5daacc639259812646b0faf9a0865cf79714af3"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp913-goose-real-attention-20261117/integrated/main-check.log",
+      "bytes": 502075,
+      "sha256": "1d4effcc568cf14a3ff7a5034d0a46056fc64b28372f37dba22f2c2b5d32bafb"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp913-goose-real-attention-20261117/integrated/symbols.log",
+      "bytes": 1390,
+      "sha256": "868dbb1c25231c1f5ae5583cedd09bfbe0206b263fa1e239441284c5e6592e63"
+    },
+    {
+      "path": "experiments/EXP-2026-11-17-913-goose-real-attention/source/projections.c",
+      "bytes": 2050,
+      "sha256": "b8c0fdf79491ebd6efa4c8e2387b8dd1e26861df378c3a49dd2019011b26ee2d"
+    },
+    {
+      "path": "experiments/EXP-2026-11-17-913-goose-real-attention/source/attention.goose",
+      "bytes": 7665,
+      "sha256": "28f2cfcb56aecae4e31d6b3c030d11eeeaa20d7c25add0febb7645821bff533d"
+    },
+    {
+      "path": "experiments/EXP-2026-11-17-913-goose-real-attention/tests/gate.cpp",
+      "bytes": 17074,
+      "sha256": "f1465b35128af2d09a92c82e8d2b05c0bddaf43d9871b43b12dc85bd10295c32"
+    },
+    {
+      "path": "experiments/EXP-2026-11-17-913-goose-real-attention/tests/build.py",
+      "bytes": 10446,
+      "sha256": "3d3fb449b13a7c984d8cef68f44592c67cc6e719552d67d4b1cb273599c66e8f"
+    },
+    {
+      "path": "goose/model/qwen35-attention.goose",
+      "bytes": 7665,
+      "sha256": "28f2cfcb56aecae4e31d6b3c030d11eeeaa20d7c25add0febb7645821bff533d"
+    },
+    {
+      "path": "integration/goose-standalone/graph-bindings.c",
+      "bytes": 14452,
+      "sha256": "377b9abab94d3487dbac546ebba8e0253b0848da4df90a803e21ad195475049c"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp913-goose-real-attention-20261117/baseline-preservation.log",
+      "bytes": 291,
+      "sha256": "8141c4558946ded3585e58a49b2a75e9698ff70f32bef46ae8844d97750938ed"
+    }
+  ]
+}

@@ -11,6 +11,7 @@ import hashlib
 import importlib.util
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -84,6 +85,8 @@ def main() -> int:
 
     for row in entries:
         rel = row["goose"]
+        if rel in seen:
+            problems.append(f"duplicate manifest entry: {rel}")
         seen.add(rel)
         path = GOOSE / rel
         if not path.is_file():
@@ -94,7 +97,18 @@ def main() -> int:
             problems.append(
                 f"hash mismatch: {rel}\n  manifest {row['sha256']}\n  actual   {digest}"
             )
-        if not (ROOT / "experiments" / row["experiment"]).is_dir():
+        revision = row.get("integration_commit")
+        if revision:
+            if not re.fullmatch(r"[0-9a-f]{40}", revision):
+                problems.append(f"invalid integration commit: {rel}")
+                continue
+            origin = subprocess.run(
+                ["git", "show", f"{revision}:goose/{rel}"], cwd=ROOT,
+                capture_output=True,
+            )
+            if origin.returncode or hashlib.sha256(origin.stdout).hexdigest() != digest:
+                problems.append(f"integrated file differs from {revision}: {rel}")
+        elif not (ROOT / "experiments" / row["experiment"]).is_dir():
             problems.append(f"missing experiment: {row['experiment']} (for {rel})")
 
     for path in sorted(GOOSE.rglob("*.goose")):
@@ -102,13 +116,14 @@ def main() -> int:
         if rel not in seen:
             problems.append(f"not in manifest: {rel}")
 
+    integrated = {row["goose"] for row in entries if row.get("integration_commit")}
     for target, experiment, source, _native, _gate in canonical_sources():
         path = GOOSE / target
         origin = ROOT / "experiments" / experiment / source
         if not path.is_file() or not origin.is_file():
             problems.append(f"canonical source missing: {target} <- {experiment}/{source}")
             continue
-        if hashlib.sha256(path.read_bytes()).hexdigest() != hashlib.sha256(origin.read_bytes()).hexdigest():
+        if target not in integrated and path.read_bytes() != origin.read_bytes():
             problems.append(f"canonical file differs from its source: {target} <- {experiment}/{source}")
 
     check_required(problems)

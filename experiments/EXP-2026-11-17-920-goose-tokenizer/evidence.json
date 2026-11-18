@@ -1,0 +1,88 @@
+{
+  "experiment": "EXP-2026-11-17-920-goose-tokenizer",
+  "date": "2026-11-17",
+  "base_commit": "c43fb4b78cc617cdd001e383f80abc849738f9a4",
+  "compiler": {
+    "compiler": "/home/end0/AI/LlamaServer/toolchain/goose-2026.3-string/goose",
+    "sha256": "664d4de42463cc10cb9c4a61dac59ce6023faa9c9da2838fddc0f4fb8294b3ab",
+    "status": "RELEASE_2026_3_STRING",
+    "version": "goose-2026.3-string",
+    "runtime_version": "1e714e6146bc",
+    "release_sha256": "5c6fdf169408f687a49f3f9ce3ebc0804ece16da0320bbbcb893721f5422558b",
+    "release_file": "/tmp/opencode/release/goose-2026.3-string-linux-x86_64.tar.gz",
+    "source_commit": "e0501dc7dee4522428a46f813cebbce0ad62736e",
+    "qualification": "Compatibility re-run of the EXP445..EXP459 gates on this binary; see docs/goose-migration/COMPILER-2026-3-STRING.md",
+    "rollback": "/home/end0/AI/Fried-Goose/.cache/compiler-exp-handoff/runtime-candidate-v61/stage3",
+    "rollback_sha256": "b87af17a8b06bed5ad3f4ebfdce5edd7539d3e75f7fb1712d19189ff9dd4cedf",
+    "previous_sha256": "b87af17a8b06bed5ad3f4ebfdce5edd7539d3e75f7fb1712d19189ff9dd4cedf",
+    "qualified_at": "2026-11-12T23:31:07.783674+00:00"
+  },
+  "model": {
+    "path": "/home/end0/AI/LocalAI/Models/Apex-35B-V1.0-Q4_K_M.gguf",
+    "bytes": 21713463136,
+    "sha256": "c3b92d94cd03a7730ad45cc45de8c753e369e0228b2f5d83d819ce2ea6ab3355",
+    "provenance": "reused EXP913 model-proof.json (PASS, stat and sha unchanged)"
+  },
+  "native_reference": {
+    "libllama.so.0": "4eba824255f06ab1fb8e5b6a9e98ae7bd0706773abc8bf86547d86b60cde98ac",
+    "libggml-base.so.0": "23363cbd74857db91d4fdc3712b2bb32adf42893075fa5139011f439d0abcdb7",
+    "bundle": "/home/end0/AI/LlamaServer/apex-independent-fast-20261116/run",
+    "load": "vocab_only, no weights, no GPU, no server"
+  },
+  "modules": {
+    "goose/misc/unicode-tables.goose": "06719d61594fc1a03bfe1e06fddb12e7bf16d76e2af588ab1ab9b818f37921f9",
+    "goose/misc/unicode-text.goose": "a57b6e432b73e442672201fdf08cae22f97c2a8a5e30efcd339366b471c1fb35",
+    "goose/misc/pretokenizer-qwen35.goose": "9583c5d7d3dcb19bfe3ee238cc93c98babf03afeedc79c95eb8cb157cba967b8",
+    "goose/model/bpe-tokenize.goose": "b1fe42f7e647e5fabe55475dd2d39605db7863517135a3133858bab6b4f84d12",
+    "goose/model/bpe-detokenize.goose": "b084f7e43aa6a81b097a8f7892332db2692540433187ff08be6f3cc39da48567"
+  },
+  "artifacts": {
+    "tokenizer.so": "f5241666d773f58be0d1e59d9d7740a8de5de1f81f429dca38791ad340bd88b6",
+    "runtime.c": "55e9dfc6e397aadf8787135ed897390de55d2a8aa90138ce6ac7152246312cd6",
+    "gate": "gate-v9 (extended corpus)",
+    "mutations": "mut-v10"
+  },
+  "gate": {
+    "tokenize_cases": 82,
+    "ids_compared": 11173,
+    "piece_comparisons": 496640,
+    "detokenize_calls": 164,
+    "eog_ids": 5,
+    "eog_mismatches": 0,
+    "tokenize_failures": 0,
+    "result": "PASS"
+  },
+  "tables": {
+    "tokens": 248320,
+    "merges": 247587,
+    "duplicate_tokens": 0,
+    "duplicate_merges": 0
+  },
+  "mutations": {
+    "split-punct-newline": "REJECTED",
+    "split-last-rn": "REJECTED",
+    "merge-stale": "REJECTED",
+    "detok-no-byte-map": "REJECTED",
+    "eog-drop-endoftext": "REJECTED",
+    "token-id-offset": "REJECTED"
+  },
+  "not_observable": [
+    "contraction-letter removal: the contraction alternative and the letters alternative produce spans that BPE re-merges identically"
+  ],
+  "evidence_directories": [
+    "gate-v1..gate-v9",
+    "lib-v1..lib-v6",
+    "mut-v5 (4 rejected)",
+    "mut-v6/v7/v8/v9 (corpus-hole rounds)",
+    "mut-v10 (final 6/6)"
+  ],
+  "hang_attempts": [
+    "mut-v1/mut-v2 split-lookahead: the whitespace branch stopped advancing pos and hung; recorded as a hang, not a rejection"
+  ],
+  "residual": {
+    "shipping_path": "unchanged; Apex still tokenizes in the native llama-vocab.cpp body",
+    "ported_not_replaced": true,
+    "cxx_lines_removed": 0,
+    "new_cxx_lines": 0
+  }
+}

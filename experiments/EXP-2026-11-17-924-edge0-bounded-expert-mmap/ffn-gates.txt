@@ -1,0 +1,93 @@
+$ g++-13 -std=c++17 -O1 -I/home/end0/AI/LlamaServer/edge0-expert-mmap-20261117 -I/home/end0/AI/LlamaServer/edge0-expert-mmap-20261117/generated -I/home/end0/.codex/worktrees/edge0-inference/FrankenMoE-CUDA/vendor/flint/ggml/include /home/end0/AI/LlamaServer/edge0-expert-mmap-20261117/ffn-gate.cpp /home/end0/AI/LlamaServer/edge0-expert-mmap-20261117/build/llama/libllama.so.0 /home/end0/AI/LlamaServer/franken-recovery-20261116/support/bin/libggml-base.so.0 /home/end0/AI/LlamaServer/franken-recovery-20261116/support/bin/libggml-cpu.so.0 /home/end0/AI/LlamaServer/franken-recovery-20261116/support/bin/libggml-cuda.so.0 -Wl,-rpath,/home/end0/AI/LlamaServer/edge0-expert-mmap-20261117/build/llama -lm -o /home/end0/AI/LlamaServer/edge0-expert-mmap-20261117/ffn-gate
+
+exit_code=0
+MODE legacy {'FRANKEN_EDGE0_EXPERT_MMAP': '0'}
+$ /home/end0/AI/LlamaServer/edge0-expert-mmap-20261117/ffn-gate /home/end0/AI/LocalAI/Models/Edge0-120B-q3k
+Edge0 expert mapping: enabled=0 page_size=4096 max_span=1171456 virtual_ceiling=0
+Edge0 cache budget: DU=1415577600 expert=3220672000 slots=2765 cache policy=existing Goose expert-lru
+Edge0 pack open: Q4 D/U, 10 routed + shared, external buffers=1494334464 bytes, no full PLE/expert mapping
+ggml_cuda_init: found 1 CUDA devices (Total VRAM: 11871 MiB):
+  Device 0: NVIDIA GeForce RTX 4070, compute capability 8.9, VMM: yes, VRAM: 11871 MiB
+Edge0 FFN progress: calls=1 completed_tokens=0 streamed_MiB=11.11
+PASS full FFN layer=0 routed=10 shared=1 values=2560 max_abs_error=4.65661287e-10 peak=0.0160969999
+PASS full FFN layer=0 routed=10 shared=1 values=2560 max_abs_error=4.65661287e-10 peak=0.0160969999
+PASS full FFN layer=47 routed=10 shared=1 values=2560 max_abs_error=4.65661287e-10 peak=0.0045983959
+PASS full FFN layer=0 routed=10 shared=1 values=2560 max_abs_error=4.65661287e-10 peak=0.0160969999
+EDGE0_PROFILE phase=0 ffn_s=0.041314776 arena_s=0.000012894 route_s=0.000117541 du_read_s=0.430456623 expert_read_s=0.003643204 weight_copy_s=0.003827602 graph_s=0.000287232 cpu_compute_s=0.026516304 ple_s=0.000000000 calls=8 du_bytes=1415577600 expert_bytes=23296000 copy_bytes=31395840 ple_rows=0 expert_hits=60 expert_misses=20 du_hits=8 du_misses=1 dense_hits=20 dense_misses=20 matvec_nodes=380 mapped_bytes=0 mapping_misses=0
+EDGE0_PROFILE phase=1 ffn_s=0.000000000 arena_s=0.000000000 route_s=0.000000000 du_read_s=0.000000000 expert_read_s=0.000000000 weight_copy_s=0.000000000 graph_s=0.000000000 cpu_compute_s=0.000000000 ple_s=0.000000000 calls=0 du_bytes=0 expert_bytes=0 copy_bytes=0 ple_rows=0 expert_hits=0 expert_misses=0 du_hits=0 du_misses=0 dense_hits=0 dense_misses=0 matvec_nodes=0 mapped_bytes=0 mapping_misses=0
+EDGE0_PROFILE phase=2 ffn_s=0.000000000 arena_s=0.000000000 route_s=0.000000000 du_read_s=0.000000000 expert_read_s=0.000000000 weight_copy_s=0.000000000 graph_s=0.000000000 cpu_compute_s=0.000000000 ple_s=0.000000000 calls=0 du_bytes=0 expert_bytes=0 copy_bytes=0 ple_rows=0 expert_hits=0 expert_misses=0 du_hits=0 du_misses=0 dense_hits=0 dense_misses=0 matvec_nodes=0 mapped_bytes=0 mapping_misses=0
+RESULT PASS: actual callback + Goose latent/top10/shared integration
+
+exit_code=0
+MODE default {}
+$ /home/end0/AI/LlamaServer/edge0-expert-mmap-20261117/ffn-gate /home/end0/AI/LocalAI/Models/Edge0-120B-q3k
+Edge0 expert mapping: enabled=1 page_size=4096 max_span=1171456 virtual_ceiling=3220332544
+Edge0 cache budget: DU=1415577600 expert=0 slots=2749 cache policy=existing Goose expert-lru
+Edge0 pack open: Q4 D/U, 10 routed + shared, external buffers=1482686464 bytes, no full PLE/expert mapping
+ggml_cuda_init: found 1 CUDA devices (Total VRAM: 11871 MiB):
+  Device 0: NVIDIA GeForce RTX 4070, compute capability 8.9, VMM: yes, VRAM: 11871 MiB
+Edge0 FFN progress: calls=1 completed_tokens=0 streamed_MiB=0.00
+PASS full FFN layer=0 routed=10 shared=1 values=2560 max_abs_error=4.65661287e-10 peak=0.0160969999
+PASS full FFN layer=0 routed=10 shared=1 values=2560 max_abs_error=4.65661287e-10 peak=0.0160969999
+PASS full FFN layer=47 routed=10 shared=1 values=2560 max_abs_error=4.65661287e-10 peak=0.0045983959
+PASS full FFN layer=0 routed=10 shared=1 values=2560 max_abs_error=4.65661287e-10 peak=0.0160969999
+EDGE0_PROFILE phase=0 ffn_s=0.037172095 arena_s=0.000014126 route_s=0.000114727 du_read_s=0.407545807 expert_read_s=0.000098466 weight_copy_s=0.003806330 graph_s=0.000279565 cpu_compute_s=0.027756766 ple_s=0.000000000 calls=8 du_bytes=1415577600 expert_bytes=0 copy_bytes=31395840 ple_rows=0 expert_hits=60 expert_misses=20 du_hits=8 du_misses=1 dense_hits=20 dense_misses=20 matvec_nodes=380 mapped_bytes=23375872 mapping_misses=20
+EDGE0_PROFILE phase=1 ffn_s=0.000000000 arena_s=0.000000000 route_s=0.000000000 du_read_s=0.000000000 expert_read_s=0.000000000 weight_copy_s=0.000000000 graph_s=0.000000000 cpu_compute_s=0.000000000 ple_s=0.000000000 calls=0 du_bytes=0 expert_bytes=0 copy_bytes=0 ple_rows=0 expert_hits=0 expert_misses=0 du_hits=0 du_misses=0 dense_hits=0 dense_misses=0 matvec_nodes=0 mapped_bytes=0 mapping_misses=0
+EDGE0_PROFILE phase=2 ffn_s=0.000000000 arena_s=0.000000000 route_s=0.000000000 du_read_s=0.000000000 expert_read_s=0.000000000 weight_copy_s=0.000000000 graph_s=0.000000000 cpu_compute_s=0.000000000 ple_s=0.000000000 calls=0 du_bytes=0 expert_bytes=0 copy_bytes=0 ple_rows=0 expert_hits=0 expert_misses=0 du_hits=0 du_misses=0 dense_hits=0 dense_misses=0 matvec_nodes=0 mapped_bytes=0 mapping_misses=0
+RESULT PASS: actual callback + Goose latent/top10/shared integration
+
+exit_code=0
+MODE tiny {'FRANKEN_EDGE0_CACHE_MIB': '16'}
+$ /home/end0/AI/LlamaServer/edge0-expert-mmap-20261117/ffn-gate /home/end0/AI/LocalAI/Models/Edge0-120B-q3k
+Edge0 expert mapping: enabled=1 page_size=4096 max_span=1171456 virtual_ceiling=16400384
+Edge0 cache budget: DU=1415577600 expert=0 slots=14 cache policy=existing Goose expert-lru
+Edge0 pack open: Q4 D/U, 10 routed + shared, external buffers=1482686464 bytes, no full PLE/expert mapping
+ggml_cuda_init: found 1 CUDA devices (Total VRAM: 11871 MiB):
+  Device 0: NVIDIA GeForce RTX 4070, compute capability 8.9, VMM: yes, VRAM: 11871 MiB
+Edge0 FFN progress: calls=1 completed_tokens=0 streamed_MiB=0.00
+PASS full FFN layer=0 routed=10 shared=1 values=2560 max_abs_error=4.65661287e-10 peak=0.0160969999
+PASS full FFN layer=0 routed=10 shared=1 values=2560 max_abs_error=4.65661287e-10 peak=0.0160969999
+PASS full FFN layer=47 routed=10 shared=1 values=2560 max_abs_error=4.65661287e-10 peak=0.0045983959
+PASS full FFN layer=0 routed=10 shared=1 values=2560 max_abs_error=4.65661287e-10 peak=0.0160969999
+EDGE0_PROFILE phase=0 ffn_s=0.037172245 arena_s=0.000013726 route_s=0.000106161 du_read_s=0.460639422 expert_read_s=0.000094429 weight_copy_s=0.003593158 graph_s=0.000267486 cpu_compute_s=0.027099146 ple_s=0.000000000 calls=8 du_bytes=1415577600 expert_bytes=0 copy_bytes=31395840 ple_rows=0 expert_hits=54 expert_misses=26 du_hits=8 du_misses=1 dense_hits=20 dense_misses=20 matvec_nodes=380 mapped_bytes=30388224 mapping_misses=26
+EDGE0_PROFILE phase=1 ffn_s=0.000000000 arena_s=0.000000000 route_s=0.000000000 du_read_s=0.000000000 expert_read_s=0.000000000 weight_copy_s=0.000000000 graph_s=0.000000000 cpu_compute_s=0.000000000 ple_s=0.000000000 calls=0 du_bytes=0 expert_bytes=0 copy_bytes=0 ple_rows=0 expert_hits=0 expert_misses=0 du_hits=0 du_misses=0 dense_hits=0 dense_misses=0 matvec_nodes=0 mapped_bytes=0 mapping_misses=0
+EDGE0_PROFILE phase=2 ffn_s=0.000000000 arena_s=0.000000000 route_s=0.000000000 du_read_s=0.000000000 expert_read_s=0.000000000 weight_copy_s=0.000000000 graph_s=0.000000000 cpu_compute_s=0.000000000 ple_s=0.000000000 calls=0 du_bytes=0 expert_bytes=0 copy_bytes=0 ple_rows=0 expert_hits=0 expert_misses=0 du_hits=0 du_misses=0 dense_hits=0 dense_misses=0 matvec_nodes=0 mapped_bytes=0 mapping_misses=0
+RESULT PASS: actual callback + Goose latent/top10/shared integration
+
+exit_code=0
+MODE cache0 {'FRANKEN_EDGE0_CACHE_MIB': '0'}
+$ /home/end0/AI/LlamaServer/edge0-expert-mmap-20261117/ffn-gate /home/end0/AI/LocalAI/Models/Edge0-120B-q3k
+Edge0 expert mapping: enabled=0 page_size=4096 max_span=1171456 virtual_ceiling=0
+Edge0 cache budget: DU=1415577600 expert=0 slots=0 cache policy=existing Goose expert-lru
+Edge0 pack open: Q4 D/U, 10 routed + shared, external buffers=1494334464 bytes, no full PLE/expert mapping
+ggml_cuda_init: found 1 CUDA devices (Total VRAM: 11871 MiB):
+  Device 0: NVIDIA GeForce RTX 4070, compute capability 8.9, VMM: yes, VRAM: 11871 MiB
+Edge0 FFN progress: calls=1 completed_tokens=0 streamed_MiB=11.11
+PASS full FFN layer=0 routed=10 shared=1 values=2560 max_abs_error=4.65661287e-10 peak=0.0160969999
+PASS full FFN layer=0 routed=10 shared=1 values=2560 max_abs_error=4.65661287e-10 peak=0.0160969999
+PASS full FFN layer=47 routed=10 shared=1 values=2560 max_abs_error=4.65661287e-10 peak=0.0045983959
+PASS full FFN layer=0 routed=10 shared=1 values=2560 max_abs_error=4.65661287e-10 peak=0.0160969999
+EDGE0_PROFILE phase=0 ffn_s=0.049272788 arena_s=0.000012114 route_s=0.000104397 du_read_s=0.419084861 expert_read_s=0.013358346 weight_copy_s=0.003696162 graph_s=0.000319713 cpu_compute_s=0.026074492 ple_s=0.000000000 calls=8 du_bytes=1415577600 expert_bytes=93184000 copy_bytes=31395840 ple_rows=0 expert_hits=0 expert_misses=80 du_hits=8 du_misses=1 dense_hits=20 dense_misses=20 matvec_nodes=380 mapped_bytes=0 mapping_misses=0
+EDGE0_PROFILE phase=1 ffn_s=0.000000000 arena_s=0.000000000 route_s=0.000000000 du_read_s=0.000000000 expert_read_s=0.000000000 weight_copy_s=0.000000000 graph_s=0.000000000 cpu_compute_s=0.000000000 ple_s=0.000000000 calls=0 du_bytes=0 expert_bytes=0 copy_bytes=0 ple_rows=0 expert_hits=0 expert_misses=0 du_hits=0 du_misses=0 dense_hits=0 dense_misses=0 matvec_nodes=0 mapped_bytes=0 mapping_misses=0
+EDGE0_PROFILE phase=2 ffn_s=0.000000000 arena_s=0.000000000 route_s=0.000000000 du_read_s=0.000000000 expert_read_s=0.000000000 weight_copy_s=0.000000000 graph_s=0.000000000 cpu_compute_s=0.000000000 ple_s=0.000000000 calls=0 du_bytes=0 expert_bytes=0 copy_bytes=0 ple_rows=0 expert_hits=0 expert_misses=0 du_hits=0 du_misses=0 dense_hits=0 dense_misses=0 matvec_nodes=0 mapped_bytes=0 mapping_misses=0
+RESULT PASS: actual callback + Goose latent/top10/shared integration
+
+exit_code=0
+MODE rebind {'EDGE0_GATE_REBIND_STRESS': '1'}
+$ /home/end0/AI/LlamaServer/edge0-expert-mmap-20261117/ffn-gate /home/end0/AI/LocalAI/Models/Edge0-120B-q3k
+Edge0 expert mapping: enabled=1 page_size=4096 max_span=1171456 virtual_ceiling=3220332544
+Edge0 cache budget: DU=1415577600 expert=0 slots=2749 cache policy=existing Goose expert-lru
+Edge0 pack open: Q4 D/U, 10 routed + shared, external buffers=1482686464 bytes, no full PLE/expert mapping
+ggml_cuda_init: found 1 CUDA devices (Total VRAM: 11871 MiB):
+  Device 0: NVIDIA GeForce RTX 4070, compute capability 8.9, VMM: yes, VRAM: 11871 MiB
+Edge0 FFN progress: calls=1 completed_tokens=0 streamed_MiB=0.00
+PASS full FFN layer=0 routed=10 shared=1 values=2560 max_abs_error=9.31322575e-10 peak=0.0276115015
+PASS full FFN layer=0 routed=10 shared=1 values=2560 max_abs_error=4.65661287e-10 peak=0.00657073967
+PASS full FFN layer=47 routed=10 shared=1 values=2560 max_abs_error=4.65661287e-10 peak=0.00854658522
+PASS full FFN layer=0 routed=10 shared=1 values=2560 max_abs_error=4.65661287e-10 peak=0.00657073967
+EDGE0_PROFILE phase=0 ffn_s=0.036840669 arena_s=0.000014877 route_s=0.000116018 du_read_s=0.407178323 expert_read_s=0.000076092 weight_copy_s=0.003722301 graph_s=0.000284670 cpu_compute_s=0.027540717 ple_s=0.000000000 calls=8 du_bytes=1415577600 expert_bytes=0 copy_bytes=31395840 ple_rows=0 expert_hits=60 expert_misses=20 du_hits=8 du_misses=1 dense_hits=20 dense_misses=20 matvec_nodes=380 mapped_bytes=23375872 mapping_misses=20
+EDGE0_PROFILE phase=1 ffn_s=0.000000000 arena_s=0.000000000 route_s=0.000000000 du_read_s=0.000000000 expert_read_s=0.000000000 weight_copy_s=0.000000000 graph_s=0.000000000 cpu_compute_s=0.000000000 ple_s=0.000000000 calls=0 du_bytes=0 expert_bytes=0 copy_bytes=0 ple_rows=0 expert_hits=0 expert_misses=0 du_hits=0 du_misses=0 dense_hits=0 dense_misses=0 matvec_nodes=0 mapped_bytes=0 mapping_misses=0
+EDGE0_PROFILE phase=2 ffn_s=0.000000000 arena_s=0.000000000 route_s=0.000000000 du_read_s=0.000000000 expert_read_s=0.000000000 weight_copy_s=0.000000000 graph_s=0.000000000 cpu_compute_s=0.000000000 ple_s=0.000000000 calls=0 du_bytes=0 expert_bytes=0 copy_bytes=0 ple_rows=0 expert_hits=0 expert_misses=0 du_hits=0 du_misses=0 dense_hits=0 dense_misses=0 matvec_nodes=0 mapped_bytes=0 mapping_misses=0
+RESULT PASS: actual callback + Goose latent/top10/shared integration
+
+exit_code=0

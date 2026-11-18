@@ -1,0 +1,250 @@
+{
+  "experiment": "EXP-2026-11-17-914",
+  "source_checkpoint": "df9b82f46c8b44d644b17f2f12e1cbd33db7c260",
+  "verdict": "ACCEPTED_COMPONENT_ONLY",
+  "real_weight_computed_steps": 6,
+  "aborted_unexecuted_graphs": 1,
+  "planner_checks": 49,
+  "host_checkpoint_checks": 50,
+  "invalid_layout_calls": 42,
+  "mutations_killed": [
+    "write-dependency",
+    "cursor",
+    "causal-mask",
+    "restore-prefix",
+    "restore-values",
+    "cache-layout"
+  ],
+  "peak_fixture_rss_KiB": 59380,
+  "main_composition_modules": 125,
+  "main_specializations": 4046,
+  "source_sha256": "f4af61270982d83071186f0e9aebabd18158055ba8e65d8efcc29bb95d2939fd",
+  "model_integrity_receipt": {
+    "path": "/home/end0/AI/LlamaServer/exp913-goose-real-attention-20261117/model-proof.json",
+    "sha256": "fe58a54ea6e2e383b073314e324e69d53a9f6c5981db0bdaa3a0a3efa880d027"
+  },
+  "scope": "Compact single-stream Q4_0 KV with FA on; one real attention layer, not full model, multi-stream, RNN state, CUDA, HTTP or final generation correctness.",
+  "model_server_runs": 0,
+  "GPU_runs": 0,
+  "performance_measured": false,
+  "native_retention_audit": {
+    "cpp_lines_replaced_and_removed": 0,
+    "dead_cpp_lines_deleted": 0,
+    "baseline_closure_cpp_files": 350,
+    "baseline_closure_cpp_lines": 248213,
+    "minimum_necessary_cpp_lines": null,
+    "reason": "Historical immutable EXP906 source closure, not minimum-needed classification. New component is not wired into the complete model/server; native cache remains necessary. Shared loading/tokenization/generation/server and alternative cache paths retained. No dynamic call-graph or whole-repository dead-code proof claimed.",
+    "new_runtime_native_adapters": 0,
+    "new_runtime_cpp_files": 0,
+    "retention_log_sha256": "d8ecc0d0136b1331b4689be0628a2b854677d8192a8b8884cacc036abda13214"
+  },
+  "native_backend_hashes_observed_after_gate": [
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/bin/libggml-base.so.0",
+      "sha256": "23363cbd74857db91d4fdc3712b2bb32adf42893075fa5139011f439d0abcdb7"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/franken-recovery-20261116/support/bin/libggml-cpu.so.0",
+      "sha256": "33baf1f3ab8c2bfff6a543f9e1164c3d7c15ea443c0b96cc0c6c80dc972d50d6"
+    }
+  ],
+  "prior_candidate_backup": "/home/end0/AI/LlamaServer/runtime-store/sets/exp914-q4-kv-before-layout-guards/provenance.json",
+  "baseline_preservation_receipt_reused": "Backup/exp915-edge0-latent-expert/apex-preservation.txt; no baseline artifact inputs changed",
+  "artifacts": [
+    {
+      "path": "/home/end0/AI/LlamaServer/exp914-goose-q4-kv-20261117-v3/bindings.o",
+      "bytes": 52928,
+      "sha256": "1a7ce16758fe0da5e724d23780fc13cc34564f8bed28e4fdb307f409f380ca06"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp914-goose-q4-kv-20261117-v3/build-inputs.json",
+      "bytes": 810,
+      "sha256": "f35248aa0a362ad5a6b2af4d65fb736a02325c7ed50115c5c84151f8740f5b29"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp914-goose-q4-kv-20261117-v3/build.log",
+      "bytes": 1901,
+      "sha256": "6d24122029114fc0a20d2c2ef5351eed457df93f80e3e798a6c87ef544ccbfad"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp914-goose-q4-kv-20261117-v3/cache-layout/cached.so",
+      "bytes": 714328,
+      "sha256": "1870865560e7f7d3885fb8d29b9c1a4669b276182cbe9adb9143fb39dc40e2bd"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp914-goose-q4-kv-20261117-v3/cache-layout/runtime.c",
+      "bytes": 398193,
+      "sha256": "95e5e9542bbd73740ef71276282e2b9d79d8a129aab9736f1076f2f2279a4d24"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp914-goose-q4-kv-20261117-v3/cache-layout/runtime.h",
+      "bytes": 3291,
+      "sha256": "3231ce87d5f3ddbb50cc1ed93522ff7e9965bdbfd2c13a772662e61f7a5fba1a"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp914-goose-q4-kv-20261117-v3/cache-layout/unit.goose",
+      "bytes": 38575,
+      "sha256": "5c41215b8274a34c37bd0c05feb2b72a0563670677f6ec794807ffc22cb17059"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp914-goose-q4-kv-20261117-v3/cached.so",
+      "bytes": 384968,
+      "sha256": "5521fbc80501d367f518882d3e29ad91d1ace4142ed2e00dc92827d2e1da6db8"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp914-goose-q4-kv-20261117-v3/causal-mask/cached.so",
+      "bytes": 714496,
+      "sha256": "555a40f59338ae81fe2e5279d49b2acffe64bc98e00c0bd6846abd5f8c9a8451"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp914-goose-q4-kv-20261117-v3/causal-mask/runtime.c",
+      "bytes": 398583,
+      "sha256": "5082b87cd715c392b80cc3bc38ae2388a4e8598253495f740d16dbec0162c4bd"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp914-goose-q4-kv-20261117-v3/causal-mask/runtime.h",
+      "bytes": 3291,
+      "sha256": "3231ce87d5f3ddbb50cc1ed93522ff7e9965bdbfd2c13a772662e61f7a5fba1a"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp914-goose-q4-kv-20261117-v3/causal-mask/unit.goose",
+      "bytes": 38612,
+      "sha256": "3ae50ec7865284eff067fb96fd48d81e9c5a70c573c19bb5792bb4db7b430b84"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp914-goose-q4-kv-20261117-v3/check.log",
+      "bytes": 1601,
+      "sha256": "96284d2436d47b3afce4d0efbfcb6706ad9dc38ade24e7a9056f728871df1aad"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp914-goose-q4-kv-20261117-v3/cursor/cached.so",
+      "bytes": 714488,
+      "sha256": "a74b3c074a33b1671252199ca40beae1b0ad55024cfd0592b3c92fd6809080a3"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp914-goose-q4-kv-20261117-v3/cursor/runtime.c",
+      "bytes": 398616,
+      "sha256": "2d94f4c4fb6f765629a0049f64cf8ab95868dab1a1d232d2b67ac48ea49b7409"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp914-goose-q4-kv-20261117-v3/cursor/runtime.h",
+      "bytes": 3291,
+      "sha256": "3231ce87d5f3ddbb50cc1ed93522ff7e9965bdbfd2c13a772662e61f7a5fba1a"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp914-goose-q4-kv-20261117-v3/cursor/unit.goose",
+      "bytes": 38617,
+      "sha256": "6b3e85c5d084bc9480c93d2b23a231d6f147b4ff9f306497dbb4e6becd0d10e0"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp914-goose-q4-kv-20261117-v3/fixture.log",
+      "bytes": 1205,
+      "sha256": "1bd6491f4bf52673e6a5deea8f4ac2625e5ac2564c2b12a6e585c19482a73c32"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp914-goose-q4-kv-20261117-v3/gate",
+      "bytes": 513240,
+      "sha256": "9cc38ba713176b02e90ea78c504cda1d96a715a78febbcabc304a032f7597468"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp914-goose-q4-kv-20261117-v3/gate.log",
+      "bytes": 2208,
+      "sha256": "140e726f57c685284cb5095bfc9e8542532033e355480c1ccc6fc4928d2ab6ff"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp914-goose-q4-kv-20261117-v3/main-check.log",
+      "bytes": 442077,
+      "sha256": "7c2a15a1e2d053c84971bd73da6c2fef35a54e2242c52588278e956cb7970806"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp914-goose-q4-kv-20261117-v3/main.goose",
+      "bytes": 3417506,
+      "sha256": "8c68f1fb2d405835b9aa548d06344fe612a8c2620ca9fae036fde98dda210a0f"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp914-goose-q4-kv-20261117-v3/mutations.log",
+      "bytes": 22972,
+      "sha256": "ba55ee66a628fbb5e7adefe422cd3ed98478b914d96d0d300192da59b9092a25"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp914-goose-q4-kv-20261117-v3/restore-prefix/cached.so",
+      "bytes": 714504,
+      "sha256": "73a67773952965281e64a872d9201c15256bf8f43627af6b4392f75f9dac5abf"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp914-goose-q4-kv-20261117-v3/restore-prefix/runtime.c",
+      "bytes": 398632,
+      "sha256": "d3dfd5c2744b355d8e49e70b8e54933dd37da0d1d30ae2a82409cbad24c5e9aa"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp914-goose-q4-kv-20261117-v3/restore-prefix/runtime.h",
+      "bytes": 3291,
+      "sha256": "3231ce87d5f3ddbb50cc1ed93522ff7e9965bdbfd2c13a772662e61f7a5fba1a"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp914-goose-q4-kv-20261117-v3/restore-prefix/unit.goose",
+      "bytes": 38617,
+      "sha256": "6467e82e8bb8030324c9529eebdfdd06b8feca96e688e5a84e165f70af0e0b9d"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp914-goose-q4-kv-20261117-v3/restore-values/cached.so",
+      "bytes": 714480,
+      "sha256": "4e5c1e581cb4a4ddcdf5ec100418f20ac8790694d7e86127bfc852e8f255e049"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp914-goose-q4-kv-20261117-v3/restore-values/runtime.c",
+      "bytes": 398498,
+      "sha256": "fa112d2d9dfa097176a7922f4e2a86af49955138bf7a55bf5c1774222abb4e12"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp914-goose-q4-kv-20261117-v3/restore-values/runtime.h",
+      "bytes": 3291,
+      "sha256": "3231ce87d5f3ddbb50cc1ed93522ff7e9965bdbfd2c13a772662e61f7a5fba1a"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp914-goose-q4-kv-20261117-v3/restore-values/unit.goose",
+      "bytes": 38609,
+      "sha256": "8b0b0cc3ceaccaa5c81a2a360f8517037ccb771fec6f6ed44badfa135e823ccb"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp914-goose-q4-kv-20261117-v3/runtime.c",
+      "bytes": 398560,
+      "sha256": "f148dcceb97e8d0d5f96480e5f809725ebf02c939e24e995b8daaaa1a81df57b"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp914-goose-q4-kv-20261117-v3/runtime.h",
+      "bytes": 3291,
+      "sha256": "3231ce87d5f3ddbb50cc1ed93522ff7e9965bdbfd2c13a772662e61f7a5fba1a"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp914-goose-q4-kv-20261117-v3/state.log",
+      "bytes": 243,
+      "sha256": "cf93d08b3ed20e745d3934334c86412f742d7a089a844e94d775c0ca19dbe9c5"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp914-goose-q4-kv-20261117-v3/unit.goose",
+      "bytes": 38613,
+      "sha256": "09accd73d650e06e76e5ccc24411b7e9ae3774fd8eb6f913d1e84a1b445588b0"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp914-goose-q4-kv-20261117-v3/write-dependency/cached.so",
+      "bytes": 714488,
+      "sha256": "6722e3a8dfa57b2a9acb10c93f51937a47374a11793d8b75bd2a182d2b7b0610"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp914-goose-q4-kv-20261117-v3/write-dependency/runtime.c",
+      "bytes": 398561,
+      "sha256": "b81648852b6062af24e4bd64799423cfa2bab8ef7efe4eecab4a8df38c6288f2"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp914-goose-q4-kv-20261117-v3/write-dependency/runtime.h",
+      "bytes": 3291,
+      "sha256": "3231ce87d5f3ddbb50cc1ed93522ff7e9965bdbfd2c13a772662e61f7a5fba1a"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp914-goose-q4-kv-20261117-v3/write-dependency/unit.goose",
+      "bytes": 38611,
+      "sha256": "39c1c9a75d1a6065a8df52196dfabcf65f70136c0af0f07f852be82d23e76b5f"
+    }
+  ]
+}

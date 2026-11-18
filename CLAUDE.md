@@ -588,3 +588,32 @@ come from Igor directly. For every marked message:
     lock status and the server tail before exiting.
 
     Apex parameters are fixed and are not to be tuned to make an error disappear: context 262144, GPU cache 4992 MiB.
+
+31. C++ must die. Goose must fly.
+
+    FrankenMoE-CUDA is a Goose runtime project, not a C++ project. New
+    functionality - architecture logic, algorithms, memory, graph and model
+    management - is written in Goose. The only permitted new C++ is a temporary
+    bridge that brings Goose in and is removed afterwards, and only when it
+    enables the deletion of substantially more C++ than it adds; every exception
+    states that plan. Functionality is never moved from Goose back into C++.
+
+    Every commit reports three numbers: C++ lines added, C++ lines deleted, and
+    which functions moved under Goose control. Reviews check this policy. The
+    end state is a standalone Goose runtime with no C++ in the compute
+    architecture.
+
+32. Apex regressions are always measured against the accepted EXP906 runtime.
+
+    The only accepted reference is
+    `/home/end0/AI/LlamaServer/apex-independent-fast-20261116/run/`, with the
+    manifest and hashes in `docs/reference/apex-exp906/manifest.json`
+    (decode 55.517645, prefill 2625.206607 on the 32768/512 profile, CUDA
+    library sha256 `17e79510f378...`). A CMake build, an old binary or any other
+    assembly is a CANDIDATE, never a reference; candidate numbers are compared
+    to this manifest under identical flags.
+
+    `bash tools/verify-apex-reference.sh` must pass before an Apex measurement
+    and refuses on any hash mismatch. The reference directory is never rebuilt,
+    overwritten or repackaged in place; new builds live in their own directory
+    and releases carry a byte copy with its own SHA256SUMS.

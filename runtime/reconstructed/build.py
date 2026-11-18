@@ -1,13 +1,19 @@
 #!/usr/bin/env python3
 """Build the reconstructed DSO: staged integration files + flint objects + the Goose modules they call."""
 from pathlib import Path
-import subprocess, sys, re, os
+import subprocess, sys, re, os, argparse, hashlib, json
 
-BASE = Path('/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108')
+BASE = Path(__file__).resolve().parents[2]
+ap = argparse.ArgumentParser(description=__doc__)
+ap.add_argument('--build-dir', type=Path, required=True)
+ap.add_argument('--runtime-libs', type=Path, required=True)
+args = ap.parse_args()
+if args.build_dir.exists():
+    sys.exit('refusing to overwrite an existing build directory')
 # Sources come from the repository (vendor/flint, provenance in vendor/flint/PROVENANCE.txt). The prebuilt objects
 # under build-cuda are still linked by the object list below and are the last external dependency; stage 4 removes them
 # by rebuilding from these sources.
-_HERE = Path(__file__).resolve().parent.parent
+_HERE = BASE
 FL = _HERE / 'vendor' / 'flint'
 if not (FL / 'include' / 'llama.h').exists():
     # build.py is copied into the working tree as well; the sources live in the repository either way
@@ -19,13 +25,30 @@ GOOSE_BIN = '/home/end0/AI/LlamaServer/toolchain/goose-2026.3-string/goose'
 REPO_SRC = Path(__file__).resolve().parent/'src'
 SRC = REPO_SRC if (REPO_SRC/'llama-vocab.cpp').exists() else BASE/'runtime/reconstructed/src'
 print('sources:', SRC)
-W = BASE/'runtime/reconstructed/build'; W.mkdir(parents=True, exist_ok=True)
-RUN = BASE/'runtime/exp244/run'
-OUT = W/'libllama-exp371.so.0.7.0'
+W = args.build_dir.resolve(); W.mkdir(parents=True)
+RUN = args.runtime_libs.resolve()
+OUT = W/'libllama.so.0'
+_generated = W/'generated'
+_generated.mkdir()
+_version = (FL/'src/llama-version.h.in').read_text()
+_version = _version.replace('@LLAMA_VERSION@', '0.7.0-dev').replace('@LLAMA_BUILD_COMMIT@', '1b44e307')
+(_generated/'llama-version.h').write_text(_version)
+_real_run = subprocess.run
+def recorded_run(command, **kwargs):
+    with (W/'commands.jsonl').open('a') as log:
+        log.write(json.dumps(command) + '\n')
+    return _real_run(command, **kwargs)
+subprocess.run = recorded_run
+pin = json.loads((BASE/'runtime/compiler/current.json').read_text())
+if hashlib.sha256(Path(GOOSE_BIN).read_bytes()).hexdigest() != pin['sha256']:
+    sys.exit('Goose compiler pin mismatch')
+_slru_dir = W/'slru-obj'
+subprocess.run(['bash', str(BASE/'experiments/EXP-2026-11-16-756-slru-policy-goose/build.sh'),
+                str(_slru_dir)], check=True)
 
 FLAGS = ['-DGGML_BACKEND_SHARED','-DGGML_SHARED','-DGGML_USE_CPU','-DGGML_USE_CUDA','-DLLAMA_BUILD',
-         '-DLLAMA_SHARED','-Dllama_EXPORTS', f'-I{SRC}/.', f'-I{FL}/build-cuda/src', f'-I{FL}/src', f'-I{FL}/include',
-         f'-I{FL}/ggml/include', '-O3','-DNDEBUG','-fPIC','-w']
+         '-DLLAMA_SHARED','-Dllama_EXPORTS', f'-I{SRC}/.', f'-I{_generated}', f'-I{FL}/src', f'-I{FL}/include',
+         f'-I{FL}/ggml/include', f'-I{_slru_dir}', '-O3','-DNDEBUG','-fPIC','-w']
 CXX = ['/usr/bin/g++-13'] + FLAGS
 
 changed = ['llama-batch.cpp','llama-context.cpp','llama-graph.cpp','llama-hparams.cpp','llama-kv-cache.cpp','llama-model.cpp',
@@ -38,6 +61,16 @@ for name in changed:
     if q.returncode: print('FAIL', name); print(q.stderr[:1500]); sys.exit(1)
     objs.append(str(o))
     print('built', name)
+
+# The reader adapter owns the mapping and is the only file here that is not a
+# carrier source. It is debt and tools/migration-status.sh counts it as such.
+_r = subprocess.run(CXX + ['-o', str(W/'gguf-reader-owner.o'), '-c',
+                           str(BASE/'integration/goose-standalone/gguf-reader-owner.cpp')],
+                    capture_output=True, text=True)
+if _r.returncode:
+    print('FAIL gguf-reader-owner.cpp'); print(_r.stderr[:1500]); sys.exit(1)
+objs.append(str(W/'gguf-reader-owner.o'))
+print('built gguf-reader-owner.cpp')
 
 # which Goose modules are called
 def undef(o):
@@ -53,6 +86,8 @@ print('modules needed:', ' '.join(sorted(pref)))
 # locate host-unit.c per prefix and build it
 modules = []
 for p in sorted(pref):
+    if p in ('fg262a', 'fg263c', 'fg286m', 'fg291b', 'fg756s'):
+        continue  # Built explicitly below, including the shared gates object.
     if p in ('fg345w', 'fg367s', 'fg373s', 'fg375s', 'fg376s', 'fg377s', 'fg380s', 'fg381s', 'fg382s', 'fg383s', 'fg384s', 'fg385s', 'fg386s', 'fg387s', 'fg388s', 'fg389s', 'fg390s', 'fg391s', 'fg392s', 'fg393s', 'fg394s', 'fg395s', 'fg396s', 'fg397s', 'fg398s', 'fg401s'):
         continue  # our own bridges are linked explicitly below
     found = None
@@ -71,13 +106,13 @@ for p in sorted(pref):
     if cands:
         found = max(cands)[1]
     if not found:
-        print('module not found:', p); continue
+        sys.exit('module not found: ' + p)
     o = W/(p + '.o')
     cc = 'gcc-13' if found.suffix == '.c' else 'g++-13'
     extra = [] if found.suffix == '.c' else ['-std=c++17']
     q = subprocess.run([cc,'-O2','-fPIC',*extra,f'-I{found.parent}','-c',str(found),'-o',str(o)],
                        capture_output=True, text=True)
-    if q.returncode: print('module build failed', p); print(q.stderr[:800]); continue
+    if q.returncode: print('module build failed', p); print(q.stderr[:800]); sys.exit(1)
     modules.append(str(o))
 print('modules built:', len(modules))
 
@@ -164,11 +199,42 @@ for _pair in _GOOSE_PAIRS:
     _goose_objs += [str(_mo), str(_bo)]
 print('goose modules compiled from sources:', len(_goose_objs)//2)
 
+# The tokenizer path is one unit, not one module: the reader, its header and type
+# tables, the Unicode and pre-tokenizer tables, the BPE engine and the load join.
+# Goose has no re-export, so they are composed the same way
+# tools/build-main-runtime.sh composes the standalone unit, then compiled once.
+# Symbols were measured before this was added: the unit exports 67 globals and
+# the only name it shares with the accepted libllama set is goose_init, which is
+# renamed here.
+_CARRIER_UNIT = [
+    'misc/gguf-headers.goose', 'misc/ggml-type-table.goose', 'model/gguf-tensors.goose',
+    'model/gguf-reader.goose', 'model/special-partition.goose',
+    'misc/unicode-tables.goose', 'misc/unicode-text.goose',
+    'misc/pretokenizer-qwen35.goose', 'model/bpe-tokenize.goose',
+    'model/bpe-detokenize.goose', 'model/bpe-load.goose',
+]
+_cunit = _gobj/'tokenizer-unit.goose'
+_r = subprocess.run([sys.executable, str(_REPO/'tools'/'compose-goose.py'), str(_cunit)]
+                    + [str(_GOOSE/m) for m in _CARRIER_UNIT], capture_output=True, text=True)
+if _r.returncode != 0:
+    print('tokenizer unit compose failed'); print(_r.stderr[:800]); sys.exit(1)
+_r = subprocess.run([str(GOOSE_BIN), '--standalone', '-o', str(_gobj/'tokenizer-unit.c'),
+                     '--header', str(_gobj/'tokenizer-unit.h'), str(_cunit)], capture_output=True, text=True)
+if _r.returncode != 0:
+    print('tokenizer unit compile failed'); print(_r.stderr[:800]); sys.exit(1)
+_r = subprocess.run(['gcc-13','-O2','-fPIC','-std=c11','-w','-Dgoose_init=fg950_goose_init',
+                     '-c', str(_gobj/'tokenizer-unit.c'), '-o', str(_gobj/'tokenizer-unit.o')],
+                    capture_output=True, text=True)
+if _r.returncode != 0:
+    print('tokenizer unit cc failed'); print(_r.stderr[:800]); sys.exit(1)
+_goose_objs.append(str(_gobj/'tokenizer-unit.o'))
+print('tokenizer unit modules composed:', len(_CARRIER_UNIT))
+
 # SLRU pieces are compiled from repository sources: two generated C files that live in experiments/ and the runtime
 # shim in integration/. They replace three prebuilt objects and are the policy the expert cache depends on.
 _slru_src = [
-    (Path(_REPO)/'experiments'/'EXP-2026-11-16-756-slru-policy-goose'/'build'/'slru-policy.c', 'slru-policy.o'),
-    (Path(_REPO)/'experiments'/'EXP-2026-11-16-756-slru-policy-goose'/'build'/'slru-runtime.c', 'slru-runtime.o'),
+    (_slru_dir/'slru-policy.c', 'slru-policy.o'),
+    (_slru_dir/'slru-runtime.c', 'slru-runtime.o'),
     (Path(_REPO)/'integration'/'goose-standalone'/'slru-runtime-shim.c', 'slru-shim.o'),
 ]
 _sobj = W/'slru-obj'; _sobj.mkdir(exist_ok=True)
@@ -182,6 +248,27 @@ for _s, _n in _slru_src:
     _slru_objs.append(_o)
 print('slru objects compiled:', len(_slru_objs))
 
+# Recreate every extra object; directory leftovers must never supply link inputs.
+for _src, _name in [
+    (BASE/'experiments/EXP-2026-11-12-291-goose-batch-reject/bridge.c', 'b291.o'),
+    (SRC/'gates.c', 'gates.o'),
+    (BASE/'integration/m1/common/fg-apex-plan-bridge.c', 'fg-q35-bridge.o'),
+    (BASE/'integration/m1/common/fg-apex-plan-ffi.c', 'fg-plan-ffi.o'),
+]:
+    subprocess.run(['gcc-13', '-O2', '-fPIC', '-std=c11', '-w',
+                    f'-I{FL}/include', f'-I{FL}/ggml/include',
+                    '-c', str(_src), '-o', str(W/_name)], check=True)
+subprocess.run([GOOSE_BIN, '-o', str(W/'q35.c'), '--header', str(W/'q35.h'),
+                str(BASE/'goose/model/qwen35moe.goose')], check=True, capture_output=True)
+subprocess.run(['gcc-13', '-O2', '-fPIC', '-std=c11', '-w',
+                '-Dgoose_init=fg_q35_goose_init', '-c', str(W/'q35.c'),
+                '-o', str(W/'fg-q35.o')], check=True)
+subprocess.run([sys.executable, str(BASE/'tools/build-goose-bridges.py'),
+                '--out', str(W)], check=True)
+subprocess.run(['gcc-13', '-O2', '-fPIC', '-std=c11', '-w', '-c',
+                str(BASE/'integration/m1/common/fg-mmap-bookkeeping-bridge.c'),
+                '-o', str(W/'fx286pic.o')], check=True)
+
 extra_mod = [W/'b291.o', W/'fx286pic.o', W/'fx262a.o', W/'fx263-pic.o', W/'gates.o',
              # compiled here from repository sources instead of taken prebuilt
              _slru_objs[0], _slru_objs[1], _slru_objs[2],
@@ -189,10 +276,12 @@ extra_mod = [W/'b291.o', W/'fx286pic.o', W/'fx262a.o', W/'fx263-pic.o', W/'gates
 # The SLRU policy object is required: llama-moe-cache.cpp calls slru_plan. Fail loudly rather than
 # linking a DSO with an undefined fg756s/slru symbol.
 for need in ('slru-policy.o', 'slru-runtime.o', 'slru-shim.o'):
-    if not (W/need).exists():
+    if not (_sobj/need).exists():
         print('MISSING', need, '- run: bash experiments/EXP-2026-11-16-756-slru-policy-goose/build.sh', W)
         sys.exit(1)
-bridge_objs += [str(x) for x in extra_mod if x.exists()]
+for x in extra_mod:
+    if not x.exists(): sys.exit('required object missing: ' + str(x))
+bridge_objs += [str(x) for x in extra_mod]
 # REVERTED: compiling only llama-*.cpp and models/*.cpp dropped sources that the Unity objects also carried
 # (ggml backend registration among them) and the runtime failed at start with a CUDA allocation error. Restored to the
 # prebuilt objects until the vendor compile list covers everything the Unity units contained.
@@ -207,18 +296,19 @@ _vend_srcs = [x for x in sorted((FL/'src').glob('llama-*.cpp')) if x.name not in
 _vend_srcs += sorted((FL/'src'/'models').glob('*.cpp'))
 _vend_srcs += [_REPO/'vendor'/'flint'/'src'/'unicode-data.cpp', _REPO/'vendor'/'flint'/'src'/'llama.cpp']
 for _src in _vend_srcs:
-    _o = _vmod_dir/(_src.stem + '.o')
+    _stem = 'core-llama' if _src == FL/'src'/'llama.cpp' else _src.stem
+    _o = _vmod_dir/(_stem + '.o')
     if not _o.exists() or _o.stat().st_mtime < _src.stat().st_mtime:
-        _r = subprocess.run(['/usr/bin/c++'] + [f for f in FLAGS if f.startswith('-I') or f.startswith('-D')] +
+        _r = subprocess.run(['/usr/bin/c++'] + [f for f in FLAGS if (f.startswith('-I') or f.startswith('-D')) and f != f'-I{SRC}/.'] +
                             ['-O3','-DNDEBUG','-fPIC','-w','-c',str(_src),'-o',str(_o)],
                             capture_output=True, text=True)
         if _r.returncode != 0:
             print('model compile failed:', _src.name); print(_r.stderr[:1200]); sys.exit(1)
     flint_objs.append(str(_o))
 print('models compiled from vendor:', len(flint_objs))
-cmd = ['/usr/bin/c++','-fPIC','-O3','-DNDEBUG','-shared','-Wl,-soname,libllama.so.0','-o',str(OUT)]
+cmd = ['/usr/bin/c++','-fPIC','-O3','-DNDEBUG','-shared','-Wl,-z,defs','-Wl,-soname,libllama.so.0','-o',str(OUT)]
 cmd += objs + flint_objs + modules + bridge_objs
-cmd += [f'-Wl,-rpath,{RUN}:', str(RUN/'libggml.so.0'), str(RUN/'libggml-cpu.so.0'),
+cmd += ['-Wl,-rpath,$ORIGIN', str(RUN/'libggml.so.0'), str(RUN/'libggml-cpu.so.0'),
         str(RUN/'libggml-cuda.so.0'), str(RUN/'libggml-base.so.0')]
 q = subprocess.run(cmd, capture_output=True, text=True)
 if q.returncode: print(q.stderr[:3000]); sys.exit(1)

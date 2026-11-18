@@ -1,0 +1,389 @@
+{
+  "experiment": "EXP-2026-11-17-918-goose-moe-trunk",
+  "source_checkpoint": "5cfe369faae2f50fff1f9076c21d7364cd63797c",
+  "verdict": "ACCEPTED_CPU_MATHEMATICAL_TRUNK_NOT_INDEPENDENT_ENGINE",
+  "source_sha256": "e8adc1a095d3725b8c19ac1f5ad65b40b5b338fe5a8a7473ccb9eb49aa374270",
+  "FFN_cases": 12,
+  "FFN_exact_values": 815560,
+  "binder_negative_cases": 24,
+  "FFN_invalid_calls": 168,
+  "layers": 40,
+  "recurrent_layers": 30,
+  "attention_layers": 10,
+  "mapped_candidate_tensors": 733,
+  "final_model_steps": 3,
+  "final_frame_compared_values": 2502720,
+  "final_logits_compared": 1241600,
+  "checkpoint_replay": true,
+  "candidate_roots_per_step": 61,
+  "observed_frames_per_step": 164,
+  "native_and_candidate_graph_nodes": 6408,
+  "persistent_state_context_used_bytes": 137684480,
+  "final_fixture_peak_RSS_KiB": 3801220,
+  "final_process_tree_peak_RSS_KiB": 3794204,
+  "process_tree_swap_KiB": 0,
+  "resource_bound": {
+    "process_tree_RSS_KiB": 4194304,
+    "seconds_per_child": 180
+  },
+  "semantic_mutants_killed": [
+    "binding",
+    "router",
+    "shared",
+    "trunk-residual",
+    "trunk-headnorm",
+    "trunk-convroot"
+  ],
+  "resource_stopped_negative_attempt": "mutations-trunk-residual.log; not counted as semantic rejection; original logger did not distinguish time/RSS arm; same compiled mutant later rejected by minimal pre-compute dependency check",
+  "main_modules": 127,
+  "main_specializations": 4062,
+  "model_integrity_reused": {
+    "path": "/home/end0/AI/LlamaServer/exp913-goose-real-attention-20261117/model-proof.json",
+    "sha256": "fe58a54ea6e2e383b073314e324e69d53a9f6c5981db0bdaa3a0a3efa880d027"
+  },
+  "native_retention_audit": {
+    "path": "Backup/exp918-goose-moe-trunk/retention-audit.log",
+    "sha256": "b8c3dc5c38a3994049de965f2dce9b5fe045b84476c91df0b41aecb96e5a32fe",
+    "native_llama_model_builder_linked": false,
+    "CPP_runtime_still_required": true,
+    "cpp_replaced_and_removed_lines": 0,
+    "dead_cpp_deleted_lines": 0,
+    "baseline_closure_cpp_lines": 248213,
+    "baseline_closure_cpp_files": 350,
+    "minimum_necessary_subset": null,
+    "new_native_runtime_adapters": 0
+  },
+  "model_server_runs": 0,
+  "GPU_runs": 0,
+  "performance_comparison": null,
+  "scope_limits": [
+    "temporary C++ fixture owns GGUF/name/config/mapping/execution",
+    "native GGML/POD/CPU and libstdc++ required",
+    "not a GPU/server/tokenizer/sampling or real-task gate",
+    "whole-model restore error atomicity unproven",
+    "short context512, not protected262144 profile",
+    "no throughput/relative memory claim"
+  ],
+  "artifacts": [
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/bind-gate-restore.log",
+      "bytes": 376,
+      "sha256": "b8b0bb63641faccee1593a7e6eb78adc3ce60e1f810949ff9e61602c1e437049"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/bindings.o",
+      "bytes": 52928,
+      "sha256": "1a7ce16758fe0da5e724d23780fc13cc34564f8bed28e4fdb307f409f380ca06"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/build.log",
+      "bytes": 40879,
+      "sha256": "f3a35900b9f55a46fce799de2102aea49110e996d287dc8b6e9e2d7b8b8358ed"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/check.log",
+      "bytes": 40923,
+      "sha256": "2a23b6f6c5aaf147ddcb8188388c154ff8b6c008442d1b43dc076f87d17b2250"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/ffn-gate-shape.log",
+      "bytes": 970,
+      "sha256": "c9d4c1d7f1f327c68d5ed91eb4512128caf97e7e000d4e2a295f256d7b27e685"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/fixture-gate-restore.log",
+      "bytes": 1373,
+      "sha256": "dc3ec0f13571e75638b9814dd5e4ba1812aa5fc85cda2c82f2a09f10bf3a70c2"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/fixture-gate-shape.log",
+      "bytes": 1367,
+      "sha256": "e3bbbc9fa2c1f6ce904089db5fdba7b5aebbf0da716e20cd97c36fd625f1b419"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/fixture-gate-trunk.log",
+      "bytes": 1367,
+      "sha256": "ab81942c238a3b96430341318bc1d61044b347a352c8985794aa89f5d7da21fd"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/fixture-gate-wiring.log",
+      "bytes": 1370,
+      "sha256": "99fa3a3c561341a2d3224700b930c92829aecb50b1fb5bd56f693e638655bf83"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/fixture.log",
+      "bytes": 2163,
+      "sha256": "18fd665bdfc864f23dc49020c7bbed0c9a6799c3336f5b5b34f84a2797cbadc5"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/gate-gdn-oracle.hpp",
+      "bytes": 2311,
+      "sha256": "ee0875f3d3364c8364799a04b4a96cd4d73f4c55d59feb40266e6b67b1e6c142"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/gate-restore",
+      "bytes": 933008,
+      "sha256": "c42a63d7705187ca94a99c1366901de39fd6ce3743f8ebb92239442ac0d65f7d"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/gate-restore-gdn-oracle.hpp",
+      "bytes": 2311,
+      "sha256": "ee0875f3d3364c8364799a04b4a96cd4d73f4c55d59feb40266e6b67b1e6c142"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/gate-restore-sources.json",
+      "bytes": 494,
+      "sha256": "89b69ecd8a1f62129e2b22d960929514f2a1555632aac0b34f90de6226e35ae2"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/gate-shape",
+      "bytes": 529008,
+      "sha256": "3c354f6854e9a3bfe59516fe855032def7396ae7b2055f627ac094de7e998871"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/gate-shape-gdn-oracle.hpp",
+      "bytes": 2311,
+      "sha256": "ee0875f3d3364c8364799a04b4a96cd4d73f4c55d59feb40266e6b67b1e6c142"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/gate-shape-sources.json",
+      "bytes": 492,
+      "sha256": "f9e98bd3c44aab19145759c38acf71ed7b0d5b96c29f1bc853098f4c3a14fafa"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/gate-trunk",
+      "bytes": 795776,
+      "sha256": "d0fc066f0a5b206922e79730fc0b0c75247ba11879a6294f917c381bac2d8cff"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/gate-trunk-gdn-oracle.hpp",
+      "bytes": 2311,
+      "sha256": "ee0875f3d3364c8364799a04b4a96cd4d73f4c55d59feb40266e6b67b1e6c142"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/gate-trunk-sources.json",
+      "bytes": 492,
+      "sha256": "05dc8529bdef4120a53b58b572ece588b8bb4357979a7be6808db55965ad3d0b"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/gate-wiring",
+      "bytes": 934928,
+      "sha256": "97b8188b319dad79d42c0a066bcdd277130358d1a97aab2e65e3d062094a682e"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/gate-wiring-gdn-oracle.hpp",
+      "bytes": 2311,
+      "sha256": "ee0875f3d3364c8364799a04b4a96cd4d73f4c55d59feb40266e6b67b1e6c142"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/gate-wiring-sources.json",
+      "bytes": 493,
+      "sha256": "b2e7cbf812f1ebac9d9d91a6025d81942977e126ead38e661c1f45c19fd1d1d2"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/inputs.json",
+      "bytes": 1651,
+      "sha256": "7b96ce75fe3dfb4f0d011644401c2e1fdc8157ae4a2faac0c7207e5a34c5f855"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/main-check.log",
+      "bytes": 457050,
+      "sha256": "f9a3a96de5e20c30c123a5c0ea4ca72f04e00198d36e91c1ccb1eacabdf307ae"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/main.goose",
+      "bytes": 3436318,
+      "sha256": "7a2fb906705db987936b987bdaa93d74602dc5c3649e8676836b5592cb3eceab"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/model.so",
+      "bytes": 710672,
+      "sha256": "83905e104262684fe0ebd8b7f5b2e90693f18d7950db02493f7abb86e4fdb0e0"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/mutant-binding/model.so",
+      "bytes": 908392,
+      "sha256": "a4cbde79629928a8d6cb366f928ead5d8c4c1d9ffe98c80292f332cb072734d1"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/mutant-binding/runtime.c",
+      "bytes": 629815,
+      "sha256": "964d1a883ab5d62dbc61acbbca4b21ccb72a24cdf640fd4a0772b4aa26efed93"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/mutant-binding/runtime.h",
+      "bytes": 10987,
+      "sha256": "1157944244ea4730a899fc29f1598f75dd5c035e6307c6e0c2b5f33aa94754f5"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/mutant-binding/unit.goose",
+      "bytes": 96709,
+      "sha256": "f0b14784da091dc9ee6c085e2cef33f421d942095e0e34f968f278f2a37fa55a"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/mutant-router/model.so",
+      "bytes": 908392,
+      "sha256": "7b1ba94cf38c6275ba7debb11e82649ab53322410f4e5fa4a591622d4c1f13c0"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/mutant-router/runtime.c",
+      "bytes": 629786,
+      "sha256": "d71635fc844b291bb3e0c8ac5d3fc3c8cb967ce04ef4550fb427a598d3d87d71"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/mutant-router/runtime.h",
+      "bytes": 10987,
+      "sha256": "1157944244ea4730a899fc29f1598f75dd5c035e6307c6e0c2b5f33aa94754f5"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/mutant-router/unit.goose",
+      "bytes": 96705,
+      "sha256": "ac2b75279f5e919a70c0657032414f6f855bebb7196fce567befae2ebae59ca8"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/mutant-shared/model.so",
+      "bytes": 908392,
+      "sha256": "627b54e88b1811834dc91c38665aac4dde85084f2221c39a9943334bcde1faf0"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/mutant-shared/runtime.c",
+      "bytes": 629787,
+      "sha256": "d3714dc8aafcd6952de5e6b9bade70933c9bfb9d9fe28ced67a996d2e10e9b56"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/mutant-shared/runtime.h",
+      "bytes": 10987,
+      "sha256": "1157944244ea4730a899fc29f1598f75dd5c035e6307c6e0c2b5f33aa94754f5"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/mutant-shared/unit.goose",
+      "bytes": 96706,
+      "sha256": "0bcd3f7a6bd7facdfac93c610ec30f4d5b57202136f55708a511119198e3e1be"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/mutant-trunk-convroot/model.so",
+      "bytes": 908408,
+      "sha256": "f70019e6134c311b80a35c062873a5bf814c4dcab7e47dbbe92f62af438c59f1"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/mutant-trunk-convroot/runtime.c",
+      "bytes": 629802,
+      "sha256": "1e1048a254559b72a4eb5286042571382adb1ab238c22bffa577f9fbddba9a5c"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/mutant-trunk-convroot/runtime.h",
+      "bytes": 10987,
+      "sha256": "1157944244ea4730a899fc29f1598f75dd5c035e6307c6e0c2b5f33aa94754f5"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/mutant-trunk-convroot/unit.goose",
+      "bytes": 96705,
+      "sha256": "ace4ea64375f148a01145b1bcc37fabd026114fa0a22091ade3588ccf6bc984b"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/mutant-trunk-headnorm/model.so",
+      "bytes": 908376,
+      "sha256": "e12d33cab46b99c7eb8362c439eb57dd4d78f66690c5d158bd4ef0af90d506cc"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/mutant-trunk-headnorm/runtime.c",
+      "bytes": 629718,
+      "sha256": "ba5daf15fbc68a99c6033faff0e8112adfe1c78a4402d8fb581940741f3cfefe"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/mutant-trunk-headnorm/runtime.h",
+      "bytes": 10987,
+      "sha256": "1157944244ea4730a899fc29f1598f75dd5c035e6307c6e0c2b5f33aa94754f5"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/mutant-trunk-headnorm/unit.goose",
+      "bytes": 96671,
+      "sha256": "d68f787cab43fb1d3a8c6042f0461bb9086179ed349685abf49a2ef1a74bec20"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/mutant-trunk-residual/model.so",
+      "bytes": 908376,
+      "sha256": "d23e60391d927b1d48da88fccc56f5a5abb36b4b98e59070c858bd3d91a2aff9"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/mutant-trunk-residual/runtime.c",
+      "bytes": 629715,
+      "sha256": "bf41c33c12c6e33635cf2a062ae502de2802f07da184b3cfb88ce00c2cba7f49"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/mutant-trunk-residual/runtime.h",
+      "bytes": 10987,
+      "sha256": "1157944244ea4730a899fc29f1598f75dd5c035e6307c6e0c2b5f33aa94754f5"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/mutant-trunk-residual/unit.goose",
+      "bytes": 96672,
+      "sha256": "87679ad3b3627b11cfc2d7e4f85c810b1ba4f2c16df237eccfe140312306e52e"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/mutation-gate-trunk-residual.log",
+      "bytes": 624,
+      "sha256": "b33c3776df750628bc74b282915686304bcc85c26aebba501a4599d31dce4d2d"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/mutations-binding.log",
+      "bytes": 90495,
+      "sha256": "b5319fcd11f6ee26c300ec3fcf8838a56e9b9ace1e983179d2d4b92895f5217b"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/mutations-router.log",
+      "bytes": 89855,
+      "sha256": "bcc12d81e5c1fcd2579477ff703c1ec47084d5ffe5906f92c0a0b359e1c202d2"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/mutations-shared.log",
+      "bytes": 89858,
+      "sha256": "206e041964679809dbc2d33054b24a7ded26fd7b1fef379762fdbcdb7a44c7c8"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/mutations-trunk-convroot.log",
+      "bytes": 95216,
+      "sha256": "adfb97b5db5176aa0779cb64d1b42955311125ce4dd3d3361920387bb9c30715"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/mutations-trunk-headnorm.log",
+      "bytes": 95217,
+      "sha256": "56c1ec9fbe209b6c7db8165e48013d4bceef76989af9410b8f3a798fb496e0ea"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/mutations-trunk-residual.log",
+      "bytes": 95064,
+      "sha256": "4818e818a2b7c47b272d05492debe46695df423db1e5e0d36d0d8328e7699d31"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/runtime.c",
+      "bytes": 629758,
+      "sha256": "ebac58e99d94104ff497e33d347ce8626328e21455d2a92febff32f571fd290b"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/runtime.h",
+      "bytes": 10987,
+      "sha256": "1157944244ea4730a899fc29f1598f75dd5c035e6307c6e0c2b5f33aa94754f5"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/trunk-gate-restore.log",
+      "bytes": 931,
+      "sha256": "6d503e80ce7386ff47701ba4755afa7aee45e6e273ed97a62e1856f168b1d033"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/trunk-gate-trunk.log",
+      "bytes": 744,
+      "sha256": "96d46193b68cbfffcc7d5d713ca9714fb3cad5f8ee5e07496381bc281cd3be52"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/trunk-gate-wiring.log",
+      "bytes": 930,
+      "sha256": "a28315557cf3e884a547b75c8ba4e0fda3dc837b47b985a43e9cddabbdcde1eb"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp918-goose-moe-trunk-20261117-v2/unit.goose",
+      "bytes": 96705,
+      "sha256": "464feddac4f79795066762fb28aed99b7ce7ed11160873d7b80efa8fa463bab4"
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+{
+  "source_checkpoint": "1574d93451bb25ac9904b8b296ff6ff53ed1cbb3",
+  "result": "ACCEPTED_ROW_DECODER_ONLY_NOT_SERVER_INTEGRATED",
+  "cases": 89,
+  "all_FP8_codes": 256,
+  "real_rows": 32,
+  "real_payload_bytes_read": 5120,
+  "concurrent_calls": 4096,
+  "mutations_killed": 6,
+  "model_runs": 0,
+  "artifacts": [
+    {
+      "path": "/home/end0/AI/LlamaServer/exp910-edge0-ple-fp8-20261117/layout.so",
+      "bytes": 36144,
+      "sha256": "61aee6ac560cbaa5fac4d671ebe25b094abd90d0cfe00b460d1269469319e1c8"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp910-edge0-ple-fp8-20261117/runtime.c",
+      "bytes": 161244,
+      "sha256": "57210dceadb47f70a758d964c2e81e649602622abae6c1c57778b716586f5a41"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp910-edge0-ple-fp8-20261117/runtime.h",
+      "bytes": 655,
+      "sha256": "24a167a6c2b663bff4f18d55783b13c2254a47dc4adf53cc81a6370899e0ee7f"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp910-edge0-ple-fp8-20261117/check.log",
+      "bytes": 945,
+      "sha256": "599dbaa2089de0c9dea12b03f29e8a9da02cf686249ff5e07de4427152100ad3"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp910-edge0-ple-fp8-20261117/build.log",
+      "bytes": 1458,
+      "sha256": "436a1328016482f7fd0f45a717ba027cef37f3ab87bd1ca0bdd0f09683a795bd"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp910-edge0-ple-fp8-20261117/gate.log",
+      "bytes": 465,
+      "sha256": "325cedef01126bfa1d30aa122244678e4f5276a8c85afb7833635da6690dfdfa"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp910-edge0-ple-fp8-20261117/mutations.log",
+      "bytes": 14080,
+      "sha256": "211df005cfcfa45abb828e200bdfe8fa201f3f307d23d87b39c7e33d7e23a9d3"
+    },
+    {
+      "path": "experiments/EXP-2026-11-17-910-edge0-ple-fp8/source/runtime.goose",
+      "bytes": 1293,
+      "sha256": "65eb68c5dbaaa321aa88f5d4ed156241f293f7b166246d9dbe149ee3632c0e9b"
+    },
+    {
+      "path": "experiments/EXP-2026-11-17-910-edge0-ple-fp8/tests/gate.py",
+      "bytes": 5445,
+      "sha256": "ad34e13d231d386282fdf9b2ea1c51e3c95144c290124ae8c234f01ed8c0d8bb"
+    },
+    {
+      "path": "experiments/EXP-2026-11-17-910-edge0-ple-fp8/tests/build.py",
+      "bytes": 4334,
+      "sha256": "c2126df53218838accd8ace5e14d2c800ecbb388d3a4da7b3efa54815ec9de8e"
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+$ rg -n cpu_weight|cpu_weights|dense_cached|franken_edge0 integration/edge0/pack.cpp vendor/flint/src/models/qwen4exp.cpp
+integration/edge0/pack.cpp:35:void franken_edge0_profile_phase(int phase) {
+integration/edge0/pack.cpp:53:struct franken_edge0_pack {
+integration/edge0/pack.cpp:54:    struct layer_ref { franken_edge0_pack * owner = nullptr; int id = 0; std::array<ggml_tensor *,5> weights{}; std::array<std::vector<uint8_t>,5> cpu_weights; };
+integration/edge0/pack.cpp:59:    bool du_cached=true, dense_cached=true;
+integration/edge0/pack.cpp:68:    ~franken_edge0_pack() { for (int f : fd) if (f >= 0) ::close(f); }
+integration/edge0/pack.cpp:70:std::shared_ptr<franken_edge0_pack> franken_edge0_open(const std::string & path) {
+integration/edge0/pack.cpp:73:    auto p = std::make_shared<franken_edge0_pack>();
+integration/edge0/pack.cpp:94:    const char * dense=std::getenv("FRANKEN_EDGE0_DENSE_CACHE");p->dense_cached=!dense || std::string(dense)!="0";
+integration/edge0/pack.cpp:114:void franken_edge0_bind(franken_edge0_pack & p,int l,ggml_tensor * r,ggml_tensor * g,ggml_tensor * u,ggml_tensor * d,ggml_tensor * sr) {
+integration/edge0/pack.cpp:124:        bytes+=ggml_nbytes(t);p.layers[l].cpu_weights[k].clear();
+integration/edge0/pack.cpp:132:static ggml_tensor * cpu_weight(ggml_context * c, ggml_tensor * source, std::vector<uint8_t> * retained) {
+integration/edge0/pack.cpp:150:static uint8_t * expert_payload(franken_edge0_pack & p,int layer,int64_t expert,int rank,int64_t off) {
+integration/edge0/pack.cpp:184:static void evaluate(franken_edge0_pack::layer_ref & ref,const float * in,float * out) {
+integration/edge0/pack.cpp:192:        auto * r=cpu_weight(c,ref.weights[0],p.dense_cached?&ref.cpu_weights[0]:nullptr); auto * logits=ggml_mul_mat(c,r,x); compute(c,logits,p.threads);
+integration/edge0/pack.cpp:219:        for(int k=0;k<4;++k) shared[k]=eh(cpu_weight(c,ref.weights[k+1],p.dense_cached?&ref.cpu_weights[k+1]:nullptr));
+integration/edge0/pack.cpp:232:    auto & ref=*(franken_edge0_pack::layer_ref*)opaque;
+integration/edge0/pack.cpp:239:ggml_tensor * franken_edge0_ffn(franken_edge0_pack & p,ggml_context * c,ggml_tensor * x,int l) {
+integration/edge0/pack.cpp:243:void franken_edge0_ple(franken_edge0_pack & p,const int32_t * rows,int64_t n,float * out) {
+vendor/flint/src/models/qwen4exp.cpp:30:        edge0 = franken_edge0_open(path);
+vendor/flint/src/models/qwen4exp.cpp:291:            franken_edge0_bind(*edge0, il, layer.ffn_gate_inp, layer.ffn_gate_shexp,
+vendor/flint/src/models/qwen4exp.cpp:1156:        return franken_edge0_ffn(*pack, ctx0, cur, il);
+vendor/flint/src/models/qwen4exp.cpp:1299:        franken_edge0_ple(*pack, idx.data(), idx.size(), values.data());
+
+exit_code=0
+RESULT: native substrate retained, no C++ deletion.

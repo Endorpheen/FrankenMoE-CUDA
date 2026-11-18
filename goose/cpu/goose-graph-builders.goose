@@ -211,14 +211,23 @@ fn repeat(a: i64, b: i64) {
     ensure(pred(4, a, b) != 0, 6);
 }
 
-fn common(p: i64) -> i64 {
-    let mode = arg(p, 0);
-    let c = arg(p, 1);
-    let a = arg(p, 2);
-    let b = arg(p, 3);
-    let d = arg(p, 4);
-    let op = arg(p, 5);
-    let inplace = arg(p, 6);
+// The legacy packet is read lazily; valid callers need only supply the fields
+// their selected mode actually reads. The typed entry uses a bounded slice.
+fn common_arg(p: i64, values: i64[:], i: i64) -> i64 {
+    if p != 0 {
+        return arg(p, i);
+    }
+    return values[i];
+}
+
+fn common_values(p: i64, values: i64[:]) -> i64 {
+    let mode = common_arg(p, values, 0);
+    let c = common_arg(p, values, 1);
+    let a = common_arg(p, values, 2);
+    let b = common_arg(p, values, 3);
+    let d = common_arg(p, values, 4);
+    let op = common_arg(p, values, 5);
+    let inplace = common_arg(p, values, 6);
 
     if mode == 0 || mode == 1 || mode == 2 || mode == 3 || mode == 4 || mode == 5 || mode == 6 || mode == 7 || mode == 8 || mode == 9 {
         if mode == 1 {
@@ -235,7 +244,13 @@ fn common(p: i64) -> i64 {
         }
 
         if mode == 4 {
-            ensure(pred(2, a, 0) != 0, 9);
+            if op == 25 {
+                // RMS supports independent outer strides, as the native CPU
+                // kernel walks nb[1..3]; only each F32 row is contiguous.
+                rows(a);
+            } else {
+                ensure(pred(2, a, 0) != 0, 9);
+            }
         }
 
         if mode == 5 {
@@ -256,7 +271,7 @@ fn common(p: i64) -> i64 {
         var r: i64 = 0;
 
         if mode == 7 {
-            r = shaped(c, arg(p, 7), a);
+            r = shaped(c, common_arg(p, values, 7), a);
         } else {
             r = result(c, a, inplace);
         }
@@ -276,15 +291,15 @@ fn common(p: i64) -> i64 {
         }
 
         if mode == 4 || mode == 8 || mode == 5 {
-            set_param(r, 0, arg(p, 7));
+            set_param(r, 0, common_arg(p, values, 7));
         }
 
         if mode == 4 || mode == 9 {
-            set_param(r, 1, arg(p, 8));
+            set_param(r, 1, common_arg(p, values, 8));
         }
 
         if mode == 9 {
-            set_param(r, 0, arg(p, 7));
+            set_param(r, 0, common_arg(p, values, 7));
         }
         return r;
     }
@@ -391,10 +406,10 @@ fn common(p: i64) -> i64 {
     }
 
     if mode == 16 {
-        let n0 = arg(p, 7);
-        let n1 = arg(p, 8);
-        let n2 = arg(p, 9);
-        let n3 = arg(p, 10);
+        let n0 = common_arg(p, values, 7);
+        let n1 = common_arg(p, values, 8);
+        let n2 = common_arg(p, values, 9);
+        let n3 = common_arg(p, values, 10);
         ensure(n0 >= 0 && n1 >= 0 && n2 >= 0 && n3 >= 0, 23);
         ensure(
             pred(12, a, 0) != 0 || (divides(n0, ne(a, 0)) && divides(n1, ne(a, 1)) && divides(n2, ne(a, 2)) && divides(n3, ne(a, 3))),
@@ -469,10 +484,10 @@ fn common(p: i64) -> i64 {
                 ne(b, 0) == ne(a, 0) && ne(b, 1) >= ne(a, 1) && divides(ne(a, 2), ne(b, 2)) && divides(ne(a, 3), ne(b, 3)),
                 31);
         }
-        ensure(! (float_bits(arg(p, 8)) > 0.0) || b != 0, 32);
+        ensure(! (float_bits(common_arg(p, values, 8)) > 0.0) || b != 0, 32);
         let r = result(c, a, inplace);
-        set_param(r, 0, arg(p, 7));
-        set_param(r, 1, arg(p, 8));
+        set_param(r, 0, common_arg(p, values, 7));
+        set_param(r, 1, common_arg(p, values, 8));
         return finish(r, op_soft_max(), a, b, 0);
     }
 
@@ -500,10 +515,10 @@ fn common(p: i64) -> i64 {
         if mode == 23 {
             r = dup(c, a);
         } else {
-            let n0 = arg(p, 7);
-            let n1 = arg(p, 8);
-            let n2 = arg(p, 9);
-            let n3 = arg(p, 10);
+            let n0 = common_arg(p, values, 7);
+            let n1 = common_arg(p, values, 8);
+            let n2 = common_arg(p, values, 9);
+            let n3 = common_arg(p, values, 10);
             ensure(pred(13, a, 0) == times(times(times(n0, n1), n2), n3), 34);
             r = fresh(c, prop(a, 0), n0, n1, n2, n3);
         }
@@ -520,7 +535,7 @@ fn common(p: i64) -> i64 {
         }
         ;
         ensure(times(ne(a, 2), mult) == ne(b, 0), 36);
-        let nd = arg(p, 7);
+        let nd = common_arg(p, values, 7);
 
         if d != 0 {
             ensure(prop(d, 0) == type_f32() && ne(d, 0) >= nd / 2, 37);
@@ -530,14 +545,14 @@ fn common(p: i64) -> i64 {
         set_param(r, 1, nd);
         set_param(r, 2, op);
         set_param(r, 3, 0);
-        set_param(r, 4, arg(p, 8));
+        set_param(r, 4, common_arg(p, values, 8));
         var j: i64 = 0;
 
         while j < 6 {
-            set_param(r, 5 + j, arg(p, 9 + j));
+            set_param(r, 5 + j, common_arg(p, values, 9 + j));
             j += 1;
         }
-        let sections = arg(p, 15);
+        let sections = common_arg(p, values, 15);
         j = 0;
 
         while j < 4 {
@@ -555,18 +570,18 @@ fn common(p: i64) -> i64 {
 
     if mode == 26 {
         ensure(pred(8, b, a) != 0 && ne(a, 3) == ne(b, 3) && ne(a, 3) == ne(d, 3), 38);
-        let mask = arg(p, 7);
+        let mask = common_arg(p, values, 7);
 
         if mask != 0 {
             ensure(prop(mask, 0) == type_f16(), 39);
             contiguous(mask);
             ensure(divides(ne(a, 2), ne(mask, 2)) && divides(ne(a, 3), ne(mask, 3)), 40);
         }
-        ensure(! (float_bits(arg(p, 9)) > 0.0) || mask != 0, 41);
+        ensure(! (float_bits(common_arg(p, values, 9)) > 0.0) || mask != 0, 41);
         let r = fresh(c, type_f32(), ne(d, 0), ne(a, 2), ne(a, 1), ne(a, 3));
-        set_param(r, 0, arg(p, 8));
-        set_param(r, 1, arg(p, 9));
-        set_param(r, 2, arg(p, 10));
+        set_param(r, 0, common_arg(p, values, 8));
+        set_param(r, 1, common_arg(p, values, 9));
+        set_param(r, 2, common_arg(p, values, 10));
         finish(r, op_flash_attn_ext(), a, b, d);
         set_src(r, 3, mask);
         return r;
@@ -580,10 +595,10 @@ fn common(p: i64) -> i64 {
     }
 
     if mode == 28 {
-        let gate = arg(p, 7);
-        let beta = arg(p, 8);
-        let state = arg(p, 9);
-        let count = arg(p, 10);
+        let gate = common_arg(p, values, 7);
+        let beta = common_arg(p, values, 8);
+        let state = common_arg(p, values, 9);
+        let count = common_arg(p, values, 10);
         rows(a);
         rows(b);
         rows(d);
@@ -632,7 +647,7 @@ fn common(p: i64) -> i64 {
 
     if mode == 32 {
         ensure(pred(13, a, 0) >= pred(13, b, 0), 49);
-        ensure(arg(p, 10) >= 0 && arg(p, 10) < 1073741824, 50);
+        ensure(common_arg(p, values, 10) >= 0 && common_arg(p, values, 10) < 1073741824, 50);
 
         if op == op_acc() {
             contiguous(a);
@@ -642,7 +657,7 @@ fn common(p: i64) -> i64 {
         var j: i64 = 0;
 
         while j < 4 {
-            set_param(r, j, arg(p, 7 + j));
+            set_param(r, j, common_arg(p, values, 7 + j));
             j += 1;
         }
         set_param(r, 4, inplace);
@@ -657,7 +672,7 @@ fn common(p: i64) -> i64 {
     if mode == 34 {
         let r = result(c, a, inplace);
         set_param(r, 0, op);
-        return finish(r, arg(p, 7), a, 0, 0);
+        return finish(r, common_arg(p, values, 7), a, 0, 0);
     }
 
     if mode == 35 {
@@ -665,7 +680,7 @@ fn common(p: i64) -> i64 {
 
         if op == 0 || op == 1 {
             ensure(prop(a, 2) == op_mul_mat(), 53);
-            set_param(a, op, arg(p, 7));
+            set_param(a, op, common_arg(p, values, 7));
             return 0;
         }
 
@@ -673,24 +688,24 @@ fn common(p: i64) -> i64 {
             let nodeop = prop(a, 2);
 
             if nodeop == op_mul_mat() || nodeop == op_mul_mat_id() {
-                set_param(a, 0, arg(p, 7));
+                set_param(a, 0, common_arg(p, values, 7));
                 return 1;
             }
 
             if nodeop == op_flash_attn_ext() {
-                set_param(a, 3, arg(p, 7));
+                set_param(a, 3, common_arg(p, values, 7));
                 return 1;
             }
             return 0;
         }
 
         if op == 3 {
-            let idx = arg(p, 8);
+            let idx = common_arg(p, values, 8);
             ensure(idx >= 0 && idx < max_src(), 54);
             let nodeop = prop(a, 2);
 
             if (nodeop == op_mul_mat() || nodeop == op_mul_mat_id()) && idx == 1 {
-                set_param(a, 3, arg(p, 7));
+                set_param(a, 3, common_arg(p, values, 7));
                 return 1;
             }
             return 0;
@@ -704,14 +719,14 @@ fn common(p: i64) -> i64 {
             }
 
             if op == 6 {
-                ensure(arg(p, 7) >= 0, 56);
+                ensure(common_arg(p, values, 7) >= 0, 56);
             }
             set_param(a, if op == 4 {
                 3
             } else {
                 4
             }
-            , arg(p, 7));
+            , common_arg(p, values, 7));
             return 0;
         }
 
@@ -743,6 +758,11 @@ fn common(p: i64) -> i64 {
     return 0;
 }
 
+fn common(p: i64) -> i64 {
+    var unused: i64[1] = [0];
+    return common_values(p, unused[0 .. 0]);
+}
+
 // Exported entry points (P11-01, EXP675). The module had none, so every function
 // here was unreachable from a host even though the logic existed. These are thin
 // forwards: the decisions stay in the functions above, unchanged.
@@ -752,6 +772,15 @@ fn common(p: i64) -> i64 {
 
 export fn gb_common(p: i64) -> i64 {
     return common(p);
+}
+
+// Caller-owned workspace for Goose graph orchestration. No pointer conversion
+// or native packet-building callback is needed between graph operations.
+export fn gb_common_args(values: i64[:]) -> i64 {
+    if values.len < 16 {
+        return 0;
+    }
+    return common_values(0, values);
 }
 
 // The operator id table, for a host that must name an op without hard-coding it.
