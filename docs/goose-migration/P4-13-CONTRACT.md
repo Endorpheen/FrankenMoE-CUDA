@@ -108,3 +108,22 @@ differential gate (it asserts the rejection), and it is recorded as an
 intentional addition, not as a regression against native. Items 1-5 remain
 differential and already have their native reference in
 `experiments/EXP-2026-11-18-1014-p4-13-alloc-gate/`.
+
+## 9. The adapter is thin: every operation maps to an existing fg161 primitive
+
+Measured on `goose/cpu/goose-allocator/allocator.goose`, the Goose allocator
+module already exposes the primitives the five contract operations need:
+
+| contract operation | existing Goose primitive |
+|---|---|
+| `allocate(buft, size)` | `fg161_alloc_buffer`, `fg161_buft`, `fg161_default_buft`, `fg161_no_alloc` |
+| `free(handle)` | `fg161_free_buffer` |
+| `reset(handle)` | `fg161_reset_buffer`, `fg161_usage` |
+| `reuse(buffer, size)` | `fg161_bulk`, `fg161_tensor_alloc` |
+| `evict(source, budget)` | plan production stays in the stream source (option B), no allocator primitive |
+
+Consequence: the adapter adds no new computational math. It translates the five
+entry points into these calls, carries the generation guard from §8, and passes
+the ordered plan through. The differential gate from §6 therefore tests the
+translation, not a reimplementation, which is exactly the shape option B was
+chosen for.
