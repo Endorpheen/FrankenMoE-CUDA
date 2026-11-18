@@ -520,21 +520,23 @@ fn sm_apply_typical(lv: f32[:], p: f32[:], id: i64[:], n: i64,
     if typical_p >= 1.0 {
         return n;
     }
-    // sort by logit descending (lv, id, p move together)
-    var i: i64 = 1;
-    while i < n {
-        var j: i64 = i;
-        while j > 0 {
-            if lv[j - 1] >= lv[j] {
-                break;
-            }
-            let tl: f32 = lv[j - 1]; lv[j - 1] = lv[j]; lv[j] = tl;
-            let ti: i64 = id[j - 1]; id[j - 1] = id[j]; id[j] = ti;
-            j = j - 1;
-        }
-        i = i + 1;
+    // sort by logit descending: sort3 gives ascending order, then the array is
+    // reversed in place. O(n log n), unlike an insertion sort over the vocabulary.
+    sort3(lv, id, p, n);
+    var dep_lo: i64 = 0;
+    var dep_hi: i64 = n - 1;
+    while dep_lo < dep_hi {
+        let dl: f32 = lv[dep_lo]; lv[dep_lo] = lv[dep_hi]; lv[dep_hi] = dl;
+        let di: i64 = id[dep_lo]; id[dep_lo] = id[dep_hi]; id[dep_hi] = di;
+        let dp: f32 = p[dep_lo]; p[dep_lo] = p[dep_hi]; p[dep_hi] = dp;
+        dep_lo = dep_lo + 1;
+        dep_hi = dep_hi - 1;
     }
-    softmax_in_place(lv, p, n, 1);
+    var i: i64 = 0;
+    let sm_rc = softmax_in_place(lv, p, n, 1);
+    if sm_rc < 0.0 {
+        return -1;
+    }
     var entropy: f32 = 0.0;
     i = 0;
     while i < n {
@@ -662,6 +664,18 @@ fn gate_dispatch(op: i64, lv: f32[:], p: f32[:], id: i64[:], n: i64, f: f32, k: 
     }
     if op == 10 {
         return k;
+    }
+    if op == 24 {
+        sort3(lv, id, p, n);
+        var a: i64 = 0;
+        var b2: i64 = n - 1;
+        while a < b2 {
+            let ta: f32 = lv[a]; lv[a] = lv[b2]; lv[b2] = ta;
+            let tb: i64 = id[a]; id[a] = id[b2]; id[b2] = tb;
+            a = a + 1;
+            b2 = b2 - 1;
+        }
+        return n;
     }
     if op == 23 {
         return sm_apply_penalties(lv, id, p, n, k, f, f2, f3);

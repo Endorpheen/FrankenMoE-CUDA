@@ -439,3 +439,25 @@ The first run differed in the low bits because I subtracted the two terms
 separately (`logit - A - B`) while native subtracts their sum once
 (`logit - (A + B)`). That is a real ordering difference, not noise, and it is
 the kind of thing that only a bitwise gate catches.
+
+## typical-p: insertion sort replaced by the heap sort (gate re-run)
+
+The accepted implementation still sorted the logits with an insertion sort, so
+it was O(n^2) on a full vocabulary. It now uses `sort3` plus an in-place reverse,
+and the gate was re-run on realistic, distinct logits:
+
+```
+typical: cases=1800 mismatches=0    (190 x 64 tokens + 10 x 2048 tokens,
+                                     tp {0.5, 0.9, 0.99}, min_keep {0, 1, 5})
+```
+
+Three harness defects were fixed to get a trustworthy run, and all three are the
+same mistake in different clothes: logits drawn from 20000 or fewer distinct
+values (ties), logits in +-50000 (probabilities underflow to zero), and
+comparing tie order instead of the kept set. The kept set and the cut size are
+now what is compared, which is what the filter actually decides.
+
+The shipping file `goose/sampling/sampler-chain-full.goose` is NOT updated yet:
+it cannot be compiled by either available compiler (`export fn` is rejected), so
+a textual port there cannot be verified, and an unverified copy of a validated
+function is worse than the old draft plus this note.
