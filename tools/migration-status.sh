@@ -214,8 +214,37 @@ print("%d" % len(shared))
 PYS
 )
     if [ -n "$_ov" ]; then
-        say "   unit exports in shipped lib  $_ov of the header's functions (the shipped"
-        say "                                artifact is built from per-module bridges, not from the unit)"
+        # Two different numbers, and conflating them was misleading: what the ACCEPTED
+        # artifact contains, and what the build script would produce from the sources it
+        # actually composes. The first describes Apex today; the second describes the
+        # recipe, and they differ because only _CARRIER_UNIT is composed from current
+        # .goose files while the rest are frozen per-module bridges.
+        _fresh=$(ls -1d /home/end0/AI/LlamaServer/exp*-dso-*/out 2>/dev/null | tail -1 || true)
+        say "   unit exports in accepted lib $_ov of the header's functions"
+        if [ -n "$_fresh" ] && [ -f "$_fresh/libllama.so.0" ]; then
+            _fn=$(python3 -W ignore - "$_fresh/libllama.so.0" "$ROOT/runtime/reconstructed/build.py" <<'PYF' 2>/dev/null || true
+import re, subprocess, sys
+from pathlib import Path
+lib, script = sys.argv[1], sys.argv[2]
+carrier = re.search(r'_CARRIER_UNIT = \[(.*?)\]', open(script).read(), re.S)
+if not carrier:
+    sys.exit(0)
+ex = set()
+root = Path(script).resolve().parents[2]
+for m in re.findall(r"'([^']+\.goose)'", carrier.group(1)):
+    try:
+        ex |= set(re.findall(r'^\s*export\s+fn\s+(\w+)', (root/'goose'/m).read_text(), re.M))
+    except OSError:
+        pass
+out = subprocess.run(['nm','-D','--defined-only',lib], capture_output=True, text=True).stdout
+have = {l.split()[-1] for l in out.splitlines() if l.strip()}
+print("%d/%d" % (len(ex & have), len(ex)))
+PYF
+)
+            say "   from current sources          $_fn carrier-unit exports present in a fresh build"
+            say "                                (only that 14-module unit is composed from .goose;"
+            say "                                 the remaining bridge objects are frozen snapshots)"
+        fi
     fi
 fi
 say "   GGUF container read          yes  (substrate reader)"

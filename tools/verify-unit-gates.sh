@@ -145,7 +145,34 @@ else
     fail=$((fail+1))
 fi
 
-# ---- 4. named, not silently dropped ----
+# ---- 4. a DSO built from current sources, when one exists ----
+# EXP999 measured that the ACCEPTED library contains none of the canonical unit's
+# exports. This asks the different question: is a build from today's sources a working
+# library? Without it, "not yet accepted" and "does not build" look the same in a report.
+_fresh=$(ls -1d /home/end0/AI/LlamaServer/exp*-dso-*/out 2>/dev/null | tail -1 || true)
+if [ -n "$_fresh" ] && [ -f "$_fresh/libllama.so.0" ]; then
+    name="fresh-dso"
+    if [ ! -x "$_fresh/smoke" ]; then
+        $CXX -O1 -w -I "$ROOT/vendor/flint/include" -I "$ROOT/vendor/flint/ggml/include" \
+            "$ROOT/experiments/EXP-2026-11-18-1000-fresh-dso/tests/smoke.cpp" -ldl \
+            "$_fresh/libllama.so.0" -Wl,-rpath,"$_fresh" -o "$_fresh/smoke" \
+            > "$OUT/gen-$name.log" 2>&1
+    fi
+    # The ggml the DSO needs is next to the build directory's parent, one level up:
+    # /home/end0/AI/LlamaServer/<exp>/out -> /home/end0/AI/LlamaServer/...
+    _rl=$(dirname "$(dirname "$_fresh")")/apex-independent-fast-20261116/run
+    if line=$(LD_LIBRARY_PATH="$_fresh:$(cd "$_rl" 2>/dev/null && pwd)" timeout 120 "$_fresh/smoke" \
+            "$_fresh/libllama.so.0" 2>/dev/null | tail -1) && [ -n "$line" ]; then
+        printf '%-16s %-8s %s\n' "$name" "$(echo "$line" | cut -c1-4)" \
+            "$(echo "$line" | cut -d' ' -f2-) (built from current sources)"
+        case "$line" in PASS*) pass=$((pass+1));; *) fail=$((fail+1));; esac
+    else
+        printf '%-16s %-8s %s\n' "$name" SMOKEFAIL "see $_fresh"
+        fail=$((fail+1))
+    fi
+fi
+
+# ---- 5. named, not silently dropped ----
 printf '\nskipped, with the reason (their oracle lives outside the unit):\n'
 printf '  %-16s %s\n' "reader-adapter"  "EXP953: needs the EXP952 candidate libllama (the one with the adapter)"
 printf '  %-16s %s\n' "vocab-wire"      "EXP954: needs the EXP953 candidate build AND a generated vocab fixture"
