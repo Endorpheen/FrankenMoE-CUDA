@@ -1486,7 +1486,8 @@ void llama_grammar_apply_impl(const struct llama_grammar & grammar, llama_token_
         if (nstacks > 0 && nstacks <= FG_MAXS) {
             static thread_local std::vector<int64_t> stk, stdk;
             stk.assign(FG_MAXS * FG_MAXD, 0); stdk.assign(FG_MAXS, 0);
-            for (int64_t sIdx = 0; sIdx < nstacks; ++sIdx) {
+            bool fg_map_failed = false;
+            for (int64_t sIdx = 0; sIdx < nstacks && !fg_map_failed; ++sIdx) {
                 const auto & st = grammar.stacks[sIdx];
                 int64_t d = 0;
                 for (const auto * e : st) {
@@ -1500,7 +1501,9 @@ void llama_grammar_apply_impl(const struct llama_grammar & grammar, llama_token_
                     d++;
                 }
                 if (d < 0) {
-                    return;   // cannot map this stack, leave the native path
+                    // cannot map this stack: fall back to the native rejection
+                    // instead of leaving the logits unmasked
+                    fg_map_failed = true;
                 }
                 stdk[sIdx] = d;
             }
@@ -1568,6 +1571,7 @@ void llama_grammar_apply_impl(const struct llama_grammar & grammar, llama_token_
         }
     }
 
+fg_native_path:
     if (!fg_done) {
         const auto rejects = llama_grammar_reject_candidates(grammar.rules, grammar.stacks, candidates_grammar);
         for (const auto & reject : rejects) {

@@ -576,3 +576,26 @@ What is left to check, in order:
 
 Recorded before any further optimization: optimizing an inner loop that handles one
 candidate would have been wasted work.
+
+## Fallback fixed; the candidate set size is the open question
+
+The early `return` is replaced by a labelled fallback: an unmapped stack element now
+runs the native rejection instead of leaving the logits unmasked.
+
+The measurement that follows is still unexplained and is recorded as such:
+
+```
+n=128 decode=5.92
+FG171_GRAMMAR goose calls=1   cand=1 stacks=1
+FG171_GRAMMAR goose calls=100 cand=1 stacks=2
+```
+
+`cand=1` means the grammar is handed a single candidate. With one candidate it cannot
+reject anything, so the grammar decision has no effect on the output, and the earlier
+"identical text" evidence for the grammar stage proves only that both paths produced
+the same text, not that the constraint was applied. That claim is weakened here
+explicitly.
+
+Why the candidate set is 1 in this chain, and why decode fell to 5.9 tok/s, are two
+questions for the next iteration; neither is answered by the hook's own work, which
+the counter bounds at one call per token over one candidate.
