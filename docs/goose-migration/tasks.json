@@ -1323,7 +1323,7 @@
       "id": "P4-13",
       "phase": "P4",
       "title": "Unify allocation and scheduler interfaces across both lineages",
-      "status": "TODO",
+      "status": "DONE",
       "sources": [
         "ggml/src/ggml-alloc.c",
         "ggml/src/ggml-backend.cpp",
@@ -1335,11 +1335,8 @@
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 78,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-      "batch": "B3",
-      "remaining": [
-        "owner decision on the option (B recommended)",
-        "port the allocator adapter with a differential gate, then switch call sites"
-      ],
+      "batch": "B3 2026-11-18 P4-13 DONE (option B: stream source owns the block tables, the allocator receives ordered plans). Contract: docs/goose-migration/P4-13-CONTRACT.md (ownership, lifetime, operations, block sizes, threading, gate). The fg161 host bridge did not exist in the repository and was written (experiments/EXP-2026-11-18-1018-p4-13-adapter/host/fg161_host.c): alloc/free/reset/usage/tensor_alloc/bulk plus a per-buffer generation. Goose adapter src/adapter.goose dispatches allocate, allocate_ctx, release, reset and place; the generation guard rejects a stale placement (-1). Differential gate against the recorded native reference passes: sizes 12288/3168, offsets 0/8192 and 0/2400, distinct handles, reuse after free, reset returning generation 1 with size kept, 4 threads x 200 cycles, no leak. Call site switched in the shipped build: ggml_backend_alloc_ctx_tensors_from_buft allocates through fg161_bulk (GGML_GOOSE_ALLOC=0 restores native), views initialised via view_src as native does. Execution proven in the server: GOOSE_ALLOC bulk=3 buffers=3. Three paired A/B runs are bit-identical (sha 5a82551375c2, tokens, logprobs, top-5); medians prefill 71.00 -> 70.54 (-0.7%), decode 30.28 -> 31.63 (+4.5%), VRAM 4741 both, RAM unchanged. The native body remains only as the rule-10 OFF arm. Baseline: build/candidate-run2 with the reproducible build/ggml-repro tree; EXP906 untouched.",
+      "remaining": [],
       "coverage_doc": "docs/goose-migration/P4-13-DECISION.md"
     },
     {
@@ -5653,8 +5650,8 @@
   },
   "updated_at": "2026-11-18T19:10:00+00:00",
   "status_totals": {
-    "DONE": 114,
-    "PARTIAL": 24,
+    "DONE": 115,
+    "PARTIAL": 23,
     "TODO": 14
   },
   "work_front": {
