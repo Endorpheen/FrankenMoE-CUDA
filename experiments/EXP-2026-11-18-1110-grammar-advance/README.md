@@ -250,3 +250,21 @@ both the accept unit and the composed grammar unit compile again.
 
 Rule for the future: stage experiment files by name, and compile every module in the
 directory after a revert - a stale translation unit hid this for one iteration.
+
+## Dispatch entry: inlined away with a single constant call site
+
+The single-stable-entry approach (six slices + five scalars, a shape no other
+function here has) compiles, but the entry does not appear in the generated C:
+
+```
+gg_function_3: (2 slices, 2 ints)          match_char
+gg_function_5: (4 slices, 2 ints, ...)     accept
+```
+
+`g_disp` has one call site with a constant `op`, so the compiler inlines it and
+drops the function - the same class of behaviour as the unreachable-entry problem
+recorded as TD-S5, from the other direction. The fix for the next attempt is to
+call the dispatch with at least two different operations (or to keep the call
+non-constant), so the function is emitted and its shape can be located.
+
+Not claimed: nothing new was gated in this iteration.
