@@ -29,6 +29,8 @@ struct llama_sampler * llama_sampler_init_dry_testing(
         float dry_multiplier, float dry_base, int32_t dry_allowed_length, int32_t dry_penalty_last_n,
         const std::vector<std::vector<llama_token>> & seq_breakers);
 
+extern "C" void fg950_goose_init(int, char **);
+
 static int checks = 0;
 static int failures = 0;
 static void check(bool cond, const std::string & what) {
@@ -40,7 +42,7 @@ static sl_i64 I(const std::vector<int64_t> & v) { return sl_i64{ const_cast<int6
 static sl_f32 F(std::vector<float> & v) { return sl_f32{ v.data(), (long long) v.size() }; }
 
 int main() {
-    goose_init(0, nullptr);
+    fg950_goose_init(0, nullptr);
     // No llama_backend_init: DRY needs no backend, and the call loads CUDA and the
     // device stack, which this comparison does not use.
 

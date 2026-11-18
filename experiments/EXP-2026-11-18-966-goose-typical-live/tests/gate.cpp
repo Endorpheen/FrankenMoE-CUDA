@@ -25,6 +25,8 @@
 #include <string>
 #include <vector>
 
+extern "C" void fg950_goose_init(int, char **);
+
 static int checks = 0;
 static int failures = 0;
 static void check(bool cond, const std::string & what) {
@@ -36,7 +38,9 @@ static sl_f64 F(std::vector<double> & v) { return sl_f64{ v.data(), (long long) 
 static sl_i64 I(std::vector<int64_t> & v) { return sl_i64{ v.data(), (long long) v.size() }; }
 
 int main() {
-    goose_init(0, nullptr);
+    // Inside the shipping DSO the composed unit's initialiser is renamed, so the
+    // gate calls it by that name - what the reader owner does on registration.
+    fg950_goose_init(0, nullptr);
     llama_backend_init();
 
     // Every case runs twice: once through the native sampler chain, once through

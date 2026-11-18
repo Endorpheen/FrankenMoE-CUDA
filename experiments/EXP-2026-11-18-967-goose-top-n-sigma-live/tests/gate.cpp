@@ -25,6 +25,8 @@
 #include <string>
 #include <vector>
 
+extern "C" void fg950_goose_init(int, char **);
+
 static int checks = 0;
 static int failures = 0;
 static void check(bool cond, const std::string & what) {
@@ -35,7 +37,9 @@ static uint32_t bits(float f) { uint32_t u; std::memcpy(&u, &f, sizeof(u)); retu
 static sl_f32 F(std::vector<float> & v) { return sl_f32{ v.data(), (long long) v.size() }; }
 
 int main() {
-    goose_init(0, nullptr);
+    // Inside the shipping DSO the composed unit's initialiser is renamed, so the
+    // gate calls it by that name - what the reader owner does on registration.
+    fg950_goose_init(0, nullptr);
     llama_backend_init();
 
     std::mt19937 rng(967);
