@@ -122,6 +122,10 @@ fn rq_eq(s: const u8[:], lit: const u8[:]) -> bool {
 // Returns 0 when accepted, -1 otherwise; out[0] mirrors that for a caller that
 // only has the array.
 export fn rq_parse_line(line: const u8[:], out: i64[:]) -> i64 {
+    return rq_parse_line_impl(line, out);
+}
+
+fn rq_parse_line_impl(line: const u8[:], out: i64[:]) -> i64 {
     if out.len < 8 {
         return -1;
     }

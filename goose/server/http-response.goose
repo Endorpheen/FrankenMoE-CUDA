@@ -145,6 +145,10 @@ fn rs_num(out: u8[:], at: i64, v: i64) -> i64 {
 // "HTTP/1.1 <status> <reason>\r\n", exactly as write_response_line emits it.
 // Returns the byte count, or -(64 + 1) when `out` cannot hold a status line.
 export fn rs_status_line(status: i64, out: u8[:]) -> i64 {
+    return rs_status_line_impl((status), out);
+}
+
+fn rs_status_line_impl(status: i64, out: u8[:]) -> i64 {
     var at: i64 = 0;
     at = rs_put(out, at, "HTTP/1.1 ");
     if at < 0 { return 0 - (64 + 1); }
@@ -161,6 +165,10 @@ export fn rs_status_line(status: i64, out: u8[:]) -> i64 {
 
 // One header line. Order is the caller's order: httplib writes the map as given.
 export fn rs_header(name: const u8[:], value: const u8[:], out: u8[:], at_in: i64) -> i64 {
+    return rs_header_impl(name, value, out, at_in);
+}
+
+fn rs_header_impl(name: const u8[:], value: const u8[:], out: u8[:], at_in: i64) -> i64 {
     if name.len == 0 { return 0 - 1; }
     var at: i64 = at_in;
     at = rs_put(out, at, name);
@@ -176,6 +184,10 @@ export fn rs_header(name: const u8[:], value: const u8[:], out: u8[:], at_in: i6
 
 // The blank line that ends the header block.
 export fn rs_end_headers(out: u8[:], at_in: i64) -> i64 {
+    return rs_end_headers_impl((out), at_in);
+}
+
+fn rs_end_headers_impl(out: u8[:], at_in: i64) -> i64 {
     return rs_put(out, at_in, RS_CRLF);
 }
 

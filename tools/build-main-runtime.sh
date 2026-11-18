@@ -140,6 +140,7 @@ MODULES=(
     goose/server/log-policy.goose
     goose/server/http-response.goose
     goose/server/http-request.goose
+    goose/server/http-listen.goose
     goose/server/console-editing.goose
     goose/server/hf-cache-naming.goose
     goose/server/download-selection.goose

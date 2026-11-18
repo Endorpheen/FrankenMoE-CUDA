@@ -33,8 +33,24 @@ CHECK=0
 mkdir -p "$OUT/inc"
 
 echo "[1/5] compose the unit"
+# Rebuild when the composed unit is missing OR stale. The old guard only checked
+# existence, so adding a module left main.c untouched and the standalone linked the
+# PREVIOUS unit - EXP978 lost a full build to that before noticing hl_open was absent
+# from the artifact. Compare the module list and the sources against the timestamp.
+_need_unit=0
 if [ ! -f "$ROOT/build/goose-main/main.c" ]; then
+    _need_unit=1
+else
+    if [ "$ROOT/tools/build-main-runtime.sh" -nt "$ROOT/build/goose-main/main.c" ]; then _need_unit=1; fi
+    if [ -n "$(find "$ROOT/goose" -name '*.goose' -newer "$ROOT/build/goose-main/main.c" 2>/dev/null | head -1)" ]; then
+        _need_unit=1
+    fi
+fi
+if [ "$_need_unit" -eq 1 ]; then
+    printf '  unit:   stale or missing, rebuilding\n'
     bash "$ROOT/tools/build-main-runtime.sh" "$ROOT/build/goose-main"
+else
+    printf '  unit:   up to date\n'
 fi
 
 echo "[2/5] stage the unit header and the per-stage shims"

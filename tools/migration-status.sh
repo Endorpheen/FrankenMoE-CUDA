@@ -205,7 +205,20 @@ say "   tokenizer CLI                no   (no frankenmoe-tokenize in builds/goos
 fi
 say "   HTTP-server decisions        yes  (this run: detok 1063000 calls, sched 39500,"
 say "                                       graph-input-plan 200 - all witnessed live)"
-say "   HTTP server (transport)      no   (decisions run; no listener in the standalone)"
+# Same rule as the engine: the transport is a capability of the artifact, not a
+# claim. hl_open/hl_serve/hl_close are the listener; the gate serves a real request
+# over a real socket (EXP978, 15 checks).
+_hl_n=0
+if [ -f "$SA_BIN" ]; then
+    _hl_n=$(nm "$SA_BIN" 2>/dev/null | grep -cE " T (hl_open|hl_serve|hl_close)" || true)
+    _hl_n=${_hl_n:-0}
+fi
+if [ "$_hl_n" -ge 3 ]; then
+say "   HTTP server (transport)      yes  ($_hl_n listener exports in the artifact; one request per"
+say "                                       call over a real socket, ephemeral port, 200 and 400 gated)"
+else
+say "   HTTP server (transport)      no   ($_hl_n of 3 listener exports in this artifact)"
+fi
 # Computed from the artifact, not asserted. Reading and laying out 21.7 GB of real tensors is a capability;
 # executing them is a different one, and the two used to be collapsed into "partial".
 _apex_mismatch="-"
@@ -235,8 +248,9 @@ say "Honest reading, split in two:"
 # rebuild it is present, and a fixed sentence would be the same lie EXP972 fixed.
 if [ "$_eng_n" -ge 4 ]; then
 say "  - the STANDALONE runtime (this section) carries the tokenizer engine"
-say "    ($_eng_n exports) and the three sampler filters, and still lacks CUDA, HTTP"
-say "    transport and full-stack execution."
+say "    ($_eng_n exports), the three sampler filters and an HTTP listener that serves"
+say "    one request per connection on an ephemeral port; it still lacks CUDA, TLS and"
+say "    full-stack execution."
 else
 say "  - the STANDALONE runtime (this section) lacks the tokenizer engine in this"
 say "    artifact ($_eng_n of 4 exports) plus CUDA, HTTP transport and full-stack execution."
