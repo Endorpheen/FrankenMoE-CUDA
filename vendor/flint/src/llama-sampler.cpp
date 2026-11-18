@@ -131,6 +131,10 @@ extern "C" int64_t fg_sampler_dist_pick_call(float * lv, float * p, int64_t n, i
                                              int64_t w2) __attribute__((weak));
 static std::atomic<unsigned long long> g_goose_distpick_calls{0};
 
+extern "C" int64_t fg_sampler_temp_ext_call(float * lv, float * p, int64_t n, float temp,
+                                            float delta, float exponent) __attribute__((weak));
+static std::atomic<unsigned long long> g_goose_tempext_calls{0};
+
 static bool fg_goose_top_p_enabled() {
     static const bool on = []() {
         const char * f = getenv("GGML_GOOSE_SAMPLER_TOP_P");
@@ -2377,6 +2381,28 @@ static const char * llama_sampler_temp_ext_name(const struct llama_sampler * smp
 static void llama_sampler_temp_ext_apply(struct llama_sampler * smpl, llama_token_data_array * cur_p) {
     auto * ctx = (llama_sampler_temp_ext *) smpl->ctx;
     if (ctx->delta > 0) {
+        if (fg_sampler_temp_ext_call != nullptr && fg_goose_chain_enabled() && cur_p->size > 1) {
+            fg_scratch.ensure(cur_p->size);
+            std::vector<float> & lv = fg_scratch.lv;
+            std::vector<float> & pp = fg_scratch.pp;
+            for (size_t i = 0; i < cur_p->size; ++i) {
+                lv[i] = cur_p->data[i].logit;
+                pp[i] = cur_p->data[i].p;
+            }
+            const int64_t r = fg_sampler_temp_ext_call(lv.data(), pp.data(), (int64_t) cur_p->size,
+                                                      ctx->temp, ctx->delta, ctx->exponent);
+            if (r == (int64_t) cur_p->size) {
+                for (size_t i = 0; i < cur_p->size; ++i) {
+                    cur_p->data[i].logit = lv[i];
+                    cur_p->data[i].p     = pp[i];
+                }
+                const unsigned long long c = ++g_goose_tempext_calls;
+                if (c == 1 || (c % 100) == 0) {
+                    fprintf(stderr, "FG171_TEMPEXT goose calls=%llu\n", (unsigned long long) c);
+                }
+                return;
+            }
+        }
         const float min_temp = std::max(0.0f, ctx->temp - ctx->delta);
         const float max_temp = ctx->temp + ctx->delta;
 

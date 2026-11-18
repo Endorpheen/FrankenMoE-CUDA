@@ -1192,3 +1192,25 @@ cases confirm.
 Eight stages are now live with identical behaviour: typical-p, top-p, XTC,
 penalties, DRY, adaptive-p, mirostat and dist. `temp_ext` remains (TD-S1 in its
 double renormalisation) and then grammars.
+
+## temp_ext implemented and gated; not yet exercised by the server
+
+```
+temp_ext: cases=200 mismatches=0
+```
+
+The gate reproduces the native rounding exactly, which my first reference did not:
+native stores the **rounded float** of `exp` in `data[i].p` but accumulates the
+**double** in `sum_cum`, and the normalisation then divides the float by the double.
+With that corrected the two agree bitwise.
+
+TD-S1 is again avoided by using the `exp` result inside the expression instead of
+storing it in an f64 local.
+
+Live run with `--dynatemp-range 0.4`: the text is identical between the two sides,
+but `FG171_TEMPEXT` never appears, so the stage was not exercised - the server did
+not put the temp_ext sampler in the chain for this request. Identical text proves
+nothing about it yet.
+
+One useful by-product of the same run: `FG171_DIST goose calls=1` appeared, which
+is independent confirmation that the dist stage is live in the real chain.

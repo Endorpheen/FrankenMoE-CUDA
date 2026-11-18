@@ -36,6 +36,10 @@ fn main() {
     let dst = fg_sampler_dist(lv, 8, id, 176);
     let dsw = fg_sampler_dist_words(lv, 8, 1, 2, 177);
     let dpk = fg_sampler_dist_pick(lv, p, 8, 1, 2, 178);
+    let tx = fg_sampler_temp_ext(lv, p, 8, 0.8, 0.4, 1.0, 179);
+    if tx < 0 {
+        return;
+    }
     if dpk < 0 {
         return;
     }
@@ -84,6 +88,7 @@ ENTRIES = [
     ("DIST",      r'\(gg_slice p0, int64_t p1, gg_slice p2, int64_t p3, int64_t base\);'),
     ("DIST_WORDS",r'\(gg_slice p0, int64_t p1, int64_t p2, int64_t p3, int64_t p4, int64_t base\);'),
     ("DIST_PICK", r'\(gg_slice p0, gg_slice p1, int64_t p2, int64_t p3, int64_t p4, int64_t p5, int64_t base\);'),
+    ("TEMP_EXT",  r'\(gg_slice p0, gg_slice p1, int64_t p2, float p3, float p4, float p5, int64_t p6, int64_t base\);'),
 ]
 
 found = {}
@@ -168,6 +173,12 @@ int64_t fg_sampler_dist_words_call(float * p, int64_t n, int64_t w1, int64_t w2)
 int64_t fg_sampler_dist_pick_call(float * lv, float * p, int64_t n, int64_t w1, int64_t w2) {
     gg_slice s0 = { (void *) lv, n }, s1 = { (void *) p, n };
     return FG_SAMPLER_DIST_PICK(s0, s1, n, w1, w2, 178, 0);
+}
+
+int64_t fg_sampler_temp_ext_call(float * lv, float * p, int64_t n, float temp, float delta,
+                                 float exponent) {
+    gg_slice s0 = { (void *) lv, n }, s1 = { (void *) p, n };
+    return FG_SAMPLER_TEMP_EXT(s0, s1, n, temp, delta, exponent, 179, 0);
 }
 """
 open(out + '/sampler_chain_shim.c', 'w').write(SHIM)

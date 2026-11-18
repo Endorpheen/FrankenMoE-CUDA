@@ -1,3 +1,4 @@
+extern fn exp(x: f64) -> f64;
 extern fn logf(x: f32) -> f32;
 extern fn powf(x: f32, y: f32) -> f32;
 // Sampler chain in Goose: MT19937, the canonical double draw and the
@@ -1159,6 +1160,65 @@ fn fg_sampler_dist_pick(lv: f32[:], p: f32[:], n: i64, w1: i64, w2: i64, marker:
     }
     if sel < 0 { sel = n - 1; }
     return sel;
+}
+
+// temp_ext: dynamic temperature from the entropy of the candidate set, then a
+// double-precision renormalisation. The exp result is not stored in an f64 local
+// (that form reads as zero on this compiler); it is used inside the expressions.
+fn fg_sampler_temp_ext(lv: f32[:], p: f32[:], n: i64,
+                       temp: f32, delta: f32, exponent: f32, marker: i64) -> i64 {
+    if marker != 179 || n <= 0 {
+        return -1;
+    }
+    if delta <= 0.0 || n <= 1 {
+        return n;
+    }
+    var min_temp: f32 = temp - delta;
+    if min_temp < 0.0 { min_temp = 0.0; }
+    let max_temp: f32 = temp + delta;
+    let sm = softmax_in_place(lv, p, n, 1);
+    if sm < 0.0 {
+        return -1;
+    }
+    let max_entropy: f32 = 0.0 - logf(1.0 / (n as f32));
+    var entropy: f32 = 0.0;
+    var i: i64 = 0;
+    while i < n {
+        if p[i] > 0.0 {
+            entropy = entropy - p[i] * logf(p[i]);
+        }
+        i = i + 1;
+    }
+    let norm_ent: f32 = entropy / max_entropy;
+    let dyn_temp: f32 = min_temp + (max_temp - min_temp) * powf(norm_ent, exponent);
+    if dyn_temp <= 0.0 {
+        i = 0;
+        while i < n {
+            lv[i] = -3.4028235e38;
+            i = i + 1;
+        }
+        lv[0] = 0.0;
+    } else {
+        i = 0;
+        while i < n {
+            lv[i] = lv[i] / dyn_temp;
+            i = i + 1;
+        }
+    }
+    let max_l: f64 = lv[0] as f64;
+    var cum: f64 = 0.0;
+    i = 0;
+    while i < n {
+        p[i] = exp((lv[i] as f64) - max_l) as f32;
+        cum = cum + exp((lv[i] as f64) - max_l);
+        i = i + 1;
+    }
+    i = 0;
+    while i < n {
+        p[i] = ((p[i] as f64) / cum) as f32;
+        i = i + 1;
+    }
+    return n;
 }
 
 // Single stable entry point for the shipped library. Generated function ids
