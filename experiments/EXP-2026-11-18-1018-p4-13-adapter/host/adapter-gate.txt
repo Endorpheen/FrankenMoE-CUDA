@@ -1,0 +1,6 @@
+alloc sizes: 12288 3168 (expect 12288 3168)
+distinct handles: 1 live=2
+reuse handle: 1 size=12288
+reset gen=1 size_kept=1
+threads: 200,200,200,200 (expect 200 each)
+GATE PASS

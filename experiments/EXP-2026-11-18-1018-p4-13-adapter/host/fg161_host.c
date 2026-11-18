@@ -66,3 +66,8 @@ void * fg161_buffer_base(int64_t h) {
     if (h <= 0 || h >= FG161_MAX || !g_slots[h].live) return NULL;
     return ggml_backend_buffer_get_base(g_slots[h].buf);
 }
+
+size_t fg161_buffer_size(int64_t h) {
+    if (h <= 0 || h >= FG161_MAX || !g_slots[h].live) return 0;
+    return ggml_backend_buffer_get_size(g_slots[h].buf);
+}

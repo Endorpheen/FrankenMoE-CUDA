@@ -48,3 +48,21 @@ A fresh placement is accepted, `reset` returns the new generation, a placement
 carrying the old generation is rejected, and `release` clears the live entry.
 `reset` was fixed to return the new generation rather than the generation after
 the bump.
+
+## Differential gate passes through the adapter (EXP-2026-11-18-1023)
+
+`host/adapter_gate.c` drives the Goose adapter and compares against the native
+reference recorded in `reference-native*.txt`:
+
+```
+alloc sizes: 12288 3168 (expect 12288 3168)
+distinct handles: 1 live=2
+reuse handle: 1 size=12288
+reset gen=1 size_kept=1
+threads: 200,200,200,200 (expect 200 each)
+GATE PASS
+```
+
+Covered: allocation sizes, distinct handles, reuse after free, reset keeping the
+size and bumping the generation, four-thread allocate/free, and no leak
+(`live=0` after release). Output kept in `host/adapter-gate.txt`.
