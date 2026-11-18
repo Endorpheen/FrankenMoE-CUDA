@@ -617,49 +617,57 @@ fn sm_apply_xtc(lv: f32[:], p: f32[:], id: i64[:], n: i64,
 // penalties: repeat, frequency and presence over the recent window. The window
 // arrives through the float slice (token ids are exact below 2^24) because the
 // dispatch carries one integer slice, and p is free before the softmax.
-fn sm_apply_penalties(lv: f32[:], id: i64[:], hist: f32[:], n: i64, hn: i64,
-                      repeat: f32, freq: f32, present: f32) -> i64 {
+fn sm_apply_penalties(lv: f32[:], id: i64[:], hist: f32[:],
+                      tbl_keys: i64[:], tbl_cnt: i64[:],
+                      n: i64, hn: i64, repeat: f32, freq: f32, present: f32) -> i64 {
     if hn == 0 || (repeat == 1.0 && freq == 0.0 && present == 0.0) {
         return n;
     }
-    // sort the window (small, at most a few hundred) and binary-search it per
-    // candidate: log2(hn) comparisons instead of a full scan over the window
-    var a: i64 = 1;
-    while a < hn {
-        let v: f32 = hist[a];
-        var b: i64 = a;
-        while b > 0 && hist[b - 1] > v {
-            hist[b] = hist[b - 1];
-            b = b - 1;
+    let slots: i64 = tbl_keys.len;
+    if slots <= 0 || tbl_cnt.len < slots {
+        return n;
+    }
+    var h: i64 = 0;
+    while h < hn {
+        let tok: i64 = hist[h] as i64;
+        var slot: i64 = (tok * 2654435761) % slots;
+        if slot < 0 { slot = slot + slots; }
+        var probe: i64 = 0;
+        while probe < slots {
+            if tbl_keys[slot] == tok {
+                tbl_cnt[slot] = tbl_cnt[slot] + 1;
+                break;
+            }
+            if tbl_cnt[slot] == 0 {
+                tbl_keys[slot] = tok;
+                tbl_cnt[slot] = 1;
+                break;
+            }
+            slot = slot + 1;
+            if slot >= slots { slot = 0; }
+            probe = probe + 1;
         }
-        hist[b] = v;
-        a = a + 1;
+        h = h + 1;
     }
     var i: i64 = 0;
     while i < n {
         let tok: i64 = id[i];
-        var lo: i64 = 0;
-        var hi: i64 = hn;
-        while lo < hi {
-            let mid: i64 = (lo + hi) / 2;
-            if (hist[mid] as i64) < tok {
-                lo = mid + 1;
-            } else {
-                hi = mid;
+        var slot: i64 = (tok * 2654435761) % slots;
+        if slot < 0 { slot = slot + slots; }
+        var c: i64 = 0;
+        var probe: i64 = 0;
+        while probe < slots {
+            if tbl_cnt[slot] == 0 {
+                break;
             }
-        }
-        var first: i64 = lo;
-        lo = 0;
-        hi = hn;
-        while lo < hi {
-            let mid: i64 = (lo + hi) / 2;
-            if (hist[mid] as i64) <= tok {
-                lo = mid + 1;
-            } else {
-                hi = mid;
+            if tbl_keys[slot] == tok {
+                c = tbl_cnt[slot];
+                break;
             }
+            slot = slot + 1;
+            if slot >= slots { slot = 0; }
+            probe = probe + 1;
         }
-        let c: i64 = lo - first;
         if c > 0 {
             if lv[i] <= 0.0 {
                 lv[i] = lv[i] * repeat;
@@ -1036,12 +1044,10 @@ fn fg_sampler_xtc(lv: f32[:], p: f32[:], id: i64[:], n: i64,
 
 
 // penalties entry: the recent window arrives as exact token ids in a float slice
-fn fg_sampler_penalties(lv: f32[:], id: i64[:], hist: f32[:], n: i64, hn: i64,
-                        repeat: f32, freq: f32, present: f32, marker: i64) -> i64 {
-    if marker != 173 {
-        return -1;
-    }
-    return sm_apply_penalties(lv, id, hist, n, hn, repeat, freq, present);
+fn fg_sampler_penalties(lv: f32[:], id: i64[:], hist: f32[:],
+                        tbl_keys: i64[:], tbl_cnt: i64[:],
+                        n: i64, hn: i64, repeat: f32, freq: f32, present: f32) -> i64 {
+    return sm_apply_penalties(lv, id, hist, tbl_keys, tbl_cnt, n, hn, repeat, freq, present);
 }
 
 // Single stable entry point for the shipped library. Generated function ids
@@ -1071,7 +1077,7 @@ fn fg_sampler_chain(op: i64, lv: f32[:], p: f32[:], id: i64[:], n: i64,
         return sm_apply_xtc(lv, p, id, n, f, f2, k, f3);
     }
     if op == 6 {
-        return sm_apply_penalties(lv, id, p, n, k, f, f2, f3);
+        return sm_apply_penalties(lv, id, p, id, id, n, k, f, f2, f3);
     }
     if op == 7 {
         return sm_apply_adaptive_p_state(lv, p, id, n, f, f2, f3);

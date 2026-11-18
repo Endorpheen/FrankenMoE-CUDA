@@ -972,3 +972,23 @@ Next design, cheaper by construction: let the hook own a small direct-mapped tab
 slices, so each candidate costs one probe instead of two searches. The arrays
 cannot be declared inside a Goose function (the compiler rejects the literal
 form), but slices passed from the caller are fine.
+
+## penalties: caller-owned table, one probe per candidate
+
+The hook now owns a 1024-slot table (keys and counts, thread-local, cleared per
+call) and hands it to Goose, so each candidate costs one probe instead of two
+binary searches. The module gate stays at 200/200 and the timings move:
+
+| config | full scan | binary search | table |
+|---|---|---|---|
+| base (all off) | 47.06 | 46.5 | 46.8 |
+| penalties alone | 30.85 | 41.6 | **46.1** |
+| all stages | 30.72 | 41.0 | **43.5** |
+
+The decode gap went from -35 % to about -7 %.
+
+Caveat recorded rather than hidden: run-to-run variance is not small on this
+machine. The same typical-only configuration measured 47.5 tok/s earlier and
+44.6 in this run, with unchanged code. Any conclusion about the last few percent
+needs more repeats than two, and the current -7 % should be re-measured before it
+is quoted as the accepted figure.

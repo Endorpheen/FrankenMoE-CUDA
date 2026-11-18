@@ -58,7 +58,11 @@ static std::atomic<unsigned long long> g_goose_xtc_calls{0};
 
 extern "C" int64_t fg_sampler_penalties_call(float * lv, int64_t * id, const float * hist,
                                              int64_t n, int64_t hn, float repeat,
-                                             float freq, float present) __attribute__((weak));
+                                             float freq, float present, int64_t * tbl_keys,
+                                             int64_t * tbl_cnt, int64_t slots) __attribute__((weak));
+static constexpr int FG_PEN_SLOTS = 1024;
+static thread_local int64_t fg_pen_keys[FG_PEN_SLOTS];
+static thread_local int64_t fg_pen_cnt [FG_PEN_SLOTS];
 static std::atomic<unsigned long long> g_goose_pen_calls{0};
 
 
@@ -3151,10 +3155,14 @@ static void llama_sampler_penalties_apply(struct llama_sampler * smpl, llama_tok
             lv[i]  = cur_p->data[i].logit;
             ids[i] = cur_p->data[i].id;
         }
+        std::memset(fg_pen_keys, 0, sizeof(fg_pen_keys));
+        std::memset(fg_pen_cnt,  0, sizeof(fg_pen_cnt));
         const int64_t kept = fg_sampler_penalties_call(lv.data(), ids.data(), hist.data(),
                                                       (int64_t) cur_p->size, (int64_t) hn,
                                                       ctx->penalty_repeat, ctx->penalty_freq,
-                                                      ctx->penalty_present);
+                                                      ctx->penalty_present,
+                                                      fg_pen_keys, fg_pen_cnt,
+                                                      (int64_t) FG_PEN_SLOTS);
         if (kept == (int64_t) cur_p->size) {
             for (size_t i = 0; i < cur_p->size; ++i) {
                 cur_p->data[i].logit = lv[i];

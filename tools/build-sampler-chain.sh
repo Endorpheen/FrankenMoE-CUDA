@@ -29,7 +29,8 @@ fn main() {
     }
     let topr = fg_sampler_top_p(lv, p, id, 8, 0.9, 1, 171);
     let xtcr = fg_sampler_xtc(lv, p, id, 8, 0.5, 0.1, 1, 0.0, 172);
-    let penr = fg_sampler_penalties(lv, id, p, 8, 8, 1.0, 0.0, 0.0, 173);
+    let tbl: i64[16] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    let penr = fg_sampler_penalties(lv, id, p, tbl, tbl, 8, 8, 1.0, 0.0, 0.0);
     if penr < 0 {
         return;
     }
@@ -59,8 +60,8 @@ tp = re.search(r'static int64_t (gg_function_\d+)\(gg_slice p0, gg_slice p1, gg_
                r' int64_t p3, float p4, int64_t p5, int64_t p6, int64_t base\);', src)
 xt = re.search(r'static int64_t (gg_function_\d+)\(gg_slice p0, gg_slice p1, gg_slice p2,'
                r' int64_t p3, float p4, float p5, int64_t p6, float p7, int64_t p8, int64_t base\);', src)
-pn = re.search(r'static int64_t (gg_function_\d+)\(gg_slice p0, gg_slice p1, gg_slice p2,'
-               r' int64_t p3, int64_t p4, float p5, float p6, float p7, int64_t p8, int64_t base\);', src)
+pn = re.search(r'static int64_t (gg_function_\d+)\(gg_slice p0, gg_slice p1, gg_slice p2, gg_slice p3,'
+               r' gg_slice p4, int64_t p5, int64_t p6, float p7, float p8, float p9, int64_t base\);', src)
 t = re.search(r'static int64_t (gg_function_\d+)\(gg_slice p0, gg_slice p1, gg_slice p2, gg_slice p3,'
               r' int64_t p4, float p5, int64_t p6, int64_t base\);', src)
 d = re.search(r'static int64_t (gg_function_\d+)\(gg_slice p0, gg_slice p1, gg_slice p2, gg_slice p3,'
@@ -108,9 +109,11 @@ open(out + '/sampler_chain_shim.c', 'w').write(
     '    return FG_SAMPLER_XTC(s0, s1, s2, n, probability, threshold, min_keep, chance, 172, 0);\n'
     '}\n\n'
     'int64_t fg_sampler_penalties_call(float * lv, int64_t * id, const float * hist, int64_t n,'
-    ' int64_t hn, float repeat, float freq, float present) {\n'
+    ' int64_t hn, float repeat, float freq, float present, int64_t * tbl_keys,'
+    ' int64_t * tbl_cnt, int64_t slots) {\n'
     '    gg_slice s0 = { (void *) lv, n }, s1 = { (void *) id, n }, s2 = { (void *) hist, hn };\n'
-    '    return FG_SAMPLER_PENALTIES(s0, s1, s2, n, hn, repeat, freq, present, 173, 0);\n'
+    '    gg_slice s3 = { (void *) tbl_keys, slots }, s4 = { (void *) tbl_cnt, slots };\n'
+    '    return FG_SAMPLER_PENALTIES(s0, s1, s2, s3, s4, n, hn, repeat, freq, present, 0);\n'
     '}\n')
 print('entry point:', m.group(1))
 PY
