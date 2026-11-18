@@ -231,3 +231,22 @@ that `(float)u / 2^32` reproduces `uniform_real_distribution<float>(0,1)`. The
 second check cannot pass until the stream matches, so the RNG port is **not**
 accepted: the module's seeding/twist needs a fix, and the verification harness
 is kept here for it.
+
+## RNG accepted (the earlier mismatch was in my harness)
+
+The comparison drew two values per iteration from the reference generator, so
+streams were compared out of phase and the float check compared different
+numbers. With one draw per iteration and the same single draw for both formulas:
+
+```
+rng: cases=1280 stream mismatches=0 float mismatches=0
+```
+
+20 seeds x 64 draws: the module's stream equals `std::mt19937` exactly, and
+`(float)u / 4294967296.0f` reproduces `uniform_real_distribution<float>(0,1)` bit
+for bit. With `gg_init_globals` called, the RNG port is complete; a fixed seed
+therefore produces the same draws in Goose as in native.
+
+This is the second time a defect was in my own harness rather than in the
+module. The lesson is recorded: compare one draw to its counterpart, never mix
+consumers inside a comparison loop.
