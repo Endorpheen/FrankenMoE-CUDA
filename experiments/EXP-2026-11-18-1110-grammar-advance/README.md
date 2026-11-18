@@ -1006,3 +1006,19 @@ The measured conclusion after eight attempts is therefore:
 
 The stage stays opt-in. Further work on this belongs with the compiler, not with more host
 rearrangements, and this card now records eight tests that closed the alternatives.
+
+## Pre-filter is correctness-neutral
+
+```
+[ON ] ' and the moon using the words tide and reflection is correct grammar usage and w'
+[OFF] ' and the moon using the words tide and reflection is correct grammar usage and w'
+```
+
+Same 32-token output with the pre-filter enabled and disabled, so the cheap rejection does
+not change the decision. It is kept as an always-on part of the hook because it removes
+candidates for grammars that reject most first characters and costs two ranges checks
+otherwise.
+
+Final state of the grammar stage: correct on both paths (validation and full-set
+resampling), correctness-neutral pre-filter, and a per-candidate cost that needs compiler
+work before the stage can default on.
