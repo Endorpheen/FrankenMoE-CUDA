@@ -170,3 +170,24 @@ dry step3: cases=100 mismatches=0    (logits compared bitwise)
 random base candidates: the resulting logits are bit-identical to the native
 formula `multiplier * pow(base, repeat_exp)`. DRY is now complete in Goose:
 steps 1, 2 and 3-4 are all gated.
+
+## Adaptive-P accepted
+
+`sm_adaptive_target` reproduces the clamped EMA target and `sm_apply_adaptive_p`
+the logit transform `5 - 10*d^2/(1+d)` with `d = |(p - adapted) * (1/0.3)|`,
+skipping `-inf` logits, followed by the same unsorted softmax.
+
+```
+adaptive-p: cases=200 mismatches=0   target mismatches=0
+```
+
+Both the adapted target and the resulting probabilities are bit-identical to the
+native computation over 200 random distributions.
+
+## Generated function ids are now auto-detected
+
+Hardcoded `gg_function_N` ids broke when the module grew: two wrappers silently
+called a different function, which is what produced the earlier confusing top-p
+failure. `gen_ids.py` now reads the dispatch prototype out of `build_chain.c` and
+writes `src/fn_ids.h`; `src/wrap.c` includes it, so the id can never be stale.
+The wrapper compiles with `-Dmain=fg_chain_main`.

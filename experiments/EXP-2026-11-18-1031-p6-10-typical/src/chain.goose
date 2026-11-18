@@ -627,6 +627,12 @@ fn gate_dispatch(op: i64, lv: f32[:], p: f32[:], id: i64[:], n: i64, f: f32, k: 
     if op == 2 {
         return sm_apply_xtc(lv, p, id, n, f, f2, k, f3);
     }
+    if op == 3 {
+        return sm_apply_adaptive_p(lv, p, id, n, f);
+    }
+    if op == 4 {
+        return sm_adaptive_target(f, f2, f3, p);
+    }
     return -2;
 }
 
@@ -813,6 +819,44 @@ fn gate_dry3(last: i64[:], rc: i64[:], lv: f32[:], id: i64[:], br_head: i64[:], 
              n_last: i64, nc: i64, allowed: i64, nb: i64, multiplier: f32, base: f32) -> i64 {
     return sm_apply_dry(last, rc, lv, id, br_head, br_tl, n_last, nc, allowed, nb, multiplier, base);
 }
+
+// adaptive-p: EMA-adapted target and the probability transform.
+// native: target = clamp(t,0,1); adapted = clamp(tw==0 ? target : 2t - ws/tw, 0, 1)
+fn sm_adaptive_target(target: f32, weighted_sum: f32, total_weight: f32, out: f32[:]) -> i64 {
+    var t: f32 = target;
+    if t < 0.0 { t = 0.0; }
+    if t > 1.0 { t = 1.0; }
+    var v: f32 = t;
+    if total_weight != 0.0 {
+        v = 2.0 * t - (weighted_sum / total_weight);
+    }
+    if v < 0.0 { v = 0.0; }
+    if v > 1.0 { v = 1.0; }
+    out[0] = v;
+    return 0;
+}
+
+// logit = 5 - 10*d^2/(1+d), d = |(p - adapted) * (1/0.3)|; -inf logits are kept
+fn sm_apply_adaptive_p(lv: f32[:], p: f32[:], id: i64[:], n: i64, adapted: f32) -> i64 {
+    let inv_width: f32 = 1.0 / 0.3;
+    var i: i64 = 0;
+    while i < n {
+        if lv[i] < -1.0e38 {
+            i = i + 1;
+            continue;
+        }
+        var dist: f32 = (p[i] - adapted) * inv_width;
+        if dist < 0.0 { dist = -dist; }
+        lv[i] = 5.0 - (10.0 * dist * dist) / (1.0 + dist);
+        i = i + 1;
+    }
+    softmax_in_place(lv, p, n, 0);
+    return 0;
+}
+
+fn gate_adaptive(lv: f32[:], p: f32[:], id: i64[:], n: i64, adapted: f32) -> i64 {
+    return sm_apply_adaptive_p(lv, p, id, n, adapted);
+}
 fn main() {
     print("p6-10 typical gate");
     let lv: f32[4] = [0.0, 0.0, 0.0, 0.0];
@@ -825,4 +869,6 @@ fn main() {
     let ignored6 = gate_dry(id, id, id, id, id, 4, 0);
     let ignored7 = gate_dry2(id, id, 4, 4);
     let ignored8 = gate_dry3(id, id, lv, id, id, id, 4, 4, 1, 0, 1.0, 1.5);
+    let ignored9 = gate_adaptive(lv, p, id, 4, 0.5);
+    let ignored10 = sm_adaptive_target(0.5, 0.0, 0.0, p);
 }
