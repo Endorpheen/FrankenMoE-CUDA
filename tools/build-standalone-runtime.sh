@@ -31,7 +31,12 @@ CXX=${CXX:-g++-13}
 # OFF ggml libraries: pure substrate, no carrier bridges, so exactly one
 # goose_init can exist in the process.
 SUB=${FG_SUBSTRATE:-/tmp/opencode/sub-661/tree/build-off/llama.cpp/ggml/src}
-GOOSE=${GOOSE:-/home/end0/AI/LlamaServer/toolchain/goose-2026.3-string/goose}
+# One compiler identity, read from the record the gates also use. A hardcoded path
+# here let the build and the gates name different compilers while both looked
+# authoritative; the artifact now records which one actually built it.
+if [ -z "${GOOSE:-}" ]; then
+    GOOSE=$(python3 -c "import json;print(json.load(open('$ROOT/runtime/compiler/current.json'))['compiler'])")
+fi
 CHECK=0
 [ "${1:-}" = "--check" ] && CHECK=1
 
@@ -175,6 +180,68 @@ if [ -d "$SUB" ] && [ -f "$ROOT/integration/goose-standalone/host_v4.c" ]; then
         fi
     fi
 fi
+
+# Provenance: what built this directory, measured now, stored with the artifact. The
+# configured compiler and the one that produced these bytes are different facts, and
+# only this file can tell them apart after the fact.
+python3 - "$OUT" "$GOOSE" "$ROOT" <<'PROV'
+import hashlib, json, os, sys
+from datetime import datetime, timezone
+
+out, goose, root = sys.argv[1:4]
+
+def sha256(path):
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for b in iter(lambda: f.read(1 << 20), b""):
+            h.update(b)
+    return h.hexdigest()
+
+cat_path = os.environ.get("FG_GOOSE_CATALOG",
+                          "/home/end0/AI/Fried-Goose/.cache/selfhosted-builds/catalog.json")
+try:
+    with open(cat_path) as f:
+        cat = json.load(f)
+except (OSError, ValueError):
+    cat = None
+
+sha = sha256(goose) if os.path.isfile(goose) else ""
+label = version_id = channel = None
+if cat:
+    for name, ch in (cat.get("channels") or {}).items():
+        cur = ch.get("current") or {}
+        if cur.get("sha256") == sha:
+            label, version_id, channel = cur.get("label"), cur.get("version"), name
+            break
+    if label is None:
+        for v in cat.get("versions") or []:
+            if v.get("sha256") == sha:
+                label, version_id, channel = v.get("label"), v.get("version"), "selfhosted_subset"
+                break
+
+unit = ""
+try:
+    with open(os.path.join(root, "build", "goose-main", ".source-sha256")) as f:
+        unit = f.read().strip()
+except OSError:
+    pass
+
+rec = {
+    "compiler": goose,
+    "compiler_sha256": sha,
+    "registry_label": label,
+    "registry_version": version_id,
+    "registry_channel": channel,
+    "verdict": "VERSIONED" if label else "NOT_IN_REGISTRY",
+    "unit_source_sha256": unit,
+    "built_at": datetime.now(timezone.utc).isoformat(),
+}
+with open(os.path.join(out, "COMPILER.json"), "w") as f:
+    json.dump(rec, f, indent=2)
+    f.write("\n")
+print("  compiler: %s sha256 %s %s" % (os.path.basename(os.path.dirname(goose)), sha[:16],
+                                       ("label " + label) if label else "(not in registry)"))
+PROV
 
 echo "[5/5] result"
 printf '  runtime: %s (%s B)\n' "$OUT/frankenmoe-v4" \

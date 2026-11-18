@@ -140,19 +140,32 @@ fi
 # Which compiler built the artifact, and whether that compiler has a version. A
 # capability with no compiler identity cannot be reproduced; the identity is read from
 # runtime/compiler/current.json and cross-referenced with the compiler's own registry.
-_ci=$(python3 "$ROOT/tools/compiler-identity.py" --json 2>/dev/null || true)
+_ci=$(python3 "$ROOT/tools/compiler-identity.py" --json \
+        ${FG_STANDALONE_DIR:+--artifact "$FG_STANDALONE_DIR"} 2>/dev/null || true)
+if [ -f "$ROOT/builds/goose-standalone/COMPILER.json" ] && [ -z "${FG_STANDALONE_DIR:-}" ]; then
+    _ci=$(python3 "$ROOT/tools/compiler-identity.py" --json \
+            --artifact "$ROOT/builds/goose-standalone" 2>/dev/null || true)
+fi
 if [ -n "$_ci" ]; then
     _ci_line=$(printf '%s' "$_ci" | python3 -c '
-import json,sys
+import json,os,sys
 d=json.load(sys.stdin)
-sha=(d.get("sha256") or "")[:12]
-ver=d.get("declared_version") or "?"
-lab=d.get("label") or ""
-v=d.get("verdict") or "?"
-if lab:
-    print("%s | %s | label %s" % (ver, sha, lab))
+if "built_at" in d:                      # read from the artifact, not the config
+    sha=(d.get("compiler_sha256") or "")[:12]
+    name=os.path.basename(os.path.dirname(d.get("compiler") or "?"))
+    lab=d.get("registry_label") or ""
+    v=d.get("verdict") or "?"
+    agree=d.get("agrees_with_configuration")
+    tail=("label "+lab) if lab else v
+    if agree is False:
+        tail += " | CONFIG DIFFERS"
+    print("%s | %s | %s | built this artifact" % (name, sha, tail))
 else:
-    print("%s | %s | %s" % (ver, sha, v))
+    sha=(d.get("sha256") or "")[:12]
+    ver=d.get("declared_version") or "?"
+    lab=d.get("label") or ""
+    v=d.get("verdict") or "?"
+    print("%s | %s | %s | configured only" % (ver, sha, ("label "+lab) if lab else v))
 ' 2>/dev/null || true)
     say "   compiler of this artifact     $_ci_line"
 fi
