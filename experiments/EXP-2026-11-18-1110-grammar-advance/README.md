@@ -1022,3 +1022,21 @@ otherwise.
 Final state of the grammar stage: correct on both paths (validation and full-set
 resampling), correctness-neutral pre-filter, and a per-candidate cost that needs compiler
 work before the stage can default on.
+
+## Decision needed on P6-10's grammar item
+
+Everything else in P6-10 is accepted with numbers. Two things remain, and both need a
+decision rather than more code:
+
+1. **Grammar default-on.** It is correct and its cost is measured: native and Goose both
+   pass over ~248k candidates per token, but the Goose loop costs ~340 ns per candidate
+   against a pointer walk. Making it acceptable needs the generated per-candidate loop to
+   get about 3x faster, which is compiler work, not a rearrangement in the host (eight
+   alternatives have been closed on this card).
+2. **Removal of the replaced native sampler bodies.** The hard rules allow this only after
+   full acceptance, and full acceptance includes the grammar stage.
+
+The options are therefore: (a) accept P6-10 with the grammar stage documented as an
+opt-in performance item and keep the native grammar body; (b) treat the compiler-side
+speed-up as a hard prerequisite and leave P6-10 partial until it lands. Both are recorded
+here; the choice belongs to Igor, not to an autonomous commit.
