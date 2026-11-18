@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <unordered_map>
+#include <chrono>
 
 #include "llama-impl.h"
 #include "llama-vocab.h"
@@ -1541,6 +1542,7 @@ void llama_grammar_apply_impl(const struct llama_grammar & grammar, llama_token_
 
             (void) out; (void) outd;
 
+            const auto fg_t0 = std::chrono::steady_clock::now();
             // one call per stack: a candidate is rejected only when every stack
             // rejects it, which is how the native code intersects the rejects
             rej_final.assign(ncand, 1);
@@ -1562,6 +1564,16 @@ void llama_grammar_apply_impl(const struct llama_grammar & grammar, llama_token_
                 for (int64_t i = 0; i < ncand; ++i) {
                     if (rej_final[i]) {
                         cur_p->data[candidates_grammar[i].index].logit = -INFINITY;
+                    }
+                }
+                {
+                    static thread_local long long fg_ns = 0, fg_n = 0;
+                    fg_ns += std::chrono::duration_cast<std::chrono::nanoseconds>(
+                                 std::chrono::steady_clock::now() - fg_t0).count();
+                    fg_n++;
+                    if ((fg_n % 128) == 0) {
+                        fprintf(stderr, "FG171_GRAMMAR_TIME calls=%lld avg_ms=%.3f total_ms=%.1f\n",
+                                fg_n, (double) fg_ns / 1e6 / (double) fg_n, (double) fg_ns / 1e6);
                     }
                 }
                 const unsigned long long n = ++g_goose_grammar_calls;

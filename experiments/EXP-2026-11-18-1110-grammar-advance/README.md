@@ -796,3 +796,32 @@ Hypotheses left, none tested:
 
 The next iteration should add a proper `start = now; ...; acc += now - start` pair, which
 is a few lines and settles it in one run.
+
+## Measured: about 84 ms per call, because the full-set path is the common one
+
+Start/stop timing inside the hook:
+
+```
+FG171_GRAMMAR_TIME calls=128 avg_ms=159.061
+FG171_GRAMMAR_TIME calls=256 avg_ms=83.769   total_ms=21444.8
+decode=10.18 n=256
+```
+
+So the time *is* inside the hook, and it averages tens of milliseconds per call. With one
+call per token, that means the full-candidate path (248k candidates) is being taken on
+nearly every token: the permissive grammar still rejects uppercase, digits and
+punctuation, so the sampled token is usually invalid and a resample follows.
+
+84 ms over 248k candidates is about 340 ns per candidate, against a native pointer walk
+that does one comparison. That is the whole 3x, and it is now measured rather than
+assumed.
+
+Consequences for the port:
+
+- the decision is correct on both paths and the output matches native;
+- the per-candidate cost is the remaining problem, and it lives in the generated C
+  (bounds-checked slice reads, no vectorisation), not in the algorithm;
+- optimising it means either a cheaper generated access pattern or reducing the
+  candidate set before the grammar, both of which are separate changes.
+
+The stage stays opt-in until that cost is addressed.
