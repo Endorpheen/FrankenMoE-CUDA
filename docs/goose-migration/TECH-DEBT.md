@@ -69,3 +69,23 @@ the signature edit never appeared.
 
 Rule that follows: every entry point must be called from the build root. The
 build script now calls each one, and the id header is generated only after that.
+
+## TD-S6: the accepted Apex profile uses a flag that no source tree here defines
+
+`tools/apex-test.sh` starts the accepted binary with `--moe-cache-mib "$CACHE"`,
+but the string appears nowhere in `work/llama.cpp-integration`,
+`vendor/flint` or the restored 150 runtime sources (the search covered
+`common`, `src`, `tools` and the patch directory). Our own build of the working
+source therefore rejects the flag:
+
+```
+build/expert-tier-franken-cuda/bin/llama-server ... --moe-cache-mib 4992
+error: invalid argument: --moe-cache-mib
+```
+
+Consequence for the acceptance A/B: the profile cannot be reproduced by building
+the source we have. Either the flag lives in a patch that is not in the
+repository, or the accepted binary was built from a tree that is not preserved.
+Until that is settled, an A/B that includes the flag can only use the accepted
+binary, and an A/B of our Goose build must state that the flag was omitted on
+both sides and that the parameter set therefore differs from the reference.
