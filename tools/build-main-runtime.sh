@@ -121,6 +121,14 @@ MODULES=(
     goose/misc/perplexity-plan.goose
     goose/misc/kv-turn-state.goose
     goose/misc/tallies.goose
+    goose/misc/unicode-tables.goose
+    goose/misc/unicode-text.goose
+    goose/misc/pretokenizer-qwen35.goose
+    goose/model/bpe-tokenize.goose
+    goose/model/bpe-detokenize.goose
+    goose/model/tokenizer-engine.goose
+    goose/model/gguf-format.goose
+    goose/model/special-partition.goose
     goose/misc/goose-tokenizer.goose
     goose/misc/prefill-plan.goose
     goose/misc/trace-frame-order.goose
