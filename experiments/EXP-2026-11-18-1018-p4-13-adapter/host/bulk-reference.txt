@@ -1,0 +1,3 @@
+200x3+64x3 native_need=3168 goose_size=3168 a_off=0 b_off=2400
+256x8+128x8 native_need=12288 goose_size=12288 a_off=0 b_off=8192
+200x3+64x3 native_need=3168 goose_size=3168 a_off=0 b_off=2400

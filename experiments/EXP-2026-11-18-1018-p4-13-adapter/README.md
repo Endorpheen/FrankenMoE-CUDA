@@ -66,3 +66,17 @@ GATE PASS
 Covered: allocation sizes, distinct handles, reuse after free, reset keeping the
 size and bumping the generation, four-thread allocate/free, and no leak
 (`live=0` after release). Output kept in `host/adapter-gate.txt`.
+
+## Bulk placement matches native (EXP-2026-11-18-1024)
+
+`fg161_bulk` places every tensor of a context into one buffer with the buft's
+alloc size and alignment. Compared against
+`ggml_backend_alloc_ctx_tensors_from_buft_size` on identical contexts:
+
+```
+200x3+64x3  native_need=3168  goose_size=3168  a_off=0 b_off=2400
+256x8+128x8 native_need=12288 goose_size=12288 a_off=0 b_off=8192
+```
+
+Sizes and offsets are identical to native, which is the same shape the accepted
+Goose allocator module uses (`fg161_bulk` is a host primitive there too).
