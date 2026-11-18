@@ -62,9 +62,11 @@ def unit_modules() -> list[str]:
 
 
 def evidence_index() -> dict[str, list[str]]:
-    """module path -> files that name it."""
-    names = {m: [] for m in unit_modules()}
-    basenames = {m.rsplit("/", 1)[-1]: m for m in names}
+    """module path -> files that name it, by path, basename or export call."""
+    modules = unit_modules()
+    names = {m: [] for m in modules}
+    basenames = {m.rsplit("/", 1)[-1]: m for m in modules}
+    corpus: dict[str, str] = {}
     for pattern in EVIDENCE_GLOBS:
         for path in ROOT.glob(pattern):
             if not path.is_file():
@@ -78,7 +80,8 @@ def evidence_index() -> dict[str, list[str]]:
                 body = path.read_text(errors="replace")
             except OSError:
                 continue
-            for module in names:
+            corpus[rel] = body
+            for module in modules:
                 if module in body:
                     names[module].append(rel)
                     continue
@@ -86,7 +89,49 @@ def evidence_index() -> dict[str, list[str]]:
                 # A bare basename counts only when it is unambiguous.
                 if body.count(base) and sum(1 for b in basenames if b == base) == 1:
                     names[module].append(rel)
+    # A gate that includes the generated header calls the exports and never writes
+    # the module path; that is the normal shape, not an exception.
+    calls = call_index(corpus)
+    for module in modules:
+        for name in exports_of(module):
+            for rel in calls.get(name, ()):
+                if rel != module and rel not in names[module]:
+                    names[module].append(rel)
     return names
+
+
+EXPORT = re.compile(r"^export\s+(?:recursive\s+)?fn\s+([A-Za-z0-9_]+)\s*\(", re.MULTILINE)
+
+
+def exports_of(module: str) -> list[str]:
+    """The exported names of one module, for callers that never write its path.
+
+    A gate commonly includes the generated header and calls `index_stats(...)`
+    without ever naming goose/misc/edge0-pack-index.goose. Searching only for the
+    path reports such a module as unverified, which is wrong - and the first version
+    of this tool made exactly that mistake on three modules.
+    """
+    try:
+        body = (ROOT / module).read_text(errors="replace")
+    except OSError:
+        return []
+    return EXPORT.findall(body)
+
+
+CALL = re.compile(r"\b([A-Za-z_][A-Za-z0-9_]*)\s*\(")
+
+
+def call_index(corpus: dict[str, str]) -> dict[str, list[str]]:
+    """exported name -> files that call it. One pass over the corpus.
+
+    The per-module search was 140 x 2663 regex scans and took minutes; this is one
+    scan that builds the reverse index, and the module loop only looks names up.
+    """
+    index: dict[str, list[str]] = {}
+    for rel, body in corpus.items():
+        for name in set(CALL.findall(body)):
+            index.setdefault(name, []).append(rel)
+    return index
 
 
 def gate_of(evidence_file: str) -> str | None:
