@@ -696,3 +696,28 @@ needs a grammar and a model that actually produce invalid tokens often enough.
 The earlier "not a filter" statement is corrected here; what stands is that the
 single-candidate path cannot reject anything, so validation only observes whether the
 chosen token is allowed.
+
+## Both grammar paths exercised, output identical
+
+With a dictatorial grammar (`root ::= "Z"`) and temperature 1.5 the instrumented run
+shows both call shapes:
+
+```
+2  cur_p=1       candidates=1        (validation of the sampled token)
+2  cur_p=248320  candidates=248071   (resampling with the full candidate set)
+```
+
+So the grammar **is** applied to the full candidate set on the resampling path, and the
+Goose hook handles that call too. The output is the single character the grammar allows:
+
+```
+ON  'Z'   (grammar calls recorded)
+OFF 'Z'   (no grammar calls)
+```
+
+The earlier diagnostic printed only every 200th call, which is why the full-set path
+looked absent; that was a measurement defect, not a runtime fact, and it is the second
+time a sampling rate in a diagnostic misled the conclusion.
+
+What is still not measured: the cost of the full-set path, which is paid only when a
+sampled token is invalid.
