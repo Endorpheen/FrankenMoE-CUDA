@@ -82,3 +82,31 @@ be compared with 41.94.
 - Performance or acceptance runs: canonical binary, `--moe-cache-mib 3584`,
   32K prompt, and at least 128 predicted tokens; use paired A/B/B/A and report
   prefill, decode, RAM and VRAM together.
+
+## Standalone CLI, three generation lengths (2026-11-17)
+
+`bash tools/bench-standalone.sh <model> 2`, CPU only, `GOOSE_THREADS=8`, prompt
+"The capital of France is". One row per run, medians of two.
+
+| requested | predicted | prefill tok/s | decode tok/s |
+|---:|---:|---:|---:|
+| 128 | 127 | 18.5 / 16.4 | 11.07 / 11.08 |
+| 256 | 255 | 17.4 / 18.3 | 11.02 / 11.24 |
+| 512 | 440 | 19.3 / 19.1 | 10.94 / 11.70 |
+
+VRAM is 0 by construction: the standalone has no GPU offload. RAM is the process
+RSS, 16150 MiB at a 517-token prefill and 10966 MiB at five tokens - the weight
+pages the prompt touches.
+
+Two things this says that a single number would hide:
+
+- decode is FLAT across 128/256/512 (11.07 -> 11.13 -> 11.32). The usual rise
+  with length comes from amortising fixed per-request cost; there is almost none
+  here, so per-token memory traffic dominates and the loop is bandwidth-bound;
+- at 512 the model stopped at 440 tokens on the Goose end-of-generation set, so
+  the 512 column is 440 predicted tokens, not 511. Reporting it as "512" would
+  overstate the length.
+
+Prefill stays 16-19 tok/s because a five-token prompt is almost entirely startup;
+a prefill figure needs a long prompt to mean anything, and the long-prompt run
+(517 tokens) measured 89.5 tok/s.
