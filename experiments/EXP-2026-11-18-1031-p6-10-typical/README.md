@@ -280,3 +280,24 @@ So a full-chain runner must not be assembled yet: five steps would be missing
 and the order would be wrong if typical were applied before top_p. The next step
 is top_k and min_p on the verified sort, then temp_ext and penalties, then the
 runner, then the fixed-seed chain test.
+
+## top-k and min-p accepted
+
+`sm_apply_top_k` sorts fully and keeps the k best in descending order; the
+module's partial sort does not order the kept prefix, which top-k requires, so
+the full sort is used and only the size is cut. `sm_apply_min_p` follows the
+unsorted native form: threshold on the logit (`max + log(p)`), count first, and
+compact in the original order only when the count is non-zero and at least
+`min_keep`.
+
+```
+topk: mismatches=0   min-p: mismatches=0
+```
+
+200 distributions for top-k with random k, and 200 x 3 thresholds x 2 min_keep
+for min-p: the kept set, its order and the resulting size all match.
+
+Two measurements in this step were mine, not the module's: the logits were drawn
+from only 2000 distinct values, so ties were frequent and the harness compared
+tie order against a different sort. With distinct logits the comparison is
+clean. Tie order is unspecified in the native sort as well.

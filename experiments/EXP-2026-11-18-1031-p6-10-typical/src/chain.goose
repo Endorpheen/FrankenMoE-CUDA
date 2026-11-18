@@ -662,6 +662,12 @@ fn gate_dispatch(op: i64, lv: f32[:], p: f32[:], id: i64[:], n: i64, f: f32, k: 
     if op == 10 {
         return k;
     }
+    if op == 12 {
+        return sm_apply_min_p(lv, p, id, n, f, k);
+    }
+    if op == 13 {
+        return sm_apply_top_k(lv, p, id, n, k);
+    }
     if op == 11 {
         id[0] = k;
         id[1] = k & M32;
@@ -926,6 +932,62 @@ fn sm_mirostat_update(mu: f32, eta: f32, tau: f32, observed: f32) -> f32 {
 fn gate_mirostat(p: f32[:], n: i64, mu: f32, m: i64, n_vocab: f32) -> i64 {
     return sm_mirostat_k(p, n, mu, m, n_vocab);
 }
+
+// top-k: keep the k best, sorted descending
+fn sm_apply_top_k(lv: f32[:], p: f32[:], id: i64[:], n: i64, k: i64) -> i64 {
+    if k <= 0 || n <= 0 {
+        return n;
+    }
+    var kk: i64 = k;
+    if kk > n { kk = n; }
+    // a full sort keeps the k best in descending order; the partial form does
+    // not order the kept prefix, which top-k requires
+    let rc = sm_partial_sort(lv, id, n, n);
+    if rc < 0 {
+        return n;
+    }
+    var i: i64 = 0;
+    while i < kk {
+        p[i] = 0.0;
+        i = i + 1;
+    }
+    return kk;
+}
+
+// min-p (unsorted form): keep logits >= max_logit + log(p), in the original order
+fn sm_apply_min_p(lv: f32[:], p: f32[:], id: i64[:], n: i64, min_p: f32, min_keep: i64) -> i64 {
+    if min_p <= 0.0 || n <= 0 {
+        return n;
+    }
+    var max_logit: f32 = lv[0];
+    var i: i64 = 1;
+    while i < n {
+        if lv[i] > max_logit { max_logit = lv[i]; }
+        i = i + 1;
+    }
+    let min_logit: f32 = max_logit + logf(min_p);
+    var kept: i64 = 0;
+    i = 0;
+    while i < n {
+        if lv[i] >= min_logit { kept = kept + 1; }
+        i = i + 1;
+    }
+    if kept == 0 || kept < min_keep {
+        return n;
+    }
+    var w: i64 = 0;
+    i = 0;
+    while i < n {
+        if lv[i] >= min_logit {
+            lv[w] = lv[i];
+            id[w] = id[i];
+            p[w] = p[i];
+            w = w + 1;
+        }
+        i = i + 1;
+    }
+    return kept;
+}
 fn main() {
     print("p6-10 typical gate");
     let lv: f32[4] = [0.0, 0.0, 0.0, 0.0];
@@ -941,4 +1003,6 @@ fn main() {
     let ignored9 = gate_adaptive(lv, p, id, 4, 0.5);
     let ignored10 = sm_adaptive_target(0.5, 0.0, 0.0, p);
     let ignored11 = gate_mirostat(lv, 4, 1.0, 3, 100.0);
+    let ignored12 = sm_apply_min_p(lv, p, id, 4, 0.5, 1);
+    let ignored13 = sm_apply_top_k(lv, p, id, 4, 2);
 }
