@@ -47,6 +47,10 @@ fn main() {
     if fset < -1 {
         return;
     }
+    let drl = fg_dry_rep_limit_entry(rc0, rc0, rc0, rc0, rc0, 1, 1);
+    if drl < -1 {
+        return;
+    }
     let gr = fg_grammar_reject(rc0, rc0, rc0, rc0, rc0, 1, rc0, rc0, rc0, rc0, rc0, 2,
                                rc0, rc0, rc0, rc0, rc0, rc0, rc0, rc0, rc0, 4, 4, 2, 180);
     if tx < 0 || gr < 0 {

@@ -27,7 +27,25 @@ carry over to the new calling mechanism.
    forwarder passed the logits array as that scratch, so the comparison ran against mutated
    input. A separate buffer fixed it.
 
-## DRY is not re-measured here, and why
+## DRY, measured after closing the gap
+
+The gap below was closed the same day by exporting the decision the harness actually needs:
+
+```
+export fn fg_dry_rep_limit_entry(last, b_head, b_ts, b_tl, b_tail, n, nb) -> i64
+```
+
+and pointing `gate_dry_c` at it. The full differential is now green against the shipping build:
+
+```
+typical-p:      cases=1800 mismatches=0
+top-p unsorted: cases=900  mismatches=0
+top-p large:    cases=45   mismatches=0
+xtc:            cases=720  mismatches=0
+dry step1:      cases=200  mismatches=0
+```
+
+## The gap as it stood, and why it mattered
 
 The harness's DRY case calls `gate_dry_c`, which returns the repetition limit position. That
 forwarder no longer exists anywhere in the tree - the earlier experiment that provided it was

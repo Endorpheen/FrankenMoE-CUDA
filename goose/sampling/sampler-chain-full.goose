@@ -685,6 +685,13 @@ fn sm_apply_penalties(lv: f32[:], id: i64[:], hist: f32[:],
 
 // ---- DRY (steps 1-4) -------------------------------------------------------
 // step 1: limit the repetition window by the nearest restart sequence
+// Exported door for the DRY repetition limit, so the differential gate measures the
+// shipped decision instead of re-implementing it in the harness.
+export fn fg_dry_rep_limit_entry(last: i64[:], b_head: i64[:], b_ts: i64[:], b_tl: i64[:],
+                                 b_tail: i64[:], n: i64, nb: i64) -> i64 {
+    return sm_dry_rep_limit(last, b_head, b_ts, b_tl, b_tail, n, nb);
+}
+
 fn sm_dry_rep_limit(last: i64[:], b_head: i64[:], b_ts: i64[:], b_tl: i64[:],
                     b_tail: i64[:], n: i64, nb: i64) -> i64 {
     var rep_limit: i64 = n;
