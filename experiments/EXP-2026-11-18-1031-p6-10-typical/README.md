@@ -1089,3 +1089,27 @@ not only the chain flag.
 Next: find under which parameters the server includes adaptive-p (the sampler
 order depends on the request settings), then re-run the comparison with the
 counter expected.
+
+## adaptive-p live and identical
+
+The stage is only added to the chain when the sampler list names it, which is why
+the earlier run showed no counter. With
+
+```
+--samplers "penalties;top_k;typical;adaptive_p" --adaptive-target 0.5
+```
+
+the run now exercises it:
+
+```
+[ON ] "konz arrangement chamada<CJK> ..."    counters: FG171_ADAPTIVE goose calls=1
+[OFF] "konz arrangement chamada<CJK> ..."    counters: none
+```
+
+Identical text, one real Goose call, and the whole `--samplers` list used so the
+native bodies answer in the off run (top-k, typical and penalties are all in the
+list).
+
+Live and verified by API: typical-p, top-p, XTC, penalties, DRY, adaptive-p.
+Mirostat needs the same treatment next (its own sampler list entry) and has no hook
+yet.
