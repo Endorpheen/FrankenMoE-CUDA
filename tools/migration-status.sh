@@ -215,7 +215,8 @@ if [ -f "$SA_BIN" ]; then
 fi
 if [ "$_hl_n" -ge 3 ]; then
 say "   HTTP server (transport)      yes  ($_hl_n listener exports in the artifact; one request per"
-say "                                       call over a real socket, ephemeral port, 200 and 400 gated)"
+say "                                       call over a real socket on an ephemeral port, routed by"
+say "                                       route_id: 200 / 404 / 405 / 400 gated, 32 checks)"
 else
 say "   HTTP server (transport)      no   ($_hl_n of 3 listener exports in this artifact)"
 fi

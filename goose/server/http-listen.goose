@@ -49,6 +49,20 @@ const HL_SLEN: i64 = 64;
 const HL_REQ: i64 = 128;
 const HL_REQ_MAX: i64 = 8192;
 
+fn hl_eq(req: const u8[:], off: i64, n: i64, lit: const u8[:]) -> bool {
+    if n != lit.len || off < 0 || off + n > req.len {
+        return false;
+    }
+    var i: i64 = 0;
+    while i < n {
+        if req[off + i] != lit[i] {
+            return false;
+        }
+        i = i + 1;
+    }
+    return true;
+}
+
 fn hl_put_addr(off: i64, port: i64) {
     // family, little-endian u16
     hl_st8(hl_tmp(off + 0), HL_AF_INET & 0xff);
@@ -150,11 +164,40 @@ export fn hl_serve(fd: i64, req: u8[:], resp: u8[:]) -> i64 {
         }
         i = i + 1;
     }
+    // The route table decides, not this function: route_id maps (method, path) to a
+    // category and answers 0 for "no such route". The method codes are the ones the
+    // native table was generated with (get 1, post 2, del 3, ws 4).
     var status: i64 = 400;
     if line_end > 0 {
         var parsed: i64[8] = [0,0,0,0,0,0,0,0];
         if rq_parse_line_impl(req[0 .. line_end], parsed) == 0 {
-            status = 200;
+            let mo: i64 = parsed[1]; let ml: i64 = parsed[2];
+            let to: i64 = parsed[3]; let tl: i64 = parsed[4];
+            var mcode: i64 = 0;
+            if hl_eq(req, mo, ml, "GET") {
+                mcode = 1;
+            } else if hl_eq(req, mo, ml, "POST") {
+                mcode = 2;
+            } else if hl_eq(req, mo, ml, "DELETE") {
+                mcode = 3;
+            }
+            if mcode == 0 {
+                // A method the table does not carry is refused, not guessed.
+                status = 405;
+            } else {
+                // The target may carry a query; the table matches the path only.
+                var plen: i64 = tl;
+                var k: i64 = 0;
+                while k < tl {
+                    if req[to + k] == 63 {
+                        plen = k;
+                        break;
+                    }
+                    k = k + 1;
+                }
+                let cat: i64 = route_id(mcode, req[to .. to + plen]);
+                status = if cat == 0 { 404 } else { 200 };
+            }
         }
     }
 

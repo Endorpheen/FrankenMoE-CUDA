@@ -87,14 +87,37 @@ static std::string exchange(const std::string & request, int * serve_rc) {
 int main() {
     goose_init(0, nullptr);
 
-    // ---- a well-formed request ----
+    // ---- a route the table carries ----
     {
         int rc = 0;
-        const std::string got = exchange("GET / HTTP/1.1\r\nHost: x\r\n\r\n", &rc);
+        const std::string got = exchange("GET /health HTTP/1.1\r\nHost: x\r\n\r\n", &rc);
         check(rc > 0, "hl_serve reported a response");
-        check(got.rfind("HTTP/1.1 200 OK\r\n", 0) == 0, "status line is 200 OK");
+        check(got.rfind("HTTP/1.1 200 OK\r\n", 0) == 0, "health is 200 OK");
         check(got.find("Content-Length: 2\r\n") != std::string::npos, "Content-Length: 2");
         check(got.size() >= 2 && got.compare(got.size() - 2, 2, "ok") == 0, "body is ok");
+    }
+
+    // ---- a path the table does not carry ----
+    {
+        int rc = 0;
+        const std::string got = exchange("GET /nope HTTP/1.1\r\n\r\n", &rc);
+        check(rc > 0, "hl_serve answered the unknown path");
+        check(got.rfind("HTTP/1.1 404 Not Found\r\n", 0) == 0, "unknown path is 404");
+        check(got.find("Content-Length: 0\r\n") != std::string::npos, "404 has no body");
+    }
+
+    // ---- a query string is stripped before the table sees the path ----
+    {
+        int rc = 0;
+        const std::string got = exchange("GET /metrics?v=1 HTTP/1.1\r\n\r\n", &rc);
+        check(got.rfind("HTTP/1.1 200 OK\r\n", 0) == 0, "path with a query still routes");
+    }
+
+    // ---- a method the table does not carry ----
+    {
+        int rc = 0;
+        const std::string got = exchange("PUT /health HTTP/1.1\r\n\r\n", &rc);
+        check(got.rfind("HTTP/1.1 405 Method Not Allowed\r\n", 0) == 0, "unknown method is 405");
     }
 
     // ---- a malformed request line gets 400 ----
