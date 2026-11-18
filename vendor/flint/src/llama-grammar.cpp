@@ -1454,8 +1454,7 @@ void llama_grammar_apply_impl(const struct llama_grammar & grammar, llama_token_
     std::vector<int64_t> fg_lo, fg_hi;
     int64_t fg_nranges = -1;
     if (fg_grammar_first_set_call != nullptr && fg_grammar_enabled() &&
-            !grammar.stacks.empty() && grammar.stacks.size() <= FG_MAXS &&
-            !grammar.stacks[0].empty()) {
+            !grammar.stacks.empty() && grammar.stacks.size() <= FG_MAXS) {
         fg_flat_rules & fl = fg_flatten(grammar.rules);
         fg_lo.assign(64, 0); fg_hi.assign(64, 0);
         std::vector<int64_t> pstk(FG_MAXS * FG_MAXD, 0), pstd(FG_MAXS, 0);
@@ -1480,7 +1479,11 @@ void llama_grammar_apply_impl(const struct llama_grammar & grammar, llama_token_
             fg_slice_rec hi{fg_hi.data(), 64};
             fg_nranges = fg_grammar_first_set_call(a, b, c, dd, (int64_t) grammar.stacks.size(),
                                                   lo, hi, 64);
+        } else {
+            fg_nranges = -42;   // pointer not in the map
         }
+    } else {
+        fg_nranges = -41;       // guard: no entry, disabled, or stack shape unsupported
     }
 
     static thread_local long long pf_n = 0;

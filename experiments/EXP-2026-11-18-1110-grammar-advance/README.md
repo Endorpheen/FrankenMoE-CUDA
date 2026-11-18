@@ -979,3 +979,30 @@ pointer not mapped) instead of guessing between four conditions. That is one pri
 ends the loop this question has been going round.
 
 The union change (skipping empty stacks) stays: it is correct on its own and costs nothing.
+
+## Pre-filter now active everywhere, and that is the end of this road
+
+After removing the host guard on `stacks[0]` the pre-filter runs on every call:
+
+```
+31 ranges=2 cur_p=1
+ 9 ranges=2 cur_p=248320
+decode=7.24
+```
+
+No speedup. The reason is simple and worth stating: for the permissive grammar `[a-z ]+`
+most candidate tokens start with a lowercase letter or a space, so they pass the range
+check and still go to the automaton. A first-codepoint filter only helps a grammar that
+rejects most first characters; for the common "text-like" grammar it filters almost
+nothing.
+
+The measured conclusion after eight attempts is therefore:
+
+- the grammar decision is correct and gated on both paths;
+- its cost is the per-candidate automaton over ~248k candidates, ~340 ns each;
+- the first-codepoint pre-filter is now always available but does not help permissive
+  grammars, and it cannot help by construction;
+- the remaining lever is the generated per-candidate loop itself, which is compiler work.
+
+The stage stays opt-in. Further work on this belongs with the compiler, not with more host
+rearrangements, and this card now records eight tests that closed the alternatives.
