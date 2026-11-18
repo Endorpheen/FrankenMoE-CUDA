@@ -763,3 +763,26 @@ not a constant answer; and the same request with every stage disabled produces
 the same text with no counters.
 
 DRY is default-on now, with the module gate and this live evidence behind it.
+
+## Pivot to the accepted runtime tree (plan recorded)
+
+The restored tree is the accepted source: it has `src/llama-moe-cache.h`, its
+`build/stage-run/` holds `libllama.so.0.7.0` and the server binary that accepts
+`--moe-cache-mib`. It has `src/` and `ggml/` but no `common/` or `tools/server`
+source, so a server cannot be built from it - only the library.
+
+Plan for the Goose build on the correct base:
+
+1. copy `src/` and `ggml/` from `.../franken-goose-exp150-restored-20261108/runtime/reconstructed`
+   into our own build area (read-only source, nothing in that tree is modified);
+2. write a minimal top-level CMakeLists that adds `ggml` and `src`, since the
+   restored tree's top-level file is not preserved;
+3. add the sampler shim to that `src/CMakeLists.txt` (our copy) and apply the
+   hook patch to its `llama-sampler.cpp`;
+4. build `llama` only, then run the accepted server binary with
+   `LD_LIBRARY_PATH` pointing at our build, so both sides of the A/B are the same
+   server and the same profile, including `--moe-cache-mib 4992`.
+
+Everything measured before this point used a library built from `work/`, which
+lacks the MoE cache, so those numbers describe a different runtime and are not
+used for acceptance.
