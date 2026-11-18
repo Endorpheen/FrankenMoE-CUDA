@@ -548,3 +548,31 @@ Two directions, both measurable:
    codepoint in the host, which is cheap there and does not change the decision.
 
 The stage stays opt-in until one of them brings it near the native cost.
+
+## The slowdown cannot be the hook's inner work
+
+The counter from the slow run says:
+
+```
+FG171_GRAMMAR goose calls=1   cand=1 stacks=1
+FG171_GRAMMAR goose calls=100 cand=1 stacks=2
+FG171_GRAMMAR goose calls=200 cand=1 stacks=2
+```
+
+One candidate and roughly one call per token. A single call over one candidate cannot
+cost the 44 ms per token that the 3x slowdown implies, so **both** of my hypotheses
+(per-token allocation, then a hundred thousand candidates through bounds checks) are
+wrong, and the second one is refuted by this measurement.
+
+What is left to check, in order:
+
+1. the early `return;` path: if a stack element is not in the pointer map, the hook
+   returns **without** falling back to the native rejection, so the grammar is not
+   applied at all for that step - a correctness hole, and a different sampling path
+   that could also explain a timing change;
+2. whether the slowdown reproduces with the hook forced to the native path
+   (`GGML_GOOSE_GRAMMAR=0` already does that, and it is fast), which isolates the
+   hook from everything else.
+
+Recorded before any further optimization: optimizing an inner loop that handles one
+candidate would have been wasted work.
