@@ -42,3 +42,21 @@ configuration selection, and the acceptance/rejection loop.
 
 Nothing is ported yet; this file records the scope so the next iteration starts from the
 repository instead of from a new investigation.
+
+## Correction after reading the acceptance path (2026-11-18)
+
+The plan assumed the classic probability-ratio acceptance test inside the speculative
+module. In this tree it is not there: `common_speculative` exposes
+`accept(seq_id, n_accepted, is_other)`, and `n_accepted` is computed by the **caller**
+after the target model verifies the drafted batch (`tools/server/server-context.cpp`
+carries the per-position counters). The decision is therefore target-verification, not a
+ratio test:
+
+- the draft proposes `k` tokens;
+- the target runs them and produces its own sampled token per position;
+- the accepted count is the length of the prefix where the draft and the target agree.
+
+Consequences for the port: slice 2 is not "port the ratio test" but "port the prefix
+comparison and the state updates it drives". The comparison itself is a few lines; what
+matters is that it consumes no RNG of its own, which is good news for the fixed-seed
+guarantee established in P6-10.
