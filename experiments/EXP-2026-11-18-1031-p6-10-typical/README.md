@@ -191,3 +191,18 @@ called a different function, which is what produced the earlier confusing top-p
 failure. `gen_ids.py` now reads the dispatch prototype out of `build_chain.c` and
 writes `src/fn_ids.h`; `src/wrap.c` includes it, so the id can never be stale.
 The wrapper compiles with `-Dmain=fg_chain_main`.
+
+## Mirostat v1 decision logic accepted
+
+`sm_mirostat_k` estimates `s_hat` from the top m probabilities, then computes
+`k = pow((eps * 2^mu) / (1 - n_vocab^-eps), 1/s_hat)` and truncates it to at
+least 1 (the loop is capped so a non-finite k cannot spin). `sm_mirostat_update`
+applies `mu -= eta * (observed_surprise - tau)`.
+
+```
+mirostat: k mismatches=0  mu mismatches=0   (200 random distributions)
+```
+
+The truncation size and the updated mu are identical to the native formulas.
+What remains outside Goose here is only the draw itself (the RNG stream, a
+separate port) and the top-k truncation, which uses the already verified sort.

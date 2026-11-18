@@ -633,6 +633,13 @@ fn gate_dispatch(op: i64, lv: f32[:], p: f32[:], id: i64[:], n: i64, f: f32, k: 
     if op == 4 {
         return sm_adaptive_target(f, f2, f3, p);
     }
+    if op == 5 {
+        return sm_mirostat_k(lv, n, f, k, f2);
+    }
+    if op == 6 {
+        p[0] = sm_mirostat_update(f, f2, f3, lv[0]);
+        return 0;
+    }
     return -2;
 }
 
@@ -857,6 +864,40 @@ fn sm_apply_adaptive_p(lv: f32[:], p: f32[:], id: i64[:], n: i64, adapted: f32) 
 fn gate_adaptive(lv: f32[:], p: f32[:], id: i64[:], n: i64, adapted: f32) -> i64 {
     return sm_apply_adaptive_p(lv, p, id, n, adapted);
 }
+
+// mirostat v1: estimate s_hat from the top m and return the truncation size k
+fn sm_mirostat_k(p: f32[:], n: i64, mu: f32, m: i64, n_vocab: f32) -> i64 {
+    var sum_ti_bi: f32 = 0.0;
+    var sum_ti_sq: f32 = 0.0;
+    var limit: i64 = m - 1;
+    if limit > n - 1 { limit = n - 1; }
+    var i: i64 = 0;
+    while i < limit {
+        let t_i: f32 = logf((i + 2) * 1.0 / (i + 1));
+        let b_i: f32 = logf(p[i] / p[i + 1]);
+        sum_ti_bi = sum_ti_bi + t_i * b_i;
+        sum_ti_sq = sum_ti_sq + t_i * t_i;
+        i = i + 1;
+    }
+    let s_hat: f32 = sum_ti_bi / sum_ti_sq;
+    let eps: f32 = s_hat - 1.0;
+    let k_f: f32 = powf((eps * powf(2.0, mu)) / (1.0 - powf(n_vocab, -eps)), 1.0 / s_hat);
+    var ki: i64 = 0;
+    while ki + 1 <= k_f && ki < 1000000 {
+        ki = ki + 1;
+    }
+    if ki < 1 { ki = 1; }
+    return ki;
+}
+
+// mirostat v1: mu -= eta * (observed_surprise - tau)
+fn sm_mirostat_update(mu: f32, eta: f32, tau: f32, observed: f32) -> f32 {
+    return mu - eta * (observed - tau);
+}
+
+fn gate_mirostat(p: f32[:], n: i64, mu: f32, m: i64, n_vocab: f32) -> i64 {
+    return sm_mirostat_k(p, n, mu, m, n_vocab);
+}
 fn main() {
     print("p6-10 typical gate");
     let lv: f32[4] = [0.0, 0.0, 0.0, 0.0];
@@ -871,4 +912,5 @@ fn main() {
     let ignored8 = gate_dry3(id, id, lv, id, id, id, 4, 4, 1, 0, 1.0, 1.5);
     let ignored9 = gate_adaptive(lv, p, id, 4, 0.5);
     let ignored10 = sm_adaptive_target(0.5, 0.0, 0.0, p);
+    let ignored11 = gate_mirostat(lv, 4, 1.0, 3, 100.0);
 }
