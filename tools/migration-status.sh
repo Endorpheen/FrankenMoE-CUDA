@@ -180,6 +180,14 @@ else:
 ' 2>/dev/null || true)
     say "   compiler of this artifact     $_ci_line"
 fi
+# A decision that no composed unit contains is invisible to every gate and to every
+# capability line. Two cycles found one each by accident (EXP995, EXP996); this counts
+# them instead, and the baseline in docs/goose-migration/UNWIRED-MODULES.json makes the
+# list unable to grow quietly.
+_unwired=$(python3 "$ROOT/tools/check-unwired-modules.py" 2>/dev/null | head -1 || true)
+if [ -n "$_unwired" ]; then
+say "   unwired decisions            $_unwired"
+fi
 say "   GGUF container read          yes  (substrate reader)"
 say "   GGUF metadata, every key     yes  (4 files, agree=yes)"
 say "   GGUF tensor directory        yes  (fixtures + 3 real models, 940 tensors)"
