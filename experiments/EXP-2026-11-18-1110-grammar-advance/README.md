@@ -873,3 +873,22 @@ gate against the native rejection (same candidates rejected, no more and no fewe
 Not implemented here: the size of the change and the need for a dedicated gate make it a
 separate slice, and starting it at the end of this iteration would leave a half-built
 path in the tree.
+
+## Allowed-first-set entry, gated against match_char
+
+`g_first_set` derives, from the current stack tops, the inclusive ranges of codepoints
+that the grammar accepts as the next character. It refuses (-1) when the decision cannot
+be expressed as positive ranges: an empty stack (end of sequence), an inverse class, or a
+token rule.
+
+```
+first_set: cases=1200 fails=0
+```
+
+Four class shapes (exact, range, character alternation, any) probed over codepoints
+0..299 against `llama_grammar_match_char`, so the ranges agree with the matcher rather
+than with my reading of the format.
+
+This is the piece the host needs to filter the ~248k candidates cheaply before any
+per-candidate call; hooking it into the host is the next step, and the full automaton
+stays the authority for the survivors.
