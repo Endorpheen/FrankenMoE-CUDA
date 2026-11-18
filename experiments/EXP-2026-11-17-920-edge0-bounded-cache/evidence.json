@@ -1,0 +1,441 @@
+{
+  "base": "d02a274a1e3aa03e7dc7d1459d191229bf7f1d7a",
+  "status": "ACCEPTED_75_INPUT_256_OUTPUT_SCOPE",
+  "compiler_pin": {
+    "compiler": "/home/end0/AI/LlamaServer/toolchain/goose-2026.3-string/goose",
+    "sha256": "664d4de42463cc10cb9c4a61dac59ce6023faa9c9da2838fddc0f4fb8294b3ab",
+    "status": "RELEASE_2026_3_STRING",
+    "version": "goose-2026.3-string",
+    "runtime_version": "1e714e6146bc",
+    "release_sha256": "5c6fdf169408f687a49f3f9ce3ebc0804ece16da0320bbbcb893721f5422558b",
+    "release_file": "/tmp/opencode/release/goose-2026.3-string-linux-x86_64.tar.gz",
+    "source_commit": "e0501dc7dee4522428a46f813cebbce0ad62736e",
+    "qualification": "Compatibility re-run of the EXP445..EXP459 gates on this binary; see docs/goose-migration/COMPILER-2026-3-STRING.md",
+    "rollback": "/home/end0/AI/Fried-Goose/.cache/compiler-exp-handoff/runtime-candidate-v61/stage3",
+    "rollback_sha256": "b87af17a8b06bed5ad3f4ebfdce5edd7539d3e75f7fb1712d19189ff9dd4cedf",
+    "previous_sha256": "b87af17a8b06bed5ad3f4ebfdce5edd7539d3e75f7fb1712d19189ff9dd4cedf",
+    "qualified_at": "2026-11-12T23:31:07.783674+00:00"
+  },
+  "inputs": {
+    "integration/edge0/PROFILE.md": "c4568668f7c155efb9445753a243931ffa30e050ceb3e1dab1b065aee4477e25",
+    "integration/edge0/ffn-gate.cpp": "93ad69116893b4da07ea8db4174d7593c31005914a97d13beb529b79b06b7bd6",
+    "integration/edge0/variant.py": "84efb10e9935ad1534f59fe88f38ad2c6d4a197506a3ba4a46e43421b05465cc",
+    "integration/edge0/cli.cpp": "5919e5396dada2507634a178a1bc1ba061ae3a521fcaed65d8b2cae537eb3fdb",
+    "integration/edge0/PLAN.md": "e5c4968bd6df0278f416659ce986cff616b38eb48100e4a1c71be42f17af7bac",
+    "integration/edge0/run.py": "a29da08c23bc1a2115f1e8179220934190ecaeb1e96202f7c35c077d5a415c82",
+    "integration/edge0/CMakeLists.txt": "c748dc08560a5c7db94f14f3260ee81849d240452c4447de50d9f3c8f3a4b680",
+    "integration/edge0/pack.cpp": "58fb529cd41a05092472d8f012f993b40f6c2c6b4f423ed9bf863fdade1dcb0a",
+    "integration/edge0/build.py": "66699107caa3d119cbd732783b2528882fb1bf6984ec27aee7bb5edd881050f3",
+    "integration/edge0/pack.h": "4a0a53201b30bad184a76797beab12510e818aaef47c46a9a00a7b2ac4838214",
+    "integration/edge0/runtime.goose": "80317ba56b8252d1cf6759b849c901b7caf353fdab470be51ed36f87cd5a30d1"
+  },
+  "accepted_runs": [
+    {
+      "input_tokens": 75.0,
+      "generated_tokens": 256.0,
+      "load_s": 1.249049,
+      "prefill_s": 56.69096,
+      "prefill_tps": 1.322962,
+      "ttft_s": 56.692805,
+      "decode_s": 187.883294,
+      "decode_steps": 255.0,
+      "decode_tps": 1.357226,
+      "eos": 0.0,
+      "maxrss_KiB": 6282300.0,
+      "tag": "a1-long",
+      "exact_parity": true,
+      "sha256": "8f996f89f2ed891c2e6ff7c059e6f100fab96271e3c8c1ed329da7c3e79d74b9",
+      "rss_KiB": 6284372,
+      "gpu_MiB": 5296,
+      "swap_KiB": 0,
+      "swapout_pages": 0,
+      "io": {
+        "prefill-start": {
+          "rchar": 11444680,
+          "wchar": 370998,
+          "syscr": 2835,
+          "syscw": 3885,
+          "read_bytes": 532480,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        },
+        "decode-start": {
+          "rchar": 148112756801,
+          "wchar": 379871,
+          "syscr": 43638,
+          "syscw": 4046,
+          "read_bytes": 3100737536,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        },
+        "decode-end": {
+          "rchar": 651657217723,
+          "wchar": 413430,
+          "syscr": 182360,
+          "syscw": 4822,
+          "read_bytes": 6112112640,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      }
+    },
+    {
+      "input_tokens": 75.0,
+      "generated_tokens": 256.0,
+      "load_s": 3.382125,
+      "prefill_s": 17.959789,
+      "prefill_tps": 4.175996,
+      "ttft_s": 17.961423,
+      "decode_s": 55.331769,
+      "decode_steps": 255.0,
+      "decode_tps": 4.608564,
+      "eos": 0.0,
+      "maxrss_KiB": 10780792.0,
+      "tag": "b2-long",
+      "exact_parity": true,
+      "sha256": "8f996f89f2ed891c2e6ff7c059e6f100fab96271e3c8c1ed329da7c3e79d74b9",
+      "rss_KiB": 10783112,
+      "gpu_MiB": 5296,
+      "swap_KiB": 0,
+      "swapout_pages": 0,
+      "io": {
+        "prefill-start": {
+          "rchar": 1427022525,
+          "wchar": 371013,
+          "syscr": 2836,
+          "syscw": 3885,
+          "read_bytes": 376832,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        },
+        "decode-start": {
+          "rchar": 13291867448,
+          "wchar": 379776,
+          "syscr": 14225,
+          "syscw": 4046,
+          "read_bytes": 3574579200,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        },
+        "decode-end": {
+          "rchar": 48253992369,
+          "wchar": 412883,
+          "syscr": 48322,
+          "syscw": 4822,
+          "read_bytes": 8996073472,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "expert_misses": 40201,
+      "expert_requests": 158400,
+      "expert_hits": 118199,
+      "expert_hit_fraction": 0.746205808080808,
+      "counter_derivation": "Uniquely reconstructed integer record count from final two-decimal MiB counter; one record =1.11083984375 MiB, rounding interval <0.01 MiB."
+    },
+    {
+      "input_tokens": 75.0,
+      "generated_tokens": 256.0,
+      "load_s": 3.344144,
+      "prefill_s": 17.937212,
+      "prefill_tps": 4.181252,
+      "ttft_s": 17.939135,
+      "decode_s": 55.693069,
+      "decode_steps": 255.0,
+      "decode_tps": 4.578667,
+      "eos": 0.0,
+      "maxrss_KiB": 10782012.0,
+      "tag": "b3-long",
+      "exact_parity": true,
+      "sha256": "8f996f89f2ed891c2e6ff7c059e6f100fab96271e3c8c1ed329da7c3e79d74b9",
+      "rss_KiB": 10783184,
+      "gpu_MiB": 5296,
+      "swap_KiB": 0,
+      "swapout_pages": 0,
+      "io": {
+        "prefill-start": {
+          "rchar": 1427022525,
+          "wchar": 371013,
+          "syscr": 2836,
+          "syscw": 3885,
+          "read_bytes": 376832,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        },
+        "decode-start": {
+          "rchar": 13291867448,
+          "wchar": 379775,
+          "syscr": 14225,
+          "syscw": 4046,
+          "read_bytes": 3496939520,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        },
+        "decode-end": {
+          "rchar": 48253992369,
+          "wchar": 412882,
+          "syscr": 48322,
+          "syscw": 4822,
+          "read_bytes": 8950308864,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      },
+      "expert_misses": 40201,
+      "expert_requests": 158400,
+      "expert_hits": 118199,
+      "expert_hit_fraction": 0.746205808080808,
+      "counter_derivation": "Uniquely reconstructed integer record count from final two-decimal MiB counter; one record =1.11083984375 MiB, rounding interval <0.01 MiB."
+    },
+    {
+      "input_tokens": 75.0,
+      "generated_tokens": 256.0,
+      "load_s": 1.325518,
+      "prefill_s": 56.680783,
+      "prefill_tps": 1.3232,
+      "ttft_s": 56.68293,
+      "decode_s": 189.417486,
+      "decode_steps": 255.0,
+      "decode_tps": 1.346233,
+      "eos": 0.0,
+      "maxrss_KiB": 6282604.0,
+      "tag": "a2-long",
+      "exact_parity": true,
+      "sha256": "8f996f89f2ed891c2e6ff7c059e6f100fab96271e3c8c1ed329da7c3e79d74b9",
+      "rss_KiB": 6284336,
+      "gpu_MiB": 5296,
+      "swap_KiB": 0,
+      "swapout_pages": 0,
+      "io": {
+        "prefill-start": {
+          "rchar": 11444631,
+          "wchar": 370998,
+          "syscr": 2835,
+          "syscw": 3885,
+          "read_bytes": 376832,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        },
+        "decode-start": {
+          "rchar": 148112756752,
+          "wchar": 379871,
+          "syscr": 43638,
+          "syscw": 4046,
+          "read_bytes": 2968805376,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        },
+        "decode-end": {
+          "rchar": 651657217674,
+          "wchar": 413431,
+          "syscr": 182360,
+          "syscw": 4822,
+          "read_bytes": 5789650944,
+          "write_bytes": 0,
+          "cancelled_write_bytes": 0
+        }
+      }
+    }
+  ],
+  "medians": {
+    "a": {
+      "prefill_tps": 1.323081,
+      "decode_tps": 1.3517295,
+      "rss_KiB": 6284354.0,
+      "gpu_MiB": 5296.0,
+      "load_s": 1.2872835
+    },
+    "b": {
+      "prefill_tps": 4.178623999999999,
+      "decode_tps": 4.5936155,
+      "rss_KiB": 10783148.0,
+      "gpu_MiB": 5296.0,
+      "load_s": 3.3631345
+    }
+  },
+  "relative_percent": {
+    "prefill_tps": 215.8252593756542,
+    "decode_tps": 239.83245168504496,
+    "rss_KiB": 71.58721485135942,
+    "gpu_MiB": 0.0,
+    "load_s": 161.25826206892265
+  },
+  "cuda_decode_16_steps": {
+    "CUPTI_ACTIVITY_KIND_GRAPH_TRACE": {
+      "events": 800,
+      "sum_seconds": 0.249402601,
+      "first_s": 0.018070963,
+      "last_s": 11.978861802
+    },
+    "CUPTI_ACTIVITY_KIND_MEMCPY": {
+      "events": 5600,
+      "sum_seconds": 0.345888163,
+      "first_s": 0.017609575,
+      "last_s": 11.978907916
+    },
+    "CUPTI_ACTIVITY_KIND_SYNCHRONIZATION": {
+      "events": 8369,
+      "sum_seconds": 0.300388166,
+      "first_s": 0.010278935,
+      "last_s": 11.978938005
+    }
+  },
+  "limitations": [
+    "All long runs stopped at max256, ordinary EOS enabled; separate arithmetic request reached natural EOS.",
+    "Initial Nsight resource supervisor followed launcher: its RSS/GPU/IO are invalid, native ru_maxrss remains recorded.",
+    "B1 supervisor failed during final proc IO sampling; excluded from acceptance; native output parity retained.",
+    "Physical read_bytes can rise despite logical I/O reduction because private caches displace filesystem cache.",
+    "Native C++ GGML/CUDA remains; no C++ removal.",
+    "Further optimisation explicitly requested; 15-17 tok/s target not reached."
+  ],
+  "artifacts": {
+    "experiments/EXP-2026-11-17-920-edge0-bounded-cache/evidence/cuda-graph-summary.json": {
+      "sha256": "b818d3503d9fea6af09c37f8d37245bf3a80b14e2a0063aba2dea5b594d09f43",
+      "bytes": 454
+    },
+    "experiments/EXP-2026-11-17-920-edge0-bounded-cache/evidence/build.log.gz": {
+      "sha256": "d7e94356d0a369d42b753bebfbe806d947dec77ce9c22410638bdb6a447fa475",
+      "bytes": 1417
+    },
+    "experiments/EXP-2026-11-17-920-edge0-bounded-cache/evidence/uncached-profile-stats.log.gz": {
+      "sha256": "ebd6932f41ef2204c53ca96f881429db204cb16bf5d764ba3425996fd5c2549d",
+      "bytes": 945
+    },
+    "experiments/EXP-2026-11-17-920-edge0-bounded-cache/evidence/uncached-profile-summary.txt": {
+      "sha256": "7ebee141dc4dcd6ac07bc5110200c09784f44fdd411dae6642bff5f37ebd5860",
+      "bytes": 1292
+    },
+    "experiments/EXP-2026-11-17-920-edge0-bounded-cache/evidence/uncached-profile-log.txt.gz": {
+      "sha256": "1f2ce383b94ac6e048a555195cd6013bdb59ac6b87d8ed9fdd8b4b8ffdc7dc9b",
+      "bytes": 34463
+    },
+    "experiments/EXP-2026-11-17-920-edge0-bounded-cache/evidence/cache-gates.log.gz": {
+      "sha256": "973f9c168144591f7868e555113e6963ce94057db031e853cade4030fe8721c2",
+      "bytes": 1119
+    },
+    "experiments/EXP-2026-11-17-920-edge0-bounded-cache/evidence/b1-long/answer.txt": {
+      "sha256": "8f996f89f2ed891c2e6ff7c059e6f100fab96271e3c8c1ed329da7c3e79d74b9",
+      "bytes": 1809
+    },
+    "experiments/EXP-2026-11-17-920-edge0-bounded-cache/evidence/b1-long/parity.json": {
+      "sha256": "d2a1d757d74d7af97ed6836a0854cff55edd4c96a8ed259ccfe9f28c0fb5ae49",
+      "bytes": 292
+    },
+    "experiments/EXP-2026-11-17-920-edge0-bounded-cache/evidence/b1-long/prompt.txt": {
+      "sha256": "15b2b3947ccf9fd8ec9c8137c04295c45e3ad166529c25bfc4fa46889a2245ac",
+      "bytes": 463
+    },
+    "experiments/EXP-2026-11-17-920-edge0-bounded-cache/evidence/b1-long/log.txt.gz": {
+      "sha256": "e0478625e04833a933039ae790c8ff617214ad6b60cdd59657e649a83aa2a6bf",
+      "bytes": 28125
+    },
+    "experiments/EXP-2026-11-17-920-edge0-bounded-cache/evidence/a1-long/answer.txt": {
+      "sha256": "8f996f89f2ed891c2e6ff7c059e6f100fab96271e3c8c1ed329da7c3e79d74b9",
+      "bytes": 1809
+    },
+    "experiments/EXP-2026-11-17-920-edge0-bounded-cache/evidence/a1-long/resources.json": {
+      "sha256": "696062e58367dd890fafa89e95eaa301311f057e86eba2c7eb2346c63094d25e",
+      "bytes": 78705
+    },
+    "experiments/EXP-2026-11-17-920-edge0-bounded-cache/evidence/a1-long/prompt.txt": {
+      "sha256": "15b2b3947ccf9fd8ec9c8137c04295c45e3ad166529c25bfc4fa46889a2245ac",
+      "bytes": 463
+    },
+    "experiments/EXP-2026-11-17-920-edge0-bounded-cache/evidence/a1-long/log.txt.gz": {
+      "sha256": "d94f6195961f90f3bc04e2432ebbf0d955ee8b72c6e972a6cfbe16a53ef3db5a",
+      "bytes": 28572
+    },
+    "experiments/EXP-2026-11-17-920-edge0-bounded-cache/evidence/b3-long/answer.txt": {
+      "sha256": "8f996f89f2ed891c2e6ff7c059e6f100fab96271e3c8c1ed329da7c3e79d74b9",
+      "bytes": 1809
+    },
+    "experiments/EXP-2026-11-17-920-edge0-bounded-cache/evidence/b3-long/resources.json": {
+      "sha256": "6cc8fec3e9c8fa7e3bb0c253e910b778cde6b7fdfed3764c74780bbfddd0e065",
+      "bytes": 25084
+    },
+    "experiments/EXP-2026-11-17-920-edge0-bounded-cache/evidence/b3-long/prompt.txt": {
+      "sha256": "15b2b3947ccf9fd8ec9c8137c04295c45e3ad166529c25bfc4fa46889a2245ac",
+      "bytes": 463
+    },
+    "experiments/EXP-2026-11-17-920-edge0-bounded-cache/evidence/b3-long/samples.jsonl.gz": {
+      "sha256": "61fac314ed379c2578e47f57e51accc30c893190ee8a320477b8073283b4dec0",
+      "bytes": 2913
+    },
+    "experiments/EXP-2026-11-17-920-edge0-bounded-cache/evidence/b3-long/log.txt.gz": {
+      "sha256": "b8ea0321f03528406d985514f5bcaf614979f543e2a50cab9f25b24c84008620",
+      "bytes": 28129
+    },
+    "experiments/EXP-2026-11-17-920-edge0-bounded-cache/evidence/a2-long/answer.txt": {
+      "sha256": "8f996f89f2ed891c2e6ff7c059e6f100fab96271e3c8c1ed329da7c3e79d74b9",
+      "bytes": 1809
+    },
+    "experiments/EXP-2026-11-17-920-edge0-bounded-cache/evidence/a2-long/resources.json": {
+      "sha256": "197d334923da9682c0db26b21f72f85847dfcb86da2196cddc6503a955863e91",
+      "bytes": 79424
+    },
+    "experiments/EXP-2026-11-17-920-edge0-bounded-cache/evidence/a2-long/prompt.txt": {
+      "sha256": "15b2b3947ccf9fd8ec9c8137c04295c45e3ad166529c25bfc4fa46889a2245ac",
+      "bytes": 463
+    },
+    "experiments/EXP-2026-11-17-920-edge0-bounded-cache/evidence/a2-long/samples.jsonl.gz": {
+      "sha256": "0d056b0c6906eeccbe6716426a31255142033ceba0f1ece5fe61b325d8a4ed6f",
+      "bytes": 8739
+    },
+    "experiments/EXP-2026-11-17-920-edge0-bounded-cache/evidence/a2-long/log.txt.gz": {
+      "sha256": "fd09de755c111e0cd38bd1434cdd520e9b6108e8de1bd0a52c73062e63263422",
+      "bytes": 28519
+    },
+    "experiments/EXP-2026-11-17-920-edge0-bounded-cache/evidence/eos-cached/answer.txt": {
+      "sha256": "fd4bca526fa9c822c80fd007b1a14851db4e63ebe898d4dc87add43f7c34f077",
+      "bytes": 12
+    },
+    "experiments/EXP-2026-11-17-920-edge0-bounded-cache/evidence/eos-cached/resources.json": {
+      "sha256": "52a618f9a4779d6fcd902257d20a8c378d84e5f596235882f267b7f12e679e4d",
+      "bytes": 4319
+    },
+    "experiments/EXP-2026-11-17-920-edge0-bounded-cache/evidence/eos-cached/prompt.txt": {
+      "sha256": "c045d6dc40eef2f49b5bb8c43064bcce657d85171919fcad7a20903e754b6ed3",
+      "bytes": 174
+    },
+    "experiments/EXP-2026-11-17-920-edge0-bounded-cache/evidence/eos-cached/samples.jsonl.gz": {
+      "sha256": "ea3706a4ad9ddce5b8a13fad01a64fa547e7c5f1ed78b26149d41653466c51b2",
+      "bytes": 586
+    },
+    "experiments/EXP-2026-11-17-920-edge0-bounded-cache/evidence/eos-cached/log.txt.gz": {
+      "sha256": "4fced1bbf178b2effd758688df33a97edeca19c6b973a3bf00cbceb195ff2eac",
+      "bytes": 19489
+    },
+    "experiments/EXP-2026-11-17-920-edge0-bounded-cache/evidence/b2-long/answer.txt": {
+      "sha256": "8f996f89f2ed891c2e6ff7c059e6f100fab96271e3c8c1ed329da7c3e79d74b9",
+      "bytes": 1809
+    },
+    "experiments/EXP-2026-11-17-920-edge0-bounded-cache/evidence/b2-long/parity.json": {
+      "sha256": "fd88a388b360786e783762b83ab76a1b5f4feb8e73e7af71a9a35397074e129e",
+      "bytes": 153
+    },
+    "experiments/EXP-2026-11-17-920-edge0-bounded-cache/evidence/b2-long/resources.json": {
+      "sha256": "6706e125ee8efe9227e4bf8e1ff4705dd7b8824d9cab0548458a42245e547c6a",
+      "bytes": 24914
+    },
+    "experiments/EXP-2026-11-17-920-edge0-bounded-cache/evidence/b2-long/prompt.txt": {
+      "sha256": "15b2b3947ccf9fd8ec9c8137c04295c45e3ad166529c25bfc4fa46889a2245ac",
+      "bytes": 463
+    },
+    "experiments/EXP-2026-11-17-920-edge0-bounded-cache/evidence/b2-long/samples.jsonl.gz": {
+      "sha256": "77e0996db278ae9af8b902d31d980e8a16416fb8adb2f410bc8d8824cbf180fc",
+      "bytes": 2876
+    },
+    "experiments/EXP-2026-11-17-920-edge0-bounded-cache/evidence/b2-long/log.txt.gz": {
+      "sha256": "c721f5a3942a0da9dc54705671c53d173a3390d412908ba03eaa05b3400bbd17",
+      "bytes": 28138
+    }
+  },
+  "cpp_audit": {
+    "baseline_replaced_removed": 0,
+    "dead_deleted": 0,
+    "native_glue_lines": 321,
+    "necessary_cpp_minimum": "UNKNOWN",
+    "retained_baseline_closure_lines": 248213,
+    "retained_baseline_closure_files": 350
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "tokens": 256,
+  "exact_token_ids": true,
+  "exact_text": true,
+  "answer_sha256": "8f996f89f2ed891c2e6ff7c059e6f100fab96271e3c8c1ed329da7c3e79d74b9",
+  "qualification": "B1 native result complete, supervisor failed during final proc IO sample; not a complete resource acceptance run."
+}

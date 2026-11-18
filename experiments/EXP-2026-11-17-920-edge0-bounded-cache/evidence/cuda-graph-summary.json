@@ -1,0 +1,20 @@
+{
+  "CUPTI_ACTIVITY_KIND_GRAPH_TRACE": {
+    "events": 800,
+    "sum_seconds": 0.249402601,
+    "first_s": 0.018070963,
+    "last_s": 11.978861802
+  },
+  "CUPTI_ACTIVITY_KIND_MEMCPY": {
+    "events": 5600,
+    "sum_seconds": 0.345888163,
+    "first_s": 0.017609575,
+    "last_s": 11.978907916
+  },
+  "CUPTI_ACTIVITY_KIND_SYNCHRONIZATION": {
+    "events": 8369,
+    "sum_seconds": 0.300388166,
+    "first_s": 0.010278935,
+    "last_s": 11.978938005
+  }
+}

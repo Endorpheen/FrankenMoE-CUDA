@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "status": "TEMPORARY_NOT_SERVER_INTEGRATED",
+  "native_adapter_files": 1,
+  "counts_as_migration_progress": false,
+  "entries": [
+    {
+      "path": "experiments/EXP-2026-11-17-911-edge0-ple-provider/source/pread.c",
+      "sha256": "dcdc53ba8ea9721f54033e9b24af63034686f9745558d0368a0188944c38c09d",
+      "role": "POSIX pread ABI and negative errno translation only",
+      "owns_runtime_policy": false,
+      "removal_target": true,
+      "remove_when": "An existing typed Goose-callable positioned-read OS binding covers the same ABI; retain no duplicate binding."
+    }
+  ]
+}
