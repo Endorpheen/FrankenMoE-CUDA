@@ -995,6 +995,18 @@ fn fg_sampler_top_p(lv: f32[:], p: f32[:], id: i64[:], n: i64,
     return n;
 }
 
+
+// XTC entry for the real path: the caller passes the uniform value it drew, so
+// the RNG stream stays with the caller and this stays pure.
+fn fg_sampler_xtc(lv: f32[:], p: f32[:], id: i64[:], n: i64,
+                  probability: f32, threshold: f32, min_keep: i64, chance: f32,
+                  marker: i64) -> i64 {
+    if marker != 172 {
+        return -1;
+    }
+    return sm_apply_xtc(lv, p, id, n, probability, threshold, min_keep, chance);
+}
+
 // Single stable entry point for the shipped library. Generated function ids
 // shift whenever this module changes, so callers must reach the chain through
 // this one function rather than through a generated id.

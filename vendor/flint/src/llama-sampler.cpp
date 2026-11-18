@@ -37,6 +37,12 @@ static std::atomic<unsigned long long> g_goose_chain_calls{0};
 static std::atomic<unsigned long long> g_goose_top_p_calls{0};
 
 // top-p is enabled with the chain; GGML_GOOSE_SAMPLER_TOP_P=0 disables it
+
+extern "C" int64_t fg_sampler_xtc_call(float * lv, float * p, int64_t * id, int64_t n,
+                                       float probability, float threshold, int64_t min_keep,
+                                       float chance) __attribute__((weak));
+static std::atomic<unsigned long long> g_goose_xtc_calls{0};
+
 static bool fg_goose_top_p_enabled() {
     static const bool on = []() {
         const char * f = getenv("GGML_GOOSE_SAMPLER_TOP_P");
@@ -2453,6 +2459,33 @@ static void llama_sample_xtc_apply(struct llama_sampler * smpl, llama_token_data
     if (chance > ctx->probability) {
         return;
     }
+    if (fg_sampler_xtc_call != nullptr && cur_p->size > 0) {
+        std::vector<float>   lv(cur_p->size), pp(cur_p->size);
+        std::vector<int64_t> ids(cur_p->size);
+        for (size_t i = 0; i < cur_p->size; ++i) {
+            lv[i]  = cur_p->data[i].logit;
+            pp[i]  = cur_p->data[i].p;
+            ids[i] = cur_p->data[i].id;
+        }
+        const int64_t kept = fg_sampler_xtc_call(lv.data(), pp.data(), ids.data(),
+                                                (int64_t) cur_p->size, ctx->probability,
+                                                ctx->threshold, ctx->min_keep, chance);
+        if (kept > 0 && kept <= (int64_t) cur_p->size) {
+            for (int64_t i = 0; i < kept; ++i) {
+                cur_p->data[i].logit = lv[i];
+                cur_p->data[i].p     = pp[i];
+                cur_p->data[i].id    = (llama_token) ids[i];
+            }
+            cur_p->size = (size_t) kept;
+            const unsigned long long c = ++g_goose_xtc_calls;
+            if (c == 1 || (c % 100) == 0) {
+                fprintf(stderr, "FG171_XTC goose calls=%llu kept=%lld\n",
+                        (unsigned long long) c, (long long) kept);
+            }
+            return;
+        }
+    }
+
 
     llama_sampler_softmax_impl(cur_p, true);
 

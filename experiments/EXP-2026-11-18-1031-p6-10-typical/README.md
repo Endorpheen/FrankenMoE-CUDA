@@ -661,3 +661,19 @@ and the id header is produced after that. Recorded in the ledger as TD-S5
 (resolved) with the rule it implies.
 
 Both stages are default-on; each can be disabled with its own flag.
+
+## XTC live in the shipped library
+
+The native XTC draws its uniform value and then hands over to Goose with that
+same value, so the RNG stream is untouched by the substitution:
+
+```
+XTC IDENTICAL ON vs OFF          (60 candidate sets, eight seeds apart by length)
+FG171_XTC goose calls=1 kept=...
+```
+
+Ids, logits and the surviving set match the native body exactly.
+
+Live stages now: typical-p and top-p (both default-on with their own disable
+flags), XTC (with the chain flag). Next: penalties and DRY, then the fixed-seed
+chain test on the real path.
