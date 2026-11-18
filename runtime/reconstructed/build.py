@@ -62,6 +62,16 @@ for name in changed:
     objs.append(str(o))
     print('built', name)
 
+# The reader adapter owns the mapping and is the only file here that is not a
+# carrier source. It is debt and tools/migration-status.sh counts it as such.
+_r = subprocess.run(CXX + ['-o', str(W/'gguf-reader-owner.o'), '-c',
+                           str(BASE/'integration/goose-standalone/gguf-reader-owner.cpp')],
+                    capture_output=True, text=True)
+if _r.returncode:
+    print('FAIL gguf-reader-owner.cpp'); print(_r.stderr[:1500]); sys.exit(1)
+objs.append(str(W/'gguf-reader-owner.o'))
+print('built gguf-reader-owner.cpp')
+
 # which Goose modules are called
 def undef(o):
     s = subprocess.run(['nm','-u',o],capture_output=True,text=True).stdout
@@ -188,6 +198,37 @@ for _pair in _GOOSE_PAIRS:
         print('bridge cc failed:', _stem); print(_r.stderr[:800]); sys.exit(1)
     _goose_objs += [str(_mo), str(_bo)]
 print('goose modules compiled from sources:', len(_goose_objs)//2)
+
+# The tokenizer path is one unit, not one module: the reader, its header and type
+# tables, the Unicode and pre-tokenizer tables, the BPE engine and the load join.
+# Goose has no re-export, so they are composed the same way
+# tools/build-main-runtime.sh composes the standalone unit, then compiled once.
+# Symbols were measured before this was added: the unit exports 67 globals and
+# the only name it shares with the accepted libllama set is goose_init, which is
+# renamed here.
+_CARRIER_UNIT = [
+    'misc/gguf-headers.goose', 'misc/ggml-type-table.goose', 'model/gguf-tensors.goose',
+    'model/gguf-reader.goose', 'model/special-partition.goose',
+    'misc/unicode-tables.goose', 'misc/unicode-text.goose',
+    'misc/pretokenizer-qwen35.goose', 'model/bpe-tokenize.goose',
+    'model/bpe-detokenize.goose', 'model/bpe-load.goose',
+]
+_cunit = _gobj/'tokenizer-unit.goose'
+_r = subprocess.run([sys.executable, str(_REPO/'tools'/'compose-goose.py'), str(_cunit)]
+                    + [str(_GOOSE/m) for m in _CARRIER_UNIT], capture_output=True, text=True)
+if _r.returncode != 0:
+    print('tokenizer unit compose failed'); print(_r.stderr[:800]); sys.exit(1)
+_r = subprocess.run([str(GOOSE_BIN), '--standalone', '-o', str(_gobj/'tokenizer-unit.c'),
+                     '--header', str(_gobj/'tokenizer-unit.h'), str(_cunit)], capture_output=True, text=True)
+if _r.returncode != 0:
+    print('tokenizer unit compile failed'); print(_r.stderr[:800]); sys.exit(1)
+_r = subprocess.run(['gcc-13','-O2','-fPIC','-std=c11','-w','-Dgoose_init=fg950_goose_init',
+                     '-c', str(_gobj/'tokenizer-unit.c'), '-o', str(_gobj/'tokenizer-unit.o')],
+                    capture_output=True, text=True)
+if _r.returncode != 0:
+    print('tokenizer unit cc failed'); print(_r.stderr[:800]); sys.exit(1)
+_goose_objs.append(str(_gobj/'tokenizer-unit.o'))
+print('tokenizer unit modules composed:', len(_CARRIER_UNIT))
 
 # SLRU pieces are compiled from repository sources: two generated C files that live in experiments/ and the runtime
 # shim in integration/. They replace three prebuilt objects and are the policy the expert cache depends on.

@@ -154,6 +154,67 @@ tokenizer, sampler).
 The instruments are `countarr.so` (LD_PRELOAD counters for the two calls) and the
 three gates above; `ggufcmp` already proves the reader's own key/tensor indexes.
 
+### Root cause (established 2026-11-18, from source, no model run)
+
+The reader is not wrong. The contract is. `gguf_get_arr_str` returns
+`ctx->kv[key_id].data_string[i].c_str()` (`ggml/src/gguf.cpp:1082`): a
+NUL-terminated copy that the C++ container owns. The GGUF wire format stores
+strings length-prefixed with no terminator, so `gr_arr_str_span` correctly
+reports `(offset, length)` and cannot report a C string - the byte after the last
+character of an element is the first byte of the next element's 8-byte length
+word.
+
+Both consumers need the terminator explicitly:
+
+- `llama-vocab.cpp` merges: `const char * sep = *word ? strchr(word + 1, ' ') : nullptr;`
+  then `second.assign(sep + 1)`. With a raw span pointer `strchr` walks past the
+  element into the following length words, stops on the first zero byte (byte 2-7
+  of a small little-endian length), and produces a truncated, wrong tail. That is
+  the observed breakage, not an offset error.
+- `llama-model-loader.cpp` / `llama-model.cpp` store the value through
+  `const T value = gguf_get_arr_str(...)`, which also needs termination.
+
+So none of the three hypotheses in the list above applies: the offset base is
+right, `payload` for a string array is the first length word (and
+`gr_arr_str_span` accounts for that by stepping 8 + n), and the missing piece is
+the one already stated in item 3 - a `std::string`/buffer copy with an explicit
+length.
+
+Correct shape of the fix, in either order:
+
+1. consumer-side: take `(offset, length)` from `gr_arr_str_span`, build the
+   string with `std::string(ptr, len)` (or `assign(ptr, len)`), and parse the
+   space separator inside that span instead of `strchr`. No adapter, no new
+   module - the carrier calls an existing export;
+2. reader-side, if a C string is really wanted: add an export that copies the
+   element into a caller-owned buffer and appends one NUL, returning the length.
+   Never hand out a pointer into the mapping as a C string.
+
+`gr_val_span` has the same rule: its `bytes` covers the 8-byte length prefixes,
+so it describes the array payload, not a printable string.
+
+### Status after EXP948 (2026-11-18)
+
+The reader half is done and tracked: `gr_arr_str_table` in
+`goose/model/gguf-reader.goose` lays a whole string array out as NUL-terminated
+entries in one pass, answers `-(needed + 1)` when the text buffer is short (and
+still publishes the offset table), and is gated by
+`experiments/EXP-2026-11-18-948-goose-arr-str-table` - 32/32 checks against
+native `libggml-base`, libc-only link, no model run. Do not re-derive it.
+
+What is still missing is only the carrier half. The candidate already has the
+right shape in `exp925-tokenizer-wire-20261117/our-src/llama-model-loader.cpp`:
+a `std::map<int64_t, arr_text> arr_str` holding a model-lifetime NUL-terminated
+table plus its offsets, filled once per array through `gr_arr_str_table` and
+handed out as `text.data() + offs[element]`. That file is outside the repository;
+bringing it into `runtime/reconstructed/src/llama-model-loader.cpp` (identical
+sha256 to the built tree today) is the remaining step, followed by the pieces,
+tokenize and sampler gates.
+
+One divergence to keep, not to "fix": for an element with an embedded NUL the
+native container stops at the NUL and loses the rest of the wire bytes;
+`gr_arr_str_table` keeps all of them. The gate asserts both behaviours.
+
 ## 4. Not blockers: work in progress, for context only
 
 - Metadata: `gguf_get_kv_type/arr_type/arr_n` now go through Goose (252 -> 99,

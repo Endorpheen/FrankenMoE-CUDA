@@ -289,3 +289,9 @@ results/runtime-snapshots/*/objects/
 # Build backups: binary sets kept for rollback. Ignored by git because they are large concrete files; the
 # store outside the repository keeps the authoritative copies.
 Backup/
+
+# Reference binary sets: large files, kept out of Git; manifests are tracked.
+reference/apex-47/bin/
+reference/apex-47/lib/
+reference/apex-47/responses/
+reference/independent-build/libllama.so

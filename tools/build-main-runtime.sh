@@ -174,6 +174,12 @@ MODULES=(
     goose/json/peg-invalid.goose
     goose/json/visit.goose
     goose/json/refs.goose
+    goose/misc/unicode-tables.goose
+    goose/misc/unicode-text.goose
+    goose/misc/pretokenizer-qwen35.goose
+    goose/model/bpe-tokenize.goose
+    goose/model/bpe-detokenize.goose
+    goose/model/bpe-load.goose
 )
 
 echo "[1/5] compose ${#MODULES[@]} modules"
