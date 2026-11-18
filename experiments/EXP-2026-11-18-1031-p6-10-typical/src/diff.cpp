@@ -1,0 +1,60 @@
+// Differential: Goose sm_apply_typical vs the native llama_sampler_typical_apply
+// algorithm transcribed with std::sort, on random logits.
+#include <cmath>
+#include <cstdio>
+#include <cstdint>
+#include <cstring>
+#include <algorithm>
+#include <numeric>
+#include <random>
+#include <vector>
+extern "C" int64_t gate_typical_c(const float*, float*, int64_t*, int64_t, float, int64_t);
+static int64_t native_typical(const std::vector<float>& logits_in, float tp, int64_t mk,
+                              std::vector<int64_t>& ids_out, std::vector<float>* probs_out) {
+    std::vector<float> lv = logits_in;
+    std::vector<int64_t> id(lv.size());
+    std::iota(id.begin(), id.end(), 0);
+    // sort by logit desc (softmax_impl(..., true) precondition)
+    std::sort(id.begin(), id.end(), [&](int64_t a, int64_t b){ return lv[a] > lv[b]; });
+    std::vector<float> sl(lv.size()), p(lv.size());
+    for (size_t i = 0; i < id.size(); ++i) sl[i] = lv[id[i]];
+    float mx = sl[0], cum = 0;
+    for (size_t i = 0; i < sl.size(); ++i) { p[i] = expf(sl[i]-mx); cum += p[i]; }
+    for (size_t i = 0; i < p.size(); ++i) p[i] /= cum;
+    float H = 0; for (float v : p) H -= v * logf(v);
+    std::vector<float> shifted(p.size());
+    for (size_t i = 0; i < p.size(); ++i) shifted[i] = fabsf(-logf(p[i]) - H);
+    std::vector<size_t> idx(p.size()); std::iota(idx.begin(), idx.end(), 0);
+    std::sort(idx.begin(), idx.end(), [&](size_t a, size_t b){ return shifted[a] < shifted[b]; });
+    float c2 = 0; size_t last = idx.size();
+    for (size_t i = 0; i < idx.size(); ++i) {
+        c2 += p[idx[i]];
+        if (c2 > tp && (mk == 0 || (int64_t)i >= mk - 1)) { last = i + 1; break; }
+    }
+    ids_out.clear(); if (probs_out) probs_out->clear();
+    for (size_t i = 0; i < last; ++i) { ids_out.push_back(id[idx[i]]); if (probs_out) probs_out->push_back(p[idx[i]]); }
+    return (int64_t) last;
+}
+int main() {
+    std::mt19937 rng(12345); std::normal_distribution<float> nd(0.f, 3.f);
+    const int N = 64; int bad = 0, cases = 0;
+    const float tps[] = {0.5f, 0.9f, 0.99f};
+    const int64_t mks[] = {0, 1, 5};
+    for (int it = 0; it < 200; ++it) {
+        std::vector<float> logits(N); for (auto& v : logits) v = nd(rng);
+        for (float tp : tps) for (int64_t mk : mks) {
+            std::vector<int64_t> nid; std::vector<float> np;
+            int64_t nn = native_typical(logits, tp, mk, nid, &np);
+            std::vector<int64_t> gid(N); std::iota(gid.begin(), gid.end(), 0);
+            std::vector<float> glv = logits, gp(N, 0.f);
+            int64_t gn = gate_typical_c(glv.data(), gp.data(), gid.data(), N, tp, mk);
+            cases++;
+            bool eq = (gn == nn);
+            if (eq) for (int64_t i = 0; i < nn; ++i) if (gid[i] != nid[i]) { eq = false; break; }
+            if (!eq) { bad++; if (bad <= 3) printf("MISMATCH tp=%g mk=%lld goose=%lld native=%lld first_ids %lld/%lld\n",
+                (double)tp,(long long)mk,(long long)gn,(long long)nn,(long long)gid[0],(long long)nid[0]); }
+        }
+    }
+    printf("typical-p: cases=%d mismatches=%d\n", cases, bad);
+    return bad ? 1 : 0;
+}
