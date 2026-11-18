@@ -1061,6 +1061,15 @@ fn fg_sampler_adaptive_p(lv: f32[:], p: f32[:], id: i64[:], n: i64,
     return sm_apply_adaptive_p_state(lv, p, id, n, target, weighted_sum, total_weight);
 }
 
+// mirostat entry: the truncation size from the s_hat estimate; the draw and the
+// EMA update stay with the caller so the RNG stream is untouched
+fn fg_sampler_mirostat(p: f32[:], n: i64, mu: f32, m: i64, n_vocab: f32, marker: i64) -> i64 {
+    if marker != 175 {
+        return -1;
+    }
+    return sm_mirostat_k(p, n, mu, m, n_vocab);
+}
+
 // Single stable entry point for the shipped library. Generated function ids
 // shift whenever this module changes, so callers must reach the chain through
 // this one function rather than through a generated id.

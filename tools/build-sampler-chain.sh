@@ -32,7 +32,8 @@ fn main() {
     let tbl: i64[16] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     let penr = fg_sampler_penalties(lv, id, p, tbl, tbl, 8, 8, 1.0, 0.0, 0.0);
     let adr = fg_sampler_adaptive_p(lv, p, id, 8, 0.5, 0.0, 1.0, 174);
-    if adr < 0 {
+    let mir = fg_sampler_mirostat(p, 8, 1.0, 3, 100.0, 175);
+    if adr < 0 || mir < 0 {
         return;
     }
     if penr < 0 {
@@ -67,6 +68,7 @@ ENTRIES = [
     ("XTC",       r'\(gg_slice p0, gg_slice p1, gg_slice p2, int64_t p3, float p4, float p5, int64_t p6, float p7, int64_t p8, int64_t base\);'),
     ("PENALTIES", r'\(gg_slice p0, gg_slice p1, gg_slice p2, gg_slice p3, gg_slice p4, int64_t p5, int64_t p6, float p7, float p8, float p9, int64_t base\);'),
     ("ADAPTIVE",  r'\(gg_slice p0, gg_slice p1, gg_slice p2, int64_t p3, float p4, float p5, float p6, int64_t p7, int64_t base\);'),
+    ("MIROSTAT",  r'\(gg_slice p0, int64_t p1, float p2, int64_t p3, float p4, int64_t p5, int64_t base\);'),
 ]
 
 found = {}
@@ -131,6 +133,11 @@ int64_t fg_sampler_adaptive_p_call(float * lv, float * p, int64_t * id, int64_t 
                                    float target, float weighted_sum, float total_weight) {
     gg_slice s0 = { (void *) lv, n }, s1 = { (void *) p, n }, s2 = { (void *) id, n };
     return FG_SAMPLER_ADAPTIVE(s0, s1, s2, n, target, weighted_sum, total_weight, 174, 0);
+}
+
+int64_t fg_sampler_mirostat_call(float * p, int64_t n, float mu, int64_t m, float n_vocab) {
+    gg_slice s0 = { (void *) p, n };
+    return FG_SAMPLER_MIROSTAT(s0, n, mu, m, n_vocab, 175, 0);
 }
 """
 open(out + '/sampler_chain_shim.c', 'w').write(SHIM)

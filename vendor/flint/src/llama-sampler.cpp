@@ -120,6 +120,10 @@ extern "C" int64_t fg_sampler_adaptive_p_call(float * lv, float * p, int64_t * i
                                               float total_weight) __attribute__((weak));
 static std::atomic<unsigned long long> g_goose_adaptive_calls{0};
 
+extern "C" int64_t fg_sampler_mirostat_call(float * p, int64_t n, float mu, int64_t m,
+                                             float n_vocab) __attribute__((weak));
+static std::atomic<unsigned long long> g_goose_mirostat_calls{0};
+
 static bool fg_goose_top_p_enabled() {
     static const bool on = []() {
         const char * f = getenv("GGML_GOOSE_SAMPLER_TOP_P");
@@ -2691,6 +2695,29 @@ static void llama_sampler_mirostat_apply(struct llama_sampler * smpl, llama_toke
     // Compute k from the estimated s_hat and target surprise value
     float epsilon_hat = s_hat - 1;
     float k = powf((epsilon_hat * powf(2, ctx->mu)) / (1 - powf(ctx->n_vocab, -epsilon_hat)), 1 / s_hat);
+
+    bool fg_k = false;
+    if (fg_sampler_mirostat_call != nullptr && fg_goose_chain_enabled() && cur_p->size > 0) {
+        const long long t0 = fg_now_ns();
+        fg_scratch.ensure(cur_p->size);
+        std::vector<float> & pp = fg_scratch.pp;
+        for (size_t i = 0; i < cur_p->size; ++i) {
+            pp[i] = cur_p->data[i].p;
+        }
+        const int64_t kg = fg_sampler_mirostat_call(pp.data(), (int64_t) cur_p->size, ctx->mu,
+                                                    (int64_t) ctx->m, ctx->n_vocab);
+        fg_report_stage("mirostat", fg_ns_xtc, fg_now_ns() - t0);
+        if (kg > 0) {
+            k = (float) kg;
+            fg_k = true;
+            const unsigned long long c = ++g_goose_mirostat_calls;
+            if (c == 1 || (c % 100) == 0) {
+                fprintf(stderr, "FG171_MIROSTAT goose calls=%llu k=%lld\n",
+                        (unsigned long long) c, (long long) kg);
+            }
+        }
+    }
+    (void) fg_k;
 
     llama_sampler_top_k_impl(cur_p, std::max(int(k), 1));
 

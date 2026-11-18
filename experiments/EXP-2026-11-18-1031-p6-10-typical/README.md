@@ -1113,3 +1113,23 @@ list).
 Live and verified by API: typical-p, top-p, XTC, penalties, DRY, adaptive-p.
 Mirostat needs the same treatment next (its own sampler list entry) and has no hook
 yet.
+
+## mirostat live and identical
+
+The truncation size comes from Goose, the draw and the EMA update stay native, so
+the RNG stream is untouched:
+
+```
+--mirostat 1 --samplers "penalties;mirostat"
+
+[ON ] " Paris.\nThe Eiffel Tower is"   counters: FG171_MIROSTAT goose calls=1
+[OFF] " Paris.\nThe Eiffel Tower is"   counters: none
+```
+
+All seven sampler stages the module implements are now exercised in the live path
+with identical output: typical-p, top-p, XTC, penalties, DRY, adaptive-p and
+mirostat.
+
+Still open in P6-10: `dist` and `temp_ext` (TD-S1), grammars and constrained
+generation, and removing the replaced native bodies once the whole set is
+accepted.
