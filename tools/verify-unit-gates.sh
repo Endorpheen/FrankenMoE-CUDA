@@ -120,7 +120,29 @@ for row in "${GATES[@]}"; do
     fi
 done
 
-# ---- 3. named, not silently dropped ----
+# ---- 3. a module generated on its own, not through the unit ----
+# test-runner.goose was recorded in the ledger as unable to generate standalone C.
+# It can, and nobody had called the result, so the gate proves both halves: the C
+# compiles and links alone, and the exports answer from C after goose_init.
+name="test-runner"
+gdir=$OUT/generated-$name
+mkdir -p "$gdir"
+if "$GOOSE" --standalone -o "$gdir/t.c" --header "$gdir/t.h" "$ROOT/goose/misc/test-runner.goose" \
+        > "$OUT/gen-$name.log" 2>&1 \
+   && "$CC" -O1 -w -I "$gdir" -I "$ROOT/integration/m1/host" -c \
+        "$ROOT/experiments/EXP-2026-11-18-990-test-runner-standalone/tests/gate.c" -o "$gdir/gate.o" \
+        >> "$OUT/gen-$name.log" 2>&1 \
+   && "$CC" -O1 -w -fPIC -c "$gdir/t.c" -o "$gdir/t.o" >> "$OUT/gen-$name.log" 2>&1 \
+   && "$CC" -O1 "$gdir/gate.o" "$gdir/t.o" "$OUT/host.o" -lm -o "$gdir/gate" >> "$OUT/gen-$name.log" 2>&1 \
+   && line=$("$gdir/gate" 2>&1 | tail -1); then
+    printf '%-16s %-8s %s\n' "$name" "$(echo "$line" | cut -c1-4)" "$(echo "$line" | cut -d' ' -f2-)"
+    case "$line" in PASS*) pass=$((pass+1));; *) fail=$((fail+1));; esac
+else
+    printf '%-16s %-8s %s\n' "$name" GENFAIL "see $OUT/gen-$name.log"
+    fail=$((fail+1))
+fi
+
+# ---- 4. named, not silently dropped ----
 printf '\nskipped, with the reason (their oracle lives outside the unit):\n'
 printf '  %-16s %s\n' "reader-adapter"  "EXP953: needs the EXP952 candidate libllama (the one with the adapter)"
 printf '  %-16s %s\n' "vocab-wire"      "EXP954: needs the EXP953 candidate build AND a generated vocab fixture"
