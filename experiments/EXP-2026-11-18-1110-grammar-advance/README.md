@@ -412,3 +412,15 @@ entry does not receive (the entry passes `wp`/`stacks`/`scratch` sized `maxs*max
 `seed` only `maxd`) or an index computed from `stackd` before it is filled.
 
 Not claimed: the grammar hook is not wired and nothing passes a functional check yet.
+
+## Bounds guard: the difference between the gated entry and the module entry
+
+The same grammar and candidates that pass in the experiment gate (`grammar composed:
+cases=4`) abort inside the module entry. The gates differ in exactly one respect: the
+experiment passes `cand_cp` with length `ncand * maxcp`, the module call passed a
+slice of length 4 for three candidates with `maxcp = 4` - the module indexes
+`cand_cp[i * maxcp + curs[i]]`, so the slice must be `ncand * maxcp` long. That is the
+first thing to correct in the wrapper, and it is a wrapper defect, not a port defect.
+
+Recorded rather than patched blindly: the next iteration fixes the length, re-runs the
+same repro, and only then moves to the hook.
