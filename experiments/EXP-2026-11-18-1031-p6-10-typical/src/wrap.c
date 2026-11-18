@@ -25,3 +25,9 @@ int64_t gate_dispatch_c(int64_t op, const float * lv, float * p, int64_t * id, i
     gg_slice s0 = { (void *) lv, n }, s1 = { (void *) p, n }, s2 = { (void *) id, n };
     return gg_function_17(op, s0, s1, s2, n, f, k, f2, f3, 0);
 }
+int64_t gate_dry_c(const int64_t * last, const int64_t * bh, const int64_t * bts,
+                   const int64_t * btl, const int64_t * btail, int64_t n, int64_t nb) {
+    gg_slice s0 = { (void *) last, n }, s1 = { (void *) bh, nb }, s2 = { (void *) bts, nb };
+    gg_slice s3 = { (void *) btl, nb }, s4 = { (void *) btail, nb * 4 };
+    return gg_function_20(s0, s1, s2, s3, s4, n, nb, 0);
+}

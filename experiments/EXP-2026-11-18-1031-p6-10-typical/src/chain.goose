@@ -662,6 +662,50 @@ fn sm_apply_xtc(lv: f32[:], p: f32[:], id: i64[:], n: i64,
     }
     return n;
 }
+
+// dry step 1: limit the repetition window by the nearest restart sequence.
+// last[] is the context in natural order; rat(i) = last[n-1-i].
+// breakers are flattened: head, tail start, tail length, tail tokens.
+fn sm_dry_rep_limit(last: i64[:], b_head: i64[:], b_ts: i64[:], b_tl: i64[:],
+                    b_tail: i64[:], n: i64, nb: i64) -> i64 {
+    var rep_limit: i64 = n;
+    var i: i64 = 0;
+    while i < n {
+        let tok: i64 = last[n - 1 - i];
+        var longest: i64 = -1;
+        var b: i64 = 0;
+        while b < nb {
+            if b_head[b] == tok {
+                let sl: i64 = b_tl[b];
+                if sl > longest && sl <= i {
+                    var ok: bool = true;
+                    var off: i64 = 0;
+                    while off < sl {
+                        if b_tail[b_ts[b] + off] != last[n - 1 - (i - off - 1)] {
+                            ok = false;
+                            break;
+                        }
+                        off = off + 1;
+                    }
+                    if ok {
+                        longest = sl;
+                    }
+                }
+            }
+            b = b + 1;
+        }
+        if longest >= 0 {
+            rep_limit = i - longest;
+            break;
+        }
+        i = i + 1;
+    }
+    return rep_limit;
+}
+
+fn gate_dry(last: i64[:], b_head: i64[:], b_ts: i64[:], b_tl: i64[:], b_tail: i64[:], n: i64, nb: i64) -> i64 {
+    return sm_dry_rep_limit(last, b_head, b_ts, b_tl, b_tail, n, nb);
+}
 fn main() {
     print("p6-10 typical gate");
     let lv: f32[4] = [0.0, 0.0, 0.0, 0.0];
@@ -671,4 +715,5 @@ fn main() {
     let ignored3 = gate_sort(lv, id, 4);
     let ignored4 = gate_top_p(lv, p, id, 4, 1.0, 0);
     let ignored5 = gate_dispatch(9, lv, p, id, 4, 1.0, 0, 0.0, 0.0);
+    let ignored6 = gate_dry(id, id, id, id, id, 4, 0);
 }

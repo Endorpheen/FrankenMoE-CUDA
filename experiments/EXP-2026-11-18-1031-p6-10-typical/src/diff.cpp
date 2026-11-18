@@ -9,6 +9,7 @@
 #include <random>
 #include <vector>
 extern "C" int64_t gate_dispatch_c(int64_t, const float*, float*, int64_t*, int64_t, float, int64_t, float, float);
+extern "C" int64_t gate_dry_c(const int64_t*, const int64_t*, const int64_t*, const int64_t*, const int64_t*, int64_t, int64_t);
 static int64_t native_typical(const std::vector<float>& logits_in, float tp, int64_t mk,
                               std::vector<int64_t>& ids_out, std::vector<float>* probs_out) {
     std::vector<float> lv = logits_in;
@@ -129,5 +130,31 @@ int main() {
         }
     }
     printf("xtc: cases=%d mismatches=%d\n", cases4, bad4);
-    return (bad||bad2||bad3||bad4) ? 1 : 0;
+    // dry step 1: rep_limit from the nearest restart sequence
+    int bad5 = 0, cases5 = 0;
+    const int NN = 32, V = 8;
+    for (int it = 0; it < 200; ++it) {
+        std::vector<int64_t> last(NN); for (auto& v : last) v = (int64_t)(rng() % V);
+        int nb = 1 + (int)(rng() % 5);
+        std::vector<int64_t> bh(nb), bts(nb), btl(nb), btail(nb*4, 0);
+        int off = 0;
+        for (int b = 0; b < nb; ++b) { bh[b] = (int64_t)(rng() % V); btl[b] = (int64_t)(rng() % 3);
+            bts[b] = off; for (int j = 0; j < btl[b]; ++j) btail[off++] = (int64_t)(rng() % V); }
+        auto rat = [&](int k){ return last[NN-1-k]; };
+        int64_t rep_limit = NN;
+        for (int i = 0; i < NN; ++i) {
+            int64_t tok = rat(i); int64_t longest = -1;
+            for (int b = 0; b < nb; ++b) if (bh[b] == tok) {
+                int64_t sl = btl[b];
+                if (sl > longest && sl <= i) { bool ok = true;
+                    for (int o = 0; o < sl; ++o) if (btail[bts[b]+o] != rat(i-o-1)) { ok = false; break; }
+                    if (ok) longest = sl; } }
+            if (longest >= 0) { rep_limit = i - longest; break; }
+        }
+        int64_t gn = gate_dry_c(last.data(), bh.data(), bts.data(), btl.data(), btail.data(), NN, nb);
+        cases5++;
+        if (gn != rep_limit) { bad5++; if (bad5<=3) printf("DRY MISMATCH goose=%lld native=%lld\n",(long long)gn,(long long)rep_limit); }
+    }
+    printf("dry step1: cases=%d mismatches=%d\n", cases5, bad5);
+    return (bad||bad2||bad3||bad4||bad5) ? 1 : 0;
 }

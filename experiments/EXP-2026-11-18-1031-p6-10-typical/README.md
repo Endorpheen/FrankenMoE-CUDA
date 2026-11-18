@@ -121,3 +121,20 @@ xtc: cases=720 mismatches=0
 60 distributions x threshold {0.1, 0.3} x min_keep {1, 3} x chance {0.0, 0.4,
 0.9}; the cut and the surviving token ids match native in every case, including
 the no-op branch when chance exceeds the probability.
+
+## DRY, step 1 accepted (restart-sequence limit)
+
+`sm_dry_rep_limit` is the first step of `llama_sampler_dry_apply`: scan the
+context backwards, find the nearest restart sequence, and return the repetition
+window limit (`rep_limit`). Breakers are passed as flattened arrays (head, tail
+start, tail length, tail tokens), so no container is needed in Goose. Indices
+use `rat(i) = last[n-1-i]` exactly as the native card ring buffer.
+
+```
+dry step1: cases=200 mismatches=0
+```
+
+200 random contexts (n=32, vocabulary 8) with 1-5 breakers whose tails are 0-2
+tokens long; the results match the native loop, including multi-token tails and
+the no-match case. Steps 2 (Z-algorithm repeat counts) and 3 (penalty
+application) are not ported yet.
