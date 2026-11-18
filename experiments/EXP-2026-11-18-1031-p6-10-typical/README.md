@@ -250,3 +250,33 @@ therefore produces the same draws in Goose as in native.
 This is the second time a defect was in my own harness rather than in the
 module. The lesson is recorded: compare one draw to its counterpart, never mix
 consumers inside a comparison loop.
+
+## Filter order, read from the shipped chain builder
+
+`common/sampling.cpp` adds the filters in this order, and a Goose chain runner
+must follow it exactly:
+
+```
+dry -> top_k -> top_p -> min_p -> xtc -> typical -> temp_ext -> penalties
+    -> adaptive_p (when selected) -> greedy | dist
+```
+
+Against that order the module currently holds:
+
+| step | Goose | evidence |
+|---|---|---|
+| dry | yes (steps 1-4) | 200/200, 300/300 + documented example, 100/100 bitwise |
+| top_k | not ported (the verified sort exists) | - |
+| top_p | yes (unsorted, both regimes) | 900/900, 45/45 |
+| min_p | not ported | - |
+| xtc | yes | 720/720 |
+| typical | yes | 1800/1800 |
+| temp_ext | not ported | - |
+| penalties | not ported | - |
+| adaptive_p | yes | 200/200 bitwise |
+| dist | not ported as a sampler (the stream is verified) | 1280/1280 |
+
+So a full-chain runner must not be assembled yet: five steps would be missing
+and the order would be wrong if typical were applied before top_p. The next step
+is top_k and min_p on the verified sort, then temp_ext and penalties, then the
+runner, then the fixed-seed chain test.
