@@ -18,6 +18,8 @@ NAMES = ['s_etype', 's_eval', 's_roff', 's_rlen', 's_seed',
          's_rowbuf', 's_rej',
          'v_maxs', 'v_maxd', 'v_maxcp']
 
+SHAPE_FIRST = ['gg_slice'] * 4 + ['int64_t'] + ['gg_slice'] * 2 + ['int64_t', 'int64_t']
+
 def main(out):
     src = open(os.path.join(out, 'sampler_chain.c')).read()
     hits = []
@@ -29,10 +31,21 @@ def main(out):
         sys.exit('grammar shape matched %d prototypes, expected exactly one' % len(hits))
     func, _ = hits[0]
 
+    first_hits = []
+    for m in re.finditer(r'static int64_t (gg_function_\d+)\(([^)]*)\);', src):
+        params = [q.strip().rsplit(' ', 1)[0].replace('const ', '') for q in m.group(2).split(',')]
+        if params[:-1] == SHAPE_FIRST:
+            first_hits.append(m.group(1))
+    if len(first_hits) != 1:
+        sys.exit('first-set shape matched %d prototypes' % len(first_hits))
+    first = first_hits[0]
+
     ids = os.path.join(out, 'sampler_chain_ids.h')
     text = open(ids).read()
     if 'FG_GRAMMAR_REJECT' not in text:
         open(ids, 'a').write('#define FG_GRAMMAR_REJECT %s\n' % func)
+    if 'FG_GRAMMAR_FIRST' not in text:
+        open(ids, 'a').write('#define FG_GRAMMAR_FIRST %s\n' % first)
 
     proto = ('int64_t fg_grammar_reject_call(gg_slice s_etype, gg_slice s_eval, gg_slice s_roff,\n'
              '                                   gg_slice s_rlen, gg_slice s_seed, int64_t v_seedd,\n'
@@ -47,6 +60,12 @@ def main(out):
     # includes sampler_chain.c would duplicate every symbol
     shim = os.path.join(out, 'sampler_chain_shim.c')
     text = open(shim).read()
+    if 'fg_grammar_first_set_call' not in text:
+        open(shim, 'a').write('\nint64_t fg_grammar_first_set_call(gg_slice s_etype, gg_slice s_eval,'
+                              ' gg_slice s_stacks, gg_slice s_stackd, int64_t v_nstacks,'
+                              ' gg_slice s_lo, gg_slice s_hi, int64_t v_maxr) {\n'
+                              '    return FG_GRAMMAR_FIRST(s_etype, s_eval, s_stacks, s_stackd, v_nstacks,'
+                              ' s_lo, s_hi, v_maxr, 181, 0);\n}\n')
     if 'fg_grammar_reject_call' not in text:
         open(shim, 'a').write('\n' + proto + '\n' + body)
     print('grammar entry:', func)

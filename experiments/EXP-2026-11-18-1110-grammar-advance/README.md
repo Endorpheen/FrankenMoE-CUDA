@@ -892,3 +892,18 @@ than with my reading of the format.
 This is the piece the host needs to filter the ~248k candidates cheaply before any
 per-candidate call; hooking it into the host is the next step, and the full automaton
 stays the authority for the survivors.
+
+## The first-set entry is dropped as unreachable (third time this class appears)
+
+The entry was added to the module and the generator extended, but the generated C contains
+no prototype for it: the only six-slice function is `gg_function_36`, which carries two
+floats and is `sm_apply_dry`, not the first-set entry.
+
+Reason: the chain build root calls the entries it needs explicitly, and
+`fg_grammar_first_set` is not among those calls, so the compiler removes it - the same
+rule as TD-S5 and the dispatch case. The fix is one line in the build root; recording it
+here because the shape-based generator then failed with `matched 0 prototypes`, which is
+the correct refusal: it will not guess.
+
+The generator's failure mode is what I want: a shape that matches nothing stops the build
+instead of wiring an arbitrary function.
