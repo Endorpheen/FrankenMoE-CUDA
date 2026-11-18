@@ -887,3 +887,31 @@ spread (22.7 to 56.3) shows the same thing.
 
 Next: request with `ignore_eos` so 512 tokens are actually produced, then the
 decode column becomes meaningful and the medians can be compared.
+
+## Valid triple A/B: decode regression of 34.7 % with the stages on
+
+512 generated tokens per run, three runs per side, accepted server, our library,
+full profile:
+
+| axis | on | off | delta |
+|---|---|---|---|
+| prefill median | 2992.19 | 2977.89 | **+0.48 %** |
+| decode median | 30.72 | 47.03 | **-34.68 %** |
+| VRAM | 9462 / 10748 | 9462 / 10748 | 0.00 % |
+| RSS | 21630112 | 21629256 | +0.004 % |
+
+Prefill and memory are neutral; decode loses a third. That is a real regression
+and it is not acceptable as an accepted stage as it stands.
+
+Likely causes, in the order worth measuring:
+
+1. every hook allocates `std::vector` buffers and copies the whole candidate
+   array (100k+ entries) in and out on every token, three stages deep;
+2. the Goose implementations sort and run softmax over the full vocabulary per
+   token, while the native bodies do the same work in place, without the copies;
+3. the call goes through a generated C function with slice descriptors, adding a
+   little overhead per invocation.
+
+The next step bisects by stage (enable one at a time) to attribute the cost
+before changing anything, then removes the copies by passing `cur_p->data`
+fields directly where the layout allows it.

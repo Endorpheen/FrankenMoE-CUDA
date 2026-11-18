@@ -17,7 +17,7 @@ import json, sys
 prompt = "word " * 7000          # roughly 32K characters, the profile's input size
 print(json.dumps({"prompt": prompt, "n_predict": 512, "seed": 42,
                   "temperature": 0.8, "top_p": 0.9, "typical_p": 0.9,
-                  "repeat_penalty": 1.1, "cache_prompt": False}))
+                  "repeat_penalty": 1.1, "cache_prompt": False, "ignore_eos": True}))
 PY
 }
 
