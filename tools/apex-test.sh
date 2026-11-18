@@ -17,6 +17,10 @@
 #
 # Usage:
 #   bash tools/apex-test.sh <tag> [len] [b] [ub] [cache]
+#
+# Readiness knobs (do not change the Apex profile):
+#   APEX_READY_MAX=900    hard cap, seconds
+#   APEX_READY_STALL=180  no-progress window, seconds
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -119,25 +123,72 @@ setsid env LD_PRELOAD="${APEX_DEBUG_PRELOAD:-}" "${SRV}" "${ARGS[@]}" \
 SRV_PID=$!
 echo "[$(date +%H:%M:%S)] server pid ${SRV_PID} (own process group)" | tee -a "${RUNDIR}/run.log"
 
+# Readiness is progress-based, not a fixed count: a slow but progressing load is
+# waited for, a load that stops making progress is not mistaken for OOM and is
+# not waited on forever.
+#   APEX_READY_MAX   hard cap in seconds (default 900)
+#   APEX_READY_STALL no-progress window in seconds (default 180)
+READY_MAX=${APEX_READY_MAX:-900}
+STALL_MAX=${APEX_READY_STALL:-180}
 READY=0
-for _ in $(seq 1 120); do
+REASON=""
+START_TS=$(date +%s)
+LAST_SIG=""
+LAST_CHANGE=${START_TS}
+NEXT_REPORT=$((START_TS + 15))
+while :; do
+    NOW=$(date +%s)
     if curl -s -m 2 "http://127.0.0.1:${PORT}/health" 2>/dev/null | grep -q ok; then READY=1; break; fi
-    kill -0 "${SRV_PID}" 2>/dev/null || break
-    cat "/proc/${SRV_PID}/maps" > "${RUNDIR}/maps.txt" 2>/dev/null || true
+    if ! kill -0 "${SRV_PID}" 2>/dev/null; then REASON=exited; break; fi
+
+    LOG_BYTES=$(stat -c %s "${RUNDIR}/server.log" 2>/dev/null || echo 0)
+    RSS_PAGES=$(awk '{print $24}' "/proc/${SRV_PID}/stat" 2>/dev/null || echo 0)
+    VRAM=$(nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits 2>/dev/null | head -1)
+    SIG="${LOG_BYTES}:${RSS_PAGES}:${VRAM}"
+    if [ "${SIG}" != "${LAST_SIG}" ]; then
+        LAST_SIG="${SIG}"
+        LAST_CHANGE=${NOW}
+    fi
+
+    if [ "${NOW}" -ge "${NEXT_REPORT}" ]; then
+        echo "[$(date +%H:%M:%S)] loading: elapsed=$((NOW-START_TS))s log=${LOG_BYTES}B rss=$((RSS_PAGES*4/1024))M vram=${VRAM:-?}M quiet=$((NOW-LAST_CHANGE))s" \
+            | tee -a "${RUNDIR}/run.log"
+        cat "/proc/${SRV_PID}/maps" > "${RUNDIR}/maps.txt" 2>/dev/null || true
+        NEXT_REPORT=$((NOW + 15))
+    fi
+
+    if [ $((NOW - LAST_CHANGE)) -ge "${STALL_MAX}" ]; then REASON=stalled; break; fi
+    if [ $((NOW - START_TS)) -ge "${READY_MAX}" ]; then REASON=timeout; break; fi
     sleep 2
 done
 
 if [ "${READY}" -ne 1 ]; then
-    echo "SERVER DID NOT BECOME READY" | tee -a "${RUNDIR}/run.log"
-    # 7. preserve everything needed to diagnose, including lock status and VRAM
-    { echo "--- OOM DIAGNOSTICS ---"; echo "pid: ${SRV_PID}"; echo "port: ${PORT}"; echo "lock: /tmp/apex-test.lock (held)"
+    OOM_EVIDENCE="$(grep -m3 -E 'cudaMalloc failed|out of memory|failed to allocate' "${RUNDIR}/server.log" 2>/dev/null || true)"
+    case "${REASON}" in
+        exited)  VERDICT="SERVER EXITED DURING LOAD (pid gone, no readiness)" ;;
+        stalled) VERDICT="SERVER STALLED: no progress (log/rss/vram unchanged) for ${STALL_MAX}s after $(( $(date +%s) - START_TS ))s" ;;
+        *)       VERDICT="SERVER STILL LOADING at the ${READY_MAX}s cap (progress was observed up to the cutoff)" ;;
+    esac
+    if [ -n "${OOM_EVIDENCE}" ]; then
+        VERDICT="${VERDICT}; ALLOCATION ERROR PRESENT"
+    else
+        VERDICT="${VERDICT}; no allocation error in the server log"
+    fi
+    echo "SERVER DID NOT BECOME READY: ${VERDICT}" | tee -a "${RUNDIR}/run.log"
+    { echo "--- DIAGNOSTICS ---"
+      echo "verdict: ${VERDICT}"
+      echo "pid: ${SRV_PID}"; echo "port: ${PORT}"; echo "lock: /tmp/apex-test.lock (held)"
       echo "params: len=${LEN} b=${B} ub=${UB} cache=${CACHE}"
+      echo "last progress signature: ${LAST_SIG}"
+      echo "quiescent: $(( $(date +%s) - LAST_CHANGE ))s"
+      echo "allocation errors found:"
+      if [ -n "${OOM_EVIDENCE}" ]; then printf '%s\n' "${OOM_EVIDENCE}"; else echo "  none"; fi
       nvidia-smi --query-gpu=memory.used,memory.total --format=csv 2>/dev/null
       nvidia-smi --query-compute-apps=pid,used_memory --format=csv,noheader 2>/dev/null
       tail -40 "${RUNDIR}/server.log"; } > "${RUNDIR}/diagnostics.txt"
     exit 4
 fi
-echo "[$(date +%H:%M:%S)] server ready" | tee -a "${RUNDIR}/run.log"
+echo "[$(date +%H:%M:%S)] server ready after $(( $(date +%s) - START_TS ))s" | tee -a "${RUNDIR}/run.log"
 
 cat "/proc/${SRV_PID}/maps" > "${RUNDIR}/maps.txt"
 cat "/proc/${SRV_PID}/status" > "${RUNDIR}/status-ready.txt"
