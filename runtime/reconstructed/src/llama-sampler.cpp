@@ -28,6 +28,15 @@ extern "C" void goose_sampler_note_call(void);
 // ABI mismatch the runtime map warns about, met here for real (EXP970).
 struct gs_f64 { double * data; int64_t len; };
 struct gs_i64 { int64_t * data; int64_t len; };
+struct gs_f32 { float * data; int64_t len; };
+// The mask is decided on a flat copy: cur_p->data is strided, and the engine takes
+// one contiguous slice. The copy is exact - float to float - so the bit comparison
+// the gate performs is meaningful.
+extern "C" int64_t tns_apply(gs_f32 logits, int64_t n, float n_sigma);
+extern "C" int64_t dry_apply(gs_i64 history, int64_t n_history, gs_f32 logits, gs_i64 ids, int64_t n_logits,
+                            float multiplier, float base, int64_t allowed, int64_t penalty_last_n,
+                            gs_i64 breakers, int64_t n_breakers, gs_i64 tails, int64_t n_tails,
+                            gs_i64 counts, gs_i64 pair_tok, gs_i64 pair_len, gs_i64 pair_count);
 extern "C" int64_t tp_apply(gs_f64 probs, int64_t n, double p, int64_t min_keep,
                             gs_i64 order, gs_i64 keep, gs_f64 scratch);
 extern "C" int fg212s_enabled(void);
@@ -3363,6 +3372,24 @@ static void llama_sampler_top_n_sigma_apply(struct llama_sampler * smpl, llama_t
         return;
     }
 
+    // The Goose mask owns max, the population deviation and the strict compare.
+    // Native writes -INFINITY and the engine writes the most negative finite float,
+    // so the masked entries are mapped back to -INFINITY here: the sentinel is a
+    // representation detail, and keeping native's makes the two paths byte-equal.
+    if (goose_sampler_enabled() && cur_p->size > 1) {
+        const size_t n = cur_p->size;
+        std::vector<float> flat(n);
+        for (size_t i = 0; i < n; i++) flat[i] = cur_p->data[i].logit;
+        const int64_t kept = tns_apply(gs_f32{ flat.data(), (int64_t) n }, (int64_t) n, ctx->n);
+        if (kept >= 0) {
+            goose_sampler_note_call();
+            for (size_t i = 0; i < n; i++) {
+                cur_p->data[i].logit = flat[i] < -1.0e38f ? -INFINITY : flat[i];
+            }
+            return;
+        }
+    }
+
     // find max logit and calculate mean
     float max = cur_p->data[0].logit;
     float logits_sum = 0;
@@ -3518,6 +3545,47 @@ static void llama_sampler_dry_apply(struct llama_sampler * smpl, llama_token_dat
 
     if (last_n_repeat <= ctx->dry_allowed_length) {
         return;
+    }
+
+    // The Goose penalty owns the restart scan, the reverse Z-algorithm, the max
+    // repeat per token and the exponent clamp. The history arrives in chronological
+    // order (to_vector) because the engine reverses it internally, which is the
+    // mapping EXP968 had to fix. Breakers are flattened here: the multimap is a
+    // host container and the engine takes parallel arrays.
+    if (goose_sampler_enabled()) {
+        std::vector<llama_token> h = ctx->last_tokens.to_vector();
+        std::vector<int64_t> hist(h.begin(), h.end());
+        std::vector<int64_t> ids((size_t) cur_p->size);
+        std::vector<float> flat((size_t) cur_p->size);
+        for (size_t i = 0; i < cur_p->size; i++) {
+            ids[i] = (int64_t) cur_p->data[i].id;
+            flat[i] = cur_p->data[i].logit;
+        }
+        std::vector<int64_t> brk, tails;
+        for (const auto & kv : ctx->dry_processed_breakers) {
+            brk.push_back((int64_t) kv.first);
+            brk.push_back((int64_t) tails.size());
+            brk.push_back((int64_t) kv.second.size());
+            for (llama_token tok : kv.second) tails.push_back((int64_t) tok);
+        }
+        std::vector<int64_t> counts((size_t) last_n_repeat + 1, 0);
+        std::vector<int64_t> ptok((size_t) cur_p->size + 1, 0), plen((size_t) cur_p->size + 1, 0), pcount(1, 0);
+        const int64_t rc = dry_apply(
+            gs_i64{ hist.data(), (int64_t) hist.size() }, (int64_t) hist.size(),
+            gs_f32{ flat.data(), (int64_t) cur_p->size }, gs_i64{ ids.data(), (int64_t) cur_p->size },
+            (int64_t) cur_p->size, ctx->dry_multiplier, ctx->dry_base, ctx->dry_allowed_length,
+            ctx->dry_penalty_last_n,
+            gs_i64{ brk.data(), (int64_t) (brk.size() / 3) }, (int64_t) (brk.size() / 3),
+            gs_i64{ tails.data(), (int64_t) tails.size() }, (int64_t) tails.size(),
+            gs_i64{ counts.data(), (int64_t) counts.size() },
+            gs_i64{ ptok.data(), (int64_t) ptok.size() }, gs_i64{ plen.data(), (int64_t) plen.size() },
+            gs_i64{ pcount.data(), 1 });
+        if (rc >= 0) {
+            goose_sampler_note_call();
+            for (size_t i = 0; i < cur_p->size; i++) cur_p->data[i].logit = flat[i];
+            cur_p->sorted = false;
+            return;
+        }
     }
 
     ctx->dry_repeat_count.assign(last_n_repeat, 0);
