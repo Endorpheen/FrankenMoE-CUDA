@@ -72,7 +72,7 @@ fn g_advance(etype: i64[:], eval: i64[:], roff: i64[:], rlen: i64[:],
         let depth: i64 = wpd[sid];
         if depth == 0 {
             // empty stack: final, the grammar can end here
-            if base + nout < max_stacks {
+            if nout < max_stacks {
                 outd[base + nout] = 0;
                 nout = nout + 1;
             }
@@ -82,7 +82,7 @@ fn g_advance(etype: i64[:], eval: i64[:], roff: i64[:], rlen: i64[:],
         let t: i64 = etype[pos];
         if t == 3 || t == 4 || t == 7 || t == 8 || t == 9 {
             // terminal: this stack is final, copy it to the result
-            if base + nout < max_stacks {
+            if nout < max_stacks {
                 var d: i64 = 0;
                 while d < depth {
                     out[(base + nout) * max_depth + d] = wp[sid * max_depth + d];
@@ -196,7 +196,7 @@ fn g_accept(etype: i64[:], eval: i64[:], roff: i64[:], rlen: i64[:],
                 tmp[d] = after;
                 d = d + 1;
             }
-            // expand rule references the way the native accept does
+            // rule references are expanded by the automaton, as the native accept does
             let n = g_advance(etype, eval, roff, rlen, tmp, d, wp, wpd, out, outd, nout, maxs, maxd);
             if n > 0 {
                 nout = nout + n;
@@ -219,7 +219,8 @@ fn main() {
     let wp: i64[16] = [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0];
     let wpd: i64[4] = [0,0,0,0];
     let r = g_accept(et, ev, ro, rl, st, std, 1, 97, out, outd, wp, wpd, 4, 4);
-    if r < 0 {
+    let r2 = g_accept(et, ev, ro, rl, st, std, 1, 98, out, outd, wp, wpd, 4, 4);
+    if r < 0 || r2 < 0 {
         return;
     }
 }

@@ -7,7 +7,7 @@ fn g_grammar_reject(etype: i64[:], eval: i64[:], roff: i64[:], rlen: i64[:],
                     wp: i64[:], wpd: i64[:], stacks: i64[:], stackd: i64[:],
                     scratch: i64[:], tmp_rej: i64[:], tmp_cur: i64[:], rowbuf: i64[:],
                     rej: i64[:], maxs: i64, maxd: i64, maxcp: i64) -> i64 {
-    let n = g_advance(etype, eval, roff, rlen, seed, seedd, wp, wpd, stacks, stackd, maxs, maxd);
+    let n = g_advance(etype, eval, roff, rlen, seed, seedd, wp, wpd, stacks, stackd, 0, maxs, maxd);
     if n <= 0 {
         return -1;
     }

@@ -8,6 +8,7 @@
 fn g_advance(etype: i64[:], eval: i64[:], roff: i64[:], rlen: i64[:],
              seed: i64[:], seedd: i64,
              wp: i64[:], wpd: i64[:], out: i64[:], outd: i64[:],
+             base: i64,
              max_stacks: i64, max_depth: i64) -> i64 {
     var nwork: i64 = 0;
     var nout: i64 = 0;
@@ -36,7 +37,7 @@ fn g_advance(etype: i64[:], eval: i64[:], roff: i64[:], rlen: i64[:],
         if depth == 0 {
             // empty stack: final, the grammar can end here
             if nout < max_stacks {
-                outd[nout] = 0;
+                outd[base + nout] = 0;
                 nout = nout + 1;
             }
             continue;
@@ -48,10 +49,10 @@ fn g_advance(etype: i64[:], eval: i64[:], roff: i64[:], rlen: i64[:],
             if nout < max_stacks {
                 var d: i64 = 0;
                 while d < depth {
-                    out[nout * max_depth + d] = wp[sid * max_depth + d];
+                    out[(base + nout) * max_depth + d] = wp[sid * max_depth + d];
                     d = d + 1;
                 }
-                outd[nout] = depth;
+                outd[base + nout] = depth;
                 nout = nout + 1;
             }
             continue;
@@ -119,7 +120,7 @@ fn main() {
     let out: i64[64] = [0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
                         0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0];
     let outd: i64[8] = [0,0,0,0,0,0,0,0];
-    let n = g_advance(et, ev, ro, rl, seed, 1, wp, wpd, out, outd, 8, 8);
+    let n = g_advance(et, ev, ro, rl, seed, 1, wp, wpd, out, outd, 0, 8, 8);
     if n < 0 {
         return;
     }

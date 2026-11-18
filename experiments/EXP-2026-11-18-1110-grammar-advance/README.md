@@ -288,3 +288,17 @@ compiler inlines it, and chasing that is not worth more iterations.
 Two lessons this closes: a stale generated C hides real mismatches (check its
 timestamp), and shape matching is safe only with an exact type list plus a
 uniqueness check.
+
+## accept with reference expansion: still not emitted
+
+With the expansion in place (accept calls `advance` with an output offset) the module
+compiles, but the accept entry is not emitted in the generated C: the only prototype
+present is `gg_function_5` with nine slices and four ints, which is `advance`.
+Adding a second call site with a different character did not change that, so the
+compiler keeps inlining this function into `main` in every pattern tried.
+
+This is a compiler-behaviour question, not a grammar question, and the same class as
+TD-S5 and the dispatch inlining: a function that the host needs must be emitted, and
+the current tooling has no way to require it. Until that is solved, the expanded
+`accept` cannot be gated and the simplified one (no reference expansion, 4/4) stays
+the accepted version.
