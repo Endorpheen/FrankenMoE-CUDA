@@ -318,3 +318,19 @@ which points at `mt_canonical` (or the i64 to f64 conversion inside it) rather
 than at the prefix walk: `sm_mt_next` itself is verified against `std::mt19937`
 on 1280 draws. The next attempt must gate `mt_canonical` on its own against a
 `generate_canonical<double,53>` reference before touching the selection.
+
+## mt_canonical verified; the defect is inside the selection
+
+`mt_canonical` matches `generate_canonical<double,53>` exactly, checked by
+scaling it by 2^32 and comparing with the second 32-bit word of the same pair:
+
+```
+seed 1 pair (1791095845, 4282876139): expect 4282876139.417  goose 4282876139
+seed 2 pair (1872583848,  794921487): expect  794921487.436  goose  794921487
+seed 3 pair (2365658986,  303761048): expect  303761048.551  goose  303761048
+```
+
+So the draw is correct and the zero-index result comes from inside
+`sm_sample_dist`: either the `f32` to `f64` conversion of the weights or the
+prefix walk. The next attempt must print the computed `u` and the prefix values
+for one fixed case (n=8, weights 1..8, seed 1) instead of another full sweep.

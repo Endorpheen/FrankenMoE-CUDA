@@ -662,6 +662,11 @@ fn gate_dispatch(op: i64, lv: f32[:], p: f32[:], id: i64[:], n: i64, f: f32, k: 
     if op == 10 {
         return k;
     }
+    if op == 15 {
+        // scaled view of mt_canonical: floor(u * 2^32), expected to be the
+        // second 32-bit word of the pair
+        return (mt_canonical(id) * 4294967296.0) as i64;
+    }
     if op == 14 {
         return sm_sample_dist(lv, n, id);
     }
