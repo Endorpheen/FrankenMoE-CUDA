@@ -186,7 +186,10 @@ echo "[1/5] compose ${#MODULES[@]} modules"
 python3 "$ROOT/tools/compose-goose.py" "$UNIT" "${MODULES[@]/#/$ROOT/}"
 
 echo "[2/5] typecheck"
-"$GOOSE" check "$UNIT" 2>&1 | grep -E "typechecked ok|error" | tail -2
+if ! "$GOOSE" check "$UNIT" >"$OUT/typecheck.log" 2>&1; then
+    tail -n 40 "$OUT/typecheck.log" >&2
+    exit 1
+fi
 
 echo "[3/5] generate C"
 "$GOOSE" --standalone -o "$C" --header "$H" "$UNIT" >/dev/null
