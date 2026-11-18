@@ -195,3 +195,56 @@ points by `gg_function_N`. Converting them to `export fn` removes that fragility
 host declare plain prototypes. It is a contained change in
 `goose/sampling/sampler-chain-full.goose` plus the two generators, and it should be done before
 the next chain change rather than during it.
+
+## TD-S9: what switching the chain to `export fn` actually needs
+
+Attempted 2026-11-18 and deliberately reverted before it could leave the tree broken. The
+switch is right; it is not a one-line change, and here is everything measured, so the next
+attempt starts from facts.
+
+### The good part, verified
+
+With the canonical compiler the whole chain typechecks and generates:
+
+```
+GOOSE_HOME=$PWD GOOSE_COMPILER=/home/end0/AI/LlamaServer/toolchain/goose-2026.3-string/goose \
+    bash tools/build-sampler-chain.sh
+typechecked ok: 78 specialization(s) ... wrote sampler_chain.c (255281 bytes)
+```
+
+Twelve entry points then resolve **by name**, and the generated C carries them at top level:
+
+```
+int64_t fg_sampler_chain(sl_f32, sl_f32, sl_i64, int64_t, float, int64_t, float, float)
+int64_t fg_sampler_dry(sl_i64 x6, sl_f32, sl_i64, int64_t x4, float x2)
+...
+```
+
+There is no `gg_function_N` anywhere in that output, so the entire id-fragility class is gone
+for this build.
+
+### The exported ABI differs from the caret one
+
+- slices are structs `{ T * data; int64_t len; }`, named `sl_f32`, `sl_i64`, `sl_u8`, not
+  `gg_slice`;
+- there is no `gg_init_globals`; a host calls `goose_init(int argc, char **argv)`, which is
+  public **only** when the C is generated with `--header out.h`;
+- with `--header`, the generated C has no `main`, so the shim can be its own translation unit
+  instead of `#include`-ing the generated C to avoid duplicate symbols.
+
+### One function refuses to export
+
+`fg_sampler_typical` fails with `could not resolve one concrete function signature`, while its
+thirteen siblings export fine. Reduced attempts that do **not** reproduce it: three slices of
+the same element type, an exported function called from two places, an exported function with
+four slices. A thin exported wrapper around it resolves, so the door is available under another
+name - but the cause is unknown and belongs to the compiler agent, not to guessing.
+
+### What remains to do
+
+1. rewrite both shim generators for the `sl_*` structs and `goose_init`;
+2. keep `fg_typical_entry` as the exported door for typical-p;
+3. rebuild the host library and re-run the sampler A/B to confirm unchanged results.
+
+Until then the chain keeps the caret compiler and the id header, which is the state that is
+accepted and measured.
