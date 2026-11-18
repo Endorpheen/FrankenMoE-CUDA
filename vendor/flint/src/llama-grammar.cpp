@@ -1387,6 +1387,9 @@ static bool fg_grammar_enabled() {
 // The rule table is immutable, so it is flattened once per grammar object.
 struct fg_flat_rules {
     std::vector<int64_t> etype, eval, roff, rlen;
+    // every rule is its own vector, so a pointer must be mapped to the global index
+    // recorded here; subtracting rules[0].data() is only valid inside rule 0
+    std::unordered_map<const llama_grammar_element *, int64_t> index;
     bool ready = false;
 };
 
@@ -1403,7 +1406,9 @@ static fg_flat_rules & fg_flatten(const llama_grammar_rules & rules) {
     for (size_t r = 0; r < rules.size(); ++r) {
         f.roff[r] = (int64_t) f.etype.size();
         f.rlen[r] = (int64_t) rules[r].size();
-        for (const auto & e : rules[r]) {
+        for (size_t k = 0; k < rules[r].size(); ++k) {
+            const llama_grammar_element & e = rules[r][k];
+            f.index[&e] = (int64_t) f.etype.size();
             f.etype.push_back((int64_t) e.type);
             f.eval.push_back((int64_t) e.value);
         }
@@ -1484,8 +1489,16 @@ void llama_grammar_apply_impl(const struct llama_grammar & grammar, llama_token_
                 int64_t d = 0;
                 for (const auto * e : st) {
                     if (d >= FG_MAXD) break;
-                    stk[sIdx * FG_MAXD + d] = (int64_t) (e - grammar.rules[0].data());
+                    auto it = flat.index.find(e);
+                    if (it == flat.index.end()) {
+                        d = -1;   // unknown pointer: refuse rather than guess
+                        break;
+                    }
+                    stk[sIdx * FG_MAXD + d] = it->second;
                     d++;
+                }
+                if (d < 0) {
+                    return;   // cannot map this stack, leave the native path
                 }
                 stdk[sIdx] = d;
             }

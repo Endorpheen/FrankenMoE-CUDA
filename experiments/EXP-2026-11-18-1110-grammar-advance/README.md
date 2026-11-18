@@ -482,3 +482,21 @@ multi-token case was never actually correct. That claim is corrected here.
 Fix for the next iteration: store `std::unordered_map<const llama_grammar_element *, int64_t>`
 in `fg_flat_rules` while flattening, and use it in the hook for both the seed stacks
 and any future accept path.
+
+## Pointer map fixed: multi-token grammar generation identical
+
+```
+[ON ] n=64  ' and the moon using the words tide and reflection is correct grammar usage ...'
+     grammar: FG171_GRAMMAR goose calls=1
+[OFF] n=64  ' and the moon using the words tide and reflection is correct grammar usage ...'
+     grammar: (none)
+```
+
+Sixty-four grammar-constrained tokens, identical text, and the decision runs in
+Goose. This replaces the earlier one-token claim, which had been made against a
+grammar that stayed inside rule 0.
+
+The fix: `fg_flat_rules` now carries a pointer-to-index map built during flattening,
+and the hook refuses (returning to the native path) if any stack element is not in the
+map rather than computing an offset from `rules[0]`. Refusing loudly on an unmapped
+pointer is what turned a silent corruption into a visible fallback.
