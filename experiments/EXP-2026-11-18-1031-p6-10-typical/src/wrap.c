@@ -16,3 +16,7 @@ int64_t gate_sort_c(float * lv, int64_t * id, int64_t n) {
     gg_slice s0 = { (void *) lv, n }, s1 = { (void *) id, n };
     return gg_function_8(s0, s1, n, 0);
 }
+int64_t gate_top_p_c(const float * lv, float * p, int64_t * id, int64_t n, float tp, int64_t mk) {
+    gg_slice s0 = { (void *) lv, n }, s1 = { (void *) p, n }, s2 = { (void *) id, n };
+    return gg_function_2(s0, s1, s2, n, tp, mk, 0);
+}

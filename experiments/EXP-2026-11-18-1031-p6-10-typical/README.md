@@ -70,3 +70,18 @@ The primitive sorts descending and moves ids in step, so the earlier diagnosis
 that blamed it is **wrong**. The unsorted top-p failure therefore lies in the
 filter code or its argument mapping, not in this sort. The probe stays in the
 card (`gate_sort`) so the next attempt starts from a verified primitive.
+
+## Unsorted Top-P: minimal probe exposes the defect (not accepted)
+
+Fixed array `lv=[1,2,3,4,5]`, `id=[0,1,2,3,4]`, `top_p=0.5`, `min_keep=1`; the
+native cut is 1 with id 4 (top probability 0.6364 >= 0.5). The Goose path:
+
+```
+cut=2 ids: 3 4   lv after call: 0.5 0.5 1.5 2.5 3.5
+```
+
+The cut differs and, more importantly, `lv` no longer holds the sorted logits:
+the array the filter reads back is corrupted, which also explains the constant
+cuts in the 900-case run. The probe (`/tmp/topprobe.c` logic, wrapper
+`gate_top_p_c`) is the reproduction to fix against. This implementation is NOT
+accepted; typical-p remains the only accepted filter in this card.

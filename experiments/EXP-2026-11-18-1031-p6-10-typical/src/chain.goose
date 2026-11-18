@@ -572,6 +572,47 @@ fn gate_sort(lv: f32[:], id: i64[:], n: i64) -> i64 {
     return sm_partial_sort(lv, id, n, n);
 }
 
+
+fn sm_apply_top_p_unsorted(lv: f32[:], p: f32[:], id: i64[:], n: i64, top_p: f32, min_keep: i64) -> i64 {
+    if n <= 0 || lv.len < n || p.len < n || id.len < n {
+        return -1;
+    }
+    if top_p >= 1.0 {
+        return n;
+    }
+    var max_l: f32 = lv[0];
+    var i: i64 = 1;
+    while i < n {
+        if lv[i] > max_l { max_l = lv[i]; }
+        i = i + 1;
+    }
+    var z: f32 = 0.0;
+    i = 0;
+    while i < n {
+        z = z + c_expf(lv[i] - max_l);
+        i = i + 1;
+    }
+    let sorted_rc = sm_partial_sort(lv, id, n, n);
+    if sorted_rc < 0 {
+        return -1;
+    }
+    var cum: f32 = 0.0;
+    i = 0;
+    while i < n {
+        let pi: f32 = c_expf(lv[i] - max_l) / z;
+        cum = cum + pi;
+        if cum >= top_p && i + 1 >= min_keep {
+            return i + 1;
+        }
+        i = i + 1;
+    }
+    return n;
+}
+
+fn gate_top_p(lv: f32[:], p: f32[:], id: i64[:], n: i64, tp: f32, mk: i64) -> i64 {
+    return sm_apply_top_p_unsorted(lv, p, id, n, tp, mk);
+}
+
 fn main() {
     print("p6-10 typical gate");
     let lv: f32[4] = [0.0, 0.0, 0.0, 0.0];
@@ -579,4 +620,5 @@ fn main() {
     let id: i64[4] = [0, 1, 2, 3];
     let ignored = gate_typical(lv, p, id, 4, 1.0, 0);
     let ignored3 = gate_sort(lv, id, 4);
+    let ignored4 = gate_top_p(lv, p, id, 4, 1.0, 0);
 }
