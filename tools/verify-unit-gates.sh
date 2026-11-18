@@ -74,6 +74,7 @@ GATES=(
     "sampler-chain  | experiments/EXP-2026-11-18-998-sampler-chain/tests/gate.cpp         | llama"
     "shipped-vs-unit| experiments/EXP-2026-11-18-999-shipped-vs-unit/tests/gate.cpp      | llama"
     "q35-bridge     | experiments/EXP-2026-11-18-1002-q35-bridge-redundant/tests/gate.cpp | dso"
+    "apex-array-plan| experiments/EXP-2026-11-18-1005-apex-array-plan/tests/gate.cpp     | gguf"
 )
 
 pass=0; fail=0; skip=0
@@ -83,7 +84,24 @@ for row in "${GATES[@]}"; do
     IFS='|' read -r name src needs <<< "$row"
     name=$(printf '%s' "$name" | xargs); src=$(printf '%s' "$src" | xargs); needs=$(printf '%s' "$needs" | xargs)
 
-    extra=(); extra_lib=()
+    # Reset everything a previous gate may have set: a leaked FG_GATE_ARG would pass one
+    # gate's file to the next, and a leaked loader path would pick the wrong library.
+    extra=(); extra_lib=(); unset FG_GATE_ARG FG_GATE_LDPATH
+    if [ "$needs" = "gguf" ]; then
+        # Needs a real GGUF: the array branch and the formula branch can agree on a
+        # synthetic file and disagree on a real one, which is the case worth testing.
+        _g=${FG_APEX_GGUF:-/home/end0/AI/LocalAI/Models/Apex-35B-V1.0-Q4_K_M.gguf}
+        LACC=/home/end0/AI/LlamaServer/apex-independent-fast-20261116/run
+        if [ ! -f "$_g" ]; then
+            printf '%-16s %-8s %s\n' "$name" SKIP "no GGUF at $_g"
+            skip=$((skip+1)); continue
+        fi
+        extra=("-I$ROOT/vendor/flint/include" "-I$ROOT/vendor/flint/ggml/include")
+        extra_lib=("$LACC/libggml-base.so.0" "$LACC/libggml.so.0" "-Wl,-rpath,$LACC"
+                   "$ROOT/builds/goose-standalone/graph-bindings.o"
+                   "$ROOT/builds/goose-standalone/tensor-data.o")
+        export FG_GATE_ARG="$_g"
+    fi
     if [ "$needs" = "dso" ]; then
         # A gate against a DSO built from current sources: the fresh build directory
         # FIRST on the loader path, because with the accepted one first the loader
@@ -131,7 +149,8 @@ for row in "${GATES[@]}"; do
     fi
     # FG_GATE_LDPATH carries the loader order for a DSO gate; it must reach the child,
     # not the script's own environment, so a stale value cannot leak between gates.
-    if LD_LIBRARY_PATH="${FG_GATE_LDPATH:-}" timeout 120 "$OUT/g-$name" > "$OUT/run-$name.log" 2>&1; then
+    if LD_LIBRARY_PATH="${FG_GATE_LDPATH:-}" timeout 180 "$OUT/g-$name" ${FG_GATE_ARG:-} \
+            > "$OUT/run-$name.log" 2>&1; then
         printf '%-16s %-8s %s\n' "$name" PASS "$(grep -oE 'checks=[0-9]+ failures=0' "$OUT/run-$name.log" | tail -1)"
         pass=$((pass+1))
     else
