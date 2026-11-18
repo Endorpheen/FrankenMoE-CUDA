@@ -37,3 +37,12 @@ reverted. The corrected version builds the max-heap directly on the shifted
 scores and extracts to the tail, giving ascending order with lv, id and p
 moving together. It passes the same gate unchanged: `cases=1800 mismatches=0`.
 Typical-P therefore runs at O(n log n).
+
+## Unsorted Top-P attempt (reverted)
+
+An unsorted top-p was added (softmax without a sort precondition, ascending
+heap sort, cumulative read from the tail, kept suffix reversed to descending).
+It failed 747 of 900 cases, returning a constant 5-token cut where the native
+algorithm cut at 2, which points at the probability array not being aligned with
+the sorted order rather than at the cut rule. Reverted, not shipped. The
+validated typical-p (1800/1800) remains the state of this card.
