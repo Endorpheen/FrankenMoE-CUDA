@@ -199,20 +199,9 @@ if [ -z "$_extra" ]; then
     _extra=$(ls -1 /home/end0/AI/LlamaServer/*/run/libllama.so.0 2>/dev/null | head -1 || true)
 fi
 if [ -f "$_extra" ] && [ -f "$ROOT/build/goose-main/.source-sha256" ]; then
-    _ov=$(python3 -W ignore - "$_extra" "$ROOT/build/goose-main/main.h" <<'PYS' 2>/dev/null || true
-import re, subprocess, sys
-lib, hdr = sys.argv[1], sys.argv[2]
-try:
-    with open(hdr) as f:
-        names = set(re.findall(r'^\s*[A-Za-z_][\w *]*(\w+)\s*\(', f.read(), re.M))
-except OSError:
-    sys.exit(0)
-out = subprocess.run(['nm', '-D', '--defined-only', lib], capture_output=True, text=True).stdout
-have = {l.split()[-1] for l in out.splitlines() if l.strip()}
-shared = sorted(n for n in names if n in have)
-print("%d" % len(shared))
-PYS
-)
+    _ovs=$(python3 "$ROOT/tools/unit-overlap.py" "$_extra" "$ROOT/build/goose-main/main.h" 2>/dev/null || true)
+    _ov=${_ovs%%|*}
+    _ov_names=${_ovs#*|}
     if [ -n "$_ov" ]; then
         # Two different numbers, and conflating them was misleading: what the ACCEPTED
         # artifact contains, and what the build script would produce from the sources it
@@ -221,6 +210,9 @@ PYS
         # .goose files while the rest are frozen per-module bridges.
         _fresh=$(ls -1d /home/end0/AI/LlamaServer/exp*-dso-*/out 2>/dev/null | tail -1 || true)
         say "   unit exports in accepted lib $_ov of the header's functions"
+        if [ -n "$_ov_names" ] && [ "$_ov" != "0" ]; then
+            say "                                ($(printf '%s' "$_ov_names" | tr ',' ' '))"
+        fi
         if [ -n "$_fresh" ] && [ -f "$_fresh/libllama.so.0" ]; then
             _fn=$(python3 -W ignore - "$_fresh/libllama.so.0" "$ROOT/runtime/reconstructed/build.py" <<'PYF' 2>/dev/null || true
 import re, subprocess, sys
