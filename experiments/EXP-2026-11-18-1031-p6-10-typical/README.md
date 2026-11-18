@@ -992,3 +992,28 @@ machine. The same typical-only configuration measured 47.5 tok/s earlier and
 44.6 in this run, with unchanged code. Any conclusion about the last few percent
 needs more repeats than two, and the current -7 % should be re-measured before it
 is quoted as the accepted figure.
+
+## Re-measurement after the table: -6.5 % decode, -3.2 % prefill
+
+Three runs per side, warm runs only (r2 and r3 for prefill, all three for
+decode), same server and profile:
+
+| axis | on | off | delta |
+|---|---|---|---|
+| prefill | 2889.95 | 2986.34 | -3.23 % |
+| decode | 44.07 | 47.12 | **-6.47 %** |
+| VRAM | 9462 / 10748 | 9462 / 10748 | 0.00 % |
+| RSS | 21634672 | 21629820 | +0.02 % |
+
+Compared with the first valid measurement (-34.7 % decode) this is a large
+improvement, but it is still a regression and it is not accepted.
+
+The prefill drop did not exist in the earlier run (+0.48 %) and now appears at
+-3.2 % with three runs; the first run of each side is consistently slower, and
+with two warm runs per side the confidence is low. Treat prefill as unresolved
+until more repeats exist; the decode figure is consistent across runs and is the
+one to work on.
+
+Remaining decode work, measured not guessed: the hook still copies 100k logits and
+100k ids per token for penalties and per token for typical (four arrays). Those
+copies are now the largest known term.
