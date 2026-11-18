@@ -177,6 +177,7 @@ MODULES=(
     goose/misc/sampler-typical.goose
     goose/misc/sampler-top-n-sigma.goose
     goose/misc/sampler-dry.goose
+    goose/sampling/sampler-chain-full.goose
 )
 
 # Record a hash of the exact inputs, so a later build can tell "up to date" by

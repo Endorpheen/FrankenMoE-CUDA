@@ -452,12 +452,6 @@
    "reason": "model IO or saver decision: not wired into the standalone runtime"
   },
   {
-   "path": "goose/sampling/sampler-chain-full.goose",
-   "exports": 9,
-   "status": "excluded_with_reason",
-   "reason": "the full chain (MT19937, partial sort, softmax, cumulative cut, temperature, draw); the unit carries sampler-chain and the three filters but not the draw itself, so sampling still runs in libllama. This is the P6-10 remainder and the most valuable entry here"
-  },
-  {
    "path": "goose/server/bind-params.goose",
    "exports": 4,
    "status": "excluded_with_reason",
