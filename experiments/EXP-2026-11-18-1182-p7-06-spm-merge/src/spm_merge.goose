@@ -6,19 +6,19 @@
 // output depends on; the caller turns it into tokens.
 // pairs are candidate merges: pl/ps/pr, pr must equal the right symbol index.
 // Returns the number of merges performed and writes their pair indices to out.
-fn g_spm_merge(n: i64, pl: i64[:], pr: i64[:], pscore: f64[:], np: i64,
-               next: i64[:], prev: i64[:], alive: i64[:], out: i64[:], marker: i64) -> i64 {
+fn g_spm_merge(n: i64, pl: i64[:], pr: i64[:], pscore: f64[:], psize: i64[:], np: i64,
+               next: i64[:], prev: i64[:], symn: i64[:], out: i64[:], marker: i64) -> i64 {
     if marker != 203 {
         return -1;
     }
-    if n <= 0 || n > next.len || n > prev.len || n > alive.len {
+    if n <= 0 || n > next.len || n > prev.len || n > symn.len {
         return -1;
     }
     var i: i64 = 0;
     while i < n {
         next[i] = i + 1;
         prev[i] = i - 1;
-        alive[i] = 1;
+        symn[i] = 1;
         i = i + 1;
     }
     var nmerged: i64 = 0;
@@ -30,7 +30,11 @@ fn g_spm_merge(n: i64, pl: i64[:], pr: i64[:], pscore: f64[:], np: i64,
         while k < np {
             let l = pl[k];
             let r = pr[k];
-            if l >= 0 && l < n && r >= 0 && r < n && alive[l] == 1 && alive[r] == 1 && next[l] == r {
+            // the size check is not redundant with adjacency: a left symbol that has
+            // already absorbed its neighbour is still adjacent, but its text has grown,
+            // so the pair was queued for a different text and the native code skips it
+            if l >= 0 && l < n && r >= 0 && r < n && symn[l] > 0 && symn[r] > 0 &&
+                    next[l] == r && symn[l] + symn[r] == psize[k] {
                 if best < 0 || pscore[k] > pscore[best] || (pscore[k] == pscore[best] && l < bleft) {
                     best = k;
                     bleft = l;
@@ -43,7 +47,8 @@ fn g_spm_merge(n: i64, pl: i64[:], pr: i64[:], pscore: f64[:], np: i64,
         } else {
             let l = pl[best];
             let r = pr[best];
-            alive[r] = 0;
+            symn[l] = symn[l] + symn[r];
+            symn[r] = 0;
             next[l] = next[r];
             var nx = next[r];
             if nx < n {
@@ -60,11 +65,12 @@ fn main() {
     let pl: i64[3] = [0, 1, 0];
     let pr: i64[3] = [1, 2, 2];
     let ps: f64[3] = [1.0, 2.0, 0.5];
+    let pn: i64[3] = [2, 2, 3];
     let nx: i64[4] = [0, 0, 0, 0];
     let pv: i64[4] = [0, 0, 0, 0];
-    let al: i64[4] = [0, 0, 0, 0];
+    let sn: i64[4] = [0, 0, 0, 0];
     let o: i64[4] = [0, 0, 0, 0];
-    let r = g_spm_merge(4, pl, pr, ps, 3, nx, pv, al, o, 203);
+    let r = g_spm_merge(4, pl, pr, ps, pn, 3, nx, pv, sn, o, 203);
     if r < 0 {
         return;
     }
