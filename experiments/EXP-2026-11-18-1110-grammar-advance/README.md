@@ -396,3 +396,19 @@ So the compiler preserved the declaration order here, and a shim can be written
 directly in that order. The attempt to add a shape-based selector to the build script
 was reverted because the insertion did not take effect and a half-edited generator is
 worse than none; the mapping above is what the next attempt needs.
+
+## Grammar shim generated; first functional call trips a bounds guard
+
+`tools/gen-grammar-shim.py` finds the entry by the complete ordered type list,
+appends `FG_GRAMMAR_REJECT` to the ids header and writes
+`sampler_chain_grammar.c` with the wrapper. It found `gg_function_53` and the wrapper
+compiles.
+
+The first call with the grammar `"a" "b" "c"` and candidates `a, b, z` aborts with the
+Goose runtime message `array index out of bounds` instead of returning the flags. The
+repro is `/tmp/gr_check.cpp` (rules at 0..3, one rule, three single-codepoint
+candidates, pools 8x8). This is the next thing to localize: either a slice length the
+entry does not receive (the entry passes `wp`/`stacks`/`scratch` sized `maxs*maxd` but
+`seed` only `maxd`) or an index computed from `stackd` before it is filled.
+
+Not claimed: the grammar hook is not wired and nothing passes a functional check yet.
