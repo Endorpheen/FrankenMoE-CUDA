@@ -6,6 +6,7 @@ extern "fg161_reset_buffer" fn reset_buffer(buffer: i64);
 extern "fg161_usage" fn set_usage(buffer: i64, usage: i64);
 extern "fg161_tensor_alloc" fn tensor_alloc(buffer: i64, t: i64, address: u64) -> i64;
 extern "fg161_generation" fn generation(buffer: i64) -> u64;
+extern "fg161_bulk" fn bulk(buft: i64, ctx: i64, size_only: i64) -> i64;
 
 fn gen_of(buffer: i64) -> i64 {
     // the generation lives in the host record; the host bumps it on reset/free
@@ -23,6 +24,15 @@ fn allocate(buft: i64, size: u64) -> i64 {
     }
     set_usage(b, 64);
     return b;
+}
+
+fn allocate_ctx(buft: i64, ctx: i64) -> i64 {
+    let h = bulk(buft, ctx, 0);
+    if h == 0 {
+        return 0;
+    }
+    set_usage(h, 64);
+    return h;
 }
 
 fn release(buffer: i64) -> i64 {
@@ -61,6 +71,9 @@ fn dispatch(op: i64, a: i64, b: i64, c: i64, d: i64) -> i64 {
     }
     if op == 3 {
         return place(a, b, c as u64, d);
+    }
+    if op == 4 {
+        return allocate_ctx(a, b);
     }
     return -2;
 }

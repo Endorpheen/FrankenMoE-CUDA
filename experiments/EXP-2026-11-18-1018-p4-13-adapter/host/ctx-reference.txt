@@ -1,0 +1,2 @@
+ctx: native=12288 goose=12288 a_off=0 b_off=8192 live=1
+after_release live=0

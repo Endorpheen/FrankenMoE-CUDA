@@ -80,3 +80,17 @@ alloc size and alignment. Compared against
 
 Sizes and offsets are identical to native, which is the same shape the accepted
 Goose allocator module uses (`fg161_bulk` is a host primitive there too).
+
+## Context allocation goes through Goose (EXP-2026-11-18-1025)
+
+Dispatch op 4 calls `allocate_ctx`, which uses the `fg161_bulk` primitive and
+sets the weight usage. End to end through the adapter:
+
+```
+ctx: native=12288 goose=12288 a_off=0 b_off=8192 live=1
+after_release live=0
+```
+
+The full operation set is now allocate, allocate_ctx, release, reset and place,
+with the generation guard — every differential check against the native
+reference passes.
