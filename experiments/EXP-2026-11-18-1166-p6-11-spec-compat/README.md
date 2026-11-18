@@ -55,3 +55,22 @@ could disagree. They do not.
 The other three accept implementations (ngram-cache, EAGLE3, MTP) carry their own state
 updates; they are listed in the scope file and are the next two slices, not silently
 assumed equal.
+
+## Slice 3b: EAGLE3 / MTP deferred-boundary rebase
+
+`g_eagle_accept` reproduces the guard order of the native `accept`: sequence range first,
+then the row count, then `i_g = min(n_accepted, n_rows - 1)` and the rebased position
+`verify_pos_first + i_g` that the deferred boundary takes.
+
+```
+eagle accept: cases=8 fails=0
+```
+
+Eight cases: mid rejection, every draft accepted (the clamp is what makes this correct),
+nothing accepted, an accepted count far above the rows, a single-row batch, an empty verify
+batch, and both out-of-range sequence directions.
+
+The row copy itself (`pending_g_last = verify_g[i_g]`) is a memory operation on an
+`n_embd_dec`-sized slice. It is not ported yet, and it is recorded here rather than implied:
+the arithmetic decides *which* row, the copy remains host-side until the embedding buffers
+are Goose-owned.
