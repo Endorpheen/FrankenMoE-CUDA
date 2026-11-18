@@ -268,3 +268,23 @@ call the dispatch with at least two different operations (or to keep the call
 non-constant), so the function is emitted and its shape can be located.
 
 Not claimed: nothing new was gated in this iteration.
+
+## Entry identification solved by exact shape with a uniqueness assertion
+
+`gen_shim.prototype_by_shape` matches a prototype only when its **full parameter
+type list** equals the expected shape, and it fails if the match is not unique:
+
+```
+shape: gg_slice gg_slice gg_slice gg_slice int64_t int64_t gg_slice gg_slice int64_t int64_t
+entry: gg_function_5
+call : gg_function_5(s0, s1, s2, s3, nstacks, chr, s4, s5, maxs, maxd, 0)
+```
+
+The accept gate then runs through that generated wrapper and still reports
+`cases=4 fails=0`, so the order really does come from the prototype rather than
+from an assumption. The dispatch idea was dropped: with constant call sites the
+compiler inlines it, and chasing that is not worth more iterations.
+
+Two lessons this closes: a stale generated C hides real mismatches (check its
+timestamp), and shape matching is safe only with an exact type list plus a
+uniqueness check.

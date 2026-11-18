@@ -9,6 +9,19 @@ consumes floats.
 """
 import re, sys, json
 
+def prototype_by_shape(src, shape):
+    """Find the single prototype whose parameter types match `shape` exactly."""
+    found = []
+    for m in re.finditer(r'static int64_t (gg_function_\d+)\(([^)]*)\);', src):
+        params = [p.strip().rsplit(' ', 1)[0].replace('const ', '').strip()
+                  for p in m.group(2).split(',') if p.strip() != 'int64_t base']
+        if params == shape:
+            found.append((m.group(1), params))
+    if len(found) != 1:
+        sys.exit('shape matches %d prototypes, expected exactly 1: %s'
+                 % (len(found), ' '.join(shape)))
+    return found[0]
+
 def prototype(src, arity):
     for m in re.finditer(r'static int64_t (gg_function_\d+)\(([^)]*)\);', src):
         params = [p.strip() for p in m.group(2).split(',')]
