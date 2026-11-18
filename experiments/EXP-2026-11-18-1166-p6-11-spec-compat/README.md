@@ -171,3 +171,26 @@ the first-wins tie, and a single strong candidate. `LLAMA_NGRAM_STATIC = 2` and
 Note the contrast with slice 6, which is exactly why both exist as separate gates: the
 static path uses a plain maximum, the primary path uses the product. A single shared
 "pick the maximum" helper would have been wrong for one of them.
+
+## Slice 8: which source produces the draft, at which level
+
+`g_cache_order` holds the order of `common_ngram_cache_draft`: levels are walked from
+`ngram_max` **down** to `ngram_min`, and inside a level the sources are tried context (lax),
+dynamic (strict), static alone - the first success wins.
+
+```
+cache order: cases=8 fails=0
+```
+
+Eight cases: the highest level wins, the context beats the dynamic, the dynamic beats the
+static, a static-only level, a fall-through to a lower level, a floor at `ngram_min`, an
+empty mask, and all levels filled.
+
+Two of my test rows were wrong before the code was: I had written masks at the wrong level
+indices, and in one case I asked for the minimum level while also marking a higher one as
+available. The harness caught my data, exactly as it should - the gate is meant to test my
+expectations too, not only the port.
+
+Bit extraction is done with division and subtraction rather than shifts, because the source
+keeps the arithmetic explicit; the masks are small (three bits) so the cost is irrelevant and
+the behaviour is easy to read.
