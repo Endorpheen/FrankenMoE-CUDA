@@ -721,3 +721,24 @@ time a sampling rate in a diagnostic misled the conclusion.
 
 What is still not measured: the cost of the full-set path, which is paid only when a
 sampled token is invalid.
+
+## Where the grammar cost comes from, and the measurement that would settle it
+
+The two paths explain the earlier 3x: the permissive grammar `[a-z ]+` rejects any
+uppercase or punctuation token, so the sampled token is frequently invalid and every
+such token pays a full-set pass over ~248k candidates. The 16.5 tok/s figure therefore
+describes the resampling path, not the validation path.
+
+Native pays that pass too, but with a pointer walk; the Goose implementation walks the
+same candidates with bounds-checked slice reads, which is what the ratio measures.
+
+The decisive measurement, for the next iteration, is one paired run with a grammar that
+rarely resamples (`root ::= [a-z ]*`, where empty is allowed and EOG stays legal) against
+the same grammar with the hook off:
+
+- if the two are close, the cost lives entirely in resampling and the stage can be
+  enabled by default for permissive grammars;
+- if they are still far apart, the per-candidate cost itself needs work.
+
+No further optimization is attempted here, because the two possibilities require
+different fixes and the measurement is cheap.
