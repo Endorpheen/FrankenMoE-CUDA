@@ -677,3 +677,18 @@ Ids, logits and the surviving set match the native body exactly.
 Live stages now: typical-p and top-p (both default-on with their own disable
 flags), XTC (with the chain flag). Next: penalties and DRY, then the fixed-seed
 chain test on the real path.
+
+## penalties live in the shipped library
+
+The hook builds the recent window from the sampler's ring buffer (exact token
+ids in a float slice) and hands over to Goose:
+
+```
+PENALTIES IDENTICAL ON vs OFF     (40 runs, 12-token windows)
+FG171_PENALTIES goose calls=1 hn=12
+```
+
+Logits after the penalty match the native body exactly.
+
+Live now: typical-p, top-p, XTC, penalties. Remaining for the chain: DRY in the
+path, and `dist`/`temp_ext` which wait on TD-S1.

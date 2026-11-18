@@ -1007,6 +1007,16 @@ fn fg_sampler_xtc(lv: f32[:], p: f32[:], id: i64[:], n: i64,
     return sm_apply_xtc(lv, p, id, n, probability, threshold, min_keep, chance);
 }
 
+
+// penalties entry: the recent window arrives as exact token ids in a float slice
+fn fg_sampler_penalties(lv: f32[:], id: i64[:], hist: f32[:], n: i64, hn: i64,
+                        repeat: f32, freq: f32, present: f32, marker: i64) -> i64 {
+    if marker != 173 {
+        return -1;
+    }
+    return sm_apply_penalties(lv, id, hist, n, hn, repeat, freq, present);
+}
+
 // Single stable entry point for the shipped library. Generated function ids
 // shift whenever this module changes, so callers must reach the chain through
 // this one function rather than through a generated id.

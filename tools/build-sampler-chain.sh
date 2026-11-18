@@ -29,6 +29,10 @@ fn main() {
     }
     let topr = fg_sampler_top_p(lv, p, id, 8, 0.9, 1, 171);
     let xtcr = fg_sampler_xtc(lv, p, id, 8, 0.5, 0.1, 1, 0.0, 172);
+    let penr = fg_sampler_penalties(lv, id, p, 8, 8, 1.0, 0.0, 0.0, 173);
+    if penr < 0 {
+        return;
+    }
     if xtcr < 0 {
         return;
     }
@@ -55,6 +59,8 @@ tp = re.search(r'static int64_t (gg_function_\d+)\(gg_slice p0, gg_slice p1, gg_
                r' int64_t p3, float p4, int64_t p5, int64_t p6, int64_t base\);', src)
 xt = re.search(r'static int64_t (gg_function_\d+)\(gg_slice p0, gg_slice p1, gg_slice p2,'
                r' int64_t p3, float p4, float p5, int64_t p6, float p7, int64_t p8, int64_t base\);', src)
+pn = re.search(r'static int64_t (gg_function_\d+)\(gg_slice p0, gg_slice p1, gg_slice p2,'
+               r' int64_t p3, int64_t p4, float p5, float p6, float p7, int64_t p8, int64_t base\);', src)
 t = re.search(r'static int64_t (gg_function_\d+)\(gg_slice p0, gg_slice p1, gg_slice p2, gg_slice p3,'
               r' int64_t p4, float p5, int64_t p6, int64_t base\);', src)
 d = re.search(r'static int64_t (gg_function_\d+)\(gg_slice p0, gg_slice p1, gg_slice p2, gg_slice p3,'
@@ -63,9 +69,10 @@ d = re.search(r'static int64_t (gg_function_\d+)\(gg_slice p0, gg_slice p1, gg_s
 if not d:
     sys.exit('dry entry point prototype not found in the generated C')
 open(out + '/sampler_chain_ids.h', 'w').write(
-    '#define FG_SAMPLER_CHAIN %s\n#define FG_SAMPLER_DRY %s\n#define FG_SAMPLER_TYPICAL %s\n#define FG_SAMPLER_TOP_P %s\n#define FG_SAMPLER_XTC %s\n'
-    % (m.group(1), d.group(1), t.group(1), tp.group(1), xt.group(1)))
+    '#define FG_SAMPLER_CHAIN %s\n#define FG_SAMPLER_DRY %s\n#define FG_SAMPLER_TYPICAL %s\n#define FG_SAMPLER_TOP_P %s\n#define FG_SAMPLER_XTC %s\n#define FG_SAMPLER_PENALTIES %s\n'
+    % (m.group(1), d.group(1), t.group(1), tp.group(1), xt.group(1), pn.group(1)))
 assert xt is not None
+assert pn is not None
 assert tp is not None
 open(out + '/sampler_chain_shim.c', 'w').write(
     '#include "sampler_chain.c"\n#include "sampler_chain_ids.h"\n\n'
@@ -99,6 +106,11 @@ open(out + '/sampler_chain_shim.c', 'w').write(
     ' float probability, float threshold, int64_t min_keep, float chance) {\n'
     '    gg_slice s0 = { (void *) lv, n }, s1 = { (void *) p, n }, s2 = { (void *) id, n };\n'
     '    return FG_SAMPLER_XTC(s0, s1, s2, n, probability, threshold, min_keep, chance, 172, 0);\n'
+    '}\n\n'
+    'int64_t fg_sampler_penalties_call(float * lv, int64_t * id, const float * hist, int64_t n,'
+    ' int64_t hn, float repeat, float freq, float present) {\n'
+    '    gg_slice s0 = { (void *) lv, n }, s1 = { (void *) id, n }, s2 = { (void *) hist, hn };\n'
+    '    return FG_SAMPLER_PENALTIES(s0, s1, s2, n, hn, repeat, freq, present, 173, 0);\n'
     '}\n')
 print('entry point:', m.group(1))
 PY

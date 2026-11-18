@@ -43,6 +43,12 @@ extern "C" int64_t fg_sampler_xtc_call(float * lv, float * p, int64_t * id, int6
                                        float chance) __attribute__((weak));
 static std::atomic<unsigned long long> g_goose_xtc_calls{0};
 
+
+extern "C" int64_t fg_sampler_penalties_call(float * lv, int64_t * id, const float * hist,
+                                             int64_t n, int64_t hn, float repeat,
+                                             float freq, float present) __attribute__((weak));
+static std::atomic<unsigned long long> g_goose_pen_calls{0};
+
 static bool fg_goose_top_p_enabled() {
     static const bool on = []() {
         const char * f = getenv("GGML_GOOSE_SAMPLER_TOP_P");
@@ -3083,6 +3089,37 @@ static void llama_sampler_penalties_apply(struct llama_sampler * smpl, llama_tok
 
     if (ctx->is_disabled()) {
         return;
+    }
+
+
+    if (fg_sampler_penalties_call != nullptr && cur_p->size > 0 && ctx->prev.size() > 0) {
+        const size_t hn = std::min<size_t>(ctx->prev.size(), (size_t) ctx->penalty_last_n);
+        std::vector<float>   hist(hn);
+        for (size_t i = 0; i < hn; ++i) {
+            hist[i] = (float) ctx->prev.rat(i);
+        }
+        std::vector<float>   lv(cur_p->size);
+        std::vector<int64_t> ids(cur_p->size);
+        for (size_t i = 0; i < cur_p->size; ++i) {
+            lv[i]  = cur_p->data[i].logit;
+            ids[i] = cur_p->data[i].id;
+        }
+        const int64_t kept = fg_sampler_penalties_call(lv.data(), ids.data(), hist.data(),
+                                                      (int64_t) cur_p->size, (int64_t) hn,
+                                                      ctx->penalty_repeat, ctx->penalty_freq,
+                                                      ctx->penalty_present);
+        if (kept == (int64_t) cur_p->size) {
+            for (size_t i = 0; i < cur_p->size; ++i) {
+                cur_p->data[i].logit = lv[i];
+            }
+            cur_p->sorted = false;
+            const unsigned long long c = ++g_goose_pen_calls;
+            if (c == 1 || (c % 100) == 0) {
+                fprintf(stderr, "FG171_PENALTIES goose calls=%llu hn=%lld\n",
+                        (unsigned long long) c, (long long) hn);
+            }
+            return;
+        }
     }
 
     // Apply frequency and presence penalties to the cur_p
