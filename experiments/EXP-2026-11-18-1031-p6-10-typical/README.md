@@ -206,3 +206,28 @@ mirostat: k mismatches=0  mu mismatches=0   (200 random distributions)
 The truncation size and the updated mu are identical to the native formulas.
 What remains outside Goose here is only the draw itself (the RNG stream, a
 separate port) and the top-k truncation, which uses the already verified sort.
+
+## Module globals must be initialised by the host
+
+`gg_init_globals()` is called by the generated `main`, not by the module's
+functions. A host that embeds the module (this gate, and any future shipped
+integration) must call it: without it every module constant reads as 0, so
+`x & M32` was always 0 and the MT stream returned zeros. `src/wrap.c` now runs
+it from a constructor.
+
+## MT19937 does not yet match std::mt19937
+
+With the globals fixed, the module's generator produces real values but they do
+not match the standard generator:
+
+```
+seed 1, draw 0 equal, draw 1: ref=3093770124 goose=4282876139
+                              ref=491263     goose=3093770124 (one step late)
+rng: cases=240 stream mismatches=220
+```
+
+The probe compares 20 seeds x 12 draws against `std::mt19937` and also checks
+that `(float)u / 2^32` reproduces `uniform_real_distribution<float>(0,1)`. The
+second check cannot pass until the stream matches, so the RNG port is **not**
+accepted: the module's seeding/twist needs a fix, and the verification harness
+is kept here for it.

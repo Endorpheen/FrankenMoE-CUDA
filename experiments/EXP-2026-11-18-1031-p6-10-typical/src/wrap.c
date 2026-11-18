@@ -1,6 +1,12 @@
 #include "build_chain.c"
 #include "fn_ids.h"
 
+/* module-level constants live in gg_globals and are set by gg_init_globals,
+   which main() normally calls; a host that embeds the module must call it too */
+__attribute__((constructor)) static void fg_init_globals_once(void) {
+    gg_init_globals(0, 0);
+}
+
 int64_t gate_dispatch_c(int64_t op, const float * lv, float * p, int64_t * id, int64_t n,
                         float f, int64_t k, float f2, float f3) {
     gg_slice s0 = { (void *) lv, n }, s1 = { (void *) p, n }, s2 = { (void *) id, n };

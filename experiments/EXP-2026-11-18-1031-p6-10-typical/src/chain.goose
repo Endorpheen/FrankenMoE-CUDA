@@ -640,6 +640,34 @@ fn gate_dispatch(op: i64, lv: f32[:], p: f32[:], id: i64[:], n: i64, f: f32, k: 
         p[0] = sm_mirostat_update(f, f2, f3, lv[0]);
         return 0;
     }
+    if op == 7 {
+        // seed inline: a forwarded i64 slice did not retain writes here
+        id[0] = k & M32;
+        var si: i64 = 1;
+        while si < 624 {
+            let prev: i64 = id[si - 1];
+            id[si] = (1812433253 * (prev ^ (prev >> 30)) + si) & M32;
+            si = si + 1;
+        }
+        id[624] = 624;
+        return 0;
+    }
+    if op == 8 {
+        return sm_mt_next(id);
+    }
+    if op == 9 {
+        id[0] = 12345;
+        return 0;
+    }
+    if op == 10 {
+        return k;
+    }
+    if op == 11 {
+        id[0] = k;
+        id[1] = k & M32;
+        id[2] = 7;
+        return 0;
+    }
     return -2;
 }
 
