@@ -530,6 +530,53 @@ int main() {
               "a request in two fragments is not answered with 400");
     }
 
+    // ---- a request body belongs to its own request ----
+    {
+        // The body arrives in the same write as the headers, which a client may do.
+        // Treating its bytes as the next request line is how a POST broke keep-alive.
+        int64_t served = -1;
+        const std::string got = exchange_pipeline(
+            { "POST /completion HTTP/1.1\r\nHost: x\r\nContent-Length: 7\r\n\r\n{\"a\":1}",
+              "GET /health HTTP/1.1\r\nHost: x\r\n\r\n" }, 2, 2, &served);
+        check(served == 2, "both requests are served with a body in front of the second");
+        // Count the answers, not their absence: a body parsed as a request produces an
+        // extra 400, and only the count shows it.
+        size_t ok200 = 0;
+        for (size_t at = got.find("HTTP/1.1 200 OK"); at != std::string::npos;
+             at = got.find("HTTP/1.1 200 OK", at + 1)) ok200++;
+        check(ok200 == 2, "both pipeline answers are 200, so the body became no request");
+        check(got.find("400 Bad Request") == std::string::npos, "no 400 anywhere in the pipeline");
+    }
+    {
+        // Body smaller than the buffer, sent separately: it has to be drained.
+        int64_t served = -1;
+        const std::string got = exchange_pipeline(
+            { "POST /completion HTTP/1.1\r\nHost: x\r\nContent-Length: 5\r\n\r\nabcde",
+              "GET /props HTTP/1.1\r\nHost: x\r\n\r\n" }, 2, 2, &served);
+        check(served == 2, "a separate body is drained before the next request");
+        size_t ok200 = 0;
+        for (size_t at = got.find("HTTP/1.1 200 OK"); at != std::string::npos;
+             at = got.find("HTTP/1.1 200 OK", at + 1)) ok200++;
+        check(ok200 == 2, "the drained body left both answers intact");
+    }
+    {
+        int rc = 0;
+        const std::string got = exchange(
+            "POST /completion HTTP/1.1\r\nHost: x\r\nContent-Length: abc\r\n\r\n", &rc);
+        check(got.rfind("HTTP/1.1 400 Bad Request\r\n", 0) == 0,
+              "a Content-Length that is not a number is refused");
+        check(got.find("Connection: close\r\n") != std::string::npos,
+              "and the connection closes, because the body cannot be measured");
+    }
+    {
+        // RFC 9112 §6.1: this listener cannot frame a chunked body, so it says so.
+        int rc = 0;
+        const std::string got = exchange(
+            "POST /completion HTTP/1.1\r\nHost: x\r\nTransfer-Encoding: chunked\r\n\r\n0\r\n\r\n", &rc);
+        check(got.find("Connection: close\r\n") != std::string::npos,
+              "a Transfer-Encoding closes the connection after the answer");
+    }
+
     // ---- RFC 9112 §3.2, as cpp-httplib applies it ----
     {
         int rc = 0;

@@ -199,7 +199,8 @@ export fn hl_serve_full(fd: i64, req: u8[:], resp: u8[:], keys: const u8[:],
         hl_cl(cfd);
         return -1;
     }
-    let rc: i64 = hl_handle_req(cfd, req[0 .. end], resp, keys, koff, origins, credentials);
+    var meta: i64[2] = [0, 0];
+    let rc: i64 = hl_handle_req(cfd, req[0 .. end], resp, keys, koff, origins, credentials, meta);
     hl_cl(cfd);
     return if rc < 0 { 0 - rc - 1 } else { rc };
 }
@@ -237,7 +238,8 @@ export fn hl_serve_keep(fd: i64, req: u8[:], resp: u8[:], keys: const u8[:],
         if end < 0 {
             break;
         }
-        let rc: i64 = hl_handle_req(cfd, req[0 .. end], resp, keys, koff, origins, credentials);
+        var meta: i64[2] = [0, 0];
+        let rc: i64 = hl_handle_req(cfd, req[0 .. end], resp, keys, koff, origins, credentials, meta);
         if rc == 0 {
             break;
         }
@@ -246,14 +248,51 @@ export fn hl_serve_keep(fd: i64, req: u8[:], resp: u8[:], keys: const u8[:],
             // The client asked to close, or the answer failed; either way stop.
             break;
         }
-        // Keep the remainder: a client may have sent the next request in the same
-        // write, and reading again would block instead of answering it.
+
+        // Consume the body before looking for the next request. Without this a POST
+        // body is parsed as the next request line, which answers 400 to a client that
+        // did nothing wrong - and the body may already be in the buffer, because the
+        // client is allowed to send it in the same write as the headers.
+        var body: i64 = meta[0];
+        if body < 0 {
+            break;
+        }
+        var inbuf: i64 = have - end;
+        if inbuf < 0 {
+            inbuf = 0;
+        }
+        if inbuf > body {
+            inbuf = body;
+        }
+        body = body - inbuf;
+        // Whatever followed the body is the next request: move it to the front.
         var k: i64 = 0;
-        while end + k < have {
-            req[k] = req[end + k];
+        while end + inbuf + k < have {
+            req[k] = req[end + inbuf + k];
             k = k + 1;
         }
-        have = have - end;
+        have = have - end - inbuf;
+        // The rest of the body has not arrived yet. Read and discard it, into the
+        // space past the next request, through the same fill primitive.
+        var dropped: i64 = 0;
+        while dropped < body {
+            if have >= req.len {
+                break;
+            }
+            let got: i64 = hl_fill(cfd, req, have);
+            if got <= 0 {
+                break;
+            }
+            dropped = dropped + (got - have);
+        }
+        if dropped < body {
+            // The client promised more body than it sent; there is no next request to
+            // frame, and guessing would answer bytes that are not a request.
+            break;
+        }
+        if meta[1] != 0 {
+            break;
+        }
     }
     hl_cl(cfd);
     return served;
@@ -293,9 +332,14 @@ fn hl_req_end(buf: const u8[:], len: i64) -> i64 {
     return -1;
 }
 
+// meta is the body contract back to the caller: meta[0] is the body length in bytes
+// (0 when there is none) and meta[1] is 1 when the connection must close after this
+// response. The caller owns the socket, so the caller does the reading; this function
+// owns the decision, which is why the length travels out rather than being read here.
 fn hl_handle_req(cfd: i64, req: const u8[:], resp: u8[:], keys: const u8[:], koff: const i64[:],
-                 origins: const u8[:], credentials: i64) -> i64 {
+                 origins: const u8[:], credentials: i64, meta: i64[:]) -> i64 {
     let n: i64 = req.len;
+    meta[0] = 0; meta[1] = 0;
 
     // The request line decides the answer, and that decision is Goose.
     // Header spans the middleware and the CORS decision need, filled by the scan
@@ -306,6 +350,10 @@ fn hl_handle_req(cfd: i64, req: const u8[:], resp: u8[:], keys: const u8[:], kof
     var close_req: i64 = 0;
     var is_options: i64 = 0;
     var host_count: i64 = 0; var host_off: i64 = -1; var host_len: i64 = 0;
+    var cl_off: i64 = -1; var cl_len: i64 = 0; var has_te: i64 = 0;
+    // Declared here, not inside the parse branch: the body contract is published to
+    // the caller at the end of the function, which is outside that branch.
+    var body_len: i64 = 0; var cl_bad: i64 = 0;
     var line_end: i64 = -1;
     var i: i64 = 0;
     while i + 1 < n {
@@ -355,6 +403,15 @@ fn hl_handle_req(cfd: i64, req: const u8[:], resp: u8[:], keys: const u8[:], kof
                         if host_count == 1 {
                             host_off = hp + ho[3]; host_len = ho[4];
                         }
+                    } else if hl_ci_eq(req, hp + ho[1], ho[2], "Content-Length") {
+                        // First occurrence wins, as get_header_value does; a second one
+                        // that disagrees is caught by the malformed-number rule below
+                        // only when it is the first, which is the native behaviour.
+                        if cl_off < 0 {
+                            cl_off = hp + ho[3]; cl_len = ho[4];
+                        }
+                    } else if hl_ci_eq(req, hp + ho[1], ho[2], "Transfer-Encoding") {
+                        has_te = 1;
                     } else if hl_ci_eq(req, hp + ho[1], ho[2], "Connection") {
                         // Half-close is honoured: the answer says so and the loop stops.
                         if hl_ci_eq(req, hp + ho[3], ho[4], "close") {
@@ -385,11 +442,27 @@ fn hl_handle_req(cfd: i64, req: const u8[:], resp: u8[:], keys: const u8[:], kof
                 }
             }
             let bad_host: i64 = rq_host_violation(host_count, parsed[7], host_ok, have_host);
+            if cl_off >= 0 {
+                var dl: i64[1] = [0];
+                if rq_decimal_impl(req[cl_off .. cl_off + cl_len], dl) != 0 {
+                    cl_bad = 1;
+                } else {
+                    body_len = dl[0];
+                }
+            }
+            // A Transfer-Encoding means the connection closes after the answer: this
+            // listener cannot frame a chunked body, and reading one as if it were the
+            // next request would answer the wrong thing.
+            if rq_body_rule(has_te, if cl_off >= 0 { 1 } else { 0 }, parsed[7]) != 0 {
+                close_req = 1;
+            }
             var fault: i64 = 0;
             if bad_host != 0 {
                 fault = 400;
             } else if tl > rq_uri_max() {
                 fault = 414;
+            } else if cl_bad != 0 {
+                fault = 400;
             }
             var mcode: i64 = 0;
             if hl_eq(req, mo, ml, "GET") {
@@ -436,6 +509,9 @@ fn hl_handle_req(cfd: i64, req: const u8[:], resp: u8[:], keys: const u8[:], kof
             }
         }
     }
+
+    meta[0] = body_len;
+    meta[1] = close_req;
 
     // The CORS allow-origin decision belongs to cors_allow_origin; the listener only
     // writes what it says. An empty policy emits nothing, which is what a server with

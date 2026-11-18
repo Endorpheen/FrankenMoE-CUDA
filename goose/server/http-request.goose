@@ -278,3 +278,47 @@ export fn rq_is_host_char(c: i64) -> bool {
 export fn rq_uri_max() -> i64 {
     return 8192;
 }
+
+// Content-Length is decimal digits and nothing else: no sign, no space, no
+// hex. out[0] receives the value; the return is 0 on a well-formed number and -1
+// otherwise, which is the difference between "no body" and "a body I cannot
+// measure" - the second must not be silently treated as the first.
+export fn rq_decimal(s: const u8[:], out: i64[:]) -> i64 {
+    return rq_decimal_impl(s, out);
+}
+
+fn rq_decimal_impl(s: const u8[:], out: i64[:]) -> i64 {
+    out[0] = 0;
+    if s.len == 0 {
+        return -1;
+    }
+    var v: i64 = 0;
+    var i: i64 = 0;
+    while i < s.len {
+        let c: i64 = s[i];
+        if c < 48 || c > 57 {
+            return -1;
+        }
+        // A body larger than the caller's buffer cannot be drained, and 19 digits is
+        // already past what an i64 holds, so the parse stops rather than wrapping.
+        if v > 922337203685477580 {
+            return -1;
+        }
+        v = v * 10 + (c - 48);
+        i = i + 1;
+    }
+    out[0] = v;
+    return 0;
+}
+
+// RFC 9112 §6.1 as cpp-httplib applies it (httplib.cpp:10241-10243): a
+// Transfer-Encoding, whether or not a Content-Length accompanies it, and in either
+// HTTP version, means the connection closes after the response. This listener does
+// not decode chunked bodies, so closing is also the only honest answer: pretending
+// to have read a body it cannot frame would answer the wrong request next.
+export fn rq_body_rule(has_te: i64, has_cl: i64, version: i64) -> i64 {
+    if has_te != 0 {
+        return 1;
+    }
+    return 0;
+}
