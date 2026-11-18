@@ -35,3 +35,23 @@ a window shorter than the arrays.
 Scope note carried from the scope file: in this tree acceptance is target verification, so
 this predicate is the whole decision - there is no probability-ratio test to port, and the
 predicate consumes no RNG, which keeps the fixed-seed guarantee from P6-10 intact.
+
+## Slice 3: ngram-mod acceptance bookkeeping
+
+`g_ngram_accept` carries the low-acceptance rule of
+`common_speculative_impl_ngram_mod::accept`: below 0.25 the streak increments, five in a
+row resets the ngram container and the prompt position, a good step clears the streak.
+
+```
+ngram accept: steps=14 fails=0 final_low=0
+```
+
+The gate applies a 14-step sequence to both implementations and compares the streak and the
+reset flag at every step. The sequence deliberately includes the fifth-low reset, a high
+step that clears the streak, a zero-length draft that must be a no-op, and **exactly 0.25**,
+which is the boundary where a division and the integer form `4 * n_accepted < n_draft_last`
+could disagree. They do not.
+
+The other three accept implementations (ngram-cache, EAGLE3, MTP) carry their own state
+updates; they are listed in the scope file and are the next two slices, not silently
+assumed equal.
