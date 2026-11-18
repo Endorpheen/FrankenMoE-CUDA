@@ -2,8 +2,7 @@
   "schema_version": 1,
   "date": "2026-11-08",
   "goal": "One universal FrankenMoE runtime implemented in Fried Goose; complete functional Apex port first, then reuse same modules for Qwen and other architectures; no separate architecture runtimes.",
-  "baseline_checkpoint": "fe9d550cca21d5d64244b1f7f85f92681f84f479",
-  "active_workstream": "APEX_COMMON",
+    "baseline_checkpoint": "candidate-run2 (EXP-2026-11-18-1028): P1-12 Goose Q4_K tiled + P4-13 Goose allocator, reproducible build/ggml-repro; 32K/512 A/B vs EXP906: 3/3 identical sha c2ff42cc1219, medians prefill 2655.50 -> 2666.53 (+0.4%), decode 53.83 -> 53.43 (-0.7%), VRAM 11405 -> 11271 MiB; historical EXP906 untouched",  "active_workstream": "APEX_COMMON",
   "next_task": "P3-07",
   "execution_order": [
     "APEX_COMMON: P0->P1->P2->P3->P4->P5->P6->P7->P8->P9->P10->P11",

@@ -588,3 +588,35 @@ come from Igor directly. For every marked message:
     lock status and the server tail before exiting.
 
     Apex parameters are fixed and are not to be tuned to make an error disappear: context 262144, GPU cache 4992 MiB.
+
+31. Every accepted stage is integrated into one cumulative baseline, and that
+    baseline is tested before the next stage begins.
+
+    The working runtime is a single build that carries every previously accepted
+    Goose module and optimisation. It is never rebuilt from the historical
+    EXP906 without them, and EXP906 itself is only the immutable control
+    reference, not the working tree.
+
+    After every migration stage:
+
+    - integrate the result on top of the current baseline, not on EXP906;
+    - before any measurement, check that every previously accepted Goose
+      component is present, is actually called on its path (witness in the
+      server log), and still works;
+    - run the three paired A/B runs on the cumulative build, comparing it with
+      EXP906 for the record result and with the previous accepted checkpoint for
+      new regressions;
+    - report prefill and decode per run, medians, percentages, VRAM and RAM,
+      token and answer correctness, and the delta against the previous
+      checkpoint;
+    - after acceptance, save the build as the next checkpoint and the base for
+      all following stages.
+
+    Losing, disabling or silently bypassing an accepted Goose kernel during a
+    rebuild is a defect, not a trade-off. `tools/check-cumulative-baseline.py`
+    enforces the presence check and runs before any acceptance measurement.
+
+    Fixed acceptance profile: Apex-35B-V1.0-Q4_K_M, RTX 4070 12 GiB, 32K input
+    and 512 output tokens, context 262144, `-b 4096 -ub 4096 -ngl all -fit off
+    --cpu-moe`, `--moe-cache-mib 4992`; historical references decode ~55.52 and
+    prefill ~2625 tok/s at those settings.
