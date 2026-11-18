@@ -21,6 +21,15 @@
 #include <stdexcept>
 
 // Goose sampler thresholds (EXP212). GGML_GOOSE_SAMPLER=0 restores the native arithmetic.
+extern "C" int goose_sampler_enabled(void);
+extern "C" void goose_sampler_note_call(void);
+// The generated header passes slices BY VALUE as {data, len} pairs. Declaring the
+// function with raw pointers instead links and then corrupts the stack - the exact
+// ABI mismatch the runtime map warns about, met here for real (EXP970).
+struct gs_f64 { double * data; int64_t len; };
+struct gs_i64 { int64_t * data; int64_t len; };
+extern "C" int64_t tp_apply(gs_f64 probs, int64_t n, double p, int64_t min_keep,
+                            gs_i64 order, gs_i64 keep, gs_f64 scratch);
 extern "C" int fg212s_enabled(void);
 extern "C" int64_t fg212s_top_k_cut(int64_t k, int64_t size);
 extern "C" int64_t fg212s_min_p_scan(uint64_t logits, int64_t n, float p, int64_t min_keep, uint64_t keep);
@@ -1993,6 +2002,34 @@ static void llama_sampler_typical_apply(struct llama_sampler * smpl, llama_token
 
     // Compute the softmax of logits and calculate entropy
     llama_sampler_softmax_impl(cur_p, true);
+
+    // The Goose filter owns the entropy, the |(-ln p) - H| ordering and the cut.
+    // The softmax above stays native because the chain needs the probabilities
+    // anyway and the filter works on them, not on logits. A refusal falls through
+    // to the native body, so the switch cannot make behaviour worse.
+    if (goose_sampler_enabled() && cur_p->size > 0) {
+        const size_t n = cur_p->size;
+        std::vector<double>        probs(n), scratch(n);
+        std::vector<int64_t>       order(n), keep(n);
+        for (size_t i = 0; i < n; i++) probs[i] = (double) cur_p->data[i].p;
+        const int64_t kept = tp_apply(gs_f64{ probs.data(), (int64_t) n }, (int64_t) n,
+                                      (double) ctx->p, (int64_t) ctx->min_keep,
+                                      gs_i64{ order.data(), (int64_t) n },
+                                      gs_i64{ keep.data(), (int64_t) n },
+                                      gs_f64{ scratch.data(), (int64_t) n });
+        if (kept >= 0) {
+            goose_sampler_note_call();
+            std::vector<llama_token_data> kept_data;
+            kept_data.reserve((size_t) kept);
+            for (int64_t i = 0; i < kept; i++) {
+                kept_data.push_back(cur_p->data[(size_t) keep[(size_t) i]]);
+            }
+            std::copy(kept_data.begin(), kept_data.end(), cur_p->data);
+            cur_p->size = kept_data.size();
+            cur_p->sorted = false;
+            return;
+        }
+    }
 
     float entropy = 0.0f;
     for (size_t i = 0; i < cur_p->size; ++i) {
