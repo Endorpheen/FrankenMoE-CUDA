@@ -354,3 +354,28 @@ dist gate failed while `sm_mt_next` and `mt_canonical` both measured correct.
 
 Minimal repro to hand to the compiler: a function returning `f64` built from two
 i64 calls, stored in a local, then compared/printed - the stored value is 0.
+
+## Blocker: draws from inside the dispatch do not reach the comparison
+
+Three attempts on the same blocker, all with a fixed case (n=8, weights 1..8,
+seed 1):
+
+1. `sm_sample_dist` with `mt_canonical(id)` stored in a local `f64` -> the draw
+   reads as 0 and the selection returns index 0.
+2. The same call used inside an expression (op 15) -> correct value
+   4282876139 for seed 1. So the value survives only inside an expression.
+3. A rewrite that keeps the two 32-bit words as `i64` and compares in one
+   expression (op 17) -> still selects index 0, which means the words read as 0
+   inside that branch even though `sm_mt_next` is verified correct when called
+   directly (op 8, 1280 draws) and the prefix arithmetic in the same function is
+   correct (op 16 printed exact prefixes).
+
+What is established: the MT stream is correct, `mt_canonical` is correct in an
+expression, the weight arithmetic is correct, and the draw is lost when the
+selection function runs inside the dispatch branch that also writes to another
+slice. What is not established: whether this is storage of computed f64, slice
+aliasing between the state slice and the output slice, or ordering of the draw
+relative to the loop.
+
+Per the repository rule, trial and error stops here: this needs the senior
+helper's diagnosis rather than a fourth variant.

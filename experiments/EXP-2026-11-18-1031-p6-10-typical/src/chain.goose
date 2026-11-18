@@ -662,6 +662,30 @@ fn gate_dispatch(op: i64, lv: f32[:], p: f32[:], id: i64[:], n: i64, f: f32, k: 
     if op == 10 {
         return k;
     }
+    if op == 17 {
+        // selection without a stored f64: the two 32-bit words are kept as i64
+        // and the comparison is a single expression
+        var tsum: f64 = 0.0;
+        var ti: i64 = 0;
+        while ti < n {
+            tsum = tsum + (lv[ti] as f64);
+            ti = ti + 1;
+        }
+        let w1: i64 = sm_mt_next(id);
+        let w2: i64 = sm_mt_next(id);
+        var tpref: f64 = 0.0;
+        var tsel: i64 = -1;
+        ti = 0;
+        while ti < n {
+            tpref = tpref + (lv[ti] as f64);
+            if tsel < 0 && (tpref / tsum) * 18446744073709551616.0 >= (w1 as f64) + (w2 as f64) * 4294967296.0 {
+                tsel = ti;
+            }
+            ti = ti + 1;
+        }
+        if tsel < 0 { tsel = n - 1; }
+        return tsel;
+    }
     if op == 16 {
         // same selection, but the draw and every normalised prefix are written
         // back into p so a single fixed case can be read directly
