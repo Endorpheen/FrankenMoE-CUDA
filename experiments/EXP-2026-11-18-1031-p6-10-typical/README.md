@@ -490,3 +490,16 @@ typical: cases=1800 mismatches=0     (entry point gg_function_1 in that build)
 The remaining work for a shipped chain is adding the already validated filters
 (XTC, DRY, adaptive-p, mirostat, penalties, dist) to the dispatch as each
 becomes callable, then the fixed-seed chain test.
+
+## XTC reaches the shipped module
+
+`sm_apply_xtc` is now part of `goose/sampling/sampler-chain-full.goose` and is
+reachable through the stable dispatch (op 5). Verified in the **shipping build**:
+
+```
+xtc (shipping build): cases=720 mismatches=0
+```
+
+60 distributions x threshold {0.1, 0.3} x min_keep {1, 3} x chance {0.0, 0.4,
+0.9}, compared with the native rule including the returned ids. The build/ shim
+path (`tools/build-sampler-chain.sh`, `fg_sampler_chain_call`) works end to end.

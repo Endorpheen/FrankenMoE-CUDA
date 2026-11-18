@@ -572,6 +572,45 @@ fn sm_apply_typical(lv: f32[:], p: f32[:], id: i64[:], n: i64,
 }
 
 
+
+// XTC: with the given chance, drop the prefix of tokens at or above the
+// probability threshold while at least min_keep survive. The uniform value is
+// passed in so this stays pure; the RNG stream is the caller's.
+fn sm_apply_xtc(lv: f32[:], p: f32[:], id: i64[:], n: i64,
+                probability: f32, threshold: f32, min_keep: i64, chance: f32) -> i64 {
+    if probability <= 0.0 || threshold > 0.5 || n < 2 {
+        return n;
+    }
+    if chance > probability {
+        return n;
+    }
+    let sm = softmax_in_place(lv, p, n, 1);
+    if sm < 0.0 {
+        return -1;
+    }
+    var pos_last: i64 = 0;
+    var i: i64 = 0;
+    while i < n {
+        if p[i] >= threshold {
+            pos_last = i;
+        } else {
+            break;
+        }
+        i = i + 1;
+    }
+    if n - pos_last >= min_keep && pos_last > 0 {
+        i = 0;
+        while i < n - pos_last {
+            lv[i] = lv[i + pos_last];
+            id[i] = id[i + pos_last];
+            p[i] = p[i + pos_last];
+            i = i + 1;
+        }
+        return n - pos_last;
+    }
+    return n;
+}
+
 // Single stable entry point for the shipped library. Generated function ids
 // shift whenever this module changes, so callers must reach the chain through
 // this one function rather than through a generated id.
@@ -591,6 +630,9 @@ fn fg_sampler_chain(op: i64, lv: f32[:], p: f32[:], id: i64[:], n: i64,
     }
     if op == 4 {
         return sm_apply_temp(lv, n, f);
+    }
+    if op == 5 {
+        return sm_apply_xtc(lv, p, id, n, f, f2, k, f3);
     }
     return -2;
 }
