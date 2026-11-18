@@ -1466,8 +1466,9 @@ void llama_grammar_apply_impl(const struct llama_grammar & grammar, llama_token_
         fg_flat_rules & flat = fg_flatten(grammar.rules);
 
         const int64_t ncand = (int64_t) candidates_grammar.size();
-        std::vector<int64_t> cp(ncand * FG_MAXCP, 0), cpl(ncand, 0), pv(ncand, 0), pn(ncand, 0);
-        std::vector<int64_t> cid(ncand, 0);
+        static thread_local std::vector<int64_t> cp, cpl, pv, pn, cid, rej, tmp_rej, tmp_cur, rej_final;
+        cp.assign(ncand * FG_MAXCP, 0); cpl.assign(ncand, 0); pv.assign(ncand, 0); pn.assign(ncand, 0);
+        cid.assign(ncand, 0);
         for (int64_t i = 0; i < ncand; ++i) {
             const auto & c = candidates_grammar[i];
             int64_t n = 0;
@@ -1483,7 +1484,8 @@ void llama_grammar_apply_impl(const struct llama_grammar & grammar, llama_token_
 
         const int64_t nstacks = (int64_t) grammar.stacks.size();
         if (nstacks > 0 && nstacks <= FG_MAXS) {
-            std::vector<int64_t> stk(FG_MAXS * FG_MAXD, 0), stdk(FG_MAXS, 0), seed(FG_MAXD, 0);
+            static thread_local std::vector<int64_t> stk, stdk;
+            stk.assign(FG_MAXS * FG_MAXD, 0); stdk.assign(FG_MAXS, 0);
             for (int64_t sIdx = 0; sIdx < nstacks; ++sIdx) {
                 const auto & st = grammar.stacks[sIdx];
                 int64_t d = 0;
@@ -1503,10 +1505,13 @@ void llama_grammar_apply_impl(const struct llama_grammar & grammar, llama_token_
                 stdk[sIdx] = d;
             }
 
-            std::vector<int64_t> rej(ncand, 0), tmp_rej(ncand, 0), tmp_cur(ncand, 0);
-            std::vector<int64_t> wp(FG_MAXS * FG_MAXD, 0), wpd(FG_MAXS, 0);
-            std::vector<int64_t> out(FG_MAXS * FG_MAXD, 0), outd(FG_MAXS, 0);
-            std::vector<int64_t> scratch(FG_MAXD, 0), rowbuf(FG_MAXD, 0);
+            rej.assign(ncand, 0); tmp_rej.assign(ncand, 0); tmp_cur.assign(ncand, 0);
+            static thread_local std::vector<int64_t> wp, wpd;
+            wp.assign(FG_MAXS * FG_MAXD, 0); wpd.assign(FG_MAXS, 0);
+            static thread_local std::vector<int64_t> out, outd;
+            out.assign(FG_MAXS * FG_MAXD, 0); outd.assign(FG_MAXS, 0);
+            static thread_local std::vector<int64_t> scratch, rowbuf;
+            scratch.assign(FG_MAXD, 0); rowbuf.assign(FG_MAXD, 0);
 
             fg_slice_rec s_et   { flat.etype.data(), (int64_t) flat.etype.size() };
             fg_slice_rec s_ev   { flat.eval.data(),  (int64_t) flat.eval.size()  };
@@ -1532,7 +1537,7 @@ void llama_grammar_apply_impl(const struct llama_grammar & grammar, llama_token_
 
             // one call per stack: a candidate is rejected only when every stack
             // rejects it, which is how the native code intersects the rejects
-            std::vector<int64_t> rej_final(ncand, 1);
+            rej_final.assign(ncand, 1);
             int64_t r = 0;
             for (int64_t sIdx = 0; sIdx < nstacks && r >= 0; ++sIdx) {
                 fg_slice_rec s_one { &stk[sIdx * FG_MAXD], FG_MAXD };

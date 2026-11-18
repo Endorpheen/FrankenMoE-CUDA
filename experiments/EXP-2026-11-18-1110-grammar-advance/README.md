@@ -526,3 +526,25 @@ Causes, in the order worth fixing:
 Until this is fixed the grammar stage is live but must not be enabled by default: it
 is correct, and it is also three times slower. The next step is buffer reuse plus one
 call carrying all stacks, then re-measure.
+
+## Buffer reuse did not move the cost
+
+```
+on  16.79   off 53.13
+on  16.31
+```
+
+Reusing thread-local buffers changed nothing measurable (16.5 before, 16.3-16.8
+after). So the allocation was not the problem; the cost is the per-candidate work
+inside Goose: the hook hands the grammar roughly a hundred thousand candidates per
+token, and every codepoint comparison inside the generated C goes through a
+bounds-checked slice read, against the native pointer walk that does one comparison.
+
+Two directions, both measurable:
+
+1. find whether the generated code can drop bounds checks for this module (a build
+   option), which would attack the reported 3x directly;
+2. reduce the candidate set handed to the grammar by pre-filtering on the first
+   codepoint in the host, which is cheap there and does not change the decision.
+
+The stage stays opt-in until one of them brings it near the native cost.
