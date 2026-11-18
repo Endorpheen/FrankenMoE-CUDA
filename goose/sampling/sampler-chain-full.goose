@@ -622,24 +622,51 @@ fn sm_apply_penalties(lv: f32[:], id: i64[:], hist: f32[:], n: i64, hn: i64,
     if hn == 0 || (repeat == 1.0 && freq == 0.0 && present == 0.0) {
         return n;
     }
+    // sort the window (small, at most a few hundred) and binary-search it per
+    // candidate: log2(hn) comparisons instead of a full scan over the window
+    var a: i64 = 1;
+    while a < hn {
+        let v: f32 = hist[a];
+        var b: i64 = a;
+        while b > 0 && hist[b - 1] > v {
+            hist[b] = hist[b - 1];
+            b = b - 1;
+        }
+        hist[b] = v;
+        a = a + 1;
+    }
     var i: i64 = 0;
     while i < n {
         let tok: i64 = id[i];
-        var cnt: i64 = 0;
-        var h: i64 = 0;
-        while h < hn {
-            if (hist[h] as i64) == tok {
-                cnt = cnt + 1;
+        var lo: i64 = 0;
+        var hi: i64 = hn;
+        while lo < hi {
+            let mid: i64 = (lo + hi) / 2;
+            if (hist[mid] as i64) < tok {
+                lo = mid + 1;
+            } else {
+                hi = mid;
             }
-            h = h + 1;
         }
-        if cnt > 0 {
+        var first: i64 = lo;
+        lo = 0;
+        hi = hn;
+        while lo < hi {
+            let mid: i64 = (lo + hi) / 2;
+            if (hist[mid] as i64) <= tok {
+                lo = mid + 1;
+            } else {
+                hi = mid;
+            }
+        }
+        let c: i64 = lo - first;
+        if c > 0 {
             if lv[i] <= 0.0 {
                 lv[i] = lv[i] * repeat;
             } else {
                 lv[i] = lv[i] / repeat;
             }
-            lv[i] = lv[i] - ((cnt as f32) * freq + present);
+            lv[i] = lv[i] - ((c as f32) * freq + present);
         }
         i = i + 1;
     }

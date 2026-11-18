@@ -934,3 +934,22 @@ not actually exercised in that run.
 Next: split the group flag so typical, XTC and penalties can each be enabled
 alone, then bisect inside the group. The suspects are unchanged: per-token vector
 copies and the full-vocabulary sort in the typical body.
+
+## penalties: the scan was the cost, a binary search recovers most of it
+
+The first implementation scanned the whole window for every candidate:
+100k candidates x 64 window entries per token. Replacing it with an in-place
+insertion sort of the small window plus two binary searches per candidate keeps
+the result bit-identical (the module gate still reports 200/200) and changes the
+timings:
+
+| config | before | after |
+|---|---|---|
+| penalties alone | 30.85 | **39.7** |
+| all stages | 30.72 | **41.3** |
+| base (all off) | 47.06 | 47.06 |
+
+So the full-scan algorithm was ~35 % of decode; the remaining gap is ~12 %. The
+remaining suspects, in order: the per-token copies of the 100k-entry candidate
+arrays into vectors, then the call overhead. The next step measures a variant
+that avoids the id copy before changing the ABI.

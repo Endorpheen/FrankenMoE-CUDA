@@ -59,6 +59,20 @@ static std::atomic<unsigned long long> g_goose_dry_calls{0};
 
 // DRY is enabled with the chain; GGML_GOOSE_SAMPLER_DRY=0 disables it. Proven by
 // the module gate and by a real-path run that matched with the stage off.
+// per-stage switches, each falling back to the chain switch
+static bool fg_stage_flag(const char * chain_var, const char * stage_var) {
+    const char * s = getenv(stage_var);
+    if (s) {
+        return strcmp(s, "0") != 0;
+    }
+    const char * c = getenv(chain_var);
+    return !(c && strcmp(c, "0") == 0);
+}
+
+static bool fg_goose_typical_enabled()    { static const bool v = fg_stage_flag("GGML_GOOSE_SAMPLER_CHAIN", "GGML_GOOSE_SAMPLER_TYPICAL");    return v; }
+static bool fg_goose_xtc_enabled()        { static const bool v = fg_stage_flag("GGML_GOOSE_SAMPLER_CHAIN", "GGML_GOOSE_SAMPLER_XTC");        return v; }
+static bool fg_goose_penalties_enabled()  { static const bool v = fg_stage_flag("GGML_GOOSE_SAMPLER_CHAIN", "GGML_GOOSE_SAMPLER_PENALTIES");  return v; }
+
 static bool fg_goose_dry_enabled() {
     static const bool on = []() {
         const char * f = getenv("GGML_GOOSE_SAMPLER_DRY");
@@ -2017,7 +2031,7 @@ static void llama_sampler_typical_apply(struct llama_sampler * smpl, llama_token
         return;
     }
 
-    if (fg_sampler_typical_call != nullptr && fg_goose_chain_enabled() && cur_p->size > 0) {
+    if (fg_sampler_typical_call != nullptr && fg_goose_typical_enabled() && cur_p->size > 0) {
         std::vector<float>   lv(cur_p->size), pp(cur_p->size), scr(cur_p->size);
         std::vector<int64_t> ids(cur_p->size);
         for (size_t i = 0; i < cur_p->size; ++i) {
@@ -2483,7 +2497,7 @@ static void llama_sample_xtc_apply(struct llama_sampler * smpl, llama_token_data
     if (chance > ctx->probability) {
         return;
     }
-    if (fg_sampler_xtc_call != nullptr && fg_goose_chain_enabled() && cur_p->size > 0) {
+    if (fg_sampler_xtc_call != nullptr && fg_goose_xtc_enabled() && cur_p->size > 0) {
         std::vector<float>   lv(cur_p->size), pp(cur_p->size);
         std::vector<int64_t> ids(cur_p->size);
         for (size_t i = 0; i < cur_p->size; ++i) {
@@ -3110,7 +3124,7 @@ static void llama_sampler_penalties_apply(struct llama_sampler * smpl, llama_tok
     }
 
 
-    if (fg_sampler_penalties_call != nullptr && fg_goose_chain_enabled() && cur_p->size > 0 && ctx->prev.size() > 0) {
+    if (fg_sampler_penalties_call != nullptr && fg_goose_penalties_enabled() && cur_p->size > 0 && ctx->prev.size() > 0) {
         const size_t hn = std::min<size_t>(ctx->prev.size(), (size_t) ctx->penalty_last_n);
         std::vector<float>   hist(hn);
         for (size_t i = 0; i < hn; ++i) {
