@@ -376,6 +376,34 @@ int main() {
               "credentials true is emitted");
     }
 
+    // ---- the localhost mode reflects a local Origin and refuses a foreign one ----
+    {
+        int rc = 0;
+        const std::string got = exchange_full(
+            "OPTIONS /health HTTP/1.1\r\nOrigin: http://localhost:8080\r\n\r\n", "",
+            { 0 }, "localhost", 1, &rc);
+        check(got.find("Access-Control-Allow-Origin: http://localhost:8080\r\n") != std::string::npos,
+              "localhost origin is reflected");
+        check(got.find("Access-Control-Allow-Credentials: true\r\n") != std::string::npos,
+              "localhost mode keeps credentials");
+    }
+    {
+        int rc = 0;
+        const std::string got = exchange_full(
+            "OPTIONS /health HTTP/1.1\r\nOrigin: http://127.0.0.1:3000\r\n\r\n", "",
+            { 0 }, "localhost", 0, &rc);
+        check(got.find("Access-Control-Allow-Origin: http://127.0.0.1:3000\r\n") != std::string::npos,
+              "127.0.0.1 origin is reflected");
+    }
+    {
+        int rc = 0;
+        const std::string got = exchange_full(
+            "OPTIONS /health HTTP/1.1\r\nOrigin: http://evil.example\r\n\r\n", "",
+            { 0 }, "localhost", 1, &rc);
+        check(got.find("Access-Control-Allow-Origin") == std::string::npos,
+              "a foreign origin gets no header in localhost mode");
+    }
+
     // ---- no policy, no header ----
     {
         int rc = 0;

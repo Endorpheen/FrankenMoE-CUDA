@@ -383,8 +383,21 @@ fn hl_handle_req(cfd: i64, req: const u8[:], resp: u8[:], keys: const u8[:], kof
     if status == 204 && origins.len > 0 {
         var cres: i64[2] = [0, 0];
         let origin_slice: const u8[:] = if origin_off >= 0 { req[origin_off .. origin_off + origin_len] } else { req[0 .. 0] };
+        // The localhost mode needs the origin's host, and the host parse is
+        // http_parse_url's decision - not a second implementation here.
+        // url_parse writes five spans: scheme, userinfo, password, host and path. Index 3
+        // is the host, which is what cors_is_localhost compares. A short array
+        // bounds-fails at run time, not at typecheck, so the size is spelled out.
+        var o_off: i64[5] = [0,0,0,0,0]; var o_len: i64[5] = [0,0,0,0,0]; var o_port: i64[1] = [0];
+        let pst: i64 = http_parse_url(origin_slice, o_off, o_len, o_port);
+        var origin_local: i64 = 0;
+        if pst == 0 && o_off[3] >= 0 && o_off[3] + o_len[3] <= origin_slice.len {
+            origin_local = cors_is_localhost(origin_slice[o_off[3] .. o_off[3] + o_len[3]], 1);
+        } else {
+            origin_local = cors_is_localhost(origin_slice[0 .. 0], 0);
+        }
         var ob: u8[256] = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
-        let n = cors_allow_origin_impl(origins, credentials, origin_slice, 0, ob, cres);
+        let n = cors_allow_origin_impl(origins, credentials, origin_slice, origin_local, ob, cres);
         if cres[0] != 0 && n >= 0 {
             allow_len = n;
             var k: i64 = 0;
