@@ -47,6 +47,24 @@ fn place(buffer: i64, t: i64, address: u64, generation: i64) -> i64 {
     return tensor_alloc(buffer, t, address);
 }
 
+// Callable entry for the C host: 0 allocate, 1 release, 2 reset, 3 place.
+fn dispatch(op: i64, a: i64, b: i64, c: i64) -> i64 {
+    if op == 0 {
+        return allocate(a, b as u64);
+    }
+    if op == 1 {
+        return release(a);
+    }
+    if op == 2 {
+        return reset(a);
+    }
+    if op == 3 {
+        return place(a, b, c as u64, 0);
+    }
+    return -2;
+}
+
 fn main() {
     print("p4-13 adapter smoke");
+    let ignored = dispatch(99, 0, 0, 0);
 }

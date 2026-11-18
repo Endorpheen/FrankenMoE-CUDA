@@ -58,3 +58,6 @@ int fg161_live_count(void) {
     for (size_t i = 1; i < FG161_MAX; ++i) n += g_slots[i].live;
     return n;
 }
+
+/* the Goose module imports this exact name */
+void fg161_usage(int64_t h, int64_t usage) { fg161_set_usage(h, usage); }

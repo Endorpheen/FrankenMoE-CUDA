@@ -23,3 +23,12 @@ gives: alloc handle 1 gen 0 live 1; reset bumps gen to 1; free drops live to 0
 and the handle's generation query returns 0 (dead); re-allocation reuses the
 handle. Next: bind the compiled Goose skeleton to this unit and run the
 differential gate against `evidence-.../reference-native*.txt`.
+
+## Goose adapter bound to the host unit (EXP-2026-11-18-1021)
+
+`src/adapter.goose` gained a callable `dispatch(op,a,b,c)` so the compiler emits
+the operations; `host/adapter_wrap.c` maps `allocate`/`release`/`reset` to it and
+`host/adapter_test.c` drives the pair. Output
+(`host/adapter-reference.txt`): `goose_alloc=1 live=1 gen=0`,
+`goose_reset_ret=1 gen=1`, `goose_release_ret=0 live=0`. `place` (op 3) and the
+real generation argument are still to be wired.
