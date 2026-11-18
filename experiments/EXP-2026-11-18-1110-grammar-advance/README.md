@@ -668,3 +668,31 @@ locate where the server actually assembles its sampler chain (the server sources
 contain no grammar wiring, so it may be assembled in a path we have not read).
 
 Recorded as a factual result: nothing changed, and no claim of filtering is made.
+
+## Correction: the grammar is a validator first and a filter on resampling
+
+The previous conclusion ("never a filter") was too strong. `common_sampler_sample`
+contains two grammar paths:
+
+```
+if (grammar_first && grammar_should_apply) llama_sampler_apply(grmr, &cur_p);   // full set
+llama_sampler_apply(chain, &cur_p); id = ...
+if (grammar_first) return id;
+// validate the single sampled token
+llama_sampler_apply(grmr, &single_token_data_array);
+if (valid) return id;
+// otherwise resample: reload logits, apply grammar to the full candidate set, rerun chain
+```
+
+`grammar_first` defaults to false and the server does not pass it, so the normal path
+is: validate the sampled token, and apply the grammar to the full candidate set only
+when that token is invalid. That is exactly why the instrumented run showed
+`cur_p=1 candidates=1` - it was the validation call, which is the common case.
+
+Both paths go through **our** `llama_grammar_apply_impl` hook, so the hook is exercised
+on every token; what is untested is the resampling path with a full candidate set, which
+needs a grammar and a model that actually produce invalid tokens often enough.
+
+The earlier "not a filter" statement is corrected here; what stands is that the
+single-candidate path cannot reject anything, so validation only observes whether the
+chosen token is allowed.
