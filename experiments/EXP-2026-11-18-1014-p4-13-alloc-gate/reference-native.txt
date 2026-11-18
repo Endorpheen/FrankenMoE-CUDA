@@ -1,0 +1,5 @@
+buft=CPU need=12288 buf=CPU size=12288
+a.data=0 b.data=8192 base=0x5fa588d0f580
+alignment=32 buft_align=32
+after_reset base=0x5fa588d0f580 size=12288
+freed ok
