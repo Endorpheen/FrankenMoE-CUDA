@@ -799,6 +799,87 @@ fn fg_sampler_dry(last: i64[:], rc: i64[:], br_head: i64[:], br_ts: i64[:],
     return sm_apply_dry(last, rc, lv, id, br_head, br_tl, n_last, nc, allowed, nb, multiplier, base);
 }
 
+
+// adaptive-p: clamped EMA target and the probability transform
+fn sm_adaptive_target(target: f32, weighted_sum: f32, total_weight: f32, out: f32[:]) -> i64 {
+    var t: f32 = target;
+    if t < 0.0 { t = 0.0; }
+    if t > 1.0 { t = 1.0; }
+    var v: f32 = t;
+    if total_weight != 0.0 {
+        v = 2.0 * t - (weighted_sum / total_weight);
+    }
+    if v < 0.0 { v = 0.0; }
+    if v > 1.0 { v = 1.0; }
+    out[0] = v;
+    return 0;
+}
+
+// compute the adapted target from the EMA state and apply the transform, so the
+// probability array is never used as scratch
+fn sm_apply_adaptive_p_state(lv: f32[:], p: f32[:], id: i64[:], n: i64,
+                             target: f32, weighted_sum: f32, total_weight: f32) -> i64 {
+    var t: f32 = target;
+    if t < 0.0 { t = 0.0; }
+    if t > 1.0 { t = 1.0; }
+    var adapted: f32 = t;
+    if total_weight != 0.0 {
+        adapted = 2.0 * t - (weighted_sum / total_weight);
+    }
+    if adapted < 0.0 { adapted = 0.0; }
+    if adapted > 1.0 { adapted = 1.0; }
+    return sm_apply_adaptive_p(lv, p, id, n, adapted);
+}
+
+fn sm_apply_adaptive_p(lv: f32[:], p: f32[:], id: i64[:], n: i64, adapted: f32) -> i64 {
+    let inv_width: f32 = 1.0 / 0.3;
+    var i: i64 = 0;
+    while i < n {
+        if lv[i] < -1.0e38 {
+            i = i + 1;
+            continue;
+        }
+        var dist: f32 = (p[i] - adapted) * inv_width;
+        if dist < 0.0 { dist = -dist; }
+        lv[i] = 5.0 - (10.0 * dist * dist) / (1.0 + dist);
+        i = i + 1;
+    }
+    let sm = softmax_in_place(lv, p, n, 0);
+    if sm < 0.0 {
+        return -1;
+    }
+    return n;
+}
+
+// mirostat v1: s_hat estimate and the truncation size
+fn sm_mirostat_k(p: f32[:], n: i64, mu: f32, m: i64, n_vocab: f32) -> i64 {
+    var sum_ti_bi: f32 = 0.0;
+    var sum_ti_sq: f32 = 0.0;
+    var limit: i64 = m - 1;
+    if limit > n - 1 { limit = n - 1; }
+    var i: i64 = 0;
+    while i < limit {
+        let t_i: f32 = logf((i + 2) * 1.0 / (i + 1));
+        let b_i: f32 = logf(p[i] / p[i + 1]);
+        sum_ti_bi = sum_ti_bi + t_i * b_i;
+        sum_ti_sq = sum_ti_sq + t_i * t_i;
+        i = i + 1;
+    }
+    let s_hat: f32 = sum_ti_bi / sum_ti_sq;
+    let eps: f32 = s_hat - 1.0;
+    let k_f: f32 = powf((eps * powf(2.0, mu)) / (1.0 - powf(n_vocab, -eps)), 1.0 / s_hat);
+    var ki: i64 = 0;
+    while ki + 1 <= k_f && ki < 1000000 {
+        ki = ki + 1;
+    }
+    if ki < 1 { ki = 1; }
+    return ki;
+}
+
+fn sm_mirostat_update(mu: f32, eta: f32, tau: f32, observed: f32) -> f32 {
+    return mu - eta * (observed - tau);
+}
+
 // Single stable entry point for the shipped library. Generated function ids
 // shift whenever this module changes, so callers must reach the chain through
 // this one function rather than through a generated id.
@@ -824,6 +905,16 @@ fn fg_sampler_chain(op: i64, lv: f32[:], p: f32[:], id: i64[:], n: i64,
     }
     if op == 6 {
         return sm_apply_penalties(lv, id, p, n, k, f, f2, f3);
+    }
+    if op == 7 {
+        return sm_apply_adaptive_p_state(lv, p, id, n, f, f2, f3);
+    }
+    if op == 8 {
+        return sm_mirostat_k(lv, n, f, k, f2);
+    }
+    if op == 9 {
+        p[0] = sm_mirostat_update(f, f2, f3, lv[0]);
+        return 0;
     }
     return -2;
 }

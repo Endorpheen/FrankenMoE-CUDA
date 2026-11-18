@@ -530,3 +530,21 @@ dry (shipping build): cases=120 mismatches=0
 120 random contexts with 1-4 breakers (tails of 0-2 tokens), random
 allowed_length, comparing both the repeat-count array and the resulting logits
 against a reference of the four native steps.
+
+## adaptive-p and mirostat reach the shipped module
+
+Both are in the shipping file behind dispatch ops 7 and 8. Verified in the
+shipping build:
+
+```
+adaptive-p: mismatches=0   mirostat: mismatches=0    (200 cases each)
+```
+
+One defect of mine was found on the way: the adaptive-p entry wrote the adapted
+target into `p[0]` before using `p` as the probability array, which corrupted the
+first probability and collapsed the distribution to index 0. The state form now
+computes the target locally and never uses the probability array as scratch.
+
+The shipped dispatch now carries typical-p, top-p, top-k, min-p, temperature,
+XTC, penalties, adaptive-p and mirostat, each gated in that build. Only `dist`
+and `temp_ext` remain, both waiting on the f64 record in the tech-debt ledger.
