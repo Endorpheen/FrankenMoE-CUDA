@@ -1,0 +1,11 @@
+n=8192 rows=8 iterations=32
+row bytes: q4_K=4608 q6_K=6720 q8_K=9344
+
+Q4_K cases: 256
+  gemv column == vec_dot row : 29 equal, 227 unmatched
+  gemv vs goose row object   : 26 equal, 230 differ, max raw-bit delta 824
+  vec_dot vs goose row object: 26 equal, 230 differ
+  gemv vs vec_dot            : max relative 2.624e-04, max ulp 3584
+
+Q6_K cases: 256
+  vec_dot vs goose row object: 24 equal, 232 differ

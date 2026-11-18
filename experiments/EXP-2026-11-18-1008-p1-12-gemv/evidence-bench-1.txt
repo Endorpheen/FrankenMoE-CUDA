@@ -1,0 +1,4 @@
+n=2048 nc=64 nb=8 reps=2000 native=3.0 us goose=817.7 us ratio=270.08x diffs=0
+n=2048 nc=512 nb=8 reps=2000 native=24.2 us goose=6572.4 us ratio=271.88x diffs=0
+n=2048 vec_dot=0.054 us goose_row=29.293 us ratio=544.7x bits_equal=0
+n=512 vec_dot=0.014 us goose_row=7.081 us ratio=497.1x bits_equal=0

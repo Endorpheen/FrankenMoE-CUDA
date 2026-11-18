@@ -1,0 +1,4 @@
+device: CPU
+cpu buft: CPU | repack buft: CPU_REPACK
+supports_op(repack, q4_K gate/up expert) = true
+note: the second probe (q6_K) aborts in the shipped Goose guard fg156 on ggml_new_tensor_3d in a synthetic context; the q4_K answer is complete and is all this check needs.

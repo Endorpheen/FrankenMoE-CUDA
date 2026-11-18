@@ -1,0 +1,32 @@
+checkpoint: CPU MoE A/B, 3 pairs, 2026-11-18
+decode [23.94] prefill [58.3] sha {'5a82551375c2'}
+4735 MiB, 12282 MiB
+MemAvailable:   47059824 kB
+MMID_HOOK_TOTAL goose=0 native=285890 fallback=0
+decode [28.98] prefill [63.8] sha {'5a82551375c2'}
+4676 MiB, 12282 MiB
+MemAvailable:   47066568 kB
+MMID_HOOK_TOTAL goose=8783 native=277558 fallback=0
+decode [25.77] prefill [70.6] sha {'5a82551375c2'}
+4795 MiB, 12282 MiB
+MemAvailable:   46920976 kB
+MMID_HOOK_TOTAL goose=0 native=285796 fallback=0
+decode [32.37] prefill [68.1] sha {'5a82551375c2'}
+4773 MiB, 12282 MiB
+MemAvailable:   47729708 kB
+MMID_HOOK_TOTAL goose=8725 native=277646 fallback=0
+decode [30.24] prefill [67.2] sha {'5a82551375c2'}
+4719 MiB, 12282 MiB
+MemAvailable:   47780200 kB
+MMID_HOOK_TOTAL goose=0 native=285888 fallback=0
+decode [28.84] prefill [64.1] sha {'5a82551375c2'}
+4749 MiB, 12282 MiB
+MemAvailable:   47640540 kB
+MMID_HOOK_TOTAL goose=8764 native=277720 fallback=0
+--- hashes ---
+1dd5abbee37c826a87bc005addaac34d00484beaf6e28bb843cebccd66e5e53c  /home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-18-1008-p1-12-gemv/evidence-ab3/libmmid_hook_v2.so
+1821f513266ade87f316063555e80750a515662743d80e4b2b696452a0c4726f  /home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-18-1008-p1-12-gemv/build/p112-mmid-v2/libmoe_mmid_tiled.so
+3e4437d9f3e906278944a765bd0ab0e1cc0a96b20c441fe3ea37aa5cc0934237  /home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-18-1008-p1-12-gemv/build/accepted-run/llama-server
+33baf1f3ab8c2bfff6a543f9e1164c3d7c15ea443c0b96cc0c6c80dc972d50d6  /home/end0/AI/FrankenMoE-CUDA/experiments/EXP-2026-11-18-1008-p1-12-gemv/build/accepted-run/libggml-cpu.so.0
+EXP906 reference dir untouched: /home/end0/AI/LlamaServer/apex-independent-fast-20261116/run
+3e4437d9f3e90627

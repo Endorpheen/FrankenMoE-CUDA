@@ -1,0 +1,90 @@
+Tiled Q4_K MoE kernel — Goose vs native (whole-kernel AVX2 unit)
+
+Kernel: src/mmid_tiled_q4_k.goose
+Compiler: /home/end0/AI/Fried-Goose/.cache/goose/simd7
+  (Fried Goose sources with idiom lane_q4k_tiled, commit dba49eb2)
+Packed report: mmid_tiled_q4_k -> lane_q4k_tiled
+
+Object: build/p112-mmid-v1/libmoe_mmid_tiled.so
+  sha256 c482d10c7afa77530bd0df9494f075ccf3a3e87b8baba710b852ad8d288eb23a
+Build:
+  gcc-13 -O3 -mavx2 -mfma -fPIC -shared -w -I src -I build/p112-mmid-v1 \
+      build/p112-mmid-v1/wrapper_mmid.c -o build/p112-mmid-v1/libmoe_mmid_tiled.so
+Export: fg_cpu_simd_mmid_tiled_q4_k(args, scratch)
+
+Gate (gate_mmid, 5 iterations):
+  nth=1 compared=20480 differ=0
+  nth=8 compared=20480 differ=0
+
+Bench (bench_mmid, 300 reps):
+  K=2048 R=512  C=8 nth=1 native=246.01 us goose=338.91 us ratio=1.38x
+  K=512  R=2048 C=8 nth=1 native=257.55 us goose=359.84 us ratio=1.40x
+  K=2048 R=512  C=8 nth=8 native=293.96 us goose=337.22 us ratio=1.15x
+  K=512  R=2048 C=8 nth=8 native=309.15 us goose=378.87 us ratio=1.23x
+
+Before the unit (scalar Goose body):
+  18.92x / 19.36x / 17.09x / 16.81x on the same four points
+Rejected variant: packed idiom calls 27.7-29.3x.
+
+Compiler regressions on the same binary:
+  safety 13/13 (verdict + stderr digest)
+  corpus PASS_REACH_CORPUS 216/0/1 (recorded separately)
+
+== Real Apex failing case (cne1 = 1) ==
+
+Input: evidence-mmid/failing_case.bin
+  header (10 x int64): K=2048 R=512 nb01=1152 nbw1=2336 cne1=1 nb0=4 nb1=2048
+  nb2=16384 cur=0 count=64
+  payload: src0 589824 B, act 2336 B, routes (3,1), 64 records {int32, f32}
+
+Regression gate: build/p112-mmid-v2/case_mmid evidence-mmid/failing_case.bin
+  case cne1=1 rows=512 compared=64 equal=64 differ=0
+
+Cause of the original 30/64 report: the comparison offsets were dense (`dst[i]`)
+instead of routed (`r*nb0 + route0*nb1 + route1*nb2`), so rows that were not
+written were compared against values from another slot. The kernel itself is
+correct on this case both as the AVX2 unit and as the scalar fallback.
+
+Real defect found while reproducing: the C shim sized the dst slice as
+nb0*ne01 + nb1*cne1 + nb2*cne1, which is smaller than a sparse route offset and
+made the scalar path abort with "array index out of bounds". The slice now
+covers max(route0*nb1 + route1*nb2) + (ne01-1)*nb0 + 4.
+
+Object (v2, rebuilt with the fixed shim):
+  sha256 1821f513266ade87f316063555e80750a515662743d80e4b2b696452a0c4726f
+  gate nth=1/8 8192/8192 differ=0; case 64/64 differ=0
+  bench K=2048/R=512 1.26x (nth=1) 1.14x (nth=8); K=512/R=2048 1.27x (nth=1) 1.09x (nth=8)
+
+== Group 0 investigation (repro_group0) ==
+
+The shipped repro compares against `ggml_vec_dot_q4_K_q8_K(n, &s, 0, x, 0, y, 0, 1)`.
+On this host that call returns 0 for every row, so its "reference" is empty: rows
+whose weights are zero match trivially (the 64/64 of groups 1-7) and the real rows
+of group 0 look wrong, with row 2 "constant" at the kernel value 0.063255541.
+
+Independent check of the same data (per-block decode, Python) gives row 2 =
+0.0632555146 and row 3 = -0.200779682, i.e. the file's expected values, and the
+kernel reproduces them bit-exactly.
+
+Corrected repro `src/repro_group0_fixed.cpp` computes the reference directly from
+the block format with the same float order as the native microkernel
+(d*s1, fmaf(-dmin,s2), fmaf(d_act,res,acc)). Result on failing_case.bin:
+
+  group=0..7 rows 64 each: eq=64/64 every group, total diffs=0, exit=0
+  same numbers with the scalar object (FGOOSE_SIMD_CPU_DISABLE)
+
+So no kernel defect exists for this case; the defect was in the repro's reference
+call. `repro_group0_fixed` is now part of run_mmid_check.sh.
+
+== Second dump (different activations, same expert) ==
+
+Input: evidence-mmid/failing_case_group6.bin (same format, 592760 B)
+repro_fixed (independent bit-exact dot, all eight groups):
+
+  WKL object:    64/64 every group, total diffs=0, exit=0
+  scalar object: 64/64 every group, total diffs=0, exit=0
+
+Both dumps are now part of run_mmid_check.sh.
+Object v4 (same sources, deterministic build):
+  sha256 (see SHA256SUMS below)
+1821f513266ade87f316063555e80750a515662743d80e4b2b696452a0c4726f  build/p112-mmid-v4/libmoe_mmid_tiled.so
