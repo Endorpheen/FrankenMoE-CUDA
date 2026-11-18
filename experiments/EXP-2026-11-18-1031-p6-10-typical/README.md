@@ -620,3 +620,25 @@ The fix that made it identical: the shifted scores live in a scratch array and a
 four-array heap sort carries the logits along, so the caller's logits keep their
 own values, as the native body does. The stage is default-on again
 (`GGML_GOOSE_SAMPLER_CHAIN=0` disables it) because it now measures identical.
+
+## top-p hook installed, opt-in, still differs
+
+The real path can call the Goose top-p (`GGML_GOOSE_SAMPLER_TOP_P=1`) and the
+counter fires (`FG171_TOP_P goose calls=200 kept=8`), but the comparison fails
+in the logits column:
+
+```
+case 0: ON  kept=1 id 5 logit 0.455646     OFF kept=1 id 5 logit 3.479219
+case 1: ON  kept=5 ids 0,12,7,5,4          OFF kept=5 ids 0,12,7,5,4
+```
+
+The kept ids and sizes agree; the logits that come back from the Goose call look
+like probabilities instead of the original logits. The entry resolves to
+`gg_function_2` in the build, and that id was selected by prototype shape, which
+is exactly the fragile path the ledger warns about (TD-S2), so the first thing to
+check is whether that id really is `fg_sampler_top_p` and not a neighbour with
+the same shape.
+
+The stage is therefore behind its own flag, default off, and the default build
+is verified unchanged (`default (top-p off) matches native`). Typical-p remains
+live and identical.

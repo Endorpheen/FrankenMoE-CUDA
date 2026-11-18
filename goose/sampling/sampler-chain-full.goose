@@ -964,6 +964,37 @@ fn fg_sampler_typical(lv: f32[:], p: f32[:], id: i64[:], scr: f32[:], n: i64,
     return n;
 }
 
+
+// top-p as the real path uses it: sort by logit descending first (the logits
+// keep their values), then keep the smallest prefix whose mass reaches top_p
+fn fg_sampler_top_p(lv: f32[:], p: f32[:], id: i64[:], n: i64,
+                    top_p: f32, min_keep: i64) -> i64 {
+    if n <= 0 || lv.len < n || p.len < n || id.len < n {
+        return -1;
+    }
+    if top_p >= 1.0 {
+        return n;
+    }
+    let srt = sm_partial_sort(lv, id, n, n);
+    if srt < 0 {
+        return -1;
+    }
+    let sm = softmax_in_place(lv, p, n, 1);
+    if sm < 0.0 {
+        return -1;
+    }
+    var cum: f32 = 0.0;
+    var i: i64 = 0;
+    while i < n {
+        cum = cum + p[i];
+        if cum >= top_p && i + 1 >= min_keep {
+            return i + 1;
+        }
+        i = i + 1;
+    }
+    return n;
+}
+
 // Single stable entry point for the shipped library. Generated function ids
 // shift whenever this module changes, so callers must reach the chain through
 // this one function rather than through a generated id.
