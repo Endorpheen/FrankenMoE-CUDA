@@ -37,10 +37,11 @@ fn g_match_char(etype: i64[:], eval: i64[:], pos_in: i64, chr: i64) -> i64 {
 // reject_candidates for one stack, single-codepoint candidates (no partial UTF-8).
 // rej[i] = 1 when candidate i is rejected. The stack transition after a class is
 // candidate independent, so the descent is iterative instead of recursive.
+// cand_cp is ncand rows of maxcp codepoints; curs starts at 0 for every candidate
 fn g_reject(etype: i64[:], eval: i64[:], roff: i64[:], rlen: i64[:],
             st: i64[:], std_in: i64,
-            cand_cp: i64[:], rej: i64[:], ncand: i64,
-            scratch: i64[:], maxd: i64) -> i64 {
+            cand_cp: i64[:], cp_len: i64[:], curs: i64[:], rej: i64[:], ncand: i64,
+            scratch: i64[:], maxd: i64, maxcp: i64) -> i64 {
     var depth: i64 = std_in;
     var i: i64 = 0;
     // copy the working stack into scratch
@@ -64,11 +65,11 @@ fn g_reject(etype: i64[:], eval: i64[:], roff: i64[:], rlen: i64[:],
             var next_depth: i64 = depth - 1;
             i = 0;
             while i < ncand {
-                if rej[i] == 0 && cand_cp[i] != 0 {
-                    let r = g_match_char(etype, eval, pos, cand_cp[i]);
+                if rej[i] == 0 && curs[i] < cp_len[i] {
+                    let r = g_match_char(etype, eval, pos, cand_cp[i * maxcp + curs[i]]);
                     if r > 0 {
                         // the class consumed this codepoint
-                        cand_cp[i] = 0;
+                        curs[i] = curs[i] + 1;
                     } else {
                         rej[i] = 1;
                         alive = alive - 1;
@@ -98,6 +99,16 @@ fn g_reject(etype: i64[:], eval: i64[:], roff: i64[:], rlen: i64[:],
         // END or unsupported: stop
         break;
     }
+    // a candidate with codepoints left when the stack is exhausted cannot be
+    // consumed by this grammar state
+    i = 0;
+    while i < ncand {
+        if rej[i] == 0 && curs[i] < cp_len[i] {
+            rej[i] = 1;
+            alive = alive - 1;
+        }
+        i = i + 1;
+    }
     return alive;
 }
 
@@ -126,10 +137,12 @@ fn main() {
     let ro: i64[2] = [0, 0];
     let rl: i64[2] = [2, 0];
     let st: i64[8] = [0, 0, 0, 0, 0, 0, 0, 0];
-    let cp: i64[4] = [97, 98, 0, 0];
+    let cp: i64[8] = [97, 0, 98, 0, 0, 0, 0, 0];
+    let cpl: i64[4] = [1, 1, 0, 0];
+    let cur: i64[4] = [0, 0, 0, 0];
     let rej: i64[4] = [0, 0, 0, 0];
     let sc: i64[8] = [0, 0, 0, 0, 0, 0, 0, 0];
-    let r = g_reject(et, ev, ro, rl, st, 1, cp, rej, 3, sc, 8);
+    let r = g_reject(et, ev, ro, rl, st, 1, cp, cpl, cur, rej, 2, sc, 8, 4);
     if r < 0 {
         return;
     }

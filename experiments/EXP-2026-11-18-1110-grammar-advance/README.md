@@ -114,10 +114,15 @@ against the native `llama_grammar_reject_candidates`. The descent is iterative
 because the stack transition after a class is candidate independent; a matched
 class clears the candidate's codepoint, which is what the native cursor does.
 
+Now with multi-codepoint candidates (`'abc'` accepted, `'ax'` rejected for the rule
+`"abc"`, `'cc'` rejected for `[a-c]`). Two defects of mine were caught by the gate
+and fixed: the cursor was not advanced, and a candidate with codepoints left when
+the stack ran out was accepted instead of rejected.
+
 Scope of this version, stated so it is not mistaken for the whole function:
 
 - one stack (the native combines several by intersecting their rejects);
-- one codepoint per candidate, so no partial UTF-8 path yet;
+- no partial UTF-8 path yet (`match_partial_char` is ported and gated, not wired);
 - no `TOKEN`/`TOKEN_NOT` rules;
 - the rule-reference case expands only the first alternate.
 
