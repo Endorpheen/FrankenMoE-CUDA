@@ -663,6 +663,9 @@ fn gate_dispatch(op: i64, lv: f32[:], p: f32[:], id: i64[:], n: i64, f: f32, k: 
     if op == 10 {
         return k;
     }
+    if op == 23 {
+        return sm_apply_penalties(lv, id, p, n, k, f, f2, f3);
+    }
     if op == 22 {
         let ua: f64 = mt_canonical(id);
         p[0] = ua as f32;
@@ -1187,6 +1190,39 @@ fn sm_apply_temp_ext(lv: f32[:], p: f32[:], id: i64[:], n: i64,
     i = 0;
     while i < n {
         p[i] = ((p[i] as f64) / cum) as f32;
+        i = i + 1;
+    }
+    return n;
+}
+
+// penalties: repeat/frequency/presence over the recent window. The window is
+// passed as floats (token ids are exact below 2^24) because the dispatch has one
+// integer slice only.
+fn sm_apply_penalties(lv: f32[:], id: i64[:], hist: f32[:], n: i64, hn: i64,
+                      repeat: f32, freq: f32, present: f32) -> i64 {
+    if hn == 0 || (repeat == 1.0 && freq == 0.0 && present == 0.0) {
+        return n;
+    }
+    var i: i64 = 0;
+    while i < n {
+        let tok: i64 = id[i];
+        var cnt: i64 = 0;
+        var h: i64 = 0;
+        while h < hn {
+            if (hist[h] as i64) == tok {
+                cnt = cnt + 1;
+            }
+            h = h + 1;
+        }
+        if cnt > 0 {
+            if lv[i] <= 0.0 {
+                lv[i] = lv[i] * repeat;
+            } else {
+                lv[i] = lv[i] / repeat;
+            }
+            // native subtracts the sum of both terms at once
+            lv[i] = lv[i] - ((cnt as f32) * freq + present);
+        }
         i = i + 1;
     }
     return n;

@@ -421,3 +421,21 @@ compiler.
 Repro command: op 22 of the dispatch with a seeded state (seed 1) prints
 `bare=0 *1.0=0 +0.0=0` where the native values are 0.997184808, 0.932557361 and
 0.128124448.
+
+## penalties accepted
+
+`sm_apply_penalties` transcribes the native rule: count the token in the recent
+window, then multiply a non-positive logit by the repeat penalty (or divide a
+positive one, as native does), and subtract `count*freq + present`.
+
+```
+penalties: cases=200 mismatches=0   (logits compared bitwise)
+```
+
+200 windows with random repeat/frequency/presence penalties and random
+candidate sets match the native formula bit for bit.
+
+The first run differed in the low bits because I subtracted the two terms
+separately (`logit - A - B`) while native subtracts their sum once
+(`logit - (A + B)`). That is a real ordering difference, not noise, and it is
+the kind of thing that only a bitwise gate catches.
