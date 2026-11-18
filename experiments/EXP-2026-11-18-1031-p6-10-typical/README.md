@@ -915,3 +915,22 @@ Likely causes, in the order worth measuring:
 The next step bisects by stage (enable one at a time) to attribute the cost
 before changing anything, then removes the copies by passing `cur_p->data`
 fields directly where the layout allows it.
+
+## Bisect: the loss is in the chain group, not in top-p
+
+Two runs per configuration, 512 tokens, same server and profile:
+
+| config | decode | Goose calls |
+|---|---|---|
+| all off (base) | 47.06 | 0 |
+| top-p only | 47.23 / 47.28 | 11 |
+| chain only (typical + XTC + penalties) | 30.35 / 29.91 | 22 |
+| DRY only | 44.69 / 44.76 | 0 |
+
+Top-p costs nothing measurable. The whole 35 % loss sits in the chain group. DRY
+shows 44.7 with **zero** calls, which is variance, not a DRY cost - its flag was
+not actually exercised in that run.
+
+Next: split the group flag so typical, XTC and penalties can each be enabled
+alone, then bisect inside the group. The suspects are unchanged: per-token vector
+copies and the full-vocabulary sort in the typical body.
