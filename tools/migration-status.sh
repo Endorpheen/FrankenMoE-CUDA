@@ -188,6 +188,36 @@ _unwired=$(python3 "$ROOT/tools/check-unwired-modules.py" 2>/dev/null | head -1 
 if [ -n "$_unwired" ]; then
 say "   unwired decisions            $_unwired"
 fi
+# The unit is the thing being built; the SHIPPED library is the thing that runs.
+# Their overlap was never counted, so "the unit has 145 modules" could be read as
+# progress on the artifact when it is a fact about a directory. This measures the
+# intersection instead: how many of the unit's exported decisions exist in the shared
+# object Apex loads.
+_extra=""
+if [ -n "${FG_SHIPPED_LIB:-}" ] && [ -f "${FG_SHIPPED_LIB}" ]; then _extra=$FG_SHIPPED_LIB; fi
+if [ -z "$_extra" ]; then
+    _extra=$(ls -1 /home/end0/AI/LlamaServer/*/run/libllama.so.0 2>/dev/null | head -1 || true)
+fi
+if [ -f "$_extra" ] && [ -f "$ROOT/build/goose-main/.source-sha256" ]; then
+    _ov=$(python3 -W ignore - "$_extra" "$ROOT/build/goose-main/main.h" <<'PYS' 2>/dev/null || true
+import re, subprocess, sys
+lib, hdr = sys.argv[1], sys.argv[2]
+try:
+    with open(hdr) as f:
+        names = set(re.findall(r'^\s*[A-Za-z_][\w *]*(\w+)\s*\(', f.read(), re.M))
+except OSError:
+    sys.exit(0)
+out = subprocess.run(['nm', '-D', '--defined-only', lib], capture_output=True, text=True).stdout
+have = {l.split()[-1] for l in out.splitlines() if l.strip()}
+shared = sorted(n for n in names if n in have)
+print("%d" % len(shared))
+PYS
+)
+    if [ -n "$_ov" ]; then
+        say "   unit exports in shipped lib  $_ov of the header's functions (the shipped"
+        say "                                artifact is built from per-module bridges, not from the unit)"
+    fi
+fi
 say "   GGUF container read          yes  (substrate reader)"
 say "   GGUF metadata, every key     yes  (4 files, agree=yes)"
 say "   GGUF tensor directory        yes  (fixtures + 3 real models, 940 tensors)"

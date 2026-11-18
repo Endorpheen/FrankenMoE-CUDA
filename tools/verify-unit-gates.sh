@@ -72,6 +72,7 @@ GATES=(
     "dry-live       | experiments/EXP-2026-11-18-968-goose-dry-live/tests/gate.cpp       | llama"
     "signal-policy  | experiments/EXP-2026-11-18-995-goose-signal-policy/tests/gate.cpp   | unit"
     "sampler-chain  | experiments/EXP-2026-11-18-998-sampler-chain/tests/gate.cpp         | llama"
+    "shipped-vs-unit| experiments/EXP-2026-11-18-999-shipped-vs-unit/tests/gate.cpp      | llama"
 )
 
 pass=0; fail=0; skip=0
