@@ -6,6 +6,11 @@
 #include <string.h>
 #include "ggml.h"
 #include "ggml-backend.h"
+#include <stdio.h>
+static unsigned long g_bulk_calls, g_alloc_calls;
+__attribute__((destructor)) static void fg161_report(void) {
+    if (g_bulk_calls) fprintf(stderr, "GOOSE_ALLOC bulk=%lu buffers=%lu\n", g_bulk_calls, g_alloc_calls);
+}
 
 #define FG161_MAX 4096
 typedef struct { ggml_backend_buffer_t buf; uint64_t gen; int live; } slot;
@@ -75,22 +80,33 @@ size_t fg161_buffer_size(int64_t h) {
 /* bulk: place every tensor of a context into one buffer, packing exactly as the
    native allocator does (alloc size from the buft, alignment from the buft). */
 int64_t fg161_bulk(int64_t buft, int64_t ctx, int64_t size_only) {
+    g_bulk_calls++;
     ggml_backend_buffer_type_t bt = (ggml_backend_buffer_type_t)(uintptr_t) buft;
     struct ggml_context * c = (struct ggml_context *)(uintptr_t) ctx;
     size_t align = ggml_backend_buft_get_alignment(bt);
     size_t total = 0;
     for (struct ggml_tensor * t = ggml_get_first_tensor(c); t; t = ggml_get_next_tensor(c, t))
-        total += ggml_backend_buft_get_alloc_size(bt, t);
+        if (t->view_src == NULL) total += ggml_backend_buft_get_alloc_size(bt, t);
     total = (total + align - 1) / align * align;
     if (size_only) return (int64_t) total;
     int64_t h = fg161_alloc_buffer(buft, total);
+    if (h) g_alloc_calls++;
     if (!h) return 0;
     char * base = (char *) fg161_buffer_base(h);
     size_t off = 0;
     for (struct ggml_tensor * t = ggml_get_first_tensor(c); t; t = ggml_get_next_tensor(c, t)) {
+        if (t->view_src != NULL) {
+            ggml_backend_view_init(t);
+            continue;
+        }
         off = (off + align - 1) / align * align;
         ggml_backend_tensor_alloc(g_slots[h].buf, t, base + off);
         off += ggml_backend_buft_get_alloc_size(bt, t);
     }
     return h;
+}
+
+void * fg161_buffer_handle(int64_t h) {
+    if (h <= 0 || h >= FG161_MAX || !g_slots[h].live) return NULL;
+    return (void *) g_slots[h].buf;
 }

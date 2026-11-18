@@ -1195,7 +1195,24 @@ static struct ggml_tensor ** ggml_backend_alloc_ctx_tensors_from_buft_collect(
     return tensors;
 }
 
+extern int64_t fg161_bulk(int64_t buft, int64_t ctx, int64_t size_only);
+extern void * fg161_buffer_handle(int64_t h);
+
 ggml_backend_buffer_t ggml_backend_alloc_ctx_tensors_from_buft(struct ggml_context * ctx, ggml_backend_buffer_type_t buft) {
+    // P4-13: allocation goes through the Goose adapter (unified interface,
+    // option B). GGML_GOOSE_ALLOC=0 restores the native body below.
+    const char * goose_env = getenv("GGML_GOOSE_ALLOC");
+    if (goose_env == NULL || atoi(goose_env) != 0) {
+        int64_t h = fg161_bulk((int64_t)(uintptr_t) buft, (int64_t)(uintptr_t) ctx, 0);
+        if (h != 0) {
+            struct ggml_backend_buffer * gb = (struct ggml_backend_buffer *) fg161_buffer_handle(h);
+            if (gb != NULL) {
+                ggml_backend_buffer_set_usage(gb, GGML_BACKEND_BUFFER_USAGE_WEIGHTS);
+                return gb;
+            }
+        }
+        return NULL;
+    }
     GGML_ASSERT(ggml_get_no_alloc(ctx) == true);
 
     int n_tensors = 0;

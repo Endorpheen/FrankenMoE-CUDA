@@ -94,3 +94,22 @@ after_release live=0
 The full operation set is now allocate, allocate_ctx, release, reset and place,
 with the generation guard — every differential check against the native
 reference passes.
+
+## Call site switched in the shipped build + triple A/B (EXP-2026-11-18-1026)
+
+`ggml_backend_alloc_ctx_tensors_from_buft` now allocates through the Goose
+adapter (`fg161_bulk`), with `GGML_GOOSE_ALLOC=0` restoring the native body.
+libggml-base rebuilt in the reproducible tree; execution proven in the server:
+`GOOSE_ALLOC bulk=3 buffers=3` (native arm: no such line).
+
+Three paired runs, same profile and request (`--moe-cache-mib 0`, 32/8):
+
+| pair | sha | tokens | logprobs | top-5 | native pre/dec | goose pre/dec | VRAM | RAM avail |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 5a82551375c2 = | = | = | = | 71.04 / 31.74 | 64.90 / 30.36 | 4741 = | 47,121,772 / 47,134,996 |
+| 2 | 5a82551375c2 = | = | = | = | 71.00 / 30.04 | 70.73 / 31.63 | 4741 = | 47,121,164 / 47,000,064 |
+| 3 | 5a82551375c2 = | = | = | = | 65.64 / 30.28 | 70.54 / 32.25 | 4741 = | 47,017,240 / 47,134,716 |
+
+Medians: prefill 71.00 -> 70.54 (-0.7%), decode 30.28 -> 31.63 (+4.5%), VRAM
+identical, RAM identical. Correctness is bit-exact; no functional regression.
+The native body stays only as the documented OFF arm (rule 10).
