@@ -73,6 +73,7 @@ GATES=(
     "signal-policy  | experiments/EXP-2026-11-18-995-goose-signal-policy/tests/gate.cpp   | unit"
     "sampler-chain  | experiments/EXP-2026-11-18-998-sampler-chain/tests/gate.cpp         | llama"
     "shipped-vs-unit| experiments/EXP-2026-11-18-999-shipped-vs-unit/tests/gate.cpp      | llama"
+    "q35-bridge     | experiments/EXP-2026-11-18-1002-q35-bridge-redundant/tests/gate.cpp | dso"
 )
 
 pass=0; fail=0; skip=0
@@ -83,6 +84,20 @@ for row in "${GATES[@]}"; do
     name=$(printf '%s' "$name" | xargs); src=$(printf '%s' "$src" | xargs); needs=$(printf '%s' "$needs" | xargs)
 
     extra=(); extra_lib=()
+    if [ "$needs" = "dso" ]; then
+        # A gate against a DSO built from current sources: the fresh build directory
+        # FIRST on the loader path, because with the accepted one first the loader
+        # satisfies libllama.so.0 from there and the unit's symbols are missing.
+        _freshdso=$(ls -1d /home/end0/AI/LlamaServer/exp*-dso-*/out 2>/dev/null | tail -1 || true)
+        LACC=/home/end0/AI/LlamaServer/apex-independent-fast-20261116/run
+        if [ -z "$_freshdso" ] || [ ! -f "$_freshdso/libllama.so.0" ]; then
+            printf '%-16s %-8s %s\n' "$name" SKIP "no DSO built from current sources"
+            skip=$((skip+1)); continue
+        fi
+        export FG_DSO_DIR="$_freshdso"
+        extra=(); extra_lib=("$_freshdso/libllama.so.0" "-Wl,-rpath,$_freshdso" "-Wl,--allow-shlib-undefined")
+        export FG_GATE_LDPATH="$_freshdso:$LACC"
+    fi
     if [ "$needs" = "llama" ]; then
         # The live sampler comparisons need the accepted libllama as their oracle, and
         # its ggml dependencies on the link line.
@@ -114,7 +129,9 @@ for row in "${GATES[@]}"; do
         printf '%-16s %-8s %s\n' "$name" LINKFAIL "$(tail -1 "$OUT/link-$name.log")"
         fail=$((fail+1)); continue
     fi
-    if timeout 120 "$OUT/g-$name" > "$OUT/run-$name.log" 2>&1; then
+    # FG_GATE_LDPATH carries the loader order for a DSO gate; it must reach the child,
+    # not the script's own environment, so a stale value cannot leak between gates.
+    if LD_LIBRARY_PATH="${FG_GATE_LDPATH:-}" timeout 120 "$OUT/g-$name" > "$OUT/run-$name.log" 2>&1; then
         printf '%-16s %-8s %s\n' "$name" PASS "$(grep -oE 'checks=[0-9]+ failures=0' "$OUT/run-$name.log" | tail -1)"
         pass=$((pass+1))
     else
@@ -172,7 +189,24 @@ if [ -n "$_fresh" ] && [ -f "$_fresh/libllama.so.0" ]; then
     fi
 fi
 
-# ---- 5. named, not silently dropped ----
+# ---- 5. a linked object that serves nothing ----
+# EXP1001 counted dead symbols; this asks the coarser question and it caught a real
+# duplicate: fg-q35-bridge.o provides the same Apex plan decision as fg-q35.o, which is
+# generated from the canonical unit, and nothing calls the older one. Reported, not
+# removed - rule 15 - so a non-zero result is printed as a finding, not as a suite fail.
+_fresh_obj=$(ls -1d /home/end0/AI/LlamaServer/exp*-dso-*/out 2>/dev/null | tail -1 || true)
+if [ -n "$_fresh_obj" ] && [ -d "$_fresh_obj" ]; then
+    _deadout=$(timeout 200 python3 "$ROOT/tools/check-dead-objects.py" "$_fresh_obj" 2>/dev/null || true)
+    _deadtail=$(printf '%s' "$_deadout" | grep '^DEAD' | head -3)
+    if [ -n "$_deadtail" ]; then
+        printf '%-16s %-8s %s\n' "dead-objects" "FINDING" "$(printf '%s' "$_deadtail" | head -1)"
+        printf '%s\n' "$_deadout" | grep '^DEAD' | tail -n +2 | sed 's/^/                        /'
+    else
+        printf '%-16s %-8s %s\n' "dead-objects" "PASS" "$(printf '%s' "$_deadout" | head -1)"
+    fi
+fi
+
+# ---- 6. named, not silently dropped ----
 printf '\nskipped, with the reason (their oracle lives outside the unit):\n'
 printf '  %-16s %s\n' "reader-adapter"  "EXP953: needs the EXP952 candidate libllama (the one with the adapter)"
 printf '  %-16s %s\n' "vocab-wire"      "EXP954: needs the EXP953 candidate build AND a generated vocab fixture"
