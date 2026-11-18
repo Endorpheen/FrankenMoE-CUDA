@@ -74,3 +74,25 @@ The row copy itself (`pending_g_last = verify_g[i_g]`) is a memory operation on 
 `n_embd_dec`-sized slice. It is not ported yet, and it is recorded here rather than implied:
 the arithmetic decides *which* row, the copy remains host-side until the embedding buffers
 are Goose-owned.
+
+## Slice 3c: ngram value selection
+
+`g_ngram_pick` carries the complex-mode decision of `common_ngram_map_send`: scan the four
+slots for the maximum with a **strict** comparison (so a tie keeps the first slot), sum the
+others, refuse unless the maximum is at least twice that sum, and clamp the draft length to
+`min(m, n_accepted[slot])`.
+
+```
+ngram pick: cases=8 fails=0
+```
+
+Eight cases, and two of them are the ones that matter:
+
+- **exactly 2x**: `4` against `1+1` is accepted, which proves the comparison stayed strict
+  (`max < 2 * sum` refuses, `max == 2 * sum` does not);
+- **tie keeps first**: `5,5` with a big second slot is refused, which proves the scan uses
+  `>` rather than `>=` and did not pick the second slot.
+
+The remaining piece of this path, `common_ngram_map_accept` (store `n_accepted` into the
+chosen slot behind the `last_draft_created` guard), is a two-line store and is left with the
+container itself, which is P9-05's subject.
