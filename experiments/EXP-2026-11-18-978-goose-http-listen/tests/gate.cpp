@@ -404,6 +404,27 @@ int main() {
               "a foreign origin gets no header in localhost mode");
     }
 
+    // ---- CORS is emitted on an ordinary response, not only the preflight ----
+    {
+        int rc = 0;
+        const std::string got = exchange_full("GET /health HTTP/1.1\r\nOrigin: http://x.test\r\n\r\n",
+                                              "", { 0 }, "*", 0, &rc);
+        check(got.rfind("HTTP/1.1 200 OK\r\n", 0) == 0, "ordinary response still 200");
+        check(got.find("Access-Control-Allow-Origin: *\r\n") != std::string::npos,
+              "CORS header on a 200, as native does");
+    }
+
+    // ---- Connection: close is honoured and stops the loop ----
+    {
+        int64_t served = -1;
+        const std::string got = exchange_pipeline(
+            { "GET /health HTTP/1.1\r\nConnection: close\r\n\r\n", "GET /nope HTTP/1.1\r\n\r\n" },
+            1, 2, &served);
+        check(served == 1, "only the first request is served when it asks to close");
+        check(got.find("Connection: close\r\n") != std::string::npos, "the response says close");
+        check(got.find("404 Not Found") == std::string::npos, "the pipelined second is not served");
+    }
+
     // ---- no policy, no header ----
     {
         int rc = 0;

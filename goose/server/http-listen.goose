@@ -189,7 +189,7 @@ export fn hl_serve_full(fd: i64, req: u8[:], resp: u8[:], keys: const u8[:],
     }
     let rc: i64 = hl_handle_req(cfd, req[0 .. end], resp, keys, koff, origins, credentials);
     hl_cl(cfd);
-    return rc;
+    return if rc < 0 { 0 - rc - 1 } else { rc };
 }
 
 // Serves up to `max_requests` requests on ONE accepted connection. A client that
@@ -226,10 +226,14 @@ export fn hl_serve_keep(fd: i64, req: u8[:], resp: u8[:], keys: const u8[:],
             break;
         }
         let rc: i64 = hl_handle_req(cfd, req[0 .. end], resp, keys, koff, origins, credentials);
-        if rc <= 0 {
+        if rc == 0 {
             break;
         }
         served = served + 1;
+        if rc < 0 {
+            // The client asked to close, or the answer failed; either way stop.
+            break;
+        }
         // Keep the remainder: a client may have sent the next request in the same
         // write, and reading again would block instead of answering it.
         var k: i64 = 0;
@@ -287,6 +291,7 @@ fn hl_handle_req(cfd: i64, req: const u8[:], resp: u8[:], keys: const u8[:], kof
     var auth_off: i64 = -1; var auth_len: i64 = 0;
     var key_off: i64 = -1; var key_len: i64 = 0;
     var origin_off: i64 = -1; var origin_len: i64 = 0;
+    var close_req: i64 = 0;
     var line_end: i64 = -1;
     var i: i64 = 0;
     while i + 1 < n {
@@ -329,6 +334,11 @@ fn hl_handle_req(cfd: i64, req: const u8[:], resp: u8[:], keys: const u8[:], kof
                         key_off = hp + ho[3]; key_len = ho[4];
                     } else if hl_ci_eq(req, hp + ho[1], ho[2], "Origin") {
                         origin_off = hp + ho[3]; origin_len = ho[4];
+                    } else if hl_ci_eq(req, hp + ho[1], ho[2], "Connection") {
+                        // Half-close is honoured: the answer says so and the loop stops.
+                        if hl_ci_eq(req, hp + ho[3], ho[4], "close") {
+                            close_req = 1;
+                        }
                     }
                 }
                 hp = he + 2;
@@ -380,7 +390,7 @@ fn hl_handle_req(cfd: i64, req: const u8[:], resp: u8[:], keys: const u8[:], kof
     // no cors_origins configured does.
     var allow_buf: u8[256] = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
     var allow_len: i64 = 0;
-    if status == 204 && origins.len > 0 {
+    if origins.len > 0 {
         var cres: i64[2] = [0, 0];
         let origin_slice: const u8[:] = if origin_off >= 0 { req[origin_off .. origin_off + origin_len] } else { req[0 .. 0] };
         // The localhost mode needs the origin's host, and the host parse is
@@ -435,6 +445,12 @@ fn hl_handle_req(cfd: i64, req: const u8[:], resp: u8[:], keys: const u8[:], kof
             }
         }
     }
+    if close_req != 0 {
+        at = rs_header_impl("Connection", "close", resp, at);
+        if at < 0 {
+            return -1;
+        }
+    }
     at = rs_header_impl("Content-Length", if status == 200 { "2" } else { "0" }, resp, at);
     if at < 0 {
         return -1;
@@ -460,5 +476,10 @@ fn hl_handle_req(cfd: i64, req: const u8[:], resp: u8[:], keys: const u8[:], kof
         i = i + 1;
     }
     let written: i64 = hl_wr(cfd, hl_tmp(HL_REQ), at);
-    return if written < 0 { -1 } else { at };
+    if written < 0 {
+        return -1;
+    }
+    // A negative answer means "written, and the connection must close". The caller
+    // decodes it: -(len + 1), so a length of 0 stays distinguishable from an error.
+    return if close_req != 0 { 0 - (at + 1) } else { at };
 }
