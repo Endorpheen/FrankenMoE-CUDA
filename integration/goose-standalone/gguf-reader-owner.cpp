@@ -23,6 +23,7 @@
 #include <unistd.h>
 
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <map>
 #include <memory>
@@ -136,7 +137,12 @@ extern "C" void llama_goose_register(const struct gguf_context * ctx, const char
             m->tensl.assign(TENSOR_SLOTS, 0);
             m->ok = gr_parse(u8x(m->hdr, m->len), st.st_size, i64x(m->state), i64x(m->kv),
                              i64x(m->tens), i64x(m->kvsl), i64x(m->tensl)) == 0;
-            if (m->ok) {
+            if (m->ok && std::getenv("GGML_GOOSE_TOKENIZER") != nullptr &&
+                std::strcmp(std::getenv("GGML_GOOSE_TOKENIZER"), "0") == 0) {
+                // Disabled by flag: keep the mapping for the reader, skip the tables so
+                // the rollback really costs nothing beyond the header window.
+                m->tok_ok = false;
+            } else if (m->ok) {
                 // btl_load sizes nothing itself: give it the array counts first.
                 const int64_t ti = gr_find_kv(u8x(m->hdr, m->len), i64x(m->state), i64x(m->kv),
                                               i64x(m->kvsl), u8x("tokenizer.ggml.tokens", 21));

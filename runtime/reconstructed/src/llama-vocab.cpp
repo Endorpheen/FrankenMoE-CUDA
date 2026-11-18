@@ -8,6 +8,7 @@
 // Same seam as the loader: the Goose reader answers when it has the file, and
 // every helper falls back to the native container so a refused file keeps the
 // old behaviour. Declaration order matches llama-model-loader.cpp.
+extern "C" int     goose_tok_enabled(void);
 extern "C" int     llama_goose_ready(const struct gguf_context * ctx);
 extern "C" int64_t llama_goose_kv_type(const struct gguf_context * ctx, int64_t index);
 extern "C" int64_t llama_goose_arr_type(const struct gguf_context * ctx, int64_t index);
@@ -16,19 +17,19 @@ extern "C" const void * llama_goose_arr_data(const struct gguf_context * ctx, in
 extern "C" const char * llama_goose_arr_str(const struct gguf_context * ctx, int64_t index, int64_t element);
 
 static inline gguf_type goose_kv_type(const struct gguf_context * ctx, int64_t i) {
-    const int64_t v = llama_goose_ready(ctx) ? llama_goose_kv_type(ctx, i) : -1;
+    const int64_t v = (goose_tok_enabled() && llama_goose_ready(ctx)) ? llama_goose_kv_type(ctx, i) : -1;
     return v >= 0 ? (gguf_type) v : gguf_get_kv_type(ctx, (int) i);
 }
 static inline gguf_type goose_arr_type(const struct gguf_context * ctx, int64_t i) {
-    const int64_t v = llama_goose_ready(ctx) ? llama_goose_arr_type(ctx, i) : -1;
+    const int64_t v = (goose_tok_enabled() && llama_goose_ready(ctx)) ? llama_goose_arr_type(ctx, i) : -1;
     return v >= 0 ? (gguf_type) v : gguf_get_arr_type(ctx, (int) i);
 }
 static inline int64_t goose_arr_n(const struct gguf_context * ctx, int64_t i) {
-    const int64_t v = llama_goose_ready(ctx) ? llama_goose_arr_n(ctx, i) : -1;
+    const int64_t v = (goose_tok_enabled() && llama_goose_ready(ctx)) ? llama_goose_arr_n(ctx, i) : -1;
     return v >= 0 ? v : (int64_t) gguf_get_arr_n(ctx, (int) i);
 }
 static inline const void * goose_arr_data(const struct gguf_context * ctx, int64_t i) {
-    if (llama_goose_ready(ctx)) {
+    if (goose_tok_enabled() && llama_goose_ready(ctx)) {
         int64_t bytes = 0;
         const void * p = llama_goose_arr_data(ctx, i, &bytes);
         if (p) return p;
@@ -36,7 +37,7 @@ static inline const void * goose_arr_data(const struct gguf_context * ctx, int64
     return gguf_get_arr_data(ctx, (int) i);
 }
 static inline const char * goose_arr_str(const struct gguf_context * ctx, int64_t i, int64_t e) {
-    if (llama_goose_ready(ctx)) {
+    if (goose_tok_enabled() && llama_goose_ready(ctx)) {
         const char * p = llama_goose_arr_str(ctx, i, e);
         if (p) return p;
     }
@@ -3911,8 +3912,9 @@ std::vector<llama_token> llama_vocab::impl::tokenize(
                 // The Goose engine owns the QWEN35 pre-tokenizer and the merge
                 // queue. It is used only for the pre-tokenizer it implements, and
                 // only when escape_whitespaces is off: the engine expects raw text.
-                const struct gguf_context * gctx =
-                    (const struct gguf_context *) (uintptr_t) llama_goose_tokenizer_ctx();
+                const struct gguf_context * gctx = goose_tok_enabled()
+                    ? (const struct gguf_context *) (uintptr_t) llama_goose_tokenizer_ctx()
+                    : nullptr;
                 const bool goose_bpe = gctx != nullptr
                     && pre_type == LLAMA_VOCAB_PRE_TYPE_QWEN35
                     && !escape_whitespaces
@@ -4145,8 +4147,9 @@ int32_t llama_vocab::impl::token_to_piece(llama_token token, char * buf, int32_t
     // rule for the QWEN35 vocabulary. Placed before the cache so the cache is
     // filled from this path too; a refusal falls through to the native body.
     if (get_type() == LLAMA_VOCAB_TYPE_BPE && pre_type == LLAMA_VOCAB_PRE_TYPE_QWEN35 && !escape_whitespaces) {
-        const struct gguf_context * gctx =
-            (const struct gguf_context *) (uintptr_t) llama_goose_tokenizer_ctx();
+        const struct gguf_context * gctx = goose_tok_enabled()
+            ? (const struct gguf_context *) (uintptr_t) llama_goose_tokenizer_ctx()
+            : nullptr;
         if (gctx != nullptr) {
             const int64_t n = llama_goose_token_to_piece(gctx, (int64_t) token, buf, (int64_t) length,
                                                          (int64_t) lstrip, special ? 1 : 0,
