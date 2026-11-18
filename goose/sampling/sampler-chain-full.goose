@@ -36,7 +36,7 @@ const MT_UPPER: i64 = 0x80000000;
 const MT_LOWER: i64 = 0x7FFFFFFF;
 const M32: i64 = 0xFFFFFFFF;
 
-export fn sm_mt_seed(state: i64[:], seed: i64) -> i64 {
+fn sm_mt_seed(state: i64[:], seed: i64) -> i64 {
     if state.len < 625 {
         return -1;
     }
@@ -65,7 +65,7 @@ fn mt_twist(state: i64[:]) {
     state[624] = 0;
 }
 
-export fn sm_mt_next(state: i64[:]) -> i64 {
+fn sm_mt_next(state: i64[:]) -> i64 {
     if state.len < 625 {
         return 0;
     }
@@ -176,7 +176,7 @@ fn sort_heap(lv: f32[:], id: i64[:], first: i64, len: i64) {
 }
 
 // std::partial_sort(first, first+npartial, first+n, comp)
-export fn sm_partial_sort(lv: f32[:], id: i64[:], n: i64, npartial: i64) -> i64 {
+fn sm_partial_sort(lv: f32[:], id: i64[:], n: i64, npartial: i64) -> i64 {
     if n <= 0 || npartial <= 0 || npartial > n || lv.len < n || id.len < n {
         return -1;
     }
@@ -193,7 +193,7 @@ export fn sm_partial_sort(lv: f32[:], id: i64[:], n: i64, npartial: i64) -> i64 
 }
 
 // Greedy: the first position with a strictly larger logit wins.
-export fn sm_greedy(lv: f32[:], n: i64) -> i64 {
+fn sm_greedy(lv: f32[:], n: i64) -> i64 {
     if n <= 0 || lv.len < n {
         return -1;
     }
@@ -239,7 +239,7 @@ fn softmax_in_place(lv: f32[:], p: f32[:], n: i64, sorted: i64) -> f64 {
 // ip: 0 top_k, 1 min_keep, 2 use_dist (0 = greedy after the temperature).
 // fp: 0 top_p, 1 min_p, 2 temp.
 // out: 0 selected position, 1 token id, 2 surviving candidate count.
-export fn sm_select(lv: f32[:], id: i64[:], p: f32[:], n_in: i64,
+fn sm_select(lv: f32[:], id: i64[:], p: f32[:], n_in: i64,
                     ip: const i64[:], fp: const f32[:], state: i64[:], out: i64[:]) -> i64 {
     if ip.len < 3 || fp.len < 3 || out.len < 3 || lv.len < n_in || id.len < n_in || p.len < n_in || n_in <= 0 {
         return -1;
@@ -388,7 +388,7 @@ export fn sm_select(lv: f32[:], id: i64[:], p: f32[:], n_in: i64,
 
 // top_k: keep the k highest logits, ordered as std::partial_sort leaves them.
 // The host re-orders its candidate array by `id` afterwards.
-export fn sm_apply_top_k(lv: f32[:], id: i64[:], n: i64, k: i64) -> i64 {
+fn sm_apply_top_k(lv: f32[:], id: i64[:], n: i64, k: i64) -> i64 {
     if n <= 0 || lv.len < n || id.len < n {
         return -1;
     }
@@ -408,7 +408,7 @@ export fn sm_apply_top_k(lv: f32[:], id: i64[:], n: i64, k: i64) -> i64 {
 }
 
 // top_p: the shortest prefix whose softmax mass reaches p, honouring min_keep.
-export fn sm_apply_top_p(lv: f32[:], p: f32[:], n: i64, top_p: f32, min_keep: i64) -> i64 {
+fn sm_apply_top_p(lv: f32[:], p: f32[:], n: i64, top_p: f32, min_keep: i64) -> i64 {
     if n <= 0 || lv.len < n || p.len < n {
         return -1;
     }
@@ -429,7 +429,7 @@ export fn sm_apply_top_p(lv: f32[:], p: f32[:], n: i64, top_p: f32, min_keep: i6
 }
 
 // min_p: drop the tail below max_logit + log(p), honouring min_keep.
-export fn sm_apply_min_p(lv: f32[:], n: i64, min_p: f32, min_keep: i64) -> i64 {
+fn sm_apply_min_p(lv: f32[:], n: i64, min_p: f32, min_keep: i64) -> i64 {
     if n <= 0 || lv.len < n {
         return -1;
     }
@@ -450,7 +450,7 @@ export fn sm_apply_min_p(lv: f32[:], n: i64, min_p: f32, min_keep: i64) -> i64 {
 }
 
 // temperature: divide in place; temp <= 0 keeps only the best candidate.
-export fn sm_apply_temp(lv: f32[:], n: i64, temp: f32) -> i64 {
+fn sm_apply_temp(lv: f32[:], n: i64, temp: f32) -> i64 {
     if n <= 0 || lv.len < n {
         return -1;
     }
@@ -471,4 +471,126 @@ export fn sm_apply_temp(lv: f32[:], n: i64, temp: f32) -> i64 {
         i = i + 1;
     }
     return n;
+}
+
+// typical-p: keep the tokens whose surprisal is closest to the entropy of the
+// distribution, honouring min_keep. Mirrors llama_sampler_typical_apply:
+// sort by logit desc, softmax, entropy, shifted = |(-log p) - entropy|, order by
+// shifted ascending, cumulative until > typical_p and i >= min_keep-1, then
+// leave the kept set in shifted order (unsorted flag at the caller).
+// NOTE: selection sort here is O(n^2); a heap sort is required before shipping
+// for the full vocabulary (the module already carries heap primitives).
+
+// ascending order over three parallel arrays (heap sort)
+fn sort3_asc(lv: f32[:], id: i64[:], p: f32[:], n: i64) {
+    var s: i64 = n / 2 - 1;
+    while s >= 0 {
+        var root: i64 = s;
+        while root * 2 + 1 < n {
+            var child: i64 = root * 2 + 1;
+            if child + 1 < n && lv[child + 1] > lv[child] {
+                child = child + 1;
+            }
+            if lv[root] >= lv[child] {
+                root = n;
+            } else {
+                let tl: f32 = lv[root]; lv[root] = lv[child]; lv[child] = tl;
+                let ti: i64 = id[root]; id[root] = id[child]; id[child] = ti;
+                let tp: f32 = p[root]; p[root] = p[child]; p[child] = tp;
+                root = child;
+            }
+        }
+        s = s - 1;
+    }
+    var e: i64 = n - 1;
+    while e > 0 {
+        let tl2: f32 = lv[0]; lv[0] = lv[e]; lv[e] = tl2;
+        let ti2: i64 = id[0]; id[0] = id[e]; id[e] = ti2;
+        let tp2: f32 = p[0]; p[0] = p[e]; p[e] = tp2;
+        var r2: i64 = 0;
+        while r2 * 2 + 1 < e {
+            var ch: i64 = r2 * 2 + 1;
+            if ch + 1 < e && lv[ch + 1] > lv[ch] {
+                ch = ch + 1;
+            }
+            if lv[r2] >= lv[ch] {
+                r2 = e;
+            } else {
+                let x: f32 = lv[r2]; lv[r2] = lv[ch]; lv[ch] = x;
+                let y: i64 = id[r2]; id[r2] = id[ch]; id[ch] = y;
+                let z: f32 = p[r2]; p[r2] = p[ch]; p[ch] = z;
+                r2 = ch;
+            }
+        }
+        e = e - 1;
+    }
+}
+
+fn sm_apply_typical(lv: f32[:], p: f32[:], id: i64[:], n: i64,
+                    typical_p: f32, min_keep: i64) -> i64 {
+    if n <= 0 || lv.len < n || p.len < n || id.len < n {
+        return -1;
+    }
+    if typical_p >= 1.0 {
+        return n;
+    }
+    // logits descending: the top-k sort is descending by logit and O(n log n)
+    let srt = sm_partial_sort(lv, id, n, n);
+    if srt < 0 {
+        return -1;
+    }
+    let sm = softmax_in_place(lv, p, n, 1);
+    if sm < 0.0 {
+        return -1;
+    }
+    var i: i64 = 0;
+    var entropy: f32 = 0.0;
+    while i < n {
+        if p[i] > 0.0 {
+            entropy = entropy - p[i] * c_logf(p[i]);
+        }
+        i = i + 1;
+    }
+    i = 0;
+    while i < n {
+        let d: f32 = (-c_logf(p[i])) - entropy;
+        lv[i] = if d < 0.0 { -d } else { d };
+        i = i + 1;
+    }
+    // order by the shifted score, keeping lv, id and p aligned
+    sort3_asc(lv, id, p, n);
+    var cum: f32 = 0.0;
+    i = 0;
+    while i < n {
+        cum = cum + p[i];
+        if cum > typical_p && (min_keep <= 0 || i + 1 >= min_keep) {
+            return i + 1;
+        }
+        i = i + 1;
+    }
+    return n;
+}
+
+
+// Single stable entry point for the shipped library. Generated function ids
+// shift whenever this module changes, so callers must reach the chain through
+// this one function rather than through a generated id.
+fn fg_sampler_chain(op: i64, lv: f32[:], p: f32[:], id: i64[:], n: i64,
+                    f: f32, k: i64, f2: f32, f3: f32) -> i64 {
+    if op == 0 {
+        return sm_apply_typical(lv, p, id, n, f, k);
+    }
+    if op == 1 {
+        return sm_apply_top_p(lv, p, n, f, k);
+    }
+    if op == 2 {
+        return sm_apply_top_k(lv, id, n, k);
+    }
+    if op == 3 {
+        return sm_apply_min_p(lv, n, f, k);
+    }
+    if op == 4 {
+        return sm_apply_temp(lv, n, f);
+    }
+    return -2;
 }

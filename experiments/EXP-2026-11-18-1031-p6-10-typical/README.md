@@ -461,3 +461,32 @@ The shipping file `goose/sampling/sampler-chain-full.goose` is NOT updated yet:
 it cannot be compiled by either available compiler (`export fn` is rejected), so
 a textual port there cannot be verified, and an unverified copy of a validated
 function is worse than the old draft plus this note.
+
+## The shipped chain module compiles and is gated
+
+Three facts changed the integration picture:
+
+1. The language has **no export mechanism**. `export fn`, `pub fn`, `@export` and
+   attribute forms are all rejected, and the compiler has no export flag, so a
+   library reaches generated functions only through their ids.
+2. A module without `main` cannot be compiled at all, and unused functions are
+   **removed**, so the build root has to call the entry point to keep it alive.
+3. Therefore the shipping file now exposes one stable dispatch,
+   `fg_sampler_chain(op, ...)`, instead of relying on a generated id, and the
+   build emits the id header and a C shim.
+
+`goose/sampling/sampler-chain-full.goose` was rewritten accordingly: every
+`export fn` became `fn`, `sm_apply_typical` now uses the validated heap-sort
+body with a three-array heap helper, and the dispatch covers typical-p, top-p,
+top-k, min-p and temperature. `tools/build-sampler-chain.sh` builds it
+reproducibly (module + root, id header, shim).
+
+Verified against the **shipping** module, not the card copy:
+
+```
+typical: cases=1800 mismatches=0     (entry point gg_function_1 in that build)
+```
+
+The remaining work for a shipped chain is adding the already validated filters
+(XTC, DRY, adaptive-p, mirostat, penalties, dist) to the dispatch as each
+becomes callable, then the fixed-seed chain test.
