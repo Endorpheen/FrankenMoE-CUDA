@@ -134,11 +134,36 @@ SA_BIN=${FG_STANDALONE_BIN:-"$ROOT/builds/goose-standalone/frankenmoe-v4"}
 if [ -f "$SA_BIN" ]; then
     _tok_n=$(nm "$SA_BIN" 2>/dev/null | grep -cE " T tok_")
 fi
+# The engine is a different capability from the decisions, and both are computed
+# from the artifact. The old text asserted "no load-and-tokenise path" here; that
+# became false the moment btl_load/bt_bpe/bt_token_to_piece were added to the unit
+# (EXP949-956), and an asserted line silently keeps lying. Count it instead.
+_eng_n=0
+if [ -f "$SA_BIN" ]; then
+    _eng_n=$(nm "$SA_BIN" 2>/dev/null | grep -cE " T (btl_load|bt_build|bt_bpe|bt_token_to_piece)")
+fi
 if [ "$_tok_n" -ge 8 ]; then
-say "   tokenizer decisions (all 8)   answers  (tokenizer_decisions gate: 39 checks, 0 failures)"
-say "   tokenizer engine             no load-and-tokenise path: the decisions answer, the engine around them does not"
+say "   tokenizer decisions (all 8)   answers  ($_tok_n tok_* exports; tokenizer_decisions gate: 39 checks, 0 failures)"
 else
-say "   tokenizer engine             no   (only $_tok_n tok_* exports in the unit)"
+say "   tokenizer decisions (all 8)   no   (only $_tok_n tok_* exports in the artifact)"
+fi
+if [ "$_eng_n" -ge 4 ]; then
+say "   tokenizer engine             yes  ($_eng_n load/build/tokenise/piece exports in the artifact;"
+say "                                       gates EXP950/955/956 against native libllama)"
+elif [ "$_eng_n" -gt 0 ]; then
+say "   tokenizer engine             partial ($_eng_n of 4 engine exports in the artifact)"
+else
+    # The artifact can be stale rather than incapable, and the two must not be
+    # conflated: a build from before the modules existed has no engine in it and is
+    # not evidence that the unit lacks one. Say which case this is.
+    _src_new=$(find "$ROOT/goose/model/bpe-load.goose" "$ROOT/goose/model/bpe-tokenize.goose" \
+                    -newer "$SA_BIN" 2>/dev/null | wc -l)
+    if [ "$_src_new" -gt 0 ]; then
+say "   tokenizer engine             stale artifact (0 engine exports; its sources are newer -"
+say "                                       rebuild: bash tools/build-main-runtime.sh && bash tools/build-standalone-runtime.sh)"
+    else
+say "   tokenizer engine             no   (0 engine exports and the sources are not newer)"
+    fi
 fi
 say "   HTTP-server decisions        yes  (this run: detok 1063000 calls, sched 39500,"
 say "                                       graph-input-plan 200 - all witnessed live)"
@@ -168,9 +193,11 @@ say "Architectures: 13 have a Goose builder of 151 in the substrate"
 say "  (docs/goose-migration/ARCHITECTURE-MAP.md; Apex is one of the 13)"
 say ""
 say "Honest reading, split in two:"
-say "  - the STANDALONE runtime (this section) still lacks the engine: no CUDA, no"
-say "    tokenizer LOAD-AND-TOKENISE path, no HTTP transport, no full-stack execution."
-say "    The 8 tok_* decisions are in the unit; what is missing is the engine around them."
+say "  - the STANDALONE runtime (this section) still lacks CUDA, HTTP transport,"
+say "    full-stack execution, and an artifact new enough to contain the engine."
+say "    The unit itself carries the engine (btl_load, bt_bpe,"
+say "    bt_token_to_piece, gated in EXP950/955/956); the shipping library links it and"
+say "    calls it (EXP954-957). What is missing is a rebuilt standalone artifact, not code."
 say "  - the INTEGRATED stage-run does run Apex end to end with Goose code witnessed, but it"
 say "    is llama.cpp plus Goose, not a standalone Goose runtime. Best measured: 2429.9"
 say "    prefill / 39.86 decode at 512 tokens, VRAM 7552 MiB, output identical to the"
