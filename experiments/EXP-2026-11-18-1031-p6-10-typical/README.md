@@ -1282,3 +1282,30 @@ flat arrays. This avoids needing a vocabulary for the automaton slice.
 
 The existing fixtures in EXP486/EXP489 cover the parser side and are not reused
 here.
+
+## P6-10 status summary (2026-11-18)
+
+Sampler stages, all live in the accepted server through the generated shim, each
+proven by a counter and identical output:
+
+| stage | gate | live |
+|---|---|---|
+| typical-p | 1800/1800 | yes |
+| top-p (unsorted) | 900/900 + 45/45 at n=2048 | yes |
+| XTC | 720/720 | yes |
+| penalties | 200/200 bitwise | yes |
+| DRY | 200/200, 300/300, 100/100 bitwise | yes |
+| adaptive-p | 200/200 bitwise | yes |
+| mirostat | 200/200 | yes |
+| dist | 400/400 + 64 live | yes |
+| temp_ext | 200/200 | yes |
+| grammar decision | 6 slices gated | yes, 64-token generation identical |
+| RNG stream | 1280/1280 vs std::mt19937 | yes |
+| fixed-seed reproducibility | sampler run and grammar run | yes |
+
+Cost: paired measurement puts the sampler stages at about 1.3 % of decode with
+prefill and memory unchanged; the grammar hook's cost is not measured yet.
+
+Not done, and not claimed: removing the replaced native bodies (needs the acceptance
+run), the grammar cost measurement, and the triple A/B on the cumulative baseline
+with the full stage set.
