@@ -1484,7 +1484,7 @@ void llama_grammar_apply_impl(const struct llama_grammar & grammar, llama_token_
     }
 
     static thread_local long long pf_n = 0;
-    if (getenv("GGML_GOOSE_GRAMMAR_DIAG") && (pf_n++ % 64) == 0) {
+    if (getenv("GGML_GOOSE_GRAMMAR_DIAG") && (pf_n++) < 40) {
         fprintf(stderr, "FG171_PREFILTER ranges=%lld cur_p=%zu\n", (long long) fg_nranges, cur_p->size);
     }
     for (size_t i = 0; i < cur_p->size; ++i) {

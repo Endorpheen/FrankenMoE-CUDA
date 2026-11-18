@@ -929,3 +929,29 @@ it is the only thing that will settle the question.
 
 The pre-filter stays: it is inert when the entry refuses, and on full-set calls it removes
 candidates before the per-candidate work.
+
+## Call distribution over the first 40 calls
+
+```
+26  ranges=-1  cur_p=1
+ 9  ranges=-1  cur_p=248320
+ 3  ranges=2   cur_p=1
+ 2  ranges=2   cur_p=248320
+```
+
+Two facts, both actionable:
+
+1. **About a quarter of the calls carry the full 248k candidate set** (11 of 40), which is
+   where the time goes; the single-candidate calls are cheap.
+2. **The pre-filter refuses in 35 of 40 calls** (`ranges=-1`). Refusal means the top of a
+   stack is an empty stack, an inverse class or a token rule, so the cheap path is not
+   being taken in exactly the case that needs it.
+
+So the optimisation to pursue is not "make the first-set faster" but "make it apply to the
+common class shapes". The likely cause of the frequent `-1` is that `g_first_set` iterates
+`nstacks` and refuses if *any* stack is empty or inverse, while the correct pre-filter
+only needs the ranges that the surviving stacks accept - a candidate is acceptable if it
+is acceptable for at least one stack, which is a union, not a refusal.
+
+That is the next change: build the union of accepted ranges across the stacks, and refuse
+only when *no* stack yields ranges.
