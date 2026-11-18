@@ -5,8 +5,10 @@
 
 #include <algorithm>
 #include <cinttypes>
+#ifdef FRANKEN_EDGE0_RUNTIME
 #include "pack.h"
 #include <cstdlib>
+#endif
 
 // bad metadata must be catchable: GGML_ASSERT aborts the whole process
 static void qwen4exp_require_nonzero(const llama_model_loader & ml, llm_kv kid, uint32_t value) {
@@ -26,9 +28,11 @@ static void qwen4exp_require_arr_len(llama_model_loader & ml, llm_kv kid, uint32
 }
 
 void llama_model_qwen4exp::load_arch_hparams(llama_model_loader & ml) {
+#ifdef FRANKEN_EDGE0_RUNTIME
     if (const char * path = std::getenv("FRANKEN_EDGE0_PACK")) {
         edge0 = franken_edge0_open(path);
     }
+#endif
     ml.get_key_or_arr(LLM_KV_EXPERT_FEED_FORWARD_LENGTH, hparams.n_ff_exp_arr, hparams.n_layer_all, false);
     ml.get_key(LLM_KV_EXPERT_SHARED_FEED_FORWARD_LENGTH, hparams.n_ff_shexp, false);
     ml.get_key(LLM_KV_ATTENTION_LAYERNORM_RMS_EPS,       hparams.f_norm_rms_eps);
@@ -287,10 +291,12 @@ void llama_model_qwen4exp::load_arch_tensors(llama_model_loader & ml) {
         layer.ffn_gate_shexp     = create_tensor(tn(LLM_TENSOR_FFN_GATE_SHEXP,     "weight", il), { n_embd, n_ff_shexp }, flags);
         layer.ffn_up_shexp       = create_tensor(tn(LLM_TENSOR_FFN_UP_SHEXP,       "weight", il), { n_embd, n_ff_shexp }, flags);
         layer.ffn_down_shexp     = create_tensor(tn(LLM_TENSOR_FFN_DOWN_SHEXP,     "weight", il), { n_ff_shexp, n_embd }, flags);
+#ifdef FRANKEN_EDGE0_RUNTIME
         if (edge0) {
             franken_edge0_bind(*edge0, il, layer.ffn_gate_inp, layer.ffn_gate_shexp,
                                layer.ffn_up_shexp, layer.ffn_down_shexp, layer.ffn_gate_inp_shexp);
         }
+#endif
     };
 
     for (int il = 0; il < n_layer; ++il) {
@@ -1152,9 +1158,11 @@ ggml_tensor * llama_model_qwen4exp::graph::build_layer_attn_linear(
 }
 
 ggml_tensor * llama_model_qwen4exp::graph::build_layer_ffn(ggml_tensor * cur, const int il) {
+#ifdef FRANKEN_EDGE0_RUNTIME
     if (const auto & pack = static_cast<const llama_model_qwen4exp &>(model).edge0) {
         return franken_edge0_ffn(*pack, ctx0, cur, il);
     }
+#endif
     GGML_ASSERT(model.layers[il].ffn_gate_inp != nullptr);
 
     ggml_tensor * moe_out =
@@ -1294,12 +1302,14 @@ void llm_graph_input_qwen4exp_ple::set_input(const llama_ubatch * ubatch) {
         }
     }
 
+#ifdef FRANKEN_EDGE0_RUNTIME
     if (const auto & pack = static_cast<const llama_model_qwen4exp &>(model).edge0) {
         std::vector<float> values(idx.size() * hparams.ple_head_dim);
         franken_edge0_ple(*pack, idx.data(), idx.size(), values.data());
         ggml_backend_tensor_set(rows, values.data(), 0, values.size() * sizeof(float));
         return;
     }
+#endif
 
     {
         ggml_tensor * ple = model.per_layer_tok_embd;

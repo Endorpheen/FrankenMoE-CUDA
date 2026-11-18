@@ -72,6 +72,8 @@ jobs:
             echo "checking $f"
             g++-13 -std=c++17 -fsyntax-only $INC "$f"
           done
+          g++-13 -std=c++17 -fsyntax-only $INC -Iintegration/edge0 \
+            -DFRANKEN_EDGE0_RUNTIME vendor/flint/src/models/qwen4exp.cpp
 
   goose:
     name: Goose compose, typecheck, build (needs the pinned compiler)

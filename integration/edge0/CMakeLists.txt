@@ -21,6 +21,7 @@ add_library(edge0_goose OBJECT "${GENERATED}/runtime.c" "${REPO}/integration/goo
     "${REPO}/experiments/EXP-2026-11-17-911-edge0-ple-provider/source/pread.c")
 target_include_directories(edge0_goose PRIVATE "${GENERATED}" "${FLINT}/ggml/include")
 target_sources(llama PRIVATE pack.cpp $<TARGET_OBJECTS:edge0_goose>)
+target_compile_definitions(llama PRIVATE FRANKEN_EDGE0_RUNTIME)
 target_include_directories(llama PRIVATE "${GENERATED}" "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(llama PRIVATE ggml-cpu ggml-base Threads::Threads m)
 add_executable(edge0-cli cli.cpp)
