@@ -204,3 +204,22 @@ Scope: this slice shifts a stack past a matched class; it does not yet expand ru
 references afterwards (the native calls `advance_stack` at that point). Rule
 references and token rules at the top are therefore out of scope here and are the
 next step.
+
+## accept with reference expansion: blocked by the generated parameter order
+
+Extending `accept` to expand rule references after the shift needs `advance` to
+write into the output pool at an offset. The attempt compiles as a module but the
+generated signature reorders the parameters:
+
+```
+gg_function_5(gg_slice p0, gg_slice p1, gg_slice p2, gg_slice p3, gg_slice p4,
+              int64_t p5, gg_slice p6, gg_slice p7, gg_slice p8, gg_slice p9,
+              int64_t p10, int64_t p11, int64_t p12, int64_t base)
+```
+
+which does not follow the declaration order I assumed, so the wrapper call did not
+type-check. This is the same class of problem the sampler solved with a single
+stable entry; guessing the order is what fails. The working copy was reverted to
+the committed state, where `accept` is the count-and-top gated slice, and the
+expansion stays open until the call is built from the generated prototype instead
+of from an assumption.

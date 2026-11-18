@@ -1,8 +1,10 @@
 #include "../../../vendor/flint/src/llama-grammar.cpp"
 #include <cstdio>
 #include <vector>
-extern "C" int64_t g_accept_call(const int64_t*, const int64_t*, const int64_t*, const int64_t*,
-                                 int64_t, int64_t, int64_t*, int64_t*, int64_t, int64_t);
+extern "C" int64_t g_accept_call(const int64_t*, const int64_t*, int64_t,
+                                 const int64_t*, const int64_t*, int64_t,
+                                 const int64_t*, const int64_t*, int64_t, int64_t,
+                                 int64_t*, int64_t*, int64_t*, int64_t*, int64_t, int64_t);
 static int fails = 0, cases = 0;
 static void run(const char * gbnf, uint32_t chr) {
     llama_grammar_parser parser;
@@ -28,8 +30,10 @@ static void run(const char * gbnf, uint32_t chr) {
     int64_t stk[64]={0}, stdin[8]={0};
     for (size_t i=0;i<stacks.size() && i<8;++i){ stdin[i]=(int64_t)stacks[i].size();
         for (size_t j=0;j<stacks[i].size() && j<8;++j) stk[i*8+j]=(int64_t)(stacks[i][j]-rules[0].data()); }
-    int64_t n = g_accept_call(et.data(), ev.data(), stk, stdin, (int64_t)stacks.size(), chr,
-                              out, outd, 8, 8);
+    int64_t wp[64]={0}, wpd[8]={0};
+    int64_t n = g_accept_call(et.data(), ev.data(), (int64_t)et.size(), ro.data(), rl.data(), (int64_t)ro.size(),
+                              stk, stdin, (int64_t)stacks.size(), chr,
+                              out, outd, wp, wpd, 8, 8);
     cases++;
     if ((size_t)n != after.size()) { fails++; printf("count %s chr=%u native=%zu goose=%lld\n", gbnf, chr, after.size(), (long long)n); return; }
     // compare the top element of each resulting stack (type and value)
