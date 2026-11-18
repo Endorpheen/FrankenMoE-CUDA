@@ -112,3 +112,21 @@ Ten cases, including a negative draft width (clamped to zero, not treated as a m
 mix where the largest value comes from the third type, and an empty type list. The type ids
 are written into the source as a comment against `enum common_speculative_type`, because
 guessing them is the mistake this project has already paid for twice.
+
+## Slice 5: type names, compared against the enum rather than re-typed
+
+`g_spec_type_id` maps the eleven names to their ids by byte comparison over `const u8[:]`,
+so it needs no string runtime - which matters, because Goose string support is exactly what
+rule 27 says must live in Goose data rather than in a C++ container.
+
+```
+spec type name: fails=0
+```
+
+The gate is stronger than the previous slices: it does not repeat a hand-written list, it
+walks `enum common_speculative_type` and asks Goose to map the name it produces for every
+member. On top of that, seven near misses must be rejected - empty, wrong case, a truncated
+name, a name with a trailing dash, a prefix of a longer name, and two arbitrary strings.
+
+That near-miss set is deliberate: a byte comparison with a wrong length check passes the
+positive cases and fails these.
