@@ -359,3 +359,22 @@ Only step 2 moves. The plan for the next iteration:
 - gate in the live path the same way: identical text with the hook on and off.
 
 No part of this is claimed as done yet.
+
+## Moved into the sampler module
+
+All gated functions now live in `goose/sampling/sampler-chain-full.goose` together
+with a single entry `fg_grammar_reject`, and the chain builds:
+
+```
+GG_SAMPLER entries: CHAIN DRY TYPICAL TOP_P XTC PENALTIES ADAPTIVE MIROSTAT
+                    DIST DIST_WORDS DIST_PICK TEMP_EXT
+```
+
+The grammar entry is present in the generated C as the unique prototype with 19
+slices and six integer parameters (`gg_function_53`); its sibling with five integers
+is the internal `g_grammar_reject`. It is not yet in the build script's entry table
+nor in the shim, because the table matches one regex per entry and this shape needs
+the same shape-driven selection that `gen_shim.prototype_by_shape` already
+implements. That is the next small step, then the hook.
+
+Nothing is claimed as wired: the functions are present and the module builds.
