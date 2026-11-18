@@ -178,9 +178,45 @@ export fn hl_serve_full(fd: i64, req: u8[:], resp: u8[:], keys: const u8[:],
     if cfd < 0 {
         return -1;
     }
+    let rc: i64 = hl_handle(cfd, req, resp, keys, koff, origins, credentials);
+    hl_cl(cfd);
+    return rc;
+}
+
+// Serves up to `max_requests` requests on ONE accepted connection. A client that
+// keeps the socket open and sends the next request after reading the previous answer
+// is what a real transport must support; a single-shot gate cannot show it. A read
+// returning 0 means the client closed, and the loop ends.
+export fn hl_serve_keep(fd: i64, req: u8[:], resp: u8[:], keys: const u8[:],
+                        koff: const i64[:], origins: const u8[:], credentials: i64,
+                        max_requests: i64) -> i64 {
+    if req.len < 1 || resp.len < 1 || max_requests <= 0 {
+        return -1;
+    }
+    let cfd: i64 = hl_accept(fd, 0, 0);
+    if cfd < 0 {
+        return -1;
+    }
+    var served: i64 = 0;
+    while served < max_requests {
+        let rc: i64 = hl_handle(cfd, req, resp, keys, koff, origins, credentials);
+        if rc <= 0 {
+            break;
+        }
+        served = served + 1;
+    }
+    hl_cl(cfd);
+    return served;
+}
+
+fn hl_handle(cfd: i64, req: u8[:], resp: u8[:], keys: const u8[:], koff: const i64[:],
+             origins: const u8[:], credentials: i64) -> i64 {
     let got: i64 = hl_rd(cfd, hl_tmp(HL_REQ), HL_REQ_MAX);
     if got < 0 {
-        hl_cl(cfd);
+        return -1;
+    }
+    if got == 0 {
+        // The peer closed without sending anything: not an error, just the end.
         return -1;
     }
     // Copy out of the scratch and into the caller's slice, byte by byte: Goose
@@ -277,7 +313,7 @@ export fn hl_serve_full(fd: i64, req: u8[:], resp: u8[:], keys: const u8[:],
                 status = if cat == 0 { 404 } else { 200 };
                 if status == 200 {
                     var empty_paths: i64[1] = [0];
-                    let allowed: i64 = key_authorize(keys, koff, req[to .. to + plen],
+                    let allowed: i64 = key_authorize_impl(keys, koff, req[to .. to + plen],
                                                      "", empty_paths,
                                                      if auth_off >= 0 { req[auth_off .. auth_off + auth_len] } else { req[0 .. 0] },
                                                      if key_off >= 0 { req[key_off .. key_off + key_len] } else { req[0 .. 0] });
@@ -298,7 +334,7 @@ export fn hl_serve_full(fd: i64, req: u8[:], resp: u8[:], keys: const u8[:],
         var cres: i64[2] = [0, 0];
         let origin_slice: const u8[:] = if origin_off >= 0 { req[origin_off .. origin_off + origin_len] } else { req[0 .. 0] };
         var ob: u8[256] = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
-        let n = cors_allow_origin(origins, credentials, origin_slice, 0, ob, cres);
+        let n = cors_allow_origin_impl(origins, credentials, origin_slice, 0, ob, cres);
         if cres[0] != 0 && n >= 0 {
             allow_len = n;
             var k: i64 = 0;
@@ -312,13 +348,11 @@ export fn hl_serve_full(fd: i64, req: u8[:], resp: u8[:], keys: const u8[:],
     var at: i64 = 0;
     at = rs_status_line_impl(status, resp);
     if at < 0 {
-        hl_cl(cfd);
         return -1;
     }
     if allow_len > 0 {
         at = rs_header_impl("Access-Control-Allow-Origin", allow_buf[0 .. allow_len], resp, at);
         if at < 0 {
-            hl_cl(cfd);
             return -1;
         }
         var cred: u8[8] = [0,0,0,0,0,0,0,0];
@@ -326,7 +360,6 @@ export fn hl_serve_full(fd: i64, req: u8[:], resp: u8[:], keys: const u8[:],
         if cn > 0 {
             at = rs_header_impl("Access-Control-Allow-Credentials", cred[0 .. cn], resp, at);
             if at < 0 {
-                hl_cl(cfd);
                 return -1;
             }
         }
@@ -335,25 +368,21 @@ export fn hl_serve_full(fd: i64, req: u8[:], resp: u8[:], keys: const u8[:],
         if tn > 0 {
             at = rs_header_impl("Content-Type", ct[0 .. tn], resp, at);
             if at < 0 {
-                hl_cl(cfd);
                 return -1;
             }
         }
     }
     at = rs_header_impl("Content-Length", if status == 200 { "2" } else { "0" }, resp, at);
     if at < 0 {
-        hl_cl(cfd);
         return -1;
     }
     at = rs_end_headers_impl(resp, at);
     if at < 0 {
-        hl_cl(cfd);
         return -1;
     }
     if status == 200 {
         // The body is written literally, not chunked: Content-Length is set above.
         if at + 2 > resp.len {
-            hl_cl(cfd);
             return -1;
         }
         resp[at] = 111;     // 'o'
@@ -368,6 +397,5 @@ export fn hl_serve_full(fd: i64, req: u8[:], resp: u8[:], keys: const u8[:],
         i = i + 1;
     }
     let written: i64 = hl_wr(cfd, hl_tmp(HL_REQ), at);
-    hl_cl(cfd);
     return if written < 0 { -1 } else { at };
 }

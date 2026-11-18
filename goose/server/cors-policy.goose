@@ -117,6 +117,16 @@ export fn cors_allow_origin(
     origin_local: i64,
     out: u8[:],
     res: i64[:]) -> i64 {
+    return cors_allow_origin_impl(origins, credentials, origin, origin_local, out, res);
+}
+
+fn cors_allow_origin_impl(
+    origins: const u8[:],
+    credentials: i64,
+    origin: const u8[:],
+    origin_local: i64,
+    out: u8[:],
+    res: i64[:]) -> i64 {
     res[0] = 0;
     res[1] = 0;
 

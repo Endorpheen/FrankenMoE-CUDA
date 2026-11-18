@@ -26,6 +26,76 @@ static void check(bool cond, const std::string & what) {
     if (!cond) { fails++; std::printf("FAIL %s\n", what.c_str()); }
 }
 
+// Reads exactly one HTTP response: headers up to the blank line, then Content-Length
+// bytes of body. Returns false on EOF.
+static bool read_one_response(int fd, std::string * out) {
+    std::string buf;
+    char c;
+    // headers
+    while (buf.find("\r\n\r\n") == std::string::npos) {
+        if (read(fd, &c, 1) != 1) return false;
+        buf.push_back(c);
+        if (buf.size() > 8192) return false;
+    }
+    size_t head_end = buf.find("\r\n\r\n") + 4;
+    size_t cl = 0;
+    const std::string lower = buf.substr(0, head_end);
+    const size_t at = lower.find("Content-Length: ");
+    if (at != std::string::npos) cl = (size_t) strtoul(lower.c_str() + at + 16, nullptr, 10);
+    while (buf.size() < head_end + cl) {
+        if (read(fd, &c, 1) != 1) return false;
+        buf.push_back(c);
+    }
+    out->append(buf);
+    return true;
+}
+
+// Connects once and sends each request only after reading the previous answer, which
+// is what keep-alive means: the connection stays open and requests are sequential.
+static void client_keep(int port, const std::vector<std::string> & requests, int echo_fd) {
+    const int fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (fd < 0) _exit(10);
+    struct sockaddr_in a{};
+    a.sin_family = AF_INET;
+    a.sin_port = htons((uint16_t) port);
+    a.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    if (connect(fd, (struct sockaddr *) &a, sizeof(a)) != 0) _exit(11);
+    for (const auto & r : requests) {
+        if (write(fd, r.data(), r.size()) != (ssize_t) r.size()) _exit(12);
+        std::string resp;
+        if (!read_one_response(fd, &resp)) _exit(13);
+        if (write(echo_fd, resp.data(), resp.size()) != (ssize_t) resp.size()) _exit(14);
+    }
+    close(fd);
+    _exit(0);
+}
+
+static std::string exchange_keep(const std::vector<std::string> & requests, int64_t max_requests,
+                                 int64_t * served_out) {
+    int64_t port_out[1] = { 0 };
+    const int64_t fd = hl_open((sl_i64){ port_out, 1 });
+    check(fd >= 0, "hl_open (keep-alive)");
+    if (fd < 0) return {};
+    int pfd[2];
+    if (pipe(pfd) != 0) { hl_close(fd); return {}; }
+    const pid_t pid = fork();
+    if (pid == 0) { close(pfd[0]); client_keep((int) port_out[0], requests, pfd[1]); _exit(20); }
+    close(pfd[1]);
+    std::vector<uint8_t> req_buf(8192, 0), resp_buf(4096, 0);
+    std::vector<int64_t> koff{ 0 };
+    *served_out = hl_serve_keep(fd, (sl_u8){ req_buf.data(), (int64_t) req_buf.size() },
+                                (sl_u8){ resp_buf.data(), (int64_t) resp_buf.size() },
+                                (sl_u8){ (uint8_t *) "", 0 }, (sl_i64){ koff.data(), (int64_t) koff.size() },
+                                (sl_u8){ (uint8_t *) "", 0 }, 0, max_requests);
+    hl_close(fd);
+    std::string echo; char buf[4096]; ssize_t n;
+    while ((n = read(pfd[0], buf, sizeof(buf))) > 0) echo.append(buf, (size_t) n);
+    close(pfd[0]);
+    int status = 0; waitpid(pid, &status, 0);
+    check(WIFEXITED(status) && WEXITSTATUS(status) == 0, "the keep-alive client completed");
+    return echo;
+}
+
 // Connects, sends `request`, echoes the reply into `echo_fd`.
 static void client(int port, const std::string & request, int echo_fd) {
     const int fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -259,6 +329,25 @@ int main() {
                                               { 0 }, "", 0, &rc);
         check(got.find("Access-Control-Allow-Origin") == std::string::npos,
               "no policy means no CORS header");
+    }
+
+    // ---- two requests on one connection ----
+    {
+        int64_t served = -1;
+        const std::string got = exchange_keep(
+            { "GET /health HTTP/1.1\r\n\r\n", "GET /nope HTTP/1.1\r\n\r\n" }, 2, &served);
+        check(served == 2, "both requests were served on the same connection");
+        check(got.find("HTTP/1.1 200 OK\r\n") != std::string::npos, "first answer is 200");
+        check(got.find("HTTP/1.1 404 Not Found\r\n") != std::string::npos, "second answer is 404");
+        // the second status must come after the first, not instead of it
+        check(got.find("200 OK") < got.find("404 Not Found"), "answers arrive in order");
+    }
+
+    // ---- the loop stops at max_requests ----
+    {
+        int64_t served = -1;
+        exchange_keep({ "GET /health HTTP/1.1\r\n\r\n" }, 1, &served);
+        check(served == 1, "max_requests bounds the loop");
     }
 
     // ---- a malformed request line gets 400 ----
