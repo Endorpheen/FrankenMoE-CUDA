@@ -138,3 +138,17 @@ dry step1: cases=200 mismatches=0
 tokens long; the results match the native loop, including multi-token tails and
 the no-match case. Steps 2 (Z-algorithm repeat counts) and 3 (penalty
 application) are not ported yet.
+
+## DRY step 2 accepted (reverse Z-algorithm repeat counts)
+
+`sm_dry_repeat_counts` is the second step of the native filter: the reverse
+Z-algorithm fills one repeat count per position, clamped to `rep_limit`.
+
+```
+example: 0 0 3 1 0 2 0 0 0 0   (the array documented in llama-sampler.cpp) PASS
+dry step2: cases=300 mismatches=0
+```
+
+The documented example matches element for element and 300 random contexts
+(n=32, vocabulary 5, random rep_limit) match the native algorithm. Step 3
+(turning the counts into a penalty over the candidate logits) remains open.

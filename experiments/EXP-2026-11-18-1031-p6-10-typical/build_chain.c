@@ -1117,6 +1117,381 @@ static int64_t gg_function_17(int64_t p0, gg_slice p1, gg_slice p2, gg_slice p3,
 static int64_t gg_function_18(gg_slice p0, gg_slice p1, gg_slice p2, int64_t p3, float p4, float p5, int64_t p6, float p7, int64_t base);
 static int64_t gg_function_19(gg_slice p0, gg_slice p1, gg_slice p2, gg_slice p3, gg_slice p4, int64_t p5, int64_t p6, int64_t base);
 static int64_t gg_function_20(gg_slice p0, gg_slice p1, gg_slice p2, gg_slice p3, gg_slice p4, int64_t p5, int64_t p6, int64_t base);
+static int64_t gg_function_21(gg_slice p0, gg_slice p1, int64_t p2, int64_t p3, int64_t base);
+static int64_t gg_function_22(gg_slice p0, gg_slice p1, int64_t p2, int64_t p3, int64_t base);
+static int64_t gg_function_22(gg_slice p0, gg_slice p1, int64_t p2, int64_t p3, int64_t base) {
+  _Alignas(8) int64_t t0;
+  _Alignas(8) int64_t t1;
+  _Alignas(8) int64_t t2;
+  _Alignas(8) int64_t t3;
+  _Alignas(8) int64_t t4;
+  _Alignas(8) uint8_t t5;
+  uint8_t t6;
+  _Alignas(8) int64_t t7;
+  _Alignas(8) int64_t t8;
+  _Alignas(8) uint8_t t9;
+  _Alignas(8) int64_t t10;
+  _Alignas(8) int64_t t11;
+  _Alignas(8) int64_t t12;
+  _Alignas(8) int64_t t13;
+  _Alignas(8) uint8_t t14;
+  _Alignas(8) uint8_t t15;
+  gg_slice t16;
+  _Alignas(8) int64_t t17;
+  _Alignas(8) int64_t t18;
+  _Alignas(8) int64_t t19;
+  _Alignas(8) int64_t t20;
+  _Alignas(8) int64_t t21;
+  GG_UNALIGNED gg_unaligned_1 * t22;
+  _Alignas(8) int64_t t23;
+  gg_slice t24;
+  _Alignas(8) int64_t t25;
+  _Alignas(8) int64_t t26;
+  _Alignas(8) int64_t t27;
+  _Alignas(8) int64_t t28;
+  _Alignas(8) int64_t t29;
+  _Alignas(8) int64_t t30;
+  _Alignas(8) int64_t t31;
+  GG_UNALIGNED gg_unaligned_1 * t32;
+  _Alignas(8) int64_t t33;
+  _Alignas(8) uint8_t t34;
+  uint8_t t35;
+  _Alignas(8) int64_t t36;
+  _Alignas(8) int64_t t37;
+  _Alignas(8) int64_t t38;
+  _Alignas(8) int64_t t39;
+  _Alignas(8) uint8_t t40;
+  gg_slice t41;
+  _Alignas(8) int64_t t42;
+  _Alignas(8) int64_t t43;
+  _Alignas(8) int64_t t44;
+  GG_UNALIGNED gg_unaligned_1 * t45;
+  _Alignas(8) int64_t t46;
+  _Alignas(8) int64_t t47;
+  _Alignas(8) uint8_t t48;
+  _Alignas(8) int64_t t49;
+  _Alignas(8) int64_t t50;
+  _Alignas(8) int64_t t51;
+  _Alignas(8) int64_t t52;
+  _Alignas(8) int64_t t53;
+  _Alignas(8) int64_t t54;
+  _Alignas(8) int64_t t55;
+  _Alignas(8) int64_t t56;
+  _Alignas(8) int64_t t57;
+  _Alignas(8) int64_t t58;
+  gg_slice t59;
+  _Alignas(8) int64_t t60;
+  _Alignas(8) int64_t t61;
+  _Alignas(8) int64_t t62;
+  GG_UNALIGNED gg_unaligned_1 * t63;
+  _Alignas(8) int64_t t64;
+  _Alignas(8) int64_t t65;
+  _Alignas(8) uint8_t t66;
+  gg_slice t67;
+  _Alignas(8) int64_t t68;
+  _Alignas(8) int64_t t69;
+  _Alignas(8) int64_t t70;
+  GG_UNALIGNED gg_unaligned_1 * t71;
+  _Alignas(8) int64_t t72;
+  _Alignas(8) int64_t t73;
+  _Alignas(8) uint8_t t74;
+  gg_slice t75;
+  _Alignas(8) int64_t t76;
+  _Alignas(8) int64_t t77;
+  _Alignas(8) int64_t t78;
+  GG_UNALIGNED gg_unaligned_1 * t79;
+  _Alignas(8) int64_t t80;
+  _Alignas(8) int64_t t81;
+  _Alignas(8) int64_t t82;
+  _Alignas(8) int64_t t83;
+  _Alignas(8) uint8_t t84;
+  _Alignas(8) uint8_t t85;
+  gg_slice t86;
+  _Alignas(8) int64_t t87;
+  _Alignas(8) int64_t t88;
+  _Alignas(8) int64_t t89;
+  _Alignas(8) int64_t t90;
+  _Alignas(8) int64_t t91;
+  GG_UNALIGNED gg_unaligned_1 * t92;
+  _Alignas(8) int64_t t93;
+  gg_slice t94;
+  _Alignas(8) int64_t t95;
+  _Alignas(8) int64_t t96;
+  _Alignas(8) int64_t t97;
+  _Alignas(8) int64_t t98;
+  _Alignas(8) int64_t t99;
+  _Alignas(8) int64_t t100;
+  _Alignas(8) int64_t t101;
+  GG_UNALIGNED gg_unaligned_1 * t102;
+  _Alignas(8) int64_t t103;
+  _Alignas(8) uint8_t t104;
+  uint8_t t105;
+  _Alignas(8) int64_t t106;
+  _Alignas(8) int64_t t107;
+  _Alignas(8) int64_t t108;
+  _Alignas(8) int64_t t109;
+  _Alignas(8) int64_t t110;
+  _Alignas(8) int64_t t111;
+  _Alignas(8) uint8_t t112;
+  gg_slice t113;
+  _Alignas(8) int64_t t114;
+  _Alignas(8) int64_t t115;
+  _Alignas(8) int64_t t116;
+  GG_UNALIGNED gg_unaligned_1 * t117;
+  _Alignas(8) int64_t t118;
+  _Alignas(8) int64_t t119;
+  _Alignas(8) int64_t t120;
+  _Alignas(8) int64_t t121;
+  _Alignas(8) gg_slice v0;
+  _Alignas(8) gg_slice v1;
+  _Alignas(8) int64_t v2;
+  _Alignas(8) int64_t v3;
+  _Alignas(8) int64_t v4;
+  _Alignas(8) int64_t v5;
+  _Alignas(8) int64_t v6;
+  _Alignas(8) int64_t v7;
+  _Alignas(8) int64_t v8;
+  _Alignas(8) int64_t v9;
+  _Alignas(8) int64_t v10;
+  _Alignas(8) int64_t v11;
+  _Alignas(8) int64_t v12;
+  _Alignas(8) int64_t v13;
+  _Alignas(8) int64_t v14;
+  v0 = p0;
+  v1 = p1;
+  v2 = p2;
+  v3 = p3;
+  {
+  t1 = ((int64_t)(v2));
+  t2 = ((int64_t)(((int64_t)UINT64_C(1))));
+  v4 = ((int64_t)(((int64_t)((uint64_t)(t1) - (uint64_t)(t2)))));
+  v5 = ((int64_t)(((int64_t)UINT64_C(0))));
+  v6 = ((int64_t)(((int64_t)UINT64_C(0))));
+  v7 = ((int64_t)(((int64_t)UINT64_C(1))));
+label1:;
+  t3 = ((int64_t)(v7));
+  t4 = ((int64_t)(v2));
+  t5 = ((t3) < (t4));
+  t6 = t5;
+  if(!t6) goto label2;
+  {
+  t7 = ((int64_t)(v7));
+  t8 = ((int64_t)(v5));
+  t9 = ((t7) > (t8));
+  if (t9) {
+  {
+  v8 = ((int64_t)(((int64_t)UINT64_C(0))));
+label4:;
+  t10 = ((int64_t)(v8));
+  t11 = ((int64_t)(v7));
+  t12 = ((int64_t)(((int64_t)((uint64_t)(t10) + (uint64_t)(t11)))));
+  t13 = ((int64_t)(v2));
+  t14 = ((t12) < (t13));
+  t15 = t14;
+  if (t15) {
+  t16 = v0;
+  t17 = ((int64_t)(v2));
+  t18 = ((int64_t)(((int64_t)UINT64_C(1))));
+  t19 = ((int64_t)(((int64_t)((uint64_t)(t17) - (uint64_t)(t18)))));
+  t20 = ((int64_t)(v8));
+  t21 = ((int64_t)((uint64_t)(t19) - (uint64_t)(t20)));
+  t22 = ((GG_UNALIGNED gg_unaligned_1 *)t16.data) + gg_index(t21, t16.len);
+  t23 = ((int64_t)((*t22)));
+  t24 = v0;
+  t25 = ((int64_t)(v2));
+  t26 = ((int64_t)(((int64_t)UINT64_C(1))));
+  t27 = ((int64_t)(((int64_t)((uint64_t)(t25) - (uint64_t)(t26)))));
+  t28 = ((int64_t)(v8));
+  t29 = ((int64_t)(v7));
+  t30 = ((int64_t)(((int64_t)((uint64_t)(t28) + (uint64_t)(t29)))));
+  t31 = ((int64_t)((uint64_t)(t27) - (uint64_t)(t30)));
+  t32 = ((GG_UNALIGNED gg_unaligned_1 *)t24.data) + gg_index(t31, t24.len);
+  t33 = ((int64_t)((*t32)));
+  t15 = ((t23) == (t33));
+  }
+  t34 = t15;
+  t35 = t34;
+  if(!t35) goto label5;
+  {
+  t36 = ((int64_t)(v8));
+  t37 = ((int64_t)(((int64_t)UINT64_C(1))));
+  v8 = ((int64_t)(((int64_t)((uint64_t)(t36) + (uint64_t)(t37)))));
+  }
+  goto label4;
+label5:;
+  v9 = ((int64_t)(v8));
+  t38 = ((int64_t)(v9));
+  t39 = ((int64_t)(v3));
+  t40 = ((t38) > (t39));
+  if (t40) {
+  {
+  v9 = ((int64_t)(v3));
+  }
+  }
+  t41 = v1;
+  t42 = ((int64_t)(v4));
+  t43 = ((int64_t)(v7));
+  t44 = ((int64_t)((uint64_t)(t42) - (uint64_t)(t43)));
+  t45 = ((GG_UNALIGNED gg_unaligned_1 *)t41.data) + gg_index(t44, t41.len);
+  (*t45) = ((int64_t)(v9));
+  t46 = ((int64_t)(v8));
+  t47 = ((int64_t)(((int64_t)UINT64_C(0))));
+  t48 = ((t46) > (t47));
+  if (t48) {
+  {
+  v6 = ((int64_t)(v7));
+  t49 = ((int64_t)(v7));
+  t50 = ((int64_t)(v8));
+  t51 = ((int64_t)(((int64_t)((uint64_t)(t49) + (uint64_t)(t50)))));
+  t52 = ((int64_t)(((int64_t)UINT64_C(1))));
+  v5 = ((int64_t)(((int64_t)((uint64_t)(t51) - (uint64_t)(t52)))));
+  }
+  }
+  }
+  } else {
+  {
+  t53 = ((int64_t)(v7));
+  t54 = ((int64_t)(v6));
+  v10 = ((int64_t)(((int64_t)((uint64_t)(t53) - (uint64_t)(t54)))));
+  t55 = ((int64_t)(v5));
+  t56 = ((int64_t)(v7));
+  t57 = ((int64_t)(((int64_t)((uint64_t)(t55) - (uint64_t)(t56)))));
+  t58 = ((int64_t)(((int64_t)UINT64_C(1))));
+  v11 = ((int64_t)(((int64_t)((uint64_t)(t57) + (uint64_t)(t58)))));
+  t59 = v1;
+  t60 = ((int64_t)(v4));
+  t61 = ((int64_t)(v10));
+  t62 = ((int64_t)((uint64_t)(t60) - (uint64_t)(t61)));
+  t63 = ((GG_UNALIGNED gg_unaligned_1 *)t59.data) + gg_index(t62, t59.len);
+  t64 = ((int64_t)((*t63)));
+  t65 = ((int64_t)(v11));
+  t66 = ((t64) < (t65));
+  if (t66) {
+  {
+  t67 = v1;
+  t68 = ((int64_t)(v4));
+  t69 = ((int64_t)(v10));
+  t70 = ((int64_t)((uint64_t)(t68) - (uint64_t)(t69)));
+  t71 = ((GG_UNALIGNED gg_unaligned_1 *)t67.data) + gg_index(t70, t67.len);
+  v12 = ((int64_t)((*t71)));
+  t72 = ((int64_t)(v12));
+  t73 = ((int64_t)(v3));
+  t74 = ((t72) > (t73));
+  if (t74) {
+  {
+  v12 = ((int64_t)(v3));
+  }
+  }
+  t75 = v1;
+  t76 = ((int64_t)(v4));
+  t77 = ((int64_t)(v7));
+  t78 = ((int64_t)((uint64_t)(t76) - (uint64_t)(t77)));
+  t79 = ((GG_UNALIGNED gg_unaligned_1 *)t75.data) + gg_index(t78, t75.len);
+  (*t79) = ((int64_t)(v12));
+  }
+  } else {
+  {
+  t80 = ((int64_t)(v5));
+  t81 = ((int64_t)(((int64_t)UINT64_C(1))));
+  v13 = ((int64_t)(((int64_t)((uint64_t)(t80) + (uint64_t)(t81)))));
+label7:;
+  t82 = ((int64_t)(v13));
+  t83 = ((int64_t)(v2));
+  t84 = ((t82) < (t83));
+  t85 = t84;
+  if (t85) {
+  t86 = v0;
+  t87 = ((int64_t)(v2));
+  t88 = ((int64_t)(((int64_t)UINT64_C(1))));
+  t89 = ((int64_t)(((int64_t)((uint64_t)(t87) - (uint64_t)(t88)))));
+  t90 = ((int64_t)(v13));
+  t91 = ((int64_t)((uint64_t)(t89) - (uint64_t)(t90)));
+  t92 = ((GG_UNALIGNED gg_unaligned_1 *)t86.data) + gg_index(t91, t86.len);
+  t93 = ((int64_t)((*t92)));
+  t94 = v0;
+  t95 = ((int64_t)(v2));
+  t96 = ((int64_t)(((int64_t)UINT64_C(1))));
+  t97 = ((int64_t)(((int64_t)((uint64_t)(t95) - (uint64_t)(t96)))));
+  t98 = ((int64_t)(v13));
+  t99 = ((int64_t)(v7));
+  t100 = ((int64_t)(((int64_t)((uint64_t)(t98) - (uint64_t)(t99)))));
+  t101 = ((int64_t)((uint64_t)(t97) - (uint64_t)(t100)));
+  t102 = ((GG_UNALIGNED gg_unaligned_1 *)t94.data) + gg_index(t101, t94.len);
+  t103 = ((int64_t)((*t102)));
+  t85 = ((t93) == (t103));
+  }
+  t104 = t85;
+  t105 = t104;
+  if(!t105) goto label8;
+  {
+  t106 = ((int64_t)(v13));
+  t107 = ((int64_t)(((int64_t)UINT64_C(1))));
+  v13 = ((int64_t)(((int64_t)((uint64_t)(t106) + (uint64_t)(t107)))));
+  }
+  goto label7;
+label8:;
+  t108 = ((int64_t)(v13));
+  t109 = ((int64_t)(v7));
+  v14 = ((int64_t)(((int64_t)((uint64_t)(t108) - (uint64_t)(t109)))));
+  t110 = ((int64_t)(v14));
+  t111 = ((int64_t)(v3));
+  t112 = ((t110) > (t111));
+  if (t112) {
+  {
+  v14 = ((int64_t)(v3));
+  }
+  }
+  t113 = v1;
+  t114 = ((int64_t)(v4));
+  t115 = ((int64_t)(v7));
+  t116 = ((int64_t)((uint64_t)(t114) - (uint64_t)(t115)));
+  t117 = ((GG_UNALIGNED gg_unaligned_1 *)t113.data) + gg_index(t116, t113.len);
+  (*t117) = ((int64_t)(v14));
+  v6 = ((int64_t)(v7));
+  t118 = ((int64_t)(v13));
+  t119 = ((int64_t)(((int64_t)UINT64_C(1))));
+  v5 = ((int64_t)(((int64_t)((uint64_t)(t118) - (uint64_t)(t119)))));
+  }
+  }
+  }
+  }
+  t120 = ((int64_t)(v7));
+  t121 = ((int64_t)(((int64_t)UINT64_C(1))));
+  v7 = ((int64_t)(((int64_t)((uint64_t)(t120) + (uint64_t)(t121)))));
+  }
+  goto label1;
+label2:;
+  t0 = ((int64_t)(((int64_t)UINT64_C(0))));
+  goto gg_done;
+  }
+gg_done:;
+  return t0;
+}
+static int64_t gg_function_21(gg_slice p0, gg_slice p1, int64_t p2, int64_t p3, int64_t base) {
+  _Alignas(8) int64_t t0;
+  _Alignas(8) gg_slice t1;
+  _Alignas(8) gg_slice t2;
+  _Alignas(8) int64_t t3;
+  _Alignas(8) int64_t t4;
+  _Alignas(8) gg_slice v0;
+  _Alignas(8) gg_slice v1;
+  _Alignas(8) int64_t v2;
+  _Alignas(8) int64_t v3;
+  v0 = p0;
+  v1 = p1;
+  v2 = p2;
+  v3 = p3;
+  {
+  t1 = v0;
+  t2 = v1;
+  t3 = ((int64_t)(v2));
+  t4 = ((int64_t)(v3));
+  t0 = gg_function_22(t1, t2, t3, t4, base + 0);
+  goto gg_done;
+  }
+gg_done:;
+  return t0;
+}
 static int64_t gg_function_20(gg_slice p0, gg_slice p1, gg_slice p2, gg_slice p3, gg_slice p4, int64_t p5, int64_t p6, int64_t base) {
   _Alignas(8) int64_t t0;
   _Alignas(8) int64_t t1;
@@ -3793,7 +4168,11 @@ static void gg_function_0(int64_t base) {
   _Alignas(8) gg_slice t29;
   _Alignas(8) int64_t t30;
   _Alignas(8) int64_t t31;
-  int64_t t32;
+  _Alignas(8) gg_slice t32;
+  _Alignas(8) gg_slice t33;
+  _Alignas(8) int64_t t34;
+  _Alignas(8) int64_t t35;
+  int64_t t36;
   _Alignas(8) gg_type_5 v0;
   _Alignas(8) gg_type_5 v1;
   _Alignas(8) gg_type_7 v2;
@@ -3802,6 +4181,7 @@ static void gg_function_0(int64_t base) {
   _Alignas(8) int64_t v5;
   _Alignas(8) int64_t v6;
   _Alignas(8) int64_t v7;
+  _Alignas(8) int64_t v8;
   {
   (t0).base = gg_get_stack(base + 0)->base + gg_get_stack(base + 0)->top; (t0).len = 0;
   gg_text(gg_ref(&t0, gg_get_stack(base + 0)), gg_view((void *)"\160\066\055\061\060\040\164\171\160\151\143\141\154\040\147\141\164\145", 18));
@@ -3855,8 +4235,13 @@ static void gg_function_0(int64_t base) {
   t30 = ((int64_t)(((int64_t)UINT64_C(4))));
   t31 = ((int64_t)(((int64_t)UINT64_C(0))));
   v7 = gg_function_19(t25, t26, t27, t28, t29, t30, t31, base + 1);
+  t32 = gg_view((v2).data, 4);
+  t33 = gg_view((v2).data, 4);
+  t34 = ((int64_t)(((int64_t)UINT64_C(4))));
+  t35 = ((int64_t)(((int64_t)UINT64_C(4))));
+  v8 = gg_function_21(t32, t33, t34, t35, base + 1);
   }
-  for (t32 = 0; t32 < 1; t32++) gg_stacks[base + t32].top = 0;
+  for (t36 = 0; t36 < 1; t36++) gg_stacks[base + t36].top = 0;
 }
 #ifdef _MSC_VER
 static volatile LONG gg_globals_state;

@@ -31,3 +31,7 @@ int64_t gate_dry_c(const int64_t * last, const int64_t * bh, const int64_t * bts
     gg_slice s3 = { (void *) btl, nb }, s4 = { (void *) btail, nb * 4 };
     return gg_function_20(s0, s1, s2, s3, s4, n, nb, 0);
 }
+int64_t gate_dry2_c(const int64_t * last, int64_t * rc, int64_t n, int64_t rep_limit) {
+    gg_slice s0 = { (void *) last, n }, s1 = { (void *) rc, n };
+    return gg_function_22(s0, s1, n, rep_limit, 0);
+}

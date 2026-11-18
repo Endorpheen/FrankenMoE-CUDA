@@ -706,6 +706,53 @@ fn sm_dry_rep_limit(last: i64[:], b_head: i64[:], b_ts: i64[:], b_tl: i64[:],
 fn gate_dry(last: i64[:], b_head: i64[:], b_ts: i64[:], b_tl: i64[:], b_tail: i64[:], n: i64, nb: i64) -> i64 {
     return sm_dry_rep_limit(last, b_head, b_ts, b_tl, b_tail, n, nb);
 }
+
+// dry step 2: reverse Z-algorithm over the context, repeat counts per position
+fn sm_dry_repeat_counts(last: i64[:], rc: i64[:], n: i64, rep_limit: i64) -> i64 {
+    let lastidx: i64 = n - 1;
+    var rt: i64 = 0;
+    var lt: i64 = 0;
+    var k: i64 = 1;
+    while k < n {
+        if k > rt {
+            var m: i64 = 0;
+            while m + k < n && last[n - 1 - m] == last[n - 1 - (m + k)] {
+                m = m + 1;
+            }
+            var v: i64 = m;
+            if v > rep_limit { v = rep_limit; }
+            rc[lastidx - k] = v;
+            if m > 0 {
+                lt = k;
+                rt = k + m - 1;
+            }
+        } else {
+            let pp: i64 = k - lt;
+            let rpl: i64 = rt - k + 1;
+            if rc[lastidx - pp] < rpl {
+                var v: i64 = rc[lastidx - pp];
+                if v > rep_limit { v = rep_limit; }
+                rc[lastidx - k] = v;
+            } else {
+                var i2: i64 = rt + 1;
+                while i2 < n && last[n - 1 - i2] == last[n - 1 - (i2 - k)] {
+                    i2 = i2 + 1;
+                }
+                var v: i64 = i2 - k;
+                if v > rep_limit { v = rep_limit; }
+                rc[lastidx - k] = v;
+                lt = k;
+                rt = i2 - 1;
+            }
+        }
+        k = k + 1;
+    }
+    return 0;
+}
+
+fn gate_dry2(last: i64[:], rc: i64[:], n: i64, rep_limit: i64) -> i64 {
+    return sm_dry_repeat_counts(last, rc, n, rep_limit);
+}
 fn main() {
     print("p6-10 typical gate");
     let lv: f32[4] = [0.0, 0.0, 0.0, 0.0];
@@ -716,4 +763,5 @@ fn main() {
     let ignored4 = gate_top_p(lv, p, id, 4, 1.0, 0);
     let ignored5 = gate_dispatch(9, lv, p, id, 4, 1.0, 0, 0.0, 0.0);
     let ignored6 = gate_dry(id, id, id, id, id, 4, 0);
+    let ignored7 = gate_dry2(id, id, 4, 4);
 }
