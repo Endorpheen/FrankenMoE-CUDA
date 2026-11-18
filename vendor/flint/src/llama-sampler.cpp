@@ -1120,6 +1120,17 @@ void llama_sampler_chain_add(struct llama_sampler * chain, struct llama_sampler 
         /* .is_backend = */ false,
         /* .ptr        = */ smpl,
     });
+
+    // The order of the chain is a decision in its own right: a filter applied in a different
+    // position changes the result even when every filter is individually correct. Dump it once
+    // per chain so the order can be compared between builds instead of assumed.
+    static int fg_chain_n = 0;
+    if (getenv("GGML_GOOSE_CHAIN_ORDER") != nullptr) {
+        const int k = fg_chain_n++;
+        if (k < 24) {
+            fprintf(stderr, "FG_CHAIN_ORDER %d %s\n", k, llama_sampler_name(smpl));
+        }
+    }
 }
 
 struct llama_sampler * llama_sampler_chain_get(struct llama_sampler * chain, int32_t i) {
