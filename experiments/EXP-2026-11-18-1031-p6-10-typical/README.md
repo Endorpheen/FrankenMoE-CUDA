@@ -1133,3 +1133,24 @@ mirostat.
 Still open in P6-10: `dist` and `temp_ext` (TD-S1), grammars and constrained
 generation, and removing the replaced native bodies once the whole set is
 accepted.
+
+## dist: TD-S1 worked around, 400/400 against std::discrete_distribution
+
+The stored-f64 pattern is avoided by keeping the two 32-bit words as `i64` and
+doing the comparison in a single expression, exactly as the earlier successful
+probe did:
+
+```
+dist: cases=400 mismatches=0     (20 seeds x 20 distributions)
+```
+
+Same reference as before, `std::discrete_distribution` fed by `std::mt19937`, so
+the selection now matches libstdc++ including the two-word canonical draw.
+
+Live wiring plan, which keeps the RNG untouched: the native body draws the two
+words from its own generator and hands them to Goose, so `llama_sample_dist` uses
+the Goose cumulative selection while the stream stays native. That is the same
+pattern used for XTC (caller draws, Goose decides).
+
+Note for the ledger: TD-S1 is a *workaround*, not a fix - any code that needs to
+store a function-returned f64 must use the inline form.

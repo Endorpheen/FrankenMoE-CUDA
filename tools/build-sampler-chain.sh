@@ -33,6 +33,10 @@ fn main() {
     let penr = fg_sampler_penalties(lv, id, p, tbl, tbl, 8, 8, 1.0, 0.0, 0.0);
     let adr = fg_sampler_adaptive_p(lv, p, id, 8, 0.5, 0.0, 1.0, 174);
     let mir = fg_sampler_mirostat(p, 8, 1.0, 3, 100.0, 175);
+    let dst = fg_sampler_dist(lv, 8, id, 176);
+    if dst < 0 {
+        return;
+    }
     if adr < 0 || mir < 0 {
         return;
     }
@@ -69,6 +73,7 @@ ENTRIES = [
     ("PENALTIES", r'\(gg_slice p0, gg_slice p1, gg_slice p2, gg_slice p3, gg_slice p4, int64_t p5, int64_t p6, float p7, float p8, float p9, int64_t base\);'),
     ("ADAPTIVE",  r'\(gg_slice p0, gg_slice p1, gg_slice p2, int64_t p3, float p4, float p5, float p6, int64_t p7, int64_t base\);'),
     ("MIROSTAT",  r'\(gg_slice p0, int64_t p1, float p2, int64_t p3, float p4, int64_t p5, int64_t base\);'),
+    ("DIST",      r'\(gg_slice p0, int64_t p1, gg_slice p2, int64_t p3, int64_t base\);'),
 ]
 
 found = {}
@@ -138,6 +143,11 @@ int64_t fg_sampler_adaptive_p_call(float * lv, float * p, int64_t * id, int64_t 
 int64_t fg_sampler_mirostat_call(float * p, int64_t n, float mu, int64_t m, float n_vocab) {
     gg_slice s0 = { (void *) p, n };
     return FG_SAMPLER_MIROSTAT(s0, n, mu, m, n_vocab, 175, 0);
+}
+
+int64_t fg_sampler_dist_call(float * p, int64_t n, int64_t * state) {
+    gg_slice s0 = { (void *) p, n }, s1 = { (void *) state, 625 };
+    return FG_SAMPLER_DIST(s0, n, s1, 176, 0);
 }
 """
 open(out + '/sampler_chain_shim.c', 'w').write(SHIM)
