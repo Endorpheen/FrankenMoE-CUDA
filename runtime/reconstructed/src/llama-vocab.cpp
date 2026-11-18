@@ -49,6 +49,9 @@ static inline const char * goose_arr_str(const struct gguf_context * ctx, int64_
 // One fragment through the loaded Goose tables. The adapter owns the scratch
 // buffers because they are host memory; the engine decides every id.
 extern "C" int64_t llama_goose_tokenizer_ctx(void);
+extern "C" int64_t llama_goose_token_to_piece(const struct gguf_context * ctx, int64_t token,
+                                              char * buf, int64_t length, int64_t lstrip,
+                                              int64_t special, int64_t escape_ws);
 extern "C" int64_t llama_goose_tokenize(const struct gguf_context * ctx,
                                         const char * text, int64_t len,
                                         int32_t * out, int64_t out_cap);
@@ -4137,6 +4140,22 @@ int32_t llama_vocab::impl::token_to_piece(llama_token token, char * buf, int32_t
         memcpy(buf, token, size);
         return (int32_t) size;
     };
+
+    // The Goose engine owns the attribute pass, the byte decode and the lstrip
+    // rule for the QWEN35 vocabulary. Placed before the cache so the cache is
+    // filled from this path too; a refusal falls through to the native body.
+    if (get_type() == LLAMA_VOCAB_TYPE_BPE && pre_type == LLAMA_VOCAB_PRE_TYPE_QWEN35 && !escape_whitespaces) {
+        const struct gguf_context * gctx =
+            (const struct gguf_context *) (uintptr_t) llama_goose_tokenizer_ctx();
+        if (gctx != nullptr) {
+            const int64_t n = llama_goose_token_to_piece(gctx, (int64_t) token, buf, (int64_t) length,
+                                                         (int64_t) lstrip, special ? 1 : 0,
+                                                         escape_whitespaces ? 1 : 0);
+            if (n >= 0 || n < -1) {
+                return (int32_t) n;
+            }
+        }
+    }
 
     // if we have a cache - use it
     {

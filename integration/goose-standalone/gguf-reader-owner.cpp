@@ -61,11 +61,10 @@ extern "C" int64_t btl_load(gsl_u8x gguf, gsl_i64x state, gsl_i64x kv, gsl_i64x 
                             gsl_i64x pairs, gsl_i64x tok_type, gsl_i64x attr, gsl_i64x order,
                             gsl_i64x eog, int64_t eos_id, int64_t eot_id, int64_t eom_id,
                             gsl_i64x stats);
-extern "C" int64_t btl_load(gsl_u8x gguf, gsl_i64x state, gsl_i64x kv, gsl_i64x kvslots,
-                            gsl_i64x tok_off, gsl_i64x tok_len, gsl_i64x tok_slots,
-                            gsl_i64x mrg_off, gsl_i64x mrg_len, gsl_i64x mrg_slots,
-                            gsl_i64x pairs, gsl_i64x tok_type, gsl_i64x attr, gsl_i64x order, gsl_i64x eog,
-                            int64_t eos_id, int64_t eot_id, int64_t eom_id, gsl_i64x stats);
+
+extern "C" int64_t bt_token_to_piece(gsl_u8x gguf, gsl_i64x tok_off, gsl_i64x tok_len, gsl_i64x attr,
+                                    int64_t token, gsl_u8x out, int64_t at, int64_t lstrip,
+                                    int64_t special, int64_t escape_ws);
 
 namespace {
 
@@ -305,6 +304,21 @@ extern "C" int64_t llama_goose_tokenize(const struct gguf_context * ctx,
     if (rc < 0 || rc > out_cap) return -1;
     for (int64_t i = 0; i < rc; i++) out[i] = ids[(size_t) i];
     llama_goose_queries++;
+    return rc;
+}
+
+// One token as its piece bytes. The engine owns the attribute pass, the GPT-2
+// byte decode, the lstrip rule and the negative "needs this much room" return.
+extern "C" int64_t llama_goose_token_to_piece(const struct gguf_context * ctx, int64_t token,
+                                              char * buf, int64_t length, int64_t lstrip,
+                                              int64_t special, int64_t escape_ws) {
+    std::lock_guard<std::mutex> lock(g_mu);
+    const reader_meta * m = meta_of(ctx);
+    if (!m || !m->tok_ok) return -1;
+    const int64_t rc = bt_token_to_piece(u8x(m->hdr, m->len), i64x(m->tok_off), i64x(m->tok_len),
+                                         i64x(m->attr), token, u8x(buf, length), 0,
+                                         lstrip, special, escape_ws);
+    if (rc >= 0 || rc < -1) llama_goose_queries++;
     return rc;
 }
 
