@@ -212,6 +212,14 @@ if [ -f "$_extra" ] && [ -f "$ROOT/build/goose-main/.source-sha256" ]; then
         say "   unit exports in accepted lib $_ov of the header's functions"
         if [ -n "$_ov_names" ] && [ "$_ov" != "0" ]; then
             say "                                ($(printf '%s' "$_ov_names" | tr ',' ' '))"
+            # Presence is not execution. A symbol can be exported, reachable by a
+            # client and called by nobody inside the library - which is exactly how the
+            # Apex plan looked alive for several cycles.
+            _called=$(timeout 200 python3 "$ROOT/tools/check-symbol-callers.py" "$_extra" \
+                          --only "$_ov_names" 2>/dev/null | awk '/^called:/{print $2}' || true)
+            if [ -n "$_called" ]; then
+                say "   ... of which something calls $_called (the rest are exported only)"
+            fi
         fi
         if [ -n "$_fresh" ] && [ -f "$_fresh/libllama.so.0" ]; then
             _fn=$(python3 -W ignore - "$_fresh/libllama.so.0" "$ROOT/runtime/reconstructed/build.py" <<'PYF' 2>/dev/null || true
