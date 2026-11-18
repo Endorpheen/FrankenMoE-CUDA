@@ -189,3 +189,18 @@ parenthesised alternation. Both sides now agree on every candidate.
 The lesson worth keeping: a hand-built rule table is not a grammar. The native
 oracle asserts if the stack was not advanced, and a table that looks plausible can
 still be laid out differently from what the parser produces.
+
+## accept_chr, first slice
+
+```
+accept: cases=4 fails=0
+```
+
+Four grammars (`"a" "b"`, `[a-c] "d"`, `[^a-c] "d"`, plus a non-matching character)
+compared by the number of resulting stacks **and** the type/value of each stack
+top, which is pointer independent.
+
+Scope: this slice shifts a stack past a matched class; it does not yet expand rule
+references afterwards (the native calls `advance_stack` at that point). Rule
+references and token rules at the top are therefore out of scope here and are the
+next step.
