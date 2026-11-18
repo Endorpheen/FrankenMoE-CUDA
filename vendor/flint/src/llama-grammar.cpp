@@ -1517,15 +1517,26 @@ void llama_grammar_apply_impl(const struct llama_grammar & grammar, llama_token_
 
             (void) out; (void) outd;
 
-            const int64_t r = fg_grammar_reject_call(
-                s_et, s_ev, s_roff, s_rlen, s_seed, stdk[0],
-                s_cp, s_cpl, s_pv, s_pn, s_cid, ncand,
-                s_wp, s_wpd, s_stk, s_std, s_scr, s_tr, s_tc, s_row, s_rej,
-                FG_MAXS, FG_MAXD, FG_MAXCP);
+            // one call per stack: a candidate is rejected only when every stack
+            // rejects it, which is how the native code intersects the rejects
+            std::vector<int64_t> rej_final(ncand, 1);
+            int64_t r = 0;
+            for (int64_t sIdx = 0; sIdx < nstacks && r >= 0; ++sIdx) {
+                fg_slice_rec s_one { &stk[sIdx * FG_MAXD], FG_MAXD };
+                std::fill(rej.begin(), rej.end(), 0);
+                r = fg_grammar_reject_call(
+                    s_et, s_ev, s_roff, s_rlen, s_one, stdk[sIdx],
+                    s_cp, s_cpl, s_pv, s_pn, s_cid, ncand,
+                    s_wp, s_wpd, s_stk, s_std, s_scr, s_tr, s_tc, s_row, s_rej,
+                    FG_MAXS, FG_MAXD, FG_MAXCP);
+                for (int64_t i = 0; i < ncand; ++i) {
+                    rej_final[i] = rej_final[i] && rej[i];
+                }
+            }
 
             if (r >= 0) {
                 for (int64_t i = 0; i < ncand; ++i) {
-                    if (rej[i]) {
+                    if (rej_final[i]) {
                         cur_p->data[candidates_grammar[i].index].logit = -INFINITY;
                     }
                 }

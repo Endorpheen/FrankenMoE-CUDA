@@ -462,3 +462,23 @@ wrapper is now emitted by `build-sampler-chain.sh` itself through
 `tools/gen-grammar-shim.py`. Before that the symbol was a weak *undefined* reference
 and the hook silently fell back to the native path - visible only because the counter
 did not fire.
+
+## Defect found: stack pointers converted against the wrong base
+
+The live attempt aborts with `goose runtime error: array index out of bounds` at
+`cand=1 stacks=1`, and the earlier long-generation run diverged (2 tokens against 64)
+for the same root cause.
+
+The hook converts each stack element pointer to a flat index as
+`e - grammar.rules[0].data()`. That is only valid for elements of rule 0: every rule is
+its own `std::vector`, so a pointer into rule 1 or later yields a meaningless offset,
+which the automaton then uses to index `etype`. The flat table uses global indices
+from `roff`, so the conversion must use a pointer-to-index map built during flattening.
+
+Consequences: the previous claim of "grammar live, output identical" holds only for the
+one-token case that happened to stay inside rule 0 (the `yes | no` grammar); the
+multi-token case was never actually correct. That claim is corrected here.
+
+Fix for the next iteration: store `std::unordered_map<const llama_grammar_element *, int64_t>`
+in `fg_flat_rules` while flattening, and use it in the hook for both the seed stacks
+and any future accept path.
