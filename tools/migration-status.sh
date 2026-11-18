@@ -23,6 +23,13 @@ cd "$ROOT"
 say() { printf '%s\n' "$*"; }
 fn_count() {
     local count
+    # A missing file must not read as "zero functions": that silently shrinks a
+    # count and looks like progress. Refuse loudly instead.
+    if [ ! -f "$1" ]; then
+        printf 'migration-status: listed file is missing: %s\n' "$1" >&2
+        printf '0\n'
+        return 1
+    fi
     count=$(grep -cE "^[A-Za-z_][A-Za-z_0-9 :<>,&*]*\**[A-Za-z_][A-Za-z_0-9]*\(" "$1" 2>/dev/null) || true
     printf '%s\n' "${count:-0}"
 }
@@ -95,6 +102,19 @@ say ""
 say "1. Composed unit:            $n_modules modules"
 say ""
 say "2. Own C++ (runtime/core), by role - NOT a rewrite list:"
+# Whether this tree is built at all decides what these numbers mean. If nothing
+# builds it, "superseded" describes a decision recorded in a document, not a
+# replacement in a shipped artifact - and the two must not be read as the same.
+_bmoe_built=0
+if [ -n "$(find "$ROOT/builds" -name 'libbmoe_core*' 2>/dev/null | head -1)" ]; then
+    _bmoe_built=1
+fi
+if [ "$_bmoe_built" -eq 1 ]; then
+say "   build target:              built (libbmoe_core present under builds/)"
+else
+say "   build target:              NONE - no build produces libbmoe_core, so these roles"
+say "                              are recorded decisions, not replacements in an artifact"
+fi
 say "   substrate (stays native):  $(printf '%s ' $substrate | tr '\n' ' ')$sub_fns fns"
 say "   superseded by Goose:       $sup_fns fns in $(printf '%s\n' $superseded | grep -c .) files"
 say "   still needed:              $need_fns fns in $(printf '%s\n' $needed | grep -c .) files"
