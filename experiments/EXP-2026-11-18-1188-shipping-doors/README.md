@@ -53,3 +53,31 @@ not kept as source - so the call was re-pointed at `fg_sampler_dry_call`, which 
 different contract, and 153 of 200 cases disagree because of that, not because of the module.
 Recorded as a gap: the DRY differential needs its forwarder written again against the exported
 door before its numbers can be claimed for the new build.
+
+## Adaptive-P and Mirostat, the two stages still listed as open
+
+```
+adaptive-p: cases=33211 mismatches=0
+mirostat-k: cases=500   mismatches=0
+```
+
+Adaptive-P compares every transformed logit against the native formula
+`PEAK - SHARPNESS * d^2 / (1 + d)` with `d = |p - adapted| / 0.3` and
+`adapted = clamp(2*target - weighted_sum/total_weight)`, over 1000 random vocabularies
+(33 211 individual logits), including the degenerate `total_weight == 0` branch.
+
+## My reference was wrong again, and it was the interesting case
+
+The first Mirostat run reported two mismatches out of 500, both where `k_f` sat just above an
+integer:
+
+```
+MISMATCH n=10 mu=2.70251 m=5 got=2 want=3 (kf=2.06183)
+```
+
+The native code ends with `llama_sampler_top_k_impl(cur_p, std::max(int(k), 1))` - it
+**truncates** the float, it does not round up. My reference used a ceiling, so the port was
+right and the test was wrong. With `(int64_t) kf` the two agree on all 500 cases.
+
+That is worth keeping in the record: a ceiling looks like the careful choice and is the wrong
+one here; only reading the call site settles it.
