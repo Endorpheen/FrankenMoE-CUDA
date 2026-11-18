@@ -131,3 +131,19 @@ Scope of this version, stated so it is not mistaken for the whole function:
 The first full run of this version caught a real defect of mine: without clearing
 the codepoint the loop retested the same character at the next class and rejected
 `"abc"` for candidate `a`. Fixed and re-gated.
+
+## Multiple stacks: rejects intersect
+
+```
+native: 0 0 1        (candidates 'a', 'b', 'z' against stacks for "a" | "b")
+goose : 0 0 1
+```
+
+`g_reject_multi` evaluates each stack with a fresh cursor set and keeps a candidate
+only when at least one stack accepts it, which is the native intersection of
+per-stack reject sets. One gate defect of mine: the second stack row was written at
+the wrong stride, which showed up as a wrong verdict for 'b' until the row offset
+matched `maxd`.
+
+Remaining scope: token rules (`TOKEN`/`TOKEN_NOT`), and alternates inside a rule
+are still expanded one level only.
