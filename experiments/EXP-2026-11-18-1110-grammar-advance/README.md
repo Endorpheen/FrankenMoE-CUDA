@@ -45,3 +45,19 @@ those two cases. That needs one more slice (the work pool) in the entry signatur
 
 Element type values used: END=0, ALT=1, RULE_REF=2, CHAR=3, CHAR_NOT=4, CHAR_ANY=7
 (checked in `llama-grammar.h`, not assumed).
+
+## Character classes match the native matcher
+
+```
+match_char: cases=12 fails=0
+```
+
+Cases: exact character, inclusive range `[a-z]`, negated range `[^a-z]`, `CHAR_ANY`,
+alternation inside a class `[ab]` and its negation. Encoding used between Goose and
+the caller: matched -> `next_pos + 1`, unmatched -> `-(next_pos + 1)`, so one integer
+carries both the verdict and where the class ends.
+
+A detail that cost one iteration: the parser stores the second character of a class
+in the `CHAR_ALT` element's own value (`{CHAR,'a'}, {CHAR_ALT,'b'}`), not in a
+following `CHAR` element. My gate data had it in the wrong place, which looked like
+a matcher defect until the native structure was checked.
