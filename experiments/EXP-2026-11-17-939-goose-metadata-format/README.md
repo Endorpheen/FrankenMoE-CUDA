@@ -68,3 +68,28 @@ native log rather than against my own expectation:
   `...`, and the resulting 8 "mismatches" were the gate's fault, not the
   formatter's. Worth stating: a gate that reports a mismatch must first prove it
   is measuring the right thing.
+
+## Second caller: the model's own metadata map
+
+`llama-model.cpp` also formatted every scalar entry with `gguf_kv_to_str` while
+building `gguf_kv`, the map the public `llama_model_meta_*` API exposes. That
+call now goes through `gr_kv_to_str` with the buffer as the only host
+responsibility.
+
+The map is the thing that must stay the same, so it was compared through the
+public API rather than by inspecting the code path:
+
+    META_COUNT 47                  (accepted)
+    META_COUNT 47                  (candidate)
+    META MAP IDENTICAL             (key = value, every entry)
+
+Accessor counts after this change, all through Goose:
+
+| call | accepted | candidate now |
+| --- | ---: | ---: |
+| `gguf_get_kv_type` | 252 | **0** |
+| `gguf_get_arr_type` | 17 | **0** |
+| `gguf_get_arr_n` | 17 | **0** |
+
+`tools/metadump`-style check: `tests/metadump.c` prints the map, and the two
+outputs are diffed.
