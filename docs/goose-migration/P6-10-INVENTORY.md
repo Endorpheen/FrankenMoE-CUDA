@@ -45,3 +45,13 @@ when the sampler is rebuilt from this source.
 4. Prove execution with counters, then run the Apex generation and the three
    paired A/B on the cumulative baseline (rule 31).
 5. Remove the replaced native filter bodies only after the gates pass.
+
+## Typical-P reference (for the Goose transcription)
+
+`llama_sampler_typical_apply` (llama-sampler.cpp:1916): if `p >= 1` return;
+softmax in place with sort; `entropy = Σ -p*log(p)`; `score_i = |(-log p_i) - entropy|`;
+sort indices by score ascending; `cum += p[idx]`, stop when `cum > p` and
+`i >= min_keep-1`; keep the first `last_idx` tokens, then sort the kept set by
+probability descending. Any transcription must preserve that order exactly,
+including the non-stable sort behaviour, and must use the same softmax that
+`fg384s` already provides.
