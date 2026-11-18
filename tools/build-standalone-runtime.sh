@@ -118,6 +118,15 @@ if [ -d "$SUB" ] && [ -f "$ROOT/integration/goose-standalone/host_v4.c" ]; then
     $CXX -O1 -Wl,--gc-sections "$OUT/tokenize_load.o" "$OUT/main-gc.o" "$OUT/host.o" \
         -L"$SUB" -lggml-base -lggml -lggml-cpu -lm -pthread -o "$OUT/tokenize_load"
     printf '  gate:   %s (build only; run with a vocab GGUF)\n' "$OUT/tokenize_load"
+
+    # The user-facing entry point. Its decisions are Goose (goose/cli/tokenize-cli.goose)
+    # and its tokenizer is the Goose engine; the file owns argv, stdin and stdout only.
+    $CC -O1 -std=c11 -w -I "$ROOT/build/goose-main" -I "$ROOT/integration/m1/host" \
+        -I "$OUT/inc" \
+        -c "$ROOT/integration/goose-standalone/cli/tokenize-main.c" -o "$OUT/tokenize-main.o"
+    $CXX -O1 -Wl,--gc-sections "$OUT/tokenize-main.o" "$OUT/main-gc.o" "$OUT/host.o" \
+        -L"$SUB" -lggml-base -lggml -lggml-cpu -lm -pthread -o "$OUT/frankenmoe-tokenize"
+    printf '  cli:    %s\n' "$OUT/frankenmoe-tokenize"
     if [ -n "${FG_TOKENIZE_FIXTURE:-}" ]; then
         if "$OUT/tokenize_load" "$FG_TOKENIZE_FIXTURE"; then
             printf '  gate:   tokenize_load PASS on %s\n' "$FG_TOKENIZE_FIXTURE"

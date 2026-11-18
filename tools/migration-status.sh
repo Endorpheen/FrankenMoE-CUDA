@@ -197,6 +197,12 @@ say "                                       rebuild: bash tools/build-main-runti
 say "   tokenizer engine             no   (0 engine exports and the sources are not newer)"
     fi
 fi
+if [ -x "$ROOT/builds/goose-standalone/frankenmoe-tokenize" ]; then
+say "   tokenizer CLI                yes  (frankenmoe-tokenize: argv/stdin in, ids out; decisions"
+say "                                       tz_* and the engine are Goose, the file owns stdio)"
+else
+say "   tokenizer CLI                no   (no frankenmoe-tokenize in builds/goose-standalone)"
+fi
 say "   HTTP-server decisions        yes  (this run: detok 1063000 calls, sched 39500,"
 say "                                       graph-input-plan 200 - all witnessed live)"
 say "   HTTP server (transport)      no   (decisions run; no listener in the standalone)"
