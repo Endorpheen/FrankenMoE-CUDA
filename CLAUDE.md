@@ -620,3 +620,29 @@ come from Igor directly. For every marked message:
     and 512 output tokens, context 262144, `-b 4096 -ub 4096 -ngl all -fit off
     --cpu-moe`, `--moe-cache-mib 4992`; historical references decode ~55.52 and
     prefill ~2625 tok/s at those settings.
+
+32. Every change grows the existing cumulative Goose build; it never starts a
+    new combination of sources and libraries.
+
+    `tools/build-main-runtime.sh` is the accumulation mechanism and its module
+    list is the input; `docs/goose-migration/BUILD-SET.md` is its generated
+    record and `tools/check-cumulative-baseline.py` guards what is already
+    accepted. A new module joins that accumulated unit with every previously
+    accepted capability intact; it is not a reason to build an independent
+    runtime, and an existing build is extended with the missing component rather
+    than replaced.
+
+    Do not declare a component absent until its Goose source, its generated C,
+    the build scripts that produce it and any preserved artefact have all been
+    checked. A diagnostic script's verdict is not evidence on its own: confirm it
+    with an independent check before acting on it or recording it as fact.
+
+    `tools/build-main-runtime.sh` builds the cumulative Goose unit, not the whole
+    executing server. The task is to connect that existing build to the host
+    runtime step by step, never to substitute a new build for it.
+
+    Every dependency, failure and resolution established during a build is
+    recorded in `docs/goose-migration/BUILD-REGISTRY.md`, so a change of context
+    does not restart the investigation. The single build process must get
+    simpler with each iteration while keeping incrementality, correctness and
+    the accepted checkpoints.
