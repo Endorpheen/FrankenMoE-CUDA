@@ -73,6 +73,9 @@ if [ -d "$SUB" ] && [ -f "$ROOT/integration/goose-standalone/host_v4.c" ]; then
         -c "$ROOT/integration/goose-standalone/tensor-data.c" -o "$OUT/tensor-data.o"
     $CC -O1 -std=c11 -w -I "$INC" \
         -c "$ROOT/integration/goose-standalone/graph-bindings.c" -o "$OUT/graph-bindings.o"
+    # The three names the system headers already declare (close/read/write) and
+    # accept's pointer form: one-line forwards, no decisions (EXP938).
+    $CC -O1 -std=c11 -w -c "$ROOT/integration/goose-standalone/libc-forwards.c" -o "$OUT/libc-forwards.o"
     # Link with $CXX, and the reason matters: libggml-base.a itself contains six C++ objects
     # (ggml.cpp, ggml-backend.cpp, ggml-backend-meta.cpp, ggml-opt.cpp, ggml-threading.cpp) and
     # ggml_critical_section_start references std::__throw_system_error. So libstdc++ is a
@@ -83,6 +86,7 @@ if [ -d "$SUB" ] && [ -f "$ROOT/integration/goose-standalone/host_v4.c" ]; then
         -I "$ROOT/build/goose-main" -c "$ROOT/integration/goose-standalone/goose-host-llm.c" -o "$OUT/goose-host-llm.o"
     $CXX -O1 -fopenmp "$ROOT/build/goose-main/main.o" "$OUT/host.o" "$OUT/host_v4.o" \
         "$OUT/tensor-data.o" "$OUT/graph-bindings.o" "$OUT/goose-host-llm.o" \
+        "$OUT/libc-forwards.o" \
         -L"$SUB" -lggml-base -lggml -lggml-cpu -lm -pthread \
         -o "$OUT/frankenmoe-v4"
     printf '  v4:     %s (%s B)\n' "$OUT/frankenmoe-v4" "$(stat -c%s "$OUT/frankenmoe-v4")"
@@ -92,7 +96,7 @@ if [ -d "$SUB" ] && [ -f "$ROOT/integration/goose-standalone/host_v4.c" ]; then
     $CC -O1 -std=c11 -w -I "$INC" \
         -c "$ROOT/integration/goose-standalone/tests/graph_exec.c" -o "$OUT/graph_exec.o"
     $CXX -O1 -fopenmp "$ROOT/build/goose-main/main.o" "$OUT/host.o" \
-        "$OUT/graph-bindings.o" "$OUT/graph_exec.o" \
+        "$OUT/graph-bindings.o" "$OUT/graph_exec.o" "$OUT/libc-forwards.o" \
         -L"$SUB" -lggml-base -lggml -lggml-cpu -lm -pthread \
         -o "$OUT/graph_exec"
     printf '  gate:   %s\n' "$OUT/graph_exec"
@@ -105,7 +109,7 @@ if [ -d "$SUB" ] && [ -f "$ROOT/integration/goose-standalone/host_v4.c" ]; then
         -o "$OUT/main-gc.o"
     $CC -O1 -std=c11 -w -I "$ROOT/build/goose-main" -I "$ROOT/integration/m1/host" \
         -c "$ROOT/integration/goose-standalone/tests/tokenizer_decisions.c" -o "$OUT/tokenizer_decisions.o"
-    $CXX -O1 -Wl,--gc-sections "$OUT/tokenizer_decisions.o" "$OUT/main-gc.o" "$OUT/host.o" \
+    $CXX -O1 -Wl,--gc-sections "$OUT/tokenizer_decisions.o" "$OUT/main-gc.o" "$OUT/host.o" "$OUT/libc-forwards.o" \
         -L"$SUB" -lggml-base -lggml -lggml-cpu -lm -pthread -o "$OUT/tokenizer_decisions"
     printf '  gate:   %s\n' "$OUT/tokenizer_decisions"
 fi

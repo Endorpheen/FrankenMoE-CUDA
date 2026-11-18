@@ -35,6 +35,13 @@ extern int64_t cfg_validate(sl_i64 iv, sl_f64 fv);
 // The Goose reader and tokenizer engine (EXP937/EXP939): the same unit that
 // builds the metadata table also parses the container and tokenises.
 extern int64_t sm_greedy(sl_f32 lv, int64_t n);
+extern int64_t ht_open(int64_t port, sl_i64 opts);
+extern int64_t ht_accept(int64_t fd, sl_u8 addr, sl_i64 alen, sl_i64 info);
+extern int64_t ht_read_request(int64_t fd, sl_u8 buf, sl_i64 info);
+extern int64_t ht_keep_alive(sl_u8 buf);
+extern int64_t ht_response_head(int64_t status, int64_t body_len, int64_t keep, sl_u8 out);
+extern int64_t ht_write_all(int64_t fd, sl_u8 buf);
+extern int64_t ht_close(int64_t fd);
 extern int64_t gr_parse(sl_u8 data, int64_t file_bytes, sl_i64 state, sl_i64 kv, sl_i64 tensors,
                         sl_i64 kv_slots, sl_i64 tensor_slots);
 extern int64_t gr_find_kv(sl_u8 data, sl_i64 state, sl_i64 kv, sl_i64 slots, sl_u8 key);
@@ -477,6 +484,85 @@ int main(int argc, char ** argv) {
                timing[0], timing[2] > 0 && timing[0] > 0 ? timing[2] / timing[0] : 0.0,
                (long long) (produced > 0 ? produced - 1 : 0),
                produced > 1 && timing[1] > 0 ? (double) (produced - 1) / timing[1] : 0.0);
+    }
+
+    // ---- HTTP: the listener and router are Goose, this host owns buffers --
+    // --serve <port> [max_requests]
+    if (argc > 2 && strcmp(argv[2], "--serve") == 0) {
+        hose_host_load(argv[1]);
+        const int64_t port = argc > 3 ? atoll(argv[3]) : 0;
+        const int64_t cap = argc > 4 ? atoll(argv[4]) : 1;
+        int64_t opts[1] = { 0 };
+        const int64_t lfd = ht_open(port, (sl_i64){ opts, 1 });
+        if (lfd < 0) { printf("FG_SERVE open_failed step=%lld\n", (long long) (-lfd)); return 1; }
+        printf("FG_SERVE listening fd=%lld port=%lld\n", (long long) lfd, (long long) port);
+        fflush(stdout);
+
+        static unsigned char addr[16], req[1 << 18], head[512], body[1 << 18], path[1024], text[1 << 16];
+        static int64_t oids[512];
+        int64_t alen[1] = { 16 }, ainfo[2] = { 0, 0 }, served = 0;
+        while (served < cap) {
+            const int64_t conn = ht_accept(lfd, (sl_u8){ addr, 16 }, (sl_i64){ alen, 1 }, (sl_i64){ ainfo, 2 });
+            if (conn < 0) break;
+            served++;
+            int64_t info[4] = { 0, 0, 0, 0 };
+            const int64_t n = ht_read_request(conn, (sl_u8){ req, sizeof req }, (sl_i64){ info, 4 });
+            if (n <= 0) { ht_close(conn); continue; }
+            const int64_t method = info[1], poff = info[2], plen = info[3];
+            const int64_t route = route_id(method, (sl_u8){ req + poff, plen });
+            const int64_t keep = ht_keep_alive((sl_u8){ req, n });
+            int64_t blen = 0, status = 200;
+            memcpy(path, req + poff, (size_t) plen);
+
+            if (plen == 11 && memcmp(path, "/completion", 11) == 0 && method == 2) {
+                double timing[3] = { 0, 0, 0 };
+                const int64_t produced = hose_generate(req + info[0], n - info[0], 256,
+                                                       oids, text, sizeof text, timing);
+                if (produced < 0) {
+                    status = 400;
+                    blen = (int64_t) sprintf((char *) body, "{\"error\":\"generation failed\"}");
+                } else {
+                    int64_t at = (int64_t) sprintf((char *) body, "{\"ids\":[");
+                    for (int64_t i = 0; i < produced && at < (int64_t) sizeof body - 40; ++i)
+                        at += (int64_t) sprintf((char *) body + at, i ? ",%lld" : "%lld", (long long) oids[i]);
+                    at += (int64_t) sprintf((char *) body + at, "],\"text\":\"");
+                    for (int64_t i = 0; i < (int64_t) strlen((const char *) text) && at < (int64_t) sizeof body - 12; ++i) {
+                        const unsigned char ch = text[i];
+                        if (ch == '"' || ch == '\\') { body[at++] = '\\'; body[at++] = ch; }
+                        else if (ch == 10) { body[at++] = '\\'; body[at++] = 'n'; }
+                        else if (ch == 13) { body[at++] = '\\'; body[at++] = 'r'; }
+                        else if (ch == 9)  { body[at++] = '\\'; body[at++] = 't'; }
+                        else if (ch < 32)  { at += (int64_t) sprintf((char *) body + at, "\\u%04x", ch); }
+                        else body[at++] = ch;
+                    }
+                    at += (int64_t) sprintf((char *) body + at, "\",\"count\":%lld}", (long long) produced);
+                    blen = at;
+                    printf("FG_SERVE_TIME prompt=%lld prefill_tok_s=%.1f decode_tok_s=%.2f\n",
+                           (long long) timing[2], timing[0] > 0 ? timing[2] / timing[0] : 0.0,
+                           produced > 1 && timing[1] > 0 ? (double) (produced - 1) / timing[1] : 0.0);
+                }
+            } else if (route > 0) {
+                int64_t hs[5] = { 0 };
+                hose_stats(hs);
+                blen = (int64_t) sprintf((char *) body,
+                    "{\"route\":%lld,\"n_vocab\":%lld,\"n_special\":%lld,\"n_layer\":%lld}",
+                    (long long) route, (long long) hs[0], (long long) hs[1], (long long) hs[4]);
+            } else {
+                status = 404;
+                blen = (int64_t) sprintf((char *) body, "{\"error\":{\"code\":404}}");
+            }
+
+            const int64_t hl = ht_response_head(status, blen, keep, (sl_u8){ head, sizeof head });
+            if (hl < 0) { ht_close(conn); continue; }
+            ht_write_all(conn, (sl_u8){ head, hl });
+            ht_write_all(conn, (sl_u8){ body, blen });
+            printf("FG_SERVE_REQ method=%lld path=%.*s status=%lld\n",
+                   (long long) method, (int) plen, path, (long long) status);
+            fflush(stdout);
+            ht_close(conn);
+        }
+        ht_close(lfd);
+        printf("FG_SERVE done served=%lld\n", (long long) served);
     }
 
     gguf_free(ctx);
