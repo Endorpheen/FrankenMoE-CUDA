@@ -663,6 +663,58 @@ fn gate_dispatch(op: i64, lv: f32[:], p: f32[:], id: i64[:], n: i64, f: f32, k: 
     if op == 10 {
         return k;
     }
+    if op == 22 {
+        let ua: f64 = mt_canonical(id);
+        p[0] = ua as f32;
+        let ub: f64 = mt_canonical(id) * 1.0;
+        p[1] = ub as f32;
+        let uc: f64 = mt_canonical(id) + 0.0;
+        p[2] = uc as f32;
+        return 0;
+    }
+    if op == 21 {
+        let xf: f64 = 1.5;
+        p[0] = xf as f32;
+        let yf: f64 = lv[0] as f64 * 2.0;
+        p[1] = yf as f32;
+        var accf: f64 = 0.0;
+        var ai: i64 = 0;
+        while ai < 3 {
+            accf = accf + (lv[ai] as f64);
+            ai = ai + 1;
+        }
+        p[2] = accf as f32;
+        return 0;
+    }
+    if op == 20 {
+        // expose max_entropy, entropy, normalized and dynamic temperature
+        var m2: f32 = lv[0];
+        var si2: i64 = 1;
+        while si2 < n {
+            if lv[si2] > m2 { m2 = lv[si2]; }
+            si2 = si2 + 1;
+        }
+        let max_ent2: f32 = 0.0 - logf(1.0 / (n as f32));
+        let dummy2 = softmax_in_place(lv, p, n, 1);
+        var ent2: f32 = 0.0;
+        var ei: i64 = 0;
+        while ei < n {
+            if p[ei] > 0.0 {
+                ent2 = ent2 - p[ei] * logf(p[ei]);
+            }
+            ei = ei + 1;
+        }
+        let norm2: f32 = ent2 / max_ent2;
+        var mn2: f32 = f - f2;
+        if mn2 < 0.0 { mn2 = 0.0; }
+        let mxt2: f32 = f + f2;
+        let dyn2: f32 = mn2 + (mxt2 - mn2) * powf(norm2, f3);
+        p[0] = max_ent2;
+        p[1] = ent2;
+        p[2] = norm2;
+        p[3] = dyn2;
+        return n;
+    }
     if op == 19 {
         let rc_sm = softmax_in_place(lv, p, n, 1);
         if rc_sm < 0.0 {

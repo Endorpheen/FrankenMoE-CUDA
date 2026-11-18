@@ -396,3 +396,28 @@ The remaining suspects are `max_entropy`, the entropy accumulation, or the
 temp_ext is therefore NOT accepted. The next step is to print `entropy`,
 `max_entropy`, `normalized_entropy` and `dyn_temp` from both sides for the fixed
 case (n=8, temp=0.8, delta=0.4, exponent=1.0), not another sweep.
+
+## Minimal repro: a function-returned f64 reads as 0 when stored
+
+| case | result |
+|---|---|
+| `let x: f64 = 1.5; p[0] = x as f32` | 1.5 (correct) |
+| `let y: f64 = lv[0] as f64 * 2.0; p[1] = y as f32` | 4 (correct) |
+| f64 accumulator over a loop, then cast | 9 (correct) |
+| `(mt_canonical(id) * 4294967296.0) as i64` in one expression | 4282876139 (correct) |
+| `let u: f64 = mt_canonical(id); p[0] = u as f32` | **0** |
+| same with `* 1.0` or `+ 0.0` in the initialiser | **0** |
+
+So the defect is specific: storing the f64 result of a function call loses the
+value, while constants, computed expressions and accumulators are fine, and the
+same call used inside a larger expression keeps its value.
+
+This one defect explains both blocked filters: `dist` stores
+`mt_canonical(state)`, and `temp_ext` stores the extern `exp()` result for the
+double renormalisation, which the native code requires. A workaround in f32
+would change the bits, so neither filter is accepted; the correct fix is in the
+compiler.
+
+Repro command: op 22 of the dispatch with a seeded state (seed 1) prints
+`bare=0 *1.0=0 +0.0=0` where the native values are 0.997184808, 0.932557361 and
+0.128124448.
