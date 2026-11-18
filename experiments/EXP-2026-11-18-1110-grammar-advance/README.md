@@ -599,3 +599,29 @@ explicitly.
 Why the candidate set is 1 in this chain, and why decode fell to 5.9 tok/s, are two
 questions for the next iteration; neither is answered by the hook's own work, which
 the counter bounds at one call per token over one candidate.
+
+## The chain applies grammar to a one-element candidate set
+
+Instrumented sizes at the call:
+
+```
+FG171_GRAMMAR_SIZES cur_p=1 candidates=1 stacks=1
+```
+
+So in this runtime the grammar sampler receives a single candidate. With one candidate
+there is nothing to reject, which means **the native grammar cannot constrain either**:
+whatever text came out conformed because the model produced it, not because it was
+constrained.
+
+Consequences, stated plainly:
+
+- the live grammar A/B measured earlier compares two unconstrained paths; the grammar
+  stage's behaviour is therefore unproven, not accepted;
+- the slowdown measured on the same configuration is also not attributable to the
+  grammar decision, and the same run shows 1.99 tok/s with 32 tokens, which needs its
+  own explanation;
+- validating the stage requires a chain where grammar runs before the candidate set is
+  truncated (upstream it is applied before top_k). That is a configuration change of
+  the sampler order, not a change to the port.
+
+The diagnostic print is kept behind `GGML_GOOSE_GRAMMAR_DIAG`.

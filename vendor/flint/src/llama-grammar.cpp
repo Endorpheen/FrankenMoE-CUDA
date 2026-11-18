@@ -1462,6 +1462,12 @@ void llama_grammar_apply_impl(const struct llama_grammar & grammar, llama_token_
     }
 
     bool fg_done = false;
+    static thread_local long long fg_diag = 0;
+    static const bool fg_diag_on = getenv("GGML_GOOSE_GRAMMAR_DIAG") != nullptr;
+    if (fg_diag_on && fg_grammar_enabled() && (fg_diag++ % 200) == 0) {
+        fprintf(stderr, "FG171_GRAMMAR_SIZES cur_p=%zu candidates=%zu stacks=%zu\n",
+                cur_p->size, candidates_grammar.size(), grammar.stacks.size());
+    }
     if (fg_grammar_reject_call != nullptr && fg_grammar_enabled() && !candidates_grammar.empty()) {
         fg_flat_rules & flat = fg_flatten(grammar.rules);
 
