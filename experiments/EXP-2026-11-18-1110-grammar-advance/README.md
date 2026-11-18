@@ -424,3 +424,22 @@ first thing to correct in the wrapper, and it is a wrapper defect, not a port de
 
 Recorded rather than patched blindly: the next iteration fixes the length, re-runs the
 same repro, and only then moves to the hook.
+
+## Module entry works
+
+With `cand_cp` passed at length `ncand * maxcp` the call returns the expected flags:
+
+```
+rejected=2 flags: 0 1 1 (expect 0 1 1)
+```
+
+for the grammar `"a" "b" "c"` with candidates `a`, `b`, `z`. That is the grammar
+decision running inside the sampler module through a generated wrapper, with the
+entry located by its full type list.
+
+Confirmed cause of the earlier abort: the wrapper was handed a codepoint slice of
+length 4 instead of `ncand * maxcp`; the module indexes `cand_cp[i*maxcp + cursor]`.
+No port defect was involved.
+
+Next: the hook in `llama_grammar_apply_impl`, flattening the immutable rule table
+once per grammar object and the stacks per call.
