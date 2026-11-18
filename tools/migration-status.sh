@@ -124,6 +124,38 @@ say "   files: $adapter_files   lines: $adapter_lines"
 for f in $adapters; do printf '     %5s  %s\n' "$(wc -l < "$f")" "$f"; done
 say ""
 say "4. Standalone runtime capabilities (evidence: EXP671-673, tools/build-standalone-runtime.sh):"
+# A capability read off a stale artifact is not evidence. The composer writes the
+# hash of what it read; comparing it here costs one hash and catches the case that
+# already fooled this report once: fresh timestamps over an old body (EXP991).
+_unit_want=$(cd "$ROOT" && { sed -n '1,400p' tools/build-main-runtime.sh; \
+    find goose -name '*.goose' -print0 | sort -z | xargs -0 sha256sum; } \
+    | sha256sum | cut -d' ' -f1)
+_unit_have=$(cat "$ROOT/build/goose-main/.source-sha256" 2>/dev/null || true)
+if [ "$_unit_want" = "$_unit_have" ]; then
+say "   unit freshness              current (matches the module sources)"
+else
+say "   unit freshness              STALE - the lines below describe an older unit;"
+say "                               rebuild with: bash tools/build-standalone-runtime.sh"
+fi
+# Which compiler built the artifact, and whether that compiler has a version. A
+# capability with no compiler identity cannot be reproduced; the identity is read from
+# runtime/compiler/current.json and cross-referenced with the compiler's own registry.
+_ci=$(python3 "$ROOT/tools/compiler-identity.py" --json 2>/dev/null || true)
+if [ -n "$_ci" ]; then
+    _ci_line=$(printf '%s' "$_ci" | python3 -c '
+import json,sys
+d=json.load(sys.stdin)
+sha=(d.get("sha256") or "")[:12]
+ver=d.get("declared_version") or "?"
+lab=d.get("label") or ""
+v=d.get("verdict") or "?"
+if lab:
+    print("%s | %s | label %s" % (ver, sha, lab))
+else:
+    print("%s | %s | %s" % (ver, sha, v))
+' 2>/dev/null || true)
+    say "   compiler of this artifact     $_ci_line"
+fi
 say "   GGUF container read          yes  (substrate reader)"
 say "   GGUF metadata, every key     yes  (4 files, agree=yes)"
 say "   GGUF tensor directory        yes  (fixtures + 3 real models, 940 tensors)"
@@ -163,7 +195,8 @@ if [ -f "$SA_BIN" ]; then
     _eng_n=$(nm "$SA_BIN" 2>/dev/null | grep -cE " T (btl_load|bt_build|bt_bpe|bt_token_to_piece)")
 fi
 if [ "$_tok_n" -ge 8 ]; then
-say "   tokenizer decisions (all 8)   answers  ($_tok_n tok_* exports; tokenizer_decisions gate: 39 checks, 0 failures)"
+say "   tokenizer decisions (all 8)   answers  ($_tok_n tok_* exports; the gates print their"
+say "                                 own counts - this line does not repeat them)"
 elif [ "$_eng_n" -ge 1 ]; then
     # Absent tok_* with bt_bpe present is not "the decisions are gone": the eight
     # predicates were folded into the engine entry point (EXP949-956). Saying "no"
@@ -181,7 +214,7 @@ if [ -x "$ROOT/builds/goose-standalone/tokenize_load" ]; then
 fi
 if [ "$_eng_n" -ge 4 ]; then
 say "   tokenizer engine             yes  ($_eng_n load/build/tokenise/piece exports in the artifact$_lat;"
-say "                                       gates: EXP950/955/956 + tokenize_load 25 checks)"
+say "                                       gates: EXP950/955/956 and tokenize_load)"
 elif [ "$_eng_n" -gt 0 ]; then
 say "   tokenizer engine             partial ($_eng_n of 4 engine exports in the artifact)"
 else
@@ -203,22 +236,22 @@ say "                                       tz_* and the engine are Goose, the f
 else
 say "   tokenizer CLI                no   (no frankenmoe-tokenize in builds/goose-standalone)"
 fi
-say "   HTTP-server decisions        yes  (this run: detok 1063000 calls, sched 39500,"
-say "                                       graph-input-plan 200 - all witnessed live)"
-# Same rule as the engine: the transport is a capability of the artifact, not a
-# claim. hl_open/hl_serve/hl_close are the listener; the gate serves a real request
-# over a real socket (EXP978, 15 checks).
+# The transport is a capability of the artifact, not a claim, and the NUMBER OF
+# CHECKS is not written here: a count typed into a report goes stale silently, which
+# is exactly what happened to this line (it said 32 while the gate had 169). The
+# suite prints its own count; this report prints what it can see in the artifact.
 _hl_n=0
 if [ -f "$SA_BIN" ]; then
-    _hl_n=$(nm "$SA_BIN" 2>/dev/null | grep -cE " T (hl_open|hl_serve|hl_close)" || true)
+    _hl_n=$(nm "$SA_BIN" 2>/dev/null | grep -cE " T hl_" || true)
     _hl_n=${_hl_n:-0}
 fi
-if [ "$_hl_n" -ge 3 ]; then
-say "   HTTP server (transport)      yes  ($_hl_n listener exports in the artifact; one request per"
-say "                                       call over a real socket on an ephemeral port, routed by"
-say "                                       route_id: 200 / 404 / 405 / 400 gated, 32 checks)"
+_srv_no="builds/goose-standalone/frankenmoe-serve"
+if [ -x "$ROOT/$_srv_no" ]; then
+say "   HTTP server (transport)      yes  ($_hl_n hl_* exports in the artifact and $_srv_no,"
+say "                                       a process that opens the port and calls the listener;"
+say "                                       the check count is printed by verify-unit-gates.sh)"
 else
-say "   HTTP server (transport)      no   ($_hl_n of 3 listener exports in this artifact)"
+say "   HTTP server (transport)      no   ($_hl_n hl_* exports in the artifact, no frankenmoe-serve)"
 fi
 # Computed from the artifact, not asserted. Reading and laying out 21.7 GB of real tensors is a capability;
 # executing them is a different one, and the two used to be collapsed into "partial".
@@ -249,13 +282,21 @@ say "Honest reading, split in two:"
 # rebuild it is present, and a fixed sentence would be the same lie EXP972 fixed.
 if [ "$_eng_n" -ge 4 ]; then
 say "  - the STANDALONE runtime (this section) carries the tokenizer engine"
-say "    ($_eng_n exports), the three sampler filters and an HTTP listener that serves"
-say "    one request per connection on an ephemeral port; it still lacks CUDA, TLS and"
-say "    full-stack execution."
+say "    ($_eng_n exports), the three sampler filters and the HTTP listener."
 else
 say "  - the STANDALONE runtime (this section) lacks the tokenizer engine in this"
-say "    artifact ($_eng_n of 4 exports) plus CUDA, HTTP transport and full-stack execution."
+say "    artifact ($_eng_n of 4 exports)."
 fi
+# HTTP is reported from the artifact, not folded into the sentence above: the two
+# capabilities are independent, and saying "lacks HTTP" whenever the tokenizer is
+# absent was false the moment the listener landed.
+if [ -x "$ROOT/builds/goose-standalone/frankenmoe-serve" ]; then
+say "    Its HTTP capability is real: frankenmoe-serve opens the port and calls the"
+say "    listener, which keeps the connection open and consumes request bodies."
+else
+say "    It has no server process, so the listener is not reachable in this artifact."
+fi
+say "    It still lacks CUDA, TLS and full-stack execution."
 say "  - the INTEGRATED stage-run does run Apex end to end with Goose code witnessed, but it"
 say "    is llama.cpp plus Goose, not a standalone Goose runtime. Best measured: 2429.9"
 say "    prefill / 39.86 decode at 512 tokens, VRAM 7552 MiB, output identical to the"
