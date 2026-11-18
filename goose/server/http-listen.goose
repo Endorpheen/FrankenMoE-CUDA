@@ -178,14 +178,26 @@ export fn hl_serve_full(fd: i64, req: u8[:], resp: u8[:], keys: const u8[:],
     if cfd < 0 {
         return -1;
     }
-    let filled: i64 = hl_fill(cfd, req, 0);
-    if filled <= 0 {
+    // Read until the header terminator arrives. One read is not one request: a client
+    // may send the request line and the headers in separate segments, and answering
+    // the first fragment with 400 is a bug, not a policy. Found by reading this
+    // function against hl_serve_keep, which already looped.
+    var filled: i64 = 0;
+    var end: i64 = -1;
+    while end < 0 {
+        if filled >= req.len {
+            break;
+        }
+        let more: i64 = hl_fill(cfd, req, filled);
+        if more <= 0 {
+            break;
+        }
+        filled = more;
+        end = hl_req_end(req, filled);
+    }
+    if end <= 0 {
         hl_cl(cfd);
         return -1;
-    }
-    var end: i64 = hl_req_end(req, filled);
-    if end < 0 {
-        end = filled;
     }
     let rc: i64 = hl_handle_req(cfd, req[0 .. end], resp, keys, koff, origins, credentials);
     hl_cl(cfd);

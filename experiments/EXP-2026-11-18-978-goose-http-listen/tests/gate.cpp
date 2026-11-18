@@ -26,6 +26,57 @@ static void check(bool cond, const std::string & what) {
     if (!cond) { fails++; std::printf("FAIL %s\n", what.c_str()); }
 }
 
+static bool read_one_response(int fd, std::string * out);
+
+// Sends the request in two writes with a pause between them, so the server sees a
+// fragment first. One read is not one request.
+static void client_fragmented(int port, int echo_fd) {
+    const int fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (fd < 0) _exit(10);
+    struct sockaddr_in a{};
+    a.sin_family = AF_INET;
+    a.sin_port = htons((uint16_t) port);
+    a.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    if (connect(fd, (struct sockaddr *) &a, sizeof(a)) != 0) _exit(11);
+    // Split INSIDE the request line: a fragment that already contains the whole
+    // line parses as a complete request and would not exercise the defect at all.
+    const char * first = "GET /hea";
+    const char * second = "lth HTTP/1.1\r\n\r\n";
+    if (write(fd, first, strlen(first)) != (ssize_t) strlen(first)) _exit(12);
+    usleep(20000);   // let the server's first read return with a partial request
+    if (write(fd, second, strlen(second)) != (ssize_t) strlen(second)) _exit(13);
+    std::string resp;
+    if (!read_one_response(fd, &resp)) _exit(14);
+    if (write(echo_fd, resp.data(), resp.size()) != (ssize_t) resp.size()) _exit(15);
+    close(fd);
+    _exit(0);
+}
+
+static std::string exchange_fragmented(int * serve_rc) {
+    int64_t port_out[1] = { 0 };
+    const int64_t fd = hl_open((sl_i64){ port_out, 1 });
+    check(fd >= 0, "hl_open (fragmented)");
+    if (fd < 0) return {};
+    int pfd[2];
+    if (pipe(pfd) != 0) { hl_close(fd); return {}; }
+    const pid_t pid = fork();
+    if (pid == 0) { close(pfd[0]); client_fragmented((int) port_out[0], pfd[1]); _exit(20); }
+    close(pfd[1]);
+    std::vector<uint8_t> req_buf(8192, 0), resp_buf(4096, 0);
+    std::vector<int64_t> koff{ 0 };
+    *serve_rc = (int) hl_serve_full(fd, (sl_u8){ req_buf.data(), (int64_t) req_buf.size() },
+                                    (sl_u8){ resp_buf.data(), (int64_t) resp_buf.size() },
+                                    (sl_u8){ (uint8_t *) "", 0 }, (sl_i64){ koff.data(), (int64_t) koff.size() },
+                                    (sl_u8){ (uint8_t *) "", 0 }, 0);
+    hl_close(fd);
+    std::string echo; char buf[4096]; ssize_t n;
+    while ((n = read(pfd[0], buf, sizeof(buf))) > 0) echo.append(buf, (size_t) n);
+    close(pfd[0]);
+    int status = 0; waitpid(pid, &status, 0);
+    check(WIFEXITED(status) && WEXITSTATUS(status) == 0, "the fragmented client completed");
+    return echo;
+}
+
 // Reads exactly one HTTP response: headers up to the blank line, then Content-Length
 // bytes of body. Returns false on EOF.
 static bool read_one_response(int fd, std::string * out) {
@@ -462,6 +513,15 @@ int main() {
         int64_t served = -1;
         exchange_keep({ "GET /health HTTP/1.1\r\n\r\n" }, 1, &served);
         check(served == 1, "max_requests bounds the loop");
+    }
+
+    // ---- a request split across two writes is one request ----
+    {
+        int rc = 0;
+        const std::string got = exchange_fragmented(&rc);
+        check(rc > 0, "hl_serve_full answered the fragmented request");
+        check(got.rfind("HTTP/1.1 200 OK\r\n", 0) == 0,
+              "a request in two fragments is not answered with 400");
     }
 
     // ---- a malformed request line gets 400 ----
