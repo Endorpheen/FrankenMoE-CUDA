@@ -223,3 +223,19 @@ stable entry; guessing the order is what fails. The working copy was reverted to
 the committed state, where `accept` is the count-and-top gated slice, and the
 expansion stays open until the call is built from the generated prototype instead
 of from an assumption.
+
+## Wrapper generation: tool written, selection still manual
+
+`gen_shim.py` takes the generated C plus a description of each entry's variables and
+emits a wrapper whose argument order follows the prototype it finds, instead of an
+assumed order. That addresses the failure of the previous iteration in principle.
+
+What is still missing is reliable *identification* of which prototype belongs to
+which entry: the generated names are `gg_function_N`, several entries coexist in one
+translation unit, and matching by parameter shape becomes ambiguous as soon as two
+entries have similar shapes. Guessing the index is exactly what produced the earlier
+mismatch, so this is not resolved by the tool alone.
+
+Next: select the prototype by a signature that cannot collide (a unique trailing
+marker whose type the generator can recognise), then the wrapper and the index both
+come from the same parsed source.
