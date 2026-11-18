@@ -244,6 +244,14 @@ PYF
             say "   from current sources          $_fn carrier-unit exports present in a fresh build"
             say "                                (only that 14-module unit is composed from .goose;"
             say "                                 the remaining bridge objects are frozen snapshots)"
+            # A bridge that is linked but never called is removable; a bridge that is
+            # called may be the only implementation some model reaches. Counting both
+            # as "migrated" is how a binary ends up with two paths and no audit.
+            _dead=$(python3 "$ROOT/tools/audit-bridge-symbols.py" "$_fresh" 2>/dev/null \
+                        | awk '/referenced by nobody/{print $NF}' || true)
+            if [ -n "$_dead" ]; then
+                say "   bridge exports called by none  $_dead of the linked bridge exports"
+            fi
         fi
     fi
 fi
