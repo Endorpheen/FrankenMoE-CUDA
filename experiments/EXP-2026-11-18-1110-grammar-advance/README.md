@@ -239,3 +239,14 @@ mismatch, so this is not resolved by the tool alone.
 Next: select the prototype by a signature that cannot collide (a unique trailing
 marker whose type the generator can recognise), then the wrapper and the index both
 come from the same parsed source.
+
+## Tree consistency restored
+
+The previous commit had left `accept.goose` calling `advance` with an extra argument
+that the committed `advance.goose` did not have, because a directory-wide `git add`
+picked up a half-finished edit. Both files are back to the versions that were gated
+(simple `accept` without reference expansion, `advance` without the base offset), and
+both the accept unit and the composed grammar unit compile again.
+
+Rule for the future: stage experiment files by name, and compile every module in the
+directory after a revert - a stale translation unit hid this for one iteration.
