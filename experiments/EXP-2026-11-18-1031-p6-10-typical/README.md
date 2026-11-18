@@ -841,3 +841,25 @@ Three pairings were tried; only one compiles:
 So the accepted `src/` is the same lineage as `vendor/flint` and needs its ggml
 and its public headers, not the `work/` ones. The build was still running at the
 end of the iteration (CUDA objects), with zero compile errors.
+
+## Pivot, step 4: the accepted src needs 37 bridge modules, some absent
+
+The restored `src/` calls into generated Goose bridges: `fg199 fg210 fg212 fg230
+fg237 fg244 fg367 fg373 fg375 fg376 fg377 fg380 ... fg406 fg756`. Their generated
+C mostly lives in `integration/modules/EXP-*-<id>-*/source/host-qualified.c`, and
+for `fg367` through `fg406` and `fg756` it is present.
+
+Missing under that naming: `fg199, fg210, fg212, fg230, fg237, fg244` - no module
+directory matches those ids (26 module directories exist in total). So the
+accepted `src/` cannot be linked as-is from this repository: part of the bridges
+it calls were not preserved here.
+
+Consequence: the pivot target is reachable only by either
+1. recovering those six bridges (they may exist in the restored tree or the local
+   store outside the repository), or
+2. building from `vendor/flint` (which pairs with its own ggml and headers) and
+   porting only what P6-10 needs, accepting that its `src/` differs from the
+   restored one.
+
+The build logs and the exact missing ids are recorded so this is a fact, not an
+impression.
