@@ -880,6 +880,90 @@ fn sm_mirostat_update(mu: f32, eta: f32, tau: f32, observed: f32) -> f32 {
     return mu - eta * (observed - tau);
 }
 
+
+// descending/ascending heap sort over four parallel arrays, ordered by the first
+fn swap4(scr: f32[:], lv: f32[:], id: i64[:], p: f32[:], a: i64, b: i64) {
+    let t0: f32 = scr[a]; scr[a] = scr[b]; scr[b] = t0;
+    let t1: f32 = lv[a];  lv[a]  = lv[b];  lv[b]  = t1;
+    let t2: i64 = id[a];  id[a]  = id[b];  id[b]  = t2;
+    let t3: f32 = p[a];   p[a]   = p[b];   p[b]   = t3;
+}
+
+fn sift4(scr: f32[:], lv: f32[:], id: i64[:], p: f32[:], root_in: i64, end: i64) {
+    var r: i64 = root_in;
+    while r * 2 + 1 < end {
+        var c: i64 = r * 2 + 1;
+        if c + 1 < end && scr[c + 1] > scr[c] {
+            c = c + 1;
+        }
+        if scr[r] >= scr[c] {
+            return;
+        }
+        swap4(scr, lv, id, p, r, c);
+        r = c;
+    }
+}
+
+// ascending order by scr, carrying lv, id and p along
+fn sort4_asc(scr: f32[:], lv: f32[:], id: i64[:], p: f32[:], n: i64) {
+    var s: i64 = n / 2 - 1;
+    while s >= 0 {
+        sift4(scr, lv, id, p, s, n);
+        s = s - 1;
+    }
+    var e: i64 = n - 1;
+    while e > 0 {
+        swap4(scr, lv, id, p, 0, e);
+        sift4(scr, lv, id, p, 0, e);
+        e = e - 1;
+    }
+}
+
+// typical-p with the caller's logits left intact: the shifted scores live in
+// scr, and the four arrays move together so logits keep their own values
+fn fg_sampler_typical(lv: f32[:], p: f32[:], id: i64[:], scr: f32[:], n: i64,
+                      typical_p: f32, min_keep: i64) -> i64 {
+    if n <= 0 || lv.len < n || p.len < n || id.len < n || scr.len < n {
+        return -1;
+    }
+    if typical_p >= 1.0 {
+        return n;
+    }
+    let srt = sm_partial_sort(lv, id, n, n);
+    if srt < 0 {
+        return -1;
+    }
+    let sm = softmax_in_place(lv, p, n, 1);
+    if sm < 0.0 {
+        return -1;
+    }
+    var i: i64 = 0;
+    var entropy: f32 = 0.0;
+    while i < n {
+        if p[i] > 0.0 {
+            entropy = entropy - p[i] * c_logf(p[i]);
+        }
+        i = i + 1;
+    }
+    i = 0;
+    while i < n {
+        let d: f32 = (-c_logf(p[i])) - entropy;
+        scr[i] = if d < 0.0 { -d } else { d };
+        i = i + 1;
+    }
+    sort4_asc(scr, lv, id, p, n);
+    var cum: f32 = 0.0;
+    i = 0;
+    while i < n {
+        cum = cum + p[i];
+        if cum > typical_p && (min_keep <= 0 || i + 1 >= min_keep) {
+            return i + 1;
+        }
+        i = i + 1;
+    }
+    return n;
+}
+
 // Single stable entry point for the shipped library. Generated function ids
 // shift whenever this module changes, so callers must reach the chain through
 // this one function rather than through a generated id.
@@ -887,6 +971,9 @@ fn fg_sampler_chain(op: i64, lv: f32[:], p: f32[:], id: i64[:], n: i64,
                     f: f32, k: i64, f2: f32, f3: f32) -> i64 {
     if op == 0 {
         return sm_apply_typical(lv, p, id, n, f, k);
+    }
+    if op == 12 {
+        return fg_sampler_typical(lv, p, id, lv, n, f, k);
     }
     if op == 1 {
         return sm_apply_top_p(lv, p, n, f, k);

@@ -599,3 +599,24 @@ What exists now and is verified:
 
 The link must therefore be done in a build of our own (a separate directory with
 the toolchain script), not inside the user's working tree copy.
+
+## typical-p live in the shipped library, identical to native
+
+The Goose stage now runs inside the built library and matches the native body on
+the real sampler API:
+
+```
+GGML_GOOSE_SAMPLER_CHAIN=1 /tmp/hookdiff   -> 200 lines
+GGML_GOOSE_SAMPLER_CHAIN=0 /tmp/hookdiff   -> 200 lines
+IDENTICAL ON vs OFF
+FG171_TYPICAL goose calls=200 kept=10
+```
+
+200 candidate sets of 8-40 tokens, three typical_p values and six min_keep
+values; ids, logits and the cut are byte-identical, and the counter proves 200
+real Goose calls rather than a symbol in the table.
+
+The fix that made it identical: the shifted scores live in a scratch array and a
+four-array heap sort carries the logits along, so the caller's logits keep their
+own values, as the native body does. The stage is default-on again
+(`GGML_GOOSE_SAMPLER_CHAIN=0` disables it) because it now measures identical.
