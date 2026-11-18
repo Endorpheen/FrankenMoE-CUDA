@@ -84,8 +84,15 @@ for f in $needed; do need_fns=$((need_fns + $(fn_count "$f"))); done
 # Goose-callable surface; adapters must shrink, never grow into a parallel runtime.
 # Tests are not adapters: a gate holds no runtime logic and nothing links it into
 # the shipped host. Only files under a tests/ directory are excluded this way.
-adapters=$(ls integration/goose-standalone/*.c integration/goose-standalone/*.cpp \
-              integration/m1/host/*.c 2>/dev/null | grep -v '/tests/')
+#
+# The glob used to stop at goose-standalone/*.c, so integration/goose-standalone/cli/
+# was never counted - not because those files are tests, but because the pattern did
+# not reach them. tokenize-main.c and serve-main.c own argv, stdio and the accept
+# loop: they are adapters by the same definition as the rest, and leaving them out
+# improved the number for no reason. Enumerated by find, so a new subdirectory is
+# counted the day it appears instead of the day someone notices.
+adapters=$(find integration/goose-standalone integration/m1/host -name '*.c' -o -name '*.cpp' 2>/dev/null \
+              | grep -v '/tests/' | sort)
 adapter_lines=0
 adapter_files=0
 for f in $adapters; do
@@ -122,6 +129,10 @@ say ""
 say "3. Adapter debt (to be REMOVED, never counted as migration):"
 say "   files: $adapter_files   lines: $adapter_lines"
 for f in $adapters; do printf '     %5s  %s\n' "$(wc -l < "$f")" "$f"; done
+# What is NOT counted, named, so the exclusion can be audited instead of trusted.
+_excluded=$(find integration/goose-standalone integration/m1/host -name '*.c' -o -name '*.cpp' 2>/dev/null \
+              | grep '/tests/' | wc -l)
+say "   excluded: $_excluded file(s) under tests/ - a gate holds no runtime logic"
 say ""
 say "4. Standalone runtime capabilities (evidence: EXP671-673, tools/build-standalone-runtime.sh):"
 # A capability read off a stale artifact is not evidence. The composer writes the

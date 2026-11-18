@@ -147,6 +147,7 @@ MODULES=(
     goose/server/http-url-policy.goose
     goose/server/jsonparse.goose
     goose/server/route-table.goose
+    goose/server/shutdown-policy.goose
     goose/server/web-assets.goose
     goose/server/mime-table.goose
     goose/server/asset-etag.goose

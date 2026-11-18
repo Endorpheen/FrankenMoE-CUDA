@@ -626,3 +626,10 @@ int64_t qz_iq3_qgrid(int64_t g, int64_t i) {
     const fg_goose_iq_tables * tables = iq_tables_required("qz_iq3_qgrid");
     return tables->iq3_grid(tables->ctx, g, i);
 }
+
+// A store, and only a store: goose/server/shutdown-policy.goose writes its three
+// decision words through this. It is host binding, not logic - the action, the exit
+// code and the message flag are chosen in Goose.
+void fg448_st_i64(uint64_t base, uint64_t offset, int64_t value) {
+    *(int64_t *) (uintptr_t) (base + offset) = value;
+}

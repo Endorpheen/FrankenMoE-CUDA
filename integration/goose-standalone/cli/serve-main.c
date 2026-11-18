@@ -18,11 +18,16 @@
 
 #include "main.h"
 
-static volatile sig_atomic_t stop_requested = 0;
+// The signal HANDLER only records that a signal arrived: format strings, buffered
+// I/O and any Goose call are not async-signal-safe. The DECISION - one interrupt runs
+// the shutdown, a second forces exit - is Goose (goose/server/shutdown-policy.goose,
+// on_signal), and it is asked from the loop, not from the handler. A local "any
+// signal means stop" was a second implementation of that policy.
+static volatile sig_atomic_t signals_seen = 0;
 
-static void on_signal(int sig) {
+static void mark_signal(int sig) {
     (void) sig;
-    stop_requested = 1;
+    signals_seen++;
 }
 
 static void usage(void) {
@@ -104,14 +109,15 @@ int main(int argc, char ** argv) {
     printf("frankenmoe-serve: listening on port %lld\n", (long long) want[0]);
     fflush(stdout);
 
-    signal(SIGINT, on_signal);
-    signal(SIGTERM, on_signal);
+    signal(SIGINT, mark_signal);
+    signal(SIGTERM, mark_signal);
 
     static uint8_t req_buf[16384];
     static uint8_t resp_buf[65536];
 
     int served = 0;
-    while (stop_requested == 0) {
+    int64_t interrupting = 0;
+    while (1) {
         const int64_t n = hl_serve_keep(fd, (sl_u8){ req_buf, (int64_t) sizeof req_buf },
                                         (sl_u8){ resp_buf, (int64_t) sizeof resp_buf },
                                         (sl_u8){ keys_blob, (int64_t) keys_len },
@@ -119,6 +125,21 @@ int main(int argc, char ** argv) {
                                         (sl_u8){ (uint8_t *) (uintptr_t) origins, (int64_t) origins_len },
                                         credentials, 64);
         if (n < 0) {
+            if (signals_seen > 0) {
+                // out: 0 action (0 nothing, 1 run shutdown, 2 force exit), 1 exit code,
+                // 2 message flag.
+                int64_t decision[3] = { 0, 0, 0 };
+                on_signal(interrupting, 1, (uint64_t) (uintptr_t) decision);
+                if (decision[0] == 2) {
+                    if (decision[2] != 0) {
+                        fprintf(stderr, "frankenmoe-serve: second interrupt, forcing exit\n");
+                    }
+                    hl_close(fd);
+                    return decision[1] != 0 ? (int) decision[1] : 1;
+                }
+                interrupting = 1;
+                break;
+            }
             break;
         }
         served += (int) n;

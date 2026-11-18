@@ -70,6 +70,7 @@ GATES=(
     "typical-live   | experiments/EXP-2026-11-18-966-goose-typical-live/tests/gate.cpp    | llama"
     "tns-live       | experiments/EXP-2026-11-18-967-goose-top-n-sigma-live/tests/gate.cpp| llama"
     "dry-live       | experiments/EXP-2026-11-18-968-goose-dry-live/tests/gate.cpp       | llama"
+    "signal-policy  | experiments/EXP-2026-11-18-995-goose-signal-policy/tests/gate.cpp   | unit"
 )
 
 pass=0; fail=0; skip=0

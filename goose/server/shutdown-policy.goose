@@ -8,10 +8,10 @@
 //
 // Step ids: 1 stop session GC, 2 set models_routes.stopping, 3 unload all
 // models, 4 mcp shutdown, 5 llama_backend_free, 6 http stop, 7 ctx terminate.
-extern "fg448_st_i64" fn st_i64(p: u64, o: u64, v: i64);
+extern "fg448_st_i64" fn sp_st_i64(p: u64, o: u64, v: i64);
 
-fn put(out: u64, i: i64, v: i64) {
-    st_i64(out, (i * (8 as i64)) as u64, v);
+fn sp_put(out: u64, i: i64, v: i64) {
+    sp_st_i64(out, (i * (8 as i64)) as u64, v);
 }
 // Signal dispatch: first interrupt runs the handler, second forces exit(1).
 // Writes action (0 nothing, 1 run shutdown, 2 force exit), exit code,
@@ -31,9 +31,9 @@ export fn on_signal(is_terminating: i64, has_handler: i64, out: u64) -> i64 {
             action = 1 as i64;
         }
     }
-    put(out, 0 as i64, action);
-    put(out, 1 as i64, code);
-    put(out, 2 as i64, msg);
+    sp_put(out, 0 as i64, action);
+    sp_put(out, 1 as i64, code);
+    sp_put(out, 2 as i64, msg);
     return 0 as i64;
 }
 // Ordered shutdown plan. kind 0 = signal handler, 1 = clean_up before exit.
@@ -44,33 +44,33 @@ export fn shutdown_plan(kind: i64, mode: i64, out: u64) -> i64 {
 
     if kind == 0 as i64 {
         if mode == 0 as i64 {
-            put(out, 1 as i64, 2 as i64);
-            put(out, 2 as i64, 4 as i64);
-            put(out, 3 as i64, 6 as i64);
+            sp_put(out, 1 as i64, 2 as i64);
+            sp_put(out, 2 as i64, 4 as i64);
+            sp_put(out, 3 as i64, 6 as i64);
             n = 3 as i64;
         } else {
-            put(out, 1 as i64, 4 as i64);
-            put(out, 2 as i64, 7 as i64);
+            sp_put(out, 1 as i64, 4 as i64);
+            sp_put(out, 2 as i64, 7 as i64);
             n = 2 as i64;
         }
     } else {
-        put(out, 1 as i64, 1 as i64);
+        sp_put(out, 1 as i64, 1 as i64);
 
         if mode == 0 as i64 {
-            put(out, 2 as i64, 2 as i64);
-            put(out, 3 as i64, 3 as i64);
-            put(out, 4 as i64, 4 as i64);
-            put(out, 5 as i64, 5 as i64);
+            sp_put(out, 2 as i64, 2 as i64);
+            sp_put(out, 3 as i64, 3 as i64);
+            sp_put(out, 4 as i64, 4 as i64);
+            sp_put(out, 5 as i64, 5 as i64);
             n = 5 as i64;
         } else {
-            put(out, 2 as i64, 6 as i64);
-            put(out, 3 as i64, 7 as i64);
-            put(out, 4 as i64, 4 as i64);
-            put(out, 5 as i64, 5 as i64);
+            sp_put(out, 2 as i64, 6 as i64);
+            sp_put(out, 3 as i64, 7 as i64);
+            sp_put(out, 4 as i64, 4 as i64);
+            sp_put(out, 5 as i64, 5 as i64);
             n = 5 as i64;
         }
     }
-    put(out, 0 as i64, n);
+    sp_put(out, 0 as i64, n);
     return 0 as i64;
 }
 // Process exit code by outcome: 0 normal, 1 http start error, 2 model load
@@ -82,7 +82,7 @@ export fn exit_code(outcome: i64, out: u64) -> i64 {
     if outcome != 0 as i64 {
         code = 1 as i64;
     }
-    put(out, 0 as i64, code);
+    sp_put(out, 0 as i64, code);
     return 0 as i64;
 }
 
