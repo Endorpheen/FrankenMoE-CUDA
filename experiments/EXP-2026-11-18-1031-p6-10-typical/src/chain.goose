@@ -566,10 +566,17 @@ fn gate_typical(lv: f32[:], p: f32[:], id: i64[:], n: i64, tp: f32, mk: i64) -> 
     return sm_apply_typical(lv, p, id, n, tp, mk);
 }
 
+
+// probe: expose the module's top-k sort so its order can be checked directly
+fn gate_sort(lv: f32[:], id: i64[:], n: i64) -> i64 {
+    return sm_partial_sort(lv, id, n, n);
+}
+
 fn main() {
     print("p6-10 typical gate");
     let lv: f32[4] = [0.0, 0.0, 0.0, 0.0];
     let p: f32[4] = [0.0, 0.0, 0.0, 0.0];
     let id: i64[4] = [0, 1, 2, 3];
     let ignored = gate_typical(lv, p, id, 4, 1.0, 0);
+    let ignored3 = gate_sort(lv, id, 4);
 }

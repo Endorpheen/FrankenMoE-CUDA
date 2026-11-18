@@ -57,3 +57,16 @@ the order/semantics of `sm_partial_sort` (the module's top-k sort) when it is
 used as a full descending sort: its comparator or its placement of results does
 not match `std::sort` descending. The next attempt must verify the primitive on
 a fixed array before the filter is rebuilt on it.
+
+## sm_partial_sort verified (probe)
+
+Fixed array `lv=[3,1,2,5,4]`, `id=[0,1,2,3,4]`, called as a full sort:
+
+```
+ret=5 lv: 5.0 4.0 3.0 2.0 1.0  id: 3 4 0 2 1
+```
+
+The primitive sorts descending and moves ids in step, so the earlier diagnosis
+that blamed it is **wrong**. The unsorted top-p failure therefore lies in the
+filter code or its argument mapping, not in this sort. The probe stays in the
+card (`gate_sort`) so the next attempt starts from a verified primitive.
