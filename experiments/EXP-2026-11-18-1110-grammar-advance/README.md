@@ -176,4 +176,16 @@ for this layout. A rule table built by hand has to match what the parser produce
 until the fixture uses parser output (or a layout the native accepts), this gate
 proves nothing and is recorded as blocked.
 
-No claim of equality is made for the composed entry.
+Fixed by using parser-produced rules and by advancing the seed stack on the native
+side as the real grammar does:
+
+```
+grammar composed: cases=4 fails=0
+```
+
+Grammars: `"a" "b" "c"`, `[a-c]`, `root ::= r1 r2` with `r1 ::= "a" | "b"`, and a
+parenthesised alternation. Both sides now agree on every candidate.
+
+The lesson worth keeping: a hand-built rule table is not a grammar. The native
+oracle asserts if the stack was not advanced, and a table that looks plausible can
+still be laid out differently from what the parser produces.
