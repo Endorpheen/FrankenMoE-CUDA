@@ -147,3 +147,17 @@ matched `maxd`.
 
 Remaining scope: token rules (`TOKEN`/`TOKEN_NOT`), and alternates inside a rule
 are still expanded one level only.
+
+## Token rules
+
+```
+reject: cases=4 fails=0
+```
+
+The fourth case is a `<5>` token rule with candidates id 5 (accepted) and id 6
+(rejected), both carrying a codepoint. The defect it caught: after a token rule the
+candidate's remaining codepoints were treated as leftovers and rejected the valid
+candidate; a token rule consumes the whole token, so the cursor is moved to the end.
+
+Remaining scope for `reject`: alternates inside a rule expand only one level, and
+`TOKEN_NOT` is implemented but not yet exercised by a case.

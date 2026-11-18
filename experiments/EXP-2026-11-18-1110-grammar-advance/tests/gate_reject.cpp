@@ -6,7 +6,7 @@
 extern "C" int64_t g_reject_call(const int64_t*, const int64_t*, const int64_t*, const int64_t*,
                                  const int64_t*, int64_t, const int64_t*, const int64_t*,
                                  int64_t*, int64_t*, int64_t, const int64_t*, const int64_t*,
-                                 int64_t*, int64_t, int64_t);
+                                 const int64_t*, int64_t*, int64_t, int64_t);
 static int fails = 0, cases = 0;
 
 static void one(const char * name, llama_grammar_rules & rules, llama_grammar_stack stack,
@@ -34,9 +34,10 @@ static void one(const char * name, llama_grammar_rules & rules, llama_grammar_st
         cpl[i] = (int64_t) cps[i].size();
         for (size_t j = 0; j < cps[i].size() && j < (size_t) maxcp; ++j) cp[i*maxcp + j] = (int64_t) cps[i][j];
     }
-    std::vector<int64_t> pv(cps.size(), 0), pn(cps.size(), 0);
+    std::vector<int64_t> pv(cps.size(), 0), pn(cps.size(), 0), cid(cps.size(), 0);
+    for (size_t i = 0; i < cps.size(); ++i) cid[i] = (int64_t) cands[i].id;
     g_reject_call(et, ev, ro, rl, st, (int64_t) stack.size(), cp.data(), cpl.data(), cur.data(),
-                  rejv.data(), (int64_t) cps.size(), pv.data(), pn.data(), scratch.data(), 8, maxcp);
+                  rejv.data(), (int64_t) cps.size(), pv.data(), pn.data(), cid.data(), scratch.data(), 8, maxcp);
 
     cases++;
     for (size_t i = 0; i < cps.size(); ++i) {
@@ -95,9 +96,34 @@ int main() {
 
         int64_t cp3[2] = {0,0}, cpl3[2] = {0,0}, cur3[2] = {0,0}, rej3[2] = {0,0};
         int64_t pv3[2] = {1,2}, pn3[2] = {1,1}, sc3[64] = {0};
-        g_reject_call(et3, ev3, ro3, rl3, st3, 1, cp3, cpl3, cur3, rej3, 2, pv3, pn3, sc3, 8, 2);
+        int64_t cid3[2] = {0,0};
+        g_reject_call(et3, ev3, ro3, rl3, st3, 1, cp3, cpl3, cur3, rej3, 2, pv3, pn3, cid3, sc3, 8, 2);
         cases++;
         for (int i = 0; i < 2; ++i) if (native[i] != rej3[i]) { fails++; printf("MISMATCH partial cand %d native=%d goose=%lld\n", i, native[i], (long long) rej3[i]); }
+    }
+    // token rule: <5>
+    {
+        llama_grammar_rules r4(1);
+        r4[0].push_back({LLAMA_GRETYPE_TOKEN, 5});
+        r4[0].push_back({LLAMA_GRETYPE_END, 0});
+        int64_t et4[8] = {8,0,0,0,0,0,0,0};
+        int64_t ev4[8] = {5,0,0,0,0,0,0,0};
+        int64_t ro4[1] = {0}, rl4[1] = {2}, st4[8] = {0,0,0,0,0,0,0,0};
+        llama_grammar_stack s4; s4.push_back(r4[0].data());
+        llama_grammar_stacks stacks{s4};
+        llama_grammar_candidates cands;
+        static uint32_t c1[2] = {'x',0}, c2[2] = {'x',0};
+        cands.push_back({0, c1, {}, 5});
+        cands.push_back({1, c2, {}, 6});
+        auto rej = llama_grammar_reject_candidates(r4, stacks, cands);
+        int native[2] = {0,0};
+        for (auto & r : rej) native[r.index] = 1;
+
+        int64_t cp4[4] = {'x',0,'x',0}, cpl4[2] = {1,1}, cur4[2] = {0,0}, rej4[2] = {0,0};
+        int64_t pv4[2] = {0,0}, pn4[2] = {0,0}, cid4[2] = {5,6}, sc4[64] = {0};
+        g_reject_call(et4, ev4, ro4, rl4, st4, 1, cp4, cpl4, cur4, rej4, 2, pv4, pn4, cid4, sc4, 8, 2);
+        cases++;
+        for (int i = 0; i < 2; ++i) if (native[i] != rej4[i]) { fails++; printf("MISMATCH token cand %d native=%d goose=%lld\n", i, native[i], (long long) rej4[i]); }
     }
     printf("reject: cases=%d fails=%d\n", cases, fails);
     return fails ? 1 : 0;

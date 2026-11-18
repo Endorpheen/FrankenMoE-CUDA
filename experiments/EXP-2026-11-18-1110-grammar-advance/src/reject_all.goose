@@ -97,7 +97,7 @@ fn pow2(n: i64) -> i64 {
 fn g_reject(etype: i64[:], eval: i64[:], roff: i64[:], rlen: i64[:],
             st: i64[:], std_in: i64,
             cand_cp: i64[:], cp_len: i64[:], curs: i64[:], rej: i64[:], ncand: i64,
-            pval: i64[:], pnr: i64[:],
+            pval: i64[:], pnr: i64[:], cand_id: i64[:],
             scratch: i64[:], maxd: i64, maxcp: i64) -> i64 {
     var depth: i64 = std_in;
     var i: i64 = 0;
@@ -161,6 +161,34 @@ fn g_reject(etype: i64[:], eval: i64[:], roff: i64[:], rlen: i64[:],
             }
             continue;
         }
+        if t == 8 || t == 9 {
+            i = 0;
+            while i < ncand {
+                if rej[i] == 0 {
+                    if curs[i] >= cp_len[i] {
+                        // no codepoints left: a partial sequence cannot satisfy a token rule
+                        if pnr[i] > 0 {
+                            rej[i] = 1;
+                            alive = alive - 1;
+                        }
+                    } else {
+                        let want_tok: bool = t == 8;
+                        let is_tok: bool = eval[pos] == cand_id[i];
+                        if is_tok != want_tok {
+                            rej[i] = 1;
+                            alive = alive - 1;
+                        } else {
+                            // a token rule consumes the whole token, so the rest of
+                            // its codepoints are not leftovers
+                            curs[i] = cp_len[i];
+                        }
+                    }
+                }
+                i = i + 1;
+            }
+            depth = depth - 1;
+            continue;
+        }
         // END or unsupported: stop
         break;
     }
@@ -209,7 +237,8 @@ fn main() {
     let pv: i64[4] = [0, 0, 0, 0];
     let pn: i64[4] = [0, 0, 0, 0];
     let sc: i64[8] = [0, 0, 0, 0, 0, 0, 0, 0];
-    let r = g_reject(et, ev, ro, rl, st, 1, cp, cpl, cur, rej, 2, pv, pn, sc, 8, 4);
+    let cid: i64[2] = [0, 0];
+    let r = g_reject(et, ev, ro, rl, st, 1, cp, cpl, cur, rej, 2, pv, pn, cid, sc, 8, 4);
     if r < 0 {
         return;
     }
