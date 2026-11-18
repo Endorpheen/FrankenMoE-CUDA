@@ -45,51 +45,24 @@ int64_t generation_serve(int64_t conn) {
         // Requests are independent: the KV bookkeeping starts from zero for each
         // one, so a second prompt never sees the first prompt's positions.
         hose_reset_state();
-        const int64_t cnt = hose_tokenize(req + info[0], n - info[0], ids, MAX_IDS);
-        if (cnt <= 0) {
-            blen = (int64_t) sprintf((char *) body, "{\"error\":\"tokenize failed\"}");
+        // The whole loop lives in the shared host, so the CLI and the server
+        // cannot drift apart.
+        unsigned char text[MAX_REQ];
+        double timing[3] = {0, 0, 0};
+        const int64_t produced = hose_generate(req + info[0], n - info[0], MAX_TOKENS,
+                                               out_ids, text, sizeof text, timing);
+        if (produced < 0) {
+            blen = (int64_t) sprintf((char *) body, "{\"error\":\"generation failed\"}");
             status = 400;
         } else {
-            float * logits = NULL;
-            int64_t n_logits = 0, produced = 0;
-            int32_t * batch = malloc((size_t) cnt * 4);
-            for (int64_t i = 0; i < cnt; ++i) batch[i] = (int32_t) ids[i];
-
-            int64_t past = cnt;
-            const double t0 = now_s();
-            double t_prefill = 0.0;
-            for (int64_t step = 0; step < MAX_TOKENS; ++step) {
-                n_logits = hose_step(batch, past, &logits);
-                free(batch);
-                if (n_logits <= 0) { printf("STEP failed at %lld past=%lld\n", (long long) step, (long long) past); fflush(stdout); break; }
-                if (step == 0) t_prefill = now_s() - t0;
-                // logits are [n_vocab, n_tokens]; the next token comes from the
-                // last position's row, and sm_greedy takes the count as its
-                // second argument.
-                const int64_t vocab = n_logits / (past > 0 ? past : 1);
-                if (vocab <= 0) break;
-                const float * row = logits + (int64_t) (past - 1) * vocab;
-                const int64_t next = sm_greedy((sl_f32){ (float *) row, vocab }, vocab);
-                free(logits);
-                logits = NULL;
-                if (next < 0) { printf("SAMPLE failed\n"); fflush(stdout); break; }
-                out_ids[produced++] = next;
-                if (hose_eog_is(next) != 0) break;
-                batch = malloc(4);
-                batch[0] = (int32_t) next;
-                past = 1;
-            }
-
-            const double t_all = now_s() - t0;
-            const double t_dec = t_all - t_prefill;
+            const int64_t tlen = (int64_t) strlen((const char *) text);
             printf("TIME prompt=%lld prefill_s=%.2f prefill_tok_s=%.1f decode_n=%lld decode_s=%.2f decode_tok_s=%.2f\n",
-                   (long long) cnt, t_prefill, cnt > 0 ? (double) cnt / (t_prefill > 0 ? t_prefill : 1e-9) : 0.0,
-                   (long long) (produced > 0 ? produced - 1 : 0), t_dec,
-                   (produced > 1 && t_dec > 0) ? (double) (produced - 1) / t_dec : 0.0);
+                   (long long) timing[2], timing[0],
+                   timing[2] > 0 && timing[0] > 0 ? timing[2] / timing[0] : 0.0,
+                   (long long) (produced > 0 ? produced - 1 : 0), timing[1],
+                   produced > 1 && timing[1] > 0 ? (double) (produced - 1) / timing[1] : 0.0);
             fflush(stdout);
 
-            unsigned char text[MAX_REQ];
-            const int64_t tlen = produced ? hose_detokenize(out_ids, produced, text, sizeof text) : 0;
             int64_t at = (int64_t) sprintf((char *) body, "{\"ids\":[");
             for (int64_t i = 0; i < produced && at < (int64_t) sizeof(body) - 40; ++i)
                 at += (int64_t) sprintf((char *) body + at, i ? ",%lld" : "%lld", (long long) out_ids[i]);

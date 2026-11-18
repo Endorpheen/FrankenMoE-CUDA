@@ -455,31 +455,28 @@ int main(int argc, char ** argv) {
     // The probe text is tokenised by the Goose engine and one model step runs on
     // the real weights. The point is that the shipping binary generates, not that
     // this particular text is meaningful.
+    // ---- generation: the same loop the server runs ----------------------
+    // --generate [max_tokens] [prompt]: tokenise, generate, print the text.
     if (argc > 2 && strcmp(argv[2], "--generate") == 0) {
         hose_host_load(argv[1]);
         int64_t hs[5] = {0};
         hose_stats(hs);
-        const char * probe = "The capital of France is";
-        static int64_t pids[256];
-        const int64_t n_ids = hose_tokenize((const unsigned char *) probe, (int64_t) strlen(probe), pids, 256);
-        if (n_ids > 0) {
-            static int32_t batch[256];
-            for (int64_t i = 0; i < n_ids; ++i) batch[i] = (int32_t) pids[i];
-            float * logits = NULL;
-            const int64_t n_logits = hose_step(batch, n_ids, &logits);
-            if (n_logits > 0) {
-                const int64_t vocab = n_logits / n_ids;
-                const int64_t next = sm_greedy((sl_f32){ logits + (n_ids - 1) * vocab, vocab }, vocab);
-                unsigned char piece[256];
-                const int64_t pl = hose_detokenize(&next, 1, piece, sizeof piece);
-                printf("FG_GENERATE vocab=%lld prompt_ids=%lld next=%lld piece=\"%.*s\"\n",
-                       (long long) hs[0], (long long) n_ids, (long long) next,
-                       (int) (pl > 0 ? pl : 0), piece);
-                free(logits);
-            } else {
-                printf("FG_GENERATE step failed\n");
-            }
-        }
+        const int64_t want = argc > 3 ? atoll(argv[3]) : 8;
+        const char * probe = argc > 4 ? argv[4] : "The capital of France is";
+
+        static int64_t out_ids[512];
+        static unsigned char out_text[1 << 16];
+        double timing[3] = {0, 0, 0};
+        const int64_t produced = hose_generate((const unsigned char *) probe, (int64_t) strlen(probe),
+                                               want, out_ids, out_text, sizeof out_text, timing);
+        printf("FG_GENERATE vocab=%lld prompt_chars=%lld n=%lld ids=",
+               (long long) hs[0], (long long) strlen(probe), (long long) produced);
+        for (int64_t i = 0; i < produced && i < 16; ++i) { printf(" %lld", (long long) out_ids[i]); }
+        printf("\ntext=\"%.*s\"\n", (int) (produced > 0 ? strlen((const char *) out_text) : 0), out_text);
+        printf("FG_GENERATE_TIME prefill_s=%.2f prefill_tok_s=%.1f decode_n=%lld decode_tok_s=%.2f\n",
+               timing[0], timing[2] > 0 && timing[0] > 0 ? timing[2] / timing[0] : 0.0,
+               (long long) (produced > 0 ? produced - 1 : 0),
+               produced > 1 && timing[1] > 0 ? (double) (produced - 1) / timing[1] : 0.0);
     }
 
     gguf_free(ctx);

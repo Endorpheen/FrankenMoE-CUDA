@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L   // clock_gettime / CLOCK_MONOTONIC
 // Generation inside the standalone runtime: HTTP in, real tokens out.
 //
 // The unit carries the decisions (trunk plan, attention/GDN branches, MoE
@@ -45,6 +46,12 @@ typedef enum ggml_type ggml_type;
 #define MAX_TOKENS 256
 
 const char * die(const char * what) { fprintf(stderr, "GENERATE %s\n", what); exit(1); }
+
+static double now_s(void) {
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (double) ts.tv_sec + (double) ts.tv_nsec / 1e9;
+}
 
 int64_t bits(float f) { int32_t b; memcpy(&b, &f, 4); return b; }
 
@@ -465,4 +472,58 @@ void hose_stats(int64_t * out5) {
     out5[2] = H.n_eog;
     out5[3] = H.eos;
     out5[4] = H.layer_count;
+}
+
+// ---- generation loop ---------------------------------------------------
+// One request: reset, tokenise, step until the Goose end-of-generation set or
+// the token cap, then detokenise. Both the CLI and the server call this, so the
+// loop exists once.
+int64_t hose_generate(const unsigned char * text, int64_t len, int64_t max_tokens,
+                      int64_t * out_ids, unsigned char * out_text, int64_t text_cap,
+                      double * timing) {
+    if (timing) { timing[0] = 0.0; timing[1] = 0.0; timing[2] = 0.0; }
+    static int64_t ids[MAX_REQ];
+    const int64_t n_ids = tokenize(text, len, ids, MAX_REQ);
+    if (n_ids <= 0) {
+        return -1;
+    }
+    reset_state();
+
+    int32_t * batch = malloc((size_t) n_ids * 4);
+    if (!batch) { return -1; }
+    for (int64_t i = 0; i < n_ids; ++i) { batch[i] = (int32_t) ids[i]; }
+
+    const double t0 = now_s();
+    double t_prefill = 0.0;
+    int64_t produced = 0;
+    int64_t past = n_ids;
+    for (int64_t step = 0; step < max_tokens; ++step) {
+        float * logits = NULL;
+        const int64_t n_logits = model_step(batch, past, &logits);
+        free(batch);
+        batch = NULL;
+        if (n_logits <= 0) { break; }
+        if (step == 0) { t_prefill = now_s() - t0; }
+        const int64_t vocab = n_logits / (past > 0 ? past : 1);
+        if (vocab <= 0) { free(logits); break; }
+        const int64_t next = sm_greedy((sl_f32){ logits + (past - 1) * vocab, vocab }, vocab);
+        free(logits);
+        if (next < 0) { break; }
+        out_ids[produced++] = next;
+        if (bt_is_eog((sl_i64){ H.eog, H.n_eog }, H.n_eog, next) != 0) { break; }
+        batch = malloc(4);
+        if (!batch) { break; }
+        batch[0] = (int32_t) next;
+        past = 1;
+    }
+    free(batch);
+
+    const int64_t tlen = produced > 0 ? detokenize(out_ids, produced, out_text, text_cap) : 0;
+    if (timing) {
+        const double all = now_s() - t0;
+        timing[0] = t_prefill;
+        timing[1] = all - t_prefill;
+        timing[2] = (double) n_ids;
+    }
+    return produced;
 }
