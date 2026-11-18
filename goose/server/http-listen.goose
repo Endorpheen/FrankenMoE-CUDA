@@ -178,7 +178,16 @@ export fn hl_serve_full(fd: i64, req: u8[:], resp: u8[:], keys: const u8[:],
     if cfd < 0 {
         return -1;
     }
-    let rc: i64 = hl_handle(cfd, req, resp, keys, koff, origins, credentials);
+    let filled: i64 = hl_fill(cfd, req, 0);
+    if filled <= 0 {
+        hl_cl(cfd);
+        return -1;
+    }
+    var end: i64 = hl_req_end(req, filled);
+    if end < 0 {
+        end = filled;
+    }
+    let rc: i64 = hl_handle_req(cfd, req[0 .. end], resp, keys, koff, origins, credentials);
     hl_cl(cfd);
     return rc;
 }
@@ -198,38 +207,79 @@ export fn hl_serve_keep(fd: i64, req: u8[:], resp: u8[:], keys: const u8[:],
         return -1;
     }
     var served: i64 = 0;
+    var have: i64 = 0;
     while served < max_requests {
-        let rc: i64 = hl_handle(cfd, req, resp, keys, koff, origins, credentials);
+        // Enough for one whole request? Read until the header terminator arrives.
+        var end: i64 = if have > 0 { hl_req_end(req, have) } else { -1 };
+        while end < 0 {
+            if have >= req.len {
+                break;
+            }
+            let more: i64 = hl_fill(cfd, req, have);
+            if more <= 0 {
+                break;
+            }
+            have = more;
+            end = hl_req_end(req, have);
+        }
+        if end < 0 {
+            break;
+        }
+        let rc: i64 = hl_handle_req(cfd, req[0 .. end], resp, keys, koff, origins, credentials);
         if rc <= 0 {
             break;
         }
         served = served + 1;
+        // Keep the remainder: a client may have sent the next request in the same
+        // write, and reading again would block instead of answering it.
+        var k: i64 = 0;
+        while end + k < have {
+            req[k] = req[end + k];
+            k = k + 1;
+        }
+        have = have - end;
     }
     hl_cl(cfd);
     return served;
 }
 
-fn hl_handle(cfd: i64, req: u8[:], resp: u8[:], keys: const u8[:], koff: const i64[:],
-             origins: const u8[:], credentials: i64) -> i64 {
-    let got: i64 = hl_rd(cfd, hl_tmp(HL_REQ), HL_REQ_MAX);
-    if got < 0 {
+// Reads more bytes into req[have..], through the host scratch because Goose cannot
+// take the address of its own slice. Returns the new length, or -1 on error or EOF.
+fn hl_fill(cfd: i64, req: u8[:], have: i64) -> i64 {
+    if have < 0 || have >= req.len {
         return -1;
     }
-    if got == 0 {
-        // The peer closed without sending anything: not an error, just the end.
+    let room: i64 = req.len - have;
+    let want: i64 = if room < HL_REQ_MAX { room } else { HL_REQ_MAX };
+    let got: i64 = hl_rd(cfd, hl_tmp(HL_REQ), want);
+    if got <= 0 {
         return -1;
-    }
-    // Copy out of the scratch and into the caller's slice, byte by byte: Goose
-    // cannot form a slice over a raw pointer.
-    var n: i64 = got;
-    if n > req.len {
-        n = req.len;
     }
     var i: i64 = 0;
-    while i < n {
-        req[i] = hl_ld8(hl_tmp(HL_REQ + i)) as u8;
+    while i < got {
+        req[have + i] = hl_ld8(hl_tmp(HL_REQ + i)) as u8;
         i = i + 1;
     }
+    return have + got;
+}
+
+// The end of the first request in buf[0..len], as an offset just past CRLF CRLF, or
+// -1 when the terminator has not arrived yet. No body is read, so the header block is
+// the whole request.
+fn hl_req_end(buf: const u8[:], len: i64) -> i64 {
+    var i: i64 = 0;
+    while i + 3 < len {
+        if buf[i] == 13 && buf[i + 1] == 10 && buf[i + 2] == 13 && buf[i + 3] == 10 {
+            return i + 4;
+        }
+        i = i + 1;
+    }
+    return -1;
+}
+
+fn hl_handle_req(cfd: i64, req: const u8[:], resp: u8[:], keys: const u8[:], koff: const i64[:],
+                 origins: const u8[:], credentials: i64) -> i64 {
+    let n: i64 = req.len;
 
     // The request line decides the answer, and that decision is Goose.
     // Header spans the middleware and the CORS decision need, filled by the scan
@@ -238,7 +288,7 @@ fn hl_handle(cfd: i64, req: u8[:], resp: u8[:], keys: const u8[:], koff: const i
     var key_off: i64 = -1; var key_len: i64 = 0;
     var origin_off: i64 = -1; var origin_len: i64 = 0;
     var line_end: i64 = -1;
-    i = 0;
+    var i: i64 = 0;
     while i + 1 < n {
         if req[i] == 13 && req[i + 1] == 10 {
             line_end = i + 2;
