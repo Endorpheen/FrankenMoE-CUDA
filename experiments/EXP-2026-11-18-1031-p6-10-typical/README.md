@@ -562,3 +562,19 @@ The same seed reproduces the whole run (four draws, the typical-p cut, the kept
 ids and the probabilities byte for byte), and a different seed changes the
 draws. The seed-1 draws are the documented `std::mt19937` sequence, which ties
 this test to the earlier stream verification.
+
+## Hook into the real generation path (staged)
+
+`vendor/flint/src/llama-sampler.cpp` now calls the Goose chain for typical-p when
+the shim is linked in. Details that matter:
+
+- the shim symbol is declared **weak**, so the runtime still builds and runs
+  without it and the native body answers;
+- the stage is **enabled by default** (`GGML_GOOSE_SAMPLER_CHAIN=0` disables it),
+  following the rule that an accepted improvement is on unless switched off;
+- the candidate arrays are copied into plain buffers, the Goose result is copied
+  back, and a counter prints `FG171_TYPICAL goose calls=N kept=M` so real
+  execution can be proven from the log rather than from a symbol table.
+
+`g++ -fsyntax-only` on the modified file passes. A linked build and a real
+generation run are the next step; a model run needs Igor's explicit go-ahead.

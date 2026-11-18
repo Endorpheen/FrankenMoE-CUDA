@@ -1913,6 +1913,30 @@ static const char * llama_sampler_typical_name(const struct llama_sampler * /*sm
     return "typical";
 }
 
+
+// ---- Goose sampler chain hook (P6-10) --------------------------------------
+// The shipped chain module exposes one entry per stage through a generated id in
+// a C shim; when that shim is linked in and the stage is enabled, the Goose
+// implementation answers instead of the native body. The flag exists only to
+// disable the stage (GGML_GOOSE_SAMPLER_CHAIN=0).
+#include <atomic>
+#include <cstdlib>
+#include <cstring>
+
+extern "C" int64_t fg_sampler_chain_call(int64_t op, const float * lv, float * p,
+                                         int64_t * id, int64_t n, float f, int64_t k,
+                                         float f2, float f3) __attribute__((weak));
+
+static std::atomic<unsigned long long> g_goose_chain_calls{0};
+
+static bool fg_goose_chain_enabled() {
+    static const bool on = []() {
+        const char * f = getenv("GGML_GOOSE_SAMPLER_CHAIN");
+        return !(f && strcmp(f, "0") == 0);
+    }();
+    return on;
+}
+
 static void llama_sampler_typical_apply(struct llama_sampler * smpl, llama_token_data_array * cur_p) {
     auto * ctx = (llama_sampler_typical *) smpl->ctx;
 
@@ -1920,6 +1944,35 @@ static void llama_sampler_typical_apply(struct llama_sampler * smpl, llama_token
     // https://github.com/huggingface/transformers/compare/main...cimeister:typical-sampling:typical-pr
     if (ctx->p >= 1.0f) {
         return;
+    }
+
+    if (fg_sampler_chain_call != nullptr && fg_goose_chain_enabled() && cur_p->size > 0) {
+        std::vector<float>   lv(cur_p->size);
+        std::vector<float>   pp(cur_p->size);
+        std::vector<int64_t> ids(cur_p->size);
+        for (size_t i = 0; i < cur_p->size; ++i) {
+            lv[i]  = cur_p->data[i].logit;
+            pp[i]  = cur_p->data[i].p;
+            ids[i] = cur_p->data[i].id;
+        }
+        const int64_t kept = fg_sampler_chain_call(0, lv.data(), pp.data(), ids.data(),
+                                                   (int64_t) cur_p->size, ctx->p, ctx->min_keep,
+                                                   0.0f, 0.0f);
+        if (kept > 0 && kept <= (int64_t) cur_p->size) {
+            for (int64_t i = 0; i < kept; ++i) {
+                cur_p->data[i].logit = lv[i];
+                cur_p->data[i].p     = pp[i];
+                cur_p->data[i].id    = (llama_token) ids[i];
+            }
+            cur_p->size = (size_t) kept;
+            cur_p->sorted = false;
+            const unsigned long long c = ++g_goose_chain_calls;
+            if (c == 1 || (c % 100) == 0) {
+                fprintf(stderr, "FG171_TYPICAL goose calls=%llu kept=%lld\n",
+                        (unsigned long long) c, (long long) kept);
+            }
+            return;
+        }
     }
 
     // Compute the softmax of logits and calculate entropy
