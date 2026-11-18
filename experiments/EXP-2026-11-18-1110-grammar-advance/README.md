@@ -770,3 +770,29 @@ grammar.
 
 Recorded with the evidence rather than patched blindly: the symptom is speed, the cause
 is a wrong decision.
+
+## Cache removed; the slowdown does not change
+
+Rebuilding the flat table on every call removed a real staleness risk, but the timing is
+identical:
+
+```
+on 16.86   off 54.83      (512 tokens, permissive grammar)
+```
+
+So the pointer-keyed cache was not the cause either. The state of the question is now:
+one call per token, one candidate per call, and a 3x difference that cannot be explained
+by the call's own work. What is needed is a direct start/stop timing pair inside the
+hook, which I started and then reverted rather than leaving a half-instrumented
+translation unit in the tree.
+
+Hypotheses left, none tested:
+
+- the resampling path is more frequent than the counter suggests (the counter prints
+  only at fixed intervals, and this has already misled once);
+- `fg_flatten` per call interacts with `grammar.rules` being rebuilt between steps;
+- the difference is not in this hook at all, and `GGML_GOOSE_GRAMMAR` also gates
+  something else on this path.
+
+The next iteration should add a proper `start = now; ...; acc += now - start` pair, which
+is a few lines and settles it in one run.

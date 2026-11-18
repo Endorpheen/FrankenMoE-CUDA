@@ -1394,15 +1394,13 @@ struct fg_flat_rules {
 };
 
 static fg_flat_rules & fg_flatten(const llama_grammar_rules & rules) {
-    static thread_local std::unordered_map<const void *, fg_flat_rules> cache;
-    const void * key = &rules;
-    auto it = cache.find(key);
-    if (it != cache.end() && it->second.ready) {
-        return it->second;
-    }
-    fg_flat_rules f;
-    f.roff.resize(rules.size());
-    f.rlen.resize(rules.size());
+    // Rebuilt on every call: the tables are tiny next to the candidate pass, and a
+    // cached table keyed by address can go stale when a grammar object is rebuilt or
+    // its address reused, which silently produces wrong decisions.
+    static thread_local fg_flat_rules f;
+    f.etype.clear(); f.eval.clear(); f.index.clear();
+    f.roff.assign(rules.size(), 0);
+    f.rlen.assign(rules.size(), 0);
     for (size_t r = 0; r < rules.size(); ++r) {
         f.roff[r] = (int64_t) f.etype.size();
         f.rlen[r] = (int64_t) rules[r].size();
@@ -1414,8 +1412,7 @@ static fg_flat_rules & fg_flatten(const llama_grammar_rules & rules) {
         }
     }
     f.ready = true;
-    cache[key] = std::move(f);
-    return cache[key];
+    return f;
 }
 
 static constexpr int64_t FG_MAXD = 64;
