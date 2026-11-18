@@ -1,74 +1,63 @@
 #!/usr/bin/env python3
 """Emit the grammar wrapper after build-sampler-chain.sh has produced the C.
 
-Kept separate from the chain generator so that a failure here cannot disturb the
-entries that already work. Selection is by the complete ordered type list, and the
-script refuses to act unless exactly one prototype matches.
+The chain is built from `export fn` entry points, so the grammar doors are found by their
+exported names in the generated header and the wrapper is generated from those prototypes.
+The ABI types therefore come from the compiler: a slice whose element type changes cannot
+keep an old hand-typed declaration, which is how the caret-era wrapper drifted.
 """
-import re, sys, os
+import os
+import re
+import sys
 
-SHAPE = (['gg_slice'] * 5 + ['int64_t'] + ['gg_slice'] * 5 + ['int64_t'] +
-         ['gg_slice'] * 9 + ['int64_t'] * 4)
+SLICE = 'fg_slice_rec'
 
-NAMES = ['s_etype', 's_eval', 's_roff', 's_rlen', 's_seed',
-         'v_seedd',
-         's_cand_cp', 's_cp_len', 's_pval', 's_pnr', 's_cand_id',
-         'v_ncand',
-         's_wp', 's_wpd', 's_stacks', 's_stackd', 's_scratch', 's_tmp_rej', 's_tmp_cur',
-         's_rowbuf', 's_rej',
-         'v_maxs', 'v_maxd', 'v_maxcp']
 
-SHAPE_FIRST = ['gg_slice'] * 4 + ['int64_t'] + ['gg_slice'] * 2 + ['int64_t', 'int64_t']
+def prototype(header, symbol):
+    m = re.search(r'^int64_t ' + symbol + r'\(([^)]*)\);', header, re.M)
+    if not m:
+        sys.exit('exported grammar entry point not found in the header: ' + symbol)
+    parts = [q.strip() for q in m.group(1).split(',')]
+    return [(q.rsplit(' ', 1)[0], q.rsplit(' ', 1)[1]) for q in parts]
+
+
+def wrapper(symbol, call_name, params, marker):
+    sig = []
+    body = []
+    args = []
+    # the last parameter is the in-module marker; the host never passes it, it is a constant
+    params = params[:-1]
+    for i, (t, _) in enumerate(params):
+        if t.startswith('sl_'):
+            elem = {'i64': 'int64_t', 'f32': 'float', 'u8': 'uint8_t'}.get(t[3:], t[3:])
+            sig.append('%s a%d' % (SLICE, i))
+            body.append('    %s h%d = { (%s *) a%d.data, a%d.len };' % (t, i, elem, i, i))
+            args.append('h%d' % i)
+        else:
+            sig.append('int64_t a%d' % i)
+            args.append('a%d' % i)
+    args.append(str(marker))
+    return ('\nint64_t %s(%s) {\n%s\n    return %s(%s);\n}\n'
+            % (call_name, ', '.join(sig), '\n'.join(body), symbol, ', '.join(args)))
+
 
 def main(out):
-    src = open(os.path.join(out, 'sampler_chain.c')).read()
-    hits = []
-    for m in re.finditer(r'static int64_t (gg_function_\d+)\(([^)]*)\);', src):
-        params = [q.strip().rsplit(' ', 1)[0].replace('const ', '') for q in m.group(2).split(',')]
-        if params[:-1] == SHAPE:
-            hits.append((m.group(1), params))
-    if len(hits) != 1:
-        sys.exit('grammar shape matched %d prototypes, expected exactly one' % len(hits))
-    func, _ = hits[0]
-
-    first_hits = []
-    for m in re.finditer(r'static int64_t (gg_function_\d+)\(([^)]*)\);', src):
-        params = [q.strip().rsplit(' ', 1)[0].replace('const ', '') for q in m.group(2).split(',')]
-        if params[:-1] == SHAPE_FIRST:
-            first_hits.append(m.group(1))
-    if len(first_hits) != 1:
-        sys.exit('first-set shape matched %d prototypes' % len(first_hits))
-    first = first_hits[0]
-
-    ids = os.path.join(out, 'sampler_chain_ids.h')
-    text = open(ids).read()
-    if 'FG_GRAMMAR_REJECT' not in text:
-        open(ids, 'a').write('#define FG_GRAMMAR_REJECT %s\n' % func)
-    if 'FG_GRAMMAR_FIRST' not in text:
-        open(ids, 'a').write('#define FG_GRAMMAR_FIRST %s\n' % first)
-
-    proto = ('int64_t fg_grammar_reject_call(gg_slice s_etype, gg_slice s_eval, gg_slice s_roff,\n'
-             '                                   gg_slice s_rlen, gg_slice s_seed, int64_t v_seedd,\n'
-             '                                   gg_slice s_cand_cp, gg_slice s_cp_len, gg_slice s_pval,\n'
-             '                                   gg_slice s_pnr, gg_slice s_cand_id, int64_t v_ncand,\n'
-             '                                   gg_slice s_wp, gg_slice s_wpd, gg_slice s_stacks,\n'
-             '                                   gg_slice s_stackd, gg_slice s_scratch, gg_slice s_tmp_rej,\n'
-             '                                   gg_slice s_tmp_cur, gg_slice s_rowbuf, gg_slice s_rej,\n'
-             '                                   int64_t v_maxs, int64_t v_maxd, int64_t v_maxcp)')
-    body = ('{\n    return FG_GRAMMAR_REJECT(%s, 180, 0);\n}\n' % ', '.join(NAMES))
-    # the wrapper joins the existing shim, because a second translation unit that
-    # includes sampler_chain.c would duplicate every symbol
+    header = open(os.path.join(out, 'sampler_chain.h')).read()
     shim = os.path.join(out, 'sampler_chain_shim.c')
     text = open(shim).read()
-    if 'fg_grammar_first_set_call' not in text:
-        open(shim, 'a').write('\nint64_t fg_grammar_first_set_call(gg_slice s_etype, gg_slice s_eval,'
-                              ' gg_slice s_stacks, gg_slice s_stackd, int64_t v_nstacks,'
-                              ' gg_slice s_lo, gg_slice s_hi, int64_t v_maxr) {\n'
-                              '    return FG_GRAMMAR_FIRST(s_etype, s_eval, s_stacks, s_stackd, v_nstacks,'
-                              ' s_lo, s_hi, v_maxr, 181, 0);\n}\n')
-    if 'fg_grammar_reject_call' not in text:
-        open(shim, 'a').write('\n' + proto + '\n' + body)
-    print('grammar entry:', func)
+    if 'typedef struct { void * data; int64_t len; } ' + SLICE not in text:
+        with open(shim, 'a') as f:
+            f.write('\ntypedef struct { void * data; int64_t len; } %s;\n' % SLICE)
+
+    text = open(shim).read()
+    for symbol, call_name, marker in (('fg_grammar_reject', 'fg_grammar_reject_call', 180),
+                                      ('fg_grammar_first_set', 'fg_grammar_first_set_call', 181)):
+        if call_name in text:
+            continue
+        with open(shim, 'a') as f:
+            f.write(wrapper(symbol, call_name, prototype(header, symbol), marker))
+    print('grammar entries: fg_grammar_reject, fg_grammar_first_set')
+
 
 if __name__ == '__main__':
     main(sys.argv[1] if len(sys.argv) > 1 else 'build/sampler-chain')

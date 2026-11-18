@@ -50,14 +50,22 @@ set(LLAMA_CORE_SOURCES
 # exports fg_sampler_*_call, which llama-sampler.cpp uses through weak references.
 set(FG_SAMPLER_CHAIN_DIR ${CMAKE_CURRENT_BINARY_DIR}/goose-sampler-chain)
 add_custom_command(
-    OUTPUT ${FG_SAMPLER_CHAIN_DIR}/sampler_chain_shim.c
+    OUTPUT ${FG_SAMPLER_CHAIN_DIR}/sampler_chain.c ${FG_SAMPLER_CHAIN_DIR}/sampler_chain.h
+           ${FG_SAMPLER_CHAIN_DIR}/sampler_chain_shim.c
     COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/../../../tools/build-sampler-chain.sh ${FG_SAMPLER_CHAIN_DIR}
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../../../goose/sampling/sampler-chain-full.goose
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../../tools/gen-grammar-shim.py
             ${CMAKE_CURRENT_SOURCE_DIR}/../../../tools/build-sampler-chain.sh
     COMMENT "Building the Goose sampler chain")
-set_source_files_properties(${FG_SAMPLER_CHAIN_DIR}/sampler_chain_shim.c
+# The shim is its own translation unit and includes only the generated header, so the
+# generated C is compiled separately and keeps its exported names. `main` is renamed
+# because the chain's root still defines one.
+set_source_files_properties(${FG_SAMPLER_CHAIN_DIR}/sampler_chain.c
                             PROPERTIES COMPILE_DEFINITIONS "main=fg_chain_main")
-list(APPEND LLAMA_CORE_SOURCES ${FG_SAMPLER_CHAIN_DIR}/sampler_chain_shim.c)
+set_source_files_properties(${FG_SAMPLER_CHAIN_DIR}/sampler_chain.h
+                            PROPERTIES HEADER_FILE_ONLY TRUE)
+list(APPEND LLAMA_CORE_SOURCES ${FG_SAMPLER_CHAIN_DIR}/sampler_chain.c
+                               ${FG_SAMPLER_CHAIN_DIR}/sampler_chain_shim.c)
 
 add_library(llama
             ../include/llama.h

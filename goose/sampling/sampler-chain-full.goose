@@ -817,7 +817,7 @@ fn sm_apply_dry(last: i64[:], rc: i64[:], lv: f32[:], id: i64[:],
 }
 
 // single entry for the whole DRY stage
-fn fg_sampler_dry(last: i64[:], rc: i64[:], br_head: i64[:], br_ts: i64[:],
+export fn fg_sampler_dry(last: i64[:], rc: i64[:], br_head: i64[:], br_ts: i64[:],
                   br_tl: i64[:], br_tail: i64[:], lv: f32[:], id: i64[:],
                   n_last: i64, nc: i64, allowed: i64, nb: i64,
                   multiplier: f32, base: f32) -> i64 {
@@ -957,6 +957,13 @@ fn sort4_asc(scr: f32[:], lv: f32[:], id: i64[:], p: f32[:], n: i64) {
 
 // typical-p with the caller's logits left intact: the shifted scores live in
 // scr, and the four arrays move together so logits keep their own values
+// The exported form of fg_sampler_typical cannot be resolved by the compiler
+// (TD-S9); this thin door gives the host a stable name.
+export fn fg_typical_entry(lv: f32[:], p: f32[:], id: i64[:], scr: f32[:], n: i64,
+                           typical_p: f32, min_keep: i64) -> i64 {
+    return fg_sampler_typical(lv, p, id, scr, n, typical_p, min_keep);
+}
+
 fn fg_sampler_typical(lv: f32[:], p: f32[:], id: i64[:], scr: f32[:], n: i64,
                       typical_p: f32, min_keep: i64) -> i64 {
     if n <= 0 || lv.len < n || p.len < n || id.len < n || scr.len < n {
@@ -1003,7 +1010,7 @@ fn fg_sampler_typical(lv: f32[:], p: f32[:], id: i64[:], scr: f32[:], n: i64,
 
 // top-p as the real path uses it: sort by logit descending first (the logits
 // keep their values), then keep the smallest prefix whose mass reaches top_p
-fn fg_sampler_top_p(lv: f32[:], p: f32[:], id: i64[:], n: i64,
+export fn fg_sampler_top_p(lv: f32[:], p: f32[:], id: i64[:], n: i64,
                     top_p: f32, min_keep: i64, marker: i64) -> i64 {
     if n <= 0 || lv.len < n || p.len < n || id.len < n || marker != 171 {
         return -1;
@@ -1034,7 +1041,7 @@ fn fg_sampler_top_p(lv: f32[:], p: f32[:], id: i64[:], n: i64,
 
 // XTC entry for the real path: the caller passes the uniform value it drew, so
 // the RNG stream stays with the caller and this stays pure.
-fn fg_sampler_xtc(lv: f32[:], p: f32[:], id: i64[:], n: i64,
+export fn fg_sampler_xtc(lv: f32[:], p: f32[:], id: i64[:], n: i64,
                   probability: f32, threshold: f32, min_keep: i64, chance: f32,
                   marker: i64) -> i64 {
     if marker != 172 {
@@ -1045,7 +1052,7 @@ fn fg_sampler_xtc(lv: f32[:], p: f32[:], id: i64[:], n: i64,
 
 
 // penalties entry: the recent window arrives as exact token ids in a float slice
-fn fg_sampler_penalties(lv: f32[:], id: i64[:], hist: f32[:],
+export fn fg_sampler_penalties(lv: f32[:], id: i64[:], hist: f32[:],
                         tbl_keys: i64[:], tbl_cnt: i64[:],
                         n: i64, hn: i64, repeat: f32, freq: f32, present: f32) -> i64 {
     return sm_apply_penalties(lv, id, hist, tbl_keys, tbl_cnt, n, hn, repeat, freq, present);
@@ -1053,7 +1060,7 @@ fn fg_sampler_penalties(lv: f32[:], id: i64[:], hist: f32[:],
 
 // adaptive-p entry: the EMA state arrives as scalars, probabilities are scaled and
 // renormalised exactly as the native body does
-fn fg_sampler_adaptive_p(lv: f32[:], p: f32[:], id: i64[:], n: i64,
+export fn fg_sampler_adaptive_p(lv: f32[:], p: f32[:], id: i64[:], n: i64,
                          target: f32, weighted_sum: f32, total_weight: f32,
                          marker: i64) -> i64 {
     if marker != 174 {
@@ -1064,7 +1071,7 @@ fn fg_sampler_adaptive_p(lv: f32[:], p: f32[:], id: i64[:], n: i64,
 
 // mirostat entry: the truncation size from the s_hat estimate; the draw and the
 // EMA update stay with the caller so the RNG stream is untouched
-fn fg_sampler_mirostat(p: f32[:], n: i64, mu: f32, m: i64, n_vocab: f32, marker: i64) -> i64 {
+export fn fg_sampler_mirostat(p: f32[:], n: i64, mu: f32, m: i64, n_vocab: f32, marker: i64) -> i64 {
     if marker != 175 {
         return -1;
     }
@@ -1074,7 +1081,7 @@ fn fg_sampler_mirostat(p: f32[:], n: i64, mu: f32, m: i64, n_vocab: f32, marker:
 // dist: std::discrete_distribution over the probabilities, without storing a
 // computed f64 (the stored form reads as zero on this compiler): the two 32-bit
 // words stay as i64 and the comparison is a single expression.
-fn fg_sampler_dist(p: f32[:], n: i64, state: i64[:], marker: i64) -> i64 {
+export fn fg_sampler_dist(p: f32[:], n: i64, state: i64[:], marker: i64) -> i64 {
     if marker != 176 || n <= 0 {
         return -1;
     }
@@ -1100,7 +1107,7 @@ fn fg_sampler_dist(p: f32[:], n: i64, state: i64[:], marker: i64) -> i64 {
 
 // dist with the two words supplied by the caller, so the RNG stream stays with the
 // host and this function is pure
-fn fg_sampler_dist_words(p: f32[:], n: i64, w1: i64, w2: i64, marker: i64) -> i64 {
+export fn fg_sampler_dist_words(p: f32[:], n: i64, w1: i64, w2: i64, marker: i64) -> i64 {
     if marker != 177 || n <= 0 {
         return -1;
     }
@@ -1125,7 +1132,7 @@ fn fg_sampler_dist_words(p: f32[:], n: i64, w1: i64, w2: i64, marker: i64) -> i6
 // dist sampler exactly as llama_sampler_dist_apply computes it: float expf
 // probabilities, double accumulation, and a double draw formed from the two words
 // the caller obtained from its generator
-fn fg_sampler_dist_pick(lv: f32[:], p: f32[:], n: i64, w1: i64, w2: i64, marker: i64) -> i64 {
+export fn fg_sampler_dist_pick(lv: f32[:], p: f32[:], n: i64, w1: i64, w2: i64, marker: i64) -> i64 {
     if marker != 178 || n <= 0 {
         return -1;
     }
@@ -1165,7 +1172,7 @@ fn fg_sampler_dist_pick(lv: f32[:], p: f32[:], n: i64, w1: i64, w2: i64, marker:
 // temp_ext: dynamic temperature from the entropy of the candidate set, then a
 // double-precision renormalisation. The exp result is not stored in an f64 local
 // (that form reads as zero on this compiler); it is used inside the expressions.
-fn fg_sampler_temp_ext(lv: f32[:], p: f32[:], n: i64,
+export fn fg_sampler_temp_ext(lv: f32[:], p: f32[:], n: i64,
                        temp: f32, delta: f32, exponent: f32, marker: i64) -> i64 {
     if marker != 179 || n <= 0 {
         return -1;
@@ -1629,7 +1636,7 @@ fn g_grammar_reject(etype: i64[:], eval: i64[:], roff: i64[:], rlen: i64[:],
 
 // One entry for the grammar decision: flat rule arrays, flat stacks and the
 // candidate codepoints; returns how many candidates were rejected and sets rej[].
-fn fg_grammar_reject(etype: i64[:], eval: i64[:], roff: i64[:], rlen: i64[:],
+export fn fg_grammar_reject(etype: i64[:], eval: i64[:], roff: i64[:], rlen: i64[:],
                      seed: i64[:], seedd: i64,
                      cand_cp: i64[:], cp_len: i64[:], pval: i64[:], pnr: i64[:],
                      cand_id: i64[:], ncand: i64,
@@ -1708,7 +1715,7 @@ fn g_first_set(etype: i64[:], eval: i64[:],
 
 
 // entry: allowed first-codepoint ranges for the current stacks
-fn fg_grammar_first_set(etype: i64[:], eval: i64[:], stacks: i64[:], stackd: i64[:],
+export fn fg_grammar_first_set(etype: i64[:], eval: i64[:], stacks: i64[:], stackd: i64[:],
                         nstacks: i64, lo: i64[:], hi: i64[:], max_ranges: i64,
                         marker: i64) -> i64 {
     if marker != 181 {
@@ -1720,7 +1727,7 @@ fn fg_grammar_first_set(etype: i64[:], eval: i64[:], stacks: i64[:], stackd: i64
 // Single stable entry point for the shipped library. Generated function ids
 // shift whenever this module changes, so callers must reach the chain through
 // this one function rather than through a generated id.
-fn fg_sampler_chain(op: i64, lv: f32[:], p: f32[:], id: i64[:], n: i64,
+export fn fg_sampler_chain(op: i64, lv: f32[:], p: f32[:], id: i64[:], n: i64,
                     f: f32, k: i64, f2: f32, f3: f32) -> i64 {
     if op == 0 {
         return sm_apply_typical(lv, p, id, n, f, k);

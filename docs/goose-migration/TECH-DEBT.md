@@ -248,3 +248,42 @@ name - but the cause is unknown and belongs to the compiler agent, not to guessi
 
 Until then the chain keeps the caret compiler and the id header, which is the state that is
 accepted and measured.
+
+### TD-S9 resolved: the switch is in
+
+The chain now builds on the canonical compiler with `export fn` entry points:
+
+```
+compiler   /home/end0/AI/LlamaServer/toolchain/goose-2026.3-string/goose
+generate   --standalone --header sampler_chain.h -o sampler_chain.c
+entries    resolved by exported NAME, not by prototype shape
+```
+
+Three things had to be right, and each was found by failing:
+
+1. **`--standalone` together with `--header`.** `--header` alone leaves `gs_rt_start` undefined,
+   because the runtime is expected from a separate link; `--standalone` writes the runtime into
+   the same C, and the result's only undefined symbols are libc and libm.
+2. **The generated C is its own translation unit.** The shim used to `#include` it to avoid
+   duplicate symbols, which is no longer needed and would now duplicate `goose_init`'s runtime.
+   CMake compiles `sampler_chain.c` with `-Dmain=fg_chain_main` and the shim separately.
+3. **The grammar wrapper is generated from the header.** The in-module marker is the last
+   parameter; the host never passes it, so the wrapper drops it and supplies the constant. The
+   parameter count is read from the compiler's prototype, which is why the host's 24-parameter
+   declaration now matches instead of being hand-maintained.
+
+Evidence:
+
+```
+[ON ] '\n\nHere\'s a sentence about the sea:\n\n"The vast ocean stretche'
+[OFF] '\n\nHere\'s a sentence about the sea:\n\n"The vast ocean stretche'
+FG171_DIST goose calls=1
+FG171_TOP_P goose calls=1
+[ON ] decode=49.46   [OFF] decode=50.44
+```
+
+Identical text, real Goose calls through the exported names, and the decode difference is the
+known chain cost, not a new one.
+
+`fg_sampler_typical` remains non-exported with `fg_typical_entry` as its door: the export
+failure is still unexplained and still belongs to the compiler agent.
