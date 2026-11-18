@@ -503,3 +503,16 @@ xtc (shipping build): cases=720 mismatches=0
 60 distributions x threshold {0.1, 0.3} x min_keep {1, 3} x chance {0.0, 0.4,
 0.9}, compared with the native rule including the returned ids. The build/ shim
 path (`tools/build-sampler-chain.sh`, `fg_sampler_chain_call`) works end to end.
+
+## penalties reach the shipped module
+
+`sm_apply_penalties` is part of the shipping file behind dispatch op 6; the
+recent window travels through the float slice as exact token ids. Verified in
+the shipping build:
+
+```
+penalties (shipping build): cases=200 mismatches=0   (logits bitwise)
+```
+
+The dispatch of the shipped module now carries typical-p, top-p, top-k, min-p,
+temperature, XTC and penalties, each gated in that same build.

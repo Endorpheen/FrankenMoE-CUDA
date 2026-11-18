@@ -611,6 +611,39 @@ fn sm_apply_xtc(lv: f32[:], p: f32[:], id: i64[:], n: i64,
     return n;
 }
 
+
+// penalties: repeat, frequency and presence over the recent window. The window
+// arrives through the float slice (token ids are exact below 2^24) because the
+// dispatch carries one integer slice, and p is free before the softmax.
+fn sm_apply_penalties(lv: f32[:], id: i64[:], hist: f32[:], n: i64, hn: i64,
+                      repeat: f32, freq: f32, present: f32) -> i64 {
+    if hn == 0 || (repeat == 1.0 && freq == 0.0 && present == 0.0) {
+        return n;
+    }
+    var i: i64 = 0;
+    while i < n {
+        let tok: i64 = id[i];
+        var cnt: i64 = 0;
+        var h: i64 = 0;
+        while h < hn {
+            if (hist[h] as i64) == tok {
+                cnt = cnt + 1;
+            }
+            h = h + 1;
+        }
+        if cnt > 0 {
+            if lv[i] <= 0.0 {
+                lv[i] = lv[i] * repeat;
+            } else {
+                lv[i] = lv[i] / repeat;
+            }
+            lv[i] = lv[i] - ((cnt as f32) * freq + present);
+        }
+        i = i + 1;
+    }
+    return n;
+}
+
 // Single stable entry point for the shipped library. Generated function ids
 // shift whenever this module changes, so callers must reach the chain through
 // this one function rather than through a generated id.
@@ -633,6 +666,9 @@ fn fg_sampler_chain(op: i64, lv: f32[:], p: f32[:], id: i64[:], n: i64,
     }
     if op == 5 {
         return sm_apply_xtc(lv, p, id, n, f, f2, k, f3);
+    }
+    if op == 6 {
+        return sm_apply_penalties(lv, id, p, n, k, f, f2, f3);
     }
     return -2;
 }
