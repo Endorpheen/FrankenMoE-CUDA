@@ -76,29 +76,20 @@ jobs:
             -DFRANKEN_EDGE0_RUNTIME vendor/flint/src/models/qwen4exp.cpp
 
   goose:
-    name: Goose compose, typecheck, build (needs the pinned compiler)
+    name: Goose compose, typecheck, build
     runs-on: ubuntu-24.04
     env:
-      GOOSE_URL: ${{ secrets.GOOSE_URL }}
-      GOOSE_SHA256: ${{ secrets.GOOSE_SHA256 }}
+      GOOSE_URL: https://github.com/aardappel/goose/releases/download/v2026.4/goose-v2026.4-linux-x64.tar.gz
+      GOOSE_SHA256: 559ad7572df89fcd1273512d8679528bcdf876c252ec1f31608d3808b24125b3
     steps:
       - uses: actions/checkout@v4
       - name: Fetch the pinned Goose compiler
         run: |
-          if [ -z "$GOOSE_URL" ] || ! [[ "$GOOSE_SHA256" =~ ^[a-fA-F0-9]{64}$ ]]; then
-            echo "::error::Configure the pinned Goose URL and its SHA-256."
-            exit 1
-          fi
-          curl -fsSL "$GOOSE_URL" -o /tmp/goose.tar.gz
-          echo "${GOOSE_SHA256}  /tmp/goose.tar.gz" | sha256sum -c -
-          mkdir -p "$HOME/goose"
-          tar -xzf /tmp/goose.tar.gz -C "$HOME/goose" --strip-components=1
-          if [ -x "$HOME/goose/bin/goose" ]; then
-            compiler="$HOME/goose/bin/goose"
-          else
-            compiler="$HOME/goose/goose"
-          fi
-          test -x "$compiler"
-          echo "GOOSE=$compiler" >> "$GITHUB_ENV"
+          curl -fsSL --retry 3 "$GOOSE_URL" -o "$RUNNER_TEMP/goose.tar.gz"
+          echo "${GOOSE_SHA256}  $RUNNER_TEMP/goose.tar.gz" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/goose"
+          tar -xzf "$RUNNER_TEMP/goose.tar.gz" -C "$RUNNER_TEMP/goose" --strip-components=1
+          test -x "$RUNNER_TEMP/goose/goose"
+          echo "GOOSE=$RUNNER_TEMP/goose/goose" >> "$GITHUB_ENV"
       - name: Goose fast gate
         run: bash tools/check.sh fast
