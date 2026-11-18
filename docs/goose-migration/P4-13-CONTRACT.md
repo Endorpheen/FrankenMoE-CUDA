@@ -77,3 +77,18 @@ Differential, against the current implementation, on identical inputs:
 
 Call sites are switched only after all six pass, and the replaced C++ body is
 removed only after the switched paths reproduce the accepted Apex results.
+
+## 7. Live inventory (2026-11-18)
+
+Measured on the two shipped libraries, not assumed:
+
+| lineage | library sha | Goose allocator symbols (`fg161*`) | public allocator API |
+|---|---|---:|---|
+| current baseline (accepted) | `23363cbd…` | **0** | `ggml_backend_alloc_ctx_tensors[_from_buft[_size]]`, `ggml_backend_buft_alloc_buffer[_n]`, `ggml_backend_buffer_free`, `ggml_backend_buffer_reset`, `ggml_backend_tensor_alloc` |
+| stage-run lineage | stage `libggml-base.so.0` | 2 exported, module called internally | same API |
+
+Consequence: on the current baseline the allocator is entirely native C++, and
+the Goose allocator module exists only in the other lineage. P4-13 therefore
+adds the adapter to the baseline; it does not merge two Goose interfaces. The
+adapter surface is exactly the public API above, with the block tables owned by
+the stream source as agreed in the contract.
