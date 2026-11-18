@@ -415,6 +415,19 @@ struct common_sampler * common_sampler_init(
         GGML_ASSERT(false && "unknown mirostat version");
     }
 
+    // The grammar sampler is created above but was never inserted into the chain, so
+    // in this tree it can only validate the selected token. Inserting it before the
+    // truncating samplers restores candidate filtering; it is behind a flag because it
+    // changes behaviour for every grammar user.
+    {
+        const char * f = getenv("GGML_GRAMMAR_IN_CHAIN");
+        if (grmr != nullptr && f != nullptr && strcmp(f, "0") != 0) {
+            llama_sampler_chain_add(chain, grmr);
+            grmr = nullptr;
+            fprintf(stderr, "FG171_GRAMMAR_CHAIN grammar sampler placed first\n");
+        }
+    }
+
     for (auto * smpl : samplers) {
         llama_sampler_chain_add(chain, smpl);
     }

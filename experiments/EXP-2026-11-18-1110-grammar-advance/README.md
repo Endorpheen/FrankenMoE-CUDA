@@ -650,3 +650,21 @@ This closes the question that was left open. What remains for P6-10's grammar it
 deliberate decision: insert the grammar sampler at the upstream position (before top_k)
 and then re-run the comparison; that is new wiring, and it changes behaviour for every
 grammar user, so it is not done here silently.
+
+## Flag-gated insertion did not take effect
+
+The insertion was added behind `GGML_GRAMMAR_IN_CHAIN=1`, but the run shows its marker
+zero times and `cur_p=1` is unchanged:
+
+```
+FG171_GRAMMAR_CHAIN count: 0
+FG171_GRAMMAR_SIZES cur_p=1 candidates=1 stacks=1
+```
+
+So either the function containing that assembly is not the one the server uses, or
+`grmr` is null at that point in the server's path. The flag is inert, which is the safe
+outcome, but it also means the placement question is still open: the next step is to
+locate where the server actually assembles its sampler chain (the server sources here
+contain no grammar wiring, so it may be assembled in a path we have not read).
+
+Recorded as a factual result: nothing changed, and no claim of filtering is made.
