@@ -863,3 +863,27 @@ Consequence: the pivot target is reachable only by either
 
 The build logs and the exact missing ids are recorded so this is a fact, not an
 impression.
+
+## Triple A/B on the accepted profile: memory identical, decode not yet valid
+
+`tools/p610-ab.sh`, accepted server, our flint library, profile with
+`--moe-cache-mib 4992`, 7001-token prompts, three runs per side:
+
+```
+on  r1 prefill=2473.98 decode=22.72  r2 3095.65/29.45  r3 3127.61/41.89
+on  vram_load=9462 vram_peak=10708 rss_kb=21631948 goose_calls=3
+off r1 prefill=2460.06 decode=32.26  r2 3136.27/44.00  r3 3167.60/56.26
+off vram_load=9462 vram_peak=10708 rss_kb=21629092 goose_calls=0
+```
+
+What is valid: VRAM identical to the megabyte, RSS +2.8 MB (+0.01 %), prefill
+medians 3095.7 vs 3136.3 tok/s (-1.3 %), and the stages executed (3 calls) versus
+not (0).
+
+What is **not** valid: `predicted_n=2` in every run. The model stopped after two
+tokens, so the decode figures are two-token startup values, not steady-state
+throughput, and they must not be compared with the 39-55 tok/s references. The
+spread (22.7 to 56.3) shows the same thing.
+
+Next: request with `ignore_eos` so 512 tokens are actually produced, then the
+decode column becomes meaningful and the medians can be compared.
