@@ -45,6 +45,38 @@ static void client(int port, const std::string & request, int echo_fd) {
     _exit(0);
 }
 
+// One full exchange with a key set AND a CORS policy.
+static std::string exchange_full(const std::string & request, const std::string & keys,
+                                 std::vector<int64_t> koff, const std::string & origins,
+                                 int64_t credentials, int * serve_rc) {
+    int64_t port_out[1] = { 0 };
+    const int64_t fd = hl_open((sl_i64){ port_out, 1 });
+    check(fd >= 0, "hl_open (full)");
+    if (fd < 0) { *serve_rc = -1; return {}; }
+    int pfd[2];
+    if (pipe(pfd) != 0) { hl_close(fd); *serve_rc = -1; return {}; }
+    const pid_t pid = fork();
+    if (pid == 0) { close(pfd[0]); client((int) port_out[0], request, pfd[1]); _exit(20); }
+    close(pfd[1]);
+    std::vector<uint8_t> req_buf(8192, 0), resp_buf(4096, 0);
+    const int64_t rc = hl_serve_full(fd, (sl_u8){ req_buf.data(), (int64_t) req_buf.size() },
+                                     (sl_u8){ resp_buf.data(), (int64_t) resp_buf.size() },
+                                     (sl_u8){ (uint8_t *) keys.data(), (int64_t) keys.size() },
+                                     (sl_i64){ koff.data(), (int64_t) koff.size() },
+                                     (sl_u8){ (uint8_t *) origins.data(), (int64_t) origins.size() },
+                                     credentials);
+    *serve_rc = (int) rc;
+    hl_close(fd);
+    std::string echo; char buf[4096]; ssize_t n;
+    while ((n = read(pfd[0], buf, sizeof(buf))) > 0) echo.append(buf, (size_t) n);
+    close(pfd[0]);
+    int status = 0; waitpid(pid, &status, 0);
+    check(WIFEXITED(status) && WEXITSTATUS(status) == 0, "the client completed (full)");
+    const std::string mine((const char *) resp_buf.data(), (size_t) (rc > 0 ? rc : 0));
+    check(echo == mine, "wire equals buffer (full)");
+    return echo;
+}
+
 // One full exchange with a configured key set; returns what the client received.
 static std::string exchange_keyed(const std::string & request, const std::string & keys,
                                   std::vector<int64_t> koff, int * serve_rc) {
@@ -194,6 +226,39 @@ int main() {
         int rc = 0;
         const std::string got = exchange("OPTIONS /health HTTP/1.1\r\n\r\n", &rc);
         check(got.rfind("HTTP/1.1 204 No Content\r\n", 0) == 0, "preflight is 204");
+    }
+
+    // ---- CORS: a literal policy is emitted on the preflight ----
+    {
+        int rc = 0;
+        const std::string got = exchange_full("OPTIONS /health HTTP/1.1\r\n\r\n", "",
+                                              { 0 }, "*", 0, &rc);
+        check(got.rfind("HTTP/1.1 204 No Content\r\n", 0) == 0, "cors preflight is 204");
+        check(got.find("Access-Control-Allow-Origin: *\r\n") != std::string::npos,
+              "allow-origin is the literal");
+        check(got.find("Access-Control-Allow-Credentials: false\r\n") != std::string::npos,
+              "credentials false is emitted");
+    }
+
+    // ---- CORS with credentials echoes the request Origin ----
+    {
+        int rc = 0;
+        const std::string got = exchange_full(
+            "OPTIONS /health HTTP/1.1\r\nOrigin: http://example.test\r\n\r\n", "",
+            { 0 }, "*", 1, &rc);
+        check(got.find("Access-Control-Allow-Origin: http://example.test\r\n") != std::string::npos,
+              "the origin is echoed when credentials are on");
+        check(got.find("Access-Control-Allow-Credentials: true\r\n") != std::string::npos,
+              "credentials true is emitted");
+    }
+
+    // ---- no policy, no header ----
+    {
+        int rc = 0;
+        const std::string got = exchange_full("OPTIONS /health HTTP/1.1\r\n\r\n", "",
+                                              { 0 }, "", 0, &rc);
+        check(got.find("Access-Control-Allow-Origin") == std::string::npos,
+              "no policy means no CORS header");
     }
 
     // ---- a malformed request line gets 400 ----

@@ -162,6 +162,15 @@ export fn hl_serve(fd: i64, req: u8[:], resp: u8[:]) -> i64 {
 // skips validation entirely, which is what native does when no key is configured.
 export fn hl_serve_keyed(fd: i64, req: u8[:], resp: u8[:], keys: const u8[:],
                          koff: const i64[:]) -> i64 {
+    return hl_serve_full(fd, req, resp, keys, koff, "", 0);
+}
+
+// The full exchange: key set plus CORS policy. `origins` is the configured
+// Access-Control-Allow-Origin mode ("*", a literal, or empty to emit nothing) and
+// `credentials` selects whether the credential header is emitted. The origin of the
+// request is echoed only where cors_allow_origin says so.
+export fn hl_serve_full(fd: i64, req: u8[:], resp: u8[:], keys: const u8[:],
+                        koff: const i64[:], origins: const u8[:], credentials: i64) -> i64 {
     if req.len < 1 || resp.len < 1 {
         return -1;
     }
@@ -187,6 +196,11 @@ export fn hl_serve_keyed(fd: i64, req: u8[:], resp: u8[:], keys: const u8[:],
     }
 
     // The request line decides the answer, and that decision is Goose.
+    // Header spans the middleware and the CORS decision need, filled by the scan
+    // below and read after routing.
+    var auth_off: i64 = -1; var auth_len: i64 = 0;
+    var key_off: i64 = -1; var key_len: i64 = 0;
+    var origin_off: i64 = -1; var origin_len: i64 = 0;
     var line_end: i64 = -1;
     i = 0;
     while i + 1 < n {
@@ -205,6 +219,34 @@ export fn hl_serve_keyed(fd: i64, req: u8[:], resp: u8[:], keys: const u8[:],
         if rq_parse_line_impl(req[0 .. line_end], parsed) == 0 {
             let mo: i64 = parsed[1]; let ml: i64 = parsed[2];
             let to: i64 = parsed[3]; let tl: i64 = parsed[4];
+            // The middleware reads two headers out of the request; both are
+            // optional and both are compared by key_authorize, not here.
+
+            var hp: i64 = line_end;
+            while hp + 1 < n {
+                // end of this header line
+                var he: i64 = hp;
+                while he + 1 < n && !(req[he] == 13 && req[he + 1] == 10) {
+                    he = he + 1;
+                }
+                if he + 1 >= n {
+                    break;
+                }
+                if he == hp {
+                    break; // the empty line ends the block
+                }
+                var ho: i64[5] = [0,0,0,0,0];
+                if rq_parse_header_impl(req[hp .. he + 2], ho) == 0 {
+                    if hl_ci_eq(req, hp + ho[1], ho[2], "Authorization") {
+                        auth_off = hp + ho[3]; auth_len = ho[4];
+                    } else if hl_ci_eq(req, hp + ho[1], ho[2], "X-Api-Key") {
+                        key_off = hp + ho[3]; key_len = ho[4];
+                    } else if hl_ci_eq(req, hp + ho[1], ho[2], "Origin") {
+                        origin_off = hp + ho[3]; origin_len = ho[4];
+                    }
+                }
+                hp = he + 2;
+            }
             var mcode: i64 = 0;
             if hl_eq(req, mo, ml, "GET") {
                 mcode = 1;
@@ -234,33 +276,6 @@ export fn hl_serve_keyed(fd: i64, req: u8[:], resp: u8[:], keys: const u8[:],
                 let cat: i64 = route_id(mcode, req[to .. to + plen]);
                 status = if cat == 0 { 404 } else { 200 };
                 if status == 200 {
-                    // The middleware reads two headers out of the request; both are
-                    // optional and both are compared by key_authorize, not here.
-                    var auth_off: i64 = -1; var auth_len: i64 = 0;
-                    var key_off: i64 = -1; var key_len: i64 = 0;
-                    var hp: i64 = line_end;
-                    while hp + 1 < n {
-                        // end of this header line
-                        var he: i64 = hp;
-                        while he + 1 < n && !(req[he] == 13 && req[he + 1] == 10) {
-                            he = he + 1;
-                        }
-                        if he + 1 >= n {
-                            break;
-                        }
-                        if he == hp {
-                            break; // the empty line ends the block
-                        }
-                        var ho: i64[5] = [0,0,0,0,0];
-                        if rq_parse_header_impl(req[hp .. he + 2], ho) == 0 {
-                            if hl_ci_eq(req, hp + ho[1], ho[2], "Authorization") {
-                                auth_off = hp + ho[3]; auth_len = ho[4];
-                            } else if hl_ci_eq(req, hp + ho[1], ho[2], "X-Api-Key") {
-                                key_off = hp + ho[3]; key_len = ho[4];
-                            }
-                        }
-                        hp = he + 2;
-                    }
                     var empty_paths: i64[1] = [0];
                     let allowed: i64 = key_authorize(keys, koff, req[to .. to + plen],
                                                      "", empty_paths,
@@ -274,11 +289,56 @@ export fn hl_serve_keyed(fd: i64, req: u8[:], resp: u8[:], keys: const u8[:],
         }
     }
 
+    // The CORS allow-origin decision belongs to cors_allow_origin; the listener only
+    // writes what it says. An empty policy emits nothing, which is what a server with
+    // no cors_origins configured does.
+    var allow_buf: u8[256] = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+    var allow_len: i64 = 0;
+    if status == 204 && origins.len > 0 {
+        var cres: i64[2] = [0, 0];
+        let origin_slice: const u8[:] = if origin_off >= 0 { req[origin_off .. origin_off + origin_len] } else { req[0 .. 0] };
+        var ob: u8[256] = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+        let n = cors_allow_origin(origins, credentials, origin_slice, 0, ob, cres);
+        if cres[0] != 0 && n >= 0 {
+            allow_len = n;
+            var k: i64 = 0;
+            while k < n {
+                allow_buf[k] = ob[k];
+                k = k + 1;
+            }
+        }
+    }
+
     var at: i64 = 0;
     at = rs_status_line_impl(status, resp);
     if at < 0 {
         hl_cl(cfd);
         return -1;
+    }
+    if allow_len > 0 {
+        at = rs_header_impl("Access-Control-Allow-Origin", allow_buf[0 .. allow_len], resp, at);
+        if at < 0 {
+            hl_cl(cfd);
+            return -1;
+        }
+        var cred: u8[8] = [0,0,0,0,0,0,0,0];
+        let cn = cors_credentials_text(credentials, cred);
+        if cn > 0 {
+            at = rs_header_impl("Access-Control-Allow-Credentials", cred[0 .. cn], resp, at);
+            if at < 0 {
+                hl_cl(cfd);
+                return -1;
+            }
+        }
+        var ct: u8[64] = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+        let tn = cors_preflight_type(ct);
+        if tn > 0 {
+            at = rs_header_impl("Content-Type", ct[0 .. tn], resp, at);
+            if at < 0 {
+                hl_cl(cfd);
+                return -1;
+            }
+        }
     }
     at = rs_header_impl("Content-Length", if status == 200 { "2" } else { "0" }, resp, at);
     if at < 0 {
