@@ -745,3 +745,21 @@ matches.
 
 Still missing from the live path: adaptive-p and mirostat (they need sampler
 selection in the server settings) and `dist`/`temp_ext` (TD-S1).
+
+## DRY default-on, fixed seed reproducible on the live path
+
+```
+run1: " Paris, and its population is approximately "
+run2: " Paris, and its population is approximately "      same-seed identical: YES
+other prompt: " Berlin, with a population of around "
+counters: DRY, PENALTIES, TOP_P, TYPICAL
+
+[OFF] " Paris, and its population is approximately "      counters=0
+```
+
+Two identical requests with seed 42 produce byte-identical text while all four
+stages execute; a different prompt produces different text, so the equality is
+not a constant answer; and the same request with every stage disabled produces
+the same text with no counters.
+
+DRY is default-on now, with the module gate and this live evidence behind it.

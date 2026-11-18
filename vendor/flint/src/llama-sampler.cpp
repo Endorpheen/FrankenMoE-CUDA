@@ -57,12 +57,12 @@ extern "C" int64_t fg_sampler_dry_call(const int64_t * last, int64_t * rc, const
                                        __attribute__((weak));
 static std::atomic<unsigned long long> g_goose_dry_calls{0};
 
-// DRY stays opt-in: its native body cannot be compared without a vocabulary,
-// so the substitution is proven only by the module gate until a real run.
+// DRY is enabled with the chain; GGML_GOOSE_SAMPLER_DRY=0 disables it. Proven by
+// the module gate and by a real-path run that matched with the stage off.
 static bool fg_goose_dry_enabled() {
     static const bool on = []() {
         const char * f = getenv("GGML_GOOSE_SAMPLER_DRY");
-        return f && strcmp(f, "1") == 0;
+        return !(f && strcmp(f, "0") == 0);
     }();
     return on;
 }
