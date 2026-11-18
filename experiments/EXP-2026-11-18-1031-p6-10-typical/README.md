@@ -578,3 +578,24 @@ the shim is linked in. Details that matter:
 
 `g++ -fsyntax-only` on the modified file passes. A linked build and a real
 generation run are the next step; a model run needs Igor's explicit go-ahead.
+
+## Link step: where it can and cannot go
+
+The working runtime build directory `build/expert-tier-franken-cuda` is
+configured from `work/llama.cpp-integration`, which is out of bounds by the
+repository rules, so the generated chain cannot be added through that
+CMakeLists. The CMake edit in `vendor/flint` was therefore reverted rather than
+left half-applied.
+
+What exists now and is verified:
+
+- `build/sampler-chain/sampler_chain_shim.c` plus its generated C (195 KB) and
+  the id header, produced by `tools/build-sampler-chain.sh`;
+- the shim object exports `fg_sampler_chain_call` and `fg_sampler_dry_call`;
+- the weak reference behaves as intended in a link test: a program declaring it
+  weakly prints `linked=NO` without the object and `linked=YES` with it, so the
+  runtime works with or without the chain;
+- `llama-sampler.cpp` carries the hook and passes `-fsyntax-only`.
+
+The link must therefore be done in a build of our own (a separate directory with
+the toolchain script), not inside the user's working tree copy.
