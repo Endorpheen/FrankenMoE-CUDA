@@ -5,7 +5,8 @@
 #include <vector>
 extern "C" int64_t g_reject_call(const int64_t*, const int64_t*, const int64_t*, const int64_t*,
                                  const int64_t*, int64_t, const int64_t*, const int64_t*,
-                                 int64_t*, int64_t*, int64_t, int64_t*, int64_t, int64_t);
+                                 int64_t*, int64_t*, int64_t, const int64_t*, const int64_t*,
+                                 int64_t*, int64_t, int64_t);
 static int fails = 0, cases = 0;
 
 static void one(const char * name, llama_grammar_rules & rules, llama_grammar_stack stack,
@@ -33,8 +34,9 @@ static void one(const char * name, llama_grammar_rules & rules, llama_grammar_st
         cpl[i] = (int64_t) cps[i].size();
         for (size_t j = 0; j < cps[i].size() && j < (size_t) maxcp; ++j) cp[i*maxcp + j] = (int64_t) cps[i][j];
     }
+    std::vector<int64_t> pv(cps.size(), 0), pn(cps.size(), 0);
     g_reject_call(et, ev, ro, rl, st, (int64_t) stack.size(), cp.data(), cpl.data(), cur.data(),
-                  rejv.data(), (int64_t) cps.size(), scratch.data(), 8, maxcp);
+                  rejv.data(), (int64_t) cps.size(), pv.data(), pn.data(), scratch.data(), 8, maxcp);
 
     cases++;
     for (size_t i = 0; i < cps.size(); ++i) {
@@ -70,6 +72,33 @@ int main() {
     llama_grammar_stack s2; s2.push_back(r2[0].data());
     one("range", r2, s2, {{'a'},{'d'},{'Z'},{'c','c'}}, et2, ev2, ro2, rl2, st2);
 
+    // partial UTF-8: no codepoints, incomplete byte sequence
+    {
+        llama_grammar_rules r3(1);
+        r3[0].push_back({LLAMA_GRETYPE_CHAR,'a'});
+        r3[0].push_back({LLAMA_GRETYPE_CHAR_RNG_UPPER,'z'});
+        r3[0].push_back({LLAMA_GRETYPE_END,0});
+        int64_t et3[8] = {3,5,0,0,0,0,0,0};
+        int64_t ev3[8] = {'a','z',0,0,0,0,0,0};
+        int64_t ro3[1] = {0}, rl3[1] = {3}, st3[8] = {0,0,0,0,0,0,0,0};
+        llama_grammar_stack s3; s3.push_back(r3[0].data());
+        llama_grammar_stacks stacks{s3};
+        llama_grammar_candidates cands;
+        static uint32_t z1[1] = {0}, z2[1] = {0};
+        llama_partial_utf8 p1{}; p1.value = 1; p1.n_remain = 1;
+        llama_partial_utf8 p2{}; p2.value = 2; p2.n_remain = 1;
+        cands.push_back({0, z1, p1, 0});
+        cands.push_back({1, z2, p2, 0});
+        auto rej = llama_grammar_reject_candidates(r3, stacks, cands);
+        int native[2] = {0,0};
+        for (auto & r : rej) native[r.index] = 1;
+
+        int64_t cp3[2] = {0,0}, cpl3[2] = {0,0}, cur3[2] = {0,0}, rej3[2] = {0,0};
+        int64_t pv3[2] = {1,2}, pn3[2] = {1,1}, sc3[64] = {0};
+        g_reject_call(et3, ev3, ro3, rl3, st3, 1, cp3, cpl3, cur3, rej3, 2, pv3, pn3, sc3, 8, 2);
+        cases++;
+        for (int i = 0; i < 2; ++i) if (native[i] != rej3[i]) { fails++; printf("MISMATCH partial cand %d native=%d goose=%lld\n", i, native[i], (long long) rej3[i]); }
+    }
     printf("reject: cases=%d fails=%d\n", cases, fails);
     return fails ? 1 : 0;
 }

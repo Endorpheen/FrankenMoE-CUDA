@@ -122,7 +122,9 @@ the stack ran out was accepted instead of rejected.
 Scope of this version, stated so it is not mistaken for the whole function:
 
 - one stack (the native combines several by intersecting their rejects);
-- no partial UTF-8 path yet (`match_partial_char` is ported and gated, not wired);
+- partial UTF-8 is wired: a candidate whose codepoints are exhausted but whose byte
+  sequence is incomplete is rejected exactly when the class cannot complete it
+  (third gated case, native and Goose agree);
 - no `TOKEN`/`TOKEN_NOT` rules;
 - the rule-reference case expands only the first alternate.
 

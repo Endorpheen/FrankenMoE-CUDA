@@ -34,6 +34,62 @@ fn g_match_char(etype: i64[:], eval: i64[:], pos_in: i64, chr: i64) -> i64 {
 }
 
 
+// match_partial_char: can a partial UTF-8 sequence still satisfy the class at pos?
+//   n_remain = number of continuation bytes still expected, value = bits so far
+fn g_match_partial(etype: i64[:], eval: i64[:], pos_in: i64, value_in: i64, n_remain: i64) -> i64 {
+    var pos: i64 = pos_in;
+    let t0: i64 = etype[pos];
+    let positive: bool = t0 == 3 || t0 == 7;
+    let partial_value: i64 = value_in;
+    if n_remain < 0 || (n_remain == 1 && partial_value < 2) {
+        return 0;
+    }
+    var shift: i64 = n_remain * 6;
+    var low: i64 = partial_value * pow2(shift);
+    var high: i64 = low + (pow2(shift) - 1);
+    if low == 0 {
+        if n_remain == 2 {
+            low = 2048;
+        } else if n_remain == 3 {
+            low = 65536;
+        }
+    }
+    var done: bool = false;
+    while !done {
+        if etype[pos + 1] == 5 {
+            if eval[pos] <= high && low <= eval[pos + 1] {
+                if positive { return 1; }
+                return 0;
+            }
+            pos = pos + 2;
+        } else if etype[pos] == 7 {
+            return 1;
+        } else {
+            if low <= eval[pos] && eval[pos] <= high {
+                if positive { return 1; }
+                return 0;
+            }
+            pos = pos + 1;
+        }
+        if etype[pos] != 6 {
+            done = true;
+        }
+    }
+    if positive { return 0; }
+    return 1;
+}
+
+fn pow2(n: i64) -> i64 {
+    var v: i64 = 1;
+    var i: i64 = 0;
+    while i < n {
+        v = v * 2;
+        i = i + 1;
+    }
+    return v;
+}
+
+
 // reject_candidates for one stack, single-codepoint candidates (no partial UTF-8).
 // rej[i] = 1 when candidate i is rejected. The stack transition after a class is
 // candidate independent, so the descent is iterative instead of recursive.
@@ -41,6 +97,7 @@ fn g_match_char(etype: i64[:], eval: i64[:], pos_in: i64, chr: i64) -> i64 {
 fn g_reject(etype: i64[:], eval: i64[:], roff: i64[:], rlen: i64[:],
             st: i64[:], std_in: i64,
             cand_cp: i64[:], cp_len: i64[:], curs: i64[:], rej: i64[:], ncand: i64,
+            pval: i64[:], pnr: i64[:],
             scratch: i64[:], maxd: i64, maxcp: i64) -> i64 {
     var depth: i64 = std_in;
     var i: i64 = 0;
@@ -65,6 +122,14 @@ fn g_reject(etype: i64[:], eval: i64[:], roff: i64[:], rlen: i64[:],
             var next_depth: i64 = depth - 1;
             i = 0;
             while i < ncand {
+                if rej[i] == 0 && curs[i] >= cp_len[i] && pnr[i] > 0 {
+                    // codepoints exhausted but the byte sequence is incomplete: the
+                    // class must be able to complete it, otherwise reject
+                    if g_match_partial(etype, eval, pos, pval[i], pnr[i]) == 0 {
+                        rej[i] = 1;
+                        alive = alive - 1;
+                    }
+                }
                 if rej[i] == 0 && curs[i] < cp_len[i] {
                     let r = g_match_char(etype, eval, pos, cand_cp[i * maxcp + curs[i]]);
                     if r > 0 {
@@ -141,8 +206,10 @@ fn main() {
     let cpl: i64[4] = [1, 1, 0, 0];
     let cur: i64[4] = [0, 0, 0, 0];
     let rej: i64[4] = [0, 0, 0, 0];
+    let pv: i64[4] = [0, 0, 0, 0];
+    let pn: i64[4] = [0, 0, 0, 0];
     let sc: i64[8] = [0, 0, 0, 0, 0, 0, 0, 0];
-    let r = g_reject(et, ev, ro, rl, st, 1, cp, cpl, cur, rej, 2, sc, 8, 4);
+    let r = g_reject(et, ev, ro, rl, st, 1, cp, cpl, cur, rej, 2, pv, pn, sc, 8, 4);
     if r < 0 {
         return;
     }
