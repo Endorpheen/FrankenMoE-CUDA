@@ -46,3 +46,14 @@ It failed 747 of 900 cases, returning a constant 5-token cut where the native
 algorithm cut at 2, which points at the probability array not being aligned with
 the sorted order rather than at the cut rule. Reverted, not shipped. The
 validated typical-p (1800/1800) remains the state of this card.
+
+## Unsorted Top-P, second attempt (reverted, sharper diagnosis)
+
+Rewriting the filter so the probabilities are recomputed from the sorted logits
+(no second array to fall out of alignment) produced the identical failure:
+747/900, constant cut at 5, and equal-count cases still mismatching in the kept
+ids. Since the probability path was removed as a suspect, the remaining cause is
+the order/semantics of `sm_partial_sort` (the module's top-k sort) when it is
+used as a full descending sort: its comparator or its placement of results does
+not match `std::sort` descending. The next attempt must verify the primitive on
+a fixed array before the filter is rebuilt on it.
