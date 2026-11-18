@@ -662,6 +662,32 @@ fn gate_dispatch(op: i64, lv: f32[:], p: f32[:], id: i64[:], n: i64, f: f32, k: 
     if op == 10 {
         return k;
     }
+    if op == 16 {
+        // same selection, but the draw and every normalised prefix are written
+        // back into p so a single fixed case can be read directly
+        var dsum: f64 = 0.0;
+        var di: i64 = 0;
+        while di < n {
+            dsum = dsum + (lv[di] as f64);
+            di = di + 1;
+        }
+        let du: f64 = mt_canonical(id);
+        var dpref: f64 = 0.0;
+        var dacc: f64 = 0.0;
+        var dsel: i64 = n - 1;
+        di = 0;
+        while di < n {
+            dpref = dpref + (lv[di] as f64);
+            let dcp: f64 = dpref / dsum;
+            p[di] = dcp as f32;
+            if dcp >= du && dsel == n - 1 && di < n {
+                dsel = di;
+            }
+            di = di + 1;
+        }
+        p[0] = du as f32;
+        return dsel;
+    }
     if op == 15 {
         // scaled view of mt_canonical: floor(u * 2^32), expected to be the
         // second 32-bit word of the pair

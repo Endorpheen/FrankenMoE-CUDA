@@ -334,3 +334,23 @@ So the draw is correct and the zero-index result comes from inside
 `sm_sample_dist`: either the `f32` to `f64` conversion of the weights or the
 prefix walk. The next attempt must print the computed `u` and the prefix values
 for one fixed case (n=8, weights 1..8, seed 1) instead of another full sweep.
+
+## The draw is lost only when stored in a local f64
+
+Single fixed case (n=8, weights 1..8, seed 1), both branches in the same
+dispatch, same `mt_canonical(id)` call:
+
+```
+op 15: (mt_canonical(id) * 2^32) as i64   -> 4282876139   (correct for seed 1)
+op 16: let du: f64 = mt_canonical(id);    -> p[0] = du as f32 prints 0
+        selection then returns index 0
+```
+
+The prefixes in the same op 16 are correct (0.0833, 0.1667, 0.2778, 0.4167,
+0.5833, 0.7778, 1.0), so only the draw is lost. Using the value inside an
+expression keeps it; assigning it to a local `f64` and comparing it later yields
+zero. That is a codegen defect, not a sampling one, and it is the real reason the
+dist gate failed while `sm_mt_next` and `mt_canonical` both measured correct.
+
+Minimal repro to hand to the compiler: a function returning `f64` built from two
+i64 calls, stored in a local, then compared/printed - the stored value is 0.
