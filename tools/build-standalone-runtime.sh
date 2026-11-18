@@ -10,8 +10,13 @@
 #                                  helpers, the one pthread_once)
 #   integration/goose-standalone/  per-stage header shims, the v4 host, the bindings
 #
-# The link needs libc, libm and pthread only: no ggml, no llama, no libstdc++.
-# `ldd` on the result shows three entries, and `nm` shows no C++ symbols.
+# The link does NOT need libllama. It does need libggml-base for the graph and
+# tensor substrate, and libggml-base.a contains C++ objects, so libstdc++ and
+# libgomp arrive with it - see the note at the link step below. Our own sources are
+# C. ldd on the result shows libstdc++, libm, libgomp, libgcc_s, libc; nm shows two
+# defined C++ symbols, both gguf_write_to_buf from libggml-base, and no libllama.
+#
+# Details and the measurements: docs/goose-migration/STANDALONE-DEPS.md.
 #
 # Generated C is not committed; the unit is built here. The shims are committed.
 #
@@ -41,10 +46,16 @@ _need_unit=0
 if [ ! -f "$ROOT/build/goose-main/main.c" ]; then
     _need_unit=1
 else
+    # By content, not by date. Timestamps cannot see a unit that was copied into
+    # place: build/goose-main held a listener without hl_serve_full while every
+    # date on it was newer than the sources. The composer writes the hash of what
+    # it read, and the comparison is over the same inputs.
+    _want=$(cd "$ROOT" && { sed -n '1,400p' tools/build-main-runtime.sh; \
+        find goose -name '*.goose' -print0 | sort -z | xargs -0 sha256sum; } \
+        | sha256sum | cut -d' ' -f1)
+    _have=$(cat "$ROOT/build/goose-main/.source-sha256" 2>/dev/null || true)
+    if [ "$_want" != "$_have" ]; then _need_unit=1; fi
     if [ "$ROOT/tools/build-main-runtime.sh" -nt "$ROOT/build/goose-main/main.c" ]; then _need_unit=1; fi
-    if [ -n "$(find "$ROOT/goose" -name '*.goose' -newer "$ROOT/build/goose-main/main.c" 2>/dev/null | head -1)" ]; then
-        _need_unit=1
-    fi
 fi
 if [ "$_need_unit" -eq 1 ]; then
     printf '  unit:   stale or missing, rebuilding\n'
@@ -143,6 +154,18 @@ if [ -d "$SUB" ] && [ -f "$ROOT/integration/goose-standalone/host_v4.c" ]; then
     $CXX -O1 -Wl,--gc-sections "$OUT/tokenize-main.o" "$OUT/main-gc.o" "$OUT/host.o" \
         -L"$SUB" -lggml-base -lggml -lggml-cpu -lm -pthread -o "$OUT/frankenmoe-tokenize"
     printf '  cli:    %s\n' "$OUT/frankenmoe-tokenize"
+
+    # The HTTP entry point. Before this existed the listener was a set of symbols in
+    # the artifact and no executable path reached them, which is not the same thing.
+    $CC -O1 -std=c11 -w -I "$ROOT/build/goose-main" -I "$ROOT/integration/m1/host" \
+        -I "$OUT/inc" \
+        -c "$ROOT/integration/goose-standalone/cli/serve-main.c" -o "$OUT/serve-main.o"
+    # -fopenmp for the same reason the v4 link needs it: libggml-base's quant code
+    # is OpenMP-parallel and its GOMP symbols are not in libggml itself.
+    $CXX -O1 -fopenmp -Wl,--gc-sections "$OUT/serve-main.o" "$OUT/main-gc.o" "$OUT/host.o" \
+        "$OUT/tensor-data.o" "$OUT/graph-bindings.o" \
+        -L"$SUB" -lggml-base -lggml -lggml-cpu -lm -pthread -o "$OUT/frankenmoe-serve"
+    printf '  cli:    %s\n' "$OUT/frankenmoe-serve"
     if [ -n "${FG_TOKENIZE_FIXTURE:-}" ]; then
         if "$OUT/tokenize_load" "$FG_TOKENIZE_FIXTURE"; then
             printf '  gate:   tokenize_load PASS on %s\n' "$FG_TOKENIZE_FIXTURE"

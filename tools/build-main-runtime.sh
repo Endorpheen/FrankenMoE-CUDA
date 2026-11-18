@@ -177,6 +177,14 @@ MODULES=(
     goose/misc/sampler-dry.goose
 )
 
+# Record a hash of the exact inputs, so a later build can tell "up to date" by
+# content rather than by timestamp. A restored or copied unit has a fresh mtime and
+# an old body, which is how build/goose-main came to hold a listener without
+# hl_serve_full while its dates said otherwise.
+UNIT_HASH=$(cd "$ROOT" && { sed -n '1,400p' tools/build-main-runtime.sh; \
+    find goose -name '*.goose' -print0 | sort -z | xargs -0 sha256sum; } \
+    | sha256sum | cut -d' ' -f1)
+
 echo "[1/5] compose ${#MODULES[@]} modules"
 python3 "$ROOT/tools/compose-goose.py" "$UNIT" "${MODULES[@]/#/$ROOT/}"
 
@@ -188,6 +196,8 @@ echo "[3/5] generate C"
 
 echo "[4/5] compile object at -O1"
 "$CC" -O1 -std=c11 -w -c "$C" -o "$OBJ"
+
+printf '%s\n' "$UNIT_HASH" > "$OUT/.source-sha256"
 
 echo "[5/5] symbol check"
 defined=$(nm -g --defined-only "$OBJ" | wc -l)

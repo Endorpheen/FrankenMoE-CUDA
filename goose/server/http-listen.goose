@@ -304,6 +304,7 @@ fn hl_handle_req(cfd: i64, req: const u8[:], resp: u8[:], keys: const u8[:], kof
     var key_off: i64 = -1; var key_len: i64 = 0;
     var origin_off: i64 = -1; var origin_len: i64 = 0;
     var close_req: i64 = 0;
+    var is_options: i64 = 0;
     var host_count: i64 = 0; var host_off: i64 = -1; var host_len: i64 = 0;
     var line_end: i64 = -1;
     var i: i64 = 0;
@@ -402,6 +403,7 @@ fn hl_handle_req(cfd: i64, req: const u8[:], resp: u8[:], keys: const u8[:], kof
                 status = fault;
                 close_req = 1;
             } else if hl_eq(req, mo, ml, "OPTIONS") {
+                is_options = 1;
                 // A preflight is answered before routing: cors_is_preflight owns that
                 // decision, and 204 is what the native server returns.
                 status = if cors_is_preflight(req[mo .. mo + ml]) != 0 { 204 } else { 405 };
@@ -478,20 +480,27 @@ fn hl_handle_req(cfd: i64, req: const u8[:], resp: u8[:], keys: const u8[:], kof
         if at < 0 {
             return -1;
         }
-        var cred: u8[8] = [0,0,0,0,0,0,0,0];
-        let cn = cors_credentials_text(credentials, cred);
-        if cn > 0 {
-            at = rs_header_impl("Access-Control-Allow-Credentials", cred[0 .. cn], resp, at);
-            if at < 0 {
-                return -1;
+        // Only the allow-origin header belongs to every response. The credentials
+        // header, the allowed methods and headers, and the blank text/html body are
+        // the PREFLIGHT answer and nothing else: server-http.cpp:292-298 sets them
+        // inside `if (req.method == "OPTIONS")`. EXP987 dropped the 204 condition from
+        // the whole block, which put a preflight's headers on ordinary responses.
+        if is_options != 0 {
+            var cred: u8[8] = [0,0,0,0,0,0,0,0];
+            let cn = cors_credentials_text(credentials, cred);
+            if cn > 0 {
+                at = rs_header_impl("Access-Control-Allow-Credentials", cred[0 .. cn], resp, at);
+                if at < 0 {
+                    return -1;
+                }
             }
-        }
-        var ct: u8[64] = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
-        let tn = cors_preflight_type(ct);
-        if tn > 0 {
-            at = rs_header_impl("Content-Type", ct[0 .. tn], resp, at);
-            if at < 0 {
-                return -1;
+            var ct: u8[64] = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+            let tn = cors_preflight_type(ct);
+            if tn > 0 {
+                at = rs_header_impl("Content-Type", ct[0 .. tn], resp, at);
+                if at < 0 {
+                    return -1;
+                }
             }
         }
     }

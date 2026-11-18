@@ -463,6 +463,12 @@ int main() {
         check(got.rfind("HTTP/1.1 200 OK\r\n", 0) == 0, "ordinary response still 200");
         check(got.find("Access-Control-Allow-Origin: *\r\n") != std::string::npos,
               "CORS header on a 200, as native does");
+        // server-http.cpp:292-298 puts these inside the OPTIONS branch only. An
+        // ordinary 200 carrying them tells a browser the response was a preflight.
+        check(got.find("Access-Control-Allow-Credentials") == std::string::npos,
+              "no credentials header on an ordinary 200");
+        check(got.find("Content-Type: text/html") == std::string::npos,
+              "no preflight content type on an ordinary 200");
     }
 
     // ---- Connection: close is honoured and stops the loop ----
