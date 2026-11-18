@@ -62,6 +62,16 @@ for name in changed:
     objs.append(str(o))
     print('built', name)
 
+# The reader adapter owns the mapping and is the only file here that is not a
+# carrier source. It is debt and tools/migration-status.sh counts it as such.
+_r = subprocess.run(CXX + ['-o', str(W/'gguf-reader-owner.o'), '-c',
+                           str(BASE/'integration/goose-standalone/gguf-reader-owner.cpp')],
+                    capture_output=True, text=True)
+if _r.returncode:
+    print('FAIL gguf-reader-owner.cpp'); print(_r.stderr[:1500]); sys.exit(1)
+objs.append(str(W/'gguf-reader-owner.o'))
+print('built gguf-reader-owner.cpp')
+
 # which Goose modules are called
 def undef(o):
     s = subprocess.run(['nm','-u',o],capture_output=True,text=True).stdout
