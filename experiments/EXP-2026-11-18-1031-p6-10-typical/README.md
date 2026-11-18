@@ -1214,3 +1214,26 @@ nothing about it yet.
 
 One useful by-product of the same run: `FG171_DIST goose calls=1` appeared, which
 is independent confirmation that the dist stage is live in the real chain.
+
+## temp_ext live and identical
+
+The reason it never fired before: my `--samplers` list did not contain
+`temperature`, and a custom list replaces the default order entirely. With
+
+```
+--samplers "penalties;top_k;typical;temperature;dist" --temp 0.8 --dynatemp-range 0.4
+```
+
+the stage runs:
+
+```
+[ON ] " Paris. Paris is the country's largest"
+      counters: FG171_TEMPEXT goose calls=1  FG171_DIST goose calls=1
+[OFF] " Paris. Paris is the country's largest"   counters: none
+```
+
+All nine sampler stages the module implements are now live with identical output:
+typical-p, top-p, XTC, penalties, DRY, adaptive-p, mirostat, dist, temp_ext.
+
+Remaining in P6-10: grammars and constrained generation, then removing the replaced
+native bodies once the whole set is accepted.
