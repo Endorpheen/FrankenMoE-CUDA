@@ -955,3 +955,27 @@ is acceptable for at least one stack, which is a union, not a refusal.
 
 That is the next change: build the union of accepted ranges across the stacks, and refuse
 only when *no* stack yields ranges.
+
+## The refusal never comes from the Goose side
+
+I encoded the two Goose refusal reasons into distinct negative values (`-t-100`,
+`-t-200`) to see which one fires. The measurement still reports exactly `-1`:
+
+```
+13 ranges=-1 cur_p=1
+ 4 ranges=-1 cur_p=248320
+ 3 ranges=2  cur_p=1
+ 2 ranges=2  cur_p=248320
+```
+
+Since neither encoded value appears, the entry is either not being called at all for those
+cases or the host's own guard sets `-1` before the call: the host requires every stack
+element to be found in the pointer map, and it checks `!grammar.stacks[0].empty()` before
+calling. Both are host-side conditions, so the frequent refusal is a host-guard effect,
+not a Goose decision, and the previous "empty stacks" hypothesis is also ruled out.
+
+Next step: log which host guard rejects (`call==nullptr`, stack empty, too many stacks,
+pointer not mapped) instead of guessing between four conditions. That is one print and it
+ends the loop this question has been going round.
+
+The union change (skipping empty stacks) stays: it is correct on its own and costs nothing.

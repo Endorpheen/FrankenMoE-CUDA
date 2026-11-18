@@ -1658,17 +1658,19 @@ fn g_first_set(etype: i64[:], eval: i64[:],
     while s < nstacks {
         let d: i64 = stackd[s];
         if d == 0 {
-            // empty stack: end of sequence is allowed, which ranges cannot express
-            return -1;
+            // an empty stack accepts no characters, so skipping it cannot exclude a
+            // candidate that this stack would have allowed
+            s = s + 1;
+            continue;
         }
         let pos: i64 = stacks[s * 8 + d - 1];
         let t: i64 = etype[pos];
         if t == 4 || t == 8 || t == 9 {
             // CHAR_NOT, TOKEN, TOKEN_NOT: not expressible as positive ranges here
-            return -1;
+            return 0 - t - 100;
         }
         if t != 3 && t != 7 {
-            return -1;
+            return 0 - t - 200;
         }
         var p: i64 = pos;
         var done: bool = false;
