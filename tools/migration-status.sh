@@ -173,9 +173,15 @@ say "                                 folded into the engine, so there is no tok
 else
 say "   tokenizer decisions (all 8)   no   (only $_tok_n tok_* exports in the artifact)"
 fi
+# Present in the artifact and actually called are different facts. The load-and-
+# tokenise gate is what makes the second one true, so name it when it exists.
+_lat=""
+if [ -x "$ROOT/builds/goose-standalone/tokenize_load" ]; then
+    _lat=" and called by the load-and-tokenise gate"
+fi
 if [ "$_eng_n" -ge 4 ]; then
-say "   tokenizer engine             yes  ($_eng_n load/build/tokenise/piece exports in the artifact;"
-say "                                       gates EXP950/955/956 against native libllama)"
+say "   tokenizer engine             yes  ($_eng_n load/build/tokenise/piece exports in the artifact$_lat;"
+say "                                       gates: EXP950/955/956 + tokenize_load 25 checks)"
 elif [ "$_eng_n" -gt 0 ]; then
 say "   tokenizer engine             partial ($_eng_n of 4 engine exports in the artifact)"
 else

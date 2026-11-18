@@ -109,6 +109,23 @@ if [ -d "$SUB" ] && [ -f "$ROOT/integration/goose-standalone/host_v4.c" ]; then
         printf '          that interface was replaced by bt_bpe (EXP949-956), whose\n'
         printf '          evidence is the EXP920 differential and EXP955/956.\n'
     fi
+
+    # The load-and-tokenise path: mmap -> gr_parse -> btl_load -> bt_bpe, with the
+    # expected ids recorded from the accepted libllama. This is the caller the status
+    # report says does not exist, and it needs no llama library at run time.
+    $CC -O1 -std=c11 -w -I "$ROOT/build/goose-main" -I "$ROOT/integration/m1/host" \
+        -c "$ROOT/integration/goose-standalone/tests/tokenize_load.c" -o "$OUT/tokenize_load.o"
+    $CXX -O1 -Wl,--gc-sections "$OUT/tokenize_load.o" "$OUT/main-gc.o" "$OUT/host.o" \
+        -L"$SUB" -lggml-base -lggml -lggml-cpu -lm -pthread -o "$OUT/tokenize_load"
+    printf '  gate:   %s (build only; run with a vocab GGUF)\n' "$OUT/tokenize_load"
+    if [ -n "${FG_TOKENIZE_FIXTURE:-}" ]; then
+        if "$OUT/tokenize_load" "$FG_TOKENIZE_FIXTURE"; then
+            printf '  gate:   tokenize_load PASS on %s\n' "$FG_TOKENIZE_FIXTURE"
+        else
+            printf '  gate:   tokenize_load FAILED on %s\n' "$FG_TOKENIZE_FIXTURE"
+            exit 1
+        fi
+    fi
 fi
 
 echo "[5/5] result"
