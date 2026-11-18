@@ -1097,6 +1097,30 @@ fn fg_sampler_dist(p: f32[:], n: i64, state: i64[:], marker: i64) -> i64 {
     return n - 1;
 }
 
+// dist with the two words supplied by the caller, so the RNG stream stays with the
+// host and this function is pure
+fn fg_sampler_dist_words(p: f32[:], n: i64, w1: i64, w2: i64, marker: i64) -> i64 {
+    if marker != 177 || n <= 0 {
+        return -1;
+    }
+    var sum: f64 = 0.0;
+    var i: i64 = 0;
+    while i < n {
+        sum = sum + (p[i] as f64);
+        i = i + 1;
+    }
+    var prefix: f64 = 0.0;
+    i = 0;
+    while i < n {
+        prefix = prefix + (p[i] as f64);
+        if (prefix / sum) * 18446744073709551616.0 >= (w1 as f64) + (w2 as f64) * 4294967296.0 {
+            return i;
+        }
+        i = i + 1;
+    }
+    return n - 1;
+}
+
 // Single stable entry point for the shipped library. Generated function ids
 // shift whenever this module changes, so callers must reach the chain through
 // this one function rather than through a generated id.
