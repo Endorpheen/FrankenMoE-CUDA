@@ -1154,3 +1154,22 @@ pattern used for XTC (caller draws, Goose decides).
 
 Note for the ledger: TD-S1 is a *workaround*, not a fix - any code that needs to
 store a function-returned f64 must use the inline form.
+
+## dist: the live path is not discrete_distribution
+
+The hook was inserted into `llama_sample_dist`, and the live test showed 64/64
+identical results - with a counter of **zero**, so nothing was exercised. The
+reason:
+
+- `llama_sampler_dist_apply` does **not** call `llama_sample_dist`; it has its own
+  loop: max logit, `expf` probabilites, a **double** cumulative sum, and a
+  `std::uniform_real_distribution<double>` draw;
+- `llama_sample_dist` (the `std::discrete_distribution` version) is used by other
+  call sites, not by the dist sampler the server puts in the chain.
+
+So the 400/400 gate against `std::discrete_distribution` proves the module matches
+that function, but the function the runtime uses is a different one. The entry must
+be gated against `llama_sampler_dist_apply`'s own algorithm, and the hook belongs
+in that function.
+
+This is recorded as a correction, not as a completion: `dist` is not migrated yet.

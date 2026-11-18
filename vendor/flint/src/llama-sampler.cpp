@@ -124,6 +124,9 @@ extern "C" int64_t fg_sampler_mirostat_call(float * p, int64_t n, float mu, int6
                                              float n_vocab) __attribute__((weak));
 static std::atomic<unsigned long long> g_goose_mirostat_calls{0};
 
+extern "C" int64_t fg_sampler_dist_words_call(float * p, int64_t n, int64_t w1, int64_t w2) __attribute__((weak));
+static std::atomic<unsigned long long> g_goose_dist_calls{0};
+
 static bool fg_goose_top_p_enabled() {
     static const bool on = []() {
         const char * f = getenv("GGML_GOOSE_SAMPLER_TOP_P");
@@ -360,6 +363,26 @@ static int llama_sample_dist(llama_token_data_array * cur_p, std::mt19937 & rng)
 #ifdef __GNUC__
     #pragma GCC diagnostic pop
 #endif
+
+    if (fg_sampler_dist_words_call != nullptr && fg_goose_chain_enabled() && cur_p->size > 0) {
+        fg_scratch.ensure(cur_p->size);
+        std::vector<float> & pp = fg_scratch.pp;
+        for (size_t i = 0; i < cur_p->size; ++i) {
+            pp[i] = cur_p->data[i].p;
+        }
+        // the two words are drawn here, in the order generate_canonical uses them
+        const int64_t w1 = (int64_t) rng();
+        const int64_t w2 = (int64_t) rng();
+        const int64_t idx = fg_sampler_dist_words_call(pp.data(), (int64_t) cur_p->size, w1, w2);
+        if (idx >= 0 && idx < (int64_t) cur_p->size) {
+            const unsigned long long c = ++g_goose_dist_calls;
+            if (c == 1 || (c % 100) == 0) {
+                fprintf(stderr, "FG171_DIST goose calls=%llu idx=%lld\n",
+                        (unsigned long long) c, (long long) idx);
+            }
+            return (int) idx;
+        }
+    }
 
     std::discrete_distribution<int> dist(probs_iterator{cur_p->data}, probs_iterator{cur_p->data + cur_p->size});
 
