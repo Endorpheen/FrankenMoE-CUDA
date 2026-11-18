@@ -92,3 +92,19 @@ the Goose allocator module exists only in the other lineage. P4-13 therefore
 adds the adapter to the baseline; it does not merge two Goose interfaces. The
 adapter surface is exactly the public API above, with the block tables owned by
 the stream source as agreed in the contract.
+
+## 8. Gate item 6 is not differentially satisfiable (measured)
+
+The native public API exposes no validity query: there is no generation or epoch
+in `ggml-backend.h`, and `ggml_backend_buffer_reset` only returns placements to
+the pool. After a reset or a free, a tensor's `data` pointer is simply dangling;
+the native implementation neither rejects nor detects the use. Matching that
+behaviour differentially would mean matching undefined behaviour.
+
+Therefore item 6 is defined as a **new guard owned by the Goose adapter**: a
+placement carries a generation, `reset`/`free` bump it, and a use with a stale
+generation is rejected with a defined error. Its test is separate from the
+differential gate (it asserts the rejection), and it is recorded as an
+intentional addition, not as a regression against native. Items 1-5 remain
+differential and already have their native reference in
+`experiments/EXP-2026-11-18-1014-p4-13-alloc-gate/`.
