@@ -130,10 +130,17 @@ content:  " Paris, and its population is approximately "
 counters: FG171_PENALTIES, FG171_TOP_P, FG171_TYPICAL
 ```
 
-The matching run with the stages disabled did not produce a response: the process
-behind it logged no Goose counters and the endpoint returned nothing, so the
-comparison is **not** established and the two texts must not be declared equal.
-Repeat the off run cleanly before using this as A/B evidence.
+The matching run with the stages disabled, launched cleanly:
+
+```
+content:  " Paris, and its population is approximately "   (identical)
+counters: none
+```
+
+So the A/B on the correct base holds: same server binary, same library build,
+same profile including `--moe-cache-mib 4992`, identical text, and Goose stages
+executed versus not executed proven by the counters. The earlier failed attempt
+was a malformed launch path, not a runtime difference.
 
 Building `llama-server` from `vendor/flint` is blocked by the Web UI assets: the
 target always downloads a distribution and fails offline
