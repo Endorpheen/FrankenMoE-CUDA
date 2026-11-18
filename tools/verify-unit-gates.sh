@@ -47,6 +47,15 @@ printf 'build: ok (%s globals, %s duplicates)\n' \
     "$(nm --defined-only --extern-only "$OUT/unit.o" | wc -l)" \
     "$(nm --defined-only --extern-only "$OUT/unit.o" | awk '{print $3}' | sort | uniq -d | wc -l)"
 
+cat > "$OUT/init-shim.c" <<'SHIM'
+// The gates call fg950_goose_init because the shipping DSO renames its initialiser.
+// The standalone unit does not, so the suite bridges the name here rather than
+// keeping two copies of every gate.
+void goose_init(int argc, char ** argv);
+void fg950_goose_init(int argc, char ** argv) { goose_init(argc, argv); }
+SHIM
+"$CC" -O1 -std=c11 -w -c "$OUT/init-shim.c" -o "$OUT/init-shim.o"
+
 "$CC" -O1 -std=c11 -w -I "$HOST_INC" -I "$SHIM" -c "$ROOT/integration/m1/host/goose_host.c" -o "$OUT/host.o" 2>"$OUT/host.log"
 if [ ! -f "$OUT/host.o" ]; then printf 'host primitives FAILED\n'; tail -3 "$OUT/host.log"; exit 1; fi
 
@@ -58,6 +67,9 @@ GATES=(
     "dry            | experiments/EXP-2026-11-18-961-goose-dry/tests/gate.cpp              | unit"
     "http-request   | experiments/EXP-2026-11-18-977-goose-http-request/tests/gate.cpp     | httplib"
     "http-listen    | experiments/EXP-2026-11-18-978-goose-http-listen/tests/gate.cpp      | unit"
+    "typical-live   | experiments/EXP-2026-11-18-966-goose-typical-live/tests/gate.cpp    | llama"
+    "tns-live       | experiments/EXP-2026-11-18-967-goose-top-n-sigma-live/tests/gate.cpp| llama"
+    "dry-live       | experiments/EXP-2026-11-18-968-goose-dry-live/tests/gate.cpp       | llama"
 )
 
 pass=0; fail=0; skip=0
@@ -67,7 +79,19 @@ for row in "${GATES[@]}"; do
     IFS='|' read -r name src needs <<< "$row"
     name=$(printf '%s' "$name" | xargs); src=$(printf '%s' "$src" | xargs); needs=$(printf '%s' "$needs" | xargs)
 
-    extra=()
+    extra=(); extra_lib=()
+    if [ "$needs" = "llama" ]; then
+        # The live sampler comparisons need the accepted libllama as their oracle, and
+        # its ggml dependencies on the link line.
+        LACC=${FG_ACCEPTED_LIB:-/home/end0/AI/LlamaServer/apex-independent-fast-20261116/run}
+        if [ ! -f "$LACC/libllama.so.0" ]; then
+            printf '%-16s %-8s %s\n' "$name" SKIP "no accepted libllama at $LACC"
+            skip=$((skip+1)); continue
+        fi
+        extra=("-I$ROOT/vendor/flint/include" "-I$ROOT/vendor/flint/ggml/include")
+        extra_lib=("$LACC/libllama.so.0" "$LACC/libggml-base.so.0" "$LACC/libggml-cpu.so.0" "$LACC/libggml.so.0"
+                   "-Wl,-rpath,$LACC")
+    fi
     if [ "$needs" = "httplib" ]; then
         HT=$ROOT/vendor/flint/vendor/cpp-httplib
         HTLIB=$OUT/httplib.o
@@ -79,11 +103,11 @@ for row in "${GATES[@]}"; do
             printf '%-16s %-8s %s\n' "$name" SKIP "no httplib object or oracle available"
             skip=$((skip+1)); continue
         fi
-        extra=("$ORA" "$HTLIB" "-I$HT")
+        extra=("-I$HT"); extra_lib=("$ORA" "$HTLIB")
     fi
 
     if ! "$CXX" -O1 -Wl,--gc-sections -I"$OUT" "${extra[@]}" -x c++ "$ROOT/$src" \
-            -x none "$OUT/unit.o" "$OUT/host.o" -lm -o "$OUT/g-$name" > "$OUT/link-$name.log" 2>&1; then
+            -x none "$OUT/unit.o" "$OUT/host.o" "${extra_lib[@]}" "$OUT/init-shim.o" -lm -o "$OUT/g-$name" > "$OUT/link-$name.log" 2>&1; then
         printf '%-16s %-8s %s\n' "$name" LINKFAIL "$(tail -1 "$OUT/link-$name.log")"
         fail=$((fail+1)); continue
     fi
@@ -98,11 +122,13 @@ done
 
 # ---- 3. named, not silently dropped ----
 printf '\nskipped, with the reason (their oracle lives outside the unit):\n'
-printf '  %-16s %s\n' "reader-adapter"  "EXP-11-18-953: needs the accepted libllama for the differential"
-printf '  %-16s %s\n' "vocab-wire"      "EXP-11-18-954: needs libllama for vocab_only load and tokenize"
-printf '  %-16s %s\n' "bpe-engine"      "EXP-11-18-955: needs libllama as the tokenizer oracle"
-printf '  %-16s %s\n' "detokenize"      "EXP-11-18-956: needs libllama for 496640 piece comparisons"
-printf '  %-16s %s\n' "sampler-live"    "EXP-11-18-966..968: need the accepted libllama sampler objects"
-printf '  %-16s %s\n' "sampler-wired"   "EXP-11-18-970/971: need two libllama builds loaded side by side"
+printf '  %-16s %s\n' "reader-adapter"  "EXP953: needs the EXP952 candidate libllama (the one with the adapter)"
+printf '  %-16s %s\n' "vocab-wire"      "EXP954: needs the EXP953 candidate build AND a generated vocab fixture"
+printf '  %-16s %s\n' "bpe-engine"      "EXP955: needs the EXP955 candidate build and the same fixture"
+printf '  %-16s %s\n' "detokenize"      "EXP956: needs the EXP956 candidate build and the same fixture"
+printf '  %-16s %s\n' "sampler-wired"   "EXP970/971: need TWO libllama builds loaded with dlopen side by side"
+printf '\n  These are named because each depends on a build directory outside this\n'
+printf '  repository and a fixture; a suite that silently omitted them would report\n'
+printf '  less coverage than it has, and one that pretended to run them would lie.\n'
 printf '\nresult: %d passed, %d failed, %d skipped\n' "$pass" "$fail" "$skip"
 [ "$fail" -eq 0 ] || exit 1
