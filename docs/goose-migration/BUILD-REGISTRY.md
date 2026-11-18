@@ -63,3 +63,23 @@ letting a 20-minute compile discover the problem.
 reference results: prefill +0.4 %, decode -0.7 %, VRAM -1.2 % versus EXP906.
 Do not compare numbers produced by a build whose composition differs from this
 registry; those are different runtimes.
+
+## flint build: what it needs at link time
+
+`cmake --build builds/flint-acc --target llama` succeeds (rc=0, six
+`fg_sampler_*` symbols in the library), but linking anything against it fails
+until two accepted bridge definitions are provided:
+
+```
+libggml-cpu.so.0: undefined reference to `fg_cpu_simd_mmid_tiled_q4_k`
+libggml-base.so.0: undefined reference to `fg161_bulk`
+```
+
+Both are accepted components whose generated C is a build artefact, not tracked
+source: the P1-12 tiled kernel and the P4-13 allocator bulk call. They must be
+linked into the ggml libraries (or shipped beside them) before the library is
+usable, and `tools/check-build-sources.sh` reports their absence.
+
+Warning recorded from the same run: a failed link produced no test binary, and
+`diff` on two empty outputs reported "identical". Empty output is never evidence;
+check the binary exists and printed its expected number of lines first.

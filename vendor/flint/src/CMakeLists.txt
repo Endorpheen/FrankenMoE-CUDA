@@ -44,6 +44,21 @@ set(LLAMA_CORE_SOURCES
     unicode.cpp
 )
 
+
+# Goose sampler chain (P6-10). The module is compiled with a build root that calls
+# every entry point, and the generated C plus its shim join this target. The shim
+# exports fg_sampler_*_call, which llama-sampler.cpp uses through weak references.
+set(FG_SAMPLER_CHAIN_DIR ${CMAKE_CURRENT_BINARY_DIR}/goose-sampler-chain)
+add_custom_command(
+    OUTPUT ${FG_SAMPLER_CHAIN_DIR}/sampler_chain_shim.c
+    COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/../../../tools/build-sampler-chain.sh ${FG_SAMPLER_CHAIN_DIR}
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../../../goose/sampling/sampler-chain-full.goose
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../../tools/build-sampler-chain.sh
+    COMMENT "Building the Goose sampler chain")
+set_source_files_properties(${FG_SAMPLER_CHAIN_DIR}/sampler_chain_shim.c
+                            PROPERTIES COMPILE_DEFINITIONS "main=fg_chain_main")
+list(APPEND LLAMA_CORE_SOURCES ${FG_SAMPLER_CHAIN_DIR}/sampler_chain_shim.c)
+
 add_library(llama
             ../include/llama.h
             ${LLAMA_CORE_SOURCES}
