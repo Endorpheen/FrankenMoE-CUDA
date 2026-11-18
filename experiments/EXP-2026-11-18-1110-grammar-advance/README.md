@@ -825,3 +825,30 @@ Consequences for the port:
   candidate set before the grammar, both of which are separate changes.
 
 The stage stays opt-in until that cost is addressed.
+
+## Host-side optimisations exhausted; the cost is inside the generated loop
+
+Measured again after removing the fixed codepoint stride and the blanket zeroing:
+
+```
+on 10.14   off 51.33      (256 tokens, before: 10.18)
+```
+
+No change. Together with the earlier attempts this rules out, one by one:
+
+| hypothesis | test | result |
+|---|---|---|
+| per-token allocation | thread-local buffers | no change |
+| stale rule cache | rebuild per call | no change |
+| cost outside the hook | start/stop inside | 84 ms per call, inside |
+| host array writes | stride + no zeroing | no change |
+
+What remains is the generated loop itself: about 340 ns per candidate, which is a
+function call and several bounds-checked slice reads per codepoint comparison. That is a
+code-generation question for the Goose compiler, not something to fix by rearranging the
+host.
+
+Decision for this stage: functionally complete, measured 3-5x slower on the full-set
+path, kept opt-in, and the performance item recorded as a compiler-level task. The
+migration continues with the acceptance measurement for the sampler stages, where the
+cost is already known to be about 1.3 %.

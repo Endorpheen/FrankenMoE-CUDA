@@ -1471,13 +1471,22 @@ void llama_grammar_apply_impl(const struct llama_grammar & grammar, llama_token_
 
         const int64_t ncand = (int64_t) candidates_grammar.size();
         static thread_local std::vector<int64_t> cp, cpl, pv, pn, cid, rej, tmp_rej, tmp_cur, rej_final;
-        cp.assign(ncand * FG_MAXCP, 0); cpl.assign(ncand, 0); pv.assign(ncand, 0); pn.assign(ncand, 0);
+        // the stride is the widest piece in this call, not a fixed 16: at 248k
+        // candidates a fixed stride costs tens of megabytes of writes per token
+        int64_t maxcp_used = 1;
+        for (const auto & c : candidates_grammar) {
+            int64_t n = 0;
+            while (n < FG_MAXCP && c.code_points[n] != 0) n++;
+            if (n > maxcp_used) maxcp_used = n;
+        }
+        cp.resize(ncand * maxcp_used);   // no blanket zeroing: only [0, cpl) is read
+        cpl.assign(ncand, 0); pv.assign(ncand, 0); pn.assign(ncand, 0);
         cid.assign(ncand, 0);
         for (int64_t i = 0; i < ncand; ++i) {
             const auto & c = candidates_grammar[i];
             int64_t n = 0;
             while (n < FG_MAXCP && c.code_points[n] != 0) {
-                cp[i * FG_MAXCP + n] = (int64_t) c.code_points[n];
+                cp[i * maxcp_used + n] = (int64_t) c.code_points[n];
                 n++;
             }
             cpl[i] = n;
@@ -1554,7 +1563,7 @@ void llama_grammar_apply_impl(const struct llama_grammar & grammar, llama_token_
                     s_et, s_ev, s_roff, s_rlen, s_one, stdk[sIdx],
                     s_cp, s_cpl, s_pv, s_pn, s_cid, ncand,
                     s_wp, s_wpd, s_stk, s_std, s_scr, s_tr, s_tc, s_row, s_rej,
-                    FG_MAXS, FG_MAXD, FG_MAXCP);
+                    FG_MAXS, FG_MAXD, maxcp_used);
                 for (int64_t i = 0; i < ncand; ++i) {
                     rej_final[i] = rej_final[i] && rej[i];
                 }
