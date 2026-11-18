@@ -195,6 +195,10 @@ fn rq_parse_line_impl(line: const u8[:], out: i64[:]) -> i64 {
 // Parses one header line INCLUDING its CRLF. `out`: 0 accept flag, 1/2 name
 // off/len, 3/4 value off/len after OWS trim. Returns 0 or -1.
 export fn rq_parse_header(line: const u8[:], out: i64[:]) -> i64 {
+    return rq_parse_header_impl(line, out);
+}
+
+fn rq_parse_header_impl(line: const u8[:], out: i64[:]) -> i64 {
     if out.len < 5 {
         return -1;
     }

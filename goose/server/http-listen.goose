@@ -63,6 +63,29 @@ fn hl_eq(req: const u8[:], off: i64, n: i64, lit: const u8[:]) -> bool {
     return true;
 }
 
+fn hl_lower(c: u8) -> u8 {
+    if c >= 65 && c <= 90 {
+        return (c + 32) as u8;
+    }
+    return c;
+}
+
+// Header names are case-insensitive (RFC 9110 5.1), so the two the middleware
+// reads are matched that way. Values are not compared here; key_authorize does it.
+fn hl_ci_eq(req: const u8[:], off: i64, n: i64, lit: const u8[:]) -> bool {
+    if n != lit.len || off < 0 || off + n > req.len {
+        return false;
+    }
+    var i: i64 = 0;
+    while i < n {
+        if hl_lower(req[off + i]) != hl_lower(lit[i]) {
+            return false;
+        }
+        i = i + 1;
+    }
+    return true;
+}
+
 fn hl_put_addr(off: i64, port: i64) {
     // family, little-endian u16
     hl_st8(hl_tmp(off + 0), HL_AF_INET & 0xff);
@@ -130,6 +153,15 @@ export fn hl_close(fd: i64) -> i64 {
 // req receives the raw request bytes, resp the response bytes. Returns the number
 // of response bytes written, or -1.
 export fn hl_serve(fd: i64, req: u8[:], resp: u8[:]) -> i64 {
+    var no_keys: i64[1] = [0];
+    return hl_serve_keyed(fd, req, resp, "", no_keys);
+}
+
+// Same exchange with a configured key set: `keys` is the concatenation and `koff`
+// its cumulative offsets, the format key_scan expects. An empty set (koff.len <= 1)
+// skips validation entirely, which is what native does when no key is configured.
+export fn hl_serve_keyed(fd: i64, req: u8[:], resp: u8[:], keys: const u8[:],
+                         koff: const i64[:]) -> i64 {
     if req.len < 1 || resp.len < 1 {
         return -1;
     }
@@ -181,7 +213,11 @@ export fn hl_serve(fd: i64, req: u8[:], resp: u8[:]) -> i64 {
             } else if hl_eq(req, mo, ml, "DELETE") {
                 mcode = 3;
             }
-            if mcode == 0 {
+            if hl_eq(req, mo, ml, "OPTIONS") {
+                // A preflight is answered before routing: cors_is_preflight owns that
+                // decision, and 204 is what the native server returns.
+                status = if cors_is_preflight(req[mo .. mo + ml]) != 0 { 204 } else { 405 };
+            } else if mcode == 0 {
                 // A method the table does not carry is refused, not guessed.
                 status = 405;
             } else {
@@ -197,6 +233,43 @@ export fn hl_serve(fd: i64, req: u8[:], resp: u8[:]) -> i64 {
                 }
                 let cat: i64 = route_id(mcode, req[to .. to + plen]);
                 status = if cat == 0 { 404 } else { 200 };
+                if status == 200 {
+                    // The middleware reads two headers out of the request; both are
+                    // optional and both are compared by key_authorize, not here.
+                    var auth_off: i64 = -1; var auth_len: i64 = 0;
+                    var key_off: i64 = -1; var key_len: i64 = 0;
+                    var hp: i64 = line_end;
+                    while hp + 1 < n {
+                        // end of this header line
+                        var he: i64 = hp;
+                        while he + 1 < n && !(req[he] == 13 && req[he + 1] == 10) {
+                            he = he + 1;
+                        }
+                        if he + 1 >= n {
+                            break;
+                        }
+                        if he == hp {
+                            break; // the empty line ends the block
+                        }
+                        var ho: i64[5] = [0,0,0,0,0];
+                        if rq_parse_header_impl(req[hp .. he + 2], ho) == 0 {
+                            if hl_ci_eq(req, hp + ho[1], ho[2], "Authorization") {
+                                auth_off = hp + ho[3]; auth_len = ho[4];
+                            } else if hl_ci_eq(req, hp + ho[1], ho[2], "X-Api-Key") {
+                                key_off = hp + ho[3]; key_len = ho[4];
+                            }
+                        }
+                        hp = he + 2;
+                    }
+                    var empty_paths: i64[1] = [0];
+                    let allowed: i64 = key_authorize(keys, koff, req[to .. to + plen],
+                                                     "", empty_paths,
+                                                     if auth_off >= 0 { req[auth_off .. auth_off + auth_len] } else { req[0 .. 0] },
+                                                     if key_off >= 0 { req[key_off .. key_off + key_len] } else { req[0 .. 0] });
+                    if allowed == 0 {
+                        status = 401;
+                    }
+                }
             }
         }
     }
