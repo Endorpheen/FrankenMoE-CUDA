@@ -151,3 +151,23 @@ trap:
 - **static zero weight**: a token with static count 0 still gets weight 0, not 1, which is
   the difference between "absent" and "present with zero";
 - **min percent boundary**: exactly 50 % passes, so the comparison stayed strict.
+
+## Slice 7: static path and its threshold tables
+
+Two functions: `g_static_lax_thresholds` holds the lax tables `{2,2,1,1}` and `{66,50,50,50}`
+as a decision rather than as a copied literal, and `g_static_draft` ports the static-only
+attempt, which uses a **plain maximum** here (no static weighting, because everything in this
+path is static) and indexes the lax table at `LLAMA_NGRAM_STATIC-1`.
+
+```
+static ngram: cases=10 fails=0
+```
+
+Four threshold cases walk all levels and compare with the constants in `ngram-cache.cpp`; six
+draft cases cover the plain maximum, both threshold directions, the sample-size rejection,
+the first-wins tie, and a single strong candidate. `LLAMA_NGRAM_STATIC = 2` and
+`LLAMA_NGRAM_MAX = 4` are recorded in the source comment against `ngram-cache.h`.
+
+Note the contrast with slice 6, which is exactly why both exist as separate gates: the
+static path uses a plain maximum, the primary path uses the product. A single shared
+"pick the maximum" helper would have been wrong for one of them.
