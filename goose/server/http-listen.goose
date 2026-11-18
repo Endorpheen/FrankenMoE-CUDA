@@ -336,6 +336,20 @@ fn hl_req_end(buf: const u8[:], len: i64) -> i64 {
 // (0 when there is none) and meta[1] is 1 when the connection must close after this
 // response. The caller owns the socket, so the caller does the reading; this function
 // owns the decision, which is why the length travels out rather than being read here.
+// The exact bytes native sends for a 404 (server-http.cpp:145-156):
+//   {"error":{"message":"File Not Found","type":"not_found_error","code":404}}
+// Written from a byte function rather than a literal so the length and the content
+// cannot drift apart, and the length is a constant the compiler can check.
+const HL_NOT_FOUND_DOC: const u8[:] = "{\"error\":{\"message\":\"File Not Found\",\"type\":\"not_found_error\",\"code\":404}}";
+const HL_NOT_FOUND_LEN_TEXT: const u8[:] = "74";
+
+fn hl_not_found_byte(i: i64) -> u8 {
+    if i < 0 || i >= HL_NOT_FOUND_DOC.len {
+        return 0;
+    }
+    return HL_NOT_FOUND_DOC[i];
+}
+
 fn hl_handle_req(cfd: i64, req: const u8[:], resp: u8[:], keys: const u8[:], koff: const i64[:],
                  origins: const u8[:], credentials: i64, meta: i64[:]) -> i64 {
     let n: i64 = req.len;
@@ -586,15 +600,34 @@ fn hl_handle_req(cfd: i64, req: const u8[:], resp: u8[:], keys: const u8[:], kof
             return -1;
         }
     }
-    at = rs_header_impl("Content-Length", if status == 200 { "2" } else { "0" }, resp, at);
+    // Whether a 404 carries the not_found document is error_404's decision, not a
+    // condition written here: server-http.cpp:145-156 sets that body from the error
+    // handler, and leaving it out answered 404 with an empty body where native sends
+    // JSON.
+    var nf: i64[1] = [0];
+    let own_404: i64 = error_404(status, nf);
+    var body_len: i64 = 0;
+    var body_kind: i64 = 0;      // 1 = "ok", 2 = the JSON not_found document
+    if status == 200 {
+        body_len = 2; body_kind = 1;
+    } else if own_404 != 0 {
+        body_len = HL_NOT_FOUND_DOC.len; body_kind = 2;
+    }
+    at = rs_header_impl("Content-Length", if body_len == 2 { "2" } else if body_len == HL_NOT_FOUND_DOC.len { HL_NOT_FOUND_LEN_TEXT } else { "0" }, resp, at);
     if at < 0 {
         return -1;
+    }
+    if body_kind == 2 {
+        at = rs_header_impl("Content-Type", "application/json; charset=utf-8", resp, at);
+        if at < 0 {
+            return -1;
+        }
     }
     at = rs_end_headers_impl(resp, at);
     if at < 0 {
         return -1;
     }
-    if status == 200 {
+    if body_kind == 1 {
         // The body is written literally, not chunked: Content-Length is set above.
         if at + 2 > resp.len {
             return -1;
@@ -602,6 +635,16 @@ fn hl_handle_req(cfd: i64, req: const u8[:], resp: u8[:], keys: const u8[:], kof
         resp[at] = 111;     // 'o'
         resp[at + 1] = 107; // 'k'
         at = at + 2;
+    } else if body_kind == 2 {
+        if at + HL_NOT_FOUND_DOC.len > resp.len {
+            return -1;
+        }
+        var b: i64 = 0;
+        while b < HL_NOT_FOUND_DOC.len {
+            resp[at + b] = hl_not_found_byte(b);
+            b = b + 1;
+        }
+        at = at + HL_NOT_FOUND_DOC.len;
     }
 
     // Out of the caller's slice and into the scratch, then one write.

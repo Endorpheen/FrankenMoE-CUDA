@@ -343,7 +343,11 @@ int main() {
         const std::string got = exchange("GET /nope HTTP/1.1\r\nHost: x\r\n\r\n", &rc);
         check(rc > 0, "hl_serve answered the unknown path");
         check(got.rfind("HTTP/1.1 404 Not Found\r\n", 0) == 0, "unknown path is 404");
-        check(got.find("Content-Length: 0\r\n") != std::string::npos, "404 has no body");
+        // This used to assert "Content-Length: 0". Native sends the not_found JSON
+        // from its error handler (server-http.cpp:145-156), so an empty 404 was the
+        // assertion being wrong, not the server being right.
+        check(got.find("Content-Length: 0\r\n") == std::string::npos,
+              "404 no longer claims an empty body");
     }
 
     // ---- a query string is stripped before the table sees the path ----
@@ -519,6 +523,25 @@ int main() {
         int64_t served = -1;
         exchange_keep({ "GET /health HTTP/1.1\r\nHost: x\r\n\r\n" }, 1, &served);
         check(served == 1, "max_requests bounds the loop");
+    }
+
+    // ---- a 404 carries the not_found document, as native does ----
+    {
+        int rc = 0;
+        const std::string got = exchange("GET /nope HTTP/1.1\r\nHost: x\r\n\r\n", &rc);
+        check(got.rfind("HTTP/1.1 404 Not Found\r\n", 0) == 0, "unknown path is 404");
+        const std::string doc =
+            "{\"error\":{\"message\":\"File Not Found\",\"type\":\"not_found_error\",\"code\":404}}";
+        check(got.find("Content-Type: application/json; charset=utf-8\r\n") != std::string::npos,
+              "404 says it is JSON");
+        check(got.find("Content-Length: " + std::to_string(doc.size()) + "\r\n") != std::string::npos,
+              "404 declares the document's length");
+        check(got.find("\r\n\r\n" + doc) != std::string::npos,
+              "404 carries the exact native document");
+        // A 200 must not gain the JSON body or its type.
+        const std::string ok = exchange("GET /health HTTP/1.1\r\nHost: x\r\n\r\n", &rc);
+        check(ok.find("application/json") == std::string::npos, "a 200 is still plain");
+        check(ok.find("ok") != std::string::npos, "and still says ok");
     }
 
     // ---- a request split across two writes is one request ----
