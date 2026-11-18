@@ -89,3 +89,25 @@ repository, or the accepted binary was built from a tree that is not preserved.
 Until that is settled, an A/B that includes the flag can only use the accepted
 binary, and an A/B of our Goose build must state that the flag was omitted on
 both sides and that the parameter set therefore differs from the reference.
+
+### TD-S6, sharpened
+
+A second look changed the picture:
+
+- the accepted binary accepts `--moe-cache-mib` and rejects a bogus flag, so the
+  option is really implemented there (its literal is simply not visible to
+  `strings`);
+- the restored runtime tree carries `src/llama-moe-cache.h` and uses it from
+  `llama-context.cpp`, `llama-graph.cpp` and others;
+- **`work/llama.cpp-integration` has no `llama-moe-cache` at all** (no files, no
+  mentions in `llama-context.cpp`).
+
+So the builds made so far came from a tree that is not the cumulative baseline:
+they cannot reproduce the accepted profile because the whole MoE-cache feature is
+absent, not because of one missing flag.
+
+Consequence: the Goose runtime must be built from the restored runtime tree
+(`.../franken-goose-exp150-restored-20261108/runtime/reconstructed`), which holds
+the accepted components, with the sampler shim added there. Measuring a build of
+`work/` against the reference would compare two different runtimes and prove
+nothing about the migration.
