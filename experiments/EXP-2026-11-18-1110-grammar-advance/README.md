@@ -318,3 +318,20 @@ XTC, is:
 This keeps every grammar decision in Goose and needs no new compiler behaviour.
 `accept` as a single Goose function stays open; its logic is covered by
 `match_char` + `advance`, both gated.
+
+## Split accept gated: host shift + Goose advance, 4/4
+
+```
+split accept: cases=4 fails=0
+```
+
+Grammars: `"a" "b"` for a matching and a non-matching character, and
+`root ::= r1 "c"` with `r1 ::= "a" | "b"` for both alternates. The host shifts the
+matched class off the stack and Goose expands the result with `g_advance`; the
+resulting stacks match the native `accept` flow exactly, including reference
+expansion and alternation.
+
+One process note that cost two wasted runs: the concatenated unit
+(`grammar_all.goose`) is generated, and I compiled it without regenerating after
+editing `advance.goose`, so the prototype I inspected was stale. The concatenation is
+now rebuilt in the same command as the compile.

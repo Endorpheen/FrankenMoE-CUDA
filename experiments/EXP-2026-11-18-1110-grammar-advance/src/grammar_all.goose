@@ -100,6 +100,7 @@ fn pow2(n: i64) -> i64 {
 fn g_advance(etype: i64[:], eval: i64[:], roff: i64[:], rlen: i64[:],
              seed: i64[:], seedd: i64,
              wp: i64[:], wpd: i64[:], out: i64[:], outd: i64[:],
+             base: i64,
              max_stacks: i64, max_depth: i64) -> i64 {
     var nwork: i64 = 0;
     var nout: i64 = 0;
@@ -128,7 +129,7 @@ fn g_advance(etype: i64[:], eval: i64[:], roff: i64[:], rlen: i64[:],
         if depth == 0 {
             // empty stack: final, the grammar can end here
             if nout < max_stacks {
-                outd[nout] = 0;
+                outd[base + nout] = 0;
                 nout = nout + 1;
             }
             continue;
@@ -140,10 +141,10 @@ fn g_advance(etype: i64[:], eval: i64[:], roff: i64[:], rlen: i64[:],
             if nout < max_stacks {
                 var d: i64 = 0;
                 while d < depth {
-                    out[nout * max_depth + d] = wp[sid * max_depth + d];
+                    out[(base + nout) * max_depth + d] = wp[sid * max_depth + d];
                     d = d + 1;
                 }
-                outd[nout] = depth;
+                outd[base + nout] = depth;
                 nout = nout + 1;
             }
             continue;
@@ -395,7 +396,7 @@ fn g_grammar_reject(etype: i64[:], eval: i64[:], roff: i64[:], rlen: i64[:],
                     wp: i64[:], wpd: i64[:], stacks: i64[:], stackd: i64[:],
                     scratch: i64[:], tmp_rej: i64[:], tmp_cur: i64[:], rowbuf: i64[:],
                     rej: i64[:], maxs: i64, maxd: i64, maxcp: i64) -> i64 {
-    let n = g_advance(etype, eval, roff, rlen, seed, seedd, wp, wpd, stacks, stackd, maxs, maxd);
+    let n = g_advance(etype, eval, roff, rlen, seed, seedd, wp, wpd, stacks, stackd, 0, maxs, maxd);
     if n <= 0 {
         return -1;
     }
