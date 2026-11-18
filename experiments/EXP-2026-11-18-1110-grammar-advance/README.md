@@ -61,3 +61,30 @@ A detail that cost one iteration: the parser stores the second character of a cl
 in the `CHAR_ALT` element's own value (`{CHAR,'a'}, {CHAR_ALT,'b'}`), not in a
 following `CHAR` element. My gate data had it in the wrong place, which looked like
 a matcher defect until the native structure was checked.
+
+## reject_candidates: structure read, port not started
+
+The function is recursive and per-codepoint, not a flat loop:
+
+```
+reject_candidates(rules, stacks, candidates)
+    for each stack: rejects = reject_for_stack(stack, rejects_so_far)
+reject_for_stack(stack, candidates):
+    empty stack        -> reject any candidate that still has codepoints or a partial sequence
+    top is TOKEN*      -> check the token id, or the end-of-token partial case
+    otherwise          -> for each candidate, match the first codepoint:
+                          match      -> descend with codepoints+1
+                          no match   -> reject
+                          exhausted  -> reject iff a partial UTF-8 sequence cannot satisfy
+                                        the class (match_partial_char)
+    then advance the stack past the matched class and recurse into it
+```
+
+So the port needs three pieces beyond what is already done (`advance_stack`,
+`match_char`): `match_partial_char`, `match_token`, and the recursive descent with
+a worklist of candidates (each carrying index, codepoint cursor, partial-sequence
+state and token id).
+
+Not started, and not claimed: this slice is the next step, gated against
+`llama_grammar_reject_candidates` compiled into the fixture exactly as the previous
+two slices were.
