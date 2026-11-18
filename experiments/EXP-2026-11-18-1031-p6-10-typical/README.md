@@ -1237,3 +1237,32 @@ typical-p, top-p, XTC, penalties, DRY, adaptive-p, mirostat, dist, temp_ext.
 
 Remaining in P6-10: grammars and constrained generation, then removing the replaced
 native bodies once the whole set is accepted.
+
+## Grammars: scope and the one real dependency
+
+The grammar sampler is `llama_sampler_grammar_apply` -> `llama_grammar_apply_impl`
+(1530 lines total in `llama-grammar.cpp`), and it splits into two parts:
+
+1. **the automaton** - `llama_grammar_advance_stack`,
+   `llama_grammar_reject_candidates`, `llama_grammar_accept_*`: pure grammar logic
+   over the rule table. Portable to Goose, but it is written with
+   `llama_grammar_element *` pointers and a `std::set` ordered by pointer address,
+   so the port needs index-based stacks and an explicit dedup rule that reproduces
+   the same traversal order.
+2. **the vocabulary touch** - `token_to_piece`, `is_eog`, and the UTF-8 decode of
+   each candidate piece. `llama_grammar_apply_impl` reads `grammar.vocab` for every
+   candidate, so the filter cannot run on Goose alone until the vocabulary
+   interface exists (that is P7-06/P7-07).
+
+The workable split is the same one that worked for XTC: the host decodes the pieces
+(it already has the vocabulary) and hands Goose the codepoints; Goose runs the
+automaton and returns the rejected candidate indexes. That keeps the decision in
+Goose and the vocabulary where it lives.
+
+Prior Goose grammar work exists (EXP486 PEG emitter, EXP489 AC emitter, EXP496/557
+format grammars) but it is the GBNF *parser* side from P7-09, not this runtime
+filter, so it does not cover this slice.
+
+Order for the next iterations: index-based rule table and stacks, then
+`advance_stack`, then `reject_candidates` with the host-supplied codepoints, each
+gated against the native functions on the existing fixtures.
