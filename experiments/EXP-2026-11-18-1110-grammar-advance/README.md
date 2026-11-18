@@ -625,3 +625,28 @@ Consequences, stated plainly:
   the sampler order, not a change to the port.
 
 The diagnostic print is kept behind `GGML_GOOSE_GRAMMAR_DIAG`.
+
+## Conclusion: in this runtime the grammar is not a candidate filter
+
+Searched the chain assembly in `common/sampling.cpp`: the chain is built only from
+`params.samplers`, and although `grmr` is created (line 270/274), */
+
+`grep grmr` finds it in the struct, in the free path and in the copy path - but **not**
+as `llama_sampler_chain_add(chain, grmr)`. The server sources here contain no grammar
+sampler wiring either.
+
+That explains the measurement: the only place the grammar sampler runs in this build is
+after selection, where `cur_p->size` is 1. Grammar therefore acts as a validator, never
+as a filter, so:
+
+- no candidate filtering exists to port into or out of;
+- the Goose decision cannot be exercised on this path without first inserting the
+  grammar sampler into the chain (a chain-level change in `common/sampling.cpp`, not a
+  port change);
+- the earlier live A/B, the 64-token "identical" run and the slowdown all measured
+  something other than the grammar decision.
+
+This closes the question that was left open. What remains for P6-10's grammar item is a
+deliberate decision: insert the grammar sampler at the upstream position (before top_k)
+and then re-run the comparison; that is new wiring, and it changes behaviour for every
+grammar user, so it is not done here silently.
