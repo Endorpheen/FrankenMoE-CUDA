@@ -152,3 +152,21 @@ dry step2: cases=300 mismatches=0
 The documented example matches element for element and 300 random contexts
 (n=32, vocabulary 5, random rep_limit) match the native algorithm. Step 3
 (turning the counts into a penalty over the candidate logits) remains open.
+
+## DRY steps 3-4 accepted (penalty application)
+
+`sm_apply_dry` turns the repeat counts into logit penalties. The maximum repeat
+for a candidate is found by scanning the context instead of the native per-token
+map, so no container is needed; single-token breakers are skipped as in the
+native driver. `logf`/`powf` are declared as externs and the exponent is clamped
+by a float comparison instead of an integer truncation, which is equivalent for
+practical exponents.
+
+```
+dry step3: cases=100 mismatches=0    (logits compared bitwise)
+```
+
+100 random contexts with random repeat counts, two breakers (one single-token),
+random base candidates: the resulting logits are bit-identical to the native
+formula `multiplier * pow(base, repeat_exp)`. DRY is now complete in Goose:
+steps 1, 2 and 3-4 are all gated.

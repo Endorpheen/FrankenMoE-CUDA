@@ -1,3 +1,5 @@
+extern fn logf(x: f32) -> f32;
+extern fn powf(x: f32, y: f32) -> f32;
 // Sampler chain in Goose: MT19937, the canonical double draw and the
 // top-k / top-p / min-p / temperature / distribution sequence, ported from
 // src/llama-sampler.cpp.
@@ -753,6 +755,64 @@ fn sm_dry_repeat_counts(last: i64[:], rc: i64[:], n: i64, rep_limit: i64) -> i64
 fn gate_dry2(last: i64[:], rc: i64[:], n: i64, rep_limit: i64) -> i64 {
     return sm_dry_repeat_counts(last, rc, n, rep_limit);
 }
+
+// dry steps 3-4: turn repeat counts into logit penalties. The maximum repeat
+// for a candidate token is computed by scanning the context, which is
+// equivalent to the native per-token map and needs no container.
+fn sm_apply_dry(last: i64[:], rc: i64[:], lv: f32[:], id: i64[:],
+                br_head: i64[:], br_tl: i64[:],
+                n_last: i64, nc: i64, allowed: i64, nb: i64,
+                multiplier: f32, base: f32) -> i64 {
+    var max_exp_f: f32 = 0.0;
+    if base > 1.000001 {
+        max_exp_f = 88.7228391 / logf(base);
+    }
+    var c: i64 = 0;
+    while c < nc {
+        let tok: i64 = id[c];
+        var max_rep: i64 = -1;
+        var i: i64 = 0;
+        while i < n_last - 1 {
+            if rc[i] >= allowed {
+                if last[n_last - 2 - i] == tok {
+                    if rc[i] > max_rep { max_rep = rc[i]; }
+                }
+            }
+            i = i + 1;
+        }
+        if max_rep >= 0 {
+            var single: bool = false;
+            var b: i64 = 0;
+            while b < nb {
+                if br_head[b] == tok && br_tl[b] == 0 {
+                    single = true;
+                    break;
+                }
+                b = b + 1;
+            }
+            if !single {
+                var e_f: f32 = 0.0;
+                var t: i64 = 0;
+                while t < max_rep - allowed {
+                    if max_exp_f > 0.0 && e_f + 1.0 > max_exp_f {
+                        break;
+                    }
+                    e_f = e_f + 1.0;
+                    t = t + 1;
+                }
+                let penalty: f32 = multiplier * powf(base, e_f);
+                lv[c] = lv[c] - penalty;
+            }
+        }
+        c = c + 1;
+    }
+    return 0;
+}
+
+fn gate_dry3(last: i64[:], rc: i64[:], lv: f32[:], id: i64[:], br_head: i64[:], br_tl: i64[:],
+             n_last: i64, nc: i64, allowed: i64, nb: i64, multiplier: f32, base: f32) -> i64 {
+    return sm_apply_dry(last, rc, lv, id, br_head, br_tl, n_last, nc, allowed, nb, multiplier, base);
+}
 fn main() {
     print("p6-10 typical gate");
     let lv: f32[4] = [0.0, 0.0, 0.0, 0.0];
@@ -764,4 +824,5 @@ fn main() {
     let ignored5 = gate_dispatch(9, lv, p, id, 4, 1.0, 0, 0.0, 0.0);
     let ignored6 = gate_dry(id, id, id, id, id, 4, 0);
     let ignored7 = gate_dry2(id, id, 4, 4);
+    let ignored8 = gate_dry3(id, id, lv, id, id, id, 4, 4, 1, 0, 1.0, 1.5);
 }
