@@ -806,3 +806,23 @@ The first is a small experiment; the second is faithful but touches graph and
 context code. The next iteration tries (1) and, if the ggml API does not line up,
 falls back to (2). The minimal top-level CMakeLists for the accepted sources is
 committed in `builds/rt-accepted/CMakeLists.txt`.
+
+## Pivot, step 2: the accepted src configures and builds against the work ggml
+
+The combination that works:
+
+```
+builds/rt-accepted/src    <- reconstructed/src   (has llama-moe-cache)
+builds/rt-accepted/ggml   <- work/llama.cpp-integration/ggml  (full build tree)
+builds/rt-accepted/include<- work/llama.cpp-integration/include
+```
+
+`cmake` configures cleanly (rc=0) and the `llama` target builds, with CUDA
+compilation reaching 67% at the end of the iteration. The restored ggml could not
+be used: it has no build files at all, only a partial source directory, which is
+why the first two attempts failed on `add_subdirectory` and on missing
+`ggml_add_cpu_backend_variant_impl`.
+
+Next: finish the build, confirm the soname matches the accepted server's
+expectation, then add the shim and the hooks to this tree and re-run the stage
+differentials on it.
