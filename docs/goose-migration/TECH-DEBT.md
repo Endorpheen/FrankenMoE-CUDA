@@ -111,3 +111,19 @@ Consequence: the Goose runtime must be built from the restored runtime tree
 the accepted components, with the sampler shim added there. Measuring a build of
 `work/` against the reference would compare two different runtimes and prove
 nothing about the migration.
+
+## TD-S7: a range-based edit deleted three entry points
+
+While rewriting `sm_apply_penalties` I replaced the text from its definition to
+the definition of `fg_sampler_penalties`. Three entries defined in between
+(`fg_sampler_typical`, `fg_sampler_top_p`, `fg_sampler_xtc`) were deleted with
+it; the compiler then failed on an unknown callee, and `git checkout` restored
+the file.
+
+Rule that follows: when rewriting a function in a file that holds several
+top-level declarations, bound the edit by the function's own text, never by
+"from here to the next name I happen to know". Verify with `grep -c "fn "`
+before and after the edit, and keep the pre-edit file recoverable.
+
+No data was lost: the deleted entries were restored from HEAD and the penalties
+gate still reports 200/200.
