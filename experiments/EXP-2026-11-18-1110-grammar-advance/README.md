@@ -335,3 +335,27 @@ One process note that cost two wasted runs: the concatenated unit
 (`grammar_all.goose`) is generated, and I compiled it without regenerating after
 editing `advance.goose`, so the prototype I inspected was stale. The concatenation is
 now rebuilt in the same command as the compile.
+
+## Next step: wiring the decision core into the live grammar filter
+
+The decision part is complete and gated. What `apply_impl` still does natively per
+token is:
+
+1. decode each candidate's piece into codepoints (host, needs the vocabulary);
+2. ask which candidates are rejected (this is the Goose core);
+3. set `-inf` on the rejected logits (host).
+
+Only step 2 moves. The plan for the next iteration:
+
+- append the gated functions (`match_char`, `match_partial_char`, `advance`,
+  `reject`, `reject_multi`, `grammar_reject`) to the sampler module, since a library
+  must be one translation unit;
+- add one entry `fg_grammar_reject` with flat rule arrays, flat stacks and the
+  candidate codepoints, returning the reject flags;
+- flatten the rule table once per grammar object and cache it beside the grammar
+  (not per token), because the table is immutable;
+- hook it into `llama_grammar_apply_impl` where `llama_grammar_reject_candidates` is
+  called today, with the same counter/reporting pattern used by the sampler stages;
+- gate in the live path the same way: identical text with the hook on and off.
+
+No part of this is claimed as done yet.
