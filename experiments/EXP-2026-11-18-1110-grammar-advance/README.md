@@ -378,3 +378,21 @@ the same shape-driven selection that `gen_shim.prototype_by_shape` already
 implements. That is the next small step, then the hook.
 
 Nothing is claimed as wired: the functions are present and the module builds.
+
+## Grammar entry prototype confirmed (mapping for the shim)
+
+The generated prototype for the entry is, in order:
+
+```
+p0..p4    slices   etype eval roff rlen seed
+p5        int      seedd
+p6..p10   slices   cand_cp cp_len pval pnr cand_id
+p11       int      ncand
+p12..p20  slices   wp wpd stacks stackd scratch tmp_rej tmp_cur rowbuf rej
+p21..p24  ints     maxs maxd maxcp marker
+```
+
+So the compiler preserved the declaration order here, and a shim can be written
+directly in that order. The attempt to add a shape-based selector to the build script
+was reverted because the insertion did not take effect and a half-edited generator is
+worse than none; the mapping above is what the next attempt needs.
