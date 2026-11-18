@@ -548,3 +548,17 @@ computes the target locally and never uses the probability array as scratch.
 The shipped dispatch now carries typical-p, top-p, top-k, min-p, temperature,
 XTC, penalties, adaptive-p and mirostat, each gated in that build. Only `dist`
 and `temp_ext` remain, both waiting on the f64 record in the tech-debt ledger.
+
+## Fixed-seed determinism in the shipped build
+
+```
+seed 1 twice identical: YES
+seed 2 draws differ:    YES
+draws(s1): 1791095845 4282876139 3093770124 4005303368  cut=3
+draws(s2): 1872583848 794921487 111352301 4000937544  cut=3
+```
+
+The same seed reproduces the whole run (four draws, the typical-p cut, the kept
+ids and the probabilities byte for byte), and a different seed changes the
+draws. The seed-1 draws are the documented `std::mt19937` sequence, which ties
+this test to the earlier stream verification.

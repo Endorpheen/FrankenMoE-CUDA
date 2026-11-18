@@ -916,5 +916,11 @@ fn fg_sampler_chain(op: i64, lv: f32[:], p: f32[:], id: i64[:], n: i64,
         p[0] = sm_mirostat_update(f, f2, f3, lv[0]);
         return 0;
     }
+    if op == 10 {
+        return sm_mt_seed(id, k);
+    }
+    if op == 11 {
+        return sm_mt_next(id);
+    }
     return -2;
 }
