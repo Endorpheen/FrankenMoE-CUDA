@@ -727,3 +727,21 @@ A defect of mine found here: `GGML_GOOSE_SAMPLER_CHAIN=0` did not disable XTC an
 penalties because those hooks lacked the guard, so the first "OFF" run was not
 off at all and would have produced a meaningless equality. The guards are in
 place and the run above is the valid one, verified by the counter being zero.
+
+## Four stages live at once, output identical
+
+Same server, same request, with typical and DRY switched on in the chain:
+
+```
+[ON ] " Paris, and its population is approximately "
+      counters: FG171_DRY, FG171_PENALTIES, FG171_TOP_P, FG171_TYPICAL
+[OFF] " Paris, and its population is approximately "
+      counters: none
+```
+
+All four stages execute for real in the live path and the generated text does not
+change. DRY's real-path doubt from the previous entry is answered: it runs and
+matches.
+
+Still missing from the live path: adaptive-p and mirostat (they need sampler
+selection in the server settings) and `dist`/`temp_ext` (TD-S1).
