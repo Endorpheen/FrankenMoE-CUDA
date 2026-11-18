@@ -171,3 +171,27 @@ Consequences:
    `foo` is present because it is exported, and `main` in that file also calls it. The case
    of an exported function with no caller has not been tested yet, and it must be: if export
    alone keeps the body, TD-S5's rule can be relaxed to "export it" instead of "call it".
+
+### TD-S8, the open question answered
+
+An exported function needs **no caller** to survive. Reproduced the same day:
+
+```
+printf 'export fn bar(a: i64) -> i64 {\n    return a * 3;\n}\n\nfn main() {\n    let r = 0 - 1;\n    if r < 0 {\n        return;\n    }\n}\n' > exptest2.goose
+goose -o exptest2.c exptest2.goose
+gcc -O1 -c exptest2.c -o exptest2.o && nm -g --defined-only exptest2.o
+0000000000000000 T bar
+0000000000000022 T main
+```
+
+`bar` is present even though `main` never calls it. So on the canonical compiler:
+
+- **exported** functions are emitted and keep a stable name whether or not anything calls them;
+- the "call it from the build root" rule was a workaround for the caret compiler, where an
+  unreachable function was dropped and its id silently moved to a neighbour.
+
+Action, not yet taken: the shipping sampler chain and the grammar shim still address entry
+points by `gg_function_N`. Converting them to `export fn` removes that fragility and lets the
+host declare plain prototypes. It is a contained change in
+`goose/sampling/sampler-chain-full.goose` plus the two generators, and it should be done before
+the next chain change rather than during it.
