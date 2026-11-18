@@ -1,0 +1,34 @@
+# EXP-2026-11-18-1110: grammar automaton on an index model
+
+Goal: port `llama_grammar_advance_stack` to Goose over flat rule arrays, replacing
+the native pointer stacks with global element indexes.
+
+## Oracle
+
+`tests/gate.cpp` compiles `llama-grammar.cpp` into the fixture, so the static native
+automaton is called directly rather than re-implemented. The same rule table is
+built in the native representation and as flat arrays:
+
+```
+rules[0] = RULE_REF 1, END      global 0..1
+rules[1] = CHAR 'a', END        global 2..3
+rules[2] = CHAR 'x', END        global 4..5
+```
+
+## Current result
+
+```
+native: n=1 d=1 t=3 v=97          (one final stack, terminal 'a')
+goose : n=2 d=1 t=2 v=1  d=1 t=3 v=97
+```
+
+The Goose version finds the right terminal stack but also emits the intermediate
+stack that still holds the `RULE_REF` bookkeeping entry. The native keeps
+in-progress stacks in its worklist and only appends a stack to the result when its
+top is terminal or the stack is empty.
+
+Fix: separate the worklist pool from the result, and append to the result only in
+those two cases. That needs one more slice (the work pool) in the entry signature.
+
+Element type values used: END=0, ALT=1, RULE_REF=2, CHAR=3, CHAR_NOT=4, CHAR_ANY=7
+(checked in `llama-grammar.h`, not assumed).
