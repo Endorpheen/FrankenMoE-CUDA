@@ -516,3 +516,17 @@ penalties (shipping build): cases=200 mismatches=0   (logits bitwise)
 
 The dispatch of the shipped module now carries typical-p, top-p, top-k, min-p,
 temperature, XTC and penalties, each gated in that same build.
+
+## DRY reaches the shipped module
+
+The four DRY steps are in `goose/sampling/sampler-chain-full.goose` behind one
+entry (`fg_sampler_dry`), with its own id and shim emitted by the build script.
+Verified end to end in the shipping build:
+
+```
+dry (shipping build): cases=120 mismatches=0
+```
+
+120 random contexts with 1-4 breakers (tails of 0-2 tokens), random
+allowed_length, comparing both the repeat-count array and the resulting logits
+against a reference of the four native steps.

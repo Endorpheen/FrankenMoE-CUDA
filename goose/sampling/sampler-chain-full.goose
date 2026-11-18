@@ -1,3 +1,5 @@
+extern fn logf(x: f32) -> f32;
+extern fn powf(x: f32, y: f32) -> f32;
 // Sampler chain in Goose: MT19937, the canonical double draw and the
 // top-k / top-p / min-p / temperature / distribution sequence, ported from
 // src/llama-sampler.cpp.
@@ -642,6 +644,159 @@ fn sm_apply_penalties(lv: f32[:], id: i64[:], hist: f32[:], n: i64, hn: i64,
         i = i + 1;
     }
     return n;
+}
+
+
+// ---- DRY (steps 1-4) -------------------------------------------------------
+// step 1: limit the repetition window by the nearest restart sequence
+fn sm_dry_rep_limit(last: i64[:], b_head: i64[:], b_ts: i64[:], b_tl: i64[:],
+                    b_tail: i64[:], n: i64, nb: i64) -> i64 {
+    var rep_limit: i64 = n;
+    var i: i64 = 0;
+    while i < n {
+        let tok: i64 = last[n - 1 - i];
+        var longest: i64 = -1;
+        var b: i64 = 0;
+        while b < nb {
+            if b_head[b] == tok {
+                let sl: i64 = b_tl[b];
+                if sl > longest && sl <= i {
+                    var ok: bool = true;
+                    var off: i64 = 0;
+                    while off < sl {
+                        if b_tail[b_ts[b] + off] != last[n - 1 - (i - off - 1)] {
+                            ok = false;
+                            break;
+                        }
+                        off = off + 1;
+                    }
+                    if ok {
+                        longest = sl;
+                    }
+                }
+            }
+            b = b + 1;
+        }
+        if longest >= 0 {
+            rep_limit = i - longest;
+            break;
+        }
+        i = i + 1;
+    }
+    return rep_limit;
+}
+
+// step 2: reverse Z-algorithm repeat counts
+fn sm_dry_repeat_counts(last: i64[:], rc: i64[:], n: i64, rep_limit: i64) -> i64 {
+    let lastidx: i64 = n - 1;
+    var rt: i64 = 0;
+    var lt: i64 = 0;
+    var k: i64 = 1;
+    while k < n {
+        if k > rt {
+            var m: i64 = 0;
+            while m + k < n && last[n - 1 - m] == last[n - 1 - (m + k)] {
+                m = m + 1;
+            }
+            var v: i64 = m;
+            if v > rep_limit { v = rep_limit; }
+            rc[lastidx - k] = v;
+            if m > 0 {
+                lt = k;
+                rt = k + m - 1;
+            }
+        } else {
+            let pp: i64 = k - lt;
+            let rpl: i64 = rt - k + 1;
+            if rc[lastidx - pp] < rpl {
+                var v: i64 = rc[lastidx - pp];
+                if v > rep_limit { v = rep_limit; }
+                rc[lastidx - k] = v;
+            } else {
+                var i2: i64 = rt + 1;
+                while i2 < n && last[n - 1 - i2] == last[n - 1 - (i2 - k)] {
+                    i2 = i2 + 1;
+                }
+                var v: i64 = i2 - k;
+                if v > rep_limit { v = rep_limit; }
+                rc[lastidx - k] = v;
+                lt = k;
+                rt = i2 - 1;
+            }
+        }
+        k = k + 1;
+    }
+    return 0;
+}
+
+// steps 3-4: penalties from the maximum repeat of each candidate
+fn sm_apply_dry(last: i64[:], rc: i64[:], lv: f32[:], id: i64[:],
+                br_head: i64[:], br_tl: i64[:],
+                n_last: i64, nc: i64, allowed: i64, nb: i64,
+                multiplier: f32, base: f32) -> i64 {
+    var max_exp_f: f32 = 0.0;
+    if base > 1.000001 {
+        max_exp_f = 88.7228391 / logf(base);
+    }
+    var c: i64 = 0;
+    while c < nc {
+        let tok: i64 = id[c];
+        var max_rep: i64 = -1;
+        var i: i64 = 0;
+        while i < n_last - 1 {
+            if rc[i] >= allowed {
+                if last[n_last - 2 - i] == tok {
+                    if rc[i] > max_rep { max_rep = rc[i]; }
+                }
+            }
+            i = i + 1;
+        }
+        if max_rep >= 0 {
+            var single: bool = false;
+            var b: i64 = 0;
+            while b < nb {
+                if br_head[b] == tok && br_tl[b] == 0 {
+                    single = true;
+                    break;
+                }
+                b = b + 1;
+            }
+            if !single {
+                var e_f: f32 = 0.0;
+                var t: i64 = 0;
+                while t < max_rep - allowed {
+                    if max_exp_f > 0.0 && e_f + 1.0 > max_exp_f {
+                        break;
+                    }
+                    e_f = e_f + 1.0;
+                    t = t + 1;
+                }
+                let penalty: f32 = multiplier * powf(base, e_f);
+                lv[c] = lv[c] - penalty;
+            }
+        }
+        c = c + 1;
+    }
+    return nc;
+}
+
+// single entry for the whole DRY stage
+fn fg_sampler_dry(last: i64[:], rc: i64[:], br_head: i64[:], br_ts: i64[:],
+                  br_tl: i64[:], br_tail: i64[:], lv: f32[:], id: i64[:],
+                  n_last: i64, nc: i64, allowed: i64, nb: i64,
+                  multiplier: f32, base: f32) -> i64 {
+    if multiplier == 0.0 || base < 1.0 || n_last == 0 {
+        return nc;
+    }
+    let rl = sm_dry_rep_limit(last, br_head, br_ts, br_tl, br_tail, n_last, nb);
+    if rl < allowed {
+        return nc;
+    }
+    let rrc = sm_dry_repeat_counts(last, rc, n_last, rl);
+    if rrc < 0 {
+        return -1;
+    }
+    return sm_apply_dry(last, rc, lv, id, br_head, br_tl, n_last, nc, allowed, nb, multiplier, base);
 }
 
 // Single stable entry point for the shipped library. Generated function ids
