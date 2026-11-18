@@ -15,7 +15,20 @@ rules[1] = CHAR 'a', END        global 2..3
 rules[2] = CHAR 'x', END        global 4..5
 ```
 
-## Current result
+## Result after the worklist split
+
+```
+native:     n=1 d=1 t=3 v=97
+goose :     n=1 d=1 t=3 v=97
+
+native alt: n=2 d=1 t=3 v=98  d=1 t=3 v=97
+goose  alt: n=2 d=1 t=3 v=98  d=1 t=3 v=97
+```
+
+Both the plain rule reference and the alternation match, including the order in
+which the alternates are produced. `advance_stack` is ported on the index model.
+
+## Earlier state (kept for the record)
 
 ```
 native: n=1 d=1 t=3 v=97          (one final stack, terminal 'a')
