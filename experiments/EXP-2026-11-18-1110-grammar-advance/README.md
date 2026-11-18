@@ -907,3 +907,25 @@ the correct refusal: it will not guess.
 
 The generator's failure mode is what I want: a shape that matches nothing stops the build
 instead of wiring an arbitrary function.
+
+## Pre-filter wired; it computes ranges but sees single-candidate calls
+
+The host pre-filter is in place and the diagnostic confirms it works:
+
+```
+FG171_PREFILTER ranges=2  cur_p=1
+FG171_PREFILTER ranges=-1 cur_p=1
+```
+
+Two ranges were derived for `[a-z ]+`, so the Goose first-set entry is reachable and
+correct on the live path, and the second sample shows the refusal path (`-1`) when the
+decision is not expressible.
+
+What it also shows is that the calls observed are single-candidate calls, where a
+pre-filter has nothing to save. The 84 ms average over 256 calls therefore cannot come
+from calls shaped like these, so the next measurement must log `cur_p` on **every** call
+over a window, not on a sample, to find where the time is. That is a one-line change and
+it is the only thing that will settle the question.
+
+The pre-filter stays: it is inert when the entry refuses, and on full-set calls it removes
+candidates before the per-candidate work.

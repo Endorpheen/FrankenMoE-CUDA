@@ -37,6 +37,10 @@ fn main() {
     let dsw = fg_sampler_dist_words(lv, 8, 1, 2, 177);
     let dpk = fg_sampler_dist_pick(lv, p, 8, 1, 2, 178);
     let tx = fg_sampler_temp_ext(lv, p, 8, 0.8, 0.4, 1.0, 179);
+    let fset = fg_grammar_first_set(rc0, rc0, rc0, rc0, 1, rc0, rc0, 4, 181);
+    if fset < -1 {
+        return;
+    }
     let gr = fg_grammar_reject(rc0, rc0, rc0, rc0, rc0, 1, rc0, rc0, rc0, rc0, rc0, 2,
                                rc0, rc0, rc0, rc0, rc0, rc0, rc0, rc0, rc0, 4, 4, 2, 180);
     if tx < 0 || gr < 0 {

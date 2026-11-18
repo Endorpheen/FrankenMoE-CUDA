@@ -1377,6 +1377,12 @@ extern "C" int64_t fg_grammar_reject_call(
         fg_slice_rec s_tmp_rej, fg_slice_rec s_tmp_cur, fg_slice_rec s_rowbuf, fg_slice_rec s_rej,
         int64_t v_maxs, int64_t v_maxd, int64_t v_maxcp) __attribute__((weak));
 
+extern "C" int64_t fg_grammar_first_set_call(fg_slice_rec s_etype, fg_slice_rec s_eval,
+                                            fg_slice_rec s_stacks, fg_slice_rec s_stackd,
+                                            int64_t v_nstacks, fg_slice_rec s_lo,
+                                            fg_slice_rec s_hi, int64_t v_maxr)
+                                            __attribute__((weak));
+
 static bool fg_grammar_enabled() {
     static const bool on = []() {
         const char * f = getenv("GGML_GOOSE_GRAMMAR");
@@ -1443,6 +1449,44 @@ void llama_grammar_apply_impl(const struct llama_grammar & grammar, llama_token_
     llama_grammar_candidates candidates_grammar;
     candidates_grammar.reserve(cur_p->size);
 
+    // Cheap pre-filter: Goose says which first codepoints the current stacks accept,
+    // and the host drops the obvious mismatches before any per-candidate call.
+    std::vector<int64_t> fg_lo, fg_hi;
+    int64_t fg_nranges = -1;
+    if (fg_grammar_first_set_call != nullptr && fg_grammar_enabled() &&
+            !grammar.stacks.empty() && grammar.stacks.size() <= FG_MAXS &&
+            !grammar.stacks[0].empty()) {
+        fg_flat_rules & fl = fg_flatten(grammar.rules);
+        fg_lo.assign(64, 0); fg_hi.assign(64, 0);
+        std::vector<int64_t> pstk(FG_MAXS * FG_MAXD, 0), pstd(FG_MAXS, 0);
+        bool mapped = true;
+        for (size_t sIdx = 0; sIdx < grammar.stacks.size() && mapped; ++sIdx) {
+            int64_t d = 0;
+            for (const auto * e : grammar.stacks[sIdx]) {
+                if (d >= FG_MAXD) { mapped = false; break; }
+                auto it = fl.index.find(e);
+                if (it == fl.index.end()) { mapped = false; break; }
+                pstk[sIdx * FG_MAXD + d] = it->second;
+                d++;
+            }
+            pstd[sIdx] = d;
+        }
+        if (mapped) {
+            fg_slice_rec a{fl.etype.data(), (int64_t) fl.etype.size()};
+            fg_slice_rec b{fl.eval.data(),  (int64_t) fl.eval.size()};
+            fg_slice_rec c{pstk.data(), FG_MAXS * FG_MAXD};
+            fg_slice_rec dd{pstd.data(), (int64_t) grammar.stacks.size()};
+            fg_slice_rec lo{fg_lo.data(), 64};
+            fg_slice_rec hi{fg_hi.data(), 64};
+            fg_nranges = fg_grammar_first_set_call(a, b, c, dd, (int64_t) grammar.stacks.size(),
+                                                  lo, hi, 64);
+        }
+    }
+
+    static thread_local long long pf_n = 0;
+    if (getenv("GGML_GOOSE_GRAMMAR_DIAG") && (pf_n++ % 64) == 0) {
+        fprintf(stderr, "FG171_PREFILTER ranges=%lld cur_p=%zu\n", (long long) fg_nranges, cur_p->size);
+    }
     for (size_t i = 0; i < cur_p->size; ++i) {
         const llama_token id      = cur_p->data[i].id;
         const std::string & piece = grammar.vocab->token_to_piece(id);
@@ -1454,7 +1498,19 @@ void llama_grammar_apply_impl(const struct llama_grammar & grammar, llama_token_
         } else if (piece.empty() || piece[0] == 0) {
             cur_p->data[i].logit = -INFINITY;
         } else {
-            candidates_decoded.push_back(decode_utf8(piece, grammar.partial_utf8));
+            auto decoded = decode_utf8(piece, grammar.partial_utf8);
+            if (fg_nranges >= 0 && !decoded.first.empty()) {
+                const int64_t cp0 = (int64_t) decoded.first[0];
+                bool in = false;
+                for (int64_t r = 0; r < fg_nranges; ++r) {
+                    if (cp0 >= fg_lo[r] && cp0 <= fg_hi[r]) { in = true; break; }
+                }
+                if (!in) {
+                    cur_p->data[i].logit = -INFINITY;
+                    continue;
+                }
+            }
+            candidates_decoded.push_back(std::move(decoded));
             candidates_grammar.push_back({ i, candidates_decoded.back().first.data(), candidates_decoded.back().second, id });
         }
     }
