@@ -742,3 +742,31 @@ the same grammar with the hook off:
 
 No further optimization is attempted here, because the two possibilities require
 different fixes and the measurement is cheap.
+
+## The cost is resampling caused by our own rejections
+
+Measured with the permissive grammar `[a-z ]*`:
+
+```
+on  16.39   off 55.14      (512 tokens)
+FG171_GRAMMAR goose calls: about 500 for 512 tokens
+```
+
+One call per token, one candidate per call - and still three times slower. A call over a
+single candidate cannot cost tens of milliseconds, so the time must be spent **outside**
+the hook: `common_sampler_sample` resamples when the validation rejects, and a resample
+reloads the logits and runs the whole chain again. The hook is very likely rejecting
+tokens the native validator accepts.
+
+First suspect: `fg_flatten` caches the flat rule table keyed by `&grammar.rules`. That
+address can be reused between requests or after a grammar is rebuilt, in which case a
+stale table is used and the decisions are wrong - rejecting valid tokens and triggering
+resampling on every step.
+
+Fix to try first: key the cache by content (rule count and the first and last element) or
+rebuild it on every call, since the tables are tiny compared with the candidate pass.
+Then re-measure: a correct validator should return to about 55 tok/s with a permissive
+grammar.
+
+Recorded with the evidence rather than patched blindly: the symptom is speed, the cause
+is a wrong decision.
