@@ -5,10 +5,11 @@ extern "fg161_free_buffer" fn free_buffer(buffer: i64);
 extern "fg161_reset_buffer" fn reset_buffer(buffer: i64);
 extern "fg161_usage" fn set_usage(buffer: i64, usage: i64);
 extern "fg161_tensor_alloc" fn tensor_alloc(buffer: i64, t: i64, address: u64) -> i64;
+extern "fg161_generation" fn generation(buffer: i64) -> u64;
 
 fn gen_of(buffer: i64) -> i64 {
-    // generation is kept per buffer in the host record; 0 means never reset
-    return buffer & 0;
+    // the generation lives in the host record; the host bumps it on reset/free
+    return generation(buffer) as i64;
 }
 
 fn bump(buffer: i64) -> i64 {
@@ -37,7 +38,7 @@ fn reset(buffer: i64) -> i64 {
         return -1;
     }
     reset_buffer(buffer);
-    return bump(buffer);
+    return gen_of(buffer);
 }
 
 fn place(buffer: i64, t: i64, address: u64, generation: i64) -> i64 {
@@ -48,7 +49,7 @@ fn place(buffer: i64, t: i64, address: u64, generation: i64) -> i64 {
 }
 
 // Callable entry for the C host: 0 allocate, 1 release, 2 reset, 3 place.
-fn dispatch(op: i64, a: i64, b: i64, c: i64) -> i64 {
+fn dispatch(op: i64, a: i64, b: i64, c: i64, d: i64) -> i64 {
     if op == 0 {
         return allocate(a, b as u64);
     }
@@ -59,12 +60,12 @@ fn dispatch(op: i64, a: i64, b: i64, c: i64) -> i64 {
         return reset(a);
     }
     if op == 3 {
-        return place(a, b, c as u64, 0);
+        return place(a, b, c as u64, d);
     }
     return -2;
 }
 
 fn main() {
     print("p4-13 adapter smoke");
-    let ignored = dispatch(99, 0, 0, 0);
+    let ignored = dispatch(99, 0, 0, 0, 0);
 }

@@ -61,3 +61,8 @@ int fg161_live_count(void) {
 
 /* the Goose module imports this exact name */
 void fg161_usage(int64_t h, int64_t usage) { fg161_set_usage(h, usage); }
+
+void * fg161_buffer_base(int64_t h) {
+    if (h <= 0 || h >= FG161_MAX || !g_slots[h].live) return NULL;
+    return ggml_backend_buffer_get_base(g_slots[h].buf);
+}

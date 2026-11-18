@@ -32,3 +32,19 @@ the operations; `host/adapter_wrap.c` maps `allocate`/`release`/`reset` to it an
 (`host/adapter-reference.txt`): `goose_alloc=1 live=1 gen=0`,
 `goose_reset_ret=1 gen=1`, `goose_release_ret=0 live=0`. `place` (op 3) and the
 real generation argument are still to be wired.
+
+## Generation guard works end to end (EXP-2026-11-18-1022)
+
+`gen_of` now reads `fg161_generation` from the host and `dispatch` takes the
+generation as its fifth argument. The test raises the contract's item 6 through
+the Goose path:
+
+```
+alloc=1 live=1 gen=0
+place_fresh=0 reset=1 place_stale=-1 release=0 live=0
+```
+
+A fresh placement is accepted, `reset` returns the new generation, a placement
+carrying the old generation is rejected, and `release` clears the live entry.
+`reset` was fixed to return the new generation rather than the generation after
+the bump.

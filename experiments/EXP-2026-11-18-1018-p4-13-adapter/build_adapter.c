@@ -959,23 +959,25 @@ static struct {
   unsigned char dummy;
 } gg_globals;
 static void gg_function_0(int64_t base);
-static int64_t gg_function_1(int64_t p0, int64_t p1, int64_t p2, int64_t p3, int64_t base);
+static int64_t gg_function_1(int64_t p0, int64_t p1, int64_t p2, int64_t p3, int64_t p4, int64_t base);
 static int64_t gg_function_2(int64_t p0, uint64_t p1, int64_t base);
 static int64_t gg_function_5(int64_t p0, int64_t base);
 static int64_t gg_function_7(int64_t p0, int64_t base);
 static int64_t gg_function_9(int64_t p0, int64_t base);
-static int64_t gg_function_10(int64_t p0, int64_t base);
 static int64_t gg_function_11(int64_t p0, int64_t p1, uint64_t p2, int64_t p3, int64_t base);
-static int64_t gg_function_10(int64_t p0, int64_t base) {
+static int64_t gg_function_9(int64_t p0, int64_t base) {
   _Alignas(8) int64_t t0;
   _Alignas(8) int64_t t1;
-  _Alignas(8) int64_t t2;
+  _Alignas(8) uint64_t t2;
   _Alignas(8) int64_t v0;
   v0 = p0;
   {
   t1 = ((int64_t)(v0));
-  t2 = ((int64_t)(((int64_t)UINT64_C(0))));
-  t0 = ((int64_t)(((t1) & (t2))));
+#ifndef __cplusplus
+  extern uint64_t (fg161_generation)(int64_t);
+#endif
+  t2 = fg161_generation(t1);
+  t0 = ((int64_t)(((int64_t)(t2))));
   goto gg_done;
   }
 gg_done:;
@@ -1013,7 +1015,7 @@ static int64_t gg_function_11(int64_t p0, int64_t p1, uint64_t p2, int64_t p3, i
   if (!t4) {
   t5 = ((int64_t)(v3));
   t6 = ((int64_t)(v0));
-  t7 = gg_function_10(t6, base + 0);
+  t7 = gg_function_9(t6, base + 0);
   t8 = ((int64_t)(t7));
   t4 = ((t5) != (t8));
   }
@@ -1033,25 +1035,6 @@ static int64_t gg_function_11(int64_t p0, int64_t p1, uint64_t p2, int64_t p3, i
 #endif
   t14 = fg161_tensor_alloc(t11, t12, t13);
   t0 = ((int64_t)(t14));
-  goto gg_done;
-  }
-gg_done:;
-  return t0;
-}
-static int64_t gg_function_9(int64_t p0, int64_t base) {
-  _Alignas(8) int64_t t0;
-  _Alignas(8) int64_t t1;
-  _Alignas(8) int64_t t2;
-  _Alignas(8) int64_t t3;
-  _Alignas(8) int64_t t4;
-  _Alignas(8) int64_t v0;
-  v0 = p0;
-  {
-  t1 = ((int64_t)(v0));
-  t2 = gg_function_10(t1, base + 0);
-  t3 = ((int64_t)(t2));
-  t4 = ((int64_t)(((int64_t)UINT64_C(1))));
-  t0 = ((int64_t)(((int64_t)((uint64_t)(t3) + (uint64_t)(t4)))));
   goto gg_done;
   }
 gg_done:;
@@ -1165,7 +1148,7 @@ static int64_t gg_function_2(int64_t p0, uint64_t p1, int64_t base) {
 gg_done:;
   return t0;
 }
-static int64_t gg_function_1(int64_t p0, int64_t p1, int64_t p2, int64_t p3, int64_t base) {
+static int64_t gg_function_1(int64_t p0, int64_t p1, int64_t p2, int64_t p3, int64_t p4, int64_t base) {
   _Alignas(8) int64_t t0;
   _Alignas(8) int64_t t1;
   _Alignas(8) int64_t t2;
@@ -1192,10 +1175,12 @@ static int64_t gg_function_1(int64_t p0, int64_t p1, int64_t p2, int64_t p3, int
   _Alignas(8) int64_t v1;
   _Alignas(8) int64_t v2;
   _Alignas(8) int64_t v3;
+  _Alignas(8) int64_t v4;
   v0 = p0;
   v1 = p1;
   v2 = p2;
   v3 = p3;
+  v4 = p4;
   {
   t1 = ((int64_t)(v0));
   t2 = ((int64_t)(((int64_t)UINT64_C(0))));
@@ -1236,7 +1221,7 @@ static int64_t gg_function_1(int64_t p0, int64_t p1, int64_t p2, int64_t p3, int
   t17 = ((int64_t)(v1));
   t18 = ((int64_t)(v2));
   t19 = ((uint64_t)(((uint64_t)(v3))));
-  t20 = ((int64_t)(((int64_t)UINT64_C(0))));
+  t20 = ((int64_t)(v4));
   t0 = gg_function_11(t17, t18, t19, t20, base + 0);
   goto gg_done;
   }
@@ -1254,7 +1239,8 @@ static void gg_function_0(int64_t base) {
   _Alignas(8) int64_t t2;
   _Alignas(8) int64_t t3;
   _Alignas(8) int64_t t4;
-  int64_t t5;
+  _Alignas(8) int64_t t5;
+  int64_t t6;
   _Alignas(8) int64_t v0;
   {
   (t0).base = gg_get_stack(base + 0)->base + gg_get_stack(base + 0)->top; (t0).len = 0;
@@ -1265,9 +1251,10 @@ static void gg_function_0(int64_t base) {
   t2 = ((int64_t)(((int64_t)UINT64_C(0))));
   t3 = ((int64_t)(((int64_t)UINT64_C(0))));
   t4 = ((int64_t)(((int64_t)UINT64_C(0))));
-  v0 = gg_function_1(t1, t2, t3, t4, base + 1);
+  t5 = ((int64_t)(((int64_t)UINT64_C(0))));
+  v0 = gg_function_1(t1, t2, t3, t4, t5, base + 1);
   }
-  for (t5 = 0; t5 < 1; t5++) gg_stacks[base + t5].top = 0;
+  for (t6 = 0; t6 < 1; t6++) gg_stacks[base + t6].top = 0;
 }
 #ifdef _MSC_VER
 static volatile LONG gg_globals_state;
