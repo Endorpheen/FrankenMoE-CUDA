@@ -662,6 +662,9 @@ fn gate_dispatch(op: i64, lv: f32[:], p: f32[:], id: i64[:], n: i64, f: f32, k: 
     if op == 10 {
         return k;
     }
+    if op == 14 {
+        return sm_sample_dist(lv, n, id);
+    }
     if op == 12 {
         return sm_apply_min_p(lv, p, id, n, f, k);
     }
@@ -988,6 +991,34 @@ fn sm_apply_min_p(lv: f32[:], p: f32[:], id: i64[:], n: i64, min_p: f32, min_kee
     }
     return kept;
 }
+
+// dist: std::discrete_distribution over the probabilities. libstdc++ normalises
+// the weights by their sum, builds prefix sums and takes lower_bound of a
+// generate_canonical<double,53> draw (two 32-bit words).
+fn sm_sample_dist(p: f32[:], n: i64, state: i64[:]) -> i64 {
+    var sum: f64 = 0.0;
+    var i: i64 = 0;
+    while i < n {
+        sum = sum + (p[i] as f64);
+        i = i + 1;
+    }
+    let u: f64 = mt_canonical(state);
+    var prefix: f64 = 0.0;
+    i = 0;
+    while i < n {
+        prefix = prefix + (p[i] as f64);
+        let cp: f64 = prefix / sum;
+        if cp >= u {
+            return i;
+        }
+        i = i + 1;
+    }
+    return n - 1;
+}
+
+fn gate_dist(p: f32[:], n: i64, state: i64[:]) -> i64 {
+    return sm_sample_dist(p, n, state);
+}
 fn main() {
     print("p6-10 typical gate");
     let lv: f32[4] = [0.0, 0.0, 0.0, 0.0];
@@ -1004,5 +1035,6 @@ fn main() {
     let ignored10 = sm_adaptive_target(0.5, 0.0, 0.0, p);
     let ignored11 = gate_mirostat(lv, 4, 1.0, 3, 100.0);
     let ignored12 = sm_apply_min_p(lv, p, id, 4, 0.5, 1);
+    let ignored14 = gate_dist(lv, 4, id);
     let ignored13 = sm_apply_top_k(lv, p, id, 4, 2);
 }

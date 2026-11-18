@@ -301,3 +301,20 @@ Two measurements in this step were mine, not the module's: the logits were drawn
 from only 2000 distinct values, so ties were frequent and the harness compared
 tie order against a different sort. With distinct logits the comparison is
 clean. Tie order is unspecified in the native sort as well.
+
+## dist sampling: not accepted yet
+
+`sm_sample_dist` reproduces the libstdc++ shape (normalise by the weight sum,
+prefix sums, `lower_bound` of a `generate_canonical<double,53>` draw) and the
+gate compares it with a real `std::discrete_distribution` fed by the same
+`std::mt19937` seed:
+
+```
+dist: cases=400 mismatches=368   (goose almost always returns index 0)
+```
+
+Returning index 0 in ~92% of the cases means the draw `u` is effectively zero,
+which points at `mt_canonical` (or the i64 to f64 conversion inside it) rather
+than at the prefix walk: `sm_mt_next` itself is verified against `std::mt19937`
+on 1280 draws. The next attempt must gate `mt_canonical` on its own against a
+`generate_canonical<double,53>` reference before touching the selection.
