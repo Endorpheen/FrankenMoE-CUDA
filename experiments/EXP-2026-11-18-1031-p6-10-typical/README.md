@@ -1039,3 +1039,27 @@ Method fix for the next measurement: interleave the configurations (ON, OFF, ON,
 OFF, ON, OFF) with separate server launches and compare paired differences, rather
 than three runs of one side followed by three of the other. A slow drift of the
 machine then cancels instead of being attributed to the stages.
+
+## Paired measurement: -1.3 % decode, prefill neutral
+
+Interleaved launches (ON, OFF, ON, OFF, ON, OFF), two requests each:
+
+```
+pair1: on=44.02 off=44.60  delta=-0.59 (-1.31 %)
+pair2: on=45.81 off=46.66  delta=-0.85 (-1.82 %)
+pair3: on=46.46 off=46.80  delta=-0.35 (-0.74 %)
+mean paired delta: -0.59 tok/s  (median -0.585)
+```
+
+The difference is consistent in sign across all three pairs and matches the
+instrumented hook cost of ~1.1 %. Prefill is neutral within the noise
+(+0.2 %, -0.5 %, +0.2 %).
+
+The drift is visible and confirms the method: pair 1 sits at ~44 tok/s and pair 3
+at ~46.6 with no code change between them. The earlier unpaired figures (-6.5 %)
+were that drift.
+
+So the current honest statement is: the Goose sampling stages cost about 1.3 % of
+decode and nothing measurable in prefill or memory. The remaining copies account
+for roughly 0.4 % of that, which is the only term left to recover before this can
+be called free.
