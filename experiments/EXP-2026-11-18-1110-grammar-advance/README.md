@@ -852,3 +852,24 @@ Decision for this stage: functionally complete, measured 3-5x slower on the full
 path, kept opt-in, and the performance item recorded as a compiler-level task. The
 migration continues with the acceptance measurement for the sampler stages, where the
 cost is already known to be about 1.3 %.
+
+## Next optimisation design: Goose computes the allowed set, host applies it
+
+The measured cost is the per-candidate loop inside the generated code, and four host-side
+rearrangements have already been ruled out. The remaining design that keeps the decision
+in Goose and removes the loop is:
+
+1. Goose, once per token, derives from the current stacks the set of **allowed first
+   codepoints** (as ranges, bounded to a small fixed count) - this is the grammar
+   decision, and it is tiny compared with the candidate array;
+2. the host applies that set to the ~248k candidates with a cheap C++ loop, rejecting the
+   obvious mismatches before any per-candidate call;
+3. only the surviving candidates go through the full automaton.
+
+This keeps every grammar decision in Goose while paying the per-candidate cost in code
+the compiler can optimise. It is a new entry and a new host loop, and it needs its own
+gate against the native rejection (same candidates rejected, no more and no fewer).
+
+Not implemented here: the size of the change and the need for a dedicated gate make it a
+separate slice, and starting it at the end of this iteration would leave a half-built
+path in the tree.
