@@ -127,3 +127,17 @@ entry points into these calls, carries the generation guard from §8, and passes
 the ordered plan through. The differential gate from §6 therefore tests the
 translation, not a reimplementation, which is exactly the shape option B was
 chosen for.
+
+## 10. Missing piece: the fg161 host bridge is not in the repository
+
+Measured: `grep -rln fg161_alloc_buffer --include=*.c --include=*.cpp goose`
+returns nothing. The primitives exist only inside the compiled stage-run
+`libggml-base.so.0`; their host host-unit (`host-unit.c` or equivalent) is not
+tracked anywhere in this repository. The Goose module's externs and the
+adapter's ABI are therefore known, but the C side that implements
+`fg161_alloc_buffer`/`fg161_free_buffer`/`fg161_reset_buffer`/`fg161_usage`/
+`fg161_tensor_alloc` has to be authored for P4-13.
+
+This is the concrete next deliverable: write that host unit, add the generation
+store it needs (§8), then run the differential gate (§6) against
+`experiments/EXP-2026-11-18-1014-p4-13-alloc-gate/`.
