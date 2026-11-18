@@ -302,3 +302,19 @@ TD-S5 and the dispatch inlining: a function that the host needs must be emitted,
 the current tooling has no way to require it. Until that is solved, the expanded
 `accept` cannot be gated and the simplified one (no reference expansion, 4/4) stays
 the accepted version.
+
+## accept: the workable split
+
+`accept` itself is not emitted from the accept-only unit (inlined), while in the
+composed unit the emitted entries are `g_grammar_reject`, `g_advance`, `g_reject`,
+`g_reject_multi` and `g_match_char`. So the practical split, the same one used for
+XTC, is:
+
+- the **host** shifts the matched class off the stack top (a few lines: match is
+  already decided, the top is popped and the position after the class is pushed);
+- **Goose** expands the result with `g_advance`, which is emitted and gated (2/2),
+  and which handles rule references and alternates.
+
+This keeps every grammar decision in Goose and needs no new compiler behaviour.
+`accept` as a single Goose function stays open; its logic is covered by
+`match_char` + `advance`, both gated.
