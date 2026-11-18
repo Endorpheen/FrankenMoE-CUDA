@@ -130,3 +130,24 @@ name, a name with a trailing dash, a prefix of a longer name, and two arbitrary 
 
 That near-miss set is deliberate: a byte comparison with a wrong length check passes the
 positive cases and fails these.
+
+## Slice 6: one level of the ngram cache
+
+`g_try_draft` ports the level decision of `common_ngram_cache::try_draft`, and it has a trap
+worth naming: the **best candidate is chosen by the product** `count * static_weight`
+(where the weight is `100 * static_count`, or 1 when the token is absent from the static
+part), while the **acceptance tests use the plain count**. Writing both with the same number
+is a silent behaviour change that no crash would reveal.
+
+```
+ngram cache level: cases=7 fails=0
+```
+
+The gate compares against the native body transcribed verbatim and against my expected
+values, so a wrong transcription fails too. Three cases exist only to catch the product
+trap:
+
+- **static weight flips**: a tie in plain counts is decided by the static count;
+- **static zero weight**: a token with static count 0 still gets weight 0, not 1, which is
+  the difference between "absent" and "present with zero";
+- **min percent boundary**: exactly 50 % passes, so the comparison stayed strict.
