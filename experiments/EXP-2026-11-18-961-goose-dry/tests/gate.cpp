@@ -46,7 +46,12 @@ static void native_dry(const std::vector<int64_t> & hist,
     std::vector<int> counts((size_t) last_n, 0);
     std::map<int64_t, int> max_rep;
 
-    auto rat = [&](int i) { return hist[(size_t) i]; };
+    // ring_buffer::rat answers "i tokens back from the newest", not "the i-th from
+    // the oldest" - src/llama-sampler.cpp ring_buffer::rat. The first version of
+    // this oracle indexed forwards, which is the same mistake the port made, so the
+    // two agreed on a wrong answer. EXP968's live gate against
+    // llama_sampler_init_dry_testing caught it.
+    auto rat = [&](int i) { return hist[(size_t) (hist.size() - 1 - (size_t) i)]; };
 
     // Step 1
     int rep_limit = last_n;

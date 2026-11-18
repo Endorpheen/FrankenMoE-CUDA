@@ -41,12 +41,16 @@ export fn dry_is_empty(multiplier: f32, base: f32, penalty_last_n: i64) -> bool 
 }
 
 fn dry_rat(history: const i64[:], n_history: i64, i: i64) -> i64 {
-    // Native's ring buffer is indexed by rat(i); here the caller passes the
-    // window already in order, which is what rat(i) with a full window returns.
+    // Native's ring buffer answers rat(i) as "i tokens back from the newest",
+    // not "the i-th from the oldest": ring_buffer::rat reads
+    // data[(first + size - i - 1) % capacity]. The caller passes the history in
+    // chronological order, so the mapping has to be reversed here. EXP968 found
+    // this the hard way - the first version indexed forwards and penalised the
+    // wrong token.
     if i < 0 || i >= n_history {
         return -1;
     }
-    return history[i];
+    return history[n_history - 1 - i];
 }
 
 // Step 1: how far back a repeat may count, or -1 when no breaker matched.
