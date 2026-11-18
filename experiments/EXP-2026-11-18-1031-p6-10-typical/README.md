@@ -89,3 +89,18 @@ Accepted now: unsorted top-p (small-candidate path, n <= 1024) matches the nativ
 filter in **900/900** cases (cut and kept ids), and typical-p still matches in
 **1800/1800**. The fixed-array probe through the dispatch gives the native
 result: `cut=1 id=4, lv=5,4,3,2,1`.
+
+## Unsorted Top-P validated on both size regimes
+
+The native filter uses a partial sort with k=256 and extends k to the full size
+when the cumulative mass has not reached p; a full sort yields the same prefix,
+so the Goose filter sorts fully and the result is identical. Gate:
+
+```
+typical-p:      cases=1800 mismatches=0
+top-p unsorted: cases=900  mismatches=0   (n = 64)
+top-p large:    cases=45   mismatches=0   (n = 2048)
+```
+
+Cut and kept ids match the native filter in every case, including the large
+vocabulary where the native heuristic is active.

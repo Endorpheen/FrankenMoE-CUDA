@@ -78,5 +78,28 @@ int main() {
         }
     }
     printf("top-p unsorted: cases=%d mismatches=%d\n", cases2, bad2);
-    return (bad||bad2) ? 1 : 0;
+    int bad3 = 0, cases3 = 0;
+    const int N2 = 2048;
+    for (int it = 0; it < 5; ++it) {
+        std::vector<float> logits(N2); for (auto& v : logits) v = nd(rng);
+        for (float tp : tps) for (int64_t mk : mks) {
+            std::vector<int64_t> id(N2); std::iota(id.begin(), id.end(), 0);
+            std::vector<float> sl = logits;
+            std::sort(id.begin(), id.end(), [&](int64_t a, int64_t b){ return sl[a] > sl[b]; });
+            std::vector<float> sv(N2), p(N2); for (int i=0;i<N2;++i) sv[i]=sl[id[i]];
+            float mx=sv[0], c=0; for (int i=0;i<N2;++i){p[i]=expf(sv[i]-mx);c+=p[i];}
+            for (int i=0;i<N2;++i) p[i]/=c;
+            size_t last=N2; float cum=0;
+            for (size_t i=0;i<(size_t)N2;++i){ cum+=p[i]; if (cum>=tp && (int64_t)(i+1)>=mk){last=i+1;break;} }
+            std::vector<int64_t> gid(N2); std::iota(gid.begin(), gid.end(), 0);
+            std::vector<float> glv = logits, gp(N2,0.f);
+            int64_t gn = gate_dispatch_c(1, glv.data(), gp.data(), gid.data(), N2, tp, mk);
+            cases3++;
+            bool eq = (gn == (int64_t)last);
+            if (eq) for (size_t i=0;i<last;++i) if (gid[i]!=id[i]) { eq=false; break; }
+            if (!eq) { bad3++; if (bad3<=3) printf("TOP-P-LARGE MISMATCH tp=%g mk=%lld goose=%lld native=%zu\n",(double)tp,(long long)mk,(long long)gn,last); }
+        }
+    }
+    printf("top-p large: cases=%d mismatches=%d\n", cases3, bad3);
+    return (bad||bad2||bad3) ? 1 : 0;
 }
