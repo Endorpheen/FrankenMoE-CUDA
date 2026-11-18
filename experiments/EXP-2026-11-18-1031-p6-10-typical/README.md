@@ -1266,3 +1266,19 @@ filter, so it does not cover this slice.
 Order for the next iterations: index-based rule table and stacks, then
 `advance_stack`, then `reject_candidates` with the host-supplied codepoints, each
 gated against the native functions on the existing fixtures.
+
+## Grammar slice: how the oracle will be built
+
+The native automaton functions (`llama_grammar_advance_stack`,
+`llama_grammar_reject_candidates`) are `static` inside `llama-grammar.cpp` and the
+parser class is not exported, so a test cannot link against them. The workable
+oracle is to compile that translation unit **into the fixture** and call the
+functions there, which keeps the comparison against the real code rather than
+against a re-implementation.
+
+Input to the gate: a small set of GBNF grammars, whose rule tables the fixture
+extracts through the same TU, then the Goose automaton consumes the same tables as
+flat arrays. This avoids needing a vocabulary for the automaton slice.
+
+The existing fixtures in EXP486/EXP489 cover the parser side and are not reused
+here.
