@@ -473,13 +473,42 @@ fn sm_apply_temp(lv: f32[:], n: i64, temp: f32) -> i64 {
     return n;
 }
 
+fn sift3(lv: f32[:], id: i64[:], p: f32[:], root_in: i64, end: i64) {
+    var root: i64 = root_in;
+    while 2 * root + 1 < end {
+        var c: i64 = 2 * root + 1;
+        if c + 1 < end && lv[c] < lv[c + 1] { c = c + 1; }
+        if lv[root] >= lv[c] { return; }
+        let tl: f32 = lv[root]; lv[root] = lv[c]; lv[c] = tl;
+        let ti: i64 = id[root]; id[root] = id[c]; id[c] = ti;
+        let tp: f32 = p[root]; p[root] = p[c]; p[c] = tp;
+        root = c;
+    }
+}
+
+// ascending by lv: build a max-heap, then move the root to the tail
+fn sort3(lv: f32[:], id: i64[:], p: f32[:], n: i64) {
+    var start: i64 = (n - 2) / 2;
+    while start >= 0 {
+        sift3(lv, id, p, start, n);
+        start = start - 1;
+    }
+    var end: i64 = n - 1;
+    while end > 0 {
+        let tl: f32 = lv[0]; lv[0] = lv[end]; lv[end] = tl;
+        let ti: i64 = id[0]; id[0] = id[end]; id[end] = ti;
+        let tp: f32 = p[0]; p[0] = p[end]; p[end] = tp;
+        sift3(lv, id, p, 0, end);
+        end = end - 1;
+    }
+}
+
 // typical-p: keep the tokens whose surprisal is closest to the entropy of the
 // distribution, honouring min_keep. Mirrors llama_sampler_typical_apply:
 // sort by logit desc, softmax, entropy, shifted = |(-log p) - entropy|, order by
 // shifted ascending, cumulative until > typical_p and i >= min_keep-1, then
 // leave the kept set in shifted order (unsorted flag at the caller).
-// NOTE: selection sort here is O(n^2); a heap sort is required before shipping
-// for the full vocabulary (the module already carries heap primitives).
+// Sorting is a heap sort (O(n log n)) over the three parallel arrays.
 fn sm_apply_typical(lv: f32[:], p: f32[:], id: i64[:], n: i64,
                            typical_p: f32, min_keep: i64) -> i64 {
     if n <= 0 || lv.len < n || p.len < n || id.len < n {
@@ -515,25 +544,9 @@ fn sm_apply_typical(lv: f32[:], p: f32[:], id: i64[:], n: i64,
         lv[i] = if d < 0.0 { -d } else { d };
         i = i + 1;
     }
-    // selection sort by shifted score ascending (stable enough for the gate);
-    // p moves with lv so the cumulative below stays aligned
-    i = 0;
-    while i < n {
-        var best: i64 = i;
-        var j: i64 = i + 1;
-        while j < n {
-            if lv[j] < lv[best] {
-                best = j;
-            }
-            j = j + 1;
-        }
-        if best != i {
-            let tl: f32 = lv[i]; lv[i] = lv[best]; lv[best] = tl;
-            let ti: i64 = id[i]; id[i] = id[best]; id[best] = ti;
-            let tp: f32 = p[i]; p[i] = p[best]; p[best] = tp;
-        }
-        i = i + 1;
-    }
+    // ascending by shifted score; lv, id and p move together so the
+    // cumulative below stays aligned with the order
+    sort3(lv, id, p, n);
     var cum: f32 = 0.0;
     var last: i64 = n;
     i = 0;

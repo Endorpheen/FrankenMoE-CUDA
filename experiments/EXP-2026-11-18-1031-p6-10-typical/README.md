@@ -31,10 +31,9 @@ Sizes and kept token ids match in every case.
 
 ## Heap sort attempt (reverted)
 
-A heap sort over the three parallel arrays was installed to remove the O(n^2)
-limit; it returned the full candidate count on every case (1800/1800
-mismatches), so the change was reverted rather than shipped. The validated
-selection-sort version is the current state. Diagnosis to continue from: the
-order produced by the max-heap extraction with negated shifted scores does not
-reproduce the native ascending order, and the probability array alignment must
-be re-checked after the sort before the O(n log n) version is accepted.
+The first heap-sort attempt negated the shifted scores before a max-heap
+extraction, which produced the reverse order and failed every case; it was
+reverted. The corrected version builds the max-heap directly on the shifted
+scores and extracts to the tail, giving ascending order with lv, id and p
+moving together. It passes the same gate unchanged: `cases=1800 mismatches=0`.
+Typical-P therefore runs at O(n log n).
