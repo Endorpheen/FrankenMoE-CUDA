@@ -19,15 +19,14 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Python
         run: python3 --version
-      # Existing tree/ledger drift (manifest gaps, canonical files older than
-      # their experiment sources) makes this check fail on main today. Keep it
-      # visible but non-blocking until that debt is fixed; blocking checks below
-      # are the ones a pull request must not break.
-      - name: Goose tree and ledger (informational)
-        continue-on-error: true
+      - name: Goose tree and ledger
         run: python3 tools/check-goose-tree.py
+      - name: Edge0 pack validation
+        run: python3 tools/tests/test_edge0_preflight.py
       - name: Generated artefacts policy
         run: python3 tools/check-generated-files.py
       - name: Tracked python tools compile
@@ -92,6 +91,12 @@ jobs:
           echo "${GOOSE_SHA256}  /tmp/goose.tar.gz" | sha256sum -c -
           mkdir -p "$HOME/goose"
           tar -xzf /tmp/goose.tar.gz -C "$HOME/goose" --strip-components=1
-          echo "$HOME/goose/bin" >> "$GITHUB_PATH"
+          if [ -x "$HOME/goose/bin/goose" ]; then
+            compiler="$HOME/goose/bin/goose"
+          else
+            compiler="$HOME/goose/goose"
+          fi
+          test -x "$compiler"
+          echo "GOOSE=$compiler" >> "$GITHUB_ENV"
       - name: Goose fast gate
         run: bash tools/check.sh fast

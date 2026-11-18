@@ -620,6 +620,18 @@ def destination(targets: list[str], experiment: str, count: int, relative: Path)
 
 def build(check: bool, force: bool = False) -> int:
     ledger = ledger_map()
+    manifest = json.loads((GOOSE / "MANIFEST.json").read_text())
+    integrated = {}
+    for row in manifest["entries"]:
+        revision = row.get("integration_commit")
+        if revision:
+            target = row["goose"]
+            blob = subprocess.check_output(
+                ["git", "show", f"{revision}:goose/{target}"], cwd=ROOT,
+            )
+            if hashlib.sha256(blob).hexdigest() != row["sha256"]:
+                raise ValueError(f"invalid integrated source: {target}")
+            integrated[target] = (row, blob)
     canonical = {}
     for target, experiment, source, native, gate in CANONICAL_SOURCES:
         path = EXPERIMENTS / experiment / source
@@ -633,6 +645,7 @@ def build(check: bool, force: bool = False) -> int:
             "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
             "gate": gate,
         }
+    canonical.update({target: row for target, (row, _) in integrated.items()})
 
     entries = []
     written = 0
@@ -653,9 +666,15 @@ def build(check: bool, force: bool = False) -> int:
             if stale.is_dir() and stale.name != "_archive":
                 shutil.rmtree(stale)
         for target, experiment, source, native, gate in CANONICAL_SOURCES:
+            if target in integrated:
+                continue
             path = GOOSE / target
             path.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(EXPERIMENTS / experiment / source, path)
+        for target, (_, blob) in integrated.items():
+            path = GOOSE / target
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(blob)
     for folder in sorted(EXPERIMENTS.iterdir()):
         if not folder.is_dir() or not folder.name.startswith("EXP-"):
             continue
