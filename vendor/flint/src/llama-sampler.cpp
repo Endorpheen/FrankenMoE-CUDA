@@ -1917,8 +1917,11 @@ static const char * llama_sampler_typical_name(const struct llama_sampler * /*sm
 // ---- Goose sampler chain hook (P6-10) --------------------------------------
 // The shipped chain module exposes one entry per stage through a generated id in
 // a C shim; when that shim is linked in and the stage is enabled, the Goose
-// implementation answers instead of the native body. The flag exists only to
-// disable the stage (GGML_GOOSE_SAMPLER_CHAIN=0).
+// implementation answers instead of the native body.
+//
+// NOT accepted yet: the Goose typical-p leaves the shifted scores in the logits
+// while the native body keeps the original logits, so the stage is opt-in until
+// that difference is fixed. It becomes default-on once the arrays match.
 #include <atomic>
 #include <cstdlib>
 #include <cstring>
@@ -1932,7 +1935,7 @@ static std::atomic<unsigned long long> g_goose_chain_calls{0};
 static bool fg_goose_chain_enabled() {
     static const bool on = []() {
         const char * f = getenv("GGML_GOOSE_SAMPLER_CHAIN");
-        return !(f && strcmp(f, "0") == 0);
+        return f && strcmp(f, "1") == 0;
     }();
     return on;
 }
