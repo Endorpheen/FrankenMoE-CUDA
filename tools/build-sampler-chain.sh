@@ -31,6 +31,10 @@ fn main() {
     let xtcr = fg_sampler_xtc(lv, p, id, 8, 0.5, 0.1, 1, 0.0, 172);
     let tbl: i64[16] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     let penr = fg_sampler_penalties(lv, id, p, tbl, tbl, 8, 8, 1.0, 0.0, 0.0);
+    let adr = fg_sampler_adaptive_p(lv, p, id, 8, 0.5, 0.0, 1.0, 174);
+    if adr < 0 {
+        return;
+    }
     if penr < 0 {
         return;
     }
@@ -52,69 +56,84 @@ python3 - "$out" <<'PY'
 import re, sys
 out = sys.argv[1]
 src = open(out + '/sampler_chain.c').read()
-m = re.search(r'static int64_t (gg_function_\d+)\(int64_t p0, gg_slice p1, gg_slice p2, gg_slice p3,'
-              r' int64_t p4, float p5, int64_t p6, float p7, float p8, int64_t base\);', src)
-if not m:
-    sys.exit('entry point prototype not found in the generated C')
-tp = re.search(r'static int64_t (gg_function_\d+)\(gg_slice p0, gg_slice p1, gg_slice p2,'
-               r' int64_t p3, float p4, int64_t p5, int64_t p6, int64_t base\);', src)
-xt = re.search(r'static int64_t (gg_function_\d+)\(gg_slice p0, gg_slice p1, gg_slice p2,'
-               r' int64_t p3, float p4, float p5, int64_t p6, float p7, int64_t p8, int64_t base\);', src)
-pn = re.search(r'static int64_t (gg_function_\d+)\(gg_slice p0, gg_slice p1, gg_slice p2, gg_slice p3,'
-               r' gg_slice p4, int64_t p5, int64_t p6, float p7, float p8, float p9, int64_t base\);', src)
-t = re.search(r'static int64_t (gg_function_\d+)\(gg_slice p0, gg_slice p1, gg_slice p2, gg_slice p3,'
-              r' int64_t p4, float p5, int64_t p6, int64_t base\);', src)
-d = re.search(r'static int64_t (gg_function_\d+)\(gg_slice p0, gg_slice p1, gg_slice p2, gg_slice p3,'
-              r' gg_slice p4, gg_slice p5, gg_slice p6, gg_slice p7,'
-              r' int64_t p8, int64_t p9, int64_t p10, int64_t p11, float p12, float p13, int64_t base\);', src)
-if not d:
-    sys.exit('dry entry point prototype not found in the generated C')
-open(out + '/sampler_chain_ids.h', 'w').write(
-    '#define FG_SAMPLER_CHAIN %s\n#define FG_SAMPLER_DRY %s\n#define FG_SAMPLER_TYPICAL %s\n#define FG_SAMPLER_TOP_P %s\n#define FG_SAMPLER_XTC %s\n#define FG_SAMPLER_PENALTIES %s\n'
-    % (m.group(1), d.group(1), t.group(1), tp.group(1), xt.group(1), pn.group(1)))
-assert xt is not None
-assert pn is not None
-assert tp is not None
-open(out + '/sampler_chain_shim.c', 'w').write(
-    '#include "sampler_chain.c"\n#include "sampler_chain_ids.h"\n\n'
-    '__attribute__((constructor)) static void fg_init(void) { gg_init_globals(0, 0); }\n\n'
-    'int64_t fg_sampler_chain_call(int64_t op, const float * lv, float * p, int64_t * id,\n'
-    '                              int64_t n, float f, int64_t k, float f2, float f3) {\n'
-    '    gg_slice s0 = { (void *) lv, n }, s1 = { (void *) p, n }, s2 = { (void *) id, n };\n'
-    '    return FG_SAMPLER_CHAIN(op, s0, s1, s2, n, f, k, f2, f3, 0);\n'
-    '}\n\n'
-    'int64_t fg_sampler_dry_call(const int64_t * last, int64_t * rc, const int64_t * bh,'
-    ' const int64_t * bts, const int64_t * btl, const int64_t * btail, float * lv,'
-    ' const int64_t * id, int64_t nl, int64_t nc, int64_t allowed, int64_t nb,'
-    ' float mult, float base) {\n'
-    '    gg_slice s0 = { (void *) last, nl }, s1 = { (void *) rc, nl }, s2 = { (void *) bh, nb };\n'
-    '    gg_slice s3 = { (void *) bts, nb }, s4 = { (void *) btl, nb }, s5 = { (void *) btail, nb * 4 };\n'
-    '    gg_slice s6 = { (void *) lv, nc }, s7 = { (void *) id, nc };\n'
-    '    return FG_SAMPLER_DRY(s0, s1, s2, s3, s4, s5, s6, s7, nl, nc, allowed, nb, mult, base, 0);\n'
-    '}\n\n'
-    'int64_t fg_sampler_typical_call(float * lv, float * p, int64_t * id, float * scr,'
-    ' int64_t n, float typical_p, int64_t min_keep) {\n'
-    '    gg_slice s0 = { (void *) lv, n }, s1 = { (void *) p, n };\n'
-    '    gg_slice s2 = { (void *) id, n }, s3 = { (void *) scr, n };\n'
-    '    return FG_SAMPLER_TYPICAL(s0, s1, s2, s3, n, typical_p, min_keep, 0);\n'
-    '}\n\n'
-    'int64_t fg_sampler_top_p_call(float * lv, float * p, int64_t * id, int64_t n,'
-    ' float top_p, int64_t min_keep) {\n'
-    '    gg_slice s0 = { (void *) lv, n }, s1 = { (void *) p, n }, s2 = { (void *) id, n };\n'
-    '    return FG_SAMPLER_TOP_P(s0, s1, s2, n, top_p, min_keep, 171, 0);\n'
-    '}\n\n'
-    'int64_t fg_sampler_xtc_call(float * lv, float * p, int64_t * id, int64_t n,'
-    ' float probability, float threshold, int64_t min_keep, float chance) {\n'
-    '    gg_slice s0 = { (void *) lv, n }, s1 = { (void *) p, n }, s2 = { (void *) id, n };\n'
-    '    return FG_SAMPLER_XTC(s0, s1, s2, n, probability, threshold, min_keep, chance, 172, 0);\n'
-    '}\n\n'
-    'int64_t fg_sampler_penalties_call(float * lv, int64_t * id, const float * hist, int64_t n,'
-    ' int64_t hn, float repeat, float freq, float present, int64_t * tbl_keys,'
-    ' int64_t * tbl_cnt, int64_t slots) {\n'
-    '    gg_slice s0 = { (void *) lv, n }, s1 = { (void *) id, n }, s2 = { (void *) hist, hn };\n'
-    '    gg_slice s3 = { (void *) tbl_keys, slots }, s4 = { (void *) tbl_cnt, slots };\n'
-    '    return FG_SAMPLER_PENALTIES(s0, s1, s2, s3, s4, n, hn, repeat, freq, present, 0);\n'
-    '}\n')
-print('entry point:', m.group(1))
+
+# Every entry point is identified by its exact prototype. The names never change;
+# the generated indexes do, and the root file calls each one so none is dropped.
+ENTRIES = [
+    ("CHAIN",     r'\(int64_t p0, gg_slice p1, gg_slice p2, gg_slice p3, int64_t p4, float p5, int64_t p6, float p7, float p8, int64_t base\);'),
+    ("DRY",       r'\(gg_slice p0, gg_slice p1, gg_slice p2, gg_slice p3, gg_slice p4, gg_slice p5, gg_slice p6, gg_slice p7, int64_t p8, int64_t p9, int64_t p10, int64_t p11, float p12, float p13, int64_t base\);'),
+    ("TYPICAL",   r'\(gg_slice p0, gg_slice p1, gg_slice p2, gg_slice p3, int64_t p4, float p5, int64_t p6, int64_t base\);'),
+    ("TOP_P",     r'\(gg_slice p0, gg_slice p1, gg_slice p2, int64_t p3, float p4, int64_t p5, int64_t p6, int64_t base\);'),
+    ("XTC",       r'\(gg_slice p0, gg_slice p1, gg_slice p2, int64_t p3, float p4, float p5, int64_t p6, float p7, int64_t p8, int64_t base\);'),
+    ("PENALTIES", r'\(gg_slice p0, gg_slice p1, gg_slice p2, gg_slice p3, gg_slice p4, int64_t p5, int64_t p6, float p7, float p8, float p9, int64_t base\);'),
+    ("ADAPTIVE",  r'\(gg_slice p0, gg_slice p1, gg_slice p2, int64_t p3, float p4, float p5, float p6, int64_t p7, int64_t base\);'),
+]
+
+found = {}
+for name, pat in ENTRIES:
+    m = re.search(r'static int64_t (gg_function_\d+)' + pat, src)
+    if not m:
+        sys.exit('prototype not found in the generated C: ' + name)
+    found[name] = m.group(1)
+
+hdr = ''.join('#define FG_SAMPLER_%s %s\n' % (k, v) for k, v in found.items())
+open(out + '/sampler_chain_ids.h', 'w').write(hdr)
+
+SHIM = """#include "sampler_chain.c"
+#include "sampler_chain_ids.h"
+
+__attribute__((constructor)) static void fg_init(void) { gg_init_globals(0, 0); }
+
+int64_t fg_sampler_chain_call(int64_t op, const float * lv, float * p, int64_t * id,
+                              int64_t n, float f, int64_t k, float f2, float f3) {
+    gg_slice s0 = { (void *) lv, n }, s1 = { (void *) p, n }, s2 = { (void *) id, n };
+    return FG_SAMPLER_CHAIN(op, s0, s1, s2, n, f, k, f2, f3, 0);
+}
+
+int64_t fg_sampler_dry_call(const int64_t * last, int64_t * rc, const int64_t * bh,
+                            const int64_t * bts, const int64_t * btl, const int64_t * btail,
+                            float * lv, const int64_t * id, int64_t nl, int64_t nc,
+                            int64_t allowed, int64_t nb, float mult, float base) {
+    gg_slice s0 = { (void *) last, nl }, s1 = { (void *) rc, nl }, s2 = { (void *) bh, nb };
+    gg_slice s3 = { (void *) bts, nb }, s4 = { (void *) btl, nb }, s5 = { (void *) btail, nb * 4 };
+    gg_slice s6 = { (void *) lv, nc }, s7 = { (void *) id, nc };
+    return FG_SAMPLER_DRY(s0, s1, s2, s3, s4, s5, s6, s7, nl, nc, allowed, nb, mult, base, 0);
+}
+
+int64_t fg_sampler_typical_call(float * lv, float * p, int64_t * id, float * scr,
+                                int64_t n, float typical_p, int64_t min_keep) {
+    gg_slice s0 = { (void *) lv, n }, s1 = { (void *) p, n };
+    gg_slice s2 = { (void *) id, n }, s3 = { (void *) scr, n };
+    return FG_SAMPLER_TYPICAL(s0, s1, s2, s3, n, typical_p, min_keep, 0);
+}
+
+int64_t fg_sampler_top_p_call(float * lv, float * p, int64_t * id, int64_t n,
+                              float top_p, int64_t min_keep) {
+    gg_slice s0 = { (void *) lv, n }, s1 = { (void *) p, n }, s2 = { (void *) id, n };
+    return FG_SAMPLER_TOP_P(s0, s1, s2, n, top_p, min_keep, 171, 0);
+}
+
+int64_t fg_sampler_xtc_call(float * lv, float * p, int64_t * id, int64_t n,
+                            float probability, float threshold, int64_t min_keep, float chance) {
+    gg_slice s0 = { (void *) lv, n }, s1 = { (void *) p, n }, s2 = { (void *) id, n };
+    return FG_SAMPLER_XTC(s0, s1, s2, n, probability, threshold, min_keep, chance, 172, 0);
+}
+
+int64_t fg_sampler_penalties_call(float * lv, int64_t * id, const float * hist, int64_t n,
+                                  int64_t hn, float repeat, float freq, float present,
+                                  int64_t * tbl_keys, int64_t * tbl_cnt, int64_t slots) {
+    gg_slice s0 = { (void *) lv, n }, s1 = { (void *) id, n }, s2 = { (void *) hist, hn };
+    gg_slice s3 = { (void *) tbl_keys, slots }, s4 = { (void *) tbl_cnt, slots };
+    return FG_SAMPLER_PENALTIES(s0, s1, s2, s3, s4, n, hn, repeat, freq, present, 0);
+}
+
+int64_t fg_sampler_adaptive_p_call(float * lv, float * p, int64_t * id, int64_t n,
+                                   float target, float weighted_sum, float total_weight) {
+    gg_slice s0 = { (void *) lv, n }, s1 = { (void *) p, n }, s2 = { (void *) id, n };
+    return FG_SAMPLER_ADAPTIVE(s0, s1, s2, n, target, weighted_sum, total_weight, 174, 0);
+}
+"""
+open(out + '/sampler_chain_shim.c', 'w').write(SHIM)
+print('entry points:', found)
 PY
 echo "built into $out"

@@ -1050,6 +1050,17 @@ fn fg_sampler_penalties(lv: f32[:], id: i64[:], hist: f32[:],
     return sm_apply_penalties(lv, id, hist, tbl_keys, tbl_cnt, n, hn, repeat, freq, present);
 }
 
+// adaptive-p entry: the EMA state arrives as scalars, probabilities are scaled and
+// renormalised exactly as the native body does
+fn fg_sampler_adaptive_p(lv: f32[:], p: f32[:], id: i64[:], n: i64,
+                         target: f32, weighted_sum: f32, total_weight: f32,
+                         marker: i64) -> i64 {
+    if marker != 174 {
+        return -1;
+    }
+    return sm_apply_adaptive_p_state(lv, p, id, n, target, weighted_sum, total_weight);
+}
+
 // Single stable entry point for the shipped library. Generated function ids
 // shift whenever this module changes, so callers must reach the chain through
 // this one function rather than through a generated id.

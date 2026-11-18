@@ -1063,3 +1063,29 @@ So the current honest statement is: the Goose sampling stages cost about 1.3 % o
 decode and nothing measurable in prefill or memory. The remaining copies account
 for roughly 0.4 % of that, which is the only term left to recover before this can
 be called free.
+
+## adaptive-p hook installed, not yet exercised by the server
+
+The adaptive-p body is redirected to Goose (transform plus renormalisation, the
+draw and the EMA update stay native so the RNG stream is untouched), and the build
+script now describes every entry in one table instead of a chain of ad-hoc
+regexes:
+
+```
+{'CHAIN': 'gg_function_1', 'DRY': 'gg_function_33', 'TYPICAL': 'gg_function_13',
+ 'TOP_P': 'gg_function_41', 'XTC': 'gg_function_42', 'PENALTIES': 'gg_function_23',
+ 'ADAPTIVE': 'gg_function_45'}
+```
+
+With `--adaptive-target 0.5` the output is identical between the two runs, but the
+counter `FG171_ADAPTIVE` never appears, so the stage was **not** exercised: the
+server did not put the adaptive sampler in the chain for this request. Identical
+text therefore proves nothing about this stage yet.
+
+Also noticed: in the "off" run `FG171_TOP_P` still fired, because top-p has its own
+flag that defaults to on. Disabling a configuration must list every stage flag,
+not only the chain flag.
+
+Next: find under which parameters the server includes adaptive-p (the sampler
+order depends on the request settings), then re-run the comparison with the
+counter expected.

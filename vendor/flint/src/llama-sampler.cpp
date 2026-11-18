@@ -115,6 +115,11 @@ static bool fg_goose_dry_enabled() {
     return on;
 }
 
+extern "C" int64_t fg_sampler_adaptive_p_call(float * lv, float * p, int64_t * id, int64_t n,
+                                              float target, float weighted_sum,
+                                              float total_weight) __attribute__((weak));
+static std::atomic<unsigned long long> g_goose_adaptive_calls{0};
+
 static bool fg_goose_top_p_enabled() {
     static const bool on = []() {
         const char * f = getenv("GGML_GOOSE_SAMPLER_TOP_P");
@@ -4070,18 +4075,51 @@ static void llama_sampler_adaptive_p_apply(struct llama_sampler * smpl, llama_to
     // tails. unbounded negative logits ensure proper suppression of far-from-target tokens
     // after the softmax.
     //
-    for (size_t i = 0; i < cur_p->size; ++i) {
-        if (cur_p->data[i].logit == -INFINITY) {
-            // don't transform logits that are -INFINITY
-            // (as masked out by e.g. min-p and top-p when using backend sampling)
-            continue;
+    bool fg_transformed = false;
+    if (fg_sampler_adaptive_p_call != nullptr && fg_goose_chain_enabled() && cur_p->size > 0) {
+        const long long t0 = fg_now_ns();
+        fg_scratch.ensure(cur_p->size);
+        std::vector<float>   & lv  = fg_scratch.lv;
+        std::vector<float>   & pp  = fg_scratch.pp;
+        std::vector<int64_t> & ids = fg_scratch.ids;
+        for (size_t i = 0; i < cur_p->size; ++i) {
+            lv[i]  = cur_p->data[i].logit;
+            pp[i]  = cur_p->data[i].p;
+            ids[i] = cur_p->data[i].id;
         }
-        float dist = std::abs((cur_p->data[i].p - adapted_target) * INV_WIDTH);
-        cur_p->data[i].logit = PEAK_LOGIT_VALUE - SHARPNESS * dist * dist / (1.0f + dist);
+        const int64_t n = fg_sampler_adaptive_p_call(lv.data(), pp.data(), ids.data(),
+                                                    (int64_t) cur_p->size, ctx->target,
+                                                    ctx->weighted_sum, ctx->total_weight);
+        fg_report_stage("adaptive_p", fg_ns_top_p, fg_now_ns() - t0);
+        if (n == (int64_t) cur_p->size) {
+            for (size_t i = 0; i < cur_p->size; ++i) {
+                cur_p->data[i].logit = lv[i];
+                cur_p->data[i].p     = pp[i];
+            }
+            fg_transformed = true;
+            const unsigned long long c = ++g_goose_adaptive_calls;
+            if (c == 1 || (c % 100) == 0) {
+                fprintf(stderr, "FG171_ADAPTIVE goose calls=%llu\n", (unsigned long long) c);
+            }
+        }
     }
 
-    // softmax and sample from the transformed distribution
-    llama_sampler_softmax_impl(cur_p, false);
+    if (!fg_transformed) {
+        for (size_t i = 0; i < cur_p->size; ++i) {
+            if (cur_p->data[i].logit == -INFINITY) {
+                // don't transform logits that are -INFINITY
+                // (as masked out by e.g. min-p and top-p when using backend sampling)
+                continue;
+            }
+            float dist = std::abs((cur_p->data[i].p - adapted_target) * INV_WIDTH);
+            cur_p->data[i].logit = PEAK_LOGIT_VALUE - SHARPNESS * dist * dist / (1.0f + dist);
+        }
+
+        // softmax and sample from the transformed distribution
+        llama_sampler_softmax_impl(cur_p, false);
+    }
+
+    // sample from the transformed distribution
     const int idx   = llama_sample_dist(cur_p, ctx->rng);
     cur_p->selected = idx;
 
