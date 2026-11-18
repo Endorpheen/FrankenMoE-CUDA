@@ -968,8 +968,8 @@ fn fg_sampler_typical(lv: f32[:], p: f32[:], id: i64[:], scr: f32[:], n: i64,
 // top-p as the real path uses it: sort by logit descending first (the logits
 // keep their values), then keep the smallest prefix whose mass reaches top_p
 fn fg_sampler_top_p(lv: f32[:], p: f32[:], id: i64[:], n: i64,
-                    top_p: f32, min_keep: i64) -> i64 {
-    if n <= 0 || lv.len < n || p.len < n || id.len < n {
+                    top_p: f32, min_keep: i64, marker: i64) -> i64 {
+    if n <= 0 || lv.len < n || p.len < n || id.len < n || marker != 171 {
         return -1;
     }
     if top_p >= 1.0 {

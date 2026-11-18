@@ -45,3 +45,23 @@ Mitigated: the shim runs it from a constructor.
 is no export flag. A module without `main` cannot be compiled, and functions not
 reachable from `main` are removed. Mitigated: the build appends a root that
 calls the entry points.
+
+## TD-S5: an edit to a module signature did not reach the generated C
+
+Observed while making the top-p entry's signature unique.
+
+```
+grep -c marker build/sampler-chain/sampler-chain-root.goose      -> 2
+grep -c 171    build/sampler-chain/sampler_chain.c               -> 0
+prototype stays: gg_function_2(gg_slice, gg_slice, gg_slice, int64_t, float, int64_t, int64_t base)
+```
+
+The source signature gained a trailing `marker: i64` that the body compares
+against 171, the root file the compiler consumes contains it, a direct compile
+of that same root file reports rc=0 and still produces no `171` and no
+seven-argument prototype. A different edit to the same file (a constant value)
+did change the output earlier, so this is not a blanket cache.
+
+Impact: an entry point cannot be made uniquely identifiable by signature until
+this is understood, which is what the top-p hook needs. Reproduction is the two
+commands above. The top-p stage stays behind its own opt-in flag meanwhile.
