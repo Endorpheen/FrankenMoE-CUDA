@@ -2,8 +2,8 @@
 
 FrankenMoE-CUDA runs Mixture-of-Experts models that do not fit in GPU memory on
 one consumer GPU. The runtime is derived from `llama.cpp` and is being migrated,
-module by module, to **Goose**, the project's own language. The reference model
-is **Apex-35B-V1.0 Q4_K_M** on a Ryzen 9 5950X, 64 GB RAM and an RTX 4070 12 GB.
+module by module, to the **Goose** programming language. The reference model is
+**Apex-35B-V1.0 Q4_K_M** on a Ryzen 9 5950X, 64 GB RAM and an RTX 4070 12 GB.
 
 ## Performance headline
 
