@@ -26,6 +26,11 @@ cat "$root/goose/misc/unicode-text.goose" >> "$rootfile"
 cat "$root/goose/misc/pretokenizer-qwen35.goose" >> "$rootfile"
 cat "$root/goose/model/bpe-tokenize.goose" >> "$rootfile"
 cat "$root/goose/model/bpe-detokenize.goose" >> "$rootfile"
+# The GGUF reader joins the unit for the same reason the detokenizer did: it was built in the separate
+# main unit and reached by nothing (EXP-2026-11-19-1324).
+cat "$root/goose/misc/gguf-headers.goose" >> "$rootfile"
+cat "$root/goose/model/gguf-tensors.goose" >> "$rootfile"
+cat "$root/goose/model/gguf-reader.goose" >> "$rootfile"
 cat "$root/goose/model/tokenizer-decisions.goose" >> "$rootfile"
 cat "$root/goose/model/tokenizer-doors.goose" >> "$rootfile"
 cat "$root/goose/model/arch-registry.goose" >> "$rootfile"
