@@ -57,3 +57,20 @@ ldd builds/checkpoint-20261119-EXP1476/libllama.so.0
 cat vendor/flint/PROVENANCE.txt
 ls builds/checkpoint-20261119-EXP1476
 ```
+
+## Correction: two dependencies the first pass missed
+
+Written 2026-11-19 evening, after `tests/regression/set-self-contained` reported `libssl.so.3` as a
+release dependency. The first version of this report read `ldd` of `libllama.so.0` only; six ELFs in the
+release need OpenSSL through `libllama-common` and `libllama-server-impl`:
+
+| library | who needs it | licence | justified? |
+|---|---|---|---|
+| `libssl.so.3` | `libllama-server-impl.so`, `libllama-common.so*` | Apache-2.0 | yes for HTTPS serving; it is a system library and is not shipped |
+| `libcrypto.so.3` | the same, as OpenSSL's companion | Apache-2.0 | yes, same reason |
+
+Neither is bundled; both must exist on the host. That is the ordinary arrangement for TLS, and it is
+recorded here because "every dependency justified" was not true of this document an hour ago.
+
+The lesson is the same one the rest of the day produced: a report built from one artefact answers a
+question about that artefact, and the wording around it must not quietly widen the claim.
