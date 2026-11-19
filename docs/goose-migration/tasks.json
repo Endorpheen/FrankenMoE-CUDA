@@ -2766,16 +2766,14 @@
         "full candidate"
       ],
       "acceptance": "Fixed Apex model/profile/input; text,tokens,probabilities,stream,state,reuse/cancel checked and every migrated subsystem witnessed; full-system prefill/decode,RAM/VRAM recorded once.",
-      "evidence": " 2026-11-19 EXP-2026-11-19-1463: an acceptance run of the shipped binary under tools/apex-test.sh — 20/20 accepted components present, response hash c2ff42cc1219 (the record), decode [60.92, 55.49, 59.88] median 59.88, prefill [2587.2, 2842.4, 2896.4] median 2842.4, model 100% resident, port released and server exited. That covers text and token parity, streaming through the server, and the prefill/decode/VRAM figures. It was also found that no earlier checkpoint carries every accepted component, so this run produced the first comparable base: builds/checkpoint-20261119-EXP1463, which the component gate now passes. Still open for this item: request cancel, KV reuse across requests, an explicit subsystem-activity list, and RAM.",
+      "evidence": " 2026-11-19 EXP-2026-11-19-1463: an acceptance run of the shipped binary under tools/apex-test.sh — 20/20 accepted components present, response hash c2ff42cc1219 (the record), decode [60.92, 55.49, 59.88] median 59.88, prefill [2587.2, 2842.4, 2896.4] median 2842.4, model 100% resident, port released and server exited. That covers text and token parity, streaming through the server, and the prefill/decode/VRAM figures. It was also found that no earlier checkpoint carries every accepted component, so this run produced the first comparable base: builds/checkpoint-20261119-EXP1463, which the component gate now passes. Still open for this item: request cancel, KV reuse across requests, an explicit subsystem-activity list, and RAM. EXP-2026-11-19-1464 (tools/apex-behaviour.sh, one server lifetime): KV reuse measured as request2 cache_n=11697 of 11705 prompt tokens with prompt_n=8, so the second request re-processed eight tokens; a streaming request cancelled by closing the client socket left the server answering health with state=ok two seconds later; RAM recorded as RSS 20 948 720 kB after start and 21 951 936 kB after the work; VRAM 10 888 MiB in use at the end. The subsystem list for that run: encoder served 11701 and 11705 tokens with zero comparison disagreements, GGUF guard and load ok, FG_ARCH_TOTAL disagreement-free, GOOSE_ALLOC bulk=5. Recorded honestly: the sampler chain is not exercised at temperature zero, and probability parity is not measured.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 0,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
       "batch": "B5",
       "remaining": [
-        "request cancel and KV reuse across requests checked on the running server",
-        "the subsystem activity list recorded as evidence, not asserted",
-        "RAM measured and recorded with the same run"
+        "probability parity against the native path on the same prompt (the only item of this requirement that is not measured)"
       ]
     },
     {
