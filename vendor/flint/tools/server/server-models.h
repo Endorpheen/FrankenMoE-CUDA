@@ -115,13 +115,53 @@ static std::string server_model_status_to_string(server_model_status status) {
     return native;
 }
 
-static std::string server_model_source_to_string(server_model_source source) {
+// The source names are the same kind of decision as the status names, so they are switched the same way: the ported module
+// answers, the switch stays as the fallback, and the diagnostic shows which one spoke and whether they agree.
+static fg_mg_str_fn fg_mg_source_door() {
+    static const fg_mg_str_fn fn = []() -> fg_mg_str_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        return h ? reinterpret_cast<fg_mg_str_fn>(dlsym(h, "mg_source_str")) : nullptr;
+    }();
+    return fn;
+}
+
+static std::string server_model_source_to_string_native(server_model_source source) {
     switch (source) {
         case SERVER_MODEL_SOURCE_PRESET:     return "preset";
         case SERVER_MODEL_SOURCE_MODELS_DIR: return "models_dir";
         case SERVER_MODEL_SOURCE_CACHE:      return "cache";
         default:                             return "unknown";
     }
+}
+
+static std::string server_model_source_to_string(server_model_source source) {
+    const std::string native = server_model_source_to_string_native(source);
+    if (const auto fn = fg_mg_source_door()) {
+        char buf[32] = {0};
+        const int64_t n = fn((int64_t) source, fg_mg_slice{ buf, (int64_t) sizeof(buf) - 1 });
+        static const bool fg_diag = getenv("FG_MODEL_STATUS_DIAG") != nullptr;
+        if (n > 0 && (size_t) n == strlen(buf)) {
+            const std::string ported(buf, (size_t) n);
+            if (fg_diag) {
+                static std::atomic<long long> calls{0}, bad{0};
+                const long long c = calls.fetch_add(1) + 1;
+                if (ported != native) {
+                    bad.fetch_add(1);
+                    fprintf(stderr, "FG_MODEL_SOURCE_DIFF source=%d ported=%s native=%s\n", (int) source,
+                            ported.c_str(), native.c_str());
+                }
+                if (c == 1 || (c % 64) == 0) {
+                    fprintf(stderr, "FG_MODEL_SOURCE ported calls=%lld disagreements=%lld\n", c, bad.load());
+                }
+            }
+            return ported;
+        }
+        static std::atomic<long long> refused{0};
+        if (fg_diag && refused.fetch_add(1) < 5) {
+            fprintf(stderr, "FG_MODEL_SOURCE_REFUSED source=%d n=%lld\n", (int) source, (long long) n);
+        }
+    }
+    return native;
 }
 
 struct server_model_meta {

@@ -36,9 +36,14 @@ if not data:
     print("FAIL: the router listed no model, so the status renderer was never called")
     raise SystemExit(1)
 status = (data[0].get("status") or {}).get("value")
-print(f"router listed {len(data)} model(s), first status={status!r}")
+source = data[0].get("source")
+print(f"router listed {len(data)} model(s), first status={status!r} source={source!r}")
 if status != "unloaded":
     print(f"FAIL: expected 'unloaded' for a model that has not been started, got {status!r}")
+    raise SystemExit(1)
+# the source name comes from the second switched renderer; both must name the model correctly
+if source != "models_dir":
+    print(f"FAIL: expected source 'models_dir' for a model listed from a directory, got {source!r}")
     raise SystemExit(1)
 PY
 RC=$?
@@ -46,6 +51,15 @@ MARK=$(grep -ac "FG_MODEL_STATUS ported" "$OUT/server.log")
 DIS=$(grep -ao "disagreements=[0-9]*" "$OUT/server.log" | head -1)
 echo "marker lines: $MARK, $DIS"
 [ "$MARK" -gt 0 ] || { echo "FAIL: the status renderer was not reached"; exit 1; }
+for KIND in FG_MODEL_SOURCE; do
+    D2=$(grep -ao "$KIND ported calls=[0-9]* disagreements=[0-9]*" "$OUT/server.log" | head -1)
+    echo "$KIND: ${D2:-absent}"
+    [ -n "$D2" ] || { echo "FAIL: $KIND was never called on this path"; exit 1; }
+    case "$D2" in
+        *disagreements=0) ;;
+        *) echo "FAIL: $KIND disagrees with the native switch"; exit 1 ;;
+    esac
+done
 case "$DIS" in
     *disagreements=0) ;;
     *) echo "FAIL: the ported status disagrees with the native switch ($DIS)"; exit 1 ;;
