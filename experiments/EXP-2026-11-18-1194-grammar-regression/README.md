@@ -122,3 +122,33 @@ exception.
 Does not establish: that it is equal for **every** candidate set. The partial path is now handled
 by declining, not by matching, and the codepoint path still needs a per-candidate differential
 against `llama_grammar_apply`. The stage therefore stays opt-in, and the item stays open.
+
+## A per-candidate differential exists now, and it is safe by construction
+
+`GGML_GOOSE_GRAMMAR_VERIFY=1` makes the hook compute **both** decisions on the same candidates:
+the port's mask and `llama_grammar_reject_candidates` from the same file. The native rejects are
+what get applied, so the mode cannot change behaviour even if the port is wrong - it only counts
+disagreement. That removes the reason this comparison was avoided until now.
+
+Measured, on real vocabularies with two different grammars:
+
+```
+FG171_GRAMMAR_VERIFY call=1  cand=1 cases=1  disagreements=0
+FG171_GRAMMAR_VERIFY call=2  cand=1 cases=2  disagreements=0
+...
+FG171_GRAMMAR_VERIFY call=16 cand=1 cases=16 disagreements=0
+```
+
+`Zendaya` from the grammar `"Z" [a-z]{1,8}`, which forces a resample, and no disagreements.
+
+## What this does not reach yet
+
+Every call reports `cand=1`: in this tree the grammar sampler is created but never added to the
+chain, so it acts as a validator on a single sampled token, and the full-set path is only taken on
+the resample route - which in this configuration also arrives with one candidate already chosen.
+Reaching 248k candidates requires a chain-order change, and the earlier instrumented run that saw
+`cur_p=248320` was a different route.
+
+So the honest state: the codepoint decision agrees with native on every candidate that has been
+compared (16 and 3 in two runs), and the full-set route is **not** measured. The stage stays
+opt-in, and the item stays open until the comparison covers both routes.

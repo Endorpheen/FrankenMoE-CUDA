@@ -1653,9 +1653,48 @@ void llama_grammar_apply_impl(const struct llama_grammar & grammar, llama_token_
             }
 
             if (r >= 0) {
-                for (int64_t i = 0; i < ncand; ++i) {
-                    if (rej_final[i]) {
-                        cur_p->data[candidates_grammar[i].index].logit = -INFINITY;
+                // Verification mode: run the native decision on the same candidates and
+                // compare it candidate by candidate against the port. The native result is
+                // what is applied either way, so the mode can never change behaviour - it
+                // only counts disagreement on a real vocabulary.
+                static const bool fg_verify = getenv("GGML_GOOSE_GRAMMAR_VERIFY") != nullptr;
+                if (fg_verify) {
+                    const auto native_rejects =
+                        llama_grammar_reject_candidates(grammar.rules, grammar.stacks, candidates_grammar);
+                    static thread_local std::vector<int64_t> nat(candidates_grammar.size());
+                    std::fill(nat.begin(), nat.end(), 0);
+                    for (const auto & rej : native_rejects) {
+                        // candidate index -> position in our arrays
+                        for (int64_t i = 0; i < ncand; ++i) {
+                            if (candidates_grammar[i].index == rej.index) { nat[i] = 1; break; }
+                        }
+                    }
+                    static thread_local long long cmp_cases = 0, cmp_bad = 0;
+                    for (int64_t i = 0; i < ncand; ++i) {
+                        cmp_cases++;
+                        const int64_t g = rej_final[i] ? 1 : 0;
+                        if (g != nat[i]) {
+                            cmp_bad++;
+                            if (cmp_bad <= 5) {
+                                fprintf(stderr, "FG171_GRAMMAR_DIFF cand=%lld id=%lld goose_reject=%lld native_reject=%lld\n",
+                                        (long long) i, (long long) candidates_grammar[i].id,
+                                        (long long) g, (long long) nat[i]);
+                            }
+                        }
+                    }
+                    static thread_local long long cmp_calls = 0;
+                    if (cmp_calls++ < 40) {
+                        fprintf(stderr, "FG171_GRAMMAR_VERIFY call=%lld cand=%lld cases=%lld disagreements=%lld\n",
+                                cmp_calls, (long long) ncand, cmp_cases, cmp_bad);
+                    }
+                    for (const auto & rej : native_rejects) {
+                        cur_p->data[rej.index].logit = -INFINITY;
+                    }
+                } else {
+                    for (int64_t i = 0; i < ncand; ++i) {
+                        if (rej_final[i]) {
+                            cur_p->data[candidates_grammar[i].index].logit = -INFINITY;
+                        }
                     }
                 }
                 {
