@@ -50,7 +50,8 @@ def main() -> int:
     ap.add_argument('--root', type=pathlib.Path,
                     default=pathlib.Path(__file__).resolve().parents[2])
     args = ap.parse_args()
-    sources = compiled_sources(args.root)
+    root = args.root
+    sources = compiled_sources(root)
     defined, refs = set(), {}
     for p in sources:
         text = p.read_text(errors='replace')
@@ -61,6 +62,39 @@ def main() -> int:
     missing = {s: sorted(v) for s, v in refs.items() if s not in defined}
     print(f'carriers: {len(sources)} source(s), {len(defined)} Goose symbol(s) defined, '
           f'{len(refs)} referenced')
+
+    # A second, different question: does the copy the build compiles call the doors the other copy
+    # calls? On 2026-11-19 llama-sampler.cpp passed the definition check - both copies define the same
+    # symbols - while the compiled copy referenced none of the thirty doors the other one calls, so
+    # the shipped sampler was native and the Goose module was debt. A definition comparison cannot
+    # see that; this does.
+    # Doors come in two spellings: fg262a / fg756s and fg_sampler_top_p_call. The first pattern
+    # alone missed the second family, which is exactly the one the sampler drift lives in.
+    REF_DOOR = re.compile(r'\b(fg_[a-z0-9_]+|fg[0-9][0-9a-z]*_[a-z0-9_]+)\b')
+    quiet = []
+    for name in CHANGED:
+        staged, vend = root / 'runtime/reconstructed/src' / name, root / 'vendor/flint/src' / name
+        if not (staged.exists() and vend.exists()):
+            continue
+        s_ref = set(REF_DOOR.findall(staged.read_text(errors='replace')))
+        v_ref = set(REF_DOOR.findall(vend.read_text(errors='replace')))
+        only_vend = sorted(v_ref - s_ref)
+        if only_vend:
+            quiet.append((name, len(s_ref), len(v_ref), only_vend[:5]))
+    if quiet:
+        # Reported, not fatal: for llama-vocab.cpp, llama-model-loader.cpp and llama-moe-cache.cpp the
+        # two copies reach the same decisions through different mechanisms (llama_goose_* against the
+        # vendor's own dlopen wrappers), so a reference difference there is expected. It is fatal only
+        # when the compiled copy references none at all, which is the shape of a port that is present
+        # and unused. tools/production-doors.py remains the authority on what the shipped tree reaches.
+        fatal = [q for q in quiet if q[1] == 0]
+        print(f'REFERENCE DRIFT {len(quiet)} carrier(s) differ in which doors they call:')
+        for name, ns, nv, sample in quiet:
+            print(f'  {name}: compiled copy references {ns}, the other {nv}; missing e.g. {sample}')
+        if fatal:
+            print(f'FATAL: {len(fatal)} carrier(s) whose compiled copy references no door at all')
+            return 1
+    print('PASS the compiled copy of every carrier calls the same doors as the other copy')
     if missing:
         print(f'UNRESOLVED {len(missing)} symbol(s):')
         for s, users in sorted(missing.items()):

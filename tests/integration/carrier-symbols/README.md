@@ -18,6 +18,18 @@ of choosing, and `build.py` refuses to compile when it fails.
 
 Current result: `200 source(s), 176 symbols defined, 176 referenced, PASS`.
 
+## The second question it now asks
+
+The check compares the two copies of every carrier by the symbols they **define** - and that passes
+everywhere. It also reports, without failing, which doors each copy **calls**: four carriers differ,
+three of them because the copies reach the same decisions through different mechanisms
+(`llama_goose_*` against the vendor's own dlopen wrappers), and one - `llama-sampler.cpp`, 16 against
+32 - because the compiled copy carries only the flag lookups and none of the sampler doors. That last
+case is the P6-10 finding: the shipped sampler is native.
+
+The report is fatal only when a compiled copy references no door at all. For what the shipped tree
+actually reaches, `tools/production-doors.py` remains the authority.
+
 ## Run
 
 ```
