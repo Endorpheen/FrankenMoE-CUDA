@@ -143,6 +143,10 @@ MODULES=(
     goose/misc/sampler-chain.goose
     goose/misc/mtp-capture-warmup.goose
     goose/misc/cli-driver-loop.goose
+    # The pre-routing policy, including the origin decision that tests/server/origin-policy holds to the
+    # native behaviour over the same URL parser (29 cases, 0 differ). Its door is called from server-http.cpp
+    # behind FG_ORIGIN_GOOSE so a build without it falls back instead of failing to link.
+    goose/server/prerouting.goose
     goose/server/mcp-core.goose
     goose/server/mcp-stdio.goose
     goose/server/mcp-integration.goose

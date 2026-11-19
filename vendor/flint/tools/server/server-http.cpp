@@ -121,8 +121,38 @@ static void log_server_request(const httplib::Request & req, const httplib::Resp
     SRV_DBG("response: %s\n", res.body.c_str());
 }
 
+// The origin verdict from the Goose module (goose/server/prerouting.goose, door
+// web_origin_is_localhost), reached the same way as the API-key door: dlopen of the unit, nullptr
+// when the build does not carry it. Opt-in while unproven in a running server; the differential gate
+// tests/server/origin-policy already holds it to the native behaviour over the same parser (29 cases,
+// 0 differ), and the native branch below stays as the fallback so a declined door can never accept an
+// origin the native check would reject.
+using fg_origin_fn = int64_t (*)(uint64_t, int64_t);
+
+bool fg_origin_goose_enabled() {
+    static const bool on = []() {
+        const char * v = getenv("FG_ORIGIN_GOOSE");
+        return v != nullptr && strcmp(v, "0") != 0;
+    }();
+    return on;
+}
+
+fg_origin_fn fg_origin_door() {
+    static fg_origin_fn fn = []() -> fg_origin_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        return h ? reinterpret_cast<fg_origin_fn>(dlsym(h, "web_origin_is_localhost")) : nullptr;
+    }();
+    return fn;
+}
+
 // returns true if the Origin header value's host is localhost / 127.0.0.1 / ::1 (any port)
 static bool origin_is_localhost(const std::string & origin) {
+    if (fg_origin_goose_enabled()) {
+        const auto fn = fg_origin_door();
+        if (fn) {
+            return fn((uint64_t) (uintptr_t) origin.data(), (int64_t) origin.size()) != 0;
+        }
+    }
     try {
         const std::string host = common_http_parse_url(origin).host;
         return host == "localhost" || host == "127.0.0.1" || host == "::1";
