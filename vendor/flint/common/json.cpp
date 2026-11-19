@@ -224,6 +224,16 @@ fg_parse_fn fg_json_parse_door() {
 // Opt-in while unproven. Rule 10 wants an accepted improvement on by default and a flag only to
 // disable it; this path is not accepted yet, so the flag is the other way round on purpose and the
 // record in docs/goose-migration/P10-07-JSON-ADAPTER-STATE.md says so.
+// Strict mode for gates: when it is on, a declined port is an error instead of a silent fallback to
+// nlohmann, so a passing run proves the port answered rather than that the fallback did.
+bool fg_json_goose_require() {
+    static const bool on = []() {
+        const char * v = getenv("FG_JSON_GOOSE_REQUIRE");
+        return v != nullptr && strcmp(v, "0") != 0;
+    }();
+    return on;
+}
+
 bool fg_json_goose_parse_enabled() {
     static const bool on = []() {
         const char * v = getenv("FG_JSON_GOOSE_PARSE");
@@ -264,8 +274,13 @@ bool fg_json_goose_parse(const std::string & text, nlohmann::ordered_json & out)
 common_json common_json::parse(const std::string & text) {
     try {
         common_json out;
-        if (fg_json_goose_parse_enabled() && fg_json_goose_parse(text, as_json(&out))) {
-            return out;
+        if (fg_json_goose_parse_enabled()) {
+            if (fg_json_goose_parse(text, as_json(&out))) {
+                return out;
+            }
+            if (fg_json_goose_require()) {
+                throw common_json_error("the Goose parser declined and FG_JSON_GOOSE_REQUIRE is set");
+            }
         }
         // the assignment moves the parsed tree in, it does not copy
         as_json(&out) = ordered_json::parse(text);
