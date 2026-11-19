@@ -712,6 +712,24 @@ struct llama_moe_cache::impl {
         st.misses += fills.size();
         st.bytes  += bytes;
 
+        // The totals are otherwise only printed by the destructor, and a server stopped with SIGTERM never runs it -
+        // so a measurement of what the cache actually costs had no number. Printed periodically under the same flag,
+        // with the per-copy average, which is what the decode step pays.
+        static const bool fg_diag = getenv("FG_SLRU_DIAG") != nullptr;
+        if (fg_diag) {
+            static std::atomic<long long> copies{0};
+            const long long c = copies.fetch_add(1) + 1;
+            if (c % 4096 == 0) {
+                const long long h = (long long) stats_small.hits + (long long) stats_large.hits;
+                const long long m = (long long) stats_small.misses + (long long) stats_large.misses;
+                const double by = (double) stats_small.bytes + (double) stats_large.bytes;
+                fprintf(stderr, "FG_SLRU_TRAFFIC copies=%lld hits=%lld misses=%lld hit_rate=%.2f%% "
+                                "uploaded=%.1fMiB per_copy=%.1fKiB\n",
+                        c, h, m, (h + m) > 0 ? 100.0 * (double) h / (double) (h + m) : 0.0,
+                        by / 1048576.0, c > 0 ? by / (double) c / 1024.0 : 0.0);
+            }
+        }
+
         // the next copy synchronizes the backend before it changes the slot map again
         ggml_backend_tensor_set_async(backend, dst, src->data, 0, ggml_nbytes(src));
 
