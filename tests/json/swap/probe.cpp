@@ -26,6 +26,23 @@ int main(int argc, char ** argv) {
         "[{\"k\":[1,[2,[3]]]}]",
         "{\"big\":1234567890123,\"neg\":-42}",
         "{\"a\":0.5,\"b\":1e-3,\"c\":2.5E+2}",
+        // Added 2026-11-20: the cases a chat template and a tool-call payload actually produce, plus the
+        // edges where a hand-written parser gives itself away - escapes, deep nesting, exponent forms,
+        // an empty container, a lone scalar, and a key that repeats.
+        "{}",
+        "[]",
+        "0",
+        "true",
+        "\"\"",
+        "{\"k\":\"\\u00e9\\u4e2d\"}",
+        "{\"q\":\"a\\\"b\\n\\t\\\\c\"}",
+        "[[[[[[[[[[1]]]]]]]]]]",
+        "{\"a\":{\"b\":{\"c\":{\"d\":[1,2,{\"e\":3}]}}}}",
+        "[-0.0,1e308,1e-308,2.2250738585072014e-308]",
+        "{\"dup\":1,\"dup\":2}",
+        "{\"nested\":[[],{},[{}],{\"x\":[]}]}",
+        "{\"tool_calls\":[{\"name\":\"f\",\"arguments\":\"{\\\"a\\\":1}\"}]}",
+        "\n{\n  \"pretty\" : [ 1 , 2 ]\n}\n",
     };
 
     const bool want_goose = std::getenv("FG_JSON_GOOSE_PARSE") != nullptr;
