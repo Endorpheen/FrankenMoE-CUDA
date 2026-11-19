@@ -245,3 +245,22 @@ handle.
 
 What the gate does not prove is that the native builder still carries that expression; it is compared against the line as
 transcribed, and the transcription is named so a future reader can check it.
+
+## The quant row ports: right where they answer, and not everywhere
+
+Risk R-1 in the removal plan said the native quant bodies cannot go while only two row types are gated. A gate over every
+type the enumerator has now measures that risk instead of repeating it:
+
+```
+quant rows: types=35 port1=7 port2=16 neither=12 row_size_failures=0
+PASS: every type the ports answer has the native sizes; 12 type(s) are answered by neither and block removal
+```
+
+Where a port answers, its block size, type size and row size match the native ones over whole blocks - 23 of 35 types, zero
+wrong sizes. Twelve types are answered by neither family: `f32`, `f16`, `q8_1`, `iq2_xxs`, `iq2_xs`, `iq1_s` and six more.
+Deleting a native body that is the only implementation of a type is exactly what the removal order forbids, so the deletion
+stays closed and this list is what a future port has to cover.
+
+One difference is documented rather than counted as wrong: for a partial block (`q2_K`, `ne=1`) the native floor-divides to
+zero while the module refuses with -2. The module is stricter, and the gate compares whole blocks because a partial block has
+no defined row size.
