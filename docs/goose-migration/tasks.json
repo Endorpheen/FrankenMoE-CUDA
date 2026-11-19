@@ -5659,5 +5659,27 @@
   "slices_total": 15,
   "slices_done": 12
  },
- "plan_sync_rule": "A document that introduces a work plan must be mirrored into tasks.json in the same change: slices_total, slices_done, remaining and coverage_doc for that requirement. A PARTIAL requirement closes only when every slice and the final acceptance have passed."
+ "plan_sync_rule": "A document that introduces a work plan must be mirrored into tasks.json in the same change: slices_total, slices_done, remaining and coverage_doc for that requirement. A PARTIAL requirement closes only when every slice and the final acceptance have passed.",
+ "coverage_20261119": {
+  "method": "grep -cE 'fg_[a-z_]+_call|goose_init|fg_goose|dlsym' <native file>; see experiments/EXP-2026-11-19-1241-coverage-map",
+  "touchpoints": {
+   "src/llama-sampler.cpp": 38,
+   "src/llama-grammar.cpp": 6,
+   "src/llama-vocab.cpp": 3,
+   "src/llama-model-loader.cpp": 0,
+   "src/llama-graph.cpp": 0,
+   "src/llama-context.cpp": 0,
+   "src/llama-model.cpp": 0,
+   "src/llama-quant.cpp": 0,
+   "ggml/src/ggml-cpu/tiled/tiled.cpp": "source-level integration, no door"
+  },
+  "states": {
+   "P6-10": "samplers: called and accepted (checkpoint, six official runs, identical hash); grammar: called on both paths, opt-in for cost; removal: not started, awaits acceptance",
+   "P6-11": "seventeen decisions gated; two called live (draft width 1 call, prefix 14 calls); synth and rejection acceptance have hooks on routes that need a draft model",
+   "P7-06": "six decisions gated; one door wired and unreachable on BPE models; BPE comparator called live 4156 times per prompt",
+   "P7-07": "detokenizer ported (11-function interface over GGUF buffers); no call path, needs an interface decision",
+   "P7-12": "5389 Goose lines across nine GGUF/loader modules, zero touchpoints in gguf.cpp and llama-model-loader.cpp"
+  },
+  "note": "The roadmap counters mixed 'ported', 'called' and 'replaced'. This block makes the three states explicit so a DONE cannot be inferred from composition alone."
+ }
 }
