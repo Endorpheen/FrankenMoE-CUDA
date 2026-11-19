@@ -26,16 +26,25 @@ one() {
     [ "$(curl -s -m 2 http://127.0.0.1:$PORT/health)" = '{"status":"ok"}' ] && break
     sleep 5
   done
-  local body; body=$(python3 -c 'import json;print(json.dumps({"prompt":"word "*7000,"n_predict":512,"seed":42,"temperature":0.8,"top_p":0.9,"typical_p":0.9,"repeat_penalty":1.1,"cache_prompt":False,"ignore_eos":True}))')
+  # prompt length is configurable: the protocol asks for about 32K input tokens
+  local words=${FG_PROMPT_WORDS:-7000}
+  # the body goes through a file: at 32K input it exceeds the argument list (measured)
+  local reqfile="$OUT/$tag-request.json"
+  python3 -c "import json;print(json.dumps({'prompt':'word '*$words,'n_predict':512,'seed':42,'temperature':0.8,'top_p':0.9,'typical_p':0.9,'repeat_penalty':1.1,'cache_prompt':False,'ignore_eos':True}))" > "$reqfile"
   for r in 1 2; do
     curl -s -m 900 http://127.0.0.1:$PORT/completion -H 'Content-Type: application/json' \
-         --data "$body" > "$OUT/$tag-r$r.json"
-    python3 - "$OUT/$tag-r$r.json" "$tag" "$r" <<'PY'
+         --data @"$reqfile" > "$OUT/$tag-r$r.json"
+    # memory axes: the rule asks for all four, so record them with each repeat
+    vram=$(nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits | head -1)
+    rss=$(awk '/VmRSS/{print $2}' /proc/$pid/status 2>/dev/null)
+    python3 - "$OUT/$tag-r$r.json" "$tag" "$r" "$vram" "$rss" <<'PY'
 import json, sys
-p, tag, r = sys.argv[1], sys.argv[2], sys.argv[3]
+p, tag, r, vram, rss = sys.argv[1:6]
 try:
     t = json.load(open(p)).get("timings", {})
-    print(f"{tag} r{r} prefill={t.get('prompt_per_second',0):.2f} decode={t.get('predicted_per_second',0):.2f} n={t.get('predicted_n',0)}")
+    print(f"{tag} r{r} prompt_n={t.get('prompt_n',0)} prefill={t.get('prompt_per_second',0):.2f} "
+          f"decode={t.get('predicted_per_second',0):.2f} n={t.get('predicted_n',0)} "
+          f"vram_mib={vram} rss_kib={rss}")
 except Exception as e:
     print(f"{tag} r{r} FAILED {e}")
 PY
