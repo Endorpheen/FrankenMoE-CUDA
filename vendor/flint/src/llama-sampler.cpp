@@ -2669,6 +2669,11 @@ static void llama_sample_xtc_apply(struct llama_sampler * smpl, llama_token_data
                 cur_p->data[i].id    = (llama_token) ids[i];
             }
             cur_p->size = (size_t) kept;
+            // The door compacts the survivors into the front of the caller's array, which reorders
+            // them. Leaving `sorted` set made the next stage trust an order that no longer holds:
+            // the native path trims by advancing the base pointer and keeps the order, so its flag
+            // stayed true and the two paths disagreed by one ULP in the next softmax.
+            cur_p->sorted = false;
             const unsigned long long c = ++g_goose_xtc_calls;
             if (c == 1 || (c % 100) == 0) {
                 fprintf(stderr, "FG171_XTC goose calls=%llu kept=%lld\n",
@@ -4183,6 +4188,14 @@ static const char * llama_sampler_adaptive_p_name(const struct llama_sampler * /
 static void llama_sampler_adaptive_p_apply(struct llama_sampler * smpl, llama_token_data_array * cur_p) {
     auto * ctx = (llama_sampler_adaptive_p *) smpl->ctx;
 
+    if (fg_diag_enabled()) {
+        bool mono = true;
+        for (size_t i = 1; i < cur_p->size; ++i) {
+            if (cur_p->data[i - 1].logit < cur_p->data[i].logit) { mono = false; break; }
+        }
+        fprintf(stderr, "FG_ADAPTIVE_FLAG sorted=%d monotonic=%d n=%zu\n", (int) cur_p->sorted, (int) mono, cur_p->size);
+    }
+
     llama_sampler_softmax_impl(cur_p, false);
 
     if (ctx->target < 0.0f) {
@@ -4256,7 +4269,7 @@ static void llama_sampler_adaptive_p_apply(struct llama_sampler * smpl, llama_to
     }
 
     if (fg_diag_enabled()) {
-        for (size_t i = 0; i < cur_p->size && i < 3; ++i) {
+        for (size_t i = 0; i < cur_p->size; ++i) {
             fprintf(stderr, "FG_ADAPTIVE_IN [%zu] id=%d logit=%08x p=%08x\n", i, (int) cur_p->data[i].id,
                     *(const unsigned *) &cur_p->data[i].logit, *(const unsigned *) &cur_p->data[i].p);
         }

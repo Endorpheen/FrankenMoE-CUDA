@@ -112,6 +112,37 @@ adaptive-p diverge", and it is the one supported by the data.
 and `e` matches, the difference is in the final division; if `e` differs, the input to `expf` differs by a bit even
 though the printed logit agrees. One line each, in the trace that already exists.
 
+### The cause: the two paths label the same array differently
+
+The arrays entering adaptive-p are **monotonic in both modes**, but the flag is not:
+
+```
+goose:  FG_ADAPTIVE_FLAG sorted=0 monotonic=1 n=7
+native: FG_ADAPTIVE_FLAG sorted=1 monotonic=1 n=7
+```
+
+`llama_sampler_softmax_impl` uses `data[0].logit` as the max when the flag is set and scans otherwise. On this array
+both give the same answer, so the flag alone is harmless here - but on one round the flag was set on an array whose
+first entry was **not** the largest, and then the two paths took a different max. That is exactly the 1-ULP
+difference, and it is reproducible outside the sampler:
+
+```
+with max=data[0]: p0=3b855bc1 p1=3efed6c9 p2=3eff13c9      <- the native value
+with true max   : p0=3b855bc1 p1=3efed6c8 p2=3eff13c9      <- the goose value
+```
+
+Three inputs, two max choices, and the observed numbers match one each. The divergence is therefore not in the
+transform, not in `expf`, not in the normalisation: it is in **which max each path trusts**, which comes from a flag
+the two paths maintain differently.
+
+### What that means, and what is not done
+
+The doors must leave `cur_p->sorted` in the state the native code would: false after a compaction that reorders
+(typical, XTC), true after a sort (top-p, the pre-ranking sort added for XTC). Aligning that is a small, checkable
+change, but it touches the shared array contract for every door, so it is prepared as its own step and verified
+against all five door comparisons plus the two chain configurations - not slipped in at the end of a numerical
+investigation.
+
 ### Original note on the open question
 
 Whether the door should reproduce the native's trimming (advance the base, preserving order) or the caller should
