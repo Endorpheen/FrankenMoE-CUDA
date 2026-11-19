@@ -27,6 +27,20 @@ All five values agree on a file with 52 metadata keys and 753 tensors.
 Both are the same lesson as the rest of this session, applied one step earlier: print what each side produced before
 interpreting the verdict.
 
+## Every key and every tensor, by name
+
+The lookup doors are compared for the whole file: for each index the native reader knows, its key or tensor name is
+looked up through the port, which must return the same index.
+
+```
+lookup: kv=52/52 tensor=753/753 fails=0
+absent key: both report -1
+```
+
+All 52 metadata keys and all 753 tensor names resolve to the index the native reader gives them, and a key that does
+not exist is reported absent by both sides - the negative case matters as much as the positive one, because a lookup
+that returns zero for everything would pass a positive-only check.
+
 ## What this establishes
 
 The ported header parser agrees with the native reader on this model's structure: version, counts, alignment and
@@ -34,6 +48,6 @@ where the data begins.
 
 ## What it does not establish
 
-That the per-key records and per-tensor descriptors are equal - the doors `gr_find_kv`, `gr_find_tensor`,
-`gr_meta_int` exist for that and are the next comparison. And, as with the detokenizer, the runtime still parses
+That the values attached to those keys are equal - `gr_meta_int` and the typed accessors exist for that and are the
+next comparison. Names, indices and the header fields are proven; payloads are not. And, as with the detokenizer, the runtime still parses
 GGUF natively: this is a port that has been proven against the real file, not one that has been connected.

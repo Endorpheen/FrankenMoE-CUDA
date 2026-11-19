@@ -14,6 +14,7 @@
 typedef struct { int64_t * data; int64_t len; } sl_i64;
 typedef struct { uint8_t * data; int64_t len; } sl_u8;
 typedef int64_t (*fn_parse)(sl_u8, int64_t, sl_i64, sl_i64, sl_i64, sl_i64, sl_i64);
+typedef int64_t (*fn_find)(sl_u8, sl_i64, sl_i64, sl_i64, sl_u8);
 
 #define WINDOW (64u * 1024u * 1024u)
 
@@ -67,6 +68,46 @@ int main(int argc, char ** argv) {
     if (state[3] != n_t)  { ++fails; printf("NT MISMATCH port=%lld native=%lld\n", (long long) state[3], (long long) n_t); }
     if ((size_t) state[4] != al)  { ++fails; printf("ALIGN MISMATCH port=%lld native=%zu\n", (long long) state[4], al); }
     if ((size_t) state[5] != off) { ++fails; printf("OFFSET MISMATCH port=%lld native=%zu\n", (long long) state[5], off); }
-    printf("gguf header: fails=%d\n", fails);
-    return fails ? 1 : 0;
+    /* every key and every tensor: the port's lookup must return the same index the native reader has */
+    fn_find find_kv = (fn_find) dlsym(h, "gr_find_kv");
+    fn_find find_tn = (fn_find) dlsym(h, "gr_find_tensor");
+    if (!find_kv || !find_tn) { printf("missing lookup doors\n"); return 3; }
+
+    struct gguf_init_params gp2 = { .no_alloc = true, .ctx = NULL };
+    struct gguf_context * g2 = gguf_init_from_file(path, gp2);
+    int kv_fail = 0, tn_fail = 0;
+    for (int64_t i = 0; i < n_kv; ++i) {
+        const char * k = gguf_get_key(g2, i);
+        sl_u8 s_key; s_key.data = (uint8_t *) k; s_key.len = (int64_t) strlen(k);
+        const int64_t got = find_kv(s_data, s_state, s_kv, s_slots, s_key);
+        if (got != i) {
+            ++kv_fail;
+            if (kv_fail <= 3) printf("KV MISMATCH key=%s native=%lld port=%lld\n", k, (long long) i, (long long) got);
+        }
+    }
+    for (int64_t i = 0; i < n_t; ++i) {
+        const char * k = gguf_get_tensor_name(g2, (int32_t) i);
+        sl_u8 s_key; s_key.data = (uint8_t *) k; s_key.len = (int64_t) strlen(k);
+        const int64_t got = find_tn(s_data, s_state, s_t, s_slots, s_key);
+        if (got != i) {
+            ++tn_fail;
+            if (tn_fail <= 3) printf("TENSOR MISMATCH name=%s native=%lld port=%lld\n", k, (long long) i, (long long) got);
+        }
+    }
+    /* the negative case: a key that is not there must be reported as absent by both */
+    const char * absent = "general.this.key.does.not.exist";
+    sl_u8 s_absent; s_absent.data = (uint8_t *) absent; s_absent.len = (int64_t) strlen(absent);
+    const int64_t port_absent  = find_kv(s_data, s_state, s_kv, s_slots, s_absent);
+    const int64_t native_absent = (int64_t) gguf_find_key(g2, absent);
+    if (port_absent != -1 || native_absent != -1) {
+        printf("ABSENT MISMATCH port=%lld native=%lld\n", (long long) port_absent, (long long) native_absent);
+        ++kv_fail;
+    } else {
+        printf("absent key: both report -1\n");
+    }
+    gguf_free(g2);
+    printf("lookup: kv=%lld/%lld tensor=%lld/%lld fails=%d\n",
+           (long long) (n_kv - kv_fail), (long long) n_kv, (long long) (n_t - tn_fail), (long long) n_t, kv_fail + tn_fail);
+    printf("gguf header: fails=%d\n", fails + kv_fail + tn_fail);
+    return (fails + kv_fail + tn_fail) ? 1 : 0;
 }
