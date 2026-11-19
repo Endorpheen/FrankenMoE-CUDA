@@ -5289,6 +5289,18 @@ int32_t llama_detokenize(
                                       vocab->get_add_space_prefix() ? 1 : 0, vocab->get_add_bos() ? 1 : 0,
                                       (int64_t) vocab->token_bos(), vocab->get_add_eos() ? 1 : 0,
                                       (int64_t) vocab->token_eos(), 0);
+            if (served < 0 && getenv("FG_TK_DETOK_DIAG")) {
+                // The short-buffer answer, beside the native one: this is the case the fallbacks exist for and
+                // the only one where the two contracts have never been compared (EXP-2026-11-19-1356).
+                static thread_local char short_buf[1];
+                const int32_t nat = vocab->detokenize(tokens, n_tokens, short_buf,
+                                                      text_len_max, remove_special, unparse_special);
+                static std::atomic<long long> shorts{0};
+                if (shorts.fetch_add(1) < 6) {
+                    fprintf(stderr, "FG_TK_SEQ_SHORT len_max=%d goose=%lld native=%d\n",
+                            (int) text_len_max, (long long) served, (int) nat);
+                }
+            }
             if (served >= 0 && served <= (int64_t) text_len_max) {
                 static std::atomic<long long> from_port{0};
                 const long long c = from_port.fetch_add(1) + 1;

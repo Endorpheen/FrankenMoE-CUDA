@@ -29,7 +29,33 @@ observation is the reason: `-65544` served as if it were `-needed` would tell a 
 string that needs 184 528 - a wrong answer that only appears on the resize path, which no successful-call comparison
 touches.
 
-## The next measurement
+## The measurement, run
+
+One sequence of 129 ids, detokenised with deliberate buffer sizes, the door's answer beside the native one:
+
+```
+len_max=8    goose=-18    native=-1015
+len_max=64   goose=-69    native=-1015
+length needed 1015, returned -1015 by both llama_detokenize calls at any size <= 1014
+```
+
+So the door **under-counts the shortfall**. `-1015` is the full length; `-18` and `-69` are what it accumulated before
+it stopped. The mechanism I named as a hypothesis - pieces contributing nothing once the room is gone - is what the
+numbers show, and it is now a measurement rather than a guess.
+
+## Why the two agree anyway
+
+`llama_detokenize` falls back to native when the door reports short, so callers always receive `-1015`. The
+disagreement is invisible today and would become visible the moment the fallback were removed - which is exactly why
+it stays until the accumulation is fixed.
+
+## The fix this defines
+
+`dt_detokenize_body` must accumulate the size of **every** remaining piece once the room is exhausted, as the native
+loop does, so `-total` is the whole needed length rather than where it stopped. The harness above is the check: after
+the fix it must print `goose=-1015` beside `native=-1015` for every `len_max <= 1014`.
+
+## The earlier measurement note
 
 One harness run that calls the door directly with three deliberate buffer sizes - too small, exactly enough, one byte
 short - and prints the door's answer beside the native's for each. If the door returns the true total for any of them,

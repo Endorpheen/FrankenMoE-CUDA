@@ -42,6 +42,20 @@ int main(int argc, char ** argv) {
         }
         free(ids);
     }
+    /* the short-buffer contract: one sequence, several buffer sizes */
+    {
+        const int n = 129;
+        llama_token ids[129];
+        for (int i = 0; i < n; ++i) { ids[i] = (llama_token) ((i * 7919) % n_vocab); }
+        const int32_t full = llama_detokenize(vocab, ids, n, buf, sizeof(buf), 1, 0);
+        const int32_t sizes[] = { 8, 64, full - 1, full, full + 1 };
+        for (int k = 0; k < 5; ++k) {
+            if (sizes[k] < 0) { continue; }
+            const int32_t got = llama_detokenize(vocab, ids, n, buf, sizes[k], 1, 0);
+            printf("short-buffer len_max=%d native_needed=%d returned=%d\n", sizes[k], full, got);
+            ++calls;
+        }
+    }
     printf("sequence harness: calls=%d\n", calls);
     llama_model_free(model);
     llama_backend_free();
