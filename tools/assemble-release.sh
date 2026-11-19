@@ -52,6 +52,19 @@ done
 REV=$(git -C "$ROOT" rev-parse HEAD 2>/dev/null || echo unknown)
 printf '%s\n' "$REV" > "$OUT/REVISION"
 
+# The build command is part of the artefact. On 2026-11-19 a fresh tools/build-independent-apex.sh run
+# produced a library with 87 unit doors where the accepted release has 198 and four accepted components
+# missing, and nothing in the release said which path had produced it - so "reproducible" could not be
+# checked and the difference had to be reconstructed by forensics. A release now names its producer, or
+# the field says unknown, which is itself the finding.
+if [ -n "${FG_BUILD_COMMAND:-}" ]; then
+    printf '%s\n' "$FG_BUILD_COMMAND" > "$OUT/BUILD-COMMAND"
+elif [ -f "$SET/BUILD-COMMAND" ]; then
+    cp "$SET/BUILD-COMMAND" "$OUT/BUILD-COMMAND"
+else
+    printf 'unknown: the producing command was not recorded when this set was built\n' > "$OUT/BUILD-COMMAND"
+fi
+
 if [ -n "$MANIFEST" ]; then
     [ -f "$MANIFEST" ] || { echo "no such manifest: $MANIFEST" >&2; exit 2; }
     cp "$MANIFEST" "$OUT/MANIFEST.md"
