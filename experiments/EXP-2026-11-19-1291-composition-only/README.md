@@ -44,6 +44,24 @@ turns from descending into ascending, they do not, and the probabilities differ 
 So the port computes the correct normalisation of the values it was given, and the native computes one based on a
 flag its own transform has invalidated.
 
+## The residual is the RNG state, and the arrays prove it
+
+With the host normalisation in place, the arrays and the probabilities at the failing round are **identical in both
+modes**, and the selection still differs:
+
+```
+round 3  n=3  ws=1.532418728 (both)   goose idx=2 tok=16   native idx=1 tok=98
+```
+
+The printed `p` for that round matches on every entry (the first differing line is the next round), so a draw from
+an identical distribution with identical probabilities produced a different index. That is only possible if the RNG
+state differs by then - which means some earlier call consumed a **different number of words** in the two modes.
+
+Candidates, in order of likelihood: the selection sampler (the door branch draws two words explicitly, the native
+`std::discrete_distribution` draws through `generate_canonical`), and adaptive's internal draw. The probe that
+settles it is a per-call-site word counter in both modes, and it is the only measurement of this thread not yet
+made.
+
 ## The culprit is the adaptive door, and the residual is the draw
 
 Mixing the switches separates the three stages:
