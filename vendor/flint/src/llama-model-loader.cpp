@@ -138,6 +138,127 @@ static bool fg_port_str(const int64_t k, const uint8_t *& ptr, int64_t & len) {
     return true;
 }
 
+// The BPE table for the ported encoder: one owner, as with the detokeniser. btl_load reads the KV arrays
+// through the port's own reader and fills every table, so the host only supplies correctly sized arrays -
+// sizes come from the native reader's own counts, never from a guess (EXP-2026-11-19-1378).
+struct fg_bpe_store {
+    std::vector<int64_t> tok_off, tok_len, tok_slots, mrg_off, mrg_len, mrg_slots;
+    std::vector<int64_t> pairs, tok_type, attr, order, eog, stats;
+    bool ready = false;
+};
+static fg_bpe_store fg_bpe;
+
+typedef int64_t (*fg_bt_bpe_fn)(fg_sl_u8, fg_sl_u8, fg_sl_i64, fg_sl_i64, fg_sl_i64,
+                                fg_sl_i64, fg_sl_i64, fg_sl_i64, fg_sl_i64, int64_t,
+                                fg_sl_i64, fg_sl_i64, fg_sl_u8, fg_sl_i64, fg_sl_i64,
+                                fg_sl_i64, fg_sl_i64);
+
+static fg_bt_bpe_fn fg_bpe_encode_resolve() {
+    static fg_bt_bpe_fn fn = []() -> fg_bt_bpe_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        return h ? reinterpret_cast<fg_bt_bpe_fn>(dlsym(h, "bt_bpe")) : nullptr;
+    }();
+    return fn;
+}
+
+// Called once from the loader, after the port store is ready. Returns false when the engine is absent or
+// refuses the vocabulary, in which case the native encoder stays the only one.
+typedef int64_t (*fg_bt_build_fn)(fg_sl_u8, fg_sl_i64, fg_sl_i64, fg_sl_i64,
+                                  fg_sl_i64, fg_sl_i64, fg_sl_i64, fg_sl_i64);
+
+static bool fg_bpe_init(int64_t tok_key, int64_t mrg_key, int64_t n_tok, int64_t n_mrg) {
+    // bt_build takes the offsets as input, so they are taken from the port's own reader: the pointer the
+    // accessor returns is inside the blob the door will index. btl_load is the same work but is not
+    // exported by the shipped unit (measured: 0 dynamic symbols), which is why this route exists.
+    static fg_bt_build_fn build = []() -> fg_bt_build_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        return h ? reinterpret_cast<fg_bt_build_fn>(dlsym(h, "bt_build")) : nullptr;
+    }();
+    if (getenv("FG_TK_BPE_DIAG")) {
+        fprintf(stderr, "FG_TK_BPE_ENTRY build=%d port=%d n_tok=%lld n_mrg=%lld\n",
+                build != nullptr, (int) fg_port.ready, (long long) n_tok, (long long) n_mrg);
+    }
+    if (!build || !fg_port.ready || n_tok <= 0) { return false; }
+    if (fg_bpe.ready) { return true; }
+    const int64_t nm = n_mrg > 0 ? n_mrg : 1;
+    int64_t tcap = 16, mcap = 16;
+    while (tcap < 2 * n_tok + 2) { tcap <<= 1; }
+    while (mcap < 2 * nm + 2) { mcap <<= 1; }
+    const int64_t maxn = n_tok > nm ? n_tok : nm;
+    fg_bpe.tok_off.assign(n_tok, 0);   fg_bpe.tok_len.assign(n_tok, 0);
+    fg_bpe.mrg_off.assign(nm, 0);      fg_bpe.mrg_len.assign(nm, 0);
+    fg_bpe.tok_slots.assign(tcap, 0);  fg_bpe.mrg_slots.assign(mcap, 0);
+    fg_bpe.pairs.assign(2 * maxn, 0);
+    fg_bpe.tok_type.assign(n_tok, 0);  fg_bpe.attr.assign(n_tok, 0);
+    fg_bpe.order.assign(n_tok, 0);     fg_bpe.eog.assign(n_tok, 0);
+    fg_bpe.stats.assign(8, 0);
+
+    // Offsets of every token and merge, taken from the reader that will serve them.
+    for (int64_t i = 0; i < n_tok; ++i) {
+        const uint8_t * ptr = nullptr; int64_t len = 0;
+        if (!fg_port_array_str(tok_key, i, &ptr, &len)) {
+            if (getenv("FG_TK_BPE_DIAG")) { fprintf(stderr, "FG_TK_BPE_OFF tok i=%lld failed\n", (long long) i); }
+            return false;
+        }
+        fg_bpe.tok_off[i] = (int64_t) (ptr - fg_port.data.data());
+        fg_bpe.tok_len[i] = len;
+    }
+    for (int64_t i = 0; i < n_mrg; ++i) {
+        const uint8_t * ptr = nullptr; int64_t len = 0;
+        if (!fg_port_array_str(mrg_key, i, &ptr, &len)) { return false; }
+        fg_bpe.mrg_off[i] = (int64_t) (ptr - fg_port.data.data());
+        fg_bpe.mrg_len[i] = len;
+    }
+    fg_sl_u8  s_gguf { fg_port.data.data(), (int64_t) fg_port.data.size() };
+    const int64_t rc = build(s_gguf,
+                             fg_sl_i64{ fg_bpe.tok_off.data(), n_tok },
+                             fg_sl_i64{ fg_bpe.tok_len.data(), n_tok },
+                             fg_sl_i64{ fg_bpe.tok_slots.data(), tcap },
+                             fg_sl_i64{ fg_bpe.mrg_off.data(), nm },
+                             fg_sl_i64{ fg_bpe.mrg_len.data(), nm },
+                             fg_sl_i64{ fg_bpe.mrg_slots.data(), mcap },
+                             fg_sl_i64{ fg_bpe.stats.data(), 8 });
+    if (rc != 0) {
+        if (getenv("FG_TK_BPE_DIAG")) { fprintf(stderr, "FG_TK_BPE_LOAD refused rc=%lld\n", (long long) rc); }
+        return false;
+    }
+    fg_bpe.ready = true;
+    if (getenv("FG_TK_BPE_DIAG")) {
+        fprintf(stderr, "FG_TK_BPE_LOAD ok n_tok=%lld n_mrg=%lld tcap=%lld mcap=%lld\n",
+                (long long) n_tok, (long long) n_mrg, (long long) tcap, (long long) mcap);
+    }
+    return true;
+}
+
+// Encodes through the port. Returns the id count, or -1 when the engine cannot answer.
+extern "C" int64_t fg_bpe_encode(const char * text, int64_t n, int64_t * ids, int64_t cap) {
+    const fg_bt_bpe_fn fn = fg_bpe_encode_resolve();
+    if (!fn || !fg_bpe.ready || !fg_port.ready || n < 0 || n > (int64_t) 1 << 24) { return -1; }
+    const int64_t m = n > 0 ? n : 1;
+    static thread_local std::vector<int64_t> cpts, seg, sym, heap, hc, info, ids_buf;
+    static thread_local std::vector<uint8_t> enc;
+    cpts.assign(m + 1, 0); seg.assign(4 * (m + 1), 0); enc.assign(8 * (m + 1), 0);
+    sym.assign(24 * (m + 1), 0); heap.assign(15 * (m + 1) + 40, 0); hc.assign(2, 0); info.assign(8, 0);
+    if (ids_buf.size() < (size_t) cap + 8) { ids_buf.resize((size_t) cap + 8); }
+    const int64_t got = fn(fg_sl_u8{ (uint8_t *) text, n },
+                           fg_sl_u8{ fg_port.data.data(), (int64_t) fg_port.data.size() },
+                           fg_sl_i64{ fg_bpe.tok_off.data(), (int64_t) fg_bpe.tok_off.size() },
+                           fg_sl_i64{ fg_bpe.tok_len.data(), (int64_t) fg_bpe.tok_len.size() },
+                           fg_sl_i64{ fg_bpe.tok_slots.data(), (int64_t) fg_bpe.tok_slots.size() },
+                           fg_sl_i64{ fg_bpe.mrg_off.data(), (int64_t) fg_bpe.mrg_off.size() },
+                           fg_sl_i64{ fg_bpe.mrg_len.data(), (int64_t) fg_bpe.mrg_len.size() },
+                           fg_sl_i64{ fg_bpe.mrg_slots.data(), (int64_t) fg_bpe.mrg_slots.size() },
+                           fg_sl_i64{ ids_buf.data(), (int64_t) ids_buf.size() }, 0,
+                           fg_sl_i64{ cpts.data(), m + 1 }, fg_sl_i64{ seg.data(), 4 * (m + 1) },
+                           fg_sl_u8{ enc.data(), 8 * (m + 1) },
+                           fg_sl_i64{ sym.data(), 24 * (m + 1) },
+                           fg_sl_i64{ heap.data(), 15 * (m + 1) + 40 },
+                           fg_sl_i64{ hc.data(), 2 }, fg_sl_i64{ info.data(), 8 });
+    if (got < 0 || got > cap) { return -1; }
+    for (int64_t i = 0; i < got; ++i) { ids[i] = ids_buf[i]; }
+    return got;
+}
+
 static int fg_gguf_check(const std::string & fname, const gguf_context & native) {
     static auto fn = []() -> fg_gr_parse_fn {
         void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
@@ -161,6 +282,36 @@ static int fg_gguf_check(const std::string & fname, const gguf_context & native)
     std::vector<int64_t> & state = fg_port.state, & kv = fg_port.kv, & tn = fg_port.tn, & slots = fg_port.slots;
     state.assign(8, 0); kv.assign((size_t) nk * 8, 0); tn.assign((size_t) nt * 12, 0); slots.assign(4096, 0);
     fg_port.ready = true;
+
+    // The encoder's table, sized from the native reader's own counts for the two arrays it needs.
+    {
+        // The port's own lookup, not the native one: an index from one reader is only valid in that reader,
+        // and a mismatch here would look exactly like a missing array.
+        typedef fg_gr_find_fn fg_find_fn;   // the same signature the check uses: data, state, kv, slots, key
+        static fg_find_fn fg_find = []() -> fg_find_fn {
+            void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+            return h ? reinterpret_cast<fg_find_fn>(dlsym(h, "gr_find_kv")) : nullptr;
+        }();
+        const char * fg_k_tok = "tokenizer.ggml.tokens", * fg_k_mrg = "tokenizer.ggml.merges";
+        const int64_t tok_key = fg_find ? fg_find(fg_sl_u8{ fg_port.data.data(), (int64_t) fg_port.data.size() },
+                                                  fg_sl_i64{ fg_port.state.data(), 8 },
+                                                  fg_sl_i64{ fg_port.kv.data(), (int64_t) fg_port.kv.size() },
+                                                  fg_sl_i64{ fg_port.slots.data(), (int64_t) fg_port.slots.size() },
+                                                  fg_sl_u8{ (uint8_t *) fg_k_tok, (int64_t) strlen(fg_k_tok) })
+                                        : gguf_find_key(&native, "tokenizer.ggml.tokens");
+        const int64_t mrg_key = fg_find ? fg_find(fg_sl_u8{ fg_port.data.data(), (int64_t) fg_port.data.size() },
+                                                  fg_sl_i64{ fg_port.state.data(), 8 },
+                                                  fg_sl_i64{ fg_port.kv.data(), (int64_t) fg_port.kv.size() },
+                                                  fg_sl_i64{ fg_port.slots.data(), (int64_t) fg_port.slots.size() },
+                                                  fg_sl_u8{ (uint8_t *) fg_k_mrg, (int64_t) strlen(fg_k_mrg) })
+                                        : gguf_find_key(&native, "tokenizer.ggml.merges");
+        if (tok_key >= 0 && mrg_key >= 0) {
+            const int64_t n_tok = gguf_get_arr_n(&native, (int) tok_key);
+            const int64_t n_mrg = gguf_get_arr_n(&native, (int) mrg_key);
+            fg_bpe_init(tok_key, mrg_key, n_tok, n_mrg);
+        }
+    }
+
     fg_sl_u8  s_data{ fg_port.data.data(), (int64_t) fg_port.data.size() };
     fg_sl_i64 s_state{ state.data(), 8 }, s_kv{ kv.data(), (int64_t) kv.size() },
               s_t{ tn.data(), (int64_t) tn.size() }, s_slots{ slots.data(), (int64_t) slots.size() };
@@ -963,7 +1114,10 @@ llama_model_loader::llama_model_loader(
             throw std::runtime_error(format("%s: failed to load model from %s", __func__, fname.c_str()));
         }
 
-        if (getenv("FG_GGUF_DIAG") != nullptr) {
+        // The encoder's table needs the same store the GGUF check fills, so the check's own flag is not
+        // enough: FG_TK_BPE_DIAG opens it too. The comparison is read-only and its verdict is the same one
+        // the check would give, so nothing is weakened by running it for this reason.
+        if (getenv("FG_GGUF_DIAG") != nullptr || getenv("FG_TK_BPE_DIAG") != nullptr) {
             // A disagreement here means the port and the native reader see the same file differently, which
             // is never acceptable: refuse the load rather than continue with an unverified reader.
             const int fg_diff = fg_gguf_check(fname, *metadata_ptr);
