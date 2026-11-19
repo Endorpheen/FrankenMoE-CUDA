@@ -62,6 +62,7 @@ decode 62.56 / 62.86 / 62.38, prefill 2701.2 / 2956.0 / 2954.1, hash `c2ff42cc12
 | `builds/checkpoint-20261119-EXP1332` | same baseline, unit grown by the detokenizer and GGUF closures (11847 symbols) | decode 62.72, prefill 2944.0, hash unchanged |
 | `builds/checkpoint-20261119-EXP1346` | same baseline, and the loader now takes its metadata from the port (11853 symbols) | decode 62.69, prefill 2945.4, hash unchanged |
 | `builds/checkpoint-20261119-EXP1355` | same baseline, and all four detokeniser decisions are served by the port | decode 63.14, prefill 2944.6, hash unchanged |
+| `builds/checkpoint-20261119-EXP1373` | same baseline, the short-buffer contract fixed, the grammar window widened, and the server's synthetic door in the compiled copy | decode 62.76, prefill 2951.0, hash unchanged |
 
 The baseline number is EXP1298's. EXP1332 is the artefact that carries more of the port, and its measurements say the
 growth cost nothing measurable.
