@@ -72,6 +72,7 @@ set(LLAMA_CORE_SOURCES
 set(FG_SAMPLER_CHAIN_DIR ${CMAKE_CURRENT_BINARY_DIR}/goose-sampler-chain)
 add_custom_command(
     OUTPUT ${FG_SAMPLER_CHAIN_DIR}/sampler_chain.c ${FG_SAMPLER_CHAIN_DIR}/sampler_chain.h
+           ${FG_SAMPLER_CHAIN_DIR}/json_dump_unit.c ${FG_SAMPLER_CHAIN_DIR}/json_dump_unit.h
            ${FG_SAMPLER_CHAIN_DIR}/sampler_chain_shim.c
            ${FG_SAMPLER_CHAIN_DIR}/slru_runtime_shim.c
     COMMAND bash ${FG_REPO_ROOT}/tools/build-sampler-chain.sh ${FG_SAMPLER_CHAIN_DIR}
@@ -90,6 +91,7 @@ add_custom_command(
             ${FG_REPO_ROOT}/goose/model/gguf-reader.goose
             ${FG_REPO_ROOT}/goose/model/gguf-tensors.goose
             ${FG_REPO_ROOT}/goose/json/json-parser.goose
+            ${FG_REPO_ROOT}/goose/json/json-dump.goose
             ${FG_REPO_ROOT}/tools/gen-grammar-shim.py
             ${FG_REPO_ROOT}/tools/build-sampler-chain.sh
     COMMENT "Building the Goose sampler chain")
@@ -100,7 +102,12 @@ set_source_files_properties(${FG_SAMPLER_CHAIN_DIR}/sampler_chain.c
                             PROPERTIES COMPILE_DEFINITIONS "main=fg_chain_main")
 set_source_files_properties(${FG_SAMPLER_CHAIN_DIR}/sampler_chain.h
                             PROPERTIES HEADER_FILE_ONLY TRUE)
-list(APPEND LLAMA_CORE_SOURCES ${FG_SAMPLER_CHAIN_DIR}/sampler_chain.c
+# The dumper is its own unit: the same constant names appear in both modules, so it cannot be concatenated into the parser's
+# root. Its entry point is renamed so the two units do not collide.
+set_source_files_properties(${FG_SAMPLER_CHAIN_DIR}/json_dump_unit.c
+                            PROPERTIES COMPILE_DEFINITIONS "goose_init=gs_json_dump_init")
+list(APPEND LLAMA_CORE_SOURCES ${FG_SAMPLER_CHAIN_DIR}/json_dump_unit.c
+                               ${FG_SAMPLER_CHAIN_DIR}/sampler_chain.c
                                ${FG_SAMPLER_CHAIN_DIR}/sampler_chain_shim.c
                                ${FG_SAMPLER_CHAIN_DIR}/slru_runtime_shim.c
                                ${FG_REPO_ROOT}/integration/goose-standalone/json-strtod-provider.c)

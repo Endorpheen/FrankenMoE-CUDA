@@ -173,6 +173,10 @@ EOF
 GOOSE_HOME="$root/experiments/EXP-2026-11-18-1031-p6-10-typical" \
 TMPDIR="$root/experiments/EXP-2026-11-18-1008-p1-12-gemv/tmp" \
     "$compiler" --standalone --header "$out/sampler_chain.h" -o "$out/sampler_chain.c" "$rootfile"
+# The JSON dumper cannot share the parser's unit: both modules declare the same kind constants and the composed root refuses
+# duplicate globals (EXP-2026-11-19-1484). It is generated as its own unit with its own heap, and its entry point is renamed so
+# the two units do not collide at link time.
+"$compiler" --standalone --header "$out/json_dump_unit.h" -o "$out/json_dump_unit.c" "$root/goose/json/json-dump.goose"
 python3 - "$out" "$root" <<'PY'
 import re, sys
 out = sys.argv[1]

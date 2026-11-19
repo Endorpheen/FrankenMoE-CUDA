@@ -29,3 +29,11 @@ double gs_json_strtod(sl_u8 s) {
     }
     return v;
 }
+
+// gs_json_fmt_e: the dumper's primitive, "%.*e" into a caller slice. Substrate like the one above - the choice of format stays in
+// the module, only the formatting call is C.
+#include <stdio.h>
+
+int64_t gs_json_fmt_e(sl_u8 out, int64_t prec, double x) {
+    return (int64_t) snprintf((char *) out.data, (size_t) out.len, "%.*e", (int) prec, x);
+}
