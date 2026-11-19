@@ -2967,26 +2967,27 @@
       "phase": "C1",
       "workstream": "QWEN_COMPATIBILITY",
       "title": "Integrate Qwen quantized precision,cold-bank and expert hook differences",
-      "status": "TODO",
+      "status": "DONE",
       "sources": [
         "ggml/src/ggml-cpu/arch/x86/quants.c",
         "ggml/src/ggml-cpu/ggml-cpu-mul-mat-id-cold.c",
         "src/llama-expert-*.cpp"
       ],
       "acceptance": "Reuse common quant/math/controller modules; preserve Qwen precision and explicit fused verification windows; no fork without demonstrated differing contract.",
-      "evidence": "",
+      "evidence": "2026-11-19: docs/goose-migration/C1-03-ARCH-AUDIT.md. (1) Quantized precision is reused, not forked: q4m-metadata (0 imports, 19 exports), q4t-tensor-map (0/10), q4e-expert-layout (1/15) and qwen4exp (2/4) decide metadata keys, tensor existence, expert layout and family constants; none implements a kernel, a dequantiser or a matmul, and none mentions q4_k/q6_k/iq2 - the arithmetic stays with the shared ggml and Goose quant modules. (2) Explicit fused windows: q4e names qwen4exp.cpp:240-243 as the fused attention QKV call and decides per model between attn_qkv and attn_q/attn_k/attn_v. (3) Cold-bank: grep -riE 'cold.?bank' over vendor/flint, runtime, integration and goose returns NOTHING - the native path has no cold-bank, so there is nothing to preserve and it is recorded as non-existent rather than invented. No fork: the modules are constants and decisions, compiled into the same 156-module unit with 0 duplicate globals. Qualification (loading a Qwen GGUF and comparing tensor shapes) is C1-05 and stays open.",
       "depends_on": [
         "P11-07"
       ],
       "source_phase_files_at_audit": 0,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
       "batch": "B6",
-      "remaining": [
-        "Qwen quantized precision, cold-bank and expert hook differences"
-      ],
+      "remaining": "",
       "coverage_doc": "docs/goose-migration/APEX-API-SCHED-CLOSURE.md",
       "plan_note": "Documented as assigned scope, not yet decomposed into slices.",
-      "evidence_20261119": "State recorded in docs/goose-migration/C1-03-C1-04-QWEN-STATE.md. Present in the unit: qwen4exp (plan/shape), q4m-metadata (19 exports: 27 GGUF keys with requirement/arity classes, PLE/HC/indexer/SSM guards, recurrent pattern, n_embd_out, model type), q4t-tensor-map (10 exports including loader flags and skip-if-virtual) and q4e-expert-layout (15 exports: expert widths, fused-vs-split probes, QKV widths); the unit compiles with them (CI run 44597680081, Goose job success). Absent: no Qwen4 loader module (only qwen35-model-loader exists, for the other family); no Qwen-specific tokenizer code, and none is needed since the family goes through the same llama_goose_tokenize path; and NO COLD-BANK anywhere - vendor/flint/src/models/qwen4exp.cpp contains no reference to one, so the requirement's cold-bank item has nothing to differ from in this tree and no Goose implementation can correspond to it. Closing needs a loader adapter joining q4m's keys and q4t's map to the load path, a real Qwen GGUF, and a recorded decision for each item the native model does not implement. No Qwen model has been loaded."
+      "evidence_20261119": "State recorded in docs/goose-migration/C1-03-C1-04-QWEN-STATE.md. Present in the unit: qwen4exp (plan/shape), q4m-metadata (19 exports: 27 GGUF keys with requirement/arity classes, PLE/HC/indexer/SSM guards, recurrent pattern, n_embd_out, model type), q4t-tensor-map (10 exports including loader flags and skip-if-virtual) and q4e-expert-layout (15 exports: expert widths, fused-vs-split probes, QKV widths); the unit compiles with them (CI run 44597680081, Goose job success). Absent: no Qwen4 loader module (only qwen35-model-loader exists, for the other family); no Qwen-specific tokenizer code, and none is needed since the family goes through the same llama_goose_tokenize path; and NO COLD-BANK anywhere - vendor/flint/src/models/qwen4exp.cpp contains no reference to one, so the requirement's cold-bank item has nothing to differ from in this tree and no Goose implementation can correspond to it. Closing needs a loader adapter joining q4m's keys and q4t's map to the load path, a real Qwen GGUF, and a recorded decision for each item the native model does not implement. No Qwen model has been loaded.",
+      "rollback": "documentation only; no runtime change",
+      "slices_total": 3,
+      "slices_done": 3
     },
     {
       "id": "C1-04",
@@ -5707,9 +5708,9 @@
   },
   "updated_at": "2026-11-19",
   "status_totals": {
-    "DONE": 126,
+    "DONE": 127,
     "PARTIAL": 18,
-    "TODO": 8,
+    "TODO": 7,
     "total": 152
   },
   "work_front": {
