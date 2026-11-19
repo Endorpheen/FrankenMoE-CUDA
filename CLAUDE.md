@@ -677,3 +677,32 @@ come from Igor directly. For every marked message:
     accepted reference binary was built from `runtime/reconstructed/src/llama-model.cpp`, which does
     (EXP-2026-11-19-1298). Both builds compiled cleanly; only one had the feature; decode differed by
     about ten tokens per second and the comparison of the two was mistaken for evidence of parity.
+
+34. Naming migrates with the implementation, never ahead of it.
+
+    The project's own names are the destination:
+
+    | today                      | future                  |
+    |----------------------------|-------------------------|
+    | `libllama.so`              | `libgoose-runtime.so`   |
+    | `libllama-server-impl.so`  | `libgoose-server.so`    |
+    | `libggml.so`               | `libgoose-compute.so`   |
+    | `llama-server`             | `frankenmoe-server`     |
+
+    This is a direction, not an instruction to rename anything now. FrankenMoE is the product and the runtime,
+    Goose is the language and the substrate, Fried Goose is the compiler.
+
+    Rules:
+
+    - rename a component only after its Goose implementation is mature enough to carry the name, which means the
+      shipped call path reaches the Goose export and the native body is dead - not that the module compiles;
+    - a compiled Goose module is not a used one, and the two have been confused before (rule 33);
+    - ABI, SONAME, dependencies, library loading and backward compatibility are preserved during the transition: a
+      rename lands as an alias or a symlink with the old name kept working, not as a break;
+    - CI, build scripts, tests, release archives and existing checkpoints keep working through any rename;
+    - never rename a component whose functionality is still mostly C++;
+    - every rename is its own verifiable step with a way back;
+    - a cosmetic rename is never a reason to touch a working runtime.
+
+    The policy lives in `docs/goose-migration/NAMING-POLICY.md` with the per-component state; this rule is the
+    authority and that document is its current accounting.
