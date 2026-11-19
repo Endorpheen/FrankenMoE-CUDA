@@ -4974,6 +4974,7 @@ private:
                         fprintf(stderr, "FG_ACCEPT_BRANCH synth=%d replay=%d reject=%d draft=%zu\n",
                                 (int) synth_probs.size(), (int) slot.spec_is_replay,
                                 (int) slot.use_spec_rejection(), slot.spec_draft.size());
+                        fprintf(stderr, "FG_ACCEPT_Q draft_q=%zu\n", slot.spec_draft_q.size());
                     }
                 }
                 if (!synth_probs.empty()) {

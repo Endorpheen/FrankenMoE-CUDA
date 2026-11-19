@@ -750,6 +750,13 @@ std::vector<llama_token> common_sampler_sample_and_accept_n(struct common_sample
     // Goose cross-check of the accepted prefix. The native result above is what returns either way,
     // so a disagreement can only be counted. `i` is the number of draft tokens the loop accepted,
     // which is exactly what the ported prefix comparison must produce for the same two arrays.
+    {
+        static std::atomic<int> fg_enter{0};
+        if (getenv("FG_ACCEPT_DIAG") && fg_enter.fetch_add(1) < 3) {
+            fprintf(stderr, "FG_PREFIX_ENTER draft=%zu result=%zu fn=%p\n",
+                    draft.size(), result.size(), (void *) fg_sp_prefix_resolve());
+        }
+    }
     if (const auto fn = fg_sp_prefix_resolve()) {
         static thread_local std::vector<int64_t> d, t;
         static thread_local int64_t out[2];
