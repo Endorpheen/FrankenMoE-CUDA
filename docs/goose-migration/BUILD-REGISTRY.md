@@ -208,3 +208,24 @@ Consequences, stated rather than papered over:
   measured binary*;
 - either the kernel object is added to the build set, or the gate is told which components apply to a
   sampling-only measurement. That is a decision for Igor, not for me.
+
+## Checkpoint 2026-11-19: the sampler chain, accepted
+
+`builds/checkpoint-20261119-chain/` holds byte copies of the set that produced the acceptance
+measurement, with `SHA256SUMS`, `git-rev.txt` (e6ca0d0a) and a `MANIFEST.md` naming the compiler, the
+build script, the profile and the restore line.
+
+    libllama.so.0.7.0          582b5619c0c8cc32cc4a49bcc2740034d57a718f99d3fe172177eaf4d43ce2ff
+    libllama-common.so.0.7.0   13fe9949957f510e27f015be4ec062b5459114c4c7b66965f6793a41add5c554
+    libllama-server-impl.so    ed1f7a8b67123c7ff9de7548efbf6c0af10054546ab27a1e13d3a50e046740c9
+    libggml-base.so.0.27.0     73d0eff7bbc2875699dd3495be19bf735867bf7baf5cdecda95b68f7437b5c2d
+    libggml-cpu.so.0.27.0      8dff918c63ebd67e6dd1559f122a45777995a18ddf6c2336900a46bf03d93448
+    llama-server               8bb2ec2a795c523d1ff4c5e24e8a09cc4f1122f8ada900dfd35fee3b6c7e8a73
+
+What it carries, in one line each: the three previously accepted Goose components, the nine sampler
+stages, the two decision modules added this session, and a chain addressed by exported names with no
+generated indexes. Evidence: 39 000+ differential cases, six official runs with the baseline hash, and a
+green `build-main-runtime.sh` (1184 symbols, 0 duplicates).
+
+This is the base the next stage extends. It is not to be overwritten: a new accepted set becomes a new
+directory with its own hash.
