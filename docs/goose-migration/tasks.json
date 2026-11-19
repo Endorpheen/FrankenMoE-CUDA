@@ -5671,14 +5671,16 @@
    "src/llama-context.cpp": 0,
    "src/llama-model.cpp": 0,
    "src/llama-quant.cpp": 0,
-   "ggml/src/ggml-cpu/tiled/tiled.cpp": "source-level integration, no door"
+   "ggml/src/ggml-cpu/tiled/tiled.cpp": "source-level integration, no door",
+   "src/llama-arch.cpp": 1
   },
   "states": {
    "P6-10": "samplers: called and accepted (checkpoint, six official runs, identical hash); grammar: called on both paths, opt-in for cost; removal: not started, awaits acceptance",
    "P6-11": "seventeen decisions gated; two called live (draft width 1 call, prefix 14 calls); synth and rejection acceptance have hooks on routes that need a draft model",
    "P7-06": "six decisions gated; one door wired and unreachable on BPE models; BPE comparator called live 4156 times per prompt",
    "P7-07": "detokenizer ported (11-function interface over GGUF buffers); no call path, needs an interface decision",
-   "P7-12": "5389 Goose lines across nine GGUF/loader modules, zero touchpoints in gguf.cpp and llama-model-loader.cpp"
+   "P7-12": "5389 Goose lines across nine GGUF/loader modules, zero touchpoints in gguf.cpp and llama-model-loader.cpp",
+   "P9-01": "architecture registry: called live at model load (find + round-trip, 1 call, 0 disagreements); suffix table and recipe rows not wired"
   },
   "note": "The roadmap counters mixed 'ported', 'called' and 'replaced'. This block makes the three states explicit so a DONE cannot be inferred from composition alone."
  }

@@ -1,3 +1,6 @@
+#include <cstring>
+#include <atomic>
+#include <dlfcn.h>
 #include "llama-arch.h"
 
 #include "llama-impl.h"
@@ -1188,7 +1191,68 @@ const char * llm_arch_name(llm_arch arch) {
     return it->second;
 }
 
+// Goose cross-check: for every architecture name the native table holds, the ported registry must
+// find it and round-trip it. The native parser's answer is what is returned either way.
+struct fg_sl_u8 { uint8_t * data; int64_t len; };
+typedef int64_t (*fg_ar_find_fn)(fg_sl_u8);
+typedef int64_t (*fg_ar_arch_fn)(int64_t, fg_sl_u8);
+
+static fg_ar_find_fn fg_ar_find_resolve() {
+    static fg_ar_find_fn fn = []() -> fg_ar_find_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        void * sym = h ? dlsym(h, "ar_find") : nullptr;
+        return reinterpret_cast<fg_ar_find_fn>(sym);
+    }();
+    return fn;
+}
+
+static fg_ar_arch_fn fg_ar_arch_resolve() {
+    static fg_ar_arch_fn fn = []() -> fg_ar_arch_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        void * sym = h ? dlsym(h, "ar_arch") : nullptr;
+        return reinterpret_cast<fg_ar_arch_fn>(sym);
+    }();
+    return fn;
+}
+
+static void fg_check_arch(const std::string & name) {
+    const auto find = fg_ar_find_resolve();
+    const auto arch = fg_ar_arch_resolve();
+    if (find == nullptr || arch == nullptr) {
+        return;
+    }
+    static std::atomic<unsigned long long> calls{0}, bad{0};
+    const auto c = ++calls;
+    fg_sl_u8 sin{ (uint8_t *) name.data(), (int64_t) name.size() };
+    const int64_t row = find(sin);
+    bool ok = row >= 0;
+    if (ok) {
+        uint8_t buf[128] = {0};
+        fg_sl_u8 sout{ buf, (int64_t) sizeof(buf) };
+        const int64_t n = arch(row, sout);
+        ok = n == (int64_t) name.size() && memcmp(buf, name.data(), (size_t) n) == 0;
+    }
+    if (!ok) {
+        ++bad;
+        if (bad.load() <= 5) {
+            fprintf(stderr, "FG_ARCH_DIFF name=%s row=%lld\n", name.c_str(), (long long) row);
+        }
+    }
+    if ((c % 32) == 0) {
+        fprintf(stderr, "FG_ARCH_PROGRESS calls=%llu disagreements=%llu\n",
+                (unsigned long long) c, (unsigned long long) bad.load());
+    }
+    static std::atomic<unsigned long long> once{0};
+    if (once.fetch_add(1, std::memory_order_relaxed) == 0) {
+        std::atexit([]() {
+            fprintf(stderr, "FG_ARCH_TOTAL calls=%llu disagreements=%llu\n",
+                    (unsigned long long) calls.load(), (unsigned long long) bad.load());
+        });
+    }
+}
+
 llm_arch llm_arch_from_string(const std::string & name) {
+    fg_check_arch(name);
     for (const auto & kv : LLM_ARCH_NAMES) { // NOLINT
         if (kv.second == name) {
             return kv.first;

@@ -19,6 +19,7 @@ cat "$root/goose/speculative/spec-decisions.goose" >> "$rootfile"
 cat "$root/goose/speculative/spec-doors.goose" >> "$rootfile"
 cat "$root/goose/model/tokenizer-decisions.goose" >> "$rootfile"
 cat "$root/goose/model/tokenizer-doors.goose" >> "$rootfile"
+cat "$root/goose/model/arch-registry.goose" >> "$rootfile"
 cat >> "$rootfile" <<'EOF'
 
 fn main() {
@@ -67,6 +68,10 @@ fn main() {
                          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    let arc = ar_count();
+    if arc < 0 {
+        return;
+    }
     let bpb = fg_tk_bpe_before(3, 1, 5, 0);
     if bpb < -1 {
         return;
