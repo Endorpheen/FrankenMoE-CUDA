@@ -32,6 +32,14 @@ accepted components ok
 acceptance          decode 63.23, prefill 2958.6, hash c2ff42cc1219
 ```
 
+## Stage 1 was tried, and it is stricter than it looks
+
+The built dist from `builds/flint-acc/tools/ui/dist` was copied into the source tree so stage 1 would return before any
+download. It was reached - `UI: using pre-built assets from .../vendor/flint/tools/ui/dist` - and then failed the same
+check for a different reason: the required set includes `workbox[hash].js`, which this dist does not contain. So a
+pre-built tree only helps if it carries the service worker, and the copy was removed rather than left in the vendored
+tree (`git status` showed it as untracked).
+
 ## What would unblock it, and who can do it
 
 1. a machine with network access, so stage 3 succeeds once and the dist is cached in the build directory;
