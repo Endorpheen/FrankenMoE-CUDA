@@ -24,8 +24,10 @@ fi
 
 # Haenot listed: experiments whose gate needs a module that is not in the current unit. They are
 # named here so the gap is visible rather than silently skipped.
-# 627 needs qz2_iq2_qgrid, absent from the unit; 1188 calls gate_dispatch_c, a wrapper that predates
-# the export-fn door convention and no longer exists anywhere in the tree.
+# 627 needs qz2_iq2_qgrid, absent from the unit. 1188 declares gate_dispatch_c as an extern and its
+# definition was a run-local scratch file that the storage rule correctly did not commit - so the
+# harness died with the run that produced it. Its individual gates were later redone through exported
+# doors (db833095 and the current sampler differentials), which is the surviving evidence.
 STALE="EXP-2026-11-15-627-s0-composed-artifact EXP-2026-11-18-1188-shipping-doors"
 
 pass=0; fail=0; missing=0

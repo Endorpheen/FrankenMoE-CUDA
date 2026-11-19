@@ -10,6 +10,15 @@ Two mechanisms, both runnable without a model and without a GPU:
 - **link** a library that exports the native function (`bmoe_core`, built with `llama.cpp present = OFF`);
 - **white-box include** the native translation unit, for functions that are `static` or class-bound.
 
+## The rule the stale harnesses taught
+
+A harness may call **only exported doors**. `EXP-2026-11-18-1188` declared `gate_dispatch_c` as an extern and its
+definition lived in a run-local scratch file, which the storage rule correctly refused to commit - so the harness
+died with the run. Its gates were redone through exported doors and that later work is the surviving evidence.
+
+The sweep names such harnesses instead of skipping them (`tools/run-verification.sh` prints a separate `stale`
+count), because a harness that quietly leaves the sweep looks exactly like coverage.
+
 ## Sampler chain (P6-10) - accepted, checkpointed
 
 | decision | evidence | mechanism |
