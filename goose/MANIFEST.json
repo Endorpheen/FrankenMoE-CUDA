@@ -11651,8 +11651,8 @@
       "experiment": "EXP-2026-11-13-446-p8-02-prerouting",
       "task": "P8-01",
       "status": "slice",
-      "sha256": "ae59ae4fe156756285ec81014572e5601596940438cb264888ba1333e4c9f058",
-      "gate": "29 origin cases vs native origin_is_localhost, 0 differ (tests/server/origin-policy, 2026-11-19); the gate found and fixed 3 divergences: harness signature, missing http/https requirement, bracketed IPv4"
+      "sha256": "a77805d520f37d9edacb27f64e4bed0ac96cb8db7b5d8897ed8fc0475723a0a5",
+      "gate": "29 origin cases vs native origin_is_localhost, 0 differ (tests/server/origin-policy); the gate found 3 divergences: harness signature, missing http/https requirement, bracketed IPv4"
     },
     {
       "goose": "server/shutdown-policy.goose",

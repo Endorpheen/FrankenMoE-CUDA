@@ -1,6 +1,6 @@
 // Server pre-routing policy in Goose, from tools/server/server-http.cpp
 // (set_pre_routing_handler, middleware_server_state, middleware_validate_api_key,
-// origin_is_localhost).
+// pr_origin_is_localhost).
 //
 // Owned decisions:
 //   - CORS Access-Control-Allow-Origin mode: echo the request Origin when
@@ -15,14 +15,14 @@
 // Outputs six i64 words: action (0 continue, 1 handled), status (0/401/503),
 // allow mode (0 none, 1 echo origin, 2 literal), literal length,
 // options headers (0/1), reject reason (0 none, 1 not ready, 2 bad key).
-extern "fg446_ld_u8" fn ld_u8(p: u64, o: u64) -> u32;
-extern "fg446_st_i64" fn st_i64(p: u64, o: u64, v: i64);
+extern "fg446_ld_u8" fn pr_ld_u8(p: u64, o: u64) -> u32;
+extern "fg446_st_i64" fn pr_st_i64(p: u64, o: u64, v: i64);
 
-fn put(out: u64, i: i64, v: i64) {
-    st_i64(out, (i * (8 as i64)) as u64, v);
+fn pr_put(out: u64, i: i64, v: i64) {
+    pr_st_i64(out, (i * (8 as i64)) as u64, v);
 }
 
-fn eq_lit(
+fn pr_eq_lit(
     p: u64,
     from: i64,
     to: i64,
@@ -41,47 +41,47 @@ fn eq_lit(
         return 0 as i64;
     }
 
-    if (ld_u8(p, from as u64) as i64) != w0 {
+    if (pr_ld_u8(p, from as u64) as i64) != w0 {
         return 0 as i64;
     }
 
-    if (ld_u8(p, (from + 1 as i64) as u64) as i64) != w1 {
+    if (pr_ld_u8(p, (from + 1 as i64) as u64) as i64) != w1 {
         return 0 as i64;
     }
 
-    if (ld_u8(p, (from + 2 as i64) as u64) as i64) != w2 {
+    if (pr_ld_u8(p, (from + 2 as i64) as u64) as i64) != w2 {
         return 0 as i64;
     }
 
-    if (ld_u8(p, (from + 3 as i64) as u64) as i64) != w3 {
+    if (pr_ld_u8(p, (from + 3 as i64) as u64) as i64) != w3 {
         return 0 as i64;
     }
 
-    if (ld_u8(p, (from + 4 as i64) as u64) as i64) != w4 {
+    if (pr_ld_u8(p, (from + 4 as i64) as u64) as i64) != w4 {
         return 0 as i64;
     }
 
-    if (ld_u8(p, (from + 5 as i64) as u64) as i64) != w5 {
+    if (pr_ld_u8(p, (from + 5 as i64) as u64) as i64) != w5 {
         return 0 as i64;
     }
 
-    if (ld_u8(p, (from + 6 as i64) as u64) as i64) != w6 {
+    if (pr_ld_u8(p, (from + 6 as i64) as u64) as i64) != w6 {
         return 0 as i64;
     }
 
-    if (ld_u8(p, (from + 7 as i64) as u64) as i64) != w7 {
+    if (pr_ld_u8(p, (from + 7 as i64) as u64) as i64) != w7 {
         return 0 as i64;
     }
 
-    if (ld_u8(p, (from + 8 as i64) as u64) as i64) != w8 {
+    if (pr_ld_u8(p, (from + 8 as i64) as u64) as i64) != w8 {
         return 0 as i64;
     }
     return 1 as i64;
 }
 // host == "localhost" (9 bytes)
 
-fn is_localhost(p: u64, from: i64, to: i64) -> i64 {
-    return eq_lit(
+fn pr_is_localhost(p: u64, from: i64, to: i64) -> i64 {
+    return pr_eq_lit(
         p,
         from,
         to,
@@ -97,8 +97,8 @@ fn is_localhost(p: u64, from: i64, to: i64) -> i64 {
 }
 // host == "127.0.0.1" (9 bytes)
 
-fn is_loopback4(p: u64, from: i64, to: i64) -> i64 {
-    return eq_lit(
+fn pr_is_loopback4(p: u64, from: i64, to: i64) -> i64 {
+    return pr_eq_lit(
         p,
         from,
         to,
@@ -114,22 +114,22 @@ fn is_loopback4(p: u64, from: i64, to: i64) -> i64 {
 }
 // host == "::1" (3 bytes)
 
-fn is_loopback6(p: u64, from: i64, to: i64) -> i64 {
+fn pr_is_loopback6(p: u64, from: i64, to: i64) -> i64 {
     let n: i64 = to - from;
 
     if n != 3 as i64 {
         return 0 as i64;
     }
 
-    if (ld_u8(p, from as u64) as i64) != 58 as i64 {
+    if (pr_ld_u8(p, from as u64) as i64) != 58 as i64 {
         return 0 as i64;
     }
 
-    if (ld_u8(p, (from + 1 as i64) as u64) as i64) != 58 as i64 {
+    if (pr_ld_u8(p, (from + 1 as i64) as u64) as i64) != 58 as i64 {
         return 0 as i64;
     }
 
-    if (ld_u8(p, (from + 2 as i64) as u64) as i64) != 49 as i64 {
+    if (pr_ld_u8(p, (from + 2 as i64) as u64) as i64) != 49 as i64 {
         return 0 as i64;
     }
     return 1 as i64;
@@ -138,40 +138,40 @@ fn is_loopback6(p: u64, from: i64, to: i64) -> i64 {
 // optional scheme, optional userinfo, bracketed IPv6, or host[:port].
 
 // A scheme is required, and it must be http or https, because common_http_parse_url throws on
-// anything else and the native origin_is_localhost turns that throw into false. Without this the port
+// anything else and the native pr_origin_is_localhost turns that throw into false. Without this the port
 // answered true for "localhost:8080" and "ftp://localhost" - inputs the native path rejects - which
 // tests/server/origin-policy caught as four differences on 2026-11-19.
-fn scheme_is_http(o: u64, n: i64) -> i64 {
+fn pr_scheme_is_http(o: u64, n: i64) -> i64 {
     if n < 7 as i64 {
         return 0 as i64;
     }
     // "http://" or "https://"
-    if (ld_u8(o, 0 as u64) as i64) != 104 as i64 {
+    if (pr_ld_u8(o, 0 as u64) as i64) != 104 as i64 {
         return 0 as i64;
     }
-    if (ld_u8(o, 1 as u64) as i64) != 116 as i64 {
+    if (pr_ld_u8(o, 1 as u64) as i64) != 116 as i64 {
         return 0 as i64;
     }
-    if (ld_u8(o, 2 as u64) as i64) != 116 as i64 {
+    if (pr_ld_u8(o, 2 as u64) as i64) != 116 as i64 {
         return 0 as i64;
     }
-    if (ld_u8(o, 3 as u64) as i64) != 112 as i64 {
+    if (pr_ld_u8(o, 3 as u64) as i64) != 112 as i64 {
         return 0 as i64;
     }
-    if (ld_u8(o, 4 as u64) as i64) == 58 as i64 {
+    if (pr_ld_u8(o, 4 as u64) as i64) == 58 as i64 {
         return 1 as i64;                        // "http:"
     }
-    if (ld_u8(o, 4 as u64) as i64) != 115 as i64 {
+    if (pr_ld_u8(o, 4 as u64) as i64) != 115 as i64 {
         return 0 as i64;
     }
-    if (ld_u8(o, 5 as u64) as i64) != 58 as i64 {
+    if (pr_ld_u8(o, 5 as u64) as i64) != 58 as i64 {
         return 0 as i64;
     }
     return 2 as i64;                            // "https:"
 }
 
-fn origin_is_localhost(o: u64, n: i64) -> i64 {
-    if scheme_is_http(o, n) == 0 as i64 {
+fn pr_origin_is_localhost(o: u64, n: i64) -> i64 {
+    if pr_scheme_is_http(o, n) == 0 as i64 {
         return 0 as i64;
     }
     // authority starts after the first "://"
@@ -180,9 +180,9 @@ fn origin_is_localhost(o: u64, n: i64) -> i64 {
     var stop: i64 = 0 as i64;
 
     while stop == 0 as i64 && p + 3 <= n {
-        let c0: i64 = (ld_u8(o, p as u64) as i64);
-        let c1: i64 = (ld_u8(o, (p + 1 as i64) as u64) as i64);
-        let c2: i64 = (ld_u8(o, (p + 2 as i64) as u64) as i64);
+        let c0: i64 = (pr_ld_u8(o, p as u64) as i64);
+        let c1: i64 = (pr_ld_u8(o, (p + 1 as i64) as u64) as i64);
+        let c2: i64 = (pr_ld_u8(o, (p + 2 as i64) as u64) as i64);
 
         if c0 == 58 as i64 && c1 == 47 as i64 && c2 == 47 as i64 {
             start = p + 3 as i64;
@@ -196,7 +196,7 @@ fn origin_is_localhost(o: u64, n: i64) -> i64 {
     var done: i64 = 0 as i64;
 
     while done == 0 as i64 && e < n {
-        let c: i64 = (ld_u8(o, e as u64) as i64);
+        let c: i64 = (pr_ld_u8(o, e as u64) as i64);
 
         if c == 47 as i64 || c == 63 as i64 || c == 35 as i64 {
             done = 1 as i64;
@@ -209,25 +209,25 @@ fn origin_is_localhost(o: u64, n: i64) -> i64 {
     var q: i64 = start;
 
     while q < e {
-        if (ld_u8(o, q as u64) as i64) == 64 as i64 {
+        if (pr_ld_u8(o, q as u64) as i64) == 64 as i64 {
             s = q + 1 as i64;
         }
         q = q + 1 as i64;
     }
 
     if s < e {
-        if (ld_u8(o, s as u64) as i64) == 91 as i64 {
+        if (pr_ld_u8(o, s as u64) as i64) == 91 as i64 {
             var r: i64 = s + 1 as i64;
 
             while r < e {
-                if (ld_u8(o, r as u64) as i64) == 93 as i64 {
+                if (pr_ld_u8(o, r as u64) as i64) == 93 as i64 {
                     // A bracketed IPv4 ("http://[127.0.0.1]") is not valid in an Origin header, but
                     // common_http_parse_url still yields "127.0.0.1" for it and the native function
                     // answers true, so the port answers true too rather than being quietly stricter.
-                    if is_loopback6(o, s + 1 as i64, r) != 0 as i64 {
+                    if pr_is_loopback6(o, s + 1 as i64, r) != 0 as i64 {
                         return 1 as i64;
                     }
-                    return is_loopback4(o, s + 1 as i64, r);
+                    return pr_is_loopback4(o, s + 1 as i64, r);
                 }
                 r = r + 1 as i64;
             }
@@ -238,7 +238,7 @@ fn origin_is_localhost(o: u64, n: i64) -> i64 {
     var c: i64 = s;
 
     while c < e {
-        if (ld_u8(o, c as u64) as i64) == 58 as i64 {
+        if (pr_ld_u8(o, c as u64) as i64) == 58 as i64 {
             colon = c;
         }
         c = c + 1 as i64;
@@ -248,12 +248,12 @@ fn origin_is_localhost(o: u64, n: i64) -> i64 {
     if colon >= (0 as i64) {
         he = colon;
     }
-    var r1: i64 = is_localhost(o, s, he);
+    var r1: i64 = pr_is_localhost(o, s, he);
 
     if r1 != 0 as i64 {
         return 1 as i64;
     }
-    var r2: i64 = is_loopback4(o, s, he);
+    var r2: i64 = pr_is_loopback4(o, s, he);
 
     if r2 != 0 as i64 {
         return 1 as i64;
@@ -262,7 +262,7 @@ fn origin_is_localhost(o: u64, n: i64) -> i64 {
 }
 // Authorization value match: optional "Bearer " prefix, then exact key bytes.
 
-fn key_matches(a: u64, an: i64, b: u64, bn: i64, k: u64, kn: i64) -> i64 {
+fn pr_key_matches(a: u64, an: i64, b: u64, bn: i64, k: u64, kn: i64) -> i64 {
     var src: u64 = a;
     var len: i64 = an;
 
@@ -272,13 +272,13 @@ fn key_matches(a: u64, an: i64, b: u64, bn: i64, k: u64, kn: i64) -> i64 {
     }
 
     if len >= 7 as i64 {
-        if (ld_u8(src, 0 as u64) as i64) == 66 as i64 {
-            if (ld_u8(src, 1 as u64) as i64) == 101 as i64 {
-                if (ld_u8(src, 2 as u64) as i64) == 97 as i64 {
-                    if (ld_u8(src, 3 as u64) as i64) == 114 as i64 {
-                        if (ld_u8(src, 4 as u64) as i64) == 101 as i64 {
-                            if (ld_u8(src, 5 as u64) as i64) == 114 as i64 {
-                                if (ld_u8(src, 6 as u64) as i64) == 32 as i64 {
+        if (pr_ld_u8(src, 0 as u64) as i64) == 66 as i64 {
+            if (pr_ld_u8(src, 1 as u64) as i64) == 101 as i64 {
+                if (pr_ld_u8(src, 2 as u64) as i64) == 97 as i64 {
+                    if (pr_ld_u8(src, 3 as u64) as i64) == 114 as i64 {
+                        if (pr_ld_u8(src, 4 as u64) as i64) == 101 as i64 {
+                            if (pr_ld_u8(src, 5 as u64) as i64) == 114 as i64 {
+                                if (pr_ld_u8(src, 6 as u64) as i64) == 32 as i64 {
                                     src = src + 7 as u64;
                                     len = len - 7 as i64;
                                 }
@@ -296,7 +296,7 @@ fn key_matches(a: u64, an: i64, b: u64, bn: i64, k: u64, kn: i64) -> i64 {
     var i: i64 = 0 as i64;
 
     while i < len {
-        if ld_u8(src, (i as u64)) != ld_u8(k, (i as u64)) {
+        if pr_ld_u8(src, (i as u64)) != pr_ld_u8(k, (i as u64)) {
             return 0 as i64;
         }
         i = i + 1 as i64;
@@ -341,7 +341,7 @@ export fn preroute(
     } else {
         if cors_mode == 2 as i64 {
             if origin_len > 0 as i64 {
-                let ok: i64 = origin_is_localhost(origin, origin_len);
+                let ok: i64 = pr_origin_is_localhost(origin, origin_len);
 
                 if ok != 0 as i64 {
                     allow_mode = 1 as i64;
@@ -366,7 +366,7 @@ export fn preroute(
             reason = 1 as i64;
         } else {
             if n_keys > 0 as i64 && is_public == 0 as i64 {
-                let ok: i64 = key_matches(auth, auth_len, xapi, xapi_len, key, key_len);
+                let ok: i64 = pr_key_matches(auth, auth_len, xapi, xapi_len, key, key_len);
 
                 if ok == 0 as i64 {
                     action = 1 as i64;
@@ -376,19 +376,19 @@ export fn preroute(
             }
         }
     }
-    put(out, 0 as i64, action);
-    put(out, 1 as i64, status);
-    put(out, 2 as i64, allow_mode);
-    put(out, 3 as i64, allow_len);
-    put(out, 4 as i64, options_hdr);
-    put(out, 5 as i64, reason);
+    pr_put(out, 0 as i64, action);
+    pr_put(out, 1 as i64, status);
+    pr_put(out, 2 as i64, allow_mode);
+    pr_put(out, 3 as i64, allow_len);
+    pr_put(out, 4 as i64, options_hdr);
+    pr_put(out, 5 as i64, reason);
     return 0 as i64;
 }
 
 
 // The origin decision on its own, for the gate and for the one-line wiring in server-http.cpp.
-// The body is the same origin_is_localhost above; exporting it changes no decision, and the native
+// The body is the same pr_origin_is_localhost above; exporting it changes no decision, and the native
 // three-compare stays as the fallback until tests/server/origin-policy agrees case for case.
 export fn web_origin_is_localhost(o: u64, n: i64) -> i64 {
-    return origin_is_localhost(o, n);
+    return pr_origin_is_localhost(o, n);
 }
