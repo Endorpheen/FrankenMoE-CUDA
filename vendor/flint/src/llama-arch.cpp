@@ -1220,6 +1220,27 @@ static fg_ar_arch_fn fg_ar_arch_resolve() {
 // what makes this a check of the registry rather than of one name; it runs once, on the first lookup.
 static void fg_check_arch_sweep();
 
+typedef int64_t (*fg_ar_suffix_fn)(int64_t, int64_t, fg_sl_u8);
+typedef int64_t (*fg_ar_exps_fn)(int64_t);
+
+static fg_ar_suffix_fn fg_ar_suffix_resolve() {
+    static fg_ar_suffix_fn fn = []() -> fg_ar_suffix_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        void * sym = h ? dlsym(h, "ar_suffix") : nullptr;
+        return reinterpret_cast<fg_ar_suffix_fn>(sym);
+    }();
+    return fn;
+}
+
+static fg_ar_exps_fn fg_ar_exps_resolve() {
+    static fg_ar_exps_fn fn = []() -> fg_ar_exps_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        void * sym = h ? dlsym(h, "ar_exps") : nullptr;
+        return reinterpret_cast<fg_ar_exps_fn>(sym);
+    }();
+    return fn;
+}
+
 static void fg_check_arch_sweep() {
     const auto find = fg_ar_find_resolve();
     const auto arch = fg_ar_arch_resolve();
@@ -1255,6 +1276,47 @@ static void fg_check_arch_sweep() {
             if (bad <= 5) {
                 fprintf(stderr, "FG_ARCH_SWEEP_DIFF name=%s row=%lld expected=%llu\n",
                         name.c_str(), (long long) row, first - 1);
+            }
+        }
+    }
+    // Suffixes: the row decides which tensors are streamed, so they are checked as well. The table is
+    // transcribed from the same native lines; gemma4 is the one row with two suffixes and a nullptr.
+    const auto suffix = fg_ar_suffix_resolve();
+    const auto exps   = fg_ar_exps_resolve();
+    if (suffix != nullptr && exps != nullptr) {
+        static const char * const std3[3] = { "ffn_gate_exps", "ffn_up_exps", "ffn_down_exps" };
+        for (int64_t row = 0; row < 9; ++row) {
+            const bool gemma = row == 3;
+            const int64_t want_exps = gemma ? 2 : 3;
+            const int64_t got_exps = exps(row);
+            if (got_exps != want_exps) {
+                ++bad;
+                if (bad <= 6) fprintf(stderr, "FG_ARCH_EXPS_DIFF row=%lld got=%lld want=%lld\n",
+                                      (long long) row, (long long) got_exps, (long long) want_exps);
+            }
+            for (int64_t slot = 0; slot < 3; ++slot) {
+                uint8_t buf[128] = {0};
+                fg_sl_u8 sout{ buf, (int64_t) sizeof(buf) };
+                const int64_t len = suffix(row, slot, sout);
+                const char * want = nullptr;
+                if (gemma) {
+                    if (slot == 0) want = "ffn_gate_up_exps";
+                    else if (slot == 1) want = "ffn_down_exps";
+                } else {
+                    want = std3[slot];
+                }
+                bool ok;
+                if (want == nullptr) {
+                    ok = len == -1;
+                } else {
+                    ok = len == (int64_t) strlen(want) && memcmp(buf, want, (size_t) len) == 0;
+                }
+                ++n;
+                if (!ok) {
+                    ++bad;
+                    if (bad <= 6) fprintf(stderr, "FG_ARCH_SUFFIX_DIFF row=%lld slot=%lld len=%lld\n",
+                                          (long long) row, (long long) slot, (long long) len);
+                }
             }
         }
     }
