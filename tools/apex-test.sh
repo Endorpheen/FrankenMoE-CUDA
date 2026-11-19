@@ -120,7 +120,7 @@ ARGS=(-m "$MODEL" --alias Apex-35B-V1.0 -c 262144 -ngl all -fit off --cpu-moe
       -fa on -ctk q4_0 -ctv q4_0 -b "$B" -ub "$UB" -t 8 -tb 16
       --cpu-mask 0f0f --cpu-mask-batch ffff --cpu-strict 1 --cpu-strict-batch 1
       --poll 0 -np 1 --cache-ram 0 --ctx-checkpoints 32 --load-mode mmap
-      --spec-type none --jinja --temp 1 --top-p 0.95 --top-k 20 --min-p 0
+      --spec-type "${APEX_SPEC_TYPE:-none}" --jinja --temp 1 --top-p 0.95 --top-k 20 --min-p 0
       --host 127.0.0.1 --port "$PORT" --moe-cache-mib "$CACHE")
 printf '%s\n' "$SRV" "${ARGS[@]}" > "${RUNDIR}/argv.txt"
 sha256sum "$REQUEST" "$SERVER_DIR"/*.so* "$SRV" > "${RUNDIR}/SHA256SUMS"
