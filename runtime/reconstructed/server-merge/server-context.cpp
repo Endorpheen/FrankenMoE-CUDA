@@ -2233,6 +2233,8 @@ private:
         return true;
     }
 
+    static inline std::atomic<int> g_fg_site{0};
+
     bool process_token(completion_token_output & result, server_slot & slot) {
         // A token that is not a valid id cannot enter a batch: the builder refuses it far away with
         // "failed to add token -2100184624 at index 0", which names the number and not the source, and the
@@ -2243,9 +2245,9 @@ private:
             if (result.tok < 0 || result.tok >= fg_nv) {
                 static std::atomic<long long> fg_bad_tok{0};
                 const long long fb = fg_bad_tok.fetch_add(1) + 1;
-                fprintf(stderr, "FG_SERVER_INVALID_TOKEN tok=%d n_vocab=%d n_prompt=%d n_gen=%d count=%lld\n",
+                fprintf(stderr, "FG_SERVER_INVALID_TOKEN tok=%d n_vocab=%d n_prompt=%d n_gen=%d count=%lld site=%d\n",
                         (int) result.tok, (int) fg_nv, (int) slot.prompt.n_tokens(),
-                        (int) slot.generated.size(), fb);
+                        (int) slot.generated.size(), fb, g_fg_site.load());
                 // Ending the task here was tried and crashed: send_error/release run inside the sampling path,
                 // with the slot half-way through a decode step. The safe form is to end the generation the way
                 // the model would - with its own end-of-generation token - and let the normal stop path run.
@@ -5027,6 +5029,7 @@ private:
                 populate_token_probs(slot, result, slot.task->params.post_sampling_probs, params_base.special, tok_idx);
             }
 
+            g_fg_site.store(1);   // plain sampling path
             if (!process_token(result, slot)) {
                 // release slot because of stop condition
                 slot.print_timings();
@@ -5181,6 +5184,7 @@ private:
 
                 slot.stats.n_gen += 1;
 
+                g_fg_site.store(2);   // speculative accept path
                 if (!process_token(result, slot)) {
                     slot.print_timings();
                     send_final_response(slot);
