@@ -8,8 +8,9 @@ FG_SP_NMAX    goose calls=1 disagreements=0      (configuration, four spec types
 FG_SP_PREFIX  goose calls=5 disagreements=0      (128-token speculative generation, temp 0.8)
 ```
 
-Five live comparisons is a small number, and it is the honest one: the accept route that computes a
-prefix is entered once per verify step, and this run took few steps with an ngram drafter.
+The prefix figure was first quoted as "5 calls" because that was the last ordinal printed; with a total line
+at exit the real number is `FG_SP_PREFIX_TOTAL calls=14 disagreements=0`. Fourteen live comparisons, not five -
+the difference came from reading the counter, not from the measurement.
 
 ## What was wrong until now, in one line
 

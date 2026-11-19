@@ -735,7 +735,21 @@ struct llm_tokenizer_bpe_session {
                             }
                         }
                     }
-                    if (c <= 3 || (c % 20000) == 0) {
+                    // `calls=` is the ordinal of this call, not a total: printing only at 1,2,3 and
+                    // every 20000 left the real total unknown, and I read "calls=3" as "three calls".
+                    // Every 500 plus a final atexit summary makes the total a number that exists.
+                    static std::atomic<unsigned long long> printed{0};
+                    if ((c % 500) == 0) {
+                        fprintf(stderr, "FG_TK_BPE_PROGRESS calls=%llu disagreements=%llu\n",
+                                (unsigned long long) c, (unsigned long long) bad.load());
+                    }
+                    if (printed.fetch_add(1, std::memory_order_relaxed) == 0) {
+                        std::atexit([]() {
+                            fprintf(stderr, "FG_TK_BPE_TOTAL calls=%llu disagreements=%llu\n",
+                                    (unsigned long long) calls.load(), (unsigned long long) bad.load());
+                        });
+                    }
+                    if (false && (c <= 3 || (c % 20000) == 0)) {
                         fprintf(stderr, "FG_TK_BPE goose calls=%llu disagreements=%llu\n",
                                 (unsigned long long) c, (unsigned long long) bad.load());
                     }

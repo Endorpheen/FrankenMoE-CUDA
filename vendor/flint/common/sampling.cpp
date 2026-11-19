@@ -789,9 +789,18 @@ std::vector<llama_token> common_sampler_sample_and_accept_n(struct common_sample
                         (long long) goose, i, draft.size());
             }
         }
-        if (c <= 5 || (c % 200) == 0) {
-            fprintf(stderr, "FG_SP_PREFIX goose calls=%llu disagreements=%llu\n",
+        // `calls=` is the ordinal, not a total; a total needs its own line at exit (measured lesson:
+        // "calls=3" read as "three calls" when the real figure was 4156 on another counter).
+        static std::atomic<unsigned long long> once{0};
+        if ((c % 200) == 0) {
+            fprintf(stderr, "FG_SP_PREFIX_PROGRESS calls=%llu disagreements=%llu\n",
                     (unsigned long long) c, (unsigned long long) bad.load());
+        }
+        if (once.fetch_add(1, std::memory_order_relaxed) == 0) {
+            std::atexit([]() {
+                fprintf(stderr, "FG_SP_PREFIX_TOTAL calls=%llu disagreements=%llu\n",
+                        (unsigned long long) calls.load(), (unsigned long long) bad.load());
+            });
         }
     }
 

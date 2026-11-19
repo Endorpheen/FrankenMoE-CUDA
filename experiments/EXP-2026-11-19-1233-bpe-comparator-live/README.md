@@ -14,20 +14,31 @@ FG_TK_BPE goose calls=2 disagreements=0
 FG_TK_BPE goose calls=3 disagreements=0
 ```
 
-## What it establishes, and how much
+## The first numbers in this card were wrong, and the fault was reading, not measuring
 
-Establishes: the ported comparator agrees with the ordering `std::priority_queue` actually applied, on a real
-vocabulary, at every pop it was asked about.
+I first wrote "three comparisons per run" from output that said `calls=3`. That line is the **ordinal of the
+call being reported**, printed only on the first three calls and every 20000 - it is not a total. After adding a
+progress line every 500 and an `atexit` summary:
 
-Does **not** establish much breadth: three comparisons per run, and a longer, word-heavy prompt did not raise
-it. That is a property of the tokenizer, not of the hook - the merge queue is drained a handful of times per
-word - so the decision is only lightly exercised here and the synthetic gate (the real `priority_queue` plus
-an antisymmetry sweep over 64 pairs) remains the stronger evidence.
+```
+FG_TK_BPE_PROGRESS calls=4000 disagreements=0
+FG_TK_BPE_TOTAL    calls=4156 disagreements=0
+```
 
-## Recorded because the number is small
+**4156 comparisons, zero disagreements** - on a real vocabulary, at every pop it was asked about. The earlier
+"three" was my misreading of my own instrument, and it made the evidence look far weaker than it is.
 
-A counter that moves three times is not a reassurance, and writing "0 disagreements" without the count would
-be misleading. The card carries both, per the project rule that a figure is quoted with its sample.
+The same fault affected the prefix counter: `FG_SP_PREFIX calls=5` was the fifth call, and its total line reads
+`FG_SP_PREFIX_TOTAL calls=14 disagreements=0`.
+
+Every counter in this session now prints a `_TOTAL` line at exit, so a figure like this cannot be misread
+again. That is the fix: not a better reader, a counter that states its own total.
+
+## What it establishes
+
+The ported comparator agrees with the ordering `std::priority_queue` actually applied, 4156 times per prompt,
+on real tokens. Together with the synthetic gate (the real queue plus an antisymmetry sweep over 64 pairs),
+the decision is verified from both sides.
 
 ## The check that would have saved five iterations, applied here first
 

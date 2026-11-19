@@ -1,0 +1,9 @@
+run p112-min-native-20261118-194721
+/home/end0/AI/FrankenMoE-CUDA/results/apex-runs/p112-min-native-20261118-194721/server.log:VECDOT_COUNT_PATCHED 0x72cc9573a400
+/home/end0/AI/FrankenMoE-CUDA/results/apex-runs/p112-min-native-20261118-194721/server.log:VECDOT_COUNT_TOTAL 15219483
+/home/end0/AI/FrankenMoE-CUDA/results/apex-runs/p112-min-native-20261118-194721/run.log:[19:47:25] server ready after 4s
+run p112-min-goose-20261118-194736
+/home/end0/AI/FrankenMoE-CUDA/results/apex-runs/p112-min-goose-20261118-194736/server.log:VECDOT_PATCHED 0x79a77cd3a400
+/home/end0/AI/FrankenMoE-CUDA/results/apex-runs/p112-min-goose-20261118-194736/server.log:VECDOT_FIRST n=2048 nrc=1 bx=0 by=0
+/home/end0/AI/FrankenMoE-CUDA/results/apex-runs/p112-min-goose-20261118-194736/server.log:VECDOT_TOTAL 27545753
+/home/end0/AI/FrankenMoE-CUDA/results/apex-runs/p112-min-goose-20261118-194736/run.log:[19:47:45] server ready after 8s
