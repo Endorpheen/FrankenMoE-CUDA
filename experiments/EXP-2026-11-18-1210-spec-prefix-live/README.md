@@ -55,3 +55,35 @@ found a different branch. The honest state:
 That read is the next step, and it is worth doing once properly: `slot.use_spec_rejection`, the
 `synth_probs` branch and the replay path together decide which accept function runs, and the
 `FG_SP_PREFIX` counter is a cheap way to confirm the answer afterwards.
+
+## The control flow, read properly
+
+The server picks the accept routine in this order:
+
+```
+if (!synth_probs.empty())            -> server_sample_and_accept_synth(...)
+else if (replay && use_rejection())   -> server_accept_replay(...)
+else if (use_rejection())            -> common_sampler_sample_and_accept_n_rejection(...)
+else                                 -> common_sampler_sample_and_accept_n(...)
+```
+
+and `use_spec_rejection()` is `temp > 0`.
+
+With `--spec-type ngram-simple` the run reports `"speculative.types":"none,ngram-simple"` and decodes
+at about 80 tok/s, so speculation is working - but the counter stays silent. The ngram drafters fill
+`synth_probs`, so the **synth** branch is taken and neither accept routine runs. The one firing seen
+earlier came from a run in which the synth branch did not engage.
+
+## Why the prefix decision cannot be verified live here
+
+`common_sampler_sample_and_accept_n` is the **draft-model** route (`--spec-type draft-simple` /
+`draft-mtp`), and that needs a draft GGUF whose vocabulary matches the target. The models on this
+machine are Apex-35B and Edge0-120B, and the only MTP assets present are Edge0's `dense.bin` and a
+`draft_vocab.bin`, not a draft model for Apex.
+
+So: the ported prefix decision is gated synthetically (7 cases against the native loop) and its live
+route is **not reachable in this environment**. That is an environment limitation to record, not a
+defect, and it is the honest reason the live number does not exist.
+
+The synth-probability acceptance, which IS the live route for ngram speculation, is a different
+decision and has not been ported.
