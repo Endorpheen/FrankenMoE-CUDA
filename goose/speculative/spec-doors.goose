@@ -27,3 +27,7 @@ export fn fg_sp_n_max_call(types: i64[:], size_m: i64[:], draft_nmax: i64[:], nt
 export fn fg_sp_synth_accept(prob: f64, u: f64, is_replay: i64, is_eog: i64) -> i64 {
     return sp_synth_accept(prob, u, is_replay, is_eog, 208);
 }
+
+export fn fg_sp_reject_accept(p_x: f64, q_x: f64, u: f64) -> i64 {
+    return sp_reject_accept(p_x, q_x, u, 209);
+}

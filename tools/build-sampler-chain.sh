@@ -52,6 +52,10 @@ fn main() {
     if fset < -1 {
         return;
     }
+    let rja = fg_sp_reject_accept(0.4, 0.5, 0.5);
+    if rja < -1 {
+        return;
+    }
     let syn = fg_sp_synth_accept(0.5, 0.25, 0, 0);
     if syn < -1 {
         return;

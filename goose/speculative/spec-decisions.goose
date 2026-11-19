@@ -521,3 +521,22 @@ fn sp_synth_accept(prob: f64, u: f64, is_replay: i64, is_eog: i64, marker: i64) 
     }
     return take;
 }
+
+// Rejection acceptance of a drafted token. q_x <= 0 never accepts: the native code guards the
+// division rather than dividing by zero, and a draft the draft model never proposed has no ratio.
+fn sp_reject_accept(p_x: f64, q_x: f64, u: f64, marker: i64) -> i64 {
+    if marker != 209 {
+        return -1;
+    }
+    if q_x <= 0.0 {
+        return 0;
+    }
+    if p_x >= q_x {
+        return 1;
+    }
+    let ratio: f64 = p_x / q_x;
+    if u < ratio {
+        return 1;
+    }
+    return 0;
+}

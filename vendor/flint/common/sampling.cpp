@@ -791,6 +791,16 @@ static float prob_of(const llama_token_data * data, size_t n, llama_token id) {
 // Accept a drafted token with probability min(1, p/q), else draw from norm(max(0, p - q)).
 // Preserves the target distribution exactly, and accepts more often than matching does when the
 // draft samples instead of taking its argmax.
+typedef int64_t (*fg_sp_reject_fn)(double, double, double);
+static fg_sp_reject_fn fg_sp_reject_resolve() {
+    static fg_sp_reject_fn fn = []() -> fg_sp_reject_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        void * sym = h ? dlsym(h, "fg_sp_reject_accept") : nullptr;
+        return reinterpret_cast<fg_sp_reject_fn>(sym);
+    }();
+    return fn;
+}
+
 std::vector<llama_token> common_sampler_sample_and_accept_n_rejection(struct common_sampler * gsmpl, struct llama_context * ctx, const std::vector<int> & idxs, const llama_tokens & draft, const std::vector<std::vector<llama_token_data>> & draft_q, bool grammar_first) {
     GGML_ASSERT(idxs.size()    == draft.size() + 1 && "idxs.size() must be draft.size() + 1");
     GGML_ASSERT(draft_q.size() == draft.size() && "draft_q must have one entry per draft token");
@@ -850,7 +860,26 @@ std::vector<llama_token> common_sampler_sample_and_accept_n_rejection(struct com
             }
         }
 
-        if (q_x > 0.0f && (p_x >= q_x || uni(gsmpl->rng) < p_x / q_x)) {
+        const float u_rej = uni(gsmpl->rng);
+        // Goose cross-check: the native answer is used either way, so a disagreement is only counted.
+        if (const auto fr = fg_sp_reject_resolve()) {
+            static std::atomic<unsigned long long> calls{0}, bad{0};
+            const int64_t goose = fr((double) p_x, (double) q_x, (double) u_rej);
+            const bool native = q_x > 0.0f && (p_x >= q_x || u_rej < p_x / q_x);
+            const auto c = ++calls;
+            if ((goose == 1) != native) {
+                ++bad;
+                if (bad.load() <= 5) {
+                    fprintf(stderr, "FG_SP_REJECT_DIFF goose=%lld native=%d p=%.6f q=%.6f u=%.6f\n",
+                            (long long) goose, native ? 1 : 0, (double) p_x, (double) q_x, (double) u_rej);
+                }
+            }
+            if (c <= 3 || (c % 500) == 0) {
+                fprintf(stderr, "FG_SP_REJECT goose calls=%llu disagreements=%llu\n",
+                        (unsigned long long) c, (unsigned long long) bad.load());
+            }
+        }
+        if (q_x > 0.0f && (p_x >= q_x || u_rej < p_x / q_x)) {
             common_sampler_accept(gsmpl, draft[i], true);
             result.push_back(draft[i]);
             continue;
