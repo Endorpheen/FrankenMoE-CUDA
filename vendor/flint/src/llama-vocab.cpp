@@ -5205,9 +5205,15 @@ int32_t llama_tokenize(
             }
         }
         if (got > 0) {
+            // Only the tokens add_special actually adds may be stripped: with it false the native sequence
+            // starts with whatever the text tokenises to, and a text that begins with the BOS token's own text
+            // legitimately starts with BOS. Stripping unconditionally reported two such texts out of 248 320 as
+            // disagreements (EXP-2026-11-19-1397).
             int32_t lo = 0, hi = n;
-            if (lo < hi && tokens[lo] == vocab->token_bos()) { lo++; }
-            if (lo < hi && tokens[hi - 1] == vocab->token_eos()) { hi--; }
+            if (add_special) {
+                if (lo < hi && tokens[lo] == vocab->token_bos()) { lo++; }
+                if (lo < hi && tokens[hi - 1] == vocab->token_eos()) { hi--; }
+            }
             const int32_t m = hi - lo;
             bool same = (got == (int64_t) m);
             for (int32_t i = 0; same && i < m; ++i) { same = tokens[lo + i] == (llama_token) ids[(size_t) i]; }
@@ -5215,7 +5221,14 @@ int32_t llama_tokenize(
             // Serving is opt-in for its own A/B: the flag turns the port's answer into the answer, and the
             // comparison above is what decides whether that is allowed to happen. The guard upstream (the
             // pre-type check) is what keeps other families on the native path entirely.
-            static const bool fg_bpe_serve = getenv("FG_TK_BPE_SERVE") != nullptr;
+            // On by default (rule 10): an accepted improvement is enabled unless it is switched off. The
+            // equality test above is what allows it to happen at all, and the pre-type guard upstream is what
+            // keeps other vocabulary families on the native path. FG_TK_BPE_SERVE=0 restores the native answer
+            // for an A/B without touching anything else.
+            static const bool fg_bpe_serve = []() {
+                const char * v = getenv("FG_TK_BPE_SERVE");
+                return v == nullptr || strcmp(v, "0") != 0;
+            }();
             if (fg_bpe_serve && same && got > 0 && got + 2 <= n_tokens_max) {
                 llama_token out2[8192];
                 llama_token * dst = n_tokens_max <= 8192 ? out2 : tokens;
