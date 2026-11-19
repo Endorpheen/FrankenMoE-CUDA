@@ -1,0 +1,7 @@
+<|im_start|>user
+Ответь кратко по-русски: как называется столица Франции?<|im_end|>
+<|im_start|>assistant
+<think>
+
+</think>
+

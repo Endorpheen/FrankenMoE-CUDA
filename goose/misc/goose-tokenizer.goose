@@ -146,7 +146,20 @@ fn bpe_ignore_merges(ignore: i64, has_token: i64) -> i64 {
     return 0 as i64;
 }
 
-fn main() {
+// Export wrappers (same rule as elsewhere in the tree: a body that the unit also
+// calls internally cannot carry the export itself, so the export is a forward).
+// The standalone gate calls all eight decisions by name.
+export fn tok_utf8_len(src: i64) -> i64 { return utf8_len(src); }
+export fn tok_bigram_valid(left_n: i64, right_n: i64, bigram_size: i64) -> i64 { return bigram_valid(left_n, right_n, bigram_size); }
+export fn tok_try_add_allowed(left: i64, right: i64, token: i64, null_token: i64, n_tokens: i64) -> i64 { return try_add_allowed(left, right, token, null_token, n_tokens); }
+export fn tok_resegment_kind(is_token: i64, has_merge: i64) -> i64 { return resegment_kind(is_token, has_merge); }
+export fn tok_clamp_symbol_len(len: i64, remaining: i64) -> i64 { return clamp_symbol_len(len, remaining); }
+export fn tok_bpe_add_allowed(left: i64, right: i64, rank: i64) -> i64 { return bpe_add_allowed(left, right, rank); }
+export fn tok_bpe_merge_valid(left_n: i64, right_n: i64, concat_matches: i64) -> i64 { return bpe_merge_valid(left_n, right_n, concat_matches); }
+export fn tok_bpe_ignore_merges(ignore: i64, has_token: i64) -> i64 { return bpe_ignore_merges(ignore, has_token); }
+
+// Renamed so a composed unit keeps exactly one global `main`.
+fn tokenizer_demo_main() {
     utf8_len(0 as i64);
     bigram_valid(0 as i64, 0 as i64, 0 as i64);
     try_add_allowed(0 as i64, 0 as i64, 0 as i64, 0 as i64, 0 as i64);

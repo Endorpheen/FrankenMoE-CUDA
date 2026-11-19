@@ -515,6 +515,18 @@ come from Igor directly. For every marked message:
     Final acceptance: the necessary runtime code is Goose, and building and running it requires no C++ source and no
     C++ runtime - with correctness proved by gates and performance not below the preserved 44.5 tok/s reference.
 
+    Every commit reports three numbers: C++ lines added, C++ lines deleted, and which functions moved under Goose
+    control. New functionality - architecture logic, algorithms, memory, graph and model management - is written in
+    Goose. The only permitted new C++ is a temporary bridge that brings Goose in and is removed afterwards, and only
+    when it enables the deletion of substantially more C++ than it adds; every exception states that plan. Reviews
+    check this policy. Functionality is never moved from Goose back into C++.
+
+    Apex regressions are measured against the accepted reference only. The manifest and hashes live in
+    `docs/reference/apex-exp906/manifest.json`, and `bash tools/verify-apex-reference.sh` must pass before an Apex
+    measurement and refuses on any hash mismatch. That directory is never rebuilt, overwritten or repackaged in
+    place; new builds live in their own directory. The current canonical baseline is the newer accepted checkpoint
+    named in rule 31 - EXP906 stays the immutable historical control, not a ceiling on what may be accepted.
+
 28. Mandatory dead-C++ audit, after every port and every removal.
 
     Search automatically for: unused C++ functions, classes, structs and variables; old C++ paths wholly replaced by

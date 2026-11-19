@@ -31,12 +31,24 @@ CXX=${CXX:-g++-13}
 # OFF ggml libraries: pure substrate, no carrier bridges, so exactly one
 # goose_init can exist in the process.
 SUB=${FG_SUBSTRATE:-/tmp/opencode/sub-661/tree/build-off/llama.cpp/ggml/src}
+# ggml headers are read-only inputs. In a sparse worktree `upstream/` can be absent
+# (it is git-ignored), so fall back to the main checkout when it is not here.
+INC=$ROOT/upstream/llama.cpp/ggml/include
+if [ ! -f "$INC/gguf.h" ]; then
+    INC=/home/end0/AI/FrankenMoE-CUDA/upstream/llama.cpp/ggml/include
+fi
+if [ ! -f "$INC/gguf.h" ]; then
+    echo "ggml headers not found: neither $ROOT/upstream nor the main checkout has them" >&2
+    exit 1
+fi
 # One compiler identity, read from the record the gates also use. A hardcoded path
 # here let the build and the gates name different compilers while both looked
-# authoritative; the artifact now records which one actually built it.
+# authoritative; the artifact now records which one actually built it. The record
+# wins; the pinned path is only a fallback when the record is absent.
 if [ -z "${GOOSE:-}" ]; then
-    GOOSE=$(python3 -c "import json;print(json.load(open('$ROOT/runtime/compiler/current.json'))['compiler'])")
+    GOOSE=$(python3 -c "import json;print(json.load(open('$ROOT/runtime/compiler/current.json'))['compiler'])" 2>/dev/null || true)
 fi
+GOOSE=${GOOSE:-/home/end0/AI/LlamaServer/toolchain/goose-2026.3-string/goose}
 CHECK=0
 [ "${1:-}" = "--check" ] && CHECK=1
 
@@ -87,31 +99,38 @@ echo "[4b/5] v4: metadata, tensor directory and payload"
 # One host covers what v2 and v3 did separately; the superseded copies are gone,
 # because a superseded adapter is pure debt (AGENTS.md).
 if [ -d "$SUB" ] && [ -f "$ROOT/integration/goose-standalone/host_v4.c" ]; then
-    $CC -O1 -std=c11 -w -I "$OUT/inc" -I "$ROOT/upstream/llama.cpp/ggml/include" \
+    $CC -O1 -std=c11 -w -I "$OUT/inc" -I "$INC" \
         -I "$ROOT/integration/goose-standalone" \
         -c "$ROOT/integration/goose-standalone/host_v4.c" -o "$OUT/host_v4.o"
-    $CC -O1 -std=c11 -w -I "$ROOT/upstream/llama.cpp/ggml/include" \
+    $CC -O1 -std=c11 -w -I "$INC" \
         -I "$ROOT/integration/goose-standalone" \
         -c "$ROOT/integration/goose-standalone/tensor-data.c" -o "$OUT/tensor-data.o"
-    $CC -O1 -std=c11 -w -I "$ROOT/upstream/llama.cpp/ggml/include" \
+    $CC -O1 -std=c11 -w -I "$INC" \
         -c "$ROOT/integration/goose-standalone/graph-bindings.c" -o "$OUT/graph-bindings.o"
+    # The three names the system headers already declare (close/read/write) and
+    # accept's pointer form: one-line forwards, no decisions (EXP938).
+    $CC -O1 -std=c11 -w -c "$ROOT/integration/goose-standalone/libc-forwards.c" -o "$OUT/libc-forwards.o"
     # Link with $CXX, and the reason matters: libggml-base.a itself contains six C++ objects
     # (ggml.cpp, ggml-backend.cpp, ggml-backend-meta.cpp, ggml-opt.cpp, ggml-threading.cpp) and
     # ggml_critical_section_start references std::__throw_system_error. So libstdc++ is a
     # SUBSTRATE dependency, not ours. Our own sources are now all C - graph-bindings and
     # tensor-data were converted - which is the part we control.
+    $CC -O1 -std=c11 -w -I "$OUT/inc" -I "$INC" -I "$ROOT/build/goose-main" \
+        -I "$ROOT/integration/goose-standalone" \
+        -I "$ROOT/build/goose-main" -c "$ROOT/integration/goose-standalone/goose-host-llm.c" -o "$OUT/goose-host-llm.o"
     $CXX -O1 -fopenmp "$ROOT/build/goose-main/main.o" "$OUT/host.o" "$OUT/host_v4.o" \
-        "$OUT/tensor-data.o" "$OUT/graph-bindings.o" \
+        "$OUT/tensor-data.o" "$OUT/graph-bindings.o" "$OUT/goose-host-llm.o" \
+        "$OUT/libc-forwards.o" \
         -L"$SUB" -lggml-base -lggml -lggml-cpu -lm -pthread \
         -o "$OUT/frankenmoe-v4"
     printf '  v4:     %s (%s B)\n' "$OUT/frankenmoe-v4" "$(stat -c%s "$OUT/frankenmoe-v4")"
 
     # The graph-execution gate is a test, not an adapter: it proves that a node the
     # Goose builder creates runs on the CPU backend (EXP681).
-    $CC -O1 -std=c11 -w -I "$ROOT/upstream/llama.cpp/ggml/include" \
+    $CC -O1 -std=c11 -w -I "$INC" \
         -c "$ROOT/integration/goose-standalone/tests/graph_exec.c" -o "$OUT/graph_exec.o"
     $CXX -O1 -fopenmp "$ROOT/build/goose-main/main.o" "$OUT/host.o" \
-        "$OUT/graph-bindings.o" "$OUT/graph_exec.o" \
+        "$OUT/graph-bindings.o" "$OUT/graph_exec.o" "$OUT/libc-forwards.o" \
         -L"$SUB" -lggml-base -lggml -lggml-cpu -lm -pthread \
         -o "$OUT/graph_exec"
     printf '  gate:   %s\n' "$OUT/graph_exec"

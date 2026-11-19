@@ -1,0 +1,146 @@
+diff --git a/integration/edge0/pack.cpp b/integration/edge0/pack.cpp
+index 3df78911..db05c45b 100644
+--- a/integration/edge0/pack.cpp
++++ b/integration/edge0/pack.cpp
+@@ -1,6 +1,9 @@
+ // Temporary native integration debt: owned OS resources and GGML callback ABI.
+ // Expert descriptors, FP8 decode, routing and latent graph policy are Goose.
+ #include "pack.h"
++#ifdef FRANKEN_EDGE0_GPU_COMPAT
++#include "compat-api.h"
++#endif
+ #include "ggml-cpu.h"
+ #include "ggml-backend.h"
+ extern "C" {
+@@ -64,8 +67,15 @@ struct franken_edge0_pack {
+     std::array<int64_t,5> account{};
+     std::mutex mutex;
+     int threads = 8;
++#ifdef FRANKEN_EDGE0_GPU_COMPAT
++    void * gpu = nullptr;
++#endif
+     uint64_t calls = 0, bytes_read = 0;
+-    ~franken_edge0_pack() { for (int f : fd) if (f >= 0) ::close(f); }
++    ~franken_edge0_pack() {
++#ifdef FRANKEN_EDGE0_GPU_COMPAT
++        e0gpu_stats(gpu);e0gpu_destroy(gpu);
++#endif
++        for (int f : fd) if (f >= 0) ::close(f); }
+ };
+ std::shared_ptr<franken_edge0_pack> franken_edge0_open(const std::string & path) {
+     static std::once_flag init;
+@@ -106,6 +116,13 @@ std::shared_ptr<franken_edge0_pack> franken_edge0_open(const std::string & path)
+         e0_span timer(e0_profile[0].du_io);exact_read(p->fd[1],p->du.data(),p->du.size(),0);
+         e0_profile[0].du_bytes+=p->du.size();++e0_profile[0].du_misses;
+     }
++    #ifdef FRANKEN_EDGE0_GPU_COMPAT
++    const char * gpu_mode=std::getenv("FRANKEN_EDGE0_GPU_COMPAT");
++    if(!gpu_mode || std::string(gpu_mode)!="0") {
++        e0_require(p->du_cached,"GPU compatibility requires qualified DU cache");
++        p->gpu=e0gpu_create(p->du.data(),p->du.size());e0_require(p->gpu,"GPU residency allocation");
++    }
++#endif
+     p->experts.resize(11648000); p->arena.resize(64*1024*1024);
+     std::fprintf(stderr,"Edge0 cache budget: DU=%zu expert=%zu slots=%lld cache policy=existing Goose expert-lru\n",p->du.size(),p->expert_cache.size(),(long long)p->cache_slots);
+     std::fprintf(stderr,"Edge0 pack open: Q4 D/U, 10 routed + shared, external buffers=%zu bytes, no full PLE/expert mapping\n",p->du.size()+p->experts.size()+p->arena.size());
+@@ -181,6 +198,24 @@ static void compute(ggml_context * c, ggml_tensor * out,int threads) {
+     { e0_span timer(e0_profile[e0_phase].cpu);
+       e0_require(ggml_graph_compute_with_ctx(c,gf,threads)==GGML_STATUS_SUCCESS,"inner CPU graph execution failed"); }
+ }
++#ifdef FRANKEN_EDGE0_GPU_COMPAT
++// Per-node opaque state lives until the synchronous inner graph finishes.
++struct e0_gpu_node {void * state;uint64_t key;int matrix;const uint8_t * record;};
++static void e0_gpu_compute(ggml_tensor *dst,const ggml_tensor*w,const ggml_tensor*x,int ith,int,void*opaque) {
++    if(ith)return;auto & node=*(e0_gpu_node*)opaque;
++    const auto at=ggml_get_type_traits_cpu(w->type)->vec_dot_type;
++    auto quant=ggml_get_type_traits_cpu(at)->from_float;
++    std::array<uint8_t,4096> activation;const size_t bytes=ggml_row_size(at,w->ne[0]);
++    e0_require(quant && bytes<=activation.size() && x->type==GGML_TYPE_F32 && x->ne[1]==1,"GPU activation contract");
++    quant((const float*)x->data,activation.data(),w->ne[0]);
++    e0_require(e0gpu_dot(node.state,w->type,node.key,node.matrix,node.record,activation.data(),bytes,(float*)dst->data,w->ne[0],w->ne[1])==0,"compatible GPU dot");
++}
++static void e0_gpu_replace(ggml_context*c,ggml_tensor*t,e0_gpu_node*opaque) {
++    e0_require(t->op==GGML_OP_MUL_MAT,"GPU replacement must be a latent matvec");
++    ggml_set_no_alloc(c,true);auto * abi=ggml_map_custom2(c,t->src[0],t->src[1],e0_gpu_compute,1,opaque);ggml_set_no_alloc(c,false);
++    t->op=abi->op;std::memcpy(t->op_params,abi->op_params,sizeof(t->op_params));
++}
++#endif
+ static void evaluate(franken_edge0_pack::layer_ref & ref,const float * in,float * out) {
+     auto & p=*ref.owner; const int l=ref.id;
+     e0_span total(e0_profile[e0_phase].ffn); ++e0_profile[e0_phase].calls;
+@@ -201,6 +236,9 @@ static void evaluate(franken_edge0_pack::layer_ref & ref,const float * in,float
+                                   {p.lru.data(),2},l,{ids,10},10,512);
+         auto * inv=external(c,GGML_TYPE_F32,1280,1,p.inverse[l].data());
+         int64_t weights[50],coeffs[10],shared[4],work[16],nodes[109];
++#ifdef FRANKEN_EDGE0_GPU_COMPAT
++        std::array<e0_gpu_node,50> gpu_nodes;
++#endif
+         for(int k=0;k<10;++k) {
+             const int g=(int)e0_route_group({p.labels.data(),98304},l,ids[k]); e0_require(g>=0,"selected expert group");
+             int64_t desc[8];
+@@ -208,10 +246,16 @@ static void evaluate(franken_edge0_pack::layer_ref & ref,const float * in,float
+             uint8_t * payload=expert_payload(p,l,ids[k],k,desc[1]);
+             for(int m=0;m<2;++m) {
+                 e0_require(e0_du_desc(l,g,4,m,{desc,8})==0,"D/U descriptor");
++                #ifdef FRANKEN_EDGE0_GPU_COMPAT
++                gpu_nodes[k*5+m]={p.gpu,(uint64_t)desc[1],m,nullptr};
++#endif
+                 weights[k*5+m]=eh(external(c,(ggml_type)desc[3],desc[4],desc[5],p.du.data()+desc[1]-(p.du_cached?0:l*29491200LL)));
+             }
+             for(int m=0;m<3;++m) {
+                 e0_require(e0_expert_desc(l,ids[k],m,{desc,8})==0,"selected expert descriptor");
++                #ifdef FRANKEN_EDGE0_GPU_COMPAT
++                gpu_nodes[k*5+2+m]={p.gpu,(uint64_t)(l*512+ids[k]),m+2,payload};
++#endif
+                 weights[k*5+2+m]=eh(external(c,(ggml_type)desc[3],desc[4],desc[5],payload+(m<2?m*352000:704000)));
+             }
+             coeffs[k]=eh(external(c,GGML_TYPE_F32,1,1,coefficients+k));
+@@ -221,6 +265,9 @@ static void evaluate(franken_edge0_pack::layer_ref & ref,const float * in,float
+         { e0_span timer(e0_profile[e0_phase].graph);
+           result=e0_routed_shared(eh(c),eh(x),eh(inv),{weights,50},{coeffs,10},{shared,4},{work,16},{nodes,109}); }
+         e0_require(result!=0,"Goose routed/shared graph refused inputs");
++        #ifdef FRANKEN_EDGE0_GPU_COMPAT
++        if(p.gpu) {const int stages[5]={0,7,2,3,6};for(int k=0;k<10;++k)for(int m=0;m<5;++m)e0_gpu_replace(c,(ggml_tensor*)(intptr_t)nodes[k*8+stages[m]],&gpu_nodes[k*5+m]);}
++#endif
+         auto * y=(ggml_tensor*)(intptr_t)result; compute(c,y,p.threads);
+         for(int i=0;i<2560;++i) e0_require(std::isfinite(((float*)y->data)[i]),"nonfinite FFN output");
+         std::memcpy(out,y->data,2560*4); ++p.calls;
+diff --git a/integration/edge0/variant.py b/integration/edge0/variant.py
+index 0df6110c..11e20c0f 100644
+--- a/integration/edge0/variant.py
++++ b/integration/edge0/variant.py
+@@ -3,7 +3,7 @@
+ from pathlib import Path
+ import argparse,subprocess,shlex,hashlib,json,os
+ r=Path(__file__).resolve().parents[2]
+-ap=argparse.ArgumentParser();ap.add_argument('--base',type=Path,required=True);ap.add_argument('--out',type=Path,required=True);ap.add_argument('--reuse-unit',type=Path);ap.add_argument('--goose',action='store_true');ap.add_argument('--reuse-goose',type=Path);a=ap.parse_args();b=a.base.resolve();o=a.out.resolve();assert o.is_relative_to(Path('/home/end0/AI/LlamaServer')) and not o.exists();o.mkdir(parents=True);(o/'build/llama').mkdir(parents=True)
++ap=argparse.ArgumentParser();ap.add_argument('--base',type=Path,required=True);ap.add_argument('--out',type=Path,required=True);ap.add_argument('--compat-library',type=Path);ap.add_argument('--reuse-unit',type=Path);ap.add_argument('--goose',action='store_true');ap.add_argument('--reuse-goose',type=Path);a=ap.parse_args();b=a.base.resolve();o=a.out.resolve();assert o.is_relative_to(Path('/home/end0/AI/LlamaServer')) and not o.exists();o.mkdir(parents=True);(o/'build/llama').mkdir(parents=True)
+ commands=subprocess.check_output(['ninja','-t','commands'],cwd=b/'build',text=True).splitlines()
+ for name in ['pack.cpp','pack.h','cli.cpp','runtime.goose']: (o/name).write_bytes((r/'integration/edge0'/name).read_bytes())
+ unit=b/'build/llama/CMakeFiles/llama.dir/Unity/unity_10_cxx.cxx';text=unit.read_text();old=str(b/'integration/pack.cpp');assert text.count(old)==1;(o/'unit.cpp').write_text(text.replace(old,str(o/'pack.cpp')))
+@@ -22,6 +22,11 @@ with (o/'build.log').open('x') as log:
+   run(['python3',r/'tools/compose-goose.py',o/'generated/runtime.goose',b/'generated/runtime.goose',r/'goose/model/expert-lru.goose'])
+   run([g,'check',o/'generated/runtime.goose']);run([g,'--standalone','-o',o/'generated/runtime.c','--header',o/'generated/runtime.h',o/'generated/runtime.goose'])
+   run(['gcc-13','-O2','-fPIC','-c',o/'generated/runtime.c','-o',o/'goose.o'])
++ if a.compat_library:
++  import shutil
++  shutil.copyfile(r/'integration/edge0/probes/compat-api.h',o/'compat-api.h')
++  shutil.copyfile(a.compat_library,o/'build/llama/libedge0-compat.so.0')
++  inputs[str(a.compat_library)]=hashlib.sha256(a.compat_library.read_bytes()).hexdigest()
+  for key,source,out in [('unity_10_cxx' ,o/'unit.cpp',o/'unit.o'),('cli.cpp',o/'cli.cpp',o/'cli.o')]:
+   if key=='unity_10_cxx' and a.reuse_unit:
+    assert (a.reuse_unit.parent/'pack.cpp').read_bytes()==(o/'pack.cpp').read_bytes(), 'cannot reuse changed pack unit'
+@@ -33,11 +38,13 @@ with (o/'build.log').open('x') as log:
+    if flag in cmd:i=cmd.index(flag);del cmd[i:i+2]
+   cmd[cmd.index('-o')+1]=str(out);cmd[cmd.index('-c')+1]=str(source);cmd.insert(1,'-I'+str(o));
+   if a.goose or a.reuse_goose:cmd.insert(1,'-I'+str(o/'generated'))
++  if a.compat_library:cmd.insert(1,'-DFRANKEN_EDGE0_GPU_COMPAT=1')
+   run(cmd)
+  line=next(x for x in commands if '-Wl,-soname,libllama.so.0' in x);cmd=shlex.split(line.split('&&')[1].strip());cmd=[x for x in cmd if not x.startswith('-Wl,--dependency-file=')]
+  cmd[cmd.index('-o')+1]=str(o/'build/llama/libllama.so.0');
+  if a.goose or a.reuse_goose:
+   old=[x for x in cmd if x.endswith('/generated/runtime.c.o')];assert len(old)==1;cmd[cmd.index(old[0])]=str(a.reuse_goose/'goose.o' if a.reuse_goose else o/'goose.o')
++ if a.compat_library:cmd.extend([str(o/'build/llama/libedge0-compat.so.0'),'-Wl,-rpath,'+str(o/'build/llama')])
+  old_obj='llama/CMakeFiles/llama.dir/Unity/unity_10_cxx.cxx.o';assert old_obj in cmd;cmd[cmd.index(old_obj)]=str(a.reuse_unit if a.reuse_unit else o/'unit.o');run(cmd)
+  run(['g++-13',o/'cli.o',o/'build/llama/libllama.so.0','/home/end0/AI/LlamaServer/franken-recovery-20261116/support/bin/libggml-base.so.0','/home/end0/AI/LlamaServer/franken-recovery-20261116/support/bin/libggml.so.0','-Wl,-rpath,'+str(o/'build/llama'),'-ldl','-o',o/'build/edge0-cli'])
+  (o/'inputs.json').write_text(json.dumps(inputs,indent=2)+'\n')

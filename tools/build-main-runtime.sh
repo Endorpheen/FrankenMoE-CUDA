@@ -81,6 +81,7 @@ MODULES=(
     goose/model/control-vectors.goose
     goose/model/lora-apply.goose
     goose/model/special-partition.goose
+    goose/sampling/sampler-chain-full.goose
     goose/misc/common-strings.goose
     goose/misc/edge0-pack-index.goose
     goose/misc/release-plan.goose
@@ -125,6 +126,15 @@ MODULES=(
     goose/misc/perplexity-plan.goose
     goose/misc/kv-turn-state.goose
     goose/misc/tallies.goose
+    goose/misc/unicode-tables.goose
+    goose/misc/unicode-text.goose
+    goose/misc/pretokenizer-qwen35.goose
+    goose/model/bpe-tokenize.goose
+    goose/model/bpe-detokenize.goose
+    goose/model/tokenizer-engine.goose
+    goose/model/gguf-format.goose
+    goose/model/special-partition.goose
+    goose/sampling/sampler-chain-full.goose
     goose/misc/goose-tokenizer.goose
     goose/misc/prefill-plan.goose
     goose/misc/trace-frame-order.goose
@@ -153,6 +163,7 @@ MODULES=(
     goose/server/route-table.goose
     goose/server/shutdown-policy.goose
     goose/server/limits.goose
+    goose/server/http-listener.goose
     goose/server/web-assets.goose
     goose/server/mime-table.goose
     goose/server/asset-etag.goose
@@ -197,14 +208,14 @@ python3 "$ROOT/tools/compose-goose.py" "$UNIT" "${MODULES[@]/#/$ROOT/}"
 
 echo "[2/5] typecheck"
 # A pipeline's exit status is the last command's, so `| tail` used to swallow a typecheck failure
-# and the build reported success without generating any C. The log is written first and the
-# verdict is taken from the log.
-"$GOOSE" check "$UNIT" > "$OUT/typecheck.log" 2>&1 || true
-grep -E "typechecked ok|error" "$OUT/typecheck.log" | tail -2
-if grep -q "error" "$OUT/typecheck.log"; then
+# and the build reported success without generating any C. The log is written first, the exit
+# status is the verdict, and the log is the evidence when it fails.
+if ! "$GOOSE" check "$UNIT" > "$OUT/typecheck.log" 2>&1; then
+    tail -n 40 "$OUT/typecheck.log" >&2
     echo "main runtime: typecheck FAILED (see $OUT/typecheck.log)"
     exit 1
 fi
+grep -E "typechecked ok" "$OUT/typecheck.log" | tail -2
 
 echo "[3/5] generate C"
 "$GOOSE" --standalone -o "$C" --header "$H" "$UNIT" >/dev/null

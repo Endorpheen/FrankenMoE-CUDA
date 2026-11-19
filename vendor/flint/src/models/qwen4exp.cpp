@@ -5,6 +5,10 @@
 
 #include <algorithm>
 #include <cinttypes>
+#ifdef FRANKEN_EDGE0_RUNTIME
+#include "pack.h"
+#include <cstdlib>
+#endif
 
 // bad metadata must be catchable: GGML_ASSERT aborts the whole process
 static void qwen4exp_require_nonzero(const llama_model_loader & ml, llm_kv kid, uint32_t value) {
@@ -24,6 +28,11 @@ static void qwen4exp_require_arr_len(llama_model_loader & ml, llm_kv kid, uint32
 }
 
 void llama_model_qwen4exp::load_arch_hparams(llama_model_loader & ml) {
+#ifdef FRANKEN_EDGE0_RUNTIME
+    if (const char * path = std::getenv("FRANKEN_EDGE0_PACK")) {
+        edge0 = franken_edge0_open(path);
+    }
+#endif
     ml.get_key_or_arr(LLM_KV_EXPERT_FEED_FORWARD_LENGTH, hparams.n_ff_exp_arr, hparams.n_layer_all, false);
     ml.get_key(LLM_KV_EXPERT_SHARED_FEED_FORWARD_LENGTH, hparams.n_ff_shexp, false);
     ml.get_key(LLM_KV_ATTENTION_LAYERNORM_RMS_EPS,       hparams.f_norm_rms_eps);
@@ -193,7 +202,7 @@ void llama_model_qwen4exp::load_arch_tensors(llama_model_loader & ml) {
     }
 
     // flat [ple_head_dim, n_rows] gather target
-    if (hparams.ple_n_heads > 0) {
+    if (hparams.ple_n_heads > 0 && !edge0) {
         // the head ranges are what the gather indexes, so they set the minimum row count
         int64_t ple_rows = 0;
         for (uint32_t h = 0; h < hparams.ple_n_heads; ++h) {
@@ -273,13 +282,21 @@ void llama_model_qwen4exp::load_arch_tensors(llama_model_loader & ml) {
         }
 
         layer.ffn_gate_inp  = create_tensor(tn(LLM_TENSOR_FFN_GATE_INP,  "weight", il), { n_embd, n_expert }, flags);
-        layer.ffn_down_exps = create_tensor(tn(LLM_TENSOR_FFN_DOWN_EXPS, "weight", il), { n_ff_exp, n_embd, n_expert }, flags);
-        create_tensor_gate_up_exps(layer, il, n_embd, n_ff_exp, n_expert, flags);
+        if (!edge0) {
+            layer.ffn_down_exps = create_tensor(tn(LLM_TENSOR_FFN_DOWN_EXPS, "weight", il), { n_ff_exp, n_embd, n_expert }, flags);
+            create_tensor_gate_up_exps(layer, il, n_embd, n_ff_exp, n_expert, flags);
+        }
 
         layer.ffn_gate_inp_shexp = create_tensor(tn(LLM_TENSOR_FFN_GATE_INP_SHEXP, "weight", il), { n_embd }, flags);
         layer.ffn_gate_shexp     = create_tensor(tn(LLM_TENSOR_FFN_GATE_SHEXP,     "weight", il), { n_embd, n_ff_shexp }, flags);
         layer.ffn_up_shexp       = create_tensor(tn(LLM_TENSOR_FFN_UP_SHEXP,       "weight", il), { n_embd, n_ff_shexp }, flags);
         layer.ffn_down_shexp     = create_tensor(tn(LLM_TENSOR_FFN_DOWN_SHEXP,     "weight", il), { n_ff_shexp, n_embd }, flags);
+#ifdef FRANKEN_EDGE0_RUNTIME
+        if (edge0) {
+            franken_edge0_bind(*edge0, il, layer.ffn_gate_inp, layer.ffn_gate_shexp,
+                               layer.ffn_up_shexp, layer.ffn_down_shexp, layer.ffn_gate_inp_shexp);
+        }
+#endif
     };
 
     for (int il = 0; il < n_layer; ++il) {
@@ -1141,6 +1158,11 @@ ggml_tensor * llama_model_qwen4exp::graph::build_layer_attn_linear(
 }
 
 ggml_tensor * llama_model_qwen4exp::graph::build_layer_ffn(ggml_tensor * cur, const int il) {
+#ifdef FRANKEN_EDGE0_RUNTIME
+    if (const auto & pack = static_cast<const llama_model_qwen4exp &>(model).edge0) {
+        return franken_edge0_ffn(*pack, ctx0, cur, il);
+    }
+#endif
     GGML_ASSERT(model.layers[il].ffn_gate_inp != nullptr);
 
     ggml_tensor * moe_out =
@@ -1204,7 +1226,8 @@ public:
 
     bool can_reuse(const llm_graph_params & params) override {
         mctx = static_cast<const llama_memory_hybrid_idx_context *>(params.mctx)->get_attn();
-        return rows->ne[0] == (int64_t) model.hparams.ple_n_heads * params.ubatch.n_tokens;
+        const int64_t width = rows->type == GGML_TYPE_F32 ? model.hparams.ple_head_dim : 1;
+        return rows->ne[0] == width * (int64_t) model.hparams.ple_n_heads * params.ubatch.n_tokens;
     }
 
     ggml_tensor * rows = nullptr;   // I32 [ple_n_heads * n_tokens]
@@ -1278,6 +1301,15 @@ void llm_graph_input_qwen4exp_ple::set_input(const llama_ubatch * ubatch) {
             }
         }
     }
+
+#ifdef FRANKEN_EDGE0_RUNTIME
+    if (const auto & pack = static_cast<const llama_model_qwen4exp &>(model).edge0) {
+        std::vector<float> values(idx.size() * hparams.ple_head_dim);
+        franken_edge0_ple(*pack, idx.data(), idx.size(), values.data());
+        ggml_backend_tensor_set(rows, values.data(), 0, values.size() * sizeof(float));
+        return;
+    }
+#endif
 
     {
         ggml_tensor * ple = model.per_layer_tok_embd;
@@ -1354,13 +1386,15 @@ ggml_tensor * llama_model_qwen4exp::graph::build_inp_ple(
     // the attention cells see every ubatch regardless of the layer types
     auto ple_inp = std::make_unique<llm_graph_input_qwen4exp_ple>(model, mctx_hyb->get_attn());
 
-    ple_inp->rows = ggml_new_tensor_1d(ctx0, GGML_TYPE_I32, n_heads * n_tokens);
+    const bool external_ple = !!static_cast<const llama_model_qwen4exp &>(model).edge0;
+    ple_inp->rows = ggml_new_tensor_1d(ctx0, external_ple ? GGML_TYPE_F32 : GGML_TYPE_I32,
+            n_heads * n_tokens * (external_ple ? hparams.ple_head_dim : 1));
     ggml_set_input(ple_inp->rows);
     ggml_tensor * rows = ple_inp->rows;
     res->add_input(std::move(ple_inp));
 
     // gather then flatten the heads: get_rows lays the head dimension out slowest, as the reference does
-    ggml_tensor * emb = ggml_get_rows(ctx0, model.per_layer_tok_embd, rows);
+    ggml_tensor * emb = external_ple ? rows : ggml_get_rows(ctx0, model.per_layer_tok_embd, rows);
     emb = ggml_reshape_2d(ctx0, emb, hparams.ple_head_dim * n_heads, n_tokens);
     cb(emb, "ple_embd", -1);
 

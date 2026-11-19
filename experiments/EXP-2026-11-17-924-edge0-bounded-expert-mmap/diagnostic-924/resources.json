@@ -1,0 +1,680 @@
+{
+  "command": [
+    "/home/end0/AI/LlamaServer/edge0-expert-mmap-20261117/build/edge0-cli",
+    "/home/end0/AI/LocalAI/Models/Edge0-120B-q3k",
+    "/home/end0/AI/LlamaServer/edge0-expert-mmap-20261117/diagnostic-924/prompt.txt",
+    "256"
+  ],
+  "runtime_env": {
+    "FRANKEN_EDGE0_PROFILE": "1",
+    "FRANKEN_EDGE0_NGL": "48",
+    "LD_LIBRARY_PATH": "/home/end0/AI/LlamaServer/edge0-expert-mmap-20261117/build/llama:/home/end0/AI/LlamaServer/franken-recovery-20261116/support/bin"
+  },
+  "ngl": 48,
+  "seconds": 43.89730041398434,
+  "exit_code": 0,
+  "stop_reason": null,
+  "samples": [
+    {
+      "s": 1.1854157160269096,
+      "pid": 1914946,
+      "rss_KiB": 1707128,
+      "swap_KiB": 0,
+      "gpu_MiB": 154,
+      "io": {
+        "rchar": 1427022517,
+        "wchar": 7101,
+        "syscr": 2836,
+        "syscw": 85,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 2.188901193032507,
+      "pid": 1914946,
+      "rss_KiB": 7626664,
+      "swap_KiB": 0,
+      "gpu_MiB": 5122,
+      "io": {
+        "rchar": 1427022517,
+        "wchar": 119805,
+        "syscr": 2836,
+        "syscw": 2179,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 3.268166497000493,
+      "pid": 1914946,
+      "rss_KiB": 9870796,
+      "swap_KiB": 0,
+      "gpu_MiB": 5296,
+      "io": {
+        "rchar": 1427040555,
+        "wchar": 371918,
+        "syscr": 2951,
+        "syscw": 3908,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 4.290437013027258,
+      "pid": 1914946,
+      "rss_KiB": 11060884,
+      "swap_KiB": 0,
+      "gpu_MiB": 5296,
+      "io": {
+        "rchar": 1427063595,
+        "wchar": 372902,
+        "syscr": 3095,
+        "syscw": 3926,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 5.412298334005754,
+      "pid": 1914946,
+      "rss_KiB": 11109972,
+      "swap_KiB": 0,
+      "gpu_MiB": 5296,
+      "io": {
+        "rchar": 1427086635,
+        "wchar": 373896,
+        "syscr": 3239,
+        "syscw": 3944,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 6.505745273025241,
+      "pid": 1914946,
+      "rss_KiB": 11109932,
+      "swap_KiB": 0,
+      "gpu_MiB": 5296,
+      "io": {
+        "rchar": 1427109675,
+        "wchar": 374895,
+        "syscr": 3383,
+        "syscw": 3962,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 7.529991001007147,
+      "pid": 1914946,
+      "rss_KiB": 11110080,
+      "swap_KiB": 0,
+      "gpu_MiB": 5296,
+      "io": {
+        "rchar": 1427132715,
+        "wchar": 375894,
+        "syscr": 3527,
+        "syscw": 3980,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 8.610525974014308,
+      "pid": 1914946,
+      "rss_KiB": 11109992,
+      "swap_KiB": 0,
+      "gpu_MiB": 5296,
+      "io": {
+        "rchar": 1427155755,
+        "wchar": 376893,
+        "syscr": 3671,
+        "syscw": 3998,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 9.626803361985367,
+      "pid": 1914946,
+      "rss_KiB": 11110004,
+      "swap_KiB": 0,
+      "gpu_MiB": 5296,
+      "io": {
+        "rchar": 1427176235,
+        "wchar": 377781,
+        "syscr": 3799,
+        "syscw": 4014,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 10.718147278996184,
+      "pid": 1914946,
+      "rss_KiB": 11110020,
+      "swap_KiB": 0,
+      "gpu_MiB": 5296,
+      "io": {
+        "rchar": 1427199275,
+        "wchar": 378780,
+        "syscr": 3943,
+        "syscw": 4032,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 11.79657770000631,
+      "pid": 1914946,
+      "rss_KiB": 11112876,
+      "swap_KiB": 0,
+      "gpu_MiB": 5296,
+      "io": {
+        "rchar": 1427219865,
+        "wchar": 380058,
+        "syscr": 4073,
+        "syscw": 4063,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 12.86289209802635,
+      "pid": 1914946,
+      "rss_KiB": 11112772,
+      "swap_KiB": 0,
+      "gpu_MiB": 5296,
+      "io": {
+        "rchar": 1427242905,
+        "wchar": 381995,
+        "syscr": 4217,
+        "syscw": 4099,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 13.964114554983098,
+      "pid": 1914946,
+      "rss_KiB": 11112892,
+      "swap_KiB": 0,
+      "gpu_MiB": 5296,
+      "io": {
+        "rchar": 1427268505,
+        "wchar": 384187,
+        "syscr": 4377,
+        "syscw": 4140,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 14.975590330024716,
+      "pid": 1914946,
+      "rss_KiB": 11112884,
+      "swap_KiB": 0,
+      "gpu_MiB": 5296,
+      "io": {
+        "rchar": 1427288985,
+        "wchar": 385885,
+        "syscr": 4505,
+        "syscw": 4172,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 15.988033108995296,
+      "pid": 1914946,
+      "rss_KiB": 11112868,
+      "swap_KiB": 0,
+      "gpu_MiB": 5296,
+      "io": {
+        "rchar": 1427309465,
+        "wchar": 387582,
+        "syscr": 4633,
+        "syscw": 4204,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 17.09268877701834,
+      "pid": 1914946,
+      "rss_KiB": 11112836,
+      "swap_KiB": 0,
+      "gpu_MiB": 5296,
+      "io": {
+        "rchar": 1427332505,
+        "wchar": 389532,
+        "syscr": 4777,
+        "syscw": 4240,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 18.119210669014137,
+      "pid": 1914946,
+      "rss_KiB": 11112876,
+      "swap_KiB": 0,
+      "gpu_MiB": 5296,
+      "io": {
+        "rchar": 1427352985,
+        "wchar": 391270,
+        "syscr": 4905,
+        "syscw": 4272,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 19.146040490013547,
+      "pid": 1914946,
+      "rss_KiB": 11112740,
+      "swap_KiB": 0,
+      "gpu_MiB": 5296,
+      "io": {
+        "rchar": 1427373465,
+        "wchar": 393029,
+        "syscr": 5033,
+        "syscw": 4304,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 20.175037336011883,
+      "pid": 1914946,
+      "rss_KiB": 11112728,
+      "swap_KiB": 0,
+      "gpu_MiB": 5296,
+      "io": {
+        "rchar": 1427396505,
+        "wchar": 394949,
+        "syscr": 5177,
+        "syscw": 4340,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 21.23894626897527,
+      "pid": 1914946,
+      "rss_KiB": 11112728,
+      "swap_KiB": 0,
+      "gpu_MiB": 5296,
+      "io": {
+        "rchar": 1427419545,
+        "wchar": 396936,
+        "syscr": 5321,
+        "syscw": 4376,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 22.29148181999335,
+      "pid": 1914946,
+      "rss_KiB": 11112768,
+      "swap_KiB": 0,
+      "gpu_MiB": 5296,
+      "io": {
+        "rchar": 1427442585,
+        "wchar": 398876,
+        "syscr": 5465,
+        "syscw": 4412,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 23.305145684978925,
+      "pid": 1914946,
+      "rss_KiB": 11112664,
+      "swap_KiB": 0,
+      "gpu_MiB": 5296,
+      "io": {
+        "rchar": 1427463065,
+        "wchar": 400607,
+        "syscr": 5593,
+        "syscw": 4444,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 24.35849752399372,
+      "pid": 1914946,
+      "rss_KiB": 11112736,
+      "swap_KiB": 0,
+      "gpu_MiB": 5296,
+      "io": {
+        "rchar": 1427483545,
+        "wchar": 402346,
+        "syscr": 5721,
+        "syscw": 4476,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 25.37924079899676,
+      "pid": 1914946,
+      "rss_KiB": 11112700,
+      "swap_KiB": 0,
+      "gpu_MiB": 5296,
+      "io": {
+        "rchar": 1427504025,
+        "wchar": 404091,
+        "syscr": 5849,
+        "syscw": 4508,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 26.451896212995052,
+      "pid": 1914946,
+      "rss_KiB": 11112756,
+      "swap_KiB": 0,
+      "gpu_MiB": 5296,
+      "io": {
+        "rchar": 1427524505,
+        "wchar": 405845,
+        "syscr": 5977,
+        "syscw": 4540,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 27.470202881027944,
+      "pid": 1914946,
+      "rss_KiB": 11112760,
+      "swap_KiB": 0,
+      "gpu_MiB": 5296,
+      "io": {
+        "rchar": 1427544985,
+        "wchar": 407597,
+        "syscr": 6105,
+        "syscw": 4572,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 28.483468391001225,
+      "pid": 1914946,
+      "rss_KiB": 11112740,
+      "swap_KiB": 0,
+      "gpu_MiB": 5296,
+      "io": {
+        "rchar": 1427565465,
+        "wchar": 409340,
+        "syscr": 6233,
+        "syscw": 4604,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 29.579745464026928,
+      "pid": 1914946,
+      "rss_KiB": 11112780,
+      "swap_KiB": 0,
+      "gpu_MiB": 5296,
+      "io": {
+        "rchar": 1427588505,
+        "wchar": 411298,
+        "syscr": 6377,
+        "syscw": 4640,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 30.59809594100807,
+      "pid": 1914946,
+      "rss_KiB": 11112848,
+      "swap_KiB": 0,
+      "gpu_MiB": 5296,
+      "io": {
+        "rchar": 1427608985,
+        "wchar": 413037,
+        "syscr": 6505,
+        "syscw": 4672,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 31.643485826032702,
+      "pid": 1914946,
+      "rss_KiB": 11112664,
+      "swap_KiB": 0,
+      "gpu_MiB": 5296,
+      "io": {
+        "rchar": 1427632025,
+        "wchar": 415039,
+        "syscr": 6649,
+        "syscw": 4708,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 32.703175670991186,
+      "pid": 1914946,
+      "rss_KiB": 11112844,
+      "swap_KiB": 0,
+      "gpu_MiB": 5296,
+      "io": {
+        "rchar": 1427655065,
+        "wchar": 416991,
+        "syscr": 6793,
+        "syscw": 4744,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 33.745298260997515,
+      "pid": 1914946,
+      "rss_KiB": 11112860,
+      "swap_KiB": 0,
+      "gpu_MiB": 5296,
+      "io": {
+        "rchar": 1427675545,
+        "wchar": 418745,
+        "syscr": 6921,
+        "syscw": 4776,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 34.76683620701078,
+      "pid": 1914946,
+      "rss_KiB": 11113144,
+      "swap_KiB": 0,
+      "gpu_MiB": 5296,
+      "io": {
+        "rchar": 1427696025,
+        "wchar": 420522,
+        "syscr": 7049,
+        "syscw": 4808,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 35.832989268994424,
+      "pid": 1914946,
+      "rss_KiB": 11113116,
+      "swap_KiB": 0,
+      "gpu_MiB": 5296,
+      "io": {
+        "rchar": 1427719065,
+        "wchar": 422490,
+        "syscr": 7193,
+        "syscw": 4844,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 36.870215431030374,
+      "pid": 1914946,
+      "rss_KiB": 11113180,
+      "swap_KiB": 0,
+      "gpu_MiB": 5296,
+      "io": {
+        "rchar": 1427739545,
+        "wchar": 424210,
+        "syscr": 7321,
+        "syscw": 4876,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 37.93813067500014,
+      "pid": 1914946,
+      "rss_KiB": 11113080,
+      "swap_KiB": 0,
+      "gpu_MiB": 5296,
+      "io": {
+        "rchar": 1427762585,
+        "wchar": 426176,
+        "syscr": 7465,
+        "syscw": 4912,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 39.05558783601737,
+      "pid": 1914946,
+      "rss_KiB": 11113180,
+      "swap_KiB": 0,
+      "gpu_MiB": 5296,
+      "io": {
+        "rchar": 1427785625,
+        "wchar": 428147,
+        "syscr": 7609,
+        "syscw": 4948,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 40.08396158902906,
+      "pid": 1914946,
+      "rss_KiB": 11113236,
+      "swap_KiB": 0,
+      "gpu_MiB": 5296,
+      "io": {
+        "rchar": 1427806105,
+        "wchar": 429871,
+        "syscr": 7737,
+        "syscw": 4980,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 41.09737658902304,
+      "pid": 1914946,
+      "rss_KiB": 11113248,
+      "swap_KiB": 0,
+      "gpu_MiB": 5296,
+      "io": {
+        "rchar": 1427826585,
+        "wchar": 431625,
+        "syscr": 7865,
+        "syscw": 5012,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 42.155740363989025,
+      "pid": 1914946,
+      "rss_KiB": 11113136,
+      "swap_KiB": 0,
+      "gpu_MiB": 5296,
+      "io": {
+        "rchar": 1427847065,
+        "wchar": 433384,
+        "syscr": 7993,
+        "syscw": 5044,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 43.22693278302904,
+      "pid": 1914946,
+      "rss_KiB": 11113136,
+      "swap_KiB": 0,
+      "gpu_MiB": 5160,
+      "io": {
+        "rchar": 1427867545,
+        "wchar": 435149,
+        "syscr": 8121,
+        "syscw": 5076,
+        "read_bytes": 0,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    }
+  ],
+  "pswpout_start": 15863833,
+  "pswpout_end": 15863833,
+  "maxrss_KiB": 11113248,
+  "max_gpu_MiB": 5296,
+  "max_swap_KiB": 0
+}

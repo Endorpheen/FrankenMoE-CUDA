@@ -1,0 +1,7 @@
+<|im_start|>user
+Сколько будет два плюс два? Ответь одним словом по-русски.<|im_end|>
+<|im_start|>assistant
+<think>
+
+</think>
+

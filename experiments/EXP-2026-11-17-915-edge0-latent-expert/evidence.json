@@ -1,0 +1,501 @@
+{
+  "experiment": "EXP-2026-11-17-915",
+  "source_checkpoint": "85b747fc639f9c208b6aecec871ce63842bfa6e8",
+  "result": "ACCEPTED_COMPONENT_ONLY_NOT_MODEL_INFERENCE",
+  "cases": 24,
+  "stages": 192,
+  "bitwise_f32_values": 430080,
+  "invalid_graphs": 288,
+  "mutations_killed": [
+    "inverse-scale",
+    "missing-scale",
+    "activation",
+    "gate-up-order",
+    "group-offset"
+  ],
+  "peak_component_rss_KiB": 26216,
+  "model_runs": 0,
+  "gpu_runs": 0,
+  "new_runtime_cpp_files": 0,
+  "new_runtime_c_adapters": 0,
+  "native_dependencies": [
+    "existing graph-bindings.c",
+    "GGML tensor allocation and math",
+    "native GGML CPU backend"
+  ],
+  "pack_revision": "dab5ce727d494e2018626fe8896bfdc774215b17",
+  "developer_source_revision": "f6bfa5546bcf89919f86946ec669bcc7f4cd526d",
+  "unique_weight_segments": [
+    {
+      "file": "labels.bin",
+      "offset": 0,
+      "bytes": 98304,
+      "sha256": "ce9b4a20b92c5c866e65d84a3884c104986522471cf11cc5f797a153affbcc06"
+    },
+    {
+      "file": "latent_dense_q4.bin",
+      "offset": 0,
+      "bytes": 1843200,
+      "sha256": "25297e6eaece5f68c5e38af35f04bad89db61ad71ca8fb2a150fc995aba71e9d"
+    },
+    {
+      "file": "latent_dense_q4.bin",
+      "offset": 14745600,
+      "bytes": 1843200,
+      "sha256": "15c4a803ef3d78a75e3b27a0fcd618b95ca79f9ccde2f2c8d865998af489b4e2"
+    },
+    {
+      "file": "experts.bin",
+      "offset": 1164800,
+      "bytes": 352000,
+      "sha256": "3ca7f650a164e3db571c132f9313f7dd0c47eeb6ec9c820a2bb06c1e7a20f085"
+    },
+    {
+      "file": "experts.bin",
+      "offset": 1516800,
+      "bytes": 352000,
+      "sha256": "4e89dcd49756f0549a5f28f7c59bd9aff69b33e0c7abd24f9e0a8cb8cf78aff1"
+    },
+    {
+      "file": "experts.bin",
+      "offset": 1868800,
+      "bytes": 460800,
+      "sha256": "eb15b008bc7deb96ac6339aa05ebaa828d1089f589ec572f497651a96032d9c3"
+    },
+    {
+      "file": "scales/l0.f32",
+      "offset": 0,
+      "bytes": 5120,
+      "sha256": "85e8d36581a6e0b2fb8a22f12f6625ef467281bf8d8bc526c68741bdcb7ddbe6"
+    },
+    {
+      "file": "latent_dense_q4.bin",
+      "offset": 5529600,
+      "bytes": 1843200,
+      "sha256": "e7b5851ecf448b63a2185a1463866c336a9e527b220917240691374c88a048f8"
+    },
+    {
+      "file": "latent_dense_q4.bin",
+      "offset": 20275200,
+      "bytes": 1843200,
+      "sha256": "3446ec91e2adcd7145e29a9b6012a885e503e5236121d409d86a02982b0072a3"
+    },
+    {
+      "file": "experts.bin",
+      "offset": 15142400,
+      "bytes": 352000,
+      "sha256": "fc1157304c984c0dc19bf42b8c33424794a877852a623e5019d9c572dfb31372"
+    },
+    {
+      "file": "experts.bin",
+      "offset": 15494400,
+      "bytes": 352000,
+      "sha256": "397ab809666b380209a7b08f6dcc132a2472c91cec93104941829393fbec9655"
+    },
+    {
+      "file": "experts.bin",
+      "offset": 15846400,
+      "bytes": 460800,
+      "sha256": "a88521ff5ffa040496e28395304addc0aa021015be9481a1415eaa24fdc1ec24"
+    },
+    {
+      "file": "latent_dense_q4.bin",
+      "offset": 12902400,
+      "bytes": 1843200,
+      "sha256": "25575ec7a0cbc6a037064f7169fb2c9d9096f28859d508bd1e51ac8f84d01901"
+    },
+    {
+      "file": "latent_dense_q4.bin",
+      "offset": 27648000,
+      "bytes": 1843200,
+      "sha256": "b383f80787dd6ac7fd297cdbbe265291c5b5b396bdb853d2a3c2be9a1688bb37"
+    },
+    {
+      "file": "experts.bin",
+      "offset": 19801600,
+      "bytes": 352000,
+      "sha256": "0b80c900aa74cf0844b4d8966d1e08da102e19e9838f7cb09c10394f7aca849d"
+    },
+    {
+      "file": "experts.bin",
+      "offset": 20153600,
+      "bytes": 352000,
+      "sha256": "1a0d4ea1c56b20ab0fce5b4184321680c057947728452a6a7127bed931bdb635"
+    },
+    {
+      "file": "experts.bin",
+      "offset": 20505600,
+      "bytes": 460800,
+      "sha256": "5ae9d2db365f1f71931f9186fbb864f8b286e60689f0f2907dceeca2315a5793"
+    },
+    {
+      "file": "latent_dense_q8.bin",
+      "offset": 0,
+      "bytes": 3481600,
+      "sha256": "b17296b3e6e50689171628ec3855e669012d3834c74d76de82f210399e1d6675"
+    },
+    {
+      "file": "latent_dense_q8.bin",
+      "offset": 27852800,
+      "bytes": 3481600,
+      "sha256": "c2143b27e9a48b849a40005ccd790ecfa56aa216b6802f966eb2b7638746aa10"
+    },
+    {
+      "file": "latent_dense_q8.bin",
+      "offset": 10444800,
+      "bytes": 3481600,
+      "sha256": "262f11657a27be342b27104dc08f4034a43b51ffad37eb709a1ffe2ab44c568b"
+    },
+    {
+      "file": "latent_dense_q8.bin",
+      "offset": 38297600,
+      "bytes": 3481600,
+      "sha256": "f2555df82c47bda7f733ce87755f9923c3cedb4591d2b96b68d75881d9d469de"
+    },
+    {
+      "file": "latent_dense_q8.bin",
+      "offset": 24371200,
+      "bytes": 3481600,
+      "sha256": "35ca11570a55787fd721584dacf088f63aefb7e4bd80b1217a061168dc07eb27"
+    },
+    {
+      "file": "latent_dense_q8.bin",
+      "offset": 52224000,
+      "bytes": 3481600,
+      "sha256": "a53b648ebc30982bfa0053bcfac37dd05cda2642d3266dbdab78d98a63611422"
+    },
+    {
+      "file": "latent_dense_q4.bin",
+      "offset": 1386086400,
+      "bytes": 1843200,
+      "sha256": "926d2cd275e86e5b888c7c2cf60833a0c82ef23dd403353ffb4f5dc1da423f9e"
+    },
+    {
+      "file": "latent_dense_q4.bin",
+      "offset": 1400832000,
+      "bytes": 1843200,
+      "sha256": "0e272649dbb91f68b6b836f872edcea11839d801a54ad6f14e429e9fd3489983"
+    },
+    {
+      "file": "experts.bin",
+      "offset": 28044889600,
+      "bytes": 352000,
+      "sha256": "98a9392689ce93c8c337419e96f6994cdecec8a77c9e3aeefb04175754e63a3d"
+    },
+    {
+      "file": "experts.bin",
+      "offset": 28045241600,
+      "bytes": 352000,
+      "sha256": "a129f7939a164705d6f2b6312842f74719a1d066eb1d6be52dee3b8373e95821"
+    },
+    {
+      "file": "experts.bin",
+      "offset": 28045593600,
+      "bytes": 460800,
+      "sha256": "c993d3e5a81ac2c3f47eb31becf84be98e3352ceee3b27d7153ecb6174be5d38"
+    },
+    {
+      "file": "scales/l47.f32",
+      "offset": 0,
+      "bytes": 5120,
+      "sha256": "9b612fcdc354854717f42a7b46d186304f51e95bfc8561a49b159e8db33a1736"
+    },
+    {
+      "file": "latent_dense_q4.bin",
+      "offset": 1391616000,
+      "bytes": 1843200,
+      "sha256": "02ebe7cbc0a85c9417906355f7a47c880e06043f6c5f8a7601afd314f2653a6b"
+    },
+    {
+      "file": "latent_dense_q4.bin",
+      "offset": 1406361600,
+      "bytes": 1843200,
+      "sha256": "05ba1fefe7492c77c134cce3ddc023415a72dda130e27bad207116aee125a952"
+    },
+    {
+      "file": "experts.bin",
+      "offset": 28039065600,
+      "bytes": 352000,
+      "sha256": "c4b370a00d33fcd88685c69a459fadc6f7e519a236aa89ebf4ce8f14b1c2eccf"
+    },
+    {
+      "file": "experts.bin",
+      "offset": 28039417600,
+      "bytes": 352000,
+      "sha256": "b25fac3d90e200c15dadf75588b81804b581c2c5c6d0247c6ad0ca3f1044317c"
+    },
+    {
+      "file": "experts.bin",
+      "offset": 28039769600,
+      "bytes": 460800,
+      "sha256": "4390268ac27c3c95058051de8b64c559cb7bceba31ab0178659bb31c63ebed63"
+    },
+    {
+      "file": "latent_dense_q4.bin",
+      "offset": 1398988800,
+      "bytes": 1843200,
+      "sha256": "c99c11508c3077a137b5c9e33f496cfb50e7d8c7f315b02ec8d52b5bc08f815a"
+    },
+    {
+      "file": "latent_dense_q4.bin",
+      "offset": 1413734400,
+      "bytes": 1843200,
+      "sha256": "5aae993a7ad74272c937741938ad0c544b6f3a8df4ff09475da6862aafc12a5d"
+    },
+    {
+      "file": "experts.bin",
+      "offset": 28055372800,
+      "bytes": 352000,
+      "sha256": "1050c73e31942715e6752f4c2d855457e727f547729afbe4e26d589040b1b1ef"
+    },
+    {
+      "file": "experts.bin",
+      "offset": 28055724800,
+      "bytes": 352000,
+      "sha256": "688507713145db7398dcb20144952ca73a89f3b34416cddf13db4dfec15813c6"
+    },
+    {
+      "file": "experts.bin",
+      "offset": 28056076800,
+      "bytes": 460800,
+      "sha256": "88adaf90d22dda4b2a233808d0fca5cf70c25f05ac00ecd37fa78dff51d4f0fd"
+    },
+    {
+      "file": "latent_dense_q8.bin",
+      "offset": 2618163200,
+      "bytes": 3481600,
+      "sha256": "9934c446240c41ca2610e9169763f5ad99a17479c572266f7e9fa45d01fdf621"
+    },
+    {
+      "file": "latent_dense_q8.bin",
+      "offset": 2646016000,
+      "bytes": 3481600,
+      "sha256": "585e63d467b88f8289d12441a4346a2cf567f0aa53e77d9274fe63c2545cdd92"
+    },
+    {
+      "file": "latent_dense_q8.bin",
+      "offset": 2628608000,
+      "bytes": 3481600,
+      "sha256": "b867cb6a5acc94365f3a5207b9ef5e42ca634c084e8d333df9940b592b4cbdc5"
+    },
+    {
+      "file": "latent_dense_q8.bin",
+      "offset": 2656460800,
+      "bytes": 3481600,
+      "sha256": "3496e2a138637b570d2cb7b2dfe0de88841f6bedaf19c8b8a79797056bded7ab"
+    },
+    {
+      "file": "latent_dense_q8.bin",
+      "offset": 2642534400,
+      "bytes": 3481600,
+      "sha256": "a76dc6dbd67f85cad283ce2532ad13cecab46810e50a83236c97c8d906b8bfd6"
+    },
+    {
+      "file": "latent_dense_q8.bin",
+      "offset": 2670387200,
+      "bytes": 3481600,
+      "sha256": "c35384f04a237ecdadb68db3f7ec425e669691323bf5687458b0a15695e6e711"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "/home/end0/AI/LlamaServer/exp915-edge0-latent-expert-20261117/activation/latent.so",
+      "bytes": 305968,
+      "sha256": "5870fa88fb839e13ce31d1ced569fad1ffb86a554717983eb6fee23c6e0042ea"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp915-edge0-latent-expert-20261117/activation/runtime.c",
+      "bytes": 344208,
+      "sha256": "ab0ea30cace611e47589eda2d470dbe93e4f182df1659e8a64c54e41023d4b97"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp915-edge0-latent-expert-20261117/activation/runtime.h",
+      "bytes": 1670,
+      "sha256": "271af3e0abfb18a35dacf509597da7c31d87925d455d7ac65a6931fcbd719bc6"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp915-edge0-latent-expert-20261117/activation/unit.goose",
+      "bytes": 27323,
+      "sha256": "c3c3e279545508313ac9b11ee4f1a45b573c499d4d878b782fcc5784fd56f858"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp915-edge0-latent-expert-20261117/bindings.o",
+      "bytes": 47672,
+      "sha256": "b1cef0a1b17c15fd7b8221cfdc1516cd3d7aae09a05b6d4ad147c530ae4c3a6c"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp915-edge0-latent-expert-20261117/build-inputs.json",
+      "bytes": 1152,
+      "sha256": "2cf8bf685d33c994133a191b470dcbf97eabc8bd93a3fa4a45790e1555ecbf4e"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp915-edge0-latent-expert-20261117/build.log",
+      "bytes": 1736,
+      "sha256": "6861a03008cbef9bfec797c0c6559db062e95abdca8b6391b775942b8a3c626e"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp915-edge0-latent-expert-20261117/check.log",
+      "bytes": 1394,
+      "sha256": "e176225d334eb06e253a8ad1abba001fd1c8b7c56f99a38754a142f351c4ae7c"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp915-edge0-latent-expert-20261117/fixture-gate-v2.log",
+      "bytes": 689,
+      "sha256": "8af6f13d3f7bc835fa2c526c44dd61d6e716392bf1f5001e56e6d4c46fff6ef0"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp915-edge0-latent-expert-20261117/fixture-gate.log",
+      "bytes": 686,
+      "sha256": "673726f5c327832c069d5c8d2b92b8bd8ddbec61fadc2c03289ec9312bd324e1"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp915-edge0-latent-expert-20261117/gate",
+      "bytes": 259584,
+      "sha256": "3258507a44a20a4aee294b67c0f82da9401f3abb5c1b4d2d1a5942d00e6f4800"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp915-edge0-latent-expert-20261117/gate-gate-v2.log",
+      "bytes": 29023,
+      "sha256": "558116004f48d5e457e3d259147d070fc483e803c557560c341ecd429a38500f"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp915-edge0-latent-expert-20261117/gate-gate.log",
+      "bytes": 27124,
+      "sha256": "6c97e7a7b10e9b5aeb0cf9221830215c87b3e8db5b0d5c6789fde3f6e2b5e821"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp915-edge0-latent-expert-20261117/gate-inputs.json",
+      "bytes": 172,
+      "sha256": "f2e06a95af5f45fa2e0d5647b15529ec48d03677c3880c964ed5c14a7f8b6a03"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp915-edge0-latent-expert-20261117/gate-up-order/latent.so",
+      "bytes": 305976,
+      "sha256": "1f605ed0fba42e553ab4def66608cba9430b08cacd45997de3475832e03ff6f6"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp915-edge0-latent-expert-20261117/gate-up-order/runtime.c",
+      "bytes": 344215,
+      "sha256": "934d567d48e3cf075809b574fcc8f3ba5d97fc0394ddde76acbd582d1c67f8bf"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp915-edge0-latent-expert-20261117/gate-up-order/runtime.h",
+      "bytes": 1670,
+      "sha256": "271af3e0abfb18a35dacf509597da7c31d87925d455d7ac65a6931fcbd719bc6"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp915-edge0-latent-expert-20261117/gate-up-order/unit.goose",
+      "bytes": 27324,
+      "sha256": "39a72bf15313eeb46168208afe0f68ef48c6a8741eb104ea0272456bcd303ce0"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp915-edge0-latent-expert-20261117/gate-v2",
+      "bytes": 261824,
+      "sha256": "d6f9c915dd23076ca06bf27adbb551aede599ef62364c203542c7f08e13ba945"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp915-edge0-latent-expert-20261117/gate-v2-inputs.json",
+      "bytes": 172,
+      "sha256": "6c5e2a0affe2cfcd9cef170be460b2db39f212a12bb45b18993184de6c21ca76"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp915-edge0-latent-expert-20261117/group-offset/latent.so",
+      "bytes": 305976,
+      "sha256": "d53d6e6f04e87d6586c5b132ab17f2cad5e50c28b7590775ef31897a625a47e3"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp915-edge0-latent-expert-20261117/group-offset/runtime.c",
+      "bytes": 344255,
+      "sha256": "7465c694520265d2305451ae50d3f3bd26289bdfff3ccc1c52debe851767b3fd"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp915-edge0-latent-expert-20261117/group-offset/runtime.h",
+      "bytes": 1670,
+      "sha256": "271af3e0abfb18a35dacf509597da7c31d87925d455d7ac65a6931fcbd719bc6"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp915-edge0-latent-expert-20261117/group-offset/unit.goose",
+      "bytes": 27329,
+      "sha256": "a3399d39dca4be710ea50d641421c7afde2b67b71f43e0e3b87283cda0c2c5fe"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp915-edge0-latent-expert-20261117/inverse-scale/latent.so",
+      "bytes": 305968,
+      "sha256": "4de4863d6e722a6373b9fc17793be704b195ce1df4b80592bad2ff33dfd39228"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp915-edge0-latent-expert-20261117/inverse-scale/runtime.c",
+      "bytes": 344179,
+      "sha256": "858e732242846b615e0701c549d5c82809e280af9c98420302ae62097a48f810"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp915-edge0-latent-expert-20261117/inverse-scale/runtime.h",
+      "bytes": 1670,
+      "sha256": "271af3e0abfb18a35dacf509597da7c31d87925d455d7ac65a6931fcbd719bc6"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp915-edge0-latent-expert-20261117/inverse-scale/unit.goose",
+      "bytes": 27318,
+      "sha256": "98c4669a9d62a09f1d338587ad5a31bcb562903eccda4e1c73dac9c1805f9e66"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp915-edge0-latent-expert-20261117/latent.so",
+      "bytes": 305944,
+      "sha256": "a49857e4bbd56a117a1888e2216b9196d5f2b440dc82b065aa2c90aa4c02e22d"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp915-edge0-latent-expert-20261117/missing-scale/latent.so",
+      "bytes": 305000,
+      "sha256": "47567edffd98ad4a808603430f89702a7df8a821e9202926050648a7262b4be7"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp915-edge0-latent-expert-20261117/missing-scale/runtime.c",
+      "bytes": 343919,
+      "sha256": "bd44204305e34dfb7ad4980120bc1692d7cc58438ddfa764addd9544b1cf01e7"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp915-edge0-latent-expert-20261117/missing-scale/runtime.h",
+      "bytes": 1670,
+      "sha256": "271af3e0abfb18a35dacf509597da7c31d87925d455d7ac65a6931fcbd719bc6"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp915-edge0-latent-expert-20261117/missing-scale/unit.goose",
+      "bytes": 27298,
+      "sha256": "666c35ff7ce70ed9ddbd5be8fef2a3845125b4ea9d1a49d37708a94285dfb0d8"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp915-edge0-latent-expert-20261117/mutations-gate-v2.log",
+      "bytes": 16643,
+      "sha256": "ef5139f6c10819570cfd70409def024756809d1c343863a09d6929249a10b084"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp915-edge0-latent-expert-20261117/pack-stats.json",
+      "bytes": 11335,
+      "sha256": "442f71b58015e31cf30abb4ffba00fa81e378e8f1178b93b2359306d87bd5a98"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp915-edge0-latent-expert-20261117/runtime.c",
+      "bytes": 344187,
+      "sha256": "7cc1abf7e6c5470bb647207597659064cbfbf7f9c8846aa5660b4ffb7960c3dd"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp915-edge0-latent-expert-20261117/runtime.h",
+      "bytes": 1670,
+      "sha256": "271af3e0abfb18a35dacf509597da7c31d87925d455d7ac65a6931fcbd719bc6"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp915-edge0-latent-expert-20261117/unit.goose",
+      "bytes": 27324,
+      "sha256": "1862a7ef86b2c8e757a975c2a3807d89ecdd3fac25f766578be9f2c6df31665c"
+    }
+  ],
+  "integrity_scope": "Reuse EXP908 full-file hashing; current inventory has 68/68 expected sizes; rename stats unchanged; numerical gate hashes each used segment and checks all pack stats before/after. No fresh whole-file hashing claimed.",
+  "scope_exclusions": [
+    "loader and provider lifetimes",
+    "top-10 routing and group accumulation",
+    "shared expert",
+    "PLE state/history/convolution",
+    "full backbone and server",
+    "CUDA execution and model performance"
+  ]
+}

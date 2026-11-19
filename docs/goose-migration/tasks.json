@@ -5546,7 +5546,29 @@
         ]
       }
     ],
-    "validation": "Default:one combined Apex fixed-profile gate at the end of a large delivery cycle. During implementation run only necessary local correctness/ownership checks on changed code. Reuse unchanged qualified objects/evidence. No repeated full sanitizer/build/model suites without a concrete new correctness or safety reason. Final performance/safety requirements remain unchanged;do not claim stability from this diagnostic policy. An exceptional broad run inside a cycle requires a critically substantial confirmed correctness/safety failure that cannot be checked locally;routine uncertainty or reassurance is not sufficient."
+    "validation": "Default:one combined Apex fixed-profile gate at the end of a large delivery cycle. During implementation run only necessary local correctness/ownership checks on changed code. Reuse unchanged qualified objects/evidence. No repeated full sanitizer/build/model suites without a concrete new correctness or safety reason. Final performance/safety requirements remain unchanged;do not claim stability from this diagnostic policy. An exceptional broad run inside a cycle requires a critically substantial confirmed correctness/safety failure that cannot be checked locally;routine uncertainty or reassurance is not sufficient.",
+    "edge0_first_answer": {
+      "status": "FIRST_ANSWER_ONLY",
+      "slices_total": 5,
+      "slices_done": 5,
+      "remaining": [],
+      "coverage_doc": "experiments/EXP-2026-11-17-916-edge0-first-inference/README.md",
+      "qualification": "Five requested first-inference slices integrated with retained native qwen4exp/GGML. This is not standalone Goose or server/general-quality acceptance. EXP917-919 remain absent from Apex server."
+    },
+    "edge0_performance": {
+      "status": "CHECKPOINT_SAVED_HANDOFF_TARGET_OPEN",
+      "slices_total": 3,
+      "slices_done": 2,
+      "remaining": [
+        "Edge0 speed target deferred: owner now prioritises100%Goose runtime migration in OpenCode from main EXP919; preserve EXP924 checkpoint and regression evidence"
+      ],
+      "coverage_doc": "experiments/EXP-2026-11-17-924-edge0-bounded-expert-mmap/README.md",
+      "accepted_checkpoint": "EXP924 exact256:8.184837 decode/8.155661 prefill; +19.59%/+25.45% against same-cycle EXP923 control; target15-17 open",
+      "target_decode_tps": [
+        15,
+        17
+      ]
+    }
   },
   "active_checkpoint": {
     "experiment": "EXP173",
@@ -5640,7 +5662,29 @@
   "work_front": {
     "note": "Integrated stage-run (Apex): pinned at 4992 MiB cache, ctx 262144, reference argv. Decode ~40.4 @512 in this session's conditions; every accepted figure carries reference hash c2ff42cc1219. Nominal identical configs measured 39.6-41.8 across hours, so only paired same-session comparisons are used. The MoE expert-cache path is Goose throughout: admission (fg262a), copy run-lengths (fg263c), SLRU policy (fg756s). EXP-757 made the protected ceiling a parameter with a two-arm gate (provenance == native, and specification == chosen policy, both 100/100); measured hit rate 83.7 -> 84.8%, upload -6.7%. EXP-758: 384 MiB of cache outweighs that gain, so VRAM remains binding. Standalone: reads the full 21.7 GB payload (753 tensors, 0 mismatches); 20/20 harnesses pass at real dimensions; and the VALUE path now works - a real q4_K tensor dequantises and matmuls to 3.5e-03 of the f32 reference, q6_K to 2.9e-03, f32 exactly 0, with the Goose builder bit-identical to raw ggml (gb_vs_ggml=0) on all three types, and two real q4_K tensors CHAINED through the builder with the first node feeding the second (builder_vs_ggml=0, EXP: REAL-CHAIN-20261117). A SIX-node chain now runs on real weights and is bit-identical to raw ggml (builder_vs_ggml=0): rms_norm -> scale by the real blk.3.attn_norm.weight -> wq (q4_K, full 8192) -> qg_split -> CONT -> wo. That is everything an attention layer does before rope. Three rules learned the hard way, all from reading goose/model/qgate-split.goose rather than guessing: the q projection must carry its FULL 2*HD*H width; qg_split's output is 3-D and needs GGML_OP_CONT with explicit extents (mode 24, sizes in args 7..10); and qg_split's elem argument is the ELEMENT SIZE IN BYTES (4 for f32), not a mode - its head_stride is elem*HD*2 = 2048, and using the tensor row stride instead was wrong by 32x. Next: rope, the k/v path with softmax-weighted values, the MoE block, then the 41-layer loop. NOT done: the 41 layers are not composed into a pass (no residual carry, no embedding/output projection, no shared KV/state arena, no chunked prefill); no HTTP transport, no CUDA, no tokenizer engine. runtime/core (the target of 22 PARTIAL remainders) is built by nothing, so those remainders are unverifiable until it gets a build target or is retargeted at the standalone lineage. 2026-11-17 EXP920: a libc-only Goose tokenizer+detokenizer now matches libllama exactly on the Apex vocabulary (70 cases/11017 ids, 496640 pieces, 140 detokenize calls, eog set); the shipping server is still native, so P7-06/P7-07 are PARTIAL with their wire-up as the last slice. 2026-11-17 EXP922 (experiments/EXP-2026-11-17-922-goose-generation): the accepted Goose modules now run as one unit and generate real text on the Apex weights - Goose tokenizer -> Goose trunk (generic GGML CPU executor) -> Goose sampler -> Goose detokenizer -> stop on the Goose end-of-generation set. Greedy, same profile as the reference (Q4_0 KV, flash attention): 8 tokens and a 17-token chat run are id-identical and text-identical to native llama.cpp, including the '<|im_end|>' stop at step 16; a 32-token run produced continuous text. Two harness findings: default F32 KV/auto attention changes the continuation (profile, not a port defect), and a position-less batch re-reads the prompt on this hybrid model. The shipping server is still native; batch>1, GPU, the stochastic chain end to end and all speed figures remain unmeasured. 2026-11-17 EXP923 (open): the composed Goose runtime generates text with the same ids, text and EOS as llama.cpp on the tested greedy runs, but the logits are NOT equal (mean |d| 0.107 one token, 0.201 multi-token, 0 of 248320 bitwise). Native's own Q4_0-vs-F32 KV effect is smaller (0.077) than the Goose-vs-native gap, and Goose is not closer to native's Q4_0 run than to its F32 run, so this is a structural difference in the trunk graph, not KV quantisation alone. EXP918's bitwise gate compared against a hand-written native graph in the same fixture, which does not imply agreement with llama.cpp. The stochastic chain cannot be compared end to end until the logits agree; isolation by layer is the next slice. 2026-11-17 EXP923 closed its isolation work: every structural candidate in the trunk's attention branch was eliminated by ablation on truncated real-weight models (MoE/norms/residual/head bitwise equal; q/k, head norms, rope, gate split, wo not the cause; stored V canonical; view geometry right; kernel exact; permutation identical), and the residue is at the level of native's own quantisation spread (mean 0.1723 vs native Q4_0, while native's own Q4_0-vs-F32 spread is 0.1462, argmax identical everywhere). The acceptance-criterion question (a recorded tolerance band) is with Igor. The next unblocked area is model/OS ownership: the mapping is still borrowed from the caller, and the shipping path still owns nothing.",
     "slices_total": 15,
-    "slices_done": 12
+    "slices_done": 12,
+    "edge0_first_answer": {
+      "status": "FIRST_ANSWER_ONLY",
+      "slices_total": 5,
+      "slices_done": 5,
+      "remaining": [],
+      "coverage_doc": "experiments/EXP-2026-11-17-916-edge0-first-inference/README.md",
+      "qualification": "Five requested first-inference slices integrated with retained native qwen4exp/GGML. This is not standalone Goose or server/general-quality acceptance. EXP917-919 remain absent from Apex server."
+    },
+    "edge0_performance": {
+      "status": "CHECKPOINT_SAVED_HANDOFF_TARGET_OPEN",
+      "slices_total": 3,
+      "slices_done": 2,
+      "remaining": [
+        "Edge0 speed target deferred: owner now prioritises100%Goose runtime migration in OpenCode from main EXP919; preserve EXP924 checkpoint and regression evidence"
+      ],
+      "coverage_doc": "experiments/EXP-2026-11-17-924-edge0-bounded-expert-mmap/README.md",
+      "accepted_checkpoint": "EXP924 exact256:8.184837 decode/8.155661 prefill; +19.59%/+25.45% against same-cycle EXP923 control; target15-17 open",
+      "target_decode_tps": [
+        15,
+        17
+      ]
+    }
   },
   "plan_sync_rule": "A document that introduces a work plan must be mirrored into tasks.json in the same change: slices_total, slices_done, remaining and coverage_doc for that requirement. A PARTIAL requirement closes only when every slice and the final acceptance have passed.",
   "coverage_20261119": {

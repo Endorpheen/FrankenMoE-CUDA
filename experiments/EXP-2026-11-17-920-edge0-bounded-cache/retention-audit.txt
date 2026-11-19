@@ -1,0 +1,38 @@
+$ rg -n franken_edge0|xl_|expert_cache|du_cached integration/edge0/pack.cpp vendor/flint/src/models/qwen4exp.cpp vendor/flint/src/models/models.h
+vendor/flint/src/models/models.h:2630:struct franken_edge0_pack;
+vendor/flint/src/models/models.h:2633:    std::shared_ptr<franken_edge0_pack> edge0;
+vendor/flint/src/models/qwen4exp.cpp:30:        edge0 = franken_edge0_open(path);
+vendor/flint/src/models/qwen4exp.cpp:291:            franken_edge0_bind(*edge0, il, layer.ffn_gate_inp, layer.ffn_gate_shexp,
+vendor/flint/src/models/qwen4exp.cpp:1156:        return franken_edge0_ffn(*pack, ctx0, cur, il);
+vendor/flint/src/models/qwen4exp.cpp:1299:        franken_edge0_ple(*pack, idx.data(), idx.size(), values.data());
+integration/edge0/pack.cpp:35:void franken_edge0_profile_phase(int phase) {
+integration/edge0/pack.cpp:53:struct franken_edge0_pack {
+integration/edge0/pack.cpp:54:    struct layer_ref { franken_edge0_pack * owner = nullptr; int id = 0; std::array<ggml_tensor *,5> weights{}; };
+integration/edge0/pack.cpp:58:    std::vector<uint8_t> labels, du, experts, arena, expert_cache;
+integration/edge0/pack.cpp:59:    bool du_cached=true;
+integration/edge0/pack.cpp:68:    ~franken_edge0_pack() { for (int f : fd) if (f >= 0) ::close(f); }
+integration/edge0/pack.cpp:70:std::shared_ptr<franken_edge0_pack> franken_edge0_open(const std::string & path) {
+integration/edge0/pack.cpp:73:    auto p = std::make_shared<franken_edge0_pack>();
+integration/edge0/pack.cpp:94:    const char * dc=std::getenv("FRANKEN_EDGE0_DU_CACHE"); p->du_cached=!dc || std::string(dc)!="0";
+integration/edge0/pack.cpp:100:    p->expert_cache.resize(p->cache_slots*1164800);
+integration/edge0/pack.cpp:103:    p->du.resize(p->du_cached?1415577600:29491200);
+integration/edge0/pack.cpp:104:    if(p->du_cached) {
+integration/edge0/pack.cpp:109:    std::fprintf(stderr,"Edge0 cache budget: DU=%zu expert=%zu slots=%lld cache policy=existing Goose expert-lru\n",p->du.size(),p->expert_cache.size(),(long long)p->cache_slots);
+integration/edge0/pack.cpp:113:void franken_edge0_bind(franken_edge0_pack & p,int l,ggml_tensor * r,ggml_tensor * g,ggml_tensor * u,ggml_tensor * d,ggml_tensor * sr) {
+integration/edge0/pack.cpp:131:static uint8_t * expert_payload(franken_edge0_pack & p,int layer,int64_t expert,int rank,int64_t off) {
+integration/edge0/pack.cpp:134:    xl_query({p.valid.data(),24576},{p.spec.data(),24576},layer,{&expert,1},1,512,p.cache_slots==0,{&resident,1});
+integration/edge0/pack.cpp:137:        e0_require(xl_touch({p.layout.data(),192},{p.valid.data(),24576},{p.spec.data(),24576},
+integration/edge0/pack.cpp:140:        return p.expert_cache.data()+p.slot_of[key]*1164800;
+integration/edge0/pack.cpp:149:        const int64_t old=xl_evict_tail({p.layout.data(),192},{p.valid.data(),24576},{p.spec.data(),24576},
+integration/edge0/pack.cpp:154:    uint8_t * payload=p.expert_cache.data()+slot*1164800;std::memcpy(payload,staging,1164800);p.slot_of[key]=slot;
+integration/edge0/pack.cpp:155:    e0_require(xl_touch({p.layout.data(),192},{p.valid.data(),24576},{p.spec.data(),24576},
+integration/edge0/pack.cpp:165:static void evaluate(franken_edge0_pack::layer_ref & ref,const float * in,float * out) {
+integration/edge0/pack.cpp:177:        if(!p.du_cached) {
+integration/edge0/pack.cpp:181:        if(p.cache_slots)xl_retain({p.valid.data(),24576},{p.prev.data(),24576},{p.next.data(),24576},
+integration/edge0/pack.cpp:192:                weights[k*5+m]=eh(external(c,(ggml_type)desc[3],desc[4],desc[5],p.du.data()+desc[1]-(p.du_cached?0:l*29491200LL)));
+integration/edge0/pack.cpp:213:    auto & ref=*(franken_edge0_pack::layer_ref*)opaque;
+integration/edge0/pack.cpp:220:ggml_tensor * franken_edge0_ffn(franken_edge0_pack & p,ggml_context * c,ggml_tensor * x,int l) {
+integration/edge0/pack.cpp:224:void franken_edge0_ple(franken_edge0_pack & p,const int32_t * rows,int64_t n,float * out) {
+
+exit_code=0
+RESULT: native runtime retained, no C++ deletion.

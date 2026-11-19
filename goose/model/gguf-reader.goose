@@ -354,7 +354,7 @@ export fn gr_val_span(state: i64[:], kv: i64[:], index: i64, out: i64[:]) -> i64
 }
 
 // Span of element `i` of a string array, as (offset, length) into the header.
-export fn gr_arr_str_span(data: const u8[:], state: i64[:], kv: i64[:], index: i64, element: i64, out: i64[:]) -> i64 {
+fn gr_span_impl(data: const u8[:], state: i64[:], kv: i64[:], index: i64, element: i64, out: i64[:]) -> i64 {
     if state.len < 8 || state[0] != 919 || index < 0 || index >= state[2] || index >= kv.len / 8 ||
        out.len < 2 || kv[index * 8 + 2] != 9 || kv[index * 8 + 3] != 8 || element < 0 ||
        element >= kv[index * 8 + 5] {
@@ -417,16 +417,20 @@ export fn gr_arr_str_offsets(data: const u8[:], state: i64[:], kv: i64[:], index
     return n;
 }
 
+// Export wrapper: the body stays non-exported so that callers inside the unit
+// and the C ABI do not compete for one concrete signature.
+export fn gr_arr_str_span(data: const u8[:], state: i64[:], kv: i64[:], index: i64, element: i64, out: i64[:]) -> i64 {
+    return gr_span_impl(data, state, kv, index, element, out);
+}
+
 // Lay out a whole GGUF string array as NUL-terminated C strings in one pass.
 // GGUF strings are length-prefixed and carry no terminator, so the terminator
 // is written here, where the length is known; a consumer that treats the mapped
-// bytes as a C string would otherwise run past the element into the next
-// entry's length word. `offs[i]` receives the offset of element i inside
-// `text`, which holds every entry back to back. Returns the element count, or
-// -(needed + 1) when `text` is smaller than needed, or -1 on a bad span, or -2
-// when `offs` is too small.
-export fn gr_arr_str_table(data: const u8[:], state: i64[:], kv: i64[:], index: i64,
-                           text: u8[:], offs: i64[:]) -> i64 {
+// bytes as a C string would otherwise run into the next entry.
+// `offs[i]` receives the offset of element i inside `text`, which holds every
+// entry back to back. Returns the element count, or `-(needed + 1)` when `text`
+// is smaller than needed, or -1 on a bad span, or -2 when `offs` is too small.
+export fn gr_arr_str_table(data: const u8[:], state: i64[:], kv: i64[:], index: i64, text: u8[:], offs: i64[:]) -> i64 {
     if state.len < 8 || state[0] != 919 || index < 0 || index >= state[2] || index >= kv.len / 8 ||
        kv[index * 8 + 2] != 9 || kv[index * 8 + 3] != 8 {
         return -1;

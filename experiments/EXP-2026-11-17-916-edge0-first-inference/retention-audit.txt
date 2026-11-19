@@ -1,0 +1,34 @@
+$ rg -n franken_edge0|build_layer_ffn|build_inp_ple vendor/flint/src/models/qwen4exp.cpp vendor/flint/src/models/models.h integration/edge0/pack.cpp
+integration/edge0/pack.cpp:33:struct franken_edge0_pack {
+integration/edge0/pack.cpp:34:    struct layer_ref { franken_edge0_pack * owner = nullptr; int id = 0; std::array<ggml_tensor *,5> weights{}; };
+integration/edge0/pack.cpp:42:    ~franken_edge0_pack() { for (int f : fd) if (f >= 0) ::close(f); }
+integration/edge0/pack.cpp:44:std::shared_ptr<franken_edge0_pack> franken_edge0_open(const std::string & path) {
+integration/edge0/pack.cpp:47:    auto p = std::make_shared<franken_edge0_pack>();
+integration/edge0/pack.cpp:72:void franken_edge0_bind(franken_edge0_pack & p,int l,ggml_tensor * r,ggml_tensor * g,ggml_tensor * u,ggml_tensor * d,ggml_tensor * sr) {
+integration/edge0/pack.cpp:90:static void evaluate(franken_edge0_pack::layer_ref & ref,const float * in,float * out) {
+integration/edge0/pack.cpp:128:    auto & ref=*(franken_edge0_pack::layer_ref*)opaque;
+integration/edge0/pack.cpp:135:ggml_tensor * franken_edge0_ffn(franken_edge0_pack & p,ggml_context * c,ggml_tensor * x,int l) {
+integration/edge0/pack.cpp:139:void franken_edge0_ple(franken_edge0_pack & p,const int32_t * rows,int64_t n,float * out) {
+vendor/flint/src/models/qwen4exp.cpp:30:        edge0 = franken_edge0_open(path);
+vendor/flint/src/models/qwen4exp.cpp:291:            franken_edge0_bind(*edge0, il, layer.ffn_gate_inp, layer.ffn_gate_shexp,
+vendor/flint/src/models/qwen4exp.cpp:433:        ple_emb = build_inp_ple(mctx_hyb);
+vendor/flint/src/models/qwen4exp.cpp:502:        cur = build_layer_ffn(cur, il);
+vendor/flint/src/models/qwen4exp.cpp:608:    cur    = build_layer_ffn(cur, il);
+vendor/flint/src/models/qwen4exp.cpp:1154:ggml_tensor * llama_model_qwen4exp::graph::build_layer_ffn(ggml_tensor * cur, const int il) {
+vendor/flint/src/models/qwen4exp.cpp:1156:        return franken_edge0_ffn(*pack, ctx0, cur, il);
+vendor/flint/src/models/qwen4exp.cpp:1299:        franken_edge0_ple(*pack, idx.data(), idx.size(), values.data());
+vendor/flint/src/models/qwen4exp.cpp:1372:ggml_tensor * llama_model_qwen4exp::graph::build_inp_ple(
+vendor/flint/src/models/models.h:1793:        ggml_tensor * build_layer_ffn(
+vendor/flint/src/models/models.h:1853:        ggml_tensor * build_layer_ffn(
+vendor/flint/src/models/models.h:1883:        ggml_tensor * build_layer_ffn(ggml_tensor * cur, ggml_tensor * inpSA, const llama_model & model, const int il);
+vendor/flint/src/models/models.h:1909:        ggml_tensor * build_layer_ffn(
+vendor/flint/src/models/models.h:2465:        ggml_tensor * build_layer_ffn(
+vendor/flint/src/models/models.h:2511:        ggml_tensor * build_layer_ffn(
+vendor/flint/src/models/models.h:2630:struct franken_edge0_pack;
+vendor/flint/src/models/models.h:2633:    std::shared_ptr<franken_edge0_pack> edge0;
+vendor/flint/src/models/models.h:2703:        ggml_tensor * build_layer_ffn(
+vendor/flint/src/models/models.h:2725:        ggml_tensor * build_inp_ple(
+vendor/flint/src/models/models.h:2770:        ggml_tensor * build_layer_ffn(
+
+exit_code=0
+RESULT: native backbone and OS/GGML glue remain necessary; no C++ deletion.

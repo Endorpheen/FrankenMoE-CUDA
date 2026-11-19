@@ -1,0 +1,117 @@
+{
+  "source_checkpoint": "5a234a58028d9f72ac872d491def69d1d0fc4fc0",
+  "result": "ACCEPTED_SYNCHRONOUS_PROVIDER_ONLY_NOT_SERVER_INTEGRATED",
+  "cases": 26,
+  "concurrent_calls": 512,
+  "caller_buffer_bound_bytes": 12864,
+  "mutations_killed": 6,
+  "model_runs": 0,
+  "retained_failed_attempts": 3,
+  "artifacts": [
+    {
+      "path": "/home/end0/AI/LlamaServer/exp911-edge0-ple-provider-20261117-v3/layout.so",
+      "bytes": 60712,
+      "sha256": "188fd0380f659e986a357d84bd5e0a8c7cda42babd1854e4233f1a441761e2a5"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp911-edge0-ple-provider-20261117-v3/faults-v2.so",
+      "bytes": 62560,
+      "sha256": "f96472a11ed9dbb6911521276c569e4e71719a3e19b91a16fbf805087b484786"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp911-edge0-ple-provider-20261117-v3/composed.goose",
+      "bytes": 6783,
+      "sha256": "6355c1fa553f44863152b2c81be7164a6d6d4613dd63a35a854cd6690f9033d0"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp911-edge0-ple-provider-20261117-v3/runtime.c",
+      "bytes": 181548,
+      "sha256": "0bf93b4ef1e9fbe4e126c68620bc8d44c136d8fa32637673c2f895f88c6e8773"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp911-edge0-ple-provider-20261117-v3/runtime.h",
+      "bytes": 1502,
+      "sha256": "7cbf361961cbc2ce20ecdca536227e190cf20315697e8a90ac9c734192550365"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp911-edge0-ple-provider-20261117-v3/check.log",
+      "bytes": 1802,
+      "sha256": "72f284b09593b3c7d2f6a79c9d975d7143a03f83fa15dc9d411ca04d600bf579"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp911-edge0-ple-provider-20261117-v3/build.log",
+      "bytes": 2543,
+      "sha256": "67ecee4fcecf1f1a7856cfd110f2203e950333eb2c41f230587f5d772b1d0f74"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp911-edge0-ple-provider-20261117-v3/gate.log",
+      "bytes": 716,
+      "sha256": "bd24a60f2a24d53c754fe44959888b74a89d59fae20489757315a911c762d321"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp911-edge0-ple-provider-20261117-v3/fault-build.log",
+      "bytes": 777,
+      "sha256": "eeba28e7d43d5cb495dae8aa44c030eb69d353c8214fe2ef19121fc354ceb523"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp911-edge0-ple-provider-20261117-v3/gate-retry.log",
+      "bytes": 577,
+      "sha256": "71c3adc9897a33c1027d70ea4a672244079b1174ca6a6c036d6baa3ca4263561"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp911-edge0-ple-provider-20261117-v3/mutations.log",
+      "bytes": 21688,
+      "sha256": "d40db1012d097ae1833106b408bc266a444ebb2d5cf6706ea69fe5ad7f6c617d"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp911-edge0-ple-provider-20261117-v3/test-pread-faults-v2.c",
+      "bytes": 434,
+      "sha256": "39d241a84443d7eb504000d7c3fd542b351cbdf19821ee82b05c2f0b0036f282"
+    },
+    {
+      "path": "experiments/EXP-2026-11-17-911-edge0-ple-provider/source/runtime.goose",
+      "bytes": 1969,
+      "sha256": "728b23b75ce3c1f4a48af79aeb42b8fa9150c709a50a9b456b04db1bef2dc12c"
+    },
+    {
+      "path": "experiments/EXP-2026-11-17-911-edge0-ple-provider/source/pread.c",
+      "bytes": 368,
+      "sha256": "dcdc53ba8ea9721f54033e9b24af63034686f9745558d0368a0188944c38c09d"
+    },
+    {
+      "path": "experiments/EXP-2026-11-17-911-edge0-ple-provider/tests/gate.py",
+      "bytes": 6158,
+      "sha256": "b2c138fc88c7e4f6ca0a9d44b102b9c666bfd6aa6a224fa1b021e54f17951edb"
+    },
+    {
+      "path": "experiments/EXP-2026-11-17-911-edge0-ple-provider/tests/build.py",
+      "bytes": 6455,
+      "sha256": "9105b0632fdd71dc5d7a60ccaadea409174969c95bcdf2dba10899a50e77f2a6"
+    },
+    {
+      "path": "experiments/EXP-2026-11-17-911-edge0-ple-provider/tests/io_faults.c",
+      "bytes": 740,
+      "sha256": "e6a2a13b4a201301f03bb128bae5c53431290f7ac847a81a2aee9f3e629127f2"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp911-edge0-ple-provider-20261117/check.log",
+      "bytes": 1773,
+      "sha256": "1a28c07f12d2885a9c8c44e80914c5a3ef493380e23546f718fcdef1daa9d672"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp911-edge0-ple-provider-20261117-v2/check.log",
+      "bytes": 1797,
+      "sha256": "e688b7a4c8d5b89b2adad33efa9fb272ac1f030f2b1a5a4e14b8392e0e7556ed"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp911-edge0-ple-provider-20261117-v2/signature-probes.log",
+      "bytes": 1744,
+      "sha256": "87be97f83959284ae7149cf448ba662367feba32badfcdd33aebc1994240e675"
+    },
+    {
+      "path": "/home/end0/AI/LlamaServer/exp911-edge0-ple-provider-20261117-v2/typed-span-probe.log",
+      "bytes": 599,
+      "sha256": "1d5179b37bc2139be724a49dae9b2f06224b0bb6e98e920c4d70b4a2d4badc88"
+    }
+  ]
+}

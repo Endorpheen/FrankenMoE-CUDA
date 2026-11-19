@@ -13,8 +13,9 @@
       "experiment": "EXP-2026-11-17-921-goose-sampler",
       "task": "P6-10",
       "status": "ported",
-      "sha256": "2ebd471d9c92a24f2ff2f3b5c49b78ca4461f994ccedceb77d5a6a2aaeca8975",
-      "gate": "207 comparisons vs llama_sampler_chain, 0 mismatches; MT19937 700 draws x 3 seeds; 5 mutants rejected"
+      "sha256": "c0a1bef9e7204827fdd934bfb1dacc22e419234f6cf29cfdd67072354554893f",
+      "gate": "207 comparisons vs llama_sampler_chain, 0 mismatches; MT19937 700 draws x 3 seeds; 5 mutants rejected",
+      "integration_commit": "d6fb6a5745760317004d7ae3f40b3343075a9018"
     },
     {
       "goose": "misc/unicode-tables.goose",
@@ -61,8 +62,9 @@
       "experiment": "EXP-2026-11-17-920-goose-tokenizer",
       "task": "P7-06",
       "status": "ported",
-      "sha256": "b1fe42f7e647e5fabe55475dd2d39605db7863517135a3133858bab6b4f84d12",
-      "gate": "tokenizer gate:70 cases/11017 ids exact;tables 248320/247587;eog 5/0;merge-stale mutant rejected"
+      "sha256": "73c06ae7ed74e398d314060e7a1719fbf5abd174f72cd03d7ba62081b7fe6083",
+      "gate": "tokenizer gate:70 cases/11017 ids exact;tables 248320/247587;eog 5/0;merge-stale mutant rejected",
+      "integration_commit": "24e3a4882167fbfe6fd8140062d8b94e3ec4c71c"
     },
     {
       "goose": "model/bpe-detokenize.goose",
@@ -709,8 +711,9 @@
       "experiment": "EXP-2026-11-14-577-p6-05-qwen35moe",
       "task": "",
       "status": "ported",
-      "sha256": "38c915be90c822a9962dac8fe201892b918de0e3ece6abcf035374ebcd1d5a6a",
-      "gate": "10/26 + extended 43/149, 12/12 mutations"
+      "sha256": "1aa0aaa16382b9deea8c878073fbbc10d06c52bacc02a1285142248e9cf592d4",
+      "gate": "10/26 + extended 43/149, 12/12 mutations",
+      "integration_commit": "8e135b29ac468954078516cb2ac5673d1dca8c27"
     },
     {
       "goose": "model/base/model_graph.goose",
@@ -7193,7 +7196,8 @@
       "experiment": "EXP-2026-11-08-202-goose-tokenizer",
       "task": "",
       "status": "slice",
-      "sha256": "92c084c6bed52c5b22eb4c24f1d728874ade29a92ed7cfd996b79e7871b5805e"
+      "sha256": "90484c5a91587db5e3c7b12ea4b0c5dc2cfd772808e8e08c54942867f4cf14bc",
+      "integration_commit": "2bb1a10398c742ceb82418fa2d8d73ccd9fcb115"
     },
     {
       "goose": "cuda/goose-mmq-dispatch.goose",
@@ -7211,7 +7215,8 @@
       "experiment": "EXP-2026-11-09-203-goose-mmq-dispatch",
       "task": "P3-09",
       "status": "slice",
-      "sha256": "6819ef831ffa26415aad5df4a4e681e436831f7a5018a8cd1a0f916067c67fb8"
+      "sha256": "c9e04373149a23a2eb64de57759bf437ee4e5e0d68bce98e7de4f66d6b7161a8",
+      "integration_commit": "e8c340276ac4a72dbf0422bd58d94159c3f62ba1"
     },
     {
       "goose": "kv/goose-kv-set/set.goose",
@@ -47117,8 +47122,9 @@
       "source": "source/reader.goose",
       "task": "P11-01",
       "status": "slice",
-      "sha256": "cf3268965e0846accf3c7274870cb8936c8e8f6bc0c08d5a810b02137b098cd2",
-      "gate": "typed engine reader/name lookup;Apex/Edge0 headers,334 synthetic checks,4 reader mutants,collision control,libc-only artifact"
+      "sha256": "d2cd80fa33a72a90be57ec009606e81589b9381433729f46a5e9235308189fa4",
+      "gate": "typed engine reader/name lookup;Apex/Edge0 headers,334 synthetic checks,4 reader mutants,collision control,libc-only artifact",
+      "integration_commit": "24e3a4882167fbfe6fd8140062d8b94e3ec4c71c"
     },
     {
       "goose": "model/model-ownership.goose",
@@ -47146,6 +47152,72 @@
       "status": "slice",
       "sha256": "42e7d6429400f6562f0183c4c0917bb07d77635160220d7cec6988a58e8b0610",
       "gate": "733 zero-copy weights/config/context lifetime;79 contracts,3 model mutants,full logits/replay;mapping borrowed"
+    },
+    {
+      "goose": "misc/qwen35-split.goose",
+      "status": "integrated",
+      "sha256": "9bbf3d1d38dcfd3a43d2caae8576918c30ae862d4b4919a458d617ff8a22cea7",
+      "integration_commit": "ef24268e3a1e2425f6e33a7fa998cab40a104eeb"
+    },
+    {
+      "goose": "misc/unicode-afmoe.goose",
+      "status": "integrated",
+      "sha256": "be945aafa416c82676b65ce2d9ecfab96da567b67e514873bedd906328a51a29",
+      "integration_commit": "31cb32e33d25db13ea2f2ee18ae66a330d964df3"
+    },
+    {
+      "goose": "misc/unicode-byte-map.goose",
+      "status": "integrated",
+      "sha256": "58a619aa34834aa99c43881c889caba4329f04430dfef865fc64cb2e2c9e5e4c",
+      "integration_commit": "eb8bec9959d0bdb974dc8e78850aa09f84f5860e"
+    },
+    {
+      "goose": "misc/unicode-gpt2.goose",
+      "status": "integrated",
+      "sha256": "14997ec00f4d4424266717716a7e107446eb262c1f805ccf5ac56f0577fe5bc4",
+      "integration_commit": "8cd24e06ae7c21bd550446d4a9af9bc0610ac3cb"
+    },
+    {
+      "goose": "misc/unicode-han.goose",
+      "status": "integrated",
+      "sha256": "72cd8d00069cf9ad7ade9c092d40d00fca33d9ff5c70a74bc35bb8e69a6a964e",
+      "integration_commit": "1c5d797fe1507c7ba74d163b4efb009574e8bef8"
+    },
+    {
+      "goose": "misc/unicode-hangul.goose",
+      "status": "integrated",
+      "sha256": "d1bf6313c97eb3143a887b098cab4da6ed9c370fddb43ea9ad8332186a0e99a3",
+      "integration_commit": "1fce5b84e794f67022bfb8a67aaf1f207f1ae885"
+    },
+    {
+      "goose": "misc/unicode-newlines.goose",
+      "status": "integrated",
+      "sha256": "1e0e55b95dd0cc66a7593ec73470230a9613fcf53b5353c0ddece336d2146318",
+      "integration_commit": "0d3aa80e6b48ee279aac0b0edacc5d27a75d8ddb"
+    },
+    {
+      "goose": "model/bpe-load.goose",
+      "status": "integrated",
+      "sha256": "dd1e952a232dfba37a4458bc11d0872124bed03589d325c91a89f56348dd967d",
+      "integration_commit": "6eccc804b2eeff8e13add981d8f8ed2a783bf92e"
+    },
+    {
+      "goose": "model/gguf-format.goose",
+      "status": "integrated",
+      "sha256": "9002a94f4a53875d56ef44b9076632e930df5e762e9ac4a39a1447dd41b6807c",
+      "integration_commit": "9148a4fb53fa716ec40e23ed681c49734fdad82d"
+    },
+    {
+      "goose": "model/tokenizer-engine.goose",
+      "status": "integrated",
+      "sha256": "48b9e5457b626048029acbaa2ea0565cbf8426f587e239a4e17db161902e469e",
+      "integration_commit": "f7ea73694020228b74fa93a2706991c4f61fa1bf"
+    },
+    {
+      "goose": "server/http-listener.goose",
+      "status": "integrated",
+      "sha256": "e5353c9822abd1d7d6de8aa1e1489034a8a6c8d8b42ded734342c886ed934758",
+      "integration_commit": "d47010de72d0648555c4646a6f75200f6e88e502"
     }
   ]
 }

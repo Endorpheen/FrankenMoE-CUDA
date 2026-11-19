@@ -1,0 +1,195 @@
+{
+  "command": [
+    "/home/end0/AI/LlamaServer/edge0-cache-20261117/build/edge0-cli",
+    "/home/end0/AI/LocalAI/Models/Edge0-120B-q3k",
+    "/home/end0/AI/LlamaServer/edge0-cache-20261117/eos-cached/prompt.txt",
+    "32"
+  ],
+  "ngl": 48,
+  "seconds": 13.199344680004288,
+  "exit_code": 0,
+  "stop_reason": null,
+  "samples": [
+    {
+      "s": 1.2404616600251757,
+      "pid": 1821843,
+      "rss_KiB": 2907180,
+      "swap_KiB": 0,
+      "gpu_MiB": 154,
+      "io": {
+        "rchar": 11444491,
+        "wchar": 6810,
+        "syscr": 2835,
+        "syscw": 82,
+        "read_bytes": 376832,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 2.2634574500261806,
+      "pid": 1821843,
+      "rss_KiB": 4785924,
+      "swap_KiB": 0,
+      "gpu_MiB": 154,
+      "io": {
+        "rchar": 11444491,
+        "wchar": 6810,
+        "syscr": 2835,
+        "syscw": 82,
+        "read_bytes": 376832,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 3.2679681460140273,
+      "pid": 1821843,
+      "rss_KiB": 10783156,
+      "swap_KiB": 0,
+      "gpu_MiB": 5122,
+      "io": {
+        "rchar": 1427022091,
+        "wchar": 119691,
+        "syscr": 2836,
+        "syscw": 2146,
+        "read_bytes": 376832,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 4.354184961994179,
+      "pid": 1821843,
+      "rss_KiB": 10749696,
+      "swap_KiB": 0,
+      "gpu_MiB": 5276,
+      "io": {
+        "rchar": 1986128774,
+        "wchar": 371304,
+        "syscr": 3335,
+        "syscw": 3897,
+        "read_bytes": 493871104,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 5.386610942019615,
+      "pid": 1821843,
+      "rss_KiB": 10769144,
+      "swap_KiB": 0,
+      "gpu_MiB": 5296,
+      "io": {
+        "rchar": 2987864454,
+        "wchar": 371524,
+        "syscr": 4243,
+        "syscw": 3901,
+        "read_bytes": 901226496,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 6.467016687034629,
+      "pid": 1821843,
+      "rss_KiB": 10769144,
+      "swap_KiB": 0,
+      "gpu_MiB": 5296,
+      "io": {
+        "rchar": 3763631494,
+        "wchar": 371968,
+        "syscr": 4973,
+        "syscw": 3909,
+        "read_bytes": 1211305984,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 7.638716991001274,
+      "pid": 1821843,
+      "rss_KiB": 10769148,
+      "swap_KiB": 0,
+      "gpu_MiB": 5296,
+      "io": {
+        "rchar": 4489312454,
+        "wchar": 372529,
+        "syscr": 5662,
+        "syscw": 3919,
+        "read_bytes": 1623367680,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 8.643890443025157,
+      "pid": 1821843,
+      "rss_KiB": 10769148,
+      "swap_KiB": 0,
+      "gpu_MiB": 5296,
+      "io": {
+        "rchar": 5081041094,
+        "wchar": 372981,
+        "syscr": 6234,
+        "syscw": 3927,
+        "read_bytes": 1799774208,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 9.893398549000267,
+      "pid": 1821843,
+      "rss_KiB": 10769148,
+      "swap_KiB": 0,
+      "gpu_MiB": 5296,
+      "io": {
+        "rchar": 5691408774,
+        "wchar": 373433,
+        "syscr": 6836,
+        "syscw": 3935,
+        "read_bytes": 2110627840,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 10.925108085037209,
+      "pid": 1821843,
+      "rss_KiB": 10769148,
+      "swap_KiB": 0,
+      "gpu_MiB": 5296,
+      "io": {
+        "rchar": 6263335974,
+        "wchar": 374003,
+        "syscr": 7392,
+        "syscw": 3945,
+        "read_bytes": 2414759936,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    },
+    {
+      "s": 12.120203833037522,
+      "pid": 1821843,
+      "rss_KiB": 10772048,
+      "swap_KiB": 0,
+      "gpu_MiB": 5296,
+      "io": {
+        "rchar": 6704807933,
+        "wchar": 374653,
+        "syscr": 7852,
+        "syscw": 3964,
+        "read_bytes": 2697109504,
+        "write_bytes": 0,
+        "cancelled_write_bytes": 0
+      }
+    }
+  ],
+  "pswpout_start": 15802510,
+  "pswpout_end": 15802510,
+  "maxrss_KiB": 10783156,
+  "max_gpu_MiB": 5296,
+  "max_swap_KiB": 0
+}

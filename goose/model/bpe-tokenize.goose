@@ -770,7 +770,7 @@ fn bt_eog_ids_impl(gguf: const u8[:], tok_off: const i64[:], tok_len: const i64[
 // ids[nout ..] receives the ids; the return value is the number of ids added,
 // or -1 when an output buffer is too small (info[5] names the stage).
 // info: 0 codepoints, 1 encoded bytes, 2 words, 3 ids, 4 stage.
-export fn bt_bpe(
+fn bt_bpe_body(
     text: const u8[:],
     gguf: const u8[:],
     tok_off: const i64[:], tok_len: const i64[:], tok_slots: const i64[:],
@@ -813,4 +813,18 @@ export fn bt_bpe(
     }
     info[3] = nout - nout_in;
     return nout - nout_in;
+}
+
+// Export wrapper: the body stays non-exported so internal callers and the C ABI
+// do not compete for one concrete signature.
+export fn bt_bpe(
+    text: const u8[:], gguf: const u8[:],
+    tok_off: const i64[:], tok_len: const i64[:], tok_slots: const i64[:],
+    mrg_off: const i64[:], mrg_len: const i64[:], mrg_slots: const i64[:],
+    ids: i64[:], nout_in: i64,
+    cpts: i64[:], seg: i64[:], enc: u8[:],
+    sym: i64[:], heap: i64[:], hc: i64[:], info: i64[:]
+) -> i64 {
+    return bt_bpe_body(text, gguf, tok_off, tok_len, tok_slots, mrg_off, mrg_len, mrg_slots,
+                       ids, nout_in, cpts, seg, enc, sym, heap, hc, info);
 }

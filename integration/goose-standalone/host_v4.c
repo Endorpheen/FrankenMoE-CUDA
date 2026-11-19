@@ -21,15 +21,39 @@
 #include "gguf.h"
 #include "ggml.h"
 #include "tensor-data.h"
+#include "goose-host-llm.h"
 
 typedef struct { uint8_t * data; int64_t len; } sl_u8;
 typedef struct { int64_t * data; int64_t len; } sl_i64;
+typedef struct { float * data; int64_t len; } sl_f32;
 typedef struct { double  * data; int64_t len; } sl_f64;
 
 extern void fg_goose_host_ensure_init(void);
 extern int64_t fg_goose_host_init_runs(void);
 extern int64_t abi_type_count(void);
 extern int64_t cfg_validate(sl_i64 iv, sl_f64 fv);
+// The Goose reader and tokenizer engine (EXP937/EXP939): the same unit that
+// builds the metadata table also parses the container and tokenises.
+extern int64_t sm_greedy(sl_f32 lv, int64_t n);
+extern int64_t ht_open(int64_t port, sl_i64 opts);
+extern int64_t ht_accept(int64_t fd, sl_u8 addr, sl_i64 alen, sl_i64 info);
+extern int64_t ht_read_request(int64_t fd, sl_u8 buf, sl_i64 info);
+extern int64_t ht_keep_alive(sl_u8 buf);
+extern int64_t ht_response_head(int64_t status, int64_t body_len, int64_t keep, sl_u8 out);
+extern int64_t ht_write_all(int64_t fd, sl_u8 buf);
+extern int64_t ht_close(int64_t fd);
+extern int64_t gr_parse(sl_u8 data, int64_t file_bytes, sl_i64 state, sl_i64 kv, sl_i64 tensors,
+                        sl_i64 kv_slots, sl_i64 tensor_slots);
+extern int64_t gr_find_kv(sl_u8 data, sl_i64 state, sl_i64 kv, sl_i64 slots, sl_u8 key);
+extern int64_t bt_prepare_need(sl_u8 data, sl_i64 state, sl_i64 kv, int64_t tok_index, int64_t mrg_index, sl_i64 need);
+extern int64_t bt_prepare_from_gguf(sl_u8 data, sl_i64 state, sl_i64 kv, int64_t tok_index, int64_t mrg_index,
+                                    sl_u8 blob, sl_i64 tok_off, sl_i64 tok_len, sl_i64 tok_slots,
+                                    sl_i64 mrg_off, sl_i64 mrg_len, sl_i64 mrg_slots, sl_i64 need);
+extern int64_t bt_tokenize(sl_u8 blob, sl_i64 tok_off, sl_i64 tok_len, sl_i64 tok_slots,
+                           sl_i64 mrg_off, sl_i64 mrg_len, sl_i64 mrg_slots,
+                           sl_i64 order, int64_t n_special, sl_u8 text, sl_i64 ids, int64_t special,
+                           sl_i64 cpts, sl_i64 seg, sl_u8 enc, sl_i64 sym, sl_i64 heap, sl_i64 hc, sl_i64 info);
+extern int64_t bt_special_order(sl_u8 blob, sl_i64 tok_off, sl_i64 tok_len, sl_i64 attr, sl_i64 order);
 // s1_init takes the eight parallel arrays the metadata table is built from:
 // state, key offsets, key lengths, types, array markers, and three value slots.
 extern int64_t s1_init(sl_i64 st, sl_i64 key_off, sl_i64 key_len, sl_i64 types,
@@ -327,6 +351,219 @@ int main(int argc, char ** argv) {
                for (int64_t t = 0; t < tst[TS_N] && t < 4096; ++t) acc += tne[4 * t];
                acc;
            }));
+
+    // ---- tokenisation through the Goose engine, on the same file ----
+    // The reader parses the container independently of the metadata table above,
+    // so agreement between the two is worth having. The text tokenised here is a
+    // fixed probe: the point is that the shipping binary answers, not the text.
+    {
+        static int64_t rstate[8], rkv[512 * 8], rkvsl[2048], rtens[4096 * 12], rtensl[16384];
+        static unsigned char hdr[1 << 26];
+        // file_bytes is the WHOLE file, not the header we read: the reader checks
+        // the tensor payload against it and answers -7 otherwise.
+        int64_t file_size = 0;
+        {
+            FILE * fs = fopen(argv[1], "rb");
+            if (fs) { fseek(fs, 0, SEEK_END); file_size = (int64_t) ftell(fs); fclose(fs); }
+        }
+        FILE * f = fopen(argv[1], "rb");
+        int tokenised = -1;
+        if (f) {
+            const int64_t got = (int64_t) fread(hdr, 1, sizeof hdr, f);
+            fclose(f);
+            const int64_t prc = gr_parse((sl_u8){ hdr, got }, (int64_t) file_size, (sl_i64){ rstate, 8 },
+                                         (sl_i64){ rkv, 512 * 8 }, (sl_i64){ rtens, 4096 * 12 },
+                                         (sl_i64){ rkvsl, 2048 }, (sl_i64){ rtensl, 16384 });
+            if (got > 0 && prc == 0) {
+                const char * tk = "tokenizer.ggml.tokens";
+                const char * mk = "tokenizer.ggml.merges";
+                const int64_t ti = gr_find_kv((sl_u8){ hdr, got }, (sl_i64){ rstate, 8 },
+                                              (sl_i64){ rkv, 512 * 8 }, (sl_i64){ rkvsl, 2048 },
+                                              (sl_u8){ (uint8_t *) tk, (int64_t) strlen(tk) });
+                const int64_t mi = gr_find_kv((sl_u8){ hdr, got }, (sl_i64){ rstate, 8 },
+                                              (sl_i64){ rkv, 512 * 8 }, (sl_i64){ rkvsl, 2048 },
+                                              (sl_u8){ (uint8_t *) mk, (int64_t) strlen(mk) });
+                int64_t need[5] = {0};
+                if (ti >= 0 && mi >= 0 &&
+                    bt_prepare_need((sl_u8){ hdr, got }, (sl_i64){ rstate, 8 }, (sl_i64){ rkv, 512 * 8 },
+                                    ti, mi, (sl_i64){ need, 5 }) == 0) {
+                    static unsigned char blob[1 << 24];
+                    static int64_t toff[1 << 18], tlen[1 << 18], tslots[1 << 20];
+                    static int64_t moff[1 << 18], mlen[1 << 18], mslots[1 << 20];
+                    static int64_t order[1 << 18];
+                    if (need[0] <= (int64_t) sizeof blob &&
+                        bt_prepare_from_gguf((sl_u8){ hdr, got }, (sl_i64){ rstate, 8 }, (sl_i64){ rkv, 512 * 8 },
+                                             ti, mi, (sl_u8){ blob, need[0] },
+                                             (sl_i64){ toff, need[1] }, (sl_i64){ tlen, need[1] },
+                                             (sl_i64){ tslots, need[3] },
+                                             (sl_i64){ moff, need[2] }, (sl_i64){ mlen, need[2] },
+                                             (sl_i64){ mslots, need[4] }, (sl_i64){ need, 5 }) == 0) {
+                        // Attributes and the special-token order come from the same
+                        // tables the engine exposes; without them bt_tokenize refuses
+                        // the text rather than guessing.
+                        static int64_t attr[1 << 18];
+                        extern int64_t bt_attrs(sl_u8 blob, sl_i64 tok_off, sl_i64 tok_len, sl_i64 tok_type, sl_i64 attr);
+                        int64_t span4[4] = {0};
+                        extern int64_t gr_val_span(sl_i64 state, sl_i64 kv, int64_t index, sl_i64 out);
+                        const char * tyk = "tokenizer.ggml.token_type";
+                        const int64_t tyi = gr_find_kv((sl_u8){ hdr, got }, (sl_i64){ rstate, 8 },
+                                                       (sl_i64){ rkv, 512 * 8 }, (sl_i64){ rkvsl, 2048 },
+                                                       (sl_u8){ (uint8_t *) tyk, (int64_t) strlen(tyk) });
+                        if (tyi >= 0 && gr_val_span((sl_i64){ rstate, 8 }, (sl_i64){ rkv, 512 * 8 }, tyi,
+                                                    (sl_i64){ span4, 4 }) == 0) {
+                            const int32_t * tt = (const int32_t *) (hdr + span4[1]);
+                            static int64_t ttype[1 << 18];
+                            for (int64_t k = 0; k < need[1] && k < (1 << 18); ++k) ttype[k] = tt[k];
+                            bt_attrs((sl_u8){ blob, need[0] }, (sl_i64){ toff, need[1] },
+                                     (sl_i64){ tlen, need[1] }, (sl_i64){ ttype, need[1] },
+                                     (sl_i64){ attr, need[1] });
+                        }
+                        // bt_build fills the probe tables; without it every lookup
+                        // misses and tokenisation answers 0 with no error at all.
+                        extern int64_t bt_build(sl_u8 blob, sl_i64 tok_off, sl_i64 tok_len, sl_i64 tok_slots,
+                                                sl_i64 mrg_off, sl_i64 mrg_len, sl_i64 mrg_slots, sl_i64 stats);
+                        int64_t bstats[4] = {0};
+                        (void) bt_build((sl_u8){ blob, need[0] }, (sl_i64){ toff, need[1] },
+                                                     (sl_i64){ tlen, need[1] }, (sl_i64){ tslots, need[3] },
+                                                     (sl_i64){ moff, need[2] }, (sl_i64){ mlen, need[2] },
+                                                     (sl_i64){ mslots, need[4] }, (sl_i64){ bstats, 4 });
+                        const int64_t n_sp = bt_special_order((sl_u8){ blob, need[0] }, (sl_i64){ toff, need[1] },
+                                                              (sl_i64){ tlen, need[1] }, (sl_i64){ attr, need[1] },
+                                                              (sl_i64){ order, need[1] });
+                        const char * probe = "The capital of France is";
+                        static int64_t ids[256], cpts[256], seg[1024], sym[4096], heap[4096], hc[2], info[8];
+                        static unsigned char enc[2048];
+                        tokenised = (int) bt_tokenize((sl_u8){ blob, need[0] },
+                                                      (sl_i64){ toff, need[3] }, (sl_i64){ tlen, need[3] },
+                                                      (sl_i64){ tslots, need[3] },
+                                                      (sl_i64){ moff, need[4] }, (sl_i64){ mlen, need[4] },
+                                                      (sl_i64){ mslots, need[4] },
+                                                      (sl_i64){ order, need[1] }, n_sp > 0 ? n_sp : 0,
+                                                      (sl_u8){ (uint8_t *) probe, (int64_t) strlen(probe) },
+                                                      (sl_i64){ ids, 256 }, 0,
+                                                      (sl_i64){ cpts, 256 }, (sl_i64){ seg, 1024 },
+                                                      (sl_u8){ enc, sizeof enc }, (sl_i64){ sym, 4096 },
+                                                      (sl_i64){ heap, 4096 }, (sl_i64){ hc, 2 },
+                                                      (sl_i64){ info, 8 });
+                        printf("FG_TOKENIZE tokens=%lld merges=%lld ids=%d", (long long) need[1],
+                               (long long) need[2], tokenised);
+                        for (int k = 0; k < tokenised && k < 12; ++k) { printf(" %lld", (long long) ids[k]); }
+                        printf("\n");
+                    }
+                }
+            }
+        }
+        if (tokenised < 0) {
+            printf("FG_TOKENIZE engine=unavailable\n");
+        }
+    }
+
+    // ---- one generated step, through the same trunk host the server uses ----
+    // The probe text is tokenised by the Goose engine and one model step runs on
+    // the real weights. The point is that the shipping binary generates, not that
+    // this particular text is meaningful.
+    // ---- generation: the same loop the server runs ----------------------
+    // --generate [max_tokens] [prompt]: tokenise, generate, print the text.
+    if (argc > 2 && strcmp(argv[2], "--generate") == 0) {
+        hose_host_load(argv[1]);
+        int64_t hs[5] = {0};
+        hose_stats(hs);
+        const int64_t want = argc > 3 ? atoll(argv[3]) : 8;
+        const char * probe = argc > 4 ? argv[4] : "The capital of France is";
+
+        static int64_t out_ids[512];
+        static unsigned char out_text[1 << 16];
+        double timing[3] = {0, 0, 0};
+        const int64_t produced = hose_generate((const unsigned char *) probe, (int64_t) strlen(probe),
+                                               want, out_ids, out_text, sizeof out_text, timing);
+        printf("FG_GENERATE vocab=%lld prompt_chars=%lld n=%lld ids=",
+               (long long) hs[0], (long long) strlen(probe), (long long) produced);
+        for (int64_t i = 0; i < produced && i < 16; ++i) { printf(" %lld", (long long) out_ids[i]); }
+        printf("\ntext=\"%.*s\"\n", (int) (produced > 0 ? strlen((const char *) out_text) : 0), out_text);
+        printf("FG_GENERATE_TIME prefill_s=%.2f prefill_tok_s=%.1f decode_n=%lld decode_tok_s=%.2f\n",
+               timing[0], timing[2] > 0 && timing[0] > 0 ? timing[2] / timing[0] : 0.0,
+               (long long) (produced > 0 ? produced - 1 : 0),
+               produced > 1 && timing[1] > 0 ? (double) (produced - 1) / timing[1] : 0.0);
+    }
+
+    // ---- HTTP: the listener and router are Goose, this host owns buffers --
+    // --serve <port> [max_requests]
+    if (argc > 2 && strcmp(argv[2], "--serve") == 0) {
+        hose_host_load(argv[1]);
+        const int64_t port = argc > 3 ? atoll(argv[3]) : 0;
+        const int64_t cap = argc > 4 ? atoll(argv[4]) : 1;
+        int64_t opts[1] = { 0 };
+        const int64_t lfd = ht_open(port, (sl_i64){ opts, 1 });
+        if (lfd < 0) { printf("FG_SERVE open_failed step=%lld\n", (long long) (-lfd)); return 1; }
+        printf("FG_SERVE listening fd=%lld port=%lld\n", (long long) lfd, (long long) port);
+        fflush(stdout);
+
+        static unsigned char addr[16], req[1 << 18], head[512], body[1 << 18], path[1024], text[1 << 16];
+        static int64_t oids[512];
+        int64_t alen[1] = { 16 }, ainfo[2] = { 0, 0 }, served = 0;
+        while (served < cap) {
+            const int64_t conn = ht_accept(lfd, (sl_u8){ addr, 16 }, (sl_i64){ alen, 1 }, (sl_i64){ ainfo, 2 });
+            if (conn < 0) break;
+            served++;
+            int64_t info[4] = { 0, 0, 0, 0 };
+            const int64_t n = ht_read_request(conn, (sl_u8){ req, sizeof req }, (sl_i64){ info, 4 });
+            if (n <= 0) { ht_close(conn); continue; }
+            const int64_t method = info[1], poff = info[2], plen = info[3];
+            const int64_t route = route_id(method, (sl_u8){ req + poff, plen });
+            const int64_t keep = ht_keep_alive((sl_u8){ req, n });
+            int64_t blen = 0, status = 200;
+            memcpy(path, req + poff, (size_t) plen);
+
+            if (plen == 11 && memcmp(path, "/completion", 11) == 0 && method == 2) {
+                double timing[3] = { 0, 0, 0 };
+                const int64_t produced = hose_generate(req + info[0], n - info[0], 256,
+                                                       oids, text, sizeof text, timing);
+                if (produced < 0) {
+                    status = 400;
+                    blen = (int64_t) sprintf((char *) body, "{\"error\":\"generation failed\"}");
+                } else {
+                    int64_t at = (int64_t) sprintf((char *) body, "{\"ids\":[");
+                    for (int64_t i = 0; i < produced && at < (int64_t) sizeof body - 40; ++i)
+                        at += (int64_t) sprintf((char *) body + at, i ? ",%lld" : "%lld", (long long) oids[i]);
+                    at += (int64_t) sprintf((char *) body + at, "],\"text\":\"");
+                    for (int64_t i = 0; i < (int64_t) strlen((const char *) text) && at < (int64_t) sizeof body - 12; ++i) {
+                        const unsigned char ch = text[i];
+                        if (ch == '"' || ch == '\\') { body[at++] = '\\'; body[at++] = ch; }
+                        else if (ch == 10) { body[at++] = '\\'; body[at++] = 'n'; }
+                        else if (ch == 13) { body[at++] = '\\'; body[at++] = 'r'; }
+                        else if (ch == 9)  { body[at++] = '\\'; body[at++] = 't'; }
+                        else if (ch < 32)  { at += (int64_t) sprintf((char *) body + at, "\\u%04x", ch); }
+                        else body[at++] = ch;
+                    }
+                    at += (int64_t) sprintf((char *) body + at, "\",\"count\":%lld}", (long long) produced);
+                    blen = at;
+                    printf("FG_SERVE_TIME prompt=%lld prefill_tok_s=%.1f decode_tok_s=%.2f\n",
+                           (long long) timing[2], timing[0] > 0 ? timing[2] / timing[0] : 0.0,
+                           produced > 1 && timing[1] > 0 ? (double) (produced - 1) / timing[1] : 0.0);
+                }
+            } else if (route > 0) {
+                int64_t hs[5] = { 0 };
+                hose_stats(hs);
+                blen = (int64_t) sprintf((char *) body,
+                    "{\"route\":%lld,\"n_vocab\":%lld,\"n_special\":%lld,\"n_layer\":%lld}",
+                    (long long) route, (long long) hs[0], (long long) hs[1], (long long) hs[4]);
+            } else {
+                status = 404;
+                blen = (int64_t) sprintf((char *) body, "{\"error\":{\"code\":404}}");
+            }
+
+            const int64_t hl = ht_response_head(status, blen, keep, (sl_u8){ head, sizeof head });
+            if (hl < 0) { ht_close(conn); continue; }
+            ht_write_all(conn, (sl_u8){ head, hl });
+            ht_write_all(conn, (sl_u8){ body, blen });
+            printf("FG_SERVE_REQ method=%lld path=%.*s status=%lld\n",
+                   (long long) method, (int) plen, path, (long long) status);
+            fflush(stdout);
+            ht_close(conn);
+        }
+        ht_close(lfd);
+        printf("FG_SERVE done served=%lld\n", (long long) served);
+    }
 
     gguf_free(ctx);
     if (gctx) { ggml_free(gctx); }
