@@ -11,7 +11,7 @@ OFF="GGML_GOOSE_SAMPLER_CHAIN=0 GGML_GOOSE_SAMPLER_PENALTIES=0 GGML_GOOSE_SAMPLE
 env $ON "$BIN" /tmp/five_goose.txt >/dev/null 2>/tmp/five_goose.log || exit 1
 env $OFF "$BIN" /tmp/five_native.txt >/dev/null 2>&1 || exit 1
 fails=0
-for arm in penalties typical mirostat adaptive; do
+for arm in penalties typical xtc mirostat adaptive; do
     g=$(awk -v a="$arm" '$1==a {on=1; print; next} /^[a-z]/ {on=0} on' /tmp/five_goose.txt | md5sum)
     n=$(awk -v a="$arm" '$1==a {on=1; print; next} /^[a-z]/ {on=0} on' /tmp/five_native.txt | md5sum)
     if [ "$g" = "$n" ]; then echo "$arm: identical"; else
@@ -20,9 +20,4 @@ for arm in penalties typical mirostat adaptive; do
              <(awk -v a="$arm" '$1==a {on=1; print; next} /^[a-z]/ {on=0} on' /tmp/five_native.txt) | head -4
     fi
 done
-# xtc: OPEN. Same array size, different membership: the door drops the two most probable tokens, the
-# native keeps them. Recorded rather than passed - see the README.
-rd=$(diff <(awk -v a=xtc '$1==a {on=1; print; next} /^[a-z]/ {on=0} on' /tmp/five_goose.txt) \
-          <(awk -v a=xtc '$1==a {on=1; print; next} /^[a-z]/ {on=0} on' /tmp/five_native.txt) | grep -c '^<')
-echo "xtc: OPEN, $rd lines differ (membership, same size)"
 exit $([ $fails -eq 0 ] && echo 0 || echo 1)

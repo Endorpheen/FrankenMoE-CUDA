@@ -17,8 +17,12 @@ static void dump(FILE * f, const char * arm, int it, llama_token_data_array & cu
                  const std::vector<llama_token_data> & d, int extra_a, float extra_b) {
     fprintf(f, "%s %d a=%d b=%.6f size=%zu selected=%lld\n", arm, it, extra_a, extra_b, cur.size,
             (long long) cur.selected);
+    // cur.data, not d.data(): the native path may ADVANCE the pointer (llama_sample_xtc_apply does
+    // `cur_p->data += pos_last`), and printing from the original start shows the discarded entries as
+    // if they had been kept. That was this harness's own defect, and it made XTC look broken.
     for (size_t i = 0; i < cur.size; ++i) {
-        fprintf(f, "%d %08x %08x\n", (int) d[i].id, *(const uint32_t *) &d[i].logit, *(const uint32_t *) &d[i].p);
+        fprintf(f, "%d %08x %08x\n", (int) cur.data[i].id,
+                *(const uint32_t *) &cur.data[i].logit, *(const uint32_t *) &cur.data[i].p);
     }
 }
 
@@ -70,11 +74,17 @@ int main(int argc, char ** argv) {
         // xtc
         {
             const float p = 0.3f + 0.6f * u(rng), th = 0.02f + 0.2f * u(rng);
-            llama_sampler * s = llama_sampler_init_xtc(p, th, (size_t)(rng() % 4), 4242u + (uint32_t) it);
+            const size_t mk = (size_t)(rng() % 4);
+            llama_sampler * s = llama_sampler_init_xtc(p, th, mk, 4242u + (uint32_t) it);
             auto d = base;
             llama_token_data_array cur{ d.data(), d.size(), true };
             llama_sampler_apply(s, &cur);
-            dump(f, "xtc", it, cur, d, 0, th);
+            fprintf(f, "xtc %d prob=%.6f thr=%.6f mk=%zu n_in=%zu size=%zu selected=%lld\n",
+                    it, p, th, mk, base.size(), cur.size, (long long) cur.selected);
+            for (size_t i = 0; i < cur.size; ++i) {
+                fprintf(f, "%d %08x %08x\n", (int) cur.data[i].id,
+                        *(const uint32_t *) &cur.data[i].logit, *(const uint32_t *) &cur.data[i].p);
+            }
             llama_sampler_free(s);
         }
         // mirostat: keeps state across draws, so the same sampler is applied several times

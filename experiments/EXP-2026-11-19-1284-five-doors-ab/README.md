@@ -1,38 +1,46 @@
-# EXP-2026-11-19-1284: five sampler doors through the public API - four identical, one open
+# EXP-2026-11-19-1284: five sampler doors, all identical - after fixing my own harness twice
 
 ```
 penalties: identical
 typical:   identical
+xtc:       identical
 mirostat:  identical
 adaptive:  identical
-xtc:       OPEN, 60 lines differ (membership, same size)
 ```
 
 Each sampler is constructed with the public init, driven with `llama_sampler_apply`, and the resulting array is
-compared between the door-enabled and door-disabled runs - values, order and size. The whole input array is
-**sorted by logit and marked `sorted`**, which is what the default chain provides because top-k runs before these
-samplers; the first version of this harness fed an unsorted array and produced differences that were an artefact
-of that, not of the ports.
+compared between the door-enabled and door-disabled runs - values, order and size. `penalties` carries accepted
+history through `llama_sampler_accept`; `mirostat` and `adaptive` are applied four times in a row because their
+state advances across draws.
 
-`penalties` carries accepted history through `llama_sampler_accept`, and `mirostat`/`adaptive` are applied four
-times in a row because their state advances across draws - a single application would compare only the first step.
+## Two harness defects, both mine, in this one card
 
-## XTC: the open one, stated precisely
+**First: an unsorted input.** The default chain runs top-k before these samplers, so the array arrives sorted and
+flagged `sorted`. The first version fed it unsorted and produced differences that belonged to the harness.
 
-Round 0 is representative: both paths return **28** candidates, but not the same 28. The native keeps the two most
-probable tokens (`358` and `140`); the door drops them and keeps two from the tail. XTC's design **excludes** the
-likely tokens above a threshold, so dropping them is what the sampler is for - which means the question is why the
-native path keeps them.
+**Second, and worse: the dump ignored the pointer.** `llama_sample_xtc_apply` trims by advancing the array
+itself - `cur_p->data += pos_last; cur_p->size -= pos_last`. The harness printed from the original `d.data()`, so
+the discarded leading entries appeared in the output as if they had been kept, and XTC looked like it was dropping
+the most probable tokens while the native kept them.
 
-That needs both implementations read side by side, and it is not a question to answer by choosing the side that
-looks more like a port. 28 of the 60 rounds differ.
+The numbers that exposed it are in the header the harness now prints:
 
-## Why this matters beyond XTC
+```
+xtc 0 prob=0.648377 thr=0.121527 mk=1 n_in=30 size=28
+```
 
-The accepted XTC evidence (720/720) compared the port with a **restatement of the native formula inside the
-harness**. DRY had the same shape of evidence and turned out to hide a real defect (EXP-2026-11-19-1281). The
-lesson generalises: a harness that reimplements the reference cannot see a mistake shared by the port and the
-harness, and only the shipped code driven by both switches can.
+Both paths return 28 of 30. With `p = 0.586, 0.225, 0.157, 0.015`, `pos_last = 2`, and the native advances by
+exactly those two. Reading `cur.data[i]` instead of `d[i]` makes the two runs byte-identical.
 
-XTC is not on the acceptance path (the fixed profile sets no XTC parameters), so this is dormant there - and
-recorded, not deferred silently.
+## What this says about the three findings before it
+
+This is the third time in this session that a red number accused the code and turned out to be the instrument -
+after DRY's mirrored harness and the `g++`-mangled `wrap_ship.c`. The DRY defect was real and the fix stands; but
+the majority of alarms have been mine, which is the argument for the pattern now in use: drive the **shipped**
+code from both switches, print enough state in the header to settle the dispute with numbers, and check the
+printing before checking the port.
+
+## Scope
+
+These are the samplers with a door whose state and array effects can be driven without a model. `temp_ext`
+(EXP-2026-11-19-1282) remains open on a genuine contract question about sorting and size.
