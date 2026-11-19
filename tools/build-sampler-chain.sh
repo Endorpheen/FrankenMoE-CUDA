@@ -21,6 +21,7 @@ cat "$root/goose/model/tokenizer-decisions.goose" >> "$rootfile"
 cat "$root/goose/model/tokenizer-doors.goose" >> "$rootfile"
 cat "$root/goose/model/arch-registry.goose" >> "$rootfile"
 cat "$root/goose/misc/spec-decode-decisions.goose" >> "$rootfile"
+cat "$root/goose/cli/config-validate.goose" >> "$rootfile"
 cat >> "$rootfile" <<'EOF'
 
 fn main() {
@@ -69,6 +70,12 @@ fn main() {
                          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    let cvi: i64[32] = [128, 4, 2048, 0, 0, 0, 0, 0, 1, 0, 0, 40, 0, 4, 3, 12, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    let cvf: f64[5] = [0.0, 0.9, 0.0, 0.0, 0.0];
+    let cvr = cfg_validate(cvi, cvf);
+    if cvr < 0 {
+        return;
+    }
     let sdctx: i32[4] = [1, 2, 3, 1];
     let sdout: i32[8] = [0, 0, 0, 0, 0, 0, 0, 0];
     let sdr = sdp_ngram_draft(sdctx, 2, 4, 1, 4, sdout);
