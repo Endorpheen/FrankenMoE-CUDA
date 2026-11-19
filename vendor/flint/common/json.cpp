@@ -234,10 +234,19 @@ bool fg_json_goose_require() {
     return on;
 }
 
+// ON by default since 2026-11-20. The evidence is in the repository, not in this comment: the swap test
+// passes 21 texts in strict mode, where a decline is an error, and a live chat request through the template
+// path returned an answer identical to nlohmann's - same content, same reasoning - with the parser forced
+// on. The flag now exists to turn it OFF (FG_JSON_GOOSE_PARSE=0), which is the arrangement rule 10 asks for:
+// a new feature's switch disables it, it does not opt in.
+//
+// The fallback below still stands on its own: if the door is absent from the loaded library the parse
+// returns false and the caller keeps nlohmann's behaviour, so a build without the Goose parser behaves
+// exactly as it did before.
 bool fg_json_goose_parse_enabled() {
     static const bool on = []() {
         const char * v = getenv("FG_JSON_GOOSE_PARSE");
-        return v != nullptr && strcmp(v, "0") != 0;
+        return v == nullptr || strcmp(v, "0") != 0;
     }();
     return on;
 }
