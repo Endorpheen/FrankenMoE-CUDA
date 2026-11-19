@@ -2448,8 +2448,10 @@ static uint32_t common_get_enabled_speculative_configs(const std::vector<common_
 // Resolved at run time on purpose: a weak symbol stayed null across the static/shared boundary,
 // and a strong one cannot link because libllama-common must not depend on libllama (it is the
 // other way round). dlsym on the process itself has neither problem.
-typedef int64_t (*fg_sp_n_max_fn)(const void *, int64_t, const void *, int64_t, const void *, int64_t,
-                                  int64_t);
+// Structs by value, copied from the generated header: passing pointer/length pieces as separate
+// arguments is an invalid call that happens to compile (measured on the prefix door, which crashed).
+struct fg_sl_i64 { int64_t * data; int64_t len; };
+typedef int64_t (*fg_sp_n_max_fn)(fg_sl_i64, fg_sl_i64, fg_sl_i64, int64_t);
 static fg_sp_n_max_fn fg_sp_n_max_resolve() {
     static fg_sp_n_max_fn fn = []() -> fg_sp_n_max_fn {
         // RTLD_DEFAULT does not see a locally loaded dependency, so the handle of the library
@@ -2490,10 +2492,10 @@ static void fg_check_n_max(const common_params_speculative * spec, int32_t nativ
     if (fn == nullptr) {
         return;
     }
-    const int64_t goose = fn(types.data(), (int64_t) types.size(),
-                                           sizes.data(), (int64_t) sizes.size(),
-                                           widths.data(), (int64_t) widths.size(),
-                                           (int64_t) types.size());
+    fg_sl_i64 st{ types.data(),  (int64_t) types.size()  };
+    fg_sl_i64 ss{ sizes.data(),  (int64_t) sizes.size()  };
+    fg_sl_i64 sw{ widths.data(), (int64_t) widths.size() };
+    const int64_t goose = fn(st, ss, sw, (int64_t) types.size());
     static std::atomic<unsigned long long> calls{0}, bad{0};
     const auto c = ++calls;
     if (goose != (int64_t) native_n_max) {
