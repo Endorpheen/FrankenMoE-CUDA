@@ -2731,6 +2731,19 @@ common_speculative_init_result::common_speculative_init_result(
 
     if (spec_mtp) {
         cparams.ctx_type = LLAMA_CONTEXT_TYPE_MTP;
+
+        // The MTP context was created with the target's own batch parameters, so its compute buffer covered
+        // n_ubatch tokens of activations - 2368 MiB at 4096 - while the head's own work is 1 + n_draft tokens.
+        // n_batch stays as the target's, because the draft context is also fed the prompt in one add and the
+        // token count must be allowed; only n_ubatch shrinks, and it is n_ubatch that sizes the graph buffer.
+        // FG_MTP_SMALL_BATCH=0 restores the old sizing for an A/B.
+        if (getenv("FG_MTP_SMALL_BATCH") == nullptr || strcmp(getenv("FG_MTP_SMALL_BATCH"), "0") != 0) {
+            const uint32_t ub_old = cparams.n_ubatch;
+            const uint32_t ub_new = std::min<uint32_t>(ub_old, 512u);
+            cparams.n_ubatch = ub_new;
+            LOG_INF("%s: MTP context n_ubatch %u -> %u, n_batch %u (n_draft_max %d)\n", __func__,
+                    ub_old, ub_new, (unsigned) cparams.n_batch, (int) common_speculative_n_max(&params.speculative));
+        }
     }
 
     // the draft context holds as many tokens per sequence as the target context
