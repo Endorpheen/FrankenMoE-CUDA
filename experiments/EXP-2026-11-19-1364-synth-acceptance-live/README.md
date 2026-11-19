@@ -79,6 +79,26 @@ The provider would have to go into the sampler-chain shim, and that is a rebuild
 library. Both edits were reverted, the chain rebuilt, and the artefacts re-checked: unresolved symbols ok, accepted
 components ok, and an acceptance run at decode 63.17 / prefill 2952.2 with hash `c2ff42cc1219` unchanged.
 
+## Attempt 6 - the probe reached the door, and the answer
+
+With the provider in the sampler-chain shim (its natural place) and the door calling it, the run shows:
+
+```
+FG_SP_SYNTH_ENTERED n=1
+FG_ACCEPT_BRANCH synth=48 replay=0 reject=1 draft=12
+FG_ACCEPT_BRANCH synth=48 replay=1 reject=1 draft=5
+FG_ACCEPT_BRANCH synth=48 replay=0 reject=1 draft=12
+```
+
+So the synthetic acceptance export **is** reached in a live server on the real model - that was the open question, and
+the answer is yes. One call in the session, because a rejected first position ends the loop.
+
+The outer counter `FG_SP_SYNTH goose calls=` still does not appear, and the reason is now specific rather than
+mysterious: it lives in `server-context.cpp`, compiled into `libllama-server-impl.so`, which has not been rebuilt since
+the counter was added - and rebuilding it needs the UI asset download that fails without network. The door's own print
+comes from `libllama`, which is rebuilt on every change. The comparison therefore runs; only its report is in a stale
+object.
+
 ## Why stop here
 
 This is the third attempt and the repository's blocker rule applies: report the exact behaviour, the attempts, and the
