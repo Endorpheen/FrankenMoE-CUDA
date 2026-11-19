@@ -759,6 +759,11 @@ come from Igor directly. For every marked message:
     - shared inputs go to `tests/fixtures/`, independent reference implementations to
       `tests/oracles/`. A C++ oracle is never linked into the production runtime;
     - every test result states the EXP, the source SHA and the requirement it belongs to;
+    - a claim that a Goose door has no call site comes from `python3 tools/door-callers.py`, not from
+      a remembered grep: it searches `*.cpp`, `*.c`, `*.h` and `*.hpp` under `vendor/flint`, `runtime`
+      and `integration`, because on 2026-11-19 five ledger records had to be corrected for counts
+      taken from `vendor/flint/src/*.cpp` alone - the model-manager wiring lives in a header and the
+      harness bridges live under `integration/`;
     - the registry is `tests/REGISTRY.md` and the row is added in the same commit as the test;
     - no working check is deleted before its replacement passes; the old and the new run side by
       side until then, and the deletion is its own verifiable step.

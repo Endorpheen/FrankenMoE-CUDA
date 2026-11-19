@@ -61,3 +61,26 @@ a router run.
 Closing it needs, in this order: wire the lifecycle doors where the router calls them, then the real
 router run. Nothing here is claimed as measured, and no door is claimed as served that this source
 does not call.
+
+## Second correction, from the tool that now answers this question
+
+`python3 tools/door-callers.py goose/server/model-manager.goose` returns **six** doors with a call
+site, not four:
+
+| door | called from | path |
+|---|---|---|
+| `mg_status_str` | `server-models.h` | shipped server |
+| `mg_source_str` | `server-models.h` | shipped server |
+| `mg_stop_gate` | `server-models.cpp` | shipped server |
+| `mg_stop_door` | `server-models.cpp` | shipped server |
+| `mg_pred` | `fg-goose-model-bridge.cpp` | m1 harness |
+| `mg_unload_action` | `fg-goose-model-bridge.cpp` | m1 harness |
+| `mg_victim` | `fg-goose-model-bridge.cpp` | m1 harness |
+
+Seven have none: `mg_remove_gate`, `mg_wait_pred`, `mg_update_fields`, `mg_arch_take`, `mg_capacity`,
+`mg_tick`, `mg_lru_log`.
+
+The third pass on this one record is the argument for the tool: hand-greps produced four, then a
+header-corrected re-check produced four again with a different composition, and a mechanical answer
+produces six. The rule that follows is in AGENTS.md: a claim about call sites comes from
+`tools/door-callers.py`, not from a remembered grep.
