@@ -144,7 +144,7 @@ static bool fg_port_str(const int64_t k, const uint8_t *& ptr, int64_t & len) {
 struct fg_bpe_store {
     std::vector<int64_t> tok_off, tok_len, tok_slots, mrg_off, mrg_len, mrg_slots;
     std::vector<int64_t> pairs, tok_type, attr, order, eog, stats;
-    std::string blob;   // token texts then merge texts, NUL terminated, the slice bt_bpe indexes
+    int64_t n_special = 0;
     bool ready = false;
 };
 static fg_bpe_store fg_bpe;
@@ -167,7 +167,8 @@ static fg_bt_bpe_fn fg_bpe_encode_resolve() {
 typedef int64_t (*fg_bt_build_fn)(fg_sl_u8, fg_sl_i64, fg_sl_i64, fg_sl_i64,
                                   fg_sl_i64, fg_sl_i64, fg_sl_i64, fg_sl_i64);
 
-static bool fg_bpe_init(int64_t tok_key, int64_t mrg_key, int64_t n_tok, int64_t n_mrg) {
+static bool fg_bpe_init(int64_t tok_key, int64_t mrg_key, int64_t n_tok, int64_t n_mrg,
+                        const int32_t * tok_type) {
     // bt_build takes the offsets as input, so they are taken from the port's own reader: the pointer the
     // accessor returns is inside the blob the door will index. btl_load is the same work but is not
     // exported by the shipped unit (measured: 0 dynamic symbols), which is why this route exists.
@@ -229,6 +230,38 @@ static bool fg_bpe_init(int64_t tok_key, int64_t mrg_key, int64_t n_tok, int64_t
         if (getenv("FG_TK_BPE_DIAG")) { fprintf(stderr, "FG_TK_BPE_LOAD refused rc=%lld\n", (long long) rc); }
         return false;
     }
+    // bt_build fills the slot tables but not the attributes; the scan needs them, and they come from the token
+    // types the reader already parsed. bt_attrs derives the bits, so the rule stays in Goose.
+    if (tok_type) {
+        for (int64_t i = 0; i < n_tok; ++i) { fg_bpe.tok_type[(size_t) i] = (int64_t) tok_type[i]; }
+        typedef int64_t (*fg_attrs_fn)(fg_sl_u8, fg_sl_i64, fg_sl_i64, fg_sl_i64, fg_sl_i64);
+        static fg_attrs_fn attrs_fn = []() -> fg_attrs_fn {
+            void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+            return h ? reinterpret_cast<fg_attrs_fn>(dlsym(h, "bt_attrs")) : nullptr;
+        }();
+        if (attrs_fn) {
+            attrs_fn(fg_sl_u8{ fg_port.data.data(), (int64_t) fg_port.data.size() },
+                     fg_sl_i64{ fg_bpe.tok_off.data(), n_tok },
+                     fg_sl_i64{ fg_bpe.tok_len.data(), n_tok },
+                     fg_sl_i64{ fg_bpe.tok_type.data(), n_tok },
+                     fg_sl_i64{ fg_bpe.attr.data(), n_tok });
+        }
+    }
+
+    // the special count the scan needs: the order door fills the ids, longest text first
+    {
+        typedef int64_t (*fg_order_fn)(fg_sl_u8, fg_sl_i64, fg_sl_i64, fg_sl_i64, fg_sl_i64);
+        static fg_order_fn order_fn = []() -> fg_order_fn {
+            void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+            return h ? reinterpret_cast<fg_order_fn>(dlsym(h, "bt_special_order")) : nullptr;
+        }();
+        fg_bpe.n_special = order_fn ? order_fn(fg_sl_u8{ fg_port.data.data(), (int64_t) fg_port.data.size() },
+                                               fg_sl_i64{ fg_bpe.tok_off.data(), n_tok },
+                                               fg_sl_i64{ fg_bpe.tok_len.data(), n_tok },
+                                               fg_sl_i64{ fg_bpe.attr.data(), n_tok },
+                                               fg_sl_i64{ fg_bpe.order.data(), n_tok }) : 0;
+        if (fg_bpe.n_special < 0) { fg_bpe.n_special = 0; }
+    }
     fg_bpe.ready = true;
     if (getenv("FG_TK_BPE_DIAG")) {
         fprintf(stderr, "FG_TK_BPE_LOAD ok n_tok=%lld n_mrg=%lld tcap=%lld mcap=%lld\n",
@@ -249,20 +282,66 @@ extern "C" int64_t fg_bpe_encode(const char * text, int64_t n, int64_t * ids, in
     if (ids_buf.size() < (size_t) cap + 8) { ids_buf.resize((size_t) cap + 8); }
     const bool fg_diag = getenv("FG_TK_BPE_DIAG") != nullptr;
     if (fg_diag) { fprintf(stderr, "FG_TK_BPE_CALL n=%lld cap=%lld\n", (long long) n, (long long) cap); }
-    const int64_t got = fn(fg_sl_u8{ (uint8_t *) text, n },
-                           fg_sl_u8{ fg_port.data.data(), (int64_t) fg_port.data.size() },
-                           fg_sl_i64{ fg_bpe.tok_off.data(), (int64_t) fg_bpe.tok_off.size() },
-                           fg_sl_i64{ fg_bpe.tok_len.data(), (int64_t) fg_bpe.tok_len.size() },
-                           fg_sl_i64{ fg_bpe.tok_slots.data(), (int64_t) fg_bpe.tok_slots.size() },
-                           fg_sl_i64{ fg_bpe.mrg_off.data(), (int64_t) fg_bpe.mrg_off.size() },
-                           fg_sl_i64{ fg_bpe.mrg_len.data(), (int64_t) fg_bpe.mrg_len.size() },
-                           fg_sl_i64{ fg_bpe.mrg_slots.data(), (int64_t) fg_bpe.mrg_slots.size() },
-                           fg_sl_i64{ ids_buf.data(), (int64_t) ids_buf.size() }, 0,
-                           fg_sl_i64{ cpts.data(), m + 1 }, fg_sl_i64{ seg.data(), 4 * (m + 1) },
-                           fg_sl_u8{ enc.data(), 8 * (m + 1) },
-                           fg_sl_i64{ sym.data(), 24 * (m + 1) },
-                           fg_sl_i64{ heap.data(), 15 * (m + 1) + 40 },
-                           fg_sl_i64{ hc.data(), 2 }, fg_sl_i64{ info.data(), 8 });
+
+    // Special tokens decide part of the answer before any merge is looked up: the native tokenizer matches them
+    // first, and the port's bt_bpe alone returns seven pieces for <|im_start|>system where the native returns two
+    // (EXP-2026-11-19-1390). The scan is a Goose door; the gaps go through bt_bpe and the ids are spliced here.
+    typedef int64_t (*fg_hits_fn)(fg_sl_u8, fg_sl_u8, fg_sl_i64, fg_sl_i64, fg_sl_i64, fg_sl_i64, int64_t, fg_sl_i64);
+    static fg_hits_fn hits_fn = []() -> fg_hits_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        return h ? reinterpret_cast<fg_hits_fn>(dlsym(h, "bt_special_hits")) : nullptr;
+    }();
+    static std::vector<int64_t> hits;      // (start, end, id) triples
+    static std::vector<int64_t> plain_ids; // ids of one plain segment
+    int64_t n_hits = 0;
+    if (hits_fn) {
+        if (hits.size() < (size_t) (3 * ((size_t) n + 1))) { hits.assign(3 * ((size_t) n + 1), 0); }
+        n_hits = hits_fn(fg_sl_u8{ (uint8_t *) text, n },
+                         fg_sl_u8{ fg_port.data.data(), (int64_t) fg_port.data.size() },
+                         fg_sl_i64{ fg_bpe.tok_off.data(), (int64_t) fg_bpe.tok_off.size() },
+                         fg_sl_i64{ fg_bpe.tok_len.data(), (int64_t) fg_bpe.tok_len.size() },
+                         fg_sl_i64{ fg_bpe.attr.data(), (int64_t) fg_bpe.attr.size() },
+                         fg_sl_i64{ fg_bpe.order.data(), (int64_t) fg_bpe.order.size() },
+                         fg_bpe.n_special,
+                         fg_sl_i64{ hits.data(), (int64_t) hits.size() });
+        if (n_hits < 0) { n_hits = 0; }
+    }
+    int64_t nout = 0;
+    auto run_plain = [&](int64_t from, int64_t len) -> bool {
+        if (len <= 0) { return true; }
+        const int64_t room = cap - nout;
+        if (room <= 0) { return false; }
+        if (plain_ids.size() < (size_t) room + 8) { plain_ids.resize((size_t) room + 8); }
+        const int64_t r = fn(fg_sl_u8{ (uint8_t *) text + from, len },
+                             fg_sl_u8{ fg_port.data.data(), (int64_t) fg_port.data.size() },
+                             fg_sl_i64{ fg_bpe.tok_off.data(), (int64_t) fg_bpe.tok_off.size() },
+                             fg_sl_i64{ fg_bpe.tok_len.data(), (int64_t) fg_bpe.tok_len.size() },
+                             fg_sl_i64{ fg_bpe.tok_slots.data(), (int64_t) fg_bpe.tok_slots.size() },
+                             fg_sl_i64{ fg_bpe.mrg_off.data(), (int64_t) fg_bpe.mrg_off.size() },
+                             fg_sl_i64{ fg_bpe.mrg_len.data(), (int64_t) fg_bpe.mrg_len.size() },
+                             fg_sl_i64{ fg_bpe.mrg_slots.data(), (int64_t) fg_bpe.mrg_slots.size() },
+                             fg_sl_i64{ plain_ids.data(), (int64_t) plain_ids.size() }, 0,
+                             fg_sl_i64{ cpts.data(), m + 1 }, fg_sl_i64{ seg.data(), 4 * (m + 1) },
+                             fg_sl_u8{ enc.data(), 8 * (m + 1) },
+                             fg_sl_i64{ sym.data(), 24 * (m + 1) },
+                             fg_sl_i64{ heap.data(), 15 * (m + 1) + 40 },
+                             fg_sl_i64{ hc.data(), 2 }, fg_sl_i64{ info.data(), 8 });
+        if (r < 0 || nout + r > cap) { return false; }
+        for (int64_t i = 0; i < r; ++i) { ids_buf[(size_t) (nout + i)] = plain_ids[(size_t) i]; }
+        nout += r;
+        return true;
+    };
+
+    bool ok = true;
+    int64_t at = 0;
+    for (int64_t h = 0; h < n_hits && ok; ++h) {
+        const int64_t hs = hits[(size_t) (h * 3)], he = hits[(size_t) (h * 3 + 1)], hid = hits[(size_t) (h * 3 + 2)];
+        ok = run_plain(at, hs - at);
+        if (ok && nout < cap) { ids_buf[(size_t) nout++] = hid; } else { ok = false; }
+        at = he;
+    }
+    if (ok) { ok = run_plain(at, n - at); }
+    const int64_t got = ok ? nout : -1;
     if (fg_diag) { fprintf(stderr, "FG_TK_BPE_DONE got=%lld info0=%lld info4=%lld\n", (long long) got, (long long) info[0], (long long) info[4]); }
     if (got < 0 || got > cap) { return -1; }
     for (int64_t i = 0; i < got; ++i) { ids[i] = ids_buf[i]; }
@@ -323,7 +402,12 @@ static int fg_gguf_check(const std::string & fname, const gguf_context & native)
         if (tok_key >= 0 && mrg_key >= 0) {
             const int64_t n_tok = gguf_get_arr_n(&native, (int) tok_key);
             const int64_t n_mrg = gguf_get_arr_n(&native, (int) mrg_key);
-            fg_bpe_init(tok_key, mrg_key, n_tok, n_mrg);
+            const int32_t * type_data = nullptr;
+            const int64_t ty_key = gguf_find_key(&native, "tokenizer.ggml.token_type");
+            if (ty_key >= 0 && gguf_get_arr_n(&native, (int) ty_key) >= n_tok) {
+                type_data = reinterpret_cast<const int32_t *>(gguf_get_arr_data(&native, (int) ty_key));
+            }
+            fg_bpe_init(tok_key, mrg_key, n_tok, n_mrg, type_data);
         }
     }
 
