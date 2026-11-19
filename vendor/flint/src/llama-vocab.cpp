@@ -5280,6 +5280,22 @@ int32_t llama_token_to_piece(
                      int32_t   length,
                      int32_t   lstrip,
                         bool   special) {
+    // An id outside the vocabulary used to abort the process: the piece path reaches token_get_attr, which is
+    // id_to_token.at(id) and throws out_of_range, and nothing catches it (measured on -1 and on n_vocab+1000, both
+    // std::terminate). A server cannot afford that - token ids arrive from requests, and one bad id would end the
+    // process instead of one answer - so the call refuses here, once in the log and always in the answer.
+    {
+        const int32_t fg_nv = (int32_t) llama_vocab_n_tokens(vocab);
+        if (token < 0 || token >= fg_nv) {
+            static std::atomic<long long> fg_bad_token{0};
+            const long long nb = fg_bad_token.fetch_add(1) + 1;
+            if (nb <= 5) {
+                fprintf(stderr, "FG_TOKEN_TO_PIECE_RANGE token=%d n_vocab=%d count=%lld\n", (int) token, (int) fg_nv, nb);
+            }
+            return 0;
+        }
+    }
+
     // The bytes come from the port when it can produce the whole piece within the caller's buffer. The
     // native call stays for the one case the door cannot express: a short buffer, where the native returns
     // -needed so the caller can resize. Serving from the door only on success means a truncation can never

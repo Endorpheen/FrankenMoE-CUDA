@@ -152,3 +152,22 @@ The first run of this test reported seven differences out of four hundred, and t
 called with `special=false`, which returns nothing for a special token, while the sequence form was called with
 `unparse_special=true`, which renders it. Two different questions, compared as one - the same mistake this project keeps
 finding, and the reason the note stays here.
+
+## The edges, where the equality tests never looked
+
+`experiments/EXP-2026-11-19-1449-tokenizer-boundaries/verify.sh` asks what happens when something is wrong:
+
+```
+tokenize short buffer: got=-10 smashed=0
+detokenize empty: got=0 smashed=0
+token_to_piece out of range: -1 -> 0, n+1000 -> 0 (no abort)
+parse_special: off=7 ids, on=4 ids
+detokenize with a bad id inside: got=2 (process alive)
+tokenizer boundaries: failures=0
+```
+
+The third line is the defect this test found: an id outside the vocabulary reached `token_get_attr`, which is
+`id_to_token.at(id)`, which throws `std::out_of_range`, which nothing catches - the process terminates. Measured on `-1` and
+on `n_vocab+1000`, both aborting. A server cannot afford that, because token ids arrive from requests, so the public piece
+call now refuses with an empty answer and one line in the log (`FG_TOKEN_TO_PIECE_RANGE`), and a bad id inside a sequence no
+longer ends the process either.
