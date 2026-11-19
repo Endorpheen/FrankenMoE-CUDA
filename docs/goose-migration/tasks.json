@@ -3132,7 +3132,8 @@
       ],
       "source_phase_files_at_audit": 0,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-      "batch": "B8"
+      "batch": "B8",
+      "evidence_20261119": "First slice recorded in docs/goose-migration/EXTERNAL-DEPENDENCIES-20261119.md from the published release set. Shipped libraries: libllama-server-impl, libllama, libllama-common, libmtmd, libggml, libggml-base. System libraries: libstdc++/libgcc (GCC 13 runtime), glibc, libm, and OpenSSL 3 (libssl/libcrypto, used by cpp-httplib TLS). Vendored sources in the tree: cpp-httplib, nlohmann, miniaudio, stb, sheredom utf8, hash, plus the flint fork itself. DEFECT FOUND: the shipped binary and libllama.so.0 carry RUNPATH=/home/end0/AI/FrankenMoE-CUDA/builds/flint-acc/bin, an absolute build path, so ldd on this host resolves everything from the build directory and the archive is not self-contained by RUNPATH; it works through the documented LD_LIBRARY_PATH=$PWD, and the release acceptance used APEX_SERVER_DIR so it did exercise the package's libraries. patchelf is not installed, so the fix is either a rebuild with -Wl,-rpath,'$ORIGIN', a run.sh in the archive, or patchelf plus a re-upload - and re-uploading a published asset is Igor's decision. Still required for this report: licences and versions per shipped and vendored dependency, and the split between unavoidable primitives (GPU driver, libc, C++ runtime) and replaceable logic."
     },
     {
       "id": "F1-04",
