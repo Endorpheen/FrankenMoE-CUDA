@@ -68,7 +68,10 @@ MODULES=(
     goose/cpu/goose-meta-backend.goose
     goose/cpu/goose-graph-builders.goose
     goose/cpu/goose-moe-router.goose
+    goose/model/qwen4exp.goose
+    goose/model/q4m-metadata.goose
     goose/model/q4t-tensor-map.goose
+    goose/model/q4e-expert-layout.goose
     goose/model/shards.goose
     goose/misc/fixture-plan.goose
     goose/cuda/goose-mmq-dispatch.goose
