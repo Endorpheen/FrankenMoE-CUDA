@@ -595,6 +595,17 @@ struct llm_tokenizer_bpe : llm_tokenizer {
     bool byte_encode = true; // GPT-2 byte encoding; false for SPM-style BPE (raw UTF-8)
 };
 
+// The BPE comparator door. Called once per merge pop, so the counter moves on any prompt.
+typedef int64_t (*fg_tk_bpe_before_fn)(int64_t, int64_t, int64_t, int64_t);
+static fg_tk_bpe_before_fn fg_tk_bpe_before_resolve() {
+    static fg_tk_bpe_before_fn fn = []() -> fg_tk_bpe_before_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        void * sym = h ? dlsym(h, "fg_tk_bpe_before") : nullptr;
+        return reinterpret_cast<fg_tk_bpe_before_fn>(sym);
+    }();
+    return fn;
+}
+
 struct llm_tokenizer_bpe_session {
     llm_tokenizer_bpe_session(const llama_vocab & vocab, const llm_tokenizer_bpe & tokenizer) : vocab(vocab), tokenizer(tokenizer) {}
 
@@ -705,6 +716,30 @@ struct llm_tokenizer_bpe_session {
             // build token(s)
             while (!work_queue.empty()) {
                 auto bigram = work_queue.pop_move();
+
+                // The queue just produced its own best element. If the ported comparator disagrees
+                // with the order the queue actually applied, this is where it shows - once per merge,
+                // on the real vocabulary. The queue's answer is used either way.
+                if (const auto fn = fg_tk_bpe_before_resolve()) {
+                    static std::atomic<unsigned long long> calls{0}, bad{0};
+                    const auto c = ++calls;
+                    if (!work_queue.empty()) {
+                        const auto & top = work_queue.top();
+                        const int64_t r = fn(bigram.rank, bigram.left, top.rank, top.left);
+                        if (r != 1) {
+                            ++bad;
+                            if (bad.load() <= 5) {
+                                fprintf(stderr, "FG_TK_BPE_DIFF popped(%d,%lld) vs top(%d,%lld) -> %lld\n",
+                                        bigram.rank, (long long) bigram.left, top.rank,
+                                        (long long) top.left, (long long) r);
+                            }
+                        }
+                    }
+                    if (c <= 3 || (c % 20000) == 0) {
+                        fprintf(stderr, "FG_TK_BPE goose calls=%llu disagreements=%llu\n",
+                                (unsigned long long) c, (unsigned long long) bad.load());
+                    }
+                }
 
                 auto & left_symbol = symbols[bigram.left];
                 auto & right_symbol = symbols[bigram.right];
