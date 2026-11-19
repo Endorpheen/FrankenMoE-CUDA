@@ -40,6 +40,10 @@ cat "$root/goose/cuda/cuda-arch-policy.goose" >> "$rootfile"
 cat "$root/goose/cuda/cuda-target-flags.goose" >> "$rootfile"
 cat "$root/goose/cuda/cuda-install-layout.goose" >> "$rootfile"
 cat "$root/goose/server/hf-cache-naming.goose" >> "$rootfile"
+# The model manager joins for the same reason: thirteen exports, no host primitives, and a host that calls none of
+# them today (EXP-2026-11-19-1475). Composing it makes the doors addressable so the switch can be made one call site at
+# a time.
+cat "$root/goose/server/model-manager.goose" >> "$rootfile"
 cat "$root/goose/model/arch-registry.goose" >> "$rootfile"
 cat "$root/goose/misc/spec-decode-decisions.goose" >> "$rootfile"
 cat "$root/goose/cli/config-validate.goose" >> "$rootfile"
