@@ -11,7 +11,12 @@ out="${1:-$root/build/sampler-chain}"
 compiler="${GOOSE_COMPILER:-/home/end0/AI/LlamaServer/toolchain/goose-2026.3-string/goose}"
 mkdir -p "$out"
 rootfile="$out/sampler-chain-root.goose"
+# The speculative doors join the same unit: one build, one shim, and a host that can call both
+# the sampler chain and the speculative decisions by name.
 cp "$mod" "$rootfile"
+cat "$root/spec_decisions" >> "$rootfile" 2>/dev/null || true
+cat "$root/goose/speculative/spec-decisions.goose" >> "$rootfile"
+cat "$root/goose/speculative/spec-doors.goose" >> "$rootfile"
 cat >> "$rootfile" <<'EOF'
 
 fn main() {
@@ -45,6 +50,10 @@ fn main() {
     let tx = fg_sampler_temp_ext(lv, p, 8, 0.8, 0.4, 1.0, 179);
     let fset = fg_grammar_first_set(rc0, rc0, rc0, rc0, 1, rc0, rc0, 4, 181);
     if fset < -1 {
+        return;
+    }
+    let cmp = fg_sp_compatible(1, 1, 1, 1, 2, 100, 1, 1, 1, 1, 2, 100, 128);
+    if cmp < -1 {
         return;
     }
     let drl = fg_dry_rep_limit_entry(rc0, rc0, rc0, rc0, rc0, 1, 1);
