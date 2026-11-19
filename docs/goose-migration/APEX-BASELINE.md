@@ -66,6 +66,7 @@ decode 62.56 / 62.86 / 62.38, prefill 2701.2 / 2956.0 / 2954.1, hash `c2ff42cc12
 | `builds/checkpoint-20261119-EXP1396` | same baseline, and the tokenizer is now served by the port on both sides - encode and decode - behind a pre-type guard | decode 63.02, prefill 2952.6, hash unchanged; text-prompt reference `2d38a6fd6a03` |
 | `builds/checkpoint-20261119-EXP1401` | same baseline, the encoder swept over the whole vocabulary, and the GGUF check widened to floats and booleans | decode 62.96, prefill 2946.8, hash unchanged |
 | `builds/checkpoint-20261119-EXP1405` | same baseline, the stack-overflow defect in the short-buffer diagnostic fixed, and both comparisons shown able to fail | decode 62.93, prefill 2937.6, hash unchanged |
+| `builds/checkpoint-20261119-EXP1412` | same baseline, plus the fit-params line and the bench-report formatting composed into the unit and protected by the gate | decode 62.85, prefill 2945.6, hash unchanged |
 
 The baseline number is EXP1298's. EXP1332 is the artefact that carries more of the port, and its measurements say the
 growth cost nothing measurable.
