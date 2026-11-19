@@ -1742,6 +1742,31 @@ void llama_grammar_apply_impl(const struct llama_grammar & grammar, llama_token_
                                         (long long) g, (long long) nat[i],
                                         (long long) cpl[i],
                                         (long long) candidates_grammar[i].partial_utf8.n_remain);
+                                // The state the decision was made in. A rejection that the native automaton does not
+                                // share cannot be reasoned about from the verdict alone: the stack says which rule was
+                                // being matched, and the codepoints say what the piece carried.
+                                fprintf(stderr, "FG171_GRAMMAR_STATE cps=");
+                                for (int64_t k = 0; k < cpl[i] && k < FG_MAXCP; ++k) {
+                                    fprintf(stderr, "%s%lld", k ? "," : "", (long long) cp[i * maxcp_used + k]);
+                                }
+                                fprintf(stderr, " stacks=%lld pval=%lld pnr=%lld\n",
+                                        (long long) nstacks, (long long) pv[i], (long long) pn[i]);
+                                for (int64_t st = 0; st < nstacks && st < 3; ++st) {
+                                    fprintf(stderr, "FG171_GRAMMAR_STACK st=%lld depth=%lld head=", (long long) st,
+                                            (long long) stdk[st]);
+                                    for (int64_t k = 0; k < 6 && k < stdk[st]; ++k) {
+                                        const int64_t e = stk[st * FG_MAXD + k];
+                                        if (e < 0) { fprintf(stderr, " [empty]"); continue; }
+                                        // resolve the flattened element back to a rule and an offset inside it
+                                        int64_t rr = -1, oo = -1;
+                                        for (size_t r2 = 0; r2 < flat.roff.size(); ++r2) {
+                                            if (e >= flat.roff[r2] && e < flat.roff[r2] + flat.rlen[r2]) { rr = (int64_t) r2; oo = e - flat.roff[r2]; break; }
+                                        }
+                                        fprintf(stderr, " r%lld+%lld(type=%lld)", (long long) rr, (long long) oo,
+                                                (rr >= 0 ? (long long) flat.etype[(size_t) e] : -1));
+                                    }
+                                    fprintf(stderr, "\n");
+                                }
                             }
                         }
                     }
