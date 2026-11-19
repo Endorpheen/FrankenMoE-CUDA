@@ -864,7 +864,7 @@ fn sm_adaptive_target(target: f32, weighted_sum: f32, total_weight: f32, out: f3
 // compute the adapted target from the EMA state and apply the transform, so the
 // probability array is never used as scratch
 fn sm_apply_adaptive_p_state(lv: f32[:], p: f32[:], id: i64[:], n: i64,
-                             target: f32, weighted_sum: f32, total_weight: f32, sorted: i64) -> i64 {
+                             target: f32, weighted_sum: f32, total_weight: f32) -> i64 {
     var t: f32 = target;
     if t < 0.0 { t = 0.0; }
     if t > 1.0 { t = 1.0; }
@@ -874,10 +874,10 @@ fn sm_apply_adaptive_p_state(lv: f32[:], p: f32[:], id: i64[:], n: i64,
     }
     if adapted < 0.0 { adapted = 0.0; }
     if adapted > 1.0 { adapted = 1.0; }
-    return sm_apply_adaptive_p(lv, p, id, n, adapted, sorted);
+    return sm_apply_adaptive_p(lv, p, id, n, adapted);
 }
 
-fn sm_apply_adaptive_p(lv: f32[:], p: f32[:], id: i64[:], n: i64, adapted: f32, sorted: i64) -> i64 {
+fn sm_apply_adaptive_p(lv: f32[:], p: f32[:], id: i64[:], n: i64, adapted: f32) -> i64 {
     let inv_width: f32 = 1.0 / 0.3;
     var i: i64 = 0;
     while i < n {
@@ -890,7 +890,7 @@ fn sm_apply_adaptive_p(lv: f32[:], p: f32[:], id: i64[:], n: i64, adapted: f32, 
         lv[i] = 5.0 - (10.0 * dist * dist) / (1.0 + dist);
         i = i + 1;
     }
-    let sm = softmax_in_place(lv, p, n, sorted);
+    let sm = softmax_in_place(lv, p, n, 0);
     if sm < 0.0 {
         return -1;
     }
@@ -1072,7 +1072,7 @@ export fn fg_sampler_penalties(lv: f32[:], id: i64[:], hist: f32[:],
 // renormalised exactly as the native body does
 export fn fg_sampler_adaptive_p(lv: f32[:], p: f32[:], id: i64[:], n: i64,
                          target: f32, weighted_sum: f32, total_weight: f32,
-                         sorted: i64, marker: i64) -> i64 {
+                         marker: i64) -> i64 {
     // The caller's array may already be flagged sorted, and the native normalisation trusts that
     // flag: it uses data[0] as the maximum instead of scanning. The final softmax here has to make
     // the same choice, otherwise the two paths differ by one rounding step - measured as exactly one
@@ -1080,7 +1080,7 @@ export fn fg_sampler_adaptive_p(lv: f32[:], p: f32[:], id: i64[:], n: i64,
     if marker != 174 {
         return -1;
     }
-    return sm_apply_adaptive_p_state(lv, p, id, n, target, weighted_sum, total_weight, sorted);
+    return sm_apply_adaptive_p_state(lv, p, id, n, target, weighted_sum, total_weight);
 }
 
 // mirostat entry: the truncation size from the s_hat estimate; the draw and the
@@ -1788,8 +1788,7 @@ export fn fg_sampler_chain(op: i64, lv: f32[:], p: f32[:], id: i64[:], n: i64,
         return sm_apply_penalties(lv, id, p, id, id, n, k, f, f2, f3);
     }
     if op == 7 {
-        // the chain dispatcher has no array flag of its own: it scans, which is the conservative choice
-        return sm_apply_adaptive_p_state(lv, p, id, n, f, f2, f3, 0);
+        return sm_apply_adaptive_p_state(lv, p, id, n, f, f2, f3);
     }
     if op == 8 {
         return sm_mirostat_k(lv, n, f, k, f2);

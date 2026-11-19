@@ -48,7 +48,7 @@ fn main() {
     let xtcr = fg_sampler_xtc(lv, p, id, 8, 0.5, 0.1, 1, 0.0, 172);
     let tbl: i64[16] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     let penr = fg_sampler_penalties(lv, id, p, tbl, tbl, 8, 8, 1.0, 0.0, 0.0);
-    let adr = fg_sampler_adaptive_p(lv, p, id, 8, 0.5, 0.0, 1.0, 0, 174);
+    let adr = fg_sampler_adaptive_p(lv, p, id, 8, 0.5, 0.0, 1.0, 174);
     let mir = fg_sampler_mirostat(p, 8, 1.0, 3, 100.0, 175);
     let dst = fg_sampler_dist(lv, 8, id, 176);
     let dsw = fg_sampler_dist_words(lv, 8, 1, 2, 177);
@@ -247,10 +247,10 @@ int64_t fg_sampler_penalties_call(float * lv, int64_t * id, const float * hist, 
 }
 
 int64_t fg_sampler_adaptive_p_call(float * lv, float * p, int64_t * id, int64_t n,
-                                   float target, float weighted_sum, float total_weight, int64_t sorted) {
+                                   float target, float weighted_sum, float total_weight) {
     sl_f32 s0 = { lv, n }, s1 = { p, n };
     sl_i64 s2 = { id, n };
-    return FG_SAMPLER_ADAPTIVE(s0, s1, s2, n, target, weighted_sum, total_weight, sorted, 174);
+    return FG_SAMPLER_ADAPTIVE(s0, s1, s2, n, target, weighted_sum, total_weight, 174);
 }
 
 int64_t fg_sampler_mirostat_call(float * p, int64_t n, float mu, int64_t m, float n_vocab) {
