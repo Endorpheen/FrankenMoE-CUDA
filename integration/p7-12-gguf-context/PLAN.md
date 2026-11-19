@@ -12,19 +12,23 @@ that it must be done as a block with its own acceptance, not appended to a sessi
 | a call path from the loader | `fg_gguf_check` in `llama_model_loader`, behind `FG_GGUF_DIAG` (EXP-2026-11-19-1335) |
 | a load-time gate | 1610 comparisons per start, refusing the load on any disagreement |
 
-## Gate coverage as of 2026-11-19 (1623 comparisons per start)
+## Gate coverage as of 2026-11-19 (745 857 comparisons per start)
 
 ```
 FG_GGUF_VALUES   integer=26/26
 FG_GGUF_STRINGS  keys=13/13
+FG_GGUF_ARRAYS   elements=744231/744231
 FG_GGUF_TINFO    descriptors=753/753
 FG_GGUF_LOOKUP   keys=52/52 tensors=753/753
 FG_GGUF_PARSE    nk=52 nt=753 align=32 off=10990944 disagreements=0
 ```
 
-Every key of every scalar kind and every tensor descriptor is now compared on the load path, which means the risk
-item "strings and arrays need comparison at the moment of use" is closed for strings. Arrays (the tokenizer tables)
-remain.
+Every value the loader can read is now compared on the load path - scalars, strings, arrays and tensor descriptors -
+so the plan's first risk item is closed for every data class, and each conversion step starts from equality rather
+than from hope. The cost is one pass over the window, paid only under `FG_GGUF_DIAG`.
+
+Remaining risks: the split-file path has no port comparison, and a conversion that returns a default on a missing key
+must be forbidden rather than tolerated.
 
 ## What has to change
 

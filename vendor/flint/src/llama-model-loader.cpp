@@ -27,6 +27,8 @@ typedef int64_t (*fg_gr_find_fn)(fg_sl_u8, fg_sl_i64, fg_sl_i64, fg_sl_i64, fg_s
 typedef int64_t (*fg_gr_meta_int_fn)(fg_sl_u8, fg_sl_i64, fg_sl_i64, int64_t, fg_sl_i64);
 typedef int64_t (*fg_gr_tinfo_fn)(fg_sl_i64, fg_sl_i64, int64_t, fg_sl_i64);
 typedef int64_t (*fg_gr_span_fn)(fg_sl_i64, fg_sl_i64, int64_t, fg_sl_i64);
+typedef int64_t (*fg_gr_arrstr_fn)(fg_sl_u8, fg_sl_i64, fg_sl_i64, int64_t, int64_t, fg_sl_i64);
+typedef int64_t (*fg_gr_arrint_fn)(fg_sl_u8, fg_sl_i64, fg_sl_i64, int64_t, int64_t, fg_sl_i64);
 
 // Returns the number of disagreements; the caller decides whether that is fatal.
 static int fg_gguf_check(const std::string & fname, const gguf_context & native) {
@@ -131,6 +133,58 @@ static int fg_gguf_check(const std::string & fname, const gguf_context & native)
                     (long long) (str_cmp - str_bad), (long long) str_cmp);
         }
 
+        // Arrays: the tokenizer tables the loader reads. Compared element by element, because a count and a
+        // type can both match while the contents differ.
+        int arr_bad = 0, arr_cmp = 0;
+        static fg_gr_arrstr_fn arr_str = nullptr;
+        static fg_gr_arrint_fn arr_int = nullptr;
+        if (!arr_str) {
+            void * h5 = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+            arr_str = h5 ? reinterpret_cast<fg_gr_arrstr_fn>(dlsym(h5, "gr_arr_str_span")) : nullptr;
+            arr_int = h5 ? reinterpret_cast<fg_gr_arrint_fn>(dlsym(h5, "gr_array_int")) : nullptr;
+        }
+        for (int64_t i = 0; i < nk && arr_str && arr_int; ++i) {
+            if (gguf_get_kv_type(&native, i) != GGUF_TYPE_ARRAY) { continue; }
+            const int64_t et = (int64_t) gguf_get_arr_type(&native, i);
+            const int64_t n  = (int64_t) gguf_get_arr_n(&native, i);
+            if (et == GGUF_TYPE_STRING) {
+                for (int64_t e = 0; e < n; ++e) {
+                    int64_t out[2] = {0};
+                    fg_sl_i64 so{ out, 2 };
+                    const char * ns = gguf_get_arr_str(&native, i, (int) e);
+                    const size_t nn = strlen(ns);
+                    ++arr_cmp;
+                    if (arr_str(s_data, s_state, s_kv, i, e, so) != 0 || (size_t) out[1] != nn ||
+                        out[0] < 0 || (size_t) (out[0] + out[1]) > data.size() ||
+                        memcmp(data.data() + out[0], ns, nn) != 0) {
+                        ++arr_bad;
+                    }
+                }
+            } else if (et >= GGUF_TYPE_UINT8 && et <= GGUF_TYPE_INT32) {
+                const uint8_t * raw = reinterpret_cast<const uint8_t *>(gguf_get_arr_data(&native, i));
+                for (int64_t e = 0; e < n; ++e) {
+                    int64_t out[1] = {0};
+                    fg_sl_i64 so{ out, 1 };
+                    int64_t native_el = 0;
+                    switch (et) {
+                        case GGUF_TYPE_UINT8:  native_el = raw[e]; break;
+                        case GGUF_TYPE_INT8:   native_el = ((const int8_t *)  raw)[e]; break;
+                        case GGUF_TYPE_UINT16: native_el = ((const uint16_t *) raw)[e]; break;
+                        case GGUF_TYPE_INT16:  native_el = ((const int16_t *)  raw)[e]; break;
+                        case GGUF_TYPE_UINT32: native_el = ((const uint32_t *) raw)[e]; break;
+                        case GGUF_TYPE_INT32:  native_el = ((const int32_t *)  raw)[e]; break;
+                        default: continue;
+                    }
+                    ++arr_cmp;
+                    if (arr_int(s_data, s_state, s_kv, i, e, so) != 0 || out[0] != native_el) { ++arr_bad; }
+                }
+            }
+        }
+        if (arr_cmp) {
+            fprintf(stderr, "FG_GGUF_ARRAYS elements=%lld/%lld\n",
+                    (long long) (arr_cmp - arr_bad), (long long) arr_cmp);
+        }
+
         // Tensor descriptors through the door the loader would use: dtype, dims, extents and data offset.
         int ti_bad = 0, ti_cmp = 0;
         static fg_gr_tinfo_fn tinfo = nullptr;
@@ -159,7 +213,7 @@ static int fg_gguf_check(const std::string & fname, const gguf_context & native)
             fprintf(stderr, "FG_GGUF_TINFO descriptors=%lld/%lld\n",
                     (long long) (ti_cmp - ti_bad), (long long) ti_cmp);
         }
-        differ += kv_bad + tn_bad + ti_bad + str_bad;
+        differ += kv_bad + tn_bad + ti_bad + str_bad + arr_bad;
         fprintf(stderr, "FG_GGUF_LOOKUP keys=%lld/%lld tensors=%lld/%lld\n",
                 (long long) (nk - kv_bad), (long long) nk, (long long) (nt - tn_bad), (long long) nt);
     }
