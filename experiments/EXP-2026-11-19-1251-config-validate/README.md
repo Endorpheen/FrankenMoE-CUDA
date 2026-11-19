@@ -1,44 +1,46 @@
 # EXP-2026-11-19-1251: configuration validation against the real native validator
 
-`bmoe::validate` (runtime/core/src/config.cpp, 265 lines) is pure: it reads a `RunConfig` and returns ok or a
-message. The port answers with an **ordered rule index** instead of a message, because messages are byte slices
-and the comparison that matters is *which rule fired, in the native order*.
+`bmoe::validate` (runtime/core/src/config.cpp) is pure: it reads a `RunConfig` and returns ok or a message. The
+port answers with an **ordered rule index** instead of a message, because messages are slices of text and the
+comparison that matters is *which rule fired, in the native order*.
 
 ```
 config validate: cases=4000 fails=0 uncovered=0
 ```
 
 4000 random configurations against `bmoe::validate` linked from `libbmoe_core.a`. The harness maps the native
-message back to its rule index, so the two sides are compared on the decision, not on wording. `uncovered=0`
-means every configuration the native code rejected was rejected by a rule this port implements - nothing was
-silently skipped.
+message back to its rule index, so the sides are compared on the decision. `uncovered=0` means every rejection
+the native code produced came from a rule this port implements.
 
-## The 17 rules covered, in native order
+## Rules covered (native order)
 
 | # | rule |
 |---|---|
-| 1 | model_path required |
-| 2-4 | n_predict, n_threads, n_ctx positive |
-| 5-6 | n_ubatch non-negative and not above n_ctx |
-| 7 | n_expert_used non-negative |
+| 1-7 | model_path; n_predict, n_threads, n_ctx positive; n_ubatch non-negative and ≤ n_ctx; n_expert_used |
 | 8-10 | workload capture/replay: exclusive, needs moe, excludes speculative |
-| 11-13 | vram_cache_mb, expert_hot_slots non-negative; VRAM cache needs n_gpu_layers |
-| 14-15 | sampling.top_k non-negative, sampling.top_p in (0,1] |
-| 16 | speculative requires greedy decoding |
-| 17 | moe.overlap requires moe.enabled |
+| 11-13 | vram_cache_mb, expert_hot_slots; VRAM cache needs n_gpu_layers |
+| 14-16 | sampling.top_k, sampling.top_p in (0,1]; speculative requires greedy |
+| 17-22 | draft_max range; MTP p_min range; ngram p_min must be zero; ngram match ranges; n_ubatch ≥ draft_max+1 |
+| 23-26 | overlap, predict_log, predict_prefetch, route_ahead all require moe.enabled |
 
-## What is not covered, and it is named
+## Three defects in my *harness*, found by running it
 
-- the **messages**: not ported, deliberately - they are text, and text comparison would test my transcription of
-  English rather than the decision;
-- the **spec-specific** rules (draft_max range, draft_p_min range, the MTP/ngram p_min exclusivity): the harness
-  keeps speculation off, so those branches are never entered. They are the next slice.
+1. **`rfind(s, 0)` tests a prefix, not a substring.** The verify-batch message does not start with the text I
+   looked for, so the mapping returned the wrong rule and produced 8 phantom mismatches. `find()` fixed it.
+2. **The mapping order mattered.** Two messages both begin with `n_ubatch=`, so the narrower test has to run
+   before the prefix test.
+3. **A rule I put in the wrong block.** `route_ahead must be in [0, 8]` lives in the nested MoE block, not in
+   the top-level sequence; including it produced a mismatch where the native code returned ok.
 
-## Why this shape is better than a symmetric gate
+None of the three was in the port. That is the fifth verification-logic error of this session and the reason
+the differential is worth more than a symmetric gate: the port was right and the test was wrong, and running it
+against real code says so immediately.
 
-The native function is compiled and called; there is no transcription anywhere. The three earlier verification
-errors in this session were all transcriptions, and this shape removes that failure mode from the comparison
-entirely. It also runs in under a second with no model and no GPU.
+## Slice boundary, stated
+
+The **nested MoE block** (io_threads, the cache band, prefetch_layers, row_stream, route_ahead range, the
+prefetch-without-cache rule) is a separate slice. Its fields are held valid here so that only the rules above can
+fire, and anything the native rejects outside them appears as `UNCOVERED` rather than passing silently.
 
 ## Reproduce
 
