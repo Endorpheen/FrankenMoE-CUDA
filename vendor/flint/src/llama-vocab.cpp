@@ -3910,6 +3910,16 @@ struct table {
     bool ready = false;
 };
 
+typedef int64_t (*fn_detok_t)(sl_u8, sl_i64, sl_i64, sl_i64, sl_i64, int64_t, sl_u8,
+                              int64_t, int64_t, int64_t, int64_t, int64_t, int64_t, int64_t, int64_t);
+inline fn_detok_t resolve_detok() {
+    static fn_detok_t fn = []() -> fn_detok_t {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        return h ? reinterpret_cast<fn_detok_t>(dlsym(h, "bt_detokenize")) : nullptr;
+    }();
+    return fn;
+}
+
 // One table for the process: the piece cache builds it, and any other reader can use it.
 inline table & shared() {
     static table t;
@@ -5252,5 +5262,47 @@ int32_t llama_detokenize(
                      int32_t   text_len_max,
                         bool   remove_special,
                         bool   unparse_special) {
-    return vocab->detokenize(tokens, n_tokens, text, text_len_max, remove_special, unparse_special);
+    const int32_t n = vocab->detokenize(tokens, n_tokens, text, text_len_max, remove_special, unparse_special);
+
+    // Measurement of the sequence form, before any conversion. It is done here, at the public entry, because
+    // that is where the buffer belongs to the caller and is not advanced - two earlier attempts inside the
+    // implementation compared a pointer that had walked the string (EXP-2026-11-19-1320, -1321).
+    static const bool fg_diag = getenv("FG_TK_DETOK_DIAG") != nullptr;
+    if (fg_diag && n >= 0) {
+        if (const auto fn = fg_detok_check::resolve_detok()) {
+            fg_detok_check::table & t = fg_detok_check::shared();
+            if (t.ready) {
+                static thread_local std::vector<int64_t> ids;
+                static thread_local std::vector<uint8_t> out;
+                ids.assign(tokens, tokens + n_tokens);
+                // the door must be given at least as much room as the native used, or it reports a short
+                // buffer and the comparison measures the buffer rather than the decision
+                if (out.size() < (size_t) n + 64) { out.resize((size_t) n + 64); }
+                fg_detok_check::sl_u8  s_gguf{ (uint8_t *) t.blob.data(), (int64_t) t.blob.size() };
+                fg_detok_check::sl_i64 s_off { t.off.data(),  (int64_t) t.off.size() };
+                fg_detok_check::sl_i64 s_len { t.len.data(),  (int64_t) t.len.size() };
+                fg_detok_check::sl_i64 s_attr{ t.attr.data(), (int64_t) t.attr.size() };
+                fg_detok_check::sl_i64 s_ids { ids.empty() ? nullptr : ids.data(), (int64_t) ids.size() };
+                fg_detok_check::sl_u8  s_out { out.data(),    (int64_t) out.size() };
+                const int64_t got = fn(s_gguf, s_off, s_len, s_attr, s_ids, (int64_t) ids.size(), s_out,
+                                       remove_special ? 1 : 0, unparse_special ? 1 : 0,
+                                       vocab->get_add_space_prefix() ? 1 : 0, vocab->get_add_bos() ? 1 : 0,
+                                       (int64_t) vocab->token_bos(), vocab->get_add_eos() ? 1 : 0,
+                                       (int64_t) vocab->token_eos(), 0);
+                static std::atomic<long long> calls{0}, bad{0};
+                const long long c = calls.fetch_add(1) + 1;
+                if (got != (int64_t) n || (n > 0 && memcmp(out.data(), text, (size_t) n) != 0)) {
+                    bad.fetch_add(1);
+                    if (bad.load() <= 5) {
+                        fprintf(stderr, "FG_TK_SEQ_DIFF n_tokens=%d native=%d goose=%lld\n",
+                                (int) n_tokens, (int) n, (long long) got);
+                    }
+                }
+                if (c % 4 == 1) {
+                    fprintf(stderr, "FG_TK_SEQ_PROGRESS calls=%lld disagreements=%lld\n", c, bad.load());
+                }
+            }
+        }
+    }
+    return n;
 }
