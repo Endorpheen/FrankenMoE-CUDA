@@ -59,8 +59,14 @@ for p in $(seq 1 "$PAIRS"); do
 done
 # provenance for the acceptance gate: the rule requires the artefacts of the exact binary that was
 # measured, and check-cumulative-baseline.py reads these copies rather than the global paths
-for lib in libllama.so.0 libggml-base.so.0 libggml-cpu.so.0; do
-  cp -f "$R/builds/flint-acc/bin/$lib" "$OUT/$lib" 2>/dev/null || echo "warn: $lib not copied"
+for lib in libllama.so.0 libggml-base.so.0 libggml-cpu.so.0 libmoe_mmid_tiled.so; do
+  if [ "$lib" = "libmoe_mmid_tiled.so" ]; then
+    # the Goose kernel object is produced by the P1-12 experiment, not by the cmake tree
+    cp -f "$R/experiments/EXP-2026-11-18-1008-p1-12-gemv/build/p112-mmid-v3/$lib" "$OUT/$lib" 2>/dev/null \
+        || echo "warn: $lib not copied"
+  else
+    cp -f "$R/builds/flint-acc/bin/$lib" "$OUT/$lib" 2>/dev/null || echo "warn: $lib not copied"
+  fi
 done
 ( cd "$OUT" && sha256sum *.so.* > SHA256SUMS 2>/dev/null )
 printf '%s\n' "$0 $*" > "$OUT/argv.txt"
