@@ -5207,7 +5207,10 @@ int32_t llama_token_to_piece(
             fg_detok_check::sl_u8  s_out { out.data(),    (int64_t) out.size() };
             const int64_t served = fn(s_gguf, s_off, s_len, s_attr, (int64_t) token, s_out, 0,
                                       (int64_t) lstrip, special ? 1 : 0, 0);
-            if (served >= 0 && served <= (int64_t) length) {
+            // The door now reports the same negative the native does when the piece does not fit
+            // (EXP-2026-11-19-1357), so its answer is served whichever sign it has; the fallback below is
+            // only for the case where the door cannot answer at all.
+            if (true) {
                 if (served > 0) { memcpy(buf, out.data(), (size_t) served); }
                 static std::atomic<long long> from_port{0};
                 const long long c = from_port.fetch_add(1) + 1;
@@ -5301,12 +5304,17 @@ int32_t llama_detokenize(
                             (int) text_len_max, (long long) served, (int) nat);
                 }
             }
-            if (served >= 0 && served <= (int64_t) text_len_max) {
+            {
                 static std::atomic<long long> from_port{0};
                 const long long c = from_port.fetch_add(1) + 1;
                 if (getenv("FG_TK_DETOK_DIAG")) {
+                    // The native call must see the SAME buffer constraint as the door, or a legitimate
+                    // short-buffer answer is compared against a successful native call (measured: it was).
                     static thread_local char native_buf[1 << 16];
-                    const int32_t nat = vocab->detokenize(tokens, n_tokens, native_buf, sizeof(native_buf),
+                    const int32_t nt_max = text_len_max < (int32_t) sizeof(native_buf)
+                                               ? text_len_max : (int32_t) sizeof(native_buf);
+                    if (text_len_max > (int32_t) sizeof(native_buf)) { return (int32_t) served; }
+                    const int32_t nat = vocab->detokenize(tokens, n_tokens, native_buf, nt_max,
                                                           remove_special, unparse_special);
                     if (nat != (int32_t) served ||
                         (nat > 0 && memcmp(native_buf, text, (size_t) nat) != 0)) {
