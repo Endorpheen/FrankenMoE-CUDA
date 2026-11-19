@@ -53,6 +53,10 @@ COMPONENTS = [
     ("goose-cuda-arch", "nm", "arch_resolve",
      "the CUDA architecture policy, composed into the unit in EXP-2026-11-19-1425; its doors answer on five "
      "hand-checked cases"),
+    ("goose-cuda-flags", "nm", "tgt_flags",
+     "the CUDA compile-flag decisions, composed in EXP-2026-11-19-1426; -lineinfo in a debug build and absent otherwise"),
+    ("goose-cuda-install", "nm", "inst_kind",
+     "the install-layout decision, composed in EXP-2026-11-19-1426; dynamic, shared and neither answer 2, 1 and 0"),
     ("expert-cache", "strings", "moe-cache",
      "the SLRU expert cache the profile sets to 4992 MiB"),
 ]
