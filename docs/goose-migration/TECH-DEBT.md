@@ -287,3 +287,23 @@ known chain cost, not a new one.
 
 `fg_sampler_typical` remains non-exported with `fg_typical_entry` as its door: the export
 failure is still unexplained and still belongs to the compiler agent.
+
+## TD-S10: the ported grammar automaton is correct and ~12x too slow
+
+Measured 2026-11-18 with the port deciding the full candidate set (it used to decline, which is why
+the earlier figure was 3-5x):
+
+```
+decode  4.32 tok/s vs 50.3   -> 11.7x slower
+prefill 5.85 tok/s vs 20.9   ->  3.6x slower
+```
+
+Correctness is not in question: zero disagreements against `llama_grammar_reject_candidates` over
+1 736 513 candidates, and constrained output identical to the reference library.
+
+The cost is in the generated per-candidate loop, not in the host. Eight host-side alternatives were
+tried and closed earlier (allocation, per-rule caching, array writes, first-codepoint pre-filter),
+so this needs the compiler: the loop walks a per-candidate codepoint array with bounds checks and
+function calls, where the native code walks a pointer chain.
+
+Until the loop is comparable, the grammar stage stays opt-in and P6-10's grammar item stays open.
