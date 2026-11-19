@@ -16,6 +16,16 @@ OUT=${3:-/tmp/opencode-repro}; rm -rf "$OUT"; mkdir -p "$OUT"
 export LD_LIBRARY_PATH="$BIN"
 M=/home/end0/AI/LocalAI/Models/Apex-35B-V1.0-Q4_K_M.gguf
 
+# The port must be free before anything starts, and the owner is identified by pid, never by process name: a
+# previous run of this script left a server behind on 9101 and the next one died with "couldn't bind HTTP server
+# socket", which looks like a model failure and is not one (EXP-2026-11-19-1436). Nothing foreign is ever stopped.
+if ss -ltnp 2>/dev/null | grep -q ":$PORT "; then
+  echo "REFUSING: port $PORT already has an owner:"
+  ss -ltnp 2>/dev/null | grep ":$PORT " | sed 's/^/  /'
+  echo "  stop your own server first; this script never stops another process"
+  exit 2
+fi
+
 setsid "$BIN/llama-server" -m "$M" --alias Apex-35B-V1.0 \
   -c 262144 -ngl all -fit off --cpu-moe -fa on -ctk q4_0 -ctv q4_0 \
   -b 4096 -ub 4096 -t 8 -tb 16 \
@@ -38,8 +48,16 @@ import json, socket, sys, time
 out, port = sys.argv[1], int(sys.argv[2])
 body_text = ("You are a coding assistant. " + "The repository contains a runtime that serves a model. " * 1950 +
              "Now describe the architecture in one paragraph.")
-body = json.dumps({"messages": [{"role": "user", "content": body_text}],
-                   "max_tokens": 64, "temperature": 1, "top_p": 0.95, "top_k": 20, "stream": True}).encode()
+tools = [{"type": "function", "function": {
+            "name": "read_file", "description": "Read a file from the workspace",
+            "parameters": {"type": "object", "properties": {"path": {"type": "string"}}, "required": ["path"]}}},
+         {"type": "function", "function": {
+            "name": "run_command", "description": "Run a shell command",
+            "parameters": {"type": "object", "properties": {"cmd": {"type": "string"}}, "required": ["cmd"]}}}]
+body = json.dumps({"messages": [{"role": "system", "content": body_text},
+                                {"role": "user", "content": "Привет. Ты тут?"}],
+                   "tools": tools, "max_tokens": 64, "temperature": 1, "top_p": 0.95, "top_k": 20,
+                   "stream": True}).encode()
 req = (b"POST /v1/chat/completions HTTP/1.1\r\nHost: 127.0.0.1\r\nContent-Type: application/json\r\n"
        b"Connection: close\r\nContent-Length: " + str(len(body)).encode() + b"\r\n\r\n" + body)
 s = socket.create_connection(("127.0.0.1", port), timeout=600)

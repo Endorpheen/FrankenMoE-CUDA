@@ -55,3 +55,15 @@ evidence either way.
 
 The crash is **guarded but not explained**. The guard converts an abort into a diagnostic message plus a failed task, and
 the diagnostic is designed to name the source on the next run.
+
+
+## The reproduction attempt that failed for the wrong reason
+
+A fourth run, with tools and a system prompt added to match what the client sends, reported the server dying - and it had:
+`couldn't bind HTTP server socket, hostname: 127.0.0.1, port: 9101`. The port was still owned by an earlier server, so the
+run never reached the model. That is the same class of confusion rule 29 exists to prevent, and it was mine: the
+reproducer had no port check.
+
+The script now refuses to start when the port has an owner and names the owner by pid; it never stops anything it did not
+start. The lesson is the one already written down - check the port by pid before a run, and never read a start failure as a
+result about the code.
