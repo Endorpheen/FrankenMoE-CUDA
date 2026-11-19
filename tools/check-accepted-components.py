@@ -47,6 +47,9 @@ COMPONENTS = [
      "format on twenty cases"),
     ("goose-bench-report", "nm", "lb_csv_escape",
      "the llama-bench report formatting, composed into the unit in EXP-2026-11-19-1408"),
+    ("goose-slru-policy", "nm", "slru_plan",
+     "the expert-cache replacement policy, composed into the unit in EXP-2026-11-19-1415; its comparison with the "
+     "native plan is the next step of P9-03"),
     ("expert-cache", "strings", "moe-cache",
      "the SLRU expert cache the profile sets to 4992 MiB"),
 ]
