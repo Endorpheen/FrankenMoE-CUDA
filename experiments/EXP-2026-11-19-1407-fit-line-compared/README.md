@@ -24,9 +24,28 @@ fp_line: calls=16 disagreements=0
 
 Sixteen of sixteen identical, byte for byte including the newline.
 
-## What is not compared
+## The `-ts` branch, and the expectation error it caught
 
-- the `-ts` branch, which the native tool emits only when more than one device is present - this machine has one;
+The branch can be exercised without a second GPU: the values are `uint32_t` casts of the split floats, and the tool
+trims trailing zero splits before printing. Three split sets were added, and the first run reported one difference:
+
+```
+DIFF ts k=2 native=[-c 4096 -ngl 41 -ts 1,0] goose=[-c 4096 -ngl 41]
+```
+
+The difference was in the **harness**: the native expectation did not implement the trim (`while (nd > 1 && split[nd-1] ==
+0) nd--;`), while `fp_line` already did. With the trim written into the expectation:
+
+```
+fp_line: calls=19 disagreements=0
+```
+
+Nineteen of nineteen, including the uint32 quirk - a split of 0.6 prints as `0`, because the tool casts the float rather
+than printing its decimals. The port reproduces that too, which is the point: matching the tool means matching its quirks.
+
+## What is still not compared
+
+
 - the `-ot`/`--override-tensor` and `--override-kv` parts, which need override patterns;
 - the backend list.
 

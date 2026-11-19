@@ -41,6 +41,37 @@ int main(int argc, char ** argv) {
                    (long long) ctxs[a], (long long) ngls[b], native, out);
         }
     }
+    /* the -ts branch: the native tool prints it when more than one device is present, and the values are
+       uint32_t casts of the split floats, not their decimal text - that quirk is what has to match */
+    const double split_sets[3][2] = { { 0.6, 0.4 }, { 0.5, 0.5 }, { 1.0, 0.0 } };
+    for (unsigned k = 0; k < 3; ++k) {
+        char native[256];
+        /* the native tool trims trailing zero splits first: while (nd > 1 && split[nd-1] == 0) nd--; */
+        unsigned nd = 2;
+        while (nd > 1 && split_sets[k][nd - 1] == 0.0) { nd--; }
+        int w = snprintf(native, sizeof(native), "-c %u -ngl %d", 4096u, 41);
+        if (nd > 1) {
+            w += snprintf(native + w, sizeof(native) - (size_t) w, " -ts ");
+            for (unsigned id = 0; id < nd; ++id) {
+                w += snprintf(native + w, sizeof(native) - (size_t) w, "%s%u", id > 0 ? "," : "",
+                              (uint32_t) split_sets[k][id]);
+            }
+        }
+        snprintf(native + w, sizeof(native) - (size_t) w, "\n");
+        char out[512]; memset(out, 0, sizeof(out));
+        sl_f64 s_splits = { (void *) split_sets[k], 2 };
+        char pats[8], bufts[8]; int64_t poff[1], plen[1], boff[1], blen[1];
+        sl_u8  s_pats = { pats, 0 };  sl_i64 s_poff = { poff, 0 }; sl_i64 s_plen = { plen, 0 };
+        sl_u8  s_bufts = { bufts, 0 }; sl_i64 s_boff = { boff, 0 }; sl_i64 s_blen = { blen, 0 };
+        sl_u8  s_out = { out, (int64_t) sizeof(out) };
+        (void) fp(4096, 41, s_splits, 2, s_pats, s_poff, s_plen, s_bufts, s_boff, s_blen, 0, s_out);
+        ++calls;
+        if (strcmp(out, native) != 0) {
+            ++bad;
+            printf("DIFF ts k=%u native=[%s] goose=[%s]\n", k, native, out);
+        }
+    }
+
     printf("fp_line: calls=%ld disagreements=%ld\n", calls, bad);
     return bad ? 1 : 0;
 }
