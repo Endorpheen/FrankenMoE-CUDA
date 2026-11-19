@@ -44,14 +44,25 @@ A harness outlives a run only if everything it needs is committed. The sweep nam
 (`tools/run-verification.sh` prints a separate `stale` count), because a harness that quietly leaves the sweep
 looks exactly like coverage.
 
-## Sampler chain (P6-10) - accepted, checkpointed
+## Sampler chain (P6-10) - nine entry points driven through the shipped library
 
 | decision | evidence | mechanism |
 |---|---|---|
-| typical, top-p, XTC, DRY | 1800 + 900 + 45 + 720 + 200 cases, 0 mismatches | differential stand |
-| adaptive-p, mirostat | 33211 logits, 500 k-values | differential stand |
-| RNG stream | 1280 draws vs `std::mt19937` | differential stand |
+| typical, top-p, XTC, DRY (steps 1-4) | 1800 + 900 + 45 + 720 + 200 | harness |
+| adaptive-p, mirostat | 33211 logits, 500 k-values | harness |
+| **penalties, typical, xtc, mirostat, adaptive-p** | arrays identical (values, order, size), state carried across draws | public API, door on/off |
+| **top-p, temp_ext** | identical including order and size | public API, door on/off |
+| **dist** | 8000 selected tokens identical, door counter at every 100th call | public API, door on/off |
 | acceptance | 6 official `apex-test.sh` runs, hash `c2ff42cc1219` | live |
+
+The public-API arrangement is the one that matters: the same sampler object is driven twice with the door enabled
+and disabled, so the comparison is with the native code rather than with a restatement of it. It found a **real
+defect** - the DRY functions read the context oldest-first while the caller builds it newest-first, so any context
+ending in a single-token breaker received a penalty the native never applies. Fixed; the acceptance hash is
+unchanged because the fixed profile sets no DRY multiplier.
+
+It also produced three alarms that were my instruments: a mirrored DRY harness, an unsorted array, and a dump that
+ignored `cur_p->data` being advanced. Each is recorded as a correction in its card rather than quietly fixed.
 
 ## Grammar (P6-10) - correct, opt-in for cost
 
