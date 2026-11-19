@@ -1194,6 +1194,7 @@ const char * llm_arch_name(llm_arch arch) {
 
 // Goose cross-check: for every architecture name the native table holds, the ported registry must
 // find it and round-trip it. The native parser's answer is what is returned either way.
+struct fg_sl_i64 { int64_t * data; int64_t len; };
 struct fg_sl_u8 { uint8_t * data; int64_t len; };
 typedef int64_t (*fg_ar_find_fn)(fg_sl_u8);
 typedef int64_t (*fg_ar_arch_fn)(int64_t, fg_sl_u8);
@@ -1237,6 +1238,17 @@ static fg_ar_exps_fn fg_ar_exps_resolve() {
         void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
         void * sym = h ? dlsym(h, "ar_exps") : nullptr;
         return reinterpret_cast<fg_ar_exps_fn>(sym);
+    }();
+    return fn;
+}
+
+typedef int64_t (*fg_ar_match_fn)(fg_sl_u8, int64_t, fg_sl_i64);
+
+static fg_ar_match_fn fg_ar_match_resolve() {
+    static fg_ar_match_fn fn = []() -> fg_ar_match_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        void * sym = h ? dlsym(h, "ar_match") : nullptr;
+        return reinterpret_cast<fg_ar_match_fn>(sym);
     }();
     return fn;
 }
@@ -1316,6 +1328,53 @@ static void fg_check_arch_sweep() {
                     ++bad;
                     if (bad <= 6) fprintf(stderr, "FG_ARCH_SUFFIX_DIFF row=%lld slot=%lld len=%lld\n",
                                           (long long) row, (long long) slot, (long long) len);
+                }
+            }
+        }
+    }
+    // Matcher invariants, built from the same table: the name for a slot must return that slot and its
+    // layer, the ".scale" companion must return -1 (its suffix is a prefix of the name), and a name with
+    // no suffix from the row must return -1. These do not need the native matcher, they are properties
+    // of the contract, which is what the streamer relies on.
+    const auto match = fg_ar_match_resolve();
+    if (match != nullptr) {
+        static const char * const std3m[3] = { "ffn_gate_exps", "ffn_up_exps", "ffn_down_exps" };
+        for (int64_t row = 0; row < 9; ++row) {
+            const bool gemma = row == 3;
+            for (int64_t slot = 0; slot < 3; ++slot) {
+                const char * suf = gemma ? (slot == 0 ? "ffn_gate_up_exps" : (slot == 1 ? "ffn_down_exps" : nullptr))
+                                         : std3m[slot];
+                int64_t lay[2] = { -1, -1 };
+                fg_sl_i64 slay{ lay, 2 };
+                char buf[128];
+                auto run = [&](const std::string & nm, int64_t * out_lay) -> int64_t {
+                    fg_sl_u8 sn{ (uint8_t *) nm.data(), (int64_t) nm.size() };
+                    return match(sn, row, slay);
+                };
+                if (suf != nullptr) {
+                    const std::string pos = std::string("blk.7.") + suf + ".weight";
+                    const int64_t got = run(pos, lay);
+                    ++n;
+                    if (got != slot || lay[0] != 7) {
+                        ++bad;
+                        if (bad <= 6) fprintf(stderr, "FG_ARCH_MATCH_DIFF row=%lld slot=%lld got=%lld lay=%lld\n",
+                                              (long long) row, (long long) slot, (long long) got, (long long) lay[0]);
+                    }
+                    const std::string neg = std::string("blk.7.") + suf + ".scale";
+                    ++n;
+                    if (run(neg, lay) != -1) {
+                        ++bad;
+                        if (bad <= 6) fprintf(stderr, "FG_ARCH_MATCH_SCALE row=%lld slot=%lld\n",
+                                              (long long) row, (long long) slot);
+                    }
+                } else {
+                    // the fused row's empty slot must never match anything
+                    const std::string neg = "blk.7.ffn_down_exps.weight";
+                    ++n;
+                    if (run(neg, lay) != 1) {
+                        ++bad;
+                        if (bad <= 6) fprintf(stderr, "FG_ARCH_MATCH_FUSED row=%lld\n", (long long) row);
+                    }
                 }
             }
         }
