@@ -785,3 +785,26 @@ come from Igor directly. For every marked message:
     - when `main` moves, the working tree is updated from it before new work starts;
     - every accepted improvement stays in `main`, so "the latest accepted state" and "main" are
       the same thing and a release can be cut from it directly.
+
+38. A watcher must never match itself, and a long command is not started before it is known to pass.
+
+    Two failures, one cause: a check that is not designed to terminate, and a build started on
+    hope.
+
+    - `pgrep -f <pattern>`, `ps | grep` and `pgrep -af` match **the observing command's own command
+      line**. On 2026-11-19 a wait loop on `pgrep -f 'runtime/reconstructed/build.py --build-dir'`
+      found itself, never exited, and held an agent for ten minutes after the build had already
+      finished with `BUILD OK`. Never wait on a pattern. Wait on a recorded PID (`kill -0 <pid>`,
+      and the pid is the process's, not a subshell's), on the owner of the port
+      (`ss -ltnp`), or on a file the run appends to.
+    - Every wait has a bound and says what it is waiting for. A wait with no exit condition, or
+      one that cannot distinguish "still working" from "already done", is a defect in the watcher,
+      not in the build.
+    - `bash x.sh & echo $!` records the **subshell's** pid, not the build's. Start the command
+      directly in the background, or record the pid the process itself wrote down.
+    - Before a build that costs minutes, run the cheap test that would show it failing: compile the
+      one translation unit that changed, check the symbol exists in the object, run
+      `goose check` on the composed file, or dry-run the link. A long build is started when its
+      failure modes have been ruled out, not to find out whether they exist. Rule 16 already says
+      this in cost terms; this rule says it in consequence terms - every avoidable rebuild costs
+      the owner the same minutes twice, once waiting and once explaining.
