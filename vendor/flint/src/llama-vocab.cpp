@@ -3910,6 +3910,12 @@ struct table {
     bool ready = false;
 };
 
+// One table for the process: the piece cache builds it, and any other reader can use it.
+inline table & shared() {
+    static table t;
+    return t;
+}
+
 } // namespace fg_detok_check
 
 std::string llama_vocab::impl::token_to_piece_for_cache(llama_token token, bool special) const {
@@ -3918,7 +3924,7 @@ std::string llama_vocab::impl::token_to_piece_for_cache(llama_token token, bool 
     // diagnostic comparison below keeps running when the flag is set.
     if (special && token >= 0 && (size_t) token < id_to_token.size()) {
         if (const auto fn = fg_detok_check::resolve()) {
-            static fg_detok_check::table t;
+            fg_detok_check::table & t = fg_detok_check::shared();
             if (!t.ready) {
                 size_t total = 0;
                 for (const auto & tk : id_to_token) { total += tk.text.size(); }
@@ -5176,7 +5182,40 @@ int32_t llama_token_to_piece(
                      int32_t   length,
                      int32_t   lstrip,
                         bool   special) {
-    return vocab->token_to_piece(token, buf, length, lstrip, special);
+    const int32_t n = vocab->token_to_piece(token, buf, length, lstrip, special);
+
+    // Measurement of the buffer form before any conversion: the door is compared on the flags this call
+    // actually uses, including special = false and lstrip > 0, neither of which the piece cache exercises.
+    // Counted, never enforced - the native bytes are what return.
+    static const bool fg_diag = getenv("FG_TK_DETOK_DIAG") != nullptr;
+    if (fg_diag && n >= 0) {
+        if (const auto fn = fg_detok_check::resolve()) {
+            fg_detok_check::table & t = fg_detok_check::shared();
+            if (t.ready && token >= 0 && (size_t) token < t.off.size()) {
+                static thread_local std::vector<uint8_t> out(1024);
+                fg_detok_check::sl_u8  s_gguf{ (uint8_t *) t.blob.data(), (int64_t) t.blob.size() };
+                fg_detok_check::sl_i64 s_off { t.off.data(),  (int64_t) t.off.size() };
+                fg_detok_check::sl_i64 s_len { t.len.data(),  (int64_t) t.len.size() };
+                fg_detok_check::sl_i64 s_attr{ t.attr.data(), (int64_t) t.attr.size() };
+                fg_detok_check::sl_u8  s_out { out.data(),    (int64_t) out.size() };
+                const int64_t got = fn(s_gguf, s_off, s_len, s_attr, (int64_t) token, s_out, 0,
+                                       (int64_t) lstrip, special ? 1 : 0, 0);
+                static std::atomic<long long> calls{0}, bad{0};
+                const long long c = calls.fetch_add(1) + 1;
+                if (got != (int64_t) n || (n > 0 && memcmp(out.data(), buf, (size_t) n) != 0)) {
+                    bad.fetch_add(1);
+                    if (bad.load() <= 5) {
+                        fprintf(stderr, "FG_TK_BUF_DIFF token=%d lstrip=%d special=%d native=%d goose=%lld\n",
+                                (int) token, (int) lstrip, special ? 1 : 0, (int) n, (long long) got);
+                    }
+                }
+                if (c % 128 == 1) {
+                    fprintf(stderr, "FG_TK_BUF_PROGRESS calls=%lld disagreements=%lld\n", c, bad.load());
+                }
+            }
+        }
+    }
+    return n;
 }
 
 int32_t llama_detokenize(
