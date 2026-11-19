@@ -3059,7 +3059,8 @@
         "Apex protection while Qwen support is extended"
       ],
       "coverage_doc": "docs/goose-migration/APEX-API-SCHED-CLOSURE.md",
-      "plan_note": "Documented as assigned scope, not yet decomposed into slices."
+      "plan_note": "Documented as assigned scope, not yet decomposed into slices.",
+      "evidence_20261119": "State recorded in docs/goose-migration/C1-06-APEX-PROTECTION.md. Mechanical guards exist and run: tests/regression/accepted-components, tests/regression/symbol-loss, tests/integration/unwired-modules, tests/integration/carrier-symbols, tools/check-cumulative-baseline.py and the CI Goose job. The CI Goose job already did its part for the Qwen work: run 44597680081 succeeded for the commit that put qwen4exp, q4m, q4t and q4e into the unit. OWED: tools/apex-test.sh has not run since that commit - the last Apex run is rel-exp1476-20261119-212613, made before the modules joined. That does not put an unverified build into production (the shipped artefact v0.10.0-exp1476 comes from the accepted checkpoint and no later build was promoted), but the qualifying measurement is owed and needs a rebuild then a model run: build-independent-apex.sh, check-cumulative-baseline, then apex-test.sh at 512 4096 4096 4992. The comparison must report decode, prefill, RAM, VRAM and the answer hash against 62.86 / 2940.9 / 20848620 kB / 9511 MiB / c2ff42cc1219. Nothing is claimed about Apex behaviour with the Qwen modules until that run exists."
     },
     {
       "id": "C2-04",
