@@ -19,7 +19,8 @@ ROOT="$(cd "$D/../../.." && pwd)"
 OUT=$D/build
 LOG=$OUT/run.log
 mkdir -p "$OUT"
-BIN=${1:-${APEX_SERVER_DIR:-$ROOT/builds/flint-acc/bin}}
+. "$ROOT/tests/lib-default.sh"
+BIN=${1:-$(lib_default "$ROOT")}
 
 # Compile first, before the library check: the two translation units are the part that can be
 # verified anywhere, and a change to json.cpp must not go unchecked just because no built library is
@@ -35,7 +36,15 @@ fail=0
         -o "$OUT/probe" -ldl || exit 1
     printf 'ok: json.cpp and json-adapter.cpp compile\n'
 
-    if [ ! -f "$BIN/libllama.so.0" ]; then
+    # The door has to exist in the library under test. On 2026-11-19 the released set
+# (builds/checkpoint-20261119-EXP1476, 0ffd98c2) exports no json_parse at all, while the working
+# library in builds/flint-acc/bin (bea5d6af, provenance unknown) does - so a pass against the working
+# directory would say nothing about the shipped artefact.
+if [ -f "$BIN/libllama.so.0" ] && ! nm -D "$BIN/libllama.so.0" 2>/dev/null | grep -qw json_parse; then
+    printf 'skip: %s exports no json_parse door\n' "${BIN#$ROOT/}" | tee "$LOG"
+    exit 77
+fi
+if [ ! -f "$BIN/libllama.so.0" ]; then
         printf 'skip: no libllama.so.0 under %s - the three runtime modes need it\n' "${BIN#$ROOT/}"
         exit 77
     fi

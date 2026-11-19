@@ -12,7 +12,8 @@
 set -uo pipefail
 D="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$D/../../.." && pwd)"
-BIN=${APEX_SERVER_DIR:-$ROOT/builds/flint-acc/bin}
+. "$ROOT/tests/lib-default.sh"
+BIN=${APEX_SERVER_DIR:-$(lib_default "$ROOT")}
 LIB=$BIN/libllama.so.0
 OUT=$D/build
 LOG=$OUT/run.log

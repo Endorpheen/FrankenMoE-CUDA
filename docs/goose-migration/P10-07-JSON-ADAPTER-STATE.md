@@ -47,3 +47,21 @@ already vendored, so nothing new is linked.
 
 That the adapter exists, that any of this is swapped, or that the comparison has run. Both doors are
 composed and exercised by tests, and the production path is unchanged.
+
+## The library these tests were measuring was not the released one
+
+Checked 2026-11-19 while retargeting the tests at the accepted artefact:
+
+| library | sha256 | `json_parse` | mtime |
+|---|---|---|---|
+| `builds/checkpoint-20261119-EXP1476/libllama.so.0` (the release) | `0ffd98c2` | **absent** | 19:00 |
+| `builds/flint-acc/bin/libllama.so.0` | `bea5d6af` | present | **19:18** |
+
+So every JSON test that passed today passed against the working directory, which is newer than the
+checkpoint, was written by no script under `tools/`, and has no recorded provenance. The released
+artefact has no JSON doors at all - the same "source ahead of the binary" pattern as the model-manager
+and api-key doors, now measured on the release itself.
+
+The tests now take their library from `tests/lib-default.sh` (accepted set first) and exit 77 when the
+door is absent, which is what they do against the release: five of them skip, and none of them passes
+against an artefact nobody accepted.

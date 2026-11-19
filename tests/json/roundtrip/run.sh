@@ -13,12 +13,20 @@
 set -uo pipefail
 D="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$D/../../.." && pwd)"
-BIN=${APEX_SERVER_DIR:-$ROOT/builds/flint-acc/bin}
+. "$ROOT/tests/lib-default.sh"
+BIN=${APEX_SERVER_DIR:-$(lib_default "$ROOT")}
 LIB=$BIN/libllama.so.0
 OUT=$D/build
 LOG=$OUT/run.log
 mkdir -p "$OUT"
 
+# The door has to exist in the library under test: the released set of 2026-11-19 exports no
+# json_parse, while the working library in builds/flint-acc/bin does, so a pass there would say
+# nothing about the shipped artefact.
+if [ -f "$LIB" ] && ! nm -D "$LIB" 2>/dev/null | grep -qw json_parse; then
+    printf 'skip: %s exports no json_parse door\n' "${LIB#$ROOT/}" | tee "$LOG"
+    exit 77
+fi
 if [ ! -f "$LIB" ]; then
     printf 'skip: %s is not built\n' "${LIB#$ROOT/}" | tee "$LOG"
     exit 77
