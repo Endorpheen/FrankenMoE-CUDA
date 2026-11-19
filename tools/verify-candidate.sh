@@ -67,6 +67,12 @@ case "$COMMON_SYMS" in
 esac
 printf '%s\n' "$JSON_ADAPTER"
 
+# The compiler that produced an artefact is part of its identity. On 2026-11-19 the accepted release
+# turned out to carry only GCC 15.2.0 while both scripts pin gcc-13, which proved it came from neither -
+# a fact no component list could show.
+STAMPS=$(readelf -p .comment "$LIB" 2>/dev/null | grep -oE "GCC: \([^)]*\) [0-9.]+" | sed 's/GCC: //' | sort -u | tr '\n' ' ')
+printf '%-42s %s\n' "compiler stamps" "${STAMPS:-none recorded}"
+
 printf '%-42s ' "artefact class"
 if [ "$(dirname "$LIB")" = "$ROOT/builds/flint-acc/bin" ]; then
     echo "working directory - not an accepted set (rule 22)"

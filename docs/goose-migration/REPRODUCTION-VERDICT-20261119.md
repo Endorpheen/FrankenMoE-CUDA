@@ -17,6 +17,25 @@ Path B, built today from `main` with all 18 extra objects present and their prod
 `q35_rope_multi`, `q35_shape`). It has 440 more defined symbols than the release, so it is not a subset
 of it either - it is a differently composed runtime.
 
+## The compiler identity proves it
+
+`.comment` in each artefact, read with `readelf -p .comment`:
+
+| artefact | compiler stamps |
+|---|---|
+| accepted release EXP1476 | **only** `GCC: (Ubuntu 15.2.0-16ubuntu1) 15.2.0` |
+| path B today (`out3`) | `15.2.0` **and** `GCC: (Ubuntu 13.4.0-10ubuntu1) 13.4.0` |
+| path A candidate, working directory | `15.2.0` |
+
+Both scripts in the tree pin the compiler: `build.py` sets `CXX = ['/usr/bin/g++-13', ...]` and
+`build-independent-apex.sh` passes `-DCMAKE_C_COMPILER=gcc-13 -DCMAKE_CXX_COMPILER=g++-13`. gcc-13
+stamps `13.4.0`, verified by compiling a trivial file. The release carries **no 13.4.0 stamp at all**, so
+it was not produced by either pinned script - it came from a build that used the system compiler, which
+is what an ad-hoc assembly during a release push looks like.
+
+Path B carries both stamps because it links our gcc-13 objects next to prebuilt objects that were
+compiled with 15.2.0.
+
 ## What this means, stated plainly
 
 1. The accepted artefact is **not reproducible from the repository** by any script it contains. The
