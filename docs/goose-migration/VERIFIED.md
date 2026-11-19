@@ -116,7 +116,7 @@ question, and every row moved only after its equality was established first.
 | end-of-generation decision | EXP-1347 | 248 320-token equality, then decode 62.76 median |
 | token-piece cache (248 320 pieces) | EXP-1348 | 248 320 pieces byte-equal |
 | buffer form `token_to_piece` | EXP-1351 | 9217-call equality measured first, then 8192+ calls served |
-| sequence form `bt_detokenize` | EXP-1353 | 84 calls: seven lengths x three shapes x four flag pairs, 0 disagreements |
+| sequence form `bt_detokenize` | EXP-1353, -1354 | 84 calls equal, then served with the hash unchanged |
 
 Still native, with reasons rather than excuses:
 
