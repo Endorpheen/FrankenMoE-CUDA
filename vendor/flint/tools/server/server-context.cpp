@@ -1481,6 +1481,9 @@ private:
         slots.clear();
 
         ctx_tgt_seq_rm_type = common_context_can_seq_rm(ctx_tgt);
+        if (getenv("FG_ACCEPT_DIAG")) {
+            fprintf(stderr, "FG_SEQ_RM type=%d (0=no, so speculative is disabled)\n", (int) ctx_tgt_seq_rm_type);
+        }
         if (ctx_tgt_seq_rm_type == COMMON_CONTEXT_SEQ_RM_TYPE_NO) {
             SRV_WRN("%s", "speculative decoding not supported by this context\n");
         }
