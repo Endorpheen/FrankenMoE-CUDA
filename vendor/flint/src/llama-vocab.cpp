@@ -5182,6 +5182,32 @@ int32_t llama_token_to_piece(
                      int32_t   length,
                      int32_t   lstrip,
                         bool   special) {
+    // The bytes come from the port when it can produce the whole piece within the caller's buffer. The
+    // native call stays for the one case the door cannot express: a short buffer, where the native returns
+    // -needed so the caller can resize. Serving from the door only on success means a truncation can never
+    // be silently reported as a complete piece.
+    if (const auto fn = fg_detok_check::resolve()) {
+        fg_detok_check::table & t = fg_detok_check::shared();
+        if (t.ready && token >= 0 && (size_t) token < t.off.size()) {
+            static thread_local std::vector<uint8_t> out(4096);
+            fg_detok_check::sl_u8  s_gguf{ (uint8_t *) t.blob.data(), (int64_t) t.blob.size() };
+            fg_detok_check::sl_i64 s_off { t.off.data(),  (int64_t) t.off.size() };
+            fg_detok_check::sl_i64 s_len { t.len.data(),  (int64_t) t.len.size() };
+            fg_detok_check::sl_i64 s_attr{ t.attr.data(), (int64_t) t.attr.size() };
+            fg_detok_check::sl_u8  s_out { out.data(),    (int64_t) out.size() };
+            const int64_t served = fn(s_gguf, s_off, s_len, s_attr, (int64_t) token, s_out, 0,
+                                      (int64_t) lstrip, special ? 1 : 0, 0);
+            if (served >= 0 && served <= (int64_t) length) {
+                if (served > 0) { memcpy(buf, out.data(), (size_t) served); }
+                static std::atomic<long long> from_port{0};
+                const long long c = from_port.fetch_add(1) + 1;
+                if (getenv("FG_TK_DETOK_DIAG") && c % 2048 == 0) {
+                    fprintf(stderr, "FG_TK_BUF_SERVED from_port=%lld\n", c);
+                }
+                return (int32_t) served;
+            }
+        }
+    }
     const int32_t n = vocab->token_to_piece(token, buf, length, lstrip, special);
 
     // Measurement of the buffer form before any conversion: the door is compared on the flags this call

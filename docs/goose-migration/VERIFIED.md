@@ -115,6 +115,7 @@ question, and every row moved only after its equality was established first.
 | metadata dump array walk | EXP-1345 | same |
 | end-of-generation decision | EXP-1347 | 248 320-token equality, then decode 62.76 median |
 | token-piece cache (248 320 pieces) | EXP-1348 | 248 320 pieces byte-equal |
+| buffer form `token_to_piece` | EXP-1351 | 9217-call equality measured first, then 8192+ calls served |
 
 Still native, with reasons rather than excuses:
 
