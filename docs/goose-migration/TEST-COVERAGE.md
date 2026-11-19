@@ -194,3 +194,12 @@ claim as "the request carried a long context".
 A request for 400 000 tokens cannot be served, so the server must refuse it - not answer, not crash - and the next request
 must succeed. That is the recovery property, and it holds whatever the reason a request fails. The refusal is recorded with
 its status and the reason for the following step is measured, not assumed.
+
+## The same request twice must give the same answer
+
+Every mode that runs a session now ends with two identical greedy requests: temperature zero, the same seed, the same text.
+With no sampling variance left, a difference can only come from the context, the cache or state the sampler carried between
+requests - which is exactly the class of defect that a single-request test cannot see.
+
+If it ever fails, it is a finding rather than a flake: the step records both lengths and the first eighty characters of each
+answer.

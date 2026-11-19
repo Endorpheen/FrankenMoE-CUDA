@@ -164,6 +164,30 @@ class Session:
         with open(p, "rb") as f:
             return needle.encode() in f.read()
 
+    def greedy(self, text, n=64):
+        """One non-streaming answer at temperature zero: greedy decoding has no sampling variance left to explain a
+        difference, so two identical requests must produce identical text."""
+        payload = {"messages": [{"role": "user", "content": text}], "max_tokens": n, "temperature": 0,
+                   "seed": self.seed, "stream": False}
+        r = post(self.url("/v1/chat/completions"), payload, False, 600)
+        return r["choices"][0]["message"].get("content") or ""
+
+    def repeat(self, where):
+        """The same request twice must give the same answer, or something in the state is influencing generation.
+
+        Greedy decoding is the case where this is unambiguous: with temperature zero the sampler has no variance, so a
+        difference points at the context, the cache or the sampler's carried state rather than at chance.
+        """
+        text = "Перечисли три причины, по которым ответ может измениться между одинаковыми запросами."
+        a = self.greedy(text)
+        b = self.greedy(text)
+        self.alive(f"the repeated requests ({where})")
+        self.log.append({"step": f"repeat:{where}", "identical": a == b, "len_a": len(a), "len_b": len(b)})
+        if a != b:
+            raise Failure(f"two identical greedy requests gave different answers ({where}): "
+                          f"{a[:80]!r} vs {b[:80]!r}")
+        return a
+
     def refuse(self, where):
         """A request that cannot be served must be refused, and the server must go on serving afterwards.
 
@@ -341,6 +365,7 @@ def run(mode, args):
             S.step("Ещё один короткий ответ после ошибочного запроса.", max_tokens=64)
             S.refuse("after the session")
             S.step("И ещё один ответ после отказа.", max_tokens=64)
+            S.repeat("after the session")
 
         found = S.goose_activity()
         required = ["tokenizer_from_port", "sampler_stage"]
