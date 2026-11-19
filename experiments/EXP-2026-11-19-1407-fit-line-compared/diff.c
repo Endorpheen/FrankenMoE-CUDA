@@ -72,6 +72,50 @@ int main(int argc, char ** argv) {
         }
     }
 
+    /* the -ot branch: " -ot \"pattern=backend" per override, comma separated, closing quote at the end */
+    {
+        const char pats_s[] = "blk.*,attn_q*";
+        const char buft_s[] = "CPU,CUDA0";
+        const int64_t poff[2] = { 0, 6 };
+        const int64_t plen[2] = { 5, 7 };
+        const int64_t boff[2] = { 0, 4 };
+        const int64_t blen[2] = { 3, 5 };
+        char native[256];
+        snprintf(native, sizeof(native), "-c 4096 -ngl 41 -ot \"blk.*=CPU,attn_q*=CUDA0\"\n");
+        char out[512]; memset(out, 0, sizeof(out));
+        const double splits[1] = { 1.0 };
+        sl_f64 s_splits = { (void *) splits, 1 };
+        sl_u8  s_pats = { (void *) pats_s, (int64_t) strlen(pats_s) };
+        sl_i64 s_poff = { (void *) poff, 2 }; sl_i64 s_plen = { (void *) plen, 2 };
+        sl_u8  s_bufts = { (void *) buft_s, (int64_t) strlen(buft_s) };
+        sl_i64 s_boff = { (void *) boff, 2 }; sl_i64 s_blen = { (void *) blen, 2 };
+        sl_u8  s_out = { out, (int64_t) sizeof(out) };
+        (void) fp(4096, 41, s_splits, 1, s_pats, s_poff, s_plen, s_bufts, s_boff, s_blen, 2, s_out);
+        ++calls;
+        if (strcmp(out, native) != 0) {
+            ++bad;
+            printf("DIFF ot native=[%s] goose=[%s]\n", native, out);
+        }
+    }
+
+    /* control: the same comparison with the expectation shifted by one must differ, or the comparison
+       would be reporting zero for reasons other than agreement */
+    int control_differs = 0;
+    {
+        char out[512]; memset(out, 0, sizeof(out));
+        const double splits[1] = { 1.0 };
+        sl_f64 s_splits = { (void *) splits, 1 };
+        char pats[8], bufts[8]; int64_t poff[1], plen[1], boff[1], blen[1];
+        sl_u8  s_pats = { pats, 0 };  sl_i64 s_poff = { poff, 0 }; sl_i64 s_plen = { plen, 0 };
+        sl_u8  s_bufts = { bufts, 0 }; sl_i64 s_boff = { boff, 0 }; sl_i64 s_blen = { blen, 0 };
+        sl_u8  s_out = { out, (int64_t) sizeof(out) };
+        (void) fp(4096, 41, s_splits, 1, s_pats, s_poff, s_plen, s_bufts, s_boff, s_blen, 0, s_out);
+        const char * expected_wrong = "-c 4097 -ngl 41\n";
+        control_differs = strcmp(out, expected_wrong) != 0;
+    }
+    printf("control: expectation shifted by one, differs=%d\n", control_differs);
+    if (!control_differs) { ++bad; }
+
     printf("fp_line: calls=%ld disagreements=%ld\n", calls, bad);
     return bad ? 1 : 0;
 }
