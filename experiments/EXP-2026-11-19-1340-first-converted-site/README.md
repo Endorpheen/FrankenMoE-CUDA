@@ -38,10 +38,26 @@ The shadow comparison of EXP-2026-11-19-1339 made the two readers known equal at
 key, during a real load. Serving from the port is therefore not a bet: if the port answered differently the load would
 already have been failing.
 
+## Strings followed, and only one form of them
+
+`std::string` keys are now served by the port too - the loader reads `general.architecture` and the tokenizer names
+that way:
+
+```
+FG_GGUF_SERVED_STR from_port=4
+FG_GGUF_SERVED     from_port=16
+decode  62.33 / 63.15 / 62.91
+hash    c2ff42cc1219
+```
+
+The `const char *` form is deliberately **not** converted: it would need a NUL-terminated copy whose lifetime nobody
+has stated, and inventing one to convert a second string accessor is exactly the kind of shortcut this report keeps
+paying for. It stays native and is listed below.
+
 ## What is still native
 
-Strings (13 keys) and arrays (the tokenizer tables) still come from the native context, and so do the 6 tensor
-descriptor sites and the split-file path. The order and the risks are in
+The `const char *` string form, the arrays (tokenizer tables), the 6 tensor descriptor sites and the split-file path
+still come from the native context. The order and the risks are in
 `integration/p7-12-gguf-context/PLAN.md`; strings are next, and they are the one the loader reads as
 `general.architecture`.
 

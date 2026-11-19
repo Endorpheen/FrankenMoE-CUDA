@@ -446,6 +446,20 @@ namespace GGUFMeta {
                     return (T) port_value;
                 }
             }
+            // Strings are next: the loader reads general.architecture and the tokenizer names this way. Only
+            // std::string is converted - the const char * form would need a NUL-terminated copy with a lifetime
+            // nobody has stated, and that is a separate decision.
+            if constexpr (std::is_same_v<T, std::string>) {
+                const uint8_t * p = nullptr; int64_t n = 0;
+                if (::fg_port_str(k, p, n)) {
+                    static std::atomic<long long> served_str{0};
+                    const long long c = served_str.fetch_add(1) + 1;
+                    if (getenv("FG_GGUF_DIAG") && c % 4 == 0) {
+                        fprintf(stderr, "FG_GGUF_SERVED_STR from_port=%lld\n", c);
+                    }
+                    return std::string(reinterpret_cast<const char *>(p), (size_t) n);
+                }
+            }
             const T value = GKV::getter(ctx, k);
 
             // Shadow read: the same key through the port, at the moment the loader uses it. A disagreement is
