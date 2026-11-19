@@ -42,6 +42,22 @@ struct fg_port_store {
 static fg_port_store fg_port;
 
 // Returns the number of disagreements; the caller decides whether that is fatal.
+// Element of an integer array, for the token-type table the vocabulary reads with gguf_get_arr_data.
+extern "C" bool fg_port_array_int(int64_t key_index, int64_t element, int64_t * out) {
+    static auto fn = []() -> fg_gr_arrint_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        return h ? reinterpret_cast<fg_gr_arrint_fn>(dlsym(h, "gr_array_int")) : nullptr;
+    }();
+    if (!fn || !fg_port.ready) { return false; }
+    fg_sl_u8  s_data{ fg_port.data.data(), (int64_t) fg_port.data.size() };
+    fg_sl_i64 s_state{ fg_port.state.data(), 8 }, s_kv{ fg_port.kv.data(), (int64_t) fg_port.kv.size() };
+    int64_t v = 0;
+    fg_sl_i64 so{ &v, 1 };
+    if (fn(s_data, s_state, s_kv, key_index, element, so) != 0) { return false; }
+    *out = v;
+    return true;
+}
+
 // Element of a string array, for consumers that iterate the arrays themselves (llama-vocab builds the
 // token list that way). C linkage so the vocabulary file can declare it without the loader's headers.
 extern "C" bool fg_port_array_str(int64_t key_index, int64_t element, const uint8_t ** ptr, int64_t * len) {

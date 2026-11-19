@@ -616,6 +616,7 @@ inline fn_t resolve() {
 // owns the window and the port records; declared here so the vocabulary can be built from the port
 // instead of from the native context (EXP-2026-11-19-1340).
 extern "C" bool fg_port_array_str(int64_t key_index, int64_t element, const uint8_t ** ptr, int64_t * len);
+extern "C" bool fg_port_array_int(int64_t key_index, int64_t element, int64_t * out);
 
 typedef int64_t (*fg_tk_bpe_before_fn)(int64_t, int64_t, int64_t, int64_t);
 static fg_tk_bpe_before_fn fg_tk_bpe_before_resolve() {
@@ -2390,7 +2391,15 @@ void llama_vocab::impl::load(llama_model_loader & ml, const LLM_KV & kv) {
                 const int n_merges = gguf_get_arr_n(ctx, merges_keyidx);
                 bpe_ranks.reserve(n_merges);
                 for (int i = 0; i < n_merges; i++) {
-                    const char * word = gguf_get_arr_str(ctx, merges_keyidx, i);
+                    const uint8_t * fg_p = nullptr; int64_t fg_n = 0;
+                    static thread_local std::string fg_merge;
+                    const char * word;
+                    if (fg_port_array_str(merges_keyidx, i, &fg_p, &fg_n)) {
+                        fg_merge.assign(reinterpret_cast<const char *>(fg_p), (size_t) fg_n);
+                        word = fg_merge.c_str();
+                    } else {
+                        word = gguf_get_arr_str(ctx, merges_keyidx, i);
+                    }
                     //GGML_ASSERT(unicode_cpts_from_utf8(word).size() > 0);
 
                     std::string first;
@@ -2502,7 +2511,15 @@ void llama_vocab::impl::load(llama_model_loader & ml, const LLM_KV & kv) {
                 const int n_merges = gguf_get_arr_n(ctx, merges_keyidx);
                 bpe_ranks.reserve(n_merges);
                 for (int i = 0; i < n_merges; i++) {
-                    const char * word = gguf_get_arr_str(ctx, merges_keyidx, i);
+                    const uint8_t * fg_p = nullptr; int64_t fg_n = 0;
+                    static thread_local std::string fg_merge;
+                    const char * word;
+                    if (fg_port_array_str(merges_keyidx, i, &fg_p, &fg_n)) {
+                        fg_merge.assign(reinterpret_cast<const char *>(fg_p), (size_t) fg_n);
+                        word = fg_merge.c_str();
+                    } else {
+                        word = gguf_get_arr_str(ctx, merges_keyidx, i);
+                    }
 
                     std::string first;
                     std::string second;
@@ -2893,7 +2910,22 @@ void llama_vocab::impl::load(llama_model_loader & ml, const LLM_KV & kv) {
         if (n_toktypes < n_tokens) {
             throw std::runtime_error("Index out of array bounds for toktypes (" + std::to_string(n_toktypes) + " < " + std::to_string(n_tokens) + ")\n");
         }
-        toktypes = (const int * ) gguf_get_arr_data(ctx, toktype_idx);
+        // The token-type table comes from the port when it can answer; the native array is the fallback.
+        // The table is read element by element below, so it is materialised once here.
+        // Every element must be answered, or the whole table falls back: an accessor that returned a default
+        // for a missing key would load a model with silently wrong token attributes, which is the one thing the
+        // plan forbids outright.
+        static thread_local std::vector<int> fg_toktypes;
+        fg_toktypes.clear();
+        bool fg_all = true;
+        for (uint32_t i = 0; i < n_toktypes; ++i) {
+            int64_t v = 0;
+            if (!fg_port_array_int(toktype_idx, (int64_t) i, &v)) { fg_all = false; break; }
+            fg_toktypes.push_back((int) v);
+        }
+        toktypes = (fg_all && fg_toktypes.size() == n_toktypes)
+                       ? fg_toktypes.data()
+                       : (const int *) gguf_get_arr_data(ctx, toktype_idx);
     }
 
     id_to_token.resize(n_tokens);
