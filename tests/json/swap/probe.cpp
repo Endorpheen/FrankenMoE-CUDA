@@ -6,6 +6,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <string>
 #include <vector>
 
@@ -45,7 +46,9 @@ int main(int argc, char ** argv) {
         "\n{\n  \"pretty\" : [ 1 , 2 ]\n}\n",
     };
 
-    const bool want_goose = std::getenv("FG_JSON_GOOSE_PARSE") != nullptr;
+    // The flag disables the Goose path since 2026-11-20: absent or any value other than "0" means on.
+    const char * fg_flag = std::getenv("FG_JSON_GOOSE_PARSE");
+    const bool want_goose = fg_flag == nullptr || std::strcmp(fg_flag, "0") != 0;
     int failures = 0;
     for (const auto & text : texts) {
         const std::string want = nlohmann::ordered_json::parse(text).dump();

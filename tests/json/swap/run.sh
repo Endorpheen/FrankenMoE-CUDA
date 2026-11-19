@@ -62,8 +62,8 @@ if [ ! -f "$BIN/libllama.so.0" ]; then
     printf 'library: %s\n' "${BIN#$ROOT/}"
     printf 'sha256:  %s\n' "$(sha256sum "$BIN/libllama.so.0" | cut -d' ' -f1)"
 
-    printf '\n== 1. flag off\n'
-    LD_LIBRARY_PATH="$BIN" "$OUT/probe" "$BIN/libllama.so.0" || fail=1
+    printf '\n== 1. flag off (FG_JSON_GOOSE_PARSE=0 - the switch disables it since 2026-11-20)\n'
+    FG_JSON_GOOSE_PARSE=0 LD_LIBRARY_PATH="$BIN" "$OUT/probe" "$BIN/libllama.so.0" || fail=1
 
     printf '\n== 2. flag on, strict (a pass proves the port answered)\n'
     FG_JSON_GOOSE_PARSE=1 FG_JSON_GOOSE_REQUIRE=1 LD_LIBRARY_PATH="$BIN" \
