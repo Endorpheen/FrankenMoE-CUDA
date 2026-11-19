@@ -3913,6 +3913,46 @@ struct table {
 } // namespace fg_detok_check
 
 std::string llama_vocab::impl::token_to_piece_for_cache(llama_token token, bool special) const {
+    // The piece comes from the port when it can produce one. The equality of this door with the native
+    // producer was established for all 248 320 tokens before the conversion (EXP-2026-11-19-1317), and the
+    // diagnostic comparison below keeps running when the flag is set.
+    if (special && token >= 0 && (size_t) token < id_to_token.size()) {
+        if (const auto fn = fg_detok_check::resolve()) {
+            static fg_detok_check::table t;
+            if (!t.ready) {
+                size_t total = 0;
+                for (const auto & tk : id_to_token) { total += tk.text.size(); }
+                t.blob.reserve(total);
+                t.off.resize(id_to_token.size());
+                t.len.resize(id_to_token.size());
+                t.attr.resize(id_to_token.size());
+                for (size_t i = 0; i < id_to_token.size(); ++i) {
+                    t.off[i]  = (int64_t) t.blob.size();
+                    t.len[i]  = (int64_t) id_to_token[i].text.size();
+                    t.attr[i] = (int64_t) token_get_attr((llama_token) i);
+                    t.blob.append(id_to_token[i].text);
+                }
+                t.ready = true;
+            }
+            static thread_local std::vector<uint8_t> fg_buf(1024);
+            if (t.ready && t.off[token] + t.len[token] <= (int64_t) t.blob.size()) {
+                fg_detok_check::sl_u8  s_gguf{ (uint8_t *) t.blob.data(), (int64_t) t.blob.size() };
+                fg_detok_check::sl_i64 s_off { t.off.data(),  (int64_t) t.off.size() };
+                fg_detok_check::sl_i64 s_len { t.len.data(),  (int64_t) t.len.size() };
+                fg_detok_check::sl_i64 s_attr{ t.attr.data(), (int64_t) t.attr.size() };
+                fg_detok_check::sl_u8  s_out { fg_buf.data(), (int64_t) fg_buf.size() };
+                const int64_t n = fn(s_gguf, s_off, s_len, s_attr, (int64_t) token, s_out, 0, 0, 1, 0);
+                if (n >= 0 && n < (int64_t) fg_buf.size()) {
+                    static std::atomic<long long> served{0};
+                    const long long c = served.fetch_add(1) + 1;
+                    if (getenv("FG_TK_DETOK_DIAG") && c % 65536 == 0) {
+                        fprintf(stderr, "FG_TK_PIECES_SERVED from_port=%lld\n", c);
+                    }
+                    return std::string(reinterpret_cast<const char *>(fg_buf.data()), (size_t) n);
+                }
+            }
+        }
+    }
     std::string piece;
     piece.resize(piece.capacity());  // using string internal cache
     const int n_chars = vocab.token_to_piece(token, &piece[0], piece.size(), 0, special);
