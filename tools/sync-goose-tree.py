@@ -31,6 +31,22 @@ GOOSE = ROOT / "goose"
 EXPERIMENTS = ROOT / "experiments"
 LEDGER = ROOT / "docs/goose-migration/tasks.json"
 
+
+# Modules whose decisions live in one composed successor. They are kept because each was the
+# frozen proof of its own experiment, and they cannot be composed next to the successor: every
+# one of them exports the same names. Recording the relation here - rather than renaming
+# symbols in either copy - is what D3 of P11-04 asks for.
+SUPERSEDED = {
+    "jinja/parsers.goose": "jinja/runtime.goose",
+    "jinja/streaming.goose": "jinja/runtime.goose",
+    "jinja/typed.goose": "jinja/runtime.goose",
+    "jinja/autoparser.goose": "jinja/runtime.goose",
+    "jinja/delimiters.goose": "jinja/runtime.goose",
+    "jinja/json-escape.goose": "jinja/runtime.goose",
+    "jinja/tool-builders.goose": "jinja/runtime.goose",
+    "jinja/jinja-macro-call.goose": "jinja/runtime.goose",
+}
+
 CANONICAL_SOURCES = [
     ("sampling/sampler-chain-full.goose", "EXP-2026-11-17-921-goose-sampler", "source/sampler-chain-full.goose",
      "src/llama-sampler.cpp (MT19937, canonical double draw, top-k/top-p/min-p/temp/dist)",
@@ -646,6 +662,10 @@ def build(check: bool, force: bool = False) -> int:
             "gate": gate,
         }
     canonical.update({target: row for target, (row, _) in integrated.items()})
+    for target, successor in SUPERSEDED.items():
+        if target in canonical:
+            canonical[target]["status"] = "superseded"
+            canonical[target]["superseded_by"] = successor
 
     entries = []
     written = 0

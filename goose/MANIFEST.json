@@ -12354,8 +12354,9 @@
       ],
       "experiment": "EXP-2026-11-13-510-p7-08-jinja-macro-call",
       "task": "P7-08",
-      "status": "slice",
-      "sha256": "f0543287e36591644b1743b560c1ca66da12a8c8618677bbe1551212d146be5d"
+      "status": "superseded",
+      "sha256": "f0543287e36591644b1743b560c1ca66da12a8c8618677bbe1551212d146be5d",
+      "superseded_by": "jinja/runtime.goose"
     },
     {
       "goose": "misc/edge0-pack-index.goose",
@@ -12377,8 +12378,9 @@
       ],
       "experiment": "EXP-2026-11-14-564-p7-08-typed",
       "task": "P7-08",
-      "status": "slice",
-      "sha256": "3be19f7fe73250d3ee79f3caca444d7f75659c00d9f6067c402d855f47e736e3"
+      "status": "superseded",
+      "sha256": "3be19f7fe73250d3ee79f3caca444d7f75659c00d9f6067c402d855f47e736e3",
+      "superseded_by": "jinja/runtime.goose"
     },
     {
       "goose": "jinja/delimiters.goose",
@@ -12391,8 +12393,9 @@
       ],
       "experiment": "EXP-2026-11-14-566-p7-08-delimiters",
       "task": "P7-08",
-      "status": "slice",
-      "sha256": "ed2c3acabc8504abfa50bb34b83d25d713c1b848832ed3455a3ee36883fb8fe4"
+      "status": "superseded",
+      "sha256": "ed2c3acabc8504abfa50bb34b83d25d713c1b848832ed3455a3ee36883fb8fe4",
+      "superseded_by": "jinja/runtime.goose"
     },
     {
       "goose": "jinja/streaming.goose",
@@ -12405,8 +12408,9 @@
       ],
       "experiment": "EXP-2026-11-14-567-p7-08-streaming",
       "task": "P7-08",
-      "status": "slice",
-      "sha256": "d9ee8843b5c559e7ab762e2915a1bc5bc1acb4c56e891968fb962d1ebf660181"
+      "status": "superseded",
+      "sha256": "d9ee8843b5c559e7ab762e2915a1bc5bc1acb4c56e891968fb962d1ebf660181",
+      "superseded_by": "jinja/runtime.goose"
     },
     {
       "goose": "json/schema.goose",
@@ -12430,8 +12434,9 @@
       ],
       "experiment": "EXP-2026-11-14-569-p7-08-autoparser",
       "task": "P7-08",
-      "status": "slice",
-      "sha256": "e98a2a7ce3f9d58f82e2686051e02f8f7ece43fe51942f9946d4466b11bfaaaa"
+      "status": "superseded",
+      "sha256": "e98a2a7ce3f9d58f82e2686051e02f8f7ece43fe51942f9946d4466b11bfaaaa",
+      "superseded_by": "jinja/runtime.goose"
     },
     {
       "goose": "jinja/tool-builders.goose",
@@ -12444,8 +12449,9 @@
       ],
       "experiment": "EXP-2026-11-14-574-p7-08-tool-builders",
       "task": "P7-08",
-      "status": "slice",
-      "sha256": "635bfe110eaed10cc1f744239270c19b3ffdbeb271e9602c97e25e6c8b38ba73"
+      "status": "superseded",
+      "sha256": "635bfe110eaed10cc1f744239270c19b3ffdbeb271e9602c97e25e6c8b38ba73",
+      "superseded_by": "jinja/runtime.goose"
     },
     {
       "goose": "jinja/parsers.goose",
@@ -12458,8 +12464,9 @@
       ],
       "experiment": "EXP-2026-11-14-593-p7-08-parsers",
       "task": "P7-08",
-      "status": "slice",
-      "sha256": "58634e3171fe3d65e05f4e7c2ab7c1709d0a91ac42c838f7231c0d7441bab564"
+      "status": "superseded",
+      "sha256": "58634e3171fe3d65e05f4e7c2ab7c1709d0a91ac42c838f7231c0d7441bab564",
+      "superseded_by": "jinja/runtime.goose"
     },
     {
       "goose": "model/saver-writer.goose",
@@ -12512,8 +12519,9 @@
       ],
       "experiment": "EXP-2026-11-14-615-p7-08-json-escape",
       "task": "P7-08",
-      "status": "slice",
-      "sha256": "bcb3c167a392f4de6df8c9f98177b9911dcd4c1f98839f2a124a4dc3d48fc021"
+      "status": "superseded",
+      "sha256": "bcb3c167a392f4de6df8c9f98177b9911dcd4c1f98839f2a124a4dc3d48fc021",
+      "superseded_by": "jinja/runtime.goose"
     },
     {
       "goose": "cpu/quant-weighted/quant-weighted.goose",
