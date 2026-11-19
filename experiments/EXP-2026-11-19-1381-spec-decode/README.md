@@ -1,42 +1,51 @@
-# EXP-2026-11-19-1381: speculative decoding measured, and a decode difference that is not about speculation
+# EXP-2026-11-19-1381: speculative decoding on Apex, measured - and what is out of profile
 
-## The first two configurations
+## In profile, and therefore comparable
 
-Same model, same request, one 512-token generation each, temperature 0, seed 1234:
+`tools/apex-test.sh` with `APEX_SPEC_TYPE` (default `none`, so no earlier result changes):
+
+| configuration | decode (3 requests) | prefill | hash |
+|---|---|---|---|
+| none (record) | 62.73 median of nine, EXP1373 | 2951 | `c2ff42cc1219` |
+| `ngram-simple` | 56.55 (56.93, 56.55, 52.99) | 2429-2913 | `0818aff9faef` |
+
+N-gram drafting is **about 10 % slower** inside the accepted profile. The request is a 32K-token prompt with almost no
+repetition, which is the case n-gram drafting cannot exploit: it pays for proposals and accepts few. The hash differs,
+which is expected - speculative decoding changes how many tokens are sampled per step - but it means every acceptance
+run under speculation needs its own correctness reference rather than the old hash.
+
+## Out of profile: explorations, not improvements
+
+These were run before rule 35 was written and are recorded as explorations. **None of them is a claim against the
+record.**
+
+| configuration | decode | note |
+|---|---|---|
+| short prompt, ctx 4096, b 2048 | 77.97 | a twenty-token prompt: far less KV to attend over, not a faster runtime |
+| short prompt, ctx 262144 | 74.36 | same |
+| short prompt, ctx 4096, b 4096 | 75.13 | same |
+| 32K request, ctx 40960 | 61.81 / 60.54 / 34.97 | within noise of the record; the 34.97 run also carried a slow-prefill outlier |
+
+The 77.97 figure was briefly read as a 24 % configuration gain. It is not: it was measured over a sequence two orders
+of magnitude shorter, which is the comparison the project's rules forbid and the exact mistake rule 35 now encodes.
+
+## MTP: it does not fit the accepted profile
+
+`--spec-type draft-mtp` on Apex, at the accepted profile:
 
 ```
-base-none   decode 77.97 tok/s   vram 9518 MiB   rss 20765256 kB
-ngram       decode 74.38 tok/s   vram 9521 MiB   rss 20765924 kB
+failed to initialize the context: failed to allocate compute pp buffers
+failed to create MTP context
 ```
 
-N-gram drafting is **4.6 % slower** on this request. The workload is a fresh paragraph with almost no repetition, which
-is the case ngram drafting cannot help: it pays for proposals and accepts few of them.
+The NextN head needs a second context with its own compute buffers, and at context 262144 with a 4992 MiB expert cache
+there is no room on a 12 GiB card. At a 40960 context the server starts but returns an empty reply during generation.
 
-That is one request per configuration, so it is a direction, not a verdict - the card says so rather than promoting it.
+Under rule 35 this is **technical debt of MTP**, not a reason to shrink the context: the head's own footprint is what
+has to come down - its pp buffer, its batch, or a shared KV - before an in-profile measurement of MTP exists.
 
-## The number that matters more
+## Next, in order
 
-Both of these ran at `-c 4096 -b 2048 -ub 2048`, and gave **77.97 tok/s**. The acceptance profile runs at
-`-c 262144 -b 4096 -ub 4096` and gives **62.7-63.2 tok/s**. Same model, same hardware, same 512 generated tokens, a
-**24 % difference** that has nothing to do with speculative decoding.
-
-Two candidate causes, and they are separable by one run each:
-
-1. the context size itself - a 262 144-slot KV cache is allocated and touched differently from a 4096-slot one;
-2. the batch and micro-batch (4096/4096 against 2048/2048), which changes how decode batches are formed.
-
-The next two runs isolate them: the first is this harness with `-c 262144`, the second with `-b 4096 -ub 4096` and the
-original context. Whichever reproduces the loss names the cause.
-
-## Why this is the right question
-
-If a decode rate of ~78 tok/s is reachable at a large context, that is a 24 % gain on the record baseline without
-touching speculative decoding at all - and it would change what a speculative gain is measured against. If the loss is
-inherent to the 262 144 context, then the acceptance profile is already at its ceiling and speculation is the only
-remaining lever.
-
-## Not claimed
-
-Nothing here is an improvement yet. Both runs are one request, the prefill figure (57 tok/s) is a twenty-token prompt
-and is not comparable with the acceptance prefill, and no correctness check was made in this script - the hash check
-belongs to the acceptance profile, which these runs deliberately do not use.
+1. measure the MTP head's memory need at the accepted profile, so the debt has a number;
+2. try the cheapest reductions inside MTP only (its micro-batch, its context share);
+3. if none fits, record it and continue the migration - the record stands either way.
