@@ -361,6 +361,38 @@ export fn gr_arr_str_span(data: const u8[:], state: i64[:], kv: i64[:], index: i
     return 0;
 }
 
+// Offsets and lengths of every element of a string array, taken from the file's own window in one pass.
+// gr_arr_str_span answers the same question for one element but walks from the array start each call, which is
+// quadratic over a vocabulary of 248 320 tokens; gr_arr_str_table copies the text, which a caller that indexes the
+// file window cannot use (EXP-2026-11-19-1389, -1390).
+export fn gr_arr_str_offsets(data: const u8[:], state: i64[:], kv: i64[:], index: i64,
+                             offs: i64[:], lens: i64[:]) -> i64 {
+    if state.len < 8 || state[0] != 919 || index < 0 || index >= state[2] || index >= kv.len / 8 ||
+       kv[index * 8 + 2] != 9 || kv[index * 8 + 3] != 8 {
+        return -1;
+    }
+    let n: i64 = kv[index * 8 + 5];
+    if offs.len < n || lens.len < n {
+        return -2;
+    }
+    var at: i64 = kv[index * 8 + 4];
+    var i: i64 = 0;
+    while i < n {
+        if !gr_fits(data, at, 8) {
+            return -1;
+        }
+        let len: u64 = gr_bits(data, at, 8);
+        if len > 9223372036854775807 || !gr_fits(data, at + 8, len as! i64) {
+            return -1;
+        }
+        offs[i] = at + 8;
+        lens[i] = len as! i64;
+        at = at + 8 + (len as! i64);
+        i = i + 1;
+    }
+    return n;
+}
+
 // Lay out a whole GGUF string array as NUL-terminated C strings in one pass.
 // GGUF strings are length-prefixed and carry no terminator, so the terminator
 // is written here, where the length is known; a consumer that treats the mapped

@@ -50,6 +50,33 @@ decode 62.52 / 63.13 / 62.96   prefill 2689.4 / 2945.4 / 2948.0   hash c2ff42cc1
 
 which is the baseline within its spread.
 
+## Where the hang actually is, narrowed twice
+
+The copy-blob hypothesis was tested first and refuted: the tables now come from a new door,
+`gr_arr_str_offsets`, which writes offsets and lengths **into the file's own window** in one pass - no copy - and the
+first call still does not return.
+
+Then the call was bracketed with prints before and after it, and **neither printed**:
+
+```
+FG_TK_BPE_ENTRY build=1 port=1 n_tok=248320 n_mrg=247587
+FG_TK_BPE_LOAD  ok n_tok=248320 n_mrg=247587
+FG_GGUF_VALUES  integer=26/26
+FG_GGUF_STRINGS keys=13/13
+          <- the process ends here, 150 s
+```
+
+So `fg_bpe_encode` is never entered. The hang is **inside `fg_gguf_check`'s later sections**, after the table build and
+after the values and strings checks. Without the flag the same harness tokenises all four cases in a second, so the
+native path is fine and nothing in the shipped runtime is involved.
+
+That leaves one suspicion with a clear test: the check's array section compares every element of every string array, and
+with the vocabulary that is 248 320 elements through the per-element door - the same quadratic walk that took an hour
+before, now hit by the check itself because the flag enables it. The next step is to run the check with the table build
+disabled and see whether it completes: if it does, the table build leaves the port's state in a form that makes the
+accessor slower, or the check's own array comparison is the cost and it has simply never been run with a 248k-element
+array before.
+
 ## Next
 
 1. build the same tables the way the CLI does - offsets into the file's own window - and see whether the call returns;
