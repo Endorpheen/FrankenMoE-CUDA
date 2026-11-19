@@ -26,6 +26,7 @@ typedef int64_t (*fg_gr_parse_fn)(fg_sl_u8, int64_t, fg_sl_i64, fg_sl_i64, fg_sl
 typedef int64_t (*fg_gr_find_fn)(fg_sl_u8, fg_sl_i64, fg_sl_i64, fg_sl_i64, fg_sl_u8);
 typedef int64_t (*fg_gr_meta_int_fn)(fg_sl_u8, fg_sl_i64, fg_sl_i64, int64_t, fg_sl_i64);
 typedef int64_t (*fg_gr_tinfo_fn)(fg_sl_i64, fg_sl_i64, int64_t, fg_sl_i64);
+typedef int64_t (*fg_gr_span_fn)(fg_sl_i64, fg_sl_i64, int64_t, fg_sl_i64);
 
 // Returns the number of disagreements; the caller decides whether that is fatal.
 static int fg_gguf_check(const std::string & fname, const gguf_context & native) {
@@ -104,6 +105,32 @@ static int fg_gguf_check(const std::string & fname, const gguf_context & native)
             differ += val_bad;
         }
 
+        // String keys: the loader reads general.architecture and the tokenizer names, so their text must be
+        // known equal at the moment of use, not only at file level.
+        int str_bad = 0, str_cmp = 0;
+        static fg_gr_span_fn val_span = nullptr;
+        if (!val_span) {
+            void * h4 = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+            val_span = h4 ? reinterpret_cast<fg_gr_span_fn>(dlsym(h4, "gr_val_span")) : nullptr;
+        }
+        if (val_span) {
+            for (int64_t i = 0; i < nk; ++i) {
+                if (gguf_get_kv_type(&native, i) != GGUF_TYPE_STRING) { continue; }
+                int64_t out[4] = {0};
+                fg_sl_i64 so{ out, 4 };
+                ++str_cmp;
+                const char * ns = gguf_get_val_str(&native, i);
+                const size_t nn = strlen(ns);
+                if (val_span(s_state, s_kv, i, so) != 0 || (size_t) out[2] != nn ||
+                    out[1] < 0 || (size_t) (out[1] + out[2]) > data.size() ||
+                    memcmp(data.data() + out[1], ns, nn) != 0) {
+                    ++str_bad;
+                }
+            }
+            fprintf(stderr, "FG_GGUF_STRINGS keys=%lld/%lld\n",
+                    (long long) (str_cmp - str_bad), (long long) str_cmp);
+        }
+
         // Tensor descriptors through the door the loader would use: dtype, dims, extents and data offset.
         int ti_bad = 0, ti_cmp = 0;
         static fg_gr_tinfo_fn tinfo = nullptr;
@@ -132,7 +159,7 @@ static int fg_gguf_check(const std::string & fname, const gguf_context & native)
             fprintf(stderr, "FG_GGUF_TINFO descriptors=%lld/%lld\n",
                     (long long) (ti_cmp - ti_bad), (long long) ti_cmp);
         }
-        differ += kv_bad + tn_bad + ti_bad;
+        differ += kv_bad + tn_bad + ti_bad + str_bad;
         fprintf(stderr, "FG_GGUF_LOOKUP keys=%lld/%lld tensors=%lld/%lld\n",
                 (long long) (nk - kv_bad), (long long) nk, (long long) (nt - tn_bad), (long long) nt);
     }
