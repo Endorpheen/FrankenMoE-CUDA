@@ -96,7 +96,8 @@ cannot carry them.
 | vocabulary array | yes |
 | merge list, token types | yes |
 | tensor lookup and type (metadata-only path) | yes |
-| `const char *` keys, two array walks outside the vocabulary, split files | no |
+| two array walks outside the vocabulary, split files | no |
+| `const char *` keys | **nothing to convert** - the specialisation is never instantiated (`GKV<const char *>` has no call site), so it is dead template code rather than a native path |
 
 ## The gate that guards each step
 
