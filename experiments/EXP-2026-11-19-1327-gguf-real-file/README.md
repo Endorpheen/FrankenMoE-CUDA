@@ -62,9 +62,17 @@ floats: 4/4   bools: 4/4   arrays(type,count): 5/5
 So every one of the 52 metadata keys is compared by its own type - 26 integers, 13 strings, 4 floats, 4 booleans and
 5 arrays - and the whole file's metadata is equal field by field.
 
-What is still not compared is the **content of the arrays**: their element type and count are equal, their elements are
-not. `gr_array_int` and `gr_arr_str_span` exist for that and are the next comparison; the vocabulary's string list is
-one of those arrays and is the largest.
+Array **contents** are compared too, starting with the largest:
+
+```
+vocabulary array: 248320/248320 elements equal
+```
+
+Every token string of the model read through `gr_arr_str_span` matches the native reader byte for byte - the same
+248 320 tokens that the detokeniser door was proven on, now proven at the source.
+
+What remains inside the arrays is the element content of the other four: the merge list and three small ones.
+`gr_array_int` and `gr_arr_str_span` cover them and the same harness extends to them directly.
 
 ## Three harness errors before the numbers were right
 

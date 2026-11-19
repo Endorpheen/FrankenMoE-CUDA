@@ -20,6 +20,7 @@ typedef int64_t (*fn_kv_type)(sl_i64, sl_i64, int64_t);
 typedef int64_t (*fn_span)(sl_i64, sl_i64, int64_t, sl_i64);
 typedef int64_t (*fn_f32_bits)(sl_u8, sl_i64, sl_i64, int64_t, sl_i64);
 typedef int64_t (*fn_arr)(sl_i64, sl_i64, int64_t);
+typedef int64_t (*fn_arr_str)(sl_u8, sl_i64, sl_i64, int64_t, int64_t, sl_i64);
 
 #define WINDOW (64u * 1024u * 1024u)
 
@@ -214,6 +215,33 @@ int main(int argc, char ** argv) {
     }
     printf("floats: %d/%d  bools: %d/%d  arrays(type,count): %d/%d\n",
            f_cmp - f_fail, f_cmp, b_cmp - b_fail, b_cmp, a_cmp - a_fail, a_cmp);
+
+    /* array contents: the vocabulary list, element by element, against the native reader */
+    fn_arr_str arr_str = (fn_arr_str) dlsym(h, "gr_arr_str_span");
+    if (arr_str) {
+        const int64_t idx = (int64_t) gguf_find_key(g2, "tokenizer.ggml.tokens");
+        if (idx >= 0) {
+            const int64_t n = (int64_t) gguf_get_arr_n(g2, idx);
+            int64_t bad = 0;
+            for (int64_t e = 0; e < n; ++e) {
+                int64_t out5[2] = {0};
+                sl_i64 s5; s5.data = out5; s5.len = 2;
+                const int64_t rc6 = arr_str(s_data, s_state, s_kv, idx, e, s5);
+                const char * ns = gguf_get_arr_str(g2, idx, (int) e);
+                const size_t nn = strlen(ns);
+                const bool ok = rc6 == 0 && (size_t) out5[1] == nn &&
+                                out5[0] >= 0 && (size_t) (out5[0] + out5[1]) <= win &&
+                                memcmp(data + out5[0], ns, nn) == 0;
+                if (!ok) {
+                    ++bad;
+                    if (bad <= 3) printf("TOKEN MISMATCH element=%lld native_len=%zu port_rc=%lld port_len=%lld\n",
+                                         (long long) e, nn, (long long) rc6, (long long) out5[1]);
+                }
+            }
+            printf("vocabulary array: %lld/%lld elements equal\n", (long long) (n - bad), (long long) n);
+            if (bad) { ++a_fail; }
+        }
+    }
 
     /* the negative case: a key that is not there must be reported as absent by both */
     const char * absent = "general.this.key.does.not.exist";
