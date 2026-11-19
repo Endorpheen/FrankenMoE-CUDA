@@ -687,6 +687,25 @@ llama_token common_sampler_sample(struct common_sampler * gsmpl, struct llama_co
 
     id = cur_p.data[cur_p.selected].id;
 
+    // Which array did the chain work on, and does the selected entry hold a token id at all? A value that is not an
+    // id here names the source: a device candidate set (small) or the full logits (n_vocab), and the entry itself.
+    {
+        const struct llama_vocab * fg_v = llama_model_get_vocab(llama_get_model(ctx));
+        const int32_t fg_nv = (int32_t) llama_vocab_n_tokens(fg_v);
+        const bool fg_dev = llama_get_sampled_probs_ith(ctx, idx) != nullptr;
+        if (id < 0 || id >= fg_nv) {
+            static std::atomic<long long> fg_bad{0};
+            const long long fb = fg_bad.fetch_add(1) + 1;
+            if (fb <= 5) {
+                fprintf(stderr, "FG_COMMON_SAMPLE_INVALID id=%d n_vocab=%d selected=%d size=%zu sorted=%d "
+                                "from_device=%d device_count=%u\n",
+                        (int) id, (int) fg_nv, (int) cur_p.selected, cur_p.size, cur_p.sorted ? 1 : 0,
+                        fg_dev ? 1 : 0,
+                        fg_dev ? llama_get_sampled_probs_count_ith(ctx, idx) : 0u);
+            }
+        }
+    }
+
     if (grammar_first || !grammar_should_apply(gsmpl)) {
         return id;
     }

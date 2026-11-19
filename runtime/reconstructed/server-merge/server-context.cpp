@@ -2246,9 +2246,14 @@ private:
                 fprintf(stderr, "FG_SERVER_INVALID_TOKEN tok=%d n_vocab=%d n_prompt=%d n_gen=%d count=%lld\n",
                         (int) result.tok, (int) fg_nv, (int) slot.prompt.n_tokens(),
                         (int) slot.generated.size(), fb);
-                send_error(slot, "invalid token produced by the sampler", ERROR_TYPE_SERVER);
-                slot.release();
-                return false;
+                // Ending the task here was tried and crashed: send_error/release run inside the sampling path,
+                // with the slot half-way through a decode step. The safe form is to end the generation the way
+                // the model would - with its own end-of-generation token - and let the normal stop path run.
+                const llama_token fg_eos = llama_vocab_eos(llama_model_get_vocab(llama_get_model(ctx_tgt)));
+                result = completion_token_output{};
+                result.tok  = fg_eos;
+                result.prob = 0.0f;
+                result.text_to_send = "";
             }
         }
 
