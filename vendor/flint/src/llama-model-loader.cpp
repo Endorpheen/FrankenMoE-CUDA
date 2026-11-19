@@ -42,6 +42,25 @@ struct fg_port_store {
 static fg_port_store fg_port;
 
 // Returns the number of disagreements; the caller decides whether that is fatal.
+// Element of a string array, for consumers that iterate the arrays themselves (llama-vocab builds the
+// token list that way). C linkage so the vocabulary file can declare it without the loader's headers.
+extern "C" bool fg_port_array_str(int64_t key_index, int64_t element, const uint8_t ** ptr, int64_t * len) {
+    static auto fn = []() -> fg_gr_arrstr_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        return h ? reinterpret_cast<fg_gr_arrstr_fn>(dlsym(h, "gr_arr_str_span")) : nullptr;
+    }();
+    if (!fn || !fg_port.ready) { return false; }
+    fg_sl_u8  s_data{ fg_port.data.data(), (int64_t) fg_port.data.size() };
+    fg_sl_i64 s_state{ fg_port.state.data(), 8 }, s_kv{ fg_port.kv.data(), (int64_t) fg_port.kv.size() };
+    int64_t out[2] = {0};
+    fg_sl_i64 so{ out, 2 };
+    if (fn(s_data, s_state, s_kv, key_index, element, so) != 0) { return false; }
+    if (out[0] < 0 || out[1] < 0 || (size_t) (out[0] + out[1]) > fg_port.data.size()) { return false; }
+    *ptr = fg_port.data.data() + out[0];
+    *len = out[1];
+    return true;
+}
+
 // Read one key through the port. Returns false when the port cannot answer, which the caller must treat as
 // "no comparison available" rather than as agreement.
 static bool fg_port_int(const int64_t k, int64_t & out) {

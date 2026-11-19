@@ -612,6 +612,11 @@ inline fn_t resolve() {
 }
 } // namespace fg_eog_check
 
+// One element of a string array through the ported reader. Implemented in llama-model-loader.cpp, which
+// owns the window and the port records; declared here so the vocabulary can be built from the port
+// instead of from the native context (EXP-2026-11-19-1340).
+extern "C" bool fg_port_array_str(int64_t key_index, int64_t element, const uint8_t ** ptr, int64_t * len);
+
 typedef int64_t (*fg_tk_bpe_before_fn)(int64_t, int64_t, int64_t, int64_t);
 static fg_tk_bpe_before_fn fg_tk_bpe_before_resolve() {
     static fg_tk_bpe_before_fn fn = []() -> fg_tk_bpe_before_fn {
@@ -2895,7 +2900,21 @@ void llama_vocab::impl::load(llama_model_loader & ml, const LLM_KV & kv) {
     token_to_id.reserve(n_tokens);
 
     for (uint32_t i = 0; i < n_tokens; i++) {
-        std::string word = gguf_get_arr_str(ctx, token_idx, i);
+        // The token list comes from the port when it can answer; the native array is the fallback for the
+        // split-file path and for a build where the port is not ready.
+        std::string word;
+        {
+            const uint8_t * p = nullptr; int64_t n = 0;
+            if (fg_port_array_str(token_idx, i, &p, &n)) {
+                static std::atomic<long long> served{0};
+                if (getenv("FG_GGUF_DIAG") && ++served % 65536 == 0) {
+                    fprintf(stderr, "FG_GGUF_SERVED_TOKENS from_port=%lld\n", served.load());
+                }
+                word.assign(reinterpret_cast<const char *>(p), (size_t) n);
+            } else {
+                word = gguf_get_arr_str(ctx, token_idx, i);
+            }
+        }
         if (word.empty()) {
             LLAMA_LOG_WARN("%s: empty token at index %u\n", __func__, i);
             word = "[EMPTY_" + std::to_string(i) + "]";
