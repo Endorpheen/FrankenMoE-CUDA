@@ -5,7 +5,7 @@ as every accepted slice.
 
 ## Ledger
 
-`docs/goose-migration/tasks.json`: **DONE 123**, **PARTIAL 19**, **TODO 10** of 152 functional requirements.
+`docs/goose-migration/tasks.json`: **DONE 124**, **PARTIAL 19**, **TODO 9** of 152 functional requirements.
 Do not read the DONE count as project percentage; it counts requirements, not code or time.
 
 Generated from the records themselves; each row is that record's own remainder field.
@@ -20,7 +20,7 @@ Generated from the records themselves; each row is that record's own remainder f
 | P7-07 | delete the replaced C++ detokenizer body - blocked by rule 15 until Igor accepts the served forms |
 | P7-12 | 1) delete the replaced native GGUF/reader/tokenizer bodies - blocked by rule 15 pending acceptance (the wiring itself is done and measured: FG_GGUF_VA... |
 | P8-06 | switch the reload sets and the connect/source choice, then exercise the lifecycle switches on a running model (load, stop, unload, remove) which needs... |
-| P8-09 | wire web_serve and the API-key middleware into server-http.cpp |
+| P8-09 | web_serve: static assets, MIME and ETag are still served by cpp-httplib set_mount_point - replacing that is the real work, and it needs a server route... |
 | P8-12 | remove the remaining native server bodies after each switch is accepted: the Origin three-compare arm and the find_tool linear scan are the last two t... |
 | P9-03 | replace the 25 call sites in the expert cache, dense placement and row streaming with the Goose decisions (commit-before-touch, budget return, caller-... |
 | P9-04 | rewrite on_eval to the rh_topk_plan/rh_ask_plan contract and replace the overlap/row-source call sites |
@@ -28,7 +28,7 @@ Generated from the records themselves; each row is that record's own remainder f
 | P9-07 | wire the CSV, decode-trace and route-trace sinks and DeterministicWorkload to the Goose rows (integration step) |
 | P9-08 | wire the closure decisions into session.cpp and cli/main.cpp |
 | P10-06 | build-time CUDA architecture and flag decisions: CMake picks CMAKE_CUDA_ARCHITECTURES itself (vendor/flint/ggml/src/ggml-cuda/CMakeLists.txt), and a c... |
-| P10-07 | write the adapter from the parallel arrays into the common_json pimpl, shadow-compare it against nlohmann at common/json.cpp:205 using the text the du... |
+| P10-07 | rebuild libllama-common so the adapter is actually linked (vendor/flint/common/json-adapter.cpp exists and common_json::parse calls it under FG_JSON_G... |
 | P10-10 | Apple/Windows branches are transcription only on this host |
 | P11-01 | standalone runtime has no CUDA, tokenizer engine or HTTP (the working Apex path is the INTEGRATED stage-run, not the standalone - rule 15 forbids repo... |
 | P11-04 | D1: F2 gguf_write_to_buf, F3 gguf_get_meta_size and F4 gguf_get_meta_data (all native in vendor/flint/ggml/src/gguf.cpp, reached only by llama-quant.c... |
@@ -46,7 +46,6 @@ Generated from the records themselves; each row is that record's own remainder f
 | C2-04 | remaining architecture extensions (Qwen builders, precision, loader and qualification) without regressing the common runtime or Apex |
 | F1-01 | All workstreams implemented; no owned handwritten C/C++/CUDA execution hidden as bridge/vendor dependency; historical controls excluded from candidate... |
 | F1-02 | All required functional tasks have evidence; real Apex/Qwen and representative other family fixtures; one common artifact and reproducible rollback. |
-| F1-03 | Every remaining dependency justified with source/symbol/version/license; replaceable owned parser,kernel,scheduler or server is not called unavoidable... |
 | F1-04 | Every functional task DONE; zero untracked residual native paths; source build reproducible and working runtime unchanged. Then comprehensive audits/o... |
 
 ## Measured state (2026-11-19)
