@@ -89,6 +89,7 @@ add_custom_command(
             ${FG_REPO_ROOT}/goose/model/bpe-detokenize.goose
             ${FG_REPO_ROOT}/goose/model/gguf-reader.goose
             ${FG_REPO_ROOT}/goose/model/gguf-tensors.goose
+            ${FG_REPO_ROOT}/goose/json/json-parser.goose
             ${FG_REPO_ROOT}/tools/gen-grammar-shim.py
             ${FG_REPO_ROOT}/tools/build-sampler-chain.sh
     COMMENT "Building the Goose sampler chain")
@@ -101,7 +102,8 @@ set_source_files_properties(${FG_SAMPLER_CHAIN_DIR}/sampler_chain.h
                             PROPERTIES HEADER_FILE_ONLY TRUE)
 list(APPEND LLAMA_CORE_SOURCES ${FG_SAMPLER_CHAIN_DIR}/sampler_chain.c
                                ${FG_SAMPLER_CHAIN_DIR}/sampler_chain_shim.c
-                               ${FG_SAMPLER_CHAIN_DIR}/slru_runtime_shim.c)
+                               ${FG_SAMPLER_CHAIN_DIR}/slru_runtime_shim.c
+                               ${FG_REPO_ROOT}/integration/goose-standalone/json-strtod-provider.c)
 
 add_library(llama
             ../include/llama.h

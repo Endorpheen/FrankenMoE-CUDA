@@ -44,6 +44,10 @@ cat "$root/goose/server/hf-cache-naming.goose" >> "$rootfile"
 # them today (EXP-2026-11-19-1475). Composing it makes the doors addressable so the switch can be made one call site at
 # a time.
 cat "$root/goose/server/model-manager.goose" >> "$rootfile"
+# The JSON parser joins for the adapter P10-07 needs: it is proven equal to nlohmann (78 parse cases over 81 850 values) but
+# was built in a separate unit and reached by nothing. It needs one host primitive, gs_json_strtod, which the shim below
+# provides from libc so the unit links.
+cat "$root/goose/json/json-parser.goose" >> "$rootfile"
 cat "$root/goose/model/arch-registry.goose" >> "$rootfile"
 cat "$root/goose/misc/spec-decode-decisions.goose" >> "$rootfile"
 cat "$root/goose/cli/config-validate.goose" >> "$rootfile"
