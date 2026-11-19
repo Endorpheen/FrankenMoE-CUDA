@@ -26,7 +26,7 @@ measured the doors. Two lessons, both already in this session's record in other 
 
 ## Where the check went instead
 
-`EXP-2026-11-18-1188-shipping-doors/wrap_now.c` maps the dispatcher to the doors the harness measured, and the
-accepted numbers reproduce exactly: typical-p 1800/1800, top-p 900/900, top-p large 45/45, XTC 720/720, DRY step 1
+The committed `wrap_ship.c` of `EXP-2026-11-18-1188-shipping-doors`, compiled **as C** and linked into the
+harness, maps the dispatcher to the doors the harness measured, and the accepted numbers reproduce exactly: typical-p 1800/1800, top-p 900/900, top-p large 45/45, XTC 720/720, DRY step 1
 200/200. The chain's internal op table stays unverified by equivalence and needs the real sampler chain, which
 needs a model.

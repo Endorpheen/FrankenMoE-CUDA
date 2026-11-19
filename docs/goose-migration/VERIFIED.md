@@ -20,14 +20,29 @@ The three sampler gates of EXP-1188 (adaptive-p 33211 cases, mirostat 500, RNG 1
 along: they call the exported doors directly and only the directory's `diff.cpp` still declares the run-local
 dispatcher. A `verify.sh` in that directory now says so, and the runner prefers it over the default recipe.
 
-## The rule the stale harnesses taught
+## A correction: the harness was never missing anything
 
-A harness may call **only exported doors**. `EXP-2026-11-18-1188` declared `gate_dispatch_c` as an extern and its
-definition lived in a run-local scratch file, which the storage rule correctly refused to commit - so the harness
-died with the run. Its gates were redone through exported doors and that later work is the surviving evidence.
+I wrote in three places that `EXP-2026-11-18-1188` referenced `gate_dispatch_c` with no definition in the tree,
+and that the definition had lived in a run-local scratch file. That was wrong. The definition is committed in
+`wrap_ship.c` in that directory and was there all along.
 
-The sweep names such harnesses instead of skipping them (`tools/run-verification.sh` prints a separate `stale`
-count), because a harness that quietly leaves the sweep looks exactly like coverage.
+The real cause: `wrap_ship.c` defines the symbol with C linkage, and I was handing the file to `g++`, which mangles
+it. Compiled as C and linked into the C++ harness, the whole measurement reproduces exactly:
+
+```
+typical-p 1800/1800, top-p 900/900, top-p large 45/45, XTC 720/720, DRY step 1 200/200
+adaptive-p 33211, mirostat 500, RNG 1280
+```
+
+Two of my own conclusions were wrong before this one, and both had the same shape: a failed step was blamed on the
+artefact's history rather than on the command I had just written. The record above is corrected rather than
+appended to, because a wrong reason in a document is worse than no reason.
+
+## The rule that does hold
+
+A harness outlives a run only if everything it needs is committed. The sweep names anything it cannot run
+(`tools/run-verification.sh` prints a separate `stale` count), because a harness that quietly leaves the sweep
+looks exactly like coverage.
 
 ## Sampler chain (P6-10) - accepted, checkpointed
 
