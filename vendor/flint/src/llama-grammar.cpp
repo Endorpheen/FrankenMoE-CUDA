@@ -1686,6 +1686,7 @@ void llama_grammar_apply_impl(const struct llama_grammar & grammar, llama_token_
                         }
                     }
                     static thread_local long long cmp_cases = 0, cmp_bad = 0;
+                    static thread_local long long call_cases0 = 0, call_bad0 = 0;
                     for (int64_t i = 0; i < ncand; ++i) {
                         cmp_cases++;
                         const int64_t g = rej_final[i] ? 1 : 0;
@@ -1702,9 +1703,12 @@ void llama_grammar_apply_impl(const struct llama_grammar & grammar, llama_token_
                     }
                     static thread_local long long cmp_calls = 0;
                     if (cmp_calls++ < 40) {
-                        fprintf(stderr, "FG171_GRAMMAR_VERIFY call=%lld cand=%lld cases=%lld disagreements=%lld\n",
-                                cmp_calls, (long long) ncand, cmp_cases, cmp_bad);
+                        fprintf(stderr, "FG171_GRAMMAR_VERIFY call=%lld cand=%lld cases=%lld disagreements=%lld declined=%d\n",
+                                cmp_calls, (long long) ncand, cmp_cases - call_cases0, cmp_bad - call_bad0,
+                                fg_has_partial ? 1 : 0);
                     }
+                    call_cases0 = cmp_cases;
+                    call_bad0 = cmp_bad;
                     for (const auto & rej : native_rejects) {
                         cur_p->data[rej.index].logit = -INFINITY;
                     }

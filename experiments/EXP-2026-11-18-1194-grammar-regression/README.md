@@ -225,3 +225,28 @@ plausible-looking condition is not a tested one, and the number is what decides.
 - production declines partial and window-filling pieces and uses the port otherwise;
 - constrained output on a strict grammar: identical to native, three consecutive runs;
 - the stage is still opt-in, because "identical on the routes measured" is not "identical".
+
+## The number that matters is per class, and it changes the picture
+
+Summing the cumulative counters was my arithmetic mistake; the print now shows per-call deltas and
+the tag of the class. On a 16-token constrained run:
+
+```
+not-declined: cases=16        disagreements=0
+declined:     cases=1736497   disagreements=203
+```
+
+Two conclusions, and the second is the important one:
+
+1. **Where the port is actually used, it agrees with native on every candidate compared** - 16
+   cases here, and the same was true in the earlier runs. The 203 disagreements live entirely in
+   the calls that go to the native path anyway, so they cannot reach the output.
+2. **The port is used almost never.** Sixteen candidates out of 1.7 million: nearly every full-set
+   call contains a piece that is partial or fills the window, so the hook declines it. The stage is
+   therefore correct but **not useful**: the speed it was meant to provide is not being collected,
+   because the declines take the native path.
+
+That reframes what remains. It is not "make the port faster" any more; it is "let the port decide
+a call that contains a multi-byte piece", which needs the partial-UTF-8 advance inside the ported
+automaton. Until that exists the stage stays opt-in and the item stays open, and the honest summary
+is: correct where used, rarely used.
