@@ -3,7 +3,7 @@
 The unit is 24 modules. "Done" means a test drives the shipped call path and checks the answer; "through" means the module is
 exercised by another module's test; "to complete" is what is left.
 
-## Progress: 23 of 24 measured
+## Progress: 24 of 24 measured
 
 | # | module | test | state |
 |---|---|---|---|
@@ -30,12 +30,10 @@ exercised by another module's test; "to complete" is what is left.
 | 21 | `cuda/cuda-target-flags` | `EXP-2026-11-19-1457`, 6 branch cases | done |
 | 22 | `cuda/cuda-install-layout` | `EXP-2026-11-19-1459`, 20 cases as a table | done |
 | 23 | `server/hf-cache-naming` | `EXP-2026-11-19-1460`, 29 cases as a table | done |
-| 24 | `metrics/metrics-traces` | `EXP-2026-11-15-618`, staged harness | **to complete** |
+| 24 | `metrics/metrics-traces` | `EXP-2026-11-19-1462`, 16 cases | done |
 
-## Remainder: 1 module
+## Remainder: none
 
-4. `metrics/metrics-traces` - 21 exports. Needs the CSV field rules and trace weight kinds compared with the native
-   writer over generated rows.
 
 ## Cross-cutting gates, already in place
 
@@ -49,7 +47,5 @@ exercised by another module's test; "to complete" is what is left.
 
 ## Order: four modules, then integration
 
-1. `metrics-traces`
-
-After this one, no module of the unit is without a test that drives its doors, and the work returns to the runtime
-integration: the paired A/B on a quiet card, the checkpoint, and the remaining requirement items.
+Every module of the unit now has a test that drives its doors. The work returns to the runtime integration: the paired A/B
+on a quiet card, the checkpoint, and the remaining requirement items.
