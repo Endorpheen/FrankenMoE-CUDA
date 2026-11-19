@@ -36,7 +36,7 @@ for dir in "$R"/experiments/*/; do
     name=$(basename "$dir")
     case " $STALE " in *" $name "*) printf '%-46s %s\n' "${name:0:46}" "STALE (references a symbol the tree no longer defines)"; missing=$((missing+1)); continue;; esac
     src=$dir/diff.cpp
-    [ -f "$src" ] || [ -x "$dir/build.sh" ] || continue
+    [ -f "$src" ] || [ -x "$dir/build.sh" ] || [ -x "$dir/verify.sh" ] || continue
     # verify.sh wins: it is how a directory says its default recipe no longer applies.
     if [ -x "$dir/verify.sh" ]; then
         out=$(cd "$dir" && timeout 600 ./verify.sh 2>&1)
