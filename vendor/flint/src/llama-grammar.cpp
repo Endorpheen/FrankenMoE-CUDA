@@ -1384,9 +1384,14 @@ extern "C" int64_t fg_grammar_first_set_call(fg_slice_rec s_etype, fg_slice_rec 
                                             __attribute__((weak));
 
 static bool fg_grammar_enabled() {
+    // Opt-in, and it must stay that way until the decision is proven to be equal to the
+    // automaton's. With it on, a constrained request produced a corrupted byte
+    // (`nam\xef\xbf\xbd e`) and, with the pre-filter, an empty-stack exception - both mean the
+    // hook accepted a token the native stack would have rejected. Rejecting or accepting too
+    // much is a correctness defect, never a performance trade. See EXP-2026-11-18-1194.
     static const bool on = []() {
         const char * f = getenv("GGML_GOOSE_GRAMMAR");
-        return !(f && strcmp(f, "0") == 0);
+        return f != nullptr && strcmp(f, "0") != 0;
     }();
     return on;
 }
@@ -1453,7 +1458,13 @@ void llama_grammar_apply_impl(const struct llama_grammar & grammar, llama_token_
     // and the host drops the obvious mismatches before any per-candidate call.
     std::vector<int64_t> fg_lo, fg_hi;
     int64_t fg_nranges = -1;
-    if (fg_grammar_first_set_call != nullptr && fg_grammar_enabled() &&
+    // The pre-filter over-rejects: with it on, a grammar that cannot match empty ends with no
+    // candidate and the server raises "Unexpected empty grammar stack after accepting piece: $".
+    // It is therefore opt-in until its ranges are proven to be a superset of what the automaton
+    // accepts (EXP-2026-11-18-1194). Rejecting too much is a correctness bug, not a slow path.
+    const char * pf_env = getenv("GGML_GOOSE_PREFILTER");
+    const bool pf_on = pf_env != nullptr && strcmp(pf_env, "0") != 0;
+    if (pf_on && fg_grammar_first_set_call != nullptr && fg_grammar_enabled() &&
             !grammar.stacks.empty() && grammar.stacks.size() <= FG_MAXS) {
         fg_flat_rules & fl = fg_flatten(grammar.rules);
         fg_lo.assign(64, 0); fg_hi.assign(64, 0);

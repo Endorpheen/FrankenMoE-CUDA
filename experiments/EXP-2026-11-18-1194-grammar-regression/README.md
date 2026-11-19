@@ -39,3 +39,53 @@ The failure is deterministic (identical message every run), so a single run per 
 it. Until then the grammar stage stays opt-in and this is a known regression in the working
 build, not in the accepted baseline - the reference library still produces valid constrained
 output.
+
+## Found by bisecting, and the answer is worse than the symptom
+
+Bisect, one variable at a time, same request, same binary:
+
+```
+ab15fbbd  llama-grammar.cpp   -> works
+96605a58  (cache removal)     -> works
+HEAD with GGML_GOOSE_GRAMMAR=0 -> works
+HEAD with the hook enabled     -> fails, and also corrupts output
+```
+
+So the regression is **the grammar hook's decision itself**, not the linkage and not the
+pre-filter alone. Two symptoms, both from the same cause:
+
+```
+grammar ON, pre-filter off: '{"name":"piano","n":4,"nam\xef\xbf\xbde":"pian","n":3}'
+grammar ON, pre-filter on : '{"name":"piano","n":4}'      (then empty-stack exception on retry)
+```
+
+The first shows a **corrupted byte in the middle of a token piece that the grammar should have
+rejected**, and the second shows the same over-acceptance collapsing a stack. Accepting a token
+the automaton rejects is a correctness defect and is not something to trade for speed. The
+earlier "identical output" result held only for permissive grammars, where almost everything is
+accepted and a wrong acceptance is invisible.
+
+## What was changed as a result
+
+Both doors are now **opt-in**, and the default path is native:
+
+- `GGML_GOOSE_GRAMMAR=1` enables the hook (was: enabled unless set to 0);
+- `GGML_GOOSE_PREFILTER=1` additionally enables the first-set pre-filter.
+
+Verified after the change, default environment, two consecutive requests:
+
+```
+'{"name":"piano","n":4,"name":"piano","n":4}'   valid ascii: True
+'{"name":"piano","n":4,"name":"piano","n":4}'   valid ascii: True
+```
+
+The sampler stages are unaffected: they remain default-on and measured, because their equality
+is established by 39 000+ differential cases rather than by a permissive workload.
+
+## Next step for the grammar stage
+
+The port must be made to produce, for every candidate, the same accept/reject the native stack
+produces, and the way to prove it is a per-candidate differential against `llama_grammar_apply`
+on real vocabularies - not an end-to-end text comparison, which cannot see a wrong acceptance in
+a permissive grammar. Until that exists the stage is an opt-in experiment and P6-10's grammar item
+is **not** complete.
