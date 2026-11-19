@@ -28,7 +28,7 @@ fi
 # definition was a run-local scratch file that the storage rule correctly did not commit - so the
 # harness died with the run that produced it. Its individual gates were later redone through exported
 # doors (db833095 and the current sampler differentials), which is the surviving evidence.
-STALE="EXP-2026-11-15-627-s0-composed-artifact EXP-2026-11-18-1188-shipping-doors"
+STALE="EXP-2026-11-15-627-s0-composed-artifact"
 
 pass=0; fail=0; missing=0
 printf '%-46s %s\n' "harness" "result"
@@ -40,6 +40,13 @@ for dir in "$R"/experiments/*/; do
     case " $STALE " in *" $name "*) printf '%-46s %s\n' "${name:0:46}" "STALE (references a symbol the tree no longer defines)"; missing=$((missing+1)); continue;; esac
     src=$dir/diff.cpp
     [ -f "$src" ] || [ -x "$dir/build.sh" ] || continue
+    # verify.sh wins: it is how a directory says its default recipe no longer applies.
+    if [ -x "$dir/verify.sh" ]; then
+        out=$(cd "$dir" && timeout 600 ./verify.sh 2>&1)
+        if [ $? -eq 0 ]; then printf '%-46s %s\n' "${name:0:46}" "$(echo "$out" | tail -1 | cut -c1-60)"; pass=$((pass+1));
+        else printf '%-46s %s\n' "${name:0:46}" "FAILED"; echo "$out" | tail -3 | sed 's/^/    /'; fail=$((fail+1)); fi
+        continue
+    fi
     if [ -x "$dir/build.sh" ] && [ ! -f "$dir/diff.cpp" ]; then
         out=$(cd "$dir" && timeout 600 ./build.sh 2>&1)
         if [ $? -eq 0 ]; then printf '%-46s %s\n' "${name:0:46}" "$(echo "$out" | tail -1)"; pass=$((pass+1));

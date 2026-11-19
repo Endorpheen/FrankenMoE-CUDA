@@ -10,6 +10,16 @@ Two mechanisms, both runnable without a model and without a GPU:
 - **link** a library that exports the native function (`bmoe_core`, built with `llama.cpp present = OFF`);
 - **white-box include** the native translation unit, for functions that are `static` or class-bound.
 
+## Reproduction status
+
+`tools/run-verification.sh` runs the whole set: **11 passed, 0 failed, 1 stale**. Every differential listed in this
+document is re-runnable in one command, which is what keeps the evidence from becoming a claim about a previous
+tree.
+
+The three sampler gates of EXP-1188 (adaptive-p 33211 cases, mirostat 500, RNG 1280) turned out to be live all
+along: they call the exported doors directly and only the directory's `diff.cpp` still declares the run-local
+dispatcher. A `verify.sh` in that directory now says so, and the runner prefers it over the default recipe.
+
 ## The rule the stale harnesses taught
 
 A harness may call **only exported doors**. `EXP-2026-11-18-1188` declared `gate_dispatch_c` as an extern and its
