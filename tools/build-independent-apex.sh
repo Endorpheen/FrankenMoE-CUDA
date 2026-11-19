@@ -2,13 +2,18 @@
 # Build every runtime component from repository sources in an isolated directory.
 set -euo pipefail
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+# FG_CUDA_ARCH pins the accepted Apex profile (89 on the RTX 4070, rule 35). The Goose decision that
+# answers the general question - version-dependent default lists and the native list - is reachable
+# at configure time through tools/cuda-arch.sh, so a caller who wants that list passes its output:
+#   FG_CUDA_ARCH="$(bash tools/cuda-arch.sh)" bash tools/build-independent-apex.sh <dir>
 OUT=${1:?usage: build-independent-apex.sh /home/end0/AI/LlamaServer/new-directory}
 case "$OUT" in /home/end0/AI/LlamaServer/*) ;; *) echo "build output must be inside LlamaServer"; exit 2;; esac
 [ ! -e "$OUT" ] || { echo "refusing to overwrite $OUT"; exit 2; }
 mkdir -p "$OUT"
 cmake -S "$ROOT/vendor/flint" -B "$OUT/support" -G Ninja \
     -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=gcc-13 -DCMAKE_CXX_COMPILER=g++-13 \
-    -DCMAKE_CUDA_HOST_COMPILER=g++-13 -DGGML_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES=89 \
+    -DCMAKE_CUDA_HOST_COMPILER=g++-13 -DGGML_CUDA=ON \
+    -DCMAKE_CUDA_ARCHITECTURES=${FG_CUDA_ARCH:-89} \
     -DLLAMA_BUILD_APP=OFF -DLLAMA_BUILD_TESTS=OFF -DLLAMA_BUILD_EXAMPLES=OFF \
     -DLLAMA_BUILD_COMMON=ON -DLLAMA_BUILD_TOOLS=ON -DLLAMA_BUILD_SERVER=ON \
     -DLLAMA_BUILD_UI=OFF -DLLAMA_USE_PREBUILT_UI=OFF -DFRANKEN_REPO="$ROOT"

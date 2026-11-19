@@ -42,3 +42,4 @@ host art goose/misc/generated-artifact-policy.goose
 host env goose/misc/build-env.goose
 host pkg goose/misc/release-plan.goose
 host fx  goose/misc/fixture-plan.goose
+host arch goose/cuda/cuda-arch-policy.goose
