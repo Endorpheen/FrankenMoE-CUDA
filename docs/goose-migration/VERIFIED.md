@@ -134,7 +134,7 @@ against the artefact everyone runs" is separate. For the twelve modules whose do
 | metrics (21 doors) | yes - the CSV/row harnesses dlopen the shipped library |
 | sampler chain, spec doors, spec decisions | yes - the door harnesses and the live counters on real runs |
 | arch registry (6 doors) | yes - the recipe harnesses dlopen the shipped library |
-| tokenizer, tokenizer doors | yes - `FG_TK_DIAG` inside a real server, 1678 comparisons |
+| tokenizer, tokenizer doors | yes - door symbols in `libllama`, 1678 encode comparisons under a flag; the encode decision is still native |
 | token pieces, end of generation | yes - 248 320 comparisons each, through the shipped library |
 | detokenizer (3 doors) | yes for pieces and EOG; sequence door not measured |
 | unicode tables and text | yes - through the tokenizer path above |
@@ -146,15 +146,24 @@ evidence about the module, not about the artefact.
 
 ## Tokenizer and detokenizer (P7-06, P7-07)
 
-| decision | evidence | mechanism |
+| decision | evidence | in the shipped runtime |
 |---|---|---|
-| BPE tokenization | 1678 live comparisons, 0 disagreements | `FG_TK_DIAG` inside a real server, mixed-script prompt |
-| token piece | **248 320** comparisons - the whole vocabulary, byte for byte | door vs the native producer, in the shipped library |
-| end of generation | **248 320** comparisons against a 5-token set | same arrangement |
-| detokenize over sequences | **not measured** | two attempts failed in my measurement, not in the port |
+| BPE tokenization (encode) | 1678 live comparisons, 0 disagreements | **diagnostic only** - no door takes this decision yet |
+| token piece | **248 320** comparisons, the whole vocabulary byte for byte | served (EXP-2026-11-19-1351) |
+| token piece, buffer form | 9 217 calls measured, then served | served (EXP-2026-11-19-1351) |
+| end of generation | 248 320 comparisons against its five-token set | served (EXP-2026-11-19-1332) |
+| detokenize over sequences | 84 calls: seven lengths, three id shapes, four flag pairs | served (EXP-2026-11-19-1353, -1354) |
+| the short callers buffer | the door now reports the same `-needed` the native does | served, no fallback (EXP-2026-11-19-1357, -1358) |
 
-The BPE module and its dependency closure are composed into the shipped unit, which is what makes these
-comparisons possible at all: before that they lived only in a separate build.
+The decode side is finished in the sense the project uses: the shipped call path reaches the Goose export in normal
+operation, on every path including a short buffer, and what remains native is a guard for a door that cannot answer -
+unreachable while the library is linked against itself.
+
+The encode side is not: the tokenizer has no door, so its 1678 comparisons prove agreement, not use. That is the
+substantive part of P7-06 still open.
+
+The BPE module and its dependency closure are composed into the shipped unit, which is what makes these comparisons
+possible at all: before that they lived only in a separate build.
 
 ## Speculative decoding (P6-11)
 
