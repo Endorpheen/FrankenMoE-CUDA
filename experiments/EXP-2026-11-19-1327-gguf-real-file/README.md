@@ -71,8 +71,21 @@ vocabulary array: 248320/248320 elements equal
 Every token string of the model read through `gr_arr_str_span` matches the native reader byte for byte - the same
 248 320 tokens that the detokeniser door was proven on, now proven at the source.
 
-What remains inside the arrays is the element content of the other four: the merge list and three small ones.
-`gr_array_int` and `gr_arr_str_span` cover them and the same harness extends to them directly.
+Every array's **contents** are compared, by element type:
+
+```
+array elements: 744231/744231 equal
+```
+
+That covers all five arrays - the vocabulary (248 320 strings), the merge list, and three small integer arrays - three
+quarters of a million elements in total, with no disagreement.
+
+## The harness lied once more, and the tell was familiar
+
+The array block did not appear in the output at all. The compile had **failed** on a `void*` dereference, so the run
+used the previous binary, and my check of it printed `compile rc=0` - because that `$?` was the exit status of `tail`
+at the end of the pipeline, not of `gcc`. That is the exact trap this project recorded in its own build scripts, and it
+still caught me in a one-line command.
 
 ## Three harness errors before the numbers were right
 

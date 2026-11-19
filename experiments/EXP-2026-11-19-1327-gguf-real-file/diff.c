@@ -21,6 +21,7 @@ typedef int64_t (*fn_span)(sl_i64, sl_i64, int64_t, sl_i64);
 typedef int64_t (*fn_f32_bits)(sl_u8, sl_i64, sl_i64, int64_t, sl_i64);
 typedef int64_t (*fn_arr)(sl_i64, sl_i64, int64_t);
 typedef int64_t (*fn_arr_str)(sl_u8, sl_i64, sl_i64, int64_t, int64_t, sl_i64);
+typedef int64_t (*fn_arr_int)(sl_u8, sl_i64, sl_i64, int64_t, int64_t, sl_i64);
 
 #define WINDOW (64u * 1024u * 1024u)
 
@@ -243,6 +244,54 @@ int main(int argc, char ** argv) {
         }
     }
 
+    /* every array's contents, by element type */
+    fn_arr_int arr_int = (fn_arr_int) dlsym(h, "gr_array_int");
+    int arr_total = 0, arr_bad = 0;
+    for (int64_t i = 0; i < n_kv; ++i) {
+        if ((int64_t) gguf_get_kv_type(g2, i) != GGUF_TYPE_ARRAY) { continue; }
+        const int64_t et = (int64_t) gguf_get_arr_type(g2, i);
+        const int64_t n = (int64_t) gguf_get_arr_n(g2, i);
+        if (et == GGUF_TYPE_STRING && arr_str) {
+            for (int64_t e = 0; e < n; ++e) {
+                int64_t out6[2] = {0};
+                sl_i64 s6; s6.data = out6; s6.len = 2;
+                const int64_t rc7 = arr_str(s_data, s_state, s_kv, i, e, s6);
+                const char * ns = gguf_get_arr_str(g2, i, (int) e);
+                const size_t nn = strlen(ns);
+                ++arr_total;
+                if (!(rc7 == 0 && (size_t) out6[1] == nn && out6[0] >= 0 &&
+                      (size_t) (out6[0] + out6[1]) <= win && memcmp(data + out6[0], ns, nn) == 0)) {
+                    ++arr_bad;
+                    if (arr_bad <= 3) printf("ARRSTR MISMATCH key=%s e=%lld\n", gguf_get_key(g2, i), (long long) e);
+                }
+            }
+        } else if (et >= GGUF_TYPE_UINT8 && et <= GGUF_TYPE_INT32 && arr_int) {
+            for (int64_t e = 0; e < n; ++e) {
+                int64_t out7[1] = {0};
+                sl_i64 s7; s7.data = out7; s7.len = 1;
+                const int64_t rc8 = arr_int(s_data, s_state, s_kv, i, e, s7);
+                const uint8_t * raw = (const uint8_t *) gguf_get_arr_data(g2, i);
+                int64_t native_el = 0;
+                switch (et) {
+                    case GGUF_TYPE_UINT8:  native_el = (int64_t) raw[e]; break;
+                    case GGUF_TYPE_INT8:   native_el = (int64_t) ((const int8_t *)  raw)[e]; break;
+                    case GGUF_TYPE_UINT16: native_el = (int64_t) ((const uint16_t *) raw)[e]; break;
+                    case GGUF_TYPE_INT16:  native_el = (int64_t) ((const int16_t *)  raw)[e]; break;
+                    case GGUF_TYPE_UINT32: native_el = (int64_t) ((const uint32_t *) raw)[e]; break;
+                    case GGUF_TYPE_INT32:  native_el = (int64_t) ((const int32_t *)  raw)[e]; break;
+                    default: continue;
+                }
+                ++arr_total;
+                if (rc8 != 0 || out7[0] != native_el) {
+                    ++arr_bad;
+                    if (arr_bad <= 3) printf("ARRINT MISMATCH key=%s e=%lld native=%lld port=%lld\n",
+                                             gguf_get_key(g2, i), (long long) e, (long long) native_el, (long long) out7[0]);
+                }
+            }
+        }
+    }
+    printf("array elements: %d/%d equal\n", arr_total - arr_bad, arr_total);
+
     /* the negative case: a key that is not there must be reported as absent by both */
     const char * absent = "general.this.key.does.not.exist";
     sl_u8 s_absent; s_absent.data = (uint8_t *) absent; s_absent.len = (int64_t) strlen(absent);
@@ -257,6 +306,6 @@ int main(int argc, char ** argv) {
     gguf_free(g2);
     printf("lookup: kv=%lld/%lld tensor=%lld/%lld fails=%d\n",
            (long long) (n_kv - kv_fail), (long long) n_kv, (long long) (n_t - tn_fail), (long long) n_t, kv_fail + tn_fail);
-    printf("gguf header: fails=%d\n", fails + kv_fail + tn_fail + val_fail + type_fail + str_fail + f_fail + b_fail + a_fail);
-    return (fails + kv_fail + tn_fail + val_fail + type_fail + str_fail + f_fail + b_fail + a_fail) ? 1 : 0;
+    printf("gguf header: fails=%d\n", fails + kv_fail + tn_fail + val_fail + type_fail + str_fail + f_fail + b_fail + a_fail + arr_bad);
+    return (fails + kv_fail + tn_fail + val_fail + type_fail + str_fail + f_fail + b_fail + a_fail + arr_bad) ? 1 : 0;
 }
