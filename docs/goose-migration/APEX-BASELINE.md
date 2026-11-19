@@ -106,3 +106,18 @@ fixed 32K-input / 512-output request.
 A number produced with a different context, cache, batch or request length is an **exploration**, filed separately and
 never compared with the record. The record stands at decode 62.79 (canonical median 62.73) and prefill 2948, and it is
 only exceeded inside that profile, in paired runs, with the response hash check and memory figures reported.
+
+## Probability parity, measured as a digest
+
+`tools/apex-probs-pair.sh` runs one prompt twice on the same build: greedy, top-five probabilities reported per position, once
+as shipped and once with `GGML_GOOSE_SAMPLER_TOP_P=0 GGML_GOOSE_SAMPLER_PENALTIES=0`.
+
+```
+goose_on:   digest=d384807f4f2014e7 positions=24 content_len=115
+doors_off:  digest=d384807f4f2014e7 positions=24 content_len=115
+identical=True
+```
+
+The reported distribution is the same distribution, which is what a probability claim has to mean. Text parity is held
+separately by the record hash `c2ff42cc1219`, because text can differ legitimately at a top-p boundary while the distribution
+does not.
