@@ -187,6 +187,9 @@ _GOOSE_PAIRS = [
     ('goose/model/arch-registry.goose',   'integration/m1/common/fg-arch-registry-bridge.c',    'fg-ar',  'fg_arch_registry_goose_init'),
     ('goose/cpu/graph-reuse.goose',       'integration/m1/common/fg-graph-reuse-bridge.c',      'fg-gr',  'fg_graph_reuse_goose_init'),
     ('goose/model/qgate-split.goose',     'integration/m1/common/fg-goose-quant-bridge.c',      'fg-qg',  'fg_qg_goose_init'),
+    # P10-07: the JSON parser. Its door json_parse is what common/json.cpp resolves by dlsym, and until this
+    # pair existed the shipped library carried the C++ adapter without the Goose parser it calls.
+    ('goose/json/json-parser.goose',      'integration/m1/common/fg-json-bridge.c',             'fg-json', 'fg_json_goose_init'),
 ]
 _GOOSE = Path(__file__).resolve().parent.parent.parent / 'goose'
 if not (_GOOSE / 'misc').is_dir():
@@ -212,7 +215,10 @@ for _pair in _GOOSE_PAIRS:
     if _r.returncode != 0:
         print('module cc failed:', _stem); print(_r.stderr[:800]); sys.exit(1)
     _bo = _gobj/(_stem + '-bridge.o')
-    _r = subprocess.run(['gcc-13','-O2','-fPIC','-std=c11','-w','-c', str(_bs), '-o', str(_bo)],
+    # -I<generated dir>: a bridge may include its own generated header instead of re-declaring the
+    # module's signature by hand. A hand-written prototype for an 18-argument export is the shortest path
+    # to an ABI nobody notices.
+    _r = subprocess.run(['gcc-13','-O2','-fPIC','-std=c11','-w',f'-I{_gobj}','-c', str(_bs), '-o', str(_bo)],
                         capture_output=True, text=True)
     if _r.returncode != 0:
         print('bridge cc failed:', _stem); print(_r.stderr[:800]); sys.exit(1)
