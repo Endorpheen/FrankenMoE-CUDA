@@ -64,6 +64,16 @@ static void fg_report_stage(const char * name, std::atomic<long long> & acc, lon
                 acc.load() / 1e6, (double) acc.load() / 1e3 / (double) c, c);
     }
 }
+// Per-call diagnostics stay behind a flag: the shipped path must not pay for them. FG_SAMPLER_DIAG=1
+// turns on the state trace used to locate a divergence between the two sampling paths.
+static bool fg_diag_enabled() {
+    static const bool on = []() {
+        const char * f = getenv("FG_SAMPLER_DIAG");
+        return f && strcmp(f, "1") == 0;
+    }();
+    return on;
+}
+
 static std::atomic<unsigned long long> g_goose_top_p_calls{0};
 
 // top-p is enabled with the chain; GGML_GOOSE_SAMPLER_TOP_P=0 disables it
@@ -2813,6 +2823,10 @@ static void llama_sampler_mirostat_apply(struct llama_sampler * smpl, llama_toke
         }
     }
     (void) fg_k;
+
+    if (fg_diag_enabled()) {
+        fprintf(stderr, "FG_MIROSTAT k=%d mu=%.9f n_in=%zu\n", std::max(int(k), 1), (double) ctx->mu, cur_p->size);
+    }
 
     llama_sampler_top_k_impl(cur_p, std::max(int(k), 1));
 

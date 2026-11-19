@@ -43,7 +43,28 @@ the door ranked an unsorted array. One added call, `llama_sampler_softmax_impl(c
 makes the door receive what the native code computes on. With it, the state after `typical`+`XTC` is **byte
 identical** in both modes: size 7, sorted, same ids, same logits, same probabilities.
 
-The chain difference fell from 83 rounds to **42**, so something downstream still diverges. It is not the pair any
+The chain difference fell from 83 rounds to **42**, so something downstream still diverges.
+
+### Isolation, run after the fix
+
+```
+typical+xtc+mirostat+dist           34 rounds differ
+typical+xtc+adaptive+dist           21 rounds differ
+typical+xtc+mirostat+adaptive+dist  56 rounds differ
+```
+
+Each sampler alone matches (EXP-2026-11-19-1284), and the state **entering** them is byte-identical after the fix,
+so the divergence is in what the door does with that state. A gated trace (`FG_SAMPLER_DIAG=1`) now prints
+mirostat's `k` and `mu` per call in both modes, and it found one concrete deviation straight away:
+
+```
+goose:  FG_MIROSTAT k=1000000 mu=13.364114761 n_in=2
+native: FG_MIROSTAT k=1572443 mu=13.364114761 n_in=2
+```
+
+The port stops counting `k` at **1 000 000**; the native has no bound. With `n_in=2` it cannot change the
+truncation, so it is a deviation to remove rather than the cause, and the first *round* difference is later (31)
+than the first `k` difference (15). It is not the pair any
 more, and mirostat and adaptive-p each match in isolation, so the remaining candidate is their **stateful**
 interaction: mirostat updates `mu` from the surprise of the token it selected, and a different `k` in one round
 changes every later round. The next experiment is to log `k` and `mu` per round in both modes and find the first
