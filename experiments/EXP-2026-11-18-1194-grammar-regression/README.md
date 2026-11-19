@@ -191,3 +191,37 @@ declines outright through the partial guard, so they can no longer reach the out
 This is exactly what the earlier end-to-end comparison could not see: a permissive grammar hides a
 wrong acceptance, and only a per-candidate comparison against `llama_grammar_reject_candidates`
 counts it.
+
+## Three more iterations, and the disagreement rate falls from 7128 to 203
+
+| change | disagreements | note |
+|---|---|---|
+| first measurement | 7128 | port accepts what native rejects |
+| empty stack rejects all | 1728 | the real defect |
+| reject `cp_len == 0 && pnr <= 0` (too broad first) | 487116 | **my mistake, caught by measuring** |
+| narrowed to `cp_len == 0` only | 203 | |
+| decline on a piece that fills the 16-codepoint window | 203 | those calls are the declined class |
+
+Out of 1 736 513 candidate comparisons, 203 disagree, and every one of them has
+`cp_len=16, pnr=0`: a piece that fills the codepoint window. Production **declines** those calls
+entirely, so they cannot reach the output; the verify mode keeps measuring them on purpose,
+because a count that excludes the failures is not a count.
+
+### The over-rejection is worth recording as a mistake
+
+The first form of the invalid-partial check used `curs[i] >= cp_len[i]`, which is also true for
+any candidate whose codepoints have all been consumed - the normal case at the end of a match. It
+rejected valid continuations and drove the count from 768 to **487116**, a 600-fold regression that
+looked like progress until it was measured. The condition now requires `cp_len[i] == 0`, i.e. a
+piece that carries no codepoint at all.
+
+That is the same lesson as the ceiling-versus-truncation in Mirostat, from the other side: a
+plausible-looking condition is not a tested one, and the number is what decides.
+
+## Current state of the grammar stage
+
+- per-candidate agreement on the codepoint path: 203 of 1 736 513 (0.012%), all in the class
+  production declines;
+- production declines partial and window-filling pieces and uses the port otherwise;
+- constrained output on a strict grammar: identical to native, three consecutive runs;
+- the stage is still opt-in, because "identical on the routes measured" is not "identical".

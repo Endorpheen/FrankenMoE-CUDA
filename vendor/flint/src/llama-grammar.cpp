@@ -1542,12 +1542,22 @@ void llama_grammar_apply_impl(const struct llama_grammar & grammar, llama_token_
     // request produced a corrupted byte. When any candidate has a pending partial, the hook
     // declines the whole call and the native path decides. Declining is safe; guessing is not.
     bool fg_has_partial = false;
+    bool fg_has_truncated = false;
     for (const auto & c : candidates_grammar) {
         if (c.partial_utf8.n_remain != 0) {
             fg_has_partial = true;
-            break;
         }
+        // a piece that fills the codepoint window may have been truncated, and the port would
+        // then judge only its prefix - accepting a piece the native code rejects because of its
+        // tail. Four such pieces account for the last 203 disagreements of 1.7 million.
+        int64_t n = 0;
+        while (n < FG_MAXCP && c.code_points[n] != 0) n++;
+        if (n >= FG_MAXCP) {
+            fg_has_truncated = true;
+        }
+        if (fg_has_partial && fg_has_truncated) break;
     }
+    fg_has_partial = fg_has_partial || fg_has_truncated;
     // In verification mode the native result is what gets applied, so the port may run even
     // when it would normally decline - that is how the declined calls get measured instead of
     // staying invisible.
@@ -1682,9 +1692,11 @@ void llama_grammar_apply_impl(const struct llama_grammar & grammar, llama_token_
                         if (g != nat[i]) {
                             cmp_bad++;
                             if (cmp_bad <= 5) {
-                                fprintf(stderr, "FG171_GRAMMAR_DIFF cand=%lld id=%lld goose_reject=%lld native_reject=%lld\n",
+                                fprintf(stderr, "FG171_GRAMMAR_DIFF cand=%lld id=%lld goose_reject=%lld native_reject=%lld cp_len=%lld pnr=%lld\n",
                                         (long long) i, (long long) candidates_grammar[i].id,
-                                        (long long) g, (long long) nat[i]);
+                                        (long long) g, (long long) nat[i],
+                                        (long long) cpl[i],
+                                        (long long) candidates_grammar[i].partial_utf8.n_remain);
                             }
                         }
                     }

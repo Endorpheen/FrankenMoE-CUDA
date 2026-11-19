@@ -1488,6 +1488,15 @@ fn g_reject(etype: i64[:], eval: i64[:], roff: i64[:], rlen: i64[:],
                         alive = alive - 1;
                     }
                 }
+                if rej[i] == 0 && cp_len[i] <= 0 && pnr[i] <= 0 {
+                    // the piece carries no codepoint at all and no valid partial: an invalid
+                    // UTF-8 sequence, e.g. a byte-fallback token. It cannot continue the
+                    // grammar. The earlier form of this check also matched candidates whose
+                    // codepoints were merely exhausted, which rejected valid continuations and
+                    // pushed the disagreement count from 768 to 487116 - measured, not assumed.
+                    rej[i] = 1;
+                    alive = alive - 1;
+                }
                 if rej[i] == 0 && curs[i] < cp_len[i] {
                     let r = g_match_char(etype, eval, pos, cand_cp[i * maxcp + curs[i]]);
                     if r > 0 {
