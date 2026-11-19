@@ -86,6 +86,7 @@ ignored `cur_p->data` being advanced. Each is recorded as a correction in its ca
 | metadata agreement | 2000 cases | white-box `deterministic_workload.cpp` |
 | file reading, every failure mode | 9 crafted files | white-box, via `load()` |
 | file writing | byte-exact, 4 workloads | white-box, via `save()` |
+| release reproduction | rebuild hash equals `d5c566d0…` | byte comparison against the EXP1298 checkpoint |
 | replay guards | 1000 cases | white-box |
 | replay route + cursor | 1000 cases | white-box |
 
@@ -99,11 +100,24 @@ ignored `cur_p->data` being advanced. Each is recorded as a correction in its ca
 | io row + 12 columns | 2000 rows | white-box |
 | encoder/unescaper pair | 4000 round-trips (961 lossy) | invariant only - no native reference exists |
 
+## Tokenizer and detokenizer (P7-06, P7-07)
+
+| decision | evidence | mechanism |
+|---|---|---|
+| BPE tokenization | 1678 live comparisons, 0 disagreements | `FG_TK_DIAG` inside a real server, mixed-script prompt |
+| token piece | **248 320** comparisons - the whole vocabulary, byte for byte | door vs the native producer, in the shipped library |
+| end of generation | **248 320** comparisons against a 5-token set | same arrangement |
+| detokenize over sequences | **not measured** | two attempts failed in my measurement, not in the port |
+
+The BPE module and its dependency closure are composed into the shipped unit, which is what makes these
+comparisons possible at all: before that they lived only in a separate build.
+
 ## Speculative decoding (P6-11)
 
 | decision | evidence | mechanism |
 |---|---|---|
 | prompt-lookup draft | 3000 cases | `bmoe_core` symbols |
+| prefix agreement on real drafts | 2 live comparisons, `calls=2 disagreements=0` | shipped server with ngram drafters |
 | prefix agreement | 14 live comparisons | live server |
 | draft width | 1 live comparison, 4 configurations | live server |
 | synthetic and rejection acceptance | gated synthetically only | their routes need a draft model |
