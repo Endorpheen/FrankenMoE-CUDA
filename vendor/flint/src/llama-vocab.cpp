@@ -3763,6 +3763,39 @@ void llama_vocab::impl::tokenizer_st_partition(std::forward_list<fragment_buffer
 }
 
 // NOTE: avoid ever using this except for building the token_to_piece caches
+// Cross-check of the ported detokenizer against the shipped one. The native piece is what returns either
+// way; this only counts disagreements. The hook lives in the function that PRODUCES that piece and calls
+// only the door - an earlier version called a piece function from inside another and recursed until the
+// stack overflowed (EXP-2026-11-19-1316).
+namespace fg_detok_check {
+
+struct sl_i64 { int64_t * data; int64_t len; };
+struct sl_u8  { uint8_t  * data; int64_t len; };
+
+typedef int64_t (*fn_t)(sl_u8, sl_i64, sl_i64, sl_i64, int64_t, sl_u8, int64_t, int64_t, int64_t, int64_t);
+
+inline fn_t resolve() {
+    static fn_t fn = []() -> fn_t {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        void * sym = h ? dlsym(h, "bt_token_to_piece") : nullptr;
+        return reinterpret_cast<fn_t>(sym);
+    }();
+    return fn;
+}
+
+inline bool enabled() {
+    static const bool on = getenv("FG_TK_DETOK_DIAG") != nullptr;
+    return on;
+}
+
+struct table {
+    std::string blob;
+    std::vector<int64_t> off, len, attr;
+    bool ready = false;
+};
+
+} // namespace fg_detok_check
+
 std::string llama_vocab::impl::token_to_piece_for_cache(llama_token token, bool special) const {
     std::string piece;
     piece.resize(piece.capacity());  // using string internal cache
@@ -3774,6 +3807,61 @@ std::string llama_vocab::impl::token_to_piece_for_cache(llama_token token, bool 
     }
     else {
         piece.resize(n_chars);
+    }
+
+    // Compare against the port on the BYTE-ENCODED token text, which is what the door reads: a space is
+    // U+0120 there, not 0x20, and uc_cpt_to_byte maps it back. Only the special=true form is compared,
+    // because the other form deliberately returns nothing for special tokens.
+    if (special && fg_detok_check::enabled() && token >= 0 && (size_t) token < id_to_token.size()) {
+        if (const auto fn = fg_detok_check::resolve()) {
+            static fg_detok_check::table t;
+            if (!t.ready) {
+                size_t total = 0;
+                for (const auto & tk : id_to_token) { total += tk.text.size(); }
+                t.blob.reserve(total);
+                t.off.resize(id_to_token.size());
+                t.len.resize(id_to_token.size());
+                t.attr.resize(id_to_token.size());
+                for (size_t i = 0; i < id_to_token.size(); ++i) {
+                    t.off[i]  = (int64_t) t.blob.size();
+                    t.len[i]  = (int64_t) id_to_token[i].text.size();
+                    t.attr[i] = (int64_t) token_get_attr((llama_token) i);
+                    t.blob.append(id_to_token[i].text);
+                }
+                t.ready = true;
+            }
+            static thread_local std::vector<uint8_t> out(1024);
+            if (t.off[token] + t.len[token] <= (int64_t) t.blob.size() && piece.size() < out.size()) {
+                fg_detok_check::sl_u8  s_gguf{ (uint8_t *) t.blob.data(), (int64_t) t.blob.size() };
+                fg_detok_check::sl_i64 s_off { t.off.data(),  (int64_t) t.off.size() };
+                fg_detok_check::sl_i64 s_len { t.len.data(),  (int64_t) t.len.size() };
+                fg_detok_check::sl_i64 s_attr{ t.attr.data(), (int64_t) t.attr.size() };
+                fg_detok_check::sl_u8  s_out { out.data(),    (int64_t) out.size() };
+                const int64_t got = fn(s_gguf, s_off, s_len, s_attr, (int64_t) token, s_out, 0, 0, 1, 0);
+                static std::atomic<unsigned long long> calls{0}, bad{0};
+                const auto c = ++calls;
+                const bool ok = got == (int64_t) piece.size() &&
+                                (got <= 0 || std::memcmp(out.data(), piece.data(), (size_t) got) == 0);
+                if (!ok) {
+                    ++bad;
+                    if (bad.load() <= 5) {
+                        fprintf(stderr, "FG_TK_DETOK_DIFF token=%d native=%zu goose=%lld\n",
+                                (int) token, piece.size(), (long long) got);
+                    }
+                }
+                if ((c % 500) == 0) {
+                    fprintf(stderr, "FG_TK_DETOK_PROGRESS calls=%llu disagreements=%llu\n",
+                            (unsigned long long) c, (unsigned long long) bad.load());
+                }
+                static std::atomic<unsigned long long> seen{0};
+                if (c != seen.exchange(c)) {
+                    static struct fin { ~fin() {
+                        fprintf(stderr, "FG_TK_DETOK_TOTAL calls=%llu disagreements=%llu\n",
+                                (unsigned long long) calls.load(), (unsigned long long) bad.load()); } } g_fin;
+                    (void) g_fin;
+                }
+            }
+        }
     }
 
     return piece;
