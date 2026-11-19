@@ -41,6 +41,19 @@ Everything in the new baseline depends on the resident mmap expert ranges being 
 loses that registration silently returns to this level, which is why
 `tools/check-accepted-components.py` runs as a pre-flight of every benchmark.
 
+### Published release
+
+```
+tag      v0.9.0-exp1298   (annotated, on e5a725033a0d65ea7d3d6da5446e573ee0318151)
+release  https://github.com/Endorpheen/FrankenMoE-CUDA/releases/tag/v0.9.0-exp1298   (Latest)
+asset    frankenmoe-apex-exp1298-linux-x86_64.tar.gz
+sha256   834a5808aaafd8109d81cfbd593968425263d5eca601f2cb05b8d23a3c751177
+```
+
+Downloaded after publication to a separate directory, checksum verified, extracted (12 of 12 files verified) and run:
+decode 62.56 / 62.86 / 62.38, prefill 2701.2 / 2956.0 / 2954.1, hash `c2ff42cc1219`, accepted-component pre-flight
+5 of 5. Earlier releases including EXP906 are untouched.
+
 ### Provenance
 
 | item | value |

@@ -59,7 +59,7 @@ letting a 20-minute compile discover the problem.
 
 ## Last accepted checkpoint
 
-**EXP-2026-11-19-1298** - `builds/checkpoint-20261119-EXP1298/`, decode 62.73 and prefill 2948.0 tok/s (medians of
+**EXP-2026-11-19-1298** - released as `v0.9.0-exp1298` (asset sha256 `834a5808...b7e06`), `builds/checkpoint-20261119-EXP1298/`, decode 62.73 and prefill 2948.0 tok/s (medians of
 nine responses), hash `c2ff42cc1219`. Full profile, provenance and the isolating control are in
 `docs/goose-migration/APEX-BASELINE.md`. The earlier `candidate-run2` entry remains below as history.
 
