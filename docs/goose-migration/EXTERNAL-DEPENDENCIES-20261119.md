@@ -65,3 +65,34 @@ The dependency list above is accurate for the artefact that exists. What remains
 licences and versions per shipped library, the version of each vendored source, and the statement
 of which of them are primitives the runtime cannot avoid (GPU driver, libc, C++ runtime) versus
 logic that is still replaceable (the JSON parser being the one already ported).
+
+
+## Licences and versions, from the tree
+
+| dependency | version | licence | source in the tree |
+|---|---|---|---|
+| `nlohmann/json` | 3.12.0 (`NLOHMANN_JSON_VERSION_*`) | MIT (the file also carries the Apache-2.0 note for its embedded parts) | `vendor/flint/vendor/nlohmann/json.hpp` |
+| `cpp-httplib` | 0.62.0 (`CPPHTTPLIB_VERSION`) | MIT | `vendor/flint/vendor/cpp-httplib/`, `LICENSE` |
+| `miniaudio` | not declared in the header | public domain | `vendor/flint/vendor/miniaudio/miniaudio.h` |
+| `stb_image` | not declared | public domain | `vendor/flint/vendor/stb/stb_image.h` |
+| `sheredom/utf8.h` | not declared | MIT-style, single header (licence text in the file) | `vendor/flint/vendor/sheredom/utf8.h` |
+| `hash` (robin-map style) | not declared | MIT-style (see its CMakeLists and header) | `vendor/flint/vendor/hash/` |
+| `flint` (the llama.cpp fork) | pinned by `vendor/flint/PROVENANCE.txt` | MIT | `vendor/flint/LICENSE` |
+| OpenSSL 3 (`libssl.so.3`, `libcrypto.so.3`) | system | Apache-2.0 | not vendored; loaded from the host |
+
+## Which of them are primitives, and which are replaceable logic
+
+The distinction F1-03 asks for, applied to the list above:
+
+- **Unavoidable primitives of this platform**: glibc, `libstdc++`/`libgcc` (while any C++ remains
+  linked), the CUDA driver and runtime, OpenSSL for TLS. None of these is a decision the project
+  makes; each is a facility the OS or the GPU provides.
+- **Replaceable logic that is still external**: `nlohmann/json` - the parser and dumper are already
+  ported and exercised (`tests/json/*`), so what remains is the adapter and the swap, not the
+  capability. `cpp-httplib` - the HTTP framing decisions are ported in `goose/server/http-*.goose`,
+  and the library currently supplies the socket loop.
+- **Facilities with no decision in them**: `miniaudio`, `stb_image`, `utf8.h`, `hash` - they move
+  bytes or hash them, and the project's own rules count them as primitives, not as logic to port.
+
+The report is complete for the shipped set. What it does not yet carry is a symbol-level inventory
+per dependency, which is only meaningful once the JSON swap has happened.
