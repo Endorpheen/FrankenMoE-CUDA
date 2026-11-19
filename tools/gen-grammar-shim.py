@@ -41,6 +41,32 @@ def wrapper(symbol, call_name, params, marker):
             % (call_name, ', '.join(sig), '\n'.join(body), symbol, ', '.join(args)))
 
 
+def drop_existing(text, call_name):
+    """Remove a previously generated wrapper, so a changed signature is not kept stale.
+
+    The generator used to skip a wrapper whose name was already present. When
+    fg_grammar_reject gained the per-row pool its arity changed, the old wrapper stayed, and
+    the composed unit failed with "no matching overload for call to fg_grammar_reject" - the
+    shim was answering with the previous prototype. A generated wrapper is always regenerated
+    now; only the text outside the function is preserved.
+    """
+    m = re.search(r'^int64_t ' + re.escape(call_name) + r'\(', text, re.M)
+    if not m:
+        return text
+    i = text.index('{', m.start())
+    depth = 0
+    while i < len(text):
+        if text[i] == '{':
+            depth += 1
+        elif text[i] == '}':
+            depth -= 1
+            if depth == 0:
+                i += 1
+                break
+        i += 1
+    return text[:m.start()] + text[i:].lstrip('\n')
+
+
 def main(out):
     header = open(os.path.join(out, 'sampler_chain.h')).read()
     shim = os.path.join(out, 'sampler_chain_shim.c')
@@ -49,11 +75,10 @@ def main(out):
         with open(shim, 'a') as f:
             f.write('\ntypedef struct { void * data; int64_t len; } %s;\n' % SLICE)
 
-    text = open(shim).read()
     for symbol, call_name, marker in (('fg_grammar_reject', 'fg_grammar_reject_call', 180),
                                       ('fg_grammar_first_set', 'fg_grammar_first_set_call', 181)):
-        if call_name in text:
-            continue
+        text = drop_existing(open(shim).read(), call_name)
+        open(shim, 'w').write(text)
         with open(shim, 'a') as f:
             f.write(wrapper(symbol, call_name, prototype(header, symbol), marker))
     print('grammar entries: fg_grammar_reject, fg_grammar_first_set')

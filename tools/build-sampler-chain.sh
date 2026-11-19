@@ -139,8 +139,11 @@ fn main() {
     if drl < -1 {
         return;
     }
+    // The pool and its level count are the per-row buffers a rule reference with several
+    // alternates needs (EXP-2026-11-19-1491); without them the smoke test no longer matches
+    // the export's signature.
     let gr = fg_grammar_reject(rc0, rc0, rc0, rc0, rc0, 1, rc0, rc0, rc0, rc0, rc0, 2,
-                               rc0, rc0, rc0, rc0, rc0, rc0, rc0, rc0, rc0, 4, 4, 2, 180);
+                               rc0, rc0, rc0, rc0, rc0, rc0, rc0, rc0, rc0, 4, 4, 2, rc0, 4, 180);
     if tx < 0 || gr < 0 {
         return;
     }
