@@ -287,4 +287,19 @@ their last commits are from earlier sessions - and I synced only the one I chang
 which commit of each module its recorded source is meant to represent, and guessing that would defeat the
 check. Left for the owner with the names, rather than silenced.
 
-`check-symbol-callers.py` and `check-dead-objects.py` take a mode argument and were not run.
+### The two checks that take a directory, now run
+
+```
+check-symbol-callers.py builds/flint-acc/bin/libllama.so.0   rc=0, 2369 call targets
+check-dead-objects.py <flat dir of objects>                  PASS, 349 objects, 0 wholly dead,
+                                                             0 partly dead
+```
+
+`check-dead-objects.py` lists `.o` files **directly** in the directory it is given, and this build nests them
+under `CMakeFiles/`, so it reported "no objects" twice before I collected them flat into a temporary directory.
+That is a limitation of the invocation, not a finding: with the objects present it reports that every linked
+bridge object has at least one caller.
+
+Running it also settles a question the earlier "no objects" answer could have hidden: the bridge objects this
+tool hunts **do** exist in the build (the EXP-271/273/275 ports compile their `bridge.c` into the server), and
+none of them is dead.
