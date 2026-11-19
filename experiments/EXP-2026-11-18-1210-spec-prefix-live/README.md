@@ -32,3 +32,26 @@ route runs.
 Recording it this way matters: "the counter fired once and said -1" could be read as a defect in the
 port, and it was a defect in my harness. The distinction is only visible because the door's refusal
 value (-1) is distinct from a disagreement (0 or 1).
+
+## Second attempt: the counter did not fire at all
+
+After bounding `k` and with the print widened to the first five calls, a repetitive prompt (so the
+ngram draft certainly produces tokens) at `temp = 0` produced **no counter line**. The same binary had
+printed `calls=1` on the earlier run, so the hook is reachable and something in the route differs
+between runs: the server has several accept branches (`synth_probs`, replay, rejection, plain) and the
+plain one is taken conditionally.
+
+## Conclusion: this is a control-flow question, not a print question
+
+Three iterations have now gone into placing instrumentation on speculative paths, and each attempt
+found a different branch. The honest state:
+
+- the door is exported, resolvable and called at least once (proved);
+- the ported decision is gated synthetically (7 cases) and proven equal to the native loop's stopping
+  point on those;
+- **live agreement is unmeasured**, and finding the right branch needs a deliberate read of the
+  speculative control flow rather than more prints.
+
+That read is the next step, and it is worth doing once properly: `slot.use_spec_rejection`, the
+`synth_probs` branch and the replay path together decide which accept function runs, and the
+`FG_SP_PREFIX` counter is a cheap way to confirm the answer afterwards.

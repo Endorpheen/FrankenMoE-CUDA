@@ -770,7 +770,7 @@ std::vector<llama_token> common_sampler_sample_and_accept_n(struct common_sample
                         (long long) goose, i, draft.size());
             }
         }
-        if (c == 1 || (c % 200) == 0) {
+        if (c <= 5 || (c % 200) == 0) {
             fprintf(stderr, "FG_SP_PREFIX goose calls=%llu disagreements=%llu\n",
                     (unsigned long long) c, (unsigned long long) bad.load());
         }
