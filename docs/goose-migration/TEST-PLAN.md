@@ -3,7 +3,7 @@
 The unit is 24 modules. "Done" means a test drives the shipped call path and checks the answer; "through" means the module is
 exercised by another module's test; "to complete" is what is left.
 
-## Progress: 22 of 24 measured
+## Progress: 23 of 24 measured
 
 | # | module | test | state |
 |---|---|---|---|
@@ -22,7 +22,7 @@ exercised by another module's test; "to complete" is what is left.
 | 13 | `model/gguf-tensors` | writer cases relinked against the shipped library | done |
 | 14 | `model/gguf-reader` | 744 231 elements, every key and type | done |
 | 15 | `cli/fit-params-line` | `EXP-2026-11-19-1407`, 20 cases | done |
-| 16 | `cli/llama-bench-report` | `EXP-2026-11-19-1408`, 5 cases | **to complete** |
+| 16 | `cli/llama-bench-report` | `EXP-2026-11-19-1461`, 24 cases | done |
 | 17 | `cli/config-validate` | 4 000 cases, 0 uncovered | done |
 | 18 | `model/slru-policy-goose` | `EXP-2026-11-19-1422/1423`, 61 441 decisions | done |
 | 19 | `model/arch-registry` | `EXP-2026-11-19-1456`, round trip over every row | done |
@@ -32,10 +32,8 @@ exercised by another module's test; "to complete" is what is left.
 | 23 | `server/hf-cache-naming` | `EXP-2026-11-19-1460`, 29 cases as a table | done |
 | 24 | `metrics/metrics-traces` | `EXP-2026-11-15-618`, staged harness | **to complete** |
 
-## Remainder: 2 modules
+## Remainder: 1 module
 
-1. `cli/llama-bench-report` - 23 exports, 5 hand cases today. Needs the report itself compared field by field on a fixed
-   input set, means and CSV escaping included. Its host is absent (P10-02), so the test calls the doors.
 4. `metrics/metrics-traces` - 21 exports. Needs the CSV field rules and trace weight kinds compared with the native
    writer over generated rows.
 
@@ -51,8 +49,7 @@ exercised by another module's test; "to complete" is what is left.
 
 ## Order: four modules, then integration
 
-1. `llama-bench-report`
-2. `metrics-traces`
+1. `metrics-traces`
 
-After the second, no module of the unit is without a test that drives its doors, and the work returns to the runtime
+After this one, no module of the unit is without a test that drives its doors, and the work returns to the runtime
 integration: the paired A/B on a quiet card, the checkpoint, and the remaining requirement items.
