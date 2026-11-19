@@ -5823,5 +5823,6 @@
     },
     "note": "pre-flight check-accepted-components 20/20 and check-cumulative-baseline PASS on the release set; the grammar change of EXP-2026-11-19-1491 is deliberately NOT in it because it has no real-vocabulary run yet"
   },
-  "rollback_policy": "DONE requires a rollback answer. 4 records carry an explicit `rollback` field; the rest state a revert path in their evidence text. docs/goose-migration/ROLLBACK-AUDIT.md records the split and requires a per-record backfill before final acceptance (F1-04); it was not bulk-edited on purpose."
+  "rollback_policy": "DONE requires a rollback answer. 4 records carry an explicit `rollback` field; the rest state a revert path in their evidence text. docs/goose-migration/ROLLBACK-AUDIT.md records the split and requires a per-record backfill before final acceptance (F1-04); it was not bulk-edited on purpose.",
+  "slices_semantics": "slices_done/slices_total counts PORT SLICES, not progress toward acceptance. 17 records show done==total while the requirement stays PARTIAL, because the port slices are accepted and the wiring, the call sites or the acceptance run are outside them (P9-08: '3 of 3 slices accepted; the wiring and two characterised differences remain'). The `remaining` field is the authoritative statement of what is open; a slice counter at N/N with PARTIAL is correct, not a defect."
 }

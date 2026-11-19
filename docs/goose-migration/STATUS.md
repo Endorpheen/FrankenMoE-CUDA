@@ -9,6 +9,10 @@ as every accepted slice.
 
 ### PARTIAL
 
+Read the slice counters as port slices, not progress: 17 records show N/N and stay PARTIAL because
+the wiring or the acceptance run sits outside the slices. `remaining` is the authoritative field.
+
+
 | requirement | what is open |
 |---|---|
 | P6-10 | grammar reject port: unit gate green (tests/grammar/reject-alternates 7 cases, first-set 6 cases) and the defect fixed i... |
