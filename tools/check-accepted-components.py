@@ -26,6 +26,19 @@ COMPONENTS = [
      "the accepted tiled Q4_K kernel bridge"),
     ("goose-shim-marker", "strings", "FG171_",
      "the shim's own diagnostics prove the door table was compiled in"),
+    # Added as the migration accepts each piece: an entry here is a promise the artefact must keep.
+    ("goose-grammar", "nm", "fg_grammar_reject",
+     "the ported grammar automaton, correct on 1 736 513 candidates"),
+    ("goose-spec-prefix", "nm", "fg_sp_prefix",
+     "the speculative prefix-agreement door"),
+    ("goose-dry-limit", "nm", "fg_dry_rep_limit_entry",
+     "DRY step 1, whose context order was a real defect and is fixed"),
+    ("goose-dry-apply", "nm", "fg_sampler_dry_call",
+     "DRY steps 2-4 through the shipped door"),
+    ("goose-bulk-bridge", "nm", "fg161_bulk",
+     "the accepted bulk bridge the ggml base library links against"),
+    ("expert-cache", "strings", "moe-cache",
+     "the SLRU expert cache the profile sets to 4992 MiB"),
 ]
 
 def shell(cmd):
