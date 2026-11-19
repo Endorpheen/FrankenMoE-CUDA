@@ -18,6 +18,8 @@ typedef int64_t (*fn_find)(sl_u8, sl_i64, sl_i64, sl_i64, sl_u8);
 typedef int64_t (*fn_meta_int)(sl_u8, sl_i64, sl_i64, int64_t, sl_i64);
 typedef int64_t (*fn_kv_type)(sl_i64, sl_i64, int64_t);
 typedef int64_t (*fn_span)(sl_i64, sl_i64, int64_t, sl_i64);
+typedef int64_t (*fn_f32_bits)(sl_u8, sl_i64, sl_i64, int64_t, sl_i64);
+typedef int64_t (*fn_arr)(sl_i64, sl_i64, int64_t);
 
 #define WINDOW (64u * 1024u * 1024u)
 
@@ -166,6 +168,53 @@ int main(int argc, char ** argv) {
                type_cmp - type_fail, type_cmp, str_cmp - str_fail, str_cmp);
     }
 
+    /* floats, booleans and arrays - the rest of the metadata */
+    fn_f32_bits f32_bits = (fn_f32_bits) dlsym(h, "gr_meta_f32_bits");
+    fn_arr arr_type = (fn_arr) dlsym(h, "gr_arr_type");
+    fn_arr arr_n    = (fn_arr) dlsym(h, "gr_arr_n");
+    int f_cmp = 0, f_fail = 0, b_cmp = 0, b_fail = 0, a_cmp = 0, a_fail = 0;
+    for (int64_t i = 0; i < n_kv; ++i) {
+        const int64_t t = (int64_t) gguf_get_kv_type(g2, i);
+        if (t == GGUF_TYPE_FLOAT32 && f32_bits) {
+            int64_t out3[1] = {0};
+            sl_i64 s3; s3.data = out3; s3.len = 1;
+            const int64_t rc4 = f32_bits(s_data, s_state, s_kv, i, s3);
+            const float native_f = gguf_get_val_f32(g2, i);
+            uint32_t nb; memcpy(&nb, &native_f, 4);
+            ++f_cmp;
+            if (rc4 != 0 || out3[0] != (int64_t) nb) {
+                ++f_fail;
+                printf("FLOAT MISMATCH key=%s native=%08x port=%08llx\n",
+                       gguf_get_key(g2, i), nb, (unsigned long long) out3[0]);
+            }
+        } else if (t == GGUF_TYPE_BOOL && meta_int) {
+            int64_t out4[1] = {0};
+            sl_i64 s4; s4.data = out4; s4.len = 1;
+            const int64_t rc5 = meta_int(s_data, s_state, s_kv, i, s4);
+            const int64_t native_b = gguf_get_val_bool(g2, i) ? 1 : 0;
+            ++b_cmp;
+            if (rc5 != 0 || out4[0] != native_b) {
+                ++b_fail;
+                printf("BOOL MISMATCH key=%s native=%lld port_rc=%lld port=%lld\n",
+                       gguf_get_key(g2, i), (long long) native_b, (long long) rc5, (long long) out4[0]);
+            }
+        } else if (t == GGUF_TYPE_ARRAY && arr_type && arr_n) {
+            const int64_t port_t2 = arr_type(s_state, s_kv, i);
+            const int64_t port_n2 = arr_n(s_state, s_kv, i);
+            const int64_t native_t2 = (int64_t) gguf_get_arr_type(g2, i);
+            const int64_t native_n2 = (int64_t) gguf_get_arr_n(g2, i);
+            ++a_cmp;
+            if (port_t2 != native_t2 || port_n2 != native_n2) {
+                ++a_fail;
+                printf("ARRAY MISMATCH key=%s native=(%lld,%lld) port=(%lld,%lld)\n",
+                       gguf_get_key(g2, i), (long long) native_t2, (long long) native_n2,
+                       (long long) port_t2, (long long) port_n2);
+            }
+        }
+    }
+    printf("floats: %d/%d  bools: %d/%d  arrays(type,count): %d/%d\n",
+           f_cmp - f_fail, f_cmp, b_cmp - b_fail, b_cmp, a_cmp - a_fail, a_cmp);
+
     /* the negative case: a key that is not there must be reported as absent by both */
     const char * absent = "general.this.key.does.not.exist";
     sl_u8 s_absent; s_absent.data = (uint8_t *) absent; s_absent.len = (int64_t) strlen(absent);
@@ -180,6 +229,6 @@ int main(int argc, char ** argv) {
     gguf_free(g2);
     printf("lookup: kv=%lld/%lld tensor=%lld/%lld fails=%d\n",
            (long long) (n_kv - kv_fail), (long long) n_kv, (long long) (n_t - tn_fail), (long long) n_t, kv_fail + tn_fail);
-    printf("gguf header: fails=%d\n", fails + kv_fail + tn_fail + val_fail + type_fail + str_fail);
-    return (fails + kv_fail + tn_fail + val_fail + type_fail + str_fail) ? 1 : 0;
+    printf("gguf header: fails=%d\n", fails + kv_fail + tn_fail + val_fail + type_fail + str_fail + f_fail + b_fail + a_fail);
+    return (fails + kv_fail + tn_fail + val_fail + type_fail + str_fail + f_fail + b_fail + a_fail) ? 1 : 0;
 }

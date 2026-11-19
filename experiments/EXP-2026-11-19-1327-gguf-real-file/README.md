@@ -53,9 +53,18 @@ Every integer-valued key decodes to the native value, every key reports the nati
 bytes are identical. Together with the 52 keys, 753 tensor names and five header fields, the metadata of this model
 is proven equal field by field.
 
-Thirteen keys are neither integers nor strings (arrays, floats, booleans). They are the remaining gap, and the doors
-for them exist - `gr_arr_type`, `gr_arr_n`, `gr_array_int`, `gr_arr_str_span`, `gr_meta_f32_bits` - but they are not
-compared here.
+The remaining thirteen keys are covered too, by their own doors:
+
+```
+floats: 4/4   bools: 4/4   arrays(type,count): 5/5
+```
+
+So every one of the 52 metadata keys is compared by its own type - 26 integers, 13 strings, 4 floats, 4 booleans and
+5 arrays - and the whole file's metadata is equal field by field.
+
+What is still not compared is the **content of the arrays**: their element type and count are equal, their elements are
+not. `gr_array_int` and `gr_arr_str_span` exist for that and are the next comparison; the vocabulary's string list is
+one of those arrays and is the largest.
 
 ## Three harness errors before the numbers were right
 
