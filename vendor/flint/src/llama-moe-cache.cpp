@@ -178,7 +178,9 @@ struct moe_cache_slru {
         fills.clear();
         n_hit = 0;
 
-        const bool fg_diag = getenv("FG_SLRU_DIAG") != nullptr;
+        // cached: this runs once per layer per decode step - 61 441 times per acceptance run - and an uncached
+        // getenv on that path is measurable (EXP-2026-11-19-1427)
+        static const bool fg_diag = getenv("FG_SLRU_DIAG") != nullptr;
         snapshot fg_sn;
         if (fg_diag) { take(fg_sn, il, ids, n_ids); }
 
