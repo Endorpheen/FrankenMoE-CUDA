@@ -54,11 +54,64 @@ def doors(bin_dir: str) -> list[str]:
                          shell=True, capture_output=True, text=True).stdout.split()
     return sorted(s for s in out if re.match(r"^(fg|bt|bmoe)_", s))
 
+def modules_in_unit() -> list[str]:
+    script = pathlib.Path("tools/build-sampler-chain.sh").read_text()
+    return re.findall(r"goose/([a-z0-9/_\-]+\.goose)", script)
+
+
+def module_report(bin_dir: str) -> int:
+    """Per module in the composed unit: its exports, how many are named in the evidence, and the verdict."""
+    text = corpus()
+    mods = modules_in_unit()
+    sources = {m: pathlib.Path("goose/" + m).read_text(errors="ignore") for m in mods}
+    # which module calls which export, so a helper module with no card of its own is still accounted for
+    callers: dict[str, set[str]] = {}
+    for m, src in sources.items():
+        for other, osrc in sources.items():
+            if other == m:
+                continue
+            for e in re.findall(r"export fn ([a-z0-9_]+)", src):
+                if re.search(r"\b" + re.escape(e) + r"\s*\(", osrc):
+                    callers.setdefault(m, set()).add(other)
+    rows = []
+    for m in modules_in_unit():
+        src = pathlib.Path("goose/" + m).read_text(errors="ignore")
+        ex = re.findall(r"export fn ([a-z0-9_]+)", src)
+        named = [e for e in ex if e in text]
+        feature = [k for k in FEATURE.get(m.split("/")[-1], []) if k in text]
+        if not ex:
+            verdict = "implementation only - exercised through its doors"
+        elif not named and callers.get(m):
+            verdict = "exercised through: " + ", ".join(sorted(callers[m])[:2])
+        elif named:
+            verdict = f"{len(named)}/{len(ex)} exports named"
+        elif feature:
+            verdict = "feature named, exports not"
+        else:
+            verdict = "NO EVIDENCE"
+        rows.append((m, len(ex), len(named), verdict))
+    w = max(len(r[0]) for r in rows)
+    print(f"{'module'.ljust(w)} exports named verdict")
+    for m, n, named, verdict in rows:
+        print(f"{m.ljust(w)} {n:7d} {named:5d} {verdict}")
+    gaps = [r for r in rows if r[3] == "NO EVIDENCE"]
+    if gaps:
+        print(f"audit-door-evidence: FAIL, {len(gaps)} module(s) with no evidence")
+        return 1
+    print("audit-door-evidence: ok, every module in the unit is traceable to evidence")
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--bin", default="builds/flint-acc/bin")
     ap.add_argument("--fail-on-gap", action="store_true")
+    ap.add_argument("--modules", action="store_true",
+                    help="report per module of the composed unit instead of per door")
     args = ap.parse_args()
+
+    if args.modules:
+        return module_report(args.bin)
 
     text = corpus()
     named, feature, gaps = [], [], []
