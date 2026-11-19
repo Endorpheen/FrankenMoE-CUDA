@@ -136,8 +136,6 @@ MODULES=(
     goose/model/bpe-detokenize.goose
     goose/model/tokenizer-engine.goose
     goose/model/gguf-format.goose
-    goose/model/special-partition.goose
-    goose/sampling/sampler-chain-full.goose
     goose/misc/goose-tokenizer.goose
     goose/misc/prefill-plan.goose
     goose/misc/trace-frame-order.goose
@@ -186,16 +184,10 @@ MODULES=(
     goose/json/peg-invalid.goose
     goose/json/visit.goose
     goose/json/refs.goose
-    goose/misc/unicode-tables.goose
-    goose/misc/unicode-text.goose
-    goose/misc/pretokenizer-qwen35.goose
-    goose/model/bpe-tokenize.goose
-    goose/model/bpe-detokenize.goose
     goose/model/bpe-load.goose
     goose/misc/sampler-typical.goose
     goose/misc/sampler-top-n-sigma.goose
     goose/misc/sampler-dry.goose
-    goose/sampling/sampler-chain-full.goose
 )
 
 # Record a hash of the exact inputs, so a later build can tell "up to date" by

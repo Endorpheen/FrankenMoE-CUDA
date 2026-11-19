@@ -44,3 +44,23 @@ the current shipped artefact carries 15% of today's unit, and the reason is the 
 lost component. Anyone comparing the two must compare artefacts of the same vintage; comparing a
 current unit with the EXP1476 library and calling the difference a regression would be the same
 mistake as comparing a cold measurement with a warm one.
+
+## Production reach, and a defect in the module list itself
+
+`tools/production-doors.py` indexes the identifiers of `vendor/flint` and `integration` once and
+classifies every door of every unit module:
+
+| class | doors |
+|---|---|
+| production (the identifier appears under `vendor/flint`) | 72 |
+| harness-only (`integration/` only) | 139 |
+| none | 1123 |
+
+Of 1334 doors, 72 reach the sources the shipped runtime is built from. This is an **upper bound**: an
+identifier can appear in a comment or a disabled branch. It agrees with the unit-carry figure, where
+the shipped library exports 200 of 1254 - the same order, measured a different way.
+
+The same run found **eight duplicate entries** in the module list: 163 entries, 155 unique. They were
+removed, and the composed output is byte-identical before and after (`cmp` on 3 802 549 bytes), so the
+dedupe is inert by construction. The module count quoted elsewhere as 163 is therefore wrong; the unit
+is 155 modules.
