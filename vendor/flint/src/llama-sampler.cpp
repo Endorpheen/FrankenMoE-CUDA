@@ -2636,6 +2636,11 @@ static void llama_sample_xtc_apply(struct llama_sampler * smpl, llama_token_data
     if (chance > ctx->probability) {
         return;
     }
+    // XTC decides by probability rank, and the native implementation sorts before it looks at the
+    // ranks. The door has to receive the same array the native code would have computed on: without
+    // this, a preceding stage that leaves the array unsorted (typical does, and does so identically
+    // in both paths) made the door keep a different number of candidates than the native path.
+    llama_sampler_softmax_impl(cur_p, true);
     if (fg_sampler_xtc_call != nullptr && fg_goose_xtc_enabled() && cur_p->size > 0) {
         std::vector<float>   lv(cur_p->size), pp(cur_p->size);
         std::vector<int64_t> ids(cur_p->size);

@@ -35,7 +35,23 @@ In isolation both XTC paths keep a sorted array and truncate the same number of 
 separately). The difference only appears when the array reaching XTC was already modified by `typical` - which is
 precisely the composition this card exists to test.
 
-## What is not yet decided
+## The fix this produced, and what is left
+
+The count difference had a single cause: **the native XTC sorts before it looks at probability ranks, and the door
+branch ran before that softmax**, so after `typical` - which leaves the array unsorted, identically in both paths -
+the door ranked an unsorted array. One added call, `llama_sampler_softmax_impl(cur_p, true)` before the branch,
+makes the door receive what the native code computes on. With it, the state after `typical`+`XTC` is **byte
+identical** in both modes: size 7, sorted, same ids, same logits, same probabilities.
+
+The chain difference fell from 83 rounds to **42**, so something downstream still diverges. It is not the pair any
+more, and mirostat and adaptive-p each match in isolation, so the remaining candidate is their **stateful**
+interaction: mirostat updates `mu` from the surprise of the token it selected, and a different `k` in one round
+changes every later round. The next experiment is to log `k` and `mu` per round in both modes and find the first
+round where they part - not to guess which sampler to blame.
+
+The acceptance hash is unchanged (`c2ff42cc1219`), because the fixed profile enables neither typical nor XTC.
+
+### Original note on the open question
 
 Whether the door should reproduce the native's trimming (advance the base, preserving order) or the caller should
 re-sort after the door returns. Both are defensible; choosing between them needs a statement about what a sampler
