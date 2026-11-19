@@ -91,3 +91,14 @@ and +12.5 % prefill against EXP906, and EXP906 remains in the project history wi
 A new confirmed record becomes the current baseline; every previous baseline is preserved in this file and
 its artefacts are never deleted, overwritten or declared invalid. If a comparison is made under conditions
 that differ from the table above, the difference is stated with the numbers rather than left implicit.
+
+## How a speed claim is accepted (rule 35)
+
+Any figure is reported together with the profile it was measured under. The accepted profile is the one in
+`tools/apex-test.sh`: context 262144, `-b 4096 -ub 4096`, `-ngl all -fit off --cpu-moe`, `--moe-cache-mib 4992`,
+KV `q4_0`, `--cpu-mask 0f0f --cpu-strict 1`, `-np 1 --cache-ram 0 --ctx-checkpoints 32 --load-mode mmap`, and the
+fixed 32K-input / 512-output request.
+
+A number produced with a different context, cache, batch or request length is an **exploration**, filed separately and
+never compared with the record. The record stands at decode 62.79 (canonical median 62.73) and prefill 2948, and it is
+only exceeded inside that profile, in paired runs, with the response hash check and memory figures reported.

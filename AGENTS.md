@@ -706,3 +706,23 @@ come from Igor directly. For every marked message:
 
     The policy lives in `docs/goose-migration/NAMING-POLICY.md` with the per-component state; this rule is the
     authority and that document is its current accounting.
+
+35. Speed is pursued by improving the implementation, never by relaxing the accepted profile.
+
+    The accepted Apex profile is fixed: context 262144, `-b 4096 -ub 4096`, `-ngl all`, `-fit off`,
+    `--cpu-moe`, `--moe-cache-mib 4992`, KV `q4_0`, the CPU masks, and the 32K-input / 512-output request.
+    Its record is EXP1298 at 62.79 tok/s decode, later confirmed at 62.73 as the canonical median.
+
+    - Changing any of those parameters to gain speed is forbidden. A smaller context, a smaller GPU cache or a
+      lighter memory mode is a different question, not a faster answer.
+    - An experiment with changed parameters is an **exploration**, and its numbers are never presented as an
+      improvement over the record. It is recorded separately and labelled as out of profile.
+    - An optimisation is accepted only after paired A/B runs on the same model, hardware, request and an
+      **identical** profile: decode, prefill, VRAM, RAM, correctness.
+    - If a mechanism (speculative decoding, MTP, a draft model) does not fit inside the accepted profile, that is
+      **technical debt of that mechanism**: reduce its own overhead, do not shrink the runtime's capability.
+    - When an optimisation cannot work inside the profile, the debt is recorded and the migration continues. A
+      prettier number obtained by weakening the test is the failure this rule exists to prevent.
+    - Every performance report states the profile it was measured under, and a figure without it is incomplete.
+
+    The principle in one line: FrankenMoE is made faster, it is not given an easier job.
