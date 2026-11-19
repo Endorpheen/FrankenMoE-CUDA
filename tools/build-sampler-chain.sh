@@ -22,6 +22,7 @@ cat "$root/goose/model/tokenizer-doors.goose" >> "$rootfile"
 cat "$root/goose/model/arch-registry.goose" >> "$rootfile"
 cat "$root/goose/misc/spec-decode-decisions.goose" >> "$rootfile"
 cat "$root/goose/cli/config-validate.goose" >> "$rootfile"
+cat "$root/goose/metrics/metrics-traces.goose" >> "$rootfile"
 cat >> "$rootfile" <<'EOF'
 
 fn main() {
@@ -70,6 +71,13 @@ fn main() {
                          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    let mtin: u8[16] = [97,44,34,10,98,0,0,0,0,0,0,0,0,0,0,0];
+    let mtout: u8[64] = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+                         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+    let mtr = mt_field_encode(mtin, mtout);
+    if mtr < 0 {
+        return;
+    }
     let cvi: i64[32] = [128, 4, 2048, 0, 0, 0, 0, 0, 1, 0, 0, 40, 0, 4, 3, 12, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     let cvf: f64[5] = [0.0, 0.9, 0.0, 0.0, 0.0];
     let cvr = cfg_validate(cvi, cvf);
