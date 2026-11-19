@@ -104,3 +104,9 @@ PASS
 
 This is the check that should have existed before the port was served: the equality tests compared the bytes the port
 produced, and none of them asked what happens when the caller's buffer is smaller than the answer.
+
+## The buffer contract, written down
+
+`docs/goose-migration/PORT-BUFFER-CONTRACT.md` lists every place the shipped runtime lets the port write into memory it does
+not own, the capacity rule of each, and which one was wrong. The rule it states is the one the crash taught: a door given a
+window of its own knows nothing about the caller's limit, so the host must compare the answer with that limit before copying.
