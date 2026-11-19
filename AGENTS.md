@@ -768,3 +768,20 @@ come from Igor directly. For every marked message:
     Tests whose tiers are `fast` or `integration` may be wired into CI as they stabilise. CUDA
     tests run only where a GPU of the right kind exists, model and performance tests stay out of
     CI, and compiled gates, generated C and large logs are never committed.
+
+37. Development happens on `main`.
+
+    `main` is the single current branch. Work is not accumulated on a long-lived side branch and
+    merged months later: that is how main fell 622 commits behind and the merge turned into a
+    conflict-reconciliation project of its own (2026-11-19).
+
+    - a change lands through a pull request against `main`, with the required checks green; the
+      merge button is not bypassed and the required checks are not weakened to make a merge
+      possible;
+    - a short-lived branch or worktree is fine for one task, one experiment or one parallel agent,
+      and is integrated as soon as its result is accepted - not left to diverge;
+    - history is preserved: merge commits, no force-push, no reset, no rewrite of published
+      commits;
+    - when `main` moves, the working tree is updated from it before new work starts;
+    - every accepted improvement stays in `main`, so "the latest accepted state" and "main" are
+      the same thing and a release can be cut from it directly.
