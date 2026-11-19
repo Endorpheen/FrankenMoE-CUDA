@@ -63,29 +63,17 @@ changed = ['llama-batch.cpp','llama-context.cpp','llama-graph.cpp','llama-hparam
 # calls it and the loader that defines it came from the staged copy. Such a file is taken from
 # the vendor source instead. The decision is a rule over the sources, not a list of names.
 #
-# The two copies of a carrier have DIVERGED, and neither is a superset of the other: the staged
-# llama-model-loader.cpp calls 51 doors but does not define the fg_port_* symbols that
-# llama-impl.cpp links against, while the vendor copy defines them and calls none of the
-# expert-cache doors (fg262a, fg263c, fg756s live only in the staged moe-cache copy). Picking
-# either file wholesale silently loses what the other has - the failure mode rule 33 names.
-#
-# So the build does not choose. It compares what each copy defines and refuses when they are not
-# interchangeable, naming the symbols. Merging the two copies is its own accepted step, and until
-# it exists a rebuild here would be wrong in one direction or the other.
-_DEFINED = re.compile(r'extern "C"[^;{]*?\b(fg[0-9a-z_]+)\s*\(')
-for _name in changed:
-    _staged, _vend = SRC / _name, FL / 'src' / _name
-    if not (_staged.exists() and _vend.exists()):
-        continue
-    _s = set(_DEFINED.findall(_staged.read_text(errors='replace')))
-    _v = set(_DEFINED.findall(_vend.read_text(errors='replace')))
-    if _s != _v:
-        print(f'build.py: the two copies of {_name} are not interchangeable')
-        print(f'  defined only in the staged carrier: {sorted(_s - _v)}')
-        print(f'  defined only in the vendor source:  {sorted(_v - _s)}')
-        print('  compiling either one loses the other\'s symbols; merge them in an accepted step '
-              'before rebuilding (docs/goose-migration/CARRIER-DIVERGENCE-20261119.md)')
-        sys.exit(1)
+# The two copies of a carrier are not interchangeable, so the build does not choose between them
+# by a file-level rule. What the link actually needs is that every Goose symbol a compiled source
+# references is defined by some compiled source, and check_carriers.py answers exactly that in a
+# fifth of a second, before anything is compiled. See
+# docs/goose-migration/CARRIER-DIVERGENCE-20261119.md.
+_r = subprocess.run([sys.executable, str(Path(__file__).resolve().parent / 'check_carriers.py'),
+                     '--root', str(BASE)], capture_output=True, text=True)
+if _r.returncode != 0:
+    print(_r.stdout.strip())
+    sys.exit('build.py: a referenced Goose symbol has no definition among the compiled sources')
+
 objs = []
 for name in changed:
     o = W/(name + '.o')
