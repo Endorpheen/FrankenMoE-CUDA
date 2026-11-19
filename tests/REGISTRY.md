@@ -13,6 +13,8 @@ run only with explicit permission).
 | grammar | first-set | `tests/grammar/first-set` | EXP-2026-11-18-1110, EXP-2026-11-19-1491 | P6-10 | fast | added 2026-11-19 |
 | models | model-manager-doors | `tests/models/model-manager-doors` | door work of P8-06 | P8-06 | fast | migrated 2026-11-19 |
 | json | roundtrip | `tests/json/roundtrip` | door work of P10-07 | P10-07 | fast | migrated 2026-11-19 |
+| json | door | `tests/json/door` | door work of P10-07 | P10-07 | fast | migrated 2026-11-19 |
+| server | router-status | `tests/server/router-status` | door work of P8-06 | P8-06 | model | migrated 2026-11-19 |
 
 ## Notes on the first migration
 
@@ -48,3 +50,14 @@ evidence about anything.
 Both need the built library and skip with exit 77 when it is absent. A skip is counted and printed
 separately by `tests/run.sh`, never folded into a pass. The original `tools/` scripts stay until
 their permanent copies have run in a second context; that removal is its own step.
+
+## Fourth batch
+
+`tests/json/door` is a move of `tools/json-door-check.sh`: same probe, same five valid and four
+invalid texts, same verdict.
+
+`tests/server/router-status` is a move of `tools/router-status-check.sh` and is the first
+`model`-tier test: it starts a server, so it requires `FG_ALLOW_MODEL_RUN=1` - the explicit
+permission rule 1 demands - and otherwise skips. Its host handling was hardened after the first
+run of this script left a server holding 9101: the server is now a direct child, so the recorded
+pid is the server's own, and cleanup verifies the port was released instead of assuming it.
