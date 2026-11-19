@@ -17,6 +17,15 @@ cp "$mod" "$rootfile"
 cat "$root/spec_decisions" >> "$rootfile" 2>/dev/null || true
 cat "$root/goose/speculative/spec-decisions.goose" >> "$rootfile"
 cat "$root/goose/speculative/spec-doors.goose" >> "$rootfile"
+# The detokenizer port joins the unit so the shipped library can reach it: 337 lines of ported logic that
+# were built only in the separate main unit and called by nothing (EXP-2026-11-19-1314).
+# Its dependency closure, found by the compiler: unicode codepoint helpers and the tokenizer
+# module that owns BT_UNKNOWN and the bt_* helpers the detokenizer calls.
+cat "$root/goose/misc/unicode-tables.goose" >> "$rootfile"
+cat "$root/goose/misc/unicode-text.goose" >> "$rootfile"
+cat "$root/goose/misc/pretokenizer-qwen35.goose" >> "$rootfile"
+cat "$root/goose/model/bpe-tokenize.goose" >> "$rootfile"
+cat "$root/goose/model/bpe-detokenize.goose" >> "$rootfile"
 cat "$root/goose/model/tokenizer-decisions.goose" >> "$rootfile"
 cat "$root/goose/model/tokenizer-doors.goose" >> "$rootfile"
 cat "$root/goose/model/arch-registry.goose" >> "$rootfile"
