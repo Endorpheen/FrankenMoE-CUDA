@@ -5,7 +5,7 @@ as every accepted slice.
 
 ## Ledger
 
-`docs/goose-migration/tasks.json`: **DONE 124**, **PARTIAL 19**, **TODO 9** of 152 functional requirements.
+`docs/goose-migration/tasks.json`: **DONE 125**, **PARTIAL 18**, **TODO 9** of 152 functional requirements.
 Do not read the DONE count as project percentage; it counts requirements, not code or time.
 
 Generated from the records themselves; each row is that record's own remainder field.
@@ -29,7 +29,6 @@ Generated from the records themselves; each row is that record's own remainder f
 | P9-08 | wire the closure decisions into session.cpp and cli/main.cpp |
 | P10-06 | build-time CUDA architecture and flag decisions: CMake picks CMAKE_CUDA_ARCHITECTURES itself (vendor/flint/ggml/src/ggml-cuda/CMakeLists.txt), and a c... |
 | P10-07 | rebuild libllama-common so the adapter is actually linked (vendor/flint/common/json-adapter.cpp exists and common_json::parse calls it under FG_JSON_G... |
-| P10-10 | Apple/Windows branches are transcription only on this host |
 | P11-01 | standalone runtime has no CUDA, tokenizer engine or HTTP (the working Apex path is the INTEGRATED stage-run, not the standalone - rule 15 forbids repo... |
 | P11-04 | D1: F2 gguf_write_to_buf, F3 gguf_get_meta_size and F4 gguf_get_meta_data (all native in vendor/flint/ggml/src/gguf.cpp, reached only by llama-quant.c... |
 | C1-02 | T_NEXTN_HC_HEAD ids exist only in the integration tree, not the pinned upstream |

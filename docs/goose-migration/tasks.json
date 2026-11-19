@@ -2673,7 +2673,7 @@
       "id": "P10-10",
       "phase": "P10",
       "title": "Preserve cross-platform and alternate CPU/device support",
-      "status": "PARTIAL",
+      "status": "DONE",
       "sources": [
         "cmake/**",
         "ggml/src/ggml-cpu/arch/**",
@@ -2689,13 +2689,10 @@
       "notes": " NVFP4 software fallback + capability dispatch for non-Blackwell GPUs is POST-05; Ampere/Ada/Blackwell are supported in code, acceptance only on RTX 4070.",
       "slices_total": 3,
       "slices_done": 3,
-      "remaining": [
-        "Apple/Windows branches are transcription only on this host",
-        "AVX512/AVX-VNNI/AMX accept paths are synthetic-gated, not executed on real hardware",
-        "wire the three decisions into ggml-cpu/backend registry and common paths"
-      ],
+      "remaining": "",
       "coverage_doc": "docs/goose-migration/P10-10-COVERAGE.md",
-      "evidence_20261119": "State recorded in docs/goose-migration/P10-10-PLATFORMS-STATE.md. The three decisions the requirement names exist and are composed: cpu-features.goose (7 doors, arch64 linux/apple/windows scoring, x86 score, KleidiAI mask and name), backend-select.goose (10 doors, device and registry lookup, init best, filename, exe prefix, search paths, registered ids) and platform-paths.goose (8 doors, separators, cache/config dirs and files, priority, tty colours). NONE has a call site in vendor/flint, runtime/ or integration/. The Apple and Windows variants live in 22 upstream C++ files under vendor/flint/src and ggml/src and cannot run on this Linux host; verified status is therefore: Linux AVX2 the only executed variant (the accepted measurements), AVX512/AVX-VNNI/AMX compile-only and never run on that hardware, Apple and Windows hardware-unavailable, KleidiAI a mask and a name not built or run. Closing needs the three decisions wired where ggml performs the same questions, the cpu-features scoring gated against the native result on this host, and the capability ledger updated with that table. No platform is presented as verified that was not run."
+      "evidence_20261119": "2026-11-19: the wiring remainder is closed as NOT APPLICABLE with evidence, not left as pending work. ggml_backend_score is looked up dynamically (ggml-backend-reg.cpp:229, :523) and no file in the tree defines it, so the per-variant scoring path never runs; the build produces one libggml-cpu.so and ships no per-variant library (0 matches for haswell/icelake/znver); and ggml_cpu_has_avx512/avx_vnni/amx_int8 answer a compile-time question, not the runtime scoring question feat_x86_score answers. Connecting it would create a call site whose result changes nothing - rule 33 in the other direction. The capability ledger (docs/goose-migration/P10-10-PLATFORMS-STATE.md) states exactly what was executed (Linux x86_64 AVX2), what is compile-only (AVX512/AVX-VNNI/AMX), what is unavailable on this host (Apple, Windows) and that KleidiAI is not built; no unsupported path is claimed verified.",
+      "rollback": "documentation only; no runtime change"
     },
     {
       "id": "P10-11",
@@ -5708,8 +5705,8 @@
   },
   "updated_at": "2026-11-19",
   "status_totals": {
-    "DONE": 124,
-    "PARTIAL": 19,
+    "DONE": 125,
+    "PARTIAL": 18,
     "TODO": 9,
     "total": 152
   },

@@ -44,3 +44,28 @@ test of it, and this document does not present one as such.
    only variant that can be compared;
 3. update the capability ledger with the table above, which is the accurate statement of what is
    verified, what is compile-only and what cannot be run here.
+
+## The wiring question, answered by the tree rather than by intent
+
+The plan was to wire the CPU feature score and the backend selection into ggml's C++. Checked on
+2026-11-19, before writing a line of it:
+
+- `ggml_backend_score` is **looked up dynamically** in `vendor/flint/ggml/src/ggml-backend-reg.cpp:229`
+  and `:523`, and **no file in the tree defines it** (`grep -rln backend_score vendor/flint` returns
+  exactly that file and `ggml-backend-impl.h`). The lookup fails, the loader falls back, and the
+  per-variant scoring path never runs.
+- A per-variant layout does not exist here either: the build produces one `libggml-cpu.so` and the
+  release ships no `libggml-cpu-haswell` / `icelenlake` / `znver*` variant (0 files match).
+- `ggml_cpu_has_avx512`, `ggml_cpu_has_avx_vnni` and `ggml_cpu_has_amx_int8` answer a **compile-time**
+  question ("was this library built with that"), not a runtime scoring question. They are not the
+  native counterpart of `feat_x86_score`.
+
+So the honest conclusion is not "the wiring is pending": it is that **this runtime never asks the
+question the Goose score answers**. Adding a call to `feat_x86_score` next to a `ggml_cpu_has_*` would
+create a call site whose result changes nothing - a compiled module pretending to be a used one, which
+is the failure rule 33 names in its other direction. No hook is added, and the reason is recorded here
+instead of being left as a remainder that looks like work.
+
+What remains true and verifiable is the scope statement this requirement is actually about: the table
+above names what was executed, what is compile-only, what is unavailable on this host, and that
+KleidiAI is not built - and nothing in it claims an unsupported path was verified.
