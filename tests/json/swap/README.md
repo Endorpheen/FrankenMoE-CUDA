@@ -21,6 +21,13 @@ The swap falls back to nlohmann when the port declines, because a parse the nati
 never be failed by the new one. That is right in production and useless as evidence, so the second
 flag makes the fallback countable: `FG_JSON_GOOSE_REQUIRE=1` refuses to hide a decline.
 
+## Compile coverage without a library
+
+The test compiles `json.cpp` and `json-adapter.cpp` **before** it looks for a library, so a change to
+either translation unit is checked even where no built library exists; the three runtime modes then
+skip. That matters here because neither CI job compiles `vendor/flint/common/`: the C++ job covers
+`models/*.cpp` and the Goose job covers the unit.
+
 ## What it does not prove
 
 That a production library built with the swap behaves the same under load. This test compiles

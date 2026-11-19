@@ -21,22 +21,26 @@ LOG=$OUT/run.log
 mkdir -p "$OUT"
 BIN=${1:-${APEX_SERVER_DIR:-$ROOT/builds/flint-acc/bin}}
 
-if [ ! -f "$BIN/libllama.so.0" ]; then
-    printf 'skip: no libllama.so.0 under %s\n' "${BIN#$ROOT/}" | tee "$LOG"
-    exit 77
-fi
-
+# Compile first, before the library check: the two translation units are the part that can be
+# verified anywhere, and a change to json.cpp must not go unchecked just because no built library is
+# present. The three runtime modes below need the library and skip without it.
 fail=0
 {
-    printf 'library: %s\n' "${BIN#$ROOT/}"
-    printf 'sha256:  %s\n' "$(sha256sum "$BIN/libllama.so.0" | cut -d' ' -f1)"
-    printf 'source:  %s\n' "$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || echo unknown)"
+    printf 'source: %s\n' "$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || echo unknown)"
     printf '$ g++-13 -O2 -std=c++17 probe.cpp json.cpp json-adapter.cpp -ldl\n'
     g++-13 -O2 -std=c++17 -I"$ROOT/vendor/flint/common" -I"$ROOT/vendor/flint/vendor" \
         -I"$ROOT/vendor/flint/vendor/nlohmann" -I"$ROOT/vendor/flint/ggml/include" \
         -I"$ROOT/vendor/flint/include" -I"$ROOT/vendor/flint/src" \
         "$D/probe.cpp" "$ROOT/vendor/flint/common/json.cpp" "$ROOT/vendor/flint/common/json-adapter.cpp" \
         -o "$OUT/probe" -ldl || exit 1
+    printf 'ok: json.cpp and json-adapter.cpp compile\n'
+
+    if [ ! -f "$BIN/libllama.so.0" ]; then
+        printf 'skip: no libllama.so.0 under %s - the three runtime modes need it\n' "${BIN#$ROOT/}"
+        exit 77
+    fi
+    printf 'library: %s\n' "${BIN#$ROOT/}"
+    printf 'sha256:  %s\n' "$(sha256sum "$BIN/libllama.so.0" | cut -d' ' -f1)"
 
     printf '\n== 1. flag off\n'
     LD_LIBRARY_PATH="$BIN" "$OUT/probe" "$BIN/libllama.so.0" || fail=1
