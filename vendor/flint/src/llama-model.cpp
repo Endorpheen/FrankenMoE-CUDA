@@ -33,6 +33,11 @@
 #include <cmath>
 #include <functional>
 #include <map>
+#include <mutex>
+#include <unistd.h>
+#include <sys/mman.h>
+#include <fstream>
+#include "llama-mmap-expert-pin.h"
 #include <numeric>
 #include <regex>
 #include <sstream>
@@ -1261,6 +1266,11 @@ struct llama_model::impl {
     // model memory mapped files
     llama_mmaps mappings;
 
+    // expert mmap pinning: registrations must be released before buffers/mmaps
+    llama_mmap_expert_pin::owner expert_pin;
+    std::mutex expert_pin_mutex;
+    bool regular_mmap = false;
+
     // objects representing data potentially being locked in memory
     llama_mlocks mlock_bufs;
     llama_mlocks mlock_mmaps;
@@ -1589,6 +1599,7 @@ bool llama_model_base::load_tensors(llama_model_loader & ml) {
     const int n_gpu_layers = this->n_gpu_layers();
 
     const bool use_mmap_buffer = true;
+    pimpl->regular_mmap = ml.use_mmap;
 
     this->ml = &ml; // to be used by create_tensor() and load_arch_tensors()
 
@@ -2402,6 +2413,88 @@ std::string llama_model::desc() const {
 
 llama_ftype llama_model::ftype() const {
     return pimpl->ftype;
+}
+
+void llama_model::pin_mmap_experts(ggml_backend_reg_t reg) const {
+#if defined(__linux__)
+    const char * enabled = std::getenv("GGML_MMAP_EXPERT_PIN");
+    if ((enabled && std::atoi(enabled) == 0) || hparams.no_alloc ||
+        hparams.n_expert <= 1 || !pimpl->regular_mmap) {
+        return;
+    }
+    std::lock_guard<std::mutex> lock(pimpl->expert_pin_mutex);
+    if (pimpl->expert_pin.owned) { return; }
+    try {
+        using namespace llama_mmap_expert_pin;
+        auto register_host = reinterpret_cast<owner::register_fn>(
+            ggml_backend_reg_get_proc_address(reg, "ggml_backend_register_host_buffer"));
+        auto unregister_host = reinterpret_cast<owner::unregister_fn>(
+            ggml_backend_reg_get_proc_address(reg, "ggml_backend_unregister_host_buffer"));
+        if (!register_host || !unregister_host) { return; }
+        const long page_long = sysconf(_SC_PAGESIZE);
+        if (page_long <= 0) { return; }
+        const uintptr_t page = static_cast<uintptr_t>(page_long);
+        std::vector<span> ranges;
+        for (const auto & entry : tensors_by_name) {
+            const auto * tensor = entry.second;
+            if (!tensor->data || !tensor->buffer || tensor->ne[2] != hparams.n_expert ||
+                !ggml_backend_buffer_is_host(tensor->buffer)) { continue; }
+            const size_t bytes = ggml_nbytes(tensor);
+            const uintptr_t begin = reinterpret_cast<uintptr_t>(tensor->data);
+            if (!bytes || begin > UINTPTR_MAX - bytes) { return; }
+            bool owned_mapping = false;
+            for (const auto & mapping : pimpl->mappings) {
+                const uintptr_t base = reinterpret_cast<uintptr_t>(mapping->addr());
+                if (begin >= base && begin - base <= mapping->size() &&
+                    bytes <= mapping->size() - (begin - base)) {
+                    owned_mapping = true;
+                    break;
+                }
+            }
+            if (!owned_mapping) { return; }
+            ranges.push_back({begin, begin + bytes});
+        }
+        ranges = merge_pages(std::move(ranges), page);
+        uint64_t bytes = 0;
+        for (const auto & range : ranges) {
+            if (range.end - range.begin > UINT64_MAX - bytes) { return; }
+            bytes += range.end - range.begin;
+        }
+        uint64_t total = 0, available = 0;
+        std::ifstream meminfo("/proc/meminfo");
+        for (std::string line; std::getline(meminfo, line);) {
+            std::istringstream row(line);
+            std::string key, unit;
+            uint64_t kib = 0;
+            if (!(row >> key >> kib >> unit) || unit != "kB" || kib > UINT64_MAX / 1024) { continue; }
+            if (key == "MemTotal:") { total = kib * 1024; }
+            if (key == "MemAvailable:") { available = kib * 1024; }
+        }
+        if (!fits_budget(bytes, total, available)) {
+            LLAMA_LOG_INFO("%s: keep pageable weights: insufficient host headroom\n", __func__);
+            return;
+        }
+        std::vector<unsigned char> residency;
+        for (const auto & range : ranges) {
+            residency.resize((range.end - range.begin) / page);
+            if (mincore(reinterpret_cast<void *>(range.begin), range.end - range.begin, residency.data()) != 0 ||
+                std::any_of(residency.begin(), residency.end(), [](unsigned char value) { return !(value & 1); })) {
+                LLAMA_LOG_INFO("%s: keep pageable weights: pages not resident\n", __func__);
+                return;
+            }
+        }
+        if (!pimpl->expert_pin.acquire(std::move(ranges), register_host, unregister_host)) {
+            LLAMA_LOG_INFO("%s: registration failed; rolled back to pageable weights\n", __func__);
+            return;
+        }
+        LLAMA_LOG_INFO("%s: registered %zu mapped expert ranges (%.2f MiB), no weight copy\n",
+                       __func__, pimpl->expert_pin.owned, bytes / (1024.0 * 1024.0));
+    } catch (const std::exception & error) {
+        LLAMA_LOG_WARN("%s: keep pageable weights: %s\n", __func__, error.what());
+    }
+#else
+    GGML_UNUSED(reg);
+#endif
 }
 
 size_t llama_model::size() const {

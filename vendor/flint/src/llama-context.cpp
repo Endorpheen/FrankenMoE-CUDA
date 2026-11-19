@@ -553,6 +553,21 @@ llama_context::llama_context(
             moe_cache = std::make_unique<llama_moe_cache>(model, backend_ptrs, backend_buft, cparams.moe_cache_size);
         }
 
+        // Register the resident mmap expert ranges once, under the same conditions the reconstructed
+        // tree used: a single sequence, offload on, exactly one GPU and one CPU backend, and a device
+        // that exposes host-buffer registration. Moved, not rewritten (EXP-2026-11-19-1298).
+        if (cparams.n_seq_max == 1 && !cparams.pipeline_parallel && cparams.offload_kqv &&
+            backend_ptrs.size() == 2 &&
+            ggml_backend_dev_type(ggml_backend_get_device(backend_ptrs[0])) == GGML_BACKEND_DEVICE_TYPE_GPU &&
+            ggml_backend_dev_type(ggml_backend_get_device(backend_ptrs[1])) == GGML_BACKEND_DEVICE_TYPE_CPU) {
+            auto * pin_dev = ggml_backend_get_device(backend_ptrs[0]);
+            ggml_backend_dev_props pin_props;
+            ggml_backend_dev_get_props(pin_dev, &pin_props);
+            if (pin_props.caps.host_buffer) {
+                model.pin_mmap_experts(ggml_backend_dev_backend_reg(pin_dev));
+            }
+        }
+
         sched_reserve();
 
         if (!cparams.flash_attn) {

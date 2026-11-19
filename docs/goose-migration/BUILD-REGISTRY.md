@@ -104,8 +104,22 @@ The port therefore needs its call site re-established against the vendored conte
 5. `python3 tools/check-accepted-components.py` must report `host-registration` present, then an
    acceptance run must show the decode gain, then this entry is replaced by the numbers.
 
-Until step 5 passes, this stays open debt and the migration continues; the rule not to stop for
-optimisation is respected, and the loss is not hidden.
+### Closed 2026-11-19 - connected, not rewritten
+
+All five steps are done: the header copied verbatim, the members added, `pin_mmap_experts` moved with its body
+unchanged onto the vendored model class, the call site re-established in the vendored context under the same
+`host_buffer` guard. Verified by A/B with the feature's own switch and by the presence check.
+
+```
+feature ON    decode 62.42 / 62.90 / 62.79   prefill 2687 / 2952 / 2953   VRAM 9511 MiB  RSS 20837548 kB
+feature OFF   decode 42.63 / 43.91 / 44.15   prefill 1945 / 2190 / 2175   VRAM 9475 MiB  RSS 20837332 kB
+```
+
+Against the historical reference (55.52 decode, 2625 prefill): **+13.1 % decode, +12.5 % prefill**, response hash
+unchanged. The registration's log line never appears at default verbosity, which is why the A/B switch, not the
+log, is the evidence.
+
+The migration continues; this entry stays as the record of how the loss happened and how it was found.
 
 ## flint build: what it needs at link time
 
