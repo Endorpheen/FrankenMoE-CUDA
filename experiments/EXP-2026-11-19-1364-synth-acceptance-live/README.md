@@ -54,6 +54,31 @@ not. The next step is the resolve print inside `fg_sp_synth_resolve()`, and it i
 (`ui-assets.cmake:137`, `dist.tar.gz.sha256`). The diagnostic edit was reverted rather than left in the tree
 uncompiled.
 
+## Attempt 5 - the probe, and what it proved instead
+
+The resolve print needed a server rebuild, which needs the UI assets. A cheaper route: a probe **inside the door**,
+which only rebuilds `llama`:
+
+```goose
+extern "fg_sp_synth_probe" fn fg_sp_synth_probe() -> i64;
+```
+
+The library then refused to load at all:
+
+```
+libllama.so.0: undefined symbol: fg_sp_synth_probe
+```
+
+which is correct behaviour - an extern needs a provider - and the gate caught it exactly as designed:
+
+```
+check-unresolved-symbols: FAIL, 1 symbol(s) no linked library provides: fg_sp_synth_probe
+```
+
+The provider would have to go into the sampler-chain shim, and that is a rebuild of the chain rather than of the
+library. Both edits were reverted, the chain rebuilt, and the artefacts re-checked: unresolved symbols ok, accepted
+components ok, and an acceptance run at decode 63.17 / prefill 2952.2 with hash `c2ff42cc1219` unchanged.
+
 ## Why stop here
 
 This is the third attempt and the repository's blocker rule applies: report the exact behaviour, the attempts, and the
