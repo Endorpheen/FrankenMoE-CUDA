@@ -328,8 +328,21 @@ what a change confined to two translation units should look like. Acceptance has
 | `check-symbol-callers.py` | rc=0, 2369 call targets |
 | `check-dead-objects.py` | PASS, 349 objects, 0 dead |
 | `check-cumulative-baseline.py` | **PASS** |
+| `check-unresolved-symbols.sh` | **PASS** (new: catches an extern with no provider) |
 
-Eight of eight, with the caveat that two of them need the right invocation: `check-dead-objects.py` wants a flat
+Nine of nine, with the caveat that two of them need the right invocation: `check-dead-objects.py` wants a flat
 directory of objects (the build nests them under CMakeFiles), and `check-cumulative-baseline.py` wants the four
 artefacts inside the run directory. Both are now produced by `tools/p610-paired.sh`, which snapshots them from
 their real producers including the kernel object from the P1-12 experiment.
+
+
+## The ninth check, and the class it closes
+
+`check-unresolved-symbols.sh` reads the shipped library and fails on any undefined symbol that is not libc,
+libstdc++ or the ggml/gguf families. It exists because `metrics-traces.goose` declared
+`extern "mt_fmt_g6"` and nothing provided it: the module composed, typechecked and counted in the symbol total,
+and the library it joined could not be loaded at all.
+
+Every previous check looked at the build; this one looks at the artefact the run loads, which is where a promise
+is either kept or discovered broken. Its own first version produced 139 false failures because I had forgotten
+`GLIBCXX` versioned symbols - caught by reading the output rather than by trusting the verdict.
