@@ -2820,7 +2820,8 @@
         "D2-D4: the partial units, the quant row bodies last, each with the symbol audit",
         "run the Apex A/B once approved"
       ],
-      "coverage_doc": "docs/goose-migration/P11-04-REMOVAL.md"
+      "coverage_doc": "docs/goose-migration/P11-04-REMOVAL.md",
+      "d1_state_20261119": "Per-item state recorded in docs/goose-migration/P11-04-D1-STATE-20261119.md, checked against the tree on main without a build. Done already: F5 (the native should_split branch is gone; the Goose bridge in integration/m1/common/fg-goose-gguf-bridge.cpp and the S1.2 gate remain) and F8 (determine_vocab_type_native is not present outside the archive). Still open: F2 gguf_write_to_buf (ggml/src/gguf.cpp:1685, no Goose call), F3 gguf_get_meta_size (gguf.cpp:1720) and F4 gguf_get_meta_data (gguf.cpp:1725), all reached only by llama-quant.cpp, the quantisation tool path - the Goose writer is composed and called by no host, so closing them is wiring plus a byte-for-byte gate; and F10, where bmoe::validate in runtime/core/src/config.cpp:7 is still native C++ while the gate beside it compares against it, so closing it means porting the decisions and promoting the existing oracle to the differential gate."
     },
     {
       "id": "P11-05",
