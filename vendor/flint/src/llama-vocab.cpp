@@ -596,6 +596,22 @@ struct llm_tokenizer_bpe : llm_tokenizer {
 };
 
 // The BPE comparator door. Called once per merge pop, so the counter moves on any prompt.
+// End-of-generation cross-check. A pure membership test over the EOG set, so the whole vocabulary is
+// compared once on the first call. Kept in its own namespace: an earlier attempt to reuse the
+// detokenizer's helper moved a brace and broke the file (EXP-2026-11-19-1318).
+namespace fg_eog_check {
+struct sl_i64 { int64_t * data; int64_t len; };
+typedef int64_t (*fn_t)(sl_i64, int64_t, int64_t);
+inline fn_t resolve() {
+    static fn_t fn = []() -> fn_t {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        void * sym = h ? dlsym(h, "bt_is_eog") : nullptr;
+        return reinterpret_cast<fn_t>(sym);
+    }();
+    return fn;
+}
+} // namespace fg_eog_check
+
 typedef int64_t (*fg_tk_bpe_before_fn)(int64_t, int64_t, int64_t, int64_t);
 static fg_tk_bpe_before_fn fg_tk_bpe_before_resolve() {
     static fg_tk_bpe_before_fn fn = []() -> fg_tk_bpe_before_fn {
@@ -3574,8 +3590,37 @@ bool llama_vocab::impl::is_unused(llama_token id) const {
 }
 
 bool llama_vocab::impl::is_eog(llama_token id) const {
+    static const bool diag = getenv("FG_TK_DETOK_DIAG") != nullptr;
+    if (diag) {
+        static struct run {
+            unsigned long long differ = 0;
+            unsigned long long tokens = 0;
+            run(const llama_vocab::impl & v) {
+                const auto fn = fg_eog_check::resolve();
+                if (!fn) { return; }
+                std::vector<int64_t> eog(v.special_eog_ids.begin(), v.special_eog_ids.end());
+                fg_eog_check::sl_i64 s_eog{ eog.empty() ? nullptr : eog.data(), (int64_t) eog.size() };
+                tokens = (unsigned long long) v.id_to_token.size();
+                for (llama_token t = 0; t < (llama_token) v.id_to_token.size(); ++t) {
+                    const int64_t goose = fn(s_eog, (int64_t) eog.size(), (int64_t) t);
+                    const int64_t native = v.special_eog_ids.count(t) > 0 ? 1 : 0;
+                    if (goose != native) {
+                        ++differ;
+                        if (differ <= 5) {
+                            fprintf(stderr, "FG_TK_EOG_DIFF token=%d native=%lld goose=%lld\n",
+                                    (int) t, (long long) native, (long long) goose);
+                        }
+                    }
+                }
+                fprintf(stderr, "FG_TK_EOG_TOTAL tokens=%llu eog=%zu disagreements=%llu\n",
+                        tokens, eog.size(), differ);
+            }
+        } once(*this);
+        (void) once;
+    }
     return id != LLAMA_TOKEN_NULL && special_eog_ids.count(id) > 0;
 }
+
 
 uint8_t llama_vocab::impl::token_to_byte(llama_token id) const {
     GGML_ASSERT(get_type() != LLAMA_VOCAB_TYPE_NONE);
