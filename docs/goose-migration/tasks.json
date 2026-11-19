@@ -2957,7 +2957,8 @@
       "coverage_doc": "docs/goose-migration/C1-02-COVERAGE.md",
       "plan_note": "Documented as assigned scope, not yet decomposed into slices.",
       "slices_total": 3,
-      "slices_done": 3
+      "slices_done": 3,
+      "evidence_20261119": "State recorded in docs/goose-migration/C1-02-QWEN4EXP-STATE.md. Modules present: q4m-metadata (19 exports), q4t-tensor-map (10) and q4e-expert-layout (15), plus the accepted qwen4exp.goose builder (q4_kind, q4_is_ple, q4_plan, q4_shape). Of these only q4t-tensor-map is in the composed unit (build-main-runtime.sh:71); qwen4exp, q4m and q4e are NOT composed, and no host calls any q4* door. The experiment EXP-2026-11-15-660 gated the slices - 43 cases / 934 values, 0 failures at -O1 and -O0, 36/36 mutations caught - but the gate builds the experiment's source copies, not goose/, and is not a permanent test. T_NEXTN_HC_HEAD (49..51) has no entry in the pinned llama-arch.cpp: the ids exist only in the integration tree, so the ported map must not invent names for them. Closing needs qwen4exp/q4m/q4e composed, the experiment gate moved into tests/ building from goose/, and a Qwen GGUF to check shapes against a real file. No Qwen model has been loaded."
     },
     {
       "id": "C1-03",
