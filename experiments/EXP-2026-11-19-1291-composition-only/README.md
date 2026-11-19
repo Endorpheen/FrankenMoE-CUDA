@@ -44,6 +44,22 @@ turns from descending into ascending, they do not, and the probabilities differ 
 So the port computes the correct normalisation of the values it was given, and the native computes one based on a
 flag its own transform has invalidated.
 
+## Every pair is exact; only the triple drifts
+
+```
+typical+adaptive         0 of 100 rounds differ
+xtc+adaptive             0 of 100 rounds differ
+typical+xtc+adaptive    21 of 100 rounds differ
+```
+
+Each pair is clean, so this is not "adaptive does not tolerate unsorted input" and not "typical's output is
+wrong". The difference needs **all three** stages present, which points at something that only two preceding stages
+produce - a transformed array whose maximum is no longer at index 0, so the `data[0]`-versus-scan question can
+actually bite. With one preceding stage the maximum happens to stay in place and the two paths agree.
+
+That is consistent with the `p`-hash measurement (the array at the selector differs) and inconsistent with the RNG
+and the scratch.
+
 ## A candidate fix was tried and reverted
 
 The obvious repair for the max question - let the host perform the final normalisation on both paths, in the same
