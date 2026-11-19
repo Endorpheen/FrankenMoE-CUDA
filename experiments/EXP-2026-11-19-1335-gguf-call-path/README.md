@@ -41,6 +41,20 @@ FG_GGUF_PARSE  nk=52 nt=753 align=32 off=10990944 disagreements=0
 805 lookups plus the four header fields, checked on every start with the flag on, and the load refuses to continue if
 any of them disagrees.
 
+## Key values too, so a substitution would be founded
+
+The last piece before the loader could take a value from the port is knowing that every such value is equal, so the
+gate now decodes all integer keys through the port as well:
+
+```
+FG_GGUF_VALUES  integer=26/26
+FG_GGUF_LOOKUP  keys=52/52 tensors=753/753
+FG_GGUF_PARSE   nk=52 nt=753 align=32 off=10990944 disagreements=0
+```
+
+857 comparisons plus four header fields, on every start with the flag on, and the load refuses on any disagreement.
+Acceptance with the gate compiled in: decode 62.87 median, hash unchanged.
+
 ## The comparison refuses the load, not just prints
 
 A disagreement between the ported and native readings of the same file is never acceptable, so with the flag set the

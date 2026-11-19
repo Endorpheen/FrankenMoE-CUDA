@@ -24,6 +24,7 @@ struct fg_sl_i64 { int64_t * data; int64_t len; };
 struct fg_sl_u8  { uint8_t  * data; int64_t len; };
 typedef int64_t (*fg_gr_parse_fn)(fg_sl_u8, int64_t, fg_sl_i64, fg_sl_i64, fg_sl_i64, fg_sl_i64, fg_sl_i64);
 typedef int64_t (*fg_gr_find_fn)(fg_sl_u8, fg_sl_i64, fg_sl_i64, fg_sl_i64, fg_sl_u8);
+typedef int64_t (*fg_gr_meta_int_fn)(fg_sl_u8, fg_sl_i64, fg_sl_i64, int64_t, fg_sl_i64);
 
 // Returns the number of disagreements; the caller decides whether that is fatal.
 static int fg_gguf_check(const std::string & fname, const gguf_context & native) {
@@ -70,6 +71,38 @@ static int fg_gguf_check(const std::string & fname, const gguf_context & native)
             fg_sl_u8 key{ reinterpret_cast<uint8_t *>(const_cast<char *>(k)), (int64_t) strlen(k) };
             if (find_tn(s_data, s_state, s_t, s_slots, key) != i) { ++tn_bad; }
         }
+        // Integer key values, not only their names: this is the last piece before the loader could take a
+        // value from the port, because a substituted value must be known equal on every key.
+        int val_bad = 0, val_cmp = 0;
+        static fg_gr_meta_int_fn meta_int = nullptr;
+        if (!meta_int) {
+            void * h2 = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+            meta_int = h2 ? reinterpret_cast<fg_gr_meta_int_fn>(dlsym(h2, "gr_meta_int")) : nullptr;
+        }
+        if (meta_int) {
+            for (int64_t i = 0; i < nk; ++i) {
+                int64_t native_val = 0;
+                switch (gguf_get_kv_type(&native, i)) {
+                    case GGUF_TYPE_UINT8:  native_val = gguf_get_val_u8 (&native, i); break;
+                    case GGUF_TYPE_INT8:   native_val = gguf_get_val_i8 (&native, i); break;
+                    case GGUF_TYPE_UINT16: native_val = gguf_get_val_u16(&native, i); break;
+                    case GGUF_TYPE_INT16:  native_val = gguf_get_val_i16(&native, i); break;
+                    case GGUF_TYPE_UINT32: native_val = gguf_get_val_u32(&native, i); break;
+                    case GGUF_TYPE_INT32:  native_val = gguf_get_val_i32(&native, i); break;
+                    case GGUF_TYPE_UINT64: native_val = (int64_t) gguf_get_val_u64(&native, i); break;
+                    case GGUF_TYPE_INT64:  native_val = gguf_get_val_i64(&native, i); break;
+                    default: continue;
+                }
+                int64_t got = 0;
+                fg_sl_i64 out{ &got, 1 };
+                ++val_cmp;
+                if (meta_int(s_data, s_state, s_kv, i, out) != 0 || got != native_val) { ++val_bad; }
+            }
+            fprintf(stderr, "FG_GGUF_VALUES integer=%lld/%lld\n",
+                    (long long) (val_cmp - val_bad), (long long) val_cmp);
+            differ += val_bad;
+        }
+
         differ += kv_bad + tn_bad;
         fprintf(stderr, "FG_GGUF_LOOKUP keys=%lld/%lld tensors=%lld/%lld\n",
                 (long long) (nk - kv_bad), (long long) nk, (long long) (nt - tn_bad), (long long) nt);
