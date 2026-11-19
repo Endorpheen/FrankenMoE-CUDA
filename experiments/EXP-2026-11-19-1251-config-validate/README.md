@@ -22,6 +22,10 @@ the native code produced came from a rule this port implements.
 | 14-16 | sampling.top_k, sampling.top_p in (0,1]; speculative requires greedy |
 | 17-22 | draft_max range; MTP p_min range; ngram p_min must be zero; ngram match ranges; n_ubatch ≥ draft_max+1 |
 | 23-26 | overlap, predict_log, predict_prefetch, route_ahead all require moe.enabled |
+| 27-28 | row_stream requires moe; row_stream_mb non-negative |
+| 29-35 | nested MoE: io_threads range, cache_mb non-negative, the pathological band, prefetch_layers range, cache_auto exclusivity, cache floor/ceil |
+| 36-39 | prefetch_layers and predict_prefetch need the cache; io_two_wave needs overlap and the cache |
+| 40-44 | predict_spec_max range; prefetch mutual exclusion; route_ahead range, exclusions and its conflict with speculation |
 
 ## Three defects in my *harness*, found by running it
 
@@ -36,11 +40,16 @@ None of the three was in the port. That is the fifth verification-logic error of
 the differential is worth more than a symmetric gate: the port was right and the test was wrong, and running it
 against real code says so immediately.
 
-## Slice boundary, stated
+## Slice boundary is now closed
 
-The **nested MoE block** (io_threads, the cache band, prefetch_layers, row_stream, route_ahead range, the
-prefetch-without-cache rule) is a separate slice. Its fields are held valid here so that only the rules above can
-fire, and anything the native rejects outside them appears as `UNCOVERED` rather than passing silently.
+The nested MoE block is included: 44 rules in total, all exercised by randomisation, `uncovered=0`. Nothing is
+held valid to hide a rule.
+
+## The prefix-versus-substring defect bit twice
+
+The `rfind(s, 0)` mistake appeared a second time in a mapping line added later ("is in the pathological band").
+The fix was to replace **every** `rfind(...) != npos` in the file at once rather than the one that failed, because
+the failing one was new and the old pattern was still in the habit - not in the code.
 
 ## Reproduce
 

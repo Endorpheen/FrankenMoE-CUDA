@@ -15,7 +15,10 @@ extern "C" int64_t cfg_rule_call(void * f, int64_t has_model, int64_t n_predict,
                                  int64_t is_mtp, int64_t is_ngram, int64_t draft_max, double p_min,
                                  int64_t ng_max, int64_t ng_min, int64_t vram, int64_t slots,
                                  int64_t ngl, double temp, int64_t top_k, double top_p,
-                                 int64_t overlap, int64_t plog, int64_t ppf, int64_t route_ahead);
+                                 int64_t overlap, int64_t plog, int64_t ppf, int64_t route_ahead,
+                                 int64_t rs, int64_t rsmb, int64_t iot, int64_t cmb, int64_t fc,
+                                 int64_t pl, int64_t ca, int64_t cfl, int64_t ccl, int64_t itw,
+                                 int64_t psm);
 
 static int native_rule(const bmoe::ValidationResult & r) {
     if (r.ok) return 0;
@@ -46,8 +49,25 @@ static int native_rule(const bmoe::ValidationResult & r) {
     if (m.rfind("moe.overlap requires moe.enabled", 0) == 0) return 23;
     if (m.rfind("moe.predict_log requires moe.enabled", 0) == 0) return 24;
     if (m.rfind("moe.predict_prefetch requires moe.enabled", 0) == 0) return 25;
-    if (m.rfind("moe.route_ahead must be in", 0) == 0) return 25;
     if (m.rfind("moe.route_ahead requires moe.enabled", 0) == 0) return 26;
+    if (m.rfind("moe.row_stream requires moe.enabled", 0) == 0) return 27;
+    if (m.rfind("moe.row_stream_mb must be >= 0", 0) == 0) return 28;
+    if (m.rfind("moe.io_threads must be in", 0) == 0) return 29;
+    if (m.rfind("moe.cache_mb must be >= 0", 0) == 0) return 30;
+    if (m.find("is in the pathological band") != std::string::npos) return 31;
+    if (m.rfind("moe.prefetch_layers must be in", 0) == 0) return 32;
+    if (m.rfind("moe.cache_auto and an explicit", 0) == 0) return 33;
+    if (m.rfind("moe.cache_floor_mb must be >= 0", 0) == 0) return 34;
+    if (m.rfind("moe.cache_ceil_mb must be >= 0", 0) == 0) return 35;
+    if (m.rfind("moe.prefetch_layers requires the LRU cache", 0) == 0) return 36;
+    if (m.rfind("moe.predict_prefetch requires the LRU cache", 0) == 0) return 37;
+    if (m.rfind("moe.io_two_wave requires moe.overlap", 0) == 0) return 38;
+    if (m.rfind("moe.io_two_wave requires the LRU cache", 0) == 0) return 39;
+    if (m.rfind("moe.predict_spec_max must be in", 0) == 0) return 40;
+    if (m.rfind("moe.predict_prefetch and moe.prefetch_layers are mutually exclusive", 0) == 0) return 41;
+    if (m.rfind("moe.route_ahead must be in", 0) == 0) return 42;
+    if (m.rfind("moe.route_ahead excludes", 0) == 0) return 43;
+    if (m.rfind("moe.route_ahead and self-speculative", 0) == 0) return 44;
     return -99;   // a native rule this port does not cover
 }
 
@@ -76,15 +96,21 @@ int main() {
         c.moe.predict_log = (rng() % 3 == 0);
         // prefetch on with the cache off is a nested-block rule (separate slice), so it is only
         // exercised where that block cannot fire: with streaming disabled
-        c.moe.predict_prefetch = c.moe.enabled ? false : (rng() % 3 == 0);
-        // The nested MoE block (io_threads, cache band, prefetch_layers, row_stream, route_ahead range)
-        // is a separate slice: its fields are held valid so that only the rules this slice covers can
-        // fire. Anything the native rejects outside them shows up as UNCOVERED, not as a false pass.
-        c.moe.io_threads = 2;
-        c.moe.cache_mb = 0;
-        c.moe.prefetch_layers = 0;
-        c.moe.row_stream = false;
-        c.moe.route_ahead = 0;
+        c.moe.predict_prefetch = (rng() % 3 == 0);
+        // Nested MoE fields are now exercised: every one is random within a range that reaches both
+        // sides of its rule.
+        c.moe.row_stream = (rng() % 4 == 0);
+        c.moe.row_stream_mb = (int)(rng() % 4) - 1;
+        c.moe.io_threads = (int)(rng() % 11);
+        c.moe.cache_mb = (int)(rng() % 4 == 0) ? 0 : (int)(rng() % 2000);
+        c.moe.force_cache = (rng() % 2);
+        c.moe.prefetch_layers = (int)(rng() % 11);
+        c.moe.cache_auto = (rng() % 3 == 0);
+        c.moe.cache_floor_mb = (int)(rng() % 4) - 1;
+        c.moe.cache_ceil_mb = (int)(rng() % 4) - 1;
+        c.moe.io_two_wave = (rng() % 3 == 0);
+        c.moe.predict_spec_max = (int)(rng() % 11) - 1;
+        c.moe.route_ahead = (int)(rng() % 11) - 1;
         // speculation: off, or one of the two source families with a random width
         const int spec_kind = (int)(rng() % 3);   // 0 off, 1 mtp, 2 ngram
         c.spec.source = spec_kind == 1 ? bmoe::DraftSource::mtp : (spec_kind == 2 ? bmoe::DraftSource::ngram : bmoe::DraftSource::none);
@@ -106,7 +132,10 @@ int main() {
             c.spec.ngram_min_match, c.vram_cache_mb, c.expert_hot_slots, c.n_gpu_layers,
             (double) c.sampling.temp, c.sampling.top_k, (double) c.sampling.top_p,
             c.moe.overlap ? 1 : 0, c.moe.predict_log ? 1 : 0, c.moe.predict_prefetch ? 1 : 0,
-            c.moe.route_ahead);
+            c.moe.route_ahead, c.moe.row_stream ? 1 : 0, c.moe.row_stream_mb, c.moe.io_threads,
+            c.moe.cache_mb, c.moe.force_cache ? 1 : 0, c.moe.prefetch_layers,
+            c.moe.cache_auto ? 1 : 0, c.moe.cache_floor_mb, c.moe.cache_ceil_mb,
+            c.moe.io_two_wave ? 1 : 0, c.moe.predict_spec_max);
         ++cases;
         if (got != want) {
             ++fails;
