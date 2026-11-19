@@ -54,6 +54,16 @@ Downloaded after publication to a separate directory, checksum verified, extract
 decode 62.56 / 62.86 / 62.38, prefill 2701.2 / 2956.0 / 2954.1, hash `c2ff42cc1219`, accepted-component pre-flight
 5 of 5. Earlier releases including EXP906 are untouched.
 
+### Later checkpoints of the same baseline
+
+| checkpoint | difference | numbers |
+|---|---|---|
+| `builds/checkpoint-20261119-EXP1298` | the published release | decode 62.73, prefill 2948.0 |
+| `builds/checkpoint-20261119-EXP1332` | same baseline, unit grown by the detokenizer and GGUF closures (11847 symbols) | decode 62.72, prefill 2944.0, hash unchanged |
+
+The baseline number is EXP1298's. EXP1332 is the artefact that carries more of the port, and its measurements say the
+growth cost nothing measurable.
+
 ### Provenance
 
 | item | value |
