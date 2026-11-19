@@ -5686,7 +5686,7 @@
    "P9-03": "ported and gated synthetically; NOT verifiable against compiled native code here: the native ExpertStreamSource needs shard paths and real expert tensors in init(), and its pure-looking helpers read the bound geometry. See docs/goose-migration/P9-DEPENDENCY-BOUNDARY.md.",
    "P9-04": "ported and gated synthetically; the decisions this port reproduces live in session.cpp (needs llama.cpp) and RowStream is class-bound like P9-03. Same boundary document.",
    "P9-05": "draft side verified against bmoe::ngram_draft (3000 cases); session/runtime side needs llama.cpp and the bmoe fork, which does not build against vendor/flint. Same boundary document.",
-   "P9-07": "partially verified against the real class by white-box include (no ggml, no model): check_static 2000 cases (EXP-1260) and the file format parser, 9 crafted files covering every failure mode (EXP-1261). Remaining: capture/replay bookkeeping (token, finish, capture_topk, replay_topk) and the metrics sinks. The class needs only fstream/sstream, so all of it is verifiable the same way."
+   "P9-07": "four parts verified against the real class by white-box include: check_static (2000 cases), the file parser (9 crafted files, every failure mode), the writer (byte-exact vs save()), and the replay guards (1000 cases). Remaining: capture_topk bookkeeping and the metrics sinks. No model and no GPU are needed for any of it."
   },
   "note": "The roadmap counters mixed 'ported', 'called' and 'replaced'. This block makes the three states explicit so a DONE cannot be inferred from composition alone.",
   "verified_against_native": [
