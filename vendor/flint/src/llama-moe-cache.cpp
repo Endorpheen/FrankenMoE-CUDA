@@ -115,11 +115,16 @@ struct moe_cache_slru {
     struct fg_sl_i64 { int64_t * d; int64_t n; };
     typedef int64_t (*fg_slru_fn)(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, fg_sl_i64,
                                   uint64_t, uint64_t, int64_t, int64_t, int64_t, int64_t, fg_sl_i64,
-                                  uint64_t, uint64_t, uint64_t, uint64_t);
+                                  uint64_t, uint64_t, uint64_t, uint64_t,
+                                  const int64_t *, int64_t);
 
     struct snapshot {
         std::vector<int32_t> key_of, prev, next, prot, head, tail, slots, ids, uniq, fills_e, fills_s, evicted;
         std::vector<int64_t> seen, scal;
+        // the per-layer slot maps, copied: the door clears an evicted entry in its own layer's map, and the shadow
+        // must not touch the real ones
+        std::vector<int32_t> maps_flat;
+        std::vector<int64_t> maps_ptr;
         snapshot() {}
     };
 
@@ -137,30 +142,15 @@ struct moe_cache_slru {
         sn.evicted.assign((size_t) n_slots, 0);
         sn.seen.resize(seen.size());
         for (size_t i = 0; i < seen.size(); ++i) { sn.seen[i] = (int64_t) seen[i]; }
+        const size_t n_layers = slot_map.size();
+        sn.maps_flat.assign(n_layers * (size_t) n_expert, -1);
+        sn.maps_ptr.assign(n_layers, 0);
+        for (size_t l = 0; l < n_layers; ++l) {
+            sn.maps_ptr[l] = (int64_t) (uintptr_t) (sn.maps_flat.data() + l * (size_t) n_expert);
+            if (slot_map[l]) { std::copy(slot_map[l], slot_map[l] + n_expert, sn.maps_flat.begin() + l * (size_t) n_expert); }
+        }
         sn.scal.assign(8, 0);
         sn.scal[0] = (int64_t) seen_gen;
-    }
-
-    int64_t run_door_raw(std::vector<int32_t> & key_of_, std::vector<int32_t> & prev_, std::vector<int32_t> & next_,
-                         std::vector<int32_t> & prot_, int32_t * head_, int32_t * tail_,
-                         std::vector<int64_t> & seen_, int32_t * slots_,
-                         std::vector<int64_t> & ids_, size_t n_ids_, int32_t il_, int32_t n_expert_, int32_t n_slots_,
-                         std::vector<int64_t> & scal_, std::vector<int32_t> & uniq_,
-                         std::vector<int32_t> & fe_, std::vector<int32_t> & fs_, std::vector<int32_t> & ev_) const {
-        static fg_slru_fn fn = []() -> fg_slru_fn {
-            void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
-            return h ? reinterpret_cast<fg_slru_fn>(dlsym(h, "slru_plan")) : nullptr;
-        }();
-        if (!fn) { return -1; }
-        fg_sl_i64 s_seen{ seen_.data(), (int64_t) seen_.size() };
-        fg_sl_i64 s_scal{ scal_.data(), (int64_t) scal_.size() };
-        return fn((uint64_t) (uintptr_t) key_of_.data(), (uint64_t) (uintptr_t) prev_.data(),
-                  (uint64_t) (uintptr_t) next_.data(), (uint64_t) (uintptr_t) prot_.data(),
-                  (uint64_t) (uintptr_t) head_, (uint64_t) (uintptr_t) tail_, s_seen,
-                  (uint64_t) (uintptr_t) slots_, (uint64_t) (uintptr_t) ids_.data(),
-                  (int64_t) n_ids_, (int64_t) il_, (int64_t) n_expert_, (int64_t) n_slots_, s_scal,
-                  (uint64_t) (uintptr_t) uniq_.data(), (uint64_t) (uintptr_t) fe_.data(),
-                  (uint64_t) (uintptr_t) fs_.data(), (uint64_t) (uintptr_t) ev_.data());
     }
 
     int64_t run_door(snapshot & sn, int32_t il, size_t n_ids) const {
@@ -178,7 +168,8 @@ struct moe_cache_slru {
                   (uint64_t) (uintptr_t) sn.slots.data(), (uint64_t) (uintptr_t) sn.ids.data(),
                   (int64_t) n_ids, (int64_t) il, (int64_t) n_expert, (int64_t) n_slots, s_scal,
                   (uint64_t) (uintptr_t) sn.uniq.data(), (uint64_t) (uintptr_t) sn.fills_e.data(),
-                  (uint64_t) (uintptr_t) sn.fills_s.data(), (uint64_t) (uintptr_t) sn.evicted.data());
+                  (uint64_t) (uintptr_t) sn.fills_s.data(), (uint64_t) (uintptr_t) sn.evicted.data(),
+                  sn.maps_ptr.data(), (int64_t) sn.maps_ptr.size());
     }
 
     // give a slot to each expert selected by ids in layer il, evicting from probation first
