@@ -189,7 +189,12 @@ _GOOSE_PAIRS = [
     ('goose/model/qgate-split.goose',     'integration/m1/common/fg-goose-quant-bridge.c',      'fg-qg',  'fg_qg_goose_init'),
     # P10-07: the JSON parser. Its door json_parse is what common/json.cpp resolves by dlsym, and until this
     # pair existed the shipped library carried the C++ adapter without the Goose parser it calls.
-    ('goose/json/json-parser.goose',      'integration/m1/common/fg-json-bridge.c',             'fg-json', 'fg_json_goose_init'),
+    # 'standalone' is the fifth element: this module calls the runtime's abort/panic/index-fail paths, and
+    # in separate mode the compiler only DECLARES them - the link then fails on gs_panic unless a runtime
+    # object is linked in. With --standalone the module carries its own runtime, and the only host code left
+    # is the strtod provider and the init call. Verified: json_parse answers rc=0 in both modes, and only
+    # standalone needs nothing else.
+    ('goose/json/json-parser.goose',      'integration/m1/common/fg-json-bridge.c',             'fg-json', 'fg_json_goose_init', 'standalone'),
 ]
 _GOOSE = Path(__file__).resolve().parent.parent.parent / 'goose'
 if not (_GOOSE / 'misc').is_dir():
@@ -205,8 +210,11 @@ for _pair in _GOOSE_PAIRS:
     if not _ms.exists() or not _bs.exists():
         print('goose source missing:', _ms, _bs); sys.exit(1)
     _co = _gobj/(_stem + '.c')
-    _r = subprocess.run([str(GOOSE_BIN), '-o', str(_co), '--header', str(_co.with_suffix('.h')), str(_ms)],
-                        capture_output=True, text=True)
+    _gos = [str(GOOSE_BIN)]
+    if len(_pair) > 4 and _pair[4] == 'standalone':
+        _gos.append('--standalone')
+    _gos += ['-o', str(_co), '--header', str(_co.with_suffix('.h')), str(_ms)]
+    _r = subprocess.run(_gos, capture_output=True, text=True)
     if _r.returncode != 0:
         print('goose compile failed:', _ms.name); print(_r.stderr[:800]); sys.exit(1)
     _mo = _gobj/(_stem + '.o')
