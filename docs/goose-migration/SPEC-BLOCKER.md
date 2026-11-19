@@ -1,54 +1,55 @@
-# Blocker report: the speculative path is unreachable from the server
+# Blocker resolved: the server is built from a merged copy, not from the vendor source
 
-For the senior helper, per the project rule about a repeated blocker.
+## The answer
 
-## Expected
-
-A server started with `--spec-type ngram-simple --spec-ngram-simple-size-n 3 --spec-ngram-simple-size-m 8`
-enters the speculative verification block in `tools/server/server-context.cpp`, reaches the accept
-dispatch, and with `temp = 0` calls `common_sampler_sample_and_accept_n`; instrumentation there prints
-per drafted token.
-
-## Actual
-
-No instrumentation prints at all, including one placed **in the init path**:
+`vendor/flint/tools/server/CMakeLists.txt` compiles
 
 ```
-FG_SEQ_RM type=%d       (placed right after ctx_tgt_seq_rm_type = common_context_can_seq_rm(ctx_tgt))
-FG_ACCEPT_BRANCH ...    (placed at the top of the accept dispatch)
-FG_SP_SYNTH ...         (inside server_sample_and_accept_synth)
+${FRANKEN_REPO}/runtime/reconstructed/server-merge/server-context.cpp
 ```
 
-All three are silent, and the server serves requests normally (`"speculative.types":"none,ngram-simple"`,
-about 80 tok/s with a repetitive prompt).
+and **not** `vendor/flint/tools/server/server-context.cpp`. The vendor file is the upstream ancestor
+kept for reference; the four ported forks were merged into the file under `runtime/reconstructed/`
+and that merged file is what runs.
 
-## What was verified
+Every instrumentation I added over four iterations went into the vendor file, which the build never
+opens. That is why no print appeared, why `strings` found none of my format strings in the library,
+and why the behaviour kept contradicting the code I was reading - I was reading dead code.
 
-- the library is fresh and loaded from this build: `libllama-server-impl.so`, timestamp 04:01,
-  resolved by `ldd` to `builds/flint-acc/bin`;
-- the same library prints other diagnostics (`FG171_TOP_P goose calls=1`, `FG268P_CTX_CHECKPOINTS`,
-  `GOOSE_ALLOC`) on the same run, so the build is not stale and stderr is captured;
-- `FG_ACCEPT_DIAG=1` is exported in the server's environment;
-- four configurations tried, including f16 KV and `--ctx-checkpoints 32`; none print;
-- one earlier run did print `FG_SP_PREFIX goose calls=1`, from the same binary family, which is why the
-  path was believed reachable.
+## Proof
 
-## Hypotheses, unproven
+```
+strings libllama-server-impl.so | grep -c FG_ACCEPT_BRANCH   -> 0     (before, in vendor)
+                                after editing the merged file -> 1
+```
 
-1. The init function containing `ctx_tgt_seq_rm_type = common_context_can_seq_rm(ctx_tgt)` is not the
-   one executed at startup, so my model of the construction order is wrong.
-2. `spec` is created but the slot never reaches the verify block because `slot.spec_draft` stays empty,
-   and the branch I instrumented is inside a condition that returns earlier.
-3. The server binary found on `PATH` is not the one started (it is started by absolute path, so this is
-   unlikely but not excluded).
+and the run then printed, first time:
 
-## What I ask
+```
+FG_SEQ_RM type=2 (0=no, so speculative is disabled)
+FG_ACCEPT_BRANCH synth=0 replay=0 reject=1 draft=8
+```
 
-A pointer to where in `server-context.cpp` the speculative draft is filled and verified for a
-non-draft-model spec type, or to the log line that would show it. With that, the remaining P6-11 live
-numbers become a matter of one run each.
+## What the numbers say about the speculative path
 
-## What is not blocked
+- sequence removal is available (`type=2`), so speculation is enabled - my earlier hypothesis that it
+  was disabled was wrong;
+- the **rejection** branch runs with 8 draft tokens, because `use_spec_rejection()` is `temp > 0`;
+- `synth=0`: synthetic probabilities are empty for ngram drafters, which contradicts my earlier
+  conclusion that the synth branch was taken. That conclusion was drawn from the dead file.
 
-Everything gated synthetically: thirteen decisions with their own tests, `n_max` verified live on four
-configurations. This blocker affects only the live acceptance numbers.
+So the live acceptance decision is the **rejection** routine, and the prefix decision applies only to
+the `temp = 0` greedy route, which is a second, separate measurement.
+
+## Lesson, and it is the expensive one
+
+Three of the four iterations on this thread were spent reasoning about a file that is not compiled.
+The cheap check that would have caught it at once, and should come first every time:
+
+```
+cmake --build ... -v | grep server-context.cpp     # or find the .o and read its source path
+```
+
+The project already records "an empty result is not proof"; this adds its sibling: **reading a file is
+not reading the build**. A `strings` check for one of your own format strings in the produced artefact
+answers it in a second.

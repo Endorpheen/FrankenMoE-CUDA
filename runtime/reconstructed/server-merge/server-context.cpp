@@ -1520,6 +1520,9 @@ private:
         slots.clear();
 
         ctx_tgt_seq_rm_type = common_context_can_seq_rm(ctx_tgt);
+        if (getenv("FG_ACCEPT_DIAG")) {
+            fprintf(stderr, "FG_SEQ_RM type=%d (0=no, so speculative is disabled)\n", (int) ctx_tgt_seq_rm_type);
+        }
         if (ctx_tgt_seq_rm_type == COMMON_CONTEXT_SEQ_RM_TYPE_NO) {
             SRV_WRN("%s", "speculative decoding not supported by this context\n");
         }
@@ -4964,6 +4967,15 @@ private:
                 const bool use_rejection = slot.use_spec_rejection() && !slot.spec_draft_q.empty();
 
                 std::vector<llama_token> accepted;
+                {
+                    static std::atomic<int> fg_branch{0};
+                    static const bool fg_branch_diag = getenv("FG_ACCEPT_DIAG") != nullptr;
+                    if (fg_branch_diag && fg_branch.fetch_add(1) < 3) {
+                        fprintf(stderr, "FG_ACCEPT_BRANCH synth=%d replay=%d reject=%d draft=%zu\n",
+                                (int) synth_probs.size(), (int) slot.spec_is_replay,
+                                (int) slot.use_spec_rejection(), slot.spec_draft.size());
+                    }
+                }
                 if (!synth_probs.empty()) {
                     // synthetic acceptance replaces verification entirely, so it comes first
                     accepted = server_sample_and_accept_synth(
