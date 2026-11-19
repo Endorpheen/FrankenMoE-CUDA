@@ -726,8 +726,12 @@ llama_token common_sampler_sample(struct common_sampler * gsmpl, struct llama_co
     {
         const struct llama_vocab * fg_v = llama_model_get_vocab(llama_get_model(ctx));
         const int32_t fg_nv = (int32_t) llama_vocab_n_tokens(fg_v);
-        const bool fg_dev = llama_get_sampled_probs_ith(ctx, idx) != nullptr;
         if (id < 0 || id >= fg_nv) {
+            // The device question is asked only when the answer is about to be printed.
+            // llama_get_sampled_probs_ith calls ctx->synchronize() (llama-context.cpp:4382), so asking it
+            // per token stops the pipeline at the sampling boundary on every generated token. This block
+            // is a crash guard that fires almost never; it must not cost a synchronisation to stay armed.
+            const bool fg_dev = llama_get_sampled_probs_ith(ctx, idx) != nullptr;
             static std::atomic<long long> fg_bad{0};
             const long long fb = fg_bad.fetch_add(1) + 1;
             if (fb <= 5) {
