@@ -1548,8 +1548,12 @@ void llama_grammar_apply_impl(const struct llama_grammar & grammar, llama_token_
             break;
         }
     }
-    if (fg_grammar_reject_call != nullptr && fg_grammar_enabled() && !fg_has_partial &&
-            !candidates_grammar.empty()) {
+    // In verification mode the native result is what gets applied, so the port may run even
+    // when it would normally decline - that is how the declined calls get measured instead of
+    // staying invisible.
+    static const bool fg_verify_mode = getenv("GGML_GOOSE_GRAMMAR_VERIFY") != nullptr;
+    if (fg_grammar_reject_call != nullptr && fg_grammar_enabled() &&
+            (!fg_has_partial || fg_verify_mode) && !candidates_grammar.empty()) {
         fg_flat_rules & flat = fg_flatten(grammar.rules);
 
         const int64_t ncand = (int64_t) candidates_grammar.size();
@@ -1657,12 +1661,14 @@ void llama_grammar_apply_impl(const struct llama_grammar & grammar, llama_token_
                 // compare it candidate by candidate against the port. The native result is
                 // what is applied either way, so the mode can never change behaviour - it
                 // only counts disagreement on a real vocabulary.
-                static const bool fg_verify = getenv("GGML_GOOSE_GRAMMAR_VERIFY") != nullptr;
+                static const bool fg_verify = fg_verify_mode;
                 if (fg_verify) {
                     const auto native_rejects =
                         llama_grammar_reject_candidates(grammar.rules, grammar.stacks, candidates_grammar);
-                    static thread_local std::vector<int64_t> nat(candidates_grammar.size());
-                    std::fill(nat.begin(), nat.end(), 0);
+                    // resize, never construct once: the first call has one candidate and a
+                    // fixed-size buffer here overflowed on the 248k call (my defect, measured)
+                    static thread_local std::vector<int64_t> nat;
+                    nat.assign(candidates_grammar.size(), 0);
                     for (const auto & rej : native_rejects) {
                         // candidate index -> position in our arrays
                         for (int64_t i = 0; i < ncand; ++i) {

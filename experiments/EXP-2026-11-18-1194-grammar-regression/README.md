@@ -152,3 +152,42 @@ Reaching 248k candidates requires a chain-order change, and the earlier instrume
 So the honest state: the codepoint decision agrees with native on every candidate that has been
 compared (16 and 3 in two runs), and the full-set route is **not** measured. The stage stays
 opt-in, and the item stays open until the comparison covers both routes.
+
+## The full-set path is measured, and it found a real port defect
+
+With the verify mode allowed to run on declined calls, the 248k route is finally visible. First
+measurement, after fixing the verifier itself (it had a fixed-size buffer that overflowed on the
+large call - my defect, and it printed nonsense values until it was resized):
+
+```
+call=31 cand=1      cases=1984591 disagreements=6336
+call=32 cand=248071 cases=2232662 disagreements=7128
+```
+
+Direction, on every printed case: `goose_reject=0 native_reject=1` - the port **accepts what the
+native rejects**, which is the same over-acceptance that corrupted the constrained output.
+
+### The cause: an empty stack accepts every character
+
+`g_reject` initialised all candidates as accepted and then looped
+
+```
+while alive > 0 && depth > 0 && steps < 4096
+```
+
+With `depth == 0` the loop never executes, so every candidate stayed accepted. An empty stack
+means the grammar can only **complete**: it accepts no characters at all, and the end-of-sequence
+case is handled before this function. The port now rejects every candidate when the stack is
+empty.
+
+```
+call=31 cand=1      disagreements=1536
+call=32 cand=248071 disagreements=1728
+```
+
+7128 -> 1728, a factor of four, and the remaining cases are the multi-byte pieces that production
+declines outright through the partial guard, so they can no longer reach the output.
+
+This is exactly what the earlier end-to-end comparison could not see: a permissive grammar hides a
+wrong acceptance, and only a per-candidate comparison against `llama_grammar_reject_candidates`
+counts it.

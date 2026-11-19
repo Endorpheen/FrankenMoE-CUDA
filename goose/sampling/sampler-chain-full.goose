@@ -1458,6 +1458,17 @@ fn g_reject(etype: i64[:], eval: i64[:], roff: i64[:], rlen: i64[:],
         rej[i] = 0;
         i = i + 1;
     }
+    // An empty stack accepts no characters at all: it means the grammar can only complete, and
+    // the end of sequence is handled before this call. Without this, the loop below never runs
+    // and every candidate is accepted, which is how the port over-accepted by 0.32%.
+    if depth <= 0 {
+        i = 0;
+        while i < ncand {
+            rej[i] = 1;
+            i = i + 1;
+        }
+        return ncand;
+    }
     var alive: i64 = ncand;
     var steps: i64 = 0;
     while alive > 0 && depth > 0 && steps < 4096 {
