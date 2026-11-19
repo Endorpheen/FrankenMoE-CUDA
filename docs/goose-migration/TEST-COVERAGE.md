@@ -66,3 +66,21 @@ the defect returns.
 
 The first row is the one this section exists for: the per-module tests all passed while it happened, because the damage was
 on the boundary between the port and its host.
+
+## The encoder on the shipped path: default and equal
+
+`experiments/EXP-2026-11-19-1442-encoder-served-default/verify.sh` runs the shipped `llama_tokenize` twice - once with
+`FG_TK_BPE_SERVE=0` and once with nothing set - over the 23 prompts and requires the two answers to be identical, that
+`FG_TK_BPE_SERVED` appears (so the port really answered) and that the comparison reports zero disagreements:
+
+```
+encoder: served answer equals native on 23 prompts
+FG_TK_BPE_SERVED lines: 2
+FG_TK_BPE_COMPARE calls=1 disagreements=0
+FG_TK_BPE_REFUSED: none, the port answered every prompt
+PASS
+```
+
+Two defects came out of writing it. Serving had been nested inside `FG_TK_BPE_DIAG`, so the accepted improvement was off
+unless a diagnostic was enabled, and the check that the Goose path answered was only true under that flag. And the comparison
+block sat after the `return` that serving uses, so a diagnostic run reported no comparison at all.

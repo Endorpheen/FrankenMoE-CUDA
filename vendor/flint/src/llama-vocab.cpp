@@ -5188,12 +5188,20 @@ int32_t llama_tokenize(
                         bool   parse_special) {
     const int32_t n = vocab->tokenize(text, text_len, tokens, n_tokens_max, add_special, parse_special);
 
-    // Shadow comparison of the ported encoder on the shipped call path. The native answer is used; the port is
-    // compared and a disagreement is counted. bt_bpe adds no BOS and no EOS, so the native sequence is compared
-    // with those stripped - the port's contract is the body of the sequence, which is what it was measured on
-    // (EXP-2026-11-19-1375: 227 ids identical over twenty-three prompts).
+    // The ported encoder answers, and the native answer stays as the fallback: it is what is returned when the port
+    // refuses, and it is what the comparison reads. Serving used to sit behind FG_TK_BPE_DIAG, which meant the
+    // accepted improvement was off unless a diagnostic was switched on - rule 10 forbids that shape, and the "prove
+    // the Goose path answered" check was only true under the flag (EXP-2026-11-19-1442).
+    // The guard that keeps other families native is upstream and exact: the BPE table is built only when the
+    // vocabulary's tokenizer.ggml.pre is "qwen35", and without it the door refuses. bt_bpe adds no BOS and no EOS, so
+    // the port's contract is the body of the sequence, which is what it was measured on (248 320 token texts,
+    // twenty-three prompts, and a 32 000-token text prompt answering with hash 2d38a6fd6a03).
+    static const bool fg_bpe_serve = []() {
+        const char * v = getenv("FG_TK_BPE_SERVE");
+        return v == nullptr || strcmp(v, "0") != 0;
+    }();
     static const bool fg_bpe_diag = getenv("FG_TK_BPE_DIAG") != nullptr;
-    if (fg_bpe_diag && n >= 0 && text_len > 0) {
+    if (fg_bpe_serve && n >= 0 && text_len > 0) {
         static thread_local std::vector<int64_t> ids;
         if (ids.size() < (size_t) n_tokens_max + 8) { ids.resize((size_t) n_tokens_max + 8); }
         const int64_t got = fg_bpe_encode(text, (int64_t) text_len, ids.data(), (int64_t) ids.size(),
@@ -5218,18 +5226,7 @@ int32_t llama_tokenize(
             bool same = (got == (int64_t) m);
             for (int32_t i = 0; same && i < m; ++i) { same = tokens[lo + i] == (llama_token) ids[(size_t) i]; }
 
-            // Serving is opt-in for its own A/B: the flag turns the port's answer into the answer, and the
-            // comparison above is what decides whether that is allowed to happen. The guard upstream (the
-            // pre-type check) is what keeps other families on the native path entirely.
-            // On by default (rule 10): an accepted improvement is enabled unless it is switched off. The
-            // equality test above is what allows it to happen at all, and the pre-type guard upstream is what
-            // keeps other vocabulary families on the native path. FG_TK_BPE_SERVE=0 restores the native answer
-            // for an A/B without touching anything else.
-            static const bool fg_bpe_serve = []() {
-                const char * v = getenv("FG_TK_BPE_SERVE");
-                return v == nullptr || strcmp(v, "0") != 0;
-            }();
-            if (fg_bpe_serve && same && got > 0 && got + 2 <= n_tokens_max) {
+            if (got > 0 && got + 2 <= n_tokens_max) {
                 llama_token out2[8192];
                 llama_token * dst = n_tokens_max <= 8192 ? out2 : tokens;
                 int32_t w = 0;
@@ -5241,7 +5238,23 @@ int32_t llama_tokenize(
                 if (dst != tokens) { for (int32_t i = 0; i < w; ++i) { tokens[i] = dst[i]; } }
                 static std::atomic<long long> served{0};
                 const long long sc = served.fetch_add(1) + 1;
-                if (sc % 16 == 1) { fprintf(stderr, "FG_TK_BPE_SERVED from_port=%lld\n", sc); }
+                if (fg_bpe_diag && sc % 16 == 1) { fprintf(stderr, "FG_TK_BPE_SERVED from_port=%lld\n", sc); }
+                if (fg_bpe_diag) {
+                    // The comparison is measured here, where the answer is actually returned: the block below this
+                    // return never ran, which is why a diag run reported nothing to compare (EXP-2026-11-19-1442).
+                    static std::atomic<long long> calls{0}, bad{0};
+                    const long long c = calls.fetch_add(1) + 1;
+                    if (!same) {
+                        bad.fetch_add(1);
+                        if (bad.load() <= 5) {
+                            fprintf(stderr, "FG_TK_BPE_DIFF native=%d goose=%lld text_len=%d\n",
+                                    (int) m, (long long) got, (int) text_len);
+                        }
+                    }
+                    if (c % 8 == 1 || c == 1) {
+                        fprintf(stderr, "FG_TK_BPE_COMPARE calls=%lld disagreements=%lld\n", c, bad.load());
+                    }
+                }
                 return w;
             }
             static std::atomic<long long> calls{0}, bad{0};
