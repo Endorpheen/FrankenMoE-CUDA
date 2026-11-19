@@ -5,7 +5,7 @@
 #include <random>
 #include <vector>
 #include <algorithm>
-extern "C" int64_t fg_sampler_adaptive_p_call(float *, float *, int64_t *, int64_t, float, float, float);
+extern "C" int64_t fg_sampler_adaptive_p_call(float *, float *, int64_t *, int64_t, float, float, float, int64_t);
 static constexpr float PEAK = 5.0f, SHARP = 10.0f, INVW = 1.0f / 0.3f;
 int main() {
     std::mt19937 rng(2026);
@@ -24,7 +24,7 @@ int main() {
         float ws = u(rng) * 3.0f;
         float tw = (rng() % 4 == 0) ? 0.0f : u(rng) * 4.0f;
         std::vector<float> pl = lv, pp = p;
-        int64_t rc = fg_sampler_adaptive_p_call(pl.data(), pp.data(), id.data(), n, target, ws, tw);
+        int64_t rc = fg_sampler_adaptive_p_call(pl.data(), pp.data(), id.data(), n, target, ws, tw, 1);
         if (rc != n) { fails++; if (fails <= 3) printf("RET MISMATCH n=%d rc=%lld\n", n, (long long) rc); continue; }
         float t = std::min(1.0f, std::max(0.0f, target));
         float adapted = (tw == 0.0f) ? t : 2.0f * t - (ws / tw);

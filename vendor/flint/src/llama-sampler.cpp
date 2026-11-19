@@ -127,7 +127,7 @@ static bool fg_goose_dry_enabled() {
 
 extern "C" int64_t fg_sampler_adaptive_p_call(float * lv, float * p, int64_t * id, int64_t n,
                                               float target, float weighted_sum,
-                                              float total_weight) __attribute__((weak));
+                                              float total_weight, int64_t sorted) __attribute__((weak));
 static std::atomic<unsigned long long> g_goose_adaptive_calls{0};
 
 extern "C" int64_t fg_sampler_mirostat_call(float * p, int64_t n, float mu, int64_t m,
@@ -4252,7 +4252,8 @@ static void llama_sampler_adaptive_p_apply(struct llama_sampler * smpl, llama_to
         }
         const int64_t n = fg_sampler_adaptive_p_call(lv.data(), pp.data(), ids.data(),
                                                     (int64_t) cur_p->size, ctx->target,
-                                                    ctx->weighted_sum, ctx->total_weight);
+                                                    ctx->weighted_sum, ctx->total_weight,
+                                                    cur_p->sorted ? 1 : 0);
         fg_report_stage("adaptive_p", fg_ns_top_p, fg_now_ns() - t0);
         if (n == (int64_t) cur_p->size) {
             for (size_t i = 0; i < cur_p->size; ++i) {
