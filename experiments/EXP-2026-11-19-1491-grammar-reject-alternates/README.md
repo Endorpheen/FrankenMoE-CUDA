@@ -42,6 +42,31 @@ rule reference. The two earlier attempts fixed the class branch; the defect was 
 - the door counts `-2` on its own (`FG_GRAMMAR_DOOR ... multi=N`), so the cost of those declines
   is visible instead of folded into the general decline counter.
 
+## The multi-alternate descent
+
+Declining the alternation was correct but useless on a JSON grammar, where `space ::= " "?` is
+reached on most calls. The rows are now really evaluated, which is the native recursion written
+out: each alternate gets the continuation below it, the candidate cursors are restored from a
+snapshot taken before the first row, and a candidate is rejected only when **every** row rejects
+it. Three candidate-sized regions and one stack region are used per level, taken from a pool the
+caller passes; past the pool the call declines with `-2` and the native matcher decides.
+
+The pool is grown, never refilled: every region is written before it is read, so zeroing megabytes
+of scratch on each token would be pure cost. Four levels is the depth a real grammar reaches
+inside one piece. At the widest call seen so far (248k candidates) the pool is 23.8 MiB of
+thread-local scratch, ~0.12% of the process RSS at the accepted Apex profile.
+
+## Two further defects the gate found while it was being written
+
+- the intersection was first accumulated by seeding each row with the current rejects, so a
+  rejecting row kept a candidate rejected even when a later row accepted it - `cand=0` of the
+  EXP-1471 shape failed. The pre-expansion rejects are now a separate mask and the accumulator
+  starts at "rejected", which is the native intersection.
+- `LLAMA_GRETYPE_ALT` ends a sequence exactly as `LLAMA_GRETYPE_END` does
+  (`llama_grammar_is_end_of_sequence`), and seven places in the port tested only for `END`. A
+  descent that landed on `ALT` fell into the "unsupported" branch and then rejected every
+  candidate with codepoints left - `'{' ' ' '"'` failed against the oracle.
+
 ## Gate
 
 `bash tests/build.sh` (gate at `-O1`, generated `gen.o` cached by source SHA + optimisation +
@@ -49,15 +74,21 @@ compiler):
 
 ```
 goose/sampling/sampler-chain-full.goose: typechecked ok
-gate: cases=2 fails=0
+gate: cases=7 fails=0
 gate exit=0
 ```
 
-- `single-alternate`: `'{' RULE_REF(space) '"'` with `space ::= " "`, five candidate pieces -
-  the port now agrees with the oracle on every one. Before the change the port rejected
-  `'{' '"'`, which the oracle accepts.
-- `multi-alternate`: the EXP-1471 shape with `space ::= " " | <empty>` - the port declines
-  (`-2`) and the native matcher decides. No wrong answer, but also no port decision yet.
+Seven cases against the compiled-in oracle:
+
+| case | shape | expected |
+|------|-------|----------|
+| `single-alternate` | `'{' REF(space) '"'`, `space ::= " "` | agrees, 5 pieces |
+| `multi-alternate-empty` | the EXP-1471 shape, `space ::= " " \| <empty>` | agrees, 5 pieces |
+| `two-alternates` | `space ::= "a" \| "b"` | agrees, 4 pieces |
+| `nested-reference` | `REF(REF(" " \| <empty>))` | agrees, 4 pieces |
+| `char-not` | `[^a]` | agrees, 4 pieces |
+| `partial-lead` | incomplete UTF-8 lead byte next to `'a'` | agrees, 2 pieces |
+| `deep-nesting` | five nested alternations, deeper than the pool | declines `-2` |
 
 ## Not measured here
 
@@ -67,7 +98,7 @@ permission.
 
 ## What is still open
 
-The multi-alternate case must be decided by the port, not declined: with `space ::= " "?` in a
-JSON grammar that state is reached on most calls, so declining it would leave the door deciding
-almost nothing. The next step is the row-by-row descent with a per-row candidate set and cursor
-snapshot, in Goose, with `-2` kept only for the case where those buffers run out.
+`deep-nesting` reaches the decline path deliberately; whether the `steps < 4096` budget or the
+level bound produced that `-2` is not distinguished by the fixture, and the card says so rather
+than guessing. Nothing else in the reject port is known to disagree with the oracle on these
+shapes.

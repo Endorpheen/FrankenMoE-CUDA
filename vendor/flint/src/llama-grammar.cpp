@@ -1375,7 +1375,8 @@ extern "C" int64_t fg_grammar_reject_call(
         int64_t v_ncand,
         fg_slice_rec s_wp, fg_slice_rec s_wpd, fg_slice_rec s_stacks, fg_slice_rec s_stackd, fg_slice_rec s_scratch,
         fg_slice_rec s_tmp_rej, fg_slice_rec s_tmp_cur, fg_slice_rec s_rowbuf, fg_slice_rec s_rej,
-        int64_t v_maxs, int64_t v_maxd, int64_t v_maxcp) __attribute__((weak));
+        int64_t v_maxs, int64_t v_maxd, int64_t v_maxcp,
+        fg_slice_rec s_pool, int64_t v_nlevels) __attribute__((weak));
 
 extern "C" int64_t fg_grammar_first_set_call(fg_slice_rec s_etype, fg_slice_rec s_eval,
                                             fg_slice_rec s_stacks, fg_slice_rec s_stackd,
@@ -1685,6 +1686,21 @@ void llama_grammar_apply_impl(const struct llama_grammar & grammar, llama_token_
             fg_slice_rec s_row  { rowbuf.data(), FG_MAXD };
             fg_slice_rec s_rej  { rej.data(), ncand };
 
+            // Per-row descending levels for a rule reference with several alternates. Each
+            // level needs three candidate-sized regions (cursor snapshot, the pre-expansion
+            // rejects, the row rejects) and one stack region. Four levels is the depth a
+            // real grammar reaches inside one piece; beyond it the port declines and the
+            // native matcher decides, so the bound can never change an answer.
+            static constexpr int64_t FG_LEVELS = 4;
+            static thread_local std::vector<int64_t> pool;
+            // Grown, never refilled: every region is written before it is read, so zeroing
+            // megabytes of scratch on each token would be pure cost.
+            const int64_t fg_pool_need = FG_LEVELS * (3 * ncand + FG_MAXD);
+            if ((int64_t) pool.size() < fg_pool_need) {
+                pool.resize((size_t) fg_pool_need);
+            }
+            fg_slice_rec s_pool { pool.data(), fg_pool_need };
+
             (void) out; (void) outd;
 
             const auto fg_t0 = std::chrono::steady_clock::now();
@@ -1699,7 +1715,7 @@ void llama_grammar_apply_impl(const struct llama_grammar & grammar, llama_token_
                     s_et, s_ev, s_roff, s_rlen, s_one, stdk[sIdx],
                     s_cp, s_cpl, s_pv, s_pn, s_cid, ncand,
                     s_wp, s_wpd, s_stk, s_std, s_scr, s_tr, s_tc, s_row, s_rej,
-                    FG_MAXS, FG_MAXD, maxcp_used);
+                    FG_MAXS, FG_MAXD, maxcp_used, s_pool, FG_LEVELS);
                 for (int64_t i = 0; i < ncand; ++i) {
                     rej_final[i] = rej_final[i] && rej[i];
                 }

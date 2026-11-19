@@ -1409,12 +1409,12 @@ fn g_advance(etype: i64[:], eval: i64[:], roff: i64[:], rlen: i64[:],
                 d = d + 1;
             }
             // the continuation of the rule reference, unless it ends the sequence
-            if etype[pos + 1] != 0 {
+            if etype[pos + 1] != 0 && etype[pos + 1] != 1 {
                 wp[nwork * max_depth + d] = pos + 1;
                 d = d + 1;
             }
             // the alternate itself, unless it is empty
-            if etype[alt_start] != 0 {
+            if etype[alt_start] != 0 && etype[alt_start] != 1 {
                 wp[nwork * max_depth + d] = alt_start;
                 d = d + 1;
             }
@@ -1448,11 +1448,12 @@ fn g_advance(etype: i64[:], eval: i64[:], roff: i64[:], rlen: i64[:],
 // rej[i] = 1 when candidate i is rejected. The stack transition after a class is
 // candidate independent, so the descent is iterative instead of recursive.
 // cand_cp is ncand rows of maxcp codepoints; curs starts at 0 for every candidate
-fn g_reject(etype: i64[:], eval: i64[:], roff: i64[:], rlen: i64[:],
+recursive fn g_reject(etype: i64[:], eval: i64[:], roff: i64[:], rlen: i64[:],
             st: i64[:], std_in: i64,
             cand_cp: i64[:], cp_len: i64[:], curs: i64[:], rej: i64[:], ncand: i64,
             pval: i64[:], pnr: i64[:], cand_id: i64[:],
-            scratch: i64[:], maxd: i64, maxcp: i64) -> i64 {
+            scratch: i64[:], maxd: i64, maxcp: i64,
+            pool: i64[:], nlevels: i64, level: i64) -> i64 {
     var depth: i64 = std_in;
     var i: i64 = 0;
     // copy the working stack into scratch
@@ -1465,16 +1466,21 @@ fn g_reject(etype: i64[:], eval: i64[:], roff: i64[:], rlen: i64[:],
         rej[i] = 0;
         i = i + 1;
     }
-    // An empty stack accepts no characters at all: it means the grammar can only complete, and
-    // the end of sequence is handled before this call. Without this, the loop below never runs
-    // and every candidate is accepted, which is how the port over-accepted by 0.32%.
+    // An empty stack accepts no characters, and the native rule is precise about it: a candidate
+    // is rejected only when it still carries codepoints or an incomplete UTF-8 sequence. An
+    // earlier form rejected every candidate here, which is wrong for a row that is empty because
+    // its sequence already ended (an empty alternate) and right for a piece with content left.
     if depth <= 0 {
+        var nrej0: i64 = 0;
         i = 0;
         while i < ncand {
-            rej[i] = 1;
+            if curs[i] < cp_len[i] || pnr[i] > 0 {
+                rej[i] = 1;
+                nrej0 = nrej0 + 1;
+            }
             i = i + 1;
         }
-        return ncand;
+        return nrej0;
     }
     var alive: i64 = ncand;
     var steps: i64 = 0;
@@ -1517,7 +1523,8 @@ fn g_reject(etype: i64[:], eval: i64[:], roff: i64[:], rlen: i64[:],
                 i = i + 1;
             }
             let after2: i64 = match_end(etype, eval, pos);
-            if etype[after2] == 0 {
+            // ALT ends a sequence exactly as END does (llama_grammar_is_end_of_sequence)
+            if etype[after2] == 0 || etype[after2] == 1 {
                 depth = next_depth;
             } else {
                 scratch[next_depth] = after2;
@@ -1554,18 +1561,92 @@ fn g_reject(etype: i64[:], eval: i64[:], roff: i64[:], rlen: i64[:],
                 }
             }
             if altn > 1 {
-                // Several alternates mean several candidate sets to intersect; that needs a
-                // per-row cursor snapshot this call does not carry. Decline instead of
-                // answering with one alternate, so the native matcher decides -2.
-                return -2;
+                // Several alternates: the native recursion runs the same candidates against the
+                // stack of each alternate and keeps a candidate only when every row rejects it.
+                // Each row gets its own cursor snapshot and reject set in the pool, so the rows
+                // do not see each other's consumption. Beyond the pool the call is declined.
+                if level + 1 >= nlevels {
+                    return -2;
+                }
+                let snap: i64 = level * (3 * ncand + maxd);
+                let pre: i64 = snap + ncand;
+                let rrow: i64 = pre + ncand;
+                let strow: i64 = rrow + ncand;
+                // pre holds what was already rejected by the classes above; acc (in rej) starts at
+                // "rejected" and is cleared by any row that accepts, which is the native
+                // intersection. Seeding the rows with pre instead would let a rejecting row keep
+                // a candidate rejected even when a later row accepts it.
+                i = 0;
+                while i < ncand {
+                    pool[snap + i] = curs[i];
+                    pool[pre + i] = rej[i];
+                    rej[i] = 1;
+                    i = i + 1;
+                }
+                var alt2: i64 = rstart;
+                var more: bool = true;
+                while more && steps < 4096 {
+                    steps = steps + 1;
+                    // the row for this alternate: the continuation below it, as advance_stack
+                    var d3: i64 = depth - 1;
+                    if etype[pos + 1] != 0 && etype[pos + 1] != 1 && d3 < maxd {
+                        scratch[d3] = pos + 1;
+                        d3 = d3 + 1;
+                    }
+                    if etype[alt2] != 0 && etype[alt2] != 1 && d3 < maxd {
+                        scratch[d3] = alt2;
+                        d3 = d3 + 1;
+                    }
+                    i = 0;
+                    while i < ncand {
+                        curs[i] = pool[snap + i];
+                        i = i + 1;
+                    }
+                    let rr = g_reject(etype, eval, roff, rlen, scratch, d3,
+                                      cand_cp, cp_len, curs, pool[rrow..rrow + ncand], ncand,
+                                      pval, pnr, cand_id, pool[strow..strow + maxd], maxd, maxcp,
+                                      pool, nlevels, level + 1);
+                    if rr < 0 {
+                        return rr;
+                    }
+                    // intersection: a candidate stays accepted only if this row accepts it too
+                    i = 0;
+                    while i < ncand {
+                        if pool[rrow + i] == 0 {
+                            rej[i] = 0;
+                        }
+                        i = i + 1;
+                    }
+                    var j2: i64 = alt2;
+                    while etype[j2] != 0 && etype[j2] != 1 {
+                        j2 = j2 + 1;
+                    }
+                    if etype[j2] == 1 {
+                        alt2 = j2 + 1;
+                    } else {
+                        more = false;
+                    }
+                }
+                var alive2: i64 = 0;
+                i = 0;
+                while i < ncand {
+                    if pool[pre + i] != 0 {
+                        rej[i] = 1;
+                    }
+                    if rej[i] == 0 {
+                        alive2 = alive2 + 1;
+                    }
+                    i = i + 1;
+                }
+                return alive2;
             }
             // one alternate: the continuation goes below it, as advance_stack does
             var d2: i64 = depth - 1;
-            if etype[pos + 1] != 0 && d2 < maxd {
+            if etype[pos + 1] != 0 && etype[pos + 1] != 1 && d2 < maxd {
                 scratch[d2] = pos + 1;
                 d2 = d2 + 1;
             }
-            if etype[rstart] != 0 && d2 < maxd {
+            if etype[rstart] != 0 && etype[rstart] != 1 && d2 < maxd {
                 scratch[d2] = rstart;
                 d2 = d2 + 1;
             }
@@ -1643,7 +1724,8 @@ fn g_reject_multi(etype: i64[:], eval: i64[:], roff: i64[:], rlen: i64[:],
                   cand_cp: i64[:], cp_len: i64[:], pval: i64[:], pnr: i64[:], cand_id: i64[:],
                   rej: i64[:], scratch: i64[:], tmp_rej: i64[:], tmp_cur: i64[:],
                   rowbuf: i64[:],
-                  ncand: i64, maxd: i64, maxcp: i64) -> i64 {
+                  ncand: i64, maxd: i64, maxcp: i64,
+                  pool: i64[:], nlevels: i64) -> i64 {
     var i: i64 = 0;
     while i < ncand {
         rej[i] = 1;
@@ -1666,7 +1748,8 @@ fn g_reject_multi(etype: i64[:], eval: i64[:], roff: i64[:], rlen: i64[:],
         let r_one = g_reject(etype, eval, roff, rlen,
                              rowbuf, stackd[s],
                              cand_cp, cp_len, tmp_cur, tmp_rej, ncand,
-                             pval, pnr, cand_id, scratch, maxd, maxcp);
+                             pval, pnr, cand_id, scratch, maxd, maxcp,
+                             pool, nlevels, 0);
         if r_one < 0 {
             // the port declined this call; the caller must let the native matcher decide
             return r_one;
@@ -1697,14 +1780,15 @@ fn g_grammar_reject(etype: i64[:], eval: i64[:], roff: i64[:], rlen: i64[:],
                     cand_id: i64[:], ncand: i64,
                     wp: i64[:], wpd: i64[:], stacks: i64[:], stackd: i64[:],
                     scratch: i64[:], tmp_rej: i64[:], tmp_cur: i64[:], rowbuf: i64[:],
-                    rej: i64[:], maxs: i64, maxd: i64, maxcp: i64) -> i64 {
+                    rej: i64[:], maxs: i64, maxd: i64, maxcp: i64,
+                    pool: i64[:], nlevels: i64) -> i64 {
     let n = g_advance(etype, eval, roff, rlen, seed, seedd, wp, wpd, stacks, stackd, 0, maxs, maxd);
     if n <= 0 {
         return -1;
     }
     return g_reject_multi(etype, eval, roff, rlen, stacks, stackd, n,
                           cand_cp, cp_len, pval, pnr, cand_id, rej, scratch, tmp_rej, tmp_cur,
-                          rowbuf, ncand, maxd, maxcp);
+                          rowbuf, ncand, maxd, maxcp, pool, nlevels);
 }
 
 
@@ -1718,14 +1802,14 @@ export fn fg_grammar_reject(etype: i64[:], eval: i64[:], roff: i64[:], rlen: i64
                      wp: i64[:], wpd: i64[:], stacks: i64[:], stackd: i64[:],
                      scratch: i64[:], tmp_rej: i64[:], tmp_cur: i64[:], rowbuf: i64[:],
                      rej: i64[:], maxs: i64, maxd: i64, maxcp: i64,
-                     marker: i64) -> i64 {
+                     pool: i64[:], nlevels: i64, marker: i64) -> i64 {
     if marker != 180 {
         return -1;
     }
     return g_grammar_reject(etype, eval, roff, rlen, seed, seedd,
                             cand_cp, cp_len, pval, pnr, cand_id, ncand,
                             wp, wpd, stacks, stackd, scratch, tmp_rej, tmp_cur, rowbuf,
-                            rej, maxs, maxd, maxcp);
+                            rej, maxs, maxd, maxcp, pool, nlevels);
 }
 
 // Allowed first codepoints at the current stack tops, as inclusive ranges.
