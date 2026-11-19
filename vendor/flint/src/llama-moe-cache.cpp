@@ -141,6 +141,28 @@ struct moe_cache_slru {
         sn.scal[0] = (int64_t) seen_gen;
     }
 
+    int64_t run_door_raw(std::vector<int32_t> & key_of_, std::vector<int32_t> & prev_, std::vector<int32_t> & next_,
+                         std::vector<int32_t> & prot_, int32_t * head_, int32_t * tail_,
+                         std::vector<int64_t> & seen_, int32_t * slots_,
+                         std::vector<int64_t> & ids_, size_t n_ids_, int32_t il_, int32_t n_expert_, int32_t n_slots_,
+                         std::vector<int64_t> & scal_, std::vector<int32_t> & uniq_,
+                         std::vector<int32_t> & fe_, std::vector<int32_t> & fs_, std::vector<int32_t> & ev_) const {
+        static fg_slru_fn fn = []() -> fg_slru_fn {
+            void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+            return h ? reinterpret_cast<fg_slru_fn>(dlsym(h, "slru_plan")) : nullptr;
+        }();
+        if (!fn) { return -1; }
+        fg_sl_i64 s_seen{ seen_.data(), (int64_t) seen_.size() };
+        fg_sl_i64 s_scal{ scal_.data(), (int64_t) scal_.size() };
+        return fn((uint64_t) (uintptr_t) key_of_.data(), (uint64_t) (uintptr_t) prev_.data(),
+                  (uint64_t) (uintptr_t) next_.data(), (uint64_t) (uintptr_t) prot_.data(),
+                  (uint64_t) (uintptr_t) head_, (uint64_t) (uintptr_t) tail_, s_seen,
+                  (uint64_t) (uintptr_t) slots_, (uint64_t) (uintptr_t) ids_.data(),
+                  (int64_t) n_ids_, (int64_t) il_, (int64_t) n_expert_, (int64_t) n_slots_, s_scal,
+                  (uint64_t) (uintptr_t) uniq_.data(), (uint64_t) (uintptr_t) fe_.data(),
+                  (uint64_t) (uintptr_t) fs_.data(), (uint64_t) (uintptr_t) ev_.data());
+    }
+
     int64_t run_door(snapshot & sn, int32_t il, size_t n_ids) const {
         static fg_slru_fn fn = []() -> fg_slru_fn {
             void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
@@ -168,6 +190,12 @@ struct moe_cache_slru {
         const bool fg_diag = getenv("FG_SLRU_DIAG") != nullptr;
         snapshot fg_sn;
         if (fg_diag) { take(fg_sn, il, ids, n_ids); }
+
+        // Serving the ported policy was attempted here (EXP-2026-11-19-1421) and is not in the tree: the door updates
+        // key_of, the LRU lists and the layer's own slot map, but the *other* layers' slot maps have to be cleared for
+        // evicted keys, and the native order clears each victim before the new owner is written. Doing that afterwards
+        // from the evicted list crashed the CUDA backend on the first run. The fix belongs inside the door, which does
+        // not know the per-layer maps; that is the representation change EXP-1420 named as route 1.
 
         if (++seen_gen == 0) {
             std::fill(seen.begin(), seen.end(), 0);
