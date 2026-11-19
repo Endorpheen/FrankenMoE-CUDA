@@ -271,7 +271,8 @@ static bool fg_bpe_init(int64_t tok_key, int64_t mrg_key, int64_t n_tok, int64_t
 }
 
 // Encodes through the port. Returns the id count, or -1 when the engine cannot answer.
-extern "C" int64_t fg_bpe_encode(const char * text, int64_t n, int64_t * ids, int64_t cap) {
+extern "C" int64_t fg_bpe_encode(const char * text, int64_t n, int64_t * ids, int64_t cap,
+                                int64_t parse_special) {
     const fg_bt_bpe_fn fn = fg_bpe_encode_resolve();
     if (!fn || !fg_bpe.ready || !fg_port.ready || n < 0 || n > (int64_t) 1 << 24) { return -1; }
     const int64_t m = n > 0 ? n : 1;
@@ -294,7 +295,7 @@ extern "C" int64_t fg_bpe_encode(const char * text, int64_t n, int64_t * ids, in
     static std::vector<int64_t> hits;      // (start, end, id) triples
     static std::vector<int64_t> plain_ids; // ids of one plain segment
     int64_t n_hits = 0;
-    if (hits_fn) {
+    if (hits_fn && parse_special) {
         if (hits.size() < (size_t) (3 * ((size_t) n + 1))) { hits.assign(3 * ((size_t) n + 1), 0); }
         n_hits = hits_fn(fg_sl_u8{ (uint8_t *) text, n },
                          fg_sl_u8{ fg_port.data.data(), (int64_t) fg_port.data.size() },

@@ -3885,7 +3885,7 @@ void llama_vocab::impl::tokenizer_st_partition(std::forward_list<fragment_buffer
 // stack overflowed (EXP-2026-11-19-1316).
 // Defined by the model loader with C linkage; a C++ declaration would mangle the name and the dynamic linker
 // would report it missing at the first call (the gate names it: _Z13fg_bpe_encodePKclPll).
-extern "C" int64_t fg_bpe_encode(const char * text, int64_t n, int64_t * ids, int64_t cap);
+extern "C" int64_t fg_bpe_encode(const char * text, int64_t n, int64_t * ids, int64_t cap, int64_t parse_special);
 
 namespace fg_detok_check {
 
@@ -5196,7 +5196,8 @@ int32_t llama_tokenize(
     if (fg_bpe_diag && n >= 0 && text_len > 0) {
         static thread_local std::vector<int64_t> ids;
         if (ids.size() < (size_t) n_tokens_max + 8) { ids.resize((size_t) n_tokens_max + 8); }
-        const int64_t got = fg_bpe_encode(text, (int64_t) text_len, ids.data(), (int64_t) ids.size());
+        const int64_t got = fg_bpe_encode(text, (int64_t) text_len, ids.data(), (int64_t) ids.size(),
+                                          parse_special ? 1 : 0);
         if (got <= 0) {
             static std::atomic<long long> refused{0};
             if (refused.fetch_add(1) < 5) {
@@ -5210,6 +5211,26 @@ int32_t llama_tokenize(
             const int32_t m = hi - lo;
             bool same = (got == (int64_t) m);
             for (int32_t i = 0; same && i < m; ++i) { same = tokens[lo + i] == (llama_token) ids[(size_t) i]; }
+
+            // Serving is opt-in for its own A/B: the flag turns the port's answer into the answer, and the
+            // comparison above is what decides whether that is allowed to happen. The guard upstream (the
+            // pre-type check) is what keeps other families on the native path entirely.
+            static const bool fg_bpe_serve = getenv("FG_TK_BPE_SERVE") != nullptr;
+            if (fg_bpe_serve && same && got > 0 && got + 2 <= n_tokens_max) {
+                llama_token out2[8192];
+                llama_token * dst = n_tokens_max <= 8192 ? out2 : tokens;
+                int32_t w = 0;
+                const bool bos_in_native = (n > lo && tokens[0] == vocab->token_bos());
+                if (bos_in_native) { dst[w++] = vocab->token_bos(); }
+                for (int64_t i = 0; i < got; ++i) { dst[w++] = (llama_token) ids[(size_t) i]; }
+                const bool eos_in_native = (hi < n && tokens[n - 1] == vocab->token_eos());
+                if (eos_in_native) { dst[w++] = vocab->token_eos(); }
+                if (dst != tokens) { for (int32_t i = 0; i < w; ++i) { tokens[i] = dst[i]; } }
+                static std::atomic<long long> served{0};
+                const long long sc = served.fetch_add(1) + 1;
+                if (sc % 16 == 1) { fprintf(stderr, "FG_TK_BPE_SERVED from_port=%lld\n", sc); }
+                return w;
+            }
             static std::atomic<long long> calls{0}, bad{0};
             const long long c = calls.fetch_add(1) + 1;
             if (!same) {
