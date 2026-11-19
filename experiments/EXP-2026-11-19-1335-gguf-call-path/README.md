@@ -28,6 +28,21 @@ prefill 2697.6 / 2948.3 / 2958.5
 hash    c2ff42cc1219
 ```
 
+## The comparison refuses the load, not just prints
+
+A disagreement between the ported and native readings of the same file is never acceptable, so with the flag set the
+loader now throws instead of continuing:
+
+```
+FG_GGUF_PARSE nk=52 nt=753 align=32 off=10990944 disagreements=0   (the load proceeds)
+```
+
+That turns the diagnostic into something a run can depend on: a future change that breaks the port cannot reach
+generation with the flag on, it fails at load.
+
+`FG_GGUF_PARSE` is now one of the accepted components the pre-flight check looks for in the shipped library, so the
+call path itself is a checked property rather than a claim in a document.
+
 ## What this is and is not
 
 Is: the first call path from the shipped runtime to the GGUF port, which is what the coverage report was asking for.

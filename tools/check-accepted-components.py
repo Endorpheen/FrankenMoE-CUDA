@@ -37,6 +37,8 @@ COMPONENTS = [
      "DRY steps 2-4 through the shipped door"),
     ("goose-bulk-bridge", "nm", "fg161_bulk",
      "the accepted bulk bridge the ggml base library links against"),
+    ("gguf-reader-call-path", "strings", "FG_GGUF_PARSE",
+     "the loader calls the ported reader and refuses the load on disagreement (FG_GGUF_DIAG)"),
     ("expert-cache", "strings", "moe-cache",
      "the SLRU expert cache the profile sets to 4992 MiB"),
 ]
