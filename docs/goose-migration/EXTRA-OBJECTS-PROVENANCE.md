@@ -36,6 +36,25 @@ Both are build products rather than sources, which is why a text search for them
 repository. They are reproducible once the exact producer is named: the mmap-bookkeeping module for the
 first, whichever module generates the `gs_*` shim for the second.
 
+## Resolved after the first pass
+
+**`slru-runtime.o` is the Goose C runtime itself, not a module.** The generated C says so:
+`GS_API ... gs_abort(int err, const char *file, int line) {` is a *definition* in
+`builds/flint-acc/src/goose-sampler-chain/sampler_chain.c:1230`, and the file's own header explains that
+in standalone mode "one translation unit holds it all", while in separate mode `goose --emit-runtime`
+writes the runtime out as a C file of its own, "compiled once and linked with every program". So the
+object is the compiler's runtime, its source is the compiler's output, and the pinned compiler is
+`2026.3-string` with `RUNTIME_VERSION 1e714e6146bc`. Producer named, version pinned - it is a
+dependency on the compiler, not an unrecorded artefact.
+
+**`fx286pic.o` is the one object that cannot be reproduced today.** `fg286m_range_update` is in
+`experiments/EXP-2026-11-12-286-goose-mmap-bookkeeping/source/mmap_bookkeeping-functions.c:184`, but
+`fg286_fx_main` appears in no `.c`, `.cpp`, `.goose`, `.py` or `.json` in this repository or in the
+external snapshot. What EXP286 does record is the compiler that produced its binaries:
+`/home/end0/AI/Fried-Goose/.cache/compiler-exp-handoff/runtime-candidate-v61/stage3`, sha256
+`b87af17a...`, which is **not** the pinned `2026.3-string`. So the object is a PIC build of a source
+that was never committed, made by a compiler build that is not the one this project pins.
+
 ## The rule this establishes
 
 An object in `extra-objects` must satisfy one of two conditions, or it does not belong there:
@@ -44,8 +63,10 @@ An object in `extra-objects` must satisfy one of two conditions, or it does not 
    object;
 2. it is a build product, and the command that produces it is recorded next to the object.
 
-Sixteen meet the first condition today. Two meet neither yet, and the honest state of path B is
-therefore "reproducible except `fx286pic.o` and `slru-runtime.o`, whose producers are not named".
+Seventeen meet a condition today: sixteen through a tracked source, and `slru-runtime.o` as the
+compiler's own runtime with its version pinned in `RUNTIME_VERSION.txt`. One does not: `fx286pic.o`.
+The honest state of path B is therefore "reproducible except `fx286pic.o`", which is a much smaller
+statement than "except extra-objects".
 
 ## What removing them needs
 
