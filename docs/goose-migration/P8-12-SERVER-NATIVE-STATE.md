@@ -18,8 +18,8 @@ vendor/flint/tools/server/server-models.cpp    (model manager doors)
 
 | item | native | Goose counterpart | state |
 |---|---|---|---|
-| `find_tool` | `server-tools.cpp:1935`, called at `:2115` | `goose/server/tools-pure.goose:92` - dispatch by name, `-1` meaning "the native `find_tool` would throw" (HTTP 404) | **native, still called**; the port exists and describes the native behaviour, which makes it a ready differential target |
-| origin / CORS | `server-http.cpp:75` `origin_is_localhost`, used at `:334-336` | `goose/server/cors-policy.goose` (`cors_is_localhost`, `cors_allow_origin`, `cors_is_preflight`) | **native, still called**; the Goose decisions are composed and unwired |
+| `find_tool` | `server-tools.cpp:1935`, called at `:2115` | `goose/server/tools-pure.goose` - `tool_name` is called from `server-mcp.cpp` and `server-tools.cpp`, `tool_index` from `server-tools.cpp` and `common/chat-auto-parser-generator.cpp` | **the native scan is still called, and the Goose lookups are wired next to it**: two of the sixteen doors are reached, which the first version of this note missed because it searched only the door named `find_tool` |
+| origin / CORS | `server-http.cpp:75` `origin_is_localhost`, used at `:334-336` | `goose/server/cors-policy.goose`; `cors_allow_origin` is called from `integration/goose-standalone/cli/serve-main.c` | native in `llama-server`; **one of five doors is wired, in the standalone CLI** - the first version said all were unwired |
 
 ## What that means for the requirement
 
@@ -41,3 +41,14 @@ is cheap to define, which is why they are named as the next server work rather t
 That any of this is measured, wired or removed. `server-http.cpp` and `server-tools.cpp` still hold
 the decisions they held before, and the two files that do call Goose are named above so the
 distinction is on the record.
+
+## The method that produced these corrections
+
+Three records (P8-06, P9-07, P8-09) and two more (here and in P9-03) shared one flaw: the call-site
+search covered `vendor/flint/src` and `runtime/` but not headers and not `integration/`. Every
+"nothing calls it" claim was re-run with `*.cpp`, `*.c`, `*.h`, `*.hpp` over
+`vendor/flint`, `runtime` and `integration`, and the numbers above are that re-run.
+
+The conclusions that survive: the shipped server path still does not call the web, metrics,
+expert-cache or router-hook doors. The conclusions that did not survive: the counts. A count is a
+fact about a search, and the search has to be stated with the number.
