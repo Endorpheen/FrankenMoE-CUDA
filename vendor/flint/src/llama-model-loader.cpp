@@ -11,6 +11,8 @@
 #include <cinttypes>
 #include <cstdint>
 #include <cstring>
+#include <atomic>
+#include <type_traits>
 #include <dlfcn.h>
 #include <fstream>
 #include <future>
@@ -30,7 +32,49 @@ typedef int64_t (*fg_gr_span_fn)(fg_sl_i64, fg_sl_i64, int64_t, fg_sl_i64);
 typedef int64_t (*fg_gr_arrstr_fn)(fg_sl_u8, fg_sl_i64, fg_sl_i64, int64_t, int64_t, fg_sl_i64);
 typedef int64_t (*fg_gr_arrint_fn)(fg_sl_u8, fg_sl_i64, fg_sl_i64, int64_t, int64_t, fg_sl_i64);
 
+// The window and the port records, kept alive after the check so a key read can be compared at the moment
+// of use. One model per process, which is what the loader has anyway.
+struct fg_port_store {
+    std::vector<uint8_t> data;
+    std::vector<int64_t> state, kv, tn, slots;
+    bool ready = false;
+};
+static fg_port_store fg_port;
+
 // Returns the number of disagreements; the caller decides whether that is fatal.
+// Read one key through the port. Returns false when the port cannot answer, which the caller must treat as
+// "no comparison available" rather than as agreement.
+static bool fg_port_int(const int64_t k, int64_t & out) {
+    static auto fn = []() -> fg_gr_meta_int_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        return h ? reinterpret_cast<fg_gr_meta_int_fn>(dlsym(h, "gr_meta_int")) : nullptr;
+    }();
+    if (!fn || !fg_port.ready) { return false; }
+    fg_sl_u8  s_data{ fg_port.data.data(), (int64_t) fg_port.data.size() };
+    fg_sl_i64 s_state{ fg_port.state.data(), 8 }, s_kv{ fg_port.kv.data(), (int64_t) fg_port.kv.size() };
+    int64_t v = 0;
+    fg_sl_i64 so{ &v, 1 };
+    if (fn(s_data, s_state, s_kv, k, so) != 0) { return false; }
+    out = v;
+    return true;
+}
+
+static bool fg_port_str(const int64_t k, const uint8_t *& ptr, int64_t & len) {
+    static auto fn = []() -> fg_gr_span_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        return h ? reinterpret_cast<fg_gr_span_fn>(dlsym(h, "gr_val_span")) : nullptr;
+    }();
+    if (!fn || !fg_port.ready) { return false; }
+    fg_sl_i64 s_state{ fg_port.state.data(), 8 }, s_kv{ fg_port.kv.data(), (int64_t) fg_port.kv.size() };
+    int64_t out[4] = {0};
+    fg_sl_i64 so{ out, 4 };
+    if (fn(s_state, s_kv, k, so) != 0) { return false; }
+    if (out[1] < 0 || out[2] < 0 || (size_t) (out[1] + out[2]) > fg_port.data.size()) { return false; }
+    ptr = fg_port.data.data() + out[1];
+    len = out[2];
+    return true;
+}
+
 static int fg_gguf_check(const std::string & fname, const gguf_context & native) {
     static auto fn = []() -> fg_gr_parse_fn {
         void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
@@ -49,8 +93,12 @@ static int fg_gguf_check(const std::string & fname, const gguf_context & native)
     if (!in.read(reinterpret_cast<char *>(data.data()), (std::streamsize) take)) { return -1; }
     const int64_t nk = (int64_t) gguf_get_n_kv(&native);
     const int64_t nt = (int64_t) gguf_get_n_tensors(&native);
-    std::vector<int64_t> state(8, 0), kv((size_t) nk * 8, 0), tn((size_t) nt * 12, 0), slots(4096, 0);
-    fg_sl_u8  s_data{ data.data(), (int64_t) data.size() };
+    fg_port.data = std::move(data);
+    data = {};   // the store owns it from here
+    std::vector<int64_t> & state = fg_port.state, & kv = fg_port.kv, & tn = fg_port.tn, & slots = fg_port.slots;
+    state.assign(8, 0); kv.assign((size_t) nk * 8, 0); tn.assign((size_t) nt * 12, 0); slots.assign(4096, 0);
+    fg_port.ready = true;
+    fg_sl_u8  s_data{ fg_port.data.data(), (int64_t) fg_port.data.size() };
     fg_sl_i64 s_state{ state.data(), 8 }, s_kv{ kv.data(), (int64_t) kv.size() },
               s_t{ tn.data(), (int64_t) tn.size() }, s_slots{ slots.data(), (int64_t) slots.size() };
     fn(s_data, size, s_state, s_kv, s_t, s_slots, s_slots);
@@ -124,8 +172,8 @@ static int fg_gguf_check(const std::string & fname, const gguf_context & native)
                 const char * ns = gguf_get_val_str(&native, i);
                 const size_t nn = strlen(ns);
                 if (val_span(s_state, s_kv, i, so) != 0 || (size_t) out[2] != nn ||
-                    out[1] < 0 || (size_t) (out[1] + out[2]) > data.size() ||
-                    memcmp(data.data() + out[1], ns, nn) != 0) {
+                    out[1] < 0 || (size_t) (out[1] + out[2]) > fg_port.data.size() ||
+                    memcmp(fg_port.data.data() + out[1], ns, nn) != 0) {
                     ++str_bad;
                 }
             }
@@ -155,8 +203,8 @@ static int fg_gguf_check(const std::string & fname, const gguf_context & native)
                     const size_t nn = strlen(ns);
                     ++arr_cmp;
                     if (arr_str(s_data, s_state, s_kv, i, e, so) != 0 || (size_t) out[1] != nn ||
-                        out[0] < 0 || (size_t) (out[0] + out[1]) > data.size() ||
-                        memcmp(data.data() + out[0], ns, nn) != 0) {
+                        out[0] < 0 || (size_t) (out[0] + out[1]) > fg_port.data.size() ||
+                        memcmp(fg_port.data.data() + out[0], ns, nn) != 0) {
                         ++arr_bad;
                     }
                 }
@@ -383,7 +431,42 @@ namespace GGUFMeta {
                 throw std::runtime_error(format("key %s has wrong type %s but expected type %s",
                     gguf_get_key(ctx, k), gguf_type_name(kt), gguf_type_name(GKV::gt)));
             }
-            return GKV::getter(ctx, k);
+            const T value = GKV::getter(ctx, k);
+
+            // Shadow read: the same key through the port, at the moment the loader uses it. A disagreement is
+            // fatal under the flag, because a converted site that read the wrong field must fail here and not
+            // in generation. Counted per key so a whole load reports how many use-site reads were compared.
+            static const bool shadow = getenv("FG_GGUF_DIAG") != nullptr;
+            if (shadow && ::fg_port.ready) {
+                static std::atomic<long long> compared{0}, differed{0};
+                if constexpr (std::is_integral_v<T> && !std::is_same_v<T, bool>) {
+                    int64_t port_value = 0;
+                    if (::fg_port_int(k, port_value)) {
+                        compared.fetch_add(1);
+                        if (port_value != (int64_t) value) {
+                            differed.fetch_add(1);
+                            throw std::runtime_error(format("%s: ported reader disagrees on key %s (%lld vs %lld)",
+                                __func__, gguf_get_key(ctx, k), (long long) port_value, (long long) value));
+                        }
+                    }
+                } else if constexpr (std::is_same_v<T, std::string>) {
+                    const uint8_t * p = nullptr; int64_t n = 0;
+                    if (::fg_port_str(k, p, n)) {
+                        compared.fetch_add(1);
+                        if ((size_t) n != value.size() || memcmp(p, value.data(), (size_t) n) != 0) {
+                            differed.fetch_add(1);
+                            throw std::runtime_error(format("%s: ported reader disagrees on key %s", __func__, gguf_get_key(ctx, k)));
+                        }
+                    }
+                }
+                static std::atomic<long long> reported{0};
+                const long long c = compared.load();
+                if (c != reported.load() && c % 8 == 0) {
+                    reported.store(c);
+                    fprintf(stderr, "FG_GGUF_USES compared=%lld differed=%lld\n", c, differed.load());
+                }
+            }
+            return value;
         }
 
         static const char * override_type_to_str(const llama_model_kv_override_type ty) {

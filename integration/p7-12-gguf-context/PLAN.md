@@ -30,6 +30,21 @@ than from hope. The cost is one pass over the window, paid only under `FG_GGUF_D
 Remaining risks: the split-file path has no port comparison, and a conversion that returns a default on a missing key
 must be forbidden rather than tolerated.
 
+## Use-site shadow read (in place)
+
+Beyond the file-level gate, `GKV::get_kv` - the single funnel through which the loader reads every typed key - now
+reads the same key through the port and compares, throwing on a disagreement:
+
+```
+FG_GGUF_USES compared=16 differed=0
+```
+
+So a converted site cannot read the wrong field silently: the comparison happens at the moment the loader uses the
+value, which is what the plan asked for and what the file-level gate could not provide.
+
+The crash that this step caused first is recorded in its card: the port records had been moved into a store and three
+comparisons still read the moved-from vector, which segfaulted the load. Running the thing is what caught it.
+
 ## What has to change
 
 `llama_model_loader` holds `struct gguf_context * metadata` and reads everything from it:
