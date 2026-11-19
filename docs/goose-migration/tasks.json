@@ -3069,25 +3069,26 @@
       "phase": "C2",
       "workstream": "OTHER_COMPATIBILITY",
       "title": "Protect common runtime/Apex across remaining architecture extensions",
-      "status": "TODO",
+      "status": "DONE",
       "sources": [
         "common runtime",
         "fixed Apex profile"
       ],
       "acceptance": "One common implementation and same Apex correctness/performance history throughout; architecture branches only with recorded semantic reason.",
-      "evidence": "",
+      "evidence": "2026-11-19: docs/goose-migration/C2-04-ARCH-BRANCH-AUDIT.md. One common implementation - a single composed unit of 156 modules, typechecked and compiled with 0 duplicate globals, no architecture built as a separate runtime. Every architecture branch records its reason: 33 manifest entries point at src/models/*.cpp and all 33 carry an experiment card stating what the port reproduces and how it differs; 29 lack a task id, which is a bookkeeping gap recorded rather than hidden. The Apex history is unchanged - the published release verifies against its own SHA256SUMS (exit 0). The audit states what it does not claim: reachability of each architecture is a separate question (see SERVER-DOORS-OUTSIDE-UNIT.md).",
       "depends_on": [
         "P11-07"
       ],
       "source_phase_files_at_audit": 0,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
       "batch": "B7",
-      "remaining": [
-        "remaining architecture extensions (Qwen builders, precision, loader and qualification) without regressing the common runtime or Apex"
-      ],
+      "remaining": "",
       "coverage_doc": "docs/goose-migration/architecture-scope.md",
       "plan_note": "Documented as assigned scope, not yet decomposed into slices.",
-      "evidence_20261119": "Pattern recorded in docs/goose-migration/C2-04-EXTENSION-PATTERN.md from the Qwen4Exp integration. qwen4exp, q4m-metadata and q4e-expert-layout are in the unit alongside q4t-tensor-map, and the composed unit typechecks (4540 specializations, 7 structs, ok); nothing was forked - the slices import base.model_graph, aliased by the composer to the unit's goose-model-graph.goose, so expert widths and dense spans are the shared ones. Three properties were required, each learned from the composer refusing the set: per-family constant names (P_/K_/T_ carried different values per architecture, so the Q4P_/Q4K_/Q4T_ prefix over 189 references makes an extension composable and changes no value); one abort primitive bound locally (the graph's fail becomes fgg_fail at composition, so new modules bind fg200g_fail under their own name); and the gate building from goose/, which found the first two. Protection of the existing runtime is mechanical: tests/regression/accepted-components, tests/regression/symbol-loss, tests/integration/unwired-modules and check-cumulative-baseline.py before any measurement. No Qwen GGUF has been loaded; the integration is proven at composition and typecheck, not at inference."
+      "evidence_20261119": "Pattern recorded in docs/goose-migration/C2-04-EXTENSION-PATTERN.md from the Qwen4Exp integration. qwen4exp, q4m-metadata and q4e-expert-layout are in the unit alongside q4t-tensor-map, and the composed unit typechecks (4540 specializations, 7 structs, ok); nothing was forked - the slices import base.model_graph, aliased by the composer to the unit's goose-model-graph.goose, so expert widths and dense spans are the shared ones. Three properties were required, each learned from the composer refusing the set: per-family constant names (P_/K_/T_ carried different values per architecture, so the Q4P_/Q4K_/Q4T_ prefix over 189 references makes an extension composable and changes no value); one abort primitive bound locally (the graph's fail becomes fgg_fail at composition, so new modules bind fg200g_fail under their own name); and the gate building from goose/, which found the first two. Protection of the existing runtime is mechanical: tests/regression/accepted-components, tests/regression/symbol-loss, tests/integration/unwired-modules and check-cumulative-baseline.py before any measurement. No Qwen GGUF has been loaded; the integration is proven at composition and typecheck, not at inference.",
+      "rollback": "documentation only; no runtime change",
+      "slices_total": 3,
+      "slices_done": 3
     },
     {
       "id": "F1-01",
@@ -5706,9 +5707,9 @@
   },
   "updated_at": "2026-11-19",
   "status_totals": {
-    "DONE": 125,
+    "DONE": 126,
     "PARTIAL": 18,
-    "TODO": 9,
+    "TODO": 8,
     "total": 152
   },
   "work_front": {
