@@ -75,6 +75,7 @@ MODULES=(
     goose/cpu/goose-opt.goose
     goose/model/vocab-type.goose
     goose/speculative/spec-decisions.goose
+    goose/speculative/spec-doors.goose
     goose/model/tokenizer-decisions.goose
     goose/model/control-vectors.goose
     goose/model/lora-apply.goose

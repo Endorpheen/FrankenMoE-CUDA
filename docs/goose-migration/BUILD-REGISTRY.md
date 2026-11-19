@@ -229,3 +229,16 @@ green `build-main-runtime.sh` (1184 symbols, 0 duplicates).
 
 This is the base the next stage extends. It is not to be overwritten: a new accepted set becomes a new
 directory with its own hash.
+
+### After the checkpoint: the unit gained the doors (1190 symbols)
+
+`check-unwired-modules.py` caught what the checkpoint commit did not: `goose/speculative/spec-doors.goose`
+exports six decisions and was in the **chain** build but in no accumulated unit, so it counted as unwired.
+
+Adding it to `MODULES` makes the unit 1190 symbols (was 1184) with 0 duplicates, typechecked green. The
+checkpoint's **libraries are unchanged** - the chain build already carried the doors, which is why its
+symbol table has `fg_sp_*` - so the recorded hashes still describe the measured artefacts. What changed is
+only the composition record of the accumulated unit.
+
+Worth noting for the next checkpoint: the symbol count in a manifest should be taken from the build that
+produced the libraries, not from a different unit, or it will drift exactly like this.
