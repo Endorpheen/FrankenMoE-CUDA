@@ -20,6 +20,7 @@ cat "$root/goose/speculative/spec-doors.goose" >> "$rootfile"
 cat "$root/goose/model/tokenizer-decisions.goose" >> "$rootfile"
 cat "$root/goose/model/tokenizer-doors.goose" >> "$rootfile"
 cat "$root/goose/model/arch-registry.goose" >> "$rootfile"
+cat "$root/goose/misc/spec-decode-decisions.goose" >> "$rootfile"
 cat >> "$rootfile" <<'EOF'
 
 fn main() {
@@ -68,6 +69,12 @@ fn main() {
                          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    let sdctx: i32[4] = [1, 2, 3, 1];
+    let sdout: i32[8] = [0, 0, 0, 0, 0, 0, 0, 0];
+    let sdr = sdp_ngram_draft(sdctx, 2, 4, 1, 4, sdout);
+    if sdr < 0 {
+        return;
+    }
     let arc = ar_count();
     if arc < 0 {
         return;
