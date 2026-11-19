@@ -54,3 +54,27 @@ release afterwards. The first thing to read is `results/apex-runs/<tag>-<timesta
 With one successful run, these have everything else already done: P7-06 and P7-07 (tokenizer and
 detokenizer doors, both wired), P8-06 (model-manager doors), P9-07 (metrics formatting), and the acceptance
 half of P6-10 (grammar). The measurement is the only missing evidence for each.
+
+## The next run, once the JSON build lands
+
+The build started at 2026-11-20 01:0x as `/home/end0/AI/LlamaServer/frankenmoe-cand-json3`, and it is the
+first artefact that should carry **both** halves of the JSON path in one set - the Goose parser in
+`libllama` and the adapter in `libllama-common`.
+
+```
+# 1. acceptance of the JSON path on one artefact
+bash tools/verify-json-build.sh /home/end0/AI/LlamaServer/frankenmoe-cand-json3/run
+
+# 2. the speed check, same profile as the two runs of 2026-11-20
+APEX_SERVER_DIR=/home/end0/AI/LlamaServer/frankenmoe-cand-json3/run \
+  bash tools/apex-test.sh dec-c-json 512 4096 4096 4992
+```
+
+What the second run must show: decode and prefill inside the spread of the baseline (61.44 / 2918.1) and the
+same response hash `c2ff42cc1219`. A JSON door that is not on the hot path should move nothing; if it moves
+something, that is worth knowing before the flag is flipped.
+
+Note on the set: `build-independent-apex.sh` copies seven libraries, and `libmoe_mmid_tiled.so` is not one of
+them - `tests/regression/set-self-contained` will say so, and the library has to be copied in from the
+release set before the server starts. That is the same gap the checkpoint has, and it is on the list to fix
+by linking `$ORIGIN` and carrying every library.
