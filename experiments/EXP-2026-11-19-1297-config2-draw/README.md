@@ -14,6 +14,24 @@ At round 10 the probabilities and the ids are identical in both modes and the dr
 EMA then absorbs a different `original_probs` entry (`ws` 0.934 against 1.403 from the next apply onward), and every
 later round follows - which is why 90 arrays and 100 selections differ from a single divergent draw.
 
+## The isolation that settles the shape: same chain, transform off
+
+adaptive-p has a documented no-op path when its target is negative. Running the identical chain with the transform
+disabled and enabled:
+
+```
+target=-1  (no-op path, no transform)     0 of 100 rounds differ
+target=0.5 (transform path)              21 of 100 rounds differ
+```
+
+With the no-op path the two modes agree over the whole run: the chain, the doors, the input generation, the accept
+history and the generator are in step. The difference appears **only when the transform executes**, and the no-op
+branch draws from the generator exactly as the transform branch does, so the two runs differ by one thing - whether
+the transform runs.
+
+That is a much sharper statement than "the generator state differs": it says the divergence is produced **by the
+transform path itself**, and that every mechanism outside it is already in step.
+
 ## What this rules in and out, with the measurements behind it
 
 | candidate | verdict |
