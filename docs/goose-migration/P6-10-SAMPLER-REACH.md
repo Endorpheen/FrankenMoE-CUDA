@@ -47,3 +47,33 @@ A decision, then a measurement:
 
 Until step 1, the honest statement is that the shipped sampler is native and the module is debt in
 the unit.
+
+## Third correction: the sampler IS served, by a different module family - and my own tool undercounted it
+
+The paragraph above is wrong, and the reason is worth keeping: it equated "no door of
+`sampler-chain-full.goose` is called" with "the sampler is native".
+
+The compiled carrier `runtime/reconstructed/src/llama-sampler.cpp` calls a **different** generation of
+the port:
+
+```
+fg212s_min_p_scan  fg380s_decide  fg384s_softmax  fg386s_pick  fg387s_decide  fg388s_decide
+```
+
+and those are provided by the experiment bridges that `build.py` links explicitly
+(`('EXP-2026-11-11-380-flint-penalties-accept-live', 'b380.o')` and its neighbours at lines 149-155).
+Each bridge is the generated host shim over a Goose module - `bridge.c` in EXP380 ends with
+`#include "host-qualified.c"` and calls `fg380s_generated_main`, so the decision underneath is Goose.
+
+So the shipped sampler is served by Goose through the per-sampler slice family (EXP212, EXP380,
+EXP384-388), with a C bridge as the host, which is debt but not native logic.
+`sampler-chain-full.goose` - the consolidated module - is what nothing calls, and that is the real
+state: a superseded consolidation, not a native sampler.
+
+## What this says about tools/production-doors.py
+
+It counts doors of the modules **in the unit list**, so it cannot see a decision that reaches the build
+through an experiment bridge. Its 72-production figure is therefore a lower bound on what is served,
+and its "none" column can contain a door whose function is served by a bridge under another name. The
+tool needs the bridge objects in its index before its numbers can be quoted as migration coverage -
+recorded here so the number is not used as if that had been done.
