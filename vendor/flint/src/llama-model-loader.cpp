@@ -42,6 +42,34 @@ struct fg_port_store {
 static fg_port_store fg_port;
 
 // Returns the number of disagreements; the caller decides whether that is fatal.
+// Tensor lookup and type through the port, for the metadata-only path that has no file list.
+extern "C" int64_t fg_port_find_tensor(const char * name, int64_t len) {
+    static auto fn = []() -> fg_gr_find_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        return h ? reinterpret_cast<fg_gr_find_fn>(dlsym(h, "gr_find_tensor")) : nullptr;
+    }();
+    if (!fn || !fg_port.ready) { return -1; }
+    fg_sl_u8  s_data{ fg_port.data.data(), (int64_t) fg_port.data.size() };
+    fg_sl_i64 s_state{ fg_port.state.data(), 8 }, s_t{ fg_port.tn.data(), (int64_t) fg_port.tn.size() };
+    fg_sl_i64 s_slots{ fg_port.slots.data(), (int64_t) fg_port.slots.size() };
+    fg_sl_u8  key{ reinterpret_cast<uint8_t *>(const_cast<char *>(name)), len };
+    return fn(s_data, s_state, s_t, s_slots, key);
+}
+
+extern "C" bool fg_port_tensor_type(int64_t index, int64_t * out) {
+    static auto fn = []() -> fg_gr_tinfo_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        return h ? reinterpret_cast<fg_gr_tinfo_fn>(dlsym(h, "gr_tensor_info")) : nullptr;
+    }();
+    if (!fn || !fg_port.ready) { return false; }
+    fg_sl_i64 s_state{ fg_port.state.data(), 8 }, s_t{ fg_port.tn.data(), (int64_t) fg_port.tn.size() };
+    int64_t info[9] = {0};
+    fg_sl_i64 so{ info, 9 };
+    if (fn(s_state, s_t, index, so) != 0) { return false; }
+    *out = info[0];
+    return true;
+}
+
 // Element of an integer array, for the token-type table the vocabulary reads with gguf_get_arr_data.
 extern "C" bool fg_port_array_int(int64_t key_index, int64_t element, int64_t * out) {
     static auto fn = []() -> fg_gr_arrint_fn {
@@ -1671,9 +1699,18 @@ struct ggml_tensor * llama_model_loader::create_tensor(
             return nullptr;
         }
         ggml_type type = GGML_TYPE_F32;
-        const int64_t tid = gguf_find_tensor(metadata, tn.str().c_str());
-        if (tid != -1) {
-            type = gguf_get_tensor_type(metadata, tid);
+        // The lookup and the type come from the port when it can answer; the native context is the fallback
+        // for the split-file path, where the port has no records.
+        const std::string fg_name = tn.str();
+        int64_t tid = fg_port_find_tensor(fg_name.c_str(), (int64_t) fg_name.size());
+        int64_t fg_type = 0;
+        if (tid >= 0 && fg_port_tensor_type(tid, &fg_type)) {
+            type = (ggml_type) fg_type;
+        } else {
+            tid = gguf_find_tensor(metadata, fg_name.c_str());
+            if (tid != -1) {
+                type = gguf_get_tensor_type(metadata, tid);
+            }
         }
 
         // for tensors that are not required some of the dimensions can be invalid:

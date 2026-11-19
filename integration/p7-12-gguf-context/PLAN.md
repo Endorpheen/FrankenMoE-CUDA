@@ -51,7 +51,9 @@ comparisons still read the moved-from vector, which segfaulted the load. Running
 `llama_model_loader` holds `struct gguf_context * metadata` and reads everything from it:
 
 - **17 call sites** of `get_key(...)`, which today resolve a key name to a value through the native context;
-- **6** places that use `gguf_find_tensor` / `gguf_get_tensor_*` for descriptor fields;
+- **1** place that uses `gguf_find_tensor` / `gguf_get_tensor_type` for a descriptor field - my earlier count of six
+  came from grepping two patterns that matched the same site twice, and the corrected number is recorded here rather
+  than left as an overstatement of the work;
 - the split-file join, which builds additional contexts per shard;
 - `n_kv` / `n_tensors` counters.
 
@@ -84,6 +86,17 @@ llama-adapter.cpp   2 x gguf_get_arr_data / gguf_get_arr_n
 So an array conversion is **consumer-side**: each of those three files has to walk the port's spans instead of the
 native array. That is why arrays are not the next one-line conversion they look like, and why the `get_key` funnel
 cannot carry them.
+
+## Progress
+
+| kind | served by the port |
+|---|---|
+| integral keys | yes |
+| `std::string` keys | yes |
+| vocabulary array | yes |
+| merge list, token types | yes |
+| tensor lookup and type (metadata-only path) | yes |
+| `const char *` keys, two array walks outside the vocabulary, split files | no |
 
 ## The gate that guards each step
 
