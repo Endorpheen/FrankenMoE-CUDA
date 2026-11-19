@@ -35,6 +35,7 @@ cat "$root/goose/model/tokenizer-decisions.goose" >> "$rootfile"
 cat "$root/goose/model/tokenizer-doors.goose" >> "$rootfile"
 cat "$root/goose/cli/fit-params-line.goose" >> "$rootfile"
 cat "$root/goose/cli/llama-bench-report.goose" >> "$rootfile"
+cat "$root/goose/model/slru-policy-goose.goose" >> "$rootfile"
 cat "$root/goose/model/arch-registry.goose" >> "$rootfile"
 cat "$root/goose/misc/spec-decode-decisions.goose" >> "$rootfile"
 cat "$root/goose/cli/config-validate.goose" >> "$rootfile"
@@ -160,9 +161,10 @@ EOF
 GOOSE_HOME="$root/experiments/EXP-2026-11-18-1031-p6-10-typical" \
 TMPDIR="$root/experiments/EXP-2026-11-18-1008-p1-12-gemv/tmp" \
     "$compiler" --standalone --header "$out/sampler_chain.h" -o "$out/sampler_chain.c" "$rootfile"
-python3 - "$out" <<'PY'
+python3 - "$out" "$root" <<'PY'
 import re, sys
 out = sys.argv[1]
+repo = sys.argv[2]
 src = open(out + '/sampler_chain.c').read()
 
 # Every entry point is identified by its exact prototype. The names never change;
@@ -311,6 +313,11 @@ int64_t fg_sampler_temp_ext_call(float * lv, float * p, int64_t n, float temp, f
 }
 """
 open(out + '/sampler_chain_shim.c', 'w').write(SHIM)
+# The SLRU policy module's host FFI already exists as a file of its own; it is reused verbatim rather than
+# written a second time (rule 17). Its constructor and its three functions are what the module needs.
+import shutil, os
+shutil.copyfile(os.path.join(repo, 'integration/goose-standalone/slru-runtime-shim.c'),
+                out + '/slru_runtime_shim.c')
 print('entry points:', found)
 PY
 python3 "$root/tools/gen-grammar-shim.py" "$out"

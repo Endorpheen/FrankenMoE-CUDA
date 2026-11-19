@@ -73,6 +73,7 @@ set(FG_SAMPLER_CHAIN_DIR ${CMAKE_CURRENT_BINARY_DIR}/goose-sampler-chain)
 add_custom_command(
     OUTPUT ${FG_SAMPLER_CHAIN_DIR}/sampler_chain.c ${FG_SAMPLER_CHAIN_DIR}/sampler_chain.h
            ${FG_SAMPLER_CHAIN_DIR}/sampler_chain_shim.c
+           ${FG_SAMPLER_CHAIN_DIR}/slru_runtime_shim.c
     COMMAND bash ${FG_REPO_ROOT}/tools/build-sampler-chain.sh ${FG_SAMPLER_CHAIN_DIR}
     # Every module the generator composes must be listed here, or the build keeps a stale copy of the
     # generated C and the new doors never reach the library. That happened twice in this session: once
@@ -99,7 +100,8 @@ set_source_files_properties(${FG_SAMPLER_CHAIN_DIR}/sampler_chain.c
 set_source_files_properties(${FG_SAMPLER_CHAIN_DIR}/sampler_chain.h
                             PROPERTIES HEADER_FILE_ONLY TRUE)
 list(APPEND LLAMA_CORE_SOURCES ${FG_SAMPLER_CHAIN_DIR}/sampler_chain.c
-                               ${FG_SAMPLER_CHAIN_DIR}/sampler_chain_shim.c)
+                               ${FG_SAMPLER_CHAIN_DIR}/sampler_chain_shim.c
+                               ${FG_SAMPLER_CHAIN_DIR}/slru_runtime_shim.c)
 
 add_library(llama
             ../include/llama.h
