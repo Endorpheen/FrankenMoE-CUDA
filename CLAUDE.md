@@ -726,3 +726,33 @@ come from Igor directly. For every marked message:
     - Every performance report states the profile it was measured under, and a figure without it is incomplete.
 
     The principle in one line: FrankenMoE is made faster, it is not given an easier job.
+
+36. A permanent test lives in `tests/`; an experiment holds the hypothesis, not the regression
+    check.
+
+    The rule takes effect now and applies to every agent:
+
+    - a check that must keep passing is created in `tests/<area>/<test-name>/` with a `run.sh`, a
+      `tier` file (`fast`, `integration`, `performance` or `model`) and a `README.md` naming the
+      oracle, the EXP that produced it and the requirement it covers;
+    - `experiments/EXP-*` keeps hypotheses, one-off diagnostics, measurements and reports. If an
+      experiment needs a new test, the test is written in `tests/` and the experiment card points at
+      its path, its command and its result;
+    - a one-off diagnostic program may stay next to its experiment, but once the result is accepted
+      the regression check moves to `tests/` and the experiment keeps its recorded numbers;
+    - shared inputs go to `tests/fixtures/`, independent reference implementations to
+      `tests/oracles/`. A C++ oracle is never linked into the production runtime;
+    - every test result states the EXP, the source SHA and the requirement it belongs to;
+    - the registry is `tests/REGISTRY.md` and the row is added in the same commit as the test;
+    - no working check is deleted before its replacement passes; the old and the new run side by
+      side until then, and the deletion is its own verifiable step.
+
+    Running is centralised: `bash tests/run.sh fast|<area>|integration|full|performance`. It does
+    not reimplement the acceptance ladder - `fast`, `integration` and `full` delegate to
+    `tools/check.sh`, and anything needing the model or the Apex lock takes the lock itself through
+    `tools/apex-test.sh`. A test without a `tier` file is treated as `model` and never runs
+    implicitly.
+
+    Tests whose tiers are `fast` or `integration` may be wired into CI as they stabilise. CUDA
+    tests run only where a GPU of the right kind exists, model and performance tests stay out of
+    CI, and compiled gates, generated C and large logs are never committed.

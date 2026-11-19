@@ -102,3 +102,19 @@ permission.
 level bound produced that `-2` is not distinguished by the fixture, and the card says so rather
 than guessing. Nothing else in the reject port is known to disagree with the oracle on these
 shapes.
+
+## Where the check lives now
+
+The gate moved to the permanent tree, because a check that must keep passing does not belong in an
+experiment (AGENTS.md rule 36):
+
+- path: `tests/grammar/reject-alternates/`
+- command: `bash tests/grammar/reject-alternates/run.sh`, or `bash tests/run.sh grammar reject-alternates`
+- result on the live module: `gate: cases=7 fails=0`, exit 0
+- registry row: `tests/REGISTRY.md`, tier `fast`, requirement P6-10
+
+The permanent copy builds against the live `goose/sampling/sampler-chain-full.goose` rather than
+the pinned `source/runtime.goose` here, which is what makes it a regression test. This card, the
+pinned source and the numbers recorded above stay as the experiment's history. `tests/fixture.cpp`
+here is left in place until the permanent copy has run in a second context; deleting it is its own
+step, not part of the move.
