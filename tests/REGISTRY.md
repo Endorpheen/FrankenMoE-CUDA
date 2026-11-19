@@ -31,6 +31,7 @@ run only with explicit permission).
 | integration | carrier-symbols | `tests/integration/carrier-symbols` | carrier divergence, 2026-11-19 | rule 33 | integration | verified 2026-11-19 |
 | models | qwen4exp-slices | `tests/models/qwen4exp-slices` | EXP-2026-11-15-660 | C1-02 | integration | migrated 2026-11-19 |
 | regression | symbol-loss | `tests/regression/symbol-loss` | rule 33 guard of tooling | rule 33 | fast | verified 2026-11-19 |
+| regression | library-provenance | `tests/regression/library-provenance` | library drift, 2026-11-19 | rule 22 | fast | added 2026-11-19 |
 
 ## Notes on the first migration
 
