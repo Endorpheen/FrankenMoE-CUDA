@@ -2457,7 +2457,8 @@
       "remaining": [
         "wire the CSV, decode-trace and route-trace sinks and DeterministicWorkload to the Goose rows (integration step)"
       ],
-      "coverage_doc": "docs/goose-migration/P9-07-COVERAGE.md"
+      "coverage_doc": "docs/goose-migration/P9-07-COVERAGE.md",
+      "evidence_20261119": "State recorded in docs/goose-migration/P9-07-METRICS-STATE-20261119.md. metrics-traces.goose exports 21 doors (mt_field_needs_quote, mt_field_encode, mt_weight_kind, mt_trace_cols, mt_metrics_cols, mt_summary_keys, ...) and none has a call site in vendor/flint/src or runtime; the records are still printed natively at runtime/cli/main.cpp:108-111,340 with literal formats. workload-format.goose exports NOTHING - all its functions are private (wl_parse, wl_put, ...) - so no host can reach it, while the CLI's --workload-capture/--workload-replay paths (runtime/cli/main.cpp:522-523,680) are served by the native DeterministicWorkload class. P9-07 needs, in order: export the workload decisions and wire them into the two existing CLI paths; switch metric formatting to mt_field_encode/mt_metrics_cols and compare emitted bytes on the same numbers; then a capture/replay check requiring identical token ids. None of it is claimed as done."
     },
     {
       "id": "P9-08",
