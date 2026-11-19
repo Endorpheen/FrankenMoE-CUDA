@@ -164,6 +164,29 @@ class Session:
         with open(p, "rb") as f:
             return needle.encode() in f.read()
 
+    def refuse(self, where):
+        """A request that cannot be served must be refused, and the server must go on serving afterwards.
+
+        This is the recovery property: whatever the reason a request fails - a context that cannot hold the answer, a bad
+        id, an exhausted cache - the next request must succeed. It also proves the failure is reported rather than silently
+        turning into a short answer.
+        """
+        payload = {"messages": [{"role": "user", "content": "hi"}], "max_tokens": 400000, "temperature": 0, "stream": False}
+        status, detail = 0, ""
+        try:
+            post(self.url("/v1/chat/completions"), payload, False, 300)
+            status = 200
+        except urllib.error.HTTPError as e:
+            status, detail = e.code, e.read(300).decode(errors="replace")
+        except (urllib.error.URLError, socket.timeout) as e:
+            self.alive(f"the refused request ({where})")
+            raise Failure(f"the refused request was not answered at all: {e}")
+        self.alive(f"the refused request ({where})")
+        if status == 200:
+            raise Failure(f"a request for {400000} tokens was answered instead of refused ({where})")
+        self.log.append({"step": f"refuse:{where}", "status": status, "detail": detail[:160]})
+        return status
+
     def hostile(self, where):
         """A request the server must refuse without dying.
 
@@ -237,9 +260,11 @@ class Session:
                                   "content": json.dumps({"ok": True, "result": f"simulated result {i}",
                                                          "path": "/tmp/x", "lines": 42})})
 
+        prompt_tokens = usage.get("prompt_tokens") or 0
+        self.prompt_tokens_max = max(getattr(self, "prompt_tokens_max", 0), prompt_tokens)
         rec = {"step": self.steps, "stream": stream, "seconds": round(dt, 2), "finish": finish,
                "content_len": len(content), "tool_calls": [c["name"] for c in calls],
-               "completion_tokens": done, "messages": len(self.messages)}
+               "completion_tokens": done, "prompt_tokens": prompt_tokens, "messages": len(self.messages)}
         self.log.append(rec)
         if self.verbose:
             print(f"  step {self.steps:2d} {dt:6.1f}s finish={finish} content={len(content):5d} "
@@ -297,6 +322,12 @@ def run(mode, args):
             S.pad(big)
             S.step("Суммируй всё сказанное выше одним абзацем.", max_tokens=256)
             S.step("Напиши длинный разбор архитектуры рантайма.", max_tokens=long_gen, stream=True)
+            # the padding is only a means: what matters is how many prompt tokens the server reports, because that is
+            # the context the request actually carried
+            need_prompt = 18000 if mode == "CHECK" else 25000
+            got_prompt = S.log[-1].get("prompt_tokens", 0)
+            if got_prompt < need_prompt:
+                raise Failure(f"{mode} reached {got_prompt} prompt tokens, below the {need_prompt} this mode exists for")
             S.step("Проверь, что предыдущий ответ не оборвался, и продолжи с того места.", max_tokens=256)
         elif mode == "REPRO":
             # the shape that failed: several requests building context, then one long generation
@@ -308,6 +339,8 @@ def run(mode, args):
         if mode in ("CHECK", "FULL", "REPRO"):
             S.hostile("after the session")
             S.step("Ещё один короткий ответ после ошибочного запроса.", max_tokens=64)
+            S.refuse("after the session")
+            S.step("И ещё один ответ после отказа.", max_tokens=64)
 
         found = S.goose_activity()
         required = ["tokenizer_from_port", "sampler_stage"]

@@ -182,3 +182,15 @@ The check is written because the same failure shape reached the batch builder fr
 (`failed to add token -2100184624`), and the batch builder aborts on it. The client path turned out to be already safe:
 `server_tokens::validate` refuses `t < 0 || t >= n_vocab` and the handler answers `ERROR_TYPE_INVALID_REQUEST`. That is now
 held by a test rather than by reading the code once.
+
+## Long context is measured, and a refusal must leave the server serving
+
+Two claims were previously implied rather than checked.
+
+The padding in CHECK and FULL is only a means; the test now reads the `prompt_tokens` the server reports and fails when it
+is below the size the mode exists for (18 000 for CHECK, 25 000 for FULL). "We padded the conversation" was not the same
+claim as "the request carried a long context".
+
+A request for 400 000 tokens cannot be served, so the server must refuse it - not answer, not crash - and the next request
+must succeed. That is the recovery property, and it holds whatever the reason a request fails. The refusal is recorded with
+its status and the reason for the following step is measured, not assumed.
