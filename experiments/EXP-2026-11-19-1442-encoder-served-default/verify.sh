@@ -31,4 +31,4 @@ rc=${PIPESTATUS[0]}
 [ "$rc" -eq 0 ] || { echo "FAIL"; exit 1; }
 grep -q "FG_TK_BPE_SERVED" "$LOG" || { echo "FAIL: nothing was served, the flag gate is still in place"; exit 1; }
 grep -q "disagreements=0" "$LOG" || { echo "FAIL: the comparison reports disagreements"; exit 1; }
-echo "PASS: the ported encoder serves by default and equals the native answer"
+echo "PASS: the ported encoder serves by default and equals the native answer" | tee -a "$LOG"

@@ -16,4 +16,4 @@ OUT=$D/out; mkdir -p "$OUT"; LOG=$OUT/verify.log
 } 2>&1 | tee "$LOG"
 rc=${PIPESTATUS[0]}
 [ "$rc" -eq 0 ] || { echo "FAIL: a short buffer was overflowed or the contract changed"; exit 1; }
-echo "PASS: every short-buffer call returns -needed and writes nothing past its buffer"
+echo "PASS: every short-buffer call returns -needed and writes nothing past its buffer" | tee -a "$LOG"

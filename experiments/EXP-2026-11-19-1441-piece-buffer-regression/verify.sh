@@ -19,4 +19,4 @@ rc=${PIPESTATUS[0]}
 echo "exit=$rc"
 [ "$rc" -eq 0 ] || { echo "FAIL: the piece buffer damages the caller"; exit 1; }
 grep -q "control: old implementation damaged the caller in 0" "$LOG" && { echo "FAIL: the control did not fail, so the test cannot detect the defect"; exit 1; }
-echo "PASS: every piece is exact and no caller field is touched; the control reproduces the defect"
+echo "PASS: every piece is exact and no caller field is touched; the control reproduces the defect" | tee -a "$LOG"
