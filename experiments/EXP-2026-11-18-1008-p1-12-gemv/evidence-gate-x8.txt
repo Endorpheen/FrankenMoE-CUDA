@@ -1,0 +1,15 @@
+iters=16
+n=  512 nc=   8 nb= 2 : 128 cases, 128 equal, 0 differ, max ulp 0, max rel 0.000e+00
+n=  512 nc=  16 nb= 2 : 256 cases, 256 equal, 0 differ, max ulp 0, max rel 0.000e+00
+n=  512 nc=  64 nb= 2 : 1024 cases, 1024 equal, 0 differ, max ulp 0, max rel 0.000e+00
+n=  512 nc= 512 nb= 2 : 8192 cases, 8192 equal, 0 differ, max ulp 0, max rel 0.000e+00
+n= 2048 nc=   8 nb= 8 : 128 cases, 128 equal, 0 differ, max ulp 0, max rel 0.000e+00
+n= 2048 nc=  16 nb= 8 : 256 cases, 256 equal, 0 differ, max ulp 0, max rel 0.000e+00
+n= 2048 nc=  64 nb= 8 : 1024 cases, 1024 equal, 0 differ, max ulp 0, max rel 0.000e+00
+n= 2048 nc= 512 nb= 8 : 8192 cases, 8192 equal, 0 differ, max ulp 0, max rel 0.000e+00
+n= 8192 nc=   8 nb=32 : 128 cases, 128 equal, 0 differ, max ulp 0, max rel 0.000e+00
+n= 8192 nc=  16 nb=32 : 256 cases, 256 equal, 0 differ, max ulp 0, max rel 0.000e+00
+n= 8192 nc=  64 nb=32 : 1024 cases, 1024 equal, 0 differ, max ulp 0, max rel 0.000e+00
+n= 8192 nc= 512 nb=32 : 8192 cases, 8192 equal, 0 differ, max ulp 0, max rel 0.000e+00
+
+TOTAL 28800 cases, 28800 equal, 0 differ, max ulp 0, max rel 0.000e+00

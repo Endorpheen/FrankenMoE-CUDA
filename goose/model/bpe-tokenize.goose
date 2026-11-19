@@ -308,6 +308,62 @@ fn bt_merge_rank(gguf: const u8[:], mrg_off: const i64[:], mrg_len: const i64[:]
 // unknown, sorted by text length descending (cache_special_tokens). Equal
 // lengths keep id order, which cannot change the result: two specials of the
 // same length can only both match where they are identical.
+// Where the special tokens occur in the text, as (start, end, id) triples, in the order bt_special_order
+// produces - longest text first, so the longest match wins at a given position. The host tokenises the gaps
+// between hits with bt_bpe and splices the ids, which is what the standalone CLI does; putting the scan here
+// keeps the matching rule in Goose instead of repeating it in every caller (EXP-2026-11-19-1390).
+export fn bt_special_hits(text: const u8[:], gguf: const u8[:],
+                          tok_off: const i64[:], tok_len: const i64[:], attr: const i64[:],
+                          order: const i64[:], n_special: i64, hits: i64[:]) -> i64 {
+    if n_special < 0 || order.len < n_special || attr.len < tok_off.len || tok_len.len < tok_off.len {
+        return -1;
+    }
+    var n: i64 = 0;
+    var pos: i64 = 0;
+    while pos < text.len {
+        var hit: i64 = 0 - 1;
+        var hit_len: i64 = 0;
+        var k: i64 = 0;
+        while k < n_special {
+            let id: i64 = order[k];
+            if id >= 0 && id < tok_len.len {
+                let len: i64 = tok_len[id];
+                if len > 0 && pos + len <= text.len {
+                    var eq: i64 = 1;
+                    var b: i64 = 0;
+                    while b < len {
+                        if text[pos + b] != gguf[tok_off[id] + b] {
+                            eq = 0;
+                            b = len;
+                        } else {
+                            b = b + 1;
+                        }
+                    }
+                    if eq == 1 {
+                        hit = id;
+                        hit_len = len;
+                        k = n_special;
+                    }
+                }
+            }
+            k = k + 1;
+        }
+        if hit < 0 {
+            pos = pos + 1;
+        } else {
+            if n * 3 + 3 > hits.len {
+                return -2;
+            }
+            hits[n * 3]     = pos;
+            hits[n * 3 + 1] = pos + hit_len;
+            hits[n * 3 + 2] = hit;
+            n = n + 1;
+            pos = pos + hit_len;
+        }
+    }
+    return n;
+}
+
 export fn bt_special_order(gguf: const u8[:], tok_off: const i64[:], tok_len: const i64[:],
                            attr: const i64[:], order: i64[:]) -> i64 {
     return bt_special_order_impl(gguf, tok_off, tok_len, attr, order);

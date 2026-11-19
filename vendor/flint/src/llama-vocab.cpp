@@ -1,3 +1,5 @@
+#include <atomic>
+#include <dlfcn.h>
 #include "llama-vocab.h"
 
 #include "ggml.h"
@@ -593,6 +595,39 @@ struct llm_tokenizer_bpe : llm_tokenizer {
     bool byte_encode = true; // GPT-2 byte encoding; false for SPM-style BPE (raw UTF-8)
 };
 
+// The BPE comparator door. Called once per merge pop, so the counter moves on any prompt.
+// End-of-generation cross-check. A pure membership test over the EOG set, so the whole vocabulary is
+// compared once on the first call. Kept in its own namespace: an earlier attempt to reuse the
+// detokenizer's helper moved a brace and broke the file (EXP-2026-11-19-1318).
+namespace fg_eog_check {
+struct sl_i64 { int64_t * data; int64_t len; };
+typedef int64_t (*fn_t)(sl_i64, int64_t, int64_t);
+inline fn_t resolve() {
+    static fn_t fn = []() -> fn_t {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        void * sym = h ? dlsym(h, "bt_is_eog") : nullptr;
+        return reinterpret_cast<fn_t>(sym);
+    }();
+    return fn;
+}
+} // namespace fg_eog_check
+
+// One element of a string array through the ported reader. Implemented in llama-model-loader.cpp, which
+// owns the window and the port records; declared here so the vocabulary can be built from the port
+// instead of from the native context (EXP-2026-11-19-1340).
+extern "C" bool fg_port_array_str(int64_t key_index, int64_t element, const uint8_t ** ptr, int64_t * len);
+extern "C" bool fg_port_array_int(int64_t key_index, int64_t element, int64_t * out);
+
+typedef int64_t (*fg_tk_bpe_before_fn)(int64_t, int64_t, int64_t, int64_t);
+static fg_tk_bpe_before_fn fg_tk_bpe_before_resolve() {
+    static fg_tk_bpe_before_fn fn = []() -> fg_tk_bpe_before_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        void * sym = h ? dlsym(h, "fg_tk_bpe_before") : nullptr;
+        return reinterpret_cast<fg_tk_bpe_before_fn>(sym);
+    }();
+    return fn;
+}
+
 struct llm_tokenizer_bpe_session {
     llm_tokenizer_bpe_session(const llama_vocab & vocab, const llm_tokenizer_bpe & tokenizer) : vocab(vocab), tokenizer(tokenizer) {}
 
@@ -703,6 +738,48 @@ struct llm_tokenizer_bpe_session {
             // build token(s)
             while (!work_queue.empty()) {
                 auto bigram = work_queue.pop_move();
+
+                // The queue just produced its own best element. If the ported comparator disagrees
+                // with the order the queue actually applied, this is where it shows - once per merge,
+                // on the real vocabulary. The queue's answer is used either way.
+                // Opt-in: this comparison costs a dlsym-resolved call per merge (4156 per prompt), which
+                // is fine for verification and not fine for a shipped path. FG_TK_DIAG=1 enables it.
+                static const bool fg_bpe_diag = getenv("FG_TK_DIAG") != nullptr;
+                const fg_tk_bpe_before_fn fn = fg_bpe_diag ? fg_tk_bpe_before_resolve() : nullptr;
+                if (fn != nullptr) {
+                    static std::atomic<unsigned long long> calls{0}, bad{0};
+                    const auto c = ++calls;
+                    if (!work_queue.empty()) {
+                        const auto & top = work_queue.top();
+                        const int64_t r = fn(bigram.rank, bigram.left, top.rank, top.left);
+                        if (r != 1) {
+                            ++bad;
+                            if (bad.load() <= 5) {
+                                fprintf(stderr, "FG_TK_BPE_DIFF popped(%d,%lld) vs top(%d,%lld) -> %lld\n",
+                                        bigram.rank, (long long) bigram.left, top.rank,
+                                        (long long) top.left, (long long) r);
+                            }
+                        }
+                    }
+                    // `calls=` is the ordinal of this call, not a total: printing only at 1,2,3 and
+                    // every 20000 left the real total unknown, and I read "calls=3" as "three calls".
+                    // Every 500 plus a final atexit summary makes the total a number that exists.
+                    static std::atomic<unsigned long long> printed{0};
+                    if ((c % 500) == 0) {
+                        fprintf(stderr, "FG_TK_BPE_PROGRESS calls=%llu disagreements=%llu\n",
+                                (unsigned long long) c, (unsigned long long) bad.load());
+                    }
+                    if (printed.fetch_add(1, std::memory_order_relaxed) == 0) {
+                        std::atexit([]() {
+                            fprintf(stderr, "FG_TK_BPE_TOTAL calls=%llu disagreements=%llu\n",
+                                    (unsigned long long) calls.load(), (unsigned long long) bad.load());
+                        });
+                    }
+                    if (false && (c <= 3 || (c % 20000) == 0)) {
+                        fprintf(stderr, "FG_TK_BPE goose calls=%llu disagreements=%llu\n",
+                                (unsigned long long) c, (unsigned long long) bad.load());
+                    }
+                }
 
                 auto & left_symbol = symbols[bigram.left];
                 auto & right_symbol = symbols[bigram.right];
@@ -1130,6 +1207,20 @@ private:
         size_t consumed_input;
     };
 
+// The tokenizer door lives in libllama; the host calls it through the loaded library, with the
+// struct arguments the generated header declares (flattened pairs are an invalid call - measured).
+struct fg_sl_u8 { uint8_t * data; int64_t len; };
+typedef int64_t (*fg_tk_norm_fn)(fg_sl_u8, fg_sl_u8, int64_t, int64_t, int64_t, int64_t);
+
+static fg_tk_norm_fn fg_tk_norm_resolve() {
+    static fg_tk_norm_fn fn = []() -> fg_tk_norm_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        void * sym = h ? dlsym(h, "fg_tk_norm") : nullptr;
+        return reinterpret_cast<fg_tk_norm_fn>(sym);
+    }();
+    return fn;
+}
+
     void normalize(const std::string& input, std::string * normalized) {
         normalized->clear();
         normalized->reserve(input.size() * 3);
@@ -1173,6 +1264,37 @@ private:
 
         if (shall_append_space) {
             normalized->append(space);
+        }
+
+        // Goose cross-check: the native result above is what is returned either way, so a
+        // disagreement is counted and never enforced. This runs for every prompt, so the counter
+        // moves on the first request.
+        if (const auto fn = fg_tk_norm_resolve()) {
+            static thread_local std::vector<uint8_t> in, out;
+            in.assign(input.begin(), input.end());
+            out.assign(input.size() * 3 + 3, 0);
+            fg_sl_u8 sin{ in.data(), (int64_t) in.size() };
+            fg_sl_u8 sout{ out.data(), (int64_t) out.size() };
+            const int64_t n = fn(sin, sout,
+                                 vocab.get_escape_whitespaces() ? 1 : 0,
+                                 shall_prepend_space ? 1 : 0,
+                                 shall_merge_spaces ? 1 : 0,
+                                 shall_append_space ? 1 : 0);
+            static std::atomic<unsigned long long> calls{0}, bad{0};
+            const auto c = ++calls;
+            const bool same = n == (int64_t) normalized->size() &&
+                              std::memcmp(out.data(), normalized->data(), (size_t) n) == 0;
+            if (!same) {
+                ++bad;
+                if (bad.load() <= 5) {
+                    fprintf(stderr, "FG_TK_NORM_DIFF goose=%lld native=%zu\n",
+                            (long long) n, normalized->size());
+                }
+            }
+            if (c <= 3 || (c % 2000) == 0) {
+                fprintf(stderr, "FG_TK_NORM goose calls=%llu disagreements=%llu\n",
+                        (unsigned long long) c, (unsigned long long) bad.load());
+            }
         }
     }
 
@@ -2269,7 +2391,15 @@ void llama_vocab::impl::load(llama_model_loader & ml, const LLM_KV & kv) {
                 const int n_merges = gguf_get_arr_n(ctx, merges_keyidx);
                 bpe_ranks.reserve(n_merges);
                 for (int i = 0; i < n_merges; i++) {
-                    const char * word = gguf_get_arr_str(ctx, merges_keyidx, i);
+                    const uint8_t * fg_p = nullptr; int64_t fg_n = 0;
+                    static thread_local std::string fg_merge;
+                    const char * word;
+                    if (fg_port_array_str(merges_keyidx, i, &fg_p, &fg_n)) {
+                        fg_merge.assign(reinterpret_cast<const char *>(fg_p), (size_t) fg_n);
+                        word = fg_merge.c_str();
+                    } else {
+                        word = gguf_get_arr_str(ctx, merges_keyidx, i);
+                    }
                     //GGML_ASSERT(unicode_cpts_from_utf8(word).size() > 0);
 
                     std::string first;
@@ -2381,7 +2511,15 @@ void llama_vocab::impl::load(llama_model_loader & ml, const LLM_KV & kv) {
                 const int n_merges = gguf_get_arr_n(ctx, merges_keyidx);
                 bpe_ranks.reserve(n_merges);
                 for (int i = 0; i < n_merges; i++) {
-                    const char * word = gguf_get_arr_str(ctx, merges_keyidx, i);
+                    const uint8_t * fg_p = nullptr; int64_t fg_n = 0;
+                    static thread_local std::string fg_merge;
+                    const char * word;
+                    if (fg_port_array_str(merges_keyidx, i, &fg_p, &fg_n)) {
+                        fg_merge.assign(reinterpret_cast<const char *>(fg_p), (size_t) fg_n);
+                        word = fg_merge.c_str();
+                    } else {
+                        word = gguf_get_arr_str(ctx, merges_keyidx, i);
+                    }
 
                     std::string first;
                     std::string second;
@@ -2772,14 +2910,43 @@ void llama_vocab::impl::load(llama_model_loader & ml, const LLM_KV & kv) {
         if (n_toktypes < n_tokens) {
             throw std::runtime_error("Index out of array bounds for toktypes (" + std::to_string(n_toktypes) + " < " + std::to_string(n_tokens) + ")\n");
         }
-        toktypes = (const int * ) gguf_get_arr_data(ctx, toktype_idx);
+        // The token-type table comes from the port when it can answer; the native array is the fallback.
+        // The table is read element by element below, so it is materialised once here.
+        // Every element must be answered, or the whole table falls back: an accessor that returned a default
+        // for a missing key would load a model with silently wrong token attributes, which is the one thing the
+        // plan forbids outright.
+        static thread_local std::vector<int> fg_toktypes;
+        fg_toktypes.clear();
+        bool fg_all = true;
+        for (uint32_t i = 0; i < n_toktypes; ++i) {
+            int64_t v = 0;
+            if (!fg_port_array_int(toktype_idx, (int64_t) i, &v)) { fg_all = false; break; }
+            fg_toktypes.push_back((int) v);
+        }
+        toktypes = (fg_all && fg_toktypes.size() == n_toktypes)
+                       ? fg_toktypes.data()
+                       : (const int *) gguf_get_arr_data(ctx, toktype_idx);
     }
 
     id_to_token.resize(n_tokens);
     token_to_id.reserve(n_tokens);
 
     for (uint32_t i = 0; i < n_tokens; i++) {
-        std::string word = gguf_get_arr_str(ctx, token_idx, i);
+        // The token list comes from the port when it can answer; the native array is the fallback for the
+        // split-file path and for a build where the port is not ready.
+        std::string word;
+        {
+            const uint8_t * p = nullptr; int64_t n = 0;
+            if (fg_port_array_str(token_idx, i, &p, &n)) {
+                static std::atomic<long long> served{0};
+                if (getenv("FG_GGUF_DIAG") && ++served % 65536 == 0) {
+                    fprintf(stderr, "FG_GGUF_SERVED_TOKENS from_port=%lld\n", served.load());
+                }
+                word.assign(reinterpret_cast<const char *>(p), (size_t) n);
+            } else {
+                word = gguf_get_arr_str(ctx, token_idx, i);
+            }
+        }
         if (word.empty()) {
             LLAMA_LOG_WARN("%s: empty token at index %u\n", __func__, i);
             word = "[EMPTY_" + std::to_string(i) + "]";
@@ -3474,8 +3641,57 @@ bool llama_vocab::impl::is_unused(llama_token id) const {
 }
 
 bool llama_vocab::impl::is_eog(llama_token id) const {
+    static const bool diag = getenv("FG_TK_DETOK_DIAG") != nullptr;
+    if (diag) {
+        static struct run {
+            unsigned long long differ = 0;
+            unsigned long long tokens = 0;
+            run(const llama_vocab::impl & v) {
+                const auto fn = fg_eog_check::resolve();
+                if (!fn) { return; }
+                std::vector<int64_t> eog(v.special_eog_ids.begin(), v.special_eog_ids.end());
+                fg_eog_check::sl_i64 s_eog{ eog.empty() ? nullptr : eog.data(), (int64_t) eog.size() };
+                tokens = (unsigned long long) v.id_to_token.size();
+                for (llama_token t = 0; t < (llama_token) v.id_to_token.size(); ++t) {
+                    const int64_t goose = fn(s_eog, (int64_t) eog.size(), (int64_t) t);
+                    const int64_t native = v.special_eog_ids.count(t) > 0 ? 1 : 0;
+                    if (goose != native) {
+                        ++differ;
+                        if (differ <= 5) {
+                            fprintf(stderr, "FG_TK_EOG_DIFF token=%d native=%lld goose=%lld\n",
+                                    (int) t, (long long) native, (long long) goose);
+                        }
+                    }
+                }
+                fprintf(stderr, "FG_TK_EOG_TOTAL tokens=%llu eog=%zu disagreements=%llu\n",
+                        tokens, eog.size(), differ);
+            }
+        } once(*this);
+        (void) once;
+    }
+    // The answer now comes from the port when it can give one: the decision is a membership test the
+    // shipped library computes for all 248 320 tokens, and this is the first place where a generation
+    // decision is taken by the ported code rather than by the native set.
+    if (id != LLAMA_TOKEN_NULL) {
+        if (const auto fn = fg_eog_check::resolve()) {
+            static thread_local std::vector<int64_t> fg_eog_ids;
+            static thread_local bool fg_ready = false;
+            if (!fg_ready) {
+                fg_eog_ids.assign(special_eog_ids.begin(), special_eog_ids.end());
+                fg_ready = true;
+            }
+            fg_eog_check::sl_i64 s_eog{ fg_eog_ids.empty() ? nullptr : fg_eog_ids.data(), (int64_t) fg_eog_ids.size() };
+            static std::atomic<long long> served{0};
+            const long long c = served.fetch_add(1) + 1;
+            if (getenv("FG_TK_DETOK_DIAG") && c % 64 == 1) {
+                fprintf(stderr, "FG_TK_EOG_SERVED from_port=%lld\n", c);
+            }
+            return fn(s_eog, (int64_t) fg_eog_ids.size(), (int64_t) id) != 0;
+        }
+    }
     return id != LLAMA_TOKEN_NULL && special_eog_ids.count(id) > 0;
 }
+
 
 uint8_t llama_vocab::impl::token_to_byte(llama_token id) const {
     GGML_ASSERT(get_type() != LLAMA_VOCAB_TYPE_NONE);
@@ -3663,7 +3879,100 @@ void llama_vocab::impl::tokenizer_st_partition(std::forward_list<fragment_buffer
 }
 
 // NOTE: avoid ever using this except for building the token_to_piece caches
+// Cross-check of the ported detokenizer against the shipped one. The native piece is what returns either
+// way; this only counts disagreements. The hook lives in the function that PRODUCES that piece and calls
+// only the door - an earlier version called a piece function from inside another and recursed until the
+// stack overflowed (EXP-2026-11-19-1316).
+// Defined by the model loader with C linkage; a C++ declaration would mangle the name and the dynamic linker
+// would report it missing at the first call (the gate names it: _Z13fg_bpe_encodePKclPll).
+extern "C" int64_t fg_bpe_encode(const char * text, int64_t n, int64_t * ids, int64_t cap, int64_t parse_special);
+
+namespace fg_detok_check {
+
+struct sl_i64 { int64_t * data; int64_t len; };
+struct sl_u8  { uint8_t  * data; int64_t len; };
+
+typedef int64_t (*fn_t)(sl_u8, sl_i64, sl_i64, sl_i64, int64_t, sl_u8, int64_t, int64_t, int64_t, int64_t);
+
+inline fn_t resolve() {
+    static fn_t fn = []() -> fn_t {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        void * sym = h ? dlsym(h, "bt_token_to_piece") : nullptr;
+        return reinterpret_cast<fn_t>(sym);
+    }();
+    return fn;
+}
+
+inline bool enabled() {
+    static const bool on = getenv("FG_TK_DETOK_DIAG") != nullptr;
+    return on;
+}
+
+struct table {
+    std::string blob;
+    std::vector<int64_t> off, len, attr;
+    bool ready = false;
+};
+
+typedef int64_t (*fn_detok_t)(sl_u8, sl_i64, sl_i64, sl_i64, sl_i64, int64_t, sl_u8,
+                              int64_t, int64_t, int64_t, int64_t, int64_t, int64_t, int64_t, int64_t);
+inline fn_detok_t resolve_detok() {
+    static fn_detok_t fn = []() -> fn_detok_t {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        return h ? reinterpret_cast<fn_detok_t>(dlsym(h, "bt_detokenize")) : nullptr;
+    }();
+    return fn;
+}
+
+// One table for the process: the piece cache builds it, and any other reader can use it.
+inline table & shared() {
+    static table t;
+    return t;
+}
+
+} // namespace fg_detok_check
+
 std::string llama_vocab::impl::token_to_piece_for_cache(llama_token token, bool special) const {
+    // The piece comes from the port when it can produce one. The equality of this door with the native
+    // producer was established for all 248 320 tokens before the conversion (EXP-2026-11-19-1317), and the
+    // diagnostic comparison below keeps running when the flag is set.
+    if (special && token >= 0 && (size_t) token < id_to_token.size()) {
+        if (const auto fn = fg_detok_check::resolve()) {
+            fg_detok_check::table & t = fg_detok_check::shared();
+            if (!t.ready) {
+                size_t total = 0;
+                for (const auto & tk : id_to_token) { total += tk.text.size(); }
+                t.blob.reserve(total);
+                t.off.resize(id_to_token.size());
+                t.len.resize(id_to_token.size());
+                t.attr.resize(id_to_token.size());
+                for (size_t i = 0; i < id_to_token.size(); ++i) {
+                    t.off[i]  = (int64_t) t.blob.size();
+                    t.len[i]  = (int64_t) id_to_token[i].text.size();
+                    t.attr[i] = (int64_t) token_get_attr((llama_token) i);
+                    t.blob.append(id_to_token[i].text);
+                }
+                t.ready = true;
+            }
+            static thread_local std::vector<uint8_t> fg_buf(1024);
+            if (t.ready && t.off[token] + t.len[token] <= (int64_t) t.blob.size()) {
+                fg_detok_check::sl_u8  s_gguf{ (uint8_t *) t.blob.data(), (int64_t) t.blob.size() };
+                fg_detok_check::sl_i64 s_off { t.off.data(),  (int64_t) t.off.size() };
+                fg_detok_check::sl_i64 s_len { t.len.data(),  (int64_t) t.len.size() };
+                fg_detok_check::sl_i64 s_attr{ t.attr.data(), (int64_t) t.attr.size() };
+                fg_detok_check::sl_u8  s_out { fg_buf.data(), (int64_t) fg_buf.size() };
+                const int64_t n = fn(s_gguf, s_off, s_len, s_attr, (int64_t) token, s_out, 0, 0, 1, 0);
+                if (n >= 0 && n < (int64_t) fg_buf.size()) {
+                    static std::atomic<long long> served{0};
+                    const long long c = served.fetch_add(1) + 1;
+                    if (getenv("FG_TK_DETOK_DIAG") && c % 65536 == 0) {
+                        fprintf(stderr, "FG_TK_PIECES_SERVED from_port=%lld\n", c);
+                    }
+                    return std::string(reinterpret_cast<const char *>(fg_buf.data()), (size_t) n);
+                }
+            }
+        }
+    }
     std::string piece;
     piece.resize(piece.capacity());  // using string internal cache
     const int n_chars = vocab.token_to_piece(token, &piece[0], piece.size(), 0, special);
@@ -3674,6 +3983,61 @@ std::string llama_vocab::impl::token_to_piece_for_cache(llama_token token, bool 
     }
     else {
         piece.resize(n_chars);
+    }
+
+    // Compare against the port on the BYTE-ENCODED token text, which is what the door reads: a space is
+    // U+0120 there, not 0x20, and uc_cpt_to_byte maps it back. Only the special=true form is compared,
+    // because the other form deliberately returns nothing for special tokens.
+    if (special && fg_detok_check::enabled() && token >= 0 && (size_t) token < id_to_token.size()) {
+        if (const auto fn = fg_detok_check::resolve()) {
+            static fg_detok_check::table t;
+            if (!t.ready) {
+                size_t total = 0;
+                for (const auto & tk : id_to_token) { total += tk.text.size(); }
+                t.blob.reserve(total);
+                t.off.resize(id_to_token.size());
+                t.len.resize(id_to_token.size());
+                t.attr.resize(id_to_token.size());
+                for (size_t i = 0; i < id_to_token.size(); ++i) {
+                    t.off[i]  = (int64_t) t.blob.size();
+                    t.len[i]  = (int64_t) id_to_token[i].text.size();
+                    t.attr[i] = (int64_t) token_get_attr((llama_token) i);
+                    t.blob.append(id_to_token[i].text);
+                }
+                t.ready = true;
+            }
+            static thread_local std::vector<uint8_t> out(1024);
+            if (t.off[token] + t.len[token] <= (int64_t) t.blob.size() && piece.size() < out.size()) {
+                fg_detok_check::sl_u8  s_gguf{ (uint8_t *) t.blob.data(), (int64_t) t.blob.size() };
+                fg_detok_check::sl_i64 s_off { t.off.data(),  (int64_t) t.off.size() };
+                fg_detok_check::sl_i64 s_len { t.len.data(),  (int64_t) t.len.size() };
+                fg_detok_check::sl_i64 s_attr{ t.attr.data(), (int64_t) t.attr.size() };
+                fg_detok_check::sl_u8  s_out { out.data(),    (int64_t) out.size() };
+                const int64_t got = fn(s_gguf, s_off, s_len, s_attr, (int64_t) token, s_out, 0, 0, 1, 0);
+                static std::atomic<unsigned long long> calls{0}, bad{0};
+                const auto c = ++calls;
+                const bool ok = got == (int64_t) piece.size() &&
+                                (got <= 0 || std::memcmp(out.data(), piece.data(), (size_t) got) == 0);
+                if (!ok) {
+                    ++bad;
+                    if (bad.load() <= 5) {
+                        fprintf(stderr, "FG_TK_DETOK_DIFF token=%d native=%zu goose=%lld\n",
+                                (int) token, piece.size(), (long long) got);
+                    }
+                }
+                if ((c % 500) == 0) {
+                    fprintf(stderr, "FG_TK_DETOK_PROGRESS calls=%llu disagreements=%llu\n",
+                            (unsigned long long) c, (unsigned long long) bad.load());
+                }
+                static std::atomic<unsigned long long> seen{0};
+                if (c != seen.exchange(c)) {
+                    static struct fin { ~fin() {
+                        fprintf(stderr, "FG_TK_DETOK_TOTAL calls=%llu disagreements=%llu\n",
+                                (unsigned long long) calls.load(), (unsigned long long) bad.load()); } } g_fin;
+                    (void) g_fin;
+                }
+            }
+        }
     }
 
     return piece;
@@ -4822,7 +5186,91 @@ int32_t llama_tokenize(
                      int32_t   n_tokens_max,
                         bool   add_special,
                         bool   parse_special) {
-    return vocab->tokenize(text, text_len, tokens, n_tokens_max, add_special, parse_special);
+    const int32_t n = vocab->tokenize(text, text_len, tokens, n_tokens_max, add_special, parse_special);
+
+    // The ported encoder answers, and the native answer stays as the fallback: it is what is returned when the port
+    // refuses, and it is what the comparison reads. Serving used to sit behind FG_TK_BPE_DIAG, which meant the
+    // accepted improvement was off unless a diagnostic was switched on - rule 10 forbids that shape, and the "prove
+    // the Goose path answered" check was only true under the flag (EXP-2026-11-19-1442).
+    // The guard that keeps other families native is upstream and exact: the BPE table is built only when the
+    // vocabulary's tokenizer.ggml.pre is "qwen35", and without it the door refuses. bt_bpe adds no BOS and no EOS, so
+    // the port's contract is the body of the sequence, which is what it was measured on (248 320 token texts,
+    // twenty-three prompts, and a 32 000-token text prompt answering with hash 2d38a6fd6a03).
+    static const bool fg_bpe_serve = []() {
+        const char * v = getenv("FG_TK_BPE_SERVE");
+        return v == nullptr || strcmp(v, "0") != 0;
+    }();
+    static const bool fg_bpe_diag = getenv("FG_TK_BPE_DIAG") != nullptr;
+    if (fg_bpe_serve && n >= 0 && text_len > 0) {
+        static thread_local std::vector<int64_t> ids;
+        if (ids.size() < (size_t) n_tokens_max + 8) { ids.resize((size_t) n_tokens_max + 8); }
+        const int64_t got = fg_bpe_encode(text, (int64_t) text_len, ids.data(), (int64_t) ids.size(),
+                                          parse_special ? 1 : 0);
+        if (got <= 0) {
+            static std::atomic<long long> refused{0};
+            if (refused.fetch_add(1) < 5) {
+                fprintf(stderr, "FG_TK_BPE_REFUSED got=%lld text_len=%d\n", (long long) got, (int) text_len);
+            }
+        }
+        if (got > 0) {
+            // Only the tokens add_special actually adds may be stripped: with it false the native sequence
+            // starts with whatever the text tokenises to, and a text that begins with the BOS token's own text
+            // legitimately starts with BOS. Stripping unconditionally reported two such texts out of 248 320 as
+            // disagreements (EXP-2026-11-19-1397).
+            int32_t lo = 0, hi = n;
+            if (add_special) {
+                if (lo < hi && tokens[lo] == vocab->token_bos()) { lo++; }
+                if (lo < hi && tokens[hi - 1] == vocab->token_eos()) { hi--; }
+            }
+            const int32_t m = hi - lo;
+            bool same = (got == (int64_t) m);
+            for (int32_t i = 0; same && i < m; ++i) { same = tokens[lo + i] == (llama_token) ids[(size_t) i]; }
+
+            if (got > 0 && got + 2 <= n_tokens_max) {
+                llama_token out2[8192];
+                llama_token * dst = n_tokens_max <= 8192 ? out2 : tokens;
+                int32_t w = 0;
+                const bool bos_in_native = (n > lo && tokens[0] == vocab->token_bos());
+                if (bos_in_native) { dst[w++] = vocab->token_bos(); }
+                for (int64_t i = 0; i < got; ++i) { dst[w++] = (llama_token) ids[(size_t) i]; }
+                const bool eos_in_native = (hi < n && tokens[n - 1] == vocab->token_eos());
+                if (eos_in_native) { dst[w++] = vocab->token_eos(); }
+                if (dst != tokens) { for (int32_t i = 0; i < w; ++i) { tokens[i] = dst[i]; } }
+                static std::atomic<long long> served{0};
+                const long long sc = served.fetch_add(1) + 1;
+                if (fg_bpe_diag && sc % 16 == 1) { fprintf(stderr, "FG_TK_BPE_SERVED from_port=%lld\n", sc); }
+                if (fg_bpe_diag) {
+                    // The comparison is measured here, where the answer is actually returned: the block below this
+                    // return never ran, which is why a diag run reported nothing to compare (EXP-2026-11-19-1442).
+                    static std::atomic<long long> calls{0}, bad{0};
+                    const long long c = calls.fetch_add(1) + 1;
+                    if (!same) {
+                        bad.fetch_add(1);
+                        if (bad.load() <= 5) {
+                            fprintf(stderr, "FG_TK_BPE_DIFF native=%d goose=%lld text_len=%d\n",
+                                    (int) m, (long long) got, (int) text_len);
+                        }
+                    }
+                    if (c % 8 == 1 || c == 1) {
+                        fprintf(stderr, "FG_TK_BPE_COMPARE calls=%lld disagreements=%lld\n", c, bad.load());
+                    }
+                }
+                return w;
+            }
+            static std::atomic<long long> calls{0}, bad{0};
+            const long long c = calls.fetch_add(1) + 1;
+            if (!same) {
+                bad.fetch_add(1);
+                if (bad.load() <= 5) {
+                    fprintf(stderr, "FG_TK_BPE_DIFF native=%d goose=%lld text_len=%d\n", (int) m, (long long) got, (int) text_len);
+                }
+            }
+            if (c % 8 == 1) {
+                fprintf(stderr, "FG_TK_BPE_COMPARE calls=%lld disagreements=%lld\n", c, bad.load());
+            }
+        }
+    }
+    return n;
 }
 
 int32_t llama_token_to_piece(
@@ -4832,7 +5280,94 @@ int32_t llama_token_to_piece(
                      int32_t   length,
                      int32_t   lstrip,
                         bool   special) {
-    return vocab->token_to_piece(token, buf, length, lstrip, special);
+    // An id outside the vocabulary used to abort the process: the piece path reaches token_get_attr, which is
+    // id_to_token.at(id) and throws out_of_range, and nothing catches it (measured on -1 and on n_vocab+1000, both
+    // std::terminate). A server cannot afford that - token ids arrive from requests, and one bad id would end the
+    // process instead of one answer - so the call refuses here, once in the log and always in the answer.
+    {
+        const int32_t fg_nv = (int32_t) llama_vocab_n_tokens(vocab);
+        if (token < 0 || token >= fg_nv) {
+            static std::atomic<long long> fg_bad_token{0};
+            const long long nb = fg_bad_token.fetch_add(1) + 1;
+            if (nb <= 5) {
+                fprintf(stderr, "FG_TOKEN_TO_PIECE_RANGE token=%d n_vocab=%d count=%lld\n", (int) token, (int) fg_nv, nb);
+            }
+            return 0;
+        }
+    }
+
+    // The bytes come from the port when it can produce the whole piece within the caller's buffer. The
+    // native call stays for the one case the door cannot express: a short buffer, where the native returns
+    // -needed so the caller can resize. Serving from the door only on success means a truncation can never
+    // be silently reported as a complete piece.
+    if (const auto fn = fg_detok_check::resolve()) {
+        fg_detok_check::table & t = fg_detok_check::shared();
+        if (t.ready && token >= 0 && (size_t) token < t.off.size()) {
+            static thread_local std::vector<uint8_t> out(4096);
+            fg_detok_check::sl_u8  s_gguf{ (uint8_t *) t.blob.data(), (int64_t) t.blob.size() };
+            fg_detok_check::sl_i64 s_off { t.off.data(),  (int64_t) t.off.size() };
+            fg_detok_check::sl_i64 s_len { t.len.data(),  (int64_t) t.len.size() };
+            fg_detok_check::sl_i64 s_attr{ t.attr.data(), (int64_t) t.attr.size() };
+            fg_detok_check::sl_u8  s_out { out.data(),    (int64_t) out.size() };
+            const int64_t served = fn(s_gguf, s_off, s_len, s_attr, (int64_t) token, s_out, 0,
+                                      (int64_t) lstrip, special ? 1 : 0, 0);
+            // The door is given a 4096-byte window of its own, so it answers with the whole piece - and the copy
+            // below used to write that answer into the caller's buffer without ever comparing it with the caller's
+            // length. A piece of 21 bytes into a 15-byte buffer therefore ran six bytes past it, and the bytes it
+            // landed on were the caller's token id: the server read tok=-779955792 (b0 d1 82 d1, i.e. text) at
+            // generation step 643 of a real agent session (EXP-2026-11-19-1439, root cause found in -1443).
+            // The native contract for "does not fit" is -needed, so that is what is returned here: the caller
+            // resizes and calls again, and no caller can be overflowed whatever length it passes.
+            static std::atomic<long long> from_port{0}, short_buf{0};
+            if (served > (int64_t) length) {
+                const long long sc = short_buf.fetch_add(1) + 1;
+                if (getenv("FG_TK_DETOK_DIAG") && sc <= 5) {
+                    fprintf(stderr, "FG_TK_BUF_SHORT needed=%lld length=%d\n", (long long) served, (int) length);
+                }
+                return (int32_t) (-served);
+            }
+            const long long c = from_port.fetch_add(1) + 1;
+            if (served > 0) { memcpy(buf, out.data(), (size_t) served); }
+            if (getenv("FG_TK_DETOK_DIAG") && c % 2048 == 0) {
+                fprintf(stderr, "FG_TK_BUF_SERVED from_port=%lld\n", c);
+            }
+            return (int32_t) served;
+        }
+    }
+    const int32_t n = vocab->token_to_piece(token, buf, length, lstrip, special);
+
+    // Measurement of the buffer form before any conversion: the door is compared on the flags this call
+    // actually uses, including special = false and lstrip > 0, neither of which the piece cache exercises.
+    // Counted, never enforced - the native bytes are what return.
+    static const bool fg_diag = getenv("FG_TK_DETOK_DIAG") != nullptr;
+    if (fg_diag && n >= 0) {
+        if (const auto fn = fg_detok_check::resolve()) {
+            fg_detok_check::table & t = fg_detok_check::shared();
+            if (t.ready && token >= 0 && (size_t) token < t.off.size()) {
+                static thread_local std::vector<uint8_t> out(1024);
+                fg_detok_check::sl_u8  s_gguf{ (uint8_t *) t.blob.data(), (int64_t) t.blob.size() };
+                fg_detok_check::sl_i64 s_off { t.off.data(),  (int64_t) t.off.size() };
+                fg_detok_check::sl_i64 s_len { t.len.data(),  (int64_t) t.len.size() };
+                fg_detok_check::sl_i64 s_attr{ t.attr.data(), (int64_t) t.attr.size() };
+                fg_detok_check::sl_u8  s_out { out.data(),    (int64_t) out.size() };
+                const int64_t got = fn(s_gguf, s_off, s_len, s_attr, (int64_t) token, s_out, 0,
+                                       (int64_t) lstrip, special ? 1 : 0, 0);
+                static std::atomic<long long> calls{0}, bad{0};
+                const long long c = calls.fetch_add(1) + 1;
+                if (got != (int64_t) n || (n > 0 && memcmp(out.data(), buf, (size_t) n) != 0)) {
+                    bad.fetch_add(1);
+                    if (bad.load() <= 5) {
+                        fprintf(stderr, "FG_TK_BUF_DIFF token=%d lstrip=%d special=%d native=%d goose=%lld\n",
+                                (int) token, (int) lstrip, special ? 1 : 0, (int) n, (long long) got);
+                    }
+                }
+                if (c % 128 == 1) {
+                    fprintf(stderr, "FG_TK_BUF_PROGRESS calls=%lld disagreements=%lld\n", c, bad.load());
+                }
+            }
+        }
+    }
+    return n;
 }
 
 int32_t llama_detokenize(
@@ -4843,5 +5378,73 @@ int32_t llama_detokenize(
                      int32_t   text_len_max,
                         bool   remove_special,
                         bool   unparse_special) {
+    // The whole sequence comes from the port when it fits the caller's buffer. Like the piece form, the
+    // native call stays for the case the door reports as short: it returns -needed so the caller can resize,
+    // and serving a truncated string as if it were complete would be a wrong answer nothing downstream checks.
+    if (getenv("FG_TK_DETOK_DIAG")) {
+        static bool fg_once = false;
+        if (!fg_once) {
+            fg_once = true;
+            fprintf(stderr, "FG_TK_SEQ_STATE fn=%p ready=%d\n",
+                    (void *) fg_detok_check::resolve_detok(), (int) fg_detok_check::shared().ready);
+        }
+    }
+    if (const auto fn = fg_detok_check::resolve_detok()) {
+        fg_detok_check::table & t = fg_detok_check::shared();
+        if (t.ready && n_tokens >= 0) {
+            static thread_local std::vector<int64_t> ids;
+            ids.assign(tokens, tokens + n_tokens);
+            fg_detok_check::sl_u8  s_gguf{ (uint8_t *) t.blob.data(), (int64_t) t.blob.size() };
+            fg_detok_check::sl_i64 s_off { t.off.data(),  (int64_t) t.off.size() };
+            fg_detok_check::sl_i64 s_len { t.len.data(),  (int64_t) t.len.size() };
+            fg_detok_check::sl_i64 s_attr{ t.attr.data(), (int64_t) t.attr.size() };
+            fg_detok_check::sl_i64 s_ids { ids.empty() ? nullptr : ids.data(), (int64_t) ids.size() };
+            fg_detok_check::sl_u8  s_out { (uint8_t *) text, (int64_t) text_len_max };
+            const int64_t served = fn(s_gguf, s_off, s_len, s_attr, s_ids, (int64_t) ids.size(), s_out,
+                                      remove_special ? 1 : 0, unparse_special ? 1 : 0,
+                                      vocab->get_add_space_prefix() ? 1 : 0, vocab->get_add_bos() ? 1 : 0,
+                                      (int64_t) vocab->token_bos(), vocab->get_add_eos() ? 1 : 0,
+                                      (int64_t) vocab->token_eos(), 0);
+            if (served < 0 && getenv("FG_TK_DETOK_DIAG")) {
+                // The short-buffer answer, beside the native one: this is the case the fallbacks exist for and
+                // the only one where the two contracts have never been compared (EXP-2026-11-19-1356).
+                // The scratch buffer must be as large as the caller's limit, or the native call writes past it:
+                // a one-byte buffer with text_len_max of 1014 smashed the stack and crashed the harness, which
+                // looked like a fault in the port for two attempts (EXP-2026-11-19-1403).
+                static thread_local std::vector<char> short_buf;
+                if (short_buf.size() < (size_t) text_len_max + 1) { short_buf.assign((size_t) text_len_max + 1, 0); }
+                const int32_t nat = vocab->detokenize(tokens, n_tokens, short_buf.data(),
+                                                      text_len_max, remove_special, unparse_special);
+                static std::atomic<long long> shorts{0};
+                if (shorts.fetch_add(1) < 6) {
+                    fprintf(stderr, "FG_TK_SEQ_SHORT len_max=%d goose=%lld native=%d\n",
+                            (int) text_len_max, (long long) served, (int) nat);
+                }
+            }
+            {
+                static std::atomic<long long> from_port{0};
+                const long long c = from_port.fetch_add(1) + 1;
+                if (getenv("FG_TK_DETOK_DIAG")) {
+                    // The native call must see the SAME buffer constraint as the door, or a legitimate
+                    // short-buffer answer is compared against a successful native call (measured: it was).
+                    static thread_local char native_buf[1 << 16];
+                    const int32_t nt_max = text_len_max < (int32_t) sizeof(native_buf)
+                                               ? text_len_max : (int32_t) sizeof(native_buf);
+                    if (text_len_max > (int32_t) sizeof(native_buf)) { return (int32_t) served; }
+                    const int32_t nat = vocab->detokenize(tokens, n_tokens, native_buf, nt_max,
+                                                          remove_special, unparse_special);
+                    if (nat != (int32_t) served ||
+                        (nat > 0 && memcmp(native_buf, text, (size_t) nat) != 0)) {
+                        fprintf(stderr, "FG_TK_SEQ_DIFF n_tokens=%d native=%d goose=%lld\n",
+                                (int) n_tokens, (int) nat, (long long) served);
+                    }
+                    if (c % 16 == 1) {
+                        fprintf(stderr, "FG_TK_SEQ_SERVED from_port=%lld\n", c);
+                    }
+                }
+                return (int32_t) served;
+            }
+        }
+    }
     return vocab->detokenize(tokens, n_tokens, text, text_len_max, remove_special, unparse_special);
 }

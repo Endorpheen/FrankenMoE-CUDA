@@ -1,0 +1,4 @@
+alloc=1 gen=0 live=1
+after_reset gen=1
+after_free live=0 gen_stale=0
+realloc=1 live=1

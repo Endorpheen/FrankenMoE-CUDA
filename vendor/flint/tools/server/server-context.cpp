@@ -1,3 +1,4 @@
+#include <dlfcn.h>
 #include "server-context.h"
 #include <atomic>
 #include <thread>
@@ -92,6 +93,17 @@ static std::vector<llama_token> server_accept_replay(
 
 // synthetic draft verification for benchmarking - accept draft tokens at random instead of by match with the target
 // on replay the draft was already accepted before a context checkpoint restore, so repeat the same decisions
+// The speculative doors live in libllama, so the symbol is looked up in the library already loaded.
+typedef int64_t (*fg_sp_synth_fn)(double, double, int64_t, int64_t);
+static fg_sp_synth_fn fg_sp_synth_resolve() {
+    static fg_sp_synth_fn fn = []() -> fg_sp_synth_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        void * sym = h ? dlsym(h, "fg_sp_synth_accept") : nullptr;
+        return reinterpret_cast<fg_sp_synth_fn>(sym);
+    }();
+    return fn;
+}
+
 static std::vector<llama_token> server_sample_and_accept_synth(
         common_sampler * smpl,
         llama_context * ctx,
@@ -110,7 +122,26 @@ static std::vector<llama_token> server_sample_and_accept_synth(
     std::uniform_real_distribution<double> dist(0.0, 1.0);
     for (size_t i = 0; i < draft.size(); ++i) {
         const llama_token id = common_sampler_sample(smpl, ctx, idxs[i]);
-        const bool accept = is_replay || dist(rng) < synth_probs[i];
+        const double u = dist(rng);
+        const bool accept = is_replay || u < synth_probs[i];
+        // Goose cross-check: the native answer above is what is used; a disagreement is only counted.
+        if (const auto fn = fg_sp_synth_resolve()) {
+            static std::atomic<unsigned long long> calls{0}, bad{0};
+            const int64_t goose = fn(synth_probs[i], u, is_replay ? 1 : 0,
+                                     llama_vocab_is_eog(vocab, draft[i]) ? 1 : 0);
+            const auto c = ++calls;
+            if ((goose == 1) != accept) {
+                ++bad;
+                if (bad.load() <= 5) {
+                    fprintf(stderr, "FG_SP_SYNTH_DIFF goose=%lld native=%d p=%.6f u=%.6f replay=%d\n",
+                            (long long) goose, accept ? 1 : 0, synth_probs[i], u, is_replay ? 1 : 0);
+                }
+            }
+            if (c <= 3 || (c % 500) == 0) {
+                fprintf(stderr, "FG_SP_SYNTH goose calls=%llu disagreements=%llu\n",
+                        (unsigned long long) c, (unsigned long long) bad.load());
+            }
+        }
         // do not accept a drafted EOG token - it would end the generation early
         // on replay the last token is from the target and can be EOG, so skip this check
         if (accept && (is_replay || !llama_vocab_is_eog(vocab, draft[i]))) {
@@ -1450,6 +1481,9 @@ private:
         slots.clear();
 
         ctx_tgt_seq_rm_type = common_context_can_seq_rm(ctx_tgt);
+        if (getenv("FG_ACCEPT_DIAG")) {
+            fprintf(stderr, "FG_SEQ_RM type=%d (0=no, so speculative is disabled)\n", (int) ctx_tgt_seq_rm_type);
+        }
         if (ctx_tgt_seq_rm_type == COMMON_CONTEXT_SEQ_RM_TYPE_NO) {
             SRV_WRN("%s", "speculative decoding not supported by this context\n");
         }
@@ -4808,6 +4842,15 @@ private:
                 const bool use_rejection = slot.use_spec_rejection() && !slot.spec_draft_q.empty();
 
                 std::vector<llama_token> accepted;
+                {
+                    static std::atomic<int> fg_branch{0};
+                    static const bool fg_branch_diag = getenv("FG_ACCEPT_DIAG") != nullptr;
+                    if (fg_branch_diag && fg_branch.fetch_add(1) < 3) {
+                        fprintf(stderr, "FG_ACCEPT_BRANCH synth=%d replay=%d reject=%d draft=%zu\n",
+                                (int) synth_probs.size(), (int) slot.spec_is_replay,
+                                (int) slot.use_spec_rejection(), slot.spec_draft.size());
+                    }
+                }
                 if (!synth_probs.empty()) {
                     // synthetic acceptance replaces verification entirely, so it comes first
                     accepted = server_sample_and_accept_synth(

@@ -189,6 +189,13 @@ if (GGML_BACKEND_DL AND NOT BUILD_SHARED_LIBS)
     message(FATAL_ERROR "GGML_BACKEND_DL requires BUILD_SHARED_LIBS")
 endif()
 
+
+# Accepted Goose bridges that ggml calls but whose generated C is a build
+# artefact rather than tracked source: the P1-12 tiled kernel and the P4-13
+# allocator bulk call. Linked here so the ggml libraries resolve at load time.
+set(FG_BRIDGE_MMID "${CMAKE_SOURCE_DIR}/../../experiments/EXP-2026-11-18-1008-p1-12-gemv/build/p112-mmid-v3/libmoe_mmid_tiled.so")
+set(FG_BRIDGE_ALLOC "${CMAKE_SOURCE_DIR}/../../experiments/EXP-2026-11-18-1008-p1-12-gemv/tmp/fg161_host.o")
+
 add_library(ggml-base
             ../include/ggml.h
             ../include/ggml-alloc.h
@@ -645,4 +652,11 @@ if (BUILD_SHARED_LIBS)
         target_compile_definitions(${target} PRIVATE GGML_BUILD)
         target_compile_definitions(${target} PUBLIC  GGML_SHARED)
     endforeach()
+endif()
+
+if (TARGET ggml-base AND EXISTS "${FG_BRIDGE_ALLOC}")
+    target_link_libraries(ggml-base PRIVATE "${FG_BRIDGE_ALLOC}")
+endif()
+if (TARGET ggml-cpu AND EXISTS "${FG_BRIDGE_MMID}")
+    target_link_libraries(ggml-cpu PRIVATE "${FG_BRIDGE_MMID}")
 endif()

@@ -1,4 +1,9 @@
 #include "server-context.h"
+// Per-process draft accounting, filled where drafts are generated and reported with the request timing.
+static int64_t g_spec_draft_us = 0;
+static int64_t g_spec_draft_calls = 0;
+#include <dlfcn.h>
+#include <cstdio>
 #include <atomic>
 #include <thread>
 #include "base64.hpp"
@@ -92,6 +97,16 @@ static std::vector<llama_token> server_accept_replay(
 
 // synthetic draft verification for benchmarking - accept draft tokens at random instead of by match with the target
 // on replay the draft was already accepted before a context checkpoint restore, so repeat the same decisions
+typedef int64_t (*fg_sp_synth_fn)(double, double, int64_t, int64_t);
+static fg_sp_synth_fn fg_sp_synth_resolve() {
+    static fg_sp_synth_fn fn = []() -> fg_sp_synth_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        void * sym = h ? dlsym(h, "fg_sp_synth_accept") : nullptr;
+        return reinterpret_cast<fg_sp_synth_fn>(sym);
+    }();
+    return fn;
+}
+
 static std::vector<llama_token> server_sample_and_accept_synth(
         common_sampler * smpl,
         llama_context * ctx,
@@ -110,7 +125,33 @@ static std::vector<llama_token> server_sample_and_accept_synth(
     std::uniform_real_distribution<double> dist(0.0, 1.0);
     for (size_t i = 0; i < draft.size(); ++i) {
         const llama_token id = common_sampler_sample(smpl, ctx, idxs[i]);
-        const bool accept = is_replay || dist(rng) < synth_probs[i];
+        const double u = dist(rng);
+        const bool accept = is_replay || u < synth_probs[i];
+        // The ported decision, compared against the native one on every position of every draft. The native
+        // answer is the one used; a disagreement is only counted. This copy is the one the build compiles -
+        // the same door added to vendor/flint/tools/server/server-context.cpp is dead source (EXP-2026-11-19-1366).
+        if (const auto fn = fg_sp_synth_resolve()) {
+            static std::atomic<unsigned long long> calls{0}, bad{0};
+            const int64_t goose = fn(synth_probs[i], u, is_replay ? 1 : 0,
+                                     llama_vocab_is_eog(vocab, draft[i]) ? 1 : 0);
+            const auto c = ++calls;
+            // The port folds the end-of-generation veto into its answer, and the native code applies it after
+            // the acceptance decision. Comparing the port's effective decision with the native's raw one would
+            // report every drafted EOG as a disagreement (measured: one, p=0.9167 u=0.0249), so the native side
+            // is the effective one here.
+            const bool native_effective = accept && (is_replay || !llama_vocab_is_eog(vocab, draft[i]));
+            if ((goose == 1) != native_effective) {
+                ++bad;
+                if (bad.load() <= 5) {
+                    fprintf(stderr, "FG_SP_SYNTH_DIFF goose=%lld native=%d p=%.6f u=%.6f replay=%d\n",
+                            (long long) goose, native_effective ? 1 : 0, synth_probs[i], u, is_replay ? 1 : 0);
+                }
+            }
+            if (c <= 3 || (c % 500) == 0) {
+                fprintf(stderr, "FG_SP_SYNTH goose calls=%llu disagreements=%llu\n",
+                        (unsigned long long) c, (unsigned long long) bad.load());
+            }
+        }
         // do not accept a drafted EOG token - it would end the generation early
         // on replay the last token is from the target and can be EOG, so skip this check
         if (accept && (is_replay || !llama_vocab_is_eog(vocab, draft[i]))) {
@@ -807,6 +848,14 @@ struct server_slot {
         SLT_INF(*this,
                 "       eval time = %10.2f ms / %5d tokens (%8.2f ms per token, %8.2f tokens per second)\n",
                 t_gen_total, (int) stats.n_gen, t_gen, n_gen_second);
+
+        if (g_spec_draft_calls > 0) {
+            const double dft_ms = (double) g_spec_draft_us / 1000.0;
+            SLT_INF(*this,
+                    "  draft time = %10.2f ms / %5lld calls (%8.2f ms per call, %5.1f %% of eval)\n",
+                    dft_ms, (long long) g_spec_draft_calls,
+                    dft_ms / (double) g_spec_draft_calls, 100.0 * dft_ms / (t_gen_total > 0.0 ? t_gen_total : 1.0));
+        }
 
         SLT_INF(*this,
                 "      total time = %10.2f ms / %5d tokens\n",
@@ -1520,6 +1569,9 @@ private:
         slots.clear();
 
         ctx_tgt_seq_rm_type = common_context_can_seq_rm(ctx_tgt);
+        if (getenv("FG_ACCEPT_DIAG")) {
+            fprintf(stderr, "FG_SEQ_RM type=%d (0=no, so speculative is disabled)\n", (int) ctx_tgt_seq_rm_type);
+        }
         if (ctx_tgt_seq_rm_type == COMMON_CONTEXT_SEQ_RM_TYPE_NO) {
             SRV_WRN("%s", "speculative decoding not supported by this context\n");
         }
@@ -2181,7 +2233,32 @@ private:
         return true;
     }
 
+    static inline std::atomic<int> g_fg_site{0};
+
     bool process_token(completion_token_output & result, server_slot & slot) {
+        // A token that is not a valid id cannot enter a batch: the builder refuses it far away with
+        // "failed to add token -2100184624 at index 0", which names the number and not the source, and the
+        // process aborts. A real OpenCode request died there (EXP-2026-11-19-1435). The task is failed with a
+        // message instead, so the server stays up and the value is reported where it appeared.
+        {
+            const int32_t fg_nv = llama_vocab_n_tokens(llama_model_get_vocab(llama_get_model(ctx_tgt)));
+            if (result.tok < 0 || result.tok >= fg_nv) {
+                static std::atomic<long long> fg_bad_tok{0};
+                const long long fb = fg_bad_tok.fetch_add(1) + 1;
+                fprintf(stderr, "FG_SERVER_INVALID_TOKEN tok=%d n_vocab=%d n_prompt=%d n_gen=%d count=%lld site=%d\n",
+                        (int) result.tok, (int) fg_nv, (int) slot.prompt.n_tokens(),
+                        (int) slot.generated.size(), fb, g_fg_site.load());
+                // Ending the task here was tried and crashed: send_error/release run inside the sampling path,
+                // with the slot half-way through a decode step. The safe form is to end the generation the way
+                // the model would - with its own end-of-generation token - and let the normal stop path run.
+                const llama_token fg_eos = llama_vocab_eos(llama_model_get_vocab(llama_get_model(ctx_tgt)));
+                result = completion_token_output{};
+                result.tok  = fg_eos;
+                result.prob = 0.0f;
+                result.text_to_send = "";
+            }
+        }
+
         // remember which tokens were sampled - used for repetition penalties during sampling
         const std::string token_str = result.text_to_send;
         slot.sampled = result.tok;
@@ -3934,15 +4011,42 @@ private:
 
         // generate the actual drafts (if any)
         if (!drafting.empty()) {
+            // Same shape as the other stage timers: the total is reported with the request, so the draft's price
+            // can be separated from verification instead of inferred from a two-point solve (EXP-1386/1387).
+            const int64_t t_draft_start = ggml_time_us();
             queue_tasks.yield_to_queue([&]() {
                 common_speculative_draft(spec.get());
             });
+            g_spec_draft_us += ggml_time_us() - t_draft_start;
+            ++g_spec_draft_calls;
         }
 
         // make checkpoints if needed
         iterate(drafting, [&](server_slot & slot) {
             auto & draft = slot.spec_draft;
             auto & ckpt  = slot.spec_ckpt;
+
+            // A drafter can propose a value that is not a token id, and nothing between it and the batch builder
+            // checks: the builder then refuses far away with "failed to add token -2100184624 at index 0", which
+            // names the number and not the source. A real OpenCode request died exactly there
+            // (EXP-2026-11-19-1435). The draft is dropped instead of being let through - a valid draft is
+            // untouched, so no accepted behaviour changes, and the log names the first bad value.
+            if (!draft.empty()) {
+                const int32_t fg_nv = llama_vocab_n_tokens(llama_model_get_vocab(llama_get_model(ctx_tgt)));
+                int32_t fg_first_bad = -1;
+                for (const auto fg_t : draft) {
+                    if (fg_t < 0 || fg_t >= fg_nv) { fg_first_bad = (int32_t) fg_t; break; }
+                }
+                if (fg_first_bad >= 0) {
+                    static std::atomic<long long> fg_dropped{0};
+                    const long long fd = fg_dropped.fetch_add(1) + 1;
+                    if (fd <= 5) {
+                        fprintf(stderr, "FG_SPEC_DRAFT_INVALID n_draft=%zu first_bad=%d n_vocab=%d dropped=%lld\n",
+                                draft.size(), (int) fg_first_bad, (int) fg_nv, fd);
+                    }
+                    draft.clear();
+                }
+            }
 
             slot.stats.n_draft_tokens += draft.size();
 
@@ -4925,6 +5029,7 @@ private:
                 populate_token_probs(slot, result, slot.task->params.post_sampling_probs, params_base.special, tok_idx);
             }
 
+            g_fg_site.store(1);   // plain sampling path
             if (!process_token(result, slot)) {
                 // release slot because of stop condition
                 slot.print_timings();
@@ -4964,6 +5069,16 @@ private:
                 const bool use_rejection = slot.use_spec_rejection() && !slot.spec_draft_q.empty();
 
                 std::vector<llama_token> accepted;
+                {
+                    static std::atomic<int> fg_branch{0};
+                    static const bool fg_branch_diag = getenv("FG_ACCEPT_DIAG") != nullptr;
+                    if (fg_branch_diag && fg_branch.fetch_add(1) < 3) {
+                        fprintf(stderr, "FG_ACCEPT_BRANCH synth=%d replay=%d reject=%d draft=%zu\n",
+                                (int) synth_probs.size(), (int) slot.spec_is_replay,
+                                (int) slot.use_spec_rejection(), slot.spec_draft.size());
+                        fprintf(stderr, "FG_ACCEPT_Q draft_q=%zu\n", slot.spec_draft_q.size());
+                    }
+                }
                 if (!synth_probs.empty()) {
                     // synthetic acceptance replaces verification entirely, so it comes first
                     accepted = server_sample_and_accept_synth(
@@ -5069,6 +5184,7 @@ private:
 
                 slot.stats.n_gen += 1;
 
+                g_fg_site.store(2);   // speculative accept path
                 if (!process_token(result, slot)) {
                     slot.print_timings();
                     send_final_response(slot);

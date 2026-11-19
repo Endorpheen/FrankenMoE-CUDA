@@ -50,6 +50,11 @@ extern "qz_abs" fn fabs32(v: f32) -> f32;
 
 // ---- ggml type ids and per-type geometry ----------------------------------
 
+// The unquantised types carry no blocks: one element per block, and the row size is the element size times the count.
+// They are ported because the Apex model is mostly f32 (310 of 753 tensors), so without them the native row-size body for
+// f32 remains the only implementation and cannot be removed (EXP-2026-11-19-1470).
+const T_F32: i64 = 0;
+const T_F16: i64 = 1;
 const T_Q4_0: i64 = 2;
 const T_Q4_1: i64 = 3;
 const T_Q5_0: i64 = 6;
@@ -75,7 +80,14 @@ const B_Q1_0: i64 = 18; // f16 d + 16 sign-bit bytes
 const B_Q2_0: i64 = 18; // f16 d + 16 two-bit bytes
 
 // ggml_blck_size for the seven types, -1 for everything outside S3a.
+const QK_F32: i64 = 1;
+const QK_F16: i64 = 1;
+const B_F32: i64 = 4;
+const B_F16: i64 = 2;
+
 export fn qz_blck(t: i64) -> i64 {
+    if t == T_F32 { return QK_F32; }
+    if t == T_F16 { return QK_F16; }
     if t == T_Q4_0 { return QK4_0; }
     if t == T_Q4_1 { return QK4_1; }
     if t == T_Q5_0 { return QK5_0; }
@@ -88,6 +100,8 @@ export fn qz_blck(t: i64) -> i64 {
 
 // ggml_type_size: bytes per block, -1 for everything outside S3a.
 export fn qz_type_size(t: i64) -> i64 {
+    if t == T_F32 { return B_F32; }
+    if t == T_F16 { return B_F16; }
     if t == T_Q4_0 { return B_Q4_0; }
     if t == T_Q4_1 { return B_Q4_1; }
     if t == T_Q5_0 { return B_Q5_0; }

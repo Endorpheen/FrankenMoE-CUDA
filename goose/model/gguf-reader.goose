@@ -213,6 +213,30 @@ fn gr_meta_int_impl(data: const u8[:], state: i64[:], kv: i64[:], index: i64, ou
     return gr_int(data, kv[index * 8 + 4], kv[index * 8 + 2], out);
 }
 
+// Raw bytes of one array element, as an integer, for any element type of eight bytes or fewer. Comparing
+// elements whose type has no integer interpretation - FLOAT32 and FLOAT64 arrays - needs the bytes themselves:
+// a float array read through gr_array_int would be compared as if its bits were an integer of another width
+// (EXP-2026-11-19-1400 records that those arrays were not compared at all).
+export fn gr_array_raw_bits(data: const u8[:], state: i64[:], kv: i64[:], index: i64, element: i64, out: i64[:]) -> i64 {
+    if state.len < 8 || state[0] != 919 || index < 0 || index >= state[2] || index >= kv.len / 8 || element < 0 ||
+       out.len < 2 || kv[index * 8 + 2] != 9 || element >= kv[index * 8 + 5] { return -1; }
+    let dtype: i64 = kv[index * 8 + 3];
+    let size: i64 = ggh_type_size(dtype);
+    if size <= 0 || size > 8 || kv[index * 8 + 4] < 0 ||
+       element > (9223372036854775807 - kv[index * 8 + 4]) / size { return -1; }
+    let at: i64 = kv[index * 8 + 4] + element * size;
+    if !gr_fits(data, at, size) { return -1; }
+    var v: i64 = 0;
+    var i: i64 = 0;
+    while i < size {
+        v = v | ((data[at + i] as i64) << (8 * i));
+        i = i + 1;
+    }
+    out[0] = v;
+    out[1] = size;
+    return 0;
+}
+
 fn gr_array_int_impl(data: const u8[:], state: i64[:], kv: i64[:], index: i64, element: i64, out: i64[:]) -> i64 {
     if state.len < 8 || state[0] != 919 || index < 0 || index >= state[2] || index >= kv.len / 8 || element < 0 ||
        kv[index * 8 + 2] != 9 || element >= kv[index * 8 + 5] { return -1; }
@@ -296,6 +320,28 @@ export fn gr_n_kv(state: i64[:]) -> i64 {
 // Payload spans for a host that keeps reading values from its own container but
 // wants the Goose reader to say where they are. Offsets are relative to the
 // header window the reader parsed; a value outside it is refused.
+// Descriptor of one tensor, as the loader reads it: [0] dtype, [1] dimension count, [2..5] extents,
+// [6] element count, [7] byte count, [8] data offset. The records already hold all of this; nothing
+// exposed it, so a host could find a tensor by name and not ask what it was (EXP-2026-11-19-1327).
+export fn gr_tensor_info(state: i64[:], tensors: i64[:], index: i64, out: i64[:]) -> i64 {
+    if state.len < 8 || state[0] != 919 || index < 0 || index >= state[3] ||
+       index >= tensors.len / 12 || out.len < 9 {
+        return -1;
+    }
+    let base: i64 = index * 12;
+    out[0] = tensors[base + 2];
+    out[1] = tensors[base + 3];
+    var d: i64 = 0;
+    while d < 4 {
+        out[2 + d] = tensors[base + 4 + d];
+        d = d + 1;
+    }
+    out[6] = tensors[base + 8];
+    out[7] = tensors[base + 9];
+    out[8] = tensors[base + 10];
+    return 0;
+}
+
 export fn gr_val_span(state: i64[:], kv: i64[:], index: i64, out: i64[:]) -> i64 {
     if state.len < 8 || state[0] != 919 || index < 0 || index >= state[2] || index >= kv.len / 8 || out.len < 4 {
         return -1;
@@ -337,6 +383,38 @@ fn gr_span_impl(data: const u8[:], state: i64[:], kv: i64[:], index: i64, elemen
     out[0] = at + 8;
     out[1] = len as! i64;
     return 0;
+}
+
+// Offsets and lengths of every element of a string array, taken from the file's own window in one pass.
+// gr_arr_str_span answers the same question for one element but walks from the array start each call, which is
+// quadratic over a vocabulary of 248 320 tokens; gr_arr_str_table copies the text, which a caller that indexes the
+// file window cannot use (EXP-2026-11-19-1389, -1390).
+export fn gr_arr_str_offsets(data: const u8[:], state: i64[:], kv: i64[:], index: i64,
+                             offs: i64[:], lens: i64[:]) -> i64 {
+    if state.len < 8 || state[0] != 919 || index < 0 || index >= state[2] || index >= kv.len / 8 ||
+       kv[index * 8 + 2] != 9 || kv[index * 8 + 3] != 8 {
+        return -1;
+    }
+    let n: i64 = kv[index * 8 + 5];
+    if offs.len < n || lens.len < n {
+        return -2;
+    }
+    var at: i64 = kv[index * 8 + 4];
+    var i: i64 = 0;
+    while i < n {
+        if !gr_fits(data, at, 8) {
+            return -1;
+        }
+        let len: u64 = gr_bits(data, at, 8);
+        if len > 9223372036854775807 || !gr_fits(data, at + 8, len as! i64) {
+            return -1;
+        }
+        offs[i] = at + 8;
+        lens[i] = len as! i64;
+        at = at + 8 + (len as! i64);
+        i = i + 1;
+    }
+    return n;
 }
 
 // Export wrapper: the body stays non-exported so that callers inside the unit

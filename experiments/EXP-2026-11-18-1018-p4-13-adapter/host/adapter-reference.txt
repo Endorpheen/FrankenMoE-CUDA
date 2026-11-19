@@ -1,0 +1,2 @@
+alloc=1 live=1 gen=0
+place_fresh=0 reset=1 place_stale=-1 release=0 live=0 gen=0

@@ -1,0 +1,52 @@
+== repro_group0, reference fixed (in-repro block-format dot) ==
+ggml_vec_dot_q4_K_q8_K and _generic return 0 for external callers in this
+build, so the reference is computed from the block format with the native
+float order. Row offsets are absolute r*nb0 (they were window-relative).
+
+-- WKL (build/repro_group0) --
+[evidence-mmid/failing_case.bin]
+ith= 1 nth=16 group=0 rows=[0,64) eq=64/64 first_diff=-1
+ith= 3 nth=16 group=1 rows=[64,128) eq=64/64 first_diff=-1
+ith= 5 nth=16 group=2 rows=[128,192) eq=64/64 first_diff=-1
+ith= 7 nth=16 group=3 rows=[192,256) eq=64/64 first_diff=-1
+ith= 9 nth=16 group=4 rows=[256,320) eq=64/64 first_diff=-1
+ith=11 nth=16 group=5 rows=[320,384) eq=64/64 first_diff=-1
+ith=13 nth=16 group=6 rows=[384,448) eq=64/64 first_diff=-1
+ith=15 nth=16 group=7 rows=[448,512) eq=64/64 first_diff=-1
+total rows compared=64 diffs=0
+exit=0
+[evidence-mmid/failing_case_group6.bin]
+ith= 1 nth=16 group=0 rows=[0,64) eq=64/64 first_diff=-1
+ith= 3 nth=16 group=1 rows=[64,128) eq=64/64 first_diff=-1
+ith= 5 nth=16 group=2 rows=[128,192) eq=64/64 first_diff=-1
+ith= 7 nth=16 group=3 rows=[192,256) eq=64/64 first_diff=-1
+ith= 9 nth=16 group=4 rows=[256,320) eq=64/64 first_diff=-1
+ith=11 nth=16 group=5 rows=[320,384) eq=64/64 first_diff=-1
+ith=13 nth=16 group=6 rows=[384,448) eq=64/64 first_diff=-1
+ith=15 nth=16 group=7 rows=[448,512) eq=64/64 first_diff=-1
+total rows compared=64 diffs=0
+exit=0
+
+-- scalar (build/repro_group0_scalar) --
+[evidence-mmid/failing_case.bin]
+ith= 1 nth=16 group=0 rows=[0,64) eq=64/64 first_diff=-1
+ith= 3 nth=16 group=1 rows=[64,128) eq=64/64 first_diff=-1
+ith= 5 nth=16 group=2 rows=[128,192) eq=64/64 first_diff=-1
+ith= 7 nth=16 group=3 rows=[192,256) eq=64/64 first_diff=-1
+ith= 9 nth=16 group=4 rows=[256,320) eq=64/64 first_diff=-1
+ith=11 nth=16 group=5 rows=[320,384) eq=64/64 first_diff=-1
+ith=13 nth=16 group=6 rows=[384,448) eq=64/64 first_diff=-1
+ith=15 nth=16 group=7 rows=[448,512) eq=64/64 first_diff=-1
+total rows compared=64 diffs=0
+exit=0
+[evidence-mmid/failing_case_group6.bin]
+ith= 1 nth=16 group=0 rows=[0,64) eq=64/64 first_diff=-1
+ith= 3 nth=16 group=1 rows=[64,128) eq=64/64 first_diff=-1
+ith= 5 nth=16 group=2 rows=[128,192) eq=64/64 first_diff=-1
+ith= 7 nth=16 group=3 rows=[192,256) eq=64/64 first_diff=-1
+ith= 9 nth=16 group=4 rows=[256,320) eq=64/64 first_diff=-1
+ith=11 nth=16 group=5 rows=[320,384) eq=64/64 first_diff=-1
+ith=13 nth=16 group=6 rows=[384,448) eq=64/64 first_diff=-1
+ith=15 nth=16 group=7 rows=[448,512) eq=64/64 first_diff=-1
+total rows compared=64 diffs=0
+exit=0

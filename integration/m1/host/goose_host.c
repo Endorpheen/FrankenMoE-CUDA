@@ -40,6 +40,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <time.h>
 
 // ---- the IQ table contract, installed at init ------------------------------
@@ -528,6 +529,24 @@ void qz_st_u8(uint64_t a, int64_t v) {
 uint64_t qz_tmp(int64_t off) {
     return host_tmp(off);
 }
+
+// File-descriptor I/O. These exist because Goose cannot declare read/write/close
+// itself: the generated unit includes unistd.h, which declares them with a
+// different prototype, so an extern of that name is a compile error (compiler
+// blocker 6). socket/bind/listen/accept/getsockname do NOT collide and are called
+// directly from Goose. These three are substrate primitives, the same category as
+// qz_st_u8 and qz_ld_u8 - they move bytes, they decide nothing.
+int64_t qz_rd(int64_t fd, uint64_t buf, int64_t n) {
+    return (int64_t) read((int) fd, (void *) (uintptr_t) buf, (size_t) n);
+}
+
+int64_t qz_wr(int64_t fd, uint64_t buf, int64_t n) {
+    return (int64_t) write((int) fd, (const void *) (uintptr_t) buf, (size_t) n);
+}
+
+int64_t qz_cl(int64_t fd) {
+    return (int64_t) close((int) fd);
+}
 // ---- the 14 IQ table views the unit declares -------------------------------
 
 // One dispatcher per view; the six provider entries of fg_goose_iq_tables do
@@ -606,4 +625,11 @@ int64_t qz_iq3_nb(int64_t g, int64_t off) {
 int64_t qz_iq3_qgrid(int64_t g, int64_t i) {
     const fg_goose_iq_tables * tables = iq_tables_required("qz_iq3_qgrid");
     return tables->iq3_grid(tables->ctx, g, i);
+}
+
+// A store, and only a store: goose/server/shutdown-policy.goose writes its three
+// decision words through this. It is host binding, not logic - the action, the exit
+// code and the message flag are chosen in Goose.
+void fg448_st_i64(uint64_t base, uint64_t offset, int64_t value) {
+    *(int64_t *) (uintptr_t) (base + offset) = value;
 }

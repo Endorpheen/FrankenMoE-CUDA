@@ -179,6 +179,17 @@ export fn key_authorize(
     poff: const i64[:],
     auth: const u8[:],
     apikey: const u8[:]) -> i64 {
+    return key_authorize_impl(keys, koff, path, paths, poff, auth, apikey);
+}
+
+fn key_authorize_impl(
+    keys: const u8[:],
+    koff: const i64[:],
+    path: const u8[:],
+    paths: const u8[:],
+    poff: const i64[:],
+    auth: const u8[:],
+    apikey: const u8[:]) -> i64 {
     // no key configured: validation is skipped entirely
     if koff.len - 1 <= 0 {
         return 1;

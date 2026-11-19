@@ -1,0 +1,10 @@
+reference proof:
+row2 before init: 0.0632556081
+ggml_vec_dot(init) vs delivered EXP665 row object: 512/512 bit-identical
+sample row2: vec_dot=0.0632556081 row_object=0
+
+gated A/B: native decode [28.85] prefill [70.4] sha {'5a82551375c2'}
+gated A/B: goose  decode [27.21] prefill [61.3] sha {'5a82551375c2'}
+MMID_HOOK_TOTAL goose=0 native=284336 fallback=0
+MMID_GOOSE_FIRST ne00=2048 ne01=512 cne1=8 ith=0 nth=16
+MMID_HOOK_TOTAL goose=8767 native=276898 fallback=0

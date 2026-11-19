@@ -1,4 +1,9 @@
 #include "llama-impl.h"
+
+// Array elements through the ported reader, declared where they are implemented (llama-model-loader.cpp).
+// A metadata dump is a read like any other, and the file-level gate has compared every element of every
+// array with the native reader (EXP-2026-11-19-1338).
+extern "C" bool fg_port_array_str(int64_t key_index, int64_t element, const uint8_t ** ptr, int64_t * len);
 #include "llama-mmap.h"
 
 #include "ggml-backend.h"
@@ -183,7 +188,15 @@ std::string gguf_kv_to_str(const struct gguf_context * ctx_gguf, int i, size_t m
                         res += ", ";
                     }
                     if (arr_type == GGUF_TYPE_STRING) {
-                        const char * s = gguf_get_arr_str(ctx_gguf, i, j);
+                        static thread_local std::string fg_elem;
+                        const uint8_t * fg_p = nullptr; int64_t fg_n = 0;
+                        const char * s;
+                        if (fg_port_array_str((int64_t) i, (int64_t) j, &fg_p, &fg_n)) {
+                            fg_elem.assign(reinterpret_cast<const char *>(fg_p), (size_t) fg_n);
+                            s = fg_elem.c_str();
+                        } else {
+                            s = gguf_get_arr_str(ctx_gguf, i, j);
+                        }
                         const size_t need = res.size() + 2 * strlen(s) + 2;
                         if (res.capacity() < need) {
                             res.reserve(std::max(need, 2 * res.capacity()));

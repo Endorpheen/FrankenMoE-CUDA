@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="FrankenMoE">
+  <defs>
+    <linearGradient id="e" x1="0" y1="1" x2="0.4" y2="0">
+      <stop offset="0" stop-color="#8A4A22"/>
+      <stop offset="0.55" stop-color="#C87942"/>
+      <stop offset="1" stop-color="#DF7138"/>
+    </linearGradient>
+  </defs>
+  <!-- Built to read at 16 px: three solid shapes, no strokes. A goose body, a raised neck with a head, and a flame crest. -->
+  <path fill="url(#e)" d="M8 29c-3.3 0-6-2.6-6-5.9 0-3.2 2.6-5.9 5.9-5.9.5 0 1 .1 1.5.2C11 14.6 13.6 12 17 10.6V6.9
+      c0-2.7 2.2-4.9 4.9-4.9 2.4 0 4.4 1.7 4.8 4h-3.1c-.3-1-1.2-1.7-2.2-1.7-1.4 0-2.5 1.1-2.5 2.5v7.3c0 .7-.4 1.3-1 1.6
+      -2.8 1.2-5 3.5-6 6.5-.3.8-1 1.3-1.9 1.3-.4 0-.7-.1-1-.1-1.1 0-2 .9-2 2s.9 2 2 2c.3 0 .6-.1.9-.2.4-.1.8 0 1.1.2
+      .5.4 1.1.6 1.8.6z"/>
+  <!-- flame crest above the head -->
+  <path fill="#DF7138" d="M23.4 1.2c1.9 1.6 3 3.9 3 6.4 0 1.1-.2 2.1-.6 3-1.2-1.3-1.9-3-1.9-4.9 0-1.7.6-3.3 1.5-4.6
+      -1.5.6-2.6 2-2.6 3.7 0 .6.1 1.1.4 1.6-1.4-.9-2.3-2.5-2.3-4.3 0-1.3.6-2.5 1.5-3.4z"/>
+</svg>

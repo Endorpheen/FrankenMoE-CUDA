@@ -212,6 +212,9 @@ _CARRIER_UNIT = [
     'misc/unicode-tables.goose', 'misc/unicode-text.goose',
     'misc/pretokenizer-qwen35.goose', 'model/bpe-tokenize.goose',
     'model/bpe-detokenize.goose', 'model/bpe-load.goose',
+    # The sampler filters are decisions over a candidate array, so they belong in
+    # the same unit as the tokenizer: one object, one goose_init, no new adapter.
+    'misc/sampler-typical.goose', 'misc/sampler-top-n-sigma.goose', 'misc/sampler-dry.goose',
 ]
 _cunit = _gobj/'tokenizer-unit.goose'
 _r = subprocess.run([sys.executable, str(_REPO/'tools'/'compose-goose.py'), str(_cunit)]

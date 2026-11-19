@@ -247,10 +247,17 @@ fn dt_piece(out: u8[:], off: i64, cap: i64,
 
 fn dt_piece_body(gguf: const u8[:], tok_off: const i64[:], tok_len: const i64[:], attr: const i64[:],
                  token: i64, out: u8[:], off: i64, cap: i64, lstrip: i64, special: i64, escape_ws: i64) -> i64 {
-    if token < 0 || token >= tok_off.len || attr.len < tok_off.len || off < 0 || cap < 0 || off > out.len {
+    if token < 0 || token >= tok_off.len || attr.len < tok_off.len || off < 0 || cap < 0 {
         return 0;
     }
-    let room: i64 = out.len - off;
+    // `off` may be past the end of the buffer once the caller has started accounting for a shortfall: the
+    // native loop keeps asking each remaining piece for its size so the total it reports is the whole
+    // needed length. Refusing that asked-for size here made the door report where it stopped rather than
+    // what was needed (-18 against -1015, measured in EXP-2026-11-19-1356).
+    var room: i64 = 0;
+    if off < out.len {
+        room = out.len - off;
+    }
     var use: i64 = cap;
     if use > room {
         use = room;

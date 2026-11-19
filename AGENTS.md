@@ -515,6 +515,18 @@ come from Igor directly. For every marked message:
     Final acceptance: the necessary runtime code is Goose, and building and running it requires no C++ source and no
     C++ runtime - with correctness proved by gates and performance not below the preserved 44.5 tok/s reference.
 
+    Every commit reports three numbers: C++ lines added, C++ lines deleted, and which functions moved under Goose
+    control. New functionality - architecture logic, algorithms, memory, graph and model management - is written in
+    Goose. The only permitted new C++ is a temporary bridge that brings Goose in and is removed afterwards, and only
+    when it enables the deletion of substantially more C++ than it adds; every exception states that plan. Reviews
+    check this policy. Functionality is never moved from Goose back into C++.
+
+    Apex regressions are measured against the accepted reference only. The manifest and hashes live in
+    `docs/reference/apex-exp906/manifest.json`, and `bash tools/verify-apex-reference.sh` must pass before an Apex
+    measurement and refuses on any hash mismatch. That directory is never rebuilt, overwritten or repackaged in
+    place; new builds live in their own directory. The current canonical baseline is the newer accepted checkpoint
+    named in rule 31 - EXP906 stays the immutable historical control, not a ceiling on what may be accepted.
+
 28. Mandatory dead-C++ audit, after every port and every removal.
 
     Search automatically for: unused C++ functions, classes, structs and variables; old C++ paths wholly replaced by
@@ -589,31 +601,170 @@ come from Igor directly. For every marked message:
 
     Apex parameters are fixed and are not to be tuned to make an error disappear: context 262144, GPU cache 4992 MiB.
 
-31. C++ must die. Goose must fly.
+31. Every accepted stage is integrated into one cumulative baseline, and that
+    baseline is tested before the next stage begins.
 
-    FrankenMoE-CUDA is a Goose runtime project, not a C++ project. New
-    functionality - architecture logic, algorithms, memory, graph and model
-    management - is written in Goose. The only permitted new C++ is a temporary
-    bridge that brings Goose in and is removed afterwards, and only when it
-    enables the deletion of substantially more C++ than it adds; every exception
-    states that plan. Functionality is never moved from Goose back into C++.
+    The working runtime is a single build that carries every previously accepted
+    Goose module and optimisation. It is never rebuilt from the historical
+    EXP906 without them, and EXP906 itself is only the immutable control
+    reference, not the working tree.
 
-    Every commit reports three numbers: C++ lines added, C++ lines deleted, and
-    which functions moved under Goose control. Reviews check this policy. The
-    end state is a standalone Goose runtime with no C++ in the compute
-    architecture.
+    After every migration stage:
 
-32. Apex regressions are always measured against the accepted EXP906 runtime.
+    - integrate the result on top of the current baseline, not on EXP906;
+    - before any measurement, check that every previously accepted Goose
+      component is present, is actually called on its path (witness in the
+      server log), and still works;
+    - run the three paired A/B runs on the cumulative build, comparing it with
+      EXP906 for the record result and with the previous accepted checkpoint for
+      new regressions;
+    - report prefill and decode per run, medians, percentages, VRAM and RAM,
+      token and answer correctness, and the delta against the previous
+      checkpoint;
+    - after acceptance, save the build as the next checkpoint and the base for
+      all following stages.
 
-    The only accepted reference is
-    `/home/end0/AI/LlamaServer/apex-independent-fast-20261116/run/`, with the
-    manifest and hashes in `docs/reference/apex-exp906/manifest.json`
-    (decode 55.517645, prefill 2625.206607 on the 32768/512 profile, CUDA
-    library sha256 `17e79510f378...`). A CMake build, an old binary or any other
-    assembly is a CANDIDATE, never a reference; candidate numbers are compared
-    to this manifest under identical flags.
+    Losing, disabling or silently bypassing an accepted Goose kernel during a
+    rebuild is a defect, not a trade-off. `tools/check-cumulative-baseline.py`
+    enforces the presence check and runs before any acceptance measurement.
 
-    `bash tools/verify-apex-reference.sh` must pass before an Apex measurement
-    and refuses on any hash mismatch. The reference directory is never rebuilt,
-    overwritten or repackaged in place; new builds live in their own directory
-    and releases carry a byte copy with its own SHA256SUMS.
+    Fixed acceptance profile: Apex-35B-V1.0-Q4_K_M, RTX 4070 12 GiB, 32K input
+    and 512 output tokens, context 262144, `-b 4096 -ub 4096 -ngl all -fit off
+    --cpu-moe`, `--moe-cache-mib 4992`.
+
+    Current canonical baseline: **EXP-2026-11-19-1298**, decode 62.73 and prefill
+    2948.0 tok/s (medians of nine responses), VRAM 9511 MiB, RSS 20837548 kB,
+    response hash `c2ff42cc1219`. Every comparison is made against it on identical
+    conditions; a differing condition is stated, not assumed away.
+    `docs/goose-migration/APEX-BASELINE.md` holds its provenance and the control
+    that isolates its key feature.
+
+    Historical baseline: EXP-2026-11-16-906, decode 55.52 and prefill 2625 tok/s.
+    EXP1298 is +13.1 % and +12.5 % against it. EXP906 and every earlier record stay
+    in the project history with their artefacts untouched; a new confirmed record
+    becomes the current baseline, and no previous baseline is ever deleted,
+    overwritten or declared invalid.
+
+32. Every change grows the existing cumulative Goose build; it never starts a
+    new combination of sources and libraries.
+
+    `tools/build-main-runtime.sh` is the accumulation mechanism and its module
+    list is the input; `docs/goose-migration/BUILD-SET.md` is its generated
+    record and `tools/check-cumulative-baseline.py` guards what is already
+    accepted. A new module joins that accumulated unit with every previously
+    accepted capability intact; it is not a reason to build an independent
+    runtime, and an existing build is extended with the missing component rather
+    than replaced.
+
+    Do not declare a component absent until its Goose source, its generated C,
+    the build scripts that produce it and any preserved artefact have all been
+    checked. A diagnostic script's verdict is not evidence on its own: confirm it
+    with an independent check before acting on it or recording it as fact.
+
+    `tools/build-main-runtime.sh` builds the cumulative Goose unit, not the whole
+    executing server. The task is to connect that existing build to the host
+    runtime step by step, never to substitute a new build for it.
+
+    Every dependency, failure and resolution established during a build is
+    recorded in `docs/goose-migration/BUILD-REGISTRY.md`, so a change of context
+    does not restart the investigation. The single build process must get
+    simpler with each iteration while keeping incrementality, correctness and
+    the accepted checkpoints.
+
+33. One cumulative runtime. Every accepted component, bridge, registration, optimisation and functional
+    Goose path must live in **one growing build**, and nothing may be added as a separate version with
+    lost functionality.
+
+    Before writing anything, find where the behaviour already exists - in the accumulated core, in an
+    earlier checkpoint, in `runtime/reconstructed`, in a build script or in a patch. Connect that
+    implementation to the shared build. Do not re-implement what is already written.
+
+    A successful compile is not evidence that a component is present. After every change, check the
+    built artefact for the components that were already accepted: symbols in the library, strings that
+    only the feature emits, and the environment/CLI flags that disable it. `tools/check-accepted-components.py`
+    performs that check against the shipped library and fails when a component disappears.
+
+    The rule exists because this actually happened: the cumulative candidate compiled
+    `vendor/flint/src/llama-model.cpp`, which contains no host-registration code at all, while the
+    accepted reference binary was built from `runtime/reconstructed/src/llama-model.cpp`, which does
+    (EXP-2026-11-19-1298). Both builds compiled cleanly; only one had the feature; decode differed by
+    about ten tokens per second and the comparison of the two was mistaken for evidence of parity.
+
+34. Naming migrates with the implementation, never ahead of it.
+
+    The project's own names are the destination:
+
+    | today                      | future                  |
+    |----------------------------|-------------------------|
+    | `libllama.so`              | `libgoose-runtime.so`   |
+    | `libllama-server-impl.so`  | `libgoose-server.so`    |
+    | `libggml.so`               | `libgoose-compute.so`   |
+    | `llama-server`             | `frankenmoe-server`     |
+
+    This is a direction, not an instruction to rename anything now. FrankenMoE is the product and the runtime,
+    Goose is the language and the substrate, Fried Goose is the compiler.
+
+    Rules:
+
+    - rename a component only after its Goose implementation is mature enough to carry the name, which means the
+      shipped call path reaches the Goose export and the native body is dead - not that the module compiles;
+    - a compiled Goose module is not a used one, and the two have been confused before (rule 33);
+    - ABI, SONAME, dependencies, library loading and backward compatibility are preserved during the transition: a
+      rename lands as an alias or a symlink with the old name kept working, not as a break;
+    - CI, build scripts, tests, release archives and existing checkpoints keep working through any rename;
+    - never rename a component whose functionality is still mostly C++;
+    - every rename is its own verifiable step with a way back;
+    - a cosmetic rename is never a reason to touch a working runtime.
+
+    The policy lives in `docs/goose-migration/NAMING-POLICY.md` with the per-component state; this rule is the
+    authority and that document is its current accounting.
+
+35. Speed is pursued by improving the implementation, never by relaxing the accepted profile.
+
+    The accepted Apex profile is fixed: context 262144, `-b 4096 -ub 4096`, `-ngl all`, `-fit off`,
+    `--cpu-moe`, `--moe-cache-mib 4992`, KV `q4_0`, the CPU masks, and the 32K-input / 512-output request.
+    Its record is EXP1298 at 62.79 tok/s decode, later confirmed at 62.73 as the canonical median.
+
+    - Changing any of those parameters to gain speed is forbidden. A smaller context, a smaller GPU cache or a
+      lighter memory mode is a different question, not a faster answer.
+    - An experiment with changed parameters is an **exploration**, and its numbers are never presented as an
+      improvement over the record. It is recorded separately and labelled as out of profile.
+    - An optimisation is accepted only after paired A/B runs on the same model, hardware, request and an
+      **identical** profile: decode, prefill, VRAM, RAM, correctness.
+    - If a mechanism (speculative decoding, MTP, a draft model) does not fit inside the accepted profile, that is
+      **technical debt of that mechanism**: reduce its own overhead, do not shrink the runtime's capability.
+    - When an optimisation cannot work inside the profile, the debt is recorded and the migration continues. A
+      prettier number obtained by weakening the test is the failure this rule exists to prevent.
+    - Every performance report states the profile it was measured under, and a figure without it is incomplete.
+
+    The principle in one line: FrankenMoE is made faster, it is not given an easier job.
+
+36. A permanent test lives in `tests/`; an experiment holds the hypothesis, not the regression
+    check.
+
+    The rule takes effect now and applies to every agent:
+
+    - a check that must keep passing is created in `tests/<area>/<test-name>/` with a `run.sh`, a
+      `tier` file (`fast`, `integration`, `performance` or `model`) and a `README.md` naming the
+      oracle, the EXP that produced it and the requirement it covers;
+    - `experiments/EXP-*` keeps hypotheses, one-off diagnostics, measurements and reports. If an
+      experiment needs a new test, the test is written in `tests/` and the experiment card points at
+      its path, its command and its result;
+    - a one-off diagnostic program may stay next to its experiment, but once the result is accepted
+      the regression check moves to `tests/` and the experiment keeps its recorded numbers;
+    - shared inputs go to `tests/fixtures/`, independent reference implementations to
+      `tests/oracles/`. A C++ oracle is never linked into the production runtime;
+    - every test result states the EXP, the source SHA and the requirement it belongs to;
+    - the registry is `tests/REGISTRY.md` and the row is added in the same commit as the test;
+    - no working check is deleted before its replacement passes; the old and the new run side by
+      side until then, and the deletion is its own verifiable step.
+
+    Running is centralised: `bash tests/run.sh fast|<area>|integration|full|performance`. It does
+    not reimplement the acceptance ladder - `fast`, `integration` and `full` delegate to
+    `tools/check.sh`, and anything needing the model or the Apex lock takes the lock itself through
+    `tools/apex-test.sh`. A test without a `tier` file is treated as `model` and never runs
+    implicitly.
+
+    Tests whose tiers are `fast` or `integration` may be wired into CI as they stabilise. CUDA
+    tests run only where a GPU of the right kind exists, model and performance tests stay out of
+    CI, and compiled gates, generated C and large logs are never committed.

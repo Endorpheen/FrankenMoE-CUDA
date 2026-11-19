@@ -1,4 +1,8 @@
 #include "tiled.h"
+#include <vector>
+#include <atomic>
+#include <cstring>
+#include <cstdlib>
 #include "tiled-kernel.h"
 
 #include "ggml-cpu-impl.h"
@@ -1161,6 +1165,11 @@ static bool tiled_matmul_dispatch(const struct ggml_compute_params * params,
 }
 
 // the supported src0 types, one list for both ops; false to fall through to vec_dot
+static bool ggml_goose_mmid_q4_k(const struct ggml_compute_params * params,
+                                       struct ggml_tensor * dst,
+                                 int64_t cur_a, int64_t cne1,
+                                 const int32_t * routes, char * scratch);
+
 static bool ggml_tiled_matmul_type_dispatch(const struct ggml_compute_params * params,
                                             struct ggml_tensor * dst,
                                             const int32_t * expert_rows = NULL,
@@ -1173,7 +1182,10 @@ static bool ggml_tiled_matmul_type_dispatch(const struct ggml_compute_params * p
         case GGML_TYPE_Q5_K:
             return tiled_matmul_dispatch<block_q5_K, 32, true,  0, false>(params, dst, expert_rows, cur_a, cne1, scratch);
         case GGML_TYPE_Q4_K:
-            return tiled_matmul_dispatch<block_q4_K, 32, true,  0, false>(params, dst, expert_rows, cur_a, cne1, scratch);
+            // P1-12: the Q4_K tiled expert kernel is Goose. The native
+            // specialization was removed; declining here falls through to the
+            // stock vec_dot mul_mat path, which is the documented OFF arm.
+            return ggml_goose_mmid_q4_k(params, dst, cur_a, cne1, expert_rows, scratch);
         case GGML_TYPE_Q3_K:
             return tiled_matmul_dispatch<block_q3_K, 16, false,  4, true>(params, dst, expert_rows, cur_a, cne1, scratch);
         case GGML_TYPE_Q2_K:
@@ -1197,6 +1209,70 @@ static bool ggml_tiled_matmul_type_dispatch(const struct ggml_compute_params * p
         default:
             return false;
     }
+}
+
+
+// P1-12: Goose Q4_K tiled expert kernel (whole-kernel AVX2 lowering).
+// The delivered kernel takes activation rows already gathered in route order;
+// this adapter builds that view and nothing else. GGML_GOOSE_MMID_Q4K=0 keeps
+// the native specialization (rule 10: features are disabled, never opted in).
+extern "C" {
+typedef struct {
+    const uint8_t * src0; int64_t ne00; int64_t ne01; int64_t nb01;
+    const uint8_t * act;  int64_t nbw1;
+    const int32_t * routes; int64_t cne1;
+    int64_t nb0, nb1, nb2;
+    float * dst;
+    int32_t ith, nth;
+} fg_mmid_tiled_q4_k_args;
+int32_t fg_cpu_simd_mmid_tiled_q4_k(const fg_mmid_tiled_q4_k_args *, uint8_t *);
+}
+
+static bool ggml_goose_mmid_q4_k(const struct ggml_compute_params * params,
+                                       struct ggml_tensor * dst,
+                                 int64_t cur_a, int64_t cne1,
+                                 const int32_t * routes, char * scratch) {
+    static const bool enabled = []() {
+        const char * e = getenv("GGML_GOOSE_MMID_Q4K");
+        return e == nullptr || atoi(e) != 0;
+    }();
+    static std::atomic<unsigned long> calls{0};
+    struct report { ~report() { fprintf(stderr, "GOOSE_MMID_Q4K calls=%lu\n", calls.load()); } };
+    static report rep;
+    if (!enabled || params == nullptr || dst == nullptr) {
+        return false;
+    }
+    calls.fetch_add(1, std::memory_order_relaxed);
+    const struct ggml_tensor * src0 = dst->src[0];
+    const struct ggml_tensor * src1 = dst->src[1];
+    const enum ggml_type vdt = ggml_get_type_traits_cpu(src0->type)->vec_dot_type;
+    const int64_t nbw1 = (int64_t) ggml_row_size(vdt, src0->ne[0]);
+    const uint8_t * wdata = (const uint8_t *) (src1->type == vdt ? src1->data : params->wdata);
+    const int64_t ne11 = src1->ne[1];
+    static thread_local std::vector<uint8_t> gathered;
+    gathered.resize((size_t) cne1 * (size_t) nbw1);
+    for (int64_t i = 0; i < cne1; ++i) {
+        const int64_t i11 = (int64_t) routes[2 * i] % ne11;
+        const int64_t i12 = (int64_t) routes[2 * i + 1];
+        memcpy(gathered.data() + (size_t) i * (size_t) nbw1,
+               wdata + (size_t) (i11 + i12 * ne11) * (size_t) nbw1, (size_t) nbw1);
+    }
+    fg_mmid_tiled_q4_k_args a{};
+    a.src0   = (const uint8_t *) src0->data + cur_a * src0->nb[2];
+    a.ne00   = src0->ne[0];
+    a.ne01   = src0->ne[1];
+    a.nb01   = (int64_t) src0->nb[1];
+    a.act    = gathered.data();
+    a.nbw1   = nbw1;
+    a.routes = routes;
+    a.cne1   = cne1;
+    a.nb0    = (int64_t) dst->nb[0];
+    a.nb1    = (int64_t) dst->nb[1];
+    a.nb2    = (int64_t) dst->nb[2];
+    a.dst    = (float *) dst->data;
+    a.ith    = (int32_t) params->ith;
+    a.nth    = (int32_t) params->nth;
+    return fg_cpu_simd_mmid_tiled_q4_k(&a, (uint8_t *) scratch) == 0;
 }
 
 static bool ggml_tiled_min_batch(int64_t rows) {

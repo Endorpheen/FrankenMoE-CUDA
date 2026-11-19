@@ -1,3 +1,7 @@
+#include <mutex>
+#include <cstring>
+#include <atomic>
+#include <dlfcn.h>
 #include "llama-arch.h"
 
 #include "llama-impl.h"
@@ -1193,7 +1197,236 @@ const char * llm_arch_name(llm_arch arch) {
     return it->second;
 }
 
+// Goose cross-check: for every architecture name the native table holds, the ported registry must
+// find it and round-trip it. The native parser's answer is what is returned either way.
+struct fg_sl_i64 { int64_t * data; int64_t len; };
+struct fg_sl_u8 { uint8_t * data; int64_t len; };
+typedef int64_t (*fg_ar_find_fn)(fg_sl_u8);
+typedef int64_t (*fg_ar_arch_fn)(int64_t, fg_sl_u8);
+
+static fg_ar_find_fn fg_ar_find_resolve() {
+    static fg_ar_find_fn fn = []() -> fg_ar_find_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        void * sym = h ? dlsym(h, "ar_find") : nullptr;
+        return reinterpret_cast<fg_ar_find_fn>(sym);
+    }();
+    return fn;
+}
+
+static fg_ar_arch_fn fg_ar_arch_resolve() {
+    static fg_ar_arch_fn fn = []() -> fg_ar_arch_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        void * sym = h ? dlsym(h, "ar_arch") : nullptr;
+        return reinterpret_cast<fg_ar_arch_fn>(sym);
+    }();
+    return fn;
+}
+
+// One full sweep over every architecture the native table holds, then the per-call check. The sweep is
+// what makes this a check of the registry rather than of one name; it runs once, on the first lookup.
+static void fg_check_arch_sweep();
+
+typedef int64_t (*fg_ar_suffix_fn)(int64_t, int64_t, fg_sl_u8);
+typedef int64_t (*fg_ar_exps_fn)(int64_t);
+
+static fg_ar_suffix_fn fg_ar_suffix_resolve() {
+    static fg_ar_suffix_fn fn = []() -> fg_ar_suffix_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        void * sym = h ? dlsym(h, "ar_suffix") : nullptr;
+        return reinterpret_cast<fg_ar_suffix_fn>(sym);
+    }();
+    return fn;
+}
+
+static fg_ar_exps_fn fg_ar_exps_resolve() {
+    static fg_ar_exps_fn fn = []() -> fg_ar_exps_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        void * sym = h ? dlsym(h, "ar_exps") : nullptr;
+        return reinterpret_cast<fg_ar_exps_fn>(sym);
+    }();
+    return fn;
+}
+
+typedef int64_t (*fg_ar_match_fn)(fg_sl_u8, int64_t, fg_sl_i64);
+
+static fg_ar_match_fn fg_ar_match_resolve() {
+    static fg_ar_match_fn fn = []() -> fg_ar_match_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        void * sym = h ? dlsym(h, "ar_match") : nullptr;
+        return reinterpret_cast<fg_ar_match_fn>(sym);
+    }();
+    return fn;
+}
+
+static void fg_check_arch_sweep() {
+    const auto find = fg_ar_find_resolve();
+    const auto arch = fg_ar_arch_resolve();
+    if (find == nullptr || arch == nullptr) {
+        return;
+    }
+    // The reference is the registry the port actually ports: runtime/core/src/moe/arch_registry.cpp,
+    // k_recipes[]. A previous version of this sweep compared against llama.cpp's 163-name
+    // LLM_ARCH_NAMES table and reported 154 disagreements - that was my error, not the port's.
+    // The nine names below are a transcription of that native table, listed in its order.
+    // Nine rows, in the native order. My first transcription had eight: the grep pattern
+    // [a-z0-9]+ dropped "gpt-oss" because of its hyphen, and the four "disagreements" it
+    // produced were an off-by-one from my own missing entry.
+    static const char * const kRecipes[] = {
+        "qwen3moe", "qwen2moe", "qwen35moe", "gemma4", "gpt-oss",
+        "lfm2moe", "deepseek4", "bailingmoe3", "qwen4exp",
+    };
+    unsigned long long bad = 0, n = 0, first = 0;
+    for (const char * rec : kRecipes) {
+        const std::string name = rec;
+        fg_sl_u8 sin{ (uint8_t *) name.data(), (int64_t) name.size() };
+        const int64_t row = find(sin);
+        bool ok = row >= 0 && (uint64_t) row == first;
+        if (ok) {
+            uint8_t buf[128] = {0};
+            fg_sl_u8 sout{ buf, (int64_t) sizeof(buf) };
+            const int64_t len = arch(row, sout);
+            ok = len == (int64_t) name.size() && memcmp(buf, name.data(), (size_t) len) == 0;
+        }
+        ++n; ++first;
+        if (!ok) {
+            ++bad;
+            if (bad <= 5) {
+                fprintf(stderr, "FG_ARCH_SWEEP_DIFF name=%s row=%lld expected=%llu\n",
+                        name.c_str(), (long long) row, first - 1);
+            }
+        }
+    }
+    // Suffixes: the row decides which tensors are streamed, so they are checked as well. The table is
+    // transcribed from the same native lines; gemma4 is the one row with two suffixes and a nullptr.
+    const auto suffix = fg_ar_suffix_resolve();
+    const auto exps   = fg_ar_exps_resolve();
+    if (suffix != nullptr && exps != nullptr) {
+        static const char * const std3[3] = { "ffn_gate_exps", "ffn_up_exps", "ffn_down_exps" };
+        for (int64_t row = 0; row < 9; ++row) {
+            const bool gemma = row == 3;
+            const int64_t want_exps = gemma ? 2 : 3;
+            const int64_t got_exps = exps(row);
+            if (got_exps != want_exps) {
+                ++bad;
+                if (bad <= 6) fprintf(stderr, "FG_ARCH_EXPS_DIFF row=%lld got=%lld want=%lld\n",
+                                      (long long) row, (long long) got_exps, (long long) want_exps);
+            }
+            for (int64_t slot = 0; slot < 3; ++slot) {
+                uint8_t buf[128] = {0};
+                fg_sl_u8 sout{ buf, (int64_t) sizeof(buf) };
+                const int64_t len = suffix(row, slot, sout);
+                const char * want = nullptr;
+                if (gemma) {
+                    if (slot == 0) want = "ffn_gate_up_exps";
+                    else if (slot == 1) want = "ffn_down_exps";
+                } else {
+                    want = std3[slot];
+                }
+                bool ok;
+                if (want == nullptr) {
+                    ok = len == -1;
+                } else {
+                    ok = len == (int64_t) strlen(want) && memcmp(buf, want, (size_t) len) == 0;
+                }
+                ++n;
+                if (!ok) {
+                    ++bad;
+                    if (bad <= 6) fprintf(stderr, "FG_ARCH_SUFFIX_DIFF row=%lld slot=%lld len=%lld\n",
+                                          (long long) row, (long long) slot, (long long) len);
+                }
+            }
+        }
+    }
+    // Matcher invariants, built from the same table: the name for a slot must return that slot and its
+    // layer, the ".scale" companion must return -1 (its suffix is a prefix of the name), and a name with
+    // no suffix from the row must return -1. These do not need the native matcher, they are properties
+    // of the contract, which is what the streamer relies on.
+    const auto match = fg_ar_match_resolve();
+    if (match != nullptr) {
+        static const char * const std3m[3] = { "ffn_gate_exps", "ffn_up_exps", "ffn_down_exps" };
+        for (int64_t row = 0; row < 9; ++row) {
+            const bool gemma = row == 3;
+            for (int64_t slot = 0; slot < 3; ++slot) {
+                const char * suf = gemma ? (slot == 0 ? "ffn_gate_up_exps" : (slot == 1 ? "ffn_down_exps" : nullptr))
+                                         : std3m[slot];
+                int64_t lay[2] = { -1, -1 };
+                fg_sl_i64 slay{ lay, 2 };
+                char buf[128];
+                auto run = [&](const std::string & nm, int64_t * out_lay) -> int64_t {
+                    fg_sl_u8 sn{ (uint8_t *) nm.data(), (int64_t) nm.size() };
+                    return match(sn, row, slay);
+                };
+                if (suf != nullptr) {
+                    const std::string pos = std::string("blk.7.") + suf + ".weight";
+                    const int64_t got = run(pos, lay);
+                    ++n;
+                    if (got != slot || lay[0] != 7) {
+                        ++bad;
+                        if (bad <= 6) fprintf(stderr, "FG_ARCH_MATCH_DIFF row=%lld slot=%lld got=%lld lay=%lld\n",
+                                              (long long) row, (long long) slot, (long long) got, (long long) lay[0]);
+                    }
+                    const std::string neg = std::string("blk.7.") + suf + ".scale";
+                    ++n;
+                    if (run(neg, lay) != -1) {
+                        ++bad;
+                        if (bad <= 6) fprintf(stderr, "FG_ARCH_MATCH_SCALE row=%lld slot=%lld\n",
+                                              (long long) row, (long long) slot);
+                    }
+                } else {
+                    // the fused row's empty slot must never match anything
+                    const std::string neg = "blk.7.ffn_down_exps.weight";
+                    ++n;
+                    if (run(neg, lay) != 1) {
+                        ++bad;
+                        if (bad <= 6) fprintf(stderr, "FG_ARCH_MATCH_FUSED row=%lld\n", (long long) row);
+                    }
+                }
+            }
+        }
+    }
+    fprintf(stderr, "FG_ARCH_SWEEP recipes=%llu disagreements=%llu\n", n, bad);
+}
+
+static void fg_check_arch(const std::string & name) {
+    static std::once_flag once;
+    std::call_once(once, fg_check_arch_sweep);
+    const auto find = fg_ar_find_resolve();
+    const auto arch = fg_ar_arch_resolve();
+    if (find == nullptr || arch == nullptr) {
+        return;
+    }
+    static std::atomic<unsigned long long> calls{0}, bad{0};
+    const auto c = ++calls;
+    fg_sl_u8 sin{ (uint8_t *) name.data(), (int64_t) name.size() };
+    const int64_t row = find(sin);
+    bool ok = row >= 0;
+    if (ok) {
+        uint8_t buf[128] = {0};
+        fg_sl_u8 sout{ buf, (int64_t) sizeof(buf) };
+        const int64_t n = arch(row, sout);
+        ok = n == (int64_t) name.size() && memcmp(buf, name.data(), (size_t) n) == 0;
+    }
+    if (!ok) {
+        ++bad;
+        if (bad.load() <= 5) {
+            fprintf(stderr, "FG_ARCH_DIFF name=%s row=%lld\n", name.c_str(), (long long) row);
+        }
+    }
+    if ((c % 32) == 0) {
+        fprintf(stderr, "FG_ARCH_PROGRESS calls=%llu disagreements=%llu\n",
+                (unsigned long long) c, (unsigned long long) bad.load());
+    }
+    static std::atomic<unsigned long long> atexit_once{0};
+    if (atexit_once.fetch_add(1, std::memory_order_relaxed) == 0) {
+        std::atexit([]() {
+            fprintf(stderr, "FG_ARCH_TOTAL calls=%llu disagreements=%llu\n",
+                    (unsigned long long) calls.load(), (unsigned long long) bad.load());
+        });
+    }
+}
+
 llm_arch llm_arch_from_string(const std::string & name) {
+    fg_check_arch(name);
     for (const auto & kv : LLM_ARCH_NAMES) { // NOLINT
         if (kv.second == name) {
             return kv.first;

@@ -295,3 +295,12 @@ reference/apex-47/bin/
 reference/apex-47/lib/
 reference/apex-47/responses/
 reference/independent-build/libllama.so
+experiments/EXP-2026-11-19-1468-quant-rows-gate/quant-rows.c
+experiments/EXP-2026-11-19-1468-quant-rows-gate/quant-rows2.c
+experiments/EXP-2026-11-19-1468-quant-rows-gate/quant-rows.h
+experiments/EXP-2026-11-19-1468-quant-rows-gate/quant-rows2.h
+experiments/EXP-2026-11-19-1468-quant-rows-gate/gate
+
+# Permanent test builds: objects, generated C and gate binaries are reproducible.
+tests/*/*/build/
+tests/*/*/build/**

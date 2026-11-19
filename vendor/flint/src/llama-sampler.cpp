@@ -20,6 +20,150 @@
 #include <unordered_map>
 #include <stdexcept>
 
+// ---- Goose sampler hooks (P6-10) -------------------------------------------
+// The shipped chain module exposes one entry per stage; the references are weak
+// so the runtime works without the shim. GGML_GOOSE_SAMPLER_CHAIN=0 disables.
+#include <atomic>
+#include <chrono>
+#include <cstdlib>
+#include <cstring>
+
+extern "C" int64_t fg_sampler_typical_call(float * lv, float * p, int64_t * id, float * scr,
+                                          int64_t n, float typical_p, int64_t min_keep)
+                                          __attribute__((weak));
+extern "C" int64_t fg_sampler_top_p_call(float * lv, float * p, int64_t * id, int64_t n,
+                                         float top_p, int64_t min_keep) __attribute__((weak));
+
+static std::atomic<unsigned long long> g_goose_chain_calls{0};
+
+// Reused across calls: sampling runs per token, and allocating four vectors of
+// vocabulary size on every token is measurable. thread_local keeps contexts on
+// different threads independent.
+struct fg_scratch_buf {
+    std::vector<float>   lv, pp, scr;
+    std::vector<int64_t> ids;
+    void ensure(size_t n) {
+        if (lv.size() < n) { lv.resize(n); pp.resize(n); scr.resize(n); ids.resize(n); }
+    }
+};
+static thread_local fg_scratch_buf fg_scratch;
+
+// deterministic accounting of the time spent inside each Goose stage
+static std::atomic<long long> fg_ns_typical{0}, fg_ns_top_p{0}, fg_ns_penalties{0}, fg_ns_xtc{0};
+static std::atomic<long long> fg_n_calls{0};
+
+static inline long long fg_now_ns() {
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(
+               std::chrono::steady_clock::now().time_since_epoch()).count();
+}
+static void fg_report_stage(const char * name, std::atomic<long long> & acc, long long dt) {
+    acc.fetch_add(dt, std::memory_order_relaxed);
+    const long long c = fg_n_calls.fetch_add(1, std::memory_order_relaxed) + 1;
+    if ((c % 400) == 0) {
+        fprintf(stderr, "FG_TIME %s total_ms=%.1f per_call_us=%.1f calls=%lld\n", name,
+                acc.load() / 1e6, (double) acc.load() / 1e3 / (double) c, c);
+    }
+}
+// Per-call diagnostics stay behind a flag: the shipped path must not pay for them. FG_SAMPLER_DIAG=1
+// turns on the state trace used to locate a divergence between the two sampling paths.
+static bool fg_diag_enabled() {
+    static const bool on = []() {
+        const char * f = getenv("FG_SAMPLER_DIAG");
+        return f && strcmp(f, "1") == 0;
+    }();
+    return on;
+}
+
+static std::atomic<unsigned long long> g_goose_top_p_calls{0};
+
+// top-p is enabled with the chain; GGML_GOOSE_SAMPLER_TOP_P=0 disables it
+
+extern "C" int64_t fg_sampler_xtc_call(float * lv, float * p, int64_t * id, int64_t n,
+                                       float probability, float threshold, int64_t min_keep,
+                                       float chance) __attribute__((weak));
+static std::atomic<unsigned long long> g_goose_xtc_calls{0};
+
+
+extern "C" int64_t fg_sampler_penalties_call(float * lv, int64_t * id, const float * hist,
+                                             int64_t n, int64_t hn, float repeat,
+                                             float freq, float present, int64_t * tbl_keys,
+                                             int64_t * tbl_cnt, int64_t slots) __attribute__((weak));
+static constexpr int FG_PEN_SLOTS = 1024;
+static thread_local int64_t fg_pen_keys[FG_PEN_SLOTS];
+static thread_local int64_t fg_pen_cnt [FG_PEN_SLOTS];
+static std::atomic<unsigned long long> g_goose_pen_calls{0};
+
+
+extern "C" int64_t fg_sampler_dry_call(const int64_t * last, int64_t * rc, const int64_t * bh,
+                                       const int64_t * bts, const int64_t * btl, const int64_t * btail,
+                                       float * lv, const int64_t * id, int64_t nl, int64_t nc,
+                                       int64_t allowed, int64_t nb, float mult, float base)
+                                       __attribute__((weak));
+static std::atomic<unsigned long long> g_goose_dry_calls{0};
+
+// DRY is enabled with the chain; GGML_GOOSE_SAMPLER_DRY=0 disables it. Proven by
+// the module gate and by a real-path run that matched with the stage off.
+// per-stage switches, each falling back to the chain switch
+static bool fg_stage_flag(const char * chain_var, const char * stage_var) {
+    const char * s = getenv(stage_var);
+    if (s) {
+        return strcmp(s, "0") != 0;
+    }
+    const char * c = getenv(chain_var);
+    return !(c && strcmp(c, "0") == 0);
+}
+
+static bool fg_goose_typical_enabled()    { static const bool v = fg_stage_flag("GGML_GOOSE_SAMPLER_CHAIN", "GGML_GOOSE_SAMPLER_TYPICAL");    return v; }
+static bool fg_goose_xtc_enabled()        { static const bool v = fg_stage_flag("GGML_GOOSE_SAMPLER_CHAIN", "GGML_GOOSE_SAMPLER_XTC");        return v; }
+static bool fg_goose_penalties_enabled()  { static const bool v = fg_stage_flag("GGML_GOOSE_SAMPLER_CHAIN", "GGML_GOOSE_SAMPLER_PENALTIES");  return v; }
+
+static bool fg_goose_dry_enabled() {
+    static const bool on = []() {
+        const char * f = getenv("GGML_GOOSE_SAMPLER_DRY");
+        return !(f && strcmp(f, "0") == 0);
+    }();
+    return on;
+}
+
+extern "C" int64_t fg_sampler_adaptive_p_call(float * lv, float * p, int64_t * id, int64_t n,
+                                              float target, float weighted_sum,
+                                              float total_weight) __attribute__((weak));
+static std::atomic<unsigned long long> g_goose_adaptive_calls{0};
+
+extern "C" int64_t fg_sampler_mirostat_call(float * p, int64_t n, float mu, int64_t m,
+                                             float n_vocab) __attribute__((weak));
+static std::atomic<unsigned long long> g_goose_mirostat_calls{0};
+
+extern "C" int64_t fg_sampler_dist_words_call(float * p, int64_t n, int64_t w1, int64_t w2) __attribute__((weak));
+static std::atomic<unsigned long long> g_goose_dist_calls{0};
+
+extern "C" int64_t fg_sampler_dist_pick_call(float * lv, float * p, int64_t n, int64_t w1,
+                                             int64_t w2) __attribute__((weak));
+static std::atomic<unsigned long long> g_goose_distpick_calls{0};
+
+extern "C" int64_t fg_sampler_temp_ext_call(float * lv, float * p, int64_t n, float temp,
+                                            float delta, float exponent) __attribute__((weak));
+static std::atomic<unsigned long long> g_goose_tempext_calls{0};
+
+static bool fg_goose_top_p_enabled() {
+    // On, and its contract was checked on the CPU: a six-element array comes back sorted descending with the ids
+    // aligned to their logits and the probabilities summing to one (EXP-2026-11-19-1436). An earlier note claimed
+    // this door returned probabilities in place of the logits and was withdrawn - softmax_in_place writes only `p`.
+    static const bool on = []() {
+        const char * f = getenv("GGML_GOOSE_SAMPLER_TOP_P");
+        return !(f && strcmp(f, "0") == 0);
+    }();
+    return on;
+}
+
+static bool fg_goose_chain_enabled() {
+    static const bool on = []() {
+        const char * f = getenv("GGML_GOOSE_SAMPLER_CHAIN");
+        return !(f && strcmp(f, "0") == 0);
+    }();
+    return on;
+}
+
 // the ring buffer works similarly to std::deque, but with a fixed capacity
 template<typename T>
 struct ring_buffer {
@@ -240,6 +384,26 @@ static int llama_sample_dist(llama_token_data_array * cur_p, std::mt19937 & rng)
 #ifdef __GNUC__
     #pragma GCC diagnostic pop
 #endif
+
+    if (fg_sampler_dist_words_call != nullptr && fg_goose_chain_enabled() && cur_p->size > 0) {
+        fg_scratch.ensure(cur_p->size);
+        std::vector<float> & pp = fg_scratch.pp;
+        for (size_t i = 0; i < cur_p->size; ++i) {
+            pp[i] = cur_p->data[i].p;
+        }
+        // the two words are drawn here, in the order generate_canonical uses them
+        const int64_t w1 = (int64_t) rng();
+        const int64_t w2 = (int64_t) rng();
+        const int64_t idx = fg_sampler_dist_words_call(pp.data(), (int64_t) cur_p->size, w1, w2);
+        if (idx >= 0 && idx < (int64_t) cur_p->size) {
+            const unsigned long long c = ++g_goose_dist_calls;
+            if (c == 1 || (c % 100) == 0) {
+                fprintf(stderr, "FG171_DIST goose calls=%llu idx=%lld\n",
+                        (unsigned long long) c, (long long) idx);
+            }
+            return (int) idx;
+        }
+    }
 
     std::discrete_distribution<int> dist(probs_iterator{cur_p->data}, probs_iterator{cur_p->data + cur_p->size});
 
@@ -957,6 +1121,21 @@ llama_token llama_sampler_sample(struct llama_sampler * smpl, struct llama_conte
 
     auto token = cur_p.data[cur_p.selected].id;
 
+    // A token that is not a valid id cannot be added to a batch: the downstream failure names the number and
+    // nothing else, which is how a real request failed with -2100184624 at the first decode
+    // (EXP-2026-11-19-1435). Printed here, where the selection and the array are both in hand.
+    if (token < 0 || token >= n_vocab) {
+        static std::atomic<long long> bad{0};
+        if (bad.fetch_add(1) < 3) {
+            fprintf(stderr, "FG_SAMPLE_INVALID token=%d n_vocab=%d selected=%d size=%zu sorted=%d "
+                            "d0=(id=%d logit=%.6g p=%.6g) dsel=(id=%d logit=%.6g p=%.6g)\n",
+                    (int) token, (int) n_vocab, (int) cur_p.selected, cur_p.size, cur_p.sorted ? 1 : 0,
+                    (int) cur_p.data[0].id, cur_p.data[0].logit, cur_p.data[0].p,
+                    (int) cur_p.data[cur_p.selected].id, cur_p.data[cur_p.selected].logit,
+                    cur_p.data[cur_p.selected].p);
+        }
+    }
+
     llama_sampler_accept(smpl, token);
 
     return token;
@@ -969,6 +1148,17 @@ void llama_sampler_chain_add(struct llama_sampler * chain, struct llama_sampler 
         /* .is_backend = */ false,
         /* .ptr        = */ smpl,
     });
+
+    // The order of the chain is a decision in its own right: a filter applied in a different
+    // position changes the result even when every filter is individually correct. Dump it once
+    // per chain so the order can be compared between builds instead of assumed.
+    static int fg_chain_n = 0;
+    if (getenv("GGML_GOOSE_CHAIN_ORDER") != nullptr) {
+        const int k = fg_chain_n++;
+        if (k < 24) {
+            fprintf(stderr, "FG_CHAIN_ORDER %d %s\n", k, llama_sampler_name(smpl));
+        }
+    }
 }
 
 struct llama_sampler * llama_sampler_chain_get(struct llama_sampler * chain, int32_t i) {
@@ -1154,6 +1344,15 @@ static const char * llama_sampler_dist_name(const struct llama_sampler * smpl) {
 }
 
 static void llama_sampler_dist_apply(struct llama_sampler * smpl, llama_token_data_array * cur_p) {
+    if (fg_diag_enabled()) {
+        unsigned h = 2166136261u;
+        for (size_t i = 0; i < cur_p->size; ++i) {
+            h = (h ^ (unsigned) cur_p->data[i].id) * 16777619u;
+            unsigned pb; memcpy(&pb, &cur_p->data[i].p, 4);
+            h = (h ^ pb) * 16777619u;
+        }
+        fprintf(stderr, "FG_DIST_IN n=%zu hash=%08x\n", cur_p->size, h);
+    }
     auto * ctx = (llama_sampler_dist *) smpl->ctx;
 
     // edge cases
@@ -1178,6 +1377,32 @@ static void llama_sampler_dist_apply(struct llama_sampler * smpl, llama_token_da
     if (!cur_p->sorted) {
         for (size_t i = 1; i < cur_p->size; ++i) {
             max_l = std::max(max_l, cur_p->data[i].logit);
+        }
+    }
+
+    if (fg_sampler_dist_pick_call != nullptr && fg_goose_chain_enabled()) {
+        fg_scratch.ensure(cur_p->size);
+        std::vector<float> & lv = fg_scratch.lv;
+        std::vector<float> & pp = fg_scratch.pp;
+        for (size_t i = 0; i < cur_p->size; ++i) {
+            lv[i] = cur_p->data[i].logit;
+        }
+        // one draw pair, the same consumption generate_canonical<double,53> uses
+        const int64_t w1 = (int64_t) ctx->rng();
+        const int64_t w2 = (int64_t) ctx->rng();
+        const int64_t sel = fg_sampler_dist_pick_call(lv.data(), pp.data(),
+                                                     (int64_t) cur_p->size, w1, w2);
+        if (sel >= 0 && sel < (int64_t) cur_p->size) {
+            for (size_t i = 0; i < cur_p->size; ++i) {
+                cur_p->data[i].p = pp[i];
+            }
+            cur_p->selected = (int) sel;
+            const unsigned long long c = ++g_goose_distpick_calls;
+            if (c == 1 || (c % 100) == 0) {
+                fprintf(stderr, "FG171_DIST goose calls=%llu sel=%lld\n",
+                        (unsigned long long) c, (long long) sel);
+            }
+            return;
         }
     }
 
@@ -1552,12 +1777,45 @@ static const char * llama_sampler_top_p_name(const struct llama_sampler * smpl) 
     return sctx->get_name();
 }
 
+
+
+
 static void llama_sampler_top_p_apply(struct llama_sampler * smpl, llama_token_data_array * cur_p) {
     auto * ctx = (llama_sampler_top_p *) smpl->ctx;
 
     if (ctx->p >= 1.0f) {
         return;
     }
+    if (fg_sampler_top_p_call != nullptr && fg_goose_top_p_enabled() && cur_p->size > 0) {
+        fg_scratch.ensure(cur_p->size);
+        std::vector<float>   & lv = fg_scratch.lv, & pp = fg_scratch.pp;
+        std::vector<int64_t> & ids = fg_scratch.ids;
+        for (size_t i = 0; i < cur_p->size; ++i) {
+            lv[i]  = cur_p->data[i].logit;
+            pp[i]  = cur_p->data[i].p;
+            ids[i] = cur_p->data[i].id;
+        }
+        const long long t0 = fg_now_ns();
+        const int64_t kept = fg_sampler_top_p_call(lv.data(), pp.data(), ids.data(),
+                                                   (int64_t) cur_p->size, ctx->p, ctx->min_keep);
+        fg_report_stage("top_p", fg_ns_top_p, fg_now_ns() - t0);
+        if (kept > 0 && kept <= (int64_t) cur_p->size) {
+            for (int64_t i = 0; i < kept; ++i) {
+                cur_p->data[i].logit = lv[i];
+                cur_p->data[i].p     = pp[i];
+                cur_p->data[i].id    = (llama_token) ids[i];
+            }
+            cur_p->size = (size_t) kept;
+            cur_p->sorted = true;
+            const unsigned long long c = ++g_goose_top_p_calls;
+            if (c == 1 || (c % 100) == 0) {
+                fprintf(stderr, "FG171_TOP_P goose calls=%llu kept=%lld\n",
+                        (unsigned long long) c, (long long) kept);
+            }
+            return;
+        }
+    }
+
 
     llama_sampler_softmax_impl(cur_p, false);
 
@@ -1913,6 +2171,8 @@ static const char * llama_sampler_typical_name(const struct llama_sampler * /*sm
     return "typical";
 }
 
+
+
 static void llama_sampler_typical_apply(struct llama_sampler * smpl, llama_token_data_array * cur_p) {
     auto * ctx = (llama_sampler_typical *) smpl->ctx;
 
@@ -1920,6 +2180,36 @@ static void llama_sampler_typical_apply(struct llama_sampler * smpl, llama_token
     // https://github.com/huggingface/transformers/compare/main...cimeister:typical-sampling:typical-pr
     if (ctx->p >= 1.0f) {
         return;
+    }
+
+    if (fg_sampler_typical_call != nullptr && fg_goose_typical_enabled() && cur_p->size > 0) {
+        fg_scratch.ensure(cur_p->size);
+        std::vector<float>   & lv = fg_scratch.lv, & pp = fg_scratch.pp, & scr = fg_scratch.scr;
+        std::vector<int64_t> & ids = fg_scratch.ids;
+        for (size_t i = 0; i < cur_p->size; ++i) {
+            lv[i]  = cur_p->data[i].logit;
+            pp[i]  = cur_p->data[i].p;
+            ids[i] = cur_p->data[i].id;
+        }
+        const long long t0 = fg_now_ns();
+        const int64_t kept = fg_sampler_typical_call(lv.data(), pp.data(), ids.data(), scr.data(),
+                                                    (int64_t) cur_p->size, ctx->p, ctx->min_keep);
+        fg_report_stage("typical", fg_ns_typical, fg_now_ns() - t0);
+        if (kept > 0 && kept <= (int64_t) cur_p->size) {
+            for (int64_t i = 0; i < kept; ++i) {
+                cur_p->data[i].logit = lv[i];
+                cur_p->data[i].p     = pp[i];
+                cur_p->data[i].id    = (llama_token) ids[i];
+            }
+            cur_p->size = (size_t) kept;
+            cur_p->sorted = false;
+            const unsigned long long c = ++g_goose_chain_calls;
+            if (c == 1 || (c % 100) == 0) {
+                fprintf(stderr, "FG171_TYPICAL goose calls=%llu kept=%lld\n",
+                        (unsigned long long) c, (long long) kept);
+            }
+            return;
+        }
     }
 
     // Compute the softmax of logits and calculate entropy
@@ -2139,6 +2429,28 @@ static const char * llama_sampler_temp_ext_name(const struct llama_sampler * smp
 static void llama_sampler_temp_ext_apply(struct llama_sampler * smpl, llama_token_data_array * cur_p) {
     auto * ctx = (llama_sampler_temp_ext *) smpl->ctx;
     if (ctx->delta > 0) {
+        if (fg_sampler_temp_ext_call != nullptr && fg_goose_chain_enabled() && cur_p->size > 1) {
+            fg_scratch.ensure(cur_p->size);
+            std::vector<float> & lv = fg_scratch.lv;
+            std::vector<float> & pp = fg_scratch.pp;
+            for (size_t i = 0; i < cur_p->size; ++i) {
+                lv[i] = cur_p->data[i].logit;
+                pp[i] = cur_p->data[i].p;
+            }
+            const int64_t r = fg_sampler_temp_ext_call(lv.data(), pp.data(), (int64_t) cur_p->size,
+                                                      ctx->temp, ctx->delta, ctx->exponent);
+            if (r == (int64_t) cur_p->size) {
+                for (size_t i = 0; i < cur_p->size; ++i) {
+                    cur_p->data[i].logit = lv[i];
+                    cur_p->data[i].p     = pp[i];
+                }
+                const unsigned long long c = ++g_goose_tempext_calls;
+                if (c == 1 || (c % 100) == 0) {
+                    fprintf(stderr, "FG171_TEMPEXT goose calls=%llu\n", (unsigned long long) c);
+                }
+                return;
+            }
+        }
         const float min_temp = std::max(0.0f, ctx->temp - ctx->delta);
         const float max_temp = ctx->temp + ctx->delta;
 
@@ -2361,6 +2673,47 @@ static void llama_sample_xtc_apply(struct llama_sampler * smpl, llama_token_data
     if (chance > ctx->probability) {
         return;
     }
+    // XTC decides by probability rank, and the native implementation sorts before it looks at the
+    // ranks. The door has to receive the same array the native code would have computed on: without
+    // this, a preceding stage that leaves the array unsorted (typical does, and does so identically
+    // in both paths) made the door keep a different number of candidates than the native path.
+    llama_sampler_softmax_impl(cur_p, true);
+    if (fg_sampler_xtc_call != nullptr && fg_goose_xtc_enabled() && cur_p->size > 0) {
+        std::vector<float>   lv(cur_p->size), pp(cur_p->size);
+        std::vector<int64_t> ids(cur_p->size);
+        for (size_t i = 0; i < cur_p->size; ++i) {
+            lv[i]  = cur_p->data[i].logit;
+            pp[i]  = cur_p->data[i].p;
+            ids[i] = cur_p->data[i].id;
+        }
+        const int64_t kept = fg_sampler_xtc_call(lv.data(), pp.data(), ids.data(),
+                                                (int64_t) cur_p->size, ctx->probability,
+                                                ctx->threshold, ctx->min_keep, chance);
+        if (kept > 0 && kept <= (int64_t) cur_p->size) {
+            for (int64_t i = 0; i < kept; ++i) {
+                cur_p->data[i].logit = lv[i];
+                cur_p->data[i].p     = pp[i];
+                cur_p->data[i].id    = (llama_token) ids[i];
+            }
+            cur_p->size = (size_t) kept;
+            // The survivors stay in descending order: compared round by round over 100 cases, the
+            // token ids AND logits after this stage hash identically in both modes, so the compaction
+            // preserves the ordering the pre-ranking sort established. The flag therefore stays true,
+            // as it does on the native path; clearing it here made the next stage recompute a maximum
+            // the native path reuses, which is where the one-ULP disagreement came from.
+            cur_p->sorted = true;
+            if (fg_diag_enabled()) {
+                fprintf(stderr, "FG_XTC door kept=%lld in=%zu\n", (long long) kept, (size_t) lv.size());
+            }
+            const unsigned long long c = ++g_goose_xtc_calls;
+            if (c == 1 || (c % 100) == 0) {
+                fprintf(stderr, "FG171_XTC goose calls=%llu kept=%lld\n",
+                        (unsigned long long) c, (long long) kept);
+            }
+            return;
+        }
+    }
+
 
     llama_sampler_softmax_impl(cur_p, true);
 
@@ -2377,6 +2730,9 @@ static void llama_sample_xtc_apply(struct llama_sampler * smpl, llama_token_data
     if (cur_p->size - pos_last >= ctx->min_keep && pos_last > 0) {
         cur_p->data += pos_last;
         cur_p->size -= pos_last;
+    }
+    if (fg_diag_enabled()) {
+        fprintf(stderr, "FG_XTC native size=%zu pos_last=%d\n", cur_p->size, pos_last);
     }
 }
 
@@ -2483,6 +2839,33 @@ static void llama_sampler_mirostat_apply(struct llama_sampler * smpl, llama_toke
     // Compute k from the estimated s_hat and target surprise value
     float epsilon_hat = s_hat - 1;
     float k = powf((epsilon_hat * powf(2, ctx->mu)) / (1 - powf(ctx->n_vocab, -epsilon_hat)), 1 / s_hat);
+
+    bool fg_k = false;
+    if (fg_sampler_mirostat_call != nullptr && fg_goose_chain_enabled() && cur_p->size > 0) {
+        const long long t0 = fg_now_ns();
+        fg_scratch.ensure(cur_p->size);
+        std::vector<float> & pp = fg_scratch.pp;
+        for (size_t i = 0; i < cur_p->size; ++i) {
+            pp[i] = cur_p->data[i].p;
+        }
+        const int64_t kg = fg_sampler_mirostat_call(pp.data(), (int64_t) cur_p->size, ctx->mu,
+                                                    (int64_t) ctx->m, ctx->n_vocab);
+        fg_report_stage("mirostat", fg_ns_xtc, fg_now_ns() - t0);
+        if (kg > 0) {
+            k = (float) kg;
+            fg_k = true;
+            const unsigned long long c = ++g_goose_mirostat_calls;
+            if (c == 1 || (c % 100) == 0) {
+                fprintf(stderr, "FG171_MIROSTAT goose calls=%llu k=%lld\n",
+                        (unsigned long long) c, (long long) kg);
+            }
+        }
+    }
+    (void) fg_k;
+
+    if (fg_diag_enabled()) {
+        fprintf(stderr, "FG_MIROSTAT k=%d mu=%.9f n_in=%zu\n", std::max(int(k), 1), (double) ctx->mu, cur_p->size);
+    }
 
     llama_sampler_top_k_impl(cur_p, std::max(int(k), 1));
 
@@ -2960,6 +3343,44 @@ static void llama_sampler_penalties_apply(struct llama_sampler * smpl, llama_tok
         return;
     }
 
+
+    if (fg_sampler_penalties_call != nullptr && fg_goose_penalties_enabled() && cur_p->size > 0 && ctx->prev.size() > 0) {
+        const size_t hn = std::min<size_t>(ctx->prev.size(), (size_t) ctx->penalty_last_n);
+        std::vector<float>   hist(hn);
+        for (size_t i = 0; i < hn; ++i) {
+            hist[i] = (float) ctx->prev.rat(i);
+        }
+        const long long t0 = fg_now_ns();
+        fg_scratch.ensure(cur_p->size);
+        std::vector<float>   & lv = fg_scratch.lv;
+        std::vector<int64_t> & ids = fg_scratch.ids;
+        for (size_t i = 0; i < cur_p->size; ++i) {
+            lv[i]  = cur_p->data[i].logit;
+            ids[i] = cur_p->data[i].id;
+        }
+        std::memset(fg_pen_keys, 0, sizeof(fg_pen_keys));
+        std::memset(fg_pen_cnt,  0, sizeof(fg_pen_cnt));
+        const int64_t kept = fg_sampler_penalties_call(lv.data(), ids.data(), hist.data(),
+                                                      (int64_t) cur_p->size, (int64_t) hn,
+                                                      ctx->penalty_repeat, ctx->penalty_freq,
+                                                      ctx->penalty_present,
+                                                      fg_pen_keys, fg_pen_cnt,
+                                                      (int64_t) FG_PEN_SLOTS);
+        fg_report_stage("penalties", fg_ns_penalties, fg_now_ns() - t0);
+        if (kept == (int64_t) cur_p->size) {
+            for (size_t i = 0; i < cur_p->size; ++i) {
+                cur_p->data[i].logit = lv[i];
+            }
+            cur_p->sorted = false;
+            const unsigned long long c = ++g_goose_pen_calls;
+            if (c == 1 || (c % 100) == 0) {
+                fprintf(stderr, "FG171_PENALTIES goose calls=%llu hn=%lld\n",
+                        (unsigned long long) c, (long long) hn);
+            }
+            return;
+        }
+    }
+
     // Apply frequency and presence penalties to the cur_p
     for (size_t i = 0; i < cur_p->size; ++i) {
         const auto token_iter = ctx->token_count.find(cur_p->data[i].id);
@@ -3396,6 +3817,51 @@ static void llama_sampler_dry_apply(struct llama_sampler * smpl, llama_token_dat
         return;
     }
 
+
+    if (fg_sampler_dry_call != nullptr && fg_goose_dry_enabled() && cur_p->size > 0 && ctx->last_tokens.size() > 0) {
+        const int64_t nl = (int64_t) std::min<size_t>(ctx->last_tokens.size(),
+                                                      (size_t) ctx->dry_penalty_last_n);
+        const int64_t nc = (int64_t) cur_p->size;
+        std::vector<int64_t> last(nl), rc(nl, 0), id(nc);
+        for (int64_t i = 0; i < nl; ++i) {
+            last[i] = (int64_t) ctx->last_tokens.rat((size_t) i);
+        }
+        std::vector<int64_t> bh, bts, btl, btail;
+        for (const auto & kv : ctx->dry_processed_breakers) {
+            bh.push_back((int64_t) kv.first);
+            bts.push_back((int64_t) btail.size());
+            btl.push_back((int64_t) kv.second.size());
+            for (llama_token t : kv.second) {
+                btail.push_back((int64_t) t);
+            }
+        }
+        const int64_t nb = (int64_t) bh.size();
+        if (btail.empty()) {
+            btail.push_back(0);
+        }
+        std::vector<float> lv(nc);
+        for (int64_t i = 0; i < nc; ++i) {
+            lv[i] = cur_p->data[i].logit;
+            id[i] = cur_p->data[i].id;
+        }
+        const int64_t r = fg_sampler_dry_call(last.data(), rc.data(), bh.data(), bts.data(),
+                                              btl.data(), btail.data(), lv.data(), id.data(),
+                                              nl, nc, ctx->dry_allowed_length, nb,
+                                              ctx->dry_multiplier, ctx->dry_base);
+        if (r == nc) {
+            for (int64_t i = 0; i < nc; ++i) {
+                cur_p->data[i].logit = lv[i];
+            }
+            cur_p->sorted = false;
+            const unsigned long long c = ++g_goose_dry_calls;
+            if (c == 1 || (c % 100) == 0) {
+                fprintf(stderr, "FG171_DRY goose calls=%llu nl=%lld nb=%lld\n",
+                        (unsigned long long) c, (long long) nl, (long long) nb);
+            }
+            return;
+        }
+    }
+
     int last_n_repeat = std::min((int) ctx->last_tokens.size(), ctx->dry_penalty_last_n);
 
     if (last_n_repeat <= ctx->dry_allowed_length) {
@@ -3756,6 +4222,18 @@ static const char * llama_sampler_adaptive_p_name(const struct llama_sampler * /
 static void llama_sampler_adaptive_p_apply(struct llama_sampler * smpl, llama_token_data_array * cur_p) {
     auto * ctx = (llama_sampler_adaptive_p *) smpl->ctx;
 
+    if (fg_diag_enabled()) {
+        bool mono = true;
+        for (size_t i = 1; i < cur_p->size; ++i) {
+            if (cur_p->data[i - 1].logit < cur_p->data[i].logit) { mono = false; break; }
+        }
+        fprintf(stderr, "FG_ADAPTIVE_FLAG sorted=%d monotonic=%d n=%zu\n", (int) cur_p->sorted, (int) mono, cur_p->size);
+        for (size_t i = 0; i < cur_p->size; ++i) {
+            fprintf(stderr, "FG_ADAPTIVE_ENTRY [%zu] id=%d logit=%08x\n", i, (int) cur_p->data[i].id,
+                    *(const unsigned *) &cur_p->data[i].logit);
+        }
+    }
+
     llama_sampler_softmax_impl(cur_p, false);
 
     if (ctx->target < 0.0f) {
@@ -3784,24 +4262,69 @@ static void llama_sampler_adaptive_p_apply(struct llama_sampler * smpl, llama_to
     // tails. unbounded negative logits ensure proper suppression of far-from-target tokens
     // after the softmax.
     //
-    for (size_t i = 0; i < cur_p->size; ++i) {
-        if (cur_p->data[i].logit == -INFINITY) {
-            // don't transform logits that are -INFINITY
-            // (as masked out by e.g. min-p and top-p when using backend sampling)
-            continue;
+    bool fg_transformed = false;
+    if (fg_sampler_adaptive_p_call != nullptr && fg_goose_chain_enabled() && cur_p->size > 0) {
+        const long long t0 = fg_now_ns();
+        fg_scratch.ensure(cur_p->size);
+        std::vector<float>   & lv  = fg_scratch.lv;
+        std::vector<float>   & pp  = fg_scratch.pp;
+        std::vector<int64_t> & ids = fg_scratch.ids;
+        for (size_t i = 0; i < cur_p->size; ++i) {
+            lv[i]  = cur_p->data[i].logit;
+            pp[i]  = cur_p->data[i].p;
+            ids[i] = cur_p->data[i].id;
         }
-        float dist = std::abs((cur_p->data[i].p - adapted_target) * INV_WIDTH);
-        cur_p->data[i].logit = PEAK_LOGIT_VALUE - SHARPNESS * dist * dist / (1.0f + dist);
+        const int64_t n = fg_sampler_adaptive_p_call(lv.data(), pp.data(), ids.data(),
+                                                    (int64_t) cur_p->size, ctx->target,
+                                                    ctx->weighted_sum, ctx->total_weight);
+        fg_report_stage("adaptive_p", fg_ns_top_p, fg_now_ns() - t0);
+        if (n == (int64_t) cur_p->size) {
+            for (size_t i = 0; i < cur_p->size; ++i) {
+                cur_p->data[i].logit = lv[i];
+                cur_p->data[i].p     = pp[i];
+            }
+            fg_transformed = true;
+            const unsigned long long c = ++g_goose_adaptive_calls;
+            if (c == 1 || (c % 100) == 0) {
+                fprintf(stderr, "FG171_ADAPTIVE goose calls=%llu\n", (unsigned long long) c);
+            }
+        }
     }
 
-    // softmax and sample from the transformed distribution
-    llama_sampler_softmax_impl(cur_p, false);
+    if (!fg_transformed) {
+        for (size_t i = 0; i < cur_p->size; ++i) {
+            if (cur_p->data[i].logit == -INFINITY) {
+                // don't transform logits that are -INFINITY
+                // (as masked out by e.g. min-p and top-p when using backend sampling)
+                continue;
+            }
+            float dist = std::abs((cur_p->data[i].p - adapted_target) * INV_WIDTH);
+            cur_p->data[i].logit = PEAK_LOGIT_VALUE - SHARPNESS * dist * dist / (1.0f + dist);
+        }
+
+        // softmax and sample from the transformed distribution
+        llama_sampler_softmax_impl(cur_p, false);
+    }
+
+    if (fg_diag_enabled()) {
+        for (size_t i = 0; i < cur_p->size; ++i) {
+            fprintf(stderr, "FG_ADAPTIVE_IN [%zu] id=%d logit=%08x p=%08x\n", i, (int) cur_p->data[i].id,
+                    *(const unsigned *) &cur_p->data[i].logit, *(const unsigned *) &cur_p->data[i].p);
+        }
+    }
+
+    // sample from the transformed distribution
     const int idx   = llama_sample_dist(cur_p, ctx->rng);
     cur_p->selected = idx;
 
     // store the selected token ID for acceptance later
     ctx->pending_token_id  = cur_p->data[idx].id;
     ctx->pending_token_idx = idx;
+    if (fg_diag_enabled()) {
+        fprintf(stderr, "FG_ADAPTIVE n=%zu idx=%d tok=%d ws=%.9f tw=%.9f transformed=%d\n", cur_p->size, idx,
+                (int) ctx->pending_token_id, (double) ctx->weighted_sum, (double) ctx->total_weight,
+                fg_transformed ? 1 : 0);
+    }
 }
 
 static void llama_sampler_adaptive_p_accept(struct llama_sampler * smpl, llama_token token) {
@@ -3812,6 +4335,10 @@ static void llama_sampler_adaptive_p_accept(struct llama_sampler * smpl, llama_t
         // update EMA with the original probability of the selected token
         ctx->weighted_sum = ctx->original_probs[ctx->pending_token_idx] + ctx->decay * ctx->weighted_sum;
         ctx->total_weight = 1.0f + ctx->decay * ctx->total_weight;
+    }
+    if (fg_diag_enabled()) {
+        fprintf(stderr, "FG_ADAPTIVE_ACCEPT tok=%d hit=%d ws=%.9f tw=%.9f\n", (int) token,
+                (ctx->pending_token_id == token) ? 1 : 0, (double) ctx->weighted_sum, (double) ctx->total_weight);
     }
     ctx->pending_token_id = LLAMA_TOKEN_NULL;
     ctx->pending_token_idx = -1;

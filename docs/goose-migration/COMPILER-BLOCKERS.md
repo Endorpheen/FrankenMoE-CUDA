@@ -58,6 +58,36 @@ sized", so the mistake has to be caught by reading carefully.
 
 Needed: a pointer/integer-size type, or a `usize`-style load that cannot silently truncate.
 
+## 6. An extern cannot share a C identifier with a libc function
+
+Hit by: `EXP924`/`EXP952` (the reader owner) and every attempt at a socket transport. This one is measured, not
+inferred; the probe is `exp958-probe`, 2026-11-18.
+
+The generated translation unit emits each extern as a plain prototype at file scope:
+
+    int64_t socket(int64_t, int64_t, int64_t);
+
+That compiles whenever no header declares `socket`. It fails the moment the same unit - or a header it includes -
+also sees `sys/socket.h`:
+
+    error: conflicting types for 'socket'; have 'int64_t(int64_t, int64_t, int64_t)'
+
+Three findings from the probe, each checked rather than assumed:
+
+- The extern string is the C symbol name. A Goose-side alias (`fn goose_socket`) still emits the prototype under the
+  original name, so renaming does not help.
+- `-Wl,--defsym` cannot rescue it: the linker only aliases symbols already defined or undefined in that link.
+- Renaming the symbol with `objcopy --redefine-sym` would silently change argument and return widths, so it trades a
+  compile error for a wrong ABI.
+
+Consequence for the runtime: the only ways to reach `open`, `mmap`, `socket`, `accept`, `recv` or `send` from Goose
+today are a C adapter or forcing the unit to avoid libc headers entirely. Both are costs that rule 27 counts as debt,
+which is why `gguf-reader-owner.cpp` exists and why the standalone runtime still has no listener.
+
+Needed, in order of usefulness: a way to declare an extern with an explicit C prototype (so `socket` can be declared
+as `int(int, int, int)`), or to bind a symbol separately from its C identifier. Either one removes an adapter file and
+unblocks the transport.
+
 ## What this means for the next step
 
 Blockers 1 to 4 together are the reason no module can yet be called complete under rule 27: each of them forces a C++

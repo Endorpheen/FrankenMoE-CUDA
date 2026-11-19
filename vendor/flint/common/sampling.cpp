@@ -1,3 +1,5 @@
+#include <atomic>
+#include <dlfcn.h>
 #include "sampling.h"
 
 #include "common.h"
@@ -141,13 +143,50 @@ struct common_sampler {
 
         const int n_vocab = llama_vocab_n_tokens(vocab);
 
-        if (sampled_probs) {
+        // The device candidate arrays are trusted only when every id in them is a token id. A candidate set that is
+        // not fully written leaves arbitrary values in `sampled_ids`, and a later stage that SORTS by logit promotes
+        // the garbage to the front: the sampler then returns a value like -2100184624 and the batch builder refuses it
+        // ("failed to add token ... at index 0", a real request, EXP-2026-11-19-1435). The full-logits path below
+        // builds the ids from the counter and cannot be wrong, so it is the fallback.
+        auto fg_ids_ok = [&](uint32_t n) {
+            if (n == 0 || n > (uint32_t) n_vocab || sampled_ids == nullptr) { return false; }
+            // The two device counters describe the same candidate set. When they disagree the set is inconsistent,
+            // and an entry that was reserved but never written is exactly what produced tok=9359756 in a real run
+            // (docs/goose-migration/SAMPLER-UNWRITTEN-ENTRY.md).
+            {
+                const uint32_t lp = llama_get_sampled_probs_count_ith (ctx, idx);
+                const uint32_t ll = llama_get_sampled_logits_count_ith(ctx, idx);
+                if (lp != 0 && ll != 0 && lp != ll) {
+                    static std::atomic<long long> fg_cnt{0};
+                    const long long fc = fg_cnt.fetch_add(1) + 1;
+                    if (fc <= 5) {
+                        fprintf(stderr, "FG_CANDIDATES_COUNT_MISMATCH probs=%u logits=%u n_vocab=%d count=%lld\n",
+                                lp, ll, (int) n_vocab, fc);
+                    }
+                    return false;
+                }
+            }
+            for (uint32_t i = 0; i < n; ++i) {
+                if (sampled_ids[i] < 0 || sampled_ids[i] >= n_vocab) {
+                    static std::atomic<long long> fg_bad{0};
+                    const long long fb = fg_bad.fetch_add(1) + 1;
+                    if (fb <= 5) {
+                        fprintf(stderr, "FG_CANDIDATES_INVALID i=%u id=%d n=%u n_vocab=%d count=%lld\n",
+                                i, (int) sampled_ids[i], n, (int) n_vocab, fb);
+                    }
+                    return false;
+                }
+            }
+            return true;
+        };
+
+        if (sampled_probs && fg_ids_ok(llama_get_sampled_probs_count_ith(ctx, idx))) {
             const uint32_t sampled_probs_count = llama_get_sampled_probs_count_ith(ctx, idx);
             cur.resize(sampled_probs_count);
             for (uint32_t i = 0; i < sampled_probs_count; ++i) {
                 cur[i] = llama_token_data{sampled_ids[i], sampled_logits[i], sampled_probs[i]};
             }
-        } else if (sampled_logits) {
+        } else if (sampled_logits && fg_ids_ok(llama_get_sampled_logits_count_ith(ctx, idx))) {
             const uint32_t sampled_logits_count = llama_get_sampled_logits_count_ith(ctx, idx);
             cur.resize(sampled_logits_count);
             for (uint32_t i = 0; i < sampled_logits_count; i++) {
@@ -415,6 +454,19 @@ struct common_sampler * common_sampler_init(
         GGML_ASSERT(false && "unknown mirostat version");
     }
 
+    // The grammar sampler is created above but was never inserted into the chain, so
+    // in this tree it can only validate the selected token. Inserting it before the
+    // truncating samplers restores candidate filtering; it is behind a flag because it
+    // changes behaviour for every grammar user.
+    {
+        const char * f = getenv("GGML_GRAMMAR_IN_CHAIN");
+        if (grmr != nullptr && f != nullptr && strcmp(f, "0") != 0) {
+            llama_sampler_chain_add(chain, grmr);
+            grmr = nullptr;
+            fprintf(stderr, "FG171_GRAMMAR_CHAIN grammar sampler placed first\n");
+        }
+    }
+
     for (auto * smpl : samplers) {
         llama_sampler_chain_add(chain, smpl);
     }
@@ -629,14 +681,32 @@ llama_token common_sampler_sample(struct common_sampler * gsmpl, struct llama_co
             GGML_ASSERT(!gsmpl->grmr    && "using grammar in combination with backend sampling is not supported");
             GGML_ASSERT(!gsmpl->rbudget && "using reasoning budget in combination with backend sampling is not supported");
 
+            bool fg_found = false;
             for (size_t i = 0; i < cur_p.size; ++i) {
                 if (cur_p.data[i].id == id) {
                     cur_p.selected = i;
+                    fg_found = true;
                     break;
                 }
             }
 
-            return id;
+            // The device's chosen token was returned without a check. When the device buffer has not been written for
+            // this step it holds whatever was there before - a value that is not a token id at all (tok=-779955792 and
+            // tok=9359756 in two real runs, the second decomposing into two valid ids or a denormal float). Nothing
+            // caught it here, and the batch builder refused it much later with "failed to add token".
+            // A token that is not in the candidate array is not a decision this step can be based on either, so both
+            // conditions fall through to the CPU chain, which builds its candidate ids from the logits.
+            const int32_t fg_nv = (int32_t) llama_vocab_n_tokens(llama_model_get_vocab(llama_get_model(ctx)));
+            if (id >= 0 && id < fg_nv && fg_found) {
+                return id;
+            }
+
+            static std::atomic<long long> fg_bad{0};
+            const long long fb = fg_bad.fetch_add(1) + 1;
+            if (fb <= 5) {
+                fprintf(stderr, "FG_DEVICE_SAMPLED_INVALID id=%d n_vocab=%d in_candidates=%d size=%zu count=%lld\n",
+                        (int) id, (int) fg_nv, fg_found ? 1 : 0, cur_p.size, fb);
+            }
         }
     }
 
@@ -650,6 +720,25 @@ llama_token common_sampler_sample(struct common_sampler * gsmpl, struct llama_co
     llama_sampler_apply(chain, &cur_p);
 
     id = cur_p.data[cur_p.selected].id;
+
+    // Which array did the chain work on, and does the selected entry hold a token id at all? A value that is not an
+    // id here names the source: a device candidate set (small) or the full logits (n_vocab), and the entry itself.
+    {
+        const struct llama_vocab * fg_v = llama_model_get_vocab(llama_get_model(ctx));
+        const int32_t fg_nv = (int32_t) llama_vocab_n_tokens(fg_v);
+        const bool fg_dev = llama_get_sampled_probs_ith(ctx, idx) != nullptr;
+        if (id < 0 || id >= fg_nv) {
+            static std::atomic<long long> fg_bad{0};
+            const long long fb = fg_bad.fetch_add(1) + 1;
+            if (fb <= 5) {
+                fprintf(stderr, "FG_COMMON_SAMPLE_INVALID id=%d n_vocab=%d selected=%d size=%zu sorted=%d "
+                                "from_device=%d device_count=%u\n",
+                        (int) id, (int) fg_nv, (int) cur_p.selected, cur_p.size, cur_p.sorted ? 1 : 0,
+                        fg_dev ? 1 : 0,
+                        fg_dev ? llama_get_sampled_probs_count_ith(ctx, idx) : 0u);
+            }
+        }
+    }
 
     if (grammar_first || !grammar_should_apply(gsmpl)) {
         return id;
@@ -687,6 +776,23 @@ llama_token common_sampler_sample(struct common_sampler * gsmpl, struct llama_co
     return id;
 }
 
+// The speculative doors live in libllama, which llama-common must not depend on, so the symbol is
+// looked up in the library already loaded in the process.
+// The exported wrapper takes STRUCTS by value, not flattened pointer/length pairs. Passing the
+// pieces as separate arguments compiles, and crashed at entry (measured): the callee reads the
+// struct layout, and only a real struct makes the call well-formed.
+struct fg_sl_i64 { int64_t * data; int64_t len; };
+typedef int64_t (*fg_sp_prefix_fn)(fg_sl_i64, fg_sl_i64, int64_t, fg_sl_i64);
+
+static fg_sp_prefix_fn fg_sp_prefix_resolve() {
+    static fg_sp_prefix_fn fn = []() -> fg_sp_prefix_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        void * sym = h ? dlsym(h, "fg_sp_prefix") : nullptr;
+        return reinterpret_cast<fg_sp_prefix_fn>(sym);
+    }();
+    return fn;
+}
+
 std::vector<llama_token> common_sampler_sample_and_accept_n(struct common_sampler * gsmpl, struct llama_context * ctx, const std::vector<int> & idxs, const llama_tokens & draft, bool grammar_first) {
     GGML_ASSERT(idxs.size() == draft.size() + 1 && "idxs.size() must be draft.size() + 1");
 
@@ -718,6 +824,60 @@ std::vector<llama_token> common_sampler_sample_and_accept_n(struct common_sample
         result.push_back(id);
     }
 
+    // Goose cross-check of the accepted prefix. The native result above is what returns either way,
+    // so a disagreement can only be counted. `i` is the number of draft tokens the loop accepted,
+    // which is exactly what the ported prefix comparison must produce for the same two arrays.
+    {
+        static std::atomic<int> fg_enter{0};
+        if (getenv("FG_ACCEPT_DIAG") && fg_enter.fetch_add(1) < 3) {
+            fprintf(stderr, "FG_PREFIX_ENTER draft=%zu result=%zu fn=%p\n",
+                    draft.size(), result.size(), (void *) fg_sp_prefix_resolve());
+        }
+    }
+    if (const auto fn = fg_sp_prefix_resolve()) {
+        static thread_local std::vector<int64_t> d, t;
+        static thread_local int64_t out[2];
+        d.assign(draft.begin(), draft.end());
+        t.assign(result.begin(), result.end());
+        // k must fit both arrays: on an early break the target holds i+1 tokens while the draft
+        // holds many more, and asking for more than the target has made the door refuse (-1) -
+        // which is what my first version did.
+        const int64_t k = (int64_t) std::min(d.size(), t.size());
+        fg_sl_i64 sd{ d.data(), (int64_t) d.size() };
+        fg_sl_i64 st{ t.data(), (int64_t) t.size() };
+        fg_sl_i64 so{ out, 2 };
+        const int64_t goose = fn(sd, st, k, so);
+        // unconditional on the first call: the conditional print below never appeared even though
+        // the block before it did, so the question is whether control returns from the door at all
+        static std::atomic<int> fg_ret{0};
+        if (getenv("FG_ACCEPT_DIAG") && fg_ret.fetch_add(1) < 3) {
+            fprintf(stderr, "FG_PREFIX_RETURNED goose=%lld i=%zu k=%lld\n",
+                    (long long) goose, (size_t) i, (long long) k);
+        }
+        static std::atomic<unsigned long long> calls{0}, bad{0};
+        const auto c = ++calls;
+        if (goose != (int64_t) i) {
+            ++bad;
+            if (bad.load() <= 5) {
+                fprintf(stderr, "FG_SP_PREFIX_DIFF goose=%lld native=%zu draft=%zu\n",
+                        (long long) goose, i, draft.size());
+            }
+        }
+        // `calls=` is the ordinal, not a total; a total needs its own line at exit (measured lesson:
+        // "calls=3" read as "three calls" when the real figure was 4156 on another counter).
+        static std::atomic<unsigned long long> once{0};
+        if ((c % 200) == 0) {
+            fprintf(stderr, "FG_SP_PREFIX_PROGRESS calls=%llu disagreements=%llu\n",
+                    (unsigned long long) c, (unsigned long long) bad.load());
+        }
+        if (once.fetch_add(1, std::memory_order_relaxed) == 0) {
+            std::atexit([]() {
+                fprintf(stderr, "FG_SP_PREFIX_TOTAL calls=%llu disagreements=%llu\n",
+                        (unsigned long long) calls.load(), (unsigned long long) bad.load());
+            });
+        }
+    }
+
     return result;
 }
 
@@ -733,6 +893,16 @@ static float prob_of(const llama_token_data * data, size_t n, llama_token id) {
 // Accept a drafted token with probability min(1, p/q), else draw from norm(max(0, p - q)).
 // Preserves the target distribution exactly, and accepts more often than matching does when the
 // draft samples instead of taking its argmax.
+typedef int64_t (*fg_sp_reject_fn)(double, double, double);
+static fg_sp_reject_fn fg_sp_reject_resolve() {
+    static fg_sp_reject_fn fn = []() -> fg_sp_reject_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        void * sym = h ? dlsym(h, "fg_sp_reject_accept") : nullptr;
+        return reinterpret_cast<fg_sp_reject_fn>(sym);
+    }();
+    return fn;
+}
+
 std::vector<llama_token> common_sampler_sample_and_accept_n_rejection(struct common_sampler * gsmpl, struct llama_context * ctx, const std::vector<int> & idxs, const llama_tokens & draft, const std::vector<std::vector<llama_token_data>> & draft_q, bool grammar_first) {
     GGML_ASSERT(idxs.size()    == draft.size() + 1 && "idxs.size() must be draft.size() + 1");
     GGML_ASSERT(draft_q.size() == draft.size() && "draft_q must have one entry per draft token");
@@ -792,7 +962,26 @@ std::vector<llama_token> common_sampler_sample_and_accept_n_rejection(struct com
             }
         }
 
-        if (q_x > 0.0f && (p_x >= q_x || uni(gsmpl->rng) < p_x / q_x)) {
+        const float u_rej = uni(gsmpl->rng);
+        // Goose cross-check: the native answer is used either way, so a disagreement is only counted.
+        if (const auto fr = fg_sp_reject_resolve()) {
+            static std::atomic<unsigned long long> calls{0}, bad{0};
+            const int64_t goose = fr((double) p_x, (double) q_x, (double) u_rej);
+            const bool native = q_x > 0.0f && (p_x >= q_x || u_rej < p_x / q_x);
+            const auto c = ++calls;
+            if ((goose == 1) != native) {
+                ++bad;
+                if (bad.load() <= 5) {
+                    fprintf(stderr, "FG_SP_REJECT_DIFF goose=%lld native=%d p=%.6f q=%.6f u=%.6f\n",
+                            (long long) goose, native ? 1 : 0, (double) p_x, (double) q_x, (double) u_rej);
+                }
+            }
+            if (c <= 3 || (c % 500) == 0) {
+                fprintf(stderr, "FG_SP_REJECT goose calls=%llu disagreements=%llu\n",
+                        (unsigned long long) c, (unsigned long long) bad.load());
+            }
+        }
+        if (q_x > 0.0f && (p_x >= q_x || u_rej < p_x / q_x)) {
             common_sampler_accept(gsmpl, draft[i], true);
             result.push_back(draft[i]);
             continue;

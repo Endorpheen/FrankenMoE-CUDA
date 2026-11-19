@@ -1,0 +1,1 @@
+tools/p610-paired.sh results/p610-prov-1222 1

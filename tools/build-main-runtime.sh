@@ -74,6 +74,10 @@ MODULES=(
     goose/cuda/goose-mmq-dispatch.goose
     goose/cpu/goose-opt.goose
     goose/model/vocab-type.goose
+    goose/speculative/spec-decisions.goose
+    goose/speculative/spec-doors.goose
+    goose/model/tokenizer-decisions.goose
+    goose/model/tokenizer-doors.goose
     goose/model/control-vectors.goose
     goose/model/lora-apply.goose
     goose/model/special-partition.goose
@@ -148,12 +152,17 @@ MODULES=(
     goose/server/server-schema.goose
     goose/server/tools-pure.goose
     goose/server/log-policy.goose
+    goose/server/http-response.goose
+    goose/server/http-request.goose
+    goose/server/http-listen.goose
     goose/server/console-editing.goose
     goose/server/hf-cache-naming.goose
     goose/server/download-selection.goose
     goose/server/http-url-policy.goose
     goose/server/jsonparse.goose
     goose/server/route-table.goose
+    goose/server/shutdown-policy.goose
+    goose/server/limits.goose
     goose/server/http-listener.goose
     goose/server/web-assets.goose
     goose/server/mime-table.goose
@@ -180,22 +189,43 @@ MODULES=(
     goose/model/bpe-tokenize.goose
     goose/model/bpe-detokenize.goose
     goose/model/bpe-load.goose
+    goose/misc/sampler-typical.goose
+    goose/misc/sampler-top-n-sigma.goose
+    goose/misc/sampler-dry.goose
+    goose/sampling/sampler-chain-full.goose
 )
+
+# Record a hash of the exact inputs, so a later build can tell "up to date" by
+# content rather than by timestamp. A restored or copied unit has a fresh mtime and
+# an old body, which is how build/goose-main came to hold a listener without
+# hl_serve_full while its dates said otherwise.
+UNIT_HASH=$(cd "$ROOT" && { sed -n '1,400p' tools/build-main-runtime.sh; \
+    find goose -name '*.goose' -print0 | sort -z | xargs -0 sha256sum; } \
+    | sha256sum | cut -d' ' -f1)
 
 echo "[1/5] compose ${#MODULES[@]} modules"
 python3 "$ROOT/tools/compose-goose.py" "$UNIT" "${MODULES[@]/#/$ROOT/}"
 
 echo "[2/5] typecheck"
-if ! "$GOOSE" check "$UNIT" >"$OUT/typecheck.log" 2>&1; then
+# A pipeline's exit status is the last command's, so `| tail` used to swallow a typecheck failure
+# and the build reported success without generating any C. The log is written first, the exit
+# status is the verdict, and the log is the evidence when it fails.
+if ! "$GOOSE" check "$UNIT" > "$OUT/typecheck.log" 2>&1; then
     tail -n 40 "$OUT/typecheck.log" >&2
+    echo "main runtime: typecheck FAILED (see $OUT/typecheck.log)"
     exit 1
 fi
+# Informational only, and never fatal: the compiler does not always print a summary, and with
+# `set -euo pipefail` a grep that finds nothing would end the build after a successful typecheck.
+grep -E "typechecked ok" "$OUT/typecheck.log" | tail -2 || true
 
 echo "[3/5] generate C"
 "$GOOSE" --standalone -o "$C" --header "$H" "$UNIT" >/dev/null
 
 echo "[4/5] compile object at -O1"
 "$CC" -O1 -std=c11 -w -c "$C" -o "$OBJ"
+
+printf '%s\n' "$UNIT_HASH" > "$OUT/.source-sha256"
 
 echo "[5/5] symbol check"
 defined=$(nm -g --defined-only "$OBJ" | wc -l)

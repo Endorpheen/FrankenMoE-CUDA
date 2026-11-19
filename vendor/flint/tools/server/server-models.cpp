@@ -1484,9 +1484,53 @@ void server_models::load(const std::string & name, const load_options & opts) {
     cv.notify_all();
 }
 
+namespace {
+// mg_stop_gate: the ported manager decides whether a stop may be asked at all - only for a mapped name and only when no stop is
+// already in flight. The decision is a pair of booleans, so the host keeps the native condition beside it as the oracle and the
+// fallback, and the diagnostic reports both the origin and any disagreement.
+struct fg_mg_stop_fn { typedef int64_t (*type)(int64_t, int64_t); };
+static fg_mg_stop_fn::type fg_mg_stop_door() {
+    static const fg_mg_stop_fn::type fn = []() -> fg_mg_stop_fn::type {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        return h ? reinterpret_cast<fg_mg_stop_fn::type>(dlsym(h, "mg_stop_gate")) : nullptr;
+    }();
+    return fn;
+}
+} // namespace
+
 void server_models::request_stop(const std::string & name, bool send_exit) {
     auto it = mapping.find(name);
-    if (it == mapping.end() || stopping_models.count(name)) {
+    const int64_t mapped  = it != mapping.end() ? 1 : 0;
+    const int64_t stoping = stopping_models.count(name) ? 1 : 0;
+    const bool native_go = mapped != 0 && stoping == 0;
+
+    bool go = native_go;
+    if (const auto fn = fg_mg_stop_door()) {
+        const int64_t ported = fn(mapped, stoping);
+        static const bool fg_diag = getenv("FG_MODEL_STATUS_DIAG") != nullptr;
+        if (ported == 0 || ported == 1) {
+            if (fg_diag) {
+                static std::atomic<long long> calls{0}, bad{0};
+                const long long c = calls.fetch_add(1) + 1;
+                if ((ported != 0) != native_go) {
+                    bad.fetch_add(1);
+                    fprintf(stderr, "FG_MODEL_STOP_DIFF mapped=%lld stopping=%lld ported=%lld native=%d\n",
+                            (long long) mapped, (long long) stoping, (long long) ported, native_go ? 1 : 0);
+                }
+                if (c == 1 || (c % 64) == 0) {
+                    fprintf(stderr, "FG_MODEL_STOP ported calls=%lld disagreements=%lld\n", c, bad.load());
+                }
+            }
+            go = ported != 0;
+        } else {
+            static std::atomic<long long> refused{0};
+            if (fg_diag && refused.fetch_add(1) < 5) {
+                fprintf(stderr, "FG_MODEL_STOP_REFUSED mapped=%lld stopping=%lld answer=%lld\n",
+                        (long long) mapped, (long long) stoping, (long long) ported);
+            }
+        }
+    }
+    if (!go) {
         return;
     }
     stopping_models.insert(name);

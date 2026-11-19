@@ -1,0 +1,175 @@
+/* FrankenMoE Ember Goose — a dark theme for llama-ui.
+ *
+ * Only colour tokens are overridden. Every value is a custom property the interface already uses, so layout, spacing, control
+ * positions and behaviour are untouched by construction: nothing here sets a size, a margin or a display on a control.
+ *
+ * Palette from the specification:
+ *   ground #151719   surface #1D2023   panel #25292D
+ *   text   #E6E6E3   muted   #93999F
+ *   copper #C87942   ember   #DF7138   border #363B40
+ */
+
+:root {
+	/* Ember Goose is dark by default, including the browser's own widgets. */
+	color-scheme: dark;
+	--radius: 0.625rem;
+
+	/* grounds */
+	--background: #151719;
+	--foreground: #E6E6E3;
+	--card: #1D2023;
+	--card-foreground: #E6E6E3;
+	--popover: #1D2023;
+	--popover-foreground: #E6E6E3;
+
+	/* the accents, muted on purpose so long answers stay readable */
+	--primary: #C87942;
+	--primary-foreground: #151719;
+
+	--secondary: #25292D;
+	--secondary-foreground: #E6E6E3;
+	--muted: #1D2023;
+	--muted-foreground: #93999F;
+	--accent: #25292D;
+	--accent-foreground: #E6E6E3;
+
+	--destructive: #C2544B;
+	--destructive-foreground: #F2F0EC;
+
+	--border: #363B40;
+	--input: #363B40;
+	--ring: #C87942;
+
+	--chart-1: #C87942;
+	--chart-2: #7FA37A;
+	--chart-3: #D8A657;
+	--chart-4: #8C86B8;
+	--chart-5: #DF7138;
+
+	--sidebar: #1D2023;
+	--sidebar-foreground: #E6E6E3;
+	--sidebar-primary: #C87942;
+	--sidebar-primary-foreground: #151719;
+	--sidebar-accent: #25292D;
+	--sidebar-accent-foreground: #E6E6E3;
+	--sidebar-border: #363B40;
+	--sidebar-ring: #C87942;
+}
+
+/* The interface toggles a .dark class; the same tokens apply there so the switch cannot bring the light theme back. */
+.dark {
+	--background: #151719;
+	--foreground: #E6E6E3;
+	--card: #1D2023;
+	--card-foreground: #E6E6E3;
+	--popover: #1D2023;
+	--popover-foreground: #E6E6E3;
+	--primary: #C87942;
+	--primary-foreground: #151719;
+	--secondary: #25292D;
+	--secondary-foreground: #E6E6E3;
+	--muted: #1D2023;
+	--muted-foreground: #93999F;
+	--accent: #25292D;
+	--accent-foreground: #E6E6E3;
+	--destructive: #C2544B;
+	--destructive-foreground: #F2F0EC;
+	--border: #363B40;
+	--input: #363B40;
+	--ring: #C87942;
+	--sidebar: #1D2023;
+	--sidebar-foreground: #E6E6E3;
+	--sidebar-primary: #C87942;
+	--sidebar-primary-foreground: #151719;
+	--sidebar-accent: #25292D;
+	--sidebar-accent-foreground: #E6E6E3;
+	--sidebar-border: #363B40;
+	--sidebar-ring: #C87942;
+}
+
+/* Selected text and the scrollbar rail: the two places a dark page still shows the platform's light defaults. */
+::selection {
+	background: rgba(200, 121, 66, 0.35);
+	color: #F2F0EC;
+}
+
+* {
+	scrollbar-color: #363B40 transparent;
+}
+
+/* ---------------------------------------------------------------------------------------------------------------------
+ * The mark. The interface draws its logo as the only svg without a class, 16x16, inside the navigation button. Its box is the
+ * one the original occupies, so nothing moves: the emblem is painted into that box as a background and the original paths are
+ * hidden. A wordmark is added beside it, absolutely positioned and clipped by the sidebar, so it can never push a control.
+ */
+div.h-4\.5.w-4\.5.md\:h-4.md\:w-4 > svg:not([class]) {
+	background: url("./gooselogo.png") center / 1.0625rem 1.0625rem no-repeat;
+}
+
+div.h-4\.5.w-4\.5.md\:h-4.md\:w-4 > svg:not([class]) > * {
+	visibility: hidden;
+}
+
+/* The wordmark is anchored to the header row, not to the button: the row is as wide as the sidebar and clips its own overflow,
+ * so the label is visible when the panel is expanded and disappears into the clip when it is collapsed. It is absolutely
+ * positioned and pointer-transparent, which is why it cannot move a control or take a click. */
+div.px-2.flex.items-center.justify-between:has(> div > button > div > svg:not([class])) {
+	position: relative;
+	overflow: hidden;
+	/* the row is as wide as the sidebar, so a container query answers "is the panel expanded" without any script */
+	container-type: inline-size;
+}
+
+@container (min-width: 7.5rem) {
+div.px-2.flex.items-center.justify-between:has(> div > button > div > svg:not([class]))::after {
+	content: "FrankenMoE";
+	position: absolute;
+	left: 2.75rem;
+	top: 50%;
+	transform: translateY(-50%);
+	font-size: 0.8125rem;
+	font-weight: 600;
+	letter-spacing: 0.01em;
+	color: #E6E6E3;
+	pointer-events: none;
+}
+}
+
+/* On a narrow screen only the emblem is shown, which the specification allows. */
+@media (max-width: 767px) {
+	div.px-2.flex.items-center.justify-between:has(> div > button > div > svg:not([class]))::after {
+		content: none;
+	}
+}
+
+/* ---------------------------------------------------------------------------------------------------------------------
+ * The supplied artwork. The small mark goes into the original logo slot above; the wide mark is a branding block at the top of
+ * the chat area.
+ *
+ * The block is absolutely positioned inside .chat-screen, which already exists: an absolutely positioned element cannot move
+ * another one, so the composer, the greeting and every control keep their coordinates whatever size this artwork takes. It is
+ * pointer-transparent for the same reason.
+ */
+.chat-screen {
+	position: relative;
+}
+
+.chat-screen::before {
+	content: "";
+	position: absolute;
+	top: 0.75rem;
+	left: 50%;
+	transform: translateX(-50%);
+	width: min(22rem, 52%);
+	aspect-ratio: 3 / 1;
+	background: url("./gooselogo-big.png") center / contain no-repeat;
+	pointer-events: none;
+	opacity: 0.96;
+}
+
+/* A phone gets the emblem only; the wide mark would take a third of the screen. */
+@media (max-width: 767px) {
+	.chat-screen::before {
+		content: none;
+	}
+}

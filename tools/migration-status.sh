@@ -23,6 +23,13 @@ cd "$ROOT"
 say() { printf '%s\n' "$*"; }
 fn_count() {
     local count
+    # A missing file must not read as "zero functions": that silently shrinks a
+    # count and looks like progress. Refuse loudly instead.
+    if [ ! -f "$1" ]; then
+        printf 'migration-status: listed file is missing: %s\n' "$1" >&2
+        printf '0\n'
+        return 1
+    fi
     count=$(grep -cE "^[A-Za-z_][A-Za-z_0-9 :<>,&*]*\**[A-Za-z_][A-Za-z_0-9]*\(" "$1" 2>/dev/null) || true
     printf '%s\n' "${count:-0}"
 }
@@ -77,8 +84,15 @@ for f in $needed; do need_fns=$((need_fns + $(fn_count "$f"))); done
 # Goose-callable surface; adapters must shrink, never grow into a parallel runtime.
 # Tests are not adapters: a gate holds no runtime logic and nothing links it into
 # the shipped host. Only files under a tests/ directory are excluded this way.
-adapters=$(ls integration/goose-standalone/*.c integration/goose-standalone/*.cpp \
-              integration/m1/host/*.c 2>/dev/null | grep -v '/tests/')
+#
+# The glob used to stop at goose-standalone/*.c, so integration/goose-standalone/cli/
+# was never counted - not because those files are tests, but because the pattern did
+# not reach them. tokenize-main.c and serve-main.c own argv, stdio and the accept
+# loop: they are adapters by the same definition as the rest, and leaving them out
+# improved the number for no reason. Enumerated by find, so a new subdirectory is
+# counted the day it appears instead of the day someone notices.
+adapters=$(find integration/goose-standalone integration/m1/host -name '*.c' -o -name '*.cpp' 2>/dev/null \
+              | grep -v '/tests/' | sort)
 adapter_lines=0
 adapter_files=0
 for f in $adapters; do
@@ -95,6 +109,19 @@ say ""
 say "1. Composed unit:            $n_modules modules"
 say ""
 say "2. Own C++ (runtime/core), by role - NOT a rewrite list:"
+# Whether this tree is built at all decides what these numbers mean. If nothing
+# builds it, "superseded" describes a decision recorded in a document, not a
+# replacement in a shipped artifact - and the two must not be read as the same.
+_bmoe_built=0
+if [ -n "$(find "$ROOT/builds" -name 'libbmoe_core*' 2>/dev/null | head -1)" ]; then
+    _bmoe_built=1
+fi
+if [ "$_bmoe_built" -eq 1 ]; then
+say "   build target:              built (libbmoe_core present under builds/)"
+else
+say "   build target:              NONE - no build produces libbmoe_core, so these roles"
+say "                              are recorded decisions, not replacements in an artifact"
+fi
 say "   substrate (stays native):  $(printf '%s ' $substrate | tr '\n' ' ')$sub_fns fns"
 say "   superseded by Goose:       $sup_fns fns in $(printf '%s\n' $superseded | grep -c .) files"
 say "   still needed:              $need_fns fns in $(printf '%s\n' $needed | grep -c .) files"
@@ -102,8 +129,146 @@ say ""
 say "3. Adapter debt (to be REMOVED, never counted as migration):"
 say "   files: $adapter_files   lines: $adapter_lines"
 for f in $adapters; do printf '     %5s  %s\n' "$(wc -l < "$f")" "$f"; done
+# What is NOT counted, named, so the exclusion can be audited instead of trusted.
+_excluded=$(find integration/goose-standalone integration/m1/host -name '*.c' -o -name '*.cpp' 2>/dev/null \
+              | grep '/tests/' | wc -l)
+say "   excluded: $_excluded file(s) under tests/ - a gate holds no runtime logic"
 say ""
 say "4. Standalone runtime capabilities (evidence: EXP671-673, tools/build-standalone-runtime.sh):"
+# A capability read off a stale artifact is not evidence. The composer writes the
+# hash of what it read; comparing it here costs one hash and catches the case that
+# already fooled this report once: fresh timestamps over an old body (EXP991).
+_unit_want=$(cd "$ROOT" && { sed -n '1,400p' tools/build-main-runtime.sh; \
+    find goose -name '*.goose' -print0 | sort -z | xargs -0 sha256sum; } \
+    | sha256sum | cut -d' ' -f1)
+_unit_have=$(cat "$ROOT/build/goose-main/.source-sha256" 2>/dev/null || true)
+if [ "$_unit_want" = "$_unit_have" ]; then
+say "   unit freshness              current (matches the module sources)"
+else
+say "   unit freshness              STALE - the lines below describe an older unit;"
+say "                               rebuild with: bash tools/build-standalone-runtime.sh"
+fi
+# Which compiler built the artifact, and whether that compiler has a version. A
+# capability with no compiler identity cannot be reproduced; the identity is read from
+# runtime/compiler/current.json and cross-referenced with the compiler's own registry.
+_ci=$(python3 "$ROOT/tools/compiler-identity.py" --json \
+        ${FG_STANDALONE_DIR:+--artifact "$FG_STANDALONE_DIR"} 2>/dev/null || true)
+if [ -f "$ROOT/builds/goose-standalone/COMPILER.json" ] && [ -z "${FG_STANDALONE_DIR:-}" ]; then
+    _ci=$(python3 "$ROOT/tools/compiler-identity.py" --json \
+            --artifact "$ROOT/builds/goose-standalone" 2>/dev/null || true)
+fi
+if [ -n "$_ci" ]; then
+    _ci_line=$(printf '%s' "$_ci" | python3 -c '
+import json,os,sys
+d=json.load(sys.stdin)
+if "built_at" in d:                      # read from the artifact, not the config
+    sha=(d.get("compiler_sha256") or "")[:12]
+    name=os.path.basename(os.path.dirname(d.get("compiler") or "?"))
+    lab=d.get("registry_label") or ""
+    v=d.get("verdict") or "?"
+    agree=d.get("agrees_with_configuration")
+    tail=("label "+lab) if lab else v
+    if agree is False:
+        tail += " | CONFIG DIFFERS"
+    print("%s | %s | %s | built this artifact" % (name, sha, tail))
+else:
+    sha=(d.get("sha256") or "")[:12]
+    ver=d.get("declared_version") or "?"
+    lab=d.get("label") or ""
+    v=d.get("verdict") or "?"
+    print("%s | %s | %s | configured only" % (ver, sha, ("label "+lab) if lab else v))
+' 2>/dev/null || true)
+    say "   compiler of this artifact     $_ci_line"
+fi
+# A decision that no composed unit contains is invisible to every gate and to every
+# capability line. Two cycles found one each by accident (EXP995, EXP996); this counts
+# them instead, and the baseline in docs/goose-migration/UNWIRED-MODULES.json makes the
+# list unable to grow quietly.
+_unwired=$(python3 "$ROOT/tools/check-unwired-modules.py" 2>/dev/null | head -1 || true)
+if [ -n "$_unwired" ]; then
+say "   unwired decisions            $_unwired"
+fi
+# The unit is the thing being built; the SHIPPED library is the thing that runs.
+# Their overlap was never counted, so "the unit has 145 modules" could be read as
+# progress on the artifact when it is a fact about a directory. This measures the
+# intersection instead: how many of the unit's exported decisions exist in the shared
+# object Apex loads.
+_extra=""
+if [ -n "${FG_SHIPPED_LIB:-}" ] && [ -f "${FG_SHIPPED_LIB}" ]; then _extra=$FG_SHIPPED_LIB; fi
+if [ -z "$_extra" ]; then
+    _extra=$(ls -1 /home/end0/AI/LlamaServer/*/run/libllama.so.0 2>/dev/null | head -1 || true)
+fi
+if [ -f "$_extra" ] && [ -f "$ROOT/build/goose-main/.source-sha256" ]; then
+    _ovs=$(python3 "$ROOT/tools/unit-overlap.py" "$_extra" "$ROOT/build/goose-main/main.h" 2>/dev/null || true)
+    _ov=${_ovs%%|*}
+    _ov_names=${_ovs#*|}
+    if [ -n "$_ov" ]; then
+        # Two different numbers, and conflating them was misleading: what the ACCEPTED
+        # artifact contains, and what the build script would produce from the sources it
+        # actually composes. The first describes Apex today; the second describes the
+        # recipe, and they differ because only _CARRIER_UNIT is composed from current
+        # .goose files while the rest are frozen per-module bridges.
+        _fresh=$(ls -1d /home/end0/AI/LlamaServer/exp*-dso-*/out 2>/dev/null | tail -1 || true)
+        say "   unit exports in accepted lib $_ov of the header's functions"
+        if [ -n "$_ov_names" ] && [ "$_ov" != "0" ]; then
+            say "                                ($(printf '%s' "$_ov_names" | tr ',' ' '))"
+            # Presence is not execution. A symbol can be exported, reachable by a
+            # client and called by nobody inside the library - which is exactly how the
+            # Apex plan looked alive for several cycles.
+            _called=$(timeout 200 python3 "$ROOT/tools/check-symbol-callers.py" "$_extra" \
+                          --only "$_ov_names" 2>/dev/null | awk '/^called:/{print $2}' || true)
+            if [ -n "$_called" ]; then
+                say "   ... of which something calls $_called (the rest are exported only)"
+            fi
+            # The bridges are the other half of the answer, and the bigger half: the
+            # unit's exports can all be uncalled while the frozen bridges run the
+            # decisions. Counting only the unit made Apex look like it ran no Goose at
+            # all, when 206 of 336 bridge exports are called.
+            _b_all=$(grep -oE " T fg[0-9]+[a-z]?_[a-z0-9_]+" /dev/null 2>/dev/null | wc -l)
+            _blist=$(nm -D --defined-only "$_extra" 2>/dev/null \
+                     | grep -oE "fg[0-9]+[a-z]?_[a-z0-9_]+" | LC_ALL=C sort -u | tr '\n' ',' | sed 's/,$//' || true)
+            if [ -n "$_blist" ]; then
+                _bc=$(timeout 200 python3 "$ROOT/tools/check-symbol-callers.py" "$_extra" \
+                          --only "$_blist" 2>/dev/null | awk '/^called:/{print $2}' || true)
+                if [ -n "$_bc" ]; then
+                    say "   bridge exports called         $_bc of $(printf '%s' "$_blist" | tr ',' '\n' | wc -l)"
+                fi
+            fi
+        fi
+        if [ -n "$_fresh" ] && [ -f "$_fresh/libllama.so.0" ]; then
+            _fn=$(python3 -W ignore - "$_fresh/libllama.so.0" "$ROOT/runtime/reconstructed/build.py" <<'PYF' 2>/dev/null || true
+import re, subprocess, sys
+from pathlib import Path
+lib, script = sys.argv[1], sys.argv[2]
+carrier = re.search(r'_CARRIER_UNIT = \[(.*?)\]', open(script).read(), re.S)
+if not carrier:
+    sys.exit(0)
+ex = set()
+root = Path(script).resolve().parents[2]
+for m in re.findall(r"'([^']+\.goose)'", carrier.group(1)):
+    try:
+        ex |= set(re.findall(r'^\s*export\s+fn\s+(\w+)', (root/'goose'/m).read_text(), re.M))
+    except OSError:
+        pass
+out = subprocess.run(['nm','-D','--defined-only',lib], capture_output=True, text=True).stdout
+have = {l.split()[-1] for l in out.splitlines() if l.strip()}
+print("%d/%d" % (len(ex & have), len(ex)))
+PYF
+)
+            say "   from current sources          $_fn carrier-unit exports present in a fresh build"
+            say "                                (only that 14-module unit is composed from .goose;"
+            say "                                 the remaining bridge objects are frozen snapshots)"
+            # A bridge that is linked but never called is removable; a bridge that is
+            # called may be the only implementation some model reaches. Counting both
+            # as "migrated" is how a binary ends up with two paths and no audit.
+            _dead=$(python3 "$ROOT/tools/audit-bridge-symbols.py" "$_fresh" 2>/dev/null \
+                        | awk '/referenced by nobody/{print $NF}' || true)
+            if [ -n "$_dead" ]; then
+                say "   bridge exports called by none  $_dead of the linked bridge exports"
+            fi
+        fi
+    fi
+fi
 say "   GGUF container read          yes  (substrate reader)"
 say "   GGUF metadata, every key     yes  (4 files, agree=yes)"
 say "   GGUF tensor directory        yes  (fixtures + 3 real models, 940 tensors)"
@@ -134,15 +299,73 @@ SA_BIN=${FG_STANDALONE_BIN:-"$ROOT/builds/goose-standalone/frankenmoe-v4"}
 if [ -f "$SA_BIN" ]; then
     _tok_n=$(nm "$SA_BIN" 2>/dev/null | grep -cE " T tok_")
 fi
-if [ "$_tok_n" -ge 8 ]; then
-say "   tokenizer decisions (all 8)   answers  (tokenizer_decisions gate: 39 checks, 0 failures)"
-say "   tokenizer engine             no load-and-tokenise path: the decisions answer, the engine around them does not"
-else
-say "   tokenizer engine             no   (only $_tok_n tok_* exports in the unit)"
+# The engine is a different capability from the decisions, and both are computed
+# from the artifact. The old text asserted "no load-and-tokenise path" here; that
+# became false the moment btl_load/bt_bpe/bt_token_to_piece were added to the unit
+# (EXP949-956), and an asserted line silently keeps lying. Count it instead.
+_eng_n=0
+if [ -f "$SA_BIN" ]; then
+    _eng_n=$(nm "$SA_BIN" 2>/dev/null | grep -cE " T (btl_load|bt_build|bt_bpe|bt_token_to_piece)")
 fi
-say "   HTTP-server decisions        yes  (this run: detok 1063000 calls, sched 39500,"
-say "                                       graph-input-plan 200 - all witnessed live)"
-say "   HTTP server (transport)      no   (decisions run; no listener in the standalone)"
+if [ "$_tok_n" -ge 8 ]; then
+say "   tokenizer decisions (all 8)   answers  ($_tok_n tok_* exports; the gates print their"
+say "                                 own counts - this line does not repeat them)"
+elif [ "$_eng_n" -ge 1 ]; then
+    # Absent tok_* with bt_bpe present is not "the decisions are gone": the eight
+    # predicates were folded into the engine entry point (EXP949-956). Saying "no"
+    # here would report a removed interface as a missing capability.
+say "   tokenizer decisions (all 8)   inside bt_bpe - the separate tok_* predicates were"
+say "                                 folded into the engine, so there is no tok_* count to make"
+else
+say "   tokenizer decisions (all 8)   no   (only $_tok_n tok_* exports in the artifact)"
+fi
+# Present in the artifact and actually called are different facts. The load-and-
+# tokenise gate is what makes the second one true, so name it when it exists.
+_lat=""
+if [ -x "$ROOT/builds/goose-standalone/tokenize_load" ]; then
+    _lat=" and called by the load-and-tokenise gate"
+fi
+if [ "$_eng_n" -ge 4 ]; then
+say "   tokenizer engine             yes  ($_eng_n load/build/tokenise/piece exports in the artifact$_lat;"
+say "                                       gates: EXP950/955/956 and tokenize_load)"
+elif [ "$_eng_n" -gt 0 ]; then
+say "   tokenizer engine             partial ($_eng_n of 4 engine exports in the artifact)"
+else
+    # The artifact can be stale rather than incapable, and the two must not be
+    # conflated: a build from before the modules existed has no engine in it and is
+    # not evidence that the unit lacks one. Say which case this is.
+    _src_new=$(find "$ROOT/goose/model/bpe-load.goose" "$ROOT/goose/model/bpe-tokenize.goose" \
+                    -newer "$SA_BIN" 2>/dev/null | wc -l)
+    if [ "$_src_new" -gt 0 ]; then
+say "   tokenizer engine             stale artifact (0 engine exports; its sources are newer -"
+say "                                       rebuild: bash tools/build-main-runtime.sh && bash tools/build-standalone-runtime.sh)"
+    else
+say "   tokenizer engine             no   (0 engine exports and the sources are not newer)"
+    fi
+fi
+if [ -x "$ROOT/builds/goose-standalone/frankenmoe-tokenize" ]; then
+say "   tokenizer CLI                yes  (frankenmoe-tokenize: argv/stdin in, ids out; decisions"
+say "                                       tz_* and the engine are Goose, the file owns stdio)"
+else
+say "   tokenizer CLI                no   (no frankenmoe-tokenize in builds/goose-standalone)"
+fi
+# The transport is a capability of the artifact, not a claim, and the NUMBER OF
+# CHECKS is not written here: a count typed into a report goes stale silently, which
+# is exactly what happened to this line (it said 32 while the gate had 169). The
+# suite prints its own count; this report prints what it can see in the artifact.
+_hl_n=0
+if [ -f "$SA_BIN" ]; then
+    _hl_n=$(nm "$SA_BIN" 2>/dev/null | grep -cE " T hl_" || true)
+    _hl_n=${_hl_n:-0}
+fi
+_srv_no="builds/goose-standalone/frankenmoe-serve"
+if [ -x "$ROOT/$_srv_no" ]; then
+say "   HTTP server (transport)      yes  ($_hl_n hl_* exports in the artifact and $_srv_no,"
+say "                                       a process that opens the port and calls the listener;"
+say "                                       the check count is printed by verify-unit-gates.sh)"
+else
+say "   HTTP server (transport)      no   ($_hl_n hl_* exports in the artifact, no frankenmoe-serve)"
+fi
 # Computed from the artifact, not asserted. Reading and laying out 21.7 GB of real tensors is a capability;
 # executing them is a different one, and the two used to be collapsed into "partial".
 _apex_mismatch="-"
@@ -168,17 +391,40 @@ say "Architectures: 13 have a Goose builder of 151 in the substrate"
 say "  (docs/goose-migration/ARCHITECTURE-MAP.md; Apex is one of the 13)"
 say ""
 say "Honest reading, split in two:"
-say "  - the STANDALONE runtime (this section) still lacks the engine: no CUDA, no"
-say "    tokenizer LOAD-AND-TOKENISE path, no HTTP transport, no full-stack execution."
-say "    The 8 tok_* decisions are in the unit; what is missing is the engine around them."
+# The engine sentence must follow the artifact, not the other way round: after the
+# rebuild it is present, and a fixed sentence would be the same lie EXP972 fixed.
+if [ "$_eng_n" -ge 4 ]; then
+say "  - the STANDALONE runtime (this section) carries the tokenizer engine"
+say "    ($_eng_n exports), the three sampler filters and the HTTP listener."
+else
+say "  - the STANDALONE runtime (this section) lacks the tokenizer engine in this"
+say "    artifact ($_eng_n of 4 exports)."
+fi
+# HTTP is reported from the artifact, not folded into the sentence above: the two
+# capabilities are independent, and saying "lacks HTTP" whenever the tokenizer is
+# absent was false the moment the listener landed.
+if [ -x "$ROOT/builds/goose-standalone/frankenmoe-serve" ]; then
+say "    Its HTTP capability is real: frankenmoe-serve opens the port and calls the"
+say "    listener, which keeps the connection open and consumes request bodies."
+else
+say "    It has no server process, so the listener is not reachable in this artifact."
+fi
+say "    It still lacks CUDA, TLS and full-stack execution."
 say "  - the INTEGRATED stage-run does run Apex end to end with Goose code witnessed, but it"
 say "    is llama.cpp plus Goose, not a standalone Goose runtime. Best measured: 2429.9"
 say "    prefill / 39.86 decode at 512 tokens, VRAM 7552 MiB, output identical to the"
 say "    reference (runtime/goose-stage/BEST-CONFIG.json)."
-say "    Those are historical stage figures, not the EXP906 baseline. The accepted independent"
-say "    Apex EXP906 median is 2625.21 prefill / 55.52 single-response decode (32K/512)."
+say "    Those are historical stage figures. The current canonical baseline is EXP1298:"
+say "    2948.0 prefill / 62.73 single-response decode (32K/512), hash c2ff42cc1219."
+say "    The historical EXP906 reference (2625.21 / 55.52) stays in the record untouched."
 say "Do not report the second as progress on the first - that is the substitution rule 15"
 say "forbids. Nothing may be deleted until the standalone answers and Igor accepts it."
+say ""
+say ""
+say "4. Modules whose doors are in the SHIPPED library (rule 33: the artefact, not the build):"
+python3 "$(dirname "$0")/check-module-coverage.py" "${1:-builds/flint-acc/bin}" 2>/dev/null | tail -5
+say "   Presence is not reach: a dlsym string counts as referenced even when the call runs"
+say "   only under a diagnostic flag."
 say ""
 say "Progress toward rule 15 is the third block: a capability is ready when the"
 say "standalone runtime answers it without the old C++, not when the old C++ calls"

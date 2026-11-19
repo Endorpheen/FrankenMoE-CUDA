@@ -1,3 +1,7 @@
+#include <dlfcn.h>
+#include <cstdio>
+#include <cstdlib>
+#include <atomic>
 #include "llama-moe-cache.h"
 
 #include "llama-impl.h"
@@ -103,11 +107,88 @@ struct moe_cache_slru {
         int32_t slot;
     };
 
+    // Shadow comparison of the ported replacement policy. The door mutates the state it is given, so it runs on a
+    // converted snapshot taken before the native plan() and cannot disturb the real cache. Only the fills and the
+    // hit count are compared: the eviction keys are derivable from them, and the door's sorted fill order is part
+    // of what has to match, so the comparison keeps the order rather than sorting both sides
+    // (contract in experiments/EXP-2026-11-19-1416-slru-contract/CONTRACT.md).
+    struct fg_sl_i64 { int64_t * d; int64_t n; };
+    typedef int64_t (*fg_slru_fn)(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, fg_sl_i64,
+                                  uint64_t, uint64_t, int64_t, int64_t, int64_t, int64_t, fg_sl_i64,
+                                  uint64_t, uint64_t, uint64_t, uint64_t,
+                                  const int64_t *, int64_t);
+
+    struct snapshot {
+        std::vector<int32_t> key_of, prev, next, prot, head, tail, slots, ids, uniq, fills_e, fills_s, evicted;
+        std::vector<int64_t> seen, scal;
+        // the per-layer slot maps, copied: the door clears an evicted entry in its own layer's map, and the shadow
+        // must not touch the real ones
+        std::vector<int32_t> maps_flat;
+        std::vector<int64_t> maps_ptr;
+        snapshot() {}
+    };
+
+    void take(snapshot & sn, int32_t il, const int32_t * ids_in, size_t n_ids) const {
+        sn.key_of = key_of; sn.prev = prev; sn.next = next;
+        sn.prot.resize(is_protected.size());
+        for (size_t i = 0; i < is_protected.size(); ++i) { sn.prot[i] = is_protected[i] ? 1 : 0; }
+        sn.head.assign(std::begin(head), std::end(head));
+        sn.tail.assign(std::begin(tail), std::end(tail));
+        sn.slots.assign(slot_map[il], slot_map[il] + n_expert);
+        sn.ids.assign(ids_in, ids_in + n_ids);
+        sn.uniq.assign((size_t) n_slots, 0);
+        sn.fills_e.assign((size_t) n_slots, 0);
+        sn.fills_s.assign((size_t) n_slots, 0);
+        sn.evicted.assign((size_t) n_slots, 0);
+        sn.seen.resize(seen.size());
+        for (size_t i = 0; i < seen.size(); ++i) { sn.seen[i] = (int64_t) seen[i]; }
+        const size_t n_layers = slot_map.size();
+        sn.maps_flat.assign(n_layers * (size_t) n_expert, -1);
+        sn.maps_ptr.assign(n_layers, 0);
+        for (size_t l = 0; l < n_layers; ++l) {
+            sn.maps_ptr[l] = (int64_t) (uintptr_t) (sn.maps_flat.data() + l * (size_t) n_expert);
+            if (slot_map[l]) { std::copy(slot_map[l], slot_map[l] + n_expert, sn.maps_flat.begin() + l * (size_t) n_expert); }
+        }
+        sn.scal.assign(8, 0);
+        sn.scal[0] = (int64_t) seen_gen;
+    }
+
+    int64_t run_door(snapshot & sn, int32_t il, size_t n_ids) const {
+        static fg_slru_fn fn = []() -> fg_slru_fn {
+            void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+            if (!h) { return nullptr; }
+            return reinterpret_cast<fg_slru_fn>(dlsym(h, "slru_plan"));
+        }();
+        if (!fn) { return -1000; }
+        fg_sl_i64 s_seen{ sn.seen.data(), (int64_t) sn.seen.size() };
+        fg_sl_i64 s_scal{ sn.scal.data(), (int64_t) sn.scal.size() };
+        return fn((uint64_t) (uintptr_t) sn.key_of.data(), (uint64_t) (uintptr_t) sn.prev.data(),
+                  (uint64_t) (uintptr_t) sn.next.data(), (uint64_t) (uintptr_t) sn.prot.data(),
+                  (uint64_t) (uintptr_t) sn.head.data(), (uint64_t) (uintptr_t) sn.tail.data(), s_seen,
+                  (uint64_t) (uintptr_t) sn.slots.data(), (uint64_t) (uintptr_t) sn.ids.data(),
+                  (int64_t) n_ids, (int64_t) il, (int64_t) n_expert, (int64_t) n_slots, s_scal,
+                  (uint64_t) (uintptr_t) sn.uniq.data(), (uint64_t) (uintptr_t) sn.fills_e.data(),
+                  (uint64_t) (uintptr_t) sn.fills_s.data(), (uint64_t) (uintptr_t) sn.evicted.data(),
+                  sn.maps_ptr.data(), (int64_t) sn.maps_ptr.size());
+    }
+
     // give a slot to each expert selected by ids in layer il, evicting from probation first
     // returns false if the ids select more distinct experts than there are slots
     bool plan(int32_t il, const int32_t * ids, size_t n_ids, std::vector<fill> & fills, size_t & n_hit) {
         fills.clear();
         n_hit = 0;
+
+        // cached: this runs once per layer per decode step - 61 441 times per acceptance run - and an uncached
+        // getenv on that path is measurable (EXP-2026-11-19-1427)
+        static const bool fg_diag = getenv("FG_SLRU_DIAG") != nullptr;
+        snapshot fg_sn;
+        if (fg_diag) { take(fg_sn, il, ids, n_ids); }
+
+        // Serving the ported policy was attempted here (EXP-2026-11-19-1421) and is not in the tree: the door updates
+        // key_of, the LRU lists and the layer's own slot map, but the *other* layers' slot maps have to be cleared for
+        // evicted keys, and the native order clears each victim before the new owner is written. Doing that afterwards
+        // from the evicted list crashed the CUDA backend on the first run. The fix belongs inside the door, which does
+        // not know the per-layer maps; that is the representation change EXP-1420 named as route 1.
 
         if (++seen_gen == 0) {
             std::fill(seen.begin(), seen.end(), 0);
@@ -149,6 +230,29 @@ struct moe_cache_slru {
             move(s, false);
             fills.push_back({ e, s });
         }
+        if (fg_diag) {
+            const int64_t got = run_door(fg_sn, il, n_ids);
+            bool same = got >= 0 && got == (int64_t) fills.size() && fg_sn.scal[3] == (int64_t) n_hit;
+            for (int64_t k = 0; same && k < got; ++k) {
+                same = fg_sn.fills_e[(size_t) k] == fills[(size_t) k].expert &&
+                       fg_sn.fills_s[(size_t) k] == fills[(size_t) k].slot;
+            }
+            static std::atomic<long long> calls{0}, bad{0};
+            const long long c = calls.fetch_add(1) + 1;
+            if (!same) {
+                bad.fetch_add(1);
+                if (bad.load() <= 5) {
+                    fprintf(stderr, "FG_SLRU_DIFF il=%d n_ids=%lld native_fills=%lld door=%lld "
+                                    "native_hits=%lld door_hits=%lld\n",
+                            (int) il, (long long) n_ids, (long long) fills.size(), (long long) got,
+                            (long long) n_hit, (long long) fg_sn.scal[3]);
+                }
+            }
+            if (c % 256 == 1) {
+                fprintf(stderr, "FG_SLRU_COMPARE calls=%lld disagreements=%lld\n", c, bad.load());
+            }
+        }
+
         return true;
     }
 };
@@ -610,6 +714,24 @@ struct llama_moe_cache::impl {
         st.misses += fills.size();
         st.bytes  += bytes;
 
+        // The totals are otherwise only printed by the destructor, and a server stopped with SIGTERM never runs it -
+        // so a measurement of what the cache actually costs had no number. Printed periodically under the same flag,
+        // with the per-copy average, which is what the decode step pays.
+        static const bool fg_diag = getenv("FG_SLRU_DIAG") != nullptr;
+        if (fg_diag) {
+            static std::atomic<long long> copies{0};
+            const long long c = copies.fetch_add(1) + 1;
+            if (c % 4096 == 0) {
+                const long long h = (long long) stats_small.hits + (long long) stats_large.hits;
+                const long long m = (long long) stats_small.misses + (long long) stats_large.misses;
+                const double by = (double) stats_small.bytes + (double) stats_large.bytes;
+                fprintf(stderr, "FG_SLRU_TRAFFIC copies=%lld hits=%lld misses=%lld hit_rate=%.2f%% "
+                                "uploaded=%.1fMiB per_copy=%.1fKiB\n",
+                        c, h, m, (h + m) > 0 ? 100.0 * (double) h / (double) (h + m) : 0.0,
+                        by / 1048576.0, c > 0 ? by / (double) c / 1024.0 : 0.0);
+            }
+        }
+
         // the next copy synchronizes the backend before it changes the slot map again
         ggml_backend_tensor_set_async(backend, dst, src->data, 0, ggml_nbytes(src));
 
@@ -635,6 +757,10 @@ struct llama_moe_cache::impl {
 
 llama_moe_cache::llama_moe_cache(const llama_model & model, const std::vector<ggml_backend_t> & backends, const std::vector<ggml_backend_buffer_type_t> & bufts, size_t size) :
     pimpl(new impl(model, backends, bufts, size)) {
+    if (getenv("FG_SLRU_DIAG") != nullptr) {
+        fprintf(stderr, "FG_SLRU_CREATED bytes_requested=%zu backends=%zu bufts=%zu\n",
+                size, backends.size(), bufts.size());
+    }
 }
 
 llama_moe_cache::~llama_moe_cache() = default;
@@ -644,7 +770,21 @@ ggml_backend_t llama_moe_cache::backend(int32_t il) const {
 }
 
 ggml_tensor * llama_moe_cache::get_slot_map(int32_t il, int64_t n_tokens, int64_t n_expert_used) const {
-    return pimpl->get_slot_map(il, n_tokens, n_expert_used);
+    ggml_tensor * r = pimpl->get_slot_map(il, n_tokens, n_expert_used);
+    // Which layers does the graph actually ask about, and for how many? Without this, a cache that is built and never
+    // consulted looks exactly like one that is consulted and whose plan never runs (EXP-2026-11-19-1417).
+    static const bool fg_diag = getenv("FG_SLRU_DIAG") != nullptr;
+    if (fg_diag) {
+        static std::atomic<long long> asked{0}, null_maps{0}, bytes_sum{0};
+        const long long c = asked.fetch_add(1) + 1;
+        if (r == nullptr) { null_maps.fetch_add(1); }
+        else { bytes_sum.fetch_add(1); }
+        if (c <= 4 || (c % 4096) == 0) {
+            fprintf(stderr, "FG_SLRU_MAPS calls=%lld null=%lld given=%lld il=%d n_tokens=%lld\n",
+                    c, null_maps.load(), bytes_sum.load(), (int) il, (long long) n_tokens);
+        }
+    }
+    return r;
 }
 
 ggml_tensor * llama_moe_cache::get_experts(const ggml_tensor * w) const {

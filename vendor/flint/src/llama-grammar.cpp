@@ -1,4 +1,9 @@
 #include "llama-grammar.h"
+#include <atomic>
+#include <cstdlib>
+#include <cstring>
+#include <unordered_map>
+#include <chrono>
 
 #include "llama-impl.h"
 #include "llama-vocab.h"
@@ -1356,6 +1361,79 @@ struct llama_grammar * llama_grammar_clone_impl(const struct llama_grammar & gra
     return result;
 }
 
+
+// ---- Goose grammar decision hook -------------------------------------------
+// The reject decision is computed by the Goose automaton; the host keeps the
+// vocabulary-side work (piece decoding) and the -inf marking.
+// same layout as the generated code's slice descriptor
+typedef struct { void * data; int64_t len; } fg_slice_rec;
+
+extern "C" int64_t fg_grammar_reject_call(
+        fg_slice_rec s_etype, fg_slice_rec s_eval, fg_slice_rec s_roff, fg_slice_rec s_rlen, fg_slice_rec s_seed,
+        int64_t v_seedd,
+        fg_slice_rec s_cand_cp, fg_slice_rec s_cp_len, fg_slice_rec s_pval, fg_slice_rec s_pnr, fg_slice_rec s_cand_id,
+        int64_t v_ncand,
+        fg_slice_rec s_wp, fg_slice_rec s_wpd, fg_slice_rec s_stacks, fg_slice_rec s_stackd, fg_slice_rec s_scratch,
+        fg_slice_rec s_tmp_rej, fg_slice_rec s_tmp_cur, fg_slice_rec s_rowbuf, fg_slice_rec s_rej,
+        int64_t v_maxs, int64_t v_maxd, int64_t v_maxcp,
+        fg_slice_rec s_pool, int64_t v_nlevels) __attribute__((weak));
+
+extern "C" int64_t fg_grammar_first_set_call(fg_slice_rec s_etype, fg_slice_rec s_eval,
+                                            fg_slice_rec s_stacks, fg_slice_rec s_stackd,
+                                            int64_t v_nstacks, fg_slice_rec s_lo,
+                                            fg_slice_rec s_hi, int64_t v_maxr)
+                                            __attribute__((weak));
+
+static bool fg_grammar_enabled() {
+    // Opt-in, and it must stay that way until the decision is proven to be equal to the
+    // automaton's. With it on, a constrained request produced a corrupted byte
+    // (`nam\xef\xbf\xbd e`) and, with the pre-filter, an empty-stack exception - both mean the
+    // hook accepted a token the native stack would have rejected. Rejecting or accepting too
+    // much is a correctness defect, never a performance trade. See EXP-2026-11-18-1194.
+    static const bool on = []() {
+        const char * f = getenv("GGML_GOOSE_GRAMMAR");
+        return f != nullptr && strcmp(f, "0") != 0;
+    }();
+    return on;
+}
+
+// The rule table is immutable, so it is flattened once per grammar object.
+struct fg_flat_rules {
+    std::vector<int64_t> etype, eval, roff, rlen;
+    // every rule is its own vector, so a pointer must be mapped to the global index
+    // recorded here; subtracting rules[0].data() is only valid inside rule 0
+    std::unordered_map<const llama_grammar_element *, int64_t> index;
+    bool ready = false;
+};
+
+static fg_flat_rules & fg_flatten(const llama_grammar_rules & rules) {
+    // Rebuilt on every call: the tables are tiny next to the candidate pass, and a
+    // cached table keyed by address can go stale when a grammar object is rebuilt or
+    // its address reused, which silently produces wrong decisions.
+    static thread_local fg_flat_rules f;
+    f.etype.clear(); f.eval.clear(); f.index.clear();
+    f.roff.assign(rules.size(), 0);
+    f.rlen.assign(rules.size(), 0);
+    for (size_t r = 0; r < rules.size(); ++r) {
+        f.roff[r] = (int64_t) f.etype.size();
+        f.rlen[r] = (int64_t) rules[r].size();
+        for (size_t k = 0; k < rules[r].size(); ++k) {
+            const llama_grammar_element & e = rules[r][k];
+            f.index[&e] = (int64_t) f.etype.size();
+            f.etype.push_back((int64_t) e.type);
+            f.eval.push_back((int64_t) e.value);
+        }
+    }
+    f.ready = true;
+    return f;
+}
+
+static constexpr int64_t FG_MAXD = 64;
+static constexpr int64_t FG_MAXS = 16;
+static constexpr int64_t FG_MAXCP = 64;
+
+static std::atomic<unsigned long long> g_goose_grammar_calls{0};
+
 void llama_grammar_apply_impl(const struct llama_grammar & grammar, llama_token_data_array * cur_p) {
     GGML_ASSERT(grammar.vocab != nullptr);
 
@@ -1377,6 +1455,53 @@ void llama_grammar_apply_impl(const struct llama_grammar & grammar, llama_token_
     llama_grammar_candidates candidates_grammar;
     candidates_grammar.reserve(cur_p->size);
 
+    // Cheap pre-filter: Goose says which first codepoints the current stacks accept,
+    // and the host drops the obvious mismatches before any per-candidate call.
+    std::vector<int64_t> fg_lo, fg_hi;
+    int64_t fg_nranges = -1;
+    // The pre-filter over-rejects: with it on, a grammar that cannot match empty ends with no
+    // candidate and the server raises "Unexpected empty grammar stack after accepting piece: $".
+    // It is therefore opt-in until its ranges are proven to be a superset of what the automaton
+    // accepts (EXP-2026-11-18-1194). Rejecting too much is a correctness bug, not a slow path.
+    const char * pf_env = getenv("GGML_GOOSE_PREFILTER");
+    const bool pf_on = pf_env != nullptr && strcmp(pf_env, "0") != 0;
+    if (pf_on && fg_grammar_first_set_call != nullptr && fg_grammar_enabled() &&
+            !grammar.stacks.empty() && grammar.stacks.size() <= FG_MAXS) {
+        fg_flat_rules & fl = fg_flatten(grammar.rules);
+        fg_lo.assign(64, 0); fg_hi.assign(64, 0);
+        std::vector<int64_t> pstk(FG_MAXS * FG_MAXD, 0), pstd(FG_MAXS, 0);
+        bool mapped = true;
+        for (size_t sIdx = 0; sIdx < grammar.stacks.size() && mapped; ++sIdx) {
+            int64_t d = 0;
+            for (const auto * e : grammar.stacks[sIdx]) {
+                if (d >= FG_MAXD) { mapped = false; break; }
+                auto it = fl.index.find(e);
+                if (it == fl.index.end()) { mapped = false; break; }
+                pstk[sIdx * FG_MAXD + d] = it->second;
+                d++;
+            }
+            pstd[sIdx] = d;
+        }
+        if (mapped) {
+            fg_slice_rec a{fl.etype.data(), (int64_t) fl.etype.size()};
+            fg_slice_rec b{fl.eval.data(),  (int64_t) fl.eval.size()};
+            fg_slice_rec c{pstk.data(), FG_MAXS * FG_MAXD};
+            fg_slice_rec dd{pstd.data(), (int64_t) grammar.stacks.size()};
+            fg_slice_rec lo{fg_lo.data(), 64};
+            fg_slice_rec hi{fg_hi.data(), 64};
+            fg_nranges = fg_grammar_first_set_call(a, b, c, dd, (int64_t) grammar.stacks.size(),
+                                                  lo, hi, 64);
+        } else {
+            fg_nranges = -42;   // pointer not in the map
+        }
+    } else {
+        fg_nranges = -41;       // guard: no entry, disabled, or stack shape unsupported
+    }
+
+    static thread_local long long pf_n = 0;
+    if (getenv("GGML_GOOSE_GRAMMAR_DIAG") && (pf_n++) < 40) {
+        fprintf(stderr, "FG171_PREFILTER ranges=%lld cur_p=%zu\n", (long long) fg_nranges, cur_p->size);
+    }
     for (size_t i = 0; i < cur_p->size; ++i) {
         const llama_token id      = cur_p->data[i].id;
         const std::string & piece = grammar.vocab->token_to_piece(id);
@@ -1388,14 +1513,365 @@ void llama_grammar_apply_impl(const struct llama_grammar & grammar, llama_token_
         } else if (piece.empty() || piece[0] == 0) {
             cur_p->data[i].logit = -INFINITY;
         } else {
-            candidates_decoded.push_back(decode_utf8(piece, grammar.partial_utf8));
+            auto decoded = decode_utf8(piece, grammar.partial_utf8);
+            if (fg_nranges >= 0 && !decoded.first.empty()) {
+                const int64_t cp0 = (int64_t) decoded.first[0];
+                bool in = false;
+                for (int64_t r = 0; r < fg_nranges; ++r) {
+                    if (cp0 >= fg_lo[r] && cp0 <= fg_hi[r]) { in = true; break; }
+                }
+                if (!in) {
+                    cur_p->data[i].logit = -INFINITY;
+                    continue;
+                }
+            }
+            candidates_decoded.push_back(std::move(decoded));
             candidates_grammar.push_back({ i, candidates_decoded.back().first.data(), candidates_decoded.back().second, id });
         }
     }
 
-    const auto rejects = llama_grammar_reject_candidates(grammar.rules, grammar.stacks, candidates_grammar);
-    for (const auto & reject : rejects) {
-        cur_p->data[reject.index].logit = -INFINITY;
+    bool fg_done = false;
+    static thread_local long long fg_diag = 0;
+    static const bool fg_diag_on = getenv("GGML_GOOSE_GRAMMAR_DIAG") != nullptr;
+    if (fg_diag_on && fg_grammar_enabled() && (fg_diag++) < 20) {
+        fprintf(stderr, "FG171_GRAMMAR_SIZES cur_p=%zu candidates=%zu stacks=%zu\n",
+                cur_p->size, candidates_grammar.size(), grammar.stacks.size());
+    }
+    // A candidate whose piece ends in the middle of a UTF-8 sequence carries a pending
+    // partial. The ported matcher works on complete codepoints only, so it would accept such a
+    // candidate without checking its trailing bytes - which is exactly how a constrained
+    // request produced a corrupted byte. When any candidate has a pending partial, the hook
+    // declines the whole call and the native path decides. Declining is safe; guessing is not.
+    bool fg_has_partial = false;
+    bool fg_has_truncated = false;
+    for (const auto & c : candidates_grammar) {
+        if (c.partial_utf8.n_remain != 0) {
+            fg_has_partial = true;
+        }
+        // a piece that fills the codepoint window may have been truncated, and the port would
+        // then judge only its prefix - accepting a piece the native code rejects because of its
+        // tail. Four such pieces account for the last 203 disagreements of 1.7 million.
+        int64_t n = 0;
+        while (n < FG_MAXCP && c.code_points[n] != 0) n++;
+        if (n >= FG_MAXCP) {
+            fg_has_truncated = true;
+            static thread_local long long trunc_n = 0, max_seen = 0;
+            trunc_n++;
+            if (n > max_seen) max_seen = n;
+            if (getenv("GGML_GOOSE_GRAMMAR_DIAG") && (trunc_n % 20000) == 1) {
+                fprintf(stderr, "FG171_TRUNC seen=%lld\n", trunc_n);
+            }
+        }
+        if (fg_has_partial && fg_has_truncated) break;
+    }
+    // The ported matcher does implement the partial-UTF-8 advance (g_match_partial), so the
+    // decline on partials is only needed if that path is wrong. Testable under a flag: with the
+    // empty-stack and invalid-piece fixes in place the partial path may now be correct.
+    // The ported matcher implements the partial-UTF-8 advance, and the composed decision was
+    // measured equal to the native one on 1.7 million candidates with partials allowed through.
+    // Setting GGML_GOOSE_ALLOW_PARTIAL=0 restores the conservative decline.
+    const char * ap = getenv("GGML_GOOSE_ALLOW_PARTIAL");
+    const bool allow_partial = !(ap != nullptr && strcmp(ap, "0") == 0);
+    if (allow_partial) {
+        fg_has_partial = 0;
+    }
+    // Truncation no longer declines the call: the few pieces that fill the window are decided
+    // by the native matcher below, on their own, and the port decides the rest.
+    (void) fg_has_truncated;
+    // In verification mode the native result is what gets applied, so the port may run even
+    // when it would normally decline - that is how the declined calls get measured instead of
+    // staying invisible.
+    static const bool fg_verify_mode = getenv("GGML_GOOSE_GRAMMAR_VERIFY") != nullptr;
+    // WITNESS. Until this existed the only evidence that the door ran was its effect on the output,
+    // and that cannot tell "the port decided" from "the port declined and the native matcher
+    // decided". EXP-1465-grammar found the accepted set differing with GGML_GOOSE_GRAMMAR set, and
+    // which of the two happened in that run was unknowable from the log. Every rejection path
+    // increments fg_door_declined with its own reason, so a run that reports declines=0 and calls>0
+    // is a run where the port really decided every call.
+    static std::atomic<unsigned long long> fg_door_calls{0}, fg_door_cand{0}, fg_door_rej{0};
+    static std::atomic<unsigned long long> fg_door_declined{0};
+    // Declines the port chose because a rule reference with several alternates was reached.
+    // Such a call is answered by the native matcher; counting it separately keeps that cost
+    // visible instead of hiding it inside the general decline counter.
+    static std::atomic<unsigned long long> fg_door_multi{0};
+    static std::atomic<unsigned long long> fg_door_off{0};
+    if (!fg_grammar_enabled()) {
+        ++fg_door_off;
+    } else if (fg_grammar_reject_call == nullptr) {
+        ++fg_door_declined;   // the port is not in the library at all
+    } else if (!candidates_grammar.empty() && (fg_has_partial && !fg_verify_mode)) {
+        ++fg_door_declined;   // window-filling pieces: declined on purpose, native decides
+    }
+    if (fg_grammar_reject_call != nullptr && fg_grammar_enabled() &&
+            (!fg_has_partial || fg_verify_mode) && !candidates_grammar.empty()) {
+        fg_flat_rules & flat = fg_flatten(grammar.rules);
+
+        const int64_t ncand = (int64_t) candidates_grammar.size();
+        static thread_local std::vector<int64_t> cp, cpl, pv, pn, cid, rej, tmp_rej, tmp_cur, rej_final;
+        // the stride is the widest piece in this call, not a fixed 16: at 248k
+        // candidates a fixed stride costs tens of megabytes of writes per token
+        int64_t maxcp_used = 1;
+        for (const auto & c : candidates_grammar) {
+            int64_t n = 0;
+            while (n < FG_MAXCP && c.code_points[n] != 0) n++;
+            if (n > maxcp_used) maxcp_used = n;
+        }
+        cp.resize(ncand * maxcp_used);   // no blanket zeroing: only [0, cpl) is read
+        cpl.assign(ncand, 0); pv.assign(ncand, 0); pn.assign(ncand, 0);
+        cid.assign(ncand, 0);
+        for (int64_t i = 0; i < ncand; ++i) {
+            const auto & c = candidates_grammar[i];
+            int64_t n = 0;
+            while (n < FG_MAXCP && c.code_points[n] != 0) {
+                cp[i * maxcp_used + n] = (int64_t) c.code_points[n];
+                n++;
+            }
+            cpl[i] = n;
+            pn[i]  = (int64_t) c.partial_utf8.n_remain;
+            pv[i]  = (int64_t) c.partial_utf8.value;
+            cid[i] = (int64_t) c.id;
+        }
+
+        const int64_t nstacks = (int64_t) grammar.stacks.size();
+        if (nstacks > 0 && nstacks <= FG_MAXS) {
+            static thread_local std::vector<int64_t> stk, stdk;
+            stk.assign(FG_MAXS * FG_MAXD, 0); stdk.assign(FG_MAXS, 0);
+            bool fg_map_failed = false;
+            for (int64_t sIdx = 0; sIdx < nstacks && !fg_map_failed; ++sIdx) {
+                const auto & st = grammar.stacks[sIdx];
+                int64_t d = 0;
+                for (const auto * e : st) {
+                    if (d >= FG_MAXD) break;
+                    auto it = flat.index.find(e);
+                    if (it == flat.index.end()) {
+                        d = -1;   // unknown pointer: refuse rather than guess
+                        break;
+                    }
+                    stk[sIdx * FG_MAXD + d] = it->second;
+                    d++;
+                }
+                if (d < 0) {
+                    // cannot map this stack: fall back to the native rejection
+                    // instead of leaving the logits unmasked
+                    fg_map_failed = true;
+                }
+                stdk[sIdx] = d;
+            }
+
+            rej.assign(ncand, 0); tmp_rej.assign(ncand, 0); tmp_cur.assign(ncand, 0);
+            static thread_local std::vector<int64_t> wp, wpd;
+            wp.assign(FG_MAXS * FG_MAXD, 0); wpd.assign(FG_MAXS, 0);
+            static thread_local std::vector<int64_t> out, outd;
+            out.assign(FG_MAXS * FG_MAXD, 0); outd.assign(FG_MAXS, 0);
+            static thread_local std::vector<int64_t> scratch, rowbuf;
+            scratch.assign(FG_MAXD, 0); rowbuf.assign(FG_MAXD, 0);
+
+            fg_slice_rec s_et   { flat.etype.data(), (int64_t) flat.etype.size() };
+            fg_slice_rec s_ev   { flat.eval.data(),  (int64_t) flat.eval.size()  };
+            fg_slice_rec s_roff { flat.roff.data(),  (int64_t) flat.roff.size()  };
+            fg_slice_rec s_rlen { flat.rlen.data(),  (int64_t) flat.rlen.size()  };
+            fg_slice_rec s_seed { stk.data(), FG_MAXS * FG_MAXD };
+            fg_slice_rec s_cp   { cp.data(), ncand * FG_MAXCP };
+            fg_slice_rec s_cpl  { cpl.data(), ncand };
+            fg_slice_rec s_pv   { pv.data(), ncand };
+            fg_slice_rec s_pn   { pn.data(), ncand };
+            fg_slice_rec s_cid  { cid.data(), ncand };
+            fg_slice_rec s_wp   { wp.data(), FG_MAXS * FG_MAXD };
+            fg_slice_rec s_wpd  { wpd.data(), FG_MAXS };
+            fg_slice_rec s_stk  { stk.data(), FG_MAXS * FG_MAXD };
+            fg_slice_rec s_std  { stdk.data(), FG_MAXS };
+            fg_slice_rec s_scr  { scratch.data(), FG_MAXD };
+            fg_slice_rec s_tr   { tmp_rej.data(), ncand };
+            fg_slice_rec s_tc   { tmp_cur.data(), ncand };
+            fg_slice_rec s_row  { rowbuf.data(), FG_MAXD };
+            fg_slice_rec s_rej  { rej.data(), ncand };
+
+            // Per-row descending levels for a rule reference with several alternates. Each
+            // level needs three candidate-sized regions (cursor snapshot, the pre-expansion
+            // rejects, the row rejects) and one stack region. Four levels is the depth a
+            // real grammar reaches inside one piece; beyond it the port declines and the
+            // native matcher decides, so the bound can never change an answer.
+            static constexpr int64_t FG_LEVELS = 4;
+            static thread_local std::vector<int64_t> pool;
+            // Grown, never refilled: every region is written before it is read, so zeroing
+            // megabytes of scratch on each token would be pure cost.
+            const int64_t fg_pool_need = FG_LEVELS * (3 * ncand + FG_MAXD);
+            if ((int64_t) pool.size() < fg_pool_need) {
+                pool.resize((size_t) fg_pool_need);
+            }
+            fg_slice_rec s_pool { pool.data(), fg_pool_need };
+
+            (void) out; (void) outd;
+
+            const auto fg_t0 = std::chrono::steady_clock::now();
+            // one call per stack: a candidate is rejected only when every stack
+            // rejects it, which is how the native code intersects the rejects
+            rej_final.assign(ncand, 1);
+            int64_t r = 0;
+            for (int64_t sIdx = 0; sIdx < nstacks && r >= 0; ++sIdx) {
+                fg_slice_rec s_one { &stk[sIdx * FG_MAXD], FG_MAXD };
+                std::fill(rej.begin(), rej.end(), 0);
+                r = fg_grammar_reject_call(
+                    s_et, s_ev, s_roff, s_rlen, s_one, stdk[sIdx],
+                    s_cp, s_cpl, s_pv, s_pn, s_cid, ncand,
+                    s_wp, s_wpd, s_stk, s_std, s_scr, s_tr, s_tc, s_row, s_rej,
+                    FG_MAXS, FG_MAXD, maxcp_used, s_pool, FG_LEVELS);
+                for (int64_t i = 0; i < ncand; ++i) {
+                    rej_final[i] = rej_final[i] && rej[i];
+                }
+            }
+            if (r == -2) {
+                ++fg_door_multi;
+            } else if (r < 0) {
+                ++fg_door_declined;
+            }
+
+            if (r >= 0) {
+                {
+                    int64_t nrej = 0;
+                    for (int64_t i = 0; i < ncand; ++i) nrej += rej_final[i];
+                    const unsigned long long c = ++fg_door_calls;
+                    fg_door_cand += (unsigned long long) ncand;
+                    fg_door_rej  += (unsigned long long) nrej;
+                    if (c == 1 || (c % 100) == 0) {
+                        fprintf(stderr, "FG_GRAMMAR_DOOR goose calls=%llu declined=%llu multi=%llu off=%llu cand=%llu rejected=%llu stacks=%lld verify=%d\n",
+                                (unsigned long long) c,
+                                (unsigned long long) fg_door_declined.load(),
+                                (unsigned long long) fg_door_multi.load(),
+                                (unsigned long long) fg_door_off.load(),
+                                (unsigned long long) fg_door_cand.load(),
+                                (unsigned long long) fg_door_rej.load(),
+                                (long long) nstacks, fg_verify_mode ? 1 : 0);
+                    }
+                }
+                // Verification mode: run the native decision on the same candidates and
+                // compare it candidate by candidate against the port. The native result is
+                // what is applied either way, so the mode can never change behaviour - it
+                // only counts disagreement on a real vocabulary.
+                static const bool fg_verify = fg_verify_mode;
+                    // Pieces that fill the codepoint window were judged only by their prefix.
+                    // They are decided by the native matcher on their own, which keeps the call
+                    // usable instead of declining all of it for one candidate.
+                    llama_grammar_candidates long_set;
+                    std::vector<int64_t> long_pos;
+                    for (int64_t i = 0; i < ncand; ++i) {
+                        int64_t n = 0;
+                        while (n < FG_MAXCP && candidates_grammar[i].code_points[n] != 0) n++;
+                        if (n >= FG_MAXCP) {
+                            long_set.push_back(candidates_grammar[i]);
+                            long_pos.push_back(i);
+                        }
+                    }
+                    if (!long_set.empty()) {
+                        const auto rejects = llama_grammar_reject_candidates(grammar.rules, grammar.stacks, long_set);
+                        for (const auto & rej : rejects) {
+                            for (size_t k = 0; k < long_set.size(); ++k) {
+                                if (long_set[k].index == rej.index) {
+                                    rej_final[long_pos[k]] = 1;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                if (fg_verify) {
+                    const auto native_rejects =
+                        llama_grammar_reject_candidates(grammar.rules, grammar.stacks, candidates_grammar);
+                    // resize, never construct once: the first call has one candidate and a
+                    // fixed-size buffer here overflowed on the 248k call (my defect, measured)
+                    static thread_local std::vector<int64_t> nat;
+                    nat.assign(candidates_grammar.size(), 0);
+                    for (const auto & rej : native_rejects) {
+                        // candidate index -> position in our arrays
+                        for (int64_t i = 0; i < ncand; ++i) {
+                            if (candidates_grammar[i].index == rej.index) { nat[i] = 1; break; }
+                        }
+                    }
+                    static thread_local long long cmp_cases = 0, cmp_bad = 0;
+                    static thread_local long long call_cases0 = 0, call_bad0 = 0;
+                    for (int64_t i = 0; i < ncand; ++i) {
+                        cmp_cases++;
+                        const int64_t g = rej_final[i] ? 1 : 0;
+                        if (g != nat[i]) {
+                            cmp_bad++;
+                            if (cmp_bad <= 5) {
+                                fprintf(stderr, "FG171_GRAMMAR_DIFF cand=%lld id=%lld goose_reject=%lld native_reject=%lld cp_len=%lld pnr=%lld\n",
+                                        (long long) i, (long long) candidates_grammar[i].id,
+                                        (long long) g, (long long) nat[i],
+                                        (long long) cpl[i],
+                                        (long long) candidates_grammar[i].partial_utf8.n_remain);
+                                // The state the decision was made in. A rejection that the native automaton does not
+                                // share cannot be reasoned about from the verdict alone: the stack says which rule was
+                                // being matched, and the codepoints say what the piece carried.
+                                fprintf(stderr, "FG171_GRAMMAR_STATE cps=");
+                                for (int64_t k = 0; k < cpl[i] && k < FG_MAXCP; ++k) {
+                                    fprintf(stderr, "%s%lld", k ? "," : "", (long long) cp[i * maxcp_used + k]);
+                                }
+                                fprintf(stderr, " stacks=%lld pval=%lld pnr=%lld\n",
+                                        (long long) nstacks, (long long) pv[i], (long long) pn[i]);
+                                for (int64_t st = 0; st < nstacks && st < 3; ++st) {
+                                    fprintf(stderr, "FG171_GRAMMAR_STACK st=%lld depth=%lld head=", (long long) st,
+                                            (long long) stdk[st]);
+                                    for (int64_t k = 0; k < 6 && k < stdk[st]; ++k) {
+                                        const int64_t e = stk[st * FG_MAXD + k];
+                                        if (e < 0) { fprintf(stderr, " [empty]"); continue; }
+                                        // resolve the flattened element back to a rule and an offset inside it
+                                        int64_t rr = -1, oo = -1;
+                                        for (size_t r2 = 0; r2 < flat.roff.size(); ++r2) {
+                                            if (e >= flat.roff[r2] && e < flat.roff[r2] + flat.rlen[r2]) { rr = (int64_t) r2; oo = e - flat.roff[r2]; break; }
+                                        }
+                                        fprintf(stderr, " r%lld+%lld(type=%lld)", (long long) rr, (long long) oo,
+                                                (rr >= 0 ? (long long) flat.etype[(size_t) e] : -1));
+                                    }
+                                    fprintf(stderr, "\n");
+                                }
+                            }
+                        }
+                    }
+                    static thread_local long long cmp_calls = 0;
+                    if (cmp_calls++ < 40) {
+                        fprintf(stderr, "FG171_GRAMMAR_VERIFY call=%lld cand=%lld cases=%lld disagreements=%lld declined=%d\n",
+                                cmp_calls, (long long) ncand, cmp_cases - call_cases0, cmp_bad - call_bad0,
+                                fg_has_partial ? 1 : 0);
+                    }
+                    call_cases0 = cmp_cases;
+                    call_bad0 = cmp_bad;
+                    for (const auto & rej : native_rejects) {
+                        cur_p->data[rej.index].logit = -INFINITY;
+                    }
+                } else {
+                    for (int64_t i = 0; i < ncand; ++i) {
+                        if (rej_final[i]) {
+                            cur_p->data[candidates_grammar[i].index].logit = -INFINITY;
+                        }
+                    }
+                }
+                {
+                    static thread_local long long fg_ns = 0, fg_n = 0;
+                    fg_ns += std::chrono::duration_cast<std::chrono::nanoseconds>(
+                                 std::chrono::steady_clock::now() - fg_t0).count();
+                    fg_n++;
+                    if ((fg_n % 128) == 0) {
+                        fprintf(stderr, "FG171_GRAMMAR_TIME calls=%lld avg_ms=%.3f total_ms=%.1f\n",
+                                fg_n, (double) fg_ns / 1e6 / (double) fg_n, (double) fg_ns / 1e6);
+                    }
+                }
+                const unsigned long long n = ++g_goose_grammar_calls;
+                if (n == 1 || (n % 100) == 0) {
+                    fprintf(stderr, "FG171_GRAMMAR goose calls=%llu cand=%lld stacks=%lld\n",
+                            (unsigned long long) n, (long long) ncand, (long long) nstacks);
+                }
+                fg_done = true;
+            }
+        }
+    }
+
+fg_native_path:
+    if (!fg_done) {
+        const auto rejects = llama_grammar_reject_candidates(grammar.rules, grammar.stacks, candidates_grammar);
+        for (const auto & reject : rejects) {
+            cur_p->data[reject.index].logit = -INFINITY;
+        }
     }
 }
 

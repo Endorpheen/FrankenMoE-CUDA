@@ -867,6 +867,11 @@ struct llama_model {
 
     llama_ftype ftype() const;
 
+    // Registers the resident mmap expert ranges with the backend so they stop being copied per
+    // dispatch. Moved here unchanged from runtime/reconstructed (EXP-2026-11-16-906); the vendored
+    // tree simply never had it, and the candidate build compiles this tree.
+    void pin_mmap_experts(ggml_backend_reg_t reg) const;
+
     size_t size() const; // file size
     size_t n_tensors() const;
     size_t n_devices() const;

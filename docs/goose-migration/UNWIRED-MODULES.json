@@ -1,0 +1,534 @@
+{
+ "schema": 1,
+ "entries": [
+  {
+   "path": "goose/cpu/dequant.goose",
+   "exports": 2,
+   "status": "excluded_with_reason",
+   "reason": "shares both export names (qz_dequant, qz_dequant_block_size) with goose/model/quant-dequant.goose, which IS in the unit; the bodies differ (143 vs 158 lines), so these are two versions of one decision and one must be retired. Recorded for the dead-code audit, not wired - wiring a second version would be the worst outcome"
+  },
+  {
+   "path": "goose/cpu/goose-moe-cache-slru.goose",
+   "exports": 1,
+   "status": "excluded_with_reason",
+   "reason": "slru_plan is also exported by goose/model/slru-policy-goose.goose and neither is in the unit: two versions of the expert-cache policy, one decision to keep"
+  },
+  {
+   "path": "goose/cpu/graph-reuse.goose",
+   "exports": 1,
+   "status": "excluded_with_reason",
+   "reason": "graph input reuse (can_reuse) as a table-driven decision; nothing in the unit asks it, so the native conjunction still stands - a genuine unwired decision"
+  },
+  {
+   "path": "goose/jinja/autoparser.goose",
+   "exports": 81,
+   "status": "excluded_with_reason",
+   "reason": "chat-template engine: the standalone has no chat path yet, so nothing would call it"
+  },
+  {
+   "path": "goose/jinja/builtins.goose",
+   "exports": 2,
+   "status": "excluded_with_reason",
+   "reason": "chat-template engine: the standalone has no chat path yet, so nothing would call it"
+  },
+  {
+   "path": "goose/jinja/delimiters.goose",
+   "exports": 65,
+   "status": "excluded_with_reason",
+   "reason": "chat-template engine: the standalone has no chat path yet, so nothing would call it"
+  },
+  {
+   "path": "goose/jinja/jinja-macro-call.goose",
+   "exports": 4,
+   "status": "excluded_with_reason",
+   "reason": "chat-template engine: the standalone has no chat path yet, so nothing would call it"
+  },
+  {
+   "path": "goose/jinja/json-escape.goose",
+   "exports": 92,
+   "status": "excluded_with_reason",
+   "reason": "chat-template engine: the standalone has no chat path yet, so nothing would call it"
+  },
+  {
+   "path": "goose/jinja/lexer.goose",
+   "exports": 1,
+   "status": "excluded_with_reason",
+   "reason": "chat-template engine: the standalone has no chat path yet, so nothing would call it"
+  },
+  {
+   "path": "goose/jinja/p10-07b-json-consumer.goose",
+   "exports": 1,
+   "status": "excluded_with_reason",
+   "reason": "chat-template engine: the standalone has no chat path yet, so nothing would call it"
+  },
+  {
+   "path": "goose/jinja/parser.goose",
+   "exports": 1,
+   "status": "excluded_with_reason",
+   "reason": "chat-template engine: the standalone has no chat path yet, so nothing would call it"
+  },
+  {
+   "path": "goose/jinja/parsers.goose",
+   "exports": 92,
+   "status": "excluded_with_reason",
+   "reason": "chat-template engine: the standalone has no chat path yet, so nothing would call it"
+  },
+  {
+   "path": "goose/jinja/streaming.goose",
+   "exports": 70,
+   "status": "excluded_with_reason",
+   "reason": "chat-template engine: the standalone has no chat path yet, so nothing would call it"
+  },
+  {
+   "path": "goose/jinja/tool-builders.goose",
+   "exports": 83,
+   "status": "excluded_with_reason",
+   "reason": "chat-template engine: the standalone has no chat path yet, so nothing would call it"
+  },
+  {
+   "path": "goose/jinja/typed.goose",
+   "exports": 53,
+   "status": "excluded_with_reason",
+   "reason": "chat-template engine: the standalone has no chat path yet, so nothing would call it"
+  },
+  {
+   "path": "goose/jinja/value-json.goose",
+   "exports": 3,
+   "status": "excluded_with_reason",
+   "reason": "chat-template engine: the standalone has no chat path yet, so nothing would call it"
+  },
+  {
+   "path": "goose/jinja/value.goose",
+   "exports": 2,
+   "status": "excluded_with_reason",
+   "reason": "chat-template engine: the standalone has no chat path yet, so nothing would call it"
+  },
+  {
+   "path": "goose/json/ac-grammar.goose",
+   "exports": 1,
+   "status": "excluded_with_reason",
+   "reason": "JSON grammar and schema: the constrained-generation path is not wired in the standalone"
+  },
+  {
+   "path": "goose/json/bounds.goose",
+   "exports": 3,
+   "status": "excluded_with_reason",
+   "reason": "JSON grammar and schema: the constrained-generation path is not wired in the standalone"
+  },
+  {
+   "path": "goose/json/chars.goose",
+   "exports": 1,
+   "status": "excluded_with_reason",
+   "reason": "JSON grammar and schema: the constrained-generation path is not wired in the standalone"
+  },
+  {
+   "path": "goose/json/gbnf-parser.goose",
+   "exports": 1,
+   "status": "excluded_with_reason",
+   "reason": "JSON grammar and schema: the constrained-generation path is not wired in the standalone"
+  },
+  {
+   "path": "goose/json/json-schema.goose",
+   "exports": 1,
+   "status": "excluded_with_reason",
+   "reason": "JSON grammar and schema: the constrained-generation path is not wired in the standalone"
+  },
+  {
+   "path": "goose/json/lazy.goose",
+   "exports": 1,
+   "status": "excluded_with_reason",
+   "reason": "JSON grammar and schema: the constrained-generation path is not wired in the standalone"
+  },
+  {
+   "path": "goose/json/notstrings.goose",
+   "exports": 1,
+   "status": "excluded_with_reason",
+   "reason": "JSON grammar and schema: the constrained-generation path is not wired in the standalone"
+  },
+  {
+   "path": "goose/json/pattern.goose",
+   "exports": 5,
+   "status": "excluded_with_reason",
+   "reason": "JSON grammar and schema: the constrained-generation path is not wired in the standalone"
+  },
+  {
+   "path": "goose/json/peg-ast.goose",
+   "exports": 2,
+   "status": "excluded_with_reason",
+   "reason": "JSON grammar and schema: the constrained-generation path is not wired in the standalone"
+  },
+  {
+   "path": "goose/json/peg-dump.goose",
+   "exports": 1,
+   "status": "excluded_with_reason",
+   "reason": "JSON grammar and schema: the constrained-generation path is not wired in the standalone"
+  },
+  {
+   "path": "goose/json/peg-grammar.goose",
+   "exports": 1,
+   "status": "excluded_with_reason",
+   "reason": "JSON grammar and schema: the constrained-generation path is not wired in the standalone"
+  },
+  {
+   "path": "goose/json/peg-grammar2.goose",
+   "exports": 1,
+   "status": "excluded_with_reason",
+   "reason": "JSON grammar and schema: the constrained-generation path is not wired in the standalone"
+  },
+  {
+   "path": "goose/json/peg-parse.goose",
+   "exports": 1,
+   "status": "excluded_with_reason",
+   "reason": "JSON grammar and schema: the constrained-generation path is not wired in the standalone"
+  },
+  {
+   "path": "goose/json/peg-parse2.goose",
+   "exports": 1,
+   "status": "excluded_with_reason",
+   "reason": "JSON grammar and schema: the constrained-generation path is not wired in the standalone"
+  },
+  {
+   "path": "goose/json/resolve-refs.goose",
+   "exports": 1,
+   "status": "excluded_with_reason",
+   "reason": "JSON grammar and schema: the constrained-generation path is not wired in the standalone"
+  },
+  {
+   "path": "goose/json/schema-add.goose",
+   "exports": 1,
+   "status": "excluded_with_reason",
+   "reason": "JSON grammar and schema: the constrained-generation path is not wired in the standalone"
+  },
+  {
+   "path": "goose/json/schema-introspect.goose",
+   "exports": 4,
+   "status": "excluded_with_reason",
+   "reason": "JSON grammar and schema: the constrained-generation path is not wired in the standalone"
+  },
+  {
+   "path": "goose/json/schema-shape.goose",
+   "exports": 4,
+   "status": "excluded_with_reason",
+   "reason": "JSON grammar and schema: the constrained-generation path is not wired in the standalone"
+  },
+  {
+   "path": "goose/json/schema.goose",
+   "exports": 5,
+   "status": "excluded_with_reason",
+   "reason": "JSON grammar and schema: the constrained-generation path is not wired in the standalone"
+  },
+  {
+   "path": "goose/json/visit-dispatch.goose",
+   "exports": 1,
+   "status": "excluded_with_reason",
+   "reason": "JSON grammar and schema: the constrained-generation path is not wired in the standalone"
+  },
+  {
+   "path": "goose/metrics/bench-diagnostics.goose",
+   "exports": 7,
+   "status": "excluded_with_reason",
+   "reason": "attaches only when its analysis scripts exist (P10-09 remainder)"
+  },
+  {
+   "path": "goose/misc/qwen35-split.goose",
+   "exports": 1,
+   "status": "excluded_with_reason",
+   "reason": "model IO or saver decision: not wired into the standalone runtime"
+  },
+  {
+   "path": "goose/misc/test-runner.goose",
+   "exports": 11,
+   "status": "excluded_with_reason",
+   "reason": "exercised by its own generated-C gate (EXP990) rather than by the runtime unit"
+  },
+  {
+   "path": "goose/misc/unicode-afmoe.goose",
+   "exports": 1,
+   "status": "excluded_with_reason",
+   "reason": "Unicode table variant: the unit carries unicode-tables and unicode-text, which are the two the tokenizer uses"
+  },
+  {
+   "path": "goose/misc/unicode-byte-map.goose",
+   "exports": 1,
+   "status": "excluded_with_reason",
+   "reason": "Unicode table variant: the unit carries unicode-tables and unicode-text, which are the two the tokenizer uses"
+  },
+  {
+   "path": "goose/misc/unicode-gpt2.goose",
+   "exports": 1,
+   "status": "excluded_with_reason",
+   "reason": "Unicode table variant: the unit carries unicode-tables and unicode-text, which are the two the tokenizer uses"
+  },
+  {
+   "path": "goose/misc/unicode-han.goose",
+   "exports": 1,
+   "status": "excluded_with_reason",
+   "reason": "Unicode table variant: the unit carries unicode-tables and unicode-text, which are the two the tokenizer uses"
+  },
+  {
+   "path": "goose/misc/unicode-hangul.goose",
+   "exports": 1,
+   "status": "excluded_with_reason",
+   "reason": "Unicode table variant: the unit carries unicode-tables and unicode-text, which are the two the tokenizer uses"
+  },
+  {
+   "path": "goose/misc/unicode-newlines.goose",
+   "exports": 1,
+   "status": "excluded_with_reason",
+   "reason": "Unicode table variant: the unit carries unicode-tables and unicode-text, which are the two the tokenizer uses"
+  },
+  {
+   "path": "goose/model/deepseek32.goose",
+   "exports": 10,
+   "status": "excluded_with_reason",
+   "reason": "architecture port outside the Apex unit: rule 17 keeps the ability to port it, and the composed unit carries Apex (qwen35/gdn) only"
+  },
+  {
+   "path": "goose/model/deepseek4.goose",
+   "exports": 25,
+   "status": "excluded_with_reason",
+   "reason": "architecture port outside the Apex unit: rule 17 keeps the ability to port it, and the composed unit carries Apex (qwen35/gdn) only"
+  },
+  {
+   "path": "goose/model/gemma3.goose",
+   "exports": 19,
+   "status": "excluded_with_reason",
+   "reason": "architecture port outside the Apex unit: rule 17 keeps the ability to port it, and the composed unit carries Apex (qwen35/gdn) only"
+  },
+  {
+   "path": "goose/model/gemma3n.goose",
+   "exports": 24,
+   "status": "excluded_with_reason",
+   "reason": "architecture port outside the Apex unit: rule 17 keeps the ability to port it, and the composed unit carries Apex (qwen35/gdn) only"
+  },
+  {
+   "path": "goose/model/gemma4-assistant.goose",
+   "exports": 11,
+   "status": "excluded_with_reason",
+   "reason": "architecture port outside the Apex unit: rule 17 keeps the ability to port it, and the composed unit carries Apex (qwen35/gdn) only"
+  },
+  {
+   "path": "goose/model/gemma4.goose",
+   "exports": 12,
+   "status": "excluded_with_reason",
+   "reason": "architecture port outside the Apex unit: rule 17 keeps the ability to port it, and the composed unit carries Apex (qwen35/gdn) only"
+  },
+  {
+   "path": "goose/model/glm-dsa.goose",
+   "exports": 24,
+   "status": "excluded_with_reason",
+   "reason": "architecture port outside the Apex unit: rule 17 keeps the ability to port it, and the composed unit carries Apex (qwen35/gdn) only"
+  },
+  {
+   "path": "goose/model/glm4-moe.goose",
+   "exports": 4,
+   "status": "excluded_with_reason",
+   "reason": "architecture port outside the Apex unit: rule 17 keeps the ability to port it, and the composed unit carries Apex (qwen35/gdn) only"
+  },
+  {
+   "path": "goose/model/glm4.goose",
+   "exports": 13,
+   "status": "excluded_with_reason",
+   "reason": "architecture port outside the Apex unit: rule 17 keeps the ability to port it, and the composed unit carries Apex (qwen35/gdn) only"
+  },
+  {
+   "path": "goose/model/glm5-next.goose",
+   "exports": 30,
+   "status": "excluded_with_reason",
+   "reason": "architecture port outside the Apex unit: rule 17 keeps the ability to port it, and the composed unit carries Apex (qwen35/gdn) only"
+  },
+  {
+   "path": "goose/model/imatrix.goose",
+   "exports": 7,
+   "status": "excluded_with_reason",
+   "reason": "model IO or saver decision: not wired into the standalone runtime"
+  },
+  {
+   "path": "goose/model/kimi-k3.goose",
+   "exports": 24,
+   "status": "excluded_with_reason",
+   "reason": "architecture port outside the Apex unit: rule 17 keeps the ability to port it, and the composed unit carries Apex (qwen35/gdn) only"
+  },
+  {
+   "path": "goose/model/kimi-linear.goose",
+   "exports": 26,
+   "status": "excluded_with_reason",
+   "reason": "architecture port outside the Apex unit: rule 17 keeps the ability to port it, and the composed unit carries Apex (qwen35/gdn) only"
+  },
+  {
+   "path": "goose/model/lora-manifest.goose",
+   "exports": 5,
+   "status": "excluded_with_reason",
+   "reason": "model IO or saver decision: not wired into the standalone runtime"
+  },
+  {
+   "path": "goose/model/mistral3.goose",
+   "exports": 9,
+   "status": "excluded_with_reason",
+   "reason": "architecture port outside the Apex unit: rule 17 keeps the ability to port it, and the composed unit carries Apex (qwen35/gdn) only"
+  },
+  {
+   "path": "goose/model/mmap.goose",
+   "exports": 6,
+   "status": "excluded_with_reason",
+   "reason": "model IO or saver decision: not wired into the standalone runtime"
+  },
+  {
+   "path": "goose/model/model-saver.goose",
+   "exports": 30,
+   "status": "excluded_with_reason",
+   "reason": "model IO or saver decision: not wired into the standalone runtime"
+  },
+  {
+   "path": "goose/model/q4e-expert-layout.goose",
+   "exports": 15,
+   "status": "excluded_with_reason",
+   "reason": "model IO or saver decision: not wired into the standalone runtime"
+  },
+  {
+   "path": "goose/model/q4m-metadata.goose",
+   "exports": 19,
+   "status": "excluded_with_reason",
+   "reason": "model IO or saver decision: not wired into the standalone runtime"
+  },
+  {
+   "path": "goose/model/qwen2.goose",
+   "exports": 7,
+   "status": "excluded_with_reason",
+   "reason": "architecture port outside the Apex unit: rule 17 keeps the ability to port it, and the composed unit carries Apex (qwen35/gdn) only"
+  },
+  {
+   "path": "goose/model/qwen2moe.goose",
+   "exports": 3,
+   "status": "excluded_with_reason",
+   "reason": "architecture port outside the Apex unit: rule 17 keeps the ability to port it, and the composed unit carries Apex (qwen35/gdn) only"
+  },
+  {
+   "path": "goose/model/qwen3.goose",
+   "exports": 7,
+   "status": "excluded_with_reason",
+   "reason": "architecture port outside the Apex unit: rule 17 keeps the ability to port it, and the composed unit carries Apex (qwen35/gdn) only"
+  },
+  {
+   "path": "goose/model/qwen3moe.goose",
+   "exports": 3,
+   "status": "excluded_with_reason",
+   "reason": "architecture port outside the Apex unit: rule 17 keeps the ability to port it, and the composed unit carries Apex (qwen35/gdn) only"
+  },
+  {
+   "path": "goose/model/qwen3next.goose",
+   "exports": 9,
+   "status": "excluded_with_reason",
+   "reason": "architecture port outside the Apex unit: rule 17 keeps the ability to port it, and the composed unit carries Apex (qwen35/gdn) only"
+  },
+  {
+   "path": "goose/model/qwen4exp.goose",
+   "exports": 4,
+   "status": "excluded_with_reason",
+   "reason": "architecture port outside the Apex unit: rule 17 keeps the ability to port it, and the composed unit carries Apex (qwen35/gdn) only"
+  },
+  {
+   "path": "goose/model/read-path.goose",
+   "exports": 6,
+   "status": "excluded_with_reason",
+   "reason": "model IO or saver decision: not wired into the standalone runtime"
+  },
+  {
+   "path": "goose/model/saver-writer.goose",
+   "exports": 27,
+   "status": "excluded_with_reason",
+   "reason": "model IO or saver decision: not wired into the standalone runtime"
+  },
+  {
+   "path": "goose/model/slru-policy-goose.goose",
+   "exports": 1,
+   "status": "excluded_with_reason",
+   "reason": "model IO or saver decision: not wired into the standalone runtime"
+  },
+  {
+   "path": "goose/model/upload-ring.goose",
+   "exports": 5,
+   "status": "excluded_with_reason",
+   "reason": "model IO or saver decision: not wired into the standalone runtime"
+  },
+  {
+   "path": "goose/server/bind-params.goose",
+   "exports": 4,
+   "status": "excluded_with_reason",
+   "reason": "HTTP decision not yet wired; most of these need a parsed request body, which the listener does not keep"
+  },
+  {
+   "path": "goose/server/gcp-props/gcp.goose",
+   "exports": 6,
+   "status": "excluded_with_reason",
+   "reason": "GCP AIP compatibility (predict handler, camelCase aliases, instances limits); the standalone serves no predict route"
+  },
+  {
+   "path": "goose/server/gcp-props/props.goose",
+   "exports": 3,
+   "status": "excluded_with_reason",
+   "reason": "/props payload key order and the GET/POST rules; not wired, and it still writes through the C-host store form (extern fg457_st_i64, out: u64) that limits.goose had to drop"
+  },
+  {
+   "path": "goose/server/multipart.goose",
+   "exports": 3,
+   "status": "excluded_with_reason",
+   "reason": "HTTP decision not yet wired; most of these need a parsed request body, which the listener does not keep"
+  },
+  {
+   "path": "goose/server/prerouting.goose",
+   "exports": 1,
+   "status": "excluded_with_reason",
+   "reason": "HTTP decision not yet wired; most of these need a parsed request body, which the listener does not keep"
+  },
+  {
+   "path": "goose/server/request-errors.goose",
+   "exports": 3,
+   "status": "excluded_with_reason",
+   "reason": "HTTP decision not yet wired; most of these need a parsed request body, which the listener does not keep"
+  },
+  {
+   "path": "goose/server/required-fields.goose",
+   "exports": 1,
+   "status": "excluded_with_reason",
+   "reason": "HTTP decision not yet wired; most of these need a parsed request body, which the listener does not keep"
+  },
+  {
+   "path": "goose/server/response.goose",
+   "exports": 5,
+   "status": "excluded_with_reason",
+   "reason": "HTTP decision not yet wired; most of these need a parsed request body, which the listener does not keep"
+  },
+  {
+   "path": "goose/server/sse-framing.goose",
+   "exports": 2,
+   "status": "excluded_with_reason",
+   "reason": "streaming response decision: needs a producer to stream, which the standalone does not have"
+  },
+  {
+   "path": "goose/server/startup-policy.goose",
+   "exports": 1,
+   "status": "excluded_with_reason",
+   "reason": "HTTP decision not yet wired; most of these need a parsed request body, which the listener does not keep"
+  },
+  {
+   "path": "goose/server/stream-manager.goose",
+   "exports": 4,
+   "status": "excluded_with_reason",
+   "reason": "streaming response decision: needs a producer to stream, which the standalone does not have"
+  },
+  {
+   "path": "goose/server/stream-policy.goose",
+   "exports": 2,
+   "status": "excluded_with_reason",
+   "reason": "streaming response decision: needs a producer to stream, which the standalone does not have"
+  },
+  {
+   "path": "goose/server/stream-provider.goose",
+   "exports": 4,
+   "status": "excluded_with_reason",
+   "reason": "streaming response decision: needs a producer to stream, which the standalone does not have"
+  }
+ ],
+ "note": "Every module that exports decisions and is in no composed unit. status excluded_with_reason means the reason was read and recorded; unclassified means it is counted but not yet judged. The check fails only on a path absent from this file."
+}

@@ -11,9 +11,642 @@
 #include <cinttypes>
 #include <cstdint>
 #include <cstring>
+#include <atomic>
+#include <type_traits>
+#include <dlfcn.h>
+#include <fstream>
 #include <future>
 #include <regex>
 #include <unordered_set>
+
+namespace {
+// Compares the ported reader's view of a GGUF header with the native one. The native values are what the
+// loader uses either way; this only counts disagreements, behind FG_GGUF_DIAG.
+struct fg_sl_i64 { int64_t * data; int64_t len; };
+struct fg_sl_u8  { uint8_t  * data; int64_t len; };
+typedef int64_t (*fg_gr_parse_fn)(fg_sl_u8, int64_t, fg_sl_i64, fg_sl_i64, fg_sl_i64, fg_sl_i64, fg_sl_i64);
+typedef int64_t (*fg_gr_find_fn)(fg_sl_u8, fg_sl_i64, fg_sl_i64, fg_sl_i64, fg_sl_u8);
+typedef int64_t (*fg_gr_meta_int_fn)(fg_sl_u8, fg_sl_i64, fg_sl_i64, int64_t, fg_sl_i64);
+typedef int64_t (*fg_gr_tinfo_fn)(fg_sl_i64, fg_sl_i64, int64_t, fg_sl_i64);
+typedef int64_t (*fg_gr_span_fn)(fg_sl_i64, fg_sl_i64, int64_t, fg_sl_i64);
+typedef int64_t (*fg_gr_arrstr_fn)(fg_sl_u8, fg_sl_i64, fg_sl_i64, int64_t, int64_t, fg_sl_i64);
+typedef int64_t (*fg_gr_arrint_fn)(fg_sl_u8, fg_sl_i64, fg_sl_i64, int64_t, int64_t, fg_sl_i64);
+
+// The window and the port records, kept alive after the check so a key read can be compared at the moment
+// of use. One model per process, which is what the loader has anyway.
+struct fg_port_store {
+    std::vector<uint8_t> data;
+    std::vector<int64_t> state, kv, tn, slots;
+    bool ready = false;
+};
+static fg_port_store fg_port;
+
+// Returns the number of disagreements; the caller decides whether that is fatal.
+// Tensor lookup and type through the port, for the metadata-only path that has no file list.
+extern "C" int64_t fg_port_find_tensor(const char * name, int64_t len) {
+    static auto fn = []() -> fg_gr_find_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        return h ? reinterpret_cast<fg_gr_find_fn>(dlsym(h, "gr_find_tensor")) : nullptr;
+    }();
+    if (!fn || !fg_port.ready) { return -1; }
+    fg_sl_u8  s_data{ fg_port.data.data(), (int64_t) fg_port.data.size() };
+    fg_sl_i64 s_state{ fg_port.state.data(), 8 }, s_t{ fg_port.tn.data(), (int64_t) fg_port.tn.size() };
+    fg_sl_i64 s_slots{ fg_port.slots.data(), (int64_t) fg_port.slots.size() };
+    fg_sl_u8  key{ reinterpret_cast<uint8_t *>(const_cast<char *>(name)), len };
+    return fn(s_data, s_state, s_t, s_slots, key);
+}
+
+extern "C" bool fg_port_tensor_type(int64_t index, int64_t * out) {
+    static auto fn = []() -> fg_gr_tinfo_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        return h ? reinterpret_cast<fg_gr_tinfo_fn>(dlsym(h, "gr_tensor_info")) : nullptr;
+    }();
+    if (!fn || !fg_port.ready) { return false; }
+    fg_sl_i64 s_state{ fg_port.state.data(), 8 }, s_t{ fg_port.tn.data(), (int64_t) fg_port.tn.size() };
+    int64_t info[9] = {0};
+    fg_sl_i64 so{ info, 9 };
+    if (fn(s_state, s_t, index, so) != 0) { return false; }
+    *out = info[0];
+    return true;
+}
+
+// Element of an integer array, for the token-type table the vocabulary reads with gguf_get_arr_data.
+extern "C" bool fg_port_array_int(int64_t key_index, int64_t element, int64_t * out) {
+    static auto fn = []() -> fg_gr_arrint_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        return h ? reinterpret_cast<fg_gr_arrint_fn>(dlsym(h, "gr_array_int")) : nullptr;
+    }();
+    if (!fn || !fg_port.ready) { return false; }
+    fg_sl_u8  s_data{ fg_port.data.data(), (int64_t) fg_port.data.size() };
+    fg_sl_i64 s_state{ fg_port.state.data(), 8 }, s_kv{ fg_port.kv.data(), (int64_t) fg_port.kv.size() };
+    int64_t v = 0;
+    fg_sl_i64 so{ &v, 1 };
+    if (fn(s_data, s_state, s_kv, key_index, element, so) != 0) { return false; }
+    *out = v;
+    return true;
+}
+
+// Element of a string array, for consumers that iterate the arrays themselves (llama-vocab builds the
+// token list that way). C linkage so the vocabulary file can declare it without the loader's headers.
+extern "C" bool fg_port_array_str(int64_t key_index, int64_t element, const uint8_t ** ptr, int64_t * len) {
+    static auto fn = []() -> fg_gr_arrstr_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        return h ? reinterpret_cast<fg_gr_arrstr_fn>(dlsym(h, "gr_arr_str_span")) : nullptr;
+    }();
+    if (!fn || !fg_port.ready) { return false; }
+    fg_sl_u8  s_data{ fg_port.data.data(), (int64_t) fg_port.data.size() };
+    fg_sl_i64 s_state{ fg_port.state.data(), 8 }, s_kv{ fg_port.kv.data(), (int64_t) fg_port.kv.size() };
+    int64_t out[2] = {0};
+    fg_sl_i64 so{ out, 2 };
+    if (fn(s_data, s_state, s_kv, key_index, element, so) != 0) { return false; }
+    if (out[0] < 0 || out[1] < 0 || (size_t) (out[0] + out[1]) > fg_port.data.size()) { return false; }
+    *ptr = fg_port.data.data() + out[0];
+    *len = out[1];
+    return true;
+}
+
+// Read one key through the port. Returns false when the port cannot answer, which the caller must treat as
+// "no comparison available" rather than as agreement.
+static bool fg_port_int(const int64_t k, int64_t & out) {
+    static auto fn = []() -> fg_gr_meta_int_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        return h ? reinterpret_cast<fg_gr_meta_int_fn>(dlsym(h, "gr_meta_int")) : nullptr;
+    }();
+    if (!fn || !fg_port.ready) { return false; }
+    fg_sl_u8  s_data{ fg_port.data.data(), (int64_t) fg_port.data.size() };
+    fg_sl_i64 s_state{ fg_port.state.data(), 8 }, s_kv{ fg_port.kv.data(), (int64_t) fg_port.kv.size() };
+    int64_t v = 0;
+    fg_sl_i64 so{ &v, 1 };
+    if (fn(s_data, s_state, s_kv, k, so) != 0) { return false; }
+    out = v;
+    return true;
+}
+
+static bool fg_port_str(const int64_t k, const uint8_t *& ptr, int64_t & len) {
+    static auto fn = []() -> fg_gr_span_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        return h ? reinterpret_cast<fg_gr_span_fn>(dlsym(h, "gr_val_span")) : nullptr;
+    }();
+    if (!fn || !fg_port.ready) { return false; }
+    fg_sl_i64 s_state{ fg_port.state.data(), 8 }, s_kv{ fg_port.kv.data(), (int64_t) fg_port.kv.size() };
+    int64_t out[4] = {0};
+    fg_sl_i64 so{ out, 4 };
+    if (fn(s_state, s_kv, k, so) != 0) { return false; }
+    if (out[1] < 0 || out[2] < 0 || (size_t) (out[1] + out[2]) > fg_port.data.size()) { return false; }
+    ptr = fg_port.data.data() + out[1];
+    len = out[2];
+    return true;
+}
+
+// The BPE table for the ported encoder: one owner, as with the detokeniser. btl_load reads the KV arrays
+// through the port's own reader and fills every table, so the host only supplies correctly sized arrays -
+// sizes come from the native reader's own counts, never from a guess (EXP-2026-11-19-1378).
+struct fg_bpe_store {
+    std::vector<int64_t> tok_off, tok_len, tok_slots, mrg_off, mrg_len, mrg_slots;
+    std::vector<int64_t> pairs, tok_type, attr, order, eog, stats;
+    int64_t n_special = 0;
+    bool ready = false;
+};
+static fg_bpe_store fg_bpe;
+
+typedef int64_t (*fg_bt_bpe_fn)(fg_sl_u8, fg_sl_u8, fg_sl_i64, fg_sl_i64, fg_sl_i64,
+                                fg_sl_i64, fg_sl_i64, fg_sl_i64, fg_sl_i64, int64_t,
+                                fg_sl_i64, fg_sl_i64, fg_sl_u8, fg_sl_i64, fg_sl_i64,
+                                fg_sl_i64, fg_sl_i64);
+
+static fg_bt_bpe_fn fg_bpe_encode_resolve() {
+    static fg_bt_bpe_fn fn = []() -> fg_bt_bpe_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        return h ? reinterpret_cast<fg_bt_bpe_fn>(dlsym(h, "bt_bpe")) : nullptr;
+    }();
+    return fn;
+}
+
+// Called once from the loader, after the port store is ready. Returns false when the engine is absent or
+// refuses the vocabulary, in which case the native encoder stays the only one.
+typedef int64_t (*fg_bt_build_fn)(fg_sl_u8, fg_sl_i64, fg_sl_i64, fg_sl_i64,
+                                  fg_sl_i64, fg_sl_i64, fg_sl_i64, fg_sl_i64);
+
+static bool fg_bpe_init(int64_t tok_key, int64_t mrg_key, int64_t n_tok, int64_t n_mrg,
+                        const int32_t * tok_type) {
+    // bt_build takes the offsets as input, so they are taken from the port's own reader: the pointer the
+    // accessor returns is inside the blob the door will index. btl_load is the same work but is not
+    // exported by the shipped unit (measured: 0 dynamic symbols), which is why this route exists.
+    static fg_bt_build_fn build = []() -> fg_bt_build_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        return h ? reinterpret_cast<fg_bt_build_fn>(dlsym(h, "bt_build")) : nullptr;
+    }();
+    if (getenv("FG_TK_BPE_DIAG")) {
+        fprintf(stderr, "FG_TK_BPE_ENTRY build=%d port=%d n_tok=%lld n_mrg=%lld\n",
+                build != nullptr, (int) fg_port.ready, (long long) n_tok, (long long) n_mrg);
+    }
+    if (!build || !fg_port.ready || n_tok <= 0) { return false; }
+    if (fg_bpe.ready) { return true; }
+    const int64_t nm = n_mrg > 0 ? n_mrg : 1;
+    int64_t tcap = 16, mcap = 16;
+    while (tcap < 2 * n_tok + 2) { tcap <<= 1; }
+    while (mcap < 2 * nm + 2) { mcap <<= 1; }
+    const int64_t maxn = n_tok > nm ? n_tok : nm;
+    fg_bpe.tok_off.assign(n_tok, 0);   fg_bpe.tok_len.assign(n_tok, 0);
+    fg_bpe.mrg_off.assign(nm, 0);      fg_bpe.mrg_len.assign(nm, 0);
+    fg_bpe.tok_slots.assign(tcap, 0);  fg_bpe.mrg_slots.assign(mcap, 0);
+    fg_bpe.pairs.assign(2 * maxn, 0);
+    fg_bpe.tok_type.assign(n_tok, 0);  fg_bpe.attr.assign(n_tok, 0);
+    fg_bpe.order.assign(n_tok, 0);     fg_bpe.eog.assign(n_tok, 0);
+    fg_bpe.stats.assign(8, 0);
+
+    // Offsets and lengths of both arrays in one pass each, straight into the file's own window: the door that
+    // copies the text produces a blob a caller cannot index against `fg_port.data`, and the per-element door is
+    // quadratic (EXP-2026-11-19-1389, -1390).
+    typedef int64_t (*fg_arr_offs_fn)(fg_sl_u8, fg_sl_i64, fg_sl_i64, int64_t, fg_sl_i64, fg_sl_i64);
+    static fg_arr_offs_fn offs_fn = []() -> fg_arr_offs_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        return h ? reinterpret_cast<fg_arr_offs_fn>(dlsym(h, "gr_arr_str_offsets")) : nullptr;
+    }();
+    if (!offs_fn) { return false; }
+
+    auto fill = [&](int64_t key, int64_t n, std::vector<int64_t> & offs, std::vector<int64_t> & lens) -> bool {
+        const int64_t got = offs_fn(fg_sl_u8{ fg_port.data.data(), (int64_t) fg_port.data.size() },
+                                    fg_sl_i64{ fg_port.state.data(), 8 },
+                                    fg_sl_i64{ fg_port.kv.data(), (int64_t) fg_port.kv.size() },
+                                    key,
+                                    fg_sl_i64{ offs.data(), n },
+                                    fg_sl_i64{ lens.data(), n });
+        return got == n;
+    };
+
+    if (!fill(tok_key, n_tok, fg_bpe.tok_off, fg_bpe.tok_len)) { return false; }
+    if (n_mrg > 0 && !fill(mrg_key, n_mrg, fg_bpe.mrg_off, fg_bpe.mrg_len)) { return false; }
+    fg_sl_u8  s_gguf { fg_port.data.data(), (int64_t) fg_port.data.size() };
+    const int64_t rc = build(s_gguf,
+                             fg_sl_i64{ fg_bpe.tok_off.data(), n_tok },
+                             fg_sl_i64{ fg_bpe.tok_len.data(), n_tok },
+                             fg_sl_i64{ fg_bpe.tok_slots.data(), tcap },
+                             fg_sl_i64{ fg_bpe.mrg_off.data(), nm },
+                             fg_sl_i64{ fg_bpe.mrg_len.data(), nm },
+                             fg_sl_i64{ fg_bpe.mrg_slots.data(), mcap },
+                             fg_sl_i64{ fg_bpe.stats.data(), 8 });
+    if (rc != 0) {
+        if (getenv("FG_TK_BPE_DIAG")) { fprintf(stderr, "FG_TK_BPE_LOAD refused rc=%lld\n", (long long) rc); }
+        return false;
+    }
+    // bt_build fills the slot tables but not the attributes; the scan needs them, and they come from the token
+    // types the reader already parsed. bt_attrs derives the bits, so the rule stays in Goose.
+    if (tok_type) {
+        for (int64_t i = 0; i < n_tok; ++i) { fg_bpe.tok_type[(size_t) i] = (int64_t) tok_type[i]; }
+        typedef int64_t (*fg_attrs_fn)(fg_sl_u8, fg_sl_i64, fg_sl_i64, fg_sl_i64, fg_sl_i64);
+        static fg_attrs_fn attrs_fn = []() -> fg_attrs_fn {
+            void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+            return h ? reinterpret_cast<fg_attrs_fn>(dlsym(h, "bt_attrs")) : nullptr;
+        }();
+        if (attrs_fn) {
+            attrs_fn(fg_sl_u8{ fg_port.data.data(), (int64_t) fg_port.data.size() },
+                     fg_sl_i64{ fg_bpe.tok_off.data(), n_tok },
+                     fg_sl_i64{ fg_bpe.tok_len.data(), n_tok },
+                     fg_sl_i64{ fg_bpe.tok_type.data(), n_tok },
+                     fg_sl_i64{ fg_bpe.attr.data(), n_tok });
+        }
+    }
+
+    // the special count the scan needs: the order door fills the ids, longest text first
+    {
+        typedef int64_t (*fg_order_fn)(fg_sl_u8, fg_sl_i64, fg_sl_i64, fg_sl_i64, fg_sl_i64);
+        static fg_order_fn order_fn = []() -> fg_order_fn {
+            void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+            return h ? reinterpret_cast<fg_order_fn>(dlsym(h, "bt_special_order")) : nullptr;
+        }();
+        fg_bpe.n_special = order_fn ? order_fn(fg_sl_u8{ fg_port.data.data(), (int64_t) fg_port.data.size() },
+                                               fg_sl_i64{ fg_bpe.tok_off.data(), n_tok },
+                                               fg_sl_i64{ fg_bpe.tok_len.data(), n_tok },
+                                               fg_sl_i64{ fg_bpe.attr.data(), n_tok },
+                                               fg_sl_i64{ fg_bpe.order.data(), n_tok }) : 0;
+        if (fg_bpe.n_special < 0) { fg_bpe.n_special = 0; }
+    }
+    fg_bpe.ready = true;
+    if (getenv("FG_TK_BPE_DIAG")) {
+        fprintf(stderr, "FG_TK_BPE_LOAD ok n_tok=%lld n_mrg=%lld tcap=%lld mcap=%lld\n",
+                (long long) n_tok, (long long) n_mrg, (long long) tcap, (long long) mcap);
+    }
+    return true;
+}
+
+// Encodes through the port. Returns the id count, or -1 when the engine cannot answer.
+extern "C" int64_t fg_bpe_encode(const char * text, int64_t n, int64_t * ids, int64_t cap,
+                                int64_t parse_special) {
+    const fg_bt_bpe_fn fn = fg_bpe_encode_resolve();
+    if (!fn || !fg_bpe.ready || !fg_port.ready || n < 0 || n > (int64_t) 1 << 24) { return -1; }
+    const int64_t m = n > 0 ? n : 1;
+    static thread_local std::vector<int64_t> cpts, seg, sym, heap, hc, info, ids_buf;
+    static thread_local std::vector<uint8_t> enc;
+    cpts.assign(m + 1, 0); seg.assign(4 * (m + 1), 0); enc.assign(8 * (m + 1), 0);
+    sym.assign(24 * (m + 1), 0); heap.assign(15 * (m + 1) + 40, 0); hc.assign(2, 0); info.assign(8, 0);
+    if (ids_buf.size() < (size_t) cap + 8) { ids_buf.resize((size_t) cap + 8); }
+    const bool fg_diag = getenv("FG_TK_BPE_DIAG") != nullptr;
+    if (fg_diag) { fprintf(stderr, "FG_TK_BPE_CALL n=%lld cap=%lld\n", (long long) n, (long long) cap); }
+
+    // Special tokens decide part of the answer before any merge is looked up: the native tokenizer matches them
+    // first, and the port's bt_bpe alone returns seven pieces for <|im_start|>system where the native returns two
+    // (EXP-2026-11-19-1390). The scan is a Goose door; the gaps go through bt_bpe and the ids are spliced here.
+    typedef int64_t (*fg_hits_fn)(fg_sl_u8, fg_sl_u8, fg_sl_i64, fg_sl_i64, fg_sl_i64, fg_sl_i64, int64_t, fg_sl_i64);
+    static fg_hits_fn hits_fn = []() -> fg_hits_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        return h ? reinterpret_cast<fg_hits_fn>(dlsym(h, "bt_special_hits")) : nullptr;
+    }();
+    static std::vector<int64_t> hits;      // (start, end, id) triples
+    static std::vector<int64_t> plain_ids; // ids of one plain segment
+    int64_t n_hits = 0;
+    if (hits_fn && parse_special) {
+        if (hits.size() < (size_t) (3 * ((size_t) n + 1))) { hits.assign(3 * ((size_t) n + 1), 0); }
+        n_hits = hits_fn(fg_sl_u8{ (uint8_t *) text, n },
+                         fg_sl_u8{ fg_port.data.data(), (int64_t) fg_port.data.size() },
+                         fg_sl_i64{ fg_bpe.tok_off.data(), (int64_t) fg_bpe.tok_off.size() },
+                         fg_sl_i64{ fg_bpe.tok_len.data(), (int64_t) fg_bpe.tok_len.size() },
+                         fg_sl_i64{ fg_bpe.attr.data(), (int64_t) fg_bpe.attr.size() },
+                         fg_sl_i64{ fg_bpe.order.data(), (int64_t) fg_bpe.order.size() },
+                         fg_bpe.n_special,
+                         fg_sl_i64{ hits.data(), (int64_t) hits.size() });
+        if (n_hits < 0) { n_hits = 0; }
+    }
+    int64_t nout = 0;
+    auto run_plain = [&](int64_t from, int64_t len) -> bool {
+        if (len <= 0) { return true; }
+        const int64_t room = cap - nout;
+        if (room <= 0) { return false; }
+        if (plain_ids.size() < (size_t) room + 8) { plain_ids.resize((size_t) room + 8); }
+        const int64_t r = fn(fg_sl_u8{ (uint8_t *) text + from, len },
+                             fg_sl_u8{ fg_port.data.data(), (int64_t) fg_port.data.size() },
+                             fg_sl_i64{ fg_bpe.tok_off.data(), (int64_t) fg_bpe.tok_off.size() },
+                             fg_sl_i64{ fg_bpe.tok_len.data(), (int64_t) fg_bpe.tok_len.size() },
+                             fg_sl_i64{ fg_bpe.tok_slots.data(), (int64_t) fg_bpe.tok_slots.size() },
+                             fg_sl_i64{ fg_bpe.mrg_off.data(), (int64_t) fg_bpe.mrg_off.size() },
+                             fg_sl_i64{ fg_bpe.mrg_len.data(), (int64_t) fg_bpe.mrg_len.size() },
+                             fg_sl_i64{ fg_bpe.mrg_slots.data(), (int64_t) fg_bpe.mrg_slots.size() },
+                             fg_sl_i64{ plain_ids.data(), (int64_t) plain_ids.size() }, 0,
+                             fg_sl_i64{ cpts.data(), m + 1 }, fg_sl_i64{ seg.data(), 4 * (m + 1) },
+                             fg_sl_u8{ enc.data(), 8 * (m + 1) },
+                             fg_sl_i64{ sym.data(), 24 * (m + 1) },
+                             fg_sl_i64{ heap.data(), 15 * (m + 1) + 40 },
+                             fg_sl_i64{ hc.data(), 2 }, fg_sl_i64{ info.data(), 8 });
+        if (r < 0 || nout + r > cap) { return false; }
+        for (int64_t i = 0; i < r; ++i) { ids_buf[(size_t) (nout + i)] = plain_ids[(size_t) i]; }
+        nout += r;
+        return true;
+    };
+
+    bool ok = true;
+    int64_t at = 0;
+    for (int64_t h = 0; h < n_hits && ok; ++h) {
+        const int64_t hs = hits[(size_t) (h * 3)], he = hits[(size_t) (h * 3 + 1)], hid = hits[(size_t) (h * 3 + 2)];
+        ok = run_plain(at, hs - at);
+        if (ok && nout < cap) { ids_buf[(size_t) nout++] = hid; } else { ok = false; }
+        at = he;
+    }
+    if (ok) { ok = run_plain(at, n - at); }
+    const int64_t got = ok ? nout : -1;
+    if (fg_diag) { fprintf(stderr, "FG_TK_BPE_DONE got=%lld info0=%lld info4=%lld\n", (long long) got, (long long) info[0], (long long) info[4]); }
+    if (got < 0 || got > cap) { return -1; }
+    for (int64_t i = 0; i < got; ++i) { ids[i] = ids_buf[i]; }
+    return got;
+}
+
+static int fg_gguf_check(const std::string & fname, const gguf_context & native) {
+    static auto fn = []() -> fg_gr_parse_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        void * sym = h ? dlsym(h, "gr_parse") : nullptr;
+        return reinterpret_cast<fg_gr_parse_fn>(sym);
+    }();
+    if (!fn) { fprintf(stderr, "FG_GGUF_RESOLVE fn=null\n"); return -1; }
+    const size_t win = 64u * 1024u * 1024u;
+    std::ifstream in(fname, std::ios::binary);
+    if (!in) { fprintf(stderr, "FG_GGUF_OPEN failed\n"); return -1; }
+    in.seekg(0, std::ios::end);
+    const int64_t size = (int64_t) in.tellg();
+    in.seekg(0, std::ios::beg);
+    const size_t take = size < (int64_t) win ? (size_t) size : win;
+    std::vector<uint8_t> data(take);
+    if (!in.read(reinterpret_cast<char *>(data.data()), (std::streamsize) take)) { return -1; }
+    const int64_t nk = (int64_t) gguf_get_n_kv(&native);
+    const int64_t nt = (int64_t) gguf_get_n_tensors(&native);
+    fg_port.data = std::move(data);
+    data = {};   // the store owns it from here
+    std::vector<int64_t> & state = fg_port.state, & kv = fg_port.kv, & tn = fg_port.tn, & slots = fg_port.slots;
+    state.assign(8, 0); kv.assign((size_t) nk * 8, 0); tn.assign((size_t) nt * 12, 0); slots.assign(4096, 0);
+    fg_port.ready = true;
+
+    fg_sl_u8  s_data{ fg_port.data.data(), (int64_t) fg_port.data.size() };
+    fg_sl_i64 s_state{ state.data(), 8 }, s_kv{ kv.data(), (int64_t) kv.size() },
+              s_t{ tn.data(), (int64_t) tn.size() }, s_slots{ slots.data(), (int64_t) slots.size() };
+    fn(s_data, size, s_state, s_kv, s_t, s_slots, s_slots);
+
+    // The encoder's table, sized from the native reader's own counts for the two arrays it needs.
+    {
+        // The port's own lookup, not the native one: an index from one reader is only valid in that reader,
+        // and a mismatch here would look exactly like a missing array.
+        typedef fg_gr_find_fn fg_find_fn;   // the same signature the check uses: data, state, kv, slots, key
+        static fg_find_fn fg_find = []() -> fg_find_fn {
+            void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+            return h ? reinterpret_cast<fg_find_fn>(dlsym(h, "gr_find_kv")) : nullptr;
+        }();
+        const char * fg_k_tok = "tokenizer.ggml.tokens", * fg_k_mrg = "tokenizer.ggml.merges";
+        const int64_t tok_key = fg_find ? fg_find(fg_sl_u8{ fg_port.data.data(), (int64_t) fg_port.data.size() },
+                                                  fg_sl_i64{ fg_port.state.data(), 8 },
+                                                  fg_sl_i64{ fg_port.kv.data(), (int64_t) fg_port.kv.size() },
+                                                  fg_sl_i64{ fg_port.slots.data(), (int64_t) fg_port.slots.size() },
+                                                  fg_sl_u8{ (uint8_t *) fg_k_tok, (int64_t) strlen(fg_k_tok) })
+                                        : gguf_find_key(&native, "tokenizer.ggml.tokens");
+        const int64_t mrg_key = fg_find ? fg_find(fg_sl_u8{ fg_port.data.data(), (int64_t) fg_port.data.size() },
+                                                  fg_sl_i64{ fg_port.state.data(), 8 },
+                                                  fg_sl_i64{ fg_port.kv.data(), (int64_t) fg_port.kv.size() },
+                                                  fg_sl_i64{ fg_port.slots.data(), (int64_t) fg_port.slots.size() },
+                                                  fg_sl_u8{ (uint8_t *) fg_k_mrg, (int64_t) strlen(fg_k_mrg) })
+                                        : gguf_find_key(&native, "tokenizer.ggml.merges");
+        if (tok_key >= 0 && mrg_key >= 0) {
+            const int64_t n_tok = gguf_get_arr_n(&native, (int) tok_key);
+            const int64_t n_mrg = gguf_get_arr_n(&native, (int) mrg_key);
+            // The ported encoder implements one pre-tokenizer (pt_qwen35_body). Serving it for another
+            // vocabulary would tokenise that family silently wrong, which is the single-architecture shortcut
+            // rule 17 forbids, so the table is only built for the family the port actually implements
+            // (EXP-2026-11-19-1378). A refusal here leaves the native encoder as the only one.
+            bool pre_supported = false;
+            {
+                const int64_t pre_key = gguf_find_key(&native, "tokenizer.ggml.pre");
+                if (pre_key >= 0) {
+                    const char * pre = gguf_get_val_str(&native, (int) pre_key);
+                    pre_supported = pre != nullptr && std::string(pre) == "qwen35";
+                }
+                if (getenv("FG_TK_BPE_DIAG")) {
+                    fprintf(stderr, "FG_TK_BPE_GUARD pre_supported=%d\n", pre_supported ? 1 : 0);
+                }
+            }
+            if (!pre_supported) { return -1; }
+
+            const int32_t * type_data = nullptr;
+            const int64_t ty_key = gguf_find_key(&native, "tokenizer.ggml.token_type");
+            if (ty_key >= 0 && gguf_get_arr_n(&native, (int) ty_key) >= n_tok) {
+                type_data = reinterpret_cast<const int32_t *>(gguf_get_arr_data(&native, (int) ty_key));
+            }
+            fg_bpe_init(tok_key, mrg_key, n_tok, n_mrg, type_data);
+        }
+    }
+
+    int differ = 0;
+    // Every key and every tensor name, resolved through the port and compared with the index the native
+    // reader gives it. Counts alone would pass a reader that indexed the wrong records.
+    static fg_gr_find_fn find_kv = nullptr, find_tn = nullptr;
+    if (!find_kv) {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        find_kv = h ? reinterpret_cast<fg_gr_find_fn>(dlsym(h, "gr_find_kv")) : nullptr;
+        find_tn = h ? reinterpret_cast<fg_gr_find_fn>(dlsym(h, "gr_find_tensor")) : nullptr;
+    }
+    if (find_kv && find_tn) {
+        int kv_bad = 0, tn_bad = 0;
+        for (int64_t i = 0; i < nk; ++i) {
+            const char * k = gguf_get_key(&native, i);
+            fg_sl_u8 key{ reinterpret_cast<uint8_t *>(const_cast<char *>(k)), (int64_t) strlen(k) };
+            if (find_kv(s_data, s_state, s_kv, s_slots, key) != i) { ++kv_bad; }
+        }
+        for (int64_t i = 0; i < nt; ++i) {
+            const char * k = gguf_get_tensor_name(&native, i);
+            fg_sl_u8 key{ reinterpret_cast<uint8_t *>(const_cast<char *>(k)), (int64_t) strlen(k) };
+            if (find_tn(s_data, s_state, s_t, s_slots, key) != i) { ++tn_bad; }
+        }
+        // Integer key values, not only their names: this is the last piece before the loader could take a
+        // value from the port, because a substituted value must be known equal on every key.
+        int val_bad = 0, val_cmp = 0;
+        static fg_gr_meta_int_fn meta_int = nullptr;
+        if (!meta_int) {
+            void * h2 = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+            meta_int = h2 ? reinterpret_cast<fg_gr_meta_int_fn>(dlsym(h2, "gr_meta_int")) : nullptr;
+        }
+        typedef int64_t (*fg_meta_f32_fn)(fg_sl_u8, fg_sl_i64, fg_sl_i64, int64_t, fg_sl_i64);
+    static fg_meta_f32_fn f32_fn = nullptr;
+    if (!f32_fn) {
+        void * h6 = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        f32_fn = h6 ? reinterpret_cast<fg_meta_f32_fn>(dlsym(h6, "gr_meta_f32_bits")) : nullptr;
+    }
+    if (meta_int) {
+            for (int64_t i = 0; i < nk; ++i) {
+                int64_t native_val = 0;
+                switch (gguf_get_kv_type(&native, i)) {
+                    case GGUF_TYPE_UINT8:  native_val = gguf_get_val_u8 (&native, i); break;
+                    case GGUF_TYPE_INT8:   native_val = gguf_get_val_i8 (&native, i); break;
+                    case GGUF_TYPE_UINT16: native_val = gguf_get_val_u16(&native, i); break;
+                    case GGUF_TYPE_INT16:  native_val = gguf_get_val_i16(&native, i); break;
+                    case GGUF_TYPE_UINT32: native_val = gguf_get_val_u32(&native, i); break;
+                    case GGUF_TYPE_INT32:  native_val = gguf_get_val_i32(&native, i); break;
+                    case GGUF_TYPE_UINT64: native_val = (int64_t) gguf_get_val_u64(&native, i); break;
+                    case GGUF_TYPE_INT64:  native_val = gguf_get_val_i64(&native, i); break;
+                    case GGUF_TYPE_BOOL:   native_val = gguf_get_val_bool(&native, i) ? 1 : 0; break;
+                    case GGUF_TYPE_FLOAT32: { ++val_cmp; int64_t bits = 0; fg_sl_i64 fo{ &bits, 1 };
+                        const uint32_t nb = [&]{ float f = gguf_get_val_f32(&native, i); uint32_t u; std::memcpy(&u, &f, 4); return u; }();
+                        if (!f32_fn || f32_fn(s_data, s_state, s_kv, i, fo) != 0 || (uint64_t) bits != (uint64_t) nb) { ++val_bad; }
+                        continue; }
+                    case GGUF_TYPE_FLOAT64: { ++val_cmp; double nd = gguf_get_val_f64(&native, i); float nf = (float) nd;
+                        int64_t bits = 0; fg_sl_i64 fo{ &bits, 1 };
+                        uint32_t nb; std::memcpy(&nb, &nf, 4);
+                        if (!f32_fn || f32_fn(s_data, s_state, s_kv, i, fo) != 0 || (uint64_t) bits != (uint64_t) nb) { ++val_bad; }
+                        continue; }
+                    default: continue;
+                }
+                int64_t got = 0;
+                fg_sl_i64 out{ &got, 1 };
+                ++val_cmp;
+                if (meta_int(s_data, s_state, s_kv, i, out) != 0 || got != native_val) { ++val_bad; }
+            }
+            fprintf(stderr, "FG_GGUF_VALUES integer=%lld/%lld\n",
+                    (long long) (val_cmp - val_bad), (long long) val_cmp);
+            differ += val_bad;
+        }
+
+        // String keys: the loader reads general.architecture and the tokenizer names, so their text must be
+        // known equal at the moment of use, not only at file level.
+        int str_bad = 0, str_cmp = 0;
+        static fg_gr_span_fn val_span = nullptr;
+        if (!val_span) {
+            void * h4 = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+            val_span = h4 ? reinterpret_cast<fg_gr_span_fn>(dlsym(h4, "gr_val_span")) : nullptr;
+        }
+        if (val_span) {
+            for (int64_t i = 0; i < nk; ++i) {
+                if (gguf_get_kv_type(&native, i) != GGUF_TYPE_STRING) { continue; }
+                int64_t out[4] = {0};
+                fg_sl_i64 so{ out, 4 };
+                ++str_cmp;
+                const char * ns = gguf_get_val_str(&native, i);
+                const size_t nn = strlen(ns);
+                if (val_span(s_state, s_kv, i, so) != 0 || (size_t) out[2] != nn ||
+                    out[1] < 0 || (size_t) (out[1] + out[2]) > fg_port.data.size() ||
+                    memcmp(fg_port.data.data() + out[1], ns, nn) != 0) {
+                    ++str_bad;
+                }
+            }
+            fprintf(stderr, "FG_GGUF_STRINGS keys=%lld/%lld\n",
+                    (long long) (str_cmp - str_bad), (long long) str_cmp);
+        }
+
+        // Arrays: the tokenizer tables the loader reads. Compared element by element, because a count and a
+        // type can both match while the contents differ.
+        int arr_bad = 0, arr_cmp = 0;
+        static fg_gr_arrstr_fn arr_str = nullptr;
+        static fg_gr_arrint_fn arr_int = nullptr;
+        typedef int64_t (*fg_arr_offs_t)(fg_sl_u8, fg_sl_i64, fg_sl_i64, int64_t, fg_sl_i64, fg_sl_i64);
+        static fg_arr_offs_t offs_fn = nullptr;
+        typedef int64_t (*fg_arr_raw_fn)(fg_sl_u8, fg_sl_i64, fg_sl_i64, int64_t, int64_t, fg_sl_i64);
+        static fg_arr_raw_fn raw_fn = nullptr;
+        if (!arr_str) {
+            void * h5 = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+            arr_str = h5 ? reinterpret_cast<fg_gr_arrstr_fn>(dlsym(h5, "gr_arr_str_span")) : nullptr;
+            arr_int = h5 ? reinterpret_cast<fg_gr_arrint_fn>(dlsym(h5, "gr_array_int")) : nullptr;
+            offs_fn = h5 ? reinterpret_cast<fg_arr_offs_t>(dlsym(h5, "gr_arr_str_offsets")) : nullptr;
+            raw_fn = h5 ? reinterpret_cast<fg_arr_raw_fn>(dlsym(h5, "gr_array_raw_bits")) : nullptr;
+        }
+        for (int64_t i = 0; i < nk && arr_str && arr_int && offs_fn && raw_fn; ++i) {
+            if (gguf_get_kv_type(&native, i) != GGUF_TYPE_ARRAY) { continue; }
+            const int64_t et = (int64_t) gguf_get_arr_type(&native, i);
+            const int64_t n  = (int64_t) gguf_get_arr_n(&native, i);
+            if (et == GGUF_TYPE_STRING) {
+                // One pass for the whole array. The per-element door walks from the array start each call,
+                // which is quadratic: at 248 320 tokens this section never finished, so the check was unusable
+                // on a real vocabulary and nobody noticed because acceptance runs do not enable it
+                // (EXP-2026-11-19-1390).
+                static std::vector<int64_t> aoff, alen;
+                aoff.assign((size_t) n, 0); alen.assign((size_t) n, 0);
+                const int64_t got = offs_fn(s_data, s_state, s_kv, i,
+                                            fg_sl_i64{ aoff.data(), n }, fg_sl_i64{ alen.data(), n });
+                for (int64_t e = 0; e < n; ++e) {
+                    const char * ns = gguf_get_arr_str(&native, i, (int) e);
+                    const size_t nn = strlen(ns);
+                    ++arr_cmp;
+                    if (got != n || aoff[(size_t) e] < 0 || alen[(size_t) e] != (int64_t) nn ||
+                        (size_t) (aoff[(size_t) e] + alen[(size_t) e]) > fg_port.data.size() ||
+                        memcmp(fg_port.data.data() + aoff[(size_t) e], ns, nn) != 0) {
+                        ++arr_bad;
+                    }
+                }
+            } else if (et == GGUF_TYPE_FLOAT32 || et == GGUF_TYPE_FLOAT64) {
+                // Float arrays have no integer interpretation, so their elements are compared as raw bytes:
+                // this is the class the check used to skip entirely (EXP-2026-11-19-1400).
+                const uint8_t * raw = reinterpret_cast<const uint8_t *>(gguf_get_arr_data(&native, i));
+                const int width = et == GGUF_TYPE_FLOAT32 ? 4 : 8;
+                for (int64_t e = 0; e < n; ++e) {
+                    int64_t out2[2] = {0, 0};
+                    fg_sl_i64 so{ out2, 2 };
+                    int64_t want = 0;
+                    for (int b = 0; b < width; ++b) { want |= (int64_t) raw[e * width + b] << (8 * b); }
+                    ++arr_cmp;
+                    if (!raw_fn || raw_fn(s_data, s_state, s_kv, i, e, so) != 0 ||
+                        out2[1] != width || out2[0] != want) {
+                        ++arr_bad;
+                    }
+                }
+            } else if (et >= GGUF_TYPE_UINT8 && et <= GGUF_TYPE_INT32) {
+                const uint8_t * raw = reinterpret_cast<const uint8_t *>(gguf_get_arr_data(&native, i));
+                for (int64_t e = 0; e < n; ++e) {
+                    int64_t out[1] = {0};
+                    fg_sl_i64 so{ out, 1 };
+                    int64_t native_el = 0;
+                    switch (et) {
+                        case GGUF_TYPE_UINT8:  native_el = raw[e]; break;
+                        case GGUF_TYPE_INT8:   native_el = ((const int8_t *)  raw)[e]; break;
+                        case GGUF_TYPE_UINT16: native_el = ((const uint16_t *) raw)[e]; break;
+                        case GGUF_TYPE_INT16:  native_el = ((const int16_t *)  raw)[e]; break;
+                        case GGUF_TYPE_UINT32: native_el = ((const uint32_t *) raw)[e]; break;
+                        case GGUF_TYPE_INT32:  native_el = ((const int32_t *)  raw)[e]; break;
+                        default: continue;
+                    }
+                    ++arr_cmp;
+                    if (arr_int(s_data, s_state, s_kv, i, e, so) != 0 || out[0] != native_el) { ++arr_bad; }
+                }
+            }
+        }
+        if (arr_cmp) {
+            fprintf(stderr, "FG_GGUF_ARRAYS elements=%lld/%lld\n",
+                    (long long) (arr_cmp - arr_bad), (long long) arr_cmp);
+        }
+
+        // Tensor descriptors through the door the loader would use: dtype, dims, extents and data offset.
+        int ti_bad = 0, ti_cmp = 0;
+        static fg_gr_tinfo_fn tinfo = nullptr;
+        if (!tinfo) {
+            void * h3 = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+            tinfo = h3 ? reinterpret_cast<fg_gr_tinfo_fn>(dlsym(h3, "gr_tensor_info")) : nullptr;
+        }
+        if (tinfo) {
+            for (int64_t i = 0; i < nt; ++i) {
+                int64_t out[9] = {0};
+                fg_sl_i64 so{ out, 9 };
+                const int64_t * ne = gguf_get_tensor_ne(&native, i);
+                uint32_t dims = 0;
+                while (dims < 4 && ne[dims] != 1) { ++dims; }
+                ++ti_cmp;
+                bool ok = tinfo(s_state, s_t, i, so) == 0 &&
+                          out[0] == (int64_t) gguf_get_tensor_type(&native, i) &&
+                          out[1] == (int64_t) dims &&
+                          (size_t) (out[8] - state[5]) == gguf_get_tensor_offset(&native, i);
+                for (uint32_t d = 0; ok && d < dims; ++d) { ok = out[2 + d] == ne[d]; }
+                if (!ok) { ++ti_bad; }
+            }
+        }
+
+        if (ti_cmp) {
+            fprintf(stderr, "FG_GGUF_TINFO descriptors=%lld/%lld\n",
+                    (long long) (ti_cmp - ti_bad), (long long) ti_cmp);
+        }
+        differ += kv_bad + tn_bad + ti_bad + str_bad + arr_bad;
+        fprintf(stderr, "FG_GGUF_LOOKUP keys=%lld/%lld tensors=%lld/%lld\n",
+                (long long) (nk - kv_bad), (long long) nk, (long long) (nt - tn_bad), (long long) nt);
+    }
+
+    if (state[0] != 919) { ++differ; fprintf(stderr, "FG_GGUF_DIFF refused state0=%lld\n", (long long) state[0]); }
+    if (state[2] != nk)  { ++differ; fprintf(stderr, "FG_GGUF_DIFF nk port=%lld native=%lld\n", (long long) state[2], (long long) nk); }
+    if (state[3] != nt)  { ++differ; fprintf(stderr, "FG_GGUF_DIFF nt port=%lld native=%lld\n", (long long) state[3], (long long) nt); }
+    if ((size_t) state[4] != gguf_get_alignment(&native)) { ++differ; fprintf(stderr, "FG_GGUF_DIFF align\n"); }
+    if ((size_t) state[5] != gguf_get_data_offset(&native)) { ++differ; fprintf(stderr, "FG_GGUF_DIFF data_off\n"); }
+    fprintf(stderr, "FG_GGUF_PARSE nk=%lld nt=%lld align=%lld off=%lld disagreements=%d\n",
+            (long long) state[2], (long long) state[3], (long long) state[4], (long long) state[5], differ);
+    return differ;
+}
+} // namespace
 
 static const size_t kiB = 1024;
 static const size_t MiB = 1024*kiB;
@@ -169,7 +802,71 @@ namespace GGUFMeta {
                 throw std::runtime_error(format("key %s has wrong type %s but expected type %s",
                     gguf_get_key(ctx, k), gguf_type_name(kt), gguf_type_name(GKV::gt)));
             }
-            return GKV::getter(ctx, k);
+            // Integral keys come from the port when it can answer, and the native getter is not called at
+            // all in that case: this is the first converted site, and the shadow comparison below proves the
+            // two agree on every read during a real load. A key the port cannot answer - a split-file shard,
+            // or a key outside the window - falls back to native rather than to a default.
+            if constexpr (std::is_integral_v<T> && !std::is_same_v<T, bool>) {
+                int64_t port_value = 0;
+                if (::fg_port_int(k, port_value)) {
+                    static std::atomic<long long> served{0};
+                    const long long c = served.fetch_add(1) + 1;
+                    if (getenv("FG_GGUF_DIAG") && c % 8 == 0) {
+                        fprintf(stderr, "FG_GGUF_SERVED from_port=%lld\n", c);
+                    }
+                    return (T) port_value;
+                }
+            }
+            // Strings are next: the loader reads general.architecture and the tokenizer names this way. Only
+            // std::string is converted - the const char * form would need a NUL-terminated copy with a lifetime
+            // nobody has stated, and that is a separate decision.
+            if constexpr (std::is_same_v<T, std::string>) {
+                const uint8_t * p = nullptr; int64_t n = 0;
+                if (::fg_port_str(k, p, n)) {
+                    static std::atomic<long long> served_str{0};
+                    const long long c = served_str.fetch_add(1) + 1;
+                    if (getenv("FG_GGUF_DIAG") && c % 4 == 0) {
+                        fprintf(stderr, "FG_GGUF_SERVED_STR from_port=%lld\n", c);
+                    }
+                    return std::string(reinterpret_cast<const char *>(p), (size_t) n);
+                }
+            }
+            const T value = GKV::getter(ctx, k);
+
+            // Shadow read: the same key through the port, at the moment the loader uses it. A disagreement is
+            // fatal under the flag, because a converted site that read the wrong field must fail here and not
+            // in generation. Counted per key so a whole load reports how many use-site reads were compared.
+            static const bool shadow = getenv("FG_GGUF_DIAG") != nullptr;
+            if (shadow && ::fg_port.ready) {
+                static std::atomic<long long> compared{0}, differed{0};
+                if constexpr (std::is_integral_v<T> && !std::is_same_v<T, bool>) {
+                    int64_t port_value = 0;
+                    if (::fg_port_int(k, port_value)) {
+                        compared.fetch_add(1);
+                        if (port_value != (int64_t) value) {
+                            differed.fetch_add(1);
+                            throw std::runtime_error(format("%s: ported reader disagrees on key %s (%lld vs %lld)",
+                                __func__, gguf_get_key(ctx, k), (long long) port_value, (long long) value));
+                        }
+                    }
+                } else if constexpr (std::is_same_v<T, std::string>) {
+                    const uint8_t * p = nullptr; int64_t n = 0;
+                    if (::fg_port_str(k, p, n)) {
+                        compared.fetch_add(1);
+                        if ((size_t) n != value.size() || memcmp(p, value.data(), (size_t) n) != 0) {
+                            differed.fetch_add(1);
+                            throw std::runtime_error(format("%s: ported reader disagrees on key %s", __func__, gguf_get_key(ctx, k)));
+                        }
+                    }
+                }
+                static std::atomic<long long> reported{0};
+                const long long c = compared.load();
+                if (c != reported.load() && c % 8 == 0) {
+                    reported.store(c);
+                    fprintf(stderr, "FG_GGUF_USES compared=%lld differed=%lld\n", c, differed.load());
+                }
+            }
+            return value;
         }
 
         static const char * override_type_to_str(const llama_model_kv_override_type ty) {
@@ -574,6 +1271,17 @@ llama_model_loader::llama_model_loader(
             throw std::runtime_error(format("%s: failed to load model from %s", __func__, fname.c_str()));
         }
 
+        // The encoder's table needs the same store the GGUF check fills, so the check's own flag is not
+        // enough: FG_TK_BPE_DIAG opens it too. The comparison is read-only and its verdict is the same one
+        // the check would give, so nothing is weakened by running it for this reason.
+        if (getenv("FG_GGUF_DIAG") != nullptr || getenv("FG_TK_BPE_DIAG") != nullptr) {
+            // A disagreement here means the port and the native reader see the same file differently, which
+            // is never acceptable: refuse the load rather than continue with an unverified reader.
+            const int fg_diff = fg_gguf_check(fname, *metadata_ptr);
+            if (fg_diff != 0) {
+                throw std::runtime_error(format("%s: ported GGUF reader disagrees with the native one (%d)", __func__, fg_diff));
+            }
+        }
         get_key(llm_kv(LLM_KV_GENERAL_ARCHITECTURE), arch_name, false);
         llm_kv = LLM_KV(llm_arch_from_string(arch_name));
 
@@ -1302,9 +2010,18 @@ struct ggml_tensor * llama_model_loader::create_tensor(
             return nullptr;
         }
         ggml_type type = GGML_TYPE_F32;
-        const int64_t tid = gguf_find_tensor(metadata, tn.str().c_str());
-        if (tid != -1) {
-            type = gguf_get_tensor_type(metadata, tid);
+        // The lookup and the type come from the port when it can answer; the native context is the fallback
+        // for the split-file path, where the port has no records.
+        const std::string fg_name = tn.str();
+        int64_t tid = fg_port_find_tensor(fg_name.c_str(), (int64_t) fg_name.size());
+        int64_t fg_type = 0;
+        if (tid >= 0 && fg_port_tensor_type(tid, &fg_type)) {
+            type = (ggml_type) fg_type;
+        } else {
+            tid = gguf_find_tensor(metadata, fg_name.c_str());
+            if (tid != -1) {
+                type = gguf_get_tensor_type(metadata, tid);
+            }
         }
 
         // for tensors that are not required some of the dimensions can be invalid:

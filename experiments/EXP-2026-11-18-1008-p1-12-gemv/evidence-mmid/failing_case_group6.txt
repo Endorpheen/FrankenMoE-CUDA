@@ -1,0 +1,4 @@
+failing case, group 6 (rows 384..448), object v2 sha 1821f513...
+header: ne00=2048 ne01=512 nb01=1152 nbw1=2336 cne1=1 nb0=4 nb1=2048 nb2=16384 r0=384 r1=448
+routes: see file; result: vecdot==native 64/64, vecdot==goose 37/64
+example: r=384 native=0 goose=-0.171376482

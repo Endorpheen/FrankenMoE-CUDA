@@ -1,0 +1,169 @@
+// Differential: the ported rule index against bmoe::validate, real native code, random configs.
+// The native side reports a message; the harness maps the messages this port covers to indices.
+#include <cstdio>
+#include <cstdint>
+#include <cstring>
+#include <random>
+#include <string>
+#include "core/include/bmoe/config.h"
+
+typedef int64_t (*fn_rule)(int64_t,int64_t,int64_t,int64_t,int64_t,int64_t,int64_t,int64_t,int64_t,
+                           int64_t,int64_t,int64_t,int64_t,double,int64_t,double,int64_t,int64_t);
+extern "C" int64_t cfg_rule_call(void * f, int64_t has_model, int64_t n_predict, int64_t n_threads,
+                                 int64_t n_ctx, int64_t n_ubatch, int64_t n_expert_used,
+                                 int64_t wl_cap, int64_t wl_rep, int64_t moe, int64_t spec,
+                                 int64_t is_mtp, int64_t is_ngram, int64_t draft_max, double p_min,
+                                 int64_t ng_max, int64_t ng_min, int64_t vram, int64_t slots,
+                                 int64_t ngl, double temp, int64_t top_k, double top_p,
+                                 int64_t overlap, int64_t plog, int64_t ppf, int64_t route_ahead,
+                                 int64_t rs, int64_t rsmb, int64_t iot, int64_t cmb, int64_t fc,
+                                 int64_t pl, int64_t ca, int64_t cfl, int64_t ccl, int64_t itw,
+                                 int64_t psm, double drop_cold, double sub_lambda);
+
+static int native_rule(const bmoe::ValidationResult & r) {
+    // the rules the earlier gate did not know about: they read the two fields it could not set
+    if (r.ok) return 0;
+    if (r.error.find("moe.drop_cold_frac requires the LRU cache") != std::string::npos) return 45;
+    if (r.error.find("moe.drop_cold_frac must be in [0, 1]") != std::string::npos) return 46;
+    if (r.error.find("moe.substitute_lambda requires the LRU cache") != std::string::npos) return 47;
+    if (r.error.find("moe.substitute_lambda must be in [0, 1]") != std::string::npos) return 48;
+    const std::string & m = r.error;
+    if (m.rfind("model_path is required", 0) == 0) return 1;
+    if (m.rfind("n_predict must be positive", 0) == 0) return 2;
+    if (m.rfind("n_threads must be positive", 0) == 0) return 3;
+    if (m.rfind("n_ctx must be positive", 0) == 0) return 4;
+    if (m.rfind("n_ubatch must be >= 0", 0) == 0) return 5;
+    // rfind(s, 0) tests a PREFIX, not a substring: for this message it always returned npos
+    if (m.find("is narrower than the verify batch") != std::string::npos) return 22;
+    if (m.rfind("n_ubatch=", 0) == 0) return 6;
+    if (m.rfind("n_expert_used must be >= 0", 0) == 0) return 7;
+    if (m.rfind("workload capture and replay are mutually exclusive", 0) == 0) return 8;
+    if (m.rfind("deterministic workload capture/replay requires moe.enabled", 0) == 0) return 9;
+    if (m.rfind("deterministic workload capture/replay does not yet support speculative", 0) == 0) return 10;
+    if (m.rfind("vram_cache_mb must be >= 0", 0) == 0) return 11;
+    if (m.rfind("expert_hot_slots must be >= 0", 0) == 0) return 12;
+    if (m.rfind("VRAM expert cache requires n_gpu_layers", 0) == 0) return 13;
+    if (m.rfind("sampling.top_k must be >= 0", 0) == 0) return 14;
+    if (m.rfind("sampling.top_p must be in (0, 1]", 0) == 0) return 15;
+    if (m.rfind("speculative decoding requires greedy decoding", 0) == 0) return 16;
+    if (m.rfind("spec.draft_max must be in", 0) == 0) return 17;
+    if (m.rfind("spec.draft_p_min must be in [0, 1]", 0) == 0) return 18;
+    if (m.rfind("spec.draft_p_min is an MTP knob", 0) == 0) return 19;
+    if (m.rfind("spec.ngram_max_match must be in", 0) == 0) return 20;
+    if (m.rfind("spec.ngram_min_match must be in", 0) == 0) return 21;
+    if (m.rfind("moe.overlap requires moe.enabled", 0) == 0) return 23;
+    if (m.rfind("moe.predict_log requires moe.enabled", 0) == 0) return 24;
+    if (m.rfind("moe.predict_prefetch requires moe.enabled", 0) == 0) return 25;
+    if (m.rfind("moe.route_ahead requires moe.enabled", 0) == 0) return 26;
+    if (m.rfind("moe.row_stream requires moe.enabled", 0) == 0) return 27;
+    if (m.rfind("moe.row_stream_mb must be >= 0", 0) == 0) return 28;
+    if (m.rfind("moe.io_threads must be in", 0) == 0) return 29;
+    if (m.rfind("moe.cache_mb must be >= 0", 0) == 0) return 30;
+    if (m.find("is in the pathological band") != std::string::npos) return 31;
+    if (m.rfind("moe.prefetch_layers must be in", 0) == 0) return 32;
+    if (m.rfind("moe.cache_auto and an explicit", 0) == 0) return 33;
+    if (m.rfind("moe.cache_floor_mb must be >= 0", 0) == 0) return 34;
+    if (m.rfind("moe.cache_ceil_mb must be >= 0", 0) == 0) return 35;
+    if (m.rfind("moe.prefetch_layers requires the LRU cache", 0) == 0) return 36;
+    if (m.rfind("moe.predict_prefetch requires the LRU cache", 0) == 0) return 37;
+    if (m.rfind("moe.io_two_wave requires moe.overlap", 0) == 0) return 38;
+    if (m.rfind("moe.io_two_wave requires the LRU cache", 0) == 0) return 39;
+    if (m.rfind("moe.predict_spec_max must be in", 0) == 0) return 40;
+    if (m.rfind("moe.predict_prefetch and moe.prefetch_layers are mutually exclusive", 0) == 0) return 41;
+    if (m.rfind("moe.route_ahead must be in", 0) == 0) return 42;
+    if (m.rfind("moe.route_ahead excludes", 0) == 0) return 43;
+    if (m.rfind("moe.route_ahead and self-speculative", 0) == 0) return 44;
+    return -99;   // a native rule this port does not cover
+}
+
+int main() {
+    std::mt19937 rng(777);
+    int fails = 0, cases = 0, uncovered = 0;
+    for (int t = 0; t < 4000; ++t) {
+        bmoe::RunConfig c;
+        randomize:;
+        c.model_path = (rng() % 8 == 0) ? "" : "/tmp/m.gguf";
+        c.n_predict  = (int)(rng() % 6) - 1;
+        c.n_threads  = (int)(rng() % 6) - 1;
+        c.n_ctx      = (int)(rng() % 6) - 1;
+        c.n_ubatch   = (int)(rng() % 8) - 2;
+        c.n_expert_used = (int)(rng() % 4) - 1;
+        c.workload_capture_path = (rng() % 5 == 0) ? "cap.bin" : "";
+        c.workload_replay_path  = (rng() % 5 == 0) ? "rep.bin" : "";
+        c.moe.enabled = (rng() % 2);
+        c.vram_cache_mb   = (int)(rng() % 4) - 1;
+        c.expert_hot_slots = (int)(rng() % 4) - 1;
+        c.n_gpu_layers    = (int)(rng() % 3) - 1;
+        c.sampling.temp = (rng() % 2) ? 0.0f : 0.8f;
+        c.sampling.top_k = (int)(rng() % 4) - 1;
+        c.sampling.top_p = (rng() % 3 == 0) ? 0.0f : 0.9f;
+        c.moe.overlap = (rng() % 3 == 0);
+        c.moe.predict_log = (rng() % 3 == 0);
+        // prefetch on with the cache off is a nested-block rule (separate slice), so it is only
+        // exercised where that block cannot fire: with streaming disabled
+        c.moe.predict_prefetch = (rng() % 3 == 0);
+        // Nested MoE fields are now exercised: every one is random within a range that reaches both
+        // sides of its rule.
+        c.moe.row_stream = (rng() % 4 == 0);
+        c.moe.row_stream_mb = (int)(rng() % 4) - 1;
+        c.moe.io_threads = (int)(rng() % 11);
+        c.moe.cache_mb = (int)(rng() % 4 == 0) ? 0 : (int)(rng() % 2000);
+        c.moe.force_cache = (rng() % 2);
+        c.moe.prefetch_layers = (int)(rng() % 11);
+        c.moe.cache_auto = (rng() % 3 == 0);
+        c.moe.cache_floor_mb = (int)(rng() % 4) - 1;
+        c.moe.cache_ceil_mb = (int)(rng() % 4) - 1;
+        c.moe.io_two_wave = (rng() % 3 == 0);
+        c.moe.predict_spec_max = (int)(rng() % 11) - 1;
+        c.moe.route_ahead = (int)(rng() % 11) - 1;
+        // the two fields the earlier gate could not express: both sides of their rules
+        switch (rng() % 4) {
+            case 0: c.moe.drop_cold_frac = 0.0f; break;
+            case 1: c.moe.drop_cold_frac = (float)(rng() % 4) * 0.4f; break;      /* 0, .4, .8, 1.2 */
+            case 2: c.moe.drop_cold_frac = 1.0f; break;
+            default: c.moe.drop_cold_frac = 0.1f + 0.8f * (float)(rng() % 100) / 100.0f; break;
+        }
+        switch (rng() % 4) {
+            case 0: c.moe.substitute_lambda = 0.0f; break;
+            case 1: c.moe.substitute_lambda = (float)(rng() % 4) * 0.4f; break;
+            case 2: c.moe.substitute_lambda = 1.0f; break;
+            default: c.moe.substitute_lambda = 0.1f + 0.8f * (float)(rng() % 100) / 100.0f; break;
+        }
+        // speculation: off, or one of the two source families with a random width
+        const int spec_kind = (int)(rng() % 3);   // 0 off, 1 mtp, 2 ngram
+        c.spec.source = spec_kind == 1 ? bmoe::DraftSource::mtp : (spec_kind == 2 ? bmoe::DraftSource::ngram : bmoe::DraftSource::none);
+        c.spec.draft_max   = (int)(rng() % 12);
+        c.spec.draft_p_min = (rng() % 2) ? 0.0f : (float)((rng() % 200) / 100.0 - 0.5);
+        c.spec.ngram_max_match = (int)(rng() % 70);
+        c.spec.ngram_min_match = (int)(rng() % 70);
+
+        const auto res = bmoe::validate(c);
+        const int want = native_rule(res);
+        if (want == -99) { if (++uncovered <= 3) printf("UNCOVERED: %s\n", res.error.c_str()); continue; }
+        // the spec-enabled paths are left out of this slice: spec is off in every generated config
+        const int64_t got = cfg_rule_call(nullptr,
+            c.model_path.empty() ? 0 : 1, c.n_predict, c.n_threads, c.n_ctx, c.n_ubatch,
+            c.n_expert_used, c.workload_capture_path.empty() ? 0 : 1,
+            c.workload_replay_path.empty() ? 0 : 1, c.moe.enabled ? 1 : 0,
+            c.spec.enabled() ? 1 : 0, c.spec.is_mtp() ? 1 : 0, c.spec.is_ngram() ? 1 : 0,
+            c.spec.draft_max, (double) c.spec.draft_p_min, c.spec.ngram_max_match,
+            c.spec.ngram_min_match, c.vram_cache_mb, c.expert_hot_slots, c.n_gpu_layers,
+            (double) c.sampling.temp, c.sampling.top_k, (double) c.sampling.top_p,
+            c.moe.overlap ? 1 : 0, c.moe.predict_log ? 1 : 0, c.moe.predict_prefetch ? 1 : 0,
+            c.moe.route_ahead, c.moe.row_stream ? 1 : 0, c.moe.row_stream_mb, c.moe.io_threads,
+            c.moe.cache_mb, c.moe.force_cache ? 1 : 0, c.moe.prefetch_layers,
+            c.moe.cache_auto ? 1 : 0, c.moe.cache_floor_mb, c.moe.cache_ceil_mb,
+            c.moe.io_two_wave ? 1 : 0, c.moe.predict_spec_max, (double) c.moe.drop_cold_frac, (double) c.moe.substitute_lambda);
+        ++cases;
+        if (got != want) {
+            ++fails;
+            if (fails <= 5) {
+                printf("MISMATCH native=%d port=%lld | ubatch=%d ctx=%d dmax=%d spec=%d spec_en=%d msg=%s\n",
+                       want, (long long) got, c.n_ubatch, c.n_ctx, c.spec.draft_max,
+                       (int) c.spec.source, c.spec.enabled() ? 1 : 0, res.error.c_str());
+            }
+        }
+    }
+    printf("config validate: cases=%d fails=%d uncovered=%d\n", cases, fails, uncovered);
+    return fails ? 1 : 0;
+}

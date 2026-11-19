@@ -1868,19 +1868,20 @@ std::string common_token_to_piece(const struct llama_context * ctx, llama_token 
 }
 
 std::string common_token_to_piece(const struct llama_vocab * vocab, llama_token token, bool special) {
-    std::string piece;
-    piece.resize(piece.capacity());  // using string internal cache, 15 bytes + '\n'
-    const int n_chars = llama_token_to_piece(vocab, token, &piece[0], piece.size(), 0, special);
+    // A real buffer instead of the string's internal cache. The cache path asked the producer for a 15-byte window
+    // and wrote the answer straight into a stack string; a piece of 21 bytes then overwrote the neighbouring fields,
+    // and one of them was the token id itself - measured as tok=-779955792 (the bytes b0 d1 82 d1, i.e. UTF-8 text)
+    // at generation step 643 of a real agent session (EXP-2026-11-19-1439). A local array of 256 bytes covers every
+    // piece this vocabulary can produce, and a longer one is grown from the size the producer reports.
+    char buf[256];
+    const int n_chars = llama_token_to_piece(vocab, token, buf, (int32_t) sizeof(buf), 0, special);
     if (n_chars < 0) {
-        piece.resize(-n_chars);
-        int check = llama_token_to_piece(vocab, token, &piece[0], piece.size(), 0, special);
+        std::string piece((size_t) (-n_chars), '\0');
+        const int check = llama_token_to_piece(vocab, token, &piece[0], (int32_t) piece.size(), 0, special);
         GGML_ASSERT(check == -n_chars);
+        return piece;
     }
-    else {
-        piece.resize(n_chars);
-    }
-
-    return piece;
+    return std::string(buf, (size_t) n_chars);
 }
 
 std::string common_detokenize(const struct llama_context * ctx, const std::vector<llama_token> & tokens, bool special) {

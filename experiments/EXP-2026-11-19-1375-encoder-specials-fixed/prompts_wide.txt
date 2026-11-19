@@ -1,0 +1,23 @@
+Hello world
+The quick brown fox jumps over the lazy dog.
+def f(x): return x**2 + 1
+Привет, мир! Как дела?
+日本語のテキストです。
+supercalifragilisticexpialidocious antidisestablishmentarianism
+a  b   c    d
+<|im_start|>system
+!@#$%^&*()_+-=[]{}|;':",./<>?
+1234567890 3.14159 1e-9
+```python
+def main():
+    print("hi")
+```
+| a | b |
+|---|---|
+| 1 | 2 |
+Emoji: 🙂 🚀 ✅ and a mix: 日本語 mixed with English 123
+<|im_end|> and <|endoftext|> in one line
+A URL: https://example.com/path?a=1&b=2#frag
+	tabs	and	newlines	here
+Line with trailing spaces   
+Ünïcödé áccents and ß, ø, å, ç

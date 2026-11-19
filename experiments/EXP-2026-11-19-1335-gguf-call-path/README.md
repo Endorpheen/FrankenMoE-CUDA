@@ -1,0 +1,105 @@
+# EXP-2026-11-19-1335: the ported GGUF reader now has a call path from the runtime
+
+## What was missing
+
+The GGUF port was proven completely against the native reader on the real model file - header, 52 typed keys,
+744 231 array elements, 753 tensor names and descriptors, tensor sizes - and reached by **nothing**. That is the
+state rule 33 calls debt rather than progress (EXP-2026-11-19-1324).
+
+## The connection
+
+`llama_model_loader` now calls `gr_parse` after the native reader has parsed the same file, and compares the two
+views. Behind `FG_GGUF_DIAG`, so the shipped path pays one `getenv` read and nothing else.
+
+A server started with the flag:
+
+```
+FG_GGUF_PARSE nk=52 nt=753 align=32 off=10990944 disagreements=0
+```
+
+Key count, tensor count, alignment and data offset all agree with what the native loader reported for the same file,
+during a real start.
+
+## Acceptance with the hook compiled in and the flag off
+
+```
+decode  62.49 / 62.87 / 62.74
+prefill 2697.6 / 2948.3 / 2958.5
+hash    c2ff42cc1219
+```
+
+## The gate covers every key and every tensor, not just the counts
+
+Counts alone would pass a reader that indexed the wrong records, so the loader gate now resolves every key and every
+tensor name through the port and compares each with the index the native reader gives it:
+
+```
+FG_GGUF_LOOKUP keys=52/52 tensors=753/753
+FG_GGUF_PARSE  nk=52 nt=753 align=32 off=10990944 disagreements=0
+```
+
+805 lookups plus the four header fields, checked on every start with the flag on, and the load refuses to continue if
+any of them disagrees.
+
+## Key values too, so a substitution would be founded
+
+The last piece before the loader could take a value from the port is knowing that every such value is equal, so the
+gate now decodes all integer keys through the port as well:
+
+```
+FG_GGUF_VALUES  integer=26/26
+FG_GGUF_LOOKUP  keys=52/52 tensors=753/753
+FG_GGUF_PARSE   nk=52 nt=753 align=32 off=10990944 disagreements=0
+```
+
+857 comparisons plus four header fields, on every start with the flag on, and the load refuses on any disagreement.
+Acceptance with the gate compiled in: decode 62.87 median, hash unchanged.
+
+## The gate now covers descriptors as well: 1610 comparisons per start
+
+With `gr_tensor_info` in place (EXP-2026-11-19-1337) the load-time gate compares every tensor descriptor too:
+
+```
+FG_GGUF_VALUES  integer=26/26
+FG_GGUF_TINFO   descriptors=753/753
+FG_GGUF_LOOKUP  keys=52/52 tensors=753/753
+FG_GGUF_PARSE   nk=52 nt=753 align=32 off=10990944 disagreements=0
+```
+
+That is 1610 comparisons plus four header fields, on every start with the flag on, and any disagreement refuses the
+load. Acceptance with the gate compiled in: decode 62.26 median, hash `c2ff42cc1219` unchanged.
+
+At this point the loader has, for every field it would need, a port accessor proven equal on the real file, on the
+real load path. Replacing its GGUF context with the port's records is no longer blocked on evidence - it is a
+substantial edit with its own acceptance, and it is the next piece of work rather than something to start at the end
+of a session.
+
+## The comparison refuses the load, not just prints
+
+A disagreement between the ported and native readings of the same file is never acceptable, so with the flag set the
+loader now throws instead of continuing:
+
+```
+FG_GGUF_PARSE nk=52 nt=753 align=32 off=10990944 disagreements=0   (the load proceeds)
+```
+
+That turns the diagnostic into something a run can depend on: a future change that breaks the port cannot reach
+generation with the flag on, it fails at load.
+
+`FG_GGUF_PARSE` is now one of the accepted components the pre-flight check looks for in the shipped library, so the
+call path itself is a checked property rather than a claim in a document.
+
+## What this is and is not
+
+Is: the first call path from the shipped runtime to the GGUF port, which is what the coverage report was asking for.
+
+Is not: a replacement. The loader still takes its numbers from the native reader, and the port's values are compared
+rather than used. Replacing the source of those numbers is a separate change with its own acceptance, and this card
+deliberately stops before it - the same order the detokenizer took, and for the same reason: prove the call path
+before making it load-bearing.
+
+## Two insertion errors, both mine
+
+The first attempt failed before writing anything - a `std::string format(` marker that this file does not contain -
+and the second assumed the anchor line was unique when it appears twice. Both were caught because the build ran after
+each edit: the first left the tree untouched, the second was fixed by indexing the first occurrence explicitly.
