@@ -11,9 +11,52 @@
 #include <cinttypes>
 #include <cstdint>
 #include <cstring>
+#include <dlfcn.h>
+#include <fstream>
 #include <future>
 #include <regex>
 #include <unordered_set>
+
+namespace {
+// Compares the ported reader's view of a GGUF header with the native one. The native values are what the
+// loader uses either way; this only counts disagreements, behind FG_GGUF_DIAG.
+struct fg_sl_i64 { int64_t * data; int64_t len; };
+struct fg_sl_u8  { uint8_t  * data; int64_t len; };
+typedef int64_t (*fg_gr_parse_fn)(fg_sl_u8, int64_t, fg_sl_i64, fg_sl_i64, fg_sl_i64, fg_sl_i64, fg_sl_i64);
+
+static void fg_gguf_check(const std::string & fname, const gguf_context & native) {
+    static auto fn = []() -> fg_gr_parse_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        void * sym = h ? dlsym(h, "gr_parse") : nullptr;
+        return reinterpret_cast<fg_gr_parse_fn>(sym);
+    }();
+    if (!fn) { fprintf(stderr, "FG_GGUF_RESOLVE fn=null\n"); return; }
+    const size_t win = 64u * 1024u * 1024u;
+    std::ifstream in(fname, std::ios::binary);
+    if (!in) { fprintf(stderr, "FG_GGUF_OPEN failed\n"); return; }
+    in.seekg(0, std::ios::end);
+    const int64_t size = (int64_t) in.tellg();
+    in.seekg(0, std::ios::beg);
+    const size_t take = size < (int64_t) win ? (size_t) size : win;
+    std::vector<uint8_t> data(take);
+    if (!in.read(reinterpret_cast<char *>(data.data()), (std::streamsize) take)) { return; }
+    const int64_t nk = (int64_t) gguf_get_n_kv(&native);
+    const int64_t nt = (int64_t) gguf_get_n_tensors(&native);
+    std::vector<int64_t> state(8, 0), kv((size_t) nk * 8, 0), tn((size_t) nt * 12, 0), slots(4096, 0);
+    fg_sl_u8  s_data{ data.data(), (int64_t) data.size() };
+    fg_sl_i64 s_state{ state.data(), 8 }, s_kv{ kv.data(), (int64_t) kv.size() },
+              s_t{ tn.data(), (int64_t) tn.size() }, s_slots{ slots.data(), (int64_t) slots.size() };
+    fn(s_data, size, s_state, s_kv, s_t, s_slots, s_slots);
+    int differ = 0;
+    if (state[0] != 919) { ++differ; fprintf(stderr, "FG_GGUF_DIFF refused state0=%lld\n", (long long) state[0]); }
+    if (state[2] != nk)  { ++differ; fprintf(stderr, "FG_GGUF_DIFF nk port=%lld native=%lld\n", (long long) state[2], (long long) nk); }
+    if (state[3] != nt)  { ++differ; fprintf(stderr, "FG_GGUF_DIFF nt port=%lld native=%lld\n", (long long) state[3], (long long) nt); }
+    if ((size_t) state[4] != gguf_get_alignment(&native)) { ++differ; fprintf(stderr, "FG_GGUF_DIFF align\n"); }
+    if ((size_t) state[5] != gguf_get_data_offset(&native)) { ++differ; fprintf(stderr, "FG_GGUF_DIFF data_off\n"); }
+    fprintf(stderr, "FG_GGUF_PARSE nk=%lld nt=%lld align=%lld off=%lld disagreements=%d\n",
+            (long long) state[2], (long long) state[3], (long long) state[4], (long long) state[5], differ);
+}
+} // namespace
 
 static const size_t kiB = 1024;
 static const size_t MiB = 1024*kiB;
@@ -574,6 +617,7 @@ llama_model_loader::llama_model_loader(
             throw std::runtime_error(format("%s: failed to load model from %s", __func__, fname.c_str()));
         }
 
+        if (getenv("FG_GGUF_DIAG") != nullptr) { fg_gguf_check(fname, *metadata_ptr); }
         get_key(llm_kv(LLM_KV_GENERAL_ARCHITECTURE), arch_name, false);
         llm_kv = LLM_KV(llm_arch_from_string(arch_name));
 
