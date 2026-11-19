@@ -36,12 +36,23 @@ fail=0
         -o "$OUT/probe" -ldl || exit 1
     printf 'ok: json.cpp and json-adapter.cpp compile\n'
 
-    # The door has to exist in the library under test. On 2026-11-19 the released set
-# (builds/checkpoint-20261119-EXP1476, 0ffd98c2) exports no json_parse at all, while the working
-# library in builds/flint-acc/bin (bea5d6af, provenance unknown) does - so a pass against the working
-# directory would say nothing about the shipped artefact.
-if [ -f "$BIN/libllama.so.0" ] && ! nm -D "$BIN/libllama.so.0" 2>/dev/null | grep -qw json_parse; then
-    printf 'skip: %s exports no json_parse door\n' "${BIN#$ROOT/}" | tee "$LOG"
+    # What the probe actually needs is the adapter symbol, fg_json_adapter::to_tree, and it lives in
+# libllama-common rather than libllama. The first version of this check looked for a Goose door named
+# json_parse inside libllama, found nothing, and skipped - against a build that carries the adapter.
+# On 2026-11-19 that false negative hid the fact that path A's build links it.
+# Captured before searched: `nm | c++filt | grep -q` lets grep exit on the match, the upstream processes
+# die of SIGPIPE and `set -o pipefail` turns a found symbol into "not found". That is the fourth time
+# this exact shape has produced a false negative in one day, which is why the comment is here.
+ADAPTER=""
+for lib in "$BIN/libllama-common.so.0" "$BIN/libllama.so.0"; do
+    [ -f "$lib" ] || continue
+    syms=$(nm -D --defined-only "$lib" 2>/dev/null | c++filt || true)
+    case "$syms" in
+        *"fg_json_adapter::to_tree"*) ADAPTER=$lib; break;;
+    esac
+done
+if [ -z "${ADAPTER:-}" ]; then
+    printf 'skip: no library under %s carries fg_json_adapter::to_tree\n' "${BIN#$ROOT/}" | tee "$LOG"
     exit 77
 fi
 if [ ! -f "$BIN/libllama.so.0" ]; then
