@@ -176,6 +176,8 @@ possible at all: before that they lived only in a separate build.
 | synthetic acceptance | live counter on the real model, 0 disagreements (EXP-1366) | door in the compiled server copy |
 | rejection acceptance | **880 combinations, 0 disagreements** (EXP-1368) | the door is a pure function; measured directly, edges included |
 | rejection acceptance on the live path | not measured | needs a draft distribution, which needs a draft model |
+| draft/target compatibility guards | **180 cases, 0 disagreements** (EXP-1371) | pure function; the per-token text half stays native |
+| ngram low-acceptance streak | **630 cases, 0 disagreements** (EXP-1372) | pure function; the host path keeps its inline streak |
 
 ## Not verified, and why
 
