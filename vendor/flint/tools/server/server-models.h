@@ -7,6 +7,10 @@
 #include "server-http.h"
 #include "server-queue.h"
 
+#include <dlfcn.h>
+
+#include <atomic>
+#include <cstring>
 #include <mutex>
 #include <condition_variable>
 #include <thread>
@@ -51,7 +55,21 @@ enum server_child_mode {
     SERVER_CHILD_MODE_DOWNLOAD, // download the model and exit
 };
 
-static std::string server_model_status_to_string(server_model_status status) {
+// The status names are a decision the ported model-manager owns (mg_status_str). The switch below stays as the fallback
+// and as the oracle for the shadow check: a switch that can silently fall back is the one shape rule 6 forbids, so both the
+// answer's origin and any disagreement are visible.
+struct fg_mg_slice { const void * data; int64_t len; };
+typedef int64_t (*fg_mg_str_fn)(int64_t, fg_mg_slice);
+
+static fg_mg_str_fn fg_mg_status_door() {
+    static const fg_mg_str_fn fn = []() -> fg_mg_str_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        return h ? reinterpret_cast<fg_mg_str_fn>(dlsym(h, "mg_status_str")) : nullptr;
+    }();
+    return fn;
+}
+
+static std::string server_model_status_to_string_native(server_model_status status) {
     switch (status) {
         case SERVER_MODEL_STATUS_DOWNLOADING: return "downloading";
         case SERVER_MODEL_STATUS_INCOMPLETE:  return "incomplete";
@@ -62,6 +80,39 @@ static std::string server_model_status_to_string(server_model_status status) {
         case SERVER_MODEL_STATUS_SLEEPING:    return "sleeping";
         default:                              return "unknown";
     }
+}
+
+static std::string server_model_status_to_string(server_model_status status) {
+    const std::string native = server_model_status_to_string_native(status);
+    if (const auto fn = fg_mg_status_door()) {
+        char buf[32] = {0};
+        const int64_t n = fn((int64_t) status, fg_mg_slice{ buf, (int64_t) sizeof(buf) - 1 });
+        static const bool fg_diag = getenv("FG_MODEL_STATUS_DIAG") != nullptr;
+        if (n > 0 && (size_t) n == strlen(buf)) {
+            const std::string ported(buf, (size_t) n);
+            if (fg_diag) {
+                static std::atomic<long long> calls{0}, bad{0};
+                const long long c = calls.fetch_add(1) + 1;
+                if (ported != native) {
+                    bad.fetch_add(1);
+                    fprintf(stderr, "FG_MODEL_STATUS_DIFF status=%d ported=%s native=%s\n", (int) status,
+                            ported.c_str(), native.c_str());
+                }
+                if (c == 1 || (c % 64) == 0) {
+                    fprintf(stderr, "FG_MODEL_STATUS ported calls=%lld disagreements=%lld\n", c, bad.load());
+                }
+            }
+            return ported;
+        }
+        // the door refused or produced something that is not its own length: the native answer stands, counted so it is
+        // not invisible
+        static std::atomic<long long> refused{0};
+        const long long rf = refused.fetch_add(1) + 1;
+        if (fg_diag && rf <= 5) {
+            fprintf(stderr, "FG_MODEL_STATUS_REFUSED status=%d n=%lld\n", (int) status, (long long) n);
+        }
+    }
+    return native;
 }
 
 static std::string server_model_source_to_string(server_model_source source) {
