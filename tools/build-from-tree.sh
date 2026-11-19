@@ -82,7 +82,12 @@ echo "upstream objects: $(echo $flint | wc -w) of $(ls "$TREE"/flint-objects/*.o
     -o "$OUT/libllama.so.0" \
     "$OUT"/obj/our-*.o "$OUT"/obj/mod-*.o "$OUT"/obj/br-*.o \
     $(ls "$TREE"/extra-objects/*.o 2>/dev/null) $flint \
-    -Wl,-rpath,"$TREE/libs" \
+    # $ORIGIN, not the tree path. An absolute rpath is what made the shipped artefact depend on
+    # /home/end0/... builds: libggml-cpu.so carried two build directories, one of them an experiment tree,
+    # and the checkpoint could not start on its own (BASELINE-DEPENDS-ON-UNTRACKED-ARTEFACT.md). A set that
+    # resolves its own directory works from any path, and the libraries it needs must be carried with it -
+    # which tests/regression/set-self-contained now checks.
+    -Wl,-rpath,'$ORIGIN' \
     "$TREE/libs/libggml.so.0" "$TREE/libs/libggml-base.so.0" \
     "$TREE/libs/libggml-cpu.so.0" "$TREE/libs/libggml-cuda.so.0"
 
