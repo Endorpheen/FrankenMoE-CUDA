@@ -47,7 +47,21 @@ object is the compiler's runtime, its source is the compiler's output, and the p
 `2026.3-string` with `RUNTIME_VERSION 1e714e6146bc`. Producer named, version pinned - it is a
 dependency on the compiler, not an unrecorded artefact.
 
-**`fx286pic.o` is the one object that cannot be reproduced today.** `fg286m_range_update` is in
+**`fx286pic.o`: the source is EXP286's test fixture, found after the first pass.** The object carries
+the string `mmap_fixture.c`, and that file exists at
+`experiments/EXP-2026-11-12-286-goose-mmap-bookkeeping/tests/mmap_fixture.c`. It defines `main`, and the
+object's defining symbol is `fg286_fx_main`, so the producer is that source compiled with
+`-Dmain=fg286_fx_main`. Rebuilt with the pinned compiler it defines exactly
+`fg286_fx_main fg286m_range_update fg286m_should_lock` - the object's three globals - **plus**
+`gate_fail` and `gate_st`, which the original carries as local symbols. That difference is a compile
+flag or a local edit nobody recorded, and it is not cosmetic: two extra globals named `gate_fail`
+collide the moment another object defines one, which is the duplicate-definition failure this project
+has already had. The object is therefore reproducible from a tracked source **with one unresolved
+visibility difference**, not irreproducible.
+
+Earlier in this document's first version it was called irreproducible because `fg286_fx_main` appears
+in no source; the string `mmap_fixture.c` inside the object is what made the difference, and it is worth
+recording that the answer was in the artefact all along. `fg286m_range_update` is in
 `experiments/EXP-2026-11-12-286-goose-mmap-bookkeeping/source/mmap_bookkeeping-functions.c:184`, but
 `fg286_fx_main` appears in no `.c`, `.cpp`, `.goose`, `.py` or `.json` in this repository or in the
 external snapshot. What EXP286 does record is the compiler that produced its binaries:
@@ -63,10 +77,11 @@ An object in `extra-objects` must satisfy one of two conditions, or it does not 
    object;
 2. it is a build product, and the command that produces it is recorded next to the object.
 
-Seventeen meet a condition today: sixteen through a tracked source, and `slru-runtime.o` as the
-compiler's own runtime with its version pinned in `RUNTIME_VERSION.txt`. One does not: `fx286pic.o`.
-The honest state of path B is therefore "reproducible except `fx286pic.o`", which is a much smaller
-statement than "except extra-objects".
+All eighteen now meet a condition: seventeen through a tracked source, and `slru-runtime.o` as the
+compiler's own runtime with its version pinned in `RUNTIME_VERSION.txt`. `fx286pic.o` is the eighteenth,
+from EXP286's fixture with `-Dmain=fg286_fx_main`, carrying one unresolved difference in symbol
+visibility. The honest state of path B is therefore: every input has a named producer, and one of them
+still needs its exact compile flags recorded before a rebuild can be trusted.
 
 ## What removing them needs
 
