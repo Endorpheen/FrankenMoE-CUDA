@@ -46,6 +46,8 @@ extern "C" int64_t gr_arr_type(gsl_i64x state, gsl_i64x kv, int64_t index);
 extern "C" int64_t gr_arr_n(gsl_i64x state, gsl_i64x kv, int64_t index);
 extern "C" int64_t gr_val_span(gsl_i64x state, gsl_i64x kv, int64_t index, gsl_i64x out);
 extern "C" int64_t gr_string_array_index(gsl_u8x data, gsl_i64x state, gsl_i64x kv, int64_t index, gsl_i64x pairs);
+extern "C" int64_t gr_arr_str_span(gsl_u8x data, gsl_i64x state, gsl_i64x kv, int64_t index, int64_t element,
+                                  gsl_i64x out);
 extern "C" int64_t gr_arr_str_table(gsl_u8x data, gsl_i64x state, gsl_i64x kv, int64_t index,
                                     gsl_u8x text, gsl_i64x offs);
 extern "C" int64_t gr_array_int(gsl_u8x data, gsl_i64x state, gsl_i64x kv, int64_t index, int64_t element,
@@ -106,6 +108,8 @@ extern "C" int llama_goose_queries = 0;
 
 std::mutex g_mu;
 std::map<const void *, std::unique_ptr<reader_meta>> g_metas;
+// The registration the ctx-less vendor entry point answers from; one file is mapped at a time.
+const struct gguf_context * g_current = nullptr;
 bool g_inited = false;
 
 const reader_meta * meta_of(const struct gguf_context * ctx) {
@@ -180,11 +184,36 @@ extern "C" void llama_goose_register(const struct gguf_context * ctx, const char
         }
     }
     g_metas[ctx] = std::move(m);
+    g_current = ctx;
 }
 
 extern "C" void llama_goose_unregister(const struct gguf_context * ctx) {
     std::lock_guard<std::mutex> lock(g_mu);
     g_metas.erase(ctx);
+    if (g_current == ctx) { g_current = nullptr; }
+}
+
+// One element of a string array, asked by key index alone.
+//
+// vendor/flint/src/llama-impl.cpp is compiled from the vendor tree (there is no staged copy) and
+// calls this four-argument form; the staged carrier serves the same question through
+// llama_goose_arr_str(ctx, index, element). The mapping belongs to one file at a time, which is
+// the same contract the vendor lineage's fg_port store has, so the answer comes from the current
+// registration. See docs/goose-migration/CARRIER-DIVERGENCE-20261119.md.
+extern "C" bool fg_port_array_str(int64_t key_index, int64_t element, const uint8_t ** ptr, int64_t * len) {
+    std::lock_guard<std::mutex> lock(g_mu);
+    if (!g_current) { return false; }
+    const reader_meta * m = meta_of(g_current);
+    if (!m || !m->ok) { return false; }
+    int64_t out[2] = { 0, 0 };
+    if (gr_arr_str_span(gsl_u8x{ (uint8_t *) m->hdr, m->len }, i64x(m->state), i64x(m->kv),
+                        key_index, element, gsl_i64x{ out, 2 }) != 0) {
+        return false;
+    }
+    if (out[0] < 0 || out[1] < 0 || (size_t) (out[0] + out[1]) > (size_t) m->len) { return false; }
+    *ptr = (const uint8_t *) m->hdr + out[0];
+    *len = out[1];
+    return true;
 }
 
 extern "C" int llama_goose_ready(const struct gguf_context * ctx) {

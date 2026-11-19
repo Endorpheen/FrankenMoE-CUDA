@@ -51,24 +51,45 @@ The two copies do not differ by degree - they solve the same problem in two diff
 Both are legitimate; neither contains the other, and pasting the vendor's `dlopen` block into the
 staged file would put two competing mechanisms for one mapping into the same translation unit.
 
+## The evidence from the built objects
+
+The failed build's own objects say exactly what is missing, which is better than reading two source
+files: `nm -u` over `core/*.o` and `core/vendor-models/*.o` lists the references the link has to
+satisfy. Of the vendor-only symbols, these are actually needed:
+
+```
+fg_port_array_str        2 references
+fg_bpe_encode           1
+fg_port_array_int       1
+fg_sampler_adaptive_p_call, _dist_pick_call, _dist_words_call, _dry_call, _mirostat_call,
+fg_sampler_penalties_call, _temp_ext_call, _top_p_call, _typical_call   1 each
+```
+
+So the gap is thirteen symbols, not one, and ten of them are the sampler door wrappers.
+
 ## The smallest correct step
 
 `llama-impl.cpp` exists **only** in the vendor tree (there is no staged copy) and calls
 `fg_port_array_str` twice. The staged tree serves the same question through
 `llama_goose_arr_str(ctx, index, element)`.
 
-So the smallest change that makes both lineages link is a four-argument
-`fg_port_array_str(key_index, element, ptr, len)` implemented in
-`integration/goose-standalone/gguf-reader-owner.cpp`, the file that already owns the mapping -
-ten lines, no new mechanism, and it keeps the carrier's `llama_goose_*` design intact.
+**Done and verified** for the first of the thirteen: `fg_port_array_str(key_index, element, ptr,
+len)` now exists in `integration/goose-standalone/gguf-reader-owner.cpp`, the file that owns the
+mapping, answering through the `gr_arr_str_span` door from the current registration. Checked in
+the cheap way rule 38 asks for:
 
-Its own step, in this order:
+```
+g++-13 -O1 -c integration/goose-standalone/gguf-reader-owner.cpp   -> 0 errors, 0.46 s
+nm -g --defined-only owner.o | grep fg_port_array_str             -> T (defined)
+g++-13 -O1 -c vendor/flint/src/llama-impl.cpp                     -> 0 errors, 0.38 s
+nm -u impl.o | grep fg_port_array_str                             -> U (satisfied by the owner)
+```
 
-1. add that function to the reader owner;
-2. compile the reader owner alone and check the symbol is defined - seconds, the cheap pre-flight
-   rule 38 asks for;
-3. compile `llama-impl.cpp` alone and check the reference resolves;
-4. only then a full build, and then the P9-03 acceptance run.
+**Still missing, and not guessed at:** the other twelve - `fg_bpe_encode`, `fg_port_array_int`,
+and the ten `fg_sampler_*_call` wrappers. Each is defined in the vendor copy of a carrier whose
+staged copy does not have it, and each must be either taken into the staged carrier or provided by
+an adapter, then checked the same way: compile the one TU, `nm` the symbol. That is thirteen small
+verified steps, not one long build.
 
-Until step 4 exists, `v0.10.0-exp1476` remains the current binary and no claim is made about
-building from `main`.
+Until all thirteen resolve, the build stays refused for those carriers, `v0.10.0-exp1476` remains
+the current binary, and no claim is made about building from `main`.
