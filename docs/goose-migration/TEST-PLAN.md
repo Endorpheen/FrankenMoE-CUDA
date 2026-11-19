@@ -3,7 +3,7 @@
 The unit is 24 modules. "Done" means a test drives the shipped call path and checks the answer; "through" means the module is
 exercised by another module's test; "to complete" is what is left.
 
-## Progress: 20 of 24 measured
+## Progress: 21 of 24 measured
 
 | # | module | test | state |
 |---|---|---|---|
@@ -28,16 +28,14 @@ exercised by another module's test; "to complete" is what is left.
 | 19 | `model/arch-registry` | `EXP-2026-11-19-1456`, round trip over every row | done |
 | 20 | `cuda/cuda-arch-policy` | `EXP-2026-11-19-1456/1457` | done |
 | 21 | `cuda/cuda-target-flags` | `EXP-2026-11-19-1457`, 6 branch cases | done |
-| 22 | `cuda/cuda-install-layout` | `EXP-2026-11-19-1426`, probe | **to complete** |
+| 22 | `cuda/cuda-install-layout` | `EXP-2026-11-19-1459`, 20 cases as a table | done |
 | 23 | `server/hf-cache-naming` | `EXP-2026-11-14-585`, 6 cases | **to complete** |
 | 24 | `metrics/metrics-traces` | `EXP-2026-11-15-618`, staged harness | **to complete** |
 
-## Remainder: 4 modules
+## Remainder: 3 modules
 
 1. `cli/llama-bench-report` - 23 exports, 5 hand cases today. Needs the report itself compared field by field on a fixed
    input set, means and CSV escaping included. Its host is absent (P10-02), so the test calls the doors.
-2. `cuda/cuda-install-layout` - 10 exports, one probe. Needs the destination and the versioned-name rules across the
-   dynamic/shared/neither cases as a table.
 3. `server/hf-cache-naming` - 12 exports, 6 cases. Needs repository and commit validity plus folder naming over a
    table of accepted and refused inputs.
 4. `metrics/metrics-traces` - 21 exports. Needs the CSV field rules and trace weight kinds compared with the native
@@ -56,9 +54,8 @@ exercised by another module's test; "to complete" is what is left.
 ## Order: four modules, then integration
 
 1. `llama-bench-report`
-2. `cuda-install-layout`
-3. `hf-cache-naming`
-4. `metrics-traces`
+2. `hf-cache-naming`
+3. `metrics-traces`
 
-After the fourth, no module of the unit is without a test that drives its doors, and the work returns to the runtime
+After the third, no module of the unit is without a test that drives its doors, and the work returns to the runtime
 integration: the paired A/B on a quiet card, the checkpoint, and the remaining requirement items.
