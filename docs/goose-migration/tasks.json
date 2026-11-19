@@ -2777,7 +2777,8 @@
           "decision coverage: 19/49 = 38.8%"
         ],
         "reading": "These are the shipped facts, not a plan: of the Goose modules, 32 have every door present in the library, 3 have some and 230 have none, which is why this requirement stays PARTIAL with 9 of 12 slices - a module that compiles but is not in the library serves no call site (rule 33). Decision coverage is 19 of 49 predicates; the rest are still answered by C++."
-      }
+      },
+      "evidence_20261119": "Unit carry measured 2026-11-19 with tools/unit-carry.py, which counts the composed unit's export fn names against an artefact's symbols. The shipped library carries 200 of 1254 (15%); the unit object from a pre-Qwen build carries 1213 (96%). The gap is age, checked by sampling: mg_stop_gate, arch_default and json_parse are present because they existed at build time, while route_id, q35_plan, key_authorize and mime_of are absent because they were added after. The same source-ahead-of-binary pattern explains the model-manager doors in P8-06 and the api-key doors in P8-09. Recorded in docs/goose-migration/UNIT-CARRY-20261119.md with the method's two caveats: the 96% figure is itself aged (every q4m_* door reads as absent from an object built before it existed) and a composer rename (sanitize_into) is invisible to a name comparison. This is why P11-01 stays PARTIAL: the requirement is one runtime carrying everything accepted, and the artefact that exists predates most of the current unit."
     },
     {
       "id": "P11-02",
