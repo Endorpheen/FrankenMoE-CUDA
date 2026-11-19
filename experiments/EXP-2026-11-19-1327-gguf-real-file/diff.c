@@ -292,6 +292,33 @@ int main(int argc, char ** argv) {
     }
     printf("array elements: %d/%d equal\n", arr_total - arr_bad, arr_total);
 
+    /* tensor descriptors as the reader recorded them: dtype, dims, extents and data offset.
+       There is no accessor for these, so the records the parse wrote are read directly. */
+    int td_cmp = 0, td_bad = 0;
+    for (int64_t i = 0; i < n_t; ++i) {
+        const int64_t * rec = tn + i * 12;
+        const int64_t native_type = (int64_t) gguf_get_tensor_type(g2, (int32_t) i);
+        const int64_t * native_ne = gguf_get_tensor_ne(g2, (int32_t) i);
+        uint32_t native_dims = 0;
+        while (native_dims < 4 && native_ne[native_dims] != 1) { ++native_dims; }
+        const size_t native_off = gguf_get_tensor_offset(g2, (int32_t) i);
+        ++td_cmp;
+        bool ok = rec[2] == native_type && rec[3] == (int64_t) native_dims &&
+                  (size_t) (rec[10] - state[5]) == native_off;
+        for (uint32_t d = 0; ok && d < native_dims; ++d) {
+            ok = rec[4 + d] == native_ne[d];
+        }
+        if (!ok) {
+            ++td_bad;
+            if (td_bad <= 3) {
+                printf("TENSOR DESC MISMATCH i=%lld native=(t=%lld d=%u off=%zu) port=(t=%lld d=%lld off=%lld)\n",
+                       (long long) i, (long long) native_type, native_dims, native_off,
+                       (long long) rec[2], (long long) rec[3], (long long) (rec[10] - state[5]));
+            }
+        }
+    }
+    printf("tensor descriptors: %d/%d equal\n", td_cmp - td_bad, td_cmp);
+
     /* the negative case: a key that is not there must be reported as absent by both */
     const char * absent = "general.this.key.does.not.exist";
     sl_u8 s_absent; s_absent.data = (uint8_t *) absent; s_absent.len = (int64_t) strlen(absent);
@@ -306,6 +333,6 @@ int main(int argc, char ** argv) {
     gguf_free(g2);
     printf("lookup: kv=%lld/%lld tensor=%lld/%lld fails=%d\n",
            (long long) (n_kv - kv_fail), (long long) n_kv, (long long) (n_t - tn_fail), (long long) n_t, kv_fail + tn_fail);
-    printf("gguf header: fails=%d\n", fails + kv_fail + tn_fail + val_fail + type_fail + str_fail + f_fail + b_fail + a_fail + arr_bad);
-    return (fails + kv_fail + tn_fail + val_fail + type_fail + str_fail + f_fail + b_fail + a_fail + arr_bad) ? 1 : 0;
+    printf("gguf header: fails=%d\n", fails + kv_fail + tn_fail + val_fail + type_fail + str_fail + f_fail + b_fail + a_fail + arr_bad + td_bad);
+    return (fails + kv_fail + tn_fail + val_fail + type_fail + str_fail + f_fail + b_fail + a_fail + arr_bad + td_bad) ? 1 : 0;
 }

@@ -80,6 +80,21 @@ array elements: 744231/744231 equal
 That covers all five arrays - the vocabulary (248 320 strings), the merge list, and three small integer arrays - three
 quarters of a million elements in total, with no disagreement.
 
+## Tensor descriptors
+
+The reader records dtype, dimensions, extents and data offset for every tensor but exposes no accessor for them, so the
+records the parse wrote are compared directly against the native reader:
+
+```
+tensor descriptors: 753/753 equal
+```
+
+Type, dimension count, every extent, and the offset relative to the data section - all equal for all 753 tensors.
+
+**The missing accessor is itself a finding**: a host can find a tensor by name through `gr_find_tensor` but cannot ask
+the port what that tensor is. Recorded as an interface gap rather than filled with a new door invented for the
+occasion.
+
 ## The harness lied once more, and the tell was familiar
 
 The array block did not appear in the output at all. The compile had **failed** on a `void*` dereference, so the run
