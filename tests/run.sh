@@ -26,6 +26,7 @@ ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 T=$ROOT/tests
 FAILS=0
 RAN=0
+SKIPPED=0
 
 tier_of() {
     local d=$1
@@ -53,6 +54,13 @@ run_one() { # <dir>
     printf '\n== %s (tier %s)\n' "$name" "$(tier_of "$d")"
     bash "$d/run.sh"
     rc=$?
+    if [ "$rc" -eq 77 ]; then
+        # 77 is the skip convention: a precondition (a built library, a GPU) is absent.
+        # A skip is not evidence, so it is counted and printed, never folded into "ok".
+        printf '  skip: %s (precondition absent)\n' "$name"
+        SKIPPED=$((SKIPPED + 1))
+        return 0
+    fi
     RAN=$((RAN + 1))
     if [ "$rc" -eq 0 ]; then
         printf '  ok: %s\n' "$name"
@@ -90,7 +98,7 @@ delegate() { # <level>
 }
 
 finish() {
-    printf '\n== summary: %d test(s) run, %d failure(s)\n' "$RAN" "$FAILS"
+    printf '\n== summary: %d test(s) run, %d failure(s), %d skipped\n' "$RAN" "$FAILS" "$SKIPPED"
     [ "$FAILS" -eq 0 ]
 }
 
@@ -101,7 +109,7 @@ case "$cmd" in
         exit 0
         ;;
     fast)
-        for a in cpu ggml kv tokenizer sampler grammar server models memory regression; do
+        for a in cpu ggml kv tokenizer sampler grammar server models json memory regression; do
             run_area "$a" fast
         done
         delegate fast
@@ -114,7 +122,7 @@ case "$cmd" in
         ;;
     full)
         delegate full
-        for a in cpu ggml kv tokenizer sampler grammar server models memory regression integration; do
+        for a in cpu ggml kv tokenizer sampler grammar server models json memory regression integration; do
             run_area "$a" fast integration
         done
         finish

@@ -11,6 +11,8 @@ run only with explicit permission).
 |------|------|------|-----|-------------|------|--------|
 | grammar | reject-alternates | `tests/grammar/reject-alternates` | EXP-2026-11-19-1491 | P6-10 | fast | migrated 2026-11-19 |
 | grammar | first-set | `tests/grammar/first-set` | EXP-2026-11-18-1110, EXP-2026-11-19-1491 | P6-10 | fast | added 2026-11-19 |
+| models | model-manager-doors | `tests/models/model-manager-doors` | door work of P8-06 | P8-06 | fast | migrated 2026-11-19 |
+| json | roundtrip | `tests/json/roundtrip` | door work of P10-07 | P10-07 | fast | migrated 2026-11-19 |
 
 ## Notes on the first migration
 
@@ -33,3 +35,16 @@ are exported. Exporting internals so a test can reach them would change the arte
 so the permanent tree gates the exported decision and the experiment keeps its direct gates as the
 record of that cycle. `tests/grammar/first-set/README.md` states which path covers which
 function.
+
+## Third batch
+
+`tests/models/model-manager-doors` and `tests/json/roundtrip` are moves of
+`tools/model-manager-doors-check.sh` and `tools/json-roundtrip-check.sh`: the probe source is the
+same text, now a committed `.c` file instead of a heredoc, and the checks are the same tables. Both
+ask the shipped library through `dlopen`, so both record the library path, its SHA-256 and the
+source revision in their log - the doors live in that artefact and a verdict without it is not
+evidence about anything.
+
+Both need the built library and skip with exit 77 when it is absent. A skip is counted and printed
+separately by `tests/run.sh`, never folded into a pass. The original `tools/` scripts stay until
+their permanent copies have run in a second context; that removal is its own step.

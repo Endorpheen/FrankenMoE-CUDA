@@ -16,6 +16,7 @@ experiment card points at the new path.
 | `tokenizer/` | vocabulary load, pre-tokenisation, encode and decode |
 | `sampler/` | sampler chain, RNG, distribution pick |
 | `grammar/` | grammar automaton, constrained generation |
+| `json/` | JSON parse, dump and schema decisions shared by the units |
 | `server/` | HTTP routes, MCP tools, server lifecycle |
 | `models/` | loader, metadata, per-architecture graphs |
 | `memory/` | expert cache, placement, LRU, budget |
@@ -60,6 +61,10 @@ bash tests/run.sh full                 # delegates to tools/check.sh full, then 
 bash tests/run.sh performance          # explicit, never implied by full
 bash tests/run.sh list
 ```
+
+A test exits `0` for pass, `1` for fail and `77` for skip. A skip means a precondition is absent
+(a built library, a GPU of the right kind); it is counted and printed separately, never folded
+into a pass, because a skip is not evidence.
 
 `run.sh` does not reimplement the build and acceptance machinery: it delegates to
 `tools/check.sh` for `integration` and `full`, and to `tools/apex-test.sh` for anything that
