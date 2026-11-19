@@ -36,3 +36,15 @@ immutable, and this is a copy, not a symlink.
 export LD_LIBRARY_PATH=<this dir>:<this dir>
 <this dir>/llama-server -m <model> <profile from above>
 ```
+
+## Restore verified
+
+The set was started **from this directory alone** (`APEX_SERVER_DIR=<here>`, nothing from the build tree) and
+measured through the official entry point:
+
+```
+decode [45.35, 45.47, 45.28]   prefill [1969.0, 2265.7, 2256.9]   sha {'c2ff42cc1219'}
+```
+
+Same hash as the acceptance run, same speed range. So the copies are complete: a checkpoint that cannot be
+started is not a checkpoint, and this one can.

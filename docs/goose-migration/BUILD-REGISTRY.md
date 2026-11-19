@@ -242,3 +242,10 @@ only the composition record of the accumulated unit.
 
 Worth noting for the next checkpoint: the symbol count in a manifest should be taken from the build that
 produced the libraries, not from a different unit, or it will drift exactly like this.
+
+### The checkpoint restores and reproduces its hash
+
+Started from `builds/checkpoint-20261119-chain/` alone - no path into the build tree - and measured through
+`apex-test.sh`: `sha c2ff42cc1219`, decode 45.28-45.47, prefill 2257-2266. The recorded acceptance hash
+reproduces from the saved bytes, which is what makes the checkpoint a restore point rather than a directory
+of copies.
