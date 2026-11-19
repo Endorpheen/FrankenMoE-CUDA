@@ -35,7 +35,6 @@ cat "$root/goose/model/tokenizer-decisions.goose" >> "$rootfile"
 cat "$root/goose/model/tokenizer-doors.goose" >> "$rootfile"
 cat "$root/goose/cli/fit-params-line.goose" >> "$rootfile"
 cat "$root/goose/cli/llama-bench-report.goose" >> "$rootfile"
-cat "$root/goose/model/slru-policy-goose.goose" >> "$rootfile"
 cat "$root/goose/model/arch-registry.goose" >> "$rootfile"
 cat "$root/goose/misc/spec-decode-decisions.goose" >> "$rootfile"
 cat "$root/goose/cli/config-validate.goose" >> "$rootfile"
@@ -211,6 +210,20 @@ int64_t mt_fmt_g6(sl_u8 out, int64_t at, double x) {
     int64_t w = 0;
     for (int i = 0; i < n && at + w < out.len; ++i) {
         out.data[at + w] = (uint8_t) tmp[i];
+        w++;
+    }
+    return w;
+}
+
+// The bench-report module formats its means with "%.2f" and calls out for it. Same provider pattern as
+// mt_fmt_g6 above: the module carries the decision, this carries the conversion.
+int64_t fg637_fmt2(sl_u8 out, double x) {
+    char tmp[64];
+    const int n = snprintf(tmp, (int) sizeof(tmp), "%.2f", x);
+    if (n < 0) { return 0; }
+    int64_t w = 0;
+    for (int i = 0; i < n && out.data + 0 != 0 && w < out.len; ++i) {
+        out.data[w] = (uint8_t) tmp[i];
         w++;
     }
     return w;

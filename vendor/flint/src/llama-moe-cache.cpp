@@ -209,7 +209,6 @@ struct moe_cache_slru {
             move(s, false);
             fills.push_back({ e, s });
         }
-        return true;
         if (fg_diag) {
             const int64_t got = run_door(fg_sn, il, n_ids);
             bool same = got >= 0 && got == (int64_t) fills.size() && fg_sn.scal[3] == (int64_t) n_hit;
@@ -233,6 +232,7 @@ struct moe_cache_slru {
             }
         }
 
+        return true;
     }
 };
 
@@ -718,6 +718,10 @@ struct llama_moe_cache::impl {
 
 llama_moe_cache::llama_moe_cache(const llama_model & model, const std::vector<ggml_backend_t> & backends, const std::vector<ggml_backend_buffer_type_t> & bufts, size_t size) :
     pimpl(new impl(model, backends, bufts, size)) {
+    if (getenv("FG_SLRU_DIAG") != nullptr) {
+        fprintf(stderr, "FG_SLRU_CREATED bytes_requested=%zu backends=%zu bufts=%zu\n",
+                size, backends.size(), bufts.size());
+    }
 }
 
 llama_moe_cache::~llama_moe_cache() = default;
@@ -727,7 +731,21 @@ ggml_backend_t llama_moe_cache::backend(int32_t il) const {
 }
 
 ggml_tensor * llama_moe_cache::get_slot_map(int32_t il, int64_t n_tokens, int64_t n_expert_used) const {
-    return pimpl->get_slot_map(il, n_tokens, n_expert_used);
+    ggml_tensor * r = pimpl->get_slot_map(il, n_tokens, n_expert_used);
+    // Which layers does the graph actually ask about, and for how many? Without this, a cache that is built and never
+    // consulted looks exactly like one that is consulted and whose plan never runs (EXP-2026-11-19-1417).
+    static const bool fg_diag = getenv("FG_SLRU_DIAG") != nullptr;
+    if (fg_diag) {
+        static std::atomic<long long> asked{0}, null_maps{0}, bytes_sum{0};
+        const long long c = asked.fetch_add(1) + 1;
+        if (r == nullptr) { null_maps.fetch_add(1); }
+        else { bytes_sum.fetch_add(1); }
+        if (c <= 4 || (c % 4096) == 0) {
+            fprintf(stderr, "FG_SLRU_MAPS calls=%lld null=%lld given=%lld il=%d n_tokens=%lld\n",
+                    c, null_maps.load(), bytes_sum.load(), (int) il, (long long) n_tokens);
+        }
+    }
+    return r;
 }
 
 ggml_tensor * llama_moe_cache::get_experts(const ggml_tensor * w) const {
