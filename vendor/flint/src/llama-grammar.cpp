@@ -1536,7 +1536,20 @@ void llama_grammar_apply_impl(const struct llama_grammar & grammar, llama_token_
         fprintf(stderr, "FG171_GRAMMAR_SIZES cur_p=%zu candidates=%zu stacks=%zu\n",
                 cur_p->size, candidates_grammar.size(), grammar.stacks.size());
     }
-    if (fg_grammar_reject_call != nullptr && fg_grammar_enabled() && !candidates_grammar.empty()) {
+    // A candidate whose piece ends in the middle of a UTF-8 sequence carries a pending
+    // partial. The ported matcher works on complete codepoints only, so it would accept such a
+    // candidate without checking its trailing bytes - which is exactly how a constrained
+    // request produced a corrupted byte. When any candidate has a pending partial, the hook
+    // declines the whole call and the native path decides. Declining is safe; guessing is not.
+    bool fg_has_partial = false;
+    for (const auto & c : candidates_grammar) {
+        if (c.partial_utf8.n_remain != 0) {
+            fg_has_partial = true;
+            break;
+        }
+    }
+    if (fg_grammar_reject_call != nullptr && fg_grammar_enabled() && !fg_has_partial &&
+            !candidates_grammar.empty()) {
         fg_flat_rules & flat = fg_flatten(grammar.rules);
 
         const int64_t ncand = (int64_t) candidates_grammar.size();

@@ -89,3 +89,36 @@ produces, and the way to prove it is a per-candidate differential against `llama
 on real vocabularies - not an end-to-end text comparison, which cannot see a wrong acceptance in
 a permissive grammar. Until that exists the stage is an opt-in experiment and P6-10's grammar item
 is **not** complete.
+
+## The cause, and the fix
+
+The ported matcher works on **complete codepoints**. It never looks at the trailing partial of a
+piece: `decode_utf8` returns a `llama_partial_utf8` for a piece that ends in the middle of a
+UTF-8 sequence, and the native code passes that to `llama_grammar_match_partial_char`. The module
+has no such path, so a candidate whose piece ends with a partial byte was accepted without its
+trailing bytes being checked - which is exactly the corrupted byte seen above.
+
+The hook now **declines the whole call** when any candidate carries a pending partial
+(`n_remain != 0`), and the native path decides in that case. Declining is safe; guessing is not.
+This is the same shape as the existing rule for stacks that are not in the pointer map.
+
+```
+grammar ON, three consecutive requests:
+run 1: '{"name":"piano","n":4,"name":"piano","n":4}' | clean: True
+run 2: '{"name":"piano","n":4,"name":"piano","n":4}' | clean: True
+run 3: '{"name":"piano","n":4,"name":"piano","n":4}' | clean: True
+
+ON : '{"name":"piano","n":4,"name":"piano","n":4}'
+OFF: '{"name":"piano","n":4,"name":"piano","n":4}'
+identical: True
+```
+
+## What this does and does not establish
+
+Establishes: with a grammar that cannot match empty and a strict constraining grammar, the hook
+now produces exactly the native output, three times in a row, instead of a corrupted byte or an
+exception.
+
+Does not establish: that it is equal for **every** candidate set. The partial path is now handled
+by declining, not by matching, and the codepoint path still needs a per-candidate differential
+against `llama_grammar_apply`. The stage therefore stays opt-in, and the item stays open.
