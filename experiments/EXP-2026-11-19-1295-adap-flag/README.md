@@ -23,6 +23,25 @@ before the change:  21 of 100 rounds differ
 after  the change:   0 of 100 rounds differ
 ```
 
+## Where the remaining 15 actually live
+
+Block-wise comparison of the diagnostic trace - arrays compared as whole applies, not line windows - shows the
+difference is not in the probabilities at all: **42 of 100 applies enter adaptive-p with a different `size`**.
+
+```
+goose : FG_ADAPTIVE n=6 idx=2 tok=109
+native: FG_ADAPTIVE n=1 idx=0 tok=91
+```
+
+A different size at that point means a **different number of survivors from the stage before** it, and in this
+chain that stage is XTC. The `typical+xtc` prefix was verified identical over 100 rounds - but on the RNG sequence
+of the standalone probe, not on the sequence this harness reaches after two other configurations. So the prefix is
+exact for the inputs it was tested on and not for these.
+
+That re-points the residual at XTC's survivor count rather than at adaptive, and the next probe follows from it:
+log `kept` per round in both modes on this input set. The adaptive flag change remains right - it makes the door's
+normalisation agree with the native rule by construction - and it is not the cause of what is left.
+
 ## What it did not fix, stated plainly
 
 The harness in EXP-2026-11-19-1287, whose inputs come from a different point in the same RNG sequence, still reports
