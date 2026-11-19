@@ -15,6 +15,7 @@ run only with explicit permission).
 | json | roundtrip | `tests/json/roundtrip` | door work of P10-07 | P10-07 | fast | migrated 2026-11-19 |
 | json | door | `tests/json/door` | door work of P10-07 | P10-07 | fast | migrated 2026-11-19 |
 | server | router-status | `tests/server/router-status` | door work of P8-06 | P8-06 | model | migrated 2026-11-19 |
+| integration | goose-composition | `tests/integration/goose-composition` | set list of tools/check-composition.sh | P6-10, P7-06, P8-09 | integration | created 2026-11-19, run pending |
 
 ## Notes on the first migration
 
@@ -61,3 +62,10 @@ invalid texts, same verdict.
 permission rule 1 demands - and otherwise skips. Its host handling was hardened after the first
 run of this script left a server holding 9101: the server is now a direct child, so the recorded
 pid is the server's own, and cleanup verifies the port was released instead of assuming it.
+
+## Fifth batch
+
+`tests/integration/goose-composition` wraps `tools/check-composition.sh`: the nine canonical module
+sets still compose and typecheck together. It is not a duplicate of `tools/check.sh fast` - that
+level composes the single cumulative unit and compiles it, while this one names the individual set
+that broke.
