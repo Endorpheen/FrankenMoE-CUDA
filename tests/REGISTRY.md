@@ -10,6 +10,7 @@ run only with explicit permission).
 | area | test | path | EXP | requirement | tier | status |
 |------|------|------|-----|-------------|------|--------|
 | grammar | reject-alternates | `tests/grammar/reject-alternates` | EXP-2026-11-19-1491 | P6-10 | fast | migrated 2026-11-19 |
+| grammar | first-set | `tests/grammar/first-set` | EXP-2026-11-18-1110, EXP-2026-11-19-1491 | P6-10 | fast | added 2026-11-19 |
 
 ## Notes on the first migration
 
@@ -22,3 +23,13 @@ regression test instead of a record.
 
 The experiment directory keeps its card, its pinned source and its recorded numbers. The card
 points here for the repeatable check.
+
+## Second batch
+
+`tests/grammar/first-set` covers the other exported grammar decision,
+`fg_grammar_first_set`. It is not a move: EXP-2026-11-18-1110 gated `g_advance`,
+`g_match_char`, `g_match_partial` and `g_first_set` through generated shims, and only the last two
+are exported. Exporting internals so a test can reach them would change the artefact under test,
+so the permanent tree gates the exported decision and the experiment keeps its direct gates as the
+record of that cycle. `tests/grammar/first-set/README.md` states which path covers which
+function.
