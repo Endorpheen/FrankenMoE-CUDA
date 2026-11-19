@@ -303,3 +303,14 @@ bridge object has at least one caller.
 Running it also settles a question the earlier "no objects" answer could have hidden: the bridge objects this
 tool hunts **do** exist in the build (the EXP-271/273/275 ports compile their `bridge.c` into the server), and
 none of them is dead.
+
+## Checkpoint 2026-11-19-arch: the recipe registry wired
+
+`builds/checkpoint-20261119-arch/` holds the set that carries the arch hook, with `SHA256SUMS`, `git-rev.txt`
+and `MANIFEST.md`. What differs from `checkpoint-20261119-chain`:
+
+    libllama.so.0.7.0        753268246495bf6c09282e13aceb58c0aea0012d0f4e71f4280d94fbc02048ee   (was 582b5619…)
+    libllama-common.so.0.7.0 0f5ef3569c1db1e22517f02bc2e3c0d766428cd2d66d201e2c5e17e7c93f0c7c   (was 13fe9949…)
+
+The ggml libraries, the server-impl library and the binary are byte-identical to the previous checkpoint, which is
+what a change confined to two translation units should look like. Acceptance hash `c2ff42cc1219`, unchanged.
