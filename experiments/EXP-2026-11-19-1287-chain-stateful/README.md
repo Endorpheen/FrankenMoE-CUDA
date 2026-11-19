@@ -135,6 +135,37 @@ Three inputs, two max choices, and the observed numbers match one each. The dive
 transform, not in `expf`, not in the normalisation: it is in **which max each path trusts**, which comes from a flag
 the two paths maintain differently.
 
+### The instrument is now suspect, and here is why
+
+The two prints that were supposed to bracket the transform **contradict each other** in both modes. The failing
+round reports
+
+```
+FG_ADAPTIVE_FLAG sorted=0 monotonic=1 n=3
+FG_ADAPTIVE_IN [0] id=61  logit=3e4482c0
+FG_ADAPTIVE_IN [1] id=98  logit=409ff2ba
+FG_ADAPTIVE_IN [2] id=16  logit=409ffa62
+```
+
+`monotonic=1` is computed at **entry**, over the same `cur_p->data`, and an ascending triple cannot be descending.
+So either the array is reordered between the two prints - by something I have not accounted for - or one of the two
+prints is lying. Neither possibility permits a conclusion about the port.
+
+Counts across the whole run, all 100 rounds:
+
+```
+                    sorted=1,mono=0   sorted=1,mono=1   sorted=0,mono=1   sorted=0,mono=0
+goose                      0                0                81                19
+native                     0               80                 1                19
+```
+
+Both modes agree that nothing is mislabelled when it is unsorted, and disagree only on the label of **sorted**
+arrays - which cannot change a maximum. The earlier numeric reproduction (`max=data[0]` giving the native value)
+was fitted to an array order that this trace now says should not exist at that point.
+
+**So the next step is not a fix.** It is to print the full array at entry as well, so the two prints either agree
+or the reordering is located between them.
+
 ### What that means, and what is not done
 
 The doors must leave `cur_p->sorted` in the state the native code would: false after a compaction that reorders
