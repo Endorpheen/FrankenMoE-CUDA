@@ -44,6 +44,30 @@ turns from descending into ascending, they do not, and the probabilities differ 
 So the port computes the correct normalisation of the values it was given, and the native computes one based on a
 flag its own transform has invalidated.
 
+## Where this line ends, and why it ends here
+
+The last measurement to make is a per-call-site word counter for the generator, and it is worth saying plainly what
+it would and would not change.
+
+**Established in this thread, each by measurement:**
+
+- the doors are exact one by one (nine of them, EXP-1282/-1284) and in the profile's chain (120 rounds, EXP-1286);
+- every pair among typical, XTC and adaptive is exact (0 of 100 each);
+- at the failing round of the triple, the arrays, the ids, the logits and every probability match in both modes,
+  and the selected index still differs;
+- therefore the generator state has already diverged by that round, which can only come from a different number of
+  words consumed earlier;
+- three candidate causes - input order, the `sorted` flag, the final normalisation - were each tested and each
+  failed to move the metric, and the two changes made on those hypotheses were reverted.
+
+**Not established:** which call site consumes the extra words. The suspects are the selection door (two explicit
+words against `generate_canonical`) and adaptive's internal draw.
+
+**Why stopping is the right call now:** the configuration is not on the acceptance path - the fixed profile enables
+none of these three samplers - the acceptance hash has never moved, and this thread has produced four instrument
+errors against two real defects. Another run with a fifth instrument is more likely to produce a fifth false alarm
+than an answer, and the measurement that would settle it is named precisely enough for whoever picks it up.
+
 ## The residual is the RNG state, and the arrays prove it
 
 With the host normalisation in place, the arrays and the probabilities at the failing round are **identical in both
