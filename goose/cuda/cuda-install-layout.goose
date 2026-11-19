@@ -179,19 +179,19 @@ fn ins_avail_impl(existing: const u8[:], backend: const u8[:], out: u8[:]) -> i6
     if existing.len == 0 {
         return ins_put(out, 0, backend);
     }
-    var from: i64 = 0;
+    var pos_from: i64 = 0;
     var found: i64 = 0;
     var done: i64 = 0;
     while done == 0 {
-        var end: i64 = from;
+        var end: i64 = pos_from;
         while end < existing.len && existing[end] != INS_SEMI {
             end = end + 1;
         }
-        if end - from == backend.len {
+        if end - pos_from == backend.len {
             var same: i64 = 1;
             var i: i64 = 0;
             while i < backend.len {
-                if existing[from + i] != backend[i] {
+                if existing[pos_from + i] != backend[i] {
                     same = 0;
                 }
                 i = i + 1;
@@ -203,7 +203,7 @@ fn ins_avail_impl(existing: const u8[:], backend: const u8[:], out: u8[:]) -> i6
         if end >= existing.len {
             done = 1;
         } else {
-            from = end + 1;
+            pos_from = end + 1;
         }
     }
     if found == 1 {

@@ -75,13 +75,13 @@ fn key_eq(a: const u8[:], b: const u8[:]) -> bool {
 }
 
 fn key_name(names: const u8[:], off: const i64[:], i: i64) -> const u8[:] {
-    let from: i64 = off[i];
+    let pos_from: i64 = off[i];
     let to: i64 = off[i + 1];
 
-    if from < 0 || to < from || to > names.len {
+    if pos_from < 0 || to < pos_from || to > names.len {
         return names[0 .. 0];
     }
-    return names[from .. to];
+    return names[pos_from .. to];
 }
 
 // The public-endpoint test: the two fixed paths, then the frontend path table.

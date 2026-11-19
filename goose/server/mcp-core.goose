@@ -147,12 +147,12 @@ fn mput_i(dst: u8[:], at: i64, v: i64) -> i64 {
 
 // JSON string body: quotes, backslash and control bytes are escaped like the
 // library's dumper; the corpus stays ASCII.
-fn mput_esc(dst: u8[:], at: i64, s: const u8[:], from: i64, n: i64) -> i64 {
+fn mput_esc(dst: u8[:], at: i64, s: const u8[:], pos_from: i64, n: i64) -> i64 {
     var p = at;
     var i: i64 = 0;
 
     while i < n {
-        let c = s[from + i];
+        let c = s[pos_from + i];
 
         if c == 34 {
             p = mput(dst, p, "\\\"");

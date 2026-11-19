@@ -65,15 +65,15 @@ fn field_i64(line: const u8[:], k: i64) -> i64 {
     return -1;
 }
 
-fn line_at(text: const u8[:], from: i64, next: i64[:]) -> const u8[:] {
-    var i: i64 = from;
+fn line_at(text: const u8[:], pos_from: i64, next: i64[:]) -> const u8[:] {
+    var i: i64 = pos_from;
 
     while i < text.len && text[i] != 10 {
         i = i + 1;
     }
     var stop: i64 = i;
 
-    if stop > from && text[stop - 1] == 13 {
+    if stop > pos_from && text[stop - 1] == 13 {
         stop = stop - 1;
     }
 
@@ -82,7 +82,7 @@ fn line_at(text: const u8[:], from: i64, next: i64[:]) -> const u8[:] {
     } else {
         next[0] = -1;
     }
-    return text[from .. stop];
+    return text[pos_from .. stop];
 }
 
 export fn index_stats(text: u8[:], out: i64[:]) -> i64 {

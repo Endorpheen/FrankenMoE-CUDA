@@ -50,11 +50,11 @@ fn tc_eq(a: const u8[:], b: const u8[:]) -> bool {
     return true;
 }
 
-fn tc_find(s: const u8[:], from: i64, t: const u8[:]) -> i64 {
+fn tc_find(s: const u8[:], pos_from: i64, t: const u8[:]) -> i64 {
     if t.len == 0 {
-        return from;
+        return pos_from;
     }
-    var i = from;
+    var i = pos_from;
     while i + t.len <= s.len {
         var j: i64 = 0;
         var ok: i64 = 1;
@@ -103,8 +103,8 @@ fn tc_is_ws(c: u8) -> bool {
 }
 
 // std::string::find_first_not_of(" \t\r\n", from)
-fn tc_first_non_ws(s: const u8[:], from: i64) -> i64 {
-    var i = from;
+fn tc_first_non_ws(s: const u8[:], pos_from: i64) -> i64 {
+    var i = pos_from;
     while i < s.len {
         if !tc_is_ws(s[i]) {
             return i;

@@ -210,8 +210,8 @@ fn qry_hex_text(c: u8, out: u8[:], at: i64) -> i64 {
 }
 
 // Next write offset after appending the encoded form of src[from .. to].
-fn qry_encode_at(src: const u8[:], from: i64, to: i64, out: u8[:], at: i64) -> i64 {
-    var i: i64 = from;
+fn qry_encode_at(src: const u8[:], pos_from: i64, to: i64, out: u8[:], at: i64) -> i64 {
+    var i: i64 = pos_from;
     var n: i64 = at;
 
     while i < to {
@@ -266,13 +266,13 @@ export fn qry_encode_component(src: const u8[:], out: u8[:]) -> i64 {
 }
 
 fn qry_blob_at(blob: const u8[:], off: const i64[:], i: i64) -> const u8[:] {
-    let from: i64 = off[i];
+    let pos_from: i64 = off[i];
     let to: i64 = off[i + 1];
 
-    if from < 0 || to < from || to > blob.len {
+    if pos_from < 0 || to < pos_from || to > blob.len {
         return blob[0 .. 0];
     }
-    return blob[from .. to];
+    return blob[pos_from .. to];
 }
 
 // One raw token of the split, [a, b) already trimmed, either entered into the

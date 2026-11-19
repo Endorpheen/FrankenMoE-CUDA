@@ -119,16 +119,16 @@ export fn rh_is_moe_node(name: const u8[:]) -> i64 {
 // router_hook.cpp:51-63 — parse_layer_tail. Digits only, to the end of the
 // string: "12abc" is not layer 12, and a runaway digit run is not a layer
 // index. The ceiling is the native one, checked after every digit.
-fn rh_tail(name: const u8[:], from: i64) -> i64 {
-    if from < 0 || from >= name.len {
+fn rh_tail(name: const u8[:], pos_from: i64) -> i64 {
+    if pos_from < 0 || pos_from >= name.len {
         return -1; // an empty tail is not a layer
     }
-    var c: i64 = name[from];
+    var c: i64 = name[pos_from];
     if c < '0' || c > '9' {
         return -1;
     }
     var il: i64 = 0;
-    var k: i64 = from;
+    var k: i64 = pos_from;
     while k < name.len {
         c = name[k];
         if c < '0' || c > '9' {
@@ -143,8 +143,8 @@ fn rh_tail(name: const u8[:], from: i64) -> i64 {
     return il;
 }
 
-export fn rh_parse_tail(name: const u8[:], from: i64) -> i64 {
-    return rh_tail(name, from);
+export fn rh_parse_tail(name: const u8[:], pos_from: i64) -> i64 {
+    return rh_tail(name, pos_from);
 }
 
 // router_hook.cpp:66-70 — match_layer_node. kind 1 is the topk ("ffn_moe_topk-"),

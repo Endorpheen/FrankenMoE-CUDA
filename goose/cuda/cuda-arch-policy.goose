@@ -63,8 +63,8 @@ fn arc_digit(c: u8) -> bool {
 }
 
 // Index of the first entry that starts at `from`, or s.len when none.
-fn arc_next(s: const u8[:], from: i64) -> i64 {
-    var i = from;
+fn arc_next(s: const u8[:], pos_from: i64) -> i64 {
+    var i = pos_from;
     while i < s.len {
         if s[i] == ARC_SEMI {
             return i;
@@ -146,13 +146,13 @@ fn arc_num_impl(s: const u8[:]) -> i64 {
     return n;
 }
 
-fn arc_span_eq(s: const u8[:], from: i64, lit: const u8[:]) -> bool {
-    if from < 0 || from + lit.len > s.len {
+fn arc_span_eq(s: const u8[:], pos_from: i64, lit: const u8[:]) -> bool {
+    if pos_from < 0 || pos_from + lit.len > s.len {
         return false;
     }
     var i: i64 = 0;
     while i < lit.len {
-        if s[from + i] != lit[i] {
+        if s[pos_from + i] != lit[i] {
             return false;
         }
         i = i + 1;
@@ -191,11 +191,11 @@ fn arc_sm_impl(s: const u8[:]) -> i64 {
     return arc_num_impl(s);
 }
 
-fn arc_token_ok_span(s: const u8[:], from: i64, end: i64) -> i64 {
-    if end <= from {
+fn arc_token_ok_span(s: const u8[:], pos_from: i64, end: i64) -> i64 {
+    if end <= pos_from {
         return 0;
     }
-    var i: i64 = from;
+    var i: i64 = pos_from;
     var digits: i64 = 0;
     while i < end && arc_digit(s[i]) {
         digits = digits + 1;
@@ -260,24 +260,24 @@ fn arc_valid_impl(s: const u8[:], list_mode: i64) -> i64 {
 }
 
 // ^12[0-9](-real|-virtual)?$ over the token [from, end)
-fn arc_is_12x(s: const u8[:], from: i64, end: i64) -> i64 {
-    var len: i64 = end - from;
+fn arc_is_12x(s: const u8[:], pos_from: i64, end: i64) -> i64 {
+    var len: i64 = end - pos_from;
     if len < 3 || len > 11 {
         return 0;
     }
-    if s[from] != 49 || s[from + 1] != 50 || arc_digit(s[from + 2]) == false {
+    if s[pos_from] != 49 || s[pos_from + 1] != 50 || arc_digit(s[pos_from + 2]) == false {
         return 0;
     }
-    if s[from + 2] > ARC_9 {
+    if s[pos_from + 2] > ARC_9 {
         return 0;
     }
     if len == 3 {
         return 1;
     }
-    if len == 8 && arc_span_eq(s, from + 3, "-real") {
+    if len == 8 && arc_span_eq(s, pos_from + 3, "-real") {
         return 1;
     }
-    if len == 11 && arc_span_eq(s, from + 3, "-virtual") {
+    if len == 11 && arc_span_eq(s, pos_from + 3, "-virtual") {
         return 1;
     }
     return 0;
@@ -287,13 +287,13 @@ fn arc_is_12x(s: const u8[:], from: i64, end: i64) -> i64 {
 // through unchanged, order preserved.
 export fn arch_rewrite(list: const u8[:], out: u8[:]) -> i64 {
     var at: i64 = 0;
-    var from: i64 = 0;
+    var pos_from: i64 = 0;
     var first: i64 = 1;
     var done: i64 = 0;
     while done == 0 {
-        var end: i64 = arc_next(list, from);
+        var end: i64 = arc_next(list, pos_from);
         var empty: i64 = 0;
-        if end == from {
+        if end == pos_from {
             empty = 1;
         }
         if empty == 0 {
@@ -302,20 +302,20 @@ export fn arch_rewrite(list: const u8[:], out: u8[:]) -> i64 {
             }
             first = 0;
         }
-        if empty == 0 && arc_is_12x(list, from, end) == 1 {
-            var i: i64 = from;
-            while i < from + 3 {
+        if empty == 0 && arc_is_12x(list, pos_from, end) == 1 {
+            var i: i64 = pos_from;
+            while i < pos_from + 3 {
                 at = arc_putc(out, at, list[i]);
                 i = i + 1;
             }
             at = arc_putc(out, at, ARC_A);
-            i = from + 3;
+            i = pos_from + 3;
             while i < end {
                 at = arc_putc(out, at, list[i]);
                 i = i + 1;
             }
         } else if empty == 0 {
-            var i: i64 = from;
+            var i: i64 = pos_from;
             while i < end {
                 at = arc_putc(out, at, list[i]);
                 i = i + 1;
@@ -324,7 +324,7 @@ export fn arch_rewrite(list: const u8[:], out: u8[:]) -> i64 {
         if end >= list.len {
             done = 1;
         } else {
-            from = end + 1;
+            pos_from = end + 1;
         }
     }
     return at;

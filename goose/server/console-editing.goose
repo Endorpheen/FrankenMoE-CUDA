@@ -222,8 +222,8 @@ fn con_cursor(delta: i64, out: u8[:], olen: i64[:]) {
     }
 }
 
-fn con_emit(out: u8[:], olen: i64[:], src: const u8[:], from: i64, to: i64) {
-    var i = from;
+fn con_emit(out: u8[:], olen: i64[:], src: const u8[:], pos_from: i64, to: i64) {
+    var i = pos_from;
 
     while i < to {
         out[olen[0]] = src[i];
@@ -426,8 +426,8 @@ fn con_word_right(line: const u8[:], llen: i64[:], pos: i64[:], out: u8[:], olen
 }
 
 // Redraw every character from `from` and return the summed width.
-fn con_redraw_tail(line: const u8[:], llen: i64[:], from: i64, out: u8[:], olen: i64[:]) -> i64 {
-    var p = from;
+fn con_redraw_tail(line: const u8[:], llen: i64[:], pos_from: i64, out: u8[:], olen: i64[:]) -> i64 {
+    var p = pos_from;
     var width: i64 = 0;
 
     while p < llen[0] {

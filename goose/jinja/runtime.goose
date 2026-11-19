@@ -17667,11 +17667,11 @@ const D_MIXED: i64 = 2;
 
 // ---- byte helpers ----------------------------------------------------------
 
-fn d_find(s: const u8[:], from: i64, t: const u8[:]) -> i64 {
+fn d_find(s: const u8[:], pos_from: i64, t: const u8[:]) -> i64 {
     if t.len == 0 {
-        return from;
+        return pos_from;
     }
-    var i = from;
+    var i = pos_from;
 
     while i + t.len <= s.len {
         var j: i64 = 0;
@@ -18085,9 +18085,9 @@ export fn d_functionary(s: const u8[:], tools: i64, parallel: i64, dst: u8[:]) -
     let raw = s[nl + 1 .. s.len];
     let start = d_params_begin(abuf, 0);
     var end = start;
-    let from = d_find(raw, 0, "{");
-    if from >= 0 {
-        let obj = d_json_value(raw, from);
+    let pos_from = d_find(raw, 0, "{");
+    if pos_from >= 0 {
+        let obj = d_json_value(raw, pos_from);
         if obj.len > 2 {
             var tmp: u8[8192] = [0; 8192];
             let cl = d_compact_json(obj[1 .. obj.len - 1], tmp);
@@ -18172,7 +18172,7 @@ export fn d_gigachat(s: const u8[:], tools: i64, dst: u8[:]) -> i64 {
 
 fn d_parse_atem_params(
     src: const u8[:],
-    from: i64,
+    pos_from: i64,
     lim: i64,
     abuf: u8[:],
     at: i64,
@@ -18184,7 +18184,7 @@ fn d_parse_atem_params(
 ) -> i64 {
     let open = "<atem:parameter name=\"";
     let close = "</atem:parameter>";
-    var p = from;
+    var p = pos_from;
     var first: i64 = 1;
     var q = at;
 
@@ -18373,7 +18373,7 @@ export fn d_muse_spark(
 
 fn d_parse_minicpm_params(
     src: const u8[:],
-    from: i64,
+    pos_from: i64,
     lim: i64,
     abuf: u8[:],
     at: i64,
@@ -18385,7 +18385,7 @@ fn d_parse_minicpm_params(
 ) -> i64 {
     let open = "<param name=\"";
     let close = "</param>";
-    var p = from;
+    var p = pos_from;
     var first: i64 = 1;
     var q = at;
 
@@ -18534,7 +18534,7 @@ export fn d_minicpm5(
 
 fn d_parse_k2_params(
     src: const u8[:],
-    from: i64,
+    pos_from: i64,
     abuf: u8[:],
     at: i64,
     schema: const u8[:],
@@ -18548,7 +18548,7 @@ fn d_parse_k2_params(
     let close_type = "</ifm|arg_type>";
     let open_val = "<ifm|arg_value>";
     let close_val = "</ifm|arg_value>";
-    var p = from;
+    var p = pos_from;
     var first: i64 = 1;
     var q = at;
 
@@ -18721,21 +18721,21 @@ export fn d_k2_horizon(
 // The end-of-generation tokens also end a value; native passes them to the
 // parser because an XML call has no closing tag of its own.
 
-fn d_eog_at(s: const u8[:], from: i64) -> i64 {
-    var best = d_find(s, from, "<|end|>");
-    best = d_min2(best, d_find(s, from, "<|call|>"));
-    best = d_min2(best, d_find(s, from, "<|return|>"));
-    best = d_min2(best, d_find(s, from, "<|endoftext|>"));
-    best = d_min2(best, d_find(s, from, "<|im_end|>"));
-    best = d_min2(best, d_find(s, from, "<|fim_pad|>"));
-    best = d_min2(best, d_find(s, from, "<|repo_name|>"));
-    best = d_min2(best, d_find(s, from, "<|file_sep|>"));
+fn d_eog_at(s: const u8[:], pos_from: i64) -> i64 {
+    var best = d_find(s, pos_from, "<|end|>");
+    best = d_min2(best, d_find(s, pos_from, "<|call|>"));
+    best = d_min2(best, d_find(s, pos_from, "<|return|>"));
+    best = d_min2(best, d_find(s, pos_from, "<|endoftext|>"));
+    best = d_min2(best, d_find(s, pos_from, "<|im_end|>"));
+    best = d_min2(best, d_find(s, pos_from, "<|fim_pad|>"));
+    best = d_min2(best, d_find(s, pos_from, "<|repo_name|>"));
+    best = d_min2(best, d_find(s, pos_from, "<|file_sep|>"));
     return best;
 }
 
 fn d_parse_rfl_params(
     src: const u8[:],
-    from: i64,
+    pos_from: i64,
     lim: i64,
     abuf: u8[:],
     at: i64,
@@ -18747,7 +18747,7 @@ fn d_parse_rfl_params(
 ) -> i64 {
     let open = "<rfl:parameter name=\"";
     let close = "\n</rfl:parameter>";
-    var p = from;
+    var p = pos_from;
     var first: i64 = 1;
     var q = at;
 
@@ -18954,8 +18954,8 @@ fn d_skip_tag(s: const u8[:]) -> const u8[:] {
 // GPT-OSS dialect: one space may follow every special token; a tool recipient
 // may sit in the role header or in the channel header.
 
-fn d_take_until(s: const u8[:], from: i64, stops: const u8[:]) -> i64 {
-    var i = from;
+fn d_take_until(s: const u8[:], pos_from: i64, stops: const u8[:]) -> i64 {
+    var i = pos_from;
 
     while i < s.len {
         var k: i64 = 0;

@@ -293,7 +293,7 @@ fn build_kv(abuf: u8[:], ast: i64[:], name: const u8[:], key: const u8[:], star:
 recursive fn refs(
     opt: const i64[:],
     oc: i64,
-    from: i64,
+    pos_from: i64,
     first: i64,
     name: const u8[:],
     strs: const u8[:],
@@ -305,7 +305,7 @@ recursive fn refs(
     rtext: u8[:],
     rp: i64[:],
     rst: i64[:]) -> i64, i64 {
-    let k = opt[from];
+    let k = opt[pos_from];
     let is_star = k < 0;
     var koff: i64 = 0;
     var klen: i64 = 0;
@@ -327,8 +327,8 @@ recursive fn refs(
     var rname_off: i64 = 0;
     var rname_len: i64 = 0;
 
-    if from + 1 < oc {
-        let co, cl = refs(opt, oc, from + 1, 1, name, strs, dir, kvdir, nprops, abuf, ast, rtext, rp, rst);
+    if pos_from + 1 < oc {
+        let co, cl = refs(opt, oc, pos_from + 1, 1, name, strs, dir, kvdir, nprops, abuf, ast, rtext, rp, rst);
         var keyname: const u8[:] = "*";
 
         if !is_star {

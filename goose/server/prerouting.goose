@@ -24,7 +24,7 @@ fn pr_put(out: u64, i: i64, v: i64) {
 
 fn pr_eq_lit(
     p: u64,
-    from: i64,
+    pos_from: i64,
     to: i64,
     w0: i64,
     w1: i64,
@@ -35,55 +35,55 @@ fn pr_eq_lit(
     w6: i64,
     w7: i64,
     w8: i64) -> i64 {
-    let n: i64 = to - from;
+    let n: i64 = to - pos_from;
 
     if n != 9 as i64 {
         return 0 as i64;
     }
 
-    if (pr_ld_u8(p, from as u64) as i64) != w0 {
+    if (pr_ld_u8(p, pos_from as u64) as i64) != w0 {
         return 0 as i64;
     }
 
-    if (pr_ld_u8(p, (from + 1 as i64) as u64) as i64) != w1 {
+    if (pr_ld_u8(p, (pos_from + 1 as i64) as u64) as i64) != w1 {
         return 0 as i64;
     }
 
-    if (pr_ld_u8(p, (from + 2 as i64) as u64) as i64) != w2 {
+    if (pr_ld_u8(p, (pos_from + 2 as i64) as u64) as i64) != w2 {
         return 0 as i64;
     }
 
-    if (pr_ld_u8(p, (from + 3 as i64) as u64) as i64) != w3 {
+    if (pr_ld_u8(p, (pos_from + 3 as i64) as u64) as i64) != w3 {
         return 0 as i64;
     }
 
-    if (pr_ld_u8(p, (from + 4 as i64) as u64) as i64) != w4 {
+    if (pr_ld_u8(p, (pos_from + 4 as i64) as u64) as i64) != w4 {
         return 0 as i64;
     }
 
-    if (pr_ld_u8(p, (from + 5 as i64) as u64) as i64) != w5 {
+    if (pr_ld_u8(p, (pos_from + 5 as i64) as u64) as i64) != w5 {
         return 0 as i64;
     }
 
-    if (pr_ld_u8(p, (from + 6 as i64) as u64) as i64) != w6 {
+    if (pr_ld_u8(p, (pos_from + 6 as i64) as u64) as i64) != w6 {
         return 0 as i64;
     }
 
-    if (pr_ld_u8(p, (from + 7 as i64) as u64) as i64) != w7 {
+    if (pr_ld_u8(p, (pos_from + 7 as i64) as u64) as i64) != w7 {
         return 0 as i64;
     }
 
-    if (pr_ld_u8(p, (from + 8 as i64) as u64) as i64) != w8 {
+    if (pr_ld_u8(p, (pos_from + 8 as i64) as u64) as i64) != w8 {
         return 0 as i64;
     }
     return 1 as i64;
 }
 // host == "localhost" (9 bytes)
 
-fn pr_is_localhost(p: u64, from: i64, to: i64) -> i64 {
+fn pr_is_localhost(p: u64, pos_from: i64, to: i64) -> i64 {
     return pr_eq_lit(
         p,
-        from,
+        pos_from,
         to,
         108 as i64,
         111 as i64,
@@ -97,10 +97,10 @@ fn pr_is_localhost(p: u64, from: i64, to: i64) -> i64 {
 }
 // host == "127.0.0.1" (9 bytes)
 
-fn pr_is_loopback4(p: u64, from: i64, to: i64) -> i64 {
+fn pr_is_loopback4(p: u64, pos_from: i64, to: i64) -> i64 {
     return pr_eq_lit(
         p,
-        from,
+        pos_from,
         to,
         49 as i64,
         50 as i64,
@@ -114,22 +114,22 @@ fn pr_is_loopback4(p: u64, from: i64, to: i64) -> i64 {
 }
 // host == "::1" (3 bytes)
 
-fn pr_is_loopback6(p: u64, from: i64, to: i64) -> i64 {
-    let n: i64 = to - from;
+fn pr_is_loopback6(p: u64, pos_from: i64, to: i64) -> i64 {
+    let n: i64 = to - pos_from;
 
     if n != 3 as i64 {
         return 0 as i64;
     }
 
-    if (pr_ld_u8(p, from as u64) as i64) != 58 as i64 {
+    if (pr_ld_u8(p, pos_from as u64) as i64) != 58 as i64 {
         return 0 as i64;
     }
 
-    if (pr_ld_u8(p, (from + 1 as i64) as u64) as i64) != 58 as i64 {
+    if (pr_ld_u8(p, (pos_from + 1 as i64) as u64) as i64) != 58 as i64 {
         return 0 as i64;
     }
 
-    if (pr_ld_u8(p, (from + 2 as i64) as u64) as i64) != 49 as i64 {
+    if (pr_ld_u8(p, (pos_from + 2 as i64) as u64) as i64) != 49 as i64 {
         return 0 as i64;
     }
     return 1 as i64;

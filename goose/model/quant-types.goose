@@ -122,11 +122,11 @@ const S_TIED: i64 = 8;
 const S_FALLBACK: i64 = 9;
 const S_LEN: i64 = 10;
 
-fn qs_find(s: const u8[:], from: i64, t: const u8[:]) -> i64 {
+fn qs_find(s: const u8[:], pos_from: i64, t: const u8[:]) -> i64 {
     if t.len == 0 {
-        return from;
+        return pos_from;
     }
-    var i = from;
+    var i = pos_from;
     while i + t.len <= s.len {
         var j: i64 = 0;
         var ok: i64 = 1;

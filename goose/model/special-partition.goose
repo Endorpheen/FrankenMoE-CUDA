@@ -37,11 +37,11 @@ fn stp_is_space(c: u8) -> bool {
 }
 
 // First occurrence of data in text[from, to), -1 when there is none.
-fn stp_find(text: const u8[:], from: i64, to: i64, data: const u8[:]) -> i64 {
-    if data.len == 0 || data.len > to - from {
+fn stp_find(text: const u8[:], pos_from: i64, to: i64, data: const u8[:]) -> i64 {
+    if data.len == 0 || data.len > to - pos_from {
         return 0 - 1;
     }
-    var i: i64 = from;
+    var i: i64 = pos_from;
     while i + data.len <= to {
         var k: i64 = 0;
         var hit: i64 = 1;

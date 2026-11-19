@@ -592,8 +592,8 @@ fn t_nbytes(tne: const i64[:], i: i64, ty: i64) -> i64 {
 
 // Cumulative padded offsets: offset[0] = 0,
 // offset[i] = offset[i-1] + PAD(nbytes[i-1], alignment).
-fn t_recompute(tst: const i64[:], tne: const i64[:], trec: i64[:], from: i64) -> i64 {
-    var i: i64 = from;
+fn t_recompute(tst: const i64[:], tne: const i64[:], trec: i64[:], pos_from: i64) -> i64 {
+    var i: i64 = pos_from;
     if i < 0 as i64 {
         i = 0 as i64;
     }

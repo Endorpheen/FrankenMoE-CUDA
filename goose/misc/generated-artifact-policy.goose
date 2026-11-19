@@ -64,13 +64,13 @@ fn gap_lower(c: u8) -> u8 {
     return c;
 }
 
-fn gap_lower_at(s: const u8[:], from: i64, lit: const u8[:]) -> bool {
-    if from < 0 || from + lit.len > s.len {
+fn gap_lower_at(s: const u8[:], pos_from: i64, lit: const u8[:]) -> bool {
+    if pos_from < 0 || pos_from + lit.len > s.len {
         return false;
     }
     var i: i64 = 0;
     while i < lit.len {
-        if gap_lower(s[from + i]) != lit[i] {
+        if gap_lower(s[pos_from + i]) != lit[i] {
             return false;
         }
         i = i + 1;

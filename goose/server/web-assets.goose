@@ -94,13 +94,13 @@ fn web_eq(a: const u8[:], b: const u8[:]) -> bool {
 // An asset name out of the packed table: names[off[i] .. off[i+1]] with the
 // last entry ending at names.len. off has cnt + 1 entries.
 fn web_name(names: const u8[:], off: const i64[:], i: i64) -> const u8[:] {
-    let from: i64 = off[i];
+    let pos_from: i64 = off[i];
     let to: i64 = off[i + 1];
 
-    if from < 0 || to < from || to > names.len {
+    if pos_from < 0 || to < pos_from || to > names.len {
         return names[0 .. 0];
     }
-    return names[from .. to];
+    return names[pos_from .. to];
 }
 
 fn web_name_is(names: const u8[:], off: const i64[:], i: i64, lit: const u8[:]) -> bool {
@@ -232,13 +232,13 @@ fn web_etag_matches(inm: const u8[:], etag: const u8[:]) -> bool {
 }
 
 fn web_etag_text(etags: const u8[:], eoff: const i64[:], i: i64) -> const u8[:] {
-    let from: i64 = eoff[i];
+    let pos_from: i64 = eoff[i];
     let to: i64 = eoff[i + 1];
 
-    if from < 0 || to < from || to > etags.len {
+    if pos_from < 0 || to < pos_from || to > etags.len {
         return etags[0 .. 0];
     }
-    return etags[from .. to];
+    return etags[pos_from .. to];
 }
 
 // The whole serve decision for one request path.

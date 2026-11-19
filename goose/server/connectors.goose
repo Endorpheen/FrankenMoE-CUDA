@@ -28,13 +28,13 @@ const CN_SRC_CACHE: i64 = 2;
 
 // ── byte helpers ───────────────────────────────────────────────────────────
 
-fn cn_put_range(dst: u8[:], at: i64, s: const u8[:], from: i64, n: i64) -> i64 {
+fn cn_put_range(dst: u8[:], at: i64, s: const u8[:], pos_from: i64, n: i64) -> i64 {
     var p = at;
     var i: i64 = 0;
 
     while i < n {
         if p < dst.len {
-            dst[p] = s[from + i];
+            dst[p] = s[pos_from + i];
         }
         p = p + 1;
         i = i + 1;
@@ -99,28 +99,28 @@ fn cn_eq_lit(a: const u8[:], ao: i64, al: i64, lit: const u8[:]) -> bool {
     return cn_eq(a, ao, al, lit, 0, lit.len);
 }
 
-fn cn_starts_with(s: const u8[:], from: i64, len: i64, head: const u8[:]) -> i64 {
+fn cn_starts_with(s: const u8[:], pos_from: i64, len: i64, head: const u8[:]) -> i64 {
     if len < head.len {
         return 0;
     }
-    if cn_eq(s, from, head.len, head, 0, head.len) {
+    if cn_eq(s, pos_from, head.len, head, 0, head.len) {
         return 1;
     }
     return 0;
 }
 
-fn cn_ends_with(s: const u8[:], from: i64, len: i64, tail: const u8[:]) -> i64 {
+fn cn_ends_with(s: const u8[:], pos_from: i64, len: i64, tail: const u8[:]) -> i64 {
     if len < tail.len {
         return 0;
     }
-    if cn_eq(s, from + len - tail.len, tail.len, tail, 0, tail.len) {
+    if cn_eq(s, pos_from + len - tail.len, tail.len, tail, 0, tail.len) {
         return 1;
     }
     return 0;
 }
 
-fn cn_find_range(s: const u8[:], from: i64, to: i64, c: u8) -> i64 {
-    var i = from;
+fn cn_find_range(s: const u8[:], pos_from: i64, to: i64, c: u8) -> i64 {
+    var i = pos_from;
 
     while i < to {
         if s[i] == c {
@@ -287,7 +287,7 @@ fn cn_unavailable_body(subproc_supported: i64, has_code: i64, code_valid: i64, h
     if binary_found == 0 {
         var p = cn_puts(out, 0, "could not find 'llama-connect' next to llama-server or in PATH.");
         p = cn_putc(out, p, 10);
-        p = cn_puts(out, p, "    it is a separate binary: download it from https://github.com/ggml-org/llama-connect/releases");
+        p = cn_puts(out, p, "    it is a separate binary: download it pos_from https://github.com/ggml-org/llama-connect/releases");
         p = cn_putc(out, p, 10);
         p = cn_puts(out, p, "    or build llama.cpp with -DLLAMA_CONNECT=ON to have it fetched automatically");
         return p;
@@ -380,20 +380,20 @@ export fn cn_model_hf_repo(has_opt: i64, opt_value: const u8[:], source: i64, na
 }
 
 // sidecar_kind index of a name, -1 when no download can pull it
-fn cn_kind_of(kind: const u8[:], from: i64, len: i64) -> i64 {
-    if cn_eq(kind, from, len, "mmproj", 0, 6) {
+fn cn_kind_of(kind: const u8[:], pos_from: i64, len: i64) -> i64 {
+    if cn_eq(kind, pos_from, len, "mmproj", 0, 6) {
         return 0;
     }
-    if cn_eq(kind, from, len, "mtp", 0, 3) {
+    if cn_eq(kind, pos_from, len, "mtp", 0, 3) {
         return 1;
     }
-    if cn_eq(kind, from, len, "dflash", 0, 6) {
+    if cn_eq(kind, pos_from, len, "dflash", 0, 6) {
         return 2;
     }
-    if cn_eq(kind, from, len, "eagle3", 0, 6) {
+    if cn_eq(kind, pos_from, len, "eagle3", 0, 6) {
         return 3;
     }
-    if cn_eq(kind, from, len, "dspark", 0, 6) {
+    if cn_eq(kind, pos_from, len, "dspark", 0, 6) {
         return 4;
     }
     return 0 - 1;

@@ -3329,7 +3329,7 @@ recursive fn rep_impl(
 // Object optional chain: the native get_recursive_refs, built backwards.
 recursive fn opt_chain(
     opt: const i64[:],
-    from: i64,
+    pos_from: i64,
     n: i64,
     first_optional: i64,
     star: i64,
@@ -3345,14 +3345,14 @@ recursive fn opt_chain(
     tlen: i64[:],
     buf: u8[:],
     st: i64[:]) -> i64, i64 {
-    let k = opt[from];
+    let k = opt[pos_from];
     let kv = buf[kvoff[k] .. kvoff[k] + kvlen[k]];
     // allocate the recursive rest first, so the final text sits after it
     var have_rest: bool = false;
     var rest_off: i64 = 0;
     var rest_len: i64 = 0;
 
-    if from + 1 < n && k != star {
+    if pos_from + 1 < n && k != star {
         let sid = props[4 * k + 1];
         let pname = s_at(strs, sdir, sid);
         let rn_off, rn_len = join_name(name, pname, buf, st);
@@ -3362,7 +3362,7 @@ recursive fn opt_chain(
         rp = app(buf, rp, suffix, 0, suffix.len);
         st[ST_B] = rp;
         let rest_name = buf[rest_at .. rp];
-        let ro, rl = opt_chain(opt, from + 1, n, 1, star, name, props, kvoff, kvlen, strs, sdir, koff, klen, toff, tlen, buf, st);
+        let ro, rl = opt_chain(opt, pos_from + 1, n, 1, star, name, props, kvoff, kvlen, strs, sdir, koff, klen, toff, tlen, buf, st);
         let ko, kl = add_rule(koff, klen, toff, tlen, buf, st, rest_name, ro, rl);
         rest_off = ko;
         rest_len = kl;
@@ -4219,13 +4219,13 @@ fn b_rep(buf: u8[:], ast: i64[:], c: u8, n: i64) -> i64, i64 {
     return at, p - at;
 }
 
-fn b_digit_range(out: u8[:], p: i64, from: u8, to: u8) -> i64 {
+fn b_digit_range(out: u8[:], p: i64, pos_from: u8, to: u8) -> i64 {
     var q = appc(out, p, '[');
 
-    if from == to {
-        q = appc(out, q, from);
+    if pos_from == to {
+        q = appc(out, q, pos_from);
     } else {
-        q = appc(out, q, from);
+        q = appc(out, q, pos_from);
         q = appc(out, q, '-');
         q = appc(out, q, to);
     }
@@ -4254,31 +4254,31 @@ fn b_more_digits(out: u8[:], p: i64, mn: i64, mx: i64) -> i64 {
 recursive fn b_uniform(
     out: u8[:],
     p: i64,
-    from: const u8[:],
+    pos_from: const u8[:],
     to: const u8[:],
     sbuf: u8[:],
     ast: i64[:]) -> i64 {
     var i: i64 = 0;
 
-    while i < from.len && i < to.len && from[i] == to[i] {
+    while i < pos_from.len && i < to.len && pos_from[i] == to[i] {
         i = i + 1;
     }
     var q: i64 = p;
 
     if i > 0 {
         q = appc(out, q, '"');
-        q = app(out, q, from, 0, i);
+        q = app(out, q, pos_from, 0, i);
         q = appc(out, q, '"');
     }
 
-    if i < from.len && i < to.len {
+    if i < pos_from.len && i < to.len {
         if i > 0 {
             q = appc(out, q, ' ');
         }
-        let sub_len = from.len - i - 1;
+        let sub_len = pos_from.len - i - 1;
 
         if sub_len > 0 {
-            let from_sub = from[i + 1 .. from.len];
+            let from_sub = pos_from[i + 1 .. pos_from.len];
             let to_sub = to[i + 1 .. to.len];
             let zo, zl = b_rep(sbuf, ast, '0', sub_len);
             let no, nl = b_rep(sbuf, ast, '9', sub_len);
@@ -4288,26 +4288,26 @@ recursive fn b_uniform(
             q = appc(out, q, '(');
 
             if eqb(from_sub, zeros) {
-                q = b_digit_range(out, q, from[i], to[i] - 1);
+                q = b_digit_range(out, q, pos_from[i], to[i] - 1);
                 q = appc(out, q, ' ');
                 q = b_more_digits(out, q, sub_len, sub_len);
             } else {
                 q = appc(out, q, '[');
-                q = appc(out, q, from[i]);
+                q = appc(out, q, pos_from[i]);
                 q = appc(out, q, ']');
                 q = appc(out, q, ' ');
                 q = appc(out, q, '(');
                 q = b_uniform(out, q, from_sub, nines, sbuf, ast);
                 q = appc(out, q, ')');
 
-                if from[i] < to[i] - 1 {
+                if pos_from[i] < to[i] - 1 {
                     q = app(out, q, " | ", 0, 3);
 
                     if eqb(to_sub, nines) {
-                        q = b_digit_range(out, q, from[i] + 1, to[i]);
+                        q = b_digit_range(out, q, pos_from[i] + 1, to[i]);
                         to_reached = true;
                     } else {
-                        q = b_digit_range(out, q, from[i] + 1, to[i] - 1);
+                        q = b_digit_range(out, q, pos_from[i] + 1, to[i] - 1);
                     }
                     q = appc(out, q, ' ');
                     q = b_more_digits(out, q, sub_len, sub_len);
@@ -4323,7 +4323,7 @@ recursive fn b_uniform(
             q = appc(out, q, ')');
         } else {
             q = appc(out, q, '[');
-            q = appc(out, q, from[i]);
+            q = appc(out, q, pos_from[i]);
             q = appc(out, q, '-');
             q = appc(out, q, to[i]);
             q = appc(out, q, ']');

@@ -62,8 +62,8 @@ fn http_eq_fold(s: const u8[:], lit: const u8[:]) -> bool {
     return true;
 }
 
-fn http_find_byte(s: const u8[:], from: i64, ch: u8) -> i64 {
-    var i: i64 = from;
+fn http_find_byte(s: const u8[:], pos_from: i64, ch: u8) -> i64 {
+    var i: i64 = pos_from;
 
     while i < s.len {
         if s[i] == ch {
@@ -74,11 +74,11 @@ fn http_find_byte(s: const u8[:], from: i64, ch: u8) -> i64 {
     return 0 - 1;
 }
 
-fn http_find_seq(s: const u8[:], from: i64, seq: const u8[:]) -> i64 {
+fn http_find_seq(s: const u8[:], pos_from: i64, seq: const u8[:]) -> i64 {
     if seq.len == 0 || seq.len > s.len {
         return 0 - 1;
     }
-    var i: i64 = from;
+    var i: i64 = pos_from;
 
     while i + seq.len <= s.len {
         var k: i64 = 0;
@@ -106,8 +106,8 @@ fn http_has_colon(s: const u8[:]) -> bool {
 
 // std::stoi on a slice: blanks, an optional sign, at least one digit, int range.
 // Returns 0 on success and writes the value, -1 on any failure.
-fn http_stoi(s: const u8[:], from: i64, to: i64, out: i64[:]) -> i64 {
-    var i: i64 = from;
+fn http_stoi(s: const u8[:], pos_from: i64, to: i64, out: i64[:]) -> i64 {
+    var i: i64 = pos_from;
 
     while i < to && (s[i] == 32 || s[i] == 9 || s[i] == 10 || s[i] == 13 || s[i] == 11 || s[i] == 12) {
         i = i + 1;
@@ -239,25 +239,25 @@ fn url_proxy_bypass(no_proxy: const u8[:], host: const u8[:]) -> i64 {
         if end < 0 {
             end = no_proxy.len;
         }
-        var from: i64 = pos;
+        var pos_from: i64 = pos;
         var to: i64 = end;
 
         pos = end + 1;
-        while from < to && (no_proxy[from] == 32 || no_proxy[from] == 9) {
-            from = from + 1;
+        while pos_from < to && (no_proxy[pos_from] == 32 || no_proxy[pos_from] == 9) {
+            pos_from = pos_from + 1;
         }
-        while to > from && (no_proxy[to - 1] == 32 || no_proxy[to - 1] == 9) {
+        while to > pos_from && (no_proxy[to - 1] == 32 || no_proxy[to - 1] == 9) {
             to = to - 1;
         }
-        if from == to {
+        if pos_from == to {
             continue;
         }
-        let entry = no_proxy[from .. to];
+        let entry = no_proxy[pos_from .. to];
 
         if http_eq_fold(entry, "*") {
             return 1;
         }
-        var st: i64 = from;
+        var st: i64 = pos_from;
 
         if no_proxy[st] == 46 {
             st = st + 1;

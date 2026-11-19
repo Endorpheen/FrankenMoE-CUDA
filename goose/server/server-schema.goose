@@ -69,11 +69,11 @@ let TTS_HARD = [0, 0, 0, 1, 0, 0];
 
 // --------------------------------------------------------- byte helpers ---
 
-fn sc_copy(dst: u8[:], at: i64, s: const u8[:], from: i64, n: i64) -> i64 {
+fn sc_copy(dst: u8[:], at: i64, s: const u8[:], pos_from: i64, n: i64) -> i64 {
     var i: i64 = 0;
 
     while i < n {
-        dst[at + i] = s[from + i];
+        dst[at + i] = s[pos_from + i];
         i = i + 1;
     }
     return at + n;

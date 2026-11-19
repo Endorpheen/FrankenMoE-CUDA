@@ -41,13 +41,13 @@ const HR_SLEEPING: i64 = 6;
 
 // ── byte helpers ───────────────────────────────────────────────────────────
 
-fn hr_put_range(dst: u8[:], at: i64, s: const u8[:], from: i64, n: i64) -> i64 {
+fn hr_put_range(dst: u8[:], at: i64, s: const u8[:], pos_from: i64, n: i64) -> i64 {
     var p = at;
     var i: i64 = 0;
 
     while i < n {
         if p < dst.len {
-            dst[p] = s[from + i];
+            dst[p] = s[pos_from + i];
         }
         p = p + 1;
         i = i + 1;
@@ -140,9 +140,9 @@ fn hr_space(c: u8) -> i64 {
 }
 
 // string_strip: std::isspace at both ends
-fn hr_strip_lo(s: const u8[:], from: i64, len: i64) -> i64 {
-    var a = from;
-    let end = from + len;
+fn hr_strip_lo(s: const u8[:], pos_from: i64, len: i64) -> i64 {
+    var a = pos_from;
+    let end = pos_from + len;
 
     while a < end && hr_space(s[a]) != 0 {
         a = a + 1;
@@ -150,9 +150,9 @@ fn hr_strip_lo(s: const u8[:], from: i64, len: i64) -> i64 {
     return a;
 }
 
-fn hr_strip_hi(s: const u8[:], from: i64, len: i64) -> i64 {
-    var e = from + len;
-    let a = hr_strip_lo(s, from, len);
+fn hr_strip_hi(s: const u8[:], pos_from: i64, len: i64) -> i64 {
+    var e = pos_from + len;
+    let a = hr_strip_lo(s, pos_from, len);
 
     while e > a && hr_space(s[e - 1]) != 0 {
         e = e - 1;
@@ -229,10 +229,10 @@ fn hr_is_running(st: i64) -> i64 {
 // preset_options_for_compare 1026-1034 and the option-map comparison at 1113.
 // Write the option entries with HOST, PORT, ALIAS and LOG_COLORS removed, one
 // per line. Two presets are the same when their normalised text is the same.
-fn hr_preset_norm_body(opts: const u8[:], from: i64, len: i64, out: u8[:]) -> i64 {
-    let end = from + len;
+fn hr_preset_norm_body(opts: const u8[:], pos_from: i64, len: i64, out: u8[:]) -> i64 {
+    let end = pos_from + len;
     var p: i64 = 0;
-    var pos = from;
+    var pos = pos_from;
 
     while pos < end {
         var e = pos;
@@ -274,8 +274,8 @@ fn hr_preset_norm_body(opts: const u8[:], from: i64, len: i64, out: u8[:]) -> i6
     return p;
 }
 
-export fn hr_preset_norm(opts: const u8[:], from: i64, len: i64, out: u8[:]) -> i64 {
-    return hr_preset_norm_body(opts, from, len, out);
+export fn hr_preset_norm(opts: const u8[:], pos_from: i64, len: i64, out: u8[:]) -> i64 {
+    return hr_preset_norm_body(opts, pos_from, len, out);
 }
 
 // ── the reload diff ────────────────────────────────────────────────────────
@@ -400,11 +400,11 @@ export fn hr_erase_set(n: i64, names: const u8[:], off: i64[:], ln: i64[:], stat
 // ── aliases (1139-1169) ────────────────────────────────────────────────────
 
 fn hr_uni_find(uni: const u8[:], uoff: i64[:], ulen: i64[:], nu: i64,
-               s: const u8[:], from: i64, len: i64) -> i64 {
+               s: const u8[:], pos_from: i64, len: i64) -> i64 {
     var i: i64 = 0;
 
     while i < nu {
-        if hr_eq(uni, uoff[i], ulen[i], s, from, len) {
+        if hr_eq(uni, uoff[i], ulen[i], s, pos_from, len) {
             return i;
         }
         i = i + 1;
@@ -598,17 +598,17 @@ export fn hr_tags(astr: const u8[:], present: i64, out: u8[:]) -> i64 {
 // ── load-on-startup (1067-1086) ────────────────────────────────────────────
 
 // common_arg_utils::is_truthy, common/arg.cpp 1337-1339
-fn hr_truthy_range(value: const u8[:], from: i64, len: i64) -> i64 {
-    if hr_eq(value, from, len, "on", 0, 2) {
+fn hr_truthy_range(value: const u8[:], pos_from: i64, len: i64) -> i64 {
+    if hr_eq(value, pos_from, len, "on", 0, 2) {
         return 1;
     }
-    if hr_eq(value, from, len, "enabled", 0, 7) {
+    if hr_eq(value, pos_from, len, "enabled", 0, 7) {
         return 1;
     }
-    if hr_eq(value, from, len, "true", 0, 4) {
+    if hr_eq(value, pos_from, len, "true", 0, 4) {
         return 1;
     }
-    if hr_eq(value, from, len, "1", 0, 1) {
+    if hr_eq(value, pos_from, len, "1", 0, 1) {
         return 1;
     }
     return 0;

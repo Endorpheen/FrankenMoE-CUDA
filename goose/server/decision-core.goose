@@ -760,11 +760,11 @@ fn dc_nl_str(dst: u8[:], at: i64, s: const u8[:]) -> i64 {
     return dc_putc(dst, p, 34);
 }
 
-fn dc_find_from(s: const u8[:], from: i64, pat: const u8[:]) -> i64 {
-    if pat.len == 0 || from < 0 {
+fn dc_find_from(s: const u8[:], pos_from: i64, pat: const u8[:]) -> i64 {
+    if pat.len == 0 || pos_from < 0 {
         return 0 - 1;
     }
-    var i = from;
+    var i = pos_from;
 
     while i + pat.len <= s.len {
         if dc_bytes_eq(s, i, pat.len, pat) {
@@ -775,8 +775,8 @@ fn dc_find_from(s: const u8[:], from: i64, pat: const u8[:]) -> i64 {
     return 0 - 1;
 }
 
-fn dc_find_char(s: const u8[:], from: i64, c: u8) -> i64 {
-    var i = from;
+fn dc_find_char(s: const u8[:], pos_from: i64, c: u8) -> i64 {
+    var i = pos_from;
 
     while i < s.len {
         if s[i] == c {

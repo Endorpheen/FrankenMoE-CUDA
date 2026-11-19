@@ -44,13 +44,13 @@ const MG_SRC_CACHE: i64 = 2;
 
 // ── byte helpers ───────────────────────────────────────────────────────────
 
-fn mg_put_range(dst: u8[:], at: i64, s: const u8[:], from: i64, n: i64) -> i64 {
+fn mg_put_range(dst: u8[:], at: i64, s: const u8[:], pos_from: i64, n: i64) -> i64 {
     var p = at;
     var i: i64 = 0;
 
     while i < n {
         if p < dst.len {
-            dst[p] = s[from + i];
+            dst[p] = s[pos_from + i];
         }
         p = p + 1;
         i = i + 1;

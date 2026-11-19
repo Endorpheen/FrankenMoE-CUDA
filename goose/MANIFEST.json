@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-19",
+  "updated_at": "2026-11-20",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
@@ -124,7 +124,7 @@
       "experiment": "EXP-2026-11-14-573-p9-06-thinking",
       "task": "",
       "status": "ported",
-      "sha256": "8205951799c95fd84546521aec73954c2bf59412596b0bc1652e2cd53b4102f4",
+      "sha256": "1b65bc5240f802298d73c49f82823119b42a1fbffdb55b64598afb850beb5473",
       "gate": "12 cases / 26 values / 0 failures, 12/12 mutations"
     },
     {
@@ -172,7 +172,7 @@
       "experiment": "EXP-2026-11-14-590-p7-11-log-console",
       "task": "",
       "status": "ported",
-      "sha256": "1a09138e8d430b210fb3975dc3df72afafddeace325dc86b1706ea70751d4530",
+      "sha256": "ab6d8984e19e84440d0284f633644c541c5c1973e9ede94dc680fc3f80782c95",
       "gate": "905 cases / 0 failures, 12/12 mutations"
     },
     {
@@ -184,7 +184,7 @@
       "experiment": "EXP-2026-11-14-590-p7-11-log-console",
       "task": "",
       "status": "ported",
-      "sha256": "cc87b6ffe3c570b2d3edb7ce0bc62a23bd971db436a5c3d22f297688a779e75a",
+      "sha256": "5e4b1a5d0950f1e0a4515e359f5ac5455836484bdeb065b6e105bb0e5198fcaa",
       "gate": "291 cases / 0 failures, 12/12 mutations"
     },
     {
@@ -208,7 +208,7 @@
       "experiment": "EXP-2026-11-14-579-p7-11-download-selection",
       "task": "",
       "status": "ported",
-      "sha256": "1d8a02c3c91fed1a44ce8a7a7987729a2e9e88782ee8b39e98a3e17f85adbdee",
+      "sha256": "2c1c99e8839afb94f4520292ec98a9d66724486ca00bb2ca9db79dafd4a3cfbb",
       "gate": "31 cases / 0 diffs, 16/16 mutations"
     },
     {
@@ -220,7 +220,7 @@
       "experiment": "EXP-2026-11-14-595-p8-07-request-schema",
       "task": "",
       "status": "ported",
-      "sha256": "40a367df5a1d661e1e6a577c3b57150a3dc08354721c94b832034e330ef531af",
+      "sha256": "a3aa7925f80361efcc66e635e35c7a98e2c055e4206c18d33ed4c287f217565d",
       "gate": "181 lines / 0 diffs, 12/12 mutations"
     },
     {
@@ -232,7 +232,7 @@
       "experiment": "EXP-2026-11-14-612-p8-07-mcp-stdio",
       "task": "",
       "status": "ported",
-      "sha256": "99b9bcc3e555363c777b4da2334ec75783d2baeb998caeb67ecd108e80f34c92",
+      "sha256": "7c5a2bcff7e575190d041194b8214525280c732e4c10f6ec0b51da6db9c1ece5",
       "gate": "94 cases / 0 failures, 12/12 mutations"
     },
     {
@@ -244,7 +244,7 @@
       "experiment": "EXP-2026-11-14-610-p8-07-decision-core",
       "task": "",
       "status": "ported",
-      "sha256": "3bc31f59a98b05954ef2041335a6522b2b47dfc07b391d065c0fd5d10283450b",
+      "sha256": "e975e8f55cc29f0726211af121546eba7c30ac5acb31f79736933c62cf61a9e5",
       "gate": "400 cases / 0 failures, 12/12 mutations"
     },
     {
@@ -256,7 +256,7 @@
       "experiment": "EXP-2026-11-14-605-p8-07-mcp-core",
       "task": "",
       "status": "ported",
-      "sha256": "477577fc33092f06cfa9b7bb69a4c4f5d65c90b03ebb26a8dce00632a3fd2d8c",
+      "sha256": "fa9d4235aa81000fbf9bce8f36cab8637cadd6642acf3b14ae9c58f4433ff484",
       "gate": "26 cases / 0 failures, 12/12 mutations"
     },
     {
@@ -292,7 +292,7 @@
       "experiment": "EXP-2026-11-14-578-p7-11-http-url",
       "task": "",
       "status": "ported",
-      "sha256": "6b063a235bafa008828a3acb8e0d94e21a82663120a6066bc37c313d4a53c16c",
+      "sha256": "33a266e926b70c9274408021517d14c0bb8d4de3cbee064b020a5033360c6e2f",
       "gate": "20000 cases / 0 diffs, 14/14 mutations"
     },
     {
@@ -425,7 +425,7 @@
       "experiment": "EXP-2026-11-14-581-p7-04-quant-types",
       "task": "",
       "status": "ported",
-      "sha256": "f9ca7bdbdc5a39f9d8f70d117e4ce8782f56f8294cfa0fd035ce781a00b0c767",
+      "sha256": "d2d101cdba3a6c01c31f1b65d1e6a11d71a77d46890839fde5716fec758d050c",
       "gate": "734 cases / 90461 values / 0 failures, 12/12 mutations"
     },
     {
@@ -739,7 +739,7 @@
       "experiment": "EXP-2026-11-14-609-p7-02-gguf-split",
       "task": "",
       "status": "ported",
-      "sha256": "5ef2aee995474ce29aaf0e4f07e364fbb11774fa836bd5ee76eaaeac8178d200",
+      "sha256": "699c222303023735556273927979029481c7635ad19d6267cd55c8db50e277d3",
       "gate": "39 cases / 587 checks / 0 failures, 12/12 mutations"
     },
     {
@@ -751,7 +751,7 @@
       "experiment": "EXP-2026-11-14-601-p7-02-gguf-tensors",
       "task": "",
       "status": "ported",
-      "sha256": "884ac25bc495e9953ae6043c4847e031e01dac23c47c8fc858220a557e6f27fe",
+      "sha256": "68baaa82cfba49af380dbac213e4d15d5a6576895135b536354451e4975d2270",
       "gate": "41 cases / 307 checks / 0 failures, 12/12 mutations"
     },
     {
@@ -811,7 +811,7 @@
       "experiment": "EXP-2026-11-14-570-p7-08-schema",
       "task": "",
       "status": "ported",
-      "sha256": "a5c66d60de35378b4378bfb5e65f13f94f5f89551aa33020bdd903c460dfa3f2",
+      "sha256": "1bb33167c5504bd99d2f5fcc9461b8561e4a700d8e46511781e6b667d06b9323",
       "gate": "30 cases / 182 values / 0 failures, 12/12 mutations"
     },
     {
@@ -859,7 +859,7 @@
       "experiment": "EXP-2026-11-15-625-p7-08-hoisted-names",
       "task": "",
       "status": "ported",
-      "sha256": "56cc6dd0883b282bee945cc6658125561aef663c335a9c482a720d54933da44c",
+      "sha256": "f30fd74bc6a699edd916c315c31b6a31b666311a9348b4223fac879948c66511",
       "gate": "gbnf 13/13, cases 13/0, parse 9/9, 27/27 mutations + parse 5/5; base EXP593 gates unchanged"
     },
     {
@@ -884,7 +884,7 @@
       "experiment": "EXP-2026-11-15-656-p8-09b-cors-query-key",
       "task": "",
       "status": "ported",
-      "sha256": "6133979670ea29e815c05f0521b446f0c76d94bf11ab5edf9d53ee29d97a5825",
+      "sha256": "9f35d3e6c1ad884f395d89e713a846b69b3169232df8041f40a70fd4cb8bcd90",
       "gate": "133 cases / 287 values / 0 failures, 12/12 mutations"
     },
     {
@@ -896,7 +896,7 @@
       "experiment": "EXP-2026-11-15-656-p8-09b-cors-query-key",
       "task": "",
       "status": "ported",
-      "sha256": "c5ee1d036c86c93b3ff8ad78a13efeda5be9b6bc5bad743b3682a4c23491865d",
+      "sha256": "0e32d93c8a9884f6697f7c5fd66c4bb5fa681039d7986be3bc16f2257f8dd1a3",
       "gate": "1121 cases / 1157 values / 0 failures, 12/12 mutations",
       "integration_commit": "964c20d66eff0c27dd9c97f486cb40194b44dac5"
     },
@@ -909,7 +909,7 @@
       "experiment": "EXP-2026-11-15-653-p8-09-web-serving",
       "task": "",
       "status": "ported",
-      "sha256": "0315674e23129694f19b99e28287ce747ee2bc40ca389107c05edd2b632f69c7",
+      "sha256": "531c9b40c57542b084cbde764a9706bd8784d3aab004fad906d66bba564525ca",
       "gate": "51 cases / 294 values / 0 failures, 12/12 mutations"
     },
     {
@@ -945,7 +945,7 @@
       "experiment": "EXP-2026-11-15-631-p8-06-model-management",
       "task": "",
       "status": "ported",
-      "sha256": "4a3eb02d2a30ab564f6998d9a27e5762a454894c0895d0418ba42262ca6915ff",
+      "sha256": "84d4b69d8f30e9c430dd58d6754c4a28160addf92a0d51ad5ee0cdf57673a926",
       "gate": "22 cases / 290 values / 0 failures, 12/12 mutations"
     },
     {
@@ -957,7 +957,7 @@
       "experiment": "EXP-2026-11-15-631-p8-06-model-management",
       "task": "",
       "status": "ported",
-      "sha256": "5b9a6d710679a4fedc3ead6355d05005596b8f9c36989251d550e675d6f8b57c",
+      "sha256": "e023e03d50dbadbe1500e8293af5175e9ceadd59737bdd36b19f312fb182147d",
       "gate": "14 cases / 98 values / 0 failures, 12/12 mutations"
     },
     {
@@ -969,7 +969,7 @@
       "experiment": "EXP-2026-11-15-631-p8-06-model-management",
       "task": "",
       "status": "ported",
-      "sha256": "e2e151e3ee62782dedf5611bd1fa1fba348ccedad0791f44c6658c6bd4cb5f4b",
+      "sha256": "1148df99cd512deb03adf09fba60bf1608ece87fe1a65ffe6fc5b43878e66b96",
       "gate": "13 cases / 133 values / 0 failures, 12/12 mutations"
     },
     {
@@ -1044,7 +1044,7 @@
       "experiment": "EXP-2026-11-15-622-p7-12-loader-tokenizer",
       "task": "",
       "status": "ported",
-      "sha256": "154cfb0f910a66c147c74ba52f1277d60d43fa6c6cb21438240c9925b6a6e682",
+      "sha256": "08e100ab9a4b6c5e95095194495b79056bab397c817e598b355aec6ce7a20ef5",
       "gate": "443 cases / 1469 fragments / 0 failures, 12/12 mutations"
     },
     {
@@ -1284,7 +1284,7 @@
       "experiment": "EXP-2026-11-15-657-p10-06-cuda-artefacts",
       "task": "",
       "status": "ported",
-      "sha256": "6973453e9da497901c2cd9998679e5c648904748ceccffbc5a6ebbea43970c8d",
+      "sha256": "02223d1e010bb601e1abc7f43c780b3a66365bf7eadc08a610bd63867f02a08d",
       "gate": "60 cases / 60 values / 0 failures, 12/12 mutations"
     },
     {
@@ -1308,7 +1308,7 @@
       "experiment": "EXP-2026-11-15-657-p10-06-cuda-artefacts",
       "task": "",
       "status": "ported",
-      "sha256": "538c99a401fdee1891b1b77005682b480ee25c01493eeb6d43a17a9ef3f1a94d",
+      "sha256": "19c74b32843b7e826385183360f8a095adff5d419b2a53cc8e26935fe72d8edd",
       "gate": "30 cases / 30 values / 0 failures, 12/12 mutations"
     },
     {
@@ -1428,7 +1428,7 @@
       "experiment": "EXP-2026-11-15-645-p10-05-owned-infra",
       "task": "",
       "status": "ported",
-      "sha256": "d970ab3e4113b49e419ba4d2cd4db86229274ee03548cb69379f9850f64eb4c2",
+      "sha256": "6e83d4cf95cfd52598039607a11b657b8550946f71f4cc2eb58584623d4198db",
       "gate": "73 cases / 73 values / 0 failures, 12/12 mutations"
     },
     {
@@ -1452,7 +1452,7 @@
       "experiment": "EXP-2026-11-15-645-p10-05-owned-infra",
       "task": "",
       "status": "ported",
-      "sha256": "a7966bab0d1ce2c0a02552b9af5efce7d34fd5d3a5060a7476a58b105e177f1d",
+      "sha256": "b4cd0b42e126813ec2d3181ec7b1093d1944f6e8d434cce41c854b953bdde771",
       "gate": "54 cases / 54 values / 0 failures, 12/12 mutations"
     },
     {
@@ -1464,7 +1464,7 @@
       "experiment": "EXP-2026-11-15-622-p7-12-loader-tokenizer",
       "task": "",
       "status": "ported",
-      "sha256": "f6647d3636090a1ded775976945f9f6b2b7b8ca4c5f3da57a69e2f2e89026c5b",
+      "sha256": "5d69a5e064e3b1985820b9b174bce569578e4e3c4c2e9048f07d52d9b85cc117",
       "gate": "140 comparisons / 1012 bytes / 0 failures, 12/12 mutations"
     },
     {
@@ -1500,7 +1500,7 @@
       "experiment": "EXP-2026-11-15-629-p9-04-stream-hooks",
       "task": "",
       "status": "ported",
-      "sha256": "0a2de5e66c08857be3b8d221b3dc7941c75fd9be7a1759f29c0e34adcc3f4ef8",
+      "sha256": "c12fb953249510fd947a4420705b2d6fbcb5347906bae109f35f5cbcf4f90c90",
       "gate": "302 cases / 0 failures, 12/12 mutations"
     },
     {
@@ -11651,7 +11651,7 @@
       "experiment": "EXP-2026-11-13-446-p8-02-prerouting",
       "task": "P8-01",
       "status": "slice",
-      "sha256": "a77805d520f37d9edacb27f64e4bed0ac96cb8db7b5d8897ed8fc0475723a0a5",
+      "sha256": "62aadc7373a2c78958a791b89a250f065eeeb35f5f2f6ae5251eea7236275002",
       "gate": "29 origin cases vs native origin_is_localhost, 0 differ (tests/server/origin-policy); the gate found 3 divergences: harness signature, missing http/https requirement, bracketed IPv4"
     },
     {
@@ -11982,7 +11982,7 @@
       "experiment": "EXP-2026-11-13-475-p7-09-visit",
       "task": "P7-09",
       "status": "slice",
-      "sha256": "f48e71355a9cad89a952f9d2e2f9b4e66e8c6d22933295f79bb0fc1a966ceef1"
+      "sha256": "dce1c601fa2a30fb3b2fa6e37b02fad93a60cc6cde9c37bc01b430d1bc4706c6"
     },
     {
       "goose": "json/bounds.goose",
@@ -12370,7 +12370,7 @@
       "experiment": "EXP-2026-11-13-511-edge0-pack-index",
       "task": "",
       "status": "slice",
-      "sha256": "29442dab8129465adfee5dd3c0c5977ea461420b3e93f13c0cdc2b38bcdf76a9"
+      "sha256": "c2bec220523c9a8abfd3c4f0bb336d9b639bdfa291f6ca7e1ddc730d0df52592"
     },
     {
       "goose": "jinja/typed.goose",

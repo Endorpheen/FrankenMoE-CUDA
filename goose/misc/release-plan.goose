@@ -73,11 +73,11 @@ fn rlp_at(s: const u8[:], p0: i64, lit: const u8[:]) -> bool {
     return true;
 }
 
-fn rlp_find(s: const u8[:], from: i64, lit: const u8[:]) -> i64 {
+fn rlp_find(s: const u8[:], pos_from: i64, lit: const u8[:]) -> i64 {
     if lit.len == 0 {
-        return from;
+        return pos_from;
     }
-    var p: i64 = from;
+    var p: i64 = pos_from;
     while p + lit.len <= s.len {
         if rlp_at(s, p, lit) {
             return p;

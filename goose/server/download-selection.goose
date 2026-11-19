@@ -72,8 +72,8 @@ fn d_ends(s: const u8[:], suf: const u8[:]) -> bool {
     return true;
 }
 
-fn d_find_from(s: const u8[:], from: i64, ch: u8) -> i64 {
-    var i: i64 = from;
+fn d_find_from(s: const u8[:], pos_from: i64, ch: u8) -> i64 {
+    var i: i64 = pos_from;
 
     while i < s.len {
         if s[i] == ch {
@@ -191,8 +191,8 @@ fn d_contains_dash_tag_dot(s: const u8[:], tag: const u8[:]) -> bool {
 }
 
 // stoi-like digit run: stops at the first non-digit, -1 when none was consumed.
-fn d_digit_value(s: const u8[:], from: i64) -> i64 {
-    var i: i64 = from;
+fn d_digit_value(s: const u8[:], pos_from: i64) -> i64 {
+    var i: i64 = pos_from;
     var v: i64 = 0;
     var n: i64 = 0;
 
@@ -324,11 +324,11 @@ fn d_part_count(name: const u8[:]) -> i64 {
     return info[5];
 }
 
-fn d_copy(dst: u8[:], at: i64, src: const u8[:], from: i64, len: i64) -> i64 {
+fn d_copy(dst: u8[:], at: i64, src: const u8[:], pos_from: i64, len: i64) -> i64 {
     var i: i64 = 0;
 
     while i < len {
-        dst[at + i] = src[from + i];
+        dst[at + i] = src[pos_from + i];
         i = i + 1;
     }
     return at + len;

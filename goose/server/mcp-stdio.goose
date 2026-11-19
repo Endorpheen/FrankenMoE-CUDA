@@ -18,8 +18,8 @@ const MS_LINES: i64 = 16384;
 
 // ── small helpers ──────────────────────────────────────────────────────────
 
-fn ms_find_range(s: const u8[:], from: i64, to: i64, c: u8) -> i64 {
-    var i = from;
+fn ms_find_range(s: const u8[:], pos_from: i64, to: i64, c: u8) -> i64 {
+    var i = pos_from;
 
     while i < to {
         if s[i] == c {
@@ -30,17 +30,17 @@ fn ms_find_range(s: const u8[:], from: i64, to: i64, c: u8) -> i64 {
     return to;
 }
 
-fn ms_find(s: const u8[:], from: i64, c: u8) -> i64 {
-    return ms_find_range(s, from, s.len, c);
+fn ms_find(s: const u8[:], pos_from: i64, c: u8) -> i64 {
+    return ms_find_range(s, pos_from, s.len, c);
 }
 
-fn ms_put(dst: u8[:], at: i64, s: const u8[:], from: i64, n: i64) -> i64 {
+fn ms_put(dst: u8[:], at: i64, s: const u8[:], pos_from: i64, n: i64) -> i64 {
     var p = at;
     var i: i64 = 0;
 
     while i < n {
         if p < dst.len {
-            dst[p] = s[from + i];
+            dst[p] = s[pos_from + i];
         }
         p = p + 1;
         i = i + 1;
@@ -106,12 +106,12 @@ fn ms_put_esc_byte(dst: u8[:], at: i64, c: u8) -> i64 {
     return p;
 }
 
-fn ms_atoi(s: const u8[:], from: i64, n: i64) -> i64 {
+fn ms_atoi(s: const u8[:], pos_from: i64, n: i64) -> i64 {
     var v: i64 = 0;
     var i: i64 = 0;
 
     while i < n {
-        let c = s[from + i];
+        let c = s[pos_from + i];
         if c >= 48 && c <= 57 {
             v = v * 10 + c - 48;
         }

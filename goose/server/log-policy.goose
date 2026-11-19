@@ -409,13 +409,13 @@ fn dbg_filter_match(
     var k: i64 = 0;
 
     while k < count {
-        let from = off[k];
+        let pos_from = off[k];
         let n = len[k];
         var ok = n <= name.len;
         var i: i64 = 0;
 
         while ok && i < n {
-            if blob[from + i] != name[i] {
+            if blob[pos_from + i] != name[i] {
                 ok = false;
             } else {
                 i = i + 1;

@@ -64,14 +64,14 @@ fn cs_starts(a: const u8[:], p: const u8[:]) -> bool {
 }
 
 // First occurrence of needle in s[from..], -1 when there is none.
-fn cs_find(s: const u8[:], from: i64, needle: const u8[:]) -> i64 {
+fn cs_find(s: const u8[:], pos_from: i64, needle: const u8[:]) -> i64 {
     if needle.len == 0 {
         return 0 - 1;
     }
-    if needle.len > s.len - from {
+    if needle.len > s.len - pos_from {
         return 0 - 1;
     }
-    var i: i64 = from;
+    var i: i64 = pos_from;
     while i + needle.len <= s.len {
         var k: i64 = 0;
         var hit: i64 = 1;
@@ -90,10 +90,10 @@ fn cs_find(s: const u8[:], from: i64, needle: const u8[:]) -> i64 {
     return 0 - 1;
 }
 
-fn cs_copy(s: const u8[:], from: i64, len: i64, out: u8[:], at: i64) -> i64 {
+fn cs_copy(s: const u8[:], pos_from: i64, len: i64, out: u8[:], at: i64) -> i64 {
     var i: i64 = 0;
     while i < len {
-        out[at + i] = s[from + i];
+        out[at + i] = s[pos_from + i];
         i = i + 1;
     }
     return at + len;
@@ -351,8 +351,8 @@ export fn cs_process_escapes(input: const u8[:], out: u8[:]) -> i64 {
 
 // atol: leading blanks, an optional sign, decimal digits, stop at the first
 // other byte; saturation at the i64 limits like strtol.
-fn cs_atol(s: const u8[:], from: i64) -> i64 {
-    var i: i64 = from;
+fn cs_atol(s: const u8[:], pos_from: i64) -> i64 {
+    var i: i64 = pos_from;
     while i < s.len && cs_is_space(s[i]) {
         i = i + 1;
     }
