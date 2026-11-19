@@ -6,9 +6,10 @@ BIN=${1:-$PWD/builds/flint-acc/bin}
 OUT=${2:-/tmp/synth}
 rm -rf "$OUT"; mkdir -p "$OUT"
 export LD_LIBRARY_PATH="$BIN"
+export FG_ACCEPT_DIAG=1
 MODEL=/home/end0/AI/LocalAI/Models/Apex-35B-V1.0-Q4_K_M.gguf
 setsid "$BIN/llama-server" -m "$MODEL" --alias Apex-35B-V1.0 -c 8192 -ngl all -fit off --cpu-moe \
-  -fa on -ctk q4_0 -ctv q4_0 -b 2048 -ub 2048 -t 8 -tb 16 --poll 0 -np 1 --cache-ram 0 \
+  -fa on -ctk q4_0 -ctv q4_0 -b 2048 -ub 2048 -t 8 -tb 16 --poll 0 -np 1 \
   --moe-cache-mib 4992 --host 127.0.0.1 --port 9101 \
   --spec-type ngram-simple --spec-synth-rates 0.950,0.931,0.912,0.893,0.874,0.855,0.836,0.817,0.798,0.779,0.760,0.741,0.722,0.703,0.684,0.665,0.646,0.627,0.608,0.589,0.570,0.551,0.532,0.513,0.494,0.475,0.456,0.437,0.418,0.399,0.380,0.361,0.342,0.323,0.304,0.285,0.266,0.247,0.228,0.209,0.190,0.171,0.152,0.133,0.114,0.095,0.076,0.057 --temp 0.7 --top-p 0.95 > "$OUT/server.log" 2>&1 &
 PID=$!

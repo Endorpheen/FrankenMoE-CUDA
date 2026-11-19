@@ -34,6 +34,26 @@ position - 48 for this build), and the run-time one is not met by either prompt.
 3. The acceptance branch is reached only when `use_spec_rejection()` is true, and the synthetic route bypasses the
    check that sets it.
 
+## Attempt 4 - and the precondition found
+
+One specific suspicion was checkable rather than guessable: `run.sh` itself passed `--cache-ram 0`, and an ngram drafter
+looks its history up in that cache. With the flag removed and the branch diagnostic on:
+
+```
+FG_ACCEPT_BRANCH synth=48 replay=0 reject=1 draft=12
+FG_ACCEPT_Q draft_q=0
+```
+
+So the synthetic branch **is** reached, with 48 probabilities and a 12-token draft: `--cache-ram 0` was what prevented
+drafting in attempts 1-3, and that is now recorded as a precondition rather than a hypothesis.
+
+`FG_SP_SYNTH` still did not print, and the difference is no longer in the path: a sibling speculative door in the same
+run printed (`FG_SP_NMAX goose calls=1 disagreements=0`), so door resolution works in this binary while this one's does
+not. The next step is the resolve print inside `fg_sp_synth_resolve()`, and it is blocked for now: rebuilding
+`llama-server` needs the UI asset target, whose download fails without network
+(`ui-assets.cmake:137`, `dist.tar.gz.sha256`). The diagnostic edit was reverted rather than left in the tree
+uncompiled.
+
 ## Why stop here
 
 This is the third attempt and the repository's blocker rule applies: report the exact behaviour, the attempts, and the
