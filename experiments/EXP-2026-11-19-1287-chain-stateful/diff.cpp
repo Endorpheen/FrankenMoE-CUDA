@@ -26,6 +26,12 @@ static void run(FILE * f, int which, std::mt19937 & rng, std::uniform_real_distr
         llama_sampler_chain_add(chain, llama_sampler_init_top_p(0.95f, 1));
         llama_sampler_chain_add(chain, llama_sampler_init_temp(0.8f));
         llama_sampler_chain_add(chain, llama_sampler_init_dist(31337u));
+    } else if (which == 2) {
+        // the configuration the flag explanation was established on: no mirostat between XTC and adaptive
+        llama_sampler_chain_add(chain, llama_sampler_init_typical(0.9f, 1));
+        llama_sampler_chain_add(chain, llama_sampler_init_xtc(0.8f, 0.1f, 1, 2718u));
+        llama_sampler_chain_add(chain, llama_sampler_init_adaptive_p(0.5f, 0.5f, 1414u));
+        llama_sampler_chain_add(chain, llama_sampler_init_dist(99991u));
     } else {
         llama_sampler_chain_add(chain, llama_sampler_init_typical(0.9f, 1));
         llama_sampler_chain_add(chain, llama_sampler_init_xtc(0.8f, 0.1f, 1, 2718u));
@@ -51,7 +57,9 @@ static void run(FILE * f, int which, std::mt19937 & rng, std::uniform_real_distr
                             ? (int) cur.data[cur.selected].id : -1;
         fprintf(f, "%d %d %d %zu\n", which, round, tok, cur.size);
         // a history with breakers and repeats, so DRY has something real to read
-        const llama_token accepted = (round % 5 == 0) ? 10 : cur.selected;
+        // cur.selected is an INDEX; accepting it as a token fed the history with positions instead of ids
+        // and made configuration 2 look identical for the wrong reason.
+        const llama_token accepted = (round % 5 == 0) ? 10 : tok;
         fprintf(f, "  %08x\n", *(const uint32_t *) &cur.data[0].logit);
         llama_sampler_accept(chain, accepted);
     }
@@ -66,7 +74,8 @@ int main(int argc, char ** argv) {
     std::uniform_real_distribution<float> u(0.0f, 1.0f);
     run(f, 0, rng, u);
     run(f, 1, rng, u);
+    run(f, 2, rng, u);
     fclose(f);
-    printf("chain stateful: 2 configurations x 100 rounds\n");
+    printf("chain stateful: 3 configurations x 100 rounds\n");
     return 0;
 }

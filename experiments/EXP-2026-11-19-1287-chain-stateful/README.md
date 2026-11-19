@@ -163,6 +163,25 @@ with max=data[0]: p1=3efed6c9    <- native
 with true max   : p1=3efed6c8    <- goose
 ```
 
+### The explanation is tested now, and it does not survive
+
+The harness no longer asserts the flag story; it checks it: every round whose selection differs must be a round
+whose `sorted` flag differs. Result:
+
+```
+configuration 1 (typical+xtc+mirostat+adaptive): 52 of 100 rounds differ
+configuration 2 (typical+xtc+adaptive):          15 of 100 rounds differ
+configuration 2: differing=15, explained_by_flag=0
+```
+
+**Zero of the fifteen are explained by the flag.** The flag story described the first divergence in a run that also
+fed the accept history with `cur.selected` - an **index** - as if it were a token. With that corrected to
+`cur.data[cur.selected].id`, the remaining differences have nothing to do with the flag.
+
+So the sequence of explanations for this configuration was: my unsorted input (wrong), my pointer-blind dump
+(wrong), the sorted flag (true for one scenario, and now falsified as the cause of the rest). What survives is only
+what the harness can check on every run.
+
 ### What this means for the port
 
 The port's behaviour is the mathematically correct one: it recomputes the maximum from the values it has, so it does

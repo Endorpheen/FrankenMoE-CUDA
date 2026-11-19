@@ -19,8 +19,30 @@ else
     diff <(awk '$1==0' /tmp/cs_goose.txt) <(awk '$1==0' /tmp/cs_native.txt) | head -4
 fi
 # configuration 1: typical + XTC + mirostat + adaptive-p + dist - OPEN
-d=$(diff <(awk '$1==1' /tmp/cs_goose.txt) <(awk '$1==1' /tmp/cs_native.txt) | grep -c '^<')
-if [ "$d" -eq 0 ]; then echo "chain stateful: identical"; else
-    echo "chain stateful: OPEN, $d rounds differ (composition of typical and XTC - see README)"
-fi
+for cfg in 1 2; do
+    d=$(diff <(awk -v c=$cfg '$1==c' /tmp/cs_goose.txt) <(awk -v c=$cfg '$1==c' /tmp/cs_native.txt) | grep -c '^<')
+    if [ "$d" -eq 0 ]; then
+        echo "configuration $cfg: identical"
+    else
+        echo "configuration $cfg: $d of 100 rounds differ"
+    fi
+done
+
+# The explanation for configuration 2 is tested, not asserted: every round whose selection differs must be a
+# round whose sorted flag differs. One differing round with equal flags would falsify it.
+env $ON FG_SAMPLER_DIAG=1 "$BIN" /tmp/cs_g2.txt >/dev/null 2>/tmp/cs_g2.log || exit 1
+env $OFF FG_SAMPLER_DIAG=1 "$BIN" /tmp/cs_n2.txt >/dev/null 2>/tmp/cs_n2.log || exit 1
+gflags=$(grep FG_ADAPTIVE_FLAG /tmp/cs_g2.log | awk '{print $2}' | tr '\n' ' ')
+nflags=$(grep FG_ADAPTIVE_FLAG /tmp/cs_n2.log | awk '{print $2}' | tr '\n' ' ')
+python3 - "$gflags" "$nflags" <<'PYEOF'
+import sys
+gs=sys.argv[1].split(); ns=sys.argv[2].split()
+def rows(p, cfg):
+    return [tuple(l.split()[1:]) for l in open(p) if l.split()[:1]==[str(cfg)]]
+g=rows('/tmp/cs_g2.txt',2); n=rows('/tmp/cs_n2.txt',2)
+diff=[i for i,(a,b) in enumerate(zip(g,n)) if a!=b]
+# adaptive-p applies once per round in configuration 2
+cov=sum(1 for i in diff if i < len(gs) and i < len(ns) and gs[i]!=ns[i])
+print(f"configuration 2: differing={len(diff)} of {len(g)}, explained_by_flag={cov}")
+PYEOF
 exit $fails
