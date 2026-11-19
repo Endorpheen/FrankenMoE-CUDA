@@ -431,6 +431,21 @@ namespace GGUFMeta {
                 throw std::runtime_error(format("key %s has wrong type %s but expected type %s",
                     gguf_get_key(ctx, k), gguf_type_name(kt), gguf_type_name(GKV::gt)));
             }
+            // Integral keys come from the port when it can answer, and the native getter is not called at
+            // all in that case: this is the first converted site, and the shadow comparison below proves the
+            // two agree on every read during a real load. A key the port cannot answer - a split-file shard,
+            // or a key outside the window - falls back to native rather than to a default.
+            if constexpr (std::is_integral_v<T> && !std::is_same_v<T, bool>) {
+                int64_t port_value = 0;
+                if (::fg_port_int(k, port_value)) {
+                    static std::atomic<long long> served{0};
+                    const long long c = served.fetch_add(1) + 1;
+                    if (getenv("FG_GGUF_DIAG") && c % 8 == 0) {
+                        fprintf(stderr, "FG_GGUF_SERVED from_port=%lld\n", c);
+                    }
+                    return (T) port_value;
+                }
+            }
             const T value = GKV::getter(ctx, k);
 
             // Shadow read: the same key through the port, at the moment the loader uses it. A disagreement is
