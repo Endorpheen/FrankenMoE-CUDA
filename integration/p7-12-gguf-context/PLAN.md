@@ -70,6 +70,21 @@ truth, no parallel implementation.
    recorded as such;
 6. remove `gguf_init_from_file` from this path only when the gate has nothing left to compare.
 
+## Arrays are not convertible through GKV alone: the scope, measured
+
+`GKV<ArrayInfo>::getter` returns `(type, length, data)` and a **null** data pointer for string arrays; the consumers
+then iterate the elements themselves:
+
+```
+llama-vocab.cpp     3 x gguf_get_arr_str     (token list, merges, token types)
+llama-impl.cpp      1 x gguf_get_arr_data + gguf_get_arr_str in the same walk
+llama-adapter.cpp   2 x gguf_get_arr_data / gguf_get_arr_n
+```
+
+So an array conversion is **consumer-side**: each of those three files has to walk the port's spans instead of the
+native array. That is why arrays are not the next one-line conversion they look like, and why the `get_key` funnel
+cannot carry them.
+
 ## The gate that guards each step
 
 `FG_GGUF_DIAG=1` already refuses the load on any disagreement, so every conversion step is checked by the load itself:
