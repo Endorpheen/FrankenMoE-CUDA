@@ -25,21 +25,30 @@ harness, not the shipped server. The other ten doors have no caller at all:
 `mg_status_str`, `mg_source_str`, `mg_pred`, `mg_unload_action`, `mg_remove_gate`, `mg_wait_pred`,
 `mg_update_fields`, `mg_arch_take`, `mg_capacity`, `mg_tick`, `mg_lru_log`.
 
-## The drift this exposed
+## Correction: there is no drift, and my first reading was wrong
 
-The permanent test `tests/server/router-status` asserts, against the **shipped library**, the
-markers `FG_MODEL_STATUS ported` and `FG_MODEL_SOURCE ported`, and it passed when it ran against
-`builds/flint-acc`. Those markers are not in the current source: this source prints
-`FG_MODEL_STOP`. So the library in `builds/` was built from an earlier `server-models.cpp` in
-which the status and source doors were reached, and the current source reaches only the stop pair.
+The first version of this note said the current source printed `FG_MODEL_STOP` while the binary's
+markers were `FG_MODEL_STATUS`/`FG_MODEL_SOURCE`, and concluded that a rebuild would lose the status
+and source reach. That was **wrong**, and the mistake was in the search: `mg_status_str` and
+`mg_source_str` are wired in **`server-models.h`** (`server_model_status_to_string`, around lines
+60-160), not in `server-models.cpp`, and I had grepped only the `.cpp`.
 
-That has two consequences, both worth stating plainly:
+What the header actually contains:
 
-1. The shipped binary serves **more** of the model-manager decisions than the current source does.
-   A rebuild from `main` today would lose that reach, not gain it - which is the failure mode rule
-   33 describes, in the direction nobody expects.
-2. `tests/server/router-status` is correct for the shipped library and would fail after such a
-   rebuild. Its failure would be true: the reach really would be gone.
+- `fg_mg_status_door()` dlopens `mg_status_str`; `server_model_status_to_string` calls it, compares
+  with `server_model_status_to_string_native` under `FG_MODEL_STATUS_DIAG`, and prints
+  `FG_MODEL_STATUS ported calls=… disagreements=…`;
+- the same shape for `mg_source_str` with `FG_MODEL_SOURCE`;
+- a refusal counter, so a door that answers with something that is not its own length is counted
+  instead of hidden.
+
+So four of the thirteen doors are reachable in the current source - status, source, stop gate and
+stop door - and the shipped library matches the source on that point. The permanent test
+`tests/server/router-status` asserts those markers against the shipped library and is consistent with
+both.
+
+That also means the earlier sentence "a rebuild from main today would lose that reach" is false, and
+the removal order below does not need a restoration step first.
 
 ## What the requirement needs
 
@@ -49,6 +58,6 @@ not be stopped - is P8-06's subject, and the router listing is its only exercise
 (`tests/models/model-manager-doors`, fast tier), which is exactly as much as can be claimed without
 a router run.
 
-Closing it needs, in this order: restore in source what the shipped binary already reaches (status
-and source), then wire the lifecycle doors where the router calls them, then the real router run.
-Nothing here is claimed as measured, and no door is claimed as served that this source does not call.
+Closing it needs, in this order: wire the lifecycle doors where the router calls them, then the real
+router run. Nothing here is claimed as measured, and no door is claimed as served that this source
+does not call.
