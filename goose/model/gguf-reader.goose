@@ -213,6 +213,30 @@ fn gr_meta_int_impl(data: const u8[:], state: i64[:], kv: i64[:], index: i64, ou
     return gr_int(data, kv[index * 8 + 4], kv[index * 8 + 2], out);
 }
 
+// Raw bytes of one array element, as an integer, for any element type of eight bytes or fewer. Comparing
+// elements whose type has no integer interpretation - FLOAT32 and FLOAT64 arrays - needs the bytes themselves:
+// a float array read through gr_array_int would be compared as if its bits were an integer of another width
+// (EXP-2026-11-19-1400 records that those arrays were not compared at all).
+export fn gr_array_raw_bits(data: const u8[:], state: i64[:], kv: i64[:], index: i64, element: i64, out: i64[:]) -> i64 {
+    if state.len < 8 || state[0] != 919 || index < 0 || index >= state[2] || index >= kv.len / 8 || element < 0 ||
+       out.len < 2 || kv[index * 8 + 2] != 9 || element >= kv[index * 8 + 5] { return -1; }
+    let dtype: i64 = kv[index * 8 + 3];
+    let size: i64 = ggh_type_size(dtype);
+    if size <= 0 || size > 8 || kv[index * 8 + 4] < 0 ||
+       element > (9223372036854775807 - kv[index * 8 + 4]) / size { return -1; }
+    let at: i64 = kv[index * 8 + 4] + element * size;
+    if !gr_fits(data, at, size) { return -1; }
+    var v: i64 = 0;
+    var i: i64 = 0;
+    while i < size {
+        v = v | ((data[at + i] as i64) << (8 * i));
+        i = i + 1;
+    }
+    out[0] = v;
+    out[1] = size;
+    return 0;
+}
+
 fn gr_array_int_impl(data: const u8[:], state: i64[:], kv: i64[:], index: i64, element: i64, out: i64[:]) -> i64 {
     if state.len < 8 || state[0] != 919 || index < 0 || index >= state[2] || index >= kv.len / 8 || element < 0 ||
        kv[index * 8 + 2] != 9 || element >= kv[index * 8 + 5] { return -1; }

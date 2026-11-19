@@ -531,13 +531,16 @@ static int fg_gguf_check(const std::string & fname, const gguf_context & native)
         static fg_gr_arrint_fn arr_int = nullptr;
         typedef int64_t (*fg_arr_offs_t)(fg_sl_u8, fg_sl_i64, fg_sl_i64, int64_t, fg_sl_i64, fg_sl_i64);
         static fg_arr_offs_t offs_fn = nullptr;
+        typedef int64_t (*fg_arr_raw_fn)(fg_sl_u8, fg_sl_i64, fg_sl_i64, int64_t, int64_t, fg_sl_i64);
+        static fg_arr_raw_fn raw_fn = nullptr;
         if (!arr_str) {
             void * h5 = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
             arr_str = h5 ? reinterpret_cast<fg_gr_arrstr_fn>(dlsym(h5, "gr_arr_str_span")) : nullptr;
             arr_int = h5 ? reinterpret_cast<fg_gr_arrint_fn>(dlsym(h5, "gr_array_int")) : nullptr;
             offs_fn = h5 ? reinterpret_cast<fg_arr_offs_t>(dlsym(h5, "gr_arr_str_offsets")) : nullptr;
+            raw_fn = h5 ? reinterpret_cast<fg_arr_raw_fn>(dlsym(h5, "gr_array_raw_bits")) : nullptr;
         }
-        for (int64_t i = 0; i < nk && arr_str && arr_int && offs_fn; ++i) {
+        for (int64_t i = 0; i < nk && arr_str && arr_int && offs_fn && raw_fn; ++i) {
             if (gguf_get_kv_type(&native, i) != GGUF_TYPE_ARRAY) { continue; }
             const int64_t et = (int64_t) gguf_get_arr_type(&native, i);
             const int64_t n  = (int64_t) gguf_get_arr_n(&native, i);
@@ -557,6 +560,22 @@ static int fg_gguf_check(const std::string & fname, const gguf_context & native)
                     if (got != n || aoff[(size_t) e] < 0 || alen[(size_t) e] != (int64_t) nn ||
                         (size_t) (aoff[(size_t) e] + alen[(size_t) e]) > fg_port.data.size() ||
                         memcmp(fg_port.data.data() + aoff[(size_t) e], ns, nn) != 0) {
+                        ++arr_bad;
+                    }
+                }
+            } else if (et == GGUF_TYPE_FLOAT32 || et == GGUF_TYPE_FLOAT64) {
+                // Float arrays have no integer interpretation, so their elements are compared as raw bytes:
+                // this is the class the check used to skip entirely (EXP-2026-11-19-1400).
+                const uint8_t * raw = reinterpret_cast<const uint8_t *>(gguf_get_arr_data(&native, i));
+                const int width = et == GGUF_TYPE_FLOAT32 ? 4 : 8;
+                for (int64_t e = 0; e < n; ++e) {
+                    int64_t out2[2] = {0, 0};
+                    fg_sl_i64 so{ out2, 2 };
+                    int64_t want = 0;
+                    for (int b = 0; b < width; ++b) { want |= (int64_t) raw[e * width + b] << (8 * b); }
+                    ++arr_cmp;
+                    if (!raw_fn || raw_fn(s_data, s_state, s_kv, i, e, so) != 0 ||
+                        out2[1] != width || out2[0] != want) {
                         ++arr_bad;
                     }
                 }

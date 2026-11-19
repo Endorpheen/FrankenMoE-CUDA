@@ -64,6 +64,11 @@ def main():
         (b'tokenizer.ggml.eos_token_id', 4, 2),
         (b'tokenizer.ggml.unknown_token_id', 4, 0),
         (b'tokenizer.ggml.add_bos_token', 7, 0),
+        # A float array and a float scalar with awkward bits: a signed zero, two values that differ only in the
+        # last mantissa bit, and a NaN. The reader check compares floats bit for bit, and a case that never
+        # reaches that path would leave it unproven (EXP-2026-11-19-1401).
+        (b'exp.float_array', 9, (6, [0.0, -0.0, 1.0, 1.0000001, float('nan')])),
+        (b'exp.float_scalar', 6, -0.0),
         (b'tokenizer.ggml.add_eos_token', 7, 0),
     ]
     blob = wire_file(kv)
