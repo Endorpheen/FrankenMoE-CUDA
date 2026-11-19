@@ -1,4 +1,3 @@
-extern fn exp(x: f64) -> f64;
 extern fn logf(x: f32) -> f32;
 extern fn powf(x: f32, y: f32) -> f32;
 // Sampler chain in Goose: MT19937, the canonical double draw and the
