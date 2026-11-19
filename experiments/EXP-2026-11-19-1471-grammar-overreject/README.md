@@ -98,3 +98,52 @@ from the code point being matched against the parent class instead of the expand
 
 Stopping here rather than continuing to guess is the project's blocker rule: two meaningful attempts, both measured, both
 negative.
+
+## The defect was in the rule-reference branch, not in the class branch (found by reading the oracle)
+
+`llama_grammar_advance_stack` (vendor/flint/src/llama-grammar.cpp:902-928) does three things at a
+`RULE_REF` and the port did one of them:
+
+- it pushes `pos + 1`, the continuation of the reference inside its own sequence;
+- it iterates **every** alternate of the referenced rule (`LLAMA_GRETYPE_ALT` scan at :917-926);
+- it recurses, so the resulting stacks carry no unresolved reference, and
+  `llama_grammar_reject_candidates` (:949-966) then **intersects** their reject sets.
+
+The port's branch did this instead:
+
+```
+if t == 2 {
+    let rid: i64 = eval[pos];
+    if roff[rid] >= 0 && etype[roff[rid]] != 0 { scratch[depth - 1] = roff[rid]; }
+    else { depth = depth - 1; }
+}
+```
+
+It overwrote the reference with the **first** alternate and dropped the continuation. `space ::= " "?`
+compiles to a rule whose alternates are `" "` and the empty sequence, so the descending stack entered
+`" "`, failed on `"`, and rejected - while the native automaton also offered the empty alternate and
+accepted. That is exactly the two-codepoint, `pnr=0`, class-reached-through-a-reference shape of the
+three recorded disagreements, and it explains why both earlier fixes in the class branch changed
+nothing: the class was right, the branch taken after it was wrong.
+
+This also explains the stack dumps: `head= r0+11(type=2) r5+0(type=3)` is a reference the **descent
+itself** pushed after consuming a class, above the class it came from - not a native input stack.
+
+## The change
+
+`goose/sampling/sampler-chain-full.goose`, `g_reject`:
+
+- the reference is now replaced by the continuation (when `pos + 1` is not `END`) with the single
+  alternate above it, which is `advance_stack` for a one-alternate rule;
+- a rule with more than one alternate needs one candidate set per alternate and a cursor snapshot per
+  row, which this call does not carry, so it returns `-2` and the native matcher decides;
+- `g_reject_multi` propagates a negative result instead of ignoring it;
+- the door counts `-2` separately (`FG_GRAMMAR_DOOR ... multi=N`) so the cost of those declines is
+  visible rather than folded into the general decline counter.
+
+Gates already run: `goose check` on the module (ok, only pre-existing redundant-cast warnings) and a
+`-fsyntax-only` compile of `vendor/flint/src/llama-grammar.cpp` with its recorded flags (exit 0).
+
+What is not yet measured: the disagreement count and the decline rate on the real grammar. That needs
+the sampler-chain library rebuild and one constrained request through the Apex lock, which is a model
+run and therefore needs Igor's permission.

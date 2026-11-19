@@ -1526,13 +1526,50 @@ fn g_reject(etype: i64[:], eval: i64[:], roff: i64[:], rlen: i64[:],
             continue;
         }
         if t == 2 {
-            // rule reference: expand by one alternate level
+            // Native advance_stack replaces a rule reference by the element that follows it
+            // and by the start of every alternate of the referenced rule, then intersects the
+            // rejects of the resulting stacks. Replacing the reference by the first alternate
+            // alone dropped the continuation and the other alternates, and that is how a token
+            // the native automaton allows was rejected (EXP-1471).
             let rid: i64 = eval[pos];
-            if roff[rid] >= 0 && etype[roff[rid]] != 0 {
-                scratch[depth - 1] = roff[rid];
-            } else {
+            let rstart: i64 = roff[rid];
+            if rstart < 0 {
                 depth = depth - 1;
+                continue;
             }
+            // count the alternates of the rule before choosing how to expand
+            var altn: i64 = 0;
+            var altp: i64 = rstart;
+            var altdone: bool = false;
+            while !altdone && altn < 4096 {
+                altn = altn + 1;
+                var j: i64 = altp;
+                while etype[j] != 0 && etype[j] != 1 {
+                    j = j + 1;
+                }
+                if etype[j] == 1 {
+                    altp = j + 1;
+                } else {
+                    altdone = true;
+                }
+            }
+            if altn > 1 {
+                // Several alternates mean several candidate sets to intersect; that needs a
+                // per-row cursor snapshot this call does not carry. Decline instead of
+                // answering with one alternate, so the native matcher decides -2.
+                return -2;
+            }
+            // one alternate: the continuation goes below it, as advance_stack does
+            var d2: i64 = depth - 1;
+            if etype[pos + 1] != 0 && d2 < maxd {
+                scratch[d2] = pos + 1;
+                d2 = d2 + 1;
+            }
+            if etype[rstart] != 0 && d2 < maxd {
+                scratch[d2] = rstart;
+                d2 = d2 + 1;
+            }
+            depth = d2;
             continue;
         }
         if t == 8 || t == 9 {
@@ -1626,10 +1663,14 @@ fn g_reject_multi(etype: i64[:], eval: i64[:], roff: i64[:], rlen: i64[:],
             rowbuf[d] = stacks[s * maxd + d];
             d = d + 1;
         }
-        let ignored = g_reject(etype, eval, roff, rlen,
-                               rowbuf, stackd[s],
-                               cand_cp, cp_len, tmp_cur, tmp_rej, ncand,
-                               pval, pnr, cand_id, scratch, maxd, maxcp);
+        let r_one = g_reject(etype, eval, roff, rlen,
+                             rowbuf, stackd[s],
+                             cand_cp, cp_len, tmp_cur, tmp_rej, ncand,
+                             pval, pnr, cand_id, scratch, maxd, maxcp);
+        if r_one < 0 {
+            // the port declined this call; the caller must let the native matcher decide
+            return r_one;
+        }
         i = 0;
         while i < ncand {
             if tmp_rej[i] == 0 {

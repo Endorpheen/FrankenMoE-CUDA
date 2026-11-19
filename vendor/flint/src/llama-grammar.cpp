@@ -1581,6 +1581,26 @@ void llama_grammar_apply_impl(const struct llama_grammar & grammar, llama_token_
     // when it would normally decline - that is how the declined calls get measured instead of
     // staying invisible.
     static const bool fg_verify_mode = getenv("GGML_GOOSE_GRAMMAR_VERIFY") != nullptr;
+    // WITNESS. Until this existed the only evidence that the door ran was its effect on the output,
+    // and that cannot tell "the port decided" from "the port declined and the native matcher
+    // decided". EXP-1465-grammar found the accepted set differing with GGML_GOOSE_GRAMMAR set, and
+    // which of the two happened in that run was unknowable from the log. Every rejection path
+    // increments fg_door_declined with its own reason, so a run that reports declines=0 and calls>0
+    // is a run where the port really decided every call.
+    static std::atomic<unsigned long long> fg_door_calls{0}, fg_door_cand{0}, fg_door_rej{0};
+    static std::atomic<unsigned long long> fg_door_declined{0};
+    // Declines the port chose because a rule reference with several alternates was reached.
+    // Such a call is answered by the native matcher; counting it separately keeps that cost
+    // visible instead of hiding it inside the general decline counter.
+    static std::atomic<unsigned long long> fg_door_multi{0};
+    static std::atomic<unsigned long long> fg_door_off{0};
+    if (!fg_grammar_enabled()) {
+        ++fg_door_off;
+    } else if (fg_grammar_reject_call == nullptr) {
+        ++fg_door_declined;   // the port is not in the library at all
+    } else if (!candidates_grammar.empty() && (fg_has_partial && !fg_verify_mode)) {
+        ++fg_door_declined;   // window-filling pieces: declined on purpose, native decides
+    }
     if (fg_grammar_reject_call != nullptr && fg_grammar_enabled() &&
             (!fg_has_partial || fg_verify_mode) && !candidates_grammar.empty()) {
         fg_flat_rules & flat = fg_flatten(grammar.rules);
@@ -1684,8 +1704,30 @@ void llama_grammar_apply_impl(const struct llama_grammar & grammar, llama_token_
                     rej_final[i] = rej_final[i] && rej[i];
                 }
             }
+            if (r == -2) {
+                ++fg_door_multi;
+            } else if (r < 0) {
+                ++fg_door_declined;
+            }
 
             if (r >= 0) {
+                {
+                    int64_t nrej = 0;
+                    for (int64_t i = 0; i < ncand; ++i) nrej += rej_final[i];
+                    const unsigned long long c = ++fg_door_calls;
+                    fg_door_cand += (unsigned long long) ncand;
+                    fg_door_rej  += (unsigned long long) nrej;
+                    if (c == 1 || (c % 100) == 0) {
+                        fprintf(stderr, "FG_GRAMMAR_DOOR goose calls=%llu declined=%llu multi=%llu off=%llu cand=%llu rejected=%llu stacks=%lld verify=%d\n",
+                                (unsigned long long) c,
+                                (unsigned long long) fg_door_declined.load(),
+                                (unsigned long long) fg_door_multi.load(),
+                                (unsigned long long) fg_door_off.load(),
+                                (unsigned long long) fg_door_cand.load(),
+                                (unsigned long long) fg_door_rej.load(),
+                                (long long) nstacks, fg_verify_mode ? 1 : 0);
+                    }
+                }
                 // Verification mode: run the native decision on the same candidates and
                 // compare it candidate by candidate against the port. The native result is
                 // what is applied either way, so the mode can never change behaviour - it
