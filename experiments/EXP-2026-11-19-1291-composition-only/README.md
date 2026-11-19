@@ -44,6 +44,29 @@ turns from descending into ascending, they do not, and the probabilities differ 
 So the port computes the correct normalisation of the values it was given, and the native computes one based on a
 flag its own transform has invalidated.
 
+## The culprit is the adaptive door, and the residual is the draw
+
+Mixing the switches separates the three stages:
+
+```
+all doors off                          baseline
+typical+XTC doors on, adaptive off     0 rounds differ
+adaptive door on, typical+XTC off     21 rounds differ
+```
+
+So the pair of preceding doors is exact even inside the triple, and the divergence comes with adaptive's door. At
+adaptive's entry the arrays, the `sorted` flags and the monotonicity are identical in both modes, and **the logits
+after the transform are identical too** - only `p` differs, by one ULP.
+
+Adding the native's own normalisation on the door path aligned that one round's `p` (`...c9` on both sides) and
+**still left 21 rounds differing**, now by a different draw. That change was reverted for the same reason as the
+previous one: it shifted the behaviour without moving the metric.
+
+So the statement the measurements support is now: the door's `p` differs by one rounding step because the native
+normalisation trusts a `sorted` flag the door cannot see; with that aligned, the residual difference is in the
+**draw**, not the distribution - which points at the RNG words consumed at the selection step, the one thing not yet
+printed.
+
 ## Every pair is exact; only the triple drifts
 
 ```
