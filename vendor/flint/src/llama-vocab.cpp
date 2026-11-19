@@ -5295,18 +5295,27 @@ int32_t llama_token_to_piece(
             fg_detok_check::sl_u8  s_out { out.data(),    (int64_t) out.size() };
             const int64_t served = fn(s_gguf, s_off, s_len, s_attr, (int64_t) token, s_out, 0,
                                       (int64_t) lstrip, special ? 1 : 0, 0);
-            // The door now reports the same negative the native does when the piece does not fit
-            // (EXP-2026-11-19-1357), so its answer is served whichever sign it has; the fallback below is
-            // only for the case where the door cannot answer at all.
-            if (true) {
-                if (served > 0) { memcpy(buf, out.data(), (size_t) served); }
-                static std::atomic<long long> from_port{0};
-                const long long c = from_port.fetch_add(1) + 1;
-                if (getenv("FG_TK_DETOK_DIAG") && c % 2048 == 0) {
-                    fprintf(stderr, "FG_TK_BUF_SERVED from_port=%lld\n", c);
+            // The door is given a 4096-byte window of its own, so it answers with the whole piece - and the copy
+            // below used to write that answer into the caller's buffer without ever comparing it with the caller's
+            // length. A piece of 21 bytes into a 15-byte buffer therefore ran six bytes past it, and the bytes it
+            // landed on were the caller's token id: the server read tok=-779955792 (b0 d1 82 d1, i.e. text) at
+            // generation step 643 of a real agent session (EXP-2026-11-19-1439, root cause found in -1443).
+            // The native contract for "does not fit" is -needed, so that is what is returned here: the caller
+            // resizes and calls again, and no caller can be overflowed whatever length it passes.
+            static std::atomic<long long> from_port{0}, short_buf{0};
+            if (served > (int64_t) length) {
+                const long long sc = short_buf.fetch_add(1) + 1;
+                if (getenv("FG_TK_DETOK_DIAG") && sc <= 5) {
+                    fprintf(stderr, "FG_TK_BUF_SHORT needed=%lld length=%d\n", (long long) served, (int) length);
                 }
-                return (int32_t) served;
+                return (int32_t) (-served);
             }
+            const long long c = from_port.fetch_add(1) + 1;
+            if (served > 0) { memcpy(buf, out.data(), (size_t) served); }
+            if (getenv("FG_TK_DETOK_DIAG") && c % 2048 == 0) {
+                fprintf(stderr, "FG_TK_BUF_SERVED from_port=%lld\n", c);
+            }
+            return (int32_t) served;
         }
     }
     const int32_t n = vocab->token_to_piece(token, buf, length, lstrip, special);

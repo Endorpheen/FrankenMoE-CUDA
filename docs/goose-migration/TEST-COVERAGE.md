@@ -84,3 +84,23 @@ PASS
 Two defects came out of writing it. Serving had been nested inside `FG_TK_BPE_DIAG`, so the accepted improvement was off
 unless a diagnostic was enabled, and the check that the Goose path answered was only true under that flag. And the comparison
 block sat after the `return` that serving uses, so a diagnostic run reported no comparison at all.
+
+## The piece crash: the root cause is the served detokeniser's length contract
+
+The first fix (a real buffer inside `common_token_to_piece`) stopped the crash on that call path. The root cause was one
+layer deeper: the served detokeniser is given a 4096-byte window of its own, and its answer was copied into the caller's
+buffer **without comparing it with the caller's length**. Any caller with a short buffer was overflowed by any piece longer
+than it - and the caller that crashed passed 15 bytes for a 21-byte piece.
+
+It now returns the native `-needed` when the piece does not fit, so no caller can be overflowed whatever length it passes.
+`experiments/EXP-2026-11-19-1443-detok-length-contract/verify.sh` calls it with deliberately short buffers surrounded by
+canaries, over every piece longer than 15 bytes:
+
+```
+detok length contract: long_pieces=7508 short_buffer_cases=25123 canary_hits=0 contract_violations=0
+control: an unchecked copy of 35 bytes into a 8-byte buffer is caught
+PASS
+```
+
+This is the check that should have existed before the port was served: the equality tests compared the bytes the port
+produced, and none of them asked what happens when the caller's buffer is smaller than the answer.
