@@ -307,3 +307,22 @@ so this needs the compiler: the loop walks a per-candidate codepoint array with 
 function calls, where the native code walks a pointer chain.
 
 Until the loop is comparable, the grammar stage stays opt-in and P6-10's grammar item stays open.
+
+## TD-S11: an exported function with slice parameters segfaults in a composed unit
+
+Reproduced 2026-11-18, ten lines, deterministic:
+
+```
+dlopen libllama.so.0; goose_init(0,0); fg_sp_prefix(draft,4,target,4,4,out,2)  -> SIGSEGV
+fg_sp_compatible(13 scalars)                                                  -> returns 1
+```
+
+The generated wrapper is `int64_t fg_sp_prefix(sl_i64, sl_i64, int64_t, sl_i64)` and calls
+`fg_sp_prefix_g(data,len,data,len,k,data,len)`, so the shape of the call matches. The same algorithm
+gated on its own compiles and passes (EXP-2026-11-18-1166), so the difference is the composed unit plus
+the exported slice ABI.
+
+Impact: every host-side call that passes slices through an exported door is affected - which is most of
+them - and the symptom is silent in the server (the call does not return, the request still completes).
+
+Recorded with the reproduction in `experiments/EXP-2026-11-18-1218-export-slice-crash/`.
