@@ -145,3 +145,35 @@ was a malformed launch path, not a runtime difference.
 Building `llama-server` from `vendor/flint` is blocked by the Web UI assets: the
 target always downloads a distribution and fails offline
 (`UI: download dist.tar.gz.sha256 ... failed`). The library itself is unaffected.
+
+## Building the server from this tree (unlocked 2026-11-18)
+
+Everything in `common/` - speculative decoding, chat parsing, the sampler driver - is compiled into
+the **server binary**, not into `libllama`. Until now every measurement used the prebuilt server in
+`stage-run`, so a change in `common/` could not be observed at all.
+
+```
+cmake -S vendor/flint -B builds/flint-acc -DHF_ENABLED=OFF -DBUILD_UI=OFF
+mkdir -p builds/flint-acc/tools/ui/dist
+tar -xzf <any>/.cache/ui/dist.tar.gz -C builds/flint-acc/tools/ui/dist   # prebuilt assets
+cmake --build builds/flint-acc --target llama-server -j 12
+```
+
+Run it with both libraries on the path:
+
+```
+LD_LIBRARY_PATH=$PWD/builds/flint-acc/bin:$PWD/builds/flint-acc/common \
+    ./builds/flint-acc/bin/llama-server -m <model> ...
+```
+
+Two things that cost time and are now recorded:
+
+1. **The UI download fails offline** (`HTTP response code said error` for `dist.tar.gz.sha256`) and
+   the build stops on it. `-DHF_ENABLED=OFF -DBUILD_UI=OFF` alone does not stop it; extracting a
+   prebuilt `dist.tar.gz` into `builds/flint-acc/tools/ui/dist` satisfies the asset step instead.
+   Copies exist under `/home/end0/AI/LlamaServer/*/build-cuda/tools/ui/dist.tar.gz`.
+2. **The binary is small** (about 18 KB) because the work lives in `libllama-common-base.a`; a
+   missing `LD_LIBRARY_PATH` entry shows up as a symbol lookup error at startup, not as a build
+   failure.
+
+Verified: the server answers a completion request and shuts the slot down cleanly.
