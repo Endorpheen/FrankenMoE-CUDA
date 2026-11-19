@@ -52,3 +52,33 @@ gate builds the modules from the experiment's `source/` copies, not from `goose/
 3. a Qwen GGUF to check the shapes against a real file, which is a model-side run.
 
 None of it is claimed as done, and no Qwen model has been loaded at any point.
+
+## Why the append failed: per-family constants share one name
+
+Adding `qwen4exp.goose`, `q4m-metadata.goose` and `q4e-expert-layout.goose` to the unit list was
+tried and reverted, because the composer reports a real conflict:
+
+```
+conflicts:
+  const P_HAS_OUTPUT: goose/model/qwen4exp.goose differs from an earlier module
+```
+
+`P_HAS_OUTPUT` is a parameter-vector index, and each architecture numbers its own vector:
+
+| module | value |
+|---|---|
+| `goose/model/qwen35moe.goose` (the only one in the unit today) | its own index |
+| `goose/model/qwen4exp.goose` | 26 |
+| `goose/model/gemma3.goose` | 8 |
+| `goose/model/deepseek32.goose` | 21 |
+
+One flat unit carries exactly one definition of that name, so **the architecture builders cannot
+share one namespace as module-level constants**. That is not a naming accident; it is the
+per-family difference the requirement itself points at ("architecture adapters only where the
+semantics really differ"). The same shape appears in the `fail` binding: the unit already carries
+eight modules declaring `fn fail(code: i64)` with eight different C symbols.
+
+The fix is a decision, not a patch: either the parameter-vector indices move into a per-architecture
+table (a struct or an array passed to the builder), or the unit composes one family's builder at a
+time. Until one is chosen, `qwen4exp`, `q4m` and `q4e` stay out of the list, and the append is not
+retried blindly.
