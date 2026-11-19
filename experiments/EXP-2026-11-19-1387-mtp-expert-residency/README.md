@@ -1,40 +1,44 @@
-# EXP-2026-11-19-1387: why a draft costs a decode - the head's experts are evicted
+# EXP-2026-11-19-1387: the eviction explanation is refuted by its own test
 
-## What the code says
+## The theory this card started with
 
-- `llama_moe_cache` covers **every** layer including the nextn one: `g.slru.init(model.layers.size(), n_expert, g.n_slots)`
-  and `layers[il]` is addressed by the same index the MTP graph uses (`il = hparams.n_layer()`, i.e. 41).
-- `llama_model::pin_mmap_experts` registers every tensor with `ne[2] == n_expert`, so the head's experts are host-pinned
-  like the rest - they are resident in RAM and streamed through the same 4992 MiB device cache.
+The head's experts are touched only during drafts, so they run cold in the shared SLRU and are re-uploaded every step -
+making a draft cost 0.86 of a decode, and a quota for the nextn layer the fix.
 
-So nothing is missing from the path. What makes a draft expensive is the **policy**: the head's experts are touched only
-during drafts, so they are cold in the SLRU and are re-uploaded on each draft step, exactly like a cold expert in a
-decode. The draft's price is therefore expert traffic, which is what the 0.86-of-a-decode measurement said.
+## The test, and the result
 
-## How much a fix would cost
+If the draft were upload-bound, shrinking the cache that serves it must hurt the draft **more** than the control. One
+draft per step, context 40960, only `--moe-cache-mib` changed (an exploration: the accepted value is 4992):
 
-From the model's metadata (256 experts, `n_embd 2048`, expert feed-forward 512, `n_embd` projections, q4_K weights), one
-layer's expert set is on the order of **450 MB** - roughly 9 % of the 4992 MiB cache. Guaranteeing that slice to the nextn
-layer would remove the upload from every draft step without touching the target profile.
+| cache | control | MTP, one draft | ratio |
+|---|---|---|---|
+| 4992 MiB | 79.86 | 75.46 | 0.945 |
+| 3072 MiB | 62.72 | 58.75 | 0.937 |
 
-## The measurement that decides it
+The control loses 21 % when the cache shrinks, which confirms that decode itself is upload-bound. The draft's price,
+however, barely moves relative to the control - the ratio is *slightly* better at the smaller cache, not worse. **The
+eviction theory is refuted by the measurement designed to support it.**
 
-If the upload is the cost, then pinning the head's experts must move the draft's price (`D` in EXP-1386's terms) well
-below 0.86, and the same acceptance curve (63 % / 36 % / 19 %) must then produce a **gain** instead of a loss - at
-`D ~ 0.1` the model predicts roughly `2.17 / 1.1 = 1.97x`.
+## What that leaves
 
-That is a large, checkable prediction, and it is the reason to spend the change rather than abandon MTP.
+A decode writes 512 tokens in 6.4 s, one step per token, about 12.5 ms each, and that step runs 41 blocks. A draft adds
+**10.8 ms**. One MoE block cannot be 10.8 ms when 41 of them plus attention and sampling are 12.5 - so the draft's cost
+is not its own compute either. It is per-step overhead of a kind that does not scale with the cache:
 
-## What must not move
+1. the draft context's graph launch and scheduler run, on a batch of one or two tokens;
+2. sampling from the head's logits - 248 320 values, a full chain per draft token;
+3. state traffic between the two contexts (KV positions, replay).
 
-The accepted profile's numbers. Any implementation is measured on the same build with the mechanism off (62.73 / 2951)
-and on (MTP at 40960, and MTP at the accepted context if the memory allows), and the response hash is compared for the
-non-MTP path.
+The same arithmetic applies to the control's own sampling, which is what makes (2) less likely than (1) or (3) - but none
+of them is measured yet.
 
-## Order of work
+## The one measurement that separates them
 
-1. read how the SLRU assigns slots and whether a per-layer quota already exists;
-2. add a **quota for the nextn layer's experts**, since they are small and their reuse pattern is the opposite of the
-   trunk's;
-3. measure the draft's price again with one draft per step - the same discriminating run as EXP-1386;
-4. only if the price falls, run the three MTP configurations and compare against the control.
+The server reports stage timers per request. A run with the draft context instrumented for its forward alone - or the
+`t_draft`-style counters if they exist in this tree - would give the draft's forward time directly, and the difference
+between that and 10.8 ms is overhead. That is the next step; no further code change until it is known.
+
+## What this card does not claim
+
+No fix, no quota, no improvement. The theory that motivated the work is withdrawn, and the number it was built on
+(0.86 of a decode) stands without an explanation.
