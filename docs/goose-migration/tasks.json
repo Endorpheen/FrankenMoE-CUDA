@@ -5680,7 +5680,7 @@
    "P7-06": "six decisions gated; one door wired and unreachable on BPE models; BPE comparator called live 4156 times per prompt",
    "P7-07": "detokenizer ported (11-function interface over GGUF buffers); no call path, needs an interface decision",
    "P7-12": "5389 Goose lines across nine GGUF/loader modules, zero touchpoints in gguf.cpp and llama-model-loader.cpp",
-   "P9-01": "architecture registry: 8 of 163 names ported (MoE recipes); sweep at model load reports 154 disagreements of 163, so the registry proper is NOT ported. The hook stays so any other architecture shows a disagreement instead of passing silently."
+   "P9-01": "recipe registry: 9 of 9 rows ported and verified live (sweep at model load, index-for-index, 0 disagreements). The 163-name LLM_ARCH_NAMES table is a different artefact and belongs to P7-12; it is not ported."
   },
   "note": "The roadmap counters mixed 'ported', 'called' and 'replaced'. This block makes the three states explicit so a DONE cannot be inferred from composition alone."
  }

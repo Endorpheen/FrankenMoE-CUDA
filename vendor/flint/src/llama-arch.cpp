@@ -1226,27 +1226,39 @@ static void fg_check_arch_sweep() {
     if (find == nullptr || arch == nullptr) {
         return;
     }
-    unsigned long long bad = 0, n = 0;
-    for (const auto & kv : LLM_ARCH_NAMES) {
-        const std::string name = kv.second;
+    // The reference is the registry the port actually ports: runtime/core/src/moe/arch_registry.cpp,
+    // k_recipes[]. A previous version of this sweep compared against llama.cpp's 163-name
+    // LLM_ARCH_NAMES table and reported 154 disagreements - that was my error, not the port's.
+    // The nine names below are a transcription of that native table, listed in its order.
+    // Nine rows, in the native order. My first transcription had eight: the grep pattern
+    // [a-z0-9]+ dropped "gpt-oss" because of its hyphen, and the four "disagreements" it
+    // produced were an off-by-one from my own missing entry.
+    static const char * const kRecipes[] = {
+        "qwen3moe", "qwen2moe", "qwen35moe", "gemma4", "gpt-oss",
+        "lfm2moe", "deepseek4", "bailingmoe3", "qwen4exp",
+    };
+    unsigned long long bad = 0, n = 0, first = 0;
+    for (const char * rec : kRecipes) {
+        const std::string name = rec;
         fg_sl_u8 sin{ (uint8_t *) name.data(), (int64_t) name.size() };
         const int64_t row = find(sin);
-        bool ok = row >= 0;
+        bool ok = row >= 0 && (uint64_t) row == first;
         if (ok) {
             uint8_t buf[128] = {0};
             fg_sl_u8 sout{ buf, (int64_t) sizeof(buf) };
             const int64_t len = arch(row, sout);
             ok = len == (int64_t) name.size() && memcmp(buf, name.data(), (size_t) len) == 0;
         }
-        ++n;
+        ++n; ++first;
         if (!ok) {
             ++bad;
             if (bad <= 5) {
-                fprintf(stderr, "FG_ARCH_SWEEP_DIFF name=%s row=%lld\n", name.c_str(), (long long) row);
+                fprintf(stderr, "FG_ARCH_SWEEP_DIFF name=%s row=%lld expected=%llu\n",
+                        name.c_str(), (long long) row, first - 1);
             }
         }
     }
-    fprintf(stderr, "FG_ARCH_SWEEP names=%llu disagreements=%llu\n", n, bad);
+    fprintf(stderr, "FG_ARCH_SWEEP recipes=%llu disagreements=%llu\n", n, bad);
 }
 
 static void fg_check_arch(const std::string & name) {
