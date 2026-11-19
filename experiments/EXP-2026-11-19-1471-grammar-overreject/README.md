@@ -68,3 +68,33 @@ shows the stack a rule reference above a class, which is exactly the state where
 The next change is therefore in the class branch of `goose/sampling/sampler-chain-full.goose`: on a failed match, advance past
 the end of the current rule and retry the same codepoint at the parent before rejecting. The shadow mode is the gate for it -
 the disagreement count on this grammar must go to zero, and the pair run must produce the same text with the door on and off.
+
+## The first hypothesis was tested and did not hold
+
+The class-final hypothesis was implemented twice and measured, not argued about. A decline was added for "the class is the
+last element of its rule, so it can be skipped", first after the rejection loop and then - after that first version was seen
+to be too late - at the branch entry before any candidate was touched. Rebuilt and re-measured:
+
+```
+FG171_GRAMMAR_DIFF cand=4753 id=4754 goose_reject=1 native_reject=0 cp_len=2 pnr=0
+FG171_GRAMMAR_STATE cps=123,34 stacks=1 pval=34 pnr=0
+FG171_GRAMMAR_STACK st=0 depth=1 head= r0+0(type=3)
+```
+
+The disagreement is unchanged, so `etype[match_end(pos)]` is not 0 at the state that rejects: the class at `r0+0` is followed
+by a rule reference, and the rejection happens one level deeper, after the reference is expanded. The decline was reverted -
+it did not fix the defect and would have cost speed on every rule-final class.
+
+What is established and reusable:
+
+- the failing input is a two-codepoint piece at a class reached through a rule reference;
+- the port rejects where the native accepts, so the direction of the error is known;
+- the shadow mode plus the state dump is the gate a fix must move: disagreements must reach zero on this grammar and the pair
+  run must give the same text.
+
+What is not established: which exact transition the port loses. The next measurement is one step deeper - whether the class
+inside `space` is reached with the candidate's cursor already advanced past the second codepoint, or whether the rejection comes
+from the code point being matched against the parent class instead of the expanded one.
+
+Stopping here rather than continuing to guess is the project's blocker rule: two meaningful attempts, both measured, both
+negative.
