@@ -74,9 +74,20 @@ add_custom_command(
     OUTPUT ${FG_SAMPLER_CHAIN_DIR}/sampler_chain.c ${FG_SAMPLER_CHAIN_DIR}/sampler_chain.h
            ${FG_SAMPLER_CHAIN_DIR}/sampler_chain_shim.c
     COMMAND bash ${FG_REPO_ROOT}/tools/build-sampler-chain.sh ${FG_SAMPLER_CHAIN_DIR}
+    # Every module the generator composes must be listed here, or the build keeps a stale copy of the
+    # generated C and the new doors never reach the library. That happened twice in this session: once
+    # with spec-decisions, once with the detokenizer and GGUF closures.
     DEPENDS ${FG_REPO_ROOT}/goose/sampling/sampler-chain-full.goose
             ${FG_REPO_ROOT}/goose/speculative/spec-decisions.goose
             ${FG_REPO_ROOT}/goose/speculative/spec-doors.goose
+            ${FG_REPO_ROOT}/goose/misc/unicode-tables.goose
+            ${FG_REPO_ROOT}/goose/misc/unicode-text.goose
+            ${FG_REPO_ROOT}/goose/misc/pretokenizer-qwen35.goose
+            ${FG_REPO_ROOT}/goose/misc/gguf-headers.goose
+            ${FG_REPO_ROOT}/goose/model/bpe-tokenize.goose
+            ${FG_REPO_ROOT}/goose/model/bpe-detokenize.goose
+            ${FG_REPO_ROOT}/goose/model/gguf-reader.goose
+            ${FG_REPO_ROOT}/goose/model/gguf-tensors.goose
             ${FG_REPO_ROOT}/tools/gen-grammar-shim.py
             ${FG_REPO_ROOT}/tools/build-sampler-chain.sh
     COMMENT "Building the Goose sampler chain")

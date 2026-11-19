@@ -22,6 +22,7 @@ typedef int64_t (*fn_f32_bits)(sl_u8, sl_i64, sl_i64, int64_t, sl_i64);
 typedef int64_t (*fn_arr)(sl_i64, sl_i64, int64_t);
 typedef int64_t (*fn_arr_str)(sl_u8, sl_i64, sl_i64, int64_t, int64_t, sl_i64);
 typedef int64_t (*fn_arr_int)(sl_u8, sl_i64, sl_i64, int64_t, int64_t, sl_i64);
+typedef int64_t (*fn_tinfo)(sl_i64, sl_i64, int64_t, sl_i64);
 
 #define WINDOW (64u * 1024u * 1024u)
 
@@ -318,6 +319,29 @@ int main(int argc, char ** argv) {
         }
     }
     printf("tensor descriptors: %d/%d equal\n", td_cmp - td_bad, td_cmp);
+
+    /* the new accessor: dtype, dims, extents, elements, bytes, data offset through one door */
+    fn_tinfo tinfo = (fn_tinfo) dlsym(h, "gr_tensor_info");
+    if (tinfo) {
+        int ti_cmp = 0, ti_bad = 0;
+        for (int64_t i = 0; i < n_t; ++i) {
+            int64_t out[9] = {0};
+            sl_i64 so; so.data = out; so.len = 9;
+            const int64_t rc9 = tinfo(s_state, s_t, i, so);
+            const int64_t * ne = gguf_get_tensor_ne(g2, (int32_t) i);
+            uint32_t dims = 0; while (dims < 4 && ne[dims] != 1) { ++dims; }
+            ++ti_cmp;
+            bool ok = rc9 == 0 && out[0] == (int64_t) gguf_get_tensor_type(g2, (int32_t) i) &&
+                      out[1] == (int64_t) dims && (size_t) (out[8] - state[5]) == gguf_get_tensor_offset(g2, (int32_t) i);
+            for (uint32_t d = 0; ok && d < dims; ++d) { ok = out[2 + d] == ne[d]; }
+            if (!ok) {
+                ++ti_bad;
+                if (ti_bad <= 3) printf("TENSOR INFO MISMATCH i=%lld\n", (long long) i);
+            }
+        }
+        printf("tensor info door: %d/%d equal\n", ti_cmp - ti_bad, ti_cmp);
+        if (ti_bad) { ++td_bad; }
+    }
 
     /* the negative case: a key that is not there must be reported as absent by both */
     const char * absent = "general.this.key.does.not.exist";

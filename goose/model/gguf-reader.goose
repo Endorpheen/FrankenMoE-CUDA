@@ -296,6 +296,28 @@ export fn gr_n_kv(state: i64[:]) -> i64 {
 // Payload spans for a host that keeps reading values from its own container but
 // wants the Goose reader to say where they are. Offsets are relative to the
 // header window the reader parsed; a value outside it is refused.
+// Descriptor of one tensor, as the loader reads it: [0] dtype, [1] dimension count, [2..5] extents,
+// [6] element count, [7] byte count, [8] data offset. The records already hold all of this; nothing
+// exposed it, so a host could find a tensor by name and not ask what it was (EXP-2026-11-19-1327).
+export fn gr_tensor_info(state: i64[:], tensors: i64[:], index: i64, out: i64[:]) -> i64 {
+    if state.len < 8 || state[0] != 919 || index < 0 || index >= state[3] ||
+       index >= tensors.len / 12 || out.len < 9 {
+        return -1;
+    }
+    let base: i64 = index * 12;
+    out[0] = tensors[base + 2];
+    out[1] = tensors[base + 3];
+    var d: i64 = 0;
+    while d < 4 {
+        out[2 + d] = tensors[base + 4 + d];
+        d = d + 1;
+    }
+    out[6] = tensors[base + 8];
+    out[7] = tensors[base + 9];
+    out[8] = tensors[base + 10];
+    return 0;
+}
+
 export fn gr_val_span(state: i64[:], kv: i64[:], index: i64, out: i64[:]) -> i64 {
     if state.len < 8 || state[0] != 919 || index < 0 || index >= state[2] || index >= kv.len / 8 || out.len < 4 {
         return -1;
