@@ -1923,7 +1923,8 @@
         "delete the replaced C++ tokenizer body - blocked by rule 15 until Igor accepts the served encoder"
       ],
       "coverage_doc": "docs/goose-migration/P7-06-COVERAGE.md",
-      "evidence_20261119": "2026-11-19: five tokenizer decisions gated and consolidated into goose/model/tokenizer-decisions.goose - merge order for SPM and BPE (gated against the real priority queues plus an antisymmetry sweep), WPM match search (7 cases, including the maxlen+1 bound), text normalization (11 cases; the gate caught a real defect in my port where escaping was hardcoded), UTF-8 byte accounting (11 codepoints plus a dense boundary sweep), score-path DP step (6 cases), symbol emission (6 cases). One door is wired: fg_tk_norm, called from llama_vocab::normalize with struct-typed dlsym. Not live on this machine: normalization belongs to the WPM and UGM sessions and both available models are BPE, so the counter cannot move until a WPM/UGM model is loaded (EXP-2026-11-18-1229). Next: the BPE merge comparator, which IS on the BPE path and can be verified live per pop."
+      "evidence_20261119": "2026-11-19: five tokenizer decisions gated and consolidated into goose/model/tokenizer-decisions.goose - merge order for SPM and BPE (gated against the real priority queues plus an antisymmetry sweep), WPM match search (7 cases, including the maxlen+1 bound), text normalization (11 cases; the gate caught a real defect in my port where escaping was hardcoded), UTF-8 byte accounting (11 codepoints plus a dense boundary sweep), score-path DP step (6 cases), symbol emission (6 cases). One door is wired: fg_tk_norm, called from llama_vocab::normalize with struct-typed dlsym. Not live on this machine: normalization belongs to the WPM and UGM sessions and both available models are BPE, so the counter cannot move until a WPM/UGM model is loaded (EXP-2026-11-18-1229). Next: the BPE merge comparator, which IS on the BPE path and can be verified live per pop.",
+      "evidence_wiring_20261119": "Wiring re-checked 2026-11-19 in docs/goose-migration/P7-TOKENIZER-GGUF-STATE-20261119.md against the STAGED carrier copies, which are the ones that ship. runtime/reconstructed/src/llama-vocab.cpp calls llama_goose_tokenize (2) and llama_goose_tokenizer_ctx (3); the owner runs bt_bpe underneath, so the encode path is wired. Open: the acceptance run comparing token ids, pre-tokenisation and special tokens over the corpus, then removal of the replaced native body. Whether the answers are equal is a differential run on the real vocabulary; none has been made since the last change to these doors, and nothing is claimed as accepted."
     },
     {
       "id": "P7-07",
@@ -1946,7 +1947,8 @@
       "remaining": [
         "delete the replaced C++ detokenizer body - blocked by rule 15 until Igor accepts the served forms"
       ],
-      "coverage_doc": "docs/goose-migration/P7-06-COVERAGE.md"
+      "coverage_doc": "docs/goose-migration/P7-06-COVERAGE.md",
+      "evidence_wiring_20261119": "Wiring re-checked 2026-11-19 in docs/goose-migration/P7-TOKENIZER-GGUF-STATE-20261119.md against the STAGED carrier copies, which are the ones that ship. the same staged file calls llama_goose_token_to_piece (2); the owner runs bt_token_to_piece underneath, so the token-to-piece path is wired. Open: the same acceptance plus streaming and short-buffer cases. Whether the answers are equal is a differential run on the real vocabulary; none has been made since the last change to these doors, and nothing is claimed as accepted."
     },
     {
       "id": "P7-08",
@@ -2062,7 +2064,8 @@
       "coverage_doc": "docs/goose-migration/P7-01-CLOSURE.md",
       "plan_note": "Documented as assigned scope, not yet decomposed into slices.",
       "slices_total": 3,
-      "slices_done": 3
+      "slices_done": 3,
+      "evidence_wiring_20261119": "Wiring re-checked 2026-11-19 in docs/goose-migration/P7-TOKENIZER-GGUF-STATE-20261119.md against the STAGED carrier copies, which are the ones that ship. every metadata question goes through llama_goose_arr_type/_arr_n/_arr_data/_arr_str/_kv_type with a native fallback, so the reader is wired on the load path. Open: multi-part GGUF naming and shard offsets, v1 and byte-order limits, float arrays, and the HF download/cache call sites - each still native. Whether the answers are equal is a differential run on the real vocabulary; none has been made since the last change to these doors, and nothing is claimed as accepted."
     },
     {
       "id": "P8-01",
