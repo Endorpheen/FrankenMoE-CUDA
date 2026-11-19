@@ -44,6 +44,23 @@ turns from descending into ascending, they do not, and the probabilities differ 
 So the port computes the correct normalisation of the values it was given, and the native computes one based on a
 flag its own transform has invalidated.
 
+## A candidate fix was tried and reverted
+
+The obvious repair for the max question - let the host perform the final normalisation on both paths, in the same
+place - changed the measurement by **nothing**:
+
+```
+before: 21 of 100 rounds differ
+after : 21 of 100 rounds differ
+```
+
+So the `p` difference at the selector does **not** come from which side normalises. The change was reverted rather
+than kept: a modification that does not move the measurement is not a fix, and leaving it in would make the next
+investigation start from a tree with an unexplained edit.
+
+That also weakens the max-choice explanation: the two paths still disagree after the normalisation is unified, so
+whatever produces the different `p` sits earlier.
+
 ## The decision this needs, which is not mine
 
 Two options, and they cannot both be true:
