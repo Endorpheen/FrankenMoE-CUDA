@@ -308,7 +308,7 @@ function calls, where the native code walks a pointer chain.
 
 Until the loop is comparable, the grammar stage stays opt-in and P6-10's grammar item stays open.
 
-## TD-S11: an exported function with slice parameters segfaults in a composed unit
+## TD-S11 — RESOLVED, and it was my error, not the compiler's
 
 Reproduced 2026-11-18, ten lines, deterministic:
 
@@ -325,4 +325,27 @@ the exported slice ABI.
 Impact: every host-side call that passes slices through an exported door is affected - which is most of
 them - and the symptom is silent in the server (the call does not return, the request still completes).
 
-Recorded with the reproduction in `experiments/EXP-2026-11-18-1218-export-slice-crash/`.
+### Resolution
+
+The exported wrapper takes **structs by value**:
+
+```c
+typedef struct { int64_t * data; int64_t len; } sl_i64;
+int64_t fg_sp_prefix(sl_i64, sl_i64, int64_t, sl_i64);
+```
+
+My host code declared it as flattened `(data, len, data, len, k, out, len)` pairs. That compiles, and
+crashes at entry, because the callee reads a struct layout the caller never produced. With the real
+struct types the same call returns the right answer (`r=2` for a draft that agrees on two tokens), and in
+the server the counter finally moves:
+
+```
+FG_SP_PREFIX goose calls=3 disagreements=0
+```
+
+So: **not a compiler defect**. The sampler shim always used real structs - which is why its 2965
+differential cases passed - and my two hand-written hooks did not, which cost several iterations and one
+false crash report.
+
+The rule that follows, and it is the same shape as the build-source mistake: when calling a generated
+export by hand, **copy the prototype from the generated header**, never re-type it as a list of pieces.

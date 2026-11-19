@@ -704,8 +704,11 @@ llama_token common_sampler_sample(struct common_sampler * gsmpl, struct llama_co
 
 // The speculative doors live in libllama, which llama-common must not depend on, so the symbol is
 // looked up in the library already loaded in the process.
-typedef int64_t (*fg_sp_prefix_fn)(const int64_t *, int64_t, const int64_t *, int64_t, int64_t,
-                                   int64_t *, int64_t);
+// The exported wrapper takes STRUCTS by value, not flattened pointer/length pairs. Passing the
+// pieces as separate arguments compiles, and crashed at entry (measured): the callee reads the
+// struct layout, and only a real struct makes the call well-formed.
+struct fg_sl_i64 { int64_t * data; int64_t len; };
+typedef int64_t (*fg_sp_prefix_fn)(fg_sl_i64, fg_sl_i64, int64_t, fg_sl_i64);
 
 static fg_sp_prefix_fn fg_sp_prefix_resolve() {
     static fg_sp_prefix_fn fn = []() -> fg_sp_prefix_fn {
@@ -766,8 +769,10 @@ std::vector<llama_token> common_sampler_sample_and_accept_n(struct common_sample
         // holds many more, and asking for more than the target has made the door refuse (-1) -
         // which is what my first version did.
         const int64_t k = (int64_t) std::min(d.size(), t.size());
-        const int64_t goose = fn(d.data(), (int64_t) d.size(), t.data(), (int64_t) t.size(),
-                                 k, out, (int64_t) 2);
+        fg_sl_i64 sd{ d.data(), (int64_t) d.size() };
+        fg_sl_i64 st{ t.data(), (int64_t) t.size() };
+        fg_sl_i64 so{ out, 2 };
+        const int64_t goose = fn(sd, st, k, so);
         // unconditional on the first call: the conditional print below never appeared even though
         // the block before it did, so the question is whether control returns from the door at all
         static std::atomic<int> fg_ret{0};
