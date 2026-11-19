@@ -14,6 +14,7 @@ run only with explicit permission).
 | models | model-manager-doors | `tests/models/model-manager-doors` | door work of P8-06 | P8-06 | fast | migrated 2026-11-19 |
 | json | roundtrip | `tests/json/roundtrip` | door work of P10-07 | P10-07 | fast | migrated 2026-11-19 |
 | json | nlohmann-shadow | `tests/json/nlohmann-shadow` | P10-07 state, 2026-11-19 | P10-07 | fast | verified 2026-11-19 |
+| json | adapter | `tests/json/adapter` | P10-07 adapter, 2026-11-19 | P10-07 | fast | verified 2026-11-19 |
 | json | door | `tests/json/door` | door work of P10-07 | P10-07 | fast | migrated 2026-11-19 |
 | server | router-status | `tests/server/router-status` | door work of P8-06 | P8-06 | model | migrated 2026-11-19 |
 | integration | goose-composition | `tests/integration/goose-composition` | set list of tools/check-composition.sh | P6-10, P7-06, P8-09 | integration | created 2026-11-19, run pending |
