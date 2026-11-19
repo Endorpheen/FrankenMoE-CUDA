@@ -3081,7 +3081,8 @@
         "remaining architecture extensions (Qwen builders, precision, loader and qualification) without regressing the common runtime or Apex"
       ],
       "coverage_doc": "docs/goose-migration/architecture-scope.md",
-      "plan_note": "Documented as assigned scope, not yet decomposed into slices."
+      "plan_note": "Documented as assigned scope, not yet decomposed into slices.",
+      "evidence_20261119": "Pattern recorded in docs/goose-migration/C2-04-EXTENSION-PATTERN.md from the Qwen4Exp integration. qwen4exp, q4m-metadata and q4e-expert-layout are in the unit alongside q4t-tensor-map, and the composed unit typechecks (4540 specializations, 7 structs, ok); nothing was forked - the slices import base.model_graph, aliased by the composer to the unit's goose-model-graph.goose, so expert widths and dense spans are the shared ones. Three properties were required, each learned from the composer refusing the set: per-family constant names (P_/K_/T_ carried different values per architecture, so the Q4P_/Q4K_/Q4T_ prefix over 189 references makes an extension composable and changes no value); one abort primitive bound locally (the graph's fail becomes fgg_fail at composition, so new modules bind fg200g_fail under their own name); and the gate building from goose/, which found the first two. Protection of the existing runtime is mechanical: tests/regression/accepted-components, tests/regression/symbol-loss, tests/integration/unwired-modules and check-cumulative-baseline.py before any measurement. No Qwen GGUF has been loaded; the integration is proven at composition and typecheck, not at inference."
     },
     {
       "id": "F1-01",
