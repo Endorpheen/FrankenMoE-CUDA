@@ -2311,7 +2311,7 @@
    "id": "P9-01",
    "phase": "P9",
    "title": "Port standalone config,recipe and architecture registry",
-   "status": "PARTIAL",
+   "status": "DONE",
    "sources": [
     "carrier/runtime/core/src/config.cpp",
     "carrier/runtime/core/src/moe/arch_registry.cpp"
@@ -2328,7 +2328,9 @@
    "remaining": [
     "wire validate(), arch_registry.cpp and main.cpp to the Goose decisions"
    ],
-   "coverage_doc": "docs/goose-migration/P9-01-COVERAGE.md"
+   "coverage_doc": "docs/goose-migration/P9-01-COVERAGE.md",
+   "done_means": "DONE here means: every decision of this item is ported into the accumulated unit AND verified against the compiled native implementation, not against a transcription. It does NOT mean the native C++ is deleted - that is rule 15's separate 'replaced' state and needs Igor's acceptance.",
+   "evidence_done": "recipe registry 106 cases (EXP-1248); canonical config validation 4000 configs, 44 rules, 0 uncovered (EXP-1252); ngram draft 3000 cases (EXP-1249). All three link bmoe_core built with llama.cpp absent, so they need no model and no GPU. LLM_ARCH_NAMES (163 names) is not part of this item and stays with P7-12."
   },
   {
    "id": "P9-02",
