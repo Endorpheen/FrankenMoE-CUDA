@@ -77,6 +77,24 @@ An object in `extra-objects` must satisfy one of two conditions, or it does not 
    object;
 2. it is a build product, and the command that produces it is recorded next to the object.
 
+## `fx286pic.o`, resolved exactly
+
+The difference was a **localization step**, not a compile flag. Reproduced and compared on 2026-11-19:
+
+```
+D=experiments/EXP-2026-11-12-286-goose-mmap-bookkeeping
+gcc-13 -O2 -fPIC -Dmain=fg286_fx_main -I$D/source -c $D/tests/mmap_fixture.c -o fx1.o
+objcopy --localize-symbol=gate_fail --localize-symbol=gate_st fx1.o fx286pic.o
+```
+
+The result's symbol table is the original's: `T fg286_fx_main`, `t gate_fail`, `t gate_st`. The module
+source declares `extern void (fg286m_fail)(int64_t)` (`mmap_bookkeeping-functions.c:36`), so the helpers
+must stay external for the module to link - which is why making them `static` in the fixture is wrong
+(it fails to compile, and that was tried), and why the object was localized after the fact instead.
+
+The localization is not cosmetic: without it the fixture exports two globals named `gate_fail` into the
+shared library, and the first other object defining that name is a duplicate-definition link failure.
+
 All eighteen now meet a condition: seventeen through a tracked source, and `slru-runtime.o` as the
 compiler's own runtime with its version pinned in `RUNTIME_VERSION.txt`. `fx286pic.o` is the eighteenth,
 from EXP286's fixture with `-Dmain=fg286_fx_main`, carrying one unresolved difference in symbol
