@@ -175,11 +175,29 @@ for name, sym in ENTRIES:
 hdr = ''.join('#define FG_SAMPLER_%s %s\n' % (k, v) for k, v in found.items())
 open(out + '/sampler_chain_ids.h', 'w').write(hdr)
 
-SHIM = """#include "sampler_chain.h"
+SHIM = """#include <stdio.h>
+#include "sampler_chain.h"
 #include "sampler_chain_ids.h"
 
 // One initialisation for the whole library; the exported doors panic without it.
 __attribute__((constructor)) static void fg_init(void) { goose_init(0, 0); }
+
+// The metrics module calls out for "%.6g" formatting, and nothing provided it - the symbol was
+// undefined and the library would not load once the module joined this unit. This is that provider:
+// the same conversion the native route sink performs with fprintf.
+int64_t mt_fmt_g6(sl_u8 out, int64_t at, double x) {
+    char tmp[64];
+    const int n = snprintf(tmp, (int) sizeof(tmp), "%.6g", x);
+    if (n < 0) {
+        return 0;
+    }
+    int64_t w = 0;
+    for (int i = 0; i < n && at + w < out.len; ++i) {
+        out.data[at + w] = (uint8_t) tmp[i];
+        w++;
+    }
+    return w;
+}
 
 int64_t fg_sampler_chain_call(int64_t op, const float * lv, float * p, int64_t * id,
                               int64_t n, float f, int64_t k, float f2, float f3) {
