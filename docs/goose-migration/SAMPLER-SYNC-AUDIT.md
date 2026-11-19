@@ -43,3 +43,18 @@ Not by reading code for its own sake: the JSON set measured 5% slower than the b
 compared, neither differed in its dynamic section, and the difference had to be inside the code. Reading the
 sampler path for anything that waits on the device produced this in one pass. The 5% between the two builds
 is still unexplained, but the four synchronisations were sitting there regardless.
+
+## A nuance that keeps the claim honest
+
+Four *calls* per token is not four *costs*. `ctx->synchronize()` drains pending work; the first call after
+the graph is computed waits for it, and the next two find nothing to wait for and return almost immediately.
+So the plausible cost is **one pipeline drain per token**, not four, and the gain from removing the extra
+calls is likely small.
+
+Also verified, because I had asserted it: `set_logits` is called from inside `common_sampler_sample`
+(`sampling.cpp:671`) and again on the resampling path (`:766`), so it really is once per sampled token -
+not once per request as one might hope.
+
+The fix applied today removed a call that was pure overhead (its value was only printed in a rare branch).
+The remaining three are load-bearing and their removal needs the experiment described above, measured
+against the baseline rather than assumed to help.
