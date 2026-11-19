@@ -755,8 +755,12 @@ std::vector<llama_token> common_sampler_sample_and_accept_n(struct common_sample
         static thread_local int64_t out[2];
         d.assign(draft.begin(), draft.end());
         t.assign(result.begin(), result.end());
+        // k must fit both arrays: on an early break the target holds i+1 tokens while the draft
+        // holds many more, and asking for more than the target has made the door refuse (-1) -
+        // which is what my first version did.
+        const int64_t k = (int64_t) std::min(d.size(), t.size());
         const int64_t goose = fn(d.data(), (int64_t) d.size(), t.data(), (int64_t) t.size(),
-                                 (int64_t) draft.size(), out, (int64_t) 2);
+                                 k, out, (int64_t) 2);
         static std::atomic<unsigned long long> calls{0}, bad{0};
         const auto c = ++calls;
         if (goose != (int64_t) i) {
