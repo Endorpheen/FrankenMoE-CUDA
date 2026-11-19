@@ -224,3 +224,24 @@ Two mistakes were in the harness itself, and both are the kind this project keep
 tested a **guessed** list of architecture names - twenty-one of twenty-five were architectures this build deliberately
 dropped, so the test failed on its own guesses. The names now come from the registry through `ar_count`/`ar_arch`, which is
 the only list that means anything.
+
+## The joint QG split, held against the native line
+
+The registry recorded one gap by name: `fg_q35s_qg_split` was not compared by any gate. It is now.
+
+`experiments/EXP-2026-11-19-1467-qg-split-gate` compiles `goose/model/qgate-split.goose` on its own against a capture host,
+so the two view records the module produces are recorded instead of becoming tensors, and compares them with the native
+expression transcribed from `vendor/flint/src/models/qwen35moe.cpp:293-300`:
+
+```
+qg split: shapes=7 refusals=4 failures=0
+PASS
+```
+
+Seven shapes cover the head widths and element sizes an Apex-class model produces. A head stride of one head width instead of
+two - the failure that would run and produce nonsense - is caught by the stride comparison, and the gate view's offset must be
+exactly one head width inside each head. All four zero dimensions refuse with codes 60..63 rather than returning a plausible
+handle.
+
+What the gate does not prove is that the native builder still carries that expression; it is compared against the line as
+transcribed, and the transcription is named so a future reader can check it.
