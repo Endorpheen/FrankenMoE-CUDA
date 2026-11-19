@@ -1,0 +1,10 @@
+Hello world
+The quick brown fox jumps over the lazy dog.
+def f(x): return x**2 + 1
+Привет, мир! Как дела?
+日本語のテキストです。
+supercalifragilisticexpialidocious antidisestablishmentarianism
+a  b   c    d
+<|im_start|>system
+!@#$%^&*()_+-=[]{}|;':",./<>?
+1234567890 3.14159 1e-9

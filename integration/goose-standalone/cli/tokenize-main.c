@@ -35,6 +35,8 @@ extern int64_t btl_load(sl_u8 gguf, sl_i64 state, sl_i64 kv, sl_i64 kvslots,
                         sl_i64 mrg_off, sl_i64 mrg_len, sl_i64 mrg_slots,
                         sl_i64 pairs, sl_i64 tok_type, sl_i64 attr, sl_i64 order, sl_i64 eog,
                         int64_t eos_id, int64_t eot_id, int64_t eom_id, sl_i64 stats);
+extern int64_t bt_special_order(sl_u8 gguf, sl_i64 tok_off, sl_i64 tok_len, sl_i64 attr, sl_i64 order);
+
 extern int64_t bt_bpe(sl_u8 text, sl_u8 gguf,
                       sl_i64 tok_off, sl_i64 tok_len, sl_i64 tok_slots,
                       sl_i64 mrg_off, sl_i64 mrg_len, sl_i64 mrg_slots,
@@ -90,8 +92,10 @@ int main(int argc, char ** argv) {
             len += n;
             if (len == cap) { cap *= 2; text = realloc(text, cap); }
         }
+        // The bytes are tokenized as given. Dropping a trailing newline made this CLI disagree with
+        // llama_tokenize by one token on every piped file, which is the difference that was mistaken for
+        // an encoder defect before it was localized (EXP-2026-11-19-1374).
         text_len = len;
-        if (text_len > 0 && text[text_len - 1] == '\n') text_len--;
     }
 
     int fd = open(path, O_RDONLY);
@@ -186,6 +190,62 @@ int main(int argc, char ** argv) {
             if (gr_meta_int(data, st8, kvv, bos, (sl_i64){ &v, 1 }) == 0) ids[nout++] = v;
         }
     }
+    // Special tokens first. The native tokenizer matches them before BPE when specials are parsed, so
+    // `<|im_start|>system` is one special id plus "system", not seven ordinary pieces - measured as the
+    // only difference on ten prompts (EXP-2026-11-19-1374: [27, 91, 316, 4747, 91, 29, 8678] against
+    // [248045, 8678]). The order comes from bt_special_order, longest text first, so the longest match
+    // wins; the segments between matches go to bt_bpe exactly as before.
+    int64_t n_special = bt_special_order(data, (sl_i64){ tok_off, n_tok }, (sl_i64){ tok_len, n_tok },
+                                         (sl_i64){ attr, n_tok }, (sl_i64){ order, n_tok });
+    int64_t * seg_start = malloc((size_t) (n_special + 1) * sizeof(int64_t));
+    int64_t * seg_end   = malloc((size_t) (n_special + 1) * sizeof(int64_t));
+    int64_t * seg_tok   = malloc((size_t) (n_special + 1) * sizeof(int64_t));
+    int64_t n_seg = 0, plain_from = 0, pos = 0;
+    while (n_special > 0 && pos < n) {
+        int64_t hit = -1, hit_len = 0;
+        for (int64_t k = 0; k < n_special; ++k) {
+            const int64_t id = order[k];
+            const int64_t len = tok_len[id];
+            if (len <= 0 || pos + len > n) { continue; }
+            if (memcmp(text + pos, data.data + tok_off[id], (size_t) len) == 0) { hit = id; hit_len = len; break; }
+        }
+        if (hit < 0) { pos++; continue; }
+        if (pos > plain_from) {
+            seg_start[n_seg] = plain_from; seg_end[n_seg] = pos; seg_tok[n_seg] = -1; n_seg++;
+        }
+        seg_start[n_seg] = pos; seg_end[n_seg] = pos + hit_len; seg_tok[n_seg] = hit; n_seg++;
+        pos += hit_len;
+        plain_from = pos;
+    }
+    if (plain_from < n) {
+        seg_start[n_seg] = plain_from; seg_end[n_seg] = n; seg_tok[n_seg] = -1; n_seg++;
+    }
+    int64_t nout_total = nout;
+    if (n_seg > 0) {
+        for (int64_t sg = 0; sg < n_seg; ++sg) {
+            if (seg_tok[sg] >= 0) {
+                if (nout_total < cap) ids[nout_total++] = seg_tok[sg];
+                continue;
+            }
+            const int64_t len = seg_end[sg] - seg_start[sg];
+            if (len <= 0) { continue; }
+            const int64_t g = bt_bpe(S(text + seg_start[sg], len), data,
+                                     (sl_i64){ tok_off, n_tok }, (sl_i64){ tok_len, n_tok },
+                                     (sl_i64){ tok_slots, tcap },
+                                     (sl_i64){ mrg_off, n_mrg > 0 ? n_mrg : 1 },
+                                     (sl_i64){ mrg_len, n_mrg > 0 ? n_mrg : 1 },
+                                     (sl_i64){ mrg_slots, mcap },
+                                     (sl_i64){ ids + nout_total, cap - nout_total }, 0,
+                                     (sl_i64){ cpts, len + 1 }, (sl_i64){ seg, 4 * (len + 1) },
+                                     S(enc, 8 * (len + 1)), (sl_i64){ sym, 24 * (len + 1) },
+                                     (sl_i64){ heap, 15 * (len + 1) + 40 }, (sl_i64){ hc, 2 },
+                                     (sl_i64){ info, 8 });
+            if (g < 0) { fprintf(stderr, "bt_bpe refused a segment\n"); return 1; }
+            nout_total += g;
+        }
+        nout = nout_total;
+        goto emit;
+    }
     const int64_t got = bt_bpe(S(text, n), data,
                                (sl_i64){ tok_off, n_tok }, (sl_i64){ tok_len, n_tok },
                                (sl_i64){ tok_slots, tcap },
@@ -199,6 +259,8 @@ int main(int argc, char ** argv) {
                                (sl_i64){ info, 8 });
     if (got < 0) { fprintf(stderr, "bt_bpe refused the input\n"); return 1; }
     nout += got;
+
+emit:;
 
     if (ids_mode) {
         char out[65536];
