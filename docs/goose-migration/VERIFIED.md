@@ -115,7 +115,7 @@ against the artefact everyone runs" is separate. For the twelve modules whose do
 | detokenizer (3 doors) | yes for pieces and EOG; sequence door not measured |
 | unicode tables and text | yes - through the tokenizer path above |
 | gguf tensors, reader, saver | yes - 601's writer cases relinked against the shipped library |
-| **config validation** | **no** - its harness includes the module source and calls `gg_function_1`, the pre-export-fn dispatcher, so it cannot be pointed at the library without a wrapper for the current signature |
+| config validation | yes - the gate extended with the two fields the old one lacked, mapped by native field name: 4000 cases, 0 failures, 0 uncovered rules |
 
 Config validation's own evidence stands - 4000 configurations, 0 failures, 0 uncovered rules, twice - but it is
 evidence about the module, not about the artefact.
