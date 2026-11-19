@@ -50,6 +50,9 @@ COMPONENTS = [
     ("goose-slru-policy", "nm", "slru_plan",
      "the expert-cache replacement policy, composed with its existing host adapter reused verbatim; equal to the "
      "native plan on 61 441 decisions in a real Apex run (EXP-2026-11-19-1419)"),
+    ("goose-cuda-arch", "nm", "arch_resolve",
+     "the CUDA architecture policy, composed into the unit in EXP-2026-11-19-1425; its doors answer on five "
+     "hand-checked cases"),
     ("expert-cache", "strings", "moe-cache",
      "the SLRU expert cache the profile sets to 4992 MiB"),
 ]
