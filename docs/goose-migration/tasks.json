@@ -5686,7 +5686,7 @@
    "P9-03": "ported and gated synthetically; NOT verifiable against compiled native code here: the native ExpertStreamSource needs shard paths and real expert tensors in init(), and its pure-looking helpers read the bound geometry. See docs/goose-migration/P9-DEPENDENCY-BOUNDARY.md.",
    "P9-04": "ported and gated synthetically; the decisions this port reproduces live in session.cpp (needs llama.cpp) and RowStream is class-bound like P9-03. Same boundary document.",
    "P9-05": "draft side verified against bmoe::ngram_draft (3000 cases); session/runtime side needs llama.cpp and the bmoe fork, which does not build against vendor/flint. Same boundary document.",
-   "P9-07": "five parts verified against the real class by white-box include: check_static (2000 cases), file parser (9 crafted files, every failure mode), writer (byte-exact vs save(), 4 workloads), replay guards token/finish (1000 cases), and replay_topk including the cursor the native leaves behind (1000 cases). Remaining: capture_topk (record construction, not a decision) and the metrics sinks (telemetry)."
+   "P9-07": "workload side COMPLETE and verified: five parts against the compiled class by white-box include (check_static 2000 cases, parser 9 failure modes, writer byte-exact, token/finish guards 1000 cases, replay_topk with cursor 1000 cases), consolidated into goose/misc/workload-format.goose and in the accumulated unit. The item still includes metrics/traces, which are NOT ported - so it stays PARTIAL."
   },
   "note": "The roadmap counters mixed 'ported', 'called' and 'replaced'. This block makes the three states explicit so a DONE cannot be inferred from composition alone.",
   "verified_against_native": [
