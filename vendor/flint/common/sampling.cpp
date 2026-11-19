@@ -143,13 +143,34 @@ struct common_sampler {
 
         const int n_vocab = llama_vocab_n_tokens(vocab);
 
-        if (sampled_probs) {
+        // The device candidate arrays are trusted only when every id in them is a token id. A candidate set that is
+        // not fully written leaves arbitrary values in `sampled_ids`, and a later stage that SORTS by logit promotes
+        // the garbage to the front: the sampler then returns a value like -2100184624 and the batch builder refuses it
+        // ("failed to add token ... at index 0", a real request, EXP-2026-11-19-1435). The full-logits path below
+        // builds the ids from the counter and cannot be wrong, so it is the fallback.
+        auto fg_ids_ok = [&](uint32_t n) {
+            if (n == 0 || n > (uint32_t) n_vocab || sampled_ids == nullptr) { return false; }
+            for (uint32_t i = 0; i < n; ++i) {
+                if (sampled_ids[i] < 0 || sampled_ids[i] >= n_vocab) {
+                    static std::atomic<long long> fg_bad{0};
+                    const long long fb = fg_bad.fetch_add(1) + 1;
+                    if (fb <= 5) {
+                        fprintf(stderr, "FG_CANDIDATES_INVALID i=%u id=%d n=%u n_vocab=%d count=%lld\n",
+                                i, (int) sampled_ids[i], n, (int) n_vocab, fb);
+                    }
+                    return false;
+                }
+            }
+            return true;
+        };
+
+        if (sampled_probs && fg_ids_ok(llama_get_sampled_probs_count_ith(ctx, idx))) {
             const uint32_t sampled_probs_count = llama_get_sampled_probs_count_ith(ctx, idx);
             cur.resize(sampled_probs_count);
             for (uint32_t i = 0; i < sampled_probs_count; ++i) {
                 cur[i] = llama_token_data{sampled_ids[i], sampled_logits[i], sampled_probs[i]};
             }
-        } else if (sampled_logits) {
+        } else if (sampled_logits && fg_ids_ok(llama_get_sampled_logits_count_ith(ctx, idx))) {
             const uint32_t sampled_logits_count = llama_get_sampled_logits_count_ith(ctx, idx);
             cur.resize(sampled_logits_count);
             for (uint32_t i = 0; i < sampled_logits_count; i++) {
