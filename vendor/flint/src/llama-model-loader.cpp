@@ -144,6 +144,7 @@ static bool fg_port_str(const int64_t k, const uint8_t *& ptr, int64_t & len) {
 struct fg_bpe_store {
     std::vector<int64_t> tok_off, tok_len, tok_slots, mrg_off, mrg_len, mrg_slots;
     std::vector<int64_t> pairs, tok_type, attr, order, eog, stats;
+    std::string blob;   // token texts then merge texts, NUL terminated, the slice bt_bpe indexes
     bool ready = false;
 };
 static fg_bpe_store fg_bpe;
@@ -193,23 +194,54 @@ static bool fg_bpe_init(int64_t tok_key, int64_t mrg_key, int64_t n_tok, int64_t
     fg_bpe.order.assign(n_tok, 0);     fg_bpe.eog.assign(n_tok, 0);
     fg_bpe.stats.assign(8, 0);
 
-    // Offsets of every token and merge, taken from the reader that will serve them.
-    for (int64_t i = 0; i < n_tok; ++i) {
-        const uint8_t * ptr = nullptr; int64_t len = 0;
-        if (!fg_port_array_str(tok_key, i, &ptr, &len)) {
-            if (getenv("FG_TK_BPE_DIAG")) { fprintf(stderr, "FG_TK_BPE_OFF tok i=%lld failed\n", (long long) i); }
-            return false;
+    // Offsets and text for both arrays in one pass each, through the reader's own table door: the per-element
+    // accessor walks the array to reach element i, which made this quadratic and cost an hour of load
+    // (EXP-2026-11-19-1389). The door writes NUL-terminated entries back to back, so the blob it fills is
+    // exactly what bt_bpe indexes, and the merges are appended after the tokens in the same blob.
+    typedef int64_t (*fg_arr_table_fn)(fg_sl_u8, fg_sl_i64, fg_sl_i64, int64_t, fg_sl_u8, fg_sl_i64);
+    static fg_arr_table_fn table_fn = []() -> fg_arr_table_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        return h ? reinterpret_cast<fg_arr_table_fn>(dlsym(h, "gr_arr_str_table")) : nullptr;
+    }();
+    if (!table_fn) { return false; }
+
+    auto fill = [&](int64_t key, int64_t n, std::vector<int64_t> & offs,
+                    std::string & blob) -> bool {
+        std::vector<int64_t> rel((size_t) n, 0);
+        std::string buf((size_t) (1 << 20), '\0');
+        int64_t got = 0;
+        for (int attempt = 0; attempt < 8; ++attempt) {
+            got = table_fn(fg_sl_u8{ fg_port.data.data(), (int64_t) fg_port.data.size() },
+                           fg_sl_i64{ fg_port.state.data(), 8 },
+                           fg_sl_i64{ fg_port.kv.data(), (int64_t) fg_port.kv.size() },
+                           key,
+                           fg_sl_u8{ (uint8_t *) buf.data(), (int64_t) buf.size() },
+                           fg_sl_i64{ rel.data(), n });
+            if (got >= 0) { break; }
+            if (got == -2) { return false; }
+            const int64_t need = -got - 1;          // -(needed + 1)
+            if (need <= 0) { return false; }
+            buf.assign((size_t) need + 64, '\0');
         }
-        fg_bpe.tok_off[i] = (int64_t) (ptr - fg_port.data.data());
-        fg_bpe.tok_len[i] = len;
+        if (got < 0 || got > n) { return false; }
+        const int64_t base = (int64_t) blob.size();
+        blob.append(buf, 0, (size_t) (rel.empty() ? 0 : rel[(size_t) got - 1] + (int64_t) strlen(buf.c_str() + rel[(size_t) got - 1]) + 1));
+        for (int64_t i = 0; i < got; ++i) { offs[(size_t) i] = base + rel[(size_t) i]; }
+        return true;
+    };
+
+    std::string blob;
+    if (!fill(tok_key, n_tok, fg_bpe.tok_off, blob)) { return false; }
+    if (n_mrg > 0 && !fill(mrg_key, n_mrg, fg_bpe.mrg_off, blob)) { return false; }
+    // lengths come from the NUL terminators the door wrote
+    for (int64_t i = 0; i < n_tok; ++i) {
+        fg_bpe.tok_len[(size_t) i] = (int64_t) strlen(blob.c_str() + fg_bpe.tok_off[(size_t) i]);
     }
     for (int64_t i = 0; i < n_mrg; ++i) {
-        const uint8_t * ptr = nullptr; int64_t len = 0;
-        if (!fg_port_array_str(mrg_key, i, &ptr, &len)) { return false; }
-        fg_bpe.mrg_off[i] = (int64_t) (ptr - fg_port.data.data());
-        fg_bpe.mrg_len[i] = len;
+        fg_bpe.mrg_len[(size_t) i] = (int64_t) strlen(blob.c_str() + fg_bpe.mrg_off[(size_t) i]);
     }
-    fg_sl_u8  s_gguf { fg_port.data.data(), (int64_t) fg_port.data.size() };
+    fg_bpe.blob = std::move(blob);
+    fg_sl_u8  s_gguf { (uint8_t *) fg_bpe.blob.data(), (int64_t) fg_bpe.blob.size() };
     const int64_t rc = build(s_gguf,
                              fg_sl_i64{ fg_bpe.tok_off.data(), n_tok },
                              fg_sl_i64{ fg_bpe.tok_len.data(), n_tok },
@@ -241,7 +273,7 @@ extern "C" int64_t fg_bpe_encode(const char * text, int64_t n, int64_t * ids, in
     sym.assign(24 * (m + 1), 0); heap.assign(15 * (m + 1) + 40, 0); hc.assign(2, 0); info.assign(8, 0);
     if (ids_buf.size() < (size_t) cap + 8) { ids_buf.resize((size_t) cap + 8); }
     const int64_t got = fn(fg_sl_u8{ (uint8_t *) text, n },
-                           fg_sl_u8{ fg_port.data.data(), (int64_t) fg_port.data.size() },
+                           fg_sl_u8{ (uint8_t *) fg_bpe.blob.data(), (int64_t) fg_bpe.blob.size() },
                            fg_sl_i64{ fg_bpe.tok_off.data(), (int64_t) fg_bpe.tok_off.size() },
                            fg_sl_i64{ fg_bpe.tok_len.data(), (int64_t) fg_bpe.tok_len.size() },
                            fg_sl_i64{ fg_bpe.tok_slots.data(), (int64_t) fg_bpe.tok_slots.size() },

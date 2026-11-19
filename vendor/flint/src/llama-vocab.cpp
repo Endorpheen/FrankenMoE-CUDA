@@ -3883,6 +3883,10 @@ void llama_vocab::impl::tokenizer_st_partition(std::forward_list<fragment_buffer
 // way; this only counts disagreements. The hook lives in the function that PRODUCES that piece and calls
 // only the door - an earlier version called a piece function from inside another and recursed until the
 // stack overflowed (EXP-2026-11-19-1316).
+// Defined by the model loader with C linkage; a C++ declaration would mangle the name and the dynamic linker
+// would report it missing at the first call (the gate names it: _Z13fg_bpe_encodePKclPll).
+extern "C" int64_t fg_bpe_encode(const char * text, int64_t n, int64_t * ids, int64_t cap);
+
 namespace fg_detok_check {
 
 struct sl_i64 { int64_t * data; int64_t len; };
@@ -5182,7 +5186,44 @@ int32_t llama_tokenize(
                      int32_t   n_tokens_max,
                         bool   add_special,
                         bool   parse_special) {
-    return vocab->tokenize(text, text_len, tokens, n_tokens_max, add_special, parse_special);
+    const int32_t n = vocab->tokenize(text, text_len, tokens, n_tokens_max, add_special, parse_special);
+
+    // Shadow comparison of the ported encoder on the shipped call path. The native answer is used; the port is
+    // compared and a disagreement is counted. bt_bpe adds no BOS and no EOS, so the native sequence is compared
+    // with those stripped - the port's contract is the body of the sequence, which is what it was measured on
+    // (EXP-2026-11-19-1375: 227 ids identical over twenty-three prompts).
+    static const bool fg_bpe_diag = getenv("FG_TK_BPE_DIAG") != nullptr;
+    if (fg_bpe_diag && n >= 0 && text_len > 0) {
+        static thread_local std::vector<int64_t> ids;
+        if (ids.size() < (size_t) n_tokens_max + 8) { ids.resize((size_t) n_tokens_max + 8); }
+        const int64_t got = fg_bpe_encode(text, (int64_t) text_len, ids.data(), (int64_t) ids.size());
+        if (got <= 0) {
+            static std::atomic<long long> refused{0};
+            if (refused.fetch_add(1) < 5) {
+                fprintf(stderr, "FG_TK_BPE_REFUSED got=%lld text_len=%d\n", (long long) got, (int) text_len);
+            }
+        }
+        if (got > 0) {
+            int32_t lo = 0, hi = n;
+            if (lo < hi && tokens[lo] == vocab->token_bos()) { lo++; }
+            if (lo < hi && tokens[hi - 1] == vocab->token_eos()) { hi--; }
+            const int32_t m = hi - lo;
+            bool same = (got == (int64_t) m);
+            for (int32_t i = 0; same && i < m; ++i) { same = tokens[lo + i] == (llama_token) ids[(size_t) i]; }
+            static std::atomic<long long> calls{0}, bad{0};
+            const long long c = calls.fetch_add(1) + 1;
+            if (!same) {
+                bad.fetch_add(1);
+                if (bad.load() <= 5) {
+                    fprintf(stderr, "FG_TK_BPE_DIFF native=%d goose=%lld text_len=%d\n", (int) m, (long long) got, (int) text_len);
+                }
+            }
+            if (c % 8 == 1) {
+                fprintf(stderr, "FG_TK_BPE_COMPARE calls=%lld disagreements=%lld\n", c, bad.load());
+            }
+        }
+    }
+    return n;
 }
 
 int32_t llama_token_to_piece(
