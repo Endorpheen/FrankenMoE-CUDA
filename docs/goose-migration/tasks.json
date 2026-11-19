@@ -2628,7 +2628,7 @@
       "id": "P10-09",
       "phase": "P10",
       "title": "Port test runners,fixtures and diagnostics as needed for native-free builds",
-      "status": "PARTIAL",
+      "status": "DONE",
       "sources": [
         "tests/**",
         "tools/server/tests/**",
@@ -2647,7 +2647,8 @@
       "remaining": [
         "attach bench-diagnostics.goose once its hosts exist: scripts/bench-analyze.py and scripts/trace_io.py are absent from the tree (checked 2026-11-19), so there is nothing to wire them into"
       ],
-      "coverage_doc": "docs/goose-migration/P10-09-COVERAGE.md"
+      "coverage_doc": "docs/goose-migration/P10-09-COVERAGE.md",
+      "evidence_done_20261119": "Accounting recorded in docs/goose-migration/P10-09-TEST-AND-DIAGNOSTICS.md. Present: a permanent test tree (ten tests, each with run.sh/tier/README), one runner (tests/run.sh) and a registry row per test naming its EXP and requirement. Absent and therefore not wired: scripts/bench-analyze.py and scripts/trace_io.py do not exist, and goose/metrics/bench-diagnostics.goose has no caller and is not in the composed unit - the requirement's own wording defers wiring to when callers exist, so no fake hook is created. The criterion is met by the tests, not by the diagnostics: the native oracle is compiled into the test fixture (tests/grammar/*/fixture.cpp includes llama-grammar.cpp) and never into the shipped library, each test writes only under its own gitignored build/, library-based tests record the artefact path, its SHA-256 and the commit, and a test that needs a model or a GPU declares it in its tier and refuses to run without its precondition."
     },
     {
       "id": "P10-10",
@@ -5676,8 +5677,8 @@
   },
   "updated_at": "2026-11-19",
   "status_totals": {
-    "DONE": 122,
-    "PARTIAL": 20,
+    "DONE": 123,
+    "PARTIAL": 19,
     "TODO": 10
   },
   "work_front": {
