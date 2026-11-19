@@ -140,7 +140,10 @@ int main() {
         int off = 0;
         for (int b = 0; b < nb; ++b) { bh[b] = (int64_t)(rng() % V); btl[b] = (int64_t)(rng() % 3);
             bts[b] = off; for (int j = 0; j < btl[b]; ++j) btail[off++] = (int64_t)(rng() % V); }
-        auto rat = [&](int k){ return last[NN-1-k]; };
+        // The real caller (llama_sampler_dry_apply) builds last[i] = last_tokens.rat(i), i.e. the array
+        // is newest-first. The harness used to mirror it here, which made it agree with a port that
+        // mirrored too - and hid the convention error found by EXP-2026-11-19-1281.
+        auto rat = [&](int k){ return last[k]; };
         int64_t rep_limit = NN;
         for (int i = 0; i < NN; ++i) {
             int64_t tok = rat(i); int64_t longest = -1;

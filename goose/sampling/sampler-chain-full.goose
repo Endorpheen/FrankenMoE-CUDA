@@ -700,7 +700,7 @@ fn sm_dry_rep_limit(last: i64[:], b_head: i64[:], b_ts: i64[:], b_tl: i64[:],
     var rep_limit: i64 = n;
     var i: i64 = 0;
     while i < n {
-        let tok: i64 = last[n - 1 - i];
+        let tok: i64 = last[i];
         var longest: i64 = -1;
         var b: i64 = 0;
         while b < nb {
@@ -710,7 +710,7 @@ fn sm_dry_rep_limit(last: i64[:], b_head: i64[:], b_ts: i64[:], b_tl: i64[:],
                     var ok: bool = true;
                     var off: i64 = 0;
                     while off < sl {
-                        if b_tail[b_ts[b] + off] != last[n - 1 - (i - off - 1)] {
+                        if b_tail[b_ts[b] + off] != last[i - off - 1] {
                             ok = false;
                             break;
                         }
@@ -741,7 +741,7 @@ fn sm_dry_repeat_counts(last: i64[:], rc: i64[:], n: i64, rep_limit: i64) -> i64
     while k < n {
         if k > rt {
             var m: i64 = 0;
-            while m + k < n && last[n - 1 - m] == last[n - 1 - (m + k)] {
+            while m + k < n && last[m] == last[m + k] {
                 m = m + 1;
             }
             var v: i64 = m;
@@ -760,7 +760,7 @@ fn sm_dry_repeat_counts(last: i64[:], rc: i64[:], n: i64, rep_limit: i64) -> i64
                 rc[lastidx - k] = v;
             } else {
                 var i2: i64 = rt + 1;
-                while i2 < n && last[n - 1 - i2] == last[n - 1 - (i2 - k)] {
+                while i2 < n && last[i2] == last[i2 - k] {
                     i2 = i2 + 1;
                 }
                 var v: i64 = i2 - k;
