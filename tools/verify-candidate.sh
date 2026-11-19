@@ -52,11 +52,20 @@ else
     echo "FAIL: $(printf '%s' "$DUP" | tr '\n' ' ')"; fail=1
 fi
 
-printf '%-42s ' "json_parse door"
-case "$SYMS" in
-    *" json_parse"*) echo "present - the JSON adapter is linked" ;;
-    *) echo "absent (P10-07 not in this build)" ;;
+# The JSON adapter is not a Goose door called json_parse: it is a C++ entry point, fg_json_adapter::to_tree,
+# and it lives in libllama-common, not in libllama. Checking only libllama for the wrong name reported
+# "absent" for a build that carries it - the same false negative this script exists to prevent.
+printf '%-42s ' "JSON adapter"
+COMMON=$(dirname "$LIB")/libllama-common.so.0
+# Captured first, grepped second: `nm | c++filt | grep -q` lets grep exit on the first match, the
+# upstream processes die of SIGPIPE and `set -o pipefail` turns a found symbol into a failed check.
+# That is the third time this exact shape produced a false negative today.
+COMMON_SYMS=$( [ -f "$COMMON" ] && nm -D --defined-only "$COMMON" 2>/dev/null | c++filt || true )
+case "$COMMON_SYMS" in
+    *"fg_json_adapter::to_tree"*) JSON_ADAPTER="present in $(basename "$COMMON") (fg_json_adapter::to_tree)" ;;
+    *) JSON_ADAPTER="absent (P10-07 not in this build)" ;;
 esac
+printf '%s\n' "$JSON_ADAPTER"
 
 printf '%-42s ' "artefact class"
 if [ "$(dirname "$LIB")" = "$ROOT/builds/flint-acc/bin" ]; then
