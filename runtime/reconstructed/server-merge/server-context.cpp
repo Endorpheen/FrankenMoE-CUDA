@@ -1,4 +1,7 @@
 #include "server-context.h"
+// Per-process draft accounting, filled where drafts are generated and reported with the request timing.
+static int64_t g_spec_draft_us = 0;
+static int64_t g_spec_draft_calls = 0;
 #include <dlfcn.h>
 #include <cstdio>
 #include <atomic>
@@ -845,6 +848,14 @@ struct server_slot {
         SLT_INF(*this,
                 "       eval time = %10.2f ms / %5d tokens (%8.2f ms per token, %8.2f tokens per second)\n",
                 t_gen_total, (int) stats.n_gen, t_gen, n_gen_second);
+
+        if (g_spec_draft_calls > 0) {
+            const double dft_ms = (double) g_spec_draft_us / 1000.0;
+            SLT_INF(*this,
+                    "  draft time = %10.2f ms / %5lld calls (%8.2f ms per call, %5.1f %% of eval)\n",
+                    dft_ms, (long long) g_spec_draft_calls,
+                    dft_ms / (double) g_spec_draft_calls, 100.0 * dft_ms / (t_gen_total > 0.0 ? t_gen_total : 1.0));
+        }
 
         SLT_INF(*this,
                 "      total time = %10.2f ms / %5d tokens\n",
@@ -3975,9 +3986,14 @@ private:
 
         // generate the actual drafts (if any)
         if (!drafting.empty()) {
+            // Same shape as the other stage timers: the total is reported with the request, so the draft's price
+            // can be separated from verification instead of inferred from a two-point solve (EXP-1386/1387).
+            const int64_t t_draft_start = ggml_time_us();
             queue_tasks.yield_to_queue([&]() {
                 common_speculative_draft(spec.get());
             });
+            g_spec_draft_us += ggml_time_us() - t_draft_start;
+            ++g_spec_draft_calls;
         }
 
         // make checkpoints if needed
