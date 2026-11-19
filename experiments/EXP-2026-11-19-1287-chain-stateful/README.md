@@ -182,6 +182,18 @@ So the sequence of explanations for this configuration was: my unsorted input (w
 (wrong), the sorted flag (true for one scenario, and now falsified as the cause of the rest). What survives is only
 what the harness can check on every run.
 
+### Stopping point, recorded rather than forced
+
+Two diagnostics I added sit **next to each other** (both immediately before the selection), so they print the same
+values and cannot bracket anything. That is the fourth instrument mistake in this thread, and it is the reason the
+work stops here rather than continuing: the remaining difference in configuration 2 is a **size** difference at the
+adaptive-p step, which means it originates earlier in the chain, and finding it needs a print placed
+**between** stages - not another run of the ones already there.
+
+Everything established stands on its own: the doors are identical one by one and in the profile's chain, DRY was
+defect and is fixed, XTC's ranking order was a defect and is fixed, and both fixes are dormant in the accepted
+configuration. What is not established is the 15-round difference in a configuration the profile does not use.
+
 ### What this means for the port
 
 The port's behaviour is the mathematically correct one: it recomputes the maximum from the values it has, so it does

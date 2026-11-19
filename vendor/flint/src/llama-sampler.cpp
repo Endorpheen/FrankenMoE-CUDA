@@ -4194,6 +4194,10 @@ static void llama_sampler_adaptive_p_apply(struct llama_sampler * smpl, llama_to
             if (cur_p->data[i - 1].logit < cur_p->data[i].logit) { mono = false; break; }
         }
         fprintf(stderr, "FG_ADAPTIVE_FLAG sorted=%d monotonic=%d n=%zu\n", (int) cur_p->sorted, (int) mono, cur_p->size);
+        for (size_t i = 0; i < cur_p->size; ++i) {
+            fprintf(stderr, "FG_ADAPTIVE_ENTRY [%zu] id=%d logit=%08x\n", i, (int) cur_p->data[i].id,
+                    *(const unsigned *) &cur_p->data[i].logit);
+        }
     }
 
     llama_sampler_softmax_impl(cur_p, false);
