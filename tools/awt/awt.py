@@ -164,6 +164,33 @@ class Session:
         with open(p, "rb") as f:
             return needle.encode() in f.read()
 
+    def hostile(self, where):
+        """A request the server must refuse without dying.
+
+        The tokens arrive from a client, and an id outside the vocabulary used to reach the batch builder, which aborts on
+        it with "failed to add token". The server already refuses it in server_tokens::validate and answers a request error;
+        this asks for that answer and for the process to still be there afterwards.
+        """
+        body = json.dumps({"prompt": [1, 2, 99999999], "n_predict": 1}).encode()
+        req = urllib.request.Request(self.url("/completion"), data=body, method="POST",
+                                     headers={"Content-Type": "application/json"})
+        status, detail = 0, ""
+        try:
+            with urllib.request.urlopen(req, timeout=120) as r:
+                status, detail = r.status, r.read(200).decode(errors="replace")
+        except urllib.error.HTTPError as e:
+            status, detail = e.code, e.read(200).decode(errors="replace")
+        except urllib.error.URLError as e:
+            self.alive(f"the hostile request ({where})")
+            raise Failure(f"the hostile request could not be sent: {e}")
+        self.alive(f"the hostile request ({where})")
+        if status == 200:
+            raise Failure(f"a request with a token id outside the vocabulary was answered as if it were valid ({where})")
+        if status == 500:
+            raise Failure(f"a bad token id produced a server error instead of a request error ({where}): {detail[:120]}")
+        self.log.append({"step": f"hostile:{where}", "status": status, "detail": detail[:120]})
+        return status
+
     def step(self, user_text, tools=True, max_tokens=256, stream=True, expect_tool=False):
         self.steps += 1
         self.messages.append({"role": "user", "content": user_text})
@@ -277,6 +304,10 @@ def run(mode, args):
             S.step("Прочитай /home/end0/AI/FrankenMoE-CUDA/AGENTS.md.", max_tokens=256, expect_tool=True)
             S.pad(21000)
             S.step("Продолжи работу по плану миграции и не останавливайся.", max_tokens=3383, stream=True)
+
+        if mode in ("CHECK", "FULL", "REPRO"):
+            S.hostile("after the session")
+            S.step("Ещё один короткий ответ после ошибочного запроса.", max_tokens=64)
 
         found = S.goose_activity()
         required = ["tokenizer_from_port", "sampler_stage"]

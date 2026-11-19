@@ -171,3 +171,14 @@ The third line is the defect this test found: an id outside the vocabulary reach
 on `n_vocab+1000`, both aborting. A server cannot afford that, because token ids arrive from requests, so the public piece
 call now refuses with an empty answer and one line in the log (`FG_TOKEN_TO_PIECE_RANGE`), and a bad id inside a sequence no
 longer ends the process either.
+
+## A request the server must refuse without dying
+
+`awt.py` now sends one request with a token id outside the vocabulary (`"prompt": [1, 2, 99999999]`) at the end of CHECK,
+FULL and REPRO, and requires three things: a request error rather than 200, not a 5xx, and the server still answering `/health`
+afterwards.
+
+The check is written because the same failure shape reached the batch builder from the sampler
+(`failed to add token -2100184624`), and the batch builder aborts on it. The client path turned out to be already safe:
+`server_tokens::validate` refuses `t < 0 || t >= n_vocab` and the handler answers `ERROR_TYPE_INVALID_REQUEST`. That is now
+held by a test rather than by reading the code once.
