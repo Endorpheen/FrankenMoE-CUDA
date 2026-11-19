@@ -47,3 +47,22 @@ strings libllama.so.0 | grep -c FG_TK_BPE     -> present before the run
 read which tokenizer the model's pre-type selects -> BPE, and this loop is inside it
 then run                                       -> counter moved on the first request
 ```
+
+## The comparison is opt-in, and the shipped path was re-verified after gating it
+
+The check costs a resolved call per merge - 4156 of them for one prompt - which is right for verification and
+wrong for a path every request takes. It is now behind `FG_TK_DIAG=1`, so the shipped binary pays nothing.
+
+Re-measured after gating, through the official entry point:
+
+```
+decode [44.95, 46.17, 46.0]   prefill [1970.4, 2287.3, 2262.6]   sha {'c2ff42cc1219'}
+```
+
+Same acceptance hash, same speed range. Gating a diagnostic must not change behaviour, and this says it did
+not.
+
+Note for the checkpoint: `builds/checkpoint-20261119-chain` is the accepted **byte** set and predates these
+opt-in diagnostics, so the tree's library no longer matches it byte for byte while the behaviour it was
+accepted for is unchanged. That is the difference between the checkpoint (immutable evidence) and the working
+tree (moves forward).

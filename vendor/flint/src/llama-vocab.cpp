@@ -720,7 +720,11 @@ struct llm_tokenizer_bpe_session {
                 // The queue just produced its own best element. If the ported comparator disagrees
                 // with the order the queue actually applied, this is where it shows - once per merge,
                 // on the real vocabulary. The queue's answer is used either way.
-                if (const auto fn = fg_tk_bpe_before_resolve()) {
+                // Opt-in: this comparison costs a dlsym-resolved call per merge (4156 per prompt), which
+                // is fine for verification and not fine for a shipped path. FG_TK_DIAG=1 enables it.
+                static const bool fg_bpe_diag = getenv("FG_TK_DIAG") != nullptr;
+                const fg_tk_bpe_before_fn fn = fg_bpe_diag ? fg_tk_bpe_before_resolve() : nullptr;
+                if (fn != nullptr) {
                     static std::atomic<unsigned long long> calls{0}, bad{0};
                     const auto c = ++calls;
                     if (!work_queue.empty()) {

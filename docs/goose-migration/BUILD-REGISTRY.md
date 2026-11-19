@@ -249,3 +249,12 @@ Started from `builds/checkpoint-20261119-chain/` alone - no path into the build 
 `apex-test.sh`: `sha c2ff42cc1219`, decode 45.28-45.47, prefill 2257-2266. The recorded acceptance hash
 reproduces from the saved bytes, which is what makes the checkpoint a restore point rather than a directory
 of copies.
+
+### Opt-in diagnostics after the checkpoint
+
+`llama-vocab.cpp` gained a BPE-comparator cross-check and `sampling.cpp` a prefix cross-check. Both are
+verification only; the BPE one is behind `FG_TK_DIAG=1` because it costs a call per merge (4156 per prompt).
+Re-measured through `apex-test.sh` after gating: `sha c2ff42cc1219`, decode 44.95-46.17, prefill 2262-2287.
+
+The working tree therefore differs in bytes from `builds/checkpoint-20261119-chain` while producing the same
+accepted behaviour. The checkpoint stays the immutable evidence; the tree moves forward.
