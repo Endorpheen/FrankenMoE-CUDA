@@ -2868,18 +2868,19 @@
       "id": "P11-08",
       "phase": "P11",
       "title": "Hand off full Apex runtime and begin shared-runtime compatibility extension",
-      "status": "TODO",
+      "status": "DONE",
       "sources": [
         "full functional report",
         "COMPILER_FEEDBACK.md local ignored"
       ],
       "acceptance": "Record full Apex functionality,dependency/import report,rollback and cumulative speed/memory history; continue Qwen/other architecture compatibility in same runtime; no production promotion.",
-      "evidence": "",
+      "evidence": "2026-11-19 EXP-1463/1469/dd0b610c: docs/goose-migration/APEX-HANDOVER.md records the reproducible artifact (23 files, libllama.so.0 sha256 429ca808…), the exact launch command, the dependency report, the numbers measured on it (two acceptance runs: decode medians 59.88 and 60.26, prefill 2842.4 and 2845.9, hash c2ff42cc1219 both times, VRAM 9733 ready / 11387 after three requests, RSS 20.85 → 21.80 GB), the behaviour measurements and the rollback procedure. The rollback anchor was verified by running it: the checkpoint passes the component gate 20/20 and answers with the record hash. One defect found and documented: the binary carries a RUNPATH to the live build, so LD_LIBRARY_PATH must point at the checkpoint directory or it silently runs the current libraries; patchelf is not installed, so the launcher carries the requirement. Qwen and other architectures stay counted under C1/C2, and no production promotion is implied.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 0,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-      "batch": "B5"
+      "batch": "B5",
+      "remaining": []
     },
     {
       "id": "C1-01",
