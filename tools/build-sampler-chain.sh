@@ -52,6 +52,10 @@ fn main() {
     if fset < -1 {
         return;
     }
+    let syn = fg_sp_synth_accept(0.5, 0.25, 0, 0);
+    if syn < -1 {
+        return;
+    }
     let cmp = fg_sp_compatible(1, 1, 1, 1, 2, 100, 1, 1, 1, 1, 2, 100, 128);
     if cmp < -1 {
         return;

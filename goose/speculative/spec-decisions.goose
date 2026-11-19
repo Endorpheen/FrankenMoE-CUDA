@@ -501,3 +501,23 @@ fn sp_slot(hash: i64, slots: i64) -> i64 {
     return hash - slots * (hash / slots);
 }
 
+
+// Synthetic acceptance of a drafted token (server_sample_and_accept_synth).
+// accept = is_replay || u < prob, and a drafted end-of-sequence is refused unless replaying.
+fn sp_synth_accept(prob: f64, u: f64, is_replay: i64, is_eog: i64, marker: i64) -> i64 {
+    if marker != 208 {
+        return -1;
+    }
+    var take: i64 = 0;
+    if is_replay == 1 {
+        take = 1;
+    } else {
+        if u < prob {
+            take = 1;
+        }
+    }
+    if take == 1 && is_replay == 0 && is_eog == 1 {
+        take = 0;
+    }
+    return take;
+}

@@ -23,3 +23,7 @@ export fn fg_sp_ngram_accept(n_accepted: i64, n_draft_last: i64, n_low: i64, out
 export fn fg_sp_n_max_call(types: i64[:], size_m: i64[:], draft_nmax: i64[:], ntypes: i64) -> i64 {
     return sp_n_max(types, size_m, draft_nmax, ntypes, 195);
 }
+
+export fn fg_sp_synth_accept(prob: f64, u: f64, is_replay: i64, is_eog: i64) -> i64 {
+    return sp_synth_accept(prob, u, is_replay, is_eog, 208);
+}
