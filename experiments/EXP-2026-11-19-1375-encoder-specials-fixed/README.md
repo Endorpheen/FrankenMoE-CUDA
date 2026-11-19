@@ -31,6 +31,21 @@ Both fixed, on the same input bytes:
 encoder: identical, 114 ids
 ```
 
+## Coverage extended, and the no-bos path
+
+A wider set was added after the first pass: fenced code, a markdown table, emoji, Japanese mixed with English, two
+special tokens on one line, a URL with a query, tabs, trailing spaces and accented Latin - twenty-three lines in all,
+both with and without BOS:
+
+```
+with bos: IDENTICAL 227 ids
+no bos:   IDENTICAL 227 ids
+```
+
+Equal counts in both rows is the model's own metadata, not a bug in the comparison: this vocabulary does not ask for a
+BOS, so `llama_tokenize` with `add_special` adds nothing and both paths tokenize the same bytes the same way. The
+`--no-bos` flag is therefore exercised, and its being a no-op for this model is a fact about the model.
+
 ## What this is and is not
 
 This is the **standalone** tokenizer: `frankenmoe-tokenize`, a program, not the shipped library. The runtime's encode
@@ -39,7 +54,7 @@ set, and that is the precondition for step 2 of the plan.
 
 The comparison covers ten prompts as one text: ASCII prose, Python, Cyrillic, Japanese, a long rare word, doubled
 spaces, a special marker, punctuation, numbers, and a trailing newline. It does not cover every special token in the
-vocabulary, nor the `--no-bos` path, and the card says so rather than implying a full sweep.
+vocabulary: two are exercised on one line, and the rest are not.
 
 ## Reproduction
 

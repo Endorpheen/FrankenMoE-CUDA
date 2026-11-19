@@ -8,8 +8,10 @@ CLI=${1:-$R/builds/goose-standalone/frankenmoe-tokenize}
 MODEL=${2:-/home/end0/AI/LocalAI/Models/Apex-35B-V1.0-Q4_K_M.gguf}
 gcc-13 -O2 -o /tmp/native_ids "$D/native_ids.c" -I "$R/vendor/flint/include" -I "$R/vendor/flint/ggml/include" \
     -L "$R/builds/flint-acc/bin" -lllama -lggml-base -Wl,-rpath,"$R/builds/flint-acc/bin" || exit 1
-/tmp/native_ids "$MODEL" x --whole < "$D/prompts.txt" > /tmp/enc_native.txt
-"$CLI" "$MODEL" --stdin --ids < "$D/prompts.txt" > /tmp/enc_goose.txt 2>/dev/null
+P="$D/prompts.txt"
+[ -f "$D/prompts_wide.txt" ] && P="$D/prompts_wide.txt"
+/tmp/native_ids "$MODEL" x --whole < "$P" 2>/dev/null > /tmp/enc_native.txt
+"$CLI" "$MODEL" --stdin --ids < "$P" > /tmp/enc_goose.txt 2>/dev/null
 python3 - <<'PY'
 a = open('/tmp/enc_native.txt').read().strip()
 b = open('/tmp/enc_goose.txt').read().strip()
