@@ -402,6 +402,23 @@ static int fg_gguf_check(const std::string & fname, const gguf_context & native)
         if (tok_key >= 0 && mrg_key >= 0) {
             const int64_t n_tok = gguf_get_arr_n(&native, (int) tok_key);
             const int64_t n_mrg = gguf_get_arr_n(&native, (int) mrg_key);
+            // The ported encoder implements one pre-tokenizer (pt_qwen35_body). Serving it for another
+            // vocabulary would tokenise that family silently wrong, which is the single-architecture shortcut
+            // rule 17 forbids, so the table is only built for the family the port actually implements
+            // (EXP-2026-11-19-1378). A refusal here leaves the native encoder as the only one.
+            bool pre_supported = false;
+            {
+                const int64_t pre_key = gguf_find_key(&native, "tokenizer.ggml.pre");
+                if (pre_key >= 0) {
+                    const char * pre = gguf_get_val_str(&native, (int) pre_key);
+                    pre_supported = pre != nullptr && std::string(pre) == "qwen35";
+                }
+                if (getenv("FG_TK_BPE_DIAG")) {
+                    fprintf(stderr, "FG_TK_BPE_GUARD pre_supported=%d\n", pre_supported ? 1 : 0);
+                }
+            }
+            if (!pre_supported) { return -1; }
+
             const int32_t * type_data = nullptr;
             const int64_t ty_key = gguf_find_key(&native, "tokenizer.ggml.token_type");
             if (ty_key >= 0 && gguf_get_arr_n(&native, (int) ty_key) >= n_tok) {
