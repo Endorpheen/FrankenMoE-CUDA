@@ -50,3 +50,19 @@ host and port together, which is the boundary the module tests do not cross.
 
 A module is not DONE because its exports are named in a card. It is DONE when a test drives the shipped call path that
 reaches it and checks the result, and the untested column above is the honest list of what remains.
+
+## Defects found in the shipped runtime and the test that now holds each of them
+
+The rule is that a defect gets a permanent test, not a note. This is the ledger; every row names the command that fails if
+the defect returns.
+
+| defect | how it showed | regression test |
+|---|---|---|
+| piece buffer overlap in `common_token_to_piece`: a 21-byte piece written into the string's 15-byte cache, damaging the caller's token field | `tok=-779955792` (bytes `b0 d1 82 d1`) at generation step 643 of a real agent session | `experiments/EXP-2026-11-19-1441-piece-buffer-regression/verify.sh` - 248 077 pieces, 7 508 of them longer than 15 bytes, zero overwrites, and a control proving the old implementation damages the caller |
+| DRY sampler order | door comparison | `experiments/EXP-2026-11-19-1381-sampler-full-sequence/` |
+| XTC sort | door comparison | same |
+| device sampled token returned unvalidated | two runs with a value outside the vocabulary | `vendor/flint/common/sampling.cpp` now falls back to the CPU chain; covered by the AWT (`tools/awt/run.sh REPRO`) |
+| invalid token accepted into the batch | `get_sub_batch: failed to add token` | the server guard `FG_SERVER_INVALID_TOKEN` plus the AWT liveness check |
+
+The first row is the one this section exists for: the per-module tests all passed while it happened, because the damage was
+on the boundary between the port and its host.
