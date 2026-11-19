@@ -47223,7 +47223,7 @@
       "goose": "server/http-listener.goose",
       "status": "integrated",
       "sha256": "2cd7c4c63feeb200367497a241ae51bcece43dc3b38fc4893f37691c09bf03aa",
-      "integration_commit": "48f05be09953f9b4c87675de7865ff0ce9b5a672"
+      "integration_commit": "57e08a255b9688a452c2d24321fa5c6ed5f1689d"
     },
     {
       "goose": "misc/sampler-dry.goose",
@@ -47327,7 +47327,7 @@
       "status": "ported",
       "sha256": "e2f1da546f04504499a848b0bdfc6a2bde96fa0e9b0dae6c0d1136991e64ec60",
       "gate": "HTTP served from Goose over a real socket (EXP-2026-11-18-978); 404 body in EXP-2026-11-18-996",
-      "integration_commit": "48f05be09953f9b4c87675de7865ff0ce9b5a672"
+      "integration_commit": "57e08a255b9688a452c2d24321fa5c6ed5f1689d"
     },
     {
       "goose": "server/http-request.goose",
