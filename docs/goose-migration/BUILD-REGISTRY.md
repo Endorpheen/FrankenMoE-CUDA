@@ -405,3 +405,21 @@ and the library it joined could not be loaded at all.
 Every previous check looked at the build; this one looks at the artefact the run loads, which is where a promise
 is either kept or discovered broken. Its own first version produced 139 false failures because I had forgotten
 `GLIBCXX` versioned symbols - caught by reading the output rather than by trusting the verdict.
+
+## The server compiles one file from a different tree
+
+`tools/server/CMakeFiles/server-context.dir` builds its object from
+`runtime/reconstructed/server-merge/server-context.cpp`, while every other server source comes from
+`vendor/flint/tools/server/`. A door added to the vendor copy compiles, links, and is **not in the binary** - measured in
+EXP-2026-11-19-1366: the rebuild printed `Built target server-context` without compiling anything and `strings` on
+`libllama-server-impl.so` had no counter.
+
+Two habits follow, and both are cheap:
+
+1. after adding a server-side door, `strings <bin>/libllama-server-impl.so | grep <counter>` before running anything;
+2. `tools/check-accepted-components.py` now carries a server-side entry (`FG_SP_SYNTH goose`), so the artefact is
+   checked by the gate rather than by memory. It was verified to fail on the EXP1355 checkpoint, which predates the
+   door.
+
+The same trap exists for `llama-model.cpp`: `runtime/reconstructed/src/llama-model.cpp` carries the host registration that
+`vendor/flint/src/llama-model.cpp` lacks, and the 19 tok/s loss in EXP1298 came from building the wrong one.

@@ -39,6 +39,9 @@ COMPONENTS = [
      "the accepted bulk bridge the ggml base library links against"),
     ("gguf-reader-call-path", "strings", "FG_GGUF_PARSE",
      "the loader calls the ported reader and refuses the load on disagreement (FG_GGUF_DIAG)"),
+    ("goose-spec-synth", "strings", "FG_SP_SYNTH goose",
+     "the synthetic acceptance door reached on the real model (EXP-2026-11-19-1366: it had been added to a "
+     "server-context.cpp this build does not compile, so the artefact carried nothing)"),
     ("expert-cache", "strings", "moe-cache",
      "the SLRU expert cache the profile sets to 4992 MiB"),
 ]
