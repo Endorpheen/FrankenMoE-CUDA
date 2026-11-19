@@ -5822,5 +5822,6 @@
       "hash": "c2ff42cc1219"
     },
     "note": "pre-flight check-accepted-components 20/20 and check-cumulative-baseline PASS on the release set; the grammar change of EXP-2026-11-19-1491 is deliberately NOT in it because it has no real-vocabulary run yet"
-  }
+  },
+  "rollback_policy": "DONE requires a rollback answer. 4 records carry an explicit `rollback` field; the rest state a revert path in their evidence text. docs/goose-migration/ROLLBACK-AUDIT.md records the split and requires a per-record backfill before final acceptance (F1-04); it was not bulk-edited on purpose."
 }
