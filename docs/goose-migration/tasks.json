@@ -1775,10 +1775,9 @@
    "batch": "B6",
    "slices_total": 3,
    "slices_done": 3,
-   "remaining": [
-    "wire ngram_draft.cpp and session.cpp to the Goose decisions (draft source, accept, MTP state, budget, trim)"
-   ],
-   "coverage_doc": "docs/goose-migration/P6-11-COVERAGE.md"
+   "remaining": "exported doors for the speculative decisions in the chain build; host hooks in common/speculative.cpp and ngram-cache/map; live run with --spec-type ngram-simple; MTP acceptance against a real draft model",
+   "coverage_doc": "docs/goose-migration/P6-11-COVERAGE.md",
+   "evidence_20261118": "2026-11-18: nine decisions ported and gated separately - compatibility 10 cases, prefix agreement 7, ngram-mod acceptance 14 steps, EAGLE3 boundary 8, ngram value choice 8, draft width 10, type names 11 plus 7 rejections, cache level 7, static path 10, source order 8, cache insertion 200 randomised inputs against a std::map, key lookup precedence 2000 inputs, hash 503 cases including the 2^32 boundary. All thirteen are now one module in the accumulated unit (goose/speculative/spec-decisions.goose), composed and typechecked with no new errors. Not wired: every decision sits behind speculative decoding, whose code lives in common/ and is now buildable from this tree (BUILD-REGISTRY), so wiring needs exported doors in the chain build plus host hooks, and a live run with a spec type."
   },
   {
    "id": "P6-12",
