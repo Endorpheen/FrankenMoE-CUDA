@@ -56,5 +56,8 @@ the wiring or the acceptance run sits outside the slices. `remaining` is the aut
 | path B carries | 11 doors, 6525 symbols, sha cbe39146 | compare-artefacts |
 | release compiler | **only GCC 15.2.0**; both scripts pin gcc-13 | readelf -p .comment |
 | suite | 10 run, 0 failures, 6 precondition skips | tests/run.sh fast |
+| manifest coverage | 4310 of 4310 tracked `goose/*.goose` files have an entry; the 4 files without one are untracked | manifest vs disk |
+| release set self-contained | ok (24 files); the raw checkpoint is not - it lacks `libmoe_mmid_tiled.so` | tests/regression/set-self-contained |
+| release binary runs | `--version` exit 0 outside its build tree, Goose witnesses print, counters zero | RELEASE-INTEGRITY-20261119.md |
 
 The release reproduces from neither path: 192 doors of path B's set are absent from it and 5 are new.
