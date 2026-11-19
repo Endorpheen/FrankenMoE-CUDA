@@ -100,6 +100,28 @@ ignored `cur_p->data` being advanced. Each is recorded as a correction in its ca
 | io row + 12 columns | 2000 rows | white-box |
 | encoder/unescaper pair | 4000 round-trips (961 lossy) | invariant only - no native reference exists |
 
+## What the shipped runtime now takes from Goose
+
+Proving a port equal is one thing; a runtime that takes its decisions from it is another. This table is the second
+question, and every row moved only after its equality was established first.
+
+| decision | served by the port since | evidence it is equal |
+|---|---|---|
+| integral metadata keys | EXP-1340 | 16 reads served on a real load, shadow-compared per read |
+| `std::string` keys (`general.architecture`, tokenizer names) | EXP-1340 | 13/13 string keys byte-equal on the load path |
+| vocabulary array (248 320 token strings) | EXP-1341 | 744 231 array elements equal |
+| merge list and token-type table | EXP-1342 | same |
+| tensor lookup and type (metadata-only path) | EXP-1343 | 753 descriptors equal |
+| metadata dump array walk | EXP-1345 | same |
+| end-of-generation decision | EXP-1347 | 248 320-token equality, then decode 62.76 median |
+| token-piece cache (248 320 pieces) | EXP-1348 | 248 320 pieces byte-equal |
+
+Still native, with reasons rather than excuses:
+
+- the split-file path - no port comparison exists for it, and a single-file model never takes it;
+- LoRA adapter arrays - a different file, the store holds only the model's window;
+- the detokeniser's buffer form and sequence form - the sequence form is **not measured at all**.
+
 ## Which composed modules have a shipped-artefact check
 
 A module can be proven against native code and still be absent from the runtime, so the question "is it checked
