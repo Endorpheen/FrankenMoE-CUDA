@@ -258,3 +258,33 @@ Re-measured through `apex-test.sh` after gating: `sha c2ff42cc1219`, decode 44.9
 
 The working tree therefore differs in bytes from `builds/checkpoint-20261119-chain` while producing the same
 accepted behaviour. The checkpoint stays the immutable evidence; the tree moves forward.
+
+## Gate suite after the sampler work (2026-11-19)
+
+| check | result |
+|---|---|
+| `check-goose-modules.py` | ok |
+| `check-unwired-modules.py` | PASS (no module outside the recorded baseline) |
+| `check-generated-files.py` | ok, no generated file staged |
+| `check-build-sources-tracked.py` | ok, all tracked |
+| `check-goose-symbols.py` | 2625 symbols present, none missing |
+| `check-cumulative-baseline.py` | FAIL, only on `libmoe_mmid_tiled.so` (see EXP-1223) |
+| `check-goose-tree.py` | 20 warnings, 5 provenance drifts |
+
+### The five provenance drifts, named
+
+```
+model/bpe-tokenize.goose
+model/gguf-reader.goose
+model/qwen35moe.goose
+server/cors-policy.goose
+server/api-key-policy.goose
+```
+
+Each is a canonical module that moved ahead of the experiment copy recorded for it. Four are **pre-existing** -
+their last commits are from earlier sessions - and I synced only the one I changed today
+(`sampling/sampler-chain-full.goose`, which no longer appears). Syncing the others would require re-deriving
+which commit of each module its recorded source is meant to represent, and guessing that would defeat the
+check. Left for the owner with the names, rather than silenced.
+
+`check-symbol-callers.py` and `check-dead-objects.py` take a mode argument and were not run.
