@@ -36,18 +36,24 @@ print(f"decompressed {n} file(s)")
 PY
 
 # Theme and mark, placed where the static site can reach them.
-cp "$HERE/theme/ember.css" "$SITE/_app/immutable/assets/ember.css"
-cp "$HERE/theme/ember-mark.svg" "$SITE/_app/immutable/assets/ember-mark.svg"
+# The bundle's assets are immutable-cached by the browser, so the theme file carries a content hash in its name: a change to the
+# CSS always lands as a new URL, and a stale theme can never survive an edit.
+HASH=$(sha256sum "$HERE/theme/ember.css" | cut -c1-10)
+cp "$HERE/theme/ember.css" "$SITE/_app/immutable/assets/ember.$HASH.css"
+cp "$HERE/assets/gooselogo.png"     "$SITE/_app/immutable/assets/gooselogo.png"
+cp "$HERE/assets/gooselogo-big.png" "$SITE/_app/immutable/assets/gooselogo-big.png"
 cp "$HERE/assets/favicon.svg" "$SITE/favicon.svg"
 
 python3 - "$SITE" <<'PY'
-import pathlib, sys
+import pathlib, re, sys
 site = pathlib.Path(sys.argv[1])
 index = site / "index.html"
 html = index.read_text()
-link = '\t\t<link href="./_app/immutable/assets/ember.css" rel="stylesheet">\n'
-if "ember.css" not in html:
-    html = html.replace("</head>", link + "\t</head>")
+import hashlib
+css = sorted((site / "_app/immutable/assets").glob("ember.*.css"))[-1]
+link = f'\t\t<link href="./_app/immutable/assets/{css.name}" rel="stylesheet">\n'
+html = re.sub(r'\t\t<link href="./_app/immutable/assets/ember[^"]*\.css" rel="stylesheet">\n', "", html)
+html = html.replace("</head>", link + "\t</head>")
 index.write_text(html)
 print("index.html carries the theme link")
 PY

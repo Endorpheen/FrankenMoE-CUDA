@@ -103,7 +103,7 @@
  * hidden. A wordmark is added beside it, absolutely positioned and clipped by the sidebar, so it can never push a control.
  */
 div.h-4\.5.w-4\.5.md\:h-4.md\:w-4 > svg:not([class]) {
-	background: url("./ember-mark.svg") center / 1.0625rem 1.0625rem no-repeat;
+	background: url("./gooselogo.png") center / 1.0625rem 1.0625rem no-repeat;
 }
 
 div.h-4\.5.w-4\.5.md\:h-4.md\:w-4 > svg:not([class]) > * {
@@ -138,6 +138,38 @@ div.px-2.flex.items-center.justify-between:has(> div > button > div > svg:not([c
 /* On a narrow screen only the emblem is shown, which the specification allows. */
 @media (max-width: 767px) {
 	div.px-2.flex.items-center.justify-between:has(> div > button > div > svg:not([class]))::after {
+		content: none;
+	}
+}
+
+/* ---------------------------------------------------------------------------------------------------------------------
+ * The supplied artwork. The small mark goes into the original logo slot above; the wide mark is a branding block at the top of
+ * the chat area.
+ *
+ * The block is absolutely positioned inside .chat-screen, which already exists: an absolutely positioned element cannot move
+ * another one, so the composer, the greeting and every control keep their coordinates whatever size this artwork takes. It is
+ * pointer-transparent for the same reason.
+ */
+.chat-screen {
+	position: relative;
+}
+
+.chat-screen::before {
+	content: "";
+	position: absolute;
+	top: 0.75rem;
+	left: 50%;
+	transform: translateX(-50%);
+	width: min(22rem, 52%);
+	aspect-ratio: 3 / 1;
+	background: url("./gooselogo-big.png") center / contain no-repeat;
+	pointer-events: none;
+	opacity: 0.96;
+}
+
+/* A phone gets the emblem only; the wide mark would take a third of the screen. */
+@media (max-width: 767px) {
+	.chat-screen::before {
 		content: none;
 	}
 }

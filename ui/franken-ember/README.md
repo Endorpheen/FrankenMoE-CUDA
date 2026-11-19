@@ -50,6 +50,12 @@ into that same box as a background and hides the original paths, so the box, the
 by the sidebar. It appears when the panel is wide enough and disappears into the clip when collapsed; below 768 px only the
 emblem is shown, which the specification allows.
 
+The artwork is the supplied pair: `assets/gooselogo.png` (1254×1254, RGBA) in the small slot and `assets/gooselogo-big.png`
+(2172×724, RGBA) as the branding block. The wide one is an absolutely positioned `::before` on `.chat-screen` — an absolutely
+positioned element cannot move another, so the composer, the greeting and every control keep their coordinates; it is hidden
+below 768 px where it would take a third of the screen. Sizes are set only on the artwork itself (1.0625rem square for the mark,
+`min(22rem, 52%)` at 3:1 for the block).
+
 ## Proof that the layout is untouched
 
 Every button, link, input and textarea was measured in the original page and in the themed one at the same viewport:
@@ -77,3 +83,12 @@ Nothing needs undoing: the shipped bundle was never modified. Delete `ui/franken
 
 The runtime, Goose, CUDA and CPU backends, the accepted builds and checkpoints, and any agent working on them. `build.sh` reads
 the bundle and writes only inside `ui/franken-ember/`.
+
+Re-measured after the supplied artwork and the branding block were added: 11 of 11 controls that both pages share have identical
+coordinates and sizes, and none moved. The two entries present only in the original capture are application state (`Retry` and a
+duplicate selector match), not geometry.
+
+## Theme cache
+
+The bundle's assets are immutable-cached by the browser, so the theme file is named `ember.<sha256prefix>.css` and the link in
+`index.html` points at the current hash. An edit to the CSS always lands as a new URL; a stale theme cannot survive a rebuild.
