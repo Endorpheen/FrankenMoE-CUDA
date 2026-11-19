@@ -60,6 +60,7 @@ decode 62.56 / 62.86 / 62.38, prefill 2701.2 / 2956.0 / 2954.1, hash `c2ff42cc12
 |---|---|---|
 | `builds/checkpoint-20261119-EXP1298` | the published release | decode 62.73, prefill 2948.0 |
 | `builds/checkpoint-20261119-EXP1332` | same baseline, unit grown by the detokenizer and GGUF closures (11847 symbols) | decode 62.72, prefill 2944.0, hash unchanged |
+| `builds/checkpoint-20261119-EXP1346` | same baseline, and the loader now takes its metadata from the port (11853 symbols) | decode 62.69, prefill 2945.4, hash unchanged |
 
 The baseline number is EXP1298's. EXP1332 is the artefact that carries more of the port, and its measurements say the
 growth cost nothing measurable.
