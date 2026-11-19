@@ -25,6 +25,7 @@ struct fg_sl_u8  { uint8_t  * data; int64_t len; };
 typedef int64_t (*fg_gr_parse_fn)(fg_sl_u8, int64_t, fg_sl_i64, fg_sl_i64, fg_sl_i64, fg_sl_i64, fg_sl_i64);
 typedef int64_t (*fg_gr_find_fn)(fg_sl_u8, fg_sl_i64, fg_sl_i64, fg_sl_i64, fg_sl_u8);
 typedef int64_t (*fg_gr_meta_int_fn)(fg_sl_u8, fg_sl_i64, fg_sl_i64, int64_t, fg_sl_i64);
+typedef int64_t (*fg_gr_tinfo_fn)(fg_sl_i64, fg_sl_i64, int64_t, fg_sl_i64);
 
 // Returns the number of disagreements; the caller decides whether that is fatal.
 static int fg_gguf_check(const std::string & fname, const gguf_context & native) {
@@ -103,7 +104,35 @@ static int fg_gguf_check(const std::string & fname, const gguf_context & native)
             differ += val_bad;
         }
 
-        differ += kv_bad + tn_bad;
+        // Tensor descriptors through the door the loader would use: dtype, dims, extents and data offset.
+        int ti_bad = 0, ti_cmp = 0;
+        static fg_gr_tinfo_fn tinfo = nullptr;
+        if (!tinfo) {
+            void * h3 = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+            tinfo = h3 ? reinterpret_cast<fg_gr_tinfo_fn>(dlsym(h3, "gr_tensor_info")) : nullptr;
+        }
+        if (tinfo) {
+            for (int64_t i = 0; i < nt; ++i) {
+                int64_t out[9] = {0};
+                fg_sl_i64 so{ out, 9 };
+                const int64_t * ne = gguf_get_tensor_ne(&native, i);
+                uint32_t dims = 0;
+                while (dims < 4 && ne[dims] != 1) { ++dims; }
+                ++ti_cmp;
+                bool ok = tinfo(s_state, s_t, i, so) == 0 &&
+                          out[0] == (int64_t) gguf_get_tensor_type(&native, i) &&
+                          out[1] == (int64_t) dims &&
+                          (size_t) (out[8] - state[5]) == gguf_get_tensor_offset(&native, i);
+                for (uint32_t d = 0; ok && d < dims; ++d) { ok = out[2 + d] == ne[d]; }
+                if (!ok) { ++ti_bad; }
+            }
+        }
+
+        if (ti_cmp) {
+            fprintf(stderr, "FG_GGUF_TINFO descriptors=%lld/%lld\n",
+                    (long long) (ti_cmp - ti_bad), (long long) ti_cmp);
+        }
+        differ += kv_bad + tn_bad + ti_bad;
         fprintf(stderr, "FG_GGUF_LOOKUP keys=%lld/%lld tensors=%lld/%lld\n",
                 (long long) (nk - kv_bad), (long long) nk, (long long) (nt - tn_bad), (long long) nt);
     }

@@ -55,6 +55,25 @@ FG_GGUF_PARSE   nk=52 nt=753 align=32 off=10990944 disagreements=0
 857 comparisons plus four header fields, on every start with the flag on, and the load refuses on any disagreement.
 Acceptance with the gate compiled in: decode 62.87 median, hash unchanged.
 
+## The gate now covers descriptors as well: 1610 comparisons per start
+
+With `gr_tensor_info` in place (EXP-2026-11-19-1337) the load-time gate compares every tensor descriptor too:
+
+```
+FG_GGUF_VALUES  integer=26/26
+FG_GGUF_TINFO   descriptors=753/753
+FG_GGUF_LOOKUP  keys=52/52 tensors=753/753
+FG_GGUF_PARSE   nk=52 nt=753 align=32 off=10990944 disagreements=0
+```
+
+That is 1610 comparisons plus four header fields, on every start with the flag on, and any disagreement refuses the
+load. Acceptance with the gate compiled in: decode 62.26 median, hash `c2ff42cc1219` unchanged.
+
+At this point the loader has, for every field it would need, a port accessor proven equal on the real file, on the
+real load path. Replacing its GGUF context with the port's records is no longer blocked on evidence - it is a
+substantial edit with its own acceptance, and it is the next piece of work rather than something to start at the end
+of a session.
+
 ## The comparison refuses the load, not just prints
 
 A disagreement between the ported and native readings of the same file is never acceptable, so with the flag set the
