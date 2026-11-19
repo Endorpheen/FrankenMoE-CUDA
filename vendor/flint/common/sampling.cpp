@@ -150,6 +150,22 @@ struct common_sampler {
         // builds the ids from the counter and cannot be wrong, so it is the fallback.
         auto fg_ids_ok = [&](uint32_t n) {
             if (n == 0 || n > (uint32_t) n_vocab || sampled_ids == nullptr) { return false; }
+            // The two device counters describe the same candidate set. When they disagree the set is inconsistent,
+            // and an entry that was reserved but never written is exactly what produced tok=9359756 in a real run
+            // (docs/goose-migration/SAMPLER-UNWRITTEN-ENTRY.md).
+            {
+                const uint32_t lp = llama_get_sampled_probs_count_ith (ctx, idx);
+                const uint32_t ll = llama_get_sampled_logits_count_ith(ctx, idx);
+                if (lp != 0 && ll != 0 && lp != ll) {
+                    static std::atomic<long long> fg_cnt{0};
+                    const long long fc = fg_cnt.fetch_add(1) + 1;
+                    if (fc <= 5) {
+                        fprintf(stderr, "FG_CANDIDATES_COUNT_MISMATCH probs=%u logits=%u n_vocab=%d count=%lld\n",
+                                lp, ll, (int) n_vocab, fc);
+                    }
+                    return false;
+                }
+            }
             for (uint32_t i = 0; i < n; ++i) {
                 if (sampled_ids[i] < 0 || sampled_ids[i] >= n_vocab) {
                     static std::atomic<long long> fg_bad{0};
@@ -665,14 +681,32 @@ llama_token common_sampler_sample(struct common_sampler * gsmpl, struct llama_co
             GGML_ASSERT(!gsmpl->grmr    && "using grammar in combination with backend sampling is not supported");
             GGML_ASSERT(!gsmpl->rbudget && "using reasoning budget in combination with backend sampling is not supported");
 
+            bool fg_found = false;
             for (size_t i = 0; i < cur_p.size; ++i) {
                 if (cur_p.data[i].id == id) {
                     cur_p.selected = i;
+                    fg_found = true;
                     break;
                 }
             }
 
-            return id;
+            // The device's chosen token was returned without a check. When the device buffer has not been written for
+            // this step it holds whatever was there before - a value that is not a token id at all (tok=-779955792 and
+            // tok=9359756 in two real runs, the second decomposing into two valid ids or a denormal float). Nothing
+            // caught it here, and the batch builder refused it much later with "failed to add token".
+            // A token that is not in the candidate array is not a decision this step can be based on either, so both
+            // conditions fall through to the CPU chain, which builds its candidate ids from the logits.
+            const int32_t fg_nv = (int32_t) llama_vocab_n_tokens(llama_model_get_vocab(llama_get_model(ctx)));
+            if (id >= 0 && id < fg_nv && fg_found) {
+                return id;
+            }
+
+            static std::atomic<long long> fg_bad{0};
+            const long long fb = fg_bad.fetch_add(1) + 1;
+            if (fb <= 5) {
+                fprintf(stderr, "FG_DEVICE_SAMPLED_INVALID id=%d n_vocab=%d in_candidates=%d size=%zu count=%lld\n",
+                        (int) id, (int) fg_nv, fg_found ? 1 : 0, cur_p.size, fb);
+            }
         }
     }
 

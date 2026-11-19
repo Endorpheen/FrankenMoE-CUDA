@@ -9,17 +9,10 @@ LOG=$1; SPID=$2; TPID=${3:-0}
 OUT=$LOG.tsv
 : > "$OUT"
 start=$(date +%s)
-while kill -0 "$SPID" 2>/dev/null; do
-    if [ "$TPID" != "0" ] && ! kill -0 "$TPID" 2>/dev/null; then break; fi
-    total=$(nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits 2>/dev/null | head -1 | tr -dc '0-9')
-    server=$(nvidia-smi --query-compute-apps=pid,used_memory --format=csv,noheader,nounits 2>/dev/null \
-             | awk -v p="$SPID" -F', *' '$1 == p {print $2}' | head -1 | tr -dc '0-9')
-    [ -n "$server" ] || server=0
-    other=$(( ${total:-0} - ${server:-0} ))
-    printf '%s\t%s\t%s\t%s\n' "$(( $(date +%s) - start ))" "${total:-0}" "$server" "$other" >> "$OUT"
-    sleep 0.5
-done
-python3 - "$OUT" <<'PY'
+# A killed tracer must still write its summary: otherwise the run leaves a profile that says nothing, which is what the
+# first attempt did.
+finish() {
+    python3 - "$OUT" > "${LOG%.log}_vram.txt" 2>&1 <<'PY2'
 import sys
 rows = [l.split('\t') for l in open(sys.argv[1]).read().strip().split('\n') if l]
 if not rows:
@@ -31,4 +24,18 @@ print(f"vram-trace: total start={tot[0]} peak={max(tot)} end={tot[-1]} MiB")
 print(f"vram-trace: this server start={srv[0]} peak={max(srv)} end={srv[-1]} MiB")
 print(f"vram-trace: everything else start={oth[0]} peak={max(oth)} end={oth[-1]} MiB")
 print(f"vram-trace: growth of this server over the run = {srv[-1] - srv[0]} MiB")
-PY
+PY2
+    exit 0
+}
+trap finish TERM INT
+while kill -0 "$SPID" 2>/dev/null; do
+    if [ "$TPID" != "0" ] && ! kill -0 "$TPID" 2>/dev/null; then break; fi
+    total=$(nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits 2>/dev/null | head -1 | tr -dc '0-9')
+    server=$(nvidia-smi --query-compute-apps=pid,used_memory --format=csv,noheader,nounits 2>/dev/null \
+             | awk -v p="$SPID" -F', *' '$1 == p {print $2}' | head -1 | tr -dc '0-9')
+    [ -n "$server" ] || server=0
+    other=$(( ${total:-0} - ${server:-0} ))
+    printf '%s\t%s\t%s\t%s\n' "$(( $(date +%s) - start ))" "${total:-0}" "$server" "$other" >> "$OUT"
+    sleep 0.5
+done
+finish

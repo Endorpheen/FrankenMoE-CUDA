@@ -116,7 +116,7 @@ fi
 
 export LD_LIBRARY_PATH="$SERVER_DIR"
 unset LD_PRELOAD
-ARGS=(-m "$MODEL" --alias Apex-35B-V1.0 -c 262144 -ngl all -fit off --cpu-moe
+ARGS=(-m "$MODEL" --alias Apex-35B-V1.0 -c "${APEX_CTX:-262144}" -ngl all -fit off --cpu-moe
       -fa on -ctk q4_0 -ctv q4_0 -b "$B" -ub "$UB" -t 8 -tb 16
       --cpu-mask 0f0f --cpu-mask-batch ffff --cpu-strict 1 --cpu-strict-batch 1
       --poll 0 -np 1 --cache-ram 0 --ctx-checkpoints 32 --load-mode mmap
