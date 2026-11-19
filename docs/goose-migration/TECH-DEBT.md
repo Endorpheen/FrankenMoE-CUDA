@@ -308,6 +308,29 @@ function calls, where the native code walks a pointer chain.
 
 Until the loop is comparable, the grammar stage stays opt-in and P6-10's grammar item stays open.
 
+### 2026-11-19: the correctness claim above does not hold on the shipped path
+
+`tools/apex-grammar-pair.sh` runs one constrained request on the shipped build with `GGML_GOOSE_GRAMMAR` unset and with it
+set, temperature zero, same seed, twice each:
+
+```
+off: {"city": "Tokyo", "country": "Japan"}        (2 of 2 runs)
+on:  { "city" : "Dhokar" , "country" : "Nepal" }  (2 of 2 runs)
+```
+
+The baseline repeats exactly, so this is not run-to-run variance: the automaton changes the answer on the path the server
+uses. Both strings obey the grammar, which means the **accepted set** differs at some position - the hook allowed a token the
+native stack did not, or refused one it would have allowed - and greedy decoding then chose differently.
+
+That is the defect the flag's own comment described, not the equality the standalone gate measured. The two are different
+questions: the gate compares decisions over 1 736 513 candidates of a real vocabulary, and the server passes a state the gate
+does not reproduce. Until this is understood, the grammar stage stays off and the deletion of the native grammar body stays
+blocked by rule 15 - a 12x speed problem would be a trade, a different answer is not.
+
+Relevant detail for whoever takes it: neither run prints any marker from the grammar door, so the evidence is behavioural
+rather than traces, and a marker on the door's answer (accepted/declined, candidates in, candidates out) is the first thing to
+add.
+
 ## TD-S11 — RESOLVED, and it was my error, not the compiler's
 
 Reproduced 2026-11-18, ten lines, deterministic:
