@@ -12,7 +12,14 @@ DST=${DST:-/home/end0/AI/LlamaServer/runtime-build-tree}
 # the rule below picks exactly the same file from both - 86 of 86, no difference, none missing. The
 # snapshot was therefore never adding anything the repository does not have, while making the build
 # depend on a directory outside it. BASE stays overridable for an archaeology run.
-BASE=${BASE:-$ROOT/experiments}
+# BASE is the tree the consolidation reads from, and it is used for more than module sources: the
+# experiment directories ($BASE/experiments), the bridges, the object directory
+# ($BASE/runtime/reconstructed/build) and the hand-built objects. Pointing it at `experiments` instead
+# of the tree root broke three of those on 2026-11-19 - the staging run reported "bridges 0 files,
+# libs 0 files, extra-objects 0 files" and failed at compose. It is the repository root.
+# The libraries are taken from LIBSDIR when given (a build output such as <build>/run), otherwise from
+# the tree's own stage-run, because a fresh tree has neither until something has been built.
+BASE=${BASE:-$ROOT}
 FL=${FL:-/home/end0/AI/LlamaServer/llama.cpp-flint-cuda}
 [ -e "$DST" ] && { echo "refusing to overwrite $DST"; exit 1; }
 
@@ -66,7 +73,8 @@ done
 # turned each into a full 220 MB copy and each consolidated tree into 9.6 GB.
 for l in libggml.so.0 libggml-base.so.0 libggml-cpu.so.0 libggml-cuda.so.0 \
          libllama-common.so.0 libllama-server-impl.so libmtmd.so.0; do
-    [ -f "$W/stage-run/$l" ] && cp -L "$W/stage-run/$l" "$DST/libs/"
+    src=${LIBSDIR:-$W/stage-run}
+    [ -f "$src/$l" ] && cp -L "$src/$l" "$DST/libs/"
 done
 
 ( cd "$DST" &&  find . -type f ! -name SHA256SUMS -exec sha256sum {} \; | sort -k2 > SHA256SUMS )
