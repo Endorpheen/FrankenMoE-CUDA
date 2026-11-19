@@ -47,12 +47,16 @@ for i in $(seq 1 180); do
   kill -0 "$PID" 2>/dev/null || { echo "FAIL: the server died during load"; tail -5 "$OUT/server.log"; exit 1; }
   sleep 4
 done
+bash "$R/tools/awt/vram-trace.sh" "$OUT/startup.log" "$PID" $$ > /dev/null 2>&1 &
+LOAD_TRACE=$!
 curl -sf "http://127.0.0.1:$PORT/health" >/dev/null || { echo "FAIL: not ready"; exit 1; }
 
 # a copy of the server log lives where awt.py expects it, and keeps growing as the run proceeds
 # The VRAM profile of the run is sampled alongside it: a peak that grows between identical requests is a leak, and a
 # constant that is too high is a configuration question - the two are separated here rather than guessed at afterwards.
 nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits > "$OUT/vram_before.txt" 2>/dev/null
+kill "$LOAD_TRACE" 2>/dev/null; wait "$LOAD_TRACE" 2>/dev/null
+cp "$OUT/startup_vram.txt" "$OUT/vram_load.txt" 2>/dev/null
 bash "$R/tools/awt/vram-trace.sh" "$OUT/server.log" "$PID" $$ > "$OUT/vram_trace.txt" 2>&1 &
 TRACE=$!
 python3 "$R/tools/awt/awt.py" "$MODE" --base "http://127.0.0.1:$PORT" --tag "$TAG" --repo "$R" --out "$OUT"
@@ -60,9 +64,13 @@ RC=$?
 kill "$TRACE" 2>/dev/null
 wait "$TRACE" 2>/dev/null
 cat "$OUT/vram_trace.txt" >> "$OUT/summary.txt" 2>/dev/null
-GROWTH=$(grep -o "growth of this server over the run = .*" "$OUT/vram_trace.txt" 2>/dev/null | grep -oE "\-?[0-9]+")
-if [ -n "${GROWTH:-}" ] && [ "$GROWTH" -gt 1024 ]; then
-    echo "WARN: the server grew by ${GROWTH} MiB during the run - repeated requests must not accumulate VRAM"
+# The VRAM profile is a verdict, not a note: a peak above the recorded baseline or growth across the run fails the
+# run the same way a wrong answer does.
+python3 "$R/tools/awt/check-vram.py" "$OUT" | tee -a "$OUT/summary.txt"
+VRAM_RC=${PIPESTATUS[0]}
+if [ "$VRAM_RC" -ne 0 ]; then
+    echo "FAIL: VRAM profile outside the baseline"
+    RC=1
 fi
 if ! kill -0 "$PID" 2>/dev/null; then
   echo "FAIL: the server died during the run"
