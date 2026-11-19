@@ -37,6 +37,25 @@ the new code. So the print is compiled in, reached in program order, and does no
 - the log contains every other `FG*` line from that run, so stderr is captured;
 - the branch is reached (`draft=8`), and the function is entered (`draft=8 result=9`).
 
+## The decisive follow-up: control does not return from the door call
+
+An unconditional print was placed immediately after the call, before any comparison:
+
+```c
+const int64_t goose = fn(d.data(), d.size(), t.data(), t.size(), k, out, 2);
+if (FG_ACCEPT_DIAG && fg_ret++ < 3) fprintf(stderr, "FG_PREFIX_RETURNED goose=%lld i=%zu k=%lld\n", ...);
+```
+
+The run printed `FG_PREFIX_ENTER` and **not** `FG_PREFIX_RETURNED`:
+
+```
+FG_PREFIX_ENTER draft=8 result=9 fn=0x7ec43d9afc90
+```
+
+So the entry block runs, the pointer is non-null, and the call to the door never returns - yet the
+server goes on to produce all 24 tokens and answer normally. That combination is only possible if the
+call transfers control somewhere that unwinds, or if the address does not point at the door at all.
+
 ## Why it is written down rather than chased further
 
 Three iterations have now gone into instrumentation on this path. What is unanswered is a

@@ -768,6 +768,13 @@ std::vector<llama_token> common_sampler_sample_and_accept_n(struct common_sample
         const int64_t k = (int64_t) std::min(d.size(), t.size());
         const int64_t goose = fn(d.data(), (int64_t) d.size(), t.data(), (int64_t) t.size(),
                                  k, out, (int64_t) 2);
+        // unconditional on the first call: the conditional print below never appeared even though
+        // the block before it did, so the question is whether control returns from the door at all
+        static std::atomic<int> fg_ret{0};
+        if (getenv("FG_ACCEPT_DIAG") && fg_ret.fetch_add(1) < 3) {
+            fprintf(stderr, "FG_PREFIX_RETURNED goose=%lld i=%zu k=%lld\n",
+                    (long long) goose, (size_t) i, (long long) k);
+        }
         static std::atomic<unsigned long long> calls{0}, bad{0};
         const auto c = ++calls;
         if (goose != (int64_t) i) {
