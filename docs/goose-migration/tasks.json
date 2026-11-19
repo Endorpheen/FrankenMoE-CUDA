@@ -2760,18 +2760,23 @@
       "id": "P11-02",
       "phase": "P11",
       "title": "Run complete Apex end-to-end functional milestone",
-      "status": "TODO",
+      "status": "PARTIAL",
       "sources": [
         "model/profile manifests",
         "full candidate"
       ],
       "acceptance": "Fixed Apex model/profile/input; text,tokens,probabilities,stream,state,reuse/cancel checked and every migrated subsystem witnessed; full-system prefill/decode,RAM/VRAM recorded once.",
-      "evidence": "",
+      "evidence": " 2026-11-19 EXP-2026-11-19-1463: an acceptance run of the shipped binary under tools/apex-test.sh — 20/20 accepted components present, response hash c2ff42cc1219 (the record), decode [60.92, 55.49, 59.88] median 59.88, prefill [2587.2, 2842.4, 2896.4] median 2842.4, model 100% resident, port released and server exited. That covers text and token parity, streaming through the server, and the prefill/decode/VRAM figures. It was also found that no earlier checkpoint carries every accepted component, so this run produced the first comparable base: builds/checkpoint-20261119-EXP1463, which the component gate now passes. Still open for this item: request cancel, KV reuse across requests, an explicit subsystem-activity list, and RAM.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 0,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-      "batch": "B5"
+      "batch": "B5",
+      "remaining": [
+        "request cancel and KV reuse across requests checked on the running server",
+        "the subsystem activity list recorded as evidence, not asserted",
+        "RAM measured and recorded with the same run"
+      ]
     },
     {
       "id": "P11-03",
