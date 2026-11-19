@@ -31,8 +31,9 @@ int main(void) {
         const int64_t a_size = qz_type_size(t), b_size = qz2_type_size(t);
         const int first  = (a_blck == n_blck && a_size == n_size);
         const int second = (b_blck == n_blck && b_size == n_size);
-        if (first) ++covered_first;
-        if (second) ++covered_second;
+        if (first) { ++covered_first; printf("  port1 %-12s\n", ggml_type_name(ty)); }
+        if (second) { ++covered_second; printf("  port2 %-12s\n", ggml_type_name(ty)); }
+
         if (!first && !second) {
             ++neither;
             printf("  NEITHER type=%d (%s) native blck=%lld size=%lld port1=(%lld,%lld) port2=(%lld,%lld)\n",

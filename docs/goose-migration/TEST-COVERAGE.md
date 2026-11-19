@@ -264,3 +264,19 @@ stays closed and this list is what a future port has to cover.
 One difference is documented rather than counted as wrong: for a partial block (`q2_K`, `ne=1`) the native floor-divides to
 zero while the module refuses with -2. The module is stricter, and the gate compares whole blocks because a partial block has
 no defined row size.
+
+## Which types actually block a deletion
+
+The gate's list of uncovered types was ten after adding the unquantised ones, and a list is only useful with reachability. The
+Apex model itself contains three types:
+
+```
+f32    310 tensors
+q4_K   379 tensors
+q6_K    64 tensors
+```
+
+`q4_K` and `q6_K` were already ported by `quant-rows2`; `f32` was not, and it is 310 of 753 tensors. Adding `f32` and `f16` to
+`goose/model/quant-rows.goose` as unquantised types - one element per block - moved the gate to nine and sixteen covered
+types, zero wrong sizes. The ten that remain (`q8_1`, `iq2_xxs`, `iq2_xs`, `iq1_s`, `i8`, `i16`, `i32`, `i64`, `f64`, `bf16`)
+belong to other model families, which is a different requirement.
