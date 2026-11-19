@@ -701,8 +701,9 @@
       "experiment": "EXP-2026-11-14-580-p6-05-qwen4exp",
       "task": "",
       "status": "ported",
-      "sha256": "8d07a8eaf3f92f7288bdf4a49605662c35d26c6f0042861e873b0a9beea4f88c",
-      "gate": "10/26 structure cases, 12/12 mutations"
+      "sha256": "d958a3d5f192b20d260a24fb01778ef11456bc879dd3ea571dbec5fb3691d80b",
+      "gate": "10/26 structure cases, 12/12 mutations",
+      "integration_commit": "0853f615a4e2f164aa89140d2ba300943aac0f17"
     },
     {
       "goose": "model/qwen35moe.goose",
@@ -992,8 +993,9 @@
       "experiment": "EXP-2026-11-15-660-c1-02-qwen4exp",
       "task": "",
       "status": "ported",
-      "sha256": "c5de38da03c433c0e7ecfeaf37ccd1061617c88d9ac8341f045de4cb3e4e93a6",
-      "gate": "15 cases / 222 values / 0 failures, 12/12 mutations"
+      "sha256": "b206dafbb5cc6431acd91166eb389d7f24d3f63bfccc7e4ad24c28c64f4b10f2",
+      "gate": "15 cases / 222 values / 0 failures, 12/12 mutations",
+      "integration_commit": "5eaea794a4198e277faa9993c542a56e643e502b"
     },
     {
       "goose": "model/q4t-tensor-map.goose",
@@ -1005,7 +1007,8 @@
       "task": "",
       "status": "ported",
       "sha256": "4e5e5595b47df0392480b286293361aafaf73a6a92c7346f1ad562a08acedbba",
-      "gate": "13 cases / 528 values / 0 failures, 12/12 mutations"
+      "gate": "13 cases / 528 values / 0 failures, 12/12 mutations",
+      "integration_commit": "eccb95f279c39016f5474d0c52167a5c24110a3d"
     },
     {
       "goose": "model/q4e-expert-layout.goose",
@@ -1016,8 +1019,9 @@
       "experiment": "EXP-2026-11-15-660-c1-02-qwen4exp",
       "task": "",
       "status": "ported",
-      "sha256": "c286704f15f464653ed9761d9bc9e5ffc871f93a6f120e1b620d56fae1d29cd4",
-      "gate": "12 cases / 28 values / 0 failures, 12/12 mutations"
+      "sha256": "3693f094d335ca3f5e93336b73852afa8b5af0dd239584125475f85cf2efb59d",
+      "gate": "12 cases / 28 values / 0 failures, 12/12 mutations",
+      "integration_commit": "0853f615a4e2f164aa89140d2ba300943aac0f17"
     },
     {
       "goose": "model/vocab-type.goose",
