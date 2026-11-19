@@ -59,10 +59,53 @@ letting a 20-minute compile discover the problem.
 
 ## Last accepted checkpoint
 
-`candidate-run2` (see `builds/` and the checkpoint history in the ledger). Apex
-reference results: prefill +0.4 %, decode -0.7 %, VRAM -1.2 % versus EXP906.
-Do not compare numbers produced by a build whose composition differs from this
-registry; those are different runtimes.
+`candidate-run2` (see `builds/` and the checkpoint history in the ledger).
+
+**Correction (EXP-2026-11-19-1298).** The earlier statement here - "prefill +0.4 %, decode -0.7 %,
+VRAM -1.2 % versus EXP906" - compared two builds of the **same composition**, both compiled from
+`vendor/flint/src`. Neither contains the host-registration feature that EXP906 was accepted for, so the
+comparison established parity between two builds that had equally lost it. It is exactly the pattern
+that must not be presented as evidence: two equally slow builds agreeing with each other.
+
+## Missing accepted component: host registration (debt, opened 2026-11-19)
+
+Measured on identical conditions (same profile, same 32768/512 request, same argv, port 9101):
+
+```
+reference binary (EXP906, built from runtime/reconstructed)   decode 55.52  prefill 2625
+candidate builds/flint-acc (compiled from vendor/flint)       decode ~45.2  prefill ~2260
+  strings <lib> | grep "mapped expert ranges"    reference: 1   candidate: 0
+```
+
+`tools/check-accepted-components.py` reports it as the one absent accepted component; every other entry
+(moe-cache, the sampler chain, the tiled Q4_K bridge, the shim marker) is present.
+
+### What exists already, and where
+
+| piece | file |
+|---|---|
+| `llama_model::pin_mmap_experts(ggml_backend_reg_t)` (~80 lines) | `runtime/reconstructed/src/llama-model.cpp:1300` |
+| `llama_mmap_expert_pin::owner` - acquire, release, merge_pages, fits_budget | `runtime/reconstructed/src/llama-mmap-expert-pin.h` (81 lines) |
+| the call site, guarded by `props.caps.host_buffer` | `runtime/reconstructed/src/llama-context.cpp:582` |
+| members `expert_pin`, `expert_pin_mutex`, `regular_mmap` | same file, impl struct at ~1295 |
+
+**Nothing is to be re-implemented.** The work is to connect these to the cumulative build, and the
+obstacle is that the two trees diverged: the reconstructed file is a `llama_model` method while the
+vendored file has `llama_model_base` and a differently shaped context initialiser with the MoE cache.
+The port therefore needs its call site re-established against the vendored context, not a copy-paste.
+
+### Connection plan (5 steps, each verifiable)
+
+1. copy `llama-mmap-expert-pin.h` into `vendor/flint/src/` - pure addition, no behaviour until used;
+2. add `regular_mmap`, `expert_pin`, `expert_pin_mutex` to the vendored impl struct and set
+   `regular_mmap` where the mmap path is taken;
+3. add `pin_mmap_experts` to the vendored model class, body unchanged;
+4. call it from the vendored context initialiser under the same `host_buffer` capability guard;
+5. `python3 tools/check-accepted-components.py` must report `host-registration` present, then an
+   acceptance run must show the decode gain, then this entry is replaced by the numbers.
+
+Until step 5 passes, this stays open debt and the migration continues; the rule not to stop for
+optimisation is respected, and the loss is not hidden.
 
 ## flint build: what it needs at link time
 

@@ -646,3 +646,22 @@ come from Igor directly. For every marked message:
     does not restart the investigation. The single build process must get
     simpler with each iteration while keeping incrementality, correctness and
     the accepted checkpoints.
+
+33. One cumulative runtime. Every accepted component, bridge, registration, optimisation and functional
+    Goose path must live in **one growing build**, and nothing may be added as a separate version with
+    lost functionality.
+
+    Before writing anything, find where the behaviour already exists - in the accumulated core, in an
+    earlier checkpoint, in `runtime/reconstructed`, in a build script or in a patch. Connect that
+    implementation to the shared build. Do not re-implement what is already written.
+
+    A successful compile is not evidence that a component is present. After every change, check the
+    built artefact for the components that were already accepted: symbols in the library, strings that
+    only the feature emits, and the environment/CLI flags that disable it. `tools/check-accepted-components.py`
+    performs that check against the shipped library and fails when a component disappears.
+
+    The rule exists because this actually happened: the cumulative candidate compiled
+    `vendor/flint/src/llama-model.cpp`, which contains no host-registration code at all, while the
+    accepted reference binary was built from `runtime/reconstructed/src/llama-model.cpp`, which does
+    (EXP-2026-11-19-1298). Both builds compiled cleanly; only one had the feature; decode differed by
+    about ten tokens per second and the comparison of the two was mistaken for evidence of parity.
