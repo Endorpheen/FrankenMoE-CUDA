@@ -17,6 +17,9 @@ export fn fg_sp_ngram_accept(n_accepted: i64, n_draft_last: i64, n_low: i64, out
     return sp_ngram_accept(n_accepted, n_draft_last, n_low, out, 192);
 }
 
-export fn fg_sp_n_max(types: i64[:], size_m: i64[:], draft_nmax: i64[:], ntypes: i64) -> i64 {
+
+// n_max for the host check: types, sizes and widths are separate slices, and the widths are read
+// only for the types that use them.
+export fn fg_sp_n_max_call(types: i64[:], size_m: i64[:], draft_nmax: i64[:], ntypes: i64) -> i64 {
     return sp_n_max(types, size_m, draft_nmax, ntypes, 195);
 }

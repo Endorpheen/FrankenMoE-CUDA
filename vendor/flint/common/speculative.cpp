@@ -1,5 +1,8 @@
 #include "speculative.h"
 
+#include <atomic>
+#include <dlfcn.h>
+
 #include "common.h"
 #include "ggml.h"
 #include "ggml-cpp.h"
@@ -2440,6 +2443,69 @@ static uint32_t common_get_enabled_speculative_configs(const std::vector<common_
     return result;
 }
 
+// Goose cross-check: the ported decision runs next to the native one and must agree. The native
+// value is what is returned either way, so a disagreement can only be counted, never enforced.
+// Resolved at run time on purpose: a weak symbol stayed null across the static/shared boundary,
+// and a strong one cannot link because libllama-common must not depend on libllama (it is the
+// other way round). dlsym on the process itself has neither problem.
+typedef int64_t (*fg_sp_n_max_fn)(const void *, int64_t, const void *, int64_t, const void *, int64_t,
+                                  int64_t);
+static fg_sp_n_max_fn fg_sp_n_max_resolve() {
+    static fg_sp_n_max_fn fn = []() -> fg_sp_n_max_fn {
+        // RTLD_DEFAULT does not see a locally loaded dependency, so the handle of the library
+        // already in the process is looked up by its soname first, then the global scope.
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        void * sym = h ? dlsym(h, "fg_sp_n_max_call")
+                       : dlsym(RTLD_DEFAULT, "fg_sp_n_max_call");
+        return reinterpret_cast<fg_sp_n_max_fn>(sym);
+    }();
+    return fn;
+}
+
+static void fg_check_n_max(const common_params_speculative * spec, int32_t native_n_max) {
+    // The reference is strong on purpose: a weak one stayed null here, because the caller lives
+    // in a static library and the definition in a shared one, and the linker is allowed to resolve
+    // a weak undefined symbol to null. A strong reference either links or fails, which is honest.
+    static thread_local std::vector<int64_t> types, sizes, widths;
+    types.clear(); sizes.clear(); widths.clear();
+    for (const auto type : spec->types) {
+        types.push_back((int64_t) type);
+        int64_t sz = 0, w = 0;
+        switch (type) {
+            case COMMON_SPECULATIVE_TYPE_NGRAM_SIMPLE:  sz = (int64_t) spec->ngram_simple.size_m;   w = 0; break;
+            case COMMON_SPECULATIVE_TYPE_NGRAM_MAP_K:   sz = (int64_t) spec->ngram_map_k.size_m;    w = 0; break;
+            case COMMON_SPECULATIVE_TYPE_NGRAM_MAP_K4V: sz = (int64_t) spec->ngram_map_k4v.size_m;  w = 0; break;
+            case COMMON_SPECULATIVE_TYPE_NGRAM_MOD:     sz = 0; w = (int64_t) spec->ngram_mod.n_max; break;
+            default:                                    sz = 0; w = (int64_t) spec->draft.n_max;    break;
+        }
+        sizes.push_back(sz); widths.push_back(w);
+    }
+    if (types.empty()) {
+        return;
+    }
+    const fg_sp_n_max_fn fn = fg_sp_n_max_resolve();
+    if (fn == nullptr) {
+        return;
+    }
+    const int64_t goose = fn(types.data(), (int64_t) types.size(),
+                                           sizes.data(), (int64_t) sizes.size(),
+                                           widths.data(), (int64_t) widths.size(),
+                                           (int64_t) types.size());
+    static std::atomic<unsigned long long> calls{0}, bad{0};
+    const auto c = ++calls;
+    if (goose != (int64_t) native_n_max) {
+        ++bad;
+        if (bad.load() <= 5) {
+            fprintf(stderr, "FG_SP_NMAX_DIFF goose=%lld native=%d types=%zu\n",
+                    (long long) goose, (int) native_n_max, types.size());
+        }
+    }
+    if (c == 1 || (c % 100) == 0) {
+        fprintf(stderr, "FG_SP_NMAX goose calls=%llu disagreements=%llu\n",
+                (unsigned long long) c, (unsigned long long) bad.load());
+    }
+}
+
 int32_t common_speculative_n_max(const common_params_speculative * spec) {
     int32_t n_max = 0;
 
@@ -2473,6 +2539,7 @@ int32_t common_speculative_n_max(const common_params_speculative * spec) {
         }
     }
 
+    fg_check_n_max(spec, n_max);
     return n_max;
 }
 
