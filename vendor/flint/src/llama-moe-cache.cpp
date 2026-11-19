@@ -1,3 +1,7 @@
+#include <dlfcn.h>
+#include <cstdio>
+#include <cstdlib>
+#include <atomic>
 #include "llama-moe-cache.h"
 
 #include "llama-impl.h"
@@ -103,11 +107,67 @@ struct moe_cache_slru {
         int32_t slot;
     };
 
+    // Shadow comparison of the ported replacement policy. The door mutates the state it is given, so it runs on a
+    // converted snapshot taken before the native plan() and cannot disturb the real cache. Only the fills and the
+    // hit count are compared: the eviction keys are derivable from them, and the door's sorted fill order is part
+    // of what has to match, so the comparison keeps the order rather than sorting both sides
+    // (contract in experiments/EXP-2026-11-19-1416-slru-contract/CONTRACT.md).
+    struct fg_sl_i64 { int64_t * d; int64_t n; };
+    typedef int64_t (*fg_slru_fn)(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, fg_sl_i64,
+                                  uint64_t, uint64_t, int64_t, int64_t, int64_t, int64_t, fg_sl_i64,
+                                  uint64_t, uint64_t, uint64_t, uint64_t);
+
+    struct snapshot {
+        std::vector<int32_t> key_of, prev, next, prot, head, tail, slots, ids, uniq, fills_e, fills_s, evicted;
+        std::vector<int64_t> seen, scal;
+        snapshot() {}
+    };
+
+    void take(snapshot & sn, int32_t il, const int32_t * ids_in, size_t n_ids) const {
+        sn.key_of = key_of; sn.prev = prev; sn.next = next;
+        sn.prot.resize(is_protected.size());
+        for (size_t i = 0; i < is_protected.size(); ++i) { sn.prot[i] = is_protected[i] ? 1 : 0; }
+        sn.head.assign(std::begin(head), std::end(head));
+        sn.tail.assign(std::begin(tail), std::end(tail));
+        sn.slots.assign(slot_map[il], slot_map[il] + n_expert);
+        sn.ids.assign(ids_in, ids_in + n_ids);
+        sn.uniq.assign((size_t) n_slots, 0);
+        sn.fills_e.assign((size_t) n_slots, 0);
+        sn.fills_s.assign((size_t) n_slots, 0);
+        sn.evicted.assign((size_t) n_slots, 0);
+        sn.seen.resize(seen.size());
+        for (size_t i = 0; i < seen.size(); ++i) { sn.seen[i] = (int64_t) seen[i]; }
+        sn.scal.assign(8, 0);
+        sn.scal[0] = (int64_t) seen_gen;
+    }
+
+    int64_t run_door(snapshot & sn, int32_t il, size_t n_ids) const {
+        static fg_slru_fn fn = []() -> fg_slru_fn {
+            void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+            if (!h) { return nullptr; }
+            return reinterpret_cast<fg_slru_fn>(dlsym(h, "slru_plan"));
+        }();
+        if (!fn) { return -1000; }
+        fg_sl_i64 s_seen{ sn.seen.data(), (int64_t) sn.seen.size() };
+        fg_sl_i64 s_scal{ sn.scal.data(), (int64_t) sn.scal.size() };
+        return fn((uint64_t) (uintptr_t) sn.key_of.data(), (uint64_t) (uintptr_t) sn.prev.data(),
+                  (uint64_t) (uintptr_t) sn.next.data(), (uint64_t) (uintptr_t) sn.prot.data(),
+                  (uint64_t) (uintptr_t) sn.head.data(), (uint64_t) (uintptr_t) sn.tail.data(), s_seen,
+                  (uint64_t) (uintptr_t) sn.slots.data(), (uint64_t) (uintptr_t) sn.ids.data(),
+                  (int64_t) n_ids, (int64_t) il, (int64_t) n_expert, (int64_t) n_slots, s_scal,
+                  (uint64_t) (uintptr_t) sn.uniq.data(), (uint64_t) (uintptr_t) sn.fills_e.data(),
+                  (uint64_t) (uintptr_t) sn.fills_s.data(), (uint64_t) (uintptr_t) sn.evicted.data());
+    }
+
     // give a slot to each expert selected by ids in layer il, evicting from probation first
     // returns false if the ids select more distinct experts than there are slots
     bool plan(int32_t il, const int32_t * ids, size_t n_ids, std::vector<fill> & fills, size_t & n_hit) {
         fills.clear();
         n_hit = 0;
+
+        const bool fg_diag = getenv("FG_SLRU_DIAG") != nullptr;
+        snapshot fg_sn;
+        if (fg_diag) { take(fg_sn, il, ids, n_ids); }
 
         if (++seen_gen == 0) {
             std::fill(seen.begin(), seen.end(), 0);
@@ -150,6 +210,29 @@ struct moe_cache_slru {
             fills.push_back({ e, s });
         }
         return true;
+        if (fg_diag) {
+            const int64_t got = run_door(fg_sn, il, n_ids);
+            bool same = got >= 0 && got == (int64_t) fills.size() && fg_sn.scal[3] == (int64_t) n_hit;
+            for (int64_t k = 0; same && k < got; ++k) {
+                same = fg_sn.fills_e[(size_t) k] == fills[(size_t) k].expert &&
+                       fg_sn.fills_s[(size_t) k] == fills[(size_t) k].slot;
+            }
+            static std::atomic<long long> calls{0}, bad{0};
+            const long long c = calls.fetch_add(1) + 1;
+            if (!same) {
+                bad.fetch_add(1);
+                if (bad.load() <= 5) {
+                    fprintf(stderr, "FG_SLRU_DIFF il=%d n_ids=%lld native_fills=%lld door=%lld "
+                                    "native_hits=%lld door_hits=%lld\n",
+                            (int) il, (long long) n_ids, (long long) fills.size(), (long long) got,
+                            (long long) n_hit, (long long) fg_sn.scal[3]);
+                }
+            }
+            if (c % 256 == 1) {
+                fprintf(stderr, "FG_SLRU_COMPARE calls=%lld disagreements=%lld\n", c, bad.load());
+            }
+        }
+
     }
 };
 
