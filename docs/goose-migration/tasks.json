@@ -2388,7 +2388,8 @@
       "remaining": [
         "rewrite on_eval to the rh_topk_plan/rh_ask_plan contract and replace the overlap/row-source call sites"
       ],
-      "coverage_doc": "docs/goose-migration/P9-04-COVERAGE.md"
+      "coverage_doc": "docs/goose-migration/P9-04-COVERAGE.md",
+      "evidence_20261119": "State recorded in docs/goose-migration/P9-04-ROW-STREAMING-STATE.md. goose/model/hook-rules.goose is composed and exports rh_is_moe_node, rh_parse_tail and rh_match_layer_node; none has a call site in vendor/flint/src, runtime/ or integration/. The contract the requirement names - rh_topk_plan / rh_ask_plan - exists only inside hook-rules.goose (and a staged copy under goose/json/s1-6-stream-staged), with no host-side declaration, implementation or caller, and on_eval itself is not present in the compiled sources at all: grepping vendor/flint/src and runtime/reconstructed/src for it returns neither definition nor call. The native row-source and prefetch names the requirement lists (row_source, row_stream, prefetch_row) do not appear in the MoE cache source either, so the inventory cannot be matched to code by name from here. Closing P9-04 needs the host side built first: find where the MoE hook fires in this tree, declare and call the two plan doors there, then gate row slices and overlap order against native behaviour."
     },
     {
       "id": "P9-05",
