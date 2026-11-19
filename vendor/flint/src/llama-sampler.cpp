@@ -146,9 +146,15 @@ extern "C" int64_t fg_sampler_temp_ext_call(float * lv, float * p, int64_t n, fl
 static std::atomic<unsigned long long> g_goose_tempext_calls{0};
 
 static bool fg_goose_top_p_enabled() {
+    // OFF by default until the door's contract is fixed. The door sorts the logits and the ids and then calls
+    // softmax_in_place on the logits, so `lv` comes back holding PROBABILITIES; the hook writes those into
+    // cur_p->data[i].logit and marks the array sorted. Every later stage then treats a probability as a logit,
+    // and the dist stage samples from a near-uniform distribution: measured as a real request dying at the first
+    // decoded token with "failed to add token -2100184624" (EXP-2026-11-19-1435). GGML_GOOSE_SAMPLER_TOP_P=1
+    // turns it back on for the comparison only.
     static const bool on = []() {
         const char * f = getenv("GGML_GOOSE_SAMPLER_TOP_P");
-        return !(f && strcmp(f, "0") == 0);
+        return f && strcmp(f, "1") == 0;
     }();
     return on;
 }
@@ -1117,6 +1123,21 @@ llama_token llama_sampler_sample(struct llama_sampler * smpl, struct llama_conte
     GGML_ASSERT(cur_p.selected >= 0 && cur_p.selected < (int32_t) cur_p.size);
 
     auto token = cur_p.data[cur_p.selected].id;
+
+    // A token that is not a valid id cannot be added to a batch: the downstream failure names the number and
+    // nothing else, which is how a real request failed with -2100184624 at the first decode
+    // (EXP-2026-11-19-1435). Printed here, where the selection and the array are both in hand.
+    if (token < 0 || token >= n_vocab) {
+        static std::atomic<long long> bad{0};
+        if (bad.fetch_add(1) < 3) {
+            fprintf(stderr, "FG_SAMPLE_INVALID token=%d n_vocab=%d selected=%d size=%zu sorted=%d "
+                            "d0=(id=%d logit=%.6g p=%.6g) dsel=(id=%d logit=%.6g p=%.6g)\n",
+                    (int) token, (int) n_vocab, (int) cur_p.selected, cur_p.size, cur_p.sorted ? 1 : 0,
+                    (int) cur_p.data[0].id, cur_p.data[0].logit, cur_p.data[0].p,
+                    (int) cur_p.data[cur_p.selected].id, cur_p.data[cur_p.selected].logit,
+                    cur_p.data[cur_p.selected].p);
+        }
+    }
 
     llama_sampler_accept(smpl, token);
 

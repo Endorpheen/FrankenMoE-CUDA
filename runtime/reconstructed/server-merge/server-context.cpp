@@ -2234,6 +2234,24 @@ private:
     }
 
     bool process_token(completion_token_output & result, server_slot & slot) {
+        // A token that is not a valid id cannot enter a batch: the builder refuses it far away with
+        // "failed to add token -2100184624 at index 0", which names the number and not the source, and the
+        // process aborts. A real OpenCode request died there (EXP-2026-11-19-1435). The task is failed with a
+        // message instead, so the server stays up and the value is reported where it appeared.
+        {
+            const int32_t fg_nv = llama_vocab_n_tokens(llama_model_get_vocab(llama_get_model(ctx_tgt)));
+            if (result.tok < 0 || result.tok >= fg_nv) {
+                static std::atomic<long long> fg_bad_tok{0};
+                const long long fb = fg_bad_tok.fetch_add(1) + 1;
+                fprintf(stderr, "FG_SERVER_INVALID_TOKEN tok=%d n_vocab=%d n_prompt=%d n_gen=%d count=%lld\n",
+                        (int) result.tok, (int) fg_nv, (int) slot.prompt.n_tokens(),
+                        (int) slot.generated.size(), fb);
+                send_error(slot, "invalid token produced by the sampler", ERROR_TYPE_SERVER);
+                slot.release();
+                return false;
+            }
+        }
+
         // remember which tokens were sampled - used for repetition penalties during sampling
         const std::string token_str = result.text_to_send;
         slot.sampled = result.tok;
@@ -4000,6 +4018,28 @@ private:
         iterate(drafting, [&](server_slot & slot) {
             auto & draft = slot.spec_draft;
             auto & ckpt  = slot.spec_ckpt;
+
+            // A drafter can propose a value that is not a token id, and nothing between it and the batch builder
+            // checks: the builder then refuses far away with "failed to add token -2100184624 at index 0", which
+            // names the number and not the source. A real OpenCode request died exactly there
+            // (EXP-2026-11-19-1435). The draft is dropped instead of being let through - a valid draft is
+            // untouched, so no accepted behaviour changes, and the log names the first bad value.
+            if (!draft.empty()) {
+                const int32_t fg_nv = llama_vocab_n_tokens(llama_model_get_vocab(llama_get_model(ctx_tgt)));
+                int32_t fg_first_bad = -1;
+                for (const auto fg_t : draft) {
+                    if (fg_t < 0 || fg_t >= fg_nv) { fg_first_bad = (int32_t) fg_t; break; }
+                }
+                if (fg_first_bad >= 0) {
+                    static std::atomic<long long> fg_dropped{0};
+                    const long long fd = fg_dropped.fetch_add(1) + 1;
+                    if (fd <= 5) {
+                        fprintf(stderr, "FG_SPEC_DRAFT_INVALID n_draft=%zu first_bad=%d n_vocab=%d dropped=%lld\n",
+                                draft.size(), (int) fg_first_bad, (int) fg_nv, fd);
+                    }
+                    draft.clear();
+                }
+            }
 
             slot.stats.n_draft_tokens += draft.size();
 
