@@ -1,4 +1,6 @@
 #include "server-context.h"
+#include <dlfcn.h>
+#include <cstdio>
 #include <atomic>
 #include <thread>
 #include "base64.hpp"
@@ -92,6 +94,16 @@ static std::vector<llama_token> server_accept_replay(
 
 // synthetic draft verification for benchmarking - accept draft tokens at random instead of by match with the target
 // on replay the draft was already accepted before a context checkpoint restore, so repeat the same decisions
+typedef int64_t (*fg_sp_synth_fn)(double, double, int64_t, int64_t);
+static fg_sp_synth_fn fg_sp_synth_resolve() {
+    static fg_sp_synth_fn fn = []() -> fg_sp_synth_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        void * sym = h ? dlsym(h, "fg_sp_synth_accept") : nullptr;
+        return reinterpret_cast<fg_sp_synth_fn>(sym);
+    }();
+    return fn;
+}
+
 static std::vector<llama_token> server_sample_and_accept_synth(
         common_sampler * smpl,
         llama_context * ctx,
@@ -110,7 +122,33 @@ static std::vector<llama_token> server_sample_and_accept_synth(
     std::uniform_real_distribution<double> dist(0.0, 1.0);
     for (size_t i = 0; i < draft.size(); ++i) {
         const llama_token id = common_sampler_sample(smpl, ctx, idxs[i]);
-        const bool accept = is_replay || dist(rng) < synth_probs[i];
+        const double u = dist(rng);
+        const bool accept = is_replay || u < synth_probs[i];
+        // The ported decision, compared against the native one on every position of every draft. The native
+        // answer is the one used; a disagreement is only counted. This copy is the one the build compiles -
+        // the same door added to vendor/flint/tools/server/server-context.cpp is dead source (EXP-2026-11-19-1366).
+        if (const auto fn = fg_sp_synth_resolve()) {
+            static std::atomic<unsigned long long> calls{0}, bad{0};
+            const int64_t goose = fn(synth_probs[i], u, is_replay ? 1 : 0,
+                                     llama_vocab_is_eog(vocab, draft[i]) ? 1 : 0);
+            const auto c = ++calls;
+            // The port folds the end-of-generation veto into its answer, and the native code applies it after
+            // the acceptance decision. Comparing the port's effective decision with the native's raw one would
+            // report every drafted EOG as a disagreement (measured: one, p=0.9167 u=0.0249), so the native side
+            // is the effective one here.
+            const bool native_effective = accept && (is_replay || !llama_vocab_is_eog(vocab, draft[i]));
+            if ((goose == 1) != native_effective) {
+                ++bad;
+                if (bad.load() <= 5) {
+                    fprintf(stderr, "FG_SP_SYNTH_DIFF goose=%lld native=%d p=%.6f u=%.6f replay=%d\n",
+                            (long long) goose, native_effective ? 1 : 0, synth_probs[i], u, is_replay ? 1 : 0);
+                }
+            }
+            if (c <= 3 || (c % 500) == 0) {
+                fprintf(stderr, "FG_SP_SYNTH goose calls=%llu disagreements=%llu\n",
+                        (unsigned long long) c, (unsigned long long) bad.load());
+            }
+        }
         // do not accept a drafted EOG token - it would end the generation early
         // on replay the last token is from the target and can be EOG, so skip this check
         if (accept && (is_replay || !llama_vocab_is_eog(vocab, draft[i]))) {
