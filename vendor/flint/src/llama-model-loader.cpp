@@ -23,6 +23,7 @@ namespace {
 struct fg_sl_i64 { int64_t * data; int64_t len; };
 struct fg_sl_u8  { uint8_t  * data; int64_t len; };
 typedef int64_t (*fg_gr_parse_fn)(fg_sl_u8, int64_t, fg_sl_i64, fg_sl_i64, fg_sl_i64, fg_sl_i64, fg_sl_i64);
+typedef int64_t (*fg_gr_find_fn)(fg_sl_u8, fg_sl_i64, fg_sl_i64, fg_sl_i64, fg_sl_u8);
 
 // Returns the number of disagreements; the caller decides whether that is fatal.
 static int fg_gguf_check(const std::string & fname, const gguf_context & native) {
@@ -49,6 +50,31 @@ static int fg_gguf_check(const std::string & fname, const gguf_context & native)
               s_t{ tn.data(), (int64_t) tn.size() }, s_slots{ slots.data(), (int64_t) slots.size() };
     fn(s_data, size, s_state, s_kv, s_t, s_slots, s_slots);
     int differ = 0;
+    // Every key and every tensor name, resolved through the port and compared with the index the native
+    // reader gives it. Counts alone would pass a reader that indexed the wrong records.
+    static fg_gr_find_fn find_kv = nullptr, find_tn = nullptr;
+    if (!find_kv) {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        find_kv = h ? reinterpret_cast<fg_gr_find_fn>(dlsym(h, "gr_find_kv")) : nullptr;
+        find_tn = h ? reinterpret_cast<fg_gr_find_fn>(dlsym(h, "gr_find_tensor")) : nullptr;
+    }
+    if (find_kv && find_tn) {
+        int kv_bad = 0, tn_bad = 0;
+        for (int64_t i = 0; i < nk; ++i) {
+            const char * k = gguf_get_key(&native, i);
+            fg_sl_u8 key{ reinterpret_cast<uint8_t *>(const_cast<char *>(k)), (int64_t) strlen(k) };
+            if (find_kv(s_data, s_state, s_kv, s_slots, key) != i) { ++kv_bad; }
+        }
+        for (int64_t i = 0; i < nt; ++i) {
+            const char * k = gguf_get_tensor_name(&native, i);
+            fg_sl_u8 key{ reinterpret_cast<uint8_t *>(const_cast<char *>(k)), (int64_t) strlen(k) };
+            if (find_tn(s_data, s_state, s_t, s_slots, key) != i) { ++tn_bad; }
+        }
+        differ += kv_bad + tn_bad;
+        fprintf(stderr, "FG_GGUF_LOOKUP keys=%lld/%lld tensors=%lld/%lld\n",
+                (long long) (nk - kv_bad), (long long) nk, (long long) (nt - tn_bad), (long long) nt);
+    }
+
     if (state[0] != 919) { ++differ; fprintf(stderr, "FG_GGUF_DIFF refused state0=%lld\n", (long long) state[0]); }
     if (state[2] != nk)  { ++differ; fprintf(stderr, "FG_GGUF_DIFF nk port=%lld native=%lld\n", (long long) state[2], (long long) nk); }
     if (state[3] != nt)  { ++differ; fprintf(stderr, "FG_GGUF_DIFF nt port=%lld native=%lld\n", (long long) state[3], (long long) nt); }

@@ -28,6 +28,19 @@ prefill 2697.6 / 2948.3 / 2958.5
 hash    c2ff42cc1219
 ```
 
+## The gate covers every key and every tensor, not just the counts
+
+Counts alone would pass a reader that indexed the wrong records, so the loader gate now resolves every key and every
+tensor name through the port and compares each with the index the native reader gives it:
+
+```
+FG_GGUF_LOOKUP keys=52/52 tensors=753/753
+FG_GGUF_PARSE  nk=52 nt=753 align=32 off=10990944 disagreements=0
+```
+
+805 lookups plus the four header fields, checked on every start with the flag on, and the load refuses to continue if
+any of them disagrees.
+
 ## The comparison refuses the load, not just prints
 
 A disagreement between the ported and native readings of the same file is never acceptable, so with the flag set the
