@@ -2669,11 +2669,12 @@ static void llama_sample_xtc_apply(struct llama_sampler * smpl, llama_token_data
                 cur_p->data[i].id    = (llama_token) ids[i];
             }
             cur_p->size = (size_t) kept;
-            // The door compacts the survivors into the front of the caller's array, which reorders
-            // them. Leaving `sorted` set made the next stage trust an order that no longer holds:
-            // the native path trims by advancing the base pointer and keeps the order, so its flag
-            // stayed true and the two paths disagreed by one ULP in the next softmax.
-            cur_p->sorted = false;
+            // The survivors stay in descending order: compared round by round over 100 cases, the
+            // token ids AND logits after this stage hash identically in both modes, so the compaction
+            // preserves the ordering the pre-ranking sort established. The flag therefore stays true,
+            // as it does on the native path; clearing it here made the next stage recompute a maximum
+            // the native path reuses, which is where the one-ULP disagreement came from.
+            cur_p->sorted = true;
             const unsigned long long c = ++g_goose_xtc_calls;
             if (c == 1 || (c % 100) == 0) {
                 fprintf(stderr, "FG171_XTC goose calls=%llu kept=%lld\n",

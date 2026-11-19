@@ -182,6 +182,24 @@ So the sequence of explanations for this configuration was: my unsorted input (w
 (wrong), the sorted flag (true for one scenario, and now falsified as the cause of the rest). What survives is only
 what the harness can check on every run.
 
+### The flag fix, measured over a hundred rounds instead of one case
+
+My earlier `sorted = false` in the XTC door path was wrong, and one probe had been enough to believe it. Comparing
+the prefix over **100 rounds**, fresh and persistent, is what showed it:
+
+```
+typical+xtc, fresh chain per round:       differing rounds = 0
+typical+xtc, one chain for 100 rounds:    differing rounds = 0
+  (before the change: sizes and hashes identical, only the flag differed)
+```
+
+The survivor array is in descending order after the door - the token ids and logits hash identically in both modes -
+so the flag belongs to `true`, exactly as the native path leaves it. With that, the prefix is identical **including
+the flag**, and the acceptance hash is unchanged (`c2ff42cc1219`).
+
+What remains is configuration 2's 15 rounds, and the two diagnostics meant to bracket it turned out to sit
+side by side. That is where this thread stops.
+
 ### Stopping point, recorded rather than forced
 
 Two diagnostics I added sit **next to each other** (both immediately before the selection), so they print the same
