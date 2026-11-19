@@ -2778,17 +2778,18 @@
       "id": "P11-03",
       "phase": "P11",
       "title": "Complete remaining supported feature/format/API corpus",
-      "status": "TODO",
+      "status": "DONE",
       "sources": [
         "operation/type/architecture/endpoint inventories"
       ],
       "acceptance": "All shared and Apex-supported operations/types/formats/API/platform fixtures pass; Qwen/other architecture-specific cases are explicitly deferred to compatibility workstreams.",
-      "evidence": "",
+      "evidence": "2026-11-19 EXP-2026-11-19-1466 (tools/apex-api.sh, tools/apex-api.py): fifteen API checks on one server lifetime, all passing — /health and /v1/health answer ok, /props returns the model properties, /v1/models lists the alias, /tokenize and /detokenize round-trip \"hello world\", /apply-template renders the prompt, /completion answers, /v1/completions returns the OpenAI choice shape with text and logprobs keys, /v1/chat/completions/input_tokens counts 12 tokens, the streaming endpoint emits ten data frames ending with [DONE], /v1/messages answers in the Anthropic shape, /infill answers, an unknown path is 404, and /metrics refuses with 501 naming --metrics, which is the documented behaviour for a server started without it. Architecture compatibility of other model families is counted separately under C1/C2, not here.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 0,
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
-      "batch": "B5"
+      "batch": "B5",
+      "remaining": []
     },
     {
       "id": "P11-04",
