@@ -1,3 +1,4 @@
+#include <mutex>
 #include <cstring>
 #include <atomic>
 #include <dlfcn.h>
@@ -1215,7 +1216,42 @@ static fg_ar_arch_fn fg_ar_arch_resolve() {
     return fn;
 }
 
+// One full sweep over every architecture the native table holds, then the per-call check. The sweep is
+// what makes this a check of the registry rather than of one name; it runs once, on the first lookup.
+static void fg_check_arch_sweep();
+
+static void fg_check_arch_sweep() {
+    const auto find = fg_ar_find_resolve();
+    const auto arch = fg_ar_arch_resolve();
+    if (find == nullptr || arch == nullptr) {
+        return;
+    }
+    unsigned long long bad = 0, n = 0;
+    for (const auto & kv : LLM_ARCH_NAMES) {
+        const std::string name = kv.second;
+        fg_sl_u8 sin{ (uint8_t *) name.data(), (int64_t) name.size() };
+        const int64_t row = find(sin);
+        bool ok = row >= 0;
+        if (ok) {
+            uint8_t buf[128] = {0};
+            fg_sl_u8 sout{ buf, (int64_t) sizeof(buf) };
+            const int64_t len = arch(row, sout);
+            ok = len == (int64_t) name.size() && memcmp(buf, name.data(), (size_t) len) == 0;
+        }
+        ++n;
+        if (!ok) {
+            ++bad;
+            if (bad <= 5) {
+                fprintf(stderr, "FG_ARCH_SWEEP_DIFF name=%s row=%lld\n", name.c_str(), (long long) row);
+            }
+        }
+    }
+    fprintf(stderr, "FG_ARCH_SWEEP names=%llu disagreements=%llu\n", n, bad);
+}
+
 static void fg_check_arch(const std::string & name) {
+    static std::once_flag once;
+    std::call_once(once, fg_check_arch_sweep);
     const auto find = fg_ar_find_resolve();
     const auto arch = fg_ar_arch_resolve();
     if (find == nullptr || arch == nullptr) {
@@ -1242,8 +1278,8 @@ static void fg_check_arch(const std::string & name) {
         fprintf(stderr, "FG_ARCH_PROGRESS calls=%llu disagreements=%llu\n",
                 (unsigned long long) c, (unsigned long long) bad.load());
     }
-    static std::atomic<unsigned long long> once{0};
-    if (once.fetch_add(1, std::memory_order_relaxed) == 0) {
+    static std::atomic<unsigned long long> atexit_once{0};
+    if (atexit_once.fetch_add(1, std::memory_order_relaxed) == 0) {
         std::atexit([]() {
             fprintf(stderr, "FG_ARCH_TOTAL calls=%llu disagreements=%llu\n",
                     (unsigned long long) calls.load(), (unsigned long long) bad.load());
