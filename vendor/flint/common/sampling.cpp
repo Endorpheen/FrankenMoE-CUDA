@@ -1,3 +1,5 @@
+#include <atomic>
+#include <dlfcn.h>
 #include "sampling.h"
 
 #include "common.h"
@@ -700,6 +702,20 @@ llama_token common_sampler_sample(struct common_sampler * gsmpl, struct llama_co
     return id;
 }
 
+// The speculative doors live in libllama, which llama-common must not depend on, so the symbol is
+// looked up in the library already loaded in the process.
+typedef int64_t (*fg_sp_prefix_fn)(const int64_t *, int64_t, const int64_t *, int64_t, int64_t,
+                                   int64_t *, int64_t);
+
+static fg_sp_prefix_fn fg_sp_prefix_resolve() {
+    static fg_sp_prefix_fn fn = []() -> fg_sp_prefix_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        void * sym = h ? dlsym(h, "fg_sp_prefix") : nullptr;
+        return reinterpret_cast<fg_sp_prefix_fn>(sym);
+    }();
+    return fn;
+}
+
 std::vector<llama_token> common_sampler_sample_and_accept_n(struct common_sampler * gsmpl, struct llama_context * ctx, const std::vector<int> & idxs, const llama_tokens & draft, bool grammar_first) {
     GGML_ASSERT(idxs.size() == draft.size() + 1 && "idxs.size() must be draft.size() + 1");
 
@@ -729,6 +745,31 @@ std::vector<llama_token> common_sampler_sample_and_accept_n(struct common_sample
         common_sampler_accept(gsmpl, id, true);
 
         result.push_back(id);
+    }
+
+    // Goose cross-check of the accepted prefix. The native result above is what returns either way,
+    // so a disagreement can only be counted. `i` is the number of draft tokens the loop accepted,
+    // which is exactly what the ported prefix comparison must produce for the same two arrays.
+    if (const auto fn = fg_sp_prefix_resolve()) {
+        static thread_local std::vector<int64_t> d, t;
+        static thread_local int64_t out[2];
+        d.assign(draft.begin(), draft.end());
+        t.assign(result.begin(), result.end());
+        const int64_t goose = fn(d.data(), (int64_t) d.size(), t.data(), (int64_t) t.size(),
+                                 (int64_t) draft.size(), out, (int64_t) 2);
+        static std::atomic<unsigned long long> calls{0}, bad{0};
+        const auto c = ++calls;
+        if (goose != (int64_t) i) {
+            ++bad;
+            if (bad.load() <= 5) {
+                fprintf(stderr, "FG_SP_PREFIX_DIFF goose=%lld native=%zu draft=%zu\n",
+                        (long long) goose, i, draft.size());
+            }
+        }
+        if (c == 1 || (c % 200) == 0) {
+            fprintf(stderr, "FG_SP_PREFIX goose calls=%llu disagreements=%llu\n",
+                    (unsigned long long) c, (unsigned long long) bad.load());
+        }
     }
 
     return result;
