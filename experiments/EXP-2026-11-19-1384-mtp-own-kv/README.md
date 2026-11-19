@@ -1,65 +1,62 @@
-# EXP-2026-11-19-1384: the MTP head does not share the target's memory - the code says so
+# EXP-2026-11-19-1384: MTP on Apex - it runs now, it costs 470 MiB, and it is slower
 
-## The finding
+## First: the arithmetic in the earlier part of this card was wrong
 
-`common_speculative_init_result` sets, for the MTP case:
-
-```cpp
-cparams.n_ctx    = llama_n_ctx(ctx_tgt);   // 262144
-cparams.ctx_other = ctx_tgt;               // the target context
-```
-
-and `llama_context`'s constructor **discards** that field immediately:
-
-```cpp
-cparams.ctx_other = nullptr;
-if (model.arch == LLM_ARCH_GEMMA4_ASSISTANT) { ... cparams.ctx_other = params.ctx_other; }
-if (model.arch == LLM_ARCH_EAGLE3 || model.arch == LLM_ARCH_DFLASH) { ... }
-```
-
-Apex is `qwen35moe`. None of the three branches applies, so the MTP head builds a **private** context: its own
-262 144-slot KV cache, its own compute buffers, its own output reserve - a second full context beside the first.
-
-## What that costs, from the model's own metadata
-
-The loader prints the parameters this calculation needs: 41 blocks, 2 KV heads, key and value length 256, KV cached as
-`q4_0` (about 0.5625 bytes per element with block scaling).
+It predicted ~6 GiB for the head's private KV at the accepted context. The measured delta between a control and an MTP
+run, same context, same request, is **470 MiB**:
 
 ```
-per token per layer : 2 heads x 256 x 2 (K and V) x 0.5625 B  ~=  576 B
-per token           : 576 B x 41 layers                     ~= 23.6 KiB
-at 262144 tokens    : 23.6 KiB x 262144                     ~= 6.0 GiB
+vram-ctrl   decode 79.86 tok/s   vram 9722 MiB    rss 20766060 kB
+vram-mtp    decode 60.40 tok/s   vram 10192 MiB   rss 21376152 kB
 ```
 
-That is an arithmetic statement from the model's metadata and the accepted KV type, not a measurement, and it is labelled
-as such. It explains the two walls already measured: with ~6 GiB taken by a second KV, the target's 1.31 GiB prefill
-buffer no longer fits, and the `cudaMalloc` failures appear in whichever allocation runs next.
+So the private KV is about 12 KiB per token, not 23.6, and the arithmetic was off by roughly a factor of two per token
+and 13x in the conclusion. It is replaced here by the measurement, which is the only thing that was ever going to settle
+it. Extrapolated linearly, the head would need about 3 GiB at 262 144 - still more than fits beside the accepted profile
+on a 12 GiB card, but a number rather than a guess.
 
-## Why this is the user's point, in code
+## Second: MTP works on this machine at all
 
-The question "must the head have a second full context?" has an answer in this tree: **it does not have to, but today it
-does**, because the sharing path (`ctx_other`) is only honoured for three architectures and qwen35moe is not among them.
-That is an implementation limit, not a hardware one.
+Before this card the head could not start: its context inherited the target's `n_ubatch 4096` and failed to allocate a
+2368 MiB compute buffer. With only the head's `n_ubatch` sized to its work (512), it starts, generates 512 tokens, and
+produces a normal answer. That is the first working MTP configuration in this project.
 
-## What a fix would look like, and what it must not do
+## Third: it is slower, and wider drafts are much slower
 
-1. honour `ctx_other` for a same-model MTP head, so the head reads the target's KV instead of duplicating it - the field
-   already exists and is already passed;
-2. if full sharing is wrong for the head (it may need its own positions), give it its own KV sized to the **draft
-   window** rather than to `n_ctx`, which is the same idea at a smaller scope;
-3. chunk the draft feed at the eight `batch.get()` sites so a small `n_batch` becomes usable;
-4. never by shrinking the target's context, cache or batch - rule 35.
+Same request, same context, only `--spec-draft-n-max` varied:
 
-## The measurement that would confirm the calculation
+| draft width | decode tok/s | vram MiB |
+|---|---|---|
+| none (control) | **79.86** | 9722 |
+| 3 (default) | 60.40 | 10192 |
+| 8 | 31.29 | 10809 |
+| 16 | 18.68 | 11215 |
 
-One pair of runs at a small context, where both start: the control, and `draft-mtp`, reading VRAM from each. The delta is
-the head's real footprint, and it should be near the 6 GiB the arithmetic predicts at 262 144, scaled down.
+Monotonic degradation with width is the signature of **low acceptance**: each extra drafted token costs a verification
+pass and is mostly thrown away. A head that were accepting well would improve up to some width and then flatten, not
+halve with every doubling.
 
-## State
+## What this settles and what it does not
 
-| question | answer |
+Settled: on Apex with this request, MTP is not a speedup lever, and neither is n-gram drafting (about -10 % at the
+accepted profile). The record stands at 62.79 / 62.73 and nothing here challenges it.
+
+Not settled: whether the head's **acceptance** is low because of the mechanism's implementation (the private context, the
+verification path) or because this model's nextn head is simply weak on this workload. The measurement that would tell
+them apart is the per-position acceptance statistics - `n_accepted_per_pos`, which P6-11 already lists as unfinished -
+and that is the next concrete step, not another configuration sweep.
+
+## What was not done, deliberately
+
+No further change to the profile, no attempt to make MTP "fit" by shrinking the target context, cache or batch. The
+accepted profile measured itself: 79.86 tok/s at a 40960 context with a short prompt is an exploration, not a record.
+
+## State for P6-11
+
+| item | state |
 |---|---|
-| does the head share the target's memory today | **no**, for qwen35moe |
-| is that required by the hardware | no |
-| what is the largest single cost | a second KV, ~6 GiB at the accepted context, by calculation |
-| what is measured so far | that it fails at the accepted profile, and at which allocations |
+| synthetic acceptance on the real model | measured, 0 disagreements (EXP-1366) |
+| rejection acceptance | measured over 880 combinations (EXP-1368) |
+| MTP runs inside the profile | **no** - needs ~3 GiB the card does not have at 262144 |
+| MTP as a speedup | **no** at any width tried; degradation is monotonic |
+| per-position acceptance statistics | not collected - the next step |
