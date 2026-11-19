@@ -3669,6 +3669,26 @@ bool llama_vocab::impl::is_eog(llama_token id) const {
         } once(*this);
         (void) once;
     }
+    // The answer now comes from the port when it can give one: the decision is a membership test the
+    // shipped library computes for all 248 320 tokens, and this is the first place where a generation
+    // decision is taken by the ported code rather than by the native set.
+    if (id != LLAMA_TOKEN_NULL) {
+        if (const auto fn = fg_eog_check::resolve()) {
+            static thread_local std::vector<int64_t> fg_eog_ids;
+            static thread_local bool fg_ready = false;
+            if (!fg_ready) {
+                fg_eog_ids.assign(special_eog_ids.begin(), special_eog_ids.end());
+                fg_ready = true;
+            }
+            fg_eog_check::sl_i64 s_eog{ fg_eog_ids.empty() ? nullptr : fg_eog_ids.data(), (int64_t) fg_eog_ids.size() };
+            static std::atomic<long long> served{0};
+            const long long c = served.fetch_add(1) + 1;
+            if (getenv("FG_TK_DETOK_DIAG") && c % 64 == 1) {
+                fprintf(stderr, "FG_TK_EOG_SERVED from_port=%lld\n", c);
+            }
+            return fn(s_eog, (int64_t) fg_eog_ids.size(), (int64_t) id) != 0;
+        }
+    }
     return id != LLAMA_TOKEN_NULL && special_eog_ids.count(id) > 0;
 }
 
