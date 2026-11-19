@@ -26,11 +26,27 @@ FG_GGUF_ARRAYS  elements=527/527     <- was 522/522, the five-element float arra
 
 Both sides read the same bits for all five, including the signed zero and the NaN.
 
-## What is not proven
+## The negative control, and it fails as it should
 
-The comparison is **exercised** but not shown to **fail**. The obvious negative control - patching a float's bytes in
-the file - changes what both readers see, so they still agree, which is not a control at all. A real one would inject a
-fault into the reader side, and that is not done here. The card states this rather than implying the check was falsified.
+Patching a float's bytes in the file is not a control: both readers see the same change and still agree. The control has
+to make the two sides differ, so the check was temporarily given the **wrong key index** for the port's read - an
+off-by-one in the comparison only.
+
+```
+FG_GGUF_ARRAYS  elements=522/527
+llama_model_load: error loading model: llama_model_loader: ported GGUF reader disagrees with the native one (5)
+```
+
+Five mismatches - exactly the five elements of the float array - and the load **refuses** to continue. The fault was then
+reverted, rebuilt, and the same fixture reports:
+
+```
+FG_GGUF_VALUES  integer=7/7
+FG_GGUF_ARRAYS  elements=527/527
+```
+
+So the branch executes, it detects wrong bytes, and a disagreement is fatal at load. That is what the previous version of
+this card could not claim.
 
 ## Shipped path
 
