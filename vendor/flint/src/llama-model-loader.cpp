@@ -411,25 +411,34 @@ static int fg_gguf_check(const std::string & fname, const gguf_context & native)
         int arr_bad = 0, arr_cmp = 0;
         static fg_gr_arrstr_fn arr_str = nullptr;
         static fg_gr_arrint_fn arr_int = nullptr;
+        typedef int64_t (*fg_arr_offs_t)(fg_sl_u8, fg_sl_i64, fg_sl_i64, int64_t, fg_sl_i64, fg_sl_i64);
+        static fg_arr_offs_t offs_fn = nullptr;
         if (!arr_str) {
             void * h5 = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
             arr_str = h5 ? reinterpret_cast<fg_gr_arrstr_fn>(dlsym(h5, "gr_arr_str_span")) : nullptr;
             arr_int = h5 ? reinterpret_cast<fg_gr_arrint_fn>(dlsym(h5, "gr_array_int")) : nullptr;
+            offs_fn = h5 ? reinterpret_cast<fg_arr_offs_t>(dlsym(h5, "gr_arr_str_offsets")) : nullptr;
         }
-        for (int64_t i = 0; i < nk && arr_str && arr_int; ++i) {
+        for (int64_t i = 0; i < nk && arr_str && arr_int && offs_fn; ++i) {
             if (gguf_get_kv_type(&native, i) != GGUF_TYPE_ARRAY) { continue; }
             const int64_t et = (int64_t) gguf_get_arr_type(&native, i);
             const int64_t n  = (int64_t) gguf_get_arr_n(&native, i);
             if (et == GGUF_TYPE_STRING) {
+                // One pass for the whole array. The per-element door walks from the array start each call,
+                // which is quadratic: at 248 320 tokens this section never finished, so the check was unusable
+                // on a real vocabulary and nobody noticed because acceptance runs do not enable it
+                // (EXP-2026-11-19-1390).
+                static std::vector<int64_t> aoff, alen;
+                aoff.assign((size_t) n, 0); alen.assign((size_t) n, 0);
+                const int64_t got = offs_fn(s_data, s_state, s_kv, i,
+                                            fg_sl_i64{ aoff.data(), n }, fg_sl_i64{ alen.data(), n });
                 for (int64_t e = 0; e < n; ++e) {
-                    int64_t out[2] = {0};
-                    fg_sl_i64 so{ out, 2 };
                     const char * ns = gguf_get_arr_str(&native, i, (int) e);
                     const size_t nn = strlen(ns);
                     ++arr_cmp;
-                    if (arr_str(s_data, s_state, s_kv, i, e, so) != 0 || (size_t) out[1] != nn ||
-                        out[0] < 0 || (size_t) (out[0] + out[1]) > fg_port.data.size() ||
-                        memcmp(fg_port.data.data() + out[0], ns, nn) != 0) {
+                    if (got != n || aoff[(size_t) e] < 0 || alen[(size_t) e] != (int64_t) nn ||
+                        (size_t) (aoff[(size_t) e] + alen[(size_t) e]) > fg_port.data.size() ||
+                        memcmp(fg_port.data.data() + aoff[(size_t) e], ns, nn) != 0) {
                         ++arr_bad;
                     }
                 }

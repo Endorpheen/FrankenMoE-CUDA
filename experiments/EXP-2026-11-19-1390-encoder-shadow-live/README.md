@@ -1,85 +1,48 @@
-# EXP-2026-11-19-1390: the encoder's table builds in seconds, and its first call hangs
+# EXP-2026-11-19-1390: the encoder now runs at `llama_tokenize`, and its one disagreement is the special tokens
 
-## What moved
+## Four things were wrong, three of them fixed
 
-`gr_arr_str_table` already existed in Goose and does in one pass what the per-element accessor did quadratically. With
-it, the table build went from "would take an hour" to seconds:
+| problem | evidence | state |
+|---|---|---|
+| the per-element accessor made the table build quadratic | no progress for 20 000 elements in 180 s | fixed by `gr_arr_str_offsets`, a bulk door that fills offsets into the file's window in one pass |
+| the call was declared with C++ linkage inside a function | `check-unresolved-symbols: FAIL _Z13fg_bpe_encodePKclPll` | fixed, gate green |
+| the GGUF check itself never finished on a real vocabulary | `FG_GGUF_DIAG` alone timed out after `FG_GGUF_STRINGS` | fixed: its array section now uses the bulk door; the check completes |
+| the port has no special-token pass on this path | measured below | **open** |
 
-```
-FG_TK_BPE_ENTRY build=1 port=1 n_tok=248320 n_mrg=247587
-FG_TK_BPE_LOAD  ok n_tok=248320 n_mrg=247587 tcap=524288 mcap=524288
-```
+The third one is worth its own line: the GGUF reader's verification was **unusable on a real vocabulary** and nobody had
+noticed, because acceptance runs do not enable it. It compared every element of every string array through the
+per-element door - 248 320 of them - which is the same quadratic walk. It now runs to completion.
 
-Both arrays are laid out as NUL-terminated text in one blob, which is exactly the slice `bt_bpe` indexes, and
-`bt_build` fills the slot tables over it.
+## The live comparison
 
-## The linkage defect, and the gate that named it
-
-The call was declared inside the function body as a plain `extern` - C++ linkage - while the loader defines it
-`extern "C"`. The library linked anyway, because a shared object may carry an unresolved symbol, and the failure would
-have appeared at the first call. The gate caught it by name before any run:
+With `FG_TK_BPE_DIAG`, every `llama_tokenize` call compares the port's ids with the native ones:
 
 ```
-check-unresolved-symbols: FAIL, 1 symbol(s) no linked library provides:
-  _Z13fg_bpe_encodePKclPll
+case 0  "Hello world"                  native 2   port 2   equal
+case 1  "Привет, мир"                  native 5   port 5   equal
+case 2  "def f(x): return x**2"        native 8   port 8   equal
+case 3  "<|im_start|>system"           native 2   port 7   DIFF
+FG_TK_BPE_COMPARE calls=1 disagreements=0   (counter printed before case 3)
 ```
 
-Moving the declaration to file scope with `extern "C"` fixed it; the gate is green again.
+Three of four equal, and the one that differs is exactly the case the standalone CLI had to be taught: the port's
+`bt_bpe` tokenises the text as ordinary pieces, while the native tokenizer matches special tokens **before** BPE. The CLI
+gained that pass in EXP-2026-11-19-1375; the library path goes straight to `bt_bpe` and does not have it.
 
-## What is broken now
+## What that means
 
-With the comparison wired into `llama_tokenize` behind `FG_TK_BPE_DIAG`, the **first** tokenisation on the shipped
-path does not return: a vocabulary-only harness with four short strings times out at 150 seconds, after printing the
-table lines and the GGUF checks and nothing else.
-
-So the port is accepted (the gate is green, and `bt_bpe` answered 227 ids correctly from the standalone CLI), but the
-call from the library with these tables does not terminate. The difference between the working CLI and this call is in
-the **table construction**, and the two are worth comparing directly: the CLI fills the offsets from the file's own
-blob, while this path fills them from a copied, NUL-terminated blob and passes that copy as `gguf`.
-
-The most likely candidate is that the slot tables reference offsets in the copied blob while some part of the encoder
-still expects the file's blob - a mismatch that would not fail loudly but could make a merge lookup never resolve.
+The comparison is live and it is doing its job - it found, on the first run, the one known gap between the CLI and the
+library path. The fix is to move the special-token pass to where both callers share it, which is the port itself (a
+`bt_detokenize`-style door that takes the special order and the text and emits ids), not to reimplement it in C++ at the
+call site - that would be the adapter debt rule 17 forbids.
 
 ## Shipped path
 
-Untouched: the comparison runs only when the flag is set, and with it unset an acceptance run gives
-
-```
-decode 62.52 / 63.13 / 62.96   prefill 2689.4 / 2945.4 / 2948.0   hash c2ff42cc1219
-```
-
-which is the baseline within its spread.
-
-## Where the hang actually is, narrowed twice
-
-The copy-blob hypothesis was tested first and refuted: the tables now come from a new door,
-`gr_arr_str_offsets`, which writes offsets and lengths **into the file's own window** in one pass - no copy - and the
-first call still does not return.
-
-Then the call was bracketed with prints before and after it, and **neither printed**:
-
-```
-FG_TK_BPE_ENTRY build=1 port=1 n_tok=248320 n_mrg=247587
-FG_TK_BPE_LOAD  ok n_tok=248320 n_mrg=247587
-FG_GGUF_VALUES  integer=26/26
-FG_GGUF_STRINGS keys=13/13
-          <- the process ends here, 150 s
-```
-
-So `fg_bpe_encode` is never entered. The hang is **inside `fg_gguf_check`'s later sections**, after the table build and
-after the values and strings checks. Without the flag the same harness tokenises all four cases in a second, so the
-native path is fine and nothing in the shipped runtime is involved.
-
-That leaves one suspicion with a clear test: the check's array section compares every element of every string array, and
-with the vocabulary that is 248 320 elements through the per-element door - the same quadratic walk that took an hour
-before, now hit by the check itself because the flag enables it. The next step is to run the check with the table build
-disabled and see whether it completes: if it does, the table build leaves the port's state in a form that makes the
-accessor slower, or the check's own array comparison is the cost and it has simply never been run with a 248k-element
-array before.
+Unchanged: the comparison and the table live behind `FG_TK_BPE_DIAG`, and an acceptance run with the flag unset gave
+decode 62.52 / 63.13 / 62.96, prefill 2689 / 2945 / 2948, hash `c2ff42cc1219`.
 
 ## Next
 
-1. build the same tables the way the CLI does - offsets into the file's own window - and see whether the call returns;
-2. if it does, the copy is the problem and the fix is to point the port at `fg_port.data` with the offsets from
-   `gr_arr_str_table`'s relation to it, or to pass the copy consistently everywhere;
-3. only then the shadow comparison produces numbers, and only after that is serving discussed.
+1. one door in Goose that tokenises text with specials, using the order `bt_special_order` already produces;
+2. re-run this harness: four of four, then a wider corpus through the server;
+3. only then serving, and only then the acceptance triple that proves nothing regressed.
