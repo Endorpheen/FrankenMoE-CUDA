@@ -203,3 +203,24 @@ requests - which is exactly the class of defect that a single-request test canno
 
 If it ever fails, it is a finding rather than a flake: the step records both lengths and the first eighty characters of each
 answer.
+
+## The architecture doors, without a model, without a GPUk
+
+`experiments/EXP-2026-11-19-1456-arch-doors-cpu/verify.sh` opens the shipped library for its exported doors and asks the
+questions the loader asks on every start - but in a second, and without 18 GiB of weights:
+
+```
+arch doors: registry rows=9
+arch doors: rows_checked=9 round_trip_failures=0 duplicate_rows=0 unknown_refused=6/6 ver_checked=7 ver_failures=0
+PASS
+```
+
+The round trip is the contract: the name a row gives must map back to that same row, or the loader reads the wrong layout for
+a model it recognises. Unknown names are refused rather than given a row, and the version comparison is checked as a truth
+table rather than by one example.
+
+Two mistakes were in the harness itself, and both are the kind this project keeps finding. The first called a door as
+`(pointer, length)` in separate registers instead of the two-field struct the generated C declares, and segfaulted. The second
+tested a **guessed** list of architecture names - twenty-one of twenty-five were architectures this build deliberately
+dropped, so the test failed on its own guesses. The names now come from the registry through `ar_count`/`ar_arch`, which is
+the only list that means anything.
