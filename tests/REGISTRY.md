@@ -16,6 +16,8 @@ run only with explicit permission).
 | json | door | `tests/json/door` | door work of P10-07 | P10-07 | fast | migrated 2026-11-19 |
 | server | router-status | `tests/server/router-status` | door work of P8-06 | P8-06 | model | migrated 2026-11-19 |
 | integration | goose-composition | `tests/integration/goose-composition` | set list of tools/check-composition.sh | P6-10, P7-06, P8-09 | integration | created 2026-11-19, run pending |
+| regression | accepted-components | `tests/regression/accepted-components` | release pre-flight of tooling | rule 31 | fast | verified 2026-11-19 |
+| regression | cumulative-baseline | `tests/regression/cumulative-baseline` | release pre-flight of tooling | rule 31 | fast | verified 2026-11-19 |
 
 ## Notes on the first migration
 
