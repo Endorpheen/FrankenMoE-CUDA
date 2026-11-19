@@ -91,6 +91,27 @@ That makes the next measurement specific rather than exploratory: log, per round
 token, the sampled index, the EMA state and the number of RNG draws consumed. The first round where any of them
 parts is the answer, and it is a single line to add to the `FG_SAMPLER_DIAG` trace that already exists.
 
+### The first divergence is one bit in one probability
+
+The trace prints the array just before the selection, and the first line that differs is this:
+
+```
+goose:  FG_ADAPTIVE_IN [1] id=98 logit=409ff2ba p=3efed6c8
+native: FG_ADAPTIVE_IN [1] id=98 logit=409ff2ba p=3efed6c9
+```
+
+Same token, **identical logit**, and the probability differs in the **last bit**. Everything after it follows: the
+discrete distribution is moved by one ULP, the drawn index changes, the EMA updates from that index, and the
+cascade reaches every later round.
+
+So the samplers are not wrong in a categorical way - the transform and the logits agree bit for bit - and the
+remaining defect is a single rounding difference in one division. That is a much smaller claim than "mirostat and
+adaptive-p diverge", and it is the one supported by the data.
+
+**Next measurement, exactly:** dump `e = expf(logit - max)` and `cum` for that array in both modes. If `cum` matches
+and `e` matches, the difference is in the final division; if `e` differs, the input to `expf` differs by a bit even
+though the printed logit agrees. One line each, in the trace that already exists.
+
 ### Original note on the open question
 
 Whether the door should reproduce the native's trimming (advance the base, preserving order) or the caller should

@@ -4255,6 +4255,13 @@ static void llama_sampler_adaptive_p_apply(struct llama_sampler * smpl, llama_to
         llama_sampler_softmax_impl(cur_p, false);
     }
 
+    if (fg_diag_enabled()) {
+        for (size_t i = 0; i < cur_p->size && i < 3; ++i) {
+            fprintf(stderr, "FG_ADAPTIVE_IN [%zu] id=%d logit=%08x p=%08x\n", i, (int) cur_p->data[i].id,
+                    *(const unsigned *) &cur_p->data[i].logit, *(const unsigned *) &cur_p->data[i].p);
+        }
+    }
+
     // sample from the transformed distribution
     const int idx   = llama_sample_dist(cur_p, ctx->rng);
     cur_p->selected = idx;
@@ -4262,6 +4269,11 @@ static void llama_sampler_adaptive_p_apply(struct llama_sampler * smpl, llama_to
     // store the selected token ID for acceptance later
     ctx->pending_token_id  = cur_p->data[idx].id;
     ctx->pending_token_idx = idx;
+    if (fg_diag_enabled()) {
+        fprintf(stderr, "FG_ADAPTIVE n=%zu idx=%d tok=%d ws=%.9f tw=%.9f transformed=%d\n", cur_p->size, idx,
+                (int) ctx->pending_token_id, (double) ctx->weighted_sum, (double) ctx->total_weight,
+                fg_transformed ? 1 : 0);
+    }
 }
 
 static void llama_sampler_adaptive_p_accept(struct llama_sampler * smpl, llama_token token) {
@@ -4272,6 +4284,10 @@ static void llama_sampler_adaptive_p_accept(struct llama_sampler * smpl, llama_t
         // update EMA with the original probability of the selected token
         ctx->weighted_sum = ctx->original_probs[ctx->pending_token_idx] + ctx->decay * ctx->weighted_sum;
         ctx->total_weight = 1.0f + ctx->decay * ctx->total_weight;
+    }
+    if (fg_diag_enabled()) {
+        fprintf(stderr, "FG_ADAPTIVE_ACCEPT tok=%d hit=%d ws=%.9f tw=%.9f\n", (int) token,
+                (ctx->pending_token_id == token) ? 1 : 0, (double) ctx->weighted_sum, (double) ctx->total_weight);
     }
     ctx->pending_token_id = LLAMA_TOKEN_NULL;
     ctx->pending_token_idx = -1;
