@@ -96,7 +96,9 @@ cannot carry them.
 | vocabulary array | yes |
 | merge list, token types | yes |
 | tensor lookup and type (metadata-only path) | yes |
-| two array walks outside the vocabulary, split files | no |
+| metadata dump in `llama-impl` | yes |
+| LoRA adapter arrays | out of scope - a different file, the store holds only the model's window |
+| split files | no, and no port comparison exists for them |
 | `const char *` keys | **nothing to convert** - the specialisation is never instantiated (`GKV<const char *>` has no call site), so it is dead template code rather than a native path |
 
 ## The gate that guards each step
