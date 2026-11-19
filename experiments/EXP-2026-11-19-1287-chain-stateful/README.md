@@ -135,7 +135,45 @@ Three inputs, two max choices, and the observed numbers match one each. The dive
 transform, not in `expf`, not in the normalisation: it is in **which max each path trusts**, which comes from a flag
 the two paths maintain differently.
 
-### The instrument is now suspect, and here is why
+### Correction: there was no contradiction, and here is the complete cause
+
+I wrote that the trace contradicted itself. It did not: the "ascending" triple I saw was the **output of the
+transform**, not the input order. Printing the array at entry settles it:
+
+```
+ENTRY  [0] id=61 logit=408f9fe4   [1] id=98 logit=406c6300   [2] id=16 logit=406c05cc   (descending)
+IN     [0] id=61 logit=3e4482c0   [1] id=98 logit=409ff2ba   [2] id=16 logit=409ffa62   (transformed)
+```
+
+The transform maps probabilities to logits on a curve peaked at the target, so a descending array becomes an
+ascending one. That is expected, and my entry `monotonic` check was right all along.
+
+**The whole difference, now accounted for:**
+
+1. the arrays entering adaptive-p are identical in both modes;
+2. their `sorted` **flags** differ: the doors set it false after a compaction, the native paths leave it true;
+3. adaptive-p's transform destroys the ordering, and the final softmax uses `data[0]` as the max **when the flag is
+   set** and scans otherwise;
+4. so the native ranks against `3e4482c0` (the stale `data[0]`) and the port against the true `409ffa62`.
+
+Computed outside the sampler, those two choices reproduce the two observed probabilities exactly:
+
+```
+with max=data[0]: p1=3efed6c9    <- native
+with true max   : p1=3efed6c8    <- goose
+```
+
+### What this means for the port
+
+The port's behaviour is the mathematically correct one: it recomputes the maximum from the values it has, so it does
+not depend on a flag that the sampler itself has just invalidated. The native path trusts a `sorted` flag that its
+own transform has made false, and gets a different maximum by one rounding step.
+
+So this is **not a defect in the port**, and replicating it would mean copying an upstream inconsistency into the
+Goose runtime. The difference is one ULP in one probability, which flips a draw only when the cumulative boundary
+falls inside it - but once it flips, the stateful samplers carry the change forward.
+
+### Earlier note, retained because it was wrong
 
 The two prints that were supposed to bracket the transform **contradict each other** in both modes. The failing
 round reports
