@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Build the reconstructed DSO: staged integration files + flint objects + the Goose modules they call."""
 from pathlib import Path
+import re
 import subprocess, sys, re, os, argparse, hashlib, json
 
 BASE = Path(__file__).resolve().parents[2]
@@ -54,6 +55,37 @@ CXX = ['/usr/bin/g++-13'] + FLAGS
 changed = ['llama-batch.cpp','llama-context.cpp','llama-graph.cpp','llama-hparams.cpp','llama-kv-cache.cpp','llama-model.cpp',
            'llama-memory-recurrent.cpp','llama-memory-hybrid.cpp','llama-model-loader.cpp','llama-sampler.cpp',
            'llama-vocab.cpp','llama-moe-cache.cpp','unicode.cpp']
+
+# A carrier copy under runtime/reconstructed/src exists to add host wiring that the vendor
+# source does not have (rule 33). When it carries no `fg_` symbol at all while the vendor copy
+# does, it is the pre-port copy of that file and compiling it silently drops the port: the
+# 2026-11-19 build failed to link fg_port_array_str exactly that way, because llama-impl.cpp
+# calls it and the loader that defines it came from the staged copy. Such a file is taken from
+# the vendor source instead. The decision is a rule over the sources, not a list of names.
+#
+# The two copies of a carrier have DIVERGED, and neither is a superset of the other: the staged
+# llama-model-loader.cpp calls 51 doors but does not define the fg_port_* symbols that
+# llama-impl.cpp links against, while the vendor copy defines them and calls none of the
+# expert-cache doors (fg262a, fg263c, fg756s live only in the staged moe-cache copy). Picking
+# either file wholesale silently loses what the other has - the failure mode rule 33 names.
+#
+# So the build does not choose. It compares what each copy defines and refuses when they are not
+# interchangeable, naming the symbols. Merging the two copies is its own accepted step, and until
+# it exists a rebuild here would be wrong in one direction or the other.
+_DEFINED = re.compile(r'extern "C"[^;{]*?\b(fg[0-9a-z_]+)\s*\(')
+for _name in changed:
+    _staged, _vend = SRC / _name, FL / 'src' / _name
+    if not (_staged.exists() and _vend.exists()):
+        continue
+    _s = set(_DEFINED.findall(_staged.read_text(errors='replace')))
+    _v = set(_DEFINED.findall(_vend.read_text(errors='replace')))
+    if _s != _v:
+        print(f'build.py: the two copies of {_name} are not interchangeable')
+        print(f'  defined only in the staged carrier: {sorted(_s - _v)}')
+        print(f'  defined only in the vendor source:  {sorted(_v - _s)}')
+        print('  compiling either one loses the other\'s symbols; merge them in an accepted step '
+              'before rebuilding (docs/goose-migration/CARRIER-DIVERGENCE-20261119.md)')
+        sys.exit(1)
 objs = []
 for name in changed:
     o = W/(name + '.o')

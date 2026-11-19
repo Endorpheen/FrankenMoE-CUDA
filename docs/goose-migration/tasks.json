@@ -2363,7 +2363,8 @@
       "remaining": [
         "replace the 25 call sites in the expert cache, dense placement and row streaming with the Goose decisions (commit-before-touch, budget return, caller-owned quiesce_spec)"
       ],
-      "coverage_doc": "docs/goose-migration/P9-03-COVERAGE.md"
+      "coverage_doc": "docs/goose-migration/P9-03-COVERAGE.md",
+      "evidence_20261119": "Expert-cache call sites checked 2026-11-19, and the check exposed a build defect that matters more than the count. expert-lru.goose exports 16 doors with zero call sites in vendor/flint/src or runtime; the decisions actually on the path are fg262a (admission), fg263c (copy run-lengths) and fg756s (SLRU), called only from runtime/reconstructed/src/llama-moe-cache.cpp (5/11/8 times), and slru_plan, called from both copies. DEFECT FOUND AND FIXED IN RULE, NOT IN SHIPPED CODE: the source-selection rule added to runtime/reconstructed/build.py earlier today would have compiled the vendor copy of llama-moe-cache.cpp, which calls none of the three, silently dropping the expert-cache decisions - the failure mode of rule 33. The first form tested the literal string 'fg_', which fg262a does not contain; the second, counting doors properly, kept the staged copy and broke the link on fg_port_array_str, because the staged llama-model-loader.cpp does not define the fg_port_* family that the vendor copy defines. Neither copy is a superset. The build now REFUSES when the two copies define different symbol sets, printing both, instead of choosing. See docs/goose-migration/CARRIER-DIVERGENCE-20261119.md. Nothing shipped is affected: the release came from the accepted checkpoint and no rebuild ran after the rule was added. P9-03 stays PARTIAL and now also needs the carrier merge before any rebuild."
     },
     {
       "id": "P9-04",
