@@ -81,3 +81,28 @@ right and the test was wrong. With `(int64_t) kf` the two agree on all 500 cases
 
 That is worth keeping in the record: a ceiling looks like the careful choice and is the wrong
 one here; only reading the call site settles it.
+
+## The RNG stream, through the shipping door
+
+```
+rng stream: cases=1280 mismatches=0
+```
+
+Four seeds, 320 draws each, comparing the module's `dist` door against `std::mt19937` advanced in
+parallel. Because the door consumes **two words per draw**, an identical sequence also proves the
+stream position advances identically - a one-word offset would show up immediately.
+
+### Two things my first attempt got wrong, both in the harness
+
+The first run reported 970 mismatches out of 1280, and both causes were mine:
+
+1. **Wrong seeding.** I filled the state with 624 successive `mt()` calls. `std::mt19937(seed)`
+   uses the recurrence `1812433253 * (prev ^ (prev >> 30)) + i`, and the module implements
+   exactly that in `sm_mt_seed`. Two different expansions of the same seed give two different
+   streams, so the comparison was between unrelated generators.
+2. **Wrong canonical double.** I used `std::generate_canonical<double, 53>`, which scales by the
+   mantissa. This project's draw is `(low + high * 2^32) / 2^64` - low word first - as in
+   `mt_canonical` in the module. Both are plausible; only one is the one the sampler uses.
+
+Both are the same failure mode as the field-name mistake earlier in this card: a harness written
+from what the standard *usually* does, instead of from what this code does.
