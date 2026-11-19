@@ -44,6 +44,25 @@ turns from descending into ascending, they do not, and the probabilities differ 
 So the port computes the correct normalisation of the values it was given, and the native computes one based on a
 flag its own transform has invalidated.
 
+## Correction: the array does differ, and one ULP in one entry is the whole cause
+
+I wrote that the arrays match and therefore the generator state differs. That was wrong, and the error was mine
+again: I compared the first twelve printed lines, which covered the first three applies and cut the fourth in half.
+Comparing the applies as blocks gives the answer on the fourth:
+
+```
+goose : FG_ADAPTIVE_IN [1] id=98 logit=409ff2ba p=3efed6c8
+native: FG_ADAPTIVE_IN [1] id=98 logit=409ff2ba p=3efed6c9
+goose : FG_ADAPTIVE n=3 idx=2 tok=16    native: FG_ADAPTIVE n=3 idx=1 tok=98
+```
+
+Identical token, identical logit, one bit in the probability - and the draw lands on a different side of the
+cumulative boundary. **No RNG divergence is needed to explain this**, so the word-count probe I named is not
+required and the "RNG state" conclusion is withdrawn.
+
+The cause is the one already identified: the native's `softmax_impl` uses `data[0]` when `sorted` is set, the door
+rescans, and after the transform those two maxima differ.
+
 ## Where this line ends, and why it ends here
 
 The last measurement to make is a per-call-site word counter for the generator, and it is worth saying plainly what
