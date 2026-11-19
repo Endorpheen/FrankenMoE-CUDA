@@ -250,3 +250,35 @@ That reframes what remains. It is not "make the port faster" any more; it is "le
 a call that contains a multi-byte piece", which needs the partial-UTF-8 advance inside the ported
 automaton. Until that exists the stage stays opt-in and the item stays open, and the honest summary
 is: correct where used, rarely used.
+
+## Zero disagreements on 1.7 million candidates
+
+Two changes made the difference, and the first was a wrong conclusion of mine:
+
+1. **The declines were truncation, not partials.** I assumed the multi-byte pieces drove the
+   declines; allowing partials through changed nothing. Instrumenting the counter showed **one**
+   candidate per call fills the 16-codepoint window - and one candidate was enough to send the
+   whole call to the native path.
+2. **Long pieces are resolved natively in place.** The candidates that fill the window are
+   collected, decided by `llama_grammar_reject_candidates` on their own, and their verdicts are
+   merged into the port's. The port keeps the call and only the few long pieces take the old path.
+
+```
+default path: cases=1736513 disagreements=0
+```
+
+The composed decision - the port for everything, native for the few window-filling pieces - now
+equals the native decision on **every** candidate in a 16-token constrained run, and the call is no
+longer declined, so the port is actually doing the work. Partials are allowed through by default
+(`GGML_GOOSE_ALLOW_PARTIAL=0` restores the conservative decline) because the ported matcher does
+implement the partial advance and the measurement covers it.
+
+## Status of the grammar item now
+
+- decision equal to native on 1 736 513 candidates of a real vocabulary, zero exceptions;
+- no call declined, so the port is used;
+- through the shipping library, with the same request the reference library accepts.
+
+What is still missing for default-on is the **cost**: the stage was 3-5x slower per call before, and
+that has to be re-measured now that the port is actually running on the full set. That measurement
+is the next step, and the stage stays opt-in until it exists.

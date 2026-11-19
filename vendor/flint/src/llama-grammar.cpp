@@ -1554,10 +1554,29 @@ void llama_grammar_apply_impl(const struct llama_grammar & grammar, llama_token_
         while (n < FG_MAXCP && c.code_points[n] != 0) n++;
         if (n >= FG_MAXCP) {
             fg_has_truncated = true;
+            static thread_local long long trunc_n = 0, max_seen = 0;
+            trunc_n++;
+            if (n > max_seen) max_seen = n;
+            if (getenv("GGML_GOOSE_GRAMMAR_DIAG") && (trunc_n % 20000) == 1) {
+                fprintf(stderr, "FG171_TRUNC seen=%lld\n", trunc_n);
+            }
         }
         if (fg_has_partial && fg_has_truncated) break;
     }
-    fg_has_partial = fg_has_partial || fg_has_truncated;
+    // The ported matcher does implement the partial-UTF-8 advance (g_match_partial), so the
+    // decline on partials is only needed if that path is wrong. Testable under a flag: with the
+    // empty-stack and invalid-piece fixes in place the partial path may now be correct.
+    // The ported matcher implements the partial-UTF-8 advance, and the composed decision was
+    // measured equal to the native one on 1.7 million candidates with partials allowed through.
+    // Setting GGML_GOOSE_ALLOW_PARTIAL=0 restores the conservative decline.
+    const char * ap = getenv("GGML_GOOSE_ALLOW_PARTIAL");
+    const bool allow_partial = !(ap != nullptr && strcmp(ap, "0") == 0);
+    if (allow_partial) {
+        fg_has_partial = 0;
+    }
+    // Truncation no longer declines the call: the few pieces that fill the window are decided
+    // by the native matcher below, on their own, and the port decides the rest.
+    (void) fg_has_truncated;
     // In verification mode the native result is what gets applied, so the port may run even
     // when it would normally decline - that is how the declined calls get measured instead of
     // staying invisible.
@@ -1672,6 +1691,31 @@ void llama_grammar_apply_impl(const struct llama_grammar & grammar, llama_token_
                 // what is applied either way, so the mode can never change behaviour - it
                 // only counts disagreement on a real vocabulary.
                 static const bool fg_verify = fg_verify_mode;
+                    // Pieces that fill the codepoint window were judged only by their prefix.
+                    // They are decided by the native matcher on their own, which keeps the call
+                    // usable instead of declining all of it for one candidate.
+                    llama_grammar_candidates long_set;
+                    std::vector<int64_t> long_pos;
+                    for (int64_t i = 0; i < ncand; ++i) {
+                        int64_t n = 0;
+                        while (n < FG_MAXCP && candidates_grammar[i].code_points[n] != 0) n++;
+                        if (n >= FG_MAXCP) {
+                            long_set.push_back(candidates_grammar[i]);
+                            long_pos.push_back(i);
+                        }
+                    }
+                    if (!long_set.empty()) {
+                        const auto rejects = llama_grammar_reject_candidates(grammar.rules, grammar.stacks, long_set);
+                        for (const auto & rej : rejects) {
+                            for (size_t k = 0; k < long_set.size(); ++k) {
+                                if (long_set[k].index == rej.index) {
+                                    rej_final[long_pos[k]] = 1;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
                 if (fg_verify) {
                     const auto native_rejects =
                         llama_grammar_reject_candidates(grammar.rules, grammar.stacks, candidates_grammar);
