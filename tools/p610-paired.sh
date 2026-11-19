@@ -57,4 +57,13 @@ for p in $(seq 1 "$PAIRS"); do
   one "on-$p"  $ON
   one "off-$p" $OFF
 done
+# provenance for the acceptance gate: the rule requires the artefacts of the exact binary that was
+# measured, and check-cumulative-baseline.py reads these copies rather than the global paths
+for lib in libllama.so.0 libggml-base.so.0 libggml-cpu.so.0; do
+  cp -f "$R/builds/flint-acc/bin/$lib" "$OUT/$lib" 2>/dev/null || echo "warn: $lib not copied"
+done
+( cd "$OUT" && sha256sum *.so.* > SHA256SUMS 2>/dev/null )
+printf '%s\n' "$0 $*" > "$OUT/argv.txt"
+nvidia-smi > "$OUT/gpu.txt" 2>/dev/null
+free -m > "$OUT/meminfo.txt" 2>/dev/null
 echo "results in $OUT"

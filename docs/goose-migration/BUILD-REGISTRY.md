@@ -177,3 +177,34 @@ Two things that cost time and are now recorded:
    failure.
 
 Verified: the server answers a completion request and shuts the slot down cleanly.
+
+## The cumulative-baseline gate now runs on our runs, and what it reports
+
+`tools/p610-paired.sh` copies the three libraries it measured into the run directory and writes
+`SHA256SUMS`, `argv.txt`, `gpu.txt` and `meminfo.txt`. Before that the run directories held only JSON
+and logs, so `check-cumulative-baseline.py` could not be applied to them at all - the gate was being
+satisfied by habit rather than by command.
+
+Result on `results/p610-prov-1222`:
+
+```
+ok P1-12 Goose Q4_K tiled kernel dispatch
+ok P1-12 Goose kernel reference
+ok P4-13 Goose allocator primitive
+MISSING Goose kernel object libmoe_mmid_tiled.so
+CUMULATIVE-BASELINE FAIL
+```
+
+So the three accepted Goose components **are** present in this build, and the only failure is an
+artefact that this tree does not produce: `libmoe_mmid_tiled.so` belongs to the CUDA MoE acceptance
+line, and nothing under `builds/` or `runtime/` contains it (only its name is referenced, by the check
+itself).
+
+Consequences, stated rather than papered over:
+
+- a sampler-chain run cannot claim "cumulative baseline PASS" today, because the gate includes a
+  component from a different line of work;
+- the honest claim is narrower and true: *the three Goose components are present and identified in the
+  measured binary*;
+- either the kernel object is added to the build set, or the gate is told which components apply to a
+  sampling-only measurement. That is a decision for Igor, not for me.
