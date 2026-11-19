@@ -2,19 +2,20 @@
 //
 // The transport decisions are Goose's: the socket lifecycle, the request line
 // parse, the header-scan bounds, the response framing and the keep-alive rule.
-// Four libc calls (`gx_read`, `gx_write`, `gx_close` and the socket family) are
-// bound by name; the three that clash with system headers are reached through
-// one-line forwards with no decision in them (EXP-2026-11-17-938).
+// Every libc call here is reached through a `gx_*` forward with no decision in it
+// (EXP-2026-11-17-938). The socket family is forwarded as well: another module in the
+// same unit (goose/server/http-listen.goose) binds `socket`, `bind` and `listen` with
+// a different signature, and one C symbol cannot carry two prototypes.
 //
 // Method codes match route-table.goose: 1 = GET, 2 = POST.
 
-extern "socket" fn gx_socket(domain: i64, kind: i64, proto: i64) -> i64;
-extern "bind" fn gx_bind(fd: i64, addr: u8[:], len: i64) -> i64;
-extern "listen" fn gx_listen(fd: i64, backlog: i64) -> i64;
+extern "gx_socket" fn gx_socket(domain: i64, kind: i64, proto: i64) -> i64;
+extern "gx_bind" fn gx_bind(fd: i64, addr: u8[:], len: i64) -> i64;
+extern "gx_listen" fn gx_listen(fd: i64, backlog: i64) -> i64;
 // accept takes pointers, and a Goose slice is passed by value, so the call
 // goes through the one-line forward like read/write/close.
 extern "gx_accept" fn gx_accept(fd: i64, addr: u8[:], len: i64[:]) -> i64;
-extern "setsockopt" fn gx_setsockopt(fd: i64, level: i64, name: i64, val: u8[:], len: i64) -> i64;
+extern "gx_setsockopt" fn gx_setsockopt(fd: i64, level: i64, name: i64, val: u8[:], len: i64) -> i64;
 extern "gx_close" fn gx_close(fd: i64) -> i64;
 extern "gx_read" fn gx_read(fd: i64, buf: u8[:], n: i64) -> i64;
 extern "gx_write" fn gx_write(fd: i64, buf: const u8[:], n: i64) -> i64;

@@ -7,6 +7,12 @@
 // generated unit does include <unistd.h>; those three go through the substrate
 // primitives qz_rd/qz_wr/qz_cl, which move bytes and decide nothing.
 //
+// The socket-family symbols are bound to `hl_*` forwards rather than to the libc
+// names: another module in the same unit (goose/server/http-listener.goose) binds the
+// same names with a different signature, and one C symbol cannot carry two prototypes.
+// The forwards are one-liners in integration/goose-standalone/libc-forwards.c and hold
+// no decision.
+//
 // The address structure is built in the host scratch (qz_tmp) because Goose cannot
 // take the address of its own slice. That is the same seam quant-rows and
 // model-ownership already use.
@@ -26,11 +32,11 @@
 
 import std;
 
-extern "socket" fn hl_socket(domain: i64, kind: i64, proto: i64) -> i64;
-extern "bind" fn hl_bind(fd: i64, addr: u64, len: i64) -> i64;
-extern "listen" fn hl_listen(fd: i64, backlog: i64) -> i64;
-extern "accept" fn hl_accept(fd: i64, addr: u64, len: u64) -> i64;
-extern "getsockname" fn hl_getsockname(fd: i64, addr: u64, len: u64) -> i64;
+extern "hl_socket" fn hl_socket(domain: i64, kind: i64, proto: i64) -> i64;
+extern "hl_bind" fn hl_bind(fd: i64, addr: u64, len: i64) -> i64;
+extern "hl_listen" fn hl_listen(fd: i64, backlog: i64) -> i64;
+extern "hl_accept" fn hl_accept(fd: i64, addr: u64, len: u64) -> i64;
+extern "hl_getsockname" fn hl_getsockname(fd: i64, addr: u64, len: u64) -> i64;
 extern "qz_tmp" fn hl_tmp(off: i64) -> u64;
 extern "qz_st_u8" fn hl_st8(a: u64, v: i64);
 extern "qz_ld_u8" fn hl_ld8(a: u64) -> i64;

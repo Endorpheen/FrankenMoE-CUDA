@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-17",
+  "updated_at": "2026-11-19",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
@@ -13,9 +13,9 @@
       "experiment": "EXP-2026-11-17-921-goose-sampler",
       "task": "P6-10",
       "status": "ported",
-      "sha256": "c0a1bef9e7204827fdd934bfb1dacc22e419234f6cf29cfdd67072354554893f",
+      "sha256": "f88b3845ecf4ddab666ed2523214dd4c6adddbba90233d4323d0f1834ea17120",
       "gate": "207 comparisons vs llama_sampler_chain, 0 mismatches; MT19937 700 draws x 3 seeds; 5 mutants rejected",
-      "integration_commit": "d6fb6a5745760317004d7ae3f40b3343075a9018"
+      "integration_commit": "b3be31e059622577eff79fecb872fb17def19ee6"
     },
     {
       "goose": "misc/unicode-tables.goose",
@@ -62,9 +62,9 @@
       "experiment": "EXP-2026-11-17-920-goose-tokenizer",
       "task": "P7-06",
       "status": "ported",
-      "sha256": "73c06ae7ed74e398d314060e7a1719fbf5abd174f72cd03d7ba62081b7fe6083",
+      "sha256": "cfaf90f587c5c6d64eac6f62edae060b1f05f1fc1f9c45d9a634328a2379f555",
       "gate": "tokenizer gate:70 cases/11017 ids exact;tables 248320/247587;eog 5/0;merge-stale mutant rejected",
-      "integration_commit": "24e3a4882167fbfe6fd8140062d8b94e3ec4c71c"
+      "integration_commit": "d8c6384987f571780131bf47fad3dc5a4fa8d2dc"
     },
     {
       "goose": "model/bpe-detokenize.goose",
@@ -75,8 +75,9 @@
       "experiment": "EXP-2026-11-17-920-goose-tokenizer",
       "task": "P7-06",
       "status": "ported",
-      "sha256": "b084f7e43aa6a81b097a8f7892332db2692540433187ff08be6f3cc39da48567",
-      "gate": "tokenizer gate:496640 pieces and 140 detokenize calls exact;detokenize byte-map mutant rejected"
+      "sha256": "f0e2f39e278bf7817edb43d28e3c73b188685a437fb5118ff528d263542ebff9",
+      "gate": "tokenizer gate:496640 pieces and 140 detokenize calls exact;detokenize byte-map mutant rejected",
+      "integration_commit": "4a3d4e384d263197e581908ddf0c6e2c06d8d45e"
     },
     {
       "goose": "chat/parse-params.goose",
@@ -411,8 +412,9 @@
       "experiment": "EXP-2026-11-14-603-p7-04-quant-rows",
       "task": "",
       "status": "ported",
-      "sha256": "4362fc29d389c2be9b7337b2dad8cc8b1a4a6af6af1f964aa456ee35e19bffc6",
-      "gate": "1798 cases / 441986 bytes / 0 failures, 12/12 mutations"
+      "sha256": "25a3693c6764855a59463d7674723c472fc9265c21d3fa5c0e7a8b667780a240",
+      "gate": "1798 cases / 441986 bytes / 0 failures, 12/12 mutations",
+      "integration_commit": "83c6efc1556ae2baa63f69b4c665529aae118cb2"
     },
     {
       "goose": "model/quant-types.goose",
@@ -868,8 +870,9 @@
       "experiment": "EXP-2026-11-15-656-p8-09b-cors-query-key",
       "task": "",
       "status": "ported",
-      "sha256": "d92abb48465ffadd640e6ea7b3219863f31966911912697c4baab8c5c330f5a9",
-      "gate": "194 cases / 622 values / 0 failures, 12/12 mutations"
+      "sha256": "bdaf20a158b67685d1cd17d0fb4f2ce0b756a0cdf04e3b8255f4d6a9fbd43de0",
+      "gate": "194 cases / 622 values / 0 failures, 12/12 mutations",
+      "integration_commit": "964c20d66eff0c27dd9c97f486cb40194b44dac5"
     },
     {
       "goose": "server/query-transport.goose",
@@ -892,8 +895,9 @@
       "experiment": "EXP-2026-11-15-656-p8-09b-cors-query-key",
       "task": "",
       "status": "ported",
-      "sha256": "3559df070128ae56bfdd73c62bf99ed6fc998616faa0f79ee5291f5d8803c3c9",
-      "gate": "1121 cases / 1157 values / 0 failures, 12/12 mutations"
+      "sha256": "c5ee1d036c86c93b3ff8ad78a13efeda5be9b6bc5bad743b3682a4c23491865d",
+      "gate": "1121 cases / 1157 values / 0 failures, 12/12 mutations",
+      "integration_commit": "964c20d66eff0c27dd9c97f486cb40194b44dac5"
     },
     {
       "goose": "server/web-assets.goose",
@@ -11656,7 +11660,8 @@
       "experiment": "EXP-2026-11-13-448-p8-01-shutdown-policy",
       "task": "P8-01",
       "status": "slice",
-      "sha256": "09adb5e762f72c14d14032f3c70e76b43ffc98e21e9e52853a526ff7d5cc14b8"
+      "sha256": "82bf527ff6c6a151b87bd1fe0bef2dfe288e3946433ebf13d6c0d824e5ad4e0d",
+      "integration_commit": "e52ec73ffcab7cc44643b0a728b4386dfa7b7d53"
     },
     {
       "goose": "server/route-table.goose",
@@ -11915,7 +11920,8 @@
       "experiment": "EXP-2026-11-13-471-p8-02-limits",
       "task": "P8-02",
       "status": "slice",
-      "sha256": "7f7d57e51ab8e3573b3a6ccfb9cc930ec0d5d680a26989bfc5233d9c1d622e9b"
+      "sha256": "057d2dc0958251cf4f639ab8f49f6820ce3ca5653f60461393b7ca65c34cccc5",
+      "integration_commit": "69aa951c7afd9e1a6b23313a74006cce4ee4a85c"
     },
     {
       "goose": "json/schema-shape.goose",
@@ -47122,9 +47128,9 @@
       "source": "source/reader.goose",
       "task": "P11-01",
       "status": "slice",
-      "sha256": "d2cd80fa33a72a90be57ec009606e81589b9381433729f46a5e9235308189fa4",
+      "sha256": "f3184b6c6477065067c56e2d11a57c26b503775dc469817c13b46841abb0fd24",
       "gate": "typed engine reader/name lookup;Apex/Edge0 headers,334 synthetic checks,4 reader mutants,collision control,libc-only artifact",
-      "integration_commit": "24e3a4882167fbfe6fd8140062d8b94e3ec4c71c"
+      "integration_commit": "d8c6384987f571780131bf47fad3dc5a4fa8d2dc"
     },
     {
       "goose": "model/model-ownership.goose",
@@ -47216,8 +47222,166 @@
     {
       "goose": "server/http-listener.goose",
       "status": "integrated",
-      "sha256": "e5353c9822abd1d7d6de8aa1e1489034a8a6c8d8b42ded734342c886ed934758",
-      "integration_commit": "d47010de72d0648555c4646a6f75200f6e88e502"
+      "sha256": "2cd7c4c63feeb200367497a241ae51bcece43dc3b38fc4893f37691c09bf03aa",
+      "integration_commit": "48f05be09953f9b4c87675de7865ff0ce9b5a672"
+    },
+    {
+      "goose": "misc/sampler-dry.goose",
+      "native": "src/llama-sampler.cpp (DRY repetition penalty)",
+      "native_targets": [
+        "src/llama-sampler.cpp"
+      ],
+      "experiment": "EXP-2026-11-18-961-goose-dry",
+      "task": "P6-10",
+      "status": "ported",
+      "sha256": "501b1b6fbbb505e97e5c09dfd63ba09f8d9957b4c456ced876ce93d392b5a196",
+      "gate": "DRY port; live sampler gates and the DRY bug fixed in EXP-2026-11-18-967/968",
+      "integration_commit": "1c32fd07cd8497a7e6329865799737d75c434a10"
+    },
+    {
+      "goose": "misc/sampler-top-n-sigma.goose",
+      "native": "src/llama-sampler.cpp (top-n-sigma mask)",
+      "native_targets": [
+        "src/llama-sampler.cpp"
+      ],
+      "experiment": "EXP-2026-11-18-960-goose-top-n-sigma",
+      "task": "P6-10",
+      "status": "ported",
+      "sha256": "c91811cc3e9accca865d6cf527944a3c49dce000bd1a5315c32c4cb31098fce8",
+      "gate": "top-n-sigma mask in Goose; the three sampler filters joined the unit in EXP-2026-11-18-962",
+      "integration_commit": "d45c87d638d4460bc3070bdf4ed17b47f55e11ef"
+    },
+    {
+      "goose": "misc/sampler-typical.goose",
+      "native": "src/llama-sampler.cpp (locally typical sampling)",
+      "native_targets": [
+        "src/llama-sampler.cpp"
+      ],
+      "experiment": "EXP-2026-11-18-959-goose-typical",
+      "task": "P6-10",
+      "status": "ported",
+      "sha256": "19289bb0557f6f819bbb422006ae6f3f2e64d756a0391adbdfc6340e4d9e2abe",
+      "gate": "locally typical sampling in Goose; joined the unit in EXP-2026-11-18-962",
+      "integration_commit": "d45c87d638d4460bc3070bdf4ed17b47f55e11ef"
+    },
+    {
+      "goose": "misc/workload-format.goose",
+      "native": "runtime/core/src/moe/deterministic_workload.cpp",
+      "native_targets": [
+        "runtime/core/src/moe/deterministic_workload.cpp"
+      ],
+      "experiment": "EXP-2026-11-19-1266-workload-format-slice",
+      "task": "P9-07",
+      "status": "ported",
+      "sha256": "846550f536b7f47b396e5b7759073f765e73f768b2d981a2c02898791efc20e8",
+      "gate": "reading 9 crafted files, writing byte-exact on 4 workloads, 1000 guard and 1000 routing cases (EXP-2026-11-19-1261/1263/1264/1265); joined the unit in EXP-2026-11-19-1266",
+      "integration_commit": "35adbc5a79d6310c142d36155391f6abb82ea7ac"
+    },
+    {
+      "goose": "model/slru-policy-goose.goose",
+      "native": "src/llama-expert-cache.cpp (SLRU policy)",
+      "native_targets": [
+        "src/llama-expert-cache.cpp"
+      ],
+      "experiment": "EXP-2026-11-19-1422-slru-door-carries-maps",
+      "task": "P9-03",
+      "status": "ported",
+      "sha256": "cbe5a0c5f122dc872d5c32b3942392bc2b17336b703ecca305d18cc640f73a23",
+      "gate": "eviction second half performed by the door; 61441 decisions matched (EXP-2026-11-19-1422)",
+      "integration_commit": "9e9090bf89a6235021ec9fb1e18c6c9bd97ef2c3"
+    },
+    {
+      "goose": "model/tokenizer-decisions.goose",
+      "native": "src/llama-vocab.cpp (tokenizer decisions)",
+      "native_targets": [
+        "src/llama-vocab.cpp"
+      ],
+      "experiment": "EXP-2026-11-18-1184-tokenizer-decisions-slice",
+      "task": "P7-06",
+      "status": "ported",
+      "sha256": "f53dc7244fd0bd949c0ae9778393b73a719ade3c212c869ad3829138a26e7ee8",
+      "gate": "normalisation, both merge orders, UTF-8 accounting, score path, WPM and SPM merges, symbol emission; joined the accumulated unit in EXP-2026-11-18-1184",
+      "integration_commit": "b80dd8e206a2a8ed87238f3fa817339ac8b5b88c"
+    },
+    {
+      "goose": "model/tokenizer-doors.goose",
+      "native": "src/llama-vocab.cpp (tokenizer doors)",
+      "native_targets": [
+        "src/llama-vocab.cpp"
+      ],
+      "experiment": "EXP-2026-11-18-1229-tokenizer-hook",
+      "task": "P7-06",
+      "status": "ported",
+      "sha256": "0300dc0c6a8c15b8dff40968be0b9fce1533101e4ddfe0d27060c2f314c9527d",
+      "gate": "doors wired in EXP-2026-11-18-1229; the BPE comparator verified live in EXP-2026-11-19-1233",
+      "integration_commit": "685f6e245e61cfda4c7cf4a62a6354a5b4590222"
+    },
+    {
+      "goose": "server/http-listen.goose",
+      "native": "common/llama.cpp (listen and accept loop)",
+      "native_targets": [
+        "common/llama.cpp"
+      ],
+      "experiment": "EXP-2026-11-18-978-goose-http-listen",
+      "task": "P8-09",
+      "status": "ported",
+      "sha256": "e2f1da546f04504499a848b0bdfc6a2bde96fa0e9b0dae6c0d1136991e64ec60",
+      "gate": "HTTP served from Goose over a real socket (EXP-2026-11-18-978); 404 body in EXP-2026-11-18-996",
+      "integration_commit": "48f05be09953f9b4c87675de7865ff0ce9b5a672"
+    },
+    {
+      "goose": "server/http-request.goose",
+      "native": "common/llama.cpp (request parse)",
+      "native_targets": [
+        "common/llama.cpp"
+      ],
+      "experiment": "EXP-2026-11-18-977-goose-http-request",
+      "task": "P8-09",
+      "status": "ported",
+      "sha256": "8d072594b06eb116e8e8737ac45624b572843569612a477e2dd7fa04ba73d795",
+      "gate": "request parsing in Goose (EXP-2026-11-18-977); body consumed before the next request in EXP-2026-11-18-992",
+      "integration_commit": "8db057439b63f3d4c253966b58b700e2ba4b8625"
+    },
+    {
+      "goose": "server/http-response.goose",
+      "native": "common/llama.cpp (response formatting)",
+      "native_targets": [
+        "common/llama.cpp"
+      ],
+      "experiment": "EXP-2026-11-18-958-goose-http-response",
+      "task": "P8-09",
+      "status": "ported",
+      "sha256": "3e4f42e843ef6f33bc22ef9c22365acab5c04f2a97836c8a0912fbe63f6448b3",
+      "gate": "response formatting in Goose (EXP-2026-11-18-958)",
+      "integration_commit": "f9236ce0b78dc2f475347e06f3c61e4803dbb046"
+    },
+    {
+      "goose": "speculative/spec-decisions.goose",
+      "native": "common/speculative.cpp, ngram-cache.cpp, ngram-map.cpp",
+      "native_targets": [
+        "common/speculative.cpp",
+        "common/ngram-cache.cpp",
+        "common/ngram-map.cpp"
+      ],
+      "experiment": "EXP-2026-11-18-1203-spec-decisions-slice",
+      "task": "P6-11",
+      "status": "ported",
+      "sha256": "2a39062fd67622cd1e3d821966efcf074c9207b7c92baa976f28faa97c1eb10a",
+      "gate": "decisions joined the accumulated unit in EXP-2026-11-18-1203; rejection acceptance gated on 5006 cases in EXP-2026-11-18-1215",
+      "integration_commit": "6942596a67b176aa1f086a84fe9378b0a5c58c89"
+    },
+    {
+      "goose": "speculative/spec-doors.goose",
+      "native": "common/speculative.cpp (doors)",
+      "native_targets": [
+        "common/speculative.cpp"
+      ],
+      "experiment": "EXP-2026-11-18-1206-spec-doors-slice",
+      "task": "P6-11",
+      "status": "ported",
+      "sha256": "4cf48e31e4216c56496bdb104255d17185b8f9e7d4fd6e049206ee3e5b11bc3b",
+      "gate": "doors exported from the same build (EXP-2026-11-18-1206); acceptance arm gated in EXP-2026-11-18-1215",
+      "integration_commit": "6942596a67b176aa1f086a84fe9378b0a5c58c89"
     }
   ]
 }

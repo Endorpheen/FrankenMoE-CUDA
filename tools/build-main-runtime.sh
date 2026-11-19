@@ -215,7 +215,9 @@ if ! "$GOOSE" check "$UNIT" > "$OUT/typecheck.log" 2>&1; then
     echo "main runtime: typecheck FAILED (see $OUT/typecheck.log)"
     exit 1
 fi
-grep -E "typechecked ok" "$OUT/typecheck.log" | tail -2
+# Informational only, and never fatal: the compiler does not always print a summary, and with
+# `set -euo pipefail` a grep that finds nothing would end the build after a successful typecheck.
+grep -E "typechecked ok" "$OUT/typecheck.log" | tail -2 || true
 
 echo "[3/5] generate C"
 "$GOOSE" --standalone -o "$C" --header "$H" "$UNIT" >/dev/null
