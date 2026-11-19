@@ -2413,7 +2413,8 @@
       "remaining": [
         "extract expert_bytes_per_slot(meta), keep rts_config as a drift pin, and wire rts_n_batch/rts_ubatch plus the MTP head admission order"
       ],
-      "coverage_doc": "docs/goose-migration/P9-05-COVERAGE.md"
+      "coverage_doc": "docs/goose-migration/P9-05-COVERAGE.md",
+      "evidence_20261119": "State recorded in docs/goose-migration/P9-05-P9-08-STANDALONE-STATE.md. runtime-facade.goose exports rts_config, rts_n_batch, rts_ubatch, rts_plan, rts_request and rts_result. rts_n_batch, rts_ubatch and rts_plan are called only from integration/m1/common/fg-goose-session-bridge.cpp and exercised by the m1 gate s32; rts_config, rts_request and rts_result have no call site. Nothing in vendor/flint/src and nothing in runtime/ calls any of the six, so the session and CLI paths that this requirement names reach none of the decisions - the m1 bridge is a harness, not the shipped engine. expert_bytes_per_slot has neither a definition nor a call site anywhere in the tree. Closing needs both halves each time: give expert_bytes_per_slot its Goose form and its caller; wire rts_n_batch/rts_ubatch/rts_config into session creation with a configuration drift check; then the real engine run (prefill/decode, draft state, state reuse, request completion), which is a model run behind the usual permission. Nothing is claimed as wired or measured."
     },
     {
       "id": "P9-06",
@@ -2481,7 +2482,8 @@
       "remaining": [
         "wire the closure decisions into session.cpp and cli/main.cpp"
       ],
-      "coverage_doc": "docs/goose-migration/P9-08-COVERAGE.md"
+      "coverage_doc": "docs/goose-migration/P9-08-COVERAGE.md",
+      "evidence_20261119": "State recorded in docs/goose-migration/P9-05-P9-08-STANDALONE-STATE.md. runtime-facade.goose exports rts_config, rts_n_batch, rts_ubatch, rts_plan, rts_request and rts_result. rts_n_batch, rts_ubatch and rts_plan are called only from integration/m1/common/fg-goose-session-bridge.cpp and exercised by the m1 gate s32; rts_config, rts_request and rts_result have no call site. Nothing in vendor/flint/src and nothing in runtime/ calls any of the six, so the session and CLI paths that this requirement names reach none of the decisions - the m1 bridge is a harness, not the shipped engine. expert_bytes_per_slot has neither a definition nor a call site anywhere in the tree. Closing needs both halves each time: give expert_bytes_per_slot its Goose form and its caller; wire rts_n_batch/rts_ubatch/rts_config into session creation with a configuration drift check; then the real engine run (prefill/decode, draft state, state reuse, request completion), which is a model run behind the usual permission. Nothing is claimed as wired or measured."
     },
     {
       "id": "P10-01",
