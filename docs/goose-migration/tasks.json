@@ -5685,14 +5685,16 @@
    "P9-01": "THREE parts verified against real native code (not transcriptions): (1) MoE recipe registry - 9 rows, names, ar_exps, 27 suffix slots and the matcher, compared with bmoe_core's find_moe_recipe/moe_recipe_at in experiments/EXP-2026-11-19-1248 (106 cases, 0 fails); (2) config validation - the canonical goose/cli/config-validate.goose, 44 rules, compared with bmoe::validate on 4000 random RunConfigs (EXP-2026-11-19-1252, 0 fails, 0 uncovered); (3) ngram draft - sdp_ngram_draft vs bmoe::ngram_draft (EXP-2026-11-19-1249, 3000 cases, 0 fails). All three run from bmoe_core built with llama.cpp absent, so no model and no GPU. LLM_ARCH_NAMES (163 names) belongs to P7-12 and is not ported. The nested MoE block of validate is covered; nothing in P9-01 is left that the pure-policy build can compare.",
    "P9-03": "ported and gated synthetically; NOT verifiable against compiled native code here: the native ExpertStreamSource needs shard paths and real expert tensors in init(), and its pure-looking helpers read the bound geometry. See docs/goose-migration/P9-DEPENDENCY-BOUNDARY.md.",
    "P9-04": "ported and gated synthetically; the decisions this port reproduces live in session.cpp (needs llama.cpp) and RowStream is class-bound like P9-03. Same boundary document.",
-   "P9-05": "draft side verified against bmoe::ngram_draft (3000 cases); session/runtime side needs llama.cpp and the bmoe fork, which does not build against vendor/flint. Same boundary document."
+   "P9-05": "draft side verified against bmoe::ngram_draft (3000 cases); session/runtime side needs llama.cpp and the bmoe fork, which does not build against vendor/flint. Same boundary document.",
+   "P9-07": "partially verified against the real class by white-box include (no ggml, no model): check_static 2000 cases (EXP-1260) and the file format parser, 9 crafted files covering every failure mode (EXP-1261). Remaining: capture/replay bookkeeping (token, finish, capture_topk, replay_topk) and the metrics sinks. The class needs only fstream/sstream, so all of it is verifiable the same way."
   },
   "note": "The roadmap counters mixed 'ported', 'called' and 'replaced'. This block makes the three states explicit so a DONE cannot be inferred from composition alone.",
   "verified_against_native": [
    "P9-01 recipe registry (106 cases)",
    "P9-01 config validation (4000 configs, 44 rules)",
    "P9-05 ngram draft (3000 cases)",
-   "P9-01 recipe matcher (4160 cases, white-box include)"
+   "P9-01 recipe matcher (4160 cases, white-box include)",
+   "P9-07 workload check_static (2000 cases) and file parser (9 failure modes)"
   ]
  }
 }
