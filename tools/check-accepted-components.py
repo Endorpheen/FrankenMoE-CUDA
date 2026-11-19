@@ -57,6 +57,9 @@ COMPONENTS = [
      "the CUDA compile-flag decisions, composed in EXP-2026-11-19-1426; -lineinfo in a debug build and absent otherwise"),
     ("goose-cuda-install", "nm", "inst_kind",
      "the install-layout decision, composed in EXP-2026-11-19-1426; dynamic, shared and neither answer 2, 1 and 0"),
+    ("goose-hf-naming", "nm", "hf_repo_folder",
+     "the Hugging Face cache naming decisions, composed in EXP-2026-11-19-1430; repo, commit, token and folder "
+     "validity answer correctly on six hand-checked cases"),
     ("expert-cache", "strings", "moe-cache",
      "the SLRU expert cache the profile sets to 4992 MiB"),
 ]
