@@ -100,6 +100,26 @@ ignored `cur_p->data` being advanced. Each is recorded as a correction in its ca
 | io row + 12 columns | 2000 rows | white-box |
 | encoder/unescaper pair | 4000 round-trips (961 lossy) | invariant only - no native reference exists |
 
+## Which composed modules have a shipped-artefact check
+
+A module can be proven against native code and still be absent from the runtime, so the question "is it checked
+against the artefact everyone runs" is separate. For the twelve modules whose doors are in the shipped library:
+
+| module | shipped-artefact check |
+|---|---|
+| metrics (21 doors) | yes - the CSV/row harnesses dlopen the shipped library |
+| sampler chain, spec doors, spec decisions | yes - the door harnesses and the live counters on real runs |
+| arch registry (6 doors) | yes - the recipe harnesses dlopen the shipped library |
+| tokenizer, tokenizer doors | yes - `FG_TK_DIAG` inside a real server, 1678 comparisons |
+| token pieces, end of generation | yes - 248 320 comparisons each, through the shipped library |
+| detokenizer (3 doors) | yes for pieces and EOG; sequence door not measured |
+| unicode tables and text | yes - through the tokenizer path above |
+| gguf tensors, reader, saver | yes - 601's writer cases relinked against the shipped library |
+| **config validation** | **no** - its harness includes the module source and calls `gg_function_1`, the pre-export-fn dispatcher, so it cannot be pointed at the library without a wrapper for the current signature |
+
+Config validation's own evidence stands - 4000 configurations, 0 failures, 0 uncovered rules, twice - but it is
+evidence about the module, not about the artefact.
+
 ## Tokenizer and detokenizer (P7-06, P7-07)
 
 | decision | evidence | mechanism |
