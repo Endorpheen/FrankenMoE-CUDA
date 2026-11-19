@@ -34,6 +34,39 @@ cp "$ROOT"/runtime/reconstructed/src/*.h "$DST/our-src/" 2>/dev/null || true
 # experiment number - reproduced there and verified against the preserved tree.
 python3 "$ROOT/tools/resolve-modules.py" "$DST" "$BASE" "${OBJDIR:-$BASE/runtime/reconstructed/build}" ${RESOLUTION:-}
 
+# A carrier can include a header the Goose compiler writes for a module (slru-policy.h is produced by
+# `goose --header` from goose/cpu/goose-moe-cache-slru.goose). Such a header is generated, never
+# committed, and its absence fails the build with "fatal error: slru-policy.h: No such file" - which is
+# how this step came to exist. Only the includes that have no tracked file are generated, so the step
+# costs one compile per such header and nothing else.
+G=${FG_GOOSE:-/home/end0/AI/LlamaServer/toolchain/goose-2026.3-string/goose}
+for inc in $(grep -rhoE '#include "[a-z0-9_-]+\.h"' "$ROOT"/runtime/reconstructed/src/*.cpp \
+             | sed 's/.*"\(.*\)"/\1/' | sort -u); do
+    # `[ ... ] && continue` returns 1 when the test fails, and under `set -e` that ends the whole
+    # script - which is exactly what happened on the first run of this step: exit 2, no message.
+    if [ -f "$ROOT/runtime/reconstructed/src/$inc" ] || [ -f "$ROOT/vendor/flint/src/$inc" ] \
+       || [ -f "$DST/module-src/$inc" ]; then
+        continue
+    fi
+    stem=${inc%.h}
+    # `ls` fails when nothing matches, and with pipefail the assignment fails with it, so the whole
+    # script exits 2 without a message - the second form of the same trap in this loop.
+    src=$(ls "$ROOT"/goose/*/"$stem".goose 2>/dev/null | head -1 || true)
+    # A header's name does not always match its module: slru-policy.h is written from
+    # goose/cpu/goose-moe-cache-slru.goose. The map records the cases the name rule cannot find.
+    if [ -z "$src" ]; then
+        case "$inc" in
+            slru-policy.h) src=$ROOT/goose/cpu/goose-moe-cache-slru.goose;;
+        esac
+    fi
+    [ -n "$src" ] || continue
+    if "$G" -o "$DST/module-src/${stem}.c" --header "$DST/module-src/$inc" "$src" >/dev/null 2>&1; then
+        echo "  generated header $inc from goose/${src#$ROOT/goose/}"
+    else
+        echo "  WARNING could not generate $inc from $src"
+    fi
+done
+
 # Bridges: the experiment directories build.py names explicitly.
 for m in $(grep -oE "EXP-[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]+-[a-z0-9-]+" "$ROOT/runtime/reconstructed/build.py" | sort -u); do
     if [ -f "$BASE/experiments/$m/source/bridge.c" ]; then
