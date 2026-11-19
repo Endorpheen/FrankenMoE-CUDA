@@ -1,3 +1,24 @@
+# The Goose tooling lives in the FrankenMoE repository, not in this tree. The previous form
+# hardcoded ${CMAKE_CURRENT_SOURCE_DIR}/../../.., which resolves to a different directory when this
+# source tree is reached through a symlink (measured building via runtime/third_party/llama.cpp:
+# "No rule to make target .../runtime/tools/build-sampler-chain.sh"). The first candidate that
+# actually contains the script wins, and the choice is not silent.
+set(FG_REPO_ROOT "" CACHE PATH "FrankenMoE repository root (holds tools/build-sampler-chain.sh)")
+if(NOT FG_REPO_ROOT)
+    foreach(cand "${CMAKE_CURRENT_SOURCE_DIR}/../../.." "${CMAKE_CURRENT_SOURCE_DIR}/../../../../.."
+                 "/home/end0/AI/FrankenMoE-CUDA")
+        get_filename_component(cand_abs "${cand}" ABSOLUTE)
+        if(EXISTS "${cand_abs}/tools/build-sampler-chain.sh")
+            set(FG_REPO_ROOT "${cand_abs}")
+            break()
+        endif()
+    endforeach()
+endif()
+if(NOT FG_REPO_ROOT)
+    message(FATAL_ERROR "FrankenMoE repository root not found; pass -DFG_REPO_ROOT=<path>")
+endif()
+message(STATUS "Goose tooling root: ${FG_REPO_ROOT}")
+
 llama_add_compile_flags()
 
 #
@@ -52,12 +73,12 @@ set(FG_SAMPLER_CHAIN_DIR ${CMAKE_CURRENT_BINARY_DIR}/goose-sampler-chain)
 add_custom_command(
     OUTPUT ${FG_SAMPLER_CHAIN_DIR}/sampler_chain.c ${FG_SAMPLER_CHAIN_DIR}/sampler_chain.h
            ${FG_SAMPLER_CHAIN_DIR}/sampler_chain_shim.c
-    COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/../../../tools/build-sampler-chain.sh ${FG_SAMPLER_CHAIN_DIR}
-    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../../../goose/sampling/sampler-chain-full.goose
-            ${CMAKE_CURRENT_SOURCE_DIR}/../../../goose/speculative/spec-decisions.goose
-            ${CMAKE_CURRENT_SOURCE_DIR}/../../../goose/speculative/spec-doors.goose
-            ${CMAKE_CURRENT_SOURCE_DIR}/../../../tools/gen-grammar-shim.py
-            ${CMAKE_CURRENT_SOURCE_DIR}/../../../tools/build-sampler-chain.sh
+    COMMAND bash ${FG_REPO_ROOT}/tools/build-sampler-chain.sh ${FG_SAMPLER_CHAIN_DIR}
+    DEPENDS ${FG_REPO_ROOT}/goose/sampling/sampler-chain-full.goose
+            ${FG_REPO_ROOT}/goose/speculative/spec-decisions.goose
+            ${FG_REPO_ROOT}/goose/speculative/spec-doors.goose
+            ${FG_REPO_ROOT}/tools/gen-grammar-shim.py
+            ${FG_REPO_ROOT}/tools/build-sampler-chain.sh
     COMMENT "Building the Goose sampler chain")
 # The shim is its own translation unit and includes only the generated header, so the
 # generated C is compiled separately and keeps its exported names. `main` is renamed
