@@ -54,6 +54,8 @@ add_custom_command(
            ${FG_SAMPLER_CHAIN_DIR}/sampler_chain_shim.c
     COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/../../../tools/build-sampler-chain.sh ${FG_SAMPLER_CHAIN_DIR}
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../../../goose/sampling/sampler-chain-full.goose
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../../goose/speculative/spec-decisions.goose
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../../goose/speculative/spec-doors.goose
             ${CMAKE_CURRENT_SOURCE_DIR}/../../../tools/gen-grammar-shim.py
             ${CMAKE_CURRENT_SOURCE_DIR}/../../../tools/build-sampler-chain.sh
     COMMENT "Building the Goose sampler chain")

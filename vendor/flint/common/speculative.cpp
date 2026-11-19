@@ -2457,6 +2457,9 @@ static fg_sp_n_max_fn fg_sp_n_max_resolve() {
         void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
         void * sym = h ? dlsym(h, "fg_sp_n_max_call")
                        : dlsym(RTLD_DEFAULT, "fg_sp_n_max_call");
+        if (getenv("FG_SP_DIAG")) {
+            fprintf(stderr, "FG_SP_RESOLVE handle=%p symbol=%p\n", h, sym);
+        }
         return reinterpret_cast<fg_sp_n_max_fn>(sym);
     }();
     return fn;

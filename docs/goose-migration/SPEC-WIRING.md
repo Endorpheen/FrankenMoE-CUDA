@@ -43,5 +43,27 @@ counter never prints, which means the door is never called.
    suffix, and check the return of `dlopen` before drawing conclusions. The last attempt did not
    print, so it needs one more diagnostic before it can be called failed.
 
-Option 1 is the next step. Nothing here weakens what is proven: the decisions are gated in their own
-units; this is only about which library carries them.
+## Resolved: none of the four was the cause
+
+The door was reached by adding a diagnostic that printed both the library handle and the symbol, and
+it showed a valid handle with a **null symbol**. The library did carry `fg_sp_n_max` - the *old* door
+name - because the CMake custom command compiled the chain from
+
+```
+DEPENDS sampler-chain-full.goose  gen-grammar-shim.py
+```
+
+and nothing else. `spec-decisions.goose` and `spec-doors.goose` were not dependencies, so editing
+them changed nothing: make saw satisfied outputs and the shim was never regenerated.
+
+After adding both files to `DEPENDS` and rebuilding the library:
+
+```
+FG_SP_RESOLVE handle=0x76d524b19580 symbol=0x76d522fafe90
+FG_SP_NMAX goose calls=1 disagreements=0
+```
+
+So the four attempts (weak, strong, RTLD_DEFAULT, NOLOAD) were all working correctly against a stale
+library, and the lesson is the one this project keeps paying for: **"the symbol does not resolve" was
+"the library was not rebuilt"**. A generated-artefact build must depend on every input it reads, or
+edits disappear silently.
