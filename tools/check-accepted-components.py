@@ -42,6 +42,11 @@ COMPONENTS = [
     ("goose-spec-synth", "strings", "FG_SP_SYNTH goose",
      "the synthetic acceptance door reached on the real model (EXP-2026-11-19-1366: it had been added to a "
      "server-context.cpp this build does not compile, so the artefact carried nothing)"),
+    ("goose-fit-line", "nm", "fp_line",
+     "the feed-forward-fit parameter line, composed into the unit in EXP-2026-11-19-1406 and equal to the native "
+     "format on twenty cases"),
+    ("goose-bench-report", "nm", "lb_csv_escape",
+     "the llama-bench report formatting, composed into the unit in EXP-2026-11-19-1408"),
     ("expert-cache", "strings", "moe-cache",
      "the SLRU expert cache the profile sets to 4992 MiB"),
 ]
