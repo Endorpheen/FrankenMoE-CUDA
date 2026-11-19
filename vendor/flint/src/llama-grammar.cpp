@@ -1429,7 +1429,7 @@ static fg_flat_rules & fg_flatten(const llama_grammar_rules & rules) {
 
 static constexpr int64_t FG_MAXD = 64;
 static constexpr int64_t FG_MAXS = 16;
-static constexpr int64_t FG_MAXCP = 16;
+static constexpr int64_t FG_MAXCP = 64;
 
 static std::atomic<unsigned long long> g_goose_grammar_calls{0};
 
