@@ -17,6 +17,8 @@ cp "$mod" "$rootfile"
 cat "$root/spec_decisions" >> "$rootfile" 2>/dev/null || true
 cat "$root/goose/speculative/spec-decisions.goose" >> "$rootfile"
 cat "$root/goose/speculative/spec-doors.goose" >> "$rootfile"
+cat "$root/goose/model/tokenizer-decisions.goose" >> "$rootfile"
+cat "$root/goose/model/tokenizer-doors.goose" >> "$rootfile"
 cat >> "$rootfile" <<'EOF'
 
 fn main() {
@@ -58,6 +60,15 @@ fn main() {
     }
     let syn = fg_sp_synth_accept(0.5, 0.25, 0, 0);
     if syn < -1 {
+        return;
+    }
+    let inp8: u8[8] = [104, 105, 32, 116, 104, 101, 114, 101];
+    let outp8: u8[64] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    let nrm = fg_tk_norm(inp8, outp8, 1, 1, 0, 0);
+    if nrm < -1 {
         return;
     }
     let cmp = fg_sp_compatible(1, 1, 1, 1, 2, 100, 1, 1, 1, 1, 2, 100, 128);

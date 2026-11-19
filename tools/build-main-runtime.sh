@@ -77,6 +77,7 @@ MODULES=(
     goose/speculative/spec-decisions.goose
     goose/speculative/spec-doors.goose
     goose/model/tokenizer-decisions.goose
+    goose/model/tokenizer-doors.goose
     goose/model/control-vectors.goose
     goose/model/lora-apply.goose
     goose/model/special-partition.goose

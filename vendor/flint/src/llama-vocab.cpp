@@ -1,3 +1,5 @@
+#include <atomic>
+#include <dlfcn.h>
 #include "llama-vocab.h"
 
 #include "ggml.h"
@@ -1130,6 +1132,20 @@ private:
         size_t consumed_input;
     };
 
+// The tokenizer door lives in libllama; the host calls it through the loaded library, with the
+// struct arguments the generated header declares (flattened pairs are an invalid call - measured).
+struct fg_sl_u8 { uint8_t * data; int64_t len; };
+typedef int64_t (*fg_tk_norm_fn)(fg_sl_u8, fg_sl_u8, int64_t, int64_t, int64_t, int64_t);
+
+static fg_tk_norm_fn fg_tk_norm_resolve() {
+    static fg_tk_norm_fn fn = []() -> fg_tk_norm_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        void * sym = h ? dlsym(h, "fg_tk_norm") : nullptr;
+        return reinterpret_cast<fg_tk_norm_fn>(sym);
+    }();
+    return fn;
+}
+
     void normalize(const std::string& input, std::string * normalized) {
         normalized->clear();
         normalized->reserve(input.size() * 3);
@@ -1173,6 +1189,37 @@ private:
 
         if (shall_append_space) {
             normalized->append(space);
+        }
+
+        // Goose cross-check: the native result above is what is returned either way, so a
+        // disagreement is counted and never enforced. This runs for every prompt, so the counter
+        // moves on the first request.
+        if (const auto fn = fg_tk_norm_resolve()) {
+            static thread_local std::vector<uint8_t> in, out;
+            in.assign(input.begin(), input.end());
+            out.assign(input.size() * 3 + 3, 0);
+            fg_sl_u8 sin{ in.data(), (int64_t) in.size() };
+            fg_sl_u8 sout{ out.data(), (int64_t) out.size() };
+            const int64_t n = fn(sin, sout,
+                                 vocab.get_escape_whitespaces() ? 1 : 0,
+                                 shall_prepend_space ? 1 : 0,
+                                 shall_merge_spaces ? 1 : 0,
+                                 shall_append_space ? 1 : 0);
+            static std::atomic<unsigned long long> calls{0}, bad{0};
+            const auto c = ++calls;
+            const bool same = n == (int64_t) normalized->size() &&
+                              std::memcmp(out.data(), normalized->data(), (size_t) n) == 0;
+            if (!same) {
+                ++bad;
+                if (bad.load() <= 5) {
+                    fprintf(stderr, "FG_TK_NORM_DIFF goose=%lld native=%zu\n",
+                            (long long) n, normalized->size());
+                }
+            }
+            if (c <= 3 || (c % 2000) == 0) {
+                fprintf(stderr, "FG_TK_NORM goose calls=%llu disagreements=%llu\n",
+                        (unsigned long long) c, (unsigned long long) bad.load());
+            }
         }
     }
 
