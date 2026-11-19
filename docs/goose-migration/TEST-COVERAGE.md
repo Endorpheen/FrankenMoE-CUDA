@@ -134,3 +134,21 @@ What the test learned, and what it deliberately does not claim:
 
 Two defects were in the verifier itself and were fixed: the exit code came from a `grep -c` that finds nothing on a passing
 run, so a pass was reported as a failure - the second time this exact mistake appeared in this project's own checks.
+
+## What a client actually sees: pieces joined equal the whole answer
+
+The server streams pieces; the client's answer is their concatenation. `experiments/EXP-2026-11-19-1448-piece-sequence-consistency`
+measures that relation on the shipped path:
+
+```
+piece/sequence: text_cases=10 text_diffs=0 sequence_cases=400 sequence_diffs=0
+PASS
+```
+
+Ten texts - code, JSON, unicode with emoji, tabs, SQL, empty - survive encode->decode byte for byte, and four hundred random
+token sequences give the same bytes when their pieces are joined as the sequence form gives whole.
+
+The first run of this test reported seven differences out of four hundred, and they were **my** error: the piece form was
+called with `special=false`, which returns nothing for a special token, while the sequence form was called with
+`unparse_special=true`, which renders it. Two different questions, compared as one - the same mistake this project keeps
+finding, and the reason the note stays here.
