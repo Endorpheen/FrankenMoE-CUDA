@@ -173,7 +173,9 @@ possible at all: before that they lived only in a separate build.
 | prefix agreement on real drafts | 2 live comparisons, `calls=2 disagreements=0` | shipped server with ngram drafters |
 | prefix agreement | 14 live comparisons | live server |
 | draft width | 1 live comparison, 4 configurations | live server |
-| synthetic and rejection acceptance | gated synthetically only | their routes need a draft model |
+| synthetic acceptance | live counter on the real model, 0 disagreements (EXP-1366) | door in the compiled server copy |
+| rejection acceptance | **880 combinations, 0 disagreements** (EXP-1368) | the door is a pure function; measured directly, edges included |
+| rejection acceptance on the live path | not measured | needs a draft distribution, which needs a draft model |
 
 ## Not verified, and why
 
