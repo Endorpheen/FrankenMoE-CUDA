@@ -52,11 +52,13 @@ classifies every door of every unit module:
 
 | class | doors |
 |---|---|
-| production (the identifier appears under `vendor/flint`) | 72 |
-| harness-only (`integration/` only) | 139 |
-| none | 1123 |
+| production (the identifier appears under `vendor/flint`) | 63 |
+| harness-only (`integration/` only) | 137 |
+| none | 1087 |
 
-Of 1334 doors, 72 reach the sources the shipped runtime is built from. This is an **upper bound**: an
+Of 1287 doors, 63 reach the sources the shipped runtime is built from. The first run of the tool
+reported 72/139/1123, and the difference is the eight duplicate module entries found in the same pass:
+their doors were counted twice. This is an **upper bound**: an
 identifier can appear in a comment or a disabled branch. It agrees with the unit-carry figure, where
 the shipped library exports 200 of 1254 - the same order, measured a different way.
 
@@ -64,3 +66,11 @@ The same run found **eight duplicate entries** in the module list: 163 entries, 
 removed, and the composed output is byte-identical before and after (`cmp` on 3 802 549 bytes), so the
 dedupe is inert by construction. The module count quoted elsewhere as 163 is therefore wrong; the unit
 is 155 modules.
+
+## The second view that was written and removed the same day
+
+The tool briefly classified every `fg*` reference from `vendor/flint` by where it is defined, and
+reported 203 of 209 as "defined nowhere". That was a fact about the scan: `fg161_bulk`, for instance,
+is an `extern` host primitive declared inside `goose/cpu/goose-allocator/allocator.goose`, not a Goose
+decision. Mixing substrate with decisions is exactly what rule 27 forbids, and the number would have
+been quoted as coverage. The view is not in the tool, and this paragraph is why.

@@ -74,6 +74,14 @@ def main() -> int:
             print(f"    none: {', '.join(absent[:8])}{' ...' if len(absent) > 8 else ''}")
     print(f"\ntotals: production={totals['production']} harness-only={totals['harness']} "
           f"none={totals['none']}")
+
+    # A second view was attempted and removed the same day it was written: it classified every fg*
+    # reference from vendor/flint by where it is defined, and reported 203 of 209 as "defined nowhere".
+    # That number was a fact about the scan, not about the tree - fg161_bulk, for instance, is an
+    # `extern` host primitive declared inside goose/cpu/goose-allocator/allocator.goose, not a Goose
+    # decision at all. Mixing substrate with decisions is the mistake rule 27 names, and the count
+    # would have been quoted as coverage. The module view above is well defined; this one is not, so
+    # it is not in the tool.
     return 0
 
 
