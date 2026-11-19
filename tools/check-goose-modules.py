@@ -31,11 +31,21 @@ def main():
         except Exception as exc:                      # a missing symbol is a failure, not a crash
             results.append((name + " (" + type(exc).__name__ + ")", False))
 
-    lib.fg_gr_enabled.restype = ctypes.c_int
-    check("graph-reuse switch defaults on", lambda: lib.fg_gr_enabled() == 1)
+    def sym(name, restype=I, argtypes=None):
+        # Accessing lib.<name> raises AttributeError when the door is not exported by the library
+        # under test, and doing it outside check() made the whole run a traceback instead of a failed
+        # check - which is what happened on 2026-11-19, when fg_gr_enabled was simply absent.
+        try:
+            f = getattr(lib, name)
+        except AttributeError:
+            raise RuntimeError(f"{name} is not exported by this library") from None
+        f.restype = restype
+        if argtypes is not None:
+            f.argtypes = argtypes
+        return f
 
-    lib.fg_n01s_count.restype = I
-    check("arch-registry has nine recipes", lambda: lib.fg_n01s_count() == 9)
+    check("graph-reuse switch defaults on", lambda: sym("fg_gr_enabled", ctypes.c_int)() == 1)
+    check("arch-registry has nine recipes", lambda: sym("fg_n01s_count")() == 9)
 
     def apex_plan():
         lib.fg_q35s_plan.argtypes = [ctypes.POINTER(I), I, I, ctypes.POINTER(I), I]
@@ -50,14 +60,13 @@ def main():
         return (n, c.get(0, 0), c.get(1, 0), c.get(2, 0)) == (41, 10, 30, 1)
     check("apex plan is 41/10/30/1", apex_plan)
 
-    lib.fg_unicode_flags_view_c.restype = ctypes.POINTER(ctypes.c_uint16)
-    lib.fg_unicode_flags_count_c.restype = I
-
+    # Resolved inside the checks, not before them: a symbol this library does not export must fail
+    # its own check rather than end the run.
     def unicode_size():
-        return lib.fg_unicode_flags_count_c() == 0x110000
+        return sym("fg_unicode_flags_count_c")() == 0x110000
 
     def unicode_class():
-        v = lib.fg_unicode_flags_view_c()
+        v = sym("fg_unicode_flags_view_c", ctypes.POINTER(ctypes.c_uint16))()
         for ch, want, mask in (('A', LETTER | UPPER, LETTER | UPPER),
                                ('z', LETTER | LOWER, LETTER | LOWER),
                                ('7', NUMBER, NUMBER),
@@ -68,8 +77,8 @@ def main():
     check("unicode view covers 0x110000 codepoints", unicode_size)
     check("unicode view classifies ASCII correctly", unicode_class)
 
-    lib.fg377s_enabled.restype = ctypes.c_int
-    check("file-alignment switch defaults on", lambda: lib.fg377s_enabled() == 1)
+
+    check("file-alignment switch defaults on", lambda: sym("fg377s_enabled", ctypes.c_int)() == 1)
 
     def reuse_true():
         lib.fg_gr_check.argtypes = [ctypes.POINTER(I), ctypes.POINTER(I), ctypes.POINTER(I), I]

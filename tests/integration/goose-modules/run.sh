@@ -16,7 +16,11 @@
 set -uo pipefail
 D="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$D/../../.." && pwd)"
-LIB=${APEX_SERVER_DIR:-$ROOT/builds/flint-acc/bin}/libllama.so.0
+# These doors live in the m1 stage build (integration/m1/common/*-bridge.c compiled into
+# runtime/goose-stage), not in the reconstructed unit: the released library exports none of the eight,
+# which is why an earlier version of this test pointed at the wrong artefact. APEX_SERVER_DIR still
+# overrides, for when the same bridges are present elsewhere.
+LIB=${APEX_SERVER_DIR:-$ROOT/runtime/goose-stage/lib}/libllama.so
 OUT=$D/build
 LOG=$OUT/run.log
 mkdir -p "$OUT"
