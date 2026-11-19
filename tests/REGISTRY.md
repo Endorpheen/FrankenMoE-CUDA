@@ -16,6 +16,7 @@ run only with explicit permission).
 | json | nlohmann-shadow | `tests/json/nlohmann-shadow` | P10-07 state, 2026-11-19 | P10-07 | fast | verified 2026-11-19 |
 | json | adapter | `tests/json/adapter` | P10-07 adapter, 2026-11-19 | P10-07 | fast | verified 2026-11-19 |
 | json | swap | `tests/json/swap` | P10-07 swap, 2026-11-19 | P10-07 | fast | verified 2026-11-19 |
+| integration | goose-determinism | `tests/integration/goose-determinism` | P10-06 state, 2026-11-19 | P10-06 | integration | verified 2026-11-19 |
 | json | door | `tests/json/door` | door work of P10-07 | P10-07 | fast | migrated 2026-11-19 |
 | server | router-status | `tests/server/router-status` | door work of P8-06 | P8-06 | model | migrated 2026-11-19 |
 | integration | goose-composition | `tests/integration/goose-composition` | set list of tools/check-composition.sh | P6-10, P7-06, P8-09 | integration | created 2026-11-19, run pending |
