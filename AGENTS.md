@@ -808,3 +808,20 @@ come from Igor directly. For every marked message:
       failure modes have been ruled out, not to find out whether they exist. Rule 16 already says
       this in cost terms; this rule says it in consequence terms - every avoidable rebuild costs
       the owner the same minutes twice, once waiting and once explaining.
+
+39. Nothing that takes minutes is started from the agent session.
+
+    A background started with `run_in_background` still blocks the owner's terminal: he cannot
+    send the next instruction while it runs, so "background" is not a way to make a long command
+    acceptable. Ten minutes of a locked session is a defect of the agent, not a property of the
+    build.
+
+    - a build, gate, benchmark or wait predicted to take more than about a minute is **handed to
+      the owner as a command**, or started only when he asks for it in that turn;
+    - what the agent delivers instead is the artefact and a cheap verification that takes seconds:
+      compose and typecheck, `goose check` on the module, compile the one translation unit that
+      changed, `nm` the symbol, dry-run the link;
+    - every command the agent does run states its expected duration first, and a command that is
+      still running when its predicted time is up is a defect to investigate, not to wait out;
+    - the same applies to monitors: a watcher that cannot report within seconds is the wrong tool,
+      and rule 38 already forbids the watchers that never terminate.
