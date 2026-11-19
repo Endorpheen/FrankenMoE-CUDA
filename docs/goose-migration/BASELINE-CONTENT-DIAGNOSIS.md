@@ -56,3 +56,36 @@ Every alternative tried today failed on the same point: path A misses the module
 resolution, and the release matches neither because nothing recorded which of the two it came from. Pinning
 the resolution converts a question of memory into a file in the repository - and a file can be diffed,
 reviewed and reproduced.
+
+## The answer, in one line: the baseline compiles the full m1 module set
+
+Mapping every non-mangled missing symbol back to the module that exports it
+(`docs/goose-migration/BASELINE-MODULE-MAP.json`) resolves **132 of 153** symbols across **15 modules**:
+
+```
+goose/cli/llama-bench-report.goose          23 doors
+goose/metrics/metrics-traces.goose          21
+goose/sampling/sampler-chain-full.goose     15
+goose/server/model-manager.goose            13
+goose/server/hf-cache-naming.goose          12
+goose/misc/spec-decode-decisions.goose      11
+goose/cuda/cuda-arch-policy.goose           10
+goose/cuda/cuda-install-layout.goose        10
+goose/speculative/spec-doors.goose           6
+goose/cuda/cuda-target-flags.goose           4
+and five more with one to three doors each
+```
+
+The remaining 21 symbols are not module exports at all: they are bridge and adapter entry points
+(`fg_*_call` wrappers, `fg_port_*`), which is why the mangled C++ symbols appear in the same gap.
+
+So the baseline is a build of **the staged m1 tree with its full module set** - the twenty-odd modules the
+m1 host declares - and not a curated pair list like path A's. That is consistent with everything measured
+today: path B is the right shape of build, and its 11 doors came from a consolidation that resolved 36
+modules instead of the full set.
+
+## What that changes in the plan
+
+Step 1 of the plan above is now done, as data: `BASELINE-MODULE-MAP.json` names the modules by file. What
+remains is the resolution file itself - a `<source-file> <experiment-dir>` line per module - and the
+consolidation run that proves the door families match.
