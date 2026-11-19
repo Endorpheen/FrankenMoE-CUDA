@@ -2609,7 +2609,8 @@
       "slices_total": 4,
       "slices_done": 4,
       "remaining": "write the adapter from the parallel arrays into the common_json pimpl, shadow-compare it against nlohmann at common/json.cpp:205 using the text the dumper now produces, then serve it",
-      "coverage_doc": "docs/goose-migration/P10-07-COVERAGE.md"
+      "coverage_doc": "docs/goose-migration/P10-07-COVERAGE.md",
+      "evidence_20261119": "State recorded in docs/goose-migration/P10-07-JSON-ADAPTER-STATE.md. Goose side: json-parser.goose exports one door json_parse (18 parallel-array parameters) and json-dump.goose one door json_dump; both are composed and both round-trip the canonical text, pinned by tests/json/roundtrip (5 cases) and tests/json/door (5 valid, 4 invalid). Consumer side: vendor/flint/common/json.cpp is 433 lines with 27 uses of nlohmann::ordered_json and the pimpl tree in common/json.h. Neither door is called from vendor/flint, runtime/ or integration/ - the only callers are the two permanent tests - so the production path still parses and dumps with nlohmann. The adapter must reproduce key order, number normalisation (-1.5e3 as -1500.0, pinned by the roundtrip test), both directions and the error translation (parse code to common_json_error). The shadow comparison belongs at vendor/flint/common/json.cpp:205 as a test that parses the same bytes with both implementations in one binary; nlohmann is header-only and already vendored, so nothing new is linked. Nothing is claimed as adapted or swapped."
     },
     {
       "id": "P10-08",
