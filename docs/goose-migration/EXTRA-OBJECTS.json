@@ -1,0 +1,116 @@
+{
+  "schema": 1,
+  "updated_at": "2026-11-19",
+  "rule": "An object in extra-objects is legitimate only when a tracked source defines its symbols and the build compiles that source, or when its producer is named and verifiable. tools/consolidate-runtime-tree.sh copies these instead of compiling them; this registry is what makes that copy accountable.",
+  "objects": [
+    {
+      "object": "b291.o",
+      "kind": "source",
+      "producer": "runtime/reconstructed/src/llama-batch.cpp",
+      "command": null
+    },
+    {
+      "object": "fx262a.o",
+      "kind": "source",
+      "producer": "runtime/reconstructed/src/llama-moe-cache.cpp",
+      "command": null
+    },
+    {
+      "object": "fx263-pic.o",
+      "kind": "source",
+      "producer": "experiments/EXP-2026-11-12-263-goose-moe-cache-copy-decisions/source/copy_decisions-functions.c",
+      "command": null
+    },
+    {
+      "object": "gates.o",
+      "kind": "source",
+      "producer": "runtime/reconstructed/src/gates.c",
+      "command": null
+    },
+    {
+      "object": "slru-policy.o",
+      "kind": "source",
+      "producer": "goose/model/slru-policy-goose.goose",
+      "command": null
+    },
+    {
+      "object": "slru-shim.o",
+      "kind": "source",
+      "producer": "integration/goose-standalone/slru-runtime-shim.c",
+      "command": null
+    },
+    {
+      "object": "slru-runtime.o",
+      "kind": "compiler-runtime",
+      "producer": "goose-2026.3-string",
+      "command": null
+    },
+    {
+      "object": "fg-ar.o",
+      "kind": "goose-module",
+      "producer": "goose/model/arch-registry.goose",
+      "command": null
+    },
+    {
+      "object": "fg-ar-bridge.o",
+      "kind": "source",
+      "producer": "integration/m1/common/fg-arch-registry-bridge.c",
+      "command": null
+    },
+    {
+      "object": "fg-q35.o",
+      "kind": "goose-module",
+      "producer": "goose/model/qwen35moe.goose",
+      "command": null,
+      "note": "q35_plan is exported by qwen35moe.goose, not by qwen35-split.goose; the object is the same module family under a different file name"
+    },
+    {
+      "object": "fg-q35-bridge.o",
+      "kind": "source",
+      "producer": "integration/m1/common/fg-apex-plan-bridge.c",
+      "command": null
+    },
+    {
+      "object": "fg-qg.o",
+      "kind": "goose-module",
+      "producer": "goose/model/qgate-split.goose",
+      "command": null
+    },
+    {
+      "object": "fg-plan-ffi.o",
+      "kind": "source",
+      "producer": "integration/goose-standalone/graph-bindings.c",
+      "command": null
+    },
+    {
+      "object": "fg-gr.o",
+      "kind": "goose-module",
+      "producer": "goose/cpu/graph-reuse.goose",
+      "command": null
+    },
+    {
+      "object": "fg-gr-bridge.o",
+      "kind": "source",
+      "producer": "runtime/reconstructed/src/llama-graph.cpp",
+      "command": null
+    },
+    {
+      "object": "fg-q35s.o",
+      "kind": "goose-module",
+      "producer": "goose/misc/qwen35-split.goose",
+      "command": null
+    },
+    {
+      "object": "fg-q35s-bridge.o",
+      "kind": "source",
+      "producer": "runtime/reconstructed/src/unicode.cpp",
+      "command": null
+    },
+    {
+      "object": "fx286pic.o",
+      "kind": "compiled-with",
+      "producer": "experiments/EXP-2026-11-12-286-goose-mmap-bookkeeping/tests/mmap_fixture.c",
+      "command": "gcc-13 -O2 -fPIC -Dmain=fg286_fx_main -I<EXP286>/source -c <fixture> -o fx1.o && objcopy --localize-symbol=gate_fail --localize-symbol=gate_st fx1.o fx286pic.o"
+    }
+  ]
+}

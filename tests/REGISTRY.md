@@ -86,3 +86,4 @@ sets still compose and typecheck together. It is not a duplicate of `tools/check
 level composes the single cumulative unit and compiles it, while this one names the individual set
 that broke.
 | server | origin-policy | `tests/server/origin-policy` | native origin_is_localhost | P8-12 | fast | 29/29 agree 2026-11-19 |
+| regression | extra-objects-provenance | `tests/regression/extra-objects-provenance` | 18 hand-built objects | P10-06 | fast | 18/18 2026-11-19 |
