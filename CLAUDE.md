@@ -13,6 +13,10 @@ Non-negotiable. They are also carried verbatim into every handoff report.
    number of runs. Start only after an explicit "yes".
 2. Before every commit, show the results in plain words: outcome, memory
    impact, correctness, and the list of files. Commit only after approval.
+   A commit that touches `goose/` runs `python3 tools/check-goose-tree.py` first: it compares
+   every manifest entry with its file and its integration commit in 0.3 seconds, and on
+   2026-11-19 a push without it failed CI on a hash mismatch for three modules that were edited
+   correctly and recorded incorrectly.
 3. Comments, commit messages, and all repository documentation are in English.
    Documentation means every tracked text artifact: experiment cards
    (`experiments/*.md`), `experiments/EXPERIMENTS.md`, `ROADMAP.md`,
