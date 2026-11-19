@@ -5680,7 +5680,7 @@
    "P7-06": "six decisions gated; one door wired and unreachable on BPE models; BPE comparator called live 4156 times per prompt",
    "P7-07": "detokenizer ported (11-function interface over GGUF buffers); no call path, needs an interface decision",
    "P7-12": "5389 Goose lines across nine GGUF/loader modules, zero touchpoints in gguf.cpp and llama-model-loader.cpp",
-   "P9-01": "recipe registry COMPLETE and verified live at every model load: 89 comparisons, 0 disagreements (9 names, 27 suffix slots, 53 matcher cases including the .scale rejection and gemma4's fused row). LLM_ARCH_NAMES (163 names) belongs to P7-12 and is not ported."
+   "P9-01": "THREE parts verified against real native code (not transcriptions): (1) MoE recipe registry - 9 rows, names, ar_exps, 27 suffix slots and the matcher, compared with bmoe_core's find_moe_recipe/moe_recipe_at in experiments/EXP-2026-11-19-1248 (106 cases, 0 fails); (2) config validation - the canonical goose/cli/config-validate.goose, 44 rules, compared with bmoe::validate on 4000 random RunConfigs (EXP-2026-11-19-1252, 0 fails, 0 uncovered); (3) ngram draft - sdp_ngram_draft vs bmoe::ngram_draft (EXP-2026-11-19-1249, 3000 cases, 0 fails). All three run from bmoe_core built with llama.cpp absent, so no model and no GPU. LLM_ARCH_NAMES (163 names) belongs to P7-12 and is not ported. The nested MoE block of validate is covered; nothing in P9-01 is left that the pure-policy build can compare."
   },
   "note": "The roadmap counters mixed 'ported', 'called' and 'replaced'. This block makes the three states explicit so a DONE cannot be inferred from composition alone."
  }
