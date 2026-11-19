@@ -5,8 +5,11 @@
 set -uo pipefail
 BIN=${1:-$PWD/builds/flint-acc/bin}
 OUT=${2:-/tmp/penalty-live}
+# the same request with the penalty door switched off is the control; everything else is identical
+DOOR_OFF=${PEN_DOOR_OFF:-0}
 mkdir -p "$OUT"
 export LD_LIBRARY_PATH="$BIN"
+if [ "$DOOR_OFF" = "1" ]; then export GGML_GOOSE_SAMPLER_PENALTIES=0; fi
 MODEL=/home/end0/AI/LocalAI/Models/Apex-35B-V1.0-Q4_K_M.gguf
 setsid "$BIN/llama-server" -m "$MODEL" --alias Apex-35B-V1.0 -c 262144 -ngl all -fit off --cpu-moe \
   -fa on -ctk q4_0 -ctv q4_0 -b 4096 -ub 4096 -t 8 -tb 16 \
@@ -22,8 +25,13 @@ for i in $(seq 1 120); do
   sleep 5
 done
 curl -sf http://127.0.0.1:9101/health >/dev/null || { echo "not ready"; exit 1; }
+# A text prompt long enough that the penalty actually has repeat history to act on. The token-array prompt
+# from the baseline request ends in 9 characters, which proves reachability and nothing else.
+cat > "$OUT/request-64.json" <<'JSON'
+{"prompt":"Write a paragraph about cats. Repeat the word cat often.","n_predict":96,"seed":123,"temperature":1.0}
+JSON
 curl -s http://127.0.0.1:9101/completion -H 'Content-Type: application/json' \
-  -d '{"prompt":"Repeat the word cat twenty times:","n_predict":64,"seed":123,"temperature":1.0}' \
+  -d @"$OUT/request-64.json" \
   -o "$OUT/response.json"
 grep -oE "FG171_[A-Z_]+ goose calls=[0-9]+" "$OUT/server.log" | sort -u | tail -6
 echo "response chars: $(wc -c < "$OUT/response.json")"

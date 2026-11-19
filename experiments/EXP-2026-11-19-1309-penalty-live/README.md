@@ -23,11 +23,27 @@ in the first decoding step, and the request returned 1881 characters without err
 The penalty door is exercised on real tokens by the shipped server, not only by harness-built arrays. With the
 candidate-array differential for the same door (EXP-2026-11-19-1284) the door is now verified in both worlds.
 
+## The native A/B, run afterwards
+
+Two lifecycles, identical in everything except the door's own switch, request 96 tokens with
+`--repeat-penalty 1.15 --repeat-last-n 64`:
+
+```
+door ON    FG171_PENALTIES present;  output 449 chars
+door OFF   FG171_PENALTIES absent;   output 449 chars
+identical: True
+```
+
+So the penalised generation is the same either way, and the counter's presence/absence confirms which path ran. That
+is the evidence the first version of this card asked for.
+
+A note on why the first attempt was useless: it took the prompt from the baseline request, whose token-array form ends
+after nine characters. Reachability was shown, equality was not, and a nine-character answer would have been a weak
+claim dressed as a result. The request was changed to a text prompt long enough for the penalty to have history.
+
 ## What it does not establish
 
-Nothing about performance: this run used a different profile on purpose. It also does not compare the penalised
-output with a native run of the same request - that needs a second lifecycle with
-`GGML_GOOSE_SAMPLER_PENALTIES=0`, and it is the natural next step if this door ever joins an accepted profile.
+Nothing about performance: this run used a different profile on purpose.
 
 ## Housekeeping
 
