@@ -268,7 +268,7 @@ accepted behaviour. The checkpoint stays the immutable evidence; the tree moves 
 | `check-generated-files.py` | ok, no generated file staged |
 | `check-build-sources-tracked.py` | ok, all tracked |
 | `check-goose-symbols.py` | 2625 symbols present, none missing |
-| `check-cumulative-baseline.py` | FAIL, only on `libmoe_mmid_tiled.so` (see EXP-1223) |
+| `check-cumulative-baseline.py` | **PASS** once the kernel object is snapshotted (see the correction in EXP-1223) |
 | `check-goose-tree.py` | 20 warnings, 5 provenance drifts |
 
 ### The five provenance drifts, named
@@ -314,3 +314,22 @@ and `MANIFEST.md`. What differs from `checkpoint-20261119-chain`:
 
 The ggml libraries, the server-impl library and the binary are byte-identical to the previous checkpoint, which is
 what a change confined to two translation units should look like. Acceptance hash `c2ff42cc1219`, unchanged.
+
+
+## Gate suite, complete (2026-11-19, latest)
+
+| check | result |
+|---|---|
+| `check-goose-modules.py` | ok |
+| `check-unwired-modules.py` | PASS |
+| `check-generated-files.py` | ok |
+| `check-build-sources-tracked.py` | ok |
+| `check-goose-symbols.py` | 2625 present, none missing |
+| `check-symbol-callers.py` | rc=0, 2369 call targets |
+| `check-dead-objects.py` | PASS, 349 objects, 0 dead |
+| `check-cumulative-baseline.py` | **PASS** |
+
+Eight of eight, with the caveat that two of them need the right invocation: `check-dead-objects.py` wants a flat
+directory of objects (the build nests them under CMakeFiles), and `check-cumulative-baseline.py` wants the four
+artefacts inside the run directory. Both are now produced by `tools/p610-paired.sh`, which snapshots them from
+their real producers including the kernel object from the P1-12 experiment.
