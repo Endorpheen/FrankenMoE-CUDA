@@ -48,3 +48,33 @@ Until one exists, switching the pin would make every module in `goose/` fail to 
 is not switched. The untested item is whether the compiler's own documentation defines an
 equivalent mechanism under another name; the three forms above are the ones the runtime and the
 host generator would use.
+
+## Update 2026-11-20: v0.2.0-preview-openwing, and it cannot replace the pinned compiler yet
+
+The compiler agent reports `fried-goose-v0.2.0-preview-openwing`, sha256 `f7942c3613b4aaf1…`, with
+`export fn` restored. **Verified here**, not taken on trust:
+
+| capability | new compiler | pinned `2026.3-string` |
+|---|---|---|
+| `export fn` | **yes** - `export fn fg_add(a: i64, b: i64) -> i64` compiled | yes |
+| `--header` | **yes** - emits `extern "C"` block, `goose_init`, `int64_t fg_add(int64_t, int64_t)` | yes |
+| `-o out.c` | yes (45 KB for the sample) | yes |
+| **`--standalone`** | **no** - the usage line lists `--tokens --parse --check --packed -o --emit-provenance` only | yes |
+
+That last row is decisive for this repository: every build path here composes a **156-module unit** and
+compiles it with `--standalone`. A compiler without it cannot build the unit, whatever else it improves.
+
+So the decision recorded here is: **keep `2026.3-string` pinned for the current pipeline**, and treat the new
+line as the target for a future flow that builds modules individually with `-o` + `--header` rather than as
+one standalone unit. Adopting it is a pipeline migration with its own gates, not a version bump.
+
+What the new line brings that is worth planning for: a clean C header with `extern "C"` and the exported
+prototype (no hand-written declaration - the failure mode this repository hit when a bridge re-declared an
+18-argument export), and a safety contract enforced on the export surface.
+
+## The one module it could not build, and why it matters here
+
+The compiler agent reports `goose/sampling/sampler-chain-full.goose` blocked: recursive argument broadening
+of reference provenance. That is the module this repository found unused from production on 2026-11-19. Two
+independent facts now agree that it is not a drop-in library: the unit-level analysis says nothing calls it,
+and the compiler's safety contract refuses its recursion. Neither is a reason to weaken the contract.
