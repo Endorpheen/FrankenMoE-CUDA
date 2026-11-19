@@ -18,6 +18,8 @@ run only with explicit permission).
 | integration | goose-composition | `tests/integration/goose-composition` | set list of tools/check-composition.sh | P6-10, P7-06, P8-09 | integration | created 2026-11-19, run pending |
 | regression | accepted-components | `tests/regression/accepted-components` | release pre-flight of tooling | rule 31 | fast | verified 2026-11-19 |
 | regression | cumulative-baseline | `tests/regression/cumulative-baseline` | release pre-flight of tooling | rule 31 | fast | verified 2026-11-19 |
+| integration | unwired-modules | `tests/integration/unwired-modules` | module accounting of tooling | P11-01, P11-04 | integration | verified 2026-11-19 |
+| regression | symbol-loss | `tests/regression/symbol-loss` | rule 33 guard of tooling | rule 33 | fast | verified 2026-11-19 |
 
 ## Notes on the first migration
 
