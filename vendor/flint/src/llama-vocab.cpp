@@ -5370,8 +5370,12 @@ int32_t llama_detokenize(
             if (served < 0 && getenv("FG_TK_DETOK_DIAG")) {
                 // The short-buffer answer, beside the native one: this is the case the fallbacks exist for and
                 // the only one where the two contracts have never been compared (EXP-2026-11-19-1356).
-                static thread_local char short_buf[1];
-                const int32_t nat = vocab->detokenize(tokens, n_tokens, short_buf,
+                // The scratch buffer must be as large as the caller's limit, or the native call writes past it:
+                // a one-byte buffer with text_len_max of 1014 smashed the stack and crashed the harness, which
+                // looked like a fault in the port for two attempts (EXP-2026-11-19-1403).
+                static thread_local std::vector<char> short_buf;
+                if (short_buf.size() < (size_t) text_len_max + 1) { short_buf.assign((size_t) text_len_max + 1, 0); }
+                const int32_t nat = vocab->detokenize(tokens, n_tokens, short_buf.data(),
                                                       text_len_max, remove_special, unparse_special);
                 static std::atomic<long long> shorts{0};
                 if (shorts.fetch_add(1) < 6) {
