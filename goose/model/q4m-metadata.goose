@@ -29,7 +29,10 @@
 //   4 n-gram size outside [2, LLAMA_MAX_PLE_NGRAM],
 //   5 head count outside [1, LLAMA_MAX_PLE_HEADS].
 
-extern "q4m_fail" fn fail(code: i64);
+// The unit has one abort primitive. Binding a second symbol for the same signature would make
+// q4m composable with its own gate and not with the cumulative unit (EXP-2026-11-19-1498);
+// fg200g_fail is the binding goose-model-graph.goose uses, so this reuses it.
+extern "fg200g_fail" fn fail(code: i64);
 
 fn q4m_ensure(v: bool, c: i64) {
     if !v {
