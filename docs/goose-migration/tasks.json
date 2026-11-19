@@ -5697,5 +5697,23 @@
    "P9-07 workload: check_static, parser, writer, guards, replay_topk",
    "P9-07 metrics: CSV field, compute/route/io rows, column counts"
   ]
+ },
+ "apex_baseline": {
+  "id": "EXP-2026-11-19-1298",
+  "registered": "2026-11-19",
+  "decode_tok_s": 62.73,
+  "prefill_tok_s": 2948.0,
+  "vram_mib": 9511,
+  "rss_kb": 20837548,
+  "hash": "c2ff42cc1219",
+  "note": "medians of nine responses over three sequential runs; control GGML_MMAP_EXPERT_PIN=0 gives 43.91 / 2189.7",
+  "checkpoint": "builds/checkpoint-20261119-EXP1298",
+  "doc": "docs/goose-migration/APEX-BASELINE.md",
+  "historical": {
+   "id": "EXP-2026-11-16-906",
+   "decode_tok_s": 55.52,
+   "prefill_tok_s": 2625.0,
+   "status": "preserved, artefacts untouched"
+  }
  }
 }
