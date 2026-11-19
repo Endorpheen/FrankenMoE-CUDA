@@ -32,3 +32,29 @@ reject door that prints on first use, in the same way the sampler doors print `F
 Grammar is **default-off** on the Goose side (`GGML_GOOSE_GRAMMAR` must be set) and unwitnessed when it is
 on, so P6-10 stays PARTIAL. What changed today is that the live path is now known to work at all - which,
 given how much of this migration had been "verified" by symbol tables alone, was not previously known.
+
+## The witness, obtained with the switch that was already there
+
+The document above said the missing piece was a marker showing that the Goose path answered. The marker
+already existed: `GGML_GOOSE_GRAMMAR_DIAG` prints `FG171_GRAMMAR_SIZES` and `FG171_PREFILTER`, and both
+lines sit inside the hook **after** `fg_grammar_enabled()` - so they print only when the Goose grammar path
+is the one deciding (`vendor/flint/src/llama-grammar.cpp:1502,1536`).
+
+One run with `GGML_GOOSE_GRAMMAR=1 GGML_GOOSE_GRAMMAR_DIAG=1`, the same `root ::= "yes" | "no"` request:
+
+```
+6 FG171_GRAMMAR_SIZES
+6 FG171_PREFILTER
+exit 0, answer "no"
+```
+
+So the Goose grammar path **executed six times during a live constrained request and produced a valid
+constrained answer**. That is the third of the three states this project distinguishes: linked, executed,
+correct - and here the first two are proven and the third is proven for this request.
+
+## What is still open in P6-10
+
+- the switch is **off by default**, so a user of the shipped binary gets the native path unless they set
+  it - the requirement is not closed by a working port, only by the port being the one that answers;
+- deleting the native reject bodies needs the acceptance run at the full input length and the four axes,
+  which is rule 15 and rule 20 territory, not this check.
