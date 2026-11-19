@@ -146,15 +146,12 @@ extern "C" int64_t fg_sampler_temp_ext_call(float * lv, float * p, int64_t n, fl
 static std::atomic<unsigned long long> g_goose_tempext_calls{0};
 
 static bool fg_goose_top_p_enabled() {
-    // OFF by default until the door's contract is fixed. The door sorts the logits and the ids and then calls
-    // softmax_in_place on the logits, so `lv` comes back holding PROBABILITIES; the hook writes those into
-    // cur_p->data[i].logit and marks the array sorted. Every later stage then treats a probability as a logit,
-    // and the dist stage samples from a near-uniform distribution: measured as a real request dying at the first
-    // decoded token with "failed to add token -2100184624" (EXP-2026-11-19-1435). GGML_GOOSE_SAMPLER_TOP_P=1
-    // turns it back on for the comparison only.
+    // On, and its contract was checked on the CPU: a six-element array comes back sorted descending with the ids
+    // aligned to their logits and the probabilities summing to one (EXP-2026-11-19-1436). An earlier note claimed
+    // this door returned probabilities in place of the logits and was withdrawn - softmax_in_place writes only `p`.
     static const bool on = []() {
         const char * f = getenv("GGML_GOOSE_SAMPLER_TOP_P");
-        return f && strcmp(f, "1") == 0;
+        return !(f && strcmp(f, "0") == 0);
     }();
     return on;
 }
