@@ -48,3 +48,22 @@ Generated from the records themselves; each row is that record's own remainder f
 | F1-02 | All required functional tasks have evidence; real Apex/Qwen and representative other family fixtures; one common artifact and reproducible rollback. |
 | F1-03 | Every remaining dependency justified with source/symbol/version/license; replaceable owned parser,kernel,scheduler or server is not called unavoidable... |
 | F1-04 | Every functional task DONE; zero untracked residual native paths; source build reproducible and working runtime unchanged. Then comprehensive audits/o... |
+
+## Measured state (2026-11-19)
+
+Four numbers, each from a tool, each with its scope. None of them is a plan.
+
+| measurement | value | tool | scope |
+|---|---|---|---|
+| unit size | 155 modules, 1254 distinct exported doors | `tools/unit-carry.py`, `tools/production-doors.py` | the module list in `tools/build-main-runtime.sh`, after eight duplicate entries were removed |
+| doors the shipped library carries | 198 of 1254 (15%) | `tools/unit-carry.py` | `libllama.so.0` of the accepted release `v0.10.0-exp1476` |
+| doors the production sources reference | 63 production, 137 harness-only, 1087 none | `tools/production-doors.py` | `vendor/flint` against the unit list |
+| working library vs accepted copies | matches none | `tests/regression/library-provenance` | `builds/flint-acc/bin`, whose provenance is unknown |
+
+Two notes a reader needs. `production-doors.py` counts per-module doors and reports 1287; `unit-carry.py`
+counts distinct names and reports 1254 - a name exported by two modules is one name and two doors.
+And the 15% is not a regression: the release was built before most of the current unit existed, which
+is the same source-ahead-of-binary pattern recorded for the model-manager, api-key and JSON doors.
+
+The suite state on the same day: `tests/run.sh fast` reports 8 passed, 0 failed, 6 precondition
+skips. The skips name what is missing rather than counting as passes.
