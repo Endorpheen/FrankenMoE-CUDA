@@ -283,6 +283,11 @@ static int fg_gguf_check(const std::string & fname, const gguf_context & native)
     state.assign(8, 0); kv.assign((size_t) nk * 8, 0); tn.assign((size_t) nt * 12, 0); slots.assign(4096, 0);
     fg_port.ready = true;
 
+    fg_sl_u8  s_data{ fg_port.data.data(), (int64_t) fg_port.data.size() };
+    fg_sl_i64 s_state{ state.data(), 8 }, s_kv{ kv.data(), (int64_t) kv.size() },
+              s_t{ tn.data(), (int64_t) tn.size() }, s_slots{ slots.data(), (int64_t) slots.size() };
+    fn(s_data, size, s_state, s_kv, s_t, s_slots, s_slots);
+
     // The encoder's table, sized from the native reader's own counts for the two arrays it needs.
     {
         // The port's own lookup, not the native one: an index from one reader is only valid in that reader,
@@ -312,10 +317,6 @@ static int fg_gguf_check(const std::string & fname, const gguf_context & native)
         }
     }
 
-    fg_sl_u8  s_data{ fg_port.data.data(), (int64_t) fg_port.data.size() };
-    fg_sl_i64 s_state{ state.data(), 8 }, s_kv{ kv.data(), (int64_t) kv.size() },
-              s_t{ tn.data(), (int64_t) tn.size() }, s_slots{ slots.data(), (int64_t) slots.size() };
-    fn(s_data, size, s_state, s_kv, s_t, s_slots, s_slots);
     int differ = 0;
     // Every key and every tensor name, resolved through the port and compared with the index the native
     // reader gives it. Counts alone would pass a reader that indexed the wrong records.
