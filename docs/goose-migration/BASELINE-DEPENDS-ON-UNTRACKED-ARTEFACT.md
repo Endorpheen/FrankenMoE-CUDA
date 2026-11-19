@@ -45,3 +45,31 @@ was not.
 
 None of this was done here: step 1 changes an accepted set, which rule 22 forbids without Igor's explicit
 approval, and step 2 is a rebuild.
+
+## Correction and completion of the picture, same evening
+
+The first version of this document implied the dependency came from `libllama.so.0`. It does not: the
+`NEEDED` entry is in **`libggml-cpu.so.0`**, and `ldd libllama.so.0` lists it only as a transitive
+dependency.
+
+`readelf -d libggml-cpu.so.0` shows the RUNPATH that makes it work on this machine and nowhere else:
+
+```
+RUNPATH /home/end0/AI/FrankenMoE-CUDA/builds/flint-acc/bin:
+        /home/end0/AI/FrankenMoE-CUDA/vendor/flint/../../experiments/EXP-2026-11-18-1008-p1-12-gemv/build/p112-mmid-v3
+```
+
+Consequences, checked rather than reasoned:
+
+| how the release is started | what happens |
+|---|---|
+| `LD_LIBRARY_PATH=$PWD ./llama-server ...` (the shipped instruction, MANIFEST.md:24) | resolves to **the release's own file** - verified: `libmoe_mmid_tiled.so => /tmp/reltest/libmoe_mmid_tiled.so` |
+| without `LD_LIBRARY_PATH` | resolves through RUNPATH to the **experiment build directory on this machine** |
+| on any other machine without `LD_LIBRARY_PATH` | the paths do not exist, so it fails - and the failure is the ordinary "cannot open shared object" |
+
+So the release is usable **exactly as documented** and fragile outside that instruction, while the
+checkpoint is not usable at all because it does not carry the file. Both are the same root cause: a
+RUNPATH naming build directories instead of `$ORIGIN`.
+
+The fix that removes the whole class: link with `-Wl,-rpath,'$ORIGIN'` so a set resolves its own files,
+and carry every library the set needs. Nothing else in this document changes.
