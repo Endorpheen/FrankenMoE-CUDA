@@ -13,6 +13,56 @@
 #include <thread>
 #include <mutex>
 
+#include <dlfcn.h>
+
+namespace {
+// The API-key verdict from the Goose module (goose/server/api-key-policy.goose, door key_authorize),
+// reached the same way the other doors are: dlopen of the unit. Opt-in while unproven; the flag comes
+// off when the differential gate for this path is green, and the native branch below stays as the
+// fallback so a declined port can never open a door that the native check would close.
+struct fg_key_sl { const void * data; int64_t len; };
+using fg_key_authorize_fn = int64_t (*)(fg_key_sl, fg_key_sl, fg_key_sl, fg_key_sl, fg_key_sl,
+                                        fg_key_sl, fg_key_sl);
+
+bool fg_api_key_goose_enabled() {
+    static const bool on = []() {
+        const char * v = getenv("FG_API_KEY_GOOSE");
+        return v != nullptr && strcmp(v, "0") != 0;
+    }();
+    return on;
+}
+
+fg_key_authorize_fn fg_key_authorize_door() {
+    static fg_key_authorize_fn fn = []() -> fg_key_authorize_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        return h ? reinterpret_cast<fg_key_authorize_fn>(dlsym(h, "key_authorize")) : nullptr;
+    }();
+    return fn;
+}
+
+// -1 declined, 1 authorised, 0 refused.
+int fg_api_key_verdict(const std::vector<std::string> & keys, const std::string & path,
+                       const std::vector<std::string> & public_paths,
+                       const std::string & auth, const std::string & alt_key) {
+    const auto fn = fg_key_authorize_door();
+    if (!fn) { return -1; }
+    std::string flat;
+    std::vector<int64_t> koff(keys.size(), 0);
+    for (size_t i = 0; i < keys.size(); ++i) { koff[i] = (int64_t) flat.size(); flat += keys[i]; }
+    std::string pflat;
+    std::vector<int64_t> poff(public_paths.size(), 0);
+    for (size_t i = 0; i < public_paths.size(); ++i) { poff[i] = (int64_t) pflat.size(); pflat += public_paths[i]; }
+    const int64_t r = fn(fg_key_sl{ flat.data(), (int64_t) flat.size() },
+                         fg_key_sl{ koff.data(), (int64_t) koff.size() },
+                         fg_key_sl{ path.data(), (int64_t) path.size() },
+                         fg_key_sl{ pflat.data(), (int64_t) pflat.size() },
+                         fg_key_sl{ poff.data(), (int64_t) poff.size() },
+                         fg_key_sl{ auth.data(), (int64_t) auth.size() },
+                         fg_key_sl{ alt_key.data(), (int64_t) alt_key.size() });
+    return r < 0 ? -1 : (r != 0 ? 1 : 0);
+}
+} // namespace
+
 //
 // HTTP implementation using cpp-httplib
 //
@@ -258,10 +308,29 @@ bool server_http_context::init_listener(const common_params & params) {
         return endpoints;
     }();
 
+
     auto middleware_validate_api_key = [api_keys = params.api_keys](const httplib::Request & req, httplib::Response & res) {
         // If API key is not set, skip validation
         if (api_keys.empty()) {
             return true;
+        }
+
+        // The Goose verdict, when the flag is on and the door answers. A decline falls through to the
+        // native path below rather than opening the door.
+        if (fg_api_key_goose_enabled()) {
+            static const std::vector<std::string> public_paths(get_public_endpoints.begin(),
+                                                               get_public_endpoints.end());
+            const int v = fg_api_key_verdict(api_keys, req.path, public_paths,
+                                             req.get_header_value("Authorization"),
+                                             req.get_header_value("X-Api-Key"));
+            if (v == 1) { return true; }
+            if (v == 0) {
+                res.status = 401;
+                res.set_content(safe_json_to_str(json { {"error", {
+                    {"message", "Invalid API Key"}, {"type", "authentication_error"}, {"code", 401}
+                }} }), "application/json; charset=utf-8");
+                return false;
+            }
         }
 
         // If path is public or a UI asset, skip validation
