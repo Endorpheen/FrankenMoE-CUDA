@@ -2161,7 +2161,7 @@
         "tools/server/server-connect.cpp"
       ],
       "acceptance": "Load/unload/swap/list/proxy lifecycle Goose; pending/active requests and resource cleanup checked without changing working runtime.",
-      "evidence": " 2026-11-15 EXP631 (experiments/EXP-2026-11-15-631-p8-06-model-management): model manager state (mg_: status predicates, unload action table, remove guards, wait predicates, request_stop, update_status/SSE fields, modality merge, slot capacity, LRU walk, tick budget), hot reload (hr_: preset normalisation, reload/erase sets, alias pass order, tags, startup guard, models_max, dedup cache hiding) and connectors (cn_: share code, dial address, four refusals in native order, binary search order, child log levels, HF/sidecar/env source choice) are Goose. Gates 22/290 + 14/98 + 13/133, 0 failures, identical at -O0; mutations 12/12 in halves. Recorded native behaviour: update_status does not reset progress, SSE is sent for unmatched names, the alias pass is order-sensitive, and unloading a LOADING model kills the process.",
+      "evidence": " 2026-11-15 EXP631 (experiments/EXP-2026-11-15-631-p8-06-model-management): model manager state (mg_: status predicates, unload action table, remove guards, wait predicates, request_stop, update_status/SSE fields, modality merge, slot capacity, LRU walk, tick budget), hot reload (hr_: preset normalisation, reload/erase sets, alias pass order, tags, startup guard, models_max, dedup cache hiding) and connectors (cn_: share code, dial address, four refusals in native order, binary search order, child log levels, HF/sidecar/env source choice) are Goose. Gates 22/290 + 14/98 + 13/133, 0 failures, identical at -O0; mutations 12/12 in halves. Recorded native behaviour: update_status does not reset progress, SSE is sent for unmatched names, the alias pass is order-sensitive, and unloading a LOADING model kills the process. 2026-11-19 EXP-1475: checked rather than restated - the module carries 13 exports with zero externs and type-checks clean, while the shipped libraries export no mg_ symbol and server-models.cpp contains no call to one. The wiring is genuinely open, and the first step is composition, which is safe for a module with no host primitives to provide.",
       "depends_on": [],
       "workstream": "APEX_COMMON",
       "source_phase_files_at_audit": 144,
@@ -2169,9 +2169,7 @@
       "batch": "B4",
       "slices_total": 3,
       "slices_done": 3,
-      "remaining": [
-        "wire model_router.cpp to mg_/hr_/cn_ (status, unload/remove, request_stop, reload sets, connect/source choice)"
-      ],
+      "remaining": "compose goose/server/model-manager.goose into the shipped unit (13 exports, no externs, type-checks clean) and then wire the host: nothing in vendor/flint/tools/server/server-models.cpp calls mg_ today and no mg_ symbol is exported by the shipped libraries - the host exists (3081 lines), the module is pure, and the switch has not been made. Then status, unload/remove, request_stop, reload sets and connect/source choice follow the same shape.",
       "coverage_doc": "docs/goose-migration/P8-06-COVERAGE.md"
     },
     {
