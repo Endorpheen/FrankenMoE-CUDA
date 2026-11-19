@@ -19,9 +19,12 @@ else
     echo "topp: MISMATCH"; fails=1
 fi
 
-# temp_ext: OPEN. The door rewrites logits in place; the native path also sorts and can change the
-# array size. That is a contract difference, not a value difference, and deciding it needs a statement
-# about what a sampler may do to the caller's array - so it is reported, not silently passed.
-lines=$(diff <(arm tempext /tmp/topp_goose.txt) <(arm tempext /tmp/topp_native.txt) | grep -c '^<')
-echo "tempext: OPEN, $lines lines differ (ordering and size, not values)"
+# temp_ext: the same comparison. It was previously reported OPEN on an unsorted input, where the
+# native's own sort looked like a difference; with the input the chain actually provides, the two
+# runs are identical.
+if cmp -s <(arm tempext /tmp/topp_goose.txt) <(arm tempext /tmp/topp_native.txt); then
+    echo "tempext: bit-identical including order and size"
+else
+    echo "tempext: MISMATCH"; fails=1
+fi
 exit $fails

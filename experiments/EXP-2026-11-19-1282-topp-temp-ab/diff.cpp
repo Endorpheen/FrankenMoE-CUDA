@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include <random>
 #include <vector>
+#include <algorithm>
 
 int main(int argc, char ** argv) {
     const char * out = argc > 1 ? argv[1] : "/tmp/topp_ab.txt";
@@ -29,15 +30,19 @@ int main(int argc, char ** argv) {
             base[i].logit = -10.0f + 20.0f * u(rng);
             base[i].p = 0.0f;
         }
+        // The chain hands these samplers a sorted array (top-k runs before them) and marks it sorted,
+        // so sorting here is the honest input, not a convenience: the first version compared an
+        // unsorted array and read the native's own sort as a difference.
+        std::sort(base.begin(), base.end(), [](const llama_token_data & a, const llama_token_data & b) { return a.logit > b.logit; });
 
         // top-p: the native sorts by logit and truncates, so the array it returns is the sorted one
         {
             llama_sampler * s = llama_sampler_init_top_p(p, mk);
             auto d = base;
-            llama_token_data_array cur{ d.data(), d.size(), false };
+            llama_token_data_array cur{ d.data(), d.size(), true };
             llama_sampler_apply(s, &cur);
-            fprintf(f, "topp %d p=%.6f mk=%zu size=%zu\n", it, p, mk, cur.size);
-            for (size_t i = 0; i < cur.size; ++i) fprintf(f, "%d %08x\n", (int) d[i].id, *(const uint32_t *) &d[i].logit);
+            fprintf(f, "topp %d p=%.6f mk=%zu n_in=%zu size=%zu\n", it, p, mk, base.size(), cur.size);
+            for (size_t i = 0; i < cur.size; ++i) fprintf(f, "%d %08x\n", (int) cur.data[i].id, *(const uint32_t *) &cur.data[i].logit);
             llama_sampler_free(s);
         }
         // dynamic temperature: this is the sampler whose apply calls the Goose door. The plain
@@ -48,10 +53,10 @@ int main(int argc, char ** argv) {
             const float exponent = 1.0f + 2.0f * u(rng);
             llama_sampler * s = llama_sampler_init_temp_ext(t, delta, exponent);
             auto d = base;
-            llama_token_data_array cur{ d.data(), d.size(), false };
+            llama_token_data_array cur{ d.data(), d.size(), true };
             llama_sampler_apply(s, &cur);
-            fprintf(f, "tempext %d t=%.6f d=%.6f e=%.6f size=%zu\n", it, t, delta, exponent, cur.size);
-            for (size_t i = 0; i < cur.size; ++i) fprintf(f, "%d %08x\n", (int) d[i].id, *(const uint32_t *) &d[i].logit);
+            fprintf(f, "tempext %d t=%.6f d=%.6f e=%.6f n_in=%zu size=%zu\n", it, t, delta, exponent, base.size(), cur.size);
+            for (size_t i = 0; i < cur.size; ++i) fprintf(f, "%d %08x\n", (int) cur.data[i].id, *(const uint32_t *) &cur.data[i].logit);
             llama_sampler_free(s);
         }
     }

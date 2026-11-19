@@ -2,7 +2,7 @@
 
 ```
 topp:    bit-identical including order and size
-tempext: OPEN, 4668 lines differ (ordering and size, not values)
+tempext: bit-identical including order and size
 ```
 
 Both samplers are driven through the public API - one sampler object per case, applied twice, once with the Goose
@@ -14,7 +14,19 @@ door on and once off - so the comparison is with the native code and not with a 
 size** all match after the door runs. The `FG171_TOP_P` counter confirms the door was reached on every case, so the
 agreement is between two live implementations, not between native code and itself.
 
-## temp_ext: open, and what the difference actually is
+## temp_ext: closed, and it was my input that was wrong
+
+**Correction.** This card first reported temp_ext as OPEN with 4668 differing lines. That was the harness, not the
+port: the array was fed **unsorted**, while the chain hands these samplers a sorted array flagged `sorted`
+because top-k runs first. `llama_sampler_temp_ext_apply` calls `softmax_impl(cur_p, true)`, which sorted the
+array in place, so position-by-position comparison read the native's own sort as a difference. With the honest
+input the two runs are identical in values, order and size.
+
+The same correction was needed in EXP-2026-11-19-1284, where the dump also ignored `cur_p->data` being advanced.
+Both are recorded rather than quietly fixed, because the pattern matters: three findings in this session accused
+the code and were instruments, and one (DRY) was real.
+
+### The original observation, kept for the record
 
 The first comparison showed 4668 differing lines, which looked alarming. Sorting each case's lines before
 comparing reduced it to 42 cases with genuine value differences, and those turned out to be cases where the native
@@ -29,7 +41,7 @@ That is a contract question, not an arithmetic one: it needs a statement about w
 caller's array, and the answer decides whether the door should sort and truncate too. It is recorded as OPEN
 rather than resolved by guesswork, and the harness prints it on every run.
 
-## Why it does not block
+## Why the earlier version was retired
 
 The fixed acceptance profile sets `temp` with no delta, and the door is only reached when `delta > 0`. The
 difference is therefore dormant in the acceptance configuration - the same situation as the DRY defect, which is
