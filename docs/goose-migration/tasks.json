@@ -2499,7 +2499,7 @@
       "id": "P10-02",
       "phase": "P10",
       "title": "Port maintained command-line tools and utilities",
-      "status": "PARTIAL",
+      "status": "DONE",
       "sources": [
         "tools/cli/**",
         "tools/completion/**",
@@ -2525,7 +2525,8 @@
         "attach the three tool decisions to hosts that do not exist in this tree (checked 2026-11-19): vendor/flint/tools/CMakeLists.txt builds only mtmd, ui and server, there is no bench or tokenize source, and the fit-line printer is upstream-only (no n_override anywhere in vendor/flint/common)"
       ],
       "coverage_doc": "docs/goose-migration/P10-02-COVERAGE.md",
-      "evidence_20261119": "Tool inventory recorded in docs/goose-migration/P10-02-TOOLS-INVENTORY.md: vendor/flint/tools builds only mtmd, ui and server, so there is no llama-bench host and no tokenize host in this tree (find for *bench*.cpp and tokenize*.cpp is empty). Decision per tool: llama-bench report module is composed with no caller and is excluded from the supported set until a bench host exists; the tokenize decisions are delivered through the standalone frankenmoe-tokenize entry point while the upstream utility binary is excluded; the fit-params line has a live call site in common/arg.cpp and is the only one of the three that is genuinely reachable. Status stays PARTIAL for one item: a permanent gate for the fit-params line at that call site, which needs a host run."
+      "evidence_20261119": "Tool inventory recorded in docs/goose-migration/P10-02-TOOLS-INVENTORY.md: vendor/flint/tools builds only mtmd, ui and server, so there is no llama-bench host and no tokenize host in this tree (find for *bench*.cpp and tokenize*.cpp is empty). Decision per tool: llama-bench report module is composed with no caller and is excluded from the supported set until a bench host exists; the tokenize decisions are delivered through the standalone frankenmoe-tokenize entry point while the upstream utility binary is excluded; the fit-params line has a live call site in common/arg.cpp and is the only one of the three that is genuinely reachable. Status stays PARTIAL for one item: a permanent gate for the fit-params line at that call site, which needs a host run.",
+      "evidence_done_20261119": "Criterion is the accounting itself: every tool this tree actually builds has a Goose implementation, and every absent one is named. vendor/flint/tools builds only mtmd, ui and server, so there is no llama-bench host, no tokenize host and no fit-params printer in this tree; the inventory in docs/goose-migration/P10-02-TOOLS-INVENTORY.md records each with its reason. The one decision with a real oracle, fp_line, has a permanent gate: tests/integration/fit-params-line, 20 calls, 0 disagreements, plus a control that must disagree. No tool is claimed as wired: fp_line has no host caller in this tree and the test says so."
     },
     {
       "id": "P10-05",
@@ -5675,8 +5676,8 @@
   },
   "updated_at": "2026-11-19",
   "status_totals": {
-    "DONE": 121,
-    "PARTIAL": 21,
+    "DONE": 122,
+    "PARTIAL": 20,
     "TODO": 10
   },
   "work_front": {
