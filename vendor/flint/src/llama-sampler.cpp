@@ -1326,6 +1326,15 @@ static const char * llama_sampler_dist_name(const struct llama_sampler * smpl) {
 }
 
 static void llama_sampler_dist_apply(struct llama_sampler * smpl, llama_token_data_array * cur_p) {
+    if (fg_diag_enabled()) {
+        unsigned h = 2166136261u;
+        for (size_t i = 0; i < cur_p->size; ++i) {
+            h = (h ^ (unsigned) cur_p->data[i].id) * 16777619u;
+            unsigned pb; memcpy(&pb, &cur_p->data[i].p, 4);
+            h = (h ^ pb) * 16777619u;
+        }
+        fprintf(stderr, "FG_DIST_IN n=%zu hash=%08x\n", cur_p->size, h);
+    }
     auto * ctx = (llama_sampler_dist *) smpl->ctx;
 
     // edge cases

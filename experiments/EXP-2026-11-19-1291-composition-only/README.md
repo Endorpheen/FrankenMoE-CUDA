@@ -21,6 +21,43 @@ remains is **shared mutable state between the parts**:
 - or a `p` array that is recomputed on one path and reused on the other, disagreeing in the last bit only for some
   inputs.
 
+## The probe was run: it is the array, not the RNG
+
+Hashing the array the selector receives, per round and in both modes:
+
+```
+FG_DIST_IN n=3 hash=b9edfde6      (goose)
+FG_DIST_IN n=3 hash=...           (native, first differs at the fourth call)
+p-hash differing: 85 of 100 rounds
+```
+
+The array differs **before** the draw, so the RNG streams are not the cause and neither is the scratch buffer. What
+differs is `p` itself.
+
+## Why `p` differs, stated as the one remaining asymmetry
+
+`llama_sampler_softmax_impl` uses `data[0].logit` as the maximum **when `sorted` is set** and scans otherwise. The
+doors call `softmax_in_place(lv, p, n, 0)` - always scanning - so the port takes the true maximum while the native
+takes the flag's word for it. On a sorted array those agree; on the **post-transform** array, which the transform
+turns from descending into ascending, they do not, and the probabilities differ by one rounding step.
+
+So the port computes the correct normalisation of the values it was given, and the native computes one based on a
+flag its own transform has invalidated.
+
+## The decision this needs, which is not mine
+
+Two options, and they cannot both be true:
+
+1. **match the native exactly** - the port must reproduce the flag's effect, including where the flag is stale. That
+   keeps token-for-token equivalence with the reference and carries the inconsistency into the Goose runtime;
+2. **keep the port correct** - the runtime normalises against the true maximum. Behaviour differs from the native in
+   the last bit for these configurations, which is visible only as a different draw in a setting the acceptance
+   profile does not use.
+
+The migration rule this project works under asks for behavioural equality proved by gates, which argues for (1);
+the rule about not inheriting defects argues for (2). This is a statement about the target, so it is recorded for
+Igor rather than decided here.
+
 ## The next probe, named
 
 Log the **RNG word values** consumed per round in both modes, plus the `p` array bitwise at the selection step. If
