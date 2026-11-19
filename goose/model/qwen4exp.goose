@@ -26,6 +26,9 @@
 import std;
 import base.model_graph;
 
+// The graph module's abort is renamed to fgg_fail when the unit is composed, so an importer
+// cannot call `fail` and still link. This module binds the same primitive under its own name.
+extern "fg200g_fail" fn q4_abort(code: i64);
 // p indices
 const Q4P_N_EMBD: i64 = 0;
 const Q4P_N_VOCAB: i64 = 1;
@@ -117,7 +120,7 @@ const Q4T_LEN: i64 = 52;
 
 fn e_ensure(v: bool, c: i64) {
     if !v {
-        fail(c);
+        q4_abort(c);
     }
 }
 
