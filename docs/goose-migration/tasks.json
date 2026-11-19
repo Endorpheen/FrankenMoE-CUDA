@@ -2983,7 +2983,8 @@
         "Qwen quantized precision, cold-bank and expert hook differences"
       ],
       "coverage_doc": "docs/goose-migration/APEX-API-SCHED-CLOSURE.md",
-      "plan_note": "Documented as assigned scope, not yet decomposed into slices."
+      "plan_note": "Documented as assigned scope, not yet decomposed into slices.",
+      "evidence_20261119": "State recorded in docs/goose-migration/C1-03-C1-04-QWEN-STATE.md. Present in the unit: qwen4exp (plan/shape), q4m-metadata (19 exports: 27 GGUF keys with requirement/arity classes, PLE/HC/indexer/SSM guards, recurrent pattern, n_embd_out, model type), q4t-tensor-map (10 exports including loader flags and skip-if-virtual) and q4e-expert-layout (15 exports: expert widths, fused-vs-split probes, QKV widths); the unit compiles with them (CI run 44597680081, Goose job success). Absent: no Qwen4 loader module (only qwen35-model-loader exists, for the other family); no Qwen-specific tokenizer code, and none is needed since the family goes through the same llama_goose_tokenize path; and NO COLD-BANK anywhere - vendor/flint/src/models/qwen4exp.cpp contains no reference to one, so the requirement's cold-bank item has nothing to differ from in this tree and no Goose implementation can correspond to it. Closing needs a loader adapter joining q4m's keys and q4t's map to the load path, a real Qwen GGUF, and a recorded decision for each item the native model does not implement. No Qwen model has been loaded."
     },
     {
       "id": "C1-04",
@@ -3009,7 +3010,8 @@
         "shared loader, tokenizer and memory interfaces needed by Qwen"
       ],
       "coverage_doc": "docs/goose-migration/APEX-API-SCHED-CLOSURE.md",
-      "plan_note": "Documented as assigned scope, not yet decomposed into slices."
+      "plan_note": "Documented as assigned scope, not yet decomposed into slices.",
+      "evidence_20261119": "State recorded in docs/goose-migration/C1-03-C1-04-QWEN-STATE.md. Present in the unit: qwen4exp (plan/shape), q4m-metadata (19 exports: 27 GGUF keys with requirement/arity classes, PLE/HC/indexer/SSM guards, recurrent pattern, n_embd_out, model type), q4t-tensor-map (10 exports including loader flags and skip-if-virtual) and q4e-expert-layout (15 exports: expert widths, fused-vs-split probes, QKV widths); the unit compiles with them (CI run 44597680081, Goose job success). Absent: no Qwen4 loader module (only qwen35-model-loader exists, for the other family); no Qwen-specific tokenizer code, and none is needed since the family goes through the same llama_goose_tokenize path; and NO COLD-BANK anywhere - vendor/flint/src/models/qwen4exp.cpp contains no reference to one, so the requirement's cold-bank item has nothing to differ from in this tree and no Goose implementation can correspond to it. Closing needs a loader adapter joining q4m's keys and q4t's map to the load path, a real Qwen GGUF, and a recorded decision for each item the native model does not implement. No Qwen model has been loaded."
     },
     {
       "id": "C1-05",
