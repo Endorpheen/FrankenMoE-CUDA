@@ -1,3 +1,7 @@
+// Bound to the C symbol under a Goose-only name: the composed unit also carries the standard
+// library's overloaded `exp`, and two exact matches for an f64 argument made every call ambiguous
+// (measured twice, in both directions). One distinct name removes the clash.
+extern "gs_exp" fn fg_exp(x: f64) -> f64;
 extern fn logf(x: f32) -> f32;
 extern fn powf(x: f32, y: f32) -> f32;
 // Sampler chain in Goose: MT19937, the canonical double draw and the
@@ -1222,8 +1226,8 @@ export fn fg_sampler_temp_ext(lv: f32[:], p: f32[:], n: i64,
     var cum: f64 = 0.0;
     i = 0;
     while i < n {
-        p[i] = exp((lv[i] as f64) - max_l) as f32;
-        cum = cum + exp((lv[i] as f64) - max_l);
+        p[i] = fg_exp((lv[i] as f64) - max_l) as f32;
+        cum = cum + fg_exp((lv[i] as f64) - max_l);
         i = i + 1;
     }
     i = 0;
