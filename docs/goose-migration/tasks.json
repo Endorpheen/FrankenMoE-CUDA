@@ -5686,7 +5686,7 @@
    "P9-03": "ported and gated synthetically; NOT verifiable against compiled native code here: the native ExpertStreamSource needs shard paths and real expert tensors in init(), and its pure-looking helpers read the bound geometry. See docs/goose-migration/P9-DEPENDENCY-BOUNDARY.md.",
    "P9-04": "ported and gated synthetically; the decisions this port reproduces live in session.cpp (needs llama.cpp) and RowStream is class-bound like P9-03. Same boundary document.",
    "P9-05": "draft side verified against bmoe::ngram_draft (3000 cases); session/runtime side needs llama.cpp and the bmoe fork, which does not build against vendor/flint. Same boundary document.",
-   "P9-07": "workload side COMPLETE and verified: five parts against the compiled class by white-box include (check_static 2000 cases, parser 9 failure modes, writer byte-exact, token/finish guards 1000 cases, replay_topk with cursor 1000 cases), consolidated into goose/misc/workload-format.goose and in the accumulated unit. The item still includes metrics/traces, which are NOT ported - so it stays PARTIAL."
+   "P9-07": "workload side COMPLETE and verified against the compiled class by white-box include: check_static 2000 cases, parser 9 failure modes, writer byte-exact, token/finish guards 1000 cases, replay_topk with cursor 1000 cases; consolidated into goose/misc/workload-format.goose. Metrics side: four decisions verified against the real sinks - CSV field escaping 4000 strings, compute row + 29 columns 2000 rows, route row + NaN arm 3000 rows, io row + 12 columns 2000 rows - plus an encoder/unescaper pair invariant (4000 round-trips) for the two helpers whose consumer is not in the tree. Remaining: mt_summary_keys (62) has no honest comparison because the native side prints a formatted line, and the trace/summary plumbing is not ported end to end."
   },
   "note": "The roadmap counters mixed 'ported', 'called' and 'replaced'. This block makes the three states explicit so a DONE cannot be inferred from composition alone.",
   "verified_against_native": [
@@ -5694,7 +5694,8 @@
    "P9-01 config validation (4000 configs, 44 rules)",
    "P9-05 ngram draft (3000 cases)",
    "P9-01 recipe matcher (4160 cases, white-box include)",
-   "P9-07 workload check_static (2000 cases) and file parser (9 failure modes)"
+   "P9-07 workload: check_static, parser, writer, guards, replay_topk",
+   "P9-07 metrics: CSV field, compute/route/io rows, column counts"
   ]
  }
 }
