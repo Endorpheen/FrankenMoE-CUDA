@@ -2744,7 +2744,24 @@
       ],
       "coverage_doc": "experiments/EXP-2026-11-15-678-coverage-map/README.md",
       "slices_total": 12,
-      "slices_done": 9
+      "slices_done": 9,
+      "coverage_20261119": {
+        "measured_by": [
+          "python3 tools/check-module-coverage.py",
+          "python3 tools/decision-coverage.py"
+        ],
+        "module_coverage": [
+          "modules with all doors in the library: 32",
+          "modules with some doors:               3",
+          "modules with no doors in the library:  230",
+          "modules with at least one door referenced: 35",
+          "shipped symbols: 11946"
+        ],
+        "decision_coverage": [
+          "decision coverage: 19/49 = 38.8%"
+        ],
+        "reading": "These are the shipped facts, not a plan: of the Goose modules, 32 have every door present in the library, 3 have some and 230 have none, which is why this requirement stays PARTIAL with 9 of 12 slices - a module that compiles but is not in the library serves no call site (rule 33). Decision coverage is 19 of 49 predicates; the rest are still answered by C++."
+      }
     },
     {
       "id": "P11-02",
