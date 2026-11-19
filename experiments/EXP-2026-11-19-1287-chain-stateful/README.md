@@ -72,6 +72,25 @@ round where they part - not to guess which sampler to blame.
 
 The acceptance hash is unchanged (`c2ff42cc1219`), because the fixed profile enables neither typical nor XTC.
 
+### The decisive narrowing: fresh chain versus persistent chain
+
+Running the same stages with a **fresh chain built per round** - same inputs, same seeds - gives **zero differing
+lines**:
+
+```
+typical+xtc+adaptive+dist, fresh chain each round: differing lines = 0
+typical+xtc+adaptive+dist, one chain for 100 rounds: 21 rounds differ
+```
+
+So no single arithmetic step differs. What differs is **state carried between rounds**: the EMA in adaptive-p
+(`weighted_sum`, `total_weight`), mirostat's `mu`, and the RNG streams of the samplers that hold one. One round
+whose selection differs anywhere sets a different `original_probs` entry into the EMA and every later round
+follows.
+
+That makes the next measurement specific rather than exploratory: log, per round and in both modes, the selected
+token, the sampled index, the EMA state and the number of RNG draws consumed. The first round where any of them
+parts is the answer, and it is a single line to add to the `FG_SAMPLER_DIAG` trace that already exists.
+
 ### Original note on the open question
 
 Whether the door should reproduce the native's trimming (advance the base, preserving order) or the caller should
