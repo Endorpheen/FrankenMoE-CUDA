@@ -7,7 +7,12 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DST=${DST:-/home/end0/AI/LlamaServer/runtime-build-tree}
-BASE=${BASE:-/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108}
+# The module sources come from this repository, not from an external snapshot. Checked 2026-11-19: the
+# external snapshot carried 528 experiments and this tree carries 1134, and for all 86 module prefixes
+# the rule below picks exactly the same file from both - 86 of 86, no difference, none missing. The
+# snapshot was therefore never adding anything the repository does not have, while making the build
+# depend on a directory outside it. BASE stays overridable for an archaeology run.
+BASE=${BASE:-$ROOT/experiments}
 FL=${FL:-/home/end0/AI/LlamaServer/llama.cpp-flint-cuda}
 [ -e "$DST" ] && { echo "refusing to overwrite $DST"; exit 1; }
 
