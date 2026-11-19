@@ -41,6 +41,35 @@ All 52 metadata keys and all 753 tensor names resolve to the index the native re
 not exist is reported absent by both sides - the negative case matters as much as the positive one, because a lookup
 that returns zero for everything would pass a positive-only check.
 
+## Types and values
+
+```
+integer keys: 26/26 equal
+key types:    52/52 equal
+string values: 13/13 equal
+```
+
+Every integer-valued key decodes to the native value, every key reports the native type code, and every string key's
+bytes are identical. Together with the 52 keys, 753 tensor names and five header fields, the metadata of this model
+is proven equal field by field.
+
+Thirteen keys are neither integers nor strings (arrays, floats, booleans). They are the remaining gap, and the doors
+for them exist - `gr_arr_type`, `gr_arr_n`, `gr_array_int`, `gr_arr_str_span`, `gr_meta_f32_bits` - but they are not
+compared here.
+
+## Three harness errors before the numbers were right
+
+Each was caught by the numbers looking wrong in a characteristic way, not by review:
+
+1. `gr_kv_type` called with two arguments instead of three - **all 52** returned -1, which is what a uniformly wrong
+   signature looks like;
+2. `gr_val_span` given two output slots when it requires four - every string returned -1;
+3. the span layout assumed `out[1]` was the length; it is the payload **offset**, with the length in `out[2]`. The
+   give-away was a five-byte string reported as 105 bytes.
+
+The third one is the instructive one: 105 is not a plausible length, but a harness that only checked `rc == 0` would
+have recorded 13 successful string comparisons.
+
 ## What this establishes
 
 The ported header parser agrees with the native reader on this model's structure: version, counts, alignment and

@@ -15,6 +15,9 @@ typedef struct { int64_t * data; int64_t len; } sl_i64;
 typedef struct { uint8_t * data; int64_t len; } sl_u8;
 typedef int64_t (*fn_parse)(sl_u8, int64_t, sl_i64, sl_i64, sl_i64, sl_i64, sl_i64);
 typedef int64_t (*fn_find)(sl_u8, sl_i64, sl_i64, sl_i64, sl_u8);
+typedef int64_t (*fn_meta_int)(sl_u8, sl_i64, sl_i64, int64_t, sl_i64);
+typedef int64_t (*fn_kv_type)(sl_i64, sl_i64, int64_t);
+typedef int64_t (*fn_span)(sl_i64, sl_i64, int64_t, sl_i64);
 
 #define WINDOW (64u * 1024u * 1024u)
 
@@ -94,6 +97,75 @@ int main(int argc, char ** argv) {
             if (tn_fail <= 3) printf("TENSOR MISMATCH name=%s native=%lld port=%lld\n", k, (long long) i, (long long) got);
         }
     }
+    /* integer-valued keys: the port's decoded value against the native one, key by key */
+    fn_meta_int meta_int = (fn_meta_int) dlsym(h, "gr_meta_int");
+    int val_cmp = 0, val_fail = 0;
+    if (meta_int) {
+        for (int64_t i = 0; i < n_kv; ++i) {
+            enum gguf_type t = gguf_get_kv_type(g2, i);
+            int64_t native = 0; int is_int = 1;
+            switch (t) {
+                case GGUF_TYPE_UINT8:  native = gguf_get_val_u8 (g2, i); break;
+                case GGUF_TYPE_INT8:   native = gguf_get_val_i8 (g2, i); break;
+                case GGUF_TYPE_UINT16: native = gguf_get_val_u16(g2, i); break;
+                case GGUF_TYPE_INT16:  native = gguf_get_val_i16(g2, i); break;
+                case GGUF_TYPE_UINT32: native = gguf_get_val_u32(g2, i); break;
+                case GGUF_TYPE_INT32:  native = gguf_get_val_i32(g2, i); break;
+                case GGUF_TYPE_UINT64: native = (int64_t) gguf_get_val_u64(g2, i); break;
+                case GGUF_TYPE_INT64:  native = gguf_get_val_i64(g2, i); break;
+                default: is_int = 0; break;
+            }
+            if (!is_int) { continue; }
+            int64_t out1[1] = {0};
+            sl_i64 s_out; s_out.data = out1; s_out.len = 1;
+            const int64_t rc2 = meta_int(s_data, s_state, s_kv, i, s_out);
+            ++val_cmp;
+            if (rc2 != 0 || out1[0] != native) {
+                ++val_fail;
+                if (val_fail <= 3) {
+                    printf("VALUE MISMATCH key=%s native=%lld port_rc=%lld port=%lld\n",
+                           gguf_get_key(g2, i), (long long) native, (long long) rc2, (long long) out1[0]);
+                }
+            }
+        }
+        printf("integer keys: %d/%d equal\n", val_cmp - val_fail, val_cmp);
+    }
+
+    /* key types and string values: the type code and the bytes of every string key */
+    fn_kv_type kv_type = (fn_kv_type) dlsym(h, "gr_kv_type");
+    fn_span    val_span = (fn_span) dlsym(h, "gr_val_span");
+    int type_cmp = 0, type_fail = 0, str_cmp = 0, str_fail = 0;
+    if (kv_type && val_span) {
+        for (int64_t i = 0; i < n_kv; ++i) {
+            const int64_t port_t = kv_type(s_state, s_kv, i);
+            const int64_t native_t = (int64_t) gguf_get_kv_type(g2, i);
+            ++type_cmp;
+            if (port_t != native_t) {
+                ++type_fail;
+                if (type_fail <= 3) printf("TYPE MISMATCH key=%s native=%lld port=%lld\n",
+                                           gguf_get_key(g2, i), (long long) native_t, (long long) port_t);
+            }
+            if (native_t == GGUF_TYPE_STRING) {
+                int64_t out2[4] = {0};   /* the door requires at least four slots */
+                sl_i64 s_out2; s_out2.data = out2; s_out2.len = 4;
+                const int64_t rc3 = val_span(s_state, s_kv, i, s_out2);
+                const char * ns = gguf_get_val_str(g2, i);
+                ++str_cmp;
+                /* layout is out[0]=type, out[1]=payload offset, out[2]=payload bytes */
+                const bool ok = rc3 == 0 && out2[2] == (int64_t) strlen(ns) &&
+                                out2[1] >= 0 && (size_t) (out2[1] + out2[2]) <= win &&
+                                memcmp(data + out2[1], ns, (size_t) out2[2]) == 0;
+                if (!ok) {
+                    ++str_fail;
+                    if (str_fail <= 3) printf("STRING MISMATCH key=%s native_len=%zu port_rc=%lld port_off=%lld port_len=%lld\n",
+                                              gguf_get_key(g2, i), strlen(ns), (long long) rc3, (long long) out2[1], (long long) out2[2]);
+                }
+            }
+        }
+        printf("key types: %d/%d equal   string values: %d/%d equal\n",
+               type_cmp - type_fail, type_cmp, str_cmp - str_fail, str_cmp);
+    }
+
     /* the negative case: a key that is not there must be reported as absent by both */
     const char * absent = "general.this.key.does.not.exist";
     sl_u8 s_absent; s_absent.data = (uint8_t *) absent; s_absent.len = (int64_t) strlen(absent);
@@ -108,6 +180,6 @@ int main(int argc, char ** argv) {
     gguf_free(g2);
     printf("lookup: kv=%lld/%lld tensor=%lld/%lld fails=%d\n",
            (long long) (n_kv - kv_fail), (long long) n_kv, (long long) (n_t - tn_fail), (long long) n_t, kv_fail + tn_fail);
-    printf("gguf header: fails=%d\n", fails + kv_fail + tn_fail);
-    return (fails + kv_fail + tn_fail) ? 1 : 0;
+    printf("gguf header: fails=%d\n", fails + kv_fail + tn_fail + val_fail + type_fail + str_fail);
+    return (fails + kv_fail + tn_fail + val_fail + type_fail + str_fail) ? 1 : 0;
 }
