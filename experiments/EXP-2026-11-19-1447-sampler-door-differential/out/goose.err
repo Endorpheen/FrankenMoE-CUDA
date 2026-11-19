@@ -1,0 +1,88 @@
+FG171_TOP_P goose calls=1 kept=1
+FG171_TOP_P goose calls=100 kept=1
+FG171_DIST goose calls=1 sel=1
+FG171_TOP_P goose calls=200 kept=2
+FG171_DIST goose calls=100 sel=0
+FG171_TOP_P goose calls=300 kept=1
+FG171_DIST goose calls=200 sel=0
+FG_TIME top_p total_ms=0.0 per_call_us=0.1 calls=400
+FG171_TOP_P goose calls=400 kept=4
+FG171_DIST goose calls=300 sel=1
+FG171_DIST goose calls=400 sel=0
+FG171_TOP_P goose calls=500 kept=61
+FG171_DIST goose calls=500 sel=7
+FG171_TOP_P goose calls=600 kept=61
+FG171_DIST goose calls=600 sel=5
+FG171_DIST goose calls=700 sel=107
+FG171_TOP_P goose calls=700 kept=250
+FG171_DIST goose calls=800 sel=41
+FG_TIME top_p total_ms=1.9 per_call_us=2.3 calls=800
+FG171_TOP_P goose calls=800 kept=250
+FG171_TOP_P goose calls=900 kept=1
+FG171_DIST goose calls=900 sel=0
+FG171_TOP_P goose calls=1000 kept=1
+FG171_TOP_P goose calls=1100 kept=1
+FG171_DIST goose calls=1000 sel=0
+FG_TIME top_p total_ms=1.9 per_call_us=1.6 calls=1200
+FG171_TOP_P goose calls=1200 kept=1
+FG171_TOP_P goose calls=1300 kept=1
+FG171_DIST goose calls=1100 sel=0
+FG171_TOP_P goose calls=1400 kept=1
+FG171_TOP_P goose calls=1500 kept=1
+FG171_DIST goose calls=1200 sel=0
+FG_TIME top_p total_ms=3.6 per_call_us=2.2 calls=1600
+FG171_TOP_P goose calls=1600 kept=1
+FG171_TOP_P goose calls=1700 kept=1
+FG171_TOP_P goose calls=1800 kept=2
+FG171_DIST goose calls=1300 sel=0
+FG171_TOP_P goose calls=1900 kept=1
+FG171_DIST goose calls=1400 sel=0
+FG_TIME top_p total_ms=3.6 per_call_us=1.8 calls=2000
+FG171_TOP_P goose calls=2000 kept=2
+FG171_DIST goose calls=1500 sel=0
+FG171_DIST goose calls=1600 sel=0
+FG171_TOP_P goose calls=2100 kept=43
+FG171_DIST goose calls=1700 sel=3
+FG171_TOP_P goose calls=2200 kept=52
+FG171_DIST goose calls=1800 sel=2
+FG171_DIST goose calls=1900 sel=46
+FG171_TOP_P goose calls=2300 kept=109
+FG171_DIST goose calls=2000 sel=40
+FG_TIME top_p total_ms=5.4 per_call_us=2.3 calls=2400
+FG171_TOP_P goose calls=2400 kept=126
+FG171_TOP_P goose calls=2500 kept=1
+FG171_DIST goose calls=2100 sel=0
+FG171_TOP_P goose calls=2600 kept=2
+FG171_DIST goose calls=2200 sel=0
+FG171_TOP_P goose calls=2700 kept=1
+FG171_DIST goose calls=2300 sel=1
+FG_TIME top_p total_ms=5.4 per_call_us=1.9 calls=2800
+FG171_TOP_P goose calls=2800 kept=4
+FG171_DIST goose calls=2400 sel=0
+FG171_DIST goose calls=2500 sel=7
+FG171_TOP_P goose calls=2900 kept=56
+FG171_DIST goose calls=2600 sel=1
+FG171_TOP_P goose calls=3000 kept=58
+FG171_DIST goose calls=2700 sel=4
+FG171_DIST goose calls=2800 sel=2
+FG171_TOP_P goose calls=3100 kept=25
+FG171_DIST goose calls=2900 sel=12
+FG_TIME top_p total_ms=7.0 per_call_us=2.2 calls=3200
+FG171_TOP_P goose calls=3200 kept=35
+FG171_TOP_P goose calls=3300 kept=1
+FG171_DIST goose calls=3000 sel=0
+FG171_TOP_P goose calls=3400 kept=2
+FG171_DIST goose calls=3100 sel=0
+FG171_TOP_P goose calls=3500 kept=1
+FG171_DIST goose calls=3200 sel=0
+FG_TIME top_p total_ms=7.0 per_call_us=2.0 calls=3600
+FG171_TOP_P goose calls=3600 kept=1
+FG171_DIST goose calls=3300 sel=0
+FG171_TOP_P goose calls=3700 kept=3
+FG171_DIST goose calls=3400 sel=0
+FG171_TOP_P goose calls=3800 kept=4
+FG171_DIST goose calls=3500 sel=0
+FG171_TOP_P goose calls=3900 kept=1
+FG171_DIST goose calls=3600 sel=0
+FG_TIME top_p total_ms=8.7 per_call_us=2.2 calls=4000
+FG171_TOP_P goose calls=4000 kept=1

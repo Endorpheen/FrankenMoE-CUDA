@@ -110,3 +110,27 @@ produced, and none of them asked what happens when the caller's buffer is smalle
 `docs/goose-migration/PORT-BUFFER-CONTRACT.md` lists every place the shipped runtime lets the port write into memory it does
 not own, the capacity rule of each, and which one was wrong. The rule it states is the one the crash taught: a door given a
 window of its own knows nothing about the caller's limit, so the host must compare the answer with that limit before copying.
+
+## The sampler doors, on the CPU, against the native stages
+
+`experiments/EXP-2026-11-19-1447-sampler-door-differential/verify.sh` runs a real chain (temperature, top-p, dist) over
+fabricated token arrays - nine thousand cases from five distribution shapes, five sizes, three temperatures, three top-p
+values and forty seeds - twice: once with the doors and once with `GGML_GOOSE_SAMPLER_TOP_P=0`.
+
+```
+compare: cases=9000 selection_mismatches=0 kept_size_mismatches=0 boundary_token_differences=40
+FG171_TOP_P lines with the doors on: 41
+FG171_TOP_P lines with the rollback:  0
+PASS
+```
+
+What the test learned, and what it deliberately does not claim:
+
+- the **selection** is identical on every case, which is the decision;
+- the **kept set** differs by one element on forty near-uniform cases: two correct summations of the same probabilities can
+  cross the 0.95 threshold on different sides. The comparison allows that boundary token and counts it, instead of hiding it
+  behind an order-insensitive hash or failing every run for it;
+- the rollback run proves the door was actually exercised: forty-one marker lines with it, zero without.
+
+Two defects were in the verifier itself and were fixed: the exit code came from a `grep -c` that finds nothing on a passing
+run, so a pass was reported as a failure - the second time this exact mistake appeared in this project's own checks.
