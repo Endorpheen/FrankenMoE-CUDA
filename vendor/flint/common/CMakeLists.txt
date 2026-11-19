@@ -87,6 +87,7 @@ add_library(${TARGET}
     json-schema.cpp
     json-schema.h
     json.cpp
+    json-adapter.cpp
     json.h
     llguidance.cpp
     log.cpp

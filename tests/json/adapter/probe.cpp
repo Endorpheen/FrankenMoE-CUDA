@@ -22,7 +22,7 @@
 // and links the minimal stub rather than the whole ggml runtime.
 extern "C" void ggml_abort(const char *, int, const char *, ...) { std::abort(); }
 #include "nlohmann/json.hpp"
-#include "../adapter/json_adapter.cpp"
+#include "json-adapter.h"
 
 namespace {
 

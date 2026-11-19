@@ -4,6 +4,10 @@
 
 #define JSON_ASSERT GGML_ASSERT
 #include <nlohmann/json.hpp>
+#include "json-adapter.h"
+#include <dlfcn.h>
+#include <cstdlib>
+#include <vector>
 
 #include <iterator>
 #include <new>
@@ -198,10 +202,72 @@ common_json::~common_json() {
     as_json(this).~basic_json();
 }
 
+
+namespace {
+
+// The Goose parser answers from the unit inside libllama; libllama-common reaches it the same way
+// the grammar door does.
+struct fg_sl8  { const void * data; int64_t len; };
+struct fg_sl64 { int64_t * data; int64_t len; };
+using fg_parse_fn = int64_t (*)(fg_sl8, fg_sl64, fg_sl64, fg_sl64, fg_sl64, fg_sl64, fg_sl64,
+                                fg_sl64, fg_sl64, fg_sl64, fg_sl64, fg_sl64, fg_sl64,
+                                fg_sl8, fg_sl64, fg_sl64, fg_sl64, fg_sl64);
+
+fg_parse_fn fg_json_parse_door() {
+    static fg_parse_fn fn = []() -> fg_parse_fn {
+        void * h = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        return h ? reinterpret_cast<fg_parse_fn>(dlsym(h, "json_parse")) : nullptr;
+    }();
+    return fn;
+}
+
+// Opt-in while unproven. Rule 10 wants an accepted improvement on by default and a flag only to
+// disable it; this path is not accepted yet, so the flag is the other way round on purpose and the
+// record in docs/goose-migration/P10-07-JSON-ADAPTER-STATE.md says so.
+bool fg_json_goose_parse_enabled() {
+    static const bool on = []() {
+        const char * v = getenv("FG_JSON_GOOSE_PARSE");
+        return v != nullptr && strcmp(v, "0") != 0;
+    }();
+    return on;
+}
+
+// Returns false when the port cannot answer, so the caller keeps nlohmann's behaviour instead of
+// failing a parse the native path would accept.
+bool fg_json_goose_parse(const std::string & text, nlohmann::ordered_json & out) {
+    const fg_parse_fn fn = fg_json_parse_door();
+    if (!fn) { return false; }
+    const int64_t nodes = (int64_t) text.size() + 64;
+    std::vector<int64_t> jk(nodes, 0), jv(nodes, 0), js(nodes, 0), jl(nodes, 0), jf(nodes, 0), jn(nodes, 0),
+                         jh(nodes, 0), ev(nodes, 0), eko(nodes, 0), ekl(nodes, 0), en(nodes, 0);
+    std::vector<double>  jd(nodes, 0.0);
+    std::vector<char>    sbuf(text.size() + 64, 0);
+    std::vector<int64_t> jkey(nodes, 0), jkl(nodes, 0), jchild(nodes, 0), jst(16, 0);
+    const int64_t rc = fn(fg_sl8{ text.data(), (int64_t) text.size() },
+        fg_sl64{ jk.data(), nodes }, fg_sl64{ jv.data(), nodes }, fg_sl64{ (int64_t *) jd.data(), nodes },
+        fg_sl64{ js.data(), nodes }, fg_sl64{ jl.data(), nodes }, fg_sl64{ jf.data(), nodes },
+        fg_sl64{ jn.data(), nodes },
+        fg_sl64{ jh.data(), nodes }, fg_sl64{ ev.data(), nodes }, fg_sl64{ eko.data(), nodes },
+        fg_sl64{ ekl.data(), nodes }, fg_sl64{ en.data(), nodes },
+        fg_sl8{ sbuf.data(), (int64_t) sbuf.size() - 1 },
+        fg_sl64{ jkey.data(), nodes }, fg_sl64{ jkl.data(), nodes }, fg_sl64{ jchild.data(), nodes },
+        fg_sl64{ jst.data(), 16 });
+    if (rc != 0) { return false; }
+    fg_json_adapter::arrays a{ jk.data(), jv.data(), js.data(), jl.data(), jd.data(), jh.data(),
+                               ev.data(), eko.data(), ekl.data(), en.data(), sbuf.data(), 0 };
+    out = fg_json_adapter::to_tree(a, 0);
+    return true;
+}
+
+} // namespace
+
 common_json common_json::parse(const std::string & text) {
     try {
-        // the assignment moves the parsed tree in, it does not copy
         common_json out;
+        if (fg_json_goose_parse_enabled() && fg_json_goose_parse(text, as_json(&out))) {
+            return out;
+        }
+        // the assignment moves the parsed tree in, it does not copy
         as_json(&out) = ordered_json::parse(text);
         return out;
     } catch (const std::exception & e) {

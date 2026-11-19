@@ -30,7 +30,7 @@ fi
     g++-13 -O2 -std=c++17 -I"$ROOT/vendor/flint/common" \
         -I"$ROOT/vendor/flint/vendor/nlohmann" -I"$ROOT/vendor/flint/vendor" \
         -I"$ROOT/vendor/flint/ggml/include" -I"$ROOT/vendor/flint/include" -I"$ROOT/vendor/flint/src" \
-        "$D/probe.cpp" "$ROOT/vendor/flint/common/json.cpp" -o "$OUT/probe" -ldl || exit 1
+        "$D/probe.cpp" "$ROOT/vendor/flint/common/json.cpp" "$ROOT/vendor/flint/common/json-adapter.cpp" -o "$OUT/probe" -ldl || exit 1
     printf '$ probe %s/libllama.so.0\n' "${BIN#$ROOT/}"
     LD_LIBRARY_PATH="$BIN" "$OUT/probe" "$BIN/libllama.so.0"
 } 2>&1 | tee "$LOG"

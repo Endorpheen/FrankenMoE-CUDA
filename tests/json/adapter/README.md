@@ -2,13 +2,15 @@
 
 **Requirement:** P10-07 - the adapter between the Goose parser's parallel arrays and the
 `common_json` pimpl tree, which the requirement lists as the step before any swap.
-**Produced by:** the P10-07 state note of 2026-11-19; this is the adapter and its gate.
+**Produced by:** the P10-07 state note of 2026-11-19; this is the adapter and its gate. The adapter
+now lives in `vendor/flint/common/json-adapter.cpp` and the test links that same translation unit,
+so the code under test is the code the runtime would use.
 **Tier:** fast - two translation units, no model, no GPU, a few seconds.
 
 ## What it proves
 
 The full path works and matches the reference: parse a text with the Goose door, turn the flat
-arrays into a `common_json` tree (`json_adapter.cpp`), dump that tree with `common_json` itself, and
+arrays into a `common_json` tree (`vendor/flint/common/json-adapter.cpp`), dump that tree with `common_json` itself, and
 compare the bytes with nlohmann's ordered dump of the same text.
 
 Result: `texts=11 compared=11 failures=0`, over nested objects and arrays, key order against
