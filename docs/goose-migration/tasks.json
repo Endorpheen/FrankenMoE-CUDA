@@ -2685,7 +2685,8 @@
         "AVX512/AVX-VNNI/AMX accept paths are synthetic-gated, not executed on real hardware",
         "wire the three decisions into ggml-cpu/backend registry and common paths"
       ],
-      "coverage_doc": "docs/goose-migration/P10-10-COVERAGE.md"
+      "coverage_doc": "docs/goose-migration/P10-10-COVERAGE.md",
+      "evidence_20261119": "State recorded in docs/goose-migration/P10-10-PLATFORMS-STATE.md. The three decisions the requirement names exist and are composed: cpu-features.goose (7 doors, arch64 linux/apple/windows scoring, x86 score, KleidiAI mask and name), backend-select.goose (10 doors, device and registry lookup, init best, filename, exe prefix, search paths, registered ids) and platform-paths.goose (8 doors, separators, cache/config dirs and files, priority, tty colours). NONE has a call site in vendor/flint, runtime/ or integration/. The Apple and Windows variants live in 22 upstream C++ files under vendor/flint/src and ggml/src and cannot run on this Linux host; verified status is therefore: Linux AVX2 the only executed variant (the accepted measurements), AVX512/AVX-VNNI/AMX compile-only and never run on that hardware, Apple and Windows hardware-unavailable, KleidiAI a mask and a name not built or run. Closing needs the three decisions wired where ggml performs the same questions, the cpu-features scoring gated against the native result on this host, and the capability ledger updated with that table. No platform is presented as verified that was not run."
     },
     {
       "id": "P10-11",
