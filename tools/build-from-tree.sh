@@ -31,13 +31,17 @@ fi
 n=0
 for src in "$TREE"/our-src/*.cpp; do
     b=$(basename "$src")
-    g++-13 -O3 -DNDEBUG -fPIC -std=c++17 -I"$TREE/our-src" -I"$TREE/upstream-include" -I"$TREE/upstream-src" -c "$src" -o "$OUT/obj/our-$b.o" &
+    # module-src carries headers the Goose compiler writes for a module (slru-policy.h and others); a
+    # carrier includes them, so the include path must be here and not only on the module compiles below.
+    g++-13 -O3 -DNDEBUG -fPIC -std=c++17 -I"$TREE/our-src" -I"$TREE/upstream-include" -I"$TREE/upstream-src" \
+        -I"$TREE/module-src" -I"$TREE/modules" -c "$src" -o "$OUT/obj/our-$b.o" &
     n=$((n+1)); [ $((n % 4)) -eq 0 ] && wait
 done
 wait
 echo "our sources: $(ls "$OUT/obj"/our-*.o | wc -l)"
 
 MODINC=""
+MODINC="-I$TREE/module-src"
 for d in "$TREE"/module-src/*/; do MODINC="$MODINC -I$d"; done
 # Each module is compiled with ITS OWN experiment directory first. A shared pool of directories lets
 # #include "cp-generated.c" resolve to another experiment's copy - fg243c failed with "too many arguments to
@@ -77,7 +81,7 @@ echo "upstream objects: $(echo $flint | wc -w) of $(ls "$TREE"/flint-objects/*.o
 /usr/bin/c++ -fPIC -O3 -DNDEBUG -shared -Wl,-soname,libllama.so.0 \
     -o "$OUT/libllama.so.0" \
     "$OUT"/obj/our-*.o "$OUT"/obj/mod-*.o "$OUT"/obj/br-*.o \
-    $TREE/extra-objects/*.o $flint \
+    $(ls "$TREE"/extra-objects/*.o 2>/dev/null) $flint \
     -Wl,-rpath,"$TREE/libs" \
     "$TREE/libs/libggml.so.0" "$TREE/libs/libggml-base.so.0" \
     "$TREE/libs/libggml-cpu.so.0" "$TREE/libs/libggml-cuda.so.0"
