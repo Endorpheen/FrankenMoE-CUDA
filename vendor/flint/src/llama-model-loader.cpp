@@ -458,7 +458,13 @@ static int fg_gguf_check(const std::string & fname, const gguf_context & native)
             void * h2 = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
             meta_int = h2 ? reinterpret_cast<fg_gr_meta_int_fn>(dlsym(h2, "gr_meta_int")) : nullptr;
         }
-        if (meta_int) {
+        typedef int64_t (*fg_meta_f32_fn)(fg_sl_u8, fg_sl_i64, fg_sl_i64, int64_t, fg_sl_i64);
+    static fg_meta_f32_fn f32_fn = nullptr;
+    if (!f32_fn) {
+        void * h6 = dlopen("libllama.so.0", RTLD_LAZY | RTLD_NOLOAD);
+        f32_fn = h6 ? reinterpret_cast<fg_meta_f32_fn>(dlsym(h6, "gr_meta_f32_bits")) : nullptr;
+    }
+    if (meta_int) {
             for (int64_t i = 0; i < nk; ++i) {
                 int64_t native_val = 0;
                 switch (gguf_get_kv_type(&native, i)) {
@@ -470,6 +476,16 @@ static int fg_gguf_check(const std::string & fname, const gguf_context & native)
                     case GGUF_TYPE_INT32:  native_val = gguf_get_val_i32(&native, i); break;
                     case GGUF_TYPE_UINT64: native_val = (int64_t) gguf_get_val_u64(&native, i); break;
                     case GGUF_TYPE_INT64:  native_val = gguf_get_val_i64(&native, i); break;
+                    case GGUF_TYPE_BOOL:   native_val = gguf_get_val_bool(&native, i) ? 1 : 0; break;
+                    case GGUF_TYPE_FLOAT32: { ++val_cmp; int64_t bits = 0; fg_sl_i64 fo{ &bits, 1 };
+                        const uint32_t nb = [&]{ float f = gguf_get_val_f32(&native, i); uint32_t u; std::memcpy(&u, &f, 4); return u; }();
+                        if (!f32_fn || f32_fn(s_data, s_state, s_kv, i, fo) != 0 || (uint64_t) bits != (uint64_t) nb) { ++val_bad; }
+                        continue; }
+                    case GGUF_TYPE_FLOAT64: { ++val_cmp; double nd = gguf_get_val_f64(&native, i); float nf = (float) nd;
+                        int64_t bits = 0; fg_sl_i64 fo{ &bits, 1 };
+                        uint32_t nb; std::memcpy(&nb, &nf, 4);
+                        if (!f32_fn || f32_fn(s_data, s_state, s_kv, i, fo) != 0 || (uint64_t) bits != (uint64_t) nb) { ++val_bad; }
+                        continue; }
                     default: continue;
                 }
                 int64_t got = 0;
