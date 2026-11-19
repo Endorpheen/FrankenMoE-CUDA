@@ -102,6 +102,18 @@ ENDPOINT=${APEX_ENDPOINT:-completion}
 [[ "$REQUEST_COUNT" =~ ^[1-9][0-9]*$ ]] || exit 2
 [[ "$PORT" = 9101 ]] || { echo "Apex requires port 9101"; exit 2; }
 [[ -x "$SRV" && -f "$REQUEST" ]] || { echo "missing server or request"; exit 2; }
+# Pre-flight: a benchmark that runs on a build missing an accepted component measures the wrong
+# runtime. This is the check that would have caught the host-registration loss before a single request.
+if [ -z "${APEX_SKIP_COMPONENT_CHECK:-}" ]; then
+    if ! python3 "$(dirname "$0")/check-accepted-components.py" "$SERVER_DIR" >/tmp/apex-components.log 2>&1; then
+        echo "APEX PRE-FLIGHT FAILED: an accepted component is missing from $SERVER_DIR"
+        sed 's/^/  /' /tmp/apex-components.log | tail -8
+        echo "  set APEX_SKIP_COMPONENT_CHECK=1 only for a deliberate control run"
+        exit 6
+    fi
+    echo "[pre-flight] accepted components present: $(grep -c present /tmp/apex-components.log)/$(grep -cE 'present|MISSING' /tmp/apex-components.log)"
+fi
+
 export LD_LIBRARY_PATH="$SERVER_DIR"
 unset LD_PRELOAD
 ARGS=(-m "$MODEL" --alias Apex-35B-V1.0 -c 262144 -ngl all -fit off --cpu-moe
