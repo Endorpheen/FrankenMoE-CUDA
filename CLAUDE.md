@@ -618,8 +618,20 @@ come from Igor directly. For every marked message:
 
     Fixed acceptance profile: Apex-35B-V1.0-Q4_K_M, RTX 4070 12 GiB, 32K input
     and 512 output tokens, context 262144, `-b 4096 -ub 4096 -ngl all -fit off
-    --cpu-moe`, `--moe-cache-mib 4992`; historical references decode ~55.52 and
-    prefill ~2625 tok/s at those settings.
+    --cpu-moe`, `--moe-cache-mib 4992`.
+
+    Current canonical baseline: **EXP-2026-11-19-1298**, decode 62.73 and prefill
+    2948.0 tok/s (medians of nine responses), VRAM 9511 MiB, RSS 20837548 kB,
+    response hash `c2ff42cc1219`. Every comparison is made against it on identical
+    conditions; a differing condition is stated, not assumed away.
+    `docs/goose-migration/APEX-BASELINE.md` holds its provenance and the control
+    that isolates its key feature.
+
+    Historical baseline: EXP-2026-11-16-906, decode 55.52 and prefill 2625 tok/s.
+    EXP1298 is +13.1 % and +12.5 % against it. EXP906 and every earlier record stay
+    in the project history with their artefacts untouched; a new confirmed record
+    becomes the current baseline, and no previous baseline is ever deleted,
+    overwritten or declared invalid.
 
 32. Every change grows the existing cumulative Goose build; it never starts a
     new combination of sources and libraries.

@@ -59,7 +59,9 @@ letting a 20-minute compile discover the problem.
 
 ## Last accepted checkpoint
 
-`candidate-run2` (see `builds/` and the checkpoint history in the ledger).
+**EXP-2026-11-19-1298** - `builds/checkpoint-20261119-EXP1298/`, decode 62.73 and prefill 2948.0 tok/s (medians of
+nine responses), hash `c2ff42cc1219`. Full profile, provenance and the isolating control are in
+`docs/goose-migration/APEX-BASELINE.md`. The earlier `candidate-run2` entry remains below as history.
 
 **Correction (EXP-2026-11-19-1298).** The earlier statement here - "prefill +0.4 %, decode -0.7 %,
 VRAM -1.2 % versus EXP906" - compared two builds of the **same composition**, both compiled from
