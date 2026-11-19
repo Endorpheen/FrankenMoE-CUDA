@@ -23,8 +23,9 @@ tree bridge.
 ## What it does not prove
 
 That the tree can be injected into `common_json`'s own parse path and the swap performed. The
-adapter builds a tree; the consumer still calls nlohmann, and switching it is a production change
-with its own gate (the shadow comparison at `common/json.cpp:205`).
+adapter builds a tree; the consumer still calls nlohmann. The adapter targets `nlohmann::ordered_json`
+directly, because that is what `common_json` holds internally - so the swap at
+`common/json.cpp:205` is an assignment, not a conversion, and still needs its own build gate.
 
 It also does not cover invalid input: `tests/json/door` covers refusal.
 

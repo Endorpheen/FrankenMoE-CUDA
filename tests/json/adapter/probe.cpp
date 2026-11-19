@@ -16,6 +16,7 @@
 #include <vector>
 
 #include "json.h"
+#include "nlohmann/json.hpp"
 
 // common_json's implementation calls ggml_abort for its invariants; this probe never triggers one
 // and links the minimal stub rather than the whole ggml runtime.
@@ -39,7 +40,7 @@ int64_t ev[512], eko[512], ekl[512], en[512], jkey[512], jkl[512], jchild[512], 
 double jd[N];
 char sbuf[4096];
 
-bool goose_tree(const std::string & text, common_json & out) {
+bool goose_tree(const std::string & text, nlohmann::ordered_json & out) {
     std::memset(jk, 0, sizeof jk); std::memset(jv, 0, sizeof jv); std::memset(js, 0, sizeof js);
     std::memset(jl, 0, sizeof jl); std::memset(jf, 0, sizeof jf); std::memset(jn, 0, sizeof jn);
     std::memset(jh, 0, sizeof jh); std::memset(ev, 0, sizeof ev); std::memset(eko, 0, sizeof eko);
@@ -80,7 +81,7 @@ int main(int argc, char ** argv) {
     int failures = 0, compared = 0;
     for (const auto & text : texts) {
         const std::string want = nlohmann::ordered_json::parse(text).dump();
-        common_json tree;
+        nlohmann::ordered_json tree;
         if (!goose_tree(text, tree)) {
             std::printf("Goose refused a text nlohmann accepts: %s\n", text.c_str());
             ++failures;
