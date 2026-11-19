@@ -85,3 +85,4 @@ pid is the server's own, and cleanup verifies the port was released instead of a
 sets still compose and typecheck together. It is not a duplicate of `tools/check.sh fast` - that
 level composes the single cumulative unit and compiles it, while this one names the individual set
 that broke.
+| server | origin-policy | `tests/server/origin-policy` | native origin_is_localhost | P8-12 | fast | 29/29 agree 2026-11-19 |

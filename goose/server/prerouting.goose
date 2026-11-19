@@ -137,8 +137,44 @@ fn is_loopback6(p: u64, from: i64, to: i64) -> i64 {
 // Host extraction equivalent to common_http_parse_url for the accepted inputs:
 // optional scheme, optional userinfo, bracketed IPv6, or host[:port].
 
+// A scheme is required, and it must be http or https, because common_http_parse_url throws on
+// anything else and the native origin_is_localhost turns that throw into false. Without this the port
+// answered true for "localhost:8080" and "ftp://localhost" - inputs the native path rejects - which
+// tests/server/origin-policy caught as four differences on 2026-11-19.
+fn scheme_is_http(o: u64, n: i64) -> i64 {
+    if n < 7 as i64 {
+        return 0 as i64;
+    }
+    // "http://" or "https://"
+    if (ld_u8(o, 0 as u64) as i64) != 104 as i64 {
+        return 0 as i64;
+    }
+    if (ld_u8(o, 1 as u64) as i64) != 116 as i64 {
+        return 0 as i64;
+    }
+    if (ld_u8(o, 2 as u64) as i64) != 116 as i64 {
+        return 0 as i64;
+    }
+    if (ld_u8(o, 3 as u64) as i64) != 112 as i64 {
+        return 0 as i64;
+    }
+    if (ld_u8(o, 4 as u64) as i64) == 58 as i64 {
+        return 1 as i64;                        // "http:"
+    }
+    if (ld_u8(o, 4 as u64) as i64) != 115 as i64 {
+        return 0 as i64;
+    }
+    if (ld_u8(o, 5 as u64) as i64) != 58 as i64 {
+        return 0 as i64;
+    }
+    return 2 as i64;                            // "https:"
+}
+
 fn origin_is_localhost(o: u64, n: i64) -> i64 {
-    // optional scheme: authority starts after the first "://" or at byte 0
+    if scheme_is_http(o, n) == 0 as i64 {
+        return 0 as i64;
+    }
+    // authority starts after the first "://"
     var start: i64 = 0 as i64;
     var p: i64 = 0 as i64;
     var stop: i64 = 0 as i64;
@@ -185,7 +221,13 @@ fn origin_is_localhost(o: u64, n: i64) -> i64 {
 
             while r < e {
                 if (ld_u8(o, r as u64) as i64) == 93 as i64 {
-                    return is_loopback6(o, s + 1 as i64, r);
+                    // A bracketed IPv4 ("http://[127.0.0.1]") is not valid in an Origin header, but
+                    // common_http_parse_url still yields "127.0.0.1" for it and the native function
+                    // answers true, so the port answers true too rather than being quietly stricter.
+                    if is_loopback6(o, s + 1 as i64, r) != 0 as i64 {
+                        return 1 as i64;
+                    }
+                    return is_loopback4(o, s + 1 as i64, r);
                 }
                 r = r + 1 as i64;
             }
@@ -343,3 +385,10 @@ export fn preroute(
     return 0 as i64;
 }
 
+
+// The origin decision on its own, for the gate and for the one-line wiring in server-http.cpp.
+// The body is the same origin_is_localhost above; exporting it changes no decision, and the native
+// three-compare stays as the fallback until tests/server/origin-policy agrees case for case.
+export fn web_origin_is_localhost(o: u64, n: i64) -> i64 {
+    return origin_is_localhost(o, n);
+}
