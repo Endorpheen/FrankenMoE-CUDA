@@ -65,3 +65,35 @@ and api-key doors, now measured on the release itself.
 The tests now take their library from `tests/lib-default.sh` (accepted set first) and exit 77 when the
 door is absent, which is what they do against the release: five of them skip, and none of them passes
 against an artefact nobody accepted.
+
+## What the last step needs, exactly
+
+Established 2026-11-19 by following the call path rather than the plan:
+
+- `vendor/flint/common/json.cpp:247` `fg_json_goose_parse` resolves its door with `fg_json_parse_door()`,
+  which is a `dlsym` for **`json_parse`** in the loaded library. With no door it returns false, and in
+  strict mode that becomes the "declined" the swap test prints.
+- The door is exported by `goose/json/json-parser.goose:977`, whose only extern is
+  `gs_json_strtod` - the host primitive that `integration/goose-standalone/json-strtod-provider.c`
+  provides.
+- The adapter half (`fg_json_adapter::to_tree`) is C++ and lives in `libllama-common`; it is already
+  linked in path A's build.
+
+So a build carries the JSON path only when it has all three: the adapter (yes), the Goose module
+`json/json-parser.goose`, and a bridge that provides `gs_json_strtod` plus the module's init entry.
+`build.py` looks for a bridge under `integration/<module>/source/bridge.c` named after the module's
+`_enabled` symbol; `json-strtod-provider.c` provides the primitive but no init, so it cannot serve as
+that bridge on its own.
+
+The concrete step, for whoever does it with a build to verify:
+
+1. add a bridge next to `json-strtod-provider.c` that includes the generated host and exports
+   `fg<NNN>_goose_init` (the same shape as `fg-unicode-gpt2-bridge.c`);
+2. add the pair to `_GOOSE_PAIRS` in `runtime/reconstructed/build.py`:
+   `('goose/json/json-parser.goose', 'integration/.../fg-json-bridge.c', 'fg-json', 'fg_json_goose_init')`;
+3. rebuild path A and run `bash tests/json/swap/run.sh <build>/run` - mode 2 must stop saying
+   "declined" and mode 3 must still refuse without the door;
+4. only then set `FG_JSON_GOOSE_PARSE` as the default, and record the run that proved it.
+
+Not done here on purpose: a new C bridge is debt under rule 17, and creating one without a build to
+verify it would be exactly the unverified claim this migration keeps paying for.
