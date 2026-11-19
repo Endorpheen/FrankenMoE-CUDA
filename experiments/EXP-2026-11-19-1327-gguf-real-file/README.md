@@ -95,6 +95,17 @@ Type, dimension count, every extent, and the offset relative to the data section
 the port what that tensor is. Recorded as an interface gap rather than filled with a new door invented for the
 occasion.
 
+## Tensor sizes
+
+The writer side computes a tensor's byte count from its type and extents (`s3_tensor_size`). Compared with
+`ggml_row_size` x extents for every tensor of the model:
+
+```
+tensor sizes: 753/753 equal
+```
+
+That covers every quantised type present in this file, not just the common one.
+
 ## The harness lied once more, and the tell was familiar
 
 The array block did not appear in the output at all. The compile had **failed** on a `void*` dereference, so the run
