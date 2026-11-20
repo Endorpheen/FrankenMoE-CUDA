@@ -26,6 +26,13 @@ sed -n '/^extern "fg176r_ld_f32"/p; /^extern "fg176r_st_f16"/p; /^extern "fg176r
     "$ROOT/goose/cuda/goose-cuda-set-rows/device.goose" |
     sed 's/^fn fg176r_quant_q4_0(/export fn fg176r_quant_q4_0(/' > "$OUT/q4-set-rows.goose"
 cp "$ROOT/goose/cuda/standalone-vector.goose" "$OUT/vector.goose"
+sed -n '/^fn cv_offset(/,/^}/p' "$ROOT/goose/cuda/standalone-vector.goose" |
+    sed 's/cv_offset/rms_offset/g; s/cv_word/rms_word/g' > "$OUT/rms-reference.goose"
+sed -n '/^struct F4 {/,/^}/p; /^extern "fg168_\(load\|store\|load4\|store4\|shuffle\|barrier\|rsqrt\|fma\)"/p;
+        /^fn warp(/,/^}/p; /^fn block_sum(/,/^}/p; /^fn rms_row(/,/^}/p' \
+    "$ROOT/goose/cuda/goose-cuda-normalization/device.goose" |
+    sed 's/\bF4\b/RmsVec/g; s/store(shared,/rms_shared_store(shared,/; s/load(shared,/rms_shared_load(shared,/' >> "$OUT/rms-reference.goose"
+cat "$ROOT/goose/cuda/standalone-rms-reference.goose" >> "$OUT/rms-reference.goose"
 sed -n '/^fn silu(/,/^}/p; /^fn sigmoid(/,/^}/p; /^fn softplus(/,/^}/p' \
     "$ROOT/goose/cpu/goose-cpu-backend-api/pointwise.goose" >> "$OUT/vector.goose"
 cp "$ROOT/goose/cuda/standalone-rope.goose" "$OUT/rope.goose"
@@ -60,7 +67,7 @@ sed -n '/^fn scale_min(/,/^}/p' "$ROOT/goose/cuda/goose-cuda-dequant-q4k/device.
 sed -n '/^fn q4_mmq_nibbles(/,/^}/p' "$ROOT/goose/cuda/goose-mmq-load-q4k/device.goose" >> "$OUT/mmq.goose"
 sed -n '/^fn vsub4(/,/^}/p; /^fn q6_mmq_bytes(/,/^}/p' \
     "$ROOT/goose/cuda/goose-mmq-load-q6k/device.goose" >> "$OUT/mmq.goose"
-for module in q4k q6k matmul q4-attention gdn gdn-mma q4-set-rows vector rope ssm-conv routing transform fwht moe-weighted mmq-quant mmq dense-mma flash-mma flash-load flash-stage; do
+for module in q4k q6k matmul q4-attention gdn gdn-mma q4-set-rows vector rms-reference rope ssm-conv routing transform fwht moe-weighted mmq-quant mmq dense-mma flash-mma flash-load flash-stage; do
     "$GOOSE" --standalone -o "$OUT/$module.c" --header "$OUT/$module.h" "$OUT/$module.goose"
     python3 - "$OUT" "$module" <<'PY'
 from pathlib import Path
@@ -79,7 +86,7 @@ if module in ("q4-attention", "gdn", "rope", "ssm-conv", "fwht", "routing"):
     types = "\n".join(line for line in types.splitlines()
                       if not line.endswith(excluded))
     fragment = types + "\n" + fragment
-if module in ("gdn-mma", "flash-mma"):
+if module in ("gdn-mma", "flash-mma", "rms-reference"):
     types = source.split("/* ---- types ---- */", 1)[1].split("/* ---- data ---- */", 1)[0]
     types = "\n".join(line for line in types.splitlines()
                       if not line.endswith(("gs_rhdr;", "gs_rref;", "gs_pref;", "sl_u8;", "a8_f32;")))

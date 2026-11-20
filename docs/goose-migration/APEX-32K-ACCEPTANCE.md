@@ -62,6 +62,10 @@ Functional qualification runs before memory and speed acceptance.
    ID and probability parity fail. The first differing output is at
    index 1 (1716 versus 198). See the
    [full diagnostic](CUDA-PARITY-EXP1476.md#ten-change-apex-32k512-diagnostic).
+   The short layer comparison now matches the first RMSNorm bitwise.
+   The next observed mismatch is in QKV, and five first-layer expert
+   slots still differ. See the
+   [tensor comparison](CUDA-PARITY-EXP1476.md#reference-rms-at-the-first-tensor-boundary).
    Gates 3 and 4 qualify the later speed comparison.
 7. [ ] **Accept memory** (requires 5 and 6). Record per-process RSS and
    its high-water mark, model page residency before and after the

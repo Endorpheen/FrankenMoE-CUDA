@@ -936,6 +936,64 @@ Response SHA-256: `18571316dd6445ed2318a0abff9236defe446dd827e0d3faeec282748a45e
 Validation: `validation.json` in the raw run directory.
 Nsight report SHA-256: `8bc18131ceafb8828efed2820a03504ced1e23bda9677ee00d6be8e6b1e52fd3`.
 
+## Reference RMS at the first tensor boundary
+
+EXP-2026-11-20-1545 connects `goose-cuda-normalization/device.goose`
+to the standalone graph with `GOOSE_RMS_REFERENCE=1`. For the first
+Apex layer, EXP-1476 (`e7c9155a01938b1825189240e7088620c6c7cd85`)
+dispatches `rms_norm_f32<512,1,...>` from `norm.cu`. It reduces F32
+squares across a block and applies `rsqrtf`. The standalone vector
+kernel used an F64 warp sum and reciprocal square root via division.
+The selected Goose kernel uses the existing F32 block reduction and
+`rsqrt.approx`. CPU and CUDA fixtures exercised weighted and unweighted
+RMS. Compute Sanitizer reported zero errors on the CUDA fixture.
+
+The reference observer captured the first 124 IDs of the 128-ID
+request before its expert-cache assertion interrupted the diagnostic
+run. Goose evaluated those same 124 IDs at physical 4096/4096.
+The sampled input embeddings already matched bitwise. The following
+comparison uses tensors captured before the assertion.
+
+| First-layer boundary | Earlier Goose | Reference RMS enabled |
+|---|---:|---:|
+| `attn_norm` differing F32 values (253,952 total) | 113,691 | **0** |
+| `attn_norm` max absolute error | 3.8146973e-6 | **0** |
+| QKV max absolute error | 1.3351440e-5 | 1.3351440e-5 |
+| QKV relative L2 error | 1.91e-7 | 1.811958e-7 |
+| GDN output relative L2 error | 8.4100463e-5 | 6.0680383e-5 |
+| Differing first-layer expert ID slots (992 total) | 5 | 5 |
+
+The next observed mismatch is at flat index 1 of
+`linear_attn_qkv_mixed-0`. Both short 124/1 diagnostics selected ID
+1142. On a sequential 4096/1 pair with MMQ, GDN MMA, Flash MMA and
+Dense MMA enabled, the checkpoint path took 14.333 s (285.779 tok/s)
+and selected ID 280. The reference RMS path took 14.350 s
+(285.431 tok/s) and selected ID 37972. Both recorded 8,582 MiB
+sampled process VRAM and zero process swap. RSS high-water was
+23,884,492 versus 23,884,780 KiB. Nsight recorded 191 launches of
+`goose_rms_reference` taking 44.766 ms on the device. Keep this
+selector opt-in while response correctness remains open.
+
+- Reference tensors: `/home/end0/AI/LlamaServer/franken-apex-reference-layers.e5xq75bf/tensors`.
+- Earlier Goose tensors: `/home/end0/AI/LlamaServer/franken-apex-goose-first-layer-layers.9kozm1qk/tensors`.
+- Reference RMS tensors: `/home/end0/AI/LlamaServer/franken-apex-goose-reference-rms-layers.g4j3vpm_/tensors`.
+- Short pair: `/home/end0/AI/LlamaServer/franken-goose-rms-reference.rTDLHd/cuda-matrix-dense-both.ezw_9pb6` and `cuda-matrix-dense-both.af1q54gb` in the same build directory. Executable SHA-256 `33de2cc3761eae47c4044acb01d97ffb6811ec30a8aa9bcff6c6fd7fecb0e6b1`.
+
+### Existing device code and standalone selection
+
+This wiring audit uses the standalone build manifest, dispatch
+sources and the recorded full Apex trace above. Mechanism statuses
+stay in the main map.
+
+| Mechanism | Existing Goose source | Observed standalone path and missing link |
+|---|---|---|
+| 5–6, Q4_K/Q6_K MMVQ | `goose-cuda-mmvq-q4k/device.goose`, `goose-cuda-mmvq-q6k/device.goose` | The build omits these modules. Decode launches `goose_quantized_matmul` (261,118 launches, 10.031 s in the decode-dominated region). Bind the packed input and select MMVQ for dense and indexed short shapes. |
+| 9, MoE grouping | `goose-cuda-mm-ids/{device,host}.goose` | Standalone groups matrix planes on the host and uses shared Q8 rows in MMQ. The device grouping/scatter source needs its own dispatch and route-layout verification. |
+| 13, Flash decode | `goose-cuda-flash-attention/vector-device.goose` | The current Flash MMA selector covers prefill. Decode ran 5,110 scalar Q4 attention tiles totaling 7.688 s. Wire the vector path to the live Q4 KV layout and output merge. |
+| 15, Flash Stream-K | `goose-cuda-flash-attention/{mma-entry-device,mask-fixups-device}.goose` | The prefill path assigns a complete tile per CTA. The reference uses 80 general and 10 uniform Stream-K fixup launches. The current launch and workspace layout still need split ranges and fixup. |
+| 18, long SSM convolution | `goose-cuda-ssm-convolution/device.goose::ssm_conv_long` | The standalone build extracts `ssm_conv_serial`. Prefill uses the serial convolution with fused SiLU. Bind the long-token layout and match history, output and activation. |
+| 19, FP32 RMS | `goose-cuda-normalization/device.goose::rms_row` | Connected through the opt-in selector above. Verified bitwise on the first Apex norm. |
+
 ## Kernel coverage
 
 The exact EXP-1476 request passed content, ID and probability

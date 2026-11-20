@@ -45,7 +45,7 @@ static struct {
     void * library;
     Context context;
     Module module;
-    Function kernel, attention_tiles, attention_merge, gdn, q4_rows, vector;
+    Function kernel, attention_tiles, attention_merge, gdn, q4_rows, vector, rms_reference;
     Function mmq_pack, mmq_pack_shared, mmq_matrix, dense_mma, gdn_mma, flash_mma, flash_stage;
     Function mmq_stream, mmq_stream_fixup;
     Function rope_phases, rope_apply, ssm_conv;
@@ -180,6 +180,8 @@ static void init_cuda(void) {
     const bool gdn_mma = gdn_setting && strcmp(gdn_setting, "1") == 0;
     const char * flash_setting = getenv("GOOSE_FLASH_MMA");
     const bool flash_mma = flash_setting && strcmp(flash_setting, "1") == 0;
+    const char * rms_setting = getenv("GOOSE_RMS_REFERENCE");
+    const bool rms_reference = rms_setting && strcmp(rms_setting, "1") == 0;
     const bool mma_image = mmq || dense_mma || gdn_mma || flash_mma;
     if (mma_image) {
         enum { compute_capability_major = 75 };
@@ -216,6 +218,7 @@ static void init_cuda(void) {
         }
         if (error == 0) error = cuda.function_get(&cuda.q4_rows, cuda.module, "goose_set_q4_rows");
         if (error == 0) error = cuda.function_get(&cuda.vector, cuda.module, "goose_vector_ops");
+        if (error == 0 && rms_reference) error = cuda.function_get(&cuda.rms_reference, cuda.module, "goose_rms_reference");
         if (error == 0) error = cuda.function_get(&cuda.rope_phases, cuda.module, "goose_rope_phases");
         if (error == 0) error = cuda.function_get(&cuda.rope_apply, cuda.module, "goose_rope_apply");
         if (error == 0) error = cuda.function_get(&cuda.ssm_conv, cuda.module, "goose_ssm_conv");
@@ -1310,6 +1313,10 @@ static int vector_input(sl_u8 data, struct device_buffer * staging, DevicePtr * 
     return 0;
 }
 
+static bool vector_aligned(uint64_t base, const int64_t * stride) {
+    return (base | (uint64_t) stride[1] | (uint64_t) stride[2] | (uint64_t) stride[3]) % 16 == 0;
+}
+
 int64_t fg_cuda_vector(sl_i64 config, sl_u8 x, sl_u8 y, sl_u8 out, float param0, float param1) {
     if (config.len != 26 || config.data[24] <= 0 || config.data[24] > INT_MAX ||
         (config.data[25] != 32 && config.data[25] != 128) ||
@@ -1336,10 +1343,26 @@ int64_t fg_cuda_vector(sl_i64 config, sl_u8 x, sl_u8 y, sl_u8 out, float param0,
     if (error == 0) {
         error = activation_input((sl_u8) {plan, sizeof(plan)}, &cuda.attention_config, &staged[2]);
     }
-    void * args[] = {&staged[0], &staged[1], &output, &staged[2], &param0, &param1};
     if (error == 0) {
-        error = cuda.launch(cuda.vector, (unsigned) config.data[24], 1, 1,
-            (unsigned) config.data[25], 1, 1, 0, NULL, args, NULL);
+        enum { rms_operation = 11 };
+        const int64_t width = plan[2];
+        const bool reference = cuda.rms_reference && plan[0] == rms_operation && width <= INT_MAX &&
+            plan[10] == 4 && (y.len == 0 || plan[18] == 4);
+        if (reference) {
+            const bool vec = width % 4 == 0 && width <= 16384 && output % 16 == 0 &&
+                vector_aligned((uint64_t) (uintptr_t) x.data, config.data + 10) &&
+                vector_aligned(staged[0], plan + 10) && (y.len == 0 || (plan[14] == width &&
+                    vector_aligned((uint64_t) (uintptr_t) y.data, config.data + 18) && vector_aligned(staged[1], plan + 18)));
+            const int32_t vectors = vec ? (width <= 4096 ? 1 : 4) : 0;
+            const unsigned lanes = vec ? (width <= 128 ? 32 : width <= 512 ? 128 : width <= 1024 ? 256 :
+                width <= 2048 ? 512 : 1024) : (width < 1024 ? 256 : 1024);
+            void * args[] = {&staged[0], &staged[1], &output, &staged[2], &param0, (void *) &vectors};
+            error = cuda.launch(cuda.rms_reference, (unsigned) plan[24], 1, 1, lanes, 1, 1, 0, NULL, args, NULL);
+        } else {
+            void * args[] = {&staged[0], &staged[1], &output, &staged[2], &param0, &param1};
+            error = cuda.launch(cuda.vector, (unsigned) config.data[24], 1, 1,
+                (unsigned) config.data[25], 1, 1, 0, NULL, args, NULL);
+        }
         if (error == 0) error = activation_publish(host, out.len, output, false);
     }
     const int popped = finish_context();

@@ -344,6 +344,7 @@ static double fg_vector_shuffle_f64(double value, int32_t delta) {
 }
 
 #include "vector-device.h"
+#include "cuda-rms-reference.cl"
 
 __kernel void goose_vector_ops(__global uint8_t * x, __global uint8_t * y,
     __global uint8_t * out, __global int64_t * cfg, float param0, float param1) {
