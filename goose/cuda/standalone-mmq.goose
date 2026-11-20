@@ -10,6 +10,7 @@ extern "fg_device_mul_rn" fn mmq_mul(a: f32, b: f32) -> f32;
 extern "fg_mmq_mma32" fn mmq_mma32(a0: u32, a1: u32, a2: u32, a3: u32, b0: u32, b1: u32) -> MmqDot;
 extern "fg_mmq_mma16" fn mmq_mma16(a0: u32, a1: u32, b0: u32) -> MmqDot;
 extern "fg182d_ld_u8" fn ld_u8(src: u64, byte: u64) -> u32;
+extern "fg_mmq_index" fn mmq_index(address: u64, index: i64) -> u64;
 
 fn mmq_q4_fragment(weight_block: u64, group: i64, lane_word: i64) -> u32 {
     let addr = weight_block + ((16 + 32 * (group / 2) + 4 * lane_word) as u64);
@@ -37,7 +38,8 @@ fn mmq_q6_acc(sum: f32, dot: i32, scale: i32, d: f32, activation: f32) -> f32 {
 // PTX ISA m16n8k32 and m16n8k16 lane fragments. Each warp writes one
 // 16-row by 8-route tile. Padded fragment lanes still enter every MMA.
 export fn fg_device_mmq(weights: u64, q: u64, out: u64, row_stride: i64, extent: i64, kind: i64,
-    row: i64, rows: i64, route_count: i64, lane: i64, out0: u64, out1: u64) {
+    row: i64, rows: i64, route_count: i64, lane: i64, out0: u64, out1: u64,
+    k_begin: i64, k_end: i64, output_row_base: i64) {
     let group_id = lane / 4;
     let thread_id = lane % 4;
     let row0 = row + group_id;
@@ -55,7 +57,7 @@ export fn fg_device_mmq(weights: u64, q: u64, out: u64, row_stride: i64, extent:
     var sum2: f32 = 0.0;
     var sum3: f32 = 0.0;
     if kind == 12 {
-        for weight_block in extent {
+        for weight_block in k_begin .. k_end {
             let a = w0 + ((144 * weight_block) as u64);
             let b = w1 + ((144 * weight_block) as u64);
             let da = mmq_half(a);
@@ -82,7 +84,7 @@ export fn fg_device_mmq(weights: u64, q: u64, out: u64, row_stride: i64, extent:
             }
         }
     } else {
-        for weight_block in extent {
+        for weight_block in k_begin .. k_end {
             let a = w0 + ((210 * weight_block) as u64);
             let b = w1 + ((210 * weight_block) as u64);
             let d0 = mmq_half(a + 208);
@@ -106,11 +108,83 @@ export fn fg_device_mmq(weights: u64, q: u64, out: u64, row_stride: i64, extent:
         }
     }
     if col0 < route_count {
-        if row0 < rows { mmq_store(out + out0 + ((4 * row0) as u64), sum0); }
-        if row1 < rows { mmq_store(out + out0 + ((4 * row1) as u64), sum2); }
+        if row0 < rows { mmq_store(out + out0 + ((4 * (row0 - output_row_base)) as u64), sum0); }
+        if row1 < rows { mmq_store(out + out0 + ((4 * (row1 - output_row_base)) as u64), sum2); }
     }
     if col1 < route_count {
-        if row0 < rows { mmq_store(out + out1 + ((4 * row0) as u64), sum1); }
-        if row1 < rows { mmq_store(out + out1 + ((4 * row1) as u64), sum3); }
+        if row0 < rows { mmq_store(out + out1 + ((4 * (row0 - output_row_base)) as u64), sum1); }
+        if row1 < rows { mmq_store(out + out1 + ((4 * (row1 - output_row_base)) as u64), sum3); }
+    }
+}
+
+// Stream-K divides the flattened output-tile/K-block range among workers.
+// Only the worker finishing a tile writes the output. Earlier fragments
+// use the worker's private 64-row by 8-route slot.
+const MMQ_STREAM_TILE_BYTES: i64 = 64 * 8 * 4;
+
+export fn fg_device_mmq_stream(weights: u64, packed: u64, out: u64, jobs: u64, tiles: u64, fixup: u64,
+    stride: i64, extent: i64, kind: i64, rows: i64, first: i64, first_route: i64,
+    words: i64, count: i64, worker: i64, workers: i64, thread: i64) {
+    let total = (1 + (rows - 1) / 64) * count * extent;
+    var at = worker * total / workers;
+    let stop = (worker + 1) * total / workers;
+    let lane = thread % 32;
+    let col0 = 2 * (lane % 4);
+    let col1 = col0 + 1;
+    while at < stop {
+        let tile = at / extent;
+        let row_base = (tile / count) * 64;
+        let row = row_base + 16 * (thread / 32);
+        let kb = at % extent;
+        let steps = if stop - at < extent - kb { stop - at } else { extent - kb };
+        let end = kb + steps;
+        if row < rows {
+            let plan = (first + tile % count) * 3;
+            let route = mmq_index(tiles, plan) as i64;
+            let routes = mmq_index(tiles, plan + 1) as i64;
+            let weight = weights + mmq_index(tiles, plan + 2);
+            let q = packed + (((route - first_route) * 288 * extent) as u64);
+            if end == extent {
+                let out0 = if col0 < routes { mmq_index(jobs, (route + col0) * words + 1) } else { 0 };
+                let out1 = if col1 < routes { mmq_index(jobs, (route + col1) * words + 1) } else { 0 };
+                fg_device_mmq(weight, q, out, stride, extent, kind, row, rows, routes, lane, out0, out1, kb, end, 0);
+            } else {
+                let partial = fixup + ((worker * MMQ_STREAM_TILE_BYTES) as u64);
+                fg_device_mmq(weight, q, partial, stride, extent, kind, row, rows, routes, lane,
+                    (col0 * 256) as u64, (col1 * 256) as u64, kb, end, row_base);
+            }
+        }
+        at += steps;
+    }
+}
+
+export fn fg_device_mmq_fixup(out: u64, jobs: u64, tiles: u64, fixup: u64, extent: i64, rows: i64,
+    first: i64, words: i64, count: i64, worker: i64, workers: i64, thread: i64) {
+    let total = (1 + (rows - 1) / 64) * count * extent;
+    let begin = worker * total / workers;
+    let end = (worker + 1) * total / workers;
+    let tile = begin / extent;
+    let tile_start = tile * extent;
+    if begin == tile_start || end < tile_start + extent { return; }
+    let plan = (first + tile % count) * 3;
+    let route = mmq_index(tiles, plan) as i64;
+    let count_routes = mmq_index(tiles, plan + 1) as i64;
+    let row_base = (tile / count) * 64;
+    var item = thread;
+    while item < count_routes * 64 {
+        let row = row_base + item % 64;
+        if row < rows {
+            var sum: f32 = 0.0;
+            var previous = worker - 1;
+            while previous >= 0 {
+                sum += mmq_float(fixup + ((previous * MMQ_STREAM_TILE_BYTES + item * 4) as u64));
+                if previous * total / workers <= tile_start { break; }
+                previous -= 1;
+            }
+            let position = mmq_index(jobs, (route + item / 64) * words + 1);
+            let address = out + position + ((row * 4) as u64);
+            mmq_store(address, mmq_float(address) + sum);
+        }
+        item += 128;
     }
 }

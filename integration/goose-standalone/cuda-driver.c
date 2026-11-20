@@ -46,10 +46,11 @@ static struct {
     Module module;
     Function kernel, attention_tiles, attention_merge, gdn, q4_rows, vector;
     Function mmq_pack, mmq_matrix, dense_mma, gdn_mma, flash_mma, flash_stage;
+    Function mmq_stream, mmq_stream_fixup;
     Function rope_phases, rope_apply, ssm_conv;
     Function route_reduce, route_sort, route_gather, blit, fwht, moe_weighted;
     struct device_buffer input, output, weight, jobs;
-    struct device_buffer mmq_packed, mmq_tiles;
+    struct device_buffer mmq_packed, mmq_tiles, mmq_partials;
     struct device_buffer attention_value, attention_scratch, attention_config;
     struct device_buffer gdn_beta;
     struct device_buffer activations;
@@ -58,7 +59,7 @@ static struct {
     struct device_buffer state;
     sl_i64 state_ranges;
     struct expert_cache experts;
-    int status;
+    int status, multiprocessors;
     int (*init)(unsigned);
     int (*device_get)(int *, int);
     int (*device_attribute)(int *, int, int);
@@ -97,6 +98,8 @@ static _Thread_local DevicePtr matrix_input, matrix_output;
 static _Thread_local uint64_t cuda_matrices;
 static _Thread_local uint64_t cuda_matrix_launches, cuda_cached_projections;
 static _Thread_local uint64_t cuda_mmq_projections;
+static _Thread_local uint64_t cuda_mmq_stream_windows;
+static _Thread_local uint64_t cuda_mmq_fixups;
 static _Thread_local uint64_t cuda_dense_mma;
 static _Thread_local uint64_t cuda_f32_matrices;
 static _Thread_local int cuda_matrix_kind;
@@ -162,7 +165,9 @@ static void init_cuda(void) {
     if (cuda.init(0) != 0 || cuda.device_get(&device, 0) != 0) return;
     cuda.status = -1;
     const char * setting = getenv("GOOSE_MMQ");
-    const bool mmq = setting && strcmp(setting, "1") == 0;
+    const char * stream_setting = getenv("GOOSE_MMQ_STREAM_K");
+    const bool stream_k = stream_setting && strcmp(stream_setting, "1") == 0;
+    const bool mmq = stream_k || (setting && strcmp(setting, "1") == 0);
     const char * dense_setting = getenv("GOOSE_DENSE_MMA");
     const bool dense_mma = dense_setting && strcmp(dense_setting, "1") == 0;
     const char * gdn_setting = getenv("GOOSE_GDN_MMA");
@@ -179,12 +184,18 @@ static void init_cuda(void) {
             return;
         }
     }
+    if (stream_k) {
+        enum { multiprocessor_count = 16 };
+        if (cuda.device_attribute(&cuda.multiprocessors, multiprocessor_count, device) != 0 || cuda.multiprocessors <= 0) return;
+    }
     int error = cuda.create(&cuda.context, 0, device);
     if (error == 0) {
         error = cuda.module_load(&cuda.module, mma_image ? goose_cuda_mmq_image : goose_cuda_image);
         if (error == 0) error = cuda.function_get(&cuda.kernel, cuda.module, "goose_quantized_matmul");
         if (error == 0 && mmq) error = cuda.function_get(&cuda.mmq_pack, cuda.module, "goose_mmq_pack_q8");
         if (error == 0 && mmq) error = cuda.function_get(&cuda.mmq_matrix, cuda.module, "goose_mmq_matmul");
+        if (error == 0 && stream_k) error = cuda.function_get(&cuda.mmq_stream, cuda.module, "goose_mmq_stream");
+        if (error == 0 && stream_k) error = cuda.function_get(&cuda.mmq_stream_fixup, cuda.module, "goose_mmq_stream_fixup");
         if (error == 0 && dense_mma) error = cuda.function_get(&cuda.dense_mma, cuda.module, "goose_dense_mma");
         if (error == 0) error = cuda.function_get(&cuda.attention_tiles, cuda.module, "goose_q4_attention_tiles");
         if (error == 0) error = cuda.function_get(&cuda.attention_merge, cuda.module, "goose_q4_attention_merge");
@@ -789,6 +800,26 @@ int64_t fg_cuda_begin(uint64_t input, int64_t input_bytes, uint64_t output, int6
     return -1;
 }
 
+static int launch_mmq_stream(DevicePtr weight, uint64_t stride, int extent, int kind, int rows, int first,
+                            int first_route, int job_words, int batch, int workers) {
+    const int64_t outputs = (int64_t) (1 + (rows - 1) / 64) * batch;
+    const bool fixup = outputs % workers != 0;
+    int error = fixup ? reserve(&cuda.mmq_partials, (size_t) workers * 64 * 8 * sizeof(float)) : 0;
+    if (error != 0) return error;
+    void * args[] = {&weight, &cuda.mmq_packed.address, &matrix_output, &cuda.jobs.address, &cuda.mmq_tiles.address,
+        &cuda.mmq_partials.address, &stride, &extent, &kind, &rows, &first, &first_route, &job_words, &batch};
+    error = cuda.launch(cuda.mmq_stream, (unsigned) workers, 1, 1, 128, 1, 1, 0, NULL, args, NULL);
+    if (error != 0) return error;
+    ++cuda_mmq_stream_windows;
+    if (fixup) {
+        void * merge[] = {&matrix_output, &cuda.jobs.address, &cuda.mmq_tiles.address, &cuda.mmq_partials.address,
+            &extent, &rows, &first, &job_words, &batch};
+        error = cuda.launch(cuda.mmq_stream_fixup, (unsigned) workers, 1, 1, 128, 1, 1, 0, NULL, merge, NULL);
+        if (error == 0) ++cuda_mmq_fixups;
+    }
+    return error;
+}
+
 static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
                       int rows, sl_i64 jobs, int job_words) {
     enum { staging_budget = 16 * 1024 * 1024, routes_per_tile = 8 };
@@ -832,8 +863,13 @@ static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
         error = cuda.launch(cuda.mmq_pack, (unsigned) (2 * extent), routes, 1,
                             32, 1, 1, 0, NULL, pack_args, NULL);
         if (error == 0) {
-            error = cuda.launch(cuda.mmq_matrix, 1u + ((unsigned) rows - 1) / 64, (unsigned) batch, 1,
-                                128, 1, 1, 0, NULL, matrix_args, NULL);
+            const int workers = cuda.mmq_stream ? (int) fg143_mmq_stream_workers(rows, batch, extent, cuda.multiprocessors) : 0;
+            if (workers > 0) {
+                error = launch_mmq_stream(weight, stride, extent, kind, rows, first, first_route, job_words, batch, workers);
+            } else {
+                error = cuda.launch(cuda.mmq_matrix, 1u + ((unsigned) rows - 1) / 64, (unsigned) batch, 1,
+                                    128, 1, 1, 0, NULL, matrix_args, NULL);
+            }
             if (error == 0) ++cuda_matrix_launches;
         }
         first += batch;
@@ -945,6 +981,12 @@ uint64_t fg_cuda_take_mmq(void) {
     const uint64_t count = cuda_mmq_projections;
     cuda_mmq_projections = 0;
     return count;
+}
+
+void fg_cuda_take_mmq_stream(uint64_t * windows, uint64_t * fixups) {
+    *windows = cuda_mmq_stream_windows;
+    *fixups = cuda_mmq_fixups;
+    cuda_mmq_stream_windows = cuda_mmq_fixups = 0;
 }
 
 uint64_t fg_cuda_take_dense_mma(void) {

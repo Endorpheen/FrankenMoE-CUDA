@@ -7,6 +7,10 @@ static uint32_t fg_mmq_word(uint64_t address) {
     return (uint32_t) halfwords[0] | ((uint32_t) halfwords[1] << 16);
 }
 
+static uint64_t fg_mmq_index(uint64_t address, int64_t index) {
+    return ((__global const uint64_t *) address)[index];
+}
+
 static uint16_t mmq_half_bits(float value) {
     uint16_t bits;
     __asm__("cvt.rn.f16.f32 %0, %1;" : "=h"(bits) : "f"(value));
@@ -104,5 +108,29 @@ __kernel void goose_mmq_matmul(__global const uint8_t * weights, __global const 
     const uint64_t out0 = col < count ? jobs[(route + col) * job_words + 1] : 0;
     const uint64_t out1 = col + 1 < count ? jobs[(route + col + 1) * job_words + 1] : 0;
     fg_device_mmq_g((uint64_t) weights + tiles[at + 2], (uint64_t) packed + (route - first_route) * 288 * extent,
-        (uint64_t) output, stride, extent, kind, row, rows, count, tid % 32, out0, out1);
+        (uint64_t) output, stride, extent, kind, row, rows, count, tid % 32, out0, out1, 0, extent, 0);
+}
+
+__kernel void goose_mmq_stream(__global const uint8_t * weights, __global const uint8_t * packed,
+    __global uint8_t * output, __global const uint64_t * jobs, __global const uint64_t * tiles,
+    __global float * fixup, uint64_t stride, int32_t extent, int32_t kind, int32_t rows,
+    int32_t first, int32_t first_route, int32_t job_words, int32_t count) {
+    uint32_t worker, workers, thread;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(worker));
+    __asm__("mov.u32 %0, %%nctaid.x;" : "=r"(workers));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
+    fg_device_mmq_stream_g((uint64_t) weights, (uint64_t) packed, (uint64_t) output,
+        (uint64_t) jobs, (uint64_t) tiles, (uint64_t) fixup, stride, extent, kind, rows, first,
+        first_route, job_words, count, worker, workers, thread);
+}
+
+__kernel void goose_mmq_stream_fixup(__global float * output, __global const uint64_t * jobs,
+    __global const uint64_t * tiles, __global const float * fixup, int32_t extent, int32_t rows,
+    int32_t first, int32_t job_words, int32_t count) {
+    uint32_t worker, workers, thread;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(worker));
+    __asm__("mov.u32 %0, %%nctaid.x;" : "=r"(workers));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
+    fg_device_mmq_fixup_g((uint64_t) output, (uint64_t) jobs, (uint64_t) tiles, (uint64_t) fixup,
+        extent, rows, first, job_words, count, worker, workers, thread);
 }

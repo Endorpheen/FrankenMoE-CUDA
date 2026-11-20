@@ -237,6 +237,16 @@ export fn fg143_mmq_window(extent: i64, tiles: i64, budget: i64) -> i64 {
     return low(tiles, low(65535 / 8, high(1, budget / bytes_per_tile)));
 }
 
+export fn fg143_mmq_stream_workers(rows: i64, tiles: i64, extent: i64, sms: i64) -> i64 {
+    if rows <= 0 || rows > 2147483647 || tiles <= 0 || tiles > 8191 || extent <= 1 || sms <= 0 { return 0; }
+    let outputs = (1 + (rows - 1) / 64) * tiles;
+    if outputs > 1073741823 / extent { return 0; }
+    let waves = 1 + (outputs - 1) / sms;
+    if 100 * outputs / (waves * sms) >= 90 { return 0; }
+    let workers = low(sms, outputs * extent);
+    return if workers != outputs { workers } else { 0 };
+}
+
 fn cuda_matrix_planes(p: const Node &, weights: u64, weight_bytes: i64,
                      planes: i64, row_bytes: i64, row_count: i64,
                      spread2: i64, spread3: i64, heads: i64, next: i64,

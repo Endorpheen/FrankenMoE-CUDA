@@ -51,6 +51,7 @@ the dependency that would justify rerunning it.
 | EXP-1536, GDN MMA | Standalone `GOOSE_GDN_MMA=1`. [Kernel and model measurements](#gdn-mma-checkpoint). Thirty kernels took 2,503.240 → 171.978 ms and short prefill reached 210.866 tokens/s. | The short first ID changed from 9495 to 280. Both differ from EXP-1476 ID 332. On the same actual layer inputs the largest relative L2 errors were 1.58e-5 for output and 3.71e-5 for state. | Compare the earliest differing routed-expert IDs and logits against EXP-1476. Recheck with restored attention and routing on a numerically verified checkpoint. Keep the experimental flag off by default until the response gate passes. |
 | EXP-1537, Flash Attention MMA | Standalone `GOOSE_FLASH_MMA=1`. [Kernel and model measurements](#causal-flash-attention-mma-checkpoint). Ten attention layers take 34.416 ms including Q4 staging, versus 2,738.669 ms for the scalar path. | The short first ID changes from 9495 to 271. On shared Apex inputs, relative L2 differences against the scalar path reach 6.44e-3. | Compare the same Q/K/V inputs to the EXP-1476 FP16 kernel, then restore stream-K scheduling and fix-up. Check isolated and combined GDN/Flash/Dense variants on the same short request. Keep the flag off by default pending response parity. |
 | EXP-1538/1539, GDN + Flash + Dense MMA | Source `8ea1f6de`, all three MMA flags and byte-budgeted MMQ. [Intermediate performance control and original five-case series](#intermediate-apex-performance-control). Current short prefill 259.252 tokens/s. | The selected ID is 280. Probability rows differ from the scalar combination control and the EXP-1476 response gate remains open. | Use the current opt-in checkpoint for future short prefill comparisons. Recheck the combination after changes to rounding, router selection, long-context attention or recurrent state. |
+| EXP-1540, MMQ Stream-K | `GOOSE_MMQ_STREAM_K=1`. [Kernel and model measurements](#mmq-stream-k-checkpoint). The Apex 32/1 case executes 160 Stream-K and 160 fixup kernels and reduces MMQ device arithmetic time from 59.266 to 54.748 ms. | The 32/1 request changes probabilities and takes 913.819 ms versus 855.517 ms. The 4096/1 geometry chooses the regular MMQ path throughout. | Keep opt-in. Recheck with reference-sized MMQ tiles and routed dispatch after their numerical gate. A low-occupancy production shape or revised tile geometry can change the partition decision. |
 
 After a material dependency change, use short sequential A/B runs on
 identical inputs and settings. Use the best current verified checkpoint
@@ -63,7 +64,7 @@ the entry. Apply the full-request gate on the package schedule.
 
 ## Mechanisms
 
-**32 mechanisms: PARITY 0, PARTIAL 24, MISSING 7, INCORRECT 1.**
+**32 mechanisms: PARITY 0, PARTIAL 25, MISSING 6, INCORRECT 1.**
 
 Group three to five related improvements. Give each change its own
 short correctness, CUDA-error and numerical checks, then commit it
@@ -92,7 +93,7 @@ dependencies. Resume decode-specific work after prefill recovery.
 | 1 | Q4_K MMQ. `ggml-cuda.cu` `ggml_cuda_mul_mat` / `ggml_cuda_mul_mat_id` → `mmq.cu` `ggml_cuda_mul_mat_q` → `mmq-load-tiles.cuh` and `mmq-vec-dot.cuh` → `mul_mat_q`. | Executed type 12 symbols contain SM89 `IMMA.16832.S8.S8`. With `GOOSE_MMQ=1`, Goose sends dense and routed 16×8 tiles to its K=32 MMA path. | PARTIAL. The integer-dot fixture and real 4,096-ID trace exercise the kernel. Full output parity and unprofiled performance remain open. |
 | 2 | Q6_K MMQ, same backend chain with `ggml_cuda_mmq_vec_dot_q6_K_q8_1_mma`. | Executed type 14 symbols contain SM89 `IMMA.16816.S8.S8`. Goose candidate uses K=16 and the existing packed loader and signed per-16 scale. | PARTIAL. Dense and cached routes match the integer-dot fixture, and the real short trace reaches the tiled path. Validate full generation and small shapes separately. |
 | 3 | Activation packing. `mmq.cu` → direct or scatter `quantize_mmq_q8_1` in `quantize.cu`, then MMQ. DS4 carries a half scale and activation sum. D4 carries F32 scales. | Both direct and scatter templates execute in the reference. Independent MMQ uses the EXP180 packer for bounded, job-ordered DS4/D4 windows. | PARTIAL. Both formats execute on real Apex. Device scatter and unique-input packing remain open. Validate model-level parity and quantify duplicate packing. |
-| 4 | MMQ stream-K. `mmq.cuh` partitions K and invokes `mul_mat_q_stream_k_fixup` to combine partial outputs. | Fix-up runs in the reference. Independent scalar kernels reduce K inside each output block. | MISSING. After the base tile passes, implement reference partition and reduction rules. Verify K tails, partial ordering and large segments separately from the base tile. |
+| 4 | MMQ stream-K. `mmq.cuh` partitions K and invokes `mul_mat_q_stream_k_fixup` to combine partial outputs. | Independent Goose partitions flattened output tiles and K blocks and applies backward partial reduction with `GOOSE_MMQ_STREAM_K=1`. GPU fixtures and a short Apex shape execute the fixup. | PARTIAL. Verify response parity and scheduling on reference-sized tiles. The current 4096 geometry selects regular tiles. |
 | 5 | Quantized small-batch MMVQ. `ggml-cuda.cu` → `ggml_cuda_mul_mat_vec_q` → Q8_1 and `mul_mat_vec_q` in `mmvq.cu`. | Both `quantize_q8_1` and `mul_mat_vec_q` run. Goose uses its scalar Q4_K/Q6_K path during decode. | MISSING. Restore the appropriate small-batch integer-dot specializations and packing. Check the exact subtype, output and decode timing under the final graph. |
 | 6 | Indexed small-batch MMVQ. `ggml_cuda_mul_mat_id` → `mul_mat_vec_q_moe_launch` → `mul_mat_vec_q_moe`. | The reference trace executes indexed MMVQ. Goose groups jobs on the host and feeds the scalar matrix kernel. | MISSING. Restore the routed MMVQ path and verify duplicate expert IDs, signed-scale arithmetic and first decode output. |
 | 7 | Tensor Core dense GEMM. `ggml_cuda_mul_mat_cublas` selects the F32 `cublasSgemm` path with `CUBLAS_TF32_TENSOR_OP_MATH` in `common.cuh`. | The 4096/1 trace records 39 CUTLASS `s1688gemm` launches. `GOOSE_DENSE_MMA=1` selects 40 independent tiled TF32 MMA launches with F32 accumulation. | PARTIAL. The CUDA path and F32 error fixture pass. Apex output changes under the experimental flag and still differs from EXP-1476. Keep the flag off for the next baseline until the model-level numerical difference is resolved. |
@@ -690,6 +691,34 @@ Binary data SHA-256: `099f8ebeabe1f6813f6c0d721803df3a4ab2b87c2b11903af0006222b8
 Manifest SHA-256: `9bfd7b9be25c3d9e9843687cc94ff4f2b72358cd9b2049c11eaa4275de52be6e`.
 Raw logits SHA-256: `02aefbb757ce92cb2324460ee44d21366900a61f8b62882b75f890fb1df57f1e`.
 Diagnostic executable SHA-256: `d7f8095c8634caecc3b62421a55df9aae991ed93e3cfbca4d82ebedc687513a4`.
+
+## MMQ Stream-K checkpoint
+
+EXP-2026-11-20-1540 restores flattened tile/K partitioning and
+backward partial reduction using the standalone 64×8 output
+tile and the existing integer MMA body. The planner uses the
+reference 90% wave-efficiency threshold and the actual 46 SMs.
+Only the final fragment writes the result. Earlier fragments
+write private worker slots. The regular path retains full-K sums.
+The five-projection Q4_K/Q6_K fixture ran five Stream-K windows
+and five fixups with maximum absolute error 1.49e-7. The final
+compute-sanitizer run reported zero errors after correcting the
+initial scratch slot stride.
+
+On the same Apex prompt's first 32 tokens, 160 of 430 MMQ windows
+used Stream-K. Total MMQ arithmetic including fixup fell from
+59.266 to 54.748 ms. Prefill changed from 855.517 to 913.819 ms
+and the selected ID was 321 in both runs. The five probability
+rows differed. On 4096/1, all 830 windows used regular MMA. Text,
+ID 280 and five probabilities matched the intermediate control.
+Prefill was 15.938 s / 256.993 tokens/s at 8,582 MiB sampled VRAM.
+This saves the implementation for future geometry and acceptance
+work. The experiment does not increase the accepted package count.
+
+32-token control: `/home/end0/AI/LlamaServer/franken-goose-mmq-window.z2Wknq/cuda-matrix-dense-both.azuvybtf`.
+32-token candidate: `/home/end0/AI/LlamaServer/franken-goose-mmq-stream.3qNa4P/cuda-matrix-dense-both.02l9svtu`.
+4096-token candidate: `/home/end0/AI/LlamaServer/franken-goose-mmq-stream.3qNa4P/cuda-matrix-dense-both.g7yjzq0j`.
+Candidate executable SHA-256: `e8a6f1ae8afd9d035aa8a12a413fd140c2de723d1683c42a010ab4719d74eb41`.
 
 ## Kernel coverage
 
