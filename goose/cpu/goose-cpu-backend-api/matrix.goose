@@ -90,8 +90,9 @@ extern "fg_cuda_begin" fn cuda_begin(input: u64, input_bytes: i64, output: u64, 
 extern "fg_cuda_prepare_experts" fn cuda_prepare_experts(tensor: u64, bytes: i64,
     active: const i64[:], offsets: i64[:]) -> i64;
 extern "fg_cuda_plane" fn cuda_plane(weights: u64, weight_bytes: i64, stride: i64,
-                                    extent: i64, kind: i64, columns: i64, jobs: const i64[:],
-                                    expert_offset: i64) -> i64;
+                                    extent: i64, kind: i64, columns: i64, jobs: const i64[:]) -> i64;
+extern "fg_cuda_expert_batch" fn cuda_expert_batch(weight_bytes: i64, stride: i64,
+                                    extent: i64, kind: i64, columns: i64, jobs: const i64[:]) -> i64;
 extern "fg_cuda_finish" fn cuda_finish(output: u64, output_bytes: i64) -> i64;
 
 fn matrix_index_layout(p: const Node &) -> bool {
@@ -201,6 +202,11 @@ fn next_quant_route(indexed: bool, indices: const i64[:], next: i64, route: i64,
     return if route + 1 < count { route + 1 } else { -1 };
 }
 
+fn cuda_matrix_job_words(p: const Node &) -> i64 {
+    let words = if p.op == OP_MUL_MAT_ID && p.x.kind != 0 { 3 } else { 2 };
+    return mul_size(words, rows(p.d));
+}
+
 fn cuda_matrix_planes(p: const Node &, weights: u64, weight_bytes: i64,
                      planes: i64, row_bytes: i64, row_count: i64,
                      spread2: i64, spread3: i64, heads: i64, next: i64,
@@ -211,6 +217,8 @@ fn cuda_matrix_planes(p: const Node &, weights: u64, weight_bytes: i64,
         cuda_prepare_experts(weights, span, routes[heads .. heads + planes], offsets)
     } else { 0 };
     if cached < 0 { return false; }
+    let extent = if p.x.kind == 0 { p.x.ne[0] } else { p.x.ne[0] / 256 };
+    var words: i64 = 0;
     for plane in planes {
         var route = if indexed { routes[heads + plane] } else { 0 };
         if route < 0 { continue; }
@@ -218,20 +226,27 @@ fn cuda_matrix_planes(p: const Node &, weights: u64, weight_bytes: i64,
         let plane3 = plane / p.x.ne[2];
         let at = add_size(mul_size(plane2, p.x.nb[2]), mul_size(plane3, p.x.nb[3]));
         if at > weight_bytes || span > weight_bytes - at { return false; }
-        var words: i64 = 0;
+        let expert_offset = if cached == 1 { offsets[plane] } else { -1 };
+        if cached == 1 && expert_offset < 0 { return false; }
         while route >= 0 {
             let ya, dst_row = quant_route(p, route, plane2, plane3, spread2, spread3);
             jobs[words] = ya;
             jobs[words + 1] = dst_row * p.d.nb[1];
             words += 2;
+            if cached == 1 {
+                jobs[words] = expert_offset;
+                words += 1;
+            }
             route = next_quant_route(indexed, routes, next, route, row_count);
         }
-        let expert_offset = if cached == 1 { offsets[plane] } else { -1 };
-        if (cached == 1 && expert_offset < 0) ||
-           cuda_plane(weights + (at as u64), span, p.x.nb[1], if p.x.kind == 0 { p.x.ne[0] } else { p.x.ne[0] / 256 },
-                      p.x.kind, p.d.ne[0], jobs[0 .. words], expert_offset) != 0 {
-            return false;
+        if cached == 0 {
+            if cuda_plane(weights + (at as u64), span, p.x.nb[1], extent, p.x.kind,
+                          p.d.ne[0], jobs[0 .. words]) != 0 { return false; }
+            words = 0;
         }
+    }
+    if cached == 1 {
+        return cuda_expert_batch(span, p.x.nb[1], extent, p.x.kind, p.d.ne[0], jobs[0 .. words]) == 0;
     }
     return true;
 }
@@ -300,7 +315,7 @@ fn packed_matrix(p: const Node &, x: const u8[:], y: const u8[:], ids: const u8[
 
     let row_count = mul_size(mul_size(p.y.ne[1], spread2), spread3);
     if addresses[0] != 0 && addresses[1] != 0 && addresses[2] != 0 && cuda_matrix_layout(p) {
-        let job_words = mul_size(2, rows(p.d));
+        let job_words = cuda_matrix_job_words(p);
         let offset_words = if indexed { planes } else { 0 };
         let offset_start = add_size(route_words, job_words);
         if indices.len < add_size(offset_start, offset_words) || p.x.nb[2] < 0 || p.x.nb[3] < 0 { return false; }

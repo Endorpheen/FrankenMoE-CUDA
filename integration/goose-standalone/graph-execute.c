@@ -18,6 +18,7 @@
 extern void fg143_cpu_init(int argc, char ** argv);
 extern uint64_t fg_cuda_take_matrices(void);
 extern uint64_t fg_cuda_take_f32_matrices(void);
+extern void fg_cuda_take_matrix_launches(uint64_t * launches, uint64_t * cached);
 extern uint64_t fg_cuda_take_attentions(void);
 extern uint64_t fg_cuda_take_causal_attentions(void);
 extern uint64_t fg_cuda_take_gdns(void);
@@ -273,6 +274,8 @@ static enum ggml_status compute_graph(struct ggml_cgraph * graph, bool all, cons
     }
     const uint64_t matrices = fg_cuda_take_matrices();
     const uint64_t f32_matrices = fg_cuda_take_f32_matrices();
+    uint64_t matrix_launches, cached_projections;
+    fg_cuda_take_matrix_launches(&matrix_launches, &cached_projections);
     const uint64_t attentions = fg_cuda_take_attentions();
     const uint64_t causal = fg_cuda_take_causal_attentions();
     const uint64_t gdns = fg_cuda_take_gdns();
@@ -296,6 +299,8 @@ static enum ggml_status compute_graph(struct ggml_cgraph * graph, bool all, cons
         fprintf(stderr, "Goose CPU graph: %llu values\n", (unsigned long long) values);
         if (matrices) fprintf(stderr, "Goose CUDA graph: %llu matrices\n", (unsigned long long) matrices);
         if (f32_matrices) fprintf(stderr, "Goose CUDA F32 matrix: %llu nodes\n", (unsigned long long) f32_matrices);
+        if (matrix_launches) fprintf(stderr, "Goose CUDA matrix launches: %llu\n", (unsigned long long) matrix_launches);
+        if (cached_projections) fprintf(stderr, "Goose CUDA cached expert projections: %llu\n", (unsigned long long) cached_projections);
         if (attentions) fprintf(stderr, "Goose CUDA attention: %llu nodes\n", (unsigned long long) attentions);
         if (causal) fprintf(stderr, "Goose CUDA causal attention: %llu nodes\n", (unsigned long long) causal);
         if (gdns) fprintf(stderr, "Goose CUDA GDN: %llu nodes\n", (unsigned long long) gdns);

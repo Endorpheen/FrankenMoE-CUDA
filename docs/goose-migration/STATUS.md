@@ -358,6 +358,23 @@ causal path on the shared graph. Switching from CUDA to CPU and back
 preserved continuation with a maximum absolute logit difference of
 0.0000001192. Apex throughput and peak memory remain unmeasured.
 
+EXP-2026-11-20-1514 batches the indexed Q4_K/Q6_K jobs for all active
+resident experts in a projection. The Goose planner emits input, output
+and bank offsets for every route. Each CUDA block addresses its bank
+plane directly. The same CUDA context lock covers cache preparation
+and execution until the projection completes, so the next projection
+can safely reuse or replace slots. Dense and streamed planes use the
+same matrix kernel with their existing two-offset jobs.
+
+On RTX 4070 the same four-token fixture exercised eight experts,
+including repeated routes, through up, gate, SwiGLU and down. Streaming
+issued 24 matrix launches. Both cold and warm cache runs issued three
+launches and matched the streamed output bytes. The warm run still
+matched after the fixture zeroed all three sets of host weights. Maximum
+absolute error against the CPU was 0.0000000140. The resident-state
+continuation and CPU chunking regressions passed. Apex throughput and
+peak memory remain unmeasured.
+
 ## Historical requirements audit
 
 `docs/goose-migration/tasks.json`: **DONE 1**, **PARTIAL 144**, **TODO 7** of 152.

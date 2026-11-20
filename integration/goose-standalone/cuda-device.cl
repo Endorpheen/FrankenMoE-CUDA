@@ -145,15 +145,17 @@ static float fg_device_mul_rn(float a, float b) {
 
 __kernel void goose_quantized_matmul(
     __global uint8_t * weights, __global uint8_t * input, __global uint8_t * output,
-    __global uint64_t * jobs, uint64_t row_stride, int32_t extent, int32_t kind, int32_t job_base) {
+    __global uint64_t * jobs, uint64_t row_stride, int32_t extent, int32_t kind, int32_t job_base,
+    int32_t job_words) {
     uint32_t lane, row, job, lanes;
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
     __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(row));
     __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(job));
     __asm__("mov.u32 %0, %%ntid.x;" : "=r"(lanes));
     __local float scratch[256];
-    const uint64_t at = 2 * ((uint64_t) job_base + job);
-    fg_device_matmul_g((uint64_t) weights + row * row_stride, (uint64_t) input + jobs[at],
+    const uint64_t at = (uint64_t) job_words * ((uint64_t) job_base + job);
+    const uint64_t plane = job_words == 3 ? jobs[at + 2] : 0;
+    fg_device_matmul_g((uint64_t) weights + plane + row * row_stride, (uint64_t) input + jobs[at],
         (uint64_t) output + jobs[at + 1] + 4 * (uint64_t) row, (uint64_t) scratch,
         extent, kind, lane, lanes);
 }

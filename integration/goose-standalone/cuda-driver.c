@@ -84,6 +84,7 @@ static _Thread_local struct {
 } activations;
 static _Thread_local DevicePtr matrix_input, matrix_output;
 static _Thread_local uint64_t cuda_matrices;
+static _Thread_local uint64_t cuda_matrix_launches, cuda_cached_projections;
 static _Thread_local uint64_t cuda_f32_matrices;
 static _Thread_local int cuda_matrix_kind;
 static _Thread_local uint64_t cuda_attentions;
@@ -632,38 +633,27 @@ int64_t fg_cuda_begin(uint64_t input, int64_t input_bytes, uint64_t output, int6
     return -1;
 }
 
-int64_t fg_cuda_plane(uint64_t weights, int64_t weight_bytes, int64_t row_stride,
-                       int64_t extent, int64_t kind, int64_t rows, sl_i64 jobs, int64_t expert_offset) {
-    if (rows <= 0 || rows > INT_MAX || extent <= 0 || extent > INT_MAX ||
+static int launch_matrix(DevicePtr weight, int64_t row_stride, int64_t extent,
+                         int64_t kind, int64_t rows, sl_i64 jobs, int job_words) {
+    if (!weight || rows <= 0 || rows > INT_MAX || extent <= 0 || extent > INT_MAX ||
         (kind != 0 && kind != 12 && kind != 14) ||
-        jobs.len <= 0 || jobs.len % 2 != 0 || jobs.len / 2 > INT_MAX) return -1;
+        jobs.len <= 0 || jobs.len % job_words != 0 || jobs.len / job_words > INT_MAX ||
+        (uint64_t) jobs.len > SIZE_MAX / sizeof(*jobs.data)) return -1;
     const size_t job_bytes = (size_t) jobs.len * sizeof(*jobs.data);
     int error = reserve(&cuda.jobs, job_bytes);
-    DevicePtr weight = 0;
-    if (expert_offset >= 0) {
-        const struct device_buffer * bank = &cuda.experts.weights;
-        if (!bank->address || weight_bytes <= 0 || (uint64_t) expert_offset > bank->bytes ||
-            (uint64_t) weight_bytes > bank->bytes - (uint64_t) expert_offset) return -1;
-        weight = bank->address + (uint64_t) expert_offset;
-    } else if (error == 0 && cuda.dense_ranges.len > 0) {
-        const int64_t offset = dw_cuda_dense_offset(cuda.dense_ranges, weights, weight_bytes);
-        if (offset >= 0) weight = cuda.dense.address + (uint64_t) offset;
-    }
-    if (error == 0 && weight == 0) {
-        error = activation_input((sl_u8) {(void *) (uintptr_t) weights, weight_bytes}, &cuda.weight, &weight);
-    }
     if (error == 0) error = cuda.upload(cuda.jobs.address, jobs.data, job_bytes);
 
     uint64_t stride = (uint64_t) row_stride;
     int width = (int) extent, type = (int) kind, start = 0;
     void * args[] = { &weight, &matrix_input, &matrix_output,
-                      &cuda.jobs.address, &stride, &width, &type, &start };
+                      &cuda.jobs.address, &stride, &width, &type, &start, &job_words };
     const unsigned lanes = kind == 14 ? 64 : 32;
-    const int count = (int) (jobs.len / 2);
+    const int count = (int) (jobs.len / job_words);
     while (error == 0 && start < count) {
         const int batch = count - start > 65535 ? 65535 : count - start;
         error = cuda.launch(cuda.kernel, (unsigned) rows, (unsigned) batch, 1,
                             lanes, 1, 1, 0, NULL, args, NULL);
+        if (error == 0) ++cuda_matrix_launches;
         start += batch;
     }
     if (start != 0) {
@@ -673,6 +663,41 @@ int64_t fg_cuda_plane(uint64_t weights, int64_t weight_bytes, int64_t row_stride
     if (error != 0) fprintf(stderr, "Goose CUDA: matrix kernel failed (%d)\n", error);
     else cuda_matrix_kind = type;
     return error == 0 ? 0 : -1;
+}
+
+int64_t fg_cuda_plane(uint64_t weights, int64_t weight_bytes, int64_t row_stride,
+                     int64_t extent, int64_t kind, int64_t rows, sl_i64 jobs) {
+    DevicePtr weight = 0;
+    if (cuda.dense_ranges.len > 0) {
+        const int64_t offset = dw_cuda_dense_offset(cuda.dense_ranges, weights, weight_bytes);
+        if (offset >= 0) weight = cuda.dense.address + (uint64_t) offset;
+    }
+    if (!weight && activation_input((sl_u8) {(void *) (uintptr_t) weights, weight_bytes}, &cuda.weight, &weight) != 0) {
+        fprintf(stderr, "Goose CUDA: matrix weight transfer failed\n");
+        return -1;
+    }
+    return launch_matrix(weight, row_stride, extent, kind, rows, jobs, 2);
+}
+
+int64_t fg_cuda_expert_batch(int64_t weight_bytes, int64_t row_stride,
+                            int64_t extent, int64_t kind, int64_t rows, sl_i64 jobs) {
+    const struct device_buffer * bank = &cuda.experts.weights;
+    if (!bank->address || weight_bytes <= 0 || (uint64_t) weight_bytes > bank->bytes ||
+        jobs.len <= 0 || jobs.len % 3 != 0 || jobs.len / 3 > INT_MAX) return -1;
+    for (int64_t i = 2; i < jobs.len; i += 3) {
+        const int64_t offset = jobs.data[i];
+        if (offset < 0 || (uint64_t) offset > bank->bytes - (uint64_t) weight_bytes) return -1;
+    }
+    const int status = launch_matrix(bank->address, row_stride, extent, kind, rows, jobs, 3);
+    if (status == 0) ++cuda_cached_projections;
+    return status;
+}
+
+void fg_cuda_take_matrix_launches(uint64_t * launches, uint64_t * cached) {
+    *launches = cuda_matrix_launches;
+    *cached = cuda_cached_projections;
+    cuda_matrix_launches = 0;
+    cuda_cached_projections = 0;
 }
 
 int64_t fg_cuda_finish(uint64_t output, int64_t output_bytes) {

@@ -13,6 +13,7 @@
 extern void fg_goose_host_ensure_init(void);
 extern int64_t fg_cuda_model_state_bytes(void);
 extern int64_t fg_cuda_dense_bytes(void);
+extern int64_t fg_cuda_load_experts(sl_i64 groups, sl_i64 layers, int64_t bytes, int64_t words32, int64_t words64);
 extern int64_t fg_cuda_load_model_state(sl_i64 ranges, int64_t bytes);
 extern int64_t fg_cuda_state_read(uint64_t host, int64_t bytes);
 extern int64_t fg_cuda_state_write(uint64_t host, int64_t bytes);
@@ -559,6 +560,80 @@ static void check_routed_matrix(enum ggml_type kind, bool indexed) {
     ggml_free(ctx);
 }
 
+static void check_cached_expert_batch(void) {
+    enum { width = 256, experts = 8, selected = 8, tokens = 4, output = 32 };
+    enum { map_words = experts, state_words = map_words + 4 * experts + 4 + 5 * experts };
+    struct ggml_context * ctx = ggml_init((struct ggml_init_params){ 1024 * 1024, NULL, true });
+    assert(ctx);
+    struct ggml_tensor * w[] = {
+        ggml_new_tensor_3d(ctx, GGML_TYPE_Q4_K, width, width, experts),
+        ggml_new_tensor_3d(ctx, GGML_TYPE_Q4_K, width, width, experts),
+        ggml_new_tensor_3d(ctx, GGML_TYPE_Q6_K, width, output, experts),
+    };
+    struct ggml_tensor * x = ggml_new_tensor_3d(ctx, GGML_TYPE_F32, width, 1, tokens);
+    struct ggml_tensor * ids = ggml_new_tensor_2d(ctx, GGML_TYPE_I32, selected, tokens);
+    struct ggml_tensor * up = ggml_mul_mat_id(ctx, w[0], x, ids);
+    struct ggml_tensor * gate = ggml_mul_mat_id(ctx, w[1], x, ids);
+    struct ggml_tensor * hidden = ggml_swiglu_split(ctx, gate, up);
+    struct ggml_tensor * value = ggml_mul_mat_id(ctx, w[2], hidden, ids);
+    struct ggml_cgraph * graph = ggml_new_graph_custom(ctx, 64, false);
+    ggml_build_forward_expand(graph, value);
+    void * storage = fg_standalone_graph_alloc(graph);
+    assert(storage);
+    for (int i = 0; i < ggml_nelements(x); ++i) {
+        ((float *) x->data)[i] = (float) ((i * 11 + i / 17) % 37 - 18) / 64.0f;
+    }
+    for (int token = 0; token < tokens; ++token) {
+        for (int slot = 0; slot < selected; ++slot) {
+            ((int32_t *) ids->data)[token * selected + slot] = (slot / (1 + token % 2) + token) % experts;
+        }
+    }
+    for (int p = 0; p < 3; ++p) {
+        const struct ggml_type_traits * trait = ggml_get_type_traits(w[p]->type);
+        for (int e = 0; e < experts; ++e) {
+            for (int row = 0; row < w[p]->ne[1]; ++row) {
+                float data[width];
+                for (int i = 0; i < width; ++i) {
+                    data[i] = (float) ((i * 17 + i / 13 + 3 * row + 5 * e + 7 * p) % 29 - 14) / 128.0f;
+                }
+                trait->from_float_ref(data, (uint8_t *) w[p]->data + e * w[p]->nb[2] + row * w[p]->nb[1], width);
+            }
+        }
+    }
+
+    assert(setenv("GOOSE_CUDA", "0", 1) == 0);
+    assert(fg_standalone_graph_compute(graph) == GGML_STATUS_SUCCESS);
+    float cpu[output * selected * tokens], streamed[output * selected * tokens];
+    memcpy(cpu, value->data, sizeof(cpu));
+    assert(unsetenv("GOOSE_CUDA") == 0);
+    fputs("Expert batch fixture streaming\n", stderr);
+    assert(fg_standalone_graph_compute(graph) == GGML_STATUS_SUCCESS);
+    memcpy(streamed, value->data, sizeof(streamed));
+    double max_error = 0.0;
+    for (int i = 0; i < output * selected * tokens; ++i) {
+        const double error = fabs((double) streamed[i] - cpu[i]);
+        assert(error < 2e-5);
+        max_error = fmax(max_error, error);
+    }
+
+    int64_t groups[] = {w[0]->nb[2], w[1]->nb[2], w[2]->nb[2], experts, 1, experts, 0, map_words, 1};
+    int64_t layers[] = {0, (intptr_t) w[0]->data, (intptr_t) w[1]->data, (intptr_t) w[2]->data};
+    const int64_t bytes = experts * (groups[0] + groups[1] + groups[2]);
+    assert(fg_cuda_load_experts((sl_i64) {groups, 9}, (sl_i64) {layers, 4},
+        bytes, state_words, 1 + experts + 5) == bytes);
+    fputs("Expert batch fixture cold cache\n", stderr);
+    assert(fg_standalone_graph_compute(graph) == GGML_STATUS_SUCCESS);
+    assert(memcmp(streamed, value->data, sizeof(streamed)) == 0);
+    // The warm graph must read the resident up, gate and down planes.
+    for (int p = 0; p < 3; ++p) memset(w[p]->data, 0, ggml_nbytes(w[p]));
+    fputs("Expert batch fixture warm cache\n", stderr);
+    assert(fg_standalone_graph_compute(graph) == GGML_STATUS_SUCCESS);
+    assert(memcmp(streamed, value->data, sizeof(streamed)) == 0);
+    printf("Cached Q4_K/Q6_K expert batch matches streamed result bytes, max CPU error %.9g\n", max_error);
+    free(storage);
+    ggml_free(ctx);
+}
+
 static void check_activation_pipeline(void) {
     enum { width = 32, rows = 3, chain = 260 };
     struct ggml_context * ctx = ggml_init((struct ggml_init_params){ 1024 * 1024, NULL, true });
@@ -856,6 +931,7 @@ int main(int argc, char ** argv) {
         else if (strcmp(argv[1], "--resident-conv") == 0) check_resident_convolution();
         else if (strcmp(argv[1], "--activations") == 0) check_activation_pipeline();
         else if (strcmp(argv[1], "--vectors") == 0) check_cuda_vectors();
+        else if (strcmp(argv[1], "--cached-experts") == 0) check_cached_expert_batch();
         else if (strcmp(argv[1], "--position") == 0) check_cuda_position();
         else if (strcmp(argv[1], "--routing") == 0) check_cuda_routing();
         else check_model_step(argv[1]);

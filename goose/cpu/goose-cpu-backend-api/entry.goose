@@ -45,7 +45,7 @@ fn entry(
                 ni = mul_size(add_size(p.x.ne[2], routes), p.nth);
             }
             if offload {
-                ni = add_size(ni, mul_size(2, rows(p.d)));
+                ni = add_size(ni, cuda_matrix_job_words(p));
                 if p.op == OP_MUL_MAT_ID { ni = add_size(ni, p.x.ne[2]); }
             }
         }
