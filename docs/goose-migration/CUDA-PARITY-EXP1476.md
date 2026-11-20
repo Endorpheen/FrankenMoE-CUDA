@@ -50,6 +50,7 @@ the dependency that would justify rerunning it.
 | EXP-1531, deferred CUDA waits | [Candidate patch](deferred/EXP-1531-graph-waits.patch) against `7916697c`. [Original A–B–B–A](#deferred-cuda-wait-diagnostic): explicit waits 1,873 → 562, median prefill 22.875 → 22.882 s. | Originally, synchronous D2H absorbed the removed waiting. Copy counts and bytes stayed unchanged. | Rechecked with reusable arena gaps and selective eviction on `e37e8a2c`. [Combined A–B–B–A](#deferred-waits-with-selective-eviction) passed the short gate and enabled waits at the planned graph boundary. Full-request qualification is open. Reassess when pinned transfer or stream/event changes alter host readback. |
 | EXP-1536, GDN MMA | Standalone `GOOSE_GDN_MMA=1`. [Kernel and model measurements](#gdn-mma-checkpoint). Thirty kernels took 2,503.240 → 171.978 ms and short prefill reached 210.866 tokens/s. | The short first ID changed from 9495 to 280. Both differ from EXP-1476 ID 332. On the same actual layer inputs the largest relative L2 errors were 1.58e-5 for output and 3.71e-5 for state. | Compare the earliest differing routed-expert IDs and logits against EXP-1476. Recheck with restored attention and routing on a numerically verified checkpoint. Keep the experimental flag off by default until the response gate passes. |
 | EXP-1537, Flash Attention MMA | Standalone `GOOSE_FLASH_MMA=1`. [Kernel and model measurements](#causal-flash-attention-mma-checkpoint). Ten attention layers take 34.416 ms including Q4 staging, versus 2,738.669 ms for the scalar path. | The short first ID changes from 9495 to 271. On shared Apex inputs, relative L2 differences against the scalar path reach 6.44e-3. | Compare the same Q/K/V inputs to the EXP-1476 FP16 kernel, then restore stream-K scheduling and fix-up. Check isolated and combined GDN/Flash/Dense variants on the same short request. Keep the flag off by default pending response parity. |
+| EXP-1538, GDN + Flash + Dense MMA | Source `3e616cb2`, all three MMA flags. [Intermediate performance control and five-case series](#intermediate-apex-performance-control). Short prefill 256.686 tokens/s. | The selected ID is 280. Probability rows differ from the control and the response gate remains open. | Use this exact opt-in checkpoint for future short prefill comparisons. Recheck the combination after changes to rounding, router selection, long-context attention or recurrent state. |
 
 After a material dependency change, use short sequential A/B runs on
 identical inputs and settings. Use the best current verified checkpoint
@@ -559,6 +560,74 @@ Short profile: `/home/end0/AI/LlamaServer/franken-goose-flash-mma.CpioRH/mmq-pro
 Layer differential: `/home/end0/AI/LlamaServer/franken-goose-flash-audit.qfjatO/mmq-profile.d5MN40/nsys.log`.
 Executable SHA-256: `754e480265e448918198295146422cb2125bddc7ef4284fd9707e2db909ce062`.
 Response SHA-256: `709b803aa8f36448cbfb49eb3b5531abb636621b10af21515facb8224a5fd8c4`.
+
+## Intermediate Apex performance control
+
+EXP-2026-11-20-1538 designates the combined GDN, Flash and Dense MMA
+variant as the intermediate control for subsequent short prefill A/B
+work. It keeps the verified memory and synchronization changes in
+`3e616cb2`. Enable it with these environment settings:
+
+```sh
+export GOOSE_MMQ=1 GOOSE_GDN_MMA=1 GOOSE_FLASH_MMA=1 GOOSE_DENSE_MMA=1
+```
+
+Use executable SHA-256
+`754e480265e448918198295146422cb2125bddc7ef4284fd9707e2db909ce062`,
+Apex Q4_K_M, context 262,144, physical 4096/4096, and the 4096/1
+request with SHA-256
+`2d716460edf11494ce0fd16fe53241535b611c70774adc8fa3fe4619a6fcf81d`.
+The request uses seed 123, temperature 1, top-k 20, top-p 0.95 and
+reports five log probabilities. This control is opt-in. EXP-1476
+remains the correctness reference and the full-request gate remains open.
+
+Five sequential Nsight runs used the same executable, request and memory
+configuration. The Flash column includes KV staging or the scalar merge.
+The Dense column covers the 40 Apex router projections. CUDA durations
+are sums of device activity. H2D/D2H cover the first through last CUDA
+kernel. RSS is process high-water, VRAM is the sampled peak.
+
+| Variant | Prefill s | Tokens/s | GDN ms | Flash ms | Dense ms | H2D bytes | D2H bytes | RSS KiB | Process VRAM MiB | Card VRAM MiB |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Scalar mechanism control | 21.798 | 187.910 | 2,499.971 | 2,799.114 | 584.218 | 66,380,839,136 | 43,090,640,896 | 23,885,528 | 8,596 | 11,388 |
+| GDN MMA | 19.336 | 211.837 | 171.778 | 2,814.737 | 583.417 | 66,328,587,320 | 43,090,640,896 | 23,885,500 | 8,596 | 11,387 |
+| Flash MMA | 18.862 | 217.151 | 2,497.768 | 34.485 | 594.360 | 66,365,457,368 | 43,090,640,896 | 23,906,312 | 8,572 | 11,364 |
+| GDN + Flash MMA | 16.510 | 248.085 | 165.009 | 35.745 | 584.822 | 66,388,725,296 | 43,090,640,896 | 23,905,132 | 8,572 | 11,347 |
+| GDN + Flash + Dense MMA | 15.957 | 256.686 | 171.275 | 35.141 | 52.432 | 66,336,206,168 | 43,090,640,896 | 23,905,980 | 8,572 | 11,348 |
+
+The individual GDN and Flash savings were 2.462 s and 2.935 s. Together
+they saved 5.287 s, 0.110 s less than the additive prediction in this
+single sequence. Dense saved a further 0.553 s at the same sampled process
+VRAM peak. The five runs shared one memory configuration, so this series
+measures Dense on top of the current memory work and does not isolate the
+memory contribution. Each run kept all 5,301,139 model pages resident,
+with zero process swap and zero system swap-out growth. There were 12,
+11, 11, 10 and 9 memory samples respectively, including one post-request
+sample in each count.
+
+| Variant | Selected ID | Selected log probability | Top five IDs and log probabilities |
+|---|---:|---:|---|
+| Scalar mechanism control | 9495 | -0.1146200 | 9495 -0.1146200, 280 -3.3105867, 1866 -3.5725305, 14166 -4.2137613, 1901 -5.1594577 |
+| GDN MMA | 280 | -0.1121834 | 280 -0.1121834, 387 -2.6394854, 605 -4.3271914, 198 -4.9755383, 271 -5.8182011 |
+| Flash MMA | 271 | -2.0011609 | 20 -1.1342604, 198 -1.2773154, 271 -2.0011609, 29 -2.5919468, 220 -3.6042435 |
+| GDN + Flash MMA | 271 | -2.3095357 | 303 -1.0703399, 198 -2.2048681, 271 -2.3095357, 37972 -2.8533170, 318 -3.6148250 |
+| GDN + Flash + Dense MMA | 280 | -0.0385359 | 280 -0.0385359, 9495 -4.3836308, 198 -4.5553913, 79 -5.2518368, 605 -6.0141039 |
+
+Matching selected IDs in two rows do not imply matching distributions.
+Keep candidate flags off by default. Use the measured combination as a
+speed control, with separate numerical checks and the existing package
+schedule for the full Apex request.
+
+Raw directories under `/home/end0/AI/LlamaServer/franken-goose-flash-mma.CpioRH`:
+
+- `cuda-matrix-base.88bpsjq2`
+- `cuda-matrix-gdn._nl2jjl9`
+- `cuda-matrix-flash.svl0z1bs`
+- `cuda-matrix-both.kd6dkqzf`
+- `cuda-matrix-dense-both.2fydhi47`
+
+Combined response SHA-256:
+`ce276d3d12b5171ca3df5dab73ba52fba7598b0f031424c79b446fb3b21bd01f`.
 
 ## Kernel coverage
 
