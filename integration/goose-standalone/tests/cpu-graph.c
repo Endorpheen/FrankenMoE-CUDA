@@ -866,6 +866,40 @@ static void check_activation_pipeline(void) {
     ggml_free(ctx);
 }
 
+static void check_activation_overwrite(void) {
+    enum { width = 32, rows = 2 };
+    for (int mode = 0; mode < 3; ++mode) {
+        struct ggml_context * ctx = ggml_init((struct ggml_init_params){ 64 * 1024, NULL, true });
+        assert(ctx);
+        struct ggml_tensor * identity = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, width, width);
+        struct ggml_tensor * original = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, width, rows);
+        struct ggml_tensor * first = ggml_mul_mat(ctx, identity, original);
+        struct ggml_tensor * next = mode == 2 ? ggml_view_tensor(ctx, first)
+            : ggml_new_tensor_2d(ctx, GGML_TYPE_F32, width, mode == 1 ? 1 : rows);
+        struct ggml_tensor * replacement = ggml_mul_mat(ctx, identity, next);
+        struct ggml_cgraph * graph = ggml_new_graph_custom(ctx, 32, false);
+        ggml_build_forward_expand(graph, first);
+        ggml_build_forward_expand(graph, replacement);
+        void * storage = fg_standalone_graph_alloc(graph);
+        assert(storage);
+        replacement->data = first->data;
+        memset(identity->data, 0, ggml_nbytes(identity));
+        for (int i = 0; i < width; ++i) ((float *) identity->data)[i * (width + 1)] = 1.0f;
+        for (int i = 0; i < width * rows; ++i) ((float *) original->data)[i] = (float) i;
+        if (mode < 2) {
+            for (int i = 0; i < ggml_nelements(next); ++i) ((float *) next->data)[i] = (float) -i;
+        }
+        assert(fg_standalone_graph_compute_output(graph, first) == GGML_STATUS_SUCCESS);
+        for (int i = 0; i < width * rows; ++i) {
+            int expected = mode == 0 || (mode == 1 && i < width) ? -i : i;
+            assert(((float *) first->data)[i] == (float) expected);
+        }
+        free(storage);
+        ggml_free(ctx);
+    }
+    puts("CUDA output overwrite: full replacement, retained tail and aliased input passed");
+}
+
 static void check_cuda_vectors(void) {
     enum { width = 257, stride = 8 * width, rows = 3, planes = 2 };
     struct ggml_context * ctx = ggml_init((struct ggml_init_params){ 1024 * 1024, NULL, true });
@@ -1194,7 +1228,10 @@ int main(int argc, char ** argv) {
     if (argc == 2) {
         if (strcmp(argv[1], "--resident-rows") == 0) check_resident_q4_rows();
         else if (strcmp(argv[1], "--resident-conv") == 0) check_resident_convolution();
-        else if (strcmp(argv[1], "--activations") == 0) check_activation_pipeline();
+        else if (strcmp(argv[1], "--activations") == 0) {
+            check_activation_pipeline();
+            check_activation_overwrite();
+        }
         else if (strcmp(argv[1], "--vectors") == 0) check_cuda_vectors();
         else if (strcmp(argv[1], "--vector-windows") == 0) check_cuda_vector_windows();
         else if (strcmp(argv[1], "--cached-experts") == 0) check_cached_expert_batch();

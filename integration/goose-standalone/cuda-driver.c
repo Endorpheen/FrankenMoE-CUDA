@@ -14,6 +14,7 @@ extern int64_t dw_cuda_dense_offset(sl_i64 ranges, uint64_t address, int64_t byt
 extern int64_t qr_state_offset(sl_i64 ranges, uint64_t address, int64_t bytes, int64_t kind);
 extern int64_t fg143_activation_lookup(sl_i64 ranges, uint64_t host, int64_t bytes);
 extern int64_t fg143_activation_overlap(sl_i64 ranges, uint64_t host, int64_t bytes, int64_t first);
+extern uint64_t fg143_activation_discard_overwritten(sl_i64 ranges, uint64_t host, int64_t bytes);
 extern int64_t fg143_activation_slot(int64_t used, int64_t capacity, int64_t bytes);
 extern void ec_reset(sl_i64 groups, sl_i64 layers, uint64_t words32, sl_i64 words64);
 extern int64_t ec_prepare(sl_i64 groups, sl_i64 layers, uint64_t words32, sl_i64 words64,
@@ -83,7 +84,7 @@ static _Thread_local struct {
     uint64_t target;
     int64_t target_bytes, count, used;
     int64_t ranges[ACTIVATION_RECORDS * ACTIVATION_WORDS];
-    uint64_t hits;
+    uint64_t hits, skipped_download_bytes;
 } activations;
 static _Thread_local DevicePtr matrix_input, matrix_output;
 static _Thread_local uint64_t cuda_matrices;
@@ -287,6 +288,7 @@ int fg_cuda_activation_graph_begin(void) {
     activations.active = true;
     activations.unavailable = false;
     activations.hits = 0;
+    activations.skipped_download_bytes = 0;
     return 0;
 }
 
@@ -313,19 +315,25 @@ int64_t fg_cuda_activation_read_f32(sl_f32 data) {
     return fg_cuda_activation_read_address((uint64_t) (uintptr_t) data.data, data.len * (int64_t) sizeof(float));
 }
 
-int fg_cuda_activation_prepare(uint64_t host, int64_t bytes, bool fresh) {
+int fg_cuda_activation_prepare(uint64_t host, int64_t bytes, bool fresh, bool overwrite) {
     if (!activations.active) return 0;
     activations.target = fresh ? host : 0;
     activations.target_bytes = bytes;
+    if (overwrite && activations.count > 0) {
+        activations.skipped_download_bytes += fg143_activation_discard_overwritten(activation_ranges(), host, bytes);
+    }
     if (activations.count == 0 || fg143_activation_overlap(activation_ranges(), host, bytes, 0) < 0) return 0;
     if (push_context() != 1) return -1;
     const int error = activation_sync_range(host, bytes, true);
     return finish_context() == 0 && error == 0 ? 0 : -1;
 }
 
-int fg_cuda_activation_graph_end(bool success, bool all, uint64_t host, int64_t bytes, uint64_t * hits) {
+int fg_cuda_activation_graph_end(bool success, bool all, uint64_t host, int64_t bytes, uint64_t * hits,
+                                 uint64_t * skipped_download_bytes) {
     *hits = activations.hits;
     activations.hits = 0;
+    *skipped_download_bytes = activations.skipped_download_bytes;
+    activations.skipped_download_bytes = 0;
     if (!activations.active) return 0;
     int error = 0;
     if (success && activations.count > 0) {

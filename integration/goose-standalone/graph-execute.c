@@ -33,7 +33,8 @@ extern void fg_cuda_take_position(uint64_t * ropes, uint64_t * convs);
 extern void fg_cuda_take_routes(uint64_t * routes);
 extern void fg_cuda_take_blits(uint64_t * blits);
 extern int fg_cuda_activation_graph_begin(void);
-extern int fg_cuda_activation_graph_end(bool success, bool all, uint64_t host, int64_t bytes, uint64_t * hits);
+extern int fg_cuda_activation_graph_end(bool success, bool all, uint64_t host, int64_t bytes, uint64_t * hits,
+                                        uint64_t * skipped_download_bytes);
 
 static pthread_once_t cpu_init = PTHREAD_ONCE_INIT;
 static atomic_uint_fast64_t cpu_values;
@@ -281,7 +282,7 @@ uint8_t fg143_graph_scan(uint64_t address) {
 static enum ggml_status compute_graph(struct ggml_cgraph * graph, bool all, const struct ggml_tensor * output) {
     pthread_once(&cpu_init, init_cpu);
     if (fg_cuda_activation_graph_begin() != 0) return GGML_STATUS_FAILED;
-    const int64_t failed = fg143_graph_run((uint64_t) (uintptr_t) graph);
+    const int64_t failed = fg143_graph_run((uint64_t) (uintptr_t) graph, !all);
     if (failed > 0) {
         const struct ggml_tensor * node = ggml_graph_node(graph, (int) (failed - 1));
         fprintf(stderr, "Goose graph: node %lld (%s) failed\n", (long long) failed - 1, ggml_op_name(node->op));
@@ -306,10 +307,10 @@ static enum ggml_status compute_graph(struct ggml_cgraph * graph, bool all, cons
     uint64_t blits[3];
     fg_cuda_take_blits(blits);
     const bool valid = failed == 0 && fg_cuda_state_graph_done() == 0;
-    uint64_t hits = 0;
+    uint64_t hits = 0, skipped_download_bytes = 0;
     const int published = fg_cuda_activation_graph_end(valid, all,
         output ? (uint64_t) (uintptr_t) output->data : 0,
-        output ? (int64_t) ggml_nbytes(output) : 0, &hits);
+        output ? (int64_t) ggml_nbytes(output) : 0, &hits, &skipped_download_bytes);
     if (getenv("GOOSE_GRAPH_LOG")) {
         const uint64_t values = (uint64_t) atomic_exchange_explicit(&cpu_values, 0, memory_order_relaxed);
         fprintf(stderr, "Goose CPU graph: %llu values\n", (unsigned long long) values);
@@ -326,6 +327,8 @@ static enum ggml_status compute_graph(struct ggml_cgraph * graph, bool all, cons
         if (writes) fprintf(stderr, "Goose CUDA resident Q4 writes: %llu nodes\n", (unsigned long long) writes);
         if (vectors) fprintf(stderr, "Goose CUDA vector: %llu nodes\n", (unsigned long long) vectors);
         if (fwhts) fprintf(stderr, "Goose CUDA KV FWHT: %llu nodes\n", (unsigned long long) fwhts);
+        if (skipped_download_bytes) fprintf(stderr, "Goose CUDA overwritten downloads skipped: %" PRIu64 " bytes\n",
+            skipped_download_bytes);
         if (ropes) fprintf(stderr, "Goose CUDA RoPE: %llu nodes\n", (unsigned long long) ropes);
         if (convs) fprintf(stderr, "Goose CUDA SSM convolution: %llu nodes\n", (unsigned long long) convs);
         for (int i = 0; i < 4; ++i) {

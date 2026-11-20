@@ -3,7 +3,8 @@ extern "fg143_graph_node" fn graph_node(graph: u64, index: i64) -> u64;
 extern "fg158_prop" fn graph_prop(tensor: u64, field: i64) -> i64;
 extern "fg143_graph_inputs" fn graph_inputs(tensor: u64, sources: u64[:]);
 extern "ggml_is_empty" fn graph_empty(tensor: u64) -> bool;
-extern "fg_cuda_activation_prepare" fn graph_output_prepare(address: u64, bytes: i64, fresh: bool) -> i32;
+extern "ggml_is_contiguous" fn graph_dense(tensor: u64) -> bool;
+extern "fg_cuda_activation_prepare" fn graph_output_prepare(address: u64, bytes: i64, fresh: bool, overwrite: bool) -> i32;
 extern "fg143_graph_describe" fn graph_describe(tensor: u64, packet: i64[:]);
 extern "fg143_graph_regular" fn graph_regular(tensor: u64, packet: const i64[:], mode: i64,
     sizes: i64[:], workspace: u64) -> bool;
@@ -13,7 +14,7 @@ extern "fg143_graph_resize" fn graph_resize(workspace: u64, bytes: i64) -> u64;
 
 struct GraphWorkspace { address: u64, capacity: i64 }
 
-fn execute_graph_node(tensor: u64, work: GraphWorkspace &) -> bool {
+fn execute_graph_node(tensor: u64, work: GraphWorkspace &, selective: bool) -> bool {
     if tensor == 0 { return false; }
     let op = graph_prop(tensor, 2);
     if op == OP_NONE || op == OP_RESHAPE || op == OP_VIEW || op == OP_PERMUTE || op == OP_TRANSPOSE {
@@ -24,12 +25,18 @@ fn execute_graph_node(tensor: u64, work: GraphWorkspace &) -> bool {
     if address == 0 || bytes > 0x7fffffffffffffff { return false; }
     var sources: u64[10] = [0; 10];
     graph_inputs(tensor, sources[..]);
+    let fresh = storage_get(tensor, STORAGE_VIEW, 0) == 0;
+    var overwrite = selective && fresh && graph_dense(tensor) &&
+        (op == OP_MUL_MAT || op == OP_MUL_MAT_ID || op == OP_RMS_NORM || op == OP_MUL ||
+         op == OP_ADD || op == OP_DIV || op == OP_CONT || op == OP_SCALE || op == OP_UNARY || op == OP_ROPE);
     for i in sources.len {
         let t = sources[i];
-        if t != 0 && storage_get(t, STORAGE_DATA, 0) == 0 && !graph_empty(t) { return false; }
+        if t == 0 { continue; }
+        let src = storage_get(t, STORAGE_DATA, 0);
+        if src == 0 && !graph_empty(t) { return false; }
+        if overwrite && activation_spans_overlap(address, bytes, src, storage_bytes(t)) { overwrite = false; }
     }
-    let fresh = storage_get(tensor, STORAGE_VIEW, 0) == 0;
-    if graph_output_prepare(address, bytes as i64, fresh) != 0 { return false; }
+    if graph_output_prepare(address, bytes as i64, fresh, overwrite) != 0 { return false; }
     if op == OP_GATED_DELTA_NET { return graph_gdn(tensor); }
     if op == OP_SSM_SCAN { return graph_scan(tensor); }
 
@@ -48,12 +55,12 @@ fn execute_graph_node(tensor: u64, work: GraphWorkspace &) -> bool {
 }
 
 // Return one plus the first failing node index, or zero after the last node.
-export fn fg143_graph_run(graph: u64) -> i64 {
+export fn fg143_graph_run(graph: u64, selective: bool) -> i64 {
     if graph == 0 { return -1; }
     var work = GraphWorkspace { address: 0, capacity: 0 };
     var outcome: i64 = 0;
     for i in graph_nodes(graph) {
-        if !execute_graph_node(graph_node(graph, i), work) {
+        if !execute_graph_node(graph_node(graph, i), work, selective) {
             outcome = i + 1;
             break;
         }

@@ -71,7 +71,7 @@ generation repair calls for an immediate full run.
 | 24 | Tensor copies, concatenation and gathers. CUDA transform dispatch → `concat_cont`, `concat_non_cont`, `cpy_scalar`, `k_get_rows_float` and vectorized gather. | All appear in reference trace. Goose has aligned lifetimes, GPU blits and gathers and host fallbacks. | PARTIAL. Match selected contiguous and strided paths while avoiding dead-tensor transfers. Check views, source lifetimes and numerical read-back. |
 | 25 | Backend graph splitting and lifetime planning. GGML scheduler in `vendor/flint/ggml/src/ggml-backend.cpp` → `ggml-alloc.c` child/view counts, aligned best-fit, split/coalesced blocks and admissible in-place reuse. | Reference log records five buffers and eight same-size reallocations. Goose completes actual 4096/4096 using a ~1.010 GB lifetime arena and whole-block reuse. | PARTIAL. Retain the tested alias planner. Extend device lifetime ownership and compare backend memory peaks and retry behavior on identical profiles. |
 | 26 | Expert tiers and pinned mapped weights. `vendor/flint/src/llama-model.cpp` → `llama-mmap-expert-pin.h` and CUDA buffer registration. | `cudaHostRegister` occurs 120 times in the reference session. Goose verifies all model pages resident, loads dense tensors and uses a GPU SLRU, with different upload scheduling. | PARTIAL. Associate registrations with the reference ranges, then restore explicit equivalent pinned transfer and expert-bank budgets. Verify real resident sizes, misses, bytes and swaps. |
-| 27 | Selective transfer and device placement. Backend split execution and CUDA tensor set/get → asynchronous linear and 2-D copies. | Reference transfers selected ranges and uses D2D. Independent trace shows large output round trips through RAM and eager materialization of overwritten records. | PARTIAL. Keep live intermediate outputs on device and omit copies of expired records. Verify CPU fallback, overlapping views and request-level transfer bytes. |
+| 27 | Selective transfer and device placement. Backend split execution and CUDA tensor set/get → asynchronous linear and 2-D copies. | Reference transfers selected ranges and uses D2D. Goose skips publishing fully overwritten activation records in output-only graphs. Large output round trips through RAM remain. | PARTIAL. Keep more live intermediates on device and retire records when their final consumers finish. Full-request transfer and peak memory checks remain open. |
 | 28 | CUDA VMM pool. CUDA buffer allocator → `cuMemAddressReserve`, `cuMemCreate`, `cuMemMap`, `cuMemSetAccess`, release. | Reference executes 105 create/map operations and reserves a virtual address range. Goose grows Driver API buffers with `cuMemAlloc_v2` and `cuMemFree_v2`. | MISSING. Restore equivalent reusable device allocation and supported fallback. Check allocation limits, device address stability and VRAM peak on RTX 4070. |
 | 29 | CUDA Graph capture and replay. `ggml-cuda.cu` graph evaluator → begin/end capture, instantiate, exec update and launch. | Whole-graph trace records over 20,000 launches across the session. Server reports 510 reuses. Goose rebuilds its graph and directly launches CUDA kernels. | MISSING. Establish stable graph keys, addresses and update boundaries before recording and replay. Check changing KV prefixes and buffer ownership before measuring decode overhead. |
 | 30 | Streams and synchronization. CUDA scheduler and `ggml-cuda.cu` establish streams, events and CUDA Graph scopes. | Reference uses stream sync and async copies. Goose synchronizes the context for many operations during execution. | PARTIAL. Restore per-stream ordering and event dependencies after liveness and transfers are safe. Compare wall time without adding driver wait to GPU time. |
@@ -189,6 +189,28 @@ Raw data: `/home/end0/AI/LlamaServer/franken-goose-kv-fwht.TbKeRQ/mmq-profile.xv
 Request SHA-256: `6aaecd1c3e3744ebc1d19039bc036fb808508b659dd44628618a0c27e9236973`.
 Response SHA-256: `206b268a8bb9da0ac08a90f7f57a7d0c3560cfeab4618f9dd9cdaaf99c558bb6`.
 Executable SHA-256: `8ec11f5f4ec138c5ecd7571f82b2b149e86f42c430902dbccf32c867cc23c023`.
+
+## Covered activation overwrite checkpoint
+
+EXP-2026-11-20-1525 skips downloads for dirty device records fully
+covered by a dense, disjoint writer during output-only evaluation.
+Overlapping inputs and partially covered records retain the existing
+publication path. The CUDA fixture verifies full replacement, a
+retained tail and an aliased input on both device images. Only the
+full-replacement case drops the dirty record (256 bytes).
+
+On the same 4096/1 input as EXP-1524, the first CUDA kernel to last
+kernel window had 2,529 D2H copies and 89,922,142,208 bytes, down from
+2,810 copies and 93,313,105,920 bytes. Recorded D2H device time fell
+from 9.840 s to 9.427 s. H2D was unchanged at 105,306,630,016 bytes.
+Prefill was 46.209 s, or 88.640 tokens/s, versus 46.428 s and 88.223
+tokens/s. Both runs returned ID 9495 and the same text. These short
+profiles measure transfer reduction. Stable throughput, full-request
+generation, decode rate and RAM/VRAM still require acceptance.
+
+Raw data: `/home/end0/AI/LlamaServer/franken-goose-overwrite.ybFFqc/mmq-profile.A1GnjM`.
+Response SHA-256: `e6e320282997e1fd778f987084a0f69c828018df42f92c092820da1e1a691e85`.
+Executable SHA-256: `7058ed51e0301df87c34524d74cef0df36668b71a8c64ac583183ba2acde0bf0`.
 
 ## Kernel coverage
 
