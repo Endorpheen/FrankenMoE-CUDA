@@ -45,7 +45,7 @@ export fn qr_cuda_state(owner: const i64[:], layers: const i64[:], head: i64) ->
     return state_load(ranges[0 .. count], bytes);
 }
 
-export fn qr_state_offset(ranges: const i64[:], address: u64, bytes: i64, kind: i64) -> i64 {
+fn qr_find_state_range(ranges: const i64[:], address: u64, bytes: i64, kind: i64) -> i64 {
     if bytes <= 0 || ranges.len % 4 != 0 { return -1; }
     for i in ranges.len / 4 {
         let at = 4 * i;
@@ -56,9 +56,19 @@ export fn qr_state_offset(ranges: const i64[:], address: u64, bytes: i64, kind: 
         if offset > ((size - bytes) as u64) { continue; }
         // Device recurrence reads and publishes complete registered tensors.
         if kind > 0 && (offset != 0 || bytes != size) { continue; }
-        return ranges[at + 2] + (offset as i64);
+        return at;
     }
     return -1;
+}
+
+export fn qr_state_index(ranges: const i64[:], address: u64, bytes: i64, kind: i64) -> i64 {
+    return qr_find_state_range(ranges, address, bytes, kind);
+}
+
+export fn qr_state_offset(ranges: const i64[:], address: u64, bytes: i64, kind: i64) -> i64 {
+    let at = qr_find_state_range(ranges, address, bytes, kind);
+    if at < 0 { return -1; }
+    return ranges[at + 2] + ((address - (ranges[at] as! u64)) as i64);
 }
 
 export fn qr_reset_state(owner: const i64[:], layers: const i64[:], session: i64[:]) -> i64 {

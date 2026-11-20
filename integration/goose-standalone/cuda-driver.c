@@ -14,6 +14,7 @@
 
 extern int64_t dw_cuda_dense_offset(sl_i64 ranges, uint64_t address, int64_t bytes);
 extern int64_t qr_state_offset(sl_i64 ranges, uint64_t address, int64_t bytes, int64_t kind);
+extern int64_t qr_state_index(sl_i64 ranges, uint64_t address, int64_t bytes, int64_t kind);
 extern int64_t fg143_activation_lookup(sl_i64 ranges, uint64_t host, int64_t bytes);
 extern int64_t fg143_activation_overlap(sl_i64 ranges, uint64_t host, int64_t bytes, int64_t first);
 extern uint64_t fg143_activation_discard_overwritten(sl_i64 ranges, uint64_t host, int64_t bytes);
@@ -77,7 +78,8 @@ struct device_buffer {
     DevicePtr address;
     size_t bytes;
     struct vmm_mapping * mappings;
-    bool virtual_reservation;
+    size_t reservation_bytes;
+    bool vmm_failed;
 };
 
 struct expert_cache {
@@ -114,12 +116,15 @@ static struct {
     sl_i64 dense_ranges;
     struct device_buffer state;
     sl_i64 state_ranges;
+    struct device_buffer * state_views;
+    size_t state_logical_bytes;
     struct expert_cache experts;
     sl_i64 expert_pins;
     int64_t expert_pinned_bytes;
     int status, multiprocessors;
     bool mmq_window, mmq_shared, moe_topk, activation_reference;
     size_t vmm_granularity, vmm_capacity;
+    bool scratch_vmm, lazy_kv;
     struct memory_properties vmm_properties;
     bool flash_graph_enabled;
     Stream flash_graph_stream;
@@ -233,7 +238,7 @@ static int release_vmm(struct device_buffer * buffer) {
         buffer->mappings = segment->previous;
         free(segment);
     }
-    const int error = cuda.vmm_free(buffer->address, cuda.vmm_capacity);
+    const int error = cuda.vmm_free(buffer->address, buffer->reservation_bytes);
     if (error == 0) {
         if (getenv("GOOSE_GRAPH_LOG")) fprintf(stderr, "Goose CUDA VMM: freed base=%#" PRIx64 "\n", (uint64_t) buffer->address);
         *buffer = (struct device_buffer) {0};
@@ -244,8 +249,10 @@ static int release_vmm(struct device_buffer * buffer) {
 static void init_vmm(int device) {
     enum { vmm_attribute = 102, allocation_pinned = 1, location_device = 1, minimum_granularity = 0 };
     const char * setting = getenv("GOOSE_CUDA_VMM");
+    const bool scratch = setting && strcmp(setting, "1") == 0;
+    const bool lazy = fg_standalone_option_enabled("GOOSE_KV_LAZY_VMM");
     int available = 0;
-    if (!setting || strcmp(setting, "1") != 0 ||
+    if ((!scratch && !lazy) ||
         cuda.device_attribute(&available, vmm_attribute, device) != 0 || !available) return;
 #define VMM_LOAD(field, symbol) do { cuda.field = dlsym(cuda.library, symbol); if (!cuda.field) return; } while (0)
     VMM_LOAD(vmm_get_granularity, "cuMemGetAllocationGranularity");
@@ -263,6 +270,8 @@ static void init_vmm(int device) {
     if (cuda.vmm_get_granularity(&granularity, &cuda.vmm_properties, minimum_granularity) == 0 &&
         granularity > 0) {
         cuda.vmm_granularity = granularity;
+        cuda.scratch_vmm = scratch;
+        cuda.lazy_kv = lazy;
     }
 }
 
@@ -300,8 +309,11 @@ static void cleanup(void) {
         if (cuda.push(cuda.context) == 0) {
             if (cuda.expert_pins.len > 0) ec_manage_pins(cuda.expert_pins, 0);
             release_flash_graph();
-            if (cuda.attention_scratch.virtual_reservation) release_vmm(&cuda.attention_scratch);
-            if (cuda.mmq_packed.virtual_reservation) release_vmm(&cuda.mmq_packed);
+            if (cuda.attention_scratch.reservation_bytes) release_vmm(&cuda.attention_scratch);
+            if (cuda.mmq_packed.reservation_bytes) release_vmm(&cuda.mmq_packed);
+            for (int64_t i = 0; cuda.state_views && i < cuda.state_ranges.len / 4; ++i) {
+                if (cuda.state_views[i].reservation_bytes) release_vmm(&cuda.state_views[i]);
+            }
             Context previous;
             cuda.pop(&previous);
         }
@@ -309,6 +321,7 @@ static void cleanup(void) {
     }
     free(cuda.dense_ranges.data);
     free(cuda.state_ranges.data);
+    free(cuda.state_views);
     free(cuda.expert_pins.data);
     free_expert_metadata(&cuda.experts);
     if (cuda.library) dlclose(cuda.library);
@@ -485,7 +498,7 @@ static void init_cuda(void) {
 
 static int release_buffer(struct device_buffer * buffer) {
     if (!buffer->address) return 0;
-    if (buffer->virtual_reservation) return release_vmm(buffer);
+    if (buffer->reservation_bytes) return release_vmm(buffer);
     const int error = cuda.release(buffer->address);
     if (error == 0) {
         *buffer = (struct device_buffer) {0};
@@ -493,14 +506,14 @@ static int release_buffer(struct device_buffer * buffer) {
     return error;
 }
 
-static int reserve_vmm(struct device_buffer * buffer, size_t bytes) {
+static int reserve_vmm(struct device_buffer * buffer, size_t bytes, size_t limit, bool clear) {
     enum { out_of_memory = 2, access_read_write = 3 };
     if (cuda.vmm_capacity == 0) {
         const size_t capacity = (size_t) fg143_vmm_capacity();
         if (capacity % cuda.vmm_granularity != 0) return out_of_memory;
         cuda.vmm_capacity = capacity;
     }
-    if (bytes > cuda.vmm_capacity) return out_of_memory;
+    if (buffer->vmm_failed || bytes > limit || limit > cuda.vmm_capacity) return out_of_memory;
     const int64_t growth = fg143_vmm_scratch_growth((int64_t) bytes, (int64_t) buffer->bytes,
         (int64_t) cuda.vmm_granularity);
     if (growth <= 0) return out_of_memory;
@@ -510,10 +523,12 @@ static int reserve_vmm(struct device_buffer * buffer, size_t bytes) {
     int error = 0;
     if (!buffer->address) {
         DevicePtr base = 0;
-        error = cuda.vmm_reserve(&base, cuda.vmm_capacity, cuda.vmm_granularity, 0, 0);
+        const int64_t reservation = fg143_vmm_scratch_growth((int64_t) limit, 0, (int64_t) cuda.vmm_granularity);
+        if (reservation <= 0) { free(segment); return out_of_memory; }
+        error = cuda.vmm_reserve(&base, (size_t) reservation, cuda.vmm_granularity, 0, 0);
         if (error == 0) {
             buffer->address = base;
-            buffer->virtual_reservation = true;
+            buffer->reservation_bytes = (size_t) reservation;
         }
     }
     if (error == 0) error = cuda.vmm_create(&segment->handle, segment->bytes, &cuda.vmm_properties, 0);
@@ -529,21 +544,25 @@ static int reserve_vmm(struct device_buffer * buffer, size_t bytes) {
         const struct memory_access access = {cuda.vmm_properties.location, access_read_write};
         error = cuda.vmm_access(address, segment->bytes, &access, 1);
     }
+    if (error == 0 && clear) error = cuda.zero(address, 0, segment->bytes);
     if (error == 0) {
         buffer->bytes += segment->bytes;
         if (getenv("GOOSE_GRAPH_LOG")) {
             fprintf(stderr, "Goose CUDA VMM: mapped base=%#" PRIx64 " offset=%zu bytes=%zu\n",
                 (uint64_t) buffer->address, segment->offset, segment->bytes);
         }
+    } else if (clear) {
+        // The graph must not consume an address whose mapping or zeroing failed.
+        buffer->vmm_failed = true;
     }
     return error;
 }
 
 static int reserve(struct device_buffer * buffer, size_t bytes) {
     if (bytes <= buffer->bytes) return 0;
-    if (cuda.vmm_granularity && (buffer == &cuda.attention_scratch || buffer == &cuda.mmq_packed) &&
-        (!buffer->address || buffer->virtual_reservation)) {
-        const int error = reserve_vmm(buffer, bytes);
+    if (cuda.scratch_vmm && (buffer == &cuda.attention_scratch || buffer == &cuda.mmq_packed) &&
+        (!buffer->address || buffer->reservation_bytes)) {
+        const int error = reserve_vmm(buffer, bytes, (size_t) fg143_vmm_capacity(), false);
         if (error == 0) return 0;
     }
     int error = release_buffer(buffer);
@@ -943,6 +962,39 @@ int64_t fg_cuda_free_bytes(void) {
     return finish_context() == 0 && status == 0 && bytes <= INT64_MAX ? (int64_t) bytes : -1;
 }
 
+static int prepare_lazy_state(const int64_t * ranges, size_t count, size_t logical,
+    struct device_buffer * eager, struct device_buffer ** views) {
+    size_t recurrent = 0, total = 0;
+    for (size_t i = 0; i < count; ++i) {
+        const int64_t * range = ranges + 4 * i;
+        if (range[1] <= 0 || (uint64_t) range[1] > logical - total || range[3] < 0 || range[3] > 2) return -1;
+        total += (size_t) range[1];
+        if (range[3] != 0) {
+            if (range[1] % 16 != 0) return -1;
+            recurrent += (size_t) range[1];
+        }
+    }
+    if (total != logical || total == recurrent) return -1;
+    struct device_buffer * buffers = calloc(count, sizeof(*buffers));
+    if (!buffers) return 2;
+    int error = recurrent ? reserve(eager, recurrent) : 0;
+    if (error == 0 && recurrent) error = cuda.zero(eager->address, 0, recurrent);
+    if (error != 0) {
+        free(buffers);
+        return error;
+    }
+    size_t offset = 0;
+    for (size_t i = 0; i < count; ++i) {
+        const int64_t * range = ranges + 4 * i;
+        if (range[3] == 0) continue;
+        buffers[i].address = eager->address + offset;
+        buffers[i].bytes = (size_t) range[1];
+        offset += buffers[i].bytes;
+    }
+    *views = buffers;
+    return 0;
+}
+
 int64_t fg_cuda_load_model_state(sl_i64 ranges, int64_t bytes) {
     if (!ranges.data || ranges.len <= 0 || ranges.len % 4 != 0 || bytes <= 0 ||
         (uint64_t) ranges.len > SIZE_MAX / sizeof(*ranges.data)) return -1;
@@ -952,11 +1004,21 @@ int64_t fg_cuda_load_model_state(sl_i64 ranges, int64_t bytes) {
     memcpy(records, ranges.data, metadata_bytes);
     if (start_context() != 1) { free(records); return -1; }
     struct device_buffer staging = {0};
-    int error = cuda.state.address ? -1 : reserve(&staging, (size_t) bytes);
-    if (error == 0) error = cuda.zero(staging.address, 0, staging.bytes);
+    struct device_buffer * views = NULL;
+    int error = cuda.state_logical_bytes ? -1 : 0;
+    if (error == 0 && cuda.lazy_kv) {
+        error = prepare_lazy_state(records, (size_t) ranges.len / 4, (size_t) bytes, &staging, &views);
+        if (error != 0) error = release_buffer(&staging);
+    }
+    if (error == 0 && !views) {
+        error = reserve(&staging, (size_t) bytes);
+        if (error == 0) error = cuda.zero(staging.address, 0, staging.bytes);
+    }
     if (error == 0) {
         cuda.state = staging;
         cuda.state_ranges = (sl_i64) {records, ranges.len};
+        cuda.state_views = views;
+        cuda.state_logical_bytes = (size_t) bytes;
     } else {
         if (staging.address) cuda.release(staging.address);
         free(records);
@@ -970,38 +1032,82 @@ int64_t fg_cuda_load_model_state(sl_i64 ranges, int64_t bytes) {
 }
 
 int64_t fg_cuda_model_state_bytes(void) {
-    return (int64_t) cuda.state.bytes;
+    return (int64_t) cuda.state_logical_bytes;
+}
+
+static struct device_buffer * state_region(uint64_t host, int64_t bytes, int64_t kind, size_t * at) {
+    if (!cuda.state_logical_bytes) return NULL;
+    if (cuda.state_views) {
+        const int64_t index = qr_state_index(cuda.state_ranges, host, bytes, kind);
+        if (index < 0) return NULL;
+        *at = (size_t) (host - (uint64_t) cuda.state_ranges.data[index]);
+        return &cuda.state_views[index / 4];
+    }
+    const int64_t offset = qr_state_offset(cuda.state_ranges, host, bytes, kind);
+    if (offset < 0 || (uint64_t) offset > cuda.state.bytes ||
+        (uint64_t) bytes > cuda.state.bytes - (uint64_t) offset) return NULL;
+    *at = (size_t) offset;
+    return &cuda.state;
 }
 
 static DevicePtr state_address(uint64_t host, int64_t bytes, int64_t kind) {
-    if (!cuda.state.address) return 0;
-    const int64_t offset = qr_state_offset(cuda.state_ranges, host, bytes, kind);
-    if (offset < 0 || (uint64_t) offset > cuda.state.bytes ||
-        (uint64_t) bytes > cuda.state.bytes - (uint64_t) offset) return 0;
-    return cuda.state.address + (uint64_t) offset;
+    size_t offset;
+    struct device_buffer * buffer = state_region(host, bytes, kind, &offset);
+    return buffer ? buffer->address + offset : 0;
+}
+
+// Bound, map and zero a lazy state span while the CUDA context is held.
+static int map_state(struct device_buffer * buffer, size_t offset, size_t bytes, DevicePtr * address) {
+    *address = 0;
+    if (!buffer) return 0;
+    if (buffer->vmm_failed) return -1;
+    if (offset + bytes > buffer->bytes) {
+        const int64_t * range = cuda.state_ranges.data + 4 * (buffer - cuda.state_views);
+        const int error = reserve_vmm(buffer, offset + bytes, (size_t) range[1], true);
+        if (error != 0) return error;
+    }
+    *address = buffer->address + offset;
+    return 0;
+}
+
+static int map_state_address(uint64_t host, int64_t bytes, int64_t kind, DevicePtr * address) {
+    size_t offset = 0;
+    struct device_buffer * buffer = state_region(host, bytes, kind, &offset);
+    return map_state(buffer, offset, (size_t) bytes, address);
 }
 
 int64_t fg_cuda_reset_model_state(void) {
     published_state.bytes = 0;
-    if (!cuda.state.address) return 0;
+    if (!cuda.state_logical_bytes) return 0;
     if (push_context() != 1) return -1;
-    const int status = cuda.zero(cuda.state.address, 0, cuda.state.bytes);
+    int status = cuda.state.address ? cuda.zero(cuda.state.address, 0, cuda.state.bytes) : 0;
+    for (int64_t i = 0; status == 0 && cuda.state_views && i < cuda.state_ranges.len / 4; ++i) {
+        const struct device_buffer * buffer = &cuda.state_views[i];
+        if (buffer->vmm_failed) status = -1;
+        else if (buffer->reservation_bytes && buffer->bytes) status = cuda.zero(buffer->address, 0, buffer->bytes);
+    }
     return finish_context() == 0 && status == 0 ? 0 : -1;
 }
 
 int64_t fg_cuda_state_write(uint64_t host, int64_t bytes) {
-    const DevicePtr target = state_address(host, bytes, -1);
-    if (!target) return 0;
+    size_t offset = 0;
+    struct device_buffer * buffer = state_region(host, bytes, -1, &offset);
+    if (!buffer) return 0;
     if (push_context() != 1) return -1;
-    const int status = cuda.upload(target, (const void *) (uintptr_t) host, (size_t) bytes);
+    DevicePtr target;
+    int status = map_state(buffer, offset, (size_t) bytes, &target);
+    if (status == 0) status = cuda.upload(target, (const void *) (uintptr_t) host, (size_t) bytes);
     return finish_context() == 0 && status == 0 ? 0 : -1;
 }
 
 static int64_t read_state(uint64_t host, int64_t bytes, int64_t kind) {
-    const DevicePtr source = state_address(host, bytes, kind);
-    if (!source) return 0;
+    size_t offset = 0;
+    struct device_buffer * buffer = state_region(host, bytes, kind, &offset);
+    if (!buffer) return 0;
     if (push_context() != 1) return -1;
-    const int status = cuda.download((void *) (uintptr_t) host, source, (size_t) bytes);
+    DevicePtr source;
+    int status = map_state(buffer, offset, (size_t) bytes, &source);
+    if (status == 0) status = cuda.download((void *) (uintptr_t) host, source, (size_t) bytes);
     return finish_context() == 0 && status == 0 ? 0 : -1;
 }
 
@@ -1019,11 +1125,15 @@ int64_t fg_cuda_gdn_state_read(sl_f32 state) {
 }
 
 int64_t fg_cuda_kv_read(sl_u8 k, sl_u8 v) {
-    const DevicePtr key = state_address((uint64_t) (uintptr_t) k.data, k.len, 0);
-    const DevicePtr value = state_address((uint64_t) (uintptr_t) v.data, v.len, 0);
-    if (!key && !value) return 0;
+    size_t key_offset = 0, value_offset = 0;
+    struct device_buffer * key_buffer = state_region((uint64_t) (uintptr_t) k.data, k.len, 0, &key_offset);
+    struct device_buffer * value_buffer = state_region((uint64_t) (uintptr_t) v.data, v.len, 0, &value_offset);
+    if (!key_buffer && !value_buffer) return 0;
     if (push_context() != 1) return -1;
-    int status = key ? cuda.download(k.data, key, (size_t) k.len) : 0;
+    DevicePtr key = 0, value = 0;
+    int status = map_state(key_buffer, key_offset, (size_t) k.len, &key);
+    if (status == 0) status = map_state(value_buffer, value_offset, (size_t) v.len, &value);
+    if (status == 0 && key) status = cuda.download(k.data, key, (size_t) k.len);
     if (status == 0 && value) status = cuda.download(v.data, value, (size_t) v.len);
     return finish_context() == 0 && status == 0 ? 0 : -1;
 }
@@ -1037,13 +1147,15 @@ int64_t fg_cuda_set_q4_rows(uint64_t source, int64_t source_bytes, int64_t strid
     uint32_t blocks = (uint32_t) (width / 32);
     uint64_t tasks = (uint64_t) rows * blocks;
     if (tasks > (uint64_t) INT_MAX * 128 || target_bytes != (int64_t) (18 * tasks)) return -1;
-    DevicePtr destination = state_address(target, target_bytes, 0);
-    if (!destination) return 0;
+    size_t offset = 0;
+    struct device_buffer * buffer = state_region(target, target_bytes, 0, &offset);
+    if (!buffer) return 0;
     const int active = start_context();
     if (active != 1) return active;
 
-    DevicePtr input = 0;
-    int error = activation_input((sl_u8) {(void *) (uintptr_t) source, source_bytes}, &cuda.input, &input);
+    DevicePtr input = 0, destination = 0;
+    int error = map_state(buffer, offset, (size_t) target_bytes, &destination);
+    if (error == 0) error = activation_input((sl_u8) {(void *) (uintptr_t) source, source_bytes}, &cuda.input, &input);
     uint64_t row_stride = (uint64_t) stride;
     void * args[] = {&input, &destination, &row_stride, &blocks, &tasks};
     if (error == 0) {
@@ -1732,15 +1844,16 @@ int64_t fg_cuda_q4_attention(sl_i64 config, sl_u8 q, sl_u8 k, sl_u8 v, sl_u8 mas
     const int active = start_context();
     if (active != 1) return active;
 
-    DevicePtr key = state_address((uint64_t) (uintptr_t) k.data, k.len, 0);
-    DevicePtr value = state_address((uint64_t) (uintptr_t) v.data, v.len, 0);
+    DevicePtr key = 0, value = 0;
+    int error = map_state_address((uint64_t) (uintptr_t) k.data, k.len, 0, &key);
+    if (error == 0) error = map_state_address((uint64_t) (uintptr_t) v.data, v.len, 0, &value);
     const bool resident = key != 0 && value != 0;
     const sl_u8 data[] = {q, key ? (sl_u8) {0} : k, value ? (sl_u8) {0} : v, mask,
         {(uint8_t *) config.data, config.len * (int64_t) sizeof(*config.data)}};
     struct device_buffer * buffers[] = {&cuda.input, &cuda.weight, &cuda.attention_value, &cuda.jobs, &cuda.attention_config};
     DevicePtr staged[] = {0, key, value, 0, 0}, output = 0;
     const uint64_t host = (uint64_t) (uintptr_t) out.data;
-    int error = activation_output(host, out.len, &output);
+    if (error == 0) error = activation_output(host, out.len, &output);
     if (error == 0) error = upload_inputs(data, buffers, staged, sizeof(data) / sizeof(*data));
 
     bool mma = false;

@@ -118,7 +118,7 @@ prefill and 62.86 decode tokens/s.
 | 25 | Backend graph splitting and lifetime planning. GGML scheduler in `vendor/flint/ggml/src/ggml-backend.cpp` → `ggml-alloc.c` child/view counts, aligned best-fit, split/coalesced blocks and admissible in-place reuse. | Reference log records five buffers and eight same-size reallocations. Goose completes actual 4096/4096 using a ~1.010 GB lifetime arena and whole-block reuse. | PARTIAL. Retain the tested alias planner. Extend device lifetime ownership and compare backend memory peaks and retry behavior on identical profiles. |
 | 26 | Expert tiers and pinned mapped weights. `vendor/flint/src/llama-model.cpp` → `llama-mmap-expert-pin.h` and CUDA buffer registration. | [Goose SLRU and mmap registration](#expert-mmap-registration-and-slru) execute in real Apex. The bounded mode registers 28 ranges, transfers 6,459,162,624 bytes from pinned sources and improves the no-swap 4096/129 median. | PARTIAL. Validate full context, quality and performance against EXP-1476. Full registration remains rejected on this host. |
 | 27 | Selective transfer and device placement. Backend split execution and CUDA tensor set/get → asynchronous linear and 2-D copies. | The [adaptive arena](#adaptive-cuda-activation-arena), [resident vector path](#resident-wide-vector-multiplication) and [last-use matrix input staging](#device-staging-for-the-last-use-matrix-input) remove the large temporary prefill publications. | PARTIAL. Investigate remaining expert uploads, dispatch packets and synchronous host transfers. Full memory and speed parity remain open. |
-| 28 | CUDA VMM pool. CUDA buffer allocator → `cuMemAddressReserve`, `cuMemCreate`, `cuMemMap`, `cuMemSetAccess`, release. | [Goose scratch VMM](#cuda-vmm-scratch-restoration) reserves stable MMQ and Attention addresses, maps growth in place and releases all mappings after real Apex. | PARTIAL. Qualify the package on the full workload. Other device buffers still use their current allocation path. |
+| 28 | CUDA VMM pool. CUDA buffer allocator → `cuMemAddressReserve`, `cuMemCreate`, `cuMemMap`, `cuMemSetAccess`, release. | [Scratch VMM](#cuda-vmm-scratch-restoration) grows stable MMQ and Attention buffers. [Lazy KV VMM](#lazy-q4-kv-vmm-restoration) saves 1,240 MiB on full Apex 32K/512 and preserves generation through a short request after reset. | PARTIAL. Qualify the larger package, full-capacity model growth and other supported layouts. |
 | 29 | CUDA Graph capture and replay. `ggml-cuda.cu` graph evaluator → begin/end capture, instantiate, exec update and launch. | [Goose vector Attention capture](#cuda-graph-replay-for-vector-attention) executes the two-node vector/merge graph and updates it with current pointers and key counts. The hybrid trace records over 20,000 graph launches across the full workload. | PARTIAL. Qualify 32K and extend capture to other dependency-safe decode sequences. |
 | 30 | Streams and synchronization. CUDA scheduler and `ggml-cuda.cu` establish streams, events and CUDA Graph scopes. | Reference uses stream sync and async copies. Planned Goose graphs defer intermediate publication and [matrix waits](#deferred-matrix-waits) to the graph boundary, with ordered blocking host reads. | PARTIAL. Reduce the remaining blocking packet uploads and qualify independent stream and event dependencies. |
 | 31 | Prefill → decode continuation. Reference `llama-context.cpp` scheduler and CUDA graph compute produce logits for the shared sampler. | The earlier full Goose response repeated input text. The newer checkpoint completes the [normal quality suite](#apex-response-quality-checkpoint) and the vector Attention cases. | INCORRECT on the last full quality diagnostic. Revalidate the current checkpoint on the full real workload. Investigate a specific reproduced behavioral defect. |
@@ -2662,6 +2662,69 @@ The A/B directories end in `fjd09uke` and `jy05j2cj`.
 The default confirmation ends in `y3oyyjpj`.
 Default executable SHA-256
 `12b2b058862b745846391e681205a364441d3c4cb2b3db0218604250d29f2f25`.
+
+## Lazy Q4 KV VMM restoration
+
+EXP-1575 restores the EXP-101 physical-memory policy for
+standalone causal Q4 KV. The Goose state manifest identifies
+the owning tensor. Each K/V tensor obtains a stable virtual
+range sized for the complete tensor. Bound accesses grow
+and clear the mapped prefix through the existing VMM
+planner. Reads, writes and diagnostic copies keep the same
+byte layout and fail before using a failed map. Recurrent
+state keeps an eager allocation. Reset clears the mapped
+KV high-water and recurrent state, and teardown unmaps
+the pages and frees the reservations. Devices without VMM
+support keep eager allocation. Set `GOOSE_KV_LAZY_VMM=0`
+to select the eager path.
+
+The fixture checks zeroed pages, preservation of a written
+prefix during growth, the final partial page and reset of
+both KV and recurrent state. It passes CUDA memcheck.
+The short Apex trace records 20 mappings and exact output.
+The full 32K/512 trace records 100 maps and 100 unmaps
+across 20 KV reservations. The logical context remains
+262,144 with 4096/4096. The SLRU bank is exactly
+5,234,122,752 bytes in both arms.
+
+| Same-binary full Apex | Eager A | Lazy B |
+|---|---:|---:|
+| Profiled prefill, tok/s | 798.897 | 802.982 |
+| Profiled decode, steps/s | 20.848 | 21.046 |
+| Profiled ready process VRAM, MiB | 7,962 | 6,522 |
+| Profiled peak process VRAM, MiB | 8,524 | 7,284 |
+| Profiled process RSS high-water, KiB | 23,514,884 | 23,515,244 |
+| Profiled system swap-out growth, pages | 44,854 | 0 |
+| Unprofiled reverse-pair prefill, tok/s | 804.446 | 806.801 |
+| Unprofiled reverse-pair decode, steps/s | 21.807 | 22.594 |
+| Unprofiled peak process VRAM, MiB | 8,512 | 7,272 |
+| Unprofiled process RSS high-water, KiB | 22,936,224 | 22,937,952 |
+| Unprofiled system swap-out growth, pages | 0 | 0 |
+
+Process swap is zero in both pairs. All full answers,
+tokens and probability rows match their controls. SLRU
+counts, profiled H2D/D2H and all 5,301,139 model pages
+also match. The existing opening echo persists. The
+unprofiled pair serves a second 4096/129 request with
+zero cached prompt tokens in each process. Its response,
+IDs and probability rows also match. Peak VRAM falls
+1,240 MiB in both pairs. The system swap activity in
+the profiled control limits a speed attribution from
+that pair. The unprofiled pair confirms the memory
+improvement without a measured throughput regression.
+
+The default build also completes a short Apex 4096/129
+with scratch VMM and CUDA Graph enabled. Nsight sees 22
+reservations, 24 maps and 1,280 graph launches. Its
+output matches the standalone lazy run, with 7,084 MiB
+peak process VRAM and zero process swap or system swap-out.
+
+The executable and evidence are under
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/lazy-kv-exp1575`.
+The profiled A/B directories end in `crx43jaz` and
+`57g3pd3y`. The unprofiled A/B directories end in
+`i807ja2q` and `me1sdsm_`. Default executable SHA-256
+`d0e953021463e61c394d420ce274bd91490acc0fad30c6a622a35b79a0d24f9f`.
 
 ## Long Attention partition probe
 
