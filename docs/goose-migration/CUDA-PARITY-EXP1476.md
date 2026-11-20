@@ -629,6 +629,33 @@ Raw directories under `/home/end0/AI/LlamaServer/franken-goose-flash-mma.CpioRH`
 Combined response SHA-256:
 `ce276d3d12b5171ca3df5dab73ba52fba7598b0f031424c79b446fb3b21bd01f`.
 
+## Byte-budgeted MMQ windows
+
+EXP-2026-11-20-1539 uses the Goose MMQ tile plan to choose a window
+from a 16 MiB packing target and the CUDA grid-Y bound. If the CUDA
+allocation runs out of memory, the driver retries with smaller
+windows. Expert boundaries, arithmetic, route order and physical
+microbatch size are preserved. This reduces dispatch overhead and
+leaves the independent stream-K implementation open. The GPU dense
+and indexed Q4_K/Q6_K oracle matched exactly.
+
+A fresh serialized 4096/1 pair used all three MMA flags on both
+builds. Prefill changed from 16.033 s / 255.476 tokens/s to
+15.799 s / 259.252 tokens/s. Each of MMQ pack and matmul fell
+from 10,397 to 830 launches. MMQ matmul device time fell from
+3,109.283 to 2,957.320 ms. Pack time fell from 95.628 to 89.121 ms.
+H2D and D2H bytes were identical. Process RSS peaks were
+23,905,636 and 23,885,044 KiB. Sampled process VRAM was 8,572 and
+8,582 MiB. Both runs had zero process swap and system swap-out
+growth. Content, output ID 280 and all five probabilities matched.
+This passes the short package gate. EXP-1476 response and full
+performance parity remain open.
+
+Control: `/home/end0/AI/LlamaServer/franken-goose-flash-mma.CpioRH/cuda-matrix-dense-both.lvij361a`.
+Candidate: `/home/end0/AI/LlamaServer/franken-goose-mmq-window.z2Wknq/cuda-matrix-dense-both.y2_5obc4`.
+Executable SHA-256: `c6a801cd58aaa99efa7a92a220dd30d07f6864cf60e119134a14dd7d48fc2429`.
+Candidate response SHA-256: `552eedccb6520e10a9bf642b24ab700cd7d78b363f89fbd12d8838f24e2de00a`.
+
 ## Kernel coverage
 
 The exact EXP-1476 request passed content, ID and probability

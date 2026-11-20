@@ -230,6 +230,13 @@ export fn fg143_mmq_tiles(jobs: const i64[:], words: i64, tiles: i64[:]) -> i64 
     return tile;
 }
 
+export fn fg143_mmq_window(extent: i64, tiles: i64, budget: i64) -> i64 {
+    if extent <= 0 || extent > 2147483647 / 256 || tiles <= 0 || budget <= 0 { return -1; }
+    let bytes_per_tile = extent * 288 * 8;
+    // Packing launches one CUDA grid-Y block per route.
+    return low(tiles, low(65535 / 8, high(1, budget / bytes_per_tile)));
+}
+
 fn cuda_matrix_planes(p: const Node &, weights: u64, weight_bytes: i64,
                      planes: i64, row_bytes: i64, row_count: i64,
                      spread2: i64, spread3: i64, heads: i64, next: i64,

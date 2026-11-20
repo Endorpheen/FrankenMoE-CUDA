@@ -791,22 +791,32 @@ int64_t fg_cuda_begin(uint64_t input, int64_t input_bytes, uint64_t output, int6
 
 static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
                       int rows, sl_i64 jobs, int job_words) {
-    enum { window_tiles = 64, routes_per_tile = 8 };
+    enum { staging_budget = 16 * 1024 * 1024, routes_per_tile = 8 };
     const int count = (int) (jobs.len / job_words);
-    const size_t window_routes = count < window_tiles * routes_per_tile ?
-        (size_t) count : window_tiles * routes_per_tile;
-    if (extent > INT_MAX / 256 || (size_t) extent > SIZE_MAX / 288 / window_routes ||
-        (size_t) count > SIZE_MAX / (3 * sizeof(int64_t))) return -1;
-    const size_t packed_bytes = window_routes * (size_t) extent * 288;
+    if (extent > INT_MAX / 256 || (size_t) count > SIZE_MAX / (3 * sizeof(int64_t))) return -1;
     int64_t * tiles = malloc((size_t) count * 3 * sizeof(*tiles));
     if (!tiles) return -1;
     const int64_t tile_count = fg143_mmq_tiles(jobs, job_words, (sl_i64) {tiles, 3ll * count});
-    if (tile_count <= 0 || tile_count > count) {
+    int64_t window_tiles = fg143_mmq_window(extent, tile_count, staging_budget);
+    if (tile_count <= 0 || tile_count > count || window_tiles <= 0) {
         free(tiles);
         return -1;
     }
     const size_t tile_bytes = (size_t) tile_count * 3 * sizeof(*tiles);
-    int error = reserve(&cuda.mmq_packed, packed_bytes);
+    size_t packed_bytes;
+    int error;
+    for (;;) {
+        const int64_t window_routes = window_tiles * routes_per_tile;
+        const size_t routes = (size_t) (count < window_routes ? count : window_routes);
+        if ((size_t) extent > SIZE_MAX / 288 / routes) {
+            free(tiles);
+            return -1;
+        }
+        packed_bytes = routes * (size_t) extent * 288;
+        error = reserve(&cuda.mmq_packed, packed_bytes);
+        if (error != 2 || window_tiles == 1) break;
+        window_tiles /= 2;
+    }
     if (error == 0) error = reserve(&cuda.mmq_tiles, tile_bytes);
     if (error == 0) error = cuda.upload(cuda.mmq_tiles.address, tiles, tile_bytes);
     int first = 0, first_route = 0;
@@ -815,7 +825,7 @@ static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
     void * matrix_args[] = {&weight, &cuda.mmq_packed.address, &matrix_output, &cuda.jobs.address,
         &cuda.mmq_tiles.address, &stride, &extent, &kind, &rows, &first, &first_route, &job_words};
     while (error == 0 && first < tile_count) {
-        const int batch = tile_count - first > window_tiles ? window_tiles : (int) (tile_count - first);
+        const int batch = (int) (tile_count - first > window_tiles ? window_tiles : tile_count - first);
         const int64_t last = 3ll * (first + batch - 1);
         first_route = (int) tiles[3ll * first];
         const unsigned routes = (unsigned) (tiles[last] + tiles[last + 1] - first_route);
