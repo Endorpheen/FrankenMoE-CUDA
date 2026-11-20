@@ -20,7 +20,11 @@ The standalone listener returned HTTP 200 with body `ok` on `GET /health`.
 Only the C declarations and tables from the former mixed header were retained.
 A Q4_K/F32 tensor fixture passed, and the existing Goose CPU arithmetic executed
 an ADD followed by MUL_MAT with the exact result `[5, 11, 10, 22]`. The numerical
-fixture linked only `libc` and `libm`. Full model loading, complete graph execution,
+fixture linked only `libc` and `libm`. The standalone inference host uses the
+Goose GGUF reader and model owner for tensor binding, KV state and RoPE section
+storage. A synthetic two-layer GGUF exercised attention and recurrent tensor
+binding, state reset and a BPE round trip through the host. The Goose greedy
+sampler is available through a public ABI. End-to-end graph execution,
 generation and the Apex/Qwen/Maxwell/Edge0 performance gates remain open.
 
 ## Ledger

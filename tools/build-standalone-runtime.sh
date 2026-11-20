@@ -16,9 +16,14 @@ COMMON_FLAGS=(-O1 -D_GNU_SOURCE -std=c11 -ffunction-sections -fdata-sections -I 
 "$CC" "${COMMON_FLAGS[@]}" -c "$ROOT/integration/goose-standalone/libc-forwards.c" \
     -o "$OUT/libc-forwards.o"
 
-for entry in tokenize serve; do
-    "$CC" "${COMMON_FLAGS[@]}" -c "$ROOT/integration/goose-standalone/cli/$entry-main.c" \
-        -o "$OUT/$entry.o"
+entries=(
+    "$ROOT/integration/goose-standalone/cli/tokenize-main.c"
+    "$ROOT/integration/goose-standalone/cli/serve-main.c"
+)
+for source in "${entries[@]}"; do
+    entry=${source##*/}
+    entry=${entry%-main.c}
+    "$CC" "${COMMON_FLAGS[@]}" -c "$source" -o "$OUT/$entry.o"
     "$CC" -Wl,--gc-sections "$OUT/$entry.o" "$UNIT/main.o" "$OUT/host.o" \
         "$OUT/libc-forwards.o" -lm -pthread -o "$OUT/frankenmoe-$entry"
     if readelf -d "$OUT/frankenmoe-$entry" | grep -Eq 'NEEDED.*(libstdc\+\+|libllama|libggml)'; then

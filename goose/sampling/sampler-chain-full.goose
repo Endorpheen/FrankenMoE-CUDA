@@ -214,6 +214,10 @@ fn sm_greedy(lv: f32[:], n: i64) -> i64 {
     return sel;
 }
 
+export fn fg_sampler_greedy(lv: f32[:], n: i64) -> i64 {
+    return sm_greedy(lv, n);
+}
+
 fn softmax_in_place(lv: f32[:], p: f32[:], n: i64, sorted: i64) -> f64 {
     var max_l: f32 = lv[0];
     if sorted == 0 {

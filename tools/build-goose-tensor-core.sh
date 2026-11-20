@@ -16,6 +16,6 @@ FLAGS=(-O1 -D_GNU_SOURCE -std=c11 -ffunction-sections -fdata-sections
        -I "$OUT" -I "$BASE/include" -I "$BASE/src" -I "$BASE/src/ggml-cpu")
 "$CC" "${FLAGS[@]}" -c "$BASE/src/ggml.c" -o "$OUT/ggml.o"
 "$CC" "${FLAGS[@]}" -c "$BASE/src/ggml-quants.c" -o "$OUT/ggml-quants.o"
-"$CC" "${FLAGS[@]}" -c "$ROOT/integration/goose-standalone/ggml-pthread.c" -o "$OUT/ggml-pthread.o"
-"$AR" rcs "$OUT/libfranken-tensor.a" "$OUT/ggml.o" "$OUT/ggml-quants.o" "$OUT/ggml-pthread.o"
+"$CC" "${FLAGS[@]}" -c "$ROOT/integration/goose-standalone/ggml-system.c" -o "$OUT/ggml-system.o"
+"$AR" rcs "$OUT/libfranken-tensor.a" "$OUT/ggml.o" "$OUT/ggml-quants.o" "$OUT/ggml-system.o"
 printf '%s/libfranken-tensor.a\n' "$OUT"
