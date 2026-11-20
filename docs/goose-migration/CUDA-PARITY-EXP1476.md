@@ -115,7 +115,7 @@ dependencies. Resume decode-specific work after prefill recovery.
 | 23 | Q4 cache writes. CUDA SET_ROWS dispatch → `k_set_rows_quant`. | Reference executes GPU Q4 quantization. Goose validates row updates and uses `goose_set_q4_rows` for dense supported spans, with ordered CPU sparse writes. | PARTIAL. Verify packed bytes and ordering against reference in the real cache. Measure writes across prefill and decode and retain safe repeated-index behavior. |
 | 24 | Tensor copies, concatenation and gathers. CUDA transform dispatch → `concat_cont`, `concat_non_cont`, `cpy_scalar`, `k_get_rows_float` and vectorized gather. | All appear in reference trace. Goose has aligned lifetimes, GPU blits and gathers and host fallbacks. | PARTIAL. Match selected contiguous and strided paths while avoiding dead-tensor transfers. Check views, source lifetimes and numerical read-back. |
 | 25 | Backend graph splitting and lifetime planning. GGML scheduler in `vendor/flint/ggml/src/ggml-backend.cpp` → `ggml-alloc.c` child/view counts, aligned best-fit, split/coalesced blocks and admissible in-place reuse. | Reference log records five buffers and eight same-size reallocations. Goose completes actual 4096/4096 using a ~1.010 GB lifetime arena and whole-block reuse. | PARTIAL. Retain the tested alias planner. Extend device lifetime ownership and compare backend memory peaks and retry behavior on identical profiles. |
-| 26 | Expert tiers and pinned mapped weights. `vendor/flint/src/llama-model.cpp` → `llama-mmap-expert-pin.h` and CUDA buffer registration. | `cudaHostRegister` occurs 120 times in the reference session. Goose verifies all model pages resident, loads dense tensors and uses a GPU SLRU, with different upload scheduling. | PARTIAL. Associate registrations with the reference ranges, then restore explicit equivalent pinned transfer and expert-bank budgets. Verify real resident sizes, misses, bytes and swaps. |
+| 26 | Expert tiers and pinned mapped weights. `vendor/flint/src/llama-model.cpp` → `llama-mmap-expert-pin.h` and CUDA buffer registration. | [Goose SLRU and mmap registration](#expert-mmap-registration-and-slru) execute in real Apex. The bounded mode registers 28 ranges, transfers 6,459,162,624 bytes from pinned sources and improves the no-swap 4096/129 median. | PARTIAL. Validate full context, quality and performance against EXP-1476. Full registration remains rejected on this host. |
 | 27 | Selective transfer and device placement. Backend split execution and CUDA tensor set/get → asynchronous linear and 2-D copies. | Reference transfers selected ranges and uses D2D. Goose retains oversized activations, retires planned results and keeps unrelated live buffers during normal arena eviction. | PARTIAL. Extend reuse across adjacent oversized operations. Full-request transfer and memory parity remain open. |
 | 28 | CUDA VMM pool. CUDA buffer allocator → `cuMemAddressReserve`, `cuMemCreate`, `cuMemMap`, `cuMemSetAccess`, release. | Reference executes 105 create/map operations and reserves a virtual address range. Goose grows Driver API buffers with `cuMemAlloc_v2` and `cuMemFree_v2`. | MISSING. Restore equivalent reusable device allocation and supported fallback. Check allocation limits, device address stability and VRAM peak on RTX 4070. |
 | 29 | CUDA Graph capture and replay. `ggml-cuda.cu` graph evaluator → begin/end capture, instantiate, exec update and launch. | Whole-graph trace records over 20,000 launches across the session. Server reports 510 reuses. Goose rebuilds its graph and directly launches CUDA kernels. | MISSING. Establish stable graph keys, addresses and update boundaries before recording and replay. Check changing KV prefixes and buffer ownership before measuring decode overhead. |
@@ -1592,6 +1592,118 @@ token loops.
   and `cuda-matrix-dense-both.oi4nsn5a`. Common request SHA-256
   `3edd77e6dcdea9ab06f9205b86818223648d8293e85d7257151a0ca78f64ba73`.
   Normal quality artifacts under `quality/paired.osGxwk`.
+
+## Expert mmap registration and SLRU
+
+Historical EXP-906 (`3989367d`) restored host registration for
+resident, read-only mmap ranges. Its own control and candidate
+measured 2,019.28 and 2,625.21 prompt tok/s, and 42.59 and
+55.52 decode tok/s. That measurement describes its historical
+pair. The independent Goose comparison uses its own matched
+checkpoint.
+
+The original standalone SLRU already shares a VRAM bank across
+layers of each compatible weight geometry. On this RTX 4070 the
+4,992 MiB cap yields 5,234,122,752 allocated bytes (4,991.648 MiB)
+after whole-slot rounding, corresponding to 1,283 Q6_K-down
+group slots and 1,479 Q4_K-down group slots. One miss fills
+all three planes of an expert. Hits do not upload weights.
+The eviction invalidates the victim layer's slot map before
+reassigning the slot. The cache fixture covers three-plane
+fills, reuse, cross-layer invalidation, separate groups and
+recovery from an interrupted upload. A CUDA fixture matches the
+streamed result after its warm cache's source weights are zeroed.
+
+Goose builds the page-aligned mmap spans from the validated
+expert tensor layout, merges overlaps, checks host RAM and
+residency and owns the registration order and rollback.
+The C boundary calls `cuMemHostRegister_v2` and
+`cuMemHostUnregister` with portable, read-only registration.
+The rollback probe successfully reacquires a page after a
+failure on a later span.
+
+The full-registration diagnostic reused the validated
+MMVQ checkpoint and the same physical 4096/4096 request.
+The registered arm acquired 120 ranges totaling
+19,504,005,120 bytes. The CUDA trace attributes 47,664 H2D
+transfers and 30,516,117,504 bytes to pinned sources. Both
+arms had 129,210 hits, 15,888 fills and 13,126 evictions.
+SLRU uploaded 30,516,117,504 expert bytes per arm.
+
+| Profiled Apex 4096/129 diagnostic | Pageable weights | Full registration |
+|---|---:|---:|
+| Prefill, tokens/s | 288.155 | 295.732 |
+| Decode, steps/s (128 steps) | 18.664 | 21.702 |
+| Host time in H2D calls, ms | 10,775.172 | 9,104.770 |
+| RSS high-water, KiB | 23,886,128 | 23,817,068 |
+| Sampled peak process VRAM, MiB | 8,582 | 8,582 |
+| Minimum sampled system MemAvailable, KiB | 43,922,904 | 27,993,736 |
+| Peak process swap, KiB | 0 | 17,056 |
+| System swap-out growth, pages | 0 | 822,505 |
+
+The token IDs, probability rows and response content all
+match. The registered arm started with 36 fewer resident
+model pages and recovered to 5,301,139 of 5,301,139 by the
+end of the request. Full registration is rejected for this
+host configuration because of swap and incomplete startup
+residency. The bounded candidate admits whole ranges under
+an explicit host pin budget and rechecks model residency
+after CUDA placement.
+
+- Full-registration raw pair under
+  `/home/end0/AI/LlamaServer/franken-goose-expert-pin.jZVzQg`,
+  directories `cuda-matrix-dense-both.4cf2o6ft` and
+  `cuda-matrix-dense-both.kp1am68l`.
+
+The accepted bound is 4,096 MiB of host registration, with
+whole spans selected across the expert mmap. It leaves the
+VRAM budget unchanged. Registration respects the host
+headroom checks and the runtime revalidates model residency
+after CUDA placement. `GGML_CUDA_REGISTER_HOST=0` disables
+registration. `GOOSE_EXPERT_PIN_MIB` sets the host budget.
+`GGML_CUDA_NO_PINNED` remains an opt-out when the register
+switch is unset.
+
+| Profiled 4096/129 A–B–B–A | Pageable A | Bounded registration B |
+|---|---:|---:|
+| Prefill pair, tokens/s | 284.588, 286.935 | 291.492, 292.118 |
+| Prefill median, tokens/s | 285.762 | 291.805 |
+| Decode pair, steps/s | 18.447, 18.600 | 19.170, 19.237 |
+| Decode median, steps/s | 18.524 | 19.203 |
+| Highest RSS high-water, KiB | 23,885,756 | 23,885,640 |
+| Sampled peak process VRAM, MiB | 8,582 | 8,582 |
+| Lowest sampled system MemAvailable, KiB | 49,166,516 | 44,850,816 |
+| Process swap, KiB | 0 | 0 |
+| System swap-out growth, pages | 0 | 0 |
+
+All four runs start and finish with all 5,301,139 model pages
+resident. Both B runs register 28 ranges covering 4,227,973,120
+bytes. The CUDA traces confirm 10,951 H2D transfers and
+6,459,162,624 bytes from pinned sources per B run.
+The median host time in H2D calls fell from 10,854.646 to
+10,366.942 ms. All four responses match in content, token IDs
+and reported probabilities. Each shows 129,210 cache hits,
+15,888 fills and 13,126 evictions.
+
+The final build selects this bounded registration without
+the enable flag. The independent runtime completes the same
+three normal quality prompts as the MMVQ checkpoint. Their
+answers and IDs match that checkpoint; all end on EOS with
+no leaked markers or loops. The 202-prompt-ID, 560-output-ID
+quality request reports 161.497 prefill and 22.130 output
+tok/s. Its shape differs from the 4096/129 performance
+diagnostic. Full 32K/512 acceptance has its own gates.
+
+- A–B–B–A traces, requests, replies and cache telemetry under
+  `/home/end0/AI/LlamaServer/franken-goose-expert-pin-bounded.vzu6Js`.
+  Raw directories in order
+  `cuda-matrix-dense-both.uvj3ebm2`, `cuda-matrix-dense-both.fmqw8yif`,
+  `cuda-matrix-dense-both.03nazd2w`, and `cuda-matrix-dense-both.bicuz4ir`.
+  Executable SHA-256 `ddfd8d2dbede001d76ebf81263cce910b6891334c8c1b3395d1ddfffeed86010`.
+- Final executable and quality results under
+  `/home/end0/AI/LlamaServer/franken-goose-expert-pin-default.fGBi00`,
+  `quality/paired.bazMBk`.
+  Executable SHA-256 `ce7ff3c3f225f235b863a958100a1aeacd8f76b9bf1e59f526c70d6344a1eeac`.
 
 ## Kernel coverage
 

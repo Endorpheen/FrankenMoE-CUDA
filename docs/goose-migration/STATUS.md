@@ -165,8 +165,12 @@ and 1,479 slots for the Q4_K-down group. These are planned capacities.
 successfully. The host fixture `integration/goose-standalone/tests/expert-cache.c`
 links the same archive with `-Wl,--wrap=fg_cuda_expert_upload`. It verified
 three-plane fills, hits without copies, cross-layer eviction, independent
-groups and recovery after an interrupted fill. Model execution, resident
-hit rates and the performance comparison remain open.
+groups and recovery after an interrupted fill. Real Apex 4096/129
+now reports 129,210 hits, 15,888 fills and 13,126 evictions per request
+at the 5,234,122,752-byte allocated bank. Bounded mmap registration
+is enabled by default with no swap and all model pages resident in
+the four-run comparison. See the
+[CUDA parity evidence](CUDA-PARITY-EXP1476.md#expert-mmap-registration-and-slru).
 
 EXP-2026-11-20-1503 integrates CUDA attention for strided Q4_0 K/V and
 F32 queries, with an optional shared F16 mask. The standalone kernel reuses

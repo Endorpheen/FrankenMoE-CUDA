@@ -9,6 +9,8 @@ enum { N_LAYERS = 3, N_EXPERTS = 2, N_PROJECTIONS = 3, N_SLOTS = 2 };
 enum { SPAN0 = 192, SPAN1 = 160 };
 enum { STATE_MAP_WORDS = N_LAYERS * N_EXPERTS, GROUP_WORDS = 4 * N_SLOTS + 4 + 5 * N_EXPERTS };
 
+extern void fg_cuda_expert_stats(sl_i64 stats);
+
 static unsigned char weights[N_LAYERS][N_PROJECTIONS][192];
 static unsigned char device[N_SLOTS * (SPAN0 + SPAN1)];
 static int uploads, fail_on;
@@ -86,10 +88,17 @@ int main(void) {
     assert(evicted_map[0] == -1 && evicted_map[1] == -1);
     assert(prepare(groups, layers, state, work, 2, 2, 0, 1) == 1 && uploads == 18);
     assert(prepare(groups, layers, state, work, 1, 1, 0, 1) == 1 && uploads == 18);
+    int64_t stats[6] = {0};
+    fg_cuda_expert_stats((sl_i64) {stats, 6});
+    assert(stats[0] == 4 && stats[1] == 6 && stats[2] == 2);
+    assert(stats[3] == 4 * SPAN0 + 2 * SPAN1);
 
     fail_on = uploads + 2;
     assert(prepare(groups, layers, state, work, 0, 0, 0, -1) == -1 && uploads == 20);
     ec_reset(groups, layers, state, work);
     assert(prepare(groups, layers, state, work, 0, 2, 0, -1) == 1 && uploads == 23);
+    fg_cuda_expert_stats((sl_i64) {stats, 6});
+    assert(stats[0] == 4 && stats[1] == 7 && stats[2] == 2);
+    assert(stats[3] == 5 * SPAN0 + 2 * SPAN1 && stats[4] == 0 && stats[5] == 0);
     puts("Goose SLRU: three-plane fills, cross-layer eviction, separate groups and failure reset verified");
 }

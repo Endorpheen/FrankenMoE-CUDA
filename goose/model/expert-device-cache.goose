@@ -7,6 +7,111 @@ const EC_MAX_BYTES: i64 = 4992 * 1024 * 1024;
 extern "fg_cuda_load_experts" fn ec_load(groups: const i64[:], layers: const i64[:],
                                          device_bytes: i64, words32: i64, words64: i64) -> i64;
 extern "fg_cuda_expert_upload" fn ec_upload(offset: i64, source: u64, bytes: i64) -> i64;
+extern "fg_cuda_expert_record" fn ec_record(hits: i64, fills: i64, evictions: i64, bytes: i64);
+extern "fg_cuda_expert_pin_info" fn ec_pin_info(info: i64[:]) -> i64;
+extern "fg_cuda_expert_pin_register" fn ec_pin_register(spans: const i64[:], bytes: i64);
+extern "fg_cuda_expert_pin_reason" fn ec_pin_reason(reason: i64, bytes: i64, available: i64);
+extern "fg_cuda_host_register" fn ec_host_register(address: u64, bytes: i64) -> i64;
+extern "fg_cuda_host_unregister" fn ec_host_unregister(address: u64);
+
+fn ec_release_pins(spans: const i64[:], count: i64) {
+    var left: i64 = count;
+    while left > 0 {
+        left -= 1;
+        ec_host_unregister(spans[2 * left] as! u64);
+    }
+}
+
+export fn ec_manage_pins(spans: const i64[:], acquire: i64) -> i64 {
+    if spans.len % 2 != 0 { return -1; }
+    if acquire == 0 {
+        ec_release_pins(spans, spans.len / 2);
+        return 0;
+    }
+    for i in spans.len / 2 {
+        if ec_host_register(spans[2 * i] as! u64, spans[2 * i + 1]) != 0 {
+            ec_release_pins(spans, i);
+            return -1;
+        }
+    }
+    return spans.len / 2;
+}
+
+fn ec_pin_mapped(groups: const i64[:], layers: const i64[:]) {
+    var info: i64[4] = [0; 4];
+    if ec_pin_info(info[..]) != 1 { return; }
+    let page = info[0];
+    let available = info[2];
+    if page <= 0 || (page & (page - 1)) != 0 || info[1] <= 0 { return; }
+
+    let count = layers.len / EC_LAYER;
+    var begin: i64[>..] = [];
+    var end: i64[>..] = [];
+    begin.resize(3 * count, 0);
+    end.resize(3 * count, 0);
+    var n: i64 = 0;
+    for layer in count {
+        let at = layer * EC_LAYER;
+        let group = layers[at];
+        if group < 0 { continue; }
+        let g = group * EC_GROUP;
+        for projection in 3 {
+            let address = layers[at + 1 + projection];
+            let bytes = groups[g + projection] * groups[g + 3];
+            if address <= 0 || bytes <= 0 || address > 9223372036854775807 - bytes - (page - 1) { return; }
+            begin[n] = address / page * page;
+            end[n] = (address + bytes + page - 1) / page * page;
+            n += 1;
+        }
+    }
+    dw_sort_pairs(begin[..], end[..], n);
+    var used: i64 = 0;
+    for i in n {
+        if used > 0 && begin[i] <= end[used - 1] {
+            if end[i] > end[used - 1] { end[used - 1] = end[i]; }
+        } else {
+            begin[used] = begin[i];
+            end[used] = end[i];
+            used += 1;
+        }
+    }
+    var spans: i64[>..] = [];
+    spans.resize(2 * used, 0);
+    if used == 0 { return; }
+    var all_bytes: i64 = 0;
+    for i in used {
+        let bytes = end[i] - begin[i];
+        if bytes > 9223372036854775807 - all_bytes { return; }
+        all_bytes += bytes;
+    }
+    var total: i64 = 0;
+    var pinned: i64 = 0;
+    let share = info[3] / used;
+    for i in used {
+        let bytes = end[i] - begin[i];
+        // Admit complete spans so an expert transfer never crosses a pin boundary.
+        if info[3] < all_bytes && bytes > share * (i + 1) - total { continue; }
+        total += bytes;
+        spans[2 * pinned] = begin[i];
+        spans[2 * pinned + 1] = bytes;
+        pinned += 1;
+    }
+    if total <= 0 { return; }
+    const headroom: i64 = 8 * 1024 * 1024 * 1024;
+    if total > info[1] / 2 || available < total || available - total < headroom {
+        ec_pin_reason(1, total, available);
+        return;
+    }
+    var resident: i64[4] = [0; 4];
+    for i in pinned {
+        let bytes = spans[2 * i + 1];
+        if dw_ram_residency(spans[2 * i] as! u64, bytes, page, resident[..]) != 0 || resident[1] != bytes {
+            ec_pin_reason(2, total, available);
+            return;
+        }
+    }
+    ec_pin_register(spans[0 .. 2 * pinned], total);
+}
 
 fn ec_plane_bytes(t: i64, owner: const i64[:], experts: i64) -> i64 {
     if t == 0 || experts <= 0 || ne(t, 2) != experts || ne(t, 3) != 1 { return 0; }
@@ -97,7 +202,10 @@ export fn qr_cuda_experts(owner: const i64[:], records: const i64[:], head: i64)
         words32 += 4 * slots + 4 + 5 * experts;
         words64 += experts + 5;
     }
-    return ec_load(groups[0 .. found * EC_GROUP], layers[..], used, words32, words64);
+    let layout = groups[0 .. found * EC_GROUP];
+    let loaded = ec_load(layout, layers[..], used, words32, words64);
+    if loaded > 0 { ec_pin_mapped(layout, layers[..]); }
+    return loaded;
 }
 
 // The i32 arena starts with a slot map per admitted layer. The group state
@@ -180,7 +288,9 @@ export fn ec_prepare(groups: const i64[:], layers: const i64[:], words32: u64, w
             uniq, fills_e, fills_s, evicted, words64[0 .. n], n);
         if fills < 0 { return -1; }
         let span = groups[g] + groups[g + 1] + groups[g + 2];
+        var evictions: i64 = 0;
         for i in fills {
+            if sl_read(evicted, i) >= 0 { evictions += 1; }
             let e = sl_read(fills_e, i);
             var offset = groups[g + 6] + span * sl_read(fills_s, i);
             for p in 3 {
@@ -199,6 +309,7 @@ export fn ec_prepare(groups: const i64[:], layers: const i64[:], words32: u64, w
                 result[e] = groups[g + 6] + span * slot + plane;
             }
         }
+        ec_record(words64[start + experts + 3], fills, evictions, fills * span);
         return 1;
     }
     return 0;

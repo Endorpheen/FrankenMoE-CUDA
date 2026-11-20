@@ -2,6 +2,7 @@
 #include "goose-cuda-image.h"
 
 #include <dlfcn.h>
+#include <inttypes.h>
 #include <limits.h>
 #include <pthread.h>
 #include <stdbool.h>
@@ -9,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 extern int64_t dw_cuda_dense_offset(sl_i64 ranges, uint64_t address, int64_t bytes);
 extern int64_t qr_state_offset(sl_i64 ranges, uint64_t address, int64_t bytes, int64_t kind);
@@ -24,6 +26,8 @@ extern bool fg_standalone_option_enabled(const char * name);
 extern void ec_reset(sl_i64 groups, sl_i64 layers, uint64_t words32, sl_i64 words64);
 extern int64_t ec_prepare(sl_i64 groups, sl_i64 layers, uint64_t words32, sl_i64 words64,
     uint64_t tensor, int64_t bytes, sl_i64 heads, sl_i64 result);
+extern int64_t ec_manage_pins(sl_i64 spans, int64_t acquire);
+extern uint64_t fg143_storage_ram_available(void);
 
 typedef struct CUctx_st * Context;
 typedef struct CUmod_st * Module;
@@ -39,6 +43,7 @@ struct expert_cache {
     struct device_buffer weights;
     sl_i64 groups, layers, work;
     int32_t * state;
+    uint64_t hits, fills, evictions, uploaded_bytes;
 };
 
 static struct {
@@ -62,6 +67,8 @@ static struct {
     struct device_buffer state;
     sl_i64 state_ranges;
     struct expert_cache experts;
+    sl_i64 expert_pins;
+    int64_t expert_pinned_bytes;
     int status, multiprocessors;
     bool mmq_window, mmq_shared, moe_topk, activation_reference;
     int (*init)(unsigned);
@@ -77,6 +84,8 @@ static struct {
     int (*alloc)(DevicePtr *, size_t);
     int (*memory_info)(size_t *, size_t *);
     int (*release)(DevicePtr);
+    int (*host_register)(void *, size_t, unsigned);
+    int (*host_unregister)(void *);
     int (*upload)(DevicePtr, const void *, size_t);
     int (*download)(void *, DevicePtr, size_t);
     int (*zero)(DevicePtr, unsigned char, size_t);
@@ -134,9 +143,17 @@ static void free_expert_metadata(struct expert_cache * cache) {
 }
 
 static void cleanup(void) {
-    if (cuda.context) cuda.destroy(cuda.context);
+    if (cuda.context) {
+        if (cuda.expert_pins.len > 0 && cuda.push(cuda.context) == 0) {
+            ec_manage_pins(cuda.expert_pins, 0);
+            Context previous;
+            cuda.pop(&previous);
+        }
+        cuda.destroy(cuda.context);
+    }
     free(cuda.dense_ranges.data);
     free(cuda.state_ranges.data);
+    free(cuda.expert_pins.data);
     free_expert_metadata(&cuda.experts);
     if (cuda.library) dlclose(cuda.library);
 }
@@ -166,6 +183,8 @@ static void init_cuda(void) {
     LOAD(launch, "cuLaunchKernel");
     LOAD(sync, "cuCtxSynchronize");
 #undef LOAD
+    cuda.host_register = dlsym(cuda.library, "cuMemHostRegister_v2");
+    cuda.host_unregister = dlsym(cuda.library, "cuMemHostUnregister");
     int device;
     if (cuda.init(0) != 0 || cuda.device_get(&device, 0) != 0) return;
     cuda.status = -1;
@@ -820,6 +839,93 @@ int64_t fg_cuda_load_experts(sl_i64 groups, sl_i64 layers, int64_t bytes, int64_
 
 int64_t fg_cuda_expert_bytes(void) {
     return (int64_t) cuda.experts.weights.bytes;
+}
+
+int64_t fg_cuda_expert_pin_info(sl_i64 info) {
+    const char * enable = getenv("GGML_CUDA_REGISTER_HOST");
+    const char * disable = getenv("GGML_CUDA_NO_PINNED");
+    const bool requested = enable ? strcmp(enable, "1") == 0 : !disable || strcmp(disable, "0") == 0;
+    if (!requested || !cuda.host_register || !cuda.host_unregister || info.len != 4) return 0;
+    enum { mib = 1024 * 1024 };
+    const char * setting = getenv("GOOSE_EXPERT_PIN_MIB");
+    int64_t budget = INT64_C(4096) * mib;
+    if (setting) {
+        char * end;
+        const intmax_t value = strtoimax(setting, &end, 10);
+        if (end == setting || *end || value <= 0 || value > INT64_MAX / mib) {
+            fputs("Goose CUDA: GOOSE_EXPERT_PIN_MIB requires a positive MiB budget\n", stderr);
+            return 0;
+        }
+        budget = (int64_t) value * mib;
+    }
+    const long page = sysconf(_SC_PAGESIZE);
+    const long pages = sysconf(_SC_PHYS_PAGES);
+    const uint64_t available = fg143_storage_ram_available();
+    if (page <= 0 || pages <= 0 || pages > INT64_MAX / page || available > INT64_MAX) return 0;
+    info.data[0] = page;
+    info.data[1] = pages * page;
+    info.data[2] = (int64_t) available;
+    info.data[3] = budget;
+    return 1;
+}
+
+void fg_cuda_expert_pin_reason(int64_t reason, int64_t bytes, int64_t available) {
+    fprintf(stderr, "Goose CUDA: keep expert weights pageable (%s, planned %" PRId64
+            " bytes, available %" PRId64 " bytes)\n",
+        reason == 1 ? "host RAM headroom" : "nonresident mmap pages", bytes, available);
+}
+
+int64_t fg_cuda_host_register(uint64_t address, int64_t bytes) {
+    enum { portable = 1, read_only = 8 };
+    if (!address || bytes <= 0 || !cuda.host_register) return -1;
+    const int error = cuda.host_register((void *) (uintptr_t) address, (size_t) bytes, portable | read_only);
+    if (error != 0) fprintf(stderr, "Goose CUDA: mmap expert registration failed (%d)\n", error);
+    return error;
+}
+
+void fg_cuda_host_unregister(uint64_t address) {
+    const int error = cuda.host_unregister((void *) (uintptr_t) address);
+    if (error != 0) fprintf(stderr, "Goose CUDA: mmap expert unregistration failed (%d)\n", error);
+}
+
+void fg_cuda_expert_pin_register(sl_i64 spans, int64_t bytes) {
+    if (spans.len <= 0 || spans.len % 2 != 0 || (uint64_t) spans.len > SIZE_MAX / sizeof(*spans.data) ||
+        cuda.expert_pins.len > 0 || !cuda.host_register || !cuda.host_unregister) return;
+    const size_t length = (size_t) spans.len * sizeof(*spans.data);
+    int64_t * copy = malloc(length);
+    if (!copy) return;
+    memcpy(copy, spans.data, length);
+    const sl_i64 pinned = { copy, spans.len };
+    if (start_context() == 1) {
+        const int64_t count = ec_manage_pins(pinned, 1);
+        if (count > 0) {
+            cuda.expert_pins = pinned;
+            cuda.expert_pinned_bytes = bytes;
+            fprintf(stderr, "Goose CUDA: registered %" PRId64 " expert mmap ranges (%" PRId64 " bytes)\n",
+                count, bytes);
+        }
+        finish_context();
+    }
+    if (!cuda.expert_pins.len) free(copy);
+}
+
+void fg_cuda_expert_record(int64_t hits, int64_t fills, int64_t evictions, int64_t bytes) {
+    cuda.experts.hits += (uint64_t) hits;
+    cuda.experts.fills += (uint64_t) fills;
+    cuda.experts.evictions += (uint64_t) evictions;
+    cuda.experts.uploaded_bytes += (uint64_t) bytes;
+}
+
+void fg_cuda_expert_stats(sl_i64 stats) {
+    if (stats.len != 6) return;
+    pthread_mutex_lock(&cuda_lock);
+    stats.data[0] = (int64_t) cuda.experts.hits;
+    stats.data[1] = (int64_t) cuda.experts.fills;
+    stats.data[2] = (int64_t) cuda.experts.evictions;
+    stats.data[3] = (int64_t) cuda.experts.uploaded_bytes;
+    stats.data[4] = cuda.expert_pinned_bytes;
+    stats.data[5] = cuda.expert_pins.len / 2;
+    pthread_mutex_unlock(&cuda_lock);
 }
 
 int64_t fg_cuda_expert_upload(int64_t offset, uint64_t source, int64_t bytes) {

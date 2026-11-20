@@ -304,6 +304,7 @@ void hose_host_load_context(const char * path, int64_t capacity) {
     const int64_t expert_bytes = qr_cuda_experts((sl_i64) { H.owner, 13 },
         (sl_i64) { H.records, H.layer_count * 32 }, H.handles[1]);
     if (expert_bytes < 0) die("model CUDA expert cache");
+    if (fg_q35_generation_prepare() != 0) die("model RAM residency after CUDA placement");
 }
 
 void hose_host_load(const char * path) {
