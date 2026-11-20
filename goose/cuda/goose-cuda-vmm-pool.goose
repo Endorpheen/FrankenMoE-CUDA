@@ -20,6 +20,26 @@
 extern "fg195v_fail" fn fail(code: i64);
 extern "fg195v_st_i64" fn st_i64(base: u64, byte: i64, v: i64);
 
+const VMM_POOL_CAPACITY: i64 = 34359738368;
+
+fn vmm_map_growth(size: i64, used: i64, mapped: i64, granularity: i64) -> i64 {
+    if size <= 0 || size > VMM_POOL_CAPACITY || used < 0 || mapped < used ||
+       mapped > VMM_POOL_CAPACITY || granularity <= 0 || granularity > VMM_POOL_CAPACITY {
+        return -1;
+    }
+    let aligned = 128 * ((size + 127) / 128);
+    let need = aligned - (mapped - used);
+    if need <= 0 { return 0; }
+    let growth = granularity * (1 + (need - 1) / granularity);
+    return if growth <= VMM_POOL_CAPACITY - mapped { growth } else { -1 };
+}
+
+export fn fg143_vmm_capacity() -> i64 { return VMM_POOL_CAPACITY; }
+
+export fn fg143_vmm_scratch_growth(bytes: i64, mapped: i64, granularity: i64) -> i64 {
+    return vmm_map_growth(bytes, 0, mapped, granularity);
+}
+
 fn ensure(v: bool, c: i64) {
     if !v {
         fail(c);
@@ -36,21 +56,12 @@ fn ensure(v: bool, c: i64) {
 
 fn plan_alloc(size: i64, pool_used: i64, pool_size: i64, granularity: i64, r: u64) {
     ensure(size > 0 && pool_used >= 0 && pool_size >= pool_used && granularity > 0, 10);
-    let max_size: i64 = (1 as i64) << 35 as i64;
     // round up the allocation size so every block is aligned for all data types
     let aligned: i64 = 128 as i64 * ( (size + 127 as i64) / 128 as i64);
     ensure(aligned >= size, 11);
-    let avail: i64 = pool_size - pool_used;
-    var reserve: i64 = 0;
-    var new_pool_size: i64 = pool_size;
-
-    if aligned > avail {
-        reserve = aligned - avail;
-        // round the growth up to the device granularity
-        reserve = granularity * ( (reserve + granularity - 1 as i64) / granularity);
-        ensure(pool_size + reserve <= max_size, 12);
-        new_pool_size = pool_size + reserve;
-    }
+    let reserve = vmm_map_growth(size, pool_used, pool_size, granularity);
+    ensure(reserve >= 0, 12);
+    let new_pool_size = pool_size + reserve;
     let ptr_off: i64 = pool_used;
     let new_pool_used: i64 = pool_used + aligned;
     ensure(new_pool_used <= new_pool_size, 13);

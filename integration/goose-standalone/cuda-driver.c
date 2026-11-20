@@ -35,12 +35,34 @@ typedef struct CUctx_st * Context;
 typedef struct CUmod_st * Module;
 typedef struct CUfunc_st * Function;
 typedef unsigned long long DevicePtr;
+typedef unsigned long long AllocationHandle;
+// Linux CUDA Driver ABI for device-local memory mappings.
+struct memory_location { int type, id; };
+struct memory_properties {
+    int type, handle_types;
+    struct memory_location location;
+    void * platform_metadata;
+    struct { unsigned char compression, rdma; unsigned short usage; unsigned char reserved[4]; } flags;
+};
+struct memory_access { struct memory_location location; int flags; };
+_Static_assert(sizeof(struct memory_properties) == 32, "CUDA allocation property ABI");
+_Static_assert(sizeof(struct memory_access) == 12, "CUDA access descriptor ABI");
+
+struct vmm_mapping {
+    struct vmm_mapping * previous;
+    AllocationHandle handle;
+    size_t offset, bytes;
+    bool mapped;
+};
+
 enum { MIB_BYTES = 1024 * 1024, DEFAULT_ACTIVATION_BYTES = 64 * MIB_BYTES,
     WIDE_ACTIVATION_BYTES = 384 * MIB_BYTES };
 
 struct device_buffer {
     DevicePtr address;
     size_t bytes;
+    struct vmm_mapping * mappings;
+    bool virtual_reservation;
 };
 
 struct expert_cache {
@@ -81,6 +103,8 @@ static struct {
     int64_t expert_pinned_bytes;
     int status, multiprocessors;
     bool mmq_window, mmq_shared, moe_topk, activation_reference;
+    size_t vmm_granularity, vmm_capacity;
+    struct memory_properties vmm_properties;
     int (*init)(unsigned);
     int (*device_get)(int *, int);
     int (*device_attribute)(int *, int, int);
@@ -94,6 +118,14 @@ static struct {
     int (*alloc)(DevicePtr *, size_t);
     int (*memory_info)(size_t *, size_t *);
     int (*release)(DevicePtr);
+    int (*vmm_get_granularity)(size_t *, const struct memory_properties *, int);
+    int (*vmm_reserve)(DevicePtr *, size_t, size_t, DevicePtr, unsigned long long);
+    int (*vmm_free)(DevicePtr, size_t);
+    int (*vmm_create)(AllocationHandle *, size_t, const struct memory_properties *, unsigned long long);
+    int (*vmm_map)(DevicePtr, size_t, size_t, AllocationHandle, unsigned long long);
+    int (*vmm_access)(DevicePtr, size_t, const struct memory_access *, size_t);
+    int (*vmm_unmap)(DevicePtr, size_t);
+    int (*vmm_release)(AllocationHandle);
     int (*host_register)(void *, size_t, unsigned);
     int (*host_unregister)(void *);
     int (*upload)(DevicePtr, const void *, size_t);
@@ -153,10 +185,61 @@ static void free_expert_metadata(struct expert_cache * cache) {
     free(cache->state);
 }
 
+static int release_vmm(struct device_buffer * buffer) {
+    const int sync_error = buffer->mappings ? cuda.sync() : 0;
+    if (sync_error != 0) return sync_error;
+    while (buffer->mappings) {
+        struct vmm_mapping * segment = buffer->mappings;
+        if (segment->mapped) {
+            const int error = cuda.vmm_unmap(buffer->address + segment->offset, segment->bytes);
+            if (error != 0) return error;
+            segment->mapped = false;
+            buffer->bytes = segment->offset;
+        }
+        const int error = cuda.vmm_release(segment->handle);
+        if (error != 0) return error;
+        buffer->mappings = segment->previous;
+        free(segment);
+    }
+    const int error = cuda.vmm_free(buffer->address, cuda.vmm_capacity);
+    if (error == 0) {
+        if (getenv("GOOSE_GRAPH_LOG")) fprintf(stderr, "Goose CUDA VMM: freed base=%#" PRIx64 "\n", (uint64_t) buffer->address);
+        *buffer = (struct device_buffer) {0};
+    }
+    return error;
+}
+
+static void init_vmm(int device) {
+    enum { vmm_attribute = 102, allocation_pinned = 1, location_device = 1, minimum_granularity = 0 };
+    const char * setting = getenv("GOOSE_CUDA_VMM");
+    int available = 0;
+    if (!setting || strcmp(setting, "1") != 0 ||
+        cuda.device_attribute(&available, vmm_attribute, device) != 0 || !available) return;
+#define VMM_LOAD(field, symbol) do { cuda.field = dlsym(cuda.library, symbol); if (!cuda.field) return; } while (0)
+    VMM_LOAD(vmm_get_granularity, "cuMemGetAllocationGranularity");
+    VMM_LOAD(vmm_reserve, "cuMemAddressReserve");
+    VMM_LOAD(vmm_free, "cuMemAddressFree");
+    VMM_LOAD(vmm_create, "cuMemCreate");
+    VMM_LOAD(vmm_map, "cuMemMap");
+    VMM_LOAD(vmm_access, "cuMemSetAccess");
+    VMM_LOAD(vmm_unmap, "cuMemUnmap");
+    VMM_LOAD(vmm_release, "cuMemRelease");
+#undef VMM_LOAD
+    cuda.vmm_properties = (struct memory_properties) {.type = allocation_pinned,
+        .location = {location_device, device}};
+    size_t granularity = 0;
+    if (cuda.vmm_get_granularity(&granularity, &cuda.vmm_properties, minimum_granularity) == 0 &&
+        granularity > 0) {
+        cuda.vmm_granularity = granularity;
+    }
+}
+
 static void cleanup(void) {
     if (cuda.context) {
-        if (cuda.expert_pins.len > 0 && cuda.push(cuda.context) == 0) {
-            ec_manage_pins(cuda.expert_pins, 0);
+        if (cuda.push(cuda.context) == 0) {
+            if (cuda.expert_pins.len > 0) ec_manage_pins(cuda.expert_pins, 0);
+            if (cuda.attention_scratch.virtual_reservation) release_vmm(&cuda.attention_scratch);
+            if (cuda.mmq_packed.virtual_reservation) release_vmm(&cuda.mmq_packed);
             Context previous;
             cuda.pop(&previous);
         }
@@ -169,11 +252,10 @@ static void cleanup(void) {
     if (cuda.library) dlclose(cuda.library);
 }
 
-static void init_cuda(void) {
+static void load_cuda(void) {
     if (goose_cuda_image[0] == 0) return;
     cuda.library = dlopen("libcuda.so.1", RTLD_NOW | RTLD_LOCAL);
     if (!cuda.library) return;
-    atexit(cleanup);
 #define LOAD(field, name) do { cuda.field = dlsym(cuda.library, name); if (!cuda.field) return; } while (0)
     LOAD(init, "cuInit");
     LOAD(device_get, "cuDeviceGet");
@@ -265,6 +347,7 @@ static void init_cuda(void) {
     }
     int error = cuda.create(&cuda.context, 0, device);
     if (error == 0) {
+        init_vmm(device);
         error = cuda.module_load(&cuda.module, mma_image ? goose_cuda_mmq_image : goose_cuda_image);
         if (error == 0) error = cuda.function_get(&cuda.kernel, cuda.module, "goose_quantized_matmul");
         if (error == 0 && mmq) error = cuda.function_get(&cuda.mmq_pack, cuda.module, "goose_mmq_pack_q8");
@@ -331,8 +414,14 @@ static void init_cuda(void) {
     cuda.status = 1;
 }
 
+static void init_cuda(void) {
+    load_cuda();
+    if (cuda.library) atexit(cleanup);
+}
+
 static int release_buffer(struct device_buffer * buffer) {
     if (!buffer->address) return 0;
+    if (buffer->virtual_reservation) return release_vmm(buffer);
     const int error = cuda.release(buffer->address);
     if (error == 0) {
         *buffer = (struct device_buffer) {0};
@@ -340,8 +429,59 @@ static int release_buffer(struct device_buffer * buffer) {
     return error;
 }
 
+static int reserve_vmm(struct device_buffer * buffer, size_t bytes) {
+    enum { out_of_memory = 2, access_read_write = 3 };
+    if (cuda.vmm_capacity == 0) {
+        const size_t capacity = (size_t) fg143_vmm_capacity();
+        if (capacity % cuda.vmm_granularity != 0) return out_of_memory;
+        cuda.vmm_capacity = capacity;
+    }
+    if (bytes > cuda.vmm_capacity) return out_of_memory;
+    const int64_t growth = fg143_vmm_scratch_growth((int64_t) bytes, (int64_t) buffer->bytes,
+        (int64_t) cuda.vmm_granularity);
+    if (growth <= 0) return out_of_memory;
+    struct vmm_mapping * segment = malloc(sizeof(*segment));
+    if (!segment) return out_of_memory;
+    *segment = (struct vmm_mapping) {.previous = buffer->mappings, .offset = buffer->bytes, .bytes = (size_t) growth};
+    int error = 0;
+    if (!buffer->address) {
+        DevicePtr base = 0;
+        error = cuda.vmm_reserve(&base, cuda.vmm_capacity, cuda.vmm_granularity, 0, 0);
+        if (error == 0) {
+            buffer->address = base;
+            buffer->virtual_reservation = true;
+        }
+    }
+    if (error == 0) error = cuda.vmm_create(&segment->handle, segment->bytes, &cuda.vmm_properties, 0);
+    if (error != 0) {
+        free(segment);
+        return error;
+    }
+    buffer->mappings = segment;
+    const DevicePtr address = buffer->address + segment->offset;
+    error = cuda.vmm_map(address, segment->bytes, 0, segment->handle, 0);
+    if (error == 0) {
+        segment->mapped = true;
+        const struct memory_access access = {cuda.vmm_properties.location, access_read_write};
+        error = cuda.vmm_access(address, segment->bytes, &access, 1);
+    }
+    if (error == 0) {
+        buffer->bytes += segment->bytes;
+        if (getenv("GOOSE_GRAPH_LOG")) {
+            fprintf(stderr, "Goose CUDA VMM: mapped base=%#" PRIx64 " offset=%zu bytes=%zu\n",
+                (uint64_t) buffer->address, segment->offset, segment->bytes);
+        }
+    }
+    return error;
+}
+
 static int reserve(struct device_buffer * buffer, size_t bytes) {
     if (bytes <= buffer->bytes) return 0;
+    if (cuda.vmm_granularity && (buffer == &cuda.attention_scratch || buffer == &cuda.mmq_packed) &&
+        (!buffer->address || buffer->virtual_reservation)) {
+        const int error = reserve_vmm(buffer, bytes);
+        if (error == 0) return 0;
+    }
     int error = release_buffer(buffer);
     if (error != 0) return error;
     error = cuda.alloc(&buffer->address, bytes);

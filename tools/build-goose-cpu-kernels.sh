@@ -39,6 +39,8 @@ parts = (
 body = ["import.codec.decode;\n"]
 body.extend(line for line in (root / "goose/cuda/standalone-vector.goose").read_text().splitlines()
             if line.startswith("const CV_"))
+vmm = (root / "goose/cuda/goose-cuda-vmm-pool.goose").read_text()
+body.append(vmm[vmm.index("const VMM_POOL_CAPACITY:"):vmm.index("fn ensure(")])
 for name in parts:
     text = (cpu / f"{name}.goose").read_text().split("\nfn main()", 1)[0]
     if name == "recurrent":

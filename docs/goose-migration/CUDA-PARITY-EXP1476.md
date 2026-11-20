@@ -66,7 +66,7 @@ the entry. Apply the full-request gate on the package schedule.
 
 ## Mechanisms
 
-**32 mechanisms: PARITY 0, PARTIAL 29, MISSING 2, INCORRECT 1.**
+**32 mechanisms: PARITY 0, PARTIAL 30, MISSING 1, INCORRECT 1.**
 
 Group three to five related improvements with a separate commit and
 targeted correctness and CUDA checks for each. Evaluate real answers
@@ -111,7 +111,7 @@ to prioritize subsequent tuning.
 | 25 | Backend graph splitting and lifetime planning. GGML scheduler in `vendor/flint/ggml/src/ggml-backend.cpp` → `ggml-alloc.c` child/view counts, aligned best-fit, split/coalesced blocks and admissible in-place reuse. | Reference log records five buffers and eight same-size reallocations. Goose completes actual 4096/4096 using a ~1.010 GB lifetime arena and whole-block reuse. | PARTIAL. Retain the tested alias planner. Extend device lifetime ownership and compare backend memory peaks and retry behavior on identical profiles. |
 | 26 | Expert tiers and pinned mapped weights. `vendor/flint/src/llama-model.cpp` → `llama-mmap-expert-pin.h` and CUDA buffer registration. | [Goose SLRU and mmap registration](#expert-mmap-registration-and-slru) execute in real Apex. The bounded mode registers 28 ranges, transfers 6,459,162,624 bytes from pinned sources and improves the no-swap 4096/129 median. | PARTIAL. Validate full context, quality and performance against EXP-1476. Full registration remains rejected on this host. |
 | 27 | Selective transfer and device placement. Backend split execution and CUDA tensor set/get → asynchronous linear and 2-D copies. | The [adaptive arena](#adaptive-cuda-activation-arena), [resident vector path](#resident-wide-vector-multiplication) and [last-use matrix input staging](#device-staging-for-the-last-use-matrix-input) remove the large temporary prefill publications. | PARTIAL. Investigate remaining expert uploads, dispatch packets and synchronous host transfers. Full memory and speed parity remain open. |
-| 28 | CUDA VMM pool. CUDA buffer allocator → `cuMemAddressReserve`, `cuMemCreate`, `cuMemMap`, `cuMemSetAccess`, release. | Reference executes 105 create/map operations and reserves a virtual address range. Goose grows Driver API buffers with `cuMemAlloc_v2` and `cuMemFree_v2`. | MISSING. Restore equivalent reusable device allocation and supported fallback. Check allocation limits, device address stability and VRAM peak on RTX 4070. |
+| 28 | CUDA VMM pool. CUDA buffer allocator → `cuMemAddressReserve`, `cuMemCreate`, `cuMemMap`, `cuMemSetAccess`, release. | [Goose scratch VMM](#cuda-vmm-scratch-restoration) reserves stable MMQ and Attention addresses, maps growth in place and releases all mappings after real Apex. | PARTIAL. Qualify the package on the full workload. Other device buffers still use their current allocation path. |
 | 29 | CUDA Graph capture and replay. `ggml-cuda.cu` graph evaluator → begin/end capture, instantiate, exec update and launch. | Whole-graph trace records over 20,000 launches across the session. Server reports 510 reuses. Goose rebuilds its graph and directly launches CUDA kernels. | MISSING. Establish stable graph keys, addresses and update boundaries before recording and replay. Check changing KV prefixes and buffer ownership before measuring decode overhead. |
 | 30 | Streams and synchronization. CUDA scheduler and `ggml-cuda.cu` establish streams, events and CUDA Graph scopes. | Reference uses stream sync and async copies. Planned Goose graphs defer intermediate publication waits to the graph boundary, with blocking host reads. | PARTIAL. Extend independent stream and event dependencies. Verify full-request performance, error propagation and state visibility. |
 | 31 | Prefill → decode continuation. Reference `llama-context.cpp` scheduler and CUDA graph compute produce logits for the shared sampler. | The earlier full Goose response repeated input text. The newer checkpoint completes the [normal quality suite](#apex-response-quality-checkpoint) and the vector Attention cases. | INCORRECT on the last full quality diagnostic. Revalidate the current checkpoint on the full real workload. Investigate a specific reproduced behavioral defect. |
@@ -2046,10 +2046,9 @@ The hybrid VMM pool uses two address reservations, 105
 create calls and 105 map calls. Recorded create/map API
 time is about 2.50 ms across the session. The independent
 path uses 36 Driver API allocations and 24 frees, totaling
-about 10.23 ms in those calls. The ready planner in
-`goose-cuda-vmm-pool.goose` remains available. VMM is
-useful for stable addresses and lifecycle parity. The
-measured allocation calls do not explain the throughput gap.
+about 10.23 ms in those calls. The latest candidate connects
+the [Goose planner to scratch VMM](#cuda-vmm-scratch-restoration).
+The measured allocation calls do not explain the throughput gap.
 
 The hybrid GGML scheduler reuses its CUDA compute
 allocations above 1 GiB and performs 10.454 GB D2D in
@@ -2445,6 +2444,54 @@ The A/B directories end in `5hlaxrgu` and `3t3tehhf`.
 The uniform and final confirmations end in `q786tnov`
 and `_uvs7o46`. Final executable SHA-256
 `bb0bc9cb57e490c762ad4032e353afc13ecf35912d0f5b6c7529e1c76b9b53bf`.
+
+## CUDA VMM scratch restoration
+
+EXP-1570 reuses the Goose VMM growth arithmetic in the
+standalone runtime. The MMQ packed activation buffer and
+Attention scratch each reserve up to 32 GiB of virtual
+address space. Physical pages are created on demand and
+mapped at the end of the current extent, rounded to the
+device granularity. The policy leaves the VA stable during
+growth. The Driver API bindings handle the map, access
+permissions, synchronization, unmap and release effects.
+Unsupported drivers and failed VMM allocations keep the
+existing ordinary allocation path. Enable
+`GOOSE_CUDA_VMM=1` for package qualification.
+
+Eight boundary cases cover alignment, reuse, growth,
+invalid granularity and the upper bound. An RTX 4070
+fixture runs two Attention sizes in the same process,
+compares both outputs bitwise and passes CUDA memcheck.
+The two original base addresses stay fixed while the
+regions grow from 2 to 14 MiB and from 4 to 6 MiB.
+The diagnostic log confirms release of both addresses.
+The runtime defers the first Goose planner call until
+the CPU module has been initialized and registers
+cleanup after CUDA initialization.
+
+| Profiled Apex 4096/129 with Flash Stream-K | Ordinary A | VMM B |
+|---|---:|---:|
+| Prefill, tok/s | 800.468 | 802.489 |
+| Decode, steps/s | 22.160 | 22.127 |
+| Process RSS high-water, KiB | 23,484,576 | 23,484,816 |
+| Peak process VRAM, MiB | 8,484 | 8,484 |
+| Peak whole-card VRAM, MiB | 10,699 | 10,699 |
+| Process swap and system swap-out growth | 0 | 0 |
+| Ordinary CUDA allocations | 28 | 24 |
+| VMM reserves / maps / unmaps / address frees | 0 / 0 / 0 / 0 | 2 / 4 / 4 / 2 |
+
+Both arms return identical content, token IDs, probability
+rows and stop reason. Both retain all 5,301,139 model
+pages and the same GPU SLRU activity. The single profiled
+pair qualifies the mechanism on the short request.
+The full quality and memory gates remain open.
+
+The fixture, pair and executable are under
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/vmm-exp1570`.
+The A/B directories end in `nvcd9prq` and `yduladvb`.
+Executable SHA-256
+`817a222ceb430ce990f8b79c48044c9a1b1d10c5d8564c67f5d1b44fb966a9ba`.
 
 ## Long Attention partition probe
 
