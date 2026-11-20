@@ -1,5 +1,8 @@
 struct MmqDot { a: i32, b: i32, c: i32, d: i32 }
 struct MmqSum { a: f32, b: f32, c: f32, d: f32 }
+struct MmqWords { a: u32, b: u32, c: u32, d: u32 }
+struct MmqScales { d0: f32, d1: f32, m0: f32, m1: f32 }
+struct MmqPartition { work: i64, workers: i64, start: i64 }
 
 extern "fg_mmq_word" fn mmq_word(address: u64) -> u32;
 extern "fg248d_ld_half" fn mmq_half(address: u64) -> f32;
@@ -11,6 +14,7 @@ extern "fg_device_mul_rn" fn mmq_mul(a: f32, b: f32) -> f32;
 extern "fg_device_fma" fn mmq_fma(a: f32, b: f32, sum: f32) -> f32;
 extern "fg_mmq_mma32" fn mmq_mma32(a0: u32, a1: u32, a2: u32, a3: u32, b0: u32, b1: u32) -> MmqDot;
 extern "fg_mmq_mma16" fn mmq_mma16(a0: u32, a1: u32, b0: u32) -> MmqDot;
+extern "fg_mmq_ldm32" fn mmq_ldm32(address: u64) -> MmqWords;
 extern "fg_mmq_mma32_shared" fn mmq_mma32_shared(address: u64, b0: u32, b1: u32) -> MmqDot;
 extern "fg_mmq_mma16_shared" fn mmq_mma16_shared(address: u64, b0: u32) -> MmqDot;
 extern "fg_mmq_shared_store" fn mmq_shared_store(address: u64, word: u32);
@@ -76,6 +80,26 @@ fn mmq_q4_acc(sum: f32, dot: i32, dm: f32, minimum: f32, ds: u64, fused: bool) -
     return value + mmq_mul(minimum, mmq_half(ds + 2));
 }
 
+fn mmq_q4_accumulate(sum: MmqSum, dot: MmqDot, scales: MmqScales, ds0: u64, ds1: u64, fused: bool) -> MmqSum {
+    return MmqSum {
+        a: mmq_q4_acc(sum.a, dot.a, scales.d0, scales.m0, ds0, fused),
+        b: mmq_q4_acc(sum.b, dot.b, scales.d0, scales.m0, ds1, fused),
+        c: mmq_q4_acc(sum.c, dot.c, scales.d1, scales.m1, ds0, fused),
+        d: mmq_q4_acc(sum.d, dot.d, scales.d1, scales.m1, ds1, fused)
+    };
+}
+
+fn mmq_q4_shared_fragment(stage: u64, group: i64, lane: i64) -> u64 {
+    // The four LDSM groups select the row-half and K-half independently.
+    return stage + ((512 * group + 32 * (lane % 16) + 16 * (lane / 16)) as u64);
+}
+
+fn mmq_q4_shared_scales(stage: u64, group: i64, lane: i64) -> MmqScales {
+    let at = stage + ((4096 + 8 * (16 * group + lane / 4)) as u64);
+    return MmqScales { d0: mmq_shared_float(at), d1: mmq_shared_float(at + 64),
+        m0: mmq_shared_float(at + 4), m1: mmq_shared_float(at + 68) };
+}
+
 fn mmq_q4_stage(weights: u64, stride: i64, tile: u64, thread: i64) {
     // Four warps unpack all 16 rows of the block once. Eight groups of
     // 32 int8 values are interleaved by row, with 16-byte LDSM alignment.
@@ -112,38 +136,24 @@ fn mmq_q4_block(previous: MmqSum, a: u64, b: u64, source: u64, source0: u64, sou
         let qs = qb + ((16 + 32 * (g % 4) + 4 * thread) as u64);
         let rhs0 = mmq_word(source + qs);
         let rhs1 = mmq_word(source + qs + 16);
-        // Each LDSM address group covers one 8-row by 16-byte fragment.
-        // The four fragment groups select row-half and K-half independently.
         let dot = if lane >= 0 {
-            let address = stage + ((512 * g + 32 * (lane % 16) + 16 * (lane / 16)) as u64);
-            mmq_mma32_shared(address, rhs0, rhs1)
+            mmq_mma32_shared(mmq_q4_shared_fragment(stage, g, lane), rhs0, rhs1)
         } else {
             mmq_mma32(mmq_q4_fragment(a, g, thread), mmq_q4_fragment(b, g, thread),
                 mmq_q4_fragment(a, g, thread + 4), mmq_q4_fragment(b, g, thread + 4), rhs0, rhs1)
         };
-        var d0: f32 = 0.0;
-        var d1: f32 = 0.0;
-        var m0: f32 = 0.0;
-        var m1: f32 = 0.0;
-        if lane >= 0 {
-            let at = stage + ((4096 + 8 * (16 * g + lane / 4)) as u64);
-            d0 = mmq_shared_float(at);
-            m0 = mmq_shared_float(at + 4);
-            d1 = mmq_shared_float(at + 64);
-            m1 = mmq_shared_float(at + 68);
+        let scales = if lane >= 0 {
+            mmq_q4_shared_scales(stage, g, lane)
         } else {
             let packed0 = mmq_scale_min(a + 4, g);
             let packed1 = mmq_scale_min(b + 4, g);
-            d0 = mmq_half_round(da * ((packed0 >> 8) as f32));
-            d1 = mmq_half_round(db * ((packed1 >> 8) as f32));
-            m0 = mmq_half_round(min_a * ((packed0 & 255) as f32));
-            m1 = mmq_half_round(min_b * ((packed1 & 255) as f32));
-        }
+            MmqScales { d0: mmq_half_round(da * ((packed0 >> 8) as f32)),
+                d1: mmq_half_round(db * ((packed1 >> 8) as f32)),
+                m0: mmq_half_round(min_a * ((packed0 & 255) as f32)),
+                m1: mmq_half_round(min_b * ((packed1 & 255) as f32)) }
+        };
         let ds = qb + ((4 * (g % 4)) as u64);
-        sum.a = mmq_q4_acc(sum.a, dot.a, d0, m0, source0 + ds, fused);
-        sum.b = mmq_q4_acc(sum.b, dot.b, d0, m0, source1 + ds, fused);
-        sum.c = mmq_q4_acc(sum.c, dot.c, d1, m1, source0 + ds, fused);
-        sum.d = mmq_q4_acc(sum.d, dot.d, d1, m1, source1 + ds, fused);
+        sum = mmq_q4_accumulate(sum, dot, scales, source0 + ds, source1 + ds, fused);
     }
     return sum;
 }
@@ -208,25 +218,29 @@ fn mmq_reference_width(minimum: i64, fallback: bool) -> i64 {
     return 16 * (1 + (minimum - 1) / 16);
 }
 
-fn mmq_reference(w0: u64, w1: u64, source: u64, source0: u64, source1: u64,
-    extent: i64, kind: i64, row: i64, rows: i64, route: i64, columns: i64, sms: i64, thread: i64,
-    stage: u64, shared_weights: u64, stride: i64, thread_block: i64) -> MmqSum {
-    // Preserve the reference's 128-row tiles and backward fixup order
-    // inside each output warp, without a global partial-sum buffer.
-    var work = extent;
-    var workers: i64 = 1;
-    var start: i64 = 0;
+fn mmq_reference_partition(extent: i64, row: i64, rows: i64, route: i64, columns: i64, sms: i64) -> MmqPartition {
     if columns > 0 {
         let ntiles = 1 + (columns - 1) / 128;
         let width = mmq_reference_width(1 + (columns - 1) / ntiles, rows % 128 != 0);
         let tiles = (1 + (rows - 1) / 128) * ntiles;
         let tile = (row / 128) * ntiles + route / width;
-        work = tiles * extent;
+        let work = tiles * extent;
         let waves = 1 + (tiles - 1) / sms;
-        workers = if 100 * tiles / (sms * waves) >= 90 { tiles }
+        let workers = if 100 * tiles / (sms * waves) >= 90 { tiles }
             else { if sms < work { sms } else { work } };
-        start = tile * extent;
+        return MmqPartition { work: work, workers: workers, start: tile * extent };
     }
+    return MmqPartition { work: extent, workers: 1, start: 0 };
+}
+
+fn mmq_reference(w0: u64, w1: u64, source: u64, source0: u64, source1: u64,
+    extent: i64, kind: i64, row: i64, rows: i64, route: i64, columns: i64, sms: i64, thread: i64,
+    stage: u64, shared_weights: u64, stride: i64, thread_block: i64) -> MmqSum {
+    // Preserve the reference's 128-row tiles and backward fixup order.
+    let partition = mmq_reference_partition(extent, row, rows, route, columns, sms);
+    let work = partition.work;
+    let workers = partition.workers;
+    let start = partition.start;
     var stop = extent;
     var worker = ((start + stop) * workers - 1) / work;
     let last = worker;
@@ -422,6 +436,115 @@ export fn fg_device_mmq_routed_shared(weights: u64, packed: u64, out: u64, jobs:
         mmq_store(dst, sum.b);
         mmq_store(dst + 32, sum.d);
     }
+}
+
+struct MmqOperand {
+    route: i64, live: i64, group: u64, col0: u64, col1: u64
+}
+
+fn mmq_wide_operand(packed: u64, jobs: u64, route: i64, first_route: i64, routes: i64,
+    start: i64, words: i64, stride: i64, input_stride: i64, lane: i64) -> MmqOperand {
+    let tail = routes - start;
+    let live = if tail <= 0 { 0 } else if tail < 8 { tail } else { 8 };
+    let first = route + (if live == 0 { 0 } else { start });
+    let batch = packed + (if input_stride == 0 { ((first - first_route) * stride) as u64 } else { 0 });
+    let col = 2 * (lane % 4);
+    return MmqOperand { route: first, live: live,
+        group: mmq_source(batch, lane / 4, live, stride, jobs, first, words, input_stride),
+        col0: mmq_source(batch, col, live, stride, jobs, first, words, input_stride),
+        col1: mmq_source(batch, col + 1, live, stride, jobs, first, words, input_stride) };
+}
+
+fn mmq_q4_wide_group(sum: MmqSum, operand: MmqOperand, fragment: MmqWords, scales: MmqScales,
+    q: u64, qs: u64, ds: u64) -> MmqSum {
+    let rhs = operand.group + q + qs;
+    let dot = mmq_mma32(fragment.a, fragment.b, fragment.c, fragment.d, mmq_word(rhs), mmq_word(rhs + 16));
+    return mmq_q4_accumulate(sum, dot, scales, operand.col0 + q + ds, operand.col1 + q + ds, true);
+}
+
+fn mmq_sum_add(left: MmqSum, right: MmqSum) -> MmqSum {
+    return MmqSum { a: left.a + right.a, b: left.b + right.b, c: left.c + right.c, d: left.d + right.d };
+}
+
+fn mmq_wide_store(out: u64, jobs: u64, words: i64, operand: MmqOperand, row: i64, lane: i64, sum: MmqSum) {
+    let col = 2 * (lane % 4);
+    let offset = (4 * (row + lane / 4)) as u64;
+    if col < operand.live {
+        let dst = out + mmq_index(jobs, words * (operand.route + col) + 1) + offset;
+        mmq_store(dst, sum.a);
+        mmq_store(dst + 32, sum.c);
+    }
+    if col + 1 < operand.live {
+        let dst = out + mmq_index(jobs, words * (operand.route + col + 1) + 1) + offset;
+        mmq_store(dst, sum.b);
+        mmq_store(dst + 32, sum.d);
+    }
+}
+
+// Share one weight tile across two eight-route accumulators in each warp.
+// The planner keeps dense blocks inside a 128-column reference partition.
+export fn fg_device_mmq_q4_x64(weights: u64, packed: u64, out: u64, jobs: u64, stride: i64,
+    extent: i64, row: i64, rows: i64, route: i64, first_route: i64, routes: i64, words: i64,
+    input_stride: i64, reference_sms: i64, thread: i64, stage: u64) {
+    let lane = thread % 32;
+    let warp_start = 16 * (thread / 32);
+    let left = mmq_wide_operand(packed, jobs, route, first_route, routes, warp_start, words, 288 * extent, input_stride, lane);
+    let right = mmq_wide_operand(packed, jobs, route, first_route, routes, warp_start + 8, words, 288 * extent, input_stride, lane);
+    let base = weights + ((row * stride) as u64);
+    let columns = if words == 2 { 4096 } else { -1 };
+    let partition = mmq_reference_partition(extent, row, rows, route, columns, reference_sms);
+    let work = partition.work;
+    let workers = partition.workers;
+    let start = partition.start;
+    let zero = MmqSum { a: 0.0, b: 0.0, c: 0.0, d: 0.0 };
+    var stop = extent;
+    var worker = ((start + stop) * workers - 1) / work;
+    let last = worker;
+    var result_left = zero;
+    var result_right = zero;
+    var earlier_left = zero;
+    var earlier_right = zero;
+    while stop > 0 {
+        let split = worker * work / workers;
+        let begin = if split > start { split - start } else { 0 };
+        var partial_left = zero;
+        var partial_right = zero;
+        for k in begin .. stop {
+            let q = (288 * k) as u64;
+            mmq_q4_stage(base + ((144 * k) as u64), stride, stage, thread);
+            mmq_barrier();
+            if left.live > 0 {
+                for group in 8 {
+                    let qb = (144 * (group / 4)) as u64;
+                    let qs = qb + ((16 + 32 * (group % 4) + 4 * (lane % 4)) as u64);
+                    let ds = qb + ((4 * (group % 4)) as u64);
+                    let fragment = mmq_ldm32(mmq_q4_shared_fragment(stage, group, lane));
+                    let scales = mmq_q4_shared_scales(stage, group, lane);
+                    partial_left = mmq_q4_wide_group(partial_left, left, fragment, scales, q, qs, ds);
+                    if right.live > 0 {
+                        partial_right = mmq_q4_wide_group(partial_right, right, fragment, scales, q, qs, ds);
+                    }
+                }
+            }
+            mmq_barrier();
+        }
+        if worker == last {
+            result_left = partial_left;
+            result_right = partial_right;
+        } else {
+            earlier_left = mmq_sum_add(earlier_left, partial_left);
+            earlier_right = mmq_sum_add(earlier_right, partial_right);
+        }
+        stop = begin;
+        worker -= 1;
+    }
+    // Avoid a new zero addition when the reference tile had no fixup.
+    if (last * work / workers) > start {
+        result_left = mmq_sum_add(result_left, earlier_left);
+        result_right = mmq_sum_add(result_right, earlier_right);
+    }
+    mmq_wide_store(out, jobs, words, left, row, lane, result_left);
+    mmq_wide_store(out, jobs, words, right, row, lane, result_right);
 }
 
 // Stream-K divides the flattened output-tile/K-block range among workers.

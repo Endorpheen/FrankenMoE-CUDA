@@ -1,5 +1,9 @@
 typedef struct { int32_t a_g, b_g, c_g, d_g; } MmqDot_g;
 typedef struct { float a_g, b_g, c_g, d_g; } MmqSum_g;
+typedef struct { uint32_t a_g, b_g, c_g, d_g; } MmqWords_g;
+typedef struct { float d0_g, d1_g, m0_g, m1_g; } MmqScales_g;
+typedef struct { int64_t work_g, workers_g, start_g; } MmqPartition_g;
+typedef struct { int64_t route_g, live_g; uint64_t group_g, col0_g, col1_g; } MmqOperand_g;
 #define gs_shl_i32(a, b) as_int((uint32_t) (a) << ((b) & 31))
 
 static uint32_t fg_mmq_word(uint64_t address) {
@@ -44,11 +48,17 @@ static MmqDot_g fg_mmq_mma16(uint32_t a0, uint32_t a1, uint32_t b0) {
     return r;
 }
 
-static MmqDot_g fg_mmq_mma32_shared(uint64_t address, uint32_t b0, uint32_t b1) {
-    uint32_t a0, a1, a2, a3;
+static MmqWords_g fg_mmq_ldm32(uint64_t address) {
+    MmqWords_g words;
     __asm__ volatile("ldmatrix.sync.aligned.m8n8.x4.shared.b16 {%0, %1, %2, %3}, [%4];"
-        : "=r"(a0), "=r"(a1), "=r"(a2), "=r"(a3) : "r"((uint32_t) address) : "memory");
-    return fg_mmq_mma32(a0, a1, a2, a3, b0, b1);
+        : "=r"(words.a_g), "=r"(words.b_g), "=r"(words.c_g), "=r"(words.d_g)
+        : "r"((uint32_t) address) : "memory");
+    return words;
+}
+
+static MmqDot_g fg_mmq_mma32_shared(uint64_t address, uint32_t b0, uint32_t b1) {
+    const MmqWords_g words = fg_mmq_ldm32(address);
+    return fg_mmq_mma32(words.a_g, words.b_g, words.c_g, words.d_g, b0, b1);
 }
 
 static MmqDot_g fg_mmq_mma16_shared(uint64_t address, uint32_t b0) {
@@ -177,7 +187,7 @@ __kernel void goose_mmq_q4_reference(__global const uint8_t * weights, __global 
         job_words, input_stride, columns, sms);
 }
 
-#define MMQ_DENSE_SHARED(name, kind, words) \
+#define MMQ_DENSE_SHARED(name, kind, words, width) \
 __kernel void name(__global const uint8_t * weights, __global const uint8_t * packed, \
     __global uint8_t * output, __global const uint64_t * jobs, uint64_t stride, int32_t extent, \
     int32_t rows, int32_t first_route, int32_t sms) { \
@@ -186,12 +196,18 @@ __kernel void name(__global const uint8_t * weights, __global const uint8_t * pa
     __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(row)); \
     __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(column)); \
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread)); \
-    fg_device_mmq_dense_shared_g((uint64_t) weights, (uint64_t) packed, (uint64_t) output, \
-        (uint64_t) jobs, stride, extent, kind, 16u * row, rows, first_route + 32u * column, \
-        first_route, sms, thread, (uint64_t) shared); \
+    if (width == 64) { \
+        fg_device_mmq_q4_x64_g((uint64_t) weights, (uint64_t) packed, (uint64_t) output, \
+            (uint64_t) jobs, stride, extent, 16u * row, rows, first_route + 64u * column, \
+            first_route, 64, 2, 0, sms, thread, (uint64_t) shared); \
+    } else { \
+        fg_device_mmq_dense_shared_g((uint64_t) weights, (uint64_t) packed, (uint64_t) output, \
+            (uint64_t) jobs, stride, extent, kind, 16u * row, rows, first_route + 32u * column, \
+            first_route, sms, thread, (uint64_t) shared); \
+    } \
 }
 
-#define MMQ_ROUTED_SHARED(name, kind, words) \
+#define MMQ_ROUTED_SHARED(name, kind, words, width) \
 __kernel void name(__global const uint8_t * weights, __global const uint8_t * packed, \
     __global uint8_t * output, __global const uint64_t * jobs, __global const uint64_t * tiles, \
     uint64_t stride, int32_t extent, int32_t rows, int32_t first, int32_t first_route, int64_t input_stride) { \
@@ -201,15 +217,23 @@ __kernel void name(__global const uint8_t * weights, __global const uint8_t * pa
     __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(tile)); \
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread)); \
     const uint64_t at = ((uint64_t) first + tile) * 3; \
-    fg_device_mmq_routed_shared_g((uint64_t) weights + tiles[at + 2], (uint64_t) packed, \
-        (uint64_t) output, (uint64_t) jobs, stride, extent, kind, 16u * row, rows, \
-        tiles[at], first_route, tiles[at + 1], input_stride, thread, (uint64_t) shared); \
+    if (width == 64) { \
+        fg_device_mmq_q4_x64_g((uint64_t) weights + tiles[at + 2], (uint64_t) packed, \
+            (uint64_t) output, (uint64_t) jobs, stride, extent, 16u * row, rows, tiles[at], \
+            first_route, tiles[at + 1], 3, input_stride, 0, thread, (uint64_t) shared); \
+    } else { \
+        fg_device_mmq_routed_shared_g((uint64_t) weights + tiles[at + 2], (uint64_t) packed, \
+            (uint64_t) output, (uint64_t) jobs, stride, extent, kind, 16u * row, rows, \
+            tiles[at], first_route, tiles[at + 1], input_stride, thread, (uint64_t) shared); \
+    } \
 }
 
-MMQ_DENSE_SHARED(goose_mmq_q4_dense_shared, 12, 1280)
-MMQ_DENSE_SHARED(goose_mmq_q6_dense_shared, 14, 1104)
-MMQ_ROUTED_SHARED(goose_mmq_q4_routed_shared, 12, 1280)
-MMQ_ROUTED_SHARED(goose_mmq_q6_routed_shared, 14, 1104)
+MMQ_DENSE_SHARED(goose_mmq_q4_dense_shared, 12, 1280, 32)
+MMQ_DENSE_SHARED(goose_mmq_q6_dense_shared, 14, 1104, 32)
+MMQ_DENSE_SHARED(goose_mmq_q4_dense_x64, 12, 1280, 64)
+MMQ_ROUTED_SHARED(goose_mmq_q4_routed_shared, 12, 1280, 32)
+MMQ_ROUTED_SHARED(goose_mmq_q6_routed_shared, 14, 1104, 32)
+MMQ_ROUTED_SHARED(goose_mmq_q4_routed_x64, 12, 1280, 64)
 #undef MMQ_DENSE_SHARED
 #undef MMQ_ROUTED_SHARED
 

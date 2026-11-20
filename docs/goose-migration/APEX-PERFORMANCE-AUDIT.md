@@ -17,7 +17,10 @@ reduces Q6_K device MMQ from 5.024 to 4.053 s and
 saves 0.966 s of prefill in its unprofiled pair.
 [EXP-1579](CUDA-PARITY-EXP1476.md#aligned-dense-mmq-windows)
 keeps two-window Q4_K projections on shared MMQ and
-saves another measured 0.482 s in its unprofiled pair. The
+saves another measured 0.482 s in its unprofiled pair.
+[EXP-1580](CUDA-PARITY-EXP1476.md#q4_k-16-by-64-cooperative-tiles)
+reuses the weight fragment for 64-route Q4_K blocks
+and saves 2.421 s of full unprofiled prefill. The
 tables below retain the original audit checkpoint.
 This comparison locates
 work and gaps. Final acceptance requires the fresh
