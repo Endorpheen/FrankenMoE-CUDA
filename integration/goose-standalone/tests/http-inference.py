@@ -49,7 +49,7 @@ def check(binary, fixture):
         candidate.bind(("127.0.0.1", 0))
         port = candidate.getsockname()[1]
 
-    limit = 23
+    limit = 34
     with subprocess.Popen(
         [binary, "--ctx-size", "262144", fixture, "--serve", str(port), str(limit)],
         stdout=subprocess.DEVNULL,
@@ -115,7 +115,35 @@ def check(binary, fixture):
             ):
                 status, result = complete(port, options)
                 assert status == 200 and result["ids"] == [expected], result
-            for invalid in ({"top_p": 1.01}, {"seed": 4294967296}, {"cache_prompt": True}):
+
+            # Typical sampling runs before the temperature changes the weights.
+            status, result = complete(port, dict(sampled, seed=17, typical_p=0.1))
+            assert status == 200 and result["ids"] == [2], result
+
+            # Seed 10's first draw is 0.29876. The repeat multiplier shifts
+            # that draw from token 2 to token 1. Applying it twice yields 0.
+            penalties = {"prompt": [2, 2], "temperature": 1.0, "seed": 10,
+                         "ignore_eos": True, "repeat_penalty": 10.0}
+            for window, expected in ((0, 2), (2, 1), (-1, 1)):
+                status, result = complete(port, dict(penalties, repeat_last_n=window))
+                assert status == 200 and result["ids"] == [expected], result
+
+            # Seed 4 picks ID 2 from the equal logits at ID 0. The second
+            # draw picks ID 0 only if that generated token is penalized.
+            generated = dict(penalties, prompt=[0], n_predict=2, seed=4)
+            for window, expected in ((0, [2, 2]), (1, [2, 0])):
+                status, result = complete(port, dict(generated, repeat_last_n=window))
+                assert status == 200 and result["ids"] == expected, result
+
+            paired = dict(profile, seed=42, temperature=0.8, top_p=0.9, typical_p=0.9,
+                          repeat_penalty=1.1, repeat_last_n=64, min_keep=0)
+            status, result = complete(port, paired)
+            assert status == 200 and result["ids"] == [2, 2], result
+            assert result["completion_probabilities"] == rows
+
+            for invalid in ({"top_p": 1.01}, {"seed": 4294967296}, {"cache_prompt": True},
+                            {"typical_p": 1.01}, {"repeat_penalty": 0},
+                            {"repeat_last_n": -2}, {"min_keep": -1}):
                 assert complete(port, dict(profile, **invalid))[0] == 400
             assert exchange(port, get("/unknown"))[0] == 404
             assert exchange(port, post(2, extra="Content-Length: 2\r\n"), b"ab")[0] == 400

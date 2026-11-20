@@ -375,6 +375,28 @@ absolute error against the CPU was 0.0000000140. The resident-state
 continuation and CPU chunking regressions passed. Apex throughput and
 peak memory remain unmeasured.
 
+EXP-2026-11-20-1515 wires the existing Goose typical filter and
+repetition arithmetic into the shared generation chain. HTTP completion
+now accepts `typical_p`, `repeat_penalty`, `repeat_last_n` and
+`min_keep`. A repetition window covers the requested suffix of prompt
+and generated IDs and adjusts each distinct token once. The chain
+applies repetition, top-k, typical-p, top-p, min-p, temperature and the
+seeded draw in that order. Diagnostics retain the raw logits for
+pre-sampling probabilities. Mark and typical-score buffers are
+allocated when their respective filters are active.
+
+All 34 HTTP requests passed on the synthetic model, including window
+truncation, repeated IDs, generated history, effective EXP-1197 sampler
+settings and unchanged pre-sampling probabilities. The archived run
+inherited top-k 20 from its launcher. Supply that value explicitly
+when replaying the profile on the standalone server. The archive
+contains 32,001 evaluated input tokens, 512 reported output tokens and
+four newline-only responses with empty ID arrays. Its timings remain
+excluded from the accepted baseline. The 267-token chunked-generation
+and CUDA expert-batch regressions also passed. Apex content,
+throughput and peak memory remain to be measured on the independent
+runtime.
+
 ## Historical requirements audit
 
 `docs/goose-migration/tasks.json`: **DONE 1**, **PARTIAL 144**, **TODO 7** of 152.

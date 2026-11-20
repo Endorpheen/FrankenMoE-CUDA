@@ -7,12 +7,21 @@ extern "fg_q35_generation_now" fn q35_generation_now() -> f64;
 extern "hose_reset_state" fn q35_generation_reset();
 
 struct Q35Sample {
-    seed: i64, top_k: i64, top_p: f32, min_p: f32, temperature: f32, ignore_eos: bool
+    seed: i64, top_k: i64, min_keep: i64, repeat_last_n: i64,
+    top_p: f32, min_p: f32, typical_p: f32, repeat_penalty: f32, temperature: f32, ignore_eos: bool
+}
+
+fn q35_sample_defaults() -> Q35Sample {
+    return Q35Sample { seed: 0, top_k: 0, min_keep: 1, repeat_last_n: 64,
+        top_p: 1.0, min_p: 0.0, typical_p: 1.0, repeat_penalty: 1.0, temperature: 0.0, ignore_eos: false };
 }
 
 fn q35_sample_valid(s: const Q35Sample &) -> bool {
     return s.seed >= 0 && s.seed <= 4294967295 && s.top_k >= 0 &&
+        s.min_keep >= 0 && s.repeat_last_n >= -1 &&
         s.top_p > 0.0 && s.top_p <= 1.0 && s.min_p >= 0.0 && s.min_p <= 1.0 &&
+        s.typical_p >= 0.0 && s.typical_p <= 1.0 &&
+        s.repeat_penalty > 0.0 && s.repeat_penalty <= 3.4028234663852886e38 &&
         s.temperature >= 0.0 && s.temperature <= 3.4028234663852886e38;
 }
 
@@ -37,17 +46,27 @@ fn q35_sample_generate(tokens: const i64[:], vocabulary: i64, capacity: i64, eog
     var candidates: f32[>..] = [];
     var probabilities: f32[>..] = [];
     var order: i64[>..] = [];
+    var typical_work: f32[>..] = [];
+    var repeat_marks: u8[>..] = [];
     var rng: i64[625] = [0; 625];
     var pick: i64[3] = [0; 3];
     let seeded = s.temperature > 0.0;
-    if seeded || top > 0 {
+    let filter = seeded || s.typical_p < 1.0;
+    let recent = if s.repeat_last_n < 0 { capacity } else { s.repeat_last_n };
+    let repeats = recent > 0 && s.repeat_penalty != 1.0;
+    if filter || top > 0 {
         probabilities.resize(vocabulary, 0.0);
         order.resize(vocabulary, 0);
     }
+    if s.typical_p < 1.0 {
+        let candidates = if s.top_k > 0 && s.top_k < vocabulary { s.top_k } else { vocabulary };
+        typical_work.resize(candidates, 0.0);
+    }
+    if repeats { repeat_marks.resize(vocabulary, 0); }
     if top > 0 { candidates.resize(vocabulary, 0.0); }
     if seeded && sm_mt_seed(rng, s.seed) != 0 { return -1; }
-    let sampler_i: i64[3] = [s.top_k, 1, 1];
-    let sampler_f: f32[3] = [s.top_p, s.min_p, s.temperature];
+    let sampler_i: i64[3] = [s.top_k, s.min_keep, 1];
+    let sampler_f: f32[4] = [s.top_p, s.min_p, s.temperature, s.typical_p];
     if q35_generation_prepare() != 0 { return -1; }
     q35_generation_reset();
     let start = q35_generation_now();
@@ -77,9 +96,17 @@ fn q35_sample_generate(tokens: const i64[:], vocabulary: i64, capacity: i64, eog
                 if token >= 0 && token < vocabulary { draw[token] = float_bits(4286578688); }
             }
         }
+        if repeats {
+            let generated_start = if produced > recent { produced - recent } else { 0 };
+            let prompt_budget = recent - (produced - generated_start);
+            let prompt_start = if tokens.len > prompt_budget { tokens.len - prompt_budget } else { 0 };
+            sm_repeat_history(draw, tokens[prompt_start .. tokens.len],
+                ids[generated_start .. produced], repeat_marks[..], s.repeat_penalty);
+        }
         var next: i64 = -1;
-        if seeded {
-            if sm_select(draw, order[..], probabilities[..], vocabulary, sampler_i, sampler_f, rng, pick) == 0 {
+        if filter {
+            if sm_select(draw, order[..], probabilities[..], typical_work[..],
+                         vocabulary, sampler_i, sampler_f, rng, pick) == 0 {
                 next = pick[1];
             }
         } else {
@@ -115,7 +142,8 @@ fn q35_sample_generate(tokens: const i64[:], vocabulary: i64, capacity: i64, eog
 
 export fn q35_generate(tokens: const i64[:], vocabulary: i64, capacity: i64, eog: const i64[:],
                        limit: i64, ignore_eos: bool, ids: i64[:], timing: f64[:]) -> i64 {
-    let s = Q35Sample { seed: 0, top_k: 0, top_p: 1.0, min_p: 0.0, temperature: 0.0, ignore_eos: ignore_eos };
+    var s = q35_sample_defaults();
+    s.ignore_eos = ignore_eos;
     var no_ids: i64[0] = [];
     var no_probs: f32[0] = [];
     return q35_sample_generate(tokens, vocabulary, capacity, eog, limit, s, ids, timing,

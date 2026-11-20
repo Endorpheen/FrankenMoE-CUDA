@@ -104,7 +104,7 @@ struct IhCompletion {
 }
 
 fn ih_completion_defaults() -> IhCompletion {
-    let s = Q35Sample { seed: 0, top_k: 0, top_p: 1.0, min_p: 0.0, temperature: 0.0, ignore_eos: false };
+    let s = q35_sample_defaults();
     return IhCompletion { limit: 1, top: 0, return_tokens: false, sampler: s };
 }
 
@@ -324,6 +324,8 @@ fn ih_option(key: const u8[:], kind: i64, integer: i64, number: f64, opts: IhCom
         if rq_eq(key, "n_predict") { opts.limit = integer; return true; }
         if rq_eq(key, "seed") { opts.sampler.seed = integer; return true; }
         if rq_eq(key, "top_k") { opts.sampler.top_k = integer; return true; }
+        if rq_eq(key, "min_keep") { opts.sampler.min_keep = integer; return true; }
+        if rq_eq(key, "repeat_last_n") { opts.sampler.repeat_last_n = integer; return true; }
         if rq_eq(key, "n_probs") { opts.top = integer; return true; }
     }
     if kind == PJ_K_BOOL {
@@ -335,9 +337,11 @@ fn ih_option(key: const u8[:], kind: i64, integer: i64, number: f64, opts: IhCom
         let val = if kind == 4 { number } else { integer as f64 };
         if !(val >= 0.0) || !(val <= 3.4028234663852886e38) { return false; }
         if rq_eq(key, "temperature") { opts.sampler.temperature = val as f32; return true; }
+        if rq_eq(key, "repeat_penalty") { opts.sampler.repeat_penalty = val as f32; return true; }
         if val <= 1.0 {
             if rq_eq(key, "top_p") { opts.sampler.top_p = val as f32; return true; }
             if rq_eq(key, "min_p") { opts.sampler.min_p = val as f32; return true; }
+            if rq_eq(key, "typical_p") { opts.sampler.typical_p = val as f32; return true; }
         }
     }
     return false;

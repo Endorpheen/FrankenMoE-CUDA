@@ -247,11 +247,11 @@ fn softmax_in_place(lv: f32[:], p: f32[:], n: i64, sorted: i64) -> f64 {
 
 // Full chain on a candidate array that starts as the whole vocabulary.
 // ip: 0 top_k, 1 min_keep, 2 use_dist (0 = greedy after the temperature).
-// fp: 0 top_p, 1 min_p, 2 temp.
+// fp: 0 top_p, 1 min_p, 2 temp, 3 typical_p.
 // out: 0 selected position, 1 token id, 2 surviving candidate count.
-fn sm_select(lv: f32[:], id: i64[:], p: f32[:], n_in: i64,
+fn sm_select(lv: f32[:], id: i64[:], p: f32[:], typical_work: f32[:], n_in: i64,
                     ip: const i64[:], fp: const f32[:], state: i64[:], out: i64[:]) -> i64 {
-    if ip.len < 3 || fp.len < 3 || out.len < 3 || lv.len < n_in || id.len < n_in || p.len < n_in || n_in <= 0 {
+    if ip.len < 3 || fp.len < 4 || out.len < 3 || lv.len < n_in || id.len < n_in || p.len < n_in || n_in <= 0 {
         return -1;
     }
     let k: i64 = ip[0];
@@ -260,6 +260,7 @@ fn sm_select(lv: f32[:], id: i64[:], p: f32[:], n_in: i64,
     let top_p: f32 = fp[0];
     let min_p: f32 = fp[1];
     let temp: f32 = fp[2];
+    let typical: f32 = fp[3];
 
     var n: i64 = n_in;
     var i: i64 = 0;
@@ -270,7 +271,7 @@ fn sm_select(lv: f32[:], id: i64[:], p: f32[:], n_in: i64,
 
     // top_k
     var sorted: i64 = 0;
-    if k > 0 || top_p < 1.0 || min_p > 0.0 {
+    if k > 0 || (typical >= 1.0 && (top_p < 1.0 || min_p > 0.0)) {
         let kk: i64 = if k > 0 && k < n { k } else { n };
         if sm_partial_sort(lv, id, n, kk) < 0 {
             return -1;
@@ -279,37 +280,20 @@ fn sm_select(lv: f32[:], id: i64[:], p: f32[:], n_in: i64,
         sorted = 1;
     }
 
-    // top_p and min_p both consume the logit-ordered candidates.
-    if top_p < 1.0 {
-        softmax_in_place(lv, p, n, 1);
-        var cum: f32 = 0.0;
-        var last: i64 = n;
-        i = 0;
-        while i < n {
-            cum = cum + p[i];
-            if cum >= top_p && i + 1 >= min_keep {
-                last = i + 1;
-                break;
-            }
-            i = i + 1;
-        }
-        n = last;
+    if typical < 1.0 {
+        n = sm_typical_filter(lv, p, id, typical_work, n, typical, min_keep, sorted);
+        if n <= 0 { return -1; }
+        sorted = 0;
     }
 
-    // min_p
-    if min_p > 0.0 {
-        let min_logit: f32 = lv[0] + c_logf(min_p);
-        var stop: i64 = 1;
-        i = 1;
-        while i < n {
-            if lv[i] < min_logit && i >= min_keep {
-                break;
-            }
-            stop = i + 1;
-            i = i + 1;
-        }
-        n = stop;
+    // Restore logit order for the probability cuts after typical sampling.
+    if sorted == 0 && (top_p < 1.0 || min_p > 0.0) {
+        if sm_partial_sort(lv, id, n, n) < 0 { return -1; }
+        sorted = 1;
     }
+    n = sm_apply_top_p(lv, p, n, top_p, min_keep);
+    n = sm_apply_min_p(lv, n, min_p, min_keep);
+    if n <= 0 { return -1; }
 
     // temperature
     if temp <= 0.0 {
@@ -647,6 +631,29 @@ fn sm_apply_xtc(lv: f32[:], p: f32[:], id: i64[:], n: i64,
 // penalties: repeat, frequency and presence over the recent window. The window
 // arrives through the float slice (token ids are exact below 2^24) because the
 // dispatch carries one integer slice, and p is free before the softmax.
+fn sm_repeat_logit(logit: f32, repeat: f32) -> f32 {
+    return if logit <= 0.0 { logit * repeat } else { logit / repeat };
+}
+
+fn sm_repeat_marked(lv: f32[:], recent: const i64[:], seen: u8[:], repeat: f32) {
+    for i in recent.len {
+        let token = recent[i];
+        if seen[token] == 0 {
+            lv[token] = sm_repeat_logit(lv[token], repeat);
+            seen[token] = 1;
+        }
+    }
+}
+
+// The request owns validated integer IDs and an exact token-indexed logit array.
+// Restore only the marks that the two suffixes touched.
+fn sm_repeat_history(lv: f32[:], prompt: const i64[:], output: const i64[:], seen: u8[:], repeat: f32) {
+    sm_repeat_marked(lv, prompt, seen, repeat);
+    sm_repeat_marked(lv, output, seen, repeat);
+    for i in prompt.len { seen[prompt[i]] = 0; }
+    for i in output.len { seen[output[i]] = 0; }
+}
+
 fn sm_apply_penalties(lv: f32[:], id: i64[:], hist: f32[:],
                       tbl_keys: i64[:], tbl_cnt: i64[:],
                       n: i64, hn: i64, repeat: f32, freq: f32, present: f32) -> i64 {
@@ -699,12 +706,7 @@ fn sm_apply_penalties(lv: f32[:], id: i64[:], hist: f32[:],
             probe = probe + 1;
         }
         if c > 0 {
-            if lv[i] <= 0.0 {
-                lv[i] = lv[i] * repeat;
-            } else {
-                lv[i] = lv[i] / repeat;
-            }
-            lv[i] = lv[i] - ((c as f32) * freq + present);
+            lv[i] = sm_repeat_logit(lv[i], repeat) - ((c as f32) * freq + present);
         }
         i = i + 1;
     }
@@ -1002,16 +1004,18 @@ export fn fg_typical_entry(lv: f32[:], p: f32[:], id: i64[:], scr: f32[:], n: i6
 
 fn fg_sampler_typical(lv: f32[:], p: f32[:], id: i64[:], scr: f32[:], n: i64,
                       typical_p: f32, min_keep: i64) -> i64 {
+    return sm_typical_filter(lv, p, id, scr, n, typical_p, min_keep, 0);
+}
+
+fn sm_typical_filter(lv: f32[:], p: f32[:], id: i64[:], scr: f32[:], n: i64,
+                     typical_p: f32, min_keep: i64, sorted: i64) -> i64 {
     if n <= 0 || lv.len < n || p.len < n || id.len < n || scr.len < n {
         return -1;
     }
     if typical_p >= 1.0 {
         return n;
     }
-    let srt = sm_partial_sort(lv, id, n, n);
-    if srt < 0 {
-        return -1;
-    }
+    if sorted == 0 && sm_partial_sort(lv, id, n, n) < 0 { return -1; }
     let sm = softmax_in_place(lv, p, n, 1);
     if sm < 0.0 {
         return -1;
