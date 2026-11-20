@@ -95,7 +95,7 @@ quantized matrix throughput, and long-context decode Attention.
 | 11 | Fused MoE combination. `ggml_cuda_match_moe_weighted_reduction` → `moe_weighted_reduction_f32`. | The reference fuses the weighted combination. Independent Goose uses the existing fused device body with bounded input windows and eliminates the separate weighted tensor. | PARTIAL. The 4096-token numerical fixture and real Apex trace pass the scoped gate. Full logits and peak memory acceptance remain open. |
 | 12 | FP16 MMA Flash Attention. `fattn.cu` `ggml_cuda_flash_attn_ext` → shape selection → `fattn-mma-f16.cuh` `flash_attn_ext_f16`. | `GOOSE_FLASH_MMA=1` stages real Q4 KV as F16 and uses the existing `8×8` Goose process tile at all ten Apex attention layers. Each CTA finishes its complete causal query tile. | PARTIAL. Match EXP-1476 numerics, restore stream-K scheduling/fix-up and verify supported masks, long-context logits and full memory. |
 | 13 | Small-query Flash Attention vector dispatch. `fattn.cu` → `flash_attn_ext_vec`. | [Goose vector decode](#vector-flash-attention-for-q4-decode) executes its Q4_0 path, including a masked tail and partition merge, and improves the 4096/129 decode median. | PARTIAL. Check 32K/512 and other small-query or masked profiles. |
-| 14 | Attention staging and bounds. `fattn-common.cuh` and `fattn-mma-f16.cuh` stage Q4_0 KV as FP16, use FWHT where selected, and derive KV bounds from the mask. | `dequantize_block_q4_0`, `fwht_cuda` and `flash_attn_mask_to_KV_max` execute. Goose now applies the reference Q/K/V and inverse-output rotations in the live Q4 KV graph. It tracks causal bounds in its KV transaction and reads Q4 directly. | PARTIAL. FWHT executes at widths 256 and 64 on Apex. Float16 staging/rounding, masked tails and generation parity still need validation. |
+| 14 | Attention staging and bounds. `fattn-common.cuh` and `fattn-mma-f16.cuh` stage Q4_0 KV as FP16, use FWHT where selected, and derive KV bounds from the mask. | `dequantize_block_q4_0`, `fwht_cuda` and `flash_attn_mask_to_KV_max` execute. Goose applies the reference rotations in the live Q4 KV graph. [Bounded single-query loops](#bounded-vector-attention-loops) reduce full vector Attention GPU time from 9.052 to 3.509 s. | PARTIAL. FWHT executes at widths 256 and 64 on Apex. Float16 staging/rounding, masked tails and full quality still need validation. |
 | 15 | Flash partition reconciliation. `fattn-mma-f16.cuh` → stream-K general/uniform fix-up, plus vector combine-results. | All three reference families are present. Goose merge implements its current scalar partition geometry. | MISSING. Port compatible reconciliation with the MMA and vector schedules. Compare numerical reductions across tail partitions and multihead layouts. |
 | 16 | GDN prefill Tensor Cores. `ggml_cuda_op_gated_delta_net_impl` → `gdn_single` in `gated-delta-net-mma.cu`. | Reference executes `gdn_single<16,128,1>`. Independent Goose runs its `C=16, V=128` body with `GOOSE_GDN_MMA=1`. All 30 GDN layers execute it in a real Apex block. | PARTIAL. The [first layer's real scores and state](#first-recurrent-sigmoid-and-silu) now match bitwise. Validate full and chunked recurrent state and generation before default promotion. |
 | 17 | GDN decode specialization and fused state cache. `ggml_cuda_op_gated_delta_net_fused_cache` → native scalar `gated_delta_net_cuda` or shape-selected MMA. | Reference executes scalar decode GDN and known fused cache code. Goose has CUDA-resident GDN state and a publish/consume path. | PARTIAL. Match the selected decode kernel's arithmetic and state snapshots against the reference across prefill → decode. Check for stale aliases and measure actual state moves. |
@@ -2155,6 +2155,68 @@ Nsight SHA-256 values
 and `4e47cdbc580e294a699048e230b11618c3a85623663c76ecf04ae7d627cd9293`.
 Shared response content SHA-256
 `3a824300f79ea0f8bfa94c646dd23f0903626b8582ea7c3d8c2b058176335079`.
+
+## Bounded vector Attention loops
+
+EXP-2026-11-20-1565 retains the existing Q4_0
+single-query score, quantization, softmax and V accumulation
+helpers. It iterates over 32 keys per warp in the original
+order instead of explicitly expanding all 32 copies of the
+score and value control flow. Every tail read retains its
+key bound. The standalone partition geometry is 64 at 32K.
+
+On SM89 SASS, the vector kernel goes from 10,616 to 1,612
+static instructions, 1,021 to 158 `ISETP`, 623 to 120
+`BRA`, and 41 `LDL` plus 40 `STL` to zero local-memory
+instructions. Offline `ptxas` reports 78 registers and zero
+stack or spill bytes. Nsight records 255 to 80 registers per
+thread at runtime. The frozen EXP-1476 vector entry has
+65 `ISETP`, 19 `BRA` and no `LDL` or `STL`. Static
+counts describe the compiled bodies and do not count dynamic
+loop executions.
+
+CUDA memcheck reports zero errors for 1, 127, 128, 129,
+4,097, 32,768 and 32,769 keys. The maximum absolute error
+against the CPU graph on the two longest fixtures is
+4.617e-5. The full A/B uses the EXP-1564 D2D checkpoint,
+the same RTX 4070, request and 4096/4096 configuration
+on both sides, with one sequence and no prompt cache hits.
+
+| Metric | A | B |
+|---|---:|---:|
+| Prefill, tok/s | 764.830 | 766.833 |
+| Prefill, s | 42.844 | 42.732 |
+| Decode, steps/s (511 steps) | 16.556 | 20.329 |
+| Decode, s | 30.866 | 25.136 |
+| Vector Q4 Attention GPU time, s | 9.052 | 3.509 |
+| Vector Q4 Attention launches | 5,110 | 5,110 |
+| Vector reconciliation GPU time, s | 0.051 | 0.051 |
+| H2D, whole trace bytes | 154,911,039,824 | 154,911,039,824 |
+| D2H, whole trace bytes | 551,156,480 | 551,156,480 |
+| D2D, whole trace bytes | 21,474,836,480 | 21,474,836,480 |
+| Process RSS high-water, KiB | 23,514,832 | 23,514,076 |
+| Sampled peak process VRAM, MiB | 8,524 | 8,524 |
+| Sampled peak whole-card VRAM, MiB | 10,718 | 10,716 |
+| Process swap and system swap-out growth | 0 | 0 |
+
+The measured decode interval decreases by 5.730 s and the
+vector Q4 kernel time decreases by 5.543 s. All 512 output
+IDs, content, probability rows, stop reason, SLRU counters
+and 5,301,139-page model residency match. The existing
+request echo remains. This pair qualifies the kernel change.
+End-to-end EXP-1476 performance and full quality gates
+remain open. Long vector Attention still costs 3.509 s
+compared with 1.216 s in the earlier frozen hybrid trace.
+
+The A trace is under
+`/home/end0/AI/LlamaServer/franken-goose-matrix-d2d.iiJE4H/cuda-full-dense-both.xjqjf6c8`.
+The B trace is under
+`/home/end0/AI/LlamaServer/franken-goose-flash-loop.IoydtL/cuda-full-dense-both.8rbn_uvp`.
+B executable SHA-256
+`aaf817e26b5d9b0bf2aef522e986d9314bd52158b183dfdf4592ac0ad885ee56`.
+A and B Nsight SHA-256 values
+`659df8aa28a5425b3f9d172ba0bdc78bd1bb3b710da8297b28278aa4c4dd256a`
+and `cc55d87a0dff360e29425ccfabee688b2ab7f6185cbf0b4192f9e309e05a7174`.
 
 ## Long Attention partition probe
 

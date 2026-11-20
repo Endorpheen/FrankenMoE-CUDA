@@ -73,8 +73,8 @@ Functional qualification runs before memory and speed acceptance.
    The separate short and long
    [response-quality comparison](CUDA-PARITY-EXP1476.md#apex-response-quality-checkpoint)
    confirms coherent generation and the HTTP EOS fix. The
-   [latest full diagnostic](CUDA-PARITY-EXP1476.md#device-staging-for-the-last-use-matrix-input)
-   reports 766.649 prefill tok/s and 16.468 decode steps/s.
+   [latest full diagnostic](CUDA-PARITY-EXP1476.md#bounded-vector-attention-loops)
+   reports 766.833 prefill tok/s and 20.329 decode steps/s.
    It preserves the recorded capacity analysis and opening input
    repetition. The full response gate remains open.
    Gates 3 and 4 qualify the later speed comparison.
