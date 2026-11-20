@@ -1031,7 +1031,13 @@ int64_t fg_cuda_vector(sl_i64 config, sl_u8 x, sl_u8 y, sl_u8 out, float param0,
     memcpy(plan, config.data, sizeof(plan));
     DevicePtr staged[3] = {0}, output = 0;
     const uint64_t host = (uint64_t) (uintptr_t) out.data;
-    int error = activation_output(host, out.len, &output);
+    int error = 0;
+    if (plan[23] & 4) {
+        error = reserve(&cuda.output, (size_t) out.len);
+        output = cuda.output.address;
+    } else {
+        error = activation_output(host, out.len, &output);
+    }
     if (error == 0) error = vector_input(x, &cuda.input, &staged[0], plan + 6, (plan[23] & 1) != 0);
     if (error == 0 && y.len > 0) {
         error = vector_input(y, &cuda.weight, &staged[1], plan + 14, (plan[23] & 2) != 0);

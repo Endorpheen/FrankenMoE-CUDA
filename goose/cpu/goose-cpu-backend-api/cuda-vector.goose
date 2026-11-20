@@ -28,7 +28,30 @@ fn cv_layout(t: const Tensor &, available: i64) -> bool {
     return true;
 }
 
-fn cv_try(p: const Node &, x: const u8[:], y: const u8[:], dst: u8[:]) -> i64 {
+fn cv_multiply_windows(p: const Node &, x: const u8[:], y: const u8[:], dst: u8[:], plan: i64[:]) -> i64 {
+    let capacity = high(1, (16 * 1024 * 1024) / p.d.nb[2]);
+    plan[23] = 4;
+    var offset: i64 = 0;
+    while offset < p.d.ne[2] {
+        let count = low(capacity, p.d.ne[2] - offset);
+        let first_x = offset * p.x.nb[2];
+        let first_y = offset * p.y.nb[2];
+        let first_d = offset * p.d.nb[2];
+        plan[1] = count * (p.d.nb[2] / 4);
+        plan[4] = count;
+        plan[8] = count;
+        plan[16] = count;
+        plan[24] = 1 + (plan[1] - 1) / 128;
+        let result = cuda_vector(plan, x[first_x .. first_x + count * p.x.nb[2]],
+            y[first_y .. first_y + count * p.y.nb[2]], dst[first_d .. first_d + count * p.d.nb[2]],
+            p.fp[0], p.fp[1]);
+        if result <= 0 { return if offset == 0 { result } else { -1 }; }
+        offset += count;
+    }
+    return 1;
+}
+
+fn cv_try(p: const Node &, x: const u8[:], y: const u8[:], dst: u8[:], addresses: const i64[3] &) -> i64 {
     let op = cv_operation(p);
     if op == 0 || p.nth != 1 || !cv_layout(p.d, dst.len) || !dense_scalar(p.d, 4) ||
        !cv_layout(p.x, x.len) {
@@ -67,5 +90,16 @@ fn cv_try(p: const Node &, x: const u8[:], y: const u8[:], dst: u8[:]) -> i64 {
     config[24] = groups;
     config[25] = if norm { 32 } else { 128 };
     let y_bytes = if pair { p.y.bytes } else { 0 };
+    // The full MoE product can exceed the available staging memory. Its
+    // token planes are independent and can be published directly to RAM.
+    if op == CV_MUL && p.d.bytes > 32 * 1024 * 1024 &&
+       p.d.ne[2] > 1 && p.d.ne[3] == 1 && same_shape(p.x, p.d) &&
+       p.y.ne[2] == p.d.ne[2] && p.y.ne[3] == 1 &&
+       dense_scalar(p.x, 4) && dense_scalar(p.y, 4) &&
+       addresses[0] != 0 && addresses[1] != 0 && addresses[2] != 0 &&
+       blit_disjoint(addresses[0] as! u64, p.x.bytes, addresses[2] as! u64, p.d.bytes) &&
+       blit_disjoint(addresses[1] as! u64, p.y.bytes, addresses[2] as! u64, p.d.bytes) {
+        return cv_multiply_windows(p, x, y, dst, config[..]);
+    }
     return cuda_vector(config, x[0 .. p.x.bytes], y[0 .. y_bytes], dst[0 .. p.d.bytes], p.fp[0], p.fp[1]);
 }

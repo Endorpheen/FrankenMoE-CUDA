@@ -34,6 +34,15 @@ paired ablations, which are open for every row.
 
 **32 mechanisms: PARITY 0, PARTIAL 21, MISSING 10, INCORRECT 1.**
 
+Group up to three related improvements. Give each change its own
+short correctness, CUDA-error and numerical checks, then commit it
+independently. Run one full Apex 32K/512 4096/4096 request after
+three verified changes and compare prefill, decode, RAM, VRAM and
+output against the previous correct checkpoint and EXP-1476.
+Isolate any regression with the short tests and run changes
+individually when needed. A critical failure or the first verified
+generation repair calls for an immediate full run.
+
 | # | Mechanism and EXP-1476 call path | Evidence and independent Goose state | Status, restoration and verification |
 |---:|---|---|---|
 | 1 | Q4_K MMQ. `ggml-cuda.cu` `ggml_cuda_mul_mat` / `ggml_cuda_mul_mat_id` → `mmq.cu` `ggml_cuda_mul_mat_q` → `mmq-load-tiles.cuh` and `mmq-vec-dot.cuh` → `mul_mat_q`. | Executed type 12 symbols contain SM89 `IMMA.16832.S8.S8`. With `GOOSE_MMQ=1`, Goose sends dense and routed 16×8 tiles to its K=32 MMA path. | PARTIAL. The integer-dot fixture and real 4,096-ID trace exercise the kernel. Full output parity and unprofiled performance remain open. |
@@ -126,6 +135,37 @@ checkpoint and continue memory and correctness work.
 Raw data is in
 `/home/end0/AI/LlamaServer/franken-goose-mmq.w1C6YB`, including
 `mmq-profile.IpNHWO` and `apex-functional.DCqNyI`.
+
+## Large MoE vector workspace checkpoint
+
+A 4096-token MoE product previously requested a contiguous
+268,435,456-byte device staging allocation and failed. The planner
+now slices large dense MUL operations along independent token
+planes. Each window has a 16 MiB staging target and publishes its
+own range to RAM. The physical microbatch is still 4096. Inputs
+and output must be disjoint before the planner selects windows.
+RTX 4070 executed three windows for the 4096-plane fixture and
+matched every output including the tail on both CUDA images.
+
+The full real request for this critical memory repair completed
+with `GOOSE_MMQ=1` at physical 4096/4096, with cache reuse zero
+and 512 output IDs. Prefill was **573.944 s / 57.092649
+tokens/s**. Decode was **49.370 s / 10.350416 steps/s** on the
+511-step denominator. Against the earlier independent scalar
+diagnostic the prefill interval fell by 447.759 seconds. The
+response discusses the repeated input log and differs from the
+reference at output index 1 (ID 280 versus 198). The next-step
+probability distribution also differs. Exact parity remains open.
+
+High-water RSS was 23,945,668 KiB. The 304 VRAM samples recorded
+8,696 MiB maximum for the process and 11,813 MiB for the card.
+Process swap and system swap-out growth were zero. The full model
+remained resident before and after the request.
+
+Raw data:
+`/home/end0/AI/LlamaServer/franken-goose-vector-windows.a9wPqw/apex-functional.qYHYlH`.
+Executable SHA-256:
+`bfb055048259d72514f0efff1919999391f86b766bd5c973bbecb6e73682e66d`.
 
 ## Kernel coverage
 

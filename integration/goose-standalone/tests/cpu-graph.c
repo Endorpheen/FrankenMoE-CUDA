@@ -923,6 +923,37 @@ static void check_cuda_vectors(void) {
     ggml_free(ctx);
 }
 
+static void check_cuda_vector_windows(void) {
+    enum { width = 513, experts = 4, tokens = 4096 };
+    struct ggml_context * ctx = ggml_init((struct ggml_init_params){1024 * 1024, NULL, true});
+    assert(ctx);
+    struct ggml_tensor * x = ggml_new_tensor_3d(ctx, GGML_TYPE_F32, width, experts, tokens);
+    struct ggml_tensor * weights = ggml_new_tensor_3d(ctx, GGML_TYPE_F32, 1, experts, tokens);
+    struct ggml_tensor * out = ggml_mul(ctx, x, weights);
+    struct ggml_cgraph * graph = ggml_new_graph_custom(ctx, 16, false);
+    ggml_build_forward_expand(graph, out);
+    void * storage = fg_standalone_graph_alloc(graph);
+    assert(storage && ggml_nbytes(out) > 32u * 1024u * 1024u);
+    float * values = x->data;
+    float * factors = weights->data;
+    for (int row = 0; row < experts * tokens; ++row) {
+        factors[row] = (float) (row % 31 - 15) / 16.0f;
+        for (int col = 0; col < width; ++col) {
+            values[row * width + col] = (float) ((17 * col + row) % 29 - 14) / 32.0f;
+        }
+    }
+    assert(fg_standalone_graph_compute(graph) == GGML_STATUS_SUCCESS);
+    const float * actual = out->data;
+    for (int row = 0; row < experts * tokens; ++row) {
+        for (int col = 0; col < width; ++col) {
+            assert(actual[row * width + col] == values[row * width + col] * factors[row]);
+        }
+    }
+    printf("Windowed CUDA multiply preserves all %d token planes and its tail\n", tokens);
+    free(storage);
+    ggml_free(ctx);
+}
+
 static void check_cuda_position(void) {
     enum { width = 128, heads = 3, tokens = 7, sequences = 2, channels = 131 };
     const int modes[] = {
@@ -1123,6 +1154,7 @@ int main(int argc, char ** argv) {
         else if (strcmp(argv[1], "--resident-conv") == 0) check_resident_convolution();
         else if (strcmp(argv[1], "--activations") == 0) check_activation_pipeline();
         else if (strcmp(argv[1], "--vectors") == 0) check_cuda_vectors();
+        else if (strcmp(argv[1], "--vector-windows") == 0) check_cuda_vector_windows();
         else if (strcmp(argv[1], "--cached-experts") == 0) check_cached_expert_batch();
         else if (strcmp(argv[1], "--mmq") == 0) check_cuda_mmq();
         else if (strcmp(argv[1], "--graph-storage") == 0) check_graph_storage();

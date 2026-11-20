@@ -64,7 +64,7 @@ fn entry(
         if handled { witness(p.op, elements(p.d)); }
         return handled;
     }
-    let vector = cv_try(p, x, y, dst);
+    let vector = cv_try(p, x, y, dst, addresses);
     if vector != 0 {
         if vector > 0 { witness(p.op, elements(p.d)); }
         return vector > 0;
