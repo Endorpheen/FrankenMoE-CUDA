@@ -40,6 +40,8 @@ sed '/^fn argsort(x/,$d; /^extern "fg283d_smem"/d' "$ROOT/goose/cuda/goose-cuda-
 cp "$ROOT/goose/cuda/standalone-transform.goose" "$OUT/transform.goose"
 sed '/^fn main()/,$d; s/^fn fg183f_row(/export fn fg183f_row(/' \
     "$ROOT/goose/cuda/goose-cuda-fwht/device.goose" > "$OUT/fwht.goose"
+sed '/^fn main()/,$d; s/^fn fg179w_reduce(/export fn fg179w_reduce(/' \
+    "$ROOT/goose/cuda/goose-cuda-moe-weighted/device.goose" > "$OUT/moe-weighted.goose"
 sed '/^fn main()/,$d; s/^fn fg180q_mmq(/export fn fg180q_mmq(/' \
     "$ROOT/goose/cuda/goose-cuda-mmq-q8-1/device.goose" > "$OUT/mmq-quant.goose"
 cp "$ROOT/goose/cuda/standalone-mmq.goose" "$OUT/mmq.goose"
@@ -47,7 +49,7 @@ sed -n '/^fn scale_min(/,/^}/p' "$ROOT/goose/cuda/goose-cuda-dequant-q4k/device.
 sed -n '/^fn q4_mmq_nibbles(/,/^}/p' "$ROOT/goose/cuda/goose-mmq-load-q4k/device.goose" >> "$OUT/mmq.goose"
 sed -n '/^fn vsub4(/,/^}/p; /^fn q6_mmq_bytes(/,/^}/p' \
     "$ROOT/goose/cuda/goose-mmq-load-q6k/device.goose" >> "$OUT/mmq.goose"
-for module in q4k q6k matmul q4-attention gdn q4-set-rows vector rope ssm-conv routing transform fwht mmq-quant mmq; do
+for module in q4k q6k matmul q4-attention gdn q4-set-rows vector rope ssm-conv routing transform fwht moe-weighted mmq-quant mmq; do
     "$GOOSE" --standalone -o "$OUT/$module.c" --header "$OUT/$module.h" "$OUT/$module.goose"
     python3 - "$OUT" "$module" <<'PY'
 from pathlib import Path

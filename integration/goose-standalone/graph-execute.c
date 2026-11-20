@@ -29,6 +29,7 @@ extern void fg_cuda_take_resident_state(uint64_t * kv, uint64_t * gdn);
 extern uint64_t fg_cuda_take_q4_writes(void);
 extern uint64_t fg_cuda_take_vectors(void);
 extern uint64_t fg_cuda_take_fwhts(void);
+extern uint64_t fg_cuda_take_moe_weighted(void);
 extern void fg_cuda_take_position(uint64_t * ropes, uint64_t * convs);
 extern void fg_cuda_take_routes(uint64_t * routes);
 extern void fg_cuda_take_blits(uint64_t * blits);
@@ -300,6 +301,7 @@ static enum ggml_status compute_graph(struct ggml_cgraph * graph, bool all, cons
     const uint64_t writes = fg_cuda_take_q4_writes();
     const uint64_t vectors = fg_cuda_take_vectors();
     const uint64_t fwhts = fg_cuda_take_fwhts();
+    const uint64_t weighted = fg_cuda_take_moe_weighted();
     uint64_t ropes, convs;
     fg_cuda_take_position(&ropes, &convs);
     uint64_t routes[4];
@@ -327,6 +329,7 @@ static enum ggml_status compute_graph(struct ggml_cgraph * graph, bool all, cons
         if (writes) fprintf(stderr, "Goose CUDA resident Q4 writes: %llu nodes\n", (unsigned long long) writes);
         if (vectors) fprintf(stderr, "Goose CUDA vector: %llu nodes\n", (unsigned long long) vectors);
         if (fwhts) fprintf(stderr, "Goose CUDA KV FWHT: %llu nodes\n", (unsigned long long) fwhts);
+        if (weighted) fprintf(stderr, "Goose CUDA MoE weighted reduction: %llu tiles\n", (unsigned long long) weighted);
         if (skipped_download_bytes) fprintf(stderr, "Goose CUDA overwritten downloads skipped: %" PRIu64 " bytes\n",
             skipped_download_bytes);
         if (ropes) fprintf(stderr, "Goose CUDA RoPE: %llu nodes\n", (unsigned long long) ropes);

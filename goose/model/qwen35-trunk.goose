@@ -39,15 +39,17 @@ fn qm_swiglu(c: i64, gate: i64, up: i64, work: i64[:]) -> i64 {
     return gb_common_args(work);
 }
 
+extern "fg_q35_moe_weighted_node" fn qm_weighted(c: i64, input: i64, weights: i64) -> i64;
+
 // Weights: router, up_exps, gate_exps, down_exps, shared_up, shared_gate,
 // shared_down, shared_router. cfg: expert_count, used_count, weight_scale_bits.
 // No groups, biases, LoRA, split scaling or activation clamps in this path.
-// Required nodes length=26+2*used. Return includes the gated shared expert.
+// Required nodes length=26. Return includes the gated shared expert.
 export fn q35_moe_ffn(c: i64, x: i64, weights: i64[:], cfg: i64[:],
                       work: i64[:], nodes: i64[:]) -> i64 {
     if c == 0 || x == 0 || weights.len < 8 || cfg.len < 3 || work.len < 16 { return 0; }
     let experts: i64 = cfg[0]; let used: i64 = cfg[1];
-    if experts <= 0 || experts > 4096 || used <= 0 || used > experts || used > 64 || nodes.len < 26 + 2 * used { return 0; }
+    if experts <= 0 || experts > 4096 || used <= 0 || used > experts || used > 64 || nodes.len < 26 { return 0; }
     let scale: f32 = float_bits(cfg[2]);
     if !(scale >= 0.0) || !(scale <= 3.4028234663852886e38) { return 0; }
     let hidden: i64 = ne(x, 0); let count: i64 = ne(x, 1);
@@ -81,19 +83,9 @@ export fn q35_moe_ffn(c: i64, x: i64, weights: i64[:], cfg: i64[:],
     nodes[14] = qm_mm_id(c, weights[2], nodes[12], nodes[3], work);
     nodes[15] = qm_swiglu(c, nodes[14], nodes[13], work);
     nodes[16] = qm_mm_id(c, weights[3], nodes[15], nodes[3], work);
-    nodes[17] = qa_binary(c, nodes[16], nodes[11], 7, work);
-    i = 0;
-    while i < used {
-        nodes[18 + i] = view2(c, nodes[17], hidden, count, hidden * used * 4, i * hidden * 4);
-        i += 1;
-    }
-    var aggregate: i64 = nodes[18]; i = 1;
-    while i < used {
-        aggregate = qa_binary(c, aggregate, nodes[18 + i], 2, work);
-        nodes[17 + used + i] = aggregate; i += 1;
-    }
-    let base: i64 = 17 + 2 * used;
-    if used == 1 { qa_begin(work, 23, c, aggregate, 0, 0, 35); aggregate = gb_common_args(work); }
+    let aggregate = qm_weighted(c, nodes[16], nodes[11]);
+    if aggregate == 0 { return 0; }
+    let base: i64 = 17;
     nodes[base] = aggregate;
     nodes[base + 1] = qa_mm(c, weights[4], x, work);
     nodes[base + 2] = qa_mm(c, weights[5], x, work);

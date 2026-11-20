@@ -51,6 +51,9 @@ export fn fg143_node_run(packet: const i64[:], mode: i64,
     if p.op == OP_CUSTOM && p.ip[0] == 0x46574854 {
         return mode == 1 || kv_fwht(p, x, dst);
     }
+    if p.op == OP_CUSTOM && p.ip[0] == 0x4d4f4557 {
+        return mode == 1 || moe_weighted(p, x, y, dst);
+    }
     if mode == 0 && p.op == OP_FLASH_ATTN_EXT {
         if packet[69] != 0 { return false; }
         let mask_shape = packet_tensor(packet, 59);
@@ -94,6 +97,39 @@ fn kv_fwht(p: const Node &, src: const u8[:], dst: u8[:]) -> bool {
                 }
             }
             step *= 2;
+        }
+    }
+    return true;
+}
+
+extern "fg_cuda_moe_weighted" fn cuda_moe_weighted(x: const u8[:], weights: const u8[:], dst: u8[:],
+    width: i64, used: i64, count: i64, tile: i64) -> i64;
+
+fn moe_weighted(p: const Node &, x: const u8[:], w: const u8[:], dst: u8[:]) -> bool {
+    let width = p.x.ne[0];
+    let used = p.x.ne[1];
+    let count = p.x.ne[2];
+    if width <= 0 || width > 65535 * 256 || used <= 0 || used > 64 || count <= 0 || count > 0x7fffffff ||
+       p.x.ne[3] != 1 || p.y.ne[0] != 1 || p.y.ne[1] != used || p.y.ne[2] != count || p.y.ne[3] != 1 ||
+       p.d.ne[0] != width || p.d.ne[1] != count || p.d.ne[2] != 1 || p.d.ne[3] != 1 ||
+       p.x.kind != 0 || p.y.kind != 0 || p.d.kind != 0 || !dense_scalar(p.x, 4) || !dense_scalar(p.y, 4) ||
+       !dense_scalar(p.d, 4) || x.len != p.x.bytes || w.len != p.y.bytes || dst.len != p.d.bytes { return false; }
+    let input_row = width * used * 4;
+    let tile = high(1, (16 * 1024 * 1024) / input_row);
+    let device = cuda_moe_weighted(x, w, dst, width, used, count, low(count, tile));
+    if device != 0 { return device > 0; }
+    if activation_read(x) != 0 || activation_read(w) != 0 { return false; }
+    for row in count {
+        let xbase = row * input_row;
+        let wbase = row * used * 4;
+        for col in width {
+            let byte = col * 4;
+            var sum = from_bits(read32(x, xbase + byte)) * from_bits(read32(w, wbase));
+            for e in 1 .. used {
+                let product = from_bits(read32(x, xbase + e * width * 4 + byte)) * from_bits(read32(w, wbase + e * 4));
+                sum += product;
+            }
+            write32(dst, row * width * 4 + byte, bits(sum));
         }
     }
     return true;

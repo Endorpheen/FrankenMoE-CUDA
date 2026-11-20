@@ -18,6 +18,7 @@ extern int64_t fg_cuda_load_model_state(sl_i64 ranges, int64_t bytes);
 extern int64_t fg_cuda_state_read(uint64_t host, int64_t bytes);
 extern int64_t fg_cuda_state_write(uint64_t host, int64_t bytes);
 extern int64_t fg_q35_fwht_node(int64_t context, int64_t input, int64_t width);
+extern int64_t fg_q35_moe_weighted_node(int64_t context, int64_t input, int64_t weights);
 
 static void check_model_step(const char * path) {
     fg_goose_host_ensure_init();
@@ -1207,7 +1208,43 @@ static void check_kv_fwht(int width) {
     ggml_free(ctx);
 }
 
+static void check_moe_weighted(int width, int used, int tokens) {
+    struct ggml_context * ctx = ggml_init((struct ggml_init_params){ 64 * 1024, NULL, true });
+    assert(ctx);
+    struct ggml_tensor * experts = ggml_new_tensor_3d(ctx, GGML_TYPE_F32, width, used, tokens);
+    struct ggml_tensor * weights = ggml_new_tensor_3d(ctx, GGML_TYPE_F32, 1, used, tokens);
+    struct ggml_tensor * output = (void *) (intptr_t) fg_q35_moe_weighted_node(
+        (intptr_t) ctx, (intptr_t) experts, (intptr_t) weights);
+    assert(output);
+    struct ggml_cgraph * graph = ggml_new_graph_custom(ctx, 16, false);
+    ggml_build_forward_expand(graph, output);
+    void * storage = fg_standalone_graph_alloc(graph);
+    assert(storage);
+    float * rows = experts->data;
+    float * factors = weights->data;
+    for (int i = 0; i < width * used * tokens; ++i) rows[i] = (float) ((i * 23 + i / 19) % 37 - 18) / 11.0f;
+    for (int i = 0; i < used * tokens; ++i) factors[i] = (float) ((i * 7 + i / 17) % 32) / 31.0f;
+    assert(fg_standalone_graph_compute_output(graph, output) == GGML_STATUS_SUCCESS);
+    const float * result = output->data;
+    for (int token = 0; token < tokens; ++token) {
+        const int first = token * used;
+        for (int col = 0; col < width; ++col) {
+            float expected = rows[first * width + col] * factors[first];
+            for (int e = 1; e < used; ++e) expected += rows[(first + e) * width + col] * factors[first + e];
+            assert(memcmp(&result[token * width + col], &expected, sizeof(float)) == 0);
+        }
+    }
+    printf("MoE weighted reduction: %d tokens, %d experts, width %d, exact output\n", tokens, used, width);
+    free(storage);
+    ggml_free(ctx);
+}
+
 int main(int argc, char ** argv) {
+    if (argc == 2 && strcmp(argv[1], "--moe-weighted") == 0) {
+        check_moe_weighted(193, 1, 3);
+        check_moe_weighted(513, 8, 4096);
+        return 0;
+    }
     if (argc == 2 && strcmp(argv[1], "--kv-fwht") == 0) {
         check_kv_fwht(64);
         check_kv_fwht(256);

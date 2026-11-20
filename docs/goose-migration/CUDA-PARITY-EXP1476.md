@@ -34,14 +34,21 @@ paired ablations, which are open for every row.
 
 **32 mechanisms: PARITY 0, PARTIAL 21, MISSING 10, INCORRECT 1.**
 
-Group up to three related improvements. Give each change its own
+Group three to five related improvements. Give each change its own
 short correctness, CUDA-error and numerical checks, then commit it
 independently. Run one full Apex 32K/512 4096/4096 request after
-three verified changes and compare prefill, decode, RAM, VRAM and
+the package and compare prefill, decode, RAM, VRAM and
 output against the previous correct checkpoint and EXP-1476.
 Isolate any regression with the short tests and run changes
 individually when needed. A critical failure or the first verified
 generation repair calls for an immediate full run.
+
+Prioritize Apex prefill. Start with dense GEMM (7), then examine
+transfers and synchronization (24, 27, 30), Flash Attention (12,
+14, 15), GDN/SSM (16, 18), and MMQ/MoE (4, 9, 10, 11). Reuse
+the existing Goose implementations whenever they fit the active
+shapes and numeric contract. Sequence work by measured impact and
+dependencies. Resume decode-specific work after prefill recovery.
 
 | # | Mechanism and EXP-1476 call path | Evidence and independent Goose state | Status, restoration and verification |
 |---:|---|---|---|
@@ -55,7 +62,7 @@ generation repair calls for an immediate full run.
 | 8 | Dense small-shape dispatch. `mmf.cu` and `mmvf.cu` implement `mul_mat_f` and `mul_mat_vec_f`. The trace also records `dot_kernel`. | All three families appear in the trace. Goose does dense F32 FMA and shuffles using one output per warp. The exact library owner of `dot_kernel` remains open. | PARTIAL. Identify the dot route and reuse existing dot and warp code where equivalent. Recreate selected row/vector tiling and validate dimensions and backend selection by shape. |
 | 9 | Device expert grouping. `ggml_cuda_mul_mat_id` / `mmq.cu` → `mm_ids_helper` → per-expert group ranges and Q8 scatter. | `mm_ids_helper` executes. Goose builds per-expert jobs and keeps a GPU SLRU, with host route synchronization. | PARTIAL. Feed active routes to device grouping and pack contiguous batches without losing expert ownership. Verify sparse, repeated and empty groups against the reference. |
 | 10 | Fused MoE selection. `ggml-cuda.cu` `ggml_cuda_topk_moe_fusion` → `topk_moe_cuda`. | Reference executes selection fusion. Goose separately runs softmax, stable sort, gather, row sum and scaling. | PARTIAL. Combine equivalent operations while retaining tie order and normalized expert weights. Compare selected indices and scores before measuring speed. |
-| 11 | Fused MoE combination. `ggml_cuda_match_moe_weighted_reduction` → `moe_weighted_reduction_f32`. | Reference makes one fused weighted combination. Goose materializes routed projections and reduces views over separate operations. | PARTIAL. Fuse route weights and reduction with the exact accumulation order. Test large MoE batches and measure removed intermediate storage and copies. |
+| 11 | Fused MoE combination. `ggml_cuda_match_moe_weighted_reduction` → `moe_weighted_reduction_f32`. | The reference fuses the weighted combination. Independent Goose uses the existing fused device body with bounded input windows and eliminates the separate weighted tensor. | PARTIAL. The 4096-token numerical fixture and real Apex trace pass the scoped gate. Full logits and peak memory acceptance remain open. |
 | 12 | FP16 MMA Flash Attention. `fattn.cu` `ggml_cuda_flash_attn_ext` → shape selection → `fattn-mma-f16.cuh` `flash_attn_ext_f16`. | Reference prefill calls the MMA kernel even with Q4 KV storage. Goose uses Q4 scalar tiles plus a separate merge. | MISSING. Reuse Q4 cache and conversion leaves with the reference tiled MMA schedule and causal/mask behavior. Verify GQA, real head width 256 and long-context logits. |
 | 13 | Small-query Flash Attention vector dispatch. `fattn.cu` → `flash_attn_ext_vec`. | Reference trace contains the vector path. Goose slices its scalar Q4 tiles for both prefill and decode. | MISSING. Restore the small-query specialization and validate softmax merging and decode latency at 32K. |
 | 14 | Attention staging and bounds. `fattn-common.cuh` and `fattn-mma-f16.cuh` stage Q4_0 KV as FP16, use FWHT where selected, and derive KV bounds from the mask. | `dequantize_block_q4_0`, `fwht_cuda` and `flash_attn_mask_to_KV_max` execute. Goose now applies the reference Q/K/V and inverse-output rotations in the live Q4 KV graph. It tracks causal bounds in its KV transaction and reads Q4 directly. | PARTIAL. FWHT executes at widths 256 and 64 on Apex. Float16 staging/rounding, masked tails and generation parity still need validation. |
@@ -211,6 +218,32 @@ generation, decode rate and RAM/VRAM still require acceptance.
 Raw data: `/home/end0/AI/LlamaServer/franken-goose-overwrite.ybFFqc/mmq-profile.A1GnjM`.
 Response SHA-256: `e6e320282997e1fd778f987084a0f69c828018df42f92c092820da1e1a691e85`.
 Executable SHA-256: `7058ed51e0301df87c34524d74cef0df36668b71a8c64ac583183ba2acde0bf0`.
+
+## Fused weighted expert reduction checkpoint
+
+EXP-2026-11-20-1526 uses the canonical `fg179w_reduce` Goose body
+and writes a single `[hidden,tokens]` result instead of materializing
+the `[hidden,experts,tokens]` weighted tensor and summing its views.
+The staging limit is 16 MiB for routed inputs per launch on Apex.
+The physical microbatch remains 4096. The independent CPU oracle
+matched every F32 result for one route and for 4096 tokens with
+eight routes and a width tail. Both CUDA images exercised the
+five-window fixture with a final partial window. The small-state
+model mixed CPU/CUDA continuation had a maximum error of 1.19e-7.
+
+The same real 4096/1 input ran 640 `goose_moe_weighted` launches in
+19.919 ms. Prefill fell from 46.209 s to 37.137 s, or 88.640 to
+110.293 tokens/s. H2D fell from 105,306,630,016 to 90,878,032,896
+bytes. D2H fell from 89,922,142,208 to 71,198,769,152 bytes.
+The 256 MiB weighted intermediate was removed from each graph
+layer. This size describes a logical tensor, not peak process RAM
+or VRAM. Both short runs produced the same token and text (9495,
+` tail`). The reference token still differs. The full 32K/512
+benchmark, peak memory and exact generation checks remain open.
+
+Raw data: `/home/end0/AI/LlamaServer/franken-goose-moe-weighted.gjQFQa/mmq-profile.gcbhWG`.
+Response SHA-256: `c3142113df588278d35a2108a43230b727818efa9acf74d1380832c881e74c63`.
+Executable SHA-256: `6d30ef31d493ced9ba533c71233c6edd276d2063d211c28f45b8f69eea8a8e0a`.
 
 ## Kernel coverage
 

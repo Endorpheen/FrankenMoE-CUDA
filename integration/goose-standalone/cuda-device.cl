@@ -514,6 +514,26 @@ __kernel void goose_kv_fwht(__global const float * src, __global float * dst,
     fg183f_row_g((uint64_t) src, (uint64_t) dst, width, rows, scale, block, 4, thread / 32, thread % 32, 32);
 }
 
+#define fg179w_ld_f32 fg183f_ld_f32
+#define fg179w_st_f32 fg183f_st_f32
+#define fg179w_fail fg183f_fail
+#pragma OPENCL FP_CONTRACT OFF
+#include "moe-weighted-device.h"
+#pragma OPENCL FP_CONTRACT ON
+#undef fg179w_ld_f32
+#undef fg179w_st_f32
+#undef fg179w_fail
+
+__kernel void goose_moe_weighted(__global const float * experts, __global const float * weights,
+                                __global float * dst, int64_t width, int64_t used) {
+    uint32_t token, tile, thread;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(token));
+    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(tile));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
+    fg179w_reduce_g((uint64_t) experts, 0, (uint64_t) weights, (uint64_t) dst, width, used,
+                    token, tile, thread, 256);
+}
+
 __kernel void goose_tensor_blit(__global uint8_t * x, __global uint8_t * y,
     __global uint8_t * out, __global int64_t * cfg) {
     fg_tensor_blit_g((uint64_t) x, (uint64_t) y, (uint64_t) out, (uint64_t) cfg, position_thread());

@@ -43,7 +43,7 @@ static struct {
     Function kernel, attention_tiles, attention_merge, gdn, q4_rows, vector;
     Function mmq_pack, mmq_matrix;
     Function rope_phases, rope_apply, ssm_conv;
-    Function route_reduce, route_sort, route_gather, blit, fwht;
+    Function route_reduce, route_sort, route_gather, blit, fwht, moe_weighted;
     struct device_buffer input, output, weight, jobs;
     struct device_buffer mmq_packed, mmq_tiles;
     struct device_buffer attention_value, attention_scratch, attention_config;
@@ -99,6 +99,7 @@ static _Thread_local uint64_t cuda_resident_kv, cuda_resident_gdn;
 static _Thread_local uint64_t cuda_q4_writes;
 static _Thread_local uint64_t cuda_vectors;
 static _Thread_local uint64_t cuda_fwhts;
+static _Thread_local uint64_t cuda_moe_weighted_tiles;
 static _Thread_local uint64_t cuda_ropes, cuda_convs;
 static _Thread_local uint64_t cuda_routes[4];
 static _Thread_local uint64_t cuda_blits[3];
@@ -179,6 +180,7 @@ static void init_cuda(void) {
         if (error == 0) error = cuda.function_get(&cuda.route_gather, cuda.module, "goose_route_gather");
         if (error == 0) error = cuda.function_get(&cuda.blit, cuda.module, "goose_tensor_blit");
         if (error == 0) error = cuda.function_get(&cuda.fwht, cuda.module, "goose_kv_fwht");
+        if (error == 0) error = cuda.function_get(&cuda.moe_weighted, cuda.module, "goose_moe_weighted");
         Context current = NULL;
         int pop_error = cuda.pop(&current);
         if (error == 0) error = pop_error;
@@ -1226,5 +1228,42 @@ int64_t fg_cuda_fwht(sl_u8 src, sl_u8 dst, int32_t width, int64_t rows, float sc
 uint64_t fg_cuda_take_fwhts(void) {
     const uint64_t count = cuda_fwhts;
     cuda_fwhts = 0;
+    return count;
+}
+
+int64_t fg_cuda_moe_weighted(sl_u8 x, sl_u8 weights, sl_u8 dst, int64_t width, int64_t used,
+                            int64_t count, int64_t tile) {
+    const int active = start_context();
+    if (active != 1) return active;
+    const int64_t x_row = x.len / count, w_row = weights.len / count, out_row = dst.len / count;
+    const unsigned columns = (unsigned) ((width + 255) / 256);
+    const uint64_t host = (uint64_t) (uintptr_t) dst.data;
+    DevicePtr output = 0;
+    int error = activation_output(host, dst.len, &output);
+    for (int64_t first = 0; first < count && error == 0; first += tile) {
+        const int64_t tokens = count - first < tile ? count - first : tile;
+        DevicePtr input = 0, scale = 0, dest = output + (uint64_t) (first * out_row);
+        error = activation_input((sl_u8) {x.data + first * x_row, tokens * x_row}, &cuda.input, &input);
+        if (error == 0) {
+            error = activation_input((sl_u8) {weights.data + first * w_row, tokens * w_row}, &cuda.weight, &scale);
+        }
+        if (error == 0) {
+            void * args[] = {&input, &scale, &dest, &width, &used};
+            error = cuda.launch(cuda.moe_weighted, (unsigned) tokens, columns, 1, 256, 1, 1, 0, NULL, args, NULL);
+            if (error == 0) ++cuda_moe_weighted_tiles;
+        }
+    }
+    if (error == 0) error = activation_publish(host, dst.len, output, false);
+    const int popped = finish_context();
+    if (error != 0 || popped != 0) {
+        fprintf(stderr, "Goose CUDA: MoE weighted reduction failed (%d)\n", error ? error : popped);
+        return -1;
+    }
+    return 1;
+}
+
+uint64_t fg_cuda_take_moe_weighted(void) {
+    const uint64_t count = cuda_moe_weighted_tiles;
+    cuda_moe_weighted_tiles = 0;
     return count;
 }

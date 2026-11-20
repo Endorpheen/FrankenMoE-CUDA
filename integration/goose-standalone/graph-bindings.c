@@ -32,6 +32,19 @@ int64_t fg_q35_fwht_node(int64_t context, int64_t input, int64_t width) {
     return (int64_t) (intptr_t) dst;
 }
 
+int64_t fg_q35_moe_weighted_node(int64_t context, int64_t input, int64_t weights) {
+    struct ggml_tensor * src = (void *) (intptr_t) input;
+    struct ggml_tensor * route_weights = (void *) (intptr_t) weights;
+    if (!context || !src || !route_weights) return 0;
+    struct ggml_tensor * dst = ggml_new_tensor_2d((void *) (intptr_t) context, GGML_TYPE_F32,
+        src->ne[0], src->ne[2]);
+    dst->op = GGML_OP_CUSTOM;
+    dst->src[0] = src;
+    dst->src[1] = route_weights;
+    dst->op_params[0] = 0x4d4f4557;
+    return (int64_t) (intptr_t) dst;
+}
+
 // ---- the fixture's helpers, verbatim in behaviour ---------------------------
 
 static int64_t fg_arg(int64_t p, int64_t i) {
