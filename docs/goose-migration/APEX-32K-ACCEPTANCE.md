@@ -3,8 +3,9 @@
 The scope is one substantive Apex Q4_K_M workload on the RTX 4070.
 Each gate closes once its evidence is recorded. A failed check returns
 to the gate that owns the defect. This checklist covers eight gates.
+Functional qualification runs before memory and speed acceptance.
 
-**Closed: 2 of 8. Remaining: 6.**
+**Closed: 3 of 8. Remaining: 5.**
 
 1. [x] **Pin the workload and control.** Verify the model digest, exact
    request bytes and the EXP-1476 executable and library manifest.
@@ -25,11 +26,10 @@ to the gate that owns the defect. This checklist covers eight gates.
    prompt reuse and the accepted launch profile. Validate the actual
    prefill batch/ubatch of 4096/4096, CPU thread/affinity settings and
    the 4,992 MiB expert-cache budget on both entry points. Record the
-   effective configuration. The present candidate uses a fixed
-   128-token prefill chunk and a serial CPU executor. Treat performance
-   under a different effective profile as diagnostic. The current settings
-   are in [generation](../../goose/model/qwen35-generation.goose) and
-   [CPU dispatch](../../goose/cpu/goose-cpu-backend-api/standalone.goose).
+   effective configuration. Physical 4096/4096 now completes on real
+   Apex and is reported by `/props`. The CPU executor remains serial.
+   Explicit KV type and expert-cache controls are pending. Treat
+   performance under a different effective profile as diagnostic.
 4. [ ] **Verify the capture path** (requires 1). Use one server at a
    time under the existing Apex lock. Capture the exact request and
    full response, startup configuration, loaded libraries, and RAM,
@@ -43,18 +43,22 @@ to the gate that owns the defect. This checklist covers eight gates.
    reports 512 IDs and uses 511 steps to calculate its decode rate.
    The candidate HTTP field currently uses 512. The validator records
    both the raw timings and the rate derived from 511 steps.
-5. [ ] **Verify real-model readiness** (requires 2–4). On Apex, record
+5. [x] **Verify real-model readiness** (requires 2). On Apex, record
    that all mapped pages are resident before admission. Check actual
    CUDA dense, expert-cache and KV/SSM allocations, and verify that the
    serving process loads only the intended runtime and system
    libraries, without C++ runtime dependencies. A lossy placement
-   or a missing required backend keeps this gate open.
-6. [ ] **Qualify the real response** (requires 5). With the exact
+   or a missing required backend keeps this gate open. Verified the
+   live 4096/4096 candidate and all 5,301,139 resident model pages.
+6. [ ] **Qualify the real response** (requires 1, 5 and the response
+   validator from 4). With the exact
    request, record 32,768 evaluated prompt IDs, zero reused prompt
    tokens, 512 returned output IDs and non-whitespace content.
    Compare token and content hashes to the control and archive every
    probability row. Diagnose any divergence from the first differing
-   token and rerun this gate after fixes.
+   token and rerun this gate after fixes. The full 4096/4096 request
+   completed. ID and probability parity diverge at output index 1.
+   Gates 3 and 4 qualify the later speed comparison.
 7. [ ] **Accept memory** (requires 5 and 6). Record per-process RSS and
    its high-water mark, model page residency before and after the
    request, per-process sampled VRAM maximum and separate whole-card
@@ -104,3 +108,6 @@ bytes were verified inside the executable.
 Five synthetic gates passed through this build. They covered CPU
 chunked prefill, mixed CPU/CUDA continuation, quantized expert dispatch,
 step and workspace recovery, and the 34-request HTTP suite.
+
+The subsequent 4096/4096 candidate and the measured CUDA regression
+are recorded in [the execution audit](APEX-CUDA-REGRESSION.md).

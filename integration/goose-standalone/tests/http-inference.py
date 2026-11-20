@@ -66,6 +66,7 @@ def check(binary, fixture):
             status, props = exchange(port, get("/props"))
             assert status == 200 and props["n_vocab"] == 4 and props["n_layer"] == 2
             assert props["n_ctx"] == 262144
+            assert props["n_batch"] == props["n_ubatch"] == 128
             assert exchange(port, post(2, "text/plain"), b"ab") == (
                 200, {"ids": [2], "text": "ab", "count": 1},
             )

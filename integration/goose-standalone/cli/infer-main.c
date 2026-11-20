@@ -29,6 +29,7 @@ void fg_http_stats(sl_i64 stats) {
     if (stats.len >= 11) stats.data[10] = fg_cuda_dense_bytes();
     if (stats.len >= 12) stats.data[11] = fg_cuda_expert_bytes();
     if (stats.len >= 13) stats.data[12] = fg_cuda_model_state_bytes();
+    if (stats.len >= 15) hose_prefill_profile(stats.data + 13);
 }
 
 void fg_http_listening(int64_t port) {
@@ -69,22 +70,37 @@ static int serve(const char * model, int64_t port, int64_t limit, int64_t capaci
 int main(int argc, char ** argv) {
     const char * program = argv[0];
     int64_t context = HOSE_DEFAULT_CONTEXT;
-    if (argc >= 2 && strcmp(argv[1], "--ctx-size") == 0) {
-        context = argc >= 3 ? positive_integer(argv[2]) : -1;
-        if (context <= 0 || context > INT32_MAX || context % 32 != 0) {
-            fputs("--ctx-size must be a positive multiple of 32 within the model context length\n", stderr);
+    int64_t batch = HOSE_DEFAULT_PREFILL_BATCH;
+    int64_t ubatch = 0;
+    while (argc >= 2) {
+        int64_t * value = NULL;
+        if (strcmp(argv[1], "--ctx-size") == 0) value = &context;
+        if (strcmp(argv[1], "--batch-size") == 0) value = &batch;
+        if (strcmp(argv[1], "--ubatch-size") == 0) value = &ubatch;
+        if (!value) break;
+        if (argc < 3 || (*value = positive_integer(argv[2])) <= 0) {
+            fprintf(stderr, "%s requires a positive integer\n", argv[1]);
             return 2;
         }
         argc -= 2;
         argv += 2;
+    }
+    if (context > INT32_MAX || context % 32 != 0) {
+        fputs("--ctx-size must be a positive multiple of 32 within the model context length\n", stderr);
+        return 2;
+    }
+    if (ubatch == 0) ubatch = batch < HOSE_DEFAULT_PREFILL_BATCH ? batch : HOSE_DEFAULT_PREFILL_BATCH;
+    if (hose_configure_prefill(batch, ubatch) != 0) {
+        fputs("require 1 <= --ubatch-size <= --batch-size <= 4096\n", stderr);
+        return 2;
     }
     const int server_mode = argc >= 3 && strcmp(argv[2], "--serve") == 0;
     if (server_mode && (argc == 4 || argc == 5)) {
         return serve(argv[1], positive_integer(argv[3]), argc == 5 ? positive_integer(argv[4]) : 0, context);
     }
     if (server_mode || (argc != 3 && argc != 4)) {
-        fprintf(stderr, "usage: %s [--ctx-size N] MODEL.gguf PROMPT [MAX_TOKENS]\n", program);
-        fprintf(stderr, "       %s [--ctx-size N] MODEL.gguf --serve PORT [MAX_CONNECTIONS]\n", program);
+        fprintf(stderr, "usage: %s [--ctx-size N] [--batch-size N] [--ubatch-size N] MODEL.gguf PROMPT [MAX_TOKENS]\n", program);
+        fprintf(stderr, "       %s [--ctx-size N] [--batch-size N] [--ubatch-size N] MODEL.gguf --serve PORT [MAX_CONNECTIONS]\n", program);
         return 2;
     }
     int64_t max_tokens = 1;

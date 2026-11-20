@@ -22,6 +22,7 @@
 #include "main.h"
 #endif
 #include "goose-host-llm.h"
+#include "goose-host.h"
 
 #define MAX_REQ   262144
 
@@ -55,6 +56,9 @@ typedef struct {
 } host_t;
 
 host_t H;
+
+static int64_t prefill_batch = HOSE_DEFAULT_PREFILL_BATCH;
+static int64_t prefill_ubatch = HOSE_DEFAULT_PREFILL_BATCH;
 
 int64_t fg_model_mincore(uint64_t address, int64_t bytes, sl_u8 flags) {
     return mincore((void *) (uintptr_t) address, (size_t) bytes, flags.data);
@@ -345,6 +349,23 @@ void hose_stats(int64_t * out5) {
 
 int64_t hose_context_capacity(void) { return H.owner[10]; }
 
+int64_t hose_configure_prefill(int64_t batch, int64_t ubatch) {
+    fg_goose_host_ensure_init();
+    if (!q35_prefill_valid(batch, ubatch)) return -1;
+    prefill_batch = batch;
+    prefill_ubatch = ubatch;
+    return 0;
+}
+
+void hose_prefill_profile(int64_t profile[2]) {
+    profile[0] = prefill_batch;
+    profile[1] = prefill_ubatch;
+}
+
+void fg_q35_generation_profile(sl_i64 profile) {
+    hose_prefill_profile(profile.data);
+}
+
 int64_t fg_http_eog(sl_i64 ids) {
     if (ids.len < H.n_eog) return -1;
     if (H.n_eog) memcpy(ids.data, H.eog, (size_t) H.n_eog * sizeof(*ids.data));
@@ -352,7 +373,23 @@ int64_t fg_http_eog(sl_i64 ids) {
 }
 
 int64_t fg_q35_generation_eval(sl_i32 tokens, sl_f32 output) {
-    return model_step(tokens, output.len != 0, output);
+    if (!tokens.data || tokens.len <= 0 || output.len < 0 ||
+        (output.len != 0 && !output.data) ||
+        (uint64_t) tokens.len > SIZE_MAX / sizeof(int32_t) ||
+        (uint64_t) output.len > SIZE_MAX / sizeof(float)) return -1;
+    const size_t token_bytes = (size_t) tokens.len * sizeof(int32_t);
+    const size_t logit_bytes = (size_t) output.len * sizeof(float);
+    if (token_bytes > SIZE_MAX - logit_bytes) return -1;
+    // Nested Goose exports start at frame zero and can reuse the caller's
+    // arena slots. Pin both borrowed slices outside that arena until return.
+    uint8_t * exchange = malloc(token_bytes + logit_bytes);
+    if (!exchange) return -1;
+    memcpy(exchange, tokens.data, token_bytes);
+    const int64_t result = model_step((sl_i32) {exchange, tokens.len}, output.len != 0,
+        (sl_f32) {exchange + token_bytes, output.len});
+    if (result > 0) memcpy(output.data, exchange + token_bytes, logit_bytes);
+    free(exchange);
+    return result;
 }
 
 int64_t hose_generate_ids(const int64_t * prompt, int64_t count, int64_t max_tokens,

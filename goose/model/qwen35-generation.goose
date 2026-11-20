@@ -1,10 +1,14 @@
-// Keep prefill graph memory bounded while all chunks share one KV/GDN state.
-const Q35_PREFILL_CHUNK: i64 = 128;
+const Q35_MAX_PREFILL_BATCH: i64 = 4096;
 
 extern "fg_q35_generation_eval" fn q35_generation_eval(tokens: const i32[:], logits: f32[:]) -> i64;
+extern "fg_q35_generation_profile" fn q35_generation_profile(profile: i64[:]);
 extern "fg_q35_generation_prepare" fn q35_generation_prepare() -> i64;
 extern "fg_q35_generation_now" fn q35_generation_now() -> f64;
 extern "hose_reset_state" fn q35_generation_reset();
+
+export fn q35_prefill_valid(batch: i64, ubatch: i64) -> bool {
+    return ubatch > 0 && ubatch <= batch && batch <= Q35_MAX_PREFILL_BATCH;
+}
 
 struct Q35Sample {
     seed: i64, top_k: i64, min_keep: i64, repeat_last_n: i64,
@@ -40,7 +44,12 @@ fn q35_sample_generate(tokens: const i64[:], vocabulary: i64, capacity: i64, eog
         if tokens[i] < 0 || tokens[i] >= vocabulary { return -1; }
     }
 
-    var batch: i32[128] = [0; 128];
+    var profile: i64[2] = [0; 2];
+    q35_generation_profile(profile[..]);
+    if !q35_prefill_valid(profile[0], profile[1]) { return -1; }
+    // The native evaluator re-enters Goose. Keep its borrowed token slice
+    // in fixed storage, outside the allocator frames used by that call.
+    var batch: i32[4096] = [0; 4096];
     var logits: f32[>..] = [];
     logits.resize(vocabulary, 0.0);
     var candidates: f32[>..] = [];
@@ -71,9 +80,14 @@ fn q35_sample_generate(tokens: const i64[:], vocabulary: i64, capacity: i64, eog
     q35_generation_reset();
     let start = q35_generation_now();
     var read: i64 = 0;
+    var batch_end: i64 = 0;
     while read < tokens.len {
-        let remaining = tokens.len - read;
-        let count = if remaining < Q35_PREFILL_CHUNK { remaining } else { Q35_PREFILL_CHUNK };
+        if read == batch_end {
+            let remaining = tokens.len - read;
+            batch_end += if remaining < profile[0] { remaining } else { profile[0] };
+        }
+        let remaining = batch_end - read;
+        let count = if remaining < profile[1] { remaining } else { profile[1] };
         for i in count { batch[i] = tokens[read + i] as i32; }
         read += count;
         let output = if read == tokens.len { logits[..] } else { logits[0 .. 0] };

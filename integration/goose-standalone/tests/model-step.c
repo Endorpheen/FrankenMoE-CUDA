@@ -1,5 +1,6 @@
 #include "goose-host-llm.h"
 #include "graph-execute.h"
+#include "main.h"
 
 #include <assert.h>
 #include <math.h>
@@ -8,7 +9,8 @@
 #include <string.h>
 
 // Wrap ggml_init, ggml_free, fg_standalone_graph_alloc,
-// fg_standalone_graph_compute_output and fg143_graph_resize.
+// fg_standalone_graph_compute_output, fg143_graph_resize,
+// fg143_storage_ram_available, fg_cuda_routing and fg_q35_generation_eval.
 enum failure { NONE, BEFORE_EXECUTE, AFTER_EXECUTE };
 static enum failure failure;
 static bool track_frames;
@@ -16,6 +18,10 @@ static size_t frame_bytes;
 static unsigned opened, closed;
 static bool fail_workspace_growth;
 static unsigned workspaces;
+static const int64_t * expected_steps;
+static size_t expected_count, step_index;
+static bool refuse_graph_ram;
+static unsigned verified_gathers;
 
 extern void fg_goose_host_ensure_init(void);
 extern struct ggml_context * __real_ggml_init(struct ggml_init_params params);
@@ -24,6 +30,32 @@ extern void * __real_fg_standalone_graph_alloc(struct ggml_cgraph * graph);
 extern enum ggml_status __real_fg_standalone_graph_compute_output(struct ggml_cgraph * graph,
     const struct ggml_tensor * output);
 extern uint64_t __real_fg143_graph_resize(uint64_t address, int64_t bytes);
+extern int64_t __real_fg_q35_generation_eval(sl_i32 tokens, sl_f32 logits);
+extern uint64_t __real_fg143_storage_ram_available(void);
+extern int64_t __real_fg_cuda_routing(sl_i64 config, sl_u8 x, sl_u8 ids, sl_u8 output);
+
+int64_t __wrap_fg_cuda_routing(sl_i64 config, sl_u8 x, sl_u8 ids, sl_u8 output) {
+    if (expected_steps && config.data[0] == 2 && config.data[4] == 32 && config.data[5] == 4) {
+        assert(step_index > 0 && ids.len == expected_steps[step_index - 1] * (int64_t) sizeof(int32_t));
+        for (int64_t i = 0; i < ids.len / (int64_t) sizeof(int32_t); ++i) {
+            assert(((const int32_t *) ids.data)[i] == 2);
+        }
+        ++verified_gathers;
+    }
+    return __real_fg_cuda_routing(config, x, ids, output);
+}
+
+uint64_t __wrap_fg143_storage_ram_available(void) {
+    return refuse_graph_ram ? 1 : __real_fg143_storage_ram_available();
+}
+
+int64_t __wrap_fg_q35_generation_eval(sl_i32 tokens, sl_f32 logits) {
+    if (expected_steps) {
+        assert(step_index < expected_count);
+        assert(tokens.len == expected_steps[step_index++]);
+    }
+    return __real_fg_q35_generation_eval(tokens, logits);
+}
 
 uint64_t __wrap_fg143_graph_resize(uint64_t address, int64_t bytes) {
     if (address && bytes > 0 && fail_workspace_growth) {
@@ -132,9 +164,53 @@ static void check_workspace_and_scan(void) {
     ggml_free(ctx);
 }
 
+static void check_prefill(const int64_t * prompt, int64_t count, int64_t batch, int64_t ubatch,
+                          const int64_t * sizes, size_t size_count) {
+    int64_t selected[2];
+    assert(hose_configure_prefill(batch, ubatch) == 0);
+    expected_steps = sizes;
+    expected_count = size_count;
+    step_index = 0;
+    verified_gathers = 0;
+    assert(hose_generate_ids(prompt, count, 2, true, selected, NULL) == 2);
+    assert(step_index == expected_count);
+    assert(selected[0] == 2 && selected[1] == 2);
+    assert(verified_gathers == expected_count);
+    expected_steps = NULL;
+}
+
+static void check_prefill_profile(const char * path) {
+    hose_host_load_context(path, 8192);
+    int64_t prompt[4096];
+    for (int i = 0; i < 4096; ++i) prompt[i] = 2;
+    const int64_t split[] = {3, 2, 3, 2, 2, 1};
+    check_prefill(prompt, 12, 5, 3, split, sizeof split / sizeof *split);
+    const int64_t boundaries[] = {3, 128, 512, 1024, 2048, 4096};
+    for (size_t i = 0; i < sizeof boundaries / sizeof *boundaries; ++i) {
+        const int64_t n = boundaries[i];
+        const int64_t full[] = {n, 1};
+        check_prefill(prompt, n, n, n, full, sizeof full / sizeof *full);
+        printf("GET_ROWS IDs verified at batch/ubatch %lld/%lld\n", (long long) n, (long long) n);
+    }
+    assert(hose_configure_prefill(4096, 4097) == -1);
+    int64_t profile[2] = {0};
+    hose_prefill_profile(profile);
+    assert(profile[0] == 4096 && profile[1] == 4096);
+    int64_t selected[2];
+    refuse_graph_ram = true;
+    assert(hose_generate_ids(prompt, 12, 2, true, selected, NULL) == -1);
+    refuse_graph_ram = false;
+    check_prefill(prompt, 12, 5, 3, split, sizeof split / sizeof *split);
+    puts("Goose prefill profile: 5/3 respects batch boundaries, 4096/4096 emits one 4096-token graph");
+}
+
 int main(int argc, char ** argv) {
-    assert(argc == 2);
+    assert(argc == 2 || (argc == 3 && strcmp(argv[2], "--profile") == 0));
     fg_goose_host_ensure_init();
+    if (argc == 3) {
+        check_prefill_profile(argv[1]);
+        return 0;
+    }
     hose_host_load_context(argv[1], 256);
     track_frames = true;
     const int32_t prompt[] = {1, 2, 0, 2, 1};

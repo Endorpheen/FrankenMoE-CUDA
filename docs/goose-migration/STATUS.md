@@ -5,6 +5,8 @@ as every accepted slice.
 
 The active [Apex 32K/512 acceptance checklist](APEX-32K-ACCEPTANCE.md)
 records the required gates and their evidence for the independent runtime.
+[The CUDA regression audit](APEX-CUDA-REGRESSION.md) records the real
+4096/4096 response and matched-input diagnostic traces.
 
 ## C++ removal checkout
 

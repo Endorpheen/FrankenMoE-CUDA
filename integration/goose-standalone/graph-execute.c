@@ -8,6 +8,7 @@
 #include "ggml-common.h"
 
 #include <pthread.h>
+#include <inttypes.h>
 #include <stdatomic.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -111,6 +112,48 @@ uint64_t fg143_storage_alloc(uint64_t bytes) {
 void * fg_standalone_graph_alloc(struct ggml_cgraph * graph) {
     pthread_once(&cpu_init, init_cpu);
     return (void *) (uintptr_t) fg143_storage_allocate((uint64_t) (uintptr_t) graph);
+}
+
+int64_t fg143_storage_hash_size(uint64_t address) {
+    const struct ggml_cgraph * graph = (const void *) (uintptr_t) address;
+    return graph->size > 0 ? (int64_t) graph->visited_hash_set.size : 0;
+}
+
+int64_t fg143_storage_slot(uint64_t address, uint64_t tensor) {
+    const struct ggml_cgraph * graph = (const void *) (uintptr_t) address;
+    const struct ggml_hash_set * table = &graph->visited_hash_set;
+    const size_t slot = ggml_hash_find(table, (void *) (uintptr_t) tensor);
+    return slot != GGML_HASHSET_FULL && ggml_bitset_get(table->used, slot) ? (int64_t) slot : -1;
+}
+
+uint64_t fg143_storage_ram_available(void) {
+    FILE * file = fopen("/proc/meminfo", "r");
+    if (!file) return 0;
+    uint64_t kib = 0;
+    char line[128];
+    while (fgets(line, sizeof(line), file)) {
+        if (sscanf(line, "MemAvailable: %" SCNu64 " kB", &kib) == 1) break;
+    }
+    fclose(file);
+    return kib <= UINT64_MAX / 1024 ? kib * 1024 : 0;
+}
+
+void fg143_storage_ram_error(uint64_t required, uint64_t available) {
+    fprintf(stderr, "Goose graph allocation refused: need %" PRIu64 " bytes, RAM available %" PRIu64 " bytes\n",
+        required, available);
+}
+
+void fg143_storage_report(uint64_t bytes, int64_t blocks, int64_t reused) {
+    if (getenv("GOOSE_ARENA_LOG")) {
+        fprintf(stderr, "Goose tensor arena: %" PRIu64 " bytes, %" PRId64 " blocks, %" PRId64 " reuses\n",
+            bytes, blocks, reused);
+    }
+}
+
+void * fg_standalone_graph_alloc_output(struct ggml_cgraph * graph, const struct ggml_tensor * output) {
+    pthread_once(&cpu_init, init_cpu);
+    return (void *) (uintptr_t) fg143_storage_allocate_output((uint64_t) (uintptr_t) graph,
+        (uint64_t) (uintptr_t) output);
 }
 
 uint64_t fg143_graph_resize(uint64_t address, int64_t bytes) {

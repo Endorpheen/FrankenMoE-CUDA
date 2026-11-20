@@ -3,6 +3,7 @@ extern "ggml_graph_overhead_custom" fn q35_graph_overhead(size: u64, grads: bool
 extern "ggml_new_graph_custom" fn q35_graph_new(ctx: i64, size: u64, grads: bool) -> i64;
 extern "ggml_build_forward_expand" fn q35_graph_append(graph: i64, root: i64);
 extern "fg_standalone_graph_alloc" fn q35_graph_allocate(graph: i64) -> u64;
+extern "fg_standalone_graph_alloc_output" fn q35_graph_allocate_output(graph: i64, output: i64) -> u64;
 extern "fg_standalone_graph_compute_output" fn q35_graph_execute(graph: i64, output: i64) -> i32;
 extern "fg_q35_release_graph" fn q35_graph_free(storage: u64);
 extern "fg_q35_write_ids" fn q35_write_ids(data: u64, tokens: const i32[:]);
@@ -51,12 +52,12 @@ fn q35_step_execute(c: i64, graph_size: i64, handles: const i64[:], layers: i64[
     let graph = q35_graph_new(c, graph_size as u64, false);
     if graph == 0 { return -1; }
     for i in roots[0] { q35_graph_append(graph, roots[i + 1]); }
-    let storage = q35_graph_allocate(graph);
+    let selected = if logit_rows != 0 { result } else { 0 };
+    let storage = if logit_rows < 0 { q35_graph_allocate(graph) } else { q35_graph_allocate_output(graph, selected) };
     if storage == 0 { return -1; }
     var outcome: i64 = -1;
     if q35_step_inputs(tokens, ids, positions, indices, state[2]) {
         executed = true;
-        let selected = if logit_rows != 0 { result } else { 0 };
         if q35_graph_execute(graph, selected) == 0 && q35_kv_commit(state, ticket) >= 0 {
             if selected != 0 { q35_read_logits(qa_get(selected, 4, 0), logits); }
             outcome = logits.len;
