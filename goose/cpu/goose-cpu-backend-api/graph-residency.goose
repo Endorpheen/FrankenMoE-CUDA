@@ -66,11 +66,33 @@ export fn fg143_activation_expire(ranges: i64[:], step: i64) -> u64 {
     return skipped;
 }
 
-// Reserve aligned space. -2 asks the adapter to publish old results before
-// reusing the arena. A tensor larger than the arena uses the normal buffer.
-export fn fg143_activation_slot(used: i64, capacity: i64, bytes: i64) -> i64 {
-    if bytes <= 0 || capacity <= 0 || bytes > capacity || used < 0 || used > capacity { return -1; }
-    let padding = (128 - used % 128) % 128;
-    if padding > capacity - used || bytes > capacity - used - padding { return -2; }
-    return used + padding;
+// Find the first aligned gap between live allocations. -2 asks the adapter
+// to publish live records before reusing the arena.
+export fn fg143_activation_slot(ranges: const i64[:], capacity: i64, bytes: i64) -> i64 {
+    if bytes <= 0 || capacity <= 0 || bytes > capacity { return -1; }
+    var start: i64 = 0;
+    while start <= capacity - bytes {
+        var next = start;
+        for i in ranges.len / ACT_WORDS {
+            let at = i * ACT_WORDS;
+            let size = ranges[at + 1];
+            if size <= 0 { continue; }
+            let offset = ranges[at + 2];
+            if offset < 0 || offset > capacity || size > capacity - offset { return -1; }
+            if offset < start + bytes && offset + size > start { next = high(next, offset + size); }
+        }
+        if next == start { return start; }
+        let padding = (128 - next % 128) % 128;
+        if padding > capacity - next { return -2; }
+        start = next + padding;
+    }
+    return -2;
+}
+
+export fn fg143_activation_record_slot(ranges: const i64[:]) -> i64 {
+    let count = ranges.len / ACT_WORDS;
+    for i in count {
+        if ranges[i * ACT_WORDS + 1] == 0 { return i; }
+    }
+    return count;
 }

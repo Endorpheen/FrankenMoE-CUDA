@@ -974,6 +974,37 @@ static void check_activation_lifetimes(void) {
     ggml_free(ctx);
 }
 
+static void check_activation_gaps(void) {
+    enum { width = 4096, kept_rows = 2048, temp_rows = 768, small = 32 };
+    struct ggml_context * ctx = ggml_init((struct ggml_init_params){ 128 * 1024, NULL, true });
+    assert(ctx);
+    struct ggml_tensor * x = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, width, kept_rows);
+    struct ggml_tensor * scratch = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, width, temp_rows);
+    struct ggml_tensor * kept = ggml_scale(ctx, x, 3.0f);
+    struct ggml_tensor * current = scratch;
+    for (int i = 0; i < 8; ++i) current = ggml_scale(ctx, current, i % 2 == 0 ? 2.0f : 0.5f);
+    struct ggml_tensor * first = ggml_view_1d(ctx, kept, small, ggml_nbytes(kept) - small * sizeof(float));
+    struct ggml_tensor * second = ggml_view_1d(ctx, current, small, 0);
+    struct ggml_tensor * output = ggml_add(ctx, first, second);
+    struct ggml_cgraph * graph = ggml_new_graph_custom(ctx, 32, false);
+    ggml_build_forward_expand(graph, kept);
+    ggml_build_forward_expand(graph, current);
+    ggml_build_forward_expand(graph, output);
+    struct fg_standalone_graph_plan * plan = fg_standalone_graph_plan_alloc(graph, output);
+    assert(plan);
+    for (int i = 0; i < width * kept_rows; ++i) ((float *) x->data)[i] = (float) (i % width);
+    for (int i = 0; i < width * temp_rows; ++i) ((float *) scratch->data)[i] = (float) (i % width);
+    memset(kept->data, 0xA5, ggml_nbytes(kept));
+
+    assert(fg_standalone_graph_plan_compute(plan) == GGML_STATUS_SUCCESS);
+    for (int i = 0; i < small; ++i) assert(((float *) output->data)[i] == (float) (width - small + i) * 3.0f + (float) i);
+    const unsigned char * host = kept->data;
+    for (size_t i = 0; i < ggml_nbytes(kept); ++i) assert(host[i] == 0xA5);
+    printf("CUDA arena gaps: %zu-byte live activation stayed on device through eight 12 MiB results\n", ggml_nbytes(kept));
+    fg_standalone_graph_plan_free(plan);
+    ggml_free(ctx);
+}
+
 static void check_cuda_vectors(void) {
     enum { width = 257, stride = 8 * width, rows = 3, planes = 2 };
     struct ggml_context * ctx = ggml_init((struct ggml_init_params){ 1024 * 1024, NULL, true });
@@ -1343,6 +1374,10 @@ static void check_dense_mma(int extent, int rows, int columns) {
 }
 
 int main(int argc, char ** argv) {
+    if (argc == 2 && strcmp(argv[1], "--activation-gaps") == 0) {
+        check_activation_gaps();
+        return 0;
+    }
     if (argc == 2 && strcmp(argv[1], "--activation-lifetimes") == 0) {
         check_activation_lifetimes();
         return 0;
