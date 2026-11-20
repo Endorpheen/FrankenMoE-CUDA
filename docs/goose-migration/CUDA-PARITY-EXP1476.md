@@ -1774,6 +1774,66 @@ Goose module or all Apex profiles.
   `9dd7df1347b5fed7f3695f63204c9f7f8bad993ca6318e8c82f57234d4d11665`.
   Default trace under `cuda-matrix-dense-both.m4h0eixz`.
 
+## Full Apex diagnostic after MMVQ, SLRU and vector Attention
+
+The independent build from EXP-1557 evaluated all 32,768
+prompt IDs and generated 512 output IDs at 4096/4096,
+context 262,144 and zero reused prompt tokens. This is one
+profiled diagnostic. It uses the canonical recorded request.
+
+| Metric | Current independent Goose |
+|---|---:|
+| Prefill time | 112.641 s |
+| Prefill | 290.905 tok/s |
+| Decode time | 30.922 s |
+| Decode, 511 steps | 16.526 steps/s |
+| Process RSS high-water | 23,945,336 KiB |
+| Sampled peak process VRAM | 8,622 MiB |
+| Sampled peak whole-card VRAM | 10,824 MiB |
+| Process swap and system swap-out growth | 0 |
+
+All 5,301,139 pages remain resident before and after the
+request. The 72 memory samples record zero process swap.
+The 5,234,122,752-byte SLRU bank reports 560,324 hits,
+77,707 fills and 74,945 evictions, with 149,376,491,520
+bytes uploaded. Bounded host registration covers
+4,227,973,120 bytes in 28 ranges.
+
+The response gives a relevant capacity analysis and advice.
+It starts by repeating input text and the request before
+the analysis. No replacement or unexpected control
+characters occur. The full behavior gate stays open.
+
+Using the first scalar GDN launch as the approximate
+prefill/decode boundary, prefill records
+469,156,832,336 bytes H2D and 301,508,012,032 D2H.
+Host time inside H2D and D2H calls is 48.577 and
+37.541 s. These API durations can include waits.
+The two reference-order MMQ kernels account for
+20.186 s of GPU activity. Removing all matrix arithmetic
+alone would leave the large transfer and dispatch cost.
+
+Decode records 5,110 vector Attention calls taking
+9.041 s, or 17.692 ms per decode step. The 4096/129
+diagnostic used about 2.67 ms per step in vector Attention
+and merge. This is a major contributor to the lower long
+decode rate. Both engines have 255-register vector entries.
+The full Goose trace uses 64 partitions per head, while the
+traced EXP-1476 specialization uses 11. Measure partition
+geometry and keep the previously qualified short path.
+Host time inside H2D calls is 20.037 s in the decode-dominated
+phase, including waits. Device and host times overlap and
+should not be added.
+
+- Raw trace
+  `/home/end0/AI/LlamaServer/franken-goose-flash-vec-default.fZdoEo/cuda-full-dense-both.34z9__mg`.
+- Request SHA-256
+  `484a12de00ec057e4b78d480ebb185153bb10af607eb23192a72995ba3026d0f`.
+- Response SHA-256
+  `05a704b7f35c3576794f692252c3fbecfdd5a50a2336ece25464230622971962`.
+- Nsight SHA-256
+  `42c42d12ddf3eccce5af92b006d9b2e0dd445021c8f620d0e31804821d889ae9`.
+
 ## Kernel coverage
 
 The exact EXP-1476 request passed content, ID and probability
