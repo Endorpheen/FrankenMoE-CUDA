@@ -40,6 +40,7 @@ static struct {
     Context context;
     Module module;
     Function kernel, attention_tiles, attention_merge, gdn, q4_rows, vector;
+    Function rope_phases, rope_apply, ssm_conv;
     struct device_buffer input, output, weight, jobs;
     struct device_buffer attention_value, attention_scratch, attention_config;
     struct device_buffer gdn_beta;
@@ -89,6 +90,7 @@ static _Thread_local uint64_t cuda_gdns;
 static _Thread_local uint64_t cuda_resident_kv, cuda_resident_gdn;
 static _Thread_local uint64_t cuda_q4_writes;
 static _Thread_local uint64_t cuda_vectors;
+static _Thread_local uint64_t cuda_ropes, cuda_convs;
 static _Thread_local struct {
     uint64_t source, destination;
     int64_t bytes;
@@ -144,6 +146,9 @@ static void init_cuda(void) {
         if (error == 0) error = cuda.function_get(&cuda.gdn, cuda.module, "goose_gated_delta_net");
         if (error == 0) error = cuda.function_get(&cuda.q4_rows, cuda.module, "goose_set_q4_rows");
         if (error == 0) error = cuda.function_get(&cuda.vector, cuda.module, "goose_vector_ops");
+        if (error == 0) error = cuda.function_get(&cuda.rope_phases, cuda.module, "goose_rope_phases");
+        if (error == 0) error = cuda.function_get(&cuda.rope_apply, cuda.module, "goose_rope_apply");
+        if (error == 0) error = cuda.function_get(&cuda.ssm_conv, cuda.module, "goose_ssm_conv");
         Context current = NULL;
         int pop_error = cuda.pop(&current);
         if (error == 0) error = pop_error;
@@ -846,4 +851,51 @@ uint64_t fg_cuda_take_vectors(void) {
     const uint64_t vectors = cuda_vectors;
     cuda_vectors = 0;
     return vectors;
+}
+
+int64_t fg_cuda_position(sl_i64 config, sl_u8 x, sl_u8 y, sl_u8 z, sl_u8 out) {
+    if (config.len != 27 || (config.data[0] != 0 && config.data[0] != 1) ||
+        config.data[1] <= 0 || config.data[1] > INT_MAX ||
+        config.data[2] <= 0 || config.data[2] > 65535 ||
+        x.len <= 0 || y.len <= 0 || z.len < 0 || out.len <= 0) return -1;
+    const bool rope = config.data[0] == 0;
+    if (rope && (config.data[3] <= 0 || config.data[3] > INT_MAX || config.data[4] <= 0)) return -1;
+    const int active = start_context();
+    if (active != 1) return active;
+    const sl_u8 data[] = {x, y, z, {(uint8_t *) config.data, config.len * (int64_t) sizeof(*config.data)}};
+    struct device_buffer * buffers[] = {&cuda.input, &cuda.weight, &cuda.jobs, &cuda.attention_config};
+    DevicePtr staged[4] = {0}, output = 0;
+    const uint64_t host = (uint64_t) (uintptr_t) out.data;
+    int error = activation_output(host, out.len, &output);
+    if (error == 0 && rope) error = reserve(&cuda.attention_scratch, (size_t) config.data[4]);
+    if (error == 0) error = upload_inputs(data, buffers, staged, sizeof(data) / sizeof(*data));
+    const unsigned gx = (unsigned) config.data[1], gy = (unsigned) config.data[2];
+    if (error == 0) {
+        if (rope) {
+            void * phase_args[] = {&staged[1], &staged[2], &cuda.attention_scratch.address, &staged[3]};
+            void * apply_args[] = {&staged[0], &output, &cuda.attention_scratch.address, &staged[3]};
+            error = cuda.launch(cuda.rope_phases, (unsigned) config.data[3], 1, 1, 128, 1, 1, 0, NULL, phase_args, NULL);
+            if (error == 0) error = cuda.launch(cuda.rope_apply, gx, 1, 1, 128, 1, 1, 0, NULL, apply_args, NULL);
+        } else {
+            void * args[] = {&staged[0], &staged[1], &output, &staged[3]};
+            error = cuda.launch(cuda.ssm_conv, gx, gy, 1, 128, 1, 1, 0, NULL, args, NULL);
+        }
+        if (error == 0) error = activation_publish(host, out.len, output, false);
+        if (error != 0) (void) cuda.sync();
+    }
+    const int popped = finish_context();
+    if (error != 0 || popped != 0) {
+        fprintf(stderr, "Goose CUDA: %s failed (%d)\n", rope ? "RoPE" : "SSM convolution", error ? error : popped);
+        return -1;
+    }
+    if (rope) ++cuda_ropes;
+    else ++cuda_convs;
+    return 1;
+}
+
+void fg_cuda_take_position(uint64_t * ropes, uint64_t * convs) {
+    *ropes = cuda_ropes;
+    *convs = cuda_convs;
+    cuda_ropes = 0;
+    cuda_convs = 0;
 }

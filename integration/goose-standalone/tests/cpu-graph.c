@@ -567,6 +567,113 @@ static void check_cuda_vectors(void) {
     ggml_free(ctx);
 }
 
+static void check_cuda_position(void) {
+    enum { width = 128, heads = 3, tokens = 7, sequences = 2, channels = 131 };
+    const int modes[] = {
+        GGML_ROPE_TYPE_NORMAL, GGML_ROPE_TYPE_NEOX, GGML_ROPE_TYPE_MROPE,
+        GGML_ROPE_TYPE_IMROPE, GGML_ROPE_TYPE_VISION,
+    };
+    const int taps[] = { 3, 4, 5, 7, 9, 15 };
+    struct ggml_context * ctx = ggml_init((struct ggml_init_params){ 1024 * 1024, NULL, true });
+    assert(ctx);
+    struct ggml_cgraph * graph = ggml_new_graph_custom(ctx, 128, false);
+    struct ggml_tensor * positions = ggml_new_tensor_1d(ctx, GGML_TYPE_I32, 4 * tokens);
+    struct ggml_tensor * factors = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, width / 2);
+    struct ggml_tensor * rope_inputs[2];
+    struct ggml_tensor * outputs[16];
+    size_t count = 0;
+    for (int half = 0; half < 2; ++half) {
+        struct ggml_tensor * src = ggml_new_tensor_4d(ctx, half ? GGML_TYPE_F16 : GGML_TYPE_F32,
+                width + 3, heads, tokens, sequences);
+        rope_inputs[half] = src;
+        struct ggml_tensor * x = ggml_view_4d(ctx, src, width, heads, tokens, sequences,
+                src->nb[1], src->nb[2], src->nb[3], 0);
+        for (size_t i = 0; i < sizeof(modes) / sizeof(*modes); ++i) {
+            const int mode = modes[i];
+            const int dims = mode == GGML_ROPE_TYPE_VISION ? width / 2 : 48;
+            int sections[4] = { 12, 8, 4, 0 };
+            struct ggml_tensor * pos = (mode & GGML_ROPE_TYPE_MROPE) ? positions :
+                ggml_view_1d(ctx, positions, tokens, 0);
+            struct ggml_tensor * result = half ?
+                ggml_rope_multi_back(ctx, x, pos, factors, dims, sections, mode,
+                        4096, 10000.0f, 0.125f, 1.0f, 1.1f, 32.0f, 1.0f) :
+                ggml_rope_multi(ctx, x, pos, factors, dims, sections, mode,
+                        4096, 10000.0f, 0.125f, 1.0f, 1.1f, 32.0f, 1.0f);
+            if (mode != GGML_ROPE_TYPE_VISION) ggml_rope_set_offset(result, 6);
+            outputs[count++] = result;
+        }
+    }
+    const size_t rope_count = count;
+    struct ggml_tensor * inputs[6];
+    struct ggml_tensor * weights[6];
+    for (size_t i = 0; i < sizeof(taps) / sizeof(*taps); ++i) {
+        const int time = taps[i] - 1 + tokens;
+        inputs[i] = ggml_new_tensor_3d(ctx, GGML_TYPE_F32, time + 2, channels, sequences);
+        struct ggml_tensor * x = ggml_view_3d(ctx, inputs[i], time, channels, sequences,
+                inputs[i]->nb[1], inputs[i]->nb[2], 0);
+        weights[i] = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, taps[i] + 1, channels);
+        struct ggml_tensor * w = ggml_view_2d(ctx, weights[i], taps[i], channels, weights[i]->nb[1], 0);
+        outputs[count++] = ggml_ssm_conv(ctx, x, w);
+    }
+    assert(count == sizeof(outputs) / sizeof(*outputs));
+    for (size_t i = 0; i < count; ++i) ggml_build_forward_expand(graph, outputs[i]);
+    void * storage = fg_standalone_graph_alloc(graph);
+    assert(storage);
+    const int steps[tokens] = { 0, 1, 123, 8192, 32767, 32768, 262144 };
+    for (int i = 0; i < 4 * tokens; ++i) {
+        ((int32_t *) positions->data)[i] = steps[i % tokens] + 1237 * (i / tokens);
+    }
+    for (int i = 0; i < width / 2; ++i) ((float *) factors->data)[i] = 0.9375f + i / 64.0f;
+    for (int half = 0; half < 2; ++half) {
+        for (int i = 0; i < ggml_nelements(rope_inputs[half]); ++i) {
+            const float value = (float) ((13 * i + i / 7) % 41 - 20) / 16.0f;
+            if (half) ((ggml_fp16_t *) rope_inputs[half]->data)[i] = ggml_fp32_to_fp16(value);
+            else ((float *) rope_inputs[half]->data)[i] = value;
+        }
+    }
+    for (size_t j = 0; j < sizeof(taps) / sizeof(*taps); ++j) {
+        for (int i = 0; i < ggml_nelements(inputs[j]); ++i) {
+            ((float *) inputs[j]->data)[i] = (float) ((7 * i + i / 13) % 37 - 18) / 17.0f;
+        }
+        for (int i = 0; i < ggml_nelements(weights[j]); ++i) {
+            ((float *) weights[j]->data)[i] = (float) ((19 * i) % 43 - 21) / 32.0f;
+        }
+    }
+    assert(setenv("GOOSE_CUDA", "0", 1) == 0);
+    assert(fg_standalone_graph_compute(graph) == GGML_STATUS_SUCCESS);
+    void * reference[16];
+    for (size_t i = 0; i < count; ++i) {
+        reference[i] = malloc(ggml_nbytes(outputs[i]));
+        assert(reference[i]);
+        memcpy(reference[i], outputs[i]->data, ggml_nbytes(outputs[i]));
+    }
+    assert(unsetenv("GOOSE_CUDA") == 0);
+    assert(fg_standalone_graph_compute(graph) == GGML_STATUS_SUCCESS);
+    double f32_rope_error = 0.0, f16_rope_error = 0.0, conv_error = 0.0;
+    for (size_t j = 0; j < count; ++j) {
+        const bool half = outputs[j]->type == GGML_TYPE_F16;
+        double * max_error = j >= rope_count ? &conv_error : half ? &f16_rope_error : &f32_rope_error;
+        for (int i = 0; i < ggml_nelements(outputs[j]); ++i) {
+            const double expected = half ? ggml_fp16_to_fp32(((ggml_fp16_t *) reference[j])[i]) :
+                ((float *) reference[j])[i];
+            const double actual = half ? ggml_fp16_to_fp32(((ggml_fp16_t *) outputs[j]->data)[i]) :
+                ((float *) outputs[j]->data)[i];
+            const double error = fabs(actual - expected);
+            if (!(error <= (half ? 1e-3 : 4e-6) * fmax(1.0, fabs(expected)))) {
+                fprintf(stderr, "CUDA position case %zu element %d, expected %.9g, got %.9g\n",
+                        j, i, expected, actual);
+                abort();
+            }
+            *max_error = fmax(*max_error, error);
+        }
+        free(reference[j]);
+    }
+    printf("CUDA position operations: %zu RoPE, %zu SSM convolution; max errors F32 %.9g, F16 %.9g, SSM %.9g\n",
+            rope_count, count - rope_count, f32_rope_error, f16_rope_error, conv_error);
+    free(storage);
+    ggml_free(ctx);
+}
+
 int main(int argc, char ** argv) {
     check_scalar_and_recurrent();
     check_gdn_snapshots(33, false);
@@ -584,6 +691,7 @@ int main(int argc, char ** argv) {
         if (strcmp(argv[1], "--resident-rows") == 0) check_resident_q4_rows();
         else if (strcmp(argv[1], "--activations") == 0) check_activation_pipeline();
         else if (strcmp(argv[1], "--vectors") == 0) check_cuda_vectors();
+        else if (strcmp(argv[1], "--position") == 0) check_cuda_position();
         else check_model_step(argv[1]);
     }
     if (argc == 3 && strcmp(argv[1], "--chunked") == 0) check_chunked_generation(argv[2]);

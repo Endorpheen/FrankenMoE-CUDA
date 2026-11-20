@@ -79,6 +79,7 @@ static int64_t device_mod(int64_t a, int64_t b) {
 #define gs_mul_u32(a, b) ((uint32_t)(a) * (uint32_t)(b))
 #define gs_sub_u32(a, b) ((uint32_t)(a) - (uint32_t)(b))
 #define gs_div_i32(a, b, file, line) ((int32_t)device_div(a, b))
+#define gs_mod_i32(q, a, b, file, line) ((int32_t)device_mod(a, b))
 #define gs_add_i32(a, b, file, line) ((int32_t)((int64_t)(a) + (int64_t)(b)))
 #define gs_sub_i32(a, b, file, line) ((int32_t)((int64_t)(a) - (int64_t)(b)))
 #define gs_mul_i32(a, b, file, line) ((int32_t)((int64_t)(a) * (int64_t)(b)))
@@ -343,4 +344,98 @@ __kernel void goose_vector_ops(__global uint8_t * x, __global uint8_t * y,
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
     fg_vector_ops_g((uint64_t) x, (uint64_t) y, (uint64_t) out,
         (uint64_t) cfg, param0, param1, group, lane);
+}
+
+static float fg_rope_float(uint64_t cfg, int64_t i) {
+    return as_float((uint32_t) fg_attn_word(cfg, i));
+}
+
+static int32_t fg_rope_position(uint64_t positions, int64_t i) {
+    return ((__global int32_t *) positions)[i];
+}
+
+static float fg_rope_load(uint64_t address, int64_t size) {
+    return size == 4 ? fg_device_global_load(address) : fg248d_ld_half(address);
+}
+
+static void fg_rope_store(uint64_t address, int64_t size, float value) {
+    if (size == 4) fg_device_global_store(address, value);
+    else fg176r_st_f16(address, 0, value);
+}
+
+static void fg_rope_copy_pair(uint64_t src, uint64_t dst, int64_t size) {
+    if (size == 4) {
+        ((__global uint32_t *) dst)[0] = ((__global uint32_t *) src)[0];
+        ((__global uint32_t *) dst)[1] = ((__global uint32_t *) src)[1];
+    } else {
+        ((__global uint16_t *) dst)[0] = ((__global uint16_t *) src)[0];
+        ((__global uint16_t *) dst)[1] = ((__global uint16_t *) src)[1];
+    }
+}
+
+// Reduce angles before the PTX trigonometric instructions. Split 2*pi
+// into two doubles so long contexts keep the small remainder accurately.
+static float fg_rope_reduce(float theta) {
+    if ((as_uint(theta) & 0x7f800000u) == 0x7f800000u) return as_float(0x7fc00000u);
+    const double scaled = (double) theta * 0.15915494309189533577;
+    int64_t n;
+    __asm__("cvt.rni.s64.f64 %0, %1;" : "=l"(n) : "d"(scaled));
+    double rem = (double) theta;
+    const double neg = -(double) n;
+    __asm__("fma.rn.f64 %0, %1, %2, %0;" : "+d"(rem) : "d"(neg), "d"(6.283185307179586));
+    __asm__("fma.rn.f64 %0, %1, %2, %0;" : "+d"(rem) : "d"(neg), "d"(2.4492935982947064e-16));
+    return (float) rem;
+}
+
+static float fg_rope_sin(float theta) {
+    float result;
+    __asm__("sin.approx.f32 %0, %1;" : "=f"(result) : "f"(fg_rope_reduce(theta)));
+    return result;
+}
+
+static float fg_rope_cos(float theta) {
+    float result;
+    __asm__("cos.approx.f32 %0, %1;" : "=f"(result) : "f"(fg_rope_reduce(theta)));
+    return result;
+}
+
+#include "rope-device.h"
+
+static int64_t position_thread(void) {
+    uint32_t group, lane;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(group));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
+    return (int64_t) group * 128 + lane;
+}
+
+__kernel void goose_rope_phases(__global uint8_t * positions, __global uint8_t * factors,
+    __global float * table, __global int64_t * cfg) {
+    fg_rope_phases_g((uint64_t) positions, (uint64_t) factors, (uint64_t) table,
+        (uint64_t) cfg, position_thread());
+}
+
+__kernel void goose_rope_apply(__global uint8_t * x, __global uint8_t * out,
+    __global float * table, __global int64_t * cfg) {
+    fg_rope_apply_g((uint64_t) x, (uint64_t) out, (uint64_t) table, (uint64_t) cfg, position_thread());
+}
+
+static float fg170s_load(uint64_t address, uint64_t i) { return fg_device_global_load(address + 4 * i); }
+static void fg170s_store(uint64_t address, uint64_t i, float value) { fg_device_global_store(address + 4 * i, value); }
+static float fg170s_expf(float value) { return fg_attn_exp(value); }
+static void fg170s_lc(void) {}
+static void fg170s_sync(void) {}
+
+#include "ssm-conv-device.h"
+
+__kernel void goose_ssm_conv(__global uint8_t * x, __global uint8_t * weights,
+    __global uint8_t * out, __global int64_t * cfg) {
+    uint32_t sequence, group, lane;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(sequence));
+    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(group));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
+    if ((int64_t) group * 128 + lane >= cfg[5]) return;
+    ssm_conv_serial_g((uint64_t) x, (uint64_t) weights, 0, (uint64_t) out,
+        (int32_t) cfg[8], (int32_t) cfg[9], (int32_t) cfg[10], (int32_t) cfg[11],
+        (int32_t) cfg[12], (int32_t) cfg[13], (int32_t) cfg[14],
+        (int32_t) cfg[7], (int32_t) cfg[6], 0, 0, lane, sequence, group);
 }

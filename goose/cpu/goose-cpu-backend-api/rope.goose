@@ -14,6 +14,36 @@ fn yarn_pair(theta: f32, scale: f32, corr: f32[2], i: i64, ext: f32, amplitude: 
     return out;
 }
 
+fn rope_sector_axis(mode: i64, sector: i64, first: i64, second: i64, third: i64) -> i64 {
+    if mode == 40 {
+        let lane = sector % 3;
+        if lane == 0 && sector < 3 * first { return 0; }
+        if lane == 1 && sector < 3 * second { return 1; }
+        if lane == 2 && sector < 3 * third { return 2; }
+        return 3;
+    }
+    if sector < first { return 0; }
+    if sector < first + second { return 1; }
+    if sector < first + second + third { return 2; }
+    return 3;
+}
+
+fn rope_reset_axis(sector: i64, first: i64, second: i64, third: i64) -> i64 {
+    if sector == 0 { return 0; }
+    if sector == first { return 1; }
+    if sector == first + second { return 2; }
+    if sector == first + second + third { return 3; }
+    return -1;
+}
+
+fn rope_correction(p: const Node &, dims: i64) -> f32[2] {
+    let pi2 = (6.283185307179586 as f32);
+    let original = p.ip[2] as f32;
+    let divisor = (2 as f32) * log32(p.fp[0]);
+    return [max32(0.0, floor32((dims as f32) * log32(original / (p.fp[4] * pi2)) / divisor)),
+        min32((dims - 1) as f32, ceil32((dims as f32) * log32(original / (p.fp[5] * pi2)) / divisor))];
+}
+
 fn rope(
     p: const Node &,
     x: const u8[:],
@@ -27,7 +57,6 @@ fn rope(
     assert(same_shape(p.x, p.d) && p.y.kind == 26 && (p.x.kind == 0 || p.x.kind == 1));
     let dims = p.ip[0];
     let mode = p.ip[1];
-    let original = p.ip[2];
     let offs = p.ip[3];
     let width = p.x.ne[0];
     assert(dims > 0 && dims % 2 == 0 && offs >= 0 && offs % 2 == 0 && offs + dims <= width && width % 2 == 0);
@@ -35,7 +64,6 @@ fn rope(
     assert(p.fp[0] > (0 as f32) && p.fp[1] > (0 as f32));
     let vision = mode == 24;
     let multiple = (mode & 8) != 0;
-    let interleave = mode == 40;
 
     if vision {
         assert(dims == width / 2 && offs == 0);
@@ -48,11 +76,7 @@ fn rope(
         -(1 as f32)
     }
     ;
-    let pi2 = (6.283185307179586 as f32);
-    var corr: f32[2] = default < f32[2] > ();
-    let divisor = (2 as f32) * log32(p.fp[0]);
-    corr[0] = max32( (0 as f32), floor32( (dims as f32) * log32( (original as f32) / (p.fp[4] * pi2)) / divisor));
-    corr[1] = min32( (dims - 1) as f32, ceil32( (dims as f32) * log32( (original as f32) / (p.fp[5] * pi2)) / divisor));
+    let corr = rope_correction(p, dims);
     let base = p.ith * width;
     var row = thread_first(p);
 
@@ -81,58 +105,11 @@ fn rope(
 
             if multiple {
                 let sector = pair % total;
-                let secw = p.ip[4] + p.ip[5];
-                let sece = secw + p.ip[6];
-
                 if vision {
-                    if sector == 0 {
-                        theta[0] = initial[0];
-                    } else
-
-                    if sector == p.ip[4] {
-                        theta[1] = initial[1];
-                    } else
-
-                    if sector == secw {
-                        theta[2] = initial[2];
-                    } else
-
-                    if sector == sece {
-                        theta[3] = initial[3];
-                    }
+                    let reset = rope_reset_axis(sector, p.ip[4], p.ip[5], p.ip[6]);
+                    if reset >= 0 { theta[reset] = initial[reset]; }
                 }
-
-                if interleave {
-                    if sector % 3 == 1 && sector < 3 * p.ip[5] {
-                        angle = theta[1];
-                    } else
-
-                    if sector % 3 == 2 && sector < 3 * p.ip[6] {
-                        angle = theta[2];
-                    } else
-
-                    if sector % 3 == 0 && sector < 3 * p.ip[4] {
-                        angle = theta[0];
-                    } else {
-                        angle = theta[3];
-                    }
-                } else {
-                    let axis = if sector < p.ip[4] {
-                        0
-                    } else
-
-                    if sector < secw {
-                        1
-                    } else
-
-                    if sector < sece {
-                        2
-                    } else {
-                        3
-                    }
-                    ;
-                    angle = theta[axis];
-                }
+                angle = theta[rope_sector_axis(mode, sector, p.ip[4], p.ip[5], p.ip[6])];
             }
             let ff = if p.ip[8] != 0 {
                 load(p.z, factors, pair)

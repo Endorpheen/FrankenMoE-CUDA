@@ -69,6 +69,13 @@ fn entry(
         if vector > 0 { witness(p.op, elements(p.d)); }
         return vector > 0;
     }
+    let position = if p.op == OP_ROPE || p.op == OP_ROPE_BACK {
+        rope_cuda(p, x, y, z, dst)
+    } else if p.op == OP_SSM_CONV { conv_cuda(p, x, y, dst) } else { 0 };
+    if position != 0 {
+        if position > 0 { witness(p.op, elements(p.d)); }
+        return position > 0;
+    }
     if activation_read(x) != 0 || activation_read(y) != 0 || activation_read(z) != 0 { return false; }
     if codec_transform(p, x, y, dst, scratch, gxx, gxs, gs, g3x, g3s, g1, signs, palette) {
         witness(p.op, elements(p.d));

@@ -279,6 +279,24 @@ The build reused the compiled common model unit and rebuilt the
 standalone operator and PTX sources. Apex performance and peak memory
 remain unmeasured.
 
+EXP-2026-11-20-1510 connects RoPE and recurrent convolution to the same
+CUDA activation arena. RoPE shares the CPU Goose sector and YaRN rules
+and keeps the same sequence of F32 phase multiplications. Each token's
+phase table serves all heads and sequences from the existing scratch
+buffer. The supported device path handles F32 and F16, forward and backward
+rotation, and the normal, NeoX, M-RoPE, interleaved and vision layouts.
+The SSM convolution uses the existing Goose rolling window for supported
+tap counts, including a partial final group of channels.
+
+The RTX 4070 trace confirmed ten RoPE cases and six SSM convolution
+cases. The largest errors against the CPU were 0.0000007153 for F32
+RoPE, 0.0001221 for F16 RoPE and zero for convolution. The four-tap
+two-layer GGUF fixture executed two RoPE nodes and one convolution per
+CUDA step, reused 94 device inputs and preserved CPU/CUDA continuation
+and reset with a maximum logit difference of 0.0000001192. CPU model and
+chunked-generation checks passed. Apex inference, performance and peak
+memory were not part of these checks.
+
 ## Historical requirements audit
 
 `docs/goose-migration/tasks.json`: **DONE 1**, **PARTIAL 144**, **TODO 7** of 152.

@@ -10,6 +10,7 @@ def string(value):
     return struct.pack('<Q', len(data)) + data
 
 metadata = []
+conv_kernel = 4
 def key(name, dtype, value):
     metadata.append(string(name) + struct.pack('<I', dtype) + value)
 def u32(name, value):
@@ -20,7 +21,7 @@ for name, value in {
     'block_count': 2, 'embedding_length': 32, 'attention.head_count': 1,
     'attention.head_count_kv': 1, 'attention.key_length': 32,
     'ssm.state_size': 32, 'ssm.group_count': 1, 'ssm.time_step_rank': 1,
-    'ssm.conv_kernel': 2, 'ssm.inner_size': 32, 'expert_count': 2,
+    'ssm.conv_kernel': conv_kernel, 'ssm.inner_size': 32, 'expert_count': 2,
     'expert_used_count': 1, 'expert_feed_forward_length': 32,
     'expert_shared_feed_forward_length': 32, 'context_length': 262144,
     'rope.dimension_count': 32,
@@ -49,7 +50,7 @@ attention = {
 recurrent = {
     'attn_norm.weight': (32,), 'attn_qkv.weight': (32,96), 'attn_gate.weight': (32,32),
     'ssm_beta.weight': (32,1), 'ssm_alpha.weight': (32,1), 'ssm_dt.bias': (1,),
-    'ssm_a': (1,), 'ssm_conv1d.weight': (2,96), 'ssm_norm.weight': (32,),
+    'ssm_a': (1,), 'ssm_conv1d.weight': (conv_kernel, 96), 'ssm_norm.weight': (32,),
     'ssm_out.weight': (32,32), 'post_attention_norm.weight': (32,),
 }
 moe = {

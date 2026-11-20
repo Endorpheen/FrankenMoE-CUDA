@@ -25,7 +25,15 @@ sed -n '/^extern "fg176r_ld_f32"/p; /^extern "fg176r_st_f16"/p; /^extern "fg176r
 cp "$ROOT/goose/cuda/standalone-vector.goose" "$OUT/vector.goose"
 sed -n '/^fn silu(/,/^}/p; /^fn sigmoid(/,/^}/p; /^fn softplus(/,/^}/p' \
     "$ROOT/goose/cpu/goose-cpu-backend-api/pointwise.goose" >> "$OUT/vector.goose"
-for module in q4k q6k matmul q4-attention gdn q4-set-rows vector; do
+cp "$ROOT/goose/cuda/standalone-rope.goose" "$OUT/rope.goose"
+sed -n '/^fn yarn_pair(/,/^}/p; /^fn rope_sector_axis(/,/^}/p; /^fn rope_reset_axis(/,/^}/p' \
+    "$ROOT/goose/cpu/goose-cpu-backend-api/rope.goose" >> "$OUT/rope.goose"
+sed -n '/^extern "fg170s_load"/p; /^extern "fg170s_store"/p; /^extern "fg170s_expf"/p;
+        /^extern "fg170s_lc"/p; /^extern "fg170s_sync"/p;
+        /^fn silu(/,/^}/p; /^fn ssm_conv_serial(/,/^}/p' \
+    "$ROOT/goose/cuda/goose-cuda-ssm-convolution/device.goose" |
+    sed 's/^fn ssm_conv_serial(/export fn ssm_conv_serial(/; s/\bsilu\b/ssm_silu/g' > "$OUT/ssm-conv.goose"
+for module in q4k q6k matmul q4-attention gdn q4-set-rows vector rope ssm-conv; do
     "$GOOSE" --standalone -o "$OUT/$module.c" --header "$OUT/$module.h" "$OUT/$module.goose"
     python3 - "$OUT" "$module" <<'PY'
 from pathlib import Path
@@ -36,7 +44,7 @@ source = (out / f"{module}.c").read_text()
 fragment = source.split("/* ---- prototypes ---- */", 1)[1].split("static void gs_init_globals(void)", 1)[0]
 if "gs_sp" in fragment:
     raise SystemExit(f"{module} uses the host stack ABI")
-if module in ("q4-attention", "gdn"):
+if module in ("q4-attention", "gdn", "rope", "ssm-conv"):
     types = source.split("/* ---- types ---- */", 1)[1].split("/* ---- data ---- */", 1)[0]
     types = "\n".join(line for line in types.splitlines()
                       if not line.endswith(("gs_rhdr;", "gs_rref;", "gs_pref;", "sl_u8;")))

@@ -24,6 +24,7 @@ extern int fg_cuda_state_graph_done(void);
 extern void fg_cuda_take_resident_state(uint64_t * kv, uint64_t * gdn);
 extern uint64_t fg_cuda_take_q4_writes(void);
 extern uint64_t fg_cuda_take_vectors(void);
+extern void fg_cuda_take_position(uint64_t * ropes, uint64_t * convs);
 extern int fg_cuda_activation_graph_begin(void);
 extern int fg_cuda_activation_prepare(uint64_t host, int64_t bytes, bool fresh);
 extern int fg_cuda_activation_graph_end(bool success, bool all, uint64_t host, int64_t bytes, uint64_t * hits);
@@ -275,6 +276,8 @@ static enum ggml_status compute_graph(struct ggml_cgraph * graph, bool all, cons
     fg_cuda_take_resident_state(&resident_kv, &resident_gdn);
     const uint64_t writes = fg_cuda_take_q4_writes();
     const uint64_t vectors = fg_cuda_take_vectors();
+    uint64_t ropes, convs;
+    fg_cuda_take_position(&ropes, &convs);
     const bool valid = failed == 0 && fg_cuda_state_graph_done() == 0;
     uint64_t hits = 0;
     const int published = fg_cuda_activation_graph_end(valid, all,
@@ -291,6 +294,8 @@ static enum ggml_status compute_graph(struct ggml_cgraph * graph, bool all, cons
         if (resident_gdn) fprintf(stderr, "Goose CUDA resident GDN: %llu nodes\n", (unsigned long long) resident_gdn);
         if (writes) fprintf(stderr, "Goose CUDA resident Q4 writes: %llu nodes\n", (unsigned long long) writes);
         if (vectors) fprintf(stderr, "Goose CUDA vector: %llu nodes\n", (unsigned long long) vectors);
+        if (ropes) fprintf(stderr, "Goose CUDA RoPE: %llu nodes\n", (unsigned long long) ropes);
+        if (convs) fprintf(stderr, "Goose CUDA SSM convolution: %llu nodes\n", (unsigned long long) convs);
         if (hits) fprintf(stderr, "Goose CUDA activation reuse: %llu inputs\n", (unsigned long long) hits);
     }
     return valid && published == 0 ? GGML_STATUS_SUCCESS : GGML_STATUS_FAILED;
