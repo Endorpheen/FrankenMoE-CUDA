@@ -22,6 +22,8 @@ extern int64_t fg143_activation_slot(sl_i64 ranges, int64_t capacity, int64_t by
 extern int64_t fg143_activation_record_slot(sl_i64 ranges);
 extern int64_t fg143_activation_device_overlap(sl_i64 ranges, int64_t offset, int64_t bytes, int64_t first);
 extern int64_t fg143_activation_eviction_slot(sl_i64 ranges, int64_t capacity, int64_t bytes);
+extern int64_t fg143_activation_last_input(sl_i64 ranges, uint64_t host, int64_t bytes,
+                                           int64_t step, int64_t window, int64_t output_bytes);
 extern bool fg_standalone_option_enabled(const char * name);
 extern void ec_reset(sl_i64 groups, sl_i64 layers, uint64_t words32, sl_i64 words64);
 extern int64_t ec_prepare(sl_i64 groups, sl_i64 layers, uint64_t words32, sl_i64 words64,
@@ -67,6 +69,7 @@ static struct {
     size_t activation_capacity;
     bool adapt_activation_capacity;
     bool direct_wide_vectors;
+    bool stage_matrix_input;
     struct device_buffer dense;
     sl_i64 dense_ranges;
     struct device_buffer state;
@@ -93,6 +96,7 @@ static struct {
     int (*host_unregister)(void *);
     int (*upload)(DevicePtr, const void *, size_t);
     int (*download)(void *, DevicePtr, size_t);
+    int (*copy_device)(DevicePtr, DevicePtr, size_t);
     int (*zero)(DevicePtr, unsigned char, size_t);
     int (*launch)(Function, unsigned, unsigned, unsigned, unsigned, unsigned, unsigned,
                   unsigned, void *, void **, void **);
@@ -108,7 +112,7 @@ static _Thread_local struct {
     bool active, unavailable, defer_waits, pending;
     bool retire, reuse, selective_eviction;
     uint64_t target;
-    int64_t target_bytes, target_deadline, count, used;
+    int64_t target_bytes, target_deadline, step, count, used;
     int64_t ranges[ACTIVATION_RECORDS * ACTIVATION_WORDS];
     int64_t large_output[ACTIVATION_WORDS];
     uint64_t hits, skipped_download_bytes, expired_bytes;
@@ -184,6 +188,7 @@ static void init_cuda(void) {
     LOAD(release, "cuMemFree_v2");
     LOAD(upload, "cuMemcpyHtoD_v2");
     LOAD(download, "cuMemcpyDtoH_v2");
+    LOAD(copy_device, "cuMemcpyDtoD_v2");
     LOAD(zero, "cuMemsetD8_v2");
     LOAD(launch, "cuLaunchKernel");
     LOAD(sync, "cuCtxSynchronize");
@@ -197,6 +202,7 @@ static void init_cuda(void) {
     cuda.activation_capacity = DEFAULT_ACTIVATION_BYTES;
     cuda.adapt_activation_capacity = !arena_setting;
     cuda.direct_wide_vectors = fg_standalone_option_enabled("GOOSE_CUDA_WIDE_VECTOR");
+    cuda.stage_matrix_input = fg_standalone_option_enabled("GOOSE_CUDA_STAGE_MATRIX_INPUT");
     if (arena_setting) {
         char * end;
         const intmax_t value = strtoimax(arena_setting, &end, 10);
@@ -430,6 +436,7 @@ int fg_cuda_activation_graph_begin(bool planned) {
     if (setting && setting[0] == '0' && !setting[1]) return 0;
     pthread_mutex_lock(&activation_lock);
     activations.active = true;
+    activations.step = -1;
     activations.unavailable = false;
     activations.defer_waits = planned && fg_standalone_option_enabled("GOOSE_CUDA_DEFER_WAITS");
     activations.retire = fg_standalone_option_enabled("GOOSE_ACTIVATION_LIFETIMES");
@@ -471,6 +478,7 @@ int fg_cuda_activation_prepare(uint64_t host, int64_t bytes, bool fresh, bool ov
     activations.target = fresh ? host : 0;
     activations.target_bytes = bytes;
     activations.target_deadline = deadline;
+    activations.step = activations.retire ? step : -1;
     if (step >= 0 && activations.retire) {
         if (activations.count > 0) activations.expired_bytes += fg143_activation_expire(activation_ranges(), step);
         if (activations.large_output[1] > 0) activations.expired_bytes += fg143_activation_expire(activation_large_range(), step);
@@ -555,9 +563,27 @@ static int activation_widen(void) {
     return 0;
 }
 
+static int stage_last_matrix_input(sl_u8 input, int64_t window, int64_t bytes, DevicePtr * staged) {
+    const uint64_t address = (uint64_t) (uintptr_t) input.data;
+    const int64_t index = fg143_activation_last_input(activation_ranges(), address, input.len,
+        activations.step, window, bytes);
+    if (index < 0) return 0;
+    int64_t * range = activations.ranges + ACTIVATION_WORDS * index;
+    int error = reserve(&cuda.input, (size_t) input.len);
+    if (error == 2) return 0;
+    if (error == 0) error = cuda.copy_device(cuda.input.address,
+        cuda.activations.address + (uint64_t) range[2], (size_t) input.len);
+    if (error != 0) return error;
+    range[1] = 0;
+    *staged = cuda.input.address;
+    ++activations.hits;
+    return 0;
+}
+
 // Called with the CUDA context bound. Reserve output before resolving input
 // addresses so a flush never invalidates a pointer passed to a launch.
-static int activation_output(uint64_t host, int64_t bytes, DevicePtr * device) {
+static int activation_output_for_input(uint64_t host, int64_t bytes, DevicePtr * device,
+                                       sl_u8 input, DevicePtr * staged) {
     // All kernels and synchronous copies use the same legacy default stream.
     // Check its completion at graph exit even if a later operation fails.
     if (activations.active && activations.defer_waits) activations.pending = true;
@@ -591,6 +617,10 @@ static int activation_output(uint64_t host, int64_t bytes, DevicePtr * device) {
             if (pos == -2 && activations.reuse && activations.selective_eviction) {
                 pos = fg143_activation_eviction_slot(activation_ranges(), capacity, bytes);
                 if (pos < 0) return -1;
+                if (staged) {
+                    const int error = stage_last_matrix_input(input, pos, bytes, staged);
+                    if (error != 0) return error;
+                }
                 const int error = activation_evict_device_range(pos, bytes);
                 if (error != 0) return error;
             }
@@ -611,6 +641,10 @@ static int activation_output(uint64_t host, int64_t bytes, DevicePtr * device) {
     const int error = activation_reserve_output((size_t) bytes);
     if (error == 0) *device = cuda.output.address;
     return error;
+}
+
+static int activation_output(uint64_t host, int64_t bytes, DevicePtr * device) {
+    return activation_output_for_input(host, bytes, device, (sl_u8) {0}, NULL);
 }
 
 static int activation_publish(uint64_t host, int64_t bytes, DevicePtr device, bool complete) {
@@ -1014,8 +1048,11 @@ int64_t fg_cuda_begin(uint64_t input, int64_t input_bytes, uint64_t output, int6
     const int active = start_context();
     if (active != 1) return active;
     cuda_matrix_kind = -1;
-    int status = activation_output(output, output_bytes, &matrix_output);
-    if (status == 0) status = activation_input((sl_u8) {(void *) (uintptr_t) input, input_bytes}, &cuda.input, &matrix_input);
+    matrix_input = 0;
+    const sl_u8 source = {(void *) (uintptr_t) input, input_bytes};
+    DevicePtr * staged = cuda.stage_matrix_input ? &matrix_input : NULL;
+    int status = activation_output_for_input(output, output_bytes, &matrix_output, source, staged);
+    if (status == 0 && !matrix_input) status = activation_input(source, &cuda.input, &matrix_input);
     if (status == 0) return 1;
     finish_context();
     fprintf(stderr, "Goose CUDA: input transfer failed (%d)\n", status);

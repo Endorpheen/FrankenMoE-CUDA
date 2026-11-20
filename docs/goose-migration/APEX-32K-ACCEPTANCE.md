@@ -54,9 +54,10 @@ Functional qualification runs before memory and speed acceptance.
    validator from 4). With the exact
    request, record 32,768 evaluated prompt IDs, zero reused prompt
    tokens, 512 returned output IDs and non-whitespace content.
-   Compare token and content hashes to the control and archive every
-   probability row. Diagnose any divergence from the first differing
-   token and rerun this gate after fixes. The full 4096/4096 request
+   Archive token and content hashes and every probability row. Compare
+   response coherence, factual grounding, instruction following and
+   repetition against the control. Investigate reproducible quality
+   defects and rerun this gate after fixes. The full 4096/4096 request
    completed with the scalar, MMQ, EXP-1528 and ten-change package
    candidates. The latest package response begins to repeat the input.
    ID and probability parity fail. The first differing output is at
@@ -72,8 +73,8 @@ Functional qualification runs before memory and speed acceptance.
    The separate short and long
    [response-quality comparison](CUDA-PARITY-EXP1476.md#apex-response-quality-checkpoint)
    confirms coherent generation and the HTTP EOS fix. The
-   [latest full diagnostic](CUDA-PARITY-EXP1476.md#resident-wide-vector-multiplication)
-   reports 702.909 prefill tok/s and 16.550 decode steps/s.
+   [latest full diagnostic](CUDA-PARITY-EXP1476.md#device-staging-for-the-last-use-matrix-input)
+   reports 766.649 prefill tok/s and 16.468 decode steps/s.
    It preserves the recorded capacity analysis and opening input
    repetition. The full response gate remains open.
    Gates 3 and 4 qualify the later speed comparison.

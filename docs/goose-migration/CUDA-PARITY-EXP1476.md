@@ -108,7 +108,7 @@ quantized matrix throughput, and long-context decode Attention.
 | 24 | Tensor copies, concatenation and gathers. CUDA transform dispatch → `concat_cont`, `concat_non_cont`, `cpy_scalar`, `k_get_rows_float` and vectorized gather. | All appear in reference trace. Goose has aligned lifetimes, GPU blits and gathers and host fallbacks. | PARTIAL. Match selected contiguous and strided paths while avoiding dead-tensor transfers. Check views, source lifetimes and numerical read-back. |
 | 25 | Backend graph splitting and lifetime planning. GGML scheduler in `vendor/flint/ggml/src/ggml-backend.cpp` → `ggml-alloc.c` child/view counts, aligned best-fit, split/coalesced blocks and admissible in-place reuse. | Reference log records five buffers and eight same-size reallocations. Goose completes actual 4096/4096 using a ~1.010 GB lifetime arena and whole-block reuse. | PARTIAL. Retain the tested alias planner. Extend device lifetime ownership and compare backend memory peaks and retry behavior on identical profiles. |
 | 26 | Expert tiers and pinned mapped weights. `vendor/flint/src/llama-model.cpp` → `llama-mmap-expert-pin.h` and CUDA buffer registration. | [Goose SLRU and mmap registration](#expert-mmap-registration-and-slru) execute in real Apex. The bounded mode registers 28 ranges, transfers 6,459,162,624 bytes from pinned sources and improves the no-swap 4096/129 median. | PARTIAL. Validate full context, quality and performance against EXP-1476. Full registration remains rejected on this host. |
-| 27 | Selective transfer and device placement. Backend split execution and CUDA tensor set/get → asynchronous linear and 2-D copies. | The [adaptive arena](#adaptive-cuda-activation-arena) and [resident vector path](#resident-wide-vector-multiplication) reduce full prefill H2D to 116.647 GB and D2H to 21.518 GB. | PARTIAL. Remove the remaining 64 MiB publications and asynchronous-copy overhead. Full memory and speed parity remain open. |
+| 27 | Selective transfer and device placement. Backend split execution and CUDA tensor set/get → asynchronous linear and 2-D copies. | The [adaptive arena](#adaptive-cuda-activation-arena), [resident vector path](#resident-wide-vector-multiplication) and [last-use matrix input staging](#device-staging-for-the-last-use-matrix-input) remove the large temporary prefill publications. | PARTIAL. Investigate remaining expert uploads, dispatch packets and synchronous host transfers. Full memory and speed parity remain open. |
 | 28 | CUDA VMM pool. CUDA buffer allocator → `cuMemAddressReserve`, `cuMemCreate`, `cuMemMap`, `cuMemSetAccess`, release. | Reference executes 105 create/map operations and reserves a virtual address range. Goose grows Driver API buffers with `cuMemAlloc_v2` and `cuMemFree_v2`. | MISSING. Restore equivalent reusable device allocation and supported fallback. Check allocation limits, device address stability and VRAM peak on RTX 4070. |
 | 29 | CUDA Graph capture and replay. `ggml-cuda.cu` graph evaluator → begin/end capture, instantiate, exec update and launch. | Whole-graph trace records over 20,000 launches across the session. Server reports 510 reuses. Goose rebuilds its graph and directly launches CUDA kernels. | MISSING. Establish stable graph keys, addresses and update boundaries before recording and replay. Check changing KV prefixes and buffer ownership before measuring decode overhead. |
 | 30 | Streams and synchronization. CUDA scheduler and `ggml-cuda.cu` establish streams, events and CUDA Graph scopes. | Reference uses stream sync and async copies. Planned Goose graphs defer intermediate publication waits to the graph boundary, with blocking host reads. | PARTIAL. Extend independent stream and event dependencies. Verify full-request performance, error propagation and state visibility. |
@@ -2092,6 +2092,69 @@ and measures its removal in an isolated candidate.
   `cuda-full-dense-both.9f8p85uk`.
   Executable SHA-256 `a2c4facd806f73910e3c3c8db4371522eaecc85544276014c322638ccb9dc79f`.
   Nsight SHA-256 `76ef051ff2f3881e04cf254cd7cccf8a10cd014aef14ca2a00e1bdbfbfc2298a`.
+
+## Device staging for the last-use matrix input
+
+EXP-2026-11-20-1564 follows EXP-1563. Layout instrumentation
+finds 388.125 MiB live including the down projection result
+at all 40 expert SwiGLU eviction sites in one 4096-token
+block. This exceeds the 384 MiB arena. EXP-1476 schedules
+placement from graph lifetimes and reuses parent storage
+when the operator, views and layouts allow it (`ggml-alloc.c`,
+`ggml_gallocr_allocate_node`).
+
+Goose checks the complete input span against the planned
+last-consumer index and the selected eviction window. On an
+exact hit it relocates the stale input to the existing matrix
+staging allocation with `cuMemcpyDtoD_v2` and releases its
+arena record. The original placement covers unmatched views,
+unpinned lifetimes and device staging out-of-memory. The
+selector is active by default with
+`GOOSE_CUDA_STAGE_MATRIX_INPUT=0` as rollback. Eight direct
+lifetime/overlap cases pass. The 4096/1 comparison changes
+40 copies in each PCIe direction to 40 D2D copies, preserves
+content, IDs and probabilities, and leaves 8,484 MiB peak
+process VRAM. Prefill changes from 694.653 to 752.958 tok/s.
+
+The full profiled A/B uses the same binary and the EXP-1563
+workload and settings. Only `GOOSE_CUDA_STAGE_MATRIX_INPUT=0`
+versus `=1` differs.
+
+| Metric | A | B |
+|---|---:|---:|
+| Prefill, tok/s | 696.703 | 766.649 |
+| Prefill, s | 47.033 | 42.742 |
+| Decode, steps/s (511 steps) | 16.526 | 16.468 |
+| Decode, s | 30.921 | 31.029 |
+| H2D, whole trace bytes | 176,385,876,304 | 154,911,039,824 |
+| D2H, whole trace bytes | 22,025,992,960 | 551,156,480 |
+| 64 MiB host round trips | 320 | 0 |
+| 64 MiB device copies | 0 | 320 |
+| 64 MiB copy GPU duration sum, s | 4.382 | 0.086 |
+| Process RSS high-water, KiB | 23,580,636 | 23,514,964 |
+| Sampled peak process VRAM, MiB | 8,524 | 8,524 |
+| Sampled peak whole-card VRAM, MiB | 10,720 | 10,725 |
+| Process swap and system swap-out growth | 0 | 0 |
+
+Both responses have the same content, all 512 IDs, probability
+rows and stop reason. The previously recorded opening echo
+persists. Both retain 5,301,139 resident model pages and the
+same SLRU hit, fill and eviction counts. This pair qualifies
+the transfer mechanism at 4096/4096. Decode varies by 0.058
+steps/s across the single profiled pair. Q4_K and Q6_K
+reference-shaped MMQ still consume 15.788 and 4.480 s on
+B, and long vector Attention consumes 9.057 s.
+
+The full traces are under
+`/home/end0/AI/LlamaServer/franken-goose-matrix-d2d.iiJE4H` in
+`cuda-full-dense-both.9q_cnmjo` and `cuda-full-dense-both.7d_2a_yj`.
+Executable SHA-256
+`5a25efca2b6b035b11c3d45c69330bf570ba56a48023271172ee008eb843c642`.
+Nsight SHA-256 values
+`da867fbb9ec87db7d595f7b86763bac87e739dc1e5c4339af4dd8095d5525b44`
+and `4e47cdbc580e294a699048e230b11618c3a85623663c76ecf04ae7d627cd9293`.
+Shared response content SHA-256
+`3a824300f79ea0f8bfa94c646dd23f0903626b8582ea7c3d8c2b058176335079`.
 
 ## Long Attention partition probe
 

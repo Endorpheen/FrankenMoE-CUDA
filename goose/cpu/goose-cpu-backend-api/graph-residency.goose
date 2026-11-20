@@ -25,7 +25,7 @@ export fn fg143_activation_lookup(ranges: const i64[:], host: u64, bytes: i64) -
     return -1;
 }
 
-export fn fg143_activation_overlap(ranges: const i64[:], host: u64, bytes: i64, first: i64) -> i64 {
+fn activation_host_overlap(ranges: const i64[:], host: u64, bytes: i64, first: i64) -> i64 {
     if bytes <= 0 || first < 0 { return -1; }
     for i in first .. ranges.len / ACT_WORDS {
         let at = i * ACT_WORDS;
@@ -35,6 +35,10 @@ export fn fg143_activation_overlap(ranges: const i64[:], host: u64, bytes: i64, 
         if activation_spans_overlap(host, bytes as u64, base, size as u64) { return i; }
     }
     return -1;
+}
+
+export fn fg143_activation_overlap(ranges: const i64[:], host: u64, bytes: i64, first: i64) -> i64 {
+    return activation_host_overlap(ranges, host, bytes, first);
 }
 
 // A fully covered record will be replaced by a disjoint full-output operation.
@@ -112,6 +116,22 @@ fn activation_device_overlap(ranges: const i64[:], offset: i64, bytes: i64, firs
 
 export fn fg143_activation_device_overlap(ranges: const i64[:], offset: i64, bytes: i64, first: i64) -> i64 {
     return activation_device_overlap(ranges, offset, bytes, first);
+}
+
+// Relocate an entire stale input on its last use if allocation would evict it.
+export fn fg143_activation_last_input(ranges: const i64[:], host: u64, bytes: i64,
+                                      step: i64, window: i64, output_bytes: i64) -> i64 {
+    if step < 0 || bytes <= 0 || window < 0 || output_bytes <= 0 { return -1; }
+    let found = activation_host_overlap(ranges, host, bytes, 0);
+    if found < 0 { return -1; }
+    let at = found * ACT_WORDS;
+    let offset = ranges[at + 2];
+    if offset < 0 || ranges[at] as! u64 != host || ranges[at + 1] != bytes ||
+       ranges[at + 3] != 0 || ranges[at + 4] != step { return -1; }
+    if !activation_spans_overlap(offset as u64, bytes as u64, window as u64, output_bytes as u64) {
+        return -1;
+    }
+    return found;
 }
 
 // An eviction window costs one potential upload per victim plus a download
