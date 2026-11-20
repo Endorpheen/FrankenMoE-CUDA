@@ -66,7 +66,7 @@ the entry. Apply the full-request gate on the package schedule.
 
 ## Mechanisms
 
-**32 mechanisms: PARITY 0, PARTIAL 30, MISSING 1, INCORRECT 1.**
+**32 mechanisms: PARITY 0, PARTIAL 31, MISSING 0, INCORRECT 1.**
 
 Group three to five related improvements with a separate commit and
 targeted correctness and CUDA checks for each. Evaluate real answers
@@ -112,7 +112,7 @@ to prioritize subsequent tuning.
 | 26 | Expert tiers and pinned mapped weights. `vendor/flint/src/llama-model.cpp` → `llama-mmap-expert-pin.h` and CUDA buffer registration. | [Goose SLRU and mmap registration](#expert-mmap-registration-and-slru) execute in real Apex. The bounded mode registers 28 ranges, transfers 6,459,162,624 bytes from pinned sources and improves the no-swap 4096/129 median. | PARTIAL. Validate full context, quality and performance against EXP-1476. Full registration remains rejected on this host. |
 | 27 | Selective transfer and device placement. Backend split execution and CUDA tensor set/get → asynchronous linear and 2-D copies. | The [adaptive arena](#adaptive-cuda-activation-arena), [resident vector path](#resident-wide-vector-multiplication) and [last-use matrix input staging](#device-staging-for-the-last-use-matrix-input) remove the large temporary prefill publications. | PARTIAL. Investigate remaining expert uploads, dispatch packets and synchronous host transfers. Full memory and speed parity remain open. |
 | 28 | CUDA VMM pool. CUDA buffer allocator → `cuMemAddressReserve`, `cuMemCreate`, `cuMemMap`, `cuMemSetAccess`, release. | [Goose scratch VMM](#cuda-vmm-scratch-restoration) reserves stable MMQ and Attention addresses, maps growth in place and releases all mappings after real Apex. | PARTIAL. Qualify the package on the full workload. Other device buffers still use their current allocation path. |
-| 29 | CUDA Graph capture and replay. `ggml-cuda.cu` graph evaluator → begin/end capture, instantiate, exec update and launch. | Whole-graph trace records over 20,000 launches across the session. Server reports 510 reuses. Goose rebuilds its graph and directly launches CUDA kernels. | MISSING. Establish stable graph keys, addresses and update boundaries before recording and replay. Check changing KV prefixes and buffer ownership before measuring decode overhead. |
+| 29 | CUDA Graph capture and replay. `ggml-cuda.cu` graph evaluator → begin/end capture, instantiate, exec update and launch. | [Goose vector Attention capture](#cuda-graph-replay-for-vector-attention) executes the two-node vector/merge graph and updates it with current pointers and key counts. The hybrid trace records over 20,000 graph launches across the full workload. | PARTIAL. Qualify 32K and extend capture to other dependency-safe decode sequences. |
 | 30 | Streams and synchronization. CUDA scheduler and `ggml-cuda.cu` establish streams, events and CUDA Graph scopes. | Reference uses stream sync and async copies. Planned Goose graphs defer intermediate publication waits to the graph boundary, with blocking host reads. | PARTIAL. Extend independent stream and event dependencies. Verify full-request performance, error propagation and state visibility. |
 | 31 | Prefill → decode continuation. Reference `llama-context.cpp` scheduler and CUDA graph compute produce logits for the shared sampler. | The earlier full Goose response repeated input text. The newer checkpoint completes the [normal quality suite](#apex-response-quality-checkpoint) and the vector Attention cases. | INCORRECT on the last full quality diagnostic. Revalidate the current checkpoint on the full real workload. Investigate a specific reproduced behavioral defect. |
 | 32 | Device initialization and specialization loading. CUDA backend loader and scheduler select architectures, entry points and cuBLAS paths. | Trace records device info, driver lookups, cuLibrary entry resolution and allocation APIs. Goose loads its own PTX with the Driver API. | PARTIAL. Extend end-to-end executable selection for supported MMQ shapes and verify real device witness. Preserve independent module loading and rejected profiles. |
@@ -2038,9 +2038,10 @@ The hybrid records 62,355 stream synchronizations, with
 not a measured speedup from Graph capture. Stable
 allocation addresses, stream boundaries, and per-token
 state keys are required before restoring capture. Goose
-`goose-graph-gating.goose` and `goose-graph-lifecycle.goose`
-contain policy and graph mechanics. Neither binds CUDA
-capture and replay in the standalone runtime.
+`goose-graph-lifecycle.goose` concerns the model graph
+container. The standalone runtime now captures the
+[vector Attention pair](#cuda-graph-replay-for-vector-attention)
+through the Driver API.
 
 The hybrid VMM pool uses two address reservations, 105
 create calls and 105 map calls. Recorded create/map API
@@ -2492,6 +2493,54 @@ The fixture, pair and executable are under
 The A/B directories end in `nvcd9prq` and `yduladvb`.
 Executable SHA-256
 `817a222ceb430ce990f8b79c48044c9a1b1d10c5d8564c67f5d1b44fb966a9ba`.
+
+## CUDA Graph replay for vector Attention
+
+EXP-1571 captures the partitioned Q4_0 vector Attention
+kernel and its combine kernel on one blocking CUDA stream.
+The stream preserves ordering with kernels and copies on
+the legacy stream. The captured executable retains the
+two kernel nodes. Replay updates both nodes' parameters,
+including the current Q/K/V and output addresses, KV
+length, strides packet and launch geometry. The Goose
+shape selector retains direct launch for a single part.
+Missing Driver API support, capture failure or a rejected
+update selects the direct pair. An error after attempting
+graph submission propagates to the caller.
+
+The six one-query fixtures vary KV length across the
+128-key boundary, change the partition count and grow
+the scratch buffer. Each result matches the direct path
+bit for bit. Nsight records one capture and five graph
+launches with eight kernel parameter updates. CUDA
+memcheck records zero errors.
+
+| Profiled Apex 4096/129 with VMM and Flash Stream-K | Direct A | Graph B |
+|---|---:|---:|
+| Prefill, tok/s | 788.828 | 801.516 |
+| Decode, steps/s | 22.189 | 22.132 |
+| Process RSS high-water, KiB | 23,484,856 | 23,484,736 |
+| Peak process VRAM, MiB | 8,484 | 8,484 |
+| Peak whole-card VRAM, MiB | 10,695 | 10,695 |
+| Process swap and system swap-out growth | 0 | 0 |
+| Direct CUDA launch API calls | 269,616 | 267,058 |
+| Graph captures and instantiations | 0 | 1 each |
+| Graph launch API calls | 0 | 1,280 |
+| Graph kernel parameter updates | 0 | 2,558 |
+
+Both responses match in content, IDs, probability rows and
+stop reason. Model residency and all SLRU counters match.
+The trace proves replay and parameter updates in the live
+runtime. The single profiled pair does not establish a
+speed gain. Enable `GOOSE_CUDA_GRAPH=1` for package
+qualification. Capture of larger decode sequences remains
+open.
+
+The raw reports and executable are under
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/cuda-graph-exp1571`.
+The A/B directories end in `p6wd6yp_` and `dji5vyxt`.
+Executable SHA-256
+`cdf0b20c4c197f08b38a53329ed0192cb0b6e697a68dae564847bb7f6c12dd6c`.
 
 ## Long Attention partition probe
 

@@ -15,6 +15,10 @@ extern "fg_cuda_q4_attention" fn cuda_q4_attention(config: const i64[:], q: cons
     v: const u8[:], mask: const u8[:], out: u8[:], scale: f32) -> i64;
 extern "fg_cuda_kv_read" fn cuda_kv_read(k: const u8[:], v: const u8[:]) -> i64;
 
+export fn fg143_flash_vector_parts(keys: i64) -> i64 {
+    return if keys > 0 { low(64, 1 + (keys - 1) / 128) } else { 0 };
+}
+
 export fn fg143_flash_stream_workers(queries: i64, groups: i64, keys: i64, sms: i64) -> i64 {
     if queries < 8 || queries > 2147483647 || groups <= 0 || groups > 65535 ||
        keys <= 0 || keys > 2147483647 || sms <= 0 || sms > 1024 { return 0; }

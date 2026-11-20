@@ -4,13 +4,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int main(int argc, char ** argv) {
-    assert(argc == 5);
+static void check(const char * path, int queries, int keys, int prefix) {
     enum { width = 256, heads = 16, kv_heads = 2 };
-    const int queries = atoi(argv[2]);
-    const int keys = atoi(argv[3]);
-    const int prefix = atoi(argv[4]);
-    assert(queries >= 8 && prefix > 0 && prefix + queries - 1 <= keys);
+    assert(queries >= 1 && prefix > 0 && prefix + queries - 1 <= keys);
     struct ggml_context * ctx = ggml_init((struct ggml_init_params){1024 * 1024, NULL, true});
     assert(ctx);
     struct ggml_tensor * q_data = ggml_new_tensor_3d(ctx, GGML_TYPE_F32, width, heads, queries);
@@ -38,7 +34,7 @@ int main(int argc, char ** argv) {
         q4->from_float_ref(src, (unsigned char *) v_data->data + row * v_data->nb[1], width);
     }
     assert(fg_standalone_graph_compute(graph) == GGML_STATUS_SUCCESS);
-    FILE * file = fopen(argv[1], "wb");
+    FILE * file = fopen(path, "wb");
     assert(file);
     const size_t size = ggml_nbytes(out);
     assert(fwrite(out->data, 1, size, file) == size);
@@ -46,4 +42,11 @@ int main(int argc, char ** argv) {
     printf("%d queries, %d keys, %d causal prefix, %zu bytes\n", queries, keys, prefix, size);
     free(arena);
     ggml_free(ctx);
+}
+
+int main(int argc, char ** argv) {
+    assert(argc >= 5 && (argc - 1) % 4 == 0);
+    for (int i = 1; i < argc; i += 4) {
+        check(argv[i], atoi(argv[i + 1]), atoi(argv[i + 2]), atoi(argv[i + 3]));
+    }
 }
