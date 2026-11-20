@@ -71,16 +71,19 @@ the entry. Apply the full-request gate on the package schedule.
 Group three to five related improvements with a separate commit and
 targeted correctness and CUDA checks for each. Evaluate real answers
 on matched prompts before accepting faster paths. Run the full Apex
-32K/512 profile after a qualified package or after an observed
-generation repair. Keep the previous checkpoint and isolate observed
+32K/512 profile when needed to qualify a package or a generation
+repair. Keep the previous checkpoint and isolate observed
 regressions with a focused test.
 
 First restore the remaining reference mechanisms with shape-aware
 dispatch and live RTX 4070 traces. Reuse existing Goose implementations
-for compatible graph shapes. Check response quality, RAM and VRAM at
-each connection, then record a new full Apex 32K/512 baseline for
-the qualified package. Use the [measured gaps](#external-computation-stack-and-measured-gaps)
-to prioritize subsequent tuning.
+for compatible graph shapes. Every row requires live execution,
+correctness, quality, performance and memory evidence to reach PARITY.
+Use the [measured gaps](#external-computation-stack-and-measured-gaps)
+to prioritize parity work. Record the final Apex 32K/512 baseline after
+all 32 rows pass and the new runtime meets the EXP-1476 performance
+target in a fresh paired comparison. The archived target is 2,940.9
+prefill and 62.86 decode tokens/s.
 
 | # | Mechanism and EXP-1476 call path | Evidence and independent Goose state | Status, restoration and verification |
 |---:|---|---|---|
@@ -2541,6 +2544,78 @@ The raw reports and executable are under
 The A/B directories end in `p6wd6yp_` and `dji5vyxt`.
 Executable SHA-256
 `cdf0b20c4c197f08b38a53329ed0192cb0b6e697a68dae564847bb7f6c12dd6c`.
+
+## Full Flash Stream-K, VMM and CUDA Graph diagnostic
+
+EXP-1572 compares the same EXP-1571 executable on the frozen
+32K/512 request. Both arms use context 262,144, batch/ubatch
+4096/4096, host pin 4,096 MiB, the existing SLRU bank and
+the 384 MiB activation arena. Arm B enables Flash Stream-K,
+VMM scratch growth and vector Attention capture. Arm A
+disables all three. This is diagnostic evidence for the live
+mechanisms and their interaction.
+
+| Profiled full Apex on RTX 4070 | A | B |
+|---|---:|---:|
+| Prefill, tok/s | 797.362 | 797.355 |
+| Decode, steps/s | 20.224 | 20.080 |
+| Prefill, s | 41.096 | 41.096 |
+| Decode, s | 25.268 | 25.448 |
+| Flash prefill compute and fixup, s | 2.841 | 2.395 |
+| General Flash fixups | 0 | 80 |
+| VMM reserves / maps / unmaps | 0 / 0 / 0 | 2 / 11 / 11 |
+| CUDA Graph launches / updates | 0 / 0 | 5,110 / 10,218 |
+| Context synchronizations | 291,671 | 291,673 |
+| H2D, whole trace bytes | 154,864,119,008 | 156,503,583,128 |
+| D2H, whole trace bytes | 551,156,480 | 551,156,480 |
+| Expert cache fills | 77,707 | 78,687 |
+| Process RSS high-water, KiB | 23,514,996 | 23,527,992 |
+| Peak process VRAM, MiB | 8,524 | 8,524 |
+| Peak whole-card VRAM, MiB | 10,736 | 10,737 |
+| Process swap and system swap-out growth | 0 | 0 |
+
+Both arms keep all 5,301,139 model pages resident. Both
+answers explain queue buildup and suggest measuring the
+service and applying bounded admission. Both begin by
+repeating a fragment of the request. IDs, probabilities,
+SLRU activity and response text diverge. Keep the prior
+production checkpoint. The package does not pass final
+quality or speed acceptance.
+
+### Transfer and scheduling attribution
+
+The EXP-1476 scheduler splits graphs and orders asynchronous
+copies with backend events (`ggml-backend.cpp`,
+`ggml_backend_sched_split_graph` and allocation/compute
+of the splits). Its CUDA evaluator runs
+`ggml_cuda_try_fuse` and uses streams and fork/join events.
+The standalone Goose executor shares its planned activation
+arena and defers selected waits to graph completion.
+
+In the B trace 220,242 context waits immediately follow
+MMVQ, 41,200 follow scalar matmul, 15,570 follow tensor
+blits and 10,380 follow Q4 cache writes. These are counts
+by preceding API and kernel correlation ID. The 25.397 s
+aggregate includes elapsed device work. It bounds time
+spent inside the calls and does not establish avoidable
+host latency. Matrix launch paths still synchronize after
+each projection even in a planned graph.
+
+The remaining D2H is 508,559,360 bytes from 512 full
+logits rows, 41,943,040 bytes from 320 routing ID
+transfers and 654,080 bytes from 20,440 small transfers.
+The earlier 64 MiB round trips remain absent. The
+additional 980 expert fills correlate with the higher
+H2D in arm B. The two-node replay leaves most CUDA
+dispatch in the direct path. It records 1,077,590 direct
+launch API calls versus 1,087,728 in A.
+
+Both traces and replies are under
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/restoration-exp1572`.
+The A/B directories end in `35aidzzm` and `vzrecq47`.
+Nsight SHA-256 values
+`c7bd5611b5ed362dd755a7ed1c2336350666f65f6266e8860311796caa6e32ac`
+and `4f079c805abbf881f7eac7085faf023dae5c5f20ea9152f69e5187797cb21c5b`.
 
 ## Long Attention partition probe
 
