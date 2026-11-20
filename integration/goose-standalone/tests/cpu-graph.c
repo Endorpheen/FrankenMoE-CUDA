@@ -2,6 +2,7 @@
 
 #include "graph-execute.h"
 #include "goose-host-llm.h"
+#include "main.h"
 
 #include <assert.h>
 #include <math.h>
@@ -11,6 +12,8 @@
 
 extern void fg_goose_host_ensure_init(void);
 extern int64_t fg_cuda_model_state_bytes(void);
+extern int64_t fg_cuda_load_model_state(sl_i64 ranges, int64_t bytes);
+extern int64_t fg_cuda_state_read(uint64_t host, int64_t bytes);
 
 static void check_model_step(const char * path) {
     fg_goose_host_ensure_init();
@@ -107,6 +110,56 @@ static void check_resident_state(const char * path) {
     }
     assert(unsetenv("GOOSE_CUDA") == 0);
     printf("Resident KV/GDN reset and mixed CUDA/CPU continuation: max error %.9g\n", max_error);
+}
+
+static void check_resident_q4_rows(void) {
+    enum { width = 64, stride = width + 4, count = 4, capacity = 16, row_bytes = width / 32 * 18 };
+    struct ggml_context * ctx = ggml_init((struct ggml_init_params){ 1024 * 1024, NULL, true });
+    assert(ctx);
+    struct ggml_tensor * input = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, stride, count);
+    struct ggml_tensor * source = ggml_view_2d(ctx, input, width, count, input->nb[1], 0);
+    struct ggml_tensor * ids = ggml_new_tensor_1d(ctx, GGML_TYPE_I64, count);
+    struct ggml_tensor * cache = ggml_new_tensor_2d(ctx, GGML_TYPE_Q4_0, width, capacity);
+    struct ggml_tensor * set = ggml_set_rows(ctx, cache, source, ids);
+    struct ggml_cgraph * graph = ggml_new_graph_custom(ctx, 64, false);
+    ggml_build_forward_expand(graph, set);
+    void * storage = fg_standalone_graph_alloc(graph);
+    assert(storage);
+    const uint64_t address = (uint64_t) (uintptr_t) cache->data;
+    const int64_t length = (int64_t) ggml_nbytes(cache);
+    int64_t ranges[] = {(int64_t) address, length, 0, 0};
+    assert(fg_cuda_load_model_state((sl_i64) {ranges, 4}, length) == length);
+
+    unsigned char expected[capacity * row_bytes] = {0};
+    memset(cache->data, 0, sizeof expected);
+    const int64_t rows[2][count] = {{4, 5, 6, 7}, {8, 4, 8, 10}};
+    for (int pass = 0; pass < 2; ++pass) {
+        memcpy(ids->data, rows[pass], sizeof rows[pass]);
+        for (int row = 0; row < count; ++row) {
+            float * data = (float *) input->data + row * stride;
+            for (int i = 0; i < width; ++i) {
+                const float v = (float) ((i * 7 + row * 3 + pass * 11) % 17 - 8) / 4.0f;
+                data[i] = pass ? v : row == 0 ? 0.0f : row == 3 ? ldexpf(v, -141) : v;
+            }
+            if (pass == 0 && row == 1) {
+                data[0] = -2.0f;
+                data[1] = 2.0f;
+            }
+            unsigned char * dest = expected + rows[pass][row] * row_bytes;
+            assert(qz_quantize_row(GGML_TYPE_Q4_0, (uint64_t) (uintptr_t) data,
+                (uint64_t) (uintptr_t) dest, width) == row_bytes);
+        }
+        assert(fg_standalone_graph_compute(graph) == GGML_STATUS_SUCCESS);
+        // The first dispatch leaves the host copy untouched. The sparse
+        // follow-up must retrieve preserved GPU rows before uploading the
+        // containing interval.
+        if (pass == 0) assert(memcmp(cache->data, expected, sizeof expected) != 0);
+    }
+    assert(fg_cuda_state_read(address, length) == 0);
+    assert(memcmp(cache->data, expected, sizeof expected) == 0);
+    puts("Resident Q4 writes: packed GPU bytes and sparse CPU updates match exactly");
+    free(storage);
+    ggml_free(ctx);
 }
 
 static void check_scalar_and_recurrent(void) {
@@ -399,7 +452,10 @@ int main(int argc, char ** argv) {
     check_split_q4_attention();
     check_quantized_matrix(GGML_TYPE_Q4_K, false);
     check_quantized_matrix(GGML_TYPE_Q6_K, true);
-    if (argc == 2) check_model_step(argv[1]);
+    if (argc == 2) {
+        if (strcmp(argv[1], "--resident-rows") == 0) check_resident_q4_rows();
+        else check_model_step(argv[1]);
+    }
     if (argc == 3 && strcmp(argv[1], "--chunked") == 0) check_chunked_generation(argv[2]);
     if (argc == 3 && strcmp(argv[1], "--resident") == 0) check_resident_state(argv[2]);
 }

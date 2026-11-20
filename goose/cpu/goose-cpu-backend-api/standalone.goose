@@ -52,7 +52,7 @@ export fn fg143_node_run(packet: const i64[:], mode: i64,
         return flash_attention(p, mask_shape, x, y, z, mask, dst, palette);
     }
     if mode == 0 && p.op == OP_SET_ROWS && p.d.kind == 2 {
-        return set_quantized_rows(p, packet[57] as! u64, packet[58] as! u64, y);
+        return set_quantized_rows(p, packet[57] as! u64, packet[58] as! u64, y, indices);
     }
     let addresses: i64[3] = [packet[57], packet[70], packet[58]];
     return entry(p, x, y, z, dst, scratch, indices, addresses, gxx, gxs, gs, g3x, g3s, g1, signs, palette);
@@ -99,8 +99,10 @@ export fn fg143_graph_run(graph: u64, workspace: u64) -> i64 {
 }
 
 extern "qz_quantize_row" fn quantize_row(kind: i64, source: u64, destination: u64, width: i64) -> i64;
+extern "fg_cuda_set_q4_rows" fn cuda_set_q4_rows(source: u64, source_bytes: i64, stride: i64,
+    destination: u64, destination_bytes: i64, width: i64, count: i64) -> i64;
 
-fn set_quantized_rows(p: const Node &, source: u64, destination: u64, ids: const u8[:]) -> bool {
+fn set_quantized_rows(p: const Node &, source: u64, destination: u64, ids: const u8[:], work: i64[:]) -> bool {
     let width = p.x.ne[0];
     if p.d.kind != 2 || p.x.kind != 0 || width <= 0 || width % 32 != 0 ||
        p.d.ne[0] != width || p.x.nb[0] != 4 || p.d.nb[0] != 18 ||
@@ -111,9 +113,13 @@ fn set_quantized_rows(p: const Node &, source: u64, destination: u64, ids: const
     }
     validate(p.y, ids.len);
     let row_bytes = (width / 32) * 18;
+    let count = rows(p.x);
+    if work.len / 2 < count { return false; }
+    if count == 0 { return true; }
+    var packed = p.x.ne[2] == 1 && p.x.ne[3] == 1 && p.x.nb[1] >= width * 4 && p.x.nb[1] % 4 == 0;
     var first = p.d.bytes;
     var last: i64 = 0;
-    for row in rows(p.x) {
+    for row in count {
         let r = row % p.x.ne[1];
         let head = (row / p.x.ne[1]) % p.x.ne[2];
         let batch = row / (p.x.ne[1] * p.x.ne[2]);
@@ -124,11 +130,26 @@ fn set_quantized_rows(p: const Node &, source: u64, destination: u64, ids: const
         if from < 0 || width * 4 > p.x.bytes - from || to < 0 || row_bytes > p.d.bytes - to {
             return false;
         }
-        if quantize_row(p.d.kind, source + (from as u64), destination + (to as u64), width) != row_bytes {
-            return false;
-        }
+        if row != 0 && to != last { packed = false; }
         first = low(first, to);
         last = high(last, to + row_bytes);
+        work[2 * row] = from;
+        work[2 * row + 1] = to;
     }
-    return last <= first || cuda_state_write(destination + (first as u64), last - first) == 0;
+    let target = destination + (first as u64);
+    let touched = last - first;
+    if packed {
+        let source_bytes = work[2 * (count - 1)] + width * 4;
+        let device = cuda_set_q4_rows(source, source_bytes, p.x.nb[1], target, touched, width, count);
+        if device != 0 { return device > 0; }
+    } else if cuda_state_read(target, touched) != 0 {
+        // Preserve the previous GPU bytes in the holes of a sparse update.
+        return false;
+    }
+    for row in count {
+        let from = source + (work[2 * row] as u64);
+        let to = destination + (work[2 * row + 1] as u64);
+        if quantize_row(p.d.kind, from, to, width) != row_bytes { return false; }
+    }
+    return cuda_state_write(target, touched) == 0;
 }

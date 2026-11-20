@@ -13,6 +13,7 @@ fn flash_cache_value(t: const Tensor &, data: const u8[:], base: i64, column: i6
 
 extern "fg_cuda_q4_attention" fn cuda_q4_attention(config: const i64[:], q: const u8[:], k: const u8[:],
     v: const u8[:], mask: const u8[:], out: u8[:], scale: f32) -> i64;
+extern "fg_cuda_kv_read" fn cuda_kv_read(k: const u8[:], v: const u8[:]) -> i64;
 
 fn cuda_q4_kv_layout(t: const Tensor &, available: i64) -> bool {
     if t.kind != 2 || t.ne[0] > 256 || t.ne[3] != 1 ||
@@ -78,6 +79,7 @@ fn flash_attention(p: const Node &, mask: const Tensor &, q: const u8[:], k: con
     validate(p.d, dst.len);
     let device = flash_cuda(p, mask, q, k, v, masks, dst);
     if device != 0 { return device > 0; }
+    if cuda_kv_read(k, v) != 0 { return false; }
     let heads = p.x.ne[2];
     let positions = p.x.ne[1];
     var head_power: i64 = 1;

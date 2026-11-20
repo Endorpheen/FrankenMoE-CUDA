@@ -257,3 +257,39 @@ __kernel void goose_gated_delta_net(__global uint64_t * packet) {
     const uint32_t effective = (uint32_t) packet[43];
     gdn_g((int64_t) packet, head, sequence, segment, lane % effective, lane / effective);
 }
+
+static float fg176r_ld_f32(uint64_t src, uint64_t at) {
+    return fg_device_global_load(src + at);
+}
+
+static void fg176r_st_f16(uint64_t dst, uint64_t at, float value) {
+    uint16_t bits;
+    __asm__("cvt.rn.f16.f32 %0, %1;" : "=h"(bits) : "f"(value));
+    *(__global uint16_t *) (dst + at) = bits;
+}
+
+static void fg176r_st_u8(uint64_t dst, uint64_t at, uint32_t value) {
+    *(__global uint8_t *) (dst + at) = (uint8_t) value;
+}
+
+static float fg176r_fabs(float value) { return as_float(as_uint(value) & 0x7fffffffu); }
+
+static int32_t fg176r_i8trunc(float value) {
+    if (!(value >= -2147483648.0f && value < 2147483648.0f)) return 0;
+    return (int8_t) (int32_t) value;
+}
+
+#pragma OPENCL FP_CONTRACT OFF
+#include "q4-set-rows-device.h"
+
+__kernel void goose_set_q4_rows(__global uint8_t * src, __global uint8_t * dst,
+    uint64_t stride, uint32_t blocks, uint64_t tasks) {
+    uint32_t group, lane;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(group));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
+    const uint64_t work = (uint64_t) group * 128 + lane;
+    if (work >= tasks) return;
+    const uint64_t row = work / blocks;
+    const uint64_t src_at = row * stride + (work % blocks) * 128;
+    fg176r_quant_q4_0_g((uint64_t) src, src_at, (uint64_t) dst, work * 18);
+}

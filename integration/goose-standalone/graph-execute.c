@@ -21,6 +21,7 @@ extern uint64_t fg_cuda_take_attentions(void);
 extern uint64_t fg_cuda_take_gdns(void);
 extern int fg_cuda_state_graph_done(void);
 extern void fg_cuda_take_resident_state(uint64_t * kv, uint64_t * gdn);
+extern uint64_t fg_cuda_take_q4_writes(void);
 
 static pthread_once_t cpu_init = PTHREAD_ONCE_INIT;
 static atomic_uint_fast64_t cpu_values;
@@ -263,6 +264,7 @@ enum ggml_status fg_standalone_graph_compute(struct ggml_cgraph * graph) {
     const uint64_t gdns = fg_cuda_take_gdns();
     uint64_t resident_kv, resident_gdn;
     fg_cuda_take_resident_state(&resident_kv, &resident_gdn);
+    const uint64_t writes = fg_cuda_take_q4_writes();
     if (getenv("GOOSE_GRAPH_LOG")) {
         const uint64_t values = (uint64_t) atomic_exchange_explicit(&cpu_values, 0, memory_order_relaxed);
         fprintf(stderr, "Goose CPU graph: %llu values\n", (unsigned long long) values);
@@ -271,6 +273,7 @@ enum ggml_status fg_standalone_graph_compute(struct ggml_cgraph * graph) {
         if (gdns) fprintf(stderr, "Goose CUDA GDN: %llu nodes\n", (unsigned long long) gdns);
         if (resident_kv) fprintf(stderr, "Goose CUDA resident KV: %llu nodes\n", (unsigned long long) resident_kv);
         if (resident_gdn) fprintf(stderr, "Goose CUDA resident GDN: %llu nodes\n", (unsigned long long) resident_gdn);
+        if (writes) fprintf(stderr, "Goose CUDA resident Q4 writes: %llu nodes\n", (unsigned long long) writes);
     }
     return failed == 0 && fg_cuda_state_graph_done() == 0 ? GGML_STATUS_SUCCESS : GGML_STATUS_FAILED;
 }

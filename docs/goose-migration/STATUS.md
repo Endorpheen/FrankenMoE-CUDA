@@ -210,6 +210,22 @@ chunked fixture and the operator checks also passed. `/props` exposes
 the allocated `cuda_model_state_bytes`. Actual Apex placement and
 performance remain unmeasured.
 
+EXP-2026-11-20-1506 uses the existing Goose Q4_0 quantizer to write
+contiguous SET_ROWS updates directly into the resident CUDA KV cache.
+The dispatcher validates all row addresses before choosing a backend.
+Sparse or repeated row indices retain ordered CPU updates. They retrieve
+the containing device interval before writing so untouched rows remain
+intact. CPU attention also reads the authoritative device interval when
+switching from CUDA. The current graph uploads the F32 source rows for a
+CUDA update.
+
+The RTX 4070 fixture matched CPU-packed bytes exactly for strided source
+rows, signed maximum ties, zero and subnormal inputs, and a sparse update
+with duplicate indices. The mixed CUDA/CPU graph executed six resident Q4
+write nodes and preserved the prior logit tolerance (maximum absolute error
+0.0000001193). The CPU chunked fixture also passed. Apex throughput and peak
+memory remain unmeasured.
+
 ## Historical requirements audit
 
 `docs/goose-migration/tasks.json`: **DONE 1**, **PARTIAL 144**, **TODO 7** of 152.

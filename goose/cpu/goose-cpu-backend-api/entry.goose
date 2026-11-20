@@ -29,6 +29,9 @@ fn entry(
         if p.op == OP_ARGSORT || p.op == OP_TOP_K {
             ni = mul_size(p.x.ne[0], p.nth);
         }
+        if p.op == OP_SET_ROWS && p.d.kind == 2 {
+            ni = mul_size(2, rows(p.x));
+        }
 
         if (p.op == OP_DUP || p.op == OP_CPY || p.op == OP_CONT || p.op == OP_GET_ROWS) && !scalar_type(p.x) && p.d.kind == 0 {
             nf = mul_size(p.x.ne[0], p.nth);

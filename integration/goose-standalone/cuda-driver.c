@@ -36,7 +36,7 @@ static struct {
     void * library;
     Context context;
     Module module;
-    Function kernel, attention_tiles, attention_merge, gdn;
+    Function kernel, attention_tiles, attention_merge, gdn, q4_rows;
     struct device_buffer input, output, weight, jobs;
     struct device_buffer attention_value, attention_scratch, attention_config;
     struct device_buffer gdn_beta;
@@ -71,6 +71,7 @@ static _Thread_local uint64_t cuda_matrices;
 static _Thread_local uint64_t cuda_attentions;
 static _Thread_local uint64_t cuda_gdns;
 static _Thread_local uint64_t cuda_resident_kv, cuda_resident_gdn;
+static _Thread_local uint64_t cuda_q4_writes;
 static _Thread_local struct {
     uint64_t source, destination;
     int64_t bytes;
@@ -124,6 +125,7 @@ static void init_cuda(void) {
         if (error == 0) error = cuda.function_get(&cuda.attention_tiles, cuda.module, "goose_q4_attention_tiles");
         if (error == 0) error = cuda.function_get(&cuda.attention_merge, cuda.module, "goose_q4_attention_merge");
         if (error == 0) error = cuda.function_get(&cuda.gdn, cuda.module, "goose_gated_delta_net");
+        if (error == 0) error = cuda.function_get(&cuda.q4_rows, cuda.module, "goose_set_q4_rows");
         Context current = NULL;
         int pop_error = cuda.pop(&current);
         if (error == 0) error = pop_error;
@@ -256,6 +258,47 @@ int64_t fg_cuda_state_read(uint64_t host, int64_t bytes) {
 int64_t fg_cuda_gdn_state_read(sl_f32 state) {
     if (state.len < 0 || state.len > INT64_MAX / (int64_t) sizeof(float)) return -1;
     return fg_cuda_state_read((uint64_t) (uintptr_t) state.data, state.len * (int64_t) sizeof(float));
+}
+
+int64_t fg_cuda_kv_read(sl_u8 k, sl_u8 v) {
+    const DevicePtr key = state_address((uint64_t) (uintptr_t) k.data, k.len, 0);
+    const DevicePtr value = state_address((uint64_t) (uintptr_t) v.data, v.len, 0);
+    if (!key && !value) return 0;
+    if (push_context() != 1) return -1;
+    int status = key ? cuda.download(k.data, key, (size_t) k.len) : 0;
+    if (status == 0 && value) status = cuda.download(v.data, value, (size_t) v.len);
+    return finish_context() == 0 && status == 0 ? 0 : -1;
+}
+
+int64_t fg_cuda_set_q4_rows(uint64_t source, int64_t source_bytes, int64_t stride,
+                            uint64_t target, int64_t target_bytes, int64_t width, int64_t rows) {
+    if (!source || source % sizeof(float) || width <= 0 || width > INT_MAX || width % 32 ||
+        stride < 4 * width || stride % sizeof(float) || source_bytes < 4 * width ||
+        rows <= 0 || rows > INT_MAX ||
+        (rows > 1 && stride > (source_bytes - 4 * width) / (rows - 1))) return -1;
+    uint32_t blocks = (uint32_t) (width / 32);
+    uint64_t tasks = (uint64_t) rows * blocks;
+    if (tasks > (uint64_t) INT_MAX * 128 || target_bytes != (int64_t) (18 * tasks)) return -1;
+    DevicePtr destination = state_address(target, target_bytes, 0);
+    if (!destination) return 0;
+    const int active = start_context();
+    if (active != 1) return active;
+
+    int error = reserve(&cuda.input, (size_t) source_bytes);
+    if (error == 0) error = cuda.upload(cuda.input.address, (const void *) (uintptr_t) source, (size_t) source_bytes);
+    uint64_t row_stride = (uint64_t) stride;
+    void * args[] = {&cuda.input.address, &destination, &row_stride, &blocks, &tasks};
+    if (error == 0) {
+        error = cuda.launch(cuda.q4_rows, (unsigned) ((tasks + 127) / 128), 1, 1, 128, 1, 1, 0, NULL, args, NULL);
+        if (error == 0) error = cuda.sync();
+    }
+    const int popped = finish_context();
+    if (error != 0 || popped != 0) {
+        fprintf(stderr, "Goose CUDA: Q4 cache update failed (%d)\n", error ? error : popped);
+        return -1;
+    }
+    ++cuda_q4_writes;
+    return 1;
 }
 
 uint8_t fg_cuda_match_published_state(uint64_t dst, uint64_t src, int64_t bytes) {
@@ -576,4 +619,10 @@ void fg_cuda_take_resident_state(uint64_t * kv, uint64_t * gdn) {
     *gdn = cuda_resident_gdn;
     cuda_resident_kv = 0;
     cuda_resident_gdn = 0;
+}
+
+uint64_t fg_cuda_take_q4_writes(void) {
+    const uint64_t writes = cuda_q4_writes;
+    cuda_q4_writes = 0;
+    return writes;
 }

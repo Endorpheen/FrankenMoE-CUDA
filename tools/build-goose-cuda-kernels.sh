@@ -17,7 +17,12 @@ sed -n '/^struct F2 {/,/^}/p; /^fn dequant_q4_0(/,/^}/p' \
 cat "$ROOT/goose/cuda/standalone-q4-attention.goose" >> "$OUT/q4-attention.goose"
 sed '/^fn main()/,$d; s/^fn gdn(/export fn gdn(/' \
     "$ROOT/goose/cuda/goose-cuda-gdn/scalar-device.goose" > "$OUT/gdn.goose"
-for module in q4k q6k matmul q4-attention gdn; do
+sed -n '/^extern "fg176r_ld_f32"/p; /^extern "fg176r_st_f16"/p; /^extern "fg176r_st_u8"/p;
+        /^extern "fg176r_fabs"/p; /^extern "fg176r_i8trunc"/p;
+        /^fn fg176r_quant_q4_0(/,/^}/p' \
+    "$ROOT/goose/cuda/goose-cuda-set-rows/device.goose" |
+    sed 's/^fn fg176r_quant_q4_0(/export fn fg176r_quant_q4_0(/' > "$OUT/q4-set-rows.goose"
+for module in q4k q6k matmul q4-attention gdn q4-set-rows; do
     "$GOOSE" --standalone -o "$OUT/$module.c" --header "$OUT/$module.h" "$OUT/$module.goose"
     python3 - "$OUT" "$module" <<'PY'
 from pathlib import Path
