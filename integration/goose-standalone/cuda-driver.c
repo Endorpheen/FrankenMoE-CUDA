@@ -33,6 +33,8 @@ typedef struct CUctx_st * Context;
 typedef struct CUmod_st * Module;
 typedef struct CUfunc_st * Function;
 typedef unsigned long long DevicePtr;
+enum { MIB_BYTES = 1024 * 1024, DEFAULT_ACTIVATION_BYTES = 64 * MIB_BYTES,
+    WIDE_ACTIVATION_BYTES = 384 * MIB_BYTES };
 
 struct device_buffer {
     DevicePtr address;
@@ -62,6 +64,8 @@ static struct {
     struct device_buffer attention_value, attention_scratch, attention_config;
     struct device_buffer gdn_beta;
     struct device_buffer activations;
+    size_t activation_capacity;
+    bool adapt_activation_capacity;
     struct device_buffer dense;
     sl_i64 dense_ranges;
     struct device_buffer state;
@@ -97,7 +101,7 @@ static struct {
 static pthread_once_t cuda_once = PTHREAD_ONCE_INIT;
 static pthread_mutex_t cuda_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t activation_lock = PTHREAD_MUTEX_INITIALIZER;
-enum { ACTIVATION_WORDS = 5, ACTIVATION_RECORDS = 256, ACTIVATION_BYTES = 64 * 1024 * 1024 };
+enum { ACTIVATION_WORDS = 5, ACTIVATION_RECORDS = 256 };
 enum { GDN_MMA_SHARED_BYTES = 93312 };
 static _Thread_local struct {
     bool active, unavailable, defer_waits, pending;
@@ -188,6 +192,18 @@ static void init_cuda(void) {
     int device;
     if (cuda.init(0) != 0 || cuda.device_get(&device, 0) != 0) return;
     cuda.status = -1;
+    const char * arena_setting = getenv("GOOSE_CUDA_ACTIVATION_MIB");
+    cuda.activation_capacity = DEFAULT_ACTIVATION_BYTES;
+    cuda.adapt_activation_capacity = !arena_setting;
+    if (arena_setting) {
+        char * end;
+        const intmax_t value = strtoimax(arena_setting, &end, 10);
+        if (end == arena_setting || *end || value < 64 || value > INT64_MAX / MIB_BYTES) {
+            fputs("Goose CUDA: GOOSE_CUDA_ACTIVATION_MIB requires a valid budget of at least 64 MiB\n", stderr);
+            return;
+        }
+        cuda.activation_capacity = (size_t) value * MIB_BYTES;
+    }
     cuda.mmq_window = fg_standalone_option_enabled("GOOSE_MMQ_WINDOW");
     cuda.mmq_shared = fg_standalone_option_enabled("GOOSE_MMQ_SHARED");
     cuda.moe_topk = fg_standalone_option_enabled("GOOSE_MOE_TOPK");
@@ -518,20 +534,50 @@ static int activation_reserve_output(size_t bytes) {
     return reserve(&cuda.output, bytes);
 }
 
+static int activation_widen(void) {
+    cuda.adapt_activation_capacity = false;
+    struct device_buffer larger = {0};
+    int error = reserve(&larger, WIDE_ACTIVATION_BYTES);
+    if (error == 2) return 0;
+    if (error != 0) return error;
+    error = activation_download_all();
+    if (error == 0) error = release_buffer(&cuda.activations);
+    if (error != 0) {
+        release_buffer(&larger);
+        return error;
+    }
+    activations.count = 0;
+    activations.used = 0;
+    cuda.activations = larger;
+    cuda.activation_capacity = WIDE_ACTIVATION_BYTES;
+    return 0;
+}
+
 // Called with the CUDA context bound. Reserve output before resolving input
 // addresses so a flush never invalidates a pointer passed to a launch.
 static int activation_output(uint64_t host, int64_t bytes, DevicePtr * device) {
     // All kernels and synchronous copies use the same legacy default stream.
     // Check its completion at graph exit even if a later operation fails.
     if (activations.active && activations.defer_waits) activations.pending = true;
-    if (activations.active && !activations.unavailable && host != 0 && host == activations.target &&
-        bytes <= activations.target_bytes && bytes > 0 && bytes <= ACTIVATION_BYTES) {
+    const bool eligible = activations.active && !activations.unavailable && host != 0 &&
+        host == activations.target && bytes > 0 && bytes <= activations.target_bytes;
+    if (eligible && cuda.adapt_activation_capacity &&
+        bytes > DEFAULT_ACTIVATION_BYTES && bytes <= WIDE_ACTIVATION_BYTES) {
+        const int error = activation_widen();
+        if (error != 0) return error;
+    }
+    if (eligible && (uint64_t) bytes <= cuda.activation_capacity) {
         if (!cuda.activations.address) {
-            const int error = reserve(&cuda.activations, ACTIVATION_BYTES);
+            const int error = reserve(&cuda.activations, cuda.activation_capacity);
+            if (error == 2 && cuda.activation_capacity > DEFAULT_ACTIVATION_BYTES) {
+                fprintf(stderr, "Goose CUDA: cannot allocate the requested %zu MiB activation arena\n",
+                    cuda.activation_capacity / MIB_BYTES);
+                return error;
+            }
             if (error == 2) activations.unavailable = true; // CUDA_ERROR_OUT_OF_MEMORY
             else if (error != 0) return error;
         }
-        if (cuda.activations.address) {
+        if (cuda.activations.address && (uint64_t) bytes <= cuda.activations.bytes) {
             const int64_t capacity = (int64_t) cuda.activations.bytes;
             int64_t pos;
             if (activations.reuse) {
@@ -569,7 +615,8 @@ static int activation_publish(uint64_t host, int64_t bytes, DevicePtr device, bo
     const bool large = device == cuda.output.address;
     // The fallback allocation is already sized for this result. Let readers
     // use it directly until the next writer needs the allocation.
-    const bool keep_large = large && bytes > ACTIVATION_BYTES && host == activations.target && bytes == activations.target_bytes;
+    const bool keep_large = large && bytes > DEFAULT_ACTIVATION_BYTES &&
+        host == activations.target && bytes == activations.target_bytes;
     if (!activations.active || (large && !keep_large)) {
         return cuda.download((void *) (uintptr_t) host, device, (size_t) bytes);
     }

@@ -117,7 +117,7 @@ dependencies. Resume decode-specific work after prefill recovery.
 | 24 | Tensor copies, concatenation and gathers. CUDA transform dispatch → `concat_cont`, `concat_non_cont`, `cpy_scalar`, `k_get_rows_float` and vectorized gather. | All appear in reference trace. Goose has aligned lifetimes, GPU blits and gathers and host fallbacks. | PARTIAL. Match selected contiguous and strided paths while avoiding dead-tensor transfers. Check views, source lifetimes and numerical read-back. |
 | 25 | Backend graph splitting and lifetime planning. GGML scheduler in `vendor/flint/ggml/src/ggml-backend.cpp` → `ggml-alloc.c` child/view counts, aligned best-fit, split/coalesced blocks and admissible in-place reuse. | Reference log records five buffers and eight same-size reallocations. Goose completes actual 4096/4096 using a ~1.010 GB lifetime arena and whole-block reuse. | PARTIAL. Retain the tested alias planner. Extend device lifetime ownership and compare backend memory peaks and retry behavior on identical profiles. |
 | 26 | Expert tiers and pinned mapped weights. `vendor/flint/src/llama-model.cpp` → `llama-mmap-expert-pin.h` and CUDA buffer registration. | [Goose SLRU and mmap registration](#expert-mmap-registration-and-slru) execute in real Apex. The bounded mode registers 28 ranges, transfers 6,459,162,624 bytes from pinned sources and improves the no-swap 4096/129 median. | PARTIAL. Validate full context, quality and performance against EXP-1476. Full registration remains rejected on this host. |
-| 27 | Selective transfer and device placement. Backend split execution and CUDA tensor set/get → asynchronous linear and 2-D copies. | Reference transfers selected ranges and uses D2D. Goose retains oversized activations, retires planned results and keeps unrelated live buffers during normal arena eviction. | PARTIAL. Extend reuse across adjacent oversized operations. Full-request transfer and memory parity remain open. |
+| 27 | Selective transfer and device placement. Backend split execution and CUDA tensor set/get → asynchronous linear and 2-D copies. | The [adaptive arena](#adaptive-cuda-activation-arena) retains multiple large operations at once. In the full diagnostic Goose prefill H2D falls to 132.887 GB and D2H to 37.657 GB. | PARTIAL. Remove the remaining large vector publications and asynchronous-copy overhead. Full memory and speed parity remain open. |
 | 28 | CUDA VMM pool. CUDA buffer allocator → `cuMemAddressReserve`, `cuMemCreate`, `cuMemMap`, `cuMemSetAccess`, release. | Reference executes 105 create/map operations and reserves a virtual address range. Goose grows Driver API buffers with `cuMemAlloc_v2` and `cuMemFree_v2`. | MISSING. Restore equivalent reusable device allocation and supported fallback. Check allocation limits, device address stability and VRAM peak on RTX 4070. |
 | 29 | CUDA Graph capture and replay. `ggml-cuda.cu` graph evaluator → begin/end capture, instantiate, exec update and launch. | Whole-graph trace records over 20,000 launches across the session. Server reports 510 reuses. Goose rebuilds its graph and directly launches CUDA kernels. | MISSING. Establish stable graph keys, addresses and update boundaries before recording and replay. Check changing KV prefixes and buffer ownership before measuring decode overhead. |
 | 30 | Streams and synchronization. CUDA scheduler and `ggml-cuda.cu` establish streams, events and CUDA Graph scopes. | Reference uses stream sync and async copies. Planned Goose graphs defer intermediate publication waits to the graph boundary, with blocking host reads. | PARTIAL. Extend independent stream and event dependencies. Verify full-request performance, error propagation and state visibility. |
@@ -1833,6 +1833,75 @@ should not be added.
   `05a704b7f35c3576794f692252c3fbecfdd5a50a2336ece25464230622971962`.
 - Nsight SHA-256
   `42c42d12ddf3eccce5af92b006d9b2e0dd445021c8f620d0e31804821d889ae9`.
+
+## Adaptive CUDA activation arena
+
+EXP-2026-11-20-1558 tests 384 MiB in the existing device
+activation arena. The Goose lifetime, alias and eviction
+planner continues to select live ranges. The default runtime
+starts with a 64 MiB arena and tries to widen only when a
+planned large output needs it. It publishes the existing
+live records before replacing the device allocation. Small
+graphs retain the original behavior. An explicit
+`GOOSE_CUDA_ACTIVATION_MIB=64` selects the previous budget.
+
+The original eviction fixture passes. A second CUDA fixture
+keeps two 128 MiB results and one 64 MiB result live in VRAM
+and reads their views correctly while the corresponding host
+buffers stay unmaterialized. Compute Sanitizer reports no
+errors.
+
+| Profiled Apex 4096/129 A–B–B–A | 64 MiB | 384 MiB |
+|---|---:|---:|
+| Prefill samples, tokens/s | 286.748, 286.625 | 627.785, 635.763 |
+| Prefill median, tokens/s | 286.686 | 631.774 |
+| Decode median, steps/s | 20.672 | 20.601 |
+| Highest RSS high-water, KiB | 23,886,648 | 23,589,992 |
+| Sampled peak process VRAM, MiB | 8,582 | 8,500 |
+| Process swap and system swap-out growth | 0 | 0 |
+
+All four replies match in text, IDs and probability rows.
+In the first pair, prefill H2D is 61,041,128,656 vs
+18,990,675,152 bytes and D2H is 37,689,370,624 vs
+4,703,856,640 bytes. The saved Nsight records identify
+the exact active kernels and transfers.
+
+The adaptive-default build completes the identical full
+Apex 32K/512 request at 4096/4096:
+
+| Full profiled diagnostic | Previous 64 MiB build | Adaptive build |
+|---|---:|---:|
+| Prefill time, s | 112.641 | 50.648 |
+| Prefill, tokens/s | 290.905 | 646.980 |
+| Decode time, s | 30.922 | 31.240 |
+| Decode, steps/s (511 steps) | 16.526 | 16.357 |
+| Prefill H2D, bytes | 469,156,832,336 | 132,887,422,032 |
+| Prefill D2H, bytes | 301,508,012,032 | 37,657,454,592 |
+| Process RSS high-water, KiB | 23,945,336 | 23,646,068 |
+| Sampled peak process VRAM, MiB | 8,622 | 8,540 |
+| Process swap and system swap-out growth | 0 | 0 |
+
+Both full responses match exactly, including their quality
+limitation noted above. All 5,301,139 model pages stay resident.
+The two full traces are development diagnostics. The same-build
+A–B–B–A establishes the short gain. The remaining full
+prefill D2H is dominated by 320 copies of 64 MiB and 960
+copies of 16 MiB after vector operations. The next prefill
+work should match their producer/consumer chains and avoid
+those host publications when they are unnecessary.
+
+- Same-build A–B–B–A under
+  `/home/end0/AI/LlamaServer/franken-goose-wide-arena.yr2YF0`.
+  In run order `cuda-matrix-dense-both.5eo3mlp2`,
+  `cuda-matrix-dense-both.4t3ah_j_`,
+  `cuda-matrix-dense-both.i0uwgyvx`, and
+  `cuda-matrix-dense-both.h0gtjg65`.
+- Adaptive executable and full trace under
+  `/home/end0/AI/LlamaServer/franken-goose-wide-arena-default.ollura`,
+  `cuda-full-dense-both.poal0fdd`.
+  Executable SHA-256 `209f7731abde844d2479529b5eb3c893de0c0978e55c6bcc56cec3ae9393a670`.
+  Response SHA-256 `6dfee12a7e73fb75361a6c749fa3c37824fc62e6805f7ab22a3926415ae3c591`.
+  Nsight SHA-256 `987099d3c1511211830de20858093f6c4042e61f8a80cf647be84de8ff32d6e2`.
 
 ## Kernel coverage
 
