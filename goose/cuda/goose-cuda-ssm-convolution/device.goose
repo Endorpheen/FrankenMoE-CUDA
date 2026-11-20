@@ -90,6 +90,11 @@ fn ssm_conv_serial(
     }
 }
 
+fn conv_shared_load(address: u64, index: u64) -> f32 { return load(address, index); }
+fn conv_shared_store(address: u64, index: u64, value: f32) { store(address, index, value); }
+fn ssm_long_acc(x: f32, weight: f32, sum: f32) -> f32 { return sum + x * weight; }
+fn ssm_long_silu(x: f32) -> f32 { return silu(x); }
+
 fn ssm_conv_long(
     src0: u64,
     src1: u64,
@@ -135,13 +140,13 @@ fn ssm_conv_long(
         if row < 128 {
             if bounded_tail {
                 if col < cut {
-                    store(
+                    conv_shared_store(
                         smem,
                         (row as u64) * (ncols as u64) + (col as u64),
                         load(xb, (row as u64) * sx + (col as u64)));
                 }
             } else {
-                store(smem, (row as u64) * (ncols as u64) + (col as u64), load(xb, (row as u64) * sx + (col as u64)));
+                conv_shared_store(smem, (row as u64) * (ncols as u64) + (col as u64), load(xb, (row as u64) * sx + (col as u64)));
             }
         }
         col += 128;
@@ -169,12 +174,13 @@ fn ssm_conv_long(
         j = 0;
 
         while j < d_conv {
-            sumf += load(smem, (tid as u64) * (ncols as u64) + ( (i + j) as u64)) * w[j];
+            let v = conv_shared_load(smem, (tid as u64) * (ncols as u64) + ((i + j) as u64));
+            sumf = ssm_long_acc(v, w[j], sumf);
             j += 1;
         }
         sumf += b;
         let out = if apply_silu {
-            silu(sumf)
+            ssm_long_silu(sumf)
         } else {
             sumf
         }

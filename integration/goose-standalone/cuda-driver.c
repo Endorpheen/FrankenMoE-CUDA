@@ -48,7 +48,7 @@ static struct {
     Function kernel, attention_tiles, attention_merge, gdn, q4_rows, vector, rms_reference;
     Function mmq_pack, mmq_pack_shared, mmq_matrix, mmq_q6_matrix, dense_mma, gdn_mma, flash_mma, flash_stage;
     Function mmq_stream, mmq_stream_fixup;
-    Function rope_phases, rope_apply, ssm_conv;
+    Function rope_phases, rope_apply, ssm_conv, ssm_conv_long;
     Function route_reduce, route_sort, route_topk, route_gather, route_norm, blit, fwht, moe_weighted;
     struct device_buffer input, output, weight, jobs;
     struct device_buffer mmq_packed, mmq_tiles, mmq_partials;
@@ -184,6 +184,8 @@ static void init_cuda(void) {
     const bool rms_reference = rms_setting && strcmp(rms_setting, "1") == 0;
     const char * q6_setting = getenv("GOOSE_MMQ_Q6_REFERENCE");
     const bool q6_reference = mmq && q6_setting && strcmp(q6_setting, "1") == 0;
+    const char * ssm_setting = getenv("GOOSE_SSM_REFERENCE");
+    const bool ssm_reference = ssm_setting && strcmp(ssm_setting, "1") == 0;
     const bool mma_image = mmq || dense_mma || gdn_mma || flash_mma;
     if (mma_image) {
         enum { compute_capability_major = 75, compute_capability_minor = 76 };
@@ -230,6 +232,9 @@ static void init_cuda(void) {
         if (error == 0) error = cuda.function_get(&cuda.rope_phases, cuda.module, "goose_rope_phases");
         if (error == 0) error = cuda.function_get(&cuda.rope_apply, cuda.module, "goose_rope_apply");
         if (error == 0) error = cuda.function_get(&cuda.ssm_conv, cuda.module, "goose_ssm_conv");
+        if (error == 0 && ssm_reference) {
+            error = cuda.function_get(&cuda.ssm_conv_long, cuda.module, "goose_ssm_conv_long");
+        }
         if (error == 0) error = cuda.function_get(&cuda.route_reduce, cuda.module, "goose_route_reduce");
         if (error == 0) error = cuda.function_get(&cuda.route_sort, cuda.module, "goose_route_sort");
         if (error == 0) error = cuda.function_get(&cuda.route_topk, cuda.module, "goose_route_topk");
@@ -1421,7 +1426,13 @@ int64_t fg_cuda_position(sl_i64 config, sl_u8 x, sl_u8 y, sl_u8 z, sl_u8 out) {
             if (error == 0) error = cuda.launch(cuda.rope_apply, gx, 1, 1, 128, 1, 1, 0, NULL, apply_args, NULL);
         } else {
             void * args[] = {&staged[0], &staged[1], &output, &staged[3]};
-            error = cuda.launch(cuda.ssm_conv, gx, gy, 1, 128, 1, 1, 0, NULL, args, NULL);
+            enum { taps = 4, tile = 32, channels = 128, grid_z_limit = 65535 };
+            const int64_t tokens = config.data[7];
+            const bool tiled = cuda.ssm_conv_long && config.data[6] == taps && config.data[5] % channels == 0 &&
+                tokens > tile && tokens <= (int64_t) tile * grid_z_limit;
+            const unsigned gz = tiled ? 1 + (unsigned) (tokens - 1) / tile : 1;
+            Function conv = tiled ? cuda.ssm_conv_long : cuda.ssm_conv;
+            error = cuda.launch(conv, gx, gy, gz, channels, 1, 1, 0, NULL, args, NULL);
         }
         if (error == 0) error = activation_publish(host, out.len, output, false);
         if (error != 0) (void) cuda.sync();

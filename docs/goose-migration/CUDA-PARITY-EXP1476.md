@@ -107,7 +107,7 @@ dependencies. Resume decode-specific work after prefill recovery.
 | 15 | Flash partition reconciliation. `fattn-mma-f16.cuh` → stream-K general/uniform fix-up, plus vector combine-results. | All three reference families are present. Goose merge implements its current scalar partition geometry. | MISSING. Port compatible reconciliation with the MMA and vector schedules. Compare numerical reductions across tail partitions and multihead layouts. |
 | 16 | GDN prefill Tensor Cores. `ggml_cuda_op_gated_delta_net_impl` → `gdn_single` in `gated-delta-net-mma.cu`. | Reference executes `gdn_single<16,128,1>`. Independent Goose runs its `C=16, V=128` body with `GOOSE_GDN_MMA=1`. All 30 GDN layers execute it in a real Apex block. | PARTIAL. CPU and actual layer-input differential checks pass at the documented error levels. The short model output changes and still differs from EXP-1476. Validate full and chunked recurrent state and generation before default promotion. |
 | 17 | GDN decode specialization and fused state cache. `ggml_cuda_op_gated_delta_net_fused_cache` → native scalar `gated_delta_net_cuda` or shape-selected MMA. | Reference executes scalar decode GDN and known fused cache code. Goose has CUDA-resident GDN state and a publish/consume path. | PARTIAL. Match the selected decode kernel's arithmetic and state snapshots against the reference across prefill → decode. Check for stale aliases and measure actual state moves. |
-| 18 | SSM convolution and activation fusion. `ssm-conv.cu` dispatch plus `ggml_cuda_try_fuse` → `ssm_conv_long_token_f32` or `ssm_conv_f32`. | Both reference families execute. Goose applies SiLU inside its existing rolling convolution at all 30 Apex GDN layers. | PARTIAL. Restore the reference long-token schedule. Keep the fused/separate numerical fixtures and check persistent history at full context. |
+| 18 | SSM convolution and activation fusion. `ssm-conv.cu` dispatch plus `ggml_cuda_try_fuse` → `ssm_conv_long_token_f32` or `ssm_conv_f32`. | Both reference families execute. Goose fuses SiLU and now executes its [long-token schedule](#reference-long-ssm-convolution) on all 30 recurrent layers of the short prefill with the diagnostic selector enabled. | PARTIAL. Verify persistent history across multiple batches and the final decode profile. |
 | 19 | Fused RMS/L2 normalization. `ggml_cuda_try_fuse` → RMS multiply/add/scale variants in `norm.cu` and supported RoPE/cache combinations. | Goose connects its existing weighted RMS kernel at Qwen35 attention and GDN sites. The short Apex numerical snapshot matches the unfused graph byte-for-byte. | PARTIAL. Validate at full context and restore remaining compatible RMS/L2 and RoPE combinations. |
 | 20 | Gated and unary activation fusion. `unary.cu` and `ggml_cuda_try_fuse` launch `unary_gated_op_kernel` and `unary_op_kernel`. | Both execute. Goose implements fused SwiGLU and several individual activations and keeps a CUDA activation arena. | PARTIAL. Verify the executed reference combinations, then match remaining graph fusion choices. Compare activations and adjacent gates before speed checks. |
 | 21 | Broadcast arithmetic and reductions. CUDA operation dispatch → `k_bin_bcast`, `scale_f32`, `reduce_1Block_kernel`. | The reference runs optimized family variants. Goose implements broadcast vector and row-sum kernels for supported layouts. | PARTIAL. Restore shape-aware broadcasts/reductions where effect is measured. Verify offsets, F32/F64 reduction order and noncontiguous inputs. |
@@ -991,7 +991,7 @@ stay in the main map.
 | 9, MoE grouping | `goose-cuda-mm-ids/{device,host}.goose` | Standalone groups matrix planes on the host and uses shared Q8 rows in MMQ. The device grouping/scatter source needs its own dispatch and route-layout verification. |
 | 13, Flash decode | `goose-cuda-flash-attention/vector-device.goose` | The current Flash MMA selector covers prefill. Decode ran 5,110 scalar Q4 attention tiles totaling 7.688 s. Wire the vector path to the live Q4 KV layout and output merge. |
 | 15, Flash Stream-K | `goose-cuda-flash-attention/{mma-entry-device,mask-fixups-device}.goose` | The prefill path assigns a complete tile per CTA. The reference uses 80 general and 10 uniform Stream-K fixup launches. The current launch and workspace layout still need split ranges and fixup. |
-| 18, long SSM convolution | `goose-cuda-ssm-convolution/device.goose::ssm_conv_long` | The standalone build extracts `ssm_conv_serial`. Prefill uses the serial convolution with fused SiLU. Bind the long-token layout and match history, output and activation. |
+| 18, long SSM convolution | `goose-cuda-ssm-convolution/device.goose::ssm_conv_long` | The [reference SSM mode](#reference-long-ssm-convolution) now selects the existing tiled body for eligible four-tap graphs and matches the first Apex convolution and SiLU. The short trace records 30 long-kernel launches. |
 | 19, FP32 RMS | `goose-cuda-normalization/device.goose::rms_row` | Connected through the opt-in selector above. Verified bitwise on the first Apex norm. |
 
 ## Reference Q6_K at the QKV boundary
@@ -1066,6 +1066,58 @@ Complete the tensor diagnosis before the full audit of existing
 Goose CUDA kernels. For each applicable Apex mechanism, record
 its build and graph binding, a CUDA trace witness and the numerical
 gate in this map. The audit feeds the full 32K/512 acceptance run.
+
+## Reference long SSM convolution
+
+EXP-2026-11-20-1547 reuses the existing Goose `ssm_conv_long`
+body. With `GOOSE_SSM_REFERENCE=1`, the standalone graph selects it
+for four taps, channel groups of 128 and more than 32 tokens.
+The kernel uses 32-token shared-memory tiles and bounds the final
+tile to the input extent. The compiled EXP-1476 SM89 kernel shows
+four `FFMA.FTZ` accumulations, `MUFU.EX2` and an approximate
+reciprocal for SiLU. These operations are explicit device
+primitives in the Goose path.
+
+Using the captured first-layer Apex QKV and actual GGUF weights,
+both the standalone convolution and the fused SiLU matched
+the reference for 33, 65 and 124 tokens (270,336, 532,480 and
+1,015,808 FP32 values respectively in each mode). Compute
+Sanitizer reported zero errors. The live 124-ID Apex graph
+also matched all 1,015,808 values of `conv_output_silu-0`.
+The next observed mismatch remains downstream of the convolution.
+The captured `linear_attn_out-0` has max absolute error 2.2947788e-5
+and relative L2 error 4.2930902e-5. Five of 992 expert ID slots
+still differ. Capture Q/K normalization, gate, beta and the
+recurrent output to isolate the first preceding mismatch.
+
+| Sequential Apex 4096/1 diagnostic | Serial SSM | Long SSM |
+|---|---:|---:|
+| CUDA convolution launches | 30 | 30 |
+| CUDA convolution time, ms | 110.705 | 24.902 |
+| Prefill time, s | 14.400 | 14.077 |
+| Prefill, tokens/s | 284.435 | 290.961 |
+| RSS high-water, KiB | 23,884,628 | 23,885,164 |
+| Sampled peak process VRAM, MiB | 8,582 | 8,582 |
+| Sampled peak whole-card VRAM, MiB | 11,385 | 11,376 |
+| Process swap, KiB | 0 | 0 |
+| System swap-out increase, pages | 126 | 698 |
+| First token | 37972 | 280 |
+
+The profiled pair used physical 4096/4096, no reused prompt
+tokens, reference RMS and Q6_K, and MMQ/GDN/Flash/Dense MMA.
+The long path used 17,920 shared bytes and 25 registers per
+thread. The different first token keeps this mode opt-in while
+the response gate is open. This pair provides no decode result.
+
+- Build and runs under
+  `/home/end0/AI/LlamaServer/franken-goose-ssm-reference.1wy4IG`.
+  Executable SHA-256 `3922f3230010398fd770beb2189efcd84f2ae576e9864c5c97873147fc1e9284`.
+  Run directories `cuda-matrix-dense-both.lika0hlf` and
+  `cuda-matrix-dense-both.p1k4kz82`.
+- Goose layer capture under
+  `/home/end0/AI/LlamaServer/franken-apex-goose-ssm-reference-layers.0v8prrd0/tensors`.
+  Reference fused SSM tensor SHA-256
+  `3a4687304ca86a30ca9f696a18e2b44024f9ad754c0737cb5ccd3db431e8ed7a`.
 
 ## Kernel coverage
 

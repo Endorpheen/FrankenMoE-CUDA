@@ -39,10 +39,17 @@ cp "$ROOT/goose/cuda/standalone-rope.goose" "$OUT/rope.goose"
 sed -n '/^fn yarn_pair(/,/^}/p; /^fn rope_sector_axis(/,/^}/p; /^fn rope_reset_axis(/,/^}/p' \
     "$ROOT/goose/cpu/goose-cpu-backend-api/rope.goose" >> "$OUT/rope.goose"
 sed -n '/^extern "fg170s_load"/p; /^extern "fg170s_store"/p; /^extern "fg170s_expf"/p;
-        /^extern "fg170s_lc"/p; /^extern "fg170s_sync"/p;
-        /^fn silu(/,/^}/p; /^fn ssm_conv_serial(/,/^}/p' \
+        /^extern "fg170s_lc"/p; /^extern "fg170s_sync"/p; /^extern "fg170s_barrier"/p;
+        /^fn silu(/,/^}/p; /^fn ssm_conv_serial(/,/^}/p; /^fn ssm_conv_long(/,/^}/p' \
     "$ROOT/goose/cuda/goose-cuda-ssm-convolution/device.goose" |
-    sed 's/^fn ssm_conv_serial(/export fn ssm_conv_serial(/; s/\bsilu\b/ssm_silu/g' > "$OUT/ssm-conv.goose"
+    sed 's/^fn ssm_conv_/export fn ssm_conv_/; s/\bsilu\b/ssm_silu/g' > "$OUT/ssm-conv.goose"
+cat >> "$OUT/ssm-conv.goose" <<'GOOSE_SOURCE'
+extern "fg170s_shared_load" fn conv_shared_load(address: u64, index: u64) -> f32;
+extern "fg170s_shared_store" fn conv_shared_store(address: u64, index: u64, value: f32);
+extern "fg170s_fma" fn ssm_long_acc(x: f32, weight: f32, sum: f32) -> f32;
+extern "fg_device_reciprocal" fn ssm_long_reciprocal(value: f32) -> f32;
+fn ssm_long_silu(x: f32) -> f32 { return x * ssm_long_reciprocal(1.0 + expf(-x)); }
+GOOSE_SOURCE
 cp "$ROOT/goose/cuda/standalone-routing.goose" "$OUT/routing.goose"
 sed -n '/^fn warp_max(/,/^}/p' "$ROOT/goose/chat/goose-cuda-softmax/device.goose" >> "$OUT/routing.goose"
 sed -n '/^fn cv_warp_sum(/,/^}/p' "$ROOT/goose/cuda/standalone-vector.goose" >> "$OUT/routing.goose"
@@ -55,7 +62,7 @@ sed '/^fn main()/,$d; s/^fn fg183f_row(/export fn fg183f_row(/' \
 sed '/^fn main()/,$d; s/^fn fg179w_reduce(/export fn fg179w_reduce(/' \
     "$ROOT/goose/cuda/goose-cuda-moe-weighted/device.goose" > "$OUT/moe-weighted.goose"
 sed '/^fn main()/,$d; s/^fn fg180q_mmq(/export fn fg180q_mmq(/;
-    s/^fn mmq_reciprocal(.*$/extern "fg180q_rcp" fn mmq_reciprocal(value: f32) -> f32;/' \
+    s/^fn mmq_reciprocal(.*$/extern "fg_device_reciprocal" fn mmq_reciprocal(value: f32) -> f32;/' \
     "$ROOT/goose/cuda/goose-cuda-mmq-q8-1/device.goose" > "$OUT/mmq-quant.goose"
 cp "$ROOT/goose/cuda/standalone-mmq.goose" "$OUT/mmq.goose"
 cp "$ROOT/goose/cuda/standalone-dense-mma.goose" "$OUT/dense-mma.goose"

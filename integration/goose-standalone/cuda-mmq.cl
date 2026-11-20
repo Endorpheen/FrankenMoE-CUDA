@@ -74,11 +74,6 @@ static float fg180q_round(float value) {
     return (float) (integral + (rest >= 0.5f) - (rest <= -0.5f));
 }
 static float fg180q_fabs(float value) { return as_float(as_uint(value) & 0x7fffffffu); }
-static float fg180q_rcp(float value) {
-    float reciprocal;
-    __asm__("rcp.approx.ftz.f32 %0, %1;" : "=f"(reciprocal) : "f"(value));
-    return reciprocal;
-}
 static void fg180q_pdl_sync(void) {}
 static void fg180q_fail(int64_t code) { fg248d_fail(code); }
 

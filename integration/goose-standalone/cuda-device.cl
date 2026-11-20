@@ -194,6 +194,12 @@ static float fg_attn_exp(float value) {
     return result;
 }
 
+static float fg_device_reciprocal(float value) {
+    float reciprocal;
+    __asm__("rcp.approx.ftz.f32 %0, %1;" : "=f"(reciprocal) : "f"(value));
+    return reciprocal;
+}
+
 static float fg_attn_neg_inf(void) {
     return as_float(0xff800000u);
 }
@@ -433,6 +439,16 @@ static void fg170s_store(uint64_t address, uint64_t i, float value) { fg_device_
 static float fg170s_expf(float value) { return fg_attn_exp(value); }
 static void fg170s_lc(void) {}
 static void fg170s_sync(void) {}
+static void fg170s_barrier(void) { fg_device_barrier(); }
+static float fg170s_shared_load(uint64_t address, uint64_t i) { return ((__local float *) address)[i]; }
+static void fg170s_shared_store(uint64_t address, uint64_t i, float value) {
+    ((__local float *) address)[i] = value;
+}
+static float fg170s_fma(float x, float w, float sum) {
+    float result;
+    __asm__("fma.rn.ftz.f32 %0, %1, %2, %3;" : "=f"(result) : "f"(x), "f"(w), "f"(sum));
+    return result;
+}
 
 #include "ssm-conv-device.h"
 
@@ -447,6 +463,21 @@ __kernel void goose_ssm_conv(__global uint8_t * x, __global uint8_t * weights,
         (int32_t) cfg[8], (int32_t) cfg[9], (int32_t) cfg[10], (int32_t) cfg[11],
         (int32_t) cfg[12], (int32_t) cfg[13], (int32_t) cfg[14],
         (int32_t) cfg[7], (int32_t) cfg[6], cfg[15] != 0, 0, lane, sequence, group);
+}
+
+__kernel void goose_ssm_conv_long(__global uint8_t * x, __global uint8_t * weights,
+    __global uint8_t * out, __global int64_t * cfg) {
+    enum { taps = 4, tile = 32, channels = 128 };
+    __local float shared[channels * (tile + taps - 1)];
+    uint32_t sequence, group, lane, tokens;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(sequence));
+    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(group));
+    __asm__("mov.u32 %0, %%ctaid.z;" : "=r"(tokens));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
+    ssm_conv_long_g((uint64_t) x, (uint64_t) weights, 0, (uint64_t) out, (uint64_t) shared,
+        (int32_t) cfg[8], (int32_t) cfg[9], (int32_t) cfg[10], (int32_t) cfg[11],
+        (int32_t) cfg[12], (int32_t) cfg[13], (int32_t) cfg[14],
+        (int32_t) cfg[7], taps, cfg[15] != 0, 0, 1, lane, sequence, group, tokens);
 }
 
 static float fg283d_ld_f32(uint64_t src, uint64_t offset) {
