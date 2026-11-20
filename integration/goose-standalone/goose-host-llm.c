@@ -376,7 +376,7 @@ void hose_host_load_context(const char * path, int64_t capacity) {
         die("model RAM residency");
     }
     const int64_t state_bytes = qr_cuda_state((sl_i64) { H.owner, 13 },
-        (sl_i64) { H.records, H.layer_count * 32 });
+        (sl_i64) { H.records, H.layer_count * 32 }, (int64_t) (intptr_t) H.head);
     if (state_bytes < 0) die("model CUDA state");
     const int64_t device_bytes = qr_cuda_dense((sl_i64) { H.owner, 13 },
         (sl_i64) { H.records, H.layer_count * 32 }, (int64_t) (intptr_t) H.head);

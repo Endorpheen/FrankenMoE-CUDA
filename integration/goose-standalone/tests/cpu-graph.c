@@ -12,6 +12,7 @@
 
 extern void fg_goose_host_ensure_init(void);
 extern int64_t fg_cuda_model_state_bytes(void);
+extern int64_t fg_cuda_dense_bytes(void);
 extern int64_t fg_cuda_load_model_state(sl_i64 ranges, int64_t bytes);
 extern int64_t fg_cuda_state_read(uint64_t host, int64_t bytes);
 
@@ -75,6 +76,7 @@ static void check_resident_state(const char * path) {
     fg_goose_host_ensure_init();
     hose_host_load_context(path, 256);
     assert(fg_cuda_model_state_bytes() > 0);
+    assert(fg_cuda_dense_bytes() > 0);
 
     enum { steps = 4, vocab = 4 };
     const int32_t prompt[] = {2, 1, 0, 2, 1};
@@ -384,12 +386,19 @@ static void check_split_q4_attention(void) {
     ggml_free(ctx);
 }
 
-static void check_quantized_matrix(enum ggml_type kind, bool indexed) {
+static void check_routed_matrix(enum ggml_type kind, bool indexed) {
     struct ggml_context * ctx = ggml_init((struct ggml_init_params){ 1024 * 1024, NULL, true });
     assert(ctx);
+    const bool f32 = kind == GGML_TYPE_F32;
+    const int width = f32 ? (indexed ? 17 : 99) : 256;
     const int64_t planes = indexed ? 3 : 2;
-    struct ggml_tensor * a = ggml_new_tensor_3d(ctx, kind, 256, 2, planes);
-    struct ggml_tensor * b = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, 256, 2, 4, indexed ? 1 : 2);
+    const int64_t batches = indexed ? 1 : 2;
+    struct ggml_tensor * a_data = ggml_new_tensor_3d(ctx, kind, width + (f32 ? 3 : 0), 2, planes);
+    struct ggml_tensor * b_data = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, width + (f32 ? 5 : 0), 2, 4, batches);
+    struct ggml_tensor * a = f32 ? ggml_view_4d(ctx, a_data, width, 2, planes, 1,
+        a_data->nb[1], a_data->nb[2], a_data->nb[3], 0) : a_data;
+    struct ggml_tensor * b = f32 ? ggml_view_4d(ctx, b_data, width, 2, 4, batches,
+        b_data->nb[1], b_data->nb[2], b_data->nb[3], 0) : b_data;
     struct ggml_tensor * ids = indexed ? ggml_new_tensor_2d(ctx, GGML_TYPE_I32, 4, 4) : NULL;
     struct ggml_tensor * product = indexed ? ggml_mul_mat_id(ctx, a, b, ids) : ggml_mul_mat(ctx, a, b);
     struct ggml_cgraph * graph = ggml_new_graph_custom(ctx, 64, false);
@@ -397,9 +406,10 @@ static void check_quantized_matrix(enum ggml_type kind, bool indexed) {
     void * storage = fg_standalone_graph_alloc(graph);
     assert(storage);
     const struct ggml_type_traits * traits = ggml_get_type_traits(kind);
-    float original[256], decoded[256];
-    for (int i = 0; i < ggml_nelements(b); ++i) {
-        ((float *) b->data)[i] = (float) ((i + i / 256) % 7 - 3) * 0.125f;
+    float original[width], decoded[width];
+    for (int i = 0; i < ggml_nelements(b_data); ++i) {
+        ((float *) b_data->data)[i] = f32 ? (float) ((i * 5 + i / 13) % 27 - 13) / 31.0f :
+            (float) ((i + i / width) % 7 - 3) * 0.125f;
     }
     if (indexed) {
         for (int i = 0; i < 16; ++i) {
@@ -409,14 +419,31 @@ static void check_quantized_matrix(enum ggml_type kind, bool indexed) {
     for (int p = 0; p < planes; ++p) {
         if (indexed && p == 2) continue;
         for (int row = 0; row < 2; ++row) {
-            for (int i = 0; i < 256; ++i) {
-                original[i] = (float) ((i + row + 3 * p) % 13 - 6) * 0.25f;
+            for (int i = 0; i < width; ++i) {
+                original[i] = f32 ? (float) ((i * 7 + row + 3 * p) % 41 - 20) / 37.0f :
+                    (float) ((i + row + 3 * p) % 13 - 6) * 0.25f;
             }
             unsigned char * packed = (unsigned char *) a->data + (size_t) p * a->nb[2] + (size_t) row * a->nb[1];
-            traits->from_float_ref(original, packed, 256);
+            if (f32) memcpy(packed, original, sizeof original);
+            else traits->from_float_ref(original, packed, width);
         }
     }
+    const char * setting = getenv("GOOSE_CUDA");
+    const bool compare = f32 && (!setting || strcmp(setting, "0") != 0);
+    void * reference = NULL;
+    if (compare) {
+        reference = malloc(ggml_nbytes(product));
+        assert(reference);
+        assert(setenv("GOOSE_CUDA", "0", 1) == 0);
+        assert(fg_standalone_graph_compute(graph) == GGML_STATUS_SUCCESS);
+        memcpy(reference, product->data, ggml_nbytes(product));
+        assert(unsetenv("GOOSE_CUDA") == 0);
+    }
     assert(fg_standalone_graph_compute(graph) == GGML_STATUS_SUCCESS);
+    if (reference) {
+        assert(memcmp(reference, product->data, ggml_nbytes(product)) == 0);
+        free(reference);
+    }
     for (int i3 = 0; i3 < product->ne[3]; ++i3) {
         for (int i2 = 0; i2 < product->ne[2]; ++i2) {
             for (int i1 = 0; i1 < product->ne[1]; ++i1) {
@@ -428,15 +455,17 @@ static void check_quantized_matrix(enum ggml_type kind, bool indexed) {
                 for (int row = 0; row < 2; ++row) {
                     const unsigned char * packed = (const unsigned char *) a->data +
                         (size_t) p * a->nb[2] + (size_t) row * a->nb[1];
-                    traits->to_float(packed, decoded, 256);
-                    float expected = 0;
-                    for (int i = 0; i < 256; ++i) expected = fmaf(decoded[i], right[i], expected);
-                    assert(fabsf(got[row] - expected) < 1e-5f);
+                    if (f32) memcpy(decoded, packed, sizeof decoded);
+                    else traits->to_float(packed, decoded, width);
+                    double expected = 0.0;
+                    for (int i = 0; i < width; ++i) expected += (double) decoded[i] * right[i];
+                    assert(fabs(got[row] - expected) < 1e-5);
                 }
             }
         }
     }
-    printf("%s %s matches dequantized reference\n", ggml_type_name(kind), indexed ? "indexed" : "broadcast");
+    printf("%s %s at width %d matches reference%s\n", ggml_type_name(kind),
+           indexed ? "indexed" : "broadcast", width, compare ? " and CPU result bytes" : "");
     free(storage);
     ggml_free(ctx);
 }
@@ -450,8 +479,10 @@ int main(int argc, char ** argv) {
     check_gdn_snapshots(128, true);
     check_quantized_cache_attention();
     check_split_q4_attention();
-    check_quantized_matrix(GGML_TYPE_Q4_K, false);
-    check_quantized_matrix(GGML_TYPE_Q6_K, true);
+    check_routed_matrix(GGML_TYPE_Q4_K, false);
+    check_routed_matrix(GGML_TYPE_Q6_K, true);
+    check_routed_matrix(GGML_TYPE_F32, false);
+    check_routed_matrix(GGML_TYPE_F32, true);
     if (argc == 2) {
         if (strcmp(argv[1], "--resident-rows") == 0) check_resident_q4_rows();
         else check_model_step(argv[1]);

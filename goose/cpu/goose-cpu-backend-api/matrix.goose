@@ -90,12 +90,22 @@ extern "fg_cuda_begin" fn cuda_begin(input: u64, input_bytes: i64, output_bytes:
 extern "fg_cuda_prepare_experts" fn cuda_prepare_experts(tensor: u64, bytes: i64,
     active: const i64[:], offsets: i64[:]) -> i64;
 extern "fg_cuda_plane" fn cuda_plane(weights: u64, weight_bytes: i64, stride: i64,
-                                    blocks: i64, kind: i64, columns: i64, jobs: const i64[:],
+                                    extent: i64, kind: i64, columns: i64, jobs: const i64[:],
                                     expert_offset: i64) -> i64;
 extern "fg_cuda_finish" fn cuda_finish(output: u64, output_bytes: i64) -> i64;
 
+fn matrix_index_layout(p: const Node &) -> bool {
+    return p.z.kind == 26 && p.x.ne[3] == 1 && p.y.ne[3] == 1 &&
+        p.z.ne[0] > 0 && p.y.ne[1] > 0 && p.z.ne[1] == p.y.ne[2] &&
+        p.z.ne[0] % p.y.ne[1] == 0 && p.z.ne[2] == 1 && p.z.ne[3] == 1 &&
+        p.d.ne[1] == p.z.ne[0] && p.d.ne[2] == p.z.ne[1] && p.d.ne[3] == 1;
+}
+
 fn cuda_matrix_layout(p: const Node &) -> bool {
-    return p.nth == 1 && (p.x.kind == 12 || p.x.kind == 14) &&
+    let f32_layout = p.x.kind == 0 && p.x.nb[0] == 4 && p.x.ne[0] <= 2147483647 &&
+        (p.x.nb[1] | p.x.nb[2] | p.x.nb[3]) % 4 == 0 &&
+        (p.op != OP_MUL_MAT_ID || matrix_index_layout(p));
+    return p.nth == 1 && (p.x.kind == 12 || p.x.kind == 14 || f32_layout) &&
         p.y.kind == 0 && p.y.nb[0] == 4 && p.d.kind == 0 &&
         (p.y.nb[1] | p.y.nb[2] | p.y.nb[3]) % 4 == 0 &&
         p.x.nb[1] >= 0 && p.x.nb[1] % 2 == 0 &&
@@ -191,13 +201,13 @@ fn next_quant_route(indexed: bool, indices: const i64[:], next: i64, route: i64,
     return if route + 1 < count { route + 1 } else { -1 };
 }
 
-fn cuda_quant_planes(p: const Node &, weights: u64, weight_bytes: i64,
+fn cuda_matrix_planes(p: const Node &, weights: u64, weight_bytes: i64,
                      planes: i64, row_bytes: i64, row_count: i64,
                      spread2: i64, spread3: i64, heads: i64, next: i64,
                      routes: const i64[:], jobs: i64[:], offsets: i64[:]) -> bool {
     let indexed = p.op == OP_MUL_MAT_ID;
     let span = add_size(mul_size(p.d.ne[0] - 1, p.x.nb[1]), row_bytes);
-    let cached = if indexed && p.x.nb[2] == span {
+    let cached = if indexed && p.x.kind != 0 && p.x.nb[2] == span {
         cuda_prepare_experts(weights, span, routes[heads .. heads + planes], offsets)
     } else { 0 };
     if cached < 0 { return false; }
@@ -218,7 +228,7 @@ fn cuda_quant_planes(p: const Node &, weights: u64, weight_bytes: i64,
         }
         let expert_offset = if cached == 1 { offsets[plane] } else { -1 };
         if (cached == 1 && expert_offset < 0) ||
-           cuda_plane(weights + (at as u64), span, p.x.nb[1], p.x.ne[0] / 256,
+           cuda_plane(weights + (at as u64), span, p.x.nb[1], if p.x.kind == 0 { p.x.ne[0] } else { p.x.ne[0] / 256 },
                       p.x.kind, p.d.ne[0], jobs[0 .. words], expert_offset) != 0 {
             return false;
         }
@@ -229,7 +239,7 @@ fn cuda_quant_planes(p: const Node &, weights: u64, weight_bytes: i64,
 // Each worker owns output columns and decodes a weight row once for all
 // input vectors using that row. Indexed multiplication groups only routes
 // that exist, so weights of inactive experts are never touched.
-fn quantized_matrix(p: const Node &, x: const u8[:], y: const u8[:], ids: const u8[:], dst: u8[:],
+fn packed_matrix(p: const Node &, x: const u8[:], y: const u8[:], ids: const u8[:], dst: u8[:],
                     scratch: f32[:], indices: i64[:], addresses: const i64[3] &,
                     gxx: const u8[8][:], gxs: const u8[8][:], gs: const u8[8][:],
                     g3x: const u8[4][:], g3s: const u8[4][:], g1: const i8[8][:],
@@ -240,13 +250,14 @@ fn quantized_matrix(p: const Node &, x: const u8[:], y: const u8[:], ids: const 
         return false;
     }
     let width = p.x.ne[0];
+    let f32_input = p.x.kind == 0;
     let kind = decode :: super_kind(p.x.kind);
-    let block_width = if kind >= 0 { 256 } else { decode :: compact_width(p.x.kind) };
-    let block_bytes = if kind >= 0 { decode :: tile_traits(kind).bytes } else { decode :: compact_bytes(p.x.kind) };
+    let block_width = if f32_input { 1 } else if kind >= 0 { 256 } else { decode :: compact_width(p.x.kind) };
+    let block_bytes = if f32_input { 4 } else if kind >= 0 { decode :: tile_traits(kind).bytes } else { decode :: compact_bytes(p.x.kind) };
     if width <= 0 || block_bytes == 0 || width % block_width != 0 || p.x.nb[0] != block_bytes ||
        p.x.ne[0] != p.y.ne[0] || p.d.ne[0] != p.x.ne[1] || p.d.ne[0] <= 0 ||
        p.x.ne[2] <= 0 || p.x.ne[3] <= 0 || p.y.ne[1] <= 0 || p.y.ne[2] <= 0 || p.y.ne[3] <= 0 ||
-       scratch.len < mul_size(width, p.nth) {
+       (!f32_input && scratch.len < mul_size(width, p.nth)) {
         return false;
     }
 
@@ -261,12 +272,7 @@ fn quantized_matrix(p: const Node &, x: const u8[:], y: const u8[:], ids: const 
     var route_words: i64 = 0;
 
     if indexed {
-        if p.z.kind != 26 || p.x.ne[3] != 1 || p.y.ne[3] != 1 ||
-           p.z.ne[0] <= 0 || p.z.ne[1] != p.y.ne[2] || p.z.ne[2] != 1 || p.z.ne[3] != 1 ||
-           p.z.ne[0] % p.y.ne[1] != 0 || p.d.ne[1] != p.z.ne[0] ||
-           p.d.ne[2] != p.z.ne[1] || p.d.ne[3] != 1 {
-            return false;
-        }
+        if !matrix_index_layout(p) { return false; }
         validate(p.z, ids.len);
         let routes = mul_size(p.z.ne[0], p.z.ne[1]);
         let words = add_size(planes, routes);
@@ -299,13 +305,14 @@ fn quantized_matrix(p: const Node &, x: const u8[:], y: const u8[:], ids: const 
         let status = cuda_begin(addresses[1] as! u64, y.len, dst.len);
         if status < 0 { return false; }
         if status > 0 {
-            let ok = cuda_quant_planes(p, addresses[0] as! u64, x.len, planes, row_bytes, row_count,
+            let ok = cuda_matrix_planes(p, addresses[0] as! u64, x.len, planes, row_bytes, row_count,
                 spread2, spread3, heads, next, indices[0 .. route_words],
                 indices[route_words .. offset_start], indices[offset_start .. offset_start + offset_words]);
             let output = if ok { addresses[2] as! u64 } else { 0 };
             return cuda_finish(output, dst.len) == 0 && ok;
         }
     }
+    if f32_input { return matrix(p, x, y, ids, dst); }
     let decoded = scratch[p.ith * width .. (p.ith + 1) * width];
     var decoder: decode :: WeightTile = default < decode :: WeightTile > ();
     for plane in planes {

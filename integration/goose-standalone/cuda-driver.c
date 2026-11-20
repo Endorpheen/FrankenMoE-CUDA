@@ -68,6 +68,8 @@ static struct {
 static pthread_once_t cuda_once = PTHREAD_ONCE_INIT;
 static pthread_mutex_t cuda_lock = PTHREAD_MUTEX_INITIALIZER;
 static _Thread_local uint64_t cuda_matrices;
+static _Thread_local uint64_t cuda_f32_matrices;
+static _Thread_local int cuda_matrix_kind;
 static _Thread_local uint64_t cuda_attentions;
 static _Thread_local uint64_t cuda_gdns;
 static _Thread_local uint64_t cuda_resident_kv, cuda_resident_gdn;
@@ -419,6 +421,7 @@ int64_t fg_cuda_prepare_experts(uint64_t tensor, int64_t bytes, sl_i64 active, s
 int64_t fg_cuda_begin(uint64_t input, int64_t input_bytes, int64_t output_bytes) {
     const int active = start_context();
     if (active != 1) return active;
+    cuda_matrix_kind = -1;
     int status = reserve(&cuda.input, (size_t) input_bytes);
     if (status == 0) status = reserve(&cuda.output, (size_t) output_bytes);
     if (status == 0) status = cuda.upload(cuda.input.address, (const void *) (uintptr_t) input, (size_t) input_bytes);
@@ -429,8 +432,9 @@ int64_t fg_cuda_begin(uint64_t input, int64_t input_bytes, int64_t output_bytes)
 }
 
 int64_t fg_cuda_plane(uint64_t weights, int64_t weight_bytes, int64_t row_stride,
-                       int64_t blocks, int64_t kind, int64_t rows, sl_i64 jobs, int64_t expert_offset) {
-    if (rows <= 0 || rows > INT_MAX || blocks <= 0 || blocks > INT_MAX ||
+                       int64_t extent, int64_t kind, int64_t rows, sl_i64 jobs, int64_t expert_offset) {
+    if (rows <= 0 || rows > INT_MAX || extent <= 0 || extent > INT_MAX ||
+        (kind != 0 && kind != 12 && kind != 14) ||
         jobs.len <= 0 || jobs.len % 2 != 0 || jobs.len / 2 > INT_MAX) return -1;
     const size_t job_bytes = (size_t) jobs.len * sizeof(*jobs.data);
     int error = reserve(&cuda.jobs, job_bytes);
@@ -452,10 +456,10 @@ int64_t fg_cuda_plane(uint64_t weights, int64_t weight_bytes, int64_t row_stride
     if (error == 0) error = cuda.upload(cuda.jobs.address, jobs.data, job_bytes);
 
     uint64_t stride = (uint64_t) row_stride;
-    int width = (int) blocks, type = (int) kind, start = 0;
+    int width = (int) extent, type = (int) kind, start = 0;
     void * args[] = { &weight, &cuda.input.address, &cuda.output.address,
                       &cuda.jobs.address, &stride, &width, &type, &start };
-    const unsigned lanes = kind == 12 ? 32 : 64;
+    const unsigned lanes = kind == 14 ? 64 : 32;
     const int count = (int) (jobs.len / 2);
     while (error == 0 && start < count) {
         const int batch = count - start > 65535 ? 65535 : count - start;
@@ -468,6 +472,7 @@ int64_t fg_cuda_plane(uint64_t weights, int64_t weight_bytes, int64_t row_stride
         if (error == 0) error = sync_error;
     }
     if (error != 0) fprintf(stderr, "Goose CUDA: matrix kernel failed (%d)\n", error);
+    else cuda_matrix_kind = type;
     return error == 0 ? 0 : -1;
 }
 
@@ -482,13 +487,22 @@ int64_t fg_cuda_finish(uint64_t output, int64_t output_bytes) {
         fprintf(stderr, "Goose CUDA: output transfer failed (%d)\n", error);
         return -1;
     }
-    if (output) ++cuda_matrices;
+    if (output) {
+        ++cuda_matrices;
+        if (cuda_matrix_kind == 0) ++cuda_f32_matrices;
+    }
     return 0;
 }
 
 uint64_t fg_cuda_take_matrices(void) {
     const uint64_t matrices = cuda_matrices;
     cuda_matrices = 0;
+    return matrices;
+}
+
+uint64_t fg_cuda_take_f32_matrices(void) {
+    const uint64_t matrices = cuda_f32_matrices;
+    cuda_f32_matrices = 0;
     return matrices;
 }
 

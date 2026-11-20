@@ -13,8 +13,9 @@ fn qr_state_span(tensor: i64, kind: i64) -> i64 {
     return 4 * ne(tensor, 0) * ne(tensor, 1) * ne(tensor, 2);
 }
 
-export fn qr_cuda_state(owner: const i64[:], layers: const i64[:]) -> i64 {
-    if owner.len < 13 || owner[0] != 9191 || owner[5] <= 0 || layers.len / 32 < owner[5] { return -1; }
+export fn qr_cuda_state(owner: const i64[:], layers: const i64[:], head: i64) -> i64 {
+    if owner.len < 13 || owner[0] != 9191 || owner[5] <= 0 ||
+       layers.len / 32 < owner[5] || head == 0 { return -1; }
     let available = mr_cuda_free();
     if available <= 0 { return available; }
     var ranges: i64[>..] = [];
@@ -41,7 +42,7 @@ export fn qr_cuda_state(owner: const i64[:], layers: const i64[:]) -> i64 {
             count += 4;
         }
     }
-    if bytes > available { return 0; }
+    if bytes > available || mr_cuda_head_bytes(head) > available - bytes { return 0; }
     return state_load(ranges[0 .. count], bytes);
 }
 

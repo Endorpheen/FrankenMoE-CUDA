@@ -65,6 +65,7 @@ static int64_t device_mod(int64_t a, int64_t b) {
 #define GS_RANGE_U(value, hi, type, file, line) device_range_u(value, hi)
 #define GS_IDX(value, size, file, line) device_range(value, 0, (size) - 1)
 #define GS_MEMZERO(at, bytes) __builtin_memset(at, 0, bytes)
+#define GS_NOINLINE __attribute__((noinline))
 #define GS_UNREACHABLE(file, line) device_trap()
 #define gs_add_i64(a, b, file, line) device_add(a, b)
 #define gs_sub_i64(a, b, file, line) device_sub(a, b)
@@ -126,11 +127,24 @@ static float fg_device_fma(float a, float b, float sum) {
     return result;
 }
 
+static float fg_device_shfl(float value, int32_t delta) {
+    uint32_t result;
+    __asm__ volatile("shfl.sync.bfly.b32 %0, %1, %2, 31, -1;"
+                     : "=r"(result) : "r"(as_uint(value)), "r"(delta));
+    return as_float(result);
+}
+
+static float fg_device_mul_rn(float a, float b) {
+    float result;
+    __asm__("mul.rn.f32 %0, %1, %2;" : "=f"(result) : "f"(a), "f"(b));
+    return result;
+}
+
 #include "matmul-device.h"
 
 __kernel void goose_quantized_matmul(
     __global uint8_t * weights, __global uint8_t * input, __global uint8_t * output,
-    __global uint64_t * jobs, uint64_t row_stride, int32_t block_count, int32_t kind, int32_t job_base) {
+    __global uint64_t * jobs, uint64_t row_stride, int32_t extent, int32_t kind, int32_t job_base) {
     uint32_t lane, row, job, lanes;
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
     __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(row));
@@ -140,7 +154,7 @@ __kernel void goose_quantized_matmul(
     const uint64_t at = 2 * ((uint64_t) job_base + job);
     fg_device_matmul_g((uint64_t) weights + row * row_stride, (uint64_t) input + jobs[at],
         (uint64_t) output + jobs[at + 1] + 4 * (uint64_t) row, (uint64_t) scratch,
-        block_count, kind, lane, lanes);
+        extent, kind, lane, lanes);
 }
 
 static uint32_t fg175q_ld_u8(uint64_t at, uint64_t offset) {
@@ -162,10 +176,7 @@ static int64_t fg_attn_word(uint64_t config, int64_t index) {
 }
 
 static float fg_attn_shfl(float value, int32_t delta) {
-    uint32_t result;
-    __asm__ volatile("shfl.sync.bfly.b32 %0, %1, %2, 31, -1;"
-                     : "=r"(result) : "r"(as_uint(value)), "r"(delta));
-    return as_float(result);
+    return fg_device_shfl(value, delta);
 }
 
 static float fg_attn_exp(float value) {
@@ -213,9 +224,7 @@ static float fg174s_expf(float value) { return fg_attn_exp(value); }
 static float fg174s_fma(float a, float b, float sum) { return fg_device_fma(a, b, sum); }
 
 static float fg174s_mul_rn(float a, float b) {
-    float result;
-    __asm__("mul.rn.f32 %0, %1, %2;" : "=f"(result) : "f"(a), "f"(b));
-    return result;
+    return fg_device_mul_rn(a, b);
 }
 
 static float fg174s_shfl_xor(float value, int32_t delta, int32_t width) {

@@ -278,19 +278,22 @@ extern "fg_cuda_free_bytes" fn mr_cuda_free() -> i64;
 extern "fg_cuda_load_dense" fn mr_cuda_load_dense(ranges: const i64[:], bytes: i64) -> i64;
 extern "fg_cuda_model_state_bytes" fn mr_cuda_state_bytes() -> i64;
 
-fn mr_cuda_reserve(owner: const i64[:], head: i64) -> i64 {
+fn mr_cuda_head_bytes(head: i64) -> i64 {
     let kind = prop(head, 0);
-    let weight = if kind == 12 || kind == 14 {
+    return if kind == 0 || kind == 12 || kind == 14 {
         (qa_get(head, 1, 1) as i64) * ne(head, 1)
     } else { 0 };
-    return owner[12] - mr_cuda_state_bytes() + weight;
+}
+
+fn mr_cuda_reserve(owner: const i64[:], head: i64) -> i64 {
+    return owner[12] - mr_cuda_state_bytes() + mr_cuda_head_bytes(head);
 }
 
 fn mr_cuda_dense_range(t: i64, owner: const i64[:], budget: i64, plan: i64[:],
                        position: i64, used: i64) -> i64 {
     if t == 0 || ne(t, 2) != 1 || ne(t, 3) != 1 { return 0; }
     let dtype = prop(t, 0);
-    if dtype != 12 && dtype != 14 { return 0; }
+    if dtype != 0 && dtype != 12 && dtype != 14 { return 0; }
     let address = qa_get(t, 4, 0);
     let base = owner[1] as! u64;
     let bytes = (qa_get(t, 1, 1) as i64) * ne(t, 1);
@@ -326,11 +329,15 @@ export fn qr_cuda_dense(owner: const i64[:], layers: const i64[:], head: i64) ->
     if head_bytes > 0 { used += head_bytes; words += 3; }
     for layer in owner[5] {
         let base = layer * 32;
-        for slot in 2 .. 12 {
+        let last = if layers[base] == 1 { 11 } else { 6 };
+        for slot in 2 .. last {
+            if layers[base] == 1 && slot > 5 && slot < 10 { continue; }
             let bytes = mr_cuda_dense_range(layers[base + slot], owner, budget, plan[..], words, used);
             if bytes > 0 { used += bytes; words += 3; }
         }
-        for slot in 16 .. 19 {
+        let router = mr_cuda_dense_range(layers[base + 12], owner, budget, plan[..], words, used);
+        if router > 0 { used += router; words += 3; }
+        for slot in 16 .. 20 {
             let bytes = mr_cuda_dense_range(layers[base + slot], owner, budget, plan[..], words, used);
             if bytes > 0 { used += bytes; words += 3; }
         }

@@ -36,13 +36,15 @@ fn entry(
         if (p.op == OP_DUP || p.op == OP_CPY || p.op == OP_CONT || p.op == OP_GET_ROWS) && !scalar_type(p.x) && p.d.kind == 0 {
             nf = mul_size(p.x.ne[0], p.nth);
         }
-        if (p.op == OP_MUL_MAT || p.op == OP_MUL_MAT_ID) && !scalar_type(p.x) {
-            nf = mul_size(p.x.ne[0], p.nth);
+        let routed_matrix = p.op == OP_MUL_MAT || p.op == OP_MUL_MAT_ID;
+        let offload = routed_matrix && addresses[0] != 0 && cuda_matrix_layout(p);
+        if routed_matrix && (!scalar_type(p.x) || offload) {
+            if !scalar_type(p.x) { nf = mul_size(p.x.ne[0], p.nth); }
             if p.op == OP_MUL_MAT_ID {
                 let routes = mul_size(p.z.ne[0], p.z.ne[1]);
                 ni = mul_size(add_size(p.x.ne[2], routes), p.nth);
             }
-            if addresses[0] != 0 && cuda_matrix_layout(p) {
+            if offload {
                 ni = add_size(ni, mul_size(2, rows(p.d)));
                 if p.op == OP_MUL_MAT_ID { ni = add_size(ni, p.x.ne[2]); }
             }
@@ -62,7 +64,7 @@ fn entry(
     }
 
     if !scalar_type(p.x) {
-        let handled = quantized_matrix(p, x, y, z, dst, scratch, indices, addresses, gxx, gxs, gs, g3x, g3s, g1, signs, palette);
+        let handled = packed_matrix(p, x, y, z, dst, scratch, indices, addresses, gxx, gxs, gs, g3x, g3s, g1, signs, palette);
         if handled { witness(p.op, elements(p.d)); }
         return handled;
     }
@@ -78,6 +80,12 @@ fn entry(
 
     if p.z.bytes > 0 {
         validate(p.z, z.len);
+    }
+    if (p.op == OP_MUL_MAT || p.op == OP_MUL_MAT_ID) && p.x.kind == 0 &&
+       addresses[0] != 0 && cuda_matrix_layout(p) {
+        let handled = packed_matrix(p, x, y, z, dst, scratch, indices, addresses, gxx, gxs, gs, g3x, g3s, g1, signs, palette);
+        if handled { witness(p.op, elements(p.d)); }
+        return handled;
     }
 
     if transforms(p, x, y, dst, addresses) {

@@ -226,6 +226,24 @@ write nodes and preserved the prior logit tolerance (maximum absolute error
 0.0000001193). The CPU chunked fixture also passed. Apex throughput and peak
 memory remain unmeasured.
 
+EXP-2026-11-20-1507 routes F32 matrix multiplication through the same
+Goose CUDA plane planner as Q4_K and Q6_K. A warp follows the CPU dot
+product's accumulator grouping and final pairwise reduction, with an
+ordered scalar tail. The dense manifest includes the F32 projections
+actually used by the model graph. Static Apex metadata adds 80 tensors
+and 84,213,760 bytes, for 1,361,551,360 bytes of eligible dense weights
+in total. State placement also leaves the streamed vocabulary weight
+span free when deciding whether the CUDA state arena fits.
+
+On RTX 4070 the width-99 broadcast and width-17 indexed F32 fixtures
+matched the CPU result bytes exactly, including strided inputs and the
+remainder columns. The synthetic mixed graph staged F32 model weights
+and executed 26 F32 matrix nodes in each CUDA step. It preserved the
+0.0000001193 maximum logit difference on CPU/CUDA continuation. Chunked
+CPU generation and resident KV write tests passed. Activations still
+cross the host between graph nodes. Apex throughput and peak memory
+remain unmeasured.
+
 ## Historical requirements audit
 
 `docs/goose-migration/tasks.json`: **DONE 1**, **PARTIAL 144**, **TODO 7** of 152.
