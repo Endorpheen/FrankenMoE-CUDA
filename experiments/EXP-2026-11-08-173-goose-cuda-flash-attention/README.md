@@ -35,6 +35,12 @@ On this machine,the qualified baseline build,compiler snapshots and fixture obje
 
 Tracked `.goose` is the canonical source for a rebuild. The source-specialization and value-state scripts preserve how it was derived;they are not required on each build. Historical diagnostics refuse to overwrite their model receipt. Do not rerun old worker-preparation scripts over qualified source. Raw model responses/traces,binaries and private compiler feedback remain local.
 
+### Generated prefill headers
+
+`build_runtime.py` materializes the MMA iteration, MMA processing and value prefill function headers in a temporary include directory. `generate_prefill_headers.py` reconstructs them from the retained compiler C output and checks each file against its qualified SHA-256 before writing it. The source verifier also checks the C output against a fresh run of the pinned Goose compiler. `EXP173_GOOSE` may point to another copy of that exact compiler binary.
+
+The three tracked `.cuh` copies held 246,999 physical lines. For this removal, all nine Goose modules passed source verification, the three regenerated headers matched their archived bytes, and the normalized NVCC preprocessor output matched on the original and regenerated inputs. NVCC built the regenerated CUDA source to object SHA-256 `cd44896ae00a6e86a015b697780ea61c8839319f8ca20c54db5af058edec60c0`.
+
 ## Compiler readiness and remaining work
 
 New complete EXP303Stage3 snapshot871aec9cc92d has verified bootstrap fixed-C provenance. Its output for all9current modules equals qualifiedf849C byte for byte,and a formerly rejected contextualf32literal-branch probe passes. It is selected for subsequent work with f849rollback retained. Existing EXP173binaries were produced by f849;no extraApex or speedup claim follows from identical emittedC. Float-to-integer support is not part of EXP303. See compiler-exp303-qualification.json. Compiler sources were not modified here.
