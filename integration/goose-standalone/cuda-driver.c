@@ -62,7 +62,7 @@ static struct {
     sl_i64 state_ranges;
     struct expert_cache experts;
     int status, multiprocessors;
-    bool mmq_window, mmq_shared, moe_topk;
+    bool mmq_window, mmq_shared, moe_topk, activation_reference;
     int (*init)(unsigned);
     int (*device_get)(int *, int);
     int (*device_attribute)(int *, int, int);
@@ -189,6 +189,8 @@ static void init_cuda(void) {
     const bool q4_reference = mmq && q4_setting && strcmp(q4_setting, "1") == 0;
     const char * ssm_setting = getenv("GOOSE_SSM_REFERENCE");
     const bool ssm_reference = ssm_setting && strcmp(ssm_setting, "1") == 0;
+    const char * activation_setting = getenv("GOOSE_CUDA_ACTIVATION_REFERENCE");
+    cuda.activation_reference = activation_setting && strcmp(activation_setting, "1") == 0;
     const bool mma_image = mmq || dense_mma || gdn_mma || flash_mma;
     bool reference_arch = false;
     if (mma_image) {
@@ -1358,6 +1360,12 @@ int64_t fg_cuda_vector(sl_i64 config, sl_u8 x, sl_u8 y, sl_u8 out, float param0,
     if (active != 1) return active;
     int64_t plan[26];
     memcpy(plan, config.data, sizeof(plan));
+    enum { sigmoid_operation = 7, silu_operation = 8, sigmoid_reference_operation = 13,
+        silu_reference_operation = 14 };
+    if (cuda.activation_reference) {
+        if (plan[0] == sigmoid_operation) plan[0] = sigmoid_reference_operation;
+        if (plan[0] == silu_operation) plan[0] = silu_reference_operation;
+    }
     DevicePtr staged[3] = {0}, output = 0;
     const uint64_t host = (uint64_t) (uintptr_t) out.data;
     int error = 0;

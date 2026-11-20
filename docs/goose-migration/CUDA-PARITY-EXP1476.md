@@ -105,11 +105,11 @@ dependencies. Resume decode-specific work after prefill recovery.
 | 13 | Small-query Flash Attention vector dispatch. `fattn.cu` → `flash_attn_ext_vec`. | Reference trace contains the vector path. Goose slices its scalar Q4 tiles for both prefill and decode. | MISSING. Restore the small-query specialization and validate softmax merging and decode latency at 32K. |
 | 14 | Attention staging and bounds. `fattn-common.cuh` and `fattn-mma-f16.cuh` stage Q4_0 KV as FP16, use FWHT where selected, and derive KV bounds from the mask. | `dequantize_block_q4_0`, `fwht_cuda` and `flash_attn_mask_to_KV_max` execute. Goose now applies the reference Q/K/V and inverse-output rotations in the live Q4 KV graph. It tracks causal bounds in its KV transaction and reads Q4 directly. | PARTIAL. FWHT executes at widths 256 and 64 on Apex. Float16 staging/rounding, masked tails and generation parity still need validation. |
 | 15 | Flash partition reconciliation. `fattn-mma-f16.cuh` → stream-K general/uniform fix-up, plus vector combine-results. | All three reference families are present. Goose merge implements its current scalar partition geometry. | MISSING. Port compatible reconciliation with the MMA and vector schedules. Compare numerical reductions across tail partitions and multihead layouts. |
-| 16 | GDN prefill Tensor Cores. `ggml_cuda_op_gated_delta_net_impl` → `gdn_single` in `gated-delta-net-mma.cu`. | Reference executes `gdn_single<16,128,1>`. Independent Goose runs its `C=16, V=128` body with `GOOSE_GDN_MMA=1`. All 30 GDN layers execute it in a real Apex block. | PARTIAL. CPU and actual layer-input differential checks pass at the documented error levels. The short model output changes and still differs from EXP-1476. Validate full and chunked recurrent state and generation before default promotion. |
+| 16 | GDN prefill Tensor Cores. `ggml_cuda_op_gated_delta_net_impl` → `gdn_single` in `gated-delta-net-mma.cu`. | Reference executes `gdn_single<16,128,1>`. Independent Goose runs its `C=16, V=128` body with `GOOSE_GDN_MMA=1`. All 30 GDN layers execute it in a real Apex block. | PARTIAL. The [first layer's real scores and state](#first-recurrent-sigmoid-and-silu) now match bitwise. Validate full and chunked recurrent state and generation before default promotion. |
 | 17 | GDN decode specialization and fused state cache. `ggml_cuda_op_gated_delta_net_fused_cache` → native scalar `gated_delta_net_cuda` or shape-selected MMA. | Reference executes scalar decode GDN and known fused cache code. Goose has CUDA-resident GDN state and a publish/consume path. | PARTIAL. Match the selected decode kernel's arithmetic and state snapshots against the reference across prefill → decode. Check for stale aliases and measure actual state moves. |
 | 18 | SSM convolution and activation fusion. `ssm-conv.cu` dispatch plus `ggml_cuda_try_fuse` → `ssm_conv_long_token_f32` or `ssm_conv_f32`. | Both reference families execute. Goose fuses SiLU and now executes its [long-token schedule](#reference-long-ssm-convolution) on all 30 recurrent layers of the short prefill with the diagnostic selector enabled. | PARTIAL. Verify persistent history across multiple batches and the final decode profile. |
 | 19 | Fused RMS/L2 normalization. `ggml_cuda_try_fuse` → RMS multiply/add/scale variants in `norm.cu` and supported RoPE/cache combinations. | Goose connects its existing weighted RMS kernel at Qwen35 attention and GDN sites. The short Apex numerical snapshot matches the unfused graph byte-for-byte. | PARTIAL. Validate at full context and restore remaining compatible RMS/L2 and RoPE combinations. |
-| 20 | Gated and unary activation fusion. `unary.cu` and `ggml_cuda_try_fuse` launch `unary_gated_op_kernel` and `unary_op_kernel`. | Both execute. Goose implements fused SwiGLU and several individual activations and keeps a CUDA activation arena. | PARTIAL. Verify the executed reference combinations, then match remaining graph fusion choices. Compare activations and adjacent gates before speed checks. |
+| 20 | Gated and unary activation fusion. `unary.cu` and `ggml_cuda_try_fuse` launch `unary_gated_op_kernel` and `unary_op_kernel`. | Both execute. Goose implements fused SwiGLU and several individual activations. The opt-in [sigmoid and SiLU](#first-recurrent-sigmoid-and-silu) match the first recurrent layer's reference arithmetic. | PARTIAL. Verify other gates and remaining graph fusion choices. |
 | 21 | Broadcast arithmetic and reductions. CUDA operation dispatch → `k_bin_bcast`, `scale_f32`, `reduce_1Block_kernel`. | The reference runs optimized family variants. Goose implements broadcast vector and row-sum kernels for supported layouts. | PARTIAL. Restore shape-aware broadcasts/reductions where effect is measured. Verify offsets, F32/F64 reduction order and noncontiguous inputs. |
 | 22 | RoPE execution. CUDA dispatch → `rope_multi` and its graph fusion with norms and cache. | `rope_multi` runs. Goose has positional transforms on GPU and CPU. | PARTIAL. Compare actual long prefix positions, mode flags and rotate/cache fusion. Check Q/K numerics at the first divergence. |
 | 23 | Q4 cache writes. CUDA SET_ROWS dispatch → `k_set_rows_quant`. | Reference executes GPU Q4 quantization. Goose validates row updates and uses `goose_set_q4_rows` for dense supported spans, with ordered CPU sparse writes. | PARTIAL. Verify packed bytes and ordering against reference in the real cache. Measure writes across prefill and decode and retain safe repeated-index behavior. |
@@ -1238,6 +1238,62 @@ Keep the reference Q4_K selector for numerical diagnosis.
   `cuda-matrix-dense-both.qyewdhb2`.
 - Live diagnostic tensors under
   `/home/end0/AI/LlamaServer/franken-apex-goose-gdn-q4-reference-layers.wmyaiiwo`.
+
+## First recurrent sigmoid and SiLU
+
+EXP-2026-11-20-1550 adds `GOOSE_CUDA_ACTIVATION_REFERENCE=1`
+for F32 sigmoid and SiLU in the existing Goose vector kernel.
+The reference SM89 sigmoid uses `MUFU.EX2`, addition and
+`MUFU.RCP`. The gated SiLU also multiplies the reciprocal
+by its input before applying the gate. The earlier standalone
+operations used rounded division. The candidate reuses the
+reciprocal primitive already used by reference SSM and MMQ.
+
+The first-layer beta CUDA replay matched all 3,968 probabilities
+bitwise with zero Compute Sanitizer errors. In the live 124-ID
+Apex graph, sigmoid alone matched the beta, recurrent output
+and persistent state. With the final sigmoid and SiLU mode,
+every checked tensor through the first recurrent output
+projection matches EXP-1476:
+
+| Boundary | Bitwise matches | Total FP32 values |
+|---|---:|---:|
+| Beta sigmoid | 3,968 | 3,968 |
+| GDN scores | 507,904 | 507,904 |
+| Materialized GDN state | 524,288 | 524,288 |
+| `linear_attn_out-0` | 253,952 | 253,952 |
+| Post-attention norm, sampled first and last rows | 4,096 | 4,096 |
+
+The first layer still differs in five expert ID slots, including
+one different expert set at input index 51. Compare the complete
+router input, logits and selection. The earlier Q/K, alpha,
+gate, Z, RMS, QKV and fused SSM checkpoints remain bitwise exact.
+
+| Sequential Apex 4096/1 diagnostic | Earlier activations | Reference activations |
+|---|---:|---:|
+| Prefill time, s | 14.297 | 14.276 |
+| Prefill, tokens/s | 286.490 | 286.913 |
+| RSS high-water, KiB | 23,885,164 | 23,884,476 |
+| Sampled peak process VRAM, MiB | 8,582 | 8,582 |
+| Sampled peak whole-card VRAM, MiB | 11,380 | 11,388 |
+| Process swap, KiB | 0 | 0 |
+| System swap-out increase, pages | 98 | 8 |
+| First token | 1156 | 11 |
+
+The CUDA trace records 30 `goose_gdn_mma` and 631
+`goose_vector_ops` launches in each run. The request uses
+physical 4096/4096, reference RMS/Q4_K/Q6_K/SSM and the four
+experimental MMA selectors. The same 4096 prompt IDs were
+evaluated with no cache reuse. Generation remains a separate
+acceptance gate and the activation selector stays opt-in.
+
+- Candidate build and raw evidence under
+  `/home/end0/AI/LlamaServer/franken-goose-activation-reference.EfN4Tf`.
+  Executable SHA-256 `17ec85e21a036a42369cf5014a6d9a0b928aaa498afdf0600adb1a16fb7fa6ca`.
+  The run directories are `cuda-matrix-dense-both.w1tpxrum`
+  and `cuda-matrix-dense-both.7idajz91`.
+- Live diagnostic tensors under
+  `/home/end0/AI/LlamaServer/franken-apex-goose-activation-reference-layers.3ohgn0ej`.
 
 ## Kernel coverage
 
