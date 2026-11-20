@@ -91,7 +91,7 @@ prefill and 62.86 decode tokens/s.
 
 | # | Mechanism and EXP-1476 call path | Evidence and independent Goose state | Status, restoration and verification |
 |---:|---|---|---|
-| 1 | Q4_K MMQ. `ggml-cuda.cu` `ggml_cuda_mul_mat` / `ggml_cuda_mul_mat_id` → `mmq.cu` `ggml_cuda_mul_mat_q` → `mmq-load-tiles.cuh` and `mmq-vec-dot.cuh` → `mul_mat_q`. | Executed type 12 symbols contain SM89 `IMMA.16832.S8.S8`. [Dense](#cooperative-dense-q4_k-mmq) and [routed](#cooperative-routed-q4_k-mmq) Goose paths use shared weights, coefficients and LDSM on qualified shapes. | PARTIAL. Improve output tile width and tail utilization. Check full quality. |
+| 1 | Q4_K MMQ. `ggml-cuda.cu` `ggml_cuda_mul_mat` / `ggml_cuda_mul_mat_id` → `mmq.cu` `ggml_cuda_mul_mat_q` → `mmq-load-tiles.cuh` and `mmq-vec-dot.cuh` → `mul_mat_q`. | [Dense](#cooperative-dense-q4_k-mmq) and [routed](#cooperative-routed-q4_k-mmq) Goose paths use shared weights, coefficients and LDSM on qualified shapes. [Aligned packing windows](#aligned-dense-mmq-windows) retain shared dispatch for the two-window dense shape. | PARTIAL. Improve output tile width and tail utilization. Check full quality. |
 | 2 | Q6_K MMQ, same backend chain with `ggml_cuda_mmq_vec_dot_q6_K_q8_1_mma`. | [Cooperative Q6_K staging](#cooperative-q6_k-mmq) uses shared weight fragments, scales and LDSM for qualified dense and routed shapes. Both execute on real Apex with the reference accumulation order. | PARTIAL. Qualify more shapes and wider output tiles, and close full quality and speed parity. |
 | 3 | Activation packing. `mmq.cu` → direct or scatter `quantize_mmq_q8_1` in `quantize.cu`, then MMQ. DS4 carries a half scale and activation sum. D4 carries F32 scales. | Both direct and scatter templates execute in the reference. Independent MMQ reuses the EXP180 packer and shares one Q8_1 row across routes when their input slot is identical. The Q6_K diagnostic adds the reference D4 reciprocal sequence. | PARTIAL. Both formats execute on Apex. Device scatter/grouping and model-level parity remain open. |
 | 4 | MMQ stream-K. `mmq.cuh` partitions K and invokes `mul_mat_q_stream_k_fixup` to combine partial outputs. | Independent Goose partitions flattened output tiles and K blocks and applies backward partial reduction with `GOOSE_MMQ_STREAM_K=1`. GPU fixtures and a short Apex shape execute the fixup. | PARTIAL. Verify response parity and scheduling on reference-sized tiles. The current 4096 geometry selects regular tiles. |
@@ -2919,6 +2919,51 @@ Profiled A/B directories end in `fla2k9lx` and `c95jysst`.
 Unprofiled A/B directories end in `3yhos541` and `f219g233`.
 Default executable SHA-256
 `7c35a7399c6a1bd25273f689408824163765b51e4f0b2361d1edd8512e54dedb`.
+
+## Aligned dense MMQ windows
+
+EXP-1579 rounds the dense staging window down to a whole
+number of cooperative 32-route blocks. The Goose planner
+keeps windows below four tiles unchanged. It never rounds
+up or increases the 16 MiB packing budget. The narrow
+path remains available if an aligned launch is ineligible.
+`GOOSE_MMQ_ALIGN_WINDOW=0` selects the previous windows.
+
+The original Q4_K path split the 4,096 columns of the
+2,048-row projection into 455 and 57 eight-route tiles.
+Neither piece met the four-tile shared launch guard.
+The aligned path splits them into 452 and 60. The two
+GPU calls use the 16-by-32 shared entry and retain the
+existing K split and accumulation order.
+
+Eight planner cases and 8,388,608 dense FP32 output
+values pass. CUDA memcheck records zero errors. Short
+Apex records the targeted 80 calls in the narrow entry
+with 0.355 s GPU time, then in the shared entry with
+0.283 s GPU time. Short prefill is 833.681 and 848.074
+tok/s. The traced copy totals and peak process VRAM
+match.
+
+| Unprofiled reverse full Apex 32K/512, 4096/4096 | Previous A | Aligned B |
+|---|---:|---:|
+| Prefill, tok/s | 836.847 | 847.266 |
+| Prefill, s | 39.157 | 38.675 |
+| Decode, steps/s | 25.108 | 25.211 |
+| Peak process VRAM, MiB | 7,272 | 7,272 |
+| Process RSS high-water, KiB | 22,938,892 | 22,938,832 |
+| Process swap and system swap-out growth | 0 | 0 |
+
+Both arms return identical content, all 512 IDs and
+probability rows. SLRU activity and all 5,301,139 model
+pages match. The existing opening echo persists. The
+default B saves 0.482 s of full prefill. The window change
+does not execute in decode.
+
+The fixtures, traces and default executable are under
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/mmq-aligned-exp1579`.
+Unprofiled A/B directories end in `a82avi54` and `hedrpskx`.
+Default executable SHA-256
+`50e0a660facd18f74513361ed65962b89d73aee2b76b6ed74f05373c718e1710`.
 
 ## Long Attention partition probe
 

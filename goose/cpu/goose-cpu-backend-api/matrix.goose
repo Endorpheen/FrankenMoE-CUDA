@@ -239,6 +239,13 @@ export fn fg143_mmq_window(extent: i64, tiles: i64, tile_width: i64, budget: i64
     return low(tiles, low(65535 / tile_width, high(1, budget / bytes_per_tile)));
 }
 
+// Four consecutive eight-route tiles form a dense shared launch.
+// Round down so the packed workspace never exceeds the approved window.
+export fn fg143_mmq_dense_window(tiles: i64, window: i64) -> i64 {
+    if tiles <= 0 || window <= 0 || window > tiles { return -1; }
+    return if tiles % 4 == 0 && window >= 4 { window - window % 4 } else { window };
+}
+
 export fn fg143_mmq_stream_workers(rows: i64, tiles: i64, extent: i64, sms: i64) -> i64 {
     if rows <= 0 || rows > 2147483647 || tiles <= 0 || tiles > 8191 || extent <= 1 || sms <= 0 { return 0; }
     let outputs = (1 + (rows - 1) / 64) * tiles;

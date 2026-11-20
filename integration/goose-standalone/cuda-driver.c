@@ -138,6 +138,7 @@ static struct {
     int64_t expert_pinned_bytes;
     int status, multiprocessors;
     bool mmq_window, mmq_shared, moe_topk, activation_reference;
+    bool mmq_align_window;
     size_t vmm_granularity, vmm_capacity;
     bool scratch_vmm, lazy_kv;
     struct memory_properties vmm_properties;
@@ -440,6 +441,7 @@ static void load_cuda(void) {
         cuda.activation_capacity = (size_t) value * MIB_BYTES;
     }
     cuda.mmq_window = fg_standalone_option_enabled("GOOSE_MMQ_WINDOW");
+    cuda.mmq_align_window = fg_standalone_option_enabled("GOOSE_MMQ_ALIGN_WINDOW");
     cuda.mmq_shared = fg_standalone_option_enabled("GOOSE_MMQ_SHARED");
     cuda.moe_topk = fg_standalone_option_enabled("GOOSE_MOE_TOPK");
     const char * setting = getenv("GOOSE_MMQ");
@@ -1615,6 +1617,7 @@ static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
     const bool reference = dense_reference || indexed_reference;
     const Function routed_shared = kind == q4_kind ? cuda.mmq_q4_routed_shared : cuda.mmq_q6_routed_shared;
     const Function dense_shared = kind == q4_kind ? cuda.mmq_q4_dense_shared : cuda.mmq_q6_dense_shared;
+    const bool dense_wide = dense_shared && dense_reference && count == 4096 && rows % 128 == 0;
     const bool routed_wide = indexed_reference && routed_shared;
     const int routes_per_tile = routed_wide ? 32 : 8;
     int32_t reference_columns = indexed_reference ? -1 : dense_reference ? count : 0;
@@ -1636,6 +1639,9 @@ static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
     size_t packed_bytes;
     int error;
     for (;;) {
+        if (cuda.mmq_align_window && dense_wide && !shared) {
+            window_tiles = fg143_mmq_dense_window(tile_count, window_tiles);
+        }
         const int64_t window_routes = window_tiles * routes_per_tile;
         const size_t routes = (size_t) (shared ? shared_rows : count < window_routes ? count : window_routes);
         if ((size_t) extent > SIZE_MAX / 288 / routes) {
@@ -1683,8 +1689,7 @@ static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
                     &cuda.mmq_tiles.address, &stride, &extent, &rows, &first, &first_route, &input_stride};
                 error = cuda.launch(routed_shared, (unsigned) rows / 16, (unsigned) batch,
                     1, 128, 1, 1, 0, NULL, args, NULL);
-            } else if (dense_shared && dense_reference && !shared &&
-                count == 4096 && rows % 128 == 0 && first % 4 == 0 && batch % 4 == 0 &&
+            } else if (dense_wide && !shared && first % 4 == 0 && batch % 4 == 0 &&
                 first_route == 8 * first && routes == 8u * (unsigned) batch) {
                 void * args[] = {&weight, &cuda.mmq_packed.address, &matrix_output, &cuda.jobs.address,
                     &stride, &extent, &rows, &first_route, &cuda.multiprocessors};

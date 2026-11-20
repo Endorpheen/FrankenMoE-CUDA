@@ -14,7 +14,10 @@ subsequently moves 853,646 H2D packets onto the async API
 and saves 2.733 s of decode in an unprofiled pair.
 [EXP-1578](CUDA-PARITY-EXP1476.md#cooperative-q6_k-mmq)
 reduces Q6_K device MMQ from 5.024 to 4.053 s and
-saves 0.966 s of prefill in its unprofiled pair. The
+saves 0.966 s of prefill in its unprofiled pair.
+[EXP-1579](CUDA-PARITY-EXP1476.md#aligned-dense-mmq-windows)
+keeps two-window Q4_K projections on shared MMQ and
+saves another measured 0.482 s in its unprofiled pair. The
 tables below retain the original audit checkpoint.
 This comparison locates
 work and gaps. Final acceptance requires the fresh
