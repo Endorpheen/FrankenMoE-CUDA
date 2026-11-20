@@ -2,6 +2,8 @@ struct MmqDot { a: i32, b: i32, c: i32, d: i32 }
 struct MmqSum { a: f32, b: f32, c: f32, d: f32 }
 struct MmqWords { a: u32, b: u32, c: u32, d: u32 }
 struct MmqScales { d0: f32, d1: f32, m0: f32, m1: f32 }
+struct MmqQ6Scales { a: i32, b: i32, c: i32, d: i32 }
+struct MmqPairSum { left: MmqSum, right: MmqSum }
 struct MmqPartition { work: i64, workers: i64, start: i64 }
 
 extern "fg_mmq_word" fn mmq_word(address: u64) -> u32;
@@ -15,6 +17,7 @@ extern "fg_device_fma" fn mmq_fma(a: f32, b: f32, sum: f32) -> f32;
 extern "fg_mmq_mma32" fn mmq_mma32(a0: u32, a1: u32, a2: u32, a3: u32, b0: u32, b1: u32) -> MmqDot;
 extern "fg_mmq_mma16" fn mmq_mma16(a0: u32, a1: u32, b0: u32) -> MmqDot;
 extern "fg_mmq_ldm32" fn mmq_ldm32(address: u64) -> MmqWords;
+extern "fg_mmq_ldm16" fn mmq_ldm16(address: u64) -> MmqWords;
 extern "fg_mmq_mma32_shared" fn mmq_mma32_shared(address: u64, b0: u32, b1: u32) -> MmqDot;
 extern "fg_mmq_mma16_shared" fn mmq_mma16_shared(address: u64, b0: u32) -> MmqDot;
 extern "fg_mmq_shared_store" fn mmq_shared_store(address: u64, word: u32);
@@ -169,41 +172,56 @@ fn mmq_q6_dot(a: u64, b: u64, source: u64, group: i64, thread: i64) -> MmqDot {
         mmq_q6_fragment(b, 4 * group + thread), mmq_word(source + qs));
 }
 
+fn mmq_q6_shared_fragment(stage: u64, group: i64, lane: i64) -> u64 {
+    return stage + ((256 * group + 16 * (lane % 16)) as u64);
+}
+
 fn mmq_q6_shared_dot(stage: u64, source: u64, group: i64, thread: i64, lane: i64) -> MmqDot {
     let qs = (16 + 16 * (group % 8) + 4 * thread) as u64;
-    let at = (256 * group + 16 * (lane % 16)) as u64;
-    return mmq_mma16_shared(stage + at, mmq_word(source + qs));
+    return mmq_mma16_shared(mmq_q6_shared_fragment(stage, group, lane), mmq_word(source + qs));
+}
+
+fn mmq_q6_shared_scales(stage: u64, row: i64, group: i64) -> MmqQ6Scales {
+    let at = stage + ((4096 + 16 * row + group) as u64);
+    return MmqQ6Scales { a: mmq_shared_i8(at), b: mmq_shared_i8(at + 1),
+        c: mmq_shared_i8(at + 128), d: mmq_shared_i8(at + 129) };
+}
+
+fn mmq_q6_accumulate_pair(sum: MmqSum, x: MmqDot, y: MmqDot, scale: MmqQ6Scales, d0: f32, d1: f32) -> MmqSum {
+    return MmqSum {
+        a: mmq_fma((x.a * scale.a + y.a * scale.b) as f32, d0, sum.a),
+        b: mmq_fma((x.b * scale.a + y.b * scale.b) as f32, d1, sum.b),
+        c: mmq_fma((x.c * scale.c + y.c * scale.d) as f32, d0, sum.c),
+        d: mmq_fma((x.d * scale.c + y.d * scale.d) as f32, d1, sum.d)
+    };
+}
+
+fn mmq_q6_finish_half(sum: MmqSum, part: MmqSum, da: f32, db: f32) -> MmqSum {
+    return MmqSum { a: mmq_fma(part.a, da, sum.a), b: mmq_fma(part.b, da, sum.b),
+        c: mmq_fma(part.c, db, sum.c), d: mmq_fma(part.d, db, sum.d) };
 }
 
 fn mmq_q6_reference_half(sum: MmqSum, a: u64, b: u64, source: u64,
     source0: u64, source1: u64, first_group: i64, thread: i64, stage: u64, lane: i64) -> MmqSum {
-    var t0: f32 = 0.0;
-    var t1: f32 = 0.0;
-    var t2: f32 = 0.0;
-    var t3: f32 = 0.0;
+    var part = MmqSum { a: 0.0, b: 0.0, c: 0.0, d: 0.0 };
     let row = if lane < 0 { 0 } else { lane / 4 };
-    let scales = stage + ((4096 + 16 * row) as u64);
     for i in 4 {
         let g = first_group + 2 * i;
         let x = if lane < 0 { mmq_q6_dot(a, b, source, g, thread) }
             else { mmq_q6_shared_dot(stage, source, g, thread, lane) };
         let y = if lane < 0 { mmq_q6_dot(a, b, source, g + 1, thread) }
             else { mmq_q6_shared_dot(stage, source, g + 1, thread, lane) };
-        let s0 = if lane < 0 { mmq_i8(a + ((192 + g) as u64)) } else { mmq_shared_i8(scales + (g as u64)) };
-        let s1 = if lane < 0 { mmq_i8(a + ((193 + g) as u64)) } else { mmq_shared_i8(scales + ((g + 1) as u64)) };
-        let s2 = if lane < 0 { mmq_i8(b + ((192 + g) as u64)) } else { mmq_shared_i8(scales + ((g + 128) as u64)) };
-        let s3 = if lane < 0 { mmq_i8(b + ((193 + g) as u64)) } else { mmq_shared_i8(scales + ((g + 129) as u64)) };
+        let scales = if lane < 0 {
+            MmqQ6Scales { a: mmq_i8(a + ((192 + g) as u64)), b: mmq_i8(a + ((193 + g) as u64)),
+                c: mmq_i8(b + ((192 + g) as u64)), d: mmq_i8(b + ((193 + g) as u64)) }
+        } else { mmq_q6_shared_scales(stage, row, g) };
         let d0 = mmq_float(source0 + ((4 * i) as u64));
         let d1 = mmq_float(source1 + ((4 * i) as u64));
-        t0 = mmq_fma((x.a * s0 + y.a * s1) as f32, d0, t0);
-        t1 = mmq_fma((x.b * s0 + y.b * s1) as f32, d1, t1);
-        t2 = mmq_fma((x.c * s2 + y.c * s3) as f32, d0, t2);
-        t3 = mmq_fma((x.d * s2 + y.d * s3) as f32, d1, t3);
+        part = mmq_q6_accumulate_pair(part, x, y, scales, d0, d1);
     }
     let da = if lane < 0 { mmq_half(a + 208) } else { mmq_shared_float(stage + ((4352 + 4 * row) as u64)) };
     let db = if lane < 0 { mmq_half(b + 208) } else { mmq_shared_float(stage + ((4384 + 4 * row) as u64)) };
-    return MmqSum { a: mmq_fma(t0, da, sum.a), b: mmq_fma(t1, da, sum.b),
-        c: mmq_fma(t2, db, sum.c), d: mmq_fma(t3, db, sum.d) };
+    return mmq_q6_finish_half(sum, part, da, db);
 }
 
 fn mmq_reference_width(minimum: i64, fallback: bool) -> i64 {
@@ -462,6 +480,39 @@ fn mmq_q4_wide_group(sum: MmqSum, operand: MmqOperand, fragment: MmqWords, scale
     return mmq_q4_accumulate(sum, dot, scales, operand.col0 + q + ds, operand.col1 + q + ds, true);
 }
 
+fn mmq_q6_wide_group(sum: MmqSum, operand: MmqOperand, x: MmqWords, y: MmqWords,
+    scales: MmqQ6Scales, q: u64, qs: u64, ds: u64) -> MmqSum {
+    let rhs = operand.group + q + qs;
+    let dot_x = mmq_mma16(x.a, x.b, mmq_word(rhs));
+    let dot_y = mmq_mma16(y.a, y.b, mmq_word(rhs + 16));
+    return mmq_q6_accumulate_pair(sum, dot_x, dot_y, scales,
+        mmq_float(operand.col0 + q + ds), mmq_float(operand.col1 + q + ds));
+}
+
+fn mmq_q6_wide_half(sum_left: MmqSum, sum_right: MmqSum, left: MmqOperand, right: MmqOperand,
+    q: u64, stage: u64, first_group: i64, lane: i64) -> MmqPairSum {
+    let zero = MmqSum { a: 0.0, b: 0.0, c: 0.0, d: 0.0 };
+    var part_left = zero;
+    var part_right = zero;
+    let row = lane / 4;
+    for pair in 4 {
+        let g = first_group + 2 * pair;
+        let qs = (16 + 32 * pair + 4 * (lane % 4)) as u64;
+        let ds = (4 * pair) as u64;
+        let x = mmq_ldm16(mmq_q6_shared_fragment(stage, g, lane));
+        let y = mmq_ldm16(mmq_q6_shared_fragment(stage, g + 1, lane));
+        let scales = mmq_q6_shared_scales(stage, row, g);
+        part_left = mmq_q6_wide_group(part_left, left, x, y, scales, q, qs, ds);
+        if right.live > 0 {
+            part_right = mmq_q6_wide_group(part_right, right, x, y, scales, q, qs, ds);
+        }
+    }
+    let da = mmq_shared_float(stage + ((4352 + 4 * row) as u64));
+    let db = mmq_shared_float(stage + ((4384 + 4 * row) as u64));
+    let finish_right = if right.live > 0 { mmq_q6_finish_half(sum_right, part_right, da, db) } else { sum_right };
+    return MmqPairSum { left: mmq_q6_finish_half(sum_left, part_left, da, db), right: finish_right };
+}
+
 fn mmq_sum_add(left: MmqSum, right: MmqSum) -> MmqSum {
     return MmqSum { a: left.a + right.a, b: left.b + right.b, c: left.c + right.c, d: left.d + right.d };
 }
@@ -483,8 +534,8 @@ fn mmq_wide_store(out: u64, jobs: u64, words: i64, operand: MmqOperand, row: i64
 
 // Share one weight tile across two eight-route accumulators in each warp.
 // The planner keeps dense blocks inside a 128-column reference partition.
-export fn fg_device_mmq_q4_x64(weights: u64, packed: u64, out: u64, jobs: u64, stride: i64,
-    extent: i64, row: i64, rows: i64, route: i64, first_route: i64, routes: i64, words: i64,
+export fn fg_device_mmq_x64(weights: u64, packed: u64, out: u64, jobs: u64, stride: i64,
+    extent: i64, kind: i64, row: i64, rows: i64, route: i64, first_route: i64, routes: i64, words: i64,
     input_stride: i64, reference_sms: i64, thread: i64, stage: u64) {
     let lane = thread % 32;
     let warp_start = 16 * (thread / 32);
@@ -511,18 +562,31 @@ export fn fg_device_mmq_q4_x64(weights: u64, packed: u64, out: u64, jobs: u64, s
         var partial_right = zero;
         for k in begin .. stop {
             let q = (288 * k) as u64;
-            mmq_q4_stage(base + ((144 * k) as u64), stride, stage, thread);
-            mmq_barrier();
-            if left.live > 0 {
-                for group in 8 {
-                    let qb = (144 * (group / 4)) as u64;
-                    let qs = qb + ((16 + 32 * (group % 4) + 4 * (lane % 4)) as u64);
-                    let ds = qb + ((4 * (group % 4)) as u64);
-                    let fragment = mmq_ldm32(mmq_q4_shared_fragment(stage, group, lane));
-                    let scales = mmq_q4_shared_scales(stage, group, lane);
-                    partial_left = mmq_q4_wide_group(partial_left, left, fragment, scales, q, qs, ds);
-                    if right.live > 0 {
-                        partial_right = mmq_q4_wide_group(partial_right, right, fragment, scales, q, qs, ds);
+            if kind == 12 {
+                mmq_q4_stage(base + ((144 * k) as u64), stride, stage, thread);
+                mmq_barrier();
+                if left.live > 0 {
+                    for group in 8 {
+                        let qb = (144 * (group / 4)) as u64;
+                        let qs = qb + ((16 + 32 * (group % 4) + 4 * (lane % 4)) as u64);
+                        let ds = qb + ((4 * (group % 4)) as u64);
+                        let fragment = mmq_ldm32(mmq_q4_shared_fragment(stage, group, lane));
+                        let scales = mmq_q4_shared_scales(stage, group, lane);
+                        partial_left = mmq_q4_wide_group(partial_left, left, fragment, scales, q, qs, ds);
+                        if right.live > 0 {
+                            partial_right = mmq_q4_wide_group(partial_right, right, fragment, scales, q, qs, ds);
+                        }
+                    }
+                }
+            } else {
+                mmq_q6_stage(base + ((210 * k) as u64), stride, stage, thread);
+                mmq_barrier();
+                if left.live > 0 {
+                    for half in 2 {
+                        let out = mmq_q6_wide_half(partial_left, partial_right, left, right,
+                            q + ((144 * half) as u64), stage, 8 * half, lane);
+                        partial_left = out.left;
+                        partial_right = out.right;
                     }
                 }
             }

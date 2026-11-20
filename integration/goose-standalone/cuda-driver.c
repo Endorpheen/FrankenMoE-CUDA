@@ -105,6 +105,7 @@ static struct {
     Function mmq_q4_dense_shared, mmq_q4_routed_shared;
     Function mmq_q4_dense_x64, mmq_q4_routed_x64;
     Function mmq_q6_dense_shared, mmq_q6_routed_shared;
+    Function mmq_q6_dense_x64, mmq_q6_routed_x64;
     Function mmvq_pack, mmvq;
     Function dense_mma, dense_mma_reference, gdn_mma, flash_mma, flash_stage, flash_vec, flash_vec_merge;
     Function mmq_stream, mmq_stream_fixup;
@@ -466,6 +467,7 @@ static void load_cuda(void) {
     const char * q6_setting = getenv("GOOSE_MMQ_Q6_REFERENCE");
     const bool q6_reference = mmq && q6_setting && strcmp(q6_setting, "1") == 0;
     const bool q6_shared = fg_standalone_option_enabled("GOOSE_MMQ_Q6_SHARED");
+    const bool q6_x64 = fg_standalone_option_enabled("GOOSE_MMQ_Q6_X64");
     const char * q4_setting = getenv("GOOSE_MMQ_Q4_REFERENCE");
     const bool q4_reference = mmq && q4_setting && strcmp(q4_setting, "1") == 0;
     const bool q4_shared = fg_standalone_option_enabled("GOOSE_MMQ_Q4_WIDE_SHARED");
@@ -521,6 +523,10 @@ static void load_cuda(void) {
                 error = cuda.function_get(&cuda.mmq_q6_dense_shared, cuda.module, "goose_mmq_q6_dense_shared");
             if (error == 0 && q6_shared)
                 error = cuda.function_get(&cuda.mmq_q6_routed_shared, cuda.module, "goose_mmq_q6_routed_shared");
+            if (error == 0 && q6_shared && q6_x64)
+                error = cuda.function_get(&cuda.mmq_q6_dense_x64, cuda.module, "goose_mmq_q6_dense_x64");
+            if (error == 0 && q6_shared && q6_x64)
+                error = cuda.function_get(&cuda.mmq_q6_routed_x64, cuda.module, "goose_mmq_q6_routed_x64");
         }
         if (error == 0 && stream_k) error = cuda.function_get(&cuda.mmq_stream, cuda.module, "goose_mmq_stream");
         if (error == 0 && stream_k) error = cuda.function_get(&cuda.mmq_stream_fixup, cuda.module, "goose_mmq_stream_fixup");
@@ -1621,11 +1627,11 @@ static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
         ((kind == q4_kind && rows == 512 && extent == 8) ||
          (kind == q6_kind && rows == 2048 && extent == 2));
     const bool reference = dense_reference || indexed_reference;
-    const bool routed_x64 = kind == q4_kind && cuda.mmq_q4_routed_x64;
-    const Function routed_shared = routed_x64 ? cuda.mmq_q4_routed_x64 :
+    const Function routed_x64 = kind == q4_kind ? cuda.mmq_q4_routed_x64 : cuda.mmq_q6_routed_x64;
+    const Function routed_shared = routed_x64 ? routed_x64 :
         kind == q4_kind ? cuda.mmq_q4_routed_shared : cuda.mmq_q6_routed_shared;
     const Function dense_shared = kind == q4_kind ? cuda.mmq_q4_dense_shared : cuda.mmq_q6_dense_shared;
-    const Function dense_x64 = kind == q4_kind ? cuda.mmq_q4_dense_x64 : NULL;
+    const Function dense_x64 = kind == q4_kind ? cuda.mmq_q4_dense_x64 : cuda.mmq_q6_dense_x64;
     const bool dense_wide = dense_shared && dense_reference && count == 4096 && rows % 128 == 0;
     const bool routed_wide = indexed_reference && routed_shared;
     const int routes_per_tile = routed_wide ? (routed_x64 ? 64 : 32) : 8;

@@ -20,7 +20,10 @@ keeps two-window Q4_K projections on shared MMQ and
 saves another measured 0.482 s in its unprofiled pair.
 [EXP-1580](CUDA-PARITY-EXP1476.md#q4_k-16-by-64-cooperative-tiles)
 reuses the weight fragment for 64-route Q4_K blocks
-and saves 2.421 s of full unprofiled prefill. The
+and saves 2.421 s of full unprofiled prefill.
+[EXP-1581](CUDA-PARITY-EXP1476.md#q6_k-16-by-64-cooperative-tiles)
+extends 64-route tiles to Q6_K and saves 1.128 s in its
+full unprofiled pair. The
 tables below retain the original audit checkpoint.
 This comparison locates
 work and gaps. Final acceptance requires the fresh
