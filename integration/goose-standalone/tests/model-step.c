@@ -2,17 +2,20 @@
 #include "graph-execute.h"
 
 #include <assert.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-// Link with --wrap for ggml_init, ggml_free, fg_standalone_graph_alloc and
-// fg_standalone_graph_compute_output to exercise the shipped step ABI.
+// Wrap ggml_init, ggml_free, fg_standalone_graph_alloc,
+// fg_standalone_graph_compute_output and fg143_graph_resize.
 enum failure { NONE, BEFORE_EXECUTE, AFTER_EXECUTE };
 static enum failure failure;
 static bool track_frames;
 static size_t frame_bytes;
 static unsigned opened, closed;
+static bool fail_workspace_growth;
+static unsigned workspaces;
 
 extern void fg_goose_host_ensure_init(void);
 extern struct ggml_context * __real_ggml_init(struct ggml_init_params params);
@@ -20,6 +23,22 @@ extern void __real_ggml_free(struct ggml_context * ctx);
 extern void * __real_fg_standalone_graph_alloc(struct ggml_cgraph * graph);
 extern enum ggml_status __real_fg_standalone_graph_compute_output(struct ggml_cgraph * graph,
     const struct ggml_tensor * output);
+extern uint64_t __real_fg143_graph_resize(uint64_t address, int64_t bytes);
+
+uint64_t __wrap_fg143_graph_resize(uint64_t address, int64_t bytes) {
+    if (address && bytes > 0 && fail_workspace_growth) {
+        fail_workspace_growth = false;
+        return 0;
+    }
+    const uint64_t result = __real_fg143_graph_resize(address, bytes);
+    if (address && bytes == 0) {
+        assert(workspaces > 0);
+        --workspaces;
+    } else if (!address && result) {
+        ++workspaces;
+    }
+    return result;
+}
 
 struct ggml_context * __wrap_ggml_init(struct ggml_init_params params) {
     if (track_frames) {
@@ -67,6 +86,52 @@ static void reject_step(int32_t token, enum failure where) {
     assert(failure == NONE && opened == closed);
 }
 
+static void check_workspace_and_scan(void) {
+    struct ggml_context * ctx = ggml_init((struct ggml_init_params){1024 * 1024, NULL, true});
+    assert(ctx);
+    struct ggml_tensor * small = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, 4);
+    struct ggml_tensor * large = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, 128);
+    struct ggml_tensor * sorted = ggml_argsort(ctx, large, GGML_SORT_ORDER_DESC);
+    struct ggml_cgraph * graph = ggml_new_graph_custom(ctx, 32, false);
+    ggml_build_forward_expand(graph, ggml_argsort(ctx, small, GGML_SORT_ORDER_DESC));
+    ggml_build_forward_expand(graph, sorted);
+
+    struct ggml_tensor * state = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, 1, 1, 1, 2);
+    struct ggml_tensor * x = ggml_new_tensor_3d(ctx, GGML_TYPE_F32, 1, 1, 2);
+    struct ggml_tensor * dt = ggml_new_tensor_3d(ctx, GGML_TYPE_F32, 1, 2, 1);
+    struct ggml_tensor * a = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, 1, 1);
+    struct ggml_tensor * b = ggml_dup_tensor(ctx, x);
+    struct ggml_tensor * c = ggml_dup_tensor(ctx, x);
+    struct ggml_tensor * ids = ggml_new_tensor_1d(ctx, GGML_TYPE_I32, 1);
+    struct ggml_tensor * scan = ggml_ssm_scan(ctx, state, x, dt, a, b, c, ids, 2);
+    ggml_build_forward_expand(graph, scan);
+
+    void * storage = fg_standalone_graph_alloc(graph);
+    assert(storage);
+    for (int i = 0; i < 4; ++i) ((float *) small->data)[i] = (float) i;
+    for (int i = 0; i < 128; ++i) ((float *) large->data)[i] = (float) i;
+    memcpy(state->data, (float[]){-7.0f, 4.0f}, 2 * sizeof(float));
+    memcpy(x->data, (float[]){2.0f, 3.0f}, 2 * sizeof(float));
+    memset(dt->data, 0, ggml_nbytes(dt));
+    *(float *) a->data = 0.0f;
+    memcpy(b->data, (float[]){1.0f, 1.0f}, 2 * sizeof(float));
+    memcpy(c->data, (float[]){2.0f, 3.0f}, 2 * sizeof(float));
+    *(int32_t *) ids->data = 1;
+
+    fail_workspace_growth = true;
+    assert(fg_standalone_graph_compute(graph) == GGML_STATUS_FAILED);
+    assert(!fail_workspace_growth && workspaces == 0);
+    assert(fg_standalone_graph_compute(graph) == GGML_STATUS_SUCCESS && workspaces == 0);
+    for (int i = 0; i < 128; ++i) assert(((int32_t *) sorted->data)[i] == 127 - i);
+    const float first = 4.0f + 2.0f * logf(2.0f);
+    const float last = first + 3.0f * logf(2.0f);
+    const float expected[] = {2.0f * first, 3.0f * last, last, first};
+    for (int i = 0; i < 4; ++i) assert(fabsf(((float *) scan->data)[i] - expected[i]) < 2e-6f);
+    puts("Goose dispatch recovers after workspace growth fails and preserves both SSM snapshots");
+    free(storage);
+    ggml_free(ctx);
+}
+
 int main(int argc, char ** argv) {
     assert(argc == 2);
     fg_goose_host_ensure_init();
@@ -96,4 +161,7 @@ int main(int argc, char ** argv) {
     free(retried);
     free(reset_after_failure);
     free(reset_reference);
+    assert(workspaces == 0);
+    track_frames = false;
+    check_workspace_and_scan();
 }

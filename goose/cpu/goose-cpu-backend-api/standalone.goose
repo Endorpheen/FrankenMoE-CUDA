@@ -90,19 +90,6 @@ export fn fg143_state_run(packet: const i64[:],
     return state_entry(p, a0, a1, a2, a3, a4, a5, a6, dst);
 }
 
-extern "fg143_graph_nodes" fn graph_nodes(graph: u64) -> i64;
-extern "fg143_graph_exec_node" fn graph_exec_node(graph: u64, workspace: u64, index: i64) -> bool;
-
-// Return one plus the first failing node index, or zero after the last node.
-export fn fg143_graph_run(graph: u64, workspace: u64) -> i64 {
-    if graph == 0 || workspace == 0 { return -1; }
-    let n = graph_nodes(graph);
-    for i in n {
-        if !graph_exec_node(graph, workspace, i) { return i + 1; }
-    }
-    return 0;
-}
-
 extern "qz_quantize_row" fn quantize_row(kind: i64, source: u64, destination: u64, width: i64) -> i64;
 extern "fg_cuda_set_q4_rows" fn cuda_set_q4_rows(source: u64, source_bytes: i64, stride: i64,
     destination: u64, destination_bytes: i64, width: i64, count: i64) -> i64;

@@ -434,6 +434,21 @@ The RTX 4070 step-recovery fixture balanced all eight frames. The
 mixed CUDA/CPU, 267-token chunked prefill and 34 HTTP checks passed.
 Apex throughput and peak memory remain unmeasured.
 
+EXP-2026-11-20-1518 moves per-node graph dispatch and workspace
+ownership into Goose. The dispatcher validates operands, skips
+metadata-only nodes, prepares the CUDA destination and selects the
+regular, GDN or SSM scan path. The regular path uses one per-graph
+allocation for the existing Goose-planned scratch and index slices.
+It releases that allocation when execution succeeds or fails. The
+C adapter projects GGML records and binds the native slices.
+
+The synthetic fixture forced a workspace growth failure after the
+first node allocated scratch. Both CPU and RTX 4070 runs released
+that allocation and retried the same graph successfully. Sorting and
+both SSM snapshots matched their references. Frame recovery, mixed
+CPU/CUDA continuation, 267-token chunked prefill and all 34 HTTP
+checks passed. Apex throughput and peak memory remain unmeasured.
+
 ## Historical requirements audit
 
 `docs/goose-migration/tasks.json`: **DONE 1**, **PARTIAL 144**, **TODO 7** of 152.

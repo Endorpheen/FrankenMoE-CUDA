@@ -30,7 +30,6 @@ extern void fg_cuda_take_position(uint64_t * ropes, uint64_t * convs);
 extern void fg_cuda_take_routes(uint64_t * routes);
 extern void fg_cuda_take_blits(uint64_t * blits);
 extern int fg_cuda_activation_graph_begin(void);
-extern int fg_cuda_activation_prepare(uint64_t host, int64_t bytes, bool fresh);
 extern int fg_cuda_activation_graph_end(bool success, bool all, uint64_t host, int64_t bytes, uint64_t * hits);
 
 static pthread_once_t cpu_init = PTHREAD_ONCE_INIT;
@@ -114,31 +113,14 @@ void * fg_standalone_graph_alloc(struct ggml_cgraph * graph) {
     return (void *) (uintptr_t) fg143_storage_allocate((uint64_t) (uintptr_t) graph);
 }
 
-struct node_workspace {
-    float * scratch;
-    int64_t * indices;
-    int64_t scratch_len;
-    int64_t indices_len;
-};
-
-static bool reserve_workspace(struct node_workspace * work, const int64_t sizes[4]) {
-    if (sizes[0] < 0 || sizes[1] < 0 ||
-        (uint64_t) sizes[0] > SIZE_MAX / sizeof(*work->scratch) ||
-        (uint64_t) sizes[1] > SIZE_MAX / sizeof(*work->indices)) return false;
-
-    if (sizes[0] > work->scratch_len) {
-        float * buffer = realloc(work->scratch, (size_t) sizes[0] * sizeof(*buffer));
-        if (!buffer) return false;
-        work->scratch = buffer;
-        work->scratch_len = sizes[0];
+uint64_t fg143_graph_resize(uint64_t address, int64_t bytes) {
+    void * work = (void *) (uintptr_t) address;
+    if (bytes == 0) {
+        free(work);
+        return 0;
     }
-    if (sizes[1] > work->indices_len) {
-        int64_t * buffer = realloc(work->indices, (size_t) sizes[1] * sizeof(*buffer));
-        if (!buffer) return false;
-        work->indices = buffer;
-        work->indices_len = sizes[1];
-    }
-    return true;
+    if (bytes < 0 || (uint64_t) bytes > SIZE_MAX) return 0;
+    return (uint64_t) (uintptr_t) realloc(work, (size_t) bytes);
 }
 
 static sl_u8 tensor_slice(const struct ggml_tensor * tensor, int64_t * metadata) {
@@ -177,74 +159,84 @@ int64_t fg143_graph_nodes(uint64_t graph) {
     return ggml_graph_n_nodes((struct ggml_cgraph *) (uintptr_t) graph);
 }
 
-uint8_t fg143_graph_exec_node(uint64_t graph, uint64_t workspace, int64_t index) {
-    struct ggml_tensor * tensor = ggml_graph_node((struct ggml_cgraph *) (uintptr_t) graph, (int) index);
-    switch (tensor->op) {
-        case GGML_OP_NONE:
-        case GGML_OP_RESHAPE:
-        case GGML_OP_VIEW:
-        case GGML_OP_PERMUTE:
-        case GGML_OP_TRANSPOSE:
-            return 1;
-        default:
-            break;
-    }
-    if (!tensor->data) return 0;
+uint64_t fg143_graph_node(uint64_t graph, int64_t index) {
+    return (uint64_t) (uintptr_t) ggml_graph_node((struct ggml_cgraph *) (uintptr_t) graph, (int) index);
+}
+
+void fg143_graph_inputs(uint64_t address, sl_u64 sources) {
+    const struct ggml_tensor * tensor = (const void *) (uintptr_t) address;
+    _Static_assert(GGML_MAX_SRC == 10, "Goose graph operand count");
     for (int i = 0; i < GGML_MAX_SRC; ++i) {
-        if (tensor->src[i] && !tensor->src[i]->data && !ggml_is_empty(tensor->src[i])) return 0;
+        sources.data[i] = (uint64_t) (uintptr_t) tensor->src[i];
     }
-    if (fg_cuda_activation_prepare((uint64_t) (uintptr_t) tensor->data,
-            (int64_t) ggml_nbytes(tensor), tensor->view_src == NULL) != 0) return 0;
+}
 
-    if (tensor->op == GGML_OP_GATED_DELTA_NET || tensor->op == GGML_OP_SSM_SCAN) {
-        int64_t packet[83] = {0};
-        sl_u8 inputs[7];
-        for (int i = 0; i < 7; ++i) inputs[i] = tensor_slice(tensor->src[i], packet + 10 * i);
-        const sl_u8 dst = tensor_slice(tensor, packet + 70);
-        packet[80] = tensor->op;
-        packet[81] = tensor->op_params[0];
-        if (tensor->op == GGML_OP_GATED_DELTA_NET) {
-            packet[82] = tensor->op_params[4];
-            sl_f32 args[6], output;
-            for (int i = 0; i < 6; ++i) {
-                if (!float_slice(inputs[i], &args[i])) return 0;
-            }
-            if (!float_slice(dst, &output)) return 0;
-            return fg143_gdn_run((sl_i64) { packet, 83 }, args[0], args[1], args[2],
-                args[3], args[4], args[5], output);
-        }
-        return fg143_state_run((sl_i64) { packet, 82 }, inputs[0], inputs[1], inputs[2],
-            inputs[3], inputs[4], inputs[5], inputs[6], dst);
-    }
+void fg143_graph_describe(uint64_t address, sl_i64 metadata) {
+    const struct ggml_tensor * t = (const void *) (uintptr_t) address;
+    int64_t * packet = metadata.data;
+    const sl_u8 x = tensor_slice(t->src[0], packet);
+    const sl_u8 y = tensor_slice(t->src[1], packet + 10);
+    tensor_slice(t->src[2], packet + 20);
+    const sl_u8 dst = tensor_slice(t, packet + 30);
+    tensor_slice(t->src[3], packet + 59);
+    packet[40] = t->op;
+    for (int i = 0; i < 16; ++i) packet[41 + i] = t->op_params[i];
+    packet[57] = (int64_t) (uintptr_t) x.data;
+    packet[58] = (int64_t) (uintptr_t) dst.data;
+    packet[69] = t->src[4] != NULL;
+    packet[70] = (int64_t) (uintptr_t) y.data;
+}
 
-    int64_t packet[71] = {0};
-    const sl_u8 inputs[5] = {
-        tensor_slice(tensor->src[0], packet), tensor_slice(tensor->src[1], packet + 10),
-        tensor_slice(tensor->src[2], packet + 20), tensor_slice(tensor, packet + 30),
-        tensor_slice(tensor->src[3], packet + 59),
+static sl_u8 borrowed_bytes(const struct ggml_tensor * t, int64_t bytes) {
+    return (sl_u8) {t ? t->data : NULL, bytes};
+}
+
+uint8_t fg143_graph_regular(uint64_t address, sl_i64 packet, int64_t mode, sl_i64 sizes, uint64_t workspace) {
+    const struct ggml_tensor * t = (const void *) (uintptr_t) address;
+    const sl_u8 inputs[] = {
+        borrowed_bytes(t->src[0], packet.data[9]), borrowed_bytes(t->src[1], packet.data[19]),
+        borrowed_bytes(t->src[2], packet.data[29]), borrowed_bytes(t, packet.data[39]),
+        borrowed_bytes(t->src[3], packet.data[68]),
     };
-    packet[40] = tensor->op;
-    for (int i = 0; i < 16; ++i) packet[41 + i] = tensor->op_params[i];
-    int64_t sizes[4];
-    packet[57] = (int64_t) (uintptr_t) inputs[0].data;
-    packet[58] = (int64_t) (uintptr_t) inputs[3].data;
-    packet[69] = tensor->src[4] != NULL;
-    packet[70] = (int64_t) (uintptr_t) inputs[1].data;
-    const sl_i64 args = { packet, 71 };
-    struct node_workspace * work = (void *) (uintptr_t) workspace;
-    if (!run_node(args, 1, inputs, (sl_f32) {0}, (sl_i64) { sizes, 4 }) ||
-        !reserve_workspace(work, sizes)) return 0;
-    return run_node(args, 0, inputs, (sl_f32) { work->scratch, sizes[0] },
-        (sl_i64) { work->indices, sizes[1] });
+    if (mode == 1) return run_node(packet, mode, inputs, (sl_f32) {0}, sizes);
+    return run_node(packet, mode, inputs, (sl_f32) {(void *) (uintptr_t) workspace, sizes.data[0]},
+        (sl_i64) {(void *) (uintptr_t) (workspace + (uint64_t) sizes.data[2]), sizes.data[1]});
+}
+
+static sl_u8 state_slices(const struct ggml_tensor * t, int64_t * packet, sl_u8 * inputs, int count) {
+    for (int i = 0; i < count; ++i) inputs[i] = tensor_slice(t->src[i], packet + 10 * i);
+    packet[80] = t->op;
+    packet[81] = t->op_params[0];
+    return tensor_slice(t, packet + 70);
+}
+
+uint8_t fg143_graph_gdn(uint64_t address) {
+    const struct ggml_tensor * t = (const void *) (uintptr_t) address;
+    int64_t packet[83] = {0};
+    sl_u8 inputs[6];
+    const sl_u8 dst = state_slices(t, packet, inputs, 6);
+    packet[82] = t->op_params[4];
+    sl_f32 args[6], output;
+    for (int i = 0; i < 6; ++i) {
+        if (!float_slice(inputs[i], &args[i])) return 0;
+    }
+    if (!float_slice(dst, &output)) return 0;
+    return fg143_gdn_run((sl_i64) {packet, 83}, args[0], args[1], args[2], args[3], args[4], args[5], output);
+}
+
+uint8_t fg143_graph_scan(uint64_t address) {
+    const struct ggml_tensor * t = (const void *) (uintptr_t) address;
+    int64_t packet[82] = {0};
+    sl_u8 inputs[7];
+    const sl_u8 dst = state_slices(t, packet, inputs, 7);
+    return fg143_state_run((sl_i64) {packet, 82}, inputs[0], inputs[1], inputs[2], inputs[3],
+        inputs[4], inputs[5], inputs[6], dst);
 }
 
 static enum ggml_status compute_graph(struct ggml_cgraph * graph, bool all, const struct ggml_tensor * output) {
     pthread_once(&cpu_init, init_cpu);
     if (fg_cuda_activation_graph_begin() != 0) return GGML_STATUS_FAILED;
-    struct node_workspace work = {0};
-    const int64_t failed = fg143_graph_run((uint64_t) (uintptr_t) graph, (uint64_t) (uintptr_t) &work);
-    free(work.scratch);
-    free(work.indices);
+    const int64_t failed = fg143_graph_run((uint64_t) (uintptr_t) graph);
     if (failed > 0) {
         const struct ggml_tensor * node = ggml_graph_node(graph, (int) (failed - 1));
         fprintf(stderr, "Goose graph: node %lld (%s) failed\n", (long long) failed - 1, ggml_op_name(node->op));
