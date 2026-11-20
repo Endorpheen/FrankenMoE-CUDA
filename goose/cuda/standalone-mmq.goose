@@ -26,10 +26,42 @@ fn mmq_q6_fragment(weight_block: u64, word: i64) -> u32 {
     return q6_mmq_bytes(ql as i64, qh as i64, (tx & 8) / 4, word % 32 >= 16) as u32;
 }
 
-fn mmq_q4_acc(sum: f32, dot: i32, dm: f32, minimum: f32, ds: u64) -> f32 {
+fn mmq_q4_acc(sum: f32, dot: i32, dm: f32, minimum: f32, ds: u64, fused: bool) -> f32 {
     let scaled = mmq_mul(dm, mmq_half(ds));
+    if fused {
+        let value = mmq_fma(scaled, dot as f32, sum);
+        return mmq_fma(minimum, mmq_half(ds + 2), value);
+    }
     let value = sum + mmq_mul(scaled, dot as f32);
     return value + mmq_mul(minimum, mmq_half(ds + 2));
+}
+
+fn mmq_q4_block(previous: MmqSum, a: u64, b: u64, source: u64, source0: u64, source1: u64,
+    thread: i64, fused: bool) -> MmqSum {
+    let da = mmq_half(a);
+    let db = mmq_half(b);
+    let min_a = -mmq_half(a + 2);
+    let min_b = -mmq_half(b + 2);
+    var sum = previous;
+    for g in 8 {
+        let qb = (144 * (g / 4)) as u64;
+        let qs = qb + ((16 + 32 * (g % 4) + 4 * thread) as u64);
+        let dot = mmq_mma32(mmq_q4_fragment(a, g, thread), mmq_q4_fragment(b, g, thread),
+            mmq_q4_fragment(a, g, thread + 4), mmq_q4_fragment(b, g, thread + 4),
+            mmq_word(source + qs), mmq_word(source + qs + 16));
+        let packed0 = scale_min(a + 4, g);
+        let packed1 = scale_min(b + 4, g);
+        let d0 = mmq_half_round(da * ((packed0 >> 8) as f32));
+        let d1 = mmq_half_round(db * ((packed1 >> 8) as f32));
+        let m0 = mmq_half_round(min_a * ((packed0 & 255) as f32));
+        let m1 = mmq_half_round(min_b * ((packed1 & 255) as f32));
+        let ds = qb + ((4 * (g % 4)) as u64);
+        sum.a = mmq_q4_acc(sum.a, dot.a, d0, m0, source0 + ds, fused);
+        sum.b = mmq_q4_acc(sum.b, dot.b, d0, m0, source1 + ds, fused);
+        sum.c = mmq_q4_acc(sum.c, dot.c, d1, m1, source0 + ds, fused);
+        sum.d = mmq_q4_acc(sum.d, dot.d, d1, m1, source1 + ds, fused);
+    }
+    return sum;
 }
 
 fn mmq_q6_acc(sum: f32, dot: i32, scale: i32, d: f32, activation: f32) -> f32 {
@@ -70,13 +102,25 @@ fn mmq_q6_reference_half(sum: MmqSum, a: u64, b: u64, source: u64,
         c: mmq_fma(t2, db, sum.c), d: mmq_fma(t3, db, sum.d) };
 }
 
-fn mmq_q6_reference(w0: u64, w1: u64, source: u64, source0: u64, source1: u64,
-    extent: i64, row: i64, rows: i64, route: i64, columns: i64, sms: i64, thread: i64) -> MmqSum {
+fn mmq_reference_width(minimum: i64, fallback: bool) -> i64 {
+    if fallback {
+        if minimum <= 8 { return 8; }
+        if minimum <= 16 { return 16; }
+        if minimum <= 32 { return 32; }
+        if minimum <= 64 { return 64; }
+        return 128;
+    }
+    if minimum <= 48 { return 8 * (1 + (minimum - 1) / 8); }
+    return 16 * (1 + (minimum - 1) / 16);
+}
+
+fn mmq_reference(w0: u64, w1: u64, source: u64, source0: u64, source1: u64,
+    extent: i64, kind: i64, row: i64, rows: i64, route: i64, columns: i64, sms: i64, thread: i64) -> MmqSum {
     // Preserve the reference's 128-row tiles and backward fixup order
     // inside each output warp, without a global partial-sum buffer.
     let ntiles = 1 + (columns - 1) / 128;
-    let width = 8 * (1 + (columns - 1) / (8 * ntiles));
-    let tiles = (rows / 128) * ntiles;
+    let width = mmq_reference_width(1 + (columns - 1) / ntiles, rows % 128 != 0);
+    let tiles = (1 + (rows - 1) / 128) * ntiles;
     let tile = (row / 128) * ntiles + route / width;
     let work = tiles * extent;
     let waves = 1 + (tiles - 1) / sms;
@@ -93,12 +137,18 @@ fn mmq_q6_reference(w0: u64, w1: u64, source: u64, source0: u64, source1: u64,
         let begin = if split > start { split - start } else { 0 };
         var partial = MmqSum { a: 0.0, b: 0.0, c: 0.0, d: 0.0 };
         for k in begin .. stop {
-            let a = w0 + ((210 * k) as u64);
-            let b = w1 + ((210 * k) as u64);
-            for half in 2 {
-                let q = (288 * k + 144 * half) as u64;
-                partial = mmq_q6_reference_half(partial, a, b, source + q, source0 + q, source1 + q,
-                    8 * half, thread);
+            let q = (288 * k) as u64;
+            if kind == 12 {
+                let w = (144 * k) as u64;
+                partial = mmq_q4_block(partial, w0 + w, w1 + w, source + q, source0 + q,
+                    source1 + q, thread, true);
+            } else {
+                let w = (210 * k) as u64;
+                for half in 2 {
+                    let at = q + ((144 * half) as u64);
+                    partial = mmq_q6_reference_half(partial, w0 + w, w1 + w, source + at, source0 + at,
+                        source1 + at, 8 * half, thread);
+                }
             }
         }
         if worker == last {
@@ -147,36 +197,20 @@ export fn fg_device_mmq(weights: u64, q: u64, out: u64, row_stride: i64, extent:
     var sum1: f32 = 0.0;
     var sum2: f32 = 0.0;
     var sum3: f32 = 0.0;
-    if kind == 12 {
-        for weight_block in k_begin .. k_end {
-            let a = w0 + ((144 * weight_block) as u64);
-            let b = w1 + ((144 * weight_block) as u64);
-            let da = mmq_half(a);
-            let db = mmq_half(b);
-            let min_a = -mmq_half(a + 2);
-            let min_b = -mmq_half(b + 2);
-            for g in 8 {
-                let qb = (288 * weight_block + 144 * (g / 4)) as u64;
-                let qs = qb + ((16 + 32 * (g % 4) + 4 * thread_id) as u64);
-                let dot = mmq_mma32(mmq_q4_fragment(a, g, thread_id), mmq_q4_fragment(b, g, thread_id),
-                    mmq_q4_fragment(a, g, thread_id + 4), mmq_q4_fragment(b, g, thread_id + 4),
-                    mmq_word(source + qs), mmq_word(source + qs + 16));
-                let packed0 = scale_min(a + 4, g);
-                let packed1 = scale_min(b + 4, g);
-                let d0 = mmq_half_round(da * ((packed0 >> 8) as f32));
-                let d1 = mmq_half_round(db * ((packed1 >> 8) as f32));
-                let m0 = mmq_half_round(min_a * ((packed0 & 255) as f32));
-                let m1 = mmq_half_round(min_b * ((packed1 & 255) as f32));
-                let ds = qb + ((4 * (g % 4)) as u64);
-                sum0 = mmq_q4_acc(sum0, dot.a, d0, m0, source0 + ds);
-                sum1 = mmq_q4_acc(sum1, dot.b, d0, m0, source1 + ds);
-                sum2 = mmq_q4_acc(sum2, dot.c, d1, m1, source0 + ds);
-                sum3 = mmq_q4_acc(sum3, dot.d, d1, m1, source1 + ds);
-            }
-        }
-    } else if reference_columns > 0 {
-        let sum = mmq_q6_reference(w0, w1, source, source0, source1, extent, row, rows, route,
+    if reference_columns > 0 {
+        let sum = mmq_reference(w0, w1, source, source0, source1, extent, kind, row, rows, route,
             reference_columns, reference_sms, thread_id);
+        sum0 = sum.a;
+        sum1 = sum.b;
+        sum2 = sum.c;
+        sum3 = sum.d;
+    } else if kind == 12 {
+        var sum = MmqSum { a: 0.0, b: 0.0, c: 0.0, d: 0.0 };
+        for weight_block in k_begin .. k_end {
+            let w = (144 * weight_block) as u64;
+            let q = (288 * weight_block) as u64;
+            sum = mmq_q4_block(sum, w0 + w, w1 + w, source + q, source0 + q, source1 + q, thread_id, false);
+        }
         sum0 = sum.a;
         sum1 = sum.b;
         sum2 = sum.c;

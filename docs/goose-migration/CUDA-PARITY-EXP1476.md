@@ -90,7 +90,7 @@ dependencies. Resume decode-specific work after prefill recovery.
 
 | # | Mechanism and EXP-1476 call path | Evidence and independent Goose state | Status, restoration and verification |
 |---:|---|---|---|
-| 1 | Q4_K MMQ. `ggml-cuda.cu` `ggml_cuda_mul_mat` / `ggml_cuda_mul_mat_id` → `mmq.cu` `ggml_cuda_mul_mat_q` → `mmq-load-tiles.cuh` and `mmq-vec-dot.cuh` → `mul_mat_q`. | Executed type 12 symbols contain SM89 `IMMA.16832.S8.S8`. With `GOOSE_MMQ=1`, Goose sends dense and routed 16×8 tiles to its K=32 MMA path. | PARTIAL. The integer-dot fixture and real 4,096-ID trace exercise the kernel. Full output parity and unprofiled performance remain open. |
+| 1 | Q4_K MMQ. `ggml-cuda.cu` `ggml_cuda_mul_mat` / `ggml_cuda_mul_mat_id` → `mmq.cu` `ggml_cuda_mul_mat_q` → `mmq-load-tiles.cuh` and `mmq-vec-dot.cuh` → `mul_mat_q`. | Executed type 12 symbols contain SM89 `IMMA.16832.S8.S8`. Goose sends dense and routed 16×8 tiles to its K=32 MMA path. The [reference Q4_K order](#first-recurrent-q4_k-projections) matches the first three recurrent projections and executes in the 4096/1 trace. | PARTIAL. Verify indexed routes and the full response. |
 | 2 | Q6_K MMQ, same backend chain with `ggml_cuda_mmq_vec_dot_q6_K_q8_1_mma`. | Executed type 14 symbols contain SM89 `IMMA.16816.S8.S8`. Goose uses the existing packed loader and K=16 integer MMA. The opt-in [reference order](#reference-q6_k-at-the-qkv-boundary) matches the first Apex QKV and runs 40 times in the 4096/1 trace. | PARTIAL. Check other projections, indexed routes and full generation. |
 | 3 | Activation packing. `mmq.cu` → direct or scatter `quantize_mmq_q8_1` in `quantize.cu`, then MMQ. DS4 carries a half scale and activation sum. D4 carries F32 scales. | Both direct and scatter templates execute in the reference. Independent MMQ reuses the EXP180 packer and shares one Q8_1 row across routes when their input slot is identical. The Q6_K diagnostic adds the reference D4 reciprocal sequence. | PARTIAL. Both formats execute on Apex. Device scatter/grouping and model-level parity remain open. |
 | 4 | MMQ stream-K. `mmq.cuh` partitions K and invokes `mul_mat_q_stream_k_fixup` to combine partial outputs. | Independent Goose partitions flattened output tiles and K blocks and applies backward partial reduction with `GOOSE_MMQ_STREAM_K=1`. GPU fixtures and a short Apex shape execute the fixup. | PARTIAL. Verify response parity and scheduling on reference-sized tiles. The current 4096 geometry selects regular tiles. |
@@ -1179,6 +1179,65 @@ correctness are open.
   `/home/end0/AI/LlamaServer/franken-apex-reference-gdn-layers.sam0tjof`,
   `/home/end0/AI/LlamaServer/franken-apex-goose-gdn-layers.2jwhn0rw`
   and `/home/end0/AI/LlamaServer/franken-apex-goose-qk-reference-layers.1ukbak9i`.
+
+## First recurrent Q4_K projections
+
+EXP-2026-11-20-1549 extends the existing reference-order MMQ
+path to dense Q4_K with `GOOSE_MMQ_Q4_REFERENCE=1` on SM89.
+Apex layer 0 has Q4_K `ssm_alpha`, `ssm_beta` and `attn_gate`
+weights. Isolated EXP-1476 CUDA graphs reproduced their recorded
+124-ID outputs byte-for-byte. The trace showed eight workers
+and a fixup for each 32-row projection and 46 workers with a
+fixup for the 4,096-row Z projection.
+
+On these activations DS4 packing was already identical. The
+SM89 DS4 sequence uses two approximate reciprocals, as does the
+existing D4 reference packer. The opt-in path uses that sequence
+for DS4, makes the two FMA accumulations explicit and reuses
+the Q6_K reference tile partition and backward fixup in registers.
+An independent reduction with the recorded launch geometry
+reproduced all three projections.
+
+| Live Apex first layer, 124 IDs | Differing values after Q4_K change | Total values |
+|---|---:|---:|
+| `alpha` projection | 0 | 3,968 |
+| `beta` projection | 0 | 3,968 |
+| Z projection | 0 | 507,904 |
+| Softplus and gate, each | 0 | 3,968 |
+| `beta_sigmoid` | 418 | 3,968 |
+| GDN output | 60,127 | 507,904 |
+| GDN persistent state | 104,508 | 524,288 |
+
+Compute Sanitizer found zero errors on all three CUDA projection
+replays with the Apex weights. Maximum error is 5.9604645e-8 for
+`beta_sigmoid`, 5.9604645e-7 for the recurrent scores and
+2.8133392e-5 for the final persistent state. First-layer expert set
+selection still differs at input index 51.
+
+| Sequential Apex 4096/1 diagnostic | Earlier Q4_K | Reference Q4_K |
+|---|---:|---:|
+| Prefill time, s | 14.137 | 14.224 |
+| Prefill, tokens/s | 289.734 | 287.964 |
+| RSS high-water, KiB | 23,883,792 | 23,884,860 |
+| Sampled peak process VRAM, MiB | 8,582 | 8,582 |
+| Sampled peak whole-card VRAM, MiB | 11,378 | 11,369 |
+| Process swap, KiB | 0 | 0 |
+| System swap-out increase, pages | 176 | 179 |
+| First token | 20 | 1156 |
+
+Both runs used reference RMS, Q6_K and SSM at physical
+4096/4096, with four experimental MMA selectors enabled.
+The trace records 310 `goose_mmq_q4_reference` launches, totaling
+1,227.433 ms. The earlier Q4_K mode remains the speed control.
+Keep the reference Q4_K selector for numerical diagnosis.
+
+- Candidate build and raw data under
+  `/home/end0/AI/LlamaServer/franken-goose-gdn-q4-reference.dU50Rf`.
+  Executable SHA-256 `689859b65962ce055b8f4361114b95fe2aea2c2baaa196c52e401e3ce1a92a9d`.
+  Short run directories `cuda-matrix-dense-both.ohrwnin4` and
+  `cuda-matrix-dense-both.qyewdhb2`.
+- Live diagnostic tensors under
+  `/home/end0/AI/LlamaServer/franken-apex-goose-gdn-q4-reference-layers.wmyaiiwo`.
 
 ## Kernel coverage
 

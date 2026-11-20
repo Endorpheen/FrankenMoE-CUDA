@@ -46,7 +46,8 @@ static struct {
     Context context;
     Module module;
     Function kernel, attention_tiles, attention_merge, gdn, q4_rows, vector, rms_reference;
-    Function mmq_pack, mmq_pack_shared, mmq_matrix, mmq_q6_matrix, dense_mma, gdn_mma, flash_mma, flash_stage;
+    Function mmq_pack, mmq_pack_shared, mmq_matrix, mmq_q4_matrix, mmq_q6_matrix;
+    Function dense_mma, gdn_mma, flash_mma, flash_stage;
     Function mmq_stream, mmq_stream_fixup;
     Function rope_phases, rope_apply, ssm_conv, ssm_conv_long;
     Function route_reduce, route_sort, route_topk, route_gather, route_norm, blit, fwht, moe_weighted;
@@ -61,7 +62,7 @@ static struct {
     sl_i64 state_ranges;
     struct expert_cache experts;
     int status, multiprocessors;
-    bool mmq_window, mmq_shared, moe_topk, mmq_q6_reference;
+    bool mmq_window, mmq_shared, moe_topk;
     int (*init)(unsigned);
     int (*device_get)(int *, int);
     int (*device_attribute)(int *, int, int);
@@ -184,9 +185,12 @@ static void init_cuda(void) {
     const bool rms_reference = rms_setting && strcmp(rms_setting, "1") == 0;
     const char * q6_setting = getenv("GOOSE_MMQ_Q6_REFERENCE");
     const bool q6_reference = mmq && q6_setting && strcmp(q6_setting, "1") == 0;
+    const char * q4_setting = getenv("GOOSE_MMQ_Q4_REFERENCE");
+    const bool q4_reference = mmq && q4_setting && strcmp(q4_setting, "1") == 0;
     const char * ssm_setting = getenv("GOOSE_SSM_REFERENCE");
     const bool ssm_reference = ssm_setting && strcmp(ssm_setting, "1") == 0;
     const bool mma_image = mmq || dense_mma || gdn_mma || flash_mma;
+    bool reference_arch = false;
     if (mma_image) {
         enum { compute_capability_major = 75, compute_capability_minor = 76 };
         int major = 0;
@@ -196,10 +200,10 @@ static void init_cuda(void) {
             return;
         }
         int minor = 0;
-        cuda.mmq_q6_reference = q6_reference && major == 8 &&
+        reference_arch = (q4_reference || q6_reference) && major == 8 &&
             cuda.device_attribute(&minor, compute_capability_minor, device) == 0 && minor == 9;
     }
-    if (stream_k || cuda.mmq_q6_reference) {
+    if (stream_k || reference_arch) {
         enum { multiprocessor_count = 16 };
         if (cuda.device_attribute(&cuda.multiprocessors, multiprocessor_count, device) != 0 || cuda.multiprocessors <= 0) return;
     }
@@ -210,7 +214,10 @@ static void init_cuda(void) {
         if (error == 0 && mmq) error = cuda.function_get(&cuda.mmq_pack, cuda.module, "goose_mmq_pack_q8");
         if (error == 0 && mmq) error = cuda.function_get(&cuda.mmq_pack_shared, cuda.module, "goose_mmq_pack_shared");
         if (error == 0 && mmq) error = cuda.function_get(&cuda.mmq_matrix, cuda.module, "goose_mmq_matmul");
-        if (error == 0 && cuda.mmq_q6_reference) {
+        if (error == 0 && reference_arch && q4_reference) {
+            error = cuda.function_get(&cuda.mmq_q4_matrix, cuda.module, "goose_mmq_q4_reference");
+        }
+        if (error == 0 && reference_arch && q6_reference) {
             error = cuda.function_get(&cuda.mmq_q6_matrix, cuda.module, "goose_mmq_q6_reference");
         }
         if (error == 0 && stream_k) error = cuda.function_get(&cuda.mmq_stream, cuda.module, "goose_mmq_stream");
@@ -859,14 +866,17 @@ static int launch_mmq_stream(DevicePtr weight, uint64_t stride, int extent, int 
 
 static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
                       int rows, sl_i64 jobs, int job_words, int64_t shared_rows, int64_t input_stride) {
-    enum { staging_budget = 16 * 1024 * 1024, routes_per_tile = 8, q6_kind = 14,
-        mmq_d4 = 0, mmq_ds4 = 1, mmq_d4_reciprocal = 3 };
+    enum { staging_budget = 16 * 1024 * 1024, routes_per_tile = 8, q4_kind = 12, q6_kind = 14,
+        mmq_d4 = 0, mmq_ds4 = 1, mmq_d4_reciprocal = 3, mmq_ds4_reciprocal = 4 };
     const int count = (int) (jobs.len / job_words);
     if (extent > INT_MAX / 256 || (size_t) count > SIZE_MAX / (3 * sizeof(int64_t))) return -1;
-    const bool q6_reference = cuda.mmq_q6_reference && kind == q6_kind && job_words == 2 && rows % 128 == 0 &&
-        (int64_t) (rows / 128) * (1 + (count - 1) / 128) <= 1073741823 / extent;
-    int32_t reference_columns = q6_reference ? count : 0;
-    int32_t layout = kind == 12 ? mmq_ds4 : q6_reference ? mmq_d4_reciprocal : mmq_d4;
+    Function reference_matrix = kind == q6_kind && rows % 128 == 0 ? cuda.mmq_q6_matrix :
+        kind == q4_kind ? cuda.mmq_q4_matrix : NULL;
+    const bool reference = reference_matrix && job_words == 2 &&
+        (int64_t) (1 + (rows - 1) / 128) * (1 + (count - 1) / 128) <= 1073741823 / extent;
+    int32_t reference_columns = reference ? count : 0;
+    int32_t layout = kind == q4_kind ? (reference ? mmq_ds4_reciprocal : mmq_ds4) :
+        (reference ? mmq_d4_reciprocal : mmq_d4);
     int64_t * tiles = malloc((size_t) count * 3 * sizeof(*tiles));
     if (!tiles) return -1;
     const int64_t tile_count = fg143_mmq_tiles(jobs, job_words, (sl_i64) {tiles, 3ll * count});
@@ -923,12 +933,12 @@ static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
                                 32, 1, 1, 0, NULL, pack_args, NULL);
         }
         if (error == 0) {
-            const int workers = cuda.mmq_stream && !q6_reference ?
+            const int workers = cuda.mmq_stream && !reference ?
                 (int) fg143_mmq_stream_workers(rows, batch, extent, cuda.multiprocessors) : 0;
             if (workers > 0) {
                 error = launch_mmq_stream(weight, stride, extent, kind, rows, first, first_route, job_words, batch, workers, input_stride);
             } else {
-                Function matrix = q6_reference ? cuda.mmq_q6_matrix : cuda.mmq_matrix;
+                Function matrix = reference ? reference_matrix : cuda.mmq_matrix;
                 error = cuda.launch(matrix, 1u + ((unsigned) rows - 1) / 64, (unsigned) batch, 1,
                                     128, 1, 1, 0, NULL, matrix_args, NULL);
             }

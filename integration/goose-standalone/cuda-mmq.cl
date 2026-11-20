@@ -145,6 +145,14 @@ __kernel void goose_mmq_q6_reference(__global const uint8_t * weights, __global 
         job_words, input_stride, columns, sms);
 }
 
+__kernel void goose_mmq_q4_reference(__global const uint8_t * weights, __global const uint8_t * packed,
+    __global uint8_t * output, __global const uint64_t * jobs, __global const uint64_t * tiles,
+    uint64_t stride, int32_t extent, int32_t kind, int32_t rows, int32_t first, int32_t first_route,
+    int32_t job_words, int64_t input_stride, int32_t columns, int32_t sms) {
+    mmq_matmul(weights, packed, output, jobs, tiles, stride, extent, 12, rows, first, first_route,
+        job_words, input_stride, columns, sms);
+}
+
 __kernel void goose_mmq_stream(__global const uint8_t * weights, __global const uint8_t * packed,
     __global uint8_t * output, __global const uint64_t * jobs, __global const uint64_t * tiles,
     __global float * fixup, uint64_t stride, int32_t extent, int32_t kind, int32_t rows,
