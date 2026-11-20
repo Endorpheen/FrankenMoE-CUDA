@@ -458,6 +458,10 @@ static int32_t fg283d_sload_i32(uint64_t at) { return *(__local int32_t *) at; }
 static void fg283d_sstore_i32(uint64_t at, int32_t value) { *(__local int32_t *) at = value; }
 static void fg283d_sync(void) { fg_device_barrier(); }
 static void fg283d_fail(int64_t code) { fg248d_fail(code); }
+static float fg169t_shuffle(float value, int32_t offset) { return fg_device_shfl(value, offset); }
+static int32_t fg169t_ishuffle(int32_t value, int32_t offset) {
+    return as_int(fg_device_shfl(as_float(value), offset));
+}
 
 #include "routing-device.h"
 
@@ -478,6 +482,15 @@ __kernel void goose_route_sort(__global uint8_t * x, __global uint8_t * y,
     __local int32_t scratch[4096], flags[128];
     fg_route_sort_g((uint64_t) x, (uint64_t) out, (uint64_t) cfg, row, lane, lanes,
         (uint64_t) scratch, (uint64_t) flags);
+}
+
+__kernel void goose_route_topk(__global uint8_t * x, __global uint8_t * y,
+    __global uint8_t * out, __global int64_t * cfg) {
+    uint32_t group, thread;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(group));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
+    fg_route_topk_g((uint64_t) x, (uint64_t) out, (uint64_t) cfg,
+        (int64_t) group * 4 + thread / 32, thread % 32);
 }
 
 __kernel void goose_route_gather(__global uint8_t * x, __global uint8_t * y,

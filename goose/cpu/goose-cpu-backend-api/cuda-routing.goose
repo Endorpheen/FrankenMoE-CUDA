@@ -17,6 +17,8 @@ fn routing_cuda(p: const Node &, x: const u8[:], y: const u8[:], dst: u8[:]) -> 
     var param: i64 = 0;
     var groups = rows(p.x);
     var lanes: i64 = 32;
+    let compact_topk = p.op == OP_TOP_K && p.ip[14] == 1 && width == 256 && p.d.ne[0] == 8 &&
+        p.x.ne[2] == 1 && p.x.ne[3] == 1;
     if kind == 0 {
         if width > 4096 || !same_shape(p.x, p.d) || p.ip[0] != 0 || p.ip[1] != 0 ||
            !(p.fp[0] > 0.0 && p.fp[0] <= 1.0) { return 0; }
@@ -40,11 +42,13 @@ fn routing_cuda(p: const Node &, x: const u8[:], y: const u8[:], dst: u8[:]) -> 
         lanes = 128;
         groups = 1 + (detail - 1) / lanes;
     } else if p.d.ne[0] != 1 || width > 4096 { return 0; }
+    if compact_topk { groups = 1 + (groups - 1) / 4; }
     if groups <= 0 || groups > 2147483647 { return 0; }
     var config: i64[22] = [0; 22];
     config[0] = kind;
     config[1] = groups;
     config[2] = lanes;
+    config[3] = if compact_topk { 1 } else { 0 };
     for axis in 4 {
         config[4 + axis] = p.x.ne[axis];
         config[8 + axis] = p.x.nb[axis];

@@ -1253,11 +1253,14 @@ static void check_cuda_routing(void) {
     struct ggml_tensor * order_src = ggml_view_2d(ctx, order_bank, 19, 2, order_bank->nb[1], 0);
     struct ggml_tensor * ascending = ggml_argsort(ctx, order_src, GGML_SORT_ORDER_ASC);
     struct ggml_tensor * unordered_top = ggml_top_k(ctx, order_src, 7);
+    struct ggml_tensor * compact_logits = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, 256, tokens);
+    struct ggml_tensor * compact_ids = ggml_top_k(ctx, ggml_soft_max(ctx, compact_logits), 8);
     struct ggml_cgraph * graph = ggml_new_graph_custom(ctx, 128, false);
     ggml_build_forward_expand(graph, normalized);
     ggml_build_forward_expand(graph, old);
     ggml_build_forward_expand(graph, ascending);
     ggml_build_forward_expand(graph, unordered_top);
+    ggml_build_forward_expand(graph, compact_ids);
     void * storage = fg_standalone_graph_alloc(graph);
     assert(storage);
     for (int row = 0; row < tokens * sequences; ++row) {
@@ -1271,16 +1274,25 @@ static void check_cuda_routing(void) {
         ((float *) order_bank->data)[i] = i == 4 || i == 26 ? NAN :
             i == 23 ? -INFINITY : (float) ((13 * i) % 7 - 3);
     }
+    for (int row = 0; row < tokens; ++row) {
+        for (int expert = 0; expert < 256; ++expert) {
+            ((float *) compact_logits->data)[row * 256 + expert] = row == 0 ? 0.25f :
+                (float) ((expert * 7 + row * 9 + expert / 13) % 23 - 11);
+        }
+    }
 
     assert(ggml_nbytes(ids) == 4 * selected * tokens * sequences);
     assert(setenv("GOOSE_CUDA", "0", 1) == 0);
     assert(fg_standalone_graph_compute(graph) == GGML_STATUS_SUCCESS);
     int32_t expected_ids[selected * tokens * sequences];
     int32_t expected_asc[38], expected_unordered[14];
+    int32_t expected_compact[8 * tokens];
     float expected_probs[experts * tokens * sequences], expected_weights[selected * tokens * sequences];
     memcpy(expected_ids, ids->data, sizeof(expected_ids));
     memcpy(expected_asc, ascending->data, sizeof(expected_asc));
     memcpy(expected_unordered, unordered_top->data, sizeof(expected_unordered));
+    memcpy(expected_compact, compact_ids->data, sizeof(expected_compact));
+    for (int i = 0; i < 8; ++i) assert(expected_compact[i] == i);
     memcpy(expected_probs, probs->data, sizeof(expected_probs));
     memcpy(expected_weights, normalized->data, sizeof(expected_weights));
     for (int row = 0; row < tokens * sequences; ++row) {
@@ -1294,6 +1306,7 @@ static void check_cuda_routing(void) {
     assert(memcmp(expected_ids, ids->data, sizeof(expected_ids)) == 0);
     assert(memcmp(expected_asc, ascending->data, sizeof(expected_asc)) == 0);
     assert(memcmp(expected_unordered, unordered_top->data, sizeof(expected_unordered)) == 0);
+    assert(memcmp(expected_compact, compact_ids->data, sizeof(expected_compact)) == 0);
     double max_probs = 0.0, max_weights = 0.0;
     for (int i = 0; i < ggml_nelements(probs); ++i) {
         const double error = fabs((double) ((float *) probs->data)[i] - expected_probs[i]);

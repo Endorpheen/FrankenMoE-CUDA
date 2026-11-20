@@ -60,6 +60,19 @@ fn warp_sum(v: f32) -> f32 {
     return value;
 }
 
+struct RouteWinner { value: f32, key: f32, expert: i32 }
+
+fn topk_winner(value: f32, key: f32, expert: i32) -> RouteWinner {
+    var winner = RouteWinner { value, key, expert };
+    var offset: i32 = 16;
+    while offset > 0 {
+        let alt = RouteWinner { shuffle(winner.value, offset), shuffle(winner.key, offset), ishuffle(winner.expert, offset) };
+        if alt.key > winner.key || (alt.key == winner.key && alt.expert < winner.expert) { winner = alt; }
+        offset >>= 1;
+    }
+    return winner;
+}
+
 fn topk_row(p: i64, row: u64, lane: i32, n_experts: i32, ept: i32, has_bias: bool) {
     let n_rows = get(p, 3, 1) as i32;
     let n_used = get(p, 3, 2) as i32;
@@ -291,20 +304,9 @@ fn topk_row(p: i64, row: u64, lane: i32, n_experts: i32, ept: i32, has_bias: boo
             }
             k += 1;
         }
-        var offset: i32 = 16;
-
-        while offset > 0 {
-            let val_v = shuffle(max_val, offset);
-            let val_k = shuffle(max_key, offset);
-            let expert = ishuffle(max_expert, offset);
-
-            if val_k > max_key || (val_k == max_key && expert < max_expert) {
-                max_val = val_v;
-                max_key = val_k;
-                max_expert = expert;
-            }
-            offset >>= 1;
-        }
+        let winner = topk_winner(max_val, max_key, max_expert);
+        max_val = winner.value;
+        max_expert = winner.expert;
 
         if max_expert % 32 == lane {
             if has_bias {

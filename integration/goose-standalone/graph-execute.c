@@ -274,6 +274,8 @@ void fg143_graph_describe(uint64_t address, sl_i64 metadata) {
     tensor_slice(t->src[3], packet + 59);
     packet[40] = t->op;
     for (int i = 0; i < 16; ++i) packet[41 + i] = t->op_params[i];
+    if (t->op == GGML_OP_TOP_K) packet[55] = t->src[0] && t->src[0]->op == GGML_OP_SOFT_MAX &&
+        !t->src[0]->src[1] && !t->src[0]->src[2];
     packet[57] = (int64_t) (uintptr_t) x.data;
     packet[58] = (int64_t) (uintptr_t) dst.data;
     packet[69] = t->src[4] != NULL;

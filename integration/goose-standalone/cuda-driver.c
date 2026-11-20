@@ -48,7 +48,7 @@ static struct {
     Function mmq_pack, mmq_pack_shared, mmq_matrix, dense_mma, gdn_mma, flash_mma, flash_stage;
     Function mmq_stream, mmq_stream_fixup;
     Function rope_phases, rope_apply, ssm_conv;
-    Function route_reduce, route_sort, route_gather, blit, fwht, moe_weighted;
+    Function route_reduce, route_sort, route_topk, route_gather, blit, fwht, moe_weighted;
     struct device_buffer input, output, weight, jobs;
     struct device_buffer mmq_packed, mmq_tiles, mmq_partials;
     struct device_buffer attention_value, attention_scratch, attention_config;
@@ -215,6 +215,7 @@ static void init_cuda(void) {
         if (error == 0) error = cuda.function_get(&cuda.ssm_conv, cuda.module, "goose_ssm_conv");
         if (error == 0) error = cuda.function_get(&cuda.route_reduce, cuda.module, "goose_route_reduce");
         if (error == 0) error = cuda.function_get(&cuda.route_sort, cuda.module, "goose_route_sort");
+        if (error == 0) error = cuda.function_get(&cuda.route_topk, cuda.module, "goose_route_topk");
         if (error == 0) error = cuda.function_get(&cuda.route_gather, cuda.module, "goose_route_gather");
         if (error == 0) error = cuda.function_get(&cuda.blit, cuda.module, "goose_tensor_blit");
         if (error == 0) error = cuda.function_get(&cuda.fwht, cuda.module, "goose_kv_fwht");
@@ -1390,7 +1391,8 @@ int64_t fg_cuda_routing(sl_i64 config, sl_u8 x, sl_u8 y, sl_u8 out) {
     const int active = start_context();
     if (active != 1) return active;
     const int64_t op = config.data[0];
-    const Function operations[] = {cuda.route_reduce, cuda.route_sort, cuda.route_gather, cuda.route_reduce};
+    const Function operations[] = {cuda.route_reduce, config.data[3] ? cuda.route_topk : cuda.route_sort,
+        cuda.route_gather, cuda.route_reduce};
     const sl_u8 data[] = {x, y, {(uint8_t *) config.data, config.len * (int64_t) sizeof(*config.data)}};
     struct device_buffer * buffers[] = {&cuda.input, &cuda.weight, &cuda.attention_config};
     DevicePtr staged[3] = {0}, output = 0;

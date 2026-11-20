@@ -40,6 +40,8 @@ cp "$ROOT/goose/cuda/standalone-routing.goose" "$OUT/routing.goose"
 sed -n '/^fn warp_max(/,/^}/p' "$ROOT/goose/chat/goose-cuda-softmax/device.goose" >> "$OUT/routing.goose"
 sed -n '/^fn cv_warp_sum(/,/^}/p' "$ROOT/goose/cuda/standalone-vector.goose" >> "$OUT/routing.goose"
 sed '/^fn argsort(x/,$d; /^extern "fg283d_smem"/d' "$ROOT/goose/cuda/goose-cuda-argsort/device.goose" >> "$OUT/routing.goose"
+sed -n '/^extern "fg169t_shuffle"/p; /^extern "fg169t_ishuffle"/p; /^struct RouteWinner /p;
+        /^fn topk_winner(/,/^}/p' "$ROOT/goose/cuda/goose-cuda-reductions/topk/device-e8.goose" >> "$OUT/routing.goose"
 cp "$ROOT/goose/cuda/standalone-transform.goose" "$OUT/transform.goose"
 sed '/^fn main()/,$d; s/^fn fg183f_row(/export fn fg183f_row(/' \
     "$ROOT/goose/cuda/goose-cuda-fwht/device.goose" > "$OUT/fwht.goose"
@@ -69,10 +71,13 @@ source = (out / f"{module}.c").read_text()
 fragment = source.split("/* ---- prototypes ---- */", 1)[1].split("static void gs_init_globals(void)", 1)[0]
 if "gs_sp" in fragment:
     raise SystemExit(f"{module} uses the host stack ABI")
-if module in ("q4-attention", "gdn", "rope", "ssm-conv", "fwht"):
+if module in ("q4-attention", "gdn", "rope", "ssm-conv", "fwht", "routing"):
     types = source.split("/* ---- types ---- */", 1)[1].split("/* ---- data ---- */", 1)[0]
+    excluded = ("gs_rhdr;", "gs_rref;", "gs_pref;", "sl_u8;")
+    if module == "routing":
+        excluded += ("a8_f32;",)
     types = "\n".join(line for line in types.splitlines()
-                      if not line.endswith(("gs_rhdr;", "gs_rref;", "gs_pref;", "sl_u8;")))
+                      if not line.endswith(excluded))
     fragment = types + "\n" + fragment
 if module in ("gdn-mma", "flash-mma"):
     types = source.split("/* ---- types ---- */", 1)[1].split("/* ---- data ---- */", 1)[0]

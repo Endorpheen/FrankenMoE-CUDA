@@ -3,6 +3,7 @@ extern "fg_rope_float" fn rt_float(cfg: u64, index: i64) -> f32;
 extern "fg_device_global_load" fn rt_load(address: u64) -> f32;
 extern "fg_device_global_store" fn rt_store(address: u64, value: f32);
 extern "fg_rope_position" fn rt_read_i32(address: u64, index: i64) -> i32;
+extern "fg283d_st_i32" fn rt_store_index(address: u64, offset: u64, value: i32);
 extern "fg_attn_neg_inf" fn rt_neg_inf() -> f32;
 extern "fg_attn_exp" fn rt_exp(value: f32) -> f32;
 extern "fg248d_fail" fn rt_fail(code: i64);
@@ -64,6 +65,27 @@ export fn fg_route_sort(x: u64, out: u64, cfg: u64, row: i64, lane: i64, lanes: 
     let results = rt_word(cfg, 12);
     argsort_row(rt_row(x, cfg, row), out + ((4 * row * results) as u64),
         width, rt_word(cfg, 20), results, rt_word(cfg, 21), lanes, lane, scratch, flags);
+}
+
+// Select from normalized probabilities. One warp owns one 256-expert row.
+export fn fg_route_topk(x: u64, out: u64, cfg: u64, row: i64, lane: i32) {
+    if row >= rt_word(cfg, 5) { return; }
+    let src = rt_row(x, cfg, row);
+    var scores: f32[8] = default <f32[8]>();
+    for i in 8 { scores[i] = rt_load(src + ((4 * (i * 32 + (lane as i64))) as u64)); }
+    for slot in 8 {
+        var key = scores[0];
+        var expert = lane;
+        for i in 1 .. 8 {
+            if scores[i] > key {
+                key = scores[i];
+                expert = lane + 32 * (i as i32);
+            }
+        }
+        let winner = topk_winner(key, key, expert);
+        if winner.expert % 32 == lane { scores[winner.expert / 32] = rt_neg_inf(); }
+        if lane == 0 { rt_store_index(out, (4 * (row * 8 + slot)) as u64, winner.expert); }
+    }
 }
 
 export fn fg_route_gather(x: u64, y: u64, out: u64, cfg: u64, index: i64) {
