@@ -3,6 +3,9 @@
 Updated: 2026-11-20. This file is the current state; update it in the same change
 as every accepted slice.
 
+The active [Apex 32K/512 acceptance checklist](APEX-32K-ACCEPTANCE.md)
+records the required gates and their evidence for the independent runtime.
+
 ## C++ removal checkout
 
 The full `deletecplusplus` checkout reached zero C++/CUDA sources, C++-bearing headers,
