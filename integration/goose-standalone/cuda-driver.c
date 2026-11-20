@@ -42,7 +42,7 @@ static struct {
     Function kernel, attention_tiles, attention_merge, gdn, q4_rows, vector;
     Function mmq_pack, mmq_matrix;
     Function rope_phases, rope_apply, ssm_conv;
-    Function route_reduce, route_sort, route_gather, blit;
+    Function route_reduce, route_sort, route_gather, blit, fwht;
     struct device_buffer input, output, weight, jobs;
     struct device_buffer mmq_packed, mmq_tiles;
     struct device_buffer attention_value, attention_scratch, attention_config;
@@ -97,6 +97,7 @@ static _Thread_local uint64_t cuda_gdns;
 static _Thread_local uint64_t cuda_resident_kv, cuda_resident_gdn;
 static _Thread_local uint64_t cuda_q4_writes;
 static _Thread_local uint64_t cuda_vectors;
+static _Thread_local uint64_t cuda_fwhts;
 static _Thread_local uint64_t cuda_ropes, cuda_convs;
 static _Thread_local uint64_t cuda_routes[4];
 static _Thread_local uint64_t cuda_blits[3];
@@ -176,6 +177,7 @@ static void init_cuda(void) {
         if (error == 0) error = cuda.function_get(&cuda.route_sort, cuda.module, "goose_route_sort");
         if (error == 0) error = cuda.function_get(&cuda.route_gather, cuda.module, "goose_route_gather");
         if (error == 0) error = cuda.function_get(&cuda.blit, cuda.module, "goose_tensor_blit");
+        if (error == 0) error = cuda.function_get(&cuda.fwht, cuda.module, "goose_kv_fwht");
         Context current = NULL;
         int pop_error = cuda.pop(&current);
         if (error == 0) error = pop_error;
@@ -1187,4 +1189,34 @@ int64_t fg_cuda_blit(sl_i64 config, sl_u8 x, sl_u8 y, sl_u8 out) {
 void fg_cuda_take_blits(uint64_t * blits) {
     memcpy(blits, cuda_blits, sizeof(cuda_blits));
     memset(cuda_blits, 0, sizeof(cuda_blits));
+}
+
+int64_t fg_cuda_fwht(sl_u8 src, sl_u8 dst, int32_t width, int64_t rows, float scale) {
+    if (width > 512) return 0;
+    const int64_t blocks = (rows + 3) / 4;
+    if (blocks <= 0 || blocks > INT_MAX) return -1;
+    const int active = start_context();
+    if (active != 1) return active;
+    DevicePtr input = 0, output = 0;
+    const uint64_t host = (uint64_t) (uintptr_t) dst.data;
+    int error = activation_output(host, dst.len, &output);
+    if (error == 0) error = activation_input(src, &cuda.input, &input);
+    if (error == 0) {
+        void * args[] = {&input, &output, &width, &rows, &scale};
+        error = cuda.launch(cuda.fwht, (unsigned) blocks, 1, 1, 128, 1, 1, 0, NULL, args, NULL);
+        if (error == 0) error = activation_publish(host, dst.len, output, false);
+    }
+    const int popped = finish_context();
+    if (error != 0 || popped != 0) {
+        fprintf(stderr, "Goose CUDA: KV FWHT failed (%d)\n", error ? error : popped);
+        return -1;
+    }
+    ++cuda_fwhts;
+    return 1;
+}
+
+uint64_t fg_cuda_take_fwhts(void) {
+    const uint64_t count = cuda_fwhts;
+    cuda_fwhts = 0;
+    return count;
 }

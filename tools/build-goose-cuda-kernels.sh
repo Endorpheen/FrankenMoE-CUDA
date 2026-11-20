@@ -38,6 +38,8 @@ sed -n '/^fn warp_max(/,/^}/p' "$ROOT/goose/chat/goose-cuda-softmax/device.goose
 sed -n '/^fn cv_warp_sum(/,/^}/p' "$ROOT/goose/cuda/standalone-vector.goose" >> "$OUT/routing.goose"
 sed '/^fn argsort(x/,$d; /^extern "fg283d_smem"/d' "$ROOT/goose/cuda/goose-cuda-argsort/device.goose" >> "$OUT/routing.goose"
 cp "$ROOT/goose/cuda/standalone-transform.goose" "$OUT/transform.goose"
+sed '/^fn main()/,$d; s/^fn fg183f_row(/export fn fg183f_row(/' \
+    "$ROOT/goose/cuda/goose-cuda-fwht/device.goose" > "$OUT/fwht.goose"
 sed '/^fn main()/,$d; s/^fn fg180q_mmq(/export fn fg180q_mmq(/' \
     "$ROOT/goose/cuda/goose-cuda-mmq-q8-1/device.goose" > "$OUT/mmq-quant.goose"
 cp "$ROOT/goose/cuda/standalone-mmq.goose" "$OUT/mmq.goose"
@@ -45,7 +47,7 @@ sed -n '/^fn scale_min(/,/^}/p' "$ROOT/goose/cuda/goose-cuda-dequant-q4k/device.
 sed -n '/^fn q4_mmq_nibbles(/,/^}/p' "$ROOT/goose/cuda/goose-mmq-load-q4k/device.goose" >> "$OUT/mmq.goose"
 sed -n '/^fn vsub4(/,/^}/p; /^fn q6_mmq_bytes(/,/^}/p' \
     "$ROOT/goose/cuda/goose-mmq-load-q6k/device.goose" >> "$OUT/mmq.goose"
-for module in q4k q6k matmul q4-attention gdn q4-set-rows vector rope ssm-conv routing transform mmq-quant mmq; do
+for module in q4k q6k matmul q4-attention gdn q4-set-rows vector rope ssm-conv routing transform fwht mmq-quant mmq; do
     "$GOOSE" --standalone -o "$OUT/$module.c" --header "$OUT/$module.h" "$OUT/$module.goose"
     python3 - "$OUT" "$module" <<'PY'
 from pathlib import Path
@@ -56,7 +58,7 @@ source = (out / f"{module}.c").read_text()
 fragment = source.split("/* ---- prototypes ---- */", 1)[1].split("static void gs_init_globals(void)", 1)[0]
 if "gs_sp" in fragment:
     raise SystemExit(f"{module} uses the host stack ABI")
-if module in ("q4-attention", "gdn", "rope", "ssm-conv"):
+if module in ("q4-attention", "gdn", "rope", "ssm-conv", "fwht"):
     types = source.split("/* ---- types ---- */", 1)[1].split("/* ---- data ---- */", 1)[0]
     types = "\n".join(line for line in types.splitlines()
                       if not line.endswith(("gs_rhdr;", "gs_rref;", "gs_pref;", "sl_u8;")))

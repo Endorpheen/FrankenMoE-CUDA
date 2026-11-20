@@ -17,6 +17,7 @@ extern int64_t fg_cuda_load_experts(sl_i64 groups, sl_i64 layers, int64_t bytes,
 extern int64_t fg_cuda_load_model_state(sl_i64 ranges, int64_t bytes);
 extern int64_t fg_cuda_state_read(uint64_t host, int64_t bytes);
 extern int64_t fg_cuda_state_write(uint64_t host, int64_t bytes);
+extern int64_t fg_q35_fwht_node(int64_t context, int64_t input, int64_t width);
 
 static void check_model_step(const char * path) {
     fg_goose_host_ensure_init();
@@ -1136,7 +1137,48 @@ static void check_cuda_routing(void) {
     ggml_free(ctx);
 }
 
+static void check_kv_fwht(int width) {
+    enum { rows = 5 };
+    struct ggml_context * ctx = ggml_init((struct ggml_init_params){ 64 * 1024, NULL, true });
+    assert(ctx);
+    struct ggml_tensor * src = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, width, rows);
+    struct ggml_tensor * dst = (void *) (intptr_t) fg_q35_fwht_node((intptr_t) ctx, (intptr_t) src, width);
+    assert(dst);
+    assert(!fg_q35_fwht_node((intptr_t) ctx, (intptr_t) src, 96));
+    struct ggml_cgraph * graph = ggml_new_graph_custom(ctx, 16, false);
+    ggml_build_forward_expand(graph, dst);
+    void * storage = fg_standalone_graph_alloc(graph);
+    assert(storage);
+    float input[rows * 256];
+    for (int i = 0; i < rows * width; ++i) input[i] = (float) ((i * 11 + i / 23) % 31 - 15) / 32.0f;
+    memcpy(src->data, input, (size_t) (rows * width) * sizeof(float));
+    assert(fg_standalone_graph_compute(graph) == GGML_STATUS_SUCCESS);
+    const float * actual = dst->data;
+    const float scale = 1.0f / sqrtf(width);
+    float max_error = 0.0f;
+    for (int row = 0; row < rows; ++row) {
+        for (int out = 0; out < width; ++out) {
+            float expected = 0.0f;
+            for (int j = 0; j < width; ++j) {
+                float term = input[row * width + j] * scale;
+                expected += __builtin_parity((unsigned) (out & j)) ? -term : term;
+            }
+            float error = fabsf(actual[row * width + out] - expected);
+            assert(error == 0.0f);
+            max_error = fmaxf(max_error, error);
+        }
+    }
+    printf("KV FWHT width %d, %d rows: max error %.9g\n", width, rows, max_error);
+    free(storage);
+    ggml_free(ctx);
+}
+
 int main(int argc, char ** argv) {
+    if (argc == 2 && strcmp(argv[1], "--kv-fwht") == 0) {
+        check_kv_fwht(64);
+        check_kv_fwht(256);
+        return 0;
+    }
     check_scalar_and_recurrent();
     check_gdn_snapshots(33, false);
     check_gdn_snapshots(33, true);

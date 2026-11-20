@@ -48,6 +48,9 @@ export fn fg143_node_run(packet: const i64[:], mode: i64,
         for i in 4 { p.fp[i] = from_bits(packet[42 + i] as! u32); }
     }
     if mode == 1 { p.ip[15] = 1464816203; }
+    if p.op == OP_CUSTOM && p.ip[0] == 0x46574854 {
+        return mode == 1 || kv_fwht(p, x, dst);
+    }
     if mode == 0 && p.op == OP_FLASH_ATTN_EXT {
         if packet[69] != 0 { return false; }
         let mask_shape = packet_tensor(packet, 59);
@@ -58,6 +61,42 @@ export fn fg143_node_run(packet: const i64[:], mode: i64,
     }
     let addresses: i64[3] = [packet[57], packet[70], packet[58]];
     return entry(p, x, y, z, dst, scratch, indices, addresses, gxx, gxs, gs, g3x, g3s, g1, signs, palette);
+}
+
+extern "fg_cuda_fwht" fn cuda_fwht(src: const u8[:], dst: u8[:], width: i32, rows: i64, scale: f32) -> i64;
+
+fn kv_fwht(p: const Node &, src: const u8[:], dst: u8[:]) -> bool {
+    let width = p.ip[1];
+    if width < 64 || width > 0x7fffffff || width > p.x.ne[0] || (width & (width - 1)) != 0 || p.x.ne[0] % width != 0 ||
+       p.x.kind != 0 || p.d.kind != 0 || !dense_scalar(p.x, 4) || !dense_scalar(p.d, 4) ||
+       src.len != p.x.bytes || src.len != dst.len || src.len <= 0 || src.len % (4 * width) != 0 { return false; }
+    let count = src.len / (4 * width);
+    let scale = 1.0 / sqrt32(width as f32);
+    let device = cuda_fwht(src, dst, width as i32, count, scale);
+    if device != 0 { return device > 0; }
+    if activation_read(src) != 0 { return false; }
+    for i in src.len / 4 {
+        let byte = i * 4;
+        write32(dst, byte, bits(from_bits(read32(src, byte)) * scale));
+    }
+    for row in count {
+        let start = row * width * 4;
+        var step: i64 = 1;
+        while step < width {
+            for group in width / (2 * step) {
+                for lane in step {
+                    let a = start + (group * 2 * step + lane) * 4;
+                    let b = a + step * 4;
+                    let av = from_bits(read32(dst, a));
+                    let bv = from_bits(read32(dst, b));
+                    write32(dst, a, bits(av + bv));
+                    write32(dst, b, bits(av - bv));
+                }
+            }
+            step *= 2;
+        }
+    }
+    return true;
 }
 
 fn state_plan(packet: const i64[:]) -> StatePlan {

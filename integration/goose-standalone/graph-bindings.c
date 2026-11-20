@@ -19,6 +19,19 @@
 
 #include "ggml.h"
 
+int64_t fg_q35_fwht_node(int64_t context, int64_t input, int64_t width) {
+    struct ggml_tensor * src = (void *) (intptr_t) input;
+    if (!context || !src || src->type != GGML_TYPE_F32 || !ggml_is_contiguous(src) ||
+        width < 64 || width > src->ne[0] || src->ne[0] % width != 0 || (width & (width - 1))) return 0;
+    struct ggml_tensor * dst = ggml_new_tensor_4d((void *) (intptr_t) context, GGML_TYPE_F32,
+        src->ne[0], src->ne[1], src->ne[2], src->ne[3]);
+    dst->op = GGML_OP_CUSTOM;
+    dst->src[0] = src;
+    dst->op_params[0] = 0x46574854;
+    dst->op_params[1] = (int32_t) width;
+    return (int64_t) (intptr_t) dst;
+}
+
 // ---- the fixture's helpers, verbatim in behaviour ---------------------------
 
 static int64_t fg_arg(int64_t p, int64_t i) {

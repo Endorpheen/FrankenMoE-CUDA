@@ -58,7 +58,7 @@ generation repair calls for an immediate full run.
 | 11 | Fused MoE combination. `ggml_cuda_match_moe_weighted_reduction` → `moe_weighted_reduction_f32`. | Reference makes one fused weighted combination. Goose materializes routed projections and reduces views over separate operations. | PARTIAL. Fuse route weights and reduction with the exact accumulation order. Test large MoE batches and measure removed intermediate storage and copies. |
 | 12 | FP16 MMA Flash Attention. `fattn.cu` `ggml_cuda_flash_attn_ext` → shape selection → `fattn-mma-f16.cuh` `flash_attn_ext_f16`. | Reference prefill calls the MMA kernel even with Q4 KV storage. Goose uses Q4 scalar tiles plus a separate merge. | MISSING. Reuse Q4 cache and conversion leaves with the reference tiled MMA schedule and causal/mask behavior. Verify GQA, real head width 256 and long-context logits. |
 | 13 | Small-query Flash Attention vector dispatch. `fattn.cu` → `flash_attn_ext_vec`. | Reference trace contains the vector path. Goose slices its scalar Q4 tiles for both prefill and decode. | MISSING. Restore the small-query specialization and validate softmax merging and decode latency at 32K. |
-| 14 | Attention staging and bounds. `fattn-common.cuh` and `fattn-mma-f16.cuh` stage Q4_0 KV as FP16, use FWHT where selected, and derive KV bounds from the mask. | `dequantize_block_q4_0`, `fwht_cuda` and `flash_attn_mask_to_KV_max` execute. Goose tracks causal bounds in its KV transaction and reads Q4 directly. | PARTIAL. Match the reference tensor transforms in the exact selected path. Check Float16 rounding, packed bytes and masked tails before timing. |
+| 14 | Attention staging and bounds. `fattn-common.cuh` and `fattn-mma-f16.cuh` stage Q4_0 KV as FP16, use FWHT where selected, and derive KV bounds from the mask. | `dequantize_block_q4_0`, `fwht_cuda` and `flash_attn_mask_to_KV_max` execute. Goose now applies the reference Q/K/V and inverse-output rotations in the live Q4 KV graph. It tracks causal bounds in its KV transaction and reads Q4 directly. | PARTIAL. FWHT executes at widths 256 and 64 on Apex. Float16 staging/rounding, masked tails and generation parity still need validation. |
 | 15 | Flash partition reconciliation. `fattn-mma-f16.cuh` → stream-K general/uniform fix-up, plus vector combine-results. | All three reference families are present. Goose merge implements its current scalar partition geometry. | MISSING. Port compatible reconciliation with the MMA and vector schedules. Compare numerical reductions across tail partitions and multihead layouts. |
 | 16 | GDN prefill Tensor Cores. `ggml_cuda_op_gated_delta_net_impl` → `gdn_single` in `gated-delta-net-mma.cu`. | Reference executes `gdn_single<16,128,1>`. Goose invokes `fg_cuda_gdn` → scalar `goose_gated_delta_net`. | MISSING. Restore the blocked recurrent MMA order and shared state update. Verify full and chunked hidden states for each layer, then prefill time and state-memory peaks. |
 | 17 | GDN decode specialization and fused state cache. `ggml_cuda_op_gated_delta_net_fused_cache` → native scalar `gated_delta_net_cuda` or shape-selected MMA. | Reference executes scalar decode GDN and known fused cache code. Goose has CUDA-resident GDN state and a publish/consume path. | PARTIAL. Match the selected decode kernel's arithmetic and state snapshots against the reference across prefill → decode. Check for stale aliases and measure actual state moves. |
@@ -166,6 +166,29 @@ Raw data:
 `/home/end0/AI/LlamaServer/franken-goose-vector-windows.a9wPqw/apex-functional.qYHYlH`.
 Executable SHA-256:
 `bfb055048259d72514f0efff1919999391f86b766bd5c973bbecb6e73682e66d`.
+
+## Q4 KV rotation checkpoint
+
+EXP-2026-11-20-1524 reconnects the existing Goose FWHT warp body.
+It follows EXP-1476 `llama_kv_cache` and `llm_graph_context::build_attn`
+at `e7c9155a`: rotate Q and K after RoPE, rotate V before Q4_0
+storage and apply the inverse V transform before the attention gate.
+CPU and both CUDA images matched the Sylvester-matrix oracle exactly
+for widths 64 and 256, five rows each, including the partial warp group.
+
+The frozen short request executed 40 `goose_kv_fwht` kernels in
+18.085 ms at physical 4096/4096. Prefill was 46.428 s, or 88.223
+tokens/s. The earlier profiled MMQ observation was 46.363 s, or
+88.346 tokens/s, on a different checkpoint. The runs do not
+establish a speed or memory change. The first generated ID remains
+different from the reference (Goose 9495, EXP-1476 332). This was
+a one-token diagnostic without a decode throughput or RAM/VRAM
+acceptance measurement. ELF dependencies remain libc and libm.
+
+Raw data: `/home/end0/AI/LlamaServer/franken-goose-kv-fwht.TbKeRQ/mmq-profile.xv66Ks`.
+Request SHA-256: `6aaecd1c3e3744ebc1d19039bc036fb808508b659dd44628618a0c27e9236973`.
+Response SHA-256: `206b268a8bb9da0ac08a90f7f57a7d0c3560cfeab4618f9dd9cdaaf99c558bb6`.
+Executable SHA-256: `8ec11f5f4ec138c5ecd7571f82b2b149e86f42c430902dbccf32c867cc23c023`.
 
 ## Kernel coverage
 

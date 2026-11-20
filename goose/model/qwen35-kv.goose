@@ -155,21 +155,34 @@ export fn q35_attn_cached(c: i64, x: i64, positions: i64, mask: i64, weights: i6
     if weights[2] == 0 || ne(weights[2], 1) != width { return 0; }
     if q35_attn_project(c, x, positions, weights, cfg, sections, work, nodes) == 0 { return 0; }
     if ne(nodes[14], 0) * ne(nodes[14], 1) != width { return 0; }
-    let k_stride: i64 = qa_get(nodes[14], 1, 2) as! i64;
-    let v_stride: i64 = qa_get(nodes[8], 1, 2) as! i64;
-    nodes[29] = view4(c, nodes[14], width, count, 1, 1, k_stride, k_stride * count, k_stride * count, 0);
-    nodes[30] = view4(c, nodes[8], width, count, 1, 1, v_stride, v_stride * count, v_stride * count, 0);
+    let head: i64 = width / cfg[1];
+    var q = nodes[13];
+    var k = nodes[14];
+    var v = nodes[8];
+    var value_rotation: i64 = 0;
+    if head % 64 == 0 {
+        var key_rotation: i64 = 64;
+        while head % (2 * key_rotation) == 0 { key_rotation *= 2; }
+        value_rotation = 64;
+        q = qa_fwht_node(c, q, key_rotation);
+        k = qa_fwht_node(c, k, key_rotation);
+        v = qa_fwht_node(c, v, value_rotation);
+        if q == 0 || k == 0 || v == 0 { return 0; }
+    }
+    let k_stride: i64 = qa_get(k, 1, 2) as! i64;
+    let v_stride: i64 = qa_get(v, 1, 2) as! i64;
+    nodes[29] = view4(c, k, width, count, 1, 1, k_stride, k_stride * count, k_stride * count, 0);
+    nodes[30] = view4(c, v, width, count, 1, 1, v_stride, v_stride * count, v_stride * count, 0);
     qa_begin(work, 19, c, cache_k, nodes[29], indices, 0);
     nodes[31] = gb_common_args(work);
     qa_begin(work, 19, c, cache_v, nodes[30], indices, 0);
     nodes[32] = gb_common_args(work);
-    let head: i64 = width / cfg[1];
     let head_bytes: i64 = qk_row_bytes(head);
     let row_bytes: i64 = qk_row_bytes(width);
     let stream_bytes: i64 = row_bytes * state[1];
     nodes[33] = view4(c, nodes[31], head, cfg[1], read_rows, 1, head_bytes, row_bytes, stream_bytes, 0);
     nodes[34] = view4(c, nodes[32], head, cfg[1], read_rows, 1, head_bytes, row_bytes, stream_bytes, 0);
-    let result: i64 = q35_attn_finish(c, x, nodes[13], nodes[33], nodes[34], nodes[15], mask, weights, cfg, work, nodes);
+    let result: i64 = qa_attn_finish(c, x, q, nodes[33], nodes[34], nodes[15], mask, weights, cfg, work, nodes, value_rotation);
     if result == 0 { return 0; }
     // Zero is the ordinary attention ABI. The standalone executor reads
     // the positive first-query key count from the private parameter word.

@@ -28,6 +28,7 @@ extern int fg_cuda_state_graph_done(void);
 extern void fg_cuda_take_resident_state(uint64_t * kv, uint64_t * gdn);
 extern uint64_t fg_cuda_take_q4_writes(void);
 extern uint64_t fg_cuda_take_vectors(void);
+extern uint64_t fg_cuda_take_fwhts(void);
 extern void fg_cuda_take_position(uint64_t * ropes, uint64_t * convs);
 extern void fg_cuda_take_routes(uint64_t * routes);
 extern void fg_cuda_take_blits(uint64_t * blits);
@@ -297,6 +298,7 @@ static enum ggml_status compute_graph(struct ggml_cgraph * graph, bool all, cons
     fg_cuda_take_resident_state(&resident_kv, &resident_gdn);
     const uint64_t writes = fg_cuda_take_q4_writes();
     const uint64_t vectors = fg_cuda_take_vectors();
+    const uint64_t fwhts = fg_cuda_take_fwhts();
     uint64_t ropes, convs;
     fg_cuda_take_position(&ropes, &convs);
     uint64_t routes[4];
@@ -323,6 +325,7 @@ static enum ggml_status compute_graph(struct ggml_cgraph * graph, bool all, cons
         if (resident_gdn) fprintf(stderr, "Goose CUDA resident GDN: %llu nodes\n", (unsigned long long) resident_gdn);
         if (writes) fprintf(stderr, "Goose CUDA resident Q4 writes: %llu nodes\n", (unsigned long long) writes);
         if (vectors) fprintf(stderr, "Goose CUDA vector: %llu nodes\n", (unsigned long long) vectors);
+        if (fwhts) fprintf(stderr, "Goose CUDA KV FWHT: %llu nodes\n", (unsigned long long) fwhts);
         if (ropes) fprintf(stderr, "Goose CUDA RoPE: %llu nodes\n", (unsigned long long) ropes);
         if (convs) fprintf(stderr, "Goose CUDA SSM convolution: %llu nodes\n", (unsigned long long) convs);
         for (int i = 0; i < 4; ++i) {

@@ -485,6 +485,35 @@ static void fg_device_copy_u32(uint64_t src, uint64_t dst) {
 
 #include "transform-device.h"
 
+static float fg183f_ld_f32(uint64_t base, uint64_t byte) {
+    return *(__global const float *) (base + byte);
+}
+
+static void fg183f_st_f32(uint64_t base, uint64_t byte, float value) {
+    *(__global float *) (base + byte) = value;
+}
+
+static float fg183f_shfl_xor(float value, uint32_t mask, int32_t delta, int32_t width) {
+    (void) mask;
+    (void) width;
+    return fg_device_shfl(value, delta);
+}
+
+static void fg183f_fail(int64_t code) {
+    (void) code;
+    device_trap();
+}
+
+#include "fwht-device.h"
+
+__kernel void goose_kv_fwht(__global const float * src, __global float * dst,
+                           int32_t width, int64_t rows, float scale) {
+    uint32_t block, thread;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(block));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
+    fg183f_row_g((uint64_t) src, (uint64_t) dst, width, rows, scale, block, 4, thread / 32, thread % 32, 32);
+}
+
 __kernel void goose_tensor_blit(__global uint8_t * x, __global uint8_t * y,
     __global uint8_t * out, __global int64_t * cfg) {
     fg_tensor_blit_g((uint64_t) x, (uint64_t) y, (uint64_t) out, (uint64_t) cfg, position_thread());

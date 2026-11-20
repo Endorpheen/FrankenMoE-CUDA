@@ -3,6 +3,7 @@
 extern "fg156_tget" fn qa_get(t: i64, field: i64, index: i64) -> u64;
 extern "fg156_tset" fn qa_set(t: i64, field: i64, index: i64, value: u64);
 extern "fg156_name" fn qa_name(t: i64, source: i64, style: i64);
+extern "fg_q35_fwht_node" fn qa_fwht_node(c: i64, input: i64, width: i64) -> i64;
 
 fn qa_begin(work: i64[:], mode: i64, c: i64, a: i64, b: i64, d: i64, op: i64) {
     var i: i64 = 0;
@@ -149,8 +150,8 @@ export fn q35_attn_project(c: i64, x: i64, positions: i64, weights: i64[:], cfg:
 
 // K/V may be fresh projection tensors or later cache views. The caller inserts
 // the state update between project and finish; this function owns the MHA path.
-export fn q35_attn_finish(c: i64, x: i64, q: i64, k: i64, v: i64, gate: i64, mask: i64,
-                         weights: i64[:], cfg: i64[:], work: i64[:], nodes: i64[:]) -> i64 {
+fn qa_attn_finish(c: i64, x: i64, q: i64, k: i64, v: i64, gate: i64, mask: i64,
+                  weights: i64[:], cfg: i64[:], work: i64[:], nodes: i64[:], value_rotation: i64) -> i64 {
     if c == 0 || x == 0 || q == 0 || k == 0 || v == 0 || gate == 0 ||
        weights.len < 8 || cfg.len < 14 || work.len < 16 || nodes.len < 29 {
         return 0;
@@ -175,7 +176,9 @@ export fn q35_attn_finish(c: i64, x: i64, q: i64, k: i64, v: i64, gate: i64, mas
     qa_begin(work, 35, c, nodes[21], 0, 0, 2);
     work[7] = cfg[13];
     if gb_common_args(work) != 1 { return 0; }
-    nodes[22] = qa_reshape(c, nodes[21], times(ne(q, 0), ne(q, 1)), ne(q, 2), 1, 1);
+    let attention = if value_rotation == 0 { nodes[21] } else { qa_fwht_node(c, nodes[21], value_rotation) };
+    if attention == 0 { return 0; }
+    nodes[22] = qa_reshape(c, attention, times(ne(q, 0), ne(q, 1)), ne(q, 2), 1, 1);
     qa_begin(work, 3, c, gate, 0, 0, 7);
     nodes[23] = gb_common_args(work);
     nodes[24] = qa_binary(c, nodes[22], nodes[23], 7, work);
@@ -184,6 +187,11 @@ export fn q35_attn_finish(c: i64, x: i64, q: i64, k: i64, v: i64, gate: i64, mas
     nodes[27] = qa_rms(c, nodes[26], cfg[5], work);
     nodes[28] = qa_binary(c, nodes[27], weights[7], 7, work);
     return nodes[28];
+}
+
+export fn q35_attn_finish(c: i64, x: i64, q: i64, k: i64, v: i64, gate: i64, mask: i64,
+                         weights: i64[:], cfg: i64[:], work: i64[:], nodes: i64[:]) -> i64 {
+    return qa_attn_finish(c, x, q, k, v, gate, mask, weights, cfg, work, nodes, 0);
 }
 
 export fn q35_attn_block(c: i64, x: i64, positions: i64, mask: i64, weights: i64[:], cfg: i64[:],
