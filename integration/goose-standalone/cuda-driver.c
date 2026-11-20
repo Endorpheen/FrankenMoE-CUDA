@@ -84,7 +84,7 @@ static pthread_mutex_t cuda_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t activation_lock = PTHREAD_MUTEX_INITIALIZER;
 enum { ACTIVATION_WORDS = 5, ACTIVATION_RECORDS = 256, ACTIVATION_BYTES = 64 * 1024 * 1024 };
 static _Thread_local struct {
-    bool active, unavailable;
+    bool active, unavailable, defer_waits, pending;
     uint64_t target;
     int64_t target_bytes, target_deadline, count;
     int64_t ranges[ACTIVATION_RECORDS * ACTIVATION_WORDS];
@@ -313,13 +313,15 @@ static int activation_sync_range(uint64_t host, int64_t bytes, bool invalidate) 
     return 0;
 }
 
-int fg_cuda_activation_graph_begin(void) {
+int fg_cuda_activation_graph_begin(bool planned) {
     if (activations.active) return -1;
     const char * setting = getenv("GOOSE_CUDA");
     if (setting && setting[0] == '0' && !setting[1]) return 0;
     pthread_mutex_lock(&activation_lock);
     activations.active = true;
     activations.unavailable = false;
+    activations.defer_waits = planned;
+    activations.pending = false;
     activations.hits = 0;
     activations.skipped_download_bytes = 0;
     activations.expired_bytes = 0;
@@ -382,7 +384,15 @@ int fg_cuda_activation_graph_end(bool success, bool all, uint64_t host, int64_t 
     activations.expired_bytes = 0;
     if (!activations.active) return 0;
     int error = 0;
-    if (success && (activations.count > 0 || activations.large_output[1] > 0)) {
+    if (activations.pending) {
+        if (push_context() != 1) error = -1;
+        else {
+            error = cuda.sync();
+            if (finish_context() != 0) error = -1;
+            if (error != 0) fprintf(stderr, "Goose CUDA: graph completion failed (%d)\n", error);
+        }
+    }
+    if (error == 0 && success && (activations.count > 0 || activations.large_output[1] > 0)) {
         if (all) {
             if (push_context() != 1) error = -1;
             else {
@@ -397,12 +407,14 @@ int fg_cuda_activation_graph_end(bool success, bool all, uint64_t host, int64_t 
     activations.count = 0;
     activations.large_output[1] = 0;
     activations.target = 0;
+    activations.pending = false;
     activations.active = false;
     pthread_mutex_unlock(&activation_lock);
     return error;
 }
 
 static int activation_reserve_output(size_t bytes) {
+    if (activations.active && activations.defer_waits) activations.pending = true;
     const int error = activation_download_record(activations.large_output, cuda.output.address);
     if (error != 0) return error;
     activations.large_output[1] = 0;
@@ -412,6 +424,9 @@ static int activation_reserve_output(size_t bytes) {
 // Called with the CUDA context bound. Reserve output before resolving input
 // addresses so a flush never invalidates a pointer passed to a launch.
 static int activation_output(uint64_t host, int64_t bytes, DevicePtr * device) {
+    // All kernels and synchronous copies use the same legacy default stream.
+    // Check its completion at graph exit even if a later operation fails.
+    if (activations.active && activations.defer_waits) activations.pending = true;
     if (activations.active && !activations.unavailable && host != 0 && host == activations.target &&
         bytes <= activations.target_bytes && bytes > 0 && bytes <= ACTIVATION_BYTES) {
         if (!cuda.activations.address) {
@@ -454,7 +469,7 @@ static int activation_publish(uint64_t host, int64_t bytes, DevicePtr device, bo
     if (!activations.active || (large && !keep_large)) {
         return cuda.download((void *) (uintptr_t) host, device, (size_t) bytes);
     }
-    const int error = complete ? 0 : cuda.sync();
+    const int error = complete || activations.defer_waits ? 0 : cuda.sync();
     if (error != 0) return error;
     int64_t * next = activations.large_output;
     if (!large) {

@@ -34,7 +34,7 @@ extern uint64_t fg_cuda_take_moe_weighted(void);
 extern void fg_cuda_take_position(uint64_t * ropes, uint64_t * convs);
 extern void fg_cuda_take_routes(uint64_t * routes);
 extern void fg_cuda_take_blits(uint64_t * blits);
-extern int fg_cuda_activation_graph_begin(void);
+extern int fg_cuda_activation_graph_begin(bool planned);
 extern int fg_cuda_activation_graph_end(bool success, bool all, uint64_t host, int64_t bytes, uint64_t * hits,
                                         uint64_t * skipped_download_bytes, uint64_t * expired_bytes);
 
@@ -312,7 +312,7 @@ uint8_t fg143_graph_scan(uint64_t address) {
 static enum ggml_status compute_graph(struct ggml_cgraph * graph, bool all, const struct ggml_tensor * output,
                                      sl_i64 deadlines) {
     pthread_once(&cpu_init, init_cpu);
-    if (fg_cuda_activation_graph_begin() != 0) return GGML_STATUS_FAILED;
+    if (fg_cuda_activation_graph_begin(deadlines.len != 0) != 0) return GGML_STATUS_FAILED;
     const int64_t failed = fg143_graph_run((uint64_t) (uintptr_t) graph, !all, deadlines);
     if (failed > 0) {
         const struct ggml_tensor * node = ggml_graph_node(graph, (int) (failed - 1));

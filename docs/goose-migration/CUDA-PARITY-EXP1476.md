@@ -47,7 +47,7 @@ the dependency that would justify rerunning it.
 | Experiment | Preserved implementation and measurements | Reason for deferral | Dependencies and next combination test |
 |---|---|---|---|
 | EXP-1527, dense TF32 MMA | `fc399bf0`, `GOOSE_DENSE_MMA=1`. [Dense diagnostic](#dense-tf32-mma-diagnostic) and [full package](#prefill-package-full-32k512-diagnostic). Matrix time 565.205 → 52.069 ms, short prefill 110.293 → 115.386 tokens/s. | The short first ID changes from 9495 to 37972. EXP-1476 returns 332. The full package also fails reference text, ID and probability parity. Its speed does not isolate Dense MMA. | Diagnose routed MoE, dense accumulations and the first divergent Apex state. After the numerical gate passes, compare the selected dense path alone and with restored MoE routing. Measure router and output timing and require reference response parity. |
-| EXP-1531, deferred CUDA waits | [Candidate patch](deferred/EXP-1531-graph-waits.patch) against `7916697c`. [A–B–B–A measurements](#deferred-cuda-wait-diagnostic). Explicit waits 1,873 → 562, median prefill 22.875 → 22.882 s. | Synchronous D2H absorbed the removed waiting. Copy counts and bytes stayed unchanged. All four short outputs and probabilities matched. | Recheck after substantially fewer forced host reads or after verified pinned/asynchronous transfers or stream/event dependencies under 24, 27 and 30. Compare transfers alone and combined with deferred waits. Verify host publication, graph failure and persistent state. |
+| EXP-1531, deferred CUDA waits | [Candidate patch](deferred/EXP-1531-graph-waits.patch) against `7916697c`. [Original A–B–B–A](#deferred-cuda-wait-diagnostic): explicit waits 1,873 → 562, median prefill 22.875 → 22.882 s. | Originally, synchronous D2H absorbed the removed waiting. Copy counts and bytes stayed unchanged. | Rechecked with reusable arena gaps and selective eviction on `e37e8a2c`. [Combined A–B–B–A](#deferred-waits-with-selective-eviction) passed the short gate and enabled waits at the planned graph boundary. Full-request qualification is open. Reassess when pinned transfer or stream/event changes alter host readback. |
 
 After a material dependency change, use short sequential A/B runs on
 identical inputs and settings. Use the best current verified checkpoint
@@ -112,7 +112,7 @@ dependencies. Resume decode-specific work after prefill recovery.
 | 27 | Selective transfer and device placement. Backend split execution and CUDA tensor set/get → asynchronous linear and 2-D copies. | Reference transfers selected ranges and uses D2D. Goose retains oversized activations, retires planned results and keeps unrelated live buffers during normal arena eviction. | PARTIAL. Extend reuse across adjacent oversized operations. Full-request transfer and memory parity remain open. |
 | 28 | CUDA VMM pool. CUDA buffer allocator → `cuMemAddressReserve`, `cuMemCreate`, `cuMemMap`, `cuMemSetAccess`, release. | Reference executes 105 create/map operations and reserves a virtual address range. Goose grows Driver API buffers with `cuMemAlloc_v2` and `cuMemFree_v2`. | MISSING. Restore equivalent reusable device allocation and supported fallback. Check allocation limits, device address stability and VRAM peak on RTX 4070. |
 | 29 | CUDA Graph capture and replay. `ggml-cuda.cu` graph evaluator → begin/end capture, instantiate, exec update and launch. | Whole-graph trace records over 20,000 launches across the session. Server reports 510 reuses. Goose rebuilds its graph and directly launches CUDA kernels. | MISSING. Establish stable graph keys, addresses and update boundaries before recording and replay. Check changing KV prefixes and buffer ownership before measuring decode overhead. |
-| 30 | Streams and synchronization. CUDA scheduler and `ggml-cuda.cu` establish streams, events and CUDA Graph scopes. | Reference uses stream sync and async copies. Goose synchronizes the context for many operations during execution. | PARTIAL. Restore per-stream ordering and event dependencies after liveness and transfers are safe. Compare wall time without adding driver wait to GPU time. |
+| 30 | Streams and synchronization. CUDA scheduler and `ggml-cuda.cu` establish streams, events and CUDA Graph scopes. | Reference uses stream sync and async copies. Planned Goose graphs defer intermediate publication waits to the graph boundary, with blocking host reads. | PARTIAL. Extend independent stream and event dependencies. Verify full-request performance, error propagation and state visibility. |
 | 31 | Numerical prefill → decode continuation. Reference `llama-context.cpp` scheduler and CUDA graph compute produce logits for the shared sampler. | Identical 32K/512 reference responses verify text, ID and probability hashes. Goose completes all tokens but diverges at output index 1, before sampling. | INCORRECT. Identify earliest differing stage by matching per-layer tensors, committed Q4 KV, SSM/GDN and the first subsequent logits. Numerical repair precedes acceptance of any speed. |
 | 32 | Device initialization and specialization loading. CUDA backend loader and scheduler select architectures, entry points and cuBLAS paths. | Trace records device info, driver lookups, cuLibrary entry resolution and allocation APIs. Goose loads its own PTX with the Driver API. | PARTIAL. Extend end-to-end executable selection for supported MMQ shapes and verify real device witness. Preserve independent module loading and rejected profiles. |
 
@@ -450,6 +450,35 @@ performance and peak process memory remain full-request gates.
 
 Candidate profile: `/home/end0/AI/LlamaServer/franken-goose-activation-eviction.8prNGA/mmq-profile.QapVkA`.
 Candidate executable SHA-256: `4a177f7e5bda8ae8752d1e1bb327226050eebdca1c4955f617d2f6cdb6521014`.
+
+## Deferred waits with selective eviction
+
+EXP-2026-11-20-1534 applies the preserved EXP-1531 implementation
+to `e37e8a2c` with reusable CUDA arena gaps and selective eviction.
+The changed sources are byte-identical to those of the isolated
+combination candidate. The eviction fixture and chunked model
+continuation passed before profiling.
+
+In 4096/1 A–B–B–A, the control took 22.503 s and 22.399 s. The
+combination took 22.285 s and 22.282 s. Median prefill improved
+from 22.451 s (182.440 tokens/s) to 22.283 s (183.813 tokens/s).
+All four runs matched text, token ID and five probabilities. H2D
+and D2H counts and bytes matched. Explicit waits again fell from
+1,873 to 562. Blocking host reads still absorbed most of the removed
+API wait. This comparison verifies a 0.168 s gain on the short
+workload in the combined configuration. It does not isolate the
+effect on full-context prefill or decode.
+
+The planned graph path now checks queued CUDA work at graph exit,
+including error exit. Generic execution and direct host publication
+retain their existing waits. Peak memory and full-request correctness
+remain open. No additional device buffer is used by this change.
+
+Control profiles: `/home/end0/AI/LlamaServer/franken-goose-activation-eviction.8prNGA/mmq-profile.QapVkA`
+and `mmq-profile.I4lJMQ` in the same directory.
+Combination profiles: `/home/end0/AI/LlamaServer/franken-goose-eviction-waits.ZwSxaq/mmq-profile.NTa62g`
+and `mmq-profile.2nTxqZ` in the same directory.
+Executable SHA-256: `106e280f164e38cdb1955fdfc5a60cab98f9c3e2df3f9b23337197aa8f6a6f88`.
 
 ## Kernel coverage
 
