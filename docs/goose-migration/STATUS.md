@@ -7,6 +7,8 @@ The active [Apex 32K/512 acceptance checklist](APEX-32K-ACCEPTANCE.md)
 records the required gates and their evidence for the independent runtime.
 [The CUDA regression audit](APEX-CUDA-REGRESSION.md) records the real
 4096/4096 response and matched-input diagnostic traces.
+[The complete EXP-1476 trace inventory](CUDA-PARITY-EXP1476.md)
+tracks CUDA mechanisms and their parity gates.
 
 ## C++ removal checkout
 
