@@ -1907,6 +1907,60 @@ already requested more than 384 MiB for each prefill block.
   Response SHA-256 `6dfee12a7e73fb75361a6c749fa3c37824fc62e6805f7ab22a3926415ae3c591`.
   Nsight SHA-256 `987099d3c1511211830de20858093f6c4042e61f8a80cf647be84de8ff32d6e2`.
 
+## Arena size comparison at Apex 32K/512
+
+EXP-2026-11-20-1560 compares 384 and 512 MiB in the same
+independent executable. The request and all runtime settings
+match, with only `GOOSE_CUDA_ACTIVATION_MIB` changed. The
+profile is Apex Q4_K_M on RTX 4070, context 262,144 and
+batch/ubatch 4096/4096. The request evaluates 32,768 input
+IDs and returns 512 output IDs without prompt reuse.
+
+| Profiled A/B | 384 MiB | 512 MiB |
+|---|---:|---:|
+| Prefill, tok/s | 646.076 | 652.184 |
+| Decode, steps/s (511 steps) | 16.328 | 16.301 |
+| Prefill and decode time, s | 82.015 | 81.592 |
+| H2D, bytes | 191,097,039,232 | 191,097,039,232 |
+| D2H, bytes | 38,131,127,040 | 38,131,127,040 |
+| Prefill H2D, bytes | 132,753,204,304 | 132,753,204,304 |
+| Prefill D2H, bytes | 37,623,900,160 | 37,623,900,160 |
+| Process RSS high-water, KiB | 23,645,904 | 23,645,976 |
+| Sampled peak process VRAM, MiB | 8,540 | 8,668 |
+| Sampled peak whole-card VRAM, MiB | 10,748 | 10,880 |
+| Process swap, KiB | 0 | 0 |
+| System swap-out growth, pages | 0 | 0 |
+| SLRU hits | 560,324 | 560,324 |
+| SLRU fills | 77,707 | 77,707 |
+| SLRU evictions | 74,945 | 74,945 |
+
+Both runs keep all 5,301,139 pages resident before and after
+generation. Each trace contains 42 process memory samples.
+The expert bank stays at 5,234,122,752 bytes, with
+149,376,491,520 bytes of expert uploads. The response text,
+all IDs and all reported probability rows match each other.
+The shared result preserves the earlier full diagnostic's
+opening repetition and substantive capacity analysis.
+
+Keep the 384 MiB configuration. The 512 MiB sample saves
+0.424 s in the combined time while using 128 MiB more
+process VRAM, with equal transfer counts and volume.
+This single pair establishes no mechanism-level gain for
+the larger allocation under the memory requirement.
+
+- Raw pair and reproduction script under
+  `/home/end0/AI/LlamaServer/franken-goose-wide-arena-default.ollura`.
+  A is `cuda-full-dense-both.e5ygvndq`, B is
+  `cuda-full-dense-both.uz39urpe`.
+- Common executable SHA-256
+  `209f7731abde844d2479529b5eb3c893de0c0978e55c6bcc56cec3ae9393a670`.
+- Common content SHA-256
+  `3a824300f79ea0f8bfa94c646dd23f0903626b8582ea7c3d8c2b058176335079`.
+- A Nsight SHA-256
+  `ca28de5bc050732b28c2603a89b235f28022b498a9cebadb5229c432e77faffa`.
+- B Nsight SHA-256
+  `63ffcf3a356e887b40c6c83b97349e5757f03ecabb13c38d1ed06f478547874f`.
+
 ## Kernel coverage
 
 The exact EXP-1476 request passed content, ID and probability
