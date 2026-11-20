@@ -64,6 +64,10 @@ void fg141_witness(int64_t stage, int64_t kind, int64_t values) {
     fg143_witness(kind, values);
 }
 
+void fg143_copy_bytes(uint64_t dst, uint64_t src, int64_t length) {
+    if (length > 0) memmove((void *) (uintptr_t) dst, (const void *) (uintptr_t) src, (size_t) length);
+}
+
 static bool needs_storage(const struct ggml_tensor * tensor) {
     return tensor->data == NULL && tensor->view_src == NULL;
 }
@@ -156,6 +160,14 @@ static sl_u8 tensor_slice(const struct ggml_tensor * tensor, int64_t * metadata)
     return (sl_u8) { tensor->data, metadata[9] };
 }
 
+static bool float_slice(sl_u8 bytes, sl_f32 * out) {
+    if (bytes.len < 0 || bytes.len % sizeof(float) || (uintptr_t) bytes.data % _Alignof(float)) {
+        return false;
+    }
+    *out = (sl_f32) { (float *) bytes.data, bytes.len / (int64_t) sizeof(float) };
+    return true;
+}
+
 static uint8_t run_node(sl_i64 packet, int64_t mode, const sl_u8 inputs[5],
                         sl_f32 scratch, sl_i64 indices) {
     return fg143_node_run(packet, mode, inputs[0], inputs[1], inputs[2], inputs[4], inputs[3], scratch, indices,
@@ -197,6 +209,15 @@ uint8_t fg143_graph_exec_node(uint64_t graph, uint64_t workspace, int64_t index)
         const sl_u8 dst = tensor_slice(tensor, packet + 70);
         packet[80] = tensor->op;
         packet[81] = tensor->op_params[0];
+        if (tensor->op == GGML_OP_GATED_DELTA_NET) {
+            sl_f32 args[6], output;
+            for (int i = 0; i < 6; ++i) {
+                if (!float_slice(inputs[i], &args[i])) return 0;
+            }
+            if (!float_slice(dst, &output)) return 0;
+            return fg143_gdn_run((sl_i64) { packet, 82 }, args[0], args[1], args[2],
+                args[3], args[4], args[5], output);
+        }
         return fg143_state_run((sl_i64) { packet, 82 }, inputs[0], inputs[1], inputs[2],
             inputs[3], inputs[4], inputs[5], inputs[6], dst);
     }

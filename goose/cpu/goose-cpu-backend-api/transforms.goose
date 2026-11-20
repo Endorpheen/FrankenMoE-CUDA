@@ -1,4 +1,16 @@
-fn transforms(p: const Node &, x: const u8[:], y: const u8[:], dst: u8[:]) -> bool {
+extern "fg143_copy_bytes" fn copy_bytes(dst: u64, src: u64, count: i64);
+
+fn dense_scalar(t: const Tensor &, size: i64) -> bool {
+    var stride = size;
+    for axis in 4 {
+        if t.ne[axis] > 1 && t.nb[axis] != stride { return false; }
+        stride = mul_size(stride, t.ne[axis]);
+    }
+    return stride == t.bytes;
+}
+
+fn transforms(p: const Node &, x: const u8[:], y: const u8[:], dst: u8[:],
+              addresses: const i64[3] &) -> bool {
     let op = p.op;
 
     if op != OP_DUP && op != OP_CPY && op != OP_CONT && op != OP_REPEAT && op != OP_CONCAT && op != OP_PAD && op != OP_PAD_REFLECT_1D && op != OP_ROLL && op != OP_ARANGE && op != OP_FILL && op != OP_DIAG && op != OP_DIAG_MASK_INF && op != OP_DIAG_MASK_ZERO && op != OP_GET_ROWS && op != OP_SET_ROWS {
@@ -10,6 +22,11 @@ fn transforms(p: const Node &, x: const u8[:], y: const u8[:], dst: u8[:]) -> bo
     if (op == OP_DUP || op == OP_CPY || op == OP_CONT) && p.x.kind == p.d.kind {
         assert(count == elements(p.x));
         let bytes = scalar_bytes(p.x.kind);
+        if p.nth == 1 && addresses[0] != 0 && addresses[2] != 0 &&
+           dense_scalar(p.x, bytes) && dense_scalar(p.d, bytes) {
+            copy_bytes(addresses[2] as! u64, addresses[0] as! u64, p.x.bytes);
+            return true;
+        }
 
         while index < count {
             let source = offset(p.x, index);

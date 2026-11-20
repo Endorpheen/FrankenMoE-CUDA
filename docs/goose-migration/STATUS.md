@@ -77,6 +77,18 @@ counts. The executable has only `libc` and `libm` as recorded ELF dependencies
 and loads the system CUDA driver at runtime. The full GPU path, longer
 generation, other models, performance and peak memory are still open.
 
+EXP-2026-11-20-1498 reduces Apex recurrent-state overhead. The Goose executor
+copies physically contiguous scalar tensors in a single byte move. It checks
+the layout before dispatching the move, and retains strided copies. The GDN
+kernel computes on F32 slices and evaluates decay once per head and token while
+preserving the dot-product reduction order. Tests cover scalar and column
+gates, strided queries, multiple sequences, and intermediate snapshots.
+
+The CPU and CUDA fixtures and the ten-request HTTP gate passed. The Apex
+Q4_K_M smoke test produced ` Paris, a` and recorded 431 CUDA matrices in each
+of its three graphs. This records functional evidence. The 32,768-input,
+512-output Apex performance and peak-memory gates remain open.
+
 ## Ledger
 
 `docs/goose-migration/tasks.json`: **DONE 1**, **PARTIAL 144**, **TODO 7** of 152.

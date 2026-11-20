@@ -29,17 +29,10 @@ fn vector_dot(
         }
         k += 32;
     }
-    var v: f32[8] = default < f32[8] > ();
-    for lane in 8 {
-        v[lane] = (acc[0][lane] + acc[2][lane]) + (acc[1][lane] + acc[3][lane]);
-    }
-    let s0 = v[0] + v[4];
-    let s1 = v[1] + v[5];
-    let s2 = v[2] + v[6];
-    let s3 = v[3] + v[7];
+    let s = dot_lanes(acc);
 
     if a.kind == 0 {
-        var result = (s0 + s1) + (s2 + s3);
+        var result = (s[0] + s[1]) + (s[2] + s[3]);
 
         while k < count {
             result += load_at(a, x, ax + k * as0) * load_at(b, y, by + k * bs0);
@@ -48,9 +41,9 @@ fn vector_dot(
         return result;
     }
     var result = if a.kind == 30 {
-        ( (s0 + s2) + (s1 + s3)) as f64
+        ((s[0] + s[2]) + (s[1] + s[3])) as f64
     } else {
-        ( (s0 + s1) + (s2 + s3)) as f64
+        ((s[0] + s[1]) + (s[2] + s[3])) as f64
     }
     ;
 
@@ -59,6 +52,36 @@ fn vector_dot(
         k += 1;
     }
     return result as f32;
+}
+
+fn dot_lanes(acc: const f32[8][4] &) -> f32[4] {
+    var v: f32[8] = default <f32[8]>();
+    for lane in 8 {
+        v[lane] = (acc[0][lane] + acc[2][lane]) + (acc[1][lane] + acc[3][lane]);
+    }
+    return [v[0] + v[4], v[1] + v[5], v[2] + v[6], v[3] + v[7]];
+}
+
+fn f32_row_dot(row: const f32[:], other: const f32[:], stride: i64) -> f32 {
+    var acc: f32[8][4] = default <f32[8][4]>();
+    let end = row.len / 32 * 32;
+    var k: i64 = 0;
+    while k < end {
+        for group in 4 {
+            for lane in 8 {
+                let i = k + 8 * group + lane;
+                acc[group][lane] = fma32(row[i], other[i * stride], acc[group][lane]);
+            }
+        }
+        k += 32;
+    }
+    let s = dot_lanes(acc);
+    var result = (s[0] + s[1]) + (s[2] + s[3]);
+    while k < row.len {
+        result += row[k] * other[k * stride];
+        k += 1;
+    }
+    return result;
 }
 
 import.codec.decode;

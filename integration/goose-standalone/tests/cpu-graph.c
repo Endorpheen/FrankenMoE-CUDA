@@ -40,6 +40,7 @@ static void check_scalar_and_recurrent(void) {
     struct ggml_tensor * add = ggml_add(ctx, a, b);
     struct ggml_tensor * mul = ggml_mul(ctx, add, b);
     struct ggml_tensor * view = ggml_view_1d(ctx, mul, 2, sizeof(float));
+    struct ggml_tensor * copy = ggml_cpy(ctx, mul, ggml_new_tensor_2d(ctx, GGML_TYPE_F32, 2, 2));
     struct ggml_tensor * q = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, 1, 1, 1, 1);
     struct ggml_tensor * k = ggml_dup_tensor(ctx, q);
     struct ggml_tensor * v = ggml_dup_tensor(ctx, q);
@@ -49,6 +50,7 @@ static void check_scalar_and_recurrent(void) {
     struct ggml_tensor * gdn = ggml_gated_delta_net(ctx, q, k, v, gate, beta, initial, 1);
     struct ggml_cgraph * graph = ggml_new_graph_custom(ctx, 64, false);
     ggml_build_forward_expand(graph, view);
+    ggml_build_forward_expand(graph, copy);
     ggml_build_forward_expand(graph, gdn);
     void * storage = fg_standalone_graph_alloc(graph);
     assert(storage);
@@ -62,8 +64,77 @@ static void check_scalar_and_recurrent(void) {
     *(float *) initial->data = 1;
     assert(fg_standalone_graph_compute(graph) == GGML_STATUS_SUCCESS);
     assert(memcmp(view->data, (float[]){15, 28}, sizeof(float) * 2) == 0);
+    assert(memcmp(copy->data, (float[]){6, 15, 28, 45}, sizeof(float) * 4) == 0);
     assert(memcmp(gdn->data, (float[]){4, 2}, sizeof(float) * 2) == 0);
     puts("ADD/MUL/VIEW 15,28; GDN 4,2");
+    free(storage);
+    ggml_free(ctx);
+}
+
+static void check_gdn_snapshots(bool column_gate) {
+    enum { width = 33, heads = 2, tokens = 3, seqs = 2, snapshots = 2 };
+    enum { square = width * width, scores = width * heads * tokens * seqs, state_size = square * heads * seqs };
+    struct ggml_context * ctx = ggml_init((struct ggml_init_params){ 1024 * 1024, NULL, true });
+    assert(ctx);
+    struct ggml_tensor * qk_storage = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, width + 1, tokens);
+    struct ggml_tensor * q = ggml_view_4d(ctx, qk_storage, width, 1, tokens, 1,
+        qk_storage->nb[1], qk_storage->nb[1], qk_storage->nb[2], 0);
+    struct ggml_tensor * k = ggml_dup_tensor(ctx, q);
+    struct ggml_tensor * v = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, width, heads, tokens, seqs);
+    struct ggml_tensor * gate = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, column_gate ? width : 1, heads, tokens, seqs);
+    struct ggml_tensor * beta = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, 1, heads, tokens, seqs);
+    struct ggml_tensor * initial = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, width, width, heads, seqs);
+    struct ggml_tensor * gdn = ggml_gated_delta_net(ctx, q, k, v, gate, beta, initial, snapshots);
+    struct ggml_cgraph * graph = ggml_new_graph_custom(ctx, 64, false);
+    ggml_build_forward_expand(graph, gdn);
+    void * storage = fg_standalone_graph_alloc(graph);
+    assert(storage);
+
+    struct ggml_tensor * inputs[] = { qk_storage, k, v, gate, beta, initial };
+    for (size_t i = 0; i < sizeof(inputs) / sizeof(inputs[0]); ++i) {
+        float * data = inputs[i]->data;
+        for (int j = 0; j < ggml_nelements(inputs[i]); ++j) {
+            data[j] = (float) ((5 * j + (int) i) % 13 - 6) / 64.0f;
+        }
+    }
+    assert(fg_standalone_graph_compute(graph) == GGML_STATUS_SUCCESS);
+    const float * actual = gdn->data;
+    const float * queries = q->data, * keys = k->data, * values = v->data;
+    const float * gates = gate->data, * rates = beta->data;
+    for (int seq = 0; seq < seqs; ++seq) {
+        for (int head = 0; head < heads; ++head) {
+            const int task = seq * heads + head;
+            float expected[square];
+            memcpy(expected, (float *) initial->data + task * square, sizeof expected);
+            for (int token = 0; token < tokens; ++token) {
+                const int input = (seq * tokens + token) * heads + head;
+                const float * query = queries + token * (width + 1);
+                const float * key = keys + token * width;
+                const float * gate_row = gates + input * gate->ne[0];
+                for (int row = 0; row < width; ++row) {
+                    float * state = expected + row * width;
+                    float predicted = 0.0f;
+                    for (int col = 0; col < width; ++col) {
+                        state[col] *= expf(gate_row[column_gate ? col : 0]);
+                        predicted = fmaf(key[col], state[col], predicted);
+                    }
+                    const float delta = (values[input * width + row] - predicted) * rates[input];
+                    float score = 0.0f;
+                    for (int col = 0; col < width; ++col) {
+                        state[col] = fmaf(key[col], delta, state[col]);
+                        score = fmaf(query[col], state[col], score);
+                    }
+                    assert(fabsf(actual[input * width + row] - score / sqrtf(width)) < 1e-6f);
+                }
+                const int slot = tokens - 1 - token;
+                if (slot < snapshots) {
+                    const float * actual_state = actual + scores + slot * state_size + task * square;
+                    for (int i = 0; i < square; ++i) assert(fabsf(actual_state[i] - expected[i]) < 1e-6f);
+                }
+            }
+        }
+    }
+    printf("GDN %s gate matches reference, including snapshots\n", column_gate ? "column" : "scalar");
     free(storage);
     ggml_free(ctx);
 }
@@ -156,6 +227,8 @@ static void check_quantized_matrix(enum ggml_type kind, bool indexed) {
 
 int main(int argc, char ** argv) {
     check_scalar_and_recurrent();
+    check_gdn_snapshots(false);
+    check_gdn_snapshots(true);
     check_quantized_cache_attention();
     check_quantized_matrix(GGML_TYPE_Q4_K, false);
     check_quantized_matrix(GGML_TYPE_Q6_K, true);

@@ -76,7 +76,7 @@ fn entry(
         validate(p.z, z.len);
     }
 
-    if transforms(p, x, y, dst) {
+    if transforms(p, x, y, dst, addresses) {
         witness(p.op, elements(p.d));
         return true;
     }

@@ -58,16 +58,29 @@ export fn fg143_node_run(packet: const i64[:], mode: i64,
     return entry(p, x, y, z, dst, scratch, indices, addresses, gxx, gxs, gs, g3x, g3s, g1, signs, palette);
 }
 
-export fn fg143_state_run(packet: const i64[:],
-    a0: const u8[:], a1: const u8[:], a2: const u8[:], a3: const u8[:],
-    a4: const u8[:], a5: const u8[:], a6: const u8[:], dst: u8[:]) -> bool {
-    if packet.len != 82 { return false; }
+fn state_plan(packet: const i64[:]) -> StatePlan {
     var p: StatePlan = default <StatePlan>();
     for i in 7 { p.source[i] = packet_tensor(packet, i * 10); }
     p.dst = packet_tensor(packet, 70);
     p.nth = 1;
     p.op = packet[80];
     p.snapshots = packet[81];
+    return p;
+}
+
+export fn fg143_gdn_run(packet: const i64[:],
+    q: const f32[:], k: const f32[:], v: const f32[:], gate: const f32[:],
+    beta: const f32[:], initial: const f32[:], dst: f32[:]) -> bool {
+    if packet.len != 82 || packet[80] != OP_GATED_DELTA_NET { return false; }
+    let p = state_plan(packet);
+    return gdn(p, q, k, v, gate, beta, initial, dst);
+}
+
+export fn fg143_state_run(packet: const i64[:],
+    a0: const u8[:], a1: const u8[:], a2: const u8[:], a3: const u8[:],
+    a4: const u8[:], a5: const u8[:], a6: const u8[:], dst: u8[:]) -> bool {
+    if packet.len != 82 { return false; }
+    let p = state_plan(packet);
     return state_entry(p, a0, a1, a2, a3, a4, a5, a6, dst);
 }
 
