@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Count physical source lines in the current main checkout."""
+"""Count physical source lines in main or the isolated deletion checkout."""
 
 import argparse
 import hashlib
@@ -36,14 +36,14 @@ def raise_scan_error(error):
     raise error
 
 
-def scan_disk(root):
+def scan_disk(root, include_nested=False):
     files = []
     totals = dict.fromkeys(LABELS, 0)
     for directory, subdirectories, names in os.walk(root, onerror=raise_scan_error):
         parent = Path(directory)
         subdirectories[:] = sorted(
             name for name in subdirectories
-            if name != ".git" and not os.path.lexists(parent / name / ".git")
+            if name != ".git" and (include_nested or not os.path.lexists(parent / name / ".git"))
         )
         for name in sorted(names):
             label = category(name)
@@ -129,7 +129,7 @@ def compare_commits(before_ref, after_ref):
     base = git("rev-parse", "--verify", before_ref + "^{commit}").strip().decode()
     first_parent = set(git("rev-list", "--first-parent", "HEAD").decode().splitlines())
     if base not in first_parent or head not in first_parent:
-        raise SystemExit("both revisions must be on the first-parent history of main")
+        raise SystemExit("both revisions must be on the first-parent history of the current branch")
     cached = {}
     with subprocess.Popen(["git", "cat-file", "--batch"], stdin=subprocess.PIPE, stdout=subprocess.PIPE) as batch:
         after = count_tree(head, batch, cached)
@@ -155,9 +155,10 @@ def main():
     args = parser.parse_args()
     if args.git and (args.save or args.against):
         parser.error("--git is a separate committed-tree comparison")
-    branch = subprocess.run(["git", "symbolic-ref", "--quiet", "--short", "HEAD"], capture_output=True)
-    if branch.returncode or branch.stdout.strip() != b"main":
-        parser.error("run this counter in the main checkout")
+    ref = subprocess.run(["git", "symbolic-ref", "--quiet", "--short", "HEAD"], capture_output=True)
+    branch = ref.stdout.decode().strip()
+    if ref.returncode or branch not in {"main", "deletecplusplus"}:
+        parser.error("run this counter in main or deletecplusplus")
     if args.git:
         compare_commits(*args.git)
         return
@@ -165,9 +166,9 @@ def main():
     started = time.monotonic()
     root = Path(os.fsdecode(git("rev-parse", "--show-toplevel").rstrip(b"\n"))).resolve()
     head = git("rev-parse", "HEAD").strip().decode()
-    files, totals = scan_disk(root)
+    files, totals = scan_disk(root, include_nested=branch == "deletecplusplus")
     snapshot = {"version": SNAPSHOT_VERSION, "root": str(root), "head": head, "totals": totals, "files": files}
-    print(f"main {head} | {len(files)} source files | {time.monotonic() - started:.2f} s")
+    print(f"{branch} {head} | {len(files)} source files | {time.monotonic() - started:.2f} s")
     if args.against:
         baseline = json.loads(args.against.read_text())
         if baseline["version"] != SNAPSHOT_VERSION or baseline["root"] != str(root):
