@@ -64,9 +64,11 @@ Functional qualification runs before memory and speed acceptance.
    [full diagnostic](CUDA-PARITY-EXP1476.md#ten-change-apex-32k512-diagnostic).
    The short layer comparison matches the first GDN output and
    state, all first-layer router logits and all 992 selected expert
-   ID positions bitwise. The softmax and later layer outputs still
-   differ. See the
-   [router comparison](CUDA-PARITY-EXP1476.md#apex-tf32-router-and-expert-selection).
+   ID positions bitwise. The indexed expert arithmetic replay
+   matches Q4_K gate/up and Q6_K down on fixed input. The
+   candidate first token matches the 4096/1 reference. Later
+   layer outputs still differ. See the
+   [indexed expert comparison](CUDA-PARITY-EXP1476.md#apex-indexed-expert-mmq).
    Gates 3 and 4 qualify the later speed comparison.
 7. [ ] **Accept memory** (requires 5 and 6). Record per-process RSS and
    its high-water mark, model page residency before and after the

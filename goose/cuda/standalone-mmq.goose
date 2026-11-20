@@ -118,15 +118,20 @@ fn mmq_reference(w0: u64, w1: u64, source: u64, source0: u64, source1: u64,
     extent: i64, kind: i64, row: i64, rows: i64, route: i64, columns: i64, sms: i64, thread: i64) -> MmqSum {
     // Preserve the reference's 128-row tiles and backward fixup order
     // inside each output warp, without a global partial-sum buffer.
-    let ntiles = 1 + (columns - 1) / 128;
-    let width = mmq_reference_width(1 + (columns - 1) / ntiles, rows % 128 != 0);
-    let tiles = (1 + (rows - 1) / 128) * ntiles;
-    let tile = (row / 128) * ntiles + route / width;
-    let work = tiles * extent;
-    let waves = 1 + (tiles - 1) / sms;
-    let workers = if 100 * tiles / (sms * waves) >= 90 { tiles }
-        else { if sms < work { sms } else { work } };
-    let start = tile * extent;
+    var work = extent;
+    var workers: i64 = 1;
+    var start: i64 = 0;
+    if columns > 0 {
+        let ntiles = 1 + (columns - 1) / 128;
+        let width = mmq_reference_width(1 + (columns - 1) / ntiles, rows % 128 != 0);
+        let tiles = (1 + (rows - 1) / 128) * ntiles;
+        let tile = (row / 128) * ntiles + route / width;
+        work = tiles * extent;
+        let waves = 1 + (tiles - 1) / sms;
+        workers = if 100 * tiles / (sms * waves) >= 90 { tiles }
+            else { if sms < work { sms } else { work } };
+        start = tile * extent;
+    }
     var stop = extent;
     var worker = ((start + stop) * workers - 1) / work;
     let last = worker;
@@ -197,7 +202,7 @@ export fn fg_device_mmq(weights: u64, q: u64, out: u64, row_stride: i64, extent:
     var sum1: f32 = 0.0;
     var sum2: f32 = 0.0;
     var sum3: f32 = 0.0;
-    if reference_columns > 0 {
+    if reference_columns != 0 {
         let sum = mmq_reference(w0, w1, source, source0, source1, extent, kind, row, rows, route,
             reference_columns, reference_sms, thread_id);
         sum0 = sum.a;

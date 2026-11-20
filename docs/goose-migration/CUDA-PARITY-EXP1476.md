@@ -90,8 +90,8 @@ dependencies. Resume decode-specific work after prefill recovery.
 
 | # | Mechanism and EXP-1476 call path | Evidence and independent Goose state | Status, restoration and verification |
 |---:|---|---|---|
-| 1 | Q4_K MMQ. `ggml-cuda.cu` `ggml_cuda_mul_mat` / `ggml_cuda_mul_mat_id` → `mmq.cu` `ggml_cuda_mul_mat_q` → `mmq-load-tiles.cuh` and `mmq-vec-dot.cuh` → `mul_mat_q`. | Executed type 12 symbols contain SM89 `IMMA.16832.S8.S8`. Goose sends dense and routed 16×8 tiles to its K=32 MMA path. The [reference Q4_K order](#first-recurrent-q4_k-projections) matches the first three recurrent projections and executes in the 4096/1 trace. | PARTIAL. Verify indexed routes and the full response. |
-| 2 | Q6_K MMQ, same backend chain with `ggml_cuda_mmq_vec_dot_q6_K_q8_1_mma`. | Executed type 14 symbols contain SM89 `IMMA.16816.S8.S8`. Goose uses the existing packed loader and K=16 integer MMA. The opt-in [reference order](#reference-q6_k-at-the-qkv-boundary) matches the first Apex QKV and runs 40 times in the 4096/1 trace. | PARTIAL. Check other projections, indexed routes and full generation. |
+| 1 | Q4_K MMQ. `ggml-cuda.cu` `ggml_cuda_mul_mat` / `ggml_cuda_mul_mat_id` → `mmq.cu` `ggml_cuda_mul_mat_q` → `mmq-load-tiles.cuh` and `mmq-vec-dot.cuh` → `mul_mat_q`. | Executed type 12 symbols contain SM89 `IMMA.16832.S8.S8`. The reference Q4_K order matches the first three recurrent projections and [indexed gate/up](#apex-indexed-expert-mmq). Both execute in the 4096/1 trace. | PARTIAL. Check the remaining shapes and full response. |
+| 2 | Q6_K MMQ, same backend chain with `ggml_cuda_mmq_vec_dot_q6_K_q8_1_mma`. | Executed type 14 symbols contain SM89 `IMMA.16816.S8.S8`. The reference order matches first Apex QKV and the isolated [indexed down projection](#apex-indexed-expert-mmq). Both execute on real Apex. | PARTIAL. Validate remaining shapes and full generation. |
 | 3 | Activation packing. `mmq.cu` → direct or scatter `quantize_mmq_q8_1` in `quantize.cu`, then MMQ. DS4 carries a half scale and activation sum. D4 carries F32 scales. | Both direct and scatter templates execute in the reference. Independent MMQ reuses the EXP180 packer and shares one Q8_1 row across routes when their input slot is identical. The Q6_K diagnostic adds the reference D4 reciprocal sequence. | PARTIAL. Both formats execute on Apex. Device scatter/grouping and model-level parity remain open. |
 | 4 | MMQ stream-K. `mmq.cuh` partitions K and invokes `mul_mat_q_stream_k_fixup` to combine partial outputs. | Independent Goose partitions flattened output tiles and K blocks and applies backward partial reduction with `GOOSE_MMQ_STREAM_K=1`. GPU fixtures and a short Apex shape execute the fixup. | PARTIAL. Verify response parity and scheduling on reference-sized tiles. The current 4096 geometry selects regular tiles. |
 | 5 | Quantized small-batch MMVQ. `ggml-cuda.cu` → `ggml_cuda_mul_mat_vec_q` → Q8_1 and `mul_mat_vec_q` in `mmvq.cu`. | Both `quantize_q8_1` and `mul_mat_vec_q` run. Goose uses its scalar Q4_K/Q6_K path during decode. | MISSING. Restore the appropriate small-batch integer-dot specializations and packing. Check the exact subtype, output and decode timing under the final graph. |
@@ -1353,6 +1353,74 @@ remain open.
   `/home/end0/AI/LlamaServer/franken-apex-reference-moe-layers.j3zgs9_t`
   and
   `/home/end0/AI/LlamaServer/franken-apex-goose-router-reference-layers.f5yrjvcd`.
+
+## Apex indexed expert MMQ
+
+EXP-2026-11-20-1552 traced the first large residual error
+back to layer 0's MoE down projection. For input index 33,
+the reference and Goose SwiGLU activations differed by at
+most 1.1920929e-7, the Q6_K down result differed by 2.632942e-5,
+and the MoE output by 6.6715293e-6. The graph has Q4_K gate
+and up (2,048 features, 512 rows) and Q6_K down (512
+features, 2,048 rows), all with 256 experts and eight routes
+per input.
+
+Isolated EXP-1476 CUDA graphs exactly reproduced the
+recorded expert projections. Their SM89 trace shows
+`mm_ids_helper<8>`, direct or scatter Q8_1 packing, and
+1,024, 1,024 and 4,096 MMQ CTAs respectively. The tiles
+cover the whole K range and the trace has no Stream-K
+fixup. The full reference trace likewise assigns a complete
+K range to these expert tiles. Goose reuses the reference
+Q4_K/Q6_K accumulation and packing order for these indexed
+shapes, including its existing shared-row and expert-cache
+dispatch.
+
+A 124-ID CUDA fixture using the actual mapped GGUF weights,
+selected routes and captured input rows matched every bit of
+the 507,904 up, 507,904 gate and 2,031,616 down values.
+The trace counters show three cached MMQ projections.
+Compute Sanitizer found zero errors.
+
+In live Apex 124/1, gate and up also match bitwise. The
+down error at index 33 falls to 3.7252903e-9. The remaining
+SwiGLU arithmetic differs by up to 2.3841858e-7 and its
+downstream quantization still exposes an outlier at input
+index 19. The isolated down replay shows the distinction
+between a discrepancy from its input and its own arithmetic.
+
+| Sequential Apex 4096/1 diagnostic | Earlier indexed math | Reference indexed math |
+|---|---:|---:|
+| Prefill time, s | 14.284 | 14.308 |
+| Prefill, tokens/s | 286.747 | 286.270 |
+| Reference Q4_K launches | 310 | 390 |
+| Reference Q6_K launches | 40 | 80 |
+| Ordinary MMQ launches | 160 | 40 |
+| RSS high-water, KiB | 23,885,640 | 23,885,396 |
+| Sampled peak process VRAM, MiB | 8,582 | 8,582 |
+| Sampled peak whole-card VRAM, MiB | 11,376 | 11,375 |
+| Process swap, KiB | 0 | 0 |
+| System swap-out increase, pages | 0 | 0 |
+| First token | 16305 | 332 |
+
+Candidate ID 332 and emitted `**` match the historical
+EXP-1476 `mmq-reference.J7xT6p` response to the same
+4,096 prompt IDs and sampling configuration. The historical
+request has `n_probs=0` and the candidate has `n_probs=5`.
+This establishes first-token agreement for the diagnostic
+request. Full generation, response probabilities and
+decode performance remain open.
+
+- Candidate build and tests under
+  `/home/end0/AI/LlamaServer/franken-goose-indexed-mmq-reference.DWuAqs`.
+  Executable SHA-256 `52398641656da3a1e7595a610075388d161197bef5271b14a155943963217711`.
+  The comparison uses `cuda-matrix-dense-both.xqsp5lm1` in that
+  build and `cuda-matrix-dense-both.hmobnect` in the preceding
+  router build.
+- Live tensors under
+  `/home/end0/AI/LlamaServer/franken-apex-goose-indexed-reference-layers.hca3mdi0`
+  and
+  `/home/end0/AI/LlamaServer/franken-apex-reference-experts-layers.cib3wbi6`.
 
 ## Kernel coverage
 

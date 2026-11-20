@@ -879,9 +879,13 @@ static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
     if (extent > INT_MAX / 256 || (size_t) count > SIZE_MAX / (3 * sizeof(int64_t))) return -1;
     Function reference_matrix = kind == q6_kind && rows % 128 == 0 ? cuda.mmq_q6_matrix :
         kind == q4_kind ? cuda.mmq_q4_matrix : NULL;
-    const bool reference = reference_matrix && job_words == 2 &&
+    const bool dense_reference = reference_matrix && job_words == 2 &&
         (int64_t) (1 + (rows - 1) / 128) * (1 + (count - 1) / 128) <= 1073741823 / extent;
-    int32_t reference_columns = reference ? count : 0;
+    const bool indexed_reference = reference_matrix && job_words == 3 &&
+        ((kind == q4_kind && rows == 512 && extent == 8) ||
+         (kind == q6_kind && rows == 2048 && extent == 2));
+    const bool reference = dense_reference || indexed_reference;
+    int32_t reference_columns = indexed_reference ? -1 : dense_reference ? count : 0;
     int32_t layout = kind == q4_kind ? (reference ? mmq_ds4_reciprocal : mmq_ds4) :
         (reference ? mmq_d4_reciprocal : mmq_d4);
     int64_t * tiles = malloc((size_t) count * 3 * sizeof(*tiles));
