@@ -12,6 +12,7 @@ const CV_RMS: i64 = 11;
 const CV_L2: i64 = 12;
 const CV_SIGMOID_REFERENCE: i64 = 13;
 const CV_SILU_REFERENCE: i64 = 14;
+const CV_SWIGLU_REFERENCE: i64 = 15;
 
 extern "fg_attn_word" fn cv_word(cfg: u64, i: i64) -> i64;
 extern "fg_device_global_load" fn cv_load(address: u64) -> f32;
@@ -96,9 +97,12 @@ export fn fg_vector_ops(x: u64, y: u64, dst: u64, cfg: u64, param0: f32, param1:
     let a = cv_load(x + (xa as u64));
     let b = if y != 0 { cv_load(y + (cv_offset(cfg, index, 14) as u64)) }
         else if gl != 0 { cv_load(x + (xb as u64)) } else { 0.0 };
-    if op == CV_SIGMOID_REFERENCE || op == CV_SILU_REFERENCE {
+    if op == CV_SIGMOID_REFERENCE || op == CV_SILU_REFERENCE || op == CV_SWIGLU_REFERENCE {
         let s = cv_reciprocal(1.0 + exp32(-a));
-        cv_store(dst + ((4 * index) as u64), if op == CV_SILU_REFERENCE { a * s } else { s });
+        let value = if op == CV_SIGMOID_REFERENCE { s }
+            else if op == CV_SILU_REFERENCE { a * s }
+            else { (a * s) * b };
+        cv_store(dst + ((4 * index) as u64), value);
         return;
     }
     let value = if op == CV_ADD { a + b }

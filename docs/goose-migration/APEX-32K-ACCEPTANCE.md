@@ -64,11 +64,13 @@ Functional qualification runs before memory and speed acceptance.
    [full diagnostic](CUDA-PARITY-EXP1476.md#ten-change-apex-32k512-diagnostic).
    The short layer comparison matches the first GDN output and
    state, all first-layer router logits and all 992 selected expert
-   ID positions bitwise. The indexed expert arithmetic replay
-   matches Q4_K gate/up and Q6_K down on fixed input. The
-   candidate first token matches the 4096/1 reference. Later
-   layer outputs still differ. See the
-   [indexed expert comparison](CUDA-PARITY-EXP1476.md#apex-indexed-expert-mmq).
+   ID positions bitwise. Gate/up, expert SwiGLU and Q6_K down
+   now match on the live first layer. The previous checkpoint
+   first token matches the 4096/1 reference. Remaining tensor
+   differences are recorded in the
+   [numerical checkpoint](CUDA-PARITY-EXP1476.md#numerical-checkpoint-before-response-quality-tests).
+   Compare short and long response quality before resuming the
+   CUDA performance work.
    Gates 3 and 4 qualify the later speed comparison.
 7. [ ] **Accept memory** (requires 5 and 6). Record per-process RSS and
    its high-water mark, model page residency before and after the

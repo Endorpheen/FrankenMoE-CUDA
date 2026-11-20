@@ -1422,6 +1422,53 @@ decode performance remain open.
   and
   `/home/end0/AI/LlamaServer/franken-apex-reference-experts-layers.cib3wbi6`.
 
+## Numerical checkpoint before response-quality tests
+
+EXP-2026-11-20-1553 extends the existing reference activation
+mode to the real expert SwiGLU. The frozen `ggml_cuda_op_swiglu`
+invokes `unary_gated_op_kernel<&op_silu>`. Its SM89 arithmetic
+applies the same approximate reciprocal already used in the
+Goose SiLU reference mode and then multiplies by the up value.
+This change reuses the existing vector dispatch and packed or
+split source addressing. Select it with
+`GOOSE_CUDA_ACTIVATION_REFERENCE=1`.
+
+On the 124-ID live tensor comparison, first-layer gate, up,
+SwiGLU, down and the ungated shared expert output all match
+bitwise. SwiGLU matches 507,904 values and down matches
+2,031,616. This removes the quantization outliers at input
+indices 19 and 33. An isolated CUDA SwiGLU test on those
+exact Apex tensors also matches, with zero Compute Sanitizer
+errors.
+
+| Remaining checked boundary | Max absolute error |
+|---|---:|
+| Layer 0 router softmax | 1.4901161e-8 |
+| Layer 0 eight normalized routing weights (468 of 992 differ) | 4.4703484e-8 |
+| Layer 0 weighted expert output | 7.450581e-9 |
+| Layer 0 gated shared expert | 1.8626451e-8 |
+| Layer 0 complete FFN | 1.8626451e-8 |
+| Layer 1 input RMSNorm | 3.8146973e-6 |
+| Layer 1 projected recurrent output | 7.804483e-4 |
+| Layer 1 complete FFN | 8.2837045e-4 |
+
+This ends the broad tensor-by-tensor numerical investigation.
+The next acceptance work compares coherent real responses
+from independent Goose and EXP-1476 on common queries,
+settings and input IDs. The records above retain the focused
+probes needed if a response shows a concrete regression.
+
+- Build `/home/end0/AI/LlamaServer/franken-goose-swiglu-reference.3MLAsn`,
+  executable SHA-256
+  `712c98d8cd8d540c5076074f614b31f73631669c45704aca395a423d02ef3fb2`.
+  `reference/` contains the CUDA replay, diagnostic observer
+  sources, standalone comparison and recorded residuals.
+- Live Goose tensors under
+  `/home/end0/AI/LlamaServer/franken-apex-goose-swiglu-reference-layers.2qfhifxt`.
+- Reference tensors under
+  `/home/end0/AI/LlamaServer/franken-apex-reference-experts-layers.cib3wbi6`.
+  The first 124 IDs are the common captured microbatch.
+
 ## Kernel coverage
 
 The exact EXP-1476 request passed content, ID and probability

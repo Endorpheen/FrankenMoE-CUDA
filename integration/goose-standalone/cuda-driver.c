@@ -1377,11 +1377,12 @@ int64_t fg_cuda_vector(sl_i64 config, sl_u8 x, sl_u8 y, sl_u8 out, float param0,
     if (active != 1) return active;
     int64_t plan[26];
     memcpy(plan, config.data, sizeof(plan));
-    enum { sigmoid_operation = 7, silu_operation = 8, sigmoid_reference_operation = 13,
-        silu_reference_operation = 14 };
+    enum { sigmoid_operation = 7, silu_operation = 8, swiglu_operation = 10,
+        sigmoid_reference_operation = 13, silu_reference_operation = 14, swiglu_reference_operation = 15 };
     if (cuda.activation_reference) {
         if (plan[0] == sigmoid_operation) plan[0] = sigmoid_reference_operation;
         if (plan[0] == silu_operation) plan[0] = silu_reference_operation;
+        if (plan[0] == swiglu_operation) plan[0] = swiglu_reference_operation;
     }
     DevicePtr staged[3] = {0}, output = 0;
     const uint64_t host = (uint64_t) (uintptr_t) out.data;
