@@ -50,7 +50,7 @@ the dependency that would justify rerunning it.
 | EXP-1531, deferred CUDA waits | [Candidate patch](deferred/EXP-1531-graph-waits.patch) against `7916697c`. [Original A–B–B–A](#deferred-cuda-wait-diagnostic): explicit waits 1,873 → 562, median prefill 22.875 → 22.882 s. | Originally, synchronous D2H absorbed the removed waiting. Copy counts and bytes stayed unchanged. | Rechecked with reusable arena gaps and selective eviction on `e37e8a2c`. [Combined A–B–B–A](#deferred-waits-with-selective-eviction) passed the short gate and enabled waits at the planned graph boundary. Full-request qualification is open. Reassess when pinned transfer or stream/event changes alter host readback. |
 | EXP-1536, GDN MMA | Standalone `GOOSE_GDN_MMA=1`. [Kernel and model measurements](#gdn-mma-checkpoint). Thirty kernels took 2,503.240 → 171.978 ms and short prefill reached 210.866 tokens/s. | The short first ID changed from 9495 to 280. Both differ from EXP-1476 ID 332. On the same actual layer inputs the largest relative L2 errors were 1.58e-5 for output and 3.71e-5 for state. | Compare the earliest differing routed-expert IDs and logits against EXP-1476. Recheck with restored attention and routing on a numerically verified checkpoint. Keep the experimental flag off by default until the response gate passes. |
 | EXP-1537, Flash Attention MMA | Standalone `GOOSE_FLASH_MMA=1`. [Kernel and model measurements](#causal-flash-attention-mma-checkpoint). Ten attention layers take 34.416 ms including Q4 staging, versus 2,738.669 ms for the scalar path. | The short first ID changes from 9495 to 271. On shared Apex inputs, relative L2 differences against the scalar path reach 6.44e-3. | Compare the same Q/K/V inputs to the EXP-1476 FP16 kernel, then restore stream-K scheduling and fix-up. Check isolated and combined GDN/Flash/Dense variants on the same short request. Keep the flag off by default pending response parity. |
-| EXP-1538/1539, GDN + Flash + Dense MMA | Source `8ea1f6de`, all three MMA flags and byte-budgeted MMQ. [Intermediate performance control and original five-case series](#intermediate-apex-performance-control). Current short prefill 259.252 tokens/s. | The selected ID is 280. Probability rows differ from the scalar combination control and the EXP-1476 response gate remains open. | Use the current opt-in checkpoint for future short prefill comparisons. Recheck the combination after changes to rounding, router selection, long-context attention or recurrent state. |
+| EXP-1538/1539/1541, GDN + Flash + Dense MMA | Source `0de1eff8`, all three MMA flags, byte-budgeted MMQ and shared Q8_1 rows. [Intermediate performance control and original five-case series](#intermediate-apex-performance-control). Current short prefill median 260.324 tokens/s. | The selected ID is 280. Probability rows differ from the scalar combination control and the EXP-1476 response gate remains open. | Use the current opt-in checkpoint for future short prefill comparisons. Recheck the combination after changes to rounding, router selection, long-context attention or recurrent state. |
 | EXP-1540, MMQ Stream-K | `GOOSE_MMQ_STREAM_K=1`. [Kernel and model measurements](#mmq-stream-k-checkpoint). The Apex 32/1 case executes 160 Stream-K and 160 fixup kernels and reduces MMQ device arithmetic time from 59.266 to 54.748 ms. | The 32/1 request changes probabilities and takes 913.819 ms versus 855.517 ms. The 4096/1 geometry chooses the regular MMQ path throughout. | Keep opt-in. Recheck with reference-sized MMQ tiles and routed dispatch after their numerical gate. A low-occupancy production shape or revised tile geometry can change the partition decision. |
 
 After a material dependency change, use short sequential A/B runs on
@@ -564,11 +564,13 @@ Response SHA-256: `709b803aa8f36448cbfb49eb3b5531abb636621b10af21515facb8224a5fd
 
 ## Intermediate Apex performance control
 
-The current intermediate speed control is `8ea1f6de` (EXP-1539),
+The current intermediate speed control is `0de1eff8` (EXP-1541),
 the GDN, Flash and Dense MMA combination with byte-budgeted MMQ
-windows. It measured **259.252 tokens/s** in 15.799 s and preserved
-response ID 280, text and five probabilities against a fresh control.
-See [the MMQ comparison](#byte-budgeted-mmq-windows) for raw data.
+windows and shared input packing. It measured **260.324 tokens/s**
+at 15.734 s median in the short A–B–B–A series. Response ID 280,
+text and five probabilities matched the preceding control in all
+four runs. The numerical snapshot is byte-identical to the original
+combined snapshot. See [shared MMQ activation rows](#shared-mmq-activation-rows).
 Enable it with these environment settings:
 
 ```sh
@@ -576,13 +578,14 @@ export GOOSE_MMQ=1 GOOSE_GDN_MMA=1 GOOSE_FLASH_MMA=1 GOOSE_DENSE_MMA=1
 ```
 
 Use executable SHA-256
-`c6a801cd58aaa99efa7a92a220dd30d07f6864cf60e119134a14dd7d48fc2429`,
+`13d5f2828e4f079ab06613aa1ca4fe686eb5682ddc8a110bfb841c8a4050f806`,
 Apex Q4_K_M, context 262,144, physical 4096/4096, and the 4096/1
 request with SHA-256
 `2d716460edf11494ce0fd16fe53241535b611c70774adc8fa3fe4619a6fcf81d`.
 The request uses seed 123, temperature 1, top-k 20, top-p 0.95 and
 reports five log probabilities. This control is opt-in. EXP-1476
 remains the correctness reference and the full-request gate remains open.
+Leave `GOOSE_MMQ_STREAM_K` unset for this control.
 
 The original EXP-1538 five-case matrix below used `3e616cb2`, executable
 SHA-256 `754e480265e448918198295146422cb2125bddc7ef4284fd9707e2db909ce062`.
@@ -744,8 +747,20 @@ request speedup in this pair. ID 280, text and all five reported
 probabilities matched. Sampled process VRAM was 8,582 MiB in both
 runs and process swap was zero.
 
+The reverse pair completed the short A–B–B–A sequence. Control times
+were 15.867 and 15.925 s. Candidate times were 15.893 and 15.575 s.
+The medians were 15.896 and 15.734 s (257.674 and 260.324 tokens/s),
+with overlapping ranges. All four responses and probability rows
+matched. In a separate diagnostic run, the full 97,691,648-byte
+numerical snapshot and manifest were byte-identical to the original
+combined snapshot, including logits, expert IDs, layer rows and state.
+The candidate is the new interim speed control.
+
 Control: `/home/end0/AI/LlamaServer/franken-goose-mmq-window.z2Wknq/cuda-matrix-dense-both.objw61et`.
 Candidate: `/home/end0/AI/LlamaServer/franken-goose-mmq-shared.TrPFV2/cuda-matrix-dense-both.livri7ys`.
+Reverse control: `cuda-matrix-dense-both.qtr76i16` in the control build directory.
+Reverse candidate: `cuda-matrix-dense-both.1suq6d3n` in the candidate build directory.
+Numerical snapshot: `/home/end0/AI/LlamaServer/franken-goose-mmq-shared.TrPFV2/numerical.JLjr4r`.
 Candidate executable SHA-256: `13d5f2828e4f079ab06613aa1ca4fe686eb5682ddc8a110bfb841c8a4050f806`.
 
 ## Kernel coverage
