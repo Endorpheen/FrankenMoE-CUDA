@@ -1697,6 +1697,45 @@ diagnostic. Full 32K/512 acceptance has its own gates.
   `quality/paired.bazMBk`.
   Executable SHA-256 `ce7ff3c3f225f235b863a958100a1aeacd8f76b9bf1e59f526c70d6344a1eeac`.
 
+### Host pin budget at full Apex 32K/512
+
+EXP-1567 runs an unprofiled A–B–B–A on the EXP-1566 binary,
+with batch/ubatch 4096/4096. Only the host pin budget differs.
+The GPU SLRU bank is 5,234,122,752 bytes in all four runs,
+with 560,324 hits, 77,707 fills and 74,945 evictions per run.
+
+| Metric | A, 4,096 MiB | B, 4,800 MiB |
+|---|---:|---:|
+| Prefill pair, tokens/s | 806.187, 800.598 | 810.558, 805.991 |
+| Prefill median, tokens/s | 803.393 | 808.274 |
+| Decode pair, steps/s | 21.294, 21.189 | 21.513, 21.400 |
+| Decode median, steps/s | 21.241 | 21.457 |
+| CUDA-registered host bytes | 4,227,973,120 | 4,982,968,320 |
+| Registered host ranges | 28 | 33 |
+| Highest process RSS high-water, KiB | 22,935,876 | 22,935,956 |
+| Peak process VRAM, MiB | 8,512 | 8,512 |
+| Median of per-run minimum system MemAvailable, KiB | 42,709,860 | 41,701,842 |
+| Process swap, KiB | 0, 0 | 0, 0 |
+| System swap-out growth, pages | 0, 17,257 | 0, 0 |
+
+All runs retain 5,301,139 of 5,301,139 model pages before
+and after inference. Content, all 512 token IDs, probability
+rows and stop reason match. The existing opening prompt echo
+persists. The 4,800 MiB setting pins another 720 MiB for
+median gains of 4.882 prefill and 0.216 decode steps/s.
+Background activity differs across runs, including system
+swap-out during the last control. Keep the 4,096 MiB
+default by decision. The follow-up pair was cancelled and
+excluded.
+
+Evidence and the runner are stored under
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/host-pin-exp1567`.
+Run directories in order: `apex-host-pin-4096.dr70wskm`,
+`apex-host-pin-4800.8dhlz7s6`, `apex-host-pin-4800.r6294_xt`
+and `apex-host-pin-4096.zwjzczw_`.
+Executable SHA-256
+`11e32a5e0607ee5567e82fa80247f39716538451ce95b046eec2ffc093c91607`.
+
 ## Vector Flash Attention for Q4 decode
 
 EXP-2026-11-20-1557 connects the existing D=256, Q4_0
