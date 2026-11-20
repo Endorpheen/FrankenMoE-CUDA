@@ -67,27 +67,17 @@ the entry. Apply the full-request gate on the package schedule.
 
 **32 mechanisms: PARITY 0, PARTIAL 28, MISSING 3, INCORRECT 1.**
 
-Group three to five related improvements. Give each change its own
-short correctness, CUDA-error and numerical checks, then commit it
-independently. Run one full Apex 32K/512 4096/4096 request after
-the package and compare prefill, decode, RAM, VRAM and
-output against the previous correct checkpoint and EXP-1476.
-Isolate any regression with the short tests and run changes
-individually when needed. A critical failure or the first verified
-generation repair calls for an immediate full run.
-The current package extends the five planned changes by another five
-before the next scheduled full request. An experimental change that
-fails a short gate does not count. Focus the additional work on missing
-computational kernels, starting with the existing Flash Attention MMA,
-GDN MMA and MMQ Stream-K work. Change transfers only where needed to
-connect or validate these kernels.
+Group three to five related improvements with a separate commit and
+targeted correctness and CUDA checks for each. Evaluate real answers
+on matched prompts before accepting faster paths. Run the full Apex
+32K/512 profile after a qualified package or after an observed
+generation repair. Keep the previous checkpoint and isolate observed
+regressions with a focused test.
 
-Prioritize Apex prefill. Start with dense GEMM (7), then examine
-transfers and synchronization (24, 27, 30), Flash Attention (12,
-14, 15), GDN/SSM (16, 18), and MMQ/MoE (4, 9, 10, 11). Reuse
-the existing Goose implementations whenever they fit the active
-shapes and numeric contract. Sequence work by measured impact and
-dependencies. Resume decode-specific work after prefill recovery.
+Prioritize by the [measured gaps](#external-computation-stack-and-measured-gaps).
+Reuse existing Goose implementations for compatible graph shapes.
+The current evidence prioritizes unnecessary prefill transfers,
+quantized matrix throughput, and long-context decode Attention.
 
 | # | Mechanism and EXP-1476 call path | Evidence and independent Goose state | Status, restoration and verification |
 |---:|---|---|---|
@@ -117,7 +107,7 @@ dependencies. Resume decode-specific work after prefill recovery.
 | 24 | Tensor copies, concatenation and gathers. CUDA transform dispatch → `concat_cont`, `concat_non_cont`, `cpy_scalar`, `k_get_rows_float` and vectorized gather. | All appear in reference trace. Goose has aligned lifetimes, GPU blits and gathers and host fallbacks. | PARTIAL. Match selected contiguous and strided paths while avoiding dead-tensor transfers. Check views, source lifetimes and numerical read-back. |
 | 25 | Backend graph splitting and lifetime planning. GGML scheduler in `vendor/flint/ggml/src/ggml-backend.cpp` → `ggml-alloc.c` child/view counts, aligned best-fit, split/coalesced blocks and admissible in-place reuse. | Reference log records five buffers and eight same-size reallocations. Goose completes actual 4096/4096 using a ~1.010 GB lifetime arena and whole-block reuse. | PARTIAL. Retain the tested alias planner. Extend device lifetime ownership and compare backend memory peaks and retry behavior on identical profiles. |
 | 26 | Expert tiers and pinned mapped weights. `vendor/flint/src/llama-model.cpp` → `llama-mmap-expert-pin.h` and CUDA buffer registration. | [Goose SLRU and mmap registration](#expert-mmap-registration-and-slru) execute in real Apex. The bounded mode registers 28 ranges, transfers 6,459,162,624 bytes from pinned sources and improves the no-swap 4096/129 median. | PARTIAL. Validate full context, quality and performance against EXP-1476. Full registration remains rejected on this host. |
-| 27 | Selective transfer and device placement. Backend split execution and CUDA tensor set/get → asynchronous linear and 2-D copies. | The [adaptive arena](#adaptive-cuda-activation-arena) retains multiple large operations at once. In the full diagnostic Goose prefill H2D falls to 132.887 GB and D2H to 37.657 GB. | PARTIAL. Remove the remaining large vector publications and asynchronous-copy overhead. Full memory and speed parity remain open. |
+| 27 | Selective transfer and device placement. Backend split execution and CUDA tensor set/get → asynchronous linear and 2-D copies. | The [adaptive arena](#adaptive-cuda-activation-arena) and [resident vector path](#resident-wide-vector-multiplication) reduce full prefill H2D to 116.647 GB and D2H to 21.518 GB. | PARTIAL. Remove the remaining 64 MiB publications and asynchronous-copy overhead. Full memory and speed parity remain open. |
 | 28 | CUDA VMM pool. CUDA buffer allocator → `cuMemAddressReserve`, `cuMemCreate`, `cuMemMap`, `cuMemSetAccess`, release. | Reference executes 105 create/map operations and reserves a virtual address range. Goose grows Driver API buffers with `cuMemAlloc_v2` and `cuMemFree_v2`. | MISSING. Restore equivalent reusable device allocation and supported fallback. Check allocation limits, device address stability and VRAM peak on RTX 4070. |
 | 29 | CUDA Graph capture and replay. `ggml-cuda.cu` graph evaluator → begin/end capture, instantiate, exec update and launch. | Whole-graph trace records over 20,000 launches across the session. Server reports 510 reuses. Goose rebuilds its graph and directly launches CUDA kernels. | MISSING. Establish stable graph keys, addresses and update boundaries before recording and replay. Check changing KV prefixes and buffer ownership before measuring decode overhead. |
 | 30 | Streams and synchronization. CUDA scheduler and `ggml-cuda.cu` establish streams, events and CUDA Graph scopes. | Reference uses stream sync and async copies. Planned Goose graphs defer intermediate publication waits to the graph boundary, with blocking host reads. | PARTIAL. Extend independent stream and event dependencies. Verify full-request performance, error propagation and state visibility. |
@@ -1960,6 +1950,145 @@ the larger allocation under the memory requirement.
   `ca28de5bc050732b28c2603a89b235f28022b498a9cebadb5229c432e77faffa`.
 - B Nsight SHA-256
   `63ffcf3a356e887b40c6c83b97349e5757f03ecabb13c38d1ed06f478547874f`.
+
+## External computation stack and measured gaps
+
+The fresh hybrid A arm in EXP-1559 and the independent
+384 MiB A arm in EXP-1560 use the same canonical Apex
+32K/512 request on RTX 4070. Both traces use 4096/4096
+and context 262,144. Their profiled prefill rates are
+2,618.408 and 646.076 tok/s. Their decode rates are 56.733
+and 16.328 tok/s. The phase split uses the first scalar
+GDN after the final prefill GDN kernel and is approximate.
+Kernel activity and host API durations can overlap.
+
+The hybrid's process map loads `libllama`,
+`libllama-server-impl`, `libllama-common`, `libmtmd`,
+`libggml`, `libggml-base`, `libggml-cpu`,
+`libggml-cuda`, the tiled MoE library, CUDA Runtime,
+cuBLAS/cuBLASLt, the system CUDA driver and libstdc++.
+The independent executable's ELF dependencies are libc
+and libm. It loads the system CUDA Driver API dynamically.
+The existing C tensor descriptors, quant data types and
+primitive substrate are statically included in its
+standalone archive. The graph and kernels discussed here
+use the independent runtime.
+
+| Measured area | Hybrid EXP-1476 | Independent Goose | Restoration priority |
+|---|---:|---:|---|
+| Prefill quantized matrix GPU time | 3.137 s in `mul_mat_q` | 21.223 s across the three MMQ entries | Highest compute priority. Reuse the Goose packed loaders and MMA coefficients with cooperative tile reuse and reference-sized MoE grouping. |
+| Prefill D2H | 1.442 GB | 37.624 GB | Immediate. The remaining large publications are 320 × 64 MiB and 960 × 16 MiB. Reuse the device vector path with valid live arena ranges. |
+| Prefill H2D | 84.097 GB | 132.753 GB | Match producer/consumer lifetimes, scatter and selected expert uploads. Measure before attributing the excess to one subsystem. |
+| Decode vector Attention GPU time | 1.216 s | 9.055 s | Highest decode kernel priority. Test the existing one-query vector body with the measured 11-part geometry against 64. Check evicted ranges and register spills independently. |
+| Decode quantized matrix GPU time | 2.492 s MMVQ | 3.002 s MMVQ plus 0.800 s scalar | Verify the remaining routed and fused MMVQ shapes. Keep the achieved Q4_K/Q6_K path. |
+| Prefill Dense GEMM | CUTLASS `s1688gemm` through cuBLAS | Independent TF32 router, 0.463 s | The traced Apex router shapes are already restored. Check other dense shapes after the larger losses. |
+| Recurrent prefill GPU time | 0.468 s GDN MMA | 1.352 s GDN MMA | Existing mechanism executes. Tune the measured residual after MMQ and transfers. |
+
+The hybrid runs 20,914 CUDA Graph launches. Its trace
+contains 895,931 graph-node launches and about 29,471
+direct launch calls. The independent trace contains zero
+graph-node launches and 1,088,448 driver launch calls,
+spending 2.933 s in those direct driver calls across the
+session. It also records 291,671 context synchronizations,
+with 27.155 s in the API including device waits.
+The hybrid records 62,355 stream synchronizations, with
+17.104 s including waits. These are attribution bounds,
+not a measured speedup from Graph capture. Stable
+allocation addresses, stream boundaries, and per-token
+state keys are required before restoring capture. Goose
+`goose-graph-gating.goose` and `goose-graph-lifecycle.goose`
+contain policy and graph mechanics. Neither binds CUDA
+capture and replay in the standalone runtime.
+
+The hybrid VMM pool uses two address reservations, 105
+create calls and 105 map calls. Recorded create/map API
+time is about 2.50 ms across the session. The independent
+path uses 36 Driver API allocations and 24 frees, totaling
+about 10.23 ms in those calls. The ready planner in
+`goose-cuda-vmm-pool.goose` remains available. VMM is
+useful for stable addresses and lifecycle parity. The
+measured allocation calls do not explain the throughput gap.
+
+The hybrid GGML scheduler reuses its CUDA compute
+allocations above 1 GiB and performs 10.454 GB D2D in
+prefill. The independent lifetime planner and 384 MiB
+arena removed most of the earlier D2H. Its remaining
+16 MiB copies align with the four explicit vector windows
+at each of 240 recurrent-layer calls. The 64 MiB group
+requires a separate lifetime check. Work on the 16 MiB
+windows first, retaining the existing CPU-visible fallback
+for graph shapes that require it.
+
+Ready compute material includes
+`goose-mmq-load-q4k/device.goose`,
+`goose-mmq-load-q6k/device.goose`,
+`goose-mmq-mma-coeff/device.goose`, and the Flash
+`mma-entry-device.goose` / `mask-fixups-device.goose`
+modules. The [main map](#mechanisms) tracks live
+selection and evidence per mechanism.
+
+## Resident wide vector multiplication
+
+EXP-2026-11-20-1561 removes the forced host publication of
+the recurrent gated multiplication when the GPU already
+owns both operands. The original path uses four 16 MiB
+vector windows for a full 64 MiB result, publishes each
+to RAM and reloads the combined tensor for the next
+matrix operation. The accepted path calls the existing
+wide Goose vector kernel once when both operands are
+resident, the graph owns a fresh output, and the existing
+arena allocator can return a slot without eviction.
+`GOOSE_CUDA_WIDE_VECTOR=0` enables the previous route.
+
+A targeted CUDA fixture computes and consumes a 64 MiB
+result while both 64 MiB operands remain live and the host
+result stays unmaterialized. Compute Sanitizer reports
+no errors.
+
+| Profiled Apex 4096/129 A–B–B–A | Windows | Resident multiplication |
+|---|---:|---:|
+| Prefill samples, tok/s | 643.403, 643.171 | 694.073, 695.933 |
+| Prefill median, tok/s | 643.287 | 695.003 |
+| Decode median, steps/s | 20.889 | 20.851 |
+| Prefill H2D, bytes | 18,990,675,152 | 16,977,390,512 |
+| Prefill D2H, bytes | 4,703,856,640 | 2,690,590,720 |
+| 16 MiB D2H copies in prefill | 120 | 0 |
+| Highest RSS high-water, KiB | 23,590,632 | 23,524,240 |
+| Sampled peak process VRAM, MiB | 8,500 | 8,484 |
+| Process swap and system swap-out growth | 0 | 0 |
+
+All four responses match in content, IDs and probabilities.
+The default selector removes the same 120 copies on the
+short request and records 689.356 tok/s prefill.
+
+The independent default build also completes the full
+32K/512 request at 4096/4096 with the same text, 512 IDs
+and probabilities as the 384 MiB control in EXP-1560.
+The full run takes 46.618 s in prefill and 30.876 s in
+decode, or 702.909 prefill tok/s and 16.550 decode
+steps/s. Exact model residency and SLRU counters persist.
+RSS high-water is 23,580,412 KiB, sampled peak process
+VRAM is 8,524 MiB and process swap and system swap-out
+growth are zero. The opening input repetition recorded
+in EXP-1560 remains visible.
+
+Prefill H2D is 116,646,927,184 bytes and D2H is
+21,517,772,800 bytes. The whole 960-copy 16 MiB group
+is gone. The largest residual prefill publication is 320
+copies of 64 MiB, totaling 21,474,836,480 bytes. Trace
+and qualify its producer/consumer lifetime independently.
+
+- Short A–B–B–A under
+  `/home/end0/AI/LlamaServer/franken-goose-resident-vector.UsIPSk`,
+  in order `cuda-matrix-dense-both.52573zah`,
+  `cuda-matrix-dense-both.j9ukwb1l`,
+  `cuda-matrix-dense-both.waa3_4bz`,
+  and `cuda-matrix-dense-both.wblyfbf1`.
+- Default executable and full run under
+  `/home/end0/AI/LlamaServer/franken-goose-resident-vector-default.DpA97A`,
+  `cuda-full-dense-both.9f8p85uk`.
+  Executable SHA-256 `a2c4facd806f73910e3c3c8db4371522eaecc85544276014c322638ccb9dc79f`.
+  Nsight SHA-256 `76ef051ff2f3881e04cf254cd7cccf8a10cd014aef14ca2a00e1bdbfbfc2298a`.
 
 ## Kernel coverage
 

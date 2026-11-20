@@ -1,5 +1,6 @@
 extern "fg_cuda_vector" fn cuda_vector(config: const i64[:], x: const u8[:], y: const u8[:],
     dst: u8[:], param0: f32, param1: f32) -> i64;
+extern "fg_cuda_wide_vector_ready" fn cv_wide_ready(x: u64, y: u64, output: u64, bytes: i64) -> bool;
 
 fn cv_operation(p: const Node &) -> i64 {
     if p.op == OP_ADD || p.op == OP_ADD1 { return CV_ADD; }
@@ -98,7 +99,8 @@ fn cv_try(p: const Node &, x: const u8[:], y: const u8[:], dst: u8[:], addresses
        dense_scalar(p.x, 4) && dense_scalar(p.y, 4) &&
        addresses[0] != 0 && addresses[1] != 0 && addresses[2] != 0 &&
        blit_disjoint(addresses[0] as! u64, p.x.bytes, addresses[2] as! u64, p.d.bytes) &&
-       blit_disjoint(addresses[1] as! u64, p.y.bytes, addresses[2] as! u64, p.d.bytes) {
+       blit_disjoint(addresses[1] as! u64, p.y.bytes, addresses[2] as! u64, p.d.bytes) &&
+       !cv_wide_ready(addresses[0] as! u64, addresses[1] as! u64, addresses[2] as! u64, p.d.bytes) {
         return cv_multiply_windows(p, x, y, dst, config[..]);
     }
     return cuda_vector(config, x[0 .. p.x.bytes], y[0 .. y_bytes], dst[0 .. p.d.bytes], p.fp[0], p.fp[1]);

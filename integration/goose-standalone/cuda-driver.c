@@ -66,6 +66,7 @@ static struct {
     struct device_buffer activations;
     size_t activation_capacity;
     bool adapt_activation_capacity;
+    bool direct_wide_vectors;
     struct device_buffer dense;
     sl_i64 dense_ranges;
     struct device_buffer state;
@@ -195,6 +196,7 @@ static void init_cuda(void) {
     const char * arena_setting = getenv("GOOSE_CUDA_ACTIVATION_MIB");
     cuda.activation_capacity = DEFAULT_ACTIVATION_BYTES;
     cuda.adapt_activation_capacity = !arena_setting;
+    cuda.direct_wide_vectors = fg_standalone_option_enabled("GOOSE_CUDA_WIDE_VECTOR");
     if (arena_setting) {
         char * end;
         const intmax_t value = strtoimax(arena_setting, &end, 10);
@@ -644,6 +646,15 @@ static DevicePtr activation_device(uint64_t host, int64_t bytes) {
     if (activations.count == 0) return 0;
     const int64_t offset = fg143_activation_lookup(activation_ranges(), host, bytes);
     return offset >= 0 ? cuda.activations.address + (uint64_t) offset : 0;
+}
+
+bool fg_cuda_wide_vector_ready(uint64_t x, uint64_t y, uint64_t output, int64_t bytes) {
+    if (!cuda.direct_wide_vectors || !activations.active || !activations.reuse ||
+        activations.unavailable || !cuda.activations.address || output != activations.target ||
+        bytes <= 0 || bytes > activations.target_bytes || (uint64_t) bytes > cuda.activations.bytes ||
+        !activation_device(x, bytes) || !activation_device(y, bytes)) return false;
+    return fg143_activation_slot(activation_ranges(), (int64_t) cuda.activations.bytes, bytes) >= 0 &&
+        fg143_activation_record_slot(activation_ranges()) < ACTIVATION_RECORDS;
 }
 
 static int activation_input(sl_u8 data, struct device_buffer * staging, DevicePtr * device) {

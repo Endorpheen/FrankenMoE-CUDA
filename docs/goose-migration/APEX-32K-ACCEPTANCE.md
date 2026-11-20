@@ -72,9 +72,10 @@ Functional qualification runs before memory and speed acceptance.
    The separate short and long
    [response-quality comparison](CUDA-PARITY-EXP1476.md#apex-response-quality-checkpoint)
    confirms coherent generation and the HTTP EOS fix. The
-   [latest full diagnostic](CUDA-PARITY-EXP1476.md#full-apex-diagnostic-after-mmvq-slru-and-vector-attention)
-   provides a capacity analysis after repeating part of the input.
-   The full response gate remains open.
+   [latest full diagnostic](CUDA-PARITY-EXP1476.md#resident-wide-vector-multiplication)
+   reports 702.909 prefill tok/s and 16.550 decode steps/s.
+   It preserves the recorded capacity analysis and opening input
+   repetition. The full response gate remains open.
    Gates 3 and 4 qualify the later speed comparison.
 7. [ ] **Accept memory** (requires 5 and 6). Record per-process RSS and
    its high-water mark, model page residency before and after the
