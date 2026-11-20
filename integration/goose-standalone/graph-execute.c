@@ -26,6 +26,7 @@ extern uint64_t fg_cuda_take_q4_writes(void);
 extern uint64_t fg_cuda_take_vectors(void);
 extern void fg_cuda_take_position(uint64_t * ropes, uint64_t * convs);
 extern void fg_cuda_take_routes(uint64_t * routes);
+extern void fg_cuda_take_blits(uint64_t * blits);
 extern int fg_cuda_activation_graph_begin(void);
 extern int fg_cuda_activation_prepare(uint64_t host, int64_t bytes, bool fresh);
 extern int fg_cuda_activation_graph_end(bool success, bool all, uint64_t host, int64_t bytes, uint64_t * hits);
@@ -281,6 +282,8 @@ static enum ggml_status compute_graph(struct ggml_cgraph * graph, bool all, cons
     fg_cuda_take_position(&ropes, &convs);
     uint64_t routes[4];
     fg_cuda_take_routes(routes);
+    uint64_t blits[3];
+    fg_cuda_take_blits(blits);
     const bool valid = failed == 0 && fg_cuda_state_graph_done() == 0;
     uint64_t hits = 0;
     const int published = fg_cuda_activation_graph_end(valid, all,
@@ -302,6 +305,10 @@ static enum ggml_status compute_graph(struct ggml_cgraph * graph, bool all, cons
         for (int i = 0; i < 4; ++i) {
             const char * names[] = {"softmax", "sort", "gather", "row sum"};
             if (routes[i]) fprintf(stderr, "Goose CUDA %s: %llu nodes\n", names[i], (unsigned long long) routes[i]);
+        }
+        const char * blit_names[] = {"concat", "contiguous copy", "resident SSM writes"};
+        for (int i = 0; i < 3; ++i) {
+            if (blits[i]) fprintf(stderr, "Goose CUDA %s: %llu nodes\n", blit_names[i], (unsigned long long) blits[i]);
         }
         if (hits) fprintf(stderr, "Goose CUDA activation reuse: %llu inputs\n", (unsigned long long) hits);
     }

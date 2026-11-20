@@ -15,6 +15,7 @@ extern int64_t fg_cuda_model_state_bytes(void);
 extern int64_t fg_cuda_dense_bytes(void);
 extern int64_t fg_cuda_load_model_state(sl_i64 ranges, int64_t bytes);
 extern int64_t fg_cuda_state_read(uint64_t host, int64_t bytes);
+extern int64_t fg_cuda_state_write(uint64_t host, int64_t bytes);
 
 static void check_model_step(const char * path) {
     fg_goose_host_ensure_init();
@@ -112,6 +113,78 @@ static void check_resident_state(const char * path) {
     }
     assert(unsetenv("GOOSE_CUDA") == 0);
     printf("Resident KV/GDN reset and mixed CUDA/CPU continuation: max error %.9g\n", max_error);
+}
+
+static void check_resident_convolution(void) {
+    enum { taps = 4, keep = taps - 1, channels = 131 };
+    struct ggml_context * persistent = ggml_init((struct ggml_init_params){ 1024 * 1024, NULL, false });
+    assert(persistent);
+    struct ggml_tensor * history = ggml_new_tensor_2d(persistent, GGML_TYPE_F32, keep, channels);
+    const uint64_t address = (uint64_t) (uintptr_t) history->data;
+    const int64_t bytes = (int64_t) ggml_nbytes(history);
+    int64_t ranges[] = {(int64_t) address, bytes, 0, 2};
+    assert(fg_cuda_load_model_state((sl_i64) { ranges, 4 }, bytes) == bytes);
+    float expected[channels * keep];
+    for (int i = 0; i < channels * keep; ++i) expected[i] = (float) (i % 19 - 9) / 16.0f;
+    memcpy(history->data, expected, sizeof(expected));
+    assert(fg_cuda_state_write(address, bytes) == 0);
+
+    const int chunks[] = {1, 2, 7, 1};
+    for (size_t pass = 0; pass < sizeof(chunks) / sizeof(*chunks); ++pass) {
+        const int n = chunks[pass];
+        const int time = keep + n;
+        const bool device = pass != 1;
+        struct ggml_context * ctx = ggml_init((struct ggml_init_params){ 1024 * 1024, NULL, true });
+        assert(ctx);
+        struct ggml_tensor * projection = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, channels, n);
+        struct ggml_tensor * scaled = ggml_scale(ctx, projection, 2.0f);
+        struct ggml_tensor * input = ggml_concat(ctx, history, ggml_transpose(ctx, scaled), 0);
+        struct ggml_tensor * tail = ggml_view_2d(ctx, input, keep, channels, input->nb[1], n * sizeof(float));
+        struct ggml_tensor * store = ggml_cpy(ctx, tail, history);
+        struct ggml_tensor * filter = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, taps, channels);
+        struct ggml_tensor * conv = ggml_ssm_conv(ctx, input, filter);
+        struct ggml_tensor * contiguous = ggml_cont(ctx, ggml_transpose(ctx, input));
+        struct ggml_cgraph * graph = ggml_new_graph_custom(ctx, 128, false);
+        ggml_build_forward_expand(graph, store);
+        ggml_build_forward_expand(graph, conv);
+        ggml_build_forward_expand(graph, contiguous);
+        void * storage = fg_standalone_graph_alloc(graph);
+        assert(storage);
+        float * samples = projection->data;
+        float * weights = filter->data;
+        for (int i = 0; i < channels * n; ++i) samples[i] = (float) ((i + 17 * (int) pass) % 37 - 18) / 16.0f;
+        for (int i = 0; i < taps * channels; ++i) weights[i] = (float) (i % 13 - 6) / 32.0f;
+        // The registered device history is authoritative between graph steps.
+        for (int i = 0; i < channels * keep; ++i) ((float *) history->data)[i] = -17.0f;
+        if (!device) assert(setenv("GOOSE_CUDA", "0", 1) == 0);
+        assert(fg_standalone_graph_compute(graph) == GGML_STATUS_SUCCESS);
+        if (!device) assert(unsetenv("GOOSE_CUDA") == 0);
+        const float * copied = contiguous->data;
+        const float * observed = conv->data;
+        for (int channel = 0; channel < channels; ++channel) {
+            float want[keep + 7];
+            for (int t = 0; t < time; ++t) {
+                want[t] = t < keep ? expected[keep * channel + t] : 2.0f * samples[channels * (t - keep) + channel];
+                assert(copied[t * channels + channel] == want[t]);
+            }
+            for (int t = 0; t < n; ++t) {
+                float sum = 0.0f;
+                for (int j = 0; j < taps; ++j) sum += want[t + j] * weights[taps * channel + j];
+                assert(observed[t * channels + channel] == sum);
+            }
+            for (int j = 0; j < keep; ++j) {
+                const int at = keep * channel + j;
+                expected[at] = want[n + j];
+                assert(((float *) history->data)[at] == (device ? -17.0f : expected[at]));
+            }
+        }
+        assert(fg_cuda_state_read(address, bytes) == 0);
+        assert(memcmp(history->data, expected, sizeof(expected)) == 0);
+        free(storage);
+        ggml_free(ctx);
+    }
+    puts("Resident SSM history matches all 393 values across CUDA/CPU continuation");
+    ggml_free(persistent);
 }
 
 static void check_resident_q4_rows(void) {
@@ -764,6 +837,7 @@ int main(int argc, char ** argv) {
     check_routed_matrix(GGML_TYPE_F32, true);
     if (argc == 2) {
         if (strcmp(argv[1], "--resident-rows") == 0) check_resident_q4_rows();
+        else if (strcmp(argv[1], "--resident-conv") == 0) check_resident_convolution();
         else if (strcmp(argv[1], "--activations") == 0) check_activation_pipeline();
         else if (strcmp(argv[1], "--vectors") == 0) check_cuda_vectors();
         else if (strcmp(argv[1], "--position") == 0) check_cuda_position();

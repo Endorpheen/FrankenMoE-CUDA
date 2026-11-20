@@ -37,7 +37,8 @@ cp "$ROOT/goose/cuda/standalone-routing.goose" "$OUT/routing.goose"
 sed -n '/^fn warp_max(/,/^}/p' "$ROOT/goose/chat/goose-cuda-softmax/device.goose" >> "$OUT/routing.goose"
 sed -n '/^fn cv_warp_sum(/,/^}/p' "$ROOT/goose/cuda/standalone-vector.goose" >> "$OUT/routing.goose"
 sed '/^fn argsort(x/,$d; /^extern "fg283d_smem"/d' "$ROOT/goose/cuda/goose-cuda-argsort/device.goose" >> "$OUT/routing.goose"
-for module in q4k q6k matmul q4-attention gdn q4-set-rows vector rope ssm-conv routing; do
+cp "$ROOT/goose/cuda/standalone-transform.goose" "$OUT/transform.goose"
+for module in q4k q6k matmul q4-attention gdn q4-set-rows vector rope ssm-conv routing transform; do
     "$GOOSE" --standalone -o "$OUT/$module.c" --header "$OUT/$module.h" "$OUT/$module.goose"
     python3 - "$OUT" "$module" <<'PY'
 from pathlib import Path

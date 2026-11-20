@@ -476,3 +476,14 @@ __kernel void goose_route_gather(__global uint8_t * x, __global uint8_t * y,
     __global uint8_t * out, __global int64_t * cfg) {
     fg_route_gather_g((uint64_t) x, (uint64_t) y, (uint64_t) out, (uint64_t) cfg, position_thread());
 }
+
+static void fg_device_copy_u32(uint64_t src, uint64_t dst) {
+    *(__global uint32_t *) dst = *(__global uint32_t *) src;
+}
+
+#include "transform-device.h"
+
+__kernel void goose_tensor_blit(__global uint8_t * x, __global uint8_t * y,
+    __global uint8_t * out, __global int64_t * cfg) {
+    fg_tensor_blit_g((uint64_t) x, (uint64_t) y, (uint64_t) out, (uint64_t) cfg, position_thread());
+}

@@ -1,6 +1,7 @@
 extern "fg143_copy_bytes" fn copy_bytes(dst: u64, src: u64, count: i64);
 extern "fg_cuda_state_read" fn cuda_state_read(src: u64, count: i64) -> i64;
 extern "fg_cuda_state_write" fn cuda_state_write(dst: u64, count: i64) -> i64;
+extern "fg_cuda_conv_read" fn cuda_conv_read(src: u64, count: i64) -> i64;
 extern "fg_cuda_match_published_state" fn cuda_match_state(dst: u64, src: u64, count: i64) -> bool;
 
 fn dense_scalar(t: const Tensor &, size: i64) -> bool {
@@ -36,6 +37,7 @@ fn transforms(p: const Node &, x: const u8[:], y: const u8[:], dst: u8[:],
             return true;
         }
 
+        if p.nth == 1 && addresses[0] != 0 && cuda_conv_read(addresses[0] as! u64, p.x.bytes) != 0 { return false; }
         while index < count {
             let source = offset(p.x, index);
             let target = offset(p.d, index);
@@ -44,9 +46,13 @@ fn transforms(p: const Node &, x: const u8[:], y: const u8[:], dst: u8[:],
             }
             index += p.nth;
         }
+        if op == OP_CPY && p.nth == 1 && addresses[2] != 0 &&
+           cuda_state_write(addresses[2] as! u64, p.d.bytes) != 0 { return false; }
         return true;
     }
 
+    if op == OP_CONCAT && p.nth == 1 && (cuda_conv_read(addresses[0] as! u64, p.x.bytes) != 0 ||
+       cuda_conv_read(addresses[1] as! u64, p.y.bytes) != 0) { return false; }
     while index < count {
         var n = index;
         var c: i64[4] = default < i64[4] > ();

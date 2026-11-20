@@ -317,6 +317,24 @@ CPU/CUDA continuation logit difference of 0.0000001192. CPU chunking
 and the CUDA RoPE/SSM differential passed. Apex throughput, transfer
 totals and peak memory remain unmeasured.
 
+EXP-2026-11-20-1512 adds the convolution history to the Goose device
+state manifest alongside packed KV and the GDN recurrence matrix. The
+tensor graph concatenates projected QKV and the resident history on CUDA.
+A strided view copies the last kernel positions directly into the
+registered history. The convolution uses the same resulting device
+input. The shared transform also materializes contiguous F32 copies of
+device views. When a CPU step takes over, it reads the current history
+and publishes its updated tail before a subsequent CUDA step.
+
+On RTX 4070 a 131-channel fixture checked 393 history values plus every
+convolution and contiguous-copy output across four chunks, with a CPU
+step between CUDA steps. All values matched exactly. The two-layer GGUF
+fixture confirmed one resident history write and one CUDA concatenation
+per CUDA graph, with 119 device input reuses and a maximum absolute
+CPU/CUDA continuation logit difference of 0.0000001192 after reset.
+Routing, RoPE/SSM and CPU chunking checks passed. Apex performance and
+peak memory remain unmeasured.
+
 ## Historical requirements audit
 
 `docs/goose-migration/tasks.json`: **DONE 1**, **PARTIAL 144**, **TODO 7** of 152.

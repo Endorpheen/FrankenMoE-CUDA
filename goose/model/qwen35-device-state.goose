@@ -2,7 +2,7 @@ extern "fg_cuda_load_model_state" fn state_load(ranges: const i64[:], bytes: i64
 extern "fg_cuda_reset_model_state" fn state_reset_cuda() -> i64;
 
 // State manifest rows: host address, byte span, device offset, kind.
-// Kind 0 is a Q4 KV tensor, and kind 1 is the recurrent matrix state.
+// Kind 0 is Q4 KV, kind 1 is the recurrent matrix, kind 2 is convolution history.
 fn qr_state_span(tensor: i64, kind: i64) -> i64 {
     if tensor == 0 || pred(0, tensor, 0) == 0 || ne(tensor, 3) != 1 { return 0; }
     if kind == 0 {
@@ -25,11 +25,10 @@ export fn qr_cuda_state(owner: const i64[:], layers: const i64[:], head: i64) ->
     for i in owner[5] {
         let row = i * 32;
         let recurrent = layers[row] == 1;
-        let span = if recurrent { 1 } else { 2 };
-        for j in span {
-            let at = if recurrent { row + 21 } else { row + 22 + j };
+        for j in 2 {
+            let at = if recurrent { row + 20 + j } else { row + 22 + j };
             let t = layers[at];
-            let kind = if recurrent { 1 } else { 0 };
+            let kind = if recurrent { 2 - j } else { 0 };
             let length = qr_state_span(t, kind);
             if length <= 0 || length > owner[12] - bytes { return -1; }
             let addr = qa_get(t, 4, 0);
@@ -55,8 +54,8 @@ export fn qr_state_offset(ranges: const i64[:], address: u64, bytes: i64, kind: 
         if address < base || size < bytes || (kind >= 0 && ranges[at + 3] != kind) { continue; }
         let offset = address - base;
         if offset > ((size - bytes) as u64) { continue; }
-        // The GDN operation publishes exactly one complete model tensor.
-        if kind == 1 && (offset != 0 || bytes != size) { continue; }
+        // Device recurrence reads and publishes complete registered tensors.
+        if kind > 0 && (offset != 0 || bytes != size) { continue; }
         return ranges[at + 2] + (offset as i64);
     }
     return -1;

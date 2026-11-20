@@ -41,7 +41,7 @@ static struct {
     Module module;
     Function kernel, attention_tiles, attention_merge, gdn, q4_rows, vector;
     Function rope_phases, rope_apply, ssm_conv;
-    Function route_reduce, route_sort, route_gather;
+    Function route_reduce, route_sort, route_gather, blit;
     struct device_buffer input, output, weight, jobs;
     struct device_buffer attention_value, attention_scratch, attention_config;
     struct device_buffer gdn_beta;
@@ -93,6 +93,7 @@ static _Thread_local uint64_t cuda_q4_writes;
 static _Thread_local uint64_t cuda_vectors;
 static _Thread_local uint64_t cuda_ropes, cuda_convs;
 static _Thread_local uint64_t cuda_routes[4];
+static _Thread_local uint64_t cuda_blits[3];
 static _Thread_local struct {
     uint64_t source, destination;
     int64_t bytes;
@@ -154,6 +155,7 @@ static void init_cuda(void) {
         if (error == 0) error = cuda.function_get(&cuda.route_reduce, cuda.module, "goose_route_reduce");
         if (error == 0) error = cuda.function_get(&cuda.route_sort, cuda.module, "goose_route_sort");
         if (error == 0) error = cuda.function_get(&cuda.route_gather, cuda.module, "goose_route_gather");
+        if (error == 0) error = cuda.function_get(&cuda.blit, cuda.module, "goose_tensor_blit");
         Context current = NULL;
         int pop_error = cuda.pop(&current);
         if (error == 0) error = pop_error;
@@ -345,12 +347,18 @@ static int activation_publish(uint64_t host, int64_t bytes, DevicePtr device, bo
     return 0;
 }
 
+static DevicePtr activation_device(uint64_t host, int64_t bytes) {
+    if (activations.count == 0) return 0;
+    const int64_t offset = fg143_activation_lookup(activation_ranges(), host, bytes);
+    return offset >= 0 ? cuda.activations.address + (uint64_t) offset : 0;
+}
+
 static int activation_input(sl_u8 data, struct device_buffer * staging, DevicePtr * device) {
     if (activations.count > 0) {
         const uint64_t host = (uint64_t) (uintptr_t) data.data;
-        const int64_t offset = fg143_activation_lookup(activation_ranges(), host, data.len);
-        if (offset >= 0) {
-            *device = cuda.activations.address + (uint64_t) offset;
+        const DevicePtr current = activation_device(host, data.len);
+        if (current) {
+            *device = current;
             ++activations.hits;
             return 0;
         }
@@ -434,12 +442,20 @@ int64_t fg_cuda_state_write(uint64_t host, int64_t bytes) {
     return finish_context() == 0 && status == 0 ? 0 : -1;
 }
 
-int64_t fg_cuda_state_read(uint64_t host, int64_t bytes) {
-    const DevicePtr source = state_address(host, bytes, -1);
+static int64_t read_state(uint64_t host, int64_t bytes, int64_t kind) {
+    const DevicePtr source = state_address(host, bytes, kind);
     if (!source) return 0;
     if (push_context() != 1) return -1;
     const int status = cuda.download((void *) (uintptr_t) host, source, (size_t) bytes);
     return finish_context() == 0 && status == 0 ? 0 : -1;
+}
+
+int64_t fg_cuda_state_read(uint64_t host, int64_t bytes) {
+    return read_state(host, bytes, -1);
+}
+
+int64_t fg_cuda_conv_read(uint64_t host, int64_t bytes) {
+    return read_state(host, bytes, 2);
 }
 
 int64_t fg_cuda_gdn_state_read(sl_f32 state) {
@@ -937,4 +953,46 @@ int64_t fg_cuda_routing(sl_i64 config, sl_u8 x, sl_u8 y, sl_u8 out) {
 void fg_cuda_take_routes(uint64_t * routes) {
     memcpy(routes, cuda_routes, sizeof(cuda_routes));
     memset(cuda_routes, 0, sizeof(cuda_routes));
+}
+
+int64_t fg_cuda_blit(sl_i64 config, sl_u8 x, sl_u8 y, sl_u8 out) {
+    if (config.len != 17 || config.data[0] < 0 || config.data[0] >= 3 ||
+        config.data[1] <= 0 || config.data[1] > INT_MAX || x.len <= 0 || y.len < 0 || out.len <= 0) return -1;
+    const int64_t mode = config.data[0];
+    const uint64_t host_x = (uint64_t) (uintptr_t) x.data;
+    const uint64_t host_y = (uint64_t) (uintptr_t) y.data;
+    const uint64_t host_out = (uint64_t) (uintptr_t) out.data;
+    DevicePtr lhs = state_address(host_x, x.len, 2);
+    DevicePtr rhs = state_address(host_y, y.len, 2);
+    DevicePtr dest = mode == 2 ? state_address(host_out, out.len, 2) : 0;
+    if (mode == 2 && !dest) return 0;
+    if (!lhs && !rhs && !activation_device(host_x, x.len) && !activation_device(host_y, y.len)) return 0;
+    const int active = start_context();
+    if (active != 1) return active;
+
+    int error = dest ? 0 : activation_output(host_out, out.len, &dest);
+    const sl_u8 data[] = {lhs ? (sl_u8) {0} : x, rhs ? (sl_u8) {0} : y,
+        {(uint8_t *) config.data, config.len * (int64_t) sizeof(*config.data)}};
+    struct device_buffer * buffers[] = {&cuda.input, &cuda.weight, &cuda.attention_config};
+    DevicePtr staged[] = {lhs, rhs, 0};
+    if (error == 0) error = upload_inputs(data, buffers, staged, sizeof(data) / sizeof(*data));
+    if (error == 0) {
+        void * args[] = {&staged[0], &staged[1], &dest, &staged[2]};
+        error = cuda.launch(cuda.blit, (unsigned) config.data[1], 1, 1, 128, 1, 1, 0, NULL, args, NULL);
+        if (error == 0) {
+            error = mode == 2 ? cuda.sync() : activation_publish(host_out, out.len, dest, false);
+        }
+    }
+    const int popped = finish_context();
+    if (error != 0 || popped != 0) {
+        fprintf(stderr, "Goose CUDA: tensor transform %lld failed (%d)\n", (long long) mode, error ? error : popped);
+        return -1;
+    }
+    ++cuda_blits[mode];
+    return 1;
+}
+
+void fg_cuda_take_blits(uint64_t * blits) {
+    memcpy(blits, cuda_blits, sizeof(cuda_blits));
+    memset(cuda_blits, 0, sizeof(cuda_blits));
 }

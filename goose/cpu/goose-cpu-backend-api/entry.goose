@@ -81,6 +81,11 @@ fn entry(
         if route > 0 { witness(p.op, elements(p.d)); }
         return route > 0;
     }
+    let blit = blit_cuda(p, x, y, dst, addresses);
+    if blit != 0 {
+        if blit > 0 { witness(p.op, elements(p.d)); }
+        return blit > 0;
+    }
     if activation_read(x) != 0 || activation_read(y) != 0 || activation_read(z) != 0 { return false; }
     if codec_transform(p, x, y, dst, scratch, gxx, gxs, gs, g3x, g3s, g1, signs, palette) {
         witness(p.op, elements(p.d));
