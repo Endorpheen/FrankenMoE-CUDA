@@ -7,6 +7,8 @@ const EC_MAX_BYTES: i64 = 4992 * 1024 * 1024;
 extern "fg_cuda_load_experts" fn ec_load(groups: const i64[:], layers: const i64[:],
                                          device_bytes: i64, words32: i64, words64: i64) -> i64;
 extern "fg_cuda_expert_upload" fn ec_upload(offset: i64, source: u64, bytes: i64) -> i64;
+extern "fg_cuda_expert_stage_upload" fn ec_stage_upload(offset: i64, source: u64, bytes: i64) -> i64;
+extern "fg_cuda_expert_stage_enabled" fn ec_stage_enabled(active_experts: i64) -> bool;
 extern "fg_cuda_expert_record" fn ec_record(hits: i64, fills: i64, evictions: i64, bytes: i64);
 extern "fg_cuda_expert_pin_info" fn ec_pin_info(info: i64[:]) -> i64;
 extern "fg_cuda_expert_pin_register" fn ec_pin_register(spans: const i64[:], bytes: i64);
@@ -245,6 +247,18 @@ export fn ec_reset(groups: const i64[:], layers: const i64[:], words32: u64, wor
     }
 }
 
+fn ec_fill_plane(layer: const i64[:], group: const i64[:], span: i64,
+                  expert: i64, slot: i64, plane: i64, staged: bool) -> bool {
+    let up = group[0];
+    let gate = group[1];
+    let before = if plane == 0 { 0 } else if plane == 1 { up } else { up + gate };
+    let bytes = group[plane];
+    let offset = group[6] + span * slot + before;
+    let source = (layer[1 + plane] as! u64) + ((bytes * expert) as u64);
+    return if staged { ec_stage_upload(offset, source, bytes) == 0 }
+        else { ec_upload(offset, source, bytes) == 0 };
+}
+
 // Resolve one indexed matrix into resident device offsets, including any
 // fills. All effects run under the CUDA driver's current-context lock.
 export fn ec_prepare(groups: const i64[:], layers: const i64[:], words32: u64, words64: i64[:],
@@ -289,15 +303,25 @@ export fn ec_prepare(groups: const i64[:], layers: const i64[:], words32: u64, w
         if fills < 0 { return -1; }
         let span = groups[g] + groups[g + 1] + groups[g + 2];
         var evictions: i64 = 0;
-        for i in fills {
-            if sl_read(evicted, i) >= 0 { evictions += 1; }
-            let e = sl_read(fills_e, i);
-            var offset = groups[g + 6] + span * sl_read(fills_s, i);
-            for p in 3 {
-                let part = groups[g + p];
-                let from = (layers[r + 1 + p] as! u64) + ((part * e) as u64);
-                if ec_upload(offset, from, part) != 0 { return -1; }
-                offset += part;
+        for i in fills { if sl_read(evicted, i) >= 0 { evictions += 1; } }
+        let layer = layers[r .. r + EC_LAYER];
+        let group = groups[g .. g + EC_GROUP];
+        if fills > 0 && ec_stage_enabled(count) {
+            for wave in 3 {
+                let p = (projection + wave) % 3;
+                for i in fills {
+                    if !ec_fill_plane(layer, group, span, sl_read(fills_e, i), sl_read(fills_s, i), p, wave != 0) {
+                        return -1;
+                    }
+                }
+            }
+        } else {
+            for i in fills {
+                for p in 3 {
+                    if !ec_fill_plane(layer, group, span, sl_read(fills_e, i), sl_read(fills_s, i), p, false) {
+                        return -1;
+                    }
+                }
             }
         }
         var plane: i64 = 0;

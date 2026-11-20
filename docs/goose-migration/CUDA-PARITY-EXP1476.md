@@ -120,7 +120,7 @@ prefill and 62.86 decode tokens/s.
 | 27 | Selective transfer and device placement. Backend split execution and CUDA tensor set/get → asynchronous linear and 2-D copies. | The [adaptive arena](#adaptive-cuda-activation-arena), [resident vector path](#resident-wide-vector-multiplication) and [last-use matrix input staging](#device-staging-for-the-last-use-matrix-input) remove the large temporary prefill publications. | PARTIAL. Investigate remaining expert uploads, dispatch packets and synchronous host transfers. Full memory and speed parity remain open. |
 | 28 | CUDA VMM pool. CUDA buffer allocator → `cuMemAddressReserve`, `cuMemCreate`, `cuMemMap`, `cuMemSetAccess`, release. | [Scratch VMM](#cuda-vmm-scratch-restoration) grows stable MMQ and Attention buffers. [Lazy KV VMM](#lazy-q4-kv-vmm-restoration) saves 1,240 MiB on full Apex 32K/512 and preserves generation through a short request after reset. | PARTIAL. Qualify the larger package, full-capacity model growth and other supported layouts. |
 | 29 | CUDA Graph capture and replay. `ggml-cuda.cu` graph evaluator → begin/end capture, instantiate, exec update and launch. | [Goose vector Attention capture](#cuda-graph-replay-for-vector-attention) executes the two-node vector/merge graph and updates it with current pointers and key counts. The hybrid trace records over 20,000 graph launches across the full workload. | PARTIAL. Qualify 32K and extend capture to other dependency-safe decode sequences. |
-| 30 | Streams and synchronization. CUDA scheduler and `ggml-cuda.cu` establish streams, events and CUDA Graph scopes. | Planned Goose graphs [defer matrix waits](#deferred-matrix-waits) and queue [small pinned packets asynchronously](#asynchronous-h2d-packets). Host reads retain their completion barriers. | PARTIAL. Reduce remaining blocking uploads and qualify independent upload streams and event dependencies. |
+| 30 | Streams and synchronization. CUDA scheduler and `ggml-cuda.cu` establish streams, events and CUDA Graph scopes. | Planned Goose graphs [defer matrix waits](#deferred-matrix-waits), queue [small pinned packets asynchronously](#asynchronous-h2d-packets), and [overlap selected expert uploads](#overlapped-expert-projection-uploads) through a separate CUDA stream. | PARTIAL. Reduce remaining blocking uploads and qualify larger independent graph scopes. |
 | 31 | Prefill → decode continuation. Reference `llama-context.cpp` scheduler and CUDA graph compute produce logits for the shared sampler. | The earlier full Goose response repeated input text. The newer checkpoint completes the [normal quality suite](#apex-response-quality-checkpoint) and the vector Attention cases. | INCORRECT on the last full quality diagnostic. Revalidate the current checkpoint on the full real workload. Investigate a specific reproduced behavioral defect. |
 | 32 | Device initialization and specialization loading. CUDA backend loader and scheduler select architectures, entry points and cuBLAS paths. | Trace records device info, driver lookups, cuLibrary entry resolution and allocation APIs. Goose loads its own PTX with the Driver API. | PARTIAL. Extend end-to-end executable selection for supported MMQ shapes and verify real device witness. Preserve independent module loading and rejected profiles. |
 
@@ -2796,6 +2796,76 @@ The profiled A/B directories end in `5hulo71g` and
 `jk3bvqtp` and `5urojrcy`. The final default short run
 ends in `orvg3r6w`. Default executable SHA-256
 `60ec1dfc5a737634195a2b7b21d8e344d1b5651455c07187760b98d409a51670`.
+
+## Overlapped expert projection uploads
+
+EXP-1577 restores the EXP-107 copy/compute overlap
+mechanism for the independent resident SLRU bank. When
+a planned, deferred multi-expert graph fills a slot,
+Goose copies the current projection first. Other planes
+from known registered source ranges are queued in a
+bounded host job list. A CUDA event protects reuse of
+the selected slots. After the current matrix's descriptors
+and kernels are queued, the driver submits the staged
+copies on a nonblocking stream. The next expert consumer
+waits on the upload-complete event. Pageable spans and
+small expert sets use ordinary uploads. The cache uses
+the existing GPU bank and the same host pin budget.
+
+The SLRU fixture and GPU eviction fixture verify projection
+selection, slot ownership, same-group cross-layer eviction
+and failure reset. The GPU test executes eight event records
+and eight event waits and passes CUDA memcheck.
+
+The first short version issued 1.403 GB on the side stream
+before the matrix launch and showed zero kernel overlap.
+In its first staged wave the matrix's first kernel started
+4.328 ms after the side copy began. Submitting the staged
+wave after the matrix descriptors and kernels creates
+61.291 ms of observed copy/kernel intersection in the
+short 4096/129 trace.
+
+| Full Apex 32K/512, same binary and 4096/4096 | Ordinary A | Overlap B |
+|---|---:|---:|
+| Profiled prefill, tok/s | 797.946 | 807.536 |
+| Profiled prefill, s | 41.065 | 40.578 |
+| Profiled side-stream H2D bytes | 0 | 9,515,630,592 |
+| Profiled side-stream copy/kernel intersection, s | 0 | 0.440 |
+| Profiled total H2D bytes | 154,864,119,008 | 154,864,119,008 |
+| Profiled total D2H bytes | 551,156,480 | 551,156,480 |
+| Profiled peak process VRAM, MiB | 7,284 | 7,284 |
+| Profiled system swap-out growth, pages | 1,919 | 57,502 |
+| Unprofiled reverse-pair prefill, tok/s | 803.911 | 814.122 |
+| Unprofiled reverse-pair prefill, s | 40.761 | 40.249 |
+| Unprofiled reverse-pair decode, steps/s | 24.949 | 25.226 |
+| Unprofiled peak process VRAM, MiB | 7,272 | 7,272 |
+| Unprofiled process RSS high-water, KiB | 22,938,660 | 22,938,588 |
+| Unprofiled system swap-out growth, pages | 0 | 0 |
+
+Both pairs preserve the response, all 512 token IDs,
+probability rows, SLRU counters and full model residency.
+Process swap remains zero. The earlier prompt echo persists.
+The profiled pair confirms the mechanism with system swap
+activity. The unprofiled pair confirms a 0.511 s prefill
+gain with unchanged peak VRAM. Decode has no staged expert
+uploads under the current selector, so its timing difference
+does not establish a decode gain.
+
+The default build on short Apex repeats the response with
+2,378 side-stream copies and 1,280 CUDA Graph launches.
+Scratch VMM and lazy KV are active, peak process VRAM is
+7,084 MiB and swap is zero. Set
+`GOOSE_CUDA_EXPERT_OVERLAP=0` for the blocking rollback.
+The remaining pageable and current-projection uploads
+still need separate optimization.
+
+The executable and evidence are under
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/expert-overlap-exp1577`.
+The profiled A/B directories end in `sz4upaih` and
+`wx7o6i72`. The unprofiled A/B directories end in
+`fetjzwqg` and `zc3wtc0r`. The default confirmation
+ends in `xeujmkr_`. Default executable SHA-256
+`49b03df6edf0db31b5b36eea385eb432e97a032347bc1d6c7ea1647a4ae4d92b`.
 
 ## Long Attention partition probe
 

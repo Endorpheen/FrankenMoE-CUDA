@@ -36,6 +36,7 @@ typedef struct CUctx_st * Context;
 typedef struct CUmod_st * Module;
 typedef struct CUfunc_st * Function;
 typedef struct CUstream_st * Stream;
+typedef struct CUevent_st * Event;
 typedef struct CUgraph_st * Graph;
 typedef struct CUgraphExec_st * GraphExec;
 typedef struct CUgraphNode_st * GraphNode;
@@ -89,6 +90,12 @@ struct expert_cache {
     uint64_t hits, fills, evictions, uploaded_bytes;
 };
 
+struct expert_upload_job {
+    DevicePtr destination;
+    const void * source;
+    size_t bytes;
+};
+
 static struct {
     void * library;
     Context context;
@@ -121,6 +128,11 @@ static struct {
     struct device_buffer * state_views;
     size_t state_logical_bytes;
     struct expert_cache experts;
+    Stream expert_stream;
+    Event expert_slots_ready, expert_uploads_ready;
+    bool expert_upload_queued;
+    struct expert_upload_job * expert_upload_jobs;
+    size_t expert_upload_count, expert_upload_capacity;
     sl_i64 expert_pins;
     int64_t expert_pinned_bytes;
     int status, multiprocessors;
@@ -156,6 +168,10 @@ static struct {
     int (*vmm_release)(AllocationHandle);
     int (*stream_create)(Stream *, unsigned);
     int (*stream_destroy)(Stream);
+    int (*stream_wait_event)(Stream, Event, unsigned);
+    int (*event_create)(Event *, unsigned);
+    int (*event_destroy)(Event);
+    int (*event_record)(Event, Stream);
     int (*graph_begin)(Stream, int);
     int (*graph_end)(Stream, Graph *);
     int (*graph_roots)(Graph, GraphNode *, size_t *);
@@ -310,9 +326,40 @@ static void release_flash_graph(void) {
     cuda.flash_graph_enabled = false;
 }
 
+static void release_expert_stream(void) {
+    if (cuda.expert_stream) cuda.stream_destroy(cuda.expert_stream);
+    if (cuda.expert_uploads_ready) cuda.event_destroy(cuda.expert_uploads_ready);
+    if (cuda.expert_slots_ready) cuda.event_destroy(cuda.expert_slots_ready);
+    cuda.expert_stream = NULL;
+    cuda.expert_uploads_ready = NULL;
+    cuda.expert_slots_ready = NULL;
+}
+
+static void init_expert_stream(void) {
+    enum { nonblocking_stream = 1, disable_timing = 2 };
+    if (!fg_standalone_option_enabled("GOOSE_CUDA_EXPERT_OVERLAP")) return;
+#define EXPERT_LOAD(field, symbol) do { cuda.field = dlsym(cuda.library, symbol); if (!cuda.field) return; } while (0)
+    EXPERT_LOAD(upload_async, "cuMemcpyHtoDAsync_v2");
+    EXPERT_LOAD(stream_create, "cuStreamCreate");
+    EXPERT_LOAD(stream_destroy, "cuStreamDestroy_v2");
+    EXPERT_LOAD(stream_wait_event, "cuStreamWaitEvent");
+    EXPERT_LOAD(event_create, "cuEventCreate");
+    EXPERT_LOAD(event_destroy, "cuEventDestroy_v2");
+    EXPERT_LOAD(event_record, "cuEventRecord");
+#undef EXPERT_LOAD
+    int error = cuda.stream_create(&cuda.expert_stream, nonblocking_stream);
+    if (error == 0) error = cuda.event_create(&cuda.expert_slots_ready, disable_timing);
+    if (error == 0) error = cuda.event_create(&cuda.expert_uploads_ready, disable_timing);
+    if (error != 0) release_expert_stream();
+}
+
 static void cleanup(void) {
     if (cuda.context) {
         if (cuda.push(cuda.context) == 0) {
+            if (cuda.expert_stream) {
+                cuda.sync();
+                release_expert_stream();
+            }
             if (cuda.expert_pins.len > 0) ec_manage_pins(cuda.expert_pins, 0);
             if (cuda.packet_host) {
                 cuda.sync();
@@ -333,6 +380,7 @@ static void cleanup(void) {
     free(cuda.state_ranges.data);
     free(cuda.state_views);
     free(cuda.expert_pins.data);
+    free(cuda.expert_upload_jobs);
     free_expert_metadata(&cuda.experts);
     if (cuda.library) dlclose(cuda.library);
 }
@@ -442,6 +490,7 @@ static void load_cuda(void) {
     int error = cuda.create(&cuda.context, 0, device);
     if (error == 0) {
         init_vmm(device);
+        init_expert_stream();
         error = cuda.module_load(&cuda.module, mma_image ? goose_cuda_mmq_image : goose_cuda_image);
         if (error == 0) error = cuda.function_get(&cuda.kernel, cuda.module, "goose_quantized_matmul");
         if (error == 0 && mmq) error = cuda.function_get(&cuda.mmq_pack, cuda.module, "goose_mmq_pack_q8");
@@ -1394,23 +1443,107 @@ void fg_cuda_expert_stats(sl_i64 stats) {
     pthread_mutex_unlock(&cuda_lock);
 }
 
-int64_t fg_cuda_expert_upload(int64_t offset, uint64_t source, int64_t bytes) {
+bool fg_cuda_expert_stage_enabled(int64_t active_experts) {
+    if (active_experts <= 8 || !activations.active || !activations.defer_waits ||
+        !cuda.defer_matrix_waits || !cuda.expert_stream || cuda.expert_pins.len <= 0 ||
+        (uint64_t) active_experts > SIZE_MAX / 2 / sizeof(*cuda.expert_upload_jobs)) return false;
+    const size_t capacity = (size_t) active_experts * 2;
+    if (capacity > cuda.expert_upload_capacity) {
+        struct expert_upload_job * jobs = realloc(cuda.expert_upload_jobs, capacity * sizeof(*jobs));
+        if (!jobs) return false;
+        cuda.expert_upload_jobs = jobs;
+        cuda.expert_upload_capacity = capacity;
+    }
+    return true;
+}
+
+static bool expert_source_pinned(uint64_t source, uint64_t bytes) {
+    for (int64_t i = 0; i < cuda.expert_pins.len; i += 2) {
+        const uint64_t base = (uint64_t) cuda.expert_pins.data[i];
+        const uint64_t span = (uint64_t) cuda.expert_pins.data[i + 1];
+        if (source < base) break;
+        if (bytes <= span && source - base <= span - bytes) return true;
+    }
+    return false;
+}
+
+static int64_t expert_upload(int64_t offset, uint64_t source, int64_t bytes, bool staged) {
     const struct device_buffer * dest = &cuda.experts.weights;
     if (!dest->address || !source || offset < 0 || bytes <= 0 ||
         (uint64_t) offset > dest->bytes || (uint64_t) bytes > dest->bytes - (uint64_t) offset) return -1;
-    const int status = cuda.upload(dest->address + (uint64_t) offset,
-        (const void *) (uintptr_t) source, (size_t) bytes);
+    const DevicePtr address = dest->address + (uint64_t) offset;
+    const void * host = (const void *) (uintptr_t) source;
+    int status;
+    if (staged && expert_source_pinned(source, (uint64_t) bytes)) {
+        if (cuda.expert_upload_count == cuda.expert_upload_capacity) return -1;
+        status = 0;
+        if (cuda.expert_upload_count == 0) {
+            // The chosen slots may still be read by the previous projection.
+            status = cuda.event_record(cuda.expert_slots_ready, NULL);
+        }
+        if (status == 0) {
+            cuda.expert_upload_jobs[cuda.expert_upload_count++] =
+                (struct expert_upload_job) {address, host, (size_t) bytes};
+        }
+    } else {
+        status = cuda.upload(address, host, (size_t) bytes);
+    }
     if (status) fprintf(stderr, "Goose CUDA: expert upload failed (%d)\n", status);
     return status == 0 ? 0 : -1;
+}
+
+int64_t fg_cuda_expert_upload(int64_t offset, uint64_t source, int64_t bytes) {
+    return expert_upload(offset, source, bytes, false);
+}
+
+int64_t fg_cuda_expert_stage_upload(int64_t offset, uint64_t source, int64_t bytes) {
+    return expert_upload(offset, source, bytes, true);
+}
+
+static void reset_expert_stage(void) {
+    struct expert_cache * cache = &cuda.experts;
+    cuda.expert_upload_count = 0;
+    ec_reset(cache->groups, cache->layers, (uint64_t) (uintptr_t) cache->state, cache->work);
+}
+
+static int submit_expert_stage(void) {
+    if (cuda.expert_upload_count == 0) return 0;
+    // Queue uploads after the consumer's descriptor copies and kernels.
+    // Future projections wait on the event, never on a host-side launch.
+    int status = cuda.stream_wait_event(cuda.expert_stream, cuda.expert_slots_ready, 0);
+    for (size_t i = 0; status == 0 && i < cuda.expert_upload_count; ++i) {
+        const struct expert_upload_job * job = &cuda.expert_upload_jobs[i];
+        activations.pending = true;
+        status = cuda.upload_async(job->destination, job->source, job->bytes, cuda.expert_stream);
+    }
+    if (status == 0) status = cuda.event_record(cuda.expert_uploads_ready, cuda.expert_stream);
+    if (status == 0) {
+        cuda.expert_upload_count = 0;
+        cuda.expert_upload_queued = true;
+        return 0;
+    }
+    (void) cuda.sync();
+    reset_expert_stage();
+    fprintf(stderr, "Goose CUDA: staged expert upload failed (%d)\n", status);
+    return -1;
 }
 
 int64_t fg_cuda_prepare_experts(uint64_t tensor, int64_t bytes, sl_i64 active, sl_i64 offsets) {
     struct expert_cache * cache = &cuda.experts;
     if (!cache->weights.address) return 0;
+    if (cuda.expert_upload_count != 0) {
+        reset_expert_stage();
+        return -1;
+    }
+    if (cuda.expert_upload_queued) {
+        // The current projection may consume a plane staged by the last one.
+        if (cuda.stream_wait_event(NULL, cuda.expert_uploads_ready, 0) != 0) return -1;
+        cuda.expert_upload_queued = false;
+    }
     const uint64_t state = (uint64_t) (uintptr_t) cache->state;
     const int64_t status = ec_prepare(cache->groups, cache->layers, state, cache->work,
         tensor, bytes, active, offsets);
-    if (status < 0) ec_reset(cache->groups, cache->layers, state, cache->work);
+    if (status < 0) reset_expert_stage();
     return status;
 }
 
@@ -1680,7 +1813,8 @@ int64_t fg_cuda_expert_batch(int64_t weight_bytes, int64_t row_stride,
         const int64_t offset = jobs.data[i];
         if (offset < 0 || (uint64_t) offset > bank->bytes - (uint64_t) weight_bytes) return -1;
     }
-    const int status = launch_matrix(bank->address, row_stride, extent, kind, rows, jobs, 3, shared_rows, input_stride);
+    int status = launch_matrix(bank->address, row_stride, extent, kind, rows, jobs, 3, shared_rows, input_stride);
+    if (status == 0) status = submit_expert_stage();
     if (status == 0) ++cuda_cached_projections;
     return status;
 }
@@ -1712,7 +1846,11 @@ uint64_t fg_cuda_take_dense_mma(void) {
 
 int64_t fg_cuda_finish(uint64_t output, int64_t output_bytes) {
     int error = 0;
-    if (output) {
+    if (cuda.expert_upload_count != 0) {
+        reset_expert_stage();
+        error = -1;
+    }
+    if (error == 0 && output) {
         error = activation_publish(output, output_bytes, matrix_output, true);
     }
     const int pop_error = finish_context();
