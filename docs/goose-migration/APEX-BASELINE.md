@@ -80,6 +80,70 @@ growth cost nothing measurable.
 | headline experiment | `experiments/EXP-2026-11-19-1298-host-registration/` |
 | launch command | `tools/apex-test.sh <tag> 512 4096 4096 4992` (records argv, checksums, deps per run) |
 
+## Excluded 32K sampler series
+
+The raw sampler series is stored in `results/p610-32k-1197/` at
+`2d8f1699b50ccb1685bc92566dd27455da9243f8`. The commit subject calls
+this series EXP-1196. The EXP-1197 grammar-cost card at `8a0aedc6`
+describes a separate experiment.
+
+Both requests are byte-identical (SHA-256
+`2fac7e8358c977ce081156612f770cdb622ff25cfc39999484c18fc784fc8a8e`).
+They extend `word ` repeated 32,000 times and evaluate 32,001 input tokens.
+The request overrides launcher settings with seed 42, temperature 0.8,
+top-p 0.90, typical-p 0.90, repeat penalty 1.10 and EOS masking. It requests
+512 output tokens, disables prompt caching, and requests no token IDs or
+probability records. The launcher keeps context 262,144, batch and ubatch
+4,096, one sequence, FlashAttention with Q4_0 KV, mmap and a 4,992 MiB
+expert cache, with CPU MoE plus CUDA. The harness names a mutable stage
+executable and library directory. The recorded series lacks matching
+artifact hashes and a loaded library map.
+
+The headline 84.21 decode and 3654.43 prefill are the second OFF request.
+Against its first request, prompt evaluation fell from 10,411.325 to
+8,756.758 ms and decode from 6,271.904 to 6,068.077 ms. Both responses
+report `cache_n=0`. The log shows 510 graph reuses after request one and
+1,019 after request two, cumulative. Process and data warm-up can explain
+part of the repeat gain, but this record cannot assign the gain to one
+cache or kernel. GPU samples are whole-card occupancy after the requests.
+RSS is the process snapshot at that same point. Neither is an isolated
+allocation peak.
+
+All four responses have the same content SHA-256
+`e97af530063a5d15944aeda2c3f76b6aa74311ce7376799925dfdcba505a60d6`.
+The ON trace shows typical-p retaining 15 candidates on its first call
+and one at call 100, with top-p also retaining one there. The same collapse
+in output appears with the tested Goose sampler switches OFF. This rules
+out the tested switch bundle as a necessary condition. A repeated
+continuation, the shared filtering/sampling path and forced length are
+consistent with a low-diversity loop. The first trigger cannot be assigned
+to a prompt, an individual stage, or a logit/detokenization defect from
+these artifacts alone. They also do not show the per-token expert routes.
+The speed is excluded from all accepted references.
+
+### Verified content in EXP-1476
+
+The three archived release responses in
+`rel-exp1476-20261119-212613` contain the same substantive capacity-risk
+assessment (2,255 characters), the same 512 output IDs (252 distinct), and
+matching saved probability arrays. They report medians of 62.8579 decode
+and 2940.9133 prefill on the 32,768-ID request and different sampler
+settings. The executable and libraries still match the archived manifest.
+
+| Control item | SHA-256 |
+|---|---|
+| request body | `484a12de00ec057e4b78d480ebb185153bb10af607eb23192a72995ba3026d0f` |
+| response content | `c2ff42cc1219ea4dfe6d69f02e008d0f90c0fc56260736a0aafb82cec362924f` |
+| output IDs, compact JSON | `fdf27fb67f12a5c0dcfa04ad59daf47100749df70cc096ed6cda8f9285e3d54c` |
+
+The archived Path B 512-token series also preserves both hashes and its
+probability arrays across all paired responses. Its faster median decode
+is historical evidence for that artifact. It does not establish throughput
+on the independent Goose runtime. The resident host registration
+experiment EXP-1298 and the in-place expert-bank and graph-reuse evidence
+are independent reasons to build those mechanisms into the new runtime.
+The rejected sampler series cannot quantify their individual contribution.
+
 ## Historical baseline: EXP-2026-11-16-906 (kept, not superseded in the record)
 
 ```
