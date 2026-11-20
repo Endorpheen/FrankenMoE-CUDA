@@ -40,9 +40,11 @@ static struct {
     Context context;
     Module module;
     Function kernel, attention_tiles, attention_merge, gdn, q4_rows, vector;
+    Function mmq_pack, mmq_matrix;
     Function rope_phases, rope_apply, ssm_conv;
     Function route_reduce, route_sort, route_gather, blit;
     struct device_buffer input, output, weight, jobs;
+    struct device_buffer mmq_packed, mmq_tiles;
     struct device_buffer attention_value, attention_scratch, attention_config;
     struct device_buffer gdn_beta;
     struct device_buffer activations;
@@ -54,6 +56,7 @@ static struct {
     int status;
     int (*init)(unsigned);
     int (*device_get)(int *, int);
+    int (*device_attribute)(int *, int, int);
     int (*create)(Context *, unsigned, int);
     int (*destroy)(Context);
     int (*push)(Context);
@@ -85,6 +88,7 @@ static _Thread_local struct {
 static _Thread_local DevicePtr matrix_input, matrix_output;
 static _Thread_local uint64_t cuda_matrices;
 static _Thread_local uint64_t cuda_matrix_launches, cuda_cached_projections;
+static _Thread_local uint64_t cuda_mmq_projections;
 static _Thread_local uint64_t cuda_f32_matrices;
 static _Thread_local int cuda_matrix_kind;
 static _Thread_local uint64_t cuda_attentions;
@@ -124,6 +128,7 @@ static void init_cuda(void) {
 #define LOAD(field, name) do { cuda.field = dlsym(cuda.library, name); if (!cuda.field) return; } while (0)
     LOAD(init, "cuInit");
     LOAD(device_get, "cuDeviceGet");
+    LOAD(device_attribute, "cuDeviceGetAttribute");
     LOAD(create, "cuCtxCreate_v2");
     LOAD(destroy, "cuCtxDestroy_v2");
     LOAD(push, "cuCtxPushCurrent_v2");
@@ -142,10 +147,23 @@ static void init_cuda(void) {
     int device;
     if (cuda.init(0) != 0 || cuda.device_get(&device, 0) != 0) return;
     cuda.status = -1;
+    const char * setting = getenv("GOOSE_MMQ");
+    const bool mmq = setting && strcmp(setting, "1") == 0;
+    if (mmq) {
+        enum { compute_capability_major = 75 };
+        int major = 0;
+        if (cuda.device_attribute(&major, compute_capability_major, device) != 0 ||
+            major < 8 || goose_cuda_mmq_image[0] == 0) {
+            fputs("Goose CUDA: MMQ requires the SM80 device image and compute capability 8 or newer\n", stderr);
+            return;
+        }
+    }
     int error = cuda.create(&cuda.context, 0, device);
     if (error == 0) {
-        error = cuda.module_load(&cuda.module, goose_cuda_image);
+        error = cuda.module_load(&cuda.module, mmq ? goose_cuda_mmq_image : goose_cuda_image);
         if (error == 0) error = cuda.function_get(&cuda.kernel, cuda.module, "goose_quantized_matmul");
+        if (error == 0 && mmq) error = cuda.function_get(&cuda.mmq_pack, cuda.module, "goose_mmq_pack_q8");
+        if (error == 0 && mmq) error = cuda.function_get(&cuda.mmq_matrix, cuda.module, "goose_mmq_matmul");
         if (error == 0) error = cuda.function_get(&cuda.attention_tiles, cuda.module, "goose_q4_attention_tiles");
         if (error == 0) error = cuda.function_get(&cuda.attention_merge, cuda.module, "goose_q4_attention_merge");
         if (error == 0) error = cuda.function_get(&cuda.gdn, cuda.module, "goose_gated_delta_net");
@@ -169,16 +187,35 @@ static void init_cuda(void) {
     cuda.status = 1;
 }
 
+static int release_buffer(struct device_buffer * buffer) {
+    if (!buffer->address) return 0;
+    const int error = cuda.release(buffer->address);
+    if (error == 0) {
+        *buffer = (struct device_buffer) {0};
+    }
+    return error;
+}
+
 static int reserve(struct device_buffer * buffer, size_t bytes) {
     if (bytes <= buffer->bytes) return 0;
-    if (buffer->address) {
-        const int error = cuda.release(buffer->address);
-        if (error != 0) return error;
-        buffer->address = 0;
-        buffer->bytes = 0;
+    int error = release_buffer(buffer);
+    if (error != 0) return error;
+    error = cuda.alloc(&buffer->address, bytes);
+    // A completed MMQ projection has no live users of its packing buffers.
+    // Reclaim them under pressure before admitting the next operator.
+    if (error == 2 && buffer != &cuda.mmq_packed && buffer != &cuda.mmq_tiles &&
+        (cuda.mmq_packed.address || cuda.mmq_tiles.address)) {
+        error = release_buffer(&cuda.mmq_packed);
+        if (error == 0) error = release_buffer(&cuda.mmq_tiles);
+        if (error == 0) error = cuda.alloc(&buffer->address, bytes);
     }
-    const int error = cuda.alloc(&buffer->address, bytes);
     if (error == 0) buffer->bytes = bytes;
+    if (error == 2) {
+        size_t available = 0, total = 0;
+        if (cuda.memory_info(&available, &total) == 0) {
+            fprintf(stderr, "Goose CUDA: %zu device bytes requested, %zu bytes available\n", bytes, available);
+        }
+    }
     return error;
 }
 
@@ -633,6 +670,58 @@ int64_t fg_cuda_begin(uint64_t input, int64_t input_bytes, uint64_t output, int6
     return -1;
 }
 
+static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
+                      int rows, sl_i64 jobs, int job_words) {
+    enum { window_tiles = 64, routes_per_tile = 8 };
+    const int count = (int) (jobs.len / job_words);
+    const size_t window_routes = count < window_tiles * routes_per_tile ?
+        (size_t) count : window_tiles * routes_per_tile;
+    if (extent > INT_MAX / 256 || (size_t) extent > SIZE_MAX / 288 / window_routes ||
+        (size_t) count > SIZE_MAX / (3 * sizeof(int64_t))) return -1;
+    const size_t packed_bytes = window_routes * (size_t) extent * 288;
+    int64_t * tiles = malloc((size_t) count * 3 * sizeof(*tiles));
+    if (!tiles) return -1;
+    const int64_t tile_count = fg143_mmq_tiles(jobs, job_words, (sl_i64) {tiles, 3ll * count});
+    if (tile_count <= 0 || tile_count > count) {
+        free(tiles);
+        return -1;
+    }
+    const size_t tile_bytes = (size_t) tile_count * 3 * sizeof(*tiles);
+    int error = reserve(&cuda.mmq_packed, packed_bytes);
+    if (error == 0) error = reserve(&cuda.mmq_tiles, tile_bytes);
+    if (error == 0) error = cuda.upload(cuda.mmq_tiles.address, tiles, tile_bytes);
+    int first = 0, first_route = 0;
+    void * pack_args[] = {&matrix_input, &cuda.jobs.address, &cuda.mmq_packed.address,
+                         &extent, &kind, &first_route, &job_words};
+    void * matrix_args[] = {&weight, &cuda.mmq_packed.address, &matrix_output, &cuda.jobs.address,
+        &cuda.mmq_tiles.address, &stride, &extent, &kind, &rows, &first, &first_route, &job_words};
+    while (error == 0 && first < tile_count) {
+        const int batch = tile_count - first > window_tiles ? window_tiles : (int) (tile_count - first);
+        const int64_t last = 3ll * (first + batch - 1);
+        first_route = (int) tiles[3ll * first];
+        const unsigned routes = (unsigned) (tiles[last] + tiles[last + 1] - first_route);
+        error = cuda.launch(cuda.mmq_pack, (unsigned) (2 * extent), routes, 1,
+                            32, 1, 1, 0, NULL, pack_args, NULL);
+        if (error == 0) {
+            error = cuda.launch(cuda.mmq_matrix, 1u + ((unsigned) rows - 1) / 64, (unsigned) batch, 1,
+                                128, 1, 1, 0, NULL, matrix_args, NULL);
+            if (error == 0) ++cuda_matrix_launches;
+        }
+        first += batch;
+    }
+    free(tiles);
+    if (first != 0) {
+        const int sync_error = cuda.sync();
+        if (error == 0) error = sync_error;
+    }
+    if (error != 0) {
+        fprintf(stderr, "Goose CUDA: MMQ failed (%d), packed activations need %zu bytes\n", error, packed_bytes);
+        return -1;
+    }
+    ++cuda_mmq_projections;
+    return 0;
+}
+
 static int launch_matrix(DevicePtr weight, int64_t row_stride, int64_t extent,
                          int64_t kind, int64_t rows, sl_i64 jobs, int job_words) {
     if (!weight || rows <= 0 || rows > INT_MAX || extent <= 0 || extent > INT_MAX ||
@@ -642,6 +731,12 @@ static int launch_matrix(DevicePtr weight, int64_t row_stride, int64_t extent,
     const size_t job_bytes = (size_t) jobs.len * sizeof(*jobs.data);
     int error = reserve(&cuda.jobs, job_bytes);
     if (error == 0) error = cuda.upload(cuda.jobs.address, jobs.data, job_bytes);
+    if (error == 0 && cuda.mmq_matrix && kind != 0 && jobs.len / job_words >= 16) {
+        const int result = launch_mmq(weight, (uint64_t) row_stride, (int) extent, (int) kind,
+                                      (int) rows, jobs, job_words);
+        if (result == 0) cuda_matrix_kind = (int) kind;
+        return result;
+    }
 
     uint64_t stride = (uint64_t) row_stride;
     int width = (int) extent, type = (int) kind, start = 0;
@@ -700,6 +795,12 @@ void fg_cuda_take_matrix_launches(uint64_t * launches, uint64_t * cached) {
     cuda_cached_projections = 0;
 }
 
+uint64_t fg_cuda_take_mmq(void) {
+    const uint64_t count = cuda_mmq_projections;
+    cuda_mmq_projections = 0;
+    return count;
+}
+
 int64_t fg_cuda_finish(uint64_t output, int64_t output_bytes) {
     int error = 0;
     if (output) {
@@ -734,6 +835,7 @@ int64_t fg_cuda_q4_attention(sl_i64 config, sl_u8 q, sl_u8 k, sl_u8 v, sl_u8 mas
     if (config.len != 22 || config.data[17] <= 0 || config.data[17] > 65535 ||
         config.data[18] <= 0 || config.data[18] > INT_MAX ||
         config.data[19] <= 0 || config.data[19] > config.data[18] || config.data[20] <= 0 ||
+        config.data[20] % config.data[19] != 0 || (uint64_t) config.data[20] > SIZE_MAX ||
         q.len <= 0 || k.len <= 0 || v.len <= 0 || mask.len < 0 || out.len <= 0) return -1;
     const int active = start_context();
     if (active != 1) return active;
@@ -747,10 +849,21 @@ int64_t fg_cuda_q4_attention(sl_i64 config, sl_u8 q, sl_u8 k, sl_u8 v, sl_u8 mas
     DevicePtr staged[] = {0, key, value, 0, 0}, output = 0;
     const uint64_t host = (uint64_t) (uintptr_t) out.data;
     int error = activation_output(host, out.len, &output);
-    if (error == 0) error = reserve(&cuda.attention_scratch, (size_t) config.data[20]);
     if (error == 0) error = upload_inputs(data, buffers, staged, sizeof(data) / sizeof(*data));
 
-    const int tasks = (int) config.data[18], capacity = (int) config.data[19];
+    const int tasks = (int) config.data[18];
+    const int requested = (int) config.data[19];
+    const size_t task_bytes = (size_t) (config.data[20] / requested);
+    int capacity = requested;
+    if (error == 0) {
+        while ((error = reserve(&cuda.attention_scratch, task_bytes * (size_t) capacity)) == 2 &&
+               capacity > 1) {
+            capacity /= 2;
+        }
+        if (error == 0 && capacity != requested && getenv("GOOSE_GRAPH_LOG")) {
+            fprintf(stderr, "Goose CUDA: attention scratch wave %d of %d tasks\n", capacity, requested);
+        }
+    }
     const unsigned tiles = (unsigned) config.data[17];
     int start = 0;
     void * tile_args[] = {&staged[0], &staged[1], &staged[2],
@@ -872,6 +985,40 @@ uint64_t fg_cuda_take_q4_writes(void) {
     return writes;
 }
 
+static int vector_input(sl_u8 data, struct device_buffer * staging, DevicePtr * device,
+                        int64_t * shape, bool pack) {
+    const uint64_t host = (uint64_t) (uintptr_t) data.data;
+    if (!pack || activation_device(host, data.len)) return activation_input(data, staging, device);
+    int error = activation_sync_range(host, data.len, false);
+    if (error != 0) return error;
+    const size_t row_bytes = (size_t) shape[0] * sizeof(float);
+    const size_t compact_bytes = row_bytes * (size_t) shape[1] * (size_t) shape[2] * (size_t) shape[3];
+    if (compact_bytes > (uint64_t) data.len) return -1;
+    uint8_t * compact = malloc(compact_bytes);
+    if (!compact) return -1;
+    uint8_t * dest = compact;
+    for (int64_t i3 = 0; i3 < shape[3]; ++i3) {
+        for (int64_t i2 = 0; i2 < shape[2]; ++i2) {
+            for (int64_t i1 = 0; i1 < shape[1]; ++i1) {
+                memcpy(dest, (const uint8_t *) data.data + i3 * shape[7] +
+                    i2 * shape[6] + i1 * shape[5], row_bytes);
+                dest += row_bytes;
+            }
+        }
+    }
+    error = reserve(staging, compact_bytes);
+    if (error == 0) error = cuda.upload(staging->address, compact, compact_bytes);
+    free(compact);
+    if (error != 0) return error;
+    size_t stride = sizeof(float);
+    for (int i = 0; i < 4; ++i) {
+        shape[4 + i] = (int64_t) stride;
+        stride *= (size_t) shape[i];
+    }
+    *device = staging->address;
+    return 0;
+}
+
 int64_t fg_cuda_vector(sl_i64 config, sl_u8 x, sl_u8 y, sl_u8 out, float param0, float param1) {
     if (config.len != 26 || config.data[24] <= 0 || config.data[24] > INT_MAX ||
         (config.data[25] != 32 && config.data[25] != 128) ||
@@ -880,12 +1027,18 @@ int64_t fg_cuda_vector(sl_i64 config, sl_u8 x, sl_u8 y, sl_u8 out, float param0,
         (y.len > 0 && (uintptr_t) y.data % sizeof(float))) return 0;
     const int active = start_context();
     if (active != 1) return active;
-    const sl_u8 data[] = {x, y, {(uint8_t *) config.data, config.len * (int64_t) sizeof(*config.data)}};
-    struct device_buffer * buffers[] = {&cuda.input, &cuda.weight, &cuda.attention_config};
+    int64_t plan[26];
+    memcpy(plan, config.data, sizeof(plan));
     DevicePtr staged[3] = {0}, output = 0;
     const uint64_t host = (uint64_t) (uintptr_t) out.data;
     int error = activation_output(host, out.len, &output);
-    if (error == 0) error = upload_inputs(data, buffers, staged, sizeof(data) / sizeof(*data));
+    if (error == 0) error = vector_input(x, &cuda.input, &staged[0], plan + 6, (plan[23] & 1) != 0);
+    if (error == 0 && y.len > 0) {
+        error = vector_input(y, &cuda.weight, &staged[1], plan + 14, (plan[23] & 2) != 0);
+    }
+    if (error == 0) {
+        error = activation_input((sl_u8) {plan, sizeof(plan)}, &cuda.attention_config, &staged[2]);
+    }
     void * args[] = {&staged[0], &staged[1], &output, &staged[2], &param0, &param1};
     if (error == 0) {
         error = cuda.launch(cuda.vector, (unsigned) config.data[24], 1, 1,

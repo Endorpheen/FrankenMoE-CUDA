@@ -207,6 +207,29 @@ fn cuda_matrix_job_words(p: const Node &) -> i64 {
     return mul_size(words, rows(p.d));
 }
 
+// Jobs for each bank plane are contiguous. No tile may cross a plane boundary.
+export fn fg143_mmq_tiles(jobs: const i64[:], words: i64, tiles: i64[:]) -> i64 {
+    if (words != 2 && words != 3) || jobs.len <= 0 || jobs.len % words != 0 { return -1; }
+    let count = jobs.len / words;
+    var first: i64 = 0;
+    var tile: i64 = 0;
+    while first < count {
+        let weight = if words == 3 { jobs[first * words + 2] } else { 0 };
+        var size: i64 = 1;
+        while size < 8 && size < count - first {
+            if words == 3 && jobs[(first + size) * words + 2] != weight { break; }
+            size += 1;
+        }
+        if tile >= tiles.len / 3 || weight < 0 { return -1; }
+        tiles[tile * 3] = first;
+        tiles[tile * 3 + 1] = size;
+        tiles[tile * 3 + 2] = weight;
+        tile += 1;
+        first += size;
+    }
+    return tile;
+}
+
 fn cuda_matrix_planes(p: const Node &, weights: u64, weight_bytes: i64,
                      planes: i64, row_bytes: i64, row_count: i64,
                      spread2: i64, spread3: i64, heads: i64, next: i64,

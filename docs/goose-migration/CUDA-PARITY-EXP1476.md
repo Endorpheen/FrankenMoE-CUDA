@@ -32,13 +32,13 @@ paired ablations, which are open for every row.
 
 ## Mechanisms
 
-**32 mechanisms: PARITY 0, PARTIAL 18, MISSING 13, INCORRECT 1.**
+**32 mechanisms: PARITY 0, PARTIAL 21, MISSING 10, INCORRECT 1.**
 
 | # | Mechanism and EXP-1476 call path | Evidence and independent Goose state | Status, restoration and verification |
 |---:|---|---|---|
-| 1 | Q4_K MMQ. `ggml-cuda.cu` `ggml_cuda_mul_mat` / `ggml_cuda_mul_mat_id` → `mmq.cu` `ggml_cuda_mul_mat_q` → `mmq-load-tiles.cuh` and `mmq-vec-dot.cuh` → `mul_mat_q`. | Executed type 12 symbols contain SM89 `IMMA.16832.S8.S8`. Goose `cuda_matrix_planes` reaches scalar F32 reconstruction and FMA in `goose_quantized_matmul`. | MISSING. Compose the existing Q4_K packed loader with Q8_1, register MMA fragments and tile write-back. Compare packed coefficients and output tiles against EXP-1476. Verify dense and indexed calls, tile tails and RTX 4070 execution. |
-| 2 | Q6_K MMQ, same backend chain with `ggml_cuda_mmq_vec_dot_q6_K_q8_1_mma`. | Executed type 14 symbols contain SM89 `IMMA.16816.S8.S8`. Goose scalar decode uses F32 and preserves the signed scale. | MISSING. Use existing Q6_K packed loader and signed-scale gates. Keep the per-16 scale, compare the reference tiles, and prove execution for both dense and routed inputs. |
-| 3 | Activation packing. `mmq.cu` → direct or scatter `quantize_mmq_q8_1` in `quantize.cu`, then MMQ. DS4 carries a half scale and activation sum. D4 carries F32 scales. | Both direct and scatter templates execute. Current standalone PTX consumes F32 activations. The existing EXP180 Goose source is available. | MISSING. Connect the existing packer to MMQ. Verify DS4/D4 byte layout, rounding, zero blocks and repeated routes. Count packing only once per routed input region. |
+| 1 | Q4_K MMQ. `ggml-cuda.cu` `ggml_cuda_mul_mat` / `ggml_cuda_mul_mat_id` → `mmq.cu` `ggml_cuda_mul_mat_q` → `mmq-load-tiles.cuh` and `mmq-vec-dot.cuh` → `mul_mat_q`. | Executed type 12 symbols contain SM89 `IMMA.16832.S8.S8`. With `GOOSE_MMQ=1`, Goose sends dense and routed 16×8 tiles to its K=32 MMA path. | PARTIAL. The integer-dot fixture and real 4,096-ID trace exercise the kernel. Full output parity and unprofiled performance remain open. |
+| 2 | Q6_K MMQ, same backend chain with `ggml_cuda_mmq_vec_dot_q6_K_q8_1_mma`. | Executed type 14 symbols contain SM89 `IMMA.16816.S8.S8`. Goose candidate uses K=16 and the existing packed loader and signed per-16 scale. | PARTIAL. Dense and cached routes match the integer-dot fixture, and the real short trace reaches the tiled path. Validate full generation and small shapes separately. |
+| 3 | Activation packing. `mmq.cu` → direct or scatter `quantize_mmq_q8_1` in `quantize.cu`, then MMQ. DS4 carries a half scale and activation sum. D4 carries F32 scales. | Both direct and scatter templates execute in the reference. Independent MMQ uses the EXP180 packer for bounded, job-ordered DS4/D4 windows. | PARTIAL. Both formats execute on real Apex. Device scatter and unique-input packing remain open. Validate model-level parity and quantify duplicate packing. |
 | 4 | MMQ stream-K. `mmq.cuh` partitions K and invokes `mul_mat_q_stream_k_fixup` to combine partial outputs. | Fix-up runs in the reference. Independent scalar kernels reduce K inside each output block. | MISSING. After the base tile passes, implement reference partition and reduction rules. Verify K tails, partial ordering and large segments separately from the base tile. |
 | 5 | Quantized small-batch MMVQ. `ggml-cuda.cu` → `ggml_cuda_mul_mat_vec_q` → Q8_1 and `mul_mat_vec_q` in `mmvq.cu`. | Both `quantize_q8_1` and `mul_mat_vec_q` run. Goose uses its scalar Q4_K/Q6_K path during decode. | MISSING. Restore the appropriate small-batch integer-dot specializations and packing. Check the exact subtype, output and decode timing under the final graph. |
 | 6 | Indexed small-batch MMVQ. `ggml_cuda_mul_mat_id` → `mul_mat_vec_q_moe_launch` → `mul_mat_vec_q_moe`. | The reference trace executes indexed MMVQ. Goose groups jobs on the host and feeds the scalar matrix kernel. | MISSING. Restore the routed MMVQ path and verify duplicate expert IDs, signed-scale arithmetic and first decode output. |
@@ -88,6 +88,44 @@ diagnostic high-water RSS of 23,883,316 KiB and sampled process VRAM
 of 8,944 MiB. The output fails parity. Final acceptance requires
 matching fresh A–B–B–A medians and valid responses. Historical floors
 are 2,940.9 input tokens/s and 62.86 decode steps/s.
+
+## First independent MMQ checkpoint
+
+`GOOSE_MMQ=1` selects the SM80+ PTX image. Q4_K and Q6_K use the
+existing packed arithmetic and Q8_1 quantizer with independent
+`mma.sync` bindings. The default device image and small-shape
+operation selection retain their previous paths while parity is
+open. Go planner tiles stay within expert bank boundaries. The
+Q8_1 staging window covers up to 512 routes. Strided vector
+operands upload their logical rows when they need host staging.
+Large attention operations can shrink their workspace wave while
+preserving batch, cache and output geometry.
+
+RTX 4070 executed five MMQ nodes in the dense/indexed fixture with
+zero error against the independent integer-dot formula. Coverage
+includes output tails, zero activation rows, repeated routes and
+multiple packing windows. The 15-case vector fixture with 8×
+stride and the mixed CPU/CUDA continuation regression also passed
+on the default image.
+
+One 4,096-ID Apex diagnostic on the new path measured
+46.363 s prefill, or 88.346 tokens/s, versus 104.375 s and 39.243
+tokens/s in the comparable scalar profile. Nsight recorded 3.160 s
+MMQ, 0.098 s Q8_1 and 0.595 s residual scalar matmul, versus
+60.690 s in the previous shared scalar kernel. Compute-window H2D
+fell from 187,594,956,656 to 105,965,212,544 bytes. D2H remained
+91,803,156,480 bytes. The short profile captured the executable
+before the attention-wave allocation guard was added.
+
+The short request's first ID differs from the reference. The
+full 32K/512 attempt on this checkpoint failed to reserve a
+268,435,456-byte dense MoE vector buffer. It captured no decode
+rate. Keep this as a GPU-executed, numerically gated partial
+checkpoint and continue memory and correctness work.
+
+Raw data is in
+`/home/end0/AI/LlamaServer/franken-goose-mmq.w1C6YB`, including
+`mmq-profile.IpNHWO` and `apex-functional.DCqNyI`.
 
 ## Kernel coverage
 

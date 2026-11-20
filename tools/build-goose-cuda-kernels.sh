@@ -38,7 +38,14 @@ sed -n '/^fn warp_max(/,/^}/p' "$ROOT/goose/chat/goose-cuda-softmax/device.goose
 sed -n '/^fn cv_warp_sum(/,/^}/p' "$ROOT/goose/cuda/standalone-vector.goose" >> "$OUT/routing.goose"
 sed '/^fn argsort(x/,$d; /^extern "fg283d_smem"/d' "$ROOT/goose/cuda/goose-cuda-argsort/device.goose" >> "$OUT/routing.goose"
 cp "$ROOT/goose/cuda/standalone-transform.goose" "$OUT/transform.goose"
-for module in q4k q6k matmul q4-attention gdn q4-set-rows vector rope ssm-conv routing transform; do
+sed '/^fn main()/,$d; s/^fn fg180q_mmq(/export fn fg180q_mmq(/' \
+    "$ROOT/goose/cuda/goose-cuda-mmq-q8-1/device.goose" > "$OUT/mmq-quant.goose"
+cp "$ROOT/goose/cuda/standalone-mmq.goose" "$OUT/mmq.goose"
+sed -n '/^fn scale_min(/,/^}/p' "$ROOT/goose/cuda/goose-cuda-dequant-q4k/device.goose" >> "$OUT/mmq.goose"
+sed -n '/^fn q4_mmq_nibbles(/,/^}/p' "$ROOT/goose/cuda/goose-mmq-load-q4k/device.goose" >> "$OUT/mmq.goose"
+sed -n '/^fn vsub4(/,/^}/p; /^fn q6_mmq_bytes(/,/^}/p' \
+    "$ROOT/goose/cuda/goose-mmq-load-q6k/device.goose" >> "$OUT/mmq.goose"
+for module in q4k q6k matmul q4-attention gdn q4-set-rows vector rope ssm-conv routing transform mmq-quant mmq; do
     "$GOOSE" --standalone -o "$OUT/$module.c" --header "$OUT/$module.h" "$OUT/$module.goose"
     python3 - "$OUT" "$module" <<'PY'
 from pathlib import Path
@@ -60,14 +67,19 @@ done
 "$CLANG" -target nvptx64-nvidia-cuda -Xclang -target-cpu -Xclang sm_70 \
     -nocudalib -O2 -x cl -cl-std=CL1.2 -I "$OUT" -S \
     "$ROOT/integration/goose-standalone/cuda-device.cl" -o "$OUT/goose-cuda.ptx"
+"$CLANG" -target nvptx64-nvidia-cuda -Xclang -target-cpu -Xclang sm_80 \
+    -nocudalib -O2 -DGOOSE_CUDA_MMQ_IMAGE -x cl -cl-std=CL1.2 -I "$OUT" -S \
+    "$ROOT/integration/goose-standalone/cuda-device.cl" -o "$OUT/goose-cuda-mmq.ptx"
 python3 - "$OUT" <<'PY'
 from pathlib import Path
 import sys
 
 out = Path(sys.argv[1])
-ptx = (out / "goose-cuda.ptx").read_bytes() + b"\0"
-lines = [", ".join(str(byte) for byte in ptx[i:i + 24]) for i in range(0, len(ptx), 24)]
-(out / "goose-cuda-image.h").write_text(
-    "static const unsigned char goose_cuda_image[] = {\n" + ",\n".join(lines) + "\n};\n"
-)
+def image(stem, symbol):
+    ptx = (out / (stem + ".ptx")).read_bytes() + b"\0"
+    lines = [", ".join(str(byte) for byte in ptx[i:i + 24]) for i in range(0, len(ptx), 24)]
+    return "static const unsigned char " + symbol + "[] = {\n" + ",\n".join(lines) + "\n};\n"
+
+(out / "goose-cuda-image.h").write_text(image("goose-cuda", "goose_cuda_image")
+                                        + image("goose-cuda-mmq", "goose_cuda_mmq_image"))
 PY

@@ -38,20 +38,23 @@ fn vsub4(a: i64, b: i64) -> i64 {
     out
 }
 
+fn q6_mmq_bytes(ql: i64, qh: i64, shift: i64, upper: bool) -> i64 {
+    let nibble = if upper { 4 } else { 0 };
+    let lo = (ql >> nibble) & 0x0F0F0F0F;
+    let hi = ((qh >> (shift + nibble)) << 4) & 0x30303030;
+    return vsub4(lo | hi, 0x20202020);
+}
+
 fn write_qs6(x: u64, stage: u64, kbx0: i64, stride: i64, i: i64, txi: i64, sram_stride: i64, qi6k: i64) -> bool {
     let bxi: u64 = x + ( (kbx0 + i * stride) * 210) as u64;
     let ql: i64 = ld_i32(bxi, txi * 4 as i64);
-    let ql0: i64 = (ql >> 0 as i64) & 0x0F0F0F0F as i64;
-    let ql1: i64 = (ql >> 4 as i64) & 0x0F0F0F0F as i64;
     let qidx: i64 = (qi6k / 4 as i64) * (txi / (qi6k / 2 as i64)) + txi % (qi6k / 4 as i64);
     let qh: i64 = ld_i32(bxi + 128 as u64, qidx * 4 as i64);
     let sh: i64 = (txi & 8 as i64) >> 2 as i64;
-    let qh0: i64 = ( ( (qh >> sh) << 4 as i64) & 0x30303030 as i64);
-    let qh1: i64 = ( (qh >> sh) & 0x30303030 as i64);
     let kq0: i64 = 2 * txi - txi % (qi6k / 2 as i64);
     let kq1: i64 = kq0 + qi6k / 2 as i64;
-    st_i32(stage, (i * sram_stride + kq0) * 4 as i64, vsub4(ql0 | qh0, 0x20202020 as i64));
-    st_i32(stage, (i * sram_stride + kq1) * 4 as i64, vsub4(ql1 | qh1, 0x20202020 as i64));
+    st_i32(stage, (i * sram_stride + kq0) * 4 as i64, q6_mmq_bytes(ql, qh, sh, false));
+    st_i32(stage, (i * sram_stride + kq1) * 4 as i64, q6_mmq_bytes(ql, qh, sh, true));
     true
 }
 

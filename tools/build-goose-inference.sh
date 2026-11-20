@@ -16,7 +16,8 @@ if command -v "${CLANG:-clang-18}" >/dev/null; then
     bash "$ROOT/tools/build-goose-cuda-kernels.sh" "$OUT"
 else
     printf '%s\n' 'CUDA PTX disabled: clang-18 (or CLANG) is unavailable' >&2
-    printf '%s\n' 'static const unsigned char goose_cuda_image[] = {0};' > "$OUT/goose-cuda-image.h"
+    printf '%s\n' 'static const unsigned char goose_cuda_image[] = {0};' \
+        'static const unsigned char goose_cuda_mmq_image[] = {0};' > "$OUT/goose-cuda-image.h"
 fi
 
 BASE=$ROOT/vendor/flint/ggml

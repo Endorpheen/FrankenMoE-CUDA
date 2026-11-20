@@ -489,3 +489,7 @@ __kernel void goose_tensor_blit(__global uint8_t * x, __global uint8_t * y,
     __global uint8_t * out, __global int64_t * cfg) {
     fg_tensor_blit_g((uint64_t) x, (uint64_t) y, (uint64_t) out, (uint64_t) cfg, position_thread());
 }
+
+#ifdef GOOSE_CUDA_MMQ_IMAGE
+#include "cuda-mmq.cl"
+#endif

@@ -13,6 +13,10 @@ fn ensure(v: bool, c: i64) {
     }
 }
 
+fn q4_mmq_nibbles(packed: i64, upper: bool) -> i64 {
+    return (packed >> (if upper { 4 } else { 0 })) & 0x0F0F0F0F;
+}
+
 fn load_row(
     x: u64,
     qs_stage: u64,
@@ -29,8 +33,8 @@ fn load_row(
         ensure(txi >= 0 as i64 && txi < 32 as i64, 1);
         let qs0: i64 = ld_i32(bxi, 16 as i64 + txi * 4 as i64);
         let slot: i64 = (i * sram_stride + 16 * (txi / 8 as i64) + (txi % 8 as i64)) * 4 as i64;
-        st_i32(qs_stage, slot, (qs0 >> 0 as i64) & 0x0F0F0F0F as i64);
-        st_i32(qs_stage, slot + 8 * 4 as i64, (qs0 >> 4 as i64) & 0x0F0F0F0F as i64);
+        st_i32(qs_stage, slot, q4_mmq_nibbles(qs0, false));
+        st_i32(qs_stage, slot + 8 * 4 as i64, q4_mmq_nibbles(qs0, true));
         return true;
     }
     let ksc: i64 = txi % 2 as i64;

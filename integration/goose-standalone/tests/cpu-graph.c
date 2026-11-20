@@ -634,6 +634,153 @@ static void check_cached_expert_batch(void) {
     ggml_free(ctx);
 }
 
+static float round_half(float value) {
+    return ggml_fp16_to_fp32(ggml_fp32_to_fp16(value));
+}
+
+static float read_half(const uint8_t * bytes) {
+    uint16_t bits;
+    memcpy(&bits, bytes, sizeof(bits));
+    return ggml_fp16_to_fp32(bits);
+}
+
+static float mmq_reference(enum ggml_type type, const uint8_t * weights, const float * input, int width) {
+    float result = 0.0f;
+    const bool q4 = type == GGML_TYPE_Q4_K;
+    for (int k = 0; k < width; k += 32) {
+        const float * x = input + k;
+        const uint8_t * a = weights + (k / 256) * (q4 ? 144 : 210);
+        const int group = (k % 256) / 32;
+        float maximum = 0.0f;
+        for (int j = 0; j < 32; ++j) maximum = fmaxf(maximum, fabsf(x[j]));
+        if (maximum == 0.0f) continue;
+        const float inverse = 127.0f / maximum;
+        const float d = 1.0f / inverse;
+        if (q4) {
+            const uint8_t * scales = a + 4;
+            const int sc = group < 4 ? scales[group] & 63 :
+                (scales[group + 4] & 15) | ((scales[group - 4] >> 6) << 4);
+            const int min = group < 4 ? scales[group + 4] & 63 :
+                (scales[group + 4] >> 4) | ((scales[group] >> 6) << 4);
+            const float coeff = round_half(read_half(a) * sc) * round_half(d);
+            const float min_coeff = round_half(-read_half(a + 2) * min);
+            const uint8_t * nibbles = a + 16 + 32 * (group / 2);
+            int dot = 0;
+            float sums[8];
+            for (int j = 0; j < 32; ++j) {
+                dot += ((nibbles[j] >> (4 * (group % 2))) & 15) * (int) roundf(x[j] * inverse);
+            }
+            for (int j = 0; j < 8; ++j) {
+                sums[j] = ((x[4*j] + x[4*j+1]) + x[4*j+2]) + x[4*j+3];
+            }
+            const float sum = ((sums[0] + sums[4]) + (sums[2] + sums[6]))
+                            + ((sums[1] + sums[5]) + (sums[3] + sums[7]));
+            result += coeff * dot;
+            result += min_coeff * round_half(sum);
+        } else {
+            for (int sub = 0; sub < 2; ++sub) {
+                int dot = 0;
+                for (int j = 0; j < 16; ++j) {
+                    const int index = 32 * group + 16 * sub + j;
+                    const int half = index / 128;
+                    const int quarter = (index % 128) / 32;
+                    const int lane = index % 32;
+                    const int ql = a[64 * half + 32 * (quarter % 2) + lane];
+                    const int qh = a[128 + 32 * half + lane];
+                    const int q = (((ql >> (quarter >= 2 ? 4 : 0)) & 15) |
+                                  (((qh >> (quarter * 2)) & 3) << 4)) - 32;
+                    dot += q * (int) roundf(x[16*sub + j] * inverse);
+                }
+                const int scale = (int8_t) a[192 + 2 * group + sub];
+                result += ((float) (dot * scale) * read_half(a + 208)) * d;
+            }
+        }
+    }
+    return result;
+}
+
+static void check_cuda_mmq(void) {
+    enum { width = 768, rows = 37, experts = 3, selected = 2, tokens = 277 };
+    enum { map_words = experts, state_words = map_words + 4 * experts + 4 + 5 * experts };
+    struct ggml_context * ctx = ggml_init((struct ggml_init_params){1024 * 1024, NULL, true});
+    assert(ctx);
+    struct ggml_tensor * w[] = {
+        ggml_new_tensor_3d(ctx, GGML_TYPE_Q4_K, width, rows, experts),
+        ggml_new_tensor_3d(ctx, GGML_TYPE_Q6_K, width, rows, experts),
+        ggml_new_tensor_3d(ctx, GGML_TYPE_Q4_K, width, rows, experts),
+    };
+    struct ggml_tensor * x = ggml_new_tensor_3d(ctx, GGML_TYPE_F32, width, 1, tokens);
+    struct ggml_tensor * ids = ggml_new_tensor_2d(ctx, GGML_TYPE_I32, selected, tokens);
+    struct ggml_tensor * dense_input = ggml_reshape_2d(ctx, x, width, tokens);
+    struct ggml_tensor * dense[2], * routed[3];
+    struct ggml_cgraph * graph = ggml_new_graph_custom(ctx, 64, false);
+    for (int i = 0; i < 2; ++i) {
+        struct ggml_tensor * weights = ggml_view_2d(ctx, w[i], width, rows, w[i]->nb[1], 0);
+        dense[i] = ggml_mul_mat(ctx, weights, dense_input);
+        ggml_build_forward_expand(graph, dense[i]);
+    }
+    for (int i = 0; i < 3; ++i) {
+        routed[i] = ggml_mul_mat_id(ctx, w[i], x, ids);
+        ggml_build_forward_expand(graph, routed[i]);
+    }
+    void * storage = fg_standalone_graph_alloc(graph);
+    assert(storage);
+    for (int t = 0; t < tokens; ++t) {
+        for (int j = 0; j < width; ++j) {
+            ((float *) x->data)[width * t + j] = t == 4 ? 0.0f :
+                (float) ((j * 11 + j / 17 + 5 * t) % 37 - 18) / 64.0f;
+        }
+        for (int s = 0; s < selected; ++s) {
+            ((int32_t *) ids->data)[t * selected + s] = (t + (t % 2) * s) % experts;
+        }
+    }
+    for (int p = 0; p < 3; ++p) {
+        const struct ggml_type_traits * type = ggml_get_type_traits(w[p]->type);
+        for (int e = 0; e < experts; ++e) {
+            for (int row = 0; row < rows; ++row) {
+                float values[width];
+                for (int j = 0; j < width; ++j) {
+                    values[j] = (float) ((j * 17 + j / 13 + 3 * row + 5 * e + 7 * p) % 29 - 14) / 128.0f;
+                }
+                type->from_float_ref(values, (uint8_t *) w[p]->data + e * w[p]->nb[2] + row * w[p]->nb[1], width);
+            }
+        }
+    }
+    int64_t groups[] = {w[0]->nb[2], w[1]->nb[2], w[2]->nb[2], experts, 1, experts, 0, map_words, 1};
+    int64_t layers[] = {0, (intptr_t) w[0]->data, (intptr_t) w[1]->data, (intptr_t) w[2]->data};
+    const int64_t bytes = experts * (groups[0] + groups[1] + groups[2]);
+    assert(fg_cuda_load_experts((sl_i64) {groups, 9}, (sl_i64) {layers, 4},
+        bytes, state_words, 1 + experts + 5) == bytes);
+    assert(fg_standalone_graph_compute(graph) == GGML_STATUS_SUCCESS);
+    double worst = 0.0;
+    for (int p = 0; p < 5; ++p) {
+        const bool indexed = p >= 2;
+        struct ggml_tensor * weights = w[indexed ? p - 2 : p];
+        const float * result = indexed ? routed[p - 2]->data : dense[p]->data;
+        const int slots = indexed ? selected : 1;
+        for (int t = 0; t < tokens; ++t) {
+            for (int s = 0; s < slots; ++s) {
+                const int e = indexed ? ((int32_t *) ids->data)[t * selected + s] : 0;
+                for (int row = 0; row < rows; ++row) {
+                    const uint8_t * a = (const uint8_t *) weights->data + e * weights->nb[2] + row * weights->nb[1];
+                    const float expected = mmq_reference(weights->type, a, (const float *) x->data + width * t, width);
+                    const float actual = result[(t * slots + s) * rows + row];
+                    const double error = fabs((double) actual - expected);
+                    if (!(error < 2e-5 * fmax(1.0, fabs(expected)))) {
+                        fprintf(stderr, "MMQ mismatch p=%d token=%d slot=%d row=%d: %.9g vs %.9g\n",
+                            p, t, s, row, actual, expected);
+                        abort();
+                    }
+                    worst = fmax(worst, error);
+                }
+            }
+        }
+    }
+    printf("MMQ Q4_K/Q6_K dense and indexed integer-dot oracle: max error %.9g\n", worst);
+    free(storage);
+    ggml_free(ctx);
+}
+
 static void check_graph_storage(void) {
     struct ggml_context * ctx = ggml_init((struct ggml_init_params){ 1024 * 1024, NULL, true });
     assert(ctx);
@@ -719,16 +866,18 @@ static void check_activation_pipeline(void) {
 }
 
 static void check_cuda_vectors(void) {
-    enum { width = 257, rows = 3, planes = 2 };
+    enum { width = 257, stride = 8 * width, rows = 3, planes = 2 };
     struct ggml_context * ctx = ggml_init((struct ggml_init_params){ 1024 * 1024, NULL, true });
     assert(ctx);
-    struct ggml_tensor * input = ggml_new_tensor_3d(ctx, GGML_TYPE_F32, width + 3, rows, planes);
+    struct ggml_tensor * input = ggml_new_tensor_3d(ctx, GGML_TYPE_F32, stride, rows, planes);
     struct ggml_tensor * x = ggml_view_3d(ctx, input, width, rows, planes, input->nb[1], input->nb[2], 0);
+    struct ggml_tensor * sibling = ggml_view_3d(ctx, input, width, rows, planes, input->nb[1], input->nb[2],
+        width * sizeof(float));
     struct ggml_tensor * vec = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, width);
     struct ggml_tensor * packed = ggml_new_tensor_3d(ctx, GGML_TYPE_F32, 2 * width, rows, planes);
     struct ggml_tensor * add = ggml_add(ctx, x, vec);
     struct ggml_tensor * outputs[] = {
-        add, ggml_sub(ctx, x, vec), ggml_mul(ctx, x, vec), ggml_div(ctx, x, vec),
+        add, ggml_add(ctx, x, sibling), ggml_sub(ctx, x, vec), ggml_mul(ctx, x, vec), ggml_div(ctx, x, vec),
         ggml_scale_bias(ctx, x, 1.125f, -0.4375f), ggml_clamp(ctx, x, -2.0f, 3.0f),
         ggml_sigmoid(ctx, x), ggml_silu(ctx, x), ggml_softplus(ctx, x),
         ggml_swiglu_split(ctx, x, add), ggml_swiglu(ctx, packed), ggml_swiglu_swapped(ctx, packed),
@@ -742,8 +891,8 @@ static void check_cuda_vectors(void) {
     for (int i = 0; i < ggml_nelements(input); ++i) {
         ((float *) input->data)[i] = i < width ? 0.0f : (float) ((i * 7) % 37 - 18) / 8.0f;
     }
-    ((float *) input->data)[width + 3] = 25.0f;
-    ((float *) input->data)[width + 4] = -25.0f;
+    ((float *) input->data)[stride] = 25.0f;
+    ((float *) input->data)[stride + 1] = -25.0f;
     for (int i = 0; i < width; ++i) ((float *) vec->data)[i] = 0.25f + (float) (i % 19) / 11.0f;
     for (int i = 0; i < ggml_nelements(packed); ++i) {
         ((float *) packed->data)[i] = (float) ((3 * i + i / 7) % 33 - 16) / 13.0f;
@@ -975,6 +1124,7 @@ int main(int argc, char ** argv) {
         else if (strcmp(argv[1], "--activations") == 0) check_activation_pipeline();
         else if (strcmp(argv[1], "--vectors") == 0) check_cuda_vectors();
         else if (strcmp(argv[1], "--cached-experts") == 0) check_cached_expert_batch();
+        else if (strcmp(argv[1], "--mmq") == 0) check_cuda_mmq();
         else if (strcmp(argv[1], "--graph-storage") == 0) check_graph_storage();
         else if (strcmp(argv[1], "--position") == 0) check_cuda_position();
         else if (strcmp(argv[1], "--routing") == 0) check_cuda_routing();
