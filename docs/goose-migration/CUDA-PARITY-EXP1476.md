@@ -2090,6 +2090,49 @@ and qualify its producer/consumer lifetime independently.
   Executable SHA-256 `a2c4facd806f73910e3c3c8db4371522eaecc85544276014c322638ccb9dc79f`.
   Nsight SHA-256 `76ef051ff2f3881e04cf254cd7cccf8a10cd014aef14ca2a00e1bdbfbfc2298a`.
 
+## Long Attention partition probe
+
+EXP-2026-11-20-1562 holds the existing vector kernel fixed
+and tests 64 versus 11 maximum partitions, matching the
+observed partition count of the frozen hybrid. The isolated
+same-binary microbench initially favors 11 partitions. At
+32,768 keys the median kernel time is 1.543 versus 1.222 ms.
+At 4,097 keys the two launch counts are 33 and 11, taking
+0.186 versus 0.165 ms per kernel. Both pass their numerical
+comparison with the CPU operation.
+
+The real same-build Apex pair at 4096/4096 and 32K/512
+does not reproduce the microbench gain:
+
+| Profiled full Apex | 64 parts | 11 parts |
+|---|---:|---:|
+| Prefill, tok/s | 689.890 | 692.118 |
+| Decode, steps/s | 16.573 | 15.781 |
+| Vector Attention GPU time, s | 9.052 | 9.291 |
+| Partition combine GPU time, s | 0.051 | 0.013 |
+| Expert fills | 77,707 | 83,740 |
+| Process RSS high-water, KiB | 23,579,860 | 23,580,188 |
+| Sampled peak process VRAM, MiB | 8,524 | 8,524 |
+| Process swap and system swap-out growth | 0 | 0 |
+
+The 11-part answer asserts growing latency and increasing
+retries without evidence from the request. The 64-part
+answer explicitly says those measurements are absent.
+The altered generation also changes expert traffic, so
+the whole decode difference cannot be assigned to the
+kernel alone. Retain 64 parts. The probe switch and
+binary stay isolated for reproduction. This rules out
+copying the partition count alone as a sufficient
+restoration of the hybrid's Attention performance.
+
+- Same-build pair and microbench under
+  `/home/end0/AI/LlamaServer/franken-goose-attention-parts.UmYXXz`.
+  A is `cuda-full-dense-both.pa18o0ow` and B is
+  `cuda-full-dense-both.hpwbdd7s`.
+- Executable SHA-256
+  `e3e2b90468a534ca817f666f62ed8c7ff823a570377a0196da23f7a25c87a322`.
+  Patch and harness are in `reproduction/`.
+
 ## Kernel coverage
 
 The exact EXP-1476 request passed content, ID and probability
