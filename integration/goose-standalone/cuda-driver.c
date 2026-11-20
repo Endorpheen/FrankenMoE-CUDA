@@ -176,8 +176,7 @@ static void init_cuda(void) {
     const char * stream_setting = getenv("GOOSE_MMQ_STREAM_K");
     const bool stream_k = stream_setting && strcmp(stream_setting, "1") == 0;
     const bool mmq = stream_k || (setting && strcmp(setting, "1") == 0);
-    const char * mmvq_setting = getenv("GOOSE_MMVQ");
-    const bool mmvq = mmvq_setting && strcmp(mmvq_setting, "1") == 0;
+    const bool mmvq_requested = fg_standalone_option_enabled("GOOSE_MMVQ");
     const char * dense_setting = getenv("GOOSE_DENSE_MMA");
     const bool dense_mma = dense_setting && strcmp(dense_setting, "1") == 0;
     const char * dense_reference_setting = getenv("GOOSE_DENSE_MMA_REFERENCE");
@@ -196,20 +195,19 @@ static void init_cuda(void) {
     const bool ssm_reference = ssm_setting && strcmp(ssm_setting, "1") == 0;
     const char * activation_setting = getenv("GOOSE_CUDA_ACTIVATION_REFERENCE");
     cuda.activation_reference = activation_setting && strcmp(activation_setting, "1") == 0;
-    const bool mma_image = mmq || mmvq || dense_mma || gdn_mma || flash_mma;
-    bool reference_arch = false;
-    if (mma_image) {
-        enum { compute_capability_major = 75, compute_capability_minor = 76 };
-        int major = 0;
-        if (cuda.device_attribute(&major, compute_capability_major, device) != 0 ||
-            major < 8 || goose_cuda_mmq_image[0] == 0) {
-            fputs("Goose CUDA: Tensor Core paths require the SM80 image and compute capability 8 or newer\n", stderr);
-            return;
-        }
-        int minor = 0;
-        reference_arch = (q4_reference || q6_reference || dense_reference) && major == 8 &&
-            cuda.device_attribute(&minor, compute_capability_minor, device) == 0 && minor == 9;
+    const bool tensor_cores = mmq || dense_mma || gdn_mma || flash_mma;
+    enum { compute_capability_major = 75, compute_capability_minor = 76 };
+    int major = 0, minor = 0;
+    const bool sm80_image = (tensor_cores || mmvq_requested) && goose_cuda_mmq_image[0] != 0 &&
+        cuda.device_attribute(&major, compute_capability_major, device) == 0 && major >= 8;
+    if (tensor_cores && !sm80_image) {
+        fputs("Goose CUDA: Tensor Core paths require the SM80 image and compute capability 8 or newer\n", stderr);
+        return;
     }
+    const bool mmvq = mmvq_requested && sm80_image;
+    const bool mma_image = tensor_cores || mmvq;
+    const bool reference_arch = (q4_reference || q6_reference || dense_reference) && major == 8 &&
+        cuda.device_attribute(&minor, compute_capability_minor, device) == 0 && minor == 9;
     if (stream_k || (reference_arch && (q4_reference || q6_reference))) {
         enum { multiprocessor_count = 16 };
         if (cuda.device_attribute(&cuda.multiprocessors, multiprocessor_count, device) != 0 || cuda.multiprocessors <= 0) return;

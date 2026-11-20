@@ -1539,8 +1539,11 @@ as the isolated comparison.
 
 EXP-2026-11-20-1555 connects the existing Goose Q4_K and
 Q6_K MMVQ dot products and the non-MMQ Q8_1 packer.
-`GOOSE_MMVQ=1` selects the integer `dp4a` path for
-qualified one-column and cached eight-route projections.
+`GOOSE_MMVQ=1` selected the integer `dp4a` path for
+qualified one-column and cached eight-route projections during
+the initial comparison. The accepted selector defaults to this
+path on devices with the SM80+ image. Use `GOOSE_MMVQ=0` for
+the prior scalar path.
 MMQ stays responsible for batch matrix multiplication.
 Explicit bit-pattern casts correct the Q6_K signed mask and
 packed halfword inputs. The driver-loadable PTX binds the
