@@ -65,6 +65,18 @@ sed '/^fn main()/,$d; s/^fn fg180q_mmq(/export fn fg180q_mmq(/;
     s/^fn mmq_reciprocal(.*$/extern "fg_device_reciprocal" fn mmq_reciprocal(value: f32) -> f32;/' \
     "$ROOT/goose/cuda/goose-cuda-mmq-q8-1/device.goose" > "$OUT/mmq-quant.goose"
 cp "$ROOT/goose/cuda/standalone-mmq.goose" "$OUT/mmq.goose"
+sed -n '/^extern "fg185q_\(ld_\|dp4a\|shfl_xor"\)/p;
+    /^fn warp_sum(/,/^}/p; /^fn impl_vmmq(/,/^}/p; /^fn dot_row(/,/^}/p; /^fn fg185q_partial(/,/^}/p' \
+    "$ROOT/goose/cuda/goose-cuda-mmvq-q4k/device.goose" |
+    sed 's/^fn \(warp_sum\|fg185q_partial\)(/export fn \1(/; s/\bdot_row\b/mmvq_q4_dot_row/g' > "$OUT/mmvq-q4.goose"
+sed -n '/^extern "fg186q_\(ld_\|dp4a\)/p;
+    /^fn ld_b2(/,/^}/p; /^fn impl_mmvq(/,/^}/p; /^fn dot_row(/,/^}/p; /^fn fg186q_partial(/,/^}/p' \
+    "$ROOT/goose/cuda/goose-cuda-mmvq-q6k/device.goose" |
+    sed 's/^fn fg186q_partial(/export fn fg186q_partial(/; s/\bdot_row\b/mmvq_q6_dot_row/g' > "$OUT/mmvq-q6.goose"
+sed '/^fn main()/,$d; s/^fn fg178q_quant(/export fn fg178q_quant(/;
+    s/\bFastDiv\b/MmvqFastDiv/g; s/\b\(ensure\|red_max\|red_sum\)\b/mmvq_pack_\1/g' \
+    "$ROOT/goose/cuda/goose-cuda-quantize/device.goose" > "$OUT/mmvq-pack.goose"
+cp "$ROOT/goose/cuda/standalone-mmvq.goose" "$OUT/mmvq.goose"
 cp "$ROOT/goose/cuda/standalone-dense-mma.goose" "$OUT/dense-mma.goose"
 sed '/^fn main()/,$d' "$ROOT/goose/cuda/goose-cuda-flash-attention/value-prefill-device.goose" > "$OUT/flash-mma.goose"
 cat "$ROOT/goose/cuda/standalone-flash-mma.goose" >> "$OUT/flash-mma.goose"
@@ -75,7 +87,7 @@ sed -n '/^fn scale_min(/,/^}/p' "$ROOT/goose/cuda/goose-cuda-dequant-q4k/device.
 sed -n '/^fn q4_mmq_nibbles(/,/^}/p' "$ROOT/goose/cuda/goose-mmq-load-q4k/device.goose" >> "$OUT/mmq.goose"
 sed -n '/^fn vsub4(/,/^}/p; /^fn q6_mmq_bytes(/,/^}/p' \
     "$ROOT/goose/cuda/goose-mmq-load-q6k/device.goose" >> "$OUT/mmq.goose"
-for module in q4k q6k matmul q4-attention gdn gdn-mma q4-set-rows vector rms-reference rope ssm-conv routing transform fwht moe-weighted mmq-quant mmq dense-mma flash-mma flash-load flash-stage; do
+for module in q4k q6k matmul q4-attention gdn gdn-mma q4-set-rows vector rms-reference rope ssm-conv routing transform fwht moe-weighted mmq-quant mmq mmvq-q4 mmvq-q6 mmvq-pack mmvq dense-mma flash-mma flash-load flash-stage; do
     "$GOOSE" --standalone -o "$OUT/$module.c" --header "$OUT/$module.h" "$OUT/$module.goose"
     python3 - "$OUT" "$module" <<'PY'
 from pathlib import Path

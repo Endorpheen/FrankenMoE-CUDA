@@ -94,8 +94,8 @@ dependencies. Resume decode-specific work after prefill recovery.
 | 2 | Q6_K MMQ, same backend chain with `ggml_cuda_mmq_vec_dot_q6_K_q8_1_mma`. | Executed type 14 symbols contain SM89 `IMMA.16816.S8.S8`. The reference order matches first Apex QKV and the isolated [indexed down projection](#apex-indexed-expert-mmq). Both execute on real Apex. | PARTIAL. Validate remaining shapes and full generation. |
 | 3 | Activation packing. `mmq.cu` → direct or scatter `quantize_mmq_q8_1` in `quantize.cu`, then MMQ. DS4 carries a half scale and activation sum. D4 carries F32 scales. | Both direct and scatter templates execute in the reference. Independent MMQ reuses the EXP180 packer and shares one Q8_1 row across routes when their input slot is identical. The Q6_K diagnostic adds the reference D4 reciprocal sequence. | PARTIAL. Both formats execute on Apex. Device scatter/grouping and model-level parity remain open. |
 | 4 | MMQ stream-K. `mmq.cuh` partitions K and invokes `mul_mat_q_stream_k_fixup` to combine partial outputs. | Independent Goose partitions flattened output tiles and K blocks and applies backward partial reduction with `GOOSE_MMQ_STREAM_K=1`. GPU fixtures and a short Apex shape execute the fixup. | PARTIAL. Verify response parity and scheduling on reference-sized tiles. The current 4096 geometry selects regular tiles. |
-| 5 | Quantized small-batch MMVQ. `ggml-cuda.cu` → `ggml_cuda_mul_mat_vec_q` → Q8_1 and `mul_mat_vec_q` in `mmvq.cu`. | Both `quantize_q8_1` and `mul_mat_vec_q` run. Goose uses its scalar Q4_K/Q6_K path during decode. | MISSING. Restore the appropriate small-batch integer-dot specializations and packing. Check the exact subtype, output and decode timing under the final graph. |
-| 6 | Indexed small-batch MMVQ. `ggml_cuda_mul_mat_id` → `mul_mat_vec_q_moe_launch` → `mul_mat_vec_q_moe`. | The reference trace executes indexed MMVQ. Goose groups jobs on the host and feeds the scalar matrix kernel. | MISSING. Restore the routed MMVQ path and verify duplicate expert IDs, signed-scale arithmetic and first decode output. |
+| 5 | Quantized small-batch MMVQ. `ggml-cuda.cu` → `ggml_cuda_mul_mat_vec_q` → Q8_1 and `mul_mat_vec_q` in `mmvq.cu`. | `GOOSE_MMVQ=1` enables the existing Goose Q4_K/Q6_K dot products and Q8_1 packer for single-column projections. [CUDA trace and replays](#independent-mmvq-decode-checkpoint). | PARTIAL. The qualified shapes execute and improve short decode. Validate full context and other small-batch specializations. |
+| 6 | Indexed small-batch MMVQ. `ggml_cuda_mul_mat_id` selects indexed `mul_mat_vec_q` or `mul_mat_vec_q_moe`. | The same Goose MMVQ option handles one or eight cached routes using the existing expert plane offsets. All three isolated expert projections match. | PARTIAL. Check remaining routed launch variants, shared packs and full acceptance. |
 | 7 | Tensor Core dense GEMM. `ggml_cuda_mul_mat_cublas` selects the F32 `cublasSgemm` path with `CUBLAS_TF32_TENSOR_OP_MATH` in `common.cuh`. | The reference uses CUTLASS TF32. The [Goose router mode](#apex-tf32-router-and-expert-selection) matches its unsplit and split-K results and executes 40 times in Apex 4096/1. | PARTIAL. The tested router shapes match. Verify other shapes and the full response before promotion. |
 | 8 | Dense small-shape dispatch. `mmf.cu` and `mmvf.cu` implement `mul_mat_f` and `mul_mat_vec_f`. The trace also records `dot_kernel`. | All three families appear in the trace. Goose does dense F32 FMA and shuffles using one output per warp. The exact library owner of `dot_kernel` remains open. | PARTIAL. Identify the dot route and reuse existing dot and warp code where equivalent. Recreate selected row/vector tiling and validate dimensions and backend selection by shape. |
 | 9 | Device expert grouping. `ggml_cuda_mul_mat_id` / `mmq.cu` → `mm_ids_helper` → per-expert group ranges and Q8 scatter. | `mm_ids_helper` executes. Goose builds per-expert jobs and keeps a GPU SLRU, with host route synchronization. | PARTIAL. Feed active routes to device grouping and pack contiguous batches without losing expert ownership. Verify sparse, repeated and empty groups against the reference. |
@@ -987,7 +987,7 @@ stay in the main map.
 
 | Mechanism | Existing Goose source | Observed standalone path and missing link |
 |---|---|---|
-| 5–6, Q4_K/Q6_K MMVQ | `goose-cuda-mmvq-q4k/device.goose`, `goose-cuda-mmvq-q6k/device.goose` | The build omits these modules. Decode launches `goose_quantized_matmul` (261,118 launches, 10.031 s in the decode-dominated region). Bind the packed input and select MMVQ for dense and indexed short shapes. |
+| 5–6, Q4_K/Q6_K MMVQ | `goose-cuda-mmvq-q4k/device.goose`, `goose-cuda-mmvq-q6k/device.goose` | Wired for the qualified [dense and indexed decode shapes](#independent-mmvq-decode-checkpoint). The earlier full trace spent 10.031 s in 261,118 scalar matrix launches in the decode-dominated region. |
 | 9, MoE grouping | `goose-cuda-mm-ids/{device,host}.goose` | Standalone groups matrix planes on the host and uses shared Q8 rows in MMQ. The device grouping/scatter source needs its own dispatch and route-layout verification. |
 | 13, Flash decode | `goose-cuda-flash-attention/vector-device.goose` | The current Flash MMA selector covers prefill. Decode ran 5,110 scalar Q4 attention tiles totaling 7.688 s. Wire the vector path to the live Q4 KV layout and output merge. |
 | 15, Flash Stream-K | `goose-cuda-flash-attention/{mma-entry-device,mask-fixups-device}.goose` | The prefill path assigns a complete tile per CTA. The reference uses 80 general and 10 uniform Stream-K fixup launches. The current launch and workspace layout still need split ranges and fixup. |
@@ -1534,6 +1534,61 @@ as the isolated comparison.
   `summary.jsonl` are under `quality/paired.gT0Q00` in that
   build. The pre-fix run is under
   `/home/end0/AI/LlamaServer/franken-goose-swiglu-reference.3MLAsn/quality/paired.061R1P`.
+
+## Independent MMVQ decode checkpoint
+
+EXP-2026-11-20-1555 connects the existing Goose Q4_K and
+Q6_K MMVQ dot products and the non-MMQ Q8_1 packer.
+`GOOSE_MMVQ=1` selects the integer `dp4a` path for
+qualified one-column and cached eight-route projections.
+MMQ stays responsible for batch matrix multiplication.
+Explicit bit-pattern casts correct the Q6_K signed mask and
+packed halfword inputs. The driver-loadable PTX binds the
+packer multiply-high operation to the CUDA instruction.
+
+Five isolated model-weight projections matched all 36,864
+reference values, using two dense projections and three
+indexed projections. The live cache path reported three
+cached projections in the expert fixture. Compute Sanitizer
+found zero errors. In the Apex request the candidate
+launched 55,169 each of `goose_mmvq_matvec` and
+`goose_mmvq_quantize`. The remaining scalar matrix kernel
+ran 10,280 times, down from 65,449.
+
+| Sequential profiled Apex 4096/129 | Scalar decode | Goose MMVQ |
+|---|---:|---:|
+| Prefill, tokens/s | 278.651 | 285.193 |
+| Decode, steps/s (128 decode steps) | 16.198 | 18.625 |
+| Scalar quantized matrix GPU time, ms | 2,521.801 | 204.342 |
+| MMVQ matvec and pack GPU time, ms | 0 | 818.839 |
+| RSS high-water, KiB | 23,885,904 | 23,885,464 |
+| Sampled process VRAM, MiB | 8,582 | 8,582 |
+| Sampled whole-card VRAM, MiB | 11,372 | 11,372 |
+| Process swap, KiB | 0 | 0 |
+| System swap-out increase, pages | 3,302 | 0 |
+
+This pair uses physical 4096/4096 and the response-quality
+checkpoint flags. The timed diagnostic forces a fixed output
+length and the token sequences differ. The pair has different
+system swap-out. Full throughput acceptance remains open.
+
+All three previous normal quality prompts remain readable
+and stop on EOS with the option enabled. The JSON still has
+correct values inside a Markdown fence. The Russian report
+preserves the facts and two investigation steps. The 560-token
+long answer contains a consistent commit/crash/retry/ack example
+and an operational check. It is 369 words, below its requested
+430–520 words. The scan found no leaked special markers,
+replacement/control characters, complete prompt echo or repeated
+token loops.
+
+- Build `/home/end0/AI/LlamaServer/franken-goose-mmvq.irQR6J`,
+  executable SHA-256
+  `346d7c89e80b65b01217ab986d2e3f7b58010e4da7c12f01861608265d59b37c`.
+  Traces and responses under `cuda-matrix-dense-both.tyew48t0`
+  and `cuda-matrix-dense-both.oi4nsn5a`. Common request SHA-256
+  `3edd77e6dcdea9ab06f9205b86818223648d8293e85d7257151a0ca78f64ba73`.
+  Normal quality artifacts under `quality/paired.osGxwk`.
 
 ## Kernel coverage
 

@@ -140,6 +140,18 @@ fn dot_row(vx: u64, vy: u64, ybase: i64, kbx_offset: i64, kbx: i64, kby: i64, kq
     let dmy: f32 = ld_h2b(vx, (xb as u64));
     return impl_vmmq(v0, v1, u0, u1, u2, u3, sc0, sc1, m0, m1, dmx, dmy, d8_0, d8_1);
 }
+fn fg185q_partial(vx: u64, vy: u64, ybase: i64, row_block: i64,
+    blocks_per_row: i64, blocks_per_iter: i64, tid: i64) -> f32 {
+    var sum: f32 = 0.0;
+    var kbx = tid / 16;
+    let kqs = 2 * (tid % 16);
+    while kbx < blocks_per_row {
+        sum += dot_row(vx, vy, ybase, row_block, kbx, 8 * kbx, kqs);
+        kbx += blocks_per_iter;
+    }
+    return sum;
+}
+
 // The block as native launches it: blockDim = (32, nwarps), tid = 32*threadIdx.y +
 // threadIdx.x. For Q4_K with ncols_dst=1 on this table nwarps = 4 and
 // rows_per_block = 1, so row = blockIdx.x and only lane 0 of warp 0 stores.
@@ -203,16 +215,8 @@ fn fg185q_body(
     let sample_y: i64 = sample_dst;
     let kbx_offset: i64 = sample_x * stride_sample_x + channel_x * stride_channel_x;
     let ybase: i64 = sample_y * stride_sample_y + channel_y * stride_channel_y;
-    var sum: f32 = 0.0;
-    // kbx starts at tid/(qi/vdr) = tid/16 and advances by blocks_per_iter
-    var kbx: i64 = tid / 16 as i64;
-
-    while kbx < blocks_per_row {
-        let kby: i64 = kbx * (256 as i64 / 32 as i64);
-        let kqs: i64 = 2 * ( (tid % 16 as i64));
-        sum = sum + dot_row_row(vx, vy, ybase, kbx_offset, row, kbx, kby, kqs, stride_row_x);
-        kbx = kbx + blocks_per_iter;
-    }
+    var sum = fg185q_partial(vx, vy, ybase, kbx_offset + row * stride_row_x,
+        blocks_per_row, blocks_per_iter, tid);
     // Native order matters: warps with ty>0 publish their RAW partial sum into slot
     // ty-1 and return, and only warp 0 adds those partials and then reduces. Reducing
     // before publishing would publish the warp total four times over.
@@ -241,21 +245,6 @@ fn fg185q_body(
         }
     }
 }
-// rows_per_block is 1 here, so the row offset folds into kbx_offset.
-
-fn dot_row_row(
-    vx: u64,
-    vy: u64,
-    ybase: i64,
-    kbx_offset: i64,
-    row: i64,
-    kbx: i64,
-    kby: i64,
-    kqs: i64,
-    stride_row_x: i64) -> f32 {
-    return dot_row(vx, vy, ybase, kbx_offset + row * stride_row_x, kbx, kby, kqs);
-}
-
 fn main() {
     fg185q_body(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 4, 0, 0, 0, 0, 0);
 }

@@ -44,7 +44,7 @@ fn ensure(v: bool, c: i64) {
 fn ld_b2(src: u64, byte: i64) -> i32 {
     let lo: u32 = ld_i16(src, (byte as u64));
     let hi: u32 = ld_i16(src, ( (byte + (2 as i64)) as u64));
-    return ( ( (hi << 16) as i32) | ( (lo & 65535 as u32) as i32));
+    return ((hi << 16) | (lo & 65535 as u32)) as !i32;
 }
 
 fn warp_sum(v0: f32) -> f32 {
@@ -79,21 +79,22 @@ fn impl_mmvq(
     let l0: i32 = (vl0 >> 0) & (0x0F0F0F0F as i32);
     let h0: i32 = ( (vh0 >> 0) << 4) & (0x30303030 as i32);
     var s0: i32 = dp4a(l0 | h0, u0, 0 as i32);
-    s0 = dp4a(0xE0E0E0E0 as i32, u0, s0);
+    let offset = 0xE0E0E0E0 as !i32;
+    s0 = dp4a(offset, u0, s0);
     let l1: i32 = (vl1 >> 0) & (0x0F0F0F0F as i32);
     let h1: i32 = ( (vh1 >> 0) << 4) & (0x30303030 as i32);
     s0 = dp4a(l1 | h1, u1, s0);
-    s0 = dp4a(0xE0E0E0E0 as i32, u1, s0);
+    s0 = dp4a(offset, u1, s0);
     sum = sum + d8_0 * ( (s0 * sc0) as f32);
     // i = 1: nibbles 4..7, q8 words u2 and u3
     let l2: i32 = (vl0 >> 4) & (0x0F0F0F0F as i32);
     let h2: i32 = ( (vh0 >> 4) << 4) & (0x30303030 as i32);
     var s1: i32 = dp4a(l2 | h2, u2, 0 as i32);
-    s1 = dp4a(0xE0E0E0E0 as i32, u2, s1);
+    s1 = dp4a(offset, u2, s1);
     let l3: i32 = (vl1 >> 4) & (0x0F0F0F0F as i32);
     let h3: i32 = ( (vh1 >> 4) << 4) & (0x30303030 as i32);
     s1 = dp4a(l3 | h3, u3, s1);
-    s1 = dp4a(0xE0E0E0E0 as i32, u3, s1);
+    s1 = dp4a(offset, u3, s1);
     sum = sum + d8_1 * ( (s1 * sc1) as f32);
     return d * sum;
 }
@@ -139,6 +140,18 @@ fn dot_row(vx: u64, vy: u64, ybase: i64, kbx_offset: i64, kbx: i64, kby: i64, iq
     let d: f32 = ld_half(vx, ( (xb + (208 as i64)) as u64));
     return impl_mmvq(vl0, vl1, vh0, vh1, u0, u1, u2, u3, sc0, sc1, d, d8_0, d8_1);
 }
+fn fg186q_partial(vx: u64, vy: u64, ybase: i64, row_block: i64,
+    blocks_per_row: i64, blocks_per_iter: i64, tid: i64) -> f32 {
+    var sum: f32 = 0.0;
+    var kbx = tid >> 4 as i64;
+    let iqs = 2 * (tid & 15);
+    while kbx < blocks_per_row {
+        sum += dot_row(vx, vy, ybase, row_block, kbx, 8 * kbx, iqs);
+        kbx += blocks_per_iter;
+    }
+    return sum;
+}
+
 // Same block shape as the Q4_K module: blockDim = (32, nwarps), nwarps = 4,
 // rows_per_block = 1, qi = 16 so kbx starts at tid/16 and iqs = 2*(tid%16).
 
@@ -198,15 +211,8 @@ fn fg186q_body(
     let sample_y: i64 = sample_dst;
     let kbx_offset: i64 = sample_x * stride_sample_x + channel_x * stride_channel_x;
     let ybase: i64 = sample_y * stride_sample_y + channel_y * stride_channel_y;
-    var sum: f32 = 0.0;
-    var kbx: i64 = tid >> 4 as i64;
-
-    while kbx < blocks_per_row {
-        let kby: i64 = kbx * (8 as i64);
-        let iqs: i64 = 2 * ( (tid & 15 as i64));
-        sum = sum + dot_row(vx, vy, ybase, kbx_offset + row * stride_row_x, kbx, kby, iqs);
-        kbx = kbx + blocks_per_iter;
-    }
+    var sum = fg186q_partial(vx, vy, ybase, kbx_offset + row * stride_row_x,
+        blocks_per_row, blocks_per_iter, tid);
 
     if ty > 0 as i64 {
         shm_put( (ty - 1) as i32, tx as i32, sum);

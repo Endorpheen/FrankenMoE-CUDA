@@ -47,6 +47,7 @@ static struct {
     Module module;
     Function kernel, attention_tiles, attention_merge, gdn, q4_rows, vector, rms_reference;
     Function mmq_pack, mmq_pack_shared, mmq_matrix, mmq_q4_matrix, mmq_q6_matrix;
+    Function mmvq_pack, mmvq;
     Function dense_mma, dense_mma_reference, gdn_mma, flash_mma, flash_stage;
     Function mmq_stream, mmq_stream_fixup;
     Function rope_phases, rope_apply, ssm_conv, ssm_conv_long;
@@ -175,6 +176,8 @@ static void init_cuda(void) {
     const char * stream_setting = getenv("GOOSE_MMQ_STREAM_K");
     const bool stream_k = stream_setting && strcmp(stream_setting, "1") == 0;
     const bool mmq = stream_k || (setting && strcmp(setting, "1") == 0);
+    const char * mmvq_setting = getenv("GOOSE_MMVQ");
+    const bool mmvq = mmvq_setting && strcmp(mmvq_setting, "1") == 0;
     const char * dense_setting = getenv("GOOSE_DENSE_MMA");
     const bool dense_mma = dense_setting && strcmp(dense_setting, "1") == 0;
     const char * dense_reference_setting = getenv("GOOSE_DENSE_MMA_REFERENCE");
@@ -193,7 +196,7 @@ static void init_cuda(void) {
     const bool ssm_reference = ssm_setting && strcmp(ssm_setting, "1") == 0;
     const char * activation_setting = getenv("GOOSE_CUDA_ACTIVATION_REFERENCE");
     cuda.activation_reference = activation_setting && strcmp(activation_setting, "1") == 0;
-    const bool mma_image = mmq || dense_mma || gdn_mma || flash_mma;
+    const bool mma_image = mmq || mmvq || dense_mma || gdn_mma || flash_mma;
     bool reference_arch = false;
     if (mma_image) {
         enum { compute_capability_major = 75, compute_capability_minor = 76 };
@@ -218,6 +221,8 @@ static void init_cuda(void) {
         if (error == 0 && mmq) error = cuda.function_get(&cuda.mmq_pack, cuda.module, "goose_mmq_pack_q8");
         if (error == 0 && mmq) error = cuda.function_get(&cuda.mmq_pack_shared, cuda.module, "goose_mmq_pack_shared");
         if (error == 0 && mmq) error = cuda.function_get(&cuda.mmq_matrix, cuda.module, "goose_mmq_matmul");
+        if (error == 0 && mmvq) error = cuda.function_get(&cuda.mmvq_pack, cuda.module, "goose_mmvq_quantize");
+        if (error == 0 && mmvq) error = cuda.function_get(&cuda.mmvq, cuda.module, "goose_mmvq_matvec");
         if (error == 0 && reference_arch && q4_reference) {
             error = cuda.function_get(&cuda.mmq_q4_matrix, cuda.module, "goose_mmq_q4_reference");
         }
@@ -970,6 +975,29 @@ static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
     return 0;
 }
 
+static int launch_mmvq(DevicePtr weight, uint64_t stride, int extent, int kind, int rows, int count, int words) {
+    const size_t packed_bytes = (size_t) extent * 288 * (size_t) count;
+    int error = reserve(&cuda.mmq_packed, packed_bytes);
+    if (error == 0) {
+        void * pack[] = {&matrix_input, &cuda.mmq_packed.address, &cuda.jobs.address, &extent, &words};
+        error = cuda.launch(cuda.mmvq_pack, (unsigned) (2 * extent), (unsigned) count, 1, 128, 1, 1, 0, NULL, pack, NULL);
+    }
+    if (error == 0) {
+        void * matrix[] = {&weight, &cuda.mmq_packed.address, &matrix_output, &cuda.jobs.address,
+            &stride, &extent, &kind, &words};
+        error = cuda.launch(cuda.mmvq, (unsigned) rows, (unsigned) count, 1, 128, 1, 1, 0, NULL, matrix, NULL);
+        const int synced = cuda.sync();
+        if (error == 0) error = synced;
+    }
+    if (error != 0) {
+        fprintf(stderr, "Goose CUDA: MMVQ failed (%d)\n", error);
+        return -1;
+    }
+    ++cuda_matrix_launches;
+    cuda_matrix_kind = kind;
+    return 0;
+}
+
 static int launch_matrix(DevicePtr weight, int64_t row_stride, int64_t extent,
                          int64_t kind, int64_t rows, sl_i64 jobs, int job_words, int64_t shared_rows, int64_t input_stride) {
     if (!weight || rows <= 0 || rows > INT_MAX || extent <= 0 || extent > INT_MAX ||
@@ -987,6 +1015,10 @@ static int launch_matrix(DevicePtr weight, int64_t row_stride, int64_t extent,
     }
 
     const int count = (int) (jobs.len / job_words);
+    if (error == 0 && cuda.mmvq && kind != 0 && extent <= INT_MAX / 256 &&
+        (count == 1 || (job_words == 3 && count == 8))) {
+        return launch_mmvq(weight, (uint64_t) row_stride, (int) extent, (int) kind, (int) rows, count, job_words);
+    }
     if (error == 0 && cuda.dense_mma && kind == 0 && job_words == 2 && rows >= 16 && count >= 16 && count <= 8 * 65535) {
         int32_t k = (int32_t) extent, m = (int32_t) rows;
         int32_t jobs_count = count;
