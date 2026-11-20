@@ -66,6 +66,10 @@ the entry. Apply the full-request gate on the package schedule.
 
 ## Mechanisms
 
+[The runtime performance audit](APEX-PERFORMANCE-AUDIT.md)
+records cross-mechanism timing and the historical optimization
+ledger, including lost KV laziness and expert upload overlap.
+
 **32 mechanisms: PARITY 0, PARTIAL 31, MISSING 0, INCORRECT 1.**
 
 Group three to five related improvements with a separate commit and
