@@ -1,0 +1,72 @@
+diff --git a/integration/goose-standalone/cuda-driver.c b/integration/goose-standalone/cuda-driver.c
+index f7f93aa4..55301860 100644
+--- a/integration/goose-standalone/cuda-driver.c
++++ b/integration/goose-standalone/cuda-driver.c
+@@ -67,6 +67,7 @@ static struct {
+     size_t activation_capacity;
+     bool adapt_activation_capacity;
+     bool direct_wide_vectors;
++    bool preserve_matrix_input;
+     struct device_buffer dense;
+     sl_i64 dense_ranges;
+     struct device_buffer state;
+@@ -197,6 +198,7 @@ static void init_cuda(void) {
+     cuda.activation_capacity = DEFAULT_ACTIVATION_BYTES;
+     cuda.adapt_activation_capacity = !arena_setting;
+     cuda.direct_wide_vectors = fg_standalone_option_enabled("GOOSE_CUDA_WIDE_VECTOR");
++    cuda.preserve_matrix_input = fg_standalone_option_enabled("GOOSE_CUDA_PRESERVE_MATRIX_INPUT");
+     if (arena_setting) {
+         char * end;
+         const intmax_t value = strtoimax(arena_setting, &end, 10);
+@@ -557,7 +559,8 @@ static int activation_widen(void) {
+ 
+ // Called with the CUDA context bound. Reserve output before resolving input
+ // addresses so a flush never invalidates a pointer passed to a launch.
+-static int activation_output(uint64_t host, int64_t bytes, DevicePtr * device) {
++static int activation_output_for_input(uint64_t host, int64_t bytes, DevicePtr * device,
++                                       uint64_t input, int64_t input_bytes) {
+     // All kernels and synchronous copies use the same legacy default stream.
+     // Check its completion at graph exit even if a later operation fails.
+     if (activations.active && activations.defer_waits) activations.pending = true;
+@@ -591,6 +594,20 @@ static int activation_output(uint64_t host, int64_t bytes, DevicePtr * device) {
+             if (pos == -2 && activations.reuse && activations.selective_eviction) {
+                 pos = fg143_activation_eviction_slot(activation_ranges(), capacity, bytes);
+                 if (pos < 0) return -1;
++                // A large result can stay in the dedicated output buffer.
++                // Keep the arena input resident when the selected window would spill it.
++                if (input && bytes > DEFAULT_ACTIVATION_BYTES && bytes == activations.target_bytes &&
++                    activations.target_deadline >= 0 && activations.large_output[1] == 0) {
++                    const int64_t offset = fg143_activation_lookup(activation_ranges(), input, input_bytes);
++                    if (offset >= 0 && offset < pos + bytes && pos < offset + input_bytes) {
++                        const int error = activation_reserve_output((size_t) bytes);
++                        if (error == 0) {
++                            *device = cuda.output.address;
++                            return 0;
++                        }
++                        if (error != 2) return error;
++                    }
++                }
+                 const int error = activation_evict_device_range(pos, bytes);
+                 if (error != 0) return error;
+             }
+@@ -613,6 +630,10 @@ static int activation_output(uint64_t host, int64_t bytes, DevicePtr * device) {
+     return error;
+ }
+ 
++static int activation_output(uint64_t host, int64_t bytes, DevicePtr * device) {
++    return activation_output_for_input(host, bytes, device, 0, 0);
++}
++
+ static int activation_publish(uint64_t host, int64_t bytes, DevicePtr device, bool complete) {
+     const bool large = device == cuda.output.address;
+     // The fallback allocation is already sized for this result. Let readers
+@@ -1014,7 +1035,8 @@ int64_t fg_cuda_begin(uint64_t input, int64_t input_bytes, uint64_t output, int6
+     const int active = start_context();
+     if (active != 1) return active;
+     cuda_matrix_kind = -1;
+-    int status = activation_output(output, output_bytes, &matrix_output);
++    const uint64_t preserve = cuda.preserve_matrix_input ? input : 0;
++    int status = activation_output_for_input(output, output_bytes, &matrix_output, preserve, input_bytes);
+     if (status == 0) status = activation_input((sl_u8) {(void *) (uintptr_t) input, input_bytes}, &cuda.input, &matrix_input);
+     if (status == 0) return 1;
+     finish_context();

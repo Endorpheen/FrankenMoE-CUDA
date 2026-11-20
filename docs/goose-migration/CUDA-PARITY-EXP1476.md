@@ -53,6 +53,7 @@ the dependency that would justify rerunning it.
 | EXP-1537, Flash Attention MMA | Standalone `GOOSE_FLASH_MMA=1`. [Kernel and model measurements](#causal-flash-attention-mma-checkpoint). Ten attention layers take 34.416 ms including Q4 staging, versus 2,738.669 ms for the scalar path. | The short first ID changes from 9495 to 271. On shared Apex inputs, relative L2 differences against the scalar path reach 6.44e-3. | Compare the same Q/K/V inputs to the EXP-1476 FP16 kernel, then restore stream-K scheduling and fix-up. Check isolated and combined GDN/Flash/Dense variants on the same short request. Keep the flag off by default pending response parity. |
 | GDN + Flash + Dense MMA on the ten-change package | Source `6083f55c`; [current intermediate performance control](#intermediate-apex-performance-control). Combined short prefill 281.919 tokens/s. The full profiled request reached 283.535 tokens/s. | The full response begins to repeat the input. Its second ID is 1716 versus 198 in EXP-1476. Content and probability rows differ. | Use the exact opt-in package as the speed checkpoint. Use the EXP-1476 response for correctness. Recheck the individual kernels and switches as the numerical path changes. |
 | EXP-1540, MMQ Stream-K | `GOOSE_MMQ_STREAM_K=1`. [Kernel and model measurements](#mmq-stream-k-checkpoint). The Apex 32/1 case executes 160 Stream-K and 160 fixup kernels and reduces MMQ device arithmetic time from 59.266 to 54.748 ms. | The 32/1 request changes probabilities and takes 913.819 ms versus 855.517 ms. The 4096/1 geometry chooses the regular MMQ path throughout. | Keep opt-in. Recheck with reference-sized MMQ tiles and routed dispatch after their numerical gate. A low-occupancy production shape or revised tile geometry can change the partition decision. |
+| EXP-1563, routed MMQ input residency | [Candidate patch and full pair](../../experiments/EXP-2026-11-20-1563-mmq-input-residency/README.md). Protecting the SwiGLU input removes 21,474,836,480 bytes in each direction and moves full prefill from 694.731 to 773.585 tok/s with matching responses. | Peak process VRAM rises from 8,524 to 8,748 MiB. The candidate run records 6,286 system swap-out pages with zero process swap. | Recheck when planned arena placement can keep the live input and result in the current capacity. Compare unchanged outputs and remeasure the 64 MiB transfers, VRAM and swap. |
 
 After a material dependency change, use short sequential A/B runs on
 identical inputs and settings. Use the best current verified checkpoint
@@ -2075,8 +2076,10 @@ in EXP-1560 remains visible.
 Prefill H2D is 116,646,927,184 bytes and D2H is
 21,517,772,800 bytes. The whole 960-copy 16 MiB group
 is gone. The largest residual prefill publication is 320
-copies of 64 MiB, totaling 21,474,836,480 bytes. Trace
-and qualify its producer/consumer lifetime independently.
+copies of 64 MiB, totaling 21,474,836,480 bytes.
+[EXP-1563](../../experiments/EXP-2026-11-20-1563-mmq-input-residency/README.md)
+identifies an arena eviction between SwiGLU and routed MMQ
+and measures its removal in an isolated candidate.
 
 - Short A–B–B–A under
   `/home/end0/AI/LlamaServer/franken-goose-resident-vector.UsIPSk`,
