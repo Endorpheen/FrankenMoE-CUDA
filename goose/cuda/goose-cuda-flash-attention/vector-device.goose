@@ -238,6 +238,10 @@ fn quant_q8(xb: u64, scale: f32, yq: i64, yds: i64, tx: i32, smem: u64) {
 // flash_attn_ext_vec<256,Q4_0,Q4_0,false>: block dim (32,4,1), lane=tx, warp=ty.
 // ncols is the runtime cols_per_block (1 or 2); D/4=64 i32 per row; D/QK8_1=8 ds pairs.
 
+fn fv_bounded_v4(base: u64, column: i64, valid: bool) -> V4 {
+    return if valid { dequant_v4(base, column) } else { V4 { 0.0, 0.0, 0.0, 0.0 } };
+}
+
 fn fattn_vec_1(
     q_p: u64,
     k_p: u64,
@@ -430,7 +434,7 @@ fn fattn_vec_1(
 
             if true {
                 let j: i32 = 0;
-                var sum = vec_dot_kq4(
+                var sum = if k0v + (i_kq as i64) < (kvlim as i64) { wr_sum(vec_dot_kq4(
                     kbase + ( (nb11 * (i_kq as i64))) as u64,
                     tx,
                     qi32[j * 2],
@@ -438,11 +442,10 @@ fn fattn_vec_1(
                     qdx[j * 2],
                     qdy[j * 2],
                     qdx[j * 2 + 1],
-                    qdy[j * 2 + 1]);
-                sum = wr_sum(sum);
+                    qdy[j * 2 + 1])) } else { negmax() };
                 // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
 
-                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) {
+                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) && k0v + (i_kq as i64) < (kvlim as i64) {
                     sum += slope * h2f(ld_u16(maskb, ( ( (j * ne11 + i_kq) * 2)) as u64));
                 }
                 kmaxn[j] = fmaxf(kmaxn[j], sum + (3.0 as f32) * (0.6931 as f32));
@@ -461,7 +464,7 @@ fn fattn_vec_1(
 
             if true {
                 let j: i32 = 0;
-                var sum = vec_dot_kq4(
+                var sum = if k0v + (i_kq as i64) < (kvlim as i64) { wr_sum(vec_dot_kq4(
                     kbase + ( (nb11 * (i_kq as i64))) as u64,
                     tx,
                     qi32[j * 2],
@@ -469,11 +472,10 @@ fn fattn_vec_1(
                     qdx[j * 2],
                     qdy[j * 2],
                     qdx[j * 2 + 1],
-                    qdy[j * 2 + 1]);
-                sum = wr_sum(sum);
+                    qdy[j * 2 + 1])) } else { negmax() };
                 // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
 
-                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) {
+                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) && k0v + (i_kq as i64) < (kvlim as i64) {
                     sum += slope * h2f(ld_u16(maskb, ( ( (j * ne11 + i_kq) * 2)) as u64));
                 }
                 kmaxn[j] = fmaxf(kmaxn[j], sum + (3.0 as f32) * (0.6931 as f32));
@@ -492,7 +494,7 @@ fn fattn_vec_1(
 
             if true {
                 let j: i32 = 0;
-                var sum = vec_dot_kq4(
+                var sum = if k0v + (i_kq as i64) < (kvlim as i64) { wr_sum(vec_dot_kq4(
                     kbase + ( (nb11 * (i_kq as i64))) as u64,
                     tx,
                     qi32[j * 2],
@@ -500,11 +502,10 @@ fn fattn_vec_1(
                     qdx[j * 2],
                     qdy[j * 2],
                     qdx[j * 2 + 1],
-                    qdy[j * 2 + 1]);
-                sum = wr_sum(sum);
+                    qdy[j * 2 + 1])) } else { negmax() };
                 // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
 
-                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) {
+                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) && k0v + (i_kq as i64) < (kvlim as i64) {
                     sum += slope * h2f(ld_u16(maskb, ( ( (j * ne11 + i_kq) * 2)) as u64));
                 }
                 kmaxn[j] = fmaxf(kmaxn[j], sum + (3.0 as f32) * (0.6931 as f32));
@@ -523,7 +524,7 @@ fn fattn_vec_1(
 
             if true {
                 let j: i32 = 0;
-                var sum = vec_dot_kq4(
+                var sum = if k0v + (i_kq as i64) < (kvlim as i64) { wr_sum(vec_dot_kq4(
                     kbase + ( (nb11 * (i_kq as i64))) as u64,
                     tx,
                     qi32[j * 2],
@@ -531,11 +532,10 @@ fn fattn_vec_1(
                     qdx[j * 2],
                     qdy[j * 2],
                     qdx[j * 2 + 1],
-                    qdy[j * 2 + 1]);
-                sum = wr_sum(sum);
+                    qdy[j * 2 + 1])) } else { negmax() };
                 // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
 
-                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) {
+                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) && k0v + (i_kq as i64) < (kvlim as i64) {
                     sum += slope * h2f(ld_u16(maskb, ( ( (j * ne11 + i_kq) * 2)) as u64));
                 }
                 kmaxn[j] = fmaxf(kmaxn[j], sum + (3.0 as f32) * (0.6931 as f32));
@@ -554,7 +554,7 @@ fn fattn_vec_1(
 
             if true {
                 let j: i32 = 0;
-                var sum = vec_dot_kq4(
+                var sum = if k0v + (i_kq as i64) < (kvlim as i64) { wr_sum(vec_dot_kq4(
                     kbase + ( (nb11 * (i_kq as i64))) as u64,
                     tx,
                     qi32[j * 2],
@@ -562,11 +562,10 @@ fn fattn_vec_1(
                     qdx[j * 2],
                     qdy[j * 2],
                     qdx[j * 2 + 1],
-                    qdy[j * 2 + 1]);
-                sum = wr_sum(sum);
+                    qdy[j * 2 + 1])) } else { negmax() };
                 // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
 
-                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) {
+                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) && k0v + (i_kq as i64) < (kvlim as i64) {
                     sum += slope * h2f(ld_u16(maskb, ( ( (j * ne11 + i_kq) * 2)) as u64));
                 }
                 kmaxn[j] = fmaxf(kmaxn[j], sum + (3.0 as f32) * (0.6931 as f32));
@@ -585,7 +584,7 @@ fn fattn_vec_1(
 
             if true {
                 let j: i32 = 0;
-                var sum = vec_dot_kq4(
+                var sum = if k0v + (i_kq as i64) < (kvlim as i64) { wr_sum(vec_dot_kq4(
                     kbase + ( (nb11 * (i_kq as i64))) as u64,
                     tx,
                     qi32[j * 2],
@@ -593,11 +592,10 @@ fn fattn_vec_1(
                     qdx[j * 2],
                     qdy[j * 2],
                     qdx[j * 2 + 1],
-                    qdy[j * 2 + 1]);
-                sum = wr_sum(sum);
+                    qdy[j * 2 + 1])) } else { negmax() };
                 // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
 
-                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) {
+                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) && k0v + (i_kq as i64) < (kvlim as i64) {
                     sum += slope * h2f(ld_u16(maskb, ( ( (j * ne11 + i_kq) * 2)) as u64));
                 }
                 kmaxn[j] = fmaxf(kmaxn[j], sum + (3.0 as f32) * (0.6931 as f32));
@@ -616,7 +614,7 @@ fn fattn_vec_1(
 
             if true {
                 let j: i32 = 0;
-                var sum = vec_dot_kq4(
+                var sum = if k0v + (i_kq as i64) < (kvlim as i64) { wr_sum(vec_dot_kq4(
                     kbase + ( (nb11 * (i_kq as i64))) as u64,
                     tx,
                     qi32[j * 2],
@@ -624,11 +622,10 @@ fn fattn_vec_1(
                     qdx[j * 2],
                     qdy[j * 2],
                     qdx[j * 2 + 1],
-                    qdy[j * 2 + 1]);
-                sum = wr_sum(sum);
+                    qdy[j * 2 + 1])) } else { negmax() };
                 // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
 
-                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) {
+                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) && k0v + (i_kq as i64) < (kvlim as i64) {
                     sum += slope * h2f(ld_u16(maskb, ( ( (j * ne11 + i_kq) * 2)) as u64));
                 }
                 kmaxn[j] = fmaxf(kmaxn[j], sum + (3.0 as f32) * (0.6931 as f32));
@@ -647,7 +644,7 @@ fn fattn_vec_1(
 
             if true {
                 let j: i32 = 0;
-                var sum = vec_dot_kq4(
+                var sum = if k0v + (i_kq as i64) < (kvlim as i64) { wr_sum(vec_dot_kq4(
                     kbase + ( (nb11 * (i_kq as i64))) as u64,
                     tx,
                     qi32[j * 2],
@@ -655,11 +652,10 @@ fn fattn_vec_1(
                     qdx[j * 2],
                     qdy[j * 2],
                     qdx[j * 2 + 1],
-                    qdy[j * 2 + 1]);
-                sum = wr_sum(sum);
+                    qdy[j * 2 + 1])) } else { negmax() };
                 // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
 
-                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) {
+                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) && k0v + (i_kq as i64) < (kvlim as i64) {
                     sum += slope * h2f(ld_u16(maskb, ( ( (j * ne11 + i_kq) * 2)) as u64));
                 }
                 kmaxn[j] = fmaxf(kmaxn[j], sum + (3.0 as f32) * (0.6931 as f32));
@@ -678,7 +674,7 @@ fn fattn_vec_1(
 
             if true {
                 let j: i32 = 0;
-                var sum = vec_dot_kq4(
+                var sum = if k0v + (i_kq as i64) < (kvlim as i64) { wr_sum(vec_dot_kq4(
                     kbase + ( (nb11 * (i_kq as i64))) as u64,
                     tx,
                     qi32[j * 2],
@@ -686,11 +682,10 @@ fn fattn_vec_1(
                     qdx[j * 2],
                     qdy[j * 2],
                     qdx[j * 2 + 1],
-                    qdy[j * 2 + 1]);
-                sum = wr_sum(sum);
+                    qdy[j * 2 + 1])) } else { negmax() };
                 // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
 
-                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) {
+                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) && k0v + (i_kq as i64) < (kvlim as i64) {
                     sum += slope * h2f(ld_u16(maskb, ( ( (j * ne11 + i_kq) * 2)) as u64));
                 }
                 kmaxn[j] = fmaxf(kmaxn[j], sum + (3.0 as f32) * (0.6931 as f32));
@@ -709,7 +704,7 @@ fn fattn_vec_1(
 
             if true {
                 let j: i32 = 0;
-                var sum = vec_dot_kq4(
+                var sum = if k0v + (i_kq as i64) < (kvlim as i64) { wr_sum(vec_dot_kq4(
                     kbase + ( (nb11 * (i_kq as i64))) as u64,
                     tx,
                     qi32[j * 2],
@@ -717,11 +712,10 @@ fn fattn_vec_1(
                     qdx[j * 2],
                     qdy[j * 2],
                     qdx[j * 2 + 1],
-                    qdy[j * 2 + 1]);
-                sum = wr_sum(sum);
+                    qdy[j * 2 + 1])) } else { negmax() };
                 // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
 
-                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) {
+                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) && k0v + (i_kq as i64) < (kvlim as i64) {
                     sum += slope * h2f(ld_u16(maskb, ( ( (j * ne11 + i_kq) * 2)) as u64));
                 }
                 kmaxn[j] = fmaxf(kmaxn[j], sum + (3.0 as f32) * (0.6931 as f32));
@@ -740,7 +734,7 @@ fn fattn_vec_1(
 
             if true {
                 let j: i32 = 0;
-                var sum = vec_dot_kq4(
+                var sum = if k0v + (i_kq as i64) < (kvlim as i64) { wr_sum(vec_dot_kq4(
                     kbase + ( (nb11 * (i_kq as i64))) as u64,
                     tx,
                     qi32[j * 2],
@@ -748,11 +742,10 @@ fn fattn_vec_1(
                     qdx[j * 2],
                     qdy[j * 2],
                     qdx[j * 2 + 1],
-                    qdy[j * 2 + 1]);
-                sum = wr_sum(sum);
+                    qdy[j * 2 + 1])) } else { negmax() };
                 // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
 
-                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) {
+                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) && k0v + (i_kq as i64) < (kvlim as i64) {
                     sum += slope * h2f(ld_u16(maskb, ( ( (j * ne11 + i_kq) * 2)) as u64));
                 }
                 kmaxn[j] = fmaxf(kmaxn[j], sum + (3.0 as f32) * (0.6931 as f32));
@@ -771,7 +764,7 @@ fn fattn_vec_1(
 
             if true {
                 let j: i32 = 0;
-                var sum = vec_dot_kq4(
+                var sum = if k0v + (i_kq as i64) < (kvlim as i64) { wr_sum(vec_dot_kq4(
                     kbase + ( (nb11 * (i_kq as i64))) as u64,
                     tx,
                     qi32[j * 2],
@@ -779,11 +772,10 @@ fn fattn_vec_1(
                     qdx[j * 2],
                     qdy[j * 2],
                     qdx[j * 2 + 1],
-                    qdy[j * 2 + 1]);
-                sum = wr_sum(sum);
+                    qdy[j * 2 + 1])) } else { negmax() };
                 // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
 
-                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) {
+                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) && k0v + (i_kq as i64) < (kvlim as i64) {
                     sum += slope * h2f(ld_u16(maskb, ( ( (j * ne11 + i_kq) * 2)) as u64));
                 }
                 kmaxn[j] = fmaxf(kmaxn[j], sum + (3.0 as f32) * (0.6931 as f32));
@@ -802,7 +794,7 @@ fn fattn_vec_1(
 
             if true {
                 let j: i32 = 0;
-                var sum = vec_dot_kq4(
+                var sum = if k0v + (i_kq as i64) < (kvlim as i64) { wr_sum(vec_dot_kq4(
                     kbase + ( (nb11 * (i_kq as i64))) as u64,
                     tx,
                     qi32[j * 2],
@@ -810,11 +802,10 @@ fn fattn_vec_1(
                     qdx[j * 2],
                     qdy[j * 2],
                     qdx[j * 2 + 1],
-                    qdy[j * 2 + 1]);
-                sum = wr_sum(sum);
+                    qdy[j * 2 + 1])) } else { negmax() };
                 // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
 
-                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) {
+                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) && k0v + (i_kq as i64) < (kvlim as i64) {
                     sum += slope * h2f(ld_u16(maskb, ( ( (j * ne11 + i_kq) * 2)) as u64));
                 }
                 kmaxn[j] = fmaxf(kmaxn[j], sum + (3.0 as f32) * (0.6931 as f32));
@@ -833,7 +824,7 @@ fn fattn_vec_1(
 
             if true {
                 let j: i32 = 0;
-                var sum = vec_dot_kq4(
+                var sum = if k0v + (i_kq as i64) < (kvlim as i64) { wr_sum(vec_dot_kq4(
                     kbase + ( (nb11 * (i_kq as i64))) as u64,
                     tx,
                     qi32[j * 2],
@@ -841,11 +832,10 @@ fn fattn_vec_1(
                     qdx[j * 2],
                     qdy[j * 2],
                     qdx[j * 2 + 1],
-                    qdy[j * 2 + 1]);
-                sum = wr_sum(sum);
+                    qdy[j * 2 + 1])) } else { negmax() };
                 // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
 
-                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) {
+                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) && k0v + (i_kq as i64) < (kvlim as i64) {
                     sum += slope * h2f(ld_u16(maskb, ( ( (j * ne11 + i_kq) * 2)) as u64));
                 }
                 kmaxn[j] = fmaxf(kmaxn[j], sum + (3.0 as f32) * (0.6931 as f32));
@@ -864,7 +854,7 @@ fn fattn_vec_1(
 
             if true {
                 let j: i32 = 0;
-                var sum = vec_dot_kq4(
+                var sum = if k0v + (i_kq as i64) < (kvlim as i64) { wr_sum(vec_dot_kq4(
                     kbase + ( (nb11 * (i_kq as i64))) as u64,
                     tx,
                     qi32[j * 2],
@@ -872,11 +862,10 @@ fn fattn_vec_1(
                     qdx[j * 2],
                     qdy[j * 2],
                     qdx[j * 2 + 1],
-                    qdy[j * 2 + 1]);
-                sum = wr_sum(sum);
+                    qdy[j * 2 + 1])) } else { negmax() };
                 // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
 
-                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) {
+                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) && k0v + (i_kq as i64) < (kvlim as i64) {
                     sum += slope * h2f(ld_u16(maskb, ( ( (j * ne11 + i_kq) * 2)) as u64));
                 }
                 kmaxn[j] = fmaxf(kmaxn[j], sum + (3.0 as f32) * (0.6931 as f32));
@@ -895,7 +884,7 @@ fn fattn_vec_1(
 
             if true {
                 let j: i32 = 0;
-                var sum = vec_dot_kq4(
+                var sum = if k0v + (i_kq as i64) < (kvlim as i64) { wr_sum(vec_dot_kq4(
                     kbase + ( (nb11 * (i_kq as i64))) as u64,
                     tx,
                     qi32[j * 2],
@@ -903,11 +892,10 @@ fn fattn_vec_1(
                     qdx[j * 2],
                     qdy[j * 2],
                     qdx[j * 2 + 1],
-                    qdy[j * 2 + 1]);
-                sum = wr_sum(sum);
+                    qdy[j * 2 + 1])) } else { negmax() };
                 // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
 
-                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) {
+                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) && k0v + (i_kq as i64) < (kvlim as i64) {
                     sum += slope * h2f(ld_u16(maskb, ( ( (j * ne11 + i_kq) * 2)) as u64));
                 }
                 kmaxn[j] = fmaxf(kmaxn[j], sum + (3.0 as f32) * (0.6931 as f32));
@@ -926,7 +914,7 @@ fn fattn_vec_1(
 
             if true {
                 let j: i32 = 0;
-                var sum = vec_dot_kq4(
+                var sum = if k0v + (i_kq as i64) < (kvlim as i64) { wr_sum(vec_dot_kq4(
                     kbase + ( (nb11 * (i_kq as i64))) as u64,
                     tx,
                     qi32[j * 2],
@@ -934,11 +922,10 @@ fn fattn_vec_1(
                     qdx[j * 2],
                     qdy[j * 2],
                     qdx[j * 2 + 1],
-                    qdy[j * 2 + 1]);
-                sum = wr_sum(sum);
+                    qdy[j * 2 + 1])) } else { negmax() };
                 // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
 
-                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) {
+                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) && k0v + (i_kq as i64) < (kvlim as i64) {
                     sum += slope * h2f(ld_u16(maskb, ( ( (j * ne11 + i_kq) * 2)) as u64));
                 }
                 kmaxn[j] = fmaxf(kmaxn[j], sum + (3.0 as f32) * (0.6931 as f32));
@@ -957,7 +944,7 @@ fn fattn_vec_1(
 
             if true {
                 let j: i32 = 0;
-                var sum = vec_dot_kq4(
+                var sum = if k0v + (i_kq as i64) < (kvlim as i64) { wr_sum(vec_dot_kq4(
                     kbase + ( (nb11 * (i_kq as i64))) as u64,
                     tx,
                     qi32[j * 2],
@@ -965,11 +952,10 @@ fn fattn_vec_1(
                     qdx[j * 2],
                     qdy[j * 2],
                     qdx[j * 2 + 1],
-                    qdy[j * 2 + 1]);
-                sum = wr_sum(sum);
+                    qdy[j * 2 + 1])) } else { negmax() };
                 // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
 
-                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) {
+                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) && k0v + (i_kq as i64) < (kvlim as i64) {
                     sum += slope * h2f(ld_u16(maskb, ( ( (j * ne11 + i_kq) * 2)) as u64));
                 }
                 kmaxn[j] = fmaxf(kmaxn[j], sum + (3.0 as f32) * (0.6931 as f32));
@@ -988,7 +974,7 @@ fn fattn_vec_1(
 
             if true {
                 let j: i32 = 0;
-                var sum = vec_dot_kq4(
+                var sum = if k0v + (i_kq as i64) < (kvlim as i64) { wr_sum(vec_dot_kq4(
                     kbase + ( (nb11 * (i_kq as i64))) as u64,
                     tx,
                     qi32[j * 2],
@@ -996,11 +982,10 @@ fn fattn_vec_1(
                     qdx[j * 2],
                     qdy[j * 2],
                     qdx[j * 2 + 1],
-                    qdy[j * 2 + 1]);
-                sum = wr_sum(sum);
+                    qdy[j * 2 + 1])) } else { negmax() };
                 // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
 
-                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) {
+                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) && k0v + (i_kq as i64) < (kvlim as i64) {
                     sum += slope * h2f(ld_u16(maskb, ( ( (j * ne11 + i_kq) * 2)) as u64));
                 }
                 kmaxn[j] = fmaxf(kmaxn[j], sum + (3.0 as f32) * (0.6931 as f32));
@@ -1019,7 +1004,7 @@ fn fattn_vec_1(
 
             if true {
                 let j: i32 = 0;
-                var sum = vec_dot_kq4(
+                var sum = if k0v + (i_kq as i64) < (kvlim as i64) { wr_sum(vec_dot_kq4(
                     kbase + ( (nb11 * (i_kq as i64))) as u64,
                     tx,
                     qi32[j * 2],
@@ -1027,11 +1012,10 @@ fn fattn_vec_1(
                     qdx[j * 2],
                     qdy[j * 2],
                     qdx[j * 2 + 1],
-                    qdy[j * 2 + 1]);
-                sum = wr_sum(sum);
+                    qdy[j * 2 + 1])) } else { negmax() };
                 // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
 
-                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) {
+                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) && k0v + (i_kq as i64) < (kvlim as i64) {
                     sum += slope * h2f(ld_u16(maskb, ( ( (j * ne11 + i_kq) * 2)) as u64));
                 }
                 kmaxn[j] = fmaxf(kmaxn[j], sum + (3.0 as f32) * (0.6931 as f32));
@@ -1050,7 +1034,7 @@ fn fattn_vec_1(
 
             if true {
                 let j: i32 = 0;
-                var sum = vec_dot_kq4(
+                var sum = if k0v + (i_kq as i64) < (kvlim as i64) { wr_sum(vec_dot_kq4(
                     kbase + ( (nb11 * (i_kq as i64))) as u64,
                     tx,
                     qi32[j * 2],
@@ -1058,11 +1042,10 @@ fn fattn_vec_1(
                     qdx[j * 2],
                     qdy[j * 2],
                     qdx[j * 2 + 1],
-                    qdy[j * 2 + 1]);
-                sum = wr_sum(sum);
+                    qdy[j * 2 + 1])) } else { negmax() };
                 // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
 
-                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) {
+                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) && k0v + (i_kq as i64) < (kvlim as i64) {
                     sum += slope * h2f(ld_u16(maskb, ( ( (j * ne11 + i_kq) * 2)) as u64));
                 }
                 kmaxn[j] = fmaxf(kmaxn[j], sum + (3.0 as f32) * (0.6931 as f32));
@@ -1081,7 +1064,7 @@ fn fattn_vec_1(
 
             if true {
                 let j: i32 = 0;
-                var sum = vec_dot_kq4(
+                var sum = if k0v + (i_kq as i64) < (kvlim as i64) { wr_sum(vec_dot_kq4(
                     kbase + ( (nb11 * (i_kq as i64))) as u64,
                     tx,
                     qi32[j * 2],
@@ -1089,11 +1072,10 @@ fn fattn_vec_1(
                     qdx[j * 2],
                     qdy[j * 2],
                     qdx[j * 2 + 1],
-                    qdy[j * 2 + 1]);
-                sum = wr_sum(sum);
+                    qdy[j * 2 + 1])) } else { negmax() };
                 // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
 
-                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) {
+                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) && k0v + (i_kq as i64) < (kvlim as i64) {
                     sum += slope * h2f(ld_u16(maskb, ( ( (j * ne11 + i_kq) * 2)) as u64));
                 }
                 kmaxn[j] = fmaxf(kmaxn[j], sum + (3.0 as f32) * (0.6931 as f32));
@@ -1112,7 +1094,7 @@ fn fattn_vec_1(
 
             if true {
                 let j: i32 = 0;
-                var sum = vec_dot_kq4(
+                var sum = if k0v + (i_kq as i64) < (kvlim as i64) { wr_sum(vec_dot_kq4(
                     kbase + ( (nb11 * (i_kq as i64))) as u64,
                     tx,
                     qi32[j * 2],
@@ -1120,11 +1102,10 @@ fn fattn_vec_1(
                     qdx[j * 2],
                     qdy[j * 2],
                     qdx[j * 2 + 1],
-                    qdy[j * 2 + 1]);
-                sum = wr_sum(sum);
+                    qdy[j * 2 + 1])) } else { negmax() };
                 // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
 
-                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) {
+                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) && k0v + (i_kq as i64) < (kvlim as i64) {
                     sum += slope * h2f(ld_u16(maskb, ( ( (j * ne11 + i_kq) * 2)) as u64));
                 }
                 kmaxn[j] = fmaxf(kmaxn[j], sum + (3.0 as f32) * (0.6931 as f32));
@@ -1143,7 +1124,7 @@ fn fattn_vec_1(
 
             if true {
                 let j: i32 = 0;
-                var sum = vec_dot_kq4(
+                var sum = if k0v + (i_kq as i64) < (kvlim as i64) { wr_sum(vec_dot_kq4(
                     kbase + ( (nb11 * (i_kq as i64))) as u64,
                     tx,
                     qi32[j * 2],
@@ -1151,11 +1132,10 @@ fn fattn_vec_1(
                     qdx[j * 2],
                     qdy[j * 2],
                     qdx[j * 2 + 1],
-                    qdy[j * 2 + 1]);
-                sum = wr_sum(sum);
+                    qdy[j * 2 + 1])) } else { negmax() };
                 // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
 
-                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) {
+                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) && k0v + (i_kq as i64) < (kvlim as i64) {
                     sum += slope * h2f(ld_u16(maskb, ( ( (j * ne11 + i_kq) * 2)) as u64));
                 }
                 kmaxn[j] = fmaxf(kmaxn[j], sum + (3.0 as f32) * (0.6931 as f32));
@@ -1174,7 +1154,7 @@ fn fattn_vec_1(
 
             if true {
                 let j: i32 = 0;
-                var sum = vec_dot_kq4(
+                var sum = if k0v + (i_kq as i64) < (kvlim as i64) { wr_sum(vec_dot_kq4(
                     kbase + ( (nb11 * (i_kq as i64))) as u64,
                     tx,
                     qi32[j * 2],
@@ -1182,11 +1162,10 @@ fn fattn_vec_1(
                     qdx[j * 2],
                     qdy[j * 2],
                     qdx[j * 2 + 1],
-                    qdy[j * 2 + 1]);
-                sum = wr_sum(sum);
+                    qdy[j * 2 + 1])) } else { negmax() };
                 // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
 
-                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) {
+                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) && k0v + (i_kq as i64) < (kvlim as i64) {
                     sum += slope * h2f(ld_u16(maskb, ( ( (j * ne11 + i_kq) * 2)) as u64));
                 }
                 kmaxn[j] = fmaxf(kmaxn[j], sum + (3.0 as f32) * (0.6931 as f32));
@@ -1205,7 +1184,7 @@ fn fattn_vec_1(
 
             if true {
                 let j: i32 = 0;
-                var sum = vec_dot_kq4(
+                var sum = if k0v + (i_kq as i64) < (kvlim as i64) { wr_sum(vec_dot_kq4(
                     kbase + ( (nb11 * (i_kq as i64))) as u64,
                     tx,
                     qi32[j * 2],
@@ -1213,11 +1192,10 @@ fn fattn_vec_1(
                     qdx[j * 2],
                     qdy[j * 2],
                     qdx[j * 2 + 1],
-                    qdy[j * 2 + 1]);
-                sum = wr_sum(sum);
+                    qdy[j * 2 + 1])) } else { negmax() };
                 // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
 
-                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) {
+                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) && k0v + (i_kq as i64) < (kvlim as i64) {
                     sum += slope * h2f(ld_u16(maskb, ( ( (j * ne11 + i_kq) * 2)) as u64));
                 }
                 kmaxn[j] = fmaxf(kmaxn[j], sum + (3.0 as f32) * (0.6931 as f32));
@@ -1236,7 +1214,7 @@ fn fattn_vec_1(
 
             if true {
                 let j: i32 = 0;
-                var sum = vec_dot_kq4(
+                var sum = if k0v + (i_kq as i64) < (kvlim as i64) { wr_sum(vec_dot_kq4(
                     kbase + ( (nb11 * (i_kq as i64))) as u64,
                     tx,
                     qi32[j * 2],
@@ -1244,11 +1222,10 @@ fn fattn_vec_1(
                     qdx[j * 2],
                     qdy[j * 2],
                     qdx[j * 2 + 1],
-                    qdy[j * 2 + 1]);
-                sum = wr_sum(sum);
+                    qdy[j * 2 + 1])) } else { negmax() };
                 // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
 
-                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) {
+                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) && k0v + (i_kq as i64) < (kvlim as i64) {
                     sum += slope * h2f(ld_u16(maskb, ( ( (j * ne11 + i_kq) * 2)) as u64));
                 }
                 kmaxn[j] = fmaxf(kmaxn[j], sum + (3.0 as f32) * (0.6931 as f32));
@@ -1267,7 +1244,7 @@ fn fattn_vec_1(
 
             if true {
                 let j: i32 = 0;
-                var sum = vec_dot_kq4(
+                var sum = if k0v + (i_kq as i64) < (kvlim as i64) { wr_sum(vec_dot_kq4(
                     kbase + ( (nb11 * (i_kq as i64))) as u64,
                     tx,
                     qi32[j * 2],
@@ -1275,11 +1252,10 @@ fn fattn_vec_1(
                     qdx[j * 2],
                     qdy[j * 2],
                     qdx[j * 2 + 1],
-                    qdy[j * 2 + 1]);
-                sum = wr_sum(sum);
+                    qdy[j * 2 + 1])) } else { negmax() };
                 // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
 
-                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) {
+                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) && k0v + (i_kq as i64) < (kvlim as i64) {
                     sum += slope * h2f(ld_u16(maskb, ( ( (j * ne11 + i_kq) * 2)) as u64));
                 }
                 kmaxn[j] = fmaxf(kmaxn[j], sum + (3.0 as f32) * (0.6931 as f32));
@@ -1298,7 +1274,7 @@ fn fattn_vec_1(
 
             if true {
                 let j: i32 = 0;
-                var sum = vec_dot_kq4(
+                var sum = if k0v + (i_kq as i64) < (kvlim as i64) { wr_sum(vec_dot_kq4(
                     kbase + ( (nb11 * (i_kq as i64))) as u64,
                     tx,
                     qi32[j * 2],
@@ -1306,11 +1282,10 @@ fn fattn_vec_1(
                     qdx[j * 2],
                     qdy[j * 2],
                     qdx[j * 2 + 1],
-                    qdy[j * 2 + 1]);
-                sum = wr_sum(sum);
+                    qdy[j * 2 + 1])) } else { negmax() };
                 // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
 
-                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) {
+                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) && k0v + (i_kq as i64) < (kvlim as i64) {
                     sum += slope * h2f(ld_u16(maskb, ( ( (j * ne11 + i_kq) * 2)) as u64));
                 }
                 kmaxn[j] = fmaxf(kmaxn[j], sum + (3.0 as f32) * (0.6931 as f32));
@@ -1329,7 +1304,7 @@ fn fattn_vec_1(
 
             if true {
                 let j: i32 = 0;
-                var sum = vec_dot_kq4(
+                var sum = if k0v + (i_kq as i64) < (kvlim as i64) { wr_sum(vec_dot_kq4(
                     kbase + ( (nb11 * (i_kq as i64))) as u64,
                     tx,
                     qi32[j * 2],
@@ -1337,11 +1312,10 @@ fn fattn_vec_1(
                     qdx[j * 2],
                     qdy[j * 2],
                     qdx[j * 2 + 1],
-                    qdy[j * 2 + 1]);
-                sum = wr_sum(sum);
+                    qdy[j * 2 + 1])) } else { negmax() };
                 // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
 
-                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) {
+                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) && k0v + (i_kq as i64) < (kvlim as i64) {
                     sum += slope * h2f(ld_u16(maskb, ( ( (j * ne11 + i_kq) * 2)) as u64));
                 }
                 kmaxn[j] = fmaxf(kmaxn[j], sum + (3.0 as f32) * (0.6931 as f32));
@@ -1360,7 +1334,7 @@ fn fattn_vec_1(
 
             if true {
                 let j: i32 = 0;
-                var sum = vec_dot_kq4(
+                var sum = if k0v + (i_kq as i64) < (kvlim as i64) { wr_sum(vec_dot_kq4(
                     kbase + ( (nb11 * (i_kq as i64))) as u64,
                     tx,
                     qi32[j * 2],
@@ -1368,11 +1342,10 @@ fn fattn_vec_1(
                     qdx[j * 2],
                     qdy[j * 2],
                     qdx[j * 2 + 1],
-                    qdy[j * 2 + 1]);
-                sum = wr_sum(sum);
+                    qdy[j * 2 + 1])) } else { negmax() };
                 // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
 
-                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) {
+                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) && k0v + (i_kq as i64) < (kvlim as i64) {
                     sum += slope * h2f(ld_u16(maskb, ( ( (j * ne11 + i_kq) * 2)) as u64));
                 }
                 kmaxn[j] = fmaxf(kmaxn[j], sum + (3.0 as f32) * (0.6931 as f32));
@@ -1391,7 +1364,7 @@ fn fattn_vec_1(
 
             if true {
                 let j: i32 = 0;
-                var sum = vec_dot_kq4(
+                var sum = if k0v + (i_kq as i64) < (kvlim as i64) { wr_sum(vec_dot_kq4(
                     kbase + ( (nb11 * (i_kq as i64))) as u64,
                     tx,
                     qi32[j * 2],
@@ -1399,11 +1372,10 @@ fn fattn_vec_1(
                     qdx[j * 2],
                     qdy[j * 2],
                     qdx[j * 2 + 1],
-                    qdy[j * 2 + 1]);
-                sum = wr_sum(sum);
+                    qdy[j * 2 + 1])) } else { negmax() };
                 // use_logit_softcap=false instance: softcap/tanhf branch absent (deferred).
 
-                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) {
+                if mask_p != 0 && (ncols == 1 || ic0 + j < ne01_z) && k0v + (i_kq as i64) < (kvlim as i64) {
                     sum += slope * h2f(ld_u16(maskb, ( ( (j * ne11 + i_kq) * 2)) as u64));
                 }
                 kmaxn[j] = fmaxf(kmaxn[j], sum + (3.0 as f32) * (0.6931 as f32));
@@ -1422,7 +1394,9 @@ fn fattn_vec_1(
             // nthreads_KQ==WARP_SIZE: source KQ_max_new shfl loop is a no-op here.
             let ksc = expf(kmax[j] - kmaxn[j]);
             kmax[j] = kmaxn[j];
-            kreg[j] = expf(kreg[j] - kmax[j]);
+            kreg[j] = if k0v + (tid as i64) < (kvlim as i64) {
+                expf(kreg[j] - kmax[j])
+            } else { 0.0 };
             ksum[j] = ksum[j] * ksc + kreg[j];
             sm_st_f32(smem, ( (j * 128 + tid)) as u64, kreg[j]);
             vkqscale[j] = ksc;
@@ -1445,7 +1419,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 0;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -1480,7 +1455,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 64;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -1529,7 +1505,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 0;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -1564,7 +1541,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 64;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -1613,7 +1591,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 0;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -1648,7 +1627,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 64;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -1697,7 +1677,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 0;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -1732,7 +1713,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 64;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -1781,7 +1763,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 0;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -1816,7 +1799,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 64;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -1865,7 +1849,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 0;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -1900,7 +1885,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 64;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -1949,7 +1935,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 0;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -1984,7 +1971,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 64;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -2033,7 +2021,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 0;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -2068,7 +2057,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 64;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -2117,7 +2107,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 0;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -2152,7 +2143,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 64;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -2201,7 +2193,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 0;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -2236,7 +2229,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 64;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -2285,7 +2279,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 0;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -2320,7 +2315,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 64;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -2369,7 +2365,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 0;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -2404,7 +2401,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 64;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -2453,7 +2451,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 0;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -2488,7 +2487,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 64;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -2537,7 +2537,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 0;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -2572,7 +2573,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 64;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -2621,7 +2623,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 0;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -2656,7 +2659,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 64;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -2705,7 +2709,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 0;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -2740,7 +2745,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 64;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -2789,7 +2795,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 0;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -2824,7 +2831,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 64;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -2873,7 +2881,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 0;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -2908,7 +2917,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 64;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -2957,7 +2967,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 0;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -2992,7 +3003,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 64;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -3041,7 +3053,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 0;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -3076,7 +3089,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 64;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -3125,7 +3139,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 0;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -3160,7 +3175,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 64;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -3209,7 +3225,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 0;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -3244,7 +3261,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 64;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -3293,7 +3311,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 0;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -3328,7 +3347,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 64;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -3377,7 +3397,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 0;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -3412,7 +3433,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 64;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -3461,7 +3483,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 0;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -3496,7 +3519,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 64;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -3545,7 +3569,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 0;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -3580,7 +3605,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 64;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -3629,7 +3655,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 0;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -3664,7 +3691,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 64;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -3713,7 +3741,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 0;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -3748,7 +3777,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 64;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -3797,7 +3827,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 0;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -3832,7 +3863,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 64;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -3881,7 +3913,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 0;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -3916,7 +3949,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 64;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -3965,7 +3999,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 0;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -4000,7 +4035,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 64;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -4049,7 +4085,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 0;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -4084,7 +4121,8 @@ fn fattn_vec_1(
 
             if true {
                 let iv: i32 = 64;
-                let v4 = dequant_v4(vbase + ( (nb21 * (k as i64))) as u64, ( (2 * iv + tx * 4)) as i64);
+                let v4 = fv_bounded_v4(vbase + ( (nb21 * (k as i64))) as u64,
+                    ( (2 * iv + tx * 4)) as i64, k0v + (k as i64) < (kvlim as i64));
                 j = 0;
 
                 if true {
@@ -4134,12 +4172,11 @@ fn fattn_vec_1(
             let kmaxn_j = fmaxf(sink, kmax[js]);
             let ksc = expf(kmax[js] - kmaxn_j);
             kmax[js] = kmaxn_j;
-            ksum[js] = ksum[js] * ksc + if tx == 0 {
+            ksum[js] = ksum[js] * ksc + (if tx == 0 {
                 expf(sink - kmax[js])
             } else {
                 0.0
-            }
-            ;
+            });
             var kk: i32 = 0;
 
             if true {

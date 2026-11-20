@@ -53,7 +53,7 @@ static struct {
     Function kernel, attention_tiles, attention_merge, gdn, q4_rows, vector, rms_reference;
     Function mmq_pack, mmq_pack_shared, mmq_matrix, mmq_q4_matrix, mmq_q6_matrix;
     Function mmvq_pack, mmvq;
-    Function dense_mma, dense_mma_reference, gdn_mma, flash_mma, flash_stage;
+    Function dense_mma, dense_mma_reference, gdn_mma, flash_mma, flash_stage, flash_vec, flash_vec_merge;
     Function mmq_stream, mmq_stream_fixup;
     Function rope_phases, rope_apply, ssm_conv, ssm_conv_long;
     Function route_reduce, route_sort, route_topk, route_gather, route_norm, blit, fwht, moe_weighted;
@@ -204,6 +204,7 @@ static void init_cuda(void) {
     const bool gdn_mma = gdn_setting && strcmp(gdn_setting, "1") == 0;
     const char * flash_setting = getenv("GOOSE_FLASH_MMA");
     const bool flash_mma = flash_setting && strcmp(flash_setting, "1") == 0;
+    const bool flash_vec_requested = fg_standalone_option_enabled("GOOSE_FLASH_VEC");
     const char * rms_setting = getenv("GOOSE_RMS_REFERENCE");
     const bool rms_reference = rms_setting && strcmp(rms_setting, "1") == 0;
     const char * q6_setting = getenv("GOOSE_MMQ_Q6_REFERENCE");
@@ -217,14 +218,15 @@ static void init_cuda(void) {
     const bool tensor_cores = mmq || dense_mma || gdn_mma || flash_mma;
     enum { compute_capability_major = 75, compute_capability_minor = 76 };
     int major = 0, minor = 0;
-    const bool sm80_image = (tensor_cores || mmvq_requested) && goose_cuda_mmq_image[0] != 0 &&
+    const bool sm80_image = (tensor_cores || mmvq_requested || flash_vec_requested) && goose_cuda_mmq_image[0] != 0 &&
         cuda.device_attribute(&major, compute_capability_major, device) == 0 && major >= 8;
     if (tensor_cores && !sm80_image) {
         fputs("Goose CUDA: Tensor Core paths require the SM80 image and compute capability 8 or newer\n", stderr);
         return;
     }
     const bool mmvq = mmvq_requested && sm80_image;
-    const bool mma_image = tensor_cores || mmvq;
+    const bool flash_vec = flash_vec_requested && sm80_image;
+    const bool mma_image = tensor_cores || mmvq || flash_vec;
     const bool reference_arch = (q4_reference || q6_reference || dense_reference) && major == 8 &&
         cuda.device_attribute(&minor, compute_capability_minor, device) == 0 && minor == 9;
     if (stream_k || (reference_arch && (q4_reference || q6_reference))) {
@@ -256,6 +258,8 @@ static void init_cuda(void) {
         if (error == 0) error = cuda.function_get(&cuda.attention_merge, cuda.module, "goose_q4_attention_merge");
         if (error == 0 && flash_mma) error = cuda.function_get(&cuda.flash_mma, cuda.module, "goose_flash_causal_mma");
         if (error == 0 && flash_mma) error = cuda.function_get(&cuda.flash_stage, cuda.module, "goose_flash_q4_stage");
+        if (error == 0 && flash_vec) error = cuda.function_get(&cuda.flash_vec, cuda.module, "goose_flash_vec_q4");
+        if (error == 0 && flash_vec) error = cuda.function_get(&cuda.flash_vec_merge, cuda.module, "goose_flash_vec_combine");
         if (error == 0) error = cuda.function_get(&cuda.gdn, cuda.module, "goose_gated_delta_net");
         if (error == 0 && gdn_mma) {
             enum { max_dynamic_shared_size = 8 };
@@ -1260,6 +1264,39 @@ static bool flash_mma_shape(const int64_t * c, int64_t mask_bytes) {
         c[7] > 0 && c[7] % 8 == 0 && c[8] > 0 && c[8] % 8 == 0;
 }
 
+static bool flash_vec_shape(const int64_t * c, int64_t mask_bytes) {
+    return cuda.flash_vec && mask_bytes == 0 && c[0] == 256 && c[1] == 256 && c[2] == 1 &&
+        c[3] > 0 && c[3] <= 256 && c[4] > 0 && c[5] == c[4] && c[3] % c[4] == 0 &&
+        c[6] > 0 && c[6] <= INT_MAX - 127 && c[21] >= 0 && c[21] <= c[6] && c[14] == 1024;
+}
+
+static int launch_flash_vec(const int64_t * c, DevicePtr * staged, DevicePtr output, float scale, bool * executed) {
+    enum { max_parts = 64, tile_keys = 128, vector_bytes = 1024 };
+    int32_t keys = (int32_t) (c[21] == 0 ? c[6] : c[21]);
+    int32_t heads = (int32_t) c[3];
+    int32_t parts = 1 + (keys - 1) / tile_keys;
+    if (parts > max_parts) parts = max_parts;
+    DevicePtr matrix = output, meta = 0;
+    if (parts > 1) {
+        const size_t vectors = (size_t) heads * (size_t) parts;
+        const size_t span = vectors * vector_bytes;
+        const int error = reserve(&cuda.attention_scratch, span + vectors * 2 * sizeof(float));
+        if (error == 2) return 0;
+        if (error != 0) return error;
+        matrix = cuda.attention_scratch.address;
+        meta = matrix + span;
+    }
+    void * args[] = {&staged[0], &staged[1], &staged[2], &matrix, &meta, &staged[4], &keys, &scale};
+    int error = cuda.launch(cuda.flash_vec, (unsigned) heads, (unsigned) parts, 1, 128, 1, 1, 0, NULL, args, NULL);
+    if (error == 0 && parts > 1) {
+        void * merge[] = {&matrix, &meta, &output, &parts, &heads};
+        error = cuda.launch(cuda.flash_vec_merge, (unsigned) heads, 1, 1, 256, 1, 1, 0, NULL, merge, NULL);
+    }
+    if (error == 0) *executed = true;
+    else (void) cuda.sync();
+    return error;
+}
+
 static int launch_flash_mma(const int64_t * c, DevicePtr * staged, DevicePtr output, float scale, bool * executed) {
     int64_t keys = c[6], padded = (keys + 31) & ~INT64_C(31);
     const uint64_t span = (uint64_t) padded * (uint64_t) c[4] * 512;
@@ -1309,12 +1346,17 @@ int64_t fg_cuda_q4_attention(sl_i64 config, sl_u8 q, sl_u8 k, sl_u8 v, sl_u8 mas
     if (error == 0 && flash_mma_shape(config.data, mask.len)) {
         error = launch_flash_mma(config.data, staged, output, scale, &mma);
     }
+    bool vector = false;
+    if (error == 0 && flash_vec_shape(config.data, mask.len)) {
+        error = launch_flash_vec(config.data, staged, output, scale, &vector);
+    }
+    const bool tiled = mma || vector;
 
     const int tasks = (int) config.data[18];
     const int requested = (int) config.data[19];
     const size_t task_bytes = (size_t) (config.data[20] / requested);
     int capacity = requested;
-    if (error == 0 && !mma) {
+    if (error == 0 && !tiled) {
         while ((error = reserve(&cuda.attention_scratch, task_bytes * (size_t) capacity)) == 2 &&
                capacity > 1) {
             capacity /= 2;
@@ -1328,7 +1370,7 @@ int64_t fg_cuda_q4_attention(sl_i64 config, sl_u8 q, sl_u8 k, sl_u8 v, sl_u8 mas
     void * tile_args[] = {&staged[0], &staged[1], &staged[2],
         &staged[3], &cuda.attention_scratch.address, &staged[4], &scale, &start};
     void * merge_args[] = {&cuda.attention_scratch.address, &output, &staged[4], &start};
-    while (error == 0 && !mma && start < tasks) {
+    while (error == 0 && !tiled && start < tasks) {
         const int count = tasks - start < capacity ? tasks - start : capacity;
         error = cuda.launch(cuda.attention_tiles, (unsigned) count, tiles, 1, 32, 1, 1, 0, NULL, tile_args, NULL);
         if (error == 0) error = cuda.launch(cuda.attention_merge, (unsigned) count, 1, 1, 32, 1, 1, 0, NULL, merge_args, NULL);

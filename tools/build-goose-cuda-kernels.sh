@@ -80,6 +80,12 @@ cp "$ROOT/goose/cuda/standalone-mmvq.goose" "$OUT/mmvq.goose"
 cp "$ROOT/goose/cuda/standalone-dense-mma.goose" "$OUT/dense-mma.goose"
 sed '/^fn main()/,$d' "$ROOT/goose/cuda/goose-cuda-flash-attention/value-prefill-device.goose" > "$OUT/flash-mma.goose"
 cat "$ROOT/goose/cuda/standalone-flash-mma.goose" >> "$OUT/flash-mma.goose"
+sed '/^fn fattn_vec_2(/,/^fn combine(/ { /^fn combine(/!d; }
+    /^fn main()/,$d
+    s/^fn \(fattn_vec_1\|combine\)(/export fn \1(/
+    s/\b\(negmax\|absf\|wr_sum\|wr_max\|alibi_slope\|q4_word\|vec_dot_kq4\|dequant_v4\|quant_q8\|fattn_vec_1\|combine\)\b/fv_\1/g
+    s/\bV4\b/VecFlash4/g' \
+    "$ROOT/goose/cuda/goose-cuda-flash-attention/vector-device.goose" > "$OUT/flash-vec.goose"
 sed '/^fn load_mask(/,$d; s/^fn load_kv(/export fn fg_flash_load_kv(/' \
     "$ROOT/goose/cuda/goose-cuda-flash-attention/loaders-device.goose" > "$OUT/flash-load.goose"
 cp "$ROOT/goose/cuda/standalone-flash-stage.goose" "$OUT/flash-stage.goose"
@@ -87,7 +93,7 @@ sed -n '/^fn scale_min(/,/^}/p' "$ROOT/goose/cuda/goose-cuda-dequant-q4k/device.
 sed -n '/^fn q4_mmq_nibbles(/,/^}/p' "$ROOT/goose/cuda/goose-mmq-load-q4k/device.goose" >> "$OUT/mmq.goose"
 sed -n '/^fn vsub4(/,/^}/p; /^fn q6_mmq_bytes(/,/^}/p' \
     "$ROOT/goose/cuda/goose-mmq-load-q6k/device.goose" >> "$OUT/mmq.goose"
-for module in q4k q6k matmul q4-attention gdn gdn-mma q4-set-rows vector rms-reference rope ssm-conv routing transform fwht moe-weighted mmq-quant mmq mmvq-q4 mmvq-q6 mmvq-pack mmvq dense-mma flash-mma flash-load flash-stage; do
+for module in q4k q6k matmul q4-attention gdn gdn-mma q4-set-rows vector rms-reference rope ssm-conv routing transform fwht moe-weighted mmq-quant mmq mmvq-q4 mmvq-q6 mmvq-pack mmvq dense-mma flash-mma flash-vec flash-load flash-stage; do
     "$GOOSE" --standalone -o "$OUT/$module.c" --header "$OUT/$module.h" "$OUT/$module.goose"
     python3 - "$OUT" "$module" <<'PY'
 from pathlib import Path
@@ -106,10 +112,13 @@ if module in ("q4-attention", "gdn", "rope", "ssm-conv", "fwht", "routing"):
     types = "\n".join(line for line in types.splitlines()
                       if not line.endswith(excluded))
     fragment = types + "\n" + fragment
-if module in ("gdn-mma", "flash-mma", "rms-reference"):
+if module in ("gdn-mma", "flash-mma", "flash-vec", "rms-reference"):
     types = source.split("/* ---- types ---- */", 1)[1].split("/* ---- data ---- */", 1)[0]
+    excluded = ("gs_rhdr;", "gs_rref;", "gs_pref;", "sl_u8;")
+    if module != "flash-vec":
+        excluded += ("a8_f32;",)
     types = "\n".join(line for line in types.splitlines()
-                      if not line.endswith(("gs_rhdr;", "gs_rref;", "gs_pref;", "sl_u8;", "a8_f32;")))
+                      if not line.endswith(excluded))
     if module == "flash-mma":
         import re
 
@@ -117,6 +126,13 @@ if module in ("gdn-mma", "flash-mma", "rms-reference"):
             return re.sub(r"\b(?:F[24]_g|U[24]_g|a\d+_(?:f32|u32))\b", lambda m: "Flash_" + m[0], text)
 
         types, fragment = prefix(types), prefix(fragment)
+    if module == "flash-vec":
+        import re
+
+        def vector_prefix(text):
+            return re.sub(r"\ba\d+_(?:f32|i32|u32)\b", lambda m: "FlashVec_" + m[0], text)
+
+        types, fragment = vector_prefix(types), vector_prefix(fragment)
     (out / f"{module}-types.h").write_text(types)
 (out / f"{module}-device.h").write_text(fragment)
 PY

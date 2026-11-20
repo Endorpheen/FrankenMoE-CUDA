@@ -21,14 +21,15 @@ use the first 4,096 IDs of that request and generate one ID. Nsight
 timings diagnose activity and omit the final unprofiled parity claim.
 
 **Status meaning.** PARITY requires an executed candidate path,
-numerical evidence against the reference and a matching performance
-and memory check. PARTIAL means an executed mechanism or verified
+quality evidence on common real requests and a matching performance
+and memory check. Use focused tensor checks for an observed
+correctness error. PARTIAL means an executed mechanism or verified
 component exists, with a missing capability or an open parity check.
 MISSING means the reference mechanism has no live independent
 equivalent. INCORRECT means a comparable output fails its reference
 check. Kernel and API duration sums in the appendices are observations.
 Per-mechanism effects on rates and peak allocations require
-paired ablations, which are open for every row.
+paired ablations.
 
 ## Deferred optimization registry
 
@@ -64,7 +65,7 @@ the entry. Apply the full-request gate on the package schedule.
 
 ## Mechanisms
 
-**32 mechanisms: PARITY 0, PARTIAL 25, MISSING 6, INCORRECT 1.**
+**32 mechanisms: PARITY 0, PARTIAL 28, MISSING 3, INCORRECT 1.**
 
 Group three to five related improvements. Give each change its own
 short correctness, CUDA-error and numerical checks, then commit it
@@ -102,7 +103,7 @@ dependencies. Resume decode-specific work after prefill recovery.
 | 10 | Fused MoE selection. `ggml-cuda.cu` `ggml_cuda_topk_moe_fusion` → `topk_moe_cuda`. | Goose selects eight experts directly and fuses gather, clamp, division and scaling in a single weights kernel. The live Apex snapshot matches the preceding graph byte-for-byte. | PARTIAL. Integrate softmax and selection with the weight output. Keep numerical parity and qualify full Apex. |
 | 11 | Fused MoE combination. `ggml_cuda_match_moe_weighted_reduction` → `moe_weighted_reduction_f32`. | The reference fuses the weighted combination. Independent Goose uses the existing fused device body with bounded input windows and eliminates the separate weighted tensor. | PARTIAL. The 4096-token numerical fixture and real Apex trace pass the scoped gate. Full logits and peak memory acceptance remain open. |
 | 12 | FP16 MMA Flash Attention. `fattn.cu` `ggml_cuda_flash_attn_ext` → shape selection → `fattn-mma-f16.cuh` `flash_attn_ext_f16`. | `GOOSE_FLASH_MMA=1` stages real Q4 KV as F16 and uses the existing `8×8` Goose process tile at all ten Apex attention layers. Each CTA finishes its complete causal query tile. | PARTIAL. Match EXP-1476 numerics, restore stream-K scheduling/fix-up and verify supported masks, long-context logits and full memory. |
-| 13 | Small-query Flash Attention vector dispatch. `fattn.cu` → `flash_attn_ext_vec`. | Reference trace contains the vector path. Goose slices its scalar Q4 tiles for both prefill and decode. | MISSING. Restore the small-query specialization and validate softmax merging and decode latency at 32K. |
+| 13 | Small-query Flash Attention vector dispatch. `fattn.cu` → `flash_attn_ext_vec`. | [Goose vector decode](#vector-flash-attention-for-q4-decode) executes its Q4_0 path, including a masked tail and partition merge, and improves the 4096/129 decode median. | PARTIAL. Check 32K/512 and other small-query or masked profiles. |
 | 14 | Attention staging and bounds. `fattn-common.cuh` and `fattn-mma-f16.cuh` stage Q4_0 KV as FP16, use FWHT where selected, and derive KV bounds from the mask. | `dequantize_block_q4_0`, `fwht_cuda` and `flash_attn_mask_to_KV_max` execute. Goose now applies the reference Q/K/V and inverse-output rotations in the live Q4 KV graph. It tracks causal bounds in its KV transaction and reads Q4 directly. | PARTIAL. FWHT executes at widths 256 and 64 on Apex. Float16 staging/rounding, masked tails and generation parity still need validation. |
 | 15 | Flash partition reconciliation. `fattn-mma-f16.cuh` → stream-K general/uniform fix-up, plus vector combine-results. | All three reference families are present. Goose merge implements its current scalar partition geometry. | MISSING. Port compatible reconciliation with the MMA and vector schedules. Compare numerical reductions across tail partitions and multihead layouts. |
 | 16 | GDN prefill Tensor Cores. `ggml_cuda_op_gated_delta_net_impl` → `gdn_single` in `gated-delta-net-mma.cu`. | Reference executes `gdn_single<16,128,1>`. Independent Goose runs its `C=16, V=128` body with `GOOSE_GDN_MMA=1`. All 30 GDN layers execute it in a real Apex block. | PARTIAL. The [first layer's real scores and state](#first-recurrent-sigmoid-and-silu) now match bitwise. Validate full and chunked recurrent state and generation before default promotion. |
@@ -120,7 +121,7 @@ dependencies. Resume decode-specific work after prefill recovery.
 | 28 | CUDA VMM pool. CUDA buffer allocator → `cuMemAddressReserve`, `cuMemCreate`, `cuMemMap`, `cuMemSetAccess`, release. | Reference executes 105 create/map operations and reserves a virtual address range. Goose grows Driver API buffers with `cuMemAlloc_v2` and `cuMemFree_v2`. | MISSING. Restore equivalent reusable device allocation and supported fallback. Check allocation limits, device address stability and VRAM peak on RTX 4070. |
 | 29 | CUDA Graph capture and replay. `ggml-cuda.cu` graph evaluator → begin/end capture, instantiate, exec update and launch. | Whole-graph trace records over 20,000 launches across the session. Server reports 510 reuses. Goose rebuilds its graph and directly launches CUDA kernels. | MISSING. Establish stable graph keys, addresses and update boundaries before recording and replay. Check changing KV prefixes and buffer ownership before measuring decode overhead. |
 | 30 | Streams and synchronization. CUDA scheduler and `ggml-cuda.cu` establish streams, events and CUDA Graph scopes. | Reference uses stream sync and async copies. Planned Goose graphs defer intermediate publication waits to the graph boundary, with blocking host reads. | PARTIAL. Extend independent stream and event dependencies. Verify full-request performance, error propagation and state visibility. |
-| 31 | Numerical prefill → decode continuation. Reference `llama-context.cpp` scheduler and CUDA graph compute produce logits for the shared sampler. | Identical 32K/512 reference responses verify text, ID and probability hashes. Goose completes all tokens but diverges at output index 1, before sampling. | INCORRECT. Identify earliest differing stage by matching per-layer tensors, committed Q4 KV, SSM/GDN and the first subsequent logits. Numerical repair precedes acceptance of any speed. |
+| 31 | Prefill → decode continuation. Reference `llama-context.cpp` scheduler and CUDA graph compute produce logits for the shared sampler. | The earlier full Goose response repeated input text. The newer checkpoint completes the [normal quality suite](#apex-response-quality-checkpoint) and the vector Attention cases. | INCORRECT on the last full quality diagnostic. Revalidate the current checkpoint on the full real workload. Investigate a specific reproduced behavioral defect. |
 | 32 | Device initialization and specialization loading. CUDA backend loader and scheduler select architectures, entry points and cuBLAS paths. | Trace records device info, driver lookups, cuLibrary entry resolution and allocation APIs. Goose loads its own PTX with the Driver API. | PARTIAL. Extend end-to-end executable selection for supported MMQ shapes and verify real device witness. Preserve independent module loading and rejected profiles. |
 
 Reference-only kernel and API details are linked to the numbered
@@ -989,7 +990,7 @@ stay in the main map.
 |---|---|---|
 | 5–6, Q4_K/Q6_K MMVQ | `goose-cuda-mmvq-q4k/device.goose`, `goose-cuda-mmvq-q6k/device.goose` | Wired for the qualified [dense and indexed decode shapes](#independent-mmvq-decode-checkpoint). The earlier full trace spent 10.031 s in 261,118 scalar matrix launches in the decode-dominated region. |
 | 9, MoE grouping | `goose-cuda-mm-ids/{device,host}.goose` | Standalone groups matrix planes on the host and uses shared Q8 rows in MMQ. The device grouping/scatter source needs its own dispatch and route-layout verification. |
-| 13, Flash decode | `goose-cuda-flash-attention/vector-device.goose` | The current Flash MMA selector covers prefill. Decode ran 5,110 scalar Q4 attention tiles totaling 7.688 s. Wire the vector path to the live Q4 KV layout and output merge. |
+| 13, Flash decode | `goose-cuda-flash-attention/vector-device.goose` | Connected to single-query Q4_0 decode with its partition merge. The active trace and boundary tests are in the [vector decode checkpoint](#vector-flash-attention-for-q4-decode). |
 | 15, Flash Stream-K | `goose-cuda-flash-attention/{mma-entry-device,mask-fixups-device}.goose` | The prefill path assigns a complete tile per CTA. The reference uses 80 general and 10 uniform Stream-K fixup launches. The current launch and workspace layout still need split ranges and fixup. |
 | 18, long SSM convolution | `goose-cuda-ssm-convolution/device.goose::ssm_conv_long` | The [reference SSM mode](#reference-long-ssm-convolution) now selects the existing tiled body for eligible four-tap graphs and matches the first Apex convolution and SiLU. The short trace records 30 long-kernel launches. |
 | 19, FP32 RMS | `goose-cuda-normalization/device.goose::rms_row` | Connected through the opt-in selector above. Verified bitwise on the first Apex norm. |
@@ -1704,6 +1705,74 @@ diagnostic. Full 32K/512 acceptance has its own gates.
   `/home/end0/AI/LlamaServer/franken-goose-expert-pin-default.fGBi00`,
   `quality/paired.bazMBk`.
   Executable SHA-256 `ce7ff3c3f225f235b863a958100a1aeacd8f76b9bf1e59f526c70d6344a1eeac`.
+
+## Vector Flash Attention for Q4 decode
+
+EXP-2026-11-20-1557 connects the existing D=256, Q4_0
+vector body and combine kernel to the independent KV graph.
+The decode path bounds a partial tile before any K or V load
+and gives masked tail positions zero softmax mass. Single
+and split-partition cases use the existing vector math. The
+prefill MMA path remains selected for qualified prefill.
+`GOOSE_FLASH_VEC=0` restores scalar Q4 Attention.
+
+Five CPU-versus-CUDA probes at 1, 127, 128, 129 and 4,097
+keys give a maximum absolute error of 0.000269771. Compute
+Sanitizer reports zero errors. In each treatment run Nsight
+shows 1,280 `goose_flash_vec_q4` and 1,280
+`goose_flash_vec_combine` calls replacing the scalar decode
+tile and merge routines.
+
+| Profiled Apex 4096/129 A–B–B–A | Scalar A | Vector B |
+|---|---:|---:|
+| Prefill samples, tokens/s | 293.450, 295.041 | 291.384, 294.030 |
+| Prefill median, tokens/s | 294.246 | 292.707 |
+| Decode samples, steps/s | 19.512, 19.333 | 20.879, 20.816 |
+| Decode median, steps/s | 19.422 | 20.847 |
+| Decode Attention GPU time, median ms | 962.895 | 342.473 |
+| Highest RSS high-water, KiB | 23,886,104 | 23,886,480 |
+| Sampled peak process VRAM, MiB | 8,582 | 8,582 |
+| Process swap, KiB | 0 | 0 |
+| System swap-out growth, pages | 0 | 0 |
+
+Both treatments use the bounded host registration checkpoint.
+The vector mode changes token IDs, as expected from its
+quantized query math. All three normal quality requests
+remain coherent and end on EOS, with no full prompt echo,
+invalid characters, leaked markers or repeated-token loop.
+The Russian answer retains the recorded incident facts
+and investigation steps. The 523-word long response includes
+an extra title and a contradictory sentence about a duplicate
+row despite the unique index. EXP-1476 has a similar
+contradiction. On a fixed direct follow-up both runtimes
+correctly answer ONE ROW and explain why the database
+rejects the second insert. Preserve the exact texts and judge
+subsequent optimizations on real response quality.
+
+The one-request default-selector check reports 291.449
+prefill and 20.583 decode steps/s and records the same
+1,280 vector and combine launches. The 35 CUDA entries in
+this compiled SM80+ image include 28 observed in this
+profile. The inactive entries are the compensated dense
+variant, the two MMQ Stream-K entries, the two scalar
+attention entries and the separate route gather and sort
+entries. They are alternatives to this request's selected
+routes. This image inventory does not cover every unlinked
+Goose module or all Apex profiles.
+
+- A–B–B–A evidence under
+  `/home/end0/AI/LlamaServer/franken-goose-flash-vec.qjrwRz`.
+  In order the runs are `cuda-matrix-dense-both.9i17vqbf`,
+  `cuda-matrix-dense-both.6j1vk9k1`,
+  `cuda-matrix-dense-both._sa0v5bx` and
+  `cuda-matrix-dense-both.e50ip44u`.
+  Normal responses under `quality/paired.piD7ig` and
+  the factual follow-up under `quality/fact.w4UKNQ`.
+- Default build
+  `/home/end0/AI/LlamaServer/franken-goose-flash-vec-default.fZdoEo`,
+  executable SHA-256
+  `9dd7df1347b5fed7f3695f63204c9f7f8bad993ca6318e8c82f57234d4d11665`.
+  Default trace under `cuda-matrix-dense-both.m4h0eixz`.
 
 ## Kernel coverage
 
