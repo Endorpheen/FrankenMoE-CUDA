@@ -57,9 +57,11 @@ Functional qualification runs before memory and speed acceptance.
    Compare token and content hashes to the control and archive every
    probability row. Diagnose any divergence from the first differing
    token and rerun this gate after fixes. The full 4096/4096 request
-   completed with the scalar, MMQ and EXP-1528 package candidates.
-   The latest response discusses the input log. ID and probability
-   parity still diverge at output index 1 (1142 versus 198).
+   completed with the scalar, MMQ, EXP-1528 and ten-change package
+   candidates. The latest package response begins to repeat the input.
+   ID and probability parity fail. The first differing output is at
+   index 1 (1716 versus 198). See the
+   [full diagnostic](CUDA-PARITY-EXP1476.md#ten-change-apex-32k512-diagnostic).
    Gates 3 and 4 qualify the later speed comparison.
 7. [ ] **Accept memory** (requires 5 and 6). Record per-process RSS and
    its high-water mark, model page residency before and after the

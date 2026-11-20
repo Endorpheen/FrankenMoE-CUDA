@@ -50,7 +50,7 @@ the dependency that would justify rerunning it.
 | EXP-1531, deferred CUDA waits | [Candidate patch](deferred/EXP-1531-graph-waits.patch) against `7916697c`. [Original A–B–B–A](#deferred-cuda-wait-diagnostic): explicit waits 1,873 → 562, median prefill 22.875 → 22.882 s. | Originally, synchronous D2H absorbed the removed waiting. Copy counts and bytes stayed unchanged. | Rechecked with reusable arena gaps and selective eviction on `e37e8a2c`. [Combined A–B–B–A](#deferred-waits-with-selective-eviction) passed the short gate and enabled waits at the planned graph boundary. Full-request qualification is open. Reassess when pinned transfer or stream/event changes alter host readback. |
 | EXP-1536, GDN MMA | Standalone `GOOSE_GDN_MMA=1`. [Kernel and model measurements](#gdn-mma-checkpoint). Thirty kernels took 2,503.240 → 171.978 ms and short prefill reached 210.866 tokens/s. | The short first ID changed from 9495 to 280. Both differ from EXP-1476 ID 332. On the same actual layer inputs the largest relative L2 errors were 1.58e-5 for output and 3.71e-5 for state. | Compare the earliest differing routed-expert IDs and logits against EXP-1476. Recheck with restored attention and routing on a numerically verified checkpoint. Keep the experimental flag off by default until the response gate passes. |
 | EXP-1537, Flash Attention MMA | Standalone `GOOSE_FLASH_MMA=1`. [Kernel and model measurements](#causal-flash-attention-mma-checkpoint). Ten attention layers take 34.416 ms including Q4 staging, versus 2,738.669 ms for the scalar path. | The short first ID changes from 9495 to 271. On shared Apex inputs, relative L2 differences against the scalar path reach 6.44e-3. | Compare the same Q/K/V inputs to the EXP-1476 FP16 kernel, then restore stream-K scheduling and fix-up. Check isolated and combined GDN/Flash/Dense variants on the same short request. Keep the flag off by default pending response parity. |
-| EXP-1538/1539/1541, GDN + Flash + Dense MMA | Source `0de1eff8`, all three MMA flags, byte-budgeted MMQ and shared Q8_1 rows. [Intermediate performance control and original five-case series](#intermediate-apex-performance-control). Current short prefill median 260.324 tokens/s. | The selected ID is 280. Probability rows differ from the scalar combination control and the EXP-1476 response gate remains open. | Use the current opt-in checkpoint for future short prefill comparisons. Recheck the combination after changes to rounding, router selection, long-context attention or recurrent state. |
+| GDN + Flash + Dense MMA on the ten-change package | Source `6083f55c`; [current intermediate performance control](#intermediate-apex-performance-control). Combined short prefill 281.919 tokens/s. The full profiled request reached 283.535 tokens/s. | The full response begins to repeat the input. Its second ID is 1716 versus 198 in EXP-1476. Content and probability rows differ. | Use the exact opt-in package as the speed checkpoint. Use the EXP-1476 response for correctness. Recheck the individual kernels and switches as the numerical path changes. |
 | EXP-1540, MMQ Stream-K | `GOOSE_MMQ_STREAM_K=1`. [Kernel and model measurements](#mmq-stream-k-checkpoint). The Apex 32/1 case executes 160 Stream-K and 160 fixup kernels and reduces MMQ device arithmetic time from 59.266 to 54.748 ms. | The 32/1 request changes probabilities and takes 913.819 ms versus 855.517 ms. The 4096/1 geometry chooses the regular MMQ path throughout. | Keep opt-in. Recheck with reference-sized MMQ tiles and routed dispatch after their numerical gate. A low-occupancy production shape or revised tile geometry can change the partition decision. |
 
 After a material dependency change, use short sequential A/B runs on
@@ -564,13 +564,13 @@ Response SHA-256: `709b803aa8f36448cbfb49eb3b5531abb636621b10af21515facb8224a5fd
 
 ## Intermediate Apex performance control
 
-The current intermediate speed control is `0de1eff8` (EXP-1541),
-the GDN, Flash and Dense MMA combination with byte-budgeted MMQ
-windows and shared input packing. It measured **260.324 tokens/s**
-at 15.734 s median in the short A–B–B–A series. Response ID 280,
-text and five probabilities matched the preceding control in all
-four runs. The numerical snapshot is byte-identical to the original
-combined snapshot. See [shared MMQ activation rows](#shared-mmq-activation-rows).
+The current intermediate speed control is `6083f55c`, the
+GDN, Flash and Dense MMA combination with the
+[ten-change package](#ten-change-experimental-package). The short
+pair measured **281.919 tokens/s** at 14.529 s. Its numerical output
+matched the preceding `0de1eff8` control. The
+[full diagnostic](#ten-change-apex-32k512-diagnostic) reached
+283.535 tokens/s and failed the response gate.
 Enable it with these environment settings:
 
 ```sh
@@ -578,7 +578,7 @@ export GOOSE_MMQ=1 GOOSE_GDN_MMA=1 GOOSE_FLASH_MMA=1 GOOSE_DENSE_MMA=1
 ```
 
 Use executable SHA-256
-`13d5f2828e4f079ab06613aa1ca4fe686eb5682ddc8a110bfb841c8a4050f806`,
+`194db934a930006f6cf3efd4063d4aacdf0a311646bc8d678d222dde6acae6b1`,
 Apex Q4_K_M, context 262,144, physical 4096/4096, and the 4096/1
 request with SHA-256
 `2d716460edf11494ce0fd16fe53241535b611c70774adc8fa3fe4619a6fcf81d`.
@@ -880,6 +880,61 @@ Use the frozen full request for the package diagnostic.
 Short control: `/home/end0/AI/LlamaServer/franken-goose-mmq-shared.TrPFV2/cuda-matrix-dense-both.7rsy224s`.
 Short package: `/home/end0/AI/LlamaServer/franken-goose-apex-package.KY0RZy/cuda-matrix-dense-both.cxs3gezu`.
 Package executable SHA-256: `194db934a930006f6cf3efd4063d4aacdf0a311646bc8d678d222dde6acae6b1`.
+
+## Ten-change Apex 32K/512 diagnostic
+
+The enabled package ran one frozen Apex Q4_K_M request with context
+262,144, physical 4096/4096, 32,768 evaluated prompt IDs and 512
+returned IDs. No prompt tokens were cached. Nsight recorded CUDA
+and OS runtime activity with node-level graph tracing. The older
+Goose full checkpoint was a non-Nsight run. The EXP-1476 node trace
+is from a previous session and its memory snapshots are from the
+archived unprofiled run. These comparisons are diagnostic.
+
+| Metric | Previous full Goose | Ten-change full Goose | EXP-1476 archived reference |
+|---|---:|---:|---:|
+| Prefill s | 390.083 | 115.569 | 12.448 (node trace) |
+| Prefill tokens/s | 84.003 | 283.535 | 2,632.479 (node trace) |
+| Decode s | 43.072 | 40.355 | 8.880 (node trace) |
+| Decode steps/s, 511 steps | 11.864 | 12.663 | 57.546 (node trace) |
+| RSS high-water KiB | 23,621,948 | 23,943,212 | 21,874,576 (archived process status) |
+| Sampled process VRAM MiB | 8,568 | 8,622 | unavailable |
+| Whole-card VRAM MiB | 11,384 sampled peak | 11,414 sampled peak | 11,031 after requests |
+| Process swap KiB | 0 | 0 | 0 |
+
+All 5,301,139 model pages remained resident at start and finish.
+There were 78 memory samples and zero system swap-out growth.
+The prefill arena was 739,459,072 bytes with 13 blocks. Historical
+unprofiled EXP-1476 targets remain 2,940.9 prefill tokens/s and
+62.86 decode steps/s. Keep the established same-session acceptance rule.
+
+| CUDA copies between first and last recorded kernels | Ten-change Goose count / bytes | EXP-1476 node trace count / bytes |
+|---|---:|---:|
+| H2D | 1,156,051 / 522,686,099,072 | 173,187 / 136,901,438,100 |
+| D2H | 28,367 / 302,015,238,912 | 21,505 / 1,950,097,760 |
+| D2D | 0 / 0 | 15,972 / 10,454,296,320 |
+
+The previous full Goose checkpoint has no CUDA copy trace. The
+short matched pair in the package section supplies the incremental
+copy comparison. Nearly all candidate D2H occurred before the first
+scalar GDN launch (301,508,012,032 bytes), an approximate phase
+boundary. Prefill MMQ spent 22.354 s in 4,080 matrix launches.
+The subsequent decode-dominated region spent 10.031 s in scalar
+quantized matmul and 7.688 s in scalar Q4 attention tiles. These
+device activity sums are not additive with CPU wait time.
+
+The first differing output is index 1, Goose ID 1716 versus reference
+198. The previous full Goose selected 1142 at that position. The new
+response begins by repeating text from the input log. Content, all
+output IDs as a sequence and probability rows fail the reference gate.
+Retain this faster checkpoint with explicit experimental MMA flags.
+The final acceptance checklist remains open.
+
+Raw run: `/home/end0/AI/LlamaServer/franken-goose-apex-package.KY0RZy/cuda-full-dense-both.vbzm5qhq`.
+Request SHA-256: `484a12de00ec057e4b78d480ebb185153bb10af607eb23192a72995ba3026d0f`.
+Response SHA-256: `18571316dd6445ed2318a0abff9236defe446dd827e0d3faeec282748a45eb9b`.
+Validation: `validation.json` in the raw run directory.
+Nsight report SHA-256: `8bc18131ceafb8828efed2820a03504ced1e23bda9677ee00d6be8e6b1e52fd3`.
 
 ## Kernel coverage
 
