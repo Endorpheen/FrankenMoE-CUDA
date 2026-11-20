@@ -33,7 +33,6 @@ long hl_accept(long fd, unsigned long addr, unsigned long len) {
     socklen_t l = (socklen_t) len;
     return (long) accept((int) fd, (struct sockaddr *) addr, &l);
 }
-long hl_getsockname(long fd, unsigned long addr, unsigned long len) {
-    socklen_t l = (socklen_t) len;
-    return (long) getsockname((int) fd, (struct sockaddr *) addr, &l);
+long hl_getsockname(long fd, unsigned long addr, unsigned long len_addr) {
+    return (long) getsockname((int) fd, (struct sockaddr *) addr, (socklen_t *) len_addr);
 }

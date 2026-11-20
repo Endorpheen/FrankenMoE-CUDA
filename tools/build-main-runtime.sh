@@ -222,7 +222,7 @@ echo "[3/5] generate C"
 "$GOOSE" --standalone -o "$C" --header "$H" "$UNIT" >/dev/null
 
 echo "[4/5] compile object at -O1"
-"$CC" -O1 -std=c11 -w -c "$C" -o "$OBJ"
+"$CC" -O1 -std=c11 -ffunction-sections -fdata-sections -w -c "$C" -o "$OBJ"
 
 printf '%s\n' "$UNIT_HASH" > "$OUT/.source-sha256"
 

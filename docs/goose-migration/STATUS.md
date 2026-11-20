@@ -3,6 +3,26 @@
 Updated: 2026-11-20. This file is the current state; update it in the same change
 as every accepted slice.
 
+## C++ removal checkout
+
+The full `deletecplusplus` checkout reached zero C++/CUDA sources, C++-bearing headers,
+mixed-language sources and detected C++ source templates at `5ee89b4b`. The committed
+baseline contained 1,062,464 C++/CUDA lines including source templates. The worktree
+uses a complete checkout and the counter refuses a sparse index on this branch.
+
+`tools/build-standalone-runtime.sh` now links `frankenmoe-tokenize` and
+`frankenmoe-serve` from one composed Goose unit and the C system adapters.
+Both binaries depend only on `libc` and `libm`. The tokenizer read the Apex GGUF and
+returned `[760, 6511, 314, 9338, 369]` for `The capital of France is` with BOS disabled.
+The standalone listener returned HTTP 200 with body `ok` on `GET /health`.
+
+`tools/build-goose-tensor-core.sh` builds the C tensor and quantization archive.
+Only the C declarations and tables from the former mixed header were retained.
+A Q4_K/F32 tensor fixture passed, and the existing Goose CPU arithmetic executed
+an ADD followed by MUL_MAT with the exact result `[5, 11, 10, 22]`. The numerical
+fixture linked only `libc` and `libm`. Full model loading, complete graph execution,
+generation and the Apex/Qwen/Maxwell/Edge0 performance gates remain open.
+
 ## Ledger
 
 `docs/goose-migration/tasks.json`: **DONE 1**, **PARTIAL 144**, **TODO 7** of 152.
