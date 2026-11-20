@@ -32,6 +32,9 @@ fn entry(
         if (p.op == OP_DUP || p.op == OP_CPY || p.op == OP_CONT || p.op == OP_GET_ROWS) && !scalar_type(p.x) && p.d.kind == 0 {
             nf = mul_size(p.x.ne[0], p.nth);
         }
+        if (p.op == OP_MUL_MAT || p.op == OP_MUL_MAT_ID) && !scalar_type(p.x) {
+            nf = p.x.ne[0];
+        }
         let byte = mul_size(nf, 4);
         let aligned = mul_size(add_size(byte, 7) / 8, 8);
         indices[0] = nf;
@@ -46,7 +49,12 @@ fn entry(
         return true;
     }
 
-    if !scalar_type(p.x) || !scalar_type(p.d) {
+    if !scalar_type(p.x) {
+        let handled = matrix(p, x, y, z, dst, scratch, gxx, gxs, gs, g3x, g3s, g1, signs, palette);
+        if handled { witness(p.op, elements(p.d)); }
+        return handled;
+    }
+    if !scalar_type(p.d) {
         return false;
     }
     validate(p.d, dst.len);
@@ -82,11 +90,7 @@ fn entry(
         y,
         z,
         dst,
-        scratch) || matrix(p,
-        x,
-        y,
-        z,
-        dst) || ssm_conv(p,
+        scratch) || matrix(p, x, y, z, dst, scratch, gxx, gxs, gs, g3x, g3s, g1, signs, palette) || ssm_conv(p,
         x,
         y,
         dst) || pointwise(p,

@@ -21,8 +21,7 @@
 #include <time.h>
 
 #include "ggml.h"
-#include "ggml-cpu.h"
-#include "ggml-alloc.h"
+#include "graph-execute.h"
 #if __has_include("unit.h")
 #include "unit.h"
 #else
@@ -244,31 +243,39 @@ static void reset_state(void) {
     }
 }
 
-// One full-model step: prompt ids in, logits out. Returns the logit count.
-//
-// The graph is built with no_alloc and then allocated through ggml_gallocr, which
-// reuses buffers by node lifetime. A fixed arena per step could not serve a
-// prompt longer than a few hundred tokens: the requirement tracked the arena and
-// the failure only moved. Inputs are filled AFTER allocation, because with
-// no_alloc the tensors have no data until the allocator places them.
+// One full-model step: build the graph, evaluate it and publish the KV ticket.
 int64_t model_step(const int32_t * tokens, int64_t count, float ** logits) {
-    const int64_t rows = q35_kv_read_rows((sl_i64){ H.kv_state, 6 }, count);
-    if (rows <= 0) return -1;
+    if (!logits) return -1;
+    *logits = NULL;
+    sl_i64 state = { H.kv_state, 6 };
+    const int64_t rows = q35_kv_read_rows(state, count);
+    if (!tokens || rows <= 0) return -1;
+    for (int64_t i = 0; i < count; ++i) {
+        if (tokens[i] < 0 || tokens[i] >= H.n_tok) return -1;
+    }
 
     ggml_context * c = ggml_init((struct ggml_init_params){ 256u * 1024u * 1024u, NULL, true });
     if (!c) return -1;
+
+    const int64_t ticket = q35_kv_begin(state, count);
+    if (ticket <= 0) { ggml_free(c); return -1; }
+
+    int64_t n = -1;
+    void * storage = NULL;
+    float * output = NULL;
+    bool executed = false;
 
     ggml_tensor * ids = ggml_new_tensor_1d(c, GGML_TYPE_I32, count);
     ggml_tensor * positions = ggml_new_tensor_1d(c, GGML_TYPE_I32, count * 4);
     ggml_tensor * indices = ggml_new_tensor_1d(c, GGML_TYPE_I64, count);
     ggml_tensor * mask = ggml_new_tensor_2d(c, GGML_TYPE_F16, rows, count);
 
-    const int64_t ticket = q35_kv_begin((sl_i64){ H.kv_state, 6 }, count);
-    if (ticket <= 0) { ggml_free(c); return -1; }
-
     int64_t work[16] = {0}, bn[40] = {0}, mn[42] = {0};
     int64_t * frames = calloc((size_t) (4 * H.layer_count + 4), sizeof(int64_t));
-    int64_t * roots  = calloc((size_t) (2 * H.layer_count + 2), sizeof(int64_t));
+    int64_t * roots = calloc((size_t) (2 * H.layer_count + 2), sizeof(int64_t));
+    int64_t * pos = calloc((size_t) count * 4, sizeof(int64_t));
+    float * raw = calloc((size_t) rows * (size_t) count, sizeof(float));
+    if (!frames || !roots || !pos || !raw) goto done;
 
     const int64_t result = q35_trunk((int64_t) (intptr_t) c, (int64_t) (intptr_t) ids,
                                      (int64_t) (intptr_t) H.emb, (int64_t) (intptr_t) H.head, (int64_t) (intptr_t) H.norm,
@@ -278,65 +285,51 @@ int64_t model_step(const int32_t * tokens, int64_t count, float ** logits) {
                                      H.rope_sections, (sl_i64){ H.kv_state, 6 }, ticket,
                                      (sl_i64){ work, 16 }, (sl_i64){ bn, 40 }, (sl_i64){ mn, 42 },
                                      (sl_i64){ frames, 4 * H.layer_count + 4 }, (sl_i64){ roots, 2 * H.layer_count + 2 });
-    if (!result) { free(frames); free(roots); ggml_free(c); return -1; }
+    if (!result) goto done;
 
     ggml_cgraph * graph = ggml_new_graph_custom(c, 16384, false);
-    for (int64_t i = 1; i <= roots[0]; ++i) ggml_build_forward_expand(graph, (ggml_tensor *) (intptr_t) roots[i]);
-
-    static ggml_gallocr_t alloc = NULL;
-    static ggml_backend_t backend = NULL;
-    static int backend_threads = 0;
-    if (!alloc) alloc = ggml_gallocr_new(ggml_backend_cpu_buffer_type());
-    if (!backend) backend = ggml_backend_cpu_init();
-    if (!alloc || !backend) { free(frames); free(roots); ggml_free(c); return -1; }
-    if (backend_threads == 0) {
-        const char * e = getenv("GOOSE_THREADS");
-        backend_threads = e ? atoi(e) : 4;
-        if (backend_threads <= 0) backend_threads = 4;
-        ggml_backend_cpu_set_n_threads(backend, backend_threads);
-    }
-    static int64_t logged = 0;
-    if (getenv("GOOSE_GRAPH_LOG") && (logged++ < 3 || count != 1)) {
-        printf("GRAPH count=%lld nodes=%d used_mem=%.0f MiB alloc_buf=%.0f MiB\n", (long long) count,
-               ggml_graph_n_nodes(graph), (double) ggml_used_mem(c) / 1048576.0,
-               (double) ggml_gallocr_get_buffer_size(alloc, 0) / 1048576.0);
-        fflush(stdout);
-    }
-    if (!ggml_gallocr_alloc_graph(alloc, graph)) {
-        free(frames); free(roots); ggml_free(c); return -1;
+    for (int64_t i = 1; i <= roots[0]; ++i) {
+        ggml_build_forward_expand(graph, (ggml_tensor *) (intptr_t) roots[i]);
     }
 
-    // inputs, now that the allocator has placed them
-    memcpy(ids->data, tokens, (size_t) count * 4);
-    int64_t * pos = calloc((size_t) count * 4, sizeof(int64_t));
-    if (q35_kv_positions((sl_i64){ H.kv_state, 6 }, count, (sl_i64){ pos, count * 4 }) != count * 4) {
-        free(pos); free(frames); free(roots); ggml_free(c); return -1;
-    }
-    for (int s = 0; s < 4; ++s)
-        for (int64_t t = 0; t < count; ++t)
-            ((int32_t *) positions->data)[s * count + t] = (int32_t) pos[s * count + t];
-    if (q35_kv_indices((sl_i64){ H.kv_state, 6 }, count, (sl_i64){ (int64_t *) indices->data, count }) != count) {
-        free(pos); free(frames); free(roots); ggml_free(c); return -1;
-    }
-    float * raw = calloc((size_t) rows * count, sizeof(float));
-    if (q35_kv_mask((sl_i64){ H.kv_state, 6 }, count, (sl_f32){ raw, rows * count }) != rows) {
-        free(pos); free(raw); free(frames); free(roots); ggml_free(c); return -1;
-    }
-    for (int64_t t = 0; t < count; ++t)
-        for (int64_t k = 0; k < rows; ++k)
-            ((ggml_fp16_t *) mask->data)[t * rows + k] = ggml_fp32_to_fp16(raw[t * rows + k]);
+    storage = fg_standalone_graph_alloc(graph);
+    if (!storage) goto done;
+    if (!ids->data || !positions->data || !indices->data || !mask->data) goto done;
 
-    if (ggml_backend_graph_compute(backend, graph) != GGML_STATUS_SUCCESS) {
-        free(pos); free(raw); free(frames); free(roots); ggml_free(c); return -1;
+    memcpy(ids->data, tokens, (size_t) count * sizeof(*tokens));
+    if (q35_kv_positions(state, count, (sl_i64){ pos, count * 4 }) != count * 4) goto done;
+    for (int64_t i = 0; i < count * 4; ++i) {
+        ((int32_t *) positions->data)[i] = (int32_t) pos[i];
+    }
+    if (q35_kv_indices(state, count, (sl_i64){ indices->data, count }) != count) goto done;
+    if (q35_kv_mask(state, count, (sl_f32){ raw, rows * count }) != rows) goto done;
+    for (int64_t i = 0; i < rows * count; ++i) {
+        ((ggml_fp16_t *) mask->data)[i] = ggml_fp32_to_fp16(raw[i]);
     }
 
-    ggml_tensor * lg = (ggml_tensor *) (intptr_t) result;
-    const int64_t n = ggml_nelements(lg);
-    *logits = malloc((size_t) n * sizeof(float));
-    memcpy(*logits, lg->data, (size_t) n * sizeof(float));
+    const ggml_tensor * lg = (const ggml_tensor *) (intptr_t) result;
+    output = malloc(ggml_nbytes(lg));
+    if (!output) goto done;
+    executed = true;
+    if (fg_standalone_graph_compute(graph) != GGML_STATUS_SUCCESS) goto done;
+    if (q35_kv_commit(state, ticket) < 0) goto done;
+    memcpy(output, lg->data, ggml_nbytes(lg));
+    *logits = output;
+    output = NULL;
+    n = ggml_nelements(lg);
 
-    if (q35_kv_commit((sl_i64){ H.kv_state, 6 }, ticket) < 0) return -1;
-    free(pos); free(raw); free(frames); free(roots);
+done:
+    if (n < 0) {
+        // Recurrent state can already have been written by a partial graph.
+        if (executed) reset_state();
+        else q35_kv_abort(state, ticket);
+    }
+    free(output);
+    free(storage);
+    free(pos);
+    free(raw);
+    free(frames);
+    free(roots);
     ggml_free(c);
     return n;
 }

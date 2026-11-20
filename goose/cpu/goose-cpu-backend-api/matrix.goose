@@ -61,16 +61,37 @@ fn vector_dot(
     return result as f32;
 }
 
-fn matrix(p: const Node &, x: const u8[:], y: const u8[:], ids: const u8[:], dst: u8[:]) -> bool {
+import.codec.decode;
+
+fn matrix(p: const Node &, x: const u8[:], y: const u8[:], ids: const u8[:], dst: u8[:],
+          scratch: f32[:], gxx: const u8[8][:], gxs: const u8[8][:], gs: const u8[8][:],
+          g3x: const u8[4][:], g3s: const u8[4][:], g1: const i8[8][:],
+          signs: const u8[:], palette: const i8[:]) -> bool {
     if p.op != OP_MUL_MAT && p.op != OP_MUL_MAT_ID && p.op != OP_OUT_PROD {
         return false;
     }
 
-    if p.x.kind != 0 && p.x.kind != 1 && p.x.kind != 30 {
+    if p.y.kind != 0 && p.y.kind != 1 && p.y.kind != 30 {
         return false;
     }
-
-    if p.y.kind != 0 && p.y.kind != 1 && p.y.kind != 30 {
+    let quantized = !scalar_type(p.x);
+    var encoded_row_bytes: i64 = 0;
+    if quantized {
+        if p.op == OP_OUT_PROD || p.x.ne[0] <= 0 || scratch.len < p.x.ne[0] {
+            return false;
+        }
+        let kind = decode :: super_kind(p.x.kind);
+        let width = if kind >= 0 { 256 } else { decode :: compact_width(p.x.kind) };
+        let bytes = if kind >= 0 { decode :: tile_traits(kind).bytes } else { decode :: compact_bytes(p.x.kind) };
+        if bytes == 0 || p.x.ne[0] % width != 0 || p.x.nb[0] != bytes { return false; }
+        encoded_row_bytes = (p.x.ne[0] / width) * bytes;
+        validate(p.y, y.len);
+        validate(p.d, dst.len);
+        if p.op == OP_MUL_MAT_ID {
+            if p.z.kind != 26 { return false; }
+            validate(p.z, ids.len);
+        }
+    } else if p.x.kind != 0 && p.x.kind != 1 && p.x.kind != 30 {
         return false;
     }
     let d0 = p.d.ne[0];
@@ -120,7 +141,19 @@ fn matrix(p: const Node &, x: const u8[:], y: const u8[:], ids: const u8[:], dst
                 ys = p.y.nb[1];
                 count = p.x.ne[1];
             }
-            store(p.d, dst, row * d0 + i0, vector_dot(p.x, x, xa, xs, p.y, y, ya, ys, count));
+            if quantized {
+                if xa < 0 || xa > x.len || encoded_row_bytes > x.len - xa { return false; }
+                let decoded = scratch[0 .. count];
+                if !decode :: row_entry(p.x.kind, x[xa .. xa + encoded_row_bytes], decoded,
+                                        gxx, gxs, gs, g3x, g3s, g1, signs, palette) { return false; }
+                var sum: f32 = 0.0;
+                for j in count {
+                    sum = fma32(decoded[j], load_at(p.y, y, ya + j * ys), sum);
+                }
+                store(p.d, dst, row * d0 + i0, sum);
+            } else {
+                store(p.d, dst, row * d0 + i0, vector_dot(p.x, x, xa, xs, p.y, y, ya, ys, count));
+            }
         }
         row += p.nth;
     }

@@ -27,6 +27,19 @@ binding, state reset and a BPE round trip through the host. The Goose greedy
 sampler is available through a public ABI. End-to-end graph execution,
 generation and the Apex/Qwen/Maxwell/Edge0 performance gates remain open.
 
+EXP-2026-11-20-1494 builds `libfranken-inference.a` from the composed runtime,
+the Goose CPU operators, and the C tensor substrate through
+`tools/build-goose-inference.sh`. The standalone host's `hose_step` calls the
+Goose graph dispatcher. Independent checks covered GDN, masked attention on
+Q4 KV rows, and Q4_K matrix multiplication against decoded weights. The
+generated two-layer fixture passed two steps with reference logit 5.655950 and
+generated tokens `2,2` (`abab`). The test executable linked only `libc` and
+`libm`. The single approved Apex CPU smoke test loaded 40 layers and a
+248,320-token vocabulary and timed out at the four-minute limit before
+producing a token. The CPU reference executor is serial and currently reserves
+storage for every graph tensor without lifetime reuse. Apex generation,
+performance and memory comparisons remain unverified.
+
 ## Ledger
 
 `docs/goose-migration/tasks.json`: **DONE 1**, **PARTIAL 144**, **TODO 7** of 152.

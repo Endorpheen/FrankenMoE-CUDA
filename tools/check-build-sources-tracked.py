@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parent.parent
 SOURCES = [
     ROOT / "tools/build-standalone-runtime.sh",
     ROOT / "tools/build-goose-tensor-core.sh",
+    ROOT / "tools/build-goose-inference.sh",
     ROOT / "tools/build-main-runtime.sh",
 ]
 
