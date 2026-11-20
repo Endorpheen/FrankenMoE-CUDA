@@ -18,6 +18,7 @@
 extern void fg143_cpu_init(int argc, char ** argv);
 extern uint64_t fg_cuda_take_matrices(void);
 extern uint64_t fg_cuda_take_attentions(void);
+extern uint64_t fg_cuda_take_gdns(void);
 
 static pthread_once_t cpu_init = PTHREAD_ONCE_INIT;
 static atomic_uint_fast64_t cpu_values;
@@ -256,11 +257,13 @@ enum ggml_status fg_standalone_graph_compute(struct ggml_cgraph * graph) {
     }
     const uint64_t matrices = fg_cuda_take_matrices();
     const uint64_t attentions = fg_cuda_take_attentions();
+    const uint64_t gdns = fg_cuda_take_gdns();
     if (getenv("GOOSE_GRAPH_LOG")) {
         const uint64_t values = (uint64_t) atomic_exchange_explicit(&cpu_values, 0, memory_order_relaxed);
         fprintf(stderr, "Goose CPU graph: %llu values\n", (unsigned long long) values);
         if (matrices) fprintf(stderr, "Goose CUDA graph: %llu matrices\n", (unsigned long long) matrices);
         if (attentions) fprintf(stderr, "Goose CUDA attention: %llu nodes\n", (unsigned long long) attentions);
+        if (gdns) fprintf(stderr, "Goose CUDA GDN: %llu nodes\n", (unsigned long long) gdns);
     }
     return failed == 0 ? GGML_STATUS_SUCCESS : GGML_STATUS_FAILED;
 }

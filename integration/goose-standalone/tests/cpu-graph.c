@@ -104,15 +104,17 @@ static void check_scalar_and_recurrent(void) {
     ggml_free(ctx);
 }
 
-static void check_gdn_snapshots(bool column_gate) {
-    enum { width = 33, heads = 2, tokens = 3, seqs = 2, snapshots = 2 };
-    enum { square = width * width, scores = width * heads * tokens * seqs, state_size = square * heads * seqs };
+static void check_gdn_snapshots(int width, bool column_gate) {
+    enum { heads = 2, tokens = 3, seqs = 2, snapshots = 2 };
+    const int square = width * width, scores = width * heads * tokens * seqs, state_size = square * heads * seqs;
     struct ggml_context * ctx = ggml_init((struct ggml_init_params){ 1024 * 1024, NULL, true });
     assert(ctx);
     struct ggml_tensor * qk_storage = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, width + 1, tokens);
     struct ggml_tensor * q = ggml_view_4d(ctx, qk_storage, width, 1, tokens, 1,
         qk_storage->nb[1], qk_storage->nb[1], qk_storage->nb[2], 0);
-    struct ggml_tensor * k = ggml_dup_tensor(ctx, q);
+    struct ggml_tensor * k_data = ggml_dup_tensor(ctx, width == 33 ? q : qk_storage);
+    struct ggml_tensor * k = width == 33 ? k_data :
+        ggml_view_4d(ctx, k_data, width, 1, tokens, 1, k_data->nb[1], k_data->nb[1], k_data->nb[2], 0);
     struct ggml_tensor * v = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, width, heads, tokens, seqs);
     struct ggml_tensor * gate = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, column_gate ? width : 1, heads, tokens, seqs);
     struct ggml_tensor * beta = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, 1, heads, tokens, seqs);
@@ -123,7 +125,7 @@ static void check_gdn_snapshots(bool column_gate) {
     void * storage = fg_standalone_graph_alloc(graph);
     assert(storage);
 
-    struct ggml_tensor * inputs[] = { qk_storage, k, v, gate, beta, initial };
+    struct ggml_tensor * inputs[] = { qk_storage, k_data, v, gate, beta, initial };
     for (size_t i = 0; i < sizeof(inputs) / sizeof(inputs[0]); ++i) {
         float * data = inputs[i]->data;
         for (int j = 0; j < ggml_nelements(inputs[i]); ++j) {
@@ -134,6 +136,7 @@ static void check_gdn_snapshots(bool column_gate) {
     const float * actual = gdn->data;
     const float * queries = q->data, * keys = k->data, * values = v->data;
     const float * gates = gate->data, * rates = beta->data;
+    float max_error = 0.0f;
     for (int seq = 0; seq < seqs; ++seq) {
         for (int head = 0; head < heads; ++head) {
             const int task = seq * heads + head;
@@ -142,7 +145,7 @@ static void check_gdn_snapshots(bool column_gate) {
             for (int token = 0; token < tokens; ++token) {
                 const int input = (seq * tokens + token) * heads + head;
                 const float * query = queries + token * (width + 1);
-                const float * key = keys + token * width;
+                const float * key = keys + token * (k->nb[2] / sizeof(float));
                 const float * gate_row = gates + input * gate->ne[0];
                 for (int row = 0; row < width; ++row) {
                     float * state = expected + row * width;
@@ -157,17 +160,24 @@ static void check_gdn_snapshots(bool column_gate) {
                         state[col] = fmaf(key[col], delta, state[col]);
                         score = fmaf(query[col], state[col], score);
                     }
-                    assert(fabsf(actual[input * width + row] - score / sqrtf(width)) < 1e-6f);
+                    const float error = fabsf(actual[input * width + row] - score / sqrtf(width));
+                    assert(error < 1e-6f);
+                    max_error = fmaxf(max_error, error);
                 }
                 const int slot = tokens - 1 - token;
                 if (slot < snapshots) {
                     const float * actual_state = actual + scores + slot * state_size + task * square;
-                    for (int i = 0; i < square; ++i) assert(fabsf(actual_state[i] - expected[i]) < 1e-6f);
+                    for (int i = 0; i < square; ++i) {
+                        const float error = fabsf(actual_state[i] - expected[i]);
+                        assert(error < 1e-6f);
+                        max_error = fmaxf(max_error, error);
+                    }
                 }
             }
         }
     }
-    printf("GDN %s gate matches reference, including snapshots\n", column_gate ? "column" : "scalar");
+    printf("GDN width %d, %s gate, snapshots: max error %.9g\n", width,
+           column_gate ? "column" : "scalar", (double) max_error);
     free(storage);
     ggml_free(ctx);
 }
@@ -336,8 +346,11 @@ static void check_quantized_matrix(enum ggml_type kind, bool indexed) {
 
 int main(int argc, char ** argv) {
     check_scalar_and_recurrent();
-    check_gdn_snapshots(false);
-    check_gdn_snapshots(true);
+    check_gdn_snapshots(33, false);
+    check_gdn_snapshots(33, true);
+    check_gdn_snapshots(16, false);
+    check_gdn_snapshots(128, false);
+    check_gdn_snapshots(128, true);
     check_quantized_cache_attention();
     check_split_q4_attention();
     check_quantized_matrix(GGML_TYPE_Q4_K, false);

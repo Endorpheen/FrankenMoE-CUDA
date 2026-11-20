@@ -15,7 +15,9 @@ cp "$ROOT/goose/cuda/standalone-matmul.goose" "$OUT/matmul.goose"
 sed -n '/^struct F2 {/,/^}/p; /^fn dequant_q4_0(/,/^}/p' \
     "$ROOT/goose/cuda/goose-cuda-flash-attention/staging-device.goose" > "$OUT/q4-attention.goose"
 cat "$ROOT/goose/cuda/standalone-q4-attention.goose" >> "$OUT/q4-attention.goose"
-for module in q4k q6k matmul q4-attention; do
+sed '/^fn main()/,$d; s/^fn gdn(/export fn gdn(/' \
+    "$ROOT/goose/cuda/goose-cuda-gdn/scalar-device.goose" > "$OUT/gdn.goose"
+for module in q4k q6k matmul q4-attention gdn; do
     "$GOOSE" --standalone -o "$OUT/$module.c" --header "$OUT/$module.h" "$OUT/$module.goose"
     python3 - "$OUT" "$module" <<'PY'
 from pathlib import Path
@@ -26,9 +28,10 @@ source = (out / f"{module}.c").read_text()
 fragment = source.split("/* ---- prototypes ---- */", 1)[1].split("static void gs_init_globals(void)", 1)[0]
 if "gs_sp" in fragment:
     raise SystemExit(f"{module} uses the host stack ABI")
-if module == "q4-attention":
+if module in ("q4-attention", "gdn"):
     types = source.split("/* ---- types ---- */", 1)[1].split("/* ---- data ---- */", 1)[0]
-    types = "\n".join(line for line in types.splitlines() if not line.endswith(("gs_rhdr;", "gs_rref;", "gs_pref;")))
+    types = "\n".join(line for line in types.splitlines()
+                      if not line.endswith(("gs_rhdr;", "gs_rref;", "gs_pref;", "sl_u8;")))
     fragment = types + "\n" + fragment
 (out / f"{module}-device.h").write_text(fragment)
 PY

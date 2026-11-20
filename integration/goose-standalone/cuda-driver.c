@@ -34,9 +34,10 @@ static struct {
     void * library;
     Context context;
     Module module;
-    Function kernel, attention_tiles, attention_merge;
+    Function kernel, attention_tiles, attention_merge, gdn;
     struct device_buffer input, output, weight, jobs;
     struct device_buffer attention_value, attention_scratch, attention_config;
+    struct device_buffer gdn_beta;
     struct device_buffer dense;
     sl_i64 dense_ranges;
     struct expert_cache experts;
@@ -63,6 +64,7 @@ static pthread_once_t cuda_once = PTHREAD_ONCE_INIT;
 static pthread_mutex_t cuda_lock = PTHREAD_MUTEX_INITIALIZER;
 static _Thread_local uint64_t cuda_matrices;
 static _Thread_local uint64_t cuda_attentions;
+static _Thread_local uint64_t cuda_gdns;
 
 static void free_expert_metadata(struct expert_cache * cache) {
     free(cache->groups.data);
@@ -109,6 +111,7 @@ static void init_cuda(void) {
         if (error == 0) error = cuda.function_get(&cuda.kernel, cuda.module, "goose_quantized_matmul");
         if (error == 0) error = cuda.function_get(&cuda.attention_tiles, cuda.module, "goose_q4_attention_tiles");
         if (error == 0) error = cuda.function_get(&cuda.attention_merge, cuda.module, "goose_q4_attention_merge");
+        if (error == 0) error = cuda.function_get(&cuda.gdn, cuda.module, "goose_gated_delta_net");
         Context current = NULL;
         int pop_error = cuda.pop(&current);
         if (error == 0) error = pop_error;
@@ -131,6 +134,16 @@ static int reserve(struct device_buffer * buffer, size_t bytes) {
     const int error = cuda.alloc(&buffer->address, bytes);
     if (error == 0) buffer->bytes = bytes;
     return error;
+}
+
+static int upload_inputs(const sl_u8 * data, struct device_buffer *const * buffers, size_t count) {
+    for (size_t i = 0; i < count; ++i) {
+        if (data[i].len == 0) continue;
+        int error = reserve(buffers[i], (size_t) data[i].len);
+        if (error == 0) error = cuda.upload(buffers[i]->address, data[i].data, (size_t) data[i].len);
+        if (error != 0) return error;
+    }
+    return 0;
 }
 
 static int finish_context(void) {
@@ -353,11 +366,7 @@ int64_t fg_cuda_q4_attention(sl_i64 config, sl_u8 q, sl_u8 k, sl_u8 v, sl_u8 mas
     struct device_buffer * buffers[] = {&cuda.input, &cuda.weight, &cuda.attention_value, &cuda.jobs, &cuda.attention_config};
     int error = reserve(&cuda.output, (size_t) out.len);
     if (error == 0) error = reserve(&cuda.attention_scratch, (size_t) config.data[20]);
-    for (size_t i = 0; error == 0 && i < sizeof(data) / sizeof(*data); ++i) {
-        if (data[i].len == 0) continue;
-        error = reserve(buffers[i], (size_t) data[i].len);
-        if (error == 0) error = cuda.upload(buffers[i]->address, data[i].data, (size_t) data[i].len);
-    }
+    if (error == 0) error = upload_inputs(data, buffers, sizeof(data) / sizeof(*data));
 
     DevicePtr device_mask = mask.len == 0 ? 0 : cuda.jobs.address;
     const int tasks = (int) config.data[18], capacity = (int) config.data[19];
@@ -387,4 +396,61 @@ uint64_t fg_cuda_take_attentions(void) {
     const uint64_t attentions = cuda_attentions;
     cuda_attentions = 0;
     return attentions;
+}
+
+int64_t fg_cuda_gdn(sl_i64 plan, sl_f32 q, sl_f32 k, sl_f32 v, sl_f32 gate, sl_f32 beta, sl_f32 initial, sl_f32 out) {
+    if (plan.len != 49 || plan.data[25] <= 0 || plan.data[25] > INT_MAX ||
+        plan.data[27] <= 0 || plan.data[27] > 65535 ||
+        plan.data[34] <= 0 || plan.data[34] > 65535 ||
+        (plan.data[35] != 16 && plan.data[35] != 32) || plan.data[36] != 4 ||
+        plan.data[48] < 0 || plan.data[48] >= out.len ||
+        out.len <= 0 || out.len > INT64_MAX / (int64_t) sizeof(float)) return -1;
+    const sl_f32 tensors[] = {q, k, v, gate, beta, initial};
+    sl_u8 data[6];
+    for (size_t i = 0; i < sizeof(tensors) / sizeof(*tensors); ++i) {
+        if (!tensors[i].data || tensors[i].len <= 0 ||
+            tensors[i].len > INT64_MAX / (int64_t) sizeof(float)) return -1;
+        data[i] = (sl_u8) {(uint8_t *) tensors[i].data, tensors[i].len * (int64_t) sizeof(float)};
+    }
+    const int active = start_context();
+    if (active != 1) return active;
+
+    struct device_buffer * buffers[] = {&cuda.input, &cuda.weight, &cuda.attention_value,
+        &cuda.jobs, &cuda.gdn_beta, &cuda.attention_scratch};
+    const size_t output_bytes = (size_t) out.len * sizeof(float);
+    int error = reserve(&cuda.output, output_bytes);
+    if (error == 0) error = upload_inputs(data, buffers, sizeof(data) / sizeof(*data));
+
+    uint64_t packet[57];
+    if (error == 0) {
+        for (size_t i = 0; i < sizeof(data) / sizeof(*data); ++i) packet[i] = buffers[i]->address;
+        packet[6] = cuda.output.address;
+        packet[7] = cuda.output.address + (uint64_t) plan.data[48] * sizeof(float);
+        memcpy(packet + 8, plan.data, sizeof(packet) - 8 * sizeof(*packet));
+        error = reserve(&cuda.attention_config, sizeof packet);
+    }
+    if (error == 0) error = cuda.upload(cuda.attention_config.address, packet, sizeof packet);
+    void * args[] = {&cuda.attention_config.address};
+    if (error == 0) {
+        error = cuda.launch(cuda.gdn, (unsigned) plan.data[25], (unsigned) plan.data[27],
+            (unsigned) plan.data[34], (unsigned) (plan.data[35] * plan.data[36]),
+            1, 1, 0, NULL, args, NULL);
+        if (error == 0) {
+            error = cuda.download(out.data, cuda.output.address, output_bytes);
+            if (error != 0) (void) cuda.sync();
+        }
+    }
+    const int popped = finish_context();
+    if (error != 0 || popped != 0) {
+        fprintf(stderr, "Goose CUDA: GDN failed (%d)\n", error ? error : popped);
+        return -1;
+    }
+    ++cuda_gdns;
+    return 1;
+}
+
+uint64_t fg_cuda_take_gdns(void) {
+    const uint64_t gdns = cuda_gdns;
+    cuda_gdns = 0;
+    return gdns;
 }

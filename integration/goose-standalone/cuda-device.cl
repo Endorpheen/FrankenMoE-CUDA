@@ -17,6 +17,16 @@ static int64_t device_range(int64_t value, int64_t lo, int64_t hi) {
     return value;
 }
 
+static uint64_t device_range_u(uint64_t value, uint64_t hi) {
+    if (value > hi) device_trap();
+    return value;
+}
+
+static uint64_t device_udiv(uint64_t a, uint64_t b) {
+    if (b == 0) device_trap();
+    return a / b;
+}
+
 static int64_t device_add(int64_t a, int64_t b) {
     int64_t result;
     if (__builtin_add_overflow(a, b, &result)) device_trap();
@@ -52,7 +62,9 @@ static int64_t device_mod(int64_t a, int64_t b) {
 }
 
 #define GS_RANGE(value, lo, hi, type, file, line) device_range(value, lo, hi)
+#define GS_RANGE_U(value, hi, type, file, line) device_range_u(value, hi)
 #define GS_IDX(value, size, file, line) device_range(value, 0, (size) - 1)
+#define GS_MEMZERO(at, bytes) __builtin_memset(at, 0, bytes)
 #define GS_UNREACHABLE(file, line) device_trap()
 #define gs_add_i64(a, b, file, line) device_add(a, b)
 #define gs_sub_i64(a, b, file, line) device_sub(a, b)
@@ -60,8 +72,19 @@ static int64_t device_mod(int64_t a, int64_t b) {
 #define gs_add_u64(a, b) device_uadd(a, b)
 #define gs_div_i64(a, b, file, line) device_div(a, b)
 #define gs_mod_i64(q, a, b, file, line) device_mod(a, b)
+#define gs_div_u64(a, b, file, line) device_udiv(a, b)
+#define gs_sub_u64(a, b) ((uint64_t)(a) - (uint64_t)(b))
+#define gs_mul_u64(a, b) ((uint64_t)(a) * (uint64_t)(b))
+#define gs_mul_u32(a, b) ((uint32_t)(a) * (uint32_t)(b))
+#define gs_sub_u32(a, b) ((uint32_t)(a) - (uint32_t)(b))
+#define gs_div_i32(a, b, file, line) ((int32_t)device_div(a, b))
+#define gs_add_i32(a, b, file, line) ((int32_t)((int64_t)(a) + (int64_t)(b)))
+#define gs_sub_i32(a, b, file, line) ((int32_t)((int64_t)(a) - (int64_t)(b)))
+#define gs_mul_i32(a, b, file, line) ((int32_t)((int64_t)(a) * (int64_t)(b)))
 #define gs_shl_i64(a,b) ((int64_t)((uint64_t)(a) << ((b)&63)))
 #define gs_shr_i64(a,b) ((a) >> ((b)&63))
+#define gs_shr_i32(a,b) ((a) >> ((b)&31))
+#define gs_shr_u64(a,b) ((a) >> ((b)&63))
 #define gs_shr_u32(a,b) ((a) >> ((b)&31))
 #define gs_shl_u32(a,b) ((a) << ((b)&31))
 
@@ -175,4 +198,62 @@ __kernel void goose_q4_attention_merge(__global float * scratch, __global uint8_
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
     fg_attn_merge_g((uint64_t) scratch, (uint64_t) output, (uint64_t) cfg,
         task, (int64_t) query_base + task, lane);
+}
+
+static float fg174s_load(uint64_t address, uint64_t index) {
+    return fg_device_global_load(address + 4 * index);
+}
+
+static void fg174s_store(uint64_t address, uint64_t index, float value) {
+    fg_device_global_store(address + 4 * index, value);
+}
+
+static float fg174s_expf(float value) { return fg_attn_exp(value); }
+
+static float fg174s_fma(float a, float b, float sum) { return fg_device_fma(a, b, sum); }
+
+static float fg174s_mul_rn(float a, float b) {
+    float result;
+    __asm__("mul.rn.f32 %0, %1, %2;" : "=f"(result) : "f"(a), "f"(b));
+    return result;
+}
+
+static float fg174s_shfl_xor(float value, int32_t delta, int32_t width) {
+    uint32_t result;
+    const int32_t bound = ((32 - width) << 8) | 31;
+    __asm__ volatile("shfl.sync.bfly.b32 %0, %1, %2, %3, -1;"
+                     : "=r"(result) : "r"(as_uint(value)), "r"(delta), "r"(bound));
+    return as_float(result);
+}
+
+static uint32_t fg174s_umulhi(uint32_t a, uint32_t b) {
+    return (uint32_t) (((uint64_t) a * b) >> 32);
+}
+
+// Eight pointer words precede the Goose-generated strides and launch plan.
+static uint64_t fg174s_dget(int64_t packet, int64_t table, int64_t index) {
+    __global uint64_t * data = (__global uint64_t *) packet;
+    return data[(table == 0 ? 0 : table == 2 ? 8 : 32) + index];
+}
+
+static float fg174s_df(int64_t packet, int64_t index) {
+    return as_float((uint32_t) ((__global uint64_t *) packet)[49 + index]);
+}
+
+static uint32_t fg174s_dm(int64_t packet, int64_t row, int64_t index) {
+    return (uint32_t) ((__global uint64_t *) packet)[50 + 3 * row + index];
+}
+
+static void fg174s_sync(void) { fg_device_barrier(); }
+
+#include "gdn-device.h"
+
+__kernel void goose_gated_delta_net(__global uint64_t * packet) {
+    uint32_t head, sequence, segment, lane;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(head));
+    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(sequence));
+    __asm__("mov.u32 %0, %%ctaid.z;" : "=r"(segment));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
+    const uint32_t effective = (uint32_t) packet[43];
+    gdn_g((int64_t) packet, head, sequence, segment, lane % effective, lane / effective);
 }

@@ -10,6 +10,77 @@ fn set_value(a: u8[:], index: i64, v: f32) {
     write32(a, mul_size(index, 4), bits(v));
 }
 
+extern "fg_cuda_gdn" fn cuda_gdn(plan: const i64[:], q: const f32[:], k: const f32[:],
+    v: const f32[:], gate: const f32[:], beta: const f32[:], initial: const f32[:], dst: f32[:]) -> i64;
+
+// The scalar device kernel uses the fast division descriptor from its
+// original host plan. Both divisors are positive and fit in 32 bits.
+fn gdn_divisor(divisor: i64, words: i64[:]) {
+    let d = divisor as u64;
+    var shift: i64 = 0;
+    while ((1 as u64) << shift) < d { shift += 1; }
+    let multiplier = ((1 as u64) << 32) * (((1 as u64) << shift) - d) / d + 1;
+    words[0] = multiplier as i64;
+    words[1] = shift;
+    words[2] = divisor;
+}
+
+fn gdn_on_cuda(p: const StatePlan &, strides: const i64[4][6] &,
+               q: const f32[:], k: const f32[:], v: const f32[:], gate: const f32[:],
+               beta: const f32[:], initial: const f32[:], dst: f32[:],
+               scale: f32, scores: i64, state_values: i64) -> i64 {
+    let width = p.source[2].ne[0];
+    let heads = p.source[2].ne[1];
+    let tokens = p.source[2].ne[2];
+    let sequences = p.source[2].ne[3];
+    let key_heads = p.source[0].ne[1];
+    let q_sequences = p.source[0].ne[3];
+    let snapshots = p.snapshots;
+    if p.nth != 1 || (width != 16 && width != 32 && width != 64 && width != 128) ||
+       sequences > 65535 || heads > 2147483647 || tokens <= 0 || snapshots > tokens ||
+       p.source[1].ne[1] != key_heads || p.source[1].ne[3] != q_sequences ||
+       strides[0][0] != 1 || strides[1][0] != 1 || strides[2][0] != 1 ||
+       dst.len != scores + snapshots * state_values {
+        return 0;
+    }
+    for axis in 4 {
+        if strides[0][axis] != strides[1][axis] { return 0; }
+    }
+    for i in 3 .. 6 {
+        if !dense_scalar(p.source[i], 4) { return 0; }
+    }
+    for axis in 1 .. 4 {
+        if p.source[3].ne[axis] != p.source[2].ne[axis] ||
+           p.source[4].ne[axis] != p.source[2].ne[axis] {
+            return 0;
+        }
+    }
+    if p.source[5].ne[3] != sequences { return 0; }
+    // Device packet: strides, kernel geometry, F32 scale bits, fast
+    // division descriptors, and the state offset following the scores.
+    var config: i64[49] = [0; 49];
+    for i in 6 {
+        for axis in 4 { config[4 * i + axis] = strides[i][axis]; }
+    }
+    config[24] = width;
+    config[25] = heads;
+    config[26] = tokens;
+    config[27] = sequences;
+    config[30] = snapshots;
+    config[31] = if snapshots > 1 { 1 } else { 0 };
+    config[34] = width / 16;
+    config[35] = low(32, width);
+    config[36] = 4;
+    config[37] = 32;
+    config[39] = state_values;
+    config[40] = if p.source[3].ne[0] == width { 1 } else { 0 };
+    config[41] = bits(scale) as i64;
+    gdn_divisor(key_heads, config[42 .. 45]);
+    gdn_divisor(sequences / q_sequences, config[45 .. 48]);
+    config[48] = scores;
+    return cuda_gdn(config, q, k, v, gate, beta, initial, dst);
+}
+
 fn gdn(
     p: const StatePlan &,
     q: const f32[:],
@@ -60,6 +131,11 @@ fn gdn(
     let snapshot_values = mul_size(square, tasks);
     assert(add_size(scores, mul_size(snapshot_values, snapshots)) <= dst.len);
     let scale = (1 as f32) / sqrt32(width as f32);
+    let device = gdn_on_cuda(p, strides, q, k, v, g, beta, initial, dst, scale, scores, snapshot_values);
+    if device != 0 {
+        if device > 0 { witness(OP_GATED_DELTA_NET, scores); }
+        return device > 0;
+    }
     let gate_width = p.source[3].ne[0];
     var decay: f32[>..] = [];
     decay.resize(gate_width, 0.0);

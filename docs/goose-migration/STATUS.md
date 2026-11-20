@@ -176,6 +176,21 @@ maximum absolute error of 0.000000755 against an independent F64 result.
 The CPU run's maximum error was 0.000000761. Matrix and recurrent graph
 fixtures also passed. No Apex model run or throughput measurement was made.
 
+EXP-2026-11-20-1504 wires the existing Goose scalar GDN kernel to the
+same CUDA graph executor. The runtime preserves the packed output, including
+both per-token scores and requested recurrent snapshots. It admits the
+existing kernel's widths 16, 32, 64 and 128 with compatible F32 layouts.
+Cases outside that layout retain the CPU GDN implementation. The backend
+uses the same transfer buffers as Q4 attention where the operations have
+disjoint lifetimes. The host remains the owner of the recurrent state.
+
+The RTX 4070 trace confirmed CUDA execution at width 16 and at the Apex
+width 128. The width-128 scalar and per-column gate fixtures, with strided
+queries and two sequences, matched the independent scores and snapshots
+with a maximum absolute error of 0.0000000373. The CPU fallback, matrix and
+attention fixtures also passed. No Apex model run or throughput measurement
+was made.
+
 ## Historical requirements audit
 
 `docs/goose-migration/tasks.json`: **DONE 1**, **PARTIAL 144**, **TODO 7** of 152.
