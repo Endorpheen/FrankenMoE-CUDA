@@ -1,4 +1,7 @@
 extern "fg143_copy_bytes" fn copy_bytes(dst: u64, src: u64, count: i64);
+extern "fg_cuda_state_read" fn cuda_state_read(src: u64, count: i64) -> i64;
+extern "fg_cuda_state_write" fn cuda_state_write(dst: u64, count: i64) -> i64;
+extern "fg_cuda_match_published_state" fn cuda_match_state(dst: u64, src: u64, count: i64) -> bool;
 
 fn dense_scalar(t: const Tensor &, size: i64) -> bool {
     var stride = size;
@@ -24,7 +27,12 @@ fn transforms(p: const Node &, x: const u8[:], y: const u8[:], dst: u8[:],
         let bytes = scalar_bytes(p.x.kind);
         if p.nth == 1 && addresses[0] != 0 && addresses[2] != 0 &&
            dense_scalar(p.x, bytes) && dense_scalar(p.d, bytes) {
-            copy_bytes(addresses[2] as! u64, addresses[0] as! u64, p.x.bytes);
+            let src = addresses[0] as! u64;
+            let dest = addresses[2] as! u64;
+            if op == OP_CPY && cuda_match_state(dest, src, p.x.bytes) { return true; }
+            if cuda_state_read(src, p.x.bytes) != 0 { return false; }
+            copy_bytes(dest, src, p.x.bytes);
+            if op == OP_CPY && cuda_state_write(dest, p.x.bytes) != 0 { return false; }
             return true;
         }
 

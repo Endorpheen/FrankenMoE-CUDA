@@ -1,5 +1,5 @@
 struct StatePlan {
-    source: Tensor[7], dst: Tensor, ith: i64, nth: i64, op: i64, snapshots: i64, fp: f32[4]
+    source: Tensor[7], dst: Tensor, ith: i64, nth: i64, op: i64, snapshots: i64, fp: f32[4], publish: bool
 }
 
 fn value_at(a: const u8[:], index: i64) -> f32 {
@@ -12,6 +12,7 @@ fn set_value(a: u8[:], index: i64, v: f32) {
 
 extern "fg_cuda_gdn" fn cuda_gdn(plan: const i64[:], q: const f32[:], k: const f32[:],
     v: const f32[:], gate: const f32[:], beta: const f32[:], initial: const f32[:], dst: f32[:]) -> i64;
+extern "fg_cuda_gdn_state_read" fn cuda_gdn_state_read(initial: const f32[:]) -> i64;
 
 // The scalar device kernel uses the fast division descriptor from its
 // original host plan. Both divisors are positive and fit in 32 bits.
@@ -58,7 +59,7 @@ fn gdn_on_cuda(p: const StatePlan &, strides: const i64[4][6] &,
     if p.source[5].ne[3] != sequences { return 0; }
     // Device packet: strides, kernel geometry, F32 scale bits, fast
     // division descriptors, and the state offset following the scores.
-    var config: i64[49] = [0; 49];
+    var config: i64[50] = [0; 50];
     for i in 6 {
         for axis in 4 { config[4 * i + axis] = strides[i][axis]; }
     }
@@ -78,6 +79,7 @@ fn gdn_on_cuda(p: const StatePlan &, strides: const i64[4][6] &,
     gdn_divisor(key_heads, config[42 .. 45]);
     gdn_divisor(sequences / q_sequences, config[45 .. 48]);
     config[48] = scores;
+    config[49] = if p.publish { 1 } else { 0 };
     return cuda_gdn(config, q, k, v, gate, beta, initial, dst);
 }
 
@@ -136,6 +138,7 @@ fn gdn(
         if device > 0 { witness(OP_GATED_DELTA_NET, scores); }
         return device > 0;
     }
+    if cuda_gdn_state_read(initial) != 0 { return false; }
     let gate_width = p.source[3].ne[0];
     var decay: f32[>..] = [];
     decay.resize(gate_width, 0.0);

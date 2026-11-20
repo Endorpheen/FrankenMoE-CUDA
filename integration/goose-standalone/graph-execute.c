@@ -19,6 +19,8 @@ extern void fg143_cpu_init(int argc, char ** argv);
 extern uint64_t fg_cuda_take_matrices(void);
 extern uint64_t fg_cuda_take_attentions(void);
 extern uint64_t fg_cuda_take_gdns(void);
+extern int fg_cuda_state_graph_done(void);
+extern void fg_cuda_take_resident_state(uint64_t * kv, uint64_t * gdn);
 
 static pthread_once_t cpu_init = PTHREAD_ONCE_INIT;
 static atomic_uint_fast64_t cpu_values;
@@ -205,19 +207,20 @@ uint8_t fg143_graph_exec_node(uint64_t graph, uint64_t workspace, int64_t index)
     }
 
     if (tensor->op == GGML_OP_GATED_DELTA_NET || tensor->op == GGML_OP_SSM_SCAN) {
-        int64_t packet[82] = {0};
+        int64_t packet[83] = {0};
         sl_u8 inputs[7];
         for (int i = 0; i < 7; ++i) inputs[i] = tensor_slice(tensor->src[i], packet + 10 * i);
         const sl_u8 dst = tensor_slice(tensor, packet + 70);
         packet[80] = tensor->op;
         packet[81] = tensor->op_params[0];
         if (tensor->op == GGML_OP_GATED_DELTA_NET) {
+            packet[82] = tensor->op_params[4];
             sl_f32 args[6], output;
             for (int i = 0; i < 6; ++i) {
                 if (!float_slice(inputs[i], &args[i])) return 0;
             }
             if (!float_slice(dst, &output)) return 0;
-            return fg143_gdn_run((sl_i64) { packet, 82 }, args[0], args[1], args[2],
+            return fg143_gdn_run((sl_i64) { packet, 83 }, args[0], args[1], args[2],
                 args[3], args[4], args[5], output);
         }
         return fg143_state_run((sl_i64) { packet, 82 }, inputs[0], inputs[1], inputs[2],
@@ -258,12 +261,16 @@ enum ggml_status fg_standalone_graph_compute(struct ggml_cgraph * graph) {
     const uint64_t matrices = fg_cuda_take_matrices();
     const uint64_t attentions = fg_cuda_take_attentions();
     const uint64_t gdns = fg_cuda_take_gdns();
+    uint64_t resident_kv, resident_gdn;
+    fg_cuda_take_resident_state(&resident_kv, &resident_gdn);
     if (getenv("GOOSE_GRAPH_LOG")) {
         const uint64_t values = (uint64_t) atomic_exchange_explicit(&cpu_values, 0, memory_order_relaxed);
         fprintf(stderr, "Goose CPU graph: %llu values\n", (unsigned long long) values);
         if (matrices) fprintf(stderr, "Goose CUDA graph: %llu matrices\n", (unsigned long long) matrices);
         if (attentions) fprintf(stderr, "Goose CUDA attention: %llu nodes\n", (unsigned long long) attentions);
         if (gdns) fprintf(stderr, "Goose CUDA GDN: %llu nodes\n", (unsigned long long) gdns);
+        if (resident_kv) fprintf(stderr, "Goose CUDA resident KV: %llu nodes\n", (unsigned long long) resident_kv);
+        if (resident_gdn) fprintf(stderr, "Goose CUDA resident GDN: %llu nodes\n", (unsigned long long) resident_gdn);
     }
-    return failed == 0 ? GGML_STATUS_SUCCESS : GGML_STATUS_FAILED;
+    return failed == 0 && fg_cuda_state_graph_done() == 0 ? GGML_STATUS_SUCCESS : GGML_STATUS_FAILED;
 }

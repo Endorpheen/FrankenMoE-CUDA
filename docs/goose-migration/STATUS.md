@@ -191,6 +191,25 @@ with a maximum absolute error of 0.0000000373. The CPU fallback, matrix and
 attention fixtures also passed. No Apex model run or throughput measurement
 was made.
 
+EXP-2026-11-20-1505 attaches persistent CUDA state to the standalone model
+owner. For registered Q4 KV tensors the row update keeps the host mirror
+current and uploads the changed byte interval. Attention consumes the
+device cache directly. The annotated Qwen3.5 GDN path with one snapshot
+updates its registered recurrence matrix in place and downloads the token
+scores. Its state-copy node consumes that publication. A graph with an
+unconsumed publication fails, and the existing model-step failure path
+resets the session. The Goose reset routine clears the host tensors and
+the device arena. A CPU recurrent step can read the device matrix and
+publish its update for the next CUDA step.
+
+On a generated two-layer fixture the RTX 4070 trace confirmed three
+resident KV and three resident GDN nodes across prefill and continuation.
+The four-step CUDA/CPU/CUDA sequence matched the full CPU replay after
+reset with a maximum absolute logit error of 0.0000001193. The CPU-only
+chunked fixture and the operator checks also passed. `/props` exposes
+the allocated `cuda_model_state_bytes`. Actual Apex placement and
+performance remain unmeasured.
+
 ## Historical requirements audit
 
 `docs/goose-migration/tasks.json`: **DONE 1**, **PARTIAL 144**, **TODO 7** of 152.

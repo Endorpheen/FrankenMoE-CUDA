@@ -71,8 +71,9 @@ fn state_plan(packet: const i64[:]) -> StatePlan {
 export fn fg143_gdn_run(packet: const i64[:],
     q: const f32[:], k: const f32[:], v: const f32[:], gate: const f32[:],
     beta: const f32[:], initial: const f32[:], dst: f32[:]) -> bool {
-    if packet.len != 82 || packet[80] != OP_GATED_DELTA_NET { return false; }
-    let p = state_plan(packet);
+    if (packet.len != 82 && packet.len != 83) || packet[80] != OP_GATED_DELTA_NET { return false; }
+    var p = state_plan(packet);
+    p.publish = packet.len == 83 && packet[82] == 1;
     return gdn(p, q, k, v, gate, beta, initial, dst);
 }
 
@@ -110,6 +111,8 @@ fn set_quantized_rows(p: const Node &, source: u64, destination: u64, ids: const
     }
     validate(p.y, ids.len);
     let row_bytes = (width / 32) * 18;
+    var first = p.d.bytes;
+    var last: i64 = 0;
     for row in rows(p.x) {
         let r = row % p.x.ne[1];
         let head = (row / p.x.ne[1]) % p.x.ne[2];
@@ -124,6 +127,8 @@ fn set_quantized_rows(p: const Node &, source: u64, destination: u64, ids: const
         if quantize_row(p.d.kind, source + (from as u64), destination + (to as u64), width) != row_bytes {
             return false;
         }
+        first = low(first, to);
+        last = high(last, to + row_bytes);
     }
-    return true;
+    return last <= first || cuda_state_write(destination + (first as u64), last - first) == 0;
 }

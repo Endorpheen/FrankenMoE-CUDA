@@ -1,3 +1,5 @@
+#define _POSIX_C_SOURCE 200809L
+
 #include "graph-execute.h"
 #include "goose-host-llm.h"
 
@@ -8,6 +10,7 @@
 #include <string.h>
 
 extern void fg_goose_host_ensure_init(void);
+extern int64_t fg_cuda_model_state_bytes(void);
 
 static void check_model_step(const char * path) {
     fg_goose_host_ensure_init();
@@ -63,6 +66,47 @@ static void check_chunked_generation(const char * path) {
     free(expected_state);
     free(actual_state);
     puts("137-token chunked generation preserves the next-step logits at 262144 context");
+}
+
+static void check_resident_state(const char * path) {
+    fg_goose_host_ensure_init();
+    hose_host_load_context(path, 256);
+    assert(fg_cuda_model_state_bytes() > 0);
+
+    enum { steps = 4, vocab = 4 };
+    const int32_t prompt[] = {2, 1, 0, 2, 1};
+    const int32_t continuation[] = {2, 0, 1};
+    float * device[steps] = {0};
+    float * reference[steps] = {0};
+    assert(hose_step(prompt, 5, &device[0]) == 5 * vocab);
+    assert(hose_step(continuation, 1, &device[1]) == vocab);
+
+    // Exercise an actual fallback between resident graph steps. The CPU has
+    // to read the authoritative GDN matrix and then publish its own update.
+    assert(setenv("GOOSE_CUDA", "0", 1) == 0);
+    assert(hose_step(continuation + 1, 1, &device[2]) == vocab);
+    assert(unsetenv("GOOSE_CUDA") == 0);
+    assert(hose_step(continuation + 2, 1, &device[3]) == vocab);
+
+    hose_reset_state();
+    assert(setenv("GOOSE_CUDA", "0", 1) == 0);
+    assert(hose_step(prompt, 5, &reference[0]) == 5 * vocab);
+    for (int step = 1; step < steps; ++step) {
+        assert(hose_step(continuation + step - 1, 1, &reference[step]) == vocab);
+    }
+    double max_error = 0.0;
+    for (int step = 0; step < steps; ++step) {
+        const int count = step == 0 ? 5 * vocab : vocab;
+        for (int i = 0; i < count; ++i) {
+            const double error = fabs((double) device[step][i] - reference[step][i]);
+            assert(error < 1e-5);
+            max_error = fmax(max_error, error);
+        }
+        free(device[step]);
+        free(reference[step]);
+    }
+    assert(unsetenv("GOOSE_CUDA") == 0);
+    printf("Resident KV/GDN reset and mixed CUDA/CPU continuation: max error %.9g\n", max_error);
 }
 
 static void check_scalar_and_recurrent(void) {
@@ -357,4 +401,5 @@ int main(int argc, char ** argv) {
     check_quantized_matrix(GGML_TYPE_Q6_K, true);
     if (argc == 2) check_model_step(argv[1]);
     if (argc == 3 && strcmp(argv[1], "--chunked") == 0) check_chunked_generation(argv[2]);
+    if (argc == 3 && strcmp(argv[1], "--resident") == 0) check_resident_state(argv[2]);
 }

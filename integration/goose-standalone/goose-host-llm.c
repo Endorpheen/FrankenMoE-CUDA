@@ -63,9 +63,6 @@ typedef struct {
     int64_t rope_sections;
     int64_t * records;
     ggml_tensor * emb, * head, * norm;
-    // Per-request state that must start at zero: GDN conv/state and the KV cells.
-    ggml_tensor ** reset_tensors;
-    int64_t reset_count;
     int64_t * scratch_cpts, * scratch_seg, * scratch_sym, * scratch_heap, * scratch_hc, * scratch_info;
     uint8_t * scratch_enc;
 } host_t;
@@ -260,22 +257,12 @@ static void init_trunk(int64_t capacity) {
     H.head = (ggml_tensor *) (intptr_t) handles[1];
     H.norm = (ggml_tensor *) (intptr_t) handles[2];
     H.rope_sections = handles[3];
-    H.reset_tensors = calloc((size_t) H.layer_count * 2, sizeof(*H.reset_tensors));
-    if (!H.reset_tensors) die("model state handles");
-    for (int64_t i = 0; i < H.layer_count; ++i) {
-        const int64_t *record = H.records + i * 32;
-        const int64_t state_slot = record[0] == 1 ? 20 : 22;
-        H.reset_tensors[H.reset_count++] = (ggml_tensor *) (intptr_t) record[state_slot];
-        H.reset_tensors[H.reset_count++] = (ggml_tensor *) (intptr_t) record[state_slot + 1];
-    }
 }
 
 // Start a request from zero: KV bookkeeping plus every recurrent/KV cell buffer.
 static void reset_state(void) {
-    if (q35_kv_init(H.owner[10], 32, (sl_i64){ H.kv_state, 6 }) != 0) die("kv reset");
-    for (int64_t i = 0; i < H.reset_count; ++i) {
-        memset(H.reset_tensors[i]->data, 0, ggml_nbytes(H.reset_tensors[i]));
-    }
+    if (qr_reset_state((sl_i64) { H.owner, 13 }, (sl_i64) { H.records, H.layer_count * 32 },
+        (sl_i64) { H.kv_state, 6 }) != 0) die("model state reset");
 }
 
 // One full-model step: build the graph, evaluate it and publish the KV ticket.
@@ -388,6 +375,9 @@ void hose_host_load_context(const char * path, int64_t capacity) {
             (long long) residency[3], (long long) residency[2], (long long) status);
         die("model RAM residency");
     }
+    const int64_t state_bytes = qr_cuda_state((sl_i64) { H.owner, 13 },
+        (sl_i64) { H.records, H.layer_count * 32 });
+    if (state_bytes < 0) die("model CUDA state");
     const int64_t device_bytes = qr_cuda_dense((sl_i64) { H.owner, 13 },
         (sl_i64) { H.records, H.layer_count * 32 }, (int64_t) (intptr_t) H.head);
     if (device_bytes < 0) die("model CUDA placement");

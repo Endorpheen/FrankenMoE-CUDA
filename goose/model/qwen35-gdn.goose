@@ -127,6 +127,9 @@ export fn q35_gdn_layer(c: i64, x: i64, conv: i64, state: i64, weights: i64[:], 
     qa_begin(work, 28, c, nodes[23], nodes[25], nodes[21], 0);
     work[7] = nodes[13]; work[8] = nodes[7]; work[9] = state; work[10] = 1;
     nodes[26] = gb_common_args(work);
+    // The only consumer of the state tail is the copy to this same model
+    // state tensor below. A resident backend can publish that tail in place.
+    qa_set(nodes[26], 10, 4, 1);
     nodes[27] = view4(c, nodes[26], head, nv, count, 1, head * 4, vd * 4, vd * count * 4, 0);
     nodes[28] = view4(c, nodes[26], head, head, nv, 1, head * 4, head * head * 4, head * head * nv * 4, vd * count * 4);
     nodes[29] = gdn_conv_store(c, nodes[28], state);

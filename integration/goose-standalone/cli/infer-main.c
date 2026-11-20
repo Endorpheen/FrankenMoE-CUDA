@@ -12,6 +12,7 @@
 
 extern int64_t fg_cuda_dense_bytes(void);
 extern int64_t fg_cuda_expert_bytes(void);
+extern int64_t fg_cuda_model_state_bytes(void);
 
 int64_t fg_http_tokenize(sl_u8 prompt, sl_i64 ids) {
     return hose_tokenize(prompt.data, prompt.len, ids.data, ids.len);
@@ -27,6 +28,7 @@ void fg_http_stats(sl_i64 stats) {
     if (stats.len >= 10 && hose_model_residency(stats.data + 6) != 0) stats.data[6] = -1;
     if (stats.len >= 11) stats.data[10] = fg_cuda_dense_bytes();
     if (stats.len >= 12) stats.data[11] = fg_cuda_expert_bytes();
+    if (stats.len >= 13) stats.data[12] = fg_cuda_model_state_bytes();
 }
 
 void fg_http_listening(int64_t port) {

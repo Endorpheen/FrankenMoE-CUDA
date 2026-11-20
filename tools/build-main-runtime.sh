@@ -45,6 +45,7 @@ MODULES=(
     goose/model/gguf-reader.goose
     goose/model/model-ownership.goose
     goose/model/qwen35-model-loader.goose
+    goose/model/qwen35-device-state.goose
     goose/model/goose-model-loader.goose
     goose/model/file-io.goose
     goose/model/arch-registry.goose
