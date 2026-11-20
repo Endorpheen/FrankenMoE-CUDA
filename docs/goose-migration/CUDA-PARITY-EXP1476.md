@@ -96,7 +96,7 @@ dependencies. Resume decode-specific work after prefill recovery.
 | 4 | MMQ stream-K. `mmq.cuh` partitions K and invokes `mul_mat_q_stream_k_fixup` to combine partial outputs. | Independent Goose partitions flattened output tiles and K blocks and applies backward partial reduction with `GOOSE_MMQ_STREAM_K=1`. GPU fixtures and a short Apex shape execute the fixup. | PARTIAL. Verify response parity and scheduling on reference-sized tiles. The current 4096 geometry selects regular tiles. |
 | 5 | Quantized small-batch MMVQ. `ggml-cuda.cu` → `ggml_cuda_mul_mat_vec_q` → Q8_1 and `mul_mat_vec_q` in `mmvq.cu`. | Both `quantize_q8_1` and `mul_mat_vec_q` run. Goose uses its scalar Q4_K/Q6_K path during decode. | MISSING. Restore the appropriate small-batch integer-dot specializations and packing. Check the exact subtype, output and decode timing under the final graph. |
 | 6 | Indexed small-batch MMVQ. `ggml_cuda_mul_mat_id` → `mul_mat_vec_q_moe_launch` → `mul_mat_vec_q_moe`. | The reference trace executes indexed MMVQ. Goose groups jobs on the host and feeds the scalar matrix kernel. | MISSING. Restore the routed MMVQ path and verify duplicate expert IDs, signed-scale arithmetic and first decode output. |
-| 7 | Tensor Core dense GEMM. `ggml_cuda_mul_mat_cublas` selects the F32 `cublasSgemm` path with `CUBLAS_TF32_TENSOR_OP_MATH` in `common.cuh`. | The 4096/1 trace records 39 CUTLASS `s1688gemm` launches. `GOOSE_DENSE_MMA=1` selects 40 independent tiled TF32 MMA launches with F32 accumulation. | PARTIAL. The CUDA path and F32 error fixture pass. Apex output changes under the experimental flag and still differs from EXP-1476. Keep the flag off for the next baseline until the model-level numerical difference is resolved. |
+| 7 | Tensor Core dense GEMM. `ggml_cuda_mul_mat_cublas` selects the F32 `cublasSgemm` path with `CUBLAS_TF32_TENSOR_OP_MATH` in `common.cuh`. | The reference uses CUTLASS TF32. The [Goose router mode](#apex-tf32-router-and-expert-selection) matches its unsplit and split-K results and executes 40 times in Apex 4096/1. | PARTIAL. The tested router shapes match. Verify other shapes and the full response before promotion. |
 | 8 | Dense small-shape dispatch. `mmf.cu` and `mmvf.cu` implement `mul_mat_f` and `mul_mat_vec_f`. The trace also records `dot_kernel`. | All three families appear in the trace. Goose does dense F32 FMA and shuffles using one output per warp. The exact library owner of `dot_kernel` remains open. | PARTIAL. Identify the dot route and reuse existing dot and warp code where equivalent. Recreate selected row/vector tiling and validate dimensions and backend selection by shape. |
 | 9 | Device expert grouping. `ggml_cuda_mul_mat_id` / `mmq.cu` → `mm_ids_helper` → per-expert group ranges and Q8 scatter. | `mm_ids_helper` executes. Goose builds per-expert jobs and keeps a GPU SLRU, with host route synchronization. | PARTIAL. Feed active routes to device grouping and pack contiguous batches without losing expert ownership. Verify sparse, repeated and empty groups against the reference. |
 | 10 | Fused MoE selection. `ggml-cuda.cu` `ggml_cuda_topk_moe_fusion` → `topk_moe_cuda`. | Goose selects eight experts directly and fuses gather, clamp, division and scaling in a single weights kernel. The live Apex snapshot matches the preceding graph byte-for-byte. | PARTIAL. Integrate softmax and selection with the weight output. Keep numerical parity and qualify full Apex. |
@@ -1294,6 +1294,65 @@ acceptance gate and the activation selector stays opt-in.
   and `cuda-matrix-dense-both.7idajz91`.
 - Live diagnostic tensors under
   `/home/end0/AI/LlamaServer/franken-apex-goose-activation-reference-layers.3ohgn0ej`.
+
+## Apex TF32 router and expert selection
+
+EXP-2026-11-20-1551 isolated the first remaining expert
+selection error. All 253,952 values entering the first router
+matched. The ordinary Goose compensated TF32 path differed in
+31,727 of 31,744 logits (max 0.0016851425). At input index 51,
+reference logits for experts 106 and 223 were -3.3826885 and
+-3.3832430. The earlier Goose values were -3.3830009 and
+-3.3829997. The ranking changed before softmax.
+
+The frozen reference's isolated router replays execute
+CUTLASS TF32 `s1688gemm`. The 124-row input executes
+`64x64_16x6_tn_align4` with grid 8×1×4, then
+`splitKreduce_kernel`. The 4096-row input executes
+`64x128_32x3_tn_align4` with grid 128×1×1. The Goose
+`GOOSE_DENSE_MMA_REFERENCE=1` mode reuses its existing
+TF32 MMA and the measured split order for the Apex router
+shape (SM89, 2,048 input features, 256 experts, 124 or
+4,096 inputs). Other shapes continue through the existing
+CUDA dispatch. The mode runs within the independent image.
+
+The live 124-ID model graph matches all 31,744 logits and
+all 992 selected expert ID positions, including expert 106
+at index 51. Softmax probabilities still differ by at most
+1.4901161e-8. The first and last sampled output rows of layer 0
+differ by at most 2.9802322e-8 and 3.7252903e-9 respectively.
+The isolated router replays match all 31,744 and 1,048,576
+logits at 124 and 4096 input rows. The 4096 replay uses repeated
+captured Apex rows to exercise that geometry. Compute Sanitizer
+found zero errors on both shapes.
+
+| Sequential Apex 4096/1 diagnostic | Compensated TF32 | Reference router |
+|---|---:|---:|
+| Prefill time, s | 14.432 | 14.351 |
+| Prefill, tokens/s | 283.814 | 285.410 |
+| Dense MMA time, ms (40 launches) | 54.878 | 58.053 |
+| RSS high-water, KiB | 23,884,940 | 23,885,184 |
+| Sampled peak process VRAM, MiB | 8,582 | 8,582 |
+| Sampled peak whole-card VRAM, MiB | 11,377 | 11,385 |
+| Process swap, KiB | 0 | 0 |
+| System swap-out increase, pages | 0 | 0 |
+| First token | 11 | 16305 |
+
+The matched live tests use physical 4096/4096 and the same
+diagnostic options from EXP-1550. Nsight shows 40 launches of
+`goose_dense_mma_reference` in the candidate. This pair measures
+short prefill. The full response, decode and context acceptance
+remain open.
+
+- Candidate build and traces under
+  `/home/end0/AI/LlamaServer/franken-goose-router-reference.e5bVFu`.
+  Executable SHA-256 `593a46fbc568c4ae7eb30d6ba76171a820dedcf5a467e0f6b992d084cfe2d489`.
+  The run directories are `cuda-matrix-dense-both.tbpu27ge`
+  and `cuda-matrix-dense-both.g5gbb6os`.
+- Live tensors under
+  `/home/end0/AI/LlamaServer/franken-apex-reference-moe-layers.j3zgs9_t`
+  and
+  `/home/end0/AI/LlamaServer/franken-apex-goose-router-reference-layers.f5yrjvcd`.
 
 ## Kernel coverage
 

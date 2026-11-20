@@ -62,11 +62,11 @@ Functional qualification runs before memory and speed acceptance.
    ID and probability parity fail. The first differing output is at
    index 1 (1716 versus 198). See the
    [full diagnostic](CUDA-PARITY-EXP1476.md#ten-change-apex-32k512-diagnostic).
-   The short layer comparison matches every checked tensor
-   through the first GDN output projection and persistent state
-   bitwise. One input position still has a different first-layer
-   expert set. See the
-   [recurrent activation comparison](CUDA-PARITY-EXP1476.md#first-recurrent-sigmoid-and-silu).
+   The short layer comparison matches the first GDN output and
+   state, all first-layer router logits and all 992 selected expert
+   ID positions bitwise. The softmax and later layer outputs still
+   differ. See the
+   [router comparison](CUDA-PARITY-EXP1476.md#apex-tf32-router-and-expert-selection).
    Gates 3 and 4 qualify the later speed comparison.
 7. [ ] **Accept memory** (requires 5 and 6). Record per-process RSS and
    its high-water mark, model page residency before and after the

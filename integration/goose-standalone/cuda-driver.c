@@ -47,7 +47,7 @@ static struct {
     Module module;
     Function kernel, attention_tiles, attention_merge, gdn, q4_rows, vector, rms_reference;
     Function mmq_pack, mmq_pack_shared, mmq_matrix, mmq_q4_matrix, mmq_q6_matrix;
-    Function dense_mma, gdn_mma, flash_mma, flash_stage;
+    Function dense_mma, dense_mma_reference, gdn_mma, flash_mma, flash_stage;
     Function mmq_stream, mmq_stream_fixup;
     Function rope_phases, rope_apply, ssm_conv, ssm_conv_long;
     Function route_reduce, route_sort, route_topk, route_gather, route_norm, blit, fwht, moe_weighted;
@@ -177,6 +177,8 @@ static void init_cuda(void) {
     const bool mmq = stream_k || (setting && strcmp(setting, "1") == 0);
     const char * dense_setting = getenv("GOOSE_DENSE_MMA");
     const bool dense_mma = dense_setting && strcmp(dense_setting, "1") == 0;
+    const char * dense_reference_setting = getenv("GOOSE_DENSE_MMA_REFERENCE");
+    const bool dense_reference = dense_mma && dense_reference_setting && strcmp(dense_reference_setting, "1") == 0;
     const char * gdn_setting = getenv("GOOSE_GDN_MMA");
     const bool gdn_mma = gdn_setting && strcmp(gdn_setting, "1") == 0;
     const char * flash_setting = getenv("GOOSE_FLASH_MMA");
@@ -202,10 +204,10 @@ static void init_cuda(void) {
             return;
         }
         int minor = 0;
-        reference_arch = (q4_reference || q6_reference) && major == 8 &&
+        reference_arch = (q4_reference || q6_reference || dense_reference) && major == 8 &&
             cuda.device_attribute(&minor, compute_capability_minor, device) == 0 && minor == 9;
     }
-    if (stream_k || reference_arch) {
+    if (stream_k || (reference_arch && (q4_reference || q6_reference))) {
         enum { multiprocessor_count = 16 };
         if (cuda.device_attribute(&cuda.multiprocessors, multiprocessor_count, device) != 0 || cuda.multiprocessors <= 0) return;
     }
@@ -225,6 +227,9 @@ static void init_cuda(void) {
         if (error == 0 && stream_k) error = cuda.function_get(&cuda.mmq_stream, cuda.module, "goose_mmq_stream");
         if (error == 0 && stream_k) error = cuda.function_get(&cuda.mmq_stream_fixup, cuda.module, "goose_mmq_stream_fixup");
         if (error == 0 && dense_mma) error = cuda.function_get(&cuda.dense_mma, cuda.module, "goose_dense_mma");
+        if (error == 0 && reference_arch && dense_reference) {
+            error = cuda.function_get(&cuda.dense_mma_reference, cuda.module, "goose_dense_mma_reference");
+        }
         if (error == 0) error = cuda.function_get(&cuda.attention_tiles, cuda.module, "goose_q4_attention_tiles");
         if (error == 0) error = cuda.function_get(&cuda.attention_merge, cuda.module, "goose_q4_attention_merge");
         if (error == 0 && flash_mma) error = cuda.function_get(&cuda.flash_mma, cuda.module, "goose_flash_causal_mma");
@@ -981,8 +986,16 @@ static int launch_matrix(DevicePtr weight, int64_t row_stride, int64_t extent,
     if (error == 0 && cuda.dense_mma && kind == 0 && job_words == 2 && rows >= 16 && count >= 16 && count <= 8 * 65535) {
         int32_t k = (int32_t) extent, m = (int32_t) rows;
         int32_t jobs_count = count;
-        void * args[] = {&weight, &matrix_input, &matrix_output, &cuda.jobs.address, &row_stride, &k, &m, &jobs_count};
-        error = cuda.launch(cuda.dense_mma, 1u + ((unsigned) rows - 1) / 64, 1u + ((unsigned) count - 1) / 8, 1,
+        // These SM89 router geometries were traced in the frozen reference.
+        int32_t partitions = 0;
+        if (cuda.dense_mma_reference && rows == 256 && extent == 2048) {
+            if (count == 124) partitions = 4;
+            if (count == 4096) partitions = 1;
+        }
+        Function matrix = partitions > 0 ? cuda.dense_mma_reference : cuda.dense_mma;
+        void * args[] = {&weight, &matrix_input, &matrix_output, &cuda.jobs.address, &row_stride, &k, &m, &jobs_count,
+            &partitions};
+        error = cuda.launch(matrix, 1u + ((unsigned) rows - 1) / 64, 1u + ((unsigned) count - 1) / 8, 1,
             128, 1, 1, 0, NULL, args, NULL);
         if (error == 0) error = cuda.sync();
         if (error != 0) {

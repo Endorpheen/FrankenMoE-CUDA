@@ -25,9 +25,9 @@ static DenseDot_g fg_dense_mma8(uint32_t a0, uint32_t a1, uint32_t a2, uint32_t 
 
 #include "dense-mma-device.h"
 
-__kernel void goose_dense_mma(__global const uint8_t * weights, __global const uint8_t * input,
+static __attribute__((always_inline)) void dense_mma(__global const uint8_t * weights, __global const uint8_t * input,
     __global uint8_t * output, __global const uint64_t * jobs, int64_t stride,
-    int32_t extent, int32_t rows, int32_t count) {
+    int32_t extent, int32_t rows, int32_t count, int32_t partitions) {
     uint32_t row_block, token_block, thread;
     __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(row_block));
     __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(token_block));
@@ -37,6 +37,19 @@ __kernel void goose_dense_mma(__global const uint8_t * weights, __global const u
     const int64_t remaining = count - first;
     if (row < rows) {
         fg_device_dense_mma_g((uint64_t) weights, (uint64_t) input, (uint64_t) output,
-            (uint64_t) (jobs + 2 * first), stride, extent, row, rows, remaining < 8 ? remaining : 8, thread % 32);
+            (uint64_t) (jobs + 2 * first), stride, extent, row, rows, remaining < 8 ? remaining : 8, thread % 32,
+            partitions);
     }
+}
+
+__kernel void goose_dense_mma(__global const uint8_t * weights, __global const uint8_t * input,
+    __global uint8_t * output, __global const uint64_t * jobs, int64_t stride,
+    int32_t extent, int32_t rows, int32_t count) {
+    dense_mma(weights, input, output, jobs, stride, extent, rows, count, 0);
+}
+
+__kernel void goose_dense_mma_reference(__global const uint8_t * weights, __global const uint8_t * input,
+    __global uint8_t * output, __global const uint64_t * jobs, int64_t stride,
+    int32_t extent, int32_t rows, int32_t count, int32_t partitions) {
+    dense_mma(weights, input, output, jobs, stride, extent, rows, count, partitions);
 }

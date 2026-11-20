@@ -19,7 +19,7 @@ fn dense_parts(base: u64, k: i64, extent: i64) -> DenseParts {
 // PTX m16n8k8 fragments. Preserve F32 input precision on model-range
 // values with a TF32 leading term and the two residual cross-products.
 export fn fg_device_dense_mma(weights: u64, input: u64, output: u64, jobs: u64,
-    stride: i64, extent: i64, row: i64, rows: i64, count: i64, lane: i64) {
+    stride: i64, extent: i64, row: i64, rows: i64, count: i64, lane: i64, partitions: i64) {
     let group_id = lane / 4;
     let thread_id = lane % 4;
     let row0 = row + group_id;
@@ -28,30 +28,49 @@ export fn fg_device_dense_mma(weights: u64, input: u64, output: u64, jobs: u64,
     let w1 = if row1 < rows { weights + ((row1 * stride) as u64) } else { 0 };
     let source = if group_id < count { input + dense_job(jobs + ((group_id * 16) as u64)) } else { 0 };
     let zero = DenseDot { a: 0.0, b: 0.0, c: 0.0, d: 0.0 };
-    var main = zero;
-    var correction = zero;
-    var k = thread_id;
-    while k - thread_id < extent {
-        let a0 = dense_parts(w0, k, extent);
-        let a1 = dense_parts(w1, k, extent);
-        let a2 = dense_parts(w0, k + 4, extent);
-        let a3 = dense_parts(w1, k + 4, extent);
-        let b0 = dense_parts(source, k, extent);
-        let b1 = dense_parts(source, k + 4, extent);
-        main = dense_mma8(a0.hi, a1.hi, a2.hi, a3.hi, b0.hi, b1.hi, main);
-        correction = dense_mma8(a0.hi, a1.hi, a2.hi, a3.hi, b0.lo, b1.lo, correction);
-        correction = dense_mma8(a0.lo, a1.lo, a2.lo, a3.lo, b0.hi, b1.hi, correction);
-        k += 8;
+    let pieces = if partitions > 0 { partitions } else { 1 };
+    let span = extent / pieces;
+    var sum = zero;
+    for piece in pieces {
+        var main = zero;
+        var correction = zero;
+        var k = piece * span + thread_id;
+        let end = (piece + 1) * span;
+        while k - thread_id < end {
+            let a0 = dense_parts(w0, k, extent);
+            let a1 = dense_parts(w1, k, extent);
+            let a2 = dense_parts(w0, k + 4, extent);
+            let a3 = dense_parts(w1, k + 4, extent);
+            let b0 = dense_parts(source, k, extent);
+            let b1 = dense_parts(source, k + 4, extent);
+            main = dense_mma8(a0.hi, a1.hi, a2.hi, a3.hi, b0.hi, b1.hi, main);
+            if partitions == 0 {
+                correction = dense_mma8(a0.hi, a1.hi, a2.hi, a3.hi, b0.lo, b1.lo, correction);
+                correction = dense_mma8(a0.lo, a1.lo, a2.lo, a3.lo, b0.hi, b1.hi, correction);
+            }
+            k += 8;
+        }
+        if partitions == 0 {
+            sum = DenseDot { a: main.a + correction.a, b: main.b + correction.b,
+                c: main.c + correction.c, d: main.d + correction.d };
+        } else if piece == 0 {
+            sum = main;
+        } else {
+            sum.a += main.a;
+            sum.b += main.b;
+            sum.c += main.c;
+            sum.d += main.d;
+        }
     }
     let col = 2 * thread_id;
     if col < count {
         let dst = output + dense_job(jobs + ((col * 16 + 8) as u64));
-        if row0 < rows { dense_store(dst + ((row0 * 4) as u64), main.a + correction.a); }
-        if row1 < rows { dense_store(dst + ((row1 * 4) as u64), main.c + correction.c); }
+        if row0 < rows { dense_store(dst + ((row0 * 4) as u64), sum.a); }
+        if row1 < rows { dense_store(dst + ((row1 * 4) as u64), sum.c); }
     }
     if col + 1 < count {
         let dst = output + dense_job(jobs + ((col * 16 + 24) as u64));
-        if row0 < rows { dense_store(dst + ((row0 * 4) as u64), main.b + correction.b); }
-        if row1 < rows { dense_store(dst + ((row1 * 4) as u64), main.d + correction.d); }
+        if row0 < rows { dense_store(dst + ((row0 * 4) as u64), sum.b); }
+        if row1 < rows { dense_store(dst + ((row1 * 4) as u64), sum.d); }
     }
 }
