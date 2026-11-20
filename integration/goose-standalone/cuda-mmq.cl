@@ -1,4 +1,5 @@
 typedef struct { int32_t a_g, b_g, c_g, d_g; } MmqDot_g;
+typedef struct { float a_g, b_g, c_g, d_g; } MmqSum_g;
 #define gs_shl_i32(a, b) as_int((uint32_t) (a) << ((b) & 31))
 
 static uint32_t fg_mmq_word(uint64_t address) {
@@ -73,43 +74,48 @@ static float fg180q_round(float value) {
     return (float) (integral + (rest >= 0.5f) - (rest <= -0.5f));
 }
 static float fg180q_fabs(float value) { return as_float(as_uint(value) & 0x7fffffffu); }
+static float fg180q_rcp(float value) {
+    float reciprocal;
+    __asm__("rcp.approx.ftz.f32 %0, %1;" : "=f"(reciprocal) : "f"(value));
+    return reciprocal;
+}
 static void fg180q_pdl_sync(void) {}
 static void fg180q_fail(int64_t code) { fg248d_fail(code); }
 
 #include "mmq-quant-device.h"
 #include "mmq-device.h"
 
-static void pack_mmq_row(uint64_t input, uint64_t packed, int32_t extent, int32_t kind,
+static void pack_mmq_row(uint64_t input, uint64_t packed, int32_t extent, int32_t layout,
                          uint32_t group, uint32_t lane) {
     fg180q_mmq_g(input, 0, packed, 256l * extent, 0, 0, 0, 256l * extent,
-        1, 1, 1, kind == 12, 0, 0, group, 0, lane, 32, 1, 2 * extent);
+        1, 1, 1, layout, 0, 0, group, 0, lane, 32, 1, 2 * extent);
 }
 
 __kernel void goose_mmq_pack_q8(__global const uint8_t * input, __global const uint64_t * jobs,
-    __global uint8_t * packed, int32_t extent, int32_t kind, int32_t first, int32_t job_words) {
+    __global uint8_t * packed, int32_t extent, int32_t layout, int32_t first, int32_t job_words) {
     uint32_t group, job, lane;
     __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(group));
     __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(job));
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
     const uint64_t route = (uint64_t) first + job;
     pack_mmq_row((uint64_t) input + jobs[route * job_words],
-        (uint64_t) packed + (uint64_t) job * 288 * extent, extent, kind, group, lane);
+        (uint64_t) packed + (uint64_t) job * 288 * extent, extent, layout, group, lane);
 }
 
 __kernel void goose_mmq_pack_shared(__global const uint8_t * input, __global uint8_t * packed,
-    int32_t extent, int32_t kind, int64_t input_stride) {
+    int32_t extent, int32_t layout, int64_t input_stride) {
     uint32_t group, row, lane;
     __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(group));
     __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(row));
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
     pack_mmq_row((uint64_t) input + (uint64_t) row * input_stride,
-        (uint64_t) packed + (uint64_t) row * 288 * extent, extent, kind, group, lane);
+        (uint64_t) packed + (uint64_t) row * 288 * extent, extent, layout, group, lane);
 }
 
-__kernel void goose_mmq_matmul(__global const uint8_t * weights, __global const uint8_t * packed,
+static __attribute__((always_inline)) void mmq_matmul(__global const uint8_t * weights, __global const uint8_t * packed,
     __global uint8_t * output, __global const uint64_t * jobs, __global const uint64_t * tiles,
     uint64_t stride, int32_t extent, int32_t kind, int32_t rows, int32_t first, int32_t first_route,
-    int32_t job_words, int64_t input_stride) {
+    int32_t job_words, int64_t input_stride, int32_t reference_columns, int32_t reference_sms) {
     uint32_t block, tile, tid;
     __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(block));
     __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(tile));
@@ -125,7 +131,23 @@ __kernel void goose_mmq_matmul(__global const uint8_t * weights, __global const 
     const uint64_t q = (uint64_t) packed + (input_stride == 0 ? (route - first_route) * 288 * extent : 0);
     fg_device_mmq_g((uint64_t) weights + tiles[at + 2], q, (uint64_t) output,
         stride, extent, kind, row, rows, count, tid % 32, out0, out1, 0, extent, 0,
-        (uint64_t) jobs, route, job_words, input_stride);
+        (uint64_t) jobs, route, job_words, input_stride, reference_columns, reference_sms);
+}
+
+__kernel void goose_mmq_matmul(__global const uint8_t * weights, __global const uint8_t * packed,
+    __global uint8_t * output, __global const uint64_t * jobs, __global const uint64_t * tiles,
+    uint64_t stride, int32_t extent, int32_t kind, int32_t rows, int32_t first, int32_t first_route,
+    int32_t job_words, int64_t input_stride) {
+    mmq_matmul(weights, packed, output, jobs, tiles, stride, extent, kind, rows, first, first_route,
+        job_words, input_stride, 0, 0);
+}
+
+__kernel void goose_mmq_q6_reference(__global const uint8_t * weights, __global const uint8_t * packed,
+    __global uint8_t * output, __global const uint64_t * jobs, __global const uint64_t * tiles,
+    uint64_t stride, int32_t extent, int32_t kind, int32_t rows, int32_t first, int32_t first_route,
+    int32_t job_words, int64_t input_stride, int32_t columns, int32_t sms) {
+    mmq_matmul(weights, packed, output, jobs, tiles, stride, extent, 14, rows, first, first_route,
+        job_words, input_stride, columns, sms);
 }
 
 __kernel void goose_mmq_stream(__global const uint8_t * weights, __global const uint8_t * packed,

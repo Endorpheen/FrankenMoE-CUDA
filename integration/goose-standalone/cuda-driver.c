@@ -46,7 +46,7 @@ static struct {
     Context context;
     Module module;
     Function kernel, attention_tiles, attention_merge, gdn, q4_rows, vector, rms_reference;
-    Function mmq_pack, mmq_pack_shared, mmq_matrix, dense_mma, gdn_mma, flash_mma, flash_stage;
+    Function mmq_pack, mmq_pack_shared, mmq_matrix, mmq_q6_matrix, dense_mma, gdn_mma, flash_mma, flash_stage;
     Function mmq_stream, mmq_stream_fixup;
     Function rope_phases, rope_apply, ssm_conv;
     Function route_reduce, route_sort, route_topk, route_gather, route_norm, blit, fwht, moe_weighted;
@@ -61,7 +61,7 @@ static struct {
     sl_i64 state_ranges;
     struct expert_cache experts;
     int status, multiprocessors;
-    bool mmq_window, mmq_shared, moe_topk;
+    bool mmq_window, mmq_shared, moe_topk, mmq_q6_reference;
     int (*init)(unsigned);
     int (*device_get)(int *, int);
     int (*device_attribute)(int *, int, int);
@@ -182,17 +182,22 @@ static void init_cuda(void) {
     const bool flash_mma = flash_setting && strcmp(flash_setting, "1") == 0;
     const char * rms_setting = getenv("GOOSE_RMS_REFERENCE");
     const bool rms_reference = rms_setting && strcmp(rms_setting, "1") == 0;
+    const char * q6_setting = getenv("GOOSE_MMQ_Q6_REFERENCE");
+    const bool q6_reference = mmq && q6_setting && strcmp(q6_setting, "1") == 0;
     const bool mma_image = mmq || dense_mma || gdn_mma || flash_mma;
     if (mma_image) {
-        enum { compute_capability_major = 75 };
+        enum { compute_capability_major = 75, compute_capability_minor = 76 };
         int major = 0;
         if (cuda.device_attribute(&major, compute_capability_major, device) != 0 ||
             major < 8 || goose_cuda_mmq_image[0] == 0) {
             fputs("Goose CUDA: Tensor Core paths require the SM80 image and compute capability 8 or newer\n", stderr);
             return;
         }
+        int minor = 0;
+        cuda.mmq_q6_reference = q6_reference && major == 8 &&
+            cuda.device_attribute(&minor, compute_capability_minor, device) == 0 && minor == 9;
     }
-    if (stream_k) {
+    if (stream_k || cuda.mmq_q6_reference) {
         enum { multiprocessor_count = 16 };
         if (cuda.device_attribute(&cuda.multiprocessors, multiprocessor_count, device) != 0 || cuda.multiprocessors <= 0) return;
     }
@@ -203,6 +208,9 @@ static void init_cuda(void) {
         if (error == 0 && mmq) error = cuda.function_get(&cuda.mmq_pack, cuda.module, "goose_mmq_pack_q8");
         if (error == 0 && mmq) error = cuda.function_get(&cuda.mmq_pack_shared, cuda.module, "goose_mmq_pack_shared");
         if (error == 0 && mmq) error = cuda.function_get(&cuda.mmq_matrix, cuda.module, "goose_mmq_matmul");
+        if (error == 0 && cuda.mmq_q6_reference) {
+            error = cuda.function_get(&cuda.mmq_q6_matrix, cuda.module, "goose_mmq_q6_reference");
+        }
         if (error == 0 && stream_k) error = cuda.function_get(&cuda.mmq_stream, cuda.module, "goose_mmq_stream");
         if (error == 0 && stream_k) error = cuda.function_get(&cuda.mmq_stream_fixup, cuda.module, "goose_mmq_stream_fixup");
         if (error == 0 && dense_mma) error = cuda.function_get(&cuda.dense_mma, cuda.module, "goose_dense_mma");
@@ -846,9 +854,14 @@ static int launch_mmq_stream(DevicePtr weight, uint64_t stride, int extent, int 
 
 static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
                       int rows, sl_i64 jobs, int job_words, int64_t shared_rows, int64_t input_stride) {
-    enum { staging_budget = 16 * 1024 * 1024, routes_per_tile = 8 };
+    enum { staging_budget = 16 * 1024 * 1024, routes_per_tile = 8, q6_kind = 14,
+        mmq_d4 = 0, mmq_ds4 = 1, mmq_d4_reciprocal = 3 };
     const int count = (int) (jobs.len / job_words);
     if (extent > INT_MAX / 256 || (size_t) count > SIZE_MAX / (3 * sizeof(int64_t))) return -1;
+    const bool q6_reference = cuda.mmq_q6_reference && kind == q6_kind && job_words == 2 && rows % 128 == 0 &&
+        (int64_t) (rows / 128) * (1 + (count - 1) / 128) <= 1073741823 / extent;
+    int32_t reference_columns = q6_reference ? count : 0;
+    int32_t layout = kind == 12 ? mmq_ds4 : q6_reference ? mmq_d4_reciprocal : mmq_d4;
     int64_t * tiles = malloc((size_t) count * 3 * sizeof(*tiles));
     if (!tiles) return -1;
     const int64_t tile_count = fg143_mmq_tiles(jobs, job_words, (sl_i64) {tiles, 3ll * count});
@@ -885,15 +898,16 @@ static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
     if (!shared) input_stride = 0;
     if (error == 0 && shared) {
         if (cuda.mmq_window) window_tiles = tile_count < 8191 ? tile_count : 8191;
-        void * args[] = {&matrix_input, &cuda.mmq_packed.address, &extent, &kind, &input_stride};
+        void * args[] = {&matrix_input, &cuda.mmq_packed.address, &extent, &layout, &input_stride};
         error = cuda.launch(cuda.mmq_pack_shared, (unsigned) (2 * extent), (unsigned) shared_rows, 1,
             32, 1, 1, 0, NULL, args, NULL);
     }
     int first = 0, first_route = 0;
     void * pack_args[] = {&matrix_input, &cuda.jobs.address, &cuda.mmq_packed.address,
-                         &extent, &kind, &first_route, &job_words};
+                         &extent, &layout, &first_route, &job_words};
     void * matrix_args[] = {&weight, &cuda.mmq_packed.address, &matrix_output, &cuda.jobs.address,
-        &cuda.mmq_tiles.address, &stride, &extent, &kind, &rows, &first, &first_route, &job_words, &input_stride};
+        &cuda.mmq_tiles.address, &stride, &extent, &kind, &rows, &first, &first_route, &job_words, &input_stride,
+        &reference_columns, &cuda.multiprocessors};
     while (error == 0 && first < tile_count) {
         const int batch = (int) (tile_count - first > window_tiles ? window_tiles : tile_count - first);
         const int64_t last = 3ll * (first + batch - 1);
@@ -904,11 +918,13 @@ static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
                                 32, 1, 1, 0, NULL, pack_args, NULL);
         }
         if (error == 0) {
-            const int workers = cuda.mmq_stream ? (int) fg143_mmq_stream_workers(rows, batch, extent, cuda.multiprocessors) : 0;
+            const int workers = cuda.mmq_stream && !q6_reference ?
+                (int) fg143_mmq_stream_workers(rows, batch, extent, cuda.multiprocessors) : 0;
             if (workers > 0) {
                 error = launch_mmq_stream(weight, stride, extent, kind, rows, first, first_route, job_words, batch, workers, input_stride);
             } else {
-                error = cuda.launch(cuda.mmq_matrix, 1u + ((unsigned) rows - 1) / 64, (unsigned) batch, 1,
+                Function matrix = q6_reference ? cuda.mmq_q6_matrix : cuda.mmq_matrix;
+                error = cuda.launch(matrix, 1u + ((unsigned) rows - 1) / 64, (unsigned) batch, 1,
                                     128, 1, 1, 0, NULL, matrix_args, NULL);
             }
             if (error == 0) ++cuda_matrix_launches;

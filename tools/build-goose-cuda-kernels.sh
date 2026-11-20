@@ -54,7 +54,8 @@ sed '/^fn main()/,$d; s/^fn fg183f_row(/export fn fg183f_row(/' \
     "$ROOT/goose/cuda/goose-cuda-fwht/device.goose" > "$OUT/fwht.goose"
 sed '/^fn main()/,$d; s/^fn fg179w_reduce(/export fn fg179w_reduce(/' \
     "$ROOT/goose/cuda/goose-cuda-moe-weighted/device.goose" > "$OUT/moe-weighted.goose"
-sed '/^fn main()/,$d; s/^fn fg180q_mmq(/export fn fg180q_mmq(/' \
+sed '/^fn main()/,$d; s/^fn fg180q_mmq(/export fn fg180q_mmq(/;
+    s/^fn mmq_reciprocal(.*$/extern "fg180q_rcp" fn mmq_reciprocal(value: f32) -> f32;/' \
     "$ROOT/goose/cuda/goose-cuda-mmq-q8-1/device.goose" > "$OUT/mmq-quant.goose"
 cp "$ROOT/goose/cuda/standalone-mmq.goose" "$OUT/mmq.goose"
 cp "$ROOT/goose/cuda/standalone-dense-mma.goose" "$OUT/dense-mma.goose"

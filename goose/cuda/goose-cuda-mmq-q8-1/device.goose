@@ -226,7 +226,9 @@ fn fg180q_mmq_d2s6_scatter(
     gyv: i32) {
     fg180q_mmq(x, ids, y, ne00, s01, s02, s03, ne0, ne1, ne2, n_used, 2 as i32, 1 as i32, bx, by, bz, tx, nt, gx, gyv);
 }
-// ds_layout: 1 = DS4 (the Apex path), 0 = D4, 2 = D2S6.
+fn mmq_reciprocal(value: f32) -> f32 { return 1.0 / value; }
+
+// ds_layout: 0 = D4, 1 = DS4, 2 = D2S6, 3 = D4 with device reciprocal.
 // scatter: 0 = direct, 1 = compact rows.
 
 fn fg180q_mmq(
@@ -318,13 +320,13 @@ fn fg180q_mmq(
         amax = red_max(amax, ds);
         var sum: f32 = 0.0;
 
-        if ds != 0 {
+        if ds == 1 || ds == 2 {
             sum = xi0 + xi1;
             sum = sum + xi2;
             sum = sum + xi3;
             sum = red_sum(sum, ds);
         }
-        let d_inv: f32 = 127.0 / amax;
+        let d_inv: f32 = if ds == 3 { 127.0 * mmq_reciprocal(amax) } else { 127.0 / amax };
         pdl_sync();
         let qx: i32 = to_i32(rnd(xi0 * d_inv));
         let qy: i32 = to_i32(rnd(xi1 * d_inv));
@@ -333,7 +335,7 @@ fn fg180q_mmq(
         // char4 packed little-endian, as the native `char4 q` store produces.
         let m: i32 = 255 as i32;
         let qword: i32 = (qx & m) | ( (qy & m) << (8 as i32)) | ( (qz & m) << (16 as i32)) | ( (qw & m) << (24 as i32));
-        let d: f32 = 1.0 / d_inv;
+        let d: f32 = if ds == 3 { mmq_reciprocal(d_inv) } else { 1.0 / d_inv };
         let nwrite: i32 = if scatter != 0 {
             n_used
         } else {

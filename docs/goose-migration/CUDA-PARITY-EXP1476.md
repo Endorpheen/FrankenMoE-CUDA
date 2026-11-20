@@ -91,8 +91,8 @@ dependencies. Resume decode-specific work after prefill recovery.
 | # | Mechanism and EXP-1476 call path | Evidence and independent Goose state | Status, restoration and verification |
 |---:|---|---|---|
 | 1 | Q4_K MMQ. `ggml-cuda.cu` `ggml_cuda_mul_mat` / `ggml_cuda_mul_mat_id` → `mmq.cu` `ggml_cuda_mul_mat_q` → `mmq-load-tiles.cuh` and `mmq-vec-dot.cuh` → `mul_mat_q`. | Executed type 12 symbols contain SM89 `IMMA.16832.S8.S8`. With `GOOSE_MMQ=1`, Goose sends dense and routed 16×8 tiles to its K=32 MMA path. | PARTIAL. The integer-dot fixture and real 4,096-ID trace exercise the kernel. Full output parity and unprofiled performance remain open. |
-| 2 | Q6_K MMQ, same backend chain with `ggml_cuda_mmq_vec_dot_q6_K_q8_1_mma`. | Executed type 14 symbols contain SM89 `IMMA.16816.S8.S8`. Goose candidate uses K=16 and the existing packed loader and signed per-16 scale. | PARTIAL. Dense and cached routes match the integer-dot fixture, and the real short trace reaches the tiled path. Validate full generation and small shapes separately. |
-| 3 | Activation packing. `mmq.cu` → direct or scatter `quantize_mmq_q8_1` in `quantize.cu`, then MMQ. DS4 carries a half scale and activation sum. D4 carries F32 scales. | Both direct and scatter templates execute in the reference. Independent MMQ reuses the EXP180 packer and shares one Q8_1 row across routes when their input slot is identical. | PARTIAL. Both formats execute on Apex. Device scatter/grouping and model-level parity remain open. |
+| 2 | Q6_K MMQ, same backend chain with `ggml_cuda_mmq_vec_dot_q6_K_q8_1_mma`. | Executed type 14 symbols contain SM89 `IMMA.16816.S8.S8`. Goose uses the existing packed loader and K=16 integer MMA. The opt-in [reference order](#reference-q6_k-at-the-qkv-boundary) matches the first Apex QKV and runs 40 times in the 4096/1 trace. | PARTIAL. Check other projections, indexed routes and full generation. |
+| 3 | Activation packing. `mmq.cu` → direct or scatter `quantize_mmq_q8_1` in `quantize.cu`, then MMQ. DS4 carries a half scale and activation sum. D4 carries F32 scales. | Both direct and scatter templates execute in the reference. Independent MMQ reuses the EXP180 packer and shares one Q8_1 row across routes when their input slot is identical. The Q6_K diagnostic adds the reference D4 reciprocal sequence. | PARTIAL. Both formats execute on Apex. Device scatter/grouping and model-level parity remain open. |
 | 4 | MMQ stream-K. `mmq.cuh` partitions K and invokes `mul_mat_q_stream_k_fixup` to combine partial outputs. | Independent Goose partitions flattened output tiles and K blocks and applies backward partial reduction with `GOOSE_MMQ_STREAM_K=1`. GPU fixtures and a short Apex shape execute the fixup. | PARTIAL. Verify response parity and scheduling on reference-sized tiles. The current 4096 geometry selects regular tiles. |
 | 5 | Quantized small-batch MMVQ. `ggml-cuda.cu` → `ggml_cuda_mul_mat_vec_q` → Q8_1 and `mul_mat_vec_q` in `mmvq.cu`. | Both `quantize_q8_1` and `mul_mat_vec_q` run. Goose uses its scalar Q4_K/Q6_K path during decode. | MISSING. Restore the appropriate small-batch integer-dot specializations and packing. Check the exact subtype, output and decode timing under the final graph. |
 | 6 | Indexed small-batch MMVQ. `ggml_cuda_mul_mat_id` → `mul_mat_vec_q_moe_launch` → `mul_mat_vec_q_moe`. | The reference trace executes indexed MMVQ. Goose groups jobs on the host and feeds the scalar matrix kernel. | MISSING. Restore the routed MMVQ path and verify duplicate expert IDs, signed-scale arithmetic and first decode output. |
@@ -993,6 +993,79 @@ stay in the main map.
 | 15, Flash Stream-K | `goose-cuda-flash-attention/{mma-entry-device,mask-fixups-device}.goose` | The prefill path assigns a complete tile per CTA. The reference uses 80 general and 10 uniform Stream-K fixup launches. The current launch and workspace layout still need split ranges and fixup. |
 | 18, long SSM convolution | `goose-cuda-ssm-convolution/device.goose::ssm_conv_long` | The standalone build extracts `ssm_conv_serial`. Prefill uses the serial convolution with fused SiLU. Bind the long-token layout and match history, output and activation. |
 | 19, FP32 RMS | `goose-cuda-normalization/device.goose::rms_row` | Connected through the opt-in selector above. Verified bitwise on the first Apex norm. |
+
+## Reference Q6_K at the QKV boundary
+
+EXP-2026-11-20-1546 compared Apex's first QKV projection using the
+bitwise-identical RMS output and `blk.0.attn_qkv.weight` (Q6_K,
+2,048 by 8,192) from the same GGUF. An isolated CUDA graph used the
+frozen EXP-1476 libraries and reproduced all 1,015,808 values from
+the reference layer capture. Nsight observed D4 packing, 46 CTAs
+of `mul_mat_q<(ggml_type)14,128,false,(ggml_prec)30>` and its Stream-K
+fixup on sm89.
+
+The arithmetic comparison separated three effects:
+
+1. Goose applied both scales to each 16-element integer dot. The
+   reference CUDA path in `mmq-vec-dot.cuh` combines two such dots
+   with signed scales in I32, accumulates four D4-scaled terms for
+   each 128-element half with FMA, then applies the weight scale
+   with another FMA.
+2. D4 packing produced identical int8 values and 2,724 differences
+   among 7,936 F32 scales. EXP-1476's SM89 disassembly uses
+   `MUFU.RCP`, multiplies by 127, then applies `MUFU.RCP` again.
+   Goose's previous packer used two rounded divisions.
+3. With reference scales and FMA order, a single 2,048-element
+   accumulation still differed in 327,878 values. Replaying the
+   original 128-row tiles, 46 worker partitions and backward
+   fixup reproduced every value.
+
+`GOOSE_MMQ=1 GOOSE_MMQ_Q6_REFERENCE=1` selects a separate Q6_K
+entry for eligible dense, 128-row-aligned projections on SM89.
+It reuses the packed loaders and int8 MMA. Each output warp
+reproduces the reference partial sums in registers, without
+allocating a global fixup buffer for this path.
+
+With `GOOSE_RMS_REFERENCE=1` the actual 124-ID Apex graph reproduces
+both the first RMS and QKV tensors byte-for-byte. On the isolated
+projection with the same Apex weights and activations, the live
+CUDA graph reached MMQ and Compute Sanitizer reported zero errors.
+The next observed mismatch is `conv_output_silu-0`, with 496,733
+differing values and maximum absolute error 1.9073486e-6.
+The `linear_attn_out-0` relative L2 error fell from 6.0680383e-5 to
+4.5949156e-5. The same five of 992 first-layer expert ID slots differ.
+
+| Sequential Apex 4096/1 diagnostic | Ordinary Q6_K | Reference Q6_K |
+|---|---:|---:|
+| Prefill time, s | 14.434 | 14.292 |
+| Prefill, tokens/s | 283.781 | 286.587 |
+| RSS high-water, KiB | 23,884,772 | 23,884,968 |
+| Sampled peak process VRAM, MiB | 8,582 | 8,582 |
+| Sampled peak whole-card VRAM, MiB | 11,377 | 11,390 |
+| Process swap, KiB | 0 | 0 |
+| System swap-out increase, pages | 6,216 | 159 |
+| First token | 37972 | 37972 |
+| First token log probability | -0.0439093 | -0.0801412 |
+
+The common request uses physical 4096/4096, a fresh context, FP32
+reference RMS and MMQ/GDN/Flash/Dense MMA. The candidate executed
+40 `goose_mmq_q6_reference` launches totaling 343.546 ms. The
+ordinary MMQ entry still used 72 registers per thread. This single
+profiled pair had different system swap-out and supplies diagnostic
+timings. Decode and response correctness remain open.
+
+- Build and raw evidence: `/home/end0/AI/LlamaServer/franken-goose-q6-reference.cSIziF`.
+  The executable SHA-256 is `cd11ae8244342c1d6f5b03b3bba9070688cd49c01477ed9243b72ec95a4f2700`.
+  The run directories are `cuda-matrix-dense-both.kr0x9587` and
+  `cuda-matrix-dense-both.gtehhqmh`. Request SHA-256
+  `2d716460edf11494ce0fd16fe53241535b611c70774adc8fa3fe4619a6fcf81d`.
+- Goose layer capture: `/home/end0/AI/LlamaServer/franken-apex-goose-q6-final-layers.qctxqfjm/tensors`.
+  The reference QKV SHA-256 is `13612e80f796c369125e191cf63b86d24bfac5f252dc66d72d0a54e77e6806e1`.
+
+Complete the tensor diagnosis before the full audit of existing
+Goose CUDA kernels. For each applicable Apex mechanism, record
+its build and graph binding, a CUDA trace witness and the numerical
+gate in this map. The audit feeds the full 32K/512 acceptance run.
 
 ## Kernel coverage
 

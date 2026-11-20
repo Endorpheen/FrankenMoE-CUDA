@@ -1,4 +1,5 @@
 struct MmqDot { a: i32, b: i32, c: i32, d: i32 }
+struct MmqSum { a: f32, b: f32, c: f32, d: f32 }
 
 extern "fg_mmq_word" fn mmq_word(address: u64) -> u32;
 extern "fg248d_ld_half" fn mmq_half(address: u64) -> f32;
@@ -7,6 +8,7 @@ extern "fg_device_global_load" fn mmq_float(address: u64) -> f32;
 extern "fg_device_global_store" fn mmq_store(address: u64, value: f32);
 extern "fg_mmq_half_round" fn mmq_half_round(value: f32) -> f32;
 extern "fg_device_mul_rn" fn mmq_mul(a: f32, b: f32) -> f32;
+extern "fg_device_fma" fn mmq_fma(a: f32, b: f32, sum: f32) -> f32;
 extern "fg_mmq_mma32" fn mmq_mma32(a0: u32, a1: u32, a2: u32, a3: u32, b0: u32, b1: u32) -> MmqDot;
 extern "fg_mmq_mma16" fn mmq_mma16(a0: u32, a1: u32, b0: u32) -> MmqDot;
 extern "fg182d_ld_u8" fn ld_u8(src: u64, byte: u64) -> u32;
@@ -35,6 +37,86 @@ fn mmq_q6_acc(sum: f32, dot: i32, scale: i32, d: f32, activation: f32) -> f32 {
     return sum + mmq_mul(term, activation);
 }
 
+fn mmq_q6_dot(a: u64, b: u64, source: u64, group: i64, thread: i64) -> MmqDot {
+    let qs = (16 + 16 * (group % 8) + 4 * thread) as u64;
+    return mmq_mma16(mmq_q6_fragment(a, 4 * group + thread),
+        mmq_q6_fragment(b, 4 * group + thread), mmq_word(source + qs));
+}
+
+fn mmq_q6_reference_half(sum: MmqSum, a: u64, b: u64, source: u64,
+    source0: u64, source1: u64, first_group: i64, thread: i64) -> MmqSum {
+    var t0: f32 = 0.0;
+    var t1: f32 = 0.0;
+    var t2: f32 = 0.0;
+    var t3: f32 = 0.0;
+    for i in 4 {
+        let g = first_group + 2 * i;
+        let x = mmq_q6_dot(a, b, source, g, thread);
+        let y = mmq_q6_dot(a, b, source, g + 1, thread);
+        let s0 = mmq_i8(a + ((192 + g) as u64));
+        let s1 = mmq_i8(a + ((193 + g) as u64));
+        let s2 = mmq_i8(b + ((192 + g) as u64));
+        let s3 = mmq_i8(b + ((193 + g) as u64));
+        let d0 = mmq_float(source0 + ((4 * i) as u64));
+        let d1 = mmq_float(source1 + ((4 * i) as u64));
+        t0 = mmq_fma((x.a * s0 + y.a * s1) as f32, d0, t0);
+        t1 = mmq_fma((x.b * s0 + y.b * s1) as f32, d1, t1);
+        t2 = mmq_fma((x.c * s2 + y.c * s3) as f32, d0, t2);
+        t3 = mmq_fma((x.d * s2 + y.d * s3) as f32, d1, t3);
+    }
+    let da = mmq_half(a + 208);
+    let db = mmq_half(b + 208);
+    return MmqSum { a: mmq_fma(t0, da, sum.a), b: mmq_fma(t1, da, sum.b),
+        c: mmq_fma(t2, db, sum.c), d: mmq_fma(t3, db, sum.d) };
+}
+
+fn mmq_q6_reference(w0: u64, w1: u64, source: u64, source0: u64, source1: u64,
+    extent: i64, row: i64, rows: i64, route: i64, columns: i64, sms: i64, thread: i64) -> MmqSum {
+    // Preserve the reference's 128-row tiles and backward fixup order
+    // inside each output warp, without a global partial-sum buffer.
+    let ntiles = 1 + (columns - 1) / 128;
+    let width = 8 * (1 + (columns - 1) / (8 * ntiles));
+    let tiles = (rows / 128) * ntiles;
+    let tile = (row / 128) * ntiles + route / width;
+    let work = tiles * extent;
+    let waves = 1 + (tiles - 1) / sms;
+    let workers = if 100 * tiles / (sms * waves) >= 90 { tiles }
+        else { if sms < work { sms } else { work } };
+    let start = tile * extent;
+    var stop = extent;
+    var worker = ((start + stop) * workers - 1) / work;
+    let last = worker;
+    var result = MmqSum { a: 0.0, b: 0.0, c: 0.0, d: 0.0 };
+    var earlier = MmqSum { a: 0.0, b: 0.0, c: 0.0, d: 0.0 };
+    while stop > 0 {
+        let split = worker * work / workers;
+        let begin = if split > start { split - start } else { 0 };
+        var partial = MmqSum { a: 0.0, b: 0.0, c: 0.0, d: 0.0 };
+        for k in begin .. stop {
+            let a = w0 + ((210 * k) as u64);
+            let b = w1 + ((210 * k) as u64);
+            for half in 2 {
+                let q = (288 * k + 144 * half) as u64;
+                partial = mmq_q6_reference_half(partial, a, b, source + q, source0 + q, source1 + q,
+                    8 * half, thread);
+            }
+        }
+        if worker == last {
+            if begin == 0 { return partial; }
+            result = partial;
+        } else {
+            earlier.a += partial.a;
+            earlier.b += partial.b;
+            earlier.c += partial.c;
+            earlier.d += partial.d;
+        }
+        stop = begin;
+        worker -= 1;
+    }
+    return MmqSum { a: result.a + earlier.a, b: result.b + earlier.b,
+        c: result.c + earlier.c, d: result.d + earlier.d };
+}
+
 // PTX ISA m16n8k32 and m16n8k16 lane fragments. Each warp writes one
 // 16-row by 8-route tile. Padded fragment lanes still enter every MMA.
 fn mmq_source(q: u64, column: i64, count: i64, row_bytes: i64, jobs: u64, route: i64,
@@ -47,7 +129,8 @@ fn mmq_source(q: u64, column: i64, count: i64, row_bytes: i64, jobs: u64, route:
 
 export fn fg_device_mmq(weights: u64, q: u64, out: u64, row_stride: i64, extent: i64, kind: i64,
     row: i64, rows: i64, route_count: i64, lane: i64, out0: u64, out1: u64,
-    k_begin: i64, k_end: i64, output_row_base: i64, jobs: u64, route: i64, words: i64, input_stride: i64) {
+    k_begin: i64, k_end: i64, output_row_base: i64, jobs: u64, route: i64, words: i64, input_stride: i64,
+    reference_columns: i64, reference_sms: i64) {
     let group_id = lane / 4;
     let thread_id = lane % 4;
     let row0 = row + group_id;
@@ -91,6 +174,13 @@ export fn fg_device_mmq(weights: u64, q: u64, out: u64, row_stride: i64, extent:
                 sum3 = mmq_q4_acc(sum3, dot.d, d1, m1, source1 + ds);
             }
         }
+    } else if reference_columns > 0 {
+        let sum = mmq_q6_reference(w0, w1, source, source0, source1, extent, row, rows, route,
+            reference_columns, reference_sms, thread_id);
+        sum0 = sum.a;
+        sum1 = sum.b;
+        sum2 = sum.c;
+        sum3 = sum.d;
     } else {
         for weight_block in k_begin .. k_end {
             let a = w0 + ((210 * weight_block) as u64);
@@ -99,9 +189,7 @@ export fn fg_device_mmq(weights: u64, q: u64, out: u64, row_stride: i64, extent:
             let d1 = mmq_half(b + 208);
             for g in 16 {
                 let qb = (288 * weight_block + 144 * (g / 8)) as u64;
-                let qs = qb + ((16 + 16 * (g % 8) + 4 * thread_id) as u64);
-                let dot = mmq_mma16(mmq_q6_fragment(a, 4 * g + thread_id),
-                    mmq_q6_fragment(b, 4 * g + thread_id), mmq_word(source + qs));
+                let dot = mmq_q6_dot(a, b, source + qb, g, thread_id);
                 let scale = (192 + g) as u64;
                 let s0 = mmq_i8(a + scale);
                 let s1 = mmq_i8(b + scale);
@@ -156,11 +244,11 @@ export fn fg_device_mmq_stream(weights: u64, packed: u64, out: u64, jobs: u64, t
                 let out0 = if col0 < routes { mmq_index(jobs, (route + col0) * words + 1) } else { 0 };
                 let out1 = if col1 < routes { mmq_index(jobs, (route + col1) * words + 1) } else { 0 };
                 fg_device_mmq(weight, q, out, stride, extent, kind, row, rows, routes, lane, out0, out1, kb, end, 0,
-                    jobs, route, words, input_stride);
+                    jobs, route, words, input_stride, 0, 0);
             } else {
                 let partial = fixup + ((worker * MMQ_STREAM_TILE_BYTES) as u64);
                 fg_device_mmq(weight, q, partial, stride, extent, kind, row, rows, routes, lane,
-                    (col0 * 256) as u64, (col1 * 256) as u64, kb, end, row_base, jobs, route, words, input_stride);
+                    (col0 * 256) as u64, (col1 * 256) as u64, kb, end, row_base, jobs, route, words, input_stride, 0, 0);
             }
         }
         at += steps;
