@@ -116,7 +116,7 @@ prefill and 62.86 decode tokens/s.
 | 27 | Selective transfer and device placement. Backend split execution and CUDA tensor set/get → asynchronous linear and 2-D copies. | The [adaptive arena](#adaptive-cuda-activation-arena), [resident vector path](#resident-wide-vector-multiplication) and [last-use matrix input staging](#device-staging-for-the-last-use-matrix-input) remove the large temporary prefill publications. | PARTIAL. Investigate remaining expert uploads, dispatch packets and synchronous host transfers. Full memory and speed parity remain open. |
 | 28 | CUDA VMM pool. CUDA buffer allocator → `cuMemAddressReserve`, `cuMemCreate`, `cuMemMap`, `cuMemSetAccess`, release. | [Goose scratch VMM](#cuda-vmm-scratch-restoration) reserves stable MMQ and Attention addresses, maps growth in place and releases all mappings after real Apex. | PARTIAL. Qualify the package on the full workload. Other device buffers still use their current allocation path. |
 | 29 | CUDA Graph capture and replay. `ggml-cuda.cu` graph evaluator → begin/end capture, instantiate, exec update and launch. | [Goose vector Attention capture](#cuda-graph-replay-for-vector-attention) executes the two-node vector/merge graph and updates it with current pointers and key counts. The hybrid trace records over 20,000 graph launches across the full workload. | PARTIAL. Qualify 32K and extend capture to other dependency-safe decode sequences. |
-| 30 | Streams and synchronization. CUDA scheduler and `ggml-cuda.cu` establish streams, events and CUDA Graph scopes. | Reference uses stream sync and async copies. Planned Goose graphs defer intermediate publication waits to the graph boundary, with blocking host reads. | PARTIAL. Extend independent stream and event dependencies. Verify full-request performance, error propagation and state visibility. |
+| 30 | Streams and synchronization. CUDA scheduler and `ggml-cuda.cu` establish streams, events and CUDA Graph scopes. | Reference uses stream sync and async copies. Planned Goose graphs defer intermediate publication and [matrix waits](#deferred-matrix-waits) to the graph boundary, with ordered blocking host reads. | PARTIAL. Reduce the remaining blocking packet uploads and qualify independent stream and event dependencies. |
 | 31 | Prefill → decode continuation. Reference `llama-context.cpp` scheduler and CUDA graph compute produce logits for the shared sampler. | The earlier full Goose response repeated input text. The newer checkpoint completes the [normal quality suite](#apex-response-quality-checkpoint) and the vector Attention cases. | INCORRECT on the last full quality diagnostic. Revalidate the current checkpoint on the full real workload. Investigate a specific reproduced behavioral defect. |
 | 32 | Device initialization and specialization loading. CUDA backend loader and scheduler select architectures, entry points and cuBLAS paths. | Trace records device info, driver lookups, cuLibrary entry resolution and allocation APIs. Goose loads its own PTX with the Driver API. | PARTIAL. Extend end-to-end executable selection for supported MMQ shapes and verify real device witness. Preserve independent module loading and rejected profiles. |
 
@@ -2616,6 +2616,48 @@ The A/B directories end in `35aidzzm` and `vzrecq47`.
 Nsight SHA-256 values
 `c7bd5611b5ed362dd755a7ed1c2336350666f65f6266e8860311796caa6e32ac`
 and `4f079c805abbf881f7eac7085faf023dae5c5f20ea9152f69e5187797cb21c5b`.
+
+## Deferred matrix waits
+
+EXP-1573 extends the existing planned-graph completion
+fence to MMQ, MMVQ, dense MMA and scalar matrix launches.
+The legacy stream orders intermediate buffers and output
+publication. Blocking host reads retain visibility. Failed
+launches and unplanned execution retain their synchronous
+handling. Use `GOOSE_CUDA_DEFER_MATRIX_WAITS=0` to restore
+per-matrix waiting.
+
+| Profiled Apex 32K/512, 4096/4096 | A | B |
+|---|---:|---:|
+| Prefill, tok/s | 792.132 | 797.870 |
+| Prefill, s | 41.367 | 41.069 |
+| Decode, steps/s | 20.047 | 20.882 |
+| Decode, s | 25.490 | 24.471 |
+| Context synchronization calls | 291,671 | 26,469 |
+| Time in context synchronization calls, s | 25.244 | 0.961 |
+| Time in H2D calls, s | 31.637 | 54.745 |
+| H2D, whole trace bytes | 154,864,119,008 | 154,864,119,008 |
+| D2H, whole trace bytes | 551,156,480 | 551,156,480 |
+| Process RSS high-water, KiB | 23,514,836 | 23,514,764 |
+| Peak process VRAM, MiB | 8,524 | 8,524 |
+| Peak whole-card VRAM, MiB | 10,785 | 10,785 |
+| Process swap and system swap-out growth | 0 | 0 |
+
+Both responses match in content, IDs, probability rows and
+stop reason. The previously recorded opening echo persists.
+The short pair also matches every response field, and decode
+improves from 21.551 to 22.092 steps/s. The binary with the
+default selector repeats the B response and 6,579 context
+synchronizations on the short request. Most of the time
+removed from the context wait API moves into H2D. Full
+prefill saves 0.298 s and decode saves 1.019 s.
+
+The full pair and default checkpoint are under
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/matrix-waits-exp1573`.
+The A/B directories end in `fjd09uke` and `jy05j2cj`.
+The default confirmation ends in `y3oyyjpj`.
+Default executable SHA-256
+`12b2b058862b745846391e681205a364441d3c4cb2b3db0218604250d29f2f25`.
 
 ## Long Attention partition probe
 

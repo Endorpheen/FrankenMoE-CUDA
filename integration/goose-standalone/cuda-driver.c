@@ -109,6 +109,7 @@ static struct {
     bool adapt_activation_capacity;
     bool direct_wide_vectors;
     bool stage_matrix_input;
+    bool defer_matrix_waits;
     struct device_buffer dense;
     sl_i64 dense_ranges;
     struct device_buffer state;
@@ -348,6 +349,7 @@ static void load_cuda(void) {
     cuda.adapt_activation_capacity = !arena_setting;
     cuda.direct_wide_vectors = fg_standalone_option_enabled("GOOSE_CUDA_WIDE_VECTOR");
     cuda.stage_matrix_input = fg_standalone_option_enabled("GOOSE_CUDA_STAGE_MATRIX_INPUT");
+    cuda.defer_matrix_waits = fg_standalone_option_enabled("GOOSE_CUDA_DEFER_MATRIX_WAITS");
     if (arena_setting) {
         char * end;
         const intmax_t value = strtoimax(arena_setting, &end, 10);
@@ -1294,6 +1296,17 @@ static int launch_mmq_stream(DevicePtr weight, uint64_t stride, int extent, int 
     return error;
 }
 
+static int finish_matrix_launches(int error) {
+    // Jobs and intermediate buffers are ordered on the legacy stream.
+    // Host publication and graph completion already wait for their writes.
+    if (error == 0 && cuda.defer_matrix_waits && activations.defer_waits) {
+        activations.pending = true;
+        return 0;
+    }
+    const int sync_error = cuda.sync();
+    return error == 0 ? sync_error : error;
+}
+
 static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
                       int rows, sl_i64 jobs, int job_words, int64_t shared_rows, int64_t input_stride) {
     enum { staging_budget = 16 * 1024 * 1024, q4_kind = 12, q6_kind = 14,
@@ -1395,10 +1408,7 @@ static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
         first += batch;
     }
     free(tiles);
-    if (first != 0) {
-        const int sync_error = cuda.sync();
-        if (error == 0) error = sync_error;
-    }
+    if (first != 0) error = finish_matrix_launches(error);
     if (error != 0) {
         fprintf(stderr, "Goose CUDA: MMQ failed (%d), packed activations need %zu bytes\n", error, packed_bytes);
         return -1;
@@ -1418,8 +1428,7 @@ static int launch_mmvq(DevicePtr weight, uint64_t stride, int extent, int kind, 
         void * matrix[] = {&weight, &cuda.mmq_packed.address, &matrix_output, &cuda.jobs.address,
             &stride, &extent, &kind, &words};
         error = cuda.launch(cuda.mmvq, (unsigned) rows, (unsigned) count, 1, 128, 1, 1, 0, NULL, matrix, NULL);
-        const int synced = cuda.sync();
-        if (error == 0) error = synced;
+        error = finish_matrix_launches(error);
     }
     if (error != 0) {
         fprintf(stderr, "Goose CUDA: MMVQ failed (%d)\n", error);
@@ -1465,7 +1474,7 @@ static int launch_matrix(DevicePtr weight, int64_t row_stride, int64_t extent,
             &partitions};
         error = cuda.launch(matrix, 1u + ((unsigned) rows - 1) / 64, 1u + ((unsigned) count - 1) / 8, 1,
             128, 1, 1, 0, NULL, args, NULL);
-        if (error == 0) error = cuda.sync();
+        if (error == 0) error = finish_matrix_launches(error);
         if (error != 0) {
             fprintf(stderr, "Goose CUDA: dense MMA failed (%d)\n", error);
             return -1;
@@ -1488,10 +1497,7 @@ static int launch_matrix(DevicePtr weight, int64_t row_stride, int64_t extent,
         if (error == 0) ++cuda_matrix_launches;
         start += batch;
     }
-    if (start != 0) {
-        const int sync_error = cuda.sync();
-        if (error == 0) error = sync_error;
-    }
+    if (start != 0) error = finish_matrix_launches(error);
     if (error != 0) fprintf(stderr, "Goose CUDA: matrix kernel failed (%d)\n", error);
     else cuda_matrix_kind = type;
     return error == 0 ? 0 : -1;
