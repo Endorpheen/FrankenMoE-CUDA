@@ -134,6 +134,12 @@ static float fg_device_fma(float a, float b, float sum) {
     return result;
 }
 
+static float fg_device_fma_ftz(float a, float b, float sum) {
+    float result;
+    __asm__("fma.rn.ftz.f32 %0, %1, %2, %3;" : "=f"(result) : "f"(a), "f"(b), "f"(sum));
+    return result;
+}
+
 static float fg_device_shfl(float value, int32_t delta) {
     uint32_t result;
     __asm__ volatile("shfl.sync.bfly.b32 %0, %1, %2, 31, -1;"
@@ -445,9 +451,7 @@ static void fg170s_shared_store(uint64_t address, uint64_t i, float value) {
     ((__local float *) address)[i] = value;
 }
 static float fg170s_fma(float x, float w, float sum) {
-    float result;
-    __asm__("fma.rn.ftz.f32 %0, %1, %2, %3;" : "=f"(result) : "f"(x), "f"(w), "f"(sum));
-    return result;
+    return fg_device_fma_ftz(x, w, sum);
 }
 
 #include "ssm-conv-device.h"

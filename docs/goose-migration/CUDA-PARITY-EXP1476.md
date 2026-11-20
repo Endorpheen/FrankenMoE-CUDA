@@ -1119,6 +1119,67 @@ the response gate is open. This pair provides no decode result.
   Reference fused SSM tensor SHA-256
   `3a4687304ca86a30ca9f696a18e2b44024f9ad754c0737cb5ccd3db431e8ed7a`.
 
+## First recurrent Q and K normalization
+
+EXP-2026-11-20-1548 makes the vector sum-of-squares order explicit
+in the existing Goose RMS kernel. SM89 disassembly of the
+EXP-1476 32-thread RMS+scale specialization shows a rounded
+square of the second component, followed by three `FFMA.FTZ`
+instructions for the first, third and fourth components.
+The prior standalone PTX rounded each product independently.
+
+The reference observer captured the first 124 IDs before the
+expert-cache assertion interrupted its diagnostic request, as in
+the preceding capture. Goose used those same IDs. The first RMS,
+QKV, and SSM convolution+SiLU remain byte-exact. The weighted
+RMS fixture passed on CPU and CUDA, with zero Compute Sanitizer
+errors.
+
+| First-layer boundary, 124 IDs | Before explicit FMA | After |
+|---|---:|---:|
+| Q after RMS+scale, differing FP32 values | 19,305 of 253,952 | 0 |
+| K after RMS+scale, differing FP32 values | 17,031 of 253,952 | 0 |
+| GDN output max absolute error | 3.0994415e-6 | 1.9073486e-6 |
+| Final GDN state max absolute error | 2.3841858e-5 | 2.7656555e-5 |
+| `linear_attn_out-0` max absolute error | 2.2947788e-5 | 1.9788742e-5 |
+
+Compare the recurrent output and the materialized persistent
+state separately. The resident Goose path can write the state
+directly and leave the unused output tail unmaterialized.
+The parallel GDN inputs still differ: `a_softplus` has 515
+differences, `gate` has 489 and `beta_sigmoid` has 1,748
+(3,968 values in each). Z has 416,341 differences in
+507,904 values. Among the five differing expert ID slots,
+four belong to two reordered pairs. The set changes once,
+at input index 51 (expert 106 versus 223).
+
+| Sequential Apex 4096/1 diagnostic | Earlier RMS | Explicit FMA |
+|---|---:|---:|
+| Prefill, tokens/s | 289.524 | 289.596 |
+| Reference RMS GPU time, ms (191 launches each) | 43.236 | 43.395 |
+| RSS high-water, KiB | 23,884,864 | 23,884,520 |
+| Sampled peak process VRAM, MiB | 8,582 | 8,582 |
+| Sampled peak whole-card VRAM, MiB | 11,387 | 11,380 |
+| Process swap, KiB | 0 | 0 |
+| System swap-out increase, pages | 267 | 131 |
+| First token | 280 | 20 |
+
+Both profiled runs use physical 4096/4096, reference RMS, Q6_K
+and SSM, and all four experimental MMA selectors. The existing
+experimental settings remain opt-in. Decode and full response
+correctness are open.
+
+- Candidate build
+  `/home/end0/AI/LlamaServer/franken-goose-qk-reference.mMaQVd`,
+  executable SHA-256 `cf515485794c260477a481c070e9204ede25893a246ff6d00be9cc17bd712863`.
+  Short candidates under `cuda-matrix-dense-both.70blc6n_`
+  and control under
+  `/home/end0/AI/LlamaServer/franken-goose-ssm-reference.1wy4IG/cuda-matrix-dense-both.xit70f3_`.
+- Tensor captures under
+  `/home/end0/AI/LlamaServer/franken-apex-reference-gdn-layers.sam0tjof`,
+  `/home/end0/AI/LlamaServer/franken-apex-goose-gdn-layers.2jwhn0rw`
+  and `/home/end0/AI/LlamaServer/franken-apex-goose-qk-reference-layers.1ukbak9i`.
+
 ## Kernel coverage
 
 The exact EXP-1476 request passed content, ID and probability

@@ -11,7 +11,7 @@ static void fg168_store4(uint64_t p, int32_t i, RmsVec_g v) {
 }
 static float fg168_shuffle(float v, int32_t delta) { return fg_device_shfl(v, delta); }
 static void fg168_barrier(void) { fg_device_barrier(); }
-static float fg168_fma(float a, float b, float c) { return fg_device_fma(a, b, c); }
+static float fg168_fma(float a, float b, float c) { return fg_device_fma_ftz(a, b, c); }
 static float fg168_rsqrt(float v) {
     float value;
     __asm__("rsqrt.approx.f32 %0, %1;" : "=f"(value) : "f"(v));

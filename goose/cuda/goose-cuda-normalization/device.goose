@@ -117,7 +117,9 @@ fn rms_row(
             if i < n / 4 {
                 xs[k] = load4(x, i);
                 let v = xs[k];
-                sum += v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w;
+                let xy = fma(v.x, v.x, v.y * v.y);
+                let xyz = fma(v.z, v.z, xy);
+                sum += fma(v.w, v.w, xyz);
             }
             k += 1;
         }
