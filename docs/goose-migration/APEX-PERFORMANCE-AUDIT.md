@@ -11,7 +11,10 @@ Apex Q4_K_M workload on the RTX 4070, with 4096/4096,
 context 262,144 and no cached prompt tokens. They were
 recorded in different sessions. [EXP-1576](CUDA-PARITY-EXP1476.md#asynchronous-h2d-packets)
 subsequently moves 853,646 H2D packets onto the async API
-and saves 2.733 s of decode in an unprofiled pair. The
+and saves 2.733 s of decode in an unprofiled pair.
+[EXP-1578](CUDA-PARITY-EXP1476.md#cooperative-q6_k-mmq)
+reduces Q6_K device MMQ from 5.024 to 4.053 s and
+saves 0.966 s of prefill in its unprofiled pair. The
 tables below retain the original audit checkpoint.
 This comparison locates
 work and gaps. Final acceptance requires the fresh

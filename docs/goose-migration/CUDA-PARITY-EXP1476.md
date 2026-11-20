@@ -92,7 +92,7 @@ prefill and 62.86 decode tokens/s.
 | # | Mechanism and EXP-1476 call path | Evidence and independent Goose state | Status, restoration and verification |
 |---:|---|---|---|
 | 1 | Q4_K MMQ. `ggml-cuda.cu` `ggml_cuda_mul_mat` / `ggml_cuda_mul_mat_id` → `mmq.cu` `ggml_cuda_mul_mat_q` → `mmq-load-tiles.cuh` and `mmq-vec-dot.cuh` → `mul_mat_q`. | Executed type 12 symbols contain SM89 `IMMA.16832.S8.S8`. [Dense](#cooperative-dense-q4_k-mmq) and [routed](#cooperative-routed-q4_k-mmq) Goose paths use shared weights, coefficients and LDSM on qualified shapes. | PARTIAL. Improve output tile width and tail utilization. Check full quality. |
-| 2 | Q6_K MMQ, same backend chain with `ggml_cuda_mmq_vec_dot_q6_K_q8_1_mma`. | Executed type 14 symbols contain SM89 `IMMA.16816.S8.S8`. The reference order matches first Apex QKV and the isolated [indexed down projection](#apex-indexed-expert-mmq). Both execute on real Apex. | PARTIAL. Validate remaining shapes and full generation. |
+| 2 | Q6_K MMQ, same backend chain with `ggml_cuda_mmq_vec_dot_q6_K_q8_1_mma`. | [Cooperative Q6_K staging](#cooperative-q6_k-mmq) uses shared weight fragments, scales and LDSM for qualified dense and routed shapes. Both execute on real Apex with the reference accumulation order. | PARTIAL. Qualify more shapes and wider output tiles, and close full quality and speed parity. |
 | 3 | Activation packing. `mmq.cu` → direct or scatter `quantize_mmq_q8_1` in `quantize.cu`, then MMQ. DS4 carries a half scale and activation sum. D4 carries F32 scales. | Both direct and scatter templates execute in the reference. Independent MMQ reuses the EXP180 packer and shares one Q8_1 row across routes when their input slot is identical. The Q6_K diagnostic adds the reference D4 reciprocal sequence. | PARTIAL. Both formats execute on Apex. Device scatter/grouping and model-level parity remain open. |
 | 4 | MMQ stream-K. `mmq.cuh` partitions K and invokes `mul_mat_q_stream_k_fixup` to combine partial outputs. | Independent Goose partitions flattened output tiles and K blocks and applies backward partial reduction with `GOOSE_MMQ_STREAM_K=1`. GPU fixtures and a short Apex shape execute the fixup. | PARTIAL. Verify response parity and scheduling on reference-sized tiles. The current 4096 geometry selects regular tiles. |
 | 5 | Quantized small-batch MMVQ. `ggml-cuda.cu` → `ggml_cuda_mul_mat_vec_q` → Q8_1 and `mul_mat_vec_q` in `mmvq.cu`. | `GOOSE_MMVQ=1` enables the existing Goose Q4_K/Q6_K dot products and Q8_1 packer for single-column projections. [CUDA trace and replays](#independent-mmvq-decode-checkpoint). | PARTIAL. The qualified shapes execute and improve short decode. Validate full context and other small-batch specializations. |
@@ -2348,7 +2348,7 @@ lanes read a valid packed slot and still participate in the
 barriers. Only the live routes store results.
 `GOOSE_MMQ_Q4_ROUTED_SHARED=0` selects the eight-route control.
 
-`integration/goose-standalone/tests/mmq-routed-q4.c` exercises
+`integration/goose-standalone/tests/mmq-routed-shared.c` exercises
 226 routes across ten experts, with tails on both sides
 of the 8- and 32-route boundaries. All 115,712 values match
 bitwise for each of the two packing modes. Compute Sanitizer
@@ -2866,6 +2866,59 @@ The profiled A/B directories end in `sz4upaih` and
 `fetjzwqg` and `zc3wtc0r`. The default confirmation
 ends in `xeujmkr_`. Default executable SHA-256
 `49b03df6edf0db31b5b36eea385eb432e97a032347bc1d6c7ea1647a4ae4d92b`.
+
+## Cooperative Q6_K MMQ
+
+EXP-1578 extends the existing shared dense and routed
+dispatch to Q6_K on SM89. The Goose loader expands Q6_K
+low and high words into 16 weight groups, staging signed
+scales and conversion factors with the fragments. Four
+warps reuse the tile via LDSM.x2. The D4 reciprocal packer
+and FP32 accumulation order stay unchanged. The qualified
+dense path uses 4,096 columns with aligned 128-row groups.
+The indexed path covers 2,048 output rows and 512 input
+elements. Both use a 16-by-32 output tile and preserve the
+existing fallback dispatch. Set `GOOSE_MMQ_Q6_SHARED=0`
+to select the reference-order narrow tile.
+
+The dense fixtures compare 4,718,592 FP32 results.
+The shared routed fixture checks 226 routes and 462,848
+Q6_K results for each packing mode. Q4_K is checked through
+the same dispatch fixture. All comparisons are bitwise
+equal and CUDA memcheck reports zero errors. SM89 SASS
+contains LDSM.x2. The Q6_K entries use 4,416 shared bytes,
+113 or 115 registers and zero spill bytes. The Q4_K shared
+entries retain 5,120 shared bytes and 110 registers.
+
+| Same-binary full Apex 32K/512, 4096/4096 | Narrow A | Shared B |
+|---|---:|---:|
+| Profiled prefill, tok/s | 807.032 | 831.755 |
+| Profiled prefill, s | 40.603 | 39.396 |
+| Profiled Q6_K MMQ GPU time, s | 5.024 | 4.053 |
+| Profiled Q6_K dense and routed shared launches | 0 / 0 | 320 / 320 |
+| Profiled H2D bytes | 154,864,119,008 | 154,852,393,496 |
+| Profiled peak process VRAM, MiB | 7,284 | 7,284 |
+| Unprofiled reverse-pair prefill, tok/s | 814.272 | 834.303 |
+| Unprofiled reverse-pair prefill, s | 40.242 | 39.276 |
+| Unprofiled reverse-pair decode, steps/s | 24.970 | 25.191 |
+| Unprofiled peak process VRAM, MiB | 7,272 | 7,272 |
+| Unprofiled process RSS high-water, KiB | 22,938,688 | 22,938,812 |
+| Process swap and system swap-out growth | 0 | 0 |
+
+Both pairs preserve content, all 512 IDs, probability
+rows, SLRU activity and full model residency. The previous
+opening echo persists. Q4_K retains the same launches and
+geometry in both traced arms. The shared Q6_K selectors
+apply to prefill on this request. Decode differs only as
+an observed paired timing. The unprofiled B runs with the
+default selector and saves 0.966 s of prefill.
+
+The evidence and default executable are under
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/q6-shared-exp1578`.
+Profiled A/B directories end in `fla2k9lx` and `c95jysst`.
+Unprofiled A/B directories end in `3yhos541` and `f219g233`.
+Default executable SHA-256
+`7c35a7399c6a1bd25273f689408824163765b51e4f0b2361d1edd8512e54dedb`.
 
 ## Long Attention partition probe
 

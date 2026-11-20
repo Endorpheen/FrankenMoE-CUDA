@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 extern void fg143_cpu_init(int argc, char ** argv);
 extern int64_t fg_cuda_load_experts(sl_i64 groups, sl_i64 layers, int64_t bytes, int64_t words32, int64_t words64);
@@ -15,11 +16,14 @@ extern int64_t fg_cuda_finish(uint64_t output, int64_t output_bytes);
 extern uint64_t fg_cuda_take_mmq(void);
 
 int main(int argc, char ** argv) {
-    assert(argc == 3);
+    assert(argc == 3 || (argc == 4 && strcmp(argv[3], "q6") == 0));
+    const enum ggml_type kind = argc == 4 ? GGML_TYPE_Q6_K : GGML_TYPE_Q4_K;
+    const int rows = kind == GGML_TYPE_Q6_K ? 2048 : 512;
+    const int width = kind == GGML_TYPE_Q6_K ? 512 : 2048;
     const bool shared_pack = atoi(argv[2]) != 0;
     const int groups[] = {1, 7, 8, 9, 16, 24, 31, 32, 33, 65};
-    enum { experts = sizeof groups / sizeof *groups, rows = 512, width = 2048, input_rows = 39 };
-    const int64_t stride = ggml_row_size(GGML_TYPE_Q4_K, width);
+    enum { experts = sizeof groups / sizeof *groups, input_rows = 39 };
+    const int64_t stride = ggml_row_size(kind, width);
     const int64_t expert_bytes = rows * stride;
     int routes = 0;
     for (int e = 0; e < experts; ++e) routes += groups[e];
@@ -41,7 +45,7 @@ int main(int argc, char ** argv) {
     sl_i64 unused = {&empty, 1};
     assert(fg_cuda_load_experts(unused, unused, experts * expert_bytes, 1, 1) == experts * expert_bytes);
     assert(fg_cuda_begin((uintptr_t) input, input_bytes, (uintptr_t) output, output_bytes) == 1);
-    const struct ggml_type_traits * traits = ggml_get_type_traits(GGML_TYPE_Q4_K);
+    const struct ggml_type_traits * traits = ggml_get_type_traits(kind);
     int route = 0;
     for (int e = 0; e < experts; ++e) {
         for (int i = 0; i < rows; ++i) {
@@ -58,7 +62,7 @@ int main(int argc, char ** argv) {
             jobs[route * 3 + 2] = e * expert_bytes;
         }
     }
-    assert(fg_cuda_expert_batch(expert_bytes, stride, width / 256, GGML_TYPE_Q4_K, rows,
+    assert(fg_cuda_expert_batch(expert_bytes, stride, width / 256, kind, rows,
         (sl_i64) {jobs, 3 * routes}, shared_pack ? input_rows : 0, width * sizeof(float)) == 0);
     assert(fg_cuda_finish((uintptr_t) output, output_bytes) == 0);
     assert(fg_cuda_take_mmq() == 1);
@@ -66,7 +70,7 @@ int main(int argc, char ** argv) {
     assert(file);
     assert(fwrite(output, 1, output_bytes, file) == output_bytes);
     assert(fclose(file) == 0);
-    printf("%d routed Q4_K columns, %zu output bytes\n", routes, output_bytes);
+    printf("%d routed %s columns, %zu output bytes\n", routes, ggml_type_name(kind), output_bytes);
     free(jobs);
     free(weight);
     free(output);

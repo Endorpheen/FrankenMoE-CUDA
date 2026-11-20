@@ -103,6 +103,7 @@ static struct {
     Function kernel, attention_tiles, attention_merge, gdn, q4_rows, vector, rms_reference;
     Function mmq_pack, mmq_pack_shared, mmq_matrix, mmq_q4_matrix, mmq_q6_matrix;
     Function mmq_q4_dense_shared, mmq_q4_routed_shared;
+    Function mmq_q6_dense_shared, mmq_q6_routed_shared;
     Function mmvq_pack, mmvq;
     Function dense_mma, dense_mma_reference, gdn_mma, flash_mma, flash_stage, flash_vec, flash_vec_merge;
     Function mmq_stream, mmq_stream_fixup;
@@ -461,6 +462,7 @@ static void load_cuda(void) {
     const bool rms_reference = rms_setting && strcmp(rms_setting, "1") == 0;
     const char * q6_setting = getenv("GOOSE_MMQ_Q6_REFERENCE");
     const bool q6_reference = mmq && q6_setting && strcmp(q6_setting, "1") == 0;
+    const bool q6_shared = fg_standalone_option_enabled("GOOSE_MMQ_Q6_SHARED");
     const char * q4_setting = getenv("GOOSE_MMQ_Q4_REFERENCE");
     const bool q4_reference = mmq && q4_setting && strcmp(q4_setting, "1") == 0;
     const bool q4_shared = fg_standalone_option_enabled("GOOSE_MMQ_Q4_WIDE_SHARED");
@@ -507,6 +509,10 @@ static void load_cuda(void) {
         }
         if (error == 0 && reference_arch && q6_reference) {
             error = cuda.function_get(&cuda.mmq_q6_matrix, cuda.module, "goose_mmq_q6_reference");
+            if (error == 0 && q6_shared)
+                error = cuda.function_get(&cuda.mmq_q6_dense_shared, cuda.module, "goose_mmq_q6_dense_shared");
+            if (error == 0 && q6_shared)
+                error = cuda.function_get(&cuda.mmq_q6_routed_shared, cuda.module, "goose_mmq_q6_routed_shared");
         }
         if (error == 0 && stream_k) error = cuda.function_get(&cuda.mmq_stream, cuda.module, "goose_mmq_stream");
         if (error == 0 && stream_k) error = cuda.function_get(&cuda.mmq_stream_fixup, cuda.module, "goose_mmq_stream_fixup");
@@ -1607,7 +1613,9 @@ static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
         ((kind == q4_kind && rows == 512 && extent == 8) ||
          (kind == q6_kind && rows == 2048 && extent == 2));
     const bool reference = dense_reference || indexed_reference;
-    const bool routed_wide = indexed_reference && kind == q4_kind && cuda.mmq_q4_routed_shared;
+    const Function routed_shared = kind == q4_kind ? cuda.mmq_q4_routed_shared : cuda.mmq_q6_routed_shared;
+    const Function dense_shared = kind == q4_kind ? cuda.mmq_q4_dense_shared : cuda.mmq_q6_dense_shared;
+    const bool routed_wide = indexed_reference && routed_shared;
     const int routes_per_tile = routed_wide ? 32 : 8;
     int32_t reference_columns = indexed_reference ? -1 : dense_reference ? count : 0;
     int32_t layout = kind == q4_kind ? (reference ? mmq_ds4_reciprocal : mmq_ds4) :
@@ -1673,14 +1681,14 @@ static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
             if (routed_wide) {
                 void * args[] = {&weight, &cuda.mmq_packed.address, &matrix_output, &cuda.jobs.address,
                     &cuda.mmq_tiles.address, &stride, &extent, &rows, &first, &first_route, &input_stride};
-                error = cuda.launch(cuda.mmq_q4_routed_shared, (unsigned) rows / 16, (unsigned) batch,
+                error = cuda.launch(routed_shared, (unsigned) rows / 16, (unsigned) batch,
                     1, 128, 1, 1, 0, NULL, args, NULL);
-            } else if (cuda.mmq_q4_dense_shared && dense_reference && kind == q4_kind && !shared &&
+            } else if (dense_shared && dense_reference && !shared &&
                 count == 4096 && rows % 128 == 0 && first % 4 == 0 && batch % 4 == 0 &&
                 first_route == 8 * first && routes == 8u * (unsigned) batch) {
                 void * args[] = {&weight, &cuda.mmq_packed.address, &matrix_output, &cuda.jobs.address,
                     &stride, &extent, &rows, &first_route, &cuda.multiprocessors};
-                error = cuda.launch(cuda.mmq_q4_dense_shared, (unsigned) rows / 16, (unsigned) batch / 4,
+                error = cuda.launch(dense_shared, (unsigned) rows / 16, (unsigned) batch / 4,
                     1, 128, 1, 1, 0, NULL, args, NULL);
             } else if (workers > 0) {
                 error = launch_mmq_stream(weight, stride, extent, kind, rows, first, first_route, job_words, batch, workers, input_stride);
