@@ -25,7 +25,7 @@ Non-negotiable. They are also carried verbatim into every handoff report.
 4. One experiment = one atomic commit.
 5. Never touch user changes in `work/llama.cpp-integration`.
 6. No destructive Git.
-7. After every commit, output the updated handoff block (format below).
+7. Run `tools/cpp-line-count.py` on `main` before and after each C++ deletion step. Report the measured physical source line total before, net lines removed, and total after. Use the same scope on both sides and the baseline in `docs/goose-migration/CPP-LINES.md`. This is the complete C++ migration progress report and supersedes the older handoff format for this work.
 8. EHS stays off by default.
 9. Never present single-response throughput as aggregate throughput.
 10. Accepted improvements must be enabled by default in new builds. A new
@@ -529,8 +529,8 @@ come from Igor directly. For every marked message:
     Final acceptance: the necessary runtime code is Goose, and building and running it requires no C++ source and no
     C++ runtime, with correctness and paired prefill, decode, RAM and VRAM checked against the current accepted control.
 
-    Every commit reports three numbers: C++ lines added, C++ lines deleted, and which functions moved under Goose
-    control. New functionality - architecture logic, algorithms, memory, graph and model management - is written in
+    C++ removal is measured in physical tracked source lines before and after the change. Build flags and file
+    renames do not count as removal. New functionality - architecture logic, algorithms, memory, graph and model management - is written in
     Goose. The only permitted new C++ is a temporary bridge that brings Goose in and is removed afterwards, and only
     when it enables the deletion of substantially more C++ than it adds; every exception states that plan. Reviews
     check this policy. Functionality is never moved from Goose back into C++.
