@@ -82,7 +82,7 @@ quantized matrix throughput, and long-context decode Attention.
 
 | # | Mechanism and EXP-1476 call path | Evidence and independent Goose state | Status, restoration and verification |
 |---:|---|---|---|
-| 1 | Q4_K MMQ. `ggml-cuda.cu` `ggml_cuda_mul_mat` / `ggml_cuda_mul_mat_id` → `mmq.cu` `ggml_cuda_mul_mat_q` → `mmq-load-tiles.cuh` and `mmq-vec-dot.cuh` → `mul_mat_q`. | Executed type 12 symbols contain SM89 `IMMA.16832.S8.S8`. The reference Q4_K order matches [indexed gate/up](#apex-indexed-expert-mmq). [Cooperative dense staging](#cooperative-dense-q4_k-mmq) restores shared weights, coefficients and LDSM for full 4096-column tiles on SM89. | PARTIAL. Extend cooperative staging to routed Q4_K and wider tiles. Check full quality. |
+| 1 | Q4_K MMQ. `ggml-cuda.cu` `ggml_cuda_mul_mat` / `ggml_cuda_mul_mat_id` → `mmq.cu` `ggml_cuda_mul_mat_q` → `mmq-load-tiles.cuh` and `mmq-vec-dot.cuh` → `mul_mat_q`. | Executed type 12 symbols contain SM89 `IMMA.16832.S8.S8`. [Dense](#cooperative-dense-q4_k-mmq) and [routed](#cooperative-routed-q4_k-mmq) Goose paths use shared weights, coefficients and LDSM on qualified shapes. | PARTIAL. Improve output tile width and tail utilization. Check full quality. |
 | 2 | Q6_K MMQ, same backend chain with `ggml_cuda_mmq_vec_dot_q6_K_q8_1_mma`. | Executed type 14 symbols contain SM89 `IMMA.16816.S8.S8`. The reference order matches first Apex QKV and the isolated [indexed down projection](#apex-indexed-expert-mmq). Both execute on real Apex. | PARTIAL. Validate remaining shapes and full generation. |
 | 3 | Activation packing. `mmq.cu` → direct or scatter `quantize_mmq_q8_1` in `quantize.cu`, then MMQ. DS4 carries a half scale and activation sum. D4 carries F32 scales. | Both direct and scatter templates execute in the reference. Independent MMQ reuses the EXP180 packer and shares one Q8_1 row across routes when their input slot is identical. The Q6_K diagnostic adds the reference D4 reciprocal sequence. | PARTIAL. Both formats execute on Apex. Device scatter/grouping and model-level parity remain open. |
 | 4 | MMQ stream-K. `mmq.cuh` partitions K and invokes `mul_mat_q_stream_k_fixup` to combine partial outputs. | Independent Goose partitions flattened output tiles and K blocks and applies backward partial reduction with `GOOSE_MMQ_STREAM_K=1`. GPU fixtures and a short Apex shape execute the fixup. | PARTIAL. Verify response parity and scheduling on reference-sized tiles. The current 4096 geometry selects regular tiles. |
@@ -2325,6 +2325,64 @@ in `cuda-full-dense-both.f6q9p_m7` and
 A and B Nsight SHA-256 values
 `24a024a83d96391b1b42fa40f7357ecdba10d89fe5d63f303a69813b69d71fb9`
 and `1ad53cd07b7ccc58ba012fc78660bd8f990a9b35aad83bbdd4348d7af285efba`.
+
+## Cooperative routed Q4_K MMQ
+
+EXP-1568 applies the cooperative Q4_K weight stage to the
+SM89 indexed gate/up projections with 512 output rows and
+2,048 input elements. The Goose job planner groups at most
+32 adjacent jobs with the same expert plane offset. The
+packing budget accounts for that limit, including when
+shared Q8_1 inputs fall back to per-route packing. Four
+warps cooperatively stage weights and coefficients. Tail
+lanes read a valid packed slot and still participate in the
+barriers. Only the live routes store results.
+`GOOSE_MMQ_Q4_ROUTED_SHARED=0` selects the eight-route control.
+
+`integration/goose-standalone/tests/mmq-routed-q4.c` exercises
+226 routes across ten experts, with tails on both sides
+of the 8- and 32-route boundaries. All 115,712 values match
+bitwise for each of the two packing modes. Compute Sanitizer
+memcheck reports zero errors. SM89 SASS contains LDSM, with
+5,120 shared bytes, 110 registers and zero spill bytes.
+
+The short Apex pair removes 0.043 s from routed Q4_K
+(0.728 to 0.685 s). Prefill is 786.305 and 794.107 tok/s.
+The full pair uses the same executable, request and 4096/4096
+launch profile. Arm A sets the rollback flag. Arm B uses
+the default. Both complete all 512 response IDs.
+
+| Metric | A | B |
+|---|---:|---:|
+| Prefill, tok/s | 795.573 | 802.785 |
+| Prefill, s | 41.188 | 40.818 |
+| Decode, steps/s | 20.287 | 20.343 |
+| Decode, s | 25.189 | 25.119 |
+| Routed Q4_K gate/up device time, s | 5.754 | 5.282 |
+| Routed Q4_K gate/up launches | 640 | 640 |
+| Routed Q4_K gate/up thread blocks | 21,326,720 | 22,745,792 |
+| H2D, whole trace bytes | 154,911,039,824 | 154,864,119,008 |
+| D2H, whole trace bytes | 551,156,480 | 551,156,480 |
+| Process RSS high-water, KiB | 23,513,964 | 23,514,240 |
+| Sampled peak process VRAM, MiB | 8,524 | 8,524 |
+| Sampled peak whole-card VRAM, MiB | 10,742 | 10,741 |
+| Process swap and system swap-out growth | 0 | 0 |
+
+Both responses match in content, IDs, probability rows
+and stop reason. The previously reported opening echo
+persists. Model residency and all SLRU counters match.
+The routed stage saves 0.472 s of kernel time, and
+prefill saves 0.370 s. The additional 1,419,072 blocks
+expose the cost of partially filled 32-route tiles.
+
+The raw reports, executable and responses are under
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/routed-q4-exp1568`.
+Full runs: `cuda-full-dense-both.fz8s60fp` and
+`cuda-full-dense-both.qlv8j1jl`. Executable SHA-256
+`6d6e4b569e2c4d83b17c78dbfb60eff62a45266f300290e9cf8f7222c148ff22`.
+Nsight SHA-256 values
+`2fe15a9425255d3495a8dbcf151296ed6621c1e9d981e943f696cde33e026d4b`
+and `941d936a5e7eb9f13d6e7678b56a422ff2106bffdabf7058a30b6e75fa4b339c`.
 
 ## Long Attention partition probe
 

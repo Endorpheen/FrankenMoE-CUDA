@@ -208,15 +208,16 @@ fn cuda_matrix_job_words(p: const Node &) -> i64 {
 }
 
 // Jobs for each bank plane are contiguous. No tile may cross a plane boundary.
-export fn fg143_mmq_tiles(jobs: const i64[:], words: i64, tiles: i64[:]) -> i64 {
-    if (words != 2 && words != 3) || jobs.len <= 0 || jobs.len % words != 0 { return -1; }
+export fn fg143_mmq_tiles(jobs: const i64[:], words: i64, tile_width: i64, tiles: i64[:]) -> i64 {
+    if (words != 2 && words != 3) || jobs.len <= 0 || jobs.len % words != 0 ||
+       (tile_width != 8 && tile_width != 32) { return -1; }
     let count = jobs.len / words;
     var first: i64 = 0;
     var tile: i64 = 0;
     while first < count {
         let weight = if words == 3 { jobs[first * words + 2] } else { 0 };
         var size: i64 = 1;
-        while size < 8 && size < count - first {
+        while size < tile_width && size < count - first {
             if words == 3 && jobs[(first + size) * words + 2] != weight { break; }
             size += 1;
         }
@@ -230,11 +231,12 @@ export fn fg143_mmq_tiles(jobs: const i64[:], words: i64, tiles: i64[:]) -> i64 
     return tile;
 }
 
-export fn fg143_mmq_window(extent: i64, tiles: i64, budget: i64) -> i64 {
-    if extent <= 0 || extent > 2147483647 / 256 || tiles <= 0 || budget <= 0 { return -1; }
-    let bytes_per_tile = extent * 288 * 8;
+export fn fg143_mmq_window(extent: i64, tiles: i64, tile_width: i64, budget: i64) -> i64 {
+    if extent <= 0 || extent > 2147483647 / 256 || tiles <= 0 || budget <= 0 ||
+       (tile_width != 8 && tile_width != 32) { return -1; }
+    let bytes_per_tile = extent * 288 * tile_width;
     // Packing launches one CUDA grid-Y block per route.
-    return low(tiles, low(65535 / 8, high(1, budget / bytes_per_tile)));
+    return low(tiles, low(65535 / tile_width, high(1, budget / bytes_per_tile)));
 }
 
 export fn fg143_mmq_stream_workers(rows: i64, tiles: i64, extent: i64, sms: i64) -> i64 {

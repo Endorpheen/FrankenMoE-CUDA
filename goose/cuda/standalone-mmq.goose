@@ -338,6 +338,42 @@ export fn fg_device_mmq_q4_dense_shared(weights: u64, packed: u64, out: u64, job
     mmq_store(out1 + offset + 32, sum.d);
 }
 
+// Every warp stages weights with the block, including inactive tail warps.
+// Only live routes write outputs. Padded lanes use the first valid route.
+export fn fg_device_mmq_q4_routed_shared(weights: u64, packed: u64, out: u64, jobs: u64,
+    stride: i64, extent: i64, row: i64, rows: i64, route: i64, first_route: i64, routes: i64,
+    input_stride: i64, thread: i64, stage: u64) {
+    let lane = thread % 32;
+    let warp_start = 8 * (thread / 32);
+    let tail = routes - warp_start;
+    let live = if tail <= 0 { 0 } else if tail < 8 { tail } else { 8 };
+    let first = route + (if live == 0 { 0 } else { warp_start });
+    let group = lane / 4;
+    let sub = lane % 4;
+    let col = 2 * sub;
+    let row_bytes = 288 * extent;
+    let batch = packed + (if input_stride == 0 { ((first - first_route) * row_bytes) as u64 } else { 0 });
+    let source = mmq_source(batch, group, live, row_bytes, jobs, first, 3, input_stride);
+    let source0 = mmq_source(batch, col, live, row_bytes, jobs, first, 3, input_stride);
+    let source1 = mmq_source(batch, col + 1, live, row_bytes, jobs, first, 3, input_stride);
+    let base = weights + ((row * stride) as u64);
+    let w0 = base + ((group * stride) as u64);
+    let w1 = w0 + ((8 * stride) as u64);
+    let sum = mmq_reference(w0, w1, source, source0, source1, extent, 12, row, rows,
+        first, -1, 0, sub, stage, base, stride, thread);
+    let offset = (4 * (row + group)) as u64;
+    if col < live {
+        let dst = out + mmq_index(jobs, 3 * (first + col) + 1) + offset;
+        mmq_store(dst, sum.a);
+        mmq_store(dst + 32, sum.c);
+    }
+    if col + 1 < live {
+        let dst = out + mmq_index(jobs, 3 * (first + col + 1) + 1) + offset;
+        mmq_store(dst, sum.b);
+        mmq_store(dst + 32, sum.d);
+    }
+}
+
 // Stream-K divides the flattened output-tile/K-block range among workers.
 // Only the worker finishing a tile writes the output. Earlier fragments
 // use the worker's private 64-row by 8-route slot.
