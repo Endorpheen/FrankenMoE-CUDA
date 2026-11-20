@@ -1408,6 +1408,50 @@ static void check_dense_mma(int extent, int rows, int columns) {
     ggml_free(ctx);
 }
 
+static void check_gdn_mma(int tokens, int sequences) {
+    enum { width = 128, key_heads = 16, heads = 32 };
+    struct ggml_context * ctx = ggml_init((struct ggml_init_params){ 64 * 1024, NULL, true });
+    assert(ctx);
+    struct ggml_tensor * q = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, width, key_heads, tokens, 1);
+    struct ggml_tensor * k = ggml_dup_tensor(ctx, q);
+    struct ggml_tensor * v = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, width, heads, tokens, sequences);
+    struct ggml_tensor * gate = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, 1, heads, tokens, sequences);
+    struct ggml_tensor * beta = ggml_dup_tensor(ctx, gate);
+    struct ggml_tensor * initial = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, width, width, heads, sequences);
+    struct ggml_tensor * output = ggml_gated_delta_net(ctx, q, k, v, gate, beta, initial, 1);
+    struct ggml_cgraph * graph = ggml_new_graph_custom(ctx, 32, false);
+    ggml_build_forward_expand(graph, output);
+    void * storage = fg_standalone_graph_alloc(graph);
+    float * expected = malloc(ggml_nbytes(output));
+    assert(storage && expected);
+    struct ggml_tensor * input[] = {q, k, v, gate, beta, initial};
+    for (int i = 0; i < 6; ++i) {
+        float * values = input[i]->data;
+        for (int j = 0; j < ggml_nelements(input[i]); ++j) {
+            const float pattern = (float) ((j * (17 + i * 2) + j / 13 + i) % 53);
+            values[j] = i == 3 ? -(pattern + 1.0f) / 512.0f : i == 4 ? (pattern + 1.0f) / 64.0f :
+                (pattern - 26.0f) / (i == 5 ? 8192.0f : 256.0f);
+        }
+    }
+    assert(setenv("GOOSE_CUDA", "0", 1) == 0);
+    assert(fg_standalone_graph_compute(graph) == GGML_STATUS_SUCCESS);
+    memcpy(expected, output->data, ggml_nbytes(output));
+    assert(unsetenv("GOOSE_CUDA") == 0);
+    assert(fg_standalone_graph_compute(graph) == GGML_STATUS_SUCCESS);
+    const float * result = output->data;
+    const size_t score_values = (size_t) width * heads * tokens * sequences;
+    float errors[2] = {0};
+    for (size_t i = 0; i < ggml_nbytes(output) / sizeof(float); ++i) {
+        const float error = fabsf(result[i] - expected[i]);
+        assert(error <= 2e-4f);
+        errors[i >= score_values] = fmaxf(errors[i >= score_values], error);
+    }
+    printf("GDN MMA: %d tokens, %d sequences, max output %.9g, state %.9g\n", tokens, sequences, errors[0], errors[1]);
+    free(expected);
+    free(storage);
+    ggml_free(ctx);
+}
+
 static void check_ssm_silu(int tokens) {
     enum { taps = 4, channels = 137, sequences = 2 };
     const int time = tokens + taps - 1;
@@ -1435,6 +1479,10 @@ static void check_ssm_silu(int tokens) {
 }
 
 int main(int argc, char ** argv) {
+    if (argc == 2 && strcmp(argv[1], "--gdn-mma") == 0) {
+        check_gdn_mma(73, 2);
+        return 0;
+    }
     if (argc == 2 && strcmp(argv[1], "--ssm-silu") == 0) {
         check_ssm_silu(1);
         check_ssm_silu(4096);

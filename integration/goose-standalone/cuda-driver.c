@@ -45,7 +45,7 @@ static struct {
     Context context;
     Module module;
     Function kernel, attention_tiles, attention_merge, gdn, q4_rows, vector;
-    Function mmq_pack, mmq_matrix, dense_mma;
+    Function mmq_pack, mmq_matrix, dense_mma, gdn_mma;
     Function rope_phases, rope_apply, ssm_conv;
     Function route_reduce, route_sort, route_gather, blit, fwht, moe_weighted;
     struct device_buffer input, output, weight, jobs;
@@ -68,6 +68,7 @@ static struct {
     int (*pop)(Context *);
     int (*module_load)(Module *, const void *);
     int (*function_get)(Function *, Module, const char *);
+    int (*function_set_attribute)(Function, int, int);
     int (*alloc)(DevicePtr *, size_t);
     int (*memory_info)(size_t *, size_t *);
     int (*release)(DevicePtr);
@@ -83,6 +84,7 @@ static pthread_once_t cuda_once = PTHREAD_ONCE_INIT;
 static pthread_mutex_t cuda_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t activation_lock = PTHREAD_MUTEX_INITIALIZER;
 enum { ACTIVATION_WORDS = 5, ACTIVATION_RECORDS = 256, ACTIVATION_BYTES = 64 * 1024 * 1024 };
+enum { GDN_MMA_SHARED_BYTES = 93312 };
 static _Thread_local struct {
     bool active, unavailable, defer_waits, pending;
     uint64_t target;
@@ -101,6 +103,7 @@ static _Thread_local int cuda_matrix_kind;
 static _Thread_local uint64_t cuda_attentions;
 static _Thread_local uint64_t cuda_causal_attentions;
 static _Thread_local uint64_t cuda_gdns;
+static _Thread_local uint64_t cuda_gdn_mmas;
 static _Thread_local uint64_t cuda_resident_kv, cuda_resident_gdn;
 static _Thread_local uint64_t cuda_q4_writes;
 static _Thread_local uint64_t cuda_vectors;
@@ -144,6 +147,7 @@ static void init_cuda(void) {
     LOAD(pop, "cuCtxPopCurrent_v2");
     LOAD(module_load, "cuModuleLoadData");
     LOAD(function_get, "cuModuleGetFunction");
+    LOAD(function_set_attribute, "cuFuncSetAttribute");
     LOAD(alloc, "cuMemAlloc_v2");
     LOAD(memory_info, "cuMemGetInfo_v2");
     LOAD(release, "cuMemFree_v2");
@@ -160,7 +164,10 @@ static void init_cuda(void) {
     const bool mmq = setting && strcmp(setting, "1") == 0;
     const char * dense_setting = getenv("GOOSE_DENSE_MMA");
     const bool dense_mma = dense_setting && strcmp(dense_setting, "1") == 0;
-    if (mmq || dense_mma) {
+    const char * gdn_setting = getenv("GOOSE_GDN_MMA");
+    const bool gdn_mma = gdn_setting && strcmp(gdn_setting, "1") == 0;
+    const bool mma_image = mmq || dense_mma || gdn_mma;
+    if (mma_image) {
         enum { compute_capability_major = 75 };
         int major = 0;
         if (cuda.device_attribute(&major, compute_capability_major, device) != 0 ||
@@ -171,7 +178,7 @@ static void init_cuda(void) {
     }
     int error = cuda.create(&cuda.context, 0, device);
     if (error == 0) {
-        error = cuda.module_load(&cuda.module, mmq || dense_mma ? goose_cuda_mmq_image : goose_cuda_image);
+        error = cuda.module_load(&cuda.module, mma_image ? goose_cuda_mmq_image : goose_cuda_image);
         if (error == 0) error = cuda.function_get(&cuda.kernel, cuda.module, "goose_quantized_matmul");
         if (error == 0 && mmq) error = cuda.function_get(&cuda.mmq_pack, cuda.module, "goose_mmq_pack_q8");
         if (error == 0 && mmq) error = cuda.function_get(&cuda.mmq_matrix, cuda.module, "goose_mmq_matmul");
@@ -179,6 +186,11 @@ static void init_cuda(void) {
         if (error == 0) error = cuda.function_get(&cuda.attention_tiles, cuda.module, "goose_q4_attention_tiles");
         if (error == 0) error = cuda.function_get(&cuda.attention_merge, cuda.module, "goose_q4_attention_merge");
         if (error == 0) error = cuda.function_get(&cuda.gdn, cuda.module, "goose_gated_delta_net");
+        if (error == 0 && gdn_mma) {
+            enum { max_dynamic_shared_size = 8 };
+            error = cuda.function_get(&cuda.gdn_mma, cuda.module, "goose_gdn_mma");
+            if (error == 0) error = cuda.function_set_attribute(cuda.gdn_mma, max_dynamic_shared_size, GDN_MMA_SHARED_BYTES);
+        }
         if (error == 0) error = cuda.function_get(&cuda.q4_rows, cuda.module, "goose_set_q4_rows");
         if (error == 0) error = cuda.function_get(&cuda.vector, cuda.module, "goose_vector_ops");
         if (error == 0) error = cuda.function_get(&cuda.rope_phases, cuda.module, "goose_rope_phases");
@@ -1043,6 +1055,10 @@ int64_t fg_cuda_gdn(sl_i64 plan, sl_f32 q, sl_f32 k, sl_f32 v, sl_f32 gate, sl_f
     if (active != 1) return active;
 
     const uint64_t initial_host = (uint64_t) (uintptr_t) initial.data;
+    const int64_t heads = plan.data[25], sequences = plan.data[27];
+    const bool mma = cuda.gdn_mma && plan.data[24] == 128 && plan.data[44] == 16 &&
+        heads >= 16 && heads <= 64 && heads % 16 == 0 && sequences <= INT_MAX / heads &&
+        plan.data[26] >= 64 && plan.data[26] <= INT64_MAX - 32 && plan.data[30] == 1 && !plan.data[40];
     const int64_t state_bytes = data[5].len;
     const size_t score_bytes = (size_t) plan.data[48] * sizeof(float);
     const DevicePtr initial_device = state_address(initial_host, state_bytes, 1);
@@ -1068,9 +1084,12 @@ int64_t fg_cuda_gdn(sl_i64 plan, sl_f32 q, sl_f32 k, sl_f32 v, sl_f32 gate, sl_f
     if (error == 0) error = cuda.upload(cuda.attention_config.address, packet, sizeof packet);
     void * args[] = {&cuda.attention_config.address};
     if (error == 0) {
-        error = cuda.launch(cuda.gdn, (unsigned) plan.data[25], (unsigned) plan.data[27],
-            (unsigned) plan.data[34], (unsigned) (plan.data[35] * plan.data[36]),
-            1, 1, 0, NULL, args, NULL);
+        if (mma) {
+            error = cuda.launch(cuda.gdn_mma, (unsigned) (heads * sequences), 1, 1, 256, 1, 1, GDN_MMA_SHARED_BYTES, NULL, args, NULL);
+        } else {
+            error = cuda.launch(cuda.gdn, (unsigned) heads, (unsigned) sequences,
+                (unsigned) plan.data[34], (unsigned) (plan.data[35] * plan.data[36]), 1, 1, 0, NULL, args, NULL);
+        }
         if (error == 0) {
             error = activation_publish(host, (int64_t) output_bytes, output, false);
             if (error != 0) (void) cuda.sync();
@@ -1082,6 +1101,7 @@ int64_t fg_cuda_gdn(sl_i64 plan, sl_f32 q, sl_f32 k, sl_f32 v, sl_f32 gate, sl_f
         return -1;
     }
     ++cuda_gdns;
+    if (mma) ++cuda_gdn_mmas;
     if (publish) {
         published_state.source = (uint64_t) (uintptr_t) out.data + score_bytes;
         published_state.destination = initial_host;
@@ -1095,6 +1115,12 @@ uint64_t fg_cuda_take_gdns(void) {
     const uint64_t gdns = cuda_gdns;
     cuda_gdns = 0;
     return gdns;
+}
+
+uint64_t fg_cuda_take_gdn_mmas(void) {
+    const uint64_t count = cuda_gdn_mmas;
+    cuda_gdn_mmas = 0;
+    return count;
 }
 
 void fg_cuda_take_resident_state(uint64_t * kv, uint64_t * gdn) {

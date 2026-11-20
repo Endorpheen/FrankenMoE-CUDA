@@ -17,6 +17,8 @@ sed -n '/^struct F2 {/,/^}/p; /^fn dequant_q4_0(/,/^}/p' \
 cat "$ROOT/goose/cuda/standalone-q4-attention.goose" >> "$OUT/q4-attention.goose"
 sed '/^fn main()/,$d; s/^fn gdn(/export fn gdn(/' \
     "$ROOT/goose/cuda/goose-cuda-gdn/scalar-device.goose" > "$OUT/gdn.goose"
+sed '/^fn main()/,$d; s/^fn gdn_v128(/export fn gdn_v128(/' \
+    "$ROOT/goose/cuda/goose-cuda-gdn/mma-device.goose" > "$OUT/gdn-mma.goose"
 sed -n '/^extern "fg176r_ld_f32"/p; /^extern "fg176r_st_f16"/p; /^extern "fg176r_st_u8"/p;
         /^extern "fg176r_fabs"/p; /^extern "fg176r_i8trunc"/p;
         /^fn fg176r_quant_q4_0(/,/^}/p' \
@@ -50,7 +52,7 @@ sed -n '/^fn scale_min(/,/^}/p' "$ROOT/goose/cuda/goose-cuda-dequant-q4k/device.
 sed -n '/^fn q4_mmq_nibbles(/,/^}/p' "$ROOT/goose/cuda/goose-mmq-load-q4k/device.goose" >> "$OUT/mmq.goose"
 sed -n '/^fn vsub4(/,/^}/p; /^fn q6_mmq_bytes(/,/^}/p' \
     "$ROOT/goose/cuda/goose-mmq-load-q6k/device.goose" >> "$OUT/mmq.goose"
-for module in q4k q6k matmul q4-attention gdn q4-set-rows vector rope ssm-conv routing transform fwht moe-weighted mmq-quant mmq dense-mma; do
+for module in q4k q6k matmul q4-attention gdn gdn-mma q4-set-rows vector rope ssm-conv routing transform fwht moe-weighted mmq-quant mmq dense-mma; do
     "$GOOSE" --standalone -o "$OUT/$module.c" --header "$OUT/$module.h" "$OUT/$module.goose"
     python3 - "$OUT" "$module" <<'PY'
 from pathlib import Path
@@ -66,6 +68,11 @@ if module in ("q4-attention", "gdn", "rope", "ssm-conv", "fwht"):
     types = "\n".join(line for line in types.splitlines()
                       if not line.endswith(("gs_rhdr;", "gs_rref;", "gs_pref;", "sl_u8;")))
     fragment = types + "\n" + fragment
+if module == "gdn-mma":
+    types = source.split("/* ---- types ---- */", 1)[1].split("/* ---- data ---- */", 1)[0]
+    types = "\n".join(line for line in types.splitlines()
+                      if not line.endswith(("gs_rhdr;", "gs_rref;", "gs_pref;", "sl_u8;", "a8_f32;")))
+    (out / "gdn-mma-types.h").write_text(types)
 (out / f"{module}-device.h").write_text(fragment)
 PY
 done

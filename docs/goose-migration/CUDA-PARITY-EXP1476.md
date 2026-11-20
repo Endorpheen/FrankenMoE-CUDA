@@ -48,6 +48,7 @@ the dependency that would justify rerunning it.
 |---|---|---|---|
 | EXP-1527, dense TF32 MMA | `fc399bf0`, `GOOSE_DENSE_MMA=1`. [Dense diagnostic](#dense-tf32-mma-diagnostic) and [full package](#prefill-package-full-32k512-diagnostic). Matrix time 565.205 → 52.069 ms, short prefill 110.293 → 115.386 tokens/s. | The short first ID changes from 9495 to 37972. EXP-1476 returns 332. The full package also fails reference text, ID and probability parity. Its speed does not isolate Dense MMA. | Diagnose routed MoE, dense accumulations and the first divergent Apex state. After the numerical gate passes, compare the selected dense path alone and with restored MoE routing. Measure router and output timing and require reference response parity. |
 | EXP-1531, deferred CUDA waits | [Candidate patch](deferred/EXP-1531-graph-waits.patch) against `7916697c`. [Original A–B–B–A](#deferred-cuda-wait-diagnostic): explicit waits 1,873 → 562, median prefill 22.875 → 22.882 s. | Originally, synchronous D2H absorbed the removed waiting. Copy counts and bytes stayed unchanged. | Rechecked with reusable arena gaps and selective eviction on `e37e8a2c`. [Combined A–B–B–A](#deferred-waits-with-selective-eviction) passed the short gate and enabled waits at the planned graph boundary. Full-request qualification is open. Reassess when pinned transfer or stream/event changes alter host readback. |
+| EXP-1536, GDN MMA | Standalone `GOOSE_GDN_MMA=1`. [Kernel and model measurements](#gdn-mma-checkpoint). Thirty kernels took 2,503.240 → 171.978 ms and short prefill reached 210.866 tokens/s. | The short first ID changed from 9495 to 280. Both differ from EXP-1476 ID 332. On the same actual layer inputs the largest relative L2 errors were 1.58e-5 for output and 3.71e-5 for state. | Compare the earliest differing routed-expert IDs and logits against EXP-1476. Recheck with restored attention and routing on a numerically verified checkpoint. Keep the experimental flag off by default until the response gate passes. |
 
 After a material dependency change, use short sequential A/B runs on
 identical inputs and settings. Use the best current verified checkpoint
@@ -60,7 +61,7 @@ the entry. Apply the full-request gate on the package schedule.
 
 ## Mechanisms
 
-**32 mechanisms: PARITY 0, PARTIAL 22, MISSING 9, INCORRECT 1.**
+**32 mechanisms: PARITY 0, PARTIAL 23, MISSING 8, INCORRECT 1.**
 
 Group three to five related improvements. Give each change its own
 short correctness, CUDA-error and numerical checks, then commit it
@@ -101,7 +102,7 @@ dependencies. Resume decode-specific work after prefill recovery.
 | 13 | Small-query Flash Attention vector dispatch. `fattn.cu` → `flash_attn_ext_vec`. | Reference trace contains the vector path. Goose slices its scalar Q4 tiles for both prefill and decode. | MISSING. Restore the small-query specialization and validate softmax merging and decode latency at 32K. |
 | 14 | Attention staging and bounds. `fattn-common.cuh` and `fattn-mma-f16.cuh` stage Q4_0 KV as FP16, use FWHT where selected, and derive KV bounds from the mask. | `dequantize_block_q4_0`, `fwht_cuda` and `flash_attn_mask_to_KV_max` execute. Goose now applies the reference Q/K/V and inverse-output rotations in the live Q4 KV graph. It tracks causal bounds in its KV transaction and reads Q4 directly. | PARTIAL. FWHT executes at widths 256 and 64 on Apex. Float16 staging/rounding, masked tails and generation parity still need validation. |
 | 15 | Flash partition reconciliation. `fattn-mma-f16.cuh` → stream-K general/uniform fix-up, plus vector combine-results. | All three reference families are present. Goose merge implements its current scalar partition geometry. | MISSING. Port compatible reconciliation with the MMA and vector schedules. Compare numerical reductions across tail partitions and multihead layouts. |
-| 16 | GDN prefill Tensor Cores. `ggml_cuda_op_gated_delta_net_impl` → `gdn_single` in `gated-delta-net-mma.cu`. | Reference executes `gdn_single<16,128,1>`. Goose invokes `fg_cuda_gdn` → scalar `goose_gated_delta_net`. | MISSING. Restore the blocked recurrent MMA order and shared state update. Verify full and chunked hidden states for each layer, then prefill time and state-memory peaks. |
+| 16 | GDN prefill Tensor Cores. `ggml_cuda_op_gated_delta_net_impl` → `gdn_single` in `gated-delta-net-mma.cu`. | Reference executes `gdn_single<16,128,1>`. Independent Goose runs its `C=16, V=128` body with `GOOSE_GDN_MMA=1`. All 30 GDN layers execute it in a real Apex block. | PARTIAL. CPU and actual layer-input differential checks pass at the documented error levels. The short model output changes and still differs from EXP-1476. Validate full and chunked recurrent state and generation before default promotion. |
 | 17 | GDN decode specialization and fused state cache. `ggml_cuda_op_gated_delta_net_fused_cache` → native scalar `gated_delta_net_cuda` or shape-selected MMA. | Reference executes scalar decode GDN and known fused cache code. Goose has CUDA-resident GDN state and a publish/consume path. | PARTIAL. Match the selected decode kernel's arithmetic and state snapshots against the reference across prefill → decode. Check for stale aliases and measure actual state moves. |
 | 18 | SSM convolution and activation fusion. `ssm-conv.cu` dispatch plus `ggml_cuda_try_fuse` → `ssm_conv_long_token_f32` or `ssm_conv_f32`. | Both reference families execute. Goose applies SiLU inside its existing rolling convolution at all 30 Apex GDN layers. | PARTIAL. Restore the reference long-token schedule. Keep the fused/separate numerical fixtures and check persistent history at full context. |
 | 19 | Fused RMS/L2 normalization. `ggml_cuda_try_fuse` → RMS multiply/add/scale variants in `norm.cu` and supported RoPE/cache combinations. | Trace shows RMS variants. Goose has row normalization and separate vector operations. | PARTIAL. Fuse only traced compatible sequences after comparing epsilon and multiply/add order. Confirm reduction layout and avoid rounding regression. |
@@ -502,6 +503,34 @@ EXP-1476 generation parity remain open.
 Candidate profile: `/home/end0/AI/LlamaServer/franken-goose-ssm-silu.1LvVP2/mmq-profile.lbLiJK`.
 Executable SHA-256: `458d9850e798acc34bd8f29b92734f2c4ddef3d15e505adbd89048d05dabc357`.
 Response SHA-256: `d2da1f35f6d5e1544177c571076704af3aea8bcdc8b1200b3fdc6012c6d561f2`.
+
+## GDN MMA checkpoint
+
+EXP-2026-11-20-1536 uses the existing Goose BF16 `C=16, V=128`
+recurrence. OpenCL C provides only raw memory and PTX operations.
+The SM80+ image enables it for qualified grouped F32 inputs with
+scalar gates and one final state. The CUDA driver opts in to
+93,312 bytes of dynamic shared memory. The 73-token, two-sequence
+fixture exercised grouped keys, a partial chunk and final state.
+Against the CPU recurrence, maximum absolute errors were 2.10e-8
+for the output and 1.38e-7 for the final state.
+
+Apex 4096/1 ran 30 MMA GDN kernels totaling 171.978 ms, compared
+with 2,503.240 ms for 30 scalar kernels. Prefill took 19.425 s /
+210.866 tokens/s, compared with 21.763 s / 188.210 tokens/s.
+The first ID changed from 9495 to 280. EXP-1476 selects 332. An
+isolated diagnostic ran both kernels on the same actual inputs
+and initial state for each of 30 Apex layers. Maximum relative
+L2 errors were 1.58e-5 for output and 3.71e-5 for final state.
+Maximum absolute errors were 2.86e-5 and 7.92e-4. Both kernels
+produced finite results throughout. These tests do not locate
+the model-level divergence. The path remains opt-in and does
+not count toward the current package's accepted improvements.
+
+Short profile: `/home/end0/AI/LlamaServer/franken-goose-gdn-mma.ljN6DW/mmq-profile.squJAC`.
+Layer differential: `/home/end0/AI/LlamaServer/franken-goose-gdn-audit.zqNjDD/mmq-profile.3UPTwP/nsys.log`.
+Executable SHA-256: `b0231d453d115fa7101cdaa6288566f7135c6c2744c5b73350e1eaf353ed3a06`.
+Response SHA-256: `f6b66a6000774215c3764dc6350df53a5ce80eb997d570525f5d27245f35456f`.
 
 ## Kernel coverage
 

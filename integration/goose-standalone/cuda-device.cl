@@ -27,6 +27,11 @@ static uint64_t device_udiv(uint64_t a, uint64_t b) {
     return a / b;
 }
 
+static uint64_t device_umod(uint64_t a, uint64_t b) {
+    if (b == 0) device_trap();
+    return a % b;
+}
+
 static int64_t device_add(int64_t a, int64_t b) {
     int64_t result;
     if (__builtin_add_overflow(a, b, &result)) device_trap();
@@ -74,6 +79,7 @@ static int64_t device_mod(int64_t a, int64_t b) {
 #define gs_div_i64(a, b, file, line) device_div(a, b)
 #define gs_mod_i64(q, a, b, file, line) device_mod(a, b)
 #define gs_div_u64(a, b, file, line) device_udiv(a, b)
+#define gs_mod_u64(a, b, file, line) device_umod(a, b)
 #define gs_sub_u64(a, b) ((uint64_t)(a) - (uint64_t)(b))
 #define gs_mul_u64(a, b) ((uint64_t)(a) * (uint64_t)(b))
 #define gs_mul_u32(a, b) ((uint32_t)(a) * (uint32_t)(b))
@@ -542,4 +548,5 @@ __kernel void goose_tensor_blit(__global uint8_t * x, __global uint8_t * y,
 #ifdef GOOSE_CUDA_MMQ_IMAGE
 #include "cuda-mmq.cl"
 #include "cuda-dense-mma.cl"
+#include "cuda-gdn-mma.cl"
 #endif
