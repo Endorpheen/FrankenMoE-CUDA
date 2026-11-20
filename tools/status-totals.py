@@ -27,6 +27,14 @@ def actual(d):
 def main() -> int:
     check = "--check" in sys.argv
     d = json.loads(LEDGER.read_text())
+    if "production_acceptance_20261120" in d:
+        unproven = [
+            t["id"] for t in d["tasks"]
+            if t["status"] == "DONE" and not t.get("production_cpp_audit", {}).get("closure_proof", "").strip()
+        ]
+        if unproven:
+            print("status-totals: DONE lacks production closure proof: " + ", ".join(unproven))
+            return 1
     counts, total = actual(d)
     stale = []
 

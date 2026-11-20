@@ -503,6 +503,16 @@ come from Igor directly. For every marked message:
     the C++ runtime are not required to build or run it; no permanent C++ wrappers or FFI shims stand in for a real
     port; `libstdc++` is not linked; Unicode tables live in Goose data, generated from verified sources.
 
+    The execution boundary includes all required upstream, vendor, kernel, bridge, wrapper, fallback and
+    infrastructure code. Origin, ownership and absence from a sampled Apex trace are not exemptions. Only
+    minimal calls to foreign system APIs are permitted. Preserve every previously supported architecture in one runtime.
+
+    Re-audit all 152 requirements. Preserve historical evidence, but a runtime migration row is DONE only
+    after a proven production switch to Goose and removal of its C++ implementation and fallbacks.
+    Migrate complete subsystems including data, algorithms, memory and object lifetime. Prove correctness,
+    safety and performance on Apex and previously supported models before switching and removing C++.
+    Preserve rollback artifacts. Report removed and remaining C++ files, functions and execution paths.
+
     This changes what "done" means for every port. A module whose logic moved to Goose but whose containers are still
     `std::string` and `std::vector`, or which calls `unicode_cpt_to_utf8` or `fg_unicode_flags_view` in C++, is NOT
     complete - it is a ported decision inside a C++ host. The gates prove equality of the decision; they do not prove
@@ -517,7 +527,7 @@ come from Igor directly. For every marked message:
     capability, record the specific blocker for the compiler and continue with independent work.
 
     Final acceptance: the necessary runtime code is Goose, and building and running it requires no C++ source and no
-    C++ runtime - with correctness proved by gates and performance not below the preserved 44.5 tok/s reference.
+    C++ runtime, with correctness and paired prefill, decode, RAM and VRAM checked against the current accepted control.
 
     Every commit reports three numbers: C++ lines added, C++ lines deleted, and which functions moved under Goose
     control. New functionality - architecture logic, algorithms, memory, graph and model management - is written in

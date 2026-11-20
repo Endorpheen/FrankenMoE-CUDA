@@ -5,9 +5,9 @@ as every accepted slice.
 
 ## Ledger
 
-`docs/goose-migration/tasks.json`: **DONE 128**, **PARTIAL 17**, **TODO 7** of 152.
+`docs/goose-migration/tasks.json`: **DONE 1**, **PARTIAL 144**, **TODO 7** of 152.
 
-Read slice counters as port slices: 17 records show N/N and stay PARTIAL.
+See [the production C++ audit](PRODUCTION-CPP-AUDIT-20261120.md) for all 152 dispositions. The narrower tables below retain earlier detailed remainders. Runtime rows require a proven production switch and removal of C++ and fallbacks.
 
 ### PARTIAL
 
@@ -35,17 +35,17 @@ Read slice counters as port slices: 17 records show N/N and stay PARTIAL.
 
 | requirement | what is open |
 |---|---|
-| P11-07 | 15 other APEX_COMMON tasks remain open; see `tools/apex-accounting.py`. |
+| P11-07 | 131 other APEX_COMMON tasks remain open; see `tools/apex-accounting.py`. |
 | C1-04 | shared loader, tokenizer and memory interfaces needed by Qwen |
 | C1-05 | complete Qwen inference qualification in the common artifact |
 | C1-06 | Apex protection while Qwen support is extended |
-| F1-01 | All workstreams implemented; no owned handwritten C/C++/CUDA execution hidden as bridge/vendor dependency; historical ... |
+| F1-01 | All workstreams implemented; zero required executable C++ across upstream, vendor, kernels, bridges, wrappers, fallbacks and infrastructure; historical ... |
 | F1-02 | All required functional tasks have evidence; real Apex/Qwen and representative other family fixtures; one common artif... |
 | F1-04 | Every functional task DONE; zero untracked residual native paths; source build reproducible and working runtime unchan... |
 
 ## Current baseline and candidate
 
-- `builds/flint-acc/run-jsondefault` is the current control. P10-07 is DONE. The 21-text strict JSON gate and same-response chat check are recorded in [P10-07-CLOSED-20261120.md](P10-07-CLOSED-20261120.md).
+- `builds/flint-acc/run-jsondefault` is the current control. The historical P10-07 JSON acceptance is retained as evidence. The vendor execution scope remains open. The 21-text strict JSON gate and same-response chat check are recorded in [P10-07-CLOSED-20261120.md](P10-07-CLOSED-20261120.md).
 - The inspected path B diagnostic set reused objects from the failed build for unchanged inputs. It passed `verify-candidate`, including relocation checks. It carries all 1257 distinct exports in the composed source. The earlier 1253/1256 count used names before composition, which missed three renamed exports and counted two source exports with the same original name as one.
 - The reconstructed DRY path had been falling back when its C++ caller described the flat breaker array as a slice of triples. With corrected slice lengths, the public API fixture produced identical output in 200 cases and observed 200 Goose calls with the switch on, zero with it off.
 - The new `tests/integration/path-b-abi` fixture verifies the GGUF comparison and observes the two DRY execution paths through the public sampler API. The strict JSON gate also exposed a missing pre-model initialization. After the library constructor began calling the existing M1 once guard, all 21 texts passed in strict mode.
@@ -56,7 +56,7 @@ Read slice counters as port slices: 17 records show N/N and stay PARTIAL.
 - Checking the first slot with the existing Goose predicate removed the full three-array KV copy from normal single-token decode. In the next unprofiled B–A–A–B, decode was 62.183 to 61.516 tokens/s, prefill 2848.56 to 2838.02 tokens/s, GPU occupancy 11162 to 11153 MiB and server RSS 21362.10 to 21350.55 MiB. All 12 responses matched and neither process swap nor system swap-out increased. The remaining 0.67 tokens/s gap kept the control in place.
 - The post-fix profile across 511 decode steps showed scheduler time of 6925.7 to 6807.0 ms and residual time inside `llama_process` of 76.1 to 285.4 ms. A second correction makes KV rollback gather only the touched cells, preserves the extension fields and sequence bounds, and allocates the full three arrays required by the Goose bounds ABI. The whole unified build, ABI fixtures and strict 21-text JSON gate passed again.
 - **512-token development checkpoint (EXP-2026-11-20-1492).** The `franken-pathb-safe-20261120.7dnWLq/run` set has libllama SHA-256 `3ab50925bd04686dac0381f38fe88cd155a5eff013ed33ef5d4ddc6dc35e2d15`, 1257 composed exports and 20/20 accepted components. The server and support libraries are byte-identical to `run-jsondefault`.
-- The unprofiled B–A–A–B series gave decode **62.096 → 63.243 tokens/s**, prefill **2888.03 → 2857.06 tokens/s**, GPU occupancy **11182.5 → 11161.5 MiB**, server RSS **21362.12 → 21365.38 MiB**, and client duration **19.605 → 19.582 s**, all medians. All 12 runs produced the same 512 output tokens and response SHA-prefix `c2ff42cc1219`. Process swap and system swap-out increments were zero. Raw runs are `results/apex-runs/pathb-safe512-*`, with per-response records in `benchmarks/experiment-history.jsonl`. The accepted release stays on `run-jsondefault` while the 128- and 256-token checks are pending. The plan still has 24 open requirements.
+- The unprofiled B–A–A–B series gave decode **62.096 → 63.243 tokens/s**, prefill **2888.03 → 2857.06 tokens/s**, GPU occupancy **11182.5 → 11161.5 MiB**, server RSS **21362.12 → 21365.38 MiB**, and client duration **19.605 → 19.582 s**, all medians. All 12 runs produced the same 512 output tokens and response SHA-prefix `c2ff42cc1219`. Process swap and system swap-out increments were zero. Raw runs are `results/apex-runs/pathb-safe512-*`, with per-response records in `benchmarks/experiment-history.jsonl`. The accepted release stays on `run-jsondefault` while the 128- and 256-token checks are pending. The production ledger has 151 open requirements.
 - The next KV ownership step is to give the canonical `goose/kv/goose-kv-seqpos-incr.goose` module the bounds allocation and the full cache lifecycle. The address-keyed C++ owner table stays until the Goose owner passes create, reset, move, restore and release checks on the same integration path.
 
 ## Historical measurements (2026-11-20 01:40)

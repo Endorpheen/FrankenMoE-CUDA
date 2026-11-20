@@ -1,0 +1,597 @@
+{
+  "control": {
+    "maps": "results/apex-runs/pathb-safe512-a2-20261120-043009/maps.txt",
+    "objects": [
+      {
+        "elf": "ld-linux-x86-64.so.2",
+        "soname": "ld-linux-x86-64.so.2",
+        "needed": []
+      },
+      {
+        "elf": "libc.so.6",
+        "soname": "libc.so.6",
+        "needed": [
+          "ld-linux-x86-64.so.2"
+        ]
+      },
+      {
+        "elf": "libcrypto.so.3",
+        "soname": "libcrypto.so.3",
+        "needed": [
+          "libz.so.1",
+          "libzstd.so.1",
+          "libc.so.6"
+        ]
+      },
+      {
+        "elf": "libcublas.so.12.6.4.1",
+        "soname": "libcublas.so.12",
+        "needed": [
+          "libcublasLt.so.12",
+          "librt.so.1",
+          "libpthread.so.0",
+          "libdl.so.2",
+          "libm.so.6",
+          "libgcc_s.so.1",
+          "libc.so.6",
+          "ld-linux-x86-64.so.2"
+        ]
+      },
+      {
+        "elf": "libcublasLt.so.12.6.4.1",
+        "soname": "libcublasLt.so.12",
+        "needed": [
+          "librt.so.1",
+          "libpthread.so.0",
+          "libdl.so.2",
+          "libm.so.6",
+          "libgcc_s.so.1",
+          "libc.so.6",
+          "ld-linux-x86-64.so.2"
+        ]
+      },
+      {
+        "elf": "libcuda.so.580.178.04",
+        "soname": "libcuda.so.1",
+        "needed": [
+          "libm.so.6",
+          "libc.so.6",
+          "libdl.so.2",
+          "libpthread.so.0",
+          "librt.so.1"
+        ]
+      },
+      {
+        "elf": "libcudart.so.12.6.77",
+        "soname": "libcudart.so.12",
+        "needed": [
+          "libc.so.6",
+          "ld-linux-x86-64.so.2",
+          "libdl.so.2",
+          "libpthread.so.0",
+          "librt.so.1"
+        ]
+      },
+      {
+        "elf": "libdl.so.2",
+        "soname": "libdl.so.2",
+        "needed": [
+          "libc.so.6"
+        ]
+      },
+      {
+        "elf": "libgcc_s.so.1",
+        "soname": "libgcc_s.so.1",
+        "needed": [
+          "libc.so.6",
+          "ld-linux-x86-64.so.2"
+        ]
+      },
+      {
+        "elf": "libggml-base.so.0",
+        "soname": "libggml-base.so.0",
+        "needed": [
+          "libgomp.so.1",
+          "libstdc++.so.6",
+          "libm.so.6",
+          "libgcc_s.so.1",
+          "libc.so.6"
+        ]
+      },
+      {
+        "elf": "libggml-cpu.so.0",
+        "soname": "libggml-cpu.so.0",
+        "needed": [
+          "libggml-base.so.0",
+          "libmoe_mmid_tiled.so",
+          "libgomp.so.1",
+          "libstdc++.so.6",
+          "libm.so.6",
+          "libgcc_s.so.1",
+          "libc.so.6",
+          "ld-linux-x86-64.so.2"
+        ]
+      },
+      {
+        "elf": "libggml-cuda.so.0",
+        "soname": "libggml-cuda.so.0",
+        "needed": [
+          "libggml-base.so.0",
+          "libcudart.so.12",
+          "libcublas.so.12",
+          "libcuda.so.1",
+          "libstdc++.so.6",
+          "libm.so.6",
+          "libgcc_s.so.1",
+          "libc.so.6",
+          "ld-linux-x86-64.so.2"
+        ]
+      },
+      {
+        "elf": "libggml.so.0",
+        "soname": "libggml.so.0",
+        "needed": [
+          "libggml-cpu.so.0",
+          "libggml-cuda.so.0",
+          "libggml-base.so.0",
+          "libstdc++.so.6",
+          "libgcc_s.so.1",
+          "libc.so.6"
+        ]
+      },
+      {
+        "elf": "libgomp.so.1.0.0",
+        "soname": "libgomp.so.1",
+        "needed": [
+          "libc.so.6"
+        ]
+      },
+      {
+        "elf": "libllama-common.so.0",
+        "soname": "libllama-common.so.0",
+        "needed": [
+          "libllama.so.0",
+          "libssl.so.3",
+          "libcrypto.so.3",
+          "libggml.so.0",
+          "libggml-base.so.0",
+          "libstdc++.so.6",
+          "libm.so.6",
+          "libgcc_s.so.1",
+          "libc.so.6",
+          "ld-linux-x86-64.so.2"
+        ]
+      },
+      {
+        "elf": "libllama-server-impl.so",
+        "soname": "libllama-server-impl.so",
+        "needed": [
+          "libllama-common.so.0",
+          "libmtmd.so.0",
+          "libllama.so.0",
+          "libggml.so.0",
+          "libggml-base.so.0",
+          "libssl.so.3",
+          "libcrypto.so.3",
+          "libstdc++.so.6",
+          "libm.so.6",
+          "libgcc_s.so.1",
+          "libc.so.6",
+          "ld-linux-x86-64.so.2"
+        ]
+      },
+      {
+        "elf": "libllama.so.0",
+        "soname": "libllama.so.0",
+        "needed": [
+          "libggml.so.0",
+          "libggml-base.so.0",
+          "libstdc++.so.6",
+          "libm.so.6",
+          "libgcc_s.so.1",
+          "libc.so.6",
+          "ld-linux-x86-64.so.2"
+        ]
+      },
+      {
+        "elf": "libm.so.6",
+        "soname": "libm.so.6",
+        "needed": [
+          "libc.so.6",
+          "ld-linux-x86-64.so.2"
+        ]
+      },
+      {
+        "elf": "libmoe_mmid_tiled.so",
+        "soname": "libmoe_mmid_tiled.so",
+        "needed": [
+          "libc.so.6",
+          "ld-linux-x86-64.so.2"
+        ]
+      },
+      {
+        "elf": "libmtmd.so.0",
+        "soname": "libmtmd.so.0",
+        "needed": [
+          "libllama.so.0",
+          "libggml.so.0",
+          "libggml-base.so.0",
+          "libstdc++.so.6",
+          "libm.so.6",
+          "libgcc_s.so.1",
+          "libc.so.6",
+          "ld-linux-x86-64.so.2"
+        ]
+      },
+      {
+        "elf": "libpthread.so.0",
+        "soname": "libpthread.so.0",
+        "needed": [
+          "libc.so.6"
+        ]
+      },
+      {
+        "elf": "librt.so.1",
+        "soname": "librt.so.1",
+        "needed": [
+          "libc.so.6"
+        ]
+      },
+      {
+        "elf": "libssl.so.3",
+        "soname": "libssl.so.3",
+        "needed": [
+          "libcrypto.so.3",
+          "libc.so.6"
+        ]
+      },
+      {
+        "elf": "libstdc++.so.6.0.35",
+        "soname": "libstdc++.so.6",
+        "needed": [
+          "libm.so.6",
+          "libc.so.6",
+          "ld-linux-x86-64.so.2",
+          "libgcc_s.so.1"
+        ]
+      },
+      {
+        "elf": "libz.so.1.3.1",
+        "soname": "libz.so.1",
+        "needed": [
+          "libc.so.6"
+        ]
+      },
+      {
+        "elf": "libzstd.so.1.5.7",
+        "soname": "libzstd.so.1",
+        "needed": [
+          "libc.so.6"
+        ]
+      },
+      {
+        "elf": "llama-server",
+        "soname": "llama-server",
+        "needed": [
+          "libllama-server-impl.so",
+          "libstdc++.so.6",
+          "libgcc_s.so.1",
+          "libc.so.6"
+        ]
+      }
+    ],
+    "direct_cpp_runtime_users": [
+      "libggml-base.so.0",
+      "libggml-cpu.so.0",
+      "libggml-cuda.so.0",
+      "libggml.so.0",
+      "libllama-common.so.0",
+      "libllama-server-impl.so",
+      "libllama.so.0",
+      "libmtmd.so.0",
+      "llama-server"
+    ],
+    "unresolved_needed_in_capture": []
+  },
+  "lazy_kv": {
+    "maps": "results/apex-runs/pathb-kv-batch-diag-20261120-051540/maps.txt",
+    "objects": [
+      {
+        "elf": "ld-linux-x86-64.so.2",
+        "soname": "ld-linux-x86-64.so.2",
+        "needed": []
+      },
+      {
+        "elf": "libc.so.6",
+        "soname": "libc.so.6",
+        "needed": [
+          "ld-linux-x86-64.so.2"
+        ]
+      },
+      {
+        "elf": "libcrypto.so.3",
+        "soname": "libcrypto.so.3",
+        "needed": [
+          "libz.so.1",
+          "libzstd.so.1",
+          "libc.so.6"
+        ]
+      },
+      {
+        "elf": "libcublas.so.12.6.4.1",
+        "soname": "libcublas.so.12",
+        "needed": [
+          "libcublasLt.so.12",
+          "librt.so.1",
+          "libpthread.so.0",
+          "libdl.so.2",
+          "libm.so.6",
+          "libgcc_s.so.1",
+          "libc.so.6",
+          "ld-linux-x86-64.so.2"
+        ]
+      },
+      {
+        "elf": "libcublasLt.so.12.6.4.1",
+        "soname": "libcublasLt.so.12",
+        "needed": [
+          "librt.so.1",
+          "libpthread.so.0",
+          "libdl.so.2",
+          "libm.so.6",
+          "libgcc_s.so.1",
+          "libc.so.6",
+          "ld-linux-x86-64.so.2"
+        ]
+      },
+      {
+        "elf": "libcuda.so.580.178.04",
+        "soname": "libcuda.so.1",
+        "needed": [
+          "libm.so.6",
+          "libc.so.6",
+          "libdl.so.2",
+          "libpthread.so.0",
+          "librt.so.1"
+        ]
+      },
+      {
+        "elf": "libcudart.so.12.6.77",
+        "soname": "libcudart.so.12",
+        "needed": [
+          "libc.so.6",
+          "ld-linux-x86-64.so.2",
+          "libdl.so.2",
+          "libpthread.so.0",
+          "librt.so.1"
+        ]
+      },
+      {
+        "elf": "libdl.so.2",
+        "soname": "libdl.so.2",
+        "needed": [
+          "libc.so.6"
+        ]
+      },
+      {
+        "elf": "libgcc_s.so.1",
+        "soname": "libgcc_s.so.1",
+        "needed": [
+          "libc.so.6",
+          "ld-linux-x86-64.so.2"
+        ]
+      },
+      {
+        "elf": "libggml-base.so.0",
+        "soname": "libggml-base.so.0",
+        "needed": [
+          "libgomp.so.1",
+          "libstdc++.so.6",
+          "libm.so.6",
+          "libgcc_s.so.1",
+          "libc.so.6"
+        ]
+      },
+      {
+        "elf": "libggml-cpu.so.0",
+        "soname": "libggml-cpu.so.0",
+        "needed": [
+          "libggml-base.so.0",
+          "libmoe_mmid_tiled.so",
+          "libgomp.so.1",
+          "libstdc++.so.6",
+          "libm.so.6",
+          "libgcc_s.so.1",
+          "libc.so.6",
+          "ld-linux-x86-64.so.2"
+        ]
+      },
+      {
+        "elf": "libggml-cuda.so.0",
+        "soname": "libggml-cuda.so.0",
+        "needed": [
+          "libggml-base.so.0",
+          "libcudart.so.12",
+          "libcublas.so.12",
+          "libcuda.so.1",
+          "libstdc++.so.6",
+          "libm.so.6",
+          "libgcc_s.so.1",
+          "libc.so.6",
+          "ld-linux-x86-64.so.2"
+        ]
+      },
+      {
+        "elf": "libggml.so.0",
+        "soname": "libggml.so.0",
+        "needed": [
+          "libggml-cpu.so.0",
+          "libggml-cuda.so.0",
+          "libggml-base.so.0",
+          "libstdc++.so.6",
+          "libgcc_s.so.1",
+          "libc.so.6"
+        ]
+      },
+      {
+        "elf": "libgomp.so.1.0.0",
+        "soname": "libgomp.so.1",
+        "needed": [
+          "libc.so.6"
+        ]
+      },
+      {
+        "elf": "libllama-common.so.0",
+        "soname": "libllama-common.so.0",
+        "needed": [
+          "libllama.so.0",
+          "libssl.so.3",
+          "libcrypto.so.3",
+          "libggml.so.0",
+          "libggml-base.so.0",
+          "libstdc++.so.6",
+          "libm.so.6",
+          "libgcc_s.so.1",
+          "libc.so.6",
+          "ld-linux-x86-64.so.2"
+        ]
+      },
+      {
+        "elf": "libllama-server-impl.so",
+        "soname": "libllama-server-impl.so",
+        "needed": [
+          "libllama-common.so.0",
+          "libmtmd.so.0",
+          "libllama.so.0",
+          "libggml.so.0",
+          "libggml-base.so.0",
+          "libssl.so.3",
+          "libcrypto.so.3",
+          "libstdc++.so.6",
+          "libm.so.6",
+          "libgcc_s.so.1",
+          "libc.so.6",
+          "ld-linux-x86-64.so.2"
+        ]
+      },
+      {
+        "elf": "libllama.so.0",
+        "soname": "libllama.so.0",
+        "needed": [
+          "libggml.so.0",
+          "libggml-base.so.0",
+          "libstdc++.so.6",
+          "libm.so.6",
+          "libgcc_s.so.1",
+          "libc.so.6",
+          "ld-linux-x86-64.so.2"
+        ]
+      },
+      {
+        "elf": "libm.so.6",
+        "soname": "libm.so.6",
+        "needed": [
+          "libc.so.6",
+          "ld-linux-x86-64.so.2"
+        ]
+      },
+      {
+        "elf": "libmoe_mmid_tiled.so",
+        "soname": "libmoe_mmid_tiled.so",
+        "needed": [
+          "libc.so.6",
+          "ld-linux-x86-64.so.2"
+        ]
+      },
+      {
+        "elf": "libmtmd.so.0",
+        "soname": "libmtmd.so.0",
+        "needed": [
+          "libllama.so.0",
+          "libggml.so.0",
+          "libggml-base.so.0",
+          "libstdc++.so.6",
+          "libm.so.6",
+          "libgcc_s.so.1",
+          "libc.so.6",
+          "ld-linux-x86-64.so.2"
+        ]
+      },
+      {
+        "elf": "libpthread.so.0",
+        "soname": "libpthread.so.0",
+        "needed": [
+          "libc.so.6"
+        ]
+      },
+      {
+        "elf": "librt.so.1",
+        "soname": "librt.so.1",
+        "needed": [
+          "libc.so.6"
+        ]
+      },
+      {
+        "elf": "libssl.so.3",
+        "soname": "libssl.so.3",
+        "needed": [
+          "libcrypto.so.3",
+          "libc.so.6"
+        ]
+      },
+      {
+        "elf": "libstdc++.so.6.0.35",
+        "soname": "libstdc++.so.6",
+        "needed": [
+          "libm.so.6",
+          "libc.so.6",
+          "ld-linux-x86-64.so.2",
+          "libgcc_s.so.1"
+        ]
+      },
+      {
+        "elf": "libz.so.1.3.1",
+        "soname": "libz.so.1",
+        "needed": [
+          "libc.so.6"
+        ]
+      },
+      {
+        "elf": "libzstd.so.1.5.7",
+        "soname": "libzstd.so.1",
+        "needed": [
+          "libc.so.6"
+        ]
+      },
+      {
+        "elf": "llama-server",
+        "soname": "llama-server",
+        "needed": [
+          "libllama-server-impl.so",
+          "libstdc++.so.6",
+          "libgcc_s.so.1",
+          "libc.so.6"
+        ]
+      },
+      {
+        "elf": "witness.so",
+        "soname": "witness.so",
+        "needed": [
+          "libc.so.6"
+        ]
+      }
+    ],
+    "direct_cpp_runtime_users": [
+      "libggml-base.so.0",
+      "libggml-cpu.so.0",
+      "libggml-cuda.so.0",
+      "libggml.so.0",
+      "libllama-common.so.0",
+      "libllama-server-impl.so",
+      "libllama.so.0",
+      "libmtmd.so.0",
+      "llama-server"
+    ],
+    "unresolved_needed_in_capture": []
+  }
+}
