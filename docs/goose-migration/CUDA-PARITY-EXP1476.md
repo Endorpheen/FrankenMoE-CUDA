@@ -109,7 +109,7 @@ dependencies. Resume decode-specific work after prefill recovery.
 | 24 | Tensor copies, concatenation and gathers. CUDA transform dispatch → `concat_cont`, `concat_non_cont`, `cpy_scalar`, `k_get_rows_float` and vectorized gather. | All appear in reference trace. Goose has aligned lifetimes, GPU blits and gathers and host fallbacks. | PARTIAL. Match selected contiguous and strided paths while avoiding dead-tensor transfers. Check views, source lifetimes and numerical read-back. |
 | 25 | Backend graph splitting and lifetime planning. GGML scheduler in `vendor/flint/ggml/src/ggml-backend.cpp` → `ggml-alloc.c` child/view counts, aligned best-fit, split/coalesced blocks and admissible in-place reuse. | Reference log records five buffers and eight same-size reallocations. Goose completes actual 4096/4096 using a ~1.010 GB lifetime arena and whole-block reuse. | PARTIAL. Retain the tested alias planner. Extend device lifetime ownership and compare backend memory peaks and retry behavior on identical profiles. |
 | 26 | Expert tiers and pinned mapped weights. `vendor/flint/src/llama-model.cpp` → `llama-mmap-expert-pin.h` and CUDA buffer registration. | `cudaHostRegister` occurs 120 times in the reference session. Goose verifies all model pages resident, loads dense tensors and uses a GPU SLRU, with different upload scheduling. | PARTIAL. Associate registrations with the reference ranges, then restore explicit equivalent pinned transfer and expert-bank budgets. Verify real resident sizes, misses, bytes and swaps. |
-| 27 | Selective transfer and device placement. Backend split execution and CUDA tensor set/get → asynchronous linear and 2-D copies. | Reference transfers selected ranges and uses D2D. Goose retains oversized activations, retires planned results after their final consumer and reuses the freed device ranges. | PARTIAL. Avoid draining unrelated live records under device arena pressure. Extend reuse across adjacent large operations. Full-request transfer and memory parity remain open. |
+| 27 | Selective transfer and device placement. Backend split execution and CUDA tensor set/get → asynchronous linear and 2-D copies. | Reference transfers selected ranges and uses D2D. Goose retains oversized activations, retires planned results and keeps unrelated live buffers during normal arena eviction. | PARTIAL. Extend reuse across adjacent oversized operations. Full-request transfer and memory parity remain open. |
 | 28 | CUDA VMM pool. CUDA buffer allocator → `cuMemAddressReserve`, `cuMemCreate`, `cuMemMap`, `cuMemSetAccess`, release. | Reference executes 105 create/map operations and reserves a virtual address range. Goose grows Driver API buffers with `cuMemAlloc_v2` and `cuMemFree_v2`. | MISSING. Restore equivalent reusable device allocation and supported fallback. Check allocation limits, device address stability and VRAM peak on RTX 4070. |
 | 29 | CUDA Graph capture and replay. `ggml-cuda.cu` graph evaluator → begin/end capture, instantiate, exec update and launch. | Whole-graph trace records over 20,000 launches across the session. Server reports 510 reuses. Goose rebuilds its graph and directly launches CUDA kernels. | MISSING. Establish stable graph keys, addresses and update boundaries before recording and replay. Check changing KV prefixes and buffer ownership before measuring decode overhead. |
 | 30 | Streams and synchronization. CUDA scheduler and `ggml-cuda.cu` establish streams, events and CUDA Graph scopes. | Reference uses stream sync and async copies. Goose synchronizes the context for many operations during execution. | PARTIAL. Restore per-stream ordering and event dependencies after liveness and transfers are safe. Compare wall time without adding driver wait to GPU time. |
@@ -430,6 +430,26 @@ was added. Peak process memory and full-request speed remain open.
 
 Candidate profile: `/home/end0/AI/LlamaServer/franken-goose-activation-gaps.zxKUb9/mmq-profile.UQ3ctU`.
 Candidate executable SHA-256: `2be0635954f65c803de606bbe744f941e8dfd08d2e1d8951564451ee4f955fbb`.
+
+## Selective CUDA arena eviction checkpoint
+
+EXP-2026-11-20-1533 scores eligible output intervals by the bytes
+needed to evict and potentially reload overlapping live records. It
+preserves unrelated records in the existing 64 MiB arena. In both
+CUDA images a 32 MiB writer displaced only one of two 24 MiB live
+results and the later consumer read both correctly. Oversized output,
+gap reuse and mixed CPU/CUDA KV/GDN checks passed.
+
+On the same 4096/1 input, prefill took 22.503 s at 182.018 tokens/s
+versus 22.760 s at 179.968 tokens/s. D2H fell from 48,794,894,336
+to 47,117,172,736 bytes (1,158 to 1,078 copies). H2D fell from
+70,810,030,400 to 70,407,377,216 bytes (26,182 to 26,140 copies).
+Text, token ID and five probabilities matched. No new device buffer
+was added. This profile qualifies the transfer change. Repeat
+performance and peak process memory remain full-request gates.
+
+Candidate profile: `/home/end0/AI/LlamaServer/franken-goose-activation-eviction.8prNGA/mmq-profile.QapVkA`.
+Candidate executable SHA-256: `4a177f7e5bda8ae8752d1e1bb327226050eebdca1c4955f617d2f6cdb6521014`.
 
 ## Kernel coverage
 

@@ -96,3 +96,58 @@ export fn fg143_activation_record_slot(ranges: const i64[:]) -> i64 {
     }
     return count;
 }
+
+fn activation_device_overlap(ranges: const i64[:], offset: i64, bytes: i64, first: i64) -> i64 {
+    if offset < 0 || bytes <= 0 || first < 0 { return -1; }
+    for i in first .. ranges.len / ACT_WORDS {
+        let at = i * ACT_WORDS;
+        let size = ranges[at + 1];
+        let base = ranges[at + 2];
+        if size > 0 && base >= 0 && activation_spans_overlap(offset as u64, bytes as u64, base as u64, size as u64) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+export fn fg143_activation_device_overlap(ranges: const i64[:], offset: i64, bytes: i64, first: i64) -> i64 {
+    return activation_device_overlap(ranges, offset, bytes, first);
+}
+
+// An eviction window costs one potential upload per victim plus a download
+// when its host copy is stale. Only zero and aligned ends of allocations can
+// start a cheaper window: moving right otherwise cannot remove a victim.
+export fn fg143_activation_eviction_slot(ranges: const i64[:], capacity: i64, bytes: i64) -> i64 {
+    if bytes <= 0 || capacity <= 0 || bytes > capacity || capacity > 0x3fffffffffffffff { return -1; }
+    let count = ranges.len / ACT_WORDS;
+    var best: i64 = -1;
+    var best_cost = 2 * capacity + 1;
+    for candidate in count + 1 {
+        var offset: i64 = 0;
+        if candidate != 0 {
+            let at = (candidate - 1) * ACT_WORDS;
+            let size = ranges[at + 1];
+            let base = ranges[at + 2];
+            if size <= 0 { continue; }
+            if base < 0 || base > capacity || size > capacity - base { return -1; }
+            let end = base + size;
+            offset = end + (128 - end % 128) % 128;
+            if offset > capacity - bytes { continue; }
+        }
+        var cost: i64 = 0;
+        var first: i64 = 0;
+        while cost < best_cost {
+            let found = activation_device_overlap(ranges, offset, bytes, first);
+            if found < 0 { break; }
+            let at = found * ACT_WORDS;
+            let size = ranges[at + 1];
+            cost += if ranges[at + 3] == 0 { 2 * size } else { size };
+            first = found + 1;
+        }
+        if cost < best_cost {
+            best = offset;
+            best_cost = cost;
+        }
+    }
+    return best;
+}

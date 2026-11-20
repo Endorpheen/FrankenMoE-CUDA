@@ -18,6 +18,8 @@ extern uint64_t fg143_activation_discard_overwritten(sl_i64 ranges, uint64_t hos
 extern uint64_t fg143_activation_expire(sl_i64 ranges, int64_t step);
 extern int64_t fg143_activation_slot(sl_i64 ranges, int64_t capacity, int64_t bytes);
 extern int64_t fg143_activation_record_slot(sl_i64 ranges);
+extern int64_t fg143_activation_device_overlap(sl_i64 ranges, int64_t offset, int64_t bytes, int64_t first);
+extern int64_t fg143_activation_eviction_slot(sl_i64 ranges, int64_t capacity, int64_t bytes);
 extern void ec_reset(sl_i64 groups, sl_i64 layers, uint64_t words32, sl_i64 words64);
 extern int64_t ec_prepare(sl_i64 groups, sl_i64 layers, uint64_t words32, sl_i64 words64,
     uint64_t tensor, int64_t bytes, sl_i64 heads, sl_i64 result);
@@ -280,6 +282,19 @@ static int activation_download_all(void) {
     return 0;
 }
 
+static int activation_evict_device_range(int64_t offset, int64_t bytes) {
+    for (int64_t i = 0; i < activations.count;) {
+        const int64_t found = fg143_activation_device_overlap(activation_ranges(), offset, bytes, i);
+        if (found < 0) break;
+        int64_t * range = activations.ranges + ACTIVATION_WORDS * found;
+        const int error = activation_download_record(range, cuda.activations.address);
+        if (error != 0) return error;
+        range[1] = 0;
+        i = found + 1;
+    }
+    return 0;
+}
+
 static int activation_sync_range(uint64_t host, int64_t bytes, bool invalidate) {
     if (activations.large_output[1] > 0 && fg143_activation_overlap(activation_large_range(), host, bytes, 0) >= 0) {
         const int error = activation_download_record(activations.large_output, cuda.output.address);
@@ -407,8 +422,14 @@ static int activation_output(uint64_t host, int64_t bytes, DevicePtr * device) {
         if (cuda.activations.address) {
             const int64_t capacity = (int64_t) cuda.activations.bytes;
             int64_t pos = fg143_activation_slot(activation_ranges(), capacity, bytes);
-            if (pos == -2 || (activations.count == ACTIVATION_RECORDS &&
-                    fg143_activation_record_slot(activation_ranges()) == ACTIVATION_RECORDS)) {
+            if (pos == -2) {
+                pos = fg143_activation_eviction_slot(activation_ranges(), capacity, bytes);
+                if (pos < 0) return -1;
+                const int error = activation_evict_device_range(pos, bytes);
+                if (error != 0) return error;
+            }
+            if (activations.count == ACTIVATION_RECORDS &&
+                fg143_activation_record_slot(activation_ranges()) == ACTIVATION_RECORDS) {
                 const int error = activation_download_all();
                 if (error != 0) return error;
                 activations.count = 0;

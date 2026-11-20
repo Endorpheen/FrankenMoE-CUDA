@@ -1005,6 +1005,41 @@ static void check_activation_gaps(void) {
     ggml_free(ctx);
 }
 
+static void check_activation_eviction(void) {
+    enum { width = 4096, small = 32 };
+    const int rows[] = {1536, 1536, 2048};
+    struct ggml_context * ctx = ggml_init((struct ggml_init_params){ 128 * 1024, NULL, true });
+    assert(ctx);
+    struct ggml_cgraph * graph = ggml_new_graph_custom(ctx, 32, false);
+    struct ggml_tensor * input[3], *ready[3], *view[3];
+    for (int i = 0; i < 3; ++i) {
+        input[i] = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, width, rows[i]);
+        input[i]->data = malloc(ggml_nbytes(input[i]));
+        assert(input[i]->data);
+        ready[i] = ggml_scale(ctx, input[i], (float) (i + 1));
+        view[i] = ggml_view_1d(ctx, ready[i], small, ggml_nbytes(ready[i]) - small * sizeof(float));
+        ggml_build_forward_expand(graph, ready[i]);
+    }
+    struct ggml_tensor * output = ggml_add(ctx, ggml_add(ctx, view[0], view[1]), view[2]);
+    ggml_build_forward_expand(graph, output);
+    struct fg_standalone_graph_plan * plan = fg_standalone_graph_plan_alloc(graph, output);
+    assert(plan);
+    for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < width * rows[i]; ++j) ((float *) input[i]->data)[j] = (float) (j % width);
+        memset(ready[i]->data, 0xA5, ggml_nbytes(ready[i]));
+    }
+    assert(fg_standalone_graph_plan_compute(plan) == GGML_STATUS_SUCCESS);
+    for (int i = 0; i < small; ++i) assert(((float *) output->data)[i] == (float) (width - small + i) * 6.0f);
+    const unsigned char * untouched = ready[0]->data;
+    // The output planner may reuse the start of either retired host block.
+    for (size_t i = ggml_nbytes(output); i < ggml_nbytes(ready[0]); ++i) assert(untouched[i] == 0xA5);
+    for (int i = small; i < width * rows[1]; ++i) assert(((float *) ready[1]->data)[i] == (float) (i % width) * 2.0f);
+    puts("CUDA arena eviction: a 32 MiB writer evicted one of two 24 MiB live results");
+    for (int i = 0; i < 3; ++i) free(input[i]->data);
+    fg_standalone_graph_plan_free(plan);
+    ggml_free(ctx);
+}
+
 static void check_cuda_vectors(void) {
     enum { width = 257, stride = 8 * width, rows = 3, planes = 2 };
     struct ggml_context * ctx = ggml_init((struct ggml_init_params){ 1024 * 1024, NULL, true });
@@ -1374,6 +1409,10 @@ static void check_dense_mma(int extent, int rows, int columns) {
 }
 
 int main(int argc, char ** argv) {
+    if (argc == 2 && strcmp(argv[1], "--activation-eviction") == 0) {
+        check_activation_eviction();
+        return 0;
+    }
     if (argc == 2 && strcmp(argv[1], "--activation-gaps") == 0) {
         check_activation_gaps();
         return 0;
