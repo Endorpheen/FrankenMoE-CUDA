@@ -10,18 +10,29 @@
 #include <sys/socket.h>
 #include <sys/time.h>
 
-int64_t fg_http_complete(sl_u8 prompt, int64_t max_tokens, sl_i64 ids,
-                         sl_u8 text, sl_i64 result) {
-    if (max_tokens <= 0 || max_tokens > ids.len || result.len < 1) return -1;
-    const int64_t count = hose_generate(prompt.data, prompt.len, max_tokens,
-                                        ids.data, NULL, 0, NULL);
+static int64_t complete_result(int64_t count, sl_i64 ids, sl_u8 text, sl_i64 result) {
     if (count <= 0) return -1;
     result.data[0] = count;
     return hose_detokenize(ids.data, count, text.data, text.len);
 }
 
+int64_t fg_http_complete(sl_u8 prompt, int64_t max_tokens, uint8_t ignore_eos,
+                         sl_i64 ids, sl_u8 text, sl_i64 result) {
+    if (max_tokens <= 0 || max_tokens > ids.len || result.len < 1) return -1;
+    const int64_t count = hose_generate_text(prompt.data, prompt.len, max_tokens, ignore_eos, ids.data, NULL);
+    return complete_result(count, ids, text, result);
+}
+
+int64_t fg_http_complete_ids(sl_i64 prompt, int64_t max_tokens, uint8_t ignore_eos,
+                             sl_i64 ids, sl_u8 text, sl_i64 result) {
+    if (max_tokens <= 0 || max_tokens > ids.len || result.len < 1) return -1;
+    const int64_t count = hose_generate_ids(prompt.data, prompt.len, max_tokens, ignore_eos, ids.data, NULL);
+    return complete_result(count, ids, text, result);
+}
+
 void fg_http_stats(sl_i64 stats) {
     if (stats.len >= 5) hose_stats(stats.data);
+    if (stats.len >= 6) stats.data[5] = hose_context_capacity();
 }
 
 void fg_http_listening(int64_t port) {
@@ -42,7 +53,7 @@ static int64_t positive_integer(const char * text) {
     return errno || end == text || *end || value <= 0 || value > INT64_MAX ? -1 : (int64_t) value;
 }
 
-static int serve(const char * model, int64_t port, int64_t limit) {
+static int serve(const char * model, int64_t port, int64_t limit, int64_t capacity) {
     if (port <= 0 || port > 65535 || limit < 0) {
         fputs("invalid port or connection limit\n", stderr);
         return 2;
@@ -50,7 +61,7 @@ static int serve(const char * model, int64_t port, int64_t limit) {
     static unsigned char request[262144], output[65536], response[524288];
     static int64_t ids[2048];
     fg_goose_host_ensure_init();
-    hose_host_load(model);
+    hose_host_load_context(model, capacity);
     const int64_t served = ih_serve(port, limit, (sl_u8) { request, sizeof request },
         (sl_u8) { output, sizeof output }, (sl_u8) { response, sizeof response },
         (sl_i64) { ids, sizeof ids / sizeof *ids });
@@ -60,13 +71,24 @@ static int serve(const char * model, int64_t port, int64_t limit) {
 }
 
 int main(int argc, char ** argv) {
+    const char * program = argv[0];
+    int64_t context = HOSE_DEFAULT_CONTEXT;
+    if (argc >= 2 && strcmp(argv[1], "--ctx-size") == 0) {
+        context = argc >= 3 ? positive_integer(argv[2]) : -1;
+        if (context <= 0 || context > INT32_MAX || context % 32 != 0) {
+            fputs("--ctx-size must be a positive multiple of 32 within the model context length\n", stderr);
+            return 2;
+        }
+        argc -= 2;
+        argv += 2;
+    }
     const int server_mode = argc >= 3 && strcmp(argv[2], "--serve") == 0;
     if (server_mode && (argc == 4 || argc == 5)) {
-        return serve(argv[1], positive_integer(argv[3]), argc == 5 ? positive_integer(argv[4]) : 0);
+        return serve(argv[1], positive_integer(argv[3]), argc == 5 ? positive_integer(argv[4]) : 0, context);
     }
     if (server_mode || (argc != 3 && argc != 4)) {
-        fprintf(stderr, "usage: %s MODEL.gguf PROMPT [MAX_TOKENS]\n", argv[0]);
-        fprintf(stderr, "       %s MODEL.gguf --serve PORT [MAX_CONNECTIONS]\n", argv[0]);
+        fprintf(stderr, "usage: %s [--ctx-size N] MODEL.gguf PROMPT [MAX_TOKENS]\n", program);
+        fprintf(stderr, "       %s [--ctx-size N] MODEL.gguf --serve PORT [MAX_CONNECTIONS]\n", program);
         return 2;
     }
     int64_t max_tokens = 1;
@@ -87,7 +109,7 @@ int main(int argc, char ** argv) {
     if (!ids || !text) goto done;
 
     fg_goose_host_ensure_init();
-    hose_host_load(argv[1]);
+    hose_host_load_context(argv[1], context);
     const int64_t count = hose_generate((const unsigned char *) argv[2], (int64_t) strlen(argv[2]),
                                         max_tokens, ids, NULL, 0, NULL);
     if (count <= 0) {

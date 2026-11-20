@@ -32,6 +32,39 @@ static void check_model_step(const char * path) {
     printf("two steps, logit %.6f; generated 2,2 (abab)\n", expected);
 }
 
+static void check_chunked_generation(const char * path) {
+    enum { prompt_size = 137, vocabulary = 4 };
+    int64_t prompt[prompt_size], first = -1;
+    int32_t batch[prompt_size];
+    for (int i = 0; i < prompt_size; ++i) {
+        batch[i] = (i * 7 + i / 5) % 3;
+        prompt[i] = batch[i];
+    }
+    fg_goose_host_ensure_init();
+    hose_host_load_context(path, 262144);
+    assert(hose_context_capacity() == 262144);
+    float * all = NULL, * expected_state = NULL, * actual_state = NULL;
+    assert(hose_step(batch, prompt_size, &all) == prompt_size * vocabulary);
+    const float * last = all + (prompt_size - 1) * vocabulary;
+    int32_t next = 0;
+    for (int i = 1; i < vocabulary; ++i) {
+        if (last[i] > last[next]) next = i;
+    }
+    assert(hose_step(&next, 1, &expected_state) == vocabulary);
+    double timing[3];
+    assert(hose_generate_ids(prompt, prompt_size, 1, false, &first, timing) == 1);
+    assert(first == next && timing[2] == prompt_size);
+    assert(hose_step(&next, 1, &actual_state) == vocabulary);
+    for (int i = 0; i < vocabulary; ++i) {
+        assert(fabsf(expected_state[i] - actual_state[i]) < 1e-6f);
+    }
+    assert(fabsf(expected_state[next]) > 0.1f);
+    free(all);
+    free(expected_state);
+    free(actual_state);
+    puts("137-token chunked generation preserves the next-step logits at 262144 context");
+}
+
 static void check_scalar_and_recurrent(void) {
     struct ggml_context * ctx = ggml_init((struct ggml_init_params){ 1024 * 1024, NULL, true });
     assert(ctx);
@@ -233,4 +266,5 @@ int main(int argc, char ** argv) {
     check_quantized_matrix(GGML_TYPE_Q4_K, false);
     check_quantized_matrix(GGML_TYPE_Q6_K, true);
     if (argc == 2) check_model_step(argv[1]);
+    if (argc == 3 && strcmp(argv[1], "--chunked") == 0) check_chunked_generation(argv[2]);
 }

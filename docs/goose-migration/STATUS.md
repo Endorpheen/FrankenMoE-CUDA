@@ -89,11 +89,32 @@ Q4_K_M smoke test produced ` Paris, a` and recorded 431 CUDA matrices in each
 of its three graphs. This records functional evidence. The 32,768-input,
 512-output Apex performance and peak-memory gates remain open.
 
-## Ledger
+EXP-2026-11-20-1499 moves generation control into Goose for both CLI and
+HTTP. Goose admits token IDs against the active session capacity, processes
+prefill in chunks of at most 128 tokens, requests logits only for the last
+prompt position, and controls decode and EOS. The model owner sizes the
+persistent arena for the requested context. Use `--ctx-size 262144` before the
+model path to select the Apex context used by the previous paired workload.
+`GET /props` reports the actual context capacity, and `POST /completion`
+accepts a flat array of token IDs as well as a string.
+
+The 137-token nonzero synthetic fixture matched next-step logits for single
+and chunked prefill to an absolute tolerance of 0.000001. The CPU and CUDA
+operator checks and all 14 HTTP requests passed. The Apex Q4_K_M server
+returned HTTP 200 with 248,320 vocabulary entries, 40 active layers, and
+262,144 context slots. At readiness it reported 1,577,428 KiB RSS and zero
+process swap. This was a readiness check without generation. The saved
+32,768-input, 512-output request also requires seeded top-k/top-p sampling and
+probability output. The current endpoint uses greedy sampling, and Q4 cache
+attention still runs on CPU. The full Apex workload and paired gates are open.
+
+## Historical requirements audit
 
 `docs/goose-migration/tasks.json`: **DONE 1**, **PARTIAL 144**, **TODO 7** of 152.
 
-See [the production C++ audit](PRODUCTION-CPP-AUDIT-20261120.md) for all 152 dispositions. The narrower tables below retain earlier detailed remainders. Runtime rows require a proven production switch and removal of C++ and fallbacks.
+See [the production C++ audit](PRODUCTION-CPP-AUDIT-20261120.md) for the
+original verdicts. The entries below are retained for traceability. The
+tested standalone runtime capabilities are recorded above.
 
 ### PARTIAL
 

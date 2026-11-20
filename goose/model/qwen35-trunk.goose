@@ -112,16 +112,17 @@ export fn q35_moe_ffn(c: i64, x: i64, weights: i64[:], cfg: i64[:],
 // One model-step ticket is shared across layers. This builder never commits it.
 // roots=[count,handles...]; generic executor expands every returned root, waits,
 // and commits once. On failure discard this unexecuted graph/context.
-export fn q35_trunk(c: i64, ids: i64, embedding: i64, head_weight: i64, head_norm: i64,
+export fn q35_trunk_output(c: i64, ids: i64, embedding: i64, head_weight: i64, head_norm: i64,
                     layers: i64[:], layer_count: i64, positions: i64, mask: i64, indices: i64,
                     attn_cfg: i64[:], gdn_cfg: i64[:], moe_cfg: i64[:], sections: i64,
                     state: i64[:], ticket: i64, work: i64[:], branch_nodes: i64[:],
-                    moe_nodes: i64[:], frames: i64[:], roots: i64[:]) -> i64 {
+                    moe_nodes: i64[:], frames: i64[:], roots: i64[:], logit_rows: i64) -> i64 {
     if c == 0 || ids == 0 || embedding == 0 || head_norm == 0 || head_weight == 0 ||
        layer_count <= 0 || layer_count > 128 || layers.len < layer_count * 32 ||
        frames.len < 4 * layer_count + 4 || roots.len < 2 * layer_count + 2 ||
        work.len < 16 || branch_nodes.len < 40 || attn_cfg.len < 14 || gdn_cfg.len < 7 || moe_cfg.len < 3 ||
-       !qk_state_ok(state) || state[4] <= 0 || state[5] != ticket || positions == 0 || mask == 0 || indices == 0 || sections == 0 { return 0; }
+       !qk_state_ok(state) || state[4] <= 0 || state[5] != ticket || positions == 0 || mask == 0 ||
+       indices == 0 || sections == 0 || logit_rows < -1 || logit_rows > 1 { return 0; }
     let count: i64 = ne(ids, 0);
     let hidden: i64 = ne(embedding, 0);
     if count != state[4] || prop(ids, 0) != 26 || ne(ids, 1) != 1 || ne(ids, 2) != 1 || ne(ids, 3) != 1 ||
@@ -169,9 +170,27 @@ export fn q35_trunk(c: i64, ids: i64, embedding: i64, head_weight: i64, head_nor
         layer += 1;
     }
     let last: i64 = 1 + 4 * layer_count;
+    if logit_rows == 0 {
+        roots[root_count + 1] = current; roots[0] = root_count + 1;
+        return current;
+    }
+    if logit_rows == 1 && count > 1 {
+        let row_stride = qa_get(current, 1, 1) as! i64;
+        current = view2(c, current, hidden, 1, row_stride, (count - 1) * row_stride);
+    }
     frames[last] = qa_rms(c, current, attn_cfg[5], work);
     frames[last + 1] = qa_binary(c, frames[last], head_norm, 7, work);
     frames[last + 2] = qa_mm(c, head_weight, frames[last + 1], work);
     roots[root_count + 1] = frames[last + 2]; roots[0] = root_count + 1;
     return frames[last + 2];
+}
+
+export fn q35_trunk(c: i64, ids: i64, embedding: i64, head_weight: i64, head_norm: i64,
+                    layers: i64[:], layer_count: i64, positions: i64, mask: i64, indices: i64,
+                    attn_cfg: i64[:], gdn_cfg: i64[:], moe_cfg: i64[:], sections: i64,
+                    state: i64[:], ticket: i64, work: i64[:], branch_nodes: i64[:],
+                    moe_nodes: i64[:], frames: i64[:], roots: i64[:]) -> i64 {
+    return q35_trunk_output(c, ids, embedding, head_weight, head_norm, layers, layer_count,
+        positions, mask, indices, attn_cfg, gdn_cfg, moe_cfg, sections, state, ticket, work,
+        branch_nodes, moe_nodes, frames, roots, -1);
 }

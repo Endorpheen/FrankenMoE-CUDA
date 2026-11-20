@@ -35,13 +35,10 @@ typedef struct ggml_cgraph  ggml_cgraph;
 typedef enum ggml_type ggml_type;
 
 #define MAX_REQ   262144
-#define MAX_IDS   65536
-#define KV_CAP    2048
-#define MAX_TOKENS 256
 
 const char * die(const char * what) { fprintf(stderr, "GENERATE %s\n", what); exit(1); }
 
-static double now_s(void) {
+double fg_q35_generation_now(void) {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
     return (double) ts.tv_sec + (double) ts.tv_nsec / 1e9;
@@ -199,7 +196,7 @@ int64_t detokenize(const int64_t * ids, int64_t n, unsigned char * out, int64_t 
     return at;
 }
 
-static void init_trunk(void) {
+static void init_trunk(int64_t capacity) {
     const int64_t hdr = H.size < 67108864 ? (int64_t) H.size : 67108864;
     const int64_t layer_slots = 128 * 32;
     const int64_t scratch_slots = H.state[3] + 4;
@@ -212,7 +209,7 @@ static void init_trunk(void) {
     H.layer_count = qr_model_open((sl_u8){ H.base, hdr }, (uint64_t) (uintptr_t) H.base,
         (int64_t) H.size, (sl_i64){ H.state, 8 }, (sl_i64){ H.kv, 256 * 8 },
         (sl_i64){ H.tens, 2048 * 12 }, (sl_i64){ H.kvsl, 512 }, (sl_i64){ H.tensl, 8192 },
-        KV_CAP, 192 * 1024 * 1024, (sl_i64){ H.owner, 12 }, (sl_i64){ H.records, layer_slots },
+        capacity, INT32_MAX, (sl_i64){ H.owner, 12 }, (sl_i64){ H.records, layer_slots },
         (sl_i64){ handles, 4 }, (sl_i64){ H.acfg, 14 }, (sl_i64){ H.gcfg, 7 },
         (sl_i64){ H.mcfg, 3 }, (sl_i64){ sections, 4 }, (sl_i64){ H.kv_state, 6 },
         (sl_u8){ name, sizeof name }, (sl_i64){ scratch, scratch_slots });
@@ -221,6 +218,7 @@ static void init_trunk(void) {
         fprintf(stderr, "Goose model loader returned %lld\n", (long long) H.layer_count);
         die("model loader");
     }
+    if (H.owner[8] != H.n_tok) die("model vocabulary size");
     H.emb = (ggml_tensor *) (intptr_t) handles[0];
     H.head = (ggml_tensor *) (intptr_t) handles[1];
     H.norm = (ggml_tensor *) (intptr_t) handles[2];
@@ -237,19 +235,17 @@ static void init_trunk(void) {
 
 // Start a request from zero: KV bookkeeping plus every recurrent/KV cell buffer.
 static void reset_state(void) {
-    if (q35_kv_init(KV_CAP, 32, (sl_i64){ H.kv_state, 6 }) != 0) die("kv reset");
+    if (q35_kv_init(H.owner[10], 32, (sl_i64){ H.kv_state, 6 }) != 0) die("kv reset");
     for (int64_t i = 0; i < H.reset_count; ++i) {
         memset(H.reset_tensors[i]->data, 0, ggml_nbytes(H.reset_tensors[i]));
     }
 }
 
 // One full-model step: build the graph, evaluate it and publish the KV ticket.
-int64_t model_step(const int32_t * tokens, int64_t count, float ** logits) {
-    if (!logits) return -1;
-    *logits = NULL;
+static int64_t model_step(const int32_t * tokens, int64_t count, int64_t logit_rows, sl_f32 output) {
     sl_i64 state = { H.kv_state, 6 };
     const int64_t rows = q35_kv_read_rows(state, count);
-    if (!tokens || rows <= 0) return -1;
+    if (!tokens || rows <= 0 || count > 4096) return -1;
     for (int64_t i = 0; i < count; ++i) {
         if (tokens[i] < 0 || tokens[i] >= H.n_tok) return -1;
     }
@@ -262,7 +258,6 @@ int64_t model_step(const int32_t * tokens, int64_t count, float ** logits) {
 
     int64_t n = -1;
     void * storage = NULL;
-    float * output = NULL;
     bool executed = false;
 
     ggml_tensor * ids = ggml_new_tensor_1d(c, GGML_TYPE_I32, count);
@@ -277,14 +272,15 @@ int64_t model_step(const int32_t * tokens, int64_t count, float ** logits) {
     float * raw = calloc((size_t) rows * (size_t) count, sizeof(float));
     if (!frames || !roots || !pos || !raw) goto done;
 
-    const int64_t result = q35_trunk((int64_t) (intptr_t) c, (int64_t) (intptr_t) ids,
+    const int64_t result = q35_trunk_output((int64_t) (intptr_t) c, (int64_t) (intptr_t) ids,
                                      (int64_t) (intptr_t) H.emb, (int64_t) (intptr_t) H.head, (int64_t) (intptr_t) H.norm,
                                      (sl_i64){ H.records, H.layer_count * 32 }, H.layer_count,
                                      (int64_t) (intptr_t) positions, (int64_t) (intptr_t) mask, (int64_t) (intptr_t) indices,
                                      (sl_i64){ H.acfg, 14 }, (sl_i64){ H.gcfg, 7 }, (sl_i64){ H.mcfg, 3 },
                                      H.rope_sections, (sl_i64){ H.kv_state, 6 }, ticket,
                                      (sl_i64){ work, 16 }, (sl_i64){ bn, 40 }, (sl_i64){ mn, 42 },
-                                     (sl_i64){ frames, 4 * H.layer_count + 4 }, (sl_i64){ roots, 2 * H.layer_count + 2 });
+                                     (sl_i64){ frames, 4 * H.layer_count + 4 },
+                                     (sl_i64){ roots, 2 * H.layer_count + 2 }, logit_rows);
     if (!result) goto done;
 
     ggml_cgraph * graph = ggml_new_graph_custom(c, 16384, false);
@@ -308,15 +304,15 @@ int64_t model_step(const int32_t * tokens, int64_t count, float ** logits) {
     }
 
     const ggml_tensor * lg = (const ggml_tensor *) (intptr_t) result;
-    output = malloc(ggml_nbytes(lg));
-    if (!output) goto done;
+    if (logit_rows != 0 && (!output.data || output.len != ggml_nelements(lg))) goto done;
     executed = true;
     if (fg_standalone_graph_compute(graph) != GGML_STATUS_SUCCESS) goto done;
     if (q35_kv_commit(state, ticket) < 0) goto done;
-    memcpy(output, lg->data, ggml_nbytes(lg));
-    *logits = output;
-    output = NULL;
-    n = ggml_nelements(lg);
+    n = 0;
+    if (logit_rows != 0) {
+        memcpy(output.data, lg->data, ggml_nbytes(lg));
+        n = output.len;
+    }
 
 done:
     if (n < 0) {
@@ -324,7 +320,6 @@ done:
         if (executed) reset_state();
         else q35_kv_abort(state, ticket);
     }
-    free(output);
     free(storage);
     free(pos);
     free(raw);
@@ -337,7 +332,7 @@ done:
 
 // ---- API ---------------------------------------------------------------
 
-void hose_host_load(const char * path) {
+void hose_host_load_context(const char * path, int64_t capacity) {
     struct stat st;
     H.fd = open(path, O_RDONLY);
     if (H.fd < 0 || fstat(H.fd, &st) != 0) die("model open");
@@ -345,7 +340,11 @@ void hose_host_load(const char * path) {
     H.base = mmap(NULL, H.size, PROT_READ, MAP_PRIVATE, H.fd, 0);
     if (H.base == MAP_FAILED) die("model mmap");
     load_vocab();
-    init_trunk();
+    init_trunk(capacity);
+}
+
+void hose_host_load(const char * path) {
+    hose_host_load_context(path, HOSE_DEFAULT_CONTEXT);
 }
 
 int64_t hose_tokenize(const unsigned char * text, int64_t len, int64_t * ids, int64_t cap) {
@@ -359,7 +358,18 @@ int64_t hose_detokenize(const int64_t * ids, int64_t n, unsigned char * out, int
 void hose_reset_state(void) { reset_state(); }
 
 int64_t hose_step(const int32_t * tokens, int64_t count, float ** logits) {
-    return model_step(tokens, count, logits);
+    if (!logits) return -1;
+    *logits = NULL;
+    if (count <= 0 || count > 4096 || H.n_tok <= 0 || (uint64_t) H.n_tok > SIZE_MAX / sizeof(float) / count) {
+        return -1;
+    }
+    const int64_t capacity = count * H.n_tok;
+    float * buffer = malloc((size_t) capacity * sizeof(*buffer));
+    if (!buffer) return -1;
+    const int64_t n = model_step(tokens, count, -1, (sl_f32) { buffer, capacity });
+    if (n < 0) free(buffer);
+    else *logits = buffer;
+    return n;
 }
 
 int64_t hose_eog_is(int64_t id) {
@@ -374,58 +384,33 @@ void hose_stats(int64_t * out5) {
     out5[4] = H.layer_count;
 }
 
-// ---- generation loop ---------------------------------------------------
-// One request: reset, tokenise, step until the Goose end-of-generation set or
-// the token cap, then detokenise. Both the CLI and the server call this, so the
-// loop exists once.
+int64_t hose_context_capacity(void) { return H.owner[10]; }
+
+int64_t fg_q35_generation_eval(sl_i32 tokens, sl_f32 output) {
+    return model_step(tokens.data, tokens.len, output.len != 0, output);
+}
+
+int64_t hose_generate_ids(const int64_t * prompt, int64_t count, int64_t max_tokens,
+                          bool ignore_eos, int64_t * out_ids, double * timing) {
+    if (!prompt || count <= 0 || !out_ids || max_tokens <= 0) return -1;
+    return q35_generate((sl_i64) { (int64_t *) prompt, count }, H.n_tok, H.owner[10],
+        (sl_i64) { H.eog, H.n_eog }, max_tokens, ignore_eos, (sl_i64) { out_ids, max_tokens },
+        (sl_f64) { timing, timing ? 3 : 0 });
+}
+
+int64_t hose_generate_text(const unsigned char * text, int64_t len, int64_t max_tokens,
+                           bool ignore_eos, int64_t * out_ids, double * timing) {
+    if (timing) { timing[0] = 0.0; timing[1] = 0.0; timing[2] = 0.0; }
+    if (!text || len <= 0 || len > MAX_REQ || max_tokens <= 0 || !out_ids) return -1;
+    static int64_t ids[MAX_REQ];
+    const int64_t n_ids = tokenize(text, len, ids, MAX_REQ);
+    return hose_generate_ids(ids, n_ids, max_tokens, ignore_eos, out_ids, timing);
+}
+
 int64_t hose_generate(const unsigned char * text, int64_t len, int64_t max_tokens,
                       int64_t * out_ids, unsigned char * out_text, int64_t text_cap,
                       double * timing) {
-    if (timing) { timing[0] = 0.0; timing[1] = 0.0; timing[2] = 0.0; }
-    if (!text || len <= 0 || max_tokens <= 0 || !out_ids) return -1;
-    static int64_t ids[MAX_REQ];
-    const int64_t n_ids = tokenize(text, len, ids, MAX_REQ);
-    if (n_ids <= 0 || n_ids > KV_CAP || max_tokens - 1 > KV_CAP - n_ids) {
-        return -1;
-    }
-    reset_state();
-
-    int32_t * batch = malloc((size_t) n_ids * 4);
-    if (!batch) { return -1; }
-    for (int64_t i = 0; i < n_ids; ++i) { batch[i] = (int32_t) ids[i]; }
-
-    const double t0 = now_s();
-    double t_prefill = 0.0;
-    int64_t produced = 0;
-    int64_t past = n_ids;
-    for (int64_t step = 0; step < max_tokens; ++step) {
-        float * logits = NULL;
-        const int64_t n_logits = model_step(batch, past, &logits);
-        free(batch);
-        batch = NULL;
-        if (n_logits <= 0) return -1;
-        if (step == 0) { t_prefill = now_s() - t0; }
-        const int64_t vocab = n_logits / (past > 0 ? past : 1);
-        if (vocab <= 0) { free(logits); return -1; }
-        const int64_t next = fg_sampler_greedy((sl_f32){ logits + (past - 1) * vocab, vocab }, vocab);
-        free(logits);
-        if (next < 0) return -1;
-        out_ids[produced++] = next;
-        if (bt_is_eog((sl_i64){ H.eog, H.n_eog }, H.n_eog, next) != 0) { break; }
-        if (produced == max_tokens) break;
-        batch = malloc(4);
-        if (!batch) return -1;
-        batch[0] = (int32_t) next;
-        past = 1;
-    }
-    free(batch);
-
-    if (out_text && detokenize(out_ids, produced, out_text, text_cap) < 0) return -1;
-    if (timing) {
-        const double all = now_s() - t0;
-        timing[0] = t_prefill;
-        timing[1] = all - t_prefill;
-        timing[2] = (double) n_ids;
-    }
+    const int64_t produced = hose_generate_text(text, len, max_tokens, false, out_ids, timing);
+    if (produced >= 0 && out_text && detokenize(out_ids, produced, out_text, text_cap) < 0) return -1;
     return produced;
 }

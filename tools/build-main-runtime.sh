@@ -41,6 +41,7 @@ MODULES=(
     goose/model/gdn-ops.goose
     goose/model/qwen35-gdn.goose
     goose/model/qwen35-trunk.goose
+    goose/model/qwen35-generation.goose
     goose/model/gguf-reader.goose
     goose/model/model-ownership.goose
     goose/model/qwen35-model-loader.goose

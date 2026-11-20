@@ -162,7 +162,8 @@ export fn qr_model_open(data: const u8[:], mapping: u64, file_bytes: i64, parsed
     let scale: i64 = mr_float(data, parsed, kv, kv_slots, "qwen35moe.expert_weights_scale", 0, scratch);
     if layers.len / 32 < count || hidden <= 0 || hidden > 65536 || heads <= 0 || heads > 512 || hk <= 0 || hk > 512 || heads % hk != 0 ||
        hd <= 0 || hd > 4096 || hd % 32 != 0 || hv != hd || experts <= 0 || experts > 4096 || used <= 0 || used > 64 || used > experts ||
-       group < 0 || group > 1 || original <= 0 || original > 2147483647 || rotated <= 0 || rotated > hd || rotated % 2 != 0 ||
+       group < 0 || group > 1 || original <= 0 || original > 2147483647 || capacity > original ||
+       rotated <= 0 || rotated > hd || rotated % 2 != 0 ||
        ff <= 0 || ff > 65536 || shared <= 0 || shared > 65536 || epsilon < 0 || base_freq < 0 || !(float_bits(base_freq) > 0.0) ||
        !(float_bits(base_freq) <= 3.4028234663852886e38) || scale < 0 || !(float_bits(scale) >= 0.0) || !(float_bits(scale) <= 3.4028234663852886e38) ||
        !mr_no_clamp(data, parsed, kv, kv_slots, "qwen35moe.swiglu_clamp_exp") ||
@@ -199,7 +200,7 @@ export fn qr_model_open(data: const u8[:], mapping: u64, file_bytes: i64, parsed
     i = 0; while i < parsed[3] { scratch[4 + i] = 0; i += 1; }
     owner[3] = qo_context_new(8388608, 1);
     if owner[3] == 0 { return -3; }
-    owner[4] = qo_context_new(state_budget, 0);
+    owner[4] = qo_context_new(needed, 0);
     if owner[4] == 0 { mr_close_contexts(owner); return -3; }
     handles[0] = mr_bind(data, parsed, tensors, tensor_slots, "token_embd.weight", owner[3], mapping, file_bytes, scratch[4 .. 4 + parsed[3]]);
     if gr_lookup(data, parsed, tensors, tensor_slots, "output.weight", 12, 3) < 0 { handles[1] = handles[0]; }

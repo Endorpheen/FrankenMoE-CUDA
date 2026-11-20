@@ -43,9 +43,9 @@ def check(binary, fixture):
         candidate.bind(("127.0.0.1", 0))
         port = candidate.getsockname()[1]
 
-    limit = 10
+    limit = 14
     with subprocess.Popen(
-        [binary, fixture, "--serve", str(port), str(limit)],
+        [binary, "--ctx-size", "262144", fixture, "--serve", str(port), str(limit)],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.PIPE,
         text=True,
@@ -59,6 +59,7 @@ def check(binary, fixture):
             assert exchange(port, get("/health")) == (200, {"status": "ok"})
             status, props = exchange(port, get("/props"))
             assert status == 200 and props["n_vocab"] == 4 and props["n_layer"] == 2
+            assert props["n_ctx"] == 262144
             assert exchange(port, post(2, "text/plain"), b"ab") == (
                 200, {"ids": [2], "text": "ab", "count": 1},
             )
@@ -67,6 +68,13 @@ def check(binary, fixture):
             assert exchange(port, post(len(body), "application/json; charset=utf-8"), body, fragment=True) == (
                 200, {"ids": [2, 2], "text": "abab", "count": 2},
             )
+            body = json.dumps({"prompt": [2] * 129, "n_predict": 2, "ignore_eos": True}).encode()
+            assert exchange(port, post(len(body)), body) == (
+                200, {"ids": [2, 2], "text": "abab", "count": 2},
+            )
+            for bad_prompt in ([4], [2, [1]], [2, True]):
+                body = json.dumps({"prompt": bad_prompt}).encode()
+                assert exchange(port, post(len(body)), body)[0] == 400
             assert exchange(port, get("/unknown"))[0] == 404
             assert exchange(port, post(2, extra="Content-Length: 2\r\n"), b"ab")[0] == 400
             assert exchange(port, post(9223372036854775808))[0] == 400
@@ -78,7 +86,7 @@ def check(binary, fixture):
         finally:
             if server.poll() is None:
                 server.kill()
-    print("HTTP inference: 10 requests verified")
+    print(f"HTTP inference: {limit} requests verified")
 
 
 if __name__ == "__main__":

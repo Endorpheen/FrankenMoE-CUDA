@@ -1,6 +1,8 @@
 // Serial request handling for the standalone model host. CLI and HTTP share
 // the tokenizer, model state, executor and sampler through hose_generate.
-extern "fg_http_complete" fn ih_complete_abi(prompt: const u8[:], max_tokens: i64,
+extern "fg_http_complete" fn ih_complete_abi(prompt: const u8[:], max_tokens: i64, ignore_eos: bool,
+    ids: i64[:], text: u8[:], result: i64[:]) -> i64;
+extern "fg_http_complete_ids" fn ih_complete_ids_abi(prompt: const i64[:], max_tokens: i64, ignore_eos: bool,
     ids: i64[:], text: u8[:], result: i64[:]) -> i64;
 extern "fg_http_stats" fn ih_stats_abi(stats: i64[:]);
 extern "fg_http_listening" fn ih_listening(port: i64);
@@ -98,14 +100,8 @@ fn ih_response(fd: i64, status: i64, body: const u8[:]) {
     }
 }
 
-fn ih_generate(fd: i64, prompt: const u8[:], limit: i64, output: u8[:], response: u8[:], ids: i64[:]) {
-    if prompt.len == 0 || limit <= 0 || limit > ids.len {
-        ih_response(fd, 400, "{\"error\":\"invalid prompt or n_predict\"}");
-        return;
-    }
-    var result: i64[1] = [0];
-    let bytes = ih_complete_abi(prompt, limit, ids, output, result);
-    let count = result[0];
+fn ih_completion_result(fd: i64, bytes: i64, count: i64, limit: i64,
+                        output: u8[:], response: u8[:], ids: i64[:]) {
     if bytes < 0 || bytes > output.len || count <= 0 || count > limit {
         ih_response(fd, 500, "{\"error\":\"generation failed\"}");
         return;
@@ -127,10 +123,22 @@ fn ih_generate(fd: i64, prompt: const u8[:], limit: i64, output: u8[:], response
     }
 }
 
-// Completion options are scalars in one object. Check that shape before
-// entering the recursive JSON reader, while leaving string escapes to it.
+fn ih_generate(fd: i64, prompt: const u8[:], limit: i64, ignore_eos: bool,
+               output: u8[:], response: u8[:], ids: i64[:]) {
+    if prompt.len == 0 || limit <= 0 || limit > ids.len {
+        ih_response(fd, 400, "{\"error\":\"invalid prompt or n_predict\"}");
+        return;
+    }
+    var result: i64[1] = [0];
+    let bytes = ih_complete_abi(prompt, limit, ignore_eos, ids, output, result);
+    ih_completion_result(fd, bytes, result[0], limit, output, response, ids);
+}
+
+// A completion object can have a flat token array in addition to scalars.
+// Bound nesting before entering the shared recursive JSON reader.
 fn ih_flat_object(body: const u8[:]) -> bool {
     var opened: bool = false;
+    var array_open: bool = false;
     var quoted: bool = false;
     var escaped: bool = false;
     for i in body.len {
@@ -145,15 +153,46 @@ fn ih_flat_object(body: const u8[:]) -> bool {
             if opened { return false; }
             opened = true;
         } else if byte == '[' {
-            return false;
+            if !opened || array_open { return false; }
+            array_open = true;
+        } else if byte == ']' {
+            if !array_open { return false; }
+            array_open = false;
         }
     }
-    return opened;
+    return opened && !array_open;
+}
+
+fn ih_generate_ids(fd: i64, p: const PNode, prompt: i64, limit: i64, ignore_eos: bool,
+                   output: u8[:], response: u8[:], ids: i64[:]) {
+    var stats: i64[6] = [0; 6];
+    ih_stats_abi(stats);
+    let count = p.jn[prompt];
+    if count <= 0 || count > stats[5] || limit <= 0 || limit > ids.len ||
+       limit - 1 > stats[5] - count {
+        ih_response(fd, 400, "{\"error\":\"invalid token count or n_predict\"}");
+        return;
+    }
+    var tokens: i64[>..] = [];
+    tokens.resize(count, 0);
+    let first = p.jf[prompt];
+    for i in count {
+        let token = p.jchild[first + i];
+        if (p.jk[token] != PJ_K_INT && p.jk[token] != PJ_K_UINT) ||
+           p.jv[token] < 0 || p.jv[token] >= stats[0] {
+            ih_response(fd, 400, "{\"error\":\"invalid prompt token\"}");
+            return;
+        }
+        tokens[i] = p.jv[token];
+    }
+    var result: i64[1] = [0];
+    let bytes = ih_complete_ids_abi(tokens[..], limit, ignore_eos, ids, output, result);
+    ih_completion_result(fd, bytes, result[0], limit, output, response, ids);
 }
 
 fn ih_generate_json(fd: i64, body: const u8[:], output: u8[:], response: u8[:], ids: i64[:]) {
     if !ih_flat_object(body) {
-        ih_response(fd, 400, "{\"error\":\"expected an object with scalar completion options\"}");
+        ih_response(fd, 400, "{\"error\":\"expected a flat completion object\"}");
         return;
     }
     // The flat parser needs no more nodes, edges or decoded string bytes
@@ -177,8 +216,9 @@ fn ih_generate_json(fd: i64, body: const u8[:], output: u8[:], response: u8[:], 
     let p = PNode { jk: table[0..n], jv: table[n..2*n], js: table[2*n..3*n], jl: table[3*n..4*n],
         jf: table[4*n..5*n], jn: table[5*n..6*n], jkey: table[11*n..12*n],
         jkl: table[12*n..13*n], jchild: table[13*n..14*n], sbuf: strings[..] };
-    let off, len = pget_str(p, root, "prompt");
+    let prompt = pget(p, root, "prompt");
     var limit: i64 = 1;
+    var ignore_eos: bool = false;
     let first = p.jf[root];
     for i in p.jn[root] {
         let edge = first + i;
@@ -190,6 +230,10 @@ fn ih_generate_json(fd: i64, body: const u8[:], output: u8[:], response: u8[:], 
             continue;
         }
         if rq_eq(key, "stream") && p.jk[child] == PJ_K_BOOL && p.jv[child] == 0 { continue; }
+        if rq_eq(key, "ignore_eos") && p.jk[child] == PJ_K_BOOL {
+            ignore_eos = p.jv[child] != 0;
+            continue;
+        }
         if rq_eq(key, "temperature") &&
            ((p.jk[child] == PJ_K_INT && p.jv[child] == 0) || (p.jk[child] == 4 && doubles[child] == 0.0)) {
             continue;
@@ -197,11 +241,16 @@ fn ih_generate_json(fd: i64, body: const u8[:], output: u8[:], response: u8[:], 
         ih_response(fd, 400, "{\"error\":\"unsupported completion option\"}");
         return;
     }
-    if off < 0 || len <= 0 {
-        ih_response(fd, 400, "{\"error\":\"expected a nonempty prompt string\"}");
+    if prompt >= 0 && p.jk[prompt] == PJ_K_ARRAY {
+        ih_generate_ids(fd, p, prompt, limit, ignore_eos, output, response, ids);
         return;
     }
-    ih_generate(fd, p.sbuf[off .. off + len], limit, output, response, ids);
+    let off, len = pget_str(p, root, "prompt");
+    if off < 0 || len <= 0 {
+        ih_response(fd, 400, "{\"error\":\"expected a prompt string or a token array\"}");
+        return;
+    }
+    ih_generate(fd, p.sbuf[off .. off + len], limit, ignore_eos, output, response, ids);
 }
 
 fn ih_request(fd: i64, request: u8[:], output: u8[:], response: u8[:], ids: i64[:]) {
@@ -214,7 +263,7 @@ fn ih_request(fd: i64, request: u8[:], output: u8[:], response: u8[:], ids: i64[
     } else if meta[2] == 1 {
         ih_response(fd, 200, "{\"status\":\"ok\"}");
     } else if meta[2] == 3 {
-        var stats: i64[5] = [0; 5];
+        var stats: i64[6] = [0; 6];
         ih_stats_abi(stats);
         var n = cp_put(response, 0, "{\"n_vocab\":");
         n = cp_uint(response, n, stats[0]);
@@ -222,6 +271,8 @@ fn ih_request(fd: i64, request: u8[:], output: u8[:], response: u8[:], ids: i64[
         n = cp_uint(response, n, stats[1]);
         n = cp_put(response, n, ",\"n_layer\":");
         n = cp_uint(response, n, stats[4]);
+        n = cp_put(response, n, ",\"n_ctx\":");
+        n = cp_uint(response, n, stats[5]);
         n = cp_put(response, n, "}");
         if n <= response.len { ih_response(fd, 200, response[0 .. n]); }
     } else {
@@ -229,7 +280,7 @@ fn ih_request(fd: i64, request: u8[:], output: u8[:], response: u8[:], ids: i64[
         if meta[3] != 0 {
             ih_generate_json(fd, body, output, response, ids);
         } else {
-            ih_generate(fd, body, 1, output, response, ids);
+            ih_generate(fd, body, 1, false, output, response, ids);
         }
     }
 }

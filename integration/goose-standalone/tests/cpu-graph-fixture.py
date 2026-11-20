@@ -1,4 +1,4 @@
-"""Write a two-layer GGUF with one nonzero tied embedding and zero branch weights."""
+"""Write a two-layer GGUF for CPU graph and chunked-generation checks."""
 
 import math
 import struct
@@ -22,7 +22,7 @@ for name, value in {
     'ssm.state_size': 32, 'ssm.group_count': 1, 'ssm.time_step_rank': 1,
     'ssm.conv_kernel': 2, 'ssm.inner_size': 32, 'expert_count': 2,
     'expert_used_count': 1, 'expert_feed_forward_length': 32,
-    'expert_shared_feed_forward_length': 32, 'context_length': 2048,
+    'expert_shared_feed_forward_length': 32, 'context_length': 262144,
     'rope.dimension_count': 32,
 }.items():
     u32('qwen35moe.' + name, value)
@@ -62,6 +62,7 @@ for layer, branch in enumerate((attention,recurrent)):
     tensors.extend((f'blk.{layer}.{name}', shape) for name, shape in (branch | moe).items())
 payload = bytearray()
 records = []
+stateful = sys.argv[2:] == ['--stateful']
 for name, shape in tensors:
     offset = len(payload)
     records.append(string(name) + struct.pack('<I', len(shape)) + struct.pack('<'+'Q'*len(shape), *shape)
@@ -69,8 +70,16 @@ for name, shape in tensors:
     values = [0.0] * math.prod(shape)
     if name == 'token_embd.weight':
         values[64] = 1.0
+        if stateful:
+            values[0] = 0.5
+            values[33] = 0.75
+            values[65] = -0.25
     elif name == 'output_norm.weight':
         values = [1.0] * len(values)
+    elif stateful and 'norm.weight' in name:
+        values = [1.0] * len(values)
+    elif stateful and any(word in name for word in ('attn_', 'ssm_')):
+        values = [((11*i + i//7) % 17 - 8) / 128 for i in range(len(values))]
     payload += struct.pack('<' + 'f'*len(values), *values)
     payload += bytes((-len(payload)) % 32)
 header = struct.pack('<4sIQQ', b'GGUF', 3, len(records), len(metadata))
