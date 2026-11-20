@@ -62,8 +62,8 @@ export fn q35_moe_ffn(c: i64, x: i64, weights: i64[:], cfg: i64[:],
     nodes[0] = qa_mm(c, weights[0], x, work);
     qa_begin(work, 20, c, nodes[0], 0, 0, 0); work[7] = 1065353216;
     nodes[1] = gb_common_args(work);
-    qa_begin(work, 29, c, nodes[1], 0, 0, 1); nodes[2] = gb_common_args(work);
-    nodes[3] = view4(c, nodes[2], used, count, 1, 1, experts * 4, experts * count * 4, experts * count * 4, 0);
+    qa_begin(work, 30, c, nodes[1], 0, 0, used); nodes[2] = gb_common_args(work);
+    nodes[3] = nodes[2];
     nodes[4] = qa_reshape(c, nodes[1], 1, experts, count, 1);
     qa_begin(work, 18, c, nodes[4], nodes[3], 0, 0); nodes[5] = gb_common_args(work);
     nodes[6] = qa_reshape(c, nodes[5], used, count, 1, 1);

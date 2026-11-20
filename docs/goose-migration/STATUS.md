@@ -297,6 +297,26 @@ and reset with a maximum logit difference of 0.0000001192. CPU model and
 chunked-generation checks passed. Apex inference, performance and peak
 memory were not part of these checks.
 
+EXP-2026-11-20-1511 connects the expert routing graph to the shared CUDA
+activation arena. It executes mask-free softmax, stable sorting and Top-K,
+F32 row gathering and row sums on device. The CUDA sort reuses the Goose
+bitonic network and preserves insertion order for unordered values.
+The Qwen3.5 MoE graph now emits compact Top-K indices with the same
+descending and tie order as its previous argsort view. The host expert
+cache materializes that compact tensor. For the Apex geometry of 256
+experts and eight selections, its ID payload per layer and token changes
+from 1,024 bytes of backing storage to 32 bytes of selected IDs.
+
+On RTX 4070 a 257-expert fixture matched all 110 selected IDs against
+the CPU, including ties. Ascending and Top-K sorting of strided rows
+containing NaNs also matched exactly. The maximum errors were
+0.00000000373 for probabilities and 0.0000000149 for normalized weights.
+The two-layer GGUF fixture witnessed CUDA softmax, sort, gather and
+row sum, with 110 device input reuses per CUDA graph and a maximum
+CPU/CUDA continuation logit difference of 0.0000001192. CPU chunking
+and the CUDA RoPE/SSM differential passed. Apex throughput, transfer
+totals and peak memory remain unmeasured.
+
 ## Historical requirements audit
 
 `docs/goose-migration/tasks.json`: **DONE 1**, **PARTIAL 144**, **TODO 7** of 152.

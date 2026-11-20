@@ -439,3 +439,40 @@ __kernel void goose_ssm_conv(__global uint8_t * x, __global uint8_t * weights,
         (int32_t) cfg[12], (int32_t) cfg[13], (int32_t) cfg[14],
         (int32_t) cfg[7], (int32_t) cfg[6], 0, 0, lane, sequence, group);
 }
+
+static float fg283d_ld_f32(uint64_t src, uint64_t offset) {
+    return fg_device_global_load(src + offset);
+}
+static void fg283d_st_i32(uint64_t out, uint64_t offset, int32_t value) {
+    *(__global int32_t *) (out + offset) = value;
+}
+static int32_t fg283d_sload_i32(uint64_t at) { return *(__local int32_t *) at; }
+static void fg283d_sstore_i32(uint64_t at, int32_t value) { *(__local int32_t *) at = value; }
+static void fg283d_sync(void) { fg_device_barrier(); }
+static void fg283d_fail(int64_t code) { fg248d_fail(code); }
+
+#include "routing-device.h"
+
+__kernel void goose_route_reduce(__global uint8_t * x, __global uint8_t * y,
+    __global uint8_t * out, __global int64_t * cfg) {
+    uint32_t row, lane;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(row));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
+    fg_route_reduce_g((uint64_t) x, (uint64_t) out, (uint64_t) cfg, row, lane);
+}
+
+__kernel void goose_route_sort(__global uint8_t * x, __global uint8_t * y,
+    __global uint8_t * out, __global int64_t * cfg) {
+    uint32_t row, lane, lanes;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(row));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
+    __asm__("mov.u32 %0, %%ntid.x;" : "=r"(lanes));
+    __local int32_t scratch[4096], flags[128];
+    fg_route_sort_g((uint64_t) x, (uint64_t) out, (uint64_t) cfg, row, lane, lanes,
+        (uint64_t) scratch, (uint64_t) flags);
+}
+
+__kernel void goose_route_gather(__global uint8_t * x, __global uint8_t * y,
+    __global uint8_t * out, __global int64_t * cfg) {
+    fg_route_gather_g((uint64_t) x, (uint64_t) y, (uint64_t) out, (uint64_t) cfg, position_thread());
+}

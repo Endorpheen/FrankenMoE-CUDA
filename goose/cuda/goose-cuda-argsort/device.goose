@@ -22,9 +22,13 @@ fn ensure(v: bool, c: i64) {
         fail(c);
     }
 }
+
+fn sort_ordered(a: f32, b: f32, order: i64) -> bool {
+    return if order == 0 { a <= b } else { a >= b };
+}
 // order: 0 = ASC, 1 = DESC.
 
-fn bitstep(x: u64, dr: u64, ncols: i64, col: i64, k: i64, j: i64, order: i64) {
+fn bitstep(x: u64, dr: u64, ncols: i64, col: i64, k: i64, j: i64, order: i64, stable: bool) {
     let ixj: i64 = col ^ j;
 
     if ixj <= col as i64 {
@@ -34,7 +38,17 @@ fn bitstep(x: u64, dr: u64, ncols: i64, col: i64, k: i64, j: i64, order: i64) {
     let b: i64 = (sload_i32(dr + ( (ixj * 4 as i64) as u64))) as i64;
     var doswap: i64 = 0 as i64;
 
-    if ( (col & k) == (0 as i64)) {
+    if stable {
+        let low = if (col & k) == 0 { a } else { b };
+        let high = if (col & k) == 0 { b } else { a };
+        if low >= ncols || high >= ncols {
+            if low > high { doswap = 1; }
+        } else {
+            let left = ld_f32(x, (low * 4) as u64);
+            let right = ld_f32(x, (high * 4) as u64);
+            if !sort_ordered(left, right, order) || (left == right && low > high) { doswap = 1; }
+        }
+    } else if ( (col & k) == (0 as i64)) {
         if a >= ncols as i64 {
             doswap = 1 as i64;
         } else {
@@ -74,42 +88,79 @@ fn bitstep(x: u64, dr: u64, ncols: i64, col: i64, k: i64, j: i64, order: i64) {
     }
 }
 
-fn argsort(x: u64, dst: u64, ncols: i64, ncols_pad: i64, order: i64, blk: i64, tid: i64, row: i64) {
+fn argsort_row(x: u64, dst: u64, ncols: i64, ncols_pad: i64, nout: i64, order: i64,
+               blk: i64, tid: i64, dr: u64, nan_flag: u64) {
     ensure(ncols > 0 as i64 && ncols_pad >= ncols as i64, 20);
     ensure(blk > 0 as i64 && tid >= 0 as i64, 21);
-    let dr: u64 = smem_base();
+    let stable = nan_flag != 0;
     var col: i64 = tid;
+    var found_nan: i32 = 0;
 
     while col < ncols_pad as i64 {
         sstore_i32(dr + ( (col * 4 as i64) as u64), col as i32);
+        if stable && col < ncols {
+            let value = ld_f32(x, (4 * col) as u64);
+            if value != value { found_nan = 1; }
+        }
         col = col + blk;
     }
+    if stable { sstore_i32(nan_flag + ((4 * tid) as u64), found_nan); }
     sync();
-    var k: i64 = 2 as i64;
-
-    while k <= ncols_pad as i64 {
-        var j: i64 = k / 2 as i64;
-
-        while j > 0 as i64 {
-            col = tid;
-            let xrow: u64 = x + ( ( (row * ncols) * 4 as i64) as u64);
-
-            while col < ncols_pad as i64 {
-                bitstep(xrow, dr, ncols, col, k, j, order);
-                col = col + blk;
-            }
-            sync();
-            j = j / 2 as i64;
+    if stable {
+        if tid == 0 {
+            var found: i32 = 0;
+            for i in blk { found |= sload_i32(nan_flag + ((4 * i) as u64)); }
+            sstore_i32(nan_flag, found);
         }
-        k = k * 2 as i64;
+        sync();
+        found_nan = sload_i32(nan_flag);
+    }
+    if stable && found_nan != 0 {
+        // Insertion order is observable for unordered values in the CPU graph.
+        if tid == 0 {
+            for i in ncols {
+                var j = i;
+                while j > 0 {
+                    let at = dr + ((4 * j) as u64);
+                    let a = sload_i32(at - 4);
+                    let b = sload_i32(at);
+                    if sort_ordered(ld_f32(x, (4 * (a as i64)) as u64),
+                                    ld_f32(x, (4 * (b as i64)) as u64), order) { break; }
+                    sstore_i32(at - 4, b);
+                    sstore_i32(at, a);
+                    j -= 1;
+                }
+            }
+        }
+        sync();
+    } else {
+        var k: i64 = 2;
+        while k <= ncols_pad {
+            var j = k / 2;
+            while j > 0 {
+                col = tid;
+                while col < ncols_pad {
+                    bitstep(x, dr, ncols, col, k, j, order, stable);
+                    col += blk;
+                }
+                sync();
+                j /= 2;
+            }
+            k *= 2;
+        }
     }
     col = tid;
 
-    while col < ncols as i64 {
+    while col < nout {
         let v: i32 = sload_i32(dr + ( (col * 4 as i64) as u64));
-        st_i32(dst, ( ( (row * ncols + col) * 4 as i64) as u64), v);
+        st_i32(dst, (4 * col) as u64, v);
         col = col + blk;
     }
+}
+
+fn argsort(x: u64, dst: u64, ncols: i64, ncols_pad: i64, order: i64, blk: i64, tid: i64, row: i64) {
+    let base = (row * ncols * 4) as u64;
+    argsort_row(x + base, dst + base, ncols, ncols_pad, ncols, order, blk, tid, smem_base(), 0);
 }
 // Retained entry; the parent never executes main.
 

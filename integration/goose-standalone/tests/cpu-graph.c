@@ -674,6 +674,81 @@ static void check_cuda_position(void) {
     ggml_free(ctx);
 }
 
+static void check_cuda_routing(void) {
+    enum { experts = 257, selected = 11, tokens = 5, sequences = 2 };
+    struct ggml_context * ctx = ggml_init((struct ggml_init_params){ 1024 * 1024, NULL, true });
+    assert(ctx);
+    struct ggml_tensor * logits = ggml_new_tensor_3d(ctx, GGML_TYPE_F32, experts, tokens, sequences);
+    struct ggml_tensor * probs = ggml_soft_max_ext(ctx, logits, NULL, 0.75f, 0.0f);
+    struct ggml_tensor * ids = ggml_top_k(ctx, probs, selected);
+    struct ggml_tensor * old = ggml_argsort_top_k(ctx, probs, selected);
+    struct ggml_tensor * bank = ggml_reshape_4d(ctx, probs, 1, experts, tokens, sequences);
+    struct ggml_tensor * picked = ggml_get_rows(ctx, bank, ids);
+    struct ggml_tensor * weights = ggml_reshape_3d(ctx, picked, selected, tokens, sequences);
+    struct ggml_tensor * sums = ggml_sum_rows(ctx, weights);
+    struct ggml_tensor * normalized = ggml_div(ctx, weights, ggml_clamp(ctx, sums, 0x1p-14f, INFINITY));
+    struct ggml_tensor * order_bank = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, 23, 2);
+    struct ggml_tensor * order_src = ggml_view_2d(ctx, order_bank, 19, 2, order_bank->nb[1], 0);
+    struct ggml_tensor * ascending = ggml_argsort(ctx, order_src, GGML_SORT_ORDER_ASC);
+    struct ggml_tensor * unordered_top = ggml_top_k(ctx, order_src, 7);
+    struct ggml_cgraph * graph = ggml_new_graph_custom(ctx, 128, false);
+    ggml_build_forward_expand(graph, normalized);
+    ggml_build_forward_expand(graph, old);
+    ggml_build_forward_expand(graph, ascending);
+    ggml_build_forward_expand(graph, unordered_top);
+    void * storage = fg_standalone_graph_alloc(graph);
+    assert(storage);
+    for (int row = 0; row < tokens * sequences; ++row) {
+        float * values = (float *) logits->data + row * experts;
+        for (int col = 0; col < experts; ++col) {
+            values[col] = row == 0 ? 1.0f : (float) ((13 * col + 7 * row) % 43 - 21) / 2;
+        }
+        if (row != 0) values[(row * 11) % experts] = -INFINITY;
+    }
+    for (int i = 0; i < ggml_nelements(order_bank); ++i) {
+        ((float *) order_bank->data)[i] = i == 4 || i == 26 ? NAN :
+            i == 23 ? -INFINITY : (float) ((13 * i) % 7 - 3);
+    }
+
+    assert(ggml_nbytes(ids) == 4 * selected * tokens * sequences);
+    assert(setenv("GOOSE_CUDA", "0", 1) == 0);
+    assert(fg_standalone_graph_compute(graph) == GGML_STATUS_SUCCESS);
+    int32_t expected_ids[selected * tokens * sequences];
+    int32_t expected_asc[38], expected_unordered[14];
+    float expected_probs[experts * tokens * sequences], expected_weights[selected * tokens * sequences];
+    memcpy(expected_ids, ids->data, sizeof(expected_ids));
+    memcpy(expected_asc, ascending->data, sizeof(expected_asc));
+    memcpy(expected_unordered, unordered_top->data, sizeof(expected_unordered));
+    memcpy(expected_probs, probs->data, sizeof(expected_probs));
+    memcpy(expected_weights, normalized->data, sizeof(expected_weights));
+    for (int row = 0; row < tokens * sequences; ++row) {
+        assert(memcmp(expected_ids + row * selected, (const int32_t *) old->data + row * experts,
+                selected * sizeof(int32_t)) == 0);
+    }
+    for (int i = 0; i < selected; ++i) assert(expected_ids[i] == i);
+
+    assert(unsetenv("GOOSE_CUDA") == 0);
+    assert(fg_standalone_graph_compute(graph) == GGML_STATUS_SUCCESS);
+    assert(memcmp(expected_ids, ids->data, sizeof(expected_ids)) == 0);
+    assert(memcmp(expected_asc, ascending->data, sizeof(expected_asc)) == 0);
+    assert(memcmp(expected_unordered, unordered_top->data, sizeof(expected_unordered)) == 0);
+    double max_probs = 0.0, max_weights = 0.0;
+    for (int i = 0; i < ggml_nelements(probs); ++i) {
+        const double error = fabs((double) ((float *) probs->data)[i] - expected_probs[i]);
+        assert(error <= 1e-7);
+        max_probs = fmax(max_probs, error);
+    }
+    for (int i = 0; i < ggml_nelements(normalized); ++i) {
+        const double error = fabs((double) ((float *) normalized->data)[i] - expected_weights[i]);
+        assert(error <= 1e-7);
+        max_weights = fmax(max_weights, error);
+    }
+    printf("CUDA routing: %d selected IDs match at %d experts; max errors probabilities %.9g, weights %.9g\n",
+            selected * tokens * sequences, experts, max_probs, max_weights);
+    free(storage);
+    ggml_free(ctx);
+}
+
 int main(int argc, char ** argv) {
     check_scalar_and_recurrent();
     check_gdn_snapshots(33, false);
@@ -692,6 +767,7 @@ int main(int argc, char ** argv) {
         else if (strcmp(argv[1], "--activations") == 0) check_activation_pipeline();
         else if (strcmp(argv[1], "--vectors") == 0) check_cuda_vectors();
         else if (strcmp(argv[1], "--position") == 0) check_cuda_position();
+        else if (strcmp(argv[1], "--routing") == 0) check_cuda_routing();
         else check_model_step(argv[1]);
     }
     if (argc == 3 && strcmp(argv[1], "--chunked") == 0) check_chunked_generation(argv[2]);

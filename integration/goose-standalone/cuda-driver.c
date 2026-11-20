@@ -41,6 +41,7 @@ static struct {
     Module module;
     Function kernel, attention_tiles, attention_merge, gdn, q4_rows, vector;
     Function rope_phases, rope_apply, ssm_conv;
+    Function route_reduce, route_sort, route_gather;
     struct device_buffer input, output, weight, jobs;
     struct device_buffer attention_value, attention_scratch, attention_config;
     struct device_buffer gdn_beta;
@@ -91,6 +92,7 @@ static _Thread_local uint64_t cuda_resident_kv, cuda_resident_gdn;
 static _Thread_local uint64_t cuda_q4_writes;
 static _Thread_local uint64_t cuda_vectors;
 static _Thread_local uint64_t cuda_ropes, cuda_convs;
+static _Thread_local uint64_t cuda_routes[4];
 static _Thread_local struct {
     uint64_t source, destination;
     int64_t bytes;
@@ -149,6 +151,9 @@ static void init_cuda(void) {
         if (error == 0) error = cuda.function_get(&cuda.rope_phases, cuda.module, "goose_rope_phases");
         if (error == 0) error = cuda.function_get(&cuda.rope_apply, cuda.module, "goose_rope_apply");
         if (error == 0) error = cuda.function_get(&cuda.ssm_conv, cuda.module, "goose_ssm_conv");
+        if (error == 0) error = cuda.function_get(&cuda.route_reduce, cuda.module, "goose_route_reduce");
+        if (error == 0) error = cuda.function_get(&cuda.route_sort, cuda.module, "goose_route_sort");
+        if (error == 0) error = cuda.function_get(&cuda.route_gather, cuda.module, "goose_route_gather");
         Context current = NULL;
         int pop_error = cuda.pop(&current);
         if (error == 0) error = pop_error;
@@ -898,4 +903,38 @@ void fg_cuda_take_position(uint64_t * ropes, uint64_t * convs) {
     *convs = cuda_convs;
     cuda_ropes = 0;
     cuda_convs = 0;
+}
+
+int64_t fg_cuda_routing(sl_i64 config, sl_u8 x, sl_u8 y, sl_u8 out) {
+    if (config.len != 22 || config.data[0] < 0 || config.data[0] >= 4 ||
+        config.data[1] <= 0 || config.data[1] > INT_MAX ||
+        (config.data[2] != 32 && config.data[2] != 128) || x.len <= 0 || y.len < 0 || out.len <= 0) return -1;
+    const int active = start_context();
+    if (active != 1) return active;
+    const int64_t op = config.data[0];
+    const Function operations[] = {cuda.route_reduce, cuda.route_sort, cuda.route_gather, cuda.route_reduce};
+    const sl_u8 data[] = {x, y, {(uint8_t *) config.data, config.len * (int64_t) sizeof(*config.data)}};
+    struct device_buffer * buffers[] = {&cuda.input, &cuda.weight, &cuda.attention_config};
+    DevicePtr staged[3] = {0}, output = 0;
+    const uint64_t host = (uint64_t) (uintptr_t) out.data;
+    int error = activation_output(host, out.len, &output);
+    if (error == 0) error = upload_inputs(data, buffers, staged, sizeof(data) / sizeof(*data));
+    if (error == 0) {
+        void * args[] = {&staged[0], &staged[1], &output, &staged[2]};
+        error = cuda.launch(operations[op], (unsigned) config.data[1], 1, 1,
+            (unsigned) config.data[2], 1, 1, 0, NULL, args, NULL);
+        if (error == 0) error = activation_publish(host, out.len, output, false);
+    }
+    const int popped = finish_context();
+    if (error != 0 || popped != 0) {
+        fprintf(stderr, "Goose CUDA: routing operation %lld failed (%d)\n", (long long) op, error ? error : popped);
+        return -1;
+    }
+    ++cuda_routes[op];
+    return 1;
+}
+
+void fg_cuda_take_routes(uint64_t * routes) {
+    memcpy(routes, cuda_routes, sizeof(cuda_routes));
+    memset(cuda_routes, 0, sizeof(cuda_routes));
 }

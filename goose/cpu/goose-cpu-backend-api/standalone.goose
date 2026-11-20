@@ -38,6 +38,8 @@ export fn fg143_node_run(packet: const i64[:], mode: i64,
     } else if p.op == OP_SOFT_MAX {
         p.ip[0] = if p.y.bytes > 0 { 1 } else { 0 };
         p.ip[1] = if p.z.bytes > 0 { 1 } else { 0 };
+    } else if p.op == OP_TOP_K {
+        p.ip[0] = 1;
     } else if p.op == OP_GLU {
         p.ip[2] = if p.y.bytes > 0 { 1 } else { 0 };
         p.fp[0] = from_bits(packet[43] as! u32);

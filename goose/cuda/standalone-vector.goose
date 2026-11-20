@@ -35,6 +35,14 @@ fn cv_offset(cfg: u64, index: i64, shape: i64) -> i64 {
     return offset;
 }
 
+fn cv_warp_sum(value: f64) -> f64 {
+    var sum = value;
+    for step in 5 {
+        sum += cv_shuffle_f64(sum, (16 >> step) as i32);
+    }
+    return sum;
+}
+
 fn cv_norm(x: u64, y: u64, dst: u64, cfg: u64, op: i64, row: i64, lane: i64, eps: f32) {
     let width = cv_word(cfg, 2);
     let start = row * width;
@@ -47,9 +55,7 @@ fn cv_norm(x: u64, y: u64, dst: u64, cfg: u64, op: i64, row: i64, lane: i64, eps
         sum += (v * v) as f64;
         i += 32;
     }
-    for step in 5 {
-        sum += cv_shuffle_f64(sum, (16 >> step) as i32);
-    }
+    sum = cv_warp_sum(sum);
     let denominator = if op == CV_L2 {
         cv_max(cv_sqrt(sum as f32), eps)
     } else {

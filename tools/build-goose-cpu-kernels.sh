@@ -31,7 +31,7 @@ for kind in ("op", "unary_op", "glu_op"):
         value += 1
 
 parts = (
-    "tensor-base", "graph-residency", "cuda-vector", "cuda-position", "pointwise", "reductions", "attention", "transforms",
+    "tensor-base", "graph-residency", "cuda-vector", "cuda-position", "cuda-routing", "pointwise", "reductions", "attention", "transforms",
     "matrix", "recurrent", "rope", "indexed", "image", "codec-transform",
     "entry", "flash-attention", "stateful/scan-composition", "stateful/stateful", "standalone",
 )
