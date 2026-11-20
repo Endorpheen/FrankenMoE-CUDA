@@ -15,6 +15,7 @@ extern int64_t qr_state_offset(sl_i64 ranges, uint64_t address, int64_t bytes, i
 extern int64_t fg143_activation_lookup(sl_i64 ranges, uint64_t host, int64_t bytes);
 extern int64_t fg143_activation_overlap(sl_i64 ranges, uint64_t host, int64_t bytes, int64_t first);
 extern uint64_t fg143_activation_discard_overwritten(sl_i64 ranges, uint64_t host, int64_t bytes);
+extern uint64_t fg143_activation_expire(sl_i64 ranges, int64_t step);
 extern int64_t fg143_activation_slot(int64_t used, int64_t capacity, int64_t bytes);
 extern void ec_reset(sl_i64 groups, sl_i64 layers, uint64_t words32, sl_i64 words64);
 extern int64_t ec_prepare(sl_i64 groups, sl_i64 layers, uint64_t words32, sl_i64 words64,
@@ -78,14 +79,14 @@ static struct {
 static pthread_once_t cuda_once = PTHREAD_ONCE_INIT;
 static pthread_mutex_t cuda_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t activation_lock = PTHREAD_MUTEX_INITIALIZER;
-enum { ACTIVATION_WORDS = 4, ACTIVATION_RECORDS = 256, ACTIVATION_BYTES = 64 * 1024 * 1024 };
+enum { ACTIVATION_WORDS = 5, ACTIVATION_RECORDS = 256, ACTIVATION_BYTES = 64 * 1024 * 1024 };
 static _Thread_local struct {
     bool active, unavailable;
     uint64_t target;
-    int64_t target_bytes, count, used;
+    int64_t target_bytes, target_deadline, count, used;
     int64_t ranges[ACTIVATION_RECORDS * ACTIVATION_WORDS];
     int64_t large_output[ACTIVATION_WORDS];
-    uint64_t hits, skipped_download_bytes;
+    uint64_t hits, skipped_download_bytes, expired_bytes;
 } activations;
 static _Thread_local DevicePtr matrix_input, matrix_output;
 static _Thread_local uint64_t cuda_matrices;
@@ -305,6 +306,7 @@ int fg_cuda_activation_graph_begin(void) {
     activations.unavailable = false;
     activations.hits = 0;
     activations.skipped_download_bytes = 0;
+    activations.expired_bytes = 0;
     return 0;
 }
 
@@ -332,10 +334,15 @@ int64_t fg_cuda_activation_read_f32(sl_f32 data) {
     return fg_cuda_activation_read_address((uint64_t) (uintptr_t) data.data, data.len * (int64_t) sizeof(float));
 }
 
-int fg_cuda_activation_prepare(uint64_t host, int64_t bytes, bool fresh, bool overwrite) {
+int fg_cuda_activation_prepare(uint64_t host, int64_t bytes, bool fresh, bool overwrite, int64_t step, int64_t deadline) {
     if (!activations.active) return 0;
     activations.target = fresh ? host : 0;
     activations.target_bytes = bytes;
+    activations.target_deadline = deadline;
+    if (step >= 0) {
+        if (activations.count > 0) activations.expired_bytes += fg143_activation_expire(activation_ranges(), step);
+        if (activations.large_output[1] > 0) activations.expired_bytes += fg143_activation_expire(activation_large_range(), step);
+    }
     if (overwrite && activations.count > 0) {
         activations.skipped_download_bytes += fg143_activation_discard_overwritten(activation_ranges(), host, bytes);
     }
@@ -350,11 +357,13 @@ int fg_cuda_activation_prepare(uint64_t host, int64_t bytes, bool fresh, bool ov
 }
 
 int fg_cuda_activation_graph_end(bool success, bool all, uint64_t host, int64_t bytes, uint64_t * hits,
-                                 uint64_t * skipped_download_bytes) {
+                                 uint64_t * skipped_download_bytes, uint64_t * expired_bytes) {
     *hits = activations.hits;
     activations.hits = 0;
     *skipped_download_bytes = activations.skipped_download_bytes;
     activations.skipped_download_bytes = 0;
+    *expired_bytes = activations.expired_bytes;
+    activations.expired_bytes = 0;
     if (!activations.active) return 0;
     int error = 0;
     if (success && (activations.count > 0 || activations.large_output[1] > 0)) {
@@ -426,6 +435,7 @@ static int activation_publish(uint64_t host, int64_t bytes, DevicePtr device, bo
     int64_t * next = large ? activations.large_output : activations.ranges + ACTIVATION_WORDS * activations.count++;
     next[0] = (int64_t) host; next[1] = bytes;
     next[2] = large ? 0 : (int64_t) (device - cuda.activations.address); next[3] = 0;
+    next[4] = host == activations.target ? activations.target_deadline : -1;
     if (!large) activations.used = next[2] + bytes;
     return 0;
 }

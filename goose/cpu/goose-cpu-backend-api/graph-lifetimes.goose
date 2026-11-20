@@ -17,11 +17,12 @@ fn storage_keep(graph: u64, tensor: u64, until: i64, lifetimes: i64[:]) -> bool 
 
 // A buffer can be reused only after the last node that reads any of its
 // views. Outputs and inputs that meet in the same node use disjoint blocks.
-export fn fg143_storage_allocate_output(graph: u64, output: u64) -> u64 {
+export fn fg143_storage_allocate_output(graph: u64, output: u64, deadlines: i64[:]) -> u64 {
     if graph == 0 { return 0; }
     let count = storage_count(graph);
     let slots = storage_hash_size(graph);
-    if count < 0 || slots <= 0 { return 0; }
+    let leaves = count - graph_nodes(graph);
+    if count < 0 || leaves < 0 || slots <= 0 || deadlines.len != count - leaves { return 0; }
     let align = storage_alignment();
     let mask = align - 1;
     let aligned = STORAGE_MAX - mask;
@@ -102,7 +103,9 @@ export fn fg143_storage_allocate_output(graph: u64, output: u64) -> u64 {
     for i in count {
         let t = storage_tensor(graph, i);
         if storage_get(t, STORAGE_VIEW, 0) == 0 && storage_get(t, STORAGE_DATA, 0) == 0 {
-            storage_set(t, STORAGE_DATA, 0, storage + placements[storage_slot(graph, t)]);
+            let slot = storage_slot(graph, t);
+            storage_set(t, STORAGE_DATA, 0, storage + placements[slot]);
+            if i >= leaves { deadlines[i - leaves] = lifetimes[slot] - leaves; }
         }
     }
     for i in count {

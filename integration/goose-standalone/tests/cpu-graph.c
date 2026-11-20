@@ -944,6 +944,36 @@ static void check_large_activation(void) {
     ggml_free(ctx);
 }
 
+static void check_activation_lifetimes(void) {
+    enum { width = 4096, tokens = 4097, small = 32 };
+    struct ggml_context * ctx = ggml_init((struct ggml_init_params){ 128 * 1024, NULL, true });
+    assert(ctx);
+    struct ggml_tensor * x = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, width, tokens);
+    struct ggml_tensor * large = ggml_scale(ctx, x, 2.0f);
+    struct ggml_tensor * view = ggml_view_1d(ctx, large, small, ggml_nbytes(large) - small * sizeof(float));
+    struct ggml_tensor * output = ggml_scale(ctx, view, 4.0f);
+    struct ggml_tensor * external = ggml_scale(ctx, x, 3.0f);
+    external->data = malloc(ggml_nbytes(external));
+    assert(external->data);
+    struct ggml_cgraph * graph = ggml_new_graph_custom(ctx, 32, false);
+    ggml_build_forward_expand(graph, output);
+    ggml_build_forward_expand(graph, external);
+    struct fg_standalone_graph_plan * plan = fg_standalone_graph_plan_alloc(graph, output);
+    assert(plan && large->data != output->data && large->data != external->data);
+    for (int i = 0; i < width * tokens; ++i) ((float *) x->data)[i] = (float) (i % width);
+    memset(large->data, 0xA5, ggml_nbytes(large));
+
+    assert(fg_standalone_graph_plan_compute(plan) == GGML_STATUS_SUCCESS);
+    for (int i = 0; i < small; ++i) assert(((float *) output->data)[i] == (float) (width - small + i) * 8.0f);
+    const unsigned char * host = large->data;
+    for (size_t i = 0; i < ggml_nbytes(large); ++i) assert(host[i] == 0xA5);
+    printf("CUDA activation lifetime: retained the view and skipped %zu dead bytes before buffer reassignment\n",
+        ggml_nbytes(large));
+    free(external->data);
+    fg_standalone_graph_plan_free(plan);
+    ggml_free(ctx);
+}
+
 static void check_cuda_vectors(void) {
     enum { width = 257, stride = 8 * width, rows = 3, planes = 2 };
     struct ggml_context * ctx = ggml_init((struct ggml_init_params){ 1024 * 1024, NULL, true });
@@ -1313,6 +1343,10 @@ static void check_dense_mma(int extent, int rows, int columns) {
 }
 
 int main(int argc, char ** argv) {
+    if (argc == 2 && strcmp(argv[1], "--activation-lifetimes") == 0) {
+        check_activation_lifetimes();
+        return 0;
+    }
     if (argc == 2 && strcmp(argv[1], "--large-activation") == 0) {
         check_large_activation();
         return 0;

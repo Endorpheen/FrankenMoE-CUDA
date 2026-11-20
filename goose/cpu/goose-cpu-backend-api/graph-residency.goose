@@ -1,5 +1,5 @@
-// Host span, byte count, offset in the CUDA arena, host-current flag.
-const ACT_WORDS: i64 = 4;
+// Host span, byte count, device offset, host-current flag, last consumer.
+const ACT_WORDS: i64 = 5;
 
 extern "fg_cuda_activation_read" fn activation_read(data: const u8[:]) -> i64;
 extern "fg_cuda_activation_read_address" fn activation_read_address(address: u64, bytes: i64) -> i64;
@@ -47,6 +47,19 @@ export fn fg143_activation_discard_overwritten(ranges: i64[:], host: u64, bytes:
         let base = ranges[at] as! u64;
         let size = ranges[at + 1];
         if size <= 0 || size > bytes || base < host || base - host > (bytes - size) as u64 { continue; }
+        if ranges[at + 3] == 0 { skipped += size as u64; }
+        ranges[at + 1] = 0;
+    }
+    return skipped;
+}
+
+export fn fg143_activation_expire(ranges: i64[:], step: i64) -> u64 {
+    var skipped: u64 = 0;
+    for i in ranges.len / ACT_WORDS {
+        let at = i * ACT_WORDS;
+        let size = ranges[at + 1];
+        let deadline = ranges[at + 4];
+        if size <= 0 || deadline < 0 || deadline >= step { continue; }
         if ranges[at + 3] == 0 { skipped += size as u64; }
         ranges[at + 1] = 0;
     }

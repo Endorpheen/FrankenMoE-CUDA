@@ -36,7 +36,7 @@ extern void fg_cuda_take_routes(uint64_t * routes);
 extern void fg_cuda_take_blits(uint64_t * blits);
 extern int fg_cuda_activation_graph_begin(void);
 extern int fg_cuda_activation_graph_end(bool success, bool all, uint64_t host, int64_t bytes, uint64_t * hits,
-                                        uint64_t * skipped_download_bytes);
+                                        uint64_t * skipped_download_bytes, uint64_t * expired_bytes);
 
 static pthread_once_t cpu_init = PTHREAD_ONCE_INIT;
 static atomic_uint_fast64_t cpu_values;
@@ -155,10 +155,38 @@ void fg143_storage_report(uint64_t bytes, int64_t blocks, int64_t reused) {
     }
 }
 
-void * fg_standalone_graph_alloc_output(struct ggml_cgraph * graph, const struct ggml_tensor * output) {
+struct fg_standalone_graph_plan {
+    struct ggml_cgraph * graph;
+    const struct ggml_tensor * output;
+    void * arena;
+    int64_t nodes;
+    int64_t deadlines[];
+};
+
+struct fg_standalone_graph_plan * fg_standalone_graph_plan_alloc(struct ggml_cgraph * graph, const struct ggml_tensor * output) {
+    if (!graph || graph->n_nodes < 0) return NULL;
+    const size_t nodes = (size_t) graph->n_nodes;
+    if (nodes > (SIZE_MAX - sizeof(struct fg_standalone_graph_plan)) / sizeof(int64_t)) return NULL;
+    struct fg_standalone_graph_plan * plan = malloc(sizeof(*plan) + nodes * sizeof(int64_t));
+    if (!plan) return NULL;
+    plan->graph = graph;
+    plan->output = output;
+    plan->nodes = (int64_t) nodes;
+    for (size_t i = 0; i < nodes; ++i) plan->deadlines[i] = -1;
     pthread_once(&cpu_init, init_cpu);
-    return (void *) (uintptr_t) fg143_storage_allocate_output((uint64_t) (uintptr_t) graph,
-        (uint64_t) (uintptr_t) output);
+    plan->arena = (void *) (uintptr_t) fg143_storage_allocate_output((uint64_t) (uintptr_t) graph,
+        (uint64_t) (uintptr_t) output, (sl_i64) {plan->deadlines, plan->nodes});
+    if (!plan->arena) {
+        free(plan);
+        return NULL;
+    }
+    return plan;
+}
+
+void fg_standalone_graph_plan_free(struct fg_standalone_graph_plan * plan) {
+    if (!plan) return;
+    free(plan->arena);
+    free(plan);
 }
 
 uint64_t fg143_graph_resize(uint64_t address, int64_t bytes) {
@@ -281,10 +309,11 @@ uint8_t fg143_graph_scan(uint64_t address) {
         inputs[4], inputs[5], inputs[6], dst);
 }
 
-static enum ggml_status compute_graph(struct ggml_cgraph * graph, bool all, const struct ggml_tensor * output) {
+static enum ggml_status compute_graph(struct ggml_cgraph * graph, bool all, const struct ggml_tensor * output,
+                                     sl_i64 deadlines) {
     pthread_once(&cpu_init, init_cpu);
     if (fg_cuda_activation_graph_begin() != 0) return GGML_STATUS_FAILED;
-    const int64_t failed = fg143_graph_run((uint64_t) (uintptr_t) graph, !all);
+    const int64_t failed = fg143_graph_run((uint64_t) (uintptr_t) graph, !all, deadlines);
     if (failed > 0) {
         const struct ggml_tensor * node = ggml_graph_node(graph, (int) (failed - 1));
         fprintf(stderr, "Goose graph: node %lld (%s) failed\n", (long long) failed - 1, ggml_op_name(node->op));
@@ -311,10 +340,10 @@ static enum ggml_status compute_graph(struct ggml_cgraph * graph, bool all, cons
     uint64_t blits[3];
     fg_cuda_take_blits(blits);
     const bool valid = failed == 0 && fg_cuda_state_graph_done() == 0;
-    uint64_t hits = 0, skipped_download_bytes = 0;
+    uint64_t hits = 0, skipped_download_bytes = 0, expired_bytes = 0;
     const int published = fg_cuda_activation_graph_end(valid, all,
         output ? (uint64_t) (uintptr_t) output->data : 0,
-        output ? (int64_t) ggml_nbytes(output) : 0, &hits, &skipped_download_bytes);
+        output ? (int64_t) ggml_nbytes(output) : 0, &hits, &skipped_download_bytes, &expired_bytes);
     if (getenv("GOOSE_GRAPH_LOG")) {
         const uint64_t values = (uint64_t) atomic_exchange_explicit(&cpu_values, 0, memory_order_relaxed);
         fprintf(stderr, "Goose CPU graph: %llu values\n", (unsigned long long) values);
@@ -335,6 +364,7 @@ static enum ggml_status compute_graph(struct ggml_cgraph * graph, bool all, cons
         if (weighted) fprintf(stderr, "Goose CUDA MoE weighted reduction: %llu tiles\n", (unsigned long long) weighted);
         if (skipped_download_bytes) fprintf(stderr, "Goose CUDA overwritten downloads skipped: %" PRIu64 " bytes\n",
             skipped_download_bytes);
+        if (expired_bytes) fprintf(stderr, "Goose CUDA dirty activations retired: %" PRIu64 " bytes\n", expired_bytes);
         if (ropes) fprintf(stderr, "Goose CUDA RoPE: %llu nodes\n", (unsigned long long) ropes);
         if (convs) fprintf(stderr, "Goose CUDA SSM convolution: %llu nodes\n", (unsigned long long) convs);
         for (int i = 0; i < 4; ++i) {
@@ -351,9 +381,14 @@ static enum ggml_status compute_graph(struct ggml_cgraph * graph, bool all, cons
 }
 
 enum ggml_status fg_standalone_graph_compute(struct ggml_cgraph * graph) {
-    return compute_graph(graph, true, NULL);
+    return compute_graph(graph, true, NULL, (sl_i64) {0});
 }
 
 enum ggml_status fg_standalone_graph_compute_output(struct ggml_cgraph * graph, const struct ggml_tensor * output) {
-    return compute_graph(graph, false, output);
+    return compute_graph(graph, false, output, (sl_i64) {0});
+}
+
+enum ggml_status fg_standalone_graph_plan_compute(struct fg_standalone_graph_plan * plan) {
+    if (!plan || plan->nodes != plan->graph->n_nodes) return GGML_STATUS_FAILED;
+    return compute_graph(plan->graph, false, plan->output, (sl_i64) {plan->deadlines, plan->nodes});
 }
