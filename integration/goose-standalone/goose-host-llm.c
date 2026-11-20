@@ -382,9 +382,10 @@ int64_t hose_generate(const unsigned char * text, int64_t len, int64_t max_token
                       int64_t * out_ids, unsigned char * out_text, int64_t text_cap,
                       double * timing) {
     if (timing) { timing[0] = 0.0; timing[1] = 0.0; timing[2] = 0.0; }
+    if (!text || len <= 0 || max_tokens <= 0 || !out_ids) return -1;
     static int64_t ids[MAX_REQ];
     const int64_t n_ids = tokenize(text, len, ids, MAX_REQ);
-    if (n_ids <= 0) {
+    if (n_ids <= 0 || n_ids > KV_CAP || max_tokens - 1 > KV_CAP - n_ids) {
         return -1;
     }
     reset_state();
@@ -402,23 +403,24 @@ int64_t hose_generate(const unsigned char * text, int64_t len, int64_t max_token
         const int64_t n_logits = model_step(batch, past, &logits);
         free(batch);
         batch = NULL;
-        if (n_logits <= 0) { break; }
+        if (n_logits <= 0) return -1;
         if (step == 0) { t_prefill = now_s() - t0; }
         const int64_t vocab = n_logits / (past > 0 ? past : 1);
-        if (vocab <= 0) { free(logits); break; }
+        if (vocab <= 0) { free(logits); return -1; }
         const int64_t next = fg_sampler_greedy((sl_f32){ logits + (past - 1) * vocab, vocab }, vocab);
         free(logits);
-        if (next < 0) { break; }
+        if (next < 0) return -1;
         out_ids[produced++] = next;
         if (bt_is_eog((sl_i64){ H.eog, H.n_eog }, H.n_eog, next) != 0) { break; }
+        if (produced == max_tokens) break;
         batch = malloc(4);
-        if (!batch) { break; }
+        if (!batch) return -1;
         batch[0] = (int32_t) next;
         past = 1;
     }
     free(batch);
 
-    const int64_t tlen = produced > 0 ? detokenize(out_ids, produced, out_text, text_cap) : 0;
+    if (out_text && detokenize(out_ids, produced, out_text, text_cap) < 0) return -1;
     if (timing) {
         const double all = now_s() - t0;
         timing[0] = t_prefill;

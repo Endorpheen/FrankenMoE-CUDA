@@ -859,6 +859,52 @@ fn compact_value(t: i64, x: const u8[:], base: i64, lane: i64, palette: const i8
     return (q as f32) * d + half(read16(x, base + 2));
 }
 
+fn compact_row(weight_type: i64, raw: const u8[:], dst: f32[:], palette: const i8[:]) -> bool {
+    let width = compact_width(weight_type);
+    let bytes = compact_bytes(weight_type);
+
+    if bytes == 0 {
+        return false;
+    }
+    assert(dst.len % width == 0 && raw.len >= (dst.len / width) * bytes);
+    for ib in dst.len / width {
+        for lane in width {
+            dst[ib * width + lane] = compact_value(weight_type, raw, ib * bytes, lane, palette);
+        }
+    }
+    return true;
+}
+
+fn row_entry_with_workspace(
+    weight_type: i64,
+    raw: const u8[:],
+    dst: f32[:],
+    gxx: const u8[8][:],
+    gxs: const u8[8][:],
+    gs: const u8[8][:],
+    g3x: const u8[4][:],
+    g3s: const u8[4][:],
+    g1: const i8[8][:],
+    signs: const u8[:],
+    palette: const i8[:],
+    decoded: WeightTile &) -> bool {
+    let kind = super_kind(weight_type);
+    if kind < 0 { return compact_row(weight_type, raw, dst, palette); }
+    let f = tile_traits(kind);
+    assert(dst.len % 256 == 0 && raw.len >= (dst.len / 256) * f.bytes);
+    for ib in dst.len / 256 {
+        unpack_block(kind, raw, ib * f.bytes, 0, 0, decoded, gxx, gxs, gs, g3x, g3s, g1, signs, palette);
+        for lane in 256 {
+            let sub = lane / f.sub;
+            let scale = decoded.scales[sub / 8][sub % 8] as f32;
+            let minimum = decoded.mins[sub / 8][sub % 8] as f32;
+            let q = (decoded.q[0][lane / 32][lane % 32] as i32) - f.bias as i32;
+            dst[ib * 256 + lane] = (decoded.d[0] * scale) * (q as f32) - decoded.dmin[0] * minimum;
+        }
+    }
+    return true;
+}
+
 fn row_entry(
     weight_type: i64,
     raw: const u8[:],
@@ -871,37 +917,9 @@ fn row_entry(
     g1: const i8[8][:],
     signs: const u8[:],
     palette: const i8[:]) -> bool {
-    let kind = super_kind(weight_type);
-
-    if kind < 0 {
-        let width = compact_width(weight_type);
-        let bytes = compact_bytes(weight_type);
-
-        if bytes == 0 {
-            return false;
-        }
-        assert(dst.len % width == 0 && raw.len >= (dst.len / width) * bytes);
-        for ib in dst.len / width {
-            for lane in width {
-                dst[ib * width + lane] = compact_value(weight_type, raw, ib * bytes, lane, palette);
-            }
-        }
-        return true;
-    }
-    let f = tile_traits(kind);
-    assert(dst.len % 256 == 0 && raw.len >= (dst.len / 256) * f.bytes);
+    if super_kind(weight_type) < 0 { return compact_row(weight_type, raw, dst, palette); }
     var decoded: WeightTile = default < WeightTile > ();
-    for ib in dst.len / 256 {
-        unpack_block(kind, raw, ib * f.bytes, 0, 0, decoded, gxx, gxs, gs, g3x, g3s, g1, signs, palette);
-        for lane in 256 {
-            let sub = lane / f.sub;
-            let scale = decoded.scales[sub / 8][sub % 8] as f32;
-            let minimum = decoded.mins[sub / 8][sub % 8] as f32;
-            let q = (decoded.q[0][lane / 32][lane % 32] as i32) - f.bias as i32;
-            dst[ib * 256 + lane] = (decoded.d[0] * scale) * (q as f32) - decoded.dmin[0] * minimum;
-        }
-    }
-    return true;
+    return row_entry_with_workspace(weight_type, raw, dst, gxx, gxs, gs, g3x, g3s, g1, signs, palette, decoded);
 }
 
 fn main() {

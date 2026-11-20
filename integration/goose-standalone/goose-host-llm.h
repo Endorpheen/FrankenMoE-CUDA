@@ -12,7 +12,7 @@ int64_t hose_step(const int32_t * tokens, int64_t count, float ** logits);
 int64_t hose_eog_is(int64_t id);
 void hose_stats(int64_t * out5);          // vocab, special, eog, eos, layers
 
-// One request: reset, tokenise, generate, detokenise. `timing` (optional) gets
+// Generate token IDs and detokenise when out_text is set. Optional timing gets
 // prefill seconds, decode seconds and the prompt token count.
 int64_t hose_generate(const unsigned char * text, int64_t len, int64_t max_tokens,
                       int64_t * out_ids, unsigned char * out_text, int64_t text_cap,

@@ -26,4 +26,7 @@ FLAGS=(-O1 -std=c11 -D_GNU_SOURCE -ffunction-sections -fdata-sections -I "$OUT"
 "$AR" rcs "$OUT/libfranken-inference.a" "$UNIT/main.o" "$OUT/cpu.o" \
     "$OUT/graph-execute.o" "$OUT/graph-bindings.o" "$OUT/model-host.o" \
     "$OUT/libc-forwards.o" "$OUT/goose-host.o" "$OUT/ggml.o" "$OUT/ggml-quants.o" "$OUT/ggml-system.o"
-printf '%s/libfranken-inference.a\n' "$OUT"
+"$CC" "${FLAGS[@]}" -I "$ROOT/integration/goose-standalone" -Wl,--gc-sections \
+    "$ROOT/integration/goose-standalone/cli/infer-main.c" "$OUT/libfranken-inference.a" \
+    -lm -pthread -o "$OUT/frankenmoe-infer"
+printf '%s/libfranken-inference.a\n%s/frankenmoe-infer\n' "$OUT" "$OUT"

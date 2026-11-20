@@ -33,7 +33,11 @@ fn entry(
             nf = mul_size(p.x.ne[0], p.nth);
         }
         if (p.op == OP_MUL_MAT || p.op == OP_MUL_MAT_ID) && !scalar_type(p.x) {
-            nf = p.x.ne[0];
+            nf = mul_size(p.x.ne[0], p.nth);
+            if p.op == OP_MUL_MAT_ID {
+                let routes = mul_size(p.z.ne[0], p.z.ne[1]);
+                ni = mul_size(add_size(p.x.ne[2], routes), p.nth);
+            }
         }
         let byte = mul_size(nf, 4);
         let aligned = mul_size(add_size(byte, 7) / 8, 8);
@@ -50,7 +54,7 @@ fn entry(
     }
 
     if !scalar_type(p.x) {
-        let handled = matrix(p, x, y, z, dst, scratch, gxx, gxs, gs, g3x, g3s, g1, signs, palette);
+        let handled = quantized_matrix(p, x, y, z, dst, scratch, indices, gxx, gxs, gs, g3x, g3s, g1, signs, palette);
         if handled { witness(p.op, elements(p.d)); }
         return handled;
     }
@@ -90,7 +94,7 @@ fn entry(
         y,
         z,
         dst,
-        scratch) || matrix(p, x, y, z, dst, scratch, gxx, gxs, gs, g3x, g3s, g1, signs, palette) || ssm_conv(p,
+        scratch) || matrix(p, x, y, z, dst) || ssm_conv(p,
         x,
         y,
         dst) || pointwise(p,

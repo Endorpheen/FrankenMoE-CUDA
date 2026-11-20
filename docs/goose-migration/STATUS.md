@@ -40,6 +40,16 @@ producing a token. The CPU reference executor is serial and currently reserves
 storage for every graph tensor without lifetime reuse. Apex generation,
 performance and memory comparisons remain unverified.
 
+EXP-2026-11-20-1495 adds `frankenmoe-infer MODEL.gguf PROMPT [MAX_TOKENS]`
+to the inference build. The same executable linked only `libc` and `libm`
+and produced `abab` on the two-layer synthetic model, ` Paris` in a one-token
+Apex Q4_K_M smoke test, and ` Paris, a` in a three-token Apex smoke test.
+The latter completed one prefill and two decode graphs. These are functional
+checks without a reference-model comparison or a performance measurement.
+The serial CPU path decodes each weight row once per group of input vectors,
+including repeated routes to the same expert. The broadcast Q4_K and indexed
+Q6_K regressions match the decoded-weight reference.
+
 ## Ledger
 
 `docs/goose-migration/tasks.json`: **DONE 1**, **PARTIAL 144**, **TODO 7** of 152.
