@@ -509,8 +509,9 @@ come from Igor directly. For every marked message:
 
     Re-audit all 152 requirements. Preserve historical evidence, but a runtime migration row is DONE only
     after a proven production switch to Goose and removal of its C++ implementation and fallbacks.
-    Migrate complete subsystems including data, algorithms, memory and object lifetime. Prove correctness,
-    safety and performance on Apex and previously supported models before switching and removing C++.
+    Migrate complete subsystems including data, algorithms, memory and object lifetime. Qualify runtime changes
+    with paired before-and-after Apex runs on the accepted profile. Diagnose and fix material regressions and
+    repeat the paired check before accepting the batch.
     Preserve rollback artifacts. Report removed and remaining C++ files, functions and execution paths.
 
     This changes what "done" means for every port. A module whose logic moved to Goose but whose containers are still

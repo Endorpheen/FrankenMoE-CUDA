@@ -7,7 +7,7 @@ import re
 import subprocess
 from tempfile import TemporaryDirectory
 
-from generate_prefill_headers import function_body, materialize
+from generate_cuda_headers import function_body, materialize
 
 
 EXPERIMENT = Path(__file__).resolve().parent
@@ -27,7 +27,7 @@ def bodies(text):
 
 def main():
     parser = argparse.ArgumentParser(description="Verify pinned Goose output and CUDA compute headers")
-    parser.add_argument("--prefill-headers", type=Path, help="directory receiving the verified prefill headers")
+    parser.add_argument("--prefill-headers", type=Path, help="directory receiving the verified CUDA headers")
     args = parser.parse_args()
     compiler = Path(os.environ.get("EXP173_GOOSE", ROOT / "runtime/compiler/stage3-f849233b999c"))
     if hashlib.sha256(compiler.read_bytes()).hexdigest() != COMPILER_SHA256:
