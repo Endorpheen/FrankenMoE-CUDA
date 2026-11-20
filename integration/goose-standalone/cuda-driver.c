@@ -20,6 +20,7 @@ extern int64_t fg143_activation_slot(sl_i64 ranges, int64_t capacity, int64_t by
 extern int64_t fg143_activation_record_slot(sl_i64 ranges);
 extern int64_t fg143_activation_device_overlap(sl_i64 ranges, int64_t offset, int64_t bytes, int64_t first);
 extern int64_t fg143_activation_eviction_slot(sl_i64 ranges, int64_t capacity, int64_t bytes);
+extern bool fg_standalone_option_enabled(const char * name);
 extern void ec_reset(sl_i64 groups, sl_i64 layers, uint64_t words32, sl_i64 words64);
 extern int64_t ec_prepare(sl_i64 groups, sl_i64 layers, uint64_t words32, sl_i64 words64,
     uint64_t tensor, int64_t bytes, sl_i64 heads, sl_i64 result);
@@ -60,6 +61,7 @@ static struct {
     sl_i64 state_ranges;
     struct expert_cache experts;
     int status, multiprocessors;
+    bool mmq_window, mmq_shared, moe_topk;
     int (*init)(unsigned);
     int (*device_get)(int *, int);
     int (*device_attribute)(int *, int, int);
@@ -88,8 +90,9 @@ enum { ACTIVATION_WORDS = 5, ACTIVATION_RECORDS = 256, ACTIVATION_BYTES = 64 * 1
 enum { GDN_MMA_SHARED_BYTES = 93312 };
 static _Thread_local struct {
     bool active, unavailable, defer_waits, pending;
+    bool retire, reuse, selective_eviction;
     uint64_t target;
-    int64_t target_bytes, target_deadline, count;
+    int64_t target_bytes, target_deadline, count, used;
     int64_t ranges[ACTIVATION_RECORDS * ACTIVATION_WORDS];
     int64_t large_output[ACTIVATION_WORDS];
     uint64_t hits, skipped_download_bytes, expired_bytes;
@@ -164,6 +167,9 @@ static void init_cuda(void) {
     int device;
     if (cuda.init(0) != 0 || cuda.device_get(&device, 0) != 0) return;
     cuda.status = -1;
+    cuda.mmq_window = fg_standalone_option_enabled("GOOSE_MMQ_WINDOW");
+    cuda.mmq_shared = fg_standalone_option_enabled("GOOSE_MMQ_SHARED");
+    cuda.moe_topk = fg_standalone_option_enabled("GOOSE_MOE_TOPK");
     const char * setting = getenv("GOOSE_MMQ");
     const char * stream_setting = getenv("GOOSE_MMQ_STREAM_K");
     const bool stream_k = stream_setting && strcmp(stream_setting, "1") == 0;
@@ -351,7 +357,10 @@ int fg_cuda_activation_graph_begin(bool planned) {
     pthread_mutex_lock(&activation_lock);
     activations.active = true;
     activations.unavailable = false;
-    activations.defer_waits = planned;
+    activations.defer_waits = planned && fg_standalone_option_enabled("GOOSE_CUDA_DEFER_WAITS");
+    activations.retire = fg_standalone_option_enabled("GOOSE_ACTIVATION_LIFETIMES");
+    activations.reuse = fg_standalone_option_enabled("GOOSE_CUDA_ARENA_REUSE");
+    activations.selective_eviction = fg_standalone_option_enabled("GOOSE_CUDA_SELECTIVE_EVICTION");
     activations.pending = false;
     activations.hits = 0;
     activations.skipped_download_bytes = 0;
@@ -388,7 +397,7 @@ int fg_cuda_activation_prepare(uint64_t host, int64_t bytes, bool fresh, bool ov
     activations.target = fresh ? host : 0;
     activations.target_bytes = bytes;
     activations.target_deadline = deadline;
-    if (step >= 0) {
+    if (step >= 0 && activations.retire) {
         if (activations.count > 0) activations.expired_bytes += fg143_activation_expire(activation_ranges(), step);
         if (activations.large_output[1] > 0) activations.expired_bytes += fg143_activation_expire(activation_large_range(), step);
     }
@@ -436,6 +445,7 @@ int fg_cuda_activation_graph_end(bool success, bool all, uint64_t host, int64_t 
         }
     }
     activations.count = 0;
+    activations.used = 0;
     activations.large_output[1] = 0;
     activations.target = 0;
     activations.pending = false;
@@ -467,18 +477,25 @@ static int activation_output(uint64_t host, int64_t bytes, DevicePtr * device) {
         }
         if (cuda.activations.address) {
             const int64_t capacity = (int64_t) cuda.activations.bytes;
-            int64_t pos = fg143_activation_slot(activation_ranges(), capacity, bytes);
-            if (pos == -2) {
+            int64_t pos;
+            if (activations.reuse) {
+                pos = fg143_activation_slot(activation_ranges(), capacity, bytes);
+            } else {
+                const int64_t aligned = (activations.used + 127) & ~INT64_C(127);
+                pos = aligned <= capacity - bytes ? aligned : -2;
+            }
+            if (pos == -2 && activations.reuse && activations.selective_eviction) {
                 pos = fg143_activation_eviction_slot(activation_ranges(), capacity, bytes);
                 if (pos < 0) return -1;
                 const int error = activation_evict_device_range(pos, bytes);
                 if (error != 0) return error;
             }
-            if (activations.count == ACTIVATION_RECORDS &&
-                fg143_activation_record_slot(activation_ranges()) == ACTIVATION_RECORDS) {
+            if (pos == -2 || (activations.count == ACTIVATION_RECORDS &&
+                (!activations.reuse || fg143_activation_record_slot(activation_ranges()) == ACTIVATION_RECORDS))) {
                 const int error = activation_download_all();
                 if (error != 0) return error;
                 activations.count = 0;
+                activations.used = 0;
                 pos = 0;
             }
             if (pos >= 0) {
@@ -504,7 +521,7 @@ static int activation_publish(uint64_t host, int64_t bytes, DevicePtr device, bo
     if (error != 0) return error;
     int64_t * next = activations.large_output;
     if (!large) {
-        const int64_t slot = fg143_activation_record_slot(activation_ranges());
+        const int64_t slot = activations.reuse ? fg143_activation_record_slot(activation_ranges()) : activations.count;
         if (slot >= ACTIVATION_RECORDS) return -1;
         if (slot == activations.count) ++activations.count;
         next = activations.ranges + ACTIVATION_WORDS * slot;
@@ -512,6 +529,7 @@ static int activation_publish(uint64_t host, int64_t bytes, DevicePtr device, bo
     next[0] = (int64_t) host; next[1] = bytes;
     next[2] = large ? 0 : (int64_t) (device - cuda.activations.address); next[3] = 0;
     next[4] = host == activations.target ? activations.target_deadline : -1;
+    if (!large && !activations.reuse) activations.used = next[2] + bytes;
     return 0;
 }
 
@@ -832,12 +850,13 @@ static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
     if (!tiles) return -1;
     const int64_t tile_count = fg143_mmq_tiles(jobs, job_words, (sl_i64) {tiles, 3ll * count});
     int64_t window_tiles = fg143_mmq_window(extent, tile_count, staging_budget);
+    if (!cuda.mmq_window && window_tiles > 64) window_tiles = 64;
     if (tile_count <= 0 || tile_count > count || window_tiles <= 0) {
         free(tiles);
         return -1;
     }
     const size_t tile_bytes = (size_t) tile_count * 3 * sizeof(*tiles);
-    bool shared = shared_rows > 0 && shared_rows < count && shared_rows <= 65535 &&
+    bool shared = cuda.mmq_shared && shared_rows > 0 && shared_rows < count && shared_rows <= 65535 &&
         input_stride >= (int64_t) extent * 256 * (int64_t) sizeof(float) &&
         (uint64_t) shared_rows * (uint64_t) extent * 288 <= staging_budget;
     size_t packed_bytes;
@@ -862,7 +881,7 @@ static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
     if (error == 0) error = cuda.upload(cuda.mmq_tiles.address, tiles, tile_bytes);
     if (!shared) input_stride = 0;
     if (error == 0 && shared) {
-        window_tiles = tile_count < 8191 ? tile_count : 8191;
+        if (cuda.mmq_window) window_tiles = tile_count < 8191 ? tile_count : 8191;
         void * args[] = {&matrix_input, &cuda.mmq_packed.address, &extent, &kind, &input_stride};
         error = cuda.launch(cuda.mmq_pack_shared, (unsigned) (2 * extent), (unsigned) shared_rows, 1,
             32, 1, 1, 0, NULL, args, NULL);
@@ -1392,7 +1411,10 @@ int64_t fg_cuda_routing(sl_i64 config, sl_u8 x, sl_u8 y, sl_u8 out) {
     const int active = start_context();
     if (active != 1) return active;
     const int64_t op = config.data[0];
-    const Function operations[] = {cuda.route_reduce, config.data[3] ? cuda.route_topk : cuda.route_sort,
+    const bool compact = op == 1 && config.data[3] != 0;
+    const bool topk = compact && cuda.moe_topk;
+    const int64_t groups = compact && !topk ? config.data[5] : config.data[1];
+    const Function operations[] = {cuda.route_reduce, topk ? cuda.route_topk : cuda.route_sort,
         cuda.route_gather, cuda.route_reduce, cuda.route_norm};
     const sl_u8 data[] = {x, y, {(uint8_t *) config.data, config.len * (int64_t) sizeof(*config.data)}};
     struct device_buffer * buffers[] = {&cuda.input, &cuda.weight, &cuda.attention_config};
@@ -1402,7 +1424,7 @@ int64_t fg_cuda_routing(sl_i64 config, sl_u8 x, sl_u8 y, sl_u8 out) {
     if (error == 0) error = upload_inputs(data, buffers, staged, sizeof(data) / sizeof(*data));
     if (error == 0) {
         void * args[] = {&staged[0], &staged[1], &output, &staged[2]};
-        error = cuda.launch(operations[op], (unsigned) config.data[1], 1, 1,
+        error = cuda.launch(operations[op], (unsigned) groups, 1, 1,
             (unsigned) config.data[2], 1, 1, 0, NULL, args, NULL);
         if (error == 0) error = activation_publish(host, out.len, output, false);
     }

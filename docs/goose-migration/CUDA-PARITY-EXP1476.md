@@ -840,6 +840,47 @@ Candidate: `/home/end0/AI/LlamaServer/franken-goose-rms-mul.sOoyid/cuda-matrix-d
 Numerical snapshot: `/home/end0/AI/LlamaServer/franken-goose-rms-mul.sOoyid/numerical.rAeym5`.
 Executable SHA-256: `f17cad7af7bfc3e543912f20c605b1cfc45aa0b4af20ee454e8f60f742a9e251`.
 
+## Ten-change experimental package
+
+The candidate uses the verified ten changes with the independent
+optimization switches enabled, plus `GOOSE_MMQ=1`,
+`GOOSE_GDN_MMA=1`, `GOOSE_FLASH_MMA=1`, and `GOOSE_DENSE_MMA=1`.
+Leave `GOOSE_MMQ_STREAM_K` and `GOOSE_APEX_TRACE_DIR` unset for
+the speed request. Each option below defaults to on and accepts
+`0` to exercise the preceding mechanism in its place.
+
+| Mechanism | Individual off switch |
+|---|---|
+| Last-consumer retirement | `GOOSE_ACTIVATION_LIFETIMES=0` |
+| CUDA activation gap reuse | `GOOSE_CUDA_ARENA_REUSE=0` |
+| Selective CUDA eviction | `GOOSE_CUDA_SELECTIVE_EVICTION=0` |
+| Deferred waits | `GOOSE_CUDA_DEFER_WAITS=0` |
+| Fused SSM SiLU | `GOOSE_SSM_SILU=0` |
+| Byte-budgeted MMQ windows | `GOOSE_MMQ_WINDOW=0` |
+| Shared Q8_1 rows | `GOOSE_MMQ_SHARED=0` |
+| Direct Top-K | `GOOSE_MOE_TOPK=0` |
+| Fused expert-weight normalization | `GOOSE_MOE_NORM=0` |
+| Weighted RMS | `GOOSE_RMS_MUL=0` |
+
+Selective eviction applies when gap reuse is active. The window
+switch restores a 64-tile launch limit even if shared rows are
+active. The three model graph switches restore the separate
+operations. All ten off switches passed their targeted fixtures
+individually. The combined build also passed activation eviction,
+weighted RMS and MoE normalization fixtures with the switches on.
+
+A new 4096/1 pair compared the published intermediate control with
+the enabled package. Prefill was 15.501 s / 264.242 tokens/s versus
+14.529 s / 281.919 tokens/s. H2D fell from 66,336,206,168 to
+61,000,992,568 bytes. D2H fell from 43,090,640,896 to 37,688,377,344
+bytes. Sampled process VRAM was 8,582 MiB in both runs, process
+swap was zero, and ID 280, text and all five probabilities matched.
+Use the frozen full request for the package diagnostic.
+
+Short control: `/home/end0/AI/LlamaServer/franken-goose-mmq-shared.TrPFV2/cuda-matrix-dense-both.7rsy224s`.
+Short package: `/home/end0/AI/LlamaServer/franken-goose-apex-package.KY0RZy/cuda-matrix-dense-both.cxs3gezu`.
+Package executable SHA-256: `194db934a930006f6cf3efd4063d4aacdf0a311646bc8d678d222dde6acae6b1`.
+
 ## Kernel coverage
 
 The exact EXP-1476 request passed content, ID and probability
