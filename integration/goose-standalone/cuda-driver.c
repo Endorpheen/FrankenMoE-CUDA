@@ -56,6 +56,7 @@ static struct {
     Module module;
     Function kernel, attention_tiles, attention_merge, gdn, q4_rows, vector, rms_reference;
     Function mmq_pack, mmq_pack_shared, mmq_matrix, mmq_q4_matrix, mmq_q6_matrix;
+    Function mmq_q4_dense_shared;
     Function mmvq_pack, mmvq;
     Function dense_mma, dense_mma_reference, gdn_mma, flash_mma, flash_stage, flash_vec, flash_vec_merge;
     Function mmq_stream, mmq_stream_fixup;
@@ -235,6 +236,7 @@ static void init_cuda(void) {
     const bool q6_reference = mmq && q6_setting && strcmp(q6_setting, "1") == 0;
     const char * q4_setting = getenv("GOOSE_MMQ_Q4_REFERENCE");
     const bool q4_reference = mmq && q4_setting && strcmp(q4_setting, "1") == 0;
+    const bool q4_shared = fg_standalone_option_enabled("GOOSE_MMQ_Q4_WIDE_SHARED");
     const char * ssm_setting = getenv("GOOSE_SSM_REFERENCE");
     const bool ssm_reference = ssm_setting && strcmp(ssm_setting, "1") == 0;
     const char * activation_setting = getenv("GOOSE_CUDA_ACTIVATION_REFERENCE");
@@ -268,6 +270,8 @@ static void init_cuda(void) {
         if (error == 0 && mmvq) error = cuda.function_get(&cuda.mmvq, cuda.module, "goose_mmvq_matvec");
         if (error == 0 && reference_arch && q4_reference) {
             error = cuda.function_get(&cuda.mmq_q4_matrix, cuda.module, "goose_mmq_q4_reference");
+            if (error == 0 && q4_shared)
+                error = cuda.function_get(&cuda.mmq_q4_dense_shared, cuda.module, "goose_mmq_q4_dense_shared");
         }
         if (error == 0 && reference_arch && q6_reference) {
             error = cuda.function_get(&cuda.mmq_q6_matrix, cuda.module, "goose_mmq_q6_reference");
@@ -1154,7 +1158,14 @@ static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
         if (error == 0) {
             const int workers = cuda.mmq_stream && !reference ?
                 (int) fg143_mmq_stream_workers(rows, batch, extent, cuda.multiprocessors) : 0;
-            if (workers > 0) {
+            if (cuda.mmq_q4_dense_shared && dense_reference && kind == q4_kind && !shared &&
+                count == 4096 && rows % 128 == 0 && first % 4 == 0 && batch % 4 == 0 &&
+                first_route == 8 * first && routes == 8u * (unsigned) batch) {
+                void * args[] = {&weight, &cuda.mmq_packed.address, &matrix_output, &cuda.jobs.address,
+                    &stride, &extent, &rows, &first_route, &cuda.multiprocessors};
+                error = cuda.launch(cuda.mmq_q4_dense_shared, (unsigned) rows / 16, (unsigned) batch / 4,
+                    1, 128, 1, 1, 0, NULL, args, NULL);
+            } else if (workers > 0) {
                 error = launch_mmq_stream(weight, stride, extent, kind, rows, first, first_route, job_words, batch, workers, input_stride);
             } else {
                 Function matrix = reference ? reference_matrix : cuda.mmq_matrix;

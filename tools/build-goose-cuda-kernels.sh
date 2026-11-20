@@ -89,7 +89,8 @@ sed '/^fn fattn_vec_2(/,/^fn combine(/ { /^fn combine(/!d; }
 sed '/^fn load_mask(/,$d; s/^fn load_kv(/export fn fg_flash_load_kv(/' \
     "$ROOT/goose/cuda/goose-cuda-flash-attention/loaders-device.goose" > "$OUT/flash-load.goose"
 cp "$ROOT/goose/cuda/standalone-flash-stage.goose" "$OUT/flash-stage.goose"
-sed -n '/^fn scale_min(/,/^}/p' "$ROOT/goose/cuda/goose-cuda-dequant-q4k/device.goose" >> "$OUT/mmq.goose"
+sed -n '/^fn scale_min(/,/^}/ { s/^fn scale_min(/fn mmq_scale_min(/; p; }' \
+    "$ROOT/goose/cuda/goose-cuda-dequant-q4k/device.goose" >> "$OUT/mmq.goose"
 sed -n '/^fn q4_mmq_nibbles(/,/^}/p' "$ROOT/goose/cuda/goose-mmq-load-q4k/device.goose" >> "$OUT/mmq.goose"
 sed -n '/^fn vsub4(/,/^}/p; /^fn q6_mmq_bytes(/,/^}/p' \
     "$ROOT/goose/cuda/goose-mmq-load-q6k/device.goose" >> "$OUT/mmq.goose"

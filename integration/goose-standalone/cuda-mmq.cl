@@ -44,6 +44,22 @@ static MmqDot_g fg_mmq_mma16(uint32_t a0, uint32_t a1, uint32_t b0) {
     return r;
 }
 
+static MmqDot_g fg_mmq_mma32_shared(uint64_t address, uint32_t b0, uint32_t b1) {
+    uint32_t a0, a1, a2, a3;
+    __asm__ volatile("ldmatrix.sync.aligned.m8n8.x4.shared.b16 {%0, %1, %2, %3}, [%4];"
+        : "=r"(a0), "=r"(a1), "=r"(a2), "=r"(a3) : "r"((uint32_t) address) : "memory");
+    return fg_mmq_mma32(a0, a1, a2, a3, b0, b1);
+}
+
+static void fg_mmq_shared_store(uint64_t address, uint32_t word) {
+    *(__local uint32_t *) address = word;
+}
+
+static float fg_mmq_shared_float(uint64_t address) { return *(__local float *) address; }
+static void fg_mmq_shared_store_float(uint64_t address, float value) { *(__local float *) address = value; }
+
+static void fg_mmq_barrier(void) { fg_device_barrier(); }
+
 static float fg180q_ld_f4x(uint64_t src, uint64_t off) { return fg_device_global_load(src + off); }
 static float fg180q_ld_f4y(uint64_t src, uint64_t off) { return fg_device_global_load(src + off + 4); }
 static float fg180q_ld_f4z(uint64_t src, uint64_t off) { return fg_device_global_load(src + off + 8); }
@@ -151,6 +167,19 @@ __kernel void goose_mmq_q4_reference(__global const uint8_t * weights, __global 
     int32_t job_words, int64_t input_stride, int32_t columns, int32_t sms) {
     mmq_matmul(weights, packed, output, jobs, tiles, stride, extent, 12, rows, first, first_route,
         job_words, input_stride, columns, sms);
+}
+
+__kernel void goose_mmq_q4_dense_shared(__global const uint8_t * weights, __global const uint8_t * packed,
+    __global uint8_t * output, __global const uint64_t * jobs, uint64_t stride, int32_t extent,
+    int32_t rows, int32_t first_route, int32_t sms) {
+    uint32_t row, column, thread;
+    __local uint32_t shared[1280] __attribute__((aligned(16)));
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(row));
+    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(column));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
+    fg_device_mmq_q4_dense_shared_g((uint64_t) weights, (uint64_t) packed, (uint64_t) output,
+        (uint64_t) jobs, stride, extent, 16u * row, rows, first_route + 32u * column,
+        first_route, sms, thread, (uint64_t) shared);
 }
 
 __kernel void goose_mmq_stream(__global const uint8_t * weights, __global const uint8_t * packed,
