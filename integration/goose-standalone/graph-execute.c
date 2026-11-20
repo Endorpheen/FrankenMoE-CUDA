@@ -21,6 +21,7 @@ extern uint64_t fg_cuda_take_matrices(void);
 extern uint64_t fg_cuda_take_f32_matrices(void);
 extern void fg_cuda_take_matrix_launches(uint64_t * launches, uint64_t * cached);
 extern uint64_t fg_cuda_take_mmq(void);
+extern uint64_t fg_cuda_take_dense_mma(void);
 extern uint64_t fg_cuda_take_attentions(void);
 extern uint64_t fg_cuda_take_causal_attentions(void);
 extern uint64_t fg_cuda_take_gdns(void);
@@ -293,6 +294,7 @@ static enum ggml_status compute_graph(struct ggml_cgraph * graph, bool all, cons
     uint64_t matrix_launches, cached_projections;
     fg_cuda_take_matrix_launches(&matrix_launches, &cached_projections);
     const uint64_t mmq = fg_cuda_take_mmq();
+    const uint64_t dense_mma = fg_cuda_take_dense_mma();
     const uint64_t attentions = fg_cuda_take_attentions();
     const uint64_t causal = fg_cuda_take_causal_attentions();
     const uint64_t gdns = fg_cuda_take_gdns();
@@ -321,6 +323,7 @@ static enum ggml_status compute_graph(struct ggml_cgraph * graph, bool all, cons
         if (matrix_launches) fprintf(stderr, "Goose CUDA matrix launches: %llu\n", (unsigned long long) matrix_launches);
         if (cached_projections) fprintf(stderr, "Goose CUDA cached expert projections: %llu\n", (unsigned long long) cached_projections);
         if (mmq) fprintf(stderr, "Goose CUDA MMQ projections: %llu nodes\n", (unsigned long long) mmq);
+        if (dense_mma) fprintf(stderr, "Goose CUDA dense MMA: %llu nodes\n", (unsigned long long) dense_mma);
         if (attentions) fprintf(stderr, "Goose CUDA attention: %llu nodes\n", (unsigned long long) attentions);
         if (causal) fprintf(stderr, "Goose CUDA causal attention: %llu nodes\n", (unsigned long long) causal);
         if (gdns) fprintf(stderr, "Goose CUDA GDN: %llu nodes\n", (unsigned long long) gdns);

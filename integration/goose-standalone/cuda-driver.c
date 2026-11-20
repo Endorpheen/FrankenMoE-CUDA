@@ -41,7 +41,7 @@ static struct {
     Context context;
     Module module;
     Function kernel, attention_tiles, attention_merge, gdn, q4_rows, vector;
-    Function mmq_pack, mmq_matrix;
+    Function mmq_pack, mmq_matrix, dense_mma;
     Function rope_phases, rope_apply, ssm_conv;
     Function route_reduce, route_sort, route_gather, blit, fwht, moe_weighted;
     struct device_buffer input, output, weight, jobs;
@@ -90,6 +90,7 @@ static _Thread_local DevicePtr matrix_input, matrix_output;
 static _Thread_local uint64_t cuda_matrices;
 static _Thread_local uint64_t cuda_matrix_launches, cuda_cached_projections;
 static _Thread_local uint64_t cuda_mmq_projections;
+static _Thread_local uint64_t cuda_dense_mma;
 static _Thread_local uint64_t cuda_f32_matrices;
 static _Thread_local int cuda_matrix_kind;
 static _Thread_local uint64_t cuda_attentions;
@@ -152,21 +153,24 @@ static void init_cuda(void) {
     cuda.status = -1;
     const char * setting = getenv("GOOSE_MMQ");
     const bool mmq = setting && strcmp(setting, "1") == 0;
-    if (mmq) {
+    const char * dense_setting = getenv("GOOSE_DENSE_MMA");
+    const bool dense_mma = dense_setting && strcmp(dense_setting, "1") == 0;
+    if (mmq || dense_mma) {
         enum { compute_capability_major = 75 };
         int major = 0;
         if (cuda.device_attribute(&major, compute_capability_major, device) != 0 ||
             major < 8 || goose_cuda_mmq_image[0] == 0) {
-            fputs("Goose CUDA: MMQ requires the SM80 device image and compute capability 8 or newer\n", stderr);
+            fputs("Goose CUDA: Tensor Core paths require the SM80 image and compute capability 8 or newer\n", stderr);
             return;
         }
     }
     int error = cuda.create(&cuda.context, 0, device);
     if (error == 0) {
-        error = cuda.module_load(&cuda.module, mmq ? goose_cuda_mmq_image : goose_cuda_image);
+        error = cuda.module_load(&cuda.module, mmq || dense_mma ? goose_cuda_mmq_image : goose_cuda_image);
         if (error == 0) error = cuda.function_get(&cuda.kernel, cuda.module, "goose_quantized_matmul");
         if (error == 0 && mmq) error = cuda.function_get(&cuda.mmq_pack, cuda.module, "goose_mmq_pack_q8");
         if (error == 0 && mmq) error = cuda.function_get(&cuda.mmq_matrix, cuda.module, "goose_mmq_matmul");
+        if (error == 0 && dense_mma) error = cuda.function_get(&cuda.dense_mma, cuda.module, "goose_dense_mma");
         if (error == 0) error = cuda.function_get(&cuda.attention_tiles, cuda.module, "goose_q4_attention_tiles");
         if (error == 0) error = cuda.function_get(&cuda.attention_merge, cuda.module, "goose_q4_attention_merge");
         if (error == 0) error = cuda.function_get(&cuda.gdn, cuda.module, "goose_gated_delta_net");
@@ -750,12 +754,29 @@ static int launch_matrix(DevicePtr weight, int64_t row_stride, int64_t extent,
         return result;
     }
 
+    const int count = (int) (jobs.len / job_words);
+    if (error == 0 && cuda.dense_mma && kind == 0 && job_words == 2 && rows >= 16 && count >= 16 && count <= 8 * 65535) {
+        int32_t k = (int32_t) extent, m = (int32_t) rows;
+        int32_t jobs_count = count;
+        void * args[] = {&weight, &matrix_input, &matrix_output, &cuda.jobs.address, &row_stride, &k, &m, &jobs_count};
+        error = cuda.launch(cuda.dense_mma, 1u + ((unsigned) rows - 1) / 64, 1u + ((unsigned) count - 1) / 8, 1,
+            128, 1, 1, 0, NULL, args, NULL);
+        if (error == 0) error = cuda.sync();
+        if (error != 0) {
+            fprintf(stderr, "Goose CUDA: dense MMA failed (%d)\n", error);
+            return -1;
+        }
+        ++cuda_matrix_launches;
+        ++cuda_dense_mma;
+        cuda_matrix_kind = 0;
+        return 0;
+    }
+
     uint64_t stride = (uint64_t) row_stride;
     int width = (int) extent, type = (int) kind, start = 0;
     void * args[] = { &weight, &matrix_input, &matrix_output,
                       &cuda.jobs.address, &stride, &width, &type, &start, &job_words };
     const unsigned lanes = kind == 14 ? 64 : 32;
-    const int count = (int) (jobs.len / job_words);
     while (error == 0 && start < count) {
         const int batch = count - start > 65535 ? 65535 : count - start;
         error = cuda.launch(cuda.kernel, (unsigned) rows, (unsigned) batch, 1,
@@ -810,6 +831,12 @@ void fg_cuda_take_matrix_launches(uint64_t * launches, uint64_t * cached) {
 uint64_t fg_cuda_take_mmq(void) {
     const uint64_t count = cuda_mmq_projections;
     cuda_mmq_projections = 0;
+    return count;
+}
+
+uint64_t fg_cuda_take_dense_mma(void) {
+    const uint64_t count = cuda_dense_mma;
+    cuda_dense_mma = 0;
     return count;
 }
 

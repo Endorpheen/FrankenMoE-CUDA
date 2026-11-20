@@ -45,11 +45,12 @@ sed '/^fn main()/,$d; s/^fn fg179w_reduce(/export fn fg179w_reduce(/' \
 sed '/^fn main()/,$d; s/^fn fg180q_mmq(/export fn fg180q_mmq(/' \
     "$ROOT/goose/cuda/goose-cuda-mmq-q8-1/device.goose" > "$OUT/mmq-quant.goose"
 cp "$ROOT/goose/cuda/standalone-mmq.goose" "$OUT/mmq.goose"
+cp "$ROOT/goose/cuda/standalone-dense-mma.goose" "$OUT/dense-mma.goose"
 sed -n '/^fn scale_min(/,/^}/p' "$ROOT/goose/cuda/goose-cuda-dequant-q4k/device.goose" >> "$OUT/mmq.goose"
 sed -n '/^fn q4_mmq_nibbles(/,/^}/p' "$ROOT/goose/cuda/goose-mmq-load-q4k/device.goose" >> "$OUT/mmq.goose"
 sed -n '/^fn vsub4(/,/^}/p; /^fn q6_mmq_bytes(/,/^}/p' \
     "$ROOT/goose/cuda/goose-mmq-load-q6k/device.goose" >> "$OUT/mmq.goose"
-for module in q4k q6k matmul q4-attention gdn q4-set-rows vector rope ssm-conv routing transform fwht moe-weighted mmq-quant mmq; do
+for module in q4k q6k matmul q4-attention gdn q4-set-rows vector rope ssm-conv routing transform fwht moe-weighted mmq-quant mmq dense-mma; do
     "$GOOSE" --standalone -o "$OUT/$module.c" --header "$OUT/$module.h" "$OUT/$module.goose"
     python3 - "$OUT" "$module" <<'PY'
 from pathlib import Path

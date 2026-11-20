@@ -32,7 +32,7 @@ paired ablations, which are open for every row.
 
 ## Mechanisms
 
-**32 mechanisms: PARITY 0, PARTIAL 21, MISSING 10, INCORRECT 1.**
+**32 mechanisms: PARITY 0, PARTIAL 22, MISSING 9, INCORRECT 1.**
 
 Group three to five related improvements. Give each change its own
 short correctness, CUDA-error and numerical checks, then commit it
@@ -58,7 +58,7 @@ dependencies. Resume decode-specific work after prefill recovery.
 | 4 | MMQ stream-K. `mmq.cuh` partitions K and invokes `mul_mat_q_stream_k_fixup` to combine partial outputs. | Fix-up runs in the reference. Independent scalar kernels reduce K inside each output block. | MISSING. After the base tile passes, implement reference partition and reduction rules. Verify K tails, partial ordering and large segments separately from the base tile. |
 | 5 | Quantized small-batch MMVQ. `ggml-cuda.cu` → `ggml_cuda_mul_mat_vec_q` → Q8_1 and `mul_mat_vec_q` in `mmvq.cu`. | Both `quantize_q8_1` and `mul_mat_vec_q` run. Goose uses its scalar Q4_K/Q6_K path during decode. | MISSING. Restore the appropriate small-batch integer-dot specializations and packing. Check the exact subtype, output and decode timing under the final graph. |
 | 6 | Indexed small-batch MMVQ. `ggml_cuda_mul_mat_id` → `mul_mat_vec_q_moe_launch` → `mul_mat_vec_q_moe`. | The reference trace executes indexed MMVQ. Goose groups jobs on the host and feeds the scalar matrix kernel. | MISSING. Restore the routed MMVQ path and verify duplicate expert IDs, signed-scale arithmetic and first decode output. |
-| 7 | Tensor Core dense GEMM. `ggml-cuda.cu` selects cuBLAS routes, with `cublasGemmEx` for supported dense shapes. | The trace contains CUTLASS `Kernel2` tensor-op GEMMs and recorded cuBLAS dependencies. The independent F32 warp broadcasts one dot per output. | MISSING. Supply a tiled Tensor Core dense path with equivalent accumulation and tail handling. Compare actual F16/F32 shapes and isolate its timing after MMQ. |
+| 7 | Tensor Core dense GEMM. `ggml_cuda_mul_mat_cublas` selects the F32 `cublasSgemm` path with `CUBLAS_TF32_TENSOR_OP_MATH` in `common.cuh`. | The 4096/1 trace records 39 CUTLASS `s1688gemm` launches. `GOOSE_DENSE_MMA=1` selects 40 independent tiled TF32 MMA launches with F32 accumulation. | PARTIAL. The CUDA path and F32 error fixture pass. Apex output changes under the experimental flag and still differs from EXP-1476. Keep the flag off for the next baseline until the model-level numerical difference is resolved. |
 | 8 | Dense small-shape dispatch. `mmf.cu` and `mmvf.cu` implement `mul_mat_f` and `mul_mat_vec_f`. The trace also records `dot_kernel`. | All three families appear in the trace. Goose does dense F32 FMA and shuffles using one output per warp. The exact library owner of `dot_kernel` remains open. | PARTIAL. Identify the dot route and reuse existing dot and warp code where equivalent. Recreate selected row/vector tiling and validate dimensions and backend selection by shape. |
 | 9 | Device expert grouping. `ggml_cuda_mul_mat_id` / `mmq.cu` → `mm_ids_helper` → per-expert group ranges and Q8 scatter. | `mm_ids_helper` executes. Goose builds per-expert jobs and keeps a GPU SLRU, with host route synchronization. | PARTIAL. Feed active routes to device grouping and pack contiguous batches without losing expert ownership. Verify sparse, repeated and empty groups against the reference. |
 | 10 | Fused MoE selection. `ggml-cuda.cu` `ggml_cuda_topk_moe_fusion` → `topk_moe_cuda`. | Reference executes selection fusion. Goose separately runs softmax, stable sort, gather, row sum and scaling. | PARTIAL. Combine equivalent operations while retaining tie order and normalized expert weights. Compare selected indices and scores before measuring speed. |
@@ -244,6 +244,31 @@ benchmark, peak memory and exact generation checks remain open.
 Raw data: `/home/end0/AI/LlamaServer/franken-goose-moe-weighted.gjQFQa/mmq-profile.gcbhWG`.
 Response SHA-256: `c3142113df588278d35a2108a43230b727818efa9acf74d1380832c881e74c63`.
 Executable SHA-256: `6d30ef31d493ced9ba533c71233c6edd276d2063d211c28f45b8f69eea8a8e0a`.
+
+## Dense TF32 MMA diagnostic
+
+EXP-2026-11-20-1527 follows the independent MMQ tile organization
+with a 16×8×8 F32-accumulating TF32 kernel for large F32 dense
+projections. It resolves the leading TF32 value and two residual
+cross-products. GPU fixtures cover odd dimensions and a 2048-wide
+router-like shape, with maximum absolute FP64-reference error
+5.04e-6. Operand and output fragments follow the
+[NVIDIA PTX ISA](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#warp-level-matrix-fragment-mma-1688).
+
+`GOOSE_DENSE_MMA=1` measured 52.069 ms across 40 Apex CUDA
+launches, versus 565.205 ms for the corresponding scalar dense
+launches. The EXP-1476 trace records 7.377 ms across 39 CUTLASS
+launches. Prefill in the independent 4096/1 diagnostic took
+35.498 s (115.386 tokens/s), versus 37.137 s (110.293 tokens/s)
+without the dense flag. The first ID changes from 9495 to 37972
+and EXP-1476 selects 332. The tested dense operation is available
+for numerical investigation. Leave it disabled in the batch
+checkpoint. No full-request throughput or peak memory comparison
+was made for this variant.
+
+Raw data: `/home/end0/AI/LlamaServer/franken-goose-dense-mma.vqcy2Z/mmq-profile.PJCwMh`.
+Response SHA-256: `d8d141218cc32e9364c122c473e571e88222c48588a69a66bfa18f7033c44486`.
+Executable SHA-256: `8d4f4371cea01543900846b245434d7c6f0ad693eedb57ac82784e7d44fc1a39`.
 
 ## Kernel coverage
 

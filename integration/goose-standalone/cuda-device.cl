@@ -541,4 +541,5 @@ __kernel void goose_tensor_blit(__global uint8_t * x, __global uint8_t * y,
 
 #ifdef GOOSE_CUDA_MMQ_IMAGE
 #include "cuda-mmq.cl"
+#include "cuda-dense-mma.cl"
 #endif

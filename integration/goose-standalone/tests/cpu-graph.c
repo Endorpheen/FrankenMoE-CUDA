@@ -1239,7 +1239,42 @@ static void check_moe_weighted(int width, int used, int tokens) {
     ggml_free(ctx);
 }
 
+static void check_dense_mma(int extent, int rows, int columns) {
+    struct ggml_context * ctx = ggml_init((struct ggml_init_params){ 64 * 1024, NULL, true });
+    assert(ctx);
+    struct ggml_tensor * w = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, extent, rows);
+    struct ggml_tensor * input = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, extent, columns);
+    struct ggml_tensor * out = ggml_mul_mat(ctx, w, input);
+    struct ggml_cgraph * graph = ggml_new_graph_custom(ctx, 16, false);
+    ggml_build_forward_expand(graph, out);
+    void * storage = fg_standalone_graph_alloc(graph);
+    assert(storage);
+    float * a = w->data, * b = input->data;
+    for (int i = 0; i < extent * rows; ++i) a[i] = (float) ((i * 13 + i / 19) % 51 - 25) / 157.0f;
+    for (int i = 0; i < extent * columns; ++i) b[i] = (float) ((i * 17 + i / 13) % 39 - 19) / 61.0f;
+    assert(fg_standalone_graph_compute_output(graph, out) == GGML_STATUS_SUCCESS);
+    const float * result = out->data;
+    double max_error = 0.0;
+    for (int col = 0; col < columns; ++col) {
+        for (int row = 0; row < rows; ++row) {
+            double expected = 0.0;
+            for (int k = 0; k < extent; ++k) expected += (double) a[row * extent + k] * b[col * extent + k];
+            const double error = fabs(result[col * rows + row] - expected);
+            assert(error <= 1e-5 * (1.0 + fabs(expected)));
+            max_error = fmax(max_error, error);
+        }
+    }
+    printf("Dense MMA: %dx%dx%d, max absolute error %.9g\n", rows, columns, extent, max_error);
+    free(storage);
+    ggml_free(ctx);
+}
+
 int main(int argc, char ** argv) {
+    if (argc == 2 && strcmp(argv[1], "--dense-mma") == 0) {
+        check_dense_mma(521, 67, 33);
+        check_dense_mma(2048, 256, 128);
+        return 0;
+    }
     if (argc == 2 && strcmp(argv[1], "--moe-weighted") == 0) {
         check_moe_weighted(193, 1, 3);
         check_moe_weighted(513, 8, 4096);
