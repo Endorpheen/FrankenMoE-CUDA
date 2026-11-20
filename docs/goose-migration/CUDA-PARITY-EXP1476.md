@@ -358,6 +358,30 @@ Candidate: `/home/end0/AI/LlamaServer/franken-goose-activation-lifetimes.UOpkCd/
 Request SHA-256: `2d716460edf11494ce0fd16fe53241535b611c70774adc8fa3fe4619a6fcf81d`.
 Candidate executable SHA-256: `9d57a6876152b08ed727a790a8b91c6d3d4679881852c4911195389bd57ffbc1`.
 
+## Deferred CUDA wait diagnostic
+
+EXP-2026-11-20-1531 tested deferring intermediate publication waits
+to the planned graph boundary. CUDA operations used the legacy
+default stream. Host reads still used blocking device-to-host copies.
+[CUDA Driver API synchronization behavior](https://docs.nvidia.com/cuda/cuda-driver-api/api-sync-behavior.html).
+
+Four sequential 4096/1 profiles in A–B–B–A order produced equivalent
+text, token IDs and five probabilities. Prefill took 22.657 s and
+23.093 s in A, versus 22.990 s and 22.774 s in B. The median changed
+from 22.875 s to 22.882 s. H2D and D2H byte counts were unchanged.
+Explicit context waits fell from 1,873 to 562 per run. Median time in
+that API fell from 9.636 s to 3.798 s. Time in synchronous D2H calls
+rose from 5.154 s to 10.754 s. API durations include waiting on
+previous GPU work. The run shows redistributed waiting and no
+prefill benefit. The change was rejected and does not count toward
+the five verified improvements in this package.
+
+Control profiles: `/home/end0/AI/LlamaServer/franken-goose-activation-lifetimes.UOpkCd/mmq-profile.Ngqd0s`
+and `mmq-profile.rzm4yZ` in the same directory.
+Candidate profiles: `/home/end0/AI/LlamaServer/franken-goose-graph-waits.OYG6LI/mmq-profile.c2mX9Y`
+and `mmq-profile.nhsQOc` in the same directory.
+Candidate executable SHA-256: `82bf7cce5d8ba9bd69a05ede48014d10b17efadf153df3b380f472b710a631f5`.
+
 ## Kernel coverage
 
 The exact EXP-1476 request passed content, ID and probability
