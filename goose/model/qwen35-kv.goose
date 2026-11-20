@@ -133,20 +133,21 @@ export fn q35_kv_host_restore(state: i64[:], width: i64, keys: u8[:], values: u8
 // Explicit SET_ROWS dependencies replace reliance on host graph-expand order.
 export fn q35_attn_cached(c: i64, x: i64, positions: i64, mask: i64, weights: i64[:], cfg: i64[:], sections: i64,
                           cache_k: i64, cache_v: i64, indices: i64, state: i64[:], ticket: i64, work: i64[:], nodes: i64[:]) -> i64 {
-    if c == 0 || x == 0 || mask == 0 || cache_k == 0 || cache_v == 0 || indices == 0 || cfg.len < 14 ||
+    if c == 0 || x == 0 || cache_k == 0 || cache_v == 0 || indices == 0 || cfg.len < 14 ||
        weights.len < 8 || work.len < 16 || nodes.len < 35 || !qk_state_ok(state) || state[4] <= 0 || state[5] != ticket { return 0; }
     let count: i64 = ne(x, 1);
-    let read_rows: i64 = q35_kv_read_rows(state, count);
-    if read_rows < 0 || cfg[1] <= 0 || state[4] != count { return 0; }
+    let padded_rows: i64 = q35_kv_read_rows(state, count);
+    if padded_rows < 0 || cfg[1] <= 0 || state[4] != count { return 0; }
+    let read_rows = if mask == 0 { state[2] + count } else { padded_rows };
     let width: i64 = ne(cache_k, 0);
     if qk_row_bytes(width) < 0 || prop(cache_k, 0) != 2 || prop(cache_v, 0) != 2 ||
        ne(cache_v, 0) != width || ne(cache_k, 1) != state[1] || ne(cache_v, 1) != state[1] ||
        ne(cache_k, 2) != 1 || ne(cache_k, 3) != 1 || ne(cache_v, 2) != 1 || ne(cache_v, 3) != 1 ||
        pred(0, cache_k, 0) == 0 || pred(0, cache_v, 0) == 0 ||
        width % cfg[1] != 0 || (width / cfg[1]) % 32 != 0 || prop(indices, 0) != 27 || ne(indices, 0) != count ||
-       ne(indices, 1) != 1 || ne(indices, 2) != 1 || ne(indices, 3) != 1 || pred(0, indices, 0) == 0 ||
-       prop(mask, 0) != 1 || ne(mask, 0) != read_rows || ne(mask, 1) < count ||
-       ne(mask, 2) != 1 || ne(mask, 3) != 1 || pred(0, mask, 0) == 0 { return 0; }
+       ne(indices, 1) != 1 || ne(indices, 2) != 1 || ne(indices, 3) != 1 || pred(0, indices, 0) == 0 { return 0; }
+    if mask != 0 && (prop(mask, 0) != 1 || ne(mask, 0) != read_rows || ne(mask, 1) < count ||
+       ne(mask, 2) != 1 || ne(mask, 3) != 1 || pred(0, mask, 0) == 0) { return 0; }
     if weights[2] == 0 || ne(weights[2], 1) != width { return 0; }
     if q35_attn_project(c, x, positions, weights, cfg, sections, work, nodes) == 0 { return 0; }
     if ne(nodes[14], 0) * ne(nodes[14], 1) != width { return 0; }
@@ -166,5 +167,8 @@ export fn q35_attn_cached(c: i64, x: i64, positions: i64, mask: i64, weights: i6
     nodes[34] = view4(c, nodes[32], head, cfg[1], read_rows, 1, head_bytes, row_bytes, stream_bytes, 0);
     let result: i64 = q35_attn_finish(c, x, nodes[13], nodes[33], nodes[34], nodes[15], mask, weights, cfg, work, nodes);
     if result == 0 { return 0; }
+    // Zero is the ordinary attention ABI. The standalone executor reads
+    // the positive first-query key count from the private parameter word.
+    if mask == 0 { qa_set(nodes[21], 10, 5, (state[2] + 1) as u64); }
     return result;
 }

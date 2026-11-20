@@ -151,7 +151,7 @@ export fn q35_attn_project(c: i64, x: i64, positions: i64, weights: i64[:], cfg:
 // the state update between project and finish; this function owns the MHA path.
 export fn q35_attn_finish(c: i64, x: i64, q: i64, k: i64, v: i64, gate: i64, mask: i64,
                          weights: i64[:], cfg: i64[:], work: i64[:], nodes: i64[:]) -> i64 {
-    if c == 0 || x == 0 || q == 0 || k == 0 || v == 0 || gate == 0 || mask == 0 ||
+    if c == 0 || x == 0 || q == 0 || k == 0 || v == 0 || gate == 0 ||
        weights.len < 8 || cfg.len < 14 || work.len < 16 || nodes.len < 29 {
         return 0;
     }

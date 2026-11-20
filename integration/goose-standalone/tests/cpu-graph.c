@@ -41,7 +41,7 @@ static void check_model_step(const char * path) {
 }
 
 static void check_chunked_generation(const char * path) {
-    enum { prompt_size = 137, vocabulary = 4 };
+    enum { prompt_size = 267, vocabulary = 4 };
     int64_t prompt[prompt_size], first = -1;
     int32_t batch[prompt_size];
     for (int i = 0; i < prompt_size; ++i) {
@@ -70,7 +70,7 @@ static void check_chunked_generation(const char * path) {
     free(all);
     free(expected_state);
     free(actual_state);
-    puts("137-token chunked generation preserves the next-step logits at 262144 context");
+    printf("%d-token chunked generation preserves the next-step logits at 262144 context\n", prompt_size);
 }
 
 static void check_resident_state(const char * path) {
@@ -396,8 +396,11 @@ static void check_split_q4_attention(void) {
     struct ggml_tensor * mask = ggml_new_tensor_2d(ctx, GGML_TYPE_F16, keys, positions);
     const float scale = 1.0f / sqrtf(width);
     struct ggml_tensor * out = ggml_flash_attn_ext(ctx, q, k, v, mask, scale, 0.0f, 0.0f);
+    struct ggml_tensor * causal = ggml_flash_attn_ext(ctx, q, k, v, NULL, scale, 0.0f, 0.0f);
+    causal->op_params[5] = 1;
     struct ggml_cgraph * graph = ggml_new_graph_custom(ctx, 64, false);
     ggml_build_forward_expand(graph, out);
+    ggml_build_forward_expand(graph, causal);
     void * storage = fg_standalone_graph_alloc(graph);
     assert(storage);
     float * query = q_data->data;
@@ -453,6 +456,19 @@ static void check_split_q4_attention(void) {
         }
     }
     printf("Split Q4 attention: 517 keys, GQA, padded and fully masked rows, max error %.9g\n", peak_error);
+    const int prefixes[] = {0, 254, 255, 510, 514};
+    for (size_t i = 0; i < sizeof(prefixes) / sizeof(*prefixes); ++i) {
+        const int prefix = prefixes[i];
+        causal->op_params[5] = prefix + 1;
+        for (int pos = 0; pos < positions; ++pos) {
+            for (int row = 0; row < keys; ++row) {
+                bias[pos * keys + row] = ggml_fp32_to_fp16(row <= prefix + pos ? 0.0f : -INFINITY);
+            }
+        }
+        assert(fg_standalone_graph_compute(graph) == GGML_STATUS_SUCCESS);
+        assert(memcmp(out->data, causal->data, ggml_nbytes(out)) == 0);
+    }
+    puts("Implicit Q4 causal attention matches the explicit mask bytes at five prefix boundaries");
     free(decoded_k);
     free(decoded_v);
     free(storage);

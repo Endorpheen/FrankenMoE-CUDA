@@ -43,11 +43,12 @@ fn flash_cuda(p: const Node &, mask: const Tensor &, q: const u8[:], k: const u8
     if tiles > 65535 { return 0; }
     let per_task = mul_size(tiles, (p.z.ne[0] + 2) * 4);
     let batch = low(tasks, high(1, (32 * 1024 * 1024) / per_task));
-    // The device reads the first 18 words. The final three size the launches
-    // and bound the partial softmax buffer independently of prompt length.
-    let config: i64[21] = [p.x.ne[0], p.z.ne[0], positions, heads, p.y.ne[2], p.z.ne[2], p.y.ne[1],
+    // Words 18..20 size the launches and bound the partial softmax buffer.
+    // Word 21 gives the first query's causal key count, or zero for an explicit
+    // mask or ordinary unmasked attention.
+    let config: i64[22] = [p.x.ne[0], p.z.ne[0], positions, heads, p.y.ne[2], p.z.ne[2], p.y.ne[1],
         p.x.nb[1], p.x.nb[2], p.y.nb[1], p.y.nb[2], p.z.nb[1], p.z.nb[2], mask.nb[1],
-        p.d.nb[1], p.d.nb[2], segment, tiles, tasks, batch, mul_size(batch, per_task)];
+        p.d.nb[1], p.d.nb[2], segment, tiles, tasks, batch, mul_size(batch, per_task), p.ip[5]];
     return cuda_q4_attention(config, q[0 .. p.x.bytes], k[0 .. p.y.bytes], v[0 .. p.z.bytes],
         masks[0 .. mask.bytes], dst[0 .. p.d.bytes], p.fp[0]);
 }
@@ -67,6 +68,9 @@ fn flash_attention(p: const Node &, mask: const Tensor &, q: const u8[:], k: con
         return false;
     }
     let has_mask = mask.bytes > 0;
+    let first_query_keys = p.ip[5];
+    if first_query_keys < 0 || (first_query_keys != 0 &&
+        (has_mask || first_query_keys > p.y.ne[1] - p.x.ne[1] + 1)) { return false; }
     if has_mask {
         if mask.kind != 1 || mask.ne[0] < p.y.ne[1] || mask.ne[1] < p.x.ne[1] ||
            mask.ne[2] <= 0 || mask.ne[3] <= 0 ||
@@ -106,7 +110,8 @@ fn flash_attention(p: const Node &, mask: const Tensor &, q: const u8[:], k: con
                 for column in p.d.ne[0] {
                     store_at(p.d, dst, db + column * p.d.nb[0], 0.0);
                 }
-                for key in p.y.ne[1] {
+                let count = if first_query_keys != 0 { first_query_keys + pos } else { p.y.ne[1] };
+                for key in count {
                     var bias: f32 = 0.0;
                     if has_mask {
                         let at = key * mask.nb[0] + pos * mask.nb[1] +

@@ -335,6 +335,29 @@ CPU/CUDA continuation logit difference of 0.0000001192 after reset.
 Routing, RoPE/SSM and CPU chunking checks passed. Apex performance and
 peak memory remain unmeasured.
 
+EXP-2026-11-20-1513 encodes single-stream causal attention with the
+first query's visible key count from the active Goose KV ticket. The
+standalone graph now exposes only the committed prefix and the current
+chunk to attention. The CPU loops over the visible keys. CUDA bounds
+each tile by the same query position and merges only tiles that wrote
+partial results. Explicit masks are still supported by the shared
+attention executor.
+
+The model step drops both the F32 mask scratch and the F16 graph tensor.
+At 32,768 KV rows this removes 24 MiB of host mask storage for a
+128-token prefill chunk or 192 KiB for a one-token decode step. These
+figures come from the former tensor shapes. CUDA attention receives
+the causal key count in its launch configuration.
+
+The 517-key grouped-query fixture compared the new and explicit masks
+at five prefix boundaries, including two segment transitions and the
+last key. Results matched byte-for-byte on CPU and RTX 4070. A
+267-token synthetic model check preserved the next-step logits when
+splitting prefill into chunks on either backend, and CUDA traced the
+causal path on the shared graph. Switching from CUDA to CPU and back
+preserved continuation with a maximum absolute logit difference of
+0.0000001192. Apex throughput and peak memory remain unmeasured.
+
 ## Historical requirements audit
 
 `docs/goose-migration/tasks.json`: **DONE 1**, **PARTIAL 144**, **TODO 7** of 152.

@@ -28,9 +28,19 @@ fn attn_sum(value: f32) -> f32 {
     return partial;
 }
 
+fn attn_active_keys(cfg: u64, pos: i64) -> i64 {
+    let first = attn_word(cfg, 21);
+    return if first != 0 { first + pos } else { attn_word(cfg, 6) };
+}
+
 export fn fg_attn_tiles(q: u64, k: u64, v: u64, mask: u64, scratch: u64, cfg: u64,
                         scale: f32, task: i64, query: i64, tile: i64, lane: i64) {
     let col = query % attn_word(cfg, 2);
+    let keys = attn_active_keys(cfg, col);
+    let segment = attn_word(cfg, 16);
+    let first = tile * segment;
+    if first >= keys { return; }
+    let last = if first + segment < keys { first + segment } else { keys };
     let heads = attn_word(cfg, 3);
     let head = query / attn_word(cfg, 2);
     let qrow = q + ((col * attn_word(cfg, 7) + head * attn_word(cfg, 8)) as u64);
@@ -39,10 +49,6 @@ export fn fg_attn_tiles(q: u64, k: u64, v: u64, mask: u64, scratch: u64, cfg: u6
     let mr = mask + ((col * attn_word(cfg, 13)) as u64);
     let qblocks = attn_word(cfg, 0) / 32;
     let vblocks = attn_word(cfg, 1) / 32;
-    let keys = attn_word(cfg, 6);
-    let segment = attn_word(cfg, 16);
-    let first = tile * segment;
-    let last = if first + segment < keys { first + segment } else { keys };
     let neg_inf = attn_neg_inf();
     var maximum = neg_inf;
     var mass: f32 = 0.0;
@@ -82,11 +88,13 @@ export fn fg_attn_tiles(q: u64, k: u64, v: u64, mask: u64, scratch: u64, cfg: u6
 export fn fg_attn_merge(scratch: u64, out: u64, cfg: u64, task: i64, query: i64, lane: i64) {
     let stride = attn_word(cfg, 1) + 2;
     let tiles = attn_word(cfg, 17);
+    let pos = query % attn_word(cfg, 2);
+    let active_tiles = 1 + (attn_active_keys(cfg, pos) - 1) / attn_word(cfg, 16);
     let vblocks = attn_word(cfg, 1) / 32;
     var maximum = attn_neg_inf();
     var mass: f32 = 0.0;
     var sum: f32[8] = [0.0; 8];
-    for i in tiles {
+    for i in active_tiles {
         let row = scratch + ((4 * ((task * tiles + i) * stride)) as u64);
         let partial = attn_load(row + 4);
         if partial == 0.0 { continue; }
@@ -101,7 +109,6 @@ export fn fg_attn_merge(scratch: u64, out: u64, cfg: u64, task: i64, query: i64,
             sum[b] = sum[b] * scale + value * weight;
         }
     }
-    let pos = query % attn_word(cfg, 2);
     let head = query / attn_word(cfg, 2);
     let dst = out + ((head * attn_word(cfg, 14) + pos * attn_word(cfg, 15)) as u64);
     for b in vblocks {

@@ -287,19 +287,17 @@ static int64_t model_step(const int32_t * tokens, int64_t count, int64_t logit_r
     ggml_tensor * ids = ggml_new_tensor_1d(c, GGML_TYPE_I32, count);
     ggml_tensor * positions = ggml_new_tensor_1d(c, GGML_TYPE_I32, count * 4);
     ggml_tensor * indices = ggml_new_tensor_1d(c, GGML_TYPE_I64, count);
-    ggml_tensor * mask = ggml_new_tensor_2d(c, GGML_TYPE_F16, rows, count);
 
     int64_t work[16] = {0}, bn[40] = {0}, mn[42] = {0};
     int64_t * frames = calloc((size_t) (4 * H.layer_count + 4), sizeof(int64_t));
     int64_t * roots = calloc((size_t) (2 * H.layer_count + 2), sizeof(int64_t));
     int64_t * pos = calloc((size_t) count * 4, sizeof(int64_t));
-    float * raw = calloc((size_t) rows * (size_t) count, sizeof(float));
-    if (!frames || !roots || !pos || !raw) goto done;
+    if (!frames || !roots || !pos) goto done;
 
     const int64_t result = q35_trunk_output((int64_t) (intptr_t) c, (int64_t) (intptr_t) ids,
                                      (int64_t) (intptr_t) H.emb, (int64_t) (intptr_t) H.head, (int64_t) (intptr_t) H.norm,
                                      (sl_i64){ H.records, H.layer_count * 32 }, H.layer_count,
-                                     (int64_t) (intptr_t) positions, (int64_t) (intptr_t) mask, (int64_t) (intptr_t) indices,
+                                     (int64_t) (intptr_t) positions, 0, (int64_t) (intptr_t) indices,
                                      (sl_i64){ H.acfg, 14 }, (sl_i64){ H.gcfg, 7 }, (sl_i64){ H.mcfg, 3 },
                                      H.rope_sections, (sl_i64){ H.kv_state, 6 }, ticket,
                                      (sl_i64){ work, 16 }, (sl_i64){ bn, 40 }, (sl_i64){ mn, 42 },
@@ -314,7 +312,7 @@ static int64_t model_step(const int32_t * tokens, int64_t count, int64_t logit_r
 
     storage = fg_standalone_graph_alloc(graph);
     if (!storage) goto done;
-    if (!ids->data || !positions->data || !indices->data || !mask->data) goto done;
+    if (!ids->data || !positions->data || !indices->data) goto done;
 
     memcpy(ids->data, tokens, (size_t) count * sizeof(*tokens));
     if (q35_kv_positions(state, count, (sl_i64){ pos, count * 4 }) != count * 4) goto done;
@@ -322,10 +320,6 @@ static int64_t model_step(const int32_t * tokens, int64_t count, int64_t logit_r
         ((int32_t *) positions->data)[i] = (int32_t) pos[i];
     }
     if (q35_kv_indices(state, count, (sl_i64){ indices->data, count }) != count) goto done;
-    if (q35_kv_mask(state, count, (sl_f32){ raw, rows * count }) != rows) goto done;
-    for (int64_t i = 0; i < rows * count; ++i) {
-        ((ggml_fp16_t *) mask->data)[i] = ggml_fp32_to_fp16(raw[i]);
-    }
 
     const ggml_tensor * lg = (const ggml_tensor *) (intptr_t) result;
     if (logit_rows != 0 && (!output.data || output.len != ggml_nelements(lg))) goto done;
@@ -346,7 +340,6 @@ done:
     }
     free(storage);
     free(pos);
-    free(raw);
     free(frames);
     free(roots);
     ggml_free(c);

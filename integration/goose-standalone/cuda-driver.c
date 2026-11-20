@@ -87,6 +87,7 @@ static _Thread_local uint64_t cuda_matrices;
 static _Thread_local uint64_t cuda_f32_matrices;
 static _Thread_local int cuda_matrix_kind;
 static _Thread_local uint64_t cuda_attentions;
+static _Thread_local uint64_t cuda_causal_attentions;
 static _Thread_local uint64_t cuda_gdns;
 static _Thread_local uint64_t cuda_resident_kv, cuda_resident_gdn;
 static _Thread_local uint64_t cuda_q4_writes;
@@ -705,7 +706,7 @@ uint64_t fg_cuda_take_f32_matrices(void) {
 }
 
 int64_t fg_cuda_q4_attention(sl_i64 config, sl_u8 q, sl_u8 k, sl_u8 v, sl_u8 mask, sl_u8 out, float scale) {
-    if (config.len != 21 || config.data[17] <= 0 || config.data[17] > 65535 ||
+    if (config.len != 22 || config.data[17] <= 0 || config.data[17] > 65535 ||
         config.data[18] <= 0 || config.data[18] > INT_MAX ||
         config.data[19] <= 0 || config.data[19] > config.data[18] || config.data[20] <= 0 ||
         q.len <= 0 || k.len <= 0 || v.len <= 0 || mask.len < 0 || out.len <= 0) return -1;
@@ -744,6 +745,7 @@ int64_t fg_cuda_q4_attention(sl_i64 config, sl_u8 q, sl_u8 k, sl_u8 v, sl_u8 mas
         return -1;
     }
     ++cuda_attentions;
+    if (config.data[21] > 0) ++cuda_causal_attentions;
     if (resident) ++cuda_resident_kv;
     return 1;
 }
@@ -752,6 +754,12 @@ uint64_t fg_cuda_take_attentions(void) {
     const uint64_t attentions = cuda_attentions;
     cuda_attentions = 0;
     return attentions;
+}
+
+uint64_t fg_cuda_take_causal_attentions(void) {
+    const uint64_t count = cuda_causal_attentions;
+    cuda_causal_attentions = 0;
+    return count;
 }
 
 int64_t fg_cuda_gdn(sl_i64 plan, sl_f32 q, sl_f32 k, sl_f32 v, sl_f32 gate, sl_f32 beta, sl_f32 initial, sl_f32 out) {

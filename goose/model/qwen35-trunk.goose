@@ -121,7 +121,7 @@ export fn q35_trunk_output(c: i64, ids: i64, embedding: i64, head_weight: i64, h
        layer_count <= 0 || layer_count > 128 || layers.len < layer_count * 32 ||
        frames.len < 4 * layer_count + 4 || roots.len < 2 * layer_count + 2 ||
        work.len < 16 || branch_nodes.len < 40 || attn_cfg.len < 14 || gdn_cfg.len < 7 || moe_cfg.len < 3 ||
-       !qk_state_ok(state) || state[4] <= 0 || state[5] != ticket || positions == 0 || mask == 0 ||
+       !qk_state_ok(state) || state[4] <= 0 || state[5] != ticket || positions == 0 ||
        indices == 0 || sections == 0 || logit_rows < -1 || logit_rows > 1 { return 0; }
     let count: i64 = ne(ids, 0);
     let hidden: i64 = ne(embedding, 0);
