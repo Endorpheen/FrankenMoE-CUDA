@@ -64,6 +64,11 @@ fn entry(
         if handled { witness(p.op, elements(p.d)); }
         return handled;
     }
+    let vector = cv_try(p, x, y, dst);
+    if vector != 0 {
+        if vector > 0 { witness(p.op, elements(p.d)); }
+        return vector > 0;
+    }
     if activation_read(x) != 0 || activation_read(y) != 0 || activation_read(z) != 0 { return false; }
     if codec_transform(p, x, y, dst, scratch, gxx, gxs, gs, g3x, g3s, g1, signs, palette) {
         witness(p.op, elements(p.d));

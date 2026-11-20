@@ -31,11 +31,13 @@ for kind in ("op", "unary_op", "glu_op"):
         value += 1
 
 parts = (
-    "tensor-base", "graph-residency", "pointwise", "reductions", "attention", "transforms",
+    "tensor-base", "graph-residency", "cuda-vector", "pointwise", "reductions", "attention", "transforms",
     "matrix", "recurrent", "rope", "indexed", "image", "codec-transform",
     "entry", "flash-attention", "stateful/scan-composition", "stateful/stateful", "standalone",
 )
 body = ["import.codec.decode;\n"]
+body.extend(line for line in (root / "goose/cuda/standalone-vector.goose").read_text().splitlines()
+            if line.startswith("const CV_"))
 for name in parts:
     text = (cpu / f"{name}.goose").read_text().split("\nfn main()", 1)[0]
     if name == "recurrent":

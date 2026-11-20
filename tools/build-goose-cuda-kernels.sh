@@ -22,7 +22,10 @@ sed -n '/^extern "fg176r_ld_f32"/p; /^extern "fg176r_st_f16"/p; /^extern "fg176r
         /^fn fg176r_quant_q4_0(/,/^}/p' \
     "$ROOT/goose/cuda/goose-cuda-set-rows/device.goose" |
     sed 's/^fn fg176r_quant_q4_0(/export fn fg176r_quant_q4_0(/' > "$OUT/q4-set-rows.goose"
-for module in q4k q6k matmul q4-attention gdn q4-set-rows; do
+cp "$ROOT/goose/cuda/standalone-vector.goose" "$OUT/vector.goose"
+sed -n '/^fn silu(/,/^}/p; /^fn sigmoid(/,/^}/p; /^fn softplus(/,/^}/p' \
+    "$ROOT/goose/cpu/goose-cpu-backend-api/pointwise.goose" >> "$OUT/vector.goose"
+for module in q4k q6k matmul q4-attention gdn q4-set-rows vector; do
     "$GOOSE" --standalone -o "$OUT/$module.c" --header "$OUT/$module.h" "$OUT/$module.goose"
     python3 - "$OUT" "$module" <<'PY'
 from pathlib import Path

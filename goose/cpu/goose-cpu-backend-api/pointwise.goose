@@ -32,6 +32,14 @@ fn silu(x: f32) -> f32 {
     return x / ( (1 as f32) + exp32(-x));
 }
 
+fn sigmoid(x: f32) -> f32 {
+    return (1.0 as f32) / ( (1.0 as f32) + exp32(-x));
+}
+
+fn softplus(x: f32) -> f32 {
+    return if x > (20.0 as f32) { x } else { log32( (1.0 as f32) + exp32(x)) };
+}
+
 fn avx2_exp_compat(x: f32) -> f32 {
     let z = fma32(x, from_bits(1069066811), 12582912 as f32);
     let n = z - (12582912 as f32);
@@ -123,7 +131,7 @@ fn unary_value(p: const Node &, op: i64, x: f32) -> f32 {
     }
 
     if op == UNARY_OP_SIGMOID {
-        return (1.0 as f32) / ( (1.0 as f32) + exp32(-x));
+        return sigmoid(x);
     }
 
     if op == UNARY_OP_HARDSIGMOID {
@@ -143,12 +151,7 @@ fn unary_value(p: const Node &, op: i64, x: f32) -> f32 {
     }
 
     if op == UNARY_OP_SOFTPLUS {
-        return if x > (20.0 as f32) {
-            x
-        } else {
-            log32( (1.0 as f32) + exp32(x))
-        }
-        ;
+        return softplus(x);
     }
 
     if op == UNARY_OP_FLOOR {

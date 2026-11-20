@@ -302,3 +302,45 @@ __kernel void goose_set_q4_rows(__global uint8_t * src, __global uint8_t * dst,
     const uint64_t src_at = row * stride + (work % blocks) * 128;
     fg176r_quant_q4_0_g((uint64_t) src, src_at, (uint64_t) dst, work * 18);
 }
+
+static float fg_vector_log(float value) {
+    float result;
+    __asm__("lg2.approx.f32 %0, %1;" : "=f"(result) : "f"(value));
+    return result * 0.6931471805599453f;
+}
+
+static float fg_vector_sqrt(float value) {
+    float result;
+    __asm__("sqrt.rn.f32 %0, %1;" : "=f"(result) : "f"(value));
+    return result;
+}
+
+static float fg_vector_min(float a, float b) {
+    float result;
+    __asm__("min.f32 %0, %1, %2;" : "=f"(result) : "f"(a), "f"(b));
+    return result;
+}
+
+static float fg_vector_max(float a, float b) {
+    float result;
+    __asm__("max.f32 %0, %1, %2;" : "=f"(result) : "f"(a), "f"(b));
+    return result;
+}
+
+static double fg_vector_shuffle_f64(double value, int32_t delta) {
+    uint64_t bits = as_ulong(value);
+    const uint32_t lo = as_uint(fg_device_shfl(as_float((uint32_t) bits), delta));
+    const uint32_t hi = as_uint(fg_device_shfl(as_float((uint32_t) (bits >> 32)), delta));
+    return as_double(((uint64_t) hi << 32) | lo);
+}
+
+#include "vector-device.h"
+
+__kernel void goose_vector_ops(__global uint8_t * x, __global uint8_t * y,
+    __global uint8_t * out, __global int64_t * cfg, float param0, float param1) {
+    uint32_t group, lane;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(group));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
+    fg_vector_ops_g((uint64_t) x, (uint64_t) y, (uint64_t) out,
+        (uint64_t) cfg, param0, param1, group, lane);
+}

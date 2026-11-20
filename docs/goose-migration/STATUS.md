@@ -262,6 +262,23 @@ step and kept the 0.0000001193 maximum logit difference. CPU chunked
 generation passed. The arena is capped at 64 MiB. Apex throughput,
 actual transfer volume and peak memory remain unmeasured.
 
+EXP-2026-11-20-1509 moves the F32 broadcast arithmetic, scale, clamp,
+sigmoid, SiLU, softplus, packed and split SwiGLU, RMS normalization and L2
+normalization used by the model into the same CUDA graph. The device code
+shares the Goose scalar activation expressions with the CPU. Normalization
+keeps F32 squares and F64 accumulation, with a warp reduction. Inputs and
+outputs use the existing activation arena. Existing CPU paths cover
+layouts, data types and variants outside the admitted device operations.
+
+The RTX 4070 trace confirmed all 14 strided vector fixtures on CUDA, with
+maximum absolute error of 0.000000477 against the CPU. Each CUDA step of
+the mixed synthetic model executed 49 vector nodes and reused 89 device
+inputs. The CPU/CUDA continuation maximum logit difference was
+0.0000000112. The alias-overwrite and selective-output graph also passed.
+The build reused the compiled common model unit and rebuilt the
+standalone operator and PTX sources. Apex performance and peak memory
+remain unmeasured.
+
 ## Historical requirements audit
 
 `docs/goose-migration/tasks.json`: **DONE 1**, **PARTIAL 144**, **TODO 7** of 152.

@@ -39,7 +39,7 @@ static struct {
     void * library;
     Context context;
     Module module;
-    Function kernel, attention_tiles, attention_merge, gdn, q4_rows;
+    Function kernel, attention_tiles, attention_merge, gdn, q4_rows, vector;
     struct device_buffer input, output, weight, jobs;
     struct device_buffer attention_value, attention_scratch, attention_config;
     struct device_buffer gdn_beta;
@@ -88,6 +88,7 @@ static _Thread_local uint64_t cuda_attentions;
 static _Thread_local uint64_t cuda_gdns;
 static _Thread_local uint64_t cuda_resident_kv, cuda_resident_gdn;
 static _Thread_local uint64_t cuda_q4_writes;
+static _Thread_local uint64_t cuda_vectors;
 static _Thread_local struct {
     uint64_t source, destination;
     int64_t bytes;
@@ -142,6 +143,7 @@ static void init_cuda(void) {
         if (error == 0) error = cuda.function_get(&cuda.attention_merge, cuda.module, "goose_q4_attention_merge");
         if (error == 0) error = cuda.function_get(&cuda.gdn, cuda.module, "goose_gated_delta_net");
         if (error == 0) error = cuda.function_get(&cuda.q4_rows, cuda.module, "goose_set_q4_rows");
+        if (error == 0) error = cuda.function_get(&cuda.vector, cuda.module, "goose_vector_ops");
         Context current = NULL;
         int pop_error = cuda.pop(&current);
         if (error == 0) error = pop_error;
@@ -809,4 +811,39 @@ uint64_t fg_cuda_take_q4_writes(void) {
     const uint64_t writes = cuda_q4_writes;
     cuda_q4_writes = 0;
     return writes;
+}
+
+int64_t fg_cuda_vector(sl_i64 config, sl_u8 x, sl_u8 y, sl_u8 out, float param0, float param1) {
+    if (config.len != 26 || config.data[24] <= 0 || config.data[24] > INT_MAX ||
+        (config.data[25] != 32 && config.data[25] != 128) ||
+        x.len <= 0 || y.len < 0 || out.len <= 0) return -1;
+    if ((uintptr_t) x.data % sizeof(float) || (uintptr_t) out.data % sizeof(float) ||
+        (y.len > 0 && (uintptr_t) y.data % sizeof(float))) return 0;
+    const int active = start_context();
+    if (active != 1) return active;
+    const sl_u8 data[] = {x, y, {(uint8_t *) config.data, config.len * (int64_t) sizeof(*config.data)}};
+    struct device_buffer * buffers[] = {&cuda.input, &cuda.weight, &cuda.attention_config};
+    DevicePtr staged[3] = {0}, output = 0;
+    const uint64_t host = (uint64_t) (uintptr_t) out.data;
+    int error = activation_output(host, out.len, &output);
+    if (error == 0) error = upload_inputs(data, buffers, staged, sizeof(data) / sizeof(*data));
+    void * args[] = {&staged[0], &staged[1], &output, &staged[2], &param0, &param1};
+    if (error == 0) {
+        error = cuda.launch(cuda.vector, (unsigned) config.data[24], 1, 1,
+            (unsigned) config.data[25], 1, 1, 0, NULL, args, NULL);
+        if (error == 0) error = activation_publish(host, out.len, output, false);
+    }
+    const int popped = finish_context();
+    if (error != 0 || popped != 0) {
+        fprintf(stderr, "Goose CUDA: vector operation failed (%d)\n", error ? error : popped);
+        return -1;
+    }
+    ++cuda_vectors;
+    return 1;
+}
+
+uint64_t fg_cuda_take_vectors(void) {
+    const uint64_t vectors = cuda_vectors;
+    cuda_vectors = 0;
+    return vectors;
 }

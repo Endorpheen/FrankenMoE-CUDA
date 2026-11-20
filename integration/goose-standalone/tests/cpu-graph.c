@@ -480,7 +480,7 @@ static void check_activation_pipeline(void) {
     struct ggml_tensor * first = ggml_mul_mat(ctx, identity, input);
     struct ggml_tensor * view = ggml_view_2d(ctx, first, width, rows - 1, first->nb[1], first->nb[1]);
     struct ggml_tensor * second = ggml_mul_mat(ctx, identity, view);
-    struct ggml_tensor * current = ggml_add_inplace(ctx, second, bias);
+    struct ggml_tensor * current = ggml_cpy(ctx, ggml_add(ctx, second, bias), second);
     struct ggml_tensor * previous = NULL;
     for (int i = 0; i < chain; ++i) {
         previous = current;
@@ -511,6 +511,62 @@ static void check_activation_pipeline(void) {
     ggml_free(ctx);
 }
 
+static void check_cuda_vectors(void) {
+    enum { width = 257, rows = 3, planes = 2 };
+    struct ggml_context * ctx = ggml_init((struct ggml_init_params){ 1024 * 1024, NULL, true });
+    assert(ctx);
+    struct ggml_tensor * input = ggml_new_tensor_3d(ctx, GGML_TYPE_F32, width + 3, rows, planes);
+    struct ggml_tensor * x = ggml_view_3d(ctx, input, width, rows, planes, input->nb[1], input->nb[2], 0);
+    struct ggml_tensor * vec = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, width);
+    struct ggml_tensor * packed = ggml_new_tensor_3d(ctx, GGML_TYPE_F32, 2 * width, rows, planes);
+    struct ggml_tensor * add = ggml_add(ctx, x, vec);
+    struct ggml_tensor * outputs[] = {
+        add, ggml_sub(ctx, x, vec), ggml_mul(ctx, x, vec), ggml_div(ctx, x, vec),
+        ggml_scale_bias(ctx, x, 1.125f, -0.4375f), ggml_clamp(ctx, x, -2.0f, 3.0f),
+        ggml_sigmoid(ctx, x), ggml_silu(ctx, x), ggml_softplus(ctx, x),
+        ggml_swiglu_split(ctx, x, add), ggml_swiglu(ctx, packed), ggml_swiglu_swapped(ctx, packed),
+        ggml_rms_norm(ctx, x, 1e-5f), ggml_l2_norm(ctx, x, 1e-5f),
+    };
+    const size_t count = sizeof(outputs) / sizeof(*outputs);
+    struct ggml_cgraph * graph = ggml_new_graph_custom(ctx, 128, false);
+    for (size_t i = 0; i < count; ++i) ggml_build_forward_expand(graph, outputs[i]);
+    void * storage = fg_standalone_graph_alloc(graph);
+    assert(storage);
+    for (int i = 0; i < ggml_nelements(input); ++i) {
+        ((float *) input->data)[i] = i < width ? 0.0f : (float) ((i * 7) % 37 - 18) / 8.0f;
+    }
+    ((float *) input->data)[width + 3] = 25.0f;
+    ((float *) input->data)[width + 4] = -25.0f;
+    for (int i = 0; i < width; ++i) ((float *) vec->data)[i] = 0.25f + (float) (i % 19) / 11.0f;
+    for (int i = 0; i < ggml_nelements(packed); ++i) {
+        ((float *) packed->data)[i] = (float) ((3 * i + i / 7) % 33 - 16) / 13.0f;
+    }
+
+    assert(setenv("GOOSE_CUDA", "0", 1) == 0);
+    assert(fg_standalone_graph_compute(graph) == GGML_STATUS_SUCCESS);
+    float * reference[count];
+    for (size_t i = 0; i < count; ++i) {
+        reference[i] = malloc(ggml_nbytes(outputs[i]));
+        assert(reference[i]);
+        memcpy(reference[i], outputs[i]->data, ggml_nbytes(outputs[i]));
+    }
+    assert(unsetenv("GOOSE_CUDA") == 0);
+    assert(fg_standalone_graph_compute(graph) == GGML_STATUS_SUCCESS);
+    double max_error = 0.0;
+    for (size_t j = 0; j < count; ++j) {
+        for (int i = 0; i < ggml_nelements(outputs[j]); ++i) {
+            const double expected = reference[j][i];
+            const double error = fabs((double) ((float *) outputs[j]->data)[i] - expected);
+            assert(error < 3e-6 * fmax(1.0, fabs(expected)));
+            max_error = fmax(max_error, error);
+        }
+        free(reference[j]);
+    }
+    printf("CUDA vector operations: %zu cases across strided rows, max error %.9g\n", count, max_error);
+    free(storage);
+    ggml_free(ctx);
+}
+
 int main(int argc, char ** argv) {
     check_scalar_and_recurrent();
     check_gdn_snapshots(33, false);
@@ -527,6 +583,7 @@ int main(int argc, char ** argv) {
     if (argc == 2) {
         if (strcmp(argv[1], "--resident-rows") == 0) check_resident_q4_rows();
         else if (strcmp(argv[1], "--activations") == 0) check_activation_pipeline();
+        else if (strcmp(argv[1], "--vectors") == 0) check_cuda_vectors();
         else check_model_step(argv[1]);
     }
     if (argc == 3 && strcmp(argv[1], "--chunked") == 0) check_chunked_generation(argv[2]);
