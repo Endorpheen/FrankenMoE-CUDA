@@ -1408,6 +1408,55 @@ static void check_dense_mma(int extent, int rows, int columns) {
     ggml_free(ctx);
 }
 
+static void check_flash_causal_mma(void) {
+    enum { width = 256, kv_heads = 2, heads = 16, queries = 17, keys = 57 };
+    struct ggml_context * ctx = ggml_init((struct ggml_init_params){ 128 * 1024, NULL, true });
+    assert(ctx);
+    struct ggml_tensor * q_data = ggml_new_tensor_3d(ctx, GGML_TYPE_F32, width, heads, queries);
+    struct ggml_tensor * k_data = ggml_new_tensor_3d(ctx, GGML_TYPE_Q4_0, width, kv_heads, keys);
+    struct ggml_tensor * v_data = ggml_dup_tensor(ctx, k_data);
+    struct ggml_tensor * q = ggml_permute(ctx, q_data, 0, 2, 1, 3);
+    struct ggml_tensor * k = ggml_permute(ctx, k_data, 0, 2, 1, 3);
+    struct ggml_tensor * v = ggml_permute(ctx, v_data, 0, 2, 1, 3);
+    struct ggml_tensor * out = ggml_flash_attn_ext(ctx, q, k, v, NULL, 1.0f / sqrtf(width), 0.0f, 0.0f);
+    out->op_params[5] = keys - queries + 1;
+    struct ggml_cgraph * graph = ggml_new_graph_custom(ctx, 32, false);
+    ggml_build_forward_expand(graph, out);
+    void * storage = fg_standalone_graph_alloc(graph);
+    float * expected = malloc(ggml_nbytes(out));
+    assert(storage && expected);
+    for (int i = 0; i < width * heads * queries; ++i) {
+        ((float *) q_data->data)[i] = (float) ((i * 17 + i / 13) % 41 - 20) / 64.0f;
+    }
+    const struct ggml_type_traits * q4 = ggml_get_type_traits(GGML_TYPE_Q4_0);
+    struct ggml_tensor * kv[] = {k_data, v_data};
+    for (int component = 0; component < 2; ++component) {
+        for (int row = 0; row < keys * kv_heads; ++row) {
+            float x[width];
+            for (int i = 0; i < width; ++i) {
+                x[i] = (float) ((row * 11 + i * (13 + 2 * component) + i / 7 + component) % 37 - 18) / 64.0f;
+            }
+            q4->from_float_ref(x, (uint8_t *) kv[component]->data + row * kv[component]->nb[1], width);
+        }
+    }
+    assert(setenv("GOOSE_CUDA", "0", 1) == 0);
+    assert(fg_standalone_graph_compute(graph) == GGML_STATUS_SUCCESS);
+    memcpy(expected, out->data, ggml_nbytes(out));
+    assert(unsetenv("GOOSE_CUDA") == 0);
+    assert(fg_standalone_graph_compute(graph) == GGML_STATUS_SUCCESS);
+    float maximum = 0.0f;
+    for (int i = 0; i < width * heads * queries; ++i) {
+        const float error = fabsf(((float *) out->data)[i] - expected[i]);
+        assert(error <= 3e-4f);
+        maximum = fmaxf(maximum, error);
+    }
+    printf("Flash causal MMA: %d queries, %d keys, %d:%d heads, max CPU error %.9g\n",
+        queries, keys, heads, kv_heads, maximum);
+    free(expected);
+    free(storage);
+    ggml_free(ctx);
+}
+
 static void check_gdn_mma(int tokens, int sequences) {
     enum { width = 128, key_heads = 16, heads = 32 };
     struct ggml_context * ctx = ggml_init((struct ggml_init_params){ 64 * 1024, NULL, true });
@@ -1479,6 +1528,10 @@ static void check_ssm_silu(int tokens) {
 }
 
 int main(int argc, char ** argv) {
+    if (argc == 2 && strcmp(argv[1], "--flash-mma") == 0) {
+        check_flash_causal_mma();
+        return 0;
+    }
     if (argc == 2 && strcmp(argv[1], "--gdn-mma") == 0) {
         check_gdn_mma(73, 2);
         return 0;

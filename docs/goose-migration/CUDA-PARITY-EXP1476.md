@@ -49,6 +49,7 @@ the dependency that would justify rerunning it.
 | EXP-1527, dense TF32 MMA | `fc399bf0`, `GOOSE_DENSE_MMA=1`. [Dense diagnostic](#dense-tf32-mma-diagnostic) and [full package](#prefill-package-full-32k512-diagnostic). Matrix time 565.205 → 52.069 ms, short prefill 110.293 → 115.386 tokens/s. | The short first ID changes from 9495 to 37972. EXP-1476 returns 332. The full package also fails reference text, ID and probability parity. Its speed does not isolate Dense MMA. | Diagnose routed MoE, dense accumulations and the first divergent Apex state. After the numerical gate passes, compare the selected dense path alone and with restored MoE routing. Measure router and output timing and require reference response parity. |
 | EXP-1531, deferred CUDA waits | [Candidate patch](deferred/EXP-1531-graph-waits.patch) against `7916697c`. [Original A–B–B–A](#deferred-cuda-wait-diagnostic): explicit waits 1,873 → 562, median prefill 22.875 → 22.882 s. | Originally, synchronous D2H absorbed the removed waiting. Copy counts and bytes stayed unchanged. | Rechecked with reusable arena gaps and selective eviction on `e37e8a2c`. [Combined A–B–B–A](#deferred-waits-with-selective-eviction) passed the short gate and enabled waits at the planned graph boundary. Full-request qualification is open. Reassess when pinned transfer or stream/event changes alter host readback. |
 | EXP-1536, GDN MMA | Standalone `GOOSE_GDN_MMA=1`. [Kernel and model measurements](#gdn-mma-checkpoint). Thirty kernels took 2,503.240 → 171.978 ms and short prefill reached 210.866 tokens/s. | The short first ID changed from 9495 to 280. Both differ from EXP-1476 ID 332. On the same actual layer inputs the largest relative L2 errors were 1.58e-5 for output and 3.71e-5 for state. | Compare the earliest differing routed-expert IDs and logits against EXP-1476. Recheck with restored attention and routing on a numerically verified checkpoint. Keep the experimental flag off by default until the response gate passes. |
+| EXP-1537, Flash Attention MMA | Standalone `GOOSE_FLASH_MMA=1`. [Kernel and model measurements](#causal-flash-attention-mma-checkpoint). Ten attention layers take 34.416 ms including Q4 staging, versus 2,738.669 ms for the scalar path. | The short first ID changes from 9495 to 271. On shared Apex inputs, relative L2 differences against the scalar path reach 6.44e-3. | Compare the same Q/K/V inputs to the EXP-1476 FP16 kernel, then restore stream-K scheduling and fix-up. Check isolated and combined GDN/Flash/Dense variants on the same short request. Keep the flag off by default pending response parity. |
 
 After a material dependency change, use short sequential A/B runs on
 identical inputs and settings. Use the best current verified checkpoint
@@ -61,7 +62,7 @@ the entry. Apply the full-request gate on the package schedule.
 
 ## Mechanisms
 
-**32 mechanisms: PARITY 0, PARTIAL 23, MISSING 8, INCORRECT 1.**
+**32 mechanisms: PARITY 0, PARTIAL 24, MISSING 7, INCORRECT 1.**
 
 Group three to five related improvements. Give each change its own
 short correctness, CUDA-error and numerical checks, then commit it
@@ -98,7 +99,7 @@ dependencies. Resume decode-specific work after prefill recovery.
 | 9 | Device expert grouping. `ggml_cuda_mul_mat_id` / `mmq.cu` → `mm_ids_helper` → per-expert group ranges and Q8 scatter. | `mm_ids_helper` executes. Goose builds per-expert jobs and keeps a GPU SLRU, with host route synchronization. | PARTIAL. Feed active routes to device grouping and pack contiguous batches without losing expert ownership. Verify sparse, repeated and empty groups against the reference. |
 | 10 | Fused MoE selection. `ggml-cuda.cu` `ggml_cuda_topk_moe_fusion` → `topk_moe_cuda`. | Reference executes selection fusion. Goose separately runs softmax, stable sort, gather, row sum and scaling. | PARTIAL. Combine equivalent operations while retaining tie order and normalized expert weights. Compare selected indices and scores before measuring speed. |
 | 11 | Fused MoE combination. `ggml_cuda_match_moe_weighted_reduction` → `moe_weighted_reduction_f32`. | The reference fuses the weighted combination. Independent Goose uses the existing fused device body with bounded input windows and eliminates the separate weighted tensor. | PARTIAL. The 4096-token numerical fixture and real Apex trace pass the scoped gate. Full logits and peak memory acceptance remain open. |
-| 12 | FP16 MMA Flash Attention. `fattn.cu` `ggml_cuda_flash_attn_ext` → shape selection → `fattn-mma-f16.cuh` `flash_attn_ext_f16`. | Reference prefill calls the MMA kernel even with Q4 KV storage. Goose uses Q4 scalar tiles plus a separate merge. | MISSING. Reuse Q4 cache and conversion leaves with the reference tiled MMA schedule and causal/mask behavior. Verify GQA, real head width 256 and long-context logits. |
+| 12 | FP16 MMA Flash Attention. `fattn.cu` `ggml_cuda_flash_attn_ext` → shape selection → `fattn-mma-f16.cuh` `flash_attn_ext_f16`. | `GOOSE_FLASH_MMA=1` stages real Q4 KV as F16 and uses the existing `8×8` Goose process tile at all ten Apex attention layers. Each CTA finishes its complete causal query tile. | PARTIAL. Match EXP-1476 numerics, restore stream-K scheduling/fix-up and verify supported masks, long-context logits and full memory. |
 | 13 | Small-query Flash Attention vector dispatch. `fattn.cu` → `flash_attn_ext_vec`. | Reference trace contains the vector path. Goose slices its scalar Q4 tiles for both prefill and decode. | MISSING. Restore the small-query specialization and validate softmax merging and decode latency at 32K. |
 | 14 | Attention staging and bounds. `fattn-common.cuh` and `fattn-mma-f16.cuh` stage Q4_0 KV as FP16, use FWHT where selected, and derive KV bounds from the mask. | `dequantize_block_q4_0`, `fwht_cuda` and `flash_attn_mask_to_KV_max` execute. Goose now applies the reference Q/K/V and inverse-output rotations in the live Q4 KV graph. It tracks causal bounds in its KV transaction and reads Q4 directly. | PARTIAL. FWHT executes at widths 256 and 64 on Apex. Float16 staging/rounding, masked tails and generation parity still need validation. |
 | 15 | Flash partition reconciliation. `fattn-mma-f16.cuh` → stream-K general/uniform fix-up, plus vector combine-results. | All three reference families are present. Goose merge implements its current scalar partition geometry. | MISSING. Port compatible reconciliation with the MMA and vector schedules. Compare numerical reductions across tail partitions and multihead layouts. |
@@ -531,6 +532,33 @@ Short profile: `/home/end0/AI/LlamaServer/franken-goose-gdn-mma.ljN6DW/mmq-profi
 Layer differential: `/home/end0/AI/LlamaServer/franken-goose-gdn-audit.zqNjDD/mmq-profile.3UPTwP/nsys.log`.
 Executable SHA-256: `b0231d453d115fa7101cdaa6288566f7135c6c2744c5b73350e1eaf353ed3a06`.
 Response SHA-256: `f6b66a6000774215c3764dc6350df53a5ce80eb997d570525f5d27245f35456f`.
+
+## Causal Flash Attention MMA checkpoint
+
+EXP-2026-11-20-1537 uses the existing Goose `8×8` FP16 process tile
+and async KV loaders. Q4 rows are staged through the existing decoder.
+The causal mask is generated in the shared mask tile without a dense
+host or device mask. The preset uses one CTA per complete query tile,
+head width 256 and eight query heads per KV head. Stream-K and other
+shapes remain separate. The 17-query, 57-key, 16:2 fixture exercised
+both tails and measured a maximum absolute CPU error of 2.72e-5.
+
+On Apex 4096/1, ten MMA calls took 34.117 ms and twenty Q4 stage
+calls took 0.300 ms. The corresponding scalar tiles and merges took
+2,738.669 ms. Prefill took 19.053 s / 214.977 tokens/s, compared
+with 21.763 s / 188.210 tokens/s. The output ID changes from 9495
+to 271. The independent attention calculation still needs reference
+parity. In an isolated comparison on the same actual Q/K/V tensors
+for each of ten Apex layers, relative L2 differences from scalar
+attention ranged from 3.44e-3 to 6.44e-3, with no nonfinite values
+and maximum absolute difference 0.168603. This is a differential
+against independent scalar arithmetic. The path remains opt-in and
+does not count toward the accepted package.
+
+Short profile: `/home/end0/AI/LlamaServer/franken-goose-flash-mma.CpioRH/mmq-profile.guwzVl`.
+Layer differential: `/home/end0/AI/LlamaServer/franken-goose-flash-audit.qfjatO/mmq-profile.d5MN40/nsys.log`.
+Executable SHA-256: `754e480265e448918198295146422cb2125bddc7ef4284fd9707e2db909ce062`.
+Response SHA-256: `709b803aa8f36448cbfb49eb3b5531abb636621b10af21515facb8224a5fd8c4`.
 
 ## Kernel coverage
 

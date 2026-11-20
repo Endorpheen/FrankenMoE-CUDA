@@ -13,7 +13,8 @@ sed '/^fn main()/,$d; s/^fn q6_K(/export fn q6_K(/' \
     "$ROOT/goose/cuda/goose-cuda-dequant-q6k/device.goose" > "$OUT/q6k.goose"
 cp "$ROOT/goose/cuda/standalone-matmul.goose" "$OUT/matmul.goose"
 sed -n '/^struct F2 {/,/^}/p; /^fn dequant_q4_0(/,/^}/p' \
-    "$ROOT/goose/cuda/goose-cuda-flash-attention/staging-device.goose" > "$OUT/q4-attention.goose"
+    "$ROOT/goose/cuda/goose-cuda-flash-attention/staging-device.goose" |
+    sed 's/^fn dequant_q4_0(/export fn dequant_q4_0(/' > "$OUT/q4-attention.goose"
 cat "$ROOT/goose/cuda/standalone-q4-attention.goose" >> "$OUT/q4-attention.goose"
 sed '/^fn main()/,$d; s/^fn gdn(/export fn gdn(/' \
     "$ROOT/goose/cuda/goose-cuda-gdn/scalar-device.goose" > "$OUT/gdn.goose"
@@ -48,11 +49,16 @@ sed '/^fn main()/,$d; s/^fn fg180q_mmq(/export fn fg180q_mmq(/' \
     "$ROOT/goose/cuda/goose-cuda-mmq-q8-1/device.goose" > "$OUT/mmq-quant.goose"
 cp "$ROOT/goose/cuda/standalone-mmq.goose" "$OUT/mmq.goose"
 cp "$ROOT/goose/cuda/standalone-dense-mma.goose" "$OUT/dense-mma.goose"
+sed '/^fn main()/,$d' "$ROOT/goose/cuda/goose-cuda-flash-attention/value-prefill-device.goose" > "$OUT/flash-mma.goose"
+cat "$ROOT/goose/cuda/standalone-flash-mma.goose" >> "$OUT/flash-mma.goose"
+sed '/^fn load_mask(/,$d; s/^fn load_kv(/export fn fg_flash_load_kv(/' \
+    "$ROOT/goose/cuda/goose-cuda-flash-attention/loaders-device.goose" > "$OUT/flash-load.goose"
+cp "$ROOT/goose/cuda/standalone-flash-stage.goose" "$OUT/flash-stage.goose"
 sed -n '/^fn scale_min(/,/^}/p' "$ROOT/goose/cuda/goose-cuda-dequant-q4k/device.goose" >> "$OUT/mmq.goose"
 sed -n '/^fn q4_mmq_nibbles(/,/^}/p' "$ROOT/goose/cuda/goose-mmq-load-q4k/device.goose" >> "$OUT/mmq.goose"
 sed -n '/^fn vsub4(/,/^}/p; /^fn q6_mmq_bytes(/,/^}/p' \
     "$ROOT/goose/cuda/goose-mmq-load-q6k/device.goose" >> "$OUT/mmq.goose"
-for module in q4k q6k matmul q4-attention gdn gdn-mma q4-set-rows vector rope ssm-conv routing transform fwht moe-weighted mmq-quant mmq dense-mma; do
+for module in q4k q6k matmul q4-attention gdn gdn-mma q4-set-rows vector rope ssm-conv routing transform fwht moe-weighted mmq-quant mmq dense-mma flash-mma flash-load flash-stage; do
     "$GOOSE" --standalone -o "$OUT/$module.c" --header "$OUT/$module.h" "$OUT/$module.goose"
     python3 - "$OUT" "$module" <<'PY'
 from pathlib import Path
@@ -68,11 +74,18 @@ if module in ("q4-attention", "gdn", "rope", "ssm-conv", "fwht"):
     types = "\n".join(line for line in types.splitlines()
                       if not line.endswith(("gs_rhdr;", "gs_rref;", "gs_pref;", "sl_u8;")))
     fragment = types + "\n" + fragment
-if module == "gdn-mma":
+if module in ("gdn-mma", "flash-mma"):
     types = source.split("/* ---- types ---- */", 1)[1].split("/* ---- data ---- */", 1)[0]
     types = "\n".join(line for line in types.splitlines()
                       if not line.endswith(("gs_rhdr;", "gs_rref;", "gs_pref;", "sl_u8;", "a8_f32;")))
-    (out / "gdn-mma-types.h").write_text(types)
+    if module == "flash-mma":
+        import re
+
+        def prefix(text):
+            return re.sub(r"\b(?:F[24]_g|U[24]_g|a\d+_(?:f32|u32))\b", lambda m: "Flash_" + m[0], text)
+
+        types, fragment = prefix(types), prefix(fragment)
+    (out / f"{module}-types.h").write_text(types)
 (out / f"{module}-device.h").write_text(fragment)
 PY
 done
