@@ -87,8 +87,11 @@ fn f32_row_dot(row: const f32[:], other: const f32[:], stride: i64) -> f32 {
 import.codec.decode;
 
 extern "fg_cuda_begin" fn cuda_begin(input: u64, input_bytes: i64, output_bytes: i64) -> i64;
+extern "fg_cuda_prepare_experts" fn cuda_prepare_experts(tensor: u64, bytes: i64,
+    active: const i64[:], offsets: i64[:]) -> i64;
 extern "fg_cuda_plane" fn cuda_plane(weights: u64, weight_bytes: i64, stride: i64,
-                                    blocks: i64, kind: i64, columns: i64, jobs: const i64[:]) -> i64;
+                                    blocks: i64, kind: i64, columns: i64, jobs: const i64[:],
+                                    expert_offset: i64) -> i64;
 extern "fg_cuda_finish" fn cuda_finish(output: u64, output_bytes: i64) -> i64;
 
 fn cuda_matrix_layout(p: const Node &) -> bool {
@@ -191,9 +194,13 @@ fn next_quant_route(indexed: bool, indices: const i64[:], next: i64, route: i64,
 fn cuda_quant_planes(p: const Node &, weights: u64, weight_bytes: i64,
                      planes: i64, row_bytes: i64, row_count: i64,
                      spread2: i64, spread3: i64, heads: i64, next: i64,
-                     routes: const i64[:], jobs: i64[:]) -> bool {
+                     routes: const i64[:], jobs: i64[:], offsets: i64[:]) -> bool {
     let indexed = p.op == OP_MUL_MAT_ID;
     let span = add_size(mul_size(p.d.ne[0] - 1, p.x.nb[1]), row_bytes);
+    let cached = if indexed && p.x.nb[2] == span {
+        cuda_prepare_experts(weights, span, routes[heads .. heads + planes], offsets)
+    } else { 0 };
+    if cached < 0 { return false; }
     for plane in planes {
         var route = if indexed { routes[heads + plane] } else { 0 };
         if route < 0 { continue; }
@@ -209,8 +216,10 @@ fn cuda_quant_planes(p: const Node &, weights: u64, weight_bytes: i64,
             words += 2;
             route = next_quant_route(indexed, routes, next, route, row_count);
         }
-        if cuda_plane(weights + (at as u64), span, p.x.nb[1], p.x.ne[0] / 256,
-                      p.x.kind, p.d.ne[0], jobs[0 .. words]) != 0 {
+        let expert_offset = if cached == 1 { offsets[plane] } else { -1 };
+        if (cached == 1 && expert_offset < 0) ||
+           cuda_plane(weights + (at as u64), span, p.x.nb[1], p.x.ne[0] / 256,
+                      p.x.kind, p.d.ne[0], jobs[0 .. words], expert_offset) != 0 {
             return false;
         }
     }
@@ -284,13 +293,15 @@ fn quantized_matrix(p: const Node &, x: const u8[:], y: const u8[:], ids: const 
     let row_count = mul_size(mul_size(p.y.ne[1], spread2), spread3);
     if addresses[0] != 0 && addresses[1] != 0 && addresses[2] != 0 && cuda_matrix_layout(p) {
         let job_words = mul_size(2, rows(p.d));
-        if indices.len - route_words < job_words || p.x.nb[2] < 0 || p.x.nb[3] < 0 { return false; }
+        let offset_words = if indexed { planes } else { 0 };
+        let offset_start = add_size(route_words, job_words);
+        if indices.len < add_size(offset_start, offset_words) || p.x.nb[2] < 0 || p.x.nb[3] < 0 { return false; }
         let status = cuda_begin(addresses[1] as! u64, y.len, dst.len);
         if status < 0 { return false; }
         if status > 0 {
             let ok = cuda_quant_planes(p, addresses[0] as! u64, x.len, planes, row_bytes, row_count,
                 spread2, spread3, heads, next, indices[0 .. route_words],
-                indices[route_words .. route_words + job_words]);
+                indices[route_words .. offset_start], indices[offset_start .. offset_start + offset_words]);
             let output = if ok { addresses[2] as! u64 } else { 0 };
             return cuda_finish(output, dst.len) == 0 && ok;
         }

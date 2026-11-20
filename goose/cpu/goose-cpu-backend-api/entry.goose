@@ -41,6 +41,7 @@ fn entry(
             }
             if addresses[0] != 0 && cuda_matrix_layout(p) {
                 ni = add_size(ni, mul_size(2, rows(p.d)));
+                if p.op == OP_MUL_MAT_ID { ni = add_size(ni, p.x.ne[2]); }
             }
         }
         let byte = mul_size(nf, 4);

@@ -277,6 +277,14 @@ export fn qr_model_open(data: const u8[:], mapping: u64, file_bytes: i64, parsed
 extern "fg_cuda_free_bytes" fn mr_cuda_free() -> i64;
 extern "fg_cuda_load_dense" fn mr_cuda_load_dense(ranges: const i64[:], bytes: i64) -> i64;
 
+fn mr_cuda_reserve(owner: const i64[:], head: i64) -> i64 {
+    let kind = prop(head, 0);
+    let weight = if kind == 12 || kind == 14 {
+        (qa_get(head, 1, 1) as i64) * ne(head, 1)
+    } else { 0 };
+    return owner[12] + weight;
+}
+
 fn mr_cuda_dense_range(t: i64, owner: const i64[:], budget: i64, plan: i64[:],
                        position: i64, used: i64) -> i64 {
     if t == 0 || ne(t, 2) != 1 || ne(t, 3) != 1 { return 0; }
@@ -304,13 +312,9 @@ export fn qr_cuda_dense(owner: const i64[:], layers: const i64[:], head: i64) ->
     }
     let free = mr_cuda_free();
     if free <= 0 { return free; }
-    let output_plane = prop(head, 0);
-    let largest = if output_plane == 12 || output_plane == 14 {
-        (qa_get(head, 1, 1) as i64) * ne(head, 1)
-    } else { 0 };
     // Leave room for model state and the largest streamed weight matrix even
     // if the GPU can only keep a subset of the dense tensors resident.
-    let reserve = owner[12] + largest;
+    let reserve = mr_cuda_reserve(owner, head);
     if free <= reserve { return 0; }
     let budget = free - reserve;
     var plan: i64[>..] = [];

@@ -28,11 +28,12 @@ FLAGS=(-O1 -std=c11 -D_GNU_SOURCE -ffunction-sections -fdata-sections -I "$OUT"
 "$CC" "${FLAGS[@]}" -c "$ROOT/integration/goose-standalone/graph-bindings.c" -o "$OUT/graph-bindings.o"
 "$CC" "${FLAGS[@]}" -c "$ROOT/integration/goose-standalone/goose-host-llm.c" -o "$OUT/model-host.o"
 "$CC" "${FLAGS[@]}" -c "$ROOT/integration/goose-standalone/libc-forwards.c" -o "$OUT/libc-forwards.o"
+"$CC" "${FLAGS[@]}" -DFG_SLRU_SHARED_UNIT -c "$ROOT/integration/goose-standalone/slru-runtime-shim.c" -o "$OUT/slru-shim.o"
 "$CC" "${FLAGS[@]}" -c "$ROOT/integration/m1/host/goose_host.c" -o "$OUT/goose-host.o"
 
 "$AR" rcs "$OUT/libfranken-inference.a" "$UNIT/main.o" "$OUT/cpu.o" \
     "$OUT/graph-execute.o" "$OUT/cuda-driver.o" "$OUT/graph-bindings.o" "$OUT/model-host.o" \
-    "$OUT/libc-forwards.o" "$OUT/goose-host.o" "$OUT/ggml.o" "$OUT/ggml-quants.o" "$OUT/ggml-system.o"
+    "$OUT/libc-forwards.o" "$OUT/slru-shim.o" "$OUT/goose-host.o" "$OUT/ggml.o" "$OUT/ggml-quants.o" "$OUT/ggml-system.o"
 "$CC" "${FLAGS[@]}" -I "$ROOT/integration/goose-standalone" -Wl,--gc-sections \
     "$ROOT/integration/goose-standalone/cli/infer-main.c" "$OUT/libfranken-inference.a" \
     -lm -ldl -pthread -o "$OUT/frankenmoe-infer"

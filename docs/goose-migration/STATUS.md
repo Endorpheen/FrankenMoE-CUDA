@@ -141,6 +141,26 @@ The expert-bank cache, GPU attention and recurrent compute, and the
 full-system validation remain open. This checkpoint is for composition and
 linkage. It has no new model run or performance claim.
 
+EXP-2026-11-20-1502 connects the existing Goose SLRU to the same CUDA
+matrix path. Layers are grouped by expert count and the byte sizes of the
+up, gate and down planes. One device slot holds all three planes. The
+indexed matrix dispatcher uses its selected expert IDs to prepare the
+slots, then passes their device offsets to CUDA. A fill reads the three
+immutable planes from the model's RAM mapping, and hits reuse those
+already uploaded bytes. If a fill fails, the adapter invalidates the
+cache metadata before a later request can reuse a slot.
+
+The cache budget is the smaller of 4,992 MiB and available device memory
+after dense placement and the existing scratch reserve. At the full
+budget, static Apex geometry yields 1,283 slots for the Q6_K-down group
+and 1,479 slots for the Q4_K-down group. These are planned capacities.
+`GET /props` reports actual allocated cache bytes. The clean build linked
+successfully. The host fixture `integration/goose-standalone/tests/expert-cache.c`
+links the same archive with `-Wl,--wrap=fg_cuda_expert_upload`. It verified
+three-plane fills, hits without copies, cross-layer eviction, independent
+groups and recovery after an interrupted fill. Model execution, resident
+hit rates and the performance comparison remain open.
+
 ## Historical requirements audit
 
 `docs/goose-migration/tasks.json`: **DONE 1**, **PARTIAL 144**, **TODO 7** of 152.

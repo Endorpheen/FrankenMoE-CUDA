@@ -33,8 +33,10 @@ void slru_fail(int64_t c) {
     abort();
 }
 
+#ifndef FG_SLRU_SHARED_UNIT
 void goose_init(int argc, char **argv);
 
 __attribute__((constructor)) static void slru_goose_init(void) {
     goose_init(0, (char **) 0);
 }
+#endif

@@ -61,6 +61,8 @@ MODULES=(
     goose/model/gguf-tensors.goose
     goose/model/gguf-split.goose
     goose/model/expert-lru.goose
+    goose/model/slru-policy-goose.goose
+    goose/model/expert-device-cache.goose
     goose/model/dense-place.goose
     goose/model/stream-plan.goose
     goose/model/hook-rules.goose
