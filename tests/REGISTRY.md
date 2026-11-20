@@ -20,6 +20,7 @@ run only with explicit permission).
 | integration | link-manifest | `tests/integration/link-manifest` | P10-06 audit, 2026-11-19 | P10-06 | fast | verified 2026-11-19 |
 | integration | clean-checkout | `tests/integration/clean-checkout` | P10-06 state, 2026-11-19 | P10-06 | fast | verified 2026-11-19 |
 | integration | path-b-abi | `tests/integration/path-b-abi` | Path B audit, 2026-11-20 | P6-10, P7-12, P11-01 | integration | compares public sampler logits and Goose GGUF against a native fixture |
+| kv | slot-state | `tests/kv/slot-state` | Path B slot compatibility, 2026-11-20 | P5-01, P5-08 | model | compares warm, restored and imported slot continuations, including prefix reuse, tokens and probabilities |
 | json | door | `tests/json/door` | door work of P10-07 | P10-07 | fast | migrated 2026-11-19 |
 | server | router-status | `tests/server/router-status` | door work of P8-06 | P8-06 | model | migrated 2026-11-19 |
 | server | api-key-policy | `tests/server/api-key-policy` | P8-09 state, 2026-11-19 | P8-09 | fast | added 2026-11-19, skips without the door |

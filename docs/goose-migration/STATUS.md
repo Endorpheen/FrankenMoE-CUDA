@@ -45,6 +45,8 @@ See [the production C++ audit](PRODUCTION-CPP-AUDIT-20261120.md) for all 152 dis
 
 ## Current baseline and candidate
 
+- The Apex slot fixture passed through `run-jsondefault` and the isolated Path B libllama `a6a6b6280b95`. Both directions of serialized-state exchange passed. The two files were byte-identical, each 134,102,272 bytes with SHA-256 `dc07e51d15e7155368b04bf0a3abafd776ab87a13c8def932f7676a19f01950a`. Six warm and replayed continuations had identical 24 output tokens, content and saved probabilities, with 410 reused and 10 evaluated input tokens. This qualifies the tested slot file and Apex profile. The KV metadata codec still executes in C++. Raw runs are `results/apex-runs/pathb-slot-state-{control,candidate,reverse}-20261120-*`.
+
 - `builds/flint-acc/run-jsondefault` is the current control. The historical P10-07 JSON acceptance is retained as evidence. The vendor execution scope remains open. The 21-text strict JSON gate and same-response chat check are recorded in [P10-07-CLOSED-20261120.md](P10-07-CLOSED-20261120.md).
 - The inspected path B diagnostic set reused objects from the failed build for unchanged inputs. It passed `verify-candidate`, including relocation checks. It carries all 1257 distinct exports in the composed source. The earlier 1253/1256 count used names before composition, which missed three renamed exports and counted two source exports with the same original name as one.
 - The reconstructed DRY path had been falling back when its C++ caller described the flat breaker array as a slice of triples. With corrected slice lengths, the public API fixture produced identical output in 200 cases and observed 200 Goose calls with the switch on, zero with it off.

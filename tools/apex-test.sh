@@ -21,6 +21,8 @@
 # Readiness knobs (do not change the Apex profile):
 #   APEX_READY_MAX=900    hard cap, seconds
 #   APEX_READY_STALL=180  no-progress window, seconds
+# Slot persistence checks use APEX_SLOT_STATE_DIR and APEX_SLOT_SAVE and/or
+# APEX_SLOT_RESTORE. The directory holds files exchanged between separate runs.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -98,10 +100,20 @@ SRV=${SERVER_DIR}/llama-server
 REQUEST=${APEX_REQUEST:-/tmp/req512.json}
 REQUEST_COUNT=${APEX_REQUEST_COUNT:-3}
 ENDPOINT=${APEX_ENDPOINT:-completion}
+SLOT_DIR=${APEX_SLOT_STATE_DIR:-}
+SLOT_SAVE=${APEX_SLOT_SAVE:-}
+SLOT_RESTORE=${APEX_SLOT_RESTORE:-}
 [[ "$ENDPOINT" = completion || "$ENDPOINT" = v1/chat/completions ]] || exit 2
 [[ "$REQUEST_COUNT" =~ ^[1-9][0-9]*$ ]] || exit 2
 [[ "$PORT" = 9101 ]] || { echo "Apex requires port 9101"; exit 2; }
 [[ -x "$SRV" && -f "$REQUEST" ]] || { echo "missing server or request"; exit 2; }
+if [ -n "$SLOT_DIR$SLOT_SAVE$SLOT_RESTORE" ]; then
+    [[ -d "$SLOT_DIR" && -n "$SLOT_SAVE$SLOT_RESTORE" && "$ENDPOINT" == completion ]] || {
+        echo 'slot checks require a state directory, save or restore filename, and /completion'
+        exit 2
+    }
+    SLOT_DIR=$(cd "$SLOT_DIR" && pwd -P)
+fi
 # Pre-flight: a benchmark that runs on a build missing an accepted component measures the wrong
 # runtime. This is the check that would have caught the host-registration loss before a single request.
 if [ -z "${APEX_SKIP_COMPONENT_CHECK:-}" ]; then
@@ -122,6 +134,9 @@ ARGS=(-m "$MODEL" --alias Apex-35B-V1.0 -c "${APEX_CTX:-262144}" -ngl all -fit o
       --poll 0 -np 1 --cache-ram 0 --ctx-checkpoints 32 --load-mode mmap
       --spec-type "${APEX_SPEC_TYPE:-none}" --jinja --temp 1 --top-p 0.95 --top-k 20 --min-p 0
       --host 127.0.0.1 --port "$PORT" --moe-cache-mib "$CACHE")
+if [ -n "$SLOT_DIR" ]; then
+    ARGS+=(--slot-save-path "$SLOT_DIR")
+fi
 printf '%s\n' "$SRV" "${ARGS[@]}" > "${RUNDIR}/argv.txt"
 sha256sum "$REQUEST" "$SERVER_DIR"/*.so* "$SRV" > "${RUNDIR}/SHA256SUMS"
 ldd "$SRV" > "${RUNDIR}/dependencies.txt"
@@ -207,24 +222,33 @@ cat "/proc/${SRV_PID}/status" > "${RUNDIR}/status-ready.txt"
 cat /proc/vmstat > "${RUNDIR}/vmstat-before.txt"
 cat /proc/meminfo > "${RUNDIR}/meminfo-ready.txt"
 nvidia-smi --query-gpu=memory.used,memory.total --format=csv,noheader > "${RUNDIR}/vram-ready.txt"
-for ((i=1; i<=REQUEST_COUNT; i++)); do
-    curl -fsS -m 1800 -X POST "http://127.0.0.1:${PORT}/${ENDPOINT}" -H 'Content-Type: application/json' \
-        --data-binary @"${REQUEST}" -o "${RUNDIR}/r${i}.json" \
-        -w '%{time_total}\n' > "${RUNDIR}/client-${i}-seconds.txt"
-    if [ -n "${APEX_EXPECT_REFERENCE:-}" ]; then
-        python3 - "${RUNDIR}/r${i}.json" "${APEX_EXPECT_REFERENCE}" <<'PY'
+if [ -n "$SLOT_DIR" ]; then
+    python3 "$ROOT/tests/kv/slot-state/probe.py" "$PORT" "$RUNDIR" "$SLOT_DIR" "$SLOT_SAVE" "$SLOT_RESTORE" \
+        | tee "$RUNDIR/summary.txt"
+else
+    for ((i=1; i<=REQUEST_COUNT; i++)); do
+        curl -fsS -m 1800 -X POST "http://127.0.0.1:${PORT}/${ENDPOINT}" -H 'Content-Type: application/json' \
+            --data-binary @"${REQUEST}" -o "${RUNDIR}/r${i}.json" \
+            -w '%{time_total}\n' > "${RUNDIR}/client-${i}-seconds.txt"
+        if [ -n "${APEX_EXPECT_REFERENCE:-}" ]; then
+            python3 - "${RUNDIR}/r${i}.json" "${APEX_EXPECT_REFERENCE}" <<'PY'
 import json, sys
 actual, expected = (json.load(open(p)) for p in sys.argv[1:])
 if actual.get("content") != expected["content"] or actual.get("tokens") != expected["tokens"]:
     raise SystemExit("control response mismatch: stopping the lifecycle")
 print("control content/token gate passed")
 PY
-    fi
-done
+        fi
+    done
+fi
 cat "/proc/${SRV_PID}/status" > "${RUNDIR}/status-after.txt"
 cat /proc/vmstat > "${RUNDIR}/vmstat-after.txt"
 cat /proc/meminfo > "${RUNDIR}/meminfo-after.txt"
 nvidia-smi --query-gpu=memory.used,memory.total --format=csv,noheader > "${RUNDIR}/vram-after.txt"
+
+if [ -n "$SLOT_DIR" ]; then
+    exit 0
+fi
 
 python3 - "${RUNDIR}" <<'PY'
 import json, hashlib, statistics, sys, pathlib
