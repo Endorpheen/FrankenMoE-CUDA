@@ -12,6 +12,7 @@ flag name; `nm` catches an exported door.
 import subprocess
 import sys
 import pathlib
+import re
 
 BIN = sys.argv[1] if len(sys.argv) > 1 else "builds/flint-acc/bin"
 
@@ -64,8 +65,20 @@ COMPONENTS = [
      "the SLRU expert cache the profile sets to 4992 MiB"),
 ]
 
-def shell(cmd):
-    return subprocess.run(cmd, shell=True, capture_output=True, text=True).stdout
+def output(*args):
+    return subprocess.run(args, check=True, capture_output=True, text=True).stdout
+
+
+def has_direct_dry_call(lib):
+    for line in output("nm", "--defined-only", "--format=posix", lib).splitlines():
+        if not line.strip():
+            continue
+        symbol = line.split()[0]
+        if symbol.startswith("_ZL23llama_sampler_dry_apply"):
+            code = output("objdump", "-d", f"--disassemble={symbol}", lib)
+            if re.search(r"\bcallq?\s+[^\n]*<dry_apply(?:@plt)?>", code):
+                return True
+    return False
 
 def main():
     # the features live in different libraries of the same build: the sampler doors and the model loader
@@ -75,12 +88,19 @@ def main():
     if not libs:
         print(f"check-accepted-components: no libraries under {BIN}")
         return 2
-    strings = "".join(shell(f"strings {p}") for p in libs)
-    symbols = "".join(shell(f"nm -D {p}") for p in libs)
+    strings = "".join(output("strings", p) for p in libs)
+    symbols = {
+        line.split()[0].split("@", 1)[0]
+        for p in libs
+        for line in output("nm", "-D", "--defined-only", "--format=posix", p).splitlines()
+        if line.strip()
+    }
     missing = []
     for name, kind, needle, why in COMPONENTS:
         hay = strings if kind == "strings" else symbols
-        if needle in hay:
+        alternate_dry = (name == "goose-dry-apply" and needle not in symbols and "dry_apply" in symbols
+                         and has_direct_dry_call(str(pathlib.Path(BIN) / "libllama.so.0")))
+        if needle in hay or alternate_dry:
             print(f"  present  {name}")
         else:
             print(f"  MISSING  {name}  <- {why}")

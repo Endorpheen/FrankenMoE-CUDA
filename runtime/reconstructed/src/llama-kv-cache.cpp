@@ -968,20 +968,15 @@ llama_kv_cache::slot_info_vec_t llama_kv_cache::prepare(const std::vector<llama_
                     saved.resize(m);
                     std::vector<int64_t> dpos(m), dseq((size_t)m*W);
                     std::vector<int64_t> sp(m), ss((size_t)m*W), sh(m);
-                    std::vector<int64_t> allpos(cells.size()), allsh(cells.size());
-                    cells.goose_pos_to(allpos.data());
-                    cells.goose_shift_to(allsh.data());
-                    for (uint32_t j = 0; j < m; ++j) {
-                        const uint32_t i = sinfo_new.idxs[s][j];
-                        sp[j] = allpos[i];
-                        sh[j] = allsh[i];
-                    }
-                    cells.goose_seq_gather(ss.data(), sinfo_new.idxs[s].data(), m);
+                    const auto * idxs = sinfo_new.idxs[s].data();
+                    cells.goose_pos_shift_gather(idxs, m, sp.data(), sh.data());
+                    cells.goose_seq_gather(ss.data(), idxs, m);
                     fg206d_gather((uint64_t)(uintptr_t)dpos.data(), (uint64_t)(uintptr_t)dseq.data(),
                                   (uint64_t)(uintptr_t)sp.data(), (uint64_t)(uintptr_t)ss.data(),
                                   (uint64_t)(uintptr_t)sh.data(), (int64_t)m, (int64_t)W);
-                    saved.goose_restore_compact(dpos.data(), dseq.data(), m, W);
+                    saved.goose_restore_compact(dpos.data(), dseq.data(), m, W, cells, idxs);
                     state.v_cells.push_back(std::move(saved));
+                } else {
                     state.v_cells.push_back(cells.cp(sinfo_new.idxs[s]));
                 }
             }
@@ -1006,23 +1001,17 @@ llama_kv_cache::slot_info_vec_t llama_kv_cache::prepare(const std::vector<llama_
             if (fg204x_enabled() && it->v_cells[s].size() > 0) {
                 const uint32_t m = (uint32_t) it->v_cells[s].size();
                 const uint32_t W = (LLAMA_MAX_SEQ + 63) / 64;
-                std::vector<int64_t> allpos(cells.size()), allsh(cells.size());
-                cells.goose_pos_to(allpos.data());
-                cells.goose_shift_to(allsh.data());
                 std::vector<int64_t> gp(m), gs((size_t)m*W), gu(m);
                 std::vector<int64_t> sp(m), ss((size_t)m*W), sh(m);
-                for (uint32_t j = 0; j < m; ++j) {
-                    const uint32_t i = sinfo.idxs[s][j];
-                    gp[j] = allpos[i];
-                    sh[j] = allsh[i];
-                }
+                const auto * idxs = sinfo.idxs[s].data();
+                cells.goose_pos_shift_gather(idxs, m, gp.data(), sh.data());
                 it->v_cells[s].goose_seq_to(ss.data(), m);
                 it->v_cells[s].goose_pos_to_ex(sp.data(), m);
                 fg204x_copy_cells((uint64_t)(uintptr_t)gp.data(), (uint64_t)(uintptr_t)gs.data(),
                                   (uint64_t)(uintptr_t)gu.data(), (uint64_t)(uintptr_t)sp.data(),
                                   (uint64_t)(uintptr_t)ss.data(), (uint64_t)(uintptr_t)sh.data(),
                                   (int64_t)m, (int64_t)W);
-                cells.goose_scatter(sinfo.idxs[s].data(), gp.data(), gs.data(), m, W);
+                cells.goose_scatter(idxs, gp.data(), gs.data(), it->v_cells[s], W);
             } else {
                 cells.set(sinfo.idxs[s], it->v_cells[s]);
             }
@@ -1241,9 +1230,28 @@ llama_kv_cache::slot_info llama_kv_cache::find_slot(const llama_ubatch & ubatch,
             return { };
         }
 
+        const auto can_use_cell = [&](uint32_t idx, bool use_goose) {
+            const bool occupied = !cells.is_empty(idx);
+            const int seq_count = occupied ? cells.seq_count(idx) : 0;
+            const llama_pos pos_cell = occupied ? cells.pos_get(idx) : 0;
+            const llama_pos max_p1 = occupied && seq_count == 1
+                ? cells.seq_pos_max(cells.seq_get(idx)) + 1 : 0;
+            return use_goose
+                ? fg199k_can_use(occupied ? 1 : 0, seq_count, pos_cell, max_p1, n_swa, swa_type) != 0
+                : !occupied || (seq_count == 1 && llama_hparams::is_masked_swa(n_swa, swa_type, pos_cell, max_p1));
+        };
+
         if (fg392s_enabled()) {
-            // the cells cross as flat arrays; the predicate is fg199k_can_use, exactly the one native uses
             const uint32_t n_cells = cells.size();
+            // A one-token walk stops if its first cell is usable. Check that cell before packing the cache.
+            if (n_tokens == 1 && head_cur <= n_cells) {
+                const uint32_t first = head_cur == n_cells ? 0 : head_cur;
+                if (can_use_cell(first, true)) {
+                    res.idxs[s].push_back(first);
+                    continue;
+                }
+            }
+
             std::vector<int64_t> pos_(n_cells, 0), cnt_(n_cells, 0), maxp1_(n_cells, 0), out_(n_tokens, -1);
             for (uint32_t i = 0; i < n_cells; ++i) {
                 const bool occ = !cells.is_empty(i);
@@ -1294,21 +1302,7 @@ llama_kv_cache::slot_info llama_kv_cache::find_slot(const llama_ubatch & ubatch,
                 //    - (disabled) mask causally, if the sequence is the same as the one we are inserting
                 //    - mask SWA, using current max pos for that sequence in the cache
                 //                always insert in the cell with minimum pos
-                // Goose decides whether the cell is reusable; the container reads stay here.
-                bool can_use;
-                {
-                    const bool occupied   = !cells.is_empty(idx);
-                    const int  seq_count  = occupied ? cells.seq_count(idx) : 0;
-                    const llama_pos pos_cell = occupied ? cells.pos_get(idx) : 0;
-                    const llama_pos max_p1   = (occupied && seq_count == 1)
-                                             ? cells.seq_pos_max(cells.seq_get(idx)) + 1 : 0;
-                    can_use = enabled
-                        ? (fg199k_can_use(occupied ? 1 : 0, seq_count, pos_cell, max_p1, n_swa, swa_type) != 0)
-                        : (!occupied || (seq_count == 1 &&
-                           llama_hparams::is_masked_swa(n_swa, swa_type, pos_cell, max_p1)));
-                }
-
-                if (can_use) {
+                if (can_use_cell(idx, enabled)) {
                     res.idxs[s].push_back(idx);
                 } else {
                     if (cont) {

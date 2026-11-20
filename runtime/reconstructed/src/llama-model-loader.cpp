@@ -13,6 +13,7 @@
 // keeps the old behaviour.
 extern "C" void    llama_goose_register(const struct gguf_context * ctx, const char * path);
 extern "C" void    llama_goose_unregister(const struct gguf_context * ctx);
+extern "C" bool    llama_goose_check(const struct gguf_context * ctx);
 extern "C" int     llama_goose_ready(const struct gguf_context * ctx);
 extern "C" int64_t llama_goose_find_kv(const struct gguf_context * ctx, const char * key);
 extern "C" int64_t llama_goose_tensor_index(const struct gguf_context * ctx, const char * name);
@@ -635,6 +636,7 @@ llama_model_loader::llama_model_loader(
         const llama_model_kv_override * param_overrides_p,
         const llama_model_tensor_buft_override * param_tensor_buft_overrides_p)
         : metadata(meta), set_tensor_data(set_tensor_data), set_tensor_data_ud(set_tensor_data_ud) {
+    std::unique_ptr<const gguf_context, decltype(&llama_goose_unregister)> registration(nullptr, llama_goose_unregister);
     int trace = 0;
     if (getenv("LLAMA_TRACE")) {
         trace = atoi(getenv("LLAMA_TRACE"));
@@ -669,13 +671,17 @@ llama_model_loader::llama_model_loader(
         if (metadata == nullptr) {
             throw std::runtime_error(format("%s: failed to load model from %s", __func__, fname.c_str()));
         }
+        contexts.emplace_back(ctx);
         llama_goose_register(metadata, fname.c_str());
+        registration.reset(metadata);
+        if ((getenv("FG_GGUF_DIAG") || getenv("FG_TK_BPE_DIAG")) && !llama_goose_check(metadata)) {
+            throw std::runtime_error(format("%s: ported GGUF reader disagrees with the native one", __func__));
+        }
 
         get_key(llm_kv(LLM_KV_GENERAL_ARCHITECTURE), arch_name, false);
         llm_kv = LLM_KV(llm_arch_from_string(arch_name));
 
         files.emplace_back(new llama_file(fname.c_str(), "rb", use_direct_io));
-        contexts.emplace_back(ctx);
 
         // Save tensors data offset of the main file.
         // For subsidiary files, `meta` tensor data offset must not be used,
@@ -941,6 +947,7 @@ llama_model_loader::llama_model_loader(
     this->check_tensors = check_tensors;
     this->no_alloc = no_alloc;
     this->load_mtp = load_mtp;
+    registration.release();
 }
 
 std::string llama_model_loader::get_arch_name() const {

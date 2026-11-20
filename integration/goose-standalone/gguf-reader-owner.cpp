@@ -23,6 +23,7 @@
 #include <unistd.h>
 
 #include <cstdint>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <map>
@@ -45,6 +46,7 @@ extern "C" int64_t gr_kv_type(gsl_i64x state, gsl_i64x kv, int64_t index);
 extern "C" int64_t gr_arr_type(gsl_i64x state, gsl_i64x kv, int64_t index);
 extern "C" int64_t gr_arr_n(gsl_i64x state, gsl_i64x kv, int64_t index);
 extern "C" int64_t gr_val_span(gsl_i64x state, gsl_i64x kv, int64_t index, gsl_i64x out);
+extern "C" int64_t gr_tensor_info(gsl_i64x state, gsl_i64x tensors, int64_t index, gsl_i64x out);
 extern "C" int64_t gr_string_array_index(gsl_u8x data, gsl_i64x state, gsl_i64x kv, int64_t index, gsl_i64x pairs);
 extern "C" int64_t gr_arr_str_span(gsl_u8x data, gsl_i64x state, gsl_i64x kv, int64_t index, int64_t element,
                                   gsl_i64x out);
@@ -191,6 +193,87 @@ extern "C" void llama_goose_unregister(const struct gguf_context * ctx) {
     std::lock_guard<std::mutex> lock(g_mu);
     g_metas.erase(ctx);
     if (g_current == ctx) { g_current = nullptr; }
+}
+
+extern "C" bool llama_goose_check(const struct gguf_context * ctx) {
+    std::lock_guard<std::mutex> lock(g_mu);
+    const reader_meta * m = meta_of(ctx);
+    if (!m) {
+        std::fprintf(stderr, "FG_GGUF_PARSE refused by the Goose reader\n");
+        return false;
+    }
+
+    const auto data = u8x(m->hdr, m->len);
+    const auto state = i64x(m->state);
+    const auto kv = i64x(m->kv);
+    const auto tensors = i64x(m->tens);
+    const int64_t nk = gguf_get_n_kv(ctx), nt = gguf_get_n_tensors(ctx);
+    const size_t data_offset = gguf_get_data_offset(ctx);
+    const auto payload_matches = [&](int64_t offset, int64_t length, const void * native, size_t size) {
+        return offset >= 0 && offset <= data.len && length >= 0 && length <= data.len - offset
+            && static_cast<size_t>(length) == size
+            && (size == 0 || (native && std::memcmp(data.data + offset, native, size) == 0));
+    };
+    // Widths describe the native GGUF wire types on little-endian hosts.
+    static constexpr size_t widths[GGUF_TYPE_COUNT] = {1, 1, 2, 2, 4, 4, 4, 1, 0, 0, 8, 8, 8};
+    int64_t disagreements = (m->state[1] != gguf_get_version(ctx)) +
+        (m->state[2] != nk) + (m->state[3] != nt) +
+        (static_cast<size_t>(m->state[4]) != gguf_get_alignment(ctx)) +
+        (static_cast<size_t>(m->state[5]) != data_offset);
+    std::vector<int64_t> spans;
+    for (int64_t i = 0; i < nk; ++i) {
+        const char * name = gguf_get_key(ctx, i);
+        const auto type = gguf_get_kv_type(ctx, i);
+        int64_t span[4]{};
+        if (gr_find_kv(data, state, kv, i64x(m->kvsl), u8x(name, std::strlen(name))) != i ||
+                gr_val_span(state, kv, i, {span, 4}) != 0 || span[0] != type) {
+            ++disagreements;
+            continue;
+        }
+        if (type == GGUF_TYPE_STRING) {
+            const char * str = gguf_get_val_str(ctx, i);
+            disagreements += !payload_matches(span[1], span[2], str, std::strlen(str));
+        } else if (type == GGUF_TYPE_ARRAY) {
+            const auto element = gguf_get_arr_type(ctx, i);
+            const size_t count = gguf_get_arr_n(ctx, i);
+            const int64_t goose_count = gr_arr_n(state, kv, i);
+            if (span[3] != element || goose_count < 0 || static_cast<size_t>(goose_count) != count) {
+                ++disagreements;
+            } else if (element == GGUF_TYPE_STRING) {
+                spans.resize(count * 2);
+                if (gr_string_array_index(data, state, kv, i, i64x(spans)) != goose_count) {
+                    ++disagreements;
+                    continue;
+                }
+                for (size_t j = 0; j < count; ++j) {
+                    const char * str = gguf_get_arr_str(ctx, i, j);
+                    disagreements += !payload_matches(spans[j * 2], spans[j * 2 + 1], str, std::strlen(str));
+                }
+            } else {
+                disagreements += !payload_matches(span[1], span[2], gguf_get_arr_data(ctx, i), count * widths[element]);
+            }
+        } else {
+            disagreements += !payload_matches(span[1], span[2], gguf_get_val_data(ctx, i), widths[type]);
+        }
+    }
+    for (int64_t i = 0; i < nt; ++i) {
+        const char * name = gguf_get_tensor_name(ctx, i);
+        int64_t info[9]{};
+        if (gr_find_tensor(data, state, tensors, i64x(m->tensl), u8x(name, std::strlen(name))) != i ||
+                gr_tensor_info(state, tensors, i, {info, 9}) != 0) {
+            ++disagreements;
+            continue;
+        }
+        const auto * extents = gguf_get_tensor_ne(ctx, i);
+        disagreements += info[0] != gguf_get_tensor_type(ctx, i)
+            || info[7] < 0 || static_cast<size_t>(info[7]) != gguf_get_tensor_size(ctx, i)
+            || info[8] < 0 || static_cast<size_t>(info[8]) != data_offset + gguf_get_tensor_offset(ctx, i)
+            || std::memcmp(info + 2, extents, 4 * sizeof(int64_t)) != 0;
+    }
+    std::fprintf(stderr, "FG_GGUF_PARSE nk=%lld nt=%lld align=%lld off=%lld disagreements=%lld\n",
+                 (long long) m->state[2], (long long) m->state[3], (long long) m->state[4],
+                 (long long) m->state[5], (long long) disagreements);
+    return disagreements == 0;
 }
 
 // One element of a string array, asked by key index alone.

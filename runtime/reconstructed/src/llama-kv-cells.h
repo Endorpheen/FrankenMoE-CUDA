@@ -55,7 +55,8 @@ public:
     static constexpr int GOOSE_ARENA_SLOTS = 8;
     struct goose_arena {
         const void * owner;
-        int64_t b[2 * LLAMA_MAX_SEQ];
+        // The Goose bounds ABI stores minima, maxima and cell counts.
+        int64_t b[3 * LLAMA_MAX_SEQ];
     };
     static inline goose_arena * goose_arenas = nullptr;
 
@@ -89,6 +90,7 @@ public:
         int64_t * b = (int64_t *) goose_bounds_ptr();
         if (!b) return;
         for (int i = 0; i < 2 * LLAMA_MAX_SEQ; ++i) b[i] = -1;
+        for (int i = 2 * LLAMA_MAX_SEQ; i < 3 * LLAMA_MAX_SEQ; ++i) b[i] = 0;
     }
 
 
@@ -234,6 +236,12 @@ public:
     void goose_shift_to(int64_t * out) const {
         for (size_t i = 0; i < shift.size(); ++i) out[i] = (int64_t) shift[i];
     }
+    void goose_pos_shift_gather(const uint32_t * idxs, uint32_t m, int64_t * p, int64_t * sh) const {
+        for (uint32_t j = 0; j < m; ++j) {
+            p[j] = pos[idxs[j]];
+            sh[j] = shift[idxs[j]];
+        }
+    }
     void goose_pos_put(uint32_t i, int64_t v)   { pos[i]   = (llama_pos) v; }
     void goose_shift_put(uint32_t i, int64_t v) { shift[i] = (llama_pos) v; }
     void goose_pos_to_ex(int64_t * out, uint32_t m) const {
@@ -281,10 +289,12 @@ public:
     }
     // scatter a compact (pos, seq) pair back to indexed destination cells
     void goose_scatter(const uint32_t * idxs, const int64_t * gp,
-                       const int64_t * gs, uint32_t m, uint32_t w) {
-        for (uint32_t j = 0; j < m; ++j) {
+                       const int64_t * gs, const llama_kv_cells & saved, uint32_t w) {
+        for (uint32_t j = 0; j < saved.pos.size(); ++j) {
             const uint32_t i = idxs[j];
+            if (pos[i] != -1) { seq_pos_rm(i); }
             goose_pos_put(i, gp[j]);
+            ext[i] = saved.ext[j];
             seq[i].reset();
             for (uint32_t k = 0; k < w; ++k) {
                 const uint64_t word = (uint64_t) gs[(size_t)j*w + k];
@@ -293,13 +303,20 @@ public:
                     if (id < LLAMA_MAX_SEQ && (word & (1ULL << b))) seq[i].set(id);
                 }
             }
-            if (gp[j] == -1) { used.erase(i); } else { used.insert(i); }
+            if (gp[j] == -1) {
+                used.erase(i);
+            } else {
+                used.insert(i);
+                seq_pos_add(i);
+            }
         }
     }
     // restore a compact pair produced by the gather
-    void goose_restore_compact(const int64_t * gp, const int64_t * gs, uint32_t m, uint32_t w) {
+    void goose_restore_compact(const int64_t * gp, const int64_t * gs, uint32_t m, uint32_t w,
+                               const llama_kv_cells & src, const uint32_t * idxs) {
         for (uint32_t j = 0; j < m; ++j) {
             goose_pos_put(j, gp[j]);
+            ext[j] = src.ext[idxs[j]];
             seq[j].reset();
             for (uint32_t k = 0; k < w; ++k) {
                 const uint64_t word = (uint64_t) gs[(size_t)j*w + k];

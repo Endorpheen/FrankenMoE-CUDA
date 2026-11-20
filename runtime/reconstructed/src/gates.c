@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stdatomic.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,6 +9,7 @@ static int goose_on(const char * name) {
 }
 int fg286m_enabled(void) { return goose_on("GGML_GOOSE_MMAP_BOOK"); }
 int fg262a_enabled(void) { return goose_on("GGML_GOOSE_MOE_CACHE_ADMIT"); }
+int fg263c_enabled(void) { return goose_on("GGML_GOOSE_MOE_CACHE_COPY"); }
 int fg756s_enabled(void) { return goose_on("GGML_GOOSE_MOE_SLRU"); }
 
 // The QWEN35 tokenizer path (EXP954-956): vocabulary questions, BPE tokenisation and
@@ -25,9 +27,9 @@ int goose_sampler_enabled(void) { return goose_on("GGML_GOOSE_SAMPLER"); }
 // that is the point of the gate. This counter is incremented by the hook, so the
 // test can assert which path produced the answer (the same mechanism EXP954 used
 // for the tokenizer).
-static int64_t sampler_calls = 0;
-void goose_sampler_note_call(void) { sampler_calls++; }
-int64_t goose_sampler_calls(void) { return sampler_calls; }
+static _Atomic int64_t sampler_calls = 0;
+void goose_sampler_note_call(void) { atomic_fetch_add_explicit(&sampler_calls, 1, memory_order_relaxed); }
+int64_t goose_sampler_calls(void) { return atomic_load_explicit(&sampler_calls, memory_order_relaxed); }
 
 // The SLRU protected-segment ceiling, as num/den. Default 7/8: EXP-757 measured hit rate 83.7 -> 84.8% and
 // upload -6.7% against the native 1/2, with identical answers at 128/256/512. Setting

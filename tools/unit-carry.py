@@ -15,6 +15,7 @@ The artefact is a shared library or an object; anything `nm -D` or `nm -g --defi
 """
 import pathlib
 import re
+import runpy
 import subprocess
 import sys
 
@@ -24,13 +25,14 @@ def unit_exports(root: pathlib.Path) -> set[str]:
     mods = re.findall(r"^\s+(goose/[a-z0-9/_-]+\.goose)\s*$", src, re.M)
     if not mods:
         sys.exit("no module list found in tools/build-main-runtime.sh")
-    out = []
+    renames = runpy.run_path(str(root / "tools/compose-goose.py"))["RENAMES"]
+    out = set()
     for m in mods:
-        for line in (root / m).read_text().split("\n"):
-            mm = re.match(r"export fn ([a-z0-9_]+)", line)
-            if mm:
-                out.append(mm.group(1))
-    return set(out)
+        module = root / m
+        mapping = renames.get(module.name, {})
+        for name in re.findall(r"(?m)^export fn (\w+)", module.read_text()):
+            out.add(mapping.get(name, name))
+    return out
 
 
 def symbols(artefact: pathlib.Path) -> set[str]:

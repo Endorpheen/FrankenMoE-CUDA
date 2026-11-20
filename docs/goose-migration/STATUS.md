@@ -1,11 +1,11 @@
 # FrankenMoE migration status
 
-Updated: 2026-11-19 (25). This file is the current state; update it in the same change
+Updated: 2026-11-20. This file is the current state; update it in the same change
 as every accepted slice.
 
 ## Ledger
 
-`docs/goose-migration/tasks.json`: **DONE 127**, **PARTIAL 18**, **TODO 7** of 152.
+`docs/goose-migration/tasks.json`: **DONE 128**, **PARTIAL 17**, **TODO 7** of 152.
 
 Read slice counters as port slices: 17 records show N/N and stay PARTIAL.
 
@@ -27,7 +27,6 @@ Read slice counters as port slices: 17 records show N/N and stay PARTIAL.
 | P9-07 | wire the CSV, decode-trace and route-trace sinks and DeterministicWorkload to the Goose rows (integration step) |
 | P9-08 | wire the closure decisions into session.cpp and cli/main.cpp |
 | P10-06 | build-time CUDA architecture and flag decisions: CMake picks CMAKE_CUDA_ARCHITECTURES itself (vendor/flint/ggml/src/gg... |
-| P10-07 | one build carrying both halves: bridge with an init entry for goose/json/json-parser.goose plus the _GOOSE_PAIRS entry... |
 | P11-01 | standalone runtime has no CUDA, tokenizer engine or HTTP (the working Apex path is the INTEGRATED stage-run, not the s... |
 | P11-04 | D1: F2 gguf_write_to_buf, F3 gguf_get_meta_size and F4 gguf_get_meta_data (all native in vendor/flint/ggml/src/gguf.cp... |
 | C1-02 | T_NEXTN_HC_HEAD ids exist only in the integration tree, not the pinned upstream |
@@ -36,7 +35,7 @@ Read slice counters as port slices: 17 records show N/N and stay PARTIAL.
 
 | requirement | what is open |
 |---|---|
-| P11-07 | blocked on the 19 open APEX_COMMON tasks listed by tools/apex-accounting.py: P6-10, P7-06, P7-07, P7-12, P8-06, P8-09,... |
+| P11-07 | 15 other APEX_COMMON tasks remain open; see `tools/apex-accounting.py`. |
 | C1-04 | shared loader, tokenizer and memory interfaces needed by Qwen |
 | C1-05 | complete Qwen inference qualification in the common artifact |
 | C1-06 | Apex protection while Qwen support is extended |
@@ -44,7 +43,23 @@ Read slice counters as port slices: 17 records show N/N and stay PARTIAL.
 | F1-02 | All required functional tasks have evidence; real Apex/Qwen and representative other family fixtures; one common artif... |
 | F1-04 | Every functional task DONE; zero untracked residual native paths; source build reproducible and working runtime unchan... |
 
-## Measured state (2026-11-20 01:40)
+## Current baseline and candidate
+
+- `builds/flint-acc/run-jsondefault` is the current control. P10-07 is DONE. The 21-text strict JSON gate and same-response chat check are recorded in [P10-07-CLOSED-20261120.md](P10-07-CLOSED-20261120.md).
+- The inspected path B diagnostic set reused objects from the failed build for unchanged inputs. It passed `verify-candidate`, including relocation checks. It carries all 1257 distinct exports in the composed source. The earlier 1253/1256 count used names before composition, which missed three renamed exports and counted two source exports with the same original name as one.
+- The reconstructed DRY path had been falling back when its C++ caller described the flat breaker array as a slice of triples. With corrected slice lengths, the public API fixture produced identical output in 200 cases and observed 200 Goose calls with the switch on, zero with it off.
+- The new `tests/integration/path-b-abi` fixture verifies the GGUF comparison and observes the two DRY execution paths through the public sampler API. The strict JSON gate also exposed a missing pre-model initialization. After the library constructor began calling the existing M1 once guard, all 21 texts passed in strict mode.
+- The fresh path B set with libllama SHA-256 `0668b36773d6eb5ff42bde96438883cc1b69fcef2769b0f7247c5c152d0bd8a1` passed the candidate, ABI and JSON gates with the exact support binaries from `run-jsondefault`.
+- Its Apex diagnostic matched the native GGUF view (52 keys, 753 tensors, zero disagreements) and then faulted in `llama_vocab::n_tokens()`. The prebuilt Qwen35MoE object accessed `llama_model::vocab` at offset `0x8d78`. The reconstructed carrier and accepted control use `0x8d68`. The four added fields in the external Flint `llama_hparams` account for the displacement. See `results/apex-runs/pathb-diag-0668-20261120-033752/server.log`.
+- Path B now stages the tracked vendor files and reconstructed carriers together. Its 201 C++ sources build with one header set and no prebuilt Flint model objects. The unified set `44e46f0f2e4c4ddd` loaded Apex, matched all 512 output tokens and passed the GGUF differential with zero disagreements.
+- The first unprofiled A–B–B–A at 512 tokens matched all 12 responses. Decode fell from 61.86 to 56.43 tokens/s and prefill from 2883.87 to 2872.08 tokens/s. Post-request medians were 11147 to 11140.5 MiB of GPU occupancy and 21362.16 to 21366.11 MiB of server RSS. This set was rejected for promotion.
+- Checking the first slot with the existing Goose predicate removed the full three-array KV copy from normal single-token decode. In the next unprofiled B–A–A–B, decode was 62.183 to 61.516 tokens/s, prefill 2848.56 to 2838.02 tokens/s, GPU occupancy 11162 to 11153 MiB and server RSS 21362.10 to 21350.55 MiB. All 12 responses matched and neither process swap nor system swap-out increased. The remaining 0.67 tokens/s gap kept the control in place.
+- The post-fix profile across 511 decode steps showed scheduler time of 6925.7 to 6807.0 ms and residual time inside `llama_process` of 76.1 to 285.4 ms. A second correction makes KV rollback gather only the touched cells, preserves the extension fields and sequence bounds, and allocates the full three arrays required by the Goose bounds ABI. The whole unified build, ABI fixtures and strict 21-text JSON gate passed again.
+- **512-token development checkpoint (EXP-2026-11-20-1492).** The `franken-pathb-safe-20261120.7dnWLq/run` set has libllama SHA-256 `3ab50925bd04686dac0381f38fe88cd155a5eff013ed33ef5d4ddc6dc35e2d15`, 1257 composed exports and 20/20 accepted components. The server and support libraries are byte-identical to `run-jsondefault`.
+- The unprofiled B–A–A–B series gave decode **62.096 → 63.243 tokens/s**, prefill **2888.03 → 2857.06 tokens/s**, GPU occupancy **11182.5 → 11161.5 MiB**, server RSS **21362.12 → 21365.38 MiB**, and client duration **19.605 → 19.582 s**, all medians. All 12 runs produced the same 512 output tokens and response SHA-prefix `c2ff42cc1219`. Process swap and system swap-out increments were zero. Raw runs are `results/apex-runs/pathb-safe512-*`, with per-response records in `benchmarks/experiment-history.jsonl`. The accepted release stays on `run-jsondefault` while the 128- and 256-token checks are pending. The plan still has 24 open requirements.
+- The next KV ownership step is to give the canonical `goose/kv/goose-kv-seqpos-incr.goose` module the bounds allocation and the full cache lifecycle. The address-keyed C++ owner table stays until the Goose owner passes create, reset, move, restore and release checks on the same integration path.
+
+## Historical measurements (2026-11-20 01:40)
 
 | measurement | value |
 |---|---|

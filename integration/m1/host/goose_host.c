@@ -285,6 +285,14 @@ int64_t fg457_ld_i64(uint64_t p, uint64_t o) {
     return *(const int64_t *) ((const char *) (uintptr_t) p + o);
 }
 
+uint32_t fg446_ld_u8(uint64_t p, uint64_t o) {
+    return *((const uint8_t *) (uintptr_t) p + o);
+}
+
+void fg446_st_i64(uint64_t p, uint64_t o, int64_t value) {
+    memcpy((uint8_t *) (uintptr_t) p + o, &value, sizeof value);
+}
+
 // EXP684: goose-model-graph.goose reads the native per-layer flags array.
 int64_t fg200g_ld_u32(uint64_t base, int64_t index) {
     uint32_t v = 0;

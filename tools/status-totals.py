@@ -30,9 +30,10 @@ def main() -> int:
     counts, total = actual(d)
     stale = []
 
-    if d.get("status_totals") != counts:
-        stale.append(f"tasks.json status_totals: {d.get('status_totals')} -> {counts}")
-        d["status_totals"] = counts
+    summary = {**counts, "total": total}
+    if d.get("status_totals") != summary:
+        stale.append(f"tasks.json status_totals: {d.get('status_totals')} -> {summary}")
+        d["status_totals"] = summary
 
     text = STATUS.read_text()
     want = f"**DONE {counts['DONE']}**, **PARTIAL {counts['PARTIAL']}**, **TODO {counts['TODO']}** of"

@@ -27,6 +27,23 @@ echo "sha256:    $(sha256sum "$LIB" | cut -d' ' -f1)"
 echo "source:    $(git -C "$ROOT" rev-parse --short HEAD)$(git -C "$ROOT" diff --quiet || echo ' + uncommitted')"
 echo
 
+printf '%-42s ' "dynamic relocations"
+SET=$(dirname "$LIB")
+TARGET=$SET/llama-server
+if [ ! -x "$TARGET" ]; then TARGET=$LIB; fi
+RELOCS=$(env -u LD_PRELOAD -u LD_AUDIT LD_LIBRARY_PATH="$SET" LC_ALL=C ldd -r "$TARGET" 2>&1)
+if [ $? -ne 0 ] || grep -Eq 'undefined symbol:|not found' <<<"$RELOCS"; then
+    echo "FAIL"
+    printf '%s\n' "$RELOCS"
+    fail=1
+elif [ "$TARGET" != "$LIB" ] && ! grep -Fq "libllama.so.0 => $LIB (" <<<"$RELOCS"; then
+    echo "FAIL: loader selected a different libllama.so.0"
+    printf '%s\n' "$RELOCS"
+    fail=1
+else
+    echo "ok"
+fi
+
 printf '%-42s ' "accepted components present"
 if python3 "$ROOT/tools/check-accepted-components.py" "$(dirname "$LIB")" >/tmp/vc-acc.$$ 2>&1; then
     echo "ok"

@@ -3547,14 +3547,16 @@ static void llama_sampler_dry_apply(struct llama_sampler * smpl, llama_token_dat
         return;
     }
 
-    // The Goose penalty owns the restart scan, the reverse Z-algorithm, the max
-    // repeat per token and the exponent clamp. The history arrives in chronological
-    // order (to_vector) because the engine reverses it internally, which is the
-    // mapping EXP968 had to fix. Breakers are flattened here: the multimap is a
-    // host container and the engine takes parallel arrays.
-    if (goose_sampler_enabled()) {
-        std::vector<llama_token> h = ctx->last_tokens.to_vector();
-        std::vector<int64_t> hist(h.begin(), h.end());
+    // Pass the active window oldest first. Goose indexes it back from the newest token.
+    static const bool dry_enabled = [] {
+        const char * flag = std::getenv("GGML_GOOSE_SAMPLER_DRY");
+        return !flag || std::strcmp(flag, "0") != 0;
+    }();
+    if (dry_enabled && goose_sampler_enabled()) {
+        std::vector<int64_t> hist(last_n_repeat);
+        for (int i = 0; i < last_n_repeat; ++i) {
+            hist[i] = ctx->last_tokens.rat(last_n_repeat - 1 - i);
+        }
         std::vector<int64_t> ids((size_t) cur_p->size);
         std::vector<float> flat((size_t) cur_p->size);
         for (size_t i = 0; i < cur_p->size; i++) {
@@ -3568,14 +3570,13 @@ static void llama_sampler_dry_apply(struct llama_sampler * smpl, llama_token_dat
             brk.push_back((int64_t) kv.second.size());
             for (llama_token tok : kv.second) tails.push_back((int64_t) tok);
         }
-        std::vector<int64_t> counts((size_t) last_n_repeat + 1, 0);
-        std::vector<int64_t> ptok((size_t) cur_p->size + 1, 0), plen((size_t) cur_p->size + 1, 0), pcount(1, 0);
+        std::vector<int64_t> counts(last_n_repeat), ptok(last_n_repeat), plen(last_n_repeat), pcount(1);
         const int64_t rc = dry_apply(
             gs_i64{ hist.data(), (int64_t) hist.size() }, (int64_t) hist.size(),
             gs_f32{ flat.data(), (int64_t) cur_p->size }, gs_i64{ ids.data(), (int64_t) cur_p->size },
             (int64_t) cur_p->size, ctx->dry_multiplier, ctx->dry_base, ctx->dry_allowed_length,
             ctx->dry_penalty_last_n,
-            gs_i64{ brk.data(), (int64_t) (brk.size() / 3) }, (int64_t) (brk.size() / 3),
+            gs_i64{ brk.data(), (int64_t) brk.size() }, (int64_t) (brk.size() / 3),
             gs_i64{ tails.data(), (int64_t) tails.size() }, (int64_t) tails.size(),
             gs_i64{ counts.data(), (int64_t) counts.size() },
             gs_i64{ ptok.data(), (int64_t) ptok.size() }, gs_i64{ plen.data(), (int64_t) plen.size() },

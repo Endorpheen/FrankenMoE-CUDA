@@ -28,7 +28,7 @@ for f in "$A" "$B"; do
 done
 
 python3 - "$ROOT" "$A" "$B" <<'PY'
-import hashlib, pathlib, re, subprocess, sys
+import hashlib, pathlib, runpy, subprocess, sys
 
 root = pathlib.Path(sys.argv[1])
 a, b = pathlib.Path(sys.argv[2]), pathlib.Path(sys.argv[3])
@@ -46,11 +46,7 @@ def dupes(p):
 def sha(p):
     return hashlib.sha256(p.read_bytes()).hexdigest()[:16]
 
-doors = set()
-for line in (root / "tools/build-main-runtime.sh").read_text().splitlines():
-    line = line.split("#")[0].strip()
-    if line.startswith("goose/") and (root / line).exists():
-        doors |= set(re.findall(r"(?m)^export fn ([a-z0-9_]+)", (root / line).read_text()))
+doors = runpy.run_path(str(root / "tools/unit-carry.py"))["unit_exports"](root)
 
 sa, sb = set(defined(a)), set(defined(b))
 da, db = doors & sa, doors & sb

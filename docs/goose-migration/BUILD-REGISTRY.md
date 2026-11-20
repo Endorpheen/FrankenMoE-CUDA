@@ -7,15 +7,18 @@ duplicate: the authoritative lists stay where they are.
 
 | what | authoritative source | notes |
 |---|---|---|
-| composed Goose unit (modules -> C) | `tools/build-main-runtime.sh` | the module list in that script is the input; `docs/goose-migration/BUILD-SET.md` is its generated record (118 modules) |
+| composed Goose unit (modules -> C) | `tools/build-main-runtime.sh` | the module list in that script is the input; `docs/goose-migration/BUILD-SET.md` is its record |
 | staged tree with carrier patches | `tools/stage-m1-tree.sh` | `--check-patches` dry-runs against upstream, touches nothing |
+| integrated runtime candidate (path B) | `tools/consolidate-runtime-tree.sh` and `tools/build-from-tree.sh` | packages vendor and reconstructed sources under one header set, compiles the model objects, and links the staged PIC Goose unit |
 | migration accounting | `tools/migration-status.sh` | units, C++ classification, standalone capabilities |
 | cumulative-baseline presence | `tools/check-cumulative-baseline.py` | P1-12 kernel, fg161_bulk, allocator bridge |
 
-These scripts build the Goose unit and check composition. They do **not** build a
-host runtime binary.
+Path B is the integration target for the next qualification. The accepted control is
+`builds/flint-acc/run-jsondefault`. Its support libraries stay fixed during the comparison.
+Path B still stages the enumerated extra objects and uses the existing host libraries. Their
+source-only production is part of P10-06. See [STATUS.md](STATUS.md) for current qualification.
 
-## Host runtime (the server that runs a model)
+## Historical host runtime record (2026-11-18)
 
 Accepted artefacts, outside the repository and never to be overwritten:
 
@@ -34,7 +37,7 @@ Source trees in this repository, measured on 2026-11-18:
 | `work/llama.cpp-integration` | yes | **no** llama-moe-cache at all; do not use as the cumulative base |
 | `.../runtime/reconstructed` (local store) | partial | full `src/` with moe-cache and `fg*` calls; `ggml/` has **no build files**; no `common/`, `tools/`, `include/` |
 
-Consequence: building the host from tracked sources currently fails, because the
+At that checkpoint, building the host from tracked sources failed because the
 bridges the accepted artefacts contain (`fg161_bulk` in ggml, `fg199..fg756` in
 llama) are not all present here. `fg367..fg406` and `fg756` exist under
 `integration/modules/EXP-*-<id>-*/source/host-qualified.c`. Measured with

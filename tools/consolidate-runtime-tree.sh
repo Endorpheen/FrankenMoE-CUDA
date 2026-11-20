@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Copy every input the runtime build actually consumes into one fixed tree, resolving the implicit dependencies:
-# the experiment directories build.py scans, the flint object directory, and the prebuilt extra objects.
+# the experiment directories build.py scans and the prebuilt extra objects.
 #
 # The point is that the resulting tree is self-contained: the same sources, the same objects, the same libraries,
 # with no dependency on which experiment directory happens to be newest on disk.
@@ -20,16 +20,16 @@ DST=${DST:-/home/end0/AI/LlamaServer/runtime-build-tree}
 # The libraries are taken from LIBSDIR when given (a build output such as <build>/run), otherwise from
 # the tree's own stage-run, because a fresh tree has neither until something has been built.
 BASE=${BASE:-$ROOT}
-FL=${FL:-/home/end0/AI/LlamaServer/llama.cpp-flint-cuda}
+FLINT=$ROOT/vendor/flint
 [ -e "$DST" ] && { echo "refusing to overwrite $DST"; exit 1; }
 
 W=${BUILD:-$BASE/runtime/reconstructed/build}
 src=${LIBSDIR:-$W/stage-run}
 extra_objects=(
-    b291.o fx286pic.o fx262a.o fx263-pic.o gates.o
-    slru-policy.o slru-runtime.o slru-shim.o
+    b291.o fx286pic.o fx262a.o fx263-pic.o
+    slru-runtime.o
     fg-ar.o fg-ar-bridge.o fg-q35.o fg-qg.o fg-q35-bridge.o
-    fg-plan-ffi.o fg-gr.o fg-gr-bridge.o fg-q35s.o fg-q35s-bridge.o
+    fg-gr.o fg-gr-bridge.o fg-q35s.o fg-q35s-bridge.o
 )
 libraries=(
     libggml.so.0 libggml-base.so.0 libggml-cpu.so.0 libggml-cuda.so.0
@@ -42,9 +42,15 @@ for input in "${extra_objects[@]/#/$W/}" "${libraries[@]/#/$src/}"; do
     fi
 done
 
-mkdir -p "$DST"/{our-src,modules,module-src,bridges,flint-objects,extra-objects,libs,build,upstream-include,upstream-src}
-cp "$ROOT"/runtime/reconstructed/src/*.cpp "$ROOT"/runtime/reconstructed/src/*.c "$DST/our-src/" 2>/dev/null || true
-cp "$ROOT"/runtime/reconstructed/src/*.h "$DST/our-src/" 2>/dev/null || true
+mkdir -p "$DST"/{our-src,modules,module-src,bridges,extra-objects,libs,build,upstream-include}
+cp "$FLINT"/src/*.{cpp,h} "$DST/our-src/"
+cp -r "$FLINT/src/models" "$DST/our-src/"
+cp "$ROOT"/runtime/reconstructed/src/*.{cpp,c,h} "$DST/our-src/"
+# The architecture registry and its enum tags come from the same source tree.
+cp "$FLINT/src/llama-arch.h" "$DST/our-src/"
+commit=$(git -C "$ROOT" rev-parse --short HEAD)
+sed -e 's/@LLAMA_VERSION@/0.7.0-dev/g' -e "s/@LLAMA_BUILD_COMMIT@/$commit/g" \
+    "$FLINT/src/llama-version.h.in" > "$DST/our-src/llama-version.h"
 # The GGUF reader adapter is a carrier-side source, not a header or a staged tree file, and the unit's loader
 # calls llama_goose_register which it defines. Without it the rebuilt artefact loads, starts, prints its Goose
 # witnesses and then dies on `undefined symbol: llama_goose_register` - a missing translation unit, not a
@@ -97,10 +103,32 @@ done
 # calls (goose_tok_enabled was the first missing one), and no consolidated set ever compiled them. The host
 # headers they include live next door.
 mkdir -p "$DST/m1bridges"
-cp "$ROOT"/integration/m1/common/*.cpp "$DST/m1bridges/" 2>/dev/null || true
+for bridge in "$ROOT"/integration/m1/common/*.cpp; do
+    # The schema bridge belongs to the staged llama-common target.
+    [ "${bridge##*/}" = fg-goose-schema-bridge.cpp ] || cp "$bridge" "$DST/m1bridges/"
+done
 cp "$ROOT"/integration/m1/common/*.h   "$DST/m1bridges/" 2>/dev/null || true
 cp "$ROOT"/integration/m1/host/*.h     "$DST/m1bridges/" 2>/dev/null || true
 cp "$ROOT"/integration/m1/host/*.c     "$DST/m1bridges/" 2>/dev/null || true
+cp "$ROOT"/integration/goose-standalone/{graph-bindings,libc-forwards,slru-runtime-shim}.c "$DST/m1bridges/"
+cp "$ROOT/runtime/core/src/engine/ngram_draft.cpp" "$DST/m1bridges/"
+test -s "$DST/module-src/slru-policy.c"
+
+while read -r module init; do
+    gen="$DST/module-src/$module"
+    mkdir -p "$gen"
+    "$G" -o "$gen/unit.c" --header "$gen/unit.h" "$ROOT/goose/misc/$module.goose"
+    printf '#define goose_init %s\n#include "%s/unit.c"\n' "$init" "$module" \
+        > "$DST/m1bridges/$module-unit.c"
+    cp "$ROOT/integration/m1/common/fg-$module-bridge.c" "$DST/m1bridges/"
+done <<'UNICODE'
+unicode-han fg_unicode_han_goose_init
+unicode-newlines fg_unicode_nl_goose_init
+unicode-byte-map fg_b2u_goose_init
+unicode-afmoe fg_afmoe_goose_init
+unicode-gpt2 fg_gpt2_goose_init
+unicode-hangul fg_hangul_goose_init
+UNICODE
 echo "  m1 bridges      $(ls "$DST"/m1bridges/*.cpp 2>/dev/null | wc -l) cpp, $(ls "$DST"/m1bridges/*.h 2>/dev/null | wc -l) h"
 
 # Bridges: the experiment directories build.py names explicitly.
@@ -110,17 +138,7 @@ for m in $(grep -oE "EXP-[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]+-[a-z0-9-]+" "$ROOT/ru
     fi
 done
 
-# Upstream headers and sources: our files include llama.h / ggml.h, and a module may include a generated
-# companion from its own experiment directory. Both are inputs, so both are frozen here.
-cp "$FL"/include/*.h "$DST/upstream-include/" 2>/dev/null || true
-cp -r "$FL"/ggml/include/. "$DST/upstream-include/" 2>/dev/null || true
-cp "$FL"/src/*.h "$DST/upstream-src/" 2>/dev/null || true
-cp -r "$FL"/src/models "$DST/upstream-src/" 2>/dev/null || true
-for d in "$FL"/src/*/; do cp -r "$d". "$DST/upstream-src/" 2>/dev/null || true; done
-cp "$FL"/ggml/src/*.h "$DST/upstream-src/" 2>/dev/null || true
-
-# Prebuilt objects and libraries, as bytes.
-find "$FL/build-cuda/src/CMakeFiles/llama.dir" -name '*.o' -exec cp {} "$DST/flint-objects/" \;
+cp "$FLINT"/include/*.h "$FLINT"/ggml/include/*.h "$FLINT"/ggml/src/*.h "$DST/upstream-include/"
 # Every object build.py itself produced: the 39 Goose module objects, the 22 bridge objects, and the hand-built
 # extras. Frozen as bytes, exactly like the flint objects, so the clean build does not re-decide which file owns a
 # prefix at every run.
@@ -137,4 +155,4 @@ cp -L "${libraries[@]/#/$src/}" "$DST/libs/"
 
 ( cd "$DST" &&  find . -type f ! -name SHA256SUMS -exec sha256sum {} \; | sort -k2 > SHA256SUMS )
 echo "consolidated tree: $DST"
-for d in our-src modules bridges m1bridges flint-objects extra-objects libs; do printf '  %-15s %s files\n' "$d" "$(find "$DST/$d" -type f | wc -l)"; done
+for d in our-src modules bridges m1bridges extra-objects libs; do printf '  %-15s %s files\n' "$d" "$(find "$DST/$d" -type f | wc -l)"; done
