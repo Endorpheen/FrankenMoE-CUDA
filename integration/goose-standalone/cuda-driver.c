@@ -84,6 +84,7 @@ static _Thread_local struct {
     uint64_t target;
     int64_t target_bytes, count, used;
     int64_t ranges[ACTIVATION_RECORDS * ACTIVATION_WORDS];
+    int64_t large_output[ACTIVATION_WORDS];
     uint64_t hits, skipped_download_bytes;
 } activations;
 static _Thread_local DevicePtr matrix_input, matrix_output;
@@ -257,30 +258,39 @@ static sl_i64 activation_ranges(void) {
     return (sl_i64) {activations.ranges, activations.count * ACTIVATION_WORDS};
 }
 
-static int activation_download_record(int64_t i) {
-    int64_t * range = activations.ranges + ACTIVATION_WORDS * i;
+static sl_i64 activation_large_range(void) {
+    return (sl_i64) {activations.large_output, ACTIVATION_WORDS};
+}
+
+static int activation_download_record(int64_t * range, DevicePtr base) {
     if (range[1] == 0 || range[3] != 0) return 0;
     const int error = cuda.download((void *) (uintptr_t) range[0],
-        cuda.activations.address + (uint64_t) range[2], (size_t) range[1]);
+        base + (uint64_t) range[2], (size_t) range[1]);
     if (error == 0) range[3] = 1;
     return error;
 }
 
 static int activation_download_all(void) {
     for (int64_t i = 0; i < activations.count; ++i) {
-        const int error = activation_download_record(i);
+        const int error = activation_download_record(activations.ranges + ACTIVATION_WORDS * i, cuda.activations.address);
         if (error != 0) return error;
     }
     return 0;
 }
 
 static int activation_sync_range(uint64_t host, int64_t bytes, bool invalidate) {
+    if (activations.large_output[1] > 0 && fg143_activation_overlap(activation_large_range(), host, bytes, 0) >= 0) {
+        const int error = activation_download_record(activations.large_output, cuda.output.address);
+        if (error != 0) return error;
+        if (invalidate) activations.large_output[1] = 0;
+    }
     for (int64_t i = 0; activations.count > 0;) {
         const int64_t found = fg143_activation_overlap(activation_ranges(), host, bytes, i);
         if (found < 0) break;
-        const int error = activation_download_record(found);
+        int64_t * range = activations.ranges + ACTIVATION_WORDS * found;
+        const int error = activation_download_record(range, cuda.activations.address);
         if (error != 0) return error;
-        if (invalidate) activations.ranges[ACTIVATION_WORDS * found + 1] = 0;
+        if (invalidate) range[1] = 0;
         i = found + 1;
     }
     return 0;
@@ -299,14 +309,15 @@ int fg_cuda_activation_graph_begin(void) {
 }
 
 int64_t fg_cuda_activation_read_address(uint64_t host, int64_t bytes) {
-    if (activations.count == 0) return 0;
-    int64_t first = 0;
-    for (;;) {
-        first = fg143_activation_overlap(activation_ranges(), host, bytes, first);
-        if (first < 0) return 0;
-        if (activations.ranges[first * ACTIVATION_WORDS + 3] == 0) break;
-        ++first;
+    bool pending = activations.large_output[1] > 0 && activations.large_output[3] == 0 &&
+        fg143_activation_overlap(activation_large_range(), host, bytes, 0) >= 0;
+    for (int64_t i = 0; !pending && i < activations.count;) {
+        const int64_t found = fg143_activation_overlap(activation_ranges(), host, bytes, i);
+        if (found < 0) break;
+        pending = activations.ranges[found * ACTIVATION_WORDS + 3] == 0;
+        i = found + 1;
     }
+    if (!pending) return 0;
     if (push_context() != 1) return -1;
     const int error = activation_sync_range(host, bytes, false);
     return finish_context() == 0 && error == 0 ? 0 : -1;
@@ -328,7 +339,11 @@ int fg_cuda_activation_prepare(uint64_t host, int64_t bytes, bool fresh, bool ov
     if (overwrite && activations.count > 0) {
         activations.skipped_download_bytes += fg143_activation_discard_overwritten(activation_ranges(), host, bytes);
     }
-    if (activations.count == 0 || fg143_activation_overlap(activation_ranges(), host, bytes, 0) < 0) return 0;
+    if (overwrite && activations.large_output[1] > 0) {
+        activations.skipped_download_bytes += fg143_activation_discard_overwritten(activation_large_range(), host, bytes);
+    }
+    if (fg143_activation_overlap(activation_ranges(), host, bytes, 0) < 0 &&
+        (activations.large_output[1] == 0 || fg143_activation_overlap(activation_large_range(), host, bytes, 0) < 0)) return 0;
     if (push_context() != 1) return -1;
     const int error = activation_sync_range(host, bytes, true);
     return finish_context() == 0 && error == 0 ? 0 : -1;
@@ -342,11 +357,12 @@ int fg_cuda_activation_graph_end(bool success, bool all, uint64_t host, int64_t 
     activations.skipped_download_bytes = 0;
     if (!activations.active) return 0;
     int error = 0;
-    if (success && activations.count > 0) {
+    if (success && (activations.count > 0 || activations.large_output[1] > 0)) {
         if (all) {
             if (push_context() != 1) error = -1;
             else {
                 error = activation_download_all();
+                if (error == 0) error = activation_download_record(activations.large_output, cuda.output.address);
                 if (finish_context() != 0) error = -1;
             }
         } else {
@@ -354,10 +370,18 @@ int fg_cuda_activation_graph_end(bool success, bool all, uint64_t host, int64_t 
         }
     }
     activations.count = activations.used = 0;
+    activations.large_output[1] = 0;
     activations.target = 0;
     activations.active = false;
     pthread_mutex_unlock(&activation_lock);
     return error;
+}
+
+static int activation_reserve_output(size_t bytes) {
+    const int error = activation_download_record(activations.large_output, cuda.output.address);
+    if (error != 0) return error;
+    activations.large_output[1] = 0;
+    return reserve(&cuda.output, bytes);
 }
 
 // Called with the CUDA context bound. Reserve output before resolving input
@@ -384,32 +408,40 @@ static int activation_output(uint64_t host, int64_t bytes, DevicePtr * device) {
             }
         }
     }
-    const int error = reserve(&cuda.output, (size_t) bytes);
+    const int error = activation_reserve_output((size_t) bytes);
     if (error == 0) *device = cuda.output.address;
     return error;
 }
 
 static int activation_publish(uint64_t host, int64_t bytes, DevicePtr device, bool complete) {
-    if (!activations.active || device == cuda.output.address) {
+    const bool large = device == cuda.output.address;
+    // The fallback allocation is already sized for this result. Let readers
+    // use it directly until the next writer needs the allocation.
+    const bool keep_large = large && bytes > ACTIVATION_BYTES && host == activations.target && bytes == activations.target_bytes;
+    if (!activations.active || (large && !keep_large)) {
         return cuda.download((void *) (uintptr_t) host, device, (size_t) bytes);
     }
     const int error = complete ? 0 : cuda.sync();
     if (error != 0) return error;
-    int64_t * next = activations.ranges + ACTIVATION_WORDS * activations.count++;
+    int64_t * next = large ? activations.large_output : activations.ranges + ACTIVATION_WORDS * activations.count++;
     next[0] = (int64_t) host; next[1] = bytes;
-    next[2] = (int64_t) (device - cuda.activations.address); next[3] = 0;
-    activations.used = next[2] + bytes;
+    next[2] = large ? 0 : (int64_t) (device - cuda.activations.address); next[3] = 0;
+    if (!large) activations.used = next[2] + bytes;
     return 0;
 }
 
 static DevicePtr activation_device(uint64_t host, int64_t bytes) {
+    if (activations.large_output[1] > 0) {
+        const int64_t offset = fg143_activation_lookup(activation_large_range(), host, bytes);
+        if (offset >= 0) return cuda.output.address + (uint64_t) offset;
+    }
     if (activations.count == 0) return 0;
     const int64_t offset = fg143_activation_lookup(activation_ranges(), host, bytes);
     return offset >= 0 ? cuda.activations.address + (uint64_t) offset : 0;
 }
 
 static int activation_input(sl_u8 data, struct device_buffer * staging, DevicePtr * device) {
-    if (activations.count > 0) {
+    if (activations.count > 0 || activations.large_output[1] > 0) {
         const uint64_t host = (uint64_t) (uintptr_t) data.data;
         const DevicePtr current = activation_device(host, data.len);
         if (current) {
@@ -1072,7 +1104,7 @@ int64_t fg_cuda_vector(sl_i64 config, sl_u8 x, sl_u8 y, sl_u8 out, float param0,
     const uint64_t host = (uint64_t) (uintptr_t) out.data;
     int error = 0;
     if (plan[23] & 4) {
-        error = reserve(&cuda.output, (size_t) out.len);
+        error = activation_reserve_output((size_t) out.len);
         output = cuda.output.address;
     } else {
         error = activation_output(host, out.len, &output);

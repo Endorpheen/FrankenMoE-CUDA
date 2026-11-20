@@ -901,6 +901,49 @@ static void check_activation_overwrite(void) {
     puts("CUDA output overwrite: full replacement, retained tail and aliased input passed");
 }
 
+static void check_large_activation(void) {
+    enum { width = 4096, tokens = 4097, small = 32 };
+    struct ggml_context * ctx = ggml_init((struct ggml_init_params){ 128 * 1024, NULL, true });
+    assert(ctx);
+    struct ggml_tensor * x = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, width, tokens);
+    struct ggml_tensor * bias = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, width);
+    struct ggml_tensor * large = ggml_add(ctx, x, bias);
+    struct ggml_tensor * view = ggml_view_1d(ctx, large, small, ggml_nbytes(large) - small * sizeof(float));
+    struct ggml_tensor * identity = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, small, small);
+    struct ggml_tensor * output = ggml_mul_mat(ctx, identity, view);
+    struct ggml_cgraph * graph = ggml_new_graph_custom(ctx, 32, false);
+    ggml_build_forward_expand(graph, output);
+    void * storage = fg_standalone_graph_alloc(graph);
+    assert(storage);
+    for (int i = 0; i < width * tokens; ++i) ((float *) x->data)[i] = (float) (i % width);
+    for (int i = 0; i < width; ++i) ((float *) bias->data)[i] = 2.0f;
+    memset(identity->data, 0, ggml_nbytes(identity));
+    for (int i = 0; i < small; ++i) ((float *) identity->data)[i * (small + 1)] = 1.0f;
+    memset(large->data, 0xA5, ggml_nbytes(large));
+    assert(fg_standalone_graph_compute_output(graph, output) == GGML_STATUS_SUCCESS);
+    for (int i = 0; i < small; ++i) assert(((float *) output->data)[i] == (float) (width - small + i) + 2.0f);
+    const unsigned char * host = large->data;
+    for (size_t i = 0; i < ggml_nbytes(large); ++i) assert(host[i] == 0xA5);
+
+    assert(fg_standalone_graph_compute(graph) == GGML_STATUS_SUCCESS);
+    const float * published = large->data;
+    for (int i = 0; i < width * tokens; ++i) assert(published[i] == (float) (i % width) + 2.0f);
+
+    struct ggml_tensor * replacement = ggml_add(ctx, large, bias);
+    struct ggml_cgraph * overwriting = ggml_new_graph_custom(ctx, 32, false);
+    ggml_build_forward_expand(overwriting, replacement);
+    void * second_storage = fg_standalone_graph_alloc(overwriting);
+    assert(second_storage);
+    assert(fg_standalone_graph_compute_output(overwriting, replacement) == GGML_STATUS_SUCCESS);
+    const float * replaced = replacement->data;
+    for (int i = 0; i < width * tokens; ++i) assert(replaced[i] == (float) (i % width) + 4.0f);
+    printf("CUDA oversized activation: %zu bytes, device view, explicit host read and buffer reassignment passed\n",
+        ggml_nbytes(large));
+    free(second_storage);
+    free(storage);
+    ggml_free(ctx);
+}
+
 static void check_cuda_vectors(void) {
     enum { width = 257, stride = 8 * width, rows = 3, planes = 2 };
     struct ggml_context * ctx = ggml_init((struct ggml_init_params){ 1024 * 1024, NULL, true });
@@ -1270,6 +1313,10 @@ static void check_dense_mma(int extent, int rows, int columns) {
 }
 
 int main(int argc, char ** argv) {
+    if (argc == 2 && strcmp(argv[1], "--large-activation") == 0) {
+        check_large_activation();
+        return 0;
+    }
     if (argc == 2 && strcmp(argv[1], "--dense-mma") == 0) {
         check_dense_mma(521, 67, 33);
         check_dense_mma(2048, 256, 128);
