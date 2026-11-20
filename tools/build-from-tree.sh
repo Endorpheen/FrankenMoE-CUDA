@@ -167,6 +167,24 @@ for o in "$TREE"/extra-objects/*.o; do
 done
 rm -f "$UNIT_SYMS"
 
+REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+# The C++ m1 bridges: the entry points the composed unit calls and nothing else in this tree defined.
+# goose_tok_enabled was the first undefined symbol; compiling the set brings the rest with it.
+# runtime/core/include carries bmoe/config.h and its siblings, which the m1 bridges include. Recorded as a
+# follow-up: the tree should carry a copy so this build does not read outside it.
+M1INC="-I$TREE/m1bridges -I$TREE/module-src -I$TREE/modules -I$TREE/upstream-include -I$REPO_ROOT/runtime/core/include"
+for src in "$TREE"/m1bridges/*.cpp; do
+    [ -f "$src" ] || continue
+    g++-13 -O2 -fPIC -std=c++17 -w $M1INC -c "$src" -o "$OUT/obj/m1-$(basename "$src" .cpp).o" \
+        || { echo "m1 bridge failed: $src"; exit 1; }
+done
+for src in "$TREE"/m1bridges/*.c; do
+    [ -f "$src" ] || continue
+    gcc-13 -O2 -fPIC -std=c11 -w $M1INC -c "$src" -o "$OUT/obj/m1-$(basename "$src" .c).o" \
+        || { echo "m1 host failed: $src"; exit 1; }
+done
+echo "m1 objects: $(ls "$OUT"/obj/m1-*.o 2>/dev/null | wc -l)"
+
 flint=""
 for o in "$TREE"/flint-objects/*.o; do
     is_replaced "$(basename "$o" .o)" || flint="$flint $o"
@@ -176,7 +194,7 @@ echo "upstream objects: $(echo $flint | wc -w) of $(ls "$TREE"/flint-objects/*.o
 # Keep the runtime search path relative to the installed library.
 /usr/bin/c++ -fPIC -O3 -DNDEBUG -shared -Wl,-soname,libllama.so.0 \
     -o "$OUT/libllama.so.0" \
-    "$OUT"/obj/our-*.o "$OUT"/obj/mod-*.o "$OUT"/obj/br-*.o $UNIT_OBJ \
+    "$OUT"/obj/our-*.o "$OUT"/obj/mod-*.o "$OUT"/obj/br-*.o "$OUT"/obj/m1-*.o $UNIT_OBJ \
     $EXTRA_OBJS $flint \
     -Wl,-rpath,'$ORIGIN' \
     "$TREE/libs/libggml.so.0" "$TREE/libs/libggml-base.so.0" \

@@ -64,7 +64,7 @@ python3 "$ROOT/tools/resolve-modules.py" "$DST" "$BASE" "${OBJDIR:-$BASE/runtime
 # how this step came to exist. Only the includes that have no tracked file are generated, so the step
 # costs one compile per such header and nothing else.
 G=${FG_GOOSE:-/home/end0/AI/LlamaServer/toolchain/goose-2026.3-string/goose}
-for inc in $(grep -rhoE '#include "[a-z0-9_-]+\.h"' "$ROOT"/runtime/reconstructed/src/*.cpp \
+for inc in $(grep -rhoE '#include "[a-z0-9_-]+\.h"' "$ROOT"/runtime/reconstructed/src/*.cpp "$ROOT"/integration/m1/common/*.cpp 2>/dev/null \
              | sed 's/.*"\(.*\)"/\1/' | sort -u); do
     # `[ ... ] && continue` returns 1 when the test fails, and under `set -e` that ends the whole
     # script - which is exactly what happened on the first run of this step: exit 2, no message.
@@ -81,6 +81,7 @@ for inc in $(grep -rhoE '#include "[a-z0-9_-]+\.h"' "$ROOT"/runtime/reconstructe
     if [ -z "$hsrc" ]; then
         case "$inc" in
             slru-policy.h) hsrc=$ROOT/goose/cpu/goose-moe-cache-slru.goose;;
+            config-slice.h) hsrc=$ROOT/goose/cli/config-validate.goose;;
         esac
     fi
     [ -n "$hsrc" ] || continue
@@ -90,6 +91,17 @@ for inc in $(grep -rhoE '#include "[a-z0-9_-]+\.h"' "$ROOT"/runtime/reconstructe
         echo "  WARNING could not generate $inc from $hsrc"
     fi
 done
+
+# The C++ m1 bridges. They are why the accepted artefact carries about a hundred mangled C++ symbols and
+# the rebuilt one did not: seven files in integration/m1/common declare the entry points the composed unit
+# calls (goose_tok_enabled was the first missing one), and no consolidated set ever compiled them. The host
+# headers they include live next door.
+mkdir -p "$DST/m1bridges"
+cp "$ROOT"/integration/m1/common/*.cpp "$DST/m1bridges/" 2>/dev/null || true
+cp "$ROOT"/integration/m1/common/*.h   "$DST/m1bridges/" 2>/dev/null || true
+cp "$ROOT"/integration/m1/host/*.h     "$DST/m1bridges/" 2>/dev/null || true
+cp "$ROOT"/integration/m1/host/*.c     "$DST/m1bridges/" 2>/dev/null || true
+echo "  m1 bridges      $(ls "$DST"/m1bridges/*.cpp 2>/dev/null | wc -l) cpp, $(ls "$DST"/m1bridges/*.h 2>/dev/null | wc -l) h"
 
 # Bridges: the experiment directories build.py names explicitly.
 for m in $(grep -oE "EXP-[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]+-[a-z0-9-]+" "$ROOT/runtime/reconstructed/build.py" | sort -u); do
@@ -125,4 +137,4 @@ cp -L "${libraries[@]/#/$src/}" "$DST/libs/"
 
 ( cd "$DST" &&  find . -type f ! -name SHA256SUMS -exec sha256sum {} \; | sort -k2 > SHA256SUMS )
 echo "consolidated tree: $DST"
-for d in our-src modules bridges flint-objects extra-objects libs; do printf '  %-15s %s files\n' "$d" "$(find "$DST/$d" -type f | wc -l)"; done
+for d in our-src modules bridges m1bridges flint-objects extra-objects libs; do printf '  %-15s %s files\n' "$d" "$(find "$DST/$d" -type f | wc -l)"; done

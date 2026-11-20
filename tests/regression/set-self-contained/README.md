@@ -9,6 +9,10 @@
 `libmoe_mmid_tiled.so`, is required by `libggml-cpu.so.0`. Every hash in that directory is correct and the
 set still cannot load. This test reads `DT_NEEDED` from every ELF in a set and asks whether each name is
 present in the same directory, so that gap is one command away instead of one accident away.
+Artifact entries must resolve to dynamic ELF files. Relative library aliases can point to members
+of the flat set. Missing targets, absolute paths and links outside the set fail the check.
+The synthetic `set-self-contained-fixtures` test exercises valid aliases and invalid dependencies
+without the release or a model.
 
 ## Two false results it produced before it worked
 
