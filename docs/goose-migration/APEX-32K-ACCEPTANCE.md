@@ -69,8 +69,10 @@ Functional qualification runs before memory and speed acceptance.
    first token matches the 4096/1 reference. Remaining tensor
    differences are recorded in the
    [numerical checkpoint](CUDA-PARITY-EXP1476.md#numerical-checkpoint-before-response-quality-tests).
-   Compare short and long response quality before resuming the
-   CUDA performance work.
+   The separate short and long
+   [response-quality comparison](CUDA-PARITY-EXP1476.md#apex-response-quality-checkpoint)
+   confirms coherent generation and the HTTP EOS fix. The full
+   Apex 32K/512 response gate remains open.
    Gates 3 and 4 qualify the later speed comparison.
 7. [ ] **Accept memory** (requires 5 and 6). Record per-process RSS and
    its high-water mark, model page residency before and after the

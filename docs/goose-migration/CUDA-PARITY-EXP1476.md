@@ -1469,6 +1469,72 @@ probes needed if a response shows a concrete regression.
   `/home/end0/AI/LlamaServer/franken-apex-reference-experts-layers.cib3wbi6`.
   The first 124 IDs are the common captured microbatch.
 
+## Apex response-quality checkpoint
+
+EXP-2026-11-20-1554 compares three real Apex requests with
+EXP-1476 using the same Q4_K_M weights, input IDs, request
+bytes and greedy sampling. Both use context 262,144,
+batch/ubatch 4096/4096, fresh context per request and normal
+EOS. The tokenizer's no-thinking chat template was rendered
+once and EXP-1476 supplied the prompt IDs for both endpoints.
+
+The first Goose run exposed the terminal EOG token in text
+and probability pieces. The sampler had already stopped
+correctly. The HTTP response now skips that token when
+decoding text and emits empty EOG text and bytes in
+probability rows. Token IDs and counts remain available.
+An EOG sampled exactly at the generation limit now reports
+`stop_type=eos`. All 36 HTTP regression requests passed.
+The same three real requests preserved every one of 1,083
+Goose token IDs across the fix. Text matches the previous
+Goose responses after removing the trailing EOG marker.
+
+| Request | EXP-1476 | Independent Goose |
+|---|---|---|
+| Strict JSON, 94 prompt IDs | 34 output IDs, EOS | 34 output IDs, EOS. Identical text and IDs. |
+| Grounded incident report in Russian, 175 prompt IDs | 320 output IDs, limit. Correct facts and two investigative steps, with extra sections. | 219 output IDs, EOS. Correct facts, two steps and an extra title. |
+| Long technical handoff, 202 prompt IDs | 766 output IDs, EOS, 526 words. | 830 output IDs, EOS, 558 words. |
+
+All six response texts after the fix are nonempty. The raw
+scan found no replacement/control characters, visible special
+markers, complete prompt echo or adjacent repeated-token loops.
+Both JSON answers provide the expected fields and values inside
+a Markdown fence, contrary to the strict formatting instruction.
+Both long answers have the requested sections in order plus an
+extra title, exceed the requested 520-word ceiling and include a
+contradictory detail about duplicate records. Goose states that
+a retry creates a second record, then explains that the unique
+index prevents it. EXP-1476 describes a second worker committing
+the same event despite that index. Both answers are readable and
+complete. The sample supports using this checkpoint for further
+CUDA work. Keep behavioral checks on subsequent changes and
+investigate only concrete new failures.
+
+On the long request, the endpoint reported 17.008 output tok/s
+for Goose and 74.582 for EXP-1476. The measured prompt rates
+were 143.871 and 349.253 tok/s at 202 prompt IDs. Peak process
+RSS was 22,878,660 KiB in Goose over the suite. Its post-request
+GPU samples were 8,018–8,020 MiB, and process swap was zero.
+These are quality diagnostics with different output sequences.
+The full 32K/512 correctness, memory and speed gates remain open.
+
+The working checkpoint uses `GOOSE_MMQ=1`, `GOOSE_GDN_MMA=1`,
+`GOOSE_FLASH_MMA=1`, `GOOSE_DENSE_MMA=1`,
+`GOOSE_RMS_REFERENCE=1`, `GOOSE_MMQ_Q4_REFERENCE=1`,
+`GOOSE_MMQ_Q6_REFERENCE=1`, `GOOSE_SSM_REFERENCE=1`,
+`GOOSE_CUDA_ACTIVATION_REFERENCE=1`, and
+`GOOSE_DENSE_MMA_REFERENCE=1`. The independent executable
+links against libc and libm. The frozen EXP-1476 only runs
+as the isolated comparison.
+
+- Build `/home/end0/AI/LlamaServer/franken-goose-quality-eos.yIp48K`,
+  executable SHA-256
+  `47b441c51e41966f333c22169e1a292e33a8cd82e1df4178b48fdaf815c2ece9`.
+- The reproducible requests, scripts, answers, hashes and
+  `summary.jsonl` are under `quality/paired.gT0Q00` in that
+  build. The pre-fix run is under
+  `/home/end0/AI/LlamaServer/franken-goose-swiglu-reference.3MLAsn/quality/paired.061R1P`.
+
 ## Kernel coverage
 
 The exact EXP-1476 request passed content, ID and probability

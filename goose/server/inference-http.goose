@@ -117,9 +117,10 @@ fn ih_integer_array(response: u8[:], at: i64, ids: const i64[:]) -> i64 {
     return cp_put(response, n, "]");
 }
 
-fn ih_probability(response: u8[:], at: i64, token: i64, probability: f32, piece: u8[:]) -> i64 {
+fn ih_probability(response: u8[:], at: i64, token: i64, probability: f32, piece: u8[:],
+                  eog: const i64[:]) -> i64 {
     let one: i64[1] = [token];
-    let bytes = ih_detokenize(one, piece);
+    let bytes = if bt_is_eog_impl(eog, eog.len, token) != 0 { 0 } else { ih_detokenize(one, piece) };
     if bytes < 0 || bytes > piece.len { return -1; }
     var prefix: i64 = 0;
     while prefix < bytes {
@@ -141,18 +142,18 @@ fn ih_probability(response: u8[:], at: i64, token: i64, probability: f32, piece:
 }
 
 fn ih_probability_rows(response: u8[:], at: i64, steps: i64, top: i64,
-                       ids: const i64[:], logp: const f32[:], piece: u8[:]) -> i64 {
+                       ids: const i64[:], logp: const f32[:], piece: u8[:], eog: const i64[:]) -> i64 {
     var n = cp_put(response, at, ",\"completion_probabilities\":[");
     for row in steps {
         let base = row * (top + 1);
         if row != 0 { n = cp_put(response, n, ","); }
-        n = ih_probability(response, n, ids[base], logp[base], piece);
+        n = ih_probability(response, n, ids[base], logp[base], piece, eog);
         if n < 0 || n > response.len { return -1; }
         n = cp_put(response, n, ",\"top_logprobs\":[");
         for col in top {
             if col != 0 { n = cp_put(response, n, ","); }
             let index = base + 1 + col;
-            n = ih_probability(response, n, ids[index], logp[index], piece);
+            n = ih_probability(response, n, ids[index], logp[index], piece, eog);
             if n < 0 || n > response.len { return -1; }
             n = cp_put(response, n, "}");
         }
@@ -223,7 +224,9 @@ fn ih_generate(fd: i64, prompt: const i64[:], opts: const IhCompletion &,
         ih_response(fd, 500, "{\"error\":\"generation failed\"}");
         return;
     }
-    let bytes = ih_detokenize(ids[0 .. count], output);
+    let stopped_eos = bt_is_eog_impl(eog[..], eog.len, ids[count - 1]) != 0;
+    let visible = if stopped_eos { count - 1 } else { count };
+    let bytes = ih_detokenize(ids[0 .. visible], output);
     if bytes < 0 || bytes > output.len {
         ih_response(fd, 500, "{\"error\":\"detokenization failed\"}");
         return;
@@ -241,8 +244,8 @@ fn ih_generate(fd: i64, prompt: const i64[:], opts: const IhCompletion &,
             n = cp_put(response, n, ",\"tokens\":");
             n = ih_integer_array(response, n, ids[0 .. count]);
         }
-        n = cp_put(response, n, if count == limit { ",\"stop\":true,\"stop_type\":\"limit\"" }
-                              else { ",\"stop\":true,\"stop_type\":\"eos\"" });
+        n = cp_put(response, n, if stopped_eos { ",\"stop\":true,\"stop_type\":\"eos\"" }
+                              else { ",\"stop\":true,\"stop_type\":\"limit\"" });
         n = cp_put(response, n, ",\"tokens_evaluated\":");
         n = cp_uint(response, n, prompt.len);
         n = cp_put(response, n, ",\"tokens_predicted\":");
@@ -250,7 +253,7 @@ fn ih_generate(fd: i64, prompt: const i64[:], opts: const IhCompletion &,
         n = ih_timing_fields(response, n, count, timing);
     }
     if top > 0 {
-        n = ih_probability_rows(response, n, count, top, prob_ids[..], logp[..], output);
+        n = ih_probability_rows(response, n, count, top, prob_ids[..], logp[..], output, eog[..]);
     }
     if n < 0 || n >= response.len {
         ih_response(fd, 500, "{\"error\":\"response too large\"}");

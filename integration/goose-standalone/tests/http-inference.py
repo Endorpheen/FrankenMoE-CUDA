@@ -49,7 +49,7 @@ def check(binary, fixture):
         candidate.bind(("127.0.0.1", 0))
         port = candidate.getsockname()[1]
 
-    limit = 34
+    limit = 36
     with subprocess.Popen(
         [binary, "--ctx-size", "262144", fixture, "--serve", str(port), str(limit)],
         stdout=subprocess.DEVNULL,
@@ -116,6 +116,18 @@ def check(binary, fixture):
             ):
                 status, result = complete(port, options)
                 assert status == 200 and result["ids"] == [expected], result
+
+            for budget in (1, 2):
+                status, result = complete(port, dict(
+                    sampled, n_predict=budget, ignore_eos=False, return_tokens=True, n_probs=4,
+                ))
+                assert status == 200 and result["tokens"] == result["ids"] == [3], result
+                assert result["content"] == result["text"] == ""
+                assert result["stop_type"] == "eos" and result["timings"]["predicted_n"] == 1
+                eos = result["completion_probabilities"][0]
+                assert eos["id"] == 3 and eos["token"] == "" and eos["bytes"] == []
+                eos_choice = next(item for item in eos["top_logprobs"] if item["id"] == 3)
+                assert eos_choice["token"] == "" and eos_choice["bytes"] == []
 
             # Typical sampling runs before the temperature changes the weights.
             status, result = complete(port, dict(sampled, seed=17, typical_p=0.1))
