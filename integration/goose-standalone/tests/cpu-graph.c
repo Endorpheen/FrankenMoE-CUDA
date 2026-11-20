@@ -634,6 +634,49 @@ static void check_cached_expert_batch(void) {
     ggml_free(ctx);
 }
 
+static void check_graph_storage(void) {
+    struct ggml_context * ctx = ggml_init((struct ggml_init_params){ 1024 * 1024, NULL, true });
+    assert(ctx);
+    struct ggml_cgraph * empty = ggml_new_graph_custom(ctx, 16, false);
+    void * empty_storage = fg_standalone_graph_alloc(empty);
+    assert(empty_storage && (uintptr_t) empty_storage % GGML_MEM_ALIGN == 0);
+    free(empty_storage);
+
+    struct ggml_tensor * base = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, 12);
+    struct ggml_tensor * first = ggml_view_1d(ctx, base, 8, 2 * sizeof(float));
+    struct ggml_tensor * nested = ggml_view_1d(ctx, first, 4, sizeof(float));
+    struct ggml_tensor * borrowed = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, 4);
+    float external[] = {2.0f, 4.0f, 6.0f, 8.0f};
+    borrowed->data = external;
+    struct ggml_tensor * output = ggml_add(ctx, nested, borrowed);
+    struct ggml_cgraph * graph = ggml_new_graph_custom(ctx, 32, false);
+    ggml_build_forward_expand(graph, output);
+    assert(nested->view_src == base && nested->view_offs == 3 * sizeof(float));
+
+    const size_t offset = nested->view_offs;
+    nested->view_offs = SIZE_MAX;
+    assert(fg_standalone_graph_alloc(graph) == NULL);
+    assert(!base->data && !nested->data && !output->data && borrowed->data == external);
+    nested->view_offs = offset;
+
+    struct ggml_tensor * orphan = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, 12);
+    nested->view_src = orphan;
+    assert(fg_standalone_graph_alloc(graph) == NULL);
+    assert(!base->data && !nested->data && !output->data && !orphan->data && borrowed->data == external);
+    nested->view_src = base;
+
+    void * storage = fg_standalone_graph_alloc(graph);
+    assert(storage && (uintptr_t) base->data % GGML_MEM_ALIGN == 0);
+    assert((uintptr_t) output->data % GGML_MEM_ALIGN == 0);
+    assert(nested->data == (uint8_t *) base->data + offset && borrowed->data == external);
+    for (int i = 0; i < 12; ++i) ((float *) base->data)[i] = (float) i;
+    assert(fg_standalone_graph_compute(graph) == GGML_STATUS_SUCCESS);
+    for (int i = 0; i < 4; ++i) assert(((float *) output->data)[i] == (float) (i + 3) + external[i]);
+    puts("Goose graph storage rejects invalid views atomically and retries with exact aligned aliases");
+    free(storage);
+    ggml_free(ctx);
+}
+
 static void check_activation_pipeline(void) {
     enum { width = 32, rows = 3, chain = 260 };
     struct ggml_context * ctx = ggml_init((struct ggml_init_params){ 1024 * 1024, NULL, true });
@@ -932,6 +975,7 @@ int main(int argc, char ** argv) {
         else if (strcmp(argv[1], "--activations") == 0) check_activation_pipeline();
         else if (strcmp(argv[1], "--vectors") == 0) check_cuda_vectors();
         else if (strcmp(argv[1], "--cached-experts") == 0) check_cached_expert_batch();
+        else if (strcmp(argv[1], "--graph-storage") == 0) check_graph_storage();
         else if (strcmp(argv[1], "--position") == 0) check_cuda_position();
         else if (strcmp(argv[1], "--routing") == 0) check_cuda_routing();
         else check_model_step(argv[1]);

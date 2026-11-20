@@ -83,58 +83,35 @@ void fg143_copy_bytes(uint64_t dst, uint64_t src, int64_t length) {
     if (length > 0) memmove((void *) (uintptr_t) dst, (const void *) (uintptr_t) src, (size_t) length);
 }
 
-static bool needs_storage(const struct ggml_tensor * tensor) {
-    return tensor->data == NULL && tensor->view_src == NULL;
+int64_t fg143_storage_count(uint64_t address) {
+    const struct ggml_cgraph * graph = (const void *) (uintptr_t) address;
+    return (int64_t) graph->n_leafs + graph->n_nodes;
 }
 
-static struct ggml_tensor * graph_tensor(struct ggml_cgraph * graph, size_t index) {
-    const size_t leaves = (size_t) graph->n_leafs;
-    return index < leaves ? graph->leafs[index] : graph->nodes[index - leaves];
+uint64_t fg143_storage_tensor(uint64_t address, int64_t index) {
+    const struct ggml_cgraph * graph = (const void *) (uintptr_t) address;
+    const int64_t leaves = graph->n_leafs;
+    return (uint64_t) (uintptr_t) (index < leaves ? graph->leafs[index] : graph->nodes[index - leaves]);
+}
+
+int64_t fg143_storage_contains(uint64_t address, uint64_t tensor) {
+    const struct ggml_cgraph * graph = (const void *) (uintptr_t) address;
+    if (graph->size == 0 || graph->visited_hash_set.size == 0) return -1;
+    return ggml_hash_contains(&graph->visited_hash_set, (void *) (uintptr_t) tensor);
+}
+
+uint64_t fg143_storage_alignment(void) {
+    return GGML_MEM_ALIGN;
+}
+
+uint64_t fg143_storage_alloc(uint64_t bytes) {
+    if (bytes > SIZE_MAX) return 0;
+    return (uint64_t) (uintptr_t) aligned_alloc(GGML_MEM_ALIGN, (size_t) bytes);
 }
 
 void * fg_standalone_graph_alloc(struct ggml_cgraph * graph) {
-    if (!graph) return NULL;
-    const size_t n = (size_t) graph->n_leafs + (size_t) graph->n_nodes;
-    size_t bytes = 0;
-    for (size_t i = 0; i < n; ++i) {
-        const struct ggml_tensor * tensor = graph_tensor(graph, i);
-        if (tensor->view_src) {
-            const size_t source_bytes = ggml_nbytes(tensor->view_src);
-            if (tensor->view_offs > source_bytes || ggml_nbytes(tensor) > source_bytes - tensor->view_offs) {
-                return NULL;
-            }
-        } else if (needs_storage(tensor)) {
-            const size_t size = ggml_nbytes(tensor);
-            if (size > SIZE_MAX - bytes - (GGML_MEM_ALIGN - 1)) {
-                return NULL;
-            }
-            bytes += GGML_PAD(size, GGML_MEM_ALIGN);
-        }
-    }
-
-    // Keep storage independent of the metadata context and any mapped weights.
-    uint8_t * storage = aligned_alloc(GGML_MEM_ALIGN, bytes ? bytes : GGML_MEM_ALIGN);
-    if (!storage) return NULL;
-
-    size_t at = 0;
-    for (size_t i = 0; i < n; ++i) {
-        struct ggml_tensor * tensor = graph_tensor(graph, i);
-        if (needs_storage(tensor)) {
-            tensor->data = storage + at;
-            at += GGML_PAD(ggml_nbytes(tensor), GGML_MEM_ALIGN);
-        }
-    }
-    for (size_t i = 0; i < n; ++i) {
-        struct ggml_tensor * tensor = graph_tensor(graph, i);
-        if (tensor->data == NULL && tensor->view_src != NULL) {
-            if (tensor->view_src->data == NULL) {
-                free(storage);
-                return NULL;
-            }
-            tensor->data = (uint8_t *) tensor->view_src->data + tensor->view_offs;
-        }
-    }
-    return storage;
+    pthread_once(&cpu_init, init_cpu);
+    return (void *) (uintptr_t) fg143_storage_allocate((uint64_t) (uintptr_t) graph);
 }
 
 struct node_workspace {

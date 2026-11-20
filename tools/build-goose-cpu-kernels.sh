@@ -33,7 +33,7 @@ for kind in ("op", "unary_op", "glu_op"):
 parts = (
     "tensor-base", "graph-residency", "cuda-vector", "cuda-position", "cuda-routing", "cuda-transform", "pointwise", "reductions", "attention", "transforms",
     "matrix", "recurrent", "rope", "indexed", "image", "codec-transform",
-    "entry", "flash-attention", "stateful/scan-composition", "stateful/stateful", "standalone",
+    "entry", "flash-attention", "stateful/scan-composition", "stateful/stateful", "graph-storage", "standalone",
 )
 body = ["import.codec.decode;\n"]
 body.extend(line for line in (root / "goose/cuda/standalone-vector.goose").read_text().splitlines()

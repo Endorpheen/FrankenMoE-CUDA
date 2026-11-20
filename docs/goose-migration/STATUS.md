@@ -419,6 +419,21 @@ metadata bytes. The resident-state continuation, 267-token chunked
 prefill and 34 HTTP checks passed. Apex throughput and peak memory
 remain unmeasured.
 
+EXP-2026-11-20-1517 moves the standalone graph data arena into the
+Goose allocator. It checks every view's byte span and verifies that an
+unbound base belongs to the graph before reserving storage or modifying
+tensor pointers. Then it aligns and binds owned blocks, followed by
+views. Borrowed buffers keep their addresses. The C adapter exposes
+GGML fields, the graph index and the aligned allocation primitive.
+
+The storage fixture rejected an overflowing view offset and a missing
+base while leaving all tensor pointers intact. The same graph then
+allocated successfully with the expected aligned addresses, nested
+view offset and borrowed buffer, and produced the expected values.
+The RTX 4070 step-recovery fixture balanced all eight frames. The
+mixed CUDA/CPU, 267-token chunked prefill and 34 HTTP checks passed.
+Apex throughput and peak memory remain unmeasured.
+
 ## Historical requirements audit
 
 `docs/goose-migration/tasks.json`: **DONE 1**, **PARTIAL 144**, **TODO 7** of 152.
