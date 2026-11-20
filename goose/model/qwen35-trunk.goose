@@ -41,6 +41,23 @@ fn qm_swiglu(c: i64, gate: i64, up: i64, work: i64[:]) -> i64 {
 
 extern "fg_q35_moe_weighted_node" fn qm_weighted(c: i64, input: i64, weights: i64) -> i64;
 extern "fg_q35_moe_norm_node" fn qm_route_weights(c: i64, input: i64, ids: i64, scale_bits: i64) -> i64;
+extern "fg_q35_moe_norm_enabled" fn qm_norm_enabled() -> bool;
+
+fn qm_route_weights_separate(c: i64, input: i64, ids: i64, experts: i64, used: i64, count: i64,
+    scale_bits: i64, work: i64[:]) -> i64 {
+    let bank = qa_reshape(c, input, 1, experts, count, 1);
+    qa_begin(work, 18, c, bank, ids, 0, 0);
+    let selected = qa_reshape(c, gb_common_args(work), used, count, 1, 1);
+    qa_begin(work, 14, c, selected, 0, 0, 15);
+    let sum = gb_common_args(work);
+    qa_begin(work, 9, c, sum, 0, 0, 50);
+    work[7] = 947912704; work[8] = 2139095040;
+    let normalized = qa_reshape(c, qa_binary(c, selected, gb_common_args(work), 8, work), 1, used, count, 1);
+    let scale = float_bits(scale_bits);
+    if scale == 0.0 || scale == 1.0 { return normalized; }
+    qa_begin(work, 8, c, normalized, 0, 0, 32); work[7] = scale_bits;
+    return gb_common_args(work);
+}
 
 // Weights: router, up_exps, gate_exps, down_exps, shared_up, shared_gate,
 // shared_down, shared_router. cfg: expert_count, used_count, weight_scale_bits.
@@ -67,7 +84,8 @@ export fn q35_moe_ffn(c: i64, x: i64, weights: i64[:], cfg: i64[:],
     nodes[1] = gb_common_args(work);
     qa_begin(work, 30, c, nodes[1], 0, 0, used); nodes[2] = gb_common_args(work);
     nodes[3] = nodes[2];
-    nodes[11] = qm_route_weights(c, nodes[1], nodes[3], cfg[2]);
+    nodes[11] = if qm_norm_enabled() { qm_route_weights(c, nodes[1], nodes[3], cfg[2]) }
+        else { qm_route_weights_separate(c, nodes[1], nodes[3], experts, used, count, cfg[2], work) };
     if nodes[11] == 0 { return 0; }
     nodes[12] = qa_reshape(c, x, hidden, 1, count, 1);
     nodes[13] = qm_mm_id(c, weights[1], nodes[12], nodes[3], work);

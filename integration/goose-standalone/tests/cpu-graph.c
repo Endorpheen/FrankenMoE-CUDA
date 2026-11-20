@@ -1237,6 +1237,37 @@ static void check_cuda_position(void) {
     ggml_free(ctx);
 }
 
+static void check_rms_mul(void) {
+    enum { width = 64, heads = 3, tokens = 7 };
+    struct ggml_context * ctx = ggml_init((struct ggml_init_params){ 64 * 1024, NULL, true });
+    assert(ctx);
+    struct ggml_tensor * bank = ggml_new_tensor_3d(ctx, GGML_TYPE_F32, 2 * width, heads, tokens);
+    struct ggml_tensor * input = ggml_view_3d(ctx, bank, width, heads, tokens, bank->nb[1], bank->nb[2], 0);
+    struct ggml_tensor * weights = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, width);
+    struct ggml_tensor * separate = ggml_mul(ctx, ggml_rms_norm(ctx, input, 1e-6f), weights);
+    struct ggml_tensor * fused = ggml_rms_norm(ctx, input, 1e-6f);
+    fused->src[1] = weights;
+    fused->op_params[14] = 1;
+    struct ggml_cgraph * graph = ggml_new_graph_custom(ctx, 32, false);
+    ggml_build_forward_expand(graph, separate);
+    ggml_build_forward_expand(graph, fused);
+    void * storage = fg_standalone_graph_alloc(graph);
+    assert(storage);
+    for (int i = 0; i < 2 * width * heads * tokens; ++i) {
+        ((float *) bank->data)[i] = (float) ((i * 13 + i / 29) % 113 - 56) / 77.0f;
+    }
+    for (int i = 0; i < width; ++i) ((float *) weights->data)[i] = (float) (i + 1) / 91.0f;
+    assert(setenv("GOOSE_CUDA", "0", 1) == 0);
+    assert(fg_standalone_graph_compute(graph) == GGML_STATUS_SUCCESS);
+    assert(memcmp(fused->data, separate->data, ggml_nbytes(fused)) == 0);
+    assert(unsetenv("GOOSE_CUDA") == 0);
+    assert(fg_standalone_graph_compute(graph) == GGML_STATUS_SUCCESS);
+    assert(memcmp(fused->data, separate->data, ggml_nbytes(fused)) == 0);
+    puts("Weighted RMS: strided columns and broadcast weights match bitwise on CPU and CUDA");
+    free(storage);
+    ggml_free(ctx);
+}
+
 static void check_moe_norm(void) {
     enum { experts = 61, selected = 37, tokens = 5 };
     struct ggml_context * ctx = ggml_init((struct ggml_init_params){ 64 * 1024, NULL, true });
@@ -1580,6 +1611,10 @@ static void check_ssm_silu(int tokens) {
 }
 
 int main(int argc, char ** argv) {
+    if (argc == 2 && strcmp(argv[1], "--rms-mul") == 0) {
+        check_rms_mul();
+        return 0;
+    }
     if (argc == 2 && strcmp(argv[1], "--moe-norm") == 0) {
         check_moe_norm();
         return 0;

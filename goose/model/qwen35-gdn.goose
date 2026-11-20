@@ -69,6 +69,8 @@ export fn q35_gdn_host_restore(conv: f32[:], state: f32[:], cfg: i64[:], meta: i
     return nc + ns;
 }
 
+extern "fg_q35_ssm_silu_enabled" fn qg_ssm_silu_enabled() -> bool;
+
 fn qg_unary(c: i64, a: i64, op: i64, w: i64[:]) -> i64 {
     qa_begin(w, 3, c, a, 0, 0, op);
     return gb_common_args(w);
@@ -97,8 +99,7 @@ export fn q35_gdn_layer(c: i64, x: i64, conv: i64, state: i64, weights: i64[:], 
        !qg_shape(weights[9], vd, hidden, 1) { return 0; }
     if prop(weights[0], 0) != 0 || prop(weights[10], 0) != 0 || prop(weights[5], 0) != 0 ||
        prop(weights[6], 0) != 0 || prop(weights[7], 0) != 0 || prop(weights[8], 0) != 0 { return 0; }
-    nodes[0] = qa_rms(c, x, cfg[4], work);
-    nodes[1] = qa_binary(c, nodes[0], weights[0], 7, work);
+    nodes[1] = qa_weighted_rms(c, x, weights[0], cfg[4], work);
     nodes[2] = qa_mm(c, weights[1], nodes[1], work);
     nodes[3] = qa_reshape(c, nodes[2], channels, count, 1, 1);
     nodes[4] = qa_mm(c, weights[2], nodes[1], work);
@@ -116,9 +117,12 @@ export fn q35_gdn_layer(c: i64, x: i64, conv: i64, state: i64, weights: i64[:], 
     nodes[16] = gdn_conv_store(c, nodes[15], conv);
     qa_begin(work, 27, c, nodes[14], weights[7], 0, 0);
     nodes[17] = gb_common_args(work);
-    // Apply SiLU before publishing the convolution result.
-    qa_set(nodes[17], 10, 0, 1);
-    nodes[18] = nodes[17];
+    if qg_ssm_silu_enabled() {
+        qa_set(nodes[17], 10, 0, 1);
+        nodes[18] = nodes[17];
+    } else {
+        nodes[18] = qg_unary(c, nodes[17], 10, work);
+    }
     nodes[19] = gdn_qkv_view(c, nodes[18], 0, head, nk, head, nv, count, 1, 4);
     nodes[20] = gdn_qkv_view(c, nodes[18], 1, head, nk, head, nv, count, 1, 4);
     nodes[21] = gdn_qkv_view(c, nodes[18], 2, head, nk, head, nv, count, 1, 4);
@@ -136,14 +140,12 @@ export fn q35_gdn_layer(c: i64, x: i64, conv: i64, state: i64, weights: i64[:], 
     nodes[28] = view4(c, nodes[26], head, head, nv, 1, head * 4, head * head * 4, head * head * nv * 4, vd * count * 4);
     nodes[29] = gdn_conv_store(c, nodes[28], state);
     nodes[30] = qa_reshape(c, nodes[4], head, nv, count, 1);
-    nodes[31] = qa_rms(c, nodes[27], cfg[4], work);
-    nodes[32] = qa_binary(c, nodes[31], weights[8], 7, work);
+    nodes[32] = qa_weighted_rms(c, nodes[27], weights[8], cfg[4], work);
     nodes[33] = qg_unary(c, nodes[30], 10, work);
     nodes[34] = qa_binary(c, nodes[32], nodes[33], 7, work);
     nodes[35] = qa_reshape(c, nodes[34], vd, count, 1, 1);
     nodes[36] = qa_mm(c, weights[9], nodes[35], work);
     nodes[37] = qa_binary(c, nodes[36], x, 2, work);
-    nodes[38] = qa_rms(c, nodes[37], cfg[4], work);
-    nodes[39] = qa_binary(c, nodes[38], weights[10], 7, work);
+    nodes[39] = qa_weighted_rms(c, nodes[37], weights[10], cfg[4], work);
     return nodes[39];
 }

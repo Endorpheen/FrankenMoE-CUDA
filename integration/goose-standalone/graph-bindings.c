@@ -19,6 +19,15 @@
 
 #include "ggml.h"
 
+bool fg_standalone_option_enabled(const char * name) {
+    const char * setting = getenv(name);
+    return !setting || strcmp(setting, "0") != 0;
+}
+
+bool fg_q35_rms_mul_enabled(void) { return fg_standalone_option_enabled("GOOSE_RMS_MUL"); }
+bool fg_q35_ssm_silu_enabled(void) { return fg_standalone_option_enabled("GOOSE_SSM_SILU"); }
+bool fg_q35_moe_norm_enabled(void) { return fg_standalone_option_enabled("GOOSE_MOE_NORM"); }
+
 int64_t fg_q35_fwht_node(int64_t context, int64_t input, int64_t width) {
     struct ggml_tensor * src = (void *) (intptr_t) input;
     if (!context || !src || src->type != GGML_TYPE_F32 || !ggml_is_contiguous(src) ||

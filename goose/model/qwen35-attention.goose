@@ -4,6 +4,7 @@ extern "fg156_tget" fn qa_get(t: i64, field: i64, index: i64) -> u64;
 extern "fg156_tset" fn qa_set(t: i64, field: i64, index: i64, value: u64);
 extern "fg156_name" fn qa_name(t: i64, source: i64, style: i64);
 extern "fg_q35_fwht_node" fn qa_fwht_node(c: i64, input: i64, width: i64) -> i64;
+extern "fg_q35_rms_mul_enabled" fn qa_rms_mul_enabled() -> bool;
 
 fn qa_begin(work: i64[:], mode: i64, c: i64, a: i64, b: i64, d: i64, op: i64) {
     var i: i64 = 0;
@@ -33,6 +34,15 @@ fn qa_rms(c: i64, input: i64, epsilon: i64, work: i64[:]) -> i64 {
     qa_begin(work, 4, c, input, 0, 0, 25);
     work[7] = epsilon;
     return gb_common_args(work);
+}
+
+fn qa_weighted_rms(c: i64, input: i64, weight: i64, epsilon: i64, work: i64[:]) -> i64 {
+    let normalized = qa_rms(c, input, epsilon, work);
+    if normalized == 0 { return 0; }
+    if !qa_rms_mul_enabled() { return qa_binary(c, normalized, weight, 7, work); }
+    qa_set(normalized, 8, 1, weight as u64);
+    qa_set(normalized, 10, 14, 1);
+    return normalized;
 }
 
 // The accepted EXP156 reshape policy, using an existing native view allocation
@@ -125,18 +135,15 @@ export fn q35_attn_project(c: i64, x: i64, positions: i64, weights: i64[:], cfg:
        ne(weights[4], 0) != times(hd, h) || ne(weights[4], 1) != k {
         return 0;
     }
-    nodes[0] = qa_rms(c, x, cfg[5], work);
-    nodes[1] = qa_binary(c, nodes[0], weights[0], 7, work);
+    nodes[1] = qa_weighted_rms(c, x, weights[0], cfg[5], work);
     nodes[2] = qa_mm(c, weights[1], nodes[1], work);
     nodes[3] = qa_mm(c, weights[2], nodes[1], work);
     nodes[4] = qa_mm(c, weights[3], nodes[1], work);
     if qg_split(c, nodes[2], hd, h, t, 4, nodes[5 .. 7]) != 2 { return 0; }
     nodes[7] = qa_reshape(c, nodes[3], hd, hk, t, 1);
     nodes[8] = qa_reshape(c, nodes[4], hd, hk, t, 1);
-    nodes[9] = qa_rms(c, nodes[5], cfg[5], work);
-    nodes[10] = qa_binary(c, nodes[9], weights[5], 7, work);
-    nodes[11] = qa_rms(c, nodes[7], cfg[5], work);
-    nodes[12] = qa_binary(c, nodes[11], weights[6], 7, work);
+    nodes[10] = qa_weighted_rms(c, nodes[5], weights[5], cfg[5], work);
+    nodes[12] = qa_weighted_rms(c, nodes[7], weights[6], cfg[5], work);
     nodes[13] = qa_rope(c, nodes[10], positions, cfg, sections, work);
     nodes[14] = qa_rope(c, nodes[12], positions, cfg, sections, work);
     qa_begin(work, 24, c, nodes[6], 0, 0, 35);
@@ -184,8 +191,7 @@ fn qa_attn_finish(c: i64, x: i64, q: i64, k: i64, v: i64, gate: i64, mask: i64,
     nodes[24] = qa_binary(c, nodes[22], nodes[23], 7, work);
     nodes[25] = qa_mm(c, weights[4], nodes[24], work);
     nodes[26] = qa_binary(c, nodes[25], x, 2, work);
-    nodes[27] = qa_rms(c, nodes[26], cfg[5], work);
-    nodes[28] = qa_binary(c, nodes[27], weights[7], 7, work);
+    nodes[28] = qa_weighted_rms(c, nodes[26], weights[7], cfg[5], work);
     return nodes[28];
 }
 

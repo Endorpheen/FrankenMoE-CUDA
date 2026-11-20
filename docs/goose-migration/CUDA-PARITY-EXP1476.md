@@ -108,7 +108,7 @@ dependencies. Resume decode-specific work after prefill recovery.
 | 16 | GDN prefill Tensor Cores. `ggml_cuda_op_gated_delta_net_impl` → `gdn_single` in `gated-delta-net-mma.cu`. | Reference executes `gdn_single<16,128,1>`. Independent Goose runs its `C=16, V=128` body with `GOOSE_GDN_MMA=1`. All 30 GDN layers execute it in a real Apex block. | PARTIAL. CPU and actual layer-input differential checks pass at the documented error levels. The short model output changes and still differs from EXP-1476. Validate full and chunked recurrent state and generation before default promotion. |
 | 17 | GDN decode specialization and fused state cache. `ggml_cuda_op_gated_delta_net_fused_cache` → native scalar `gated_delta_net_cuda` or shape-selected MMA. | Reference executes scalar decode GDN and known fused cache code. Goose has CUDA-resident GDN state and a publish/consume path. | PARTIAL. Match the selected decode kernel's arithmetic and state snapshots against the reference across prefill → decode. Check for stale aliases and measure actual state moves. |
 | 18 | SSM convolution and activation fusion. `ssm-conv.cu` dispatch plus `ggml_cuda_try_fuse` → `ssm_conv_long_token_f32` or `ssm_conv_f32`. | Both reference families execute. Goose applies SiLU inside its existing rolling convolution at all 30 Apex GDN layers. | PARTIAL. Restore the reference long-token schedule. Keep the fused/separate numerical fixtures and check persistent history at full context. |
-| 19 | Fused RMS/L2 normalization. `ggml_cuda_try_fuse` → RMS multiply/add/scale variants in `norm.cu` and supported RoPE/cache combinations. | Trace shows RMS variants. Goose has row normalization and separate vector operations. | PARTIAL. Fuse only traced compatible sequences after comparing epsilon and multiply/add order. Confirm reduction layout and avoid rounding regression. |
+| 19 | Fused RMS/L2 normalization. `ggml_cuda_try_fuse` → RMS multiply/add/scale variants in `norm.cu` and supported RoPE/cache combinations. | Goose connects its existing weighted RMS kernel at Qwen35 attention and GDN sites. The short Apex numerical snapshot matches the unfused graph byte-for-byte. | PARTIAL. Validate at full context and restore remaining compatible RMS/L2 and RoPE combinations. |
 | 20 | Gated and unary activation fusion. `unary.cu` and `ggml_cuda_try_fuse` launch `unary_gated_op_kernel` and `unary_op_kernel`. | Both execute. Goose implements fused SwiGLU and several individual activations and keeps a CUDA activation arena. | PARTIAL. Verify the executed reference combinations, then match remaining graph fusion choices. Compare activations and adjacent gates before speed checks. |
 | 21 | Broadcast arithmetic and reductions. CUDA operation dispatch → `k_bin_bcast`, `scale_f32`, `reduce_1Block_kernel`. | The reference runs optimized family variants. Goose implements broadcast vector and row-sum kernels for supported layouts. | PARTIAL. Restore shape-aware broadcasts/reductions where effect is measured. Verify offsets, F32/F64 reduction order and noncontiguous inputs. |
 | 22 | RoPE execution. CUDA dispatch → `rope_multi` and its graph fusion with norms and cache. | `rope_multi` runs. Goose has positional transforms on GPU and CPU. | PARTIAL. Compare actual long prefix positions, mode flags and rotate/cache fusion. Check Q/K numerics at the first divergence. |
@@ -813,6 +813,32 @@ Control: `/home/end0/AI/LlamaServer/franken-goose-router-topk.Fvuato/cuda-matrix
 Candidate: `/home/end0/AI/LlamaServer/franken-goose-route-norm.C436JC/cuda-matrix-dense-both.knvpkl98`.
 Numerical snapshot: `/home/end0/AI/LlamaServer/franken-goose-route-norm.C436JC/numerical.8exlSO`.
 Executable SHA-256: `3ffebfc5f012a0bfab8122636d4f4f451710ef5be55f1a714a988b25fba6a024`.
+
+## Weighted RMS in the Qwen35 graph
+
+EXP-2026-11-20-1544 connects the existing Goose weighted RMS path
+at the attention and GDN layer sites. The head RMS remains available
+as a separate numerical checkpoint. The strided broadcast-weight
+fixture matched fused and separate results bitwise on CPU and CUDA.
+Compute Sanitizer reported zero errors. `GOOSE_RMS_MUL=0`,
+`GOOSE_MOE_NORM=0` and `GOOSE_SSM_SILU=0` each restore their
+separate graph path. The mixed CPU/CUDA model fixture passed with
+each option disabled individually.
+
+On one identical executable with all three experimental MMA flags,
+Apex 4096/1 took 15.619 s / 262.243 tokens/s with separate RMS and
+14.573 s / 281.072 tokens/s with weighted RMS. This removed 130
+vector launches. H2D dropped from 66,336,182,488 to 61,000,992,568
+bytes and D2H from 43,090,640,896 to 37,688,377,344 bytes. Sampled
+process VRAM remained 8,582 MiB. ID 280, text and five probabilities
+matched. The separate 97,691,648-byte numerical capture and manifest
+matched the prior combination byte-for-byte. This is the tenth
+short-verified improvement. Full-request qualification is separate.
+
+Control: `/home/end0/AI/LlamaServer/franken-goose-rms-mul.sOoyid/cuda-matrix-dense-both._m0eovju`.
+Candidate: `/home/end0/AI/LlamaServer/franken-goose-rms-mul.sOoyid/cuda-matrix-dense-both.r9xuapi6`.
+Numerical snapshot: `/home/end0/AI/LlamaServer/franken-goose-rms-mul.sOoyid/numerical.rAeym5`.
+Executable SHA-256: `f17cad7af7bfc3e543912f20c605b1cfc45aa0b4af20ee454e8f60f742a9e251`.
 
 ## Kernel coverage
 
