@@ -21,3 +21,5 @@ python3 tools/cpp-line-count.py --git <before-commit> HEAD
 ```
 
 Run from `main`. The on-disk snapshot records counts and SHA-256 hashes by file. The committed comparison reads Git blobs from the first-parent history of `main` and reports exact renames across extension groups separately. Report the preceding total, net physical lines removed, and resulting total after each C++ deletion. Use the same scope on both sides of a comparison.
+
+Each deletion batch removes at least 6,500 net C++ and CUDA lines from `main`.

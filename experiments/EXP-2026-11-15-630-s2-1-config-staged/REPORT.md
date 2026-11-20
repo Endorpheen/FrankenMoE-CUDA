@@ -74,6 +74,11 @@ New files of this stage:
 and the llama.cpp targets are untouched; they are built by the same command and
 stand next to the config targets, not on their link line.
 
+The seven archived `.cpp` inputs under `runtime/reconstructed/{src,server-merge}`
+matched the corresponding files in [the S1.1 staging snapshot](../EXP-2026-11-15-626-s1-1-apex-staging/runtime/reconstructed)
+byte for byte. That snapshot holds the shared source copies. The full historical
+directory is also available at commit `f3ac1c0646908671700933e5420564b4786d21c5`.
+
 Deliverable and artefacts: source, scripts, patches, report and`evidence/` are
 the deliverable. `goose-gen/config-slice.c`, `goose-gen/config-slice.h`, every
 `build-*` directory and every binary in them are reproducible from

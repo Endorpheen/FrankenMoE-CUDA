@@ -25,7 +25,7 @@ Non-negotiable. They are also carried verbatim into every handoff report.
 4. One experiment = one atomic commit.
 5. Never touch user changes in `work/llama.cpp-integration`.
 6. No destructive Git.
-7. Run `tools/cpp-line-count.py` on `main` before and after each C++ deletion step. Report the measured physical source line total before, net lines removed, and total after. Use the same scope on both sides and the baseline in `docs/goose-migration/CPP-LINES.md`. This is the complete C++ migration progress report and supersedes the older handoff format for this work.
+7. Each C++ deletion batch removes at least 6,500 net physical C++ and CUDA lines from `main`. Run `tools/cpp-line-count.py` before and after the batch. Report the measured total before, net lines removed, and total after. Use the same scope on both sides and the baseline in `docs/goose-migration/CPP-LINES.md`. This is the complete C++ migration progress report and supersedes the older handoff format for this work.
 8. EHS stays off by default.
 9. Never present single-response throughput as aggregate throughput.
 10. Accepted improvements must be enabled by default in new builds. A new

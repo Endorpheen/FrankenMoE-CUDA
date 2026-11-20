@@ -73,6 +73,11 @@ GPU side of the runtime, which this stage deliberately does not touch. The
 production `.so` they build (`libllama-exp371.so.0.7.0`) is the target of a
 later stage, not of this one.
 
+The seven archived `.cpp` inputs under `runtime/reconstructed/{src,server-merge}`
+were byte-identical to the same paths in [the S1.1 staging snapshot](../EXP-2026-11-15-626-s1-1-apex-staging/runtime/reconstructed).
+That snapshot holds the shared source copies. The full historical directory is
+also available at commit `f3ac1c0646908671700933e5420564b4786d21c5`.
+
 ## 4. Exact commands
 
 ```bash
