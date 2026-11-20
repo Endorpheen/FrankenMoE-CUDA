@@ -1,13 +1,8 @@
 #define _POSIX_C_SOURCE 200809L   // clock_gettime / CLOCK_MONOTONIC
 // Generation inside the standalone runtime: HTTP in, real tokens out.
 //
-// The unit carries the decisions (trunk plan, attention/GDN branches, MoE
-// routing, KV bookkeeping, sampling, detokenisation). This host binds the real
-// quantised weights by offset and owns the buffers, exactly as the gate does;
-// it chooses no layer, no branch and no token.
-//
-// The Goose reader and model owner bind GGUF tensors. The host maps the file
-// and passes graph execution to the CPU backend.
+// The host maps the file, binds system calls and carries the model handles.
+// Goose owns the inference step, including its graph and KV transaction.
 
 #include <errno.h>
 #include <stdint.h>
@@ -21,19 +16,12 @@
 #include <unistd.h>
 #include <time.h>
 
-#include "ggml.h"
-#include "graph-execute.h"
 #if __has_include("unit.h")
 #include "unit.h"
 #else
 #include "main.h"
 #endif
 #include "goose-host-llm.h"
-
-typedef struct ggml_context ggml_context;
-typedef struct ggml_tensor  ggml_tensor;
-typedef struct ggml_cgraph  ggml_cgraph;
-typedef enum ggml_type ggml_type;
 
 #define MAX_REQ   262144
 
@@ -60,9 +48,8 @@ typedef struct {
     int64_t n_eog, eos;
     // trunk state
     int64_t layer_count, acfg[14], gcfg[7], mcfg[3], kv_state[6];
-    int64_t rope_sections;
+    int64_t handles[4];
     int64_t * records;
-    ggml_tensor * emb, * head, * norm;
     int64_t * scratch_cpts, * scratch_seg, * scratch_sym, * scratch_heap, * scratch_hc, * scratch_info;
     uint8_t * scratch_enc;
 } host_t;
@@ -237,14 +224,13 @@ static void init_trunk(int64_t capacity) {
     H.records = calloc((size_t) layer_slots, sizeof(int64_t));
     int64_t *scratch = calloc((size_t) scratch_slots, sizeof(int64_t));
     if (!H.records || !scratch) die("model loader workspaces");
-    int64_t handles[4] = {0};
     int64_t sections[4] = {0};
     uint8_t name[128] = {0};
     H.layer_count = qr_model_open((sl_u8){ H.base, hdr }, (uint64_t) (uintptr_t) H.base,
         (int64_t) H.size, (sl_i64){ H.state, 8 }, (sl_i64){ H.kv, 256 * 8 },
         (sl_i64){ H.tens, 2048 * 12 }, (sl_i64){ H.kvsl, 512 }, (sl_i64){ H.tensl, 8192 },
         capacity, INT32_MAX, (sl_i64){ H.owner, 13 }, (sl_i64){ H.records, layer_slots },
-        (sl_i64){ handles, 4 }, (sl_i64){ H.acfg, 14 }, (sl_i64){ H.gcfg, 7 },
+        (sl_i64){ H.handles, 4 }, (sl_i64){ H.acfg, 14 }, (sl_i64){ H.gcfg, 7 },
         (sl_i64){ H.mcfg, 3 }, (sl_i64){ sections, 4 }, (sl_i64){ H.kv_state, 6 },
         (sl_u8){ name, sizeof name }, (sl_i64){ scratch, scratch_slots });
     free(scratch);
@@ -253,10 +239,6 @@ static void init_trunk(int64_t capacity) {
         die("model loader");
     }
     if (H.owner[8] != H.n_tok) die("model vocabulary size");
-    H.emb = (ggml_tensor *) (intptr_t) handles[0];
-    H.head = (ggml_tensor *) (intptr_t) handles[1];
-    H.norm = (ggml_tensor *) (intptr_t) handles[2];
-    H.rope_sections = handles[3];
 }
 
 // Start a request from zero: KV bookkeeping plus every recurrent/KV cell buffer.
@@ -265,85 +247,26 @@ static void reset_state(void) {
         (sl_i64) { H.kv_state, 6 }) != 0) die("model state reset");
 }
 
-// One full-model step: build the graph, evaluate it and publish the KV ticket.
-static int64_t model_step(const int32_t * tokens, int64_t count, int64_t logit_rows, sl_f32 output) {
-    sl_i64 state = { H.kv_state, 6 };
-    const int64_t rows = q35_kv_read_rows(state, count);
-    if (!tokens || rows <= 0 || count > 4096) return -1;
-    for (int64_t i = 0; i < count; ++i) {
-        if (tokens[i] < 0 || tokens[i] >= H.n_tok) return -1;
-    }
+void fg_q35_write_ids(uint64_t address, sl_i32 tokens) {
+    memcpy((void *) (uintptr_t) address, tokens.data, (size_t) tokens.len * sizeof(*tokens.data));
+}
 
-    ggml_context * c = ggml_init((struct ggml_init_params){ 256u * 1024u * 1024u, NULL, true });
-    if (!c) return -1;
+void fg_q35_read_logits(uint64_t address, sl_f32 output) {
+    memcpy(output.data, (const void *) (uintptr_t) address, (size_t) output.len * sizeof(*output.data));
+}
 
-    const int64_t ticket = q35_kv_begin(state, count);
-    if (ticket <= 0) { ggml_free(c); return -1; }
+void fg_q35_release_graph(uint64_t address) {
+    free((void *) (uintptr_t) address);
+}
 
-    int64_t n = -1;
-    void * storage = NULL;
-    bool executed = false;
-
-    ggml_tensor * ids = ggml_new_tensor_1d(c, GGML_TYPE_I32, count);
-    ggml_tensor * positions = ggml_new_tensor_1d(c, GGML_TYPE_I32, count * 4);
-    ggml_tensor * indices = ggml_new_tensor_1d(c, GGML_TYPE_I64, count);
-
-    int64_t work[16] = {0}, bn[40] = {0}, mn[42] = {0};
-    int64_t * frames = calloc((size_t) (4 * H.layer_count + 4), sizeof(int64_t));
-    int64_t * roots = calloc((size_t) (2 * H.layer_count + 2), sizeof(int64_t));
-    int64_t * pos = calloc((size_t) count * 4, sizeof(int64_t));
-    if (!frames || !roots || !pos) goto done;
-
-    const int64_t result = q35_trunk_output((int64_t) (intptr_t) c, (int64_t) (intptr_t) ids,
-                                     (int64_t) (intptr_t) H.emb, (int64_t) (intptr_t) H.head, (int64_t) (intptr_t) H.norm,
-                                     (sl_i64){ H.records, H.layer_count * 32 }, H.layer_count,
-                                     (int64_t) (intptr_t) positions, 0, (int64_t) (intptr_t) indices,
-                                     (sl_i64){ H.acfg, 14 }, (sl_i64){ H.gcfg, 7 }, (sl_i64){ H.mcfg, 3 },
-                                     H.rope_sections, (sl_i64){ H.kv_state, 6 }, ticket,
-                                     (sl_i64){ work, 16 }, (sl_i64){ bn, 40 }, (sl_i64){ mn, 42 },
-                                     (sl_i64){ frames, 4 * H.layer_count + 4 },
-                                     (sl_i64){ roots, 2 * H.layer_count + 2 }, logit_rows);
-    if (!result) goto done;
-
-    ggml_cgraph * graph = ggml_new_graph_custom(c, 16384, false);
-    for (int64_t i = 1; i <= roots[0]; ++i) {
-        ggml_build_forward_expand(graph, (ggml_tensor *) (intptr_t) roots[i]);
-    }
-
-    storage = fg_standalone_graph_alloc(graph);
-    if (!storage) goto done;
-    if (!ids->data || !positions->data || !indices->data) goto done;
-
-    memcpy(ids->data, tokens, (size_t) count * sizeof(*tokens));
-    if (q35_kv_positions(state, count, (sl_i64){ pos, count * 4 }) != count * 4) goto done;
-    for (int64_t i = 0; i < count * 4; ++i) {
-        ((int32_t *) positions->data)[i] = (int32_t) pos[i];
-    }
-    if (q35_kv_indices(state, count, (sl_i64){ indices->data, count }) != count) goto done;
-
-    const ggml_tensor * lg = (const ggml_tensor *) (intptr_t) result;
-    if (logit_rows != 0 && (!output.data || output.len != ggml_nelements(lg))) goto done;
-    executed = true;
-    if (fg_standalone_graph_compute_output(graph, logit_rows != 0 ? lg : NULL) != GGML_STATUS_SUCCESS) goto done;
-    if (q35_kv_commit(state, ticket) < 0) goto done;
-    n = 0;
-    if (logit_rows != 0) {
-        memcpy(output.data, lg->data, ggml_nbytes(lg));
-        n = output.len;
-    }
-
-done:
-    if (n < 0) {
-        // Recurrent state can already have been written by a partial graph.
-        if (executed) reset_state();
-        else q35_kv_abort(state, ticket);
-    }
-    free(storage);
-    free(pos);
-    free(frames);
-    free(roots);
-    ggml_free(c);
-    return n;
+static int64_t model_step(sl_i32 tokens, int64_t logit_rows, sl_f32 output) {
+    if (!tokens.data || (output.len != 0 && !output.data)) return -1;
+    const int64_t result = q35_model_step((sl_i64) { H.owner, 13 }, (sl_i64) { H.handles, 4 },
+        (sl_i64) { H.records, H.layer_count * 32 }, (sl_i64) { H.acfg, 14 },
+        (sl_i64) { H.gcfg, 7 }, (sl_i64) { H.mcfg, 3 }, (sl_i64) { H.kv_state, 6 },
+        tokens, logit_rows, output);
+    if (result == -2) die("model step recovery");
+    return result;
 }
 
 
@@ -369,13 +292,13 @@ void hose_host_load_context(const char * path, int64_t capacity) {
         die("model RAM residency");
     }
     const int64_t state_bytes = qr_cuda_state((sl_i64) { H.owner, 13 },
-        (sl_i64) { H.records, H.layer_count * 32 }, (int64_t) (intptr_t) H.head);
+        (sl_i64) { H.records, H.layer_count * 32 }, H.handles[1]);
     if (state_bytes < 0) die("model CUDA state");
     const int64_t device_bytes = qr_cuda_dense((sl_i64) { H.owner, 13 },
-        (sl_i64) { H.records, H.layer_count * 32 }, (int64_t) (intptr_t) H.head);
+        (sl_i64) { H.records, H.layer_count * 32 }, H.handles[1]);
     if (device_bytes < 0) die("model CUDA placement");
     const int64_t expert_bytes = qr_cuda_experts((sl_i64) { H.owner, 13 },
-        (sl_i64) { H.records, H.layer_count * 32 }, (int64_t) (intptr_t) H.head);
+        (sl_i64) { H.records, H.layer_count * 32 }, H.handles[1]);
     if (expert_bytes < 0) die("model CUDA expert cache");
 }
 
@@ -402,7 +325,7 @@ int64_t hose_step(const int32_t * tokens, int64_t count, float ** logits) {
     const int64_t capacity = count * H.n_tok;
     float * buffer = malloc((size_t) capacity * sizeof(*buffer));
     if (!buffer) return -1;
-    const int64_t n = model_step(tokens, count, -1, (sl_f32) { buffer, capacity });
+    const int64_t n = model_step((sl_i32) { (int32_t *) tokens, count }, -1, (sl_f32) { buffer, capacity });
     if (n < 0) free(buffer);
     else *logits = buffer;
     return n;
@@ -429,7 +352,7 @@ int64_t fg_http_eog(sl_i64 ids) {
 }
 
 int64_t fg_q35_generation_eval(sl_i32 tokens, sl_f32 output) {
-    return model_step(tokens.data, tokens.len, output.len != 0, output);
+    return model_step(tokens, output.len != 0, output);
 }
 
 int64_t hose_generate_ids(const int64_t * prompt, int64_t count, int64_t max_tokens,

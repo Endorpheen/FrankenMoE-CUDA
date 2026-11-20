@@ -354,9 +354,13 @@ export fn qr_model_close(owner: i64[:]) -> i64 {
 // Frame4: magic9192,context,generation,model mapping identity. Never copy an
 // active frame record. Close refuses stale/wrong-owner and double releases.
 export fn qr_frame_open(owner: i64[:], arena_bytes: i64, frame: i64[:]) -> i64 {
+    return qr_frame_open_mode(owner, arena_bytes, frame, 0);
+}
+
+fn qr_frame_open_mode(owner: i64[:], arena_bytes: i64, frame: i64[:], no_alloc: i64) -> i64 {
     if owner.len < 12 || owner[0] != 9191 || owner[6] < 0 || owner[6] == 9223372036854775807 ||
        frame.len < 4 || frame[0] != 0 || arena_bytes <= 0 || arena_bytes > 2147483647 { return 0; }
-    let c: i64 = qo_context_new(arena_bytes, 0); if c == 0 { return 0; }
+    let c: i64 = qo_context_new(arena_bytes, no_alloc); if c == 0 { return 0; }
     owner[6] += 1; frame[1] = c; frame[2] = owner[9]; frame[3] = owner[1]; frame[0] = 9192; return c;
 }
 

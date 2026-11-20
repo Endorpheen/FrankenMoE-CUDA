@@ -42,8 +42,12 @@ export fn q35_kv_begin(state: i64[:], added: i64) -> i64 {
 export fn q35_kv_indices(state: i64[:], added: i64, out: i64[:]) -> i64 {
     if q35_kv_read_rows(state, added) < 0 || out.len < added { return -1; }
     var i: i64 = 0;
-    while i < added { out[i] = state[2] + i; i += 1; }
+    while i < added { out[i] = q35_kv_position(state[2], i, 0); i += 1; }
     return added;
+}
+
+fn q35_kv_position(prefix: i64, token: i64, plane: i64) -> i64 {
+    return if plane < 3 { prefix + token } else { 0 };
 }
 
 export fn q35_kv_positions(state: i64[:], added: i64, out: i64[:]) -> i64 {
@@ -52,7 +56,7 @@ export fn q35_kv_positions(state: i64[:], added: i64, out: i64[:]) -> i64 {
     while s < 4 {
         var i: i64 = 0;
         while i < added {
-            out[s * added + i] = if s < 3 { state[2] + i } else { 0 };
+            out[s * added + i] = q35_kv_position(state[2], i, s);
             i += 1;
         }
         s += 1;

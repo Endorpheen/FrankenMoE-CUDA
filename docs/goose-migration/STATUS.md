@@ -397,6 +397,28 @@ and CUDA expert-batch regressions also passed. Apex content,
 throughput and peak memory remain to be measured on the independent
 runtime.
 
+EXP-2026-11-20-1516 moves the standalone model step into the Goose owner.
+Goose opens and closes the graph frame, validates inputs, writes RoPE
+positions and KV indices, executes the graph and commits the ticket.
+An error before execution aborts the ticket and preserves the committed
+prefix. An execution failure resets the KV and recurrent state before
+the next step. The C host passes model handles and binds raw memory
+copies and release.
+
+The metadata arena uses the model's layer and selected-expert counts
+and GGML's native overhead calculations. For the 40-layer Apex geometry
+with eight selections it requests 2,705,872 metadata bytes per frame.
+The previous fixed metadata arena requested 256 MiB.
+
+The synthetic recovery fixture forced an allocation error before
+execution and a graph error after state mutation. Within both CPU and
+RTX 4070 runs, the retry matched the uninterrupted continuation
+byte-for-byte, and recovery after execution matched an explicit reset.
+Eight frame allocations matched eight frees, each requesting 163,168
+metadata bytes. The resident-state continuation, 267-token chunked
+prefill and 34 HTTP checks passed. Apex throughput and peak memory
+remain unmeasured.
+
 ## Historical requirements audit
 
 `docs/goose-migration/tasks.json`: **DONE 1**, **PARTIAL 144**, **TODO 7** of 152.
