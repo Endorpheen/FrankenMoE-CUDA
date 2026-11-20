@@ -51,6 +51,10 @@ fn ht_eq_lit(s: const u8[:], lit: const u8[:]) -> bool {
 // Bind and listen. Returns the descriptor, or -(step) on failure:
 // 1 socket, 2 setsockopt, 3 bind, 4 listen.
 export fn ht_open(port: i64, opts: i64[:]) -> i64 {
+    return ht_open_impl(port, opts);
+}
+
+fn ht_open_impl(port: i64, opts: i64[:]) -> i64 {
     let fd: i64 = gx_socket(HT_AF_INET, HT_SOCK_STREAM, 0);
     if fd < 0 {
         return -1;
@@ -231,6 +235,10 @@ export fn ht_contains_ci(hay: const u8[:], needle: const u8[:]) -> i64 {
 
 // Write the whole buffer, looping over short writes. Returns 0 or -1.
 export fn ht_write_all(fd: i64, buf: const u8[:]) -> i64 {
+    return ht_write_all_impl(fd, buf);
+}
+
+fn ht_write_all_impl(fd: i64, buf: const u8[:]) -> i64 {
     var sent: i64 = 0;
     while sent < buf.len {
         let n: i64 = gx_write(fd, buf[sent .. buf.len], buf.len - sent);
@@ -245,6 +253,10 @@ export fn ht_write_all(fd: i64, buf: const u8[:]) -> i64 {
 // Response head: status line, Content-Length, content type, connection rule.
 // `out` receives the head; returns its length, or -1 when `out` is too small.
 export fn ht_response_head(status: i64, body_len: i64, keep: i64, out: u8[:]) -> i64 {
+    return ht_response_head_impl(status, body_len, keep, out);
+}
+
+fn ht_response_head_impl(status: i64, body_len: i64, keep: i64, out: u8[:]) -> i64 {
     var at: i64 = 0;
     at = ht_put(out, at, "HTTP/1.1 ");
     at = ht_put_int(out, at, status);
@@ -254,6 +266,8 @@ export fn ht_response_head(status: i64, body_len: i64, keep: i64, out: u8[:]) ->
         at = ht_put(out, at, " Bad Request\r\n");
     } else if status == 404 {
         at = ht_put(out, at, " Not Found\r\n");
+    } else if status == 413 {
+        at = ht_put(out, at, " Content Too Large\r\n");
     } else if status == 500 {
         at = ht_put(out, at, " Internal Server Error\r\n");
     } else {
@@ -272,7 +286,7 @@ export fn ht_response_head(status: i64, body_len: i64, keep: i64, out: u8[:]) ->
 }
 
 fn ht_put(out: u8[:], at: i64, s: const u8[:]) -> i64 {
-    if at + s.len > out.len {
+    if at < 0 || s.len > out.len - at {
         return -1;
     }
     var i: i64 = 0;
@@ -284,7 +298,7 @@ fn ht_put(out: u8[:], at: i64, s: const u8[:]) -> i64 {
 }
 
 fn ht_put_int(out: u8[:], at: i64, v: i64) -> i64 {
-    if v < 0 {
+    if at < 0 || v < 0 {
         return -1;
     }
     var digits: u8[20] = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];

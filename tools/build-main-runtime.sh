@@ -169,6 +169,7 @@ MODULES=(
     goose/server/shutdown-policy.goose
     goose/server/limits.goose
     goose/server/http-listener.goose
+    goose/server/inference-http.goose
     goose/server/web-assets.goose
     goose/server/mime-table.goose
     goose/server/asset-etag.goose

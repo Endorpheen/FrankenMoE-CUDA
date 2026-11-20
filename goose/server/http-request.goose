@@ -301,7 +301,7 @@ fn rq_decimal_impl(s: const u8[:], out: i64[:]) -> i64 {
         }
         // A body larger than the caller's buffer cannot be drained, and 19 digits is
         // already past what an i64 holds, so the parse stops rather than wrapping.
-        if v > 922337203685477580 {
+        if v > (9223372036854775807 - (c - 48)) / 10 {
             return -1;
         }
         v = v * 10 + (c - 48);

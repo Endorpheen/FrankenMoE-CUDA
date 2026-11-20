@@ -50,6 +50,17 @@ The serial CPU path decodes each weight row once per group of input vectors,
 including repeated routes to the same expert. The broadcast Q4_K and indexed
 Q6_K regressions match the decoded-weight reference.
 
+EXP-2026-11-20-1496 adds `frankenmoe-infer MODEL.gguf --serve PORT [MAX_CONNECTIONS]`.
+The loopback listener shares the model host with the CLI and exposes
+`/health`, `/props` and `/completion`. The completion route accepts raw prompt
+bytes or JSON with a string `prompt` and optional positive `n_predict`.
+It uses greedy sampling and returns token IDs, decoded text and count.
+The ten-request synthetic check covered fragmented input, invalid framing,
+JSON validation and exact generation. The real Apex HTTP smoke test returned
+`{"ids":[11751,11],"text":" Paris,","count":2}` after prefill and one decode
+graph. The executable linked only `libc` and `libm`. OpenAI routes, streaming,
+GPU execution, performance and peak memory remain open.
+
 ## Ledger
 
 `docs/goose-migration/tasks.json`: **DONE 1**, **PARTIAL 144**, **TODO 7** of 152.
