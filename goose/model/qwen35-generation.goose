@@ -2,6 +2,7 @@
 const Q35_PREFILL_CHUNK: i64 = 128;
 
 extern "fg_q35_generation_eval" fn q35_generation_eval(tokens: const i32[:], logits: f32[:]) -> i64;
+extern "fg_q35_generation_prepare" fn q35_generation_prepare() -> i64;
 extern "fg_q35_generation_now" fn q35_generation_now() -> f64;
 extern "hose_reset_state" fn q35_generation_reset();
 
@@ -47,6 +48,7 @@ fn q35_sample_generate(tokens: const i64[:], vocabulary: i64, capacity: i64, eog
     if seeded && sm_mt_seed(rng, s.seed) != 0 { return -1; }
     let sampler_i: i64[3] = [s.top_k, 1, 1];
     let sampler_f: f32[3] = [s.top_p, s.min_p, s.temperature];
+    if q35_generation_prepare() != 0 { return -1; }
     q35_generation_reset();
     let start = q35_generation_now();
     var read: i64 = 0;

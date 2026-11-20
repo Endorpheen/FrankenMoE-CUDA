@@ -403,8 +403,12 @@ fn ih_request(fd: i64, request: u8[:], output: u8[:], response: u8[:], ids: i64[
     } else if meta[2] == 1 {
         ih_response(fd, 200, "{\"status\":\"ok\"}");
     } else if meta[2] == 3 {
-        var stats: i64[6] = [0; 6];
+        var stats: i64[11] = [0; 11];
         ih_stats_abi(stats);
+        if stats[6] < 0 {
+            ih_response(fd, 500, "{\"error\":\"model residency unavailable\"}");
+            return;
+        }
         var n = cp_put(response, 0, "{\"n_vocab\":");
         n = cp_uint(response, n, stats[0]);
         n = cp_put(response, n, ",\"n_special\":");
@@ -413,6 +417,16 @@ fn ih_request(fd: i64, request: u8[:], output: u8[:], response: u8[:], ids: i64[
         n = cp_uint(response, n, stats[4]);
         n = cp_put(response, n, ",\"n_ctx\":");
         n = cp_uint(response, n, stats[5]);
+        n = cp_put(response, n, ",\"model_bytes\":");
+        n = cp_uint(response, n, stats[6]);
+        n = cp_put(response, n, ",\"model_resident_bytes\":");
+        n = cp_uint(response, n, stats[7]);
+        n = cp_put(response, n, ",\"model_pages\":");
+        n = cp_uint(response, n, stats[8]);
+        n = cp_put(response, n, ",\"model_resident_pages\":");
+        n = cp_uint(response, n, stats[9]);
+        n = cp_put(response, n, ",\"cuda_dense_weight_bytes\":");
+        n = cp_uint(response, n, stats[10]);
         n = cp_put(response, n, "}");
         if n <= response.len { ih_response(fd, 200, response[0 .. n]); }
     } else {

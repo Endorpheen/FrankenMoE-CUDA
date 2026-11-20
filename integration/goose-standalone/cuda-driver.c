@@ -7,6 +7,9 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
+extern int64_t dw_cuda_dense_offset(sl_i64 ranges, uint64_t address, int64_t bytes);
 
 typedef struct CUctx_st * Context;
 typedef struct CUmod_st * Module;
@@ -24,6 +27,8 @@ static struct {
     Module module;
     Function kernel;
     struct device_buffer input, output, weight, jobs;
+    struct device_buffer dense;
+    sl_i64 dense_ranges;
     int status;
     int (*init)(unsigned);
     int (*device_get)(int *, int);
@@ -34,6 +39,7 @@ static struct {
     int (*module_load)(Module *, const void *);
     int (*function_get)(Function *, Module, const char *);
     int (*alloc)(DevicePtr *, size_t);
+    int (*memory_info)(size_t *, size_t *);
     int (*release)(DevicePtr);
     int (*upload)(DevicePtr, const void *, size_t);
     int (*download)(void *, DevicePtr, size_t);
@@ -48,6 +54,7 @@ static _Thread_local uint64_t cuda_matrices;
 
 static void cleanup(void) {
     if (cuda.context) cuda.destroy(cuda.context);
+    free(cuda.dense_ranges.data);
     if (cuda.library) dlclose(cuda.library);
 }
 
@@ -66,6 +73,7 @@ static void init_cuda(void) {
     LOAD(module_load, "cuModuleLoadData");
     LOAD(function_get, "cuModuleGetFunction");
     LOAD(alloc, "cuMemAlloc_v2");
+    LOAD(memory_info, "cuMemGetInfo_v2");
     LOAD(release, "cuMemFree_v2");
     LOAD(upload, "cuMemcpyHtoD_v2");
     LOAD(download, "cuMemcpyDtoH_v2");
@@ -110,7 +118,7 @@ static int finish_context(void) {
     return status;
 }
 
-int64_t fg_cuda_begin(uint64_t input, int64_t input_bytes, int64_t output_bytes) {
+static int start_context(void) {
     const char * setting = getenv("GOOSE_CUDA");
     if (setting && setting[0] == '0' && !setting[1]) return 0;
     pthread_once(&cuda_once, init_cuda);
@@ -119,13 +127,71 @@ int64_t fg_cuda_begin(uint64_t input, int64_t input_bytes, int64_t output_bytes)
     int status = cuda.push(cuda.context);
     if (status != 0) {
         pthread_mutex_unlock(&cuda_lock);
-    } else {
-        status = reserve(&cuda.input, (size_t) input_bytes);
-        if (status == 0) status = reserve(&cuda.output, (size_t) output_bytes);
-        if (status == 0) status = cuda.upload(cuda.input.address, (const void *) (uintptr_t) input, (size_t) input_bytes);
-        if (status == 0) return 1;
-        finish_context();
+        fprintf(stderr, "Goose CUDA: context switch failed (%d)\n", status);
+        return -1;
     }
+    return 1;
+}
+
+int64_t fg_cuda_free_bytes(void) {
+    const int active = start_context();
+    if (active != 1) return active;
+    size_t bytes = 0, total = 0;
+    const int status = cuda.memory_info(&bytes, &total);
+    return finish_context() == 0 && status == 0 && bytes <= INT64_MAX ? (int64_t) bytes : -1;
+}
+
+int64_t fg_cuda_load_dense(sl_i64 ranges, int64_t bytes) {
+    if (!ranges.data || ranges.len <= 0 || ranges.len % 3 != 0 || bytes <= 0 ||
+        (uint64_t) ranges.len > SIZE_MAX / sizeof(*ranges.data)) return -1;
+    const size_t metadata_bytes = (size_t) ranges.len * sizeof(*ranges.data);
+    int64_t * records = malloc(metadata_bytes);
+    if (!records) return -1;
+    memcpy(records, ranges.data, metadata_bytes);
+    if (start_context() != 1) { free(records); return -1; }
+    if (cuda.dense.address) {
+        finish_context();
+        free(records);
+        return -1;
+    }
+    struct device_buffer staging = {0};
+    int status = reserve(&staging, (size_t) bytes);
+    for (int64_t i = 0; status == 0 && i < ranges.len; i += 3) {
+        const int64_t span = records[i + 1], at = records[i + 2];
+        if (records[i] == 0 || span <= 0 || at < 0 || at > bytes || span > bytes - at) {
+            status = -1;
+            break;
+        }
+        status = cuda.upload(staging.address + (uint64_t) at,
+            (const void *) (uintptr_t) records[i], (size_t) span);
+    }
+    if (status == 0) {
+        cuda.dense = staging;
+        cuda.dense_ranges = (sl_i64) { records, ranges.len };
+    } else {
+        if (staging.address) cuda.release(staging.address);
+        free(records);
+    }
+    const int popped = finish_context();
+    if (status != 0 || popped != 0) {
+        fprintf(stderr, "Goose CUDA: dense weight upload failed (%d)\n", status ? status : popped);
+        return -1;
+    }
+    return bytes;
+}
+
+int64_t fg_cuda_dense_bytes(void) {
+    return (int64_t) cuda.dense.bytes;
+}
+
+int64_t fg_cuda_begin(uint64_t input, int64_t input_bytes, int64_t output_bytes) {
+    const int active = start_context();
+    if (active != 1) return active;
+    int status = reserve(&cuda.input, (size_t) input_bytes);
+    if (status == 0) status = reserve(&cuda.output, (size_t) output_bytes);
+    if (status == 0) status = cuda.upload(cuda.input.address, (const void *) (uintptr_t) input, (size_t) input_bytes);
+    if (status == 0) return 1;
+    finish_context();
     fprintf(stderr, "Goose CUDA: input transfer failed (%d)\n", status);
     return -1;
 }
@@ -135,14 +201,22 @@ int64_t fg_cuda_plane(uint64_t weights, int64_t weight_bytes, int64_t row_stride
     if (rows <= 0 || rows > INT_MAX || blocks <= 0 || blocks > INT_MAX ||
         jobs.len <= 0 || jobs.len % 2 != 0 || jobs.len / 2 > INT_MAX) return -1;
     const size_t job_bytes = (size_t) jobs.len * sizeof(*jobs.data);
-    int error = reserve(&cuda.weight, (size_t) weight_bytes);
-    if (error == 0) error = reserve(&cuda.jobs, job_bytes);
-    if (error == 0) error = cuda.upload(cuda.weight.address, (const void *) (uintptr_t) weights, (size_t) weight_bytes);
+    int error = reserve(&cuda.jobs, job_bytes);
+    DevicePtr weight = 0;
+    if (error == 0 && cuda.dense_ranges.len > 0) {
+        const int64_t offset = dw_cuda_dense_offset(cuda.dense_ranges, weights, weight_bytes);
+        if (offset >= 0) weight = cuda.dense.address + (uint64_t) offset;
+    }
+    if (error == 0 && weight == 0) {
+        error = reserve(&cuda.weight, (size_t) weight_bytes);
+        weight = cuda.weight.address;
+        if (error == 0) error = cuda.upload(weight, (const void *) (uintptr_t) weights, (size_t) weight_bytes);
+    }
     if (error == 0) error = cuda.upload(cuda.jobs.address, jobs.data, job_bytes);
 
     uint64_t stride = (uint64_t) row_stride;
     int width = (int) blocks, type = (int) kind, start = 0;
-    void * args[] = { &cuda.weight.address, &cuda.input.address, &cuda.output.address,
+    void * args[] = { &weight, &cuda.input.address, &cuda.output.address,
                       &cuda.jobs.address, &stride, &width, &type, &start };
     const unsigned lanes = kind == 12 ? 32 : 64;
     const int count = (int) (jobs.len / 2);

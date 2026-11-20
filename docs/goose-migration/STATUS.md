@@ -124,6 +124,23 @@ fixtures and the 137-token chunked-generation differential also passed.
 This verifies the request and response path on fixtures. Full real-model
 generation and throughput at 32,768 input and 512 output tokens remain open.
 
+EXP-2026-11-20-1501 connects host residency and persistent CUDA weights to
+the model owner. Goose prefaults the original read-only mapping and checks
+each page with `mincore` before readiness. Inference admission checks the
+same mapping and rewarms it if needed. This is a verified-residency policy
+at admission. It does not lock the full file against Linux page reclamation.
+
+Goose builds an immutable CUDA manifest for eligible Q4_K/Q6_K dense
+tensors, reserves space for the model state and a streamed output matrix,
+and stages the selected weights in one device allocation. CUDA matmul
+consumes those device addresses directly. Other planes keep using the
+shared host mapping. `GET /props` exposes exact mapped/resident host bytes
+and pages, and the persistent dense weight bytes on CUDA. Static Apex
+GGUF inspection found 311 eligible matrices totaling 1,277,337,600 bytes.
+The expert-bank cache, GPU attention and recurrent compute, and the
+full-system validation remain open. This checkpoint is for composition and
+linkage. It has no new model run or performance claim.
+
 ## Historical requirements audit
 
 `docs/goose-migration/tasks.json`: **DONE 1**, **PARTIAL 144**, **TODO 7** of 152.

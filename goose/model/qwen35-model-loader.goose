@@ -3,6 +3,7 @@
 // tensor lifetime; the caller must keep the mapping/tables until model close.
 // Owner12: magic9191,map_base,file_bytes,weight_ctx,state_ctx,layers,live_frames,
 // hidden,vocab,generation,capacity,bound_weights. Generation survives close.
+// Standalone callers can provide a thirteenth word for the state arena size.
 
 fn mr_integer(data: const u8[:], st: i64[:], kv: i64[:], slots: i64[:],
                 key: const u8[:], missing: i64, scratch: i64[:]) -> i64 {
@@ -267,8 +268,70 @@ export fn qr_model_open(data: const u8[:], mapping: u64, file_bytes: i64, parsed
     handles[3] = rope_bytes as! i64;
     if q35_kv_init(capacity, 32, session) != 0 { mr_close_contexts(owner); return -4; }
     owner[1] = mapping as! i64; owner[2] = file_bytes; owner[5] = count; owner[6] = 0;
-    owner[7] = hidden; owner[8] = ne(handles[0], 1); owner[9] += 1; owner[10] = capacity; owner[11] = bound; owner[0] = 9191;
+    owner[7] = hidden; owner[8] = ne(handles[0], 1); owner[9] += 1; owner[10] = capacity; owner[11] = bound;
+    if owner.len > 12 { owner[12] = needed; }
+    owner[0] = 9191;
     return count;
+}
+
+extern "fg_cuda_free_bytes" fn mr_cuda_free() -> i64;
+extern "fg_cuda_load_dense" fn mr_cuda_load_dense(ranges: const i64[:], bytes: i64) -> i64;
+
+fn mr_cuda_dense_range(t: i64, owner: const i64[:], budget: i64, plan: i64[:],
+                       position: i64, used: i64) -> i64 {
+    if t == 0 || ne(t, 2) != 1 || ne(t, 3) != 1 { return 0; }
+    let dtype = prop(t, 0);
+    if dtype != 12 && dtype != 14 { return 0; }
+    let address = qa_get(t, 4, 0);
+    let base = owner[1] as! u64;
+    let bytes = (qa_get(t, 1, 1) as i64) * ne(t, 1);
+    if bytes <= 0 || address < base || address - base > (owner[2] as u64) ||
+       (bytes as u64) > (owner[2] as u64) - (address - base) ||
+       bytes > budget - used || position > plan.len - 3 {
+        return 0;
+    }
+    plan[position] = address as! i64;
+    plan[position + 1] = bytes;
+    plan[position + 2] = used;
+    return bytes;
+}
+
+// Persist the supported dense matrices in one device allocation. The expert
+// planes remain in the same immutable RAM mapping until the cache admits them.
+export fn qr_cuda_dense(owner: const i64[:], layers: const i64[:], head: i64) -> i64 {
+    if owner.len < 13 || owner[0] != 9191 || layers.len / 32 < owner[5] || head == 0 {
+        return -1;
+    }
+    let free = mr_cuda_free();
+    if free <= 0 { return free; }
+    let output_plane = prop(head, 0);
+    let largest = if output_plane == 12 || output_plane == 14 {
+        (qa_get(head, 1, 1) as i64) * ne(head, 1)
+    } else { 0 };
+    // Leave room for model state and the largest streamed weight matrix even
+    // if the GPU can only keep a subset of the dense tensors resident.
+    let reserve = owner[12] + largest;
+    if free <= reserve { return 0; }
+    let budget = free - reserve;
+    var plan: i64[>..] = [];
+    plan.resize(3 * (1 + 13 * owner[5]), 0);
+    var used: i64 = 0;
+    var words: i64 = 0;
+    let head_bytes = mr_cuda_dense_range(head, owner, budget, plan[..], words, used);
+    if head_bytes > 0 { used += head_bytes; words += 3; }
+    for layer in owner[5] {
+        let base = layer * 32;
+        for slot in 2 .. 12 {
+            let bytes = mr_cuda_dense_range(layers[base + slot], owner, budget, plan[..], words, used);
+            if bytes > 0 { used += bytes; words += 3; }
+        }
+        for slot in 16 .. 19 {
+            let bytes = mr_cuda_dense_range(layers[base + slot], owner, budget, plan[..], words, used);
+            if bytes > 0 { used += bytes; words += 3; }
+        }
+    }
+    if used == 0 { return 0; }
+    return mr_cuda_load_dense(plan[0 .. words], used);
 }
 
 export fn qr_model_close(owner: i64[:]) -> i64 {

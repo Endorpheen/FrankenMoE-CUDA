@@ -182,3 +182,67 @@ export fn dw_resident_bytes(size: const i64[:], code: const i64[:], n: i64) -> i
     }
     return b;
 }
+
+extern "fg_model_mincore" fn dw_mincore(address: u64, bytes: i64, flags: u8[:]) -> i64;
+extern "fg_model_populate" fn dw_populate(address: u64, bytes: i64) -> i64;
+extern "fg_model_touch_page" fn dw_touch_page(address: u64);
+
+// State: exact file bytes, resident file bytes, mapped pages, resident pages.
+// The partial final page counts as one page and contributes only its file bytes.
+fn dw_ram_measure(mapping: u64, bytes: i64, page: i64, state: i64[:]) -> i64 {
+    if state.len < 4 || bytes <= 0 || page <= 0 || mapping == 0 ||
+       mapping % (page as u64) != 0 || mapping > 18446744073709551615 - (bytes as u64) {
+        return -1;
+    }
+    let pages = bytes / page + (if bytes % page == 0 { 0 } else { 1 });
+    var flags: u8[512] = [0; 512];
+    var resident: i64 = 0;
+    var resident_bytes: i64 = 0;
+    for slot in pr_resident_calls(pages) {
+        let first = slot * 512;
+        let count = if pages - first < 512 { pages - first } else { 512 };
+        let at = first * page;
+        let span = if count == pages - first { bytes - at } else { count * page };
+        if dw_mincore(mapping + (at as u64), span, flags[0 .. count]) != 0 { return -1; }
+        for i in count {
+            if (flags[i] & 1) != 0 {
+                resident += 1;
+                resident_bytes += if first + i + 1 == pages { bytes - (pages - 1) * page } else { page };
+            }
+        }
+    }
+    state[0] = bytes;
+    state[1] = resident_bytes;
+    state[2] = pages;
+    state[3] = resident;
+    return 0;
+}
+
+export fn dw_ram_residency(mapping: u64, bytes: i64, page: i64, state: i64[:]) -> i64 {
+    return dw_ram_measure(mapping, bytes, page, state);
+}
+
+export fn dw_ram_warm(mapping: u64, bytes: i64, page: i64, state: i64[:]) -> i64 {
+    if bytes <= 0 || page <= 0 || mapping == 0 ||
+       mapping % (page as u64) != 0 || mapping > 18446744073709551615 - (bytes as u64) {
+        return -1;
+    }
+    let status = dw_populate(mapping, bytes);
+    if status < 0 { return status; }
+    if status > 0 {
+        let pages = bytes / page + (if bytes % page == 0 { 0 } else { 1 });
+        for p in pages { dw_touch_page(mapping + ((p * page) as u64)); }
+    }
+    if dw_ram_measure(mapping, bytes, page, state) != 0 || state[2] != state[3] { return -1; }
+    return 0;
+}
+
+// Device manifest rows: immutable host address, byte span, device offset.
+export fn dw_cuda_dense_offset(ranges: const i64[:], address: u64, bytes: i64) -> i64 {
+    if ranges.len % 3 != 0 || bytes <= 0 { return -1; }
+    for i in ranges.len / 3 {
+        let at = 3 * i;
+        if (ranges[at] as! u64) == address && ranges[at + 1] == bytes { return ranges[at + 2]; }
+    }
+    return -1;
+}

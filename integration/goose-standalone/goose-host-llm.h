@@ -14,6 +14,7 @@ int64_t hose_step(const int32_t * tokens, int64_t count, float ** logits);
 int64_t hose_eog_is(int64_t id);
 void hose_stats(int64_t * out5);          // vocab, special, eog, eos, layers
 int64_t hose_context_capacity(void);
+int64_t hose_model_residency(int64_t out[4]);  // file bytes, resident bytes, pages, resident pages
 
 // Generate token IDs and detokenise when out_text is set. Optional timing gets
 // prefill seconds, decode seconds and the prompt token count.

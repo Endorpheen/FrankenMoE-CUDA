@@ -9,6 +9,7 @@
 // The Goose reader and model owner bind GGUF tensors. The host maps the file
 // and passes graph execution to the CPU backend.
 
+#include <errno.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -45,10 +46,10 @@ double fg_q35_generation_now(void) {
 }
 
 typedef struct {
-    int fd;
     uint8_t * base;
     size_t size;
-    int64_t owner[12];
+    int64_t page_size;
+    int64_t owner[13];
     // Goose vocabulary tables
     int64_t state[8];
     int64_t * kv, * kvsl, * tens, * tensl;
@@ -70,6 +71,42 @@ typedef struct {
 } host_t;
 
 host_t H;
+
+int64_t fg_model_mincore(uint64_t address, int64_t bytes, sl_u8 flags) {
+    return mincore((void *) (uintptr_t) address, (size_t) bytes, flags.data);
+}
+
+int64_t fg_model_populate(uint64_t address, int64_t bytes) {
+#ifdef MADV_POPULATE_READ
+    if (madvise((void *) (uintptr_t) address, (size_t) bytes, MADV_POPULATE_READ) == 0) return 0;
+    if (errno != EINVAL && errno != ENOSYS && errno != EOPNOTSUPP) return -errno;
+#else
+    (void) address;
+    (void) bytes;
+#endif
+    return 1;
+}
+
+void fg_model_touch_page(uint64_t address) {
+    (void) *(const volatile uint8_t *) (uintptr_t) address;
+}
+
+int64_t hose_model_residency(int64_t out[4]) {
+    return dw_ram_residency((uint64_t) (uintptr_t) H.base, (int64_t) H.size, H.page_size,
+        (sl_i64) { out, 4 });
+}
+
+static int64_t warm_model(int64_t out[4]) {
+    return dw_ram_warm((uint64_t) (uintptr_t) H.base, (int64_t) H.size, H.page_size,
+        (sl_i64) { out, 4 });
+}
+
+int64_t fg_q35_generation_prepare(void) {
+    int64_t residency[4] = {0};
+    if (hose_model_residency(residency) != 0) return -1;
+    if (residency[1] == residency[0]) return 0;
+    return warm_model(residency);
+}
 
 int64_t find_key(const char * key) {
     int64_t n = 0;
@@ -209,7 +246,7 @@ static void init_trunk(int64_t capacity) {
     H.layer_count = qr_model_open((sl_u8){ H.base, hdr }, (uint64_t) (uintptr_t) H.base,
         (int64_t) H.size, (sl_i64){ H.state, 8 }, (sl_i64){ H.kv, 256 * 8 },
         (sl_i64){ H.tens, 2048 * 12 }, (sl_i64){ H.kvsl, 512 }, (sl_i64){ H.tensl, 8192 },
-        capacity, INT32_MAX, (sl_i64){ H.owner, 12 }, (sl_i64){ H.records, layer_slots },
+        capacity, INT32_MAX, (sl_i64){ H.owner, 13 }, (sl_i64){ H.records, layer_slots },
         (sl_i64){ handles, 4 }, (sl_i64){ H.acfg, 14 }, (sl_i64){ H.gcfg, 7 },
         (sl_i64){ H.mcfg, 3 }, (sl_i64){ sections, 4 }, (sl_i64){ H.kv_state, 6 },
         (sl_u8){ name, sizeof name }, (sl_i64){ scratch, scratch_slots });
@@ -334,13 +371,26 @@ done:
 
 void hose_host_load_context(const char * path, int64_t capacity) {
     struct stat st;
-    H.fd = open(path, O_RDONLY);
-    if (H.fd < 0 || fstat(H.fd, &st) != 0) die("model open");
+    const int fd = open(path, O_RDONLY | O_CLOEXEC);
+    if (fd < 0 || fstat(fd, &st) != 0 || !S_ISREG(st.st_mode) || st.st_size <= 0) die("model open");
     H.size = (size_t) st.st_size;
-    H.base = mmap(NULL, H.size, PROT_READ, MAP_PRIVATE, H.fd, 0);
+    H.page_size = sysconf(_SC_PAGESIZE);
+    if (H.page_size <= 0) die("model page size");
+    H.base = mmap(NULL, H.size, PROT_READ, MAP_PRIVATE, fd, 0);
+    close(fd);
     if (H.base == MAP_FAILED) die("model mmap");
     load_vocab();
     init_trunk(capacity);
+    int64_t residency[4] = {0};
+    const int64_t status = warm_model(residency);
+    if (status != 0) {
+        fprintf(stderr, "Goose model RAM: %lld of %lld pages resident, status %lld\n",
+            (long long) residency[3], (long long) residency[2], (long long) status);
+        die("model RAM residency");
+    }
+    const int64_t device_bytes = qr_cuda_dense((sl_i64) { H.owner, 13 },
+        (sl_i64) { H.records, H.layer_count * 32 }, (int64_t) (intptr_t) H.head);
+    if (device_bytes < 0) die("model CUDA placement");
 }
 
 void hose_host_load(const char * path) {
