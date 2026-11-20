@@ -30,6 +30,34 @@ check. Kernel and API duration sums in the appendices are observations.
 Per-mechanism effects on rates and peak allocations require
 paired ablations, which are open for every row.
 
+## Deferred optimization registry
+
+Measure eliminated work separately from request throughput. A change
+that demonstrably reduces unnecessary work can be useful if correctness
+holds and no unacceptable regression is observed. Keep the device or
+resource metric distinct from measured prefill and decode. Record useful
+interactions even when a standalone test shows no speed gain.
+
+Add an entry when an experiment improves a kernel, transfer or API
+metric but lacks a verified request-level gain or fails the numerical
+gate. Keep its exact implementation in Git or in a patch tied to the
+original base. Preserve measured results, explain the deferral and name
+the dependency that would justify rerunning it.
+
+| Experiment | Preserved implementation and measurements | Reason for deferral | Dependencies and next combination test |
+|---|---|---|---|
+| EXP-1527, dense TF32 MMA | `fc399bf0`, `GOOSE_DENSE_MMA=1`. [Dense diagnostic](#dense-tf32-mma-diagnostic) and [full package](#prefill-package-full-32k512-diagnostic). Matrix time 565.205 → 52.069 ms, short prefill 110.293 → 115.386 tokens/s. | The short first ID changes from 9495 to 37972. EXP-1476 returns 332. The full package also fails reference text, ID and probability parity. Its speed does not isolate Dense MMA. | Diagnose routed MoE, dense accumulations and the first divergent Apex state. After the numerical gate passes, compare the selected dense path alone and with restored MoE routing. Measure router and output timing and require reference response parity. |
+| EXP-1531, deferred CUDA waits | [Candidate patch](deferred/EXP-1531-graph-waits.patch) against `7916697c`. [A–B–B–A measurements](#deferred-cuda-wait-diagnostic). Explicit waits 1,873 → 562, median prefill 22.875 → 22.882 s. | Synchronous D2H absorbed the removed waiting. Copy counts and bytes stayed unchanged. All four short outputs and probabilities matched. | Recheck after substantially fewer forced host reads or after verified pinned/asynchronous transfers or stream/event dependencies under 24, 27 and 30. Compare transfers alone and combined with deferred waits. Verify host publication, graph failure and persistent state. |
+
+After a material dependency change, use short sequential A/B runs on
+identical inputs and settings. Use the best current verified checkpoint
+as the control. Compare the combined candidate and, when necessary, the
+individual toggles to isolate interactions. Record IDs, probabilities,
+prefill, decode and the targeted hardware metrics. Enable a combination
+in the working runtime only after it passes correctness and shows a real
+end-to-end gain. Preserve each implementation and append new evidence to
+the entry. Apply the full-request gate on the package schedule.
+
 ## Mechanisms
 
 **32 mechanisms: PARITY 0, PARTIAL 22, MISSING 9, INCORRECT 1.**
