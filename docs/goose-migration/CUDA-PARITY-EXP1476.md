@@ -660,6 +660,37 @@ Candidate: `/home/end0/AI/LlamaServer/franken-goose-mmq-window.z2Wknq/cuda-matri
 Executable SHA-256: `c6a801cd58aaa99efa7a92a220dd30d07f6864cf60e119134a14dd7d48fc2429`.
 Candidate response SHA-256: `552eedccb6520e10a9bf642b24ab700cd7d78b363f89fbd12d8838f24e2de00a`.
 
+## Numerical checkpoint for the combined speed control
+
+Set `GOOSE_APEX_TRACE_DIR` to an existing, empty directory for a
+separate diagnostic request. Use a new directory per request. The
+Goose executor observes the existing layer frames before their
+temporary storage can be reused. Each planned graph step writes
+`step-<prefix>.bin` and `step-<prefix>.jsonl`. The manifest records
+roles, layer, dtype, GGML shape and compact row ranges, byte offsets
+and byte counts. A final completion record gives the prefix and
+input token count. A missing completion record means the capture
+is incomplete. Data is written in the native little-endian format
+on the tested host. Keep captured tensor data outside Git.
+
+The 4096/1 checkpoint uses byte-budgeted MMQ with GDN, Flash and
+Dense MMA enabled. It contains embeddings, the first and last
+rows of the norm, feed-forward and final output of each of 40
+layers, all 1,310,720 expert IDs, and all 248,320 F32 logits for
+the final token. It also contains active K/V rows for 10 attention
+layers and history and recurrent states for 30 SSM/GDN layers.
+The payload is 97,691,648 bytes. The manifest was checked for
+all expected roles, contiguous byte spans, valid expert IDs and
+finite logits. Logit argmax and sampled ID are both 280. Content
+and all five probabilities match the captured speed control.
+This run adds device-to-host reads and is for numerical comparison.
+
+Capture: `/home/end0/AI/LlamaServer/franken-goose-numerical-checkpoint.dMq92a/numerical.4xbhLK`.
+Binary data SHA-256: `099f8ebeabe1f6813f6c0d721803df3a4ab2b87c2b11903af0006222b8bda24b`.
+Manifest SHA-256: `9bfd7b9be25c3d9e9843687cc94ff4f2b72358cd9b2049c11eaa4275de52be6e`.
+Raw logits SHA-256: `02aefbb757ce92cb2324460ee44d21366900a61f8b62882b75f890fb1df57f1e`.
+Diagnostic executable SHA-256: `d7f8095c8634caecc3b62421a55df9aae991ed93e3cfbca4d82ebedc687513a4`.
+
 ## Kernel coverage
 
 The exact EXP-1476 request passed content, ID and probability

@@ -8,6 +8,7 @@
 #include "ggml-common.h"
 
 #include <pthread.h>
+#include <fcntl.h>
 #include <inttypes.h>
 #include <stdatomic.h>
 #include <stddef.h>
@@ -15,6 +16,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 extern void fg143_cpu_init(int argc, char ** argv);
 extern uint64_t fg_cuda_take_matrices(void);
@@ -37,11 +39,23 @@ extern void fg_cuda_take_position(uint64_t * ropes, uint64_t * convs);
 extern void fg_cuda_take_routes(uint64_t * routes);
 extern void fg_cuda_take_blits(uint64_t * blits);
 extern int fg_cuda_activation_graph_begin(bool planned);
+extern int64_t fg_cuda_activation_read_address(uint64_t host, int64_t bytes);
+extern int64_t fg_cuda_state_read(uint64_t host, int64_t bytes);
 extern int fg_cuda_activation_graph_end(bool success, bool all, uint64_t host, int64_t bytes, uint64_t * hits,
                                         uint64_t * skipped_download_bytes, uint64_t * expired_bytes);
 
 static pthread_once_t cpu_init = PTHREAD_ONCE_INIT;
 static atomic_uint_fast64_t cpu_values;
+
+struct numerical_checkpoint {
+    FILE * data;
+    FILE * manifest;
+    sl_i64 frames;
+    int64_t layers;
+    uint64_t offset;
+};
+
+static _Thread_local struct numerical_checkpoint * checkpoint;
 
 static void init_cpu(void) {
     fg_goose_host_ensure_init();
@@ -311,11 +325,66 @@ uint8_t fg143_graph_scan(uint64_t address) {
         inputs[4], inputs[5], inputs[6], dst);
 }
 
+static bool checkpoint_write(const struct ggml_tensor * t, const char * role, int64_t layer,
+                             int64_t row, int64_t rows, bool persistent, bool whole) {
+    if (!t || !t->data || row < 0 || rows <= 0 || row > t->ne[1] || rows > t->ne[1] - row) return false;
+    const size_t total = ggml_nbytes(t);
+    const size_t width = ggml_row_size(t->type, t->ne[0]);
+    const size_t stride = t->nb[1];
+    if (!width || stride < width || width > total || (uint64_t) row > (total - width) / stride) return false;
+    const size_t start = (size_t) row * stride;
+    if ((uint64_t) (rows - 1) > (total - start - width) / stride) return false;
+    if (whole && (!ggml_is_contiguous(t) || row != 0 || rows != t->ne[1])) return false;
+    if (!whole && (t->ne[2] != 1 || t->ne[3] != 1)) return false;
+    const size_t span = whole ? total : (size_t) (rows - 1) * stride + width;
+    const size_t bytes = whole ? total : (size_t) rows * width;
+    if (span > INT64_MAX || bytes > UINT64_MAX - checkpoint->offset) return false;
+    const uint8_t * data = (const uint8_t *) t->data + start;
+    const uint64_t source = (uint64_t) (uintptr_t) data;
+    const int64_t copied = persistent ? fg_cuda_state_read(source, (int64_t) span)
+                                     : fg_cuda_activation_read_address(source, (int64_t) span);
+    if (copied != 0) return false;
+    if (whole || stride == width) {
+        if (fwrite(data, 1, bytes, checkpoint->data) != bytes) return false;
+    } else {
+        for (int64_t i = 0; i < rows; ++i) {
+            if (fwrite(data + (size_t) i * stride, 1, width, checkpoint->data) != width) return false;
+        }
+    }
+    const int recorded = fprintf(checkpoint->manifest,
+        "{\"role\":\"%s\",\"layer\":%" PRId64 ",\"dtype\":\"%s\","
+        "\"shape\":[%" PRId64 ",%" PRId64 ",%" PRId64 ",%" PRId64 "],"
+        "\"row\":%" PRId64 ",\"rows\":%" PRId64 ",\"offset\":%" PRIu64 ",\"bytes\":%zu}\n",
+        role, layer, ggml_type_name(t->type), t->ne[0], t->ne[1], t->ne[2], t->ne[3], row, rows, checkpoint->offset, bytes);
+    checkpoint->offset += bytes;
+    return recorded >= 0;
+}
+
+uint8_t fg143_graph_observe(uint64_t address) {
+    if (!checkpoint) return 0;
+    const struct ggml_tensor * t = (const void *) (uintptr_t) address;
+    static const char * roles[] = {"post_attention_norm", "experts", "ffn", "layer_output"};
+    static const char * tail[] = {"head_rms", "head_norm", "logits"};
+    const int64_t end = 1 + 4 * checkpoint->layers;
+    for (int64_t i = 0; i < checkpoint->frames.len; ++i) {
+        if ((uint64_t) checkpoint->frames.data[i] != address) continue;
+        const char * role = i == 0 ? "embedding" : i < end ? roles[(i - 1) % 4] : tail[i - end];
+        const int64_t layer = i > 0 && i < end ? (i - 1) / 4 : -1;
+        if (i == end + 2 || (layer >= 0 && (i - 1) % 4 == 1)) {
+            if (!checkpoint_write(t, role, layer, 0, t->ne[1], false, false)) return 0;
+        } else {
+            if (!checkpoint_write(t, role, layer, 0, 1, false, false)) return 0;
+            if (t->ne[1] > 1 && !checkpoint_write(t, role, layer, t->ne[1] - 1, 1, false, false)) return 0;
+        }
+    }
+    return 1;
+}
+
 static enum ggml_status compute_graph(struct ggml_cgraph * graph, bool all, const struct ggml_tensor * output,
                                      sl_i64 deadlines) {
     pthread_once(&cpu_init, init_cpu);
     if (fg_cuda_activation_graph_begin(deadlines.len != 0) != 0) return GGML_STATUS_FAILED;
-    const int64_t failed = fg143_graph_run((uint64_t) (uintptr_t) graph, !all, deadlines);
+    const int64_t failed = fg143_graph_run((uint64_t) (uintptr_t) graph, !all, deadlines, checkpoint != NULL);
     if (failed > 0) {
         const struct ggml_tensor * node = ggml_graph_node(graph, (int) (failed - 1));
         fprintf(stderr, "Goose graph: node %lld (%s) failed\n", (long long) failed - 1, ggml_op_name(node->op));
@@ -397,4 +466,60 @@ enum ggml_status fg_standalone_graph_compute_output(struct ggml_cgraph * graph, 
 enum ggml_status fg_standalone_graph_plan_compute(struct fg_standalone_graph_plan * plan) {
     if (!plan || plan->nodes != plan->graph->n_nodes) return GGML_STATUS_FAILED;
     return compute_graph(plan->graph, false, plan->output, (sl_i64) {plan->deadlines, plan->nodes});
+}
+
+bool fg_q35_checkpoint_enabled(void) {
+    const char * path = getenv("GOOSE_APEX_TRACE_DIR");
+    return path && *path;
+}
+
+static FILE * checkpoint_file(int directory, int64_t prefix, const char * suffix) {
+    char name[56];
+    snprintf(name, sizeof name, "step-%012" PRId64 ".%s", prefix, suffix);
+    const int fd = openat(directory, name, O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC, 0600);
+    if (fd < 0) return NULL;
+    FILE * file = fdopen(fd, "wb");
+    if (!file) close(fd);
+    return file;
+}
+
+enum ggml_status fg_q35_checkpoint_compute(struct fg_standalone_graph_plan * plan, sl_i64 frames,
+                                          sl_i64 layers, int64_t prefix, int64_t tokens) {
+    const char * path = getenv("GOOSE_APEX_TRACE_DIR");
+    const int64_t count = layers.len / 32;
+    if (!path || !*path || !plan || checkpoint || prefix < 0 || tokens <= 0 || prefix > INT64_MAX - tokens ||
+        count < 1 || count > 128 || layers.len % 32 || frames.len != 4 * count + 4) return GGML_STATUS_FAILED;
+    const int directory = open(path, O_RDONLY | O_DIRECTORY | O_CLOEXEC);
+    if (directory < 0) return GGML_STATUS_FAILED;
+    struct numerical_checkpoint trace = {0};
+    trace.data = checkpoint_file(directory, prefix, "bin");
+    if (trace.data) trace.manifest = checkpoint_file(directory, prefix, "jsonl");
+    close(directory);
+    if (!trace.data || !trace.manifest) {
+        if (trace.data) fclose(trace.data);
+        fprintf(stderr, "Goose: cannot create numerical checkpoint for prefix %" PRId64 "\n", prefix);
+        return GGML_STATUS_FAILED;
+    }
+    trace.frames = frames;
+    trace.layers = count;
+    checkpoint = &trace;
+    bool valid = fg_standalone_graph_plan_compute(plan) == GGML_STATUS_SUCCESS;
+    for (int64_t i = 0; valid && i < count; ++i) {
+        const int64_t * layer = layers.data + 32 * i;
+        const bool recurrent = layer[0] == 1;
+        const struct ggml_tensor * left = (const void *) (uintptr_t) layer[recurrent ? 20 : 22];
+        const struct ggml_tensor * right = (const void *) (uintptr_t) layer[recurrent ? 21 : 23];
+        if (!left || !right) { valid = false; break; }
+        valid = checkpoint_write(left, recurrent ? "ssm_history" : "kv_keys", i, 0,
+            recurrent ? left->ne[1] : prefix + tokens, true, recurrent) &&
+            checkpoint_write(right, recurrent ? "gdn_state" : "kv_values", i, 0,
+                recurrent ? right->ne[1] : prefix + tokens, true, recurrent);
+    }
+    checkpoint = NULL;
+    if (fclose(trace.data) != 0) valid = false;
+    if (valid && fprintf(trace.manifest, "{\"complete\":true,\"prefix\":%" PRId64 ",\"tokens\":%" PRId64 "}\n",
+            prefix, tokens) < 0) valid = false;
+    if (fclose(trace.manifest) != 0) valid = false;
+    if (!valid) fprintf(stderr, "Goose: numerical checkpoint failed for prefix %" PRId64 "\n", prefix);
+    return valid ? GGML_STATUS_SUCCESS : GGML_STATUS_FAILED;
 }

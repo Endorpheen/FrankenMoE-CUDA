@@ -12,6 +12,7 @@ extern "fg143_graph_regular" fn graph_regular(tensor: u64, packet: const i64[:],
 extern "fg143_graph_gdn" fn graph_gdn(tensor: u64) -> bool;
 extern "fg143_graph_scan" fn graph_scan(tensor: u64) -> bool;
 extern "fg143_graph_resize" fn graph_resize(workspace: u64, bytes: i64) -> u64;
+extern "fg143_graph_observe" fn graph_observe(tensor: u64) -> bool;
 
 struct GraphWorkspace { address: u64, capacity: i64 }
 
@@ -56,7 +57,7 @@ fn execute_graph_node(tensor: u64, work: GraphWorkspace &, selective: bool, step
 }
 
 // Return one plus the first failing node index, or zero after the last node.
-export fn fg143_graph_run(graph: u64, selective: bool, deadlines: const i64[:]) -> i64 {
+export fn fg143_graph_run(graph: u64, selective: bool, deadlines: const i64[:], observe: bool) -> i64 {
     if graph == 0 { return -1; }
     let count = graph_nodes(graph);
     if deadlines.len != 0 && (deadlines.len != count || !selective) { return -1; }
@@ -65,7 +66,8 @@ export fn fg143_graph_run(graph: u64, selective: bool, deadlines: const i64[:]) 
     for i in count {
         let step = if deadlines.len == 0 { -1 } else { i };
         let deadline = if deadlines.len == 0 { -1 } else { deadlines[i] };
-        if !execute_graph_node(graph_node(graph, i), work, selective, step, deadline) {
+        let tensor = graph_node(graph, i);
+        if !execute_graph_node(tensor, work, selective, step, deadline) || (observe && !graph_observe(tensor)) {
             outcome = i + 1;
             break;
         }
