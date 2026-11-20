@@ -108,6 +108,22 @@ process swap. This was a readiness check without generation. The saved
 probability output. The current endpoint uses greedy sampling, and Q4 cache
 attention still runs on CPU. The full Apex workload and paired gates are open.
 
+EXP-2026-11-20-1500 connects the existing Goose MT19937, top-k, top-p, min-p
+and temperature sampler to the shared generation implementation. The HTTP
+route accepts the saved Apex request options, including explicit seed and
+cache disabled. `ignore_eos` bans end-of-generation candidates when choosing
+a token. Requested log probabilities use the full vocabulary before sampling,
+and the response includes the token IDs and timings needed for comparison.
+Bare completion requests retain their compact response shape.
+
+All 23 HTTP checks passed. They cover distinct and repeatable seeded draws,
+EOG masking, full-vocabulary log probabilities within 0.000001 of an
+independent calculation, and parsing a 32,768-element token array before
+rejecting its intentionally invalid last token. The CPU/CUDA operator
+fixtures and the 137-token chunked-generation differential also passed.
+This verifies the request and response path on fixtures. Full real-model
+generation and throughput at 32,768 input and 512 output tokens remain open.
+
 ## Historical requirements audit
 
 `docs/goose-migration/tasks.json`: **DONE 1**, **PARTIAL 144**, **TODO 7** of 152.

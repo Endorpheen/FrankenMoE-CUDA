@@ -1,9 +1,8 @@
 // Serial request handling for the standalone model host. CLI and HTTP share
-// the tokenizer, model state, executor and sampler through hose_generate.
-extern "fg_http_complete" fn ih_complete_abi(prompt: const u8[:], max_tokens: i64, ignore_eos: bool,
-    ids: i64[:], text: u8[:], result: i64[:]) -> i64;
-extern "fg_http_complete_ids" fn ih_complete_ids_abi(prompt: const i64[:], max_tokens: i64, ignore_eos: bool,
-    ids: i64[:], text: u8[:], result: i64[:]) -> i64;
+// the same model state and Goose generation and sampling code.
+extern "fg_http_tokenize" fn ih_tokenize(prompt: const u8[:], ids: i64[:]) -> i64;
+extern "fg_http_detokenize" fn ih_detokenize(ids: const i64[:], text: u8[:]) -> i64;
+extern "fg_http_eog" fn ih_eog(ids: i64[:]) -> i64;
 extern "fg_http_stats" fn ih_stats_abi(stats: i64[:]);
 extern "fg_http_listening" fn ih_listening(port: i64);
 extern "fg_http_set_timeout" fn ih_timeout(fd: i64) -> i64;
@@ -100,38 +99,177 @@ fn ih_response(fd: i64, status: i64, body: const u8[:]) {
     }
 }
 
-fn ih_completion_result(fd: i64, bytes: i64, count: i64, limit: i64,
-                        output: u8[:], response: u8[:], ids: i64[:]) {
-    if bytes < 0 || bytes > output.len || count <= 0 || count > limit {
-        ih_response(fd, 500, "{\"error\":\"generation failed\"}");
-        return;
-    }
-    var n = cp_put(response, 0, "{\"ids\":[");
-    for i in count {
+struct IhCompletion {
+    limit: i64, top: i64, return_tokens: bool, sampler: Q35Sample
+}
+
+fn ih_completion_defaults() -> IhCompletion {
+    let s = Q35Sample { seed: 0, top_k: 0, top_p: 1.0, min_p: 0.0, temperature: 0.0, ignore_eos: false };
+    return IhCompletion { limit: 1, top: 0, return_tokens: false, sampler: s };
+}
+
+fn ih_integer_array(response: u8[:], at: i64, ids: const i64[:]) -> i64 {
+    var n = cp_put(response, at, "[");
+    for i in ids.len {
         if i != 0 { n = cp_put(response, n, ","); }
         n = cp_uint(response, n, ids[i]);
     }
-    n = cp_put(response, n, "],\"text\":");
+    return cp_put(response, n, "]");
+}
+
+fn ih_probability(response: u8[:], at: i64, token: i64, probability: f32, piece: u8[:]) -> i64 {
+    let one: i64[1] = [token];
+    let bytes = ih_detokenize(one, piece);
+    if bytes < 0 || bytes > piece.len { return -1; }
+    var prefix: i64 = 0;
+    while prefix < bytes {
+        let kind, size = utf8_len(piece, 0, prefix, bytes);
+        if kind != 0 { break; }
+        prefix += size;
+    }
+    var n = cp_put(response, at, "{\"id\":");
+    n = cp_uint(response, n, token);
+    n = cp_put(response, n, ",\"token\":");
+    n = esc_string(response, n, piece, 0, prefix, 1);
+    n = cp_put(response, n, ",\"bytes\":[");
+    for i in bytes {
+        if i != 0 { n = cp_put(response, n, ","); }
+        n = cp_uint(response, n, piece[i] as i64);
+    }
+    n = cp_put(response, n, "],\"logprob\":");
+    return fmt_double(response, n, probability as f64);
+}
+
+fn ih_probability_rows(response: u8[:], at: i64, steps: i64, top: i64,
+                       ids: const i64[:], logp: const f32[:], piece: u8[:]) -> i64 {
+    var n = cp_put(response, at, ",\"completion_probabilities\":[");
+    for row in steps {
+        let base = row * (top + 1);
+        if row != 0 { n = cp_put(response, n, ","); }
+        n = ih_probability(response, n, ids[base], logp[base], piece);
+        if n < 0 || n > response.len { return -1; }
+        n = cp_put(response, n, ",\"top_logprobs\":[");
+        for col in top {
+            if col != 0 { n = cp_put(response, n, ","); }
+            let index = base + 1 + col;
+            n = ih_probability(response, n, ids[index], logp[index], piece);
+            if n < 0 || n > response.len { return -1; }
+            n = cp_put(response, n, "}");
+        }
+        n = cp_put(response, n, "]}");
+    }
+    return cp_put(response, n, "]");
+}
+
+fn ih_timing_fields(response: u8[:], at: i64, count: i64, timing: const f64[:]) -> i64 {
+    let prompt = timing[2] as i64;
+    var n = cp_put(response, at, ",\"timings\":{\"cache_n\":0,\"prompt_n\":");
+    n = cp_uint(response, n, prompt);
+    n = cp_put(response, n, ",\"prompt_ms\":");
+    n = fmt_double(response, n, timing[0] * 1000.0);
+    n = cp_put(response, n, ",\"prompt_per_token_ms\":");
+    n = fmt_double(response, n, timing[0] * 1000.0 / timing[2]);
+    n = cp_put(response, n, ",\"prompt_per_second\":");
+    n = fmt_double(response, n, if timing[0] > 0.0 { timing[2] / timing[0] } else { 0.0 });
+    n = cp_put(response, n, ",\"predicted_n\":");
+    n = cp_uint(response, n, count);
+    n = cp_put(response, n, ",\"predicted_ms\":");
+    n = fmt_double(response, n, timing[1] * 1000.0);
+    n = cp_put(response, n, ",\"predicted_per_token_ms\":");
+    n = fmt_double(response, n, timing[1] * 1000.0 / (count as f64));
+    n = cp_put(response, n, ",\"predicted_per_second\":");
+    n = fmt_double(response, n, if timing[1] > 0.0 { (count as f64) / timing[1] } else { 0.0 });
+    return cp_put(response, n, "}");
+}
+
+fn ih_generate(fd: i64, prompt: const i64[:], opts: const IhCompletion &,
+               output: u8[:], response: u8[:], ids: i64[:]) {
+    var stats: i64[6] = [0; 6];
+    ih_stats_abi(stats);
+    let limit = opts.limit;
+    if prompt.len <= 0 || prompt.len > stats[5] || limit <= 0 || limit > ids.len ||
+       limit - 1 > stats[5] - prompt.len || opts.top < 0 || !q35_sample_valid(opts.sampler) {
+        ih_response(fd, 400, "{\"error\":\"invalid prompt length or completion options\"}");
+        return;
+    }
+    for i in prompt.len {
+        if prompt[i] < 0 || prompt[i] >= stats[0] {
+            ih_response(fd, 400, "{\"error\":\"invalid prompt token\"}");
+            return;
+        }
+    }
+    let top = if opts.top < stats[0] { opts.top } else { stats[0] };
+    var prob_ids: i64[>..] = [];
+    var logp: f32[>..] = [];
+    if top > 0 {
+        // Each probability record consumes more than one response byte.
+        if limit > response.len / (top + 1) {
+            ih_response(fd, 400, "{\"error\":\"probability output exceeds response capacity\"}");
+            return;
+        }
+        prob_ids.resize(limit * (top + 1), 0);
+        logp.resize(limit * (top + 1), 0.0);
+    }
+    var eog: i64[>..] = [];
+    eog.resize(stats[2], 0);
+    if ih_eog(eog[..]) != eog.len {
+        ih_response(fd, 500, "{\"error\":\"generation failed\"}");
+        return;
+    }
+    var timing: f64[3] = [0.0; 3];
+    let count = q35_sample_generate(prompt, stats[0], stats[5], eog[..], limit, opts.sampler, ids,
+        timing, top, prob_ids[..], logp[..]);
+    if count <= 0 || count > limit {
+        ih_response(fd, 500, "{\"error\":\"generation failed\"}");
+        return;
+    }
+    let bytes = ih_detokenize(ids[0 .. count], output);
+    if bytes < 0 || bytes > output.len {
+        ih_response(fd, 500, "{\"error\":\"detokenization failed\"}");
+        return;
+    }
+    var n = cp_put(response, 0, "{\"ids\":");
+    n = ih_integer_array(response, n, ids[0 .. count]);
+    n = cp_put(response, n, ",\"text\":");
     n = esc_string(response, n, output, 0, bytes, 1);
     n = cp_put(response, n, ",\"count\":");
     n = cp_uint(response, n, count);
-    n = cp_put(response, n, "}");
-    if n <= response.len {
-        ih_response(fd, 200, response[0 .. n]);
-    } else {
-        ih_response(fd, 500, "{\"error\":\"response too large\"}");
+    if opts.return_tokens || top > 0 {
+        n = cp_put(response, n, ",\"content\":");
+        n = esc_string(response, n, output, 0, bytes, 1);
+        if opts.return_tokens {
+            n = cp_put(response, n, ",\"tokens\":");
+            n = ih_integer_array(response, n, ids[0 .. count]);
+        }
+        n = cp_put(response, n, if count == limit { ",\"stop\":true,\"stop_type\":\"limit\"" }
+                              else { ",\"stop\":true,\"stop_type\":\"eos\"" });
+        n = cp_put(response, n, ",\"tokens_evaluated\":");
+        n = cp_uint(response, n, prompt.len);
+        n = cp_put(response, n, ",\"tokens_predicted\":");
+        n = cp_uint(response, n, count);
+        n = ih_timing_fields(response, n, count, timing);
     }
-}
-
-fn ih_generate(fd: i64, prompt: const u8[:], limit: i64, ignore_eos: bool,
-               output: u8[:], response: u8[:], ids: i64[:]) {
-    if prompt.len == 0 || limit <= 0 || limit > ids.len {
-        ih_response(fd, 400, "{\"error\":\"invalid prompt or n_predict\"}");
+    if top > 0 {
+        n = ih_probability_rows(response, n, count, top, prob_ids[..], logp[..], output);
+    }
+    if n < 0 || n >= response.len {
+        ih_response(fd, 500, "{\"error\":\"response too large\"}");
         return;
     }
-    var result: i64[1] = [0];
-    let bytes = ih_complete_abi(prompt, limit, ignore_eos, ids, output, result);
-    ih_completion_result(fd, bytes, result[0], limit, output, response, ids);
+    n = cp_put(response, n, "}");
+    ih_response(fd, 200, response[0 .. n]);
+}
+
+fn ih_generate_text(fd: i64, prompt: const u8[:], opts: const IhCompletion &,
+                    output: u8[:], response: u8[:], ids: i64[:]) {
+    var tokens: i64[>..] = [];
+    tokens.resize(prompt.len, 0);
+    let count = ih_tokenize(prompt, tokens[..]);
+    if count <= 0 || count > tokens.len {
+        ih_response(fd, 400, "{\"error\":\"invalid prompt\"}");
+        return;
+    }
+    ih_generate(fd, tokens[0 .. count], opts, output, response, ids);
 }
 
 // A completion object can have a flat token array in addition to scalars.
@@ -163,31 +301,46 @@ fn ih_flat_object(body: const u8[:]) -> bool {
     return opened && !array_open;
 }
 
-fn ih_generate_ids(fd: i64, p: const PNode, prompt: i64, limit: i64, ignore_eos: bool,
+fn ih_generate_ids(fd: i64, p: const PNode, prompt: i64, opts: const IhCompletion &,
                    output: u8[:], response: u8[:], ids: i64[:]) {
-    var stats: i64[6] = [0; 6];
-    ih_stats_abi(stats);
     let count = p.jn[prompt];
-    if count <= 0 || count > stats[5] || limit <= 0 || limit > ids.len ||
-       limit - 1 > stats[5] - count {
-        ih_response(fd, 400, "{\"error\":\"invalid token count or n_predict\"}");
-        return;
-    }
     var tokens: i64[>..] = [];
     tokens.resize(count, 0);
     let first = p.jf[prompt];
     for i in count {
         let token = p.jchild[first + i];
-        if (p.jk[token] != PJ_K_INT && p.jk[token] != PJ_K_UINT) ||
-           p.jv[token] < 0 || p.jv[token] >= stats[0] {
+        if p.jk[token] != PJ_K_INT && p.jk[token] != PJ_K_UINT {
             ih_response(fd, 400, "{\"error\":\"invalid prompt token\"}");
             return;
         }
         tokens[i] = p.jv[token];
     }
-    var result: i64[1] = [0];
-    let bytes = ih_complete_ids_abi(tokens[..], limit, ignore_eos, ids, output, result);
-    ih_completion_result(fd, bytes, result[0], limit, output, response, ids);
+    ih_generate(fd, tokens[..], opts, output, response, ids);
+}
+
+fn ih_option(key: const u8[:], kind: i64, integer: i64, number: f64, opts: IhCompletion &) -> bool {
+    if rq_eq(key, "prompt") { return true; }
+    if kind == PJ_K_INT || kind == PJ_K_UINT {
+        if rq_eq(key, "n_predict") { opts.limit = integer; return true; }
+        if rq_eq(key, "seed") { opts.sampler.seed = integer; return true; }
+        if rq_eq(key, "top_k") { opts.sampler.top_k = integer; return true; }
+        if rq_eq(key, "n_probs") { opts.top = integer; return true; }
+    }
+    if kind == PJ_K_BOOL {
+        if rq_eq(key, "ignore_eos") { opts.sampler.ignore_eos = integer != 0; return true; }
+        if rq_eq(key, "return_tokens") { opts.return_tokens = integer != 0; return true; }
+        if rq_eq(key, "stream") || rq_eq(key, "cache_prompt") { return integer == 0; }
+    }
+    if kind == PJ_K_INT || kind == PJ_K_UINT || kind == 4 {
+        let val = if kind == 4 { number } else { integer as f64 };
+        if !(val >= 0.0) || !(val <= 3.4028234663852886e38) { return false; }
+        if rq_eq(key, "temperature") { opts.sampler.temperature = val as f32; return true; }
+        if val <= 1.0 {
+            if rq_eq(key, "top_p") { opts.sampler.top_p = val as f32; return true; }
+            if rq_eq(key, "min_p") { opts.sampler.min_p = val as f32; return true; }
+        }
+    }
+    return false;
 }
 
 fn ih_generate_json(fd: i64, body: const u8[:], output: u8[:], response: u8[:], ids: i64[:]) {
@@ -217,32 +370,19 @@ fn ih_generate_json(fd: i64, body: const u8[:], output: u8[:], response: u8[:], 
         jf: table[4*n..5*n], jn: table[5*n..6*n], jkey: table[11*n..12*n],
         jkl: table[12*n..13*n], jchild: table[13*n..14*n], sbuf: strings[..] };
     let prompt = pget(p, root, "prompt");
-    var limit: i64 = 1;
-    var ignore_eos: bool = false;
+    var opts = ih_completion_defaults();
     let first = p.jf[root];
     for i in p.jn[root] {
         let edge = first + i;
         let key = p.sbuf[p.jkey[edge] .. p.jkey[edge]+p.jkl[edge]];
         let child = p.jchild[edge];
-        if rq_eq(key, "prompt") { continue; }
-        if rq_eq(key, "n_predict") && (p.jk[child] == PJ_K_INT || p.jk[child] == PJ_K_UINT) {
-            limit = p.jv[child];
-            continue;
+        if !ih_option(key, p.jk[child], p.jv[child], doubles[child], opts) {
+            ih_response(fd, 400, "{\"error\":\"unsupported completion option\"}");
+            return;
         }
-        if rq_eq(key, "stream") && p.jk[child] == PJ_K_BOOL && p.jv[child] == 0 { continue; }
-        if rq_eq(key, "ignore_eos") && p.jk[child] == PJ_K_BOOL {
-            ignore_eos = p.jv[child] != 0;
-            continue;
-        }
-        if rq_eq(key, "temperature") &&
-           ((p.jk[child] == PJ_K_INT && p.jv[child] == 0) || (p.jk[child] == 4 && doubles[child] == 0.0)) {
-            continue;
-        }
-        ih_response(fd, 400, "{\"error\":\"unsupported completion option\"}");
-        return;
     }
     if prompt >= 0 && p.jk[prompt] == PJ_K_ARRAY {
-        ih_generate_ids(fd, p, prompt, limit, ignore_eos, output, response, ids);
+        ih_generate_ids(fd, p, prompt, opts, output, response, ids);
         return;
     }
     let off, len = pget_str(p, root, "prompt");
@@ -250,7 +390,7 @@ fn ih_generate_json(fd: i64, body: const u8[:], output: u8[:], response: u8[:], 
         ih_response(fd, 400, "{\"error\":\"expected a prompt string or a token array\"}");
         return;
     }
-    ih_generate(fd, p.sbuf[off .. off + len], limit, ignore_eos, output, response, ids);
+    ih_generate_text(fd, p.sbuf[off .. off + len], opts, output, response, ids);
 }
 
 fn ih_request(fd: i64, request: u8[:], output: u8[:], response: u8[:], ids: i64[:]) {
@@ -280,7 +420,8 @@ fn ih_request(fd: i64, request: u8[:], output: u8[:], response: u8[:], ids: i64[
         if meta[3] != 0 {
             ih_generate_json(fd, body, output, response, ids);
         } else {
-            ih_generate(fd, body, 1, false, output, response, ids);
+            let opts = ih_completion_defaults();
+            ih_generate_text(fd, body, opts, output, response, ids);
         }
     }
 }

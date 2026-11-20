@@ -270,8 +270,8 @@ fn sm_select(lv: f32[:], id: i64[:], p: f32[:], n_in: i64,
 
     // top_k
     var sorted: i64 = 0;
-    if k > 0 {
-        let kk: i64 = if k < n { k } else { n };
+    if k > 0 || top_p < 1.0 || min_p > 0.0 {
+        let kk: i64 = if k > 0 && k < n { k } else { n };
         if sm_partial_sort(lv, id, n, kk) < 0 {
             return -1;
         }
@@ -279,12 +279,8 @@ fn sm_select(lv: f32[:], id: i64[:], p: f32[:], n_in: i64,
         sorted = 1;
     }
 
-    // top_p: the native code sorts when it is not already sorted, which only
-    // happens when top_k is disabled. This port requires the sorted path.
+    // top_p and min_p both consume the logit-ordered candidates.
     if top_p < 1.0 {
-        if sorted == 0 {
-            return -2;
-        }
         softmax_in_place(lv, p, n, 1);
         var cum: f32 = 0.0;
         var last: i64 = n;
@@ -302,9 +298,6 @@ fn sm_select(lv: f32[:], id: i64[:], p: f32[:], n_in: i64,
 
     // min_p
     if min_p > 0.0 {
-        if sorted == 0 {
-            return -3;
-        }
         let min_logit: f32 = lv[0] + c_logf(min_p);
         var stop: i64 = 1;
         i = 1;
@@ -390,6 +383,35 @@ fn sm_select(lv: f32[:], id: i64[:], p: f32[:], n_in: i64,
     out[1] = id[sel];
     out[2] = n;
     return 0;
+}
+
+// Match the server's pre-sampling probabilities: partially sort the raw
+// vocabulary, then accumulate the F32 softmax in that same order.
+fn sm_pre_sample_logprobs(logits: f32[:], work_ids: i64[:], work_p: f32[:],
+                          selected: i64, top: i64, ids: i64[:], logp: f32[:]) -> bool {
+    if top <= 0 || top > logits.len || ids.len < top + 1 || logp.len < top + 1 ||
+       sm_apply_top_k(logits, work_ids, logits.len, top) != top {
+        return false;
+    }
+    if !(softmax_in_place(logits, work_p, logits.len, 1) > 0.0) { return false; }
+    ids[0] = selected;
+    var found = false;
+    for i in logits.len {
+        if i < top {
+            ids[i + 1] = work_ids[i];
+            logp[i + 1] = sm_report_logprob(work_p[i]);
+        }
+        if work_ids[i] == selected {
+            logp[0] = sm_report_logprob(work_p[i]);
+            found = true;
+        }
+        if found && i >= top - 1 { break; }
+    }
+    return found;
+}
+
+fn sm_report_logprob(p: f32) -> f32 {
+    return if p == 0.0 { -3.4028234663852886e38 } else { c_logf(p) };
 }
 
 // ---- individual chain steps, for a host whose sampler chain applies them one

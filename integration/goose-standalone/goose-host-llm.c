@@ -386,6 +386,12 @@ void hose_stats(int64_t * out5) {
 
 int64_t hose_context_capacity(void) { return H.owner[10]; }
 
+int64_t fg_http_eog(sl_i64 ids) {
+    if (ids.len < H.n_eog) return -1;
+    if (H.n_eog) memcpy(ids.data, H.eog, (size_t) H.n_eog * sizeof(*ids.data));
+    return H.n_eog;
+}
+
 int64_t fg_q35_generation_eval(sl_i32 tokens, sl_f32 output) {
     return model_step(tokens.data, tokens.len, output.len != 0, output);
 }

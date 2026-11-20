@@ -333,6 +333,10 @@ export fn bt_detokenize(
 
 // End of generation membership over the id list built by bt_eog_ids.
 export fn bt_is_eog(eog: const i64[:], n: i64, token: i64) -> i64 {
+    return bt_is_eog_impl(eog, n, token);
+}
+
+fn bt_is_eog_impl(eog: const i64[:], n: i64, token: i64) -> i64 {
     var i: i64 = 0;
     while i < n && i < eog.len {
         if eog[i] == token {

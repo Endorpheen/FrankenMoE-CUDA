@@ -10,24 +10,12 @@
 #include <sys/socket.h>
 #include <sys/time.h>
 
-static int64_t complete_result(int64_t count, sl_i64 ids, sl_u8 text, sl_i64 result) {
-    if (count <= 0) return -1;
-    result.data[0] = count;
-    return hose_detokenize(ids.data, count, text.data, text.len);
+int64_t fg_http_tokenize(sl_u8 prompt, sl_i64 ids) {
+    return hose_tokenize(prompt.data, prompt.len, ids.data, ids.len);
 }
 
-int64_t fg_http_complete(sl_u8 prompt, int64_t max_tokens, uint8_t ignore_eos,
-                         sl_i64 ids, sl_u8 text, sl_i64 result) {
-    if (max_tokens <= 0 || max_tokens > ids.len || result.len < 1) return -1;
-    const int64_t count = hose_generate_text(prompt.data, prompt.len, max_tokens, ignore_eos, ids.data, NULL);
-    return complete_result(count, ids, text, result);
-}
-
-int64_t fg_http_complete_ids(sl_i64 prompt, int64_t max_tokens, uint8_t ignore_eos,
-                             sl_i64 ids, sl_u8 text, sl_i64 result) {
-    if (max_tokens <= 0 || max_tokens > ids.len || result.len < 1) return -1;
-    const int64_t count = hose_generate_ids(prompt.data, prompt.len, max_tokens, ignore_eos, ids.data, NULL);
-    return complete_result(count, ids, text, result);
+int64_t fg_http_detokenize(sl_i64 ids, sl_u8 text) {
+    return hose_detokenize(ids.data, ids.len, text.data, text.len);
 }
 
 void fg_http_stats(sl_i64 stats) {
