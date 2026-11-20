@@ -41,6 +41,8 @@ body.extend(line for line in (root / "goose/cuda/standalone-vector.goose").read_
             if line.startswith("const CV_"))
 vmm = (root / "goose/cuda/goose-cuda-vmm-pool.goose").read_text()
 body.append(vmm[vmm.index("const VMM_POOL_CAPACITY:"):vmm.index("fn ensure(")])
+pinned = (root / "goose/cuda/goose-cuda-pinned-pool.goose").read_text()
+body.append(pinned[pinned.index("export fn fg143_pinned_packet_slot("):pinned.index("fn ensure(")])
 for name in parts:
     text = (cpu / f"{name}.goose").read_text().split("\nfn main()", 1)[0]
     if name == "recurrent":

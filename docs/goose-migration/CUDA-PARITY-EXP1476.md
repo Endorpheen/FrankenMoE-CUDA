@@ -120,7 +120,7 @@ prefill and 62.86 decode tokens/s.
 | 27 | Selective transfer and device placement. Backend split execution and CUDA tensor set/get → asynchronous linear and 2-D copies. | The [adaptive arena](#adaptive-cuda-activation-arena), [resident vector path](#resident-wide-vector-multiplication) and [last-use matrix input staging](#device-staging-for-the-last-use-matrix-input) remove the large temporary prefill publications. | PARTIAL. Investigate remaining expert uploads, dispatch packets and synchronous host transfers. Full memory and speed parity remain open. |
 | 28 | CUDA VMM pool. CUDA buffer allocator → `cuMemAddressReserve`, `cuMemCreate`, `cuMemMap`, `cuMemSetAccess`, release. | [Scratch VMM](#cuda-vmm-scratch-restoration) grows stable MMQ and Attention buffers. [Lazy KV VMM](#lazy-q4-kv-vmm-restoration) saves 1,240 MiB on full Apex 32K/512 and preserves generation through a short request after reset. | PARTIAL. Qualify the larger package, full-capacity model growth and other supported layouts. |
 | 29 | CUDA Graph capture and replay. `ggml-cuda.cu` graph evaluator → begin/end capture, instantiate, exec update and launch. | [Goose vector Attention capture](#cuda-graph-replay-for-vector-attention) executes the two-node vector/merge graph and updates it with current pointers and key counts. The hybrid trace records over 20,000 graph launches across the full workload. | PARTIAL. Qualify 32K and extend capture to other dependency-safe decode sequences. |
-| 30 | Streams and synchronization. CUDA scheduler and `ggml-cuda.cu` establish streams, events and CUDA Graph scopes. | Reference uses stream sync and async copies. Planned Goose graphs defer intermediate publication and [matrix waits](#deferred-matrix-waits) to the graph boundary, with ordered blocking host reads. | PARTIAL. Reduce the remaining blocking packet uploads and qualify independent stream and event dependencies. |
+| 30 | Streams and synchronization. CUDA scheduler and `ggml-cuda.cu` establish streams, events and CUDA Graph scopes. | Planned Goose graphs [defer matrix waits](#deferred-matrix-waits) and queue [small pinned packets asynchronously](#asynchronous-h2d-packets). Host reads retain their completion barriers. | PARTIAL. Reduce remaining blocking uploads and qualify independent upload streams and event dependencies. |
 | 31 | Prefill → decode continuation. Reference `llama-context.cpp` scheduler and CUDA graph compute produce logits for the shared sampler. | The earlier full Goose response repeated input text. The newer checkpoint completes the [normal quality suite](#apex-response-quality-checkpoint) and the vector Attention cases. | INCORRECT on the last full quality diagnostic. Revalidate the current checkpoint on the full real workload. Investigate a specific reproduced behavioral defect. |
 | 32 | Device initialization and specialization loading. CUDA backend loader and scheduler select architectures, entry points and cuBLAS paths. | Trace records device info, driver lookups, cuLibrary entry resolution and allocation APIs. Goose loads its own PTX with the Driver API. | PARTIAL. Extend end-to-end executable selection for supported MMQ shapes and verify real device witness. Preserve independent module loading and rejected profiles. |
 
@@ -2725,6 +2725,77 @@ The profiled A/B directories end in `crx43jaz` and
 `57g3pd3y`. The unprofiled A/B directories end in
 `i807ja2q` and `me1sdsm_`. Default executable SHA-256
 `d0e953021463e61c394d420ce274bd91490acc0fad30c6a622a35b79a0d24f9f`.
+
+## Asynchronous H2D packets
+
+EXP-1576 moves eligible uploads up to 4 KiB onto the
+asynchronous CUDA copy path in planned graphs. The existing
+Goose pinned-pool module assigns aligned slots in a single
+1 MiB pinned host buffer. Each packet copies its original
+bytes into that buffer before launch. The GPU copy stays
+on the legacy stream to preserve dependency ordering,
+including with the blocking Attention replay stream.
+The host buffer is reused after graph completion. A failed
+completion disables reuse. Allocation failure, disabled
+pinning, unplanned execution and capacity exhaustion
+retain the blocking copy path. Expert weight uploads
+retain their current scheduling.
+
+The saturation fixture submits 4,097 matrices, reuses
+the buffer in a second graph, and submits one matrix
+outside the graph. It verifies the results, 12,309 async
+copies, three blocking copies after exhaustion, three
+blocking copies outside the graph and a complete
+allocation/free lifecycle. CUDA memcheck reports zero
+errors.
+
+Both paired full Apex 32K/512 blocks use batch/ubatch
+4096/4096, context 262,144, the same model and executable,
+default lazy KV and the unchanged expert budgets. Only
+`GOOSE_CUDA_ASYNC_PACKETS` differs.
+
+| Metric | Blocking A | Async B |
+|---|---:|---:|
+| Profiled prefill, tok/s | 798.127 | 796.619 |
+| Profiled decode, steps/s | 20.790 | 23.413 |
+| Profiled decode, s | 24.579 | 21.825 |
+| Profiled synchronous / asynchronous H2D calls | 1,153,478 / 0 | 299,832 / 853,646 |
+| Profiled host time in both H2D APIs, s | 54.818 | 45.154 |
+| Profiled context wait API time, s | 0.948 | 6.779 |
+| Profiled H2D whole trace bytes | 154,864,119,008 | 154,864,119,008 |
+| Profiled D2H whole trace bytes | 551,156,480 | 551,156,480 |
+| Profiled peak process VRAM, MiB | 7,284 | 7,284 |
+| Profiled system swap-out growth, pages | 32,927 | 0 |
+| Unprofiled reverse-pair prefill, tok/s | 802.004 | 805.183 |
+| Unprofiled reverse-pair decode, steps/s | 22.062 | 25.012 |
+| Unprofiled reverse-pair decode, s | 23.162 | 20.430 |
+| Unprofiled peak process VRAM, MiB | 7,272 | 7,272 |
+| Unprofiled process RSS high-water, KiB | 22,936,584 | 22,938,524 |
+| Unprofiled system swap-out growth, pages | 0 | 0 |
+
+Process swap is zero in both pairs. All answers, token
+IDs, probability rows, model residency and SLRU activity
+match. The existing opening echo persists. Some of the
+H2D API time moves to context waits. The unprofiled pair
+shows a 2.733 s decode improvement with no detectable
+prefill regression on that pair and unchanged peak VRAM.
+The host buffer uses 1 MiB of pinned memory.
+
+The default build repeats the short Apex response with
+212,707 async copies and 1,280 graph launches alongside
+scratch and lazy-KV VMM. Peak process VRAM is 7,084 MiB
+and process swap and system swap-out growth are zero.
+Set `GOOSE_CUDA_ASYNC_PACKETS=0` for the blocking rollback.
+The historical expert transfer and compute overlap
+remains a separate mechanism.
+
+Evidence and binaries are under
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/async-packets-exp1576`.
+The profiled A/B directories end in `5hulo71g` and
+`_gtst4av`. The unprofiled A/B directories end in
+`jk3bvqtp` and `5urojrcy`. The final default short run
+ends in `orvg3r6w`. Default executable SHA-256
+`60ec1dfc5a737634195a2b7b21d8e344d1b5651455c07187760b98d409a51670`.
 
 ## Long Attention partition probe
 

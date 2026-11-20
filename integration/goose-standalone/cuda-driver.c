@@ -112,6 +112,8 @@ static struct {
     bool direct_wide_vectors;
     bool stage_matrix_input;
     bool defer_matrix_waits;
+    bool async_packets;
+    unsigned char * packet_host;
     struct device_buffer dense;
     sl_i64 dense_ranges;
     struct device_buffer state;
@@ -165,7 +167,10 @@ static struct {
     int (*graph_exec_destroy)(GraphExec);
     int (*host_register)(void *, size_t, unsigned);
     int (*host_unregister)(void *);
+    int (*host_alloc)(void **, size_t, unsigned);
+    int (*host_free)(void *);
     int (*upload)(DevicePtr, const void *, size_t);
+    int (*upload_async)(DevicePtr, const void *, size_t, Stream);
     int (*download)(void *, DevicePtr, size_t);
     int (*copy_device)(DevicePtr, DevicePtr, size_t);
     int (*zero)(DevicePtr, unsigned char, size_t);
@@ -187,6 +192,7 @@ static _Thread_local struct {
     int64_t ranges[ACTIVATION_RECORDS * ACTIVATION_WORDS];
     int64_t large_output[ACTIVATION_WORDS];
     uint64_t hits, skipped_download_bytes, expired_bytes;
+    size_t packet_used;
 } activations;
 static _Thread_local DevicePtr matrix_input, matrix_output;
 static _Thread_local uint64_t cuda_matrices;
@@ -308,6 +314,10 @@ static void cleanup(void) {
     if (cuda.context) {
         if (cuda.push(cuda.context) == 0) {
             if (cuda.expert_pins.len > 0) ec_manage_pins(cuda.expert_pins, 0);
+            if (cuda.packet_host) {
+                cuda.sync();
+                cuda.host_free(cuda.packet_host);
+            }
             release_flash_graph();
             if (cuda.attention_scratch.reservation_bytes) release_vmm(&cuda.attention_scratch);
             if (cuda.mmq_packed.reservation_bytes) release_vmm(&cuda.mmq_packed);
@@ -354,6 +364,14 @@ static void load_cuda(void) {
 #undef LOAD
     cuda.host_register = dlsym(cuda.library, "cuMemHostRegister_v2");
     cuda.host_unregister = dlsym(cuda.library, "cuMemHostUnregister");
+    const char * no_pinned = getenv("GGML_CUDA_NO_PINNED");
+    if (fg_standalone_option_enabled("GOOSE_CUDA_ASYNC_PACKETS") &&
+        (!no_pinned || strcmp(no_pinned, "0") == 0)) {
+        cuda.host_alloc = dlsym(cuda.library, "cuMemHostAlloc");
+        cuda.host_free = dlsym(cuda.library, "cuMemFreeHost");
+        cuda.upload_async = dlsym(cuda.library, "cuMemcpyHtoDAsync_v2");
+        cuda.async_packets = cuda.host_alloc && cuda.host_free && cuda.upload_async;
+    }
     int device;
     if (cuda.init(0) != 0 || cuda.device_get(&device, 0) != 0) return;
     cuda.status = -1;
@@ -682,6 +700,7 @@ int fg_cuda_activation_graph_begin(bool planned) {
     activations.hits = 0;
     activations.skipped_download_bytes = 0;
     activations.expired_bytes = 0;
+    activations.packet_used = 0;
     return 0;
 }
 
@@ -749,6 +768,7 @@ int fg_cuda_activation_graph_end(bool success, bool all, uint64_t host, int64_t 
             if (finish_context() != 0) error = -1;
             if (error != 0) fprintf(stderr, "Goose CUDA: graph completion failed (%d)\n", error);
         }
+        if (error != 0 && activations.packet_used != 0) cuda.async_packets = false;
     }
     if (error == 0 && success && (activations.count > 0 || activations.large_output[1] > 0)) {
         if (all) {
@@ -927,6 +947,27 @@ bool fg_cuda_wide_vector_ready(uint64_t x, uint64_t y, uint64_t output, int64_t 
         fg143_activation_record_slot(activation_ranges()) < ACTIVATION_RECORDS;
 }
 
+static int upload_packet(DevicePtr device, const void * data, size_t bytes) {
+    if (!activations.active || !activations.defer_waits || !cuda.async_packets || bytes > 4096) {
+        return cuda.upload(device, data, bytes);
+    }
+    if (!cuda.packet_host) {
+        void * host = NULL;
+        if (cuda.host_alloc(&host, MIB_BYTES, 0) != 0) {
+            cuda.async_packets = false;
+            return cuda.upload(device, data, bytes);
+        }
+        cuda.packet_host = host;
+    }
+    const int64_t slot = fg143_pinned_packet_slot((int64_t) activations.packet_used, MIB_BYTES, (int64_t) bytes);
+    if (slot < 0) return cuda.upload(device, data, bytes);
+    unsigned char * host = cuda.packet_host + slot;
+    memcpy(host, data, bytes);
+    activations.packet_used = (size_t) slot + bytes;
+    activations.pending = true;
+    return cuda.upload_async(device, host, bytes, NULL);
+}
+
 static int activation_input(sl_u8 data, struct device_buffer * staging, DevicePtr * device) {
     if (activations.count > 0 || activations.large_output[1] > 0) {
         const uint64_t host = (uint64_t) (uintptr_t) data.data;
@@ -940,7 +981,7 @@ static int activation_input(sl_u8 data, struct device_buffer * staging, DevicePt
         if (error != 0) return error;
     }
     int error = reserve(staging, (size_t) data.len);
-    if (error == 0) error = cuda.upload(staging->address, data.data, (size_t) data.len);
+    if (error == 0) error = upload_packet(staging->address, data.data, (size_t) data.len);
     if (error == 0) *device = staging->address;
     return error;
 }
@@ -1559,7 +1600,7 @@ static int launch_matrix(DevicePtr weight, int64_t row_stride, int64_t extent,
         (uint64_t) jobs.len > SIZE_MAX / sizeof(*jobs.data)) return -1;
     const size_t job_bytes = (size_t) jobs.len * sizeof(*jobs.data);
     int error = reserve(&cuda.jobs, job_bytes);
-    if (error == 0) error = cuda.upload(cuda.jobs.address, jobs.data, job_bytes);
+    if (error == 0) error = upload_packet(cuda.jobs.address, jobs.data, job_bytes);
     if (error == 0 && cuda.mmq_matrix && kind != 0 && jobs.len / job_words >= 16) {
         const int result = launch_mmq(weight, (uint64_t) row_stride, (int) extent, (int) kind,
                                       (int) rows, jobs, job_words, shared_rows, input_stride);
@@ -1966,7 +2007,7 @@ int64_t fg_cuda_gdn(sl_i64 plan, sl_f32 q, sl_f32 k, sl_f32 v, sl_f32 gate, sl_f
         memcpy(packet + 8, plan.data, sizeof(packet) - 8 * sizeof(*packet));
         error = reserve(&cuda.attention_config, sizeof packet);
     }
-    if (error == 0) error = cuda.upload(cuda.attention_config.address, packet, sizeof packet);
+    if (error == 0) error = upload_packet(cuda.attention_config.address, packet, sizeof packet);
     void * args[] = {&cuda.attention_config.address};
     if (error == 0) {
         if (mma) {

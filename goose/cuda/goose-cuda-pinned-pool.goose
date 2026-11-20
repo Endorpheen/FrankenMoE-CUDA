@@ -24,6 +24,14 @@
 extern "fg196p_fail" fn fail(code: i64);
 extern "fg196p_st_i64" fn st_i64(base: u64, byte: i64, v: i64);
 
+// Pack host packets into cache-line aligned storage until the graph fence.
+export fn fg143_pinned_packet_slot(used: i64, capacity: i64, bytes: i64) -> i64 {
+    if used < 0 || used > capacity || bytes <= 0 || bytes > 4096 { return -1; }
+    let padding = (64 - used % 64) % 64;
+    if padding > capacity - used || bytes > capacity - used - padding { return -1; }
+    return used + padding;
+}
+
 fn ensure(v: bool, c: i64) {
     if !v {
         fail(c);
