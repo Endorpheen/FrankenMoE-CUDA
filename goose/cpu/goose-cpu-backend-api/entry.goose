@@ -6,6 +6,7 @@ fn entry(
     dst: u8[:],
     scratch: f32[:],
     indices: i64[:],
+    addresses: const i64[3] &,
     gxx: const u8[8][:],
     gxs: const u8[8][:],
     gs: const u8[8][:],
@@ -38,6 +39,9 @@ fn entry(
                 let routes = mul_size(p.z.ne[0], p.z.ne[1]);
                 ni = mul_size(add_size(p.x.ne[2], routes), p.nth);
             }
+            if addresses[0] != 0 && cuda_matrix_layout(p) {
+                ni = add_size(ni, mul_size(2, rows(p.d)));
+            }
         }
         let byte = mul_size(nf, 4);
         let aligned = mul_size(add_size(byte, 7) / 8, 8);
@@ -54,7 +58,7 @@ fn entry(
     }
 
     if !scalar_type(p.x) {
-        let handled = quantized_matrix(p, x, y, z, dst, scratch, indices, gxx, gxs, gs, g3x, g3s, g1, signs, palette);
+        let handled = quantized_matrix(p, x, y, z, dst, scratch, indices, addresses, gxx, gxs, gs, g3x, g3s, g1, signs, palette);
         if handled { witness(p.op, elements(p.d)); }
         return handled;
     }
@@ -139,7 +143,8 @@ fn main() {
     let g1: i8[8][1] = default < i8[8][1] > ();
     let signs: u8[128] = default < u8[128] > ();
     let palette: i8[16] = default < i8[16] > ();
-    let ok = entry(p, x, x, x, d, f, i, g8, g8, g8, g4, g4, g1, signs, palette);
+    let addresses: i64[3] = [0, 0, 0];
+    let ok = entry(p, x, x, x, d, f, i, addresses, g8, g8, g8, g4, g4, g1, signs, palette);
     print(ok);
 }
 

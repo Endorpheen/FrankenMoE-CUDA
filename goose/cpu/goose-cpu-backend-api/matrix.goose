@@ -63,6 +63,22 @@ fn vector_dot(
 
 import.codec.decode;
 
+extern "fg_cuda_begin" fn cuda_begin(input: u64, input_bytes: i64, output_bytes: i64) -> i64;
+extern "fg_cuda_plane" fn cuda_plane(weights: u64, weight_bytes: i64, stride: i64,
+                                    blocks: i64, kind: i64, columns: i64, jobs: const i64[:]) -> i64;
+extern "fg_cuda_finish" fn cuda_finish(output: u64, output_bytes: i64) -> i64;
+
+fn cuda_matrix_layout(p: const Node &) -> bool {
+    return p.nth == 1 && (p.x.kind == 12 || p.x.kind == 14) &&
+        p.y.kind == 0 && p.y.nb[0] == 4 && p.d.kind == 0 &&
+        (p.y.nb[1] | p.y.nb[2] | p.y.nb[3]) % 4 == 0 &&
+        p.x.nb[1] >= 0 && p.x.nb[1] % 2 == 0 &&
+        p.d.nb[0] == 4 && p.d.nb[1] == mul_size(p.d.ne[0], 4) &&
+        p.d.nb[2] == mul_size(p.d.nb[1], p.d.ne[1]) &&
+        p.d.nb[3] == mul_size(p.d.nb[2], p.d.ne[2]) &&
+        p.d.bytes == mul_size(p.d.nb[3], p.d.ne[3]);
+}
+
 fn matrix(p: const Node &, x: const u8[:], y: const u8[:], ids: const u8[:], dst: u8[:]) -> bool {
     if p.op != OP_MUL_MAT && p.op != OP_MUL_MAT_ID && p.op != OP_OUT_PROD {
         return false;
@@ -129,11 +145,60 @@ fn matrix(p: const Node &, x: const u8[:], y: const u8[:], ids: const u8[:], dst
 }
 
 
+fn quant_route(p: const Node &, route: i64, plane2: i64, plane3: i64,
+               spread2: i64, spread3: i64) -> i64, i64 {
+    if p.op == OP_MUL_MAT_ID {
+        let slot = route % p.z.ne[0];
+        let token = route / p.z.ne[0];
+        return (slot % p.y.ne[1]) * p.y.nb[1] + token * p.y.nb[2], route;
+    }
+    let i1 = route % p.y.ne[1];
+    let relative_plane = route / p.y.ne[1];
+    let i2 = plane2 * spread2 + relative_plane % spread2;
+    let i3 = plane3 * spread3 + relative_plane / spread2;
+    return i1 * p.y.nb[1] + i2 * p.y.nb[2] + i3 * p.y.nb[3],
+        i1 + p.d.ne[1] * (i2 + p.d.ne[2] * i3);
+}
+
+fn next_quant_route(indexed: bool, indices: const i64[:], next: i64, route: i64, count: i64) -> i64 {
+    if indexed { return indices[next + route]; }
+    return if route + 1 < count { route + 1 } else { -1 };
+}
+
+fn cuda_quant_planes(p: const Node &, weights: u64, weight_bytes: i64,
+                     planes: i64, row_bytes: i64, row_count: i64,
+                     spread2: i64, spread3: i64, heads: i64, next: i64,
+                     routes: const i64[:], jobs: i64[:]) -> bool {
+    let indexed = p.op == OP_MUL_MAT_ID;
+    let span = add_size(mul_size(p.d.ne[0] - 1, p.x.nb[1]), row_bytes);
+    for plane in planes {
+        var route = if indexed { routes[heads + plane] } else { 0 };
+        if route < 0 { continue; }
+        let plane2 = plane % p.x.ne[2];
+        let plane3 = plane / p.x.ne[2];
+        let at = add_size(mul_size(plane2, p.x.nb[2]), mul_size(plane3, p.x.nb[3]));
+        if at > weight_bytes || span > weight_bytes - at { return false; }
+        var words: i64 = 0;
+        while route >= 0 {
+            let ya, dst_row = quant_route(p, route, plane2, plane3, spread2, spread3);
+            jobs[words] = ya;
+            jobs[words + 1] = dst_row * p.d.nb[1];
+            words += 2;
+            route = next_quant_route(indexed, routes, next, route, row_count);
+        }
+        if cuda_plane(weights + (at as u64), span, p.x.nb[1], p.x.ne[0] / 256,
+                      p.x.kind, p.d.ne[0], jobs[0 .. words]) != 0 {
+            return false;
+        }
+    }
+    return true;
+}
+
 // Each worker owns output columns and decodes a weight row once for all
 // input vectors using that row. Indexed multiplication groups only routes
 // that exist, so weights of inactive experts are never touched.
 fn quantized_matrix(p: const Node &, x: const u8[:], y: const u8[:], ids: const u8[:], dst: u8[:],
-                    scratch: f32[:], indices: i64[:],
+                    scratch: f32[:], indices: i64[:], addresses: const i64[3] &,
                     gxx: const u8[8][:], gxs: const u8[8][:], gs: const u8[8][:],
                     g3x: const u8[4][:], g3s: const u8[4][:], g1: const i8[8][:],
                     signs: const u8[:], palette: const i8[:]) -> bool {
@@ -161,6 +226,7 @@ fn quantized_matrix(p: const Node &, x: const u8[:], y: const u8[:], ids: const 
     var spread3: i64 = 1;
     var heads: i64 = 0;
     var next: i64 = 0;
+    var route_words: i64 = 0;
 
     if indexed {
         if p.z.kind != 26 || p.x.ne[3] != 1 || p.y.ne[3] != 1 ||
@@ -172,7 +238,8 @@ fn quantized_matrix(p: const Node &, x: const u8[:], y: const u8[:], ids: const 
         validate(p.z, ids.len);
         let routes = mul_size(p.z.ne[0], p.z.ne[1]);
         let words = add_size(planes, routes);
-        if indices.len < mul_size(words, p.nth) { return false; }
+        route_words = mul_size(words, p.nth);
+        if indices.len < route_words { return false; }
         heads = p.ith * words;
         next = heads + planes;
         for expert in planes { indices[heads + expert] = -1; }
@@ -192,6 +259,19 @@ fn quantized_matrix(p: const Node &, x: const u8[:], y: const u8[:], ids: const 
     }
 
     let row_count = mul_size(mul_size(p.y.ne[1], spread2), spread3);
+    if addresses[0] != 0 && addresses[1] != 0 && addresses[2] != 0 && cuda_matrix_layout(p) {
+        let job_words = mul_size(2, rows(p.d));
+        if indices.len - route_words < job_words || p.x.nb[2] < 0 || p.x.nb[3] < 0 { return false; }
+        let status = cuda_begin(addresses[1] as! u64, y.len, dst.len);
+        if status < 0 { return false; }
+        if status > 0 {
+            let ok = cuda_quant_planes(p, addresses[0] as! u64, x.len, planes, row_bytes, row_count,
+                spread2, spread3, heads, next, indices[0 .. route_words],
+                indices[route_words .. route_words + job_words]);
+            let output = if ok { addresses[2] as! u64 } else { 0 };
+            return cuda_finish(output, dst.len) == 0 && ok;
+        }
+    }
     let decoded = scratch[p.ith * width .. (p.ith + 1) * width];
     var decoder: decode :: WeightTile = default < decode :: WeightTile > ();
     for plane in planes {
@@ -211,29 +291,13 @@ fn quantized_matrix(p: const Node &, x: const u8[:], y: const u8[:], ids: const 
 
             var route = first;
             while route >= 0 {
-                var ya: i64 = 0;
-                var dst_row: i64 = 0;
-                if indexed {
-                    let slot = route % p.z.ne[0];
-                    let token = route / p.z.ne[0];
-                    ya = (slot % p.y.ne[1]) * p.y.nb[1] + token * p.y.nb[2];
-                    dst_row = route;
-                } else {
-                    let i1 = route % p.y.ne[1];
-                    let relative_plane = route / p.y.ne[1];
-                    let i2 = plane2 * spread2 + relative_plane % spread2;
-                    let i3 = plane3 * spread3 + relative_plane / spread2;
-                    ya = i1 * p.y.nb[1] + i2 * p.y.nb[2] + i3 * p.y.nb[3];
-                    dst_row = i1 + p.d.ne[1] * (i2 + p.d.ne[2] * i3);
-                }
+                let ya, dst_row = quant_route(p, route, plane2, plane3, spread2, spread3);
                 var sum: f32 = 0.0;
                 for j in width {
                     sum = fma32(decoded[j], load_at(p.y, y, ya + j * p.y.nb[0]), sum);
                 }
                 store(p.d, dst, dst_row * p.d.ne[0] + col, sum);
-                if indexed { route = indices[next + route]; }
-                else if route + 1 < row_count { route += 1; }
-                else { route = -1; }
+                route = next_quant_route(indexed, indices, next, route, row_count);
             }
             col += p.nth;
         }

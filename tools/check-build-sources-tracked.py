@@ -18,11 +18,12 @@ SOURCES = [
     ROOT / "tools/build-standalone-runtime.sh",
     ROOT / "tools/build-goose-tensor-core.sh",
     ROOT / "tools/build-goose-inference.sh",
+    ROOT / "tools/build-goose-cuda-kernels.sh",
     ROOT / "tools/build-main-runtime.sh",
 ]
 
 PATTERNS = [
-    (r'\$ROOT/([^\s"$]+\.c)(?=["\s])', ""),
+    (r'\$ROOT/([^\s"$]+\.(?:c|cl|goose))(?=["\s])', ""),
     (r'\$BASE/([^\s"$]+\.c)(?=["\s])', "vendor/flint/ggml/"),
     (r'^\s+(goose/[^\s]+\.goose)[ \t]*$', ""),
 ]

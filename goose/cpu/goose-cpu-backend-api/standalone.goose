@@ -15,7 +15,7 @@ export fn fg143_node_run(packet: const i64[:], mode: i64,
     gxx: const u8[8][:], gxs: const u8[8][:], gs: const u8[8][:],
     g3x: const u8[4][:], g3s: const u8[4][:], g1: const i8[8][:],
     signs: const u8[:], palette: const i8[:]) -> bool {
-    if packet.len != 70 { return false; }
+    if packet.len != 71 { return false; }
     var p: Node = default <Node>();
     p.x = packet_tensor(packet, 0);
     p.y = packet_tensor(packet, 10);
@@ -54,7 +54,8 @@ export fn fg143_node_run(packet: const i64[:], mode: i64,
     if mode == 0 && p.op == OP_SET_ROWS && p.d.kind == 2 {
         return set_quantized_rows(p, packet[57] as! u64, packet[58] as! u64, y);
     }
-    return entry(p, x, y, z, dst, scratch, indices, gxx, gxs, gs, g3x, g3s, g1, signs, palette);
+    let addresses: i64[3] = [packet[57], packet[70], packet[58]];
+    return entry(p, x, y, z, dst, scratch, indices, addresses, gxx, gxs, gs, g3x, g3s, g1, signs, palette);
 }
 
 export fn fg143_state_run(packet: const i64[:],

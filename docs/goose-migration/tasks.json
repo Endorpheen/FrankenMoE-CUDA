@@ -3927,9 +3927,9 @@
       "update_rule": "DONE only with Goose source+producer+artifact+correctness+liveness+rollback evidence. Major APEX_COMMON stage additionally records one fixed-profile full-system sample; speed regression does not block functional progress.",
       "batch": "B5",
       "remaining": [
-        "standalone runtime has no CUDA, tokenizer engine or HTTP (the working Apex path is the INTEGRATED stage-run, not the standalone - rule 15 forbids reporting one as the other)",
-        "full 41-layer stack execution (dispatch verified in EXP-705, not run as a stack)",
-        "port the llama-side routes into the standalone so libllama is not needed",
+        "extend the standalone CUDA path beyond Q4_K/Q6_K matrices and reduce transfers and host synchronization",
+        "verify the full Apex workload and earlier supported model families on the same artifact",
+        "complete the standalone server and runtime feature set, including OpenAI routes and streaming",
         "A/B at 128/256/512 for every candidate before acceptance (rule 20)"
       ],
       "coverage_doc": "experiments/EXP-2026-11-15-678-coverage-map/README.md",

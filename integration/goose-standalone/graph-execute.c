@@ -16,6 +16,7 @@
 #include <string.h>
 
 extern void fg143_cpu_init(int argc, char ** argv);
+extern uint64_t fg_cuda_take_matrices(void);
 
 static pthread_once_t cpu_init = PTHREAD_ONCE_INIT;
 static atomic_uint_fast64_t cpu_values;
@@ -200,7 +201,7 @@ uint8_t fg143_graph_exec_node(uint64_t graph, uint64_t workspace, int64_t index)
             inputs[3], inputs[4], inputs[5], inputs[6], dst);
     }
 
-    int64_t packet[70] = {0};
+    int64_t packet[71] = {0};
     const sl_u8 inputs[5] = {
         tensor_slice(tensor->src[0], packet), tensor_slice(tensor->src[1], packet + 10),
         tensor_slice(tensor->src[2], packet + 20), tensor_slice(tensor, packet + 30),
@@ -212,7 +213,8 @@ uint8_t fg143_graph_exec_node(uint64_t graph, uint64_t workspace, int64_t index)
     packet[57] = (int64_t) (uintptr_t) inputs[0].data;
     packet[58] = (int64_t) (uintptr_t) inputs[3].data;
     packet[69] = tensor->src[4] != NULL;
-    const sl_i64 args = { packet, 70 };
+    packet[70] = (int64_t) (uintptr_t) inputs[1].data;
+    const sl_i64 args = { packet, 71 };
     struct node_workspace * work = (void *) (uintptr_t) workspace;
     if (!run_node(args, 1, inputs, (sl_f32) {0}, (sl_i64) { sizes, 4 }) ||
         !reserve_workspace(work, sizes)) return 0;
@@ -228,11 +230,13 @@ enum ggml_status fg_standalone_graph_compute(struct ggml_cgraph * graph) {
     free(work.indices);
     if (failed > 0) {
         const struct ggml_tensor * node = ggml_graph_node(graph, (int) (failed - 1));
-        fprintf(stderr, "Goose CPU: node %lld (%s) failed\n", (long long) failed - 1, ggml_op_name(node->op));
+        fprintf(stderr, "Goose graph: node %lld (%s) failed\n", (long long) failed - 1, ggml_op_name(node->op));
     }
+    const uint64_t matrices = fg_cuda_take_matrices();
     if (getenv("GOOSE_GRAPH_LOG")) {
         const uint64_t values = (uint64_t) atomic_exchange_explicit(&cpu_values, 0, memory_order_relaxed);
         fprintf(stderr, "Goose CPU graph: %llu values\n", (unsigned long long) values);
+        if (matrices) fprintf(stderr, "Goose CUDA graph: %llu matrices\n", (unsigned long long) matrices);
     }
     return failed == 0 ? GGML_STATUS_SUCCESS : GGML_STATUS_FAILED;
 }

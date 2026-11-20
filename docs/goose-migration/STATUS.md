@@ -61,6 +61,22 @@ JSON validation and exact generation. The real Apex HTTP smoke test returned
 graph. The executable linked only `libc` and `libm`. OpenAI routes, streaming,
 GPU execution, performance and peak memory remain open.
 
+EXP-2026-11-20-1497 routes Q4_K and Q6_K matrix multiplication in the shared
+CLI and HTTP graph to CUDA for supported F32 layouts. It reuses the Goose
+decoders and plans active expert routes in Goose. OpenCL C binds device
+intrinsics, and the C host adapter uses the CUDA Driver API. Device buffers
+are reused. The host uploads one active weight plane at a time, and all other
+operators continue on the existing CPU path. `GOOSE_CUDA=0` disables offload.
+
+On the RTX 4070, the broadcast Q4_K and indexed Q6_K fixtures matched the
+dequantized reference within the existing absolute tolerance of 0.00001 on
+both CPU and CUDA. Apex Q4_K_M returned ` Paris,` through the CLI, with 431
+CUDA matrices in prefill and 431 in the following decode graph. The same
+binary returned HTTP 200 and token IDs `[11751,11]` with the same two CUDA
+counts. The executable has only `libc` and `libm` as recorded ELF dependencies
+and loads the system CUDA driver at runtime. The full GPU path, longer
+generation, other models, performance and peak memory are still open.
+
 ## Ledger
 
 `docs/goose-migration/tasks.json`: **DONE 1**, **PARTIAL 144**, **TODO 7** of 152.
@@ -85,7 +101,7 @@ See [the production C++ audit](PRODUCTION-CPP-AUDIT-20261120.md) for all 152 dis
 | P9-07 | wire the CSV, decode-trace and route-trace sinks and DeterministicWorkload to the Goose rows (integration step) |
 | P9-08 | wire the closure decisions into session.cpp and cli/main.cpp |
 | P10-06 | build-time CUDA architecture and flag decisions: CMake picks CMAKE_CUDA_ARCHITECTURES itself (vendor/flint/ggml/src/gg... |
-| P11-01 | standalone runtime has no CUDA, tokenizer engine or HTTP (the working Apex path is the INTEGRATED stage-run, not the s... |
+| P11-01 | standalone CLI and HTTP run Apex with partial CUDA offload. Remaining work includes GPU graph coverage, server feature parity and the fixed-profile Apex gates. |
 | P11-04 | D1: F2 gguf_write_to_buf, F3 gguf_get_meta_size and F4 gguf_get_meta_data (all native in vendor/flint/ggml/src/gguf.cp... |
 | C1-02 | T_NEXTN_HC_HEAD ids exist only in the integration tree, not the pinned upstream |
 
