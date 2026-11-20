@@ -591,9 +591,7 @@ static void gg_function_2(uint8_t p0, int64_t p1, int64_t base) {
   if (t1) {
   {
   t2 = ((int64_t)(v1));
-#ifndef __cplusplus
   extern void (fg245v_fail)(int64_t);
-#endif
   fg245v_fail(t2);
   }
   }
@@ -750,65 +748,47 @@ static int64_t gg_function_1(uint64_t p0, int64_t p1, int64_t p2, int64_t p3, in
   t39 = ((int64_t)(((int64_t)(v0))));
   t40 = ((int64_t)(v1));
   t41 = ((int64_t)(((int64_t)((uint64_t)(t39) + (uint64_t)(t40)))));
-#ifndef __cplusplus
   extern void (fg245v_st_i64)(uint64_t, int64_t, int64_t);
-#endif
   fg245v_st_i64(t37, t38, t41);
   t42 = ((uint64_t)(v10));
   t43 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
   t44 = ((int64_t)(v6));
-#ifndef __cplusplus
   extern void (fg245v_st_i64)(uint64_t, int64_t, int64_t);
-#endif
   fg245v_st_i64(t42, t43, t44);
   t45 = ((uint64_t)(v10));
   t46 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(2))))));
   t47 = ((int64_t)(v7));
-#ifndef __cplusplus
   extern void (fg245v_st_i64)(uint64_t, int64_t, int64_t);
-#endif
   fg245v_st_i64(t45, t46, t47);
   t48 = ((uint64_t)(v10));
   t49 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(3))))));
   t50 = ((int64_t)(v8));
-#ifndef __cplusplus
   extern void (fg245v_st_i64)(uint64_t, int64_t, int64_t);
-#endif
   fg245v_st_i64(t48, t49, t50);
   t51 = ((uint64_t)(v10));
   t52 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(4))))));
   t53 = ((int64_t)(v9));
-#ifndef __cplusplus
   extern void (fg245v_st_i64)(uint64_t, int64_t, int64_t);
-#endif
   fg245v_st_i64(t51, t52, t53);
   t54 = ((uint64_t)(v10));
   t55 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(5))))));
   t56 = ((int64_t)(v2));
-#ifndef __cplusplus
   extern void (fg245v_st_i64)(uint64_t, int64_t, int64_t);
-#endif
   fg245v_st_i64(t54, t55, t56);
   t57 = ((uint64_t)(v10));
   t58 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(6))))));
   t59 = ((int64_t)(v3));
-#ifndef __cplusplus
   extern void (fg245v_st_i64)(uint64_t, int64_t, int64_t);
-#endif
   fg245v_st_i64(t57, t58, t59);
   t60 = ((uint64_t)(v10));
   t61 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(7))))));
   t62 = ((int64_t)(v4));
-#ifndef __cplusplus
   extern void (fg245v_st_i64)(uint64_t, int64_t, int64_t);
-#endif
   fg245v_st_i64(t60, t61, t62);
   t63 = ((uint64_t)(v10));
   t64 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(8))))));
   t65 = ((int64_t)(v5));
-#ifndef __cplusplus
   extern void (fg245v_st_i64)(uint64_t, int64_t, int64_t);
-#endif
   fg245v_st_i64(t63, t64, t65);
   t0 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
   }

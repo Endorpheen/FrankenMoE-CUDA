@@ -635,12 +635,6 @@ GS_LIBM float gs_logf(float x) GS_LIBM1(logf)
 GS_LIBM float gs_log2f(float x) GS_LIBM1(log2f)
 GS_LIBM float gs_log10f(float x) GS_LIBM1(log10f)
 GS_LIBM float gs_powf(float x, float y) GS_LIBM2(powf)
-#if defined(__CUDACC__)
-static __host__ __device__ double gs_exp_cuda(double x) { return exp(x); }
-static __host__ __device__ float gs_expf_cuda(float x) { return expf(x); }
-#define gs_exp(x) gs_exp_cuda(x)
-#define gs_expf(x) gs_expf_cuda(x)
-#endif
 /* std's popcount, clz and ctz (64 for zero): the instruction where the C
    compiler has one, and counting under TinyCC. MSVC's popcount is an
    instruction past x86-64's baseline, which /arch:AVX and up promise. */
@@ -2525,9 +2519,7 @@ label1:;
 label2:;
   t23 = ((float)(v6));
   t24 = ((float)(v4));
-#ifndef __cplusplus
   extern float (logf)(float);
-#endif
   t25 = logf(t24);
   t26 = ((float)(t25));
   v8 = ((float)(((t23) + (t26))));
@@ -2768,9 +2760,7 @@ label1:;
   t20 = ((int64_t)(((int64_t)UINT64_C(1))));
   t21 = ((float)(((int64_t)((uint64_t)(t19) + (uint64_t)(t20)))));
   t22 = ((float)(((t18) / (t21))));
-#ifndef __cplusplus
   extern float (logf)(float);
-#endif
   t23 = logf(t22);
   v9 = ((float)(t23));
   /* FG_DIRECT_SLICE_INDEX */
@@ -2784,9 +2774,7 @@ label1:;
   t31 = ((GG_UNALIGNED gg_unaligned_2 *)t27.data) + gg_index(t30, t27.len);
   t32 = ((float)((*t31)));
   t33 = ((float)(((t26) / (t32))));
-#ifndef __cplusplus
   extern float (logf)(float);
-#endif
   t34 = logf(t33);
   v10 = ((float)(t34));
   t35 = ((float)(v5));
@@ -2814,9 +2802,7 @@ label2:;
   t49 = ((float)(v12));
   t50 = ((float)(gg_double_bits(UINT64_C(4611686018427387904))));
   t51 = ((float)(v2));
-#ifndef __cplusplus
   extern float (powf)(float, float);
-#endif
   t52 = powf(t50, t51);
   t53 = ((float)(t52));
   t54 = ((float)(((t49) * (t53))));
@@ -2824,9 +2810,7 @@ label2:;
   t56 = ((float)(v4));
   t57 = v12;
   t58 = ((float)((-(t57))));
-#ifndef __cplusplus
   extern float (powf)(float, float);
-#endif
   t59 = powf(t56, t58);
   t60 = ((float)(t59));
   t61 = ((float)(((t55) - (t60))));
@@ -2834,9 +2818,7 @@ label2:;
   t63 = ((float)(gg_double_bits(UINT64_C(4607182418800017408))));
   t64 = ((float)(v11));
   t65 = ((float)(((t63) / (t64))));
-#ifndef __cplusplus
   extern float (powf)(float, float);
-#endif
   t66 = powf(t62, t65);
   v13 = ((float)(t66));
   v14 = ((int64_t)(((int64_t)UINT64_C(0))));
@@ -3115,9 +3097,7 @@ label4:;
   t25 = ((float)((*t24)));
   t26 = ((float)(v4));
   t27 = ((float)(((t25) - (t26))));
-#ifndef __cplusplus
   extern float (expf)(float);
-#endif
   t28 = expf(t27);
   v8 = ((float)(t28));
   /* FG_DIRECT_SLICE_INDEX */
@@ -3468,9 +3448,7 @@ static int64_t gg_function_39(gg_slice p0, gg_slice p1, gg_slice p2, gg_slice p3
   {
   t4 = ((float)(gg_double_bits(UINT64_C(4635943731704213833))));
   t5 = ((float)(v11));
-#ifndef __cplusplus
   extern float (logf)(float);
-#endif
   t6 = logf(t5);
   t7 = ((float)(t6));
   v12 = ((float)(((t4) / (t7))));
@@ -3630,9 +3608,7 @@ label11:;
   t86 = ((float)(v10));
   t87 = ((float)(v11));
   t88 = ((float)(v19));
-#ifndef __cplusplus
   extern float (powf)(float, float);
-#endif
   t89 = powf(t87, t88);
   t90 = ((float)(t89));
   v21 = ((float)(((t86) * (t90))));
@@ -4530,9 +4506,7 @@ static int64_t gg_function_29(gg_slice p0, gg_slice p1, gg_slice p2, int64_t p3,
   t21 = ((float)(gg_double_bits(UINT64_C(4607182418800017408))));
   t22 = ((float)(((float)(v3))));
   t23 = ((float)(((t21) / (t22))));
-#ifndef __cplusplus
   extern float (logf)(float);
-#endif
   t24 = logf(t23);
   t25 = ((float)(t24));
   v9 = ((float)(((t20) - (t25))));
@@ -4557,9 +4531,7 @@ label1:;
   t35 = ((float)(v10));
   t36 = ((float)(v12));
   t37 = ((float)(v12));
-#ifndef __cplusplus
   extern float (logf)(float);
-#endif
   t38 = logf(t37);
   t39 = ((float)(t38));
   t40 = ((float)(((t36) * (t39))));
@@ -4581,9 +4553,7 @@ label2:;
   t48 = ((float)(((t46) - (t47))));
   t49 = ((float)(v13));
   t50 = ((float)(v6));
-#ifndef __cplusplus
   extern float (powf)(float, float);
-#endif
   t51 = powf(t49, t50);
   t52 = ((float)(t51));
   t53 = ((float)(((t48) * (t52))));
@@ -4663,9 +4633,7 @@ label10:;
   t88 = ((double)(((double)((*t87)))));
   t89 = ((double)(v15));
   t90 = ((double)(((t88) - (t89))));
-#ifndef __cplusplus
   extern double (exp)(double);
-#endif
   t91 = exp(t90);
   v17 = ((double)(t91));
   /* FG_DIRECT_SLICE_INDEX */
@@ -5729,9 +5697,7 @@ label4:;
   t42 = ((float)((*t41)));
   t43 = ((float)(v6));
   t44 = ((float)(((t42) - (t43))));
-#ifndef __cplusplus
   extern float (expf)(float);
-#endif
   t45 = expf(t44);
   t46 = ((float)(t45));
   v8 = ((float)(((t39) + (t46))));
@@ -5771,9 +5737,7 @@ label7:;
   t63 = ((float)((*t62)));
   t64 = ((float)(v6));
   t65 = ((float)(((t63) - (t64))));
-#ifndef __cplusplus
   extern float (expf)(float);
-#endif
   t66 = expf(t65);
   t67 = ((float)(t66));
   t68 = ((float)(v8));
@@ -6112,9 +6076,7 @@ label4:;
   t74 = v11;
   t75 = ((GG_UNALIGNED gg_unaligned_2 *)(v1).data) + gg_index(t74, (v1).len);
   t76 = ((float)((*t75)));
-#ifndef __cplusplus
   extern float (logf)(float);
-#endif
   t77 = logf(t76);
   t78 = ((float)(t77));
   t79 = ((float)(((t73) * (t78))));
@@ -6137,9 +6099,7 @@ label7:;
   t86 = v11;
   t87 = ((GG_UNALIGNED gg_unaligned_2 *)(v1).data) + gg_index(t86, (v1).len);
   t88 = ((float)((*t87)));
-#ifndef __cplusplus
   extern float (logf)(float);
-#endif
   t89 = logf(t88);
   t90 = t89;
   t91 = ((float)((-(t90))));
@@ -7103,9 +7063,7 @@ label11:;
   t212 = ((float)(gg_double_bits(UINT64_C(4607182418800017408))));
   t213 = ((float)(((float)(v4))));
   t214 = ((float)(((t212) / (t213))));
-#ifndef __cplusplus
   extern float (logf)(float);
-#endif
   t215 = logf(t214);
   t216 = ((float)(t215));
   v24 = ((float)(((t211) - (t216))));
@@ -7140,9 +7098,7 @@ label13:;
   t234 = v27;
   t235 = ((GG_UNALIGNED gg_unaligned_2 *)(v2).data) + gg_index(t234, (v2).len);
   t236 = ((float)((*t235)));
-#ifndef __cplusplus
   extern float (logf)(float);
-#endif
   t237 = logf(t236);
   t238 = ((float)(t237));
   t239 = ((float)(((t233) * (t238))));
@@ -7178,9 +7134,7 @@ label14:;
   t254 = ((float)(((t252) - (t253))));
   t255 = ((float)(v28));
   t256 = ((float)(v8));
-#ifndef __cplusplus
   extern float (powf)(float, float);
-#endif
   t257 = powf(t255, t256);
   t258 = ((float)(t257));
   t259 = ((float)(((t254) * (t258))));

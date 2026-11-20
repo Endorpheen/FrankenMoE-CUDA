@@ -543,9 +543,7 @@ static void gg_function_2(uint8_t p0, int64_t p1, int64_t base) {
   if (t1) {
   {
   t2 = ((int64_t)(v1));
-#ifndef __cplusplus
   extern void (fg260d_fail)(int64_t);
-#endif
   fg260d_fail(t2);
   }
   }
@@ -734,9 +732,7 @@ static void gg_function_1(uint64_t p0, uint64_t p1, int64_t p2, int64_t p3, int6
   t29 = ((int64_t)(v5));
   t30 = ((int64_t)(((int64_t)((uint64_t)(t28) * (uint64_t)(t29)))));
   t31 = ((uint64_t)(((uint64_t)(((int64_t)((uint64_t)(t27) + (uint64_t)(t30)))))));
-#ifndef __cplusplus
   extern uint32_t (fg260d_ld_u16)(uint64_t, uint64_t);
-#endif
   t32 = fg260d_ld_u16(t24, t31);
   v8 = ((uint32_t)(t32));
   t33 = ((uint64_t)(v0));
@@ -749,9 +745,7 @@ static void gg_function_1(uint64_t p0, uint64_t p1, int64_t p2, int64_t p3, int6
   t40 = ((int64_t)(((int64_t)((uint64_t)(t36) + (uint64_t)(t39)))));
   t41 = ((int64_t)(v4));
   t42 = ((uint64_t)(((uint64_t)(((int64_t)((uint64_t)(t40) + (uint64_t)(t41)))))));
-#ifndef __cplusplus
   extern uint32_t (fg260d_ld_u8)(uint64_t, uint64_t);
-#endif
   t43 = fg260d_ld_u8(t33, t42);
   v9 = ((uint32_t)(t43));
   t44 = ((int64_t)(((int64_t)UINT64_C(3))));
@@ -787,9 +781,7 @@ static void gg_function_1(uint64_t p0, uint64_t p1, int64_t p2, int64_t p3, int6
   v14 = ((int64_t)(((int64_t)(((t63) & (t64))))));
   t65 = ((uint64_t)(v0));
   t66 = ((uint64_t)(((uint64_t)(v6))));
-#ifndef __cplusplus
   extern float (fg260d_ld_half)(uint64_t, uint64_t);
-#endif
   t67 = fg260d_ld_half(t65, t66);
   t68 = ((float)(t67));
   t69 = ((int64_t)(((int64_t)UINT64_C(2))));
@@ -799,9 +791,7 @@ static void gg_function_1(uint64_t p0, uint64_t p1, int64_t p2, int64_t p3, int6
   t73 = ((float)(((float)(((int64_t)((uint64_t)(t71) + (uint64_t)(t72)))))));
   v15 = ((float)(((t68) * (t73))));
   t74 = ((uint32_t)(v11));
-#ifndef __cplusplus
   extern uint32_t (fg260d_grid)(uint32_t);
-#endif
   t75 = fg260d_grid(t74);
   v16 = ((uint32_t)(t75));
   t76 = ((uint32_t)(v16));
@@ -857,9 +847,7 @@ label1:;
   t107 = ((float)(v13));
   t108 = ((float)(((t106) + (t107))));
   t109 = ((float)(((t105) * (t108))));
-#ifndef __cplusplus
   extern void (fg260d_st_f32)(uint64_t, uint64_t, float);
-#endif
   fg260d_st_f32(t99, t104, t109);
   t110 = ((int64_t)(v19));
   t111 = ((int64_t)(((int64_t)UINT64_C(1))));

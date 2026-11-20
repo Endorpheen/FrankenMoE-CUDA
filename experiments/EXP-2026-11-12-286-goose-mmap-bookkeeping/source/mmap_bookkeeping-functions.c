@@ -32,9 +32,7 @@ static void fg286m_gg_function_2(uint8_t p0, int64_t p1, int64_t base) {
   if (t1) {
   {
   t2 = ((int64_t)(v1));
-#ifndef __cplusplus
   extern void (fg286m_fail)(int64_t);
-#endif
   fg286m_fail(t2);
   }
   }
@@ -109,16 +107,12 @@ static uint8_t fg286m_gg_function_4(int64_t p0, int64_t p1, int64_t p2, int64_t 
   t13 = ((uint64_t)(v4));
   t14 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
   t15 = ((int64_t)(v5));
-#ifndef __cplusplus
   extern void (fg286m_st_i64)(uint64_t, int64_t, int64_t);
-#endif
   fg286m_st_i64(t13, t14, t15);
   t16 = ((uint64_t)(v4));
   t17 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(8))))));
   t18 = ((int64_t)(v7));
-#ifndef __cplusplus
   extern void (fg286m_st_i64)(uint64_t, int64_t, int64_t);
-#endif
   fg286m_st_i64(t16, t17, t18);
   t0 = ((uint8_t)UINT64_C(1));
   }

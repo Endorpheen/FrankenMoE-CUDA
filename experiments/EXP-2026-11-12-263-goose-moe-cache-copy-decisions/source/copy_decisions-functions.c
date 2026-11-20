@@ -38,9 +38,7 @@ static int64_t fg263c_gg_function_4(uint64_t p0, int64_t p1, int64_t base) {
   t2 = ((int64_t)(v1));
   t3 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(4))))));
   t4 = ((int64_t)(((int64_t)((uint64_t)(t2) * (uint64_t)(t3)))));
-#ifndef __cplusplus
   extern int64_t (fg263c_ld_i32)(uint64_t, int64_t);
-#endif
   t5 = fg263c_ld_i32(t1, t4);
   t0 = ((int64_t)(t5));
   goto fg263c_gg_done;
@@ -62,9 +60,7 @@ static void fg263c_gg_function_2(uint8_t p0, int64_t p1, int64_t base) {
   if (t1) {
   {
   t2 = ((int64_t)(v1));
-#ifndef __cplusplus
   extern void (fg263c_fail)(int64_t);
-#endif
   fg263c_fail(t2);
   }
   }
@@ -386,9 +382,7 @@ static int64_t fg263c_gg_function_7(uint64_t p0, int64_t p1, int64_t p2, int64_t
   t10 = ((int64_t)(v1));
   t11 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(8))))));
   t12 = ((int64_t)(((int64_t)((uint64_t)(t10) * (uint64_t)(t11)))));
-#ifndef __cplusplus
   extern int64_t (fg263c_ld_i32)(uint64_t, int64_t);
-#endif
   t13 = fg263c_ld_i32(t9, t12);
   v3 = ((int64_t)(t13));
   t14 = ((uint64_t)(v0));
@@ -397,9 +391,7 @@ static int64_t fg263c_gg_function_7(uint64_t p0, int64_t p1, int64_t p2, int64_t
   t17 = ((int64_t)(((int64_t)((uint64_t)(t15) * (uint64_t)(t16)))));
   t18 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(4))))));
   t19 = ((int64_t)(((int64_t)((uint64_t)(t17) + (uint64_t)(t18)))));
-#ifndef __cplusplus
   extern int64_t (fg263c_ld_i32)(uint64_t, int64_t);
-#endif
   t20 = fg263c_ld_i32(t14, t19);
   v4 = ((int64_t)(t20));
   v5 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
@@ -417,9 +409,7 @@ label1:;
   t30 = ((int64_t)(((int64_t)((uint64_t)(t28) + (uint64_t)(t29)))));
   t31 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(8))))));
   t32 = ((int64_t)(((int64_t)((uint64_t)(t30) * (uint64_t)(t31)))));
-#ifndef __cplusplus
   extern int64_t (fg263c_ld_i32)(uint64_t, int64_t);
-#endif
   t33 = fg263c_ld_i32(t27, t32);
   t34 = ((int64_t)(t33));
   t35 = ((int64_t)(v3));
@@ -438,9 +428,7 @@ label1:;
   t45 = ((int64_t)(((int64_t)((uint64_t)(t43) * (uint64_t)(t44)))));
   t46 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(4))))));
   t47 = ((int64_t)(((int64_t)((uint64_t)(t45) + (uint64_t)(t46)))));
-#ifndef __cplusplus
   extern int64_t (fg263c_ld_i32)(uint64_t, int64_t);
-#endif
   t48 = fg263c_ld_i32(t40, t47);
   t49 = ((int64_t)(t48));
   t50 = ((int64_t)(v4));

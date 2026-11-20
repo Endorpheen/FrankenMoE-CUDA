@@ -513,9 +513,7 @@ static void gg_function_3(uint8_t p0, int64_t p1, int64_t base) {
   if (t1) {
   {
   t2 = ((int64_t)(v1));
-#ifndef __cplusplus
   extern void (fg283h_fail)(int64_t);
-#endif
   fg283h_fail(t2);
   }
   }
@@ -612,41 +610,31 @@ static uint8_t gg_function_1(int64_t p0, int64_t base) {
   t1 = ((int64_t)(v0));
   t2 = ((int64_t)(((int64_t)UINT64_C(0))));
   t3 = ((int64_t)(((int64_t)UINT64_C(0))));
-#ifndef __cplusplus
   extern uint64_t (fg283h_get)(int64_t, int64_t, int64_t);
-#endif
   t4 = fg283h_get(t1, t2, t3);
   v1 = ((uint64_t)(t4));
   t5 = ((int64_t)(v0));
   t6 = ((int64_t)(((int64_t)UINT64_C(0))));
   t7 = ((int64_t)(((int64_t)UINT64_C(1))));
-#ifndef __cplusplus
   extern uint64_t (fg283h_get)(int64_t, int64_t, int64_t);
-#endif
   t8 = fg283h_get(t5, t6, t7);
   v2 = ((uint64_t)(t8));
   t9 = ((int64_t)(v0));
   t10 = ((int64_t)(((int64_t)UINT64_C(0))));
   t11 = ((int64_t)(((int64_t)UINT64_C(2))));
-#ifndef __cplusplus
   extern uint64_t (fg283h_get)(int64_t, int64_t, int64_t);
-#endif
   t12 = fg283h_get(t9, t10, t11);
   v3 = ((int64_t)(((int64_t)(t12))));
   t13 = ((int64_t)(v0));
   t14 = ((int64_t)(((int64_t)UINT64_C(0))));
   t15 = ((int64_t)(((int64_t)UINT64_C(3))));
-#ifndef __cplusplus
   extern uint64_t (fg283h_get)(int64_t, int64_t, int64_t);
-#endif
   t16 = fg283h_get(t13, t14, t15);
   v4 = ((int64_t)(((int64_t)(t16))));
   t17 = ((int64_t)(v0));
   t18 = ((int64_t)(((int64_t)UINT64_C(0))));
   t19 = ((int64_t)(((int64_t)UINT64_C(4))));
-#ifndef __cplusplus
   extern uint64_t (fg283h_get)(int64_t, int64_t, int64_t);
-#endif
   t20 = fg283h_get(t17, t18, t19);
   v5 = ((int64_t)(((int64_t)(t20))));
   t21 = ((uint64_t)(v1));
@@ -703,47 +691,35 @@ label2:;
   t49 = ((int64_t)(((int64_t)UINT64_C(24))));
   gg_function_3(t48, t49, base + 0);
   t50 = ((int64_t)(v0));
-#ifndef __cplusplus
   extern int64_t (fg283h_plan)(int64_t);
-#endif
   t51 = fg283h_plan(t50);
   v9 = ((int64_t)(t51));
   t52 = ((int64_t)(v9));
   t53 = ((int64_t)(((int64_t)UINT64_C(1))));
   t54 = ((int64_t)(((int64_t)UINT64_C(0))));
   t55 = ((uint64_t)(((uint64_t)(v7))));
-#ifndef __cplusplus
   extern void (fg283h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg283h_put(t52, t53, t54, t55);
   t56 = ((int64_t)(v9));
   t57 = ((int64_t)(((int64_t)UINT64_C(1))));
   t58 = ((int64_t)(((int64_t)UINT64_C(1))));
   t59 = ((uint64_t)(((uint64_t)(v8))));
-#ifndef __cplusplus
   extern void (fg283h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg283h_put(t56, t57, t58, t59);
   t60 = ((int64_t)(v9));
   t61 = ((int64_t)(((int64_t)UINT64_C(1))));
   t62 = ((int64_t)(((int64_t)UINT64_C(2))));
   t63 = ((uint64_t)(((uint64_t)(v4))));
-#ifndef __cplusplus
   extern void (fg283h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg283h_put(t60, t61, t62, t63);
   t64 = ((int64_t)(v9));
   t65 = ((int64_t)(((int64_t)UINT64_C(1))));
   t66 = ((int64_t)(((int64_t)UINT64_C(3))));
   t67 = ((uint64_t)(((uint64_t)(v6))));
-#ifndef __cplusplus
   extern void (fg283h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg283h_put(t64, t65, t66, t67);
   t68 = ((int64_t)(v0));
-#ifndef __cplusplus
   extern int64_t (fg283h_launch)(int64_t);
-#endif
   t69 = fg283h_launch(t68);
   t70 = ((int64_t)(t69));
   t71 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));

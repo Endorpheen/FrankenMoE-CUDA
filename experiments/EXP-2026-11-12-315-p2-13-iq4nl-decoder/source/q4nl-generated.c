@@ -336,12 +336,6 @@ GS_LIBM float gs_logf(float x) GS_LIBM1(logf)
 GS_LIBM float gs_log2f(float x) GS_LIBM1(log2f)
 GS_LIBM float gs_log10f(float x) GS_LIBM1(log10f)
 GS_LIBM float gs_powf(float x, float y) GS_LIBM2(powf)
-#if defined(__CUDACC__)
-static __host__ __device__ double gs_exp_cuda(double x) { return exp(x); }
-static __host__ __device__ float gs_expf_cuda(float x) { return expf(x); }
-#define gs_exp(x) gs_exp_cuda(x)
-#define gs_expf(x) gs_expf_cuda(x)
-#endif
 /* std's popcount, clz and ctz (64 for zero): the instruction where the C
    compiler has one, and counting under TinyCC. MSVC's popcount is an
    instruction past x86-64's baseline, which /arch:AVX and up promise. */
@@ -963,9 +957,7 @@ static int64_t fg315q_fn_4(uint64_t p0, uint64_t p1, int64_t p2, int64_t base) {
   t4 = ((uint64_t)(((uint64_t)((uint64_t)(t2) * (uint64_t)(t3)))));
   v4 = ((uint64_t)(((uint64_t)((uint64_t)(t1) + (uint64_t)(t4)))));
   t5 = ((uint64_t)(v4));
-#ifndef __cplusplus
   extern float (fg315q_ld_f16)(uint64_t);
-#endif
   t6 = fg315q_ld_f16(t5);
   v5 = ((float)(t6));
   t7 = ((uint64_t)(v4));
@@ -987,9 +979,7 @@ label1:;
   t16 = ((uint64_t)(v6));
   t17 = ((uint64_t)(v9));
   t18 = ((uint64_t)(((uint64_t)((uint64_t)(t16) + (uint64_t)(t17)))));
-#ifndef __cplusplus
   extern int64_t (fg315q_ld_u8)(uint64_t);
-#endif
   t19 = fg315q_ld_u8(t18);
   v10 = ((int64_t)(t19));
   t20 = ((uint64_t)(v7));
@@ -1004,9 +994,7 @@ label1:;
   t29 = fg315q_fn_7(t28, base + 0);
   t30 = ((float)(((float)(t29))));
   t31 = ((float)(((t25) * (t30))));
-#ifndef __cplusplus
   extern void (fg315q_st_f32)(uint64_t, float);
-#endif
   fg315q_st_f32(t24, t31);
   t32 = ((uint64_t)(v7));
   t33 = ((uint64_t)(v9));
@@ -1022,9 +1010,7 @@ label1:;
   t43 = fg315q_fn_7(t42, base + 0);
   t44 = ((float)(((float)(t43))));
   t45 = ((float)(((t39) * (t44))));
-#ifndef __cplusplus
   extern void (fg315q_st_f32)(uint64_t, float);
-#endif
   fg315q_st_f32(t38, t45);
   t46 = ((int64_t)(v8));
   t47 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
@@ -1052,9 +1038,7 @@ static void fg315q_fn_2(uint8_t p0, int64_t p1, int64_t base) {
   if (t1) {
   {
   t2 = ((int64_t)(v1));
-#ifndef __cplusplus
   extern void (fg315q_fail)(int64_t);
-#endif
   fg315q_fail(t2);
   }
   }

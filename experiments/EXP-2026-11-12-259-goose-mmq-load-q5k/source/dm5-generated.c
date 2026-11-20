@@ -336,12 +336,6 @@ GS_LIBM float gs_logf(float x) GS_LIBM1(logf)
 GS_LIBM float gs_log2f(float x) GS_LIBM1(log2f)
 GS_LIBM float gs_log10f(float x) GS_LIBM1(log10f)
 GS_LIBM float gs_powf(float x, float y) GS_LIBM2(powf)
-#if defined(__CUDACC__)
-static __host__ __device__ double gs_exp_cuda(double x) { return exp(x); }
-static __host__ __device__ float gs_expf_cuda(float x) { return expf(x); }
-#define gs_exp(x) gs_exp_cuda(x)
-#define gs_expf(x) gs_expf_cuda(x)
-#endif
 /* std's popcount, clz and ctz (64 for zero): the instruction where the C
    compiler has one, and counting under TinyCC. MSVC's popcount is an
    instruction past x86-64's baseline, which /arch:AVX and up promise. */
@@ -759,9 +753,7 @@ static uint8_t gg_function_1(uint64_t p0, uint64_t p1, int64_t p2, int64_t p3, i
   t14 = ((int64_t)(v8));
   t15 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
   t16 = ((int64_t)(((int64_t)((uint64_t)(t14) + (uint64_t)(t15)))));
-#ifndef __cplusplus
   extern int64_t (fg259m_unpack_scales)(uint64_t, int64_t);
-#endif
   t17 = fg259m_unpack_scales(t13, t16);
   v9 = ((int64_t)(t17));
   t18 = ((uint64_t)(v7));
@@ -770,16 +762,12 @@ static uint8_t gg_function_1(uint64_t p0, uint64_t p1, int64_t p2, int64_t p3, i
   t21 = ((int64_t)(v8));
   t22 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(2))))));
   t23 = ((int64_t)(((int64_t)((uint64_t)(t21) + (uint64_t)(t22)))));
-#ifndef __cplusplus
   extern int64_t (fg259m_unpack_scales)(uint64_t, int64_t);
-#endif
   t24 = fg259m_unpack_scales(t20, t23);
   v10 = ((int64_t)(t24));
   t25 = ((uint64_t)(v7));
   t26 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
-#ifndef __cplusplus
   extern int64_t (fg259m_ld_i32)(uint64_t, int64_t);
-#endif
   t27 = fg259m_ld_i32(t25, t26);
   v11 = ((int64_t)(t27));
   v12 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
@@ -818,14 +806,10 @@ label1:;
   t55 = ((int64_t)(v11));
   t56 = ((int64_t)(v13));
   t57 = ((int64_t)(v14));
-#ifndef __cplusplus
   extern int64_t (fg259m_dm_scale)(int64_t, int64_t, int64_t);
-#endif
   t58 = fg259m_dm_scale(t55, t56, t57);
   t59 = ((int64_t)(t58));
-#ifndef __cplusplus
   extern void (fg259m_st_i32)(uint64_t, int64_t, int64_t);
-#endif
   fg259m_st_i32(t43, t54, t59);
   t60 = ((int64_t)(v12));
   t61 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));

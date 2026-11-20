@@ -452,9 +452,7 @@ static int64_t fg284p_gg_function_6(uint64_t p0, int64_t p1, int64_t base) {
   {
   t1 = ((uint64_t)(v0));
   t2 = ((int64_t)(v1));
-#ifndef __cplusplus
   extern int64_t (fg284p_ld_u8)(uint64_t, int64_t);
-#endif
   t3 = fg284p_ld_u8(t1, t2);
   t0 = ((int64_t)(t3));
   goto fg284p_gg_done;
@@ -547,9 +545,7 @@ static void fg284p_gg_function_2(uint8_t p0, int64_t p1, int64_t base) {
   if (t1) {
   {
   t2 = ((int64_t)(v1));
-#ifndef __cplusplus
   extern void (fg284p_fail)(int64_t);
-#endif
   fg284p_fail(t2);
   }
   }

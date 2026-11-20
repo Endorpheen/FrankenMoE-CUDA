@@ -256,13 +256,7 @@
 #define GGML_MROPE_SECTIONS   4
 
 #define GGML_UNUSED(x) (void)(x)
-#ifdef __CUDACC__
-template<typename... Args>
-__host__ __device__ constexpr inline void ggml_unused_vars_impl(Args&&...) noexcept {}
-#define GGML_UNUSED_VARS(...) ggml_unused_vars_impl(__VA_ARGS__)
-#else
 #define GGML_UNUSED_VARS(...) do { (void)sizeof((__VA_ARGS__, 0)); } while(0)
-#endif // __CUDACC__
 
 #define GGML_PAD(x, n) (((x) + (n) - 1) & ~((n) - 1))
 
@@ -276,9 +270,7 @@ __host__ __device__ constexpr inline void ggml_unused_vars_impl(Args&&...) noexc
 #   define GGML_UNREACHABLE() ((void) 0)
 #endif
 
-#ifdef __cplusplus
-#   define GGML_NORETURN [[noreturn]]
-#elif defined(_MSC_VER)
+#if defined(_MSC_VER)
 #   define GGML_NORETURN __declspec(noreturn)
 #else
 #   define GGML_NORETURN _Noreturn
@@ -341,9 +333,6 @@ __host__ __device__ constexpr inline void ggml_unused_vars_impl(Args&&...) noexc
     GGML_TENSOR_LOCALS(int64_t, ne1, src1, ne) \
     GGML_TENSOR_LOCALS(size_t,  nb1, src1, nb)
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
 
     // Function type used in fatal error callbacks
     typedef void (*ggml_abort_callback_t)(const char * error_message);
@@ -2958,24 +2947,11 @@ extern "C" {
                    int64_t   n_per_row,
                const float * imatrix);
 
-#ifdef __cplusplus
-    // restrict not standard in C++
-#    if defined(__GNUC__)
-#        define GGML_RESTRICT __restrict__
-#    elif defined(__clang__)
-#        define GGML_RESTRICT __restrict
-#    elif defined(_MSC_VER)
-#        define GGML_RESTRICT __restrict
-#    else
-#        define GGML_RESTRICT
-#    endif
-#else
 #    if defined (_MSC_VER) && (__STDC_VERSION__ < 201112L)
 #        define GGML_RESTRICT __restrict
 #    else
 #        define GGML_RESTRICT restrict
 #    endif
-#endif
     typedef void (*ggml_to_float_t)  (const void  * GGML_RESTRICT x, float * GGML_RESTRICT y, int64_t k);
     typedef void (*ggml_from_float_t)(const float * GGML_RESTRICT x, void  * GGML_RESTRICT y, int64_t k);
 
@@ -3023,6 +2999,3 @@ extern "C" {
     GGML_API void                          ggml_threadpool_params_init   (struct ggml_threadpool_params * p, int n_threads);
     GGML_API bool                          ggml_threadpool_params_match  (const struct ggml_threadpool_params * p0, const struct ggml_threadpool_params * p1);
 
-#ifdef  __cplusplus
-}
-#endif

@@ -595,12 +595,6 @@ GS_LIBM float gs_logf(float x) GS_LIBM1(logf)
 GS_LIBM float gs_log2f(float x) GS_LIBM1(log2f)
 GS_LIBM float gs_log10f(float x) GS_LIBM1(log10f)
 GS_LIBM float gs_powf(float x, float y) GS_LIBM2(powf)
-#if defined(__CUDACC__)
-static __host__ __device__ double gs_exp_cuda(double x) { return exp(x); }
-static __host__ __device__ float gs_expf_cuda(float x) { return expf(x); }
-#define gs_exp(x) gs_exp_cuda(x)
-#define gs_expf(x) gs_expf_cuda(x)
-#endif
 /* std's popcount, clz and ctz (64 for zero): the instruction where the C
    compiler has one, and counting under TinyCC. MSVC's popcount is an
    instruction past x86-64's baseline, which /arch:AVX and up promise. */
@@ -986,9 +980,7 @@ static int64_t gg_function_13(int64_t p0, int64_t p1, int64_t base) {
   t1 = ((int64_t)(v0));
   t2 = ((int64_t)(v1));
   t3 = ((int64_t)(((int64_t)UINT64_C(0))));
-#ifndef __cplusplus
   extern int64_t (fg161_bulk)(int64_t, int64_t, int64_t);
-#endif
   t4 = fg161_bulk(t1, t2, t3);
   v2 = ((int64_t)(t4));
   t5 = ((int64_t)(v2));
@@ -1002,9 +994,7 @@ static int64_t gg_function_13(int64_t p0, int64_t p1, int64_t base) {
   }
   t8 = ((int64_t)(v2));
   t9 = ((int64_t)(((int64_t)UINT64_C(64))));
-#ifndef __cplusplus
   extern void (fg161_usage)(int64_t, int64_t);
-#endif
   fg161_usage(t8, t9);
   t0 = ((int64_t)(v2));
   goto gg_done;
@@ -1020,9 +1010,7 @@ static int64_t gg_function_9(int64_t p0, int64_t base) {
   v0 = p0;
   {
   t1 = ((int64_t)(v0));
-#ifndef __cplusplus
   extern uint64_t (fg161_generation)(int64_t);
-#endif
   t2 = fg161_generation(t1);
   t0 = ((int64_t)(((int64_t)(t2))));
   goto gg_done;
@@ -1077,9 +1065,7 @@ static int64_t gg_function_11(int64_t p0, int64_t p1, uint64_t p2, int64_t p3, i
   t11 = ((int64_t)(v0));
   t12 = ((int64_t)(v1));
   t13 = ((uint64_t)(v2));
-#ifndef __cplusplus
   extern int64_t (fg161_tensor_alloc)(int64_t, int64_t, uint64_t);
-#endif
   t14 = fg161_tensor_alloc(t11, t12, t13);
   t0 = ((int64_t)(t14));
   goto gg_done;
@@ -1109,9 +1095,7 @@ static int64_t gg_function_7(int64_t p0, int64_t base) {
   }
   }
   t5 = ((int64_t)(v0));
-#ifndef __cplusplus
   extern void (fg161_reset_buffer)(int64_t);
-#endif
   fg161_reset_buffer(t5);
   t6 = ((int64_t)(v0));
   t0 = gg_function_9(t6, base + 0);
@@ -1141,9 +1125,7 @@ static int64_t gg_function_5(int64_t p0, int64_t base) {
   }
   }
   t5 = ((int64_t)(v0));
-#ifndef __cplusplus
   extern void (fg161_free_buffer)(int64_t);
-#endif
   fg161_free_buffer(t5);
   t0 = ((int64_t)(((int64_t)UINT64_C(0))));
   goto gg_done;
@@ -1169,9 +1151,7 @@ static int64_t gg_function_2(int64_t p0, uint64_t p1, int64_t base) {
   {
   t1 = ((int64_t)(v0));
   t2 = ((uint64_t)(v1));
-#ifndef __cplusplus
   extern int64_t (fg161_alloc_buffer)(int64_t, uint64_t);
-#endif
   t3 = fg161_alloc_buffer(t1, t2);
   v2 = ((int64_t)(t3));
   t4 = ((int64_t)(v2));
@@ -1185,9 +1165,7 @@ static int64_t gg_function_2(int64_t p0, uint64_t p1, int64_t base) {
   }
   t7 = ((int64_t)(v2));
   t8 = ((int64_t)(((int64_t)UINT64_C(64))));
-#ifndef __cplusplus
   extern void (fg161_usage)(int64_t, int64_t);
-#endif
   fg161_usage(t7, t8);
   t0 = ((int64_t)(v2));
   goto gg_done;

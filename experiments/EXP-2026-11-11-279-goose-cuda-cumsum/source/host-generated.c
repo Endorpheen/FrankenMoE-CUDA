@@ -513,9 +513,7 @@ static void gg_function_3(uint8_t p0, int64_t p1, int64_t base) {
   if (t1) {
   {
   t2 = ((int64_t)(v1));
-#ifndef __cplusplus
   extern void (fg279h_fail)(int64_t);
-#endif
   fg279h_fail(t2);
   }
   }
@@ -649,57 +647,43 @@ static uint8_t gg_function_1(int64_t p0, int64_t base) {
   t1 = ((int64_t)(v0));
   t2 = ((int64_t)(((int64_t)UINT64_C(0))));
   t3 = ((int64_t)(((int64_t)UINT64_C(0))));
-#ifndef __cplusplus
   extern uint64_t (fg279h_get)(int64_t, int64_t, int64_t);
-#endif
   t4 = fg279h_get(t1, t2, t3);
   v1 = ((uint64_t)(t4));
   t5 = ((int64_t)(v0));
   t6 = ((int64_t)(((int64_t)UINT64_C(0))));
   t7 = ((int64_t)(((int64_t)UINT64_C(1))));
-#ifndef __cplusplus
   extern uint64_t (fg279h_get)(int64_t, int64_t, int64_t);
-#endif
   t8 = fg279h_get(t5, t6, t7);
   v2 = ((uint64_t)(t8));
   t9 = ((int64_t)(v0));
   t10 = ((int64_t)(((int64_t)UINT64_C(0))));
   t11 = ((int64_t)(((int64_t)UINT64_C(2))));
-#ifndef __cplusplus
   extern uint64_t (fg279h_get)(int64_t, int64_t, int64_t);
-#endif
   t12 = fg279h_get(t9, t10, t11);
   v3 = ((int64_t)(((int64_t)(t12))));
   t13 = ((int64_t)(v0));
   t14 = ((int64_t)(((int64_t)UINT64_C(0))));
   t15 = ((int64_t)(((int64_t)UINT64_C(3))));
-#ifndef __cplusplus
   extern uint64_t (fg279h_get)(int64_t, int64_t, int64_t);
-#endif
   t16 = fg279h_get(t13, t14, t15);
   v4 = ((int64_t)(((int64_t)(t16))));
   t17 = ((int64_t)(v0));
   t18 = ((int64_t)(((int64_t)UINT64_C(0))));
   t19 = ((int64_t)(((int64_t)UINT64_C(4))));
-#ifndef __cplusplus
   extern uint64_t (fg279h_get)(int64_t, int64_t, int64_t);
-#endif
   t20 = fg279h_get(t17, t18, t19);
   v5 = ((int64_t)(((int64_t)(t20))));
   t21 = ((int64_t)(v0));
   t22 = ((int64_t)(((int64_t)UINT64_C(0))));
   t23 = ((int64_t)(((int64_t)UINT64_C(5))));
-#ifndef __cplusplus
   extern uint64_t (fg279h_get)(int64_t, int64_t, int64_t);
-#endif
   t24 = fg279h_get(t21, t22, t23);
   v6 = ((int64_t)(((int64_t)(t24))));
   t25 = ((int64_t)(v0));
   t26 = ((int64_t)(((int64_t)UINT64_C(0))));
   t27 = ((int64_t)(((int64_t)UINT64_C(6))));
-#ifndef __cplusplus
   extern uint64_t (fg279h_get)(int64_t, int64_t, int64_t);
-#endif
   t28 = fg279h_get(t25, t26, t27);
   v7 = ((int64_t)(((int64_t)(t28))));
   t29 = ((uint64_t)(v1));
@@ -781,55 +765,41 @@ static uint8_t gg_function_1(int64_t p0, int64_t base) {
   t79 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(4))))));
   v11 = ((int64_t)(((int64_t)((uint64_t)(t78) * (uint64_t)(t79)))));
   t80 = ((int64_t)(v0));
-#ifndef __cplusplus
   extern int64_t (fg279h_plan)(int64_t);
-#endif
   t81 = fg279h_plan(t80);
   v12 = ((int64_t)(t81));
   t82 = ((int64_t)(v12));
   t83 = ((int64_t)(((int64_t)UINT64_C(1))));
   t84 = ((int64_t)(((int64_t)UINT64_C(0))));
   t85 = ((uint64_t)(((uint64_t)(v9))));
-#ifndef __cplusplus
   extern void (fg279h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg279h_put(t82, t83, t84, t85);
   t86 = ((int64_t)(v12));
   t87 = ((int64_t)(((int64_t)UINT64_C(1))));
   t88 = ((int64_t)(((int64_t)UINT64_C(1))));
   t89 = ((uint64_t)(((uint64_t)(v11))));
-#ifndef __cplusplus
   extern void (fg279h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg279h_put(t86, t87, t88, t89);
   t90 = ((int64_t)(v12));
   t91 = ((int64_t)(((int64_t)UINT64_C(1))));
   t92 = ((int64_t)(((int64_t)UINT64_C(2))));
   t93 = ((uint64_t)(((uint64_t)(v4))));
-#ifndef __cplusplus
   extern void (fg279h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg279h_put(t90, t91, t92, t93);
   t94 = ((int64_t)(v12));
   t95 = ((int64_t)(((int64_t)UINT64_C(1))));
   t96 = ((int64_t)(((int64_t)UINT64_C(3))));
   t97 = ((uint64_t)(((uint64_t)(v5))));
-#ifndef __cplusplus
   extern void (fg279h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg279h_put(t94, t95, t96, t97);
   t98 = ((int64_t)(v12));
   t99 = ((int64_t)(((int64_t)UINT64_C(1))));
   t100 = ((int64_t)(((int64_t)UINT64_C(4))));
   t101 = ((uint64_t)(((uint64_t)(v6))));
-#ifndef __cplusplus
   extern void (fg279h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg279h_put(t98, t99, t100, t101);
   t102 = ((int64_t)(v0));
-#ifndef __cplusplus
   extern int64_t (fg279h_launch)(int64_t);
-#endif
   t103 = fg279h_launch(t102);
   t104 = ((int64_t)(t103));
   t105 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));

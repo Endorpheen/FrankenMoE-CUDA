@@ -8,13 +8,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#ifdef __cplusplus
-#include <map>
-#include <string>
-#include <vector>
-#include <cinttypes>
-#include <memory>
-#endif
 
 /**
  * libmtmd: A library for multimodal support in llama.cpp.
@@ -47,9 +40,6 @@
 #    define MTMD_API
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 enum mtmd_input_chunk_type {
     MTMD_INPUT_CHUNK_TYPE_TEXT,
@@ -501,113 +491,13 @@ MTMD_API int32_t mtmd_gen_audio_process(mtmd_context * ctx,
 // test function, to be used in test-mtmd-c-api.c
 MTMD_API mtmd_input_chunks * mtmd_test_create_input_chunks(void);
 
-#ifdef __cplusplus
-} // extern "C"
-#endif
 
 // Get memory usage of the current model in bytes, per backend device
 // Note: this is an unstable API, used internally by fit_params; it WILL be removed or changed without deprecation
-#ifdef __cplusplus
-struct mtmd_memory_usage {
-    std::map<ggml_backend_dev_t, size_t> backend_mem_usage;
-    // for models that use non-causal attention, max_tokens must not exceed n_ubatch of llama_context
-    int image_max_tokens;
-    bool use_non_causal;
-};
-MTMD_API struct mtmd_memory_usage mtmd_get_memory_usage(
-    const char * mmproj_fname,
-    struct mtmd_context_params ctx_params);
-#endif
 
 //
 // C++ wrappers
 //
 
-#ifdef __cplusplus
-
-namespace mtmd {
-
-struct mtmd_context_deleter {
-    void operator()(mtmd_context * val) { mtmd_free(val); }
-};
-using context_ptr = std::unique_ptr<mtmd_context, mtmd_context_deleter>;
-
-struct mtmd_bitmap_deleter {
-    void operator()(mtmd_bitmap * val) { mtmd_bitmap_free(val); }
-};
-using bitmap_ptr = std::unique_ptr<mtmd_bitmap, mtmd_bitmap_deleter>;
-
-struct mtmd_input_chunks_deleter {
-    void operator()(mtmd_input_chunks * val) { mtmd_input_chunks_free(val); }
-};
-using input_chunks_ptr = std::unique_ptr<mtmd_input_chunks, mtmd_input_chunks_deleter>;
-
-struct mtmd_input_chunk_deleter {
-    void operator()(mtmd_input_chunk * val) { mtmd_input_chunk_free(val); }
-};
-using input_chunk_ptr = std::unique_ptr<mtmd_input_chunk, mtmd_input_chunk_deleter>;
-
-struct mtmd_batch_deleter {
-    void operator()(mtmd_batch * val) { mtmd_batch_free(val); }
-};
-using batch_ptr = std::unique_ptr<mtmd_batch, mtmd_batch_deleter>;
-
-struct mtmd_audio_stream_deleter {
-    void operator()(mtmd_audio_stream * val) { mtmd_audio_stream_free(val); }
-};
-using audio_stream_ptr = std::unique_ptr<mtmd_audio_stream, mtmd_audio_stream_deleter>;
-
-struct mtmd_gen_state_deleter {
-    void operator()(mtmd_gen_state * val) { mtmd_gen_state_free(val); }
-};
-using gen_state_ptr = std::unique_ptr<mtmd_gen_state, mtmd_gen_state_deleter>;
-
-struct bitmap {
-    bitmap_ptr ptr;
-    bitmap() : ptr(nullptr) {}
-    bitmap(mtmd_bitmap * bitmap) : ptr(bitmap) {}
-    bitmap(bitmap && other) noexcept : ptr(std::move(other.ptr)) {}
-    bitmap(uint32_t nx, uint32_t ny, const unsigned char * data) {
-        ptr.reset(mtmd_bitmap_init(nx, ny, data));
-    }
-    ~bitmap() = default;
-    uint32_t nx() const { return mtmd_bitmap_get_nx(ptr.get()); }
-    uint32_t ny() const { return mtmd_bitmap_get_ny(ptr.get()); }
-    const unsigned char * data() const { return mtmd_bitmap_get_data(ptr.get()); }
-    size_t n_bytes() const { return mtmd_bitmap_get_n_bytes(ptr.get()); }
-    std::string id() const { return mtmd_bitmap_get_id(ptr.get()); }
-    void set_id(const char * id) const { mtmd_bitmap_set_id(ptr.get(), id); }
-};
-
-struct bitmaps {
-    std::vector<bitmap> entries;
-    ~bitmaps() = default;
-    // return list of pointers to mtmd_bitmap
-    // example:
-    //   auto bitmaps_c_ptr = bitmaps.c_ptr();
-    //   int32_t res = mtmd_tokenize(... bitmaps_c_ptr.data(), bitmaps_c_ptr.size());
-    std::vector<const mtmd_bitmap *> c_ptr() {
-        std::vector<const mtmd_bitmap *> res(entries.size());
-        for (size_t i = 0; i < entries.size(); i++) {
-            res[i] = entries[i].ptr.get();
-        }
-        return res;
-    }
-};
-
-struct input_chunks {
-    input_chunks_ptr ptr;
-    input_chunks() = default;
-    input_chunks(mtmd_input_chunks * chunks) : ptr(chunks) {}
-    ~input_chunks() = default;
-    size_t size() const { return mtmd_input_chunks_size(ptr.get()); }
-    const mtmd_input_chunk * operator[](size_t idx) const {
-        return mtmd_input_chunks_get(ptr.get(), idx);
-    }
-};
-
-} // namespace mtmd
-
-#endif
 
 #endif

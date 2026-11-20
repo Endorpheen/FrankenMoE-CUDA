@@ -36,9 +36,7 @@ static int64_t fg270q_gg_function_4(uint64_t p0, int64_t p1, int64_t base) {
   t2 = ((int64_t)(v1));
   t3 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(8))))));
   t4 = ((int64_t)(((int64_t)((uint64_t)(t2) * (uint64_t)(t3)))));
-#ifndef __cplusplus
   extern int64_t (fg270q_ld_i64)(uint64_t, int64_t);
-#endif
   t5 = fg270q_ld_i64(t1, t4);
   t0 = ((int64_t)(t5));
   goto fg270q_gg_done;
@@ -88,9 +86,7 @@ static void fg270q_gg_function_7(uint64_t p0, int64_t p1, int64_t base) {
   t15 = ((int64_t)(((int64_t)fg270q_gg_mod(t13, t14))));
   t16 = ((int64_t)(((int64_t)((uint64_t)(t12) << ((uint64_t)(t15) & 63)))));
   t17 = ((int64_t)(((t11) | (t16))));
-#ifndef __cplusplus
   extern void (fg270q_st_i64)(uint64_t, int64_t, int64_t);
-#endif
   fg270q_st_i64(t0, t5, t17);
   }
 }
@@ -108,9 +104,7 @@ static void fg270q_gg_function_2(uint8_t p0, int64_t p1, int64_t base) {
   if (t1) {
   {
   t2 = ((int64_t)(v1));
-#ifndef __cplusplus
   extern void (fg270q_fail)(int64_t);
-#endif
   fg270q_fail(t2);
   }
   }

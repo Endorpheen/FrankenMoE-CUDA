@@ -336,12 +336,6 @@ GS_LIBM float gs_logf(float x) GS_LIBM1(logf)
 GS_LIBM float gs_log2f(float x) GS_LIBM1(log2f)
 GS_LIBM float gs_log10f(float x) GS_LIBM1(log10f)
 GS_LIBM float gs_powf(float x, float y) GS_LIBM2(powf)
-#if defined(__CUDACC__)
-static __host__ __device__ double gs_exp_cuda(double x) { return exp(x); }
-static __host__ __device__ float gs_expf_cuda(float x) { return expf(x); }
-#define gs_exp(x) gs_exp_cuda(x)
-#define gs_expf(x) gs_expf_cuda(x)
-#endif
 /* std's popcount, clz and ctz (64 for zero): the instruction where the C
    compiler has one, and counting under TinyCC. MSVC's popcount is an
    instruction past x86-64's baseline, which /arch:AVX and up promise. */
@@ -673,9 +667,7 @@ static void fg180qs_gg_function_3(uint8_t p0, int64_t p1, int64_t base) {
   if (t1) {
   {
   t2 = ((int64_t)(v1));
-#ifndef __cplusplus
   extern void (fg180h_fail)(int64_t);
-#endif
   fg180h_fail(t2);
   }
   }
@@ -1062,17 +1054,13 @@ static uint8_t fg180qs_gg_function_1(int64_t p0, int64_t base) {
   t1 = ((int64_t)(v0));
   t2 = ((int64_t)(((int64_t)UINT64_C(0))));
   t3 = ((int64_t)(((int64_t)UINT64_C(0))));
-#ifndef __cplusplus
   extern uint64_t (fg180h_get)(int64_t, int64_t, int64_t);
-#endif
   t4 = fg180h_get(t1, t2, t3);
   v1 = ((uint64_t)(t4));
   t5 = ((int64_t)(v0));
   t6 = ((int64_t)(((int64_t)UINT64_C(0))));
   t7 = ((int64_t)(((int64_t)UINT64_C(2))));
-#ifndef __cplusplus
   extern uint64_t (fg180h_get)(int64_t, int64_t, int64_t);
-#endif
   t8 = fg180h_get(t5, t6, t7);
   v2 = ((uint64_t)(t8));
   t9 = ((uint64_t)(v1));
@@ -1090,9 +1078,7 @@ static uint8_t fg180qs_gg_function_1(int64_t p0, int64_t base) {
   t17 = ((int64_t)(v0));
   t18 = ((int64_t)(((int64_t)UINT64_C(0))));
   t19 = ((int64_t)(((int64_t)UINT64_C(3))));
-#ifndef __cplusplus
   extern uint64_t (fg180h_get)(int64_t, int64_t, int64_t);
-#endif
   t20 = fg180h_get(t17, t18, t19);
   v3 = ((int64_t)(((int64_t)(t20))));
   t21 = ((int64_t)(v3));
@@ -1114,17 +1100,13 @@ static uint8_t fg180qs_gg_function_1(int64_t p0, int64_t base) {
   t28 = ((int64_t)(v0));
   t29 = ((int64_t)(((int64_t)UINT64_C(1))));
   t30 = ((int64_t)(((int64_t)UINT64_C(0))));
-#ifndef __cplusplus
   extern uint64_t (fg180h_get)(int64_t, int64_t, int64_t);
-#endif
   t31 = fg180h_get(t28, t29, t30);
   v4 = ((int64_t)(((int64_t)(t31))));
   t32 = ((int64_t)(v0));
   t33 = ((int64_t)(((int64_t)UINT64_C(1))));
   t34 = ((int64_t)(((int64_t)UINT64_C(4))));
-#ifndef __cplusplus
   extern uint64_t (fg180h_get)(int64_t, int64_t, int64_t);
-#endif
   t35 = fg180h_get(t32, t33, t34);
   v5 = ((int64_t)(((int64_t)(t35))));
   t36 = ((int64_t)(v4));
@@ -1158,9 +1140,7 @@ static uint8_t fg180qs_gg_function_1(int64_t p0, int64_t base) {
   t56 = ((int64_t)(v0));
   t57 = ((int64_t)(((int64_t)UINT64_C(2))));
   t58 = ((int64_t)(((int64_t)UINT64_C(0))));
-#ifndef __cplusplus
   extern uint64_t (fg180h_get)(int64_t, int64_t, int64_t);
-#endif
   t59 = fg180h_get(t56, t57, t58);
   v6 = ((uint64_t)(t59));
   v7 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(128))))));
@@ -1176,9 +1156,7 @@ static uint8_t fg180qs_gg_function_1(int64_t p0, int64_t base) {
   t67 = ((int64_t)(((int64_t)UINT64_C(23))));
   fg180qs_gg_function_3(t66, t67, base + 0);
   t68 = ((int64_t)(v0));
-#ifndef __cplusplus
   extern int64_t (fg180h_plan)(int64_t);
-#endif
   t69 = fg180h_plan(t68);
   v10 = ((int64_t)(t69));
   t70 = ((uint64_t)(v6));
@@ -1189,17 +1167,13 @@ static uint8_t fg180qs_gg_function_1(int64_t p0, int64_t base) {
   t73 = ((int64_t)(v0));
   t74 = ((int64_t)(((int64_t)UINT64_C(2))));
   t75 = ((int64_t)(((int64_t)UINT64_C(1))));
-#ifndef __cplusplus
   extern uint64_t (fg180h_get)(int64_t, int64_t, int64_t);
-#endif
   t76 = fg180h_get(t73, t74, t75);
   v11 = ((int64_t)(((int64_t)(t76))));
   t77 = ((int64_t)(v0));
   t78 = ((int64_t)(((int64_t)UINT64_C(2))));
   t79 = ((int64_t)(((int64_t)UINT64_C(3))));
-#ifndef __cplusplus
   extern uint64_t (fg180h_get)(int64_t, int64_t, int64_t);
-#endif
   t80 = fg180h_get(t77, t78, t79);
   v12 = ((uint64_t)(((uint64_t)(t80))));
   t81 = ((int64_t)(v11));
@@ -1216,73 +1190,55 @@ static uint8_t fg180qs_gg_function_1(int64_t p0, int64_t base) {
   t90 = ((int64_t)(((int64_t)UINT64_C(1))));
   t91 = ((int64_t)(((int64_t)UINT64_C(0))));
   t92 = ((uint64_t)(((uint64_t)(v11))));
-#ifndef __cplusplus
   extern void (fg180h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg180h_put(t89, t90, t91, t92);
   t93 = ((int64_t)(v10));
   t94 = ((int64_t)(((int64_t)UINT64_C(1))));
   t95 = ((int64_t)(((int64_t)UINT64_C(1))));
   t96 = ((uint64_t)(v9));
-#ifndef __cplusplus
   extern void (fg180h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg180h_put(t93, t94, t95, t96);
   t97 = ((int64_t)(v10));
   t98 = ((int64_t)(((int64_t)UINT64_C(1))));
   t99 = ((int64_t)(((int64_t)UINT64_C(2))));
   t100 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(1))))));
-#ifndef __cplusplus
   extern void (fg180h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg180h_put(t97, t98, t99, t100);
   t101 = ((int64_t)(v10));
   t102 = ((int64_t)(((int64_t)UINT64_C(1))));
   t103 = ((int64_t)(((int64_t)UINT64_C(3))));
   t104 = ((uint64_t)(v7));
-#ifndef __cplusplus
   extern void (fg180h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg180h_put(t101, t102, t103, t104);
   t105 = ((int64_t)(v10));
   t106 = ((int64_t)(((int64_t)UINT64_C(2))));
   t107 = ((int64_t)(((int64_t)UINT64_C(0))));
   t108 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(1))))));
-#ifndef __cplusplus
   extern void (fg180h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg180h_put(t105, t106, t107, t108);
   t109 = ((int64_t)(v10));
   t110 = ((int64_t)(((int64_t)UINT64_C(2))));
   t111 = ((int64_t)(((int64_t)UINT64_C(1))));
   t112 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(0))))));
-#ifndef __cplusplus
   extern void (fg180h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg180h_put(t109, t110, t111, t112);
   t113 = ((int64_t)(v10));
   t114 = ((int64_t)(((int64_t)UINT64_C(2))));
   t115 = ((int64_t)(((int64_t)UINT64_C(2))));
   t116 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(0))))));
-#ifndef __cplusplus
   extern void (fg180h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg180h_put(t113, t114, t115, t116);
   t117 = ((int64_t)(v10));
   t118 = ((int64_t)(((int64_t)UINT64_C(2))));
   t119 = ((int64_t)(((int64_t)UINT64_C(3))));
   t120 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(0))))));
-#ifndef __cplusplus
   extern void (fg180h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg180h_put(t117, t118, t119, t120);
   t121 = ((int64_t)(v10));
   t122 = ((int64_t)(((int64_t)UINT64_C(3))));
   t123 = ((int64_t)(((int64_t)UINT64_C(0))));
   t124 = ((uint64_t)(v12));
-#ifndef __cplusplus
   extern void (fg180h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg180h_put(t121, t122, t123, t124);
   t125 = ((int64_t)(v10));
   t126 = ((int64_t)(((int64_t)UINT64_C(4))));
@@ -1290,14 +1246,10 @@ static uint8_t fg180qs_gg_function_1(int64_t p0, int64_t base) {
   t128 = ((int64_t)(v0));
   t129 = ((int64_t)(((int64_t)UINT64_C(6))));
   t130 = ((int64_t)(((int64_t)UINT64_C(2))));
-#ifndef __cplusplus
   extern uint64_t (fg180h_get)(int64_t, int64_t, int64_t);
-#endif
   t131 = fg180h_get(t128, t129, t130);
   t132 = ((uint64_t)(t131));
-#ifndef __cplusplus
   extern void (fg180h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg180h_put(t125, t126, t127, t132);
   }
   } else {
@@ -1305,25 +1257,19 @@ static uint8_t fg180qs_gg_function_1(int64_t p0, int64_t base) {
   t133 = ((int64_t)(v0));
   t134 = ((int64_t)(((int64_t)UINT64_C(1))));
   t135 = ((int64_t)(((int64_t)UINT64_C(5))));
-#ifndef __cplusplus
   extern uint64_t (fg180h_get)(int64_t, int64_t, int64_t);
-#endif
   t136 = fg180h_get(t133, t134, t135);
   v13 = ((int64_t)(((int64_t)(t136))));
   t137 = ((int64_t)(v0));
   t138 = ((int64_t)(((int64_t)UINT64_C(1))));
   t139 = ((int64_t)(((int64_t)UINT64_C(6))));
-#ifndef __cplusplus
   extern uint64_t (fg180h_get)(int64_t, int64_t, int64_t);
-#endif
   t140 = fg180h_get(t137, t138, t139);
   v14 = ((int64_t)(((int64_t)(t140))));
   t141 = ((int64_t)(v0));
   t142 = ((int64_t)(((int64_t)UINT64_C(1))));
   t143 = ((int64_t)(((int64_t)UINT64_C(7))));
-#ifndef __cplusplus
   extern uint64_t (fg180h_get)(int64_t, int64_t, int64_t);
-#endif
   t144 = fg180h_get(t141, t142, t143);
   v15 = ((int64_t)(((int64_t)(t144))));
   t145 = ((int64_t)(v13));
@@ -1349,17 +1295,13 @@ static uint8_t fg180qs_gg_function_1(int64_t p0, int64_t base) {
   t158 = ((int64_t)(((int64_t)UINT64_C(1))));
   t159 = ((int64_t)(((int64_t)UINT64_C(0))));
   t160 = ((uint64_t)(((uint64_t)(v13))));
-#ifndef __cplusplus
   extern void (fg180h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg180h_put(t157, t158, t159, t160);
   t161 = ((int64_t)(v10));
   t162 = ((int64_t)(((int64_t)UINT64_C(1))));
   t163 = ((int64_t)(((int64_t)UINT64_C(1))));
   t164 = ((uint64_t)(v9));
-#ifndef __cplusplus
   extern void (fg180h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg180h_put(t161, t162, t163, t164);
   t165 = ((int64_t)(v10));
   t166 = ((int64_t)(((int64_t)UINT64_C(1))));
@@ -1367,57 +1309,43 @@ static uint8_t fg180qs_gg_function_1(int64_t p0, int64_t base) {
   t168 = ((uint64_t)(((uint64_t)(v14))));
   t169 = ((uint64_t)(((uint64_t)(v15))));
   t170 = fg180qs_gg_function_5(t168, t169, base + 0);
-#ifndef __cplusplus
   extern void (fg180h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg180h_put(t165, t166, t167, t170);
   t171 = ((int64_t)(v10));
   t172 = ((int64_t)(((int64_t)UINT64_C(1))));
   t173 = ((int64_t)(((int64_t)UINT64_C(3))));
   t174 = ((uint64_t)(v7));
-#ifndef __cplusplus
   extern void (fg180h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg180h_put(t171, t172, t173, t174);
   t175 = ((int64_t)(v10));
   t176 = ((int64_t)(((int64_t)UINT64_C(2))));
   t177 = ((int64_t)(((int64_t)UINT64_C(0))));
   t178 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(0))))));
-#ifndef __cplusplus
   extern void (fg180h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg180h_put(t175, t176, t177, t178);
   t179 = ((int64_t)(v10));
   t180 = ((int64_t)(((int64_t)UINT64_C(2))));
   t181 = ((int64_t)(((int64_t)UINT64_C(1))));
   t182 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(0))))));
-#ifndef __cplusplus
   extern void (fg180h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg180h_put(t179, t180, t181, t182);
   t183 = ((int64_t)(v10));
   t184 = ((int64_t)(((int64_t)UINT64_C(2))));
   t185 = ((int64_t)(((int64_t)UINT64_C(2))));
   t186 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(0))))));
-#ifndef __cplusplus
   extern void (fg180h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg180h_put(t183, t184, t185, t186);
   t187 = ((int64_t)(v10));
   t188 = ((int64_t)(((int64_t)UINT64_C(2))));
   t189 = ((int64_t)(((int64_t)UINT64_C(3))));
   t190 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(0))))));
-#ifndef __cplusplus
   extern void (fg180h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg180h_put(t187, t188, t189, t190);
   t191 = ((int64_t)(v10));
   t192 = ((int64_t)(((int64_t)UINT64_C(3))));
   t193 = ((int64_t)(((int64_t)UINT64_C(0))));
   t194 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(0))))));
-#ifndef __cplusplus
   extern void (fg180h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg180h_put(t191, t192, t193, t194);
   t195 = ((int64_t)(v10));
   t196 = ((int64_t)(((int64_t)UINT64_C(4))));
@@ -1425,14 +1353,10 @@ static uint8_t fg180qs_gg_function_1(int64_t p0, int64_t base) {
   t198 = ((int64_t)(v0));
   t199 = ((int64_t)(((int64_t)UINT64_C(6))));
   t200 = ((int64_t)(((int64_t)UINT64_C(2))));
-#ifndef __cplusplus
   extern uint64_t (fg180h_get)(int64_t, int64_t, int64_t);
-#endif
   t201 = fg180h_get(t198, t199, t200);
   t202 = ((uint64_t)(t201));
-#ifndef __cplusplus
   extern void (fg180h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg180h_put(t195, t196, t197, t202);
   }
   }
@@ -1442,14 +1366,10 @@ static uint8_t fg180qs_gg_function_1(int64_t p0, int64_t base) {
   t206 = ((int64_t)(v0));
   t207 = ((int64_t)(((int64_t)UINT64_C(6))));
   t208 = ((int64_t)(((int64_t)UINT64_C(0))));
-#ifndef __cplusplus
   extern uint64_t (fg180h_get)(int64_t, int64_t, int64_t);
-#endif
   t209 = fg180h_get(t206, t207, t208);
   t210 = ((uint64_t)(t209));
-#ifndef __cplusplus
   extern void (fg180h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg180h_put(t203, t204, t205, t210);
   t211 = ((int64_t)(v10));
   t212 = ((int64_t)(((int64_t)UINT64_C(5))));
@@ -1457,14 +1377,10 @@ static uint8_t fg180qs_gg_function_1(int64_t p0, int64_t base) {
   t214 = ((int64_t)(v0));
   t215 = ((int64_t)(((int64_t)UINT64_C(6))));
   t216 = ((int64_t)(((int64_t)UINT64_C(1))));
-#ifndef __cplusplus
   extern uint64_t (fg180h_get)(int64_t, int64_t, int64_t);
-#endif
   t217 = fg180h_get(t214, t215, t216);
   t218 = ((uint64_t)(t217));
-#ifndef __cplusplus
   extern void (fg180h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg180h_put(t211, t212, t213, t218);
   t219 = ((int64_t)(v10));
   t220 = ((int64_t)(((int64_t)UINT64_C(5))));
@@ -1472,14 +1388,10 @@ static uint8_t fg180qs_gg_function_1(int64_t p0, int64_t base) {
   t222 = ((int64_t)(v0));
   t223 = ((int64_t)(((int64_t)UINT64_C(6))));
   t224 = ((int64_t)(((int64_t)UINT64_C(3))));
-#ifndef __cplusplus
   extern uint64_t (fg180h_get)(int64_t, int64_t, int64_t);
-#endif
   t225 = fg180h_get(t222, t223, t224);
   t226 = ((uint64_t)(t225));
-#ifndef __cplusplus
   extern void (fg180h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg180h_put(t219, t220, t221, t226);
   t227 = ((int64_t)(v10));
   t228 = ((int64_t)(((int64_t)UINT64_C(5))));
@@ -1487,14 +1399,10 @@ static uint8_t fg180qs_gg_function_1(int64_t p0, int64_t base) {
   t230 = ((int64_t)(v0));
   t231 = ((int64_t)(((int64_t)UINT64_C(6))));
   t232 = ((int64_t)(((int64_t)UINT64_C(4))));
-#ifndef __cplusplus
   extern uint64_t (fg180h_get)(int64_t, int64_t, int64_t);
-#endif
   t233 = fg180h_get(t230, t231, t232);
   t234 = ((uint64_t)(t233));
-#ifndef __cplusplus
   extern void (fg180h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg180h_put(t227, t228, t229, t234);
   t235 = ((int64_t)(v10));
   t236 = ((int64_t)(((int64_t)UINT64_C(5))));
@@ -1502,14 +1410,10 @@ static uint8_t fg180qs_gg_function_1(int64_t p0, int64_t base) {
   t238 = ((int64_t)(v0));
   t239 = ((int64_t)(((int64_t)UINT64_C(6))));
   t240 = ((int64_t)(((int64_t)UINT64_C(5))));
-#ifndef __cplusplus
   extern uint64_t (fg180h_get)(int64_t, int64_t, int64_t);
-#endif
   t241 = fg180h_get(t238, t239, t240);
   t242 = ((uint64_t)(t241));
-#ifndef __cplusplus
   extern void (fg180h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg180h_put(t235, t236, t237, t242);
   t243 = ((int64_t)(v10));
   t244 = ((int64_t)(((int64_t)UINT64_C(5))));
@@ -1517,19 +1421,13 @@ static uint8_t fg180qs_gg_function_1(int64_t p0, int64_t base) {
   t246 = ((int64_t)(v0));
   t247 = ((int64_t)(((int64_t)UINT64_C(6))));
   t248 = ((int64_t)(((int64_t)UINT64_C(6))));
-#ifndef __cplusplus
   extern uint64_t (fg180h_get)(int64_t, int64_t, int64_t);
-#endif
   t249 = fg180h_get(t246, t247, t248);
   t250 = ((uint64_t)(t249));
-#ifndef __cplusplus
   extern void (fg180h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg180h_put(t243, t244, t245, t250);
   t251 = ((int64_t)(v0));
-#ifndef __cplusplus
   extern int64_t (fg180h_launch)(int64_t);
-#endif
   t252 = fg180h_launch(t251);
   t253 = ((int64_t)(t252));
   t254 = ((int64_t)(((int64_t)UINT64_C(0))));

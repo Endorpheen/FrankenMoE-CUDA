@@ -523,9 +523,7 @@ static void gg_function_2(uint8_t p0, int64_t p1, int64_t base) {
   if (t1) {
   {
   t2 = ((int64_t)(v1));
-#ifndef __cplusplus
   extern void (fg273d_fail)(int64_t);
-#endif
   fg273d_fail(t2);
   }
   }
@@ -645,18 +643,14 @@ label1:;
   t20 = ((int64_t)(v10));
   t21 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(4))))));
   t22 = ((uint64_t)(((uint64_t)(((int64_t)((uint64_t)(t20) * (uint64_t)(t21)))))));
-#ifndef __cplusplus
   extern int32_t (fg273d_ld_i32)(uint64_t, uint64_t);
-#endif
   t23 = fg273d_ld_i32(t19, t22);
   v11 = ((int32_t)(t23));
   t24 = ((uint64_t)(v1));
   t25 = ((int64_t)(v10));
   t26 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(4))))));
   t27 = ((uint64_t)(((uint64_t)(((int64_t)((uint64_t)(t25) * (uint64_t)(t26)))))));
-#ifndef __cplusplus
   extern int32_t (fg273d_ld_i32)(uint64_t, uint64_t);
-#endif
   t28 = fg273d_ld_i32(t24, t27);
   v12 = ((int32_t)(t28));
   t29 = ((int32_t)(v11));
@@ -683,9 +677,7 @@ label4:;
   {
   t38 = ((int32_t)(((int32_t)(v9))));
   t39 = ((int32_t)(((int32_t)(v13))));
-#ifndef __cplusplus
   extern int32_t (fg273d_shfl_xor)(int32_t, int32_t);
-#endif
   t40 = fg273d_shfl_xor(t38, t39);
   v14 = ((int32_t)(t40));
   t41 = ((int64_t)(v9));
@@ -704,9 +696,7 @@ label5:;
   {
   t48 = ((uint64_t)(v2));
   t49 = ((int32_t)(((int32_t)(v9))));
-#ifndef __cplusplus
   extern void (fg273d_atomic_add)(uint64_t, int32_t);
-#endif
   fg273d_atomic_add(t48, t49);
   }
   }

@@ -61,9 +61,3 @@ static inline size_t ggml_hash_find(const struct ggml_hash_set *hash_set,const s
 static inline bool ggml_hash_contains(const struct ggml_hash_set *hash_set,struct ggml_tensor *key){if(fg160_graph_enabled){return (bool)fg160_packet(42,FG160_A(hash_set),FG160_A(key),FG160_A(0),FG160_A(0),FG160_A(0),FG160_A(0),FG160_A(0));}return fg160_native_ggml_hash_contains(hash_set,key);}
 static inline size_t ggml_hash_insert(struct ggml_hash_set *hash_set,struct ggml_tensor *key){if(fg160_graph_enabled){return (size_t)fg160_packet(43,FG160_A(hash_set),FG160_A(key),FG160_A(0),FG160_A(0),FG160_A(0),FG160_A(0),FG160_A(0));}return fg160_native_ggml_hash_insert(hash_set,key);}
 static inline size_t ggml_hash_find_or_insert(struct ggml_hash_set *hash_set,struct ggml_tensor *key){if(fg160_graph_enabled){return (size_t)fg160_packet(44,FG160_A(hash_set),FG160_A(key),FG160_A(0),FG160_A(0),FG160_A(0),FG160_A(0),FG160_A(0));}return fg160_native_ggml_hash_find_or_insert(hash_set,key);}
-#ifdef __cplusplus
-inline bool ggml_can_fuse(const struct ggml_cgraph*g,int first,std::initializer_list<enum ggml_op>ops){return ggml_can_fuse(g,first,ops.begin(),(int)ops.size());}
-inline bool ggml_can_fuse_subgraph(const struct ggml_cgraph*g,int first,std::initializer_list<enum ggml_op>ops,std::initializer_list<int>outputs={}){return ggml_can_fuse_subgraph(g,first,(int)ops.size(),ops.begin(),outputs.begin(),(int)outputs.size());}
-inline bool ggml_check_edges(const struct ggml_cgraph*g,int first,std::initializer_list<std::array<int,3>>edges){if(fg160_fusion_enabled){static_assert(sizeof(std::array<int,3>)==3*sizeof(int),"Edge tuple ABI");return (bool)fg160_packet(6,FG160_A(g),FG160_A(first),FG160_A(edges.begin()),FG160_A(edges.size()),0,0,0);}return fg160_native_ggml_check_edges(g,first,edges);}
-
-#endif

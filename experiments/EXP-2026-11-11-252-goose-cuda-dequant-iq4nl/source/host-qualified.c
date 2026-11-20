@@ -514,9 +514,7 @@ static void fg252ds_gg_function_3(uint8_t p0, int64_t p1, int64_t base) {
   if (t1) {
   {
   t2 = ((int64_t)(v1));
-#ifndef __cplusplus
   extern void (fg252h_fail)(int64_t);
-#endif
   fg252h_fail(t2);
   }
   }
@@ -643,25 +641,19 @@ static uint8_t fg252ds_gg_function_1(int64_t p0, int64_t base) {
   t1 = ((int64_t)(v0));
   t2 = ((int64_t)(((int64_t)UINT64_C(0))));
   t3 = ((int64_t)(((int64_t)UINT64_C(0))));
-#ifndef __cplusplus
   extern uint64_t (fg252h_get)(int64_t, int64_t, int64_t);
-#endif
   t4 = fg252h_get(t1, t2, t3);
   v1 = ((uint64_t)(t4));
   t5 = ((int64_t)(v0));
   t6 = ((int64_t)(((int64_t)UINT64_C(0))));
   t7 = ((int64_t)(((int64_t)UINT64_C(1))));
-#ifndef __cplusplus
   extern uint64_t (fg252h_get)(int64_t, int64_t, int64_t);
-#endif
   t8 = fg252h_get(t5, t6, t7);
   v2 = ((uint64_t)(t8));
   t9 = ((int64_t)(v0));
   t10 = ((int64_t)(((int64_t)UINT64_C(0))));
   t11 = ((int64_t)(((int64_t)UINT64_C(2))));
-#ifndef __cplusplus
   extern uint64_t (fg252h_get)(int64_t, int64_t, int64_t);
-#endif
   t12 = fg252h_get(t9, t10, t11);
   v3 = ((uint64_t)(t12));
   t13 = ((uint64_t)(v1));
@@ -701,39 +693,29 @@ static uint8_t fg252ds_gg_function_1(int64_t p0, int64_t base) {
   t39 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(32))))));
   v5 = ((int64_t)(((int64_t)(((uint64_t)fg252ds_gg_udiv(t38, t39))))));
   t40 = ((int64_t)(v0));
-#ifndef __cplusplus
   extern int64_t (fg252h_plan)(int64_t);
-#endif
   t41 = fg252h_plan(t40);
   v6 = ((int64_t)(t41));
   t42 = ((int64_t)(v6));
   t43 = ((int64_t)(((int64_t)UINT64_C(0))));
   t44 = ((int64_t)(((int64_t)UINT64_C(3))));
   t45 = ((uint64_t)(((uint64_t)(v5))));
-#ifndef __cplusplus
   extern void (fg252h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg252h_put(t42, t43, t44, t45);
   t46 = ((int64_t)(v6));
   t47 = ((int64_t)(((int64_t)UINT64_C(1))));
   t48 = ((int64_t)(((int64_t)UINT64_C(0))));
   t49 = ((uint64_t)(((uint64_t)(v4))));
-#ifndef __cplusplus
   extern void (fg252h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg252h_put(t46, t47, t48, t49);
   t50 = ((int64_t)(v6));
   t51 = ((int64_t)(((int64_t)UINT64_C(1))));
   t52 = ((int64_t)(((int64_t)UINT64_C(1))));
   t53 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(32))))));
-#ifndef __cplusplus
   extern void (fg252h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg252h_put(t50, t51, t52, t53);
   t54 = ((int64_t)(v0));
-#ifndef __cplusplus
   extern int64_t (fg252h_launch)(int64_t);
-#endif
   t55 = fg252h_launch(t54);
   t56 = ((int64_t)(t55));
   t57 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));

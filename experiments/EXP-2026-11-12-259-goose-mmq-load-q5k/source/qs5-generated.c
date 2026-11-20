@@ -336,12 +336,6 @@ GS_LIBM float gs_logf(float x) GS_LIBM1(logf)
 GS_LIBM float gs_log2f(float x) GS_LIBM1(log2f)
 GS_LIBM float gs_log10f(float x) GS_LIBM1(log10f)
 GS_LIBM float gs_powf(float x, float y) GS_LIBM2(powf)
-#if defined(__CUDACC__)
-static __host__ __device__ double gs_exp_cuda(double x) { return exp(x); }
-static __host__ __device__ float gs_expf_cuda(float x) { return expf(x); }
-#define gs_exp(x) gs_exp_cuda(x)
-#define gs_expf(x) gs_expf_cuda(x)
-#endif
 /* std's popcount, clz and ctz (64 for zero): the instruction where the C
    compiler has one, and counting under TinyCC. MSVC's popcount is an
    instruction past x86-64's baseline, which /arch:AVX and up promise. */
@@ -794,9 +788,7 @@ static uint8_t gg_function_1(uint64_t p0, uint64_t p1, int64_t p2, int64_t p3, i
   t14 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(4))))));
   t15 = ((int64_t)(((int64_t)((uint64_t)(t13) * (uint64_t)(t14)))));
   t16 = ((int64_t)(((int64_t)((uint64_t)(t12) + (uint64_t)(t15)))));
-#ifndef __cplusplus
   extern int64_t (fg259q_ld_i32)(uint64_t, int64_t);
-#endif
   t17 = fg259q_ld_i32(t11, t16);
   v11 = ((int64_t)(t17));
   t18 = ((int64_t)(v11));
@@ -817,9 +809,7 @@ static uint8_t gg_function_1(uint64_t p0, uint64_t p1, int64_t p2, int64_t p3, i
   t31 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(4))))));
   t32 = ((int64_t)(((int64_t)((uint64_t)(t30) * (uint64_t)(t31)))));
   t33 = ((int64_t)(((int64_t)((uint64_t)(t27) + (uint64_t)(t32)))));
-#ifndef __cplusplus
   extern int64_t (fg259q_ld_i32)(uint64_t, int64_t);
-#endif
   t34 = fg259q_ld_i32(t26, t33);
   v14 = ((int64_t)(t34));
   t35 = ((int64_t)(((int64_t)UINT64_C(2))));
@@ -871,9 +861,7 @@ static uint8_t gg_function_1(uint64_t p0, uint64_t p1, int64_t p2, int64_t p3, i
   t75 = ((int64_t)(v12));
   t76 = ((int64_t)(v16));
   t77 = ((int64_t)(((t75) | (t76))));
-#ifndef __cplusplus
   extern void (fg259q_st_i32)(uint64_t, int64_t, int64_t);
-#endif
   fg259q_st_i32(t67, t74, t77);
   t78 = ((uint64_t)(v1));
   t79 = ((int64_t)(v4));
@@ -886,9 +874,7 @@ static uint8_t gg_function_1(uint64_t p0, uint64_t p1, int64_t p2, int64_t p3, i
   t86 = ((int64_t)(v13));
   t87 = ((int64_t)(v17));
   t88 = ((int64_t)(((t86) | (t87))));
-#ifndef __cplusplus
   extern void (fg259q_st_i32)(uint64_t, int64_t, int64_t);
-#endif
   fg259q_st_i32(t78, t85, t88);
   t0 = ((uint8_t)UINT64_C(1));
   }

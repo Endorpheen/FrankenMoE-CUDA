@@ -543,9 +543,7 @@ static void fg285ds_gg_function_4(uint8_t p0, int64_t p1, int64_t base) {
   if (t1) {
   {
   t2 = ((int64_t)(v1));
-#ifndef __cplusplus
   extern void (fg285h_fail)(int64_t);
-#endif
   fg285h_fail(t2);
   }
   }
@@ -690,83 +688,61 @@ static uint8_t fg285ds_gg_function_1(int64_t p0, int64_t base) {
   t1 = ((int64_t)(v0));
   t2 = ((int64_t)(((int64_t)UINT64_C(0))));
   t3 = ((int64_t)(((int64_t)UINT64_C(0))));
-#ifndef __cplusplus
   extern uint64_t (fg285h_get)(int64_t, int64_t, int64_t);
-#endif
   t4 = fg285h_get(t1, t2, t3);
   v1 = ((uint64_t)(t4));
   t5 = ((int64_t)(v0));
   t6 = ((int64_t)(((int64_t)UINT64_C(0))));
   t7 = ((int64_t)(((int64_t)UINT64_C(1))));
-#ifndef __cplusplus
   extern uint64_t (fg285h_get)(int64_t, int64_t, int64_t);
-#endif
   t8 = fg285h_get(t5, t6, t7);
   v2 = ((uint64_t)(t8));
   t9 = ((int64_t)(v0));
   t10 = ((int64_t)(((int64_t)UINT64_C(0))));
   t11 = ((int64_t)(((int64_t)UINT64_C(2))));
-#ifndef __cplusplus
   extern uint64_t (fg285h_get)(int64_t, int64_t, int64_t);
-#endif
   t12 = fg285h_get(t9, t10, t11);
   v3 = ((int64_t)(((int64_t)(t12))));
   t13 = ((int64_t)(v0));
   t14 = ((int64_t)(((int64_t)UINT64_C(0))));
   t15 = ((int64_t)(((int64_t)UINT64_C(3))));
-#ifndef __cplusplus
   extern uint64_t (fg285h_get)(int64_t, int64_t, int64_t);
-#endif
   t16 = fg285h_get(t13, t14, t15);
   v4 = ((int64_t)(((int64_t)(t16))));
   t17 = ((int64_t)(v0));
   t18 = ((int64_t)(((int64_t)UINT64_C(0))));
   t19 = ((int64_t)(((int64_t)UINT64_C(4))));
-#ifndef __cplusplus
   extern uint64_t (fg285h_get)(int64_t, int64_t, int64_t);
-#endif
   t20 = fg285h_get(t17, t18, t19);
   v5 = ((int64_t)(((int64_t)(t20))));
   t21 = ((int64_t)(v0));
   t22 = ((int64_t)(((int64_t)UINT64_C(0))));
   t23 = ((int64_t)(((int64_t)UINT64_C(5))));
-#ifndef __cplusplus
   extern uint64_t (fg285h_get)(int64_t, int64_t, int64_t);
-#endif
   t24 = fg285h_get(t21, t22, t23);
   v6 = ((int64_t)(((int64_t)(t24))));
   t25 = ((int64_t)(v0));
   t26 = ((int64_t)(((int64_t)UINT64_C(0))));
   t27 = ((int64_t)(((int64_t)UINT64_C(6))));
-#ifndef __cplusplus
   extern uint64_t (fg285h_get)(int64_t, int64_t, int64_t);
-#endif
   t28 = fg285h_get(t25, t26, t27);
   v7 = ((int64_t)(((int64_t)(t28))));
   t29 = ((int64_t)(v0));
   t30 = ((int64_t)(((int64_t)UINT64_C(0))));
   t31 = ((int64_t)(((int64_t)UINT64_C(7))));
-#ifndef __cplusplus
   extern uint64_t (fg285h_get)(int64_t, int64_t, int64_t);
-#endif
   t32 = fg285h_get(t29, t30, t31);
   t33 = ((uint32_t)(((uint32_t)(t32))));
-#ifndef __cplusplus
   extern float (fg285h_u32f)(uint32_t);
-#endif
   t34 = fg285h_u32f(t33);
   v8 = ((float)(t34));
   t35 = ((int64_t)(v0));
   t36 = ((int64_t)(((int64_t)UINT64_C(0))));
   t37 = ((int64_t)(((int64_t)UINT64_C(8))));
-#ifndef __cplusplus
   extern uint64_t (fg285h_get)(int64_t, int64_t, int64_t);
-#endif
   t38 = fg285h_get(t35, t36, t37);
   t39 = ((uint32_t)(((uint32_t)(t38))));
-#ifndef __cplusplus
   extern float (fg285h_u32f)(uint32_t);
-#endif
   t40 = fg285h_u32f(t39);
   v9 = ((float)(t40));
   t41 = ((uint64_t)(v1));
@@ -842,47 +818,35 @@ static uint8_t fg285ds_gg_function_1(int64_t p0, int64_t base) {
   t94 = ((int64_t)(((int64_t)UINT64_C(29))));
   fg285ds_gg_function_4(t93, t94, base + 0);
   t95 = ((int64_t)(v0));
-#ifndef __cplusplus
   extern int64_t (fg285h_plan)(int64_t);
-#endif
   t96 = fg285h_plan(t95);
   v12 = ((int64_t)(t96));
   t97 = ((int64_t)(v12));
   t98 = ((int64_t)(((int64_t)UINT64_C(1))));
   t99 = ((int64_t)(((int64_t)UINT64_C(0))));
   t100 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(256))))));
-#ifndef __cplusplus
   extern void (fg285h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg285h_put(t97, t98, t99, t100);
   t101 = ((int64_t)(v12));
   t102 = ((int64_t)(((int64_t)UINT64_C(1))));
   t103 = ((int64_t)(((int64_t)UINT64_C(1))));
   t104 = ((uint64_t)(((uint64_t)(v6))));
-#ifndef __cplusplus
   extern void (fg285h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg285h_put(t101, t102, t103, t104);
   t105 = ((int64_t)(v12));
   t106 = ((int64_t)(((int64_t)UINT64_C(1))));
   t107 = ((int64_t)(((int64_t)UINT64_C(2))));
   t108 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(256))))));
-#ifndef __cplusplus
   extern void (fg285h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg285h_put(t105, t106, t107, t108);
   t109 = ((int64_t)(v12));
   t110 = ((int64_t)(((int64_t)UINT64_C(1))));
   t111 = ((int64_t)(((int64_t)UINT64_C(3))));
   t112 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(1))))));
-#ifndef __cplusplus
   extern void (fg285h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg285h_put(t109, t110, t111, t112);
   t113 = ((int64_t)(v0));
-#ifndef __cplusplus
   extern int64_t (fg285h_launch)(int64_t);
-#endif
   t114 = fg285h_launch(t113);
   t115 = ((int64_t)(t114));
   t116 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));

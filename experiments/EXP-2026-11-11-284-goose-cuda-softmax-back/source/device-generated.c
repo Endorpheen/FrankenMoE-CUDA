@@ -556,9 +556,7 @@ label1:;
   {
   t3 = ((float)(v1));
   t4 = ((int32_t)(((int32_t)(v2))));
-#ifndef __cplusplus
   extern float (fg284d_shfl_xor)(float, int32_t);
-#endif
   t5 = fg284d_shfl_xor(t3, t4);
   v3 = ((float)(t5));
   t6 = ((float)(v1));
@@ -589,9 +587,7 @@ static void gg_function_2(uint8_t p0, int64_t p1, int64_t base) {
   if (t1) {
   {
   t2 = ((int64_t)(v1));
-#ifndef __cplusplus
   extern void (fg284d_fail)(int64_t);
-#endif
   fg284d_fail(t2);
   }
   }
@@ -701,9 +697,7 @@ label1:;
   t12 = ((int64_t)(((int64_t)((uint64_t)(t10) + (uint64_t)(t11)))));
   t13 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(4))))));
   t14 = ((uint64_t)(((uint64_t)(((int64_t)((uint64_t)(t12) * (uint64_t)(t13)))))));
-#ifndef __cplusplus
   extern float (fg284d_ld_f32)(uint64_t, uint64_t);
-#endif
   t15 = fg284d_ld_f32(t9, t14);
   t16 = ((float)(t15));
   t17 = ((uint64_t)(v0));
@@ -712,9 +706,7 @@ label1:;
   t20 = ((int64_t)(((int64_t)((uint64_t)(t18) + (uint64_t)(t19)))));
   t21 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(4))))));
   t22 = ((uint64_t)(((uint64_t)(((int64_t)((uint64_t)(t20) * (uint64_t)(t21)))))));
-#ifndef __cplusplus
   extern float (fg284d_ld_f32)(uint64_t, uint64_t);
-#endif
   t23 = fg284d_ld_f32(t17, t22);
   t24 = ((float)(t23));
   t25 = ((float)(((t16) * (t24))));
@@ -739,9 +731,7 @@ label4:;
   t34 = ((int64_t)(((int64_t)((uint64_t)(t32) + (uint64_t)(t33)))));
   t35 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(4))))));
   t36 = ((uint64_t)(((uint64_t)(((int64_t)((uint64_t)(t34) * (uint64_t)(t35)))))));
-#ifndef __cplusplus
   extern float (fg284d_ld_f32)(uint64_t, uint64_t);
-#endif
   t37 = fg284d_ld_f32(t31, t36);
   v10 = ((float)(t37));
   t38 = ((uint64_t)(v1));
@@ -750,9 +740,7 @@ label4:;
   t41 = ((int64_t)(((int64_t)((uint64_t)(t39) + (uint64_t)(t40)))));
   t42 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(4))))));
   t43 = ((uint64_t)(((uint64_t)(((int64_t)((uint64_t)(t41) * (uint64_t)(t42)))))));
-#ifndef __cplusplus
   extern float (fg284d_ld_f32)(uint64_t, uint64_t);
-#endif
   t44 = fg284d_ld_f32(t38, t43);
   v11 = ((float)(t44));
   t45 = ((uint64_t)(v2));
@@ -768,9 +756,7 @@ label4:;
   t55 = ((float)(((t51) * (t54))));
   t56 = ((float)(v11));
   t57 = ((float)(((t55) * (t56))));
-#ifndef __cplusplus
   extern void (fg284d_st_f32)(uint64_t, uint64_t, float);
-#endif
   fg284d_st_f32(t45, t50, t57);
   t58 = ((int64_t)(v9));
   t59 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(32))))));

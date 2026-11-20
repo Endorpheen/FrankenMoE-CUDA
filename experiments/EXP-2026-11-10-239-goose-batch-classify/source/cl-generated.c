@@ -591,9 +591,7 @@ static void gg_function_2(uint8_t p0, int64_t p1, int64_t base) {
   if (t1) {
   {
   t2 = ((int64_t)(v1));
-#ifndef __cplusplus
   extern void (fg239b_fail)(int64_t);
-#endif
   fg239b_fail(t2);
   }
   }
@@ -764,16 +762,12 @@ label1:;
   {
   t15 = ((uint64_t)(v1));
   t16 = ((int64_t)(v8));
-#ifndef __cplusplus
   extern int64_t (fg239b_ld_i32)(uint64_t, int64_t);
-#endif
   t17 = fg239b_ld_i32(t15, t16);
   v10 = ((int64_t)(t17));
   t18 = ((uint64_t)(v2));
   t19 = ((int64_t)(v8));
-#ifndef __cplusplus
   extern int64_t (fg239b_ld_i32)(uint64_t, int64_t);
-#endif
   t20 = fg239b_ld_i32(t18, t19);
   v11 = ((int64_t)(t20));
   t21 = ((int64_t)(v10));
@@ -944,44 +938,32 @@ label2:;
   t95 = ((uint64_t)(v4));
   t96 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
   t97 = ((int64_t)(v5));
-#ifndef __cplusplus
   extern void (fg239b_st_i32)(uint64_t, int64_t, int64_t);
-#endif
   fg239b_st_i32(t95, t96, t97);
   t98 = ((uint64_t)(v4));
   t99 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
   t100 = ((int64_t)(v6));
-#ifndef __cplusplus
   extern void (fg239b_st_i32)(uint64_t, int64_t, int64_t);
-#endif
   fg239b_st_i32(t98, t99, t100);
   t101 = ((uint64_t)(v4));
   t102 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(2))))));
   t103 = ((int64_t)(v7));
-#ifndef __cplusplus
   extern void (fg239b_st_i32)(uint64_t, int64_t, int64_t);
-#endif
   fg239b_st_i32(t101, t102, t103);
   t104 = ((uint64_t)(v4));
   t105 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(3))))));
   t106 = ((int64_t)(v12));
-#ifndef __cplusplus
   extern void (fg239b_st_i32)(uint64_t, int64_t, int64_t);
-#endif
   fg239b_st_i32(t104, t105, t106);
   t107 = ((uint64_t)(v4));
   t108 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(4))))));
   t109 = ((int64_t)(v13));
-#ifndef __cplusplus
   extern void (fg239b_st_i32)(uint64_t, int64_t, int64_t);
-#endif
   fg239b_st_i32(t107, t108, t109);
   t110 = ((uint64_t)(v4));
   t111 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(5))))));
   t112 = ((int64_t)(v14));
-#ifndef __cplusplus
   extern void (fg239b_st_i32)(uint64_t, int64_t, int64_t);
-#endif
   fg239b_st_i32(t110, t111, t112);
   t0 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
   }

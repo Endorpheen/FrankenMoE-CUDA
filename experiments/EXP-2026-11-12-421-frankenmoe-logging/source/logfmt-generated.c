@@ -336,12 +336,6 @@ GS_LIBM float gs_logf(float x) GS_LIBM1(logf)
 GS_LIBM float gs_log2f(float x) GS_LIBM1(log2f)
 GS_LIBM float gs_log10f(float x) GS_LIBM1(log10f)
 GS_LIBM float gs_powf(float x, float y) GS_LIBM2(powf)
-#if defined(__CUDACC__)
-static __host__ __device__ double gs_exp_cuda(double x) { return exp(x); }
-static __host__ __device__ float gs_expf_cuda(float x) { return expf(x); }
-#define gs_exp(x) gs_exp_cuda(x)
-#define gs_expf(x) gs_expf_cuda(x)
-#endif
 /* std's popcount, clz and ctz (64 for zero): the instruction where the C
    compiler has one, and counting under TinyCC. MSVC's popcount is an
    instruction past x86-64's baseline, which /arch:AVX and up promise. */
@@ -715,9 +709,7 @@ static int64_t gg_function_8(uint64_t p0, int64_t p1, int64_t p2, uint8_t p3, in
   t4 = ((uint64_t)(v0));
   t5 = ((uint64_t)(((uint64_t)(v2))));
   t6 = ((uint8_t)(v3));
-#ifndef __cplusplus
   extern void (fglog_st_u8)(uint64_t, uint64_t, uint8_t);
-#endif
   fglog_st_u8(t4, t5, t6);
   t7 = ((int64_t)(v2));
   t8 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
@@ -845,9 +837,7 @@ label1:;
   {
   t4 = ((uint64_t)(v3));
   t5 = ((uint64_t)(((uint64_t)(v5))));
-#ifndef __cplusplus
   extern uint8_t (fglog_ld_u8)(uint64_t, uint64_t);
-#endif
   t6 = fglog_ld_u8(t4, t5);
   v7 = ((uint8_t)(t6));
   t7 = ((uint8_t)(v7));
@@ -1208,9 +1198,7 @@ label1:;
   t6 = ((int64_t)(v6));
   t7 = ((uint64_t)(v3));
   t8 = ((uint64_t)(((uint64_t)(v5))));
-#ifndef __cplusplus
   extern uint8_t (fglog_ld_u8)(uint64_t, uint64_t);
-#endif
   t9 = fglog_ld_u8(t7, t8);
   t10 = ((uint8_t)(t9));
   v6 = gg_function_8(t4, t5, t6, t10, base + 0);
@@ -1557,9 +1545,7 @@ label0:;
   t11 = ((int64_t)(v2));
   t12 = ((int64_t)(v4));
   t13 = ((uint64_t)(((uint64_t)(((int64_t)((uint64_t)(t11) + (uint64_t)(t12)))))));
-#ifndef __cplusplus
   extern uint8_t (fglog_ld_u8)(uint64_t, uint64_t);
-#endif
   t14 = fglog_ld_u8(t10, t13);
   t15 = ((uint8_t)(t14));
   t16 = ((uint8_t)(v5));
@@ -2384,9 +2370,7 @@ static int64_t gg_function_1(uint64_t p0, int64_t p1, uint64_t p2, int64_t p3, i
   t4 = ((uint64_t)(v2));
   t5 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(0))))));
   t6 = ((int64_t)(v10));
-#ifndef __cplusplus
   extern void (fglog_st_i64)(uint64_t, uint64_t, int64_t);
-#endif
   fglog_st_i64(t4, t5, t6);
   t7 = ((int64_t)(v4));
   t8 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
@@ -2441,9 +2425,7 @@ static int64_t gg_function_1(uint64_t p0, int64_t p1, uint64_t p2, int64_t p3, i
   t39 = ((int64_t)(v7));
   t40 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
   t41 = ((uint64_t)(((uint64_t)(((int64_t)((uint64_t)(t39) - (uint64_t)(t40)))))));
-#ifndef __cplusplus
   extern uint8_t (fglog_ld_u8)(uint64_t, uint64_t);
-#endif
   t42 = fglog_ld_u8(t38, t41);
   t43 = ((uint8_t)(t42));
   t44 = ((uint8_t)(((uint8_t)(((int64_t)UINT64_C(10))))));
@@ -2512,9 +2494,7 @@ static int64_t gg_function_1(uint64_t p0, int64_t p1, uint64_t p2, int64_t p3, i
   t85 = ((int64_t)(v13));
   t86 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
   t87 = ((uint64_t)(((uint64_t)(((int64_t)((uint64_t)(t85) - (uint64_t)(t86)))))));
-#ifndef __cplusplus
   extern uint8_t (fglog_ld_u8)(uint64_t, uint64_t);
-#endif
   t88 = fglog_ld_u8(t84, t87);
   t89 = ((uint8_t)(t88));
   t90 = ((uint8_t)(((uint8_t)(((int64_t)UINT64_C(10))))));

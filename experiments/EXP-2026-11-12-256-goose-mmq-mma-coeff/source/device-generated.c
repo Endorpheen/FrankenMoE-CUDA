@@ -336,12 +336,6 @@ GS_LIBM float gs_logf(float x) GS_LIBM1(logf)
 GS_LIBM float gs_log2f(float x) GS_LIBM1(log2f)
 GS_LIBM float gs_log10f(float x) GS_LIBM1(log10f)
 GS_LIBM float gs_powf(float x, float y) GS_LIBM2(powf)
-#if defined(__CUDACC__)
-static __host__ __device__ double gs_exp_cuda(double x) { return exp(x); }
-static __host__ __device__ float gs_expf_cuda(float x) { return expf(x); }
-#define gs_exp(x) gs_exp_cuda(x)
-#define gs_expf(x) gs_expf_cuda(x)
-#endif
 /* std's popcount, clz and ctz (64 for zero): the instruction where the C
    compiler has one, and counting under TinyCC. MSVC's popcount is an
    instruction past x86-64's baseline, which /arch:AVX and up promise. */
@@ -681,37 +675,25 @@ static int64_t gg_function_6(int64_t p0, int64_t p1, int64_t p2, int64_t base) {
   v2 = p2;
   {
   t1 = ((int64_t)(v0));
-#ifndef __cplusplus
   extern float (fg256d_b2f)(int64_t);
-#endif
   t2 = fg256d_b2f(t1);
   t3 = ((float)(t2));
   t4 = ((int64_t)(v1));
-#ifndef __cplusplus
   extern float (fg256d_b2f)(int64_t);
-#endif
   t5 = fg256d_b2f(t4);
   t6 = ((float)(t5));
-#ifndef __cplusplus
   extern float (fg256d_mul)(float, float);
-#endif
   t7 = fg256d_mul(t3, t6);
   v3 = ((float)(t7));
   t8 = ((int64_t)(v2));
-#ifndef __cplusplus
   extern float (fg256d_b2f)(int64_t);
-#endif
   t9 = fg256d_b2f(t8);
   t10 = ((float)(t9));
   t11 = ((float)(v3));
-#ifndef __cplusplus
   extern float (fg256d_add)(float, float);
-#endif
   t12 = fg256d_add(t10, t11);
   t13 = ((float)(t12));
-#ifndef __cplusplus
   extern int64_t (fg256d_f2b)(float);
-#endif
   t14 = fg256d_f2b(t13);
   t0 = ((int64_t)(t14));
   }
@@ -751,50 +733,34 @@ static int64_t gg_function_1(int64_t p0, int64_t p1, int64_t p2, int64_t p3, int
   v3 = p3;
   {
   t1 = ((int64_t)(v0));
-#ifndef __cplusplus
   extern float (fg256d_b2f)(int64_t);
-#endif
   t2 = fg256d_b2f(t1);
   t3 = ((float)(t2));
   t4 = ((int64_t)(v1));
-#ifndef __cplusplus
   extern float (fg256d_b2f)(int64_t);
-#endif
   t5 = fg256d_b2f(t4);
   t6 = ((float)(t5));
-#ifndef __cplusplus
   extern float (fg256d_mul)(float, float);
-#endif
   t7 = fg256d_mul(t3, t6);
   v4 = ((float)(t7));
   t8 = ((float)(v4));
   t9 = ((int64_t)(v2));
-#ifndef __cplusplus
   extern float (fg256d_b2f)(int64_t);
-#endif
   t10 = fg256d_b2f(t9);
   t11 = ((float)(t10));
-#ifndef __cplusplus
   extern float (fg256d_mul)(float, float);
-#endif
   t12 = fg256d_mul(t8, t11);
   v5 = ((float)(t12));
   t13 = ((int64_t)(v3));
-#ifndef __cplusplus
   extern float (fg256d_b2f)(int64_t);
-#endif
   t14 = fg256d_b2f(t13);
   t15 = ((float)(t14));
   t16 = ((float)(v5));
-#ifndef __cplusplus
   extern float (fg256d_add)(float, float);
-#endif
   t17 = fg256d_add(t15, t16);
   v6 = ((float)(t17));
   t18 = ((float)(v6));
-#ifndef __cplusplus
   extern int64_t (fg256d_f2b)(float);
-#endif
   t19 = fg256d_f2b(t18);
   t0 = ((int64_t)(t19));
   }

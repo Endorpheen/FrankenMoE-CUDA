@@ -591,9 +591,7 @@ static void gg_function_2(uint8_t p0, int64_t p1, int64_t base) {
   if (t1) {
   {
   t2 = ((int64_t)(v1));
-#ifndef __cplusplus
   extern void (fg228e_fail)(int64_t);
-#endif
   fg228e_fail(t2);
   }
   }
@@ -836,23 +834,17 @@ static int64_t gg_function_1(int64_t p0, int64_t p1, int64_t p2, int64_t p3, int
   t64 = ((uint64_t)(v11));
   t65 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
   t66 = ((int64_t)(v12));
-#ifndef __cplusplus
   extern void (fg228e_st_i32)(uint64_t, int64_t, int64_t);
-#endif
   fg228e_st_i32(t64, t65, t66);
   t67 = ((uint64_t)(v11));
   t68 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
   t69 = ((int64_t)(v13));
-#ifndef __cplusplus
   extern void (fg228e_st_i32)(uint64_t, int64_t, int64_t);
-#endif
   fg228e_st_i32(t67, t68, t69);
   t70 = ((uint64_t)(v11));
   t71 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(2))))));
   t72 = ((int64_t)(v14));
-#ifndef __cplusplus
   extern void (fg228e_st_i32)(uint64_t, int64_t, int64_t);
-#endif
   fg228e_st_i32(t70, t71, t72);
   t0 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
   goto gg_done;

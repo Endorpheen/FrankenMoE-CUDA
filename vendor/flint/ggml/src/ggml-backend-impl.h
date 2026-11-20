@@ -4,9 +4,6 @@
 
 #include "ggml-backend.h"
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
 
     #define GGML_BACKEND_API_VERSION 3
 
@@ -255,22 +252,6 @@ extern "C" {
     typedef int                (*ggml_backend_score_t)(void);
 
 #ifdef GGML_BACKEND_DL
-#    ifdef __cplusplus
-#        define GGML_BACKEND_DL_IMPL(reg_fn)                             \
-            extern "C" {                                                 \
-            GGML_BACKEND_API ggml_backend_reg_t ggml_backend_init(void); \
-            }                                                            \
-            ggml_backend_reg_t ggml_backend_init(void) {                 \
-                return reg_fn();                                         \
-            }
-#        define GGML_BACKEND_DL_SCORE_IMPL(score_fn)       \
-            extern "C" {                                   \
-            GGML_BACKEND_API int ggml_backend_score(void); \
-            }                                              \
-            int ggml_backend_score(void) {                 \
-                return score_fn();                         \
-            }
-#    else
 #        define GGML_BACKEND_DL_IMPL(reg_fn)                              \
             GGML_BACKEND_API ggml_backend_reg_t ggml_backend_init(void);  \
             ggml_backend_reg_t                  ggml_backend_init(void) { \
@@ -281,12 +262,8 @@ extern "C" {
             int                  ggml_backend_score(void) { \
                 return score_fn();                          \
             }
-#    endif
 #else
 #    define GGML_BACKEND_DL_IMPL(reg_fn)
 #    define GGML_BACKEND_DL_SCORE_IMPL(score_fn)
 #endif
 
-#ifdef  __cplusplus
-}
-#endif

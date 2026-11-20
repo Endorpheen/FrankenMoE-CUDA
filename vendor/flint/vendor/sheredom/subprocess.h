@@ -111,9 +111,6 @@ enum subprocess_error_e {
   subprocess_error_not_supported = -9
 };
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
 
 /// @brief Create a process.
 /// @param command_line An array of strings for the command line to execute for
@@ -249,17 +246,10 @@ subprocess_read_stderr(struct subprocess_s *const process, char *const buffer,
 /// @return If the process is still alive non-zero is returned.
 subprocess_weak int subprocess_alive(struct subprocess_s *const process);
 
-#if defined(__cplusplus)
-#define SUBPROCESS_CAST(type, x) static_cast<type>(x)
-#define SUBPROCESS_PTR_CAST(type, x) reinterpret_cast<type>(x)
-#define SUBPROCESS_CONST_CAST(type, x) const_cast<type>(x)
-#define SUBPROCESS_NULL NULL
-#else
 #define SUBPROCESS_CAST(type, x) ((type)(x))
 #define SUBPROCESS_PTR_CAST(type, x) ((type)(x))
 #define SUBPROCESS_CONST_CAST(type, x) ((type)(x))
 #define SUBPROCESS_NULL 0
-#endif
 
 #if !defined(_WIN32)
 #include <errno.h>
@@ -2187,8 +2177,5 @@ int subprocess_alive(struct subprocess_s *const process) {
 #endif
 #endif
 
-#if defined(__cplusplus)
-} // extern "C"
-#endif
 
 #endif /* SHEREDOM_SUBPROCESS_H_INCLUDED */

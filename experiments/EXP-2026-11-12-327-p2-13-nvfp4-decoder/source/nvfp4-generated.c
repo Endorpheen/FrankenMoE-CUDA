@@ -336,12 +336,6 @@ GS_LIBM float gs_logf(float x) GS_LIBM1(logf)
 GS_LIBM float gs_log2f(float x) GS_LIBM1(log2f)
 GS_LIBM float gs_log10f(float x) GS_LIBM1(log10f)
 GS_LIBM float gs_powf(float x, float y) GS_LIBM2(powf)
-#if defined(__CUDACC__)
-static __host__ __device__ double gs_exp_cuda(double x) { return exp(x); }
-static __host__ __device__ float gs_expf_cuda(float x) { return expf(x); }
-#define gs_exp(x) gs_exp_cuda(x)
-#define gs_expf(x) gs_expf_cuda(x)
-#endif
 /* std's popcount, clz and ctz (64 for zero): the instruction where the C
    compiler has one, and counting under TinyCC. MSVC's popcount is an
    instruction past x86-64's baseline, which /arch:AVX and up promise. */
@@ -996,14 +990,10 @@ label1:;
   t14 = ((uint64_t)(v4));
   t15 = ((uint64_t)(((uint64_t)(v7))));
   t16 = ((uint64_t)(((uint64_t)((uint64_t)(t14) + (uint64_t)(t15)))));
-#ifndef __cplusplus
   extern int64_t (fg327q_ld_u8)(uint64_t);
-#endif
   t17 = fg327q_ld_u8(t16);
   t18 = ((uint64_t)(((uint64_t)(t17))));
-#ifndef __cplusplus
   extern float (fg327q_ue4m3)(uint64_t);
-#endif
   t19 = fg327q_ue4m3(t18);
   v8 = ((float)(t19));
   t20 = ((uint64_t)(v5));
@@ -1027,9 +1017,7 @@ label4:;
   t31 = ((uint64_t)(v9));
   t32 = ((uint64_t)(v12));
   t33 = ((uint64_t)(((uint64_t)((uint64_t)(t31) + (uint64_t)(t32)))));
-#ifndef __cplusplus
   extern int64_t (fg327q_ld_u8)(uint64_t);
-#endif
   t34 = fg327q_ld_u8(t33);
   v13 = ((int64_t)(t34));
   t35 = ((uint64_t)(v10));
@@ -1044,9 +1032,7 @@ label4:;
   t44 = fg327q_fn_7(t43, base + 0);
   t45 = ((float)(((float)(t44))));
   t46 = ((float)(((t40) * (t45))));
-#ifndef __cplusplus
   extern void (fg327q_st_f32)(uint64_t, float);
-#endif
   fg327q_st_f32(t39, t46);
   t47 = ((uint64_t)(v10));
   t48 = ((uint64_t)(v12));
@@ -1062,9 +1048,7 @@ label4:;
   t58 = fg327q_fn_7(t57, base + 0);
   t59 = ((float)(((float)(t58))));
   t60 = ((float)(((t54) * (t59))));
-#ifndef __cplusplus
   extern void (fg327q_st_f32)(uint64_t, float);
-#endif
   fg327q_st_f32(t53, t60);
   t61 = ((int64_t)(v11));
   t62 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
@@ -1098,9 +1082,7 @@ static void fg327q_fn_2(uint8_t p0, int64_t p1, int64_t base) {
   if (t1) {
   {
   t2 = ((int64_t)(v1));
-#ifndef __cplusplus
   extern void (fg327q_fail)(int64_t);
-#endif
   fg327q_fail(t2);
   }
   }

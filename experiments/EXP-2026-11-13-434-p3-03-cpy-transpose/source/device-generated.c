@@ -336,12 +336,6 @@ GS_LIBM float gs_logf(float x) GS_LIBM1(logf)
 GS_LIBM float gs_log2f(float x) GS_LIBM1(log2f)
 GS_LIBM float gs_log10f(float x) GS_LIBM1(log10f)
 GS_LIBM float gs_powf(float x, float y) GS_LIBM2(powf)
-#if defined(__CUDACC__)
-static __host__ __device__ double gs_exp_cuda(double x) { return exp(x); }
-static __host__ __device__ float gs_expf_cuda(float x) { return expf(x); }
-#define gs_exp(x) gs_exp_cuda(x)
-#define gs_expf(x) gs_expf_cuda(x)
-#endif
 /* std's popcount, clz and ctz (64 for zero): the instruction where the C
    compiler has one, and counting under TinyCC. MSVC's popcount is an
    instruction past x86-64's baseline, which /arch:AVX and up promise. */
@@ -960,14 +954,10 @@ label4:;
   t79 = ((int64_t)(v22));
   t80 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(4))))));
   t81 = ((uint64_t)(((uint64_t)(((int64_t)((uint64_t)(t79) * (uint64_t)(t80)))))));
-#ifndef __cplusplus
   extern float (fg434c_ld_f32)(uint64_t, uint64_t);
-#endif
   t82 = fg434c_ld_f32(t78, t81);
   t83 = ((float)(t82));
-#ifndef __cplusplus
   extern void (fg434c_st_f32)(uint64_t, uint64_t, float);
-#endif
   fg434c_st_f32(t74, t77, t83);
   }
   }
@@ -977,9 +967,7 @@ label4:;
   }
   goto label4;
 label5:;
-#ifndef __cplusplus
   extern void (fg434c_sync)(void);
-#endif
   fg434c_sync();
   v20 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
 label7:;
@@ -1032,14 +1020,10 @@ label7:;
   t123 = ((int64_t)(v23));
   t124 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(4))))));
   t125 = ((uint64_t)(((uint64_t)(((int64_t)((uint64_t)(t123) * (uint64_t)(t124)))))));
-#ifndef __cplusplus
   extern float (fg434c_ld_f32)(uint64_t, uint64_t);
-#endif
   t126 = fg434c_ld_f32(t122, t125);
   t127 = ((float)(t126));
-#ifndef __cplusplus
   extern void (fg434c_st_f32)(uint64_t, uint64_t, float);
-#endif
   fg434c_st_f32(t118, t121, t127);
   }
   }
@@ -1049,9 +1033,7 @@ label7:;
   }
   goto label7;
 label8:;
-#ifndef __cplusplus
   extern void (fg434c_sync)(void);
-#endif
   fg434c_sync();
   t130 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
   t131 = ((int64_t)(v17));

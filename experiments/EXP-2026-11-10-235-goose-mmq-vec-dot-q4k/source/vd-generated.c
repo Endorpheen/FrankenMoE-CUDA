@@ -711,9 +711,7 @@ static void gg_function_2(uint8_t p0, int64_t p1, int64_t base) {
   if (t1) {
   {
   t2 = ((int64_t)(v1));
-#ifndef __cplusplus
   extern void (fg235v_fail)(int64_t);
-#endif
   fg235v_fail(t2);
   }
   }
@@ -835,9 +833,7 @@ label4:;
   {
   t9 = ((uint64_t)(v0));
   t10 = ((int64_t)(v13));
-#ifndef __cplusplus
   extern int64_t (fg235v_ld_i32)(uint64_t, int64_t);
-#endif
   t11 = fg235v_ld_i32(t9, t10);
   t12 = ((int64_t)(t11));
   t13 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(4))))));
@@ -852,9 +848,7 @@ label4:;
   t21 = ((int64_t)(((int64_t)((uint64_t)(t19) * (uint64_t)(t20)))));
   t22 = ((int64_t)(v13));
   t23 = ((int64_t)(((int64_t)((uint64_t)(t21) + (uint64_t)(t22)))));
-#ifndef __cplusplus
   extern int64_t (fg235v_ld_i32)(uint64_t, int64_t);
-#endif
   t24 = fg235v_ld_i32(t18, t23);
   v15 = ((int64_t)(t24));
   t25 = ((int64_t)(v14));
@@ -869,39 +863,29 @@ label4:;
 label5:;
   t30 = ((uint64_t)(v2));
   t31 = ((int64_t)(v11));
-#ifndef __cplusplus
   extern int64_t (fg235v_ld_u8)(uint64_t, int64_t);
-#endif
   t32 = fg235v_ld_u8(t30, t31);
   v16 = ((int64_t)(t32));
   t33 = ((uint64_t)(v3));
   t34 = ((int64_t)(v11));
-#ifndef __cplusplus
   extern int64_t (fg235v_ld_u8)(uint64_t, int64_t);
-#endif
   t35 = fg235v_ld_u8(t33, t34);
   v17 = ((int64_t)(t35));
   t36 = ((uint64_t)(v4));
   t37 = ((int64_t)(v11));
-#ifndef __cplusplus
   extern float (fg235v_ld_f32)(uint64_t, int64_t);
-#endif
   t38 = fg235v_ld_f32(t36, t37);
   v18 = ((float)(t38));
   t39 = ((uint64_t)(v5));
   t40 = ((int64_t)(v11));
-#ifndef __cplusplus
   extern float (fg235v_ld_f32)(uint64_t, int64_t);
-#endif
   t41 = fg235v_ld_f32(t39, t40);
   v19 = ((float)(t41));
   t42 = ((float)(v9));
   t43 = ((float)(v18));
   t44 = ((float)(((float)(v16))));
   t45 = ((int64_t)(v12));
-#ifndef __cplusplus
   extern float (fg235v_to_f32)(int64_t);
-#endif
   t46 = fg235v_to_f32(t45);
   t47 = ((float)(t46));
   t48 = ((float)(((t44) * (t47))));

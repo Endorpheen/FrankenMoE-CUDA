@@ -543,9 +543,7 @@ static void fg280ds_gg_function_4(uint8_t p0, int64_t p1, int64_t base) {
   if (t1) {
   {
   t2 = ((int64_t)(v1));
-#ifndef __cplusplus
   extern void (fg280h_fail)(int64_t);
-#endif
   fg280h_fail(t2);
   }
   }
@@ -725,99 +723,73 @@ static uint8_t fg280ds_gg_function_1(int64_t p0, int64_t base) {
   t1 = ((int64_t)(v0));
   t2 = ((int64_t)(((int64_t)UINT64_C(0))));
   t3 = ((int64_t)(((int64_t)UINT64_C(0))));
-#ifndef __cplusplus
   extern uint64_t (fg280h_get)(int64_t, int64_t, int64_t);
-#endif
   t4 = fg280h_get(t1, t2, t3);
   v1 = ((uint64_t)(t4));
   t5 = ((int64_t)(v0));
   t6 = ((int64_t)(((int64_t)UINT64_C(0))));
   t7 = ((int64_t)(((int64_t)UINT64_C(1))));
-#ifndef __cplusplus
   extern uint64_t (fg280h_get)(int64_t, int64_t, int64_t);
-#endif
   t8 = fg280h_get(t5, t6, t7);
   v2 = ((uint64_t)(t8));
   t9 = ((int64_t)(v0));
   t10 = ((int64_t)(((int64_t)UINT64_C(0))));
   t11 = ((int64_t)(((int64_t)UINT64_C(2))));
-#ifndef __cplusplus
   extern uint64_t (fg280h_get)(int64_t, int64_t, int64_t);
-#endif
   t12 = fg280h_get(t9, t10, t11);
   v3 = ((int64_t)(((int64_t)(t12))));
   t13 = ((int64_t)(v0));
   t14 = ((int64_t)(((int64_t)UINT64_C(0))));
   t15 = ((int64_t)(((int64_t)UINT64_C(3))));
-#ifndef __cplusplus
   extern uint64_t (fg280h_get)(int64_t, int64_t, int64_t);
-#endif
   t16 = fg280h_get(t13, t14, t15);
   v4 = ((int64_t)(((int64_t)(t16))));
   t17 = ((int64_t)(v0));
   t18 = ((int64_t)(((int64_t)UINT64_C(0))));
   t19 = ((int64_t)(((int64_t)UINT64_C(4))));
-#ifndef __cplusplus
   extern uint64_t (fg280h_get)(int64_t, int64_t, int64_t);
-#endif
   t20 = fg280h_get(t17, t18, t19);
   v5 = ((int64_t)(((int64_t)(t20))));
   t21 = ((int64_t)(v0));
   t22 = ((int64_t)(((int64_t)UINT64_C(0))));
   t23 = ((int64_t)(((int64_t)UINT64_C(5))));
-#ifndef __cplusplus
   extern uint64_t (fg280h_get)(int64_t, int64_t, int64_t);
-#endif
   t24 = fg280h_get(t21, t22, t23);
   v6 = ((int64_t)(((int64_t)(t24))));
   t25 = ((int64_t)(v0));
   t26 = ((int64_t)(((int64_t)UINT64_C(0))));
   t27 = ((int64_t)(((int64_t)UINT64_C(6))));
-#ifndef __cplusplus
   extern uint64_t (fg280h_get)(int64_t, int64_t, int64_t);
-#endif
   t28 = fg280h_get(t25, t26, t27);
   v7 = ((int64_t)(((int64_t)(t28))));
   t29 = ((int64_t)(v0));
   t30 = ((int64_t)(((int64_t)UINT64_C(0))));
   t31 = ((int64_t)(((int64_t)UINT64_C(7))));
-#ifndef __cplusplus
   extern uint64_t (fg280h_get)(int64_t, int64_t, int64_t);
-#endif
   t32 = fg280h_get(t29, t30, t31);
   v8 = ((int64_t)(((int64_t)(t32))));
   t33 = ((int64_t)(v0));
   t34 = ((int64_t)(((int64_t)UINT64_C(0))));
   t35 = ((int64_t)(((int64_t)UINT64_C(8))));
-#ifndef __cplusplus
   extern uint64_t (fg280h_get)(int64_t, int64_t, int64_t);
-#endif
   t36 = fg280h_get(t33, t34, t35);
   t37 = ((uint32_t)(((uint32_t)(t36))));
-#ifndef __cplusplus
   extern float (fg280h_u32f)(uint32_t);
-#endif
   t38 = fg280h_u32f(t37);
   v9 = ((float)(t38));
   t39 = ((int64_t)(v0));
   t40 = ((int64_t)(((int64_t)UINT64_C(0))));
   t41 = ((int64_t)(((int64_t)UINT64_C(9))));
-#ifndef __cplusplus
   extern uint64_t (fg280h_get)(int64_t, int64_t, int64_t);
-#endif
   t42 = fg280h_get(t39, t40, t41);
   t43 = ((uint32_t)(((uint32_t)(t42))));
-#ifndef __cplusplus
   extern float (fg280h_u32f)(uint32_t);
-#endif
   t44 = fg280h_u32f(t43);
   v10 = ((float)(t44));
   t45 = ((int64_t)(v0));
   t46 = ((int64_t)(((int64_t)UINT64_C(1))));
   t47 = ((int64_t)(((int64_t)UINT64_C(0))));
-#ifndef __cplusplus
   extern uint64_t (fg280h_get)(int64_t, int64_t, int64_t);
-#endif
   t48 = fg280h_get(t45, t46, t47);
   v11 = ((int64_t)(((int64_t)(t48))));
   t49 = ((uint64_t)(v1));
@@ -935,9 +907,7 @@ label2:;
   if (t115) {
   {
   t116 = ((int64_t)(((int64_t)UINT64_C(24))));
-#ifndef __cplusplus
   extern void (fg280h_fail)(int64_t);
-#endif
   fg280h_fail(t116);
   }
   }
@@ -950,63 +920,47 @@ label2:;
   }
   }
   t117 = ((int64_t)(v0));
-#ifndef __cplusplus
   extern int64_t (fg280h_plan)(int64_t);
-#endif
   t118 = fg280h_plan(t117);
   v17 = ((int64_t)(t118));
   t119 = ((int64_t)(v17));
   t120 = ((int64_t)(((int64_t)UINT64_C(1))));
   t121 = ((int64_t)(((int64_t)UINT64_C(1))));
   t122 = ((uint64_t)(((uint64_t)(v12))));
-#ifndef __cplusplus
   extern void (fg280h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg280h_put(t119, t120, t121, t122);
   t123 = ((int64_t)(v17));
   t124 = ((int64_t)(((int64_t)UINT64_C(1))));
   t125 = ((int64_t)(((int64_t)UINT64_C(2))));
   t126 = ((uint64_t)(((uint64_t)(v16))));
-#ifndef __cplusplus
   extern void (fg280h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg280h_put(t123, t124, t125, t126);
   t127 = ((int64_t)(v17));
   t128 = ((int64_t)(((int64_t)UINT64_C(1))));
   t129 = ((int64_t)(((int64_t)UINT64_C(3))));
   t130 = ((uint64_t)(((uint64_t)(v15))));
-#ifndef __cplusplus
   extern void (fg280h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg280h_put(t127, t128, t129, t130);
   t131 = ((int64_t)(v17));
   t132 = ((int64_t)(((int64_t)UINT64_C(1))));
   t133 = ((int64_t)(((int64_t)UINT64_C(4))));
   t134 = ((uint64_t)(((uint64_t)(v4))));
-#ifndef __cplusplus
   extern void (fg280h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg280h_put(t131, t132, t133, t134);
   t135 = ((int64_t)(v17));
   t136 = ((int64_t)(((int64_t)UINT64_C(1))));
   t137 = ((int64_t)(((int64_t)UINT64_C(5))));
   t138 = ((uint64_t)(((uint64_t)(v5))));
-#ifndef __cplusplus
   extern void (fg280h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg280h_put(t135, t136, t137, t138);
   t139 = ((int64_t)(v17));
   t140 = ((int64_t)(((int64_t)UINT64_C(1))));
   t141 = ((int64_t)(((int64_t)UINT64_C(6))));
   t142 = ((uint64_t)(((uint64_t)(v6))));
-#ifndef __cplusplus
   extern void (fg280h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg280h_put(t139, t140, t141, t142);
   t143 = ((int64_t)(v0));
-#ifndef __cplusplus
   extern int64_t (fg280h_launch)(int64_t);
-#endif
   t144 = fg280h_launch(t143);
   t145 = ((int64_t)(t144));
   t146 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));

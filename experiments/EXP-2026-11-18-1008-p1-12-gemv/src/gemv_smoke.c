@@ -595,12 +595,6 @@ GS_LIBM float gs_logf(float x) GS_LIBM1(logf)
 GS_LIBM float gs_log2f(float x) GS_LIBM1(log2f)
 GS_LIBM float gs_log10f(float x) GS_LIBM1(log10f)
 GS_LIBM float gs_powf(float x, float y) GS_LIBM2(powf)
-#if defined(__CUDACC__)
-static __host__ __device__ double gs_exp_cuda(double x) { return exp(x); }
-static __host__ __device__ float gs_expf_cuda(float x) { return expf(x); }
-#define gs_exp(x) gs_exp_cuda(x)
-#define gs_expf(x) gs_expf_cuda(x)
-#endif
 /* std's popcount, clz and ctz (64 for zero): the instruction where the C
    compiler has one, and counting under TinyCC. MSVC's popcount is an
    instruction past x86-64's baseline, which /arch:AVX and up promise. */
@@ -1529,9 +1523,7 @@ label0:;
   t18 = v944;
   t19 = ((GG_UNALIGNED gg_unaligned_3 *)t17.data) + gg_index(t18, t17.len);
   t20 = ((float)((*t19)));
-#ifndef __cplusplus
   extern float (fmaf)(float, float, float);
-#endif
   t21 = fmaf(t12, t16, t20);
   (*t8) = ((float)(t21));
   }
@@ -3396,9 +3388,7 @@ static GG_INLINE float gg_function_6(gg_slice p0, int64_t p1, int64_t base) {
   t1 = v0;
   t2 = ((int64_t)(v1));
   t3 = gg_function_12(t1, t2, base + 1);
-#ifndef __cplusplus
   extern float (gs_simd_f32_from_bits)(uint32_t);
-#endif
   t4 = gs_simd_f32_from_bits(t3);
   t0 = ((float)(t4));
   goto gg_done;
@@ -3534,9 +3524,7 @@ static float gg_function_4(gg_type_20 p0, int64_t p1, int64_t base) {
   t29 = ((int64_t)(((int64_t)UINT64_C(13))));
   t30 = ((uint32_t)(((uint32_t)((uint64_t)(t28) << ((uint64_t)(t29) & 31)))));
   t31 = ((uint32_t)(((t27) | (t30))));
-#ifndef __cplusplus
   extern float (gs_simd_f32_from_bits)(uint32_t);
-#endif
   t32 = gs_simd_f32_from_bits(t31);
   t0 = ((float)(t32));
   goto gg_done;
@@ -3553,9 +3541,7 @@ static float gg_function_4(gg_type_20 p0, int64_t p1, int64_t base) {
   if (t38) {
   {
   t39 = ((uint32_t)(v3));
-#ifndef __cplusplus
   extern float (gs_simd_f32_from_bits)(uint32_t);
-#endif
   t40 = gs_simd_f32_from_bits(t39);
   t0 = ((float)(t40));
   goto gg_done;
@@ -3595,9 +3581,7 @@ label2:;
   t62 = ((int64_t)(((int64_t)UINT64_C(13))));
   t63 = ((uint32_t)(((uint32_t)((uint64_t)(t61) << ((uint64_t)(t62) & 31)))));
   t64 = ((uint32_t)(((t60) | (t63))));
-#ifndef __cplusplus
   extern float (gs_simd_f32_from_bits)(uint32_t);
-#endif
   t65 = gs_simd_f32_from_bits(t64);
   t0 = ((float)(t65));
   goto gg_done;
@@ -3614,9 +3598,7 @@ label2:;
   t74 = ((int64_t)(((int64_t)UINT64_C(13))));
   t75 = ((uint32_t)(((uint32_t)((uint64_t)(t73) << ((uint64_t)(t74) & 31)))));
   t76 = ((uint32_t)(((t72) | (t75))));
-#ifndef __cplusplus
   extern float (gs_simd_f32_from_bits)(uint32_t);
-#endif
   t77 = gs_simd_f32_from_bits(t76);
   t0 = ((float)(t77));
   goto gg_done;

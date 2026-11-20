@@ -336,12 +336,6 @@ GS_LIBM float gs_logf(float x) GS_LIBM1(logf)
 GS_LIBM float gs_log2f(float x) GS_LIBM1(log2f)
 GS_LIBM float gs_log10f(float x) GS_LIBM1(log10f)
 GS_LIBM float gs_powf(float x, float y) GS_LIBM2(powf)
-#if defined(__CUDACC__)
-static __host__ __device__ double gs_exp_cuda(double x) { return exp(x); }
-static __host__ __device__ float gs_expf_cuda(float x) { return expf(x); }
-#define gs_exp(x) gs_exp_cuda(x)
-#define gs_expf(x) gs_expf_cuda(x)
-#endif
 /* std's popcount, clz and ctz (64 for zero): the instruction where the C
    compiler has one, and counting under TinyCC. MSVC's popcount is an
    instruction past x86-64's baseline, which /arch:AVX and up promise. */
@@ -1052,9 +1046,7 @@ label1:;
   t7 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(4))))));
   t8 = ((uint64_t)(((uint64_t)((uint64_t)(t6) * (uint64_t)(t7)))));
   t9 = ((uint64_t)(((uint64_t)((uint64_t)(t5) + (uint64_t)(t8)))));
-#ifndef __cplusplus
   extern float (fg329q_ld_f32)(uint64_t);
-#endif
   t10 = fg329q_ld_f32(t9);
   t11 = ((float)(t10));
   v5 = fg329q_fn_3(t4, t11, base + 0);
@@ -1080,9 +1072,7 @@ label4:;
   t21 = ((uint64_t)(((uint64_t)(v6))));
   t22 = ((uint64_t)(((uint64_t)((uint64_t)(t20) + (uint64_t)(t21)))));
   t23 = ((int64_t)(((int64_t)UINT64_C(0))));
-#ifndef __cplusplus
   extern void (fg329q_st_u8)(uint64_t, int64_t);
-#endif
   fg329q_st_u8(t22, t23);
   t24 = ((int64_t)(v6));
   t25 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
@@ -1113,20 +1103,14 @@ label7:;
   t37 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(4))))));
   t38 = ((uint64_t)(((uint64_t)((uint64_t)(t36) * (uint64_t)(t37)))));
   t39 = ((uint64_t)(((uint64_t)((uint64_t)(t35) + (uint64_t)(t38)))));
-#ifndef __cplusplus
   extern float (fg329q_ld_f32)(uint64_t);
-#endif
   t40 = fg329q_ld_f32(t39);
   t41 = ((float)(t40));
   t42 = ((float)(((t34) * (t41))));
-#ifndef __cplusplus
   extern int64_t (fg329q_nearest)(float);
-#endif
   t43 = fg329q_nearest(t42);
   t44 = ((int64_t)(t43));
-#ifndef __cplusplus
   extern void (fg329q_st_u8)(uint64_t, int64_t);
-#endif
   fg329q_st_u8(t33, t44);
   t45 = ((int64_t)(v6));
   t46 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
@@ -1150,17 +1134,13 @@ label10:;
   t54 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(4))))));
   t55 = ((uint64_t)(((uint64_t)((uint64_t)(t53) * (uint64_t)(t54)))));
   t56 = ((uint64_t)(((uint64_t)((uint64_t)(t52) + (uint64_t)(t55)))));
-#ifndef __cplusplus
   extern float (fg329q_ld_f32)(uint64_t);
-#endif
   t57 = fg329q_ld_f32(t56);
   v10 = ((float)(t57));
   t58 = ((uint64_t)(v3));
   t59 = ((uint64_t)(((uint64_t)(v6))));
   t60 = ((uint64_t)(((uint64_t)((uint64_t)(t58) + (uint64_t)(t59)))));
-#ifndef __cplusplus
   extern int64_t (fg329q_ld_u8)(uint64_t);
-#endif
   t61 = fg329q_ld_u8(t60);
   v11 = ((float)(((float)(t61))));
   t62 = ((float)(v10));
@@ -1173,9 +1153,7 @@ label10:;
   t68 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(4))))));
   t69 = ((uint64_t)(((uint64_t)((uint64_t)(t67) * (uint64_t)(t68)))));
   t70 = ((uint64_t)(((uint64_t)((uint64_t)(t66) + (uint64_t)(t69)))));
-#ifndef __cplusplus
   extern float (fg329q_ld_f32)(uint64_t);
-#endif
   t71 = fg329q_ld_f32(t70);
   v13 = ((float)(t71));
   t72 = ((float)(v9));
@@ -1228,18 +1206,14 @@ label16:;
   t101 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(4))))));
   t102 = ((uint64_t)(((uint64_t)((uint64_t)(t100) * (uint64_t)(t101)))));
   t103 = ((uint64_t)(((uint64_t)((uint64_t)(t99) + (uint64_t)(t102)))));
-#ifndef __cplusplus
   extern float (fg329q_ld_f32)(uint64_t);
-#endif
   t104 = fg329q_ld_f32(t103);
   v18 = ((float)(t104));
   t105 = ((int64_t)(v1));
   t106 = ((float)(v15));
   t107 = ((float)(v18));
   t108 = ((float)(((t106) * (t107))));
-#ifndef __cplusplus
   extern int64_t (fg329q_nearest)(float);
-#endif
   t109 = fg329q_nearest(t108);
   t110 = ((int64_t)(t109));
   v19 = fg329q_fn_7(t105, t110, base + 0);
@@ -1253,9 +1227,7 @@ label16:;
   t117 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(4))))));
   t118 = ((uint64_t)(((uint64_t)((uint64_t)(t116) * (uint64_t)(t117)))));
   t119 = ((uint64_t)(((uint64_t)((uint64_t)(t115) + (uint64_t)(t118)))));
-#ifndef __cplusplus
   extern float (fg329q_ld_f32)(uint64_t);
-#endif
   t120 = fg329q_ld_f32(t119);
   v21 = ((float)(t120));
   t121 = ((float)(v17));
@@ -1302,18 +1274,14 @@ label19:;
   t139 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(4))))));
   t140 = ((uint64_t)(((uint64_t)((uint64_t)(t138) * (uint64_t)(t139)))));
   t141 = ((uint64_t)(((uint64_t)((uint64_t)(t137) + (uint64_t)(t140)))));
-#ifndef __cplusplus
   extern float (fg329q_ld_f32)(uint64_t);
-#endif
   t142 = fg329q_ld_f32(t141);
   v24 = ((float)(t142));
   t143 = ((int64_t)(v1));
   t144 = ((float)(v7));
   t145 = ((float)(v24));
   t146 = ((float)(((t144) * (t145))));
-#ifndef __cplusplus
   extern int64_t (fg329q_nearest)(float);
-#endif
   t147 = fg329q_nearest(t146);
   t148 = ((int64_t)(t147));
   v25 = fg329q_fn_7(t143, t148, base + 0);
@@ -1321,18 +1289,14 @@ label19:;
   t150 = ((uint64_t)(((uint64_t)(v6))));
   t151 = ((uint64_t)(((uint64_t)((uint64_t)(t149) + (uint64_t)(t150)))));
   t152 = ((int64_t)(v25));
-#ifndef __cplusplus
   extern void (fg329q_st_u8)(uint64_t, int64_t);
-#endif
   fg329q_st_u8(t151, t152);
   t153 = ((uint64_t)(v4));
   t154 = ((uint64_t)(((uint64_t)(v6))));
   t155 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(4))))));
   t156 = ((uint64_t)(((uint64_t)((uint64_t)(t154) * (uint64_t)(t155)))));
   t157 = ((uint64_t)(((uint64_t)((uint64_t)(t153) + (uint64_t)(t156)))));
-#ifndef __cplusplus
   extern float (fg329q_ld_f32)(uint64_t);
-#endif
   t158 = fg329q_ld_f32(t157);
   v26 = ((float)(t158));
   t159 = ((float)(v22));
@@ -1375,9 +1339,7 @@ label25:;
   t181 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(4))))));
   t182 = ((uint64_t)(((uint64_t)((uint64_t)(t180) * (uint64_t)(t181)))));
   t183 = ((uint64_t)(((uint64_t)((uint64_t)(t179) + (uint64_t)(t182)))));
-#ifndef __cplusplus
   extern float (fg329q_ld_f32)(uint64_t);
-#endif
   t184 = fg329q_ld_f32(t183);
   v29 = ((float)(t184));
   t185 = ((uint64_t)(v2));
@@ -1385,17 +1347,13 @@ label25:;
   t187 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(4))))));
   t188 = ((uint64_t)(((uint64_t)((uint64_t)(t186) * (uint64_t)(t187)))));
   t189 = ((uint64_t)(((uint64_t)((uint64_t)(t185) + (uint64_t)(t188)))));
-#ifndef __cplusplus
   extern float (fg329q_ld_f32)(uint64_t);
-#endif
   t190 = fg329q_ld_f32(t189);
   v30 = ((float)(t190));
   t191 = ((uint64_t)(v3));
   t192 = ((uint64_t)(((uint64_t)(v6))));
   t193 = ((uint64_t)(((uint64_t)((uint64_t)(t191) + (uint64_t)(t192)))));
-#ifndef __cplusplus
   extern int64_t (fg329q_ld_u8)(uint64_t);
-#endif
   t194 = fg329q_ld_u8(t193);
   v31 = ((int64_t)(t194));
   t195 = ((float)(v22));
@@ -1430,9 +1388,7 @@ label25:;
   t217 = ((float)(((t215) * (t216))));
   t218 = ((float)(v32));
   t219 = ((float)(((t217) / (t218))));
-#ifndef __cplusplus
   extern int64_t (fg329q_nearest)(float);
-#endif
   t220 = fg329q_nearest(t219);
   t221 = ((int64_t)(t220));
   v34 = fg329q_fn_7(t214, t221, base + 0);
@@ -1473,9 +1429,7 @@ label25:;
   t249 = ((uint64_t)(((uint64_t)(v6))));
   t250 = ((uint64_t)(((uint64_t)((uint64_t)(t248) + (uint64_t)(t249)))));
   t251 = ((int64_t)(v34));
-#ifndef __cplusplus
   extern void (fg329q_st_u8)(uint64_t, int64_t);
-#endif
   fg329q_st_u8(t250, t251);
   v22 = ((float)(v32));
   v23 = ((float)(v33));

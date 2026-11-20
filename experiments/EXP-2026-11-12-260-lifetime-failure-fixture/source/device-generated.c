@@ -336,12 +336,6 @@ GS_LIBM float gs_logf(float x) GS_LIBM1(logf)
 GS_LIBM float gs_log2f(float x) GS_LIBM1(log2f)
 GS_LIBM float gs_log10f(float x) GS_LIBM1(log10f)
 GS_LIBM float gs_powf(float x, float y) GS_LIBM2(powf)
-#if defined(__CUDACC__)
-static __host__ __device__ double gs_exp_cuda(double x) { return exp(x); }
-static __host__ __device__ float gs_expf_cuda(float x) { return expf(x); }
-#define gs_exp(x) gs_exp_cuda(x)
-#define gs_expf(x) gs_expf_cuda(x)
-#endif
 /* std's popcount, clz and ctz (64 for zero): the instruction where the C
    compiler has one, and counting under TinyCC. MSVC's popcount is an
    instruction past x86-64's baseline, which /arch:AVX and up promise. */
@@ -671,9 +665,7 @@ static void gg_function_2(uint8_t p0, int64_t p1, int64_t base) {
   if (t1) {
   {
   t2 = ((int64_t)(v1));
-#ifndef __cplusplus
   extern void (fg195v_fail)(int64_t);
-#endif
   fg195v_fail(t2);
   }
   }
@@ -910,44 +902,32 @@ static void gg_function_1(int64_t p0, int64_t p1, int64_t p2, int64_t p3, uint64
   t57 = ((uint64_t)(v4));
   t58 = ((int64_t)(((int64_t)UINT64_C(0))));
   t59 = ((int64_t)(v8));
-#ifndef __cplusplus
   extern void (fg195v_st_i64)(uint64_t, int64_t, int64_t);
-#endif
   fg195v_st_i64(t57, t58, t59);
   t60 = ((uint64_t)(v4));
   t61 = ((int64_t)(((int64_t)UINT64_C(8))));
   t62 = ((int64_t)(v10));
-#ifndef __cplusplus
   extern void (fg195v_st_i64)(uint64_t, int64_t, int64_t);
-#endif
   fg195v_st_i64(t60, t61, t62);
   t63 = ((uint64_t)(v4));
   t64 = ((int64_t)(((int64_t)UINT64_C(16))));
   t65 = ((int64_t)(v9));
-#ifndef __cplusplus
   extern void (fg195v_st_i64)(uint64_t, int64_t, int64_t);
-#endif
   fg195v_st_i64(t63, t64, t65);
   t66 = ((uint64_t)(v4));
   t67 = ((int64_t)(((int64_t)UINT64_C(24))));
   t68 = ((int64_t)(v11));
-#ifndef __cplusplus
   extern void (fg195v_st_i64)(uint64_t, int64_t, int64_t);
-#endif
   fg195v_st_i64(t66, t67, t68);
   t69 = ((uint64_t)(v4));
   t70 = ((int64_t)(((int64_t)UINT64_C(32))));
   t71 = ((int64_t)(v6));
-#ifndef __cplusplus
   extern void (fg195v_st_i64)(uint64_t, int64_t, int64_t);
-#endif
   fg195v_st_i64(t69, t70, t71);
   t72 = ((uint64_t)(v4));
   t73 = ((int64_t)(((int64_t)UINT64_C(40))));
   t74 = ((int64_t)(v2));
-#ifndef __cplusplus
   extern void (fg195v_st_i64)(uint64_t, int64_t, int64_t);
-#endif
   fg195v_st_i64(t72, t73, t74);
   }
 }

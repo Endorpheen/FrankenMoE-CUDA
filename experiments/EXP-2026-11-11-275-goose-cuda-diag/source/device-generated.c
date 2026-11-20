@@ -545,9 +545,7 @@ static void gg_function_3(uint8_t p0, int64_t p1, int64_t base) {
   if (t1) {
   {
   t2 = ((int64_t)(v1));
-#ifndef __cplusplus
   extern void (fg275d_fail)(int64_t);
-#endif
   fg275d_fail(t2);
   }
   }
@@ -818,14 +816,10 @@ static void gg_function_7(uint64_t p0, uint64_t p1, int64_t p2, int64_t p3, int6
   t42 = ((int64_t)(v14));
   t43 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(2))))));
   t44 = ((uint64_t)(((uint64_t)(((int64_t)((uint64_t)(t42) * (uint64_t)(t43)))))));
-#ifndef __cplusplus
   extern uint32_t (fg275d_ld_u16)(uint64_t, uint64_t);
-#endif
   t45 = fg275d_ld_u16(t41, t44);
   t46 = ((uint32_t)(t45));
-#ifndef __cplusplus
   extern void (fg275d_st_u16)(uint64_t, uint64_t, uint32_t);
-#endif
   fg275d_st_u16(t37, t40, t46);
   }
   } else {
@@ -835,9 +829,7 @@ static void gg_function_7(uint64_t p0, uint64_t p1, int64_t p2, int64_t p3, int6
   t49 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(2))))));
   t50 = ((uint64_t)(((uint64_t)(((int64_t)((uint64_t)(t48) * (uint64_t)(t49)))))));
   t51 = ((uint32_t)(((uint32_t)(((int64_t)UINT64_C(0))))));
-#ifndef __cplusplus
   extern void (fg275d_st_u16)(uint64_t, uint64_t, uint32_t);
-#endif
   fg275d_st_u16(t47, t50, t51);
   }
   }
@@ -980,14 +972,10 @@ static void gg_function_1(uint64_t p0, uint64_t p1, int64_t p2, int64_t p3, int6
   t42 = ((int64_t)(v14));
   t43 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(4))))));
   t44 = ((uint64_t)(((uint64_t)(((int64_t)((uint64_t)(t42) * (uint64_t)(t43)))))));
-#ifndef __cplusplus
   extern float (fg275d_ld_f32)(uint64_t, uint64_t);
-#endif
   t45 = fg275d_ld_f32(t41, t44);
   t46 = ((float)(t45));
-#ifndef __cplusplus
   extern void (fg275d_st_f32)(uint64_t, uint64_t, float);
-#endif
   fg275d_st_f32(t37, t40, t46);
   }
   } else {
@@ -997,9 +985,7 @@ static void gg_function_1(uint64_t p0, uint64_t p1, int64_t p2, int64_t p3, int6
   t49 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(4))))));
   t50 = ((uint64_t)(((uint64_t)(((int64_t)((uint64_t)(t48) * (uint64_t)(t49)))))));
   t51 = ((float)(((float)(gg_double_bits(UINT64_C(0))))));
-#ifndef __cplusplus
   extern void (fg275d_st_f32)(uint64_t, uint64_t, float);
-#endif
   fg275d_st_f32(t47, t50, t51);
   }
   }

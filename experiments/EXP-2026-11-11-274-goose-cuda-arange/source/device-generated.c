@@ -533,9 +533,7 @@ static void gg_function_2(uint8_t p0, int64_t p1, int64_t base) {
   if (t1) {
   {
   t2 = ((int64_t)(v1));
-#ifndef __cplusplus
   extern void (fg274d_fail)(int64_t);
-#endif
   fg274d_fail(t2);
   }
   }
@@ -592,9 +590,7 @@ static void gg_function_1(uint64_t p0, int64_t p1, float p2, float p3, int64_t p
   t13 = ((float)(((float)(v4))));
   t14 = ((float)(((t12) * (t13))));
   t15 = ((float)(((t11) + (t14))));
-#ifndef __cplusplus
   extern void (fg274d_st_f32)(uint64_t, uint64_t, float);
-#endif
   fg274d_st_f32(t7, t10, t15);
   }
 gg_done:;

@@ -656,9 +656,7 @@ static void gg_function_2(uint8_t p0, int64_t p1, int64_t base) {
   if (t1) {
   {
   t2 = ((int64_t)(v1));
-#ifndef __cplusplus
   extern void (fg202t_fail)(int64_t);
-#endif
   fg202t_fail(t2);
   }
   }

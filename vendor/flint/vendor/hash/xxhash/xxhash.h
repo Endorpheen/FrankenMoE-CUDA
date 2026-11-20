@@ -241,9 +241,6 @@
  * xxHash prototypes and implementation
  */
 
-#if defined (__cplusplus)
-extern "C" {
-#endif
 
 /* ****************************
  *  INLINE mode
@@ -334,7 +331,7 @@ extern "C" {
 #  undef XXH_PUBLIC_API
 #  if defined(__GNUC__)
 #    define XXH_PUBLIC_API static __inline __attribute__((__unused__))
-#  elif defined (__cplusplus) || (defined (__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L) /* C99 */)
+#elif 0 || (defined (__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)          )
 #    define XXH_PUBLIC_API static inline
 #  elif defined(_MSC_VER)
 #    define XXH_PUBLIC_API static __inline
@@ -586,9 +583,7 @@ typedef enum {
  */
 typedef uint32_t XXH32_hash_t;
 
-#elif !defined (__VMS) \
-  && (defined (__cplusplus) \
-  || (defined (__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L) /* C99 */) )
+#elif !defined (__VMS)    && (0    || (defined (__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)          ) )
 #   ifdef _AIX
 #     include <inttypes.h>
 #   else
@@ -810,11 +805,7 @@ XXH_PUBLIC_API XXH_PUREF XXH32_hash_t XXH32_hashFromCanonical(const XXH32_canoni
 /*! @endcond */
 
 /*! @cond Doxygen ignores this part */
-#if defined(__cplusplus) && defined(__has_cpp_attribute)
-# define XXH_HAS_CPP_ATTRIBUTE(x) __has_cpp_attribute(x)
-#else
 # define XXH_HAS_CPP_ATTRIBUTE(x) 0
-#endif
 /*! @endcond */
 
 /*! @cond Doxygen ignores this part */
@@ -864,9 +855,7 @@ XXH_PUBLIC_API XXH_PUREF XXH32_hash_t XXH32_hashFromCanonical(const XXH32_canoni
  * Not necessarily defined to `uint64_t` but functionally equivalent.
  */
 typedef uint64_t XXH64_hash_t;
-#elif !defined (__VMS) \
-  && (defined (__cplusplus) \
-  || (defined (__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L) /* C99 */) )
+#elif !defined (__VMS)    && (0    || (defined (__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)          ) )
 #   ifdef _AIX
 #     include <inttypes.h>
 #   else
@@ -1694,9 +1683,6 @@ struct XXH64_state_s {
     && (defined(_MSC_VER) && (_MSC_VER >= 1000) || !defined(_MSC_VER)) /* >= C11 */
 #  include <stdalign.h>
 #  define XXH_ALIGN(n)      alignas(n)
-#elif defined(__cplusplus) && (__cplusplus >= 201103L) /* >= C++11 */
-/* In C++ alignas() is a keyword */
-#  define XXH_ALIGN(n)      alignas(n)
 #elif defined(__GNUC__)
 #  define XXH_ALIGN(n)      __attribute__ ((aligned(n)))
 #elif defined(_MSC_VER)
@@ -1706,9 +1692,7 @@ struct XXH64_state_s {
 #endif
 
 /* Old GCC versions only accept the attribute after the type in structures. */
-#if !(defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L))   /* C11+ */ \
-    && ! (defined(__cplusplus) && (__cplusplus >= 201103L)) /* >= C++11 */ \
-    && defined(__GNUC__)
+#if !(defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L))                   && ! (0 && (0 >= 201103L))                     && defined(__GNUC__)
 #   define XXH_ALIGN_MEMBER(align, type) type XXH_ALIGN(align)
 #else
 #   define XXH_ALIGN_MEMBER(align, type) XXH_ALIGN(align) type
@@ -2414,8 +2398,7 @@ static void* XXH_memcpy(void* dest, const void* src, size_t size)
 #elif defined(_MSC_VER)  /* Visual Studio */
 #  define XXH_FORCE_INLINE static __forceinline
 #  define XXH_NO_INLINE static __declspec(noinline)
-#elif defined (__cplusplus) \
-  || (defined (__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L))   /* C99 */
+#elif 0    || (defined (__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L))
 #  define XXH_FORCE_INLINE static inline
 #  define XXH_NO_INLINE static
 #else
@@ -2464,8 +2447,6 @@ static void* XXH_memcpy(void* dest, const void* src, size_t size)
 #ifndef XXH_STATIC_ASSERT
 #  if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)    /* C11 */
 #    define XXH_STATIC_ASSERT_WITH_MESSAGE(c,m) do { _Static_assert((c),m); } while(0)
-#  elif defined(__cplusplus) && (__cplusplus >= 201103L)            /* C++11 */
-#    define XXH_STATIC_ASSERT_WITH_MESSAGE(c,m) do { static_assert((c),m); } while(0)
 #  else
 #    define XXH_STATIC_ASSERT_WITH_MESSAGE(c,m) do { struct xxh_sa { char x[(c) ? 1 : -1]; }; } while(0)
 #  endif
@@ -2505,9 +2486,7 @@ static void* XXH_memcpy(void* dest, const void* src, size_t size)
 /* *************************************
 *  Basic Types
 ***************************************/
-#if !defined (__VMS) \
- && (defined (__cplusplus) \
- || (defined (__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L) /* C99 */) )
+#if !defined (__VMS)   && (0   || (defined (__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)          ) )
 #   ifdef _AIX
 #     include <inttypes.h>
 #   else
@@ -3697,9 +3676,7 @@ XXH_PUBLIC_API XXH64_hash_t XXH64_hashFromCanonical(XXH_NOESCAPE const XXH64_can
 
 /* ===   Compiler specifics   === */
 
-#if ((defined(sun) || defined(__sun)) && __cplusplus) /* Solaris includes __STDC_VERSION__ with C++. Tested with GCC 5.5 */
-#  define XXH_RESTRICT   /* disable */
-#elif defined (__STDC_VERSION__) && __STDC_VERSION__ >= 199901L   /* >= C99 */
+#if defined (__STDC_VERSION__) && __STDC_VERSION__ >= 199901L   /* >= C99 */
 #  define XXH_RESTRICT   restrict
 #elif (defined (__GNUC__) && ((__GNUC__ > 3) || (__GNUC__ == 3 && __GNUC_MINOR__ >= 1))) \
    || (defined (__clang__)) \
@@ -4845,9 +4822,7 @@ XXH_FORCE_INLINE void XXH_writeLE64(void* dst, xxh_u64 v64)
  * However, several environments do not define __int64 type,
  * requiring a workaround.
  */
-#if !defined (__VMS) \
-  && (defined (__cplusplus) \
-  || (defined (__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L) /* C99 */) )
+#if !defined (__VMS)    && (0    || (defined (__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)          ) )
     typedef int64_t xxh_i64;
 #else
     /* the following type must have a width of 64-bit */
@@ -7088,6 +7063,3 @@ XXH3_generateSecret_fromSeed(XXH_NOESCAPE void* secretBuffer, XXH64_hash_t seed)
 #endif  /* XXH_IMPLEMENTATION */
 
 
-#if defined (__cplusplus)
-} /* extern "C" */
-#endif

@@ -577,9 +577,7 @@ static void gg_function_8(uint64_t p0, uint64_t p1, int64_t p2, int64_t p3, int6
   {
   t0 = ((uint64_t)(v1));
   t1 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
-#ifndef __cplusplus
   extern int64_t (fg297k_ld_i64)(uint64_t, int64_t);
-#endif
   t2 = fg297k_ld_i64(t0, t1);
   v7 = ((int64_t)(t2));
   t3 = ((uint64_t)(v0));
@@ -589,9 +587,7 @@ static void gg_function_8(uint64_t p0, uint64_t p1, int64_t p2, int64_t p3, int6
   t7 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(8))))));
   t8 = ((int64_t)(((int64_t)((uint64_t)(t6) * (uint64_t)(t7)))));
   t9 = ((int64_t)(v2));
-#ifndef __cplusplus
   extern void (fg297k_st_i64)(uint64_t, int64_t, int64_t);
-#endif
   fg297k_st_i64(t3, t8, t9);
   t10 = ((uint64_t)(v0));
   t11 = ((int64_t)(v7));
@@ -602,9 +598,7 @@ static void gg_function_8(uint64_t p0, uint64_t p1, int64_t p2, int64_t p3, int6
   t16 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(8))))));
   t17 = ((int64_t)(((int64_t)((uint64_t)(t15) * (uint64_t)(t16)))));
   t18 = ((int64_t)(v3));
-#ifndef __cplusplus
   extern void (fg297k_st_i64)(uint64_t, int64_t, int64_t);
-#endif
   fg297k_st_i64(t10, t17, t18);
   t19 = ((uint64_t)(v0));
   t20 = ((int64_t)(v7));
@@ -615,9 +609,7 @@ static void gg_function_8(uint64_t p0, uint64_t p1, int64_t p2, int64_t p3, int6
   t25 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(8))))));
   t26 = ((int64_t)(((int64_t)((uint64_t)(t24) * (uint64_t)(t25)))));
   t27 = ((int64_t)(v4));
-#ifndef __cplusplus
   extern void (fg297k_st_i64)(uint64_t, int64_t, int64_t);
-#endif
   fg297k_st_i64(t19, t26, t27);
   t28 = ((uint64_t)(v0));
   t29 = ((int64_t)(v7));
@@ -628,9 +620,7 @@ static void gg_function_8(uint64_t p0, uint64_t p1, int64_t p2, int64_t p3, int6
   t34 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(8))))));
   t35 = ((int64_t)(((int64_t)((uint64_t)(t33) * (uint64_t)(t34)))));
   t36 = ((int64_t)(v5));
-#ifndef __cplusplus
   extern void (fg297k_st_i64)(uint64_t, int64_t, int64_t);
-#endif
   fg297k_st_i64(t28, t35, t36);
   t37 = ((uint64_t)(v0));
   t38 = ((int64_t)(v7));
@@ -641,18 +631,14 @@ static void gg_function_8(uint64_t p0, uint64_t p1, int64_t p2, int64_t p3, int6
   t43 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(8))))));
   t44 = ((int64_t)(((int64_t)((uint64_t)(t42) * (uint64_t)(t43)))));
   t45 = ((int64_t)(v6));
-#ifndef __cplusplus
   extern void (fg297k_st_i64)(uint64_t, int64_t, int64_t);
-#endif
   fg297k_st_i64(t37, t44, t45);
   t46 = ((uint64_t)(v1));
   t47 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
   t48 = ((int64_t)(v7));
   t49 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
   t50 = ((int64_t)(((int64_t)((uint64_t)(t48) + (uint64_t)(t49)))));
-#ifndef __cplusplus
   extern void (fg297k_st_i64)(uint64_t, int64_t, int64_t);
-#endif
   fg297k_st_i64(t46, t47, t50);
   }
 gg_done:;
@@ -703,9 +689,7 @@ static int64_t gg_function_10(uint64_t p0, int64_t p1, int64_t base) {
   t2 = ((int64_t)(v1));
   t3 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(8))))));
   t4 = ((int64_t)(((int64_t)((uint64_t)(t2) * (uint64_t)(t3)))));
-#ifndef __cplusplus
   extern int64_t (fg297k_ld_i64)(uint64_t, int64_t);
-#endif
   t5 = fg297k_ld_i64(t1, t4);
   t0 = ((int64_t)(t5));
   goto gg_done;
@@ -1197,165 +1181,123 @@ static uint8_t gg_function_13(int64_t p0, int64_t base) {
   t1 = ((int64_t)(v0));
   t2 = ((int64_t)(((int64_t)UINT64_C(0))));
   t3 = ((int64_t)(((int64_t)UINT64_C(1))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t4 = fg297k_get(t1, t2, t3);
   v1 = ((uint64_t)(t4));
   t5 = ((int64_t)(v0));
   t6 = ((int64_t)(((int64_t)UINT64_C(0))));
   t7 = ((int64_t)(((int64_t)UINT64_C(2))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t8 = fg297k_get(t5, t6, t7);
   v2 = ((uint64_t)(t8));
   t9 = ((int64_t)(v0));
   t10 = ((int64_t)(((int64_t)UINT64_C(0))));
   t11 = ((int64_t)(((int64_t)UINT64_C(3))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t12 = fg297k_get(t9, t10, t11);
   v3 = ((int64_t)(((int64_t)(t12))));
   t13 = ((int64_t)(v0));
   t14 = ((int64_t)(((int64_t)UINT64_C(0))));
   t15 = ((int64_t)(((int64_t)UINT64_C(5))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t16 = fg297k_get(t13, t14, t15);
   v4 = ((int64_t)(((int64_t)(t16))));
   t17 = ((int64_t)(v0));
   t18 = ((int64_t)(((int64_t)UINT64_C(0))));
   t19 = ((int64_t)(((int64_t)UINT64_C(7))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t20 = fg297k_get(t17, t18, t19);
   v5 = ((int64_t)(((int64_t)(t20))));
   t21 = ((int64_t)(v0));
   t22 = ((int64_t)(((int64_t)UINT64_C(0))));
   t23 = ((int64_t)(((int64_t)UINT64_C(8))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t24 = fg297k_get(t21, t22, t23);
   v6 = ((int64_t)(((int64_t)(t24))));
   t25 = ((int64_t)(v0));
   t26 = ((int64_t)(((int64_t)UINT64_C(0))));
   t27 = ((int64_t)(((int64_t)UINT64_C(9))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t28 = fg297k_get(t25, t26, t27);
   v7 = ((int64_t)(((int64_t)(t28))));
   t29 = ((int64_t)(v0));
   t30 = ((int64_t)(((int64_t)UINT64_C(0))));
   t31 = ((int64_t)(((int64_t)UINT64_C(10))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t32 = fg297k_get(t29, t30, t31);
   v8 = ((int64_t)(((int64_t)(t32))));
   t33 = ((int64_t)(v0));
   t34 = ((int64_t)(((int64_t)UINT64_C(0))));
   t35 = ((int64_t)(((int64_t)UINT64_C(13))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t36 = fg297k_get(t33, t34, t35);
   v9 = ((uint64_t)(t36));
   t37 = ((int64_t)(v0));
   t38 = ((int64_t)(((int64_t)UINT64_C(1))));
   t39 = ((int64_t)(((int64_t)UINT64_C(0))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t40 = fg297k_get(t37, t38, t39);
   v10 = ((uint64_t)(t40));
   t41 = ((int64_t)(v0));
   t42 = ((int64_t)(((int64_t)UINT64_C(1))));
   t43 = ((int64_t)(((int64_t)UINT64_C(1))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t44 = fg297k_get(t41, t42, t43);
   v11 = ((uint64_t)(t44));
   t45 = ((int64_t)(v0));
   t46 = ((int64_t)(((int64_t)UINT64_C(1))));
   t47 = ((int64_t)(((int64_t)UINT64_C(2))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t48 = fg297k_get(t45, t46, t47);
   v12 = ((uint64_t)(t48));
   t49 = ((int64_t)(v0));
   t50 = ((int64_t)(((int64_t)UINT64_C(2))));
   t51 = ((int64_t)(((int64_t)UINT64_C(0))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t52 = fg297k_get(t49, t50, t51);
   v13 = ((uint64_t)(t52));
   t53 = ((int64_t)(v0));
   t54 = ((int64_t)(((int64_t)UINT64_C(2))));
   t55 = ((int64_t)(((int64_t)UINT64_C(1))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t56 = fg297k_get(t53, t54, t55);
   v14 = ((uint64_t)(t56));
   t57 = ((int64_t)(v0));
   t58 = ((int64_t)(((int64_t)UINT64_C(2))));
   t59 = ((int64_t)(((int64_t)UINT64_C(2))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t60 = fg297k_get(t57, t58, t59);
   v15 = ((uint64_t)(t60));
   t61 = ((int64_t)(v0));
   t62 = ((int64_t)(((int64_t)UINT64_C(3))));
   t63 = ((int64_t)(((int64_t)UINT64_C(0))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t64 = fg297k_get(t61, t62, t63);
   v16 = ((uint64_t)(t64));
   t65 = ((int64_t)(v0));
   t66 = ((int64_t)(((int64_t)UINT64_C(3))));
   t67 = ((int64_t)(((int64_t)UINT64_C(1))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t68 = fg297k_get(t65, t66, t67);
   v17 = ((uint64_t)(t68));
   t69 = ((int64_t)(v0));
   t70 = ((int64_t)(((int64_t)UINT64_C(3))));
   t71 = ((int64_t)(((int64_t)UINT64_C(4))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t72 = fg297k_get(t69, t70, t71);
   t73 = ((uint64_t)(t72));
   t74 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
-#ifndef __cplusplus
   extern int64_t (fg297k_ld_i64)(uint64_t, int64_t);
-#endif
   t75 = fg297k_ld_i64(t73, t74);
   v18 = ((int64_t)(t75));
   t76 = ((uint64_t)(v2));
   t77 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
   t78 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
-#ifndef __cplusplus
   extern void (fg297k_st_i64)(uint64_t, int64_t, int64_t);
-#endif
   fg297k_st_i64(t76, t77, t78);
   t79 = ((uint64_t)(v9));
   t80 = ((int64_t)(v18));
-#ifndef __cplusplus
   extern int64_t (fg297k_ld_i64)(uint64_t, int64_t);
-#endif
   t81 = fg297k_ld_i64(t79, t80);
   v19 = ((int64_t)(t81));
   t82 = ((int64_t)(v18));
@@ -1363,9 +1305,7 @@ static uint8_t gg_function_13(int64_t p0, int64_t base) {
   v18 = ((int64_t)(((int64_t)((uint64_t)(t82) + (uint64_t)(t83)))));
   t84 = ((uint64_t)(v9));
   t85 = ((int64_t)(v18));
-#ifndef __cplusplus
   extern int64_t (fg297k_ld_i64)(uint64_t, int64_t);
-#endif
   t86 = fg297k_ld_i64(t84, t85);
   v20 = ((int64_t)(t86));
   t87 = ((int64_t)(v18));
@@ -1379,24 +1319,18 @@ static uint8_t gg_function_13(int64_t p0, int64_t base) {
   t92 = ((int64_t)(v0));
   t93 = ((int64_t)(((int64_t)UINT64_C(3))));
   t94 = ((int64_t)(((int64_t)UINT64_C(4))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t95 = fg297k_get(t92, t93, t94);
   t96 = ((uint64_t)(t95));
   t97 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
   t98 = ((int64_t)(v18));
-#ifndef __cplusplus
   extern void (fg297k_st_i64)(uint64_t, int64_t, int64_t);
-#endif
   fg297k_st_i64(t96, t97, t98);
   t99 = ((int64_t)(v0));
   t100 = ((int64_t)(((int64_t)UINT64_C(4))));
   t101 = ((int64_t)(((int64_t)UINT64_C(0))));
   t102 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(0))))));
-#ifndef __cplusplus
   extern void (fg297k_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg297k_put(t99, t100, t101, t102);
   t0 = ((uint8_t)UINT64_C(1));
   goto gg_done;
@@ -1410,24 +1344,18 @@ static uint8_t gg_function_13(int64_t p0, int64_t base) {
   t106 = ((int64_t)(v0));
   t107 = ((int64_t)(((int64_t)UINT64_C(3))));
   t108 = ((int64_t)(((int64_t)UINT64_C(4))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t109 = fg297k_get(t106, t107, t108);
   t110 = ((uint64_t)(t109));
   t111 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
   t112 = ((int64_t)(v18));
-#ifndef __cplusplus
   extern void (fg297k_st_i64)(uint64_t, int64_t, int64_t);
-#endif
   fg297k_st_i64(t110, t111, t112);
   t113 = ((int64_t)(v0));
   t114 = ((int64_t)(((int64_t)UINT64_C(4))));
   t115 = ((int64_t)(((int64_t)UINT64_C(0))));
   t116 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(0))))));
-#ifndef __cplusplus
   extern void (fg297k_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg297k_put(t113, t114, t115, t116);
   t0 = ((uint8_t)UINT64_C(1));
   goto gg_done;
@@ -1441,24 +1369,18 @@ static uint8_t gg_function_13(int64_t p0, int64_t base) {
   t120 = ((int64_t)(v0));
   t121 = ((int64_t)(((int64_t)UINT64_C(3))));
   t122 = ((int64_t)(((int64_t)UINT64_C(4))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t123 = fg297k_get(t120, t121, t122);
   t124 = ((uint64_t)(t123));
   t125 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
   t126 = ((int64_t)(v18));
-#ifndef __cplusplus
   extern void (fg297k_st_i64)(uint64_t, int64_t, int64_t);
-#endif
   fg297k_st_i64(t124, t125, t126);
   t127 = ((int64_t)(v0));
   t128 = ((int64_t)(((int64_t)UINT64_C(4))));
   t129 = ((int64_t)(((int64_t)UINT64_C(0))));
   t130 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(0))))));
-#ifndef __cplusplus
   extern void (fg297k_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg297k_put(t127, t128, t129, t130);
   t0 = ((uint8_t)UINT64_C(1));
   goto gg_done;
@@ -1480,9 +1402,7 @@ label1:;
   {
   t139 = ((uint64_t)(v9));
   t140 = ((int64_t)(v18));
-#ifndef __cplusplus
   extern int64_t (fg297k_ld_i64)(uint64_t, int64_t);
-#endif
   t141 = fg297k_ld_i64(t139, t140);
   v22 = ((int64_t)(t141));
   t142 = ((int64_t)(v18));
@@ -1490,9 +1410,7 @@ label1:;
   v18 = ((int64_t)(((int64_t)((uint64_t)(t142) + (uint64_t)(t143)))));
   t144 = ((uint64_t)(v9));
   t145 = ((int64_t)(v18));
-#ifndef __cplusplus
   extern int64_t (fg297k_ld_i64)(uint64_t, int64_t);
-#endif
   t146 = fg297k_ld_i64(t144, t145);
   v23 = ((int64_t)(t146));
   t147 = ((int64_t)(v18));
@@ -1509,24 +1427,18 @@ label1:;
   t155 = ((int64_t)(v0));
   t156 = ((int64_t)(((int64_t)UINT64_C(3))));
   t157 = ((int64_t)(((int64_t)UINT64_C(4))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t158 = fg297k_get(t155, t156, t157);
   t159 = ((uint64_t)(t158));
   t160 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
   t161 = ((int64_t)(v18));
-#ifndef __cplusplus
   extern void (fg297k_st_i64)(uint64_t, int64_t, int64_t);
-#endif
   fg297k_st_i64(t159, t160, t161);
   t162 = ((int64_t)(v0));
   t163 = ((int64_t)(((int64_t)UINT64_C(4))));
   t164 = ((int64_t)(((int64_t)UINT64_C(0))));
   t165 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(0))))));
-#ifndef __cplusplus
   extern void (fg297k_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg297k_put(t162, t163, t164, t165);
   t0 = ((uint8_t)UINT64_C(1));
   goto gg_done;
@@ -1543,24 +1455,18 @@ label1:;
   t172 = ((int64_t)(v0));
   t173 = ((int64_t)(((int64_t)UINT64_C(3))));
   t174 = ((int64_t)(((int64_t)UINT64_C(4))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t175 = fg297k_get(t172, t173, t174);
   t176 = ((uint64_t)(t175));
   t177 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
   t178 = ((int64_t)(v18));
-#ifndef __cplusplus
   extern void (fg297k_st_i64)(uint64_t, int64_t, int64_t);
-#endif
   fg297k_st_i64(t176, t177, t178);
   t179 = ((int64_t)(v0));
   t180 = ((int64_t)(((int64_t)UINT64_C(4))));
   t181 = ((int64_t)(((int64_t)UINT64_C(0))));
   t182 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(0))))));
-#ifndef __cplusplus
   extern void (fg297k_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg297k_put(t179, t180, t181, t182);
   t0 = ((uint8_t)UINT64_C(1));
   goto gg_done;
@@ -1603,9 +1509,7 @@ label1:;
   {
   t209 = ((uint64_t)(v9));
   t210 = ((int64_t)(v18));
-#ifndef __cplusplus
   extern int64_t (fg297k_ld_i64)(uint64_t, int64_t);
-#endif
   t211 = fg297k_ld_i64(t209, t210);
   v24 = ((int64_t)(t211));
   t212 = ((int64_t)(v18));
@@ -1622,24 +1526,18 @@ label1:;
   t220 = ((int64_t)(v0));
   t221 = ((int64_t)(((int64_t)UINT64_C(3))));
   t222 = ((int64_t)(((int64_t)UINT64_C(4))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t223 = fg297k_get(t220, t221, t222);
   t224 = ((uint64_t)(t223));
   t225 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
   t226 = ((int64_t)(v18));
-#ifndef __cplusplus
   extern void (fg297k_st_i64)(uint64_t, int64_t, int64_t);
-#endif
   fg297k_st_i64(t224, t225, t226);
   t227 = ((int64_t)(v0));
   t228 = ((int64_t)(((int64_t)UINT64_C(4))));
   t229 = ((int64_t)(((int64_t)UINT64_C(0))));
   t230 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(0))))));
-#ifndef __cplusplus
   extern void (fg297k_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg297k_put(t227, t228, t229, t230);
   t0 = ((uint8_t)UINT64_C(1));
   goto gg_done;
@@ -1701,9 +1599,7 @@ label4:;
   {
   t266 = ((uint64_t)(v9));
   t267 = ((int64_t)(v18));
-#ifndef __cplusplus
   extern int64_t (fg297k_ld_i64)(uint64_t, int64_t);
-#endif
   t268 = fg297k_ld_i64(t266, t267);
   v25 = ((int64_t)(t268));
   t269 = ((int64_t)(v18));
@@ -1711,9 +1607,7 @@ label4:;
   v18 = ((int64_t)(((int64_t)((uint64_t)(t269) + (uint64_t)(t270)))));
   t271 = ((uint64_t)(v9));
   t272 = ((int64_t)(v18));
-#ifndef __cplusplus
   extern int64_t (fg297k_ld_i64)(uint64_t, int64_t);
-#endif
   t273 = fg297k_ld_i64(t271, t272);
   v26 = ((int64_t)(t273));
   t274 = ((int64_t)(v18));
@@ -1730,24 +1624,18 @@ label4:;
   t282 = ((int64_t)(v0));
   t283 = ((int64_t)(((int64_t)UINT64_C(3))));
   t284 = ((int64_t)(((int64_t)UINT64_C(4))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t285 = fg297k_get(t282, t283, t284);
   t286 = ((uint64_t)(t285));
   t287 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
   t288 = ((int64_t)(v18));
-#ifndef __cplusplus
   extern void (fg297k_st_i64)(uint64_t, int64_t, int64_t);
-#endif
   fg297k_st_i64(t286, t287, t288);
   t289 = ((int64_t)(v0));
   t290 = ((int64_t)(((int64_t)UINT64_C(4))));
   t291 = ((int64_t)(((int64_t)UINT64_C(0))));
   t292 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(0))))));
-#ifndef __cplusplus
   extern void (fg297k_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg297k_put(t289, t290, t291, t292);
   t0 = ((uint8_t)UINT64_C(1));
   goto gg_done;
@@ -1764,24 +1652,18 @@ label4:;
   t299 = ((int64_t)(v0));
   t300 = ((int64_t)(((int64_t)UINT64_C(3))));
   t301 = ((int64_t)(((int64_t)UINT64_C(4))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t302 = fg297k_get(t299, t300, t301);
   t303 = ((uint64_t)(t302));
   t304 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
   t305 = ((int64_t)(v18));
-#ifndef __cplusplus
   extern void (fg297k_st_i64)(uint64_t, int64_t, int64_t);
-#endif
   fg297k_st_i64(t303, t304, t305);
   t306 = ((int64_t)(v0));
   t307 = ((int64_t)(((int64_t)UINT64_C(4))));
   t308 = ((int64_t)(((int64_t)UINT64_C(0))));
   t309 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(0))))));
-#ifndef __cplusplus
   extern void (fg297k_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg297k_put(t306, t307, t308, t309);
   t0 = ((uint8_t)UINT64_C(1));
   goto gg_done;
@@ -1841,9 +1723,7 @@ label7:;
   {
   t342 = ((uint64_t)(v9));
   t343 = ((int64_t)(v18));
-#ifndef __cplusplus
   extern int64_t (fg297k_ld_i64)(uint64_t, int64_t);
-#endif
   t344 = fg297k_ld_i64(t342, t343);
   v27 = ((int64_t)(t344));
   t345 = ((int64_t)(v18));
@@ -1851,9 +1731,7 @@ label7:;
   v18 = ((int64_t)(((int64_t)((uint64_t)(t345) + (uint64_t)(t346)))));
   t347 = ((uint64_t)(v9));
   t348 = ((int64_t)(v18));
-#ifndef __cplusplus
   extern int64_t (fg297k_ld_i64)(uint64_t, int64_t);
-#endif
   t349 = fg297k_ld_i64(t347, t348);
   v28 = ((int64_t)(t349));
   t350 = ((int64_t)(v18));
@@ -1861,9 +1739,7 @@ label7:;
   v18 = ((int64_t)(((int64_t)((uint64_t)(t350) + (uint64_t)(t351)))));
   t352 = ((uint64_t)(v9));
   t353 = ((int64_t)(v18));
-#ifndef __cplusplus
   extern int64_t (fg297k_ld_i64)(uint64_t, int64_t);
-#endif
   t354 = fg297k_ld_i64(t352, t353);
   v29 = ((int64_t)(t354));
   t355 = ((int64_t)(v18));
@@ -1880,24 +1756,18 @@ label7:;
   t363 = ((int64_t)(v0));
   t364 = ((int64_t)(((int64_t)UINT64_C(3))));
   t365 = ((int64_t)(((int64_t)UINT64_C(4))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t366 = fg297k_get(t363, t364, t365);
   t367 = ((uint64_t)(t366));
   t368 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
   t369 = ((int64_t)(v18));
-#ifndef __cplusplus
   extern void (fg297k_st_i64)(uint64_t, int64_t, int64_t);
-#endif
   fg297k_st_i64(t367, t368, t369);
   t370 = ((int64_t)(v0));
   t371 = ((int64_t)(((int64_t)UINT64_C(4))));
   t372 = ((int64_t)(((int64_t)UINT64_C(0))));
   t373 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(0))))));
-#ifndef __cplusplus
   extern void (fg297k_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg297k_put(t370, t371, t372, t373);
   t0 = ((uint8_t)UINT64_C(1));
   goto gg_done;
@@ -1907,9 +1777,7 @@ label7:;
   t375 = ((int64_t)(v0));
   t376 = ((int64_t)(((int64_t)UINT64_C(3))));
   t377 = ((int64_t)(((int64_t)UINT64_C(2))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t378 = fg297k_get(t375, t376, t377);
   t379 = ((int64_t)(((int64_t)(t378))));
   t380 = ((t374) != (t379));
@@ -1918,24 +1786,18 @@ label7:;
   t381 = ((int64_t)(v0));
   t382 = ((int64_t)(((int64_t)UINT64_C(3))));
   t383 = ((int64_t)(((int64_t)UINT64_C(4))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t384 = fg297k_get(t381, t382, t383);
   t385 = ((uint64_t)(t384));
   t386 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
   t387 = ((int64_t)(v18));
-#ifndef __cplusplus
   extern void (fg297k_st_i64)(uint64_t, int64_t, int64_t);
-#endif
   fg297k_st_i64(t385, t386, t387);
   t388 = ((int64_t)(v0));
   t389 = ((int64_t)(((int64_t)UINT64_C(4))));
   t390 = ((int64_t)(((int64_t)UINT64_C(0))));
   t391 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(0))))));
-#ifndef __cplusplus
   extern void (fg297k_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg297k_put(t388, t389, t390, t391);
   t0 = ((uint8_t)UINT64_C(1));
   goto gg_done;
@@ -1949,24 +1811,18 @@ label7:;
   t395 = ((int64_t)(v0));
   t396 = ((int64_t)(((int64_t)UINT64_C(3))));
   t397 = ((int64_t)(((int64_t)UINT64_C(4))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t398 = fg297k_get(t395, t396, t397);
   t399 = ((uint64_t)(t398));
   t400 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
   t401 = ((int64_t)(v18));
-#ifndef __cplusplus
   extern void (fg297k_st_i64)(uint64_t, int64_t, int64_t);
-#endif
   fg297k_st_i64(t399, t400, t401);
   t402 = ((int64_t)(v0));
   t403 = ((int64_t)(((int64_t)UINT64_C(4))));
   t404 = ((int64_t)(((int64_t)UINT64_C(0))));
   t405 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(0))))));
-#ifndef __cplusplus
   extern void (fg297k_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg297k_put(t402, t403, t404, t405);
   t0 = ((uint8_t)UINT64_C(1));
   goto gg_done;
@@ -2022,32 +1878,24 @@ label8:;
   t432 = ((int64_t)(v0));
   t433 = ((int64_t)(((int64_t)UINT64_C(3))));
   t434 = ((int64_t)(((int64_t)UINT64_C(4))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t435 = fg297k_get(t432, t433, t434);
   t436 = ((uint64_t)(t435));
   t437 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
   t438 = ((int64_t)(v18));
-#ifndef __cplusplus
   extern void (fg297k_st_i64)(uint64_t, int64_t, int64_t);
-#endif
   fg297k_st_i64(t436, t437, t438);
   t439 = ((int64_t)(v0));
   t440 = ((int64_t)(((int64_t)UINT64_C(3))));
   t441 = ((int64_t)(((int64_t)UINT64_C(3))));
   t442 = ((uint64_t)(((uint64_t)(v18))));
-#ifndef __cplusplus
   extern void (fg297k_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg297k_put(t439, t440, t441, t442);
   t443 = ((int64_t)(v0));
   t444 = ((int64_t)(((int64_t)UINT64_C(4))));
   t445 = ((int64_t)(((int64_t)UINT64_C(0))));
   t446 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(1))))));
-#ifndef __cplusplus
   extern void (fg297k_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg297k_put(t443, t444, t445, t446);
   t0 = ((uint8_t)UINT64_C(1));
   goto gg_done;
@@ -2475,137 +2323,103 @@ static uint8_t gg_function_5(int64_t p0, int64_t base) {
   t1 = ((int64_t)(v0));
   t2 = ((int64_t)(((int64_t)UINT64_C(0))));
   t3 = ((int64_t)(((int64_t)UINT64_C(1))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t4 = fg297k_get(t1, t2, t3);
   v1 = ((uint64_t)(t4));
   t5 = ((int64_t)(v0));
   t6 = ((int64_t)(((int64_t)UINT64_C(0))));
   t7 = ((int64_t)(((int64_t)UINT64_C(2))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t8 = fg297k_get(t5, t6, t7);
   v2 = ((uint64_t)(t8));
   t9 = ((int64_t)(v0));
   t10 = ((int64_t)(((int64_t)UINT64_C(0))));
   t11 = ((int64_t)(((int64_t)UINT64_C(3))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t12 = fg297k_get(t9, t10, t11);
   v3 = ((int64_t)(((int64_t)(t12))));
   t13 = ((int64_t)(v0));
   t14 = ((int64_t)(((int64_t)UINT64_C(0))));
   t15 = ((int64_t)(((int64_t)UINT64_C(5))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t16 = fg297k_get(t13, t14, t15);
   v4 = ((int64_t)(((int64_t)(t16))));
   t17 = ((int64_t)(v0));
   t18 = ((int64_t)(((int64_t)UINT64_C(0))));
   t19 = ((int64_t)(((int64_t)UINT64_C(7))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t20 = fg297k_get(t17, t18, t19);
   v5 = ((int64_t)(((int64_t)(t20))));
   t21 = ((int64_t)(v0));
   t22 = ((int64_t)(((int64_t)UINT64_C(0))));
   t23 = ((int64_t)(((int64_t)UINT64_C(10))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t24 = fg297k_get(t21, t22, t23);
   v6 = ((int64_t)(((int64_t)(t24))));
   t25 = ((int64_t)(v0));
   t26 = ((int64_t)(((int64_t)UINT64_C(0))));
   t27 = ((int64_t)(((int64_t)UINT64_C(11))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t28 = fg297k_get(t25, t26, t27);
   v7 = ((int64_t)(((int64_t)(t28))));
   t29 = ((int64_t)(v0));
   t30 = ((int64_t)(((int64_t)UINT64_C(0))));
   t31 = ((int64_t)(((int64_t)UINT64_C(12))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t32 = fg297k_get(t29, t30, t31);
   v8 = ((uint64_t)(t32));
   t33 = ((int64_t)(v0));
   t34 = ((int64_t)(((int64_t)UINT64_C(1))));
   t35 = ((int64_t)(((int64_t)UINT64_C(0))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t36 = fg297k_get(t33, t34, t35);
   v9 = ((uint64_t)(t36));
   t37 = ((int64_t)(v0));
   t38 = ((int64_t)(((int64_t)UINT64_C(1))));
   t39 = ((int64_t)(((int64_t)UINT64_C(1))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t40 = fg297k_get(t37, t38, t39);
   v10 = ((uint64_t)(t40));
   t41 = ((int64_t)(v0));
   t42 = ((int64_t)(((int64_t)UINT64_C(1))));
   t43 = ((int64_t)(((int64_t)UINT64_C(2))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t44 = fg297k_get(t41, t42, t43);
   v11 = ((uint64_t)(t44));
   t45 = ((int64_t)(v0));
   t46 = ((int64_t)(((int64_t)UINT64_C(2))));
   t47 = ((int64_t)(((int64_t)UINT64_C(0))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t48 = fg297k_get(t45, t46, t47);
   v12 = ((uint64_t)(t48));
   t49 = ((int64_t)(v0));
   t50 = ((int64_t)(((int64_t)UINT64_C(2))));
   t51 = ((int64_t)(((int64_t)UINT64_C(1))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t52 = fg297k_get(t49, t50, t51);
   v13 = ((uint64_t)(t52));
   t53 = ((int64_t)(v0));
   t54 = ((int64_t)(((int64_t)UINT64_C(2))));
   t55 = ((int64_t)(((int64_t)UINT64_C(2))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t56 = fg297k_get(t53, t54, t55);
   v14 = ((uint64_t)(t56));
   t57 = ((int64_t)(v0));
   t58 = ((int64_t)(((int64_t)UINT64_C(3))));
   t59 = ((int64_t)(((int64_t)UINT64_C(0))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t60 = fg297k_get(t57, t58, t59);
   v15 = ((uint64_t)(t60));
   t61 = ((int64_t)(v0));
   t62 = ((int64_t)(((int64_t)UINT64_C(3))));
   t63 = ((int64_t)(((int64_t)UINT64_C(1))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t64 = fg297k_get(t61, t62, t63);
   v16 = ((uint64_t)(t64));
   t65 = ((uint64_t)(v2));
   t66 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
   t67 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
-#ifndef __cplusplus
   extern void (fg297k_st_i64)(uint64_t, int64_t, int64_t);
-#endif
   fg297k_st_i64(t65, t66, t67);
   t68 = ((uint64_t)(v1));
   t69 = ((uint64_t)(v2));
@@ -2869,9 +2683,7 @@ label16:;
   t242 = ((int64_t)(v0));
   t243 = ((int64_t)(((int64_t)UINT64_C(3))));
   t244 = ((int64_t)(((int64_t)UINT64_C(2))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t245 = fg297k_get(t242, t243, t244);
   t246 = ((int64_t)(((int64_t)(t245))));
   gg_function_7(t240, t241, t246, base + 0);
@@ -2906,9 +2718,7 @@ label22:;
   t264 = ((int64_t)(v0));
   t265 = ((int64_t)(((int64_t)UINT64_C(3))));
   t266 = ((int64_t)(((int64_t)UINT64_C(2))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t267 = fg297k_get(t264, t265, t266);
   v36 = ((int64_t)(((int64_t)(t267))));
   t268 = ((int64_t)(v34));
@@ -2975,9 +2785,7 @@ static void gg_function_3(uint8_t p0, int64_t p1, int64_t base) {
   if (t1) {
   {
   t2 = ((int64_t)(v1));
-#ifndef __cplusplus
   extern void (fg297k_fail)(int64_t);
-#endif
   fg297k_fail(t2);
   }
   }
@@ -3010,9 +2818,7 @@ static uint8_t gg_function_1(int64_t p0, int64_t base) {
   t1 = ((int64_t)(v0));
   t2 = ((int64_t)(((int64_t)UINT64_C(0))));
   t3 = ((int64_t)(((int64_t)UINT64_C(0))));
-#ifndef __cplusplus
   extern uint64_t (fg297k_get)(int64_t, int64_t, int64_t);
-#endif
   t4 = fg297k_get(t1, t2, t3);
   v1 = ((int64_t)(((int64_t)(t4))));
   t5 = ((int64_t)(v1));

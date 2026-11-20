@@ -513,9 +513,7 @@ static void gg_function_3(uint8_t p0, int64_t p1, int64_t base) {
   if (t1) {
   {
   t2 = ((int64_t)(v1));
-#ifndef __cplusplus
   extern void (fg286h_fail)(int64_t);
-#endif
   fg286h_fail(t2);
   }
   }
@@ -594,33 +592,25 @@ static uint8_t gg_function_1(int64_t p0, int64_t base) {
   t1 = ((int64_t)(v0));
   t2 = ((int64_t)(((int64_t)UINT64_C(0))));
   t3 = ((int64_t)(((int64_t)UINT64_C(0))));
-#ifndef __cplusplus
   extern uint64_t (fg286h_get)(int64_t, int64_t, int64_t);
-#endif
   t4 = fg286h_get(t1, t2, t3);
   v1 = ((uint64_t)(t4));
   t5 = ((int64_t)(v0));
   t6 = ((int64_t)(((int64_t)UINT64_C(0))));
   t7 = ((int64_t)(((int64_t)UINT64_C(1))));
-#ifndef __cplusplus
   extern uint64_t (fg286h_get)(int64_t, int64_t, int64_t);
-#endif
   t8 = fg286h_get(t5, t6, t7);
   v2 = ((uint64_t)(t8));
   t9 = ((int64_t)(v0));
   t10 = ((int64_t)(((int64_t)UINT64_C(0))));
   t11 = ((int64_t)(((int64_t)UINT64_C(2))));
-#ifndef __cplusplus
   extern uint64_t (fg286h_get)(int64_t, int64_t, int64_t);
-#endif
   t12 = fg286h_get(t9, t10, t11);
   v3 = ((int64_t)(((int64_t)(t12))));
   t13 = ((int64_t)(v0));
   t14 = ((int64_t)(((int64_t)UINT64_C(0))));
   t15 = ((int64_t)(((int64_t)UINT64_C(3))));
-#ifndef __cplusplus
   extern uint64_t (fg286h_get)(int64_t, int64_t, int64_t);
-#endif
   t16 = fg286h_get(t13, t14, t15);
   v4 = ((int64_t)(((int64_t)(t16))));
   t17 = ((uint64_t)(v1));
@@ -660,31 +650,23 @@ static uint8_t gg_function_1(int64_t p0, int64_t base) {
   t42 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(256))))));
   v5 = ((int64_t)(((int64_t)gg_div(t41, t42))));
   t43 = ((int64_t)(v0));
-#ifndef __cplusplus
   extern int64_t (fg286h_plan)(int64_t);
-#endif
   t44 = fg286h_plan(t43);
   v6 = ((int64_t)(t44));
   t45 = ((int64_t)(v6));
   t46 = ((int64_t)(((int64_t)UINT64_C(1))));
   t47 = ((int64_t)(((int64_t)UINT64_C(0))));
   t48 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(256))))));
-#ifndef __cplusplus
   extern void (fg286h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg286h_put(t45, t46, t47, t48);
   t49 = ((int64_t)(v6));
   t50 = ((int64_t)(((int64_t)UINT64_C(1))));
   t51 = ((int64_t)(((int64_t)UINT64_C(1))));
   t52 = ((uint64_t)(((uint64_t)(v5))));
-#ifndef __cplusplus
   extern void (fg286h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg286h_put(t49, t50, t51, t52);
   t53 = ((int64_t)(v0));
-#ifndef __cplusplus
   extern int64_t (fg286h_launch)(int64_t);
-#endif
   t54 = fg286h_launch(t53);
   t55 = ((int64_t)(t54));
   t56 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));

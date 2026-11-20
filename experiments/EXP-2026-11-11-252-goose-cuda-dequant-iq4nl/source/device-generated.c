@@ -740,9 +740,7 @@ static void gg_function_2(uint8_t p0, int64_t p1, int64_t base) {
   if (t1) {
   {
   t2 = ((int64_t)(v1));
-#ifndef __cplusplus
   extern void (fg252d_fail)(int64_t);
-#endif
   fg252d_fail(t2);
   }
   }
@@ -908,9 +906,7 @@ static void gg_function_1(uint64_t p0, uint64_t p1, int64_t p2, int64_t p3, int6
   v10 = ((int64_t)(((int64_t)((uint64_t)(t33) + (uint64_t)(t36)))));
   t37 = ((uint64_t)(v0));
   t38 = ((uint64_t)(((uint64_t)(v9))));
-#ifndef __cplusplus
   extern float (fg252d_ld_half)(uint64_t, uint64_t);
-#endif
   t39 = fg252d_ld_half(t37, t38);
   v11 = ((float)(t39));
   t40 = ((int64_t)(v9));
@@ -930,9 +926,7 @@ label1:;
   t49 = ((int64_t)(v12));
   t50 = ((int64_t)(v13));
   t51 = ((uint64_t)(((uint64_t)(((int64_t)((uint64_t)(t49) + (uint64_t)(t50)))))));
-#ifndef __cplusplus
   extern uint32_t (fg252d_ld_u8)(uint64_t, uint64_t);
-#endif
   t52 = fg252d_ld_u8(t48, t51);
   v14 = ((uint32_t)(t52));
   t53 = ((uint32_t)(v14));
@@ -952,9 +946,7 @@ label1:;
   t65 = ((float)(v11));
   t66 = ((float)(((float)(v15))));
   t67 = ((float)(((t65) * (t66))));
-#ifndef __cplusplus
   extern void (fg252d_st_f32)(uint64_t, uint64_t, float);
-#endif
   fg252d_st_f32(t59, t64, t67);
   t68 = ((uint64_t)(v1));
   t69 = ((int64_t)(v10));
@@ -967,9 +959,7 @@ label1:;
   t76 = ((float)(v11));
   t77 = ((float)(((float)(v16))));
   t78 = ((float)(((t76) * (t77))));
-#ifndef __cplusplus
   extern void (fg252d_st_f32)(uint64_t, uint64_t, float);
-#endif
   fg252d_st_f32(t68, t75, t78);
   t79 = ((int64_t)(v13));
   t80 = ((int64_t)(((int64_t)UINT64_C(1))));

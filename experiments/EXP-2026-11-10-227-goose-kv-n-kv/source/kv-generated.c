@@ -644,9 +644,7 @@ static void gg_function_2(uint8_t p0, int64_t p1, int64_t base) {
   if (t1) {
   {
   t2 = ((int64_t)(v1));
-#ifndef __cplusplus
   extern void (fg227n_fail)(int64_t);
-#endif
   fg227n_fail(t2);
   }
   }
@@ -779,16 +777,12 @@ label1:;
   {
   t13 = ((uint64_t)(v1));
   t14 = ((int64_t)(v6));
-#ifndef __cplusplus
   extern int64_t (fg227n_ld_i32)(uint64_t, int64_t);
-#endif
   t15 = fg227n_ld_i32(t13, t14);
   v7 = ((int64_t)(t15));
   t16 = ((uint64_t)(v2));
   t17 = ((int64_t)(v6));
-#ifndef __cplusplus
   extern int64_t (fg227n_ld_i32)(uint64_t, int64_t);
-#endif
   t18 = fg227n_ld_i32(t16, t17);
   v8 = ((int64_t)(t18));
   t19 = ((int64_t)(v7));

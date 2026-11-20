@@ -513,9 +513,7 @@ static void gg_function_3(uint8_t p0, int64_t p1, int64_t base) {
   if (t1) {
   {
   t2 = ((int64_t)(v1));
-#ifndef __cplusplus
   extern void (fg250h_fail)(int64_t);
-#endif
   fg250h_fail(t2);
   }
   }
@@ -578,25 +576,19 @@ static uint8_t gg_function_1(int64_t p0, int64_t base) {
   t1 = ((int64_t)(v0));
   t2 = ((int64_t)(((int64_t)UINT64_C(0))));
   t3 = ((int64_t)(((int64_t)UINT64_C(0))));
-#ifndef __cplusplus
   extern uint64_t (fg250h_get)(int64_t, int64_t, int64_t);
-#endif
   t4 = fg250h_get(t1, t2, t3);
   v1 = ((uint64_t)(t4));
   t5 = ((int64_t)(v0));
   t6 = ((int64_t)(((int64_t)UINT64_C(0))));
   t7 = ((int64_t)(((int64_t)UINT64_C(2))));
-#ifndef __cplusplus
   extern uint64_t (fg250h_get)(int64_t, int64_t, int64_t);
-#endif
   t8 = fg250h_get(t5, t6, t7);
   v2 = ((uint64_t)(t8));
   t9 = ((int64_t)(v0));
   t10 = ((int64_t)(((int64_t)UINT64_C(0))));
   t11 = ((int64_t)(((int64_t)UINT64_C(1))));
-#ifndef __cplusplus
   extern uint64_t (fg250h_get)(int64_t, int64_t, int64_t);
-#endif
   t12 = fg250h_get(t9, t10, t11);
   v3 = ((uint64_t)(t12));
   t13 = ((uint64_t)(v1));
@@ -622,31 +614,23 @@ static uint8_t gg_function_1(int64_t p0, int64_t base) {
   t28 = ((int64_t)(((int64_t)UINT64_C(22))));
   gg_function_3(t27, t28, base + 0);
   t29 = ((int64_t)(v0));
-#ifndef __cplusplus
   extern int64_t (fg250h_plan)(int64_t);
-#endif
   t30 = fg250h_plan(t29);
   v4 = ((int64_t)(t30));
   t31 = ((int64_t)(v4));
   t32 = ((int64_t)(((int64_t)UINT64_C(1))));
   t33 = ((int64_t)(((int64_t)UINT64_C(0))));
   t34 = ((uint64_t)(v3));
-#ifndef __cplusplus
   extern void (fg250h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg250h_put(t31, t32, t33, t34);
   t35 = ((int64_t)(v4));
   t36 = ((int64_t)(((int64_t)UINT64_C(1))));
   t37 = ((int64_t)(((int64_t)UINT64_C(1))));
   t38 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(64))))));
-#ifndef __cplusplus
   extern void (fg250h_put)(int64_t, int64_t, int64_t, uint64_t);
-#endif
   fg250h_put(t35, t36, t37, t38);
   t39 = ((int64_t)(v0));
-#ifndef __cplusplus
   extern int64_t (fg250h_launch)(int64_t);
-#endif
   t40 = fg250h_launch(t39);
   t41 = ((int64_t)(t40));
   t42 = ((int64_t)(((int64_t)UINT64_C(0))));

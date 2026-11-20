@@ -336,12 +336,6 @@ GS_LIBM float gs_logf(float x) GS_LIBM1(logf)
 GS_LIBM float gs_log2f(float x) GS_LIBM1(log2f)
 GS_LIBM float gs_log10f(float x) GS_LIBM1(log10f)
 GS_LIBM float gs_powf(float x, float y) GS_LIBM2(powf)
-#if defined(__CUDACC__)
-static __host__ __device__ double gs_exp_cuda(double x) { return exp(x); }
-static __host__ __device__ float gs_expf_cuda(float x) { return expf(x); }
-#define gs_exp(x) gs_exp_cuda(x)
-#define gs_expf(x) gs_expf_cuda(x)
-#endif
 /* std's popcount, clz and ctz (64 for zero): the instruction where the C
    compiler has one, and counting under TinyCC. MSVC's popcount is an
    instruction past x86-64's baseline, which /arch:AVX and up promise. */
@@ -771,9 +765,7 @@ label4:;
   t11 = ((int64_t)(v11));
   t12 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(4))))));
   t13 = ((uint64_t)(((uint64_t)(((int64_t)((uint64_t)(t11) * (uint64_t)(t12)))))));
-#ifndef __cplusplus
   extern int64_t (fg433b_ld_i32)(uint64_t, uint64_t);
-#endif
   t14 = fg433b_ld_i32(t10, t13);
   v12 = ((int64_t)(t14));
   t15 = ((int64_t)(v12));
@@ -790,9 +782,7 @@ label4:;
   t24 = ((int64_t)(((int64_t)((uint64_t)(t22) + (uint64_t)(t23)))));
   t25 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(4))))));
   t26 = ((uint64_t)(((uint64_t)(((int64_t)((uint64_t)(t24) * (uint64_t)(t25)))))));
-#ifndef __cplusplus
   extern float (fg433b_ld_f32)(uint64_t, uint64_t);
-#endif
   t27 = fg433b_ld_f32(t19, t26);
   t28 = ((float)(t27));
   v10 = ((float)(((t18) + (t28))));
@@ -813,9 +803,7 @@ label5:;
   t37 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(4))))));
   t38 = ((uint64_t)(((uint64_t)(((int64_t)((uint64_t)(t36) * (uint64_t)(t37)))))));
   t39 = ((float)(v10));
-#ifndef __cplusplus
   extern void (fg433b_st_f32)(uint64_t, uint64_t, float);
-#endif
   fg433b_st_f32(t31, t38, t39);
   t40 = ((int64_t)(v9));
   t41 = ((int64_t)(v8));

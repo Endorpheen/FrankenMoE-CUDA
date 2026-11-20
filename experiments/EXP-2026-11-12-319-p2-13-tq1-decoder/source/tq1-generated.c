@@ -336,12 +336,6 @@ GS_LIBM float gs_logf(float x) GS_LIBM1(logf)
 GS_LIBM float gs_log2f(float x) GS_LIBM1(log2f)
 GS_LIBM float gs_log10f(float x) GS_LIBM1(log10f)
 GS_LIBM float gs_powf(float x, float y) GS_LIBM2(powf)
-#if defined(__CUDACC__)
-static __host__ __device__ double gs_exp_cuda(double x) { return exp(x); }
-static __host__ __device__ float gs_expf_cuda(float x) { return expf(x); }
-#define gs_exp(x) gs_exp_cuda(x)
-#define gs_expf(x) gs_expf_cuda(x)
-#endif
 /* std's popcount, clz and ctz (64 for zero): the instruction where the C
    compiler has one, and counting under TinyCC. MSVC's popcount is an
    instruction past x86-64's baseline, which /arch:AVX and up promise. */
@@ -787,9 +781,7 @@ static void fg319q_fn_7(int64_t p0, int64_t p1, float p2, uint64_t p3, int64_t b
   t13 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
   t14 = ((float)(((float)(((int64_t)((uint64_t)(t12) - (uint64_t)(t13)))))));
   t15 = ((float)(((t11) * (t14))));
-#ifndef __cplusplus
   extern void (fg319q_st_f32)(uint64_t, float);
-#endif
   fg319q_st_f32(t10, t15);
   }
 }
@@ -897,9 +889,7 @@ static int64_t fg319q_fn_4(uint64_t p0, uint64_t p1, int64_t p2, int64_t base) {
   t5 = ((uint64_t)(v4));
   t6 = ((uint64_t)(((uint64_t)(((int64_t)UINT64_C(52))))));
   t7 = ((uint64_t)(((uint64_t)((uint64_t)(t5) + (uint64_t)(t6)))));
-#ifndef __cplusplus
   extern float (fg319q_ld_f16)(uint64_t);
-#endif
   t8 = fg319q_ld_f16(t7);
   v5 = ((float)(t8));
   t9 = ((uint64_t)(v4));
@@ -928,9 +918,7 @@ label4:;
   t21 = ((uint64_t)(v4));
   t22 = ((uint64_t)(((uint64_t)(v10))));
   t23 = ((uint64_t)(((uint64_t)((uint64_t)(t21) + (uint64_t)(t22)))));
-#ifndef __cplusplus
   extern int64_t (fg319q_ld_u8)(uint64_t);
-#endif
   t24 = fg319q_ld_u8(t23);
   t25 = ((int64_t)(t24));
   t26 = ((int64_t)(v9));
@@ -971,9 +959,7 @@ label10:;
   t43 = ((int64_t)(((int64_t)(v11))));
   t44 = ((uint64_t)(((uint64_t)(((int64_t)((uint64_t)(t42) + (uint64_t)(t43)))))));
   t45 = ((uint64_t)(((uint64_t)((uint64_t)(t41) + (uint64_t)(t44)))));
-#ifndef __cplusplus
   extern int64_t (fg319q_ld_u8)(uint64_t);
-#endif
   t46 = fg319q_ld_u8(t45);
   t47 = ((int64_t)(t46));
   t48 = ((int64_t)(v9));
@@ -1012,9 +998,7 @@ label16:;
   t63 = ((uint64_t)(v6));
   t64 = ((uint64_t)(((uint64_t)(v12))));
   t65 = ((uint64_t)(((uint64_t)((uint64_t)(t63) + (uint64_t)(t64)))));
-#ifndef __cplusplus
   extern int64_t (fg319q_ld_u8)(uint64_t);
-#endif
   t66 = fg319q_ld_u8(t65);
   t67 = ((int64_t)(t66));
   t68 = ((int64_t)(v9));
@@ -1056,9 +1040,7 @@ static void fg319q_fn_2(uint8_t p0, int64_t p1, int64_t base) {
   if (t1) {
   {
   t2 = ((int64_t)(v1));
-#ifndef __cplusplus
   extern void (fg319q_fail)(int64_t);
-#endif
   fg319q_fail(t2);
   }
   }

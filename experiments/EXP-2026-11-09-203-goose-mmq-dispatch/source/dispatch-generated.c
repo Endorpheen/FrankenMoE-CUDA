@@ -1247,9 +1247,7 @@ static void gg_function_3(uint8_t p0, int64_t p1, int64_t base) {
   if (t1) {
   {
   t2 = ((int64_t)(v1));
-#ifndef __cplusplus
   extern void (fg203d_fail)(int64_t);
-#endif
   fg203d_fail(t2);
   }
   }

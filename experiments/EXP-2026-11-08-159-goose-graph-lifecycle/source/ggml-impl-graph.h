@@ -16,7 +16,7 @@
 #include <arm_sve.h>
 #endif // __ARM_FEATURE_SVE
 
-#if defined(__ARM_NEON) && !defined(__CUDACC__) && !defined(__MUSACC__)
+#if defined(__ARM_NEON) && !0 && !defined(__MUSACC__)
 // if YCM cannot find <arm_neon.h>, make a symbolic link to it, for example:
 //
 //   $ ln -sfn /Library/Developer/CommandLineTools/usr/lib/clang/13.1.6/include/arm_neon.h ./src/
@@ -24,9 +24,6 @@
 #include <arm_neon.h>
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 void ggml_print_backtrace(void);
 
@@ -47,7 +44,6 @@ uint64_t ggml_graph_next_uid(void);
 // fall back to the _Static_assert C11 keyword.
 // if C99 - static_assert is noop
 // ref: https://stackoverflow.com/a/53923785/4039976
-#ifndef __cplusplus
     #ifndef static_assert
         #if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201100L)
             #define static_assert(cond, msg) _Static_assert(cond, msg)
@@ -55,7 +51,6 @@ uint64_t ggml_graph_next_uid(void);
             #define static_assert(cond, msg) struct global_scope_noop_trick
         #endif
     #endif
-#endif
 
 static inline int ggml_up32(int n) {
     return (n + 31) & ~31;
@@ -420,7 +415,7 @@ static inline float ggml_compute_fp16_to_fp32(ggml_fp16_t h) {
     const uint32_t two_w = w + w;
 
     const uint32_t exp_offset = UINT32_C(0xE0) << 23;
-#if (defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L) || defined(__GNUC__) && !defined(__STRICT_ANSI__)) && (!defined(__cplusplus) || __cplusplus >= 201703L)
+#if (defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L) || defined(__GNUC__) && !defined(__STRICT_ANSI__)) && (!0 || 0 >= 201703L)
     const float exp_scale = 0x1.0p-112f;
 #else
     const float exp_scale = fp32_from_bits(UINT32_C(0x7800000));
@@ -438,7 +433,7 @@ static inline float ggml_compute_fp16_to_fp32(ggml_fp16_t h) {
 }
 
 static inline ggml_fp16_t ggml_compute_fp32_to_fp16(float f) {
-#if (defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L) || defined(__GNUC__) && !defined(__STRICT_ANSI__)) && (!defined(__cplusplus) || __cplusplus >= 201703L)
+#if (defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L) || defined(__GNUC__) && !defined(__STRICT_ANSI__)) && (!0 || 0 >= 201703L)
     const float scale_to_inf = 0x1.0p+112f;
     const float scale_to_zero = 0x1.0p-110f;
 #else
@@ -774,43 +769,4 @@ static inline bool ggml_can_fuse_subgraph(const struct ggml_cgraph * cgraph,
     return ggml_can_fuse_subgraph_ext(cgraph, idxs, count, ops, outputs, num_outputs);
 }
 
-#ifdef __cplusplus
-}
-#endif
 
-#ifdef __cplusplus
-#include <array>
-#include <initializer_list>
-#include <vector>
-
-// nicer C++ syntax for ggml_can_fuse
-inline bool ggml_can_fuse(const struct ggml_cgraph * cgraph, int node_idx, std::initializer_list<enum ggml_op> ops) {
-    return ggml_can_fuse(cgraph, node_idx, ops.begin(), (int)ops.size());
-}
-
-inline bool ggml_can_fuse_subgraph(const struct ggml_cgraph *          cgraph,
-                                   int                                 start_idx,
-                                   std::initializer_list<enum ggml_op> ops,
-                                   std::initializer_list<int>          outputs = {}) {
-    return ggml_can_fuse_subgraph(cgraph, start_idx, ops.size(), ops.begin(), outputs.begin(), outputs.size());
-}
-
-// Return true if the edges in the graph match expectations.
-inline bool ggml_check_edges(const struct ggml_cgraph *                cgraph,
-                             int                                       start_idx,
-                             std::initializer_list<std::array<int, 3>> edges) {
-    for (const auto & edge : edges) {
-        int dst_node = edge[0];
-        int src_idx  = edge[1];
-        int src_node = edge[2];
-        if (cgraph->nodes[start_idx + dst_node]->src[src_idx] != cgraph->nodes[start_idx + src_node]) {
-            return false;
-        }
-    }
-    return true;
-}
-
-// expose GGUF internals for test code
-GGML_API size_t gguf_type_size(enum gguf_type type);
-GGML_API void gguf_write_to_buf(const struct gguf_context * ctx, std::vector<int8_t> & buf, bool only_meta);
-#endif // __cplusplus

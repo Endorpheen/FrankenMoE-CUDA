@@ -593,9 +593,7 @@ static void gg_function_2(uint8_t p0, int64_t p1, int64_t base) {
   if (t1) {
   {
   t2 = ((int64_t)(v1));
-#ifndef __cplusplus
   extern void (fg233c_fail)(int64_t);
-#endif
   fg233c_fail(t2);
   }
   }
@@ -658,9 +656,7 @@ label1:;
   {
   t10 = ((uint64_t)(v1));
   t11 = ((int64_t)(v3));
-#ifndef __cplusplus
   extern int64_t (fg233c_ld_i32)(uint64_t, int64_t);
-#endif
   t12 = fg233c_ld_i32(t10, t11);
   v4 = ((int64_t)(t12));
   t13 = ((int64_t)(v4));
@@ -726,9 +722,7 @@ static int64_t gg_function_5(int64_t p0, uint64_t p1, int64_t base) {
   }
   t10 = ((uint64_t)(v1));
   t11 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
-#ifndef __cplusplus
   extern int64_t (fg233c_ld_i32)(uint64_t, int64_t);
-#endif
   t12 = fg233c_ld_i32(t10, t11);
   t0 = ((int64_t)(t12));
   goto gg_done;
@@ -773,9 +767,7 @@ label1:;
   {
   t7 = ((uint64_t)(v1));
   t8 = ((int64_t)(v3));
-#ifndef __cplusplus
   extern int64_t (fg233c_ld_i32)(uint64_t, int64_t);
-#endif
   t9 = fg233c_ld_i32(t7, t8);
   t10 = ((int64_t)(t9));
   t11 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));

@@ -591,9 +591,7 @@ static void gg_function_2(uint8_t p0, int64_t p1, int64_t base) {
   if (t1) {
   {
   t2 = ((int64_t)(v1));
-#ifndef __cplusplus
   extern void (fg241u_fail)(int64_t);
-#endif
   fg241u_fail(t2);
   }
   }
@@ -768,9 +766,7 @@ label1:;
   {
   t22 = ((uint64_t)(v3));
   t23 = ((int64_t)(v12));
-#ifndef __cplusplus
   extern int64_t (fg241u_ld_i32)(uint64_t, int64_t);
-#endif
   t24 = fg241u_ld_i32(t22, t23);
   v13 = ((int64_t)(t24));
   t25 = ((int64_t)(v13));
@@ -781,9 +777,7 @@ label1:;
   t29 = ((int64_t)(v11));
   t30 = ((uint64_t)(v2));
   t31 = ((int64_t)(v13));
-#ifndef __cplusplus
   extern int64_t (fg241u_ld_i32)(uint64_t, int64_t);
-#endif
   t32 = fg241u_ld_i32(t30, t31);
   t33 = ((int64_t)(t32));
   v11 = ((int64_t)(((int64_t)((uint64_t)(t29) + (uint64_t)(t33)))));
@@ -894,44 +888,32 @@ label2:;
   t81 = ((uint64_t)(v10));
   t82 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
   t83 = ((int64_t)(v14));
-#ifndef __cplusplus
   extern void (fg241u_st_i64)(uint64_t, int64_t, int64_t);
-#endif
   fg241u_st_i64(t81, t82, t83);
   t84 = ((uint64_t)(v10));
   t85 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
   t86 = ((int64_t)(v15));
-#ifndef __cplusplus
   extern void (fg241u_st_i64)(uint64_t, int64_t, int64_t);
-#endif
   fg241u_st_i64(t84, t85, t86);
   t87 = ((uint64_t)(v10));
   t88 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(2))))));
   t89 = ((int64_t)(v16));
-#ifndef __cplusplus
   extern void (fg241u_st_i64)(uint64_t, int64_t, int64_t);
-#endif
   fg241u_st_i64(t87, t88, t89);
   t90 = ((uint64_t)(v10));
   t91 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(3))))));
   t92 = ((int64_t)(v17));
-#ifndef __cplusplus
   extern void (fg241u_st_i64)(uint64_t, int64_t, int64_t);
-#endif
   fg241u_st_i64(t90, t91, t92);
   t93 = ((uint64_t)(v10));
   t94 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(4))))));
   t95 = ((int64_t)(v18));
-#ifndef __cplusplus
   extern void (fg241u_st_i64)(uint64_t, int64_t, int64_t);
-#endif
   fg241u_st_i64(t93, t94, t95);
   t96 = ((uint64_t)(v10));
   t97 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(5))))));
   t98 = ((int64_t)(v19));
-#ifndef __cplusplus
   extern void (fg241u_st_i64)(uint64_t, int64_t, int64_t);
-#endif
   fg241u_st_i64(t96, t97, t98);
   t0 = ((int64_t)(v11));
   }

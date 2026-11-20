@@ -591,9 +591,7 @@ static void gg_function_2(uint8_t p0, int64_t p1, int64_t base) {
   if (t1) {
   {
   t2 = ((int64_t)(v1));
-#ifndef __cplusplus
   extern void (fg231a_fail)(int64_t);
-#endif
   fg231a_fail(t2);
   }
   }
@@ -755,9 +753,7 @@ static int64_t gg_function_1(int64_t p0, int64_t p1, int64_t p2, int64_t p3, int
   t37 = ((int64_t)(v6));
   t38 = ((int64_t)(v0));
   t39 = ((int64_t)(((int64_t)((uint64_t)(t37) + (uint64_t)(t38)))));
-#ifndef __cplusplus
   extern void (fg231a_st_i64)(uint64_t, int64_t);
-#endif
   fg231a_st_i64(t36, t39);
   t0 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
   goto gg_done;

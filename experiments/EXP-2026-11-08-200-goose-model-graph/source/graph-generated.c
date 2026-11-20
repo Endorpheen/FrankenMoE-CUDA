@@ -706,9 +706,7 @@ static void gg_function_2(uint8_t p0, int64_t p1, int64_t base) {
   if (t1) {
   {
   t2 = ((int64_t)(v1));
-#ifndef __cplusplus
   extern void (fg200g_fail)(int64_t);
-#endif
   fg200g_fail(t2);
   }
   }
@@ -1893,9 +1891,7 @@ static int64_t gg_function_1(int64_t p0, int64_t p1, uint64_t p2, int64_t base) 
   }
   t13 = ((uint64_t)(v2));
   t14 = ((int64_t)(v0));
-#ifndef __cplusplus
   extern int64_t (fg200g_ld_u32)(uint64_t, int64_t);
-#endif
   t15 = fg200g_ld_u32(t13, t14);
   v3 = ((int64_t)(t15));
   t16 = ((int64_t)(v3));

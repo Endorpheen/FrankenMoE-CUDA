@@ -528,9 +528,7 @@ static void gg_function_2(uint8_t p0, int64_t p1, int64_t base) {
   if (t1) {
   {
   t2 = ((int64_t)(v1));
-#ifndef __cplusplus
   extern void (fg205g_fail)(int64_t);
-#endif
   fg205g_fail(t2);
   }
   }
@@ -720,9 +718,7 @@ label4:;
   t43 = ((int64_t)(((int64_t)UINT64_C(1))));
   v6 = ((int64_t)((uint64_t)(t42) + (uint64_t)(t43)));
   t44 = ((int64_t)(v11));
-#ifndef __cplusplus
   extern int64_t (fg205g_can_use)(int64_t);
-#endif
   t45 = fg205g_can_use(t44);
   t46 = ((int64_t)(t45));
   t47 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
@@ -734,9 +730,7 @@ label4:;
   t51 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(8))))));
   t52 = ((int64_t)(((int64_t)((uint64_t)(t50) * (uint64_t)(t51)))));
   t53 = ((int64_t)(v11));
-#ifndef __cplusplus
   extern void (fg205g_st_i64)(uint64_t, int64_t, int64_t);
-#endif
   fg205g_st_i64(t49, t52, t53);
   t54 = v7;
   t55 = ((int64_t)(((int64_t)UINT64_C(1))));

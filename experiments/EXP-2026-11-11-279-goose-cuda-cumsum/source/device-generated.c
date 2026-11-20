@@ -563,9 +563,7 @@ label1:;
   {
   t3 = ((float)(v3));
   t4 = ((int32_t)(((int32_t)(v4))));
-#ifndef __cplusplus
   extern float (fg279d_shfl_up)(float, int32_t);
-#endif
   t5 = fg279d_shfl_up(t3, t4);
   v5 = ((float)(t5));
   t6 = ((int64_t)(v1));
@@ -603,9 +601,7 @@ static void gg_function_2(uint8_t p0, int64_t p1, int64_t base) {
   if (t1) {
   {
   t2 = ((int64_t)(v1));
-#ifndef __cplusplus
   extern void (fg279d_fail)(int64_t);
-#endif
   fg279d_fail(t2);
   }
   }
@@ -976,9 +972,7 @@ static void gg_function_1(uint64_t p0, uint64_t p1, int64_t p2, int64_t p3, int6
   t12 = ((int64_t)(v12));
   t13 = ((int64_t)(v17));
   v20 = ((int64_t)(((int64_t)gg_div(t12, t13))));
-#ifndef __cplusplus
   extern uint64_t (fg279d_smem)(void);
-#endif
   t14 = fg279d_smem();
   v21 = ((uint64_t)(t14));
   v22 = ((uint64_t)(v21));
@@ -1010,15 +1004,11 @@ static void gg_function_1(uint64_t p0, uint64_t p1, int64_t p2, int64_t p3, int6
   {
   t36 = ((uint64_t)(v24));
   t37 = ((float)(((float)(gg_double_bits(UINT64_C(0))))));
-#ifndef __cplusplus
   extern void (fg279d_sstore)(uint64_t, float);
-#endif
   fg279d_sstore(t36, t37);
   }
   }
-#ifndef __cplusplus
   extern void (fg279d_sync)(void);
-#endif
   fg279d_sync();
   t38 = ((int64_t)(v16));
   t39 = ((int64_t)(((int64_t)(v5))));
@@ -1089,9 +1079,7 @@ label1:;
   t79 = ((int64_t)(((int64_t)((uint64_t)(t77) + (uint64_t)(t78)))));
   t80 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(4))))));
   t81 = ((uint64_t)(((uint64_t)(((int64_t)((uint64_t)(t79) * (uint64_t)(t80)))))));
-#ifndef __cplusplus
   extern float (fg279d_ld_f32)(uint64_t, uint64_t);
-#endif
   t82 = fg279d_ld_f32(t76, t81);
   v30 = ((float)(t82));
   }
@@ -1113,9 +1101,7 @@ label1:;
   t94 = ((int64_t)(((int64_t)((uint64_t)(t92) + (uint64_t)(t93)))));
   t95 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(4))))));
   t96 = ((uint64_t)(((uint64_t)(((int64_t)((uint64_t)(t94) * (uint64_t)(t95)))))));
-#ifndef __cplusplus
   extern float (fg279d_ld_f32)(uint64_t, uint64_t);
-#endif
   t97 = fg279d_ld_f32(t89, t96);
   t98 = ((float)(t97));
   v31 = ((float)(((t88) + (t98))));
@@ -1138,9 +1124,7 @@ label1:;
   t110 = ((int64_t)(((int64_t)((uint64_t)(t108) + (uint64_t)(t109)))));
   t111 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(4))))));
   t112 = ((uint64_t)(((uint64_t)(((int64_t)((uint64_t)(t110) * (uint64_t)(t111)))))));
-#ifndef __cplusplus
   extern float (fg279d_ld_f32)(uint64_t, uint64_t);
-#endif
   t113 = fg279d_ld_f32(t105, t112);
   t114 = ((float)(t113));
   v32 = ((float)(((t104) + (t114))));
@@ -1163,9 +1147,7 @@ label1:;
   t126 = ((int64_t)(((int64_t)((uint64_t)(t124) + (uint64_t)(t125)))));
   t127 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(4))))));
   t128 = ((uint64_t)(((uint64_t)(((int64_t)((uint64_t)(t126) * (uint64_t)(t127)))))));
-#ifndef __cplusplus
   extern float (fg279d_ld_f32)(uint64_t, uint64_t);
-#endif
   t129 = fg279d_ld_f32(t121, t128);
   t130 = ((float)(t129));
   v33 = ((float)(((t120) + (t130))));
@@ -1190,9 +1172,7 @@ label1:;
   t140 = ((uint64_t)(((uint64_t)(((int64_t)((uint64_t)(t138) * (uint64_t)(t139)))))));
   t141 = ((uint64_t)(((uint64_t)((uint64_t)(t137) + (uint64_t)(t140)))));
   t142 = ((float)(v34));
-#ifndef __cplusplus
   extern void (fg279d_sstore)(uint64_t, float);
-#endif
   fg279d_sstore(t141, t142);
   t143 = ((int64_t)(v18));
   t144 = ((int64_t)(v17));
@@ -1207,15 +1187,11 @@ label1:;
   t151 = ((uint64_t)(((uint64_t)(((int64_t)((uint64_t)(t149) * (uint64_t)(t150)))))));
   t152 = ((uint64_t)(((uint64_t)((uint64_t)(t148) + (uint64_t)(t151)))));
   t153 = ((float)(v34));
-#ifndef __cplusplus
   extern void (fg279d_sstore)(uint64_t, float);
-#endif
   fg279d_sstore(t152, t153);
   }
   }
-#ifndef __cplusplus
   extern void (fg279d_sync)(void);
-#endif
   fg279d_sync();
   t154 = ((int64_t)(v19));
   t155 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
@@ -1233,9 +1209,7 @@ label1:;
   t162 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(4))))));
   t163 = ((uint64_t)(((uint64_t)(((int64_t)((uint64_t)(t161) * (uint64_t)(t162)))))));
   t164 = ((uint64_t)(((uint64_t)((uint64_t)(t160) + (uint64_t)(t163)))));
-#ifndef __cplusplus
   extern float (fg279d_sload)(uint64_t);
-#endif
   t165 = fg279d_sload(t164);
   v35 = ((float)(t165));
   }
@@ -1258,9 +1232,7 @@ label1:;
   t177 = ((float)(v36));
   t178 = ((float)(v35));
   t179 = ((float)(((t177) - (t178))));
-#ifndef __cplusplus
   extern void (fg279d_sstore)(uint64_t, float);
-#endif
   fg279d_sstore(t176, t179);
   }
   }
@@ -1273,22 +1245,16 @@ label1:;
   {
   t185 = ((uint64_t)(v25));
   t186 = ((float)(v36));
-#ifndef __cplusplus
   extern void (fg279d_sstore)(uint64_t, float);
-#endif
   fg279d_sstore(t185, t186);
   }
   }
   }
   }
-#ifndef __cplusplus
   extern void (fg279d_sync)(void);
-#endif
   fg279d_sync();
   t187 = ((uint64_t)(v24));
-#ifndef __cplusplus
   extern float (fg279d_sload)(uint64_t);
-#endif
   t188 = fg279d_sload(t187);
   v37 = ((float)(t188));
   t189 = ((uint64_t)(v22));
@@ -1296,9 +1262,7 @@ label1:;
   t191 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(4))))));
   t192 = ((uint64_t)(((uint64_t)(((int64_t)((uint64_t)(t190) * (uint64_t)(t191)))))));
   t193 = ((uint64_t)(((uint64_t)((uint64_t)(t189) + (uint64_t)(t192)))));
-#ifndef __cplusplus
   extern float (fg279d_sload)(uint64_t);
-#endif
   t194 = fg279d_sload(t193);
   v38 = ((float)(t194));
   t195 = ((uint64_t)(v23));
@@ -1306,9 +1270,7 @@ label1:;
   t197 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(4))))));
   t198 = ((uint64_t)(((uint64_t)(((int64_t)((uint64_t)(t196) * (uint64_t)(t197)))))));
   t199 = ((uint64_t)(((uint64_t)((uint64_t)(t195) + (uint64_t)(t198)))));
-#ifndef __cplusplus
   extern float (fg279d_sload)(uint64_t);
-#endif
   t200 = fg279d_sload(t199);
   v39 = ((float)(t200));
   t201 = ((float)(v38));
@@ -1332,9 +1294,7 @@ label1:;
   t216 = ((float)(v30));
   t217 = ((float)(v40));
   t218 = ((float)(((t216) + (t217))));
-#ifndef __cplusplus
   extern void (fg279d_st_f32)(uint64_t, uint64_t, float);
-#endif
   fg279d_st_f32(t210, t215, t218);
   }
   }
@@ -1356,9 +1316,7 @@ label1:;
   t232 = ((float)(v31));
   t233 = ((float)(v40));
   t234 = ((float)(((t232) + (t233))));
-#ifndef __cplusplus
   extern void (fg279d_st_f32)(uint64_t, uint64_t, float);
-#endif
   fg279d_st_f32(t224, t231, t234);
   }
   }
@@ -1380,9 +1338,7 @@ label1:;
   t248 = ((float)(v32));
   t249 = ((float)(v40));
   t250 = ((float)(((t248) + (t249))));
-#ifndef __cplusplus
   extern void (fg279d_st_f32)(uint64_t, uint64_t, float);
-#endif
   fg279d_st_f32(t240, t247, t250);
   }
   }
@@ -1404,15 +1360,11 @@ label1:;
   t264 = ((float)(v33));
   t265 = ((float)(v40));
   t266 = ((float)(((t264) + (t265))));
-#ifndef __cplusplus
   extern void (fg279d_st_f32)(uint64_t, uint64_t, float);
-#endif
   fg279d_st_f32(t256, t263, t266);
   }
   }
-#ifndef __cplusplus
   extern void (fg279d_sync)(void);
-#endif
   fg279d_sync();
   t267 = ((int64_t)(v13));
   t268 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(0))))));
@@ -1421,21 +1373,15 @@ label1:;
   {
   t270 = ((uint64_t)(v24));
   t271 = ((uint64_t)(v24));
-#ifndef __cplusplus
   extern float (fg279d_sload)(uint64_t);
-#endif
   t272 = fg279d_sload(t271);
   t273 = ((float)(t272));
   t274 = ((uint64_t)(v25));
-#ifndef __cplusplus
   extern float (fg279d_sload)(uint64_t);
-#endif
   t275 = fg279d_sload(t274);
   t276 = ((float)(t275));
   t277 = ((float)(((t273) + (t276))));
-#ifndef __cplusplus
   extern void (fg279d_sstore)(uint64_t, float);
-#endif
   fg279d_sstore(t270, t277);
   }
   }

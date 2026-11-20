@@ -559,9 +559,7 @@ static void gg_function_2(uint8_t p0, int64_t p1, int64_t base) {
   if (t1) {
   {
   t2 = ((int64_t)(v1));
-#ifndef __cplusplus
   extern void (fg213p_fail)(int64_t);
-#endif
   fg213p_fail(t2);
   }
   }
@@ -632,9 +630,7 @@ label1:;
   }
   t16 = ((uint64_t)(v0));
   t17 = ((int64_t)(v3));
-#ifndef __cplusplus
   extern int64_t (fg213p_ld_u8)(uint64_t, int64_t);
-#endif
   t18 = fg213p_ld_u8(t16, t17);
   t19 = ((int64_t)(t18));
   t20 = gg_function_5(t19, base + 0);
@@ -747,14 +743,10 @@ label1:;
   t24 = ((int64_t)(v5));
   t25 = ((int64_t)(v7));
   t26 = ((int64_t)(((int64_t)((uint64_t)(t24) + (uint64_t)(t25)))));
-#ifndef __cplusplus
   extern int64_t (fg213p_ld_u8)(uint64_t, int64_t);
-#endif
   t27 = fg213p_ld_u8(t23, t26);
   t28 = ((int64_t)(t27));
-#ifndef __cplusplus
   extern void (fg213p_st_u8)(uint64_t, int64_t, int64_t);
-#endif
   fg213p_st_u8(t21, t22, t28);
   t29 = v7;
   t30 = ((int64_t)(((int64_t)UINT64_C(1))));

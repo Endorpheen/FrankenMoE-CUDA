@@ -35,9 +35,7 @@ static int64_t fg272s_gg_function_5(uint64_t p0, int64_t p1, int64_t base) {
   t2 = ((int64_t)(v1));
   t3 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(8))))));
   t4 = ((int64_t)(((int64_t)((uint64_t)(t2) * (uint64_t)(t3)))));
-#ifndef __cplusplus
   extern int64_t (fg272s_ld_i64)(uint64_t, int64_t);
-#endif
   t5 = fg272s_ld_i64(t1, t4);
   t0 = ((int64_t)(t5));
   goto fg272s_gg_done;
@@ -59,9 +57,7 @@ static void fg272s_gg_function_2(uint8_t p0, int64_t p1, int64_t base) {
   if (t1) {
   {
   t2 = ((int64_t)(v1));
-#ifndef __cplusplus
   extern void (fg272s_fail)(int64_t);
-#endif
   fg272s_fail(t2);
   }
   }
@@ -277,9 +273,7 @@ static int64_t fg272s_gg_function_1(uint64_t p0, uint64_t p1, int64_t p2, int64_
   t8 = ((int64_t)(((int64_t)UINT64_C(10))));
   fg272s_gg_function_2(t7, t8, base + 0);
   t9 = ((uint32_t)(((uint32_t)(v4))));
-#ifndef __cplusplus
   extern float (fg272s_from_bits)(uint32_t);
-#endif
   t10 = fg272s_from_bits(t9);
   v5 = ((float)(t10));
   v6 = ((float)(((float)(((int64_t)UINT64_C(0))))));

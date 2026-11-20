@@ -594,9 +594,7 @@ static int64_t gg_function_6(uint64_t p0, int64_t p1, int64_t base) {
   t4 = ((int64_t)(((int64_t)((uint64_t)(t2) * (uint64_t)(t3)))));
   t5 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(4))))));
   t6 = ((int64_t)(((int64_t)((uint64_t)(t4) + (uint64_t)(t5)))));
-#ifndef __cplusplus
   extern int64_t (fg218t_ld_u32)(uint64_t, int64_t);
-#endif
   t7 = fg218t_ld_u32(t1, t6);
   t0 = ((int64_t)(t7));
   }
@@ -619,9 +617,7 @@ static int64_t gg_function_4(uint64_t p0, int64_t p1, int64_t base) {
   t2 = ((int64_t)(v1));
   t3 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(8))))));
   t4 = ((int64_t)(((int64_t)((uint64_t)(t2) * (uint64_t)(t3)))));
-#ifndef __cplusplus
   extern int64_t (fg218t_ld_u32)(uint64_t, int64_t);
-#endif
   t5 = fg218t_ld_u32(t1, t4);
   t0 = ((int64_t)(t5));
   }
@@ -642,9 +638,7 @@ static void gg_function_2(uint8_t p0, int64_t p1, int64_t base) {
   if (t1) {
   {
   t2 = ((int64_t)(v1));
-#ifndef __cplusplus
   extern void (fg218t_fail)(int64_t);
-#endif
   fg218t_fail(t2);
   }
   }

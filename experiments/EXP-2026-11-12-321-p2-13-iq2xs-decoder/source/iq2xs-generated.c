@@ -336,12 +336,6 @@ GS_LIBM float gs_logf(float x) GS_LIBM1(logf)
 GS_LIBM float gs_log2f(float x) GS_LIBM1(log2f)
 GS_LIBM float gs_log10f(float x) GS_LIBM1(log10f)
 GS_LIBM float gs_powf(float x, float y) GS_LIBM2(powf)
-#if defined(__CUDACC__)
-static __host__ __device__ double gs_exp_cuda(double x) { return exp(x); }
-static __host__ __device__ float gs_expf_cuda(float x) { return expf(x); }
-#define gs_exp(x) gs_exp_cuda(x)
-#define gs_expf(x) gs_expf_cuda(x)
-#endif
 /* std's popcount, clz and ctz (64 for zero): the instruction where the C
    compiler has one, and counting under TinyCC. MSVC's popcount is an
    instruction past x86-64's baseline, which /arch:AVX and up promise. */
@@ -819,9 +813,7 @@ static int64_t fg321q_fn_4(uint64_t p0, uint64_t p1, int64_t p2, int64_t base) {
   t4 = ((uint64_t)(((uint64_t)((uint64_t)(t2) * (uint64_t)(t3)))));
   v4 = ((uint64_t)(((uint64_t)((uint64_t)(t1) + (uint64_t)(t4)))));
   t5 = ((uint64_t)(v4));
-#ifndef __cplusplus
   extern float (fg321q_ld_f16)(uint64_t);
-#endif
   t6 = fg321q_ld_f16(t5);
   v5 = ((float)(t6));
   t7 = ((uint64_t)(v4));
@@ -845,9 +837,7 @@ label1:;
   t18 = ((uint64_t)(v7));
   t19 = ((uint64_t)(((uint64_t)(v9))));
   t20 = ((uint64_t)(((uint64_t)((uint64_t)(t18) + (uint64_t)(t19)))));
-#ifndef __cplusplus
   extern int64_t (fg321q_ld_u8)(uint64_t);
-#endif
   t21 = fg321q_ld_u8(t20);
   v10 = ((int64_t)(t21));
   t22 = ((float)(v5));
@@ -884,9 +874,7 @@ label4:;
   t47 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(2))))));
   t48 = ((uint64_t)(((uint64_t)(((int64_t)((uint64_t)(t46) * (uint64_t)(t47)))))));
   t49 = ((uint64_t)(((uint64_t)((uint64_t)(t41) + (uint64_t)(t48)))));
-#ifndef __cplusplus
   extern int64_t (fg321q_ld_u16)(uint64_t);
-#endif
   t50 = fg321q_ld_u16(t49);
   v14 = ((int64_t)(t50));
   t51 = ((int64_t)(v14));
@@ -895,15 +883,11 @@ label4:;
   t53 = ((int64_t)(v14));
   t54 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(9))))));
   t55 = ((int64_t)(((t53) >> ((uint64_t)(t54) & 63))));
-#ifndef __cplusplus
   extern int64_t (fg321q_signs)(int64_t);
-#endif
   t56 = fg321q_signs(t55);
   v16 = ((int64_t)(t56));
   t57 = ((int64_t)(v15));
-#ifndef __cplusplus
   extern int64_t (fg321q_grid)(int64_t);
-#endif
   t58 = fg321q_grid(t57);
   v17 = ((int64_t)(t58));
   t59 = ((int64_t)(v13));
@@ -943,9 +927,7 @@ label7:;
   v21 = ((int64_t)(((t77) & (t78))));
   t79 = ((int64_t)(v16));
   t80 = ((int64_t)(v20));
-#ifndef __cplusplus
   extern int64_t (fg321q_kmask)(int64_t);
-#endif
   t81 = fg321q_kmask(t80);
   t82 = ((int64_t)(t81));
   t83 = ((int64_t)(((t79) & (t82))));
@@ -973,9 +955,7 @@ label7:;
   t95 = ((float)(((t93) * (t94))));
   t96 = ((float)(v23));
   t97 = ((float)(((t95) * (t96))));
-#ifndef __cplusplus
   extern void (fg321q_st_f32)(uint64_t, float);
-#endif
   fg321q_st_f32(t92, t97);
   t98 = ((int64_t)(v20));
   t99 = ((int64_t)(((int64_t)(((int64_t)UINT64_C(1))))));
@@ -1015,9 +995,7 @@ static void fg321q_fn_2(uint8_t p0, int64_t p1, int64_t base) {
   if (t1) {
   {
   t2 = ((int64_t)(v1));
-#ifndef __cplusplus
   extern void (fg321q_fail)(int64_t);
-#endif
   fg321q_fail(t2);
   }
   }
