@@ -97,5 +97,6 @@ fn conv_cuda(p: const Node &, x: const u8[:], weights: const u8[:], dst: u8[:]) 
     config[12] = p.d.nb[0];
     config[13] = p.d.nb[1];
     config[14] = p.d.nb[2];
+    config[15] = if p.ip[0] == 1 { 1 } else { 0 };
     return cuda_position(config, x[0 .. p.x.bytes], weights[0 .. p.y.bytes], weights[0 .. 0], dst[0 .. p.d.bytes]);
 }

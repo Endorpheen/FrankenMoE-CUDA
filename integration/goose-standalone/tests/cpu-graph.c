@@ -1408,7 +1408,38 @@ static void check_dense_mma(int extent, int rows, int columns) {
     ggml_free(ctx);
 }
 
+static void check_ssm_silu(int tokens) {
+    enum { taps = 4, channels = 137, sequences = 2 };
+    const int time = tokens + taps - 1;
+    struct ggml_context * ctx = ggml_init((struct ggml_init_params){ 64 * 1024, NULL, true });
+    assert(ctx);
+    struct ggml_tensor * x = ggml_new_tensor_3d(ctx, GGML_TYPE_F32, time, channels, sequences);
+    struct ggml_tensor * w = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, taps, channels);
+    struct ggml_tensor * separate = ggml_silu(ctx, ggml_ssm_conv(ctx, x, w));
+    struct ggml_tensor * fused = ggml_ssm_conv(ctx, x, w);
+    fused->op_params[0] = 1;
+    struct ggml_cgraph * graph = ggml_new_graph_custom(ctx, 32, false);
+    ggml_build_forward_expand(graph, separate);
+    ggml_build_forward_expand(graph, fused);
+    void * storage = fg_standalone_graph_alloc(graph);
+    assert(storage);
+    for (int i = 0; i < time * channels * sequences; ++i) {
+        ((float *) x->data)[i] = (float) ((7 * i + i / 13) % 37 - 18) / 17.0f;
+    }
+    for (int i = 0; i < taps * channels; ++i) ((float *) w->data)[i] = (float) ((19 * i) % 43 - 21) / 32.0f;
+    assert(fg_standalone_graph_compute(graph) == GGML_STATUS_SUCCESS);
+    assert(memcmp(fused->data, separate->data, ggml_nbytes(fused)) == 0);
+    printf("SSM convolution/SiLU: %d tokens, %d channels, %d sequences, bit-exact\n", tokens, channels, sequences);
+    free(storage);
+    ggml_free(ctx);
+}
+
 int main(int argc, char ** argv) {
+    if (argc == 2 && strcmp(argv[1], "--ssm-silu") == 0) {
+        check_ssm_silu(1);
+        check_ssm_silu(4096);
+        return 0;
+    }
     if (argc == 2 && strcmp(argv[1], "--activation-eviction") == 0) {
         check_activation_eviction();
         return 0;

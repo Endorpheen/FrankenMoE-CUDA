@@ -22,6 +22,7 @@ fn ssm_conv(p: const Node &, x: const u8[:], weight: const u8[:], dst: u8[:]) ->
                     let w = load_at(p.y, weight, tap * p.y.nb[0] + channel * p.y.nb[1]);
                     sum += v * w;
                 }
+                if p.ip[0] == 1 { sum = silu(sum); }
                 store(p.d, dst, channel + channels * (token + tokens * seq), sum);
             }
         }

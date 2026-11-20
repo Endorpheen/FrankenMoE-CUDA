@@ -439,7 +439,7 @@ __kernel void goose_ssm_conv(__global uint8_t * x, __global uint8_t * weights,
     ssm_conv_serial_g((uint64_t) x, (uint64_t) weights, 0, (uint64_t) out,
         (int32_t) cfg[8], (int32_t) cfg[9], (int32_t) cfg[10], (int32_t) cfg[11],
         (int32_t) cfg[12], (int32_t) cfg[13], (int32_t) cfg[14],
-        (int32_t) cfg[7], (int32_t) cfg[6], 0, 0, lane, sequence, group);
+        (int32_t) cfg[7], (int32_t) cfg[6], cfg[15] != 0, 0, lane, sequence, group);
 }
 
 static float fg283d_ld_f32(uint64_t src, uint64_t offset) {

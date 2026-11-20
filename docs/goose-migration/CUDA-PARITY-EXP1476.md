@@ -70,9 +70,12 @@ output against the previous correct checkpoint and EXP-1476.
 Isolate any regression with the short tests and run changes
 individually when needed. A critical failure or the first verified
 generation repair calls for an immediate full run.
-After the EXP-1528 diagnostic, use five short-verified improvements
+The current package extends the five planned changes by another five
 before the next scheduled full request. An experimental change that
-fails a short gate does not count toward that five.
+fails a short gate does not count. Focus the additional work on missing
+computational kernels, starting with the existing Flash Attention MMA,
+GDN MMA and MMQ Stream-K work. Change transfers only where needed to
+connect or validate these kernels.
 
 Prioritize Apex prefill. Start with dense GEMM (7), then examine
 transfers and synchronization (24, 27, 30), Flash Attention (12,
@@ -100,7 +103,7 @@ dependencies. Resume decode-specific work after prefill recovery.
 | 15 | Flash partition reconciliation. `fattn-mma-f16.cuh` → stream-K general/uniform fix-up, plus vector combine-results. | All three reference families are present. Goose merge implements its current scalar partition geometry. | MISSING. Port compatible reconciliation with the MMA and vector schedules. Compare numerical reductions across tail partitions and multihead layouts. |
 | 16 | GDN prefill Tensor Cores. `ggml_cuda_op_gated_delta_net_impl` → `gdn_single` in `gated-delta-net-mma.cu`. | Reference executes `gdn_single<16,128,1>`. Goose invokes `fg_cuda_gdn` → scalar `goose_gated_delta_net`. | MISSING. Restore the blocked recurrent MMA order and shared state update. Verify full and chunked hidden states for each layer, then prefill time and state-memory peaks. |
 | 17 | GDN decode specialization and fused state cache. `ggml_cuda_op_gated_delta_net_fused_cache` → native scalar `gated_delta_net_cuda` or shape-selected MMA. | Reference executes scalar decode GDN and known fused cache code. Goose has CUDA-resident GDN state and a publish/consume path. | PARTIAL. Match the selected decode kernel's arithmetic and state snapshots against the reference across prefill → decode. Check for stale aliases and measure actual state moves. |
-| 18 | SSM convolution and activation fusion. `ssm-conv.cu` dispatch plus `ggml_cuda_try_fuse` → `ssm_conv_long_token_f32` or `ssm_conv_f32`. | Both kernel families execute. Goose uses the Goose rolling-window leaf and separate activation on the shared arena. | PARTIAL. Restore the long-token tiling and selected SiLU fusion without altering the valid fallback. Verify convolution tail, persistent history and chunked equivalence. |
+| 18 | SSM convolution and activation fusion. `ssm-conv.cu` dispatch plus `ggml_cuda_try_fuse` → `ssm_conv_long_token_f32` or `ssm_conv_f32`. | Both reference families execute. Goose applies SiLU inside its existing rolling convolution at all 30 Apex GDN layers. | PARTIAL. Restore the reference long-token schedule. Keep the fused/separate numerical fixtures and check persistent history at full context. |
 | 19 | Fused RMS/L2 normalization. `ggml_cuda_try_fuse` → RMS multiply/add/scale variants in `norm.cu` and supported RoPE/cache combinations. | Trace shows RMS variants. Goose has row normalization and separate vector operations. | PARTIAL. Fuse only traced compatible sequences after comparing epsilon and multiply/add order. Confirm reduction layout and avoid rounding regression. |
 | 20 | Gated and unary activation fusion. `unary.cu` and `ggml_cuda_try_fuse` launch `unary_gated_op_kernel` and `unary_op_kernel`. | Both execute. Goose implements fused SwiGLU and several individual activations and keeps a CUDA activation arena. | PARTIAL. Verify the executed reference combinations, then match remaining graph fusion choices. Compare activations and adjacent gates before speed checks. |
 | 21 | Broadcast arithmetic and reductions. CUDA operation dispatch → `k_bin_bcast`, `scale_f32`, `reduce_1Block_kernel`. | The reference runs optimized family variants. Goose implements broadcast vector and row-sum kernels for supported layouts. | PARTIAL. Restore shape-aware broadcasts/reductions where effect is measured. Verify offsets, F32/F64 reduction order and noncontiguous inputs. |
@@ -479,6 +482,26 @@ and `mmq-profile.I4lJMQ` in the same directory.
 Combination profiles: `/home/end0/AI/LlamaServer/franken-goose-eviction-waits.ZwSxaq/mmq-profile.NTa62g`
 and `mmq-profile.2nTxqZ` in the same directory.
 Executable SHA-256: `106e280f164e38cdb1955fdfc5a60cab98f9c3e2df3f9b23337197aa8f6a6f88`.
+
+## Fused SSM convolution and SiLU checkpoint
+
+EXP-2026-11-20-1535 connects the existing Goose SSM device leaf's
+activation parameter in the Qwen35 graph and mirrors it in the CPU
+fallback. Fused and separate outputs match bitwise at 1 and 4,096
+tokens on CPU and both CUDA images, with 137 channels and two
+sequences. The mixed-backend KV/GDN continuation error was 1.19e-7.
+
+The same real 4096/1 input ran 30 SSM kernels and 30 fewer vector
+kernels. Prefill changed from 22.282 s / 183.823 tokens/s to 21.763 s /
+188.210 tokens/s. H2D fell from 70,407,377,216 to 66,380,839,136
+bytes and D2H from 47,117,172,736 to 43,090,640,896 bytes. The
+short answer, ID 9495 and all five probabilities matched the
+preceding Goose checkpoint. Full-request speed, peak memory and
+EXP-1476 generation parity remain open.
+
+Candidate profile: `/home/end0/AI/LlamaServer/franken-goose-ssm-silu.1LvVP2/mmq-profile.lbLiJK`.
+Executable SHA-256: `458d9850e798acc34bd8f29b92734f2c4ddef3d15e505adbd89048d05dabc357`.
+Response SHA-256: `d2da1f35f6d5e1544177c571076704af3aea8bcdc8b1200b3fdc6012c6d561f2`.
 
 ## Kernel coverage
 

@@ -116,7 +116,9 @@ export fn q35_gdn_layer(c: i64, x: i64, conv: i64, state: i64, weights: i64[:], 
     nodes[16] = gdn_conv_store(c, nodes[15], conv);
     qa_begin(work, 27, c, nodes[14], weights[7], 0, 0);
     nodes[17] = gb_common_args(work);
-    nodes[18] = qg_unary(c, nodes[17], 10, work);
+    // Apply SiLU before publishing the convolution result.
+    qa_set(nodes[17], 10, 0, 1);
+    nodes[18] = nodes[17];
     nodes[19] = gdn_qkv_view(c, nodes[18], 0, head, nk, head, nv, count, 1, 4);
     nodes[20] = gdn_qkv_view(c, nodes[18], 1, head, nk, head, nv, count, 1, 4);
     nodes[21] = gdn_qkv_view(c, nodes[18], 2, head, nk, head, nv, count, 1, 4);
