@@ -50,7 +50,7 @@ the dependency that would justify rerunning it.
 | EXP-1531, deferred CUDA waits | [Candidate patch](deferred/EXP-1531-graph-waits.patch) against `7916697c`. [Original A–B–B–A](#deferred-cuda-wait-diagnostic): explicit waits 1,873 → 562, median prefill 22.875 → 22.882 s. | Originally, synchronous D2H absorbed the removed waiting. Copy counts and bytes stayed unchanged. | Rechecked with reusable arena gaps and selective eviction on `e37e8a2c`. [Combined A–B–B–A](#deferred-waits-with-selective-eviction) passed the short gate and enabled waits at the planned graph boundary. Full-request qualification is open. Reassess when pinned transfer or stream/event changes alter host readback. |
 | EXP-1536, GDN MMA | Standalone `GOOSE_GDN_MMA=1`. [Kernel and model measurements](#gdn-mma-checkpoint). Thirty kernels took 2,503.240 → 171.978 ms and short prefill reached 210.866 tokens/s. | The short first ID changed from 9495 to 280. Both differ from EXP-1476 ID 332. On the same actual layer inputs the largest relative L2 errors were 1.58e-5 for output and 3.71e-5 for state. | Compare the earliest differing routed-expert IDs and logits against EXP-1476. Recheck with restored attention and routing on a numerically verified checkpoint. Keep the experimental flag off by default until the response gate passes. |
 | EXP-1537, Flash Attention MMA | Standalone `GOOSE_FLASH_MMA=1`. [Kernel and model measurements](#causal-flash-attention-mma-checkpoint). Ten attention layers take 34.416 ms including Q4 staging, versus 2,738.669 ms for the scalar path. | The short first ID changes from 9495 to 271. On shared Apex inputs, relative L2 differences against the scalar path reach 6.44e-3. | Compare the same Q/K/V inputs to the EXP-1476 FP16 kernel, then restore stream-K scheduling and fix-up. Check isolated and combined GDN/Flash/Dense variants on the same short request. Keep the flag off by default pending response parity. |
-| EXP-1538, GDN + Flash + Dense MMA | Source `3e616cb2`, all three MMA flags. [Intermediate performance control and five-case series](#intermediate-apex-performance-control). Short prefill 256.686 tokens/s. | The selected ID is 280. Probability rows differ from the control and the response gate remains open. | Use this exact opt-in checkpoint for future short prefill comparisons. Recheck the combination after changes to rounding, router selection, long-context attention or recurrent state. |
+| EXP-1538/1539, GDN + Flash + Dense MMA | Source `8ea1f6de`, all three MMA flags and byte-budgeted MMQ. [Intermediate performance control and original five-case series](#intermediate-apex-performance-control). Current short prefill 259.252 tokens/s. | The selected ID is 280. Probability rows differ from the scalar combination control and the EXP-1476 response gate remains open. | Use the current opt-in checkpoint for future short prefill comparisons. Recheck the combination after changes to rounding, router selection, long-context attention or recurrent state. |
 
 After a material dependency change, use short sequential A/B runs on
 identical inputs and settings. Use the best current verified checkpoint
@@ -563,17 +563,19 @@ Response SHA-256: `709b803aa8f36448cbfb49eb3b5531abb636621b10af21515facb8224a5fd
 
 ## Intermediate Apex performance control
 
-EXP-2026-11-20-1538 designates the combined GDN, Flash and Dense MMA
-variant as the intermediate control for subsequent short prefill A/B
-work. It keeps the verified memory and synchronization changes in
-`3e616cb2`. Enable it with these environment settings:
+The current intermediate speed control is `8ea1f6de` (EXP-1539),
+the GDN, Flash and Dense MMA combination with byte-budgeted MMQ
+windows. It measured **259.252 tokens/s** in 15.799 s and preserved
+response ID 280, text and five probabilities against a fresh control.
+See [the MMQ comparison](#byte-budgeted-mmq-windows) for raw data.
+Enable it with these environment settings:
 
 ```sh
 export GOOSE_MMQ=1 GOOSE_GDN_MMA=1 GOOSE_FLASH_MMA=1 GOOSE_DENSE_MMA=1
 ```
 
 Use executable SHA-256
-`754e480265e448918198295146422cb2125bddc7ef4284fd9707e2db909ce062`,
+`c6a801cd58aaa99efa7a92a220dd30d07f6864cf60e119134a14dd7d48fc2429`,
 Apex Q4_K_M, context 262,144, physical 4096/4096, and the 4096/1
 request with SHA-256
 `2d716460edf11494ce0fd16fe53241535b611c70774adc8fa3fe4619a6fcf81d`.
@@ -581,6 +583,8 @@ The request uses seed 123, temperature 1, top-k 20, top-p 0.95 and
 reports five log probabilities. This control is opt-in. EXP-1476
 remains the correctness reference and the full-request gate remains open.
 
+The original EXP-1538 five-case matrix below used `3e616cb2`, executable
+SHA-256 `754e480265e448918198295146422cb2125bddc7ef4284fd9707e2db909ce062`.
 Five sequential Nsight runs used the same executable, request and memory
 configuration. The Flash column includes KV staging or the scalar merge.
 The Dense column covers the 40 Apex router projections. CUDA durations
