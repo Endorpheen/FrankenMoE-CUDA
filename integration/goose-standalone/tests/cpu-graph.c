@@ -19,6 +19,7 @@ extern int64_t fg_cuda_state_read(uint64_t host, int64_t bytes);
 extern int64_t fg_cuda_state_write(uint64_t host, int64_t bytes);
 extern int64_t fg_q35_fwht_node(int64_t context, int64_t input, int64_t width);
 extern int64_t fg_q35_moe_weighted_node(int64_t context, int64_t input, int64_t weights);
+extern int64_t fg_q35_moe_norm_node(int64_t context, int64_t input, int64_t ids, int64_t scale_bits);
 
 static void check_model_step(const char * path) {
     fg_goose_host_ensure_init();
@@ -1236,6 +1237,44 @@ static void check_cuda_position(void) {
     ggml_free(ctx);
 }
 
+static void check_moe_norm(void) {
+    enum { experts = 61, selected = 37, tokens = 5 };
+    struct ggml_context * ctx = ggml_init((struct ggml_init_params){ 64 * 1024, NULL, true });
+    assert(ctx);
+    struct ggml_tensor * probs = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, experts, tokens);
+    struct ggml_tensor * ids = ggml_new_tensor_2d(ctx, GGML_TYPE_I32, selected, tokens);
+    const float scale = 1.25f;
+    uint32_t scale_bits;
+    memcpy(&scale_bits, &scale, sizeof scale_bits);
+    struct ggml_tensor * fused = (void *) (intptr_t) fg_q35_moe_norm_node(
+        (intptr_t) ctx, (intptr_t) probs, (intptr_t) ids, scale_bits);
+    struct ggml_tensor * bank = ggml_reshape_3d(ctx, probs, 1, experts, tokens);
+    struct ggml_tensor * picked = ggml_reshape_2d(ctx, ggml_get_rows(ctx, bank, ids), selected, tokens);
+    struct ggml_tensor * denominator = ggml_clamp(ctx, ggml_sum_rows(ctx, picked), 0x1p-14f, INFINITY);
+    struct ggml_tensor * previous = ggml_scale(ctx, ggml_div(ctx, picked, denominator), scale);
+    struct ggml_cgraph * graph = ggml_new_graph_custom(ctx, 32, false);
+    ggml_build_forward_expand(graph, previous);
+    ggml_build_forward_expand(graph, fused);
+    void * storage = fg_standalone_graph_alloc(graph);
+    assert(storage && ggml_nbytes(fused) == ggml_nbytes(previous));
+    for (int row = 0; row < tokens; ++row) {
+        for (int i = 0; i < experts; ++i) {
+            ((float *) probs->data)[row * experts + i] = row == 0 ? (float) i * 0x1p-30f :
+                (float) ((17 * i + row * 5) % 113) / 127.0f;
+        }
+        for (int i = 0; i < selected; ++i) ((int32_t *) ids->data)[row * selected + i] = (17 * i + row) % experts;
+    }
+    assert(setenv("GOOSE_CUDA", "0", 1) == 0);
+    assert(fg_standalone_graph_compute(graph) == GGML_STATUS_SUCCESS);
+    assert(memcmp(fused->data, previous->data, ggml_nbytes(fused)) == 0);
+    assert(unsetenv("GOOSE_CUDA") == 0);
+    assert(fg_standalone_graph_compute(graph) == GGML_STATUS_SUCCESS);
+    assert(memcmp(fused->data, previous->data, ggml_nbytes(fused)) == 0);
+    puts("MoE normalized gather: 37 routes, clamp and scale, bit-exact CPU and CUDA");
+    free(storage);
+    ggml_free(ctx);
+}
+
 static void check_cuda_routing(void) {
     enum { experts = 257, selected = 11, tokens = 5, sequences = 2 };
     struct ggml_context * ctx = ggml_init((struct ggml_init_params){ 1024 * 1024, NULL, true });
@@ -1541,6 +1580,10 @@ static void check_ssm_silu(int tokens) {
 }
 
 int main(int argc, char ** argv) {
+    if (argc == 2 && strcmp(argv[1], "--moe-norm") == 0) {
+        check_moe_norm();
+        return 0;
+    }
     if (argc == 2 && strcmp(argv[1], "--flash-mma") == 0) {
         check_flash_causal_mma();
         return 0;

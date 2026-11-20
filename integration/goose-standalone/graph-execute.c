@@ -413,7 +413,7 @@ static enum ggml_status compute_graph(struct ggml_cgraph * graph, bool all, cons
     const uint64_t weighted = fg_cuda_take_moe_weighted();
     uint64_t ropes, convs;
     fg_cuda_take_position(&ropes, &convs);
-    uint64_t routes[4];
+    uint64_t routes[5];
     fg_cuda_take_routes(routes);
     uint64_t blits[3];
     fg_cuda_take_blits(blits);
@@ -449,8 +449,8 @@ static enum ggml_status compute_graph(struct ggml_cgraph * graph, bool all, cons
         if (expired_bytes) fprintf(stderr, "Goose CUDA dirty activations retired: %" PRIu64 " bytes\n", expired_bytes);
         if (ropes) fprintf(stderr, "Goose CUDA RoPE: %llu nodes\n", (unsigned long long) ropes);
         if (convs) fprintf(stderr, "Goose CUDA SSM convolution: %llu nodes\n", (unsigned long long) convs);
-        for (int i = 0; i < 4; ++i) {
-            const char * names[] = {"softmax", "sort", "gather", "row sum"};
+        for (int i = 0; i < 5; ++i) {
+            const char * names[] = {"softmax", "sort", "gather", "row sum", "normalized gather"};
             if (routes[i]) fprintf(stderr, "Goose CUDA %s: %llu nodes\n", names[i], (unsigned long long) routes[i]);
         }
         const char * blit_names[] = {"concat", "contiguous copy", "resident SSM writes"};

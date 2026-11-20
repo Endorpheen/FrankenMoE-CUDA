@@ -45,6 +45,21 @@ int64_t fg_q35_moe_weighted_node(int64_t context, int64_t input, int64_t weights
     return (int64_t) (intptr_t) dst;
 }
 
+int64_t fg_q35_moe_norm_node(int64_t context, int64_t input, int64_t ids, int64_t scale_bits) {
+    struct ggml_tensor * src = (void *) (intptr_t) input;
+    struct ggml_tensor * selected = (void *) (intptr_t) ids;
+    if (!context || !src || !selected || src->type != GGML_TYPE_F32 || selected->type != GGML_TYPE_I32 ||
+        selected->ne[1] != src->ne[1]) return 0;
+    struct ggml_tensor * dst = ggml_new_tensor_3d((void *) (intptr_t) context, GGML_TYPE_F32,
+        1, selected->ne[0], selected->ne[1]);
+    dst->op = GGML_OP_CUSTOM;
+    dst->src[0] = src;
+    dst->src[1] = selected;
+    dst->op_params[0] = 0x4d4f454e;
+    dst->op_params[1] = (int32_t) scale_bits;
+    return (int64_t) (intptr_t) dst;
+}
+
 // ---- the fixture's helpers, verbatim in behaviour ---------------------------
 
 static int64_t fg_arg(int64_t p, int64_t i) {

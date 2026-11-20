@@ -104,3 +104,28 @@ export fn fg_route_gather(x: u64, y: u64, out: u64, cfg: u64, index: i64) {
         token * rt_word(cfg, 10) + sequence * rt_word(cfg, 11);
     rt_store(out + ((4 * index) as u64), rt_load(x + (at as u64)));
 }
+
+export fn fg_route_norm(x: u64, ids: u64, out: u64, cfg: u64, row: i64, lane: i64) {
+    let experts = rt_word(cfg, 4);
+    let used = rt_word(cfg, 12);
+    let scale = rt_float(cfg, 21);
+    var sum: f64 = 0.0;
+    var picked: f32[2] = default <f32[2]>();
+    var slot = lane;
+    while slot < used {
+        let expert = rt_read_i32(ids, row * used + slot) as i64;
+        if expert < 0 || expert >= experts { rt_fail(1511); return; }
+        let value = rt_load(x + ((4 * (row * experts + expert)) as u64));
+        picked[slot / 32] = value;
+        sum += value as f64;
+        slot += 32;
+    }
+    let denominator = fmaxf(cv_warp_sum(sum) as f32, 0.00006103515625);
+    slot = lane;
+    while slot < used {
+        let weight = picked[slot / 32] / denominator;
+        let scaled = if scale == 0.0 || scale == 1.0 { weight } else { weight * scale + 0.0 };
+        rt_store(out + ((4 * (row * used + slot)) as u64), scaled);
+        slot += 32;
+    }
+}

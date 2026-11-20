@@ -498,6 +498,14 @@ __kernel void goose_route_gather(__global uint8_t * x, __global uint8_t * y,
     fg_route_gather_g((uint64_t) x, (uint64_t) y, (uint64_t) out, (uint64_t) cfg, position_thread());
 }
 
+__kernel void goose_route_norm(__global uint8_t * x, __global uint8_t * y,
+    __global uint8_t * out, __global int64_t * cfg) {
+    uint32_t row, lane;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(row));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
+    fg_route_norm_g((uint64_t) x, (uint64_t) y, (uint64_t) out, (uint64_t) cfg, row, lane);
+}
+
 static void fg_device_copy_u32(uint64_t src, uint64_t dst) {
     *(__global uint32_t *) dst = *(__global uint32_t *) src;
 }

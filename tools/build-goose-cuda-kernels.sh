@@ -75,7 +75,7 @@ if module in ("q4-attention", "gdn", "rope", "ssm-conv", "fwht", "routing"):
     types = source.split("/* ---- types ---- */", 1)[1].split("/* ---- data ---- */", 1)[0]
     excluded = ("gs_rhdr;", "gs_rref;", "gs_pref;", "sl_u8;")
     if module == "routing":
-        excluded += ("a8_f32;",)
+        excluded += ("a2_f32;", "a8_f32;")
     types = "\n".join(line for line in types.splitlines()
                       if not line.endswith(excluded))
     fragment = types + "\n" + fragment

@@ -1,5 +1,40 @@
 extern "fg_cuda_routing" fn cuda_routing(config: const i64[:], x: const u8[:], y: const u8[:], dst: u8[:]) -> i64;
 
+fn moe_normalize(p: const Node &, probs: const u8[:], ids: const u8[:], dst: u8[:]) -> bool {
+    let experts = p.x.ne[0]; let used = p.y.ne[0]; let tokens = p.x.ne[1];
+    if experts <= 0 || used <= 0 || used > experts || used > 64 || tokens <= 0 || tokens > 2147483647 ||
+       p.x.kind != 0 || p.y.kind != 26 || p.d.kind != 0 || p.x.ne[2] != 1 || p.x.ne[3] != 1 ||
+       p.y.ne[1] != tokens || p.y.ne[2] != 1 || p.y.ne[3] != 1 ||
+       p.d.ne[0] != 1 || p.d.ne[1] != used || p.d.ne[2] != tokens || p.d.ne[3] != 1 ||
+       !dense_scalar(p.x, 4) || !dense_scalar(p.y, 4) || !dense_scalar(p.d, 4) ||
+       p.x.bytes > probs.len || p.y.bytes > ids.len || p.d.bytes > dst.len { return false; }
+    let scale = p.fp[1];
+    if !(scale >= 0.0 && scale <= 3.4028234663852886e38) { return false; }
+    var cfg: i64[22] = [0; 22];
+    cfg[0] = 4; cfg[1] = tokens; cfg[2] = 32;
+    cfg[4] = experts; cfg[12] = used; cfg[21] = p.ip[1];
+    let cuda = cuda_routing(cfg, probs[0 .. p.x.bytes], ids[0 .. p.y.bytes], dst[0 .. p.d.bytes]);
+    if cuda != 0 { return cuda > 0; }
+    if activation_read(probs) != 0 || activation_read(ids) != 0 { return false; }
+    for row in tokens {
+        var picked: f32[64] = default <f32[64]>();
+        var sum: f64 = 0.0;
+        for slot in used {
+            let id = read32(ids, 4 * (row * used + slot)) as! i32;
+            if id < 0 || (id as i64) >= experts { return false; }
+            picked[slot] = from_bits(read32(probs, 4 * (row * experts + (id as i64))));
+            sum += picked[slot] as f64;
+        }
+        let denominator = max32(sum as f32, 0.00006103515625);
+        for slot in used {
+            let weight = picked[slot] / denominator;
+            let result = if scale == 0.0 || scale == 1.0 { weight } else { weight * scale + 0.0 };
+            write32(dst, 4 * (row * used + slot), bits(result));
+        }
+    }
+    return true;
+}
+
 fn routing_cuda(p: const Node &, x: const u8[:], y: const u8[:], dst: u8[:]) -> i64 {
     let kind = if p.op == OP_SOFT_MAX { 0 } else if p.op == OP_ARGSORT || p.op == OP_TOP_K { 1 }
         else if p.op == OP_GET_ROWS { 2 } else if p.op == OP_SUM_ROWS { 3 } else { -1 };

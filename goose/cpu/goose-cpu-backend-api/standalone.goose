@@ -54,6 +54,9 @@ export fn fg143_node_run(packet: const i64[:], mode: i64,
     if p.op == OP_CUSTOM && p.ip[0] == 0x4d4f4557 {
         return mode == 1 || moe_weighted(p, x, y, dst);
     }
+    if p.op == OP_CUSTOM && p.ip[0] == 0x4d4f454e {
+        return mode == 1 || moe_normalize(p, x, y, dst);
+    }
     if mode == 0 && p.op == OP_FLASH_ATTN_EXT {
         if packet[69] != 0 { return false; }
         let mask_shape = packet_tensor(packet, 59);

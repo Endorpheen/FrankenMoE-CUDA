@@ -99,7 +99,7 @@ dependencies. Resume decode-specific work after prefill recovery.
 | 7 | Tensor Core dense GEMM. `ggml_cuda_mul_mat_cublas` selects the F32 `cublasSgemm` path with `CUBLAS_TF32_TENSOR_OP_MATH` in `common.cuh`. | The 4096/1 trace records 39 CUTLASS `s1688gemm` launches. `GOOSE_DENSE_MMA=1` selects 40 independent tiled TF32 MMA launches with F32 accumulation. | PARTIAL. The CUDA path and F32 error fixture pass. Apex output changes under the experimental flag and still differs from EXP-1476. Keep the flag off for the next baseline until the model-level numerical difference is resolved. |
 | 8 | Dense small-shape dispatch. `mmf.cu` and `mmvf.cu` implement `mul_mat_f` and `mul_mat_vec_f`. The trace also records `dot_kernel`. | All three families appear in the trace. Goose does dense F32 FMA and shuffles using one output per warp. The exact library owner of `dot_kernel` remains open. | PARTIAL. Identify the dot route and reuse existing dot and warp code where equivalent. Recreate selected row/vector tiling and validate dimensions and backend selection by shape. |
 | 9 | Device expert grouping. `ggml_cuda_mul_mat_id` / `mmq.cu` → `mm_ids_helper` → per-expert group ranges and Q8 scatter. | `mm_ids_helper` executes. Goose builds per-expert jobs and keeps a GPU SLRU, with host route synchronization. | PARTIAL. Feed active routes to device grouping and pack contiguous batches without losing expert ownership. Verify sparse, repeated and empty groups against the reference. |
-| 10 | Fused MoE selection. `ggml-cuda.cu` `ggml_cuda_topk_moe_fusion` → `topk_moe_cuda`. | Goose reuses the EXP-171 warp winner reduction to select eight experts directly from each 256-expert softmax row. The live Apex routes and numerical snapshot match byte-for-byte. Softmax, gather and normalization remain separate. | PARTIAL. Fuse the remaining arithmetic while retaining expert IDs and weights. Compare selected scores and layer outputs before full acceptance. |
+| 10 | Fused MoE selection. `ggml-cuda.cu` `ggml_cuda_topk_moe_fusion` → `topk_moe_cuda`. | Goose selects eight experts directly and fuses gather, clamp, division and scaling in a single weights kernel. The live Apex snapshot matches the preceding graph byte-for-byte. | PARTIAL. Integrate softmax and selection with the weight output. Keep numerical parity and qualify full Apex. |
 | 11 | Fused MoE combination. `ggml_cuda_match_moe_weighted_reduction` → `moe_weighted_reduction_f32`. | The reference fuses the weighted combination. Independent Goose uses the existing fused device body with bounded input windows and eliminates the separate weighted tensor. | PARTIAL. The 4096-token numerical fixture and real Apex trace pass the scoped gate. Full logits and peak memory acceptance remain open. |
 | 12 | FP16 MMA Flash Attention. `fattn.cu` `ggml_cuda_flash_attn_ext` → shape selection → `fattn-mma-f16.cuh` `flash_attn_ext_f16`. | `GOOSE_FLASH_MMA=1` stages real Q4 KV as F16 and uses the existing `8×8` Goose process tile at all ten Apex attention layers. Each CTA finishes its complete causal query tile. | PARTIAL. Match EXP-1476 numerics, restore stream-K scheduling/fix-up and verify supported masks, long-context logits and full memory. |
 | 13 | Small-query Flash Attention vector dispatch. `fattn.cu` → `flash_attn_ext_vec`. | Reference trace contains the vector path. Goose slices its scalar Q4 tiles for both prefill and decode. | MISSING. Restore the small-query specialization and validate softmax merging and decode latency at 32K. |
@@ -788,6 +788,31 @@ Control: `/home/end0/AI/LlamaServer/franken-goose-mmq-shared.TrPFV2/cuda-matrix-
 Candidate: `/home/end0/AI/LlamaServer/franken-goose-router-topk.Fvuato/cuda-matrix-dense-both.2oz_xztl`.
 Numerical snapshot: `/home/end0/AI/LlamaServer/franken-goose-router-topk.Fvuato/numerical.zEwphX`.
 Executable SHA-256: `e454509024062f5b59bc92b7cbaef98628f70fe28cc698398765d87137701a2d`.
+
+## Fused expert-weight normalization
+
+EXP-2026-11-20-1543 replaces the separate gather, sum, clamp, divide
+and optional scale stages with one Goose operation. It preserves the
+existing selection and softmax, F64 accumulation, F32 rounding and
+2^-14 clamp. The 37-route fixture covered the two-slot warp reduction,
+clamping and scaling. Both CPU and CUDA matched the separate graph
+bitwise. Compute Sanitizer reported zero errors. The small model's
+mixed backend continuation error remained 1.19e-7.
+
+On matched Apex 4096/1, the new graph ran 40 normalized gather
+kernels, eliminating 120 net CUDA launches. H2D calls fell from
+26,008 to 25,888 while D2H bytes stayed unchanged. The block took
+15.632 s / 262.032 tokens/s versus 15.725 s / 260.484 tokens/s
+in the preceding control. Sampled process VRAM was 8,582 MiB
+and swap zero in both. Selected ID 280, text and probabilities
+matched. A separate numerical payload and manifest matched all
+97,691,648 bytes. This passes the work-reduction gate. Full-request
+throughput and EXP-1476 response parity remain open.
+
+Control: `/home/end0/AI/LlamaServer/franken-goose-router-topk.Fvuato/cuda-matrix-dense-both.dyfbhtfw`.
+Candidate: `/home/end0/AI/LlamaServer/franken-goose-route-norm.C436JC/cuda-matrix-dense-both.knvpkl98`.
+Numerical snapshot: `/home/end0/AI/LlamaServer/franken-goose-route-norm.C436JC/numerical.8exlSO`.
+Executable SHA-256: `3ffebfc5f012a0bfab8122636d4f4f451710ef5be55f1a714a988b25fba6a024`.
 
 ## Kernel coverage
 
