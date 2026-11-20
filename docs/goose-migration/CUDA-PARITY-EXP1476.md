@@ -42,6 +42,9 @@ output against the previous correct checkpoint and EXP-1476.
 Isolate any regression with the short tests and run changes
 individually when needed. A critical failure or the first verified
 generation repair calls for an immediate full run.
+After the EXP-1528 diagnostic, use five short-verified improvements
+before the next scheduled full request. An experimental change that
+fails a short gate does not count toward that five.
 
 Prioritize Apex prefill. Start with dense GEMM (7), then examine
 transfers and synchronization (24, 27, 30), Flash Attention (12,
@@ -262,9 +265,8 @@ launches. Prefill in the independent 4096/1 diagnostic took
 35.498 s (115.386 tokens/s), versus 37.137 s (110.293 tokens/s)
 without the dense flag. The first ID changes from 9495 to 37972
 and EXP-1476 selects 332. The tested dense operation is available
-for numerical investigation. Leave it disabled in the batch
-checkpoint. No full-request throughput or peak memory comparison
-was made for this variant.
+for numerical investigation and remains off by default. The later
+full diagnostic below enables it alongside the other changes.
 
 Raw data: `/home/end0/AI/LlamaServer/franken-goose-dense-mma.vqcy2Z/mmq-profile.PJCwMh`.
 Response SHA-256: `d8d141218cc32e9364c122c473e571e88222c48588a69a66bfa18f7033c44486`.
@@ -294,6 +296,42 @@ Full-request speed, generation parity and memory remain separate gates.
 Raw data: `/home/end0/AI/LlamaServer/franken-goose-large-activation.9mnAtU/mmq-profile.z4KQe7`.
 Response SHA-256: `3749196097278a3605a0096b5d9d4755e487f2ec30699b24b0e9346d4e14d441`.
 Executable SHA-256: `fa212c57aa64d49dfad999f3e868fd8b7543791acfc1d14a2baf8e387832481d`.
+
+## Prefill package full 32K/512 diagnostic
+
+Commit `903bc4e2` ran the frozen Apex Q4_K_M request on RTX 4070
+with context 262,144, physical 4096/4096, no cached input, MMQ on
+and the experimental Dense MMA enabled for this diagnostic. All
+32,768 input IDs and 512 output IDs completed. Prefill was
+390.083 s at **84.002538 tokens/s**. Decode was 43.072 s at
+**11.863898 steps/s** across 511 steps. The previous independent
+full diagnostic was 573.944 s / 57.092649 tokens/s and 49.370 s /
+10.350416 steps/s. The new run shortens those intervals by 183.861 s
+and 6.298 s. The EXP-1476 historical acceptance target remains
+2,940.9 tokens/s prefill and 62.86 steps/s decode. The diagnostics
+report single-request throughput. Matched reference parity is open.
+
+The response discusses the input log, and all 512 probability rows
+were returned. The first differing output is index 1 (Goose 1142,
+reference 198). Text, IDs and probability hashes differ. The full
+request does not pass the generation gate. The first 4,096-token
+profile is a distinct workload and has different throughput.
+
+The full model remained resident before and after (21,713,463,136
+bytes and 5,301,139 pages). Process high-water RSS was 23,621,948 KiB
+and the 211 samples recorded 8,568 MiB maximum process VRAM and
+11,384 MiB whole-card VRAM. Process swap and system swap-out growth
+were zero. Prefill arena size fell from 1,009,991,680 to 741,556,224
+bytes. The previous independent diagnostic recorded 23,945,668 KiB
+RSS and 8,696 MiB process VRAM. These are sampled diagnostic peaks.
+There is no matched reference peak in this run. The candidate loads
+the NVIDIA driver and system C libraries.
+
+Raw data: `/home/end0/AI/LlamaServer/franken-goose-large-activation.9mnAtU/apex-functional.zQA8TW`.
+Request SHA-256: `484a12de00ec057e4b78d480ebb185153bb10af607eb23192a72995ba3026d0f`.
+Response SHA-256: `38b38b56b6e8aa57679dde3e2cae2eacd8ae32eb2c42ef768edfe3ffc1651722`.
+Output IDs SHA-256: `d93f350741000ce81d3131ae7d82a4526527dcf4331b409ccf4d050e5bc18f13`.
+Probability rows SHA-256: `992d83c84c347a9762cd907037f29b6d17a881e24c124e3e5238f6dac02e2227`.
 
 ## Kernel coverage
 
