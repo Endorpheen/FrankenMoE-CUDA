@@ -11,6 +11,46 @@ fn flash_cache_value(t: const Tensor &, data: const u8[:], base: i64, column: i6
     return load_at(t, data, base + column * t.nb[0]);
 }
 
+extern "fg_cuda_q4_attention" fn cuda_q4_attention(config: const i64[:], q: const u8[:], k: const u8[:],
+    v: const u8[:], mask: const u8[:], out: u8[:], scale: f32) -> i64;
+
+fn cuda_q4_kv_layout(t: const Tensor &, available: i64) -> bool {
+    if t.kind != 2 || t.ne[0] > 256 || t.ne[3] != 1 ||
+       t.nb[0] != 18 || t.nb[1] <= 0 || t.nb[1] % 2 != 0 || t.nb[2] < 0 || t.nb[2] % 2 != 0 {
+        return false;
+    }
+    let last = add_size(mul_size(t.ne[0] / 32, 18),
+        add_size(mul_size(t.ne[1] - 1, t.nb[1]), mul_size(t.ne[2] - 1, t.nb[2])));
+    return last <= t.bytes && t.bytes <= available;
+}
+
+fn flash_cuda(p: const Node &, mask: const Tensor &, q: const u8[:], k: const u8[:],
+              v: const u8[:], masks: const u8[:], dst: u8[:]) -> i64 {
+    let masked = mask.bytes > 0;
+    if p.x.ne[3] != 1 || p.fp[1] != 0.0 || p.fp[2] != 0.0 ||
+       p.x.nb[0] != 4 || p.x.nb[1] % 4 != 0 || p.x.nb[2] % 4 != 0 || !dense_scalar(p.d, 4) ||
+       !cuda_q4_kv_layout(p.y, k.len) || !cuda_q4_kv_layout(p.z, v.len) ||
+       (masked && (mask.ne[2] != 1 || mask.ne[3] != 1 || mask.nb[0] != 2 || mask.nb[1] % 2 != 0)) {
+        return 0;
+    }
+    let positions = p.x.ne[1];
+    let heads = p.x.ne[2];
+    let tasks = mul_size(positions, heads);
+    if tasks > 2147483647 { return 0; }
+    let segment: i64 = 256;
+    let tiles = 1 + (p.y.ne[1] - 1) / segment;
+    if tiles > 65535 { return 0; }
+    let per_task = mul_size(tiles, (p.z.ne[0] + 2) * 4);
+    let batch = low(tasks, high(1, (32 * 1024 * 1024) / per_task));
+    // The device reads the first 18 words. The final three size the launches
+    // and bound the partial softmax buffer independently of prompt length.
+    let config: i64[21] = [p.x.ne[0], p.z.ne[0], positions, heads, p.y.ne[2], p.z.ne[2], p.y.ne[1],
+        p.x.nb[1], p.x.nb[2], p.y.nb[1], p.y.nb[2], p.z.nb[1], p.z.nb[2], mask.nb[1],
+        p.d.nb[1], p.d.nb[2], segment, tiles, tasks, batch, mul_size(batch, per_task)];
+    return cuda_q4_attention(config, q[0 .. p.x.bytes], k[0 .. p.y.bytes], v[0 .. p.z.bytes],
+        masks[0 .. mask.bytes], dst[0 .. p.d.bytes], p.fp[0]);
+}
+
 fn flash_attention(p: const Node &, mask: const Tensor &, q: const u8[:], k: const u8[:],
                    v: const u8[:], masks: const u8[:], dst: u8[:], palette: const i8[:]) -> bool {
     if p.x.kind != 0 || p.d.kind != 0 || !flash_value_type(p.y) || !flash_value_type(p.z) ||
@@ -36,6 +76,8 @@ fn flash_attention(p: const Node &, mask: const Tensor &, q: const u8[:], k: con
     }
     validate(p.x, q.len);
     validate(p.d, dst.len);
+    let device = flash_cuda(p, mask, q, k, v, masks, dst);
+    if device != 0 { return device > 0; }
     let heads = p.x.ne[2];
     let positions = p.x.ne[1];
     var head_power: i64 = 1;

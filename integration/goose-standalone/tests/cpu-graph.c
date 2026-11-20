@@ -201,6 +201,82 @@ static void check_quantized_cache_attention(void) {
     ggml_free(ctx);
 }
 
+static void check_split_q4_attention(void) {
+    enum { width = 256, kv_heads = 2, heads = 4, keys = 517, positions = 3 };
+    struct ggml_context * ctx = ggml_init((struct ggml_init_params){ 1024 * 1024, NULL, true });
+    assert(ctx);
+    struct ggml_tensor * q_data = ggml_new_tensor_3d(ctx, GGML_TYPE_F32, width, heads, positions);
+    struct ggml_tensor * k_data = ggml_new_tensor_3d(ctx, GGML_TYPE_Q4_0, width, kv_heads, keys);
+    struct ggml_tensor * v_data = ggml_dup_tensor(ctx, k_data);
+    struct ggml_tensor * q = ggml_permute(ctx, q_data, 0, 2, 1, 3);
+    struct ggml_tensor * k = ggml_permute(ctx, k_data, 0, 2, 1, 3);
+    struct ggml_tensor * v = ggml_permute(ctx, v_data, 0, 2, 1, 3);
+    struct ggml_tensor * mask = ggml_new_tensor_2d(ctx, GGML_TYPE_F16, keys, positions);
+    const float scale = 1.0f / sqrtf(width);
+    struct ggml_tensor * out = ggml_flash_attn_ext(ctx, q, k, v, mask, scale, 0.0f, 0.0f);
+    struct ggml_cgraph * graph = ggml_new_graph_custom(ctx, 64, false);
+    ggml_build_forward_expand(graph, out);
+    void * storage = fg_standalone_graph_alloc(graph);
+    assert(storage);
+    float * query = q_data->data;
+    for (int i = 0; i < positions * heads * width; ++i) {
+        query[i] = (float) ((13 * i + i / 19) % 27 - 13) / 16.0f;
+    }
+    const struct ggml_type_traits * q4 = ggml_get_type_traits(GGML_TYPE_Q4_0);
+    float * decoded_k = malloc(keys * kv_heads * width * sizeof(float));
+    float * decoded_v = malloc(keys * kv_heads * width * sizeof(float));
+    assert(decoded_k && decoded_v);
+    for (int row = 0; row < keys * kv_heads; ++row) {
+        float src[width];
+        for (int i = 0; i < width; ++i) src[i] = (float) ((17 * row + i * 7) % 21 - 10) / 8.0f;
+        unsigned char * kp = (unsigned char *) k_data->data + row * k_data->nb[1];
+        q4->from_float_ref(src, kp, width);
+        q4->to_float(kp, decoded_k + row * width, width);
+        for (int i = 0; i < width; ++i) src[i] = (float) ((3 * row + i * 11) % 31 - 11) / 8.0f;
+        unsigned char * vp = (unsigned char *) v_data->data + row * v_data->nb[1];
+        q4->from_float_ref(src, vp, width);
+        q4->to_float(vp, decoded_v + row * width, width);
+    }
+    ggml_fp16_t * bias = mask->data;
+    for (int p = 0; p < positions; ++p) {
+        for (int row = 0; row < keys; ++row) {
+            const bool valid = p == 0 ? row % 13 != 0 : p == 1 && row >= 256;
+            bias[p * keys + row] = ggml_fp32_to_fp16(valid ? (float) (row % 7 - 3) / 8.0f : -INFINITY);
+        }
+    }
+    assert(fg_standalone_graph_compute(graph) == GGML_STATUS_SUCCESS);
+    const float * actual = out->data;
+    double peak_error = 0.0;
+    for (int p = 0; p < positions; ++p) {
+        for (int h = 0; h < heads; ++h) {
+            const float * qi = query + (p * heads + h) * width;
+            const int group = h / (heads / kv_heads);
+            double total = 0.0, sum[width] = {0};
+            for (int row = 0; row < keys; ++row) {
+                const float b = ggml_fp16_to_fp32(bias[p * keys + row]);
+                if (b == -INFINITY) continue;
+                const int at = (row * kv_heads + group) * width;
+                double dot = 0.0;
+                for (int i = 0; i < width; ++i) dot += (double) qi[i] * decoded_k[at + i];
+                const double weight = exp(dot * scale + b);
+                total += weight;
+                for (int i = 0; i < width; ++i) sum[i] += weight * decoded_v[at + i];
+            }
+            for (int i = 0; i < width; ++i) {
+                const double expected = total > 0.0 ? sum[i] / total : 0.0;
+                const double error = fabs(actual[(p * heads + h) * width + i] - expected);
+                assert(error < 3e-5);
+                peak_error = fmax(peak_error, error);
+            }
+        }
+    }
+    printf("Split Q4 attention: 517 keys, GQA, padded and fully masked rows, max error %.9g\n", peak_error);
+    free(decoded_k);
+    free(decoded_v);
+    free(storage);
+    ggml_free(ctx);
+}
+
 static void check_quantized_matrix(enum ggml_type kind, bool indexed) {
     struct ggml_context * ctx = ggml_init((struct ggml_init_params){ 1024 * 1024, NULL, true });
     assert(ctx);
@@ -263,6 +339,7 @@ int main(int argc, char ** argv) {
     check_gdn_snapshots(false);
     check_gdn_snapshots(true);
     check_quantized_cache_attention();
+    check_split_q4_attention();
     check_quantized_matrix(GGML_TYPE_Q4_K, false);
     check_quantized_matrix(GGML_TYPE_Q6_K, true);
     if (argc == 2) check_model_step(argv[1]);

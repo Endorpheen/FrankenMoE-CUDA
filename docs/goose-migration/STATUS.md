@@ -161,6 +161,21 @@ three-plane fills, hits without copies, cross-layer eviction, independent
 groups and recovery after an interrupted fill. Model execution, resident
 hit rates and the performance comparison remain open.
 
+EXP-2026-11-20-1503 integrates CUDA attention for strided Q4_0 K/V and
+F32 queries, with an optional shared F16 mask. The standalone kernel reuses
+the existing Goose Q4_0 decoder. It computes one partial softmax state per
+query, head and KV segment, then merges those states and writes the existing
+output layout. It handles both prompt chunks and single-token decode. This
+path covers single-sequence layouts with no ALiBi or logit soft cap. The
+other supported layouts and CPU-only builds use the existing Goose CPU
+operation. K/V updates and primary storage still use the host path.
+
+On the RTX 4070 the graph executor logged both Q4 attention fixtures on CUDA.
+The 517-key grouped-query case with strided K/V and empty mask segments had
+maximum absolute error of 0.000000755 against an independent F64 result.
+The CPU run's maximum error was 0.000000761. Matrix and recurrent graph
+fixtures also passed. No Apex model run or throughput measurement was made.
+
 ## Historical requirements audit
 
 `docs/goose-migration/tasks.json`: **DONE 1**, **PARTIAL 144**, **TODO 7** of 152.

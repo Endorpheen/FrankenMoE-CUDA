@@ -34,8 +34,9 @@ static struct {
     void * library;
     Context context;
     Module module;
-    Function kernel;
+    Function kernel, attention_tiles, attention_merge;
     struct device_buffer input, output, weight, jobs;
+    struct device_buffer attention_value, attention_scratch, attention_config;
     struct device_buffer dense;
     sl_i64 dense_ranges;
     struct expert_cache experts;
@@ -61,6 +62,7 @@ static struct {
 static pthread_once_t cuda_once = PTHREAD_ONCE_INIT;
 static pthread_mutex_t cuda_lock = PTHREAD_MUTEX_INITIALIZER;
 static _Thread_local uint64_t cuda_matrices;
+static _Thread_local uint64_t cuda_attentions;
 
 static void free_expert_metadata(struct expert_cache * cache) {
     free(cache->groups.data);
@@ -105,6 +107,8 @@ static void init_cuda(void) {
     if (error == 0) {
         error = cuda.module_load(&cuda.module, goose_cuda_image);
         if (error == 0) error = cuda.function_get(&cuda.kernel, cuda.module, "goose_quantized_matmul");
+        if (error == 0) error = cuda.function_get(&cuda.attention_tiles, cuda.module, "goose_q4_attention_tiles");
+        if (error == 0) error = cuda.function_get(&cuda.attention_merge, cuda.module, "goose_q4_attention_merge");
         Context current = NULL;
         int pop_error = cuda.pop(&current);
         if (error == 0) error = pop_error;
@@ -335,4 +339,52 @@ uint64_t fg_cuda_take_matrices(void) {
     const uint64_t matrices = cuda_matrices;
     cuda_matrices = 0;
     return matrices;
+}
+
+int64_t fg_cuda_q4_attention(sl_i64 config, sl_u8 q, sl_u8 k, sl_u8 v, sl_u8 mask, sl_u8 out, float scale) {
+    if (config.len != 21 || config.data[17] <= 0 || config.data[17] > 65535 ||
+        config.data[18] <= 0 || config.data[18] > INT_MAX ||
+        config.data[19] <= 0 || config.data[19] > config.data[18] || config.data[20] <= 0 ||
+        q.len <= 0 || k.len <= 0 || v.len <= 0 || mask.len < 0 || out.len <= 0) return -1;
+    const int active = start_context();
+    if (active != 1) return active;
+
+    const sl_u8 data[] = {q, k, v, mask, {(uint8_t *) config.data, config.len * (int64_t) sizeof(*config.data)}};
+    struct device_buffer * buffers[] = {&cuda.input, &cuda.weight, &cuda.attention_value, &cuda.jobs, &cuda.attention_config};
+    int error = reserve(&cuda.output, (size_t) out.len);
+    if (error == 0) error = reserve(&cuda.attention_scratch, (size_t) config.data[20]);
+    for (size_t i = 0; error == 0 && i < sizeof(data) / sizeof(*data); ++i) {
+        if (data[i].len == 0) continue;
+        error = reserve(buffers[i], (size_t) data[i].len);
+        if (error == 0) error = cuda.upload(buffers[i]->address, data[i].data, (size_t) data[i].len);
+    }
+
+    DevicePtr device_mask = mask.len == 0 ? 0 : cuda.jobs.address;
+    const int tasks = (int) config.data[18], capacity = (int) config.data[19];
+    const unsigned tiles = (unsigned) config.data[17];
+    int start = 0;
+    void * tile_args[] = {&cuda.input.address, &cuda.weight.address, &cuda.attention_value.address,
+        &device_mask, &cuda.attention_scratch.address, &cuda.attention_config.address, &scale, &start};
+    void * merge_args[] = {&cuda.attention_scratch.address, &cuda.output.address, &cuda.attention_config.address, &start};
+    while (error == 0 && start < tasks) {
+        const int count = tasks - start < capacity ? tasks - start : capacity;
+        error = cuda.launch(cuda.attention_tiles, (unsigned) count, tiles, 1, 32, 1, 1, 0, NULL, tile_args, NULL);
+        if (error == 0) error = cuda.launch(cuda.attention_merge, (unsigned) count, 1, 1, 32, 1, 1, 0, NULL, merge_args, NULL);
+        start += count;
+    }
+    if (error == 0) error = cuda.download(out.data, cuda.output.address, (size_t) out.len);
+    if (error != 0 && start > 0) (void) cuda.sync();
+    const int popped = finish_context();
+    if (error != 0 || popped != 0) {
+        fprintf(stderr, "Goose CUDA: Q4 attention failed (%d)\n", error ? error : popped);
+        return -1;
+    }
+    ++cuda_attentions;
+    return 1;
+}
+
+uint64_t fg_cuda_take_attentions(void) {
+    const uint64_t attentions = cuda_attentions;
+    cuda_attentions = 0;
+    return attentions;
 }
