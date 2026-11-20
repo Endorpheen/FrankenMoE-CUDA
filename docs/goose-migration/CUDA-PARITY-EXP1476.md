@@ -66,7 +66,7 @@ the entry. Apply the full-request gate on the package schedule.
 
 ## Mechanisms
 
-**32 mechanisms: PARITY 0, PARTIAL 28, MISSING 3, INCORRECT 1.**
+**32 mechanisms: PARITY 0, PARTIAL 29, MISSING 2, INCORRECT 1.**
 
 Group three to five related improvements with a separate commit and
 targeted correctness and CUDA checks for each. Evaluate real answers
@@ -75,10 +75,12 @@ on matched prompts before accepting faster paths. Run the full Apex
 generation repair. Keep the previous checkpoint and isolate observed
 regressions with a focused test.
 
-Prioritize by the [measured gaps](#external-computation-stack-and-measured-gaps).
-Reuse existing Goose implementations for compatible graph shapes.
-The current evidence prioritizes unnecessary prefill transfers,
-quantized matrix throughput, and long-context decode Attention.
+First restore the remaining reference mechanisms with shape-aware
+dispatch and live RTX 4070 traces. Reuse existing Goose implementations
+for compatible graph shapes. Check response quality, RAM and VRAM at
+each connection, then record a new full Apex 32K/512 baseline for
+the qualified package. Use the [measured gaps](#external-computation-stack-and-measured-gaps)
+to prioritize subsequent tuning.
 
 | # | Mechanism and EXP-1476 call path | Evidence and independent Goose state | Status, restoration and verification |
 |---:|---|---|---|
@@ -93,10 +95,10 @@ quantized matrix throughput, and long-context decode Attention.
 | 9 | Device expert grouping. `ggml_cuda_mul_mat_id` / `mmq.cu` → `mm_ids_helper` → per-expert group ranges and Q8 scatter. | `mm_ids_helper` executes. Goose builds per-expert jobs and keeps a GPU SLRU, with host route synchronization. | PARTIAL. Feed active routes to device grouping and pack contiguous batches without losing expert ownership. Verify sparse, repeated and empty groups against the reference. |
 | 10 | Fused MoE selection. `ggml-cuda.cu` `ggml_cuda_topk_moe_fusion` → `topk_moe_cuda`. | Goose selects eight experts directly and fuses gather, clamp, division and scaling in a single weights kernel. The live Apex snapshot matches the preceding graph byte-for-byte. | PARTIAL. Integrate softmax and selection with the weight output. Keep numerical parity and qualify full Apex. |
 | 11 | Fused MoE combination. `ggml_cuda_match_moe_weighted_reduction` → `moe_weighted_reduction_f32`. | The reference fuses the weighted combination. Independent Goose uses the existing fused device body with bounded input windows and eliminates the separate weighted tensor. | PARTIAL. The 4096-token numerical fixture and real Apex trace pass the scoped gate. Full logits and peak memory acceptance remain open. |
-| 12 | FP16 MMA Flash Attention. `fattn.cu` `ggml_cuda_flash_attn_ext` → shape selection → `fattn-mma-f16.cuh` `flash_attn_ext_f16`. | `GOOSE_FLASH_MMA=1` stages real Q4 KV as F16 and uses the existing `8×8` Goose process tile at all ten Apex attention layers. Each CTA finishes its complete causal query tile. | PARTIAL. Match EXP-1476 numerics, restore stream-K scheduling/fix-up and verify supported masks, long-context logits and full memory. |
+| 12 | FP16 MMA Flash Attention. `fattn.cu` `ggml_cuda_flash_attn_ext` → shape selection → `fattn-mma-f16.cuh` `flash_attn_ext_f16`. | `GOOSE_FLASH_MMA=1` stages real Q4 KV as F16 and uses the existing `8×8` Goose process tile at all ten Apex attention layers. [Stream-K](#flash-attention-stream-k-restoration) also executes on eligible causal shapes. | PARTIAL. Verify the full package, other reference tile sizes and supported masks. |
 | 13 | Small-query Flash Attention vector dispatch. `fattn.cu` → `flash_attn_ext_vec`. | [Goose vector decode](#vector-flash-attention-for-q4-decode) executes its Q4_0 path, including a masked tail and partition merge, and improves the 4096/129 decode median. | PARTIAL. Check 32K/512 and other small-query or masked profiles. |
 | 14 | Attention staging and bounds. `fattn-common.cuh` and `fattn-mma-f16.cuh` stage Q4_0 KV as FP16, use FWHT where selected, and derive KV bounds from the mask. | `dequantize_block_q4_0`, `fwht_cuda` and `flash_attn_mask_to_KV_max` execute. Goose applies the reference rotations in the live Q4 KV graph. [Bounded single-query loops](#bounded-vector-attention-loops) reduce full vector Attention GPU time from 9.052 to 3.509 s. | PARTIAL. FWHT executes at widths 256 and 64 on Apex. Float16 staging/rounding, masked tails and full quality still need validation. |
-| 15 | Flash partition reconciliation. `fattn-mma-f16.cuh` → stream-K general/uniform fix-up, plus vector combine-results. | All three reference families are present. Goose merge implements its current scalar partition geometry. | MISSING. Port compatible reconciliation with the MMA and vector schedules. Compare numerical reductions across tail partitions and multihead layouts. |
+| 15 | Flash partition reconciliation. `fattn-mma-f16.cuh` → stream-K general/uniform fix-up, plus vector combine-results. | The [standalone MMA path](#flash-attention-stream-k-restoration) selects and executes both Goose fixups on RTX 4070 with real Apex. Vector decode retains its existing combine-results path. | PARTIAL. Include Stream-K in the next package qualification. Check 32K quality and memory, then tune the choice of workers and tile size. |
 | 16 | GDN prefill Tensor Cores. `ggml_cuda_op_gated_delta_net_impl` → `gdn_single` in `gated-delta-net-mma.cu`. | Reference executes `gdn_single<16,128,1>`. Independent Goose runs its `C=16, V=128` body with `GOOSE_GDN_MMA=1`. All 30 GDN layers execute it in a real Apex block. | PARTIAL. The [first layer's real scores and state](#first-recurrent-sigmoid-and-silu) now match bitwise. Validate full and chunked recurrent state and generation before default promotion. |
 | 17 | GDN decode specialization and fused state cache. `ggml_cuda_op_gated_delta_net_fused_cache` → native scalar `gated_delta_net_cuda` or shape-selected MMA. | Reference executes scalar decode GDN and known fused cache code. Goose has CUDA-resident GDN state and a publish/consume path. | PARTIAL. Match the selected decode kernel's arithmetic and state snapshots against the reference across prefill → decode. Check for stale aliases and measure actual state moves. |
 | 18 | SSM convolution and activation fusion. `ssm-conv.cu` dispatch plus `ggml_cuda_try_fuse` → `ssm_conv_long_token_f32` or `ssm_conv_f32`. | Both reference families execute. Goose fuses SiLU and now executes its [long-token schedule](#reference-long-ssm-convolution) on all 30 recurrent layers of the short prefill with the diagnostic selector enabled. | PARTIAL. Verify persistent history across multiple batches and the final decode profile. |
@@ -982,7 +984,7 @@ stay in the main map.
 | 5–6, Q4_K/Q6_K MMVQ | `goose-cuda-mmvq-q4k/device.goose`, `goose-cuda-mmvq-q6k/device.goose` | Wired for the qualified [dense and indexed decode shapes](#independent-mmvq-decode-checkpoint). The earlier full trace spent 10.031 s in 261,118 scalar matrix launches in the decode-dominated region. |
 | 9, MoE grouping | `goose-cuda-mm-ids/{device,host}.goose` | Standalone groups matrix planes on the host and uses shared Q8 rows in MMQ. The device grouping/scatter source needs its own dispatch and route-layout verification. |
 | 13, Flash decode | `goose-cuda-flash-attention/vector-device.goose` | Connected to single-query Q4_0 decode with its partition merge. The active trace and boundary tests are in the [vector decode checkpoint](#vector-flash-attention-for-q4-decode). |
-| 15, Flash Stream-K | `goose-cuda-flash-attention/{mma-entry-device,mask-fixups-device}.goose` | The prefill path assigns a complete tile per CTA. The reference uses 80 general and 10 uniform Stream-K fixup launches. The current launch and workspace layout still need split ranges and fixup. |
+| 15, Flash Stream-K | `goose-cuda-flash-attention/{mma-entry-device,mask-fixups-device}.goose` | [Both prefill fixups](#flash-attention-stream-k-restoration) are connected behind the package selector. The reference uses 80 general and 10 uniform Stream-K fixup launches on the full workload. |
 | 18, long SSM convolution | `goose-cuda-ssm-convolution/device.goose::ssm_conv_long` | The [reference SSM mode](#reference-long-ssm-convolution) now selects the existing tiled body for eligible four-tap graphs and matches the first Apex convolution and SiLU. The short trace records 30 long-kernel launches. |
 | 19, FP32 RMS | `goose-cuda-normalization/device.goose::rms_row` | Connected through the opt-in selector above. Verified bitwise on the first Apex norm. |
 
@@ -2383,6 +2385,66 @@ Full runs: `cuda-full-dense-both.fz8s60fp` and
 Nsight SHA-256 values
 `2fe15a9425255d3495a8dbcf151296ed6621c1e9d981e943f696cde33e026d4b`
 and `941d936a5e7eb9f13d6e7678b56a422ff2106bffdabf7058a30b6e75fa4b339c`.
+
+## Flash Attention Stream-K restoration
+
+EXP-1569 schedules the existing FP16 MMA tile across a
+flattened query-tile by key-tile range. The Goose planner
+uses two workers per SM and the reference 5% rounding
+rule. It selects a uniform, general, or whole-tile path
+according to the shape. The fixup uses the original
+Goose `mask-fixups-device.goose` reductions and layout.
+The implementation reuses the MMQ pack allocation for
+fixup metadata and partials. It keeps the causal bound,
+supports partial query tiles and writes neutral partials
+for fully masked ranges. A barrier protects shared
+memory across successive tiles of one worker.
+
+The fixture `integration/goose-standalone/tests/flash-stream-k.c`
+checks 16 query heads, two KV heads and Q4_0 storage.
+Uniform (17 queries, 199 keys, prefix 17) compares 69,632
+values to the whole-tile GPU path, with maximum absolute
+error 0.000280. General (289 queries, 333 keys, prefix 45)
+compares 1,183,744 values, with maximum absolute error
+0.001769 and relative L2 0.0004531. Both pass CUDA
+memcheck. General also passes racecheck on the final
+build with zero errors and warnings.
+
+RTX 4070 executes ten 92-worker Stream-K and ten general
+fixup launches on the paired Apex 4096/129. A 120/1
+Apex probe executes ten 90-worker Stream-K and ten
+uniform fixup launches for 30 output tiles. The uniform
+probe uses the available 8-by-8 tile. EXP-1476's trace
+also includes a 4-by-8 uniform shape.
+
+| Profiled Apex 4096/129 | Whole-tile A | Stream-K B |
+|---|---:|---:|
+| Prefill, tok/s | 789.053 | 790.191 |
+| Decode, steps/s | 21.554 | 22.106 |
+| Flash MMA and fixup device time, ms | 50.796 | 74.568 |
+| Process RSS high-water, KiB | 23,484,572 | 23,485,240 |
+| Sampled peak process VRAM, MiB | 8,484 | 8,484 |
+| Process swap and system swap-out growth | 0 | 0 |
+
+Both answers identify the missing measurements and
+queue-growth risk. Both repeat part of the input. IDs,
+probabilities and SLRU activity differ, so the pair
+cannot attribute a decode gain to Stream-K. Both retain
+all 5,301,139 model pages. The final barrier build
+repeats B's response, IDs and probabilities with 8,484
+MiB peak process VRAM and zero swap. Enable
+`GOOSE_FLASH_STREAM_K=1` alongside `GOOSE_FLASH_MMA=1`
+for package qualification. The existing whole-tile
+selector remains the default pending the full quality
+and memory check.
+
+The profiled pair, uniform probe and final confirmation
+are stored under
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/flash-stream-exp1569`.
+The A/B directories end in `5hlaxrgu` and `3t3tehhf`.
+The uniform and final confirmations end in `q786tnov`
+and `_uvs7o46`. Final executable SHA-256
+`bb0bc9cb57e490c762ad4032e353afc13ecf35912d0f5b6c7529e1c76b9b53bf`.
 
 ## Long Attention partition probe
 

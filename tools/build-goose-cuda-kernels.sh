@@ -80,6 +80,11 @@ cp "$ROOT/goose/cuda/standalone-mmvq.goose" "$OUT/mmvq.goose"
 cp "$ROOT/goose/cuda/standalone-dense-mma.goose" "$OUT/dense-mma.goose"
 sed '/^fn main()/,$d' "$ROOT/goose/cuda/goose-cuda-flash-attention/value-prefill-device.goose" > "$OUT/flash-mma.goose"
 cat "$ROOT/goose/cuda/standalone-flash-mma.goose" >> "$OUT/flash-mma.goose"
+sed -n '/^fn ftz_thresh(/,/^}/p; /^extern "fg168f_\(ld_f32\|st_f32\|sync\|lc\|expf\|fmaxf\)"/p;
+        /^fn fixup_uniform(/,/^}/p; /^fn fixup_general(/,/^}/p' \
+    "$ROOT/goose/cuda/goose-cuda-flash-attention/mask-fixups-device.goose" |
+    sed 's/^fn fixup_/export fn flash_fixup_/;
+         s/\b\(ftz_thresh\|ld_f32\|st_f32\|pdl_sync\|lc\|expf\|fmaxf\)\b/flash_fix_\1/g' >> "$OUT/flash-mma.goose"
 sed '/^fn fattn_vec_2(/,/^fn combine(/ { /^fn combine(/!d; }
     /^fn main()/,$d
     s/^fn \(fattn_vec_1\|combine\)(/export fn \1(/

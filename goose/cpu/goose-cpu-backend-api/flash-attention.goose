@@ -15,6 +15,18 @@ extern "fg_cuda_q4_attention" fn cuda_q4_attention(config: const i64[:], q: cons
     v: const u8[:], mask: const u8[:], out: u8[:], scale: f32) -> i64;
 extern "fg_cuda_kv_read" fn cuda_kv_read(k: const u8[:], v: const u8[:]) -> i64;
 
+export fn fg143_flash_stream_workers(queries: i64, groups: i64, keys: i64, sms: i64) -> i64 {
+    if queries < 8 || queries > 2147483647 || groups <= 0 || groups > 65535 ||
+       keys <= 0 || keys > 2147483647 || sms <= 0 || sms > 1024 { return 0; }
+    let tiles = ((queries + 7) / 8) * groups;
+    let key_tiles = (keys + 31) / 32;
+    if tiles > 2147483647 / key_tiles || key_tiles == 1 { return 0; }
+    let raw = low(2 * sms, tiles * key_tiles);
+    let rounded = (raw / tiles) * tiles;
+    let workers = if rounded > 0 && 100 * (raw - rounded) <= 5 * raw { rounded } else { raw };
+    return if workers > 1 && workers != tiles { workers } else { 0 };
+}
+
 fn cuda_q4_kv_layout(t: const Tensor &, available: i64) -> bool {
     if t.kind != 2 || t.ne[0] > 256 || t.ne[3] != 1 ||
        t.nb[0] != 18 || t.nb[1] <= 0 || t.nb[1] % 2 != 0 || t.nb[2] < 0 || t.nb[2] % 2 != 0 {

@@ -72,6 +72,12 @@ static uint32_t fg175c_fg175p_smld(uint64_t p, uint64_t i) { return ((__local ui
 static void fg175c_fg175p_smst(uint64_t p, uint64_t i, uint32_t v) { ((__local uint32_t *) p)[i] = v; }
 static float fg175c_fg175p_smldf(uint64_t p, uint64_t i) { return ((__local float *) p)[i]; }
 static void fg175c_fg175p_smstf(uint64_t p, uint64_t i, float v) { ((__local float *) p)[i] = v; }
+static float fg168f_ld_f32(uint64_t p, uint64_t off) { return fg_device_global_load(p + off); }
+static void fg168f_st_f32(uint64_t p, uint64_t off, float v) { fg_device_global_store(p + off, v); }
+static float fg168f_expf(float v) { return fg_attn_exp(v); }
+static float fg168f_fmaxf(float a, float b) { return fg_vector_max(a, b); }
+static void fg168f_sync(void) {}
+static void fg168f_lc(void) {}
 #define fg175c_fg175p_h2mul fg175c_fg176i_mulh2
 #define fg175c_fg175p_h2pack fg175c_fg176i_h2
 
@@ -100,4 +106,45 @@ __kernel void goose_flash_causal_mma(__global const float * q, __global const ui
     __asm__("mov.u64 %0, goose_flash_shared;" : "=l"(shared));
     fg_flash_causal_mma_g((uint64_t) q, (uint64_t) k, (uint64_t) v, (uint64_t) out,
         (uint64_t) cfg, scale, tile, head, thread % 32, thread / 32, shared);
+}
+
+__kernel void goose_flash_stream_mma(__global const float * q, __global const uint16_t * k,
+    __global const uint16_t * v, __global float * out, __global float * fix,
+    __global const int64_t * cfg, float scale) {
+    uint32_t worker, workers, thread;
+    uint64_t shared;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(worker));
+    __asm__("mov.u32 %0, %%nctaid.x;" : "=r"(workers));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
+    __asm__("mov.u64 %0, goose_flash_shared;" : "=l"(shared));
+    fg_flash_stream_mma_g((uint64_t) q, (uint64_t) k, (uint64_t) v, (uint64_t) out,
+        (uint64_t) fix, (uint64_t) cfg, scale, worker, workers, thread % 32, thread / 32, shared);
+}
+
+__kernel void goose_flash_fixup_uniform(__global float * out, __global const float * fix,
+    int32_t queries, int32_t heads, int32_t workers, int32_t blocks_per_tile) {
+    uint32_t tile, query, head, lane;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(tile));
+    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(query));
+    __asm__("mov.u32 %0, %%ctaid.z;" : "=r"(head));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
+    const int64_t per_head = (queries + 7l) / 8;
+    const int32_t groups = heads / 8;
+    flash_fixup_uniform_g((uint64_t) out, (uint64_t) fix, queries, heads, groups, workers, 8,
+        blocks_per_tile, per_head * groups, per_head, per_head, 8, 8, tile, query, head, lane);
+}
+
+__kernel void goose_flash_fixup_general(__global float * out, __global const float * fix,
+    int32_t queries, int32_t heads, int32_t keys) {
+    uint32_t worker, workers, query, head, lane;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(worker));
+    __asm__("mov.u32 %0, %%nctaid.x;" : "=r"(workers));
+    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(query));
+    __asm__("mov.u32 %0, %%ctaid.z;" : "=r"(head));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
+    const int64_t key_tiles = (keys + 31l) / 32;
+    const int64_t per_head = ((queries + 7l) / 8) * key_tiles;
+    const int64_t work = per_head * (heads / 8);
+    flash_fixup_general_g((uint64_t) out, (uint64_t) fix, queries, heads, 8, (int32_t) work,
+        work, per_head, per_head, key_tiles, 8, 8, worker, query, head, workers, lane);
 }

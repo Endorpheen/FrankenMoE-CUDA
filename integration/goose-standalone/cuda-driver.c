@@ -60,6 +60,7 @@ static struct {
     Function mmvq_pack, mmvq;
     Function dense_mma, dense_mma_reference, gdn_mma, flash_mma, flash_stage, flash_vec, flash_vec_merge;
     Function mmq_stream, mmq_stream_fixup;
+    Function flash_stream, flash_fixup_uniform, flash_fixup_general;
     Function rope_phases, rope_apply, ssm_conv, ssm_conv_long;
     Function route_reduce, route_sort, route_topk, route_gather, route_norm, blit, fwht, moe_weighted;
     struct device_buffer input, output, weight, jobs;
@@ -229,6 +230,8 @@ static void init_cuda(void) {
     const bool gdn_mma = gdn_setting && strcmp(gdn_setting, "1") == 0;
     const char * flash_setting = getenv("GOOSE_FLASH_MMA");
     const bool flash_mma = flash_setting && strcmp(flash_setting, "1") == 0;
+    const char * flash_stream_setting = getenv("GOOSE_FLASH_STREAM_K");
+    const bool flash_stream = flash_mma && flash_stream_setting && strcmp(flash_stream_setting, "1") == 0;
     const bool flash_vec_requested = fg_standalone_option_enabled("GOOSE_FLASH_VEC");
     const char * rms_setting = getenv("GOOSE_RMS_REFERENCE");
     const bool rms_reference = rms_setting && strcmp(rms_setting, "1") == 0;
@@ -256,7 +259,7 @@ static void init_cuda(void) {
     const bool mma_image = tensor_cores || mmvq || flash_vec;
     const bool reference_arch = (q4_reference || q6_reference || dense_reference) && major == 8 &&
         cuda.device_attribute(&minor, compute_capability_minor, device) == 0 && minor == 9;
-    if (stream_k || (reference_arch && (q4_reference || q6_reference))) {
+    if (stream_k || flash_stream || (reference_arch && (q4_reference || q6_reference))) {
         enum { multiprocessor_count = 16 };
         if (cuda.device_attribute(&cuda.multiprocessors, multiprocessor_count, device) != 0 || cuda.multiprocessors <= 0) return;
     }
@@ -289,6 +292,9 @@ static void init_cuda(void) {
         if (error == 0) error = cuda.function_get(&cuda.attention_merge, cuda.module, "goose_q4_attention_merge");
         if (error == 0 && flash_mma) error = cuda.function_get(&cuda.flash_mma, cuda.module, "goose_flash_causal_mma");
         if (error == 0 && flash_mma) error = cuda.function_get(&cuda.flash_stage, cuda.module, "goose_flash_q4_stage");
+        if (error == 0 && flash_stream) error = cuda.function_get(&cuda.flash_stream, cuda.module, "goose_flash_stream_mma");
+        if (error == 0 && flash_stream) error = cuda.function_get(&cuda.flash_fixup_uniform, cuda.module, "goose_flash_fixup_uniform");
+        if (error == 0 && flash_stream) error = cuda.function_get(&cuda.flash_fixup_general, cuda.module, "goose_flash_fixup_general");
         if (error == 0 && flash_vec) error = cuda.function_get(&cuda.flash_vec, cuda.module, "goose_flash_vec_q4");
         if (error == 0 && flash_vec) error = cuda.function_get(&cuda.flash_vec_merge, cuda.module, "goose_flash_vec_combine");
         if (error == 0) error = cuda.function_get(&cuda.gdn, cuda.module, "goose_gated_delta_net");
@@ -1420,18 +1426,48 @@ static int launch_flash_mma(const int64_t * c, DevicePtr * staged, DevicePtr out
     int error = reserve(&cuda.attention_scratch, (size_t) (2 * span));
     if (error == 2) return 0; // The scalar path can use smaller scratch waves.
     if (error != 0) return error;
+    const unsigned heads = (unsigned) c[4];
+    const unsigned tiles_per_head = (unsigned) ((c[2] + 7) / 8);
+    const uint64_t tiles = (uint64_t) tiles_per_head * heads;
+    unsigned workers = cuda.flash_stream ?
+        (unsigned) fg143_flash_stream_workers(c[2], c[4], keys, cuda.multiprocessors) : 0;
+    DevicePtr fix = 0;
+    if (workers && tiles % workers != 0) {
+        const size_t fix_bytes = (size_t) workers * 64 * (256 + 4) * sizeof(float);
+        // Flash and MMQ consume this scratch on the same legacy stream.
+        // Reuse the already allocated MMQ pack when it fits.
+        error = reserve(&cuda.mmq_packed, fix_bytes);
+        if (error == 2) { workers = 0; error = 0; }
+        else if (error != 0) return error;
+        else fix = cuda.mmq_packed.address;
+    }
     DevicePtr keys_half = cuda.attention_scratch.address, values_half = keys_half + span;
     int64_t k_row = c[9], k_head = c[10], v_row = c[11], v_head = c[12];
     void * k_args[] = {&staged[1], &keys_half, &keys, &padded, &k_row, &k_head};
     void * v_args[] = {&staged[2], &values_half, &keys, &padded, &v_row, &v_head};
-    const unsigned heads = (unsigned) c[4];
     error = cuda.launch(cuda.flash_stage, (unsigned) padded, heads, 1, 128, 1, 1, 0, NULL, k_args, NULL);
     if (error == 0) error = cuda.launch(cuda.flash_stage, (unsigned) padded, heads, 1, 128, 1, 1, 0, NULL, v_args, NULL);
     if (error == 0) {
         enum { FLASH_MMA_SHARED_BYTES = 33792 };
-        void * args[] = {&staged[0], &keys_half, &values_half, &output, &staged[4], &scale};
-        error = cuda.launch(cuda.flash_mma, (unsigned) ((c[2] + 7) / 8), heads, 1,
-            128, 1, 1, FLASH_MMA_SHARED_BYTES, NULL, args, NULL);
+        if (workers) {
+            void * args[] = {&staged[0], &keys_half, &values_half, &output, &fix, &staged[4], &scale};
+            error = cuda.launch(cuda.flash_stream, workers, 1, 1, 128, 1, 1, FLASH_MMA_SHARED_BYTES, NULL, args, NULL);
+        } else {
+            void * args[] = {&staged[0], &keys_half, &values_half, &output, &staged[4], &scale};
+            error = cuda.launch(cuda.flash_mma, tiles_per_head, heads, 1, 128, 1, 1, FLASH_MMA_SHARED_BYTES, NULL, args, NULL);
+        }
+    }
+    if (error == 0 && fix) {
+        int32_t queries = (int32_t) c[2], query_heads = (int32_t) c[3];
+        if (workers % tiles == 0) {
+            int32_t blocks_per_tile = (int32_t) (workers / tiles);
+            void * args[] = {&output, &fix, &queries, &query_heads, &workers, &blocks_per_tile};
+            error = cuda.launch(cuda.flash_fixup_uniform, (unsigned) tiles, 8, 8, 256, 1, 1, 0, NULL, args, NULL);
+        } else {
+            int32_t key_count = (int32_t) keys;
+            void * args[] = {&output, &fix, &queries, &query_heads, &key_count};
+            error = cuda.launch(cuda.flash_fixup_general, workers, 8, 8, 256, 1, 1, 0, NULL, args, NULL);
+        }
     }
     if (error == 0) *executed = true;
     else (void) cuda.sync();
