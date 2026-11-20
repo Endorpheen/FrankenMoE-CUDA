@@ -25,6 +25,7 @@ extern "fg175v_ld_f32" fn ld_f32(p: u64, a: u64) -> f32;
 extern "fg175v_st_f32" fn st_f32(p: u64, a: u64, v: f32);
 extern "fg175v_ld_u16" fn ld_u16(p: u64, a: u64) -> u32;
 extern "fg175v_ld_i32" fn ld_i32(p: u64, a: u64) -> i32;
+extern "fg175v_st_i32" fn st_i32(p: u64, a: u64, v: i32);
 extern "fg175v_h2f" fn h2f(w: u32) -> f32;
 extern "fg175v_dp4a" fn dp4a(a: i32, b: i32, c: i32) -> i32;
 extern "fg175v_expf" fn expf(x: f32) -> f32;
@@ -235,6 +236,21 @@ fn quant_q8(xb: u64, scale: f32, yq: i64, yds: i64, tx: i32, smem: u64) {
         sm_st_f32(smem, ( (yds + ( (2 * (tx / 8)) as i64) + 1)) as u64, sum);
     }
 }
+
+// Use the vector path's original query quantizer and word layout.
+fn quant_q8_head(q: u64, scale: f32, lane: i32, shared: u64) {
+    quant_q8(q, scale, 0, 64, lane, shared);
+    quant_q8(q + 512, scale, 32, 72, lane, shared);
+}
+
+fn pack_query(q: u64, dst: u64, scale: f32, lane: i32, shared: u64) {
+    quant_q8_head(q, scale, lane, shared);
+    syncwarp();
+    let word = lane as u64;
+    st_i32(dst, 4 * word, sm_i32(shared, word));
+    st_i32(dst, 4 * (word + 32), sm_i32(shared, word + 32));
+    if lane < 16 { st_i32(dst, 4 * (word + 64), sm_i32(shared, word + 64)); }
+}
 // flash_attn_ext_vec<256,Q4_0,Q4_0,false>: block dim (32,4,1), lane=tx, warp=ty.
 // ncols is the runtime cols_per_block (1 or 2); D/4=64 i32 per row; D/QK8_1=8 ds pairs.
 
@@ -280,7 +296,7 @@ fn fattn_vec_1(
     nb31: i64,
     nb32: i64,
     nb33: i64,
-    unused_ncols: i32,
+    query_mode: i32,
     bx: i32,
     by: i32,
     bz: i32,
@@ -319,91 +335,31 @@ fn fattn_vec_1(
         ksum[j] = 0.0;
     }
     j = (1 as i32);
-    // Q -> q8_1 in the shared KQ buffer: source j0-loop with break; nwarps=4>=ncols so warp ty
-    // owns column ty exactly when ty<ncols.
+    // The standalone single-query path can share a packed Q across partitions.
     pdl_sync();
-    let jq = ty;
-
-    if ! (4 > ncols && jq >= ncols) {
-        let colw = jq * 256;
-
-        if ncols > 1 && ic0 + jq >= ne01_z {
-            var i0: i32 = 0;
-
-            if true {
-                let i0: i32 = 0;
-                sm_st_i32(smem, ( (colw + i0 + tx)) as u64, 0);
-            }
-
-            if true {
-                let i0: i32 = 32;
-                sm_st_i32(smem, ( (colw + i0 + tx)) as u64, 0);
-            }
-            i0 = (64 as i32);
-
-            if tx < 8 {
-                sm_st_f32(smem, ( (colw + 64 + 2 * tx)) as u64, 0.0);
-                sm_st_f32(smem, ( (colw + 64 + 2 * tx + 1)) as u64, 0.0);
-            }
-        } else {
-            let xb = qb + ( (nb01 * (jq as i64))) as u64;
-            var i0: i32 = 0;
-
-            if true {
-                let i0: i32 = 0;
-                quant_q8(
-                    xb + ( (i0 * 16) as u64),
-                    scale,
-                    (colw + i0) as i64,
-                    (colw + 64 + 2 * (i0 / 8)) as i64,
-                    tx,
-                    smem);
-            }
-
-            if true {
-                let i0: i32 = 32;
-                quant_q8(
-                    xb + ( (i0 * 16) as u64),
-                    scale,
-                    (colw + i0) as i64,
-                    (colw + 64 + 2 * (i0 / 8)) as i64,
-                    tx,
-                    smem);
-            }
-            i0 = (64 as i32);
-        }
+    let prepacked = query_mode == 0;
+    if !prepacked {
+        if ty == 0 { quant_q8_head(qb, scale, tx, smem); }
+        barrier();
     }
-    barrier();
     var qi32: i32[4] = default < i32[4] > ();
     var qdx: f32[4] = default < f32[4] > ();
     var qdy: f32[4] = default < f32[4] > ();
-    j = 0;
-
-    if true {
-        let j: i32 = 0;
-        var i0: i32 = 0;
-
-        if true {
-            let i0: i32 = 0;
-            let i = i0 + tx;
-            qi32[j * 2 + i0 / 32] = sm_i32(smem, ( (j * 256 + i)) as u64);
-            let dw = ( (j * 256 + 64 + 2 * (i / 8))) as u64;
-            qdx[j * 2 + i0 / 32] = sm_f32(smem, dw);
-            qdy[j * 2 + i0 / 32] = sm_f32(smem, dw + 1);
+    let packed = q_p + ((320 * (bz as i64)) as u64);
+    for half in 2 {
+        let word = (32 * half + (tx as i64)) as u64;
+        let ds = 64 + 2 * (word / 8);
+        if prepacked {
+            qi32[half] = ld_i32(packed, 4 * word);
+            qdx[half] = ld_f32(packed, 4 * ds);
+            qdy[half] = ld_f32(packed, 4 * (ds + 1));
+        } else {
+            qi32[half] = sm_i32(smem, word);
+            qdx[half] = sm_f32(smem, ds);
+            qdy[half] = sm_f32(smem, ds + 1);
         }
-
-        if true {
-            let i0: i32 = 32;
-            let i = i0 + tx;
-            qi32[j * 2 + i0 / 32] = sm_i32(smem, ( (j * 256 + i)) as u64);
-            let dw = ( (j * 256 + 64 + 2 * (i / 8))) as u64;
-            qdx[j * 2 + i0 / 32] = sm_f32(smem, dw);
-            qdy[j * 2 + i0 / 32] = sm_f32(smem, dw + 1);
-        }
-        i0 = (64 as i32);
     }
-    j = (1 as i32);
-    barrier();
+    if !prepacked { barrier(); }
     var kvlim: i32 = ne11;
 
     if kv_max_p != 0 {

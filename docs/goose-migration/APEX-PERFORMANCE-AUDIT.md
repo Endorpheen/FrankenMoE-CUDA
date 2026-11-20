@@ -23,8 +23,12 @@ reuses the weight fragment for 64-route Q4_K blocks
 and saves 2.421 s of full unprofiled prefill.
 [EXP-1581](CUDA-PARITY-EXP1476.md#q6_k-16-by-64-cooperative-tiles)
 extends 64-route tiles to Q6_K and saves 1.128 s in its
-full unprofiled pair. The
-tables below retain the original audit checkpoint.
+full unprofiled pair.
+[EXP-1582](CUDA-PARITY-EXP1476.md#shared-query-packing-for-long-vector-attention)
+reuses the query quantization across long vector Attention
+partitions and saves 0.655 and 0.728 s of full decode in
+opposite-order diagnostic pairs. The tables below retain
+the original audit checkpoint.
 This comparison locates
 work and gaps. Final acceptance requires the fresh
 paired conditions in [the acceptance checklist](APEX-32K-ACCEPTANCE.md).

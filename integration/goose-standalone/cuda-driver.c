@@ -108,6 +108,7 @@ static struct {
     Function mmq_q6_dense_x64, mmq_q6_routed_x64;
     Function mmvq_pack, mmvq;
     Function dense_mma, dense_mma_reference, gdn_mma, flash_mma, flash_stage, flash_vec, flash_vec_merge;
+    Function flash_vec_pack, flash_vec_packed;
     Function mmq_stream, mmq_stream_fixup;
     Function flash_stream, flash_fixup_uniform, flash_fixup_general;
     Function rope_phases, rope_apply, ssm_conv, ssm_conv_long;
@@ -459,6 +460,7 @@ static void load_cuda(void) {
     const bool gdn_mma = gdn_setting && strcmp(gdn_setting, "1") == 0;
     const char * flash_setting = getenv("GOOSE_FLASH_MMA");
     const bool flash_mma = flash_setting && strcmp(flash_setting, "1") == 0;
+    const bool vec_pack = fg_standalone_option_enabled("GOOSE_FLASH_VEC_PREPACK");
     const char * flash_stream_setting = getenv("GOOSE_FLASH_STREAM_K");
     const bool flash_stream = flash_mma && flash_stream_setting && strcmp(flash_stream_setting, "1") == 0;
     const bool flash_vec_requested = fg_standalone_option_enabled("GOOSE_FLASH_VEC");
@@ -543,6 +545,10 @@ static void load_cuda(void) {
         if (error == 0 && flash_stream) error = cuda.function_get(&cuda.flash_fixup_general, cuda.module, "goose_flash_fixup_general");
         if (error == 0 && flash_vec) error = cuda.function_get(&cuda.flash_vec, cuda.module, "goose_flash_vec_q4");
         if (error == 0 && flash_vec) error = cuda.function_get(&cuda.flash_vec_merge, cuda.module, "goose_flash_vec_combine");
+        if (error == 0 && flash_vec && vec_pack)
+            error = cuda.function_get(&cuda.flash_vec_pack, cuda.module, "goose_flash_vec_pack_query");
+        if (error == 0 && flash_vec && vec_pack)
+            error = cuda.function_get(&cuda.flash_vec_packed, cuda.module, "goose_flash_vec_q4_packed");
         if (error == 0) init_flash_graph();
         if (error == 0) error = cuda.function_get(&cuda.gdn, cuda.module, "goose_gated_delta_net");
         if (error == 0 && gdn_mma) {
@@ -1963,22 +1969,35 @@ static int launch_flash_pair(const struct kernel_node_params * vector, const str
 }
 
 static int launch_flash_vec(const int64_t * c, DevicePtr * staged, DevicePtr output, float scale, bool * executed) {
-    enum { vector_bytes = 1024 };
+    enum { vector_bytes = 1024, packed_query_bytes = 320, min_prepack_parts = 64 };
     int32_t keys = (int32_t) (c[21] == 0 ? c[6] : c[21]);
     int32_t heads = (int32_t) c[3];
     int32_t parts = (int32_t) fg143_flash_vector_parts(keys);
-    DevicePtr matrix = output, meta = 0;
+    DevicePtr matrix = output, meta = 0, query = staged[0];
+    bool prepacked = cuda.flash_vec_pack && parts >= min_prepack_parts;
     if (parts > 1) {
         const size_t vectors = (size_t) heads * (size_t) parts;
         const size_t span = vectors * vector_bytes;
-        const int error = reserve(&cuda.attention_scratch, span + vectors * 2 * sizeof(float));
+        const size_t scratch = span + vectors * 2 * sizeof(float);
+        const size_t extra = prepacked ? (size_t) heads * packed_query_bytes : 0;
+        int error = reserve(&cuda.attention_scratch, scratch + extra);
+        if (error == 2 && prepacked) {
+            prepacked = false;
+            error = reserve(&cuda.attention_scratch, scratch);
+        }
         if (error == 2) return 0;
         if (error != 0) return error;
         matrix = cuda.attention_scratch.address;
         meta = matrix + span;
+        if (prepacked) query = matrix + scratch;
     }
-    void * args[] = {&staged[0], &staged[1], &staged[2], &matrix, &meta, &staged[4], &keys, &scale};
-    const struct kernel_node_params vector = { .function = cuda.flash_vec, .grid_x = (unsigned) heads,
+    if (prepacked) {
+        void * pack[] = {&staged[0], &query, &staged[4], &scale};
+        const int error = cuda.launch(cuda.flash_vec_pack, (unsigned) heads, 1, 1, 32, 1, 1, 0, NULL, pack, NULL);
+        if (error != 0) return error;
+    }
+    void * args[] = {&query, &staged[1], &staged[2], &matrix, &meta, &staged[4], &keys, &scale};
+    const struct kernel_node_params vector = { .function = prepacked ? cuda.flash_vec_packed : cuda.flash_vec, .grid_x = (unsigned) heads,
         .grid_y = (unsigned) parts, .grid_z = 1, .block_x = 128, .block_y = 1, .block_z = 1, .params = args };
     void * merge_args[] = {&matrix, &meta, &output, &parts, &heads};
     const struct kernel_node_params merge = { .function = cuda.flash_vec_merge, .grid_x = (unsigned) heads,

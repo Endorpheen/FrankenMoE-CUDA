@@ -87,8 +87,8 @@ sed -n '/^fn ftz_thresh(/,/^}/p; /^extern "fg168f_\(ld_f32\|st_f32\|sync\|lc\|ex
          s/\b\(ftz_thresh\|ld_f32\|st_f32\|pdl_sync\|lc\|expf\|fmaxf\)\b/flash_fix_\1/g' >> "$OUT/flash-mma.goose"
 sed '/^fn fattn_vec_2(/,/^fn combine(/ { /^fn combine(/!d; }
     /^fn main()/,$d
-    s/^fn \(fattn_vec_1\|combine\)(/export fn \1(/
-    s/\b\(negmax\|absf\|wr_sum\|wr_max\|alibi_slope\|q4_word\|vec_dot_kq4\|dequant_v4\|quant_q8\|fattn_vec_1\|combine\)\b/fv_\1/g
+    s/^fn \(fattn_vec_1\|combine\|pack_query\)(/export fn \1(/
+    s/\b\(negmax\|absf\|wr_sum\|wr_max\|alibi_slope\|q4_word\|vec_dot_kq4\|dequant_v4\|quant_q8\|quant_q8_head\|pack_query\|fattn_vec_1\|combine\)\b/fv_\1/g
     s/\bV4\b/VecFlash4/g' \
     "$ROOT/goose/cuda/goose-cuda-flash-attention/vector-device.goose" > "$OUT/flash-vec.goose"
 sed '/^fn load_mask(/,$d; s/^fn load_kv(/export fn fg_flash_load_kv(/' \

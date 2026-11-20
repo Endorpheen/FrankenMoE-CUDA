@@ -3068,6 +3068,58 @@ Full A/B directories end in `8p0be036` and `sklg3axw`.
 Default executable SHA-256
 `471702a96c6b8987c46cb357063dc6e8d867670013f5c17fa373f058ac6fd3a0`.
 
+## Shared query packing for long vector Attention
+
+EXP-1582 reuses one Q8_1 query block per head across
+vector Attention partitions. The old path repeated the
+same quantization in each partition. Both paths use the
+same Goose quantizer and merge. The qualified default
+starts at 64 partitions and uses 320 bytes per head in
+the existing Attention scratch buffer. Smaller shapes
+retain inline packing. The rollback is
+`GOOSE_FLASH_VEC_PREPACK=0`.
+
+The Q4 fixture compares outputs across the dispatch
+boundary at 8,064 and 8,065 keys and at 32,769 keys.
+The outputs match bitwise and CUDA memcheck reports zero
+errors. The graph fixture switches the kernel on replay
+and observes both inline and prepacked launches.
+
+| Full Apex 32K/512, 4096/4096 | Inline A | Prepacked B |
+|---|---:|---:|
+| Profiled vector + query packing + merge, s | 3.564 | 2.855 |
+| Profiled decode, steps/s | 23.628 | 24.438 |
+| Unprofiled B–A prefill, tok/s | 942.149 | 942.943 |
+| Unprofiled B–A decode, steps/s | 25.233 | 26.077 |
+| Unprofiled B–A decode, s | 20.251 | 19.596 |
+| Unprofiled A–B prefill, tok/s | 936.834 | 936.412 |
+| Unprofiled A–B decode, steps/s | 25.037 | 25.963 |
+| Unprofiled A–B decode, s | 20.410 | 19.682 |
+| Both unprofiled pairs, peak process VRAM, MiB | 7,272 | 7,272 |
+| Unprofiled A–B RSS high-water, KiB | 22,939,252 | 22,939,280 |
+
+The trace reports 5,110 packed vector calls and 5,110
+query packing calls. Transfers are unchanged at
+154,842,736,688 H2D and 551,156,480 D2H bytes. On the
+short 4096/129 trial, applying packing from eight
+partitions moves vector plus merge and packing from
+127.396 to 127.910 ms. The default therefore retains
+inline packing for that range.
+
+Both unprofiled pairs preserve the response, token IDs,
+probability rows and stop reason. The known opening
+prompt echo remains. Process swap is zero. System
+swap-out is observable in both arms: 873/1,079 pages in
+the B–A pair (A/B order in this sentence), and
+89,063/65,867 pages in the A–B pair. These runs
+support the kernel optimization and leave clean full
+baseline acceptance open.
+
+Binary and artifacts are under
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/flash-prepack-exp1582`.
+Default executable SHA-256
+`5fef71d24ccf728e939413d11c531c31fd8a624e2cf27c5923621aff69faedf4`.
+
 ## Long Attention partition probe
 
 EXP-2026-11-20-1562 holds the existing vector kernel fixed
