@@ -92,7 +92,7 @@ dependencies. Resume decode-specific work after prefill recovery.
 |---:|---|---|---|
 | 1 | Q4_K MMQ. `ggml-cuda.cu` `ggml_cuda_mul_mat` / `ggml_cuda_mul_mat_id` → `mmq.cu` `ggml_cuda_mul_mat_q` → `mmq-load-tiles.cuh` and `mmq-vec-dot.cuh` → `mul_mat_q`. | Executed type 12 symbols contain SM89 `IMMA.16832.S8.S8`. With `GOOSE_MMQ=1`, Goose sends dense and routed 16×8 tiles to its K=32 MMA path. | PARTIAL. The integer-dot fixture and real 4,096-ID trace exercise the kernel. Full output parity and unprofiled performance remain open. |
 | 2 | Q6_K MMQ, same backend chain with `ggml_cuda_mmq_vec_dot_q6_K_q8_1_mma`. | Executed type 14 symbols contain SM89 `IMMA.16816.S8.S8`. Goose candidate uses K=16 and the existing packed loader and signed per-16 scale. | PARTIAL. Dense and cached routes match the integer-dot fixture, and the real short trace reaches the tiled path. Validate full generation and small shapes separately. |
-| 3 | Activation packing. `mmq.cu` → direct or scatter `quantize_mmq_q8_1` in `quantize.cu`, then MMQ. DS4 carries a half scale and activation sum. D4 carries F32 scales. | Both direct and scatter templates execute in the reference. Independent MMQ uses the EXP180 packer for bounded, job-ordered DS4/D4 windows. | PARTIAL. Both formats execute on real Apex. Device scatter and unique-input packing remain open. Validate model-level parity and quantify duplicate packing. |
+| 3 | Activation packing. `mmq.cu` → direct or scatter `quantize_mmq_q8_1` in `quantize.cu`, then MMQ. DS4 carries a half scale and activation sum. D4 carries F32 scales. | Both direct and scatter templates execute in the reference. Independent MMQ reuses the EXP180 packer and shares one Q8_1 row across routes when their input slot is identical. | PARTIAL. Both formats execute on Apex. Device scatter/grouping and model-level parity remain open. |
 | 4 | MMQ stream-K. `mmq.cuh` partitions K and invokes `mul_mat_q_stream_k_fixup` to combine partial outputs. | Independent Goose partitions flattened output tiles and K blocks and applies backward partial reduction with `GOOSE_MMQ_STREAM_K=1`. GPU fixtures and a short Apex shape execute the fixup. | PARTIAL. Verify response parity and scheduling on reference-sized tiles. The current 4096 geometry selects regular tiles. |
 | 5 | Quantized small-batch MMVQ. `ggml-cuda.cu` → `ggml_cuda_mul_mat_vec_q` → Q8_1 and `mul_mat_vec_q` in `mmvq.cu`. | Both `quantize_q8_1` and `mul_mat_vec_q` run. Goose uses its scalar Q4_K/Q6_K path during decode. | MISSING. Restore the appropriate small-batch integer-dot specializations and packing. Check the exact subtype, output and decode timing under the final graph. |
 | 6 | Indexed small-batch MMVQ. `ggml_cuda_mul_mat_id` → `mul_mat_vec_q_moe_launch` → `mul_mat_vec_q_moe`. | The reference trace executes indexed MMVQ. Goose groups jobs on the host and feeds the scalar matrix kernel. | MISSING. Restore the routed MMVQ path and verify duplicate expert IDs, signed-scale arithmetic and first decode output. |
@@ -719,6 +719,34 @@ work. The experiment does not increase the accepted package count.
 32-token candidate: `/home/end0/AI/LlamaServer/franken-goose-mmq-stream.3qNa4P/cuda-matrix-dense-both.02l9svtu`.
 4096-token candidate: `/home/end0/AI/LlamaServer/franken-goose-mmq-stream.3qNa4P/cuda-matrix-dense-both.g7yjzq0j`.
 Candidate executable SHA-256: `e8a6f1ae8afd9d035aa8a12a413fd140c2de723d1683c42a010ab4719d74eb41`.
+
+## Shared MMQ activation rows
+
+EXP-2026-11-20-1541 recognizes cached routed projections with one
+input activation per token. Each token is packed once with the
+existing Q8_1 leaf. The tile reads the same packed row for every
+expert route using the original job's byte offset. The route order,
+weight offsets and MMA arithmetic are unchanged. Separate input
+slots, oversized packing requests and allocation pressure retain
+the job-window path. The dense/indexed GPU fixture matched exactly
+with ordinary MMQ. The shared + Stream-K fixture stayed within
+1.49e-7 and compute-sanitizer reported zero errors.
+
+In the matched combined Apex 4096/1 pair, pack and matrix launches
+each fell from 830 to 510. Packed rows fell from 5,201,920 to
+2,908,160, including 327,680 rows packed by 80 shared launches.
+Total arithmetic tiles were unchanged. Pack device time fell from
+89.185 to 43.877 ms and matrix time from 2,982.817 to 2,793.722
+ms. The same first-to-last CUDA kernel window had identical H2D
+and D2H bytes. Prefill was 15.867 s before and 15.893 s after.
+This passes the short work-reduction gate, with no measured
+request speedup in this pair. ID 280, text and all five reported
+probabilities matched. Sampled process VRAM was 8,582 MiB in both
+runs and process swap was zero.
+
+Control: `/home/end0/AI/LlamaServer/franken-goose-mmq-window.z2Wknq/cuda-matrix-dense-both.objw61et`.
+Candidate: `/home/end0/AI/LlamaServer/franken-goose-mmq-shared.TrPFV2/cuda-matrix-dense-both.livri7ys`.
+Candidate executable SHA-256: `13d5f2828e4f079ab06613aa1ca4fe686eb5682ddc8a110bfb841c8a4050f806`.
 
 ## Kernel coverage
 

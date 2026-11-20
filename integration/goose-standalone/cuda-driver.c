@@ -45,7 +45,7 @@ static struct {
     Context context;
     Module module;
     Function kernel, attention_tiles, attention_merge, gdn, q4_rows, vector;
-    Function mmq_pack, mmq_matrix, dense_mma, gdn_mma, flash_mma, flash_stage;
+    Function mmq_pack, mmq_pack_shared, mmq_matrix, dense_mma, gdn_mma, flash_mma, flash_stage;
     Function mmq_stream, mmq_stream_fixup;
     Function rope_phases, rope_apply, ssm_conv;
     Function route_reduce, route_sort, route_gather, blit, fwht, moe_weighted;
@@ -193,6 +193,7 @@ static void init_cuda(void) {
         error = cuda.module_load(&cuda.module, mma_image ? goose_cuda_mmq_image : goose_cuda_image);
         if (error == 0) error = cuda.function_get(&cuda.kernel, cuda.module, "goose_quantized_matmul");
         if (error == 0 && mmq) error = cuda.function_get(&cuda.mmq_pack, cuda.module, "goose_mmq_pack_q8");
+        if (error == 0 && mmq) error = cuda.function_get(&cuda.mmq_pack_shared, cuda.module, "goose_mmq_pack_shared");
         if (error == 0 && mmq) error = cuda.function_get(&cuda.mmq_matrix, cuda.module, "goose_mmq_matmul");
         if (error == 0 && stream_k) error = cuda.function_get(&cuda.mmq_stream, cuda.module, "goose_mmq_stream");
         if (error == 0 && stream_k) error = cuda.function_get(&cuda.mmq_stream_fixup, cuda.module, "goose_mmq_stream_fixup");
@@ -801,13 +802,13 @@ int64_t fg_cuda_begin(uint64_t input, int64_t input_bytes, uint64_t output, int6
 }
 
 static int launch_mmq_stream(DevicePtr weight, uint64_t stride, int extent, int kind, int rows, int first,
-                            int first_route, int job_words, int batch, int workers) {
+                            int first_route, int job_words, int batch, int workers, int64_t input_stride) {
     const int64_t outputs = (int64_t) (1 + (rows - 1) / 64) * batch;
     const bool fixup = outputs % workers != 0;
     int error = fixup ? reserve(&cuda.mmq_partials, (size_t) workers * 64 * 8 * sizeof(float)) : 0;
     if (error != 0) return error;
     void * args[] = {&weight, &cuda.mmq_packed.address, &matrix_output, &cuda.jobs.address, &cuda.mmq_tiles.address,
-        &cuda.mmq_partials.address, &stride, &extent, &kind, &rows, &first, &first_route, &job_words, &batch};
+        &cuda.mmq_partials.address, &stride, &extent, &kind, &rows, &first, &first_route, &job_words, &batch, &input_stride};
     error = cuda.launch(cuda.mmq_stream, (unsigned) workers, 1, 1, 128, 1, 1, 0, NULL, args, NULL);
     if (error != 0) return error;
     ++cuda_mmq_stream_windows;
@@ -821,7 +822,7 @@ static int launch_mmq_stream(DevicePtr weight, uint64_t stride, int extent, int 
 }
 
 static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
-                      int rows, sl_i64 jobs, int job_words) {
+                      int rows, sl_i64 jobs, int job_words, int64_t shared_rows, int64_t input_stride) {
     enum { staging_budget = 16 * 1024 * 1024, routes_per_tile = 8 };
     const int count = (int) (jobs.len / job_words);
     if (extent > INT_MAX / 256 || (size_t) count > SIZE_MAX / (3 * sizeof(int64_t))) return -1;
@@ -834,38 +835,54 @@ static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
         return -1;
     }
     const size_t tile_bytes = (size_t) tile_count * 3 * sizeof(*tiles);
+    bool shared = shared_rows > 0 && shared_rows < count && shared_rows <= 65535 &&
+        input_stride >= (int64_t) extent * 256 * (int64_t) sizeof(float) &&
+        (uint64_t) shared_rows * (uint64_t) extent * 288 <= staging_budget;
     size_t packed_bytes;
     int error;
     for (;;) {
         const int64_t window_routes = window_tiles * routes_per_tile;
-        const size_t routes = (size_t) (count < window_routes ? count : window_routes);
+        const size_t routes = (size_t) (shared ? shared_rows : count < window_routes ? count : window_routes);
         if ((size_t) extent > SIZE_MAX / 288 / routes) {
             free(tiles);
             return -1;
         }
         packed_bytes = routes * (size_t) extent * 288;
         error = reserve(&cuda.mmq_packed, packed_bytes);
+        if (error == 2 && shared) {
+            shared = false;
+            continue;
+        }
         if (error != 2 || window_tiles == 1) break;
         window_tiles /= 2;
     }
     if (error == 0) error = reserve(&cuda.mmq_tiles, tile_bytes);
     if (error == 0) error = cuda.upload(cuda.mmq_tiles.address, tiles, tile_bytes);
+    if (!shared) input_stride = 0;
+    if (error == 0 && shared) {
+        window_tiles = tile_count < 8191 ? tile_count : 8191;
+        void * args[] = {&matrix_input, &cuda.mmq_packed.address, &extent, &kind, &input_stride};
+        error = cuda.launch(cuda.mmq_pack_shared, (unsigned) (2 * extent), (unsigned) shared_rows, 1,
+            32, 1, 1, 0, NULL, args, NULL);
+    }
     int first = 0, first_route = 0;
     void * pack_args[] = {&matrix_input, &cuda.jobs.address, &cuda.mmq_packed.address,
                          &extent, &kind, &first_route, &job_words};
     void * matrix_args[] = {&weight, &cuda.mmq_packed.address, &matrix_output, &cuda.jobs.address,
-        &cuda.mmq_tiles.address, &stride, &extent, &kind, &rows, &first, &first_route, &job_words};
+        &cuda.mmq_tiles.address, &stride, &extent, &kind, &rows, &first, &first_route, &job_words, &input_stride};
     while (error == 0 && first < tile_count) {
         const int batch = (int) (tile_count - first > window_tiles ? window_tiles : tile_count - first);
         const int64_t last = 3ll * (first + batch - 1);
         first_route = (int) tiles[3ll * first];
         const unsigned routes = (unsigned) (tiles[last] + tiles[last + 1] - first_route);
-        error = cuda.launch(cuda.mmq_pack, (unsigned) (2 * extent), routes, 1,
-                            32, 1, 1, 0, NULL, pack_args, NULL);
+        if (!shared) {
+            error = cuda.launch(cuda.mmq_pack, (unsigned) (2 * extent), routes, 1,
+                                32, 1, 1, 0, NULL, pack_args, NULL);
+        }
         if (error == 0) {
             const int workers = cuda.mmq_stream ? (int) fg143_mmq_stream_workers(rows, batch, extent, cuda.multiprocessors) : 0;
             if (workers > 0) {
-                error = launch_mmq_stream(weight, stride, extent, kind, rows, first, first_route, job_words, batch, workers);
+                error = launch_mmq_stream(weight, stride, extent, kind, rows, first, first_route, job_words, batch, workers, input_stride);
             } else {
                 error = cuda.launch(cuda.mmq_matrix, 1u + ((unsigned) rows - 1) / 64, (unsigned) batch, 1,
                                     128, 1, 1, 0, NULL, matrix_args, NULL);
@@ -888,7 +905,7 @@ static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
 }
 
 static int launch_matrix(DevicePtr weight, int64_t row_stride, int64_t extent,
-                         int64_t kind, int64_t rows, sl_i64 jobs, int job_words) {
+                         int64_t kind, int64_t rows, sl_i64 jobs, int job_words, int64_t shared_rows, int64_t input_stride) {
     if (!weight || rows <= 0 || rows > INT_MAX || extent <= 0 || extent > INT_MAX ||
         (kind != 0 && kind != 12 && kind != 14) ||
         jobs.len <= 0 || jobs.len % job_words != 0 || jobs.len / job_words > INT_MAX ||
@@ -898,7 +915,7 @@ static int launch_matrix(DevicePtr weight, int64_t row_stride, int64_t extent,
     if (error == 0) error = cuda.upload(cuda.jobs.address, jobs.data, job_bytes);
     if (error == 0 && cuda.mmq_matrix && kind != 0 && jobs.len / job_words >= 16) {
         const int result = launch_mmq(weight, (uint64_t) row_stride, (int) extent, (int) kind,
-                                      (int) rows, jobs, job_words);
+                                      (int) rows, jobs, job_words, shared_rows, input_stride);
         if (result == 0) cuda_matrix_kind = (int) kind;
         return result;
     }
@@ -953,11 +970,12 @@ int64_t fg_cuda_plane(uint64_t weights, int64_t weight_bytes, int64_t row_stride
         fprintf(stderr, "Goose CUDA: matrix weight transfer failed\n");
         return -1;
     }
-    return launch_matrix(weight, row_stride, extent, kind, rows, jobs, 2);
+    return launch_matrix(weight, row_stride, extent, kind, rows, jobs, 2, 0, 0);
 }
 
 int64_t fg_cuda_expert_batch(int64_t weight_bytes, int64_t row_stride,
-                            int64_t extent, int64_t kind, int64_t rows, sl_i64 jobs) {
+                            int64_t extent, int64_t kind, int64_t rows, sl_i64 jobs,
+                            int64_t shared_rows, int64_t input_stride) {
     const struct device_buffer * bank = &cuda.experts.weights;
     if (!bank->address || weight_bytes <= 0 || (uint64_t) weight_bytes > bank->bytes ||
         jobs.len <= 0 || jobs.len % 3 != 0 || jobs.len / 3 > INT_MAX) return -1;
@@ -965,7 +983,7 @@ int64_t fg_cuda_expert_batch(int64_t weight_bytes, int64_t row_stride,
         const int64_t offset = jobs.data[i];
         if (offset < 0 || (uint64_t) offset > bank->bytes - (uint64_t) weight_bytes) return -1;
     }
-    const int status = launch_matrix(bank->address, row_stride, extent, kind, rows, jobs, 3);
+    const int status = launch_matrix(bank->address, row_stride, extent, kind, rows, jobs, 3, shared_rows, input_stride);
     if (status == 0) ++cuda_cached_projections;
     return status;
 }
