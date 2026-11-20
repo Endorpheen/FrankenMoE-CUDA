@@ -244,6 +244,24 @@ CPU generation and resident KV write tests passed. Activations still
 cross the host between graph nodes. Apex throughput and peak memory
 remain unmeasured.
 
+EXP-2026-11-20-1508 adds a bounded CUDA activation arena to the shared
+graph. Matrices, Q4 attention and GDN can publish their outputs directly
+into it. CUDA consumers resolve the same host span or a contained view to
+the device address, including Q4 row updates. CPU reads materialize the
+required data. Writes through aliases materialize and invalidate the
+affected records. When space or record slots run out, the graph publishes
+the old contents before reusing the arena. Allocation pressure retains
+the normal staging path.
+
+The public graph API still publishes all results. The model asks for its
+selected logits, or for no host output on a prefill-only step. On the
+RTX 4070 a 262-matrix synthetic graph reused 259 inputs on each pass and
+verified view offsets, CPU overwrite, arena rollover and both output
+contracts. The mixed model fixture also reused one activation per CUDA
+step and kept the 0.0000001193 maximum logit difference. CPU chunked
+generation passed. The arena is capped at 64 MiB. Apex throughput,
+actual transfer volume and peak memory remain unmeasured.
+
 ## Historical requirements audit
 
 `docs/goose-migration/tasks.json`: **DONE 1**, **PARTIAL 144**, **TODO 7** of 152.

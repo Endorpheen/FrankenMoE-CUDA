@@ -470,6 +470,47 @@ static void check_routed_matrix(enum ggml_type kind, bool indexed) {
     ggml_free(ctx);
 }
 
+static void check_activation_pipeline(void) {
+    enum { width = 32, rows = 3, chain = 260 };
+    struct ggml_context * ctx = ggml_init((struct ggml_init_params){ 1024 * 1024, NULL, true });
+    assert(ctx);
+    struct ggml_tensor * identity = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, width, width);
+    struct ggml_tensor * input = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, width, rows);
+    struct ggml_tensor * bias = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, width);
+    struct ggml_tensor * first = ggml_mul_mat(ctx, identity, input);
+    struct ggml_tensor * view = ggml_view_2d(ctx, first, width, rows - 1, first->nb[1], first->nb[1]);
+    struct ggml_tensor * second = ggml_mul_mat(ctx, identity, view);
+    struct ggml_tensor * current = ggml_add_inplace(ctx, second, bias);
+    struct ggml_tensor * previous = NULL;
+    for (int i = 0; i < chain; ++i) {
+        previous = current;
+        current = ggml_mul_mat(ctx, identity, current);
+    }
+    struct ggml_cgraph * graph = ggml_new_graph_custom(ctx, 512, false);
+    ggml_build_forward_expand(graph, current);
+    void * storage = fg_standalone_graph_alloc(graph);
+    assert(storage && previous);
+
+    memset(identity->data, 0, ggml_nbytes(identity));
+    for (int i = 0; i < width; ++i) ((float *) identity->data)[i * (width + 1)] = 1.0f;
+    for (int i = 0; i < rows * width; ++i) ((float *) input->data)[i] = (float) (i - 7) / 4.0f;
+    for (int i = 0; i < width; ++i) ((float *) bias->data)[i] = 2.0f;
+    memset(previous->data, 0xA5, ggml_nbytes(previous));
+    assert(fg_standalone_graph_compute_output(graph, current) == GGML_STATUS_SUCCESS);
+    for (int i = 0; i < (rows - 1) * width; ++i) {
+        const float expected = ((float *) input->data)[i + width] + 2.0f;
+        assert(((float *) current->data)[i] == expected);
+    }
+    for (size_t i = 0; i < ggml_nbytes(previous); ++i) {
+        assert(((const unsigned char *) previous->data)[i] == 0xA5);
+    }
+    assert(fg_standalone_graph_compute(graph) == GGML_STATUS_SUCCESS);
+    assert(memcmp(previous->data, current->data, ggml_nbytes(current)) == 0);
+    puts("CUDA activation pipeline: views, CPU overwrite, arena rollover and selective output verified");
+    free(storage);
+    ggml_free(ctx);
+}
+
 int main(int argc, char ** argv) {
     check_scalar_and_recurrent();
     check_gdn_snapshots(33, false);
@@ -485,6 +526,7 @@ int main(int argc, char ** argv) {
     check_routed_matrix(GGML_TYPE_F32, true);
     if (argc == 2) {
         if (strcmp(argv[1], "--resident-rows") == 0) check_resident_q4_rows();
+        else if (strcmp(argv[1], "--activations") == 0) check_activation_pipeline();
         else check_model_step(argv[1]);
     }
     if (argc == 3 && strcmp(argv[1], "--chunked") == 0) check_chunked_generation(argv[2]);

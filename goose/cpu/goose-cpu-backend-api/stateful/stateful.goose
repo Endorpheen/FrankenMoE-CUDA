@@ -138,6 +138,9 @@ fn gdn(
         if device > 0 { witness(OP_GATED_DELTA_NET, scores); }
         return device > 0;
     }
+    if activation_read_f32(q) != 0 || activation_read_f32(k) != 0 ||
+       activation_read_f32(v) != 0 || activation_read_f32(g) != 0 ||
+       activation_read_f32(beta) != 0 || activation_read_f32(initial) != 0 { return false; }
     if cuda_gdn_state_read(initial) != 0 { return false; }
     let gate_width = p.source[3].ne[0];
     var decay: f32[>..] = [];

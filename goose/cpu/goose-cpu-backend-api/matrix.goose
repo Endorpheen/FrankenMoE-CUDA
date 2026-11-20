@@ -86,7 +86,7 @@ fn f32_row_dot(row: const f32[:], other: const f32[:], stride: i64) -> f32 {
 
 import.codec.decode;
 
-extern "fg_cuda_begin" fn cuda_begin(input: u64, input_bytes: i64, output_bytes: i64) -> i64;
+extern "fg_cuda_begin" fn cuda_begin(input: u64, input_bytes: i64, output: u64, output_bytes: i64) -> i64;
 extern "fg_cuda_prepare_experts" fn cuda_prepare_experts(tensor: u64, bytes: i64,
     active: const i64[:], offsets: i64[:]) -> i64;
 extern "fg_cuda_plane" fn cuda_plane(weights: u64, weight_bytes: i64, stride: i64,
@@ -263,6 +263,7 @@ fn packed_matrix(p: const Node &, x: const u8[:], y: const u8[:], ids: const u8[
 
     validate(p.y, y.len);
     validate(p.d, dst.len);
+    if f32_input { validate(p.x, x.len); }
     let row_bytes = mul_size(width / block_width, block_bytes);
     let planes = mul_size(p.x.ne[2], p.x.ne[3]);
     var spread2: i64 = 1;
@@ -273,6 +274,7 @@ fn packed_matrix(p: const Node &, x: const u8[:], y: const u8[:], ids: const u8[
 
     if indexed {
         if !matrix_index_layout(p) { return false; }
+        if activation_read(ids) != 0 { return false; }
         validate(p.z, ids.len);
         let routes = mul_size(p.z.ne[0], p.z.ne[1]);
         let words = add_size(planes, routes);
@@ -302,7 +304,7 @@ fn packed_matrix(p: const Node &, x: const u8[:], y: const u8[:], ids: const u8[
         let offset_words = if indexed { planes } else { 0 };
         let offset_start = add_size(route_words, job_words);
         if indices.len < add_size(offset_start, offset_words) || p.x.nb[2] < 0 || p.x.nb[3] < 0 { return false; }
-        let status = cuda_begin(addresses[1] as! u64, y.len, dst.len);
+        let status = cuda_begin(addresses[1] as! u64, y.len, addresses[2] as! u64, dst.len);
         if status < 0 { return false; }
         if status > 0 {
             let ok = cuda_matrix_planes(p, addresses[0] as! u64, x.len, planes, row_bytes, row_count,
@@ -312,6 +314,7 @@ fn packed_matrix(p: const Node &, x: const u8[:], y: const u8[:], ids: const u8[
             return cuda_finish(output, dst.len) == 0 && ok;
         }
     }
+    if activation_read(x) != 0 || activation_read(y) != 0 { return false; }
     if f32_input { return matrix(p, x, y, ids, dst); }
     let decoded = scratch[p.ith * width .. (p.ith + 1) * width];
     var decoder: decode :: WeightTile = default < decode :: WeightTile > ();

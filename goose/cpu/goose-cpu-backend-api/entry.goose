@@ -58,16 +58,18 @@ fn entry(
         return true;
     }
 
-    if codec_transform(p, x, y, dst, scratch, gxx, gxs, gs, g3x, g3s, g1, signs, palette) {
-        witness(p.op, elements(p.d));
-        return true;
-    }
-
-    if !scalar_type(p.x) {
+    let routed = p.op == OP_MUL_MAT || p.op == OP_MUL_MAT_ID;
+    if routed && (!scalar_type(p.x) || (p.x.kind == 0 && addresses[0] != 0 && cuda_matrix_layout(p))) {
         let handled = packed_matrix(p, x, y, z, dst, scratch, indices, addresses, gxx, gxs, gs, g3x, g3s, g1, signs, palette);
         if handled { witness(p.op, elements(p.d)); }
         return handled;
     }
+    if activation_read(x) != 0 || activation_read(y) != 0 || activation_read(z) != 0 { return false; }
+    if codec_transform(p, x, y, dst, scratch, gxx, gxs, gs, g3x, g3s, g1, signs, palette) {
+        witness(p.op, elements(p.d));
+        return true;
+    }
+    if !scalar_type(p.x) { return false; }
     if !scalar_type(p.d) {
         return false;
     }
@@ -81,13 +83,6 @@ fn entry(
     if p.z.bytes > 0 {
         validate(p.z, z.len);
     }
-    if (p.op == OP_MUL_MAT || p.op == OP_MUL_MAT_ID) && p.x.kind == 0 &&
-       addresses[0] != 0 && cuda_matrix_layout(p) {
-        let handled = packed_matrix(p, x, y, z, dst, scratch, indices, addresses, gxx, gxs, gs, g3x, g3s, g1, signs, palette);
-        if handled { witness(p.op, elements(p.d)); }
-        return handled;
-    }
-
     if transforms(p, x, y, dst, addresses) {
         witness(p.op, elements(p.d));
         return true;

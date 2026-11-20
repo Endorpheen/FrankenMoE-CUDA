@@ -79,6 +79,8 @@ fn flash_attention(p: const Node &, mask: const Tensor &, q: const u8[:], k: con
     validate(p.d, dst.len);
     let device = flash_cuda(p, mask, q, k, v, masks, dst);
     if device != 0 { return device > 0; }
+    if activation_read(q) != 0 || activation_read(k) != 0 ||
+       activation_read(v) != 0 || activation_read(masks) != 0 { return false; }
     if cuda_kv_read(k, v) != 0 { return false; }
     let heads = p.x.ne[2];
     let positions = p.x.ne[1];

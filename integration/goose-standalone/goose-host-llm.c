@@ -330,7 +330,7 @@ static int64_t model_step(const int32_t * tokens, int64_t count, int64_t logit_r
     const ggml_tensor * lg = (const ggml_tensor *) (intptr_t) result;
     if (logit_rows != 0 && (!output.data || output.len != ggml_nelements(lg))) goto done;
     executed = true;
-    if (fg_standalone_graph_compute(graph) != GGML_STATUS_SUCCESS) goto done;
+    if (fg_standalone_graph_compute_output(graph, logit_rows != 0 ? lg : NULL) != GGML_STATUS_SUCCESS) goto done;
     if (q35_kv_commit(state, ticket) < 0) goto done;
     n = 0;
     if (logit_rows != 0) {

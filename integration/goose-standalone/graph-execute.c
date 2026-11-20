@@ -23,6 +23,9 @@ extern uint64_t fg_cuda_take_gdns(void);
 extern int fg_cuda_state_graph_done(void);
 extern void fg_cuda_take_resident_state(uint64_t * kv, uint64_t * gdn);
 extern uint64_t fg_cuda_take_q4_writes(void);
+extern int fg_cuda_activation_graph_begin(void);
+extern int fg_cuda_activation_prepare(uint64_t host, int64_t bytes, bool fresh);
+extern int fg_cuda_activation_graph_end(bool success, bool all, uint64_t host, int64_t bytes, uint64_t * hits);
 
 static pthread_once_t cpu_init = PTHREAD_ONCE_INIT;
 static atomic_uint_fast64_t cpu_values;
@@ -207,6 +210,8 @@ uint8_t fg143_graph_exec_node(uint64_t graph, uint64_t workspace, int64_t index)
     for (int i = 0; i < GGML_MAX_SRC; ++i) {
         if (tensor->src[i] && !tensor->src[i]->data && !ggml_is_empty(tensor->src[i])) return 0;
     }
+    if (fg_cuda_activation_prepare((uint64_t) (uintptr_t) tensor->data,
+            (int64_t) ggml_nbytes(tensor), tensor->view_src == NULL) != 0) return 0;
 
     if (tensor->op == GGML_OP_GATED_DELTA_NET || tensor->op == GGML_OP_SSM_SCAN) {
         int64_t packet[83] = {0};
@@ -250,8 +255,9 @@ uint8_t fg143_graph_exec_node(uint64_t graph, uint64_t workspace, int64_t index)
         (sl_i64) { work->indices, sizes[1] });
 }
 
-enum ggml_status fg_standalone_graph_compute(struct ggml_cgraph * graph) {
+static enum ggml_status compute_graph(struct ggml_cgraph * graph, bool all, const struct ggml_tensor * output) {
     pthread_once(&cpu_init, init_cpu);
+    if (fg_cuda_activation_graph_begin() != 0) return GGML_STATUS_FAILED;
     struct node_workspace work = {0};
     const int64_t failed = fg143_graph_run((uint64_t) (uintptr_t) graph, (uint64_t) (uintptr_t) &work);
     free(work.scratch);
@@ -267,6 +273,11 @@ enum ggml_status fg_standalone_graph_compute(struct ggml_cgraph * graph) {
     uint64_t resident_kv, resident_gdn;
     fg_cuda_take_resident_state(&resident_kv, &resident_gdn);
     const uint64_t writes = fg_cuda_take_q4_writes();
+    const bool valid = failed == 0 && fg_cuda_state_graph_done() == 0;
+    uint64_t hits = 0;
+    const int published = fg_cuda_activation_graph_end(valid, all,
+        output ? (uint64_t) (uintptr_t) output->data : 0,
+        output ? (int64_t) ggml_nbytes(output) : 0, &hits);
     if (getenv("GOOSE_GRAPH_LOG")) {
         const uint64_t values = (uint64_t) atomic_exchange_explicit(&cpu_values, 0, memory_order_relaxed);
         fprintf(stderr, "Goose CPU graph: %llu values\n", (unsigned long long) values);
@@ -277,6 +288,15 @@ enum ggml_status fg_standalone_graph_compute(struct ggml_cgraph * graph) {
         if (resident_kv) fprintf(stderr, "Goose CUDA resident KV: %llu nodes\n", (unsigned long long) resident_kv);
         if (resident_gdn) fprintf(stderr, "Goose CUDA resident GDN: %llu nodes\n", (unsigned long long) resident_gdn);
         if (writes) fprintf(stderr, "Goose CUDA resident Q4 writes: %llu nodes\n", (unsigned long long) writes);
+        if (hits) fprintf(stderr, "Goose CUDA activation reuse: %llu inputs\n", (unsigned long long) hits);
     }
-    return failed == 0 && fg_cuda_state_graph_done() == 0 ? GGML_STATUS_SUCCESS : GGML_STATUS_FAILED;
+    return valid && published == 0 ? GGML_STATUS_SUCCESS : GGML_STATUS_FAILED;
+}
+
+enum ggml_status fg_standalone_graph_compute(struct ggml_cgraph * graph) {
+    return compute_graph(graph, true, NULL);
+}
+
+enum ggml_status fg_standalone_graph_compute_output(struct ggml_cgraph * graph, const struct ggml_tensor * output) {
+    return compute_graph(graph, false, output);
 }

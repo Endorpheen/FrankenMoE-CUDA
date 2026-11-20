@@ -12,6 +12,9 @@
 
 extern int64_t dw_cuda_dense_offset(sl_i64 ranges, uint64_t address, int64_t bytes);
 extern int64_t qr_state_offset(sl_i64 ranges, uint64_t address, int64_t bytes, int64_t kind);
+extern int64_t fg143_activation_lookup(sl_i64 ranges, uint64_t host, int64_t bytes);
+extern int64_t fg143_activation_overlap(sl_i64 ranges, uint64_t host, int64_t bytes, int64_t first);
+extern int64_t fg143_activation_slot(int64_t used, int64_t capacity, int64_t bytes);
 extern void ec_reset(sl_i64 groups, sl_i64 layers, uint64_t words32, sl_i64 words64);
 extern int64_t ec_prepare(sl_i64 groups, sl_i64 layers, uint64_t words32, sl_i64 words64,
     uint64_t tensor, int64_t bytes, sl_i64 heads, sl_i64 result);
@@ -40,6 +43,7 @@ static struct {
     struct device_buffer input, output, weight, jobs;
     struct device_buffer attention_value, attention_scratch, attention_config;
     struct device_buffer gdn_beta;
+    struct device_buffer activations;
     struct device_buffer dense;
     sl_i64 dense_ranges;
     struct device_buffer state;
@@ -67,6 +71,16 @@ static struct {
 
 static pthread_once_t cuda_once = PTHREAD_ONCE_INIT;
 static pthread_mutex_t cuda_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t activation_lock = PTHREAD_MUTEX_INITIALIZER;
+enum { ACTIVATION_WORDS = 4, ACTIVATION_RECORDS = 256, ACTIVATION_BYTES = 64 * 1024 * 1024 };
+static _Thread_local struct {
+    bool active, unavailable;
+    uint64_t target;
+    int64_t target_bytes, count, used;
+    int64_t ranges[ACTIVATION_RECORDS * ACTIVATION_WORDS];
+    uint64_t hits;
+} activations;
+static _Thread_local DevicePtr matrix_input, matrix_output;
 static _Thread_local uint64_t cuda_matrices;
 static _Thread_local uint64_t cuda_f32_matrices;
 static _Thread_local int cuda_matrix_kind;
@@ -152,16 +166,6 @@ static int reserve(struct device_buffer * buffer, size_t bytes) {
     return error;
 }
 
-static int upload_inputs(const sl_u8 * data, struct device_buffer *const * buffers, size_t count) {
-    for (size_t i = 0; i < count; ++i) {
-        if (data[i].len == 0) continue;
-        int error = reserve(buffers[i], (size_t) data[i].len);
-        if (error == 0) error = cuda.upload(buffers[i]->address, data[i].data, (size_t) data[i].len);
-        if (error != 0) return error;
-    }
-    return 0;
-}
-
 static int finish_context(void) {
     Context context = NULL;
     const int status = cuda.pop(&context);
@@ -185,6 +189,175 @@ static int start_context(void) {
     if (setting && setting[0] == '0' && !setting[1]) return 0;
     pthread_once(&cuda_once, init_cuda);
     return cuda.status == 1 ? push_context() : cuda.status;
+}
+
+static sl_i64 activation_ranges(void) {
+    return (sl_i64) {activations.ranges, activations.count * ACTIVATION_WORDS};
+}
+
+static int activation_download_record(int64_t i) {
+    int64_t * range = activations.ranges + ACTIVATION_WORDS * i;
+    if (range[1] == 0 || range[3] != 0) return 0;
+    const int error = cuda.download((void *) (uintptr_t) range[0],
+        cuda.activations.address + (uint64_t) range[2], (size_t) range[1]);
+    if (error == 0) range[3] = 1;
+    return error;
+}
+
+static int activation_download_all(void) {
+    for (int64_t i = 0; i < activations.count; ++i) {
+        const int error = activation_download_record(i);
+        if (error != 0) return error;
+    }
+    return 0;
+}
+
+static int activation_sync_range(uint64_t host, int64_t bytes, bool invalidate) {
+    for (int64_t i = 0; activations.count > 0;) {
+        const int64_t found = fg143_activation_overlap(activation_ranges(), host, bytes, i);
+        if (found < 0) break;
+        const int error = activation_download_record(found);
+        if (error != 0) return error;
+        if (invalidate) activations.ranges[ACTIVATION_WORDS * found + 1] = 0;
+        i = found + 1;
+    }
+    return 0;
+}
+
+int fg_cuda_activation_graph_begin(void) {
+    if (activations.active) return -1;
+    const char * setting = getenv("GOOSE_CUDA");
+    if (setting && setting[0] == '0' && !setting[1]) return 0;
+    pthread_mutex_lock(&activation_lock);
+    activations.active = true;
+    activations.unavailable = false;
+    activations.hits = 0;
+    return 0;
+}
+
+int64_t fg_cuda_activation_read_address(uint64_t host, int64_t bytes) {
+    if (activations.count == 0) return 0;
+    int64_t first = 0;
+    for (;;) {
+        first = fg143_activation_overlap(activation_ranges(), host, bytes, first);
+        if (first < 0) return 0;
+        if (activations.ranges[first * ACTIVATION_WORDS + 3] == 0) break;
+        ++first;
+    }
+    if (push_context() != 1) return -1;
+    const int error = activation_sync_range(host, bytes, false);
+    return finish_context() == 0 && error == 0 ? 0 : -1;
+}
+
+int64_t fg_cuda_activation_read(sl_u8 data) {
+    return fg_cuda_activation_read_address((uint64_t) (uintptr_t) data.data, data.len);
+}
+
+int64_t fg_cuda_activation_read_f32(sl_f32 data) {
+    if (data.len < 0 || data.len > INT64_MAX / (int64_t) sizeof(float)) return -1;
+    return fg_cuda_activation_read_address((uint64_t) (uintptr_t) data.data, data.len * (int64_t) sizeof(float));
+}
+
+int fg_cuda_activation_prepare(uint64_t host, int64_t bytes, bool fresh) {
+    if (!activations.active) return 0;
+    activations.target = fresh ? host : 0;
+    activations.target_bytes = bytes;
+    if (activations.count == 0 || fg143_activation_overlap(activation_ranges(), host, bytes, 0) < 0) return 0;
+    if (push_context() != 1) return -1;
+    const int error = activation_sync_range(host, bytes, true);
+    return finish_context() == 0 && error == 0 ? 0 : -1;
+}
+
+int fg_cuda_activation_graph_end(bool success, bool all, uint64_t host, int64_t bytes, uint64_t * hits) {
+    *hits = activations.hits;
+    activations.hits = 0;
+    if (!activations.active) return 0;
+    int error = 0;
+    if (success && activations.count > 0) {
+        if (all) {
+            if (push_context() != 1) error = -1;
+            else {
+                error = activation_download_all();
+                if (finish_context() != 0) error = -1;
+            }
+        } else {
+            error = (int) fg_cuda_activation_read_address(host, bytes);
+        }
+    }
+    activations.count = activations.used = 0;
+    activations.target = 0;
+    activations.active = false;
+    pthread_mutex_unlock(&activation_lock);
+    return error;
+}
+
+// Called with the CUDA context bound. Reserve output before resolving input
+// addresses so a flush never invalidates a pointer passed to a launch.
+static int activation_output(uint64_t host, int64_t bytes, DevicePtr * device) {
+    if (activations.active && !activations.unavailable && host != 0 && host == activations.target &&
+        bytes <= activations.target_bytes && bytes > 0 && bytes <= ACTIVATION_BYTES) {
+        if (!cuda.activations.address) {
+            const int error = reserve(&cuda.activations, ACTIVATION_BYTES);
+            if (error == 2) activations.unavailable = true; // CUDA_ERROR_OUT_OF_MEMORY
+            else if (error != 0) return error;
+        }
+        if (cuda.activations.address) {
+            int64_t pos = fg143_activation_slot(activations.used, (int64_t) cuda.activations.bytes, bytes);
+            if (pos == -2 || activations.count == ACTIVATION_RECORDS) {
+                const int error = activation_download_all();
+                if (error != 0) return error;
+                activations.count = activations.used = 0;
+                pos = fg143_activation_slot(0, (int64_t) cuda.activations.bytes, bytes);
+            }
+            if (pos >= 0) {
+                *device = cuda.activations.address + (uint64_t) pos;
+                return 0;
+            }
+        }
+    }
+    const int error = reserve(&cuda.output, (size_t) bytes);
+    if (error == 0) *device = cuda.output.address;
+    return error;
+}
+
+static int activation_publish(uint64_t host, int64_t bytes, DevicePtr device, bool complete) {
+    if (!activations.active || device == cuda.output.address) {
+        return cuda.download((void *) (uintptr_t) host, device, (size_t) bytes);
+    }
+    const int error = complete ? 0 : cuda.sync();
+    if (error != 0) return error;
+    int64_t * next = activations.ranges + ACTIVATION_WORDS * activations.count++;
+    next[0] = (int64_t) host; next[1] = bytes;
+    next[2] = (int64_t) (device - cuda.activations.address); next[3] = 0;
+    activations.used = next[2] + bytes;
+    return 0;
+}
+
+static int activation_input(sl_u8 data, struct device_buffer * staging, DevicePtr * device) {
+    if (activations.count > 0) {
+        const uint64_t host = (uint64_t) (uintptr_t) data.data;
+        const int64_t offset = fg143_activation_lookup(activation_ranges(), host, data.len);
+        if (offset >= 0) {
+            *device = cuda.activations.address + (uint64_t) offset;
+            ++activations.hits;
+            return 0;
+        }
+        const int error = activation_sync_range(host, data.len, false);
+        if (error != 0) return error;
+    }
+    int error = reserve(staging, (size_t) data.len);
+    if (error == 0) error = cuda.upload(staging->address, data.data, (size_t) data.len);
+    if (error == 0) *device = staging->address;
+    return error;
+}
+
+static int upload_inputs(const sl_u8 * data, struct device_buffer *const * buffers, DevicePtr * addresses, size_t count) {
+    for (size_t i = 0; i < count; ++i) {
+        if (data[i].len == 0) continue;
+        const int error = activation_input(data[i], buffers[i], &addresses[i]);
+        if (error != 0) return error;
+    }
+    return 0;
 }
 
 int64_t fg_cuda_free_bytes(void) {
@@ -286,10 +459,10 @@ int64_t fg_cuda_set_q4_rows(uint64_t source, int64_t source_bytes, int64_t strid
     const int active = start_context();
     if (active != 1) return active;
 
-    int error = reserve(&cuda.input, (size_t) source_bytes);
-    if (error == 0) error = cuda.upload(cuda.input.address, (const void *) (uintptr_t) source, (size_t) source_bytes);
+    DevicePtr input = 0;
+    int error = activation_input((sl_u8) {(void *) (uintptr_t) source, source_bytes}, &cuda.input, &input);
     uint64_t row_stride = (uint64_t) stride;
-    void * args[] = {&cuda.input.address, &destination, &row_stride, &blocks, &tasks};
+    void * args[] = {&input, &destination, &row_stride, &blocks, &tasks};
     if (error == 0) {
         error = cuda.launch(cuda.q4_rows, (unsigned) ((tasks + 127) / 128), 1, 1, 128, 1, 1, 0, NULL, args, NULL);
         if (error == 0) error = cuda.sync();
@@ -418,13 +591,12 @@ int64_t fg_cuda_prepare_experts(uint64_t tensor, int64_t bytes, sl_i64 active, s
     return status;
 }
 
-int64_t fg_cuda_begin(uint64_t input, int64_t input_bytes, int64_t output_bytes) {
+int64_t fg_cuda_begin(uint64_t input, int64_t input_bytes, uint64_t output, int64_t output_bytes) {
     const int active = start_context();
     if (active != 1) return active;
     cuda_matrix_kind = -1;
-    int status = reserve(&cuda.input, (size_t) input_bytes);
-    if (status == 0) status = reserve(&cuda.output, (size_t) output_bytes);
-    if (status == 0) status = cuda.upload(cuda.input.address, (const void *) (uintptr_t) input, (size_t) input_bytes);
+    int status = activation_output(output, output_bytes, &matrix_output);
+    if (status == 0) status = activation_input((sl_u8) {(void *) (uintptr_t) input, input_bytes}, &cuda.input, &matrix_input);
     if (status == 0) return 1;
     finish_context();
     fprintf(stderr, "Goose CUDA: input transfer failed (%d)\n", status);
@@ -449,15 +621,13 @@ int64_t fg_cuda_plane(uint64_t weights, int64_t weight_bytes, int64_t row_stride
         if (offset >= 0) weight = cuda.dense.address + (uint64_t) offset;
     }
     if (error == 0 && weight == 0) {
-        error = reserve(&cuda.weight, (size_t) weight_bytes);
-        weight = cuda.weight.address;
-        if (error == 0) error = cuda.upload(weight, (const void *) (uintptr_t) weights, (size_t) weight_bytes);
+        error = activation_input((sl_u8) {(void *) (uintptr_t) weights, weight_bytes}, &cuda.weight, &weight);
     }
     if (error == 0) error = cuda.upload(cuda.jobs.address, jobs.data, job_bytes);
 
     uint64_t stride = (uint64_t) row_stride;
     int width = (int) extent, type = (int) kind, start = 0;
-    void * args[] = { &weight, &cuda.input.address, &cuda.output.address,
+    void * args[] = { &weight, &matrix_input, &matrix_output,
                       &cuda.jobs.address, &stride, &width, &type, &start };
     const unsigned lanes = kind == 14 ? 64 : 32;
     const int count = (int) (jobs.len / 2);
@@ -479,7 +649,7 @@ int64_t fg_cuda_plane(uint64_t weights, int64_t weight_bytes, int64_t row_stride
 int64_t fg_cuda_finish(uint64_t output, int64_t output_bytes) {
     int error = 0;
     if (output) {
-        error = cuda.download((void *) (uintptr_t) output, cuda.output.address, (size_t) output_bytes);
+        error = activation_publish(output, output_bytes, matrix_output, true);
     }
     const int pop_error = finish_context();
     if (error == 0) error = pop_error;
@@ -520,26 +690,25 @@ int64_t fg_cuda_q4_attention(sl_i64 config, sl_u8 q, sl_u8 k, sl_u8 v, sl_u8 mas
     const sl_u8 data[] = {q, key ? (sl_u8) {0} : k, value ? (sl_u8) {0} : v, mask,
         {(uint8_t *) config.data, config.len * (int64_t) sizeof(*config.data)}};
     struct device_buffer * buffers[] = {&cuda.input, &cuda.weight, &cuda.attention_value, &cuda.jobs, &cuda.attention_config};
-    int error = reserve(&cuda.output, (size_t) out.len);
+    DevicePtr staged[] = {0, key, value, 0, 0}, output = 0;
+    const uint64_t host = (uint64_t) (uintptr_t) out.data;
+    int error = activation_output(host, out.len, &output);
     if (error == 0) error = reserve(&cuda.attention_scratch, (size_t) config.data[20]);
-    if (error == 0) error = upload_inputs(data, buffers, sizeof(data) / sizeof(*data));
+    if (error == 0) error = upload_inputs(data, buffers, staged, sizeof(data) / sizeof(*data));
 
-    if (!key) key = cuda.weight.address;
-    if (!value) value = cuda.attention_value.address;
-    DevicePtr device_mask = mask.len == 0 ? 0 : cuda.jobs.address;
     const int tasks = (int) config.data[18], capacity = (int) config.data[19];
     const unsigned tiles = (unsigned) config.data[17];
     int start = 0;
-    void * tile_args[] = {&cuda.input.address, &key, &value,
-        &device_mask, &cuda.attention_scratch.address, &cuda.attention_config.address, &scale, &start};
-    void * merge_args[] = {&cuda.attention_scratch.address, &cuda.output.address, &cuda.attention_config.address, &start};
+    void * tile_args[] = {&staged[0], &staged[1], &staged[2],
+        &staged[3], &cuda.attention_scratch.address, &staged[4], &scale, &start};
+    void * merge_args[] = {&cuda.attention_scratch.address, &output, &staged[4], &start};
     while (error == 0 && start < tasks) {
         const int count = tasks - start < capacity ? tasks - start : capacity;
         error = cuda.launch(cuda.attention_tiles, (unsigned) count, tiles, 1, 32, 1, 1, 0, NULL, tile_args, NULL);
         if (error == 0) error = cuda.launch(cuda.attention_merge, (unsigned) count, 1, 1, 32, 1, 1, 0, NULL, merge_args, NULL);
         start += count;
     }
-    if (error == 0) error = cuda.download(out.data, cuda.output.address, (size_t) out.len);
+    if (error == 0) error = activation_publish(host, out.len, output, false);
     if (error != 0 && start > 0) (void) cuda.sync();
     const int popped = finish_context();
     if (error != 0 || popped != 0) {
@@ -583,16 +752,17 @@ int64_t fg_cuda_gdn(sl_i64 plan, sl_f32 q, sl_f32 k, sl_f32 v, sl_f32 gate, sl_f
     if (initial_device) data[5] = (sl_u8) {0};
     struct device_buffer * buffers[] = {&cuda.input, &cuda.weight, &cuda.attention_value,
         &cuda.jobs, &cuda.gdn_beta, &cuda.attention_scratch};
+    DevicePtr staged[] = {0, 0, 0, 0, 0, initial_device}, output = 0;
+    const uint64_t host = (uint64_t) (uintptr_t) out.data;
     const size_t output_bytes = publish ? score_bytes : (size_t) out.len * sizeof(float);
-    int error = publish && published_state.bytes > 0 ? -1 : reserve(&cuda.output, output_bytes);
-    if (error == 0) error = upload_inputs(data, buffers, sizeof(data) / sizeof(*data));
+    int error = publish && published_state.bytes > 0 ? -1 : activation_output(host, (int64_t) output_bytes, &output);
+    if (error == 0) error = upload_inputs(data, buffers, staged, sizeof(data) / sizeof(*data));
 
     uint64_t packet[57];
     if (error == 0) {
-        for (size_t i = 0; i < sizeof(data) / sizeof(*data); ++i) packet[i] = buffers[i]->address;
-        if (initial_device) packet[5] = initial_device;
-        packet[6] = cuda.output.address;
-        packet[7] = publish ? initial_device : cuda.output.address + score_bytes;
+        for (size_t i = 0; i < sizeof(data) / sizeof(*data); ++i) packet[i] = staged[i];
+        packet[6] = output;
+        packet[7] = publish ? initial_device : output + score_bytes;
         memcpy(packet + 8, plan.data, sizeof(packet) - 8 * sizeof(*packet));
         error = reserve(&cuda.attention_config, sizeof packet);
     }
@@ -603,7 +773,7 @@ int64_t fg_cuda_gdn(sl_i64 plan, sl_f32 q, sl_f32 k, sl_f32 v, sl_f32 gate, sl_f
             (unsigned) plan.data[34], (unsigned) (plan.data[35] * plan.data[36]),
             1, 1, 0, NULL, args, NULL);
         if (error == 0) {
-            error = cuda.download(out.data, cuda.output.address, output_bytes);
+            error = activation_publish(host, (int64_t) output_bytes, output, false);
             if (error != 0) (void) cuda.sync();
         }
     }

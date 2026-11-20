@@ -81,6 +81,9 @@ export fn fg143_state_run(packet: const i64[:],
     a0: const u8[:], a1: const u8[:], a2: const u8[:], a3: const u8[:],
     a4: const u8[:], a5: const u8[:], a6: const u8[:], dst: u8[:]) -> bool {
     if packet.len != 82 { return false; }
+    if activation_read(a0) != 0 || activation_read(a1) != 0 || activation_read(a2) != 0 ||
+       activation_read(a3) != 0 || activation_read(a4) != 0 || activation_read(a5) != 0 ||
+       activation_read(a6) != 0 { return false; }
     let p = state_plan(packet);
     return state_entry(p, a0, a1, a2, a3, a4, a5, a6, dst);
 }
@@ -112,6 +115,7 @@ fn set_quantized_rows(p: const Node &, source: u64, destination: u64, ids: const
         return false;
     }
     validate(p.y, ids.len);
+    if activation_read(ids) != 0 { return false; }
     let row_bytes = (width / 32) * 18;
     let count = rows(p.x);
     if work.len / 2 < count { return false; }
@@ -146,6 +150,7 @@ fn set_quantized_rows(p: const Node &, source: u64, destination: u64, ids: const
         // Preserve the previous GPU bytes in the holes of a sparse update.
         return false;
     }
+    if activation_read_address(source, p.x.bytes) != 0 { return false; }
     for row in count {
         let from = source + (work[2 * row] as u64);
         let to = destination + (work[2 * row + 1] as u64);
