@@ -1890,6 +1890,10 @@ copies of 16 MiB after vector operations. The next prefill
 work should match their producer/consumer chains and avoid
 those host publications when they are unnecessary.
 
+The [isolated EXP-1476 comparison](../../experiments/EXP-2026-11-20-1559-hybrid-activation-arena/README.md)
+changed zero CUDA compute allocations. Its graph allocator
+already requested more than 384 MiB for each prefill block.
+
 - Same-build A–B–B–A under
   `/home/end0/AI/LlamaServer/franken-goose-wide-arena.yr2YF0`.
   In run order `cuda-matrix-dense-both.5eo3mlp2`,
