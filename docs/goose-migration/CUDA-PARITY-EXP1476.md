@@ -3860,6 +3860,49 @@ Build and fixture logs, captures, compiler reproducer and traces
 are under
 `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/vector-params-exp1603`.
 
+## MMVQ job descriptors in launch parameters
+
+EXP-2026-11-21-1604 tests passing up to eight jobs directly to the Q8_1
+packer and the Q4_K/Q6_K matvec. Replacing the explicit descriptor
+upload and the device-buffer reads may reduce decode dispatch time.
+The MMQ and dense MMA selectors, Goose arithmetic and slot addressing
+are identical to the EXP-1603 control.
+
+Both kernels read the 192-byte packet through `ld.param` with a
+route-dependent offset. SM89 assembly reports a zero-byte stack frame
+and zero spills for both kernels, using 25 registers for the packer
+and 40 for the matvec. The selection of a constant parameter space is
+consistent with the [compiler registry](FRIED-GOOSE-OPTIMIZATION-REGISTRY.md#read-only-cuda-parameter-aggregates).
+
+The fixture checks dense batches of 1, 7 and 8 and indexed batches of
+1 and 8 for both quantizations, with nonzero input, output and expert
+offsets. All 950 outputs match bitwise. Compute Sanitizer memcheck
+reports zero errors.
+
+| Sequential Apex 32K/512, 4096/4096, RTX 4070 | EXP-1603 A1 / A2 | MMVQ packet B1 / B2 |
+|---|---:|---:|
+| Prefill, tokens/s | 1148.98 / 1152.08 | 1136.24 / 1125.81 |
+| Decode, steps/s | 32.716 / 32.679 | 33.078 / 33.301 |
+| Prefill plus decode, s | 44.138 / 44.079 | 44.287 / 44.451 |
+| Process VRAM peak, MiB | 8200 / 8200 | 8200 / 8200 |
+| RSS high-water, KiB | 21482352 / 21482812 | 21481100 / 21480468 |
+| Process swap, KiB | 0 / 0 | 0 / 0 |
+| System swap-out increase, pages | 0 / 0 | 0 / 0 |
+
+All responses, including IDs and probabilities, match the control.
+Request SHA-256 `484a12de00ec057e4b78d480ebb185153bb10af607eb23192a72995ba3026d0f`.
+Canonical response JSON with timings removed has SHA-256
+`767a1589b5dcde655905c1d94d6e5bb0eee2efb869e7867a28859d7ccd26a98d`.
+
+**Deferred.** Median decode saves 231 ms. Median prefill costs 492 ms,
+and median combined time rises by 260 ms. Keep the EXP-1603 runtime.
+The physical volume of descriptor uploads removed was not measured
+with a matched trace. Recheck a decode-only dispatch change or a
+scalar parameter ABI for the dominant single-column projection.
+The reproducible patch, fixture, generated PTX, executable and raw
+runs are in
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/mmvq-params-exp1604`.
+
 ## Long Attention partition probe
 
 EXP-2026-11-20-1562 holds the existing vector kernel fixed
