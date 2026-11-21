@@ -45,13 +45,19 @@ def complete(port, options):
 
 
 def check(binary, fixture):
+    for flag, value in (("--cache-type-k", "f16"), ("--cache-type-v", "q8_0"),
+                        ("--expert-cache-mib", "0"), ("--expert-cache-mib", str(1 << 43))):
+        invalid = subprocess.run([binary, flag, value, fixture, "ab"], capture_output=True, text=True)
+        assert invalid.returncode == 2 and flag in invalid.stderr, invalid
+
     with socket.socket() as candidate:
         candidate.bind(("127.0.0.1", 0))
         port = candidate.getsockname()[1]
 
     limit = 36
     with subprocess.Popen(
-        [binary, "--ctx-size", "262144", fixture, "--serve", str(port), str(limit)],
+        [binary, "--ctx-size", "262144", "--cache-type-k", "q4_0", "--cache-type-v", "q4_0",
+         fixture, "--serve", str(port), str(limit)],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.PIPE,
         text=True,
@@ -67,6 +73,8 @@ def check(binary, fixture):
             assert status == 200 and props["n_vocab"] == 4 and props["n_layer"] == 2
             assert props["n_ctx"] == 262144
             assert props["n_batch"] == props["n_ubatch"] == 128
+            assert props["cache_type_k"] == props["cache_type_v"] == "q4_0"
+            assert props["cuda_expert_cache_limit_bytes"] == 4992 * 1024 * 1024
             assert exchange(port, post(2, "text/plain"), b"ab") == (
                 200, {"ids": [2], "text": "ab", "count": 1},
             )

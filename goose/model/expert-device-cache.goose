@@ -2,7 +2,7 @@
 // one expert. Layers with the same plane sizes and expert count share an SLRU.
 const EC_GROUP: i64 = 9;
 const EC_LAYER: i64 = 4;
-const EC_MAX_BYTES: i64 = 4992 * 1024 * 1024;
+const EC_DEFAULT_BYTES: i64 = 4992 * 1024 * 1024;
 
 extern "fg_cuda_load_experts" fn ec_load(groups: const i64[:], layers: const i64[:],
                                          device_bytes: i64, words32: i64, words64: i64) -> i64;
@@ -130,15 +130,23 @@ fn ec_plane_bytes(t: i64, owner: const i64[:], experts: i64) -> i64 {
     return bytes;
 }
 
-export fn qr_cuda_experts(owner: const i64[:], records: const i64[:], head: i64) -> i64 {
+export fn qr_cuda_experts(owner: const i64[:], records: const i64[:], head: i64,
+                          requested: i64, capacity: i64[:]) -> i64 {
     if owner.len < 13 || owner[0] != 9191 || owner[5] <= 0 ||
-       records.len / 32 < owner[5] || head == 0 { return -1; }
+       records.len / 32 < owner[5] || head == 0 || requested < 0 ||
+       capacity.len != 2 { return -1; }
+    let strict = requested > 0;
+    let limit_bytes = if strict { requested } else { EC_DEFAULT_BYTES };
+    capacity[0] = 0;
+    capacity[1] = limit_bytes;
     let free = mr_cuda_free();
-    if free <= 0 { return free; }
+    if free <= 0 { return if strict { -2 } else { free }; }
     let reserve = mr_cuda_reserve(owner, head);
-    if free <= reserve { return 0; }
-    let available = free - reserve;
-    let budget = if available < EC_MAX_BYTES { available } else { EC_MAX_BYTES };
+    let available = if free <= reserve { 0 } else { free - reserve };
+    capacity[0] = available;
+    if strict && requested > available { return -3; }
+    if available == 0 { return 0; }
+    let budget = if available < limit_bytes { available } else { limit_bytes };
 
     let n = owner[5];
     var groups: i64[>..] = [];
@@ -174,7 +182,7 @@ export fn qr_cuda_experts(owner: const i64[:], records: const i64[:], head: i64)
         layers[at] = group;
         for p in 3 { layers[at + 1 + p] = qa_get(records[row + 13 + p], 4, 0) as! i64; }
     }
-    if found == 0 { return 0; }
+    if found == 0 { return if strict { -5 } else { 0 }; }
 
     var used: i64 = 0;
     var words32: i64 = 0;
@@ -187,7 +195,10 @@ export fn qr_cuda_experts(owner: const i64[:], records: const i64[:], head: i64)
         let limit = experts * groups[g + 4];
         let slots = if share / span < limit { share / span } else { limit };
         // Keep every distinct route in a full prefill batch simultaneously.
-        if slots < experts { continue; }
+        if slots < experts {
+            if strict { return -4; }
+            continue;
+        }
         groups[g + 5] = slots;
         groups[g + 6] = used;
         used += slots * span;

@@ -32,6 +32,7 @@ void fg_http_stats(sl_i64 stats) {
     if (stats.len >= 13) stats.data[12] = fg_cuda_model_state_bytes();
     if (stats.len >= 15) hose_prefill_profile(stats.data + 13);
     if (stats.len >= 21) fg_cuda_expert_stats((sl_i64) { stats.data + 15, 6 });
+    if (stats.len >= 22) stats.data[21] = hose_expert_cache_limit();
 }
 
 void fg_http_listening(int64_t port) {
@@ -75,6 +76,24 @@ int main(int argc, char ** argv) {
     int64_t batch = HOSE_DEFAULT_PREFILL_BATCH;
     int64_t ubatch = 0;
     while (argc >= 2) {
+        if (strcmp(argv[1], "--cache-type-k") == 0 || strcmp(argv[1], "--cache-type-v") == 0) {
+            if (argc < 3 || strcmp(argv[2], "q4_0") != 0) {
+                fprintf(stderr, "%s requires q4_0 in the standalone Apex runtime\n", argv[1]);
+                return 2;
+            }
+            argc -= 2;
+            argv += 2;
+            continue;
+        }
+        if (strcmp(argv[1], "--expert-cache-mib") == 0) {
+            if (argc < 3 || hose_configure_expert_cache(positive_integer(argv[2])) != 0) {
+                fputs("--expert-cache-mib requires a positive MiB value that fits in signed 64-bit bytes\n", stderr);
+                return 2;
+            }
+            argc -= 2;
+            argv += 2;
+            continue;
+        }
         int64_t * value = NULL;
         if (strcmp(argv[1], "--ctx-size") == 0) value = &context;
         if (strcmp(argv[1], "--batch-size") == 0) value = &batch;
@@ -101,8 +120,10 @@ int main(int argc, char ** argv) {
         return serve(argv[1], positive_integer(argv[3]), argc == 5 ? positive_integer(argv[4]) : 0, context);
     }
     if (server_mode || (argc != 3 && argc != 4)) {
-        fprintf(stderr, "usage: %s [--ctx-size N] [--batch-size N] [--ubatch-size N] MODEL.gguf PROMPT [MAX_TOKENS]\n", program);
-        fprintf(stderr, "       %s [--ctx-size N] [--batch-size N] [--ubatch-size N] MODEL.gguf --serve PORT [MAX_CONNECTIONS]\n", program);
+        fputs("options: --ctx-size N --batch-size N --ubatch-size N --cache-type-k q4_0 "
+              "--cache-type-v q4_0 --expert-cache-mib N\n", stderr);
+        fprintf(stderr, "usage: %s [OPTIONS] MODEL.gguf PROMPT [MAX_TOKENS]\n", program);
+        fprintf(stderr, "       %s [OPTIONS] MODEL.gguf --serve PORT [MAX_CONNECTIONS]\n", program);
         return 2;
     }
     int64_t max_tokens = 1;

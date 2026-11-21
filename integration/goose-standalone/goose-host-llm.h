@@ -16,6 +16,8 @@ void hose_stats(int64_t * out5);          // vocab, special, eog, eos, layers
 int64_t hose_context_capacity(void);
 int64_t hose_configure_prefill(int64_t batch, int64_t ubatch);
 void hose_prefill_profile(int64_t profile[2]);
+int64_t hose_configure_expert_cache(int64_t mib);
+int64_t hose_expert_cache_limit(void);
 int64_t hose_model_residency(int64_t out[4]);  // file bytes, resident bytes, pages, resident pages
 
 // Generate token IDs and detokenise when out_text is set. Optional timing gets

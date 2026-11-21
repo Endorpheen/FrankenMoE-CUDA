@@ -118,9 +118,8 @@ if [ -n "$SLOT_DIR$SLOT_SAVE$SLOT_RESTORE" ]; then
     SLOT_DIR=$(cd "$SLOT_DIR" && pwd -P)
 fi
 if [ -n "$GOOSE_BIN" ]; then
-    [[ "$ENDPOINT" == completion && -z "$SLOT_DIR" && "$CACHE" == 4992 &&
-       "${APEX_SPEC_TYPE:-none}" == none ]] || {
-        echo 'Goose capture requires /completion, the 4992 MiB expert budget, and no slot or speculative mode'
+    [[ "$ENDPOINT" == completion && -z "$SLOT_DIR" && "${APEX_SPEC_TYPE:-none}" == none ]] || {
+        echo 'Goose capture requires /completion and no slot or speculative mode'
         exit 2
     }
 fi
@@ -139,7 +138,12 @@ fi
 unset LD_PRELOAD
 if [ -n "$GOOSE_BIN" ]; then
     unset LD_LIBRARY_PATH
-    ARGS=(--ctx-size "${APEX_CTX:-262144}" --batch-size "$B" --ubatch-size "$UB" "$MODEL" --serve "$PORT")
+    ARGS=(--ctx-size "${APEX_CTX:-262144}" --batch-size "$B" --ubatch-size "$UB"
+          --cache-type-k q4_0 --cache-type-v q4_0)
+    if [ -n "${5:-}" ]; then
+        ARGS+=(--expert-cache-mib "$CACHE")
+    fi
+    ARGS+=("$MODEL" --serve "$PORT")
     PRELOAD=
 else
     export LD_LIBRARY_PATH="$SERVER_DIR"

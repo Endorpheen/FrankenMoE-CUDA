@@ -411,7 +411,7 @@ fn ih_request(fd: i64, request: u8[:], output: u8[:], response: u8[:], ids: i64[
     } else if meta[2] == 1 {
         ih_response(fd, 200, "{\"status\":\"ok\"}");
     } else if meta[2] == 3 {
-        var stats: i64[21] = [0; 21];
+        var stats: i64[22] = [0; 22];
         ih_stats_abi(stats);
         if stats[6] < 0 {
             ih_response(fd, 500, "{\"error\":\"model residency unavailable\"}");
@@ -437,6 +437,9 @@ fn ih_request(fd: i64, request: u8[:], output: u8[:], response: u8[:], ids: i64[
         n = cp_uint(response, n, stats[10]);
         n = cp_put(response, n, ",\"cuda_expert_cache_bytes\":");
         n = cp_uint(response, n, stats[11]);
+        n = cp_put(response, n, ",\"cuda_expert_cache_limit_bytes\":");
+        n = cp_uint(response, n, stats[21]);
+        n = cp_put(response, n, ",\"cache_type_k\":\"q4_0\",\"cache_type_v\":\"q4_0\"");
         n = cp_put(response, n, ",\"cuda_model_state_bytes\":");
         n = cp_uint(response, n, stats[12]);
         n = cp_put(response, n, ",\"n_batch\":");

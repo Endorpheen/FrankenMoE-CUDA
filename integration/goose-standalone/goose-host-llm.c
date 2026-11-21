@@ -11,6 +11,7 @@
 #include <string.h>
 #include <math.h>
 #include <fcntl.h>
+#include <inttypes.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -48,7 +49,7 @@ typedef struct {
     int64_t * eog;
     int64_t n_eog, eos;
     // trunk state
-    int64_t layer_count, acfg[14], gcfg[7], mcfg[3], kv_state[6];
+    int64_t layer_count, expert_cache_limit, acfg[14], gcfg[7], mcfg[3], kv_state[6];
     int64_t handles[4];
     int64_t * records;
     int64_t * scratch_cpts, * scratch_seg, * scratch_sym, * scratch_heap, * scratch_hc, * scratch_info;
@@ -59,6 +60,7 @@ host_t H;
 
 static int64_t prefill_batch = HOSE_DEFAULT_PREFILL_BATCH;
 static int64_t prefill_ubatch = HOSE_DEFAULT_PREFILL_BATCH;
+static int64_t expert_cache_request;
 
 int64_t fg_model_mincore(uint64_t address, int64_t bytes, sl_u8 flags) {
     return mincore((void *) (uintptr_t) address, (size_t) bytes, flags.data);
@@ -301,9 +303,21 @@ void hose_host_load_context(const char * path, int64_t capacity) {
     const int64_t device_bytes = qr_cuda_dense((sl_i64) { H.owner, 13 },
         (sl_i64) { H.records, H.layer_count * 32 }, H.handles[1]);
     if (device_bytes < 0) die("model CUDA placement");
+    int64_t expert_capacity[2] = {0};
     const int64_t expert_bytes = qr_cuda_experts((sl_i64) { H.owner, 13 },
-        (sl_i64) { H.records, H.layer_count * 32 }, H.handles[1]);
+        (sl_i64) { H.records, H.layer_count * 32 }, H.handles[1], expert_cache_request,
+        (sl_i64) { expert_capacity, 2 });
+    if (expert_bytes == -2) die("requested GPU expert cache requires an available CUDA device");
+    if (expert_bytes == -3) {
+        fprintf(stderr, "Goose GPU expert cache: requested %" PRId64
+                " MiB, available %" PRId64 " bytes after model allocations\n",
+                expert_cache_request / (1024 * 1024), expert_capacity[0]);
+        exit(1);
+    }
+    if (expert_bytes == -4) die("requested GPU expert cache cannot hold one layer of experts per group");
+    if (expert_bytes == -5) die("model has no supported GPU expert cache groups");
     if (expert_bytes < 0) die("model CUDA expert cache");
+    H.expert_cache_limit = expert_capacity[1];
     if (fg_q35_generation_prepare() != 0) die("model RAM residency after CUDA placement");
 }
 
@@ -361,6 +375,17 @@ int64_t hose_configure_prefill(int64_t batch, int64_t ubatch) {
 void hose_prefill_profile(int64_t profile[2]) {
     profile[0] = prefill_batch;
     profile[1] = prefill_ubatch;
+}
+
+int64_t hose_configure_expert_cache(int64_t mib) {
+    const int64_t mib_bytes = 1024 * 1024;
+    if (mib <= 0 || mib > INT64_MAX / mib_bytes) return -1;
+    expert_cache_request = mib * mib_bytes;
+    return 0;
+}
+
+int64_t hose_expert_cache_limit(void) {
+    return H.expert_cache_limit;
 }
 
 void fg_q35_generation_profile(sl_i64 profile) {

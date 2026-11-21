@@ -28,7 +28,9 @@ Functional qualification runs before memory and speed acceptance.
    the 4,992 MiB expert-cache budget on both entry points. Record the
    effective configuration. Physical 4096/4096 now completes on real
    Apex and is reported by `/props`. The CPU executor remains serial.
-   Explicit KV type and expert-cache controls are pending. Treat
+   The [explicit cache controls](#explicit-cache-profile) verify the
+   Q4_0 K/V format and the 4,992 MiB budget on real Apex. The CPU
+   thread and affinity profile still needs qualification. Treat
    performance under a different effective profile as diagnostic.
    The frozen checkpointed reference evaluates the final 4,096
    prompt tokens in parts of 4,092 and 4. The
@@ -106,6 +108,58 @@ Functional qualification runs before memory and speed acceptance.
    and single-response decode. Report units, absolute rates, per-run
    values and spread, memory, exact binaries and raw evidence.
    Resolve a regression in the same gate and rerun the affected checks.
+
+## Explicit cache profile
+
+EXP-1589 accepts `--cache-type-k q4_0`,
+`--cache-type-v q4_0` and `--expert-cache-mib N` on
+the independent binary. Q4_0 is the supported KV layout.
+The loader uses the existing Q4 KV state and the shared
+Goose SLRU planner. The budget limits the model's expert
+bank on the GPU. Whole-slot packing determines the actual
+allocation. `/props` reports both byte counts, both KV
+formats and the independent mmap host-registration counters.
+The automatic path keeps its existing 4,992 MiB ceiling
+and VRAM adjustment. An explicit request fails when CUDA
+is unavailable, the budget exceeds available device memory,
+or a supported group cannot fit a layer's experts.
+
+The HTTP suite passes 36 requests with explicit Q4_0 and
+rejects unsupported cache types, zero MiB and byte overflow.
+On the RTX 4070, a 4,096 MiB startup allocates
+4,292,247,552 bytes and reports all 5,301,139 model
+pages resident. A 1 MiB request fails the layer-fit rule.
+A 16,384 MiB request reports 8,123,604,992 available bytes
+after model allocations and exits before serving. The CPU
+fixture rejects an explicit GPU budget with CUDA disabled.
+
+The capture runner passes an explicit GPU budget when the
+fifth positional argument is supplied. Both arms below use
+the same binary, matched checkpoint tail, exact request and
+4,096/4,096 limits.
+
+| Apex 32K/512 diagnostic pair | Automatic A | Explicit 4,992 MiB B |
+|---|---:|---:|
+| KV K / V | Q4_0 / Q4_0 | Q4_0 / Q4_0 |
+| Configured expert limit, bytes | 5,234,491,392 | 5,234,491,392 |
+| Actual expert bank, bytes | 5,234,122,752 | 5,234,122,752 |
+| Registered host weight bytes | 4,227,973,120 | 4,227,973,120 |
+| Prefill, tok/s | 1,039.476 | 1,041.207 |
+| Decode, steps/s | 27.057 | 27.070 |
+| Process RSS high-water, KiB | 22,947,692 | 22,947,656 |
+| Process VRAM after request, MiB | 7,272 | 7,272 |
+| Process swap / system swap-out growth | 0 / 0 | 0 / 0 |
+
+Both responses and all probabilities match outside timing.
+The two captured property objects are identical and both
+maps contain no C++ runtime, libggml or libllama. This pair
+verifies selection and behavior with the explicit budget.
+The CPU scheduling and final performance comparisons remain open.
+
+Raw captures, startup probes and the executable are under
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/explicit-cache-exp1589`.
+Executable SHA-256
+`81029bb5d93e05f9d30f7da4943738d5a804f01a154c0c1da87996bc47479826`.
 
 ## Capture and timing convention
 
