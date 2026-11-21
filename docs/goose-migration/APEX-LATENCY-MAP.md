@@ -1,6 +1,123 @@
 # Apex 32K/512 latency map
 
-## Current snapshot
+## EXP-1619 — Long decode graphs and expert staging
+
+EXP-1619 extends the opt-in Goose graph from the full FFN through
+the following layer's recurrent or attention work and device
+Top-K. The graph ends before reading the IDs on the host.
+RMSNorm and SSM convolution use model-owned GPU-resident weights.
+The resident dense allocation adds 4,639,232 bytes. The staged
+variant adds an external CUDA event before the first routed
+projection. Its first ten kernels can execute before that event.
+The copy stream waits for earlier readers of the cache slots.
+
+Both arms use the same independent Goose binary, graph,
+RTX 4070, Apex request and settings from EXP-1618, including
+4096/4096, Q4_0 KV, CPU affinity and a 5,632 MiB cache budget.
+`GOOSE_CUDA_DECODE_GRAPH=1` enables the region. The A/B switch
+is `GOOSE_CUDA_DECODE_EXPERT_OVERLAP=0|1`.
+
+| Unprofiled, 5,632 MiB | Synchronous | Staged | Staged minus synchronous |
+|---|---:|---:|---:|
+| Median prefill, tok/s | 1,148.69 | 1,143.15 | -5.53 |
+| Median decode, tok/s | 32.57 | 33.00 | +0.42 |
+| Median prefill, ms | 28,526.470 | 28,664.568 | +138.098 |
+| Median decode, ms | 15,687.324 | 15,486.910 | -200.414 |
+| Peak process VRAM, MiB | 7,928 | 7,928 | 0 |
+| Maximum process RSS high-water mark, KiB | 21,480,528 | 21,480,852 | +324 |
+| Process swap, KiB / system swap-out growth, pages | 0 / 0 | 0 / 0 | 0 / 0 |
+
+The first A-B-B-A control had 36,087 pages of system swap-out
+and is excluded from timing acceptance. The first B is also
+outside the balanced subset. The clean comparison uses
+B2-A2-A3-B3. All six runs return identical text, 512 IDs,
+probability rows and stop reason. Each arm reports 570,364
+SLRU hits, 70,688 fills, 67,573 evictions and 135,674,634,240
+uploaded expert bytes. The model is fully resident in RAM.
+Q4_K and Q6_K eviction fixtures produce byte-identical output
+with 48 fills, 40 evictions and zero Compute Sanitizer errors.
+
+One separate A/B at the previous 5,920 MiB setting yields
+1,132.22 / 33.19 and 1,141.39 / 34.12 tok/s for prefill / decode.
+Decode falls from 15,398.401 to 14,976.249 ms. Both runs reach
+8,218 MiB process VRAM, with RSS high-water marks of 21,480,076
+and 21,479,648 KiB respectively. Process swap and system
+swap-out growth stay at zero. All response fields and SLRU
+counters match within this pair. This is a diagnostic pair.
+The earlier 8,226 MiB EXP-1617 run also had a 5,920 MiB budget.
+The 7,928 MiB result above uses a budget 288 MiB smaller.
+
+### Expert transfers and GPU idle
+
+The second pair uses Nsight Systems 2026.6.1 with node-level
+and device event tracing. It covers all 511 decode evaluations.
+Both traces have the same 998,476 kernel events and the same
+graph-size distribution. Of the 40 per-layer regions per
+step, 29 contain 49 kernels, 10 contain 48 kernels and the
+final region contains 22 kernels. There are also 2,550
+two-kernel replays. Host `cuLaunchKernel` calls include
+kernel recording during capture.
+
+| Decode measurement | Synchronous | Staged | Staged minus synchronous |
+|---|---:|---:|---:|
+| Server decode, ms | 18,642.954 | 18,180.012 | -462.941 |
+| Device window, ms | 18,639.824 | 18,176.573 | -463.251 |
+| GPU idle union, ms | 8,668.410 | 7,182.347 | -1,486.063 |
+| Synchronous expert H2D calls | 62,571 | 0 | -62,571 |
+| Asynchronous expert H2D calls | 0 | 62,571 | +62,571 |
+| Expert H2D payload, bytes | 40,850,890,752 | 40,850,890,752 | 0 |
+| Host elapsed in expert copy APIs, ms | 4,179.159 | 207.782 | -3,971.377 |
+| GPU idle during expert copy APIs, ms | 2,793.955 | 162.694 | -2,631.260 |
+| Expert H2D device time, ms | 1,709.259 | 2,744.811 | +1,035.552 |
+| Expert H2D intersecting compute kernels, ms | 0.000 | 0.000 | 0.000 |
+| Remaining synchronous H2D (8,192 B each) | 1,021 | 1,021 | 0 |
+| Host elapsed in remaining synchronous H2D, ms | 18.459 | 18.045 | -0.414 |
+| Ring-buffer host event synchronizations | 0 | 13,761 | +13,761 |
+| Ring-buffer host event synchronization wall, ms | 0.000 | 13.110 | +13.110 |
+| Copy-stream wait for old cache readers, ms | 0.000 | 6.666 | +6.666 |
+| Graph-stream weight-ready event waits, ms | 0.000 | 25.661 | +25.661 |
+
+The 2,682.964 ms of synchronous expert-copy idle identified
+in EXP-1618 has no corresponding synchronous expert calls in
+the new staged trace. Its fresh same-binary control measures
+2,793.955 ms. The staged copy enqueue APIs still intersect
+162.694 ms of GPU idle. Event timings and API intervals are
+diagnostic subsets. GPU transfer duration, event waits and
+host API duration must not be added to overall GPU idle.
+Device event tracing can perturb scheduling, so performance
+acceptance uses the unprofiled pair above.
+
+All 62,571 staged copies associate with 10,974 graph replays.
+Every miss group completes its last H2D before its first
+compute kernel, including 10,970 groups ready before the
+host calls `cuGraphLaunch`. The elapsed time between the last
+copy and that call totals 1,274.413 ms, with 1,274.067 ms
+of GPU idle. Within those intervals, host API time includes
+384.621 ms recording kernels, 179.021 ms updating graph
+executables and 22.578 ms in begin/end capture and
+instantiation. Another 145.167 ms is async packet upload API
+time. The device weight-ready waits are observed separately.
+The span between the last independent kernel and first routed
+matvec is 17.694 ms in miss groups, with zero time where a
+required copy remains incomplete.
+
+The staged transport removes blocking expert H2D from decode.
+The new ordering provides independent compute nodes, but
+per-token capture and update keep their replay behind the
+completed transfers in this trace. Reusing a recorded region
+with correct mutable addresses is the next measured target.
+Host Top-K consumption and the remaining 8 KiB copies are
+still present. Both graph and staging flags remain experimental.
+
+Evidence is in
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/decode-region-exp1619`.
+`profiles/analyze.py` joins CUDA API events, GPU transfers
+and graph kernel replays. `profiles/expert-comparison.json`
+contains the unrounded numbers. The response control hash
+over IDs, text, probabilities and stop reason is
+`d80bce6a8f64b63856c70215a2195a3402e1840a5d4888284b4f3e5a0d0460ba`.
+
+## EXP-1618 baseline snapshot
 
 EXP-1618 compares frozen [Optimized Hybrid](OPTIMIZED-HYBRID.md)
 against independent Goose EXP-1617 (`efa4c82c`) with its cumulative

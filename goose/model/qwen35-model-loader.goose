@@ -277,6 +277,7 @@ export fn qr_model_open(data: const u8[:], mapping: u64, file_bytes: i64, parsed
 extern "fg_cuda_free_bytes" fn mr_cuda_free() -> i64;
 extern "fg_cuda_load_dense" fn mr_cuda_load_dense(ranges: const i64[:], bytes: i64) -> i64;
 extern "fg_cuda_model_state_startup_bytes" fn mr_cuda_state_startup_bytes() -> i64;
+extern "fg_cuda_decode_graph_enabled" fn mr_cuda_decode_graph() -> bool;
 
 fn mr_cuda_head_bytes(head: i64) -> i64 {
     let kind = prop(head, 0);
@@ -312,7 +313,7 @@ fn mr_cuda_dense_range(t: i64, owner: const i64[:], budget: i64, plan: i64[:],
 
 // Persist the supported dense matrices in one device allocation. The expert
 // planes remain in the same immutable RAM mapping until the cache admits them.
-export fn qr_cuda_dense(owner: const i64[:], layers: const i64[:], head: i64) -> i64 {
+export fn qr_cuda_dense(owner: const i64[:], layers: const i64[:], head: i64, head_norm: i64) -> i64 {
     if owner.len < 13 || owner[0] != 9191 || layers.len / 32 < owner[5] || head == 0 {
         return -1;
     }
@@ -323,8 +324,9 @@ export fn qr_cuda_dense(owner: const i64[:], layers: const i64[:], head: i64) ->
     let reserve = mr_cuda_reserve(owner, head);
     if free <= reserve { return 0; }
     let budget = free - reserve;
+    let resident_inputs = mr_cuda_decode_graph();
     var plan: i64[>..] = [];
-    plan.resize(3 * (1 + 13 * owner[5]), 0);
+    plan.resize(3 * (if resident_inputs { 2 + 16 * owner[5] } else { 1 + 13 * owner[5] }), 0);
     var used: i64 = 0;
     var words: i64 = 0;
     let head_bytes = mr_cuda_dense_range(head, owner, budget, plan[..], words, used);
@@ -343,6 +345,22 @@ export fn qr_cuda_dense(owner: const i64[:], layers: const i64[:], head: i64) ->
             let bytes = mr_cuda_dense_range(layers[base + slot], owner, budget, plan[..], words, used);
             if bytes > 0 { used += bytes; words += 3; }
         }
+    }
+    if resident_inputs {
+        // Preserve the dense matrix placement order under tight device budgets.
+        for layer in owner[5] {
+            let base = layer * 32;
+            let last = if layers[base] == 1 { 12 } else { 9 };
+            for slot in 1 .. last {
+                if (slot >= 2 && slot <= 5) || (layers[base] == 1 && slot == 10) { continue; }
+                let at = used + (16 - used % 16) % 16;
+                let bytes = mr_cuda_dense_range(layers[base + slot], owner, budget, plan[..], words, at);
+                if bytes > 0 { used = at + bytes; words += 3; }
+            }
+        }
+        let at = used + (16 - used % 16) % 16;
+        let bytes = mr_cuda_dense_range(head_norm, owner, budget, plan[..], words, at);
+        if bytes > 0 { used = at + bytes; words += 3; }
     }
     if used == 0 { return 0; }
     return mr_cuda_load_dense(plan[0 .. words], used);

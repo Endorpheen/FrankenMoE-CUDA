@@ -28,7 +28,7 @@ extern int64_t fg143_activation_last_input(sl_i64 ranges, uint64_t host, int64_t
 extern bool fg_standalone_option_enabled(const char * name);
 extern void ec_reset(sl_i64 groups, sl_i64 layers, uint64_t words32, sl_i64 words64);
 extern int64_t ec_prepare(sl_i64 groups, sl_i64 layers, uint64_t words32, sl_i64 words64,
-    uint64_t tensor, int64_t bytes, sl_i64 heads, sl_i64 result);
+    uint64_t tensor, int64_t bytes, sl_i64 heads, sl_i64 result, uint8_t stage_all);
 extern int64_t ec_manage_pins(sl_i64 spans, int64_t acquire);
 extern uint64_t fg143_storage_ram_available(void);
 
@@ -80,6 +80,12 @@ enum { MMVQ_GRAPH_SLOTS = 1024, MMVQ_GRAPH_KEY_WORDS = 16 };
 struct mmvq_graph_entry {
     uint64_t key[MMVQ_GRAPH_KEY_WORDS];
     GraphExec executable;
+};
+enum { DECODE_GRAPH_REGIONS = 128 };
+
+struct graph_update_result {
+    int result;
+    GraphNode node, from;
 };
 
 struct device_buffer {
@@ -153,7 +159,7 @@ static struct {
     struct expert_cache experts;
     Stream expert_stream;
     Event expert_slots_ready, expert_uploads_ready;
-    bool expert_upload_queued;
+    bool expert_upload_queued, expert_decode_overlap;
     struct expert_upload_job * expert_upload_jobs;
     size_t expert_upload_count, expert_upload_capacity;
     struct expert_host_ring expert_host;
@@ -175,6 +181,10 @@ static struct {
     size_t flash_graph_node_count;
     struct mmvq_graph_entry * mmvq_graph_cache;
     bool mmvq_graph_enabled, routed_graph_enabled, full_ffn_enabled;
+    bool decode_graph_enabled;
+    GraphExec decode_regions[DECODE_GRAPH_REGIONS];
+    int (*graph_update)(GraphExec, Graph, struct graph_update_result *);
+    int (*copy_device_async)(DevicePtr, DevicePtr, size_t, Stream);
     struct device_buffer routed_graph_scratch;
     int (*init)(unsigned);
     int (*device_get)(int *, int);
@@ -227,9 +237,6 @@ static struct {
     int (*sync)(void);
 } cuda;
 
-static pthread_once_t cuda_once = PTHREAD_ONCE_INIT;
-static pthread_mutex_t cuda_lock = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t activation_lock = PTHREAD_MUTEX_INITIALIZER;
 enum { ACTIVATION_WORDS = 5, ACTIVATION_RECORDS = 256 };
 enum { GDN_MMA_SHARED_BYTES = 93312 };
 static _Thread_local struct {
@@ -242,6 +249,175 @@ static _Thread_local struct {
     uint64_t hits, skipped_download_bytes, expired_bytes;
     size_t packet_used;
 } activations;
+
+static struct {
+    __typeof__(cuda.launch) launch;
+    __typeof__(cuda.upload) upload;
+    __typeof__(cuda.upload_async) upload_async;
+    __typeof__(cuda.download) download;
+    __typeof__(cuda.copy_device) copy_device;
+    __typeof__(cuda.zero) zero;
+    __typeof__(cuda.alloc) alloc;
+    __typeof__(cuda.release) release;
+    __typeof__(cuda.sync) sync;
+    __typeof__(cuda.memory_info) memory_info;
+} decode_raw;
+
+static _Thread_local struct {
+    bool scope, capturing;
+    size_t region, kernels, replays, updates, maximum;
+} decode_capture;
+
+static int decode_capture_submit(void) {
+    if (!decode_capture.capturing) return 0;
+    decode_capture.capturing = false;
+    Graph graph = NULL;
+    int error = cuda.graph_end(cuda.graph_stream, &graph);
+    if (error != 0) return error;
+    GraphExec temporary = NULL;
+    GraphExec * exec = decode_capture.region < DECODE_GRAPH_REGIONS ?
+        &cuda.decode_regions[decode_capture.region++] : &temporary;
+    if (*exec) {
+        struct graph_update_result result = {0};
+        if (cuda.graph_update(*exec, graph, &result) == 0 && result.result == 0) {
+            ++decode_capture.updates;
+        } else {
+            cuda.graph_exec_destroy(*exec);
+            *exec = NULL;
+        }
+    }
+    if (!*exec) error = cuda.graph_instantiate(exec, graph, 0);
+    if (error == 0) error = cuda.graph_launch(*exec, cuda.graph_stream);
+    if (error == 0) {
+        ++decode_capture.replays;
+        if (decode_capture.kernels > decode_capture.maximum) decode_capture.maximum = decode_capture.kernels;
+    }
+    if (temporary) cuda.graph_exec_destroy(temporary);
+    cuda.graph_destroy(graph);
+    decode_capture.kernels = 0;
+    return error;
+}
+
+static int decode_capture_discard(void) {
+    decode_capture.capturing = false;
+    decode_capture.kernels = 0;
+    Graph graph = NULL;
+    const int ended = cuda.graph_end(cuda.graph_stream, &graph);
+    const int destroyed = graph ? cuda.graph_destroy(graph) : 0;
+    const int drained = decode_raw.sync();
+    return ended ? ended : destroyed ? destroyed : drained;
+}
+
+static int decode_capture_begin(void) {
+    if (decode_capture.capturing || !decode_capture.scope) return 0;
+    enum { blocking_stream = 0, thread_local_capture = 1 };
+    int error = cuda.graph_stream ? 0 : cuda.stream_create(&cuda.graph_stream, blocking_stream);
+    if (error == 0) error = cuda.graph_begin(cuda.graph_stream, thread_local_capture);
+    if (error == 0) decode_capture.capturing = true;
+    return error;
+}
+
+static int decode_launch(Function kernel, unsigned gx, unsigned gy, unsigned gz, unsigned bx, unsigned by,
+                         unsigned bz, unsigned shared, void * stream, void ** params, void ** extra) {
+    const int error = stream ? decode_capture_submit() : decode_capture_begin();
+    if (error != 0) return error;
+    if (decode_capture.capturing) {
+        stream = cuda.graph_stream;
+        ++decode_capture.kernels;
+    }
+    return decode_raw.launch(kernel, gx, gy, gz, bx, by, bz, shared, stream, params, extra);
+}
+
+static int decode_upload_async(DevicePtr dst, const void * src, size_t bytes, Stream stream) {
+    const int error = stream ? decode_capture_submit() : decode_capture_begin();
+    if (error != 0) return error;
+    if (decode_capture.capturing) stream = cuda.graph_stream;
+    return decode_raw.upload_async(dst, src, bytes, stream);
+}
+
+static const void * snapshot_packet(const void * data, size_t bytes) {
+    if (!cuda.packet_host || !bytes || bytes > MIB_BYTES) return NULL;
+    const int64_t checked = (int64_t) (bytes > 4096 ? 4096 : bytes);
+    const int64_t slot = fg143_pinned_packet_slot((int64_t) activations.packet_used, MIB_BYTES, checked);
+    if (slot < 0 || bytes > MIB_BYTES - (size_t) slot) return NULL;
+    unsigned char * host = cuda.packet_host + slot;
+    memcpy(host, data, bytes);
+    activations.packet_used = (size_t) slot + bytes;
+    activations.pending = true;
+    return host;
+}
+
+static int decode_upload(DevicePtr dst, const void * src, size_t bytes) {
+    if (decode_capture.scope && decode_raw.upload_async && bytes == 8192) {
+        // Device-only consumers wait through the captured stream. Retain a
+        // pinned copy because the caller may release its host buffer now.
+        const void * host = snapshot_packet(src, bytes);
+        if (host) return decode_upload_async(dst, host, bytes, NULL);
+    }
+    const int error = decode_capture_submit();
+    return error == 0 ? decode_raw.upload(dst, src, bytes) : error;
+}
+
+static int decode_copy_device(DevicePtr dst, DevicePtr src, size_t bytes) {
+    if (decode_capture.scope && cuda.copy_device_async) {
+        const int error = decode_capture_begin();
+        return error == 0 ? cuda.copy_device_async(dst, src, bytes, cuda.graph_stream) : error;
+    }
+    const int error = decode_capture_submit();
+    return error == 0 ? decode_raw.copy_device(dst, src, bytes) : error;
+}
+
+// Host accesses and allocation changes are submission barriers.
+#define DECODE_BARRIER(name, parameters, args) \
+    static int decode_##name parameters { \
+        const int error = decode_capture_submit(); \
+        return error == 0 ? decode_raw.name args : error; \
+    }
+DECODE_BARRIER(download, (void * dst, DevicePtr src, size_t bytes), (dst, src, bytes))
+DECODE_BARRIER(zero, (DevicePtr dst, unsigned char value, size_t bytes), (dst, value, bytes))
+DECODE_BARRIER(alloc, (DevicePtr * dst, size_t bytes), (dst, bytes))
+DECODE_BARRIER(release, (DevicePtr dst), (dst))
+DECODE_BARRIER(sync, (void), ())
+DECODE_BARRIER(memory_info, (size_t * free_bytes, size_t * total_bytes), (free_bytes, total_bytes))
+#undef DECODE_BARRIER
+
+static int finish_device_state_write(void) {
+    if (!decode_capture.capturing) return cuda.sync();
+    activations.pending = true;
+    return 0;
+}
+
+static void install_decode_capture(void) {
+    cuda.graph_update = dlsym(cuda.library, "cuGraphExecUpdate_v2");
+    if (!cuda.graph_update) return;
+    cuda.copy_device_async = dlsym(cuda.library, "cuMemcpyDtoDAsync_v2");
+#define DECODE_HOOK(name) do { decode_raw.name = cuda.name; cuda.name = decode_##name; } while (0)
+    DECODE_HOOK(launch);
+    DECODE_HOOK(upload);
+    if (cuda.upload_async) DECODE_HOOK(upload_async);
+    DECODE_HOOK(download);
+    DECODE_HOOK(copy_device);
+    DECODE_HOOK(zero);
+    DECODE_HOOK(alloc);
+    DECODE_HOOK(release);
+    DECODE_HOOK(sync);
+    DECODE_HOOK(memory_info);
+#undef DECODE_HOOK
+    cuda.decode_graph_enabled = true;
+    const char * overlap = getenv("GOOSE_CUDA_DECODE_EXPERT_OVERLAP");
+    if (cuda.expert_stream && overlap && strcmp(overlap, "1") == 0 &&
+        cuda.event_record(cuda.expert_uploads_ready, cuda.expert_stream) == 0) {
+        cuda.expert_decode_overlap = true;
+    }
+}
+
+uint8_t fg_cuda_decode_graph_enabled(void) {
+    return cuda.decode_graph_enabled;
+}
+
+static pthread_once_t cuda_once = PTHREAD_ONCE_INIT;
+static pthread_mutex_t cuda_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t activation_lock = PTHREAD_MUTEX_INITIALIZER;
 static _Thread_local DevicePtr matrix_input, matrix_output;
 static _Thread_local uint64_t cuda_matrices;
 static _Thread_local uint64_t cuda_routed_groups, cuda_routed_replays;
@@ -361,6 +537,8 @@ static void init_cuda_graphs(void) {
         cuda.mmvq_graph_enabled = mmvq_requested;
         cuda.routed_graph_enabled = routed_requested;
         cuda.full_ffn_enabled = routed_requested && full_ffn && strcmp(full_ffn, "1") == 0;
+        const char * decode = getenv("GOOSE_CUDA_DECODE_GRAPH");
+        if (cuda.full_ffn_enabled && decode && strcmp(decode, "1") == 0) install_decode_capture();
     }
 }
 
@@ -434,6 +612,9 @@ static void cleanup(void) {
             }
             release_flash_graph();
             release_mmvq_graphs();
+            for (size_t i = 0; i < DECODE_GRAPH_REGIONS; ++i) {
+                if (cuda.decode_regions[i]) cuda.graph_exec_destroy(cuda.decode_regions[i]);
+            }
             if (cuda.graph_stream) cuda.stream_destroy(cuda.graph_stream);
             if (cuda.attention_scratch.reservation_bytes) release_vmm(&cuda.attention_scratch);
             if (cuda.mmq_packed.reservation_bytes) release_vmm(&cuda.mmq_packed);
@@ -700,6 +881,8 @@ static int reserve_vmm(struct device_buffer * buffer, size_t bytes, size_t limit
     const int64_t growth = fg143_vmm_scratch_growth((int64_t) bytes, (int64_t) buffer->bytes,
         (int64_t) cuda.vmm_granularity);
     if (growth <= 0) return out_of_memory;
+    const int submitted = decode_capture_submit();
+    if (submitted != 0) return submitted;
     struct vmm_mapping * segment = malloc(sizeof(*segment));
     if (!segment) return out_of_memory;
     *segment = (struct vmm_mapping) {.previous = buffer->mappings, .offset = buffer->bytes, .bytes = (size_t) growth};
@@ -866,6 +1049,7 @@ int fg_cuda_activation_graph_begin(bool planned) {
     activations.skipped_download_bytes = 0;
     activations.expired_bytes = 0;
     activations.packet_used = 0;
+    memset(&decode_capture, 0, sizeof decode_capture);
     return 0;
 }
 
@@ -926,10 +1110,11 @@ int fg_cuda_activation_graph_end(bool success, bool all, uint64_t host, int64_t 
     activations.expired_bytes = 0;
     if (!activations.active) return 0;
     int error = 0;
-    if (activations.pending) {
+    decode_capture.scope = false;
+    if (activations.pending || decode_capture.capturing) {
         if (push_context() != 1) error = -1;
         else {
-            error = cuda.sync();
+            error = !success && decode_capture.capturing ? decode_capture_discard() : cuda.sync();
             if (finish_context() != 0) error = -1;
             if (error != 0) fprintf(stderr, "Goose CUDA: graph completion failed (%d)\n", error);
         }
@@ -954,6 +1139,10 @@ int fg_cuda_activation_graph_end(bool success, bool all, uint64_t host, int64_t 
     activations.pending = false;
     activations.active = false;
     pthread_mutex_unlock(&activation_lock);
+    if (decode_capture.replays && getenv("GOOSE_GRAPH_LOG")) {
+        fprintf(stderr, "Goose CUDA decode regions: %zu replays, %zu updates, %zu kernels max\n",
+            decode_capture.replays, decode_capture.updates, decode_capture.maximum);
+    }
     return error;
 }
 
@@ -1124,13 +1313,8 @@ static int upload_packet(DevicePtr device, const void * data, size_t bytes) {
         }
         cuda.packet_host = host;
     }
-    const int64_t slot = fg143_pinned_packet_slot((int64_t) activations.packet_used, MIB_BYTES, (int64_t) bytes);
-    if (slot < 0) return cuda.upload(device, data, bytes);
-    unsigned char * host = cuda.packet_host + slot;
-    memcpy(host, data, bytes);
-    activations.packet_used = (size_t) slot + bytes;
-    activations.pending = true;
-    return cuda.upload_async(device, host, bytes, NULL);
+    const void * host = snapshot_packet(data, bytes);
+    return host ? cuda.upload_async(device, host, bytes, NULL) : cuda.upload(device, data, bytes);
 }
 
 static int activation_input(sl_u8 data, struct device_buffer * staging, DevicePtr * device) {
@@ -1370,7 +1554,7 @@ int64_t fg_cuda_set_q4_rows(uint64_t source, int64_t source_bytes, int64_t strid
     void * args[] = {&input, &destination, &row_stride, &blocks, &tasks};
     if (error == 0) {
         error = cuda.launch(cuda.q4_rows, (unsigned) ((tasks + 127) / 128), 1, 1, 128, 1, 1, 0, NULL, args, NULL);
-        if (error == 0) error = cuda.sync();
+        if (error == 0) error = finish_device_state_write();
     }
     const int popped = finish_context();
     if (error != 0 || popped != 0) {
@@ -1589,13 +1773,15 @@ static void init_expert_host_ring(void) {
     ring->storage = storage;
 }
 
-bool fg_cuda_expert_stage_enabled(int64_t active_experts) {
-    if (active_experts <= 8 || !activations.active || !activations.defer_waits ||
+uint8_t fg_cuda_expert_stage_enabled(int64_t active_experts, uint8_t stage_all) {
+    const size_t planes = stage_all ? 3 : 2;
+    if (active_experts <= 0 || (!stage_all && active_experts <= 8) ||
+        !activations.active || !activations.defer_waits ||
         !cuda.defer_matrix_waits || !cuda.expert_stream ||
-        (uint64_t) active_experts > SIZE_MAX / 2 / sizeof(*cuda.expert_upload_jobs)) return false;
+        (uint64_t) active_experts > SIZE_MAX / planes / sizeof(*cuda.expert_upload_jobs)) return false;
     init_expert_host_ring();
     if (cuda.expert_pins.len <= 0 && !cuda.expert_host.enabled) return false;
-    const size_t capacity = (size_t) active_experts * 2;
+    const size_t capacity = (size_t) active_experts * planes;
     if (capacity > cuda.expert_upload_capacity) {
         struct expert_upload_job * jobs = realloc(cuda.expert_upload_jobs, capacity * sizeof(*jobs));
         if (!jobs) return false;
@@ -1684,8 +1870,8 @@ static int submit_pageable_expert(const struct expert_upload_job * job) {
 
 static int submit_expert_stage(void) {
     if (cuda.expert_upload_count == 0) return 0;
-    // Queue uploads after the consumer's descriptor copies and kernels.
-    // Future projections wait on the event, never on a host-side launch.
+    // Existing readers release cache slots before this stream writes them.
+    // Consumers wait on the recorded completion event.
     int status = cuda.stream_wait_event(cuda.expert_stream, cuda.expert_slots_ready, 0);
     for (size_t i = 0; status == 0 && i < cuda.expert_upload_count; ++i) {
         const struct expert_upload_job * job = &cuda.expert_upload_jobs[i];
@@ -1707,9 +1893,9 @@ static int submit_expert_stage(void) {
     return -1;
 }
 
-int64_t fg_cuda_prepare_experts(uint64_t tensor, int64_t bytes, sl_i64 active, sl_i64 offsets) {
-    struct expert_cache * cache = &cuda.experts;
-    if (!cache->weights.address) return 0;
+static int begin_expert_prepare(void) {
+    decode_capture.scope = false;
+    if (decode_capture_submit() != 0) return -1;
     if (cuda.expert_upload_count != 0) {
         reset_expert_stage();
         return -1;
@@ -1719,11 +1905,23 @@ int64_t fg_cuda_prepare_experts(uint64_t tensor, int64_t bytes, sl_i64 active, s
         if (cuda.stream_wait_event(NULL, cuda.expert_uploads_ready, 0) != 0) return -1;
         cuda.expert_upload_queued = false;
     }
+    return 0;
+}
+
+static int64_t prepare_expert_offsets(uint64_t tensor, int64_t bytes, sl_i64 active, sl_i64 offsets,
+                                      bool stage_all) {
+    struct expert_cache * cache = &cuda.experts;
     const uint64_t state = (uint64_t) (uintptr_t) cache->state;
     const int64_t status = ec_prepare(cache->groups, cache->layers, state, cache->work,
-        tensor, bytes, active, offsets);
+        tensor, bytes, active, offsets, stage_all);
     if (status < 0) reset_expert_stage();
     return status;
+}
+
+int64_t fg_cuda_prepare_experts(uint64_t tensor, int64_t bytes, sl_i64 active, sl_i64 offsets) {
+    if (begin_expert_prepare() != 0) return -1;
+    if (!cuda.experts.weights.address) return 0;
+    return prepare_expert_offsets(tensor, bytes, active, offsets, false);
 }
 
 int64_t fg_cuda_begin(uint64_t input, int64_t input_bytes, uint64_t output, int64_t output_bytes) {
@@ -1997,7 +2195,7 @@ static int launch_mmvq(DevicePtr weight, uint64_t stride, int extent, int kind, 
         void * matrix[] = {&weight, &cuda.mmq_packed.address, &matrix_output, &cuda.jobs.address,
             &stride, &extent, &kind, &words};
         GraphExec graph = NULL;
-        if (cuda.mmvq_graph_enabled && cuda.mmvq_graph_cache && activations.active && activations.defer_waits &&
+        if (!decode_capture.scope && cuda.mmvq_graph_enabled && cuda.mmvq_graph_cache && activations.active && activations.defer_waits &&
             (count == 1 || count == 8)) {
             const struct kernel_node_params kernels[] = {
                 { .function = cuda.mmvq_pack, .grid_x = (unsigned) (2 * extent), .grid_y = (unsigned) count,
@@ -2139,7 +2337,7 @@ static struct kernel_node_params ffn_kernel(Function f, unsigned gx, unsigned gy
         .block_x = threads, .block_y = 1, .block_z = 1, .params = args };
 }
 
-static bool ffn_dense_weight(uint64_t host, int64_t bytes, DevicePtr * device) {
+static bool dense_weight(uint64_t host, int64_t bytes, DevicePtr * device) {
     if (!cuda.dense.address) return false;
     const int64_t offset = dw_cuda_dense_offset(cuda.dense_ranges, host, bytes);
     if (offset < 0) return false;
@@ -2167,10 +2365,10 @@ int64_t fg_cuda_routed_graph(sl_i64 plan, sl_i64 glu, sl_i64 norm, sl_i64 shared
     DevicePtr dense_weights[4] = {0};
     if (full) {
         const int64_t up_bytes = (width / 256) * 144 * shared_hidden;
-        if (!ffn_dense_weight((uint64_t) shared.data[0], up_bytes, &dense_weights[0]) ||
-            !ffn_dense_weight((uint64_t) shared.data[1], up_bytes, &dense_weights[1]) ||
-            !ffn_dense_weight((uint64_t) shared.data[2], (int64_t) shared_stride * width, &dense_weights[2]) ||
-            !ffn_dense_weight((uint64_t) shared.data[3], (int64_t) router_stride, &dense_weights[3])) return 0;
+        if (!dense_weight((uint64_t) shared.data[0], up_bytes, &dense_weights[0]) ||
+            !dense_weight((uint64_t) shared.data[1], up_bytes, &dense_weights[1]) ||
+            !dense_weight((uint64_t) shared.data[2], (int64_t) shared_stride * width, &dense_weights[2]) ||
+            !dense_weight((uint64_t) shared.data[3], (int64_t) router_stride, &dense_weights[3])) return 0;
     }
     const uint64_t input_host = (uint64_t) plan.data[3], probs_host = (uint64_t) plan.data[4];
     const uint64_t ids_host = (uint64_t) plan.data[5];
@@ -2216,6 +2414,8 @@ int64_t fg_cuda_routed_graph(sl_i64 plan, sl_i64 glu, sl_i64 norm, sl_i64 shared
     const size_t routed_pack = (size_t) (input_extent > down_extent ? input_extent : down_extent) * 288 * routes;
     const size_t shared_pack = (size_t) shared_extent * 288;
     const size_t packed_bytes = routed_pack > shared_pack ? routed_pack : shared_pack;
+    const bool stage_all = full && cuda.expert_decode_overlap && activations.defer_waits;
+    const size_t pack_space = packed_bytes + (stage_all ? shared_pack : 0);
     const size_t middle_bytes = (size_t) hidden * routes * 4;
     const size_t down_bytes = (size_t) width * routes * 4;
     struct {
@@ -2226,7 +2426,7 @@ int64_t fg_cuda_routed_graph(sl_i64 plan, sl_i64 glu, sl_i64 norm, sl_i64 shared
     } packet;
     _Static_assert(sizeof(packet) % 16 == 0, "routed graph packet alignment");
     const size_t shared_bytes = full ? (size_t) (3 * shared_hidden + 4 * width + 2) * 4 : 0;
-    const size_t scratch_bytes = sizeof packet + packed_bytes + 3 * middle_bytes + down_bytes + routes * 4 + shared_bytes;
+    const size_t scratch_bytes = sizeof packet + pack_space + 3 * middle_bytes + down_bytes + routes * 4 + shared_bytes;
     int error = reserve(&cuda.routed_graph_scratch, scratch_bytes);
     if (error == 2) return finish_context() == 0 ? 0 : -1;
     DevicePtr output = reused_input ? cuda.activations.address + (uint64_t) reused_input[2] : 0;
@@ -2237,12 +2437,17 @@ int64_t fg_cuda_routed_graph(sl_i64 plan, sl_i64 glu, sl_i64 norm, sl_i64 shared
     if (error == 0 && (!input || !probs || (full && !residual) || (reused_input && input != output))) {
         return finish_context() == 0 ? 0 : -1;
     }
+    if (stage_all && error == 0) error = begin_expert_prepare();
+    const sl_i64 active_routes = {heads, experts};
+    const sl_i64 device_offsets = {offsets, experts};
     for (size_t p = 0; p < 3 && error == 0; ++p) {
         const int64_t plane = (int64_t) (p == 2 ? stride_down * width : stride_up * hidden);
-        const int64_t ready = fg_cuda_prepare_experts((uint64_t) plan.data[p], plane,
-            (sl_i64) {heads, experts}, (sl_i64) {offsets, experts});
+        const uint64_t weight = (uint64_t) plan.data[p];
+        const int64_t ready = stage_all ?
+            prepare_expert_offsets(weight, plane, active_routes, device_offsets, true) :
+            fg_cuda_prepare_experts(weight, plane, active_routes, device_offsets);
         if (ready == 0 && p == 0) return finish_context() == 0 ? 0 : -1;
-        if (ready != 1 || cuda.expert_upload_count != 0) {
+        if (ready != 1 || (!stage_all && cuda.expert_upload_count != 0)) {
             reset_expert_stage();
             error = -1;
             break;
@@ -2259,6 +2464,7 @@ int64_t fg_cuda_routed_graph(sl_i64 plan, sl_i64 glu, sl_i64 norm, sl_i64 shared
             packet.jobs[p][r * words + 2] = offset;
         }
     }
+    if (stage_all && error == 0) error = submit_expert_stage();
     if (error == 0) {
         memcpy(packet.config, norm.data, sizeof packet.config);
         memcpy(packet.ids, ids, sizeof packet.ids);
@@ -2269,7 +2475,9 @@ int64_t fg_cuda_routed_graph(sl_i64 plan, sl_i64 glu, sl_i64 norm, sl_i64 shared
         const DevicePtr scratch = cuda.routed_graph_scratch.address;
         DevicePtr jobs_up = scratch, jobs_gate = jobs_up + sizeof packet.jobs[0], jobs_down = jobs_gate + sizeof packet.jobs[0];
         DevicePtr norm_cfg = jobs_down + sizeof packet.jobs[0], selected = norm_cfg + sizeof packet.config;
-        DevicePtr packed = scratch + sizeof packet, up = packed + packed_bytes, gate = up + middle_bytes;
+        DevicePtr packed = scratch + sizeof packet;
+        DevicePtr packed_shared = stage_all ? packed + packed_bytes : packed;
+        DevicePtr up = packed + pack_space, gate = up + middle_bytes;
         DevicePtr activated = gate + middle_bytes, down = activated + middle_bytes, normalized = down + down_bytes;
         DevicePtr bank = cuda.experts.weights.address;
         int64_t vector[26];
@@ -2299,8 +2507,9 @@ int64_t fg_cuda_routed_graph(sl_i64 plan, sl_i64 glu, sl_i64 norm, sl_i64 shared
         void * dense_up[] = {&dense_weights[0], &packed, &sh_up, &dense_jobs, &stride_up, &input_extent, &q4, &dense_words};
         void * dense_gate[] = {&dense_weights[1], &packed, &sh_gate, &dense_jobs, &stride_up, &input_extent, &q4, &dense_words};
         void * dense_glu[] = {&sh_gate, &sh_up, &sh_glu, plans[0], &zero, &zero};
-        void * dense_pack[] = {&sh_glu, &packed, &dense_jobs, &shared_extent, &dense_words};
-        void * dense_down[] = {&dense_weights[2], &packed, &sh_down, &dense_jobs, &shared_stride, &shared_extent, &shared_down_kind, &dense_words};
+        void * dense_pack[] = {&sh_glu, &packed_shared, &dense_jobs, &shared_extent, &dense_words};
+        void * dense_down[] = {&dense_weights[2], &packed_shared, &sh_down, &dense_jobs, &shared_stride,
+            &shared_extent, &shared_down_kind, &dense_words};
         void * dense_router[] = {&dense_weights[3], (void *) &input, &route_score, &dense_jobs,
             &router_stride, &output_rows, &f32, &first, &dense_words};
         DevicePtr unused = 0;
@@ -2309,26 +2518,45 @@ int64_t fg_cuda_routed_graph(sl_i64 plan, sl_i64 glu, sl_i64 norm, sl_i64 shared
         void * add_shared[] = {&routed_out, &product, &mixed, plans[3], &zero, &zero};
         void * add_residual[] = {&mixed, &residual, &output, plans[4], &zero, &zero};
         struct kernel_node_params kernels[18];
+        struct kernel_node_params shared_head[2], shared_tail[6];
+        if (full) {
+            shared_head[0] = ffn_kernel(cuda.mmvq, (unsigned) shared_rows, 1, 128, dense_up);
+            shared_head[1] = ffn_kernel(cuda.mmvq, (unsigned) shared_rows, 1, 128, dense_gate);
+            shared_tail[0] = ffn_kernel(cuda.vector, (unsigned) plans[0][24], 1, 128, dense_glu);
+            shared_tail[1] = ffn_kernel(cuda.mmvq_pack, 2 * (unsigned) shared_extent, 1, 128, dense_pack);
+            shared_tail[2] = ffn_kernel(cuda.mmvq, (unsigned) output_rows, 1, 128, dense_down);
+            shared_tail[3] = ffn_kernel(cuda.kernel, 1, 1, 32, dense_router);
+            shared_tail[4] = ffn_kernel(cuda.vector, (unsigned) plans[1][24], 1, 128, sigmoid);
+            shared_tail[5] = ffn_kernel(cuda.vector, (unsigned) plans[2][24], 1, 128, scale);
+        }
+        const struct kernel_node_params normalize_routes = ffn_kernel(cuda.route_norm, 1, 1, 32, normalize);
         size_t count = 0;
         kernels[count++] = ffn_kernel(cuda.mmvq_pack, 2 * (unsigned) input_extent, routes, 128, pack_up);
+        if (stage_all) {
+            // Shared FFN and route normalization do not read the expert bank.
+            memcpy(kernels + count, shared_head, sizeof shared_head);
+            count += 2;
+            memcpy(kernels + count, shared_tail, sizeof shared_tail);
+            count += 6;
+            kernels[count++] = normalize_routes;
+        }
+        const size_t expert_wait_index = count;
         kernels[count++] = ffn_kernel(cuda.mmvq, (unsigned) hidden_rows, routes, 128, matrix_up);
         kernels[count++] = ffn_kernel(cuda.mmvq, (unsigned) hidden_rows, routes, 128, matrix_gate);
-        if (full) {
-            kernels[count++] = ffn_kernel(cuda.mmvq, (unsigned) shared_rows, 1, 128, dense_up);
-            kernels[count++] = ffn_kernel(cuda.mmvq, (unsigned) shared_rows, 1, 128, dense_gate);
+        if (full && !stage_all) {
+            memcpy(kernels + count, shared_head, sizeof shared_head);
+            count += 2;
         }
         kernels[count++] = ffn_kernel(cuda.vector, (unsigned) vector[24], 1, 128, gl);
         kernels[count++] = ffn_kernel(cuda.mmvq_pack, 2 * (unsigned) down_extent, routes, 128, pack_down);
         kernels[count++] = ffn_kernel(cuda.mmvq, (unsigned) output_rows, routes, 128, matrix_down);
-        kernels[count++] = ffn_kernel(cuda.route_norm, 1, 1, 32, normalize);
+        if (!stage_all) kernels[count++] = normalize_routes;
         kernels[count++] = ffn_kernel(cuda.moe_weighted, (unsigned) 1, (unsigned) ((width + 255) / 256), 256, reduce);
         if (full) {
-            kernels[count++] = ffn_kernel(cuda.vector, (unsigned) plans[0][24], 1, 128, dense_glu);
-            kernels[count++] = ffn_kernel(cuda.mmvq_pack, 2 * (unsigned) shared_extent, 1, 128, dense_pack);
-            kernels[count++] = ffn_kernel(cuda.mmvq, (unsigned) output_rows, 1, 128, dense_down);
-            kernels[count++] = ffn_kernel(cuda.kernel, 1, 1, 32, dense_router);
-            kernels[count++] = ffn_kernel(cuda.vector, (unsigned) plans[1][24], 1, 128, sigmoid);
-            kernels[count++] = ffn_kernel(cuda.vector, (unsigned) plans[2][24], 1, 128, scale);
+            if (!stage_all) {
+                memcpy(kernels + count, shared_tail, sizeof shared_tail);
+                count += 6;
+            }
             kernels[count++] = ffn_kernel(cuda.vector, (unsigned) plans[3][24], 1, 128, add_shared);
             kernels[count++] = ffn_kernel(cuda.vector, (unsigned) plans[4][24], 1, 128, add_residual);
         }
@@ -2336,11 +2564,26 @@ int64_t fg_cuda_routed_graph(sl_i64 plan, sl_i64 glu, sl_i64 norm, sl_i64 shared
             (uint64_t) width, (uint64_t) hidden, (uint64_t) vector[0], UINT64_MAX - (unsigned) down_kind, residual,
             dense_weights[0], dense_weights[1], dense_weights[2], dense_weights[3],
             (uint64_t) shared_hidden, (unsigned) shared_down_kind};
-        const GraphExec graph = cached_graph_for(key, kernels, count);
-        error = graph ? cuda.graph_launch(graph, cuda.graph_stream) : launch_cuda_kernels(kernels, count, NULL);
+        if (full && cuda.decode_graph_enabled) decode_capture.scope = true;
+        const GraphExec graph = decode_capture.scope ? NULL : cached_graph_for(key, kernels, count);
+        if (stage_all) {
+            enum { wait_external_in_capture = 1 };
+            error = launch_cuda_kernels(kernels, expert_wait_index, NULL);
+            if (error == 0) {
+                error = cuda.stream_wait_event(cuda.graph_stream, cuda.expert_uploads_ready, wait_external_in_capture);
+                if (error == 0) cuda.expert_upload_queued = false;
+            }
+            if (error == 0) error = launch_cuda_kernels(kernels + expert_wait_index, count - expert_wait_index, NULL);
+        } else {
+            error = graph ? cuda.graph_launch(graph, cuda.graph_stream) : launch_cuda_kernels(kernels, count, NULL);
+        }
         if (error == 0 && graph) {
             if (full) ++cuda_full_ffn_replays;
             else ++cuda_routed_replays;
+        }
+        if (error && decode_capture.capturing) {
+            decode_capture.scope = false;
+            (void) decode_capture_discard();
         }
         error = finish_matrix_launches(error);
         if (error == 0 && reused_input) {
@@ -2350,6 +2593,7 @@ int64_t fg_cuda_routed_graph(sl_i64 plan, sl_i64 glu, sl_i64 norm, sl_i64 shared
             error = activation_publish(out_host, output_bytes, output, true);
         }
     }
+    if (stage_all && error) reset_expert_stage();
     const int popped = finish_context();
     if (error || popped) {
         fprintf(stderr, "Goose CUDA: routed FFN launch failed (%d)\n", error ? error : popped);
@@ -2466,7 +2710,7 @@ static int capture_flash_graph(const struct kernel_node_params * kernels, size_t
 }
 
 static int launch_flash_chain(const struct kernel_node_params * kernels, size_t count) {
-    if (cuda.flash_graph_enabled) {
+    if (cuda.flash_graph_enabled && !decode_capture.scope) {
         int error = 0;
         if (cuda.flash_graph_exec && cuda.flash_graph_node_count != count) release_flash_graph();
         if (!cuda.flash_graph_exec) {
@@ -2507,7 +2751,7 @@ static int launch_flash_vec(const int64_t * c, DevicePtr * staged, DevicePtr out
         meta = matrix + span;
         if (prepacked) query = matrix + scratch;
     }
-    const bool pack_in_graph = prepacked && cuda.flash_graph_enabled && cuda.flash_graph_pack;
+    const bool pack_in_graph = prepacked && cuda.flash_graph_enabled && cuda.flash_graph_pack && !decode_capture.scope;
     void * pack_args[] = {&staged[0], &query, &staged[4], &scale};
     const struct kernel_node_params pack = { .function = cuda.flash_vec_pack, .grid_x = (unsigned) heads,
         .grid_y = 1, .grid_z = 1, .block_x = 32, .block_y = 1, .block_z = 1, .params = pack_args };
@@ -2837,7 +3081,10 @@ int64_t fg_cuda_vector(sl_i64 config, sl_u8 x, sl_u8 y, sl_u8 out, float param0,
     }
     if (error == 0) error = vector_input(x, &cuda.input, &staged[0], plan + 6, (plan[23] & 1) != 0);
     if (error == 0 && y.len > 0) {
-        error = vector_input(y, &cuda.weight, &staged[1], plan + 14, (plan[23] & 2) != 0);
+        const bool pack = (plan[23] & 2) != 0;
+        const bool resident = cuda.decode_graph_enabled && !pack &&
+            dense_weight((uint64_t) (uintptr_t) y.data, y.len, &staged[1]);
+        if (!resident) error = vector_input(y, &cuda.weight, &staged[1], plan + 14, pack);
     }
     if (error == 0) {
         enum { rms_operation = 11 };
@@ -2886,9 +3133,12 @@ int64_t fg_cuda_position(sl_i64 config, sl_u8 x, sl_u8 y, sl_u8 z, sl_u8 out) {
     if (rope && (config.data[3] <= 0 || config.data[3] > INT_MAX || config.data[4] <= 0)) return -1;
     const int active = start_context();
     if (active != 1) return active;
-    const sl_u8 data[] = {x, y, z, {(uint8_t *) config.data, config.len * (int64_t) sizeof(*config.data)}};
-    struct device_buffer * buffers[] = {&cuda.input, &cuda.weight, &cuda.jobs, &cuda.attention_config};
     DevicePtr staged[4] = {0}, output = 0;
+    const bool resident = cuda.decode_graph_enabled && !rope &&
+        dense_weight((uint64_t) (uintptr_t) y.data, y.len, &staged[1]);
+    const sl_u8 data[] = {x, resident ? (sl_u8) {0} : y, z,
+        {(uint8_t *) config.data, config.len * (int64_t) sizeof(*config.data)}};
+    struct device_buffer * buffers[] = {&cuda.input, &cuda.weight, &cuda.jobs, &cuda.attention_config};
     const uint64_t host = (uint64_t) (uintptr_t) out.data;
     int error = activation_output(host, out.len, &output);
     const bool rope_decode = config.data[0] == rope_decode_operation && cuda.rope_decode;
@@ -3000,7 +3250,7 @@ int64_t fg_cuda_blit(sl_i64 config, sl_u8 x, sl_u8 y, sl_u8 out) {
         void * args[] = {&staged[0], &staged[1], &dest, &staged[2]};
         error = cuda.launch(cuda.blit, (unsigned) config.data[1], 1, 1, 128, 1, 1, 0, NULL, args, NULL);
         if (error == 0) {
-            error = mode == 2 ? cuda.sync() : activation_publish(host_out, out.len, dest, false);
+            error = mode == 2 ? finish_device_state_write() : activation_publish(host_out, out.len, dest, false);
         }
     }
     const int popped = finish_context();

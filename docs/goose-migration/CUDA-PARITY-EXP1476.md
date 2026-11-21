@@ -4537,6 +4537,31 @@ Executable SHA-256
 Builds, alias evidence, test data and full runs are in
 `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/full-ffn-exp1617`.
 
+## Decode from expert admission through the next Top-K
+
+EXP-2026-11-21-1619 extends the previous per-layer graph
+through the next Top-K and keeps the CPU-visible IDs as an
+execution boundary. The capture retains ordered device state
+writes and immutable convolution and normalization weights.
+The next admission submits the graph before SLRU can reuse
+slots. Each step has 40 regions with up to 49 existing CUDA
+kernels. The experimental expert transport adds an ordered
+copy stream and an external readiness event at the first
+routed projection. The shared branch has its own Q8_1 scratch.
+The existing Goose SLRU remains responsible for slot selection.
+
+Compare `GOOSE_CUDA_DECODE_EXPERT_OVERLAP=0|1` with
+`GOOSE_CUDA_DECODE_GRAPH=1` and the earlier cumulative flags.
+At 5,632 MiB, all 62,571 expert plane copies in decode move to
+the async stream. The clean unprofiled sequence saves 200.414
+ms in median decode. The traced miss groups complete transfers
+before the first GPU kernel, with 1,274.413 ms between ready
+weights and graph submission. Coverage through Top-K is
+established on Apex. Reducing rerecording and obtaining actual
+GPU copy/compute overlap remain open. See the
+[Apex latency map](APEX-LATENCY-MAP.md) for the timing unions,
+correctness tests, memory results and raw traces.
+
 ## Long Attention partition probe
 
 EXP-2026-11-20-1562 holds the existing vector kernel fixed

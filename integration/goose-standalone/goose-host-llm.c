@@ -328,7 +328,7 @@ void hose_host_load_context(const char * path, int64_t capacity) {
         (sl_i64) { H.records, H.layer_count * 32 }, H.handles[1]);
     if (state_bytes < 0) die("model CUDA state");
     const int64_t device_bytes = qr_cuda_dense((sl_i64) { H.owner, 13 },
-        (sl_i64) { H.records, H.layer_count * 32 }, H.handles[1]);
+        (sl_i64) { H.records, H.layer_count * 32 }, H.handles[1], H.handles[2]);
     if (device_bytes < 0) die("model CUDA placement");
     int64_t expert_capacity[2] = {0};
     const int64_t expert_bytes = qr_cuda_experts((sl_i64) { H.owner, 13 },

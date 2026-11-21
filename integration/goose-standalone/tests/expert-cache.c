@@ -38,7 +38,7 @@ static int64_t prepare(sl_i64 groups, sl_i64 layers, uint64_t state, sl_i64 work
     const int64_t bytes = sizes[active_group[layer]][projection];
     const uint64_t source = (uint64_t) (uintptr_t) weights[layer][projection];
     const int64_t result = ec_prepare(groups, layers, state, work, source, bytes,
-        (sl_i64) { heads, N_EXPERTS }, (sl_i64) { offsets, N_EXPERTS });
+        (sl_i64) { heads, N_EXPERTS }, (sl_i64) { offsets, N_EXPERTS }, 0);
     if (result != 1) return result;
     for (int e = 0; e < N_EXPERTS; ++e) {
         if (heads[e] < 0) {
