@@ -101,6 +101,10 @@ fn cv_value(op: i64, a: f32, b: f32, param0: f32, param1: f32) -> f32 {
         else { silu(a) * b };
 }
 
+export fn fg_vector_swiglu_reference(gate: f32, up: f32) -> f32 {
+    return cv_value(CV_SWIGLU_REFERENCE, gate, up, 0.0, 0.0);
+}
+
 export fn fg_vector_flat(x: u64, y: u64, dst: u64, op: i64, count: i64,
     param0: f32, param1: f32, index: i64) {
     if index >= count { return; }

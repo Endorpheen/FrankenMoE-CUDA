@@ -131,7 +131,7 @@ static void fg180q_pdl_sync(void) {}
 static void fg180q_fail(int64_t code) { fg248d_fail(code); }
 
 static float fg_mmq_swiglu_reference(float gate, float up) {
-    return cv_value_g(15, gate, up, 0.0f, 0.0f);
+    return fg_vector_swiglu_reference_g(gate, up);
 }
 
 #include "mmq-quant-types.h"

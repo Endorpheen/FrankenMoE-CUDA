@@ -20,6 +20,117 @@ moving independently and retain its tested production path.
 |---|---|---|
 | Read CUDA parameter aggregates directly when their address does not need to escape | Candidate | [EXP-1603 vector plans](CUDA-PARITY-EXP1476.md#vector-plans-in-cuda-kernel-parameters) |
 | Specialize large CUDA helpers at call sites with constant mode arguments | Candidate | [EXP-1609 Flash lowering](CUDA-PARITY-EXP1476.md#flash-attention-device-lowering-and-l2-prefetch) |
+| Elide empty ownership scopes in borrowed scalar loops | Candidate | [KeelWing Apex CPU sampler](#keelwing-ownership-scopes-in-the-apex-sampler) |
+
+## KeelWing ownership scopes in the Apex sampler
+
+**Problem.** In the composed FrankenMoE host unit, KeelWing emits
+ownership-region entry, exit and unwind calls in the inner scan of
+`sm_partial_sort`. The scan borrows its input and output slices and has
+no owned allocation on the path where a logit does not exceed the heap
+threshold. The emitted housekeeping runs for every examined vocabulary
+position. The same sampler compiled separately on KeelWing does not
+insert that housekeeping into this loop.
+
+**Reproduction.** Use
+[`sampler-chain-full.goose`](../../goose/sampling/sampler-chain-full.goose)
+at source revision `95d15b3386bb15a353eec52108e135d5839d15e1`, with
+file SHA-256 `631a8045b5ca448c12bb39ab8807989a5b1debf6985085b09bd9ded4db091fc4`.
+Compare the old compiler `664d4de42463cc10cb9c4a61dac59ce6023faa9c9da2838fddc0f4fb8294b3ab`
+with KeelWing `e2e46ade68cafa25eb05239b6d7d5e2afc674da393637132dc2bfdbd8865d41a`.
+Build with GCC 13 at `-O1` and call
+`fg_sampler_chain(2, logits, probabilities, ids, 248320, 0, k, 0, 0)`.
+The probe restores the same deterministic logits before each call, warms
+once, then times 40 calls for each K. The probe SHA-256 is
+`a6069de74717fd16c06bfe8bd472c4cec85366666fbfb2b2b01a3c0838280ecb`.
+
+| Top-K on 248,320 logits | Old full unit | KeelWing full unit | KeelWing sampler alone |
+|---|---:|---:|---:|
+| K=5, ms/call | 0.132 | 17.649 | 0.194 |
+| K=20, ms/call | 0.133 | 16.770 | 0.162 |
+
+The top-ID fingerprints matched across all arms for both K values.
+An unrelated export using only a growable scalar array still ran the
+sampler below 0.18 ms. An unrelated export adding an owned copy
+reproduced the regression without ever being called:
+
+```goose
+export fn sampler_probe_owned_copy(input: i64) -> i64 {
+    var buffer: i64[>..] = [input, 7];
+    let owned: i64[] = copy(buffer);
+    return owned.len;
+}
+```
+
+The same sampler then took 14.260 ms for K=5 and 14.552 ms for K=20,
+with the same ID fingerprints. In KeelWing's `compiler/emitter.goose`,
+`c_owned_helpers` enables `ctx.c_owned_enabled` when it finds any type
+with an owned image in the unit. `emit_function` and the statement and
+loop emitters consume that unit-wide flag without checking whether the
+current function or region uses ownership.
+
+The Goose loop is:
+
+```goose
+while i < n {
+    if lv[i] > lv[0] {
+        pop_heap_to(lv, id, 0, npartial, i);
+    }
+    i = i + 1;
+}
+```
+
+The composed KeelWing C function `gg_function_339` enters a temporary
+scope to compare `i < n`, enters additional scopes to compare the
+logits and increment `i`, and executes
+`gg_owned_unwind_to(t33); goto label1;` on the backedge. The isolated
+C only performs the bounds-checked comparison, heap update when needed,
+and increment. This is host code, so CUDA PTX, SASS and registers do
+not apply to this compiler issue.
+
+**Measured impact.** On matching Apex 32K/32 Nsight traces, the 31-step
+decode window grew from 1,069.922 to 3,206.916 ms. GPU busy time decreased
+from 781.298 to 753.031 ms, while GPU idle grew from 288.624 to 2,453.885 ms.
+The interval from the 993,280-byte logit readback to the next 8,192-byte
+upload, outside CUDA API calls and before submission, grew from 69.812 to
+1,891.565 ms. The Top-K microprobe isolates one contributor to that
+interval. The generation loop calls Top-K for token selection and again
+for probability reporting. Do not assign the entire interval to Top-K
+or sum it with overlapping host waits. The separate KeelWing gprofng
+capture also sampled `gg_owned_enter` and `gg_owned_leave` during decode.
+
+**Causal control in FrankenMoE.** Keep both KeelWing CUDA images and the
+rest of the host source fixed. Compile only the existing token selection
+and probability reporting functions in a separate Goose unit and call
+them across the generated ABI. In an unprofiled Apex 32K/512 run with
+the same request bytes and effective profile, this reduced decode from
+50.923 to 23.948 seconds (10.03 to 21.34 tokens/s). Prefill was 2,075.89
+and 2,112.11 tokens/s, respectively. All 512 token IDs, probability rows,
+response bytes and SLRU counters matched. Process VRAM peaked at
+8,188 MiB in both runs and neither process swapped. This accounts for
+26.975 of the 36.729 seconds lost against the old toolchain. The separate
+unit is a diagnostic control. Separating the complete HTTP generation
+loop as a second control reduced decode further to 21.076 seconds
+(24.25 tokens/s) at 2,093.00 tokens/s prefill. The 512 token IDs, all
+probability rows, response bytes, SLRU counters and peak process VRAM
+still matched the monolithic KeelWing build. This recovered 29.847 seconds
+of the loss. The original 36.00 tokens/s decode remains the target.
+
+**Compiler acceptance.** Omit region bookkeeping where a local effect
+analysis proves that a region cannot acquire owned allocations, roots,
+or cleanup obligations, and no reachable call can mutate it. Preserve
+borrow checks and unwind order for allocating or escaping paths. Test
+both the composed sampler and an isolated case, including the heap
+update path, tied logits, and previously qualified release cases with
+allocating loops, nested calls and early exits. Compare selected IDs,
+probabilities and state on identical operands. Repeat a real Apex pair
+while preserving the KeelWing prefill gain.
+
+**Artifacts.** Local experiment directory
+`/tmp/franken-goose-keelwing-exp1665.HMxMZL`, including `sampler-probe/`,
+`nsys-{a,b}.nsys-rep`, `nsys-decode.json`, `cpu-phase-profile.json`,
+`full-runs/`, `sampler-split-full/` and `generation-split-full/`.
+Status: candidate.
 
 ## Read-only CUDA parameter aggregates
 
