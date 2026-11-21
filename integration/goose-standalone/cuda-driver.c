@@ -210,7 +210,7 @@ static struct {
     Function mmq_q4_routed_x128, mmq_q6_routed_x128, mmq_q6_routed_pipeline;
     Function mmq_q4_routed_m128, mmq_q4_routed_down_m128;
     Function mmvq_pack, mmvq;
-    Function dense_mma, dense_mma_reference, gdn_mma, flash_mma, flash_stage, flash_vec, flash_vec_merge;
+    Function dense_mma, dense_mma_reference, gdn_mma, gdn_mma_v32, flash_mma, flash_stage, flash_vec, flash_vec_merge;
     Function flash_vec_pack, flash_vec_packed;
     Function mmq_stream, mmq_stream_fixup;
     Function flash_stream, flash_fixup_uniform, flash_fixup_general;
@@ -322,6 +322,7 @@ static struct {
 
 enum { ACTIVATION_WORDS = 5, ACTIVATION_RECORDS = 256 };
 enum { GDN_MMA_SHARED_BYTES = 93312 };
+enum { GDN_V32_SHARED_BYTES = 38016 };
 enum { Q4_PIPE_SHARED_BYTES = 2 * 30720 };
 enum { Q6_HALF_K_SHARED_BYTES = 53760 };
 enum { Q6_PIPE_SHARED_BYTES = Q6_HALF_K_SHARED_BYTES + 18432 };
@@ -1246,6 +1247,11 @@ static void load_cuda(void) {
             enum { max_dynamic_shared_size = 8 };
             error = cuda.function_get(&cuda.gdn_mma, cuda.module, "goose_gdn_mma");
             if (error == 0) error = cuda.function_set_attribute(cuda.gdn_mma, max_dynamic_shared_size, GDN_MMA_SHARED_BYTES);
+            if (error == 0 && fg_standalone_option_enabled("GOOSE_GDN_MMA_V32")) {
+                int setup = cuda.function_get(&cuda.gdn_mma_v32, cuda.module, "goose_gdn_mma_v32");
+                if (setup == 0) setup = cuda.function_set_attribute(cuda.gdn_mma_v32, max_dynamic_shared_size, GDN_V32_SHARED_BYTES);
+                if (setup != 0) cuda.gdn_mma_v32 = NULL;
+            }
         }
         if (error == 0) error = cuda.function_get(&cuda.q4_rows, cuda.module, "goose_set_q4_rows");
         if (error == 0) error = cuda.function_get(&cuda.vector, cuda.module, "goose_vector_ops");
@@ -3600,7 +3606,12 @@ int64_t fg_cuda_gdn(sl_i64 plan, sl_f32 q, sl_f32 k, sl_f32 v, sl_f32 gate, sl_f
     void * args[] = {packet};
     if (error == 0) {
         if (mma) {
-            error = cuda.launch(cuda.gdn_mma, (unsigned) (heads * sequences), 1, 1, 256, 1, 1, GDN_MMA_SHARED_BYTES, NULL, args, NULL);
+            const bool sliced = cuda.gdn_mma_v32 && sequences <= INT_MAX / (4 * heads);
+            error = cuda.launch(sliced ? cuda.gdn_mma_v32 : cuda.gdn_mma,
+                (unsigned) (heads * sequences * (sliced ? 4 : 1)), 1, 1, 256, 1, 1,
+                sliced ? GDN_V32_SHARED_BYTES : GDN_MMA_SHARED_BYTES, NULL, args, NULL);
+            if (error == 0 && sliced && getenv("GOOSE_GRAPH_LOG"))
+                fprintf(stderr, "Goose CUDA GDN: V32 slices\n");
         } else {
             const Function scalar = plan.data[38] && cuda.gdn_decode ? cuda.gdn_decode : cuda.gdn;
             error = cuda.launch(scalar, (unsigned) heads, (unsigned) sequences,

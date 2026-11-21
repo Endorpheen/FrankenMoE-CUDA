@@ -58,6 +58,44 @@ the next target after the current MMQ work.
 The trace and analysis are in
 `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/profile-exp1647`.
 
+## EXP-1656 — Run the existing GDN V32 prefill kernel
+
+Expose the existing Goose 32-column state slice through
+the standalone CUDA adapter. Four slices write disjoint
+output and state ranges for each head. The device keeps
+38,016 bytes of shared memory per block, down from 93,312
+for the whole-head tile. The recurrence and BF16
+residual arithmetic stay in the existing Goose kernel.
+Set `GOOSE_GDN_MMA_V32=0` for the whole-head launch.
+
+The warmed GDN fixture with 4,096 tokens went from
+28.275 to 25.852 ms, including data movement. The
+4,096-token case and the 65-token, two-sequence case
+matched all 18,882,560 finite scores and state words.
+The Apex warm-up reports 30 V32 launches.
+
+| Warmed Apex 32,768/512, 4096/4096 | EXP-1654 control | EXP-1656 | Candidate minus control |
+|---|---:|---:|---:|
+| Prefill, ms | 20,974.224 | 20,692.427 | -281.797 |
+| Prefill, tok/s | 1,562.30 | **1,583.57** | +21.28 |
+| Decode, ms | 15,044.750 | 14,861.343 | -183.406 |
+| Decode, tok/s | 33.97 | 34.38 | +0.42 |
+| Prefill plus decode, ms | 36,018.974 | 35,553.770 | -465.204 |
+| Peak process RSS, KiB | 21,483,696 | 21,482,868 | -828 |
+| Peak process VRAM, MiB | 8,220 | 8,220 | 0 |
+| Process swap and system swap-out growth | 0 / 0 | 0 / 0 | 0 / 0 |
+
+All 512 IDs, probabilities, response, and SLRU match.
+The model remains fully resident. The prefill result
+advances the observed best past 1,582.51 tok/s. The
+decode difference is the result observed in this pair.
+Performance qualification covers RTX 4070 and Apex.
+Keep EXP-1654 available for rollback.
+The [benchmark journal](../../benchmarks/experiment-history.jsonl)
+records the exact run and hashes. The executable and raw
+evidence are in
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/gdn-v32-exp1656`.
+
 ## EXP-1654 — Prepare deferred expert copies in parallel
 
 Use one helper for groups of at least four pageable

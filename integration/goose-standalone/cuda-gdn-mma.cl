@@ -70,15 +70,19 @@ static F4_g fg174m_mma(F4_g d, uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a
 
 #include "gdn-mma-device.h"
 
-__kernel void goose_gdn_mma(gdn_launch_packet arguments) {
-    const uint64_t * packet = arguments.words;
-    uint32_t task, thread;
-    uint64_t shared;
-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(task));
-    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
-    __asm__("mov.u64 %0, goose_gdn_shared;" : "=l"(shared));
-    gdn_v128_g(packet[0], packet[1], packet[2], packet[3], packet[4], packet[5], packet[6], packet[7], shared,
-        (int32_t) packet[33], (int32_t) packet[52], (int32_t) packet[55], packet[34], packet[9], packet[10], packet[11],
-        packet[17], packet[18], packet[19], packet[21], packet[22], packet[23], thread % 32, thread / 32, task,
-        as_float((uint32_t) packet[49]));
+#define GDN_MMA_ENTRY(name, device) \
+__kernel void name(gdn_launch_packet arguments) { \
+    const uint64_t * packet = arguments.words; \
+    uint32_t task, thread; \
+    uint64_t shared; \
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(task)); \
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread)); \
+    __asm__("mov.u64 %0, goose_gdn_shared;" : "=l"(shared)); \
+    device(packet[0], packet[1], packet[2], packet[3], packet[4], packet[5], packet[6], packet[7], shared, \
+        (int32_t) packet[33], (int32_t) packet[52], (int32_t) packet[55], packet[34], packet[9], packet[10], packet[11], \
+        packet[17], packet[18], packet[19], packet[21], packet[22], packet[23], thread % 32, thread / 32, task, \
+        as_float((uint32_t) packet[49])); \
 }
+GDN_MMA_ENTRY(goose_gdn_mma, gdn_v128_g)
+GDN_MMA_ENTRY(goose_gdn_mma_v32, gdn_v32_g)
+#undef GDN_MMA_ENTRY

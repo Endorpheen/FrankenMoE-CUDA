@@ -18,7 +18,7 @@ sed -n '/^struct F2 {/,/^}/p; /^fn dequant_q4_0(/,/^}/p' \
 cat "$ROOT/goose/cuda/standalone-q4-attention.goose" >> "$OUT/q4-attention.goose"
 sed '/^fn main()/,$d; s/^fn \(gdn\|gdn_decode\)(/export fn \1(/' \
     "$ROOT/goose/cuda/goose-cuda-gdn/scalar-device.goose" > "$OUT/gdn.goose"
-sed '/^fn main()/,$d; s/^fn gdn_v128(/export fn gdn_v128(/' \
+sed '/^fn main()/,$d; s/^fn \(gdn_v32\|gdn_v128\)(/export fn \1(/' \
     "$ROOT/goose/cuda/goose-cuda-gdn/mma-device.goose" > "$OUT/gdn-mma.goose"
 sed -n '/^extern "fg176r_ld_f32"/p; /^extern "fg176r_st_f16"/p; /^extern "fg176r_st_u8"/p;
         /^extern "fg176r_fabs"/p; /^extern "fg176r_i8trunc"/p;
@@ -142,6 +142,13 @@ if module in ("gdn-mma", "flash-mma", "flash-vec", "rms-reference"):
         excluded += ("a8_f32;",)
     types = "\n".join(line for line in types.splitlines()
                       if not line.endswith(excluded))
+    if module == "gdn-mma":
+        import re
+
+        def gdn_prefix(text):
+            return re.sub(r"\ba(?:4|16)_f32\b", lambda m: "GdnMma_" + m[0], text)
+
+        types, fragment = gdn_prefix(types), gdn_prefix(fragment)
     if module == "flash-mma":
         import re
 
