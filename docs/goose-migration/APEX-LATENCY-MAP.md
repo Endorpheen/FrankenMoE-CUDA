@@ -1,5 +1,90 @@
 # Apex 32K/512 latency map
 
+## Short gate before full Apex
+
+Use the accepted checkpoint and candidate on the same
+short Apex request, with equal inputs, settings, cache
+state and peak-memory measurements. For prefill, use
+Apex 4096/2. Record the target phase time in milliseconds.
+Require a reduction of at least 10% in that phase and
+matching correctness before starting a new Apex 32K/512
+performance comparison. Archive smaller gains for later
+combinations. Qualify the combined result with the same
+short gate. Inspect machine code when a material unexplained
+loss needs it. Advance to the next candidate after a
+below-threshold result that requires no such diagnosis.
+
+## EXP-1627 — Half-K staging with the 128 × 256 tile
+
+The candidate merges K-major Q8_1 packing with the
+half-K staging pattern from the hybrid and the EXP-1624
+output tile. It stages a full K block of Q4_K once, keeps
+scale/minimum pairs in half2 and loads one contiguous Q8_1
+half-block at a time. The accumulation order is unchanged.
+Source-level CTA barriers per K block fall from eight to four.
+The new kernel has 73,728 dynamic shared bytes and 239
+live registers per thread on RTX 4070.
+
+### Finite-operand correction
+
+The legacy dense fixtures subtracted 65 from a
+`size_t` expression when generating activations. Negative
+samples wrapped. All outputs inspected from the legacy
+EXP-1627 synthetic fixtures were nonfinite. Their matching
+bits cannot qualify arithmetic. Earlier synthetic records
+using that generator remain historical. The real Apex
+responses and their checks are separate evidence.
+
+The corrected fixture casts before subtracting, uses finite
+inputs and feeds each runtime the exact same stored weight
+and input bytes. Both Goose modes agree bitwise on all
+three dense shapes and a partial-column tail. Compute
+Sanitizer reports zero errors on the corrected tail.
+At 8192 × 4092 × 2048 the hybrid also matches every one
+of the 33,521,664 FP32 output words in each format, Q4_K
+and Q6_K.
+
+| Q4_K M × N × K | Quarter-K pack + MMQ, ms | Half-K pack + MMQ, ms |
+|---|---:|---:|
+| 8192 × 4092 × 2048 | 4.719 | 4.543 |
+| 2048 × 4096 × 4096 | 2.851 | 2.726 |
+| 4096 × 4092 × 2048 | 2.518 | 2.429 |
+
+On 8192 × 4092 × 2048 with those operands, the hybrid
+takes 1.747 ms for pack and Q4_K MMQ. For Q6_K the hybrid
+takes 1.953 ms; the existing wide and tail kernels in Goose
+take 11.386 ms including packing. The Q6_K arithmetic
+already matches. The hybrid's larger CTA and half-K
+operand reuse are the next source-guided change.
+
+### Full Apex and short gate
+
+The full A-B-B-A was completed before the 10% short gate
+was introduced. All four 32K/512 responses match output,
+IDs, probabilities and SLRU at 4096/4096 and 5,920 MiB.
+The model is fully resident. Peak process VRAM is 8,220
+MiB and process swap and system swap-out are zero in
+both arms.
+
+| Measurement | EXP-1624 quarter-K | Half-K | Difference |
+|---|---:|---:|---:|
+| Unprofiled median prefill, tok/s | 1,288.72 | 1,278.23 | -10.49 |
+| Unprofiled median prefill, ms | 25,430.720 | 25,636.473 | +205.753 |
+| Unprofiled median decode, tok/s | 36.31 | 35.98 | -0.33 |
+| Unprofiled median decode, ms | 14,075.641 | 14,200.758 | +125.117 |
+| Short 4096/2 prefill, ms | 3,231.264 | 3,237.051 | +5.787 |
+
+The paired short outputs and SLRU match. The gate fails.
+The full diagnostic traces show the 2,000 wide dense launches
+at 2,599.013 and 2,423.508 ms. The total prefill difference
+also includes 425.021 ms less device idle and 162.635 ms less
+exclusive bulk H2D. Keep the half-K patch for combinations.
+Use EXP-1624 as the working prefill checkpoint.
+
+The finite operands, fixture source, reversible patch,
+benchmarks and traces are preserved in
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/mmq-half-k-exp1627`.
+
 ## EXP-1626 — Hybrid MMQ operand staging audit
 
 The immutable EXP-1476 and Optimized Hybrid comparator
