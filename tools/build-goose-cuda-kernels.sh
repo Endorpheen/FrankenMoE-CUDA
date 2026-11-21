@@ -40,7 +40,8 @@ sed -n '/^fn yarn_pair(/,/^}/p; /^fn rope_sector_axis(/,/^}/p; /^fn rope_reset_a
     "$ROOT/goose/cpu/goose-cpu-backend-api/rope.goose" >> "$OUT/rope.goose"
 sed -n '/^extern "fg170s_load"/p; /^extern "fg170s_store"/p; /^extern "fg170s_expf"/p;
         /^extern "fg170s_lc"/p; /^extern "fg170s_sync"/p; /^extern "fg170s_barrier"/p;
-        /^fn silu(/,/^}/p; /^fn ssm_conv_serial(/,/^}/p; /^fn ssm_conv_long(/,/^}/p' \
+        /^fn silu(/,/^}/p; /^fn ssm_conv_serial(/,/^}/p; /^fn ssm_conv_decode(/,/^}/p;
+        /^fn ssm_conv_long(/,/^}/p' \
     "$ROOT/goose/cuda/goose-cuda-ssm-convolution/device.goose" |
     sed 's/^fn ssm_conv_/export fn ssm_conv_/; s/\bsilu\b/ssm_silu/g' > "$OUT/ssm-conv.goose"
 cat >> "$OUT/ssm-conv.goose" <<'GOOSE_SOURCE'

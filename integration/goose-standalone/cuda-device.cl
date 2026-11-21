@@ -472,6 +472,18 @@ __kernel void goose_ssm_conv(__global uint8_t * x, __global uint8_t * weights,
         (int32_t) cfg[7], (int32_t) cfg[6], cfg[15] != 0, 0, lane, sequence, group);
 }
 
+__kernel void goose_ssm_conv_decode(__global uint8_t * x, __global uint8_t * weights,
+    __global uint8_t * out, __global int64_t * cfg) {
+    uint32_t sequence, group, lane;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(sequence));
+    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(group));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
+    const uint64_t channel = (uint64_t) group * 128 + lane;
+    if (channel >= (uint64_t) cfg[5]) return;
+    ssm_conv_decode_g((uint64_t) x + sequence * (uint64_t) cfg[10], (uint64_t) weights,
+        (uint64_t) out + sequence * (uint64_t) cfg[14], cfg[9], cfg[11], channel, cfg[15] != 0);
+}
+
 __kernel void goose_ssm_conv_long(__global uint8_t * x, __global uint8_t * weights,
     __global uint8_t * out, __global int64_t * cfg) {
     enum { taps = 4, tile = 32, channels = 128 };

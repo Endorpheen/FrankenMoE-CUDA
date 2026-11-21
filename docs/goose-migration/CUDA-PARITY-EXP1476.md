@@ -54,6 +54,7 @@ the dependency that would justify rerunning it.
 | GDN + Flash + Dense MMA on the ten-change package | Source `6083f55c`; [current intermediate performance control](#intermediate-apex-performance-control). Combined short prefill 281.919 tokens/s. The full profiled request reached 283.535 tokens/s. | The full response begins to repeat the input. Its second ID is 1716 versus 198 in EXP-1476. Content and probability rows differ. | Use the exact opt-in package as the speed checkpoint. Use the EXP-1476 response for correctness. Recheck the individual kernels and switches as the numerical path changes. |
 | EXP-1540, MMQ Stream-K | `GOOSE_MMQ_STREAM_K=1`. [Kernel and model measurements](#mmq-stream-k-checkpoint). The Apex 32/1 case executes 160 Stream-K and 160 fixup kernels and reduces MMQ device arithmetic time from 59.266 to 54.748 ms. | The 32/1 request changes probabilities and takes 913.819 ms versus 855.517 ms. The 4096/1 geometry chooses the regular MMQ path throughout. | Keep opt-in. Recheck with reference-sized MMQ tiles and routed dispatch after their numerical gate. A low-occupancy production shape or revised tile geometry can change the partition decision. |
 | EXP-1563, routed MMQ input residency | [Candidate patch and full pair](../../experiments/EXP-2026-11-20-1563-mmq-input-residency/README.md). Protecting the SwiGLU input removes 21,474,836,480 bytes in each direction and moves full prefill from 694.731 to 773.585 tok/s with matching responses. | Peak process VRAM rises from 8,524 to 8,748 MiB. The candidate run records 6,286 system swap-out pages with zero process swap. | Recheck when planned arena placement can keep the live input and result in the current capacity. Compare unchanged outputs and remeasure the 64 MiB transfers, VRAM and swap. |
+| EXP-1585, single-token four-tap SSM | [Captured-input replay](#deferred-single-token-ssm-arithmetic). Both raw and fused results match 8,192 of 8,192 native values. The new entry uses 24 registers and no stack. | The original opening repetition persists. Live decode drops from 26.228 to 24.004 steps/s in the observed pair, with a different token sequence and 17.064 GB more expert uploads. | Retest after the full-shape Q6_K prefill projection matches on the three saved rows. Compare generation and measure SSM device time with the same token history. |
 
 After a material dependency change, use short sequential A/B runs on
 identical inputs and settings. Use the best current verified checkpoint
@@ -3242,6 +3243,85 @@ Candidate executable SHA-256 is
 `d7ce21e116177c7a56239ea33fb389bb940223cfffb17e0f1d6fbbd776a7a53c`.
 Raw evidence and the executable are under
 `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/gdn-launch-params-exp1583`.
+
+## First Apex decode divergence and saved SSM history
+
+EXP-1585 follows the opening prompt repetition on the frozen
+32K request. The first output is token 11 in both executables.
+On the next step EXP-1476 ranks newline 198 first, with
+log probability -0.779868. Goose ranks token 1716 first,
+with log probability -0.000019. These rankings exist before
+sampling. Disabling vector Attention, MMVQ, or prefill GDN
+MMA in three separate 32K/2 runs preserves the Goose choice.
+
+The paired first-decode capture preserves both uninstrumented
+token sequences. On the first layer, embedding, weighted RMS,
+the current QKV row and the gate projections match exactly.
+The first observed difference is in the convolution input's
+three historical rows. The current row and convolution
+weights are bitwise identical. The relative L2 error is
+0.001229 at layer 0 output, 0.168142 at layer 15 output
+and 0.359983 at the final logits.
+
+A separate capture at prefix 28,672 with 4,096 evaluated
+tokens reads the last three rows before storage. Embedding
+and RMS match for all 6,144 values each. The Q6_K projection
+`blk.0.attn_qkv.weight` differs at its output:
+
+| Last three prefill rows | Bitwise matches out of 8,192 | Maximum absolute difference |
+|---|---:|---:|
+| 32,765 | 118 | 0.00185585 |
+| 32,766 | 115 | 0.00152779 |
+| 32,767 | 117 | 0.00107527 |
+
+Within each runtime those rows match its own saved convolution
+history exactly. This localizes an upstream discrepancy to
+the dense Q6_K projection on the full prefill shape. The
+[124-token parity replay](#reference-q6_k-at-the-qkv-boundary)
+does not cover this shape. Compare the full native D4 pack,
+Stream-K schedule, and result on the same captured activations.
+
+### Deferred single-token SSM arithmetic
+
+EXP-1476 SM89 SASS uses four FTZ FMA accumulations and the
+approximate reciprocal for the SiLU of a single query. The
+standalone four-tap specialization reuses the already exposed
+Goose primitives from the long convolution. PTXAS reports
+24 registers and zero stack bytes versus 34 registers and
+120 stack bytes for the general serial kernel.
+
+On the captured native first-step window and weights, the
+old kernel matches 5,532 of 8,192 raw values and 4,252 of
+8,192 fused values. The specialization matches 8,192 of
+8,192 in each mode. Both kernels pass CUDA memcheck.
+The live variant leaves the upstream history discrepancy and
+the second token unchanged.
+
+| Full Apex 32K/512, 4096/4096, one unprofiled pair | Serial A | Specialized B |
+|---|---:|---:|
+| Prefill, tok/s | 1,032.472 | 1,041.559 |
+| Decode, steps/s | 26.228 | 24.004 |
+| Expert uploads, bytes | 149,376,491,520 | 166,440,394,752 |
+| Peak VRAM, MiB | 7,272 | 7,272 |
+| RSS high-water, KiB | 22,951,524 | 22,951,516 |
+| Process swap, KiB | 0 | 0 |
+| System swap-out, pages | 23,719 | 2,055 |
+
+Opening repetition remains and the sequences diverge at
+output index 17. B repeats the topic further in its body.
+The changed workload and system swap activity prevent an
+isolated kernel speed attribution. Preserve the specialized
+kernel for replay after the upstream Q6_K repair. The normal
+runtime keeps the serial choice. The experimental selector is
+`GOOSE_SSM_DECODE_REFERENCE=1` with `GOOSE_SSM_REFERENCE=1`.
+The final opt-in build reproduces both fixture modes.
+
+The input slices, live captures, fixture, diagnostic adapters,
+run scripts and raw pair are under
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/decode-boundary-exp1585`.
+Final opt-in executable SHA-256
+`aa600b952e99b3a23661ee4e483ca694d0f9a5c2a3d5b34fd17edb0cef9a184f`.
+The accepted speed checkpoint remains EXP-1584.
 
 ## Long Attention partition probe
 

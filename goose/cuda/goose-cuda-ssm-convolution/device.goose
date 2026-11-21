@@ -95,6 +95,18 @@ fn conv_shared_store(address: u64, index: u64, value: f32) { store(address, inde
 fn ssm_long_acc(x: f32, weight: f32, sum: f32) -> f32 { return sum + x * weight; }
 fn ssm_long_silu(x: f32) -> f32 { return silu(x); }
 
+// A single token needs one four-tap window per channel and no scratch tile.
+fn ssm_conv_decode(src: u64, weight: u64, dst: u64, src_row: u64,
+                   weight_row: u64, channel: u64, apply_silu: bool) {
+    let input = src + channel * src_row;
+    let filter = weight + channel * weight_row;
+    var sum: f32 = ssm_long_acc(load(input, 0), load(filter, 0), 0.0);
+    sum = ssm_long_acc(load(input, 1), load(filter, 1), sum);
+    sum = ssm_long_acc(load(input, 2), load(filter, 2), sum);
+    sum = ssm_long_acc(load(input, 3), load(filter, 3), sum);
+    store(dst, channel, if apply_silu { ssm_long_silu(sum) } else { sum });
+}
+
 fn ssm_conv_long(
     src0: u64,
     src1: u64,

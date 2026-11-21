@@ -121,7 +121,7 @@ static struct {
     Function flash_vec_pack, flash_vec_packed;
     Function mmq_stream, mmq_stream_fixup;
     Function flash_stream, flash_fixup_uniform, flash_fixup_general;
-    Function rope_phases, rope_apply, ssm_conv, ssm_conv_long;
+    Function rope_phases, rope_apply, ssm_conv, ssm_conv_decode, ssm_conv_long;
     Function route_reduce, route_sort, route_topk, route_gather, route_norm, blit, fwht, moe_weighted;
     struct device_buffer input, output, weight, jobs;
     struct device_buffer mmq_packed, mmq_tiles, mmq_partials;
@@ -587,6 +587,10 @@ static void load_cuda(void) {
         if (error == 0) error = cuda.function_get(&cuda.ssm_conv, cuda.module, "goose_ssm_conv");
         if (error == 0 && ssm_reference) {
             error = cuda.function_get(&cuda.ssm_conv_long, cuda.module, "goose_ssm_conv_long");
+            const char * decode_setting = getenv("GOOSE_SSM_DECODE_REFERENCE");
+            if (error == 0 && decode_setting && strcmp(decode_setting, "1") == 0) {
+                error = cuda.function_get(&cuda.ssm_conv_decode, cuda.module, "goose_ssm_conv_decode");
+            }
         }
         if (error == 0) error = cuda.function_get(&cuda.route_reduce, cuda.module, "goose_route_reduce");
         if (error == 0) error = cuda.function_get(&cuda.route_sort, cuda.module, "goose_route_sort");
@@ -2467,7 +2471,9 @@ int64_t fg_cuda_position(sl_i64 config, sl_u8 x, sl_u8 y, sl_u8 z, sl_u8 out) {
             const bool tiled = cuda.ssm_conv_long && config.data[6] == taps && config.data[5] % channels == 0 &&
                 tokens > tile && tokens <= (int64_t) tile * grid_z_limit;
             const unsigned gz = tiled ? 1 + (unsigned) (tokens - 1) / tile : 1;
-            Function conv = tiled ? cuda.ssm_conv_long : cuda.ssm_conv;
+            const bool decode = cuda.ssm_conv_decode && config.data[6] == taps &&
+                tokens == 1 && config.data[8] == sizeof(float) && config.data[12] == sizeof(float);
+            Function conv = decode ? cuda.ssm_conv_decode : tiled ? cuda.ssm_conv_long : cuda.ssm_conv;
             error = cuda.launch(conv, gx, gy, gz, channels, 1, 1, 0, NULL, args, NULL);
         }
         if (error == 0) error = activation_publish(host, out.len, output, false);

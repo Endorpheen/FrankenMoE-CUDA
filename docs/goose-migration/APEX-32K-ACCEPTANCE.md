@@ -73,10 +73,15 @@ Functional qualification runs before memory and speed acceptance.
    The separate short and long
    [response-quality comparison](CUDA-PARITY-EXP1476.md#apex-response-quality-checkpoint)
    confirms coherent generation and the HTTP EOS fix. The
-   [latest full diagnostic](CUDA-PARITY-EXP1476.md#cooperative-dense-q4_k-mmq)
-   reports 804.407 prefill tok/s and 20.333 decode steps/s.
-   It preserves the recorded capacity analysis and opening input
-   repetition. The full response gate remains open.
+   [current speed checkpoint](CUDA-PARITY-EXP1476.md#pinned-staging-for-pageable-expert-uploads)
+   reports median 1,049.754 prefill tok/s and 26.256 decode steps/s.
+   It preserves the capacity analysis and opening input repetition.
+   The [paired boundary captures](CUDA-PARITY-EXP1476.md#first-apex-decode-divergence-and-saved-ssm-history)
+   locate a first-layer Q6_K projection difference in the last
+   prefill batch before the history copy. The single-token SSM
+   arithmetic candidate matches the reference on identical input
+   and is deferred after the live response and decode comparison.
+   The full response gate remains open.
    Gates 3 and 4 qualify the later speed comparison.
 7. [ ] **Accept memory** (requires 5 and 6). Record per-process RSS and
    its high-water mark, model page residency before and after the
