@@ -3773,9 +3773,9 @@
       "experiment": "EXP-2026-11-07-145-goose-cpu-backend-api",
       "task": "P1-10",
       "status": "slice",
-      "sha256": "34e957aea41ef84f8bd22ced44d8cc170d0bdb7e5d5a64bf926ab1e283e6a2db",
-      "gate": "EXP-1617 full FFN shape and lifetime matcher, Apex differential, input/output alias and SLRU eviction fixtures; EXP-1660 exact direct SSM device probe and warmed Apex 32K/512 differential; EXP-1661 exact routed Q8_1 GPU fixture and warmed Apex 32K/512 differential",
-      "integration_commit": "db6ffb9c7b2d3cb9bc8b3f652c2bb46a437efba6"
+      "sha256": "45b9f5a6a1652c5000221ae282aa75217e6767b1e9d7b6b4350d85610d8491f0",
+      "gate": "EXP-1617 full FFN shape and lifetime matcher, Apex differential, input/output alias and SLRU eviction fixtures; EXP-1660 exact direct SSM device probe and warmed Apex 32K/512 differential; EXP-1661 exact routed Q8_1 GPU fixture and warmed Apex 32K/512 differential; EXP-1662 exact strided RMSNorm SCALE fixture and warmed Apex 32K/512 differential",
+      "integration_commit": "0c914d5eccc2924b742778f68a8c576c27a0687c"
     },
     {
       "goose": "cpu/goose-cpu-backend-api/backend/kernel-template.goose",
@@ -4069,9 +4069,9 @@
       "experiment": "EXP-2026-11-21-1603-vector-parameters",
       "task": "P3-01",
       "status": "slice",
-      "sha256": "b1cc0142e2dba9a9d33b47c44958d2ed67abaa47563fe7ba650174c917b5164c",
-      "integration_commit": "91159df92579d979af8a3d0b4d18262c021107f7",
-      "gate": "EXP-1603 weighted RMS bitwise fixture, kernel parameter trace and exact Apex 32K/512 pairs"
+      "sha256": "9da51a3cd81cd6c60db721bb5fe57eee462c650add83fd4b7178db4241b824a7",
+      "integration_commit": "0c914d5eccc2924b742778f68a8c576c27a0687c",
+      "gate": "EXP-1603 weighted RMS bitwise fixture, kernel parameter trace and exact Apex 32K/512 pairs; EXP-1662 exact strided RMSNorm SCALE fixture and warmed Apex 32K/512 differential"
     },
     {
       "goose": "cuda/standalone-mmq.goose",
@@ -5453,7 +5453,9 @@
       "experiment": "EXP-2026-11-08-168-goose-cuda-normalization",
       "task": "P3-01",
       "status": "slice",
-      "sha256": "10b2106c27bce035ea5c41b62e3de82ae8052885ca2e3502ea9e584e5f97ef70"
+      "sha256": "7bd03daabd9a4cc12382d0f98129edc35a8b1650cdd59b483ac4a2d03b57dcc2",
+      "gate": "EXP-1662 exact strided RMSNorm SCALE fixture and warmed Apex 32K/512 differential",
+      "integration_commit": "0c914d5eccc2924b742778f68a8c576c27a0687c"
     },
     {
       "goose": "cuda/goose-cuda-normalization/host.goose",
