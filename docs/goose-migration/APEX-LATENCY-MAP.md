@@ -15,6 +15,67 @@ for rollback. Retain isolated patches and trace evidence when
 combinations need further qualification. Inspect machine
 code for material unexplained differences.
 
+## EXP-1633 — Pinned staging for current pageable expert weights
+
+EXP-1632 traces the blocking pageable transfers in
+wave zero of the existing `ec_prepare` policy. Reuse
+the current three-slot pinned host ring for that wave.
+The legacy stream orders each pageable transfer between
+the old reader of the SLRU slot and the new projection.
+Each ring slot is sealed with an event on its copy stream
+before reuse on either stream. Later waves keep their
+existing expert-stream event chain. The SLRU replacement
+policy, pinned host budget, and decode graph are retained.
+
+| One full unprofiled Apex 32K/512 A/B | EXP-1631 control | Current staging | Candidate minus control |
+|---|---:|---:|---:|
+| Prefill, ms | 24,312.038 | 23,444.811 | -867.227 |
+| Prefill, tok/s | 1,347.81 | 1,397.67 | +49.86 |
+| Decode, ms | 14,332.100 | 14,101.707 | -230.393 |
+| Decode, tok/s | 35.65 | 36.24 | +0.58 |
+| Prefill plus decode, ms | 38,644.138 | 37,546.519 | -1,097.620 |
+| Client request, ms | 38,718.717 | 37,620.618 | -1,098.099 |
+| Maximum process RSS, KiB | 21,483,356 | 21,484,512 | +1,156 |
+| Maximum process VRAM, MiB | 8,220 | 8,220 | 0 |
+| Process swap, KiB / system swap-out growth, pages | 0 / 0 | 0 / 0 | 0 / 0 |
+
+The response, all 512 IDs and probabilities, model
+residency, and SLRU counters match the control. The
+default-enabled rebuild also completes unprofiled and
+matches the full response. Its prefill is 23,597.489 ms.
+The observed decode difference is outside the targeted
+prefill mechanism. The remaining prefill gap to the
+2,668 tok/s target is 11,162.952 ms in the measured pair.
+Use the archived EXP-1633 candidate as the cumulative
+prefill control. Set `GOOSE_CUDA_EXPERT_STAGE_CURRENT=0`
+to restore synchronous wave-zero copies.
+
+| Prefill diagnostic trace | EXP-1631 | EXP-1633 | Change |
+|---|---:|---:|---:|
+| 589,824 B synchronous pageable H2D copies | 31,184 | 0 | -31,184 |
+| GPU idle during those pageable copy calls, ms | 1,478.082 | 0.000 | -1,478.082 |
+| All synchronous H2D calls | 57,562 | 26,378 | -31,184 |
+| All asynchronous H2D calls | 102,648 | 133,832 | +31,184 |
+| GPU idle union, ms | 3,542.178 | 2,818.462 | -723.716 |
+| GPU idle before submission outside CUDA APIs, ms | 1,276.072 | 1,895.113 | +619.041 |
+| CUDA event synchronization calls | 14,669 | 19,217 | +4,548 |
+| CUDA event synchronization API wall time, ms | 49.137 | 82.754 | +33.617 |
+
+Copy and wait wall times overlap device work. The idle
+union is the disjoint measure. The added interval outside
+CUDA APIs needs host attribution. Nsight Systems 2026.6.1
+in per-node graph tracing faults during decode. GDB
+reproduces SIGSEGV on the profiler's `[NSys]` thread in
+`libToolsInjection64.so`. The table uses the completed
+prefill from the initial capture. A separate full capture with
+`--cuda-graph-trace=graph` returns the same response and SLRU.
+Keep the failing capture and GDB evidence alongside the
+successful trace. Performance uses the unprofiled A/B.
+
+The executable, replay profile, raw measurements, and
+traces are in
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/prefill-current-stage-exp1633`.
+
 ## EXP-1632 — Prefill trace after routed MMQ changes
 
 Profile the EXP-1631 candidate with the frozen Apex

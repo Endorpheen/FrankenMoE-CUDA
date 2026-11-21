@@ -194,6 +194,7 @@ static struct {
     Stream expert_stream;
     Event expert_slots_ready, expert_uploads_ready;
     bool expert_upload_queued, expert_decode_overlap;
+    bool expert_prefill_staging, expert_current_staging;
     struct expert_upload_job * expert_upload_jobs;
     size_t expert_upload_count, expert_upload_capacity;
     struct expert_host_ring expert_host;
@@ -888,6 +889,7 @@ static void init_expert_stream(void) {
         cuda.host_alloc && cuda.host_free) {
         cuda.event_sync = dlsym(cuda.library, "cuEventSynchronize");
         cuda.expert_host.enabled = cuda.event_sync != NULL;
+        cuda.expert_prefill_staging = fg_standalone_option_enabled("GOOSE_CUDA_EXPERT_STAGE_CURRENT");
     }
 }
 
@@ -2113,6 +2115,7 @@ uint8_t fg_cuda_expert_stage_enabled(int64_t active_experts, uint8_t stage_all) 
         cuda.expert_upload_jobs = jobs;
         cuda.expert_upload_capacity = capacity;
     }
+    cuda.expert_current_staging = !stage_all && cuda.expert_prefill_staging && cuda.expert_host.enabled;
     return true;
 }
 
@@ -2126,6 +2129,8 @@ static bool expert_source_pinned(uint64_t source, uint64_t bytes) {
     return false;
 }
 
+static int submit_pageable_expert(const struct expert_upload_job * job, Stream stream);
+
 static int64_t expert_upload(int64_t offset, uint64_t source, int64_t bytes, bool staged) {
     const struct device_buffer * dest = &cuda.experts.weights;
     if (!dest->address || !source || offset < 0 || bytes <= 0 ||
@@ -2133,7 +2138,7 @@ static int64_t expert_upload(int64_t offset, uint64_t source, int64_t bytes, boo
     const DevicePtr address = dest->address + (uint64_t) offset;
     const void * host = (const void *) (uintptr_t) source;
     int status;
-    const bool pinned = staged && expert_source_pinned(source, (uint64_t) bytes);
+    const bool pinned = (staged || cuda.expert_current_staging) && expert_source_pinned(source, (uint64_t) bytes);
     if (staged && (pinned || (cuda.expert_host.enabled && bytes <= EXPERT_HOST_SLOT_BYTES))) {
         if (cuda.expert_upload_count == cuda.expert_upload_capacity) return -1;
         status = 0;
@@ -2145,6 +2150,12 @@ static int64_t expert_upload(int64_t offset, uint64_t source, int64_t bytes, boo
             cuda.expert_upload_jobs[cuda.expert_upload_count++] =
                 (struct expert_upload_job) {address, host, (size_t) bytes, !pinned};
         }
+    } else if (!staged && cuda.expert_current_staging && !pinned && bytes <= EXPERT_HOST_SLOT_BYTES) {
+        // The legacy stream orders the upload between the old slot reader
+        // and the current projection. Event fences protect the host ring.
+        const struct expert_upload_job job = {address, host, (size_t) bytes, true};
+        activations.pending = true;
+        status = submit_pageable_expert(&job, NULL);
     } else {
         status = cuda.upload(address, host, (size_t) bytes);
     }
@@ -2166,10 +2177,10 @@ static void reset_expert_stage(void) {
     ec_reset(cache->groups, cache->layers, (uint64_t) (uintptr_t) cache->state, cache->work);
 }
 
-static int seal_expert_host_slot(void) {
+static int seal_expert_host_slot(Stream stream) {
     struct expert_host_ring * ring = &cuda.expert_host;
     if (ring->used == 0) return 0;
-    const int error = cuda.event_record(ring->ready[ring->index], cuda.expert_stream);
+    const int error = cuda.event_record(ring->ready[ring->index], stream);
     if (error == 0) {
         ring->busy[ring->index] = true;
         ring->index = (ring->index + 1) % EXPERT_HOST_SLOTS;
@@ -2178,10 +2189,10 @@ static int seal_expert_host_slot(void) {
     return error;
 }
 
-static int submit_pageable_expert(const struct expert_upload_job * job) {
+static int submit_pageable_expert(const struct expert_upload_job * job, Stream stream) {
     struct expert_host_ring * ring = &cuda.expert_host;
     int error = 0;
-    if (job->bytes > EXPERT_HOST_SLOT_BYTES - ring->used) error = seal_expert_host_slot();
+    if (job->bytes > EXPERT_HOST_SLOT_BYTES - ring->used) error = seal_expert_host_slot(stream);
     if (error == 0 && ring->busy[ring->index]) {
         error = cuda.event_sync(ring->ready[ring->index]);
         if (error == 0) ring->busy[ring->index] = false;
@@ -2190,7 +2201,7 @@ static int submit_pageable_expert(const struct expert_upload_job * job) {
     uint8_t * storage = ring->storage + ring->index * EXPERT_HOST_SLOT_BYTES + ring->used;
     memcpy(storage, job->source, job->bytes);
     ring->used += job->bytes;
-    return cuda.upload_async(job->destination, storage, job->bytes, cuda.expert_stream);
+    return cuda.upload_async(job->destination, storage, job->bytes, stream);
 }
 
 static int submit_expert_stage(void) {
@@ -2201,10 +2212,10 @@ static int submit_expert_stage(void) {
     for (size_t i = 0; status == 0 && i < cuda.expert_upload_count; ++i) {
         const struct expert_upload_job * job = &cuda.expert_upload_jobs[i];
         activations.pending = true;
-        status = job->pageable ? submit_pageable_expert(job) :
+        status = job->pageable ? submit_pageable_expert(job, cuda.expert_stream) :
             cuda.upload_async(job->destination, job->source, job->bytes, cuda.expert_stream);
     }
-    if (status == 0) status = seal_expert_host_slot();
+    if (status == 0) status = seal_expert_host_slot(cuda.expert_stream);
     if (status == 0) status = cuda.event_record(cuda.expert_uploads_ready, cuda.expert_stream);
     if (status == 0) {
         cuda.expert_upload_count = 0;
@@ -2239,6 +2250,16 @@ static int64_t prepare_expert_offsets(uint64_t tensor, int64_t bytes, sl_i64 act
     const uint64_t state = (uint64_t) (uintptr_t) cache->state;
     const int64_t status = ec_prepare(cache->groups, cache->layers, state, cache->work,
         tensor, bytes, active, offsets, stage_all);
+    if (cuda.expert_current_staging) {
+        cuda.expert_current_staging = false;
+        if (seal_expert_host_slot(NULL) != 0) {
+            cuda.sync();
+            cuda.expert_host.used = 0;
+            cuda.expert_host.enabled = false;
+            reset_expert_stage();
+            return -1;
+        }
+    }
     if (status < 0) reset_expert_stage();
     return status;
 }
