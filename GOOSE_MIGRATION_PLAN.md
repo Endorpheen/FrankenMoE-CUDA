@@ -513,6 +513,25 @@ Status: TODO=not started; IN_PROGRESS=implementation active; PARTIAL=bounded evi
 
 ## Dependencies,compiler limits and end condition
 
+GGML and the frozen EXP-1476 are engineering references for
+CUDA kernels, allocation, scheduling, fusion and synchronization.
+Select mechanisms from measured operator and request costs, then
+implement the chosen designs in the independent Goose runtime.
+Keep any experimental hybrid builds separate from both the frozen
+reference and the independent runtime.
+
+Specialize first for measured Apex workloads on RTX 4070 and retain
+device-capability dispatch and general CUDA implementations for the
+RTX 30 and RTX 50 series. Check compilation and execution scope on
+each supported architecture. Report performance as unmeasured until
+it has been verified on the corresponding hardware.
+
+Repeat full CPU/GPU profiling after substantial changes to kernels,
+placement or scheduling. Compare the fixed Apex workload against
+EXP-1476 with phase-specific kernel, transfer, wait and host-cost
+attribution. Verify correctness, prefill, decode, RAM and VRAM in
+matched runs. Keep profiling results separate from speed acceptance.
+
 Candidate unavoidable dependencies: OS kernel/threads/virtual memory/file/socket primitives; C ABI/runtime/math support; CUDA driver/device runtime/toolchain and specifically justified vendor primitives; build tools. This is a provisional list,not an approval to keep arbitrary C++ libraries. Owned GGML/llama arithmetic,allocator,scheduler,GGUF/tokenizer/JSON/Jinja/HTTP/server logic is migration scope,not an unavoidable external dependency.
 
 Compiler limitations stay in local ignored COMPILER_FEEDBACK.md with reproducer,producer and observed behavior. Do not publish that private file,edit the compiler or manufacture a native fallback completion. If a language feature is missing,use a supported Goose formulation; if impossible,keep the task explicitly incomplete and continue independent tasks.

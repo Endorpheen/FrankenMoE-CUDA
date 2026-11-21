@@ -1,5 +1,128 @@
 # Apex runtime performance and historical optimization audit
 
+## EXP-1596 current CPU/GPU profile
+
+This diagnostic compares the immutable EXP-1476 release
+(`e7c9155a`) with independent Goose at `4f73f42e`. Both use
+the frozen Apex request, RTX 4070, context 262,144, batch and
+ubatch 4096/4096, Q4_0 K/V, CPU controls 8/16 and a 4,992 MiB
+expert budget. The two runs use gprofng's 2 ms clock collector,
+Nsight CUDA kernel-node, API, OS runtime and allocation capture,
+and 250 ms process/card memory sampling. The gprofng reports are
+filtered between two request signals. Hardware counters and
+context-switch sampling remain unavailable on this host. A first
+gprofng mode that disabled resource sampling produced no clock
+samples and was superseded by the verified configuration.
+
+| Profiled server metric | Native EXP-1476 | Independent Goose |
+|---|---:|---:|
+| Prefill, tok/s | 2,612.710 | 1,097.321 |
+| Decode, steps/s | 56.143 | 26.473 |
+| Process RSS high-water, KiB | 22,513,280 | 23,558,448 |
+| Sampled peak process / whole-card VRAM, MiB | 8,214 / 10,511 | 7,284 / 9,543 |
+| Process swap and request-window system swap-out growth | 0 | 0 |
+
+Phase windows begin at the first full hybrid MMQ or first
+Goose RMS and split at the first vector Attention after the
+last prefill MMA Attention. Decode ends at the last trace
+kernel. The active interval is the union of clipped CUDA
+kernel and transfer intervals. Nsight warns of incomplete
+Goose capture. Device and host API time can overlap each
+other and across threads. These are diagnostic observations.
+
+| Trace metric | Native EXP-1476 | Independent Goose |
+|---|---:|---:|
+| Prefill span / active GPU / residual, s | 12.164 / 11.054 / 1.110 | 29.716 / 26.110 / 3.607 |
+| Decode span / active GPU / residual, s | 9.094 / 7.042 / 2.052 | 18.852 / 10.795 / 8.057 |
+| Prefill MMQ computation, s | 3.148 | 13.712 |
+| Prefill MMA Attention, s | 1.410 | 2.938 |
+| Prefill MMA GDN, s | 0.469 | 1.354 |
+| Prefill long SSM, s | 0.205 | 0.204 |
+| Decode vector Attention computation, s | 1.214 | 2.715 |
+| Decode MMVQ computation, s | 2.488 | 2.767 |
+| Decode scalar GDN, s | 0.056 | 0.113 |
+| Prefill H2D / D2H, GB | 83.655 / 1.441 | 96.539 / 0.043 |
+| Decode H2D / D2H, GB | 51.084 / 0.507 | 52.342 / 0.495 |
+| Decode H2D at most 4 KiB, calls | 23,498 | 809,607 |
+| Decode CUDA kernel / graph launch API calls | 6,605 / 20,873 | 1,034,583 / 0 |
+| Decode sync API time, s | 6.197 stream | 1.151 context |
+| Decode H2D API time, s | 0.447 async memcpy including other directions | 9.467 sync + 1.983 async H2D |
+
+Clock samples in the request window total 1.594 s for EXP-1476
+and 4.064 s for Goose, including profiler and driver frames.
+The hybrid scheduler has 0.374 s of inclusive sampled time
+and its graph reserve helper 0.002 s. Goose graph compute has
+0.938 s of inclusive sampled time and the quantized gather
+worker 0.342 s. The samples support attribution to driver,
+submission and execution frames. They cannot be interpreted
+as exact aggregate thread CPU or isolated scheduler latency.
+The principal measured residuals are MMQ and decode submission
+gaps, followed by Attention and prefill GDN. The independent
+graph selector is disabled in this fixed profile. The limited
+opt-in Goose graph experiment remains documented in the
+[CUDA map](CUDA-PARITY-EXP1476.md#cuda-graph-replay-for-vector-attention).
+
+### Device allocation attribution
+
+Reconstruct live device allocations by address and time from
+`CUDA_GPU_MEMORY_USAGE_EVENTS`. The 2 MiB VMM intervals in
+the hybrid form 20 physically populated 10 MiB spans at
+72 MiB logical spacing. One disjoint contiguous 74 MiB span
+belongs to its temporary VMM pool. Goose also commits 20
+times 10 MiB of physical KV, with no scratch VMM in this run.
+Both report 1,440 MiB of logical KV and use 62.8125 MiB of
+resident recurrent state. Goose reports those logical sizes
+together as 1,575,813,120 bytes.
+
+| Live at tracked peak, MiB | EXP-1476 | Goose |
+|---|---:|---:|
+| Dense model buffer(s) | 1,302.901 | 1,298.477 |
+| Expert device cache | 4,991.484 | 4,991.648 |
+| Physical KV VMM pages | 200 | 200 |
+| Recurrent state | 62.813 | 62.813 |
+| Graph compute buffer or activation arena | 1,347.125 | 384.000 |
+| Other ordinary device scratch | 12.126 | 176.842 |
+| VMM scratch pool | 74.000 | 0 |
+| Total tracked device allocations | 7,990.449 | 7,113.780 |
+
+Compute, activation and scratch storage account for **872.409
+MiB** of the 930 MiB difference in sampled process peaks.
+The other tracked allocations account for another 4.260 MiB.
+The remaining 53.331 MiB is the difference between the two
+NVML/trace residuals. This trace cannot separate driver accounting,
+additional allocations and sampling alignment in that residual.
+It also does not split the hybrid's compute buffer into live
+tensors or establish a fragmentation cost.
+
+### Reverse-port audit
+
+The following comparisons cover the active optimization families
+in the [CUDA map](CUDA-PARITY-EXP1476.md#mechanisms) and the
+[historical ledger](#historical-optimization-ledger). A gap in
+coverage or a useful mechanism in Goose is a proposed hybrid
+experiment only if the original lacks its effect on the same
+workload. The reproduced transfer in EXP-1597 is expert-cache
+sizing, with the binary unchanged in a separate copy.
+
+| Mechanism | Evidence in frozen EXP-1476 | Reverse-port disposition |
+|---|---|---|
+| Tiled Q4_K/Q6_K MMQ, MMA, quantization and Stream-K | The hybrid already runs grouped tiled MMQ with 128-column reuse and reconciliation. Its MMQ device time is 3.148 s versus 13.712 s. | Retain the hybrid kernel. Shift independent Goose dispatch and tile reuse toward the measured winning shapes. |
+| RoPE and scalar GDN specialization | The hybrid already uses one RoPE kernel and fixed-width GDN. Goose EXP-1594/1595 restore the selection and register residency. | No demonstrated hybrid gain from these replacements. Hybrid scalar GDN remains faster in the trace. |
+| GDN MMA, SSM and graph fusion | Hybrid already selects specialized GDN, fused long SSM SiLU and host-proven fusions. Long SSM ties in the trace. | Test only a measured missing fusion at identical tensor layouts. A wholesale Goose kernel swap would regress the measured GDN path. |
+| Shared query packing for long vector Attention | `fattn-vec.cuh` quantizes the query in each partition block. Goose EXP-1582 shares prepacked rows. The hybrid uses fewer partitions and its current combined device path is faster. | Candidate within hybrid CUDA: compare the same Q8_1 bits, remove repeat packing and measure merge/grids and graph replay. No hybrid transfer gain yet measured. |
+| Compact expert mapping, shared activation rows, norm/weighted fusion | Hybrid groups on-device with `mm_ids_helper`, has fused top-K and weighted expert reduction. Goose builds compact host jobs with bank offsets. | Do not add a second mapping path. Quantify reuse in the active hybrid specialization before moving host-side grouping. |
+| Pinned mmap, async copies, overlap and pinned pageable staging | Both use host pinning and async paths. Hybrid whole trace has 136.880 GB pinned H2D and only 1.387 GB pageable H2D (0.138 s device copy time). | A hybrid ring has a small measured device interval to target. Establish exposed pageable wait before implementation. |
+| Small async descriptors, by-value GDN arguments and graph replay | Hybrid already uses kernel parameters, async copies and broad CUDA Graph replay. Standalone still uploads 809,607 small packets in this decode profile. | These are forward-transfer priorities for Goose. Copying the narrower Goose path offers no demonstrated hybrid advantage. |
+| Lazy KV VMM and residency budgeting | The two live KV footprints are both 200 MiB. Goose uses a separate context-growth reserve and can use its smaller working arena for more expert slots. | The higher-cache profile is measured separately. KV mapping itself is already live in both. |
+| Activation lifetime, scratch and reduced prefill publications | Goose tracks 872.409 MiB less device workspace and records 0.043 GB versus 1.441 GB prefill D2H. | Highest memory-port opportunity. First attribute hybrid peaks to live tensors and track consumers across graph splits. EXP-1559 tested only an arena threshold and changed zero allocations. No hybrid lifetime-allocator port has been measured. |
+
+Keep full CPU/GPU recordings after significant prefill/decode
+changes or when the bottleneck moves. Enable `APEX_CPU_PROFILE=1`
+and `APEX_SAMPLE_MEMORY=1` for diagnostic captures. For ordinary
+performance pairs enable only the memory sampler. The emitted
+Goose device image also assembles with `ptxas -arch=sm_86`.
+Only the RTX 4070 is executed and timed in these experiments.
+
 ## Comparisons and timing boundaries
 
 The reference is the preserved EXP-1476 executable from

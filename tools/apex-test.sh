@@ -19,6 +19,8 @@
 #   bash tools/apex-test.sh <tag> [len] [b] [ub] [cache]
 # Set APEX_GOOSE_BIN to capture an independent frankenmoe-infer execution.
 # APEX_RUN_ROOT optionally selects the directory for run artifacts.
+# APEX_CPU_PROFILE=1 records gprofng clock stacks with request boundary marks.
+# APEX_SAMPLE_MEMORY=1 samples server RAM and GPU memory throughout the run.
 #
 # Readiness knobs (do not change the Apex profile):
 #   APEX_READY_MAX=900    hard cap, seconds
@@ -48,6 +50,10 @@ echo "[$(date +%H:%M:%S)] lock acquired" | tee -a "${RUNDIR}/run.log"
 
 cleanup() {
     local rc=$?
+    if [ -n "${MEMORY_PID:-}" ]; then
+        kill -TERM "$MEMORY_PID" 2>/dev/null || true
+        wait "$MEMORY_PID" || true
+    fi
     if [ -n "${SRV_PID:-}" ]; then
         # Only the process group this script created. Never a global kill by name.
         kill -TERM -- "-${SRV_PID}" 2>/dev/null || true
@@ -106,10 +112,16 @@ ENDPOINT=${APEX_ENDPOINT:-completion}
 SLOT_DIR=${APEX_SLOT_STATE_DIR:-}
 SLOT_SAVE=${APEX_SLOT_SAVE:-}
 SLOT_RESTORE=${APEX_SLOT_RESTORE:-}
+CPU_PROFILE=${APEX_CPU_PROFILE:-0}
 [[ "$ENDPOINT" = completion || "$ENDPOINT" = v1/chat/completions ]] || exit 2
 [[ "$REQUEST_COUNT" =~ ^[1-9][0-9]*$ ]] || exit 2
 [[ "$PORT" = 9101 ]] || { echo "Apex requires port 9101"; exit 2; }
 [[ -x "$SRV" && -f "$REQUEST" ]] || { echo "missing server or request"; exit 2; }
+COLLECTOR=()
+if [ "$CPU_PROFILE" = 1 ]; then
+    command -v gprofng >/dev/null || { echo 'APEX_CPU_PROFILE requires gprofng'; exit 2; }
+    COLLECTOR=(gprofng collect app -F off -a off -p 2 -l SIGUSR2 -o "${RUNDIR}/cpu.er")
+fi
 if [ -n "$SLOT_DIR$SLOT_SAVE$SLOT_RESTORE" ]; then
     [[ -d "$SLOT_DIR" && -n "$SLOT_SAVE$SLOT_RESTORE" && "$ENDPOINT" == completion ]] || {
         echo 'slot checks require a state directory, save or restore filename, and /completion'
@@ -191,11 +203,16 @@ cat /proc/vmstat > "${RUNDIR}/vmstat-prelaunch.txt"
 cat /proc/meminfo > "${RUNDIR}/meminfo-prelaunch.txt"
 
 # 5. own process group: setsid, so the group id is the server's pid and only it is terminated.
-setsid env LD_PRELOAD="$PRELOAD" "${SRV}" "${ARGS[@]}" \
+setsid env LD_PRELOAD="$PRELOAD" "${COLLECTOR[@]}" "${SRV}" "${ARGS[@]}" \
     > "${RUNDIR}/server.log" 2>&1 &
 SRV_PID=$!
 printf '%s\n' "$SRV_PID" > "${RUNDIR}/pid.txt"
 echo "[$(date +%H:%M:%S)] server pid ${SRV_PID} (own process group)" | tee -a "${RUNDIR}/run.log"
+if [ "${APEX_SAMPLE_MEMORY:-0}" = 1 ]; then
+    python3 "$ROOT/tools/apex-memory.py" "$SRV_PID" > "${RUNDIR}/memory.jsonl" \
+        2> "${RUNDIR}/memory-errors.txt" &
+    MEMORY_PID=$!
+fi
 
 # Readiness is progress-based, not a fixed count: a slow but progressing load is
 # waited for, a load that stops making progress is not mistaken for OOM and is
@@ -271,6 +288,8 @@ if ! grep -F "pid=${SRV_PID}," "${RUNDIR}/listener.txt" >/dev/null; then
 fi
 cat "/proc/${SRV_PID}/maps" > "${RUNDIR}/maps.txt"
 cat "/proc/${SRV_PID}/status" > "${RUNDIR}/status-ready.txt"
+tr '\0' '\n' < "/proc/${SRV_PID}/cmdline" > "${RUNDIR}/cmdline.txt"
+readlink "/proc/${SRV_PID}/exe" > "${RUNDIR}/exe.txt"
 if [ -n "$GOOSE_BIN" ]; then
     curl -fsS -m 5 "http://127.0.0.1:${PORT}/props" -o "${RUNDIR}/props-ready.json"
 fi
@@ -279,6 +298,9 @@ cat /proc/meminfo > "${RUNDIR}/meminfo-ready.txt"
 nvidia-smi --query-gpu=memory.used,memory.total --format=csv,noheader > "${RUNDIR}/vram-ready.txt"
 nvidia-smi --query-compute-apps=pid,used_memory --format=csv,noheader |
     awk -F, -v pid="$SRV_PID" '$1+0 == pid' > "${RUNDIR}/vram-process-ready.txt"
+if [ "$CPU_PROFILE" = 1 ]; then
+    kill -USR2 "$SRV_PID"
+fi
 if [ -n "$SLOT_DIR" ]; then
     python3 "$ROOT/tests/kv/slot-state/probe.py" "$PORT" "$RUNDIR" "$SLOT_DIR" "$SLOT_SAVE" "$SLOT_RESTORE" \
         | tee "$RUNDIR/summary.txt"
@@ -298,6 +320,9 @@ PY
         fi
     done
 fi
+if [ "$CPU_PROFILE" = 1 ]; then
+    kill -USR2 "$SRV_PID"
+fi
 cat "/proc/${SRV_PID}/status" > "${RUNDIR}/status-after.txt"
 cat "/proc/${SRV_PID}/maps" > "${RUNDIR}/maps-after.txt"
 if [ -n "$GOOSE_BIN" ]; then
@@ -308,6 +333,12 @@ cat /proc/meminfo > "${RUNDIR}/meminfo-after.txt"
 nvidia-smi --query-gpu=memory.used,memory.total --format=csv,noheader > "${RUNDIR}/vram-after.txt"
 nvidia-smi --query-compute-apps=pid,used_memory --format=csv,noheader |
     awk -F, -v pid="$SRV_PID" '$1+0 == pid' > "${RUNDIR}/vram-process-after.txt"
+if [ -n "${MEMORY_PID:-}" ]; then
+    kill -TERM "$MEMORY_PID" 2>/dev/null || true
+    wait "$MEMORY_PID"
+    MEMORY_PID=
+    [[ -s "${RUNDIR}/memory.jsonl" ]] || { echo 'Apex memory samples missing'; exit 5; }
+fi
 
 if [ -n "$SLOT_DIR" ]; then
     exit 0
