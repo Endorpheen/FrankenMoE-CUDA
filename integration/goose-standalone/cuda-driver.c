@@ -5,6 +5,7 @@
 #include <inttypes.h>
 #include <limits.h>
 #include <pthread.h>
+#include <sched.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -146,6 +147,50 @@ struct expert_host_ring {
     size_t index, used;
     bool enabled;
 };
+
+struct expert_copy_task {
+    const struct expert_upload_job * jobs;
+    size_t count;
+    uint8_t * destination;
+};
+
+static struct {
+    pthread_mutex_t lock;
+    pthread_cond_t ready, done;
+    pthread_t thread;
+    struct expert_copy_task task;
+    bool running, stop;
+} expert_copy_worker = {
+    .lock = PTHREAD_MUTEX_INITIALIZER,
+    .ready = PTHREAD_COND_INITIALIZER,
+    .done = PTHREAD_COND_INITIALIZER,
+};
+
+static void copy_expert_payloads(struct expert_copy_task task) {
+    for (size_t i = 0; i < task.count; ++i) {
+        memcpy(task.destination, task.jobs[i].source, task.jobs[i].bytes);
+        task.destination += task.jobs[i].bytes;
+    }
+}
+
+static void * copy_expert_worker_main(void * unused) {
+    (void) unused;
+    pthread_mutex_lock(&expert_copy_worker.lock);
+    while (!expert_copy_worker.stop) {
+        if (expert_copy_worker.task.count == 0) {
+            pthread_cond_wait(&expert_copy_worker.ready, &expert_copy_worker.lock);
+            continue;
+        }
+        const struct expert_copy_task task = expert_copy_worker.task;
+        pthread_mutex_unlock(&expert_copy_worker.lock);
+        copy_expert_payloads(task);
+        pthread_mutex_lock(&expert_copy_worker.lock);
+        expert_copy_worker.task.count = 0;
+        pthread_cond_signal(&expert_copy_worker.done);
+    }
+    pthread_mutex_unlock(&expert_copy_worker.lock);
+    return NULL;
+}
 
 static struct {
     void * library;
@@ -291,6 +336,7 @@ static _Thread_local struct {
     uint64_t hits, skipped_download_bytes, expired_bytes;
     uint64_t shared_pack_reuses, dense_pack_reuses, flat_vectors, flat4_vectors, q4_prepared, q4_pipelined, q6_pipelined;
     uint64_t q6_routed_pipelined;
+    uint64_t expert_parallel_batches;
     size_t packet_used;
 } activations;
 
@@ -870,6 +916,14 @@ static void release_flash_graph(void) {
 
 static void release_expert_stream(void) {
     struct expert_host_ring * ring = &cuda.expert_host;
+    if (expert_copy_worker.running) {
+        pthread_mutex_lock(&expert_copy_worker.lock);
+        expert_copy_worker.stop = true;
+        pthread_cond_signal(&expert_copy_worker.ready);
+        pthread_mutex_unlock(&expert_copy_worker.lock);
+        pthread_join(expert_copy_worker.thread, NULL);
+        expert_copy_worker.running = false;
+    }
     for (size_t i = 0; i < EXPERT_HOST_SLOTS; ++i) {
         if (ring->ready[i]) cuda.event_destroy(ring->ready[i]);
     }
@@ -904,6 +958,11 @@ static void init_expert_stream(void) {
         cuda.event_sync = dlsym(cuda.library, "cuEventSynchronize");
         cuda.expert_host.enabled = cuda.event_sync != NULL;
         cuda.expert_prefill_staging = fg_standalone_option_enabled("GOOSE_CUDA_EXPERT_STAGE_CURRENT");
+        cpu_set_t affinity;
+        if (cuda.expert_host.enabled && fg_standalone_option_enabled("GOOSE_CUDA_EXPERT_PARALLEL_COPY") &&
+            sched_getaffinity(0, sizeof affinity, &affinity) == 0 && CPU_COUNT(&affinity) > 1) {
+            expert_copy_worker.running = pthread_create(&expert_copy_worker.thread, NULL, copy_expert_worker_main, NULL) == 0;
+        }
     }
 }
 
@@ -1421,6 +1480,7 @@ int fg_cuda_activation_graph_begin(bool planned) {
     activations.q4_pipelined = 0;
     activations.q6_pipelined = 0;
     activations.q6_routed_pipelined = 0;
+    activations.expert_parallel_batches = 0;
     activations.unavailable = false;
     activations.defer_waits = planned && fg_standalone_option_enabled("GOOSE_CUDA_DEFER_WAITS");
     activations.retire = fg_standalone_option_enabled("GOOSE_ACTIVATION_LIFETIMES");
@@ -1508,6 +1568,9 @@ int fg_cuda_activation_graph_end(bool success, bool all, uint64_t host, int64_t 
     }
     if (activations.q6_routed_pipelined && getenv("GOOSE_MMQ_SHARED_REUSE_REPORT")) {
         fprintf(stderr, "Goose CUDA MMQ: pipelined %" PRIu64 " routed Q6_K launches\n", activations.q6_routed_pipelined);
+    }
+    if (activations.expert_parallel_batches && getenv("GOOSE_MMQ_SHARED_REUSE_REPORT")) {
+        fprintf(stderr, "Goose CUDA: prepared %" PRIu64 " expert batches in parallel\n", activations.expert_parallel_batches);
     }
     if (activations.flat_vectors && getenv("GOOSE_CUDA_VECTOR_FLAT_REPORT")) {
         fprintf(stderr, "Goose CUDA vector: %" PRIu64 " flat launches, %" PRIu64 " using float4\n",
@@ -2269,19 +2332,50 @@ static int seal_expert_host_slot(Stream stream) {
     return error;
 }
 
-static int submit_pageable_expert(const struct expert_upload_job * job, Stream stream) {
+static int reserve_expert_host_slot(size_t bytes, Stream stream, uint8_t ** storage) {
     struct expert_host_ring * ring = &cuda.expert_host;
     int error = 0;
-    if (job->bytes > EXPERT_HOST_SLOT_BYTES - ring->used) error = seal_expert_host_slot(stream);
+    if (bytes > EXPERT_HOST_SLOT_BYTES - ring->used) error = seal_expert_host_slot(stream);
     if (error == 0 && ring->busy[ring->index]) {
         error = cuda.event_sync(ring->ready[ring->index]);
         if (error == 0) ring->busy[ring->index] = false;
     }
     if (error != 0) return error;
-    uint8_t * storage = ring->storage + ring->index * EXPERT_HOST_SLOT_BYTES + ring->used;
+    *storage = ring->storage + ring->index * EXPERT_HOST_SLOT_BYTES + ring->used;
+    ring->used += bytes;
+    return 0;
+}
+
+static int submit_pageable_expert(const struct expert_upload_job * job, Stream stream) {
+    uint8_t * storage;
+    const int error = reserve_expert_host_slot(job->bytes, stream, &storage);
+    if (error != 0) return error;
     memcpy(storage, job->source, job->bytes);
-    ring->used += job->bytes;
     return cuda.upload_async(job->destination, storage, job->bytes, stream);
+}
+
+static int submit_parallel_experts(const struct expert_upload_job * jobs, size_t count, size_t bytes) {
+    uint8_t * storage;
+    int error = reserve_expert_host_slot(bytes, cuda.expert_stream, &storage);
+    if (error != 0) return error;
+    size_t split = 0, first_bytes = 0;
+    while (split + 1 < count && first_bytes < bytes / 2) {
+        first_bytes += jobs[split++].bytes;
+    }
+    pthread_mutex_lock(&expert_copy_worker.lock);
+    expert_copy_worker.task = (struct expert_copy_task) {jobs, split, storage};
+    pthread_cond_signal(&expert_copy_worker.ready);
+    pthread_mutex_unlock(&expert_copy_worker.lock);
+    copy_expert_payloads((struct expert_copy_task) {jobs + split, count - split, storage + first_bytes});
+    pthread_mutex_lock(&expert_copy_worker.lock);
+    while (expert_copy_worker.task.count != 0) pthread_cond_wait(&expert_copy_worker.done, &expert_copy_worker.lock);
+    pthread_mutex_unlock(&expert_copy_worker.lock);
+    for (size_t i = 0; error == 0 && i < count; ++i) {
+        error = cuda.upload_async(jobs[i].destination, storage, jobs[i].bytes, cuda.expert_stream);
+        storage += jobs[i].bytes;
+    }
+    if (error == 0) ++activations.expert_parallel_batches;
+    return error;
 }
 
 static int submit_expert_stage(void) {
@@ -2289,11 +2383,23 @@ static int submit_expert_stage(void) {
     // Existing readers release cache slots before this stream writes them.
     // Consumers wait on the recorded completion event.
     int status = cuda.stream_wait_event(cuda.expert_stream, cuda.expert_slots_ready, 0);
-    for (size_t i = 0; status == 0 && i < cuda.expert_upload_count; ++i) {
+    const bool parallel = expert_copy_worker.running && cuda.expert_upload_count >= 32;
+    for (size_t i = 0; status == 0 && i < cuda.expert_upload_count;) {
         const struct expert_upload_job * job = &cuda.expert_upload_jobs[i];
         activations.pending = true;
-        status = job->pageable ? submit_pageable_expert(job, cuda.expert_stream) :
-            cuda.upload_async(job->destination, job->source, job->bytes, cuda.expert_stream);
+        size_t count = 0, bytes = 0;
+        if (parallel && job->pageable) {
+            while (i + count < cuda.expert_upload_count && job[count].pageable &&
+                job[count].bytes <= EXPERT_HOST_SLOT_BYTES - bytes) bytes += job[count++].bytes;
+        }
+        if (count >= 4) {
+            status = submit_parallel_experts(job, count, bytes);
+            i += count;
+        } else {
+            status = job->pageable ? submit_pageable_expert(job, cuda.expert_stream) :
+                cuda.upload_async(job->destination, job->source, job->bytes, cuda.expert_stream);
+            ++i;
+        }
     }
     if (status == 0) status = seal_expert_host_slot(cuda.expert_stream);
     if (status == 0) status = cuda.event_record(cuda.expert_uploads_ready, cuda.expert_stream);

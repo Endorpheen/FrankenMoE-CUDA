@@ -58,6 +58,57 @@ the next target after the current MMQ work.
 The trace and analysis are in
 `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/profile-exp1647`.
 
+## EXP-1654 — Prepare deferred expert copies in parallel
+
+Use one helper for groups of at least four pageable
+transfers in the deferred expert wave. It fills a
+disjoint part of the existing pinned slot while the
+submitter fills the rest. Both parts finish before the
+submitter issues the transfers in their original order.
+The CUDA events, pinned budget, and SLRU placement stay
+the same. Set `GOOSE_CUDA_EXPERT_PARALLEL_COPY=0` for
+serial host preparation.
+
+The short warmed Apex 4096/2 pair reduced prefill from
+2,810.863 to 2,768.716 ms. The full warmed pair follows.
+
+| Apex 32,768/512, 4096/4096 | EXP-1652 control | EXP-1654 | Candidate minus control |
+|---|---:|---:|---:|
+| Prefill, ms | 21,402.701 | 21,370.448 | -32.253 |
+| Prefill, tok/s | 1,531.02 | **1,533.33** | +2.31 |
+| Decode, ms | 14,318.492 | 14,401.868 | +83.376 |
+| Decode, tok/s | 35.69 | 35.48 | -0.21 |
+| Prefill plus decode, ms | 35,721.193 | 35,772.315 | +51.123 |
+| Peak process RSS, KiB | 21,483,900 | 21,484,972 | +1,072 |
+| Peak process VRAM, MiB | 8,220 | 8,220 | 0 |
+| Process swap and system swap-out growth | 0 / 0 | 0 / 0 | 0 / 0 |
+
+All 512 IDs, probabilities, response, and SLRU match.
+The model remains fully resident. The measured prefill
+best advances to 1,533.33 tok/s. The prefill gain is small
+and the combined request took 51 ms longer in this pair.
+Keep the cumulative experimental prefill checkpoint and
+the earlier EXP-1652 binary for rollback.
+
+Separate warmed CUDA/NVTX captures use the same request,
+boundaries, and 114,494 prefill memcpy calls. The times
+below use interval unions across both host threads.
+Expert preparation and its memcpy subranges overlap.
+
+| Profiled prefill interval, ms | Serial capture | Parallel capture | Difference |
+|---|---:|---:|---:|
+| Prefill window | 22,467.534 | 21,529.656 | -937.878 |
+| GPU idle | 3,155.189 | 2,410.825 | -744.364 |
+| GPU idle during CPU memcpy into pinned ring | 1,875.505 | 1,272.788 | -602.717 |
+| GPU idle during ring-slot waits | 3.309 | 1.771 | -1.539 |
+
+The NVTX captures show a reduction in exposed host copy
+time. Use the unprofiled pair for end-to-end timings.
+The response and SLRU also match in the diagnostic
+capture. Artifacts, including the measured executable,
+are in
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/expert-parallel-exp1654`.
+
 ## EXP-1652 — Pipeline routed Q6_K projections
 
 Use the existing 128 × 128 half-K computation for wide
