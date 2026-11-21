@@ -59,6 +59,7 @@ the dependency that would justify rerunning it.
 | EXP-1607, direct single-route MMVQ addresses | [Same-binary A–B–B–A](#single-route-mmvq-address-parameters) saves 237 ms median decode and preserves the exact response. | Prefill takes 261 ms longer in this series, combined time stays essentially flat and process VRAM increases by 2 MiB. | Keep the patch and repeat with an isolated decode selector or a single parameter ABI that shares the existing CUDA entry. Reuse the counterpart fixture and verify real-device timing before enabling. |
 | EXP-1608, Flash Attention Stream-K on EXP-1603 | [Isolated selector recheck](#flash-attention-stream-k-on-the-exp-1603-checkpoint) uses one binary and batch/ubatch 4096/4096. | The clean pair adds 92 ms to the combined request. Both candidate responses mistake a conditional capacity statement for observed queue growth. | Keep whole-tile Attention. Recheck a scheduling change that preserves the whole-tile result and supports the traced long-context geometry. |
 | EXP-1610, vector stores for causal masks | [CUDA and Apex pairs](#vector-stores-for-causal-masks) save 1.35 and 7.31 ms in an isolated long tile. | Both full pairs preserve exact replies. Their total latency changes in opposite directions. | Retain the patch. Recheck with a prefill kernel that eliminates shared-mask reads on fully visible tiles. |
+| EXP-1611, dense Q4_K 32-by-128 MMQ | [Live Apex event measurements](#dense-q4_k-32-by-128-mmq-tiles) save 1.002 s across 2,000 launches and halve the block count. | The unprofiled request does not improve. The event runs synchronize each timed tile and therefore change overlap. | Preserve the 32-row path. Re-evaluate alongside measured scheduling changes or profile with queued events that keep the full dependency order. |
 
 After a material dependency change, use short sequential A/B runs on
 identical inputs and settings. Use the best current verified checkpoint
@@ -4162,6 +4163,58 @@ decode takes 86 ms longer. The isolated tile speedup does not
 qualify this as a runtime default. Keep the baseline and
 preserve the patch, binary, fixtures, traces and full runs in
 `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/flash-mask-exp1610`.
+
+## Dense Q4_K 32-by-128 MMQ tiles
+
+EXP-2026-11-21-1611 reuses two packed Q8_1 words across
+adjacent 16-row Q4_K fragments. The 32-row tile preserves
+128-row reference partition boundaries, the K traversal,
+the reverse partial fixup order and the original 16 MiB
+packing window. It only replaces eligible SM89 dense Q4_K
+16-by-128 launches. Routed, Q6_K, and incomplete column
+geometry keep their established paths.
+
+The dense 4,092-column tail, Q6_K and the two complete Q4_K
+shapes match across 42,991,104 FP32 values. Memcheck reports
+zero errors on the multi-window Q4_K tail. SM89 offline
+assembly uses 168 registers and 10,240 shared bytes for
+32-by-128, versus 126 and 5,120 for the same-build 16-by-128
+control, with zero spills in both. The short fixture kernel
+medians average 3.066 to 2.572 ms at 2,048 output rows and
+12.063 to 10.173 ms at 8,192 rows, with 4,096 columns and
+contraction 2,048. Both pairs favor the candidate.
+
+| Unprofiled Apex 32K/512, 4096/4096, 5,920 MiB | EXP-1603 A1 / A2 | 32 rows B1 / B2 |
+|---|---:|---:|
+| Prefill, tok/s | 1150.379 / 1145.949 | 1150.593 / 1131.970 |
+| Decode, steps/s | 32.591 / 32.294 | 32.410 / 32.118 |
+| Prefill plus decode, s | 44.164 / 44.418 | 44.246 / 44.858 |
+| Peak process VRAM, MiB | 8200 / 8200 | 8202 / 8202 |
+| RSS high-water, KiB | 21480636 / 21480804 | 21481580 / 21479892 |
+| Process swap and system swap-out growth | 0 / 0 | 0 / 0 |
+
+All four replies, IDs, probabilities and expert transfer
+counters match. The combined request takes 82 and 440 ms
+longer in the two clean pairs. Keep the EXP-1603 checkpoint.
+
+The separate diagnostic build records CUDA events around
+each eligible launch and synchronizes the end event. Both
+arms have 2,000 timed launches and no increase in system
+swap-out. The selector changes the CTA sum from 8,078,400
+to 4,039,200 and the measured device interval sum from
+6,053.033 to 5,050.837 ms. All ten observed shape groups
+favor the 32-row tile. The three largest groups by
+control time are 8,192 × 2,048 (2,006.390 to 1,669.628 ms),
+2,048 × 4,096 (1,573.956 to 1,316.476 ms), and
+4,096 × 2,048 (1,159.145 to 969.430 ms), all at 4,096
+prompt columns. This confirms live dispatch and the
+kernel gain under synchronous profiling. The extra waits
+alter the schedule, so those intervals cannot establish
+the source of the unprofiled request difference.
+
+The selectable patch, exact event-probe source, binaries,
+fixture traces and raw Apex runs are stored in
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/mmq-m32-exp1611`.
 
 ## Long Attention partition probe
 
