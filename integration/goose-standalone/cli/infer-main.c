@@ -1,5 +1,6 @@
 #include "goose-host-llm.h"
 #include "goose-host.h"
+#include "graph-execute.h"
 #include "main.h"
 
 #include <errno.h>
@@ -33,6 +34,7 @@ void fg_http_stats(sl_i64 stats) {
     if (stats.len >= 15) hose_prefill_profile(stats.data + 13);
     if (stats.len >= 21) fg_cuda_expert_stats((sl_i64) { stats.data + 15, 6 });
     if (stats.len >= 22) stats.data[21] = hose_expert_cache_limit();
+    if (stats.len >= 23) stats.data[22] = fg_standalone_cpu_batch_threads();
 }
 
 void fg_http_listening(int64_t port) {
@@ -75,6 +77,7 @@ int main(int argc, char ** argv) {
     int64_t context = HOSE_DEFAULT_CONTEXT;
     int64_t batch = HOSE_DEFAULT_PREFILL_BATCH;
     int64_t ubatch = 0;
+    int64_t batch_threads = 1;
     while (argc >= 2) {
         if (strcmp(argv[1], "--cache-type-k") == 0 || strcmp(argv[1], "--cache-type-v") == 0) {
             if (argc < 3 || strcmp(argv[2], "q4_0") != 0) {
@@ -98,6 +101,7 @@ int main(int argc, char ** argv) {
         if (strcmp(argv[1], "--ctx-size") == 0) value = &context;
         if (strcmp(argv[1], "--batch-size") == 0) value = &batch;
         if (strcmp(argv[1], "--ubatch-size") == 0) value = &ubatch;
+        if (strcmp(argv[1], "--threads-batch") == 0) value = &batch_threads;
         if (!value) break;
         if (argc < 3 || (*value = positive_integer(argv[2])) <= 0) {
             fprintf(stderr, "%s requires a positive integer\n", argv[1]);
@@ -115,13 +119,17 @@ int main(int argc, char ** argv) {
         fputs("require 1 <= --ubatch-size <= --batch-size <= 4096\n", stderr);
         return 2;
     }
+    if (batch_threads > 1 && fg_standalone_configure_cpu_batch(batch_threads) != 0) {
+        fputs("--threads-batch exceeds the available Goose worker capacity\n", stderr);
+        return 2;
+    }
     const int server_mode = argc >= 3 && strcmp(argv[2], "--serve") == 0;
     if (server_mode && (argc == 4 || argc == 5)) {
         return serve(argv[1], positive_integer(argv[3]), argc == 5 ? positive_integer(argv[4]) : 0, context);
     }
     if (server_mode || (argc != 3 && argc != 4)) {
         fputs("options: --ctx-size N --batch-size N --ubatch-size N --cache-type-k q4_0 "
-              "--cache-type-v q4_0 --expert-cache-mib N\n", stderr);
+              "--cache-type-v q4_0 --expert-cache-mib N --threads-batch N\n", stderr);
         fprintf(stderr, "usage: %s [OPTIONS] MODEL.gguf PROMPT [MAX_TOKENS]\n", program);
         fprintf(stderr, "       %s [OPTIONS] MODEL.gguf --serve PORT [MAX_CONNECTIONS]\n", program);
         return 2;

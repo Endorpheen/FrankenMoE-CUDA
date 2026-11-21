@@ -13,3 +13,5 @@ enum ggml_status fg_standalone_graph_plan_compute(struct fg_standalone_graph_pla
 enum ggml_status fg_standalone_graph_compute(struct ggml_cgraph * graph);
 // Only the selected graph output needs to be visible to the host.
 enum ggml_status fg_standalone_graph_compute_output(struct ggml_cgraph * graph, const struct ggml_tensor * output);
+int64_t fg_standalone_configure_cpu_batch(int64_t threads);
+int64_t fg_standalone_cpu_batch_threads(void);

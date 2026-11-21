@@ -46,7 +46,8 @@ def complete(port, options):
 
 def check(binary, fixture):
     for flag, value in (("--cache-type-k", "f16"), ("--cache-type-v", "q8_0"),
-                        ("--expert-cache-mib", "0"), ("--expert-cache-mib", str(1 << 43))):
+                        ("--expert-cache-mib", "0"), ("--expert-cache-mib", str(1 << 43)),
+                        ("--threads-batch", "0"), ("--threads-batch", str(1 << 31))):
         invalid = subprocess.run([binary, flag, value, fixture, "ab"], capture_output=True, text=True)
         assert invalid.returncode == 2 and flag in invalid.stderr, invalid
 
@@ -73,6 +74,7 @@ def check(binary, fixture):
             assert status == 200 and props["n_vocab"] == 4 and props["n_layer"] == 2
             assert props["n_ctx"] == 262144
             assert props["n_batch"] == props["n_ubatch"] == 128
+            assert props["n_threads_batch"] == 1
             assert props["cache_type_k"] == props["cache_type_v"] == "q4_0"
             assert props["cuda_expert_cache_limit_bytes"] == 4992 * 1024 * 1024
             assert exchange(port, post(2, "text/plain"), b"ab") == (

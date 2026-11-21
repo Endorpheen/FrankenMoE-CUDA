@@ -133,6 +133,59 @@ Profiled CUDA module loading is 8.913 ms in Goose and
 13.939 ms across four library loads in EXP-1476. Build
 and module initialization costs are outside steady decode.
 
+### CPU batch workers for quantized row gather
+
+EXP-1590 times the CPU arithmetic branch of the regular
+graph nodes after input materialization. At 32K/512 the
+instrumented run records nine prefill `GET_ROWS` calls
+and 67,108,864 FP32 results in 2.655 s of thread CPU
+time. Decode gather takes 0.042 s across 511 calls.
+The scope excludes CUDA dispatch, synchronization and
+other CPU code outside the regular-node arithmetic branch.
+The diagnostic reproduces the matched-tail response.
+
+The standalone selector `--threads-batch N` now executes
+dense Q4_K/Q6_K row gathers on scoped Goose workers.
+The coordinator materializes the inputs in the graph
+thread. Each worker uses the existing Goose row decoder
+and writes its own output range. The C adapter copies one
+packed input row and one output row at a time through the
+foreign buffers. CUDA launches and activation state keep
+their original owner. The option defaults to one. The
+capture runner can set it with `APEX_GOOSE_THREADS_BATCH`.
+
+The CPU fixture checks all 8,382,464 values per weight
+type with 1, 3 and 16 threads across 4,093 rows. It
+matches bitwise and rejects an out-of-range token ID
+with a failed graph result. The HTTP suite verifies
+36 requests and rejects invalid worker counts. A short
+Apex trace logs one 4,092-row gather on 16 threads.
+
+| Unprofiled Apex 32K/512, 4096/4096, A–B–B–A | 1 thread A | 16 threads B |
+|---|---:|---:|
+| A–B prefill, tok/s | 1,017.030 | 1,122.879 |
+| B–A prefill, tok/s | 1,023.286 | 1,132.302 |
+| Median prefill, tok/s | 1,020.158 | 1,127.590 |
+| Median prefill, s | 32.121 | 29.061 |
+| Median decode, steps/s | 26.907 | 26.995 |
+| Process VRAM after request, MiB | 7,272 | 7,272 |
+| Process RSS high-water range, KiB | 22,947,728–22,948,244 | 22,952,480–22,954,504 |
+| System swap-out, A–B, pages | 0 | 806 |
+| Process swap and reverse-pair system swap-out | 0 | 0 |
+
+Prefill saves 3.037 and 3.083 s in the two pairs. All
+four responses, token and probability records, expert
+cache counters and 5,301,139 resident pages agree.
+The clean reverse pair confirms the prefill gain.
+The gather work for individual decode tokens stays
+serial. The results qualify the batch gather workers.
+The complete CPU affinity and decode profile remains open.
+
+The binary, raw captures and fixtures are under
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/batch-workers-exp1590`.
+Executable SHA-256
+`5d3afdef0ad9caab975b010a2f055f343cbb5f9c9908fcf325803a8aa9c177b7`.
+
 ## Historical optimization ledger
 
 The ledger follows the Apex optimization line from EXP-090

@@ -47,6 +47,7 @@ extern int fg_cuda_activation_graph_end(bool success, bool all, uint64_t host, i
 
 static pthread_once_t cpu_init = PTHREAD_ONCE_INIT;
 static atomic_uint_fast64_t cpu_values;
+static atomic_int_fast64_t cpu_batch_threads = 1;
 
 struct numerical_checkpoint {
     FILE * data;
@@ -61,6 +62,38 @@ static _Thread_local struct numerical_checkpoint * checkpoint;
 static void init_cpu(void) {
     fg_goose_host_ensure_init();
     fg143_cpu_init(0, NULL);
+}
+
+int64_t fg_standalone_configure_cpu_batch(int64_t threads) {
+    if (threads <= 0) return -1;
+    pthread_once(&cpu_init, init_cpu);
+    if (!fg143_cpu_batch_supported(threads)) return -1;
+    atomic_store_explicit(&cpu_batch_threads, threads, memory_order_relaxed);
+    return 0;
+}
+
+int64_t fg_standalone_cpu_batch_threads(void) {
+    return atomic_load_explicit(&cpu_batch_threads, memory_order_relaxed);
+}
+
+int64_t fg143_gather_index(uint64_t address) {
+    int32_t value;
+    memcpy(&value, (const void *) (uintptr_t) address, sizeof value);
+    return value;
+}
+
+void fg143_gather_fetch(uint64_t address, sl_u8 row) {
+    memcpy(row.data, (const void *) (uintptr_t) address, (size_t) row.len);
+}
+
+void fg143_gather_store(uint64_t address, sl_f32 row) {
+    memcpy((void *) (uintptr_t) address, row.data, (size_t) row.len * sizeof(*row.data));
+}
+
+void fg143_gather_witness(int64_t rows, int64_t tasks) {
+    if (getenv("GOOSE_GRAPH_LOG")) {
+        fprintf(stderr, "Goose CPU GET_ROWS: %" PRId64 " rows over %" PRId64 " threads\n", rows, tasks);
+    }
 }
 
 uint32_t fg143_bits(float value) {

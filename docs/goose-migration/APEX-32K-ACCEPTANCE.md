@@ -27,10 +27,12 @@ Functional qualification runs before memory and speed acceptance.
    prefill batch/ubatch of 4096/4096, CPU thread/affinity settings and
    the 4,992 MiB expert-cache budget on both entry points. Record the
    effective configuration. Physical 4096/4096 now completes on real
-   Apex and is reported by `/props`. The CPU executor remains serial.
+   Apex and is reported by `/props`.
    The [explicit cache controls](#explicit-cache-profile) verify the
-   Q4_0 K/V format and the 4,992 MiB budget on real Apex. The CPU
-   thread and affinity profile still needs qualification. Treat
+   Q4_0 K/V format and the 4,992 MiB budget on real Apex.
+   [EXP-1590](APEX-PERFORMANCE-AUDIT.md#cpu-batch-workers-for-quantized-row-gather)
+   verifies 16 threads on the quantized prefill gather.
+   Decode thread scheduling and affinity still need qualification. Treat
    performance under a different effective profile as diagnostic.
    The frozen checkpointed reference evaluates the final 4,096
    prompt tokens in parts of 4,092 and 4. The

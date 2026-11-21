@@ -143,6 +143,9 @@ if [ -n "$GOOSE_BIN" ]; then
     if [ -n "${5:-}" ]; then
         ARGS+=(--expert-cache-mib "$CACHE")
     fi
+    if [ -n "${APEX_GOOSE_THREADS_BATCH:-}" ]; then
+        ARGS+=(--threads-batch "$APEX_GOOSE_THREADS_BATCH")
+    fi
     ARGS+=("$MODEL" --serve "$PORT")
     PRELOAD=
 else
