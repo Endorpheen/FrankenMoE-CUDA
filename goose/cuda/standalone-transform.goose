@@ -26,3 +26,19 @@ export fn fg_tensor_blit(x: u64, y: u64, dst: u64, cfg: u64, index: i64) {
     }
     blit_copy(input + (offset as u64), dst + ((4 * index) as u64));
 }
+
+export fn fg_tensor_transpose_concat(history: u64, projection: u64, dst: u64, cfg: u64,
+    bx: i64, by: i64, lane: i64, warp: i64, scratch: u64) {
+    let prefix = blit_word(cfg, 4);
+    let width = blit_word(cfg, 5);
+    let channels = blit_word(cfg, 6);
+    let input_pitch = blit_word(cfg, 13) / 4;
+    transpose_tile(projection, dst + ((4 * prefix) as u64), channels, width - prefix,
+        input_pitch, width, bx, by, lane, warp, scratch);
+    let channel = bx * 32 + lane;
+    if by == 0 && warp < prefix && channel < channels {
+        let from = (channel * blit_word(cfg, 10) + 4 * warp) as u64;
+        let into = (4 * (channel * width + warp)) as u64;
+        blit_copy(history + from, dst + into);
+    }
+}

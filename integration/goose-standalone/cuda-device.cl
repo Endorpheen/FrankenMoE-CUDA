@@ -613,6 +613,18 @@ static void fg_device_copy_u32(uint64_t src, uint64_t dst) {
     *(__global uint32_t *) dst = *(__global uint32_t *) src;
 }
 
+static float fg434c_ld_f32(uint64_t base, uint64_t offset) {
+    float value;
+    __asm__ volatile("ld.f32 %0, [%1];" : "=f"(value) : "l"(base + offset) : "memory");
+    return value;
+}
+
+static void fg434c_st_f32(uint64_t base, uint64_t offset, float value) {
+    __asm__ volatile("st.f32 [%0], %1;" :: "l"(base + offset), "f"(value) : "memory");
+}
+
+static void fg434c_sync(void) { fg_device_barrier(); }
+
 #include "transform-device.h"
 
 static float fg183f_ld_f32(uint64_t base, uint64_t byte) {
@@ -667,6 +679,19 @@ __kernel void goose_moe_weighted(__global const float * experts, __global const 
 __kernel void goose_tensor_blit(__global uint8_t * x, __global uint8_t * y,
     __global uint8_t * out, __global int64_t * cfg) {
     fg_tensor_blit_g((uint64_t) x, (uint64_t) y, (uint64_t) out, (uint64_t) cfg, position_thread());
+}
+
+__kernel void goose_tensor_transpose_concat(__global const uint8_t * x, __global const uint8_t * y,
+    __global uint8_t * out, __global const int64_t * cfg) {
+    __local float tile[32 * 33] __attribute__((aligned(16)));
+    uint32_t bx, by, thread;
+    uint64_t shared;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(bx));
+    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(by));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
+    __asm__("cvta.shared.u64 %0, %1;" : "=l"(shared) : "l"((uint64_t) tile));
+    fg_tensor_transpose_concat_g((uint64_t) x, (uint64_t) y, (uint64_t) out, (uint64_t) cfg,
+        bx, by, thread % 32, thread / 32, shared);
 }
 
 #ifdef GOOSE_CUDA_MMQ_IMAGE

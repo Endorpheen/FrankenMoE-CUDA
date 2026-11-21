@@ -216,7 +216,7 @@ static struct {
     Function flash_stream, flash_fixup_uniform, flash_fixup_general;
     Function rope_phases, rope_apply, ssm_conv, ssm_conv_decode, ssm_conv_long;
     Function rope_decode;
-    Function route_reduce, route_sort, route_topk, route_gather, route_norm, blit, fwht, moe_weighted;
+    Function route_reduce, route_sort, route_topk, route_gather, route_norm, blit, blit_transpose, fwht, moe_weighted;
     struct device_buffer input, output, weight, jobs;
     struct device_buffer mmq_packed, mmq_tiles, mmq_partials;
     struct device_buffer attention_value, attention_scratch, attention_config;
@@ -1279,6 +1279,8 @@ static void load_cuda(void) {
         if (error == 0) error = cuda.function_get(&cuda.route_gather, cuda.module, "goose_route_gather");
         if (error == 0) error = cuda.function_get(&cuda.route_norm, cuda.module, "goose_route_norm");
         if (error == 0) error = cuda.function_get(&cuda.blit, cuda.module, "goose_tensor_blit");
+        if (error == 0 && fg_standalone_option_enabled("GOOSE_CUDA_TILED_BLIT"))
+            (void) cuda.function_get(&cuda.blit_transpose, cuda.module, "goose_tensor_transpose_concat");
         if (error == 0) error = cuda.function_get(&cuda.fwht, cuda.module, "goose_kv_fwht");
         if (error == 0) error = cuda.function_get(&cuda.moe_weighted, cuda.module, "goose_moe_weighted");
         Context current = NULL;
@@ -3907,7 +3909,20 @@ int64_t fg_cuda_blit(sl_i64 config, sl_u8 x, sl_u8 y, sl_u8 out) {
     if (error == 0) error = upload_inputs(data, buffers, staged, sizeof(data) / sizeof(*data));
     if (error == 0) {
         void * args[] = {&staged[0], &staged[1], &dest, &staged[2]};
-        error = cuda.launch(cuda.blit, (unsigned) config.data[1], 1, 1, 128, 1, 1, 0, NULL, args, NULL);
+        const int64_t prefix = config.data[4], width = config.data[5], channels = config.data[6];
+        const bool tiled = cuda.blit_transpose && mode == 0 && config.data[3] == 0 &&
+            prefix > 0 && prefix <= 8 && width - prefix >= 32 && width - prefix <= 32ll * 65535 &&
+            channels >= 32 && channels <= INT_MAX && config.data[7] == 1 && config.data[8] == 1 &&
+            config.data[9] == 4 && config.data[10] >= 4 * prefix && config.data[10] % 4 == 0 &&
+            config.data[14] == 4 && config.data[13] >= 4 * channels && config.data[13] % 4 == 0;
+        if (tiled) {
+            error = cuda.launch(cuda.blit_transpose, (unsigned) ((channels + 31) / 32),
+                (unsigned) ((width - prefix + 31) / 32), 1, 256, 1, 1, 0, NULL, args, NULL);
+            if (error == 0 && getenv("GOOSE_GRAPH_LOG"))
+                fprintf(stderr, "Goose CUDA: tiled transpose concat\n");
+        } else {
+            error = cuda.launch(cuda.blit, (unsigned) config.data[1], 1, 1, 128, 1, 1, 0, NULL, args, NULL);
+        }
         if (error == 0) {
             error = mode == 2 ? finish_device_state_write() : activation_publish(host_out, out.len, dest, false);
         }

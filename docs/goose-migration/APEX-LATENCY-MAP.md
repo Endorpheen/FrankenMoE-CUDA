@@ -58,6 +58,68 @@ the next target after the current MMQ work.
 The trace and analysis are in
 `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/profile-exp1647`.
 
+## EXP-1659 — Tile the SSM input transpose and concatenation
+
+Reuse the existing 32 × 32 Goose transpose tile with a
+padded shared-memory stride. Coalesce reads from the
+time-major projection and writes into the channel-major
+SSM input. The first tile also writes the recurrent
+history into the reserved prefix. Other tensor
+transforms use their existing paths.
+Set `GOOSE_CUDA_TILED_BLIT=0` for the generic copy.
+
+The warmed 8,192-channel, 4,096-token fixture fell from
+15.853 to 14.539 ms including result readback. The
+33,579,008 output words and the 8,908 words in the
+ragged fixture matched independent expected words bit
+for bit. The Apex warm-up logs all 30 tiled operations.
+
+| Warmed Apex 32,768/512, 4096/4096 | EXP-1658 control | EXP-1659 | Candidate minus control |
+|---|---:|---:|---:|
+| Prefill, ms | 20,259.447 | 19,849.132 | -410.315 |
+| Prefill, tok/s | 1,617.42 | **1,650.85** | +33.43 |
+| Decode, ms | 14,581.781 | 14,363.047 | -218.733 |
+| Decode, tok/s | 35.04 | 35.58 | +0.53 |
+| Prefill plus decode, ms | 34,841.228 | 34,212.179 | -629.048 |
+| Peak process RSS, KiB | 21,484,232 | 21,484,100 | -132 |
+| Peak process VRAM, MiB | 8,220 | 8,220 | 0 |
+| Process swap and system swap-out growth | 0 / 0 | 0 / 0 | 0 / 0 |
+
+The response, all 512 IDs, probabilities, and SLRU
+match. All model pages are resident. The control
+reaches 1,617.42 tok/s, a fresh best for EXP-1658.
+EXP-1659 moves the observed prefill best to 1,650.85
+tok/s and is the new cumulative checkpoint.
+The decode difference is the observation from this
+pair. Keep EXP-1658 for rollback. Exact timings and
+hashes are in the [benchmark journal](../../benchmarks/experiment-history.jsonl).
+The binary and evidence are in
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/tiled-blit-exp1659`.
+
+### EXP-1658 profile before the tiled copy
+
+The warmed control profile matches all 512 IDs,
+probabilities, response, and SLRU. Capture decode graphs
+as a whole. There are 22,990 replays and their internal
+kernels are outside the per-kernel breakdown.
+
+| Prefill interval, ms | EXP-1658 trace |
+|---|---:|
+| Window | 20,680.014 |
+| MMQ exclusive | 6,130.475 |
+| Bulk H2D exclusive | 4,799.725 |
+| Device idle | 2,336.755 |
+| Flash Attention MMA exclusive | 2,051.005 |
+| GDN exclusive | 1,010.157 |
+| Tensor gather and blit exclusive | 492.628 |
+
+The 240 largest blit launches contribute 454.598 ms.
+Their element counts match the recurrent input's 8,192
+channels, a three-value history, and token counts of
+4,096 or 4,092. This profile selected the EXP-1659
+target. The trace is in
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/profile-exp1658`.
+
 ## EXP-1658 — Evaluate the causal Flash mask in registers
 
 The whole-tile eight-query Flash MMA path derives two

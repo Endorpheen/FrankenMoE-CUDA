@@ -16,6 +16,32 @@ fn ensure(v: bool, c: i64) {
     }
 }
 
+// Stage one 32-by-32 tile with a padded shared stride for the transpose.
+fn transpose_tile(src: u64, dst: u64, columns: i64, rows: i64,
+    src_pitch: i64, dst_pitch: i64, bx: i64, by: i64, tx: i64, ty: i64, scratch: u64) {
+    let sx = bx * 32 + tx;
+    let sy = by * 32 + ty;
+    let dx = by * 32 + tx;
+    let dy = bx * 32 + ty;
+    for group in 4 {
+        let row = sy + 8 * group;
+        if sx < columns && row < rows {
+            let tile = ((ty + 8 * group) * 33 + tx) as u64;
+            let offset = (4 * (row * src_pitch + sx)) as u64;
+            st_f32(scratch, 4 * tile, ld_f32(src, offset));
+        }
+    }
+    sync();
+    for group in 4 {
+        let row = dy + 8 * group;
+        if dx < rows && row < columns {
+            let tile = (tx * 33 + ty + 8 * group) as u64;
+            let offset = (4 * (row * dst_pitch + dx)) as u64;
+            st_f32(dst, offset, ld_f32(scratch, 4 * tile));
+        }
+    }
+}
+
 fn transpose(
     cx: u64,
     cdst: u64,
@@ -33,44 +59,17 @@ fn transpose(
     }
     let n: i64 = ne00 * ne01;
     let nmat: i64 = ne / n;
-    let sx: i64 = bx * (32 as i64) + tx;
-    let sy: i64 = by * (32 as i64) + ty;
-    let dcol: i64 = by * (32 as i64) + tx;
-    let drow: i64 = bx * (32 as i64) + ty;
-    var cur: i64 = 0 as i64;
-    var i: i64 = 0 as i64;
-
-    while i < (8 as i64) {
-        let imat: i64 = bz * (8 as i64) + i;
-
-        if imat >= nmat {
-            i = (8 as i64);
-        } else {
-            var j: i64 = 0 as i64;
-
-            while j < (32 as i64) {
-                if sx < ne01 && sy + j < ne00 {
-                    let toff: i64 = cur * (1056 as i64) + (ty + j) * (33 as i64) + tx;
-                    let soff: i64 = imat * n + (sy + j) * ne01 + sx;
-                    st_f32(shared, (toff * (4 as i64)) as u64, ld_f32(cx, (soff * (4 as i64)) as u64));
-                }
-                j = j + (8 as i64);
-            }
-            sync();
-            j = 0 as i64;
-
-            while j < (32 as i64) {
-                if drow + j < ne01 && dcol < ne00 {
-                    let toff: i64 = cur * (1056 as i64) + tx * (33 as i64) + (ty + j);
-                    let doff: i64 = imat * n + (drow + j) * ne00 + dcol;
-                    st_f32(cdst, (doff * (4 as i64)) as u64, ld_f32(shared, (toff * (4 as i64)) as u64));
-                }
-                j = j + (8 as i64);
-            }
-            sync();
-            cur = (1 as i64) - cur;
-            i = i + (1 as i64);
-        }
+    var cur: i64 = 0;
+    var i: i64 = 0;
+    while i < 8 {
+        let imat = bz * 8 + i;
+        if imat >= nmat { return 0; }
+        let offset = (4 * imat * n) as u64;
+        transpose_tile(cx + offset, cdst + offset, ne01, ne00,
+            ne01, ne00, bx, by, tx, ty, shared + ((4 * 1056 * cur) as u64));
+        sync();
+        cur = 1 - cur;
+        i += 1;
     }
     return 0 as i64;
 }

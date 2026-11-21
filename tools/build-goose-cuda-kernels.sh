@@ -57,7 +57,8 @@ sed -n '/^fn cv_warp_sum(/,/^}/p' "$ROOT/goose/cuda/standalone-vector.goose" >> 
 sed '/^fn argsort(x/,$d; /^extern "fg283d_smem"/d' "$ROOT/goose/cuda/goose-cuda-argsort/device.goose" >> "$OUT/routing.goose"
 sed -n '/^extern "fg169t_shuffle"/p; /^extern "fg169t_ishuffle"/p; /^struct RouteWinner /p;
         /^fn topk_winner(/,/^}/p' "$ROOT/goose/cuda/goose-cuda-reductions/topk/device-e8.goose" >> "$OUT/routing.goose"
-cp "$ROOT/goose/cuda/standalone-transform.goose" "$OUT/transform.goose"
+sed '/^fn transpose(/,$d' "$ROOT/goose/cuda/cpy-transpose/device.goose" > "$OUT/transform.goose"
+cat "$ROOT/goose/cuda/standalone-transform.goose" >> "$OUT/transform.goose"
 sed '/^fn main()/,$d; s/^fn fg183f_row(/export fn fg183f_row(/' \
     "$ROOT/goose/cuda/goose-cuda-fwht/device.goose" > "$OUT/fwht.goose"
 sed '/^fn main()/,$d; s/^fn fg179w_reduce(/export fn fg179w_reduce(/' \
