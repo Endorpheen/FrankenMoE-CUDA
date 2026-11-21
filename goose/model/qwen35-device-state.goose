@@ -1,5 +1,6 @@
 extern "fg_cuda_load_model_state" fn state_load(ranges: const i64[:], bytes: i64) -> i64;
 extern "fg_cuda_reset_model_state" fn state_reset_cuda() -> i64;
+extern "fg_model_zero_host_pages" fn state_zero_host_pages(address: u64, bytes: i64) -> i64;
 
 // State manifest rows: host address, byte span, device offset, kind.
 // Kind 0 is Q4 KV, kind 1 is the recurrent matrix, kind 2 is convolution history.
@@ -11,6 +12,11 @@ fn qr_state_span(tensor: i64, kind: i64) -> i64 {
     }
     if prop(tensor, 0) != 0 { return 0; }
     return 4 * ne(tensor, 0) * ne(tensor, 1) * ne(tensor, 2);
+}
+
+fn qr_zero_host_kv(tensor: i64) -> bool {
+    let bytes = qr_state_span(tensor, 0);
+    return bytes > 0 && (state_zero_host_pages(qa_get(tensor, 4, 0), bytes) != 0 || qo_tensor_zero(tensor) != 0);
 }
 
 export fn qr_cuda_state(owner: const i64[:], layers: const i64[:], head: i64) -> i64 {
@@ -75,8 +81,9 @@ export fn qr_reset_state(owner: const i64[:], layers: const i64[:], session: i64
     if owner.len < 12 || owner[0] != 9191 || owner[5] <= 0 || layers.len / 32 < owner[5] { return -1; }
     for i in owner[5] {
         let row = i * 32;
-        let slot = if layers[row] == 1 { 20 } else { 22 };
-        if qo_tensor_zero(layers[row + slot]) == 0 || qo_tensor_zero(layers[row + slot + 1]) == 0 { return -1; }
+        if layers[row] == 1 {
+            if qo_tensor_zero(layers[row + 20]) == 0 || qo_tensor_zero(layers[row + 21]) == 0 { return -1; }
+        } else if !qr_zero_host_kv(layers[row + 22]) || !qr_zero_host_kv(layers[row + 23]) { return -1; }
     }
     if state_reset_cuda() != 0 { return -1; }
     return q35_kv_init(owner[10], 32, session);

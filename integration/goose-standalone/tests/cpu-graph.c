@@ -79,7 +79,8 @@ static void check_chunked_generation(const char * path) {
 
 static void check_resident_state(const char * path) {
     fg_goose_host_ensure_init();
-    hose_host_load_context(path, 256);
+    // Each synthetic KV tensor contains full host pages at this capacity.
+    hose_host_load_context(path, 4096);
     assert(fg_cuda_model_state_bytes() > 0);
     assert(fg_cuda_dense_bytes() > 0);
 

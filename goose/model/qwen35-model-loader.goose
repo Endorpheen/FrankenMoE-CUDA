@@ -238,7 +238,7 @@ export fn qr_model_open(data: const u8[:], mapping: u64, file_bytes: i64, parsed
         } else {
             layers[row + 22] = fresh(owner[4], 2, hd * hk, capacity, 1, 1);
             layers[row + 23] = fresh(owner[4], 2, hd * hk, capacity, 1, 1);
-            qo_tensor_zero(layers[row + 22]); qo_tensor_zero(layers[row + 23]);
+            if !qr_zero_host_kv(layers[row + 22]) || !qr_zero_host_kv(layers[row + 23]) { mr_close_contexts(owner); return -4; }
         }
         i += 1;
     }

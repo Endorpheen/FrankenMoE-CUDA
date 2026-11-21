@@ -82,6 +82,32 @@ void fg_model_touch_page(uint64_t address) {
     (void) *(const volatile uint8_t *) (uintptr_t) address;
 }
 
+extern bool fg_standalone_option_enabled(const char * name);
+
+// The caller owns this span in a private anonymous tensor arena. Only discard
+// pages entirely inside the span, as boundary pages may contain other objects.
+int64_t fg_model_zero_host_pages(uint64_t address, int64_t length) {
+#if defined(__linux__) && defined(MADV_DONTNEED)
+    if (!fg_standalone_option_enabled("GOOSE_HOST_KV_DECOMMIT") ||
+        !address || length <= 0 || (uint64_t) length > UINTPTR_MAX - address) return 0;
+    const long page = sysconf(_SC_PAGESIZE);
+    if (page <= 0) return 0;
+    const size_t bytes = (size_t) length;
+    const size_t leading = ((size_t) page - address % (size_t) page) % (size_t) page;
+    if (leading >= bytes) return 0;
+    const size_t whole = (bytes - leading) / (size_t) page * (size_t) page;
+    uint8_t * const start = (void *) (uintptr_t) address;
+    if (!whole || madvise(start + leading, whole, MADV_DONTNEED) != 0) return 0;
+    memset(start, 0, leading);
+    memset(start + leading + whole, 0, bytes - leading - whole);
+    return 1;
+#else
+    (void) address;
+    (void) length;
+    return 0;
+#endif
+}
+
 int64_t hose_model_residency(int64_t out[4]) {
     return dw_ram_residency((uint64_t) (uintptr_t) H.base, (int64_t) H.size, H.page_size,
         (sl_i64) { out, 4 });

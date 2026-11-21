@@ -21,6 +21,7 @@
 # APEX_RUN_ROOT optionally selects the directory for run artifacts.
 # APEX_CPU_PROFILE=1 records gprofng clock stacks with request boundary marks.
 # APEX_SAMPLE_MEMORY=1 samples server RAM and GPU memory throughout the run.
+# APEX_CAPTURE_SMAPS=1 saves mapping-level accounting before and after requests.
 #
 # Readiness knobs (do not change the Apex profile):
 #   APEX_READY_MAX=900    hard cap, seconds
@@ -188,7 +189,7 @@ if [ -n "$GOOSE_BIN" ]; then
         GOOSE_CUDA GOOSE_MMQ GOOSE_GDN_MMA GOOSE_GDN_DECODE GOOSE_FLASH_MMA GOOSE_DENSE_MMA GOOSE_MMVQ \
         GOOSE_MMQ_Q4_REFERENCE GOOSE_MMQ_Q6_REFERENCE GOOSE_MMQ_DENSE_X128 GOOSE_MMQ_ROUTED_X128 \
         GOOSE_DENSE_MMA_REFERENCE \
-        GOOSE_SSM_REFERENCE GOOSE_SSM_DECODE_REFERENCE GOOSE_RMS_REFERENCE GOOSE_KV_LAZY_VMM \
+        GOOSE_SSM_REFERENCE GOOSE_SSM_DECODE_REFERENCE GOOSE_RMS_REFERENCE GOOSE_KV_LAZY_VMM GOOSE_HOST_KV_DECOMMIT \
         GOOSE_FLASH_VEC GOOSE_FLASH_TAIL_MMA GOOSE_FLASH_STREAM_K GOOSE_ROPE_DECODE \
         GOOSE_CUDA_ACTIVATION_MIB GOOSE_CUDA_ACTIVATION_REFERENCE GOOSE_CUDA_STAGE_MATRIX_INPUT \
         GOOSE_CUDA_ASYNC_PACKETS GOOSE_CUDA_EXPERT_OVERLAP GOOSE_CUDA_EXPERT_STAGE_PAGEABLE \
@@ -289,6 +290,9 @@ if ! grep -F "pid=${SRV_PID}," "${RUNDIR}/listener.txt" >/dev/null; then
 fi
 cat "/proc/${SRV_PID}/maps" > "${RUNDIR}/maps.txt"
 cat "/proc/${SRV_PID}/status" > "${RUNDIR}/status-ready.txt"
+if [ "${APEX_CAPTURE_SMAPS:-0}" = 1 ]; then
+    cat "/proc/${SRV_PID}/smaps" > "${RUNDIR}/smaps-ready.txt"
+fi
 tr '\0' '\n' < "/proc/${SRV_PID}/cmdline" > "${RUNDIR}/cmdline.txt"
 readlink "/proc/${SRV_PID}/exe" > "${RUNDIR}/exe.txt"
 if [ -n "$GOOSE_BIN" ]; then
@@ -326,6 +330,9 @@ if [ "$CPU_PROFILE" = 1 ]; then
 fi
 cat "/proc/${SRV_PID}/status" > "${RUNDIR}/status-after.txt"
 cat "/proc/${SRV_PID}/maps" > "${RUNDIR}/maps-after.txt"
+if [ "${APEX_CAPTURE_SMAPS:-0}" = 1 ]; then
+    cat "/proc/${SRV_PID}/smaps" > "${RUNDIR}/smaps-after.txt"
+fi
 if [ -n "$GOOSE_BIN" ]; then
     curl -fsS -m 5 "http://127.0.0.1:${PORT}/props" -o "${RUNDIR}/props-after.json"
 fi

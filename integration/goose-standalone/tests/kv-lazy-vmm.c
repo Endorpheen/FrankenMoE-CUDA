@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
+#include <unistd.h>
 
 extern void fg143_cpu_init(int argc, char ** argv);
 extern int64_t fg_cuda_load_model_state(sl_i64 ranges, int64_t bytes);
@@ -12,12 +14,37 @@ extern int64_t fg_cuda_state_write(uint64_t host, int64_t bytes);
 extern int64_t fg_cuda_state_read(uint64_t host, int64_t bytes);
 extern int64_t fg_cuda_model_state_bytes(void);
 extern int64_t fg_cuda_model_state_startup_bytes(void);
+extern int64_t fg_model_zero_host_pages(uint64_t address, int64_t bytes);
 
 static void check_bytes(const unsigned char * bytes, size_t count, unsigned char expected) {
     for (size_t i = 0; i < count; ++i) assert(bytes[i] == expected);
 }
 
+static void check_host_pages(void) {
+    const long page = sysconf(_SC_PAGESIZE);
+    assert(page > 0);
+    const size_t bytes = 4 * (size_t) page;
+    unsigned char * memory = mmap(NULL, bytes, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    assert(memory != MAP_FAILED);
+    memset(memory, 0x29, bytes);
+    assert(fg_model_zero_host_pages((uintptr_t) memory + 1, bytes - 2) == 1);
+    unsigned char flags[4];
+    assert(mincore(memory, bytes, flags) == 0);
+    assert((flags[1] & 1) == 0 && (flags[2] & 1) == 0);
+    check_bytes(memory + 1, bytes - 2, 0);
+    assert(memory[0] == 0x29 && memory[bytes - 1] == 0x29);
+    memory[page] = 73;
+    assert(fg_model_zero_host_pages((uintptr_t) memory + 1, bytes - 2) == 1);
+    assert(memory[page] == 0);
+    assert(munmap(memory, bytes) == 0);
+    puts("Host KV discards whole pages, zeroes edges and preserves adjacent bytes");
+}
+
 int main(int argc, char ** argv) {
+    if (argc == 2 && strcmp(argv[1], "--host-pages") == 0) {
+        check_host_pages();
+        return 0;
+    }
     enum { mib = 1024 * 1024, span = 5 * mib, probe = 256 };
     unsigned char * key = malloc(span), * value = malloc(span);
     unsigned char recurrent[512];

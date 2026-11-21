@@ -5,7 +5,7 @@ Each gate closes once its evidence is recorded. A failed check returns
 to the gate that owns the defect. This checklist covers eight gates.
 Functional qualification runs before memory and speed acceptance.
 
-**Closed: 6 of 8. Remaining: 2.**
+**Closed: 7 of 8. Remaining: 1.**
 
 1. [x] **Pin the workload and control.** Verify the model digest, exact
    request bytes and the EXP-1476 executable and library manifest.
@@ -71,16 +71,17 @@ Functional qualification runs before memory and speed acceptance.
    identity is optional diagnostic evidence. The
    [scoped qualification below](#qualified-32k-request-and-response)
    applies to the current exact workload.
-7. [ ] **Accept memory** (requires 5 and 6). Record per-process RSS and
+7. [x] **Accept memory** (requires 5 and 6). Record per-process RSS and
    its high-water mark, model page residency before and after the
    request, per-process sampled VRAM maximum and separate whole-card
    occupancy. Log sample intervals, process swap and system swap-out.
    The candidate must maintain full model residency and avoid swap
    growth and RAM/VRAM regression against the same-session control.
-   EXP-1597 records 8,200 MiB sampled peak VRAM for the selected
-   Goose profile and 8,202 MiB for the original EXP-1476. Goose's
-   RSS high-water remains about 1 GiB higher. The memory gate
-   stays open for the higher RSS and the final runtime envelope.
+   [EXP-1601](#host-kv-resident-memory) qualifies the fixed workload
+   against the same-session original EXP-1476, with both the common
+   4,992 MiB budget and the selected 5,920 MiB Goose profile. Peak
+   RSS and VRAM are lower, model residency is complete and swap is
+   zero. Recheck this gate for the final speed candidate.
 8. [ ] **Accept reproducible speed** (requires 1–7). Use sequential
    A–B–B–A with matched cache and thermal conditions. Keep cold and
    warm observations separate. Require the correctness gate on each
@@ -133,6 +134,69 @@ does not establish universal operator parity, broader model quality,
 memory parity or speed acceptance. The raw responses, decoded prompt,
 checksums and state/HTTP logs are in the EXP-1598 archive linked from
 the CUDA map.
+
+## Host KV resident memory
+
+EXP-1601 stops retaining untouched anonymous host pages for the
+full Q4 KV capacity. Goose selects this policy for KV tensors at
+model initialization and request reset. The Linux adapter discards
+whole pages wholly contained in the private tensor span and zeroes
+the two partial boundary regions. Unsupported or failed discard
+falls through to the existing tensor zero. Addresses, state shapes,
+GPU VMM policy, CPU fallback and reset ordering stay intact.
+`GOOSE_HOST_KV_DECOMMIT=0` restores eager host zeroing.
+
+The host fixture confirms the discarded pages are nonresident with
+`mincore`, zero on access, writable again and isolated from adjacent
+sentinels. The resident-state fixture uses 4,096 positions to exercise
+whole host pages. Its CUDA–CPU–CUDA continuation and reset match CPU
+replay to `1.1920929e-7`. The CUDA KV growth/reset fixture and all 36
+HTTP checks pass. Both embedded PTX files are byte-identical to
+EXP-1600. The new host executable still links only libc and libm.
+
+| Same binary, Apex 32K/512, 4096/4096 and 5,920 MiB | A, eager host zero | B, discard whole host pages |
+|---|---:|---:|
+| A–B prefill, tok/s | 1,138.356 | 1,147.284 |
+| B–A prefill, tok/s | 1,142.167 | 1,140.939 |
+| Median prefill, tok/s | 1,140.262 | 1,144.111 |
+| Median decode, steps/s | 30.984 | 31.018 |
+| Maximum process RSS high-water, KiB | 22,956,048 | 21,479,732 |
+| Peak sampled process VRAM, MiB | 8,200 | 8,200 |
+| Model pages resident before and after | 5,301,139 | 5,301,139 |
+| Process swap and request system swap-out growth | 0 | 0 |
+
+Both pairs preserve text, IDs, probability rows, stop reason and
+GPU expert allocation. They differ in the direction of the prefill
+change. This is memory qualification. The state-bearing anonymous
+mapping retains the same mapped size across runs while its RSS
+falls from 1,562,936 to 88,456 KiB. Its 1,474,480 KiB reduction
+identifies the reclaimed KV pages. The GGUF mapping RSS is identical
+at 21,204,556 KiB with all model pages resident. Peak process RSS
+falls by 1,476,316 KiB, or about 1,442 MiB.
+
+| Same-session peak comparison | Frozen EXP-1476 | Goose at same cache | Goose at near-equal VRAM |
+|---|---:|---:|---:|
+| Expert cache budget, MiB | 4,992 | 4,992 | 5,920 |
+| Maximum process RSS high-water, KiB | 21,861,308 | 21,478,792 | 21,479,732 |
+| Maximum sampled process VRAM, MiB | 8,202 | 7,272 | 8,200 |
+| Maximum sampled whole-card VRAM, MiB | 10,450 | 9,483 | 10,411 |
+| Process swap and request system swap-out growth | 0 | 0 | 0 |
+
+The 250 ms monitor samples full process and card VRAM. RSS high-water
+also comes from `/proc/<pid>/status`. At readiness the same-cache
+Goose's instantaneous RSS is 21,398,900 KiB versus the hybrid's
+20,846,864 KiB. Startup high-water by that point is lower at
+21,398,900 versus 21,559,780 KiB, and the full-run high-water is
+382,516 KiB lower. This closes the scoped peak memory comparison.
+The runtime speed still differs on the common cache, at 1,148.825
+versus 2,664.006 prefill tok/s and 28.515 versus 62.084 decode
+steps/s. These single-run times are context for gate 8.
+
+The binary SHA-256 is
+`7deafd555ec2072626dbdea5f3a4bc80c381ad90cc4dd0f12a35b4e118f257aa`.
+Raw `smaps`, `status`, `mincore` fixture, profile, complete captures
+and hashes are under
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/host-kv-pages-exp1601`.
 
 ## Explicit cache profile
 
