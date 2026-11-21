@@ -6522,6 +6522,19 @@
       "sha256": "945101b4e41bba4227b24a596c92d0b7d47e39f121ba7fa85806d6c716e26494"
     },
     {
+      "goose": "cuda/standalone-flash-mma.goose",
+      "native": "ggml/src/ggml-cuda/fattn-mma-f16.cuh",
+      "native_targets": [
+        "ggml/src/ggml-cuda/fattn-mma-f16.cuh"
+      ],
+      "experiment": "EXP-2026-11-21-1658",
+      "task": "P1-07",
+      "status": "slice",
+      "sha256": "6c82e2ed8ddd1edd9d0d1edb2e9fc7d1031815e76df1959d0ce72d884610f3c6",
+      "integration_commit": "f5145d685c0fd6c4042ad41dbd6b322e42bbbee3",
+      "gate": "Exact long and ragged Flash fixtures and warmed Apex 32K/512 differential, APEX-LATENCY-MAP.md#exp-1658--evaluate-the-causal-flash-mask-in-registers"
+    },
+    {
       "goose": "cuda/goose-cuda-flash-attention/value-prefill-device.goose",
       "native": "ggml/src/ggml-cpu/repack.cpp",
       "native_targets": [
@@ -6537,9 +6550,9 @@
       "experiment": "EXP-2026-11-08-173-goose-cuda-flash-attention",
       "task": "P1-07",
       "status": "slice",
-      "sha256": "4bd3bece9258abf7e0f4e56b4cc0a96719e307cb3bd751fe4eea871bb4714534",
-      "integration_commit": "c92a3465b33e69f9b35e49253e6e524cd3e5eac5",
-      "gate": "Apex 32K/512 warmed matched differential, APEX-LATENCY-MAP.md#exp-1651--share-the-flash-mma-kv-loop"
+      "sha256": "52fadc3416e975d32a3e996ecd97a38826606f56cd247aa153e61f51337fe315",
+      "integration_commit": "f5145d685c0fd6c4042ad41dbd6b322e42bbbee3",
+      "gate": "Exact long and ragged Flash fixtures and warmed Apex 32K/512 differential, APEX-LATENCY-MAP.md#exp-1658--evaluate-the-causal-flash-mask-in-registers"
     },
     {
       "goose": "cuda/goose-cuda-flash-attention/vector-device.goose",
