@@ -1,5 +1,142 @@
 # Apex 32K/512 latency map
 
+## EXP-1621 — Current gap to the hybrid at 5,920 MiB
+
+The refreshed ranking pairs the EXP-1620 reused graph trace
+with the frozen hybrid binary's second diagnostic run at
+5,920 MiB. Both runs use the same Apex model and request,
+RTX 4070, 4096/4096, Q4_0 K/V, 262,144 context, CPU
+limits 8/16 and masks `0f0f` / `ffff`, with zero prefix
+reuse. Both traces use Nsight Systems 2026.6.1 and include
+all 511 decode evaluations. Hybrid executable and library
+manifests match before and after profiling. The first hybrid
+trace is retained with its three pages of system swap-out.
+
+| Profiled metric | Hybrid | Goose EXP-1620 | Goose minus Hybrid |
+|---|---:|---:|---:|
+| Prefill, ms | 12,505.753 | 29,840.209 | +17,334.456 |
+| Decode, ms | 8,633.209 | 15,948.365 | +7,315.156 |
+| Prefill, tok/s | 2,620.23 | 1,098.12 | -1,522.12 |
+| Decode, tok/s | 59.19 | 32.04 | -27.15 |
+| Peak process VRAM, MiB | 9,156 | 8,250 | -906 |
+| Peak RSS high-water, KiB | 22,520,180 | 22,089,532 | -430,648 |
+| Process swap, KiB / system swap-out, pages | 0 / 0 | 0 / 0 | 0 / 0 |
+
+The accepted [Optimized Hybrid](OPTIMIZED-HYBRID.md) target
+remains 2,668 prefill and 65.38 decode tok/s at 5,632 MiB.
+The profiles below are diagnostic. They use identical request
+bytes and each runtime's previous response hash. The two
+runtimes generate different continuations. A launch count
+difference can include different routes. Per-family exposure
+uses exclusive device intervals, and GPU idle uses the device
+timeline complement. Concurrent work and CPU APIs remain
+outside these rows. Differences from EXP-1618 are changes in
+observed gap across snapshot configurations. The controlled
+same-binary change for graph reuse is recorded in EXP-1620.
+
+### Prefill remaining gap
+
+| Operation | Hybrid, ms | Goose, ms | EXP-1618 gap, ms | Current gap, ms | Gap reduction, ms |
+|---|---:|---:|---:|---:|---:|
+| MMQ Q4_K | 2,367.833 | 8,377.428 | +5,856.868 | +6,009.595 | -152.727 |
+| GPU idle | 1,137.673 | 4,089.827 | +2,390.777 | +2,952.154 | -561.378 |
+| MMQ Q6_K | 744.883 | 2,411.027 | +1,657.972 | +1,666.144 | -8.172 |
+| Flash Attention MMA | 1,421.059 | 2,949.578 | +1,554.315 | +1,528.520 | +25.795 |
+| Pointwise and GLU | 489.415 | 1,649.188 | +1,156.778 | +1,159.773 | -2.995 |
+| MMQ Unresolved format | 0.000 | 989.929 | +981.240 | +989.929 | -8.689 |
+| GDN | 469.615 | 1,358.429 | +889.046 | +888.815 | +0.231 |
+| H2D bulk | 3,473.451 | 4,162.618 | +278.089 | +689.167 | -411.078 |
+| Dense and generic matmul | 88.923 | 499.564 | +413.333 | +410.642 | +2.691 |
+| RMSNorm | 241.490 | 345.136 | +103.507 | +103.646 | -0.139 |
+| KV FWHT | 47.130 | 145.981 | +102.868 | +98.851 | +4.017 |
+| Tensor gather and blit | 362.143 | 454.864 | +117.695 | +92.721 | +24.974 |
+| Other Attention | 0.000 | 60.420 | +58.055 | +60.420 | -2.365 |
+| D2D | 44.475 | 89.346 | +46.191 | +44.871 | +1.320 |
+| RoPE | 12.189 | 41.209 | +29.412 | +29.020 | +0.391 |
+| MoE weighted reduction | 234.161 | 244.531 | +1.286 | +10.370 | -9.085 |
+| MoE router | 7.714 | 16.713 | +9.080 | +9.000 | +0.080 |
+| KV writes | 6.406 | 11.769 | +6.175 | +5.363 | +0.811 |
+| SSM convolution | 203.458 | 204.594 | -0.180 | +1.136 | -1.317 |
+| Memset | 0.230 | 0.284 | +0.050 | +0.054 | -0.003 |
+
+### Decode remaining gap
+
+| Operation | Hybrid, ms | Goose, ms | EXP-1618 gap, ms | Current gap, ms | Gap reduction, ms |
+|---|---:|---:|---:|---:|---:|
+| GPU idle | 2,158.512 | 5,228.527 | +5,435.795 | +3,070.016 | +2,365.780 |
+| Vector Attention | 1,221.331 | 2,844.536 | +1,617.290 | +1,623.204 | -5.914 |
+| H2D bulk | 1,706.705 | 2,436.804 | -44.580 | +730.098 | -774.678 |
+| Dense and generic matmul | 148.013 | 806.078 | +650.854 | +658.066 | -7.212 |
+| Pointwise and GLU | 139.808 | 558.642 | +439.429 | +418.834 | +20.595 |
+| MMVQ | 2,488.074 | 2,826.385 | +329.930 | +338.311 | -8.381 |
+| MoE router | 48.589 | 215.678 | +151.212 | +167.089 | -15.877 |
+| RMSNorm | 124.908 | 268.112 | +148.375 | +143.205 | +5.170 |
+| H2D packets up to 4 KiB | 7.572 | 79.789 | +107.363 | +72.217 | +35.146 |
+| GDN | 56.952 | 111.028 | +58.932 | +54.077 | +4.856 |
+| KV FWHT | 18.096 | 52.581 | +36.396 | +34.485 | +1.911 |
+| SSM convolution | 21.059 | 49.676 | +30.117 | +28.617 | +1.500 |
+| KV writes | 14.570 | 34.108 | +20.304 | +19.538 | +0.766 |
+| RoPE | 10.824 | 28.687 | +16.456 | +17.863 | -1.408 |
+| MoE weighted reduction | 29.567 | 46.885 | +17.302 | +17.318 | -0.016 |
+| MMVQ pack | 184.257 | 194.954 | +48.959 | +10.696 | +38.263 |
+
+The largest prefill arithmetic target is Q4_K MMQ. The
+current aggregate identifies the family, while the retrievable
+kernel launch grids preserve the exact specializations.
+Dense and routed projections require matched logical M/N/K
+and separate timing. In particular, the hybrid's `mul_mat_q`
+count combines multiple tensor shapes and both execution paths.
+The 8 KiB inter-token handoff and the bulk expert transfers
+remain separate decode work.
+
+### Q4_K MMQ with matched operand shapes
+
+The diagnostic 4096/2 request evaluates a 4,092-column
+checkpoint body in both runtimes. NVTX spans capture logical
+operands and distinguish dense from routed calls. The analyzer
+joins the host launch timestamps and CUPTI correlation IDs to
+424 hybrid and 960 Goose MMQ kernel launches. The temporary
+hybrid interposer calls the unchanged released MMQ functions.
+The Goose probe uses the EXP-1620 PTX. Compare device kernel
+sums per logical operation among these exact dense shapes.
+
+| Dense Q4_K M × N × K | Operations each | Hybrid / Goose kernels per operation | Hybrid, ms/op | Goose, ms/op | Remaining gap, ms/op |
+|---|---:|---:|---:|---:|---:|
+| 8192 × 4092 × 2048 | 26 | 1 / 2 | 1.538 | 9.877 | +8.340 |
+| 2048 × 4092 × 4096 | 40 | 1 / 3 | 0.766 | 5.100 | +4.334 |
+| 4096 × 4092 × 2048 | 30 | 1 / 2 | 0.792 | 5.059 | +4.267 |
+
+For the first shape the hybrid launches 2,048 CTAs with
+`mul_mat_q<Q4_K,128,false,F32>`. Goose launches 15,872
+CTAs using `goose_mmq_q4_dense_x128`, followed by 2,048
+in `goose_mmq_q4_reference` for the tail. Both primary
+kernels run 256 threads per CTA and have IMMA and LDSM
+instructions. The runtime records 221 registers per thread
+and 57,856 dynamic shared bytes for the hybrid, and 120
+registers and 5,120 static shared bytes for the Goose wide
+kernel. Its current 16 × 128 tile leaves much more work
+fragmented across CTAs. A larger shared weight tile with
+cross-warp reuse is the next candidate. Prior EXP-1611
+already tested a 32-row variant whose kernel gain failed
+the full-request test.
+
+The unresolved generic `goose_mmq_matmul` in this probe
+executes routed Q4_K down projection with M=2048 and K=512.
+All 60 launches belong to that path. Its 20 large
+N=32,736 operations average 6.254 ms across two launches,
+versus 3.287 ms across one launch in the hybrid. The
+remaining 20 launches serve the N=32 checkpoint tail.
+Equal flattened N leaves per-expert routing distributions
+open. The full trace retains the unresolved-format row
+until its own launches have logical attribution.
+
+The raw profiles and `current-map.json` are preserved in
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/parity-refresh-exp1621`.
+`mmq-shapes/shape-comparison.json` preserves the exact
+logical shapes, grids and kernel resources. That directory
+also contains the shipped hybrid SM89 SASS and Goose SASS
+assembled offline from the archived PTX.
+
 ## EXP-1620 — Reuse the long decode graphs
 
 EXP-1620 retains the linear CUDA Graph through the next Top-K.
