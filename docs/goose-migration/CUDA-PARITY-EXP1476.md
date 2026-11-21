@@ -3806,7 +3806,8 @@ has no local frame. The RMS kernel retains its previous 64-byte
 frame independently of the parameter plan. SM89 assembly reports
 40 registers per thread and zero spill bytes for both entries.
 The original and tuned PTX and generated fragments provide a
-reproducer for a future Fried Goose code generation change.
+reproducer for a future Fried Goose code generation change. See the
+[compiler optimization registry](FRIED-GOOSE-OPTIMIZATION-REGISTRY.md#read-only-cuda-parameter-aggregates).
 
 Synthetic vector coverage passes 15 strided cases with maximum
 absolute error `4.76837158e-7` versus the CPU fixture. Windowed

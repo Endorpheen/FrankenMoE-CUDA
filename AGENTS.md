@@ -281,6 +281,20 @@ directly affects it. Run the complete registry for architecture acceptance
 and general releases. Record missing references without delaying routine
 Apex optimization. The current speed target is Optimized Hybrid.
 
+## Fried Goose compiler optimization registry
+
+Maintain [the compiler optimization registry](docs/goose-migration/FRIED-GOOSE-OPTIMIZATION-REGISTRY.md).
+For every observed low-level inefficiency, determine whether a general
+Fried Goose optimization can eliminate it. When it can, record the cause,
+the relevant Goose and generated PTX/SASS before and after, measured
+effects and affected operations, the proposed compiler change, tests,
+status and experiment links. Distinguish isolated compiler measurements
+from measurements of combined runtime changes.
+
+The compiler agent owns implementation. Do not change Fried Goose or
+interfere with that agent while maintaining this registry. Continue the
+main Apex optimization and preserve the working runtime and its tests.
+
 ## Communication with Igor
 
 Do not use Markdown blockquotes (`>`) in messages to Igor: his interface renders

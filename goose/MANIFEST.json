@@ -4038,6 +4038,28 @@
       "integration_commit": "d7286af560727bc7f45c09dba560d9d85f4f91e4"
     },
     {
+      "goose": "cuda/standalone-vector.goose",
+      "native": "ggml/src/ggml-cuda/binbcast*; ggml/src/ggml-cuda/unary*",
+      "native_targets": ["ggml/src/ggml-cuda/binbcast*", "ggml/src/ggml-cuda/unary*"],
+      "experiment": "EXP-2026-11-21-1603-vector-parameters",
+      "task": "P3-04",
+      "status": "slice",
+      "sha256": "1882f4cc246cf330bdd62ba37951de413a94b9349447bd8d97fb1213265e3044",
+      "integration_commit": "91159df92579d979af8a3d0b4d18262c021107f7",
+      "gate": "EXP-1603 strided vector differential, windowed multiply, CUDA memcheck and exact Apex 32K/512 pairs"
+    },
+    {
+      "goose": "cuda/standalone-rms-reference.goose",
+      "native": "ggml/src/ggml-cuda/norm.cu",
+      "native_targets": ["ggml/src/ggml-cuda/norm.cu"],
+      "experiment": "EXP-2026-11-21-1603-vector-parameters",
+      "task": "P3-01",
+      "status": "slice",
+      "sha256": "b1cc0142e2dba9a9d33b47c44958d2ed67abaa47563fe7ba650174c917b5164c",
+      "integration_commit": "91159df92579d979af8a3d0b4d18262c021107f7",
+      "gate": "EXP-1603 weighted RMS bitwise fixture, kernel parameter trace and exact Apex 32K/512 pairs"
+    },
+    {
       "goose": "cuda/standalone-mmq.goose",
       "native": "ggml/src/ggml-cuda/mmq*",
       "native_targets": [
