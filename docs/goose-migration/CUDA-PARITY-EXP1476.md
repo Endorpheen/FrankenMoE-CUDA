@@ -56,6 +56,7 @@ the dependency that would justify rerunning it.
 | EXP-1563, routed MMQ input residency | [Candidate patch and full pair](../../experiments/EXP-2026-11-20-1563-mmq-input-residency/README.md). Protecting the SwiGLU input removes 21,474,836,480 bytes in each direction and moves full prefill from 694.731 to 773.585 tok/s with matching responses. | Peak process VRAM rises from 8,524 to 8,748 MiB. The candidate run records 6,286 system swap-out pages with zero process swap. | Recheck when planned arena placement can keep the live input and result in the current capacity. Compare unchanged outputs and remeasure the 64 MiB transfers, VRAM and swap. |
 | EXP-1585, single-token four-tap SSM | [Captured-input replay](#deferred-single-token-ssm-arithmetic). Both raw and fused results match 8,192 of 8,192 native values. The new entry uses 24 registers and no stack. | The original opening repetition persists. Live decode drops from 26.228 to 24.004 steps/s in the observed pair, with a different token sequence and 17.064 GB more expert uploads. | Recheck with the matched [EXP-1586 prefill tail](#actual-apex-checkpoint-tail-geometry). Compare generation and measure SSM device time with the same token history. |
 | EXP-1586, checkpoint-tail geometry and dense MMVQ | [Matched prefill snapshots and full pairs](#actual-apex-checkpoint-tail-geometry). The last 24,576 QKV values match the live reference. Both full candidate responses omit the opening task echo. [EXP-1587](#cooperative-mmq-on-the-checkpoint-tail) restores the fast MMQ dispatch for this geometry. | The response still miscounts the repeated log records. | Qualify the entire response and compare the matched effective profile with the frozen reference. The two tail-profile selectors remain experimental. |
+| EXP-1607, direct single-route MMVQ addresses | [Same-binary A–B–B–A](#single-route-mmvq-address-parameters) saves 237 ms median decode and preserves the exact response. | Prefill takes 261 ms longer in this series, combined time stays essentially flat and process VRAM increases by 2 MiB. | Keep the patch and repeat with an isolated decode selector or a single parameter ABI that shares the existing CUDA entry. Reuse the counterpart fixture and verify real-device timing before enabling. |
 
 After a material dependency change, use short sequential A/B runs on
 identical inputs and settings. Use the best current verified checkpoint
@@ -3994,6 +3995,50 @@ A follow-up would need measured bank transactions or a larger
 change that also removes repeated global activation loads.
 The patch, fixture, traces and hashes are in
 `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/mmq-banks-exp1606`.
+
+## Single-route MMVQ address parameters
+
+EXP-2026-11-21-1607 follows up the 192-byte packet experiment.
+The EXP-1603 trace has 154,374 single-route MMVQ launches in
+the visible decode region and four in prefill. This candidate
+adds the input, output and optional expert-plane offsets on the
+host. The two single-route kernels take those addresses by value
+and run the existing Goose Q8_1 packing and matvec. Other widths
+keep the current descriptor upload and dispatch.
+
+All 950 Q4_K and Q6_K values match the control in dense and
+indexed fixtures with nonzero offsets. Compute Sanitizer reports
+zero errors. The fixture trace records four launches of each new
+entry at grid Y=1. The original entries execute two at Y=7 and
+four at Y=8 each. SM89 assembly reports zero spills, 40 registers
+for both matvecs, and 25 versus 23 for the generic and scalar
+packers. The executable links libc and libm.
+
+| Unprofiled Apex 32K/512, 4096/4096, 5,920 MiB | A, jobs buffer | B, direct addresses |
+|---|---:|---:|
+| Prefill, tok/s, A–B then B–A | 1139.42 / 1144.78 | 1136.64 / 1127.01 |
+| Decode, steps/s, A–B then B–A | 32.546 / 32.266 | 33.111 / 32.691 |
+| Median prefill, s | 28.691 | 28.952 |
+| Median decode, s | 15.769 | 15.532 |
+| Median prefill plus decode, s | 44.460 | 44.484 |
+| Peak process VRAM, MiB | 8200 | 8202 |
+| Maximum process RSS high-water, KiB | 21482008 | 21481256 |
+| Process swap and request system swap-out growth | 0 | 0 |
+
+Both arms use the same executable, with the control setting
+`GOOSE_MMVQ_SCALAR_ARGS=0`. All four replies, IDs, probabilities
+and stop reasons match. Each launch starts with the full GGUF resident.
+The two pairs save 268 and 206 ms of decode. Combined time
+saves 197 ms in the first pair and costs 245 ms in the second.
+The data do not establish the cause of the prefill change.
+
+The separate Nsight control stopped with SIGSEGV before
+collecting CUDA activity. It used CUPTI 12.6 with the installed
+13.0 driver and the scalar selector disabled. The cause is
+unresolved and the partial trace is excluded from speed
+attribution. Retain the EXP-1603 checkpoint. The deferred patch,
+binary, fixture, trace and four complete unprofiled runs are
+under `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/mmvq-scalar-exp1607`.
 
 ## Long Attention partition probe
 
