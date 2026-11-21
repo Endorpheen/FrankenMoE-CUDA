@@ -130,6 +130,9 @@ prefill and 62.86 decode tokens/s.
 
 Reference-only kernel and API details are linked to the numbered
 mechanisms below. Events that lack reliable attribution stay open.
+The [historical restoration ledger](APEX-PERFORMANCE-AUDIT.md#historical-optimization-ledger)
+tracks the earlier patch series and dependencies beyond this map,
+including the [lazy KV VRAM admission correction](APEX-PERFORMANCE-AUDIT.md#lazy-kv-vram-admission).
 
 ## Selected numbers
 

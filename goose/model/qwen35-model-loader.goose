@@ -276,7 +276,7 @@ export fn qr_model_open(data: const u8[:], mapping: u64, file_bytes: i64, parsed
 
 extern "fg_cuda_free_bytes" fn mr_cuda_free() -> i64;
 extern "fg_cuda_load_dense" fn mr_cuda_load_dense(ranges: const i64[:], bytes: i64) -> i64;
-extern "fg_cuda_model_state_bytes" fn mr_cuda_state_bytes() -> i64;
+extern "fg_cuda_model_state_startup_bytes" fn mr_cuda_state_startup_bytes() -> i64;
 
 fn mr_cuda_head_bytes(head: i64) -> i64 {
     let kind = prop(head, 0);
@@ -286,7 +286,9 @@ fn mr_cuda_head_bytes(head: i64) -> i64 {
 }
 
 fn mr_cuda_reserve(owner: const i64[:], head: i64) -> i64 {
-    return owner[12] - mr_cuda_state_bytes() + mr_cuda_head_bytes(head);
+    // Free device memory already excludes eager state, but includes the capacity
+    // that lazy KV will consume as its physical pages are mapped.
+    return owner[12] - mr_cuda_state_startup_bytes() + mr_cuda_head_bytes(head);
 }
 
 fn mr_cuda_dense_range(t: i64, owner: const i64[:], budget: i64, plan: i64[:],

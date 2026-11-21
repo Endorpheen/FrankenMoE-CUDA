@@ -190,18 +190,22 @@ Executable SHA-256
 
 ## Historical optimization ledger
 
-The ledger follows the Apex optimization line from EXP-090
-and its dependencies through EXP-172. It also checks
-successors retained in the EXP-1476 reference. The earlier
-Qwen experiments identify shared mechanisms and
-model-specific work. The separate [CUDA execution map](CUDA-PARITY-EXP1476.md#mechanisms)
-covers the remaining backend families from the frozen
-hybrid trace. The evidence column distinguishes archival
-results, current execution, and conditions that remain
-unmeasured. Baseline numbers from different model placement,
-profiles or sessions do not establish a paired speed delta.
-The 18 entries comprise four retained and active, ten
-partially restored and four lost from the live path.
+The audit starts with the published early series, follows
+EXP-090 through EXP-172, and checks scoped successors against
+the frozen EXP-1476 release (`4e722775`). The archive at that
+revision contains 19 files under `patches/` and 92 distinct
+September/October IDs under `experiments/`. The direct range
+`28a854aa^..5067fe0b` contains 49 experiment-tagged commits;
+its later portion already uses Goose inside the hybrid runtime.
+The [experiment log](../../experiments/EXPERIMENTS.md) and
+[CUDA execution map](CUDA-PARITY-EXP1476.md#mechanisms) retain
+the original verdicts and traced backend families respectively.
+The ledger groups related changes by mechanism. It counts
+five retained and active, fifteen partially restored and five
+lost from the standalone path. An alternative implementation
+is only marked more effective when same-workload evidence
+establishes that comparison. The scoped standalone results
+below do not establish any cross-runtime replacement of that kind.
 
 | # | Historical mechanism and reference | Current Goose status and evidence | Restoration, potential and acceptance |
 |---:|---|---|---|
@@ -211,18 +215,25 @@ partially restored and four lost from the live path.
 | 4 | EXP-107 dual-slot GPU staging and copy/compute overlap, `d73f7d59:patches/expert-h2d-compute-overlap.patch`. Historical 14.300 → 12.978 s prefill and 1.415 s overlap with CPU MoE. | **Partially restored.** `ec_prepare` and `submit_expert_stage` overlap later pinned planes with MMQ using the existing SLRU bank. EXP-1577 measures 0.440 s overlap on 9.516 GB and 0.511 s lower request prefill. EXP-1584 extends the same overlap to eligible pageable sources. | The current projection and oversized sources remain blocking. Measure exposed waits for those planes before extending scheduling. Total prefill H2D interval in the audit trace is 3.949 s, including traffic already overlapped. |
 | 5 | EXP-038/040/041/062 pinned upload ring and depth three, `d965c667`, `9360ba0f`, `9f8748b5:patches/ring-depth-3.patch`. Depth three saved 11.5% median prefill in the historical Qwen profile. | **Partially restored.** EXP-1584 restores the three-slot ring for the live Apex pageable path. It uses 12 MiB of the existing pin budget and saves 3.290 s median full prefill. The historical CPU-MoE Qwen profile has no equivalent live standalone qualification. | Preserve the direct path for already pinned spans. Check the original Qwen layout separately with the same memory and output criteria. |
 | 6 | EXP-075 split transfers on pinned-range boundaries, `36edcc67` and the boundary fix `c1d34d27`. EXP-076 deferred registration, `ae8f6510`, `c4a8ff87`. | **Partially restored.** Current Goose admits whole aligned spans and checks every async expert transfer for full containment. It lacks split submissions and registers admitted spans at model preparation. | Only revisit split submission if a trace observes many partial intersections. Profile load and first request before reopening worker registration. The archival async candidate traded a 56.16% slower first request for later gains. |
-| 7 | EXP-045 two-worker CPU gather, `73354ac4:patches/two-thread-gather.patch`. | **Lost on the standalone CUDA expert path.** Planned Goose jobs resolve expert slots on the host. There is no two-worker pageable staging copy equivalent in `ec_prepare`. | Establish host gather/copy wall time on pageable fills first. The historical 496.453 ms of concurrent GPU idle from EXP-043 is a Qwen window, with no speed estimate licensed for Apex. |
+| 7 | EXP-045 two-worker CPU gather, `73354ac4:patches/two-thread-gather.patch`. The historical offline median gather+upload was 1,924.465 → 1,827.530 ms (three wins in four pairs). The later commit adds a bounded 512 KiB threshold and futex helper to the historical default build. | **Lost on the standalone CUDA expert path.** Planned Goose jobs resolve expert slots on the host. `submit_pageable_expert` uses one `memcpy` into a pinned slot before queueing DMA. [EXP-1590](#cpu-batch-workers-for-quantized-row-gather) parallelizes quantized `GET_ROWS`, a distinct stage. | Instrument exposed gather/copy wall time in the live staging ring first. The 496.453 ms of concurrent GPU idle in EXP-043 is a Qwen observation; the current Apex benefit is unmeasured. |
 | 8 | Compact host job mapping and active-expert tiling. The corrected EXP-117 bound is `e200c47d:patches/moe-launch-bound-experimental.patch`. | **Retained and active as a compact schedule in Goose.** `cuda_matrix_planes` emits one job per real route and `fg143_mmq_tiles` ends each tile at its bank-plane boundary. Q4_K and Q6_K tiles execute on real Apex. EXP-117 tested a different grid bound and its corrected result tied at 13.024 vs 13.020 s. | Preserve zero work for empty groups and last partial tiles. Do not recover the earlier stale-grid variant. |
-| 9 | GPU grouping and scatter via `mm_ids_helper`. EXP-181 already ported the helper to `goose/cuda/goose-cuda-mm-ids`. The isolated measurement at `37e31805` found no clear gain. | **Lost from the standalone executor.** The helper executes 936 times in EXP-1476, totaling 154.024 ms. Standalone consumes compact host jobs for the resident tile schedule. | Connect the existing helper only where its outputs replace work. Host SLRU still needs active IDs, so adding a second grouping pass establishes no benefit. Measure route extraction, list upload and tile count on identical route maps first. |
+| 9 | GPU grouping and scatter via `mm_ids_helper`. EXP-181 (`a03ddce1`) ported the eight-slot kernel. The later isolated measurement at `37e31805` found no clear gain from the Goose helper's implementation alone. | **Lost from the standalone executor.** The helper executes 936 times in EXP-1476, totaling 154.024 ms. Standalone consumes compact host jobs for the resident tile schedule. The old kernel emits source, destination and bounds arrays; the live MMQ helper uses offsets into the SLRU bank. | Measure current route extraction, list uploads and tile counts on fixed route maps. Connect the existing helper when its maps can replace the host expansion and job transfers. Preserve host SLRU admission and slot fences. The 154.024 ms is the old kernel's cost, not the current removable time. |
 | 10 | EXP-160 graph Fusion policy, `59891c83`. Includes safe pattern eligibility and alias checks. | **Partially restored.** Standalone executes weighted RMS, fused SwiGLU and weighted reductions. The full gate/up paired matrix operation and remaining fusion coverage are open. | Reuse Goose numerical bodies and prove graph elision and output lifetime checks. The archived decode trace has 220,205 packing launches at 0.275 s plus vector work at 0.771 s, shared across eligible and ineligible operators. |
 | 11 | EXP-170 SSM Fusion, `67ef2ecc`. Rolling serial decode, tiled prefill, six tap sizes, optional bias and SiLU. | **Partially restored.** The required four-tap Apex fused SiLU path is active. The trace sees 240 long convolution launches in 0.204 s, versus 0.208 s in the hybrid. Other tap/layout/bias combinations have no equivalent full standalone qualification. | Preserve the measured shape. Gate other modes separately and prove state at tile and request boundaries. Current Apex time shows no convolution deficit. |
 | 12 | EXP-172 GDN scalar, BF16 MMA, fused state and snapshots, `5067fe0b`. Historical 32K/128 with exact output and 127 graph reuses. | **Partially restored.** Standalone runs the same Goose scalar and whole-head V128 MMA bodies. The first-layer values were checked and persistent state publication is live. V32 MMA and multi-snapshot cache semantics lack standalone coverage. | Prefill GDN is 1.360 s versus 0.468 s in the audit trace. Compare actual tile geometry, spills and state publication before changing arithmetic. |
 | 13 | EXP-172 GDN launch plan passed by value, `5067fe0b`, `scalar-bridge.cuh` and `mma-bridge.cuh`. | **Retained and active after restoration.** EXP-1582 issued a separate 456-byte H2D packet per GDN launch. EXP-1583 removes 3,870 such copies in the short live trace and saves 0.172/0.281 s full decode with the same response and memory envelope. | Preserve the direct CUDA ABI around existing Goose math. At 240 prefill and 15,330 decode recurrence launches the eliminated explicit packet payload is 7,099,920 bytes. |
 | 14 | EXP-161 allocator, EXP-163 ordering, EXP-164 graph scheduler. Later EXP-195 mapped pool arithmetic, `3ac0df66`. | **Partially restored.** Independent Goose reuses graph storage and lifetime planning. Scratch VMM is available experimentally and lazy KV uses stable reservations by default. Allocation and planning cost 0.160 s in the archived decode trace. | Reuse plan state where tensor shapes, views and aliases match. Measure physical maps, idle retained VRAM and full request impact. EXP-093 rejected generic pool trimming on its small measured bound. |
-| 15 | CUDA Graph replay on hybrid EXP-172 and EXP-1476. Separately, EXP-052 rejected an L2-only alternating-shape cache. | **Partially restored.** Standalone can capture and update a two-node vector Attention pair. Full package trace observes 5,110 graph launches, compared with 20,914 graph submissions across scopes in EXP-1476. | Reuse tested graph lifecycle and extend capture with explicit pointer/geometry updates and expert-slot fences. The audit measures 11.442 s of idle trace gap in long Goose decode, including waits and work beyond graph submission. |
+| 15 | CUDA Graph replay on hybrid EXP-172 and EXP-1476. EXP-049–052 diagnose verify-shape alternation; EXP-052 rejects its L2-only two-variant candidate. The separate EXP-059 `GGML_CUDA_GRAPH_OPT` screen also regresses. | **Partially restored.** Standalone can capture and update a two-node vector Attention pair. Full package trace observes 5,110 graph launches, compared with 20,914 graph submissions across scopes in EXP-1476. | Reuse tested graph lifecycle and extend capture with explicit pointer/geometry updates and expert-slot fences. The audit measures 11.442 s of idle trace gap in long Goose decode, including other waits and handoffs. The whole trace's 2.933 s of direct launch API time is another overlapping bound. |
 | 16 | EXP-083 RAM-only recurrent/SWA prefix checkpoints, `8c1f02e9`. EXP-1464 `4e7fad74` reused 11,697 of 11,705 tokens on a follow-up. | **Lost from independent serving.** `q35_sample_generate` resets state at each request. The HTTP handler accepts `cache_prompt=false` and does not expose a live warm prefix path. | Reuse prefix policy and KV range logic. Restore recurrent state together with KV and guard cache ownership, divergence and cancellation. The historical 11,697-token saving applies to warm prefill only. |
 | 17 | EXP-1422/1423 SLRU replacement/residency. In one hybrid A/B 4,992 MiB gave 83.68% hits and 61.83 decode versus 71.25% and 47.43 at 3,072 MiB. | **Retained and active on Apex.** `ec_prepare` calls the preserved Goose SLRU and the live bank is 4,991.65 MiB. Declared SLRU capacity and registered host spans are independent. | Preserve policy and test any new cache budget against real uploads, process VRAM and the matched model profile. Current ranges cannot explain a speed change by capacity alone. |
 | 18 | EXP-046 fused IQ2_S verify decode, `a11a0e52:patches/iq2s-fused-decode-default-on.patch`, preserved by EXP-079 on the old Qwen path. | **Lost on the old Qwen fast path.** Standalone checked MMVQ layout selects Q4_K and Q6_K. Codec IQ2_S presence provides no evidence of the fused verify computation or its speed. | Evaluate the originally supported Qwen profile and reuse the Goose IQ2_S arithmetic only if a real verify workload exercises it. Apex Q4_K_M offers no estimate. |
+| 19 | EXP-006 split model placement and mmap ownership, `4e722775:patches/expert-tier-integration.patch`. The original Qwen test retained speed with 12.9 GiB less RAM. | **Partially restored.** Apex loads all pages in a file-backed mapping, retains supported dense matrices on the GPU and admits selected expert planes into SLRU. Separate standalone evidence for Qwen SSD streaming, row windows and tier eviction is missing. | Keep one runtime and verify model-specific placement independently. The Qwen RAM result is scoped to its original model and load mode. |
+| 20 | EXP-009 GPU reserve and bounded autofit (`75fed99d`) and EXP-121 physical-device attribution. The historical launcher passes an explicit free-VRAM reserve; EXP-010 leaves EHS off. | **Partially restored.** Goose budgets dense placement and SLRU capacity using the live CUDA free-byte query plus expected state/head space. The lazy path previously subtracted logical KV bytes from the reserve even though those bytes were still free. See [the VRAM admission correction](#lazy-kv-vram-admission). | Keep lazy KV, account separately for already committed pages and subsequent growth, and verify the configured 4,992 MiB bank still fits on the Apex profile. Historical EHS admission offers no Apex throughput estimate. |
+| 21 | EXP-024 split MTP draft (`92406443`, `patches/mtp-sidecar.patch`), accepted configuration with 13.6% warmer Qwen decode on its own profile. | **Lost from standalone inference.** The Apex trunk loader recognizes and skips MTP tensors. The fixed EXP-1476 comparison profile uses `--spec-type none`. | Restore only alongside the model-specific verify path and comparable quality. Expected effect on the specified Apex acceptance profile is zero because it does not use a draft. |
+| 22 | EXP-013 CPU thread scaling (`39cc4735`), EXP-057 affinity and pool placement. EXP-092 rejects a 12-worker Apex promotion after a fresh control. | **Partially restored.** EXP-1590 and EXP-1591 expose and exercise the real 8/16 profile. Some independent single-token graph paths remain serial, and effective affinity for the compared hybrid was inherited. | Extend worker use only where CPU profiling identifies real work. The 16-worker quantized gather saves 3.037/3.083 s on full Apex prefill; those gains are already present in the comparison executable. |
+| 23 | EXP-171 IMRoPE (`5c885dc3`) and the active CUDA `rope_multi` path. | **Retained and active for Apex.** `q35_attn_project` calls the positional rotation. The standalone runtime runs its Goose CUDA RoPE arithmetic and reference FWHT rotations on the live Q4 KV path. | Preserve rotary-section layout and position offsets. Remaining norm/cache fusion and alternate layouts are tracked in parity items 19 and 22. |
+| 24 | EXP-173 Flash Attention prefill and decode, with the frozen EXP-1476 causal `4 × 8` and `8 × 8` families. | **Partially restored.** Existing CUDA vector decode and large-prompt MMA paths are live. [EXP-1592](CUDA-PARITY-EXP1476.md#four-query-flash-attention-checkpoint-tail) restores and traces the four-query tile on real Apex under a diagnostic selector. | The scoped oracle's max error is `5.96e-8`; the full candidate improves the record count but loses 1.056 s in decode with a different token sequence and expert workload. Keep the candidate reproducible without adopting it as the default. |
+| 25 | EXP-138–149 host CPU compute ownership (`ccde6f61` through `2a0c4b77`), including AVX2 tiled quantized CPU MoE, quant type dispatch and threadpool. | **Partially restored.** The standalone CPU path runs Goose quantized decode, matrix routing and row workers. Historical hybrid AVX2 and worker policies must be checked against actually dispatched standalone shapes. | Compare instruction mix, layout and worker duty on active CPU operators. Current Apex quantized matrix time is dominated by GPU kernels; no isolated CPU MoE gain is measured for this profile. |
 
 ### Historical negative results and estimates
 
@@ -246,16 +257,124 @@ variants likewise do not represent deletion regressions.
 
 Track historic mechanisms through the shared
 [CUDA parity map](CUDA-PARITY-EXP1476.md#mechanisms).
-Prioritize remaining long-decode submission and prefill
-MMQ traffic by measured request-window time. After the
-GDN descriptor change, target expert copies that still block compute and
-compare device grouping only after accounting for host SLRU
-inputs. Broader CUDA Graph capture depends on stable buffers,
-safe dynamic parameter updates and event ownership.
-Warm prefix reuse and non-Apex compatibility need separate
-request profiles. Cold Apex acceptance remains 32K/512,
-4096/4096, fresh A/B against EXP-1476, with output quality,
-RSS, VRAM and swap under identical conditions.
+
+The EXP-1592 diagnostic supplies a newer whole-trace view of
+the dominant families. The table sums device intervals by
+short kernel name. The runs are from separate sessions and
+the completion token streams differ. Small startup work can
+contribute to both sums. The deltas are priorities for isolation
+and do not add up to a change in request latency.
+
+| Device family, seconds | EXP-1476 | EXP-1592 | Difference |
+|---|---:|---:|---:|
+| MMQ matmul, separately from quantization/packing | 3.137 | 13.704 | +10.566 |
+| MMA Flash Attention, including partition fixups | 1.400 | 2.946 | +1.546 |
+| Vector Flash Attention body | 1.216 | 2.774 | +1.558 |
+| Whole-head prefill GDN MMA | 0.468 | 1.354 | +0.887 |
+| Scalar GDN | 0.057 | 0.475 | +0.418 |
+| RoPE, phase generation plus application in Goose | 0.022 | 0.539 | +0.517 |
+| Long SSM convolution | 0.208 | 0.204 | −0.004 |
+
+For RoPE the independent trace has 10,326 calls per phase,
+compared with 10,440 calls to the hybrid's `rope_multi`.
+Check whether the existing fused body can reuse the same
+per-position phases or execute a single dispatch for the active
+layout. Preserve position sections, strides and cache rotations.
+The 0.517 s device difference is a measured gap, with no
+standalone request-latency claim.
+
+1. Reprofile the current 8/16 checkpoint with fixed routes or
+   teacher-forced continuation for attribution. Reuse shared
+   Q4_K/Q6_K MMQ and measure remaining kernel time and exposed
+   staging waits. The old 16.234 s MMQ difference includes
+   gains already restored by EXP-1578–1581 and EXP-1587.
+2. Extend CUDA Graph capture to a stable decode sequence where
+   the replay replaces actual submissions. Gate pointer, shape,
+   cache growth and expert-slot eviction before larger captures.
+   Compare submission gaps and full decode on the same request.
+3. Compare equivalent GDN decode and RoPE shapes using the
+   existing EXP-171/172 bodies. Measure registers, launches
+   and reduction/state traffic before changing arithmetic.
+4. Measure pinned-slot preparation and exposed DMA waits on
+   pageable expert fills. Consider the original EXP-045 worker
+   only if this producer is on the critical path. Keep fixed
+   bytes, expert IDs and slot reuse in that comparison.
+5. Evaluate the existing device grouping kernel only when its
+   outputs eliminate host job expansion or transfer. Compact
+   host jobs and live top-K already run. Validate empty groups,
+   repeated routes and destination ordering, with SLRU slot
+   ownership preserved.
+6. Recover warm KV/recurrent prefix reuse separately from the
+   cold benchmark. Check exact-prefix hits, divergence and
+   request cancellation. Qualify IQ2_S verify, MTP and streamed
+   expert placement on the original supported Qwen profile.
+   Cold Apex with `cache_prompt=false` and no draft cannot
+   measure these gains.
+
+Cold Apex acceptance remains 32K/512, 4096/4096, fresh A/B
+against EXP-1476, with output quality, RSS, VRAM and swap under
+identical conditions. The EXP-1591 full reference replay
+measures 2,674.379 prefill tok/s and 61.647 decode steps/s.
+The newer [EXP-1592 scalar control](CUDA-PARITY-EXP1476.md#four-query-flash-attention-checkpoint-tail)
+measures 1,119.964 and 26.993. The separate observations
+differ by 17.006 s in prefill and 10.642 s in decode. They
+are neither a fresh pair nor an allocation of loss to any
+single mechanism.
+
+### Lazy KV VRAM admission
+
+The Goose dense and SLRU placement functions both call
+`mr_cuda_reserve` after preparing CUDA model state. The old
+subtraction used the logical state size for both eager and lazy
+allocation. Under lazy VMM, `cuMemGetInfo` still counts the bytes
+that the model will map later as free. A sufficiently large
+resident expert bank could spend those bytes at startup and
+leave the configured context without VRAM to grow.
+
+EXP-1593 uses the already committed startup allocation
+in the placement calculation. The startup allocation is the
+entire state for eager mode and the recurrent state for lazy
+mode. Mapping remains on demand. The logical size reported via
+the existing runtime statistics keeps its original meaning.
+The CUDA fixture checks 10,486,272 logical bytes in both modes,
+with 10,486,272 eager startup bytes or 512 lazy startup bytes.
+Data survives growth and reset clears KV and recurrent state.
+Compute Sanitizer reports zero errors.
+
+A startup-only Apex boundary check uses the same profile at
+7,168 MiB of explicitly requested expert cache. The old build
+becomes ready. The corrected build exits with a capacity message
+reporting 6,635,413,504 bytes available after model allocations.
+It also rejects a 7,992 MiB request before allocating the bank.
+The boundary result establishes admission behavior. No inference
+request was sent at either raised budget.
+
+| Full cold Apex 32K/512, 4096/4096, 4,992 MiB expert budget | Control A | Corrected B |
+|---|---:|---:|
+| Prefill, tok/s | 1,128.516 | 1,121.384 |
+| Decode, steps/s | 26.985 | 26.975 |
+| Process RSS high-water, KiB | 22,956,272 | 22,955,328 |
+| Process VRAM ready / after request, MiB | 6,510 / 7,272 | 6,510 / 7,272 |
+| Device expert bank, bytes | 5,234,122,752 | 5,234,122,752 |
+| Logical KV/SSM state, bytes | 1,575,813,120 | 1,575,813,120 |
+| Resident model pages | 5,301,139 | 5,301,139 |
+| Process swap and system swap-out growth | 0 | 0 |
+
+Both answers, all 512 IDs, probability rows, stop reason and
+SLRU counters are identical. The existing content defect is
+unchanged. This single pair verifies the supported configuration
+and reports the observed 0.185 s more prefill and 0.007 s more
+decode. It does not establish a throughput trend. VRAM figures
+are snapshots, with continuous peak sampling still open for
+final acceptance. The process maps have no libggml or libstdc++.
+
+The frozen request SHA-256 is
+`484a12de00ec057e4b78d480ebb185153bb10af607eb23192a72995ba3026d0f`.
+The corrected executable SHA-256 is
+`407b5b304df32e6966d388f6cee93acf582cbf4d627ee020892279966caa8c1d`.
+Raw runs, both binaries, the fixture log and output checksums
+are under
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/vram-reserve-exp1593`.
 
 Reference artifacts are in
 `/home/end0/AI/LlamaServer/franken-exp1476-arena-ab.htNK9R/a`.

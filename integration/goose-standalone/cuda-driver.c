@@ -1186,6 +1186,10 @@ int64_t fg_cuda_model_state_bytes(void) {
     return (int64_t) cuda.state_logical_bytes;
 }
 
+int64_t fg_cuda_model_state_startup_bytes(void) {
+    return (int64_t) cuda.state.bytes;
+}
+
 static struct device_buffer * state_region(uint64_t host, int64_t bytes, int64_t kind, size_t * at) {
     if (!cuda.state_logical_bytes) return NULL;
     if (cuda.state_views) {

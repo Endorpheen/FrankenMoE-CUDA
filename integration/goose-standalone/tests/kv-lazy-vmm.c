@@ -11,6 +11,7 @@ extern int64_t fg_cuda_reset_model_state(void);
 extern int64_t fg_cuda_state_write(uint64_t host, int64_t bytes);
 extern int64_t fg_cuda_state_read(uint64_t host, int64_t bytes);
 extern int64_t fg_cuda_model_state_bytes(void);
+extern int64_t fg_cuda_model_state_startup_bytes(void);
 
 static void check_bytes(const unsigned char * bytes, size_t count, unsigned char expected) {
     for (size_t i = 0; i < count; ++i) assert(bytes[i] == expected);
@@ -31,6 +32,10 @@ int main(int argc, char ** argv) {
     fg143_cpu_init(argc, argv);
     assert(fg_cuda_load_model_state((sl_i64) {ranges, 12}, logical) == logical);
     assert(fg_cuda_model_state_bytes() == logical);
+    const int64_t startup = fg_cuda_model_state_startup_bytes();
+    assert(startup == sizeof(recurrent) || startup == logical);
+    if (argc == 2) assert(startup == strtoll(argv[1], NULL, 10));
+    printf("KV logical bytes: %lld, eager startup bytes: %lld\n", (long long) logical, (long long) startup);
     memset(key, 0xff, probe);
     assert(fg_cuda_state_read((uintptr_t) key, probe) == 0);
     check_bytes(key, probe, 0);
@@ -58,6 +63,7 @@ int main(int argc, char ** argv) {
     check_bytes(key, probe, 0);
     check_bytes(value, probe, 0);
     check_bytes(recurrent, sizeof(recurrent), 0);
+    assert(fg_cuda_model_state_startup_bytes() == startup);
     puts("KV growth and recurrent reset passed");
     free(value);
     free(key);
