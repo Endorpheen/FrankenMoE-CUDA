@@ -80,14 +80,18 @@ fn mmq_q6_stage(weights: u64, stride: i64, tile: u64, thread: i64, threads: i64)
     }
 }
 
-fn mmq_q4_acc(sum: f32, dot: i32, dm: f32, minimum: f32, ds: u64, fused: bool) -> f32 {
-    let scaled = mmq_mul(dm, mmq_half(ds));
+fn mmq_q4_scaled_acc(sum: f32, dot: i32, dm: f32, minimum: f32, delta: f32, total: f32, fused: bool) -> f32 {
+    let scaled = mmq_mul(dm, delta);
     if fused {
         let value = mmq_fma(scaled, dot as f32, sum);
-        return mmq_fma(minimum, mmq_half(ds + 2), value);
+        return mmq_fma(minimum, total, value);
     }
     let value = sum + mmq_mul(scaled, dot as f32);
-    return value + mmq_mul(minimum, mmq_half(ds + 2));
+    return value + mmq_mul(minimum, total);
+}
+
+fn mmq_q4_acc(sum: f32, dot: i32, dm: f32, minimum: f32, ds: u64, fused: bool) -> f32 {
+    return mmq_q4_scaled_acc(sum, dot, dm, minimum, mmq_half(ds), mmq_half(ds + 2), fused);
 }
 
 fn mmq_q4_accumulate(sum: MmqSum, dot: MmqDot, scales: MmqScales, ds0: u64, ds1: u64, fused: bool) -> MmqSum {
@@ -625,21 +629,21 @@ export fn fg_device_mmq_wide(weights: u64, packed: u64, out: u64, jobs: u64, str
     mmq_wide_store(out, jobs, words, right, row, lane, result_right);
 }
 
-fn mmq_q4_shared_acc(sum: MmqSum, dot: MmqDot, scale: MmqScales, ds0: u32, ds1: u32) -> MmqSum {
+fn mmq_q4_shared_acc(sum: MmqSum, dot: MmqDot, scale: MmqScales, ds0: u32, ds1: u32, fused: bool) -> MmqSum {
     let d0 = mmq_half_value(ds0 & 65535);
     let d1 = mmq_half_value(ds1 & 65535);
     let s0 = mmq_half_value(ds0 >> 16);
     let s1 = mmq_half_value(ds1 >> 16);
     return MmqSum {
-        a: mmq_fma(scale.m0, s0, mmq_fma(mmq_mul(scale.d0, d0), dot.a as f32, sum.a)),
-        b: mmq_fma(scale.m0, s1, mmq_fma(mmq_mul(scale.d0, d1), dot.b as f32, sum.b)),
-        c: mmq_fma(scale.m1, s0, mmq_fma(mmq_mul(scale.d1, d0), dot.c as f32, sum.c)),
-        d: mmq_fma(scale.m1, s1, mmq_fma(mmq_mul(scale.d1, d1), dot.d as f32, sum.d))
+        a: mmq_q4_scaled_acc(sum.a, dot.a, scale.d0, scale.m0, d0, s0, fused),
+        b: mmq_q4_scaled_acc(sum.b, dot.b, scale.d0, scale.m0, d1, s1, fused),
+        c: mmq_q4_scaled_acc(sum.c, dot.c, scale.d1, scale.m1, d0, s0, fused),
+        d: mmq_q4_scaled_acc(sum.d, dot.d, scale.d1, scale.m1, d1, s1, fused)
     };
 }
 
 fn mmq_q4_shared_column(sum: MmqPairSum, activation: u64, group: i64, lane: i64,
-    lo: MmqWords, hi: MmqWords, lo_scales: MmqScales, hi_scales: MmqScales) -> MmqPairSum {
+    lo: MmqWords, hi: MmqWords, lo_scales: MmqScales, hi_scales: MmqScales, fused: bool) -> MmqPairSum {
     let sub = lane % 4;
     let rhs = activation + ((144 * (lane / 4) + 16 + 32 * group + 4 * sub) as u64);
     let ds = activation + ((288 * sub + 4 * group) as u64);
@@ -649,8 +653,8 @@ fn mmq_q4_shared_column(sum: MmqPairSum, activation: u64, group: i64, lane: i64,
     let ds1 = mmq_shared_word(ds + 144);
     let dot_lo = mmq_mma32(lo.a, lo.b, lo.c, lo.d, b0, b1);
     let dot_hi = mmq_mma32(hi.a, hi.b, hi.c, hi.d, b0, b1);
-    return MmqPairSum { left: mmq_q4_shared_acc(sum.left, dot_lo, lo_scales, ds0, ds1),
-        right: mmq_q4_shared_acc(sum.right, dot_hi, hi_scales, ds0, ds1) };
+    return MmqPairSum { left: mmq_q4_shared_acc(sum.left, dot_lo, lo_scales, ds0, ds1, fused),
+        right: mmq_q4_shared_acc(sum.right, dot_hi, hi_scales, ds0, ds1, fused) };
 }
 
 fn mmq_store_pair(out: u64, jobs: u64, words: i64, tile: i64, col: i64, routes: i64,
@@ -832,10 +836,10 @@ export fn fg_device_mmq_q4_m64(weights: u64, packed: u64, out: u64, jobs: u64,
                 let hi = mmq_ldm32(mmq_q4_shared_fragment(hi_stage, g, lane));
                 let lo_scales = mmq_q4_shared_scales(lo_stage, g, lane);
                 let hi_scales = mmq_q4_shared_scales(hi_stage, g, lane);
-                sum0 = mmq_q4_shared_column(sum0, activation, group, lane, lo, hi, lo_scales, hi_scales);
-                sum1 = mmq_q4_shared_column(sum1, activation + 1152, group, lane, lo, hi, lo_scales, hi_scales);
-                sum2 = mmq_q4_shared_column(sum2, activation + 2304, group, lane, lo, hi, lo_scales, hi_scales);
-                sum3 = mmq_q4_shared_column(sum3, activation + 3456, group, lane, lo, hi, lo_scales, hi_scales);
+                sum0 = mmq_q4_shared_column(sum0, activation, group, lane, lo, hi, lo_scales, hi_scales, true);
+                sum1 = mmq_q4_shared_column(sum1, activation + 1152, group, lane, lo, hi, lo_scales, hi_scales, true);
+                sum2 = mmq_q4_shared_column(sum2, activation + 2304, group, lane, lo, hi, lo_scales, hi_scales, true);
+                sum3 = mmq_q4_shared_column(sum3, activation + 3456, group, lane, lo, hi, lo_scales, hi_scales, true);
             }
             mmq_barrier();
         }
@@ -875,7 +879,7 @@ fn mmq_q4_stage_half(weights: u64, stride: i64, tile: u64, half: i64, lane: i64)
 // each 16-row slab keeps the shared allocation equal to that of M64.
 fn mmq_q4_m128(weights: u64, packed: u64, out: u64, jobs: u64,
     stride: i64, extent: i64, row: i64, route: i64, first_route: i64, routes: i64,
-    thread: i64, stage: u64, words: i64, input_stride: i64) {
+    thread: i64, stage: u64, words: i64, input_stride: i64, fused: bool) {
     let lane = thread % 32;
     let warp = thread / 32;
     let col = 64 * (warp % 2);
@@ -918,14 +922,14 @@ fn mmq_q4_m128(weights: u64, packed: u64, out: u64, jobs: u64,
                 let hi = mmq_ldm32(mmq_q4_shared_fragment(hi_stage, group, lane));
                 let lo_scales = mmq_q4_scales_at(lo_stage + 2048, group, lane);
                 let hi_scales = mmq_q4_scales_at(hi_stage + 2048, group, lane);
-                sum0 = mmq_q4_shared_column(sum0, activation, group, lane, lo, hi, lo_scales, hi_scales);
-                sum1 = mmq_q4_shared_column(sum1, activation + 1152, group, lane, lo, hi, lo_scales, hi_scales);
-                sum2 = mmq_q4_shared_column(sum2, activation + 2304, group, lane, lo, hi, lo_scales, hi_scales);
-                sum3 = mmq_q4_shared_column(sum3, activation + 3456, group, lane, lo, hi, lo_scales, hi_scales);
-                sum4 = mmq_q4_shared_column(sum4, activation + 4608, group, lane, lo, hi, lo_scales, hi_scales);
-                sum5 = mmq_q4_shared_column(sum5, activation + 5760, group, lane, lo, hi, lo_scales, hi_scales);
-                sum6 = mmq_q4_shared_column(sum6, activation + 6912, group, lane, lo, hi, lo_scales, hi_scales);
-                sum7 = mmq_q4_shared_column(sum7, activation + 8064, group, lane, lo, hi, lo_scales, hi_scales);
+                sum0 = mmq_q4_shared_column(sum0, activation, group, lane, lo, hi, lo_scales, hi_scales, fused);
+                sum1 = mmq_q4_shared_column(sum1, activation + 1152, group, lane, lo, hi, lo_scales, hi_scales, fused);
+                sum2 = mmq_q4_shared_column(sum2, activation + 2304, group, lane, lo, hi, lo_scales, hi_scales, fused);
+                sum3 = mmq_q4_shared_column(sum3, activation + 3456, group, lane, lo, hi, lo_scales, hi_scales, fused);
+                sum4 = mmq_q4_shared_column(sum4, activation + 4608, group, lane, lo, hi, lo_scales, hi_scales, fused);
+                sum5 = mmq_q4_shared_column(sum5, activation + 5760, group, lane, lo, hi, lo_scales, hi_scales, fused);
+                sum6 = mmq_q4_shared_column(sum6, activation + 6912, group, lane, lo, hi, lo_scales, hi_scales, fused);
+                sum7 = mmq_q4_shared_column(sum7, activation + 8064, group, lane, lo, hi, lo_scales, hi_scales, fused);
             }
             mmq_barrier();
         }
@@ -942,13 +946,14 @@ fn mmq_q4_m128(weights: u64, packed: u64, out: u64, jobs: u64,
 
 export fn fg_device_mmq_q4_m128(weights: u64, packed: u64, out: u64, jobs: u64,
     stride: i64, extent: i64, row: i64, route: i64, first_route: i64, routes: i64, thread: i64, stage: u64) {
-    mmq_q4_m128(weights, packed, out, jobs, stride, extent, row, route, first_route, routes, thread, stage, 2, 0);
+    mmq_q4_m128(weights, packed, out, jobs, stride, extent, row, route, first_route, routes, thread, stage, 2, 0, true);
 }
 
 export fn fg_device_mmq_q4_routed_m128(weights: u64, packed: u64, out: u64, jobs: u64,
     stride: i64, extent: i64, row: i64, route: i64, first_route: i64, routes: i64,
-    thread: i64, stage: u64, input_stride: i64) {
-    mmq_q4_m128(weights, packed, out, jobs, stride, extent, row, route, first_route, routes, thread, stage, 3, input_stride);
+    thread: i64, stage: u64, input_stride: i64, fused: bool) {
+    mmq_q4_m128(weights, packed, out, jobs, stride, extent, row, route, first_route, routes,
+        thread, stage, 3, input_stride, fused);
 }
 
 fn mmq_q4_stage_quarter(weights: u64, stride: i64, tile: u64, quarter: i64, lane: i64) {
@@ -998,8 +1003,8 @@ fn mmq_q4_quarter_column(sum: MmqPairSum, activation: u64, group: i64, scale_off
     let ds1 = mmq_shared_word(ds + 80);
     let dot_lo = mmq_mma32(lo.a, lo.b, lo.c, lo.d, b0, b1);
     let dot_hi = mmq_mma32(hi.a, hi.b, hi.c, hi.d, b0, b1);
-    return MmqPairSum { left: mmq_q4_shared_acc(sum.left, dot_lo, lo_scales, ds0, ds1),
-        right: mmq_q4_shared_acc(sum.right, dot_hi, hi_scales, ds0, ds1) };
+    return MmqPairSum { left: mmq_q4_shared_acc(sum.left, dot_lo, lo_scales, ds0, ds1, true),
+        right: mmq_q4_shared_acc(sum.right, dot_hi, hi_scales, ds0, ds1, true) };
 }
 
 // Both CTA shapes have eight 32-by-128 warp tiles. A quarter block keeps

@@ -15,6 +15,52 @@ for rollback. Retain isolated patches and trace evidence when
 combinations need further qualification. Inspect machine
 code for material unexplained differences.
 
+## EXP-1631 — Route the Q4_K down projection through 128 rows
+
+The Apex `2048 × 32736 × 512` down projection used
+`goose_mmq_matmul`. Its Q4_K path rounds the weight scales
+and uses distinct FP32 multiply and add steps. Reuse the
+128 × 128 routed tile with that same accumulation and the
+same Q8_1 pack layout. The block shares its staged
+activations and stays inside one expert plane. The 16 MiB
+packing bound and the scatter-to-job destinations remain
+unchanged. Small routed batches retain the previous dispatch.
+
+For the same 32,736 fixed routes and two packing windows,
+the old and new paths match all 67,043,328 finite FP32
+values in both per-route and shared packing. Compute
+Sanitizer reports zero errors with shared packing. The
+per-route trace measures two matrix launches at 6.278 ms
+total for the control and 4.003 ms for the candidate.
+Packing takes 0.122 ms in each arm.
+
+| One full unprofiled Apex 32K/512 A/B | EXP-1630 control | Q4_K down tile | Candidate minus control |
+|---|---:|---:|---:|
+| Prefill, ms | 24,346.262 | 23,997.923 | -348.340 |
+| Prefill, tok/s | 1,345.92 | 1,365.45 | +19.54 |
+| Decode, ms | 14,681.481 | 14,451.596 | -229.884 |
+| Decode, tok/s | 34.81 | 35.36 | +0.55 |
+| Prefill plus decode, ms | 39,027.743 | 38,449.519 | -578.224 |
+| Client request, ms | 39,102.730 | 38,528.786 | -573.944 |
+| Maximum process RSS, KiB | 21,482,096 | 21,480,944 | -1,152 |
+| Maximum process VRAM, MiB | 8,220 | 8,220 | 0 |
+| Process swap, KiB / system swap-out growth, pages | 0 / 0 | 0 / 0 | 0 / 0 |
+
+The request, 512 IDs, probabilities, response, all four
+SLRU counters, and model residency match EXP-1630. Both
+use the cumulative Apex profile with 4096/4096 and a
+5,920 MiB expert cache. The change targets prefill.
+The decode difference is an observation from this pair.
+The remaining prefill gap is 11,716.064 ms against the
+2,668 tok/s target. Use the archived EXP-1631 candidate
+as the cumulative control. New builds select the kernel
+by default in the qualified SM89 scope. Set
+`GOOSE_MMQ_Q4_ROUTED_DOWN_M128=0` for the previous path.
+
+The executables, pinned profile, raw full runs, exact
+fixture and CUDA trace are in
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/routed-down-exp1631`.
+
 ## EXP-1630 — Reuse Q8_1 across 128 routed Q4_K rows
 
 Hybrid `e7c9155a:vendor/flint/ggml/src/ggml-cuda/mmq.cu`

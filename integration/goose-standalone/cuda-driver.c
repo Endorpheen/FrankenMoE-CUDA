@@ -163,7 +163,7 @@ static struct {
     Function mmq_q4_dense_large;
     unsigned mmq_q4_large_rows, mmq_q4_large_cols;
     Function mmq_q4_routed_x128, mmq_q6_routed_x128;
-    Function mmq_q4_routed_m128;
+    Function mmq_q4_routed_m128, mmq_q4_routed_down_m128;
     Function mmvq_pack, mmvq;
     Function dense_mma, dense_mma_reference, gdn_mma, flash_mma, flash_stage, flash_vec, flash_vec_merge;
     Function flash_vec_pack, flash_vec_packed;
@@ -1088,6 +1088,8 @@ static void load_cuda(void) {
                 error = cuda.function_get(&cuda.mmq_q4_routed_x128, cuda.module, "goose_mmq_q4_routed_x128");
             if (error == 0 && cuda.mmq_q4_routed_x128 && fg_standalone_option_enabled("GOOSE_MMQ_Q4_ROUTED_M128"))
                 error = cuda.function_get(&cuda.mmq_q4_routed_m128, cuda.module, "goose_mmq_q4_routed_m128");
+            if (error == 0 && fg_standalone_option_enabled("GOOSE_MMQ_Q4_ROUTED_DOWN_M128"))
+                error = cuda.function_get(&cuda.mmq_q4_routed_down_m128, cuda.module, "goose_mmq_q4_routed_down_m128");
         }
         if (error == 0 && reference_arch && q6_reference) {
             error = cuda.function_get(&cuda.mmq_q6_matrix, cuda.module, "goose_mmq_q6_reference");
@@ -2328,7 +2330,9 @@ static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
     const bool dense_q6_half_k = kind == q6_kind && cuda.mmq_q6_dense_half_k && unsplit;
     const bool routed_wide = indexed_reference && routed_shared;
     const Function routed_x128 = !routed_wide ? NULL : kind == q4_kind ? cuda.mmq_q4_routed_x128 : cuda.mmq_q6_routed_x128;
-    const int routes_per_tile = routed_wide ? (routed_x128 ? 128 : routed_x64 ? 64 : 32) : 8;
+    const bool routed_down = kind == q4_kind && job_words == 3 && rows == 2048 && extent == 2 &&
+        count >= wide_reference_columns && cuda.mmq_q4_routed_down_m128;
+    const int routes_per_tile = routed_down || routed_x128 ? 128 : routed_wide ? (routed_x64 ? 64 : 32) : 8;
     int32_t reference_columns = indexed_reference ? -1 : dense_reference ? count : 0;
     int32_t layout = kind == q4_kind ? (reference ? mmq_ds4_reciprocal : mmq_ds4) :
         (reference ? mmq_d4_reciprocal : mmq_d4);
@@ -2427,6 +2431,12 @@ static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
                     error = cuda.launch(routed_shared, (unsigned) rows / 16, (unsigned) (batch - wide),
                         1, 128, 1, 1, 0, NULL, args, NULL);
                 }
+            } else if (routed_down) {
+                int tile = first;
+                void * args[] = {&weight, &cuda.mmq_packed.address, &matrix_output, &cuda.jobs.address,
+                    &cuda.mmq_tiles.address, &stride, &extent, &rows, &tile, &first_route, &input_stride};
+                error = cuda.launch(cuda.mmq_q4_routed_down_m128, (unsigned) rows / 128, (unsigned) batch,
+                    1, 256, 1, 1, 0, NULL, args, NULL);
             } else if (q6_half_k) {
                 void * args[] = {&weight, &cuda.mmq_packed.address, &matrix_output, &cuda.jobs.address,
                     &stride, &extent, &first_route, &columns};

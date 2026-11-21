@@ -289,19 +289,23 @@ MMQ_DENSE_Q4_COOPERATIVE(goose_mmq_q4_dense_m64, fg_device_mmq_q4_m64_g, 64u)
 MMQ_DENSE_Q4_COOPERATIVE(goose_mmq_q4_dense_m128, fg_device_mmq_q4_m128_g, 128u)
 #undef MMQ_DENSE_Q4_COOPERATIVE
 
-__kernel void goose_mmq_q4_routed_m128(__global const uint8_t * weights, __global const uint8_t * packed,
-    __global uint8_t * output, __global const uint64_t * jobs, __global const uint64_t * tiles,
-    uint64_t stride, int32_t extent, int32_t rows, int32_t first, int32_t first_route, int64_t input_stride) {
-    uint32_t row, tile, thread;
-    __local uint32_t shared[9856] __attribute__((aligned(16)));
-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(row));
-    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(tile));
-    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
-    const uint64_t at = ((uint64_t) first + tile) * 3;
-    fg_device_mmq_q4_routed_m128_g((uint64_t) weights + tiles[at + 2], (uint64_t) packed,
-        (uint64_t) output, (uint64_t) jobs, stride, extent, 128u * row, tiles[at],
-        first_route, tiles[at + 1], thread, (uint64_t) shared, input_stride);
+#define MMQ_ROUTED_Q4_COOPERATIVE(name, fused) \
+__kernel void name(__global const uint8_t * weights, __global const uint8_t * packed, \
+    __global uint8_t * output, __global const uint64_t * jobs, __global const uint64_t * tiles, \
+    uint64_t stride, int32_t extent, int32_t rows, int32_t first, int32_t first_route, int64_t input_stride) { \
+    uint32_t row, tile, thread; \
+    __local uint32_t shared[9856] __attribute__((aligned(16))); \
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(row)); \
+    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(tile)); \
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread)); \
+    const uint64_t at = ((uint64_t) first + tile) * 3; \
+    fg_device_mmq_q4_routed_m128_g((uint64_t) weights + tiles[at + 2], (uint64_t) packed, \
+        (uint64_t) output, (uint64_t) jobs, stride, extent, 128u * row, tiles[at], \
+        first_route, tiles[at + 1], thread, (uint64_t) shared, input_stride, fused); \
 }
+MMQ_ROUTED_Q4_COOPERATIVE(goose_mmq_q4_routed_m128, true)
+MMQ_ROUTED_Q4_COOPERATIVE(goose_mmq_q4_routed_down_m128, false)
+#undef MMQ_ROUTED_Q4_COOPERATIVE
 
 #define MMQ_DENSE_Q4_LARGE(name, height, width) \
 __kernel void name(__global const uint8_t * weights, __global const uint8_t * packed, \
