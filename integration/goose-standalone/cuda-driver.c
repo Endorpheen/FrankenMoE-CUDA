@@ -117,6 +117,7 @@ static struct {
     Function mmq_q6_dense_shared, mmq_q6_routed_shared;
     Function mmq_q6_dense_x64, mmq_q6_routed_x64;
     Function mmq_q4_dense_x128, mmq_q6_dense_x128;
+    Function mmq_q4_routed_x128, mmq_q6_routed_x128;
     Function mmvq_pack, mmvq;
     Function dense_mma, dense_mma_reference, gdn_mma, flash_mma, flash_stage, flash_vec, flash_vec_merge;
     Function flash_vec_pack, flash_vec_packed;
@@ -509,6 +510,7 @@ static void load_cuda(void) {
     const bool q4_routed_shared = fg_standalone_option_enabled("GOOSE_MMQ_Q4_ROUTED_SHARED");
     const bool q4_x64 = fg_standalone_option_enabled("GOOSE_MMQ_Q4_X64");
     const bool dense_x128 = fg_standalone_option_enabled("GOOSE_MMQ_DENSE_X128");
+    const bool routed_x128 = fg_standalone_option_enabled("GOOSE_MMQ_ROUTED_X128");
     const char * ssm_setting = getenv("GOOSE_SSM_REFERENCE");
     const bool ssm_reference = ssm_setting && strcmp(ssm_setting, "1") == 0;
     const char * activation_setting = getenv("GOOSE_CUDA_ACTIVATION_REFERENCE");
@@ -554,6 +556,8 @@ static void load_cuda(void) {
                 error = cuda.function_get(&cuda.mmq_q4_dense_x128, cuda.module, "goose_mmq_q4_dense_x128");
             if (error == 0 && q4_x64 && q4_routed_shared)
                 error = cuda.function_get(&cuda.mmq_q4_routed_x64, cuda.module, "goose_mmq_q4_routed_x64");
+            if (error == 0 && cuda.mmq_q4_routed_x64 && routed_x128)
+                error = cuda.function_get(&cuda.mmq_q4_routed_x128, cuda.module, "goose_mmq_q4_routed_x128");
         }
         if (error == 0 && reference_arch && q6_reference) {
             error = cuda.function_get(&cuda.mmq_q6_matrix, cuda.module, "goose_mmq_q6_reference");
@@ -567,6 +571,8 @@ static void load_cuda(void) {
                 error = cuda.function_get(&cuda.mmq_q6_dense_x128, cuda.module, "goose_mmq_q6_dense_x128");
             if (error == 0 && q6_shared && q6_x64)
                 error = cuda.function_get(&cuda.mmq_q6_routed_x64, cuda.module, "goose_mmq_q6_routed_x64");
+            if (error == 0 && cuda.mmq_q6_routed_x64 && routed_x128)
+                error = cuda.function_get(&cuda.mmq_q6_routed_x128, cuda.module, "goose_mmq_q6_routed_x128");
         }
         if (error == 0 && stream_k) error = cuda.function_get(&cuda.mmq_stream, cuda.module, "goose_mmq_stream");
         if (error == 0 && stream_k) error = cuda.function_get(&cuda.mmq_stream_fixup, cuda.module, "goose_mmq_stream_fixup");
@@ -1757,7 +1763,8 @@ static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
         (count - 1) / reference_tile_width == (wide_reference_columns - 1) / reference_tile_width);
     const bool dense_wide = dense_shared && dense_reference && wide_geometry && rows % 128 == 0;
     const bool routed_wide = indexed_reference && routed_shared;
-    const int routes_per_tile = routed_wide ? (routed_x64 ? 64 : 32) : 8;
+    const Function routed_x128 = !routed_wide ? NULL : kind == q4_kind ? cuda.mmq_q4_routed_x128 : cuda.mmq_q6_routed_x128;
+    const int routes_per_tile = routed_wide ? (routed_x128 ? 128 : routed_x64 ? 64 : 32) : 8;
     int32_t reference_columns = indexed_reference ? -1 : dense_reference ? count : 0;
     int32_t layout = kind == q4_kind ? (reference ? mmq_ds4_reciprocal : mmq_ds4) :
         (reference ? mmq_d4_reciprocal : mmq_d4);
@@ -1797,7 +1804,7 @@ static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
         window_tiles /= 2;
     }
     if (error == 0) error = reserve(&cuda.mmq_tiles, tile_bytes);
-    if (error == 0) error = cuda.upload(cuda.mmq_tiles.address, tiles, tile_bytes);
+    if (error == 0 && !routed_x128) error = cuda.upload(cuda.mmq_tiles.address, tiles, tile_bytes);
     if (!shared) input_stride = 0;
     if (error == 0 && shared) {
         if (cuda.mmq_window) window_tiles = tile_count < 8191 ? tile_count : 8191;
@@ -1817,7 +1824,14 @@ static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
         const int64_t last = 3ll * (end - 1);
         first_route = (int) tiles[3ll * first];
         const unsigned routes = (unsigned) (tiles[last] + tiles[last + 1] - first_route);
-        if (!shared) {
+        int wide = 0;
+        if (routed_x128) {
+            int64_t * window = tiles + 3ll * first;
+            wide = (int) fg143_mmq_wide_first((sl_i64) {window, 3ll * batch});
+            error = upload_packet(cuda.mmq_tiles.address + 3ull * first * sizeof(*tiles),
+                                  window, 3ull * batch * sizeof(*tiles));
+        }
+        if (error == 0 && !shared) {
             error = cuda.launch(cuda.mmq_pack, (unsigned) (2 * extent), routes, 1,
                                 32, 1, 1, 0, NULL, pack_args, NULL);
         }
@@ -1825,10 +1839,19 @@ static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
             const int workers = cuda.mmq_stream && !reference ?
                 (int) fg143_mmq_stream_workers(rows, batch, extent, cuda.multiprocessors) : 0;
             if (routed_wide) {
+                int tile = first;
                 void * args[] = {&weight, &cuda.mmq_packed.address, &matrix_output, &cuda.jobs.address,
-                    &cuda.mmq_tiles.address, &stride, &extent, &rows, &first, &first_route, &input_stride};
-                error = cuda.launch(routed_shared, (unsigned) rows / 16, (unsigned) batch,
-                    1, 128, 1, 1, 0, NULL, args, NULL);
+                    &cuda.mmq_tiles.address, &stride, &extent, &rows, &tile, &first_route, &input_stride};
+                if (wide > 0) {
+                    error = cuda.launch(routed_x128, (unsigned) rows / 16, (unsigned) wide,
+                        1, 256, 1, 1, 0, NULL, args, NULL);
+                    if (error == 0 && wide < batch) ++cuda_matrix_launches;
+                    tile += wide;
+                }
+                if (error == 0 && wide < batch) {
+                    error = cuda.launch(routed_shared, (unsigned) rows / 16, (unsigned) (batch - wide),
+                        1, 128, 1, 1, 0, NULL, args, NULL);
+                }
             } else if (dense_wide && !shared && first % 4 == 0 &&
                 first_route == 8 * first && routes >= 32) {
                 const bool x128 = dense_x128 && first % 16 == 0 && batch % 16 == 0 && routes >= 128;

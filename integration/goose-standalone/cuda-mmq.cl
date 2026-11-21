@@ -224,10 +224,10 @@ __kernel void name(__global const uint8_t * weights, __global const uint8_t * pa
     __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(tile)); \
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread)); \
     const uint64_t at = ((uint64_t) first + tile) * 3; \
-    if (width == 64) { \
+    if (width >= 64) { \
         fg_device_mmq_wide_g((uint64_t) weights + tiles[at + 2], (uint64_t) packed, \
             (uint64_t) output, (uint64_t) jobs, stride, extent, kind, 16u * row, rows, tiles[at], \
-            first_route, tiles[at + 1], 3, input_stride, 0, thread, (uint64_t) shared, 128); \
+            first_route, tiles[at + 1], 3, input_stride, 0, thread, (uint64_t) shared, 2 * width); \
     } else { \
         fg_device_mmq_routed_shared_g((uint64_t) weights + tiles[at + 2], (uint64_t) packed, \
             (uint64_t) output, (uint64_t) jobs, stride, extent, kind, 16u * row, rows, \
@@ -245,6 +245,8 @@ MMQ_ROUTED_SHARED(goose_mmq_q4_routed_shared, 12, 1280, 32)
 MMQ_ROUTED_SHARED(goose_mmq_q6_routed_shared, 14, 1104, 32)
 MMQ_ROUTED_SHARED(goose_mmq_q4_routed_x64, 12, 1280, 64)
 MMQ_ROUTED_SHARED(goose_mmq_q6_routed_x64, 14, 1104, 64)
+MMQ_ROUTED_SHARED(goose_mmq_q4_routed_x128, 12, 1280, 128)
+MMQ_ROUTED_SHARED(goose_mmq_q6_routed_x128, 14, 1104, 128)
 #undef MMQ_DENSE_SHARED
 #undef MMQ_ROUTED_SHARED
 

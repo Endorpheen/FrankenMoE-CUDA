@@ -21,7 +21,7 @@ int main(int argc, char ** argv) {
     const int rows = kind == GGML_TYPE_Q6_K ? 2048 : 512;
     const int width = kind == GGML_TYPE_Q6_K ? 512 : 2048;
     const bool shared_pack = atoi(argv[2]) != 0;
-    const int groups[] = {1, 7, 8, 9, 16, 24, 31, 32, 33, 65};
+    const int groups[] = {1, 65, 7, 127, 8, 128, 9, 129, 16, 24, 31, 32, 33, 193};
     enum { experts = sizeof groups / sizeof *groups, input_rows = 39 };
     const int64_t stride = ggml_row_size(kind, width);
     const int64_t expert_bytes = rows * stride;

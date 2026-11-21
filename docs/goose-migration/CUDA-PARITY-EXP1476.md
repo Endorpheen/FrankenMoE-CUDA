@@ -3724,6 +3724,70 @@ under `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/dense-mmq-x128-ex
 Default executable SHA-256
 `692f93507df48b8ab430a44254e00d10f85632cca6d9da320c2f441cac9605d6`.
 
+## Mixed routed MMQ 16-by-64 and 16-by-128 tiles
+
+EXP-1600 extends the existing SM89 cooperative kernel to
+the routed Q4_K and Q6_K shapes already selected by the
+reference path. The Goose planner forms up to 128 routes
+per expert tile. Within each already bounded window, it
+places descriptors with more than 64 routes first. Route
+indices and packed data keep their original order. CUDA
+launches those descriptors with 256 threads and handles
+the short expert tails with the existing 128-thread
+entry. Neither launch crosses an expert boundary or
+changes the original 16 MiB workspace cap. Both shared and
+per-route packing work. `GOOSE_MMQ_ROUTED_X128=0` restores
+the 64-route plan.
+
+Fixtures at 803 routes compare Q4_K and Q6_K across both
+packing modes with uneven expert groups around the 64
+and 128 boundaries. A separate 11,654-route Q4_K case spans
+multiple packing windows. All 10,078,208 FP32 value
+comparisons are exact. Compute Sanitizer reports zero
+errors in the shared Q4_K and per-route Q6_K cases. Both
+widths use the same registers per thread and shared
+memory per block in the SM89 offline assembly, with zero
+spills.
+
+| Live CUDA traces, same request | 64-route control | Mixed widths |
+|---|---:|---:|
+| Dedicated routed Q4_K blocks | 12,503,616 | 7,353,280 |
+| Dedicated routed Q6_K blocks | 12,497,536 | 7,345,536 |
+| Dedicated routed Q4_K GPU time, s | 4.495 | 4.310 |
+| Dedicated routed Q6_K GPU time, s | 1.294 | 1.154 |
+| Routed kernel launches | 1,060 | 2,020 |
+| Shared and per-route MMQ packing kernel launches | 4,200 | 4,200 |
+| Combined MMQ packing time, s | 0.367 | 0.363 |
+
+The mixed trace has 640 Q4_K and 320 Q6_K wide launches.
+The 1,060 narrow launches handle residual groups. The
+observed dedicated routed time decreases by 325 ms. Dense
+and decode dispatch stay outside the selector.
+
+| Unprofiled Apex 32K/512, 4096/4096, 5,920 MiB | A, 64 routes | B, mixed |
+|---|---:|---:|
+| A–B prefill, tok/s | 1,120.246 | 1,129.230 |
+| B–A prefill, tok/s | 1,127.459 | 1,128.465 |
+| Median prefill, tok/s | 1,123.852 | 1,128.848 |
+| Median prefill, s | 29.157 | 29.028 |
+| Median decode, steps/s | 30.832 | 30.722 |
+| Maximum process / card VRAM, MiB | 8,200 / 10,462 | 8,200 / 10,462 |
+| Maximum RSS high-water, KiB | 22,954,768 | 22,955,264 |
+| Process swap and system swap-out growth per request | 0 | 0 |
+
+Prefill saves 233 and 26 ms. Median decode adds 60 ms
+across the two pairs. This is evidence of a modest
+prefill gain with some decode variation. Both arms have
+the same exact output, probabilities, resident pages and
+expert transfers. The mixed path is enabled for the
+qualified shapes. The independent binary still links
+only libc and libm. Overall Apex acceptance remains 6/8.
+
+Executable SHA-256
+`0e3299da52dd495fc9df879431997a12a942d65f99e6a0c411e476ef98bc1797`.
+Raw data and both traces are under
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/routed-mmq-x128-exp1600`.
+
 ## Long Attention partition probe
 
 EXP-2026-11-20-1562 holds the existing vector kernel fixed

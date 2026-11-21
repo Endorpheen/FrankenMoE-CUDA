@@ -210,7 +210,7 @@ fn cuda_matrix_job_words(p: const Node &) -> i64 {
 // Jobs for each bank plane are contiguous. No tile may cross a plane boundary.
 export fn fg143_mmq_tiles(jobs: const i64[:], words: i64, tile_width: i64, tiles: i64[:]) -> i64 {
     if (words != 2 && words != 3) || jobs.len <= 0 || jobs.len % words != 0 ||
-       (tile_width != 8 && tile_width != 32 && tile_width != 64) { return -1; }
+       (tile_width != 8 && tile_width != 32 && tile_width != 64 && tile_width != 128) { return -1; }
     let count = jobs.len / words;
     var first: i64 = 0;
     var tile: i64 = 0;
@@ -233,10 +233,27 @@ export fn fg143_mmq_tiles(jobs: const i64[:], words: i64, tile_width: i64, tiles
 
 export fn fg143_mmq_window(extent: i64, tiles: i64, tile_width: i64, budget: i64) -> i64 {
     if extent <= 0 || extent > 2147483647 / 256 || tiles <= 0 || budget <= 0 ||
-       (tile_width != 8 && tile_width != 32 && tile_width != 64) { return -1; }
+       (tile_width != 8 && tile_width != 32 && tile_width != 64 && tile_width != 128) { return -1; }
     let bytes_per_tile = extent * 288 * tile_width;
     // Packing launches one CUDA grid-Y block per route.
     return low(tiles, low(65535 / tile_width, high(1, budget / bytes_per_tile)));
+}
+
+// Group the wide descriptors within one already bounded packing window.
+// Route indices and their packed inputs stay in the original order.
+export fn fg143_mmq_wide_first(tiles: i64[:]) -> i64 {
+    var wide: i64 = 0;
+    for i in tiles.len / 3 {
+        let at = 3 * i;
+        if tiles[at + 1] <= 64 { continue; }
+        for j in 3 {
+            let value = tiles[at + j];
+            tiles[at + j] = tiles[3 * wide + j];
+            tiles[3 * wide + j] = value;
+        }
+        wide += 1;
+    }
+    return wide;
 }
 
 // Consecutive eight-route tiles form a dense shared launch.
