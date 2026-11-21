@@ -365,6 +365,10 @@ void hose_prefill_profile(int64_t profile[2]) {
 
 void fg_q35_generation_profile(sl_i64 profile) {
     hose_prefill_profile(profile.data);
+    if (profile.len >= 3) {
+        const char * tail = getenv("GOOSE_PREFILL_CHECKPOINT_TAIL");
+        profile.data[2] = tail && strcmp(tail, "1") == 0;
+    }
 }
 
 int64_t fg_http_eog(sl_i64 ids) {

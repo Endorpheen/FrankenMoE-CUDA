@@ -54,7 +54,8 @@ the dependency that would justify rerunning it.
 | GDN + Flash + Dense MMA on the ten-change package | Source `6083f55c`; [current intermediate performance control](#intermediate-apex-performance-control). Combined short prefill 281.919 tokens/s. The full profiled request reached 283.535 tokens/s. | The full response begins to repeat the input. Its second ID is 1716 versus 198 in EXP-1476. Content and probability rows differ. | Use the exact opt-in package as the speed checkpoint. Use the EXP-1476 response for correctness. Recheck the individual kernels and switches as the numerical path changes. |
 | EXP-1540, MMQ Stream-K | `GOOSE_MMQ_STREAM_K=1`. [Kernel and model measurements](#mmq-stream-k-checkpoint). The Apex 32/1 case executes 160 Stream-K and 160 fixup kernels and reduces MMQ device arithmetic time from 59.266 to 54.748 ms. | The 32/1 request changes probabilities and takes 913.819 ms versus 855.517 ms. The 4096/1 geometry chooses the regular MMQ path throughout. | Keep opt-in. Recheck with reference-sized MMQ tiles and routed dispatch after their numerical gate. A low-occupancy production shape or revised tile geometry can change the partition decision. |
 | EXP-1563, routed MMQ input residency | [Candidate patch and full pair](../../experiments/EXP-2026-11-20-1563-mmq-input-residency/README.md). Protecting the SwiGLU input removes 21,474,836,480 bytes in each direction and moves full prefill from 694.731 to 773.585 tok/s with matching responses. | Peak process VRAM rises from 8,524 to 8,748 MiB. The candidate run records 6,286 system swap-out pages with zero process swap. | Recheck when planned arena placement can keep the live input and result in the current capacity. Compare unchanged outputs and remeasure the 64 MiB transfers, VRAM and swap. |
-| EXP-1585, single-token four-tap SSM | [Captured-input replay](#deferred-single-token-ssm-arithmetic). Both raw and fused results match 8,192 of 8,192 native values. The new entry uses 24 registers and no stack. | The original opening repetition persists. Live decode drops from 26.228 to 24.004 steps/s in the observed pair, with a different token sequence and 17.064 GB more expert uploads. | Retest after the full-shape Q6_K prefill projection matches on the three saved rows. Compare generation and measure SSM device time with the same token history. |
+| EXP-1585, single-token four-tap SSM | [Captured-input replay](#deferred-single-token-ssm-arithmetic). Both raw and fused results match 8,192 of 8,192 native values. The new entry uses 24 registers and no stack. | The original opening repetition persists. Live decode drops from 26.228 to 24.004 steps/s in the observed pair, with a different token sequence and 17.064 GB more expert uploads. | Recheck with the matched [EXP-1586 prefill tail](#actual-apex-checkpoint-tail-geometry). Compare generation and measure SSM device time with the same token history. |
+| EXP-1586, checkpoint-tail geometry and dense MMVQ | [Matched prefill snapshots and full pairs](#actual-apex-checkpoint-tail-geometry). The last 24,576 QKV values match the live reference. Both full candidate responses omit the opening task echo. | Median prefill adds 0.805 s and the response miscounts the number of repeated log records. | Restore cooperative MMQ dispatch at the 4,092-token shape and qualify the full response again. The two selectors remain experimental. |
 
 After a material dependency change, use short sequential A/B runs on
 identical inputs and settings. Use the best current verified checkpoint
@@ -3275,11 +3276,11 @@ and RMS match for all 6,144 values each. The Q6_K projection
 | 32,767 | 117 | 0.00107527 |
 
 Within each runtime those rows match its own saved convolution
-history exactly. This localizes an upstream discrepancy to
-the dense Q6_K projection on the full prefill shape. The
-[124-token parity replay](#reference-q6_k-at-the-qkv-boundary)
-does not cover this shape. Compare the full native D4 pack,
-Stream-K schedule, and result on the same captured activations.
+history exactly. The comparison located the difference before
+the history copy. The
+[follow-up replay](#actual-apex-checkpoint-tail-geometry)
+identified different native and Goose microbatch shapes at
+these rows.
 
 ### Deferred single-token SSM arithmetic
 
@@ -3311,7 +3312,7 @@ Opening repetition remains and the sequences diverge at
 output index 17. B repeats the topic further in its body.
 The changed workload and system swap activity prevent an
 isolated kernel speed attribution. Preserve the specialized
-kernel for replay after the upstream Q6_K repair. The normal
+kernel for replay with matched checkpoint-tail geometry. The normal
 runtime keeps the serial choice. The experimental selector is
 `GOOSE_SSM_DECODE_REFERENCE=1` with `GOOSE_SSM_REFERENCE=1`.
 The final opt-in build reproduces both fixture modes.
@@ -3322,6 +3323,93 @@ run scripts and raw pair are under
 Final opt-in executable SHA-256
 `aa600b952e99b3a23661ee4e483ca694d0f9a5c2a3d5b34fd17edb0cef9a184f`.
 The accepted speed checkpoint remains EXP-1584.
+
+## Actual Apex checkpoint-tail geometry
+
+EXP-1586 checks the assumptions behind the EXP-1585
+comparison. On the observed request, both profiles set a
+4,096-token logical and physical limit. The last three
+observed rows run in different shapes. EXP-1476's
+`server-context.cpp` completion batching breaks at
+`min(n_batch, 4 + n_ubatch)` and `min(n_batch, 4)`
+before the end of a checkpointed recurrent prompt.
+The frozen `--ctx-checkpoints 32` profile therefore
+executes seven batches of 4,096 followed by 4,092 and
+4. The archived lane trace observes D4 MMQ for 4,092
+rows and `mul_mat_vec_q<Q6_K,4,...>` plus the ordinary
+Q8_1 packer for the last four. The deployed Goose
+checkpoint evaluates eight batches of 4,096.
+
+The same captured F32 RMS rows and actual Apex Q6_K
+weight produce these isolated results on SM89:
+
+| Replay | Bitwise matches out of 24,576 | Compared with |
+|---|---:|---|
+| EXP-1476 MMQ, 4,096 columns | 24,576 | The live Goose QKV capture |
+| Goose narrow, 16×32 and 16×64 kernels, 4,096 columns | 24,576 each | Isolated EXP-1476 MMQ |
+| EXP-1476 MMVQ, four columns | 24,576 | The live EXP-1476 QKV capture |
+| Goose existing MMVQ, four columns | 24,576 | Isolated EXP-1476 MMVQ |
+
+The 48 inspected D4 blocks also match byte-for-byte,
+including all 192 F32 scales and 6,144 signed quant
+bytes. These comparisons explain the earlier
+0.00185585 absolute difference without a repair to
+the full-shape Q6_K arithmetic.
+
+The experimental Goose completion planner has the
+same two end boundaries. It passes 1,064,960 comparisons
+against the token-by-token condition, including both
+enabled and ordinary modes across batch, ubatch and
+prompt sizes. The Apex plan retains its 4,096 limit.
+The independent implementation has two selectors,
+`GOOSE_PREFILL_CHECKPOINT_TAIL=1` for scheduling and
+`GOOSE_MMVQ_DENSE_TAIL=1` for the existing small dense
+MMVQ path. No checkpoint is persisted by the scheduling
+selector.
+
+The instrumented Goose request observes a four-token step
+at prefix 32,764. Its embedding, RMS and last three QKV
+rows match 6,144, 6,144 and 24,576 values respectively.
+The short response starts with IDs 198, 248069
+(newline, closing reasoning token). The reference starts
+with 11, 198 (comma, newline). The first logit distributions
+still differ after the local QKV match.
+
+| Unprofiled Apex 32K/512, 4096/4096, A–B–B–A | Ordinary A | Matched tail B |
+|---|---:|---:|
+| A–B prefill, tok/s | 1,029.066 | 1,013.084 |
+| B–A prefill, tok/s | 1,045.178 | 1,009.488 |
+| Median prefill, tok/s | 1,037.122 | 1,011.286 |
+| Median prefill, s | 31.597 | 32.402 |
+| Median decode, steps/s | 25.850 | 26.844 |
+| Median decode, s | 19.768 | 19.036 |
+| Peak VRAM per process, MiB | 7,272 | 7,272 |
+| RSS high-water range, KiB | 22,951,500–22,951,632 | 22,949,788–22,949,824 |
+| System swap-out, A–B, pages | 19,043 | 489 |
+| System swap-out, B–A, pages | 0 | 0 |
+
+Process swap is zero and all 5,301,139 model pages remain
+resident in all four runs. Each arm reproduces its exact
+response, IDs and probability rows in both orders. The
+prompt task is repeated once in both A responses and
+zero times in both B responses. Both B answers identify
+the lack of service data, explain the queue risks and
+give a mitigation plan. They estimate about 3,000
+repeated records against 1,723 exact occurrences in
+the frozen prompt. B uploads 145,893,605,376 expert
+bytes versus 149,376,491,520 in A. The different
+outputs and swap in the first pair limit performance
+attribution. In the clean reverse pair B saves 0.630 s
+of decode and adds 1.108 s of prefill. The 4,092-token
+step falls outside the current cooperative dense MMQ
+selector. Both flags remain opt-in for this checkpoint.
+
+Raw data, build and replays are preserved under
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/checkpoint-tail-exp1586`.
+Same-binary executable SHA-256
+`e78ef632650072ce5976a0b2f0bb0808cd70af2e0ac6fa05202f128ced663395`.
+Candidate UTF-8 content SHA-256 in both runs
+`0a8d939edb6eb2ac14d248a5883f0c64dd63e9e28eafe749baef61547e88cdc5`.
 
 ## Long Attention partition probe
 

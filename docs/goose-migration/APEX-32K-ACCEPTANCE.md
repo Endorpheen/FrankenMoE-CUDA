@@ -30,6 +30,11 @@ Functional qualification runs before memory and speed acceptance.
    Apex and is reported by `/props`. The CPU executor remains serial.
    Explicit KV type and expert-cache controls are pending. Treat
    performance under a different effective profile as diagnostic.
+   The frozen checkpointed reference evaluates the final 4,096
+   prompt tokens in parts of 4,092 and 4. The
+   [experimental matched tail](CUDA-PARITY-EXP1476.md#actual-apex-checkpoint-tail-geometry)
+   reproduces that physical sequence with both runtime limits
+   still at 4,096.
 4. [ ] **Verify the capture path** (requires 1). Use one server at a
    time under the existing Apex lock. Capture the exact request and
    full response, startup configuration, loaded libraries, and RAM,
@@ -77,10 +82,14 @@ Functional qualification runs before memory and speed acceptance.
    reports median 1,049.754 prefill tok/s and 26.256 decode steps/s.
    It preserves the capacity analysis and opening input repetition.
    The [paired boundary captures](CUDA-PARITY-EXP1476.md#first-apex-decode-divergence-and-saved-ssm-history)
-   locate a first-layer Q6_K projection difference in the last
-   prefill batch before the history copy. The single-token SSM
-   arithmetic candidate matches the reference on identical input
-   and is deferred after the live response and decode comparison.
+   locate a first-layer Q6_K projection difference before the
+   history copy, between different microbatch shapes. The
+   [matched-tail follow-up](CUDA-PARITY-EXP1476.md#actual-apex-checkpoint-tail-geometry)
+   brings the last three QKV rows into exact agreement with
+   EXP-1476 and removes the opening task repetition in both
+   full runs. It still miscounts the repeated records and the
+   token sequences differ. The single-token SSM arithmetic
+   candidate remains deferred.
    The full response gate remains open.
    Gates 3 and 4 qualify the later speed comparison.
 7. [ ] **Accept memory** (requires 5 and 6). Record per-process RSS and

@@ -153,6 +153,7 @@ static struct {
     int status, multiprocessors;
     bool mmq_window, mmq_shared, moe_topk, activation_reference;
     bool mmq_align_window;
+    bool mmvq_dense_tail;
     size_t vmm_granularity, vmm_capacity;
     bool scratch_vmm, lazy_kv;
     struct memory_properties vmm_properties;
@@ -475,6 +476,8 @@ static void load_cuda(void) {
     const bool stream_k = stream_setting && strcmp(stream_setting, "1") == 0;
     const bool mmq = stream_k || (setting && strcmp(setting, "1") == 0);
     const bool mmvq_requested = fg_standalone_option_enabled("GOOSE_MMVQ");
+    const char * mmvq_tail = getenv("GOOSE_MMVQ_DENSE_TAIL");
+    cuda.mmvq_dense_tail = mmvq_tail && strcmp(mmvq_tail, "1") == 0;
     const char * dense_setting = getenv("GOOSE_DENSE_MMA");
     const bool dense_mma = dense_setting && strcmp(dense_setting, "1") == 0;
     const char * dense_reference_setting = getenv("GOOSE_DENSE_MMA_REFERENCE");
@@ -1865,7 +1868,8 @@ static int launch_matrix(DevicePtr weight, int64_t row_stride, int64_t extent,
 
     const int count = (int) (jobs.len / job_words);
     if (error == 0 && cuda.mmvq && kind != 0 && extent <= INT_MAX / 256 &&
-        (count == 1 || (job_words == 3 && count == 8))) {
+        (count == 1 || (job_words == 3 && count == 8) ||
+         (cuda.mmvq_dense_tail && job_words == 2 && count <= 8))) {
         return launch_mmvq(weight, (uint64_t) row_stride, (int) extent, (int) kind, (int) rows, count, job_words);
     }
     if (error == 0 && cuda.dense_mma && kind == 0 && job_words == 2 && rows >= 16 && count >= 16 && count <= 8 * 65535) {

@@ -10,6 +10,19 @@ export fn q35_prefill_valid(batch: i64, ubatch: i64) -> bool {
     return ubatch > 0 && ubatch <= batch && batch <= Q35_MAX_PREFILL_BATCH;
 }
 
+fn q35_prefill_batch_count(remaining: i64, batch: i64, ubatch: i64, checkpoint_tail: bool) -> i64 {
+    var count = if remaining < batch { remaining } else { batch };
+    if checkpoint_tail {
+        // Match the recurrent server's two near-end checkpoint boundaries.
+        let offsets: i64[2] = [ubatch + 4, 4];
+        for i in 2 {
+            let keep = if offsets[i] < batch { offsets[i] } else { batch };
+            if remaining > keep && remaining - keep < count { count = remaining - keep; }
+        }
+    }
+    return count;
+}
+
 struct Q35Sample {
     seed: i64, top_k: i64, min_keep: i64, repeat_last_n: i64,
     top_p: f32, min_p: f32, typical_p: f32, repeat_penalty: f32, temperature: f32, ignore_eos: bool
@@ -44,7 +57,7 @@ fn q35_sample_generate(tokens: const i64[:], vocabulary: i64, capacity: i64, eog
         if tokens[i] < 0 || tokens[i] >= vocabulary { return -1; }
     }
 
-    var profile: i64[2] = [0; 2];
+    var profile: i64[3] = [0; 3];
     q35_generation_profile(profile[..]);
     if !q35_prefill_valid(profile[0], profile[1]) { return -1; }
     // The native evaluator re-enters Goose. Keep its borrowed token slice
@@ -83,8 +96,7 @@ fn q35_sample_generate(tokens: const i64[:], vocabulary: i64, capacity: i64, eog
     var batch_end: i64 = 0;
     while read < tokens.len {
         if read == batch_end {
-            let remaining = tokens.len - read;
-            batch_end += if remaining < profile[0] { remaining } else { profile[0] };
+            batch_end += q35_prefill_batch_count(tokens.len - read, profile[0], profile[1], profile[2] != 0);
         }
         let remaining = batch_end - read;
         let count = if remaining < profile[1] { remaining } else { profile[1] };
