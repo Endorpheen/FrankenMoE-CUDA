@@ -4562,6 +4562,16 @@ GPU copy/compute overlap remain open. See the
 [Apex latency map](APEX-LATENCY-MAP.md) for the timing unions,
 correctness tests, memory results and raw traces.
 
+EXP-2026-11-21-1620 retains those linear executable regions
+through the next Top-K. It updates only the changed KV and
+Attention nodes on Apex, keeps ordered expert readiness and
+recaptures regions when the copy addresses or topology
+change. The full Apex trace keeps 22,990 graph launches and
+998,476 kernel events. Host kernel recording falls from
+993,386 calls to 12,656. At 5,920 MiB the clean A-B-B-A
+median saves 713.212 ms decode and keeps 8,218 MiB peak
+VRAM. The experimental switch is `GOOSE_CUDA_DECODE_REUSE`.
+
 ## Long Attention partition probe
 
 EXP-2026-11-20-1562 holds the existing vector kernel fixed

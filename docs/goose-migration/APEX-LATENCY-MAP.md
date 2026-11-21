@@ -1,5 +1,87 @@
 # Apex 32K/512 latency map
 
+## EXP-1620 — Reuse the long decode graphs
+
+EXP-1620 retains the linear CUDA Graph through the next Top-K.
+An 8192/32 probe compared 1,200 successive region instances.
+All 13,500 copy descriptions were stable. Only 900 of 57,690
+kernel nodes changed, consisting of 600 KV writes and 300
+Flash Attention invocations. The replay path snapshots the
+argument bytes and validates the operation order, copy
+addresses and kernel parameter layouts. It sets parameters on
+changed executable nodes, recaptures changed shapes that
+cannot be updated and discards retained graphs on device
+memory release. PTX supplies kernel parameter counts, and
+both device images are byte-identical to EXP-1619.
+
+The control and candidate use the same new executable,
+5920 MiB SLRU, async expert staging, 4096/4096, Q4_0 K/V,
+RTX 4070 and the same zero-prefix-reuse Apex 32K/512
+request. `GOOSE_CUDA_DECODE_REUSE=0|1` selects the arm
+within the cumulative experimental graph path.
+
+| Unprofiled A-B-B-A | Capture each step | Reuse executable | Difference |
+|---|---:|---:|---:|
+| Median prefill, tok/s | 1,149.60 | 1,148.12 | -1.48 |
+| Median decode, tok/s | 34.03 | 35.72 | +1.70 |
+| Median prefill, ms | 28,503.946 | 28,540.566 | +36.621 |
+| Median decode, ms | 15,017.720 | 14,304.508 | -713.212 |
+| Peak process VRAM, MiB | 8,218 | 8,218 | 0 |
+| Maximum RSS high-water, KiB | 21,481,204 | 21,481,668 | +464 |
+| Process swap, KiB / system swap-out growth, pages | 0 / 0 | 0 / 0 | 0 / 0 |
+
+All four runs match text, all 512 IDs, probabilities and the stop
+reason, with complete model RAM residency. SLRU has 572,259
+hits, 68,793 fills, 65,518 evictions and 131,964,911,616 uploaded
+bytes in each arm. In the live 8192/32 check, each of the 30 steps
+after warm-up reuses 40 regions with 30 changed kernel nodes.
+The Q4_K and Q6_K fixtures match output bytes with 48 fills and
+40 evictions per fixture, and both have zero Compute Sanitizer
+errors.
+
+### Trace confirmation
+
+| Decode, full matched Nsight traces | Capture each step | Reuse executable | Difference |
+|---|---:|---:|---:|
+| Server decode, ms | 18,275.817 | 15,948.365 | -2,327.452 |
+| GPU idle union, ms | 7,478.978 | 5,228.527 | -2,250.451 |
+| Host calls to `cuLaunchKernel` | 993,386 | 12,656 | -980,730 |
+| Full executable graph updates | 20,400 | 0 | -20,400 |
+| Individual kernel node parameter updates | 0 | 15,300 | +15,300 |
+| GPU CUDA kernel events | 998,476 | 998,476 | 0 |
+| CUDA Graph launches | 22,990 | 22,990 | 0 |
+| Time after expert copies complete and before graph submission, ms | 1,308.916 | 183.479 | -1,125.438 |
+| Expert H2D device time, ms | 2,538.162 | 2,465.121 | -73.041 |
+| Expert H2D overlapping GPU kernels, ms | 0.000 | 1.093 | +1.093 |
+| Remaining synchronous H2D | 1,021 | 1,021 | 0 |
+
+The 511 decode steps preserve the complete 40-region graph
+per step and the distribution of 49-, 48-, 22- and two-kernel
+replays. There are 56,934 async expert copies and zero
+synchronous expert copies in each arm. In the replay trace,
+10,261 of 10,335 miss groups finish their last transfer
+before the first kernel. Only 0.248 ms between the last
+independent kernel and first routed matvec still has a
+required copy in flight. The reduced submission delay is
+the measured effect. Additional copy/compute overlap remains
+small. Nsight event tracing affects scheduling, so use the
+unprofiled series for throughput. The event trace records
+the external wait nodes only at capture in the reuse arm.
+
+The host interval after logits readback and before the first
+8 KiB upload of the next token remains at 1,274.503 ms of GPU
+idle, versus 1,276.791 ms in the control trace. This handoff
+is the largest remaining interval between identifiable host
+calls in the replay trace. The trace does not split it into
+sampling, probability formatting, graph construction and
+off-CPU time. `profiles/latency-map-decode.json` contains
+the disjoint idle accounting for both arms.
+
+The executable, traces, probe and verification logs are in
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/decode-reuse-exp1620`.
+The executable SHA-256 is
+`41321543f047cab56df23398dec69bdaf64d6635e6c896392bc8c1b1b902ecbf`.
+
 ## EXP-1619 — Long decode graphs and expert staging
 
 EXP-1619 extends the opt-in Goose graph from the full FFN through

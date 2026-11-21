@@ -82,6 +82,35 @@ struct mmvq_graph_entry {
     GraphExec executable;
 };
 enum { DECODE_GRAPH_REGIONS = 128 };
+enum { REPLAY_OPS = 128, REPLAY_ARGS = 32, REPLAY_BYTES = 64 * 1024 };
+enum replay_kind { replay_kernel, replay_h2d, replay_d2d, replay_wait };
+
+struct replay_layout {
+    Function function;
+    size_t count, bytes;
+    size_t offset[REPLAY_ARGS], size[REPLAY_ARGS];
+};
+
+struct replay_operation {
+    enum replay_kind kind;
+    union {
+        struct {
+            const struct replay_layout *layout;
+            unsigned shape[7];
+            size_t start;
+        } kernel;
+        struct { DevicePtr dst; uint64_t src; size_t bytes; } copy;
+    };
+};
+
+struct replay_region {
+    Graph graph;
+    GraphExec exec;
+    GraphNode nodes[REPLAY_OPS];
+    size_t count;
+    struct replay_operation *ops;
+    uint8_t *args;
+};
 
 struct graph_update_result {
     int result;
@@ -181,7 +210,7 @@ static struct {
     size_t flash_graph_node_count;
     struct mmvq_graph_entry * mmvq_graph_cache;
     bool mmvq_graph_enabled, routed_graph_enabled, full_ffn_enabled;
-    bool decode_graph_enabled;
+    bool decode_graph_enabled, decode_reuse;
     GraphExec decode_regions[DECODE_GRAPH_REGIONS];
     int (*graph_update)(GraphExec, Graph, struct graph_update_result *);
     int (*copy_device_async)(DevicePtr, DevicePtr, size_t, Stream);
@@ -218,11 +247,14 @@ static struct {
     int (*graph_end)(Stream, Graph *);
     int (*graph_roots)(Graph, GraphNode *, size_t *);
     int (*graph_dependents)(GraphNode, GraphNode *, size_t *);
+    int (*graph_node_type)(GraphNode, int *);
     int (*graph_instantiate)(GraphExec *, Graph, unsigned long long);
     int (*graph_set_kernel)(GraphExec, GraphNode, const struct kernel_node_params *);
     int (*graph_launch)(GraphExec, Stream);
     int (*graph_destroy)(Graph);
     int (*graph_exec_destroy)(GraphExec);
+    int (*function_param)(Function, size_t, size_t *, size_t *);
+    int (*function_name)(const char **, Function);
     int (*host_register)(void *, size_t, unsigned);
     int (*host_unregister)(void *);
     int (*host_alloc)(void **, size_t, unsigned);
@@ -264,13 +296,192 @@ static struct {
 } decode_raw;
 
 static _Thread_local struct {
-    bool scope, capturing;
-    size_t region, kernels, replays, updates, maximum;
+    bool scope, capturing, buffering;
+    size_t region, kernels, replays, updates, maximum, reused, changed_nodes;
 } decode_capture;
+
+static struct replay_layout replay_layouts[128];
+static size_t replay_layout_count;
+static struct replay_region replay_regions[DECODE_GRAPH_REGIONS];
+// The activation graph lock serializes buffered decode regions.
+static struct {
+    size_t count, used;
+    struct replay_operation ops[REPLAY_OPS];
+    uint8_t args[REPLAY_BYTES];
+} replay_buffer;
+
+static const struct replay_layout * replay_layout_for(Function function) {
+#ifdef GOOSE_CUDA_HAS_ARG_COUNTS
+    for (size_t i = 0; i < replay_layout_count; ++i)
+        if (replay_layouts[i].function == function) return &replay_layouts[i];
+    if (replay_layout_count == sizeof replay_layouts / sizeof *replay_layouts) return NULL;
+    const char *name;
+    if (cuda.function_name(&name, function) != 0) return NULL;
+    const size_t entries = sizeof goose_cuda_arg_counts / sizeof *goose_cuda_arg_counts;
+    size_t index = 0;
+    while (index < entries && strcmp(goose_cuda_arg_counts[index].name, name) != 0) ++index;
+    if (index == entries || goose_cuda_arg_counts[index].count > REPLAY_ARGS) return NULL;
+    struct replay_layout layout = { .function = function, .count = goose_cuda_arg_counts[index].count };
+    for (size_t i = 0; i < layout.count; ++i) {
+        size_t offset, bytes;
+        const int error = cuda.function_param(function, i, &offset, &bytes);
+        if (error || offset > REPLAY_BYTES || bytes > REPLAY_BYTES - offset) return NULL;
+        layout.offset[i] = offset;
+        layout.size[i] = bytes;
+        if (offset + bytes > layout.bytes) layout.bytes = offset + bytes;
+    }
+    replay_layouts[replay_layout_count] = layout;
+    return &replay_layouts[replay_layout_count++];
+#else
+    (void) function;
+    return NULL;
+#endif
+}
+
+static struct kernel_node_params replay_kernel_params(const struct replay_operation *op, void *args[REPLAY_ARGS]) {
+    const struct replay_layout *layout = op->kernel.layout;
+    for (size_t i = 0; i < layout->count; ++i)
+        args[i] = replay_buffer.args + op->kernel.start + layout->offset[i];
+    const unsigned *s = op->kernel.shape;
+    return (struct kernel_node_params) { .function = layout->function, .grid_x = s[0], .grid_y = s[1],
+        .grid_z = s[2], .block_x = s[3], .block_y = s[4], .block_z = s[5], .shared_bytes = s[6],
+        .params = layout->count ? args : NULL };
+}
+
+static int record_buffered_decode(void) {
+    enum { thread_local_capture = 1, wait_external = 1 };
+    int error = cuda.graph_begin(cuda.graph_stream, thread_local_capture);
+    if (error != 0) return error;
+    decode_capture.buffering = false;
+    for (size_t i = 0; error == 0 && i < replay_buffer.count; ++i) {
+        const struct replay_operation *op = &replay_buffer.ops[i];
+        if (op->kind == replay_kernel) {
+            void *args[REPLAY_ARGS];
+            const struct kernel_node_params p = replay_kernel_params(op, args);
+            error = decode_raw.launch(p.function, p.grid_x, p.grid_y, p.grid_z,
+                p.block_x, p.block_y, p.block_z, p.shared_bytes, cuda.graph_stream, p.params, NULL);
+        } else if (op->kind == replay_h2d) {
+            error = decode_raw.upload_async(op->copy.dst, (const void *) (uintptr_t) op->copy.src,
+                op->copy.bytes, cuda.graph_stream);
+        } else if (op->kind == replay_d2d) {
+            error = cuda.copy_device_async(op->copy.dst, op->copy.src, op->copy.bytes, cuda.graph_stream);
+        } else {
+            error = cuda.stream_wait_event(cuda.graph_stream, cuda.expert_uploads_ready, wait_external);
+        }
+    }
+    return error;
+}
+
+static void release_replay_region(struct replay_region *region) {
+    if (region->exec) cuda.graph_exec_destroy(region->exec);
+    if (region->graph) cuda.graph_destroy(region->graph);
+    free(region->ops);
+    free(region->args);
+    *region = (struct replay_region) {0};
+}
+
+static void clear_replay_regions(void) {
+    if (!cuda.decode_reuse) return;
+    for (size_t i = 0; i < DECODE_GRAPH_REGIONS; ++i) release_replay_region(&replay_regions[i]);
+}
+
+static bool update_replay_region(struct replay_region *region) {
+    if (!region->exec || region->count != replay_buffer.count) return false;
+    for (size_t i = 0; i < region->count; ++i) {
+        const struct replay_operation *old = &region->ops[i], *op = &replay_buffer.ops[i];
+        if (old->kind != op->kind) return false;
+        if (op->kind == replay_kernel) {
+            if (old->kernel.layout != op->kernel.layout || old->kernel.start != op->kernel.start) return false;
+        } else if (op->kind != replay_wait &&
+            (old->copy.dst != op->copy.dst || old->copy.src != op->copy.src || old->copy.bytes != op->copy.bytes)) {
+            return false;
+        }
+    }
+    for (size_t i = 0; i < region->count; ++i) {
+        struct replay_operation *old = &region->ops[i];
+        const struct replay_operation *op = &replay_buffer.ops[i];
+        if (op->kind != replay_kernel) continue;
+        const size_t start = op->kernel.start, bytes = op->kernel.layout->bytes;
+        if (memcmp(old->kernel.shape, op->kernel.shape, sizeof op->kernel.shape) == 0 &&
+            memcmp(region->args + start, replay_buffer.args + start, bytes) == 0) continue;
+        void *args[REPLAY_ARGS];
+        const struct kernel_node_params p = replay_kernel_params(op, args);
+        if (cuda.graph_set_kernel(region->exec, region->nodes[i], &p) != 0) return false;
+        memcpy(region->args + start, replay_buffer.args + start, bytes);
+        *old = *op;
+        ++decode_capture.changed_nodes;
+    }
+    return true;
+}
+
+static bool store_replay_region(struct replay_region *region, Graph graph, GraphExec exec) {
+    // Only reuse captures that match the recorded linear stream command by command.
+    GraphNode next = NULL;
+    size_t count = 0;
+    if (cuda.graph_roots(graph, NULL, &count) != 0 || count != 1 ||
+        cuda.graph_roots(graph, &next, &count) != 0) return false;
+    for (size_t i = 0; i < replay_buffer.count; ++i) {
+        enum { gpu_kernel = 0, gpu_memcpy = 1, gpu_event_wait = 6 };
+        const enum replay_kind kind = replay_buffer.ops[i].kind;
+        const int expected = kind == replay_kernel ? gpu_kernel : kind == replay_wait ? gpu_event_wait : gpu_memcpy;
+        int type;
+        if (cuda.graph_node_type(next, &type) != 0 || type != expected) return false;
+        region->nodes[i] = next;
+        count = 0;
+        if (cuda.graph_dependents(next, NULL, &count) != 0 ||
+            count != (size_t) (i + 1 < replay_buffer.count)) return false;
+        if (count && cuda.graph_dependents(next, &next, &count) != 0) return false;
+    }
+    struct replay_operation *ops = malloc(replay_buffer.count * sizeof(*ops));
+    uint8_t *args = malloc(replay_buffer.used ? replay_buffer.used : 1);
+    if (!ops || !args) { free(ops); free(args); return false; }
+    memcpy(ops, replay_buffer.ops, replay_buffer.count * sizeof(*ops));
+    memcpy(args, replay_buffer.args, replay_buffer.used);
+    region->graph = graph;
+    region->exec = exec;
+    region->count = replay_buffer.count;
+    region->ops = ops;
+    region->args = args;
+    return true;
+}
+
+static int submit_buffered_decode(size_t index) {
+    struct replay_region *region = index < DECODE_GRAPH_REGIONS ? &replay_regions[index] : NULL;
+    if (region && update_replay_region(region)) {
+        ++decode_capture.reused;
+        return cuda.graph_launch(region->exec, cuda.graph_stream);
+    }
+    if (region) release_replay_region(region);
+    Graph graph = NULL;
+    GraphExec exec = NULL;
+    int error = record_buffered_decode();
+    if (!decode_capture.buffering) {
+        const int ended = cuda.graph_end(cuda.graph_stream, &graph);
+        if (error == 0) error = ended;
+    }
+    if (error == 0) error = cuda.graph_instantiate(&exec, graph, 0);
+    if (error == 0) error = cuda.graph_launch(exec, cuda.graph_stream);
+    const bool cached = error == 0 && region && store_replay_region(region, graph, exec);
+    if (!cached) {
+        if (exec) cuda.graph_exec_destroy(exec);
+        if (graph) cuda.graph_destroy(graph);
+    }
+    return error;
+}
 
 static int decode_capture_submit(void) {
     if (!decode_capture.capturing) return 0;
     decode_capture.capturing = false;
+    if (decode_capture.buffering) {
+        const int error = submit_buffered_decode(decode_capture.region++);
+        decode_capture.buffering = false;
+        if (error == 0) {
+            ++decode_capture.replays;
+            if (decode_capture.kernels > decode_capture.maximum) decode_capture.maximum = decode_capture.kernels;
+        }
+        decode_capture.kernels = 0;
+        return error;
+    }
     Graph graph = NULL;
     int error = cuda.graph_end(cuda.graph_stream, &graph);
     if (error != 0) return error;
@@ -302,7 +513,8 @@ static int decode_capture_discard(void) {
     decode_capture.capturing = false;
     decode_capture.kernels = 0;
     Graph graph = NULL;
-    const int ended = cuda.graph_end(cuda.graph_stream, &graph);
+    const int ended = decode_capture.buffering ? 0 : cuda.graph_end(cuda.graph_stream, &graph);
+    decode_capture.buffering = false;
     const int destroyed = graph ? cuda.graph_destroy(graph) : 0;
     const int drained = decode_raw.sync();
     return ended ? ended : destroyed ? destroyed : drained;
@@ -312,9 +524,32 @@ static int decode_capture_begin(void) {
     if (decode_capture.capturing || !decode_capture.scope) return 0;
     enum { blocking_stream = 0, thread_local_capture = 1 };
     int error = cuda.graph_stream ? 0 : cuda.stream_create(&cuda.graph_stream, blocking_stream);
-    if (error == 0) error = cuda.graph_begin(cuda.graph_stream, thread_local_capture);
+    if (error == 0 && cuda.decode_reuse) {
+        replay_buffer.count = 0;
+        replay_buffer.used = 0;
+        decode_capture.buffering = true;
+    } else if (error == 0) {
+        error = cuda.graph_begin(cuda.graph_stream, thread_local_capture);
+    }
     if (error == 0) decode_capture.capturing = true;
     return error;
+}
+
+static bool buffer_decode_kernel(const struct replay_layout *layout, const unsigned shape[7], void **params) {
+    const size_t start = (replay_buffer.used + 15) & ~(size_t) 15;
+    if (!layout || replay_buffer.count == REPLAY_OPS || start > REPLAY_BYTES ||
+        layout->bytes > REPLAY_BYTES - start || (layout->count && !params)) return false;
+    for (size_t i = 0; i < layout->count; ++i)
+        if (!params[i]) return false;
+    uint8_t *args = replay_buffer.args + start;
+    memset(replay_buffer.args + replay_buffer.used, 0, start - replay_buffer.used + layout->bytes);
+    for (size_t i = 0; i < layout->count; ++i)
+        memcpy(args + layout->offset[i], params[i], layout->size[i]);
+    struct replay_operation *op = &replay_buffer.ops[replay_buffer.count++];
+    *op = (struct replay_operation) { .kind = replay_kernel, .kernel = { .layout = layout, .start = start } };
+    memcpy(op->kernel.shape, shape, sizeof op->kernel.shape);
+    replay_buffer.used = start + layout->bytes;
+    return true;
 }
 
 static int decode_launch(Function kernel, unsigned gx, unsigned gy, unsigned gz, unsigned bx, unsigned by,
@@ -325,6 +560,12 @@ static int decode_launch(Function kernel, unsigned gx, unsigned gy, unsigned gz,
         stream = cuda.graph_stream;
         ++decode_capture.kernels;
     }
+    if (decode_capture.buffering) {
+        const unsigned shape[] = {gx, gy, gz, bx, by, bz, shared};
+        if (!extra && buffer_decode_kernel(replay_layout_for(kernel), shape, params)) return 0;
+        const int recorded = record_buffered_decode();
+        if (recorded != 0) return recorded;
+    }
     return decode_raw.launch(kernel, gx, gy, gz, bx, by, bz, shared, stream, params, extra);
 }
 
@@ -332,6 +573,15 @@ static int decode_upload_async(DevicePtr dst, const void * src, size_t bytes, St
     const int error = stream ? decode_capture_submit() : decode_capture_begin();
     if (error != 0) return error;
     if (decode_capture.capturing) stream = cuda.graph_stream;
+    if (decode_capture.buffering) {
+        if (replay_buffer.count < REPLAY_OPS) {
+            replay_buffer.ops[replay_buffer.count++] = (struct replay_operation) {
+                .kind = replay_h2d, .copy = {dst, (uintptr_t) src, bytes} };
+            return 0;
+        }
+        const int recorded = record_buffered_decode();
+        if (recorded != 0) return recorded;
+    }
     return decode_raw.upload_async(dst, src, bytes, stream);
 }
 
@@ -360,11 +610,32 @@ static int decode_upload(DevicePtr dst, const void * src, size_t bytes) {
 
 static int decode_copy_device(DevicePtr dst, DevicePtr src, size_t bytes) {
     if (decode_capture.scope && cuda.copy_device_async) {
-        const int error = decode_capture_begin();
+        int error = decode_capture_begin();
+        if (error == 0 && decode_capture.buffering) {
+            if (replay_buffer.count < REPLAY_OPS) {
+                replay_buffer.ops[replay_buffer.count++] = (struct replay_operation) {
+                    .kind = replay_d2d, .copy = {dst, src, bytes} };
+                return 0;
+            }
+            error = record_buffered_decode();
+        }
         return error == 0 ? cuda.copy_device_async(dst, src, bytes, cuda.graph_stream) : error;
     }
     const int error = decode_capture_submit();
     return error == 0 ? decode_raw.copy_device(dst, src, bytes) : error;
+}
+
+static int decode_wait_for_experts(void) {
+    enum { wait_external = 1 };
+    if (decode_capture.buffering) {
+        if (replay_buffer.count < REPLAY_OPS) {
+            replay_buffer.ops[replay_buffer.count++] = (struct replay_operation) { .kind = replay_wait };
+            return 0;
+        }
+        const int recorded = record_buffered_decode();
+        if (recorded != 0) return recorded;
+    }
+    return cuda.stream_wait_event(cuda.graph_stream, cuda.expert_uploads_ready, wait_external);
 }
 
 // Host accesses and allocation changes are submission barriers.
@@ -376,10 +647,16 @@ static int decode_copy_device(DevicePtr dst, DevicePtr src, size_t bytes) {
 DECODE_BARRIER(download, (void * dst, DevicePtr src, size_t bytes), (dst, src, bytes))
 DECODE_BARRIER(zero, (DevicePtr dst, unsigned char value, size_t bytes), (dst, value, bytes))
 DECODE_BARRIER(alloc, (DevicePtr * dst, size_t bytes), (dst, bytes))
-DECODE_BARRIER(release, (DevicePtr dst), (dst))
 DECODE_BARRIER(sync, (void), ())
 DECODE_BARRIER(memory_info, (size_t * free_bytes, size_t * total_bytes), (free_bytes, total_bytes))
 #undef DECODE_BARRIER
+
+static int decode_release(DevicePtr dst) {
+    const int error = decode_capture_submit();
+    if (error != 0) return error;
+    clear_replay_regions();
+    return decode_raw.release(dst);
+}
 
 static int finish_device_state_write(void) {
     if (!decode_capture.capturing) return cuda.sync();
@@ -404,6 +681,15 @@ static void install_decode_capture(void) {
     DECODE_HOOK(memory_info);
 #undef DECODE_HOOK
     cuda.decode_graph_enabled = true;
+#ifdef GOOSE_CUDA_HAS_ARG_COUNTS
+    const char * reuse = getenv("GOOSE_CUDA_DECODE_REUSE");
+    if (reuse && strcmp(reuse, "1") == 0) {
+        cuda.function_param = dlsym(cuda.library, "cuFuncGetParamInfo");
+        cuda.function_name = dlsym(cuda.library, "cuFuncGetName");
+        cuda.graph_node_type = dlsym(cuda.library, "cuGraphNodeGetType");
+        cuda.decode_reuse = cuda.function_param && cuda.function_name && cuda.graph_node_type;
+    }
+#endif
     const char * overlap = getenv("GOOSE_CUDA_DECODE_EXPERT_OVERLAP");
     if (cuda.expert_stream && overlap && strcmp(overlap, "1") == 0 &&
         cuda.event_record(cuda.expert_uploads_ready, cuda.expert_stream) == 0) {
@@ -457,6 +743,7 @@ static void free_expert_metadata(struct expert_cache * cache) {
 static int release_vmm(struct device_buffer * buffer) {
     const int sync_error = buffer->mappings ? cuda.sync() : 0;
     if (sync_error != 0) return sync_error;
+    clear_replay_regions();
     while (buffer->mappings) {
         struct vmm_mapping * segment = buffer->mappings;
         if (segment->mapped) {
@@ -601,6 +888,8 @@ static void init_expert_stream(void) {
 static void cleanup(void) {
     if (cuda.context) {
         if (cuda.push(cuda.context) == 0) {
+            if (cuda.decode_reuse) cuda.sync();
+            clear_replay_regions();
             if (cuda.expert_stream) {
                 cuda.sync();
                 release_expert_stream();
@@ -1142,6 +1431,9 @@ int fg_cuda_activation_graph_end(bool success, bool all, uint64_t host, int64_t 
     if (decode_capture.replays && getenv("GOOSE_GRAPH_LOG")) {
         fprintf(stderr, "Goose CUDA decode regions: %zu replays, %zu updates, %zu kernels max\n",
             decode_capture.replays, decode_capture.updates, decode_capture.maximum);
+        if (cuda.decode_reuse)
+            fprintf(stderr, "Goose CUDA decode reuse: %zu regions, %zu changed kernel nodes\n",
+                decode_capture.reused, decode_capture.changed_nodes);
     }
     return error;
 }
@@ -2567,10 +2859,9 @@ int64_t fg_cuda_routed_graph(sl_i64 plan, sl_i64 glu, sl_i64 norm, sl_i64 shared
         if (full && cuda.decode_graph_enabled) decode_capture.scope = true;
         const GraphExec graph = decode_capture.scope ? NULL : cached_graph_for(key, kernels, count);
         if (stage_all) {
-            enum { wait_external_in_capture = 1 };
             error = launch_cuda_kernels(kernels, expert_wait_index, NULL);
             if (error == 0) {
-                error = cuda.stream_wait_event(cuda.graph_stream, cuda.expert_uploads_ready, wait_external_in_capture);
+                error = decode_wait_for_experts();
                 if (error == 0) cuda.expert_upload_queued = false;
             }
             if (error == 0) error = launch_cuda_kernels(kernels + expert_wait_index, count - expert_wait_index, NULL);

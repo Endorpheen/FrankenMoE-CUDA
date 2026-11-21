@@ -165,14 +165,29 @@ done
     "$ROOT/integration/goose-standalone/cuda-device.cl" -o "$OUT/goose-cuda-mmq.ptx"
 python3 - "$OUT" <<'PY'
 from pathlib import Path
+import re
 import sys
 
 out = Path(sys.argv[1])
+argument_counts = {}
+
 def image(stem, symbol):
     ptx = (out / (stem + ".ptx")).read_bytes() + b"\0"
+    signatures = re.findall(rb"(?m)^\s*(?:\.visible\s+)?\.entry\s+(\w+)\s*\(([^)]*)\)", ptx)
+    if not signatures:
+        raise ValueError(f"no kernel signatures in {stem}")
+    for kernel, params in signatures:
+        count = len(re.findall(rb"\.param\b", params))
+        if argument_counts.setdefault(kernel.decode("ascii"), count) != count:
+            raise ValueError(f"different argument counts for {kernel!r}")
     lines = [", ".join(str(byte) for byte in ptx[i:i + 24]) for i in range(0, len(ptx), 24)]
     return "static const unsigned char " + symbol + "[] = {\n" + ",\n".join(lines) + "\n};\n"
 
-(out / "goose-cuda-image.h").write_text(image("goose-cuda", "goose_cuda_image")
-                                        + image("goose-cuda-mmq", "goose_cuda_mmq_image"))
+images = image("goose-cuda", "goose_cuda_image") + image("goose-cuda-mmq", "goose_cuda_mmq_image")
+counts = "".join(f'    {{"{kernel}", {count}}},\n' for kernel, count in sorted(argument_counts.items()))
+(out / "goose-cuda-image.h").write_text(
+    images + "#define GOOSE_CUDA_HAS_ARG_COUNTS 1\n"
+    "static const struct { const char *name; unsigned count; } goose_cuda_arg_counts[] = {\n"
+    + counts + "};\n"
+)
 PY
