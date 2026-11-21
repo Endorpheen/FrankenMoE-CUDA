@@ -73,6 +73,7 @@ fn gdn_on_cuda(p: const StatePlan &, strides: const i64[4][6] &,
     config[35] = low(32, width);
     config[36] = 4;
     config[37] = 32;
+    config[38] = if width == 128 && tokens == 1 && snapshots == 1 && p.source[3].ne[0] == 1 { 1 } else { 0 };
     config[39] = state_values;
     config[40] = if p.source[3].ne[0] == width { 1 } else { 0 };
     config[41] = bits(scale) as i64;

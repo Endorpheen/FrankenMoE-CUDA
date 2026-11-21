@@ -16,7 +16,7 @@ sed -n '/^struct F2 {/,/^}/p; /^fn dequant_q4_0(/,/^}/p' \
     "$ROOT/goose/cuda/goose-cuda-flash-attention/staging-device.goose" |
     sed 's/^fn dequant_q4_0(/export fn dequant_q4_0(/' > "$OUT/q4-attention.goose"
 cat "$ROOT/goose/cuda/standalone-q4-attention.goose" >> "$OUT/q4-attention.goose"
-sed '/^fn main()/,$d; s/^fn gdn(/export fn gdn(/' \
+sed '/^fn main()/,$d; s/^fn \(gdn\|gdn_decode\)(/export fn \1(/' \
     "$ROOT/goose/cuda/goose-cuda-gdn/scalar-device.goose" > "$OUT/gdn.goose"
 sed '/^fn main()/,$d; s/^fn gdn_v128(/export fn gdn_v128(/' \
     "$ROOT/goose/cuda/goose-cuda-gdn/mma-device.goose" > "$OUT/gdn-mma.goose"
@@ -111,6 +111,14 @@ source = (out / f"{module}.c").read_text()
 fragment = source.split("/* ---- prototypes ---- */", 1)[1].split("static void gs_init_globals(void)", 1)[0]
 if "gs_sp" in fragment:
     raise SystemExit(f"{module} uses the host stack ABI")
+if module == "gdn":
+    import re
+
+    # Keep launch-shape literals visible to Clang when lowering the device loops.
+    fragment = re.sub(r"static void (gdn(?:_body|_decode)?_g\()",
+                      r"static __attribute__((always_inline)) void \1", fragment)
+    fragment = re.sub(r"^(\s*)(for \(int32_t r_g(?:_\d+)? = 0;)",
+                      r"\1#pragma clang loop unroll(full)\n\1\2", fragment, flags=re.MULTILINE)
 if module in ("q4-attention", "gdn", "rope", "ssm-conv", "fwht", "routing"):
     types = source.split("/* ---- types ---- */", 1)[1].split("/* ---- data ---- */", 1)[0]
     excluded = ("gs_rhdr;", "gs_rref;", "gs_pref;", "sl_u8;")

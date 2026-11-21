@@ -110,7 +110,7 @@ static struct {
     void * library;
     Context context;
     Module module;
-    Function kernel, attention_tiles, attention_merge, gdn, q4_rows, vector, rms_reference;
+    Function kernel, attention_tiles, attention_merge, gdn, gdn_decode, q4_rows, vector, rms_reference;
     Function mmq_pack, mmq_pack_shared, mmq_matrix, mmq_q4_matrix, mmq_q6_matrix;
     Function mmq_q4_dense_shared, mmq_q4_routed_shared;
     Function mmq_q4_dense_x64, mmq_q4_routed_x64;
@@ -583,6 +583,9 @@ static void load_cuda(void) {
             error = cuda.function_get(&cuda.flash_vec_packed, cuda.module, "goose_flash_vec_q4_packed");
         if (error == 0) init_flash_graph();
         if (error == 0) error = cuda.function_get(&cuda.gdn, cuda.module, "goose_gated_delta_net");
+        if (error == 0 && fg_standalone_option_enabled("GOOSE_GDN_DECODE")) {
+            error = cuda.function_get(&cuda.gdn_decode, cuda.module, "goose_gdn_decode");
+        }
         if (error == 0 && gdn_mma) {
             enum { max_dynamic_shared_size = 8 };
             error = cuda.function_get(&cuda.gdn_mma, cuda.module, "goose_gdn_mma");
@@ -2319,7 +2322,8 @@ int64_t fg_cuda_gdn(sl_i64 plan, sl_f32 q, sl_f32 k, sl_f32 v, sl_f32 gate, sl_f
         if (mma) {
             error = cuda.launch(cuda.gdn_mma, (unsigned) (heads * sequences), 1, 1, 256, 1, 1, GDN_MMA_SHARED_BYTES, NULL, args, NULL);
         } else {
-            error = cuda.launch(cuda.gdn, (unsigned) heads, (unsigned) sequences,
+            const Function scalar = plan.data[38] && cuda.gdn_decode ? cuda.gdn_decode : cuda.gdn;
+            error = cuda.launch(scalar, (unsigned) heads, (unsigned) sequences,
                 (unsigned) plan.data[34], (unsigned) (plan.data[35] * plan.data[36]), 1, 1, 0, NULL, args, NULL);
         }
         if (error == 0) {

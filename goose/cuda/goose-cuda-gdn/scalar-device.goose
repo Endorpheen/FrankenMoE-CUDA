@@ -47,7 +47,7 @@ fn warp_sum(v: f32, width: i32) -> f32 {
 // One column-segment worker;the parent kernel wrapper maps blockIdx.xyz/threadIdx.xy and
 // passes the plan by value. All loops are the native recurrence in native order.
 
-fn gdn(p: i64, bidx: i32, bidy: i32, bidz: i32, tidx: i32, tidy: i32) {
+fn gdn_body(p: i64, bidx: i32, bidy: i32, bidz: i32, tidx: i32, tidy: i32, decode: bool) {
     let q = get(p, 0, 0);
     let k = get(p, 0, 1);
     let v = get(p, 0, 2);
@@ -56,13 +56,13 @@ fn gdn(p: i64, bidx: i32, bidy: i32, bidz: i32, tidx: i32, tidy: i32) {
     let state_in = get(p, 0, 5);
     let dst = get(p, 0, 6);
     let state_out_base = get(p, 0, 7);
-    let sv = get(p, 3, 0);
+    let sv = if decode { 128 as u64 } else { get(p, 3, 0) };
     let H = get(p, 3, 1);
-    let n_tokens = get(p, 3, 2);
-    let keep_rs = get(p, 3, 7) == (1 as u64);
-    let kda = get(p, 3, 16) == (1 as u64);
-    let warp_size = get(p, 3, 13);
-    let num_warps = get(p, 3, 12);
+    let n_tokens = if decode { 1 as u64 } else { get(p, 3, 2) };
+    let keep_rs = !decode && get(p, 3, 7) == (1 as u64);
+    let kda = !decode && get(p, 3, 16) == (1 as u64);
+    let warp_size = if decode { 32 as u64 } else { get(p, 3, 13) };
+    let num_warps = if decode { 4 as u64 } else { get(p, 3, 12) };
     let eff = if warp_size < sv {
         warp_size
     } else {
@@ -98,16 +98,14 @@ fn gdn(p: i64, bidx: i32, bidy: i32, bidz: i32, tidx: i32, tidy: i32) {
     var attn = dst + attn0 * 4;
     var s: f32[32] = default < f32[32] > ();
     sync();
-    var r: i32 = 0;
 
-    while r < rpl {
+    for r in rpl {
         let i = (r * lpc + lic) as u64;
         s[r] = load(cur, i);
-        r += 1;
     }
-    var t: u64 = 0;
 
-    while t < n_tokens {
+    for token in (n_tokens as i64) {
+        let t = token as u64;
         let qb = iq3 * sq3 + t * sq2 + iq1 * sq1;
         let qt = q + qb * 4;
         let kt = k + qb * 4;
@@ -117,33 +115,24 @@ fn gdn(p: i64, bidx: i32, bidy: i32, bidz: i32, tidx: i32, tidy: i32) {
         let beta_val = load(bt, 0 as u64);
         var kr: f32[32] = default < f32[32] > ();
         var qr: f32[32] = default < f32[32] > ();
-        r = 0;
-
-        while r < rpl {
+        for r in rpl {
             let i = (r * lpc + lic) as u64;
             kr[r] = load(kt, i);
             qr[r] = load(qt, i);
-            r += 1;
         }
 
         if !kda {
             let g_val = expf(load(g + gbo * 4, 0 as u64));
             var kv_shard: f32 = 0.0;
-            r = 0;
-
-            while r < rpl {
-                kv_shard += s[r] * kr[r];
-                r += 1;
+            for r in rpl {
+                kv_shard = fma(s[r], kr[r], kv_shard);
             }
             let kv_col = warp_sum(kv_shard, lpc);
             let delta_col = (load(vt, col) - g_val * kv_col) * beta_val;
             var attn_partial: f32 = 0.0;
-            r = 0;
-
-            while r < rpl {
+            for r in rpl {
                 s[r] = fma(g_val, s[r], mul_rn(kr[r], delta_col));
-                attn_partial += s[r] * qr[r];
-                r += 1;
+                attn_partial = fma(s[r], qr[r], attn_partial);
             }
             let attn_col = warp_sum(attn_partial, lpc);
 
@@ -153,23 +142,17 @@ fn gdn(p: i64, bidx: i32, bidy: i32, bidz: i32, tidx: i32, tidy: i32) {
         } else {
             let gk = g + gbo * sv * 4;
             var kv_shard: f32 = 0.0;
-            r = 0;
-
-            while r < rpl {
+            for r in rpl {
                 let i = (r * lpc + lic) as u64;
-                kv_shard += expf(load(gk, i)) * s[r] * kr[r];
-                r += 1;
+                kv_shard = fma(expf(load(gk, i)) * s[r], kr[r], kv_shard);
             }
             let kv_col = warp_sum(kv_shard, lpc);
             let delta_col = (load(vt, col) - kv_col) * beta_val;
             var attn_partial: f32 = 0.0;
-            r = 0;
-
-            while r < rpl {
+            for r in rpl {
                 let i = (r * lpc + lic) as u64;
                 s[r] = fma(expf(load(gk, i)), s[r], mul_rn(kr[r], delta_col));
-                attn_partial += s[r] * qr[r];
-                r += 1;
+                attn_partial = fma(s[r], qr[r], attn_partial);
             }
             let attn_col = warp_sum(attn_partial, lpc);
 
@@ -184,27 +167,28 @@ fn gdn(p: i64, bidx: i32, bidy: i32, bidz: i32, tidx: i32, tidy: i32) {
 
             if target < get(p, 3, 6) {
                 let cs = state_out + target * slot_stride * 4;
-                r = 0;
-
-                while r < rpl {
+                for r in rpl {
                     let i = (r * lpc + lic) as u64;
                     store(cs, col * sv + i, s[r]);
-                    r += 1;
                 }
             }
         }
-        t += 1;
     }
 
     if !keep_rs {
-        r = 0;
-
-        while r < rpl {
+        for r in rpl {
             let i = (r * lpc + lic) as u64;
             store(state_out, col * sv + i, s[r]);
-            r += 1;
         }
     }
+}
+
+fn gdn(p: i64, bidx: i32, bidy: i32, bidz: i32, tidx: i32, tidy: i32) {
+    gdn_body(p, bidx, bidy, bidz, tidx, tidy, false);
+}
+
+fn gdn_decode(p: i64, bidx: i32, bidy: i32, bidz: i32, tidx: i32, tidy: i32) {
+    gdn_body(p, bidx, bidy, bidz, tidx, tidy, true);
 }
 
 fn main() {

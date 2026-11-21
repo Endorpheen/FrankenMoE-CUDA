@@ -280,8 +280,10 @@ static void check_scalar_and_recurrent(void) {
     ggml_free(ctx);
 }
 
-static void check_gdn_snapshots(int width, bool column_gate) {
-    enum { heads = 2, tokens = 3, seqs = 2, snapshots = 2 };
+static void check_gdn_snapshots(int width, bool column_gate, const char * decode_output) {
+    enum { heads = 2, seqs = 2 };
+    const int tokens = decode_output ? 1 : 3;
+    const int snapshots = decode_output ? 1 : 2;
     const int square = width * width, scores = width * heads * tokens * seqs, state_size = square * heads * seqs;
     struct ggml_context * ctx = ggml_init((struct ggml_init_params){ 1024 * 1024, NULL, true });
     assert(ctx);
@@ -354,6 +356,12 @@ static void check_gdn_snapshots(int width, bool column_gate) {
     }
     printf("GDN width %d, %s gate, snapshots: max error %.9g\n", width,
            column_gate ? "column" : "scalar", (double) max_error);
+    if (decode_output) {
+        FILE * file = fopen(decode_output, "wb");
+        const size_t bytes = ggml_nbytes(gdn);
+        assert(file && fwrite(gdn->data, 1, bytes, file) == bytes);
+        assert(fclose(file) == 0);
+    }
     free(storage);
     ggml_free(ctx);
 }
@@ -1623,6 +1631,10 @@ static void check_ssm_silu(int tokens) {
 }
 
 int main(int argc, char ** argv) {
+    if (argc == 3 && strcmp(argv[1], "--gdn-decode") == 0) {
+        check_gdn_snapshots(128, false, argv[2]);
+        return 0;
+    }
     if (argc == 2 && strcmp(argv[1], "--rms-mul") == 0) {
         check_rms_mul();
         return 0;
@@ -1676,11 +1688,11 @@ int main(int argc, char ** argv) {
         return 0;
     }
     check_scalar_and_recurrent();
-    check_gdn_snapshots(33, false);
-    check_gdn_snapshots(33, true);
-    check_gdn_snapshots(16, false);
-    check_gdn_snapshots(128, false);
-    check_gdn_snapshots(128, true);
+    check_gdn_snapshots(33, false, NULL);
+    check_gdn_snapshots(33, true, NULL);
+    check_gdn_snapshots(16, false, NULL);
+    check_gdn_snapshots(128, false, NULL);
+    check_gdn_snapshots(128, true, NULL);
     check_quantized_cache_attention();
     check_split_q4_attention();
     check_routed_matrix(GGML_TYPE_Q4_K, false);

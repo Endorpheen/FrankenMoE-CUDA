@@ -111,7 +111,7 @@ prefill and 62.86 decode tokens/s.
 | 14 | Attention staging and bounds. `fattn-common.cuh` and `fattn-mma-f16.cuh` stage Q4_0 KV as FP16, use FWHT where selected, and derive KV bounds from the mask. | `dequantize_block_q4_0`, `fwht_cuda` and `flash_attn_mask_to_KV_max` execute. Goose applies the reference rotations in the live Q4 KV graph. [Bounded single-query loops](#bounded-vector-attention-loops) reduce full vector Attention GPU time from 9.052 to 3.509 s. | PARTIAL. FWHT executes at widths 256 and 64 on Apex. Float16 staging/rounding, masked tails and full quality still need validation. |
 | 15 | Flash partition reconciliation. `fattn-mma-f16.cuh` → stream-K general/uniform fix-up, plus vector combine-results. | The [standalone MMA path](#flash-attention-stream-k-restoration) selects and executes both Goose fixups on RTX 4070 with real Apex. Vector decode retains its existing combine-results path. | PARTIAL. Include Stream-K in the next package qualification. Check 32K quality and memory, then tune the choice of workers and tile size. |
 | 16 | GDN prefill Tensor Cores. `ggml_cuda_op_gated_delta_net_impl` → `gdn_single` in `gated-delta-net-mma.cu`. | Reference executes `gdn_single<16,128,1>`. Independent Goose runs its `C=16, V=128` body with `GOOSE_GDN_MMA=1`. All 30 GDN layers execute it in a real Apex block. | PARTIAL. The [first layer's real scores and state](#first-recurrent-sigmoid-and-silu) now match bitwise. Validate full and chunked recurrent state and generation before default promotion. |
-| 17 | GDN decode specialization and fused state cache. `ggml_cuda_op_gated_delta_net_fused_cache` → native scalar `gated_delta_net_cuda` or shape-selected MMA. | Reference executes scalar decode GDN and known fused cache code. Goose has CUDA-resident GDN state and a publish/consume path. | PARTIAL. Match the selected decode kernel's arithmetic and state snapshots against the reference across prefill → decode. Check for stale aliases and measure actual state moves. |
+| 17 | GDN decode specialization and fused state cache. `ggml_cuda_op_gated_delta_net_fused_cache` → native scalar `gated_delta_net_cuda` or shape-selected MMA. | [Specialized scalar GDN](#register-resident-single-token-gdn) uses the existing Goose recurrence with fixed width 128 and one output token. The two clean Apex pairs save 614 and 615 ms of full decode versus the prior build. | PARTIAL. The active single-state route is covered. Broader snapshot behavior and the prefill MMA gap remain open. |
 | 18 | SSM convolution and activation fusion. `ssm-conv.cu` dispatch plus `ggml_cuda_try_fuse` → `ssm_conv_long_token_f32` or `ssm_conv_f32`. | Both reference families execute. Goose fuses SiLU and now executes its [long-token schedule](#reference-long-ssm-convolution) on all 30 recurrent layers of the short prefill with the diagnostic selector enabled. | PARTIAL. Verify persistent history across multiple batches and the final decode profile. |
 | 19 | Fused RMS/L2 normalization. `ggml_cuda_try_fuse` → RMS multiply/add/scale variants in `norm.cu` and supported RoPE/cache combinations. | Goose connects its existing weighted RMS kernel at Qwen35 attention and GDN sites. The short Apex numerical snapshot matches the unfused graph byte-for-byte. | PARTIAL. Validate at full context and restore remaining compatible RMS/L2 and RoPE combinations. |
 | 20 | Gated and unary activation fusion. `unary.cu` and `ggml_cuda_try_fuse` launch `unary_gated_op_kernel` and `unary_op_kernel`. | Both execute. Goose implements fused SwiGLU and several individual activations. The opt-in [sigmoid and SiLU](#first-recurrent-sigmoid-and-silu) match the first recurrent layer's reference arithmetic. | PARTIAL. Verify other gates and remaining graph fusion choices. |
@@ -3601,6 +3601,66 @@ libm and libc. Its SHA-256 is
 Raw runs, exact options, fixture outputs, binary, trace
 and checksums are under
 `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/rope-decode-exp1594`.
+
+## Register-resident single-token GDN
+
+EXP-1595 restores EXP-1476's use of fixed launch geometry
+for the scalar width-128 GDN. The old Goose PTX has device
+division and local loads/stores in the state loop. The
+new entry uses the same Goose recurrence, with the width,
+warp geometry and single-token loop visible at device
+compile time. Counted state loops and explicit FMAs keep
+the previous accumulation order. The active sm80 PTX
+contains zero local accesses and zero unsigned divides or
+remainders in this entry. The generic path is still used
+for KDA, other widths, multi-token calls and snapshots.
+`GOOSE_GDN_DECODE=0` selects the generic path in the new
+build.
+
+The one-token fixture uses two sequences and grouped heads.
+All 264,192 output and state bytes match between the old
+binary, the new generic dispatch and the specialization.
+Compute Sanitizer reports zero memory errors. Full Apex
+32K/512 uses the same frozen request, 4096/4096, Q4_0 KV,
+CPU limits 8/16 and 4,992 MiB expert budget.
+
+| Metric, clean unprofiled pairs | A, EXP-1594 | B, EXP-1595 default |
+|---|---:|---:|
+| Prefill in B–A, tok/s | 1,113.449 | 1,121.015 |
+| Prefill in A–B, tok/s | 1,112.432 | 1,123.451 |
+| Median prefill, tok/s | 1,112.941 | 1,122.233 |
+| Decode in B–A, steps/s | 27.384 | 28.317 |
+| Decode in A–B, steps/s | 27.665 | 28.616 |
+| Median decode, steps/s | 27.525 | 28.467 |
+| Median decode time, s | 18.566 | 17.951 |
+| Process RSS high-water maximum, KiB | 22,955,052 | 22,954,812 |
+| Process VRAM ready / after request, MiB | 6,510 / 7,272 | 6,510 / 7,272 |
+| Resident model pages | 5,301,139 | 5,301,139 |
+| Process swap and request-window system swap-out growth | 0 | 0 |
+
+The answers, 512 IDs, probabilities, stop reason and SLRU
+counters match across all arms. One extra old-control run
+has 1,716 pages of system swap-out during its request. It
+and its paired candidate remain in the archive. The table
+uses the repeated clean pair. One within-binary toggle
+improves decode from 28.283 to 28.317 steps/s (22 ms). That
+comparison shares the updated generic loops. The old-build
+comparison measures the whole GDN change and does not
+isolate the contribution of the new entry or establish an
+independent prefill gain.
+
+With the flag unset, the live trace records 14,969 calls
+to `goose_gdn_decode` (7.539 µs mean) and 30 generic scalar
+and 240 MMA calls. The preceding EXP-1594 trace recorded
+31.184 µs mean in the previous scalar path. The EXP-1476
+archive averaged 3.713 µs. Traced counts are lower bounds
+because Nsight warns of incomplete capture. The CUDA
+process maps contain no libggml or libstdc++.
+
+Raw captures, the trace, binary and fixture checksums are
+under `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/gdn-decode-exp1595`.
+Executable SHA-256
+`0a6f572af594c270efa1eee1ac72ca255260363af02fb652f18c65c2811469b7`.
 
 ## Long Attention partition probe
 

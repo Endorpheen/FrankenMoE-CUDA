@@ -291,6 +291,15 @@ __kernel void goose_gated_delta_net(gdn_launch_packet arguments) {
     gdn_g((int64_t) packet, head, sequence, segment, lane % effective, lane / effective);
 }
 
+__kernel void goose_gdn_decode(gdn_launch_packet arguments) {
+    uint32_t head, sequence, segment, lane;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(head));
+    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(sequence));
+    __asm__("mov.u32 %0, %%ctaid.z;" : "=r"(segment));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
+    gdn_decode_g((int64_t) arguments.words, head, sequence, segment, lane % 32, lane / 32);
+}
+
 static float fg176r_ld_f32(uint64_t src, uint64_t at) {
     return fg_device_global_load(src + at);
 }
