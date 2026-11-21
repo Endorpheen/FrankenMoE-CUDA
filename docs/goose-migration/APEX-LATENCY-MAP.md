@@ -102,6 +102,44 @@ records the exact measurements and hashes. The binary and
 evidence are in
 `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/q6-routed-exp1652`.
 
+### EXP-1653 — Prefill idle during expert staging
+
+The EXP-1647 trace places 1,156.073 of 1,432.740 ms
+of pre-submit idle before 576 and 840 KiB asynchronous
+expert H2D transfers. A separate EXP-1652 diagnostic
+build adds NVTX ranges to the existing host staging
+path. Its full 32K/512 response, IDs, probabilities,
+and SLRU counters match the unprofiled checkpoint.
+
+| Prefill in the instrumented EXP-1652 trace | Events | Host duration, ms | Overlap with GPU idle, ms |
+|---|---:|---:|---:|
+| Copy expert weights into the pinned ring | 114,494 | 7,157.590 | 1,875.505 |
+| Wait for the pinned ring slot | 19,222 | 88.145 | 3.309 |
+
+The trace window has 3,155.189 ms of GPU idle. Of
+that, 2,312.920 ms is outside a recorded CUDA API.
+The two rows above are disjoint. The copy overlap
+lies entirely outside the CUDA API. The enclosing
+expert plan and submit ranges also contain the two
+rows, so their duration is excluded from the table.
+The overlap measures host work on the idle timeline.
+The amount recoverable by changing the transfer
+schedule remains to be measured.
+
+The write-combined ring was rejected after warmed
+Apex 4096/2 prefill rose from 2,747.067 to 2,943.348 ms.
+Both output IDs, probabilities, and SLRU match. On a
+separate pinned-buffer fixture, lowering the libc
+non-temporal copy threshold from 24 MiB to 256 KiB
+raised the median copy time from 25.025 to 39.225 us
+for 576 KiB and from 35.457 to 56.264 us for 840 KiB.
+EXP-1652 remains the runtime checkpoint. Test overlap
+between host copying and submission on the existing
+event and SLRU boundaries.
+
+The trace, interval attribution, and probes are in
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/prefill-idle-exp1653`.
+
 ## EXP-1651 — Share the Flash MMA KV loop
 
 The Apex eight-query tile uses one loop for the steady
