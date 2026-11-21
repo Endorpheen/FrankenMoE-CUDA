@@ -126,10 +126,45 @@ allocating loops, nested calls and early exits. Compare selected IDs,
 probabilities and state on identical operands. Repeat a real Apex pair
 while preserving the KeelWing prefill gain.
 
+**First compiler candidate.** An isolated emitter patch uses typed
+scalar and slice operations plus a closed direct-call graph to prove
+when function scopes can be omitted. The patch retains ordinary scopes
+for unknown calls and ownership-bearing functions. The owned-copy
+reproducer improved from 14.006/14.097 to 0.176/0.207 ms for K=5/K=20,
+with identical top-ID fingerprints. Three supported ownership tests
+passed with AddressSanitizer and UndefinedBehaviorSanitizer. In the
+composed C, the Top-K scan contains zero of the former 19 scope entries
+while retaining both bounds checks. With the original KeelWing CUDA
+images, the unchanged FrankenMoE host source achieved 2,141.76 prefill
+and 14.67 decode tokens/s on Apex 32K/512. Token IDs, probabilities,
+the response and SLRU counters matched the unpatched KeelWing. Peak
+process VRAM was 8,188 MiB with zero swap. This patch verifies the
+Top-K fix and recovers only part of the whole-runtime decode loss.
+
+**Second compiler candidate.** Fried Goose commit
+[`bb1452fa`](https://github.com/Endorpheen/Fried-Goose/commit/bb1452faa1e3f4e4ff4d715723c91a4fcf4e8c78)
+also inlines
+empty region transitions and leaves allocation and root cleanup in its
+checked slow path. A 248,320-element CPU loop that performs one real
+owned copy improved from 5.581 to 1.751 ms across 30 measured iterations
+per arm. The result matched. Three supported tests passed with ASan and
+UBSan, and five invalid ownership cases kept identical diagnostics.
+The unchanged host source with the same KeelWing CUDA images ran Apex
+32K/512 at 4,096/4,096 with 2,140.49 prefill and 27.03 decode tokens/s.
+Decode fell from 50.923 to 18.906 seconds against unpatched KeelWing.
+The 512 token IDs, every probability row, response bytes and SLRU
+counters matched. Peak process RSS was 21,481,284 KiB, peak VRAM was
+8,188 MiB, and process swap and system swap-out delta were zero.
+The old toolchain's 36.00 tokens/s took 14.193 seconds, leaving a
+4.713-second decode gap. This was a host-only differential with pinned
+device images. Full compiler release qualification is still open.
+
 **Artifacts.** Local experiment directory
 `/tmp/franken-goose-keelwing-exp1665.HMxMZL`, including `sampler-probe/`,
 `nsys-{a,b}.nsys-rep`, `nsys-decode.json`, `cpu-phase-profile.json`,
-`full-runs/`, `sampler-split-full/` and `generation-split-full/`.
+`full-runs/`, `sampler-split-full/`, `generation-split-full/` and
+`compiler-fixed-full/` and `compiler-v2-full/`. The first compiler patch is in
+`build/fried-goose-keelwing-ownership/artifacts/keelwing-owned-scope.patch`.
 Status: candidate.
 
 ## Read-only CUDA parameter aggregates
