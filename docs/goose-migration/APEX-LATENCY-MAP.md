@@ -58,6 +58,43 @@ the next target after the current MMQ work.
 The trace and analysis are in
 `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/profile-exp1647`.
 
+## EXP-1663 — Fuse FWHT and Q4 KV writes
+
+The Goose matcher groups FWHT, a zero-offset view, and
+its sole Q4 SET_ROWS consumer. It requires consecutive
+row IDs and a bounded dense destination span. The
+existing butterfly writes into warp-local shared
+storage and the existing Q4 quantizer publishes the
+bytes directly to the mapped KV cache. Sparse writes
+and other consumers retain separate execution.
+Set `GOOSE_CUDA_FWHT_Q4=0` to disable the fusion.
+
+The 64-wide and 256-wide GPU fixtures each match
+1,179,648 bytes. The ragged case matches 10,224 bytes.
+The warm width-64 probe falls from about 0.206 to
+0.156 ms. The width-256 probe falls from 0.178 to
+0.119 ms. The prototype uses 38 registers per thread,
+4 KiB shared memory per block and a 64-byte local
+frame. It permits 12 resident blocks per SM on RTX
+4070. The Apex warm-up logs 20 fused K/V writes.
+
+| Warmed Apex 32,768/512, 4096/4096 | EXP-1662 | EXP-1663 | Candidate minus control |
+|---|---:|---:|---:|
+| Prefill, ms | 19,575.073 | 19,202.921 | -372.152 |
+| Prefill, tok/s | 1,673.97 | **1,706.41** | +32.44 |
+| Decode, ms | 14,436.258 | 14,541.672 | +105.414 |
+| Decode, tok/s | 35.40 | 35.14 | -0.26 |
+| Prefill plus decode, ms | 34,011.330 | 33,744.593 | -266.737 |
+| Peak process RSS, KiB | 21,483,576 | 21,484,096 | +520 |
+| Peak process VRAM, MiB | 8,190 | 8,190 | 0 |
+| Process swap and system swap-out growth | 0 / 0 | 0 / 0 | 0 / 0 |
+
+All 512 IDs, probability rows, response, and SLRU
+match. The model stays fully resident. The cached
+binary and exact measurements are in
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/fwht-q4-exp1663`.
+Keep EXP-1662 for rollback.
+
 ## EXP-1662 — Fuse GDN RMSNorm and SCALE
 
 The Goose graph matcher combines an unweighted RMSNorm

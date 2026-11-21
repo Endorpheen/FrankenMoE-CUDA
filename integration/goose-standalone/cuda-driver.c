@@ -217,7 +217,7 @@ static struct {
     Function rope_phases, rope_apply, ssm_conv, ssm_conv_decode, ssm_conv_long;
     Function ssm_conv_direct, ssm_conv_save_tail;
     Function rope_decode;
-    Function route_reduce, route_sort, route_topk, route_gather, route_norm, blit, blit_transpose, fwht, moe_weighted;
+    Function route_reduce, route_sort, route_topk, route_gather, route_norm, blit, blit_transpose, fwht, fwht_q4, moe_weighted;
     struct device_buffer input, output, weight, jobs;
     struct device_buffer mmq_packed, mmq_tiles, mmq_partials;
     struct device_buffer attention_value, attention_scratch, attention_config;
@@ -1296,6 +1296,8 @@ static void load_cuda(void) {
         if (error == 0 && fg_standalone_option_enabled("GOOSE_CUDA_TILED_BLIT"))
             (void) cuda.function_get(&cuda.blit_transpose, cuda.module, "goose_tensor_transpose_concat");
         if (error == 0) error = cuda.function_get(&cuda.fwht, cuda.module, "goose_kv_fwht");
+        if (error == 0 && fg_standalone_option_enabled("GOOSE_CUDA_FWHT_Q4"))
+            (void) cuda.function_get(&cuda.fwht_q4, cuda.module, "goose_fwht_q4");
         if (error == 0) error = cuda.function_get(&cuda.moe_weighted, cuda.module, "goose_moe_weighted");
         Context current = NULL;
         int pop_error = cuda.pop(&current);
@@ -2028,8 +2030,8 @@ int64_t fg_cuda_kv_read(sl_u8 k, sl_u8 v) {
     return finish_context() == 0 && status == 0 ? 0 : -1;
 }
 
-int64_t fg_cuda_set_q4_rows(uint64_t source, int64_t source_bytes, int64_t stride,
-                            uint64_t target, int64_t target_bytes, int64_t width, int64_t rows) {
+static int64_t set_q4_rows(uint64_t source, int64_t source_bytes, int64_t stride,
+                           uint64_t target, int64_t target_bytes, int64_t width, int64_t rows, int32_t rotation, float scale) {
     if (!source || source % sizeof(float) || width <= 0 || width > INT_MAX || width % 32 ||
         stride < 4 * width || stride % sizeof(float) || source_bytes < 4 * width ||
         rows <= 0 || rows > INT_MAX ||
@@ -2049,7 +2051,13 @@ int64_t fg_cuda_set_q4_rows(uint64_t source, int64_t source_bytes, int64_t strid
     uint64_t row_stride = (uint64_t) stride;
     void * args[] = {&input, &destination, &row_stride, &blocks, &tasks};
     if (error == 0) {
-        error = cuda.launch(cuda.q4_rows, (unsigned) ((tasks + 127) / 128), 1, 1, 128, 1, 1, 0, NULL, args, NULL);
+        if (rotation > 0) {
+            int64_t groups = rows * (width / rotation);
+            void * fused[] = {&input, &destination, &rotation, &groups, &scale};
+            error = cuda.launch(cuda.fwht_q4, (unsigned) ((groups + 3) / 4), 1, 1, 128, 1, 1, 0, NULL, fused, NULL);
+        } else {
+            error = cuda.launch(cuda.q4_rows, (unsigned) ((tasks + 127) / 128), 1, 1, 128, 1, 1, 0, NULL, args, NULL);
+        }
         if (error == 0) error = finish_device_state_write();
     }
     const int popped = finish_context();
@@ -2059,6 +2067,22 @@ int64_t fg_cuda_set_q4_rows(uint64_t source, int64_t source_bytes, int64_t strid
     }
     ++cuda_q4_writes;
     return 1;
+}
+
+int64_t fg_cuda_set_q4_rows(uint64_t source, int64_t source_bytes, int64_t stride,
+                            uint64_t target, int64_t target_bytes, int64_t width, int64_t rows) {
+    return set_q4_rows(source, source_bytes, stride, target, target_bytes, width, rows, 0, 0.0f);
+}
+
+bool fg_cuda_fwht_q4_enabled(void) { return cuda.fwht_q4 && activations.active; }
+
+int64_t fg_cuda_fwht_q4_rows(uint64_t input, uint64_t target, int64_t width, int64_t rows, int32_t rotation, float scale) {
+    if (!fg_cuda_fwht_q4_enabled() || (rotation != 64 && rotation != 256) ||
+        width <= 0 || width > 65536 || rows <= 0 || rows > 4096 || width % rotation) return 0;
+    const int64_t result = set_q4_rows(input, 4 * width * rows, 4 * width, target,
+        18 * (width / 32) * rows, width, rows, rotation, scale);
+    if (result > 0 && getenv("GOOSE_GRAPH_LOG")) fprintf(stderr, "Goose CUDA: fused FWHT and Q4 cache write\n");
+    return result;
 }
 
 uint8_t fg_cuda_match_published_state(uint64_t dst, uint64_t src, int64_t bytes) {

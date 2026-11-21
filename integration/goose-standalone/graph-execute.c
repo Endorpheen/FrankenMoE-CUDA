@@ -400,6 +400,18 @@ static sl_u8 borrowed_bytes(const struct ggml_tensor * t, int64_t bytes) {
     return (sl_u8) {t ? t->data : NULL, bytes};
 }
 
+int64_t fg143_read_contiguous_id(uint64_t address, int64_t index, bool wide) {
+    const char * data = (const char *) (uintptr_t) address;
+    if (wide) {
+        int64_t value;
+        memcpy(&value, data + index * sizeof(value), sizeof(value));
+        return value;
+    }
+    int32_t value;
+    memcpy(&value, data + index * sizeof(value), sizeof(value));
+    return value;
+}
+
 uint8_t fg143_graph_regular(uint64_t address, sl_i64 packet, int64_t mode, sl_i64 sizes, uint64_t workspace) {
     const struct ggml_tensor * t = (const void *) (uintptr_t) address;
     const sl_u8 inputs[] = {

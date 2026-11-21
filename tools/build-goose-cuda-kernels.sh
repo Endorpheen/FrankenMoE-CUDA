@@ -61,6 +61,7 @@ sed '/^fn transpose(/,$d' "$ROOT/goose/cuda/cpy-transpose/device.goose" > "$OUT/
 cat "$ROOT/goose/cuda/standalone-transform.goose" >> "$OUT/transform.goose"
 sed '/^fn main()/,$d; s/^fn fg183f_row(/export fn fg183f_row(/' \
     "$ROOT/goose/cuda/goose-cuda-fwht/device.goose" > "$OUT/fwht.goose"
+cat "$ROOT/goose/cuda/standalone-fwht-q4.goose" >> "$OUT/fwht.goose"
 sed '/^fn main()/,$d; s/^fn fg179w_reduce(/export fn fg179w_reduce(/' \
     "$ROOT/goose/cuda/goose-cuda-moe-weighted/device.goose" > "$OUT/moe-weighted.goose"
 sed '/^fn main()/,$d; s/^fn fg180q_mmq(/export fn fg180q_mmq(/;

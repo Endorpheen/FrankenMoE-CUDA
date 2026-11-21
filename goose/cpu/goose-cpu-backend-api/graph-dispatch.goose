@@ -21,6 +21,10 @@ extern "fg_cuda_glu_pack_offer" fn offer_glu_pack(plan: const i64[:]) -> bool;
 extern "fg_cuda_glu_pack_close" fn close_glu_pack() -> bool;
 extern "fg_cuda_rms_scale" fn rms_scale(plan: const i64[:], input: u64, input_bytes: i64,
     output: u64, bytes: i64, step: i64, deadline: i64, eps: f32, scale: f32) -> i64;
+extern "fg143_read_contiguous_id" fn graph_read_id(address: u64, index: i64, wide: bool) -> i64;
+extern "fg_cuda_fwht_q4_enabled" fn fwht_q4_enabled() -> bool;
+extern "fg_cuda_fwht_q4_rows" fn fwht_q4_rows(input: u64, target: u64, width: i64, rows: i64,
+    rotation: i32, scale: f32) -> i64;
 extern "fg_cuda_routed_graph" fn routed_graph(plan: const i64[:], glu: const i64[:], norm: const i64[:],
     shared: const i64[:], step: i64, deadline: i64) -> i64;
 
@@ -394,6 +398,49 @@ fn try_rms_scale(graph: u64, step: i64, deadlines: const i64[:], rms: u64) -> i6
     return rms_scale(cfg[..], inp, x.bytes, out, words * 4, step, deadlines[step + 1], eps, factor);
 }
 
+fn try_fwht_q4(graph: u64, step: i64, deadlines: const i64[:], fwht: u64) -> i64 {
+    if step + 2 >= deadlines.len || deadlines[step] != step + 2 ||
+       deadlines[step + 1] > step + 2 || storage_get(fwht, STORAGE_VIEW, 0) != 0 { return 0; }
+    let view = graph_node(graph, step + 1);
+    let update = graph_node(graph, step + 2);
+    if graph_prop(view, 2) != OP_VIEW || graph_prop(update, 2) != OP_SET_ROWS ||
+       storage_get(view, STORAGE_VIEW, 0) != fwht || storage_get(view, STORAGE_VIEW_OFFSET, 0) != 0 { return 0; }
+    var inputs: u64[10] = [0; 10];
+    graph_inputs(update, inputs[..]);
+    if inputs[0] != view || inputs[1] == 0 { return 0; }
+    let ids_tensor = inputs[1];
+    let target = storage_get(update, STORAGE_DATA, 0);
+    var p: i64[71] = [0; 71];
+    graph_describe(update, p[..]);
+    let width = p[0]; let rows = p[1]; let capacity = p[31];
+    if width <= 0 || width > 65536 || width % 32 != 0 || rows < 64 || rows > 4096 ||
+       !routed_dense(packet_tensor(p[..], 0), width, rows, 1, 0) ||
+       p[38] != 2 || p[30] != width || p[32] != 1 || p[33] != 1 ||
+       p[34] != 18 || p[35] != width / 32 * 18 || capacity < rows || target == 0 { return 0; }
+    let stride = p[35];
+    let target_bytes = p[39];
+    let id_shape = packet_tensor(p[..], 10);
+    if (id_shape.kind != 26 && id_shape.kind != 27) || id_shape.ne[0] != rows ||
+       id_shape.ne[1] != 1 || id_shape.ne[2] != 1 || id_shape.ne[3] != 1 ||
+       !dense_scalar(id_shape, if id_shape.kind == 27 { 8 } else { 4 }) { return 0; }
+    graph_describe(fwht, p[..]);
+    let rotation = p[42];
+    let x = packet_tensor(p[..], 0);
+    let input = p[57] as! u64;
+    if p[41] != 0x46574854 || (rotation != 64 && rotation != 256) || width % rotation != 0 ||
+       x.kind != 0 || x.ne[0] % rotation != 0 || !dense_scalar(x, 4) ||
+       x.bytes != 4 * width * rows || p[39] != x.bytes || input == 0 { return 0; }
+    let ids = storage_get(ids_tensor, STORAGE_DATA, 0);
+    if ids == 0 || id_shape.bytes != rows * (if id_shape.kind == 27 { 8 } else { 4 }) { return 0; }
+    if activation_read_address(ids, id_shape.bytes) != 0 { return -1; }
+    let first = graph_read_id(ids, 0, id_shape.kind == 27);
+    if first < 0 || first > capacity - rows || (first + rows) > target_bytes / stride { return 0; }
+    for i in rows {
+        if graph_read_id(ids, i, id_shape.kind == 27) != first + i { return 0; }
+    }
+    return fwht_q4_rows(input, target + ((first * stride) as u64), width, rows, rotation as i32, 1.0 / sqrt32(rotation as f32));
+}
+
 fn execute_graph_node(tensor: u64, work: GraphWorkspace &, selective: bool, step: i64, deadline: i64) -> bool {
     if tensor == 0 { return false; }
     let op = graph_prop(tensor, 2);
@@ -447,6 +494,11 @@ export fn fg143_graph_run(graph: u64, selective: bool, deadlines: const i64[:], 
         let step = if deadlines.len == 0 { -1 } else { i };
         let deadline = if deadlines.len == 0 { -1 } else { deadlines[i] };
         let tensor = graph_node(graph, i);
+        if !observe && deadlines.len != 0 && graph_prop(tensor, 2) == OP_CUSTOM && fwht_q4_enabled() {
+            let fused = try_fwht_q4(graph, i, deadlines, tensor);
+            if fused > 0 { i += 3; continue; }
+            if fused < 0 { outcome = i + 1; break; }
+        }
         if !observe && deadlines.len != 0 && graph_prop(tensor, 2) == OP_RMS_NORM {
             let fused = try_rms_scale(graph, i, deadlines, tensor);
             if fused > 0 { i += 2; continue; }

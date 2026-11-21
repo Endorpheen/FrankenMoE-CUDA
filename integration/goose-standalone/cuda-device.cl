@@ -301,7 +301,9 @@ __kernel void goose_gdn_decode(gdn_launch_packet arguments) {
 }
 
 static float fg176r_ld_f32(uint64_t src, uint64_t at) {
-    return fg_device_global_load(src + at);
+    float value;
+    __asm__ volatile("ld.f32 %0, [%1];" : "=f"(value) : "l"(src + at) : "memory");
+    return value;
 }
 
 static void fg176r_st_f16(uint64_t dst, uint64_t at, float value) {
@@ -646,7 +648,7 @@ static float fg183f_ld_f32(uint64_t base, uint64_t byte) {
 }
 
 static void fg183f_st_f32(uint64_t base, uint64_t byte, float value) {
-    *(__global float *) (base + byte) = value;
+    __asm__ volatile("st.f32 [%0], %1;" :: "l"(base + byte), "f"(value) : "memory");
 }
 
 static float fg183f_shfl_xor(float value, uint32_t mask, int32_t delta, int32_t width) {
@@ -660,6 +662,10 @@ static void fg183f_fail(int64_t code) {
     device_trap();
 }
 
+static void fg_fwht_quantize_shared(uint64_t src, uint64_t sb, uint64_t dst, uint64_t db) {
+    fg176r_quant_q4_0_g(src, sb, dst, db);
+}
+static void fg_fwht_warp_sync(void) { __asm__ volatile("bar.warp.sync -1;" ::: "memory"); }
 #include "fwht-device.h"
 
 __kernel void goose_kv_fwht(__global const float * src, __global float * dst,
@@ -670,14 +676,28 @@ __kernel void goose_kv_fwht(__global const float * src, __global float * dst,
     fg183f_row_g((uint64_t) src, (uint64_t) dst, width, rows, scale, block, 4, thread / 32, thread % 32, 32);
 }
 
+__kernel void goose_fwht_q4(__global const float *src, __global uchar *dst,
+    int32_t width, int64_t rows, float scale) {
+    __local float tile[4 * 256] __attribute__((aligned(16)));
+    uint32_t block, thread;
+    uint64_t shared;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(block));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
+    __asm__("cvta.shared.u64 %0, %1;" : "=l"(shared) : "l"((uint64_t) tile));
+    const uint32_t warp = thread / 32;
+    fwht_q4_write_g((uint64_t) src, (uint64_t) dst, shared + 4ul * warp * width,
+        width, rows, scale, 4l * block + warp, thread % 32);
+}
+
 #define fg179w_ld_f32 fg183f_ld_f32
-#define fg179w_st_f32 fg183f_st_f32
+static void fg179w_st_f32(uint64_t base, uint64_t byte, float value) {
+    fg_device_global_store(base + byte, value);
+}
 #define fg179w_fail fg183f_fail
 #pragma OPENCL FP_CONTRACT OFF
 #include "moe-weighted-device.h"
 #pragma OPENCL FP_CONTRACT ON
 #undef fg179w_ld_f32
-#undef fg179w_st_f32
 #undef fg179w_fail
 
 __kernel void goose_moe_weighted(__global const float * experts, __global const float * weights,
