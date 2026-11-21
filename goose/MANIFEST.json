@@ -3773,9 +3773,9 @@
       "experiment": "EXP-2026-11-07-145-goose-cpu-backend-api",
       "task": "P1-10",
       "status": "slice",
-      "sha256": "45b9f5a6a1652c5000221ae282aa75217e6767b1e9d7b6b4350d85610d8491f0",
-      "gate": "EXP-1617 full FFN shape and lifetime matcher, Apex differential, input/output alias and SLRU eviction fixtures; EXP-1660 exact direct SSM device probe and warmed Apex 32K/512 differential; EXP-1661 exact routed Q8_1 GPU fixture and warmed Apex 32K/512 differential; EXP-1662 exact strided RMSNorm SCALE fixture and warmed Apex 32K/512 differential",
-      "integration_commit": "0c914d5eccc2924b742778f68a8c576c27a0687c"
+      "sha256": "32798445397b7f3ce394fa0db004167140dbed790ef8875df7ca04108b828a4c",
+      "gate": "EXP-1617 full FFN shape and lifetime matcher, Apex differential, input/output alias and SLRU eviction fixtures; EXP-1660 exact direct SSM device probe and warmed Apex 32K/512 differential; EXP-1661 exact routed Q8_1 GPU fixture and warmed Apex 32K/512 differential; EXP-1662 exact strided RMSNorm SCALE fixture and warmed Apex 32K/512 differential; EXP-1663 byte-exact FWHT Q4 probe and warmed Apex 32K/512 differential",
+      "integration_commit": "d277a1716154d18dfd3cca8a870ad9307276efac"
     },
     {
       "goose": "cpu/goose-cpu-backend-api/backend/kernel-template.goose",
@@ -7041,6 +7041,20 @@
       "task": "P1-11",
       "status": "slice",
       "sha256": "e27df3d31d4f3c3b1cda154891b99c0f6a60014161ece6fae501a21ba422ab2c"
+    },
+    {
+      "goose": "cuda/standalone-fwht-q4.goose",
+      "native": "ggml/src/ggml-cuda/fwht.cu",
+      "native_targets": [
+        "ggml/src/ggml-cuda/fwht.cu",
+        "ggml/src/ggml-cuda/set-rows.cu"
+      ],
+      "experiment": "EXP-2026-11-21-1663",
+      "task": "P3-04",
+      "status": "slice",
+      "sha256": "0ffede022292413f0c0a4d369a91ad86abe2c6c47c594ec911b84998de6e6ce9",
+      "integration_commit": "d277a1716154d18dfd3cca8a870ad9307276efac",
+      "gate": "EXP-1663 byte-exact FWHT Q4 probe and warmed Apex 32K/512 differential"
     },
     {
       "goose": "cuda/goose-cuda-fwht/device.goose",
