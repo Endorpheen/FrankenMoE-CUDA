@@ -21,6 +21,8 @@
 # APEX_RUN_ROOT optionally selects the directory for run artifacts.
 # APEX_CPU_PROFILE=1 records gprofng clock stacks with request boundary marks.
 # APEX_SAMPLE_MEMORY=1 samples server RAM and GPU memory throughout the run.
+# APEX_NSYS_SESSION stops a named Nsight capture before server shutdown.
+# APEX_NSYS_BIN selects its CLI when it differs from the installed nsys.
 # APEX_CAPTURE_SMAPS=1 saves mapping-level accounting before and after requests.
 #
 # Readiness knobs (do not change the Apex profile):
@@ -372,3 +374,7 @@ out = f"decode {dec} prefill {pre} sha {hs}"
 (d/"summary.txt").write_text(out + "\n")
 print(out)
 PY
+
+if [ -n "${APEX_NSYS_SESSION:-}" ]; then
+    "${APEX_NSYS_BIN:-nsys}" stop --session="$APEX_NSYS_SESSION" >"${RUNDIR}/nsight-stop.log" 2>&1
+fi

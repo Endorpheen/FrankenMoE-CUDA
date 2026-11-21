@@ -1,5 +1,10 @@
 # Apex runtime performance and historical optimization audit
 
+The [current Apex latency map](APEX-LATENCY-MAP.md) compares
+the active Optimized Hybrid and cumulative Goose graph on full
+Apex 32K/512 traces. The snapshots below retain historical
+comparisons and implementation context.
+
 ## Live Apex dispatch and Fusion audit
 
 The active independent checkpoint is EXP-1603. Compare its recorded
