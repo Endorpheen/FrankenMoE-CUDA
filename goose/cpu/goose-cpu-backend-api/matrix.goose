@@ -185,9 +185,12 @@ fn matrix(p: const Node &, x: const u8[:], y: const u8[:], ids: const u8[:], dst
 fn quant_route(p: const Node &, route: i64, plane2: i64, plane3: i64,
                spread2: i64, spread3: i64) -> i64, i64 {
     if p.op == OP_MUL_MAT_ID {
-        let slot = route % p.z.ne[0];
         let token = route / p.z.ne[0];
-        return (slot % p.y.ne[1]) * p.y.nb[1] + token * p.y.nb[2], route;
+        let base = token * p.y.nb[2];
+        if p.y.ne[1] == 1 { return base, route; }
+        let slot = route - token * p.z.ne[0];
+        let input_slot = if p.y.ne[1] == p.z.ne[0] { slot } else { slot % p.y.ne[1] };
+        return base + input_slot * p.y.nb[1], route;
     }
     let i1 = route % p.y.ne[1];
     let relative_plane = route / p.y.ne[1];
@@ -215,11 +218,12 @@ export fn fg143_mmq_tiles(jobs: const i64[:], words: i64, tile_width: i64, tiles
     var first: i64 = 0;
     var tile: i64 = 0;
     while first < count {
-        let weight = if words == 3 { jobs[first * words + 2] } else { 0 };
-        var size: i64 = 1;
-        while size < tile_width && size < count - first {
-            if words == 3 && jobs[(first + size) * words + 2] != weight { break; }
-            size += 1;
+        let limit = low(tile_width, count - first);
+        let weight = if words == 3 { jobs[3 * first + 2] } else { 0 };
+        var size = limit;
+        if words == 3 {
+            size = 1;
+            while size < limit && jobs[3 * (first + size) + 2] == weight { size += 1; }
         }
         if tile >= tiles.len / 3 || weight < 0 { return -1; }
         tiles[tile * 3] = first;
@@ -367,11 +371,16 @@ fn packed_matrix(p: const Node &, x: const u8[:], y: const u8[:], ids: const u8[
         heads = p.ith * words;
         next = heads + planes;
         for expert in planes { indices[heads + expert] = -1; }
-        for route in routes {
-            let expert = (read32(ids, offset(p.z, route)) as! i32) as i64;
-            if expert < 0 || expert >= planes { return false; }
-            indices[next + route] = indices[heads + expert];
-            indices[heads + expert] = route;
+        var route: i64 = 0;
+        for token in p.z.ne[1] {
+            let row = token * p.z.nb[1];
+            for slot in p.z.ne[0] {
+                let expert = (read32(ids, row + slot * p.z.nb[0]) as! i32) as i64;
+                if expert < 0 || expert >= planes { return false; }
+                indices[next + route] = indices[heads + expert];
+                indices[heads + expert] = route;
+                route += 1;
+            }
         }
     } else {
         if p.y.ne[2] % p.x.ne[2] != 0 || p.y.ne[3] % p.x.ne[3] != 0 ||

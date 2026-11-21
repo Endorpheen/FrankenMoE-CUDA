@@ -15,6 +15,42 @@ for rollback. Retain isolated patches and trace evidence when
 combinations need further qualification. Inspect machine
 code for material unexplained differences.
 
+## EXP-1636, EXP-1638 and EXP-1639 — Cumulative prefill updates
+
+EXP-1636 reuses a shared Q8_1 pack across adjacent matrix
+projections that read the same live activation. Its full
+run reused 320 packs. EXP-1638 selects linear device
+addressing in Goose for dense pointwise inputs with matching
+shapes, and adds this to the shared-pack path. The candidate
+recorded 3,320 flat launches and 360 pack reuses. EXP-1639
+walks Top-K by token and slot, simplifies common indexed input
+offsets, and emits dense MMQ tiles directly. The routing and
+the order and math of the GPU operations are preserved.
+
+| Experiment and same-session control | Prefill, control → candidate | Decode, control → candidate | Prefill + decode, control → candidate |
+|---|---:|---:|---:|
+| EXP-1636 vs EXP-1633 | 23.776 → 23.549 s | 14.312 → 14.250 s | 38.088 → 37.799 s |
+| EXP-1638 vs EXP-1633, cumulative | 23.584 → 23.071 s | 14.260 → 14.753 s | 37.844 → 37.824 s |
+| EXP-1639 vs EXP-1638, cumulative | 23.998 → 23.147 s | 14.821 → 14.615 s | 38.819 → 37.763 s |
+
+All pairs use Apex 32,768/512, 4096/4096 and the same
+5,920 MiB expert budget. All 512 output IDs, probabilities,
+response and SLRU match. Peak process VRAM is 8,220 MiB and
+process and system swap-out are zero. Peak process RSS
+changes by +1,032 KiB, +287,052 KiB and -32 KiB,
+respectively. EXP-1638 holds the recorded prefill best at
+1,420.30 tok/s. EXP-1639 is the cumulative runtime control
+and holds the logged prefill-plus-decode best in this set.
+Use paired times to estimate the effect of each change.
+
+Use `GOOSE_MMQ_SHARED_REUSE=0` or
+`GOOSE_CUDA_VECTOR_FLAT=0` to isolate either earlier path.
+The request, binaries, comparison JSON and source patches
+are recorded in the local experiment directories
+`/tmp/franken-goose-shared-pack-exp1636.3Uzyr3`,
+`/tmp/franken-goose-flat-vector-exp1638.0LFmx9`, and
+`/tmp/franken-goose-matrix-route-exp1639.w74ukJ`.
+
 ## EXP-1633 — Pinned staging for current pageable expert weights
 
 EXP-1632 traces the blocking pageable transfers in
