@@ -13,6 +13,7 @@ const CV_L2: i64 = 12;
 const CV_SIGMOID_REFERENCE: i64 = 13;
 const CV_SILU_REFERENCE: i64 = 14;
 const CV_SWIGLU_REFERENCE: i64 = 15;
+const CV_FLAT_PLAN: i64 = 8;
 
 extern "fg_vector_word" fn cv_word(cfg: u64, i: i64) -> i64;
 extern "fg_device_global_load" fn cv_load(address: u64) -> f32;
@@ -76,6 +77,34 @@ fn cv_norm(x: u64, y: u64, dst: u64, cfg: u64, op: i64, row: i64, lane: i64, eps
     }
 }
 
+fn cv_value(op: i64, a: f32, b: f32, param0: f32, param1: f32) -> f32 {
+    if op == CV_SIGMOID_REFERENCE || op == CV_SILU_REFERENCE || op == CV_SWIGLU_REFERENCE {
+        let s = cv_reciprocal(1.0 + exp32(-a));
+        return if op == CV_SIGMOID_REFERENCE { s }
+            else if op == CV_SILU_REFERENCE { a * s }
+            else { (a * s) * b };
+    }
+    return if op == CV_ADD { a + b }
+        else if op == CV_SUB { a - b }
+        else if op == CV_MUL { a * b }
+        else if op == CV_DIV { a / b }
+        else if op == CV_SCALE { a * param0 + param1 }
+        else if op == CV_CLAMP { cv_min(cv_max(a, param0), param1) }
+        else if op == CV_SIGMOID { sigmoid(a) }
+        else if op == CV_SILU { silu(a) }
+        else if op == CV_SOFTPLUS { softplus(a) }
+        else { silu(a) * b };
+}
+
+export fn fg_vector_flat(x: u64, y: u64, dst: u64, op: i64, count: i64,
+    param0: f32, param1: f32, index: i64) {
+    if index >= count { return; }
+    let offset = (4 * index) as u64;
+    let a = cv_load(x + offset);
+    let b = if y != 0 { cv_load(y + offset) } else { 0.0 };
+    cv_store(dst + offset, cv_value(op, a, b, param0, param1));
+}
+
 export fn fg_vector_ops(x: u64, y: u64, dst: u64, cfg: u64, param0: f32, param1: f32,
                         group: i64, lane: i64) {
     let op = cv_word(cfg, 0);
@@ -97,23 +126,5 @@ export fn fg_vector_ops(x: u64, y: u64, dst: u64, cfg: u64, param0: f32, param1:
     let a = cv_load(x + (xa as u64));
     let b = if y != 0 { cv_load(y + (cv_offset(cfg, index, 14) as u64)) }
         else if gl != 0 { cv_load(x + (xb as u64)) } else { 0.0 };
-    if op == CV_SIGMOID_REFERENCE || op == CV_SILU_REFERENCE || op == CV_SWIGLU_REFERENCE {
-        let s = cv_reciprocal(1.0 + exp32(-a));
-        let value = if op == CV_SIGMOID_REFERENCE { s }
-            else if op == CV_SILU_REFERENCE { a * s }
-            else { (a * s) * b };
-        cv_store(dst + ((4 * index) as u64), value);
-        return;
-    }
-    let value = if op == CV_ADD { a + b }
-        else if op == CV_SUB { a - b }
-        else if op == CV_MUL { a * b }
-        else if op == CV_DIV { a / b }
-        else if op == CV_SCALE { a * param0 + param1 }
-        else if op == CV_CLAMP { cv_min(cv_max(a, param0), param1) }
-        else if op == CV_SIGMOID { sigmoid(a) }
-        else if op == CV_SILU { silu(a) }
-        else if op == CV_SOFTPLUS { softplus(a) }
-        else { silu(a) * b };
-    cv_store(dst + ((4 * index) as u64), value);
+    cv_store(dst + ((4 * index) as u64), cv_value(op, a, b, param0, param1));
 }

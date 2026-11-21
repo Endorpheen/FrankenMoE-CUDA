@@ -151,7 +151,7 @@ static struct {
     void * library;
     Context context;
     Module module;
-    Function kernel, attention_tiles, attention_merge, gdn, gdn_decode, q4_rows, vector, rms_reference;
+    Function kernel, attention_tiles, attention_merge, gdn, gdn_decode, q4_rows, vector, vector_flat, rms_reference;
     Function mmq_pack, mmq_pack_shared, mmq_matrix, mmq_q4_matrix, mmq_q6_matrix;
     Function mmq_pack_k_major, mmq_q6_dense_half_k;
     Function mmq_q4_dense_shared, mmq_q4_routed_shared;
@@ -286,7 +286,7 @@ static _Thread_local struct {
     int64_t ranges[ACTIVATION_RECORDS * ACTIVATION_WORDS];
     int64_t large_output[ACTIVATION_WORDS];
     uint64_t hits, skipped_download_bytes, expired_bytes;
-    uint64_t shared_pack_reuses;
+    uint64_t shared_pack_reuses, flat_vectors;
     size_t packet_used;
 } activations;
 
@@ -1156,6 +1156,8 @@ static void load_cuda(void) {
         }
         if (error == 0) error = cuda.function_get(&cuda.q4_rows, cuda.module, "goose_set_q4_rows");
         if (error == 0) error = cuda.function_get(&cuda.vector, cuda.module, "goose_vector_ops");
+        if (error == 0 && fg_standalone_option_enabled("GOOSE_CUDA_VECTOR_FLAT"))
+            error = cuda.function_get(&cuda.vector_flat, cuda.module, "goose_vector_flat");
         if (error == 0 && rms_reference) error = cuda.function_get(&cuda.rms_reference, cuda.module, "goose_rms_reference");
         if (error == 0) error = cuda.function_get(&cuda.rope_phases, cuda.module, "goose_rope_phases");
         if (error == 0) error = cuda.function_get(&cuda.rope_apply, cuda.module, "goose_rope_apply");
@@ -1376,6 +1378,7 @@ int fg_cuda_activation_graph_begin(bool planned) {
     activations.step = -1;
     shared_activation_pack.host = 0;
     activations.shared_pack_reuses = 0;
+    activations.flat_vectors = 0;
     activations.unavailable = false;
     activations.defer_waits = planned && fg_standalone_option_enabled("GOOSE_CUDA_DEFER_WAITS");
     activations.retire = fg_standalone_option_enabled("GOOSE_ACTIVATION_LIFETIMES");
@@ -1448,6 +1451,9 @@ int fg_cuda_activation_graph_end(bool success, bool all, uint64_t host, int64_t 
     if (!activations.active) return 0;
     if (activations.shared_pack_reuses && getenv("GOOSE_MMQ_SHARED_REUSE_REPORT")) {
         fprintf(stderr, "Goose CUDA MMQ: reused %" PRIu64 " shared Q8_1 packs\n", activations.shared_pack_reuses);
+    }
+    if (activations.flat_vectors && getenv("GOOSE_CUDA_VECTOR_FLAT_REPORT")) {
+        fprintf(stderr, "Goose CUDA vector: %" PRIu64 " flat launches\n", activations.flat_vectors);
     }
     int error = 0;
     decode_capture.scope = false;
@@ -3522,11 +3528,15 @@ int64_t fg_cuda_vector(sl_i64 config, sl_u8 x, sl_u8 y, sl_u8 out, float param0,
         if (!resident) error = vector_input(y, &cuda.weight, &staged[1], plan + 14, pack);
     }
     if (error == 0) {
-        enum { rms_operation = 11 };
+        enum { rms_operation = 11, flat_plan = 8 };
         const int64_t width = plan[2];
         const bool reference = cuda.rms_reference && plan[0] == rms_operation && width <= INT_MAX &&
             plan[10] == 4 && (y.len == 0 || plan[18] == 4);
-        if (reference) {
+        if (cuda.vector_flat && (plan[23] & flat_plan) && plan[1] >= 16384 && plan[25] == 128) {
+            void * args[] = {&staged[0], &staged[1], &output, &plan[0], &plan[1], &param0, &param1};
+            error = cuda.launch(cuda.vector_flat, (unsigned) plan[24], 1, 1, 128, 1, 1, 0, NULL, args, NULL);
+            if (error == 0) ++activations.flat_vectors;
+        } else if (reference) {
             const bool vec = width % 4 == 0 && width <= 16384 && output % 16 == 0 &&
                 vector_aligned((uint64_t) (uintptr_t) x.data, config.data + 10) &&
                 vector_aligned(staged[0], plan + 10) && (y.len == 0 || (plan[14] == width &&

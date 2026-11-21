@@ -87,7 +87,9 @@ fn cv_try(p: const Node &, x: const u8[:], y: const u8[:], dst: u8[:], addresses
     config[22] = if !packed { 0 } else if p.ip[1] != 0 { 2 } else { 1 };
     let pack_x = p.x.nb[0] == 4 && p.x.bytes > mul_size(elements(p.x), 4);
     let pack_y = pair && p.y.nb[0] == 4 && p.y.bytes > mul_size(elements(p.y), 4);
-    config[23] = (if pack_x { 1 } else { 0 }) | (if pack_y { 2 } else { 0 });
+    let flat = !norm && !packed && same_shape(p.x, p.d) && dense_scalar(p.x, 4) &&
+        (!pair || (same_shape(p.y, p.d) && dense_scalar(p.y, 4)));
+    config[23] = (if pack_x { 1 } else { 0 }) | (if pack_y { 2 } else { 0 }) | (if flat { CV_FLAT_PLAN } else { 0 });
     config[24] = groups;
     config[25] = if norm { 32 } else { 128 };
     let y_bytes = if pair { p.y.bytes } else { 0 };

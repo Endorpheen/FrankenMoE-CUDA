@@ -386,6 +386,15 @@ __kernel void goose_vector_ops(__global uint8_t * x, __global uint8_t * y,
         (uint64_t) cfg.words, param0, param1, group, lane);
 }
 
+__kernel void goose_vector_flat(__global uint8_t * x, __global uint8_t * y,
+    __global uint8_t * out, int64_t op, int64_t count, float param0, float param1) {
+    uint32_t group, lane;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(group));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
+    fg_vector_flat_g((uint64_t) x, (uint64_t) y, (uint64_t) out,
+        op, count, param0, param1, (int64_t) group * 128 + lane);
+}
+
 static float fg_rope_float(uint64_t cfg, int64_t i) {
     return as_float((uint32_t) fg_attn_word(cfg, i));
 }
