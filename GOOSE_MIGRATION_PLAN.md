@@ -531,6 +531,11 @@ placement or scheduling. Compare the fixed Apex workload against
 EXP-1476 with phase-specific kernel, transfer, wait and host-cost
 attribution. Verify correctness, prefill, decode, RAM and VRAM in
 matched runs. Keep profiling results separate from speed acceptance.
+The [Optimized Hybrid record](docs/goose-migration/OPTIMIZED-HYBRID.md)
+tracks the current best confirmed hybrid while EXP-1476 remains
+frozen. Compare with matched parameters, matched device memory and
+the best verified setting for each runtime. The performance goal is
+to exceed the current Optimized Hybrid with correct generation.
 
 Candidate unavoidable dependencies: OS kernel/threads/virtual memory/file/socket primitives; C ABI/runtime/math support; CUDA driver/device runtime/toolchain and specifically justified vendor primitives; build tools. This is a provisional list,not an approval to keep arbitrary C++ libraries. Owned GGML/llama arithmetic,allocator,scheduler,GGUF/tokenizer/JSON/Jinja/HTTP/server logic is migration scope,not an unavoidable external dependency.
 

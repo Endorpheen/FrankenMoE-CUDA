@@ -122,6 +122,11 @@ and `APEX_SAMPLE_MEMORY=1` for diagnostic captures. For ordinary
 performance pairs enable only the memory sampler. The emitted
 Goose device image also assembles with `ptxas -arch=sm_86`.
 Only the RTX 4070 is executed and timed in these experiments.
+Exact commands and the equal-VRAM cache choice are in the
+[launch and residency comparison](APEX-LAUNCH-COMPARISON.md).
+Use the [current Optimized Hybrid](OPTIMIZED-HYBRID.md) as the
+additional performance comparator while retaining the original
+EXP-1476 as the frozen control.
 
 ## Comparisons and timing boundaries
 

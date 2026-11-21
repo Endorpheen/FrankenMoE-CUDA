@@ -105,6 +105,9 @@ Functional qualification runs before memory and speed acceptance.
    1,124.843 prefill tok/s and 27.718 decode steps/s across
    two full requests using the fused path. The response still
    overestimates the repeated record count.
+   The [cache placement series](APEX-LAUNCH-COMPARISON.md)
+   preserves that response on EXP-1595 and measures up to
+   31.053 median decode steps/s at the selected 5,920 MiB budget.
    The full response gate remains open.
    Gates 3 and 4 qualify the later speed comparison.
 7. [ ] **Accept memory** (requires 5 and 6). Record per-process RSS and
@@ -113,6 +116,10 @@ Functional qualification runs before memory and speed acceptance.
    occupancy. Log sample intervals, process swap and system swap-out.
    The candidate must maintain full model residency and avoid swap
    growth and RAM/VRAM regression against the same-session control.
+   EXP-1597 records 8,200 MiB sampled peak VRAM for the selected
+   Goose profile and 8,202 MiB for the original EXP-1476. Goose's
+   RSS high-water remains about 1 GiB higher. The memory gate
+   stays open together with the response gate.
 8. [ ] **Accept reproducible speed** (requires 1–7). Use sequential
    A–B–B–A with matched cache and thermal conditions. Keep cold and
    warm observations separate. Require the correctness gate on each
@@ -120,6 +127,10 @@ Functional qualification runs before memory and speed acceptance.
    and single-response decode. Report units, absolute rates, per-run
    values and spread, memory, exact binaries and raw evidence.
    Resolve a regression in the same gate and rerun the affected checks.
+   The [Optimized Hybrid comparator](OPTIMIZED-HYBRID.md) tracks
+   the best confirmed hybrid separately. Final optimization targets
+   surpassing that comparator with quality preserved. Record matched
+   settings, matched device memory and tuned-profile comparisons.
 
 ## Explicit cache profile
 
