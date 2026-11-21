@@ -3773,8 +3773,8 @@
       "experiment": "EXP-2026-11-07-145-goose-cpu-backend-api",
       "task": "P1-10",
       "status": "slice",
-      "sha256": "0c489df6d2303e4e686dc25be0f37257fdefc92559889ab7007958fc34d70882",
-      "gate": "EXP-1616 routed FFN shape and lifetime matcher, Apex differential, SLRU eviction fixtures and CUDA memcheck"
+      "sha256": "df069f68616b0a70a96e76bfb2ecb87e01f14ff0f0b48bcc9bc0d98be1807a4b",
+      "gate": "EXP-1617 full FFN shape and lifetime matcher, Apex differential, input/output alias and SLRU eviction fixtures"
     },
     {
       "goose": "cpu/goose-cpu-backend-api/backend/kernel-template.goose",

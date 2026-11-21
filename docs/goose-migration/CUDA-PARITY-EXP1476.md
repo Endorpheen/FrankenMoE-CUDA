@@ -4485,6 +4485,58 @@ The build, layout witness, fixture checks and complete runs
 are under
 `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/routed-ffn-exp1616`.
 
+## Full expert FFN and residual graph
+
+EXP-2026-11-21-1617 extends the routed graph through the
+adjacent shared expert projections, sigmoid gate, mixture
+and residual add. It captures 15 logical nodes as 18
+existing CUDA kernels. Routed and shared up/gate reuse
+the same Q8_1 input. The matcher verifies last uses and
+the driver requires all four shared weights to be
+resident. Enable `GOOSE_CUDA_FULL_FFN_GRAPH=1` alongside
+the earlier experimental graph flags. Shapes the complete
+matcher declines retain the routed FFN and ordinary
+executor.
+
+The Apex layout has an exact input/output alias in all 40
+layers. The complete graph retains that device record
+until its last consumer. The final residual addition
+writes the replacement value and updates the record's
+deadline. Bounded cache probing admits the recurring
+layer signatures without evicting live executables.
+Both CUDA images remain byte-identical to EXP-1616.
+
+The full-mode eviction fixture exercises the input/output
+alias, Q4_K and Q6_K down, and 40 evictions on eight slots
+for each quantization. Outputs match bitwise and both
+memcheck passes report zero errors. The fixture trace has
+five replays, each with 18 kernel nodes. In live Apex
+8192/32 the first decode step warms 40 layer signatures
+and the next 30 each replay all 40 layers. Text, IDs,
+probabilities and SLRU statistics match the routed control.
+
+| Intermediate Apex 32K/512, 4096/4096, 5,920 MiB | Routed graph A1 / A2 | Full FFN graph B1 / B2 |
+|---|---:|---:|
+| Prefill, tok/s | 1143.663 / 1153.036 | 1144.262 / 1138.933 |
+| Decode, steps/s | 32.142 / 32.822 | 33.513 / 33.256 |
+| Prefill plus decode, s | 44.550 / 43.988 | 43.885 / 44.136 |
+| Peak process VRAM, MiB | 8234 / 8234 | 8226 / 8226 |
+| RSS high-water, KiB | 21480740 / 21480332 | 21480908 / 21481708 |
+| Process swap and system swap-out growth | 0 / 0 | 0 / 0 |
+
+All four replies and expert counters match. Median decode
+saves 427 ms and median prefill adds 168 ms. Combined time
+falls 665 ms in the first pair and rises 149 ms in the
+second. Keep the complete FFN as part of the cumulative
+experimental path. Capture through the next layer's
+attention or recurrent branch and router to reach the
+hybrid's host-visible Top-K boundary.
+
+Executable SHA-256
+`9a4f3eaaeeb92431e9fa2c6fef76ec05bcacfa6e6a977357699c34c21347e672`.
+Builds, alias evidence, test data and full runs are in
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/full-ffn-exp1617`.
+
 ## Long Attention partition probe
 
 EXP-2026-11-20-1562 holds the existing vector kernel fixed

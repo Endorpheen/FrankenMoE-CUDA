@@ -25,7 +25,7 @@ extern int64_t th_cpumask_next(sl_i64 mask, int64_t strict, int64_t first, sl_i6
 extern uint64_t fg_cuda_take_matrices(void);
 extern uint64_t fg_cuda_take_f32_matrices(void);
 extern void fg_cuda_take_matrix_launches(uint64_t * launches, uint64_t * cached);
-extern void fg_cuda_take_routed_graph(uint64_t * groups, uint64_t * replays);
+extern void fg_cuda_take_routed_graph(uint64_t * groups, uint64_t * replays, uint64_t * full, uint64_t * full_replays);
 extern uint64_t fg_cuda_take_mmq(void);
 extern void fg_cuda_take_mmq_stream(uint64_t * windows, uint64_t * fixups);
 extern uint64_t fg_cuda_take_dense_mma(void);
@@ -524,8 +524,8 @@ static enum ggml_status compute_graph(struct ggml_cgraph * graph, bool all, cons
     const uint64_t f32_matrices = fg_cuda_take_f32_matrices();
     uint64_t matrix_launches, cached_projections;
     fg_cuda_take_matrix_launches(&matrix_launches, &cached_projections);
-    uint64_t routed_groups, routed_replays;
-    fg_cuda_take_routed_graph(&routed_groups, &routed_replays);
+    uint64_t routed_groups, routed_replays, full_ffn_groups, full_ffn_replays;
+    fg_cuda_take_routed_graph(&routed_groups, &routed_replays, &full_ffn_groups, &full_ffn_replays);
     const uint64_t mmq = fg_cuda_take_mmq();
     uint64_t mmq_stream, mmq_fixups;
     fg_cuda_take_mmq_stream(&mmq_stream, &mmq_fixups);
@@ -561,6 +561,8 @@ static enum ggml_status compute_graph(struct ggml_cgraph * graph, bool all, cons
         if (cached_projections) fprintf(stderr, "Goose CUDA cached expert projections: %llu\n", (unsigned long long) cached_projections);
         if (routed_groups) fprintf(stderr, "Goose CUDA routed FFN: %" PRIu64 " groups, %" PRIu64 " graph replays\n",
             routed_groups, routed_replays);
+        if (full_ffn_groups) fprintf(stderr, "Goose CUDA full FFN: %" PRIu64 " groups, %" PRIu64 " graph replays\n",
+            full_ffn_groups, full_ffn_replays);
         if (mmq) fprintf(stderr, "Goose CUDA MMQ projections: %llu nodes\n", (unsigned long long) mmq);
         if (mmq_stream) fprintf(stderr, "Goose CUDA MMQ Stream-K: %" PRIu64 " windows, %" PRIu64 " fixups\n",
             mmq_stream, mmq_fixups);

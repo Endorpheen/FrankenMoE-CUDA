@@ -14,8 +14,9 @@ extern "fg143_graph_scan" fn graph_scan(tensor: u64) -> bool;
 extern "fg143_graph_resize" fn graph_resize(workspace: u64, bytes: i64) -> u64;
 extern "fg143_graph_observe" fn graph_observe(tensor: u64) -> bool;
 extern "fg_cuda_routed_graph_enabled" fn routed_graph_enabled() -> bool;
+extern "fg_cuda_full_ffn_enabled" fn full_ffn_enabled() -> bool;
 extern "fg_cuda_routed_graph" fn routed_graph(plan: const i64[:], glu: const i64[:], norm: const i64[:],
-    step: i64, deadline: i64) -> i64;
+    shared: const i64[:], step: i64, deadline: i64) -> i64;
 
 export fn fg143_routed_layer_matches(layers: const i64[:], plan: const i64[:]) -> bool {
     for i in layers.len / 4 {
@@ -44,6 +45,122 @@ fn routed_shape(p: const i64[:], width: i64, rows: i64, experts: i64, inputs: i6
         routed_dense(packet_tensor(p, 10), width, inputs, 1, 0) &&
         routed_dense(packet_tensor(p, 20), 8, 1, 1, 26) &&
         routed_dense(packet_tensor(p, 30), rows, 8, 1, 0);
+}
+
+fn graph_vector_plan(p: const i64[:], op: i64, config: i64[:]) {
+    config[0] = op;
+    config[1] = p[30] * p[31];
+    for axis in 4 {
+        config[2 + axis] = p[30 + axis];
+        config[6 + axis] = p[axis];
+        config[10 + axis] = p[4 + axis];
+        config[14 + axis] = p[10 + axis];
+        config[18 + axis] = p[14 + axis];
+    }
+    config[24] = (config[1] + 127) / 128;
+    config[25] = 128;
+}
+
+fn shared_projection(p: const i64[:], width: i64, rows: i64, kind: i64) -> bool {
+    let w = packet_tensor(p, 0);
+    let block_bytes = if kind == 12 { 144 } else { 210 };
+    let row_bytes = width / 256 * block_bytes;
+    return w.kind == kind && w.ne[0] == width && w.ne[1] == rows && w.ne[2] == 1 && w.ne[3] == 1 &&
+        w.nb[0] == block_bytes && w.nb[1] == row_bytes && w.bytes == rows * row_bytes &&
+        routed_dense(packet_tensor(p, 10), width, 1, 1, 0) &&
+        routed_dense(packet_tensor(p, 30), rows, 1, 1, 0);
+}
+
+// Match the complete shared expert and residual before extending the routed graph.
+// Each matched intermediate must have its final consumer inside this group.
+fn shared_ffn_plan(graph: u64, step: i64, deadlines: const i64[:], input: u64, routed: u64,
+                   width: i64, shared: i64[:]) -> bool {
+    if step + 14 >= deadlines.len || deadlines[step + 5] != step + 13 ||
+       deadlines[step + 6] != step + 8 || deadlines[step + 7] != step + 8 ||
+       deadlines[step + 8] != step + 9 || deadlines[step + 9] != step + 12 ||
+       deadlines[step + 10] != step + 11 || deadlines[step + 11] != step + 12 ||
+       deadlines[step + 12] != step + 13 || deadlines[step + 13] != step + 14 { return false; }
+    let a = graph_node(graph, step + 6);
+    let b = graph_node(graph, step + 7);
+    let glu = graph_node(graph, step + 8);
+    let down = graph_node(graph, step + 9);
+    let router = graph_node(graph, step + 10);
+    let sigmoid = graph_node(graph, step + 11);
+    let product = graph_node(graph, step + 12);
+    let added = graph_node(graph, step + 13);
+    let output = graph_node(graph, step + 14);
+    if graph_prop(a, 2) != OP_MUL_MAT || graph_prop(b, 2) != OP_MUL_MAT ||
+       graph_prop(glu, 2) != OP_GLU || graph_prop(down, 2) != OP_MUL_MAT ||
+       graph_prop(router, 2) != OP_MUL_MAT || graph_prop(sigmoid, 2) != OP_UNARY ||
+       graph_prop(product, 2) != OP_MUL || graph_prop(added, 2) != OP_ADD ||
+       graph_prop(output, 2) != OP_ADD || storage_get(output, STORAGE_VIEW, 0) != 0 { return false; }
+
+    var s: u64[10] = [0; 10];
+    var packet: i64[71] = [0; 71];
+    graph_inputs(glu, s[..]);
+    let gate = s[0]; let up = s[1];
+    if !((gate == a && up == b) || (gate == b && up == a)) { return false; }
+    graph_describe(up, packet[..]);
+    let hidden = packet[1];
+    if hidden <= 0 || hidden > 8192 || hidden % 256 != 0 ||
+       !shared_projection(packet[..], width, hidden, 12) { return false; }
+    graph_inputs(up, s[..]);
+    if s[1] == 0 || storage_get(s[1], STORAGE_DATA, 0) != input { return false; }
+    let up_weight = s[0];
+    graph_inputs(gate, s[..]);
+    if s[1] == 0 || storage_get(s[1], STORAGE_DATA, 0) != input { return false; }
+    let gate_weight = s[0];
+    graph_describe(gate, packet[..]);
+    if !shared_projection(packet[..], width, hidden, 12) { return false; }
+    graph_inputs(down, s[..]);
+    let down_weight = s[0];
+    if s[1] != glu { return false; }
+    graph_describe(down, packet[..]);
+    let kind = packet[8];
+    if (kind != 12 && kind != 14) || !shared_projection(packet[..], hidden, width, kind) { return false; }
+    graph_describe(glu, packet[..]);
+    if packet[41] != GLU_OP_SWIGLU || packet[42] != 0 || packet[53] != 0 ||
+       !routed_dense(packet_tensor(packet[..], 30), hidden, 1, 1, 0) { return false; }
+    graph_vector_plan(packet[..], CV_SWIGLU, shared[8 .. 34]);
+
+    graph_inputs(router, s[..]);
+    let router_weight = s[0];
+    if s[1] == 0 || storage_get(s[1], STORAGE_DATA, 0) != input { return false; }
+    graph_describe(router, packet[..]);
+    if !routed_dense(packet_tensor(packet[..], 0), width, 1, 1, 0) ||
+       !routed_dense(packet_tensor(packet[..], 10), width, 1, 1, 0) ||
+       !routed_dense(packet_tensor(packet[..], 30), 1, 1, 1, 0) { return false; }
+    graph_inputs(sigmoid, s[..]);
+    if s[0] != router { return false; }
+    graph_describe(sigmoid, packet[..]);
+    if packet[41] != UNARY_OP_SIGMOID || !routed_dense(packet_tensor(packet[..], 30), 1, 1, 1, 0) { return false; }
+    graph_vector_plan(packet[..], CV_SIGMOID, shared[34 .. 60]);
+    graph_inputs(product, s[..]);
+    if s[0] != down || s[1] != sigmoid { return false; }
+    graph_describe(product, packet[..]);
+    if !routed_dense(packet_tensor(packet[..], 30), width, 1, 1, 0) { return false; }
+    graph_vector_plan(packet[..], CV_MUL, shared[60 .. 86]);
+    graph_inputs(added, s[..]);
+    if s[0] != routed || s[1] != product { return false; }
+    graph_describe(added, packet[..]);
+    if !routed_dense(packet_tensor(packet[..], 30), width, 1, 1, 0) { return false; }
+    graph_vector_plan(packet[..], CV_ADD, shared[86 .. 112]);
+    graph_inputs(output, s[..]);
+    if s[0] != added { return false; }
+    let residual = s[1];
+    graph_describe(output, packet[..]);
+    if !routed_dense(packet_tensor(packet[..], 10), width, 1, 1, 0) ||
+       !routed_dense(packet_tensor(packet[..], 30), width, 1, 1, 0) { return false; }
+    graph_vector_plan(packet[..], CV_ADD, shared[112 .. 138]);
+
+    let tensors: u64[6] = [up_weight, gate_weight, down_weight, router_weight, residual, output];
+    for i in tensors.len {
+        let address = storage_get(tensors[i], STORAGE_DATA, 0);
+        if address == 0 { return false; }
+        shared[i] = address as! i64;
+    }
+    shared[6] = hidden; shared[7] = kind;
+    return true;
 }
 
 fn try_routed_graph(graph: u64, step: i64, deadlines: const i64[:]) -> i64 {
@@ -95,15 +212,7 @@ fn try_routed_graph(graph: u64, step: i64, deadlines: const i64[:]) -> i64 {
     if matrix[41] != GLU_OP_SWIGLU || matrix[42] != 0 || matrix[53] != 0 ||
        !routed_dense(packet_tensor(matrix[..], 30), hidden, 8, 1, 0) { return 0; }
     var glu: i64[26] = [0; 26];
-    glu[0] = CV_SWIGLU; glu[1] = hidden * 8;
-    for axis in 4 {
-        glu[2 + axis] = matrix[30 + axis];
-        glu[6 + axis] = matrix[axis];
-        glu[10 + axis] = matrix[4 + axis];
-        glu[14 + axis] = matrix[10 + axis];
-        glu[18 + axis] = matrix[14 + axis];
-    }
-    glu[24] = (glu[1] + 127) / 128; glu[25] = 128;
+    graph_vector_plan(matrix[..], CV_SWIGLU, glu[..]);
 
     graph_describe(norm_node, matrix[..]);
     if matrix[41] != 0x4d4f454e || !routed_dense(packet_tensor(matrix[..], 0), experts, 1, 1, 0) ||
@@ -124,11 +233,24 @@ fn try_routed_graph(graph: u64, step: i64, deadlines: const i64[:]) -> i64 {
         plan[j] = address as! i64;
     }
     plan[7] = width; plan[8] = hidden; plan[9] = down_kind;
+    if full_ffn_enabled() {
+        var shared: i64[138] = [0; 138];
+        if shared_ffn_plan(graph, step, deadlines, plan[3] as! u64, output, width, shared[..]) &&
+           !activation_spans_overlap(shared[5] as! u64, (width * 4) as u64, plan[4] as! u64, (experts * 4) as u64) &&
+           !activation_spans_overlap(shared[5] as! u64, (width * 4) as u64, plan[5] as! u64, 32) &&
+           !activation_spans_overlap(shared[5] as! u64, (width * 4) as u64, shared[4] as! u64, (width * 4) as u64) &&
+           (shared[5] == plan[3] || !activation_spans_overlap(shared[5] as! u64, (width * 4) as u64, plan[3] as! u64, (width * 4) as u64)) {
+            let grouped = routed_graph(plan[..], glu[..], norm[..], shared[..], step, deadlines[step + 14]);
+            if grouped != 0 { return if grouped > 0 { 15 } else { grouped }; }
+        }
+    }
     let destination = plan[6] as! u64;
     if activation_spans_overlap(destination, (width * 4) as u64, plan[3] as! u64, (width * 4) as u64) ||
        activation_spans_overlap(destination, (width * 4) as u64, plan[4] as! u64, (experts * 4) as u64) ||
        activation_spans_overlap(destination, (width * 4) as u64, plan[5] as! u64, 32) { return 0; }
-    return routed_graph(plan[..], glu[..], norm[..], step, deadlines[step + 5]);
+    var empty: i64[0] = [];
+    let grouped = routed_graph(plan[..], glu[..], norm[..], empty[..], step, deadlines[step + 5]);
+    return if grouped > 0 { 6 } else { grouped };
 }
 
 fn execute_graph_node(tensor: u64, work: GraphWorkspace &, selective: bool, step: i64, deadline: i64) -> bool {
@@ -186,7 +308,7 @@ export fn fg143_graph_run(graph: u64, selective: bool, deadlines: const i64[:], 
         let tensor = graph_node(graph, i);
         if use_routed_graph && graph_prop(tensor, 2) == OP_MUL_MAT_ID {
             let grouped = try_routed_graph(graph, i, deadlines);
-            if grouped > 0 { i += 6; continue; }
+            if grouped > 0 { i += grouped; continue; }
             if grouped < 0 { outcome = i + 1; break; }
         }
         if !execute_graph_node(tensor, work, selective, step, deadline) || (observe && !graph_observe(tensor)) {
