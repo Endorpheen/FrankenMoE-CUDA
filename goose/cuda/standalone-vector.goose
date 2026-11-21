@@ -26,6 +26,11 @@ extern "fg_vector_min" fn cv_min(a: f32, b: f32) -> f32;
 extern "fg_vector_max" fn cv_max(a: f32, b: f32) -> f32;
 extern "fg_vector_shuffle_f64" fn cv_shuffle_f64(value: f64, delta: i32) -> f64;
 
+struct CVVec4 { x: f32, y: f32, z: f32, w: f32 }
+
+extern "fg_vector_load4" fn cv_load4(address: u64) -> CVVec4;
+extern "fg_vector_store4" fn cv_store4(address: u64, value: CVVec4);
+
 // The standalone plan carries output extents, input extents and byte
 // strides. Broadcasting and the resulting address calculation are Goose.
 fn cv_offset(cfg: u64, index: i64, shape: i64) -> i64 {
@@ -103,6 +108,20 @@ export fn fg_vector_flat(x: u64, y: u64, dst: u64, op: i64, count: i64,
     let a = cv_load(x + offset);
     let b = if y != 0 { cv_load(y + offset) } else { 0.0 };
     cv_store(dst + offset, cv_value(op, a, b, param0, param1));
+}
+
+export fn fg_vector_flat4(x: u64, y: u64, dst: u64, op: i64, vectors: i64,
+    param0: f32, param1: f32, index: i64) {
+    if index >= vectors { return; }
+    let offset = (16 * index) as u64;
+    let a = cv_load4(x + offset);
+    let b = if y != 0 { cv_load4(y + offset) } else { CVVec4 { 0.0, 0.0, 0.0, 0.0 } };
+    cv_store4(dst + offset, CVVec4 {
+        cv_value(op, a.x, b.x, param0, param1),
+        cv_value(op, a.y, b.y, param0, param1),
+        cv_value(op, a.z, b.z, param0, param1),
+        cv_value(op, a.w, b.w, param0, param1)
+    });
 }
 
 export fn fg_vector_ops(x: u64, y: u64, dst: u64, cfg: u64, param0: f32, param1: f32,

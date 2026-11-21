@@ -374,6 +374,15 @@ static int64_t fg_vector_word(uint64_t cfg, int64_t index) {
     return ((const int64_t *) cfg)[index];
 }
 
+typedef struct { float x_g, y_g, z_g, w_g; } CVVec4_g;
+static CVVec4_g fg_vector_load4(uint64_t address) {
+    const float4 value = *(__global const float4 *) address;
+    return (CVVec4_g) {value.x, value.y, value.z, value.w};
+}
+static void fg_vector_store4(uint64_t address, CVVec4_g v) {
+    *(__global float4 *) address = (float4) (v.x_g, v.y_g, v.z_g, v.w_g);
+}
+
 #include "vector-device.h"
 #include "cuda-rms-reference.cl"
 
@@ -393,6 +402,15 @@ __kernel void goose_vector_flat(__global uint8_t * x, __global uint8_t * y,
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
     fg_vector_flat_g((uint64_t) x, (uint64_t) y, (uint64_t) out,
         op, count, param0, param1, (int64_t) group * 128 + lane);
+}
+
+__kernel void goose_vector_flat4(__global const uint8_t * x, __global const uint8_t * y,
+    __global uint8_t * out, int64_t op, int64_t vectors, float param0, float param1) {
+    uint32_t group, lane;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(group));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
+    fg_vector_flat4_g((uint64_t) x, (uint64_t) y, (uint64_t) out,
+        op, vectors, param0, param1, (int64_t) group * 128 + lane);
 }
 
 static float fg_rope_float(uint64_t cfg, int64_t i) {

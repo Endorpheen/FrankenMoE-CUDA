@@ -5,8 +5,10 @@
 Carry the qualified kernels, graph scopes, and memory paths
 forward together. Use the latest verified cumulative profile
 as the control. Once a kernel improves on identical operands,
-run one matched full Apex 32K/512 A/B pair. Use 4096/2 to
-screen multiple candidates quickly. Repeat only for unstable
+run one matched full Apex 32K/512 A/B pair. Before each
+measured run, execute a separate 4096/2 warm-up with the same
+binary and flags. Retain the CUDA cache and restart the server
+for the full request to reset KV and SLRU. Repeat only for unstable
 timing, suspicious mismatches, or a regression. Judge prefill
 in seconds and verify decode, memory, all 512 output IDs,
 probabilities, response, and SLRU. Compare timings within
@@ -14,6 +16,67 @@ each pair. Keep the previous executable, request, and flags
 for rollback. Retain isolated patches and trace evidence when
 combinations need further qualification. Inspect machine
 code for material unexplained differences.
+
+## EXP-1640 — Aligned float4 for dense Goose vectors
+
+Select four FP32 values per CUDA thread when an existing
+flat plan has a complete vector count and all device addresses
+are 16-byte aligned. Reuse the same Goose arithmetic for each
+component and keep the scalar kernel for other flat plans.
+All 3,320 flat launches in the candidate used float4.
+
+| Warmed full Apex 32,768/512, 4096/4096 | EXP-1639 | EXP-1640 | Change |
+|---|---:|---:|---:|
+| Prefill, ms | 22,507.327 | 22,287.565 | -219.762 |
+| Prefill, tok/s | 1,455.88 | 1,470.24 | +14.36 |
+| Decode, ms | 14,310.486 | 14,285.537 | -24.949 |
+| Decode, tok/s | 35.71 | 35.77 | +0.06 |
+| Prefill plus decode, ms | 36,817.813 | 36,573.102 | -244.711 |
+| Peak process RSS, KiB | 21,482,500 | 21,482,616 | +116 |
+| Peak process VRAM, MiB | 8,220 | 8,220 | 0 |
+| Process swap and system swap-out growth | 0 / 0 | 0 / 0 | 0 / 0 |
+
+All 512 IDs, probabilities, response, and SLRU match.
+The first candidate warm-up takes 23 s to reach readiness
+with the new CUDA image. In the measured pair both servers
+reach readiness in 4 s and neither maps the PTX JIT library.
+Use EXP-1640 as the next cumulative control.
+`GOOSE_CUDA_VECTOR_FLAT4=0` restores the scalar flat kernel.
+The source patch, binary, and raw pair are in
+`/tmp/franken-goose-flat4-exp1640.3OarWs`.
+
+### EXP-1638 control repeatability
+
+The historical EXP-1638 record and the fresh control of
+EXP-1639 use the same executable SHA-256, request, argv,
+and recorded runtime options. Their prefill is 23.071 and
+23.998 s, respectively. Both have a fully resident model,
+zero prompt-cache tokens, matched expert counters and
+zero process swap or system swap-out. The earlier run
+mapped the PTX JIT library, updated the CUDA cache, and
+took 23 s to reach readiness. The latter reached readiness
+in 4 s. Clocks, power, temperature, and per-process load
+were unrecorded during those requests. The cause of the
+historical 927 ms request gap is unresolved.
+
+Two consecutive full EXP-1638 runs with the same warm CUDA
+cache measure 23.117 and 23.006 s (1,417.50 and 1,424.32
+tok/s). The 111 ms spread is a measured property of that
+session. Median prefill SM clocks are 2,820 and 2,835 MHz,
+memory clocks are 10,251 MHz, board power medians are
+130 and 127 W, and temperature medians
+are 65.5 and 60 C. GPU utilization medians are 91%.
+No sampled power or thermal throttle is active. PCIe
+reports Gen4 ×16. VRAM is 8,220 MiB and process swap is zero
+in both runs. The warm repeats show that the historical
+speed is reachable with no PTX JIT at startup.
+
+Keep historical bests and fresh paired controls separately.
+The build, flags and live counters of EXP-1639 confirm
+3,320 linear vector launches, 360 shared Q8_1 pack reuses,
+the direct Top-K builder, and the previous current-wave
+expert staging option. Raw telemetry is in
+`/tmp/franken-apex-control-audit.r1Vof5`.
 
 ## EXP-1636, EXP-1638 and EXP-1639 — Cumulative prefill updates
 
@@ -39,8 +102,9 @@ response and SLRU match. Peak process VRAM is 8,220 MiB and
 process and system swap-out are zero. Peak process RSS
 changes by +1,032 KiB, +287,052 KiB and -32 KiB,
 respectively. EXP-1638 holds the recorded prefill best at
-1,420.30 tok/s. EXP-1639 is the cumulative runtime control
-and holds the logged prefill-plus-decode best in this set.
+1,420.30 tok/s within this set. EXP-1639 was the
+cumulative runtime control for EXP-1640 and held the
+logged prefill-plus-decode best in this set.
 Use paired times to estimate the effect of each change.
 
 Use `GOOSE_MMQ_SHARED_REUSE=0` or
