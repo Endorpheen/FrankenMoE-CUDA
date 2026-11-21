@@ -64,6 +64,7 @@ the dependency that would justify rerunning it.
 | EXP-1610, vector stores for causal masks | [CUDA and Apex pairs](#vector-stores-for-causal-masks) save 1.35 and 7.31 ms in an isolated long tile. | Both full pairs preserve exact replies. Their total latency changes in opposite directions. | Retain the patch. Recheck with a prefill kernel that eliminates shared-mask reads on fully visible tiles. |
 | EXP-1611, dense Q4_K 32-by-128 MMQ | [Live Apex event measurements](#dense-q4_k-32-by-128-mmq-tiles) save 1.002 s across 2,000 launches and halve the block count. | The unprofiled request does not improve. The event runs synchronize each timed tile and therefore change overlap. | Preserve the 32-row path. Re-evaluate alongside measured scheduling changes or profile with queued events that keep the full dependency order. |
 | EXP-1613, query packing in the vector Attention graph | [Live three-node replay](#query-packing-in-the-attention-graph) eliminates 15,327 direct calls relative to the direct diagnostic and retains the exact output. | One cross-run comparison does not show a throughput gain. The captured scope still covers only Attention. | Reuse the ordered chain lifecycle in a larger decode group with fewer address updates and explicit expert-slot fences. |
+| EXP-1614, cached MMVQ pack and projection graph | [Live replay](#cached-mmvq-pack-and-projection-graphs) eliminates 335,368 direct decode calls without node parameter updates. | Both full pairs take longer, and process VRAM increases by up to 24 MiB. The probe reports no executable-slot collisions. | Use one admission and one graph for the routed expert FFN, reusing the current slot's up, gate and down planes. Keep repeated inputs and intermediate activations resident. |
 
 After a material dependency change, use short sequential A/B runs on
 identical inputs and settings. Use the best current verified checkpoint
@@ -4293,6 +4294,59 @@ with expert uploads confirmed before submission and outputs
 published before CPU use. The exact patch, probe, binaries,
 fixture trace and full request are archived in
 `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/graph-pack-exp1613`.
+
+## Cached MMVQ pack and projection graphs
+
+EXP-2026-11-21-1614 captures the existing Q8_1 pack and
+Q4_K/Q6_K matvec together for one-column and eight-route
+projections in planned execution. A bounded executable cache
+keys replay by matrix geometry, weight, input, output, packed
+storage and job-buffer address. Expert offsets are uploaded
+to the existing job buffer before replay. The blocking CUDA
+stream preserves ordering with legacy-stream writes and the
+expert admission fences. No node parameters are updated.
+The test selector is `GOOSE_CUDA_MMVQ_GRAPH=1`.
+
+The fixture changes route offsets and overwrites the same
+expert-bank positions between launches. All 5,700 FP32
+values match. Compute Sanitizer reports zero errors. The node
+trace records eight instantiations and 40 graph launches,
+including Q8_1 and matvec on all 40. Both PTX images match
+the working checkpoint byte for byte.
+
+| Same-binary unprofiled Apex 32K/512, 4096/4096, 5,920 MiB | Direct A1 / A2 | Cached graph B1 / B2 |
+|---|---:|---:|
+| Prefill, tok/s | 1147.626 / 1147.900 | 1149.465 / 1139.913 |
+| Decode, steps/s | 32.548 / 32.631 | 32.312 / 32.298 |
+| Prefill plus decode, s | 44.253 / 44.206 | 44.322 / 44.567 |
+| Peak process VRAM, MiB | 8200 / 8200 | 8222 / 8224 |
+| RSS high-water, KiB | 21479984 / 21480908 | 21480324 / 21479408 |
+| Process swap and system swap-out growth | 0 / 0 | 0 / 0 |
+
+All replies and expert upload counters match. Median prefill
+adds 77 ms and median decode adds 138 ms. Both total-time
+deltas are unfavorable, at +69 and +362 ms.
+
+The separate host witness logs 220,241 decode MMVQ operations,
+167,902 successful graph launches and 218 instantiations, with
+no setup failures or executable-slot collisions. Direct CUDA
+calls fall to 724,446 from 1,059,814 in the saved
+[same-workload direct witness](#live-apex-attention-graph-replay).
+The 335,368-call difference is two eliminated kernel calls
+per replay after subtracting the two capture calls for each
+instantiation. Prefill still has 26,094 direct calls. No
+timestamped GPU idle measurement was taken.
+
+**Deferred.** This proves sizable launch reduction and
+correct execution with changing expert slots. The two-node
+boundary does not justify its measured request latency and
+memory cost. The Goose expert cache already fills up, gate
+and down planes within one admitted slot. Reuse that
+admission to capture multiple dependent projections and
+SwiGLU before publishing the weighted output. Keep the
+working runtime unchanged pending a full gain. Raw runs,
+fixture trace, source patches and executable hashes are in
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/mmvq-graph-exp1614`.
 
 ## Long Attention partition probe
 
