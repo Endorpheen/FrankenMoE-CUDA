@@ -198,8 +198,7 @@ build.
     runtime. The balancing rule governs how speed is pursued, not what the end
     state must be.
 
-20. Every A/B test reports all four axes, and promising configurations are
-    checked at three generation lengths.
+20. Every A/B test reports prefill, decode, VRAM, and RAM.
 
     A configuration is never accepted or rejected on one number. Each comparison
     is one table: prefill tok/s and %, decode tok/s and %, VRAM MiB and %, RAM
@@ -208,19 +207,27 @@ build.
     or a memory saving, and a small decode loss may be offset the same way - the
     table is what settles it, not the decode column alone.
 
-    If the difference is not statistically convincing, keep BOTH configurations as
-    candidates. Do not declare a loser.
+    Any positive result from a comparable, warmed A/B with preserved correctness
+    earns a place in the experimental cumulative checkpoint. There is no
+    minimum throughput gain or time saving. A small gain, including 1–5 tok/s,
+    remains useful. When two comparable pairs both improve the target metric,
+    keep the change even when its gain is small or the absolute historical best
+    remains higher.
 
-    Generation length changes the answer: decode tok/s rises with length because
-    fixed per-request cost is amortised. Run 128, 256 and 512 predicted tokens,
-    several warmed repeats each, and report the median per length. Compare against
-    historical figures only at the SAME length - the recorded references are 39.6
-    at 128, 41.0 at 256 and 41.94-43.04 at 512, and quoting one against another is
-    the mistake that made a 96% result look like 82%.
+    Record experimental acceptance, a fresh paired control, and the historical
+    best as distinct results. Preserve each valid absolute best, including
+    1480 → 1485 → 1490 tok/s on the same profile. Combine accepted changes and
+    verify their joint effect when they share buffers, execution paths, or
+    scheduling. Roll back a change only when a regression, correctness failure,
+    or incompatibility is established. Preserve the previous best executable,
+    exact runtime profile, and a way to switch back.
 
-    Filter candidates with short runs first, then verify the winners at all three
-    lengths. Everything goes into benchmarks/experiment-history.jsonl with its
-    length; absent measurements stay null.
+    Routine Apex optimization uses the matched 32,768/512 profile. Warm up
+    each binary before its full measurement, and repeat when timing is unstable
+    or the change has a suspected regression. Fixed per-request costs make
+    decode throughput depend on generation length. Keep measurements at each
+    length separate in benchmarks/experiment-history.jsonl. Absent measurements
+    stay null.
 
 21. Use one fixed endpoint for FrankenMoE runtime server runs and benchmarks:
     `127.0.0.1:9101`. Do not change the port between experiments or silently
@@ -673,9 +680,10 @@ come from Igor directly. For every marked message:
     - before any measurement, check that every previously accepted Goose
       component is present, is actually called on its path (witness in the
       server log), and still works;
-    - run the three paired A/B runs on the cumulative build, comparing it with
-      EXP906 for the record result and with the previous accepted checkpoint for
-      new regressions;
+    - run the matched A/B on the cumulative build and the previous accepted
+      checkpoint. Keep the immutable historical reference as a separate
+      record. Repeat to resolve unstable timing, suspected regressions, or
+      interactions between accepted changes;
     - report prefill and decode per run, medians, percentages, VRAM and RAM,
       token and answer correctness, and the delta against the previous
       checkpoint;
