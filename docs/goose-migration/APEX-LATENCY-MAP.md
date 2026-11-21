@@ -14,6 +14,57 @@ short gate. Inspect machine code when a material unexplained
 loss needs it. Advance to the next candidate after a
 below-threshold result that requires no such diagnosis.
 
+## EXP-1628 — Dense Q6_K half-K with a 128 × 128 tile
+
+The candidate stages an entire weight block once and reuses
+each contiguous K-major Q8_1 half-block across the output
+rows. It retains the existing signed expansion, pair and
+half accumulation order, and leaves routed Q6_K outside
+the experiment. The largest fixture moves from two matrix
+launches totaling 17,920 CTAs to one with 2,048 CTAs. On
+RTX 4070 the candidate uses 237 registers per thread and
+53,760 bytes of dynamic shared memory per CTA.
+
+All five finite fixtures match the Goose control bitwise,
+including a multi-window case and a partial-column tail.
+On 8192 × 4092 × 2048 all 33,521,664 FP32 outputs also
+match the hybrid fixture digest from EXP-1627. Compute
+Sanitizer reports zero errors on the candidate tail.
+
+| Dense Q6_K M × N × K | Control pack + MMQ, ms | Half-K pack + MMQ, ms | Saved, ms |
+|---|---:|---:|---:|
+| 8192 × 4092 × 2048 | 11.548 | 6.027 | 5.520 |
+| 2048 × 4092 × 512 | 0.826 | 0.441 | 0.385 |
+| 512 × 4092 × 2048 | 0.891 | 0.522 | 0.369 |
+
+These are seven-iteration GPU medians after two warm-ups.
+The separate hybrid timing on the largest exact operands
+was 1.953 ms. The short Apex comparison uses one run per
+arm on RTX 4070 with batch/ubatch 4096/4096 and a
+5,920 MiB GPU expert-cache budget.
+
+| Apex 4096/2 | EXP-1624 control | Half-K |
+|---|---:|---:|
+| Prefill, ms | 3,330.543 | 3,204.498 |
+| Prefill, tok/s | 1,229.83 | 1,278.20 |
+| Decode interval for one timed step, ms | 57.191 | 57.757 |
+| Peak process RAM, KiB | 21,461,616 | 21,461,684 |
+| Peak process VRAM, MiB | 8,004 | 7,990 |
+| Peak process swap, KiB | 0 | 0 |
+| System swap-out, pages | 0 | 0 |
+
+The request, response, IDs, probabilities, and SLRU
+counters match. The resident model size is 21,713,463,136
+bytes in both runs. Prefill saves 126.045 ms (3.78%),
+below the 10% gate. Keep the candidate available for a
+combined test with routed MMQ or a prefill idle reduction.
+EXP-1624 remains the working checkpoint. Full Apex and
+the effect on 512-token decode remain unmeasured here.
+
+The reversible patch, executable, fixture inputs and
+hashes, short runs, and Nsight traces are preserved in
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/mmq-q6-half-exp1628`.
+
 ## EXP-1627 — Half-K staging with the 128 × 256 tile
 
 The candidate merges K-major Q8_1 packing with the
