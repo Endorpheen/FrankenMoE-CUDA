@@ -11614,6 +11614,20 @@
       "sha256": "bc504c160e8a7d6f1336223310398793ace89ed7c9731a727ddf77f8338ee206"
     },
     {
+      "goose": "cuda/standalone-transform.goose",
+      "native": "ggml/src/ggml-cuda/concat.cu",
+      "native_targets": [
+        "ggml/src/ggml-cuda/concat.cu",
+        "ggml/src/ggml-cuda/cpy.cu"
+      ],
+      "experiment": "EXP-2026-11-21-1659",
+      "task": "P3-03",
+      "status": "slice",
+      "sha256": "a1de9544fe508913eee0db93e5877812bf402b2933d9b8831053eb96c92b2f29",
+      "integration_commit": "b8cecfd87592c9915962cd3a4bbe4fef939ff948",
+      "gate": "Exact full-size and ragged SSM blit fixtures and warmed Apex 32K/512 differential, APEX-LATENCY-MAP.md#exp-1659--tile-the-ssm-input-transpose-and-concatenation"
+    },
+    {
       "goose": "cuda/cpy-transpose/device.goose",
       "native": "ggml/src/ggml-cuda/cpy*",
       "native_targets": [
@@ -11627,7 +11641,9 @@
       "experiment": "EXP-2026-11-13-434-p3-03-cpy-transpose",
       "task": "P3-03",
       "status": "slice",
-      "sha256": "6a3acbec069b8562b90e4df6c87ba372fd01cdb9418ee63ebb2918a9e14fe510"
+      "sha256": "04a97ad0eea57bbf0302e4c54b6185639c53e5ead0aef2d99d1b279866c025b6",
+      "integration_commit": "b8cecfd87592c9915962cd3a4bbe4fef939ff948",
+      "gate": "Exact full-size and ragged SSM blit fixtures and warmed Apex 32K/512 differential, APEX-LATENCY-MAP.md#exp-1659--tile-the-ssm-input-transpose-and-concatenation"
     },
     {
       "goose": "cuda/cpy-transpose/host.goose",
