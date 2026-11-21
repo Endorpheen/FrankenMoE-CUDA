@@ -147,6 +147,18 @@ __kernel void goose_mmq_pack_q8(__global const uint8_t * input, __global const u
         (uint64_t) packed + (uint64_t) job * 288 * extent, extent, layout, group, lane);
 }
 
+__kernel void goose_mmq_pack_k_major(__global const uint8_t * input, __global const uint64_t * jobs,
+    __global uint8_t * packed, int32_t extent, int32_t layout, int32_t first, int32_t columns) {
+    uint32_t group, job, lane;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(group));
+    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(job));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
+    const uint64_t route = (uint64_t) first + job;
+    fg180q_mmq_g((uint64_t) input + jobs[route * 2], 0, (uint64_t) packed,
+        256l * extent, 0, 0, 0, 256l * extent, columns, 1, 1, layout, 0,
+        job, group, 0, lane, 32, columns, 2 * extent);
+}
+
 __kernel void goose_mmq_pack_shared(__global const uint8_t * input, __global uint8_t * packed,
     int32_t extent, int32_t layout, int64_t input_stride) {
     uint32_t group, row, lane;
@@ -294,6 +306,22 @@ __kernel void name(__global const uint8_t * weights, __global const uint8_t * pa
 MMQ_DENSE_Q4_LARGE(goose_mmq_q4_dense_m128n256, 128u, 256u)
 MMQ_DENSE_Q4_LARGE(goose_mmq_q4_dense_m256n128, 256u, 128u)
 #undef MMQ_DENSE_Q4_LARGE
+
+__asm__(".extern .shared .align 16 .b8 goose_mmq_q6_shared[];");
+__kernel void goose_mmq_q6_dense_m128_half_k(__global const uint8_t * weights, __global const uint8_t * packed,
+    __global uint8_t * output, __global const uint64_t * jobs, uint64_t stride, int32_t extent,
+    int32_t first_route, int32_t routes) {
+    uint32_t row, tile, thread;
+    uint64_t shared;
+    __asm__("mov.u64 %0, goose_mmq_q6_shared;" : "=l"(shared));
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(row));
+    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(tile));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
+    const int32_t left = routes - (int32_t) (128u * tile);
+    fg_device_mmq_q6_half_k_g((uint64_t) weights, (uint64_t) packed, (uint64_t) output, (uint64_t) jobs,
+        stride, extent, 128u * row, first_route + 128u * tile, first_route,
+        left < 128 ? left : 128, routes, thread, shared);
+}
 
 __kernel void goose_mmq_stream(__global const uint8_t * weights, __global const uint8_t * packed,
     __global uint8_t * output, __global const uint64_t * jobs, __global const uint64_t * tiles,

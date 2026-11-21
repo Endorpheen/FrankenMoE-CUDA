@@ -153,6 +153,7 @@ static struct {
     Module module;
     Function kernel, attention_tiles, attention_merge, gdn, gdn_decode, q4_rows, vector, rms_reference;
     Function mmq_pack, mmq_pack_shared, mmq_matrix, mmq_q4_matrix, mmq_q6_matrix;
+    Function mmq_pack_k_major, mmq_q6_dense_half_k;
     Function mmq_q4_dense_shared, mmq_q4_routed_shared;
     Function mmq_q4_dense_x64, mmq_q4_routed_x64;
     Function mmq_q6_dense_shared, mmq_q6_routed_shared;
@@ -274,6 +275,7 @@ static struct {
 
 enum { ACTIVATION_WORDS = 5, ACTIVATION_RECORDS = 256 };
 enum { GDN_MMA_SHARED_BYTES = 93312 };
+enum { Q6_HALF_K_SHARED_BYTES = 53760 };
 static _Thread_local struct {
     bool active, unavailable, defer_waits, pending;
     bool retire, reuse, selective_eviction;
@@ -1094,6 +1096,13 @@ static void load_cuda(void) {
                 error = cuda.function_get(&cuda.mmq_q6_dense_x64, cuda.module, "goose_mmq_q6_dense_x64");
             if (error == 0 && q6_shared && q6_x64 && dense_x128)
                 error = cuda.function_get(&cuda.mmq_q6_dense_x128, cuda.module, "goose_mmq_q6_dense_x128");
+            if (error == 0 && cuda.mmq_q6_dense_x128 && fg_standalone_option_enabled("GOOSE_MMQ_Q6_HALF_K")) {
+                enum { max_dynamic_shared_size = 8 };
+                error = cuda.function_get(&cuda.mmq_q6_dense_half_k, cuda.module, "goose_mmq_q6_dense_m128_half_k");
+                if (error == 0) error = cuda.function_set_attribute(cuda.mmq_q6_dense_half_k,
+                    max_dynamic_shared_size, Q6_HALF_K_SHARED_BYTES);
+                if (error == 0) error = cuda.function_get(&cuda.mmq_pack_k_major, cuda.module, "goose_mmq_pack_k_major");
+            }
             if (error == 0 && q6_shared && q6_x64)
                 error = cuda.function_get(&cuda.mmq_q6_routed_x64, cuda.module, "goose_mmq_q6_routed_x64");
             if (error == 0 && cuda.mmq_q6_routed_x64 && routed_x128)
@@ -2310,8 +2319,10 @@ static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
     const int64_t reference_tiles = (int64_t) (rows / 128) * (wide_reference_columns / reference_tile_width);
     const int64_t sms = cuda.multiprocessors;
     // A complete reference tile has a single K interval at this occupancy.
-    const bool dense_m64 = kind == q4_kind && cuda.mmq_q4_dense_m64 && dense_wide && sms > 0 &&
+    const bool unsplit = dense_wide && sms > 0 &&
         100 * reference_tiles / (((reference_tiles - 1) / sms + 1) * sms) >= 90;
+    const bool dense_m64 = kind == q4_kind && cuda.mmq_q4_dense_m64 && unsplit;
+    const bool dense_q6_half_k = kind == q6_kind && cuda.mmq_q6_dense_half_k && unsplit;
     const bool routed_wide = indexed_reference && routed_shared;
     const Function routed_x128 = !routed_wide ? NULL : kind == q4_kind ? cuda.mmq_q4_routed_x128 : cuda.mmq_q6_routed_x128;
     const int routes_per_tile = routed_wide ? (routed_x128 ? 128 : routed_x64 ? 64 : 32) : 8;
@@ -2374,6 +2385,8 @@ static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
         const int64_t last = 3ll * (end - 1);
         first_route = (int) tiles[3ll * first];
         const unsigned routes = (unsigned) (tiles[last] + tiles[last + 1] - first_route);
+        const bool q6_half_k = dense_q6_half_k && !shared && first % 16 == 0 && first_route == 8 * first;
+        int32_t columns = (int32_t) routes;
         int wide = 0;
         if (routed_x128) {
             int64_t * window = tiles + 3ll * first;
@@ -2382,8 +2395,15 @@ static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
                                   window, 3ull * batch * sizeof(*tiles));
         }
         if (error == 0 && !shared) {
-            error = cuda.launch(cuda.mmq_pack, (unsigned) (2 * extent), routes, 1,
-                                32, 1, 1, 0, NULL, pack_args, NULL);
+            if (q6_half_k) {
+                void * args[] = {&matrix_input, &cuda.jobs.address, &cuda.mmq_packed.address,
+                    &extent, &layout, &first_route, &columns};
+                error = cuda.launch(cuda.mmq_pack_k_major, (unsigned) (2 * extent), routes, 1,
+                    32, 1, 1, 0, NULL, args, NULL);
+            } else {
+                error = cuda.launch(cuda.mmq_pack, (unsigned) (2 * extent), routes, 1,
+                    32, 1, 1, 0, NULL, pack_args, NULL);
+            }
         }
         if (error == 0) {
             const int workers = cuda.mmq_stream && !reference ?
@@ -2402,6 +2422,11 @@ static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
                     error = cuda.launch(routed_shared, (unsigned) rows / 16, (unsigned) (batch - wide),
                         1, 128, 1, 1, 0, NULL, args, NULL);
                 }
+            } else if (q6_half_k) {
+                void * args[] = {&weight, &cuda.mmq_packed.address, &matrix_output, &cuda.jobs.address,
+                    &stride, &extent, &first_route, &columns};
+                error = cuda.launch(cuda.mmq_q6_dense_half_k, (unsigned) rows / 128,
+                    1 + (routes - 1) / 128, 1, 256, 1, 1, Q6_HALF_K_SHARED_BYTES, NULL, args, NULL);
             } else if (dense_m64 && !shared && first % 16 == 0 && first_route == 8 * first) {
                 const bool large = cuda.mmq_q4_dense_large && routes >= cuda.mmq_q4_large_cols &&
                     (unsigned) rows % cuda.mmq_q4_large_rows == 0;
@@ -2409,7 +2434,6 @@ static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
                     cuda.mmq_q4_dense_m128 ? cuda.mmq_q4_dense_m128 : cuda.mmq_q4_dense_m64;
                 const unsigned row_tile = large ? cuda.mmq_q4_large_rows : cuda.mmq_q4_dense_m128 ? 128 : 64;
                 const unsigned column_tile = large ? cuda.mmq_q4_large_cols : 128;
-                int32_t columns = (int32_t) routes;
                 void * args[] = {&weight, &cuda.mmq_packed.address, &matrix_output, &cuda.jobs.address,
                     &stride, &extent, &first_route, &columns};
                 error = cuda.launch(matrix, (unsigned) rows / row_tile,

@@ -1,18 +1,109 @@
 # Apex 32K/512 latency map
 
-## Short gate before full Apex
+## Selecting and testing the cumulative checkpoint
 
-Use the accepted checkpoint and candidate on the same
-short Apex request, with equal inputs, settings, cache
-state and peak-memory measurements. For prefill, use
-Apex 4096/2. Record the target phase time in milliseconds.
-Require a reduction of at least 10% in that phase and
-matching correctness before starting a new Apex 32K/512
-performance comparison. Archive smaller gains for later
-combinations. Qualify the combined result with the same
-short gate. Inspect machine code when a material unexplained
-loss needs it. Advance to the next candidate after a
-below-threshold result that requires no such diagnosis.
+Carry the qualified kernels, graph scopes, and memory paths
+forward together. Use the latest verified cumulative profile
+as the control. Apex 4096/2 is a prefill diagnostic. Use
+matched full 32K/512 A–B–B–A runs to measure end-to-end gains,
+including gains below 10%. Compare timings within each series.
+Keep the previous executable, request, and flags for rollback.
+Retain isolated patches and trace evidence when combinations
+need further qualification. Inspect machine code for material
+unexplained differences.
+
+## EXP-1629 — Cumulative Apex prefill checkpoint
+
+The control is the EXP-1624 executable and profile, also
+used as the control in EXP-1627 and the EXP-1628 short pair.
+The 1,288.72 tok/s figure is the full 32K/512 control median
+in EXP-1627. The 1,229.83 tok/s figure is its separate 4096/2
+measurement. The executable SHA-256 in both is `56aba7d1…e4bf`.
+Their effective launch arguments and recorded Goose options
+match. The request lengths and input bytes differ.
+
+The EXP-1629 candidate preserves the control profile and
+adds `GOOSE_MMQ_Q6_HALF_K=1` to the 128 × 256 dense Q4_K,
+mixed routed MMQ, Attention, GDN, Dense MMA, and graph
+reuse already qualified for Apex. Both arms use RTX 4070,
+batch/ubatch 4096/4096, Q4_0 KV, 5,920 MiB expert SLRU,
+4,096 MiB host pin budget, 384 MiB activation arena, and
+8/16 compute/batch threads. The server context cap is 262,144.
+All four runs process 32,768 fresh input tokens and produce
+512 output tokens. The request SHA-256 is
+`484a12de00ec057e4b78d480ebb185153bb10af607eb23192a72995ba3026d0f`.
+
+| Full unprofiled A–B–B–A | EXP-1624 control | Cumulative Q6_K | Candidate minus control |
+|---|---:|---:|---:|
+| Median prefill, tok/s | 1,257.75 | 1,294.47 | +36.71 |
+| Median prefill, ms | 26,052.854 | 25,314.109 | -738.745 |
+| Median decode, tok/s | 35.69 | 35.57 | -0.13 |
+| Median decode, ms | 14,316.625 | 14,368.152 | +51.526 |
+| Median prefill plus decode, ms | 40,369.479 | 39,682.261 | -687.219 |
+| Median client request, ms | 40,443.862 | 39,755.632 | -688.230 |
+| Maximum process RSS, KiB | 21,483,620 | 21,480,788 | -2,832 |
+| Maximum process VRAM, MiB | 8,220 | 8,220 | 0 |
+| Process swap, KiB / system swap-out growth, pages | 0 / 0 | 0 / 0 | 0 / 0 |
+
+Both full pairs improve prefill and total time. Decode
+changes in opposite directions across the two pairs.
+All responses, IDs, probabilities and SLRU counts match
+the frozen control. Each run has 21,713,463,136 resident
+model bytes, 572,259 cache hits and 131,964,911,616 expert
+upload bytes. The process loads the CUDA driver and has
+no mapped libggml, libstdc++ or cuBLAS dependency.
+
+Use this cumulative profile as the next prefill control.
+It has the highest median prefill in the matched-workload
+paired series reviewed here. Keep the original EXP-1624
+executable as rollback and decode reference. Its EXP-1627
+control median of 36.31 decode tok/s and 39,506.361 ms total
+are the best archived decode and total medians respectively
+in those series. Use the fresh EXP-1629 pair for the
+measured effect of adding Q6_K.
+
+### Executed CUDA paths and prefill gap
+
+The cumulative diagnostic trace records 2,000 dense Q4_K
+128 × 256 kernels, 320 dense Q6_K half-K kernels, 320 K-major
+pack launches, 640 wide routed Q4_K and 320 wide routed
+Q6_K launches. It also records 80 causal Flash Attention
+MMA, 240 GDN MMA, 280 reference Dense MMA, and 40 other
+Dense MMA launches. Decode replays 22,990 CUDA Graphs.
+19,929 of these replays contain 48 or 49 kernels, with
+987,753 graph kernel executions across all replay sizes.
+There are 12,656 direct kernel launches in the same window.
+
+| Prefill device interval, ms | Optimized Hybrid trace | EXP-1624 trace | Cumulative trace | Candidate minus Hybrid |
+|---|---:|---:|---:|---:|
+| Q4_K MMQ | 2,351.424 | 5,493.512 | 5,536.859 | +3,185.435 |
+| GPU idle | 1,116.869 | 3,478.251 | 3,605.845 | +2,488.976 |
+| Flash Attention MMA | 1,418.364 | 2,954.334 | 2,940.684 | +1,522.320 |
+| Pointwise and GLU | 489.568 | 1,614.927 | 1,619.501 | +1,129.934 |
+| Q6_K MMQ | 738.909 | 2,411.736 | 1,866.318 | +1,127.409 |
+| MMQ with unresolved format in the full trace | 0.000 | 982.161 | 981.653 | +981.653 |
+| GDN | 460.678 | 1,348.659 | 1,352.278 | +891.600 |
+
+Family times are exclusive GPU intervals. The two older
+traces are from EXP-1624. These diagnostic differences
+rank work to investigate. The unprofiled series measures
+end-to-end improvement. The prefill target is 12,281.859 ms
+for 32,768 tokens at 2,668 tok/s. It is 13,032.250 ms below
+the new 25,314.109 ms median. Prioritize the remaining
+prefill MMQ, exposed idle, and Attention paths.
+
+The executable, exact `cumulative-options.txt` and
+`cumulative-argv.txt`, request, raw measurements, and
+trace with a verified SHA-256 manifest are in
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/cumulative-prefill-exp1629`.
+Use this profile with the archived executable for the next
+matched comparison. New builds select half-K by default
+within the qualified SM89 reference MMQ scope. A separate
+4096/2 run with the selector unset traces 40 half-K and 250
+wide Q4_K kernels and matches the short candidate's response
+and SLRU. The full timings above use the original profiled
+candidate executable with the selector set to `1`. Set
+`GOOSE_MMQ_Q6_HALF_K=0` to restore the earlier Q6_K dispatch.
 
 ## EXP-1628 — Dense Q6_K half-K with a 128 × 128 tile
 
@@ -55,11 +146,9 @@ arm on RTX 4070 with batch/ubatch 4096/4096 and a
 
 The request, response, IDs, probabilities, and SLRU
 counters match. The resident model size is 21,713,463,136
-bytes in both runs. Prefill saves 126.045 ms (3.78%),
-below the 10% gate. Keep the candidate available for a
-combined test with routed MMQ or a prefill idle reduction.
-EXP-1624 remains the working checkpoint. Full Apex and
-the effect on 512-token decode remain unmeasured here.
+bytes in both runs. Prefill saves 126.045 ms (3.78%).
+This short result led to the full cumulative qualification
+in EXP-1629.
 
 The reversible patch, executable, fixture inputs and
 hashes, short runs, and Nsight traces are preserved in
