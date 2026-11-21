@@ -66,6 +66,7 @@ sed '/^fn main()/,$d; s/^fn fg179w_reduce(/export fn fg179w_reduce(/' \
 sed '/^fn main()/,$d; s/^fn fg180q_mmq(/export fn fg180q_mmq(/;
     s/^fn mmq_reciprocal(.*$/extern "fg_device_reciprocal" fn mmq_reciprocal(value: f32) -> f32;/' \
     "$ROOT/goose/cuda/goose-cuda-mmq-q8-1/device.goose" > "$OUT/mmq-quant.goose"
+cat "$ROOT/goose/cuda/standalone-mmq-glu.goose" >> "$OUT/mmq-quant.goose"
 cp "$ROOT/goose/cuda/standalone-mmq.goose" "$OUT/mmq.goose"
 sed -n '/^extern "fg185q_\(ld_\|dp4a\|shfl_xor"\)/p;
     /^fn warp_sum(/,/^}/p; /^fn impl_vmmq(/,/^}/p; /^fn dot_row(/,/^}/p; /^fn fg185q_partial(/,/^}/p' \
@@ -166,6 +167,11 @@ if module in ("gdn-mma", "flash-mma", "flash-vec", "rms-reference"):
         types, fragment = vector_prefix(types), vector_prefix(fragment)
     (out / f"{module}-types.h").write_text(types)
 (out / f"{module}-device.h").write_text(fragment)
+if module == "mmq-quant":
+    types = source.split("/* ---- types ---- */", 1)[1].split("/* ---- data ---- */", 1)[0]
+    start = types.index("typedef struct MmqQ8Result_g ")
+    end = types.index("};", start) + 2
+    (out / "mmq-quant-types.h").write_text(types[start:end] + "\n")
 PY
 done
 "$CLANG" -target nvptx64-nvidia-cuda -Xclang -target-cpu -Xclang sm_70 \

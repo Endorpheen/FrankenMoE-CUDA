@@ -58,6 +58,50 @@ the next target after the current MMQ work.
 The trace and analysis are in
 `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/profile-exp1647`.
 
+## EXP-1661 — Fuse SwiGLU with the down projection's Q8_1 pack
+
+The Goose graph matcher groups a routed gate/up pair,
+its SwiGLU, and the following down projection during
+selective prefill. The down projection must be the only
+consumer of SwiGLU. The existing quantizer packs directly
+from gate/up using the reference activation. It preserves
+the Q8_1 rounding and reduction order. The grouped graph
+packs the two resident operands before allocating the
+down output and then retires both inputs. Down MMQ uses
+the existing shared-pack addressing over all routed rows.
+At 32,768 routes this needs 18 MiB of packed storage.
+Set `GOOSE_MMQ_SWIGLU_PACK=0` for separate execution.
+
+On the 32,768-route GPU fixture, permuted DS4 packing
+fell from 0.612 to 0.346 ms. All 18,874,368 bytes match
+in each of the three tested layouts. The gathered
+prototype used 31 registers per thread, no shared or
+local memory, and had a calculated limit of 24 blocks
+per SM. Integrating gather and packing inside each down
+window hurt short Apex and reduced activation reuse.
+Packing before allocating the result reduced
+that short-pair difference to about 42 ms. The full
+candidate warm-up records all 40 grouped down calls.
+
+| Warmed Apex 32,768/512, 4096/4096 | EXP-1660 | EXP-1661 | Candidate minus control |
+|---|---:|---:|---:|
+| Prefill, ms | 19,721.627 | 19,585.192 | -136.435 |
+| Prefill, tok/s | 1,661.53 | **1,673.10** | +11.57 |
+| Decode, ms | 14,967.929 | 14,624.260 | -343.668 |
+| Decode, tok/s | 34.14 | 34.94 | +0.80 |
+| Prefill plus decode, ms | 34,689.556 | 34,209.452 | -480.104 |
+| Peak process RSS, KiB | 21,482,960 | 21,483,592 | +632 |
+| Peak process VRAM, MiB | 8,220 | 8,190 | -30 |
+| Process swap and system swap-out growth | 0 / 0 | 0 / 0 | 0 / 0 |
+
+The matched response includes all 512 IDs and probability
+rows, identical SLRU counters, and full model residency.
+Decode varies in this prefill-only experiment. Use the
+pair for total latency and keep EXP-1660 for rollback.
+The [benchmark journal](../../benchmarks/experiment-history.jsonl)
+has exact measurements and hashes. The archive is
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/swiglu-pack-exp1661`.
+
 ## EXP-1660 — Fuse the SSM input and convolution
 
 The Goose graph executor recognizes the exact concat,

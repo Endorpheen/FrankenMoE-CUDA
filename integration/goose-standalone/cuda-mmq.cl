@@ -130,6 +130,11 @@ static float fg180q_fabs(float value) { return as_float(as_uint(value) & 0x7ffff
 static void fg180q_pdl_sync(void) {}
 static void fg180q_fail(int64_t code) { fg248d_fail(code); }
 
+static float fg_mmq_swiglu_reference(float gate, float up) {
+    return cv_value_g(15, gate, up, 0.0f, 0.0f);
+}
+
+#include "mmq-quant-types.h"
 #include "mmq-quant-device.h"
 #include "mmq-device.h"
 
@@ -148,6 +153,18 @@ __kernel void goose_mmq_pack_q8(__global const uint8_t * input, __global const u
     const uint64_t route = (uint64_t) first + job;
     pack_mmq_row((uint64_t) input + jobs[route * job_words],
         (uint64_t) packed + (uint64_t) job * 288 * extent, extent, layout, group, lane);
+}
+
+__kernel void goose_mmq_pack_swiglu(__global const uint8_t * gate, __global const uint8_t * up,
+    __global const uint64_t * jobs, __global uint8_t * packed,
+    int32_t extent, int32_t layout, int32_t first, int32_t job_words) {
+    uint32_t group, job, lane;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(group));
+    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(job));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
+    const uint64_t offset = jobs ? jobs[((uint64_t) first + job) * job_words] : (uint64_t) job * extent * 1024;
+    fg_mmq_glu_pack_g((uint64_t) gate + offset, (uint64_t) up + offset,
+        (uint64_t) packed + (uint64_t) job * 288 * extent, layout, group, lane);
 }
 
 __kernel void goose_mmq_pack_k_major(__global const uint8_t * input, __global const uint64_t * jobs,

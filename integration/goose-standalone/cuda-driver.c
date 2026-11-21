@@ -197,7 +197,7 @@ static struct {
     Context context;
     Module module;
     Function kernel, attention_tiles, attention_merge, gdn, gdn_decode, q4_rows, vector, vector_flat, vector_flat4, rms_reference;
-    Function mmq_pack, mmq_pack_shared, mmq_matrix, mmq_q4_matrix, mmq_q6_matrix;
+    Function mmq_pack, mmq_pack_shared, mmq_pack_glu, mmq_matrix, mmq_q4_matrix, mmq_q6_matrix;
     Function mmq_pack_k_major, mmq_q6_dense_half_k, mmq_q6_dense_pipeline;
     Function mmq_q4_dense_shared, mmq_q4_routed_shared;
     Function mmq_q4_dense_x64, mmq_q4_routed_x64;
@@ -766,6 +766,12 @@ static pthread_mutex_t cuda_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t activation_lock = PTHREAD_MUTEX_INITIALIZER;
 static _Thread_local DevicePtr matrix_input, matrix_output;
 static _Thread_local uint64_t matrix_reusable_host;
+static _Thread_local struct {
+    uint64_t target;
+    int64_t bytes;
+    bool packed;
+} matrix_glu;
+static _Thread_local bool matrix_glu_active;
 static _Thread_local int64_t matrix_input_bytes;
 static _Thread_local struct {
     uint64_t host;
@@ -1132,6 +1138,8 @@ static void load_cuda(void) {
         if (error == 0) error = cuda.function_get(&cuda.kernel, cuda.module, "goose_quantized_matmul");
         if (error == 0 && mmq) error = cuda.function_get(&cuda.mmq_pack, cuda.module, "goose_mmq_pack_q8");
         if (error == 0 && mmq) error = cuda.function_get(&cuda.mmq_pack_shared, cuda.module, "goose_mmq_pack_shared");
+        if (error == 0 && mmq && fg_standalone_option_enabled("GOOSE_MMQ_SWIGLU_PACK"))
+            (void) cuda.function_get(&cuda.mmq_pack_glu, cuda.module, "goose_mmq_pack_swiglu");
         if (error == 0 && mmq) error = cuda.function_get(&cuda.mmq_matrix, cuda.module, "goose_mmq_matmul");
         if (error == 0 && mmvq) error = cuda.function_get(&cuda.mmvq_pack, cuda.module, "goose_mmvq_quantize");
         if (error == 0 && mmvq) error = cuda.function_get(&cuda.mmvq, cuda.module, "goose_mmvq_matvec");
@@ -2473,12 +2481,62 @@ int64_t fg_cuda_prepare_experts(uint64_t tensor, int64_t bytes, sl_i64 active, s
     return prepare_expert_offsets(tensor, bytes, active, offsets, false);
 }
 
+bool fg_cuda_glu_pack_offer(sl_i64 plan) {
+    if (!cuda.mmq_pack_glu || !cuda.mmq_matrix || !cuda.activation_reference ||
+        !activations.active || !activations.defer_waits || plan.len != 8 || !cuda.mmq_shared ||
+        !cuda.experts.weights.address ||
+        !fg143_routed_layer_matches(cuda.experts.layers, (sl_i64) {plan.data, 3})) return false;
+    const uint64_t gate = (uint64_t) plan.data[3], up = (uint64_t) plan.data[4];
+    const int64_t bytes = plan.data[6];
+    DevicePtr a = activation_device(gate, bytes), b = activation_device(up, bytes);
+    if (!a || !b || start_context() != 1) return false;
+    enum { extent_value = 2 };
+    int32_t extent = extent_value, layout = plan.data[7] == 12 ? 1 : cuda.mmq_q6_matrix ? 3 : 0;
+    int32_t first = 0, words = 3;
+    DevicePtr jobs = 0;
+    const size_t rows = (size_t) bytes / 2048;
+    int error = reserve(&cuda.mmq_packed, rows * 288 * extent);
+    if (error == 0) {
+        void * args[] = {&a, &b, &jobs, &cuda.mmq_packed.address, &extent, &layout, &first, &words};
+        activations.pending = true;
+        error = cuda.launch(cuda.mmq_pack_glu, 2 * extent, (unsigned) rows, 1, 32, 1, 1, 0, NULL, args, NULL);
+    }
+    const int popped = finish_context();
+    if (error != 0 || popped != 0) return false;
+    fg143_activation_discard_overwritten(activation_ranges(), gate, bytes);
+    fg143_activation_discard_overwritten(activation_ranges(), up, bytes);
+    fg143_activation_discard_overwritten(activation_large_range(), gate, bytes);
+    fg143_activation_discard_overwritten(activation_large_range(), up, bytes);
+    matrix_glu.target = (uint64_t) plan.data[5];
+    matrix_glu.bytes = bytes;
+    matrix_glu.packed = false;
+    return true;
+}
+
+bool fg_cuda_glu_pack_close(void) {
+    const bool packed = matrix_glu.packed;
+    matrix_glu.target = 0;
+    matrix_glu_active = false;
+    return packed;
+}
+
 int64_t fg_cuda_begin(uint64_t input, int64_t input_bytes, uint64_t output, int64_t output_bytes) {
     const int active = start_context();
     if (active != 1) return active;
     cuda_matrix_kind = -1;
     matrix_input = 0;
+    matrix_glu_active = false;
     matrix_reusable_host = 0;
+    if (matrix_glu.target != 0) {
+        int status = input == matrix_glu.target && input_bytes == matrix_glu.bytes ?
+            activation_output(output, output_bytes, &matrix_output) : -1;
+        if (status == 0) {
+            matrix_glu_active = true;
+            return 1;
+        }
+        (void) finish_context();
+        return -1;
+    }
     const sl_u8 source = {(void *) (uintptr_t) input, input_bytes};
     DevicePtr * staged = cuda.stage_matrix_input ? &matrix_input : NULL;
     int status = activation_output_for_input(output, output_bytes, &matrix_output, source, staged);
@@ -2580,9 +2638,13 @@ static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
         return -1;
     }
     const size_t tile_bytes = (size_t) tile_count * 3 * sizeof(*tiles);
-    bool shared = cuda.mmq_shared && shared_rows > 0 && shared_rows < count && shared_rows <= 65535 &&
+    if (matrix_glu_active) {
+        shared_rows = matrix_glu.bytes / 2048;
+        input_stride = 2048;
+    }
+    bool shared = matrix_glu_active || (cuda.mmq_shared && shared_rows > 0 && shared_rows < count && shared_rows <= 65535 &&
         input_stride >= (int64_t) extent * 256 * (int64_t) sizeof(float) &&
-        (uint64_t) shared_rows * (uint64_t) extent * 288 <= staging_budget;
+        (uint64_t) shared_rows * (uint64_t) extent * 288 <= staging_budget);
     size_t packed_bytes;
     int error;
     for (;;) {
@@ -2598,7 +2660,7 @@ static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
         }
         packed_bytes = routes * (size_t) extent * 288;
         error = reserve(&cuda.mmq_packed, packed_bytes);
-        if (error == 2 && shared) {
+        if (error == 2 && shared && !matrix_glu_active) {
             shared = false;
             continue;
         }
@@ -2626,8 +2688,11 @@ static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
         shared_activation_pack.layout == layout;
     shared_activation_pack.host = 0;
     if (error == 0 && shared) {
+        if (matrix_glu_active) matrix_glu.packed = true;
         if (cuda.mmq_window) window_tiles = tile_count < 8191 ? tile_count : 8191;
-        if (!reuse_pack) {
+        if (matrix_glu_active) {
+            // SwiGLU has already been packed while both operands were live.
+        } else if (!reuse_pack) {
             void * args[] = {&matrix_input, &cuda.mmq_packed.address, &extent, &layout, &input_stride};
             error = cuda.launch(cuda.mmq_pack_shared, (unsigned) (2 * extent), (unsigned) shared_rows, 1,
                 32, 1, 1, 0, NULL, args, NULL);
@@ -2889,6 +2954,8 @@ static int launch_matrix(DevicePtr weight, int64_t row_stride, int64_t extent,
         (kind != 0 && kind != 12 && kind != 14) ||
         jobs.len <= 0 || jobs.len % job_words != 0 || jobs.len / job_words > INT_MAX ||
         (uint64_t) jobs.len > SIZE_MAX / sizeof(*jobs.data)) return -1;
+    if (matrix_glu_active && (kind == 0 || extent != 2 || job_words != 3 ||
+        shared_rows != 0 || jobs.len / job_words < 16)) return -1;
     const size_t job_bytes = (size_t) jobs.len * sizeof(*jobs.data);
     int error = reserve(&cuda.jobs, job_bytes);
     if (error == 0) error = upload_packet(cuda.jobs.address, jobs.data, job_bytes);
@@ -3308,6 +3375,8 @@ int64_t fg_cuda_finish(uint64_t output, int64_t output_bytes) {
     if (error == 0 && output) {
         error = activation_publish(output, output_bytes, matrix_output, true);
     }
+    if (error == 0 && output && matrix_glu_active && getenv("GOOSE_GRAPH_LOG"))
+        fprintf(stderr, "Goose CUDA: fused SwiGLU Q8_1 down projection\n");
     const int pop_error = finish_context();
     if (error == 0) error = pop_error;
     if (error != 0) {

@@ -17,6 +17,8 @@ extern "fg_cuda_routed_graph_enabled" fn routed_graph_enabled() -> bool;
 extern "fg_cuda_full_ffn_enabled" fn full_ffn_enabled() -> bool;
 extern "fg_cuda_direct_ssm_enabled" fn direct_ssm_enabled() -> bool;
 extern "fg_cuda_direct_ssm" fn direct_ssm(plan: const i64[:], step: i64, deadline: i64) -> i64;
+extern "fg_cuda_glu_pack_offer" fn offer_glu_pack(plan: const i64[:]) -> bool;
+extern "fg_cuda_glu_pack_close" fn close_glu_pack() -> bool;
 extern "fg_cuda_routed_graph" fn routed_graph(plan: const i64[:], glu: const i64[:], norm: const i64[:],
     shared: const i64[:], step: i64, deadline: i64) -> i64;
 
@@ -305,6 +307,54 @@ fn try_direct_ssm(graph: u64, step: i64, deadlines: const i64[:], concat: u64) -
     return direct_ssm(plan[..], step, deadlines[step + 3]);
 }
 
+fn try_glu_pack(graph: u64, step: i64, deadlines: const i64[:], glu: u64) -> bool {
+    if step + 1 >= deadlines.len || deadlines[step] != step + 1 ||
+       storage_get(glu, STORAGE_VIEW, 0) != 0 { return false; }
+    let down = graph_node(graph, step + 1);
+    if graph_prop(down, 2) != OP_MUL_MAT_ID { return false; }
+    var p: i64[71] = [0; 71];
+    graph_describe(down, p[..]);
+    let tokens = p[12]; let kind = p[8];
+    if tokens < 512 || tokens > 4096 || (kind != 12 && kind != 14) ||
+       !routed_dense(packet_tensor(p[..], 10), 512, 8, tokens, 0) ||
+       !routed_dense(packet_tensor(p[..], 30), 2048, 8, tokens, 0) ||
+       !routed_dense(packet_tensor(p[..], 20), 8, tokens, 1, 26) ||
+       p[0] != 512 || p[1] != 2048 || p[2] != 256 || p[3] != 1 { return false; }
+    var s: u64[10] = [0; 10];
+    graph_inputs(down, s[..]);
+    let down_w = s[0]; let ids = s[2];
+    if down_w == 0 || ids == 0 || s[1] != glu { return false; }
+    let out = storage_get(down, STORAGE_DATA, 0);
+    graph_describe(glu, p[..]);
+    if p[41] != GLU_OP_SWIGLU || p[42] != 0 || p[53] != 0 ||
+       !routed_dense(packet_tensor(p[..], 0), 512, 8, tokens, 0) ||
+       !routed_dense(packet_tensor(p[..], 10), 512, 8, tokens, 0) { return false; }
+    graph_inputs(glu, s[..]);
+    let gate = s[0]; let up = s[1];
+    if gate == 0 || up == 0 || graph_prop(gate, 2) != OP_MUL_MAT_ID ||
+       graph_prop(up, 2) != OP_MUL_MAT_ID { return false; }
+    if step < 2 || deadlines[step - 2] != step || deadlines[step - 1] != step { return false; }
+    let first = graph_node(graph, step - 2); let second = graph_node(graph, step - 1);
+    if !((first == gate && second == up) || (first == up && second == gate)) { return false; }
+    let a = storage_get(gate, STORAGE_DATA, 0);
+    let b = storage_get(up, STORAGE_DATA, 0);
+    let input = storage_get(glu, STORAGE_DATA, 0);
+    let size = 4 * 512 * 8 * tokens;
+    if out == 0 || a == 0 || b == 0 || input == 0 ||
+       activation_spans_overlap(out, (4 * 2048 * 8 * tokens) as u64, a, size as u64) ||
+       activation_spans_overlap(out, (4 * 2048 * 8 * tokens) as u64, b, size as u64) { return false; }
+    graph_inputs(gate, s[..]);
+    let gate_w = s[0];
+    if gate_w == 0 || s[2] != ids { return false; }
+    graph_inputs(up, s[..]);
+    let up_w = s[0];
+    if up_w == 0 || s[2] != ids { return false; }
+    let plan: i64[8] = [storage_get(up_w, STORAGE_DATA, 0) as! i64,
+        storage_get(gate_w, STORAGE_DATA, 0) as! i64, storage_get(down_w, STORAGE_DATA, 0) as! i64,
+        a as! i64, b as! i64, input as! i64, size, kind];
+    return offer_glu_pack(plan[..]);
+}
+
 fn execute_graph_node(tensor: u64, work: GraphWorkspace &, selective: bool, step: i64, deadline: i64) -> bool {
     if tensor == 0 { return false; }
     let op = graph_prop(tensor, 2);
@@ -358,6 +408,15 @@ export fn fg143_graph_run(graph: u64, selective: bool, deadlines: const i64[:], 
         let step = if deadlines.len == 0 { -1 } else { i };
         let deadline = if deadlines.len == 0 { -1 } else { deadlines[i] };
         let tensor = graph_node(graph, i);
+        if !observe && deadlines.len != 0 && graph_prop(tensor, 2) == OP_GLU &&
+           try_glu_pack(graph, i, deadlines, tensor) {
+            // Keep both operands alive at the SwiGLU step until packing finishes.
+            let ok = execute_graph_node(graph_node(graph, i + 1), work, selective, i, deadlines[i + 1]);
+            let used = close_glu_pack();
+            if !ok || !used { outcome = i + 1; break; }
+            i += 2;
+            continue;
+        }
         if !observe && deadlines.len != 0 && graph_prop(tensor, 2) == OP_CONCAT && direct_ssm_enabled() {
             let grouped = try_direct_ssm(graph, i, deadlines, tensor);
             if grouped > 0 { i += 4; continue; }

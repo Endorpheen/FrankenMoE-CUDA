@@ -228,6 +228,37 @@ fn fg180q_mmq_d2s6_scatter(
 }
 fn mmq_reciprocal(value: f32) -> f32 { return 1.0 / value; }
 
+struct MmqQ8Result { word: i32, scale: f32, sum: f32 }
+
+fn fg180q_quantize4(xi0: f32, xi1: f32, xi2: f32, xi3: f32, ds: i32) -> MmqQ8Result {
+    var amax: f32 = fabsv(xi0);
+    amax = fmax2(amax, fabsv(xi1));
+    amax = fmax2(amax, fabsv(xi2));
+    amax = fmax2(amax, fabsv(xi3));
+    amax = red_max(amax, ds);
+    var sum: f32 = 0.0;
+
+    let ds4 = ds == 1 || ds == 4;
+    let approximate = ds == 3 || ds == 4;
+    if ds4 || ds == 2 {
+        sum = xi0 + xi1;
+        sum = sum + xi2;
+        sum = sum + xi3;
+        sum = red_sum(sum, ds);
+    }
+    let d_inv: f32 = if approximate { 127.0 * mmq_reciprocal(amax) } else { 127.0 / amax };
+    pdl_sync();
+    let qx: i32 = to_i32(rnd(xi0 * d_inv));
+    let qy: i32 = to_i32(rnd(xi1 * d_inv));
+    let qz: i32 = to_i32(rnd(xi2 * d_inv));
+    let qw: i32 = to_i32(rnd(xi3 * d_inv));
+    // char4 packed little-endian, as the native `char4 q` store produces.
+    let m: i32 = 255 as i32;
+    let qword: i32 = (qx & m) | ( (qy & m) << (8 as i32)) | ( (qz & m) << (16 as i32)) | ( (qw & m) << (24 as i32));
+    let d: f32 = if approximate { mmq_reciprocal(d_inv) } else { 1.0 / d_inv };
+    return MmqQ8Result { qword, d, sum };
+}
+
 // ds_layout: 0 = D4, 1 = DS4, 2 = D2S6, 3 = D4 and 4 = DS4 with device reciprocal.
 // scatter: 0 = direct, 1 = compact rows.
 
@@ -313,31 +344,11 @@ fn fg180q_mmq(
             xi2 = ld_f4z(x, ob);
             xi3 = ld_f4w(x, ob);
         }
-        var amax: f32 = fabsv(xi0);
-        amax = fmax2(amax, fabsv(xi1));
-        amax = fmax2(amax, fabsv(xi2));
-        amax = fmax2(amax, fabsv(xi3));
-        amax = red_max(amax, ds);
-        var sum: f32 = 0.0;
-
+        let packed = fg180q_quantize4(xi0, xi1, xi2, xi3, ds);
+        let qword = packed.word;
+        let d = packed.scale;
+        let sum = packed.sum;
         let ds4 = ds == 1 || ds == 4;
-        let approximate = ds == 3 || ds == 4;
-        if ds4 || ds == 2 {
-            sum = xi0 + xi1;
-            sum = sum + xi2;
-            sum = sum + xi3;
-            sum = red_sum(sum, ds);
-        }
-        let d_inv: f32 = if approximate { 127.0 * mmq_reciprocal(amax) } else { 127.0 / amax };
-        pdl_sync();
-        let qx: i32 = to_i32(rnd(xi0 * d_inv));
-        let qy: i32 = to_i32(rnd(xi1 * d_inv));
-        let qz: i32 = to_i32(rnd(xi2 * d_inv));
-        let qw: i32 = to_i32(rnd(xi3 * d_inv));
-        // char4 packed little-endian, as the native `char4 q` store produces.
-        let m: i32 = 255 as i32;
-        let qword: i32 = (qx & m) | ( (qy & m) << (8 as i32)) | ( (qz & m) << (16 as i32)) | ( (qw & m) << (24 as i32));
-        let d: f32 = if approximate { mmq_reciprocal(d_inv) } else { 1.0 / d_inv };
         let nwrite: i32 = if scatter != 0 {
             n_used
         } else {
