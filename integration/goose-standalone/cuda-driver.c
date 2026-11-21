@@ -202,7 +202,7 @@ static struct {
     int64_t expert_pinned_bytes;
     int status, multiprocessors;
     bool mmq_window, mmq_shared, moe_topk, activation_reference;
-    bool mmq_align_window, mmq_dense_partial;
+    bool mmq_align_window, mmq_dense_partial, mmq_shared_reuse;
     bool mmvq_dense_tail;
     size_t vmm_granularity, vmm_capacity;
     bool scratch_vmm, lazy_kv;
@@ -286,6 +286,7 @@ static _Thread_local struct {
     int64_t ranges[ACTIVATION_RECORDS * ACTIVATION_WORDS];
     int64_t large_output[ACTIVATION_WORDS];
     uint64_t hits, skipped_download_bytes, expired_bytes;
+    uint64_t shared_pack_reuses;
     size_t packet_used;
 } activations;
 
@@ -712,6 +713,14 @@ static pthread_once_t cuda_once = PTHREAD_ONCE_INIT;
 static pthread_mutex_t cuda_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t activation_lock = PTHREAD_MUTEX_INITIALIZER;
 static _Thread_local DevicePtr matrix_input, matrix_output;
+static _Thread_local uint64_t matrix_reusable_host;
+static _Thread_local int64_t matrix_input_bytes;
+static _Thread_local struct {
+    uint64_t host;
+    DevicePtr input, packed;
+    int64_t bytes, step, rows, stride;
+    int extent, layout;
+} shared_activation_pack;
 static _Thread_local uint64_t cuda_matrices;
 static _Thread_local uint64_t cuda_routed_groups, cuda_routed_replays;
 static _Thread_local uint64_t cuda_full_ffn_groups, cuda_full_ffn_replays;
@@ -987,6 +996,7 @@ static void load_cuda(void) {
     }
     cuda.mmq_window = fg_standalone_option_enabled("GOOSE_MMQ_WINDOW");
     cuda.mmq_align_window = fg_standalone_option_enabled("GOOSE_MMQ_ALIGN_WINDOW");
+    cuda.mmq_shared_reuse = fg_standalone_option_enabled("GOOSE_MMQ_SHARED_REUSE");
     cuda.mmq_dense_partial = fg_standalone_option_enabled("GOOSE_MMQ_DENSE_PARTIAL");
     cuda.mmq_shared = fg_standalone_option_enabled("GOOSE_MMQ_SHARED");
     cuda.moe_topk = fg_standalone_option_enabled("GOOSE_MOE_TOPK");
@@ -1185,6 +1195,7 @@ static void init_cuda(void) {
 }
 
 static int release_buffer(struct device_buffer * buffer) {
+    if (buffer == &cuda.mmq_packed) shared_activation_pack.host = 0;
     if (!buffer->address) return 0;
     if (buffer->reservation_bytes) return release_vmm(buffer);
     const int error = cuda.release(buffer->address);
@@ -1363,6 +1374,8 @@ int fg_cuda_activation_graph_begin(bool planned) {
     pthread_mutex_lock(&activation_lock);
     activations.active = true;
     activations.step = -1;
+    shared_activation_pack.host = 0;
+    activations.shared_pack_reuses = 0;
     activations.unavailable = false;
     activations.defer_waits = planned && fg_standalone_option_enabled("GOOSE_CUDA_DEFER_WAITS");
     activations.retire = fg_standalone_option_enabled("GOOSE_ACTIVATION_LIFETIMES");
@@ -1433,6 +1446,9 @@ int fg_cuda_activation_graph_end(bool success, bool all, uint64_t host, int64_t 
     *expired_bytes = activations.expired_bytes;
     activations.expired_bytes = 0;
     if (!activations.active) return 0;
+    if (activations.shared_pack_reuses && getenv("GOOSE_MMQ_SHARED_REUSE_REPORT")) {
+        fprintf(stderr, "Goose CUDA MMQ: reused %" PRIu64 " shared Q8_1 packs\n", activations.shared_pack_reuses);
+    }
     int error = 0;
     decode_capture.scope = false;
     if (activations.pending || decode_capture.capturing) {
@@ -2275,11 +2291,21 @@ int64_t fg_cuda_begin(uint64_t input, int64_t input_bytes, uint64_t output, int6
     if (active != 1) return active;
     cuda_matrix_kind = -1;
     matrix_input = 0;
+    matrix_reusable_host = 0;
     const sl_u8 source = {(void *) (uintptr_t) input, input_bytes};
     DevicePtr * staged = cuda.stage_matrix_input ? &matrix_input : NULL;
     int status = activation_output_for_input(output, output_bytes, &matrix_output, source, staged);
     if (status == 0 && !matrix_input) status = activation_input(source, &cuda.input, &matrix_input);
-    if (status == 0) return 1;
+    if (status == 0) {
+        if (cuda.mmq_shared_reuse && activations.active && activations.step >= 0 &&
+            input_bytes > 0 && output_bytes > 0 &&
+            (input < output ? output - input >= (uint64_t) input_bytes : input - output >= (uint64_t) output_bytes) &&
+            matrix_input == activation_device(input, input_bytes)) {
+            matrix_reusable_host = input;
+            matrix_input_bytes = input_bytes;
+        }
+        return 1;
+    }
     finish_context();
     fprintf(stderr, "Goose CUDA: input transfer failed (%d)\n", status);
     return -1;
@@ -2395,11 +2421,32 @@ static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
     if (error == 0) error = reserve(&cuda.mmq_tiles, tile_bytes);
     if (error == 0 && !routed_x128) error = cuda.upload(cuda.mmq_tiles.address, tiles, tile_bytes);
     if (!shared) input_stride = 0;
+    // Only reuse a pack from the immediately preceding graph step, with
+    // both projections reading the same live, unaliased activation.
+    const bool cache_shared = shared && job_words == 3 && matrix_reusable_host != 0;
+    const bool reuse_shared = cache_shared && shared_activation_pack.host == matrix_reusable_host &&
+        shared_activation_pack.step == activations.step - 1 &&
+        shared_activation_pack.input == matrix_input && shared_activation_pack.packed == cuda.mmq_packed.address &&
+        shared_activation_pack.bytes == matrix_input_bytes && shared_activation_pack.rows == shared_rows &&
+        shared_activation_pack.stride == input_stride && shared_activation_pack.extent == extent &&
+        shared_activation_pack.layout == layout;
+    shared_activation_pack.host = 0;
     if (error == 0 && shared) {
         if (cuda.mmq_window) window_tiles = tile_count < 8191 ? tile_count : 8191;
-        void * args[] = {&matrix_input, &cuda.mmq_packed.address, &extent, &layout, &input_stride};
-        error = cuda.launch(cuda.mmq_pack_shared, (unsigned) (2 * extent), (unsigned) shared_rows, 1,
-            32, 1, 1, 0, NULL, args, NULL);
+        if (!reuse_shared) {
+            void * args[] = {&matrix_input, &cuda.mmq_packed.address, &extent, &layout, &input_stride};
+            error = cuda.launch(cuda.mmq_pack_shared, (unsigned) (2 * extent), (unsigned) shared_rows, 1,
+                32, 1, 1, 0, NULL, args, NULL);
+        } else {
+            ++activations.shared_pack_reuses;
+        }
+        if (error == 0 && cache_shared) {
+            shared_activation_pack = (__typeof__(shared_activation_pack)) {
+                .host = matrix_reusable_host, .input = matrix_input, .packed = cuda.mmq_packed.address,
+                .bytes = matrix_input_bytes, .step = activations.step, .rows = shared_rows, .stride = input_stride,
+                .extent = extent, .layout = layout,
+            };
+        }
     }
     int first = 0, first_route = 0;
     void * pack_args[] = {&matrix_input, &cuda.jobs.address, &cuda.mmq_packed.address,
@@ -2576,6 +2623,7 @@ static GraphExec cached_graph_for(const uint64_t key[MMVQ_GRAPH_KEY_WORDS],
 }
 
 static int launch_mmvq(DevicePtr weight, uint64_t stride, int extent, int kind, int rows, int count, int words) {
+    shared_activation_pack.host = 0;
     const size_t packed_bytes = (size_t) extent * 288 * (size_t) count;
     int error = reserve(&cuda.mmq_packed, packed_bytes);
     if (error == 0) {
