@@ -23,6 +23,10 @@ jobs:
           fetch-depth: 0
       - name: Python
         run: python3 --version
+      - name: Model acceptance registry and regression policy
+        run: |
+          python3 tools/check-model-regressions.py --validate
+          python3 tools/tests/test_model_regressions.py
       - name: Goose tree and ledger
         run: python3 tools/check-goose-tree.py
       - name: Edge0 pack validation

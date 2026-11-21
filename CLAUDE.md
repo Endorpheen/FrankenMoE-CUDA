@@ -252,6 +252,29 @@ build.
 Measurements are manual and strictly one at a time: no scripts, no parallel
 runs, no background work alongside benchmarks.
 
+## Model architecture integration
+
+Maintain `docs/goose-migration/model-architectures.json` as the permanent
+[integration registry](docs/goose-migration/MODEL-ARCHITECTURES.md). Add a
+record when work on an architecture is scheduled. Update status, compute,
+quantization, KV/state, CUDA dispatch, required Goose changes, correctness,
+generation quality, performance, verified results and limitations in the
+same change as their evidence. Keep historical coverage visible.
+
+Before accepting a new architecture, run the `architecture-regressions`
+model test against the same independent Goose artifact intended for
+promotion. It must run all registered references sequentially and retain
+its receipt. Missing artifacts, unfinished reference coverage, swap
+activity, unreviewed output divergence and confirmed regressions prevent
+acceptance. Fix or isolate the cause and repeat the affected checks. Apex
+32K/512 is mandatory. The scheduled candidate after Apex speed recovery
+is Inkling-2-Mini, with AD-IQ4_XS preferred pending artifact verification.
+
+Use shared model and GPU mechanisms. Isolate specializations behind actual
+shape, layout and capability checks with a maintained supported path.
+Architecture integration must preserve independence from C++ and libggml
+and keep previously supported architectures covered by their own references.
+
 ## Communication with Igor
 
 Do not use Markdown blockquotes (`>`) in messages to Igor: his interface renders

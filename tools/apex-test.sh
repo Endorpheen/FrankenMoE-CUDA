@@ -152,7 +152,7 @@ unset LD_PRELOAD
 if [ -n "$GOOSE_BIN" ]; then
     unset LD_LIBRARY_PATH
     ARGS=(--ctx-size "${APEX_CTX:-262144}" --batch-size "$B" --ubatch-size "$UB"
-          --cache-type-k q4_0 --cache-type-v q4_0)
+          --cache-type-k "${APEX_CACHE_TYPE_K:-q4_0}" --cache-type-v "${APEX_CACHE_TYPE_V:-q4_0}")
     if [ -n "${5:-}" ]; then
         ARGS+=(--expert-cache-mib "$CACHE")
     fi

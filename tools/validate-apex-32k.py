@@ -30,8 +30,8 @@ def require(condition, detail):
         raise ValueError(detail)
 
 
-def token_id(value):
-    return type(value) is int and 0 <= value < VOCABULARY
+def token_id(value, vocabulary=VOCABULARY):
+    return type(value) is int and 0 <= value < vocabulary
 
 
 def number(value):
@@ -47,34 +47,35 @@ def verify_request(path):
     require(request["n_predict"] == OUTPUT_TOKENS and request["cache_prompt"] is False, "invalid request settings")
 
 
-def response_evidence(path):
+def response_evidence(path, *, prompt_tokens=PROMPT_TOKENS, output_tokens=OUTPUT_TOKENS,
+                      vocabulary=VOCABULARY, alternatives=5):
     raw = path.read_bytes()
     response = json.loads(raw)
     content = response["content"]
     require(isinstance(content, str) and content.strip(), "response content is empty or whitespace")
     tokens = response["tokens"]
-    require(isinstance(tokens, list) and len(tokens) == OUTPUT_TOKENS, "expected 512 output IDs")
-    require(all(map(token_id, tokens)), "output ID outside the Apex vocabulary")
+    require(isinstance(tokens, list) and len(tokens) == output_tokens, f"expected {output_tokens} output IDs")
+    require(all(token_id(token, vocabulary) for token in tokens), "output ID outside the vocabulary")
     require(response.get("ids", tokens) == tokens, "response token arrays disagree")
-    require(response["tokens_evaluated"] == PROMPT_TOKENS, "prompt count differs")
-    require(response["tokens_predicted"] == OUTPUT_TOKENS, "output count differs")
+    require(response["tokens_evaluated"] == prompt_tokens, "prompt count differs")
+    require(response["tokens_predicted"] == output_tokens, "output count differs")
     timings = response["timings"]
     require(
-        (timings["prompt_n"], timings["predicted_n"], timings["cache_n"]) == (PROMPT_TOKENS, OUTPUT_TOKENS, 0),
-        "timing counts differ from the uncached 32K/512 workload",
+        (timings["prompt_n"], timings["predicted_n"], timings["cache_n"]) == (prompt_tokens, output_tokens, 0),
+        "timing counts differ from the uncached workload",
     )
     for key in ("prompt_ms", "prompt_per_second", "predicted_ms", "predicted_per_second"):
         require(number(timings[key]) and timings[key] > 0, f"invalid {key}")
 
     rows = response["completion_probabilities"]
-    require(len(rows) == OUTPUT_TOKENS, "expected a probability row per output ID")
+    require(len(rows) == output_tokens, "expected a probability row per output ID")
     for index, (token, row) in enumerate(zip(tokens, rows, strict=True)):
         require(row["id"] == token and number(row["logprob"]), f"invalid probability row {index}")
         top = row["top_logprobs"]
-        require(len(top) == 5, f"expected five alternatives at output index {index}")
+        require(len(top) == alternatives, f"expected {alternatives} alternatives at output index {index}")
         for alternative in top:
             require(
-                token_id(alternative["id"]) and number(alternative["logprob"]),
+                token_id(alternative["id"], vocabulary) and number(alternative["logprob"]),
                 f"invalid probability alternative at output index {index}",
             )
 
@@ -86,20 +87,20 @@ def response_evidence(path):
         "content_characters": len(content),
         "distinct_output_tokens": len(set(tokens)),
         "timings": timings,
-        "prefill_tokens_per_second_from_ms": 1000 * PROMPT_TOKENS / timings["prompt_ms"],
-        "decode_steps": OUTPUT_TOKENS - 1,
-        "decode_steps_per_second_from_ms": 1000 * (OUTPUT_TOKENS - 1) / timings["predicted_ms"],
+        "prefill_tokens_per_second_from_ms": 1000 * prompt_tokens / timings["prompt_ms"],
+        "decode_steps": output_tokens - 1,
+        "decode_steps_per_second_from_ms": 1000 * (output_tokens - 1) / timings["predicted_ms"],
     }
 
 
-def verify_step_timings(timings):
+def verify_step_timings(timings, prompt_tokens=PROMPT_TOKENS, output_tokens=OUTPUT_TOKENS):
     prefill_ms = timings["prompt_ms"]
     decode_ms = timings["predicted_ms"]
     for key, expected in (
-        ("prompt_per_token_ms", prefill_ms / PROMPT_TOKENS),
-        ("prompt_per_second", 1000 * PROMPT_TOKENS / prefill_ms),
-        ("predicted_per_token_ms", decode_ms / (OUTPUT_TOKENS - 1)),
-        ("predicted_per_second", 1000 * (OUTPUT_TOKENS - 1) / decode_ms),
+        ("prompt_per_token_ms", prefill_ms / prompt_tokens),
+        ("prompt_per_second", 1000 * prompt_tokens / prefill_ms),
+        ("predicted_per_token_ms", decode_ms / (output_tokens - 1)),
+        ("predicted_per_second", 1000 * (output_tokens - 1) / decode_ms),
     ):
         value = timings[key]
         require(number(value) and math.isclose(value, expected, rel_tol=1e-6),
