@@ -4223,6 +4223,40 @@ The selectable patch, exact event-probe source, binaries,
 fixture traces and raw Apex runs are stored in
 `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/mmq-m32-exp1611`.
 
+## Live Apex Attention graph replay
+
+EXP-2026-11-21-1612 verifies the existing two-node Attention
+graph on the current EXP-1603 workload with `GOOSE_CUDA_GRAPH`.
+Both diagnostic runs use the same host binary with submission
+counters and byte-identical EXP-1603 PTX. They evaluate the
+frozen Apex 32K/512 request at 4096/4096 with a 5,920 MiB
+expert cache. Counters add no CUDA synchronization. The nine
+prefill graph evaluations finish before the 511 decode
+evaluations. Kernel calls during initial graph capture are
+included in the direct API count.
+
+| Decode submission metric, 511 evaluations | Direct | Graph |
+|---|---:|---:|
+| `cuLaunchKernel` calls | 1,059,814 | 1,049,596 |
+| Successful `cuGraphLaunch` calls | 0 | 5,110 |
+| Captures and instantiations | 0 | 1 |
+| Capture or update fallback | 0 | 0 |
+| Prefill, tok/s | 1147.026 | 1134.380 |
+| Decode, steps/s | 32.581 | 32.266 |
+| Peak process VRAM, MiB | 8200 | 8200 |
+| RSS high-water, KiB | 21479604 | 21480288 |
+| Process swap and system swap-out growth | 0 | 0 |
+
+The graph executes ten times per decode step and eliminates
+10,218 direct calls. The two captured kernels per attention
+site leave query packing outside replay. All response text,
+IDs, probabilities and stop reasons match. This single
+diagnostic pair establishes live replay and dispatch reduction.
+It does not establish a speed gain or measure GPU idle gaps.
+Keep the existing graph opt-in while extending its scope.
+The counter-only source, executable and capture artifacts are in
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/graph-witness-exp1612`.
+
 ## Long Attention partition probe
 
 EXP-2026-11-20-1562 holds the existing vector kernel fixed
