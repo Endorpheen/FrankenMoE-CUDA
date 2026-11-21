@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-20",
+  "updated_at": "2026-11-21",
   "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
@@ -4034,7 +4034,22 @@
       "experiment": "EXP-2026-11-07-145-goose-cpu-backend-api",
       "task": "P1-10",
       "status": "slice",
-      "sha256": "0aae62af8b1ea9189f7e9ca43366b9ffa7d318dd35a0e0d24cda605712e6a073"
+      "sha256": "b10630ad553a6c5e17ae9f4c4754f116f37c30e2c5efa89d2f378287bed05eb2",
+      "integration_commit": "4d827f1ba5798fb6a4ad41d27d3bf1847479d350"
+    },
+    {
+      "goose": "cuda/standalone-mmq.goose",
+      "native": "ggml/src/ggml-cuda/mmq*",
+      "native_targets": [
+        "ggml/src/ggml-cuda/mmq*",
+        "ggml/src/ggml-cuda/template-instances/**"
+      ],
+      "experiment": "EXP-2026-11-21-1598-dense-mmq-x128",
+      "task": "P3-09",
+      "status": "slice",
+      "sha256": "90448caa66b1051442264620df25a03aa91b3f1a73c973f885c0eeacf8d17fb9",
+      "integration_commit": "4d827f1ba5798fb6a4ad41d27d3bf1847479d350",
+      "gate": "Apex 32K/512 same-binary differential and SM89 CUDA trace, CUDA-PARITY-EXP1476.md#dense-mmq-16-by-128-cooperative-tiles"
     },
     {
       "goose": "cpu/goose-cpu-backend-api/pointwise.goose",

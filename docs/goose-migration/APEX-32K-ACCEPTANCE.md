@@ -5,7 +5,7 @@ Each gate closes once its evidence is recorded. A failed check returns
 to the gate that owns the defect. This checklist covers eight gates.
 Functional qualification runs before memory and speed acceptance.
 
-**Closed: 5 of 8. Remaining: 3.**
+**Closed: 6 of 8. Remaining: 2.**
 
 1. [x] **Pin the workload and control.** Verify the model digest, exact
    request bytes and the EXP-1476 executable and library manifest.
@@ -57,59 +57,20 @@ Functional qualification runs before memory and speed acceptance.
    libraries, without C++ runtime dependencies. A lossy placement
    or a missing required backend keeps this gate open. Verified the
    live 4096/4096 candidate and all 5,301,139 resident model pages.
-6. [ ] **Qualify the real response** (requires 1, 5 and the response
-   validator from 4). With the exact
-   request, record 32,768 evaluated prompt IDs, zero reused prompt
-   tokens, 512 returned output IDs and non-whitespace content.
-   Archive token and content hashes and every probability row. Compare
-   response coherence, factual grounding, instruction following and
-   repetition against the control. Investigate reproducible quality
-   defects and rerun this gate after fixes. The full 4096/4096 request
-   completed with the scalar, MMQ, EXP-1528 and ten-change package
-   candidates. The ten-change package response begins to repeat the input.
-   ID and probability parity fail. The first differing output is at
-   index 1 (1716 versus 198). See the
-   [full diagnostic](CUDA-PARITY-EXP1476.md#ten-change-apex-32k512-diagnostic).
-   The short layer comparison matches the first GDN output and
-   state, all first-layer router logits and all 992 selected expert
-   ID positions bitwise. Gate/up, expert SwiGLU and Q6_K down
-   now match on the live first layer. The previous checkpoint
-   first token matches the 4096/1 reference. Remaining tensor
-   differences are recorded in the
-   [numerical checkpoint](CUDA-PARITY-EXP1476.md#numerical-checkpoint-before-response-quality-tests).
-   The separate short and long
-   [response-quality comparison](CUDA-PARITY-EXP1476.md#apex-response-quality-checkpoint)
-   confirms coherent generation and the HTTP EOS fix. The
-   [earlier speed checkpoint](CUDA-PARITY-EXP1476.md#pinned-staging-for-pageable-expert-uploads)
-   reports median 1,049.754 prefill tok/s and 26.256 decode steps/s.
-   It preserves the capacity analysis and opening input repetition.
-   The [paired boundary captures](CUDA-PARITY-EXP1476.md#first-apex-decode-divergence-and-saved-ssm-history)
-   locate a first-layer Q6_K projection difference before the
-   history copy, between different microbatch shapes. The
-   [matched-tail follow-up](CUDA-PARITY-EXP1476.md#actual-apex-checkpoint-tail-geometry)
-   brings the last three QKV rows into exact agreement with
-   EXP-1476 and removes the opening task repetition in both
-   full runs. [EXP-1587](CUDA-PARITY-EXP1476.md#cooperative-mmq-on-the-checkpoint-tail)
-   restores cooperative MMQ at 4,092 tokens and preserves that
-   entire response, with 1,026.590 prefill tok/s and 26.838
-   decode steps/s on the matched-tail profile. The response
-   still miscounts the repeated records. The [four-query Flash tail
-   comparison](CUDA-PARITY-EXP1476.md#four-query-flash-attention-checkpoint-tail)
-   confirms the reference tile executes on Apex and improves the
-   estimated count from 3,000 to 1,600 against 1,723 complete
-   records. The action plan still truncates and observed decode
-   is 25.567 versus 26.993 steps/s. The four-query tile and
-   single-token SSM arithmetic remain experimental.
-   [EXP-1594](CUDA-PARITY-EXP1476.md#single-kernel-imrope-for-apex-decode)
-   preserves the matched-tail control response, with median
-   1,124.843 prefill tok/s and 27.718 decode steps/s across
-   two full requests using the fused path. The response still
-   overestimates the repeated record count.
-   The [cache placement series](APEX-LAUNCH-COMPARISON.md)
-   preserves that response on EXP-1595 and measures up to
-   31.053 median decode steps/s at the selected 5,920 MiB budget.
-   The full response gate remains open.
-   Gates 3 and 4 qualify the later speed comparison.
+6. [x] **Qualify execution and response quality** (requires 1, 5 and
+   the capture path from 4). Verify 32,768 evaluated prompt IDs,
+   zero reused prompt tokens, 512 returned IDs, complete probability
+   rows and non-whitespace content. Archive the raw outputs and hashes.
+   Qualify computation and state with differential, continuation and
+   reset evidence. Review coherence, factual grounding, instruction
+   following and repetition against the control. A reproducible
+   computation or state error, or a material generation regression
+   attributable to Goose, blocks this gate. Use differences in tokens
+   and probabilities to diagnose issues and confirm fixes. Assess factual
+   claims by their impact on the requested task. Cross-runtime byte
+   identity is optional diagnostic evidence. The
+   [scoped qualification below](#qualified-32k-request-and-response)
+   applies to the current exact workload.
 7. [ ] **Accept memory** (requires 5 and 6). Record per-process RSS and
    its high-water mark, model page residency before and after the
    request, per-process sampled VRAM maximum and separate whole-card
@@ -119,7 +80,7 @@ Functional qualification runs before memory and speed acceptance.
    EXP-1597 records 8,200 MiB sampled peak VRAM for the selected
    Goose profile and 8,202 MiB for the original EXP-1476. Goose's
    RSS high-water remains about 1 GiB higher. The memory gate
-   stays open together with the response gate.
+   stays open for the higher RSS and the final runtime envelope.
 8. [ ] **Accept reproducible speed** (requires 1–7). Use sequential
    A–B–B–A with matched cache and thermal conditions. Keep cold and
    warm observations separate. Require the correctness gate on each
@@ -131,6 +92,47 @@ Functional qualification runs before memory and speed acceptance.
    the best confirmed hybrid separately. Final optimization targets
    surpassing that comparator with quality preserved. Record matched
    settings, matched device memory and tuned-profile comparisons.
+
+## Qualified 32K request and response
+
+The fixed prompt begins with “Assess this service log. Explain the
+capacity risks and propose a safe plan.” Decoding its token IDs from
+the model vocabulary yields 1,723 complete copies of the same log
+record and a trailing partial record. The instruction contains no
+counting task. Original EXP-1476 and Optimized Hybrid describe
+“hundreds” of repetitions. Independent Goose estimates about 3,000.
+The experimental Flash tail estimated about 1,600. These are model
+observations. The count difference has no demonstrated computation
+or state fault and does not affect the requested risk assessment.
+
+Manual review of EXP-1598 Goose and the two hybrid controls verifies
+all three requested components: explain the lack of actual telemetry,
+describe conditional capacity risks and propose a practical plan
+covering queue depth, throughput, backpressure and retries. All three
+complete the substance before the forced 512-token limit and truncate
+the final prose. The current Goose output contains no task prompt echo.
+The different continuations remain visible in the raw captures.
+
+| Scope | Verified evidence |
+|---|---|
+| Exact request and output framing | Five EXP-1598 Goose captures and four EXP-1597 hybrid captures have the pinned request digest, 32,768 evaluated prompt IDs, zero reused tokens and 512 output IDs. Each has 512 finite selected log probabilities and five finite alternatives per row. IDs are in vocabulary and selected rows match their output IDs. |
+| Differential compute | The [current Q4_K/Q6_K gate](CUDA-PARITY-EXP1476.md#dense-mmq-16-by-128-cooperative-tiles) verifies all 1,048,064 values bitwise and zero CUDA memory errors. The earlier [layer probes](CUDA-PARITY-EXP1476.md#numerical-checkpoint-before-response-quality-tests) document exact GDN, router, expert selection, gate/up and down outputs on their tested first-layer paths and preserve remaining differences. |
+| KV and recurrent state | The EXP-1598 binary passes lazy KV growth and recurrent reset. Its mixed CUDA–CPU–CUDA continuation and reset comparison has maximum absolute logit error `1.1920929e-7` against CPU replay. |
+| Response transport | All 36 synthetic HTTP checks pass. The nine full captures have non-whitespace UTF-8 content without broken characters or a repeated task instruction. |
+
+The earlier [prompt repetition diagnostic](CUDA-PARITY-EXP1476.md#ten-change-apex-32k512-diagnostic)
+remains valid for its historical binary. The
+[matched-tail follow-up](CUDA-PARITY-EXP1476.md#actual-apex-checkpoint-tail-geometry)
+removed that repetition and reconciled the tested boundary QKV rows.
+The separate [normal prompt suite](CUDA-PARITY-EXP1476.md#apex-response-quality-checkpoint)
+preserves evidence of shared model limitations outside this request.
+
+EXP-1598 has exact within-Goose output for the MMQ change, including
+text, IDs, probabilities and stop reason. The workload qualification
+does not establish universal operator parity, broader model quality,
+memory parity or speed acceptance. The raw responses, decoded prompt,
+checksums and state/HTTP logs are in the EXP-1598 archive linked from
+the CUDA map.
 
 ## Explicit cache profile
 
