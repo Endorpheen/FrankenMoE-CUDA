@@ -3773,9 +3773,9 @@
       "experiment": "EXP-2026-11-07-145-goose-cpu-backend-api",
       "task": "P1-10",
       "status": "slice",
-      "sha256": "3f7e3ea6254d400e3fa81a61d876c6c213d510552b5ede764ca0587f00ca7801",
-      "gate": "EXP-1617 full FFN shape and lifetime matcher, Apex differential, input/output alias and SLRU eviction fixtures; EXP-1660 exact direct SSM device probe and warmed Apex 32K/512 differential",
-      "integration_commit": "1140a49fcc16a85be03e7dd7365584170991c4e2"
+      "sha256": "34e957aea41ef84f8bd22ced44d8cc170d0bdb7e5d5a64bf926ab1e283e6a2db",
+      "gate": "EXP-1617 full FFN shape and lifetime matcher, Apex differential, input/output alias and SLRU eviction fixtures; EXP-1660 exact direct SSM device probe and warmed Apex 32K/512 differential; EXP-1661 exact routed Q8_1 GPU fixture and warmed Apex 32K/512 differential",
+      "integration_commit": "db6ffb9c7b2d3cb9bc8b3f652c2bb46a437efba6"
     },
     {
       "goose": "cpu/goose-cpu-backend-api/backend/kernel-template.goose",
@@ -6922,6 +6922,19 @@
       "sha256": "c13310094b42dcec0385ccf76b4511f0e55a3b9d6b6fd73e082f9adc70940c23"
     },
     {
+      "goose": "cuda/standalone-mmq-glu.goose",
+      "native": "ggml/src/ggml-cuda/quantize.cu",
+      "native_targets": [
+        "ggml/src/ggml-cuda/quantize.cu"
+      ],
+      "experiment": "EXP-2026-11-21-1661",
+      "task": "P3-07",
+      "status": "slice",
+      "sha256": "82ef0410a1b8867975ffbc0245f24848d3fa640d8ad9c22f1e4b589cbe255ff7",
+      "integration_commit": "db6ffb9c7b2d3cb9bc8b3f652c2bb46a437efba6",
+      "gate": "EXP-1661 exact routed Q8_1 GPU fixture and warmed Apex 32K/512 differential"
+    },
+    {
       "goose": "cuda/goose-cuda-mmq-q8-1/device.goose",
       "native": "ggml/src/ggml-cuda/dequantize.cuh",
       "native_targets": [
@@ -6934,7 +6947,9 @@
       "experiment": "EXP-2026-11-08-180-goose-cuda-mmq-q8-1",
       "task": "P3-07",
       "status": "slice",
-      "sha256": "780532bd44bbbdab1c492b9579a001788ba7477169b37a76d8b079e1c573401f"
+      "sha256": "9dd117052f4d1b2606b7adf0d004f4ae8a628d96a8941d55a51b3b1bd4f912ec",
+      "gate": "EXP-1661 exact routed Q8_1 GPU fixture and warmed Apex 32K/512 differential",
+      "integration_commit": "db6ffb9c7b2d3cb9bc8b3f652c2bb46a437efba6"
     },
     {
       "goose": "cuda/goose-cuda-mmq-q8-1/host.goose",
