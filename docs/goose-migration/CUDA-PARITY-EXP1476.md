@@ -4421,6 +4421,70 @@ on the scope comparable to the hybrid.
 Builds, exact request, witness source and logs are in
 `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/cuda-graph-combined-exp1615`.
 
+## Routed expert FFN graph
+
+EXP-2026-11-21-1616 extends the cumulative experimental
+path with the six logical decode nodes that the live Apex
+executor orders contiguously. The Goose matcher verifies
+the two projections, their shared activation and IDs,
+SwiGLU, down projection, normalized weights and weighted
+reduction. It checks intermediate last uses and output
+aliasing, and skips the group during tensor capture.
+The qualified shapes use eight routes out of 256 experts,
+Q4_K up/gate and Q4_K or Q6_K down.
+
+The first expert lookup fills all three planes for the layer's
+selected SLRU slots. The remaining lookups confirm residence
+and preserve existing counters. The launch retains those slots
+until the last reader. One ordered upload supplies all three
+job lists and the current IDs and normalization parameters.
+An eight-node graph reuses the existing pack, matrix, SwiGLU,
+route normalization and weighted-reduction kernels. Up and
+gate share one Q8_1 pack. An address/shape signature matches
+the captured arguments before replay. No PTX changes.
+
+Enable `GOOSE_CUDA_ROUTED_GRAPH=1` with the previous three
+experimental selectors. Unsupported shapes and intermediate
+uses take the existing executor. The default working runtime
+keeps the experimental selectors unset.
+
+The live Apex 8192/32 probe records 1,240 groups across all
+40 layers, including 1,236 successful graph replays. The first
+version covered 20 layers with Q6_K down. Checking the GGUF
+and using the existing Q4_K down projection adds the other
+20 active layers. The exact response and expert counters
+match the previous graph configuration.
+
+The [eight-slot fixture](../../integration/goose-standalone/tests/routed-graph.c)
+replaces all selected experts on each of six evaluations. Both
+down types compare bitwise with their direct baseline and
+report 48 fills, 40 evictions and five graph replays each.
+CUDA memcheck reports zero errors for both.
+
+| Intermediate Apex 32K/512, 4096/4096, 5,920 MiB | Previous graph A1 / A2 | Routed FFN graph B1 / B2 |
+|---|---:|---:|
+| Prefill, tok/s | 1139.819 / 1155.998 | 1140.377 / 1130.414 |
+| Decode, steps/s | 32.140 / 32.441 | 32.492 / 32.478 |
+| Prefill plus decode, s | 44.647 / 44.098 | 44.461 / 44.721 |
+| Peak process VRAM, MiB | 8224 / 8222 | 8222 / 8224 |
+| Peak RSS high-water, KiB | 21481428 / 21480740 | 21480544 / 21480748 |
+| Process swap and system swap-out growth | 0 / 0 | 0 / 0 |
+
+All four replies, IDs, probabilities and SLRU counters match.
+Median decode saves 95 ms while median prefill adds 314 ms.
+Combined time falls 186 ms in the first pair and rises
+624 ms in the second. Keep the routed scope in the
+experimental checkpoint. Next expand it to the adjacent
+shared expert projections and residual, with the next
+host-visible Top-K as the later scope boundary. CPU/GPU
+profiling of that larger scope remains open.
+
+Executable SHA-256
+`dfc87e75aba9dd1e819d24326b5f90dc8429e4438e393cc721fcf2b202903740`.
+The build, layout witness, fixture checks and complete runs
+are under
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/routed-ffn-exp1616`.
+
 ## Long Attention partition probe
 
 EXP-2026-11-20-1562 holds the existing vector kernel fixed

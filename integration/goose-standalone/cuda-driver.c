@@ -174,6 +174,8 @@ static struct {
     GraphNode flash_graph_nodes[3];
     size_t flash_graph_node_count;
     struct mmvq_graph_entry * mmvq_graph_cache;
+    bool mmvq_graph_enabled, routed_graph_enabled;
+    struct device_buffer routed_graph_scratch;
     int (*init)(unsigned);
     int (*device_get)(int *, int);
     int (*device_attribute)(int *, int, int);
@@ -242,6 +244,7 @@ static _Thread_local struct {
 } activations;
 static _Thread_local DevicePtr matrix_input, matrix_output;
 static _Thread_local uint64_t cuda_matrices;
+static _Thread_local uint64_t cuda_routed_groups, cuda_routed_replays;
 static _Thread_local uint64_t cuda_matrix_launches, cuda_cached_projections;
 static _Thread_local uint64_t cuda_mmq_projections;
 static _Thread_local uint64_t cuda_mmq_stream_windows;
@@ -331,9 +334,11 @@ static void init_cuda_graphs(void) {
     const char * flash = getenv("GOOSE_CUDA_GRAPH");
     const char * mmvq = getenv("GOOSE_CUDA_MMVQ_GRAPH");
     const char * pack = getenv("GOOSE_CUDA_GRAPH_PACK");
+    const char * routed = getenv("GOOSE_CUDA_ROUTED_GRAPH");
     const bool flash_requested = cuda.flash_vec && flash && strcmp(flash, "1") == 0;
     const bool mmvq_requested = cuda.mmvq && mmvq && strcmp(mmvq, "1") == 0;
-    if (!flash_requested && !mmvq_requested) return;
+    const bool routed_requested = cuda.mmvq && routed && strcmp(routed, "1") == 0;
+    if (!flash_requested && !mmvq_requested && !routed_requested) return;
 #define GRAPH_LOAD(field, symbol) do { cuda.field = dlsym(cuda.library, symbol); if (!cuda.field) return; } while (0)
     GRAPH_LOAD(stream_create, "cuStreamCreate");
     GRAPH_LOAD(stream_destroy, "cuStreamDestroy_v2");
@@ -349,7 +354,11 @@ static void init_cuda_graphs(void) {
 #undef GRAPH_LOAD
     cuda.flash_graph_enabled = flash_requested;
     cuda.flash_graph_pack = flash_requested && pack && strcmp(pack, "1") == 0;
-    if (mmvq_requested) cuda.mmvq_graph_cache = calloc(MMVQ_GRAPH_SLOTS, sizeof(*cuda.mmvq_graph_cache));
+    if (mmvq_requested || routed_requested) {
+        cuda.mmvq_graph_cache = calloc(MMVQ_GRAPH_SLOTS, sizeof(*cuda.mmvq_graph_cache));
+        cuda.mmvq_graph_enabled = mmvq_requested;
+        cuda.routed_graph_enabled = routed_requested;
+    }
 }
 
 static void release_mmvq_graphs(void) {
@@ -1936,14 +1945,10 @@ static int capture_cuda_graph(const struct kernel_node_params * kernels, size_t 
     return error != 0 ? error : ended;
 }
 
-static GraphExec mmvq_graph_for(DevicePtr weight, uint64_t stride, int extent, int kind, int rows, int count, int words,
-                               const struct kernel_node_params * kernels) {
-    if (!cuda.mmvq_graph_cache || !activations.active || !activations.defer_waits || (count != 1 && count != 8)) return NULL;
-    // The ordered descriptor upload provides the current expert slots.
-    // Only the addresses and launch geometry are retained by the graph.
-    const uint64_t key[MMVQ_GRAPH_KEY_WORDS] = {weight, stride, matrix_input, matrix_output,
-        cuda.mmq_packed.address, cuda.jobs.address, ((uint64_t) extent << 32) | (unsigned) rows,
-        ((uint64_t) count << 32) | (unsigned) words, (unsigned) kind};
+static GraphExec cached_graph_for(const uint64_t key[MMVQ_GRAPH_KEY_WORDS],
+                                  const struct kernel_node_params * kernels, size_t kernel_count) {
+    if (!cuda.mmvq_graph_cache) return NULL;
+    const size_t key_bytes = sizeof(cuda.mmvq_graph_cache[0].key);
     uint64_t hash = UINT64_C(14695981039346656037);
     for (size_t i = 0; i < MMVQ_GRAPH_KEY_WORDS; ++i) {
         hash = (hash ^ (key[i] >> 32)) * UINT64_C(1099511628211);
@@ -1953,19 +1958,19 @@ static GraphExec mmvq_graph_for(DevicePtr weight, uint64_t stride, int extent, i
     hash *= UINT64_C(0xff51afd7ed558ccd);
     hash ^= hash >> 33;
     struct mmvq_graph_entry * entry = &cuda.mmvq_graph_cache[hash % MMVQ_GRAPH_SLOTS];
-    if (memcmp(entry->key, key, sizeof key) != 0) {
+    if (memcmp(entry->key, key, key_bytes) != 0) {
         // Admit a recurring signature. Keep existing executable slots on
         // collision, so a changing shape cannot cause continual captures.
-        if (!entry->executable) memcpy(entry->key, key, sizeof key);
+        if (!entry->executable) memcpy(entry->key, key, key_bytes);
         return NULL;
     }
     if (entry->executable) return entry->executable;
     Graph graph = NULL;
-    int error = capture_cuda_graph(kernels, 2, &graph);
+    int error = capture_cuda_graph(kernels, kernel_count, &graph);
     if (error == 0) error = cuda.graph_instantiate(&entry->executable, graph, 0);
     if (graph) cuda.graph_destroy(graph);
     if (error == 0) return entry->executable;
-    if (getenv("GOOSE_GRAPH_LOG")) fprintf(stderr, "Goose CUDA MMVQ graph: setup failed (%d)\n", error);
+    if (getenv("GOOSE_GRAPH_LOG")) fprintf(stderr, "Goose CUDA cached graph: setup failed (%d)\n", error);
     release_mmvq_graphs();
     return NULL;
 }
@@ -1978,14 +1983,19 @@ static int launch_mmvq(DevicePtr weight, uint64_t stride, int extent, int kind, 
         void * matrix[] = {&weight, &cuda.mmq_packed.address, &matrix_output, &cuda.jobs.address,
             &stride, &extent, &kind, &words};
         GraphExec graph = NULL;
-        if (cuda.mmvq_graph_cache) {
+        if (cuda.mmvq_graph_enabled && cuda.mmvq_graph_cache && activations.active && activations.defer_waits &&
+            (count == 1 || count == 8)) {
             const struct kernel_node_params kernels[] = {
                 { .function = cuda.mmvq_pack, .grid_x = (unsigned) (2 * extent), .grid_y = (unsigned) count,
                   .grid_z = 1, .block_x = 128, .block_y = 1, .block_z = 1, .params = pack },
                 { .function = cuda.mmvq, .grid_x = (unsigned) rows, .grid_y = (unsigned) count,
                   .grid_z = 1, .block_x = 128, .block_y = 1, .block_z = 1, .params = matrix },
             };
-            graph = mmvq_graph_for(weight, stride, extent, kind, rows, count, words, kernels);
+            // The ordered descriptor upload provides the current expert slots.
+            const uint64_t key[MMVQ_GRAPH_KEY_WORDS] = {weight, stride, matrix_input, matrix_output,
+                cuda.mmq_packed.address, cuda.jobs.address, ((uint64_t) extent << 32) | (unsigned) rows,
+                ((uint64_t) count << 32) | (unsigned) words, (unsigned) kind};
+            graph = cached_graph_for(key, kernels, 2);
         }
         if (graph) {
             error = cuda.graph_launch(graph, cuda.graph_stream);
@@ -2099,6 +2109,151 @@ int64_t fg_cuda_expert_batch(int64_t weight_bytes, int64_t row_stride,
     if (status == 0) status = submit_expert_stage();
     if (status == 0) ++cuda_cached_projections;
     return status;
+}
+
+uint8_t fg_cuda_routed_graph_enabled(void) {
+    return cuda.routed_graph_enabled && cuda.mmvq_graph_cache && cuda.experts.weights.address &&
+        activations.active && activations.defer_waits;
+}
+
+int64_t fg_cuda_routed_graph(sl_i64 plan, sl_i64 glu, sl_i64 norm, int64_t step, int64_t deadline) {
+    enum { routes = 8, experts = 256, words = 3 };
+    if (!fg_cuda_routed_graph_enabled()) return 0;
+    if (plan.len != 10 || glu.len != 26 || norm.len != 22) return -1;
+    const int64_t width = plan.data[7], hidden = plan.data[8], used = routes;
+    if (width <= 0 || width > 8192 || width % 256 || hidden <= 0 || hidden > 8192 || hidden % 256 ||
+        (plan.data[9] != 12 && plan.data[9] != 14) ||
+        norm.data[4] != experts || norm.data[12] != routes) return -1;
+    if (!fg143_routed_layer_matches(cuda.experts.layers, plan)) return 0;
+    const uint64_t input_host = (uint64_t) plan.data[3], probs_host = (uint64_t) plan.data[4];
+    const uint64_t ids_host = (uint64_t) plan.data[5], out_host = (uint64_t) plan.data[6];
+    const int64_t output_bytes = width * 4;
+    if (!activation_device(input_host, output_bytes) || !activation_device(probs_host, experts * 4)) return 0;
+    if (fg_cuda_activation_read_address(ids_host, routes * 4) != 0) return -1;
+    int32_t ids[routes];
+    memcpy(ids, (const void *) (uintptr_t) ids_host, sizeof ids);
+    int64_t heads[experts], offsets[experts];
+    for (size_t e = 0; e < experts; ++e) heads[e] = -1;
+    for (size_t r = 0; r < routes; ++r) {
+        const int id = ids[r];
+        if (id < 0 || id >= experts || heads[id] >= 0) return 0;
+        heads[id] = (int64_t) r;
+    }
+    if (fg_cuda_activation_prepare(out_host, output_bytes, true, false, step, deadline) != 0) return -1;
+    const int active = start_context();
+    if (active != 1) return active;
+
+    // Both Q4_K projections consume the same packed input. The down pack
+    // can reuse it after the two matvecs and SwiGLU have completed.
+    int input_extent = (int) (width / 256), down_extent = (int) (hidden / 256);
+    int hidden_rows = (int) hidden, output_rows = (int) width;
+    int q4 = 12, down_kind = (int) plan.data[9], job_words = words;
+    uint64_t stride_up = (uint64_t) input_extent * 144;
+    uint64_t stride_down = (uint64_t) down_extent * (down_kind == 12 ? 144 : 210);
+    const size_t packed_bytes = (size_t) (input_extent > down_extent ? input_extent : down_extent) * 288 * routes;
+    const size_t middle_bytes = (size_t) hidden * routes * 4;
+    const size_t down_bytes = (size_t) width * routes * 4;
+    struct {
+        int64_t jobs[3][routes * words];
+        int64_t config[22];
+        int32_t ids[routes];
+    } packet;
+    _Static_assert(sizeof(packet) % 16 == 0, "routed graph packet alignment");
+    const size_t scratch_bytes = sizeof packet + packed_bytes + 3 * middle_bytes + down_bytes + routes * 4;
+    int error = reserve(&cuda.routed_graph_scratch, scratch_bytes);
+    if (error == 2) return finish_context() == 0 ? 0 : -1;
+    DevicePtr output = 0;
+    if (error == 0) error = activation_output(out_host, output_bytes, &output);
+    const DevicePtr input = activation_device(input_host, output_bytes);
+    const DevicePtr probs = activation_device(probs_host, experts * 4);
+    if (error == 0 && (!input || !probs)) return finish_context() == 0 ? 0 : -1;
+    for (size_t p = 0; p < 3 && error == 0; ++p) {
+        const int64_t plane = (int64_t) (p == 2 ? stride_down * width : stride_up * hidden);
+        const int64_t ready = fg_cuda_prepare_experts((uint64_t) plan.data[p], plane,
+            (sl_i64) {heads, experts}, (sl_i64) {offsets, experts});
+        if (ready == 0 && p == 0) return finish_context() == 0 ? 0 : -1;
+        if (ready != 1 || cuda.expert_upload_count != 0) {
+            reset_expert_stage();
+            error = -1;
+            break;
+        }
+        for (size_t r = 0; r < routes; ++r) {
+            const int64_t offset = offsets[ids[r]];
+            if (offset < 0 || (uint64_t) offset > cuda.experts.weights.bytes ||
+                (uint64_t) plane > cuda.experts.weights.bytes - (uint64_t) offset) {
+                error = -1;
+                break;
+            }
+            packet.jobs[p][r * words] = p == 2 ? (int64_t) r * hidden * 4 : 0;
+            packet.jobs[p][r * words + 1] = (int64_t) r * (p == 2 ? width : hidden) * 4;
+            packet.jobs[p][r * words + 2] = offset;
+        }
+    }
+    if (error == 0) {
+        memcpy(packet.config, norm.data, sizeof packet.config);
+        memcpy(packet.ids, ids, sizeof packet.ids);
+        error = upload_packet(cuda.routed_graph_scratch.address, &packet, sizeof packet);
+    }
+    if (error == 0) {
+        const DevicePtr scratch = cuda.routed_graph_scratch.address;
+        DevicePtr jobs_up = scratch, jobs_gate = jobs_up + sizeof packet.jobs[0], jobs_down = jobs_gate + sizeof packet.jobs[0];
+        DevicePtr norm_cfg = jobs_down + sizeof packet.jobs[0], selected = norm_cfg + sizeof packet.config;
+        DevicePtr packed = scratch + sizeof packet, up = packed + packed_bytes, gate = up + middle_bytes;
+        DevicePtr activated = gate + middle_bytes, down = activated + middle_bytes, normalized = down + down_bytes;
+        DevicePtr bank = cuda.experts.weights.address;
+        int64_t vector[26];
+        memcpy(vector, glu.data, sizeof vector);
+        if (cuda.activation_reference) vector[0] = 15;
+        float zero = 0.0f;
+        void * pack_up[] = {(void *) &input, &packed, &jobs_up, &input_extent, &job_words};
+        void * matrix_up[] = {&bank, &packed, &up, &jobs_up, &stride_up, &input_extent, &q4, &job_words};
+        void * matrix_gate[] = {&bank, &packed, &gate, &jobs_gate, &stride_up, &input_extent, &q4, &job_words};
+        void * gl[] = {&gate, &up, &activated, vector, &zero, &zero};
+        void * pack_down[] = {&activated, &packed, &jobs_down, &down_extent, &job_words};
+        void * matrix_down[] = {&bank, &packed, &down, &jobs_down, &stride_down, &down_extent, &down_kind, &job_words};
+        void * normalize[] = {(void *) &probs, &selected, &normalized, &norm_cfg};
+        void * reduce[] = {&down, &normalized, &output, (void *) &width, (void *) &used};
+#define ROUTED_NODE(f, gx, gy, threads, arguments) { .function = (f), .grid_x = (unsigned) (gx), \
+    .grid_y = (unsigned) (gy), .grid_z = 1, .block_x = (threads), .block_y = 1, .block_z = 1, .params = (arguments) }
+        const struct kernel_node_params kernels[] = {
+            ROUTED_NODE(cuda.mmvq_pack, 2 * input_extent, routes, 128, pack_up),
+            ROUTED_NODE(cuda.mmvq, hidden_rows, routes, 128, matrix_up),
+            ROUTED_NODE(cuda.mmvq, hidden_rows, routes, 128, matrix_gate),
+            ROUTED_NODE(cuda.vector, vector[24], 1, 128, gl),
+            ROUTED_NODE(cuda.mmvq_pack, 2 * down_extent, routes, 128, pack_down),
+            ROUTED_NODE(cuda.mmvq, output_rows, routes, 128, matrix_down),
+            ROUTED_NODE(cuda.route_norm, 1, 1, 32, normalize),
+            ROUTED_NODE(cuda.moe_weighted, 1, (width + 255) / 256, 256, reduce),
+        };
+#undef ROUTED_NODE
+        const uint64_t key[MMVQ_GRAPH_KEY_WORDS] = {bank, scratch, input, probs, output,
+            (uint64_t) width, (uint64_t) hidden, (uint64_t) vector[0], UINT64_MAX - (unsigned) down_kind};
+        const size_t count = sizeof kernels / sizeof *kernels;
+        const GraphExec graph = cached_graph_for(key, kernels, count);
+        error = graph ? cuda.graph_launch(graph, cuda.graph_stream) : launch_cuda_kernels(kernels, count, NULL);
+        if (error == 0 && graph) ++cuda_routed_replays;
+        error = finish_matrix_launches(error);
+        if (error == 0) error = activation_publish(out_host, output_bytes, output, true);
+    }
+    const int popped = finish_context();
+    if (error || popped) {
+        fprintf(stderr, "Goose CUDA: routed FFN launch failed (%d)\n", error ? error : popped);
+        return -1;
+    }
+    ++cuda_routed_groups;
+    cuda_matrix_launches += 3;
+    cuda_cached_projections += 3;
+    cuda_matrices += 3;
+    ++cuda_vectors;
+    ++cuda_routes[4];
+    ++cuda_moe_weighted_tiles;
+    return 1;
+}
+
+void fg_cuda_take_routed_graph(uint64_t * groups, uint64_t * replays) {
+    *groups = cuda_routed_groups;
+    *replays = cuda_routed_replays;
+    cuda_routed_groups = cuda_routed_replays = 0;
 }
 
 void fg_cuda_take_matrix_launches(uint64_t * launches, uint64_t * cached) {

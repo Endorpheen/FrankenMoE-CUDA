@@ -3764,6 +3764,19 @@
       "sha256": "3770555f4ebbed80b582a4eeb983f0c6ddace54d299e6b2bdf13a67ba88e929a"
     },
     {
+      "goose": "cpu/goose-cpu-backend-api/graph-dispatch.goose",
+      "native": "ggml/src/ggml-backend.cpp",
+      "native_targets": [
+        "ggml/src/ggml-backend.cpp",
+        "ggml/src/ggml-cuda/ggml-cuda.cu"
+      ],
+      "experiment": "EXP-2026-11-07-145-goose-cpu-backend-api",
+      "task": "P1-10",
+      "status": "slice",
+      "sha256": "0c489df6d2303e4e686dc25be0f37257fdefc92559889ab7007958fc34d70882",
+      "gate": "EXP-1616 routed FFN shape and lifetime matcher, Apex differential, SLRU eviction fixtures and CUDA memcheck"
+    },
+    {
       "goose": "cpu/goose-cpu-backend-api/backend/kernel-template.goose",
       "native": "ggml/src/ggml-cpu/ggml-cpu.c",
       "native_targets": [
