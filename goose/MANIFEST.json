@@ -4034,8 +4034,8 @@
       "experiment": "EXP-2026-11-07-145-goose-cpu-backend-api",
       "task": "P1-10",
       "status": "slice",
-      "sha256": "b10630ad553a6c5e17ae9f4c4754f116f37c30e2c5efa89d2f378287bed05eb2",
-      "integration_commit": "4d827f1ba5798fb6a4ad41d27d3bf1847479d350"
+      "sha256": "5c2351c4277710f8346a95f47fecb28032c2893d43f529a6ede25cdc3f0bc6de",
+      "integration_commit": "d7286af560727bc7f45c09dba560d9d85f4f91e4"
     },
     {
       "goose": "cuda/standalone-mmq.goose",
