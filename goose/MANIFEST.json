@@ -4058,9 +4058,9 @@
       "experiment": "EXP-2026-11-21-1603-vector-parameters",
       "task": "P3-04",
       "status": "slice",
-      "sha256": "1882f4cc246cf330bdd62ba37951de413a94b9349447bd8d97fb1213265e3044",
-      "integration_commit": "91159df92579d979af8a3d0b4d18262c021107f7",
-      "gate": "EXP-1603 strided vector differential, windowed multiply, CUDA memcheck and exact Apex 32K/512 pairs"
+      "sha256": "46ece50019958465e30de18fb6cf7e1189577d7a2805b00c418a36b87a1fcab7",
+      "integration_commit": "59a8418e7c5f258b384df9b67ca18c89624eed95",
+      "gate": "EXP-1603 strided vector differential, windowed multiply, CUDA memcheck and exact Apex 32K/512 pairs; EXP-1665 builds both CUDA images with KeelWing and completes Apex 32K/512"
     },
     {
       "goose": "cuda/standalone-rms-reference.goose",
