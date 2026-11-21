@@ -3961,6 +3961,40 @@ Complete logs, minimal sources, emitted Q4_K C/header and control
 artifacts with checksums are in
 `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/scribewing-exp1605`.
 
+## Q4_K shared tile bank layout
+
+EXP-2026-11-21-1606 tests an XOR mapping for the 16-byte halves of
+each row in the shared Q4_K weight tile. At a 32-byte stride, rows
+four apart reuse the same bank addresses. Swap the two halves on
+alternating groups of four rows and apply the inverse mapping in
+the LDSM address calculation. The layout, arithmetic and dispatch
+outside the shared Q4_K weight tile stay unchanged.
+
+The EXP-1603 trace attributes 5.298 s to dense Q4_K X128 MMQ
+and 4.310 s to the two routed Q4_K cooperative families.
+Those sums bound the affected kernel time. They do not identify
+bank conflicts as the source of the time.
+
+The dense 4,092-column fixture and the 803-route expert fixture
+match in 1,346,048 FP32 comparisons across dense, shared-packer and
+per-route cases. Compute Sanitizer reports zero errors in the dense
+and shared-packer cases. Offline SM89 assembly reports unchanged
+shared memory, register usage and zero spills for both X128 entries.
+
+| Profiled 2,048 × 4,096 × 2,048 dense Q4_K | Linear tile | XOR tile |
+|---|---:|---:|
+| First A–B kernel median, ms | 2.730226 | 2.673297 |
+| Second B–A kernel median, ms | 2.678322 | 2.723123 |
+
+Each arm measures twelve launches and excludes the first. The
+direction reverses in the second pair. The isolated kernel test
+does not establish a repeatable improvement, so this layout was
+left out of the runtime without running a full Apex request.
+A follow-up would need measured bank transactions or a larger
+change that also removes repeated global activation loads.
+The patch, fixture, traces and hashes are in
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/mmq-banks-exp1606`.
+
 ## Long Attention partition probe
 
 EXP-2026-11-20-1562 holds the existing vector kernel fixed
