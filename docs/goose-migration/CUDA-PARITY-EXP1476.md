@@ -3903,6 +3903,64 @@ The reproducible patch, fixture, generated PTX, executable and raw
 runs are in
 `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/mmvq-params-exp1604`.
 
+## ScribeWing compiler compatibility
+
+EXP-2026-11-21-1605 builds source
+`15dfdb5da0af880ebe1a412a9951c362fc6f658b` in two isolated output
+directories with GCC 13 and Clang 18.1.8. The composed source in both
+builds has SHA-256
+`22385232a169a5fcf8b5ac66aa1310846cd69646ff253e7f576cfa1ce9614403`.
+The hypothesis was that ScribeWing could replace the current compiler
+after a clean build, CUDA code comparison and a matched Apex run.
+
+The published preview binary matches the local release qualification
+record in Fried Goose commit `7d6343cee7c4aef53d34a587709e7c5eb3e0c6e7`.
+The release archive and the extracted binary also match their checksums.
+The extracted binary passes the release `--check` and
+`--json-selftest` smoke probes.
+
+| Artifact | SHA-256 |
+|---|---|
+| Current `goose-2026.3-string/goose` | `664d4de42463cc10cb9c4a61dac59ce6023faa9c9da2838fddc0f4fb8294b3ab` |
+| ScribeWing Linux archive | `84727594841d94c3fdba60b30051b9d0daf6090cb2d850a1cabdb491e6d0829d` |
+| ScribeWing binary, extracted and in the release directory | `79f2aa54360451b26e9458452c1c6a22aedfdbb5956288059ae525c72a841cae` |
+
+| Clean build | Current compiler | ScribeWing |
+|---|---:|---:|
+| Wall time, seconds | 252.10 | 1.26 to CLI rejection |
+| Compiler pipeline peak RSS, KiB | 1374676 | 38636 to CLI rejection |
+| Executable and two CUDA PTX images | Built | Unavailable |
+
+The current compiler accepts `check` and `--standalone`. ScribeWing
+accepts `--check` and an output header with `-o`. Adjusting only the
+invocation exposed two independent compatibility failures:
+
+1. `--ast-budget-mib 2048 --check` fails with `expected '>'` at
+   `address < base || address - base > (owner[2] as u64)` in
+   [the model loader](../../goose/model/qwen35-model-loader.goose).
+   The archived standalone reproducer passes with the current compiler.
+   In this small probe, evaluating the final comparison in a separate
+   expression also passes with ScribeWing.
+2. With `--standalone` omitted, ScribeWing emits host C and a generic
+   `gg_slice` header. The emitted Q4_K fragment lacks the
+   `/* ---- prototypes ---- */` boundary used by
+   [the CUDA build](../../tools/build-goose-cuda-kernels.sh). The first
+   extraction fails before Clang emits PTX. The current host consumes
+   typed slices, so a successful extraction would still need a C ABI
+   check against the new emitter.
+
+**Blocked on compiler compatibility.** The control CUDA PTX images
+match the EXP-1603 checkpoint byte for byte. ScribeWing produced no
+comparable CUDA PTX/SASS or independent executable, so an Apex A/B,
+memory comparison and performance verdict are pending. Keep the current
+compiler and default runtime until the composed loader and CUDA device
+export work under the release and an equivalent Apex 32K/512 profile
+passes. No compiler source was modified.
+
+Complete logs, minimal sources, emitted Q4_K C/header and control
+artifacts with checksums are in
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/scribewing-exp1605`.
+
 ## Long Attention partition probe
 
 EXP-2026-11-20-1562 holds the existing vector kernel fixed
