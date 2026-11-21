@@ -367,16 +367,23 @@ static double fg_vector_shuffle_f64(double value, int32_t delta) {
     return as_double(((uint64_t) hi << 32) | lo);
 }
 
+// Keep the validated shape words in CUDA parameter space. Both vector entries
+// consume the same plan layout without a separate upload to device memory.
+typedef struct { int64_t words[26]; } vector_launch_packet;
+static int64_t fg_vector_word(uint64_t cfg, int64_t index) {
+    return ((const int64_t *) cfg)[index];
+}
+
 #include "vector-device.h"
 #include "cuda-rms-reference.cl"
 
 __kernel void goose_vector_ops(__global uint8_t * x, __global uint8_t * y,
-    __global uint8_t * out, __global int64_t * cfg, float param0, float param1) {
+    __global uint8_t * out, vector_launch_packet cfg, float param0, float param1) {
     uint32_t group, lane;
     __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(group));
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
     fg_vector_ops_g((uint64_t) x, (uint64_t) y, (uint64_t) out,
-        (uint64_t) cfg, param0, param1, group, lane);
+        (uint64_t) cfg.words, param0, param1, group, lane);
 }
 
 static float fg_rope_float(uint64_t cfg, int64_t i) {

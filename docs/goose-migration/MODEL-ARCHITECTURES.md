@@ -19,6 +19,12 @@ broader migration inventory.
 
 ## Required acceptance procedure
 
+Routine optimization before Apex speed recovery runs the Apex 32K/512
+reference on RTX 4070. Run another model's checks for changes that affect
+its path directly. The full registry remains mandatory on architecture
+acceptance and general releases. Keep missing references recorded while
+continuing Apex optimization.
+
 1. Pin each model artifact, request and baseline executable by SHA-256.
    Record effective context, batch/ubatch, cache formats and budget,
    CPU limits, GPU and Goose selectors. Add the necessary controlled

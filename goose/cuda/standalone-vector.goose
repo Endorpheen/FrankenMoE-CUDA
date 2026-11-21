@@ -14,7 +14,7 @@ const CV_SIGMOID_REFERENCE: i64 = 13;
 const CV_SILU_REFERENCE: i64 = 14;
 const CV_SWIGLU_REFERENCE: i64 = 15;
 
-extern "fg_attn_word" fn cv_word(cfg: u64, i: i64) -> i64;
+extern "fg_vector_word" fn cv_word(cfg: u64, i: i64) -> i64;
 extern "fg_device_global_load" fn cv_load(address: u64) -> f32;
 extern "fg_device_global_store" fn cv_store(address: u64, value: f32);
 extern "fg_attn_exp" fn exp32(x: f32) -> f32;

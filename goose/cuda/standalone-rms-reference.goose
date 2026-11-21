@@ -1,4 +1,4 @@
-extern "fg_attn_word" fn rms_word(cfg: u64, index: i64) -> i64;
+extern "fg_vector_word" fn rms_word(cfg: u64, index: i64) -> i64;
 extern "fg_rms_shared_load" fn rms_shared_load(address: u64, offset: u64) -> f32;
 extern "fg_rms_shared_store" fn rms_shared_store(address: u64, offset: u64, value: f32);
 

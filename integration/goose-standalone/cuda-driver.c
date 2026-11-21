@@ -2459,7 +2459,7 @@ int64_t fg_cuda_vector(sl_i64 config, sl_u8 x, sl_u8 y, sl_u8 out, float param0,
         if (plan[0] == silu_operation) plan[0] = silu_reference_operation;
         if (plan[0] == swiglu_operation) plan[0] = swiglu_reference_operation;
     }
-    DevicePtr staged[3] = {0}, output = 0;
+    DevicePtr staged[2] = {0}, output = 0;
     const uint64_t host = (uint64_t) (uintptr_t) out.data;
     int error = 0;
     if (plan[23] & 4) {
@@ -2471,9 +2471,6 @@ int64_t fg_cuda_vector(sl_i64 config, sl_u8 x, sl_u8 y, sl_u8 out, float param0,
     if (error == 0) error = vector_input(x, &cuda.input, &staged[0], plan + 6, (plan[23] & 1) != 0);
     if (error == 0 && y.len > 0) {
         error = vector_input(y, &cuda.weight, &staged[1], plan + 14, (plan[23] & 2) != 0);
-    }
-    if (error == 0) {
-        error = activation_input((sl_u8) {plan, sizeof(plan)}, &cuda.attention_config, &staged[2]);
     }
     if (error == 0) {
         enum { rms_operation = 11 };
@@ -2488,10 +2485,10 @@ int64_t fg_cuda_vector(sl_i64 config, sl_u8 x, sl_u8 y, sl_u8 out, float param0,
             const int32_t vectors = vec ? (width <= 4096 ? 1 : 4) : 0;
             const unsigned lanes = vec ? (width <= 128 ? 32 : width <= 512 ? 128 : width <= 1024 ? 256 :
                 width <= 2048 ? 512 : 1024) : (width < 1024 ? 256 : 1024);
-            void * args[] = {&staged[0], &staged[1], &output, &staged[2], &param0, (void *) &vectors};
+            void * args[] = {&staged[0], &staged[1], &output, plan, &param0, (void *) &vectors};
             error = cuda.launch(cuda.rms_reference, (unsigned) plan[24], 1, 1, lanes, 1, 1, 0, NULL, args, NULL);
         } else {
-            void * args[] = {&staged[0], &staged[1], &output, &staged[2], &param0, &param1};
+            void * args[] = {&staged[0], &staged[1], &output, plan, &param0, &param1};
             error = cuda.launch(cuda.vector, (unsigned) config.data[24], 1, 1,
                 (unsigned) config.data[25], 1, 1, 0, NULL, args, NULL);
         }

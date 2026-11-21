@@ -3788,6 +3788,77 @@ Executable SHA-256
 Raw data and both traces are under
 `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/routed-mmq-x128-exp1600`.
 
+## Vector plans in CUDA kernel parameters
+
+EXP-1603 passes the existing 26-word shape plans to vector and
+reference RMSNorm kernels as a 208-byte CUDA parameter. Shape
+validation, stride packing, output residence and the Goose
+arithmetic remain unchanged. The driver no longer uploads a
+separate device plan for each of these launches. RoPE and other
+consumers retain their existing plan path. The host binary still
+links only libc and libm.
+
+An initial device build copied all 208 parameter bytes to a
+per-thread local array because Goose emitted `cv_norm_g` as an
+out-of-line call. The CUDA build now explicitly inlines that
+helper. The optimized vector PTX reads `.param` directly and
+has no local frame. The RMS kernel retains its previous 64-byte
+frame independently of the parameter plan. SM89 assembly reports
+40 registers per thread and zero spill bytes for both entries.
+The original and tuned PTX and generated fragments provide a
+reproducer for a future Fried Goose code generation change.
+
+Synthetic vector coverage passes 15 strided cases with maximum
+absolute error `4.76837158e-7` versus the CPU fixture. Windowed
+CUDA multiply preserves the 4,096 planes and tail. Weighted RMS
+outputs match bitwise across the strided and broadcast fixture.
+Compute Sanitizer reports zero errors.
+
+| Unprofiled Apex 32K/512, 4096/4096, 5,920 MiB | A, EXP-1601 | B, CUDA parameters |
+|---|---:|---:|
+| Prefill in A–B, tok/s | 1,137.488 | 1,139.636 |
+| Prefill in B–A, tok/s | 1,134.247 | 1,131.741 |
+| Median prefill, tok/s | 1,135.868 | 1,135.689 |
+| Decode in A–B, steps/s | 30.747 | 32.268 |
+| Decode in B–A, steps/s | 30.843 | 31.686 |
+| Median decode, steps/s | 30.795 | 31.977 |
+| Median decode time, s | 16.594 | 15.981 |
+| Maximum sampled process VRAM, MiB | 8,200 | 8,200 |
+| Maximum process RSS high-water, KiB | 21,479,960 | 21,481,284 |
+| Process swap and system swap-out growth per request | 0 | 0 |
+
+The two clean pairs save 783 and 441 ms of decode. Prefill
+fluctuates in opposite directions. Maximum RSS increases by
+1,324 KiB in this series and remains below the frozen hybrid
+peak. All responses, token IDs, probability rows, stop reasons,
+expert counters and 5,301,139 resident model pages match.
+
+The separate CUDA trace comparison uses the preserved EXP-1600
+mixed-MMQ trace and the new CUDA trace. It aligns the first 448
+decode steps by the first GDN invocation and the next full step
+boundary. All tested kernel launch counts match in that window.
+The old trace uses the unchanged device path before the host KV
+memory optimization. Both traces warn of incomplete capture.
+
+| Matched 448-step CUDA window | Old plan uploads | Kernel parameters |
+|---|---:|---:|
+| 208-byte H2D copies | 327,936 | 0 |
+| All H2D packets up to 4 KiB | 727,104 | 399,168 |
+| Vector operations, GPU ms | 668.262 | 516.712 |
+| Reference RMSNorm, GPU ms | 283.235 | 239.189 |
+| Window time, s | 15.679 | 14.855 |
+
+The matched window removes 68,210,688 explicit upload bytes.
+The unprofiled pairs establish the measured request gain. These
+results do not close overall Apex speed parity with the
+[Optimized Hybrid](OPTIMIZED-HYBRID.md).
+
+Binary SHA-256
+`8c69d9d3b4478d8d68a1a7412aaca4d74d6698977360cf0c6b2d19152dd07ddf`.
+Build and fixture logs, captures, compiler reproducer and traces
+are under
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/vector-params-exp1603`.
+
 ## Long Attention partition probe
 
 EXP-2026-11-20-1562 holds the existing vector kernel fixed

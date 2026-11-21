@@ -275,6 +275,12 @@ shape, layout and capability checks with a maintained supported path.
 Architecture integration must preserve independence from C++ and libggml
 and keep previously supported architectures covered by their own references.
 
+Until Apex speed recovery, routine optimization uses the Apex 32K/512
+reference on RTX 4070. Run another architecture's tests when the change
+directly affects it. Run the complete registry for architecture acceptance
+and general releases. Record missing references without delaying routine
+Apex optimization. The current speed target is Optimized Hybrid.
+
 ## Communication with Igor
 
 Do not use Markdown blockquotes (`>`) in messages to Igor: his interface renders

@@ -119,6 +119,11 @@ if module == "gdn":
                       r"static __attribute__((always_inline)) void \1", fragment)
     fragment = re.sub(r"^(\s*)(for \(int32_t r_g(?:_\d+)? = 0;)",
                       r"\1#pragma clang loop unroll(full)\n\1\2", fragment, flags=re.MULTILINE)
+if module == "vector":
+    # Inlining keeps the by-value shape plan in parameter space. Passing its
+    # address through a device call would copy the plan to per-thread memory.
+    fragment = fragment.replace("static GS_NOINLINE void cv_norm_g(",
+                                "static __attribute__((always_inline)) void cv_norm_g(")
 if module in ("q4-attention", "gdn", "rope", "ssm-conv", "fwht", "routing"):
     types = source.split("/* ---- types ---- */", 1)[1].split("/* ---- data ---- */", 1)[0]
     excluded = ("gs_rhdr;", "gs_rref;", "gs_pref;", "sl_u8;")
