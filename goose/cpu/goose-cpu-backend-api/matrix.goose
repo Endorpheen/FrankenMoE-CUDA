@@ -243,7 +243,7 @@ export fn fg143_mmq_window(extent: i64, tiles: i64, tile_width: i64, budget: i64
 // Round down so the packed workspace never exceeds the approved window.
 export fn fg143_mmq_dense_window(tiles: i64, window: i64, group: i64) -> i64 {
     if tiles <= 0 || window <= 0 || window > tiles || (group != 4 && group != 8) { return -1; }
-    return if tiles % group == 0 && window >= group { window - window % group } else { window };
+    return if window < tiles && window >= group { window - window % group } else { window };
 }
 
 export fn fg143_mmq_stream_workers(rows: i64, tiles: i64, extent: i64, sms: i64) -> i64 {

@@ -55,7 +55,7 @@ the dependency that would justify rerunning it.
 | EXP-1540, MMQ Stream-K | `GOOSE_MMQ_STREAM_K=1`. [Kernel and model measurements](#mmq-stream-k-checkpoint). The Apex 32/1 case executes 160 Stream-K and 160 fixup kernels and reduces MMQ device arithmetic time from 59.266 to 54.748 ms. | The 32/1 request changes probabilities and takes 913.819 ms versus 855.517 ms. The 4096/1 geometry chooses the regular MMQ path throughout. | Keep opt-in. Recheck with reference-sized MMQ tiles and routed dispatch after their numerical gate. A low-occupancy production shape or revised tile geometry can change the partition decision. |
 | EXP-1563, routed MMQ input residency | [Candidate patch and full pair](../../experiments/EXP-2026-11-20-1563-mmq-input-residency/README.md). Protecting the SwiGLU input removes 21,474,836,480 bytes in each direction and moves full prefill from 694.731 to 773.585 tok/s with matching responses. | Peak process VRAM rises from 8,524 to 8,748 MiB. The candidate run records 6,286 system swap-out pages with zero process swap. | Recheck when planned arena placement can keep the live input and result in the current capacity. Compare unchanged outputs and remeasure the 64 MiB transfers, VRAM and swap. |
 | EXP-1585, single-token four-tap SSM | [Captured-input replay](#deferred-single-token-ssm-arithmetic). Both raw and fused results match 8,192 of 8,192 native values. The new entry uses 24 registers and no stack. | The original opening repetition persists. Live decode drops from 26.228 to 24.004 steps/s in the observed pair, with a different token sequence and 17.064 GB more expert uploads. | Recheck with the matched [EXP-1586 prefill tail](#actual-apex-checkpoint-tail-geometry). Compare generation and measure SSM device time with the same token history. |
-| EXP-1586, checkpoint-tail geometry and dense MMVQ | [Matched prefill snapshots and full pairs](#actual-apex-checkpoint-tail-geometry). The last 24,576 QKV values match the live reference. Both full candidate responses omit the opening task echo. | Median prefill adds 0.805 s and the response miscounts the number of repeated log records. | Restore cooperative MMQ dispatch at the 4,092-token shape and qualify the full response again. The two selectors remain experimental. |
+| EXP-1586, checkpoint-tail geometry and dense MMVQ | [Matched prefill snapshots and full pairs](#actual-apex-checkpoint-tail-geometry). The last 24,576 QKV values match the live reference. Both full candidate responses omit the opening task echo. [EXP-1587](#cooperative-mmq-on-the-checkpoint-tail) restores the fast MMQ dispatch for this geometry. | The response still miscounts the repeated log records. | Qualify the entire response and compare the matched effective profile with the frozen reference. The two tail-profile selectors remain experimental. |
 
 After a material dependency change, use short sequential A/B runs on
 identical inputs and settings. Use the best current verified checkpoint
@@ -3410,6 +3410,65 @@ Same-binary executable SHA-256
 `e78ef632650072ce5976a0b2f0bb0808cd70af2e0ac6fa05202f128ced663395`.
 Candidate UTF-8 content SHA-256 in both runs
 `0a8d939edb6eb2ac14d248a5883f0c64dd63e9e28eafe749baef61547e88cdc5`.
+
+## Cooperative MMQ on the checkpoint tail
+
+EXP-1587 extends cooperative dense Q4_K and Q6_K
+launches to the 4,092-column prefill step. For
+128-row-aligned matrices, 3,969–4,096 columns use
+the same 32 reference column tiles with width 128
+and the same K partitions. The Goose window planner
+aligns nonfinal packing windows. The driver launches
+the existing shared kernel for complete 32- or
+64-column groups and the existing narrow kernel for
+the remainder. Both read the same packed window. The
+16 MiB workspace budget and compiled PTX are identical
+to EXP-1586. `GOOSE_MMQ_DENSE_PARTIAL=0` restores the
+4,096-only dispatch.
+
+The matrix fixture checks 47,077,632 output values
+bitwise, including multi-window Q4_K and the full
+8,192 by 4,092 by 2,048 Q6_K geometry. It checks
+3,968, 3,969, 4,092 and 4,096 columns. Both Q4_K and
+Q6_K pass CUDA memcheck with the 64-column selectors
+disabled, exercising the 32-column path and its
+remainder.
+
+| Short Apex 4096/129 CUDA trace | Narrow A | Shared plus tail B |
+|---|---:|---:|
+| Prefill, s | 4.864 | 4.153 |
+| Dense Q4_K kernel sum, ms | 1,224.605 | 719.428 |
+| Dense Q6_K kernel sum, ms | 394.710 | 177.016 |
+| H2D bytes | 35,533,704,248 | 35,533,704,248 |
+| D2H bytes | 133,539,840 | 133,539,840 |
+| Peak VRAM per process, MiB | 7,068 | 7,068 |
+
+| Unprofiled Apex 32K/512, 4096/4096, A–B–B–A | Narrow A | Shared plus tail B |
+|---|---:|---:|
+| A–B prefill, tok/s | 1,004.767 | 1,031.043 |
+| B–A prefill, tok/s | 1,007.845 | 1,022.137 |
+| Median prefill, tok/s | 1,006.306 | 1,026.590 |
+| Median prefill, s | 32.563 | 31.920 |
+| Median decode, steps/s | 26.818 | 26.838 |
+| Peak VRAM per process, MiB | 7,272 | 7,272 |
+| RSS high-water range, KiB | 22,949,772–22,949,804 | 22,949,764–22,949,824 |
+| Process and system swap activity | 0 | 0 |
+
+Prefill saves 0.831 and 0.455 s in the two orders.
+The responses match EXP-1586's matched-tail arm
+including all 512 IDs and probability rows. Cache
+counters and all 5,301,139 resident pages agree.
+The opening task echo stays absent. The factual
+miscount from EXP-1586 remains. The faster MMQ
+dispatch is enabled by default. The two selectors for
+the separate checkpoint-tail profile remain opt-in.
+
+Raw pairs, traces, fixture and executable are under
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/mmq-partial-exp1587`.
+Executable SHA-256
+`56b1634ce779381832e6e2d2313fd3b216265f6999b51597d98b666cc36759d7`.
+PTX SHA-256
+`0c90421dec2f14d330117d2cf7c20cac30bf4519584fa59455fc563d2cf6affa`.
 
 ## Long Attention partition probe
 

@@ -87,8 +87,12 @@ Functional qualification runs before memory and speed acceptance.
    [matched-tail follow-up](CUDA-PARITY-EXP1476.md#actual-apex-checkpoint-tail-geometry)
    brings the last three QKV rows into exact agreement with
    EXP-1476 and removes the opening task repetition in both
-   full runs. It still miscounts the repeated records and the
-   token sequences differ. The single-token SSM arithmetic
+   full runs. [EXP-1587](CUDA-PARITY-EXP1476.md#cooperative-mmq-on-the-checkpoint-tail)
+   restores cooperative MMQ at 4,092 tokens and preserves that
+   entire response, with 1,026.590 prefill tok/s and 26.838
+   decode steps/s on the matched-tail profile. The response
+   still miscounts the repeated records and the token
+   sequences differ. The single-token SSM arithmetic
    candidate remains deferred.
    The full response gate remains open.
    Gates 3 and 4 qualify the later speed comparison.
