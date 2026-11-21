@@ -1,5 +1,81 @@
 # Apex 32K/512 latency map
 
+## EXP-1626 — Hybrid MMQ operand staging audit
+
+The immutable EXP-1476 and Optimized Hybrid comparator
+share the released CUDA library. The source audit uses
+`e7c9155a` and the executed symbols from EXP-1621. For the
+matched dense Q4_K and Q6_K 8192 × 4092 × 2048 forms, the
+hybrid configuration is 128 × 128, 256 threads per CTA,
+with 57,856 bytes of dynamic shared memory. The kernel
+uses a streamed tile index. The traced dense launch has
+2,048 CTAs for the 2,048 logical output tiles.
+
+### Operations missing from the combined Goose path
+
+| Mechanism | Hybrid CUDA source and execution | Goose status |
+|---|---|---|
+| K-major activation packing | `quantize.cu:quantize_mmq_q8_1` writes consecutive columns at `k_block * N + column`. `mmq.cuh:mul_mat_q_process_tile` reads whole consecutive Q8_1 half-blocks into shared memory. | The existing Goose quantizer implements the same indexing. The standalone dispatcher had selected one column per call. EXP-1626 exercises K-major packing with the larger quarter-K Goose tile. |
+| Q4_K scales | `mmq-load-tiles.cuh:ggml_cuda_mmq_load_tiles_q4_K` expands nibbles and stores the scale/minimum pair as `half2`. The NVIDIA dot loop preloads weight fragments with LDSM and expands scales before computing columns. | Goose uses IMMA and LDSM and has the EXP-1624 shared tile. It stages rounded scale/minimum pairs in two FP32 words. The compact representation and half-K data staging remain open. |
+| Q6_K scales and dot products | The Q6_K loader stages expanded signed bytes, signed scales and the block coefficient. `ggml_cuda_mmq_vec_dot_q6_K_q8_1_mma` preloads weight fragments and scales. It combines pairs of IMMA dots before multiplication by each Q8_1 scale, then applies the block coefficient after the half sum. | Goose already preserves the pair and half arithmetic in its reference path. The wider Goose Q6_K kernels stage 16 output rows per CTA. Shared operand staging and reuse across a larger output tile remain open. |
+
+The profiled Q4_K paths execute IMMA.m16n8k32, and
+the Q6_K paths execute IMMA.m16n8k16. The hybrid and
+the wide Goose Q6_K use LDSM.x2 for weight fragments.
+The Goose reference tail has IMMA with global
+operand loads. The archived SASS census gives static
+instructions, separate from dynamic counts.
+
+| Q6_K operation in EXP-1621 | M × N × K | Hybrid, ms/op | Goose, ms/op | Hybrid / Goose launches |
+|---|---|---:|---:|---:|
+| Dense | 8192 × 4092 × 2048 | 1.742 | 10.254 | 14 / 28 |
+| Dense | 2048 × 4092 × 512 | 0.131 | 0.712 | 19 / 40 |
+| Dense | 512 × 4092 × 2048 | 0.118 | 0.659 | 6 / 12 |
+| Routed down | 2048 × 32736 × 512 | 3.503 | 7.668 | 19 / 80 |
+
+Each mean uses the number of logical operations in its
+own runtime. Equal flattened routed N leaves expert
+distribution open. In the first dense row, the hybrid
+uses 242 registers per thread. The Goose wide Q6_K uses
+126 registers and 4,416 static shared bytes per CTA.
+The recorded tiles and the narrower reference tail account
+for the extra launches. This ranking uses measured shapes.
+
+### K-major packing combined with the 128 × 256 tile
+
+The candidate changes only the packed Q8_1 block order.
+The quantizer, quarter-K load shape, IMMA/FMA order and
+buffer size are retained. The selected pack and consumer
+agree on the width of each packing window. The target,
+multi-window and partial-column fixtures are bit-identical.
+Compute Sanitizer reports zero errors on the latter.
+
+| Dense Q4_K M × N × K | Row-major packs and MMQ, ms | K-major packs and MMQ, ms | Difference, ms |
+|---|---:|---:|---:|
+| 8192 × 4092 × 2048 | 4.736 | 4.767 | +0.031 |
+| 2048 × 4096 × 4096 | 2.866 | 2.881 | +0.015 |
+| 4096 × 4092 × 2048 | 2.504 | 2.533 | +0.029 |
+
+The paired fixture medians exclude two warm-up iterations.
+The first attempt at the multi-window control was
+interrupted by the temporary-filesystem quota. Both arms
+of that fixture were repeated after freeing space. Exact
+kernel names are taken from CUPTI's mangled-name column.
+The device reports 239 and 242 registers for the two
+matrix paths and one active CTA per SM in both.
+
+K-major alone adds no measurable speed benefit with the
+current quarter-K loads. The existing quarter loader still
+gathers scale words and slices of each half-block. The
+hybrid couples K-major packing with full coalesced half
+loads, half2 weight metadata and fewer barriers. Preserve
+the candidate for a combined half-K staging experiment
+and keep EXP-1624 as the working experimental checkpoint.
+
+The reversible patch, compiled probe, exact fixture
+traces and the Q6_K SASS census are in
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/mmq-k-major-exp1626`.
+
 ## EXP-1624 — Dense Q4_K 128 × 256 and 256 × 128
 
 Both candidates compute eight 32 × 128 warp tiles.
