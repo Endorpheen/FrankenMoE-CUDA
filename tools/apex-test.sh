@@ -17,6 +17,8 @@
 #
 # Usage:
 #   bash tools/apex-test.sh <tag> [len] [b] [ub] [cache]
+# Set APEX_GOOSE_BIN to capture an independent frankenmoe-infer execution.
+# APEX_RUN_ROOT optionally selects the directory for run artifacts.
 #
 # Readiness knobs (do not change the Apex profile):
 #   APEX_READY_MAX=900    hard cap, seconds
@@ -30,7 +32,7 @@ TAG=${1:?usage: apex-test.sh <tag> [len] [b] [ub] [cache]}
 LEN=${2:-512}; B=${3:-4096}; UB=${4:-4096}; CACHE=${5:-4992}
 
 LOCK=/tmp/apex-test.lock
-LOGROOT=${ROOT}/results/apex-runs
+LOGROOT=${APEX_RUN_ROOT:-${ROOT}/results/apex-runs}
 RUNID="${TAG}-$(date +%Y%m%d-%H%M%S)"
 RUNDIR="${LOGROOT}/${RUNID}"
 mkdir -p "${RUNDIR}"
@@ -96,7 +98,8 @@ MODEL=${MODEL:-/home/end0/AI/LocalAI/Models/Apex-35B-V1.0-Q4_K_M.gguf}
 
 W=/home/end0/AI/LlamaServer/franken-goose-exp150-restored-20261108/runtime/reconstructed/build
 SERVER_DIR=${APEX_SERVER_DIR:-${W}/stage-run}
-SRV=${SERVER_DIR}/llama-server
+GOOSE_BIN=${APEX_GOOSE_BIN:-}
+SRV=${GOOSE_BIN:-${SERVER_DIR}/llama-server}
 REQUEST=${APEX_REQUEST:-/tmp/req512.json}
 REQUEST_COUNT=${APEX_REQUEST_COUNT:-3}
 ENDPOINT=${APEX_ENDPOINT:-completion}
@@ -114,9 +117,16 @@ if [ -n "$SLOT_DIR$SLOT_SAVE$SLOT_RESTORE" ]; then
     }
     SLOT_DIR=$(cd "$SLOT_DIR" && pwd -P)
 fi
+if [ -n "$GOOSE_BIN" ]; then
+    [[ "$ENDPOINT" == completion && -z "$SLOT_DIR" && "$CACHE" == 4992 &&
+       "${APEX_SPEC_TYPE:-none}" == none ]] || {
+        echo 'Goose capture requires /completion, the 4992 MiB expert budget, and no slot or speculative mode'
+        exit 2
+    }
+fi
 # Pre-flight: a benchmark that runs on a build missing an accepted component measures the wrong
 # runtime. This is the check that would have caught the host-registration loss before a single request.
-if [ -z "${APEX_SKIP_COMPONENT_CHECK:-}" ]; then
+if [ -z "$GOOSE_BIN" ] && [ -z "${APEX_SKIP_COMPONENT_CHECK:-}" ]; then
     if ! python3 "$(dirname "$0")/check-accepted-components.py" "$SERVER_DIR" >/tmp/apex-components.log 2>&1; then
         echo "APEX PRE-FLIGHT FAILED: an accepted component is missing from $SERVER_DIR"
         sed 's/^/  /' /tmp/apex-components.log | tail -8
@@ -126,28 +136,49 @@ if [ -z "${APEX_SKIP_COMPONENT_CHECK:-}" ]; then
     echo "[pre-flight] accepted components present: $(grep -c present /tmp/apex-components.log)/$(grep -cE 'present|MISSING' /tmp/apex-components.log)"
 fi
 
-export LD_LIBRARY_PATH="$SERVER_DIR"
 unset LD_PRELOAD
-ARGS=(-m "$MODEL" --alias Apex-35B-V1.0 -c "${APEX_CTX:-262144}" -ngl all -fit off --cpu-moe
-      -fa on -ctk q4_0 -ctv q4_0 -b "$B" -ub "$UB" -t 8 -tb 16
-      --cpu-mask 0f0f --cpu-mask-batch ffff --cpu-strict 1 --cpu-strict-batch 1
-      --poll 0 -np 1 --cache-ram 0 --ctx-checkpoints 32 --load-mode mmap
-      --spec-type "${APEX_SPEC_TYPE:-none}" --jinja --temp 1 --top-p 0.95 --top-k 20 --min-p 0
-      --host 127.0.0.1 --port "$PORT" --moe-cache-mib "$CACHE")
-if [ -n "$SLOT_DIR" ]; then
-    ARGS+=(--slot-save-path "$SLOT_DIR")
+if [ -n "$GOOSE_BIN" ]; then
+    unset LD_LIBRARY_PATH
+    ARGS=(--ctx-size "${APEX_CTX:-262144}" --batch-size "$B" --ubatch-size "$UB" "$MODEL" --serve "$PORT")
+    PRELOAD=
+else
+    export LD_LIBRARY_PATH="$SERVER_DIR"
+    PRELOAD=${APEX_DEBUG_PRELOAD:-}
+    ARGS=(-m "$MODEL" --alias Apex-35B-V1.0 -c "${APEX_CTX:-262144}" -ngl all -fit off --cpu-moe
+          -fa on -ctk q4_0 -ctv q4_0 -b "$B" -ub "$UB" -t 8 -tb 16
+          --cpu-mask 0f0f --cpu-mask-batch ffff --cpu-strict 1 --cpu-strict-batch 1
+          --poll 0 -np 1 --cache-ram 0 --ctx-checkpoints 32 --load-mode mmap
+          --spec-type "${APEX_SPEC_TYPE:-none}" --jinja --temp 1 --top-p 0.95 --top-k 20 --min-p 0
+          --host 127.0.0.1 --port "$PORT" --moe-cache-mib "$CACHE")
+    if [ -n "$SLOT_DIR" ]; then
+        ARGS+=(--slot-save-path "$SLOT_DIR")
+    fi
 fi
 printf '%s\n' "$SRV" "${ARGS[@]}" > "${RUNDIR}/argv.txt"
-sha256sum "$REQUEST" "$SERVER_DIR"/*.so* "$SRV" > "${RUNDIR}/SHA256SUMS"
+if [ -n "$GOOSE_BIN" ]; then
+    sha256sum "$REQUEST" "$SRV" > "${RUNDIR}/SHA256SUMS"
+    for option in GGML_CUDA_REGISTER_HOST GGML_CUDA_NO_PINNED GOOSE_EXPERT_PIN_MIB \
+        GOOSE_CUDA GOOSE_MMQ GOOSE_GDN_MMA GOOSE_FLASH_MMA GOOSE_DENSE_MMA GOOSE_MMVQ \
+        GOOSE_MMQ_Q4_REFERENCE GOOSE_MMQ_Q6_REFERENCE GOOSE_DENSE_MMA_REFERENCE \
+        GOOSE_SSM_REFERENCE GOOSE_RMS_REFERENCE GOOSE_KV_LAZY_VMM GOOSE_FLASH_VEC \
+        GOOSE_CUDA_ACTIVATION_MIB GOOSE_CUDA_ACTIVATION_REFERENCE GOOSE_CUDA_STAGE_MATRIX_INPUT \
+        GOOSE_CUDA_ASYNC_PACKETS GOOSE_CUDA_EXPERT_OVERLAP GOOSE_CUDA_EXPERT_STAGE_PAGEABLE \
+        GOOSE_PREFILL_CHECKPOINT_TAIL GOOSE_MMVQ_DENSE_TAIL GOOSE_MMQ_DENSE_PARTIAL; do
+        if [[ -v $option ]]; then printf '%s=%s\n' "$option" "${!option}"; fi
+    done > "${RUNDIR}/goose-options.txt"
+else
+    sha256sum "$REQUEST" "$SERVER_DIR"/*.so* "$SRV" > "${RUNDIR}/SHA256SUMS"
+fi
 ldd "$SRV" > "${RUNDIR}/dependencies.txt"
 cp "$REQUEST" "${RUNDIR}/request.json"
 cat /proc/vmstat > "${RUNDIR}/vmstat-prelaunch.txt"
 cat /proc/meminfo > "${RUNDIR}/meminfo-prelaunch.txt"
 
 # 5. own process group: setsid, so the group id is the server's pid and only it is terminated.
-setsid env LD_PRELOAD="${APEX_DEBUG_PRELOAD:-}" "${SRV}" "${ARGS[@]}" \
+setsid env LD_PRELOAD="$PRELOAD" "${SRV}" "${ARGS[@]}" \
     > "${RUNDIR}/server.log" 2>&1 &
 SRV_PID=$!
+printf '%s\n' "$SRV_PID" > "${RUNDIR}/pid.txt"
 echo "[$(date +%H:%M:%S)] server pid ${SRV_PID} (own process group)" | tee -a "${RUNDIR}/run.log"
 
 # Readiness is progress-based, not a fixed count: a slow but progressing load is
@@ -217,11 +248,21 @@ if [ "${READY}" -ne 1 ]; then
 fi
 echo "[$(date +%H:%M:%S)] server ready after $(( $(date +%s) - START_TS ))s" | tee -a "${RUNDIR}/run.log"
 
+ss -H -ltnp "sport = :${PORT}" > "${RUNDIR}/listener.txt"
+if ! grep -F "pid=${SRV_PID}," "${RUNDIR}/listener.txt" >/dev/null; then
+    echo "REFUSING: ready listener on port ${PORT} is not owned by PID ${SRV_PID}" | tee -a "${RUNDIR}/run.log"
+    exit 2
+fi
 cat "/proc/${SRV_PID}/maps" > "${RUNDIR}/maps.txt"
 cat "/proc/${SRV_PID}/status" > "${RUNDIR}/status-ready.txt"
+if [ -n "$GOOSE_BIN" ]; then
+    curl -fsS -m 5 "http://127.0.0.1:${PORT}/props" -o "${RUNDIR}/props-ready.json"
+fi
 cat /proc/vmstat > "${RUNDIR}/vmstat-before.txt"
 cat /proc/meminfo > "${RUNDIR}/meminfo-ready.txt"
 nvidia-smi --query-gpu=memory.used,memory.total --format=csv,noheader > "${RUNDIR}/vram-ready.txt"
+nvidia-smi --query-compute-apps=pid,used_memory --format=csv,noheader |
+    awk -F, -v pid="$SRV_PID" '$1+0 == pid' > "${RUNDIR}/vram-process-ready.txt"
 if [ -n "$SLOT_DIR" ]; then
     python3 "$ROOT/tests/kv/slot-state/probe.py" "$PORT" "$RUNDIR" "$SLOT_DIR" "$SLOT_SAVE" "$SLOT_RESTORE" \
         | tee "$RUNDIR/summary.txt"
@@ -242,9 +283,15 @@ PY
     done
 fi
 cat "/proc/${SRV_PID}/status" > "${RUNDIR}/status-after.txt"
+cat "/proc/${SRV_PID}/maps" > "${RUNDIR}/maps-after.txt"
+if [ -n "$GOOSE_BIN" ]; then
+    curl -fsS -m 5 "http://127.0.0.1:${PORT}/props" -o "${RUNDIR}/props-after.json"
+fi
 cat /proc/vmstat > "${RUNDIR}/vmstat-after.txt"
 cat /proc/meminfo > "${RUNDIR}/meminfo-after.txt"
 nvidia-smi --query-gpu=memory.used,memory.total --format=csv,noheader > "${RUNDIR}/vram-after.txt"
+nvidia-smi --query-compute-apps=pid,used_memory --format=csv,noheader |
+    awk -F, -v pid="$SRV_PID" '$1+0 == pid' > "${RUNDIR}/vram-process-after.txt"
 
 if [ -n "$SLOT_DIR" ]; then
     exit 0

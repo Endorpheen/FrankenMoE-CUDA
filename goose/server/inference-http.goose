@@ -164,6 +164,7 @@ fn ih_probability_rows(response: u8[:], at: i64, steps: i64, top: i64,
 
 fn ih_timing_fields(response: u8[:], at: i64, count: i64, timing: const f64[:]) -> i64 {
     let prompt = timing[2] as i64;
+    let decode_steps = (count - 1) as f64;
     var n = cp_put(response, at, ",\"timings\":{\"cache_n\":0,\"prompt_n\":");
     n = cp_uint(response, n, prompt);
     n = cp_put(response, n, ",\"prompt_ms\":");
@@ -177,9 +178,9 @@ fn ih_timing_fields(response: u8[:], at: i64, count: i64, timing: const f64[:]) 
     n = cp_put(response, n, ",\"predicted_ms\":");
     n = fmt_double(response, n, timing[1] * 1000.0);
     n = cp_put(response, n, ",\"predicted_per_token_ms\":");
-    n = fmt_double(response, n, timing[1] * 1000.0 / (count as f64));
+    n = fmt_double(response, n, if decode_steps > 0.0 { timing[1] * 1000.0 / decode_steps } else { 0.0 });
     n = cp_put(response, n, ",\"predicted_per_second\":");
-    n = fmt_double(response, n, if timing[1] > 0.0 { (count as f64) / timing[1] } else { 0.0 });
+    n = fmt_double(response, n, if timing[1] > 0.0 { decode_steps / timing[1] } else { 0.0 });
     return cp_put(response, n, "}");
 }
 

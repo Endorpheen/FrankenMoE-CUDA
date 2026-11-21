@@ -92,8 +92,24 @@ def response_evidence(path):
     }
 
 
+def verify_step_timings(timings):
+    prefill_ms = timings["prompt_ms"]
+    decode_ms = timings["predicted_ms"]
+    for key, expected in (
+        ("prompt_per_token_ms", prefill_ms / PROMPT_TOKENS),
+        ("prompt_per_second", 1000 * PROMPT_TOKENS / prefill_ms),
+        ("predicted_per_token_ms", decode_ms / (OUTPUT_TOKENS - 1)),
+        ("predicted_per_second", 1000 * (OUTPUT_TOKENS - 1) / decode_ms),
+    ):
+        value = timings[key]
+        require(number(value) and math.isclose(value, expected, rel_tol=1e-6),
+                f"{key} does not match the measured interval and step count")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--capture", action="store_true",
+                        help="require valid step timings and report response differences without rejecting them")
     parser.add_argument("request", type=Path)
     parser.add_argument("reference", type=Path, help="one archived EXP-1476 response")
     parser.add_argument("responses", nargs="+", type=Path)
@@ -106,13 +122,17 @@ def main():
             == (CONTENT_SHA, TOKENS_SHA, PROBABILITY_SHA),
             "reference hashes differ from EXP-1476",
         )
+        if args.capture:
+            verify_step_timings(reference["timings"])
     except (OSError, ValueError, TypeError, KeyError, OverflowError) as error:
         parser.exit(1, f"Invalid reference input: {error}\n")
 
-    all_match = True
+    valid = True
     for path in args.responses:
         try:
             tokens, evidence = response_evidence(path)
+            if args.capture:
+                verify_step_timings(evidence["timings"])
             evidence["first_different_output_index"] = next(
                 (i for i, (expected, actual) in enumerate(zip(reference_tokens, tokens, strict=True)) if actual != expected),
                 None,
@@ -121,12 +141,13 @@ def main():
                 evidence["content_sha256"] == CONTENT_SHA and evidence["token_ids_sha256"] == TOKENS_SHA
             )
             evidence["matches_probability_rows"] = evidence["probability_rows_sha256"] == PROBABILITY_SHA
-            all_match &= evidence["matches_content_and_ids"]
+            if not args.capture:
+                valid &= evidence["matches_content_and_ids"]
         except (OSError, ValueError, TypeError, KeyError, OverflowError) as error:
             evidence = {"error": str(error)}
-            all_match = False
+            valid = False
         print(json.dumps({"path": str(path), "request_sha256": REQUEST_SHA, **evidence}))
-    return 0 if all_match else 1
+    return 0 if valid else 1
 
 
 if __name__ == "__main__":

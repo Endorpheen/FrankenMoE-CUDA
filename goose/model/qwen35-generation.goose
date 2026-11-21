@@ -90,8 +90,8 @@ fn q35_sample_generate(tokens: const i64[:], vocabulary: i64, capacity: i64, eog
     let sampler_i: i64[3] = [s.top_k, s.min_keep, 1];
     let sampler_f: f32[4] = [s.top_p, s.min_p, s.temperature, s.typical_p];
     if q35_generation_prepare() != 0 { return -1; }
-    q35_generation_reset();
     let start = q35_generation_now();
+    q35_generation_reset();
     var read: i64 = 0;
     var batch_end: i64 = 0;
     while read < tokens.len {
@@ -108,8 +108,8 @@ fn q35_sample_generate(tokens: const i64[:], vocabulary: i64, capacity: i64, eog
             return -1;
         }
     }
-    let prefill = q35_generation_now() - start;
-
+    var prefill_done: f64 = 0.0;
+    var decode_done: f64 = 0.0;
     var produced: i64 = 0;
     while produced < limit {
         let draw = if top == 0 { logits[..] } else { candidates[..] };
@@ -141,6 +141,15 @@ fn q35_sample_generate(tokens: const i64[:], vocabulary: i64, capacity: i64, eog
         if next < 0 || next >= vocabulary { return -1; }
         let is_eog = bt_is_eog_impl(eog, eog.len, next) != 0;
         if s.ignore_eos && is_eog { return -1; }
+        let last = produced + 1 == limit || is_eog;
+        if timing.len == 3 {
+            // The first sample uses the final prompt logits. Publish the
+            // phase boundaries before the probability rows are formatted.
+            if produced == 0 { prefill_done = q35_generation_now(); }
+            if last {
+                decode_done = if produced == 0 { prefill_done } else { q35_generation_now() };
+            }
+        }
         if top > 0 {
             let at = produced * (top + 1);
             let end = at + top + 1;
@@ -149,7 +158,7 @@ fn q35_sample_generate(tokens: const i64[:], vocabulary: i64, capacity: i64, eog
         }
         ids[produced] = next;
         produced += 1;
-        if produced == limit || is_eog {
+        if last {
             break;
         }
         batch[0] = next as i32;
@@ -159,8 +168,8 @@ fn q35_sample_generate(tokens: const i64[:], vocabulary: i64, capacity: i64, eog
         }
     }
     if timing.len == 3 {
-        timing[0] = prefill;
-        timing[1] = q35_generation_now() - start - prefill;
+        timing[0] = prefill_done - start;
+        timing[1] = decode_done - prefill_done;
         timing[2] = tokens.len as f64;
     }
     return produced;

@@ -91,7 +91,11 @@ def check(binary, fixture):
             assert status == 200
             assert result["tokens"] == result["ids"] == [2, 2]
             assert result["content"] == "abab" and result["stop_type"] == "limit"
-            assert result["timings"]["prompt_n"] == 1 and result["timings"]["predicted_n"] == 2
+            timing = result["timings"]
+            assert timing["prompt_n"] == 1 and timing["predicted_n"] == 2
+            assert timing["predicted_ms"] > 0
+            assert math.isclose(timing["predicted_per_token_ms"], timing["predicted_ms"])
+            assert math.isclose(timing["predicted_per_second"] * timing["predicted_ms"], 1000)
             rows = result["completion_probabilities"]
             assert len(rows) == 2
             logit = 1 / math.sqrt(1 / 32 + 1e-5)
@@ -124,6 +128,8 @@ def check(binary, fixture):
                 assert status == 200 and result["tokens"] == result["ids"] == [3], result
                 assert result["content"] == result["text"] == ""
                 assert result["stop_type"] == "eos" and result["timings"]["predicted_n"] == 1
+                assert all(result["timings"][key] == 0 for key in
+                           ("predicted_ms", "predicted_per_token_ms", "predicted_per_second"))
                 eos = result["completion_probabilities"][0]
                 assert eos["id"] == 3 and eos["token"] == "" and eos["bytes"] == []
                 eos_choice = next(item for item in eos["top_logprobs"] if item["id"] == 3)

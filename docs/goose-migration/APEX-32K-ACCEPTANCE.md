@@ -5,7 +5,7 @@ Each gate closes once its evidence is recorded. A failed check returns
 to the gate that owns the defect. This checklist covers eight gates.
 Functional qualification runs before memory and speed acceptance.
 
-**Closed: 3 of 8. Remaining: 5.**
+**Closed: 4 of 8. Remaining: 4.**
 
 1. [x] **Pin the workload and control.** Verify the model digest, exact
    request bytes and the EXP-1476 executable and library manifest.
@@ -35,19 +35,16 @@ Functional qualification runs before memory and speed acceptance.
    [experimental matched tail](CUDA-PARITY-EXP1476.md#actual-apex-checkpoint-tail-geometry)
    reproduces that physical sequence with both runtime limits
    still at 4,096.
-4. [ ] **Verify the capture path** (requires 1). Use one server at a
+4. [x] **Verify the capture path** (requires 1). Use one server at a
    time under the existing Apex lock. Capture the exact request and
    full response, startup configuration, loaded libraries, and RAM,
    VRAM and swap evidence for the serving PID. Verify the capture and
    response gate on a fixture and exercise the rejection path.
    Confirm the prefill/decode timing windows and token denominators
    match, including the treatment of the first sampled token.
-   The offline validator `tools/validate-apex-32k.py` already accepts
-   all three archived controls, rejects the whitespace-only sample
-   and identifies the first altered output ID. The archived control
-   reports 512 IDs and uses 511 steps to calculate its decode rate.
-   The candidate HTTP field currently uses 512. The validator records
-   both the raw timings and the rate derived from 511 steps.
+   [EXP-1588](#capture-and-timing-convention) verifies the HTTP fixture,
+   the rejected request, and one real capture from each executable.
+   Both return 512 IDs and report timing rates based on 511 steps.
 5. [x] **Verify real-model readiness** (requires 2). On Apex, record
    that all mapped pages are resident before admission. Check actual
    CUDA dense, expert-cache and KV/SSM allocations, and verify that the
@@ -109,6 +106,68 @@ Functional qualification runs before memory and speed acceptance.
    and single-response decode. Report units, absolute rates, per-run
    values and spread, memory, exact binaries and raw evidence.
    Resolve a regression in the same gate and rerun the affected checks.
+
+## Capture and timing convention
+
+`tools/apex-test.sh` uses the existing Apex lock for both executables.
+Set `APEX_GOOSE_BIN` to an independent `frankenmoe-infer` executable
+and `APEX_REQUEST_COUNT=1` for one arm. The runner verifies that its
+own PID holds the listener. It saves the request, response, launch
+arguments, relevant Goose options, ELF dependencies, live process maps,
+status, per-PID VRAM and separate card and swap snapshots. The Goose
+path also records `/props` before and after the request. The two
+VRAM snapshots identify the serving PID. The peak-resource gate uses
+its own sampled request window.
+
+EXP-1476 records the prompt boundary after sampling and accepting the
+first token and ends generation timing after accepting the final token,
+before reporting its probabilities. See `server_slot_stats` and the
+non-speculative sampling loop in `4e722775`. Goose uses the same phase
+boundaries around its prompt preparation, sampler and probability
+reporting. The response still carries 512 output IDs and a
+`predicted_n` of 512. The two derived decode fields use 511 steps.
+A one-token completion reports zero decode time and rate.
+
+Use `tools/validate-apex-32k.py --capture REQUEST REFERENCE RESPONSE`
+to check the fixed request, response structure and rate denominators.
+The report includes the first differing ID and all hashes. The
+capture verdict covers these data contracts. Response quality is a
+separate gate.
+
+EXP-1588 ran the 36-request HTTP fixture against the rebuilt Goose
+binary. The one-token cases verify zero decode time. The two-token
+case verifies a single decode step. The capture runner saved the
+valid fixture and released the listener after an invalid token
+returned HTTP 400. The fixed-workload validator rejects both a
+whitespace response and the old 512-step timing fields.
+
+The following captures ran sequentially with the frozen request and
+4,096/4,096 limits. Goose used the matched checkpoint-tail profile.
+
+| Capture observation | Frozen EXP-1476 | Independent Goose |
+|---|---:|---:|
+| Prompt tokens / sampled IDs / decode steps | 32,768 / 512 / 511 | 32,768 / 512 / 511 |
+| Prefill interval, s | 12.287 | 31.358 |
+| Prefill, tok/s | 2,666.833 | 1,044.954 |
+| Decode interval, s | 8.192 | 18.856 |
+| Decode, steps/s | 62.377 | 27.101 |
+| Process RSS high-water, KiB | 21,863,992 | 22,948,988 |
+| Process VRAM at ready / after, MiB | 6,596 / 8,202 | 6,510 / 7,272 |
+| Process swap / system swap-out growth | 0 / 0 | 0 / 0 |
+
+Both listener and status snapshots identify the serving PID.
+The capture validator passes both responses. The fresh EXP-1476
+response matches the frozen response hashes. Goose matches
+EXP-1587's matched-tail response outside the timing object,
+including all 512 IDs and probability rows. Its live maps contain
+no `libstdc++`, `libggml` or `libllama`. This is a capture check
+with one request per executable. Resource peaks, quality and
+reproducible performance remain open under their own gates.
+
+The binary, fixture, raw captures and validator output are under
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/step-timing-exp1588`.
+Goose executable SHA-256
+`ade09ef5546b9fec6c6b26efb6835bc066d17181d20499aae7d78eae5a782d43`.
 
 ## Fixed evidence
 
