@@ -58,6 +58,50 @@ the next target after the current MMQ work.
 The trace and analysis are in
 `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/profile-exp1647`.
 
+## EXP-1652 — Pipeline routed Q6_K projections
+
+Use the existing 128 × 128 half-K computation for wide
+expert tiles. Stage two Q8_1 halves with asynchronous
+copies and use the route descriptor to scatter each
+result. Shared activations stay packed once per input
+row. Short route groups retain their existing kernel.
+The new path uses 71 KiB shared memory per block.
+Set `GOOSE_MMQ_Q6_ROUTED_PIPELINE=0` to use the earlier
+routed kernel.
+
+The warmed 11,654-route fixture runs the Apex Q6_K
+projection (M=2048, K=512) with uneven expert groups.
+The shared Q8_1 case fell from 2.057 to 1.392 ms.
+Route-order packing fell from 2.355 to 1.447 ms.
+All 23,867,392 outputs were finite and matched bit for
+bit in both layouts.
+
+| Warmed Apex 32,768/512, 4096/4096 | EXP-1651 control | EXP-1652 | Candidate minus control |
+|---|---:|---:|---:|
+| Prefill, ms | 21,705.334 | 21,432.911 | -272.423 |
+| Prefill, tok/s | 1,509.67 | **1,528.86** | +19.19 |
+| Decode, ms | 14,629.996 | 14,889.879 | +259.884 |
+| Decode, tok/s | 34.93 | 34.32 | -0.61 |
+| Prefill plus decode, ms | 36,335.330 | 36,322.790 | -12.539 |
+| Peak process RSS, KiB | 21,482,088 | 21,483,768 | +1,680 |
+| Peak process VRAM, MiB | 8,220 | 8,220 | 0 |
+| Peak process swap, KiB | 0 | 0 | 0 |
+| System swap-out growth, pages | 83 | 0 | -83 |
+
+The candidate records 320 routed Q6_K pipeline launches.
+Both arms match all 512 IDs, probabilities, response, and
+SLRU with 100% model residency. Peak VRAM is equal and
+process RSS rises by about 1.64 MiB. System swap-out is
+reported as observed because it can include other
+processes. This single pair advances the measured prefill
+best to 1,528.86 tok/s. The measured decode difference
+leaves the combined latency essentially flat. Keep the
+candidate in the cumulative prefill checkpoint.
+The [benchmark journal](../../benchmarks/experiment-history.jsonl)
+records the exact measurements and hashes. The binary and
+evidence are in
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/q6-routed-exp1652`.
+
 ## EXP-1651 — Share the Flash MMA KV loop
 
 The Apex eight-query tile uses one loop for the steady

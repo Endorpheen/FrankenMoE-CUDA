@@ -369,11 +369,26 @@ __kernel void name(__global const uint8_t * weights, __global const uint8_t * pa
     const int32_t left = routes - (int32_t) (128u * tile); \
     fg_device_mmq_q6_half_k_g((uint64_t) weights, (uint64_t) packed, (uint64_t) output, (uint64_t) jobs, \
         stride, extent, 128u * row, first_route + 128u * tile, first_route, \
-        left < 128 ? left : 128, routes, thread, shared, ahead); \
+        left < 128 ? left : 128, routes, thread, shared, ahead, 0); \
 }
 MMQ_DENSE_Q6_HALF(goose_mmq_q6_dense_m128_half_k, false)
 MMQ_DENSE_Q6_HALF(goose_mmq_q6_dense_m128_pipeline, true)
 #undef MMQ_DENSE_Q6_HALF
+
+__kernel void goose_mmq_q6_routed_m128_pipeline(__global const uint8_t * weights, __global const uint8_t * packed,
+    __global uint8_t * output, __global const uint64_t * jobs, __global const uint64_t * tiles,
+    uint64_t stride, int32_t extent, int32_t rows, int32_t first, int32_t first_route, int64_t input_stride) {
+    uint32_t row, tile, thread;
+    uint64_t shared;
+    __asm__("mov.u64 %0, goose_mmq_q6_shared;" : "=l"(shared));
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(row));
+    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(tile));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
+    const uint64_t at = ((uint64_t) first + tile) * 3;
+    fg_device_mmq_q6_half_k_g((uint64_t) weights + tiles[at + 2], (uint64_t) packed,
+        (uint64_t) output, (uint64_t) jobs, stride, extent, 128u * row, tiles[at],
+        first_route, tiles[at + 1], 0, thread, shared, true, input_stride);
+}
 
 __kernel void goose_mmq_stream(__global const uint8_t * weights, __global const uint8_t * packed,
     __global uint8_t * output, __global const uint64_t * jobs, __global const uint64_t * tiles,
