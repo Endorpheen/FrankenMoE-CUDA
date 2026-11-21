@@ -100,10 +100,14 @@ fn mmq_q4_shared_fragment(stage: u64, group: i64, lane: i64) -> u64 {
     return stage + ((512 * group + 32 * (lane % 16) + 16 * (lane / 16)) as u64);
 }
 
-fn mmq_q4_shared_scales(stage: u64, group: i64, lane: i64) -> MmqScales {
-    let at = stage + ((4096 + 8 * (16 * group + lane / 4)) as u64);
+fn mmq_q4_scales_at(scales: u64, group: i64, lane: i64) -> MmqScales {
+    let at = scales + ((8 * (16 * group + lane / 4)) as u64);
     return MmqScales { d0: mmq_shared_float(at), d1: mmq_shared_float(at + 64),
         m0: mmq_shared_float(at + 4), m1: mmq_shared_float(at + 68) };
+}
+
+fn mmq_q4_shared_scales(stage: u64, group: i64, lane: i64) -> MmqScales {
+    return mmq_q4_scales_at(stage + 4096, group, lane);
 }
 
 fn mmq_q4_stage(weights: u64, stride: i64, tile: u64, thread: i64, threads: i64) {
@@ -653,6 +657,18 @@ fn mmq_q4_dense_store(out: u64, jobs: u64, tile: i64, col: i64, routes: i64,
     mmq_wide_store(out, jobs, 2, operand, row + 16, lane, sum.right);
 }
 
+fn mmq_stage_q8_half(stage: u64, packed_tile: u64, pitch: i64, routes: i64, thread: i64) {
+    for pass in 5 {
+        let vector = thread + 256 * pass;
+        if vector < 1152 {
+            let slot = vector / 9;
+            let live_slot = if slot < routes { slot } else { 0 };
+            let source = packed_tile + ((live_slot * pitch + 16 * (vector % 9)) as u64);
+            mmq_copy_16(stage + ((16 * vector) as u64), source);
+        }
+    }
+}
+
 // Eight warps cover 64 output rows and 128 columns. A half-block of Q8_1
 // stays in shared memory while both 32-row warp groups consume it.
 export fn fg_device_mmq_q4_m64(weights: u64, packed: u64, out: u64, jobs: u64,
@@ -681,15 +697,7 @@ export fn fg_device_mmq_q4_m64(weights: u64, packed: u64, out: u64, jobs: u64,
         mmq_q4_stage(w + ((32 * stride) as u64), stride, weight_stage + 10240, thread % 128, 128);
         for half in 2 {
             let q = (288 * k + 144 * half) as u64;
-            for pass in 5 {
-                let vector = thread + 256 * pass;
-                if vector < 1152 {
-                    let slot = vector / 9;
-                    let live_slot = if slot < routes { slot } else { 0 };
-                    let source = packed_tile + q + ((live_slot * pitch + 16 * (vector % 9)) as u64);
-                    mmq_copy_16(activate + ((16 * vector) as u64), source);
-                }
-            }
+            mmq_stage_q8_half(activate, packed_tile + q, pitch, routes, thread);
             mmq_barrier();
             for group in 4 {
                 let g = 4 * half + group;
@@ -709,6 +717,91 @@ export fn fg_device_mmq_q4_m64(weights: u64, packed: u64, out: u64, jobs: u64,
     mmq_q4_dense_store(out, jobs, route, col + 8, routes, row + row_pair, lane, sum1);
     mmq_q4_dense_store(out, jobs, route, col + 16, routes, row + row_pair, lane, sum2);
     mmq_q4_dense_store(out, jobs, route, col + 24, routes, row + row_pair, lane, sum3);
+}
+
+fn mmq_q4_stage_half(weights: u64, stride: i64, tile: u64, half: i64, lane: i64) {
+    for pass in 8 {
+        let word = lane + 32 * pass;
+        let row = word / 16;
+        let pair = (word % 16) / 8;
+        let part = word % 8;
+        let packed = mmq_word(weights + ((row * stride + 16 + 64 * half + 32 * pair + 4 * part) as u64));
+        let address = tile + ((1024 * pair + 32 * row + 4 * part) as u64);
+        mmq_shared_store(address, q4_mmq_nibbles(packed as i64, false) as u32);
+        mmq_shared_store(address + 512, q4_mmq_nibbles(packed as i64, true) as u32);
+    }
+    for pass in 2 {
+        let slot = lane + 32 * pass;
+        let row = slot / 4;
+        let group = slot % 4;
+        let weight = weights + ((row * stride) as u64);
+        let packed = mmq_scale_min(weight + 4, group + 4 * half);
+        let d = mmq_half_round(mmq_half(weight) * ((packed >> 8) as f32));
+        let minimum = mmq_half_round(-mmq_half(weight + 2) * ((packed & 255) as f32));
+        let at = tile + ((2048 + 8 * (16 * group + row)) as u64);
+        mmq_shared_store_float(at, d);
+        mmq_shared_store_float(at + 4, minimum);
+    }
+}
+
+// The larger CTA gives each warp a 32-by-64 region. Staging only half of
+// each 16-row slab keeps the shared allocation equal to that of M64.
+export fn fg_device_mmq_q4_m128(weights: u64, packed: u64, out: u64, jobs: u64,
+    stride: i64, extent: i64, row: i64, route: i64, first_route: i64, routes: i64, thread: i64, stage: u64) {
+    let lane = thread % 32;
+    let warp = thread / 32;
+    let col = 64 * (warp % 2);
+    let row_pair = 32 * (warp / 2);
+    let activate = stage + 20480;
+    let weight_stage = stage + ((2560 * warp) as u64);
+    let weight_src = weights + ((stride * (row + 16 * warp)) as u64);
+    let lo_stage = stage + ((2560 * (2 * (warp / 2))) as u64);
+    let hi_stage = lo_stage + 2560;
+    let activation = activate + ((144 * col) as u64);
+    let pitch = 288 * extent;
+    let packed_tile = packed + ((pitch * (route - first_route)) as u64);
+    let zero = MmqSum { a: 0.0, b: 0.0, c: 0.0, d: 0.0 };
+    let empty = MmqPairSum { left: zero, right: zero };
+    var sum0 = empty;
+    var sum1 = empty;
+    var sum2 = empty;
+    var sum3 = empty;
+    var sum4 = empty;
+    var sum5 = empty;
+    var sum6 = empty;
+    var sum7 = empty;
+    for k in extent {
+        let w = weight_src + ((144 * k) as u64);
+        for half in 2 {
+            let q = (288 * k + 144 * half) as u64;
+            mmq_q4_stage_half(w, stride, weight_stage, half, lane);
+            mmq_stage_q8_half(activate, packed_tile + q, pitch, routes, thread);
+            mmq_barrier();
+            for group in 4 {
+                let lo = mmq_ldm32(mmq_q4_shared_fragment(lo_stage, group, lane));
+                let hi = mmq_ldm32(mmq_q4_shared_fragment(hi_stage, group, lane));
+                let lo_scales = mmq_q4_scales_at(lo_stage + 2048, group, lane);
+                let hi_scales = mmq_q4_scales_at(hi_stage + 2048, group, lane);
+                sum0 = mmq_q4_shared_column(sum0, activation, group, lane, lo, hi, lo_scales, hi_scales);
+                sum1 = mmq_q4_shared_column(sum1, activation + 1152, group, lane, lo, hi, lo_scales, hi_scales);
+                sum2 = mmq_q4_shared_column(sum2, activation + 2304, group, lane, lo, hi, lo_scales, hi_scales);
+                sum3 = mmq_q4_shared_column(sum3, activation + 3456, group, lane, lo, hi, lo_scales, hi_scales);
+                sum4 = mmq_q4_shared_column(sum4, activation + 4608, group, lane, lo, hi, lo_scales, hi_scales);
+                sum5 = mmq_q4_shared_column(sum5, activation + 5760, group, lane, lo, hi, lo_scales, hi_scales);
+                sum6 = mmq_q4_shared_column(sum6, activation + 6912, group, lane, lo, hi, lo_scales, hi_scales);
+                sum7 = mmq_q4_shared_column(sum7, activation + 8064, group, lane, lo, hi, lo_scales, hi_scales);
+            }
+            mmq_barrier();
+        }
+    }
+    mmq_q4_dense_store(out, jobs, route, col, routes, row + row_pair, lane, sum0);
+    mmq_q4_dense_store(out, jobs, route, col + 8, routes, row + row_pair, lane, sum1);
+    mmq_q4_dense_store(out, jobs, route, col + 16, routes, row + row_pair, lane, sum2);
+    mmq_q4_dense_store(out, jobs, route, col + 24, routes, row + row_pair, lane, sum3);
+    mmq_q4_dense_store(out, jobs, route, col + 32, routes, row + row_pair, lane, sum4);
+    mmq_q4_dense_store(out, jobs, route, col + 40, routes, row + row_pair, lane, sum5);
+    mmq_q4_dense_store(out, jobs, route, col + 48, routes, row + row_pair, lane, sum6);
+    mmq_q4_dense_store(out, jobs, route, col + 56, routes, row + row_pair, lane, sum7);
 }
 
 // Stream-K divides the flattened output-tile/K-block range among workers.

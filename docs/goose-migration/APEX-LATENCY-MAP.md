@@ -1,5 +1,73 @@
 # Apex 32K/512 latency map
 
+## EXP-1623 — Dense Q4_K 128 × 128 MMQ
+
+The 128-row variant stages half of each Q4_K weight slab
+at a time. This doubles CTA output rows within the same
+38,912-byte shared allocation. Eight warps each compute a
+32 × 64 output region. Accumulation order and the guarded
+column tail match EXP-1622. Enable it using
+`GOOSE_MMQ_Q4_M128=1` with `GOOSE_MMQ_Q4_M64=1`.
+
+On the 8192 × 4092 × 2048 fixture, a single trace pair
+reduces CTA count from 4,096 to 2,048 and kernel time from
+6.876 to 5.761 ms. Both fixture modes share the candidate
+binary. Outputs match the archived EXP-1622 fixture over
+44,005,376 FP32 values in the target, multi-window and
+partial-column cases. Compute Sanitizer reports zero
+errors. The short Apex response and SLRU match.
+
+| SM89 resources in the fixture build | 64 × 128 | 128 × 128 |
+|---|---:|---:|
+| Driver registers per thread | 149 | 164 |
+| Static shared memory per CTA, bytes | 38,912 | 38,912 |
+| Maximum active CTAs per SM from CUDA Driver | 1 | 1 |
+| Resident threads per SM at that limit | 256 / 1,536 | 256 / 1,536 |
+
+Offline SM89 assembly of 128 × 128 uses 168 registers
+and zero spills. The occupancy row is a resource limit,
+separate from achieved warp occupancy.
+
+### Full Apex 32K/512 and trace confirmation
+
+The unprofiled A-B-B-A uses the published EXP-1622
+executable in A and the 128 × 128 build in B. Both
+use 4096/4096, 5,920 MiB, the same request, Q4_0 KV,
+existing graph replays and async expert staging.
+All outputs, 512 token IDs, probabilities and counters
+match. The model is fully resident.
+
+| Unprofiled medians unless noted | 64 × 128 | 128 × 128 | Difference |
+|---|---:|---:|---:|
+| Prefill, tok/s | 1,219.40 | 1,220.55 | +1.15 |
+| Prefill, ms | 26,872.293 | 26,847.515 | -24.778 |
+| Decode, tok/s | 34.66 | 35.08 | +0.41 |
+| Decode, ms | 14,741.133 | 14,567.588 | -173.544 |
+| Prefill plus decode, ms | 41,613.426 | 41,415.104 | -198.322 |
+| Peak process VRAM, MiB | 8,220 | 8,220 | 0 |
+| Maximum RSS high-water, KiB | 21,480,776 | 21,480,756 | -20 |
+| Process swap, KiB / system swap-out, pages | 0 / 0 | 0 / 0 | 0 / 0 |
+
+Prefill improves by 139.485 ms in the first pair and
+grows by 89.929 ms in the reverse pair. Complete request
+time falls in both pairs. Keep EXP-1622 as the qualified
+prefill checkpoint and preserve the larger tile as an
+experimental candidate.
+
+In the diagnostic full trace pair, 2,000 wide dense launches
+take 3,248.067 and 3,047.085 ms of exclusive GPU time.
+Identified Q4_K exposure falls 196.564 ms. Prefill falls
+from 27,260.127 to 26,831.864 ms. Over that device window
+the idle union drops 128.230 ms, exclusive bulk H2D drops
+107.460 ms and concurrent-family activity rises 41.308 ms.
+The timing change in traced execution is distinct from
+the unprofiled A-B-B-A result. Both trace arms have
+8,250 MiB peak process VRAM and zero swap-out.
+
+Builds, profiles, driver occupancy output and full runs are
+in `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/mmq-m128-exp1623`.
+The last full same-session hybrid gap is in EXP-1622 below.
+
 ## EXP-1622 — Dense Q4_K 64 × 128 MMQ
 
 Eight warps share four 16-row staged Q4_K slabs and half

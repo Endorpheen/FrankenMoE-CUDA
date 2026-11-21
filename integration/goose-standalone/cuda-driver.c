@@ -158,7 +158,7 @@ static struct {
     Function mmq_q6_dense_shared, mmq_q6_routed_shared;
     Function mmq_q6_dense_x64, mmq_q6_routed_x64;
     Function mmq_q4_dense_x128, mmq_q6_dense_x128;
-    Function mmq_q4_dense_m64;
+    Function mmq_q4_dense_m64, mmq_q4_dense_m128;
     Function mmq_q4_routed_x128, mmq_q6_routed_x128;
     Function mmvq_pack, mmvq;
     Function dense_mma, dense_mma_reference, gdn_mma, flash_mma, flash_stage, flash_vec, flash_vec_merge;
@@ -1064,6 +1064,9 @@ static void load_cuda(void) {
             const char * q4_m64 = getenv("GOOSE_MMQ_Q4_M64");
             if (error == 0 && cuda.mmq_q4_dense_x128 && q4_m64 && strcmp(q4_m64, "1") == 0)
                 error = cuda.function_get(&cuda.mmq_q4_dense_m64, cuda.module, "goose_mmq_q4_dense_m64");
+            const char * q4_m128 = getenv("GOOSE_MMQ_Q4_M128");
+            if (error == 0 && cuda.mmq_q4_dense_m64 && q4_m128 && strcmp(q4_m128, "1") == 0)
+                error = cuda.function_get(&cuda.mmq_q4_dense_m128, cuda.module, "goose_mmq_q4_dense_m128");
             if (error == 0 && q4_x64 && q4_routed_shared)
                 error = cuda.function_get(&cuda.mmq_q4_routed_x64, cuda.module, "goose_mmq_q4_routed_x64");
             if (error == 0 && cuda.mmq_q4_routed_x64 && routed_x128)
@@ -2388,10 +2391,12 @@ static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
                         1, 128, 1, 1, 0, NULL, args, NULL);
                 }
             } else if (dense_m64 && !shared && first % 16 == 0 && first_route == 8 * first) {
+                const Function matrix = cuda.mmq_q4_dense_m128 ? cuda.mmq_q4_dense_m128 : cuda.mmq_q4_dense_m64;
+                const unsigned row_tile = cuda.mmq_q4_dense_m128 ? 128 : 64;
                 int32_t columns = (int32_t) routes;
                 void * args[] = {&weight, &cuda.mmq_packed.address, &matrix_output, &cuda.jobs.address,
                     &stride, &extent, &first_route, &columns};
-                error = cuda.launch(cuda.mmq_q4_dense_m64, (unsigned) rows / 64,
+                error = cuda.launch(matrix, (unsigned) rows / row_tile,
                     1 + (routes - 1) / 128, 1, 256, 1, 1, 0, NULL, args, NULL);
             } else if (dense_wide && !shared && first % 4 == 0 &&
                 first_route == 8 * first && routes >= 32) {
