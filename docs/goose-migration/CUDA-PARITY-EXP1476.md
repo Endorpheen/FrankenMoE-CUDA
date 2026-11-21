@@ -4381,15 +4381,42 @@ short diagnostic rates are 1,180.530 versus 1,162.349
 prefill tok/s and 26.981 versus 26.305 decode steps/s.
 This qualifies coexistence, without a speed acceptance.
 
+### Intermediate full Apex comparison
+
+Sequential A–B–B–A uses the same EXP-1615 executable
+`ec9dc9962f49699921f464966981d8e733301ebb9313f1fd556fd777f030d4ad`
+on the frozen Apex 32K/512 request, RTX 4070, 4096/4096
+and 5,920 MiB. B enables the three graph selectors. A
+sets all three to zero. No profiler is attached.
+
+| Full Apex metric | Direct A1 / A2 | Combined graphs B1 / B2 |
+|---|---:|---:|
+| Prefill, tok/s | 1140.902 / 1126.811 | 1142.592 / 1107.846 |
+| Decode, steps/s | 32.278 / 31.942 | 32.097 / 32.007 |
+| Median prefill, tok/s | 1133.856 | 1125.219 |
+| Median decode, steps/s | 32.110 | 32.052 |
+| Prefill plus decode, s | 44.552 / 45.078 | 44.599 / 45.544 |
+| Peak process VRAM, MiB | 8200 / 8200 | 8226 / 8224 |
+| RSS high-water, KiB | 21481144 / 21481284 | 21479924 / 21480476 |
+| Process swap and system swap-out growth | 0 / 0 | 0 / 0 |
+
+Text, IDs, probability rows and expert counters match in
+all four runs. Combined time adds 47 and 466 ms. Keep
+both graph scopes in the experimental configuration to
+measure their interaction with later blocks. Use the
+direct configuration as the preserved working control.
+The raw comparison is in the archive's `full-runs/` directory.
+
 Extend capture to the routed expert FFN after slot
 admission. The existing SLRU fill resolves all three
 expert planes together. Keep their slot offsets, shared
 Q8_1 input, SwiGLU intermediate and weighted output
 ordered within the group. Validate the next routing
 readback and KV updates before increasing scope again.
-Judge full Apex 32K/512 and CPU/GPU timing when the live
-scope is comparable to the hybrid. Preserve these smaller
-checkpoints during that work.
+Record a full Apex 32K/512 comparison after each added
+block and preserve the cumulative experimental scopes.
+Complete CPU/GPU profiling and final speed acceptance
+on the scope comparable to the hybrid.
 
 Builds, exact request, witness source and logs are in
 `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/cuda-graph-combined-exp1615`.
