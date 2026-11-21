@@ -96,6 +96,43 @@ records the exact run and hashes. The executable and raw
 evidence are in
 `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/gdn-v32-exp1656`.
 
+### EXP-1657 — GDN state-loop qualification
+
+The published EXP-1656 binary reached a measured
+prefill best of **1,609.20 tok/s** during the first
+EXP-1657 control. That run also reached 35.80 tok/s in
+decode, with 8,220 MiB peak VRAM and zero swap.
+
+The candidate unrolls the fixed Goose state loops.
+V32 has six static PTX local load/store instructions,
+down from 46. The warmed 4,096-token fixture improves
+from 27.368 to 23.935 ms. Both V32 and V128 match their
+respective controls on finite outputs and state, including
+the 65-token, two-sequence tail.
+
+| Warmed Apex 32,768/512, 4096/4096 | EXP-1656 control | EXP-1657 candidate | Candidate minus control |
+|---|---:|---:|---:|
+| A/B prefill, ms | 20,362.891 | 21,285.026 | +922.136 |
+| B/A prefill, ms | 20,721.919 | 20,960.598 | +238.680 |
+| Median prefill, ms | 20,542.405 | 21,122.812 | +580.408 |
+| Median decode, ms | 14,451.583 | 14,710.432 | +258.849 |
+| Peak process RSS, KiB | 21,483,172 | 21,484,232 | +1,060 |
+| Peak process VRAM, MiB | 8,220 | 8,220 | 0 |
+| Process swap and system swap-out growth | 0 / 0 | 0 / 0 | 0 / 0 |
+
+All four runs match the response, 512 IDs, probabilities,
+SLRU counters, and model residency. One-second samples
+in the reverse pair show P2 and identical median GPU
+and memory clocks of 2,835 and 10,251 MHz. Prefill
+temperatures range from 55–64 °C in control and 53–66 °C
+in the candidate. The samples do not establish the cause
+of the end-to-end regression. Both full pairs favor
+EXP-1656, which remains the cumulative checkpoint.
+The [benchmark journal](../../benchmarks/experiment-history.jsonl)
+lists exact run hashes. The patch, telemetry, and raw
+evidence are in
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/gdn-state-exp1657`.
+
 ## EXP-1654 — Prepare deferred expert copies in parallel
 
 Use one helper for groups of at least four pageable
