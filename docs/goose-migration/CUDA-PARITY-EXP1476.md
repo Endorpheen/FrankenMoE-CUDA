@@ -58,6 +58,7 @@ the dependency that would justify rerunning it.
 | EXP-1586, checkpoint-tail geometry and dense MMVQ | [Matched prefill snapshots and full pairs](#actual-apex-checkpoint-tail-geometry). The last 24,576 QKV values match the live reference. Both full candidate responses omit the opening task echo. [EXP-1587](#cooperative-mmq-on-the-checkpoint-tail) restores the fast MMQ dispatch for this geometry. | The response still miscounts the repeated log records. | Qualify the entire response and compare the matched effective profile with the frozen reference. The two tail-profile selectors remain experimental. |
 | EXP-1607, direct single-route MMVQ addresses | [Same-binary A–B–B–A](#single-route-mmvq-address-parameters) saves 237 ms median decode and preserves the exact response. | Prefill takes 261 ms longer in this series, combined time stays essentially flat and process VRAM increases by 2 MiB. | Keep the patch and repeat with an isolated decode selector or a single parameter ABI that shares the existing CUDA entry. Reuse the counterpart fixture and verify real-device timing before enabling. |
 | EXP-1608, Flash Attention Stream-K on EXP-1603 | [Isolated selector recheck](#flash-attention-stream-k-on-the-exp-1603-checkpoint) uses one binary and batch/ubatch 4096/4096. | The clean pair adds 92 ms to the combined request. Both candidate responses mistake a conditional capacity statement for observed queue growth. | Keep whole-tile Attention. Recheck a scheduling change that preserves the whole-tile result and supports the traced long-context geometry. |
+| EXP-1610, vector stores for causal masks | [CUDA and Apex pairs](#vector-stores-for-causal-masks) save 1.35 and 7.31 ms in an isolated long tile. | Both full pairs preserve exact replies. Their total latency changes in opposite directions. | Retain the patch. Recheck with a prefill kernel that eliminates shared-mask reads on fully visible tiles. |
 
 After a material dependency change, use short sequential A/B runs on
 identical inputs and settings. Use the best current verified checkpoint
@@ -4125,6 +4126,42 @@ shared helper inlining. No full-model speed claim is made.
 The generated device fragments, PTX, register/stack reports,
 fixture traces and patches are in
 `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/flash-lowering-exp1609`.
+
+## Vector stores for causal masks
+
+EXP-2026-11-21-1610 writes the eight half values that one lane
+owns with one aligned 16-byte store when the span is entirely
+visible or entirely masked. The mixed span retains the original
+half stores, and the final partial query tile retains modulo
+wrap. The Goose loader selects the path and the CUDA binding
+emits `st.shared.v4.u32` for the uniform spans. The mask layout,
+floating-point arithmetic and synchronization stay the same.
+
+The 4-, 17- and 289-query fixtures match bitwise with and
+without Stream-K across 2,539,520 FP32 values. Both candidate
+memcheck runs report zero errors. The long 4,096-query by
+32,768-key fixture matches an additional 16,777,216 values.
+Its CUDA kernel medians are 67.993 to 66.646 ms in A–B and
+71.110 to 63.797 ms in B–A, using five launches per arm
+after warm-up.
+
+| Unprofiled Apex 32K/512, 4096/4096, 5,920 MiB | EXP-1603 A1 / A2 | Vector stores B1 / B2 |
+|---|---:|---:|
+| Prefill, tok/s | 1139.968 / 1153.345 | 1148.400 / 1139.846 |
+| Decode, steps/s | 32.265 / 32.608 | 32.299 / 32.222 |
+| Prefill plus decode, s | 44.582 / 44.082 | 44.355 / 44.607 |
+| Peak process VRAM, MiB | 8200 / 8200 | 8200 / 8200 |
+| RSS high-water, KiB | 21481972 / 21480004 | 21478544 / 21480048 |
+| Process swap and system swap-out growth | 0 / 0 | 0 / 0 |
+
+All responses, token IDs, probabilities and expert counters
+match. Each launch starts with the GGUF resident. The two clean
+pairs give opposite end-to-end changes, a saving of 228 ms and a
+cost of 525 ms. Median prefill takes 63 ms longer and median
+decode takes 86 ms longer. The isolated tile speedup does not
+qualify this as a runtime default. Keep the baseline and
+preserve the patch, binary, fixtures, traces and full runs in
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/flash-mask-exp1610`.
 
 ## Long Attention partition probe
 
