@@ -58,6 +58,43 @@ the next target after the current MMQ work.
 The trace and analysis are in
 `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/profile-exp1647`.
 
+## EXP-1651 — Share the Flash MMA KV loop
+
+The Apex eight-query tile uses one loop for the steady
+and final 32-row KV tiles. The last iteration skips the
+next K and mask load. The MMA sequence, softmax update,
+shared layout, and partial-tile handling are preserved.
+At 4,096 queries and 32,768 keys, the warmed fixture
+median fell from 84.584 to 69.866 ms. All 16,777,216
+outputs and 69,632 outputs in the partial-query fixture
+match bit for bit and are finite.
+
+| Warmed Apex 32,768/512, 4096/4096 | EXP-1647 control | EXP-1651 | Candidate minus control |
+|---|---:|---:|---:|
+| A/B prefill, ms | 22,043.435 | 22,377.250 | +333.815 |
+| B/A prefill, ms | 22,494.410 | 21,716.157 | -778.253 |
+| Median prefill, ms | 22,268.922 | 22,046.704 | -222.219 |
+| Median prefill, tok/s | 1,471.62 | 1,486.63 | +15.01 |
+| Median decode, ms | 14,528.614 | 14,636.404 | +107.790 |
+| Median decode, tok/s | 35.17 | 34.92 | -0.26 |
+| Median prefill plus decode, ms | 36,797.537 | 36,683.108 | -114.429 |
+| Peak process RSS, KiB | 21,484,008 | 21,484,256 | +248 |
+| Peak process VRAM, MiB | 8,220 | 8,220 | 0 |
+| Process swap and system swap-out growth | 0 / 0 | 0 / 0 | 0 / 0 |
+
+The reverse pair follows the disagreement between the
+fixture and the first full pair. Both pairs match all
+512 IDs, probabilities, response, and SLRU. The model
+is fully resident. The measured prefill best is **1,508.92
+tok/s** with 35.26 tok/s decode. The pairs have opposite
+prefill deltas. Keep EXP-1651 as an experimental cumulative
+checkpoint on the positive combined prefill and request
+medians, alongside the preserved EXP-1647 executable.
+The exact measurements and hashes are in the
+[benchmark journal](../../benchmarks/experiment-history.jsonl).
+The executable and raw evidence are in
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/flash-loop-exp1651`.
+
 ## EXP-1647 — Prefetch dense Q6_K activation halves
 
 Keep the 128 × 128 Q6_K weight tile and its integer
