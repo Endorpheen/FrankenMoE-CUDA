@@ -63,6 +63,7 @@ the dependency that would justify rerunning it.
 | EXP-1608, Flash Attention Stream-K on EXP-1603 | [Isolated selector recheck](#flash-attention-stream-k-on-the-exp-1603-checkpoint) uses one binary and batch/ubatch 4096/4096. | The clean pair adds 92 ms to the combined request. Both candidate responses mistake a conditional capacity statement for observed queue growth. | Keep whole-tile Attention. Recheck a scheduling change that preserves the whole-tile result and supports the traced long-context geometry. |
 | EXP-1610, vector stores for causal masks | [CUDA and Apex pairs](#vector-stores-for-causal-masks) save 1.35 and 7.31 ms in an isolated long tile. | Both full pairs preserve exact replies. Their total latency changes in opposite directions. | Retain the patch. Recheck with a prefill kernel that eliminates shared-mask reads on fully visible tiles. |
 | EXP-1611, dense Q4_K 32-by-128 MMQ | [Live Apex event measurements](#dense-q4_k-32-by-128-mmq-tiles) save 1.002 s across 2,000 launches and halve the block count. | The unprofiled request does not improve. The event runs synchronize each timed tile and therefore change overlap. | Preserve the 32-row path. Re-evaluate alongside measured scheduling changes or profile with queued events that keep the full dependency order. |
+| EXP-1613, query packing in the vector Attention graph | [Live three-node replay](#query-packing-in-the-attention-graph) eliminates 15,327 direct calls relative to the direct diagnostic and retains the exact output. | One cross-run comparison does not show a throughput gain. The captured scope still covers only Attention. | Reuse the ordered chain lifecycle in a larger decode group with fewer address updates and explicit expert-slot fences. |
 
 After a material dependency change, use short sequential A/B runs on
 identical inputs and settings. Use the best current verified checkpoint
@@ -4256,6 +4257,42 @@ It does not establish a speed gain or measure GPU idle gaps.
 Keep the existing graph opt-in while extending its scope.
 The counter-only source, executable and capture artifacts are in
 `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/graph-witness-exp1612`.
+
+## Query packing in the Attention graph
+
+EXP-2026-11-21-1613 places the existing Q8_1 query pack,
+vector Attention and merge in one ordered graph. The
+diagnostic patch reuses the two-node graph lifecycle,
+updates each node's arguments, recreates the executable
+when the chain length changes and preserves direct launch
+ordering on a failed setup. No CUDA arithmetic or PTX changes.
+
+The fixture switches across 127, 129, 8,064, 8,065, 32,768,
+257 and 16,384 keys in one process. Direct, two-node and
+three-node values match bitwise. CUDA memcheck finds zero
+errors. A node trace records four successful instantiations
+and six graph launches, three of which include query packing.
+
+The full Apex 32K/512 diagnostic uses 4096/4096 and a
+5,920 MiB expert cache. The host witness records one capture,
+5,110 successful graph launches representing 15,330 kernel
+nodes, and zero fallbacks. Direct decode submissions fall to
+1,044,487 versus the saved [two-node witness](#live-apex-attention-graph-replay)'s
+1,049,596. Prefill remains at 26,094 direct submissions.
+Response, probabilities, stop reason and expert counters
+match the EXP-1612 direct diagnostic. Peak VRAM is 8,200 MiB,
+RSS high-water 21,480,796 KiB and swap growth zero.
+This single run measures 1,133.824 prefill and 31.553 decode
+steps/s with no timestamped CUDA activity trace. It establishes
+live execution of the additional node, without a speed or
+GPU-gap claim.
+
+The patch remains out of the working runtime. The next scope
+is the [observed layer-spanning graph](APEX-PERFORMANCE-AUDIT.md#graph-scopes-actually-replayed),
+with expert uploads confirmed before submission and outputs
+published before CPU use. The exact patch, probe, binaries,
+fixture trace and full request are archived in
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/graph-pack-exp1613`.
 
 ## Long Attention partition probe
 
