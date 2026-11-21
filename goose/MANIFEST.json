@@ -6537,7 +6537,9 @@
       "experiment": "EXP-2026-11-08-173-goose-cuda-flash-attention",
       "task": "P1-07",
       "status": "slice",
-      "sha256": "4c96bac6ed484ae6575cde08d2f4f3a53837adcc5dc0e555f3bbac88c7468d40"
+      "sha256": "4bd3bece9258abf7e0f4e56b4cc0a96719e307cb3bd751fe4eea871bb4714534",
+      "integration_commit": "c92a3465b33e69f9b35e49253e6e524cd3e5eac5",
+      "gate": "Apex 32K/512 warmed matched differential, APEX-LATENCY-MAP.md#exp-1651--share-the-flash-mma-kv-loop"
     },
     {
       "goose": "cuda/goose-cuda-flash-attention/vector-device.goose",
