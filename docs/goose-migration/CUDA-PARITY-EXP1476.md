@@ -63,8 +63,8 @@ the dependency that would justify rerunning it.
 | EXP-1608, Flash Attention Stream-K on EXP-1603 | [Isolated selector recheck](#flash-attention-stream-k-on-the-exp-1603-checkpoint) uses one binary and batch/ubatch 4096/4096. | The clean pair adds 92 ms to the combined request. Both candidate responses mistake a conditional capacity statement for observed queue growth. | Keep whole-tile Attention. Recheck a scheduling change that preserves the whole-tile result and supports the traced long-context geometry. |
 | EXP-1610, vector stores for causal masks | [CUDA and Apex pairs](#vector-stores-for-causal-masks) save 1.35 and 7.31 ms in an isolated long tile. | Both full pairs preserve exact replies. Their total latency changes in opposite directions. | Retain the patch. Recheck with a prefill kernel that eliminates shared-mask reads on fully visible tiles. |
 | EXP-1611, dense Q4_K 32-by-128 MMQ | [Live Apex event measurements](#dense-q4_k-32-by-128-mmq-tiles) save 1.002 s across 2,000 launches and halve the block count. | The unprofiled request does not improve. The event runs synchronize each timed tile and therefore change overlap. | Preserve the 32-row path. Re-evaluate alongside measured scheduling changes or profile with queued events that keep the full dependency order. |
-| EXP-1613, query packing in the vector Attention graph | [Live three-node replay](#query-packing-in-the-attention-graph) eliminates 15,327 direct calls relative to the direct diagnostic and retains the exact output. | One cross-run comparison does not show a throughput gain. The captured scope still covers only Attention. | Reuse the ordered chain lifecycle in a larger decode group with fewer address updates and explicit expert-slot fences. |
-| EXP-1614, cached MMVQ pack and projection graph | [Live replay](#cached-mmvq-pack-and-projection-graphs) eliminates 335,368 direct decode calls without node parameter updates. | Both full pairs take longer, and process VRAM increases by up to 24 MiB. The probe reports no executable-slot collisions. | Use one admission and one graph for the routed expert FFN, reusing the current slot's up, gate and down planes. Keep repeated inputs and intermediate activations resident. |
+| EXP-1613, query packing in the vector Attention graph | [Live three-node replay](#query-packing-in-the-attention-graph) eliminates 15,327 direct calls relative to the direct diagnostic and retains the exact output. | One cross-run comparison does not show a throughput gain. The captured scope still covers only Attention. | Retained in the [experimental decode graph](#combined-experimental-decode-graph) for larger groups with explicit expert-slot fences. |
+| EXP-1614, cached MMVQ pack and projection graph | [Live replay](#cached-mmvq-pack-and-projection-graphs) eliminates 335,368 direct decode calls without node parameter updates. | Both full pairs take longer, and process VRAM increases by up to 24 MiB. The probe reports no executable-slot collisions. | Retained in the [experimental decode graph](#combined-experimental-decode-graph). Use one admission and one graph for the routed expert FFN, reusing the current slot's up, gate and down planes. |
 
 After a material dependency change, use short sequential A/B runs on
 identical inputs and settings. Use the best current verified checkpoint
@@ -4347,6 +4347,52 @@ SwiGLU before publishing the weighted output. Keep the
 working runtime unchanged pending a full gain. Raw runs,
 fixture trace, source patches and executable hashes are in
 `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/mmvq-graph-exp1614`.
+
+## Combined experimental decode graph
+
+EXP-2026-11-21-1615 keeps the validated MMVQ capture and
+three-node vector Attention in one experimental path. Both
+use the same ordered CUDA stream and kernel-list capture
+routine. MMVQ replays a cached graph when its pointers and
+geometry match, after updating the job buffer with current
+expert slots. Attention refreshes its node parameters with
+the current KV extent and captured scratch addresses. A
+topology change recreates the Attention graph. Failure
+before submission preserves direct execution in the same
+dependency order.
+
+Use `GOOSE_CUDA_MMVQ_GRAPH=1 GOOSE_CUDA_GRAPH=1 GOOSE_CUDA_GRAPH_PACK=1`
+to exercise both scopes. With these selectors unset, the
+runtime uses the direct working path. The existing
+`GOOSE_CUDA_GRAPH=1` selector alone continues to capture two
+Attention nodes. The harness records all three settings.
+
+Both PTX images match EXP-1603 byte for byte. A short
+same-binary Apex check evaluates the first 8,192 prompt
+IDs and returns 32 tokens at batch/ubatch 4096/4096.
+The combined host witness records 11,122 successful
+MMVQ replays, 310 successful three-node Attention replays
+and 257 successful captures, with no setup errors.
+The 32 IDs, response text, probability rows, stop reason
+and SLRU counters match the direct control. Peak process
+VRAM is 8,032 versus 8,058 MiB, peak RSS is 21,464,584
+versus 21,464,768 KiB and neither arm grows swap. The
+short diagnostic rates are 1,180.530 versus 1,162.349
+prefill tok/s and 26.981 versus 26.305 decode steps/s.
+This qualifies coexistence, without a speed acceptance.
+
+Extend capture to the routed expert FFN after slot
+admission. The existing SLRU fill resolves all three
+expert planes together. Keep their slot offsets, shared
+Q8_1 input, SwiGLU intermediate and weighted output
+ordered within the group. Validate the next routing
+readback and KV updates before increasing scope again.
+Judge full Apex 32K/512 and CPU/GPU timing when the live
+scope is comparable to the hybrid. Preserve these smaller
+checkpoints during that work.
+
+Builds, exact request, witness source and logs are in
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/cuda-graph-combined-exp1615`.
 
 ## Long Attention partition probe
 

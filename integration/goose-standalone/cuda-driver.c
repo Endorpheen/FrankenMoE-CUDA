@@ -75,6 +75,12 @@ struct vmm_mapping {
 enum { MIB_BYTES = 1024 * 1024, DEFAULT_ACTIVATION_BYTES = 64 * MIB_BYTES,
     WIDE_ACTIVATION_BYTES = 384 * MIB_BYTES };
 enum { EXPERT_HOST_SLOTS = 3, EXPERT_HOST_SLOT_BYTES = 4 * MIB_BYTES };
+enum { MMVQ_GRAPH_SLOTS = 1024, MMVQ_GRAPH_KEY_WORDS = 9 };
+
+struct mmvq_graph_entry {
+    uint64_t key[MMVQ_GRAPH_KEY_WORDS];
+    GraphExec executable;
+};
 
 struct device_buffer {
     DevicePtr address;
@@ -160,12 +166,14 @@ static struct {
     size_t vmm_granularity, vmm_capacity;
     bool scratch_vmm, lazy_kv;
     struct memory_properties vmm_properties;
-    bool flash_graph_enabled;
+    bool flash_graph_enabled, flash_graph_pack;
     bool flash_stream_all, flash_tail_mma;
-    Stream flash_graph_stream;
+    Stream graph_stream;
     Graph flash_graph;
     GraphExec flash_graph_exec;
-    GraphNode flash_graph_root, flash_graph_merge;
+    GraphNode flash_graph_nodes[3];
+    size_t flash_graph_node_count;
+    struct mmvq_graph_entry * mmvq_graph_cache;
     int (*init)(unsigned);
     int (*device_get)(int *, int);
     int (*device_attribute)(int *, int, int);
@@ -319,9 +327,13 @@ static void init_vmm(int device) {
     }
 }
 
-static void init_flash_graph(void) {
-    const char * setting = getenv("GOOSE_CUDA_GRAPH");
-    if (!setting || strcmp(setting, "1") != 0 || !cuda.flash_vec) return;
+static void init_cuda_graphs(void) {
+    const char * flash = getenv("GOOSE_CUDA_GRAPH");
+    const char * mmvq = getenv("GOOSE_CUDA_MMVQ_GRAPH");
+    const char * pack = getenv("GOOSE_CUDA_GRAPH_PACK");
+    const bool flash_requested = cuda.flash_vec && flash && strcmp(flash, "1") == 0;
+    const bool mmvq_requested = cuda.mmvq && mmvq && strcmp(mmvq, "1") == 0;
+    if (!flash_requested && !mmvq_requested) return;
 #define GRAPH_LOAD(field, symbol) do { cuda.field = dlsym(cuda.library, symbol); if (!cuda.field) return; } while (0)
     GRAPH_LOAD(stream_create, "cuStreamCreate");
     GRAPH_LOAD(stream_destroy, "cuStreamDestroy_v2");
@@ -335,17 +347,27 @@ static void init_flash_graph(void) {
     GRAPH_LOAD(graph_destroy, "cuGraphDestroy");
     GRAPH_LOAD(graph_exec_destroy, "cuGraphExecDestroy");
 #undef GRAPH_LOAD
-    cuda.flash_graph_enabled = true;
+    cuda.flash_graph_enabled = flash_requested;
+    cuda.flash_graph_pack = flash_requested && pack && strcmp(pack, "1") == 0;
+    if (mmvq_requested) cuda.mmvq_graph_cache = calloc(MMVQ_GRAPH_SLOTS, sizeof(*cuda.mmvq_graph_cache));
+}
+
+static void release_mmvq_graphs(void) {
+    if (cuda.mmvq_graph_cache) {
+        for (size_t i = 0; i < MMVQ_GRAPH_SLOTS; ++i) {
+            if (cuda.mmvq_graph_cache[i].executable) cuda.graph_exec_destroy(cuda.mmvq_graph_cache[i].executable);
+        }
+        free(cuda.mmvq_graph_cache);
+        cuda.mmvq_graph_cache = NULL;
+    }
 }
 
 static void release_flash_graph(void) {
     if (cuda.flash_graph_exec) cuda.graph_exec_destroy(cuda.flash_graph_exec);
     if (cuda.flash_graph) cuda.graph_destroy(cuda.flash_graph);
-    if (cuda.flash_graph_stream) cuda.stream_destroy(cuda.flash_graph_stream);
     cuda.flash_graph_exec = NULL;
     cuda.flash_graph = NULL;
-    cuda.flash_graph_stream = NULL;
-    cuda.flash_graph_enabled = false;
+    cuda.flash_graph_node_count = 0;
 }
 
 static void release_expert_stream(void) {
@@ -399,6 +421,8 @@ static void cleanup(void) {
                 cuda.host_free(cuda.packet_host);
             }
             release_flash_graph();
+            release_mmvq_graphs();
+            if (cuda.graph_stream) cuda.stream_destroy(cuda.graph_stream);
             if (cuda.attention_scratch.reservation_bytes) release_vmm(&cuda.attention_scratch);
             if (cuda.mmq_packed.reservation_bytes) release_vmm(&cuda.mmq_packed);
             for (int64_t i = 0; cuda.state_views && i < cuda.state_ranges.len / 4; ++i) {
@@ -593,7 +617,7 @@ static void load_cuda(void) {
             error = cuda.function_get(&cuda.flash_vec_pack, cuda.module, "goose_flash_vec_pack_query");
         if (error == 0 && flash_vec && vec_pack)
             error = cuda.function_get(&cuda.flash_vec_packed, cuda.module, "goose_flash_vec_q4_packed");
-        if (error == 0) init_flash_graph();
+        if (error == 0) init_cuda_graphs();
         if (error == 0) error = cuda.function_get(&cuda.gdn, cuda.module, "goose_gated_delta_net");
         if (error == 0 && fg_standalone_option_enabled("GOOSE_GDN_DECODE")) {
             error = cuda.function_get(&cuda.gdn_decode, cuda.module, "goose_gdn_decode");
@@ -1891,17 +1915,86 @@ static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
     return 0;
 }
 
+static int launch_cuda_kernels(const struct kernel_node_params * kernels, size_t count, Stream stream) {
+    int error = 0;
+    for (size_t i = 0; i < count && error == 0; ++i) {
+        const struct kernel_node_params * p = &kernels[i];
+        error = cuda.launch(p->function, p->grid_x, p->grid_y, p->grid_z, p->block_x, p->block_y, p->block_z,
+            p->shared_bytes, stream, p->params, p->extra);
+    }
+    return error;
+}
+
+static int capture_cuda_graph(const struct kernel_node_params * kernels, size_t count, Graph * graph) {
+    enum { blocking_stream = 0, thread_local_capture = 1 };
+    // All capture scopes share a stream with legacy-stream ordering.
+    int error = cuda.graph_stream ? 0 : cuda.stream_create(&cuda.graph_stream, blocking_stream);
+    if (error == 0) error = cuda.graph_begin(cuda.graph_stream, thread_local_capture);
+    if (error != 0) return error;
+    error = launch_cuda_kernels(kernels, count, cuda.graph_stream);
+    const int ended = cuda.graph_end(cuda.graph_stream, graph);
+    return error != 0 ? error : ended;
+}
+
+static GraphExec mmvq_graph_for(DevicePtr weight, uint64_t stride, int extent, int kind, int rows, int count, int words,
+                               const struct kernel_node_params * kernels) {
+    if (!cuda.mmvq_graph_cache || !activations.active || !activations.defer_waits || (count != 1 && count != 8)) return NULL;
+    // The ordered descriptor upload provides the current expert slots.
+    // Only the addresses and launch geometry are retained by the graph.
+    const uint64_t key[MMVQ_GRAPH_KEY_WORDS] = {weight, stride, matrix_input, matrix_output,
+        cuda.mmq_packed.address, cuda.jobs.address, ((uint64_t) extent << 32) | (unsigned) rows,
+        ((uint64_t) count << 32) | (unsigned) words, (unsigned) kind};
+    uint64_t hash = UINT64_C(14695981039346656037);
+    for (size_t i = 0; i < MMVQ_GRAPH_KEY_WORDS; ++i) {
+        hash = (hash ^ (key[i] >> 32)) * UINT64_C(1099511628211);
+        hash = (hash ^ (key[i] & UINT32_MAX)) * UINT64_C(1099511628211);
+    }
+    hash ^= hash >> 33;
+    hash *= UINT64_C(0xff51afd7ed558ccd);
+    hash ^= hash >> 33;
+    struct mmvq_graph_entry * entry = &cuda.mmvq_graph_cache[hash % MMVQ_GRAPH_SLOTS];
+    if (memcmp(entry->key, key, sizeof key) != 0) {
+        // Admit a recurring signature. Keep existing executable slots on
+        // collision, so a changing shape cannot cause continual captures.
+        if (!entry->executable) memcpy(entry->key, key, sizeof key);
+        return NULL;
+    }
+    if (entry->executable) return entry->executable;
+    Graph graph = NULL;
+    int error = capture_cuda_graph(kernels, 2, &graph);
+    if (error == 0) error = cuda.graph_instantiate(&entry->executable, graph, 0);
+    if (graph) cuda.graph_destroy(graph);
+    if (error == 0) return entry->executable;
+    if (getenv("GOOSE_GRAPH_LOG")) fprintf(stderr, "Goose CUDA MMVQ graph: setup failed (%d)\n", error);
+    release_mmvq_graphs();
+    return NULL;
+}
+
 static int launch_mmvq(DevicePtr weight, uint64_t stride, int extent, int kind, int rows, int count, int words) {
     const size_t packed_bytes = (size_t) extent * 288 * (size_t) count;
     int error = reserve(&cuda.mmq_packed, packed_bytes);
     if (error == 0) {
         void * pack[] = {&matrix_input, &cuda.mmq_packed.address, &cuda.jobs.address, &extent, &words};
-        error = cuda.launch(cuda.mmvq_pack, (unsigned) (2 * extent), (unsigned) count, 1, 128, 1, 1, 0, NULL, pack, NULL);
-    }
-    if (error == 0) {
         void * matrix[] = {&weight, &cuda.mmq_packed.address, &matrix_output, &cuda.jobs.address,
             &stride, &extent, &kind, &words};
-        error = cuda.launch(cuda.mmvq, (unsigned) rows, (unsigned) count, 1, 128, 1, 1, 0, NULL, matrix, NULL);
+        GraphExec graph = NULL;
+        if (cuda.mmvq_graph_cache) {
+            const struct kernel_node_params kernels[] = {
+                { .function = cuda.mmvq_pack, .grid_x = (unsigned) (2 * extent), .grid_y = (unsigned) count,
+                  .grid_z = 1, .block_x = 128, .block_y = 1, .block_z = 1, .params = pack },
+                { .function = cuda.mmvq, .grid_x = (unsigned) rows, .grid_y = (unsigned) count,
+                  .grid_z = 1, .block_x = 128, .block_y = 1, .block_z = 1, .params = matrix },
+            };
+            graph = mmvq_graph_for(weight, stride, extent, kind, rows, count, words, kernels);
+        }
+        if (graph) {
+            error = cuda.graph_launch(graph, cuda.graph_stream);
+        } else {
+            error = cuda.launch(cuda.mmvq_pack, (unsigned) (2 * extent), (unsigned) count, 1, 128, 1, 1, 0, NULL, pack, NULL);
+            if (error == 0) {
+                error = cuda.launch(cuda.mmvq, (unsigned) rows, (unsigned) count, 1, 128, 1, 1, 0, NULL, matrix, NULL);
+            }
+        }
         error = finish_matrix_launches(error);
     }
     if (error != 0) {
@@ -2081,45 +2174,39 @@ static bool flash_vec_shape(const int64_t * c, int64_t mask_bytes) {
         c[6] > 0 && c[6] <= INT_MAX - 127 && c[21] >= 0 && c[21] <= c[6] && c[14] == 1024;
 }
 
-static int launch_flash_node(const struct kernel_node_params * p, Stream stream) {
-    return cuda.launch(p->function, p->grid_x, p->grid_y, p->grid_z, p->block_x, p->block_y, p->block_z,
-        p->shared_bytes, stream, p->params, p->extra);
-}
-
-static int capture_flash_graph(const struct kernel_node_params * vector, const struct kernel_node_params * merge) {
-    enum { blocking_stream = 0, thread_local_capture = 1 };
-    // The blocking stream preserves dependencies with the legacy stream.
-    int error = cuda.stream_create(&cuda.flash_graph_stream, blocking_stream);
-    if (error == 0) error = cuda.graph_begin(cuda.flash_graph_stream, thread_local_capture);
+static int capture_flash_graph(const struct kernel_node_params * kernels, size_t count) {
+    int error = capture_cuda_graph(kernels, count, &cuda.flash_graph);
     if (error != 0) return error;
-    error = launch_flash_node(vector, cuda.flash_graph_stream);
-    if (error == 0) error = launch_flash_node(merge, cuda.flash_graph_stream);
-    const int end_error = cuda.graph_end(cuda.flash_graph_stream, &cuda.flash_graph);
-    if (error != 0 || end_error != 0) return error ? error : end_error;
     size_t nodes = 1;
-    error = cuda.graph_roots(cuda.flash_graph, &cuda.flash_graph_root, &nodes);
+    error = cuda.graph_roots(cuda.flash_graph, &cuda.flash_graph_nodes[0], &nodes);
     if (error != 0 || nodes != 1) return error ? error : -1;
-    nodes = 1;
-    error = cuda.graph_dependents(cuda.flash_graph_root, &cuda.flash_graph_merge, &nodes);
-    if (error != 0 || nodes != 1) return error ? error : -1;
-    return cuda.graph_instantiate(&cuda.flash_graph_exec, cuda.flash_graph, 0);
+    for (size_t i = 1; i < count; ++i) {
+        nodes = 1;
+        error = cuda.graph_dependents(cuda.flash_graph_nodes[i - 1], &cuda.flash_graph_nodes[i], &nodes);
+        if (error != 0 || nodes != 1) return error ? error : -1;
+    }
+    error = cuda.graph_instantiate(&cuda.flash_graph_exec, cuda.flash_graph, 0);
+    if (error == 0) cuda.flash_graph_node_count = count;
+    return error;
 }
 
-static int launch_flash_pair(const struct kernel_node_params * vector, const struct kernel_node_params * merge) {
+static int launch_flash_chain(const struct kernel_node_params * kernels, size_t count) {
     if (cuda.flash_graph_enabled) {
-        int error;
+        int error = 0;
+        if (cuda.flash_graph_exec && cuda.flash_graph_node_count != count) release_flash_graph();
         if (!cuda.flash_graph_exec) {
-            error = capture_flash_graph(vector, merge);
+            error = capture_flash_graph(kernels, count);
         } else {
-            error = cuda.graph_set_kernel(cuda.flash_graph_exec, cuda.flash_graph_root, vector);
-            if (error == 0) error = cuda.graph_set_kernel(cuda.flash_graph_exec, cuda.flash_graph_merge, merge);
+            for (size_t i = 0; i < count && error == 0; ++i) {
+                error = cuda.graph_set_kernel(cuda.flash_graph_exec, cuda.flash_graph_nodes[i], &kernels[i]);
+            }
         }
-        if (error == 0) return cuda.graph_launch(cuda.flash_graph_exec, cuda.flash_graph_stream);
+        if (error == 0) return cuda.graph_launch(cuda.flash_graph_exec, cuda.graph_stream);
         if (getenv("GOOSE_GRAPH_LOG")) fprintf(stderr, "Goose CUDA Flash graph: setup failed (%d)\n", error);
         release_flash_graph();
+        cuda.flash_graph_enabled = false;
     }
-    const int error = launch_flash_node(vector, NULL);
-    return error == 0 ? launch_flash_node(merge, NULL) : error;
+    return launch_cuda_kernels(kernels, count, NULL);
 }
 
 static int launch_flash_vec(const int64_t * c, DevicePtr * staged, DevicePtr output, float scale, bool * executed) {
@@ -2145,9 +2232,12 @@ static int launch_flash_vec(const int64_t * c, DevicePtr * staged, DevicePtr out
         meta = matrix + span;
         if (prepacked) query = matrix + scratch;
     }
-    if (prepacked) {
-        void * pack[] = {&staged[0], &query, &staged[4], &scale};
-        const int error = cuda.launch(cuda.flash_vec_pack, (unsigned) heads, 1, 1, 32, 1, 1, 0, NULL, pack, NULL);
+    const bool pack_in_graph = prepacked && cuda.flash_graph_enabled && cuda.flash_graph_pack;
+    void * pack_args[] = {&staged[0], &query, &staged[4], &scale};
+    const struct kernel_node_params pack = { .function = cuda.flash_vec_pack, .grid_x = (unsigned) heads,
+        .grid_y = 1, .grid_z = 1, .block_x = 32, .block_y = 1, .block_z = 1, .params = pack_args };
+    if (prepacked && !pack_in_graph) {
+        const int error = launch_cuda_kernels(&pack, 1, NULL);
         if (error != 0) return error;
     }
     void * args[] = {&query, &staged[1], &staged[2], &matrix, &meta, &staged[4], &keys, &scale};
@@ -2156,7 +2246,9 @@ static int launch_flash_vec(const int64_t * c, DevicePtr * staged, DevicePtr out
     void * merge_args[] = {&matrix, &meta, &output, &parts, &heads};
     const struct kernel_node_params merge = { .function = cuda.flash_vec_merge, .grid_x = (unsigned) heads,
         .grid_y = 1, .grid_z = 1, .block_x = 256, .block_y = 1, .block_z = 1, .params = merge_args };
-    const int error = parts > 1 ? launch_flash_pair(&vector, &merge) : launch_flash_node(&vector, NULL);
+    const struct kernel_node_params kernels[] = {pack, vector, merge};
+    const int error = parts > 1 ? launch_flash_chain(kernels + (pack_in_graph ? 0 : 1), pack_in_graph ? 3 : 2) :
+        launch_cuda_kernels(&vector, 1, NULL);
     if (error == 0) *executed = true;
     else (void) cuda.sync();
     return error;
