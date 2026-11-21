@@ -83,11 +83,36 @@ All 512 IDs, probabilities, response, and SLRU match.
 The candidate records 320 Q6_K pipeline launches and
 retains 1,545 Q4_K pipeline launches, 320 dense Q8_1
 reuses and 360 shared Q8_1 reuses. Use EXP-1647 as the
-cumulative control. Its recorded prefill advances the
-historical best from 1,485.81 to 1,500.56 tok/s. The
-decode result is a pair observation for a prefill change.
+cumulative control. The original pair advanced the
+prefill best from 1,485.81 to 1,500.56 tok/s.
 The binary and matched evidence are in
 `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/q6-pipeline-exp1647`.
+
+### EXP-1647 measured best during EXP-1650
+
+The warmed control of EXP-1650 used the same EXP-1647
+executable and produced a new measured best of **1,507.32
+tok/s prefill**. The original EXP-1647 A/B above records
+the measured effect of the Q6_K change. Use the control
+of each new matched pair to measure its effect.
+
+| Warmed Apex 32,768/512, 4096/4096 | EXP-1647 control | EXP-1650 batched uploads |
+|---|---:|---:|
+| Prefill, ms | 21,739.268 | 22,151.536 |
+| Prefill, tok/s | 1,507.32 | 1,479.27 |
+| Decode, ms | 14,223.543 | 14,520.074 |
+| Decode, tok/s | 35.93 | 35.19 |
+| Prefill plus decode, ms | 35,962.811 | 36,671.610 |
+| Peak process RSS, KiB | 21,483,676 | 21,484,496 |
+| Peak process VRAM, MiB | 8,220 | 8,220 |
+| Process swap and system swap-out growth | 0 / 0 | 0 / 0 |
+
+Both arms match the EXP-1647 output, all 512 IDs and
+probabilities, and the SLRU counters. The candidate
+submitted 155,824 copies in 27,635 batches and added
+708.799 ms to prefill plus decode. EXP-1647 remains the
+cumulative checkpoint. The exact measurements and hashes
+are recorded in the [benchmark journal](../../benchmarks/experiment-history.jsonl).
 
 ## EXP-1646 — Pipeline prepared Q4_K quarters
 
