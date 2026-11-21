@@ -58,6 +58,44 @@ the next target after the current MMQ work.
 The trace and analysis are in
 `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/profile-exp1647`.
 
+## EXP-1662 — Fuse GDN RMSNorm and SCALE
+
+The Goose graph matcher combines an unweighted RMSNorm
+with its sole adjacent SCALE consumer on eligible
+prefill tensors. It keeps the reference RMSNorm and
+applies the scalar operation after the normalized value
+has rounded. The addition of positive zero preserves
+the separate SCALE operation's signed-zero behavior.
+Set `GOOSE_CUDA_RMS_POSTSCALE=0` for separate launches.
+
+The strided 4,096-token GPU fixture matched all 8,388,608
+values and fell from 0.336 to 0.213 ms. The 65-token
+fixture matched all 133,120 values. The Apex warm-up
+records all 60 fused Q/K operations and all 40 SwiGLU
+packing groups from EXP-1661.
+
+| Warmed Apex 32,768/512, 4096/4096 | EXP-1661 | EXP-1662 | Candidate minus control |
+|---|---:|---:|---:|
+| A/B prefill, ms | 19,507.034 | 19,604.575 | +97.540 |
+| B/A prefill, ms | 19,840.458 | 19,380.845 | -459.614 |
+| Median prefill, ms | 19,673.746 | 19,492.710 | -181.037 |
+| Median decode, ms | 14,529.423 | 14,532.631 | +3.208 |
+| Median prefill plus decode, ms | 34,203.169 | 34,025.341 | -177.828 |
+| Peak process RSS, KiB | 21,483,480 | 21,484,048 | +568 |
+| Peak process VRAM, MiB | 8,190 | 8,190 | 0 |
+| Process swap and system swap-out growth | 0 / 0 | 0 / 0 | 0 / 0 |
+
+All four runs match 512 IDs, probability rows,
+response, and SLRU with full model residency. The
+first pair improves combined latency while prefill
+regresses. The reverse pair confirms a total latency
+gain, and the candidate reaches **1,690.74 tok/s** with
+35.27 tok/s decode. Keep the combined winner as the
+experimental cumulative checkpoint. The exact runs and
+hashes are in the [benchmark journal](../../benchmarks/experiment-history.jsonl).
+Artifacts are in
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/rms-scale-exp1662`.
+
 ## EXP-1661 — Fuse SwiGLU with the down projection's Q8_1 pack
 
 The Goose graph matcher groups a routed gate/up pair,

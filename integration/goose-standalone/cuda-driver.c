@@ -247,7 +247,7 @@ static struct {
     sl_i64 expert_pins;
     int64_t expert_pinned_bytes;
     int status, multiprocessors;
-    bool mmq_window, mmq_shared, moe_topk, activation_reference;
+    bool mmq_window, mmq_shared, moe_topk, activation_reference, rms_postscale;
     bool mmq_align_window, mmq_dense_partial, mmq_shared_reuse, mmq_dense_reuse;
     bool mmvq_dense_tail;
     size_t vmm_granularity, vmm_capacity;
@@ -1269,6 +1269,7 @@ static void load_cuda(void) {
         if (error == 0 && cuda.vector_flat && fg_standalone_option_enabled("GOOSE_CUDA_VECTOR_FLAT4"))
             error = cuda.function_get(&cuda.vector_flat4, cuda.module, "goose_vector_flat4");
         if (error == 0 && rms_reference) error = cuda.function_get(&cuda.rms_reference, cuda.module, "goose_rms_reference");
+        cuda.rms_postscale = cuda.rms_reference && fg_standalone_option_enabled("GOOSE_CUDA_RMS_POSTSCALE");
         if (error == 0) error = cuda.function_get(&cuda.rope_phases, cuda.module, "goose_rope_phases");
         if (error == 0) error = cuda.function_get(&cuda.rope_apply, cuda.module, "goose_rope_apply");
         if (error == 0 && fg_standalone_option_enabled("GOOSE_ROPE_DECODE")) {
@@ -3838,7 +3839,7 @@ int64_t fg_cuda_vector(sl_i64 config, sl_u8 x, sl_u8 y, sl_u8 out, float param0,
             const int32_t vectors = vec ? (width <= 4096 ? 1 : 4) : 0;
             const unsigned lanes = vec ? (width <= 128 ? 32 : width <= 512 ? 128 : width <= 1024 ? 256 :
                 width <= 2048 ? 512 : 1024) : (width < 1024 ? 256 : 1024);
-            void * args[] = {&staged[0], &staged[1], &output, plan, &param0, (void *) &vectors};
+            void * args[] = {&staged[0], &staged[1], &output, plan, &param0, (void *) &vectors, &param1};
             error = cuda.launch(cuda.rms_reference, (unsigned) plan[24], 1, 1, lanes, 1, 1, 0, NULL, args, NULL);
         } else {
             void * args[] = {&staged[0], &staged[1], &output, plan, &param0, &param1};
@@ -3854,6 +3855,16 @@ int64_t fg_cuda_vector(sl_i64 config, sl_u8 x, sl_u8 y, sl_u8 out, float param0,
     }
     ++cuda_vectors;
     return 1;
+}
+
+int64_t fg_cuda_rms_scale(sl_i64 plan, uint64_t input, int64_t input_bytes,
+                          uint64_t output, int64_t bytes, int64_t step, int64_t deadline, float eps, float scale) {
+    if (!cuda.rms_postscale || !activations.active) return 0;
+    if (fg_cuda_activation_prepare(output, bytes, true, false, step, deadline) != 0) return -1;
+    const int64_t status = fg_cuda_vector(plan, (sl_u8) {(void *) (uintptr_t) input, input_bytes},
+        (sl_u8) {0}, (sl_u8) {(void *) (uintptr_t) output, bytes}, eps, scale);
+    if (status > 0 && getenv("GOOSE_GRAPH_LOG")) fprintf(stderr, "Goose CUDA: fused RMS and scale\n");
+    return status;
 }
 
 uint64_t fg_cuda_take_vectors(void) {

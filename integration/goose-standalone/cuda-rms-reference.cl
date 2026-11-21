@@ -23,12 +23,12 @@ static void fg_rms_shared_store(uint64_t p, uint64_t i, float v) { ((__local flo
 #include "rms-reference-device.h"
 
 __kernel void goose_rms_reference(__global uint8_t * x, __global uint8_t * weights,
-    __global uint8_t * out, vector_launch_packet cfg, float eps, int32_t vectors) {
+    __global uint8_t * out, vector_launch_packet cfg, float eps, int32_t vectors, float postscale) {
     uint32_t row, thread, lanes;
     __local float shared[32];
     __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(row));
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
     __asm__("mov.u32 %0, %%ntid.x;" : "=r"(lanes));
     fg_reference_rms_g((uint64_t) x, (uint64_t) weights, (uint64_t) out, (uint64_t) cfg.words, eps,
-        (uint64_t) shared, row, thread, lanes, vectors);
+        (uint64_t) shared, row, thread, lanes, vectors, postscale);
 }

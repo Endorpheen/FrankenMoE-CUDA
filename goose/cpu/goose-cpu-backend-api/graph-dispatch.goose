@@ -19,6 +19,8 @@ extern "fg_cuda_direct_ssm_enabled" fn direct_ssm_enabled() -> bool;
 extern "fg_cuda_direct_ssm" fn direct_ssm(plan: const i64[:], step: i64, deadline: i64) -> i64;
 extern "fg_cuda_glu_pack_offer" fn offer_glu_pack(plan: const i64[:]) -> bool;
 extern "fg_cuda_glu_pack_close" fn close_glu_pack() -> bool;
+extern "fg_cuda_rms_scale" fn rms_scale(plan: const i64[:], input: u64, input_bytes: i64,
+    output: u64, bytes: i64, step: i64, deadline: i64, eps: f32, scale: f32) -> i64;
 extern "fg_cuda_routed_graph" fn routed_graph(plan: const i64[:], glu: const i64[:], norm: const i64[:],
     shared: const i64[:], step: i64, deadline: i64) -> i64;
 
@@ -355,6 +357,43 @@ fn try_glu_pack(graph: u64, step: i64, deadlines: const i64[:], glu: u64) -> boo
     return offer_glu_pack(plan[..]);
 }
 
+fn try_rms_scale(graph: u64, step: i64, deadlines: const i64[:], rms: u64) -> i64 {
+    if step + 1 >= deadlines.len || deadlines[step] != step + 1 ||
+       storage_get(rms, STORAGE_VIEW, 0) != 0 { return 0; }
+    let scale = graph_node(graph, step + 1);
+    if graph_prop(scale, 2) != OP_SCALE || storage_get(scale, STORAGE_VIEW, 0) != 0 { return 0; }
+    var inputs: u64[10] = [0; 10];
+    graph_inputs(scale, inputs[..]);
+    if inputs[0] != rms { return 0; }
+    var p: i64[71] = [0; 71];
+    graph_describe(scale, p[..]);
+    let width = p[30]; let heads = p[31]; let tokens = p[32];
+    let factor = from_bits(p[41] as! u32);
+    if p[42] != 0 || !(factor > 0.0 && factor <= 1.0) ||
+       width != 128 || heads < 1 || heads > 64 || tokens < 64 || tokens > 4096 ||
+       !routed_dense(packet_tensor(p[..], 30), width, heads, tokens, 0) ||
+       !routed_dense(packet_tensor(p[..], 0), width, heads, tokens, 0) { return 0; }
+    let out = storage_get(scale, STORAGE_DATA, 0);
+    graph_describe(rms, p[..]);
+    let inp = p[57] as! u64;
+    let x = packet_tensor(p[..], 0);
+    let eps = from_bits(p[41] as! u32);
+    let words = width * heads * tokens;
+    if p[55] != 0 || inp == 0 || out == 0 || (inp | out) % 4 != 0 ||
+       !(eps >= 0.0 && eps <= 1.0) ||
+       x.ne[0] != width || x.ne[1] != heads || x.ne[2] != tokens || x.ne[3] != 1 ||
+       x.nb[0] != 4 || !cv_layout(x, x.bytes) ||
+       activation_spans_overlap(inp, x.bytes as u64, out, (words * 4) as u64) { return 0; }
+    var cfg: i64[26] = [0; 26];
+    cfg[0] = CV_RMS; cfg[1] = words;
+    for i in 4 {
+        cfg[2 + i] = x.ne[i]; cfg[6 + i] = x.ne[i]; cfg[10 + i] = x.nb[i];
+    }
+    cfg[23] = 16 | (if x.bytes > words * 4 { 1 } else { 0 });
+    cfg[24] = heads * tokens; cfg[25] = 32;
+    return rms_scale(cfg[..], inp, x.bytes, out, words * 4, step, deadlines[step + 1], eps, factor);
+}
+
 fn execute_graph_node(tensor: u64, work: GraphWorkspace &, selective: bool, step: i64, deadline: i64) -> bool {
     if tensor == 0 { return false; }
     let op = graph_prop(tensor, 2);
@@ -408,6 +447,11 @@ export fn fg143_graph_run(graph: u64, selective: bool, deadlines: const i64[:], 
         let step = if deadlines.len == 0 { -1 } else { i };
         let deadline = if deadlines.len == 0 { -1 } else { deadlines[i] };
         let tensor = graph_node(graph, i);
+        if !observe && deadlines.len != 0 && graph_prop(tensor, 2) == OP_RMS_NORM {
+            let fused = try_rms_scale(graph, i, deadlines, tensor);
+            if fused > 0 { i += 2; continue; }
+            if fused < 0 { outcome = i + 1; break; }
+        }
         if !observe && deadlines.len != 0 && graph_prop(tensor, 2) == OP_GLU &&
            try_glu_pack(graph, i, deadlines, tensor) {
             // Keep both operands alive at the SwiGLU step until packing finishes.

@@ -104,7 +104,8 @@ fn rms_row(
     mc: i32,
     ac: i32,
     eps: f32,
-    scale_out: f32) {
+    scale_out: f32,
+    add_zero: bool) {
     var sum: f32 = 0.0;
 
     if vec {
@@ -158,6 +159,12 @@ fn rms_row(
                     out.y *= scale_out;
                     out.z *= scale_out;
                     out.w *= scale_out;
+                    if add_zero {
+                        out.x += 0.0;
+                        out.y += 0.0;
+                        out.z += 0.0;
+                        out.w += 0.0;
+                    }
                 }
                 store4(d, i, out);
             }
@@ -187,7 +194,8 @@ fn rms_row(
                 }
             } else {
                 if scaled {
-                    store(d, col as u64, scale_out * (scale * load(x, col as u64)));
+                    let result = scale_out * (scale * load(x, col as u64));
+                    store(d, col as u64, if add_zero { result + 0.0 } else { result });
                 } else {
                     store(d, col as u64, scale * load(x, col as u64));
                 }
@@ -350,7 +358,8 @@ fn lane(
                     get(p, 1, 8) as i32,
                     get(p, 1, 12) as i32,
                     eps,
-                    fl(p, 1));
+                    fl(p, 1),
+                    false);
             } else {
                 var pair = F2 {
                     0.0, 0.0
