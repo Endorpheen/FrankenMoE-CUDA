@@ -86,6 +86,33 @@ Full matrix comparisons, traces, SASS, executable hashes
 and results are in
 `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/mmq-large-exp1624`.
 
+### EXP-1625 — Wider CTA at the register limit
+
+The 128 × 288 and 128 × 320 variants preserve output bits
+and reduce CTA count further. Both reach 255 registers.
+Offline SM89 assembly reports 172 and 272 bytes each of
+spill loads and stores, respectively. CUDA Driver still
+reports a maximum of one active CTA per SM. With the
+same deterministic inputs, both larger tiles lose on
+the two major shapes. Medians use seven measured
+iterations after two warm-up iterations.
+
+| Dense Q4_K M × N × K | 128 × 256, ms | 128 × 288, ms | 128 × 320, ms |
+|---|---:|---:|---:|
+| 8192 × 4092 × 2048 | 4.628 | 6.025 | 6.981 |
+| 2048 × 4096 × 4096 | 2.968 | 3.537 | 4.544 |
+
+Keep 128 × 256. The wider code, binaries and traces
+are archived in
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/mmq-width-limit-exp1625`.
+The next comparison separates operand layout from tile
+dimensions. The hybrid writes Q8_1 at `k_block * N + column`
+and stages consecutive columns of each K block. Goose
+currently calls the equivalent quantizer separately for
+each input column and stores the K blocks of a column
+together. This layout can change while preserving the
+quarter-K CTA and accumulation order.
+
 ## EXP-1623 — Dense Q4_K 128 × 128 MMQ
 
 The 128-row variant stages half of each Q4_K weight slab
