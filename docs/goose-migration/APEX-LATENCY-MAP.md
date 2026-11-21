@@ -109,6 +109,44 @@ capture. Artifacts, including the measured executable,
 are in
 `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/expert-parallel-exp1654`.
 
+### EXP-1655 — Routed Q4_K pipeline qualification
+
+The EXP-1654 binary reached a measured prefill best of
+**1,582.51 tok/s**, with 33.98 tok/s decode, as the
+first control of EXP-1655. A second control reached
+1,548.37 tok/s. Both controls use the same executable,
+request, and configuration. Keep the individual best
+and the paired effects distinct.
+
+The EXP-1655 candidate stages both Q4_K weight halves
+in shared memory and alternates Q8_1 activation banks
+with `cp.async` in the gate and up projections. The
+warmed fixture prefill step fell from 1.159 to 1.120 ms
+with shared packing and from 1.558 to 1.472 ms with
+per-route packing. All 5,966,848 output words were
+finite and matched in each case.
+
+| Warmed Apex 32,768/512, 4096/4096 | EXP-1654 control | EXP-1655 candidate | Candidate minus control |
+|---|---:|---:|---:|
+| A/B prefill, ms | 20,706.323 | 21,041.381 | +335.058 |
+| B/A prefill, ms | 21,162.932 | 21,199.031 | +36.099 |
+| Median prefill, ms | 20,934.628 | 21,120.206 | +185.578 |
+| Median decode, ms | 14,955.792 | 15,189.268 | +233.477 |
+| Median prefill plus decode, ms | 35,890.419 | 36,309.474 | +419.055 |
+| Peak process RSS, KiB | 21,483,412 | 21,484,780 | +1,368 |
+| Peak process VRAM, MiB | 8,220 | 8,220 | 0 |
+| Process swap and system swap-out growth | 0 / 0 | 0 / 0 | 0 / 0 |
+
+The candidate records 640 pipeline launches per
+request. All 512 IDs, probabilities, response, SLRU,
+and full model residency match. Both full pairs show
+higher prefill latency for the candidate, so keep
+EXP-1654 as the cumulative runtime checkpoint.
+The [benchmark journal](../../benchmarks/experiment-history.jsonl)
+records the individual runs. The candidate patch and
+raw comparisons are in
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/q4-routed-exp1655`.
+
 ## EXP-1652 — Pipeline routed Q6_K projections
 
 Use the existing 128 × 128 half-K computation for wide
