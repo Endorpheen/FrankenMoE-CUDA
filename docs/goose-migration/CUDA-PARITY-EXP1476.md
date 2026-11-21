@@ -116,7 +116,7 @@ prefill and 62.86 decode tokens/s.
 | 19 | Fused RMS/L2 normalization. `ggml_cuda_try_fuse` → RMS multiply/add/scale variants in `norm.cu` and supported RoPE/cache combinations. | Goose connects its existing weighted RMS kernel at Qwen35 attention and GDN sites. The short Apex numerical snapshot matches the unfused graph byte-for-byte. | PARTIAL. Validate at full context and restore remaining compatible RMS/L2 and RoPE combinations. |
 | 20 | Gated and unary activation fusion. `unary.cu` and `ggml_cuda_try_fuse` launch `unary_gated_op_kernel` and `unary_op_kernel`. | Both execute. Goose implements fused SwiGLU and several individual activations. The opt-in [sigmoid and SiLU](#first-recurrent-sigmoid-and-silu) match the first recurrent layer's reference arithmetic. | PARTIAL. Verify other gates and remaining graph fusion choices. |
 | 21 | Broadcast arithmetic and reductions. CUDA operation dispatch → `k_bin_bcast`, `scale_f32`, `reduce_1Block_kernel`. | The reference runs optimized family variants. Goose implements broadcast vector and row-sum kernels for supported layouts. | PARTIAL. Restore shape-aware broadcasts/reductions where effect is measured. Verify offsets, F32/F64 reduction order and noncontiguous inputs. |
-| 22 | RoPE execution. CUDA dispatch → `rope_multi` and its graph fusion with norms and cache. | `rope_multi` runs. Goose has positional transforms on GPU and CPU. | PARTIAL. Compare actual long prefix positions, mode flags and rotate/cache fusion. Check Q/K numerics at the first divergence. |
+| 22 | RoPE execution. CUDA dispatch → `rope_multi` and its graph fusion with norms and cache. | `rope_multi` runs in the hybrid. [Single-kernel IMRoPE](#single-kernel-imrope-for-apex-decode) runs by default on the eligible standalone Apex decode shape and saves 0.471 s median full decode. | PARTIAL. The multi-token path still uses separate phases. Compare other mode flags and rotate/cache fusion. |
 | 23 | Q4 cache writes. CUDA SET_ROWS dispatch → `k_set_rows_quant`. | Reference executes GPU Q4 quantization. Goose validates row updates and uses `goose_set_q4_rows` for dense supported spans, with ordered CPU sparse writes. | PARTIAL. Verify packed bytes and ordering against reference in the real cache. Measure writes across prefill and decode and retain safe repeated-index behavior. |
 | 24 | Tensor copies, concatenation and gathers. CUDA transform dispatch → `concat_cont`, `concat_non_cont`, `cpy_scalar`, `k_get_rows_float` and vectorized gather. | All appear in reference trace. Goose has aligned lifetimes, GPU blits and gathers and host fallbacks. | PARTIAL. Match selected contiguous and strided paths while avoiding dead-tensor transfers. Check views, source lifetimes and numerical read-back. |
 | 25 | Backend graph splitting and lifetime planning. GGML scheduler in `vendor/flint/ggml/src/ggml-backend.cpp` → `ggml-alloc.c` child/view counts, aligned best-fit, split/coalesced blocks and admissible in-place reuse. | Reference log records five buffers and eight same-size reallocations. Goose completes actual 4096/4096 using a ~1.010 GB lifetime arena and whole-block reuse. | PARTIAL. Retain the tested alias planner. Extend device lifetime ownership and compare backend memory peaks and retry behavior on identical profiles. |
@@ -3535,6 +3535,72 @@ checksums are under
 Executable SHA-256
 `11fcaf2b847ee561507eab5ad8588e91091a530cff11519485c0e9482603033e`.
 The executable links libc and libm.
+
+## Single-kernel IMRoPE for Apex decode
+
+EXP-1594 restores the single-dispatch structure used by
+EXP-171 and the hybrid's `rope_multi`. Standalone Goose
+previously calculated all phase pairs serially in one lane
+per token, including unused pairs. The next kernel applied
+the table to all heads. The new decode dispatch maps one
+block to each head. Each lane computes an active pair's
+phase using the existing FP32 recurrence, section selection
+and YaRN arithmetic, then applies the shared rotation
+function. Unrotated pairs keep their original bytes. There
+is no global phase table for the fused operation.
+
+Goose selects the path for single-token, single-sequence
+IMRoPE with up to 64 rotated and 512 total channels.
+Multi-token prefill and other shapes retain the original
+dispatch. Set `GOOSE_ROPE_DECODE=0` to select the original
+two kernels. The CUDA fixture includes two precisions,
+long and different positions per axis, strided input,
+YaRN factors, a nonzero rotation offset and backward
+rotation. The 126,024 output bytes match the control.
+Compute Sanitizer reports zero memory errors.
+
+The full unprofiled A–B–B–A series toggles only
+`GOOSE_ROPE_DECODE` within one binary. It uses RTX 4070,
+the frozen 32,768-input/512-output request, context 262,144,
+4096/4096, Q4_0 KV, CPU limits 8/16 and the 4,992 MiB
+expert cache. All four responses and the separate profiled
+response have identical text, 512 IDs, probability rows,
+stop reason and expert-cache counters.
+
+| Metric | A, two kernels | B, fused |
+|---|---:|---:|
+| Prefill in A–B, tok/s | 1,126.558 | 1,126.424 |
+| Prefill in B–A, tok/s | 1,123.487 | 1,123.263 |
+| Median prefill, tok/s | 1,125.023 | 1,124.843 |
+| Decode in A–B, steps/s | 27.004 | 27.625 |
+| Decode in B–A, steps/s | 27.051 | 27.811 |
+| Median decode, steps/s | 27.028 | 27.718 |
+| Median decode time, s | 18.907 | 18.436 |
+| Process RSS high-water range, KiB | 22,954,936–22,955,652 | 22,955,012–22,955,652 |
+| Process VRAM ready / after request, MiB | 6,510 / 7,272 | 6,510 / 7,272 |
+| Resident model pages | 5,301,139 | 5,301,139 |
+| Process swap and system swap-out growth | 0 | 0 |
+
+Decode saves 425 and 516 ms in the two pairs. Median
+prefill differs by 4.65 ms. VRAM values are process
+snapshots. The response retains the control's existing
+content defect, so this optimization does not close
+the response or end-to-end speed acceptance gate.
+
+With the selector unset, Nsight records 4,989 launches
+at grid X=2 (K, mean 2.478 µs) and 4,989 at grid X=16
+(Q, mean 2.701 µs), and no decode-sized `goose_rope_apply`
+launches. The older trace records approximately 47 µs
+for the single-token phase kernel and 2.05–2.16 µs for
+apply. The traces were collected in separate sessions.
+Nsight warns of incomplete event capture, so the counts
+establish dispatch and the unprofiled pairs establish
+request speed. The executable's ELF dependencies are
+libm and libc. Its SHA-256 is
+`2e169f0a19d4b6c9eaf63c50ce1cff34d42e96f2fd465e721947b718ee8de8ab`.
+Raw runs, exact options, fixture outputs, binary, trace
+and checksums are under
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/rope-decode-exp1594`.
 
 ## Long Attention partition probe
 

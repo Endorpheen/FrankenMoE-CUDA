@@ -53,7 +53,8 @@ fn rope_cuda(p: const Node &, x: const u8[:], positions: const u8[:], factors: c
     let corr = rope_correction(p, dims);
     let forward = if p.op == OP_ROPE { 1 } else { 0 };
     let workspace = mul_size(mul_size(tokens, width), 4);
-    let config: i64[27] = [0, blocks, 1, phases, workspace,
+    let decode = mode == 40 && tokens == 1 && p.x.ne[3] == 1 && width <= 512 && dims <= 64;
+    let config: i64[27] = [if decode { 2 } else { 0 }, blocks, 1, phases, workspace,
         width, p.x.ne[1], tokens, p.x.ne[3], dims, mode, offs,
         p.ip[4], p.ip[5], p.ip[6], p.ip[7], size, p.x.nb[1], p.x.nb[2], p.x.nb[3],
         forward, bits(step) as i64, bits(p.fp[1]) as i64, bits(p.fp[2]) as i64,

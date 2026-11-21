@@ -122,6 +122,7 @@ static struct {
     Function mmq_stream, mmq_stream_fixup;
     Function flash_stream, flash_fixup_uniform, flash_fixup_general;
     Function rope_phases, rope_apply, ssm_conv, ssm_conv_decode, ssm_conv_long;
+    Function rope_decode;
     Function route_reduce, route_sort, route_topk, route_gather, route_norm, blit, fwht, moe_weighted;
     struct device_buffer input, output, weight, jobs;
     struct device_buffer mmq_packed, mmq_tiles, mmq_partials;
@@ -592,6 +593,9 @@ static void load_cuda(void) {
         if (error == 0 && rms_reference) error = cuda.function_get(&cuda.rms_reference, cuda.module, "goose_rms_reference");
         if (error == 0) error = cuda.function_get(&cuda.rope_phases, cuda.module, "goose_rope_phases");
         if (error == 0) error = cuda.function_get(&cuda.rope_apply, cuda.module, "goose_rope_apply");
+        if (error == 0 && fg_standalone_option_enabled("GOOSE_ROPE_DECODE")) {
+            error = cuda.function_get(&cuda.rope_decode, cuda.module, "goose_rope_decode");
+        }
         if (error == 0) error = cuda.function_get(&cuda.ssm_conv, cuda.module, "goose_ssm_conv");
         if (error == 0 && ssm_reference) {
             error = cuda.function_get(&cuda.ssm_conv_long, cuda.module, "goose_ssm_conv_long");
@@ -2473,11 +2477,12 @@ uint64_t fg_cuda_take_vectors(void) {
 }
 
 int64_t fg_cuda_position(sl_i64 config, sl_u8 x, sl_u8 y, sl_u8 z, sl_u8 out) {
-    if (config.len != 27 || (config.data[0] != 0 && config.data[0] != 1) ||
+    enum { rope_operation = 0, conv_operation = 1, rope_decode_operation = 2 };
+    if (config.len != 27 || config.data[0] < rope_operation || config.data[0] > rope_decode_operation ||
         config.data[1] <= 0 || config.data[1] > INT_MAX ||
         config.data[2] <= 0 || config.data[2] > 65535 ||
         x.len <= 0 || y.len <= 0 || z.len < 0 || out.len <= 0) return -1;
-    const bool rope = config.data[0] == 0;
+    const bool rope = config.data[0] != conv_operation;
     if (rope && (config.data[3] <= 0 || config.data[3] > INT_MAX || config.data[4] <= 0)) return -1;
     const int active = start_context();
     if (active != 1) return active;
@@ -2486,11 +2491,16 @@ int64_t fg_cuda_position(sl_i64 config, sl_u8 x, sl_u8 y, sl_u8 z, sl_u8 out) {
     DevicePtr staged[4] = {0}, output = 0;
     const uint64_t host = (uint64_t) (uintptr_t) out.data;
     int error = activation_output(host, out.len, &output);
-    if (error == 0 && rope) error = reserve(&cuda.attention_scratch, (size_t) config.data[4]);
+    const bool rope_decode = config.data[0] == rope_decode_operation && cuda.rope_decode;
+    if (error == 0 && rope && !rope_decode) error = reserve(&cuda.attention_scratch, (size_t) config.data[4]);
     if (error == 0) error = upload_inputs(data, buffers, staged, sizeof(data) / sizeof(*data));
     const unsigned gx = (unsigned) config.data[1], gy = (unsigned) config.data[2];
     if (error == 0) {
-        if (rope) {
+        if (rope_decode) {
+            const unsigned lanes = ((unsigned) config.data[5] + 63) / 64 * 32;
+            void * args[] = {&staged[0], &staged[1], &staged[2], &output, &staged[3]};
+            error = cuda.launch(cuda.rope_decode, (unsigned) config.data[6], 1, 1, lanes, 1, 1, 0, NULL, args, NULL);
+        } else if (rope) {
             void * phase_args[] = {&staged[1], &staged[2], &cuda.attention_scratch.address, &staged[3]};
             void * apply_args[] = {&staged[0], &output, &cuda.attention_scratch.address, &staged[3]};
             error = cuda.launch(cuda.rope_phases, (unsigned) config.data[3], 1, 1, 128, 1, 1, 0, NULL, phase_args, NULL);

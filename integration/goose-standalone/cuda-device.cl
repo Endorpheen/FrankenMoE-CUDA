@@ -443,6 +443,15 @@ __kernel void goose_rope_apply(__global uint8_t * x, __global uint8_t * out,
     fg_rope_apply_g((uint64_t) x, (uint64_t) out, (uint64_t) table, (uint64_t) cfg, position_thread());
 }
 
+__kernel void goose_rope_decode(__global uint8_t * x, __global uint8_t * positions,
+    __global uint8_t * factors, __global uint8_t * out, __global int64_t * cfg) {
+    uint32_t head, lane;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(head));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
+    fg_rope_decode_g((uint64_t) x, (uint64_t) positions, (uint64_t) factors,
+        (uint64_t) out, (uint64_t) cfg, head, lane);
+}
+
 static float fg170s_load(uint64_t address, uint64_t i) { return fg_device_global_load(address + 4 * i); }
 static void fg170s_store(uint64_t address, uint64_t i, float value) { fg_device_global_store(address + 4 * i, value); }
 static float fg170s_expf(float value) { return fg_attn_exp(value); }

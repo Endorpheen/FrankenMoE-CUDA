@@ -277,11 +277,12 @@ and do not add up to a change in request latency.
 
 For RoPE the independent trace has 10,326 calls per phase,
 compared with 10,440 calls to the hybrid's `rope_multi`.
-Check whether the existing fused body can reuse the same
-per-position phases or execute a single dispatch for the active
-layout. Preserve position sections, strides and cache rotations.
-The 0.517 s device difference is a measured gap, with no
-standalone request-latency claim.
+[EXP-1594](CUDA-PARITY-EXP1476.md#single-kernel-imrope-for-apex-decode)
+restores a single kernel for the active decode layout,
+reuses the existing phase recurrence, and saves 0.471 s
+median full Apex decode. The table retains its original
+diagnostic checkpoint. Multi-token RoPE and other
+norm/cache fusion remain separate.
 
 1. Reprofile the current 8/16 checkpoint with fixed routes or
    teacher-forced continuation for attribution. Reuse shared
@@ -292,9 +293,9 @@ standalone request-latency claim.
    the replay replaces actual submissions. Gate pointer, shape,
    cache growth and expert-slot eviction before larger captures.
    Compare submission gaps and full decode on the same request.
-3. Compare equivalent GDN decode and RoPE shapes using the
-   existing EXP-171/172 bodies. Measure registers, launches
-   and reduction/state traffic before changing arithmetic.
+3. Compare equivalent GDN decode and prefill shapes using the
+   existing EXP-172 bodies. Measure registers, launches and
+   reduction/state traffic before changing arithmetic.
 4. Measure pinned-slot preparation and exposed DMA waits on
    pageable expert fills. Consider the original EXP-045 worker
    only if this producer is on the critical path. Keep fixed

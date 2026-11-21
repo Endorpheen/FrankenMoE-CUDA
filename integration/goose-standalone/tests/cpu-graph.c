@@ -1130,8 +1130,12 @@ static void check_cuda_vector_windows(void) {
     ggml_free(ctx);
 }
 
-static void check_cuda_position(void) {
-    enum { width = 128, heads = 3, tokens = 7, sequences = 2, channels = 131 };
+static void check_cuda_position(bool decode, const char * dump) {
+    enum { channels = 131 };
+    const int width = decode ? 256 : 128;
+    const int heads = decode ? 16 : 3;
+    const int tokens = decode ? 1 : 7;
+    const int sequences = decode ? 1 : 2;
     const int modes[] = {
         GGML_ROPE_TYPE_NORMAL, GGML_ROPE_TYPE_NEOX, GGML_ROPE_TYPE_MROPE,
         GGML_ROPE_TYPE_IMROPE, GGML_ROPE_TYPE_VISION,
@@ -1153,7 +1157,7 @@ static void check_cuda_position(void) {
                 src->nb[1], src->nb[2], src->nb[3], 0);
         for (size_t i = 0; i < sizeof(modes) / sizeof(*modes); ++i) {
             const int mode = modes[i];
-            const int dims = mode == GGML_ROPE_TYPE_VISION ? width / 2 : 48;
+            const int dims = mode == GGML_ROPE_TYPE_VISION ? width / 2 : decode ? 64 : 48;
             int sections[4] = { 12, 8, 4, 0 };
             struct ggml_tensor * pos = (mode & GGML_ROPE_TYPE_MROPE) ? positions :
                 ggml_view_1d(ctx, positions, tokens, 0);
@@ -1182,9 +1186,10 @@ static void check_cuda_position(void) {
     for (size_t i = 0; i < count; ++i) ggml_build_forward_expand(graph, outputs[i]);
     void * storage = fg_standalone_graph_alloc(graph);
     assert(storage);
-    const int steps[tokens] = { 0, 1, 123, 8192, 32767, 32768, 262144 };
+    const int steps[] = { 0, 1, 123, 8192, 32767, 32768, 262144 };
     for (int i = 0; i < 4 * tokens; ++i) {
-        ((int32_t *) positions->data)[i] = steps[i % tokens] + 1237 * (i / tokens);
+        const int position = decode ? 261337 : steps[i % tokens];
+        ((int32_t *) positions->data)[i] = position + 1237 * (i / tokens);
     }
     for (int i = 0; i < width / 2; ++i) ((float *) factors->data)[i] = 0.9375f + i / 64.0f;
     for (int half = 0; half < 2; ++half) {
@@ -1212,6 +1217,8 @@ static void check_cuda_position(void) {
     }
     assert(unsetenv("GOOSE_CUDA") == 0);
     assert(fg_standalone_graph_compute(graph) == GGML_STATUS_SUCCESS);
+    FILE * file = dump ? fopen(dump, "wb") : NULL;
+    assert(!dump || file);
     double f32_rope_error = 0.0, f16_rope_error = 0.0, conv_error = 0.0;
     for (size_t j = 0; j < count; ++j) {
         const bool half = outputs[j]->type == GGML_TYPE_F16;
@@ -1229,8 +1236,13 @@ static void check_cuda_position(void) {
             }
             *max_error = fmax(*max_error, error);
         }
+        if (file) {
+            const size_t bytes = ggml_nbytes(outputs[j]);
+            assert(fwrite(outputs[j]->data, 1, bytes, file) == bytes);
+        }
         free(reference[j]);
     }
+    if (file) assert(fclose(file) == 0);
     printf("CUDA position operations: %zu RoPE, %zu SSM convolution; max errors F32 %.9g, F16 %.9g, SSM %.9g\n",
             rope_count, count - rope_count, f32_rope_error, f16_rope_error, conv_error);
     free(storage);
@@ -1687,10 +1699,11 @@ int main(int argc, char ** argv) {
         else if (strcmp(argv[1], "--cached-experts") == 0) check_cached_expert_batch();
         else if (strcmp(argv[1], "--mmq") == 0) check_cuda_mmq();
         else if (strcmp(argv[1], "--graph-storage") == 0) check_graph_storage();
-        else if (strcmp(argv[1], "--position") == 0) check_cuda_position();
+        else if (strcmp(argv[1], "--position") == 0) check_cuda_position(false, NULL);
         else if (strcmp(argv[1], "--routing") == 0) check_cuda_routing();
         else check_model_step(argv[1]);
     }
     if (argc == 3 && strcmp(argv[1], "--chunked") == 0) check_chunked_generation(argv[2]);
     if (argc == 3 && strcmp(argv[1], "--resident") == 0) check_resident_state(argv[2]);
+    if (argc == 3 && strcmp(argv[1], "--position-decode") == 0) check_cuda_position(true, argv[2]);
 }

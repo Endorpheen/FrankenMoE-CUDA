@@ -66,7 +66,7 @@ Functional qualification runs before memory and speed acceptance.
    repetition against the control. Investigate reproducible quality
    defects and rerun this gate after fixes. The full 4096/4096 request
    completed with the scalar, MMQ, EXP-1528 and ten-change package
-   candidates. The latest package response begins to repeat the input.
+   candidates. The ten-change package response begins to repeat the input.
    ID and probability parity fail. The first differing output is at
    index 1 (1716 versus 198). See the
    [full diagnostic](CUDA-PARITY-EXP1476.md#ten-change-apex-32k512-diagnostic).
@@ -80,7 +80,7 @@ Functional qualification runs before memory and speed acceptance.
    The separate short and long
    [response-quality comparison](CUDA-PARITY-EXP1476.md#apex-response-quality-checkpoint)
    confirms coherent generation and the HTTP EOS fix. The
-   [current speed checkpoint](CUDA-PARITY-EXP1476.md#pinned-staging-for-pageable-expert-uploads)
+   [earlier speed checkpoint](CUDA-PARITY-EXP1476.md#pinned-staging-for-pageable-expert-uploads)
    reports median 1,049.754 prefill tok/s and 26.256 decode steps/s.
    It preserves the capacity analysis and opening input repetition.
    The [paired boundary captures](CUDA-PARITY-EXP1476.md#first-apex-decode-divergence-and-saved-ssm-history)
@@ -100,6 +100,11 @@ Functional qualification runs before memory and speed acceptance.
    records. The action plan still truncates and observed decode
    is 25.567 versus 26.993 steps/s. The four-query tile and
    single-token SSM arithmetic remain experimental.
+   [EXP-1594](CUDA-PARITY-EXP1476.md#single-kernel-imrope-for-apex-decode)
+   preserves the matched-tail control response, with median
+   1,124.843 prefill tok/s and 27.718 decode steps/s across
+   two full requests using the fused path. The response still
+   overestimates the repeated record count.
    The full response gate remains open.
    Gates 3 and 4 qualify the later speed comparison.
 7. [ ] **Accept memory** (requires 5 and 6). Record per-process RSS and

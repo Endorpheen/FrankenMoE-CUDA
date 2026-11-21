@@ -55,6 +55,15 @@ export fn fg_rope_phases(positions: u64, factors: u64, table: u64, cfg: u64, tok
     }
 }
 
+fn rotate_pair(x: u64, out: u64, size: i64, first: i64, distance: i64, c: f32, s: f32) {
+    let a = (first * size) as u64;
+    let b = ((first + distance) * size) as u64;
+    let x0 = rp_load(x + a, size);
+    let x1 = rp_load(x + b, size);
+    rp_store(out + a, size, x0 * c - x1 * s);
+    rp_store(out + b, size, x0 * s + x1 * c);
+}
+
 export fn fg_rope_apply(x: u64, out: u64, table: u64, cfg: u64, task: i64) {
     let width = rp_word(cfg, 5);
     let heads = rp_word(cfg, 6);
@@ -79,13 +88,38 @@ export fn fg_rope_apply(x: u64, out: u64, table: u64, cfg: u64, task: i64) {
     let rel = col - offs;
     let first = offs + (if mode == 0 { rel } else { rel / 2 });
     let distance = if mode == 0 { 1 } else if mode == 24 { dims } else { dims / 2 };
-    let a = (first * size) as u64;
-    let b = ((first + distance) * size) as u64;
-    let x0 = rp_load(xpos + a, size);
-    let x1 = rp_load(xpos + b, size);
     let angle = table + ((4 * (token * width + rel)) as u64);
-    let c = rp_load_float(angle);
-    let s = rp_load_float(angle + 4);
-    rp_store(dst + a, size, x0 * c - x1 * s);
-    rp_store(dst + b, size, x0 * s + x1 * c);
+    rotate_pair(xpos, dst, size, first, distance, rp_load_float(angle), rp_load_float(angle + 4));
+}
+
+// Single-token IMRoPE. Distribute the pairs across lanes while keeping the
+// same rounded theta recurrence as the table producer for each selected axis.
+export fn fg_rope_decode(x: u64, positions: u64, factors: u64, out: u64, cfg: u64, head: i64, lane: i64) {
+    let width = rp_word(cfg, 5);
+    let col = 2 * lane;
+    if col >= width { return; }
+    let size = rp_word(cfg, 16);
+    let src = x + ((head * rp_word(cfg, 17)) as u64);
+    let dst = out + ((head * width * size) as u64);
+    let dims = rp_word(cfg, 9);
+    let offs = rp_word(cfg, 11);
+    if col < offs || col >= offs + dims {
+        let at = (col * size) as u64;
+        rp_copy(src + at, dst + at, size);
+        return;
+    }
+    let pair = (col - offs) / 2;
+    let first = rp_word(cfg, 12);
+    let second = rp_word(cfg, 13);
+    let third = rp_word(cfg, 14);
+    let total = first + second + third + rp_word(cfg, 15);
+    let axis = rope_sector_axis(40, pair % total, first, second, third);
+    let step = rp_float(cfg, 21);
+    var theta = rp_position(positions, axis) as f32;
+    for i in pair { theta *= step; }
+    let ff = if factors == 0 { 1.0 } else { rp_load_float(factors + ((4 * pair) as u64)) };
+    let corr: f32[2] = [rp_float(cfg, 25), rp_float(cfg, 26)];
+    let cs = yarn_pair(theta / ff, rp_float(cfg, 22), corr, 2 * pair, rp_float(cfg, 23), rp_float(cfg, 24));
+    let sign: f32 = if rp_word(cfg, 20) != 0 { 1.0 } else { -1.0 };
+    rotate_pair(src, dst, size, offs + pair, dims / 2, cs[0], cs[1] * sign);
 }
