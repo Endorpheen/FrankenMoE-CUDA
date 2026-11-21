@@ -20,7 +20,7 @@ export fn fg143_flash_vector_parts(keys: i64) -> i64 {
 }
 
 export fn fg143_flash_stream_workers(queries: i64, groups: i64, keys: i64, sms: i64) -> i64 {
-    if queries < 8 || queries > 2147483647 || groups <= 0 || groups > 65535 ||
+    if queries < 4 || queries > 2147483647 || groups <= 0 || groups > 65535 ||
        keys <= 0 || keys > 2147483647 || sms <= 0 || sms > 1024 { return 0; }
     let tiles = ((queries + 7) / 8) * groups;
     let key_tiles = (keys + 31) / 32;

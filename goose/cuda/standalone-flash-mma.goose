@@ -9,10 +9,12 @@ fn flash_causal_part(q: u64, k: u64, v: u64, out: u64, fix: u64, cfg: u64, scale
     let prefix = flash_word(cfg, 21);
     let head = (group as i64) * 8;
     let kv_offset = ((group as i64) * ((keys + 31) / 32) * 16384) as u64;
-    process_tile_apex_nc8_np1(q + ((head * flash_word(cfg, 8)) as u64), k + kv_offset, v + kv_offset,
+    let columns: i32 = if queries == 4 { 4 } else { 8 };
+    let value_partitions: i32 = if columns == 4 { 2 } else { 1 };
+    process_tile(q + ((head * flash_word(cfg, 8)) as u64), k + kv_offset, v + kv_offset,
         prefix as u64, 0, out + ((head * 1024) as u64), fix, scale, 1.0, queries, heads as i32, 8,
         flash_word(cfg, 7) / 8, flash_word(cfg, 8) / 8, 128, 128, 0, tile, 0, start, stop,
-        8, 1, needs_fixup, is_fixup, worker, workers, lane, warp, 0, 0, 0, 0, shared);
+        columns, value_partitions, needs_fixup, is_fixup, worker, workers, lane, warp, 0, 0, 0, 0, shared);
 }
 
 // One block handles eight causal queries for eight heads sharing the same KV head.

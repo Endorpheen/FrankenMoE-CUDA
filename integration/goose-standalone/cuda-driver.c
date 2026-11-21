@@ -158,6 +158,7 @@ static struct {
     bool scratch_vmm, lazy_kv;
     struct memory_properties vmm_properties;
     bool flash_graph_enabled;
+    bool flash_stream_all, flash_tail_mma;
     Stream flash_graph_stream;
     Graph flash_graph;
     GraphExec flash_graph_exec;
@@ -489,7 +490,10 @@ static void load_cuda(void) {
     const bool flash_mma = flash_setting && strcmp(flash_setting, "1") == 0;
     const bool vec_pack = fg_standalone_option_enabled("GOOSE_FLASH_VEC_PREPACK");
     const char * flash_stream_setting = getenv("GOOSE_FLASH_STREAM_K");
-    const bool flash_stream = flash_mma && flash_stream_setting && strcmp(flash_stream_setting, "1") == 0;
+    cuda.flash_stream_all = flash_mma && flash_stream_setting && strcmp(flash_stream_setting, "1") == 0;
+    const char * flash_tail_setting = getenv("GOOSE_FLASH_TAIL_MMA");
+    cuda.flash_tail_mma = flash_mma && flash_tail_setting && strcmp(flash_tail_setting, "1") == 0;
+    const bool flash_stream = cuda.flash_stream_all || cuda.flash_tail_mma;
     const bool flash_vec_requested = fg_standalone_option_enabled("GOOSE_FLASH_VEC");
     const char * rms_setting = getenv("GOOSE_RMS_REFERENCE");
     const bool rms_reference = rms_setting && strcmp(rms_setting, "1") == 0;
@@ -2021,7 +2025,8 @@ uint64_t fg_cuda_take_f32_matrices(void) {
 }
 
 static bool flash_mma_shape(const int64_t * c, int64_t mask_bytes) {
-    return cuda.flash_mma && mask_bytes == 0 && c[0] == 256 && c[1] == 256 && c[2] >= 8 &&
+    return cuda.flash_mma && mask_bytes == 0 && c[0] == 256 && c[1] == 256 &&
+        (c[2] >= 8 || (cuda.flash_tail_mma && c[2] == 4)) &&
         c[4] > 0 && c[4] <= 65535 && c[5] == c[4] && c[3] == 8 * c[4] &&
         c[6] >= c[2] && c[6] <= INT_MAX - 31 && c[21] > 0 && c[21] <= c[6] - c[2] + 1 &&
         c[7] > 0 && c[7] % 8 == 0 && c[8] > 0 && c[8] % 8 == 0;
@@ -2122,13 +2127,15 @@ static int launch_flash_mma(const int64_t * c, DevicePtr * staged, DevicePtr out
     if (error == 2) return 0; // The scalar path can use smaller scratch waves.
     if (error != 0) return error;
     const unsigned heads = (unsigned) c[4];
-    const unsigned tiles_per_head = (unsigned) ((c[2] + 7) / 8);
+    const unsigned columns = c[2] == 4 ? 4 : 8;
+    const unsigned tiles_per_head = (unsigned) ((c[2] + columns - 1) / columns);
     const uint64_t tiles = (uint64_t) tiles_per_head * heads;
-    unsigned workers = cuda.flash_stream ?
+    const bool stream = c[2] == 4 ? cuda.flash_tail_mma : cuda.flash_stream_all;
+    unsigned workers = stream ?
         (unsigned) fg143_flash_stream_workers(c[2], c[4], keys, cuda.multiprocessors) : 0;
     DevicePtr fix = 0;
     if (workers && tiles % workers != 0) {
-        const size_t fix_bytes = (size_t) workers * 64 * (256 + 4) * sizeof(float);
+        const size_t fix_bytes = (size_t) workers * columns * 8 * (256 + 4) * sizeof(float);
         // Flash and MMQ consume this scratch on the same legacy stream.
         // Reuse the already allocated MMQ pack when it fits.
         error = reserve(&cuda.mmq_packed, fix_bytes);
@@ -2157,11 +2164,11 @@ static int launch_flash_mma(const int64_t * c, DevicePtr * staged, DevicePtr out
         if (workers % tiles == 0) {
             int32_t blocks_per_tile = (int32_t) (workers / tiles);
             void * args[] = {&output, &fix, &queries, &query_heads, &workers, &blocks_per_tile};
-            error = cuda.launch(cuda.flash_fixup_uniform, (unsigned) tiles, 8, 8, 256, 1, 1, 0, NULL, args, NULL);
+            error = cuda.launch(cuda.flash_fixup_uniform, (unsigned) tiles, columns, 8, 256, 1, 1, 0, NULL, args, NULL);
         } else {
             int32_t key_count = (int32_t) keys;
             void * args[] = {&output, &fix, &queries, &query_heads, &key_count};
-            error = cuda.launch(cuda.flash_fixup_general, workers, 8, 8, 256, 1, 1, 0, NULL, args, NULL);
+            error = cuda.launch(cuda.flash_fixup_general, workers, columns, 8, 256, 1, 1, 0, NULL, args, NULL);
         }
     }
     if (error == 0) *executed = true;

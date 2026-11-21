@@ -3470,6 +3470,69 @@ Executable SHA-256
 PTX SHA-256
 `0c90421dec2f14d330117d2cf7c20cac30bf4519584fa59455fc563d2cf6affa`.
 
+## Four-query Flash Attention checkpoint tail
+
+EXP-1592 connects the existing Goose `process_tile_apex_nc4_np2`
+body to the four-token checkpoint tail. `GOOSE_FLASH_TAIL_MMA=1`
+enables this shape with `GOOSE_FLASH_MMA=1`. Larger queries retain
+the existing Flash selector and independent Stream-K control.
+The host and both fixup entries use the selected width for the
+partial-buffer strides and launch bounds. The experimental selector
+is off by default.
+
+The frozen EXP-1476 trace launches ten
+`flash_attn_ext_f16<256,256,4,8,false,false,false>` kernels and
+ten uniform fixups on the final four inputs. The independent real
+Apex trace also executes ten 92-block Stream-K kernels (2.250 ms
+total) and ten `2 × 4 × 8` uniform fixups (0.129 ms total).
+Compute Sanitizer reports zero errors for four queries with 77
+and 32,768 keys. With 32,768 keys, the same-input fixture against
+the reference FP16 oracle measures maximum absolute error
+`5.9605e-8` and relative L2 `3.8623e-8`. The traced fixture
+is byte-identical to the unprofiled fixture.
+
+One unprofiled same-executable pair uses the frozen request,
+RTX 4070, 4096/4096, Q4_0 KV, context 262,144, CPU limits
+8/16 and a 4,992 MiB expert cache. Both process 32,768 input
+tokens without reuse, return 512 IDs and retain all model pages.
+
+| Metric | A, scalar tail | B, `4 × 8` MMA tail |
+|---|---:|---:|
+| Prefill, tok/s | 1,119.964 | 1,129.696 |
+| Prefill, s | 29.258 | 29.006 |
+| Decode, steps/s | 26.993 | 25.567 |
+| Decode, s | 18.931 | 19.987 |
+| Process RSS high-water, KiB | 22,953,888 | 22,956,256 |
+| Process VRAM after request, MiB | 7,272 | 7,274 |
+| Process swap and system swap-out growth | 0 | 0 |
+| SLRU expert uploads, bytes | 145,893,605,376 | 149,682,929,664 |
+
+Both answers identify the missing operational evidence. The
+frozen request contains 1,723 complete copies of the repeated
+record. A estimates 3,000, B estimates 1,600 and the saved
+EXP-1476 response describes hundreds. B reaches the first phase
+of its action plan before the output limit. The different
+generated workload adds 2,037 fills and 3.789 GB of expert uploads.
+This pair identifies a quality improvement on the count and an
+end-to-end decode regression. It cannot attribute the decode delta
+to the Flash kernel. The exact B response repeats under Nsight.
+Keep the experimental selector off in the control profile.
+
+The archived single-token SSM arithmetic, padded `8 × 8` tail,
+and padded tail plus SSM runs respectively measure
+1,117.799/26.419, 1,123.783/26.454 and 1,127.340/25.415
+prefill/decode. The first estimates 1,700 records but introduces
+an unsupported reading of the instructions. Both padded cases
+estimate 1,300 records. The combined padded response asserts
+queue growth as a fact despite the conditional input.
+
+Raw responses, exact options, source patches, CUDA traces and
+checksums are under
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/tail-quality-exp1592`.
+Executable SHA-256
+`11fcaf2b847ee561507eab5ad8588e91091a530cff11519485c0e9482603033e`.
+The executable links libc and libm.
+
 ## Long Attention partition probe
 
 EXP-2026-11-20-1562 holds the existing vector kernel fixed

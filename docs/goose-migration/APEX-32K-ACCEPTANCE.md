@@ -93,9 +93,13 @@ Functional qualification runs before memory and speed acceptance.
    restores cooperative MMQ at 4,092 tokens and preserves that
    entire response, with 1,026.590 prefill tok/s and 26.838
    decode steps/s on the matched-tail profile. The response
-   still miscounts the repeated records and the token
-   sequences differ. The single-token SSM arithmetic
-   candidate remains deferred.
+   still miscounts the repeated records. The [four-query Flash tail
+   comparison](CUDA-PARITY-EXP1476.md#four-query-flash-attention-checkpoint-tail)
+   confirms the reference tile executes on Apex and improves the
+   estimated count from 3,000 to 1,600 against 1,723 complete
+   records. The action plan still truncates and observed decode
+   is 25.567 versus 26.993 steps/s. The four-query tile and
+   single-token SSM arithmetic remain experimental.
    The full response gate remains open.
    Gates 3 and 4 qualify the later speed comparison.
 7. [ ] **Accept memory** (requires 5 and 6). Record per-process RSS and
