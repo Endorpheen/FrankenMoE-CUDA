@@ -17,6 +17,36 @@ for rollback. Retain isolated patches and trace evidence when
 combinations need further qualification. Inspect machine
 code for material unexplained differences.
 
+Accept a positive, comparable warmed A/B into the
+experimental cumulative checkpoint when correctness passes.
+Retain small gains and verify interactions between changes.
+Track historical bests separately from each fresh pair.
+
+## EXP-1644 — Prepare dense Q4_K weights once per projection
+
+The Goose preparation kernel expands Q4_K nibbles and
+rounds scale/minimum pairs once. The existing 128 × 256
+MMQ tile then loads the packed quarter weights with
+aligned 16-byte copies. Use the existing attention scratch
+only when it can hold the full prepared image. All current
+producers and readers are ordered by the legacy stream.
+Each candidate ran 1,545 prepared projections.
+
+| Warmed Apex 32,768/512 | Control prefill, ms | Candidate prefill, ms | Prefill saved, ms | Total saved, ms |
+|---|---:|---:|---:|---:|
+| EXP-1640 versus prepared weights | 22,712.068 | 22,511.742 | 200.326 | 283.421 |
+| Reverse pair, same executable with preparation off/on | 22,309.377 | 22,136.997 | 172.380 | 93.026 |
+
+The reverse-pair candidate reaches 1,480.24 prefill tok/s,
+35.86 decode tok/s, and 36.389 s for prefill plus decode.
+Decode takes 79 ms longer in the reverse pair. All 512 IDs,
+probabilities, response and SLRU match in both pairs.
+Peak VRAM is 8,220 MiB, swap is zero, and peak process
+RSS rises by 540 and 1,232 KiB, respectively.
+Set `GOOSE_MMQ_Q4_PREPARE=0` to restore the original tile.
+The hashes, binaries, warm-ups and matched runs are in
+`/tmp/franken-goose-q4-prepare-exp1644.O4Gkd9`.
+
 ## EXP-1640 — Aligned float4 for dense Goose vectors
 
 Select four FP32 values per CUDA thread when an existing

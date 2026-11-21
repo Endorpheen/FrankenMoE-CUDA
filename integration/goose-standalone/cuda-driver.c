@@ -160,7 +160,7 @@ static struct {
     Function mmq_q6_dense_x64, mmq_q6_routed_x64;
     Function mmq_q4_dense_x128, mmq_q6_dense_x128;
     Function mmq_q4_dense_m64, mmq_q4_dense_m128;
-    Function mmq_q4_dense_large;
+    Function mmq_q4_dense_large, mmq_q4_prepare, mmq_q4_dense_prepared;
     unsigned mmq_q4_large_rows, mmq_q4_large_cols;
     Function mmq_q4_routed_x128, mmq_q6_routed_x128;
     Function mmq_q4_routed_m128, mmq_q4_routed_down_m128;
@@ -286,7 +286,7 @@ static _Thread_local struct {
     int64_t ranges[ACTIVATION_RECORDS * ACTIVATION_WORDS];
     int64_t large_output[ACTIVATION_WORDS];
     uint64_t hits, skipped_download_bytes, expired_bytes;
-    uint64_t shared_pack_reuses, flat_vectors, flat4_vectors;
+    uint64_t shared_pack_reuses, flat_vectors, flat4_vectors, q4_prepared;
     size_t packet_used;
 } activations;
 
@@ -1092,6 +1092,11 @@ static void load_cuda(void) {
                     error = cuda.function_get(&cuda.mmq_q4_dense_large, cuda.module, name);
                     cuda.mmq_q4_large_rows = more_columns ? 128 : 256;
                     cuda.mmq_q4_large_cols = more_columns ? 256 : 128;
+                    if (error == 0 && more_columns && fg_standalone_option_enabled("GOOSE_MMQ_Q4_PREPARE")) {
+                        error = cuda.function_get(&cuda.mmq_q4_prepare, cuda.module, "goose_mmq_q4_prepare");
+                        if (error == 0) error = cuda.function_get(&cuda.mmq_q4_dense_prepared, cuda.module,
+                            "goose_mmq_q4_dense_m128n256_prepared");
+                    }
                 }
             }
             if (error == 0 && q4_x64 && q4_routed_shared)
@@ -1382,6 +1387,7 @@ int fg_cuda_activation_graph_begin(bool planned) {
     activations.shared_pack_reuses = 0;
     activations.flat_vectors = 0;
     activations.flat4_vectors = 0;
+    activations.q4_prepared = 0;
     activations.unavailable = false;
     activations.defer_waits = planned && fg_standalone_option_enabled("GOOSE_CUDA_DEFER_WAITS");
     activations.retire = fg_standalone_option_enabled("GOOSE_ACTIVATION_LIFETIMES");
@@ -1454,6 +1460,9 @@ int fg_cuda_activation_graph_end(bool success, bool all, uint64_t host, int64_t 
     if (!activations.active) return 0;
     if (activations.shared_pack_reuses && getenv("GOOSE_MMQ_SHARED_REUSE_REPORT")) {
         fprintf(stderr, "Goose CUDA MMQ: reused %" PRIu64 " shared Q8_1 packs\n", activations.shared_pack_reuses);
+    }
+    if (activations.q4_prepared && getenv("GOOSE_MMQ_SHARED_REUSE_REPORT")) {
+        fprintf(stderr, "Goose CUDA MMQ: prepared %" PRIu64 " dense Q4_K weights\n", activations.q4_prepared);
     }
     if (activations.flat_vectors && getenv("GOOSE_CUDA_VECTOR_FLAT_REPORT")) {
         fprintf(stderr, "Goose CUDA vector: %" PRIu64 " flat launches, %" PRIu64 " using float4\n",
@@ -2459,6 +2468,7 @@ static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
         }
     }
     int first = 0, first_route = 0;
+    bool weights_prepared = false;
     void * pack_args[] = {&matrix_input, &cuda.jobs.address, &cuda.mmq_packed.address,
                          &extent, &layout, &first_route, &job_words};
     void * matrix_args[] = {&weight, &cuda.mmq_packed.address, &matrix_output, &cuda.jobs.address,
@@ -2523,13 +2533,27 @@ static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
             } else if (dense_m64 && !shared && first % 16 == 0 && first_route == 8 * first) {
                 const bool large = cuda.mmq_q4_dense_large && routes >= cuda.mmq_q4_large_cols &&
                     (unsigned) rows % cuda.mmq_q4_large_rows == 0;
-                const Function matrix = large ? cuda.mmq_q4_dense_large :
+                // The same legacy stream orders the temporary weight image
+                // with every producer and consumer of attention scratch.
+                const bool prepare = large && cuda.mmq_q4_dense_prepared && routes >= 1024 && extent <= 65535 / 4 &&
+                    cuda.attention_scratch.address && (uint64_t) rows * extent * 320 <= cuda.attention_scratch.bytes;
+                DevicePtr matrix_weights = prepare ? cuda.attention_scratch.address : weight;
+                if (prepare && !weights_prepared) {
+                    void * args[] = {&weight, &matrix_weights, &stride, &extent};
+                    error = cuda.launch(cuda.mmq_q4_prepare, (unsigned) rows / 16, 4u * extent, 1,
+                        32, 1, 1, 0, NULL, args, NULL);
+                    if (error == 0) {
+                        weights_prepared = true;
+                        ++activations.q4_prepared;
+                    }
+                }
+                const Function matrix = prepare ? cuda.mmq_q4_dense_prepared : large ? cuda.mmq_q4_dense_large :
                     cuda.mmq_q4_dense_m128 ? cuda.mmq_q4_dense_m128 : cuda.mmq_q4_dense_m64;
                 const unsigned row_tile = large ? cuda.mmq_q4_large_rows : cuda.mmq_q4_dense_m128 ? 128 : 64;
                 const unsigned column_tile = large ? cuda.mmq_q4_large_cols : 128;
-                void * args[] = {&weight, &cuda.mmq_packed.address, &matrix_output, &cuda.jobs.address,
+                void * args[] = {&matrix_weights, &cuda.mmq_packed.address, &matrix_output, &cuda.jobs.address,
                     &stride, &extent, &first_route, &columns};
-                error = cuda.launch(matrix, (unsigned) rows / row_tile,
+                if (error == 0) error = cuda.launch(matrix, (unsigned) rows / row_tile,
                     1 + (routes - 1) / column_tile, 1, 256, 1, 1, 0, NULL, args, NULL);
             } else if (dense_wide && !shared && first % 4 == 0 &&
                 first_route == 8 * first && routes >= 32) {

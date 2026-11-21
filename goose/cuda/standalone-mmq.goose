@@ -21,6 +21,7 @@ extern "fg_mmq_ldm16" fn mmq_ldm16(address: u64) -> MmqWords;
 extern "fg_mmq_mma32_shared" fn mmq_mma32_shared(address: u64, b0: u32, b1: u32) -> MmqDot;
 extern "fg_mmq_mma16_shared" fn mmq_mma16_shared(address: u64, b0: u32) -> MmqDot;
 extern "fg_mmq_shared_store" fn mmq_shared_store(address: u64, word: u32);
+extern "fg_mmq_global_store_word" fn mmq_global_store_word(address: u64, word: u32);
 extern "fg_mmq_shared_i8" fn mmq_shared_i8(address: u64) -> i32;
 extern "fg_mmq_shared_float" fn mmq_shared_float(address: u64) -> f32;
 extern "fg_mmq_shared_store_float" fn mmq_shared_store_float(address: u64, value: f32);
@@ -956,15 +957,22 @@ export fn fg_device_mmq_q4_routed_m128(weights: u64, packed: u64, out: u64, jobs
         thread, stage, 3, input_stride, fused);
 }
 
-fn mmq_q4_stage_quarter(weights: u64, stride: i64, tile: u64, quarter: i64, lane: i64) {
+fn mmq_q4_stage_quarter(weights: u64, stride: i64, tile: u64, quarter: i64, lane: i64, prepare: bool) {
     for pass in 4 {
         let word = lane + 32 * pass;
         let row = word / 8;
         let part = word % 8;
         let packed = mmq_word(weights + ((row * stride + 16 + 32 * quarter + 4 * part) as u64));
         let addr = tile + ((32 * row + 4 * part) as u64);
-        mmq_shared_store(addr, q4_mmq_nibbles(packed as i64, false) as u32);
-        mmq_shared_store(addr + 512, q4_mmq_nibbles(packed as i64, true) as u32);
+        let lo = q4_mmq_nibbles(packed as i64, false) as u32;
+        let hi = q4_mmq_nibbles(packed as i64, true) as u32;
+        if prepare {
+            mmq_global_store_word(addr, lo);
+            mmq_global_store_word(addr + 512, hi);
+        } else {
+            mmq_shared_store(addr, lo);
+            mmq_shared_store(addr + 512, hi);
+        }
     }
     let row = lane / 2;
     let group = lane % 2;
@@ -973,8 +981,30 @@ fn mmq_q4_stage_quarter(weights: u64, stride: i64, tile: u64, quarter: i64, lane
     let d = mmq_half_round(mmq_half(weight) * ((packed >> 8) as f32));
     let minimum = mmq_half_round(-mmq_half(weight + 2) * ((packed & 255) as f32));
     let addr = tile + ((1024 + 8 * (16 * group + row)) as u64);
-    mmq_shared_store_float(addr, d);
-    mmq_shared_store_float(addr + 4, minimum);
+    if prepare {
+        mmq_store(addr, d);
+        mmq_store(addr + 4, minimum);
+    } else {
+        mmq_shared_store_float(addr, d);
+        mmq_shared_store_float(addr + 4, minimum);
+    }
+}
+
+export fn fg_device_mmq_q4_prepare(weights: u64, prepared: u64, stride: i64, extent: i64,
+    row_tile: i64, quarter_tile: i64, lane: i64) {
+    let source = weights + ((16 * row_tile * stride + 144 * (quarter_tile / 4)) as u64);
+    let target = prepared + ((1280 * (row_tile * extent * 4 + quarter_tile)) as u64);
+    mmq_q4_stage_quarter(source, stride, target, quarter_tile % 4, lane, true);
+}
+
+fn mmq_q4_load_prepared(tile: u64, source: u64, lane: i64) {
+    for pass in 3 {
+        let vector = lane + 32 * pass;
+        if vector < 80 {
+            let offset = (16 * vector) as u64;
+            mmq_copy_16(tile + offset, source + offset);
+        }
+    }
 }
 
 fn mmq_stage_q8_quarter(stage: u64, packed_tile: u64, pitch: i64, routes: i64, columns: i64,
@@ -1011,7 +1041,7 @@ fn mmq_q4_quarter_column(sum: MmqPairSum, activation: u64, group: i64, scale_off
 // the staged weights and activations within the same shared allocation.
 export fn fg_device_mmq_q4_large(weights: u64, packed: u64, out: u64, jobs: u64,
     stride: i64, extent: i64, row: i64, route: i64, first_route: i64, routes: i64,
-    thread: i64, stage: u64, height: i64, columns: i64) {
+    thread: i64, stage: u64, height: i64, columns: i64, prepared: bool) {
     let lane = thread % 32;
     let warp = thread / 32;
     let column_warps = columns / 128;
@@ -1019,7 +1049,8 @@ export fn fg_device_mmq_q4_large(weights: u64, packed: u64, out: u64, jobs: u64,
     let row_pair = 32 * (warp / column_warps);
     let activate = stage + ((80 * height) as u64);
     let weight_stage = stage + ((1280 * warp) as u64);
-    let weight_src = weights + ((stride * (row + 16 * warp)) as u64);
+    let weight_offset = if prepared { 5120 * extent * (row / 16 + warp) } else { stride * (row + 16 * warp) };
+    let weight_src = weights + (weight_offset as u64);
     let lo_stage = stage + ((80 * row_pair) as u64);
     let hi_stage = lo_stage + 1280;
     let activation = activate + ((80 * col) as u64);
@@ -1049,9 +1080,13 @@ export fn fg_device_mmq_q4_large(weights: u64, packed: u64, out: u64, jobs: u64,
             let q = (288 * k + 144 * (quarter / 2)) as u64;
             let local = quarter % 2;
             let scale_offset = 8 * local;
-            mmq_q4_stage_quarter(w, stride, weight_stage, quarter, lane);
-            if height == 256 {
-                mmq_q4_stage_quarter(w + ((128 * stride) as u64), stride, weight_stage + 10240, quarter, lane);
+            if prepared {
+                mmq_q4_load_prepared(weight_stage, weight_src + ((1280 * (4 * k + quarter)) as u64), lane);
+            } else {
+                mmq_q4_stage_quarter(w, stride, weight_stage, quarter, lane, false);
+                if height == 256 {
+                    mmq_q4_stage_quarter(w + ((128 * stride) as u64), stride, weight_stage + 10240, quarter, lane, false);
+                }
             }
             mmq_stage_q8_quarter(activate, packed_tile + q, pitch, routes, columns, local, thread);
             mmq_barrier();

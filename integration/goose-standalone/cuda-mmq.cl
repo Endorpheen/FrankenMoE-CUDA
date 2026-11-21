@@ -78,6 +78,9 @@ static MmqDot_g fg_mmq_mma16_shared(uint64_t address, uint32_t b0) {
 static void fg_mmq_shared_store(uint64_t address, uint32_t word) {
     *(__local uint32_t *) address = word;
 }
+static void fg_mmq_global_store_word(uint64_t address, uint32_t word) {
+    *(__global uint32_t *) address = word;
+}
 
 static float fg_mmq_shared_float(uint64_t address) { return *(__local float *) address; }
 static int32_t fg_mmq_shared_i8(uint64_t address) { return *(__local int8_t *) address; }
@@ -307,7 +310,17 @@ MMQ_ROUTED_Q4_COOPERATIVE(goose_mmq_q4_routed_m128, true)
 MMQ_ROUTED_Q4_COOPERATIVE(goose_mmq_q4_routed_down_m128, false)
 #undef MMQ_ROUTED_Q4_COOPERATIVE
 
-#define MMQ_DENSE_Q4_LARGE(name, height, width) \
+__kernel void goose_mmq_q4_prepare(__global const uint8_t * weights, __global uint8_t * prepared,
+    uint64_t stride, int32_t extent) {
+    uint32_t row_tile, quarter_tile, lane;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(row_tile));
+    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(quarter_tile));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
+    fg_device_mmq_q4_prepare_g((uint64_t) weights, (uint64_t) prepared, stride, extent,
+        row_tile, quarter_tile, lane);
+}
+
+#define MMQ_DENSE_Q4_LARGE(name, height, width, prepared) \
 __kernel void name(__global const uint8_t * weights, __global const uint8_t * packed, \
     __global uint8_t * output, __global const uint64_t * jobs, uint64_t stride, int32_t extent, \
     int32_t first_route, int32_t routes) { \
@@ -319,10 +332,11 @@ __kernel void name(__global const uint8_t * weights, __global const uint8_t * pa
     const int32_t left = routes - (int32_t) (width * tile); \
     fg_device_mmq_q4_large_g((uint64_t) weights, (uint64_t) packed, (uint64_t) output, (uint64_t) jobs, \
         stride, extent, height * row, first_route + width * tile, first_route, \
-        left < (int32_t) width ? left : width, thread, (uint64_t) shared, height, width); \
+        left < (int32_t) width ? left : width, thread, (uint64_t) shared, height, width, prepared); \
 }
-MMQ_DENSE_Q4_LARGE(goose_mmq_q4_dense_m128n256, 128u, 256u)
-MMQ_DENSE_Q4_LARGE(goose_mmq_q4_dense_m256n128, 256u, 128u)
+MMQ_DENSE_Q4_LARGE(goose_mmq_q4_dense_m128n256, 128u, 256u, false)
+MMQ_DENSE_Q4_LARGE(goose_mmq_q4_dense_m256n128, 256u, 128u, false)
+MMQ_DENSE_Q4_LARGE(goose_mmq_q4_dense_m128n256_prepared, 128u, 256u, true)
 #undef MMQ_DENSE_Q4_LARGE
 
 __asm__(".extern .shared .align 16 .b8 goose_mmq_q6_shared[];");
