@@ -47184,8 +47184,23 @@
       "source": "source/model.goose",
       "task": "P11-01",
       "status": "slice",
-      "sha256": "42e7d6429400f6562f0183c4c0917bb07d77635160220d7cec6988a58e8b0610",
-      "gate": "733 zero-copy weights/config/context lifetime;79 contracts,3 model mutants,full logits/replay;mapping borrowed"
+      "sha256": "2dbf32e736112e3769135f07aa15603221e0f949bd9896624f88d03f9027c29d",
+      "integration_commit": "69629f760ac8cf42a2f73b28fe7ab8af7d94ce1f",
+      "gate": "733 zero-copy weights/config/context lifetime;79 contracts,3 model mutants,full logits/replay;mapping borrowed; EXP-1601 exact Apex 32K/512 host KV memory differential"
+    },
+    {
+      "goose": "model/qwen35-device-state.goose",
+      "native": "src/llama-kv-cache.cpp; src/llama-memory-recurrent.cpp (qualified scope only)",
+      "native_targets": [
+        "src/llama-kv-cache.cpp",
+        "src/llama-memory-recurrent.cpp"
+      ],
+      "experiment": "EXP-2026-11-21-1601-host-kv-pages",
+      "task": "P5-10",
+      "status": "slice",
+      "sha256": "8a1ab705dcfa05c287fcd715bfaab6a23e6e29228eb87312f08b9fd2508f3101",
+      "integration_commit": "69629f760ac8cf42a2f73b28fe7ab8af7d94ce1f",
+      "gate": "EXP-1601 lazy KV growth, resident reset, CUDA-CPU replay and exact Apex 32K/512 paired output"
     },
     {
       "goose": "misc/qwen35-split.goose",
