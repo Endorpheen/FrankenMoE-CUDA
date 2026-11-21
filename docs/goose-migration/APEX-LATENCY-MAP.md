@@ -58,6 +58,60 @@ the next target after the current MMQ work.
 The trace and analysis are in
 `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/profile-exp1647`.
 
+## EXP-1660 — Fuse the SSM input and convolution
+
+The Goose graph executor recognizes the exact concat,
+tail view, state copy, and convolution group on selective
+execution. The direct four-tap kernel reads the original
+time-major projection and old state. A second kernel
+publishes the last three samples after all convolution
+reads on the same stream. The group avoids writing and
+reading the transposed input. The original graph handles
+other shapes and observed intermediates.
+
+The first integration downloaded a still-live projection
+when its host slot was recycled for the result. The short
+pair regressed from 2,699.318 to 3,576.538 ms. Keeping the
+old device range live until convolution and tail submission
+reduced the subsequent same-binary difference to 11.305 ms.
+The Apex warm-up exercises that host-slot reuse on all 30
+recurrent layers. Set `GOOSE_CUDA_DIRECT_SSM=0` for rollback.
+
+| Warmed Apex 32,768/512, 4096/4096 | EXP-1659 | EXP-1660 | Candidate minus control |
+|---|---:|---:|---:|
+| Prefill, ms | 20,014.043 | 19,750.097 | -263.946 |
+| Prefill, tok/s | 1,637.25 | **1,659.13** | +21.88 |
+| Decode, ms | 14,493.765 | 14,314.903 | -178.861 |
+| Decode, tok/s | 35.26 | 35.70 | +0.44 |
+| Prefill plus decode, ms | 34,507.807 | 34,065.000 | -442.807 |
+| Peak process RSS, KiB | 21,484,020 | 21,482,680 | -1,340 |
+| Peak process VRAM, MiB | 8,220 | 8,220 | 0 |
+| Process swap and system swap-out growth | 0 / 0 | 0 / 0 | 0 / 0 |
+
+Every output token, probability row, and SLRU counter
+matched, with full model residency. The GPU fixture
+matched 33,554,432 outputs and reduced transpose plus
+convolution from 1.522 to 0.593 ms. The full pair measures
+the complete graph change. The archive is
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/direct-ssm-exp1660`.
+
+### Fusion candidates from the EXP-1658 prefill trace
+
+Exclusive times measure entire existing families. They
+bound the work under investigation and do not estimate
+speedup. Check actual consumers and lifetimes before
+changing the graph. Qualify layout and numerical behavior
+on identical operands, then verify the full Apex pair.
+
+| Family | Exclusive ms | Candidate and dependency to verify |
+|---|---:|---|
+| MMQ, SwiGLU | 6,130.475 MMQ, 845.228 pointwise and GLU | Group expert gate/up, activation and down projection. Share the Q8_1 input and keep distinct output accumulators. Check registers, shared bytes, expert windows, and whether spilling offsets the saved traffic. |
+| Flash Attention | 2,051.005 | Evaluate feeding Q4 KV blocks directly into the shared MMA tile. Preserve mask and online softmax order. Price the additional dequantization and shared-memory scheduling against staged F16 reads. |
+| GDN | 1,010.157 | Inspect Q/K normalization and input packing for a single-consumer path. Preserve BF16 residual terms, recurrent ordering, and state. Check the resulting register footprint on V32. |
+| MoE | 237.648 weighted reduction, 16.136 routing | Test down projection and weighted reduction as a chain. Preserve the contribution order, expert cache events, and final output layout. |
+| SSM | 204.565 convolution before fusion | Refresh the trace after EXP-1660. Keep state-reader ordering when considering other consumers of the projection. |
+| RoPE | 41.275 | Consider combining application and KV write on an eligible layout. Preserve Q4 rounding and rotary positions. Compare the isolated saving against the higher-cost families. |
+
 ## EXP-1659 — Tile the SSM input transpose and concatenation
 
 Reuse the existing 32 × 32 Goose transpose tile with a

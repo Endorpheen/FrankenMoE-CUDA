@@ -215,6 +215,7 @@ static struct {
     Function mmq_stream, mmq_stream_fixup;
     Function flash_stream, flash_fixup_uniform, flash_fixup_general;
     Function rope_phases, rope_apply, ssm_conv, ssm_conv_decode, ssm_conv_long;
+    Function ssm_conv_direct, ssm_conv_save_tail;
     Function rope_decode;
     Function route_reduce, route_sort, route_topk, route_gather, route_norm, blit, blit_transpose, fwht, moe_weighted;
     struct device_buffer input, output, weight, jobs;
@@ -1279,6 +1280,10 @@ static void load_cuda(void) {
         if (error == 0) error = cuda.function_get(&cuda.route_gather, cuda.module, "goose_route_gather");
         if (error == 0) error = cuda.function_get(&cuda.route_norm, cuda.module, "goose_route_norm");
         if (error == 0) error = cuda.function_get(&cuda.blit, cuda.module, "goose_tensor_blit");
+        if (error == 0 && fg_standalone_option_enabled("GOOSE_CUDA_DIRECT_SSM")) {
+            (void) cuda.function_get(&cuda.ssm_conv_direct, cuda.module, "goose_ssm_conv_direct");
+            (void) cuda.function_get(&cuda.ssm_conv_save_tail, cuda.module, "goose_ssm_conv_save_tail");
+        }
         if (error == 0 && fg_standalone_option_enabled("GOOSE_CUDA_TILED_BLIT"))
             (void) cuda.function_get(&cuda.blit_transpose, cuda.module, "goose_tensor_transpose_concat");
         if (error == 0) error = cuda.function_get(&cuda.fwht, cuda.module, "goose_kv_fwht");
@@ -1527,8 +1532,7 @@ int64_t fg_cuda_activation_read_f32(sl_f32 data) {
     return fg_cuda_activation_read_address((uint64_t) (uintptr_t) data.data, data.len * (int64_t) sizeof(float));
 }
 
-int fg_cuda_activation_prepare(uint64_t host, int64_t bytes, bool fresh, bool overwrite, int64_t step, int64_t deadline) {
-    if (!activations.active) return 0;
+static void activation_prepare_target(uint64_t host, int64_t bytes, bool fresh, int64_t step, int64_t deadline) {
     activations.target = fresh ? host : 0;
     activations.target_bytes = bytes;
     activations.target_deadline = deadline;
@@ -1537,6 +1541,11 @@ int fg_cuda_activation_prepare(uint64_t host, int64_t bytes, bool fresh, bool ov
         if (activations.count > 0) activations.expired_bytes += fg143_activation_expire(activation_ranges(), step);
         if (activations.large_output[1] > 0) activations.expired_bytes += fg143_activation_expire(activation_large_range(), step);
     }
+}
+
+int fg_cuda_activation_prepare(uint64_t host, int64_t bytes, bool fresh, bool overwrite, int64_t step, int64_t deadline) {
+    if (!activations.active) return 0;
+    activation_prepare_target(host, bytes, fresh, step, deadline);
     if (overwrite && activations.count > 0) {
         activations.skipped_download_bytes += fg143_activation_discard_overwritten(activation_ranges(), host, bytes);
     }
@@ -3782,6 +3791,56 @@ uint64_t fg_cuda_take_vectors(void) {
     const uint64_t vectors = cuda_vectors;
     cuda_vectors = 0;
     return vectors;
+}
+
+bool fg_cuda_direct_ssm_enabled(void) {
+    return cuda.ssm_conv_direct && cuda.ssm_conv_save_tail && activations.active && activations.defer_waits;
+}
+
+int64_t fg_cuda_direct_ssm(sl_i64 plan, int64_t step, int64_t deadline) {
+    if (plan.len != 7 || !fg_cuda_direct_ssm_enabled()) return 0;
+    const uint64_t history = (uint64_t) plan.data[0], input = (uint64_t) plan.data[1];
+    const uint64_t weights = (uint64_t) plan.data[2], output = (uint64_t) plan.data[3];
+    uint64_t channels = (uint64_t) plan.data[4], tokens = (uint64_t) plan.data[5];
+    int32_t silu = (int32_t) plan.data[6];
+    const int64_t bytes = (int64_t) (4 * channels * tokens);
+    DevicePtr state = state_address(history, (int64_t) (12 * channels), 2);
+    if (!state) return 0;
+    // The graph can reuse the projection's host slot for the convolution.
+    // Keep the old device record until the convolution and tail finish reading.
+    const bool reused = input == output;
+    if (reused) activation_prepare_target(output, bytes, true, step, deadline);
+    else if (fg_cuda_activation_prepare(output, bytes, true, false, step, deadline) != 0) return -1;
+    const int active = start_context();
+    if (active != 1) return active;
+    DevicePtr result = 0, mixed = 0, filter = 0;
+    const sl_u8 projection = {(void *) (uintptr_t) input, bytes};
+    int error = activation_output_for_input(output, bytes, &result, projection, &mixed);
+    if (error == 0 && !mixed) error = activation_input(projection, &cuda.input, &mixed);
+    const int64_t filter_bytes = (int64_t) (16 * channels);
+    if (error == 0 && !dense_weight(weights, filter_bytes, &filter))
+        error = activation_input((sl_u8) {(void *) (uintptr_t) weights, filter_bytes}, &cuda.weight, &filter);
+    if (error == 0) {
+        const unsigned groups = (unsigned) ((channels + 127) / 128);
+        void *conv[] = {&state, &mixed, &filter, &result, &channels, &tokens, &silu};
+        void *tail[] = {&state, &mixed, &channels, &tokens};
+        error = cuda.launch(cuda.ssm_conv_direct, groups, (unsigned) ((tokens + 31) / 32), 1,
+            128, 1, 1, 0, NULL, conv, NULL);
+        if (error == 0) error = cuda.launch(cuda.ssm_conv_save_tail, groups, 1, 1, 128, 1, 1, 0, NULL, tail, NULL);
+        if (error == 0 && reused) {
+            fg143_activation_discard_overwritten(activation_ranges(), output, bytes);
+            fg143_activation_discard_overwritten(activation_large_range(), output, bytes);
+        }
+        if (error == 0) error = activation_publish(output, bytes, result, false);
+    }
+    const int popped = finish_context();
+    if (error != 0 || popped != 0) {
+        fprintf(stderr, "Goose CUDA: direct SSM failed (%d)\n", error ? error : popped);
+        return -1;
+    }
+    ++cuda_convs;
+    if (getenv("GOOSE_GRAPH_LOG")) fprintf(stderr, "Goose CUDA: direct SSM and ordered tail (host reuse=%d)\n", reused);
+    return 1;
 }
 
 int64_t fg_cuda_position(sl_i64 config, sl_u8 x, sl_u8 y, sl_u8 z, sl_u8 out) {

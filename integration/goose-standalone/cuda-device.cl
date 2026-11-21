@@ -511,6 +511,20 @@ static float fg170s_fma(float x, float w, float sum) {
 
 #include "ssm-conv-device.h"
 
+__kernel void goose_ssm_conv_direct(__global float *history, __global float *mixed, __global float *weights,
+    __global float *output, uint64_t channels, uint64_t tokens, int32_t silu) {
+    uint32_t group, time, lane;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(group));
+    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(time));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
+    ssm_conv_direct_g((uint64_t) history, (uint64_t) mixed, (uint64_t) weights, (uint64_t) output,
+        channels, tokens, (uint64_t) group * 128 + lane, (uint64_t) time * 32, silu != 0);
+}
+
+__kernel void goose_ssm_conv_save_tail(__global float *history, __global float *mixed, uint64_t channels, uint64_t tokens) {
+    ssm_conv_save_tail_g((uint64_t) history, (uint64_t) mixed, channels, tokens, position_thread());
+}
+
 __kernel void goose_ssm_conv(__global uint8_t * x, __global uint8_t * weights,
     __global uint8_t * out, __global int64_t * cfg) {
     uint32_t sequence, group, lane;

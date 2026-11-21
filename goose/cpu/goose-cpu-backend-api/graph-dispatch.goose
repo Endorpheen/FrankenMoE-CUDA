@@ -15,6 +15,8 @@ extern "fg143_graph_resize" fn graph_resize(workspace: u64, bytes: i64) -> u64;
 extern "fg143_graph_observe" fn graph_observe(tensor: u64) -> bool;
 extern "fg_cuda_routed_graph_enabled" fn routed_graph_enabled() -> bool;
 extern "fg_cuda_full_ffn_enabled" fn full_ffn_enabled() -> bool;
+extern "fg_cuda_direct_ssm_enabled" fn direct_ssm_enabled() -> bool;
+extern "fg_cuda_direct_ssm" fn direct_ssm(plan: const i64[:], step: i64, deadline: i64) -> i64;
 extern "fg_cuda_routed_graph" fn routed_graph(plan: const i64[:], glu: const i64[:], norm: const i64[:],
     shared: const i64[:], step: i64, deadline: i64) -> i64;
 
@@ -253,6 +255,56 @@ fn try_routed_graph(graph: u64, step: i64, deadlines: const i64[:]) -> i64 {
     return if grouped > 0 { 6 } else { grouped };
 }
 
+fn try_direct_ssm(graph: u64, step: i64, deadlines: const i64[:], concat: u64) -> i64 {
+    if step + 3 >= deadlines.len || deadlines[step] != step + 3 || deadlines[step + 1] > step + 2 ||
+       deadlines[step + 2] > step + 3 { return 0; }
+    let tail = graph_node(graph, step + 1);
+    let copy = graph_node(graph, step + 2);
+    let conv = graph_node(graph, step + 3);
+    if graph_prop(tail, 2) != OP_VIEW || graph_prop(copy, 2) != OP_CPY ||
+       graph_prop(conv, 2) != OP_SSM_CONV || storage_get(tail, STORAGE_VIEW, 0) != concat ||
+       storage_get(conv, STORAGE_VIEW, 0) != 0 { return 0; }
+    var inputs: u64[10] = [0; 10];
+    graph_inputs(concat, inputs[..]);
+    let history = inputs[0];
+    let transposed = inputs[1];
+    if history == 0 || transposed == 0 || graph_prop(transposed, 2) != OP_TRANSPOSE { return 0; }
+    graph_inputs(transposed, inputs[..]);
+    let mixed = inputs[0];
+    graph_inputs(copy, inputs[..]);
+    if mixed == 0 || inputs[0] != tail || inputs[1] != history { return 0; }
+    graph_inputs(conv, inputs[..]);
+    let weights = inputs[1];
+    if inputs[0] != concat || weights == 0 { return 0; }
+    var p: i64[71] = [0; 71];
+    graph_describe(conv, p[..]);
+    let channels = p[30]; let tokens = p[31]; let silu = p[41];
+    if channels < 128 || channels > 65535 * 128 || tokens <= 32 || tokens > 65535 * 32 ||
+       (silu != 0 && silu != 1) || !routed_dense(packet_tensor(p[..], 30), channels, tokens, 1, 0) ||
+       !routed_dense(packet_tensor(p[..], 10), 4, channels, 1, 0) ||
+       !routed_dense(packet_tensor(p[..], 0), tokens + 3, channels, 1, 0) ||
+       storage_get(tail, STORAGE_VIEW_OFFSET, 0) != (4 * tokens) as u64 { return 0; }
+    graph_describe(copy, p[..]);
+    let v = packet_tensor(p[..], 0);
+    if v.kind != 0 || v.ne[0] != 3 || v.ne[1] != channels || v.ne[2] != 1 || v.ne[3] != 1 ||
+       v.nb[0] != 4 || v.nb[1] != 4 * (tokens + 3) ||
+       !routed_dense(packet_tensor(p[..], 30), 3, channels, 1, 0) { return 0; }
+    graph_describe(concat, p[..]);
+    let t = packet_tensor(p[..], 10);
+    if p[41] != 0 || !routed_dense(packet_tensor(p[..], 0), 3, channels, 1, 0) ||
+       t.kind != 0 || t.ne[0] != tokens || t.ne[1] != channels || t.ne[2] != 1 || t.ne[3] != 1 ||
+       t.nb[0] != 4 * channels || t.nb[1] != 4 { return 0; }
+    let x = storage_get(mixed, STORAGE_DATA, 0);
+    let h = storage_get(history, STORAGE_DATA, 0);
+    let w = storage_get(weights, STORAGE_DATA, 0);
+    let y = storage_get(conv, STORAGE_DATA, 0);
+    if x == 0 || h == 0 || w == 0 || y == 0 || x != storage_get(transposed, STORAGE_DATA, 0) ||
+       h != storage_get(copy, STORAGE_DATA, 0) { return 0; }
+    let plan: i64[7] = [h as! i64, x as! i64, w as! i64, y as! i64, channels, tokens, silu];
+    // Use the earlier step to keep the projection live until both launches.
+    return direct_ssm(plan[..], step, deadlines[step + 3]);
+}
+
 fn execute_graph_node(tensor: u64, work: GraphWorkspace &, selective: bool, step: i64, deadline: i64) -> bool {
     if tensor == 0 { return false; }
     let op = graph_prop(tensor, 2);
@@ -306,6 +358,11 @@ export fn fg143_graph_run(graph: u64, selective: bool, deadlines: const i64[:], 
         let step = if deadlines.len == 0 { -1 } else { i };
         let deadline = if deadlines.len == 0 { -1 } else { deadlines[i] };
         let tensor = graph_node(graph, i);
+        if !observe && deadlines.len != 0 && graph_prop(tensor, 2) == OP_CONCAT && direct_ssm_enabled() {
+            let grouped = try_direct_ssm(graph, i, deadlines, tensor);
+            if grouped > 0 { i += 4; continue; }
+            if grouped < 0 { outcome = i + 1; break; }
+        }
         if use_routed_graph && graph_prop(tensor, 2) == OP_MUL_MAT_ID {
             let grouped = try_routed_graph(graph, i, deadlines);
             if grouped > 0 { i += grouped; continue; }

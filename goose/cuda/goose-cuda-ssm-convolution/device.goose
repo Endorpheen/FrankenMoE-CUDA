@@ -202,6 +202,43 @@ fn ssm_conv_long(
     }
 }
 
+fn ssm_conv_direct(history: u64, mixed: u64, weights: u64, output: u64,
+    channels: u64, tokens: u64, channel: u64, first: u64, silu: bool) {
+    if channel >= channels || first >= tokens { return; }
+    let old = 3 * channel;
+    let seed = if first == 0 { old } else { (first - 3) * channels + channel };
+    let source = if first == 0 { history } else { mixed };
+    let step: u64 = if first == 0 { 1 } else { channels };
+    var x0 = load(source, seed);
+    var x1 = load(source, seed + step);
+    var x2 = load(source, seed + 2 * step);
+    let weight = 4 * channel;
+    let w0 = load(weights, weight);
+    let w1 = load(weights, weight + 1);
+    let w2 = load(weights, weight + 2);
+    let w3 = load(weights, weight + 3);
+    let count = if tokens - first < 32 { tokens - first } else { 32 };
+    for i in count as i64 {
+        let at = (first + (i as u64)) * channels + channel;
+        let x3 = load(mixed, at);
+        var sum = ssm_long_acc(x0, w0, 0.0);
+        sum = ssm_long_acc(x1, w1, sum);
+        sum = ssm_long_acc(x2, w2, sum);
+        sum = ssm_long_acc(x3, w3, sum) + 0.0;
+        store(output, at, if silu { ssm_long_silu(sum) } else { sum });
+        x0 = x1;
+        x1 = x2;
+        x2 = x3;
+    }
+}
+
+fn ssm_conv_save_tail(history: u64, mixed: u64, channels: u64, tokens: u64, channel: u64) {
+    if channel >= channels { return; }
+    for i in 3 {
+        store(history, 3 * channel + (i as u64), load(mixed, (tokens - 3 + (i as u64)) * channels + channel));
+    }
+}
+
 fn main() {
     ssm_conv_serial(0 as u64, 0 as u64, 0 as u64, 0 as u64, 4, 4, 4, 4, 4, 4, 4, 0, 3, false, false, 0, 0, 0);
     ssm_conv_long(
