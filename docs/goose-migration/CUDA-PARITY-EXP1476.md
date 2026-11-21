@@ -4225,6 +4225,19 @@ The selectable patch, exact event-probe source, binaries,
 fixture traces and raw Apex runs are stored in
 `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/mmq-m32-exp1611`.
 
+## Dense Q4_K 64-by-128 MMQ tiles
+
+EXP-2026-11-21-1622 preserves the reference accumulation
+order on dense Q4_K where reference K is unsplit. The
+64-by-128 CTA shares a staged Q8_1 half-block and four
+16-row weight slabs. A guarded tail retains partial columns
+in the same tile. The full Apex A-B-B-A at 5,920 MiB saves
+1,971.422 ms of median prefill and 1,865.050 ms end to end,
+with identical answers and SLRU. The opt-in
+`GOOSE_MMQ_Q4_M64=1` checkpoint awaits default qualification
+after a small observed decode and VRAM increase.
+See the [latency map and same-session traces](APEX-LATENCY-MAP.md#exp-1622--dense-q4_k-64--128-mmq).
+
 ## Live Apex Attention graph replay
 
 EXP-2026-11-21-1612 verifies the existing two-node Attention

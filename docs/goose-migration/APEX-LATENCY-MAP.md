@@ -1,5 +1,125 @@
 # Apex 32K/512 latency map
 
+## EXP-1622 — Dense Q4_K 64 × 128 MMQ
+
+Eight warps share four 16-row staged Q4_K slabs and half
+of the current packed Q8_1 block for 128 columns. Each warp reuses
+activation and weight fragments across two row groups and
+four adjacent column groups. The tail belongs to the same
+kernel. The experimental dispatcher selects shapes with
+unsplit reference K and keeps the established arithmetic
+order. The 64 × 128 specialization uses 144 registers and
+38,912 shared bytes per CTA on SM89, with zero spills.
+
+The matched 8192 × 4092 × 2048 fixture replaces 17,920 CTAs
+in two kernels with 4,096 CTAs in one kernel. Matrix kernel
+time falls from 12.356 to 7.482 ms. This is a single fixture
+trace. The target shape, a multi-window 2048 × 4096 × 4096
+projection and a 512 × 4092 × 512 tail have identical
+outputs across 44,005,376 FP32 values. Compute Sanitizer
+reports zero errors on the partial-column case. The short
+Apex response and cache counters match EXP-1621.
+
+### Full matched Apex 32K/512
+
+Both arms use RTX 4070, 4096/4096, Q4_0 K/V, 5,920 MiB
+expert cache and EXP-1620 graph replays with expert staging.
+`GOOSE_MMQ_Q4_M64=0|1` selects the dense path. All four
+responses, 512 IDs, probability rows and expert cache
+counters match. The model is fully resident in RAM.
+
+| Unprofiled A-B-B-A | Previous wide tiles | 64 × 128 | Difference |
+|---|---:|---:|---:|
+| Median prefill, tok/s | 1,146.77 | 1,231.70 | +84.94 |
+| Median decode, tok/s | 35.83 | 35.57 | -0.27 |
+| Median prefill, ms | 28,575.259 | 26,603.837 | -1,971.422 |
+| Median decode, ms | 14,260.908 | 14,367.280 | +106.372 |
+| Median prefill plus decode, ms | 42,836.167 | 40,971.117 | -1,865.050 |
+| Peak process VRAM, MiB | 8,218 | 8,220 | +2 |
+| Maximum RSS high-water, KiB | 21,480,604 | 21,480,624 | +20 |
+| Process swap, KiB / system swap-out, pages | 0 / 0 | 0 / 0 | 0 / 0 |
+
+### Same-session Nsight trace
+
+| Full diagnostic profile | Hybrid | Goose A | Goose B | A → B | B minus Hybrid |
+|---|---:|---:|---:|---:|---:|
+| Server prefill, ms | 12,464.912 | 29,228.900 | 26,973.908 | -2,254.992 | +14,508.996 |
+| Server decode, ms | 8,570.875 | 15,791.688 | 15,897.297 | +105.609 | +7,326.422 |
+| Peak process VRAM, MiB | 9,156 | 8,250 | 8,250 | 0 | -906 |
+| Peak RSS high-water, KiB | 22,520,448 | 22,089,452 | 22,088,092 | -1,360 | -432,356 |
+| Process swap, KiB / system swap-out, pages | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 |
+
+The 2,000 wide dense Q4_K launches fall from 5,283.453 to
+3,246.213 ms of exclusive GPU time. The entire identified
+Q4_K family saves 2,080.726 ms. Decode GPU idle grows by
+175.709 ms. Disjoint attribution finds 142.778 ms more idle
+before the host submits work and 35.278 ms more during
+graph launch. The logits-to-first-upload handoff grows
+84.507 ms and the pre-submit handoff from async copy to
+graph launch grows 103.656 ms. Other gaps improve. These
+are measured intervals. Causes within the uninstrumented
+host spans remain open. The decode device-busy union falls
+70.059 ms.
+
+Keep the tile as an experimental prefill checkpoint. Its
+two full pairs are faster end to end. The observed decode
+difference and 2 MiB extra peak VRAM warrant separate
+qualification before promotion. The accepted Optimized
+Hybrid speed targets remain 2,668 prefill and 65.38 decode.
+
+Family rows use exclusive GPU time and exclude concurrent
+activities. GPU idle is the complement of the GPU busy
+union. All three Nsight traces include 511 decode steps.
+The complete matrix, disjoint
+idle attribution, source assembly and executable are in
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/mmq-m64-exp1622`.
+
+### Prefill gaps after EXP-1622
+
+| Operation | Hybrid, ms | Goose A, ms | Goose B, ms | A → B, ms | B minus Hybrid, ms |
+|---|---:|---:|---:|---:|---:|
+| MMQ Q4_K | 2,365.905 | 8,264.363 | 6,183.637 | -2,080.726 | +3,817.732 |
+| GPU idle | 1,131.660 | 3,711.543 | 3,603.536 | -108.007 | +2,471.876 |
+| MMQ Q6_K | 741.615 | 2,427.290 | 2,406.038 | -21.253 | +1,664.423 |
+| Flash Attention MMA | 1,411.565 | 2,948.421 | 2,943.296 | -5.126 | +1,531.730 |
+| Pointwise and GLU | 489.945 | 1,642.244 | 1,633.332 | -8.913 | +1,143.387 |
+| MMQ Unresolved format | 0.000 | 979.452 | 985.947 | +6.495 | +985.947 |
+| GDN | 463.978 | 1,350.623 | 1,351.056 | +0.434 | +887.078 |
+| H2D bulk | 3,488.652 | 3,973.263 | 3,928.456 | -44.807 | +439.805 |
+| Dense and generic matmul | 88.958 | 498.662 | 498.075 | -0.587 | +409.116 |
+| RMSNorm | 237.622 | 345.281 | 349.133 | +3.852 | +111.512 |
+| KV FWHT | 46.168 | 147.053 | 148.923 | +1.870 | +102.755 |
+| Tensor gather and blit | 362.403 | 460.812 | 459.856 | -0.956 | +97.454 |
+| Other Attention | 0.000 | 61.344 | 61.011 | -0.333 | +61.011 |
+| D2D | 44.083 | 88.977 | 88.216 | -0.761 | +44.133 |
+| RoPE | 11.329 | 41.122 | 41.140 | +0.019 | +29.811 |
+| MoE weighted reduction | 234.904 | 246.497 | 248.210 | +1.713 | +13.306 |
+| MoE router | 8.580 | 16.399 | 16.645 | +0.246 | +8.065 |
+| KV writes | 6.012 | 11.747 | 11.705 | -0.042 | +5.692 |
+| Memset | 0.232 | 0.284 | 0.282 | -0.002 | +0.050 |
+
+### Decode gaps after EXP-1622
+
+| Operation | Hybrid, ms | Goose A, ms | Goose B, ms | A → B, ms | B minus Hybrid, ms |
+|---|---:|---:|---:|---:|---:|
+| GPU idle | 2,107.932 | 5,032.004 | 5,207.714 | +175.709 | +3,099.781 |
+| Vector Attention | 1,217.478 | 2,842.015 | 2,839.377 | -2.638 | +1,621.899 |
+| H2D bulk | 1,700.288 | 2,478.268 | 2,415.889 | -62.379 | +715.600 |
+| Dense and generic matmul | 147.955 | 806.090 | 806.380 | +0.289 | +658.425 |
+| Pointwise and GLU | 139.696 | 557.734 | 557.374 | -0.360 | +417.678 |
+| MMVQ | 2,487.202 | 2,824.229 | 2,822.307 | -1.922 | +335.105 |
+| MoE router | 48.592 | 216.141 | 216.091 | -0.051 | +167.499 |
+| RMSNorm | 124.947 | 268.114 | 268.100 | -0.014 | +143.153 |
+| H2D packets up to 4 KiB | 7.598 | 79.596 | 80.971 | +1.375 | +73.372 |
+| GDN | 57.042 | 111.192 | 111.101 | -0.092 | +54.058 |
+| KV FWHT | 18.099 | 52.459 | 52.481 | +0.022 | +34.382 |
+| SSM convolution | 21.043 | 49.796 | 49.818 | +0.022 | +28.775 |
+| KV writes | 14.559 | 34.094 | 34.101 | +0.006 | +19.542 |
+| RoPE | 10.810 | 29.100 | 29.102 | +0.003 | +18.293 |
+| MoE weighted reduction | 29.525 | 46.779 | 46.682 | -0.097 | +17.157 |
+| MMVQ pack | 184.083 | 195.191 | 194.190 | -1.001 | +10.106 |
+| D2H | 39.987 | 42.470 | 39.642 | -2.828 | -0.346 |
+
 ## EXP-1621 — Current gap to the hybrid at 5,920 MiB
 
 The refreshed ranking pairs the EXP-1620 reused graph trace
