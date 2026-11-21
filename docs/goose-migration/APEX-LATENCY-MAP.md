@@ -4,8 +4,10 @@
 
 Carry the qualified kernels, graph scopes, and memory paths
 forward together. Use the latest verified cumulative profile
-as the control. Once a kernel improves on identical operands,
-run one matched full Apex 32K/512 A/B pair. Before each
+as the control. Screen each change with a short warmed A/B
+that executes its real path, such as Apex 4096/2 or a matching
+kernel fixture. Use a positive elapsed-time signal to qualify
+one matched full Apex 32K/512 A/B pair. Before each
 measured run, execute a separate 4096/2 warm-up with the same
 binary and flags. Retain the CUDA cache and restart the server
 for the full request to reset KV and SLRU. Repeat only for unstable
@@ -21,6 +23,40 @@ Accept a positive, comparable warmed A/B into the
 experimental cumulative checkpoint when correctness passes.
 Retain small gains and verify interactions between changes.
 Track historical bests separately from each fresh pair.
+
+### EXP-1647 diagnostic refresh
+
+The warmed diagnostic request matches all 512 IDs,
+probabilities, response and SLRU from the unprofiled
+EXP-1647 run. Capture CUDA graphs as a whole. The prefill
+window starts at the first 4,096-row RMS launch and ends
+at the first decode graph. It contains 22,162.972 ms of
+wall time and 2,340.303 ms without recorded GPU activity.
+The graph capture records 22,990 decode replays. It
+does not resolve the kernels inside those replay ranges.
+Use the unprofiled pair for throughput acceptance.
+
+| Prefill interval, ms | Optimized Hybrid | EXP-1631 trace | EXP-1647 trace | Current excess |
+|---|---:|---:|---:|---:|
+| MMQ | 3,090.333 | 7,135.471 | 6,521.297 | 3,430.964 |
+| Flash Attention MMA | 1,418.364 | 2,954.766 | 2,951.365 | 1,533.000 |
+| Bulk H2D | 3,467.884 | 4,299.160 | 4,710.651 | 1,242.767 |
+| GPU idle | 1,116.869 | 3,542.178 | 2,340.303 | 1,223.434 |
+| GDN | 460.678 | 1,358.527 | 1,350.967 | 890.289 |
+| Pointwise and GLU | 489.568 | 1,626.915 | 847.207 | 357.639 |
+
+Family times are exclusive device intervals. Idle
+is disjoint from recorded device activity. Of the current
+idle, 1,432.740 ms occurs before submission outside an
+active CUDA API. The cause of that portion needs host
+attribution. The 3,320 float4 launches account for
+690.587 ms and are classified within Pointwise and GLU.
+The 80 whole-tile Flash MMA launches occupy 2,940.710 ms.
+This is the largest remaining non-MMQ compute gap and
+the next target after the current MMQ work.
+
+The trace and analysis are in
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/profile-exp1647`.
 
 ## EXP-1647 — Prefetch dense Q6_K activation halves
 

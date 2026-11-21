@@ -33,7 +33,7 @@ KERNEL_FAMILIES = {
     "GDN": ("gdn_single", "gated_delta_net_cuda", "goose_gdn", "goose_gated_delta_net"),
     "SSM convolution": ("ssm_conv", "goose_ssm_conv"),
     "RMSNorm": ("rms_norm_f32", "goose_rms_reference"),
-    "Pointwise and GLU": ("k_bin_bcast", "unary_", "scale_f32", "goose_vector_ops"),
+    "Pointwise and GLU": ("k_bin_bcast", "unary_", "scale_f32", "goose_vector_ops", "goose_vector_flat"),
     "MoE router": ("topk_moe_cuda", "goose_route_"),
     "MoE grouping": ("mm_ids_helper",),
     "MoE weighted reduction": ("moe_weighted_reduction_f32", "goose_moe_weighted"),

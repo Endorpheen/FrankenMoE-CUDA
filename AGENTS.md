@@ -222,12 +222,15 @@ build.
     or incompatibility is established. Preserve the previous best executable,
     exact runtime profile, and a way to switch back.
 
-    Routine Apex optimization uses the matched 32,768/512 profile. Warm up
-    each binary before its full measurement, and repeat when timing is unstable
-    or the change has a suspected regression. Fixed per-request costs make
-    decode throughput depend on generation length. Keep measurements at each
-    length separate in benchmarks/experiment-history.jsonl. Absent measurements
-    stay null.
+    Screen each optimization with a short warmed A/B that exercises its real
+    path. Compare elapsed time in seconds on matched inputs. Use Apex 4096/2
+    when it covers the path, and a targeted kernel fixture when a larger shape
+    is required. A positive signal qualifies one matched full Apex 32,768/512
+    pair. Save inconclusive or slower screens and move to another hypothesis.
+    Warm up each binary before the full measurement. Keep measurements at
+    each generation length separate in benchmarks/experiment-history.jsonl.
+    Absent measurements stay null. When diagnostic profiling is planned for an
+    experiment, include its results in that experiment's push.
 
 21. Use one fixed endpoint for FrankenMoE runtime server runs and benchmarks:
     `127.0.0.1:9101`. Do not change the port between experiments or silently
