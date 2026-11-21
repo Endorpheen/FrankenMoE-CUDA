@@ -4085,6 +4085,47 @@ or a separately qualified Stream-K shape. The complete runs,
 request, replies, options and hashes are under
 `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/flash-recheck-exp1608`.
 
+## Flash Attention device lowering and L2 prefetch
+
+EXP-2026-11-21-1609 screens code generation and the K/V
+loader against the EXP-1603 whole-tile baseline. Its archived
+CUDA trace spends 2.949 s in 80 prefill MMA launches. The
+8-query body is an out-of-line call in the control PTX.
+
+Forcing just the 8-query body inline moves the remaining call
+to its shared wrapper and grows the causal stack frame from
+64 to 72 bytes. Forcing the wrapper too specializes the two
+callers and reduces the causal frame to 56 bytes. It also
+grows the Stream-K frame from 168 to 4,032 bytes. The shared
+inline policy is rejected on resource usage. Applying Clang's
+`flatten` to the ordinary CUDA entry produces byte-identical
+PTX. See the [compiler candidate and assembly evidence](FRIED-GOOSE-OPTIMIZATION-REGISTRY.md#call-site-specialization-of-large-device-helpers).
+
+The independent L2 probe restores the 64-byte prefetch
+qualifier of `cp_async_cg_16<64>` in EXP-1476
+(`e7c9155a:vendor/flint/ggml/src/ggml-cuda/cp-async.cuh`).
+Each copy still transfers 16 bytes to shared memory. SM89
+assembly replaces 128 static `LDGSTS.E.BYPASS.128` instructions
+with `LDGSTS.E.BYPASS.LTC64B.128`. Per-entry registers and
+stack sizes are unchanged. The first inline variant and
+the L2 probe each match 17,977,344 FP32 values bitwise across
+the four-query tail, partial tile and long-context fixtures.
+Compute Sanitizer finds zero errors in the tail and partial
+tile tests for both variants.
+
+| Profiled causal Flash, 4,096 queries and 32,768 keys | Control | L2 hint |
+|---|---:|---:|
+| A–B kernel median, ms | 69.007 | 68.124 |
+| B–A kernel median, ms | 66.587 | 71.676 |
+
+Each arm times five launches after the first warm-up. The
+L2 hint produces no repeatable speed gain. Retain the
+whole-tile baseline without the hint and without forcing
+shared helper inlining. No full-model speed claim is made.
+The generated device fragments, PTX, register/stack reports,
+fixture traces and patches are in
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/flash-lowering-exp1609`.
+
 ## Long Attention partition probe
 
 EXP-2026-11-20-1562 holds the existing vector kernel fixed

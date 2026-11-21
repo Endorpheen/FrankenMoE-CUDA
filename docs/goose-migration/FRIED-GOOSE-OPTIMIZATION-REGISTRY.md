@@ -19,6 +19,7 @@ moving independently and retain its tested production path.
 | Candidate | Status | FrankenMoE evidence |
 |---|---|---|
 | Read CUDA parameter aggregates directly when their address does not need to escape | Candidate | [EXP-1603 vector plans](CUDA-PARITY-EXP1476.md#vector-plans-in-cuda-kernel-parameters) |
+| Specialize large CUDA helpers at call sites with constant mode arguments | Candidate | [EXP-1609 Flash lowering](CUDA-PARITY-EXP1476.md#flash-attention-device-lowering-and-l2-prefetch) |
 
 ## Read-only CUDA parameter aggregates
 
@@ -127,3 +128,50 @@ preserve semantics, and that resource usage and runtime do not regress.
 Raw generated fragments, PTX/SASS, assembly logs and captures are under
 `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/vector-params-exp1603`.
 See the [complete runtime experiment](CUDA-PARITY-EXP1476.md#vector-plans-in-cuda-kernel-parameters).
+
+## Call-site specialization of large device helpers
+
+**Problem.** The causal Flash Attention entry passes constants
+for fixup mode, partition count and initial position through a
+large device helper shared with Stream-K. The CUDA compilation
+pipeline leaves an out-of-line call on this path. Forcing both
+levels inline specializes the causal call but also expands the
+Stream-K body, where the fixup and work-range arguments vary.
+
+The original [Goose entry](../../goose/cuda/standalone-flash-mma.goose)
+is identical in the two builds:
+
+```goose
+flash_causal_part(q, k, v, out, 0, cfg, scale, tile, group, 0, ((visible + 31) / 32) as i32,
+    false, false, 0, 1, lane, warp, shared);
+```
+
+In the original PTX the entry emits `call.uni` to
+`process_tile_apex_nc8_np1_g`. Inline only the 8-query body
+and the call moves to `flash_causal_part_g`. Inline both shared
+helpers and the kernel calls the now-specialized
+`fg_flash_causal_mma_g`. The causal SASS prologue changes from
+`IADD3 R1, R1, -0x40, RZ` to `IADD3 R1, R1, -0x38, RZ`.
+
+| SM89 assembly | Default | Inline 8-query body | Inline body and wrapper |
+|---|---:|---:|---:|
+| Causal local stack, bytes | 64 | 72 | 56 |
+| Stream-K local stack, bytes | 168 | 168 | 4032 |
+
+**Compiler candidate.** Specialize the helper for the call
+sites with proven constant shape and mode arguments. Keep a
+shared entry for variable arguments when expanding it increases
+local storage or code size. Validate the lowering with both
+callers in the same device image. This experiment used Goose
+`664d4de42463cc10cb9c4a61dac59ce6023faa9c9da2838fddc0f4fb8294b3ab`,
+Clang 18.1.8 and CUDA `ptxas` 12.6.85.
+
+**Status and tests.** Global inlining has a measured resource
+regression for Stream-K and remains disabled. Runtime speed for
+the inline variants is unmeasured. The first inline variant
+passes bitwise comparison for 4, 289 and 4,096 queries and
+CUDA memcheck on the first two shapes. For a compiler candidate,
+repeat these checks and the uniform/general Stream-K fixup
+fixtures, then compare actual kernel time, stack and spills.
+See [EXP-1609](CUDA-PARITY-EXP1476.md#flash-attention-device-lowering-and-l2-prefetch)
+for the raw artifacts and the unrelated cache-hint screen.
