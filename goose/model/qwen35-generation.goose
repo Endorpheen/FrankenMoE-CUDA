@@ -1,6 +1,6 @@
 const Q35_MAX_PREFILL_BATCH: i64 = 4096;
 
-extern "fg_q35_generation_eval" fn q35_generation_eval(tokens: const i32[:], logits: f32[:]) -> i64;
+extern "fg_q35_generation_eval" fn q35_generation_eval(tokens: const i32[:], logits: f32[:], prefill: bool) -> i64;
 extern "fg_q35_generation_profile" fn q35_generation_profile(profile: i64[:]);
 extern "fg_q35_generation_prepare" fn q35_generation_prepare() -> i64;
 extern "fg_q35_generation_now" fn q35_generation_now() -> f64;
@@ -8,6 +8,22 @@ extern "hose_reset_state" fn q35_generation_reset();
 
 export fn q35_prefill_valid(batch: i64, ubatch: i64) -> bool {
     return ubatch > 0 && ubatch <= batch && batch <= Q35_MAX_PREFILL_BATCH;
+}
+
+export fn q35_cpumask_parse(text: const u8[:], mask: i64[:]) -> bool {
+    if mask.len != 512 { return false; }
+    let start = if text.len >= 2 && text[0] == '0' && (text[1] == 'x' || text[1] == 'X') { 2 } else { 0 };
+    let digits = text.len - start;
+    if digits <= 0 || digits > mask.len / 4 { return false; }
+    for i in mask.len { mask[i] = 0; }
+    var nonzero: i64 = 0;
+    for i in digits {
+        let value = pr_hex_val(text[text.len - 1 - i]);
+        if value < 0 { return false; }
+        nonzero = nonzero | value;
+        for bit in 4 { mask[4 * i + bit] = (value >> bit) & 1; }
+    }
+    return nonzero != 0;
 }
 
 fn q35_prefill_batch_count(remaining: i64, batch: i64, ubatch: i64, checkpoint_tail: bool) -> i64 {
@@ -103,7 +119,7 @@ fn q35_sample_generate(tokens: const i64[:], vocabulary: i64, capacity: i64, eog
         for i in count { batch[i] = tokens[read + i] as i32; }
         read += count;
         let output = if read == tokens.len { logits[..] } else { logits[0 .. 0] };
-        if q35_generation_eval(batch[0 .. count], output) != output.len {
+        if q35_generation_eval(batch[0 .. count], output, true) != output.len {
             q35_generation_reset();
             return -1;
         }
@@ -162,7 +178,7 @@ fn q35_sample_generate(tokens: const i64[:], vocabulary: i64, capacity: i64, eog
             break;
         }
         batch[0] = next as i32;
-        if q35_generation_eval(batch[0 .. 1], logits[..]) != vocabulary {
+        if q35_generation_eval(batch[0 .. 1], logits[..], false) != vocabulary {
             q35_generation_reset();
             return -1;
         }

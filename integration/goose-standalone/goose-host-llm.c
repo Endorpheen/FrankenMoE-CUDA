@@ -24,6 +24,7 @@
 #endif
 #include "goose-host-llm.h"
 #include "goose-host.h"
+#include "graph-execute.h"
 
 #define MAX_REQ   262144
 
@@ -402,7 +403,7 @@ int64_t fg_http_eog(sl_i64 ids) {
     return H.n_eog;
 }
 
-int64_t fg_q35_generation_eval(sl_i32 tokens, sl_f32 output) {
+int64_t fg_q35_generation_eval(sl_i32 tokens, sl_f32 output, uint8_t prefill) {
     if (!tokens.data || tokens.len <= 0 || output.len < 0 ||
         (output.len != 0 && !output.data) ||
         (uint64_t) tokens.len > SIZE_MAX / sizeof(int32_t) ||
@@ -415,8 +416,10 @@ int64_t fg_q35_generation_eval(sl_i32 tokens, sl_f32 output) {
     uint8_t * exchange = malloc(token_bytes + logit_bytes);
     if (!exchange) return -1;
     memcpy(exchange, tokens.data, token_bytes);
+    const bool previous = fg_standalone_set_cpu_prefill(prefill != 0);
     const int64_t result = model_step((sl_i32) {exchange, tokens.len}, output.len != 0,
         (sl_f32) {exchange + token_bytes, output.len});
+    fg_standalone_set_cpu_prefill(previous);
     if (result > 0) memcpy(output.data, exchange + token_bytes, logit_bytes);
     free(exchange);
     return result;

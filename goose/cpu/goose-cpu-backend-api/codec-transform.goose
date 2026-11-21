@@ -86,7 +86,9 @@ fn codec_transform(
     return true;
 }
 
-extern "fg_standalone_cpu_batch_threads" fn cpu_batch_threads() -> i64;
+extern "fg143_cpu_gather_threads" fn cpu_gather_threads() -> i64;
+extern "fg143_cpu_prefill" fn cpu_prefill() -> bool;
+extern "fg143_gather_affinity" fn gather_affinity(prefill: bool, task: i64) -> i64;
 extern "fg143_gather_index" fn gather_index(address: u64) -> i64;
 extern "fg143_gather_fetch" fn gather_fetch(address: u64, row: u8[:]);
 extern "fg143_gather_store" fn gather_store(address: u64, row: const f32[:]);
@@ -94,7 +96,7 @@ extern "fg143_gather_witness" fn gather_witness(rows: i64, tasks: i64);
 
 struct CodecGather {
     weights: u64, ids: u64, dst: u64, width: i64, rows: i64,
-    weight_rows: i64, stride: i64, row_bytes: i64, kind: i64, tasks: i64
+    weight_rows: i64, stride: i64, row_bytes: i64, kind: i64, tasks: i64, prefill: bool
 }
 
 fn codec_gather_partition(job: CodecGather, task: i64) -> bool {
@@ -122,6 +124,7 @@ fn codec_gather_partition(job: CodecGather, task: i64) -> bool {
 }
 
 thread_fn codec_gather_worker(job: CodecGather, task: i64) {
+    assert(gather_affinity(job.prefill, task) == 0);
     assert(codec_gather_partition(job, task));
 }
 
@@ -136,7 +139,7 @@ fn codec_parallel_gather(p: const Node &, addresses: const i64[3] &) -> i64 {
        p.y.ne[3] != 1 || p.d.ne[0] != p.x.ne[0] || p.y.ne[0] != rows(p.d) ||
        p.x.ne[0] <= 0 || p.x.ne[0] % 256 != 0 || p.x.ne[1] <= 0 ||
        addresses[0] == 0 || addresses[1] == 0 || addresses[2] == 0 { return 0; }
-    let tasks = cpu_batch_threads();
+    let tasks = cpu_gather_threads();
     let count = p.y.ne[0];
     if tasks <= 1 || count < tasks || count > 2147483647 { return 0; }
     let weights = addresses[0] as! u64;
@@ -150,7 +153,7 @@ fn codec_parallel_gather(p: const Node &, addresses: const i64[3] &) -> i64 {
        !blit_disjoint(weights, p.x.bytes, dst, p.d.bytes) ||
        !blit_disjoint(ids, p.y.bytes, dst, p.d.bytes) { return 0; }
 
-    let job = CodecGather { weights, ids, dst, p.x.ne[0], count, p.x.ne[1], p.x.nb[1], row_bytes, p.x.kind, tasks };
+    let job = CodecGather { weights, ids, dst, p.x.ne[0], count, p.x.ne[1], p.x.nb[1], row_bytes, p.x.kind, tasks, cpu_prefill() };
     var workers: i64[>..] = [];
     for task in 1 .. tasks { workers.push(thread_spawn_contained(codec_gather_worker, job, task)); }
     var ok = codec_gather_partition(job, 0);

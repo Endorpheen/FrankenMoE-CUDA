@@ -10,6 +10,7 @@
 #include <pthread.h>
 #include <fcntl.h>
 #include <inttypes.h>
+#include <sched.h>
 #include <stdatomic.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -19,6 +20,8 @@
 #include <unistd.h>
 
 extern void fg143_cpu_init(int argc, char ** argv);
+extern uint8_t q35_cpumask_parse(sl_u8 text, sl_i64 mask);
+extern int64_t th_cpumask_next(sl_i64 mask, int64_t strict, int64_t first, sl_i64 local);
 extern uint64_t fg_cuda_take_matrices(void);
 extern uint64_t fg_cuda_take_f32_matrices(void);
 extern void fg_cuda_take_matrix_launches(uint64_t * launches, uint64_t * cached);
@@ -48,6 +51,14 @@ extern int fg_cuda_activation_graph_end(bool success, bool all, uint64_t host, i
 static pthread_once_t cpu_init = PTHREAD_ONCE_INIT;
 static atomic_uint_fast64_t cpu_values;
 static atomic_int_fast64_t cpu_batch_threads = 1;
+static atomic_int_fast64_t cpu_decode_threads = 1;
+static _Thread_local bool cpu_prefill = true;
+enum { CPU_PROFILE_MASK_BITS = 512 };
+struct cpu_affinity_profile {
+    cpu_set_t placement[CPU_PROFILE_MASK_BITS];
+    int64_t count;
+};
+static struct cpu_affinity_profile cpu_affinity[2];
 
 struct numerical_checkpoint {
     FILE * data;
@@ -64,16 +75,85 @@ static void init_cpu(void) {
     fg143_cpu_init(0, NULL);
 }
 
-int64_t fg_standalone_configure_cpu_batch(int64_t threads) {
-    if (threads <= 0) return -1;
+static int64_t configure_cpu_threads(atomic_int_fast64_t * setting, int64_t threads) {
+    if (threads <= 0 || threads > CPU_PROFILE_MASK_BITS) return -1;
     pthread_once(&cpu_init, init_cpu);
     if (!fg143_cpu_batch_supported(threads)) return -1;
-    atomic_store_explicit(&cpu_batch_threads, threads, memory_order_relaxed);
+    atomic_store_explicit(setting, threads, memory_order_relaxed);
     return 0;
+}
+
+int64_t fg_standalone_configure_cpu_batch(int64_t threads) {
+    return configure_cpu_threads(&cpu_batch_threads, threads);
+}
+
+int64_t fg_standalone_configure_cpu_decode(int64_t threads) {
+    return configure_cpu_threads(&cpu_decode_threads, threads);
 }
 
 int64_t fg_standalone_cpu_batch_threads(void) {
     return atomic_load_explicit(&cpu_batch_threads, memory_order_relaxed);
+}
+
+int64_t fg_standalone_cpu_decode_threads(void) {
+    return atomic_load_explicit(&cpu_decode_threads, memory_order_relaxed);
+}
+
+bool fg_standalone_set_cpu_prefill(bool prefill) {
+    const bool previous = cpu_prefill;
+    cpu_prefill = prefill;
+    return previous;
+}
+
+int64_t fg_standalone_configure_cpu_affinity(const char * text, bool strict, bool prefill) {
+    int64_t mask[CPU_PROFILE_MASK_BITS], local[CPU_PROFILE_MASK_BITS];
+    cpu_set_t allowed;
+    if (!text || sched_getaffinity(0, sizeof allowed, &allowed) != 0) return -1;
+    pthread_once(&cpu_init, init_cpu);
+    if (!q35_cpumask_parse((sl_u8) {(void *) text, (int64_t) strlen(text)},
+                         (sl_i64) {mask, CPU_PROFILE_MASK_BITS})) return -1;
+    for (int cpu = 0; cpu < CPU_PROFILE_MASK_BITS; ++cpu) {
+        if (mask[cpu] && !CPU_ISSET(cpu, &allowed)) return -1;
+    }
+    struct cpu_affinity_profile * profile = &cpu_affinity[prefill ? 0 : 1];
+    const int64_t threads = prefill ? fg_standalone_cpu_batch_threads() : fg_standalone_cpu_decode_threads();
+    int64_t next = 0;
+    for (int64_t worker = 0; worker < threads; ++worker) {
+        next = th_cpumask_next((sl_i64) {mask, CPU_PROFILE_MASK_BITS}, strict, next,
+                              (sl_i64) {local, CPU_PROFILE_MASK_BITS});
+        CPU_ZERO(&profile->placement[worker]);
+        for (int cpu = 0; cpu < CPU_PROFILE_MASK_BITS; ++cpu) {
+            if (local[cpu]) CPU_SET(cpu, &profile->placement[worker]);
+        }
+    }
+    profile->count = threads;
+    return 0;
+}
+
+uint8_t fg143_cpu_prefill(void) {
+    return cpu_prefill;
+}
+
+int64_t fg143_cpu_gather_threads(void) {
+    return cpu_prefill ? fg_standalone_cpu_batch_threads() : fg_standalone_cpu_decode_threads();
+}
+
+int64_t fg143_gather_affinity(uint8_t prefill, int64_t worker) {
+    const struct cpu_affinity_profile * profile = &cpu_affinity[prefill ? 0 : 1];
+    if (profile->count == 0) return 0;
+    if (worker < 0 || worker >= profile->count ||
+        sched_setaffinity(0, sizeof(cpu_set_t), &profile->placement[worker]) != 0) {
+        fprintf(stderr, "Goose CPU affinity failed for %s worker %" PRId64 "\n",
+                prefill ? "prefill" : "decode", worker);
+        return -1;
+    }
+    if (getenv("GOOSE_GRAPH_LOG")) {
+        cpu_set_t effective;
+        if (sched_getaffinity(0, sizeof effective, &effective) != 0) return -1;
+        fprintf(stderr, "Goose CPU affinity: %s worker %" PRId64 " cpu %d allowed %d\n",
+                prefill ? "prefill" : "decode", worker, sched_getcpu(), CPU_COUNT(&effective));
+    }
+    return 0;
 }
 
 int64_t fg143_gather_index(uint64_t address) {
@@ -419,8 +499,22 @@ uint8_t fg143_graph_observe(uint64_t address) {
 static enum ggml_status compute_graph(struct ggml_cgraph * graph, bool all, const struct ggml_tensor * output,
                                      sl_i64 deadlines) {
     pthread_once(&cpu_init, init_cpu);
-    if (fg_cuda_activation_graph_begin(deadlines.len != 0) != 0) return GGML_STATUS_FAILED;
-    const int64_t failed = fg143_graph_run((uint64_t) (uintptr_t) graph, !all, deadlines, checkpoint != NULL);
+    const bool pin = cpu_affinity[cpu_prefill ? 0 : 1].count != 0;
+    cpu_set_t previous;
+    if (pin && sched_getaffinity(0, sizeof previous, &previous) != 0) {
+        perror("Goose CPU affinity snapshot");
+        return GGML_STATUS_FAILED;
+    }
+    const bool started = fg143_gather_affinity(cpu_prefill, 0) == 0 &&
+        fg_cuda_activation_graph_begin(deadlines.len != 0) == 0;
+    const int64_t failed = started ?
+        fg143_graph_run((uint64_t) (uintptr_t) graph, !all, deadlines, checkpoint != NULL) : -1;
+    bool restored = true;
+    if (pin && sched_setaffinity(0, sizeof previous, &previous) != 0) {
+        perror("Goose CPU affinity restore");
+        restored = false;
+    }
+    if (!started) return GGML_STATUS_FAILED;
     if (failed > 0) {
         const struct ggml_tensor * node = ggml_graph_node(graph, (int) (failed - 1));
         fprintf(stderr, "Goose graph: node %lld (%s) failed\n", (long long) failed - 1, ggml_op_name(node->op));
@@ -450,7 +544,7 @@ static enum ggml_status compute_graph(struct ggml_cgraph * graph, bool all, cons
     fg_cuda_take_routes(routes);
     uint64_t blits[3];
     fg_cuda_take_blits(blits);
-    const bool valid = failed == 0 && fg_cuda_state_graph_done() == 0;
+    const bool valid = failed == 0 && fg_cuda_state_graph_done() == 0 && restored;
     uint64_t hits = 0, skipped_download_bytes = 0, expired_bytes = 0;
     const int published = fg_cuda_activation_graph_end(valid, all,
         output ? (uint64_t) (uintptr_t) output->data : 0,

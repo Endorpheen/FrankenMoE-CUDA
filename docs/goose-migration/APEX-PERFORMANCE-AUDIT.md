@@ -179,7 +179,9 @@ cache counters and 5,301,139 resident pages agree.
 The clean reverse pair confirms the prefill gain.
 The gather work for individual decode tokens stays
 serial. The results qualify the batch gather workers.
-The complete CPU affinity and decode profile remains open.
+[EXP-1591](APEX-32K-ACCEPTANCE.md#effective-cpu-profile)
+qualifies the 8/16 CPU profile against the effective
+inherited affinity of the frozen EXP-1476 workload.
 
 The binary, raw captures and fixtures are under
 `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/batch-workers-exp1590`.

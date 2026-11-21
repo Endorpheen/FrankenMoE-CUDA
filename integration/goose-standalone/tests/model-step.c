@@ -30,7 +30,7 @@ extern void * __real_fg_standalone_graph_alloc(struct ggml_cgraph * graph);
 extern enum ggml_status __real_fg_standalone_graph_compute_output(struct ggml_cgraph * graph,
     const struct ggml_tensor * output);
 extern uint64_t __real_fg143_graph_resize(uint64_t address, int64_t bytes);
-extern int64_t __real_fg_q35_generation_eval(sl_i32 tokens, sl_f32 logits);
+extern int64_t __real_fg_q35_generation_eval(sl_i32 tokens, sl_f32 logits, uint8_t prefill);
 extern uint64_t __real_fg143_storage_ram_available(void);
 extern int64_t __real_fg_cuda_routing(sl_i64 config, sl_u8 x, sl_u8 ids, sl_u8 output);
 
@@ -49,12 +49,13 @@ uint64_t __wrap_fg143_storage_ram_available(void) {
     return refuse_graph_ram ? 1 : __real_fg143_storage_ram_available();
 }
 
-int64_t __wrap_fg_q35_generation_eval(sl_i32 tokens, sl_f32 logits) {
+int64_t __wrap_fg_q35_generation_eval(sl_i32 tokens, sl_f32 logits, uint8_t prefill) {
     if (expected_steps) {
         assert(step_index < expected_count);
+        assert((prefill != 0) == (step_index + 1 < expected_count));
         assert(tokens.len == expected_steps[step_index++]);
     }
-    return __real_fg_q35_generation_eval(tokens, logits);
+    return __real_fg_q35_generation_eval(tokens, logits, prefill);
 }
 
 uint64_t __wrap_fg143_graph_resize(uint64_t address, int64_t bytes) {
@@ -185,7 +186,7 @@ static void check_prefill_profile(const char * path) {
     for (int i = 0; i < 4096; ++i) prompt[i] = 2;
     const int64_t split[] = {3, 2, 3, 2, 2, 1};
     check_prefill(prompt, 12, 5, 3, split, sizeof split / sizeof *split);
-    const int64_t boundaries[] = {3, 128, 512, 1024, 2048, 4096};
+    const int64_t boundaries[] = {1, 3, 128, 512, 1024, 2048, 4096};
     for (size_t i = 0; i < sizeof boundaries / sizeof *boundaries; ++i) {
         const int64_t n = boundaries[i];
         const int64_t full[] = {n, 1};

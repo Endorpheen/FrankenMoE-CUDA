@@ -15,3 +15,7 @@ enum ggml_status fg_standalone_graph_compute(struct ggml_cgraph * graph);
 enum ggml_status fg_standalone_graph_compute_output(struct ggml_cgraph * graph, const struct ggml_tensor * output);
 int64_t fg_standalone_configure_cpu_batch(int64_t threads);
 int64_t fg_standalone_cpu_batch_threads(void);
+int64_t fg_standalone_configure_cpu_decode(int64_t threads);
+int64_t fg_standalone_cpu_decode_threads(void);
+int64_t fg_standalone_configure_cpu_affinity(const char * mask, bool strict, bool prefill);
+bool fg_standalone_set_cpu_prefill(bool prefill);

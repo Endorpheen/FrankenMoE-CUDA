@@ -35,6 +35,7 @@ void fg_http_stats(sl_i64 stats) {
     if (stats.len >= 21) fg_cuda_expert_stats((sl_i64) { stats.data + 15, 6 });
     if (stats.len >= 22) stats.data[21] = hose_expert_cache_limit();
     if (stats.len >= 23) stats.data[22] = fg_standalone_cpu_batch_threads();
+    if (stats.len >= 24) stats.data[23] = fg_standalone_cpu_decode_threads();
 }
 
 void fg_http_listening(int64_t port) {
@@ -78,6 +79,9 @@ int main(int argc, char ** argv) {
     int64_t batch = HOSE_DEFAULT_PREFILL_BATCH;
     int64_t ubatch = 0;
     int64_t batch_threads = 1;
+    int64_t threads = 1;
+    const char * cpu_mask = NULL, * cpu_mask_batch = NULL;
+    bool cpu_strict = false, cpu_strict_batch = false;
     while (argc >= 2) {
         if (strcmp(argv[1], "--cache-type-k") == 0 || strcmp(argv[1], "--cache-type-v") == 0) {
             if (argc < 3 || strcmp(argv[2], "q4_0") != 0) {
@@ -97,11 +101,38 @@ int main(int argc, char ** argv) {
             argv += 2;
             continue;
         }
+        const char ** mask = NULL;
+        if (strcmp(argv[1], "--cpu-mask") == 0) mask = &cpu_mask;
+        if (strcmp(argv[1], "--cpu-mask-batch") == 0) mask = &cpu_mask_batch;
+        if (mask) {
+            if (argc < 3) {
+                fprintf(stderr, "%s requires a hexadecimal CPU mask\n", argv[1]);
+                return 2;
+            }
+            *mask = argv[2];
+            argc -= 2;
+            argv += 2;
+            continue;
+        }
+        bool * strict = NULL;
+        if (strcmp(argv[1], "--cpu-strict") == 0) strict = &cpu_strict;
+        if (strcmp(argv[1], "--cpu-strict-batch") == 0) strict = &cpu_strict_batch;
+        if (strict) {
+            if (argc < 3 || (strcmp(argv[2], "0") != 0 && strcmp(argv[2], "1") != 0)) {
+                fprintf(stderr, "%s requires 0 or 1\n", argv[1]);
+                return 2;
+            }
+            *strict = argv[2][0] == '1';
+            argc -= 2;
+            argv += 2;
+            continue;
+        }
         int64_t * value = NULL;
         if (strcmp(argv[1], "--ctx-size") == 0) value = &context;
         if (strcmp(argv[1], "--batch-size") == 0) value = &batch;
         if (strcmp(argv[1], "--ubatch-size") == 0) value = &ubatch;
         if (strcmp(argv[1], "--threads-batch") == 0) value = &batch_threads;
+        if (strcmp(argv[1], "--threads") == 0) value = &threads;
         if (!value) break;
         if (argc < 3 || (*value = positive_integer(argv[2])) <= 0) {
             fprintf(stderr, "%s requires a positive integer\n", argv[1]);
@@ -123,13 +154,27 @@ int main(int argc, char ** argv) {
         fputs("--threads-batch exceeds the available Goose worker capacity\n", stderr);
         return 2;
     }
+    if (threads > 1 && fg_standalone_configure_cpu_decode(threads) != 0) {
+        fputs("--threads exceeds the available Goose worker capacity\n", stderr);
+        return 2;
+    }
+    if (cpu_mask && fg_standalone_configure_cpu_affinity(cpu_mask, cpu_strict, false) != 0) {
+        fputs("--cpu-mask requires a nonzero hexadecimal mask of allowed CPUs\n", stderr);
+        return 2;
+    }
+    if (cpu_mask_batch && fg_standalone_configure_cpu_affinity(cpu_mask_batch, cpu_strict_batch, true) != 0) {
+        fputs("--cpu-mask-batch requires a nonzero hexadecimal mask of allowed CPUs\n", stderr);
+        return 2;
+    }
     const int server_mode = argc >= 3 && strcmp(argv[2], "--serve") == 0;
     if (server_mode && (argc == 4 || argc == 5)) {
         return serve(argv[1], positive_integer(argv[3]), argc == 5 ? positive_integer(argv[4]) : 0, context);
     }
     if (server_mode || (argc != 3 && argc != 4)) {
         fputs("options: --ctx-size N --batch-size N --ubatch-size N --cache-type-k q4_0 "
-              "--cache-type-v q4_0 --expert-cache-mib N --threads-batch N\n", stderr);
+              "--cache-type-v q4_0 --expert-cache-mib N\n"
+              "         --threads N --threads-batch N --cpu-mask HEX --cpu-mask-batch HEX "
+              "--cpu-strict 0|1 --cpu-strict-batch 0|1\n", stderr);
         fprintf(stderr, "usage: %s [OPTIONS] MODEL.gguf PROMPT [MAX_TOKENS]\n", program);
         fprintf(stderr, "       %s [OPTIONS] MODEL.gguf --serve PORT [MAX_CONNECTIONS]\n", program);
         return 2;

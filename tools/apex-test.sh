@@ -143,8 +143,16 @@ if [ -n "$GOOSE_BIN" ]; then
     if [ -n "${5:-}" ]; then
         ARGS+=(--expert-cache-mib "$CACHE")
     fi
-    if [ -n "${APEX_GOOSE_THREADS_BATCH:-}" ]; then
-        ARGS+=(--threads-batch "$APEX_GOOSE_THREADS_BATCH")
+    if [ "${APEX_GOOSE_CPU_AFFINITY:-0}" == 1 ]; then
+        ARGS+=(--threads "${APEX_GOOSE_THREADS:-8}" --threads-batch "${APEX_GOOSE_THREADS_BATCH:-16}"
+              --cpu-mask 0f0f --cpu-mask-batch ffff --cpu-strict 1 --cpu-strict-batch 1)
+    else
+        if [ -n "${APEX_GOOSE_THREADS:-}" ]; then
+            ARGS+=(--threads "$APEX_GOOSE_THREADS")
+        fi
+        if [ -n "${APEX_GOOSE_THREADS_BATCH:-}" ]; then
+            ARGS+=(--threads-batch "$APEX_GOOSE_THREADS_BATCH")
+        fi
     fi
     ARGS+=("$MODEL" --serve "$PORT")
     PRELOAD=

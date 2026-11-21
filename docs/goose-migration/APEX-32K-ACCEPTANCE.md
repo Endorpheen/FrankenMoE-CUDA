@@ -5,7 +5,7 @@ Each gate closes once its evidence is recorded. A failed check returns
 to the gate that owns the defect. This checklist covers eight gates.
 Functional qualification runs before memory and speed acceptance.
 
-**Closed: 4 of 8. Remaining: 4.**
+**Closed: 5 of 8. Remaining: 3.**
 
 1. [x] **Pin the workload and control.** Verify the model digest, exact
    request bytes and the EXP-1476 executable and library manifest.
@@ -21,7 +21,7 @@ Functional qualification runs before memory and speed acceptance.
    state recovery and HTTP regressions through the rebuilt artifact.
    The clean candidate below passed. Repeat this gate for the final
    executable after any runtime fix.
-3. [ ] **Match the effective run profile** (requires 1 and 2). Use the
+3. [x] **Match the effective run profile** (requires 1 and 2). Use the
    same hardware, weights, request, context, Q4 KV, one sequence, no
    prompt reuse and the accepted launch profile. Validate the actual
    prefill batch/ubatch of 4096/4096, CPU thread/affinity settings and
@@ -32,8 +32,9 @@ Functional qualification runs before memory and speed acceptance.
    Q4_0 K/V format and the 4,992 MiB budget on real Apex.
    [EXP-1590](APEX-PERFORMANCE-AUDIT.md#cpu-batch-workers-for-quantized-row-gather)
    verifies 16 threads on the quantized prefill gather.
-   Decode thread scheduling and affinity still need qualification. Treat
-   performance under a different effective profile as diagnostic.
+   [EXP-1591](#effective-cpu-profile) supplies the decode and batch
+   limits of 8 and 16 and verifies the effective CPU affinity of
+   the frozen reference and the Goose comparison profile.
    The frozen checkpointed reference evaluates the final 4,096
    prompt tokens in parts of 4,092 and 4. The
    [experimental matched tail](CUDA-PARITY-EXP1476.md#actual-apex-checkpoint-tail-geometry)
@@ -156,12 +157,70 @@ Both responses and all probabilities match outside timing.
 The two captured property objects are identical and both
 maps contain no C++ runtime, libggml or libllama. This pair
 verifies selection and behavior with the explicit budget.
-The CPU scheduling and final performance comparisons remain open.
+The final performance comparison remains open.
 
 Raw captures, startup probes and the executable are under
 `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/explicit-cache-exp1589`.
 Executable SHA-256
 `81029bb5d93e05f9d30f7da4943738d5a804f01a154c0c1da87996bc47479826`.
+
+## Effective CPU profile
+
+EXP-1591 adds `--threads N` for eligible decode CPU
+work and the two phase-specific CPU masks and strict
+placement flags. The standalone assigns logical CPUs
+using the existing Goose mask planner. System bindings
+apply the selected masks and restore the coordinator's
+original mask after each graph. The prompt phase is
+explicit, including one-token prompt graphs. On the Apex
+profile, the gather uses 16 threads for large prompt batches.
+Each decode step has one gather row, so the row runs on the
+coordinator under the configured eight-thread limit.
+
+The frozen EXP-1476 executable was observed through
+short 4096/129 and full 32K/512 requests with its
+original 8/16 counts and explicit `0f0f`/`ffff` masks.
+Tracing the server and its children recorded no
+`sched_setaffinity` calls in either request. A separate
+`taskset -c 0` control recorded the expected successful
+syscall. The server process had CPUs 0–31 allowed at
+readiness and after the full response. The full response
+matches the frozen content, IDs and probability hashes.
+
+Use `APEX_GOOSE_THREADS=8 APEX_GOOSE_THREADS_BATCH=16`
+with inherited affinity for comparison with that binary.
+The explicit strict masks are available through the
+CLI and `APEX_GOOSE_CPU_AFFINITY=1` for separate runs.
+On the short Goose trace, strict prefill workers 0–15
+each report one CPU with the same index. The decode
+coordinator reports CPU 0. Both phases restore the
+initial allowed mask 0–31. Mask fixtures pass strict
+ordering, wraparound, non-strict mode and invalid masks.
+The HTTP and model-step checks pass, including the
+one-token prefill and decode distinction.
+
+| Unprofiled Goose Apex 32K/512, same binary and 8/16 thread limits | Inherited A | Strict B |
+|---|---:|---:|
+| Prefill, tok/s | 1,127.697 | 1,126.500 |
+| Decode, steps/s | 26.959 | 26.898 |
+| Process RSS high-water, KiB | 22,953,120 | 22,952,664 |
+| Process VRAM after request, MiB | 7,272 | 7,272 |
+| Process swap / system swap-out growth | 0 / 0 | 0 / 0 |
+
+Both use the exact frozen request, context 262,144,
+4,096/4,096 limits, matched checkpoint tail, Q4_0 KV
+and explicit 4,992 MiB GPU expert budget. They reproduce
+the same response, IDs, probability rows, SLRU counters
+and all 5,301,139 resident pages. The strict arm checks
+placement behavior. The inherited arm records the
+effective profile for parity work. Formal performance
+acceptance uses its own repeated unprofiled pairs.
+
+The binary, validator, fixtures, raw captures and affinity
+traces are under
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/cpu-affinity-exp1591`.
+Executable SHA-256
+`bba340b17a3c25c5429bba64eab104d9fca1800639fb28f9e8d4714794b40c98`.
 
 ## Capture and timing convention
 
