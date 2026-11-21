@@ -57,6 +57,7 @@ the dependency that would justify rerunning it.
 | EXP-1585, single-token four-tap SSM | [Captured-input replay](#deferred-single-token-ssm-arithmetic). Both raw and fused results match 8,192 of 8,192 native values. The new entry uses 24 registers and no stack. | The original opening repetition persists. Live decode drops from 26.228 to 24.004 steps/s in the observed pair, with a different token sequence and 17.064 GB more expert uploads. | Recheck with the matched [EXP-1586 prefill tail](#actual-apex-checkpoint-tail-geometry). Compare generation and measure SSM device time with the same token history. |
 | EXP-1586, checkpoint-tail geometry and dense MMVQ | [Matched prefill snapshots and full pairs](#actual-apex-checkpoint-tail-geometry). The last 24,576 QKV values match the live reference. Both full candidate responses omit the opening task echo. [EXP-1587](#cooperative-mmq-on-the-checkpoint-tail) restores the fast MMQ dispatch for this geometry. | The response still miscounts the repeated log records. | Qualify the entire response and compare the matched effective profile with the frozen reference. The two tail-profile selectors remain experimental. |
 | EXP-1607, direct single-route MMVQ addresses | [Same-binary A–B–B–A](#single-route-mmvq-address-parameters) saves 237 ms median decode and preserves the exact response. | Prefill takes 261 ms longer in this series, combined time stays essentially flat and process VRAM increases by 2 MiB. | Keep the patch and repeat with an isolated decode selector or a single parameter ABI that shares the existing CUDA entry. Reuse the counterpart fixture and verify real-device timing before enabling. |
+| EXP-1608, Flash Attention Stream-K on EXP-1603 | [Isolated selector recheck](#flash-attention-stream-k-on-the-exp-1603-checkpoint) uses one binary and batch/ubatch 4096/4096. | The clean pair adds 92 ms to the combined request. Both candidate responses mistake a conditional capacity statement for observed queue growth. | Keep whole-tile Attention. Recheck a scheduling change that preserves the whole-tile result and supports the traced long-context geometry. |
 
 After a material dependency change, use short sequential A/B runs on
 identical inputs and settings. Use the best current verified checkpoint
@@ -4039,6 +4040,50 @@ unresolved and the partial trace is excluded from speed
 attribution. Retain the EXP-1603 checkpoint. The deferred patch,
 binary, fixture, trace and four complete unprofiled runs are
 under `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/mmvq-scalar-exp1607`.
+
+## Flash Attention Stream-K on the EXP-1603 checkpoint
+
+EXP-2026-11-21-1608 retests the [existing Stream-K path](#flash-attention-stream-k-restoration)
+after cooperative MMQ, the matched prefill tail and host KV page
+decommit. The older combined diagnostic saved 446 ms of device
+Attention time with Stream-K and its fixup. This experiment isolates
+the selector by setting only `GOOSE_FLASH_STREAM_K` to 0 or 1.
+Both arms use the EXP-1603 executable and the frozen request on
+RTX 4070 with 4096/4096, Q4_0 K/V and a 5,920 MiB expert cache.
+No profiler is attached. All four launches start with the GGUF
+resident. A startup attempt with concurrent browser VRAM use could
+not allocate 5,920 MiB. A separate 4,992 MiB control completed and
+is excluded from the 5,920 MiB series.
+
+| Apex 32K/512 | A1, whole tile | B1, Stream-K | B2, Stream-K | A2, whole tile |
+|---|---:|---:|---:|---:|
+| Prefill, tok/s | 1085.498 | 1133.709 | 1134.699 | 1141.853 |
+| Decode, steps/s | 30.887 | 32.289 | 32.341 | 32.160 |
+| Prefill plus decode, s | 46.731 | 44.729 | 44.679 | 44.586 |
+| Peak process VRAM, MiB | 8200 | 8202 | 8202 | 8200 |
+| Peak card VRAM, MiB | 10499 | 10478 | 10459 | 10454 |
+| Peak RSS high-water, KiB | 21478264 | 21458636 | 21480708 | 21482040 |
+| Process swap, KiB | 0 | 0 | 0 | 0 |
+| System swap-out increase, pages | 570 | 0 | 0 | 0 |
+
+Exclude A1–B1 from speed attribution because A1 has request-window
+swap-out. In the clean B2–A2 pair Stream-K adds 181 ms of prefill
+and saves 89 ms of decode, adding 92 ms overall. The two runs in
+each arm have matching canonical response JSON after removing
+timings. Across arms the text, IDs and probabilities differ. The
+Stream-K replies preserve the requested assessment and planning
+structure but treat the repeated conditional line as evidence that
+arrivals actually outpace completions. The control explicitly
+conditions the risk on measurements the log lacks. The candidate
+also has 325 additional expert fills and 667,533,312 more expert
+upload bytes. The decode difference cannot isolate kernel speed.
+
+**Deferred.** Keep the whole-tile default. Full response quality
+and speed do not qualify Stream-K on this configuration. The
+remaining opportunity is better scheduling for whole-tile arithmetic
+or a separately qualified Stream-K shape. The complete runs,
+request, replies, options and hashes are under
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/flash-recheck-exp1608`.
 
 ## Long Attention partition probe
 
