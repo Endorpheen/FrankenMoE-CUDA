@@ -804,6 +804,148 @@ export fn fg_device_mmq_q4_m128(weights: u64, packed: u64, out: u64, jobs: u64,
     mmq_q4_dense_store(out, jobs, route, col + 56, routes, row + row_pair, lane, sum7);
 }
 
+fn mmq_q4_stage_quarter(weights: u64, stride: i64, tile: u64, quarter: i64, lane: i64) {
+    for pass in 4 {
+        let word = lane + 32 * pass;
+        let row = word / 8;
+        let part = word % 8;
+        let packed = mmq_word(weights + ((row * stride + 16 + 32 * quarter + 4 * part) as u64));
+        let addr = tile + ((32 * row + 4 * part) as u64);
+        mmq_shared_store(addr, q4_mmq_nibbles(packed as i64, false) as u32);
+        mmq_shared_store(addr + 512, q4_mmq_nibbles(packed as i64, true) as u32);
+    }
+    let row = lane / 2;
+    let group = lane % 2;
+    let weight = weights + ((row * stride) as u64);
+    let packed = mmq_scale_min(weight + 4, group + 2 * quarter);
+    let d = mmq_half_round(mmq_half(weight) * ((packed >> 8) as f32));
+    let minimum = mmq_half_round(-mmq_half(weight + 2) * ((packed & 255) as f32));
+    let addr = tile + ((1024 + 8 * (16 * group + row)) as u64);
+    mmq_shared_store_float(addr, d);
+    mmq_shared_store_float(addr + 4, minimum);
+}
+
+fn mmq_stage_q8_quarter(stage: u64, packed_tile: u64, pitch: i64, routes: i64, columns: i64,
+    quarter_in_half: i64, thread: i64) {
+    let vectors = 5 * columns;
+    for pass in 1 + (vectors - 1) / 256 {
+        let vector = thread + 256 * pass;
+        if vector < vectors {
+            let slot = vector / 5;
+            let live_slot = if slot < routes { slot } else { 0 };
+            let part = vector % 5;
+            let offset = if part == 0 { 0 } else { 64 * quarter_in_half + 16 * part };
+            mmq_copy_16(stage + ((16 * vector) as u64), packed_tile + ((live_slot * pitch + offset) as u64));
+        }
+    }
+}
+
+fn mmq_q4_quarter_column(sum: MmqPairSum, activation: u64, group: i64, scale_offset: i64, lane: i64,
+    lo: MmqWords, hi: MmqWords, lo_scales: MmqScales, hi_scales: MmqScales) -> MmqPairSum {
+    let sub = lane % 4;
+    let rhs = activation + ((80 * (lane / 4) + 16 + 32 * group + 4 * sub) as u64);
+    let ds = activation + ((160 * sub + scale_offset + 4 * group) as u64);
+    let b0 = mmq_shared_word(rhs);
+    let b1 = mmq_shared_word(rhs + 16);
+    let ds0 = mmq_shared_word(ds);
+    let ds1 = mmq_shared_word(ds + 80);
+    let dot_lo = mmq_mma32(lo.a, lo.b, lo.c, lo.d, b0, b1);
+    let dot_hi = mmq_mma32(hi.a, hi.b, hi.c, hi.d, b0, b1);
+    return MmqPairSum { left: mmq_q4_shared_acc(sum.left, dot_lo, lo_scales, ds0, ds1),
+        right: mmq_q4_shared_acc(sum.right, dot_hi, hi_scales, ds0, ds1) };
+}
+
+// Both CTA shapes have eight 32-by-128 warp tiles. A quarter block keeps
+// the staged weights and activations within the same shared allocation.
+export fn fg_device_mmq_q4_large(weights: u64, packed: u64, out: u64, jobs: u64,
+    stride: i64, extent: i64, row: i64, route: i64, first_route: i64, routes: i64,
+    thread: i64, stage: u64, height: i64, columns: i64) {
+    let lane = thread % 32;
+    let warp = thread / 32;
+    let column_warps = columns / 128;
+    let col = 128 * (warp % column_warps);
+    let row_pair = 32 * (warp / column_warps);
+    let activate = stage + ((80 * height) as u64);
+    let weight_stage = stage + ((1280 * warp) as u64);
+    let weight_src = weights + ((stride * (row + 16 * warp)) as u64);
+    let lo_stage = stage + ((80 * row_pair) as u64);
+    let hi_stage = lo_stage + 1280;
+    let activation = activate + ((80 * col) as u64);
+    let pitch = 288 * extent;
+    let packed_tile = packed + ((pitch * (route - first_route)) as u64);
+    let zero = MmqSum { a: 0.0, b: 0.0, c: 0.0, d: 0.0 };
+    let empty = MmqPairSum { left: zero, right: zero };
+    var sum0 = empty;
+    var sum1 = empty;
+    var sum2 = empty;
+    var sum3 = empty;
+    var sum4 = empty;
+    var sum5 = empty;
+    var sum6 = empty;
+    var sum7 = empty;
+    var sum8 = empty;
+    var sum9 = empty;
+    var sum10 = empty;
+    var sum11 = empty;
+    var sum12 = empty;
+    var sum13 = empty;
+    var sum14 = empty;
+    var sum15 = empty;
+    for k in extent {
+        let w = weight_src + ((144 * k) as u64);
+        for quarter in 4 {
+            let q = (288 * k + 144 * (quarter / 2)) as u64;
+            let local = quarter % 2;
+            let scale_offset = 8 * local;
+            mmq_q4_stage_quarter(w, stride, weight_stage, quarter, lane);
+            if height == 256 {
+                mmq_q4_stage_quarter(w + ((128 * stride) as u64), stride, weight_stage + 10240, quarter, lane);
+            }
+            mmq_stage_q8_quarter(activate, packed_tile + q, pitch, routes, columns, local, thread);
+            mmq_barrier();
+            for group in 2 {
+                let lo = mmq_ldm32(mmq_q4_shared_fragment(lo_stage, group, lane));
+                let hi = mmq_ldm32(mmq_q4_shared_fragment(hi_stage, group, lane));
+                let lo_scales = mmq_q4_scales_at(lo_stage + 1024, group, lane);
+                let hi_scales = mmq_q4_scales_at(hi_stage + 1024, group, lane);
+                sum0 = mmq_q4_quarter_column(sum0, activation, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
+                sum1 = mmq_q4_quarter_column(sum1, activation + 640, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
+                sum2 = mmq_q4_quarter_column(sum2, activation + 1280, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
+                sum3 = mmq_q4_quarter_column(sum3, activation + 1920, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
+                sum4 = mmq_q4_quarter_column(sum4, activation + 2560, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
+                sum5 = mmq_q4_quarter_column(sum5, activation + 3200, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
+                sum6 = mmq_q4_quarter_column(sum6, activation + 3840, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
+                sum7 = mmq_q4_quarter_column(sum7, activation + 4480, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
+                sum8 = mmq_q4_quarter_column(sum8, activation + 5120, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
+                sum9 = mmq_q4_quarter_column(sum9, activation + 5760, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
+                sum10 = mmq_q4_quarter_column(sum10, activation + 6400, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
+                sum11 = mmq_q4_quarter_column(sum11, activation + 7040, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
+                sum12 = mmq_q4_quarter_column(sum12, activation + 7680, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
+                sum13 = mmq_q4_quarter_column(sum13, activation + 8320, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
+                sum14 = mmq_q4_quarter_column(sum14, activation + 8960, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
+                sum15 = mmq_q4_quarter_column(sum15, activation + 9600, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
+            }
+            mmq_barrier();
+        }
+    }
+    mmq_q4_dense_store(out, jobs, route, col, routes, row + row_pair, lane, sum0);
+    mmq_q4_dense_store(out, jobs, route, col + 8, routes, row + row_pair, lane, sum1);
+    mmq_q4_dense_store(out, jobs, route, col + 16, routes, row + row_pair, lane, sum2);
+    mmq_q4_dense_store(out, jobs, route, col + 24, routes, row + row_pair, lane, sum3);
+    mmq_q4_dense_store(out, jobs, route, col + 32, routes, row + row_pair, lane, sum4);
+    mmq_q4_dense_store(out, jobs, route, col + 40, routes, row + row_pair, lane, sum5);
+    mmq_q4_dense_store(out, jobs, route, col + 48, routes, row + row_pair, lane, sum6);
+    mmq_q4_dense_store(out, jobs, route, col + 56, routes, row + row_pair, lane, sum7);
+    mmq_q4_dense_store(out, jobs, route, col + 64, routes, row + row_pair, lane, sum8);
+    mmq_q4_dense_store(out, jobs, route, col + 72, routes, row + row_pair, lane, sum9);
+    mmq_q4_dense_store(out, jobs, route, col + 80, routes, row + row_pair, lane, sum10);
+    mmq_q4_dense_store(out, jobs, route, col + 88, routes, row + row_pair, lane, sum11);
+    mmq_q4_dense_store(out, jobs, route, col + 96, routes, row + row_pair, lane, sum12);
+    mmq_q4_dense_store(out, jobs, route, col + 104, routes, row + row_pair, lane, sum13);
+    mmq_q4_dense_store(out, jobs, route, col + 112, routes, row + row_pair, lane, sum14);
+    mmq_q4_dense_store(out, jobs, route, col + 120, routes, row + row_pair, lane, sum15);
+}
+
 // Stream-K divides the flattened output-tile/K-block range among workers.
 // Only the worker finishing a tile writes the output. Earlier fragments
 // use the worker's private 64-row by 8-route slot.

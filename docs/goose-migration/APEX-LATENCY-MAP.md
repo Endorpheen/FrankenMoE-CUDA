@@ -1,5 +1,91 @@
 # Apex 32K/512 latency map
 
+## EXP-1624 — Dense Q4_K 128 × 256 and 256 × 128
+
+Both candidates compute eight 32 × 128 warp tiles.
+Quarter-K staging holds the packed activation and Q4_K
+fragments in 30,720 bytes of shared memory. The dispatcher
+keeps the qualified unsplit-K scope and handles partial
+columns. The row-major 256 × 128 shape uses the previous
+tile when a matrix lacks full 256-row blocks.
+
+| Q4_K fixture M × N × K | 128 × 128 kernel median, ms | 128 × 256, ms | 256 × 128, ms |
+|---|---:|---:|---:|
+| 8192 × 4092 × 2048 | 5.949 | 4.633 | 4.675 |
+| 2048 × 4096 × 4096 | 3.263 | 2.651 | 2.604 |
+| 4096 × 4092 × 2048 | 3.141 | 2.433 | 2.485 |
+
+The medians use seven iterations after two warm-up
+iterations. Each larger shape halves the CTA count for
+these fixtures. All outputs match. Compute Sanitizer finds
+zero errors on the partial-column fixture for both shapes.
+The 128 × 256 choice wins two shapes with lower register
+pressure. It advances to the full Apex run. The alternate
+256 × 128 stays available as a fixture-qualified experiment.
+
+| SM89 kernel resources | 128 × 128 | 128 × 256 | 256 × 128 |
+|---|---:|---:|---:|
+| Driver registers per thread | 164 | 237 | 248 |
+| Static shared bytes per CTA | 38,912 | 30,720 | 30,720 |
+| Maximum active CTAs per SM from CUDA Driver | 1 | 1 | 1 |
+| Active threads per SM at that limit | 256 / 1,536 | 256 / 1,536 | 256 / 1,536 |
+
+Offline SM89 assembly uses 251 and 254 registers for the
+two larger shapes, respectively, with zero spills. The
+occupancy figures describe the resource ceiling.
+
+### Full Apex 32K/512
+
+The control is the EXP-1623 executable. The candidate uses
+`GOOSE_MMQ_Q4_LARGE_TILE=128x256` with the earlier M64 and
+M128 flags. The profile remains 4096/4096, 5,920 MiB and
+Q4_0 KV with EXP-1620 graph reuse and async expert staging.
+The short and all four full runs match output, token IDs,
+probabilities and SLRU. The model is fully resident.
+
+| Unprofiled A-B-B-A | 128 × 128 | 128 × 256 | Difference |
+|---|---:|---:|---:|
+| Median prefill, tok/s | 1,249.47 | 1,278.68 | +29.20 |
+| Median prefill, ms | 26,225.423 | 25,626.573 | -598.850 |
+| Median decode, tok/s | 35.92 | 35.77 | -0.15 |
+| Median decode, ms | 14,228.831 | 14,286.767 | +57.936 |
+| Median prefill plus decode, ms | 40,454.254 | 39,913.340 | -540.914 |
+| Peak process VRAM, MiB | 8,220 | 8,220 | 0 |
+| Maximum RSS high-water, KiB | 21,483,004 | 21,482,020 | -984 |
+| Process swap, KiB / system swap-out growth, pages | 0 / 0 | 0 / 0 | 0 / 0 |
+
+Both full pairs improve prefill and total latency. The
+proof selects 128 × 256 as the current experimental
+prefill checkpoint and preserves all previous builds.
+
+### Same-session trace and remaining prefill gap
+
+| Metric, ms | Hybrid | Goose 128 × 128 | Goose 128 × 256 | Goose A → B | B minus Hybrid |
+|---|---:|---:|---:|---:|---:|
+| Full server prefill | 12,408.153 | 26,567.253 | 26,085.648 | -481.604 | +13,677.495 |
+| Full server decode | 8,498.112 | 15,515.114 | 15,522.784 | +7.670 | +7,024.672 |
+| Identified Q4_K MMQ | 2,351.424 | 5,977.869 | 5,493.512 | -484.357 | +3,142.088 |
+| Prefill GPU idle | 1,116.869 | 3,455.032 | 3,478.251 | +23.219 | +2,361.382 |
+| Q6_K MMQ | 738.909 | 2,411.594 | 2,411.736 | +0.142 | +1,672.827 |
+| Flash Attention MMA | 1,418.364 | 2,952.676 | 2,954.334 | +1.657 | +1,535.969 |
+| Pointwise and GLU | 489.568 | 1,640.540 | 1,614.927 | -25.613 | +1,125.359 |
+| MMQ unresolved in full trace | 0.000 | 980.106 | 982.161 | +2.055 | +982.161 |
+| Prefill GDN | 460.678 | 1,357.734 | 1,348.659 | -9.074 | +887.982 |
+
+The 2,000 wide dense launches account for 3,053.258 and
+2,542.910 ms respectively. Family rows are exclusive
+device time. A 43.111 ms increase in exclusive bulk H2D
+and 23.219 ms additional idle partially offset the saved
+Q4_K time. Other families and the 23.027 ms reduction in
+the concurrent-work interval complete the attribution.
+Traces record 8,250 MiB peak process VRAM in both Goose
+arms, 9,156 MiB in the hybrid and zero swap-out in all
+three. Throughput acceptance uses the unprofiled series.
+
+Full matrix comparisons, traces, SASS, executable hashes
+and results are in
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/mmq-large-exp1624`.
+
 ## EXP-1623 — Dense Q4_K 128 × 128 MMQ
 
 The 128-row variant stages half of each Q4_K weight slab

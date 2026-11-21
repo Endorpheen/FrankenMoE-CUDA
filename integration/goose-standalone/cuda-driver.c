@@ -159,6 +159,8 @@ static struct {
     Function mmq_q6_dense_x64, mmq_q6_routed_x64;
     Function mmq_q4_dense_x128, mmq_q6_dense_x128;
     Function mmq_q4_dense_m64, mmq_q4_dense_m128;
+    Function mmq_q4_dense_large;
+    unsigned mmq_q4_large_rows, mmq_q4_large_cols;
     Function mmq_q4_routed_x128, mmq_q6_routed_x128;
     Function mmvq_pack, mmvq;
     Function dense_mma, dense_mma_reference, gdn_mma, flash_mma, flash_stage, flash_vec, flash_vec_merge;
@@ -1067,6 +1069,16 @@ static void load_cuda(void) {
             const char * q4_m128 = getenv("GOOSE_MMQ_Q4_M128");
             if (error == 0 && cuda.mmq_q4_dense_m64 && q4_m128 && strcmp(q4_m128, "1") == 0)
                 error = cuda.function_get(&cuda.mmq_q4_dense_m128, cuda.module, "goose_mmq_q4_dense_m128");
+            const char * q4_large = getenv("GOOSE_MMQ_Q4_LARGE_TILE");
+            if (error == 0 && cuda.mmq_q4_dense_m128 && q4_large) {
+                const bool more_columns = strcmp(q4_large, "128x256") == 0;
+                if (more_columns || strcmp(q4_large, "256x128") == 0) {
+                    const char * name = more_columns ? "goose_mmq_q4_dense_m128n256" : "goose_mmq_q4_dense_m256n128";
+                    error = cuda.function_get(&cuda.mmq_q4_dense_large, cuda.module, name);
+                    cuda.mmq_q4_large_rows = more_columns ? 128 : 256;
+                    cuda.mmq_q4_large_cols = more_columns ? 256 : 128;
+                }
+            }
             if (error == 0 && q4_x64 && q4_routed_shared)
                 error = cuda.function_get(&cuda.mmq_q4_routed_x64, cuda.module, "goose_mmq_q4_routed_x64");
             if (error == 0 && cuda.mmq_q4_routed_x64 && routed_x128)
@@ -2391,13 +2403,17 @@ static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
                         1, 128, 1, 1, 0, NULL, args, NULL);
                 }
             } else if (dense_m64 && !shared && first % 16 == 0 && first_route == 8 * first) {
-                const Function matrix = cuda.mmq_q4_dense_m128 ? cuda.mmq_q4_dense_m128 : cuda.mmq_q4_dense_m64;
-                const unsigned row_tile = cuda.mmq_q4_dense_m128 ? 128 : 64;
+                const bool large = cuda.mmq_q4_dense_large && routes >= cuda.mmq_q4_large_cols &&
+                    (unsigned) rows % cuda.mmq_q4_large_rows == 0;
+                const Function matrix = large ? cuda.mmq_q4_dense_large :
+                    cuda.mmq_q4_dense_m128 ? cuda.mmq_q4_dense_m128 : cuda.mmq_q4_dense_m64;
+                const unsigned row_tile = large ? cuda.mmq_q4_large_rows : cuda.mmq_q4_dense_m128 ? 128 : 64;
+                const unsigned column_tile = large ? cuda.mmq_q4_large_cols : 128;
                 int32_t columns = (int32_t) routes;
                 void * args[] = {&weight, &cuda.mmq_packed.address, &matrix_output, &cuda.jobs.address,
                     &stride, &extent, &first_route, &columns};
                 error = cuda.launch(matrix, (unsigned) rows / row_tile,
-                    1 + (routes - 1) / 128, 1, 256, 1, 1, 0, NULL, args, NULL);
+                    1 + (routes - 1) / column_tile, 1, 256, 1, 1, 0, NULL, args, NULL);
             } else if (dense_wide && !shared && first % 4 == 0 &&
                 first_route == 8 * first && routes >= 32) {
                 const bool x128 = dense_x128 && first % 16 == 0 && batch % 16 == 0 && routes >= 128;

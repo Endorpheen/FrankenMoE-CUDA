@@ -277,6 +277,24 @@ MMQ_DENSE_Q4_COOPERATIVE(goose_mmq_q4_dense_m64, fg_device_mmq_q4_m64_g, 64u)
 MMQ_DENSE_Q4_COOPERATIVE(goose_mmq_q4_dense_m128, fg_device_mmq_q4_m128_g, 128u)
 #undef MMQ_DENSE_Q4_COOPERATIVE
 
+#define MMQ_DENSE_Q4_LARGE(name, height, width) \
+__kernel void name(__global const uint8_t * weights, __global const uint8_t * packed, \
+    __global uint8_t * output, __global const uint64_t * jobs, uint64_t stride, int32_t extent, \
+    int32_t first_route, int32_t routes) { \
+    uint32_t row, tile, thread; \
+    __local uint32_t shared[7680] __attribute__((aligned(16))); \
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(row)); \
+    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(tile)); \
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread)); \
+    const int32_t left = routes - (int32_t) (width * tile); \
+    fg_device_mmq_q4_large_g((uint64_t) weights, (uint64_t) packed, (uint64_t) output, (uint64_t) jobs, \
+        stride, extent, height * row, first_route + width * tile, first_route, \
+        left < (int32_t) width ? left : width, thread, (uint64_t) shared, height, width); \
+}
+MMQ_DENSE_Q4_LARGE(goose_mmq_q4_dense_m128n256, 128u, 256u)
+MMQ_DENSE_Q4_LARGE(goose_mmq_q4_dense_m256n128, 256u, 128u)
+#undef MMQ_DENSE_Q4_LARGE
+
 __kernel void goose_mmq_stream(__global const uint8_t * weights, __global const uint8_t * packed,
     __global uint8_t * output, __global const uint64_t * jobs, __global const uint64_t * tiles,
     __global float * fixup, uint64_t stride, int32_t extent, int32_t kind, int32_t rows,

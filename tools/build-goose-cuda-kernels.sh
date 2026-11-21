@@ -124,6 +124,9 @@ if module == "vector":
     # address through a device call would copy the plan to per-thread memory.
     fragment = fragment.replace("static GS_NOINLINE void cv_norm_g(",
                                 "static __attribute__((always_inline)) void cv_norm_g(")
+if module == "mmq":
+    fragment = fragment.replace("static void fg_device_mmq_q4_large_g(",
+                                "static __attribute__((always_inline)) void fg_device_mmq_q4_large_g(")
 if module in ("q4-attention", "gdn", "rope", "ssm-conv", "fwht", "routing"):
     types = source.split("/* ---- types ---- */", 1)[1].split("/* ---- data ---- */", 1)[0]
     excluded = ("gs_rhdr;", "gs_rref;", "gs_pref;", "sl_u8;")
