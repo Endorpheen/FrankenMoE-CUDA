@@ -122,7 +122,7 @@ prefill and 62.86 decode tokens/s.
 | 27 | Selective transfer and device placement. Backend split execution and CUDA tensor set/get → asynchronous linear and 2-D copies. | The [adaptive arena](#adaptive-cuda-activation-arena), [resident vector path](#resident-wide-vector-multiplication) and [last-use matrix input staging](#device-staging-for-the-last-use-matrix-input) remove the large temporary prefill publications. | PARTIAL. Investigate remaining expert uploads, dispatch packets and synchronous host transfers. Full memory and speed parity remain open. |
 | 28 | CUDA VMM pool. CUDA buffer allocator → `cuMemAddressReserve`, `cuMemCreate`, `cuMemMap`, `cuMemSetAccess`, release. | [Scratch VMM](#cuda-vmm-scratch-restoration) grows stable MMQ and Attention buffers. [Lazy KV VMM](#lazy-q4-kv-vmm-restoration) saves 1,240 MiB on full Apex 32K/512 and preserves generation through a short request after reset. | PARTIAL. Qualify the larger package, full-capacity model growth and other supported layouts. |
 | 29 | CUDA Graph capture and replay. `ggml-cuda.cu` graph evaluator → begin/end capture, instantiate, exec update and launch. | [Goose vector Attention capture](#cuda-graph-replay-for-vector-attention) executes the two-node vector/merge graph and updates it with current pointers and key counts. The hybrid trace records over 20,000 graph launches across the full workload. | PARTIAL. Qualify 32K and extend capture to other dependency-safe decode sequences. |
-| 30 | Streams and synchronization. CUDA scheduler and `ggml-cuda.cu` establish streams, events and CUDA Graph scopes. | Planned Goose graphs [defer matrix waits](#deferred-matrix-waits), queue [small pinned packets asynchronously](#asynchronous-h2d-packets), and [overlap selected expert uploads](#overlapped-expert-projection-uploads) through a separate CUDA stream. | PARTIAL. Reduce remaining blocking uploads and qualify larger independent graph scopes. |
+| 30 | Streams and synchronization. CUDA scheduler and `ggml-cuda.cu` establish streams, events and CUDA Graph scopes. | Planned Goose graphs [defer matrix waits](#deferred-matrix-waits), queue [small pinned packets asynchronously](#asynchronous-h2d-packets), and overlap [registered](#overlapped-expert-projection-uploads) and [pageable](#pinned-staging-for-pageable-expert-uploads) uploads through a separate CUDA stream. | PARTIAL. Reduce blocking uploads of the current projection and qualify larger independent graph scopes. |
 | 31 | Prefill → decode continuation. Reference `llama-context.cpp` scheduler and CUDA graph compute produce logits for the shared sampler. | The earlier full Goose response repeated input text. The newer checkpoint completes the [normal quality suite](#apex-response-quality-checkpoint) and the vector Attention cases. | INCORRECT on the last full quality diagnostic. Revalidate the current checkpoint on the full real workload. Investigate a specific reproduced behavioral defect. |
 | 32 | Device initialization and specialization loading. CUDA backend loader and scheduler select architectures, entry points and cuBLAS paths. | Trace records device info, driver lookups, cuLibrary entry resolution and allocation APIs. Goose loads its own PTX with the Driver API. | PARTIAL. Extend end-to-end executable selection for supported MMQ shapes and verify real device witness. Preserve independent module loading and rejected profiles. |
 
@@ -2868,6 +2868,72 @@ The profiled A/B directories end in `sz4upaih` and
 `fetjzwqg` and `zc3wtc0r`. The default confirmation
 ends in `xeujmkr_`. Default executable SHA-256
 `49b03df6edf0db31b5b36eea385eb432e97a032347bc1d6c7ea1647a4ae4d92b`.
+
+## Pinned staging for pageable expert uploads
+
+EXP-1584 restores bounded host staging from EXP-062
+for the pageable fills left by EXP-1577. Goose keeps
+the current projection on its existing ordered upload
+path. It queues eligible later planes to the existing
+expert copy stream. Registered mmap spans continue to
+use direct DMA. The CUDA adapter copies other eligible
+spans through three 4 MiB pinned host slots. Each slot
+is reusable only after the CUDA event for its last
+upload completes. The next consumer still waits on
+the existing expert upload event, and there is no
+extra device bank.
+
+The ring is allocated from the unused part of the host pin
+budget and requires the same MemAvailable headroom. It
+preserves full-span registration, SLRU layout and expert
+ordering. Decode and pageable planes over 4 MiB retain
+ordinary uploads. Set `GOOSE_CUDA_EXPERT_STAGE_PAGEABLE=0` for the
+registered-only rollback.
+
+The GPU eviction fixture passes with entirely pinned,
+mixed and entirely pageable sources, with zero
+Compute Sanitizer errors in each mode. The mixed trace
+observes eight CUDA event synchronizations at pinned
+slot reuse and checks every output across four layer
+rounds. The short Apex trace verifies the transfer
+mechanism on production tensor shapes.
+
+| Short Apex 4096/129 CUDA trace | Registered-only A | Pageable staging B |
+|---|---:|---:|
+| Prefill, s | 4.345 | 3.899 |
+| Side-stream H2D bytes | 1,402,601,472 | 9,749,151,744 |
+| Total H2D bytes | 34,179,364,888 | 34,179,364,888 |
+| Side-stream copy/kernel intersection, ms | 59.669 | 200.969 |
+| Blocking H2D host API sum, s | 6.041 | 4.831 |
+| Host event synchronization sum, ms | 0 | 10.235 |
+| Peak process VRAM, MiB | 7,068 | 7,068 |
+
+| Unprofiled Apex 32K/512, 4096/4096 | Registered-only A | Pageable staging B |
+|---|---:|---:|
+| A–B prefill, tok/s | 948.780 | 1,051.236 |
+| B–A prefill, tok/s | 950.558 | 1,048.271 |
+| Median prefill, tok/s | 949.669 | 1,049.754 |
+| Median prefill, s | 34.505 | 31.215 |
+| Median decode, steps/s | 26.279 | 26.256 |
+| Peak process VRAM, MiB | 7,272 | 7,272 |
+| Process RSS high-water range, KiB | 22,939,212–22,939,220 | 22,951,564–22,951,584 |
+| Process swap and system swap-out growth | 0 | 0 |
+
+Both orders preserve content, IDs, probability rows,
+stop reason, cache counters, 28 registered mmap spans
+and all 5,301,139 resident model pages. Prefill saves
+3.366 and 3.213 s across the two orders. The decode
+medians differ by 17 ms. The candidate adds about
+12 MiB RSS, as expected from the host staging ring.
+The existing opening echo persists and full generation
+quality acceptance remains open.
+
+The matched request and response fingerprints are those
+in [EXP-1583](#gdn-launch-parameters). Evidence and the
+default binary are under
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/pageable-expert-ring-exp1584`.
+The default executable SHA-256 is
+`75b22bf1f80e00710f232ea8b3a35517bca2704c8aaa4a3ccb45d1ce3b8aa602`.
 
 ## Cooperative Q6_K MMQ
 

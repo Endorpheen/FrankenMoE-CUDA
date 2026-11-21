@@ -74,6 +74,7 @@ struct vmm_mapping {
 
 enum { MIB_BYTES = 1024 * 1024, DEFAULT_ACTIVATION_BYTES = 64 * MIB_BYTES,
     WIDE_ACTIVATION_BYTES = 384 * MIB_BYTES };
+enum { EXPERT_HOST_SLOTS = 3, EXPERT_HOST_SLOT_BYTES = 4 * MIB_BYTES };
 
 struct device_buffer {
     DevicePtr address;
@@ -94,6 +95,15 @@ struct expert_upload_job {
     DevicePtr destination;
     const void * source;
     size_t bytes;
+    bool pageable;
+};
+
+struct expert_host_ring {
+    uint8_t * storage;
+    Event ready[EXPERT_HOST_SLOTS];
+    bool busy[EXPERT_HOST_SLOTS];
+    size_t index, used;
+    bool enabled;
 };
 
 static struct {
@@ -137,6 +147,7 @@ static struct {
     bool expert_upload_queued;
     struct expert_upload_job * expert_upload_jobs;
     size_t expert_upload_count, expert_upload_capacity;
+    struct expert_host_ring expert_host;
     sl_i64 expert_pins;
     int64_t expert_pinned_bytes;
     int status, multiprocessors;
@@ -177,6 +188,7 @@ static struct {
     int (*event_create)(Event *, unsigned);
     int (*event_destroy)(Event);
     int (*event_record)(Event, Stream);
+    int (*event_sync)(Event);
     int (*graph_begin)(Stream, int);
     int (*graph_end)(Stream, Graph *);
     int (*graph_roots)(Graph, GraphNode *, size_t *);
@@ -332,6 +344,12 @@ static void release_flash_graph(void) {
 }
 
 static void release_expert_stream(void) {
+    struct expert_host_ring * ring = &cuda.expert_host;
+    for (size_t i = 0; i < EXPERT_HOST_SLOTS; ++i) {
+        if (ring->ready[i]) cuda.event_destroy(ring->ready[i]);
+    }
+    if (ring->storage) cuda.host_free(ring->storage);
+    *ring = (struct expert_host_ring) {0};
     if (cuda.expert_stream) cuda.stream_destroy(cuda.expert_stream);
     if (cuda.expert_uploads_ready) cuda.event_destroy(cuda.expert_uploads_ready);
     if (cuda.expert_slots_ready) cuda.event_destroy(cuda.expert_slots_ready);
@@ -356,6 +374,11 @@ static void init_expert_stream(void) {
     if (error == 0) error = cuda.event_create(&cuda.expert_slots_ready, disable_timing);
     if (error == 0) error = cuda.event_create(&cuda.expert_uploads_ready, disable_timing);
     if (error != 0) release_expert_stream();
+    if (error == 0 && fg_standalone_option_enabled("GOOSE_CUDA_EXPERT_STAGE_PAGEABLE") &&
+        cuda.host_alloc && cuda.host_free) {
+        cuda.event_sync = dlsym(cuda.library, "cuEventSynchronize");
+        cuda.expert_host.enabled = cuda.event_sync != NULL;
+    }
 }
 
 static void cleanup(void) {
@@ -1469,10 +1492,38 @@ void fg_cuda_expert_stats(sl_i64 stats) {
     pthread_mutex_unlock(&cuda_lock);
 }
 
+static void init_expert_host_ring(void) {
+    struct expert_host_ring * ring = &cuda.expert_host;
+    if (!ring->enabled || ring->storage) return;
+    enum { disable_timing = 2, bytes = EXPERT_HOST_SLOTS * EXPERT_HOST_SLOT_BYTES };
+    int64_t info[4];
+    const int64_t headroom = INT64_C(8) * 1024 * MIB_BYTES;
+    if (!fg_cuda_expert_pin_info((sl_i64) {info, 4}) ||
+        info[3] < cuda.expert_pinned_bytes || info[3] - cuda.expert_pinned_bytes < bytes ||
+        info[2] < headroom + bytes) {
+        ring->enabled = false;
+        return;
+    }
+    for (size_t i = 0; i < EXPERT_HOST_SLOTS; ++i) {
+        if (cuda.event_create(&ring->ready[i], disable_timing) != 0) {
+            ring->enabled = false;
+            return;
+        }
+    }
+    void * storage = NULL;
+    if (cuda.host_alloc(&storage, bytes, 0) != 0) {
+        ring->enabled = false;
+        return;
+    }
+    ring->storage = storage;
+}
+
 bool fg_cuda_expert_stage_enabled(int64_t active_experts) {
     if (active_experts <= 8 || !activations.active || !activations.defer_waits ||
-        !cuda.defer_matrix_waits || !cuda.expert_stream || cuda.expert_pins.len <= 0 ||
+        !cuda.defer_matrix_waits || !cuda.expert_stream ||
         (uint64_t) active_experts > SIZE_MAX / 2 / sizeof(*cuda.expert_upload_jobs)) return false;
+    init_expert_host_ring();
+    if (cuda.expert_pins.len <= 0 && !cuda.expert_host.enabled) return false;
     const size_t capacity = (size_t) active_experts * 2;
     if (capacity > cuda.expert_upload_capacity) {
         struct expert_upload_job * jobs = realloc(cuda.expert_upload_jobs, capacity * sizeof(*jobs));
@@ -1500,7 +1551,8 @@ static int64_t expert_upload(int64_t offset, uint64_t source, int64_t bytes, boo
     const DevicePtr address = dest->address + (uint64_t) offset;
     const void * host = (const void *) (uintptr_t) source;
     int status;
-    if (staged && expert_source_pinned(source, (uint64_t) bytes)) {
+    const bool pinned = staged && expert_source_pinned(source, (uint64_t) bytes);
+    if (staged && (pinned || (cuda.expert_host.enabled && bytes <= EXPERT_HOST_SLOT_BYTES))) {
         if (cuda.expert_upload_count == cuda.expert_upload_capacity) return -1;
         status = 0;
         if (cuda.expert_upload_count == 0) {
@@ -1509,7 +1561,7 @@ static int64_t expert_upload(int64_t offset, uint64_t source, int64_t bytes, boo
         }
         if (status == 0) {
             cuda.expert_upload_jobs[cuda.expert_upload_count++] =
-                (struct expert_upload_job) {address, host, (size_t) bytes};
+                (struct expert_upload_job) {address, host, (size_t) bytes, !pinned};
         }
     } else {
         status = cuda.upload(address, host, (size_t) bytes);
@@ -1532,6 +1584,33 @@ static void reset_expert_stage(void) {
     ec_reset(cache->groups, cache->layers, (uint64_t) (uintptr_t) cache->state, cache->work);
 }
 
+static int seal_expert_host_slot(void) {
+    struct expert_host_ring * ring = &cuda.expert_host;
+    if (ring->used == 0) return 0;
+    const int error = cuda.event_record(ring->ready[ring->index], cuda.expert_stream);
+    if (error == 0) {
+        ring->busy[ring->index] = true;
+        ring->index = (ring->index + 1) % EXPERT_HOST_SLOTS;
+        ring->used = 0;
+    }
+    return error;
+}
+
+static int submit_pageable_expert(const struct expert_upload_job * job) {
+    struct expert_host_ring * ring = &cuda.expert_host;
+    int error = 0;
+    if (job->bytes > EXPERT_HOST_SLOT_BYTES - ring->used) error = seal_expert_host_slot();
+    if (error == 0 && ring->busy[ring->index]) {
+        error = cuda.event_sync(ring->ready[ring->index]);
+        if (error == 0) ring->busy[ring->index] = false;
+    }
+    if (error != 0) return error;
+    uint8_t * storage = ring->storage + ring->index * EXPERT_HOST_SLOT_BYTES + ring->used;
+    memcpy(storage, job->source, job->bytes);
+    ring->used += job->bytes;
+    return cuda.upload_async(job->destination, storage, job->bytes, cuda.expert_stream);
+}
+
 static int submit_expert_stage(void) {
     if (cuda.expert_upload_count == 0) return 0;
     // Queue uploads after the consumer's descriptor copies and kernels.
@@ -1540,15 +1619,18 @@ static int submit_expert_stage(void) {
     for (size_t i = 0; status == 0 && i < cuda.expert_upload_count; ++i) {
         const struct expert_upload_job * job = &cuda.expert_upload_jobs[i];
         activations.pending = true;
-        status = cuda.upload_async(job->destination, job->source, job->bytes, cuda.expert_stream);
+        status = job->pageable ? submit_pageable_expert(job) :
+            cuda.upload_async(job->destination, job->source, job->bytes, cuda.expert_stream);
     }
+    if (status == 0) status = seal_expert_host_slot();
     if (status == 0) status = cuda.event_record(cuda.expert_uploads_ready, cuda.expert_stream);
     if (status == 0) {
         cuda.expert_upload_count = 0;
         cuda.expert_upload_queued = true;
         return 0;
     }
-    (void) cuda.sync();
+    if (cuda.sync() != 0) cuda.expert_host.enabled = false;
+    cuda.expert_host.used = 0;
     reset_expert_stage();
     fprintf(stderr, "Goose CUDA: staged expert upload failed (%d)\n", status);
     return -1;

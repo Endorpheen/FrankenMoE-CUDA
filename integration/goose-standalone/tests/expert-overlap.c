@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 extern void fg143_cpu_init(int argc, char ** argv);
@@ -22,7 +23,10 @@ extern int64_t fg_cuda_finish(uint64_t output, int64_t output_bytes);
 extern void fg_cuda_expert_stats(sl_i64 stats);
 
 enum { layers = 2, projections = 3, experts = 9, rows = 16, input_width = 2, rounds = 4 };
-typedef float Expert[rows][input_width];
+typedef union {
+    float data[rows][input_width];
+    unsigned char span[512 * 1024];
+} Expert;
 typedef Expert Tensor[experts];
 
 static float marker(int layer, int plane, int expert) {
@@ -35,8 +39,12 @@ int main(int argc, char ** argv) {
     const size_t page = (size_t) sysconf(_SC_PAGESIZE);
     const size_t bytes = layers * projections * sizeof(Tensor);
     const size_t pinned = ((bytes + page - 1) / page) * page;
+    const bool mixed = argc == 2 && strcmp(argv[1], "mixed") == 0;
+    const bool pageable = argc == 2 && strcmp(argv[1], "pageable") == 0;
+    const size_t registered = pageable ? 0 : mixed ? sizeof(Tensor) : pinned;
     Tensor * weights = aligned_alloc(page, pinned);
     assert(weights);
+    memset(weights, 0, pinned);
 
     int64_t metadata[layers][4];
     for (int l = 0; l < layers; ++l) {
@@ -46,8 +54,8 @@ int main(int argc, char ** argv) {
             metadata[l][p + 1] = (int64_t) (uintptr_t) tensor;
             for (int e = 0; e < experts; ++e) {
                 for (int r = 0; r < rows; ++r) {
-                    (*tensor)[e][r][0] = marker(l, p, e);
-                    (*tensor)[e][r][1] = (float) r;
+                    (*tensor)[e].data[r][0] = marker(l, p, e);
+                    (*tensor)[e].data[r][1] = (float) r;
                 }
             }
         }
@@ -57,8 +65,10 @@ int main(int argc, char ** argv) {
     const int64_t bank = (int64_t) experts * projections * sizeof(Expert);
     assert(fg_cuda_load_experts((sl_i64) {group, 9}, (sl_i64) {&metadata[0][0], 4 * layers},
         bank, layers * experts + 4 * experts + 4 + 5 * experts, layers + experts + 5) == bank);
-    int64_t spans[] = {(int64_t) (uintptr_t) weights, (int64_t) pinned};
-    fg_cuda_expert_pin_register((sl_i64) {spans, 2}, (int64_t) pinned);
+    if (registered != 0) {
+        int64_t spans[] = {(int64_t) (uintptr_t) weights, (int64_t) registered};
+        fg_cuda_expert_pin_register((sl_i64) {spans, 2}, (int64_t) registered);
+    }
 
     float output[rounds][projections][experts][rows];
     const float input[input_width] = {1.0f, 2.0f};
@@ -101,7 +111,7 @@ int main(int argc, char ** argv) {
     int64_t stats[6] = {0};
     fg_cuda_expert_stats((sl_i64) {stats, 6});
     assert(stats[1] == rounds * experts && stats[2] == (rounds - 1) * experts);
-    assert(stats[4] == (int64_t) pinned && stats[5] == 1);
+    assert(stats[4] == (int64_t) registered && stats[5] == (registered != 0));
     puts("Expert projection staging and cross-layer eviction passed");
     // The CUDA context owns the registration until its exit handler runs.
 }
