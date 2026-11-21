@@ -58,6 +58,29 @@ the next target after the current MMQ work.
 The trace and analysis are in
 `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/profile-exp1647`.
 
+### EXP-1664 — Qualify RoPE, FWHT and Q4 as one operation
+
+The key path stages RoPE and FWHT in separate shared
+memory regions and writes Q4 directly. The existing
+phase producer and the value-cache path remain intact.
+The warmed isolated Apex shape falls from 0.165 to
+0.066 ms for apply plus FWHT and Q4. With FP contraction
+disabled as in the reference, the 64-, 128- and
+256-dimension probes each match all 1,179,648 bytes.
+The 71-token tail matches all 20,448 bytes.
+
+The EXP-1663 control reaches **1,719.52 tok/s prefill**
+and 35.57 tok/s decode in the full warmed pair. The
+candidate reaches 1,714.21 and 35.64 tok/s. Relative to
+this control, prefill takes 59.046 ms longer, decode
+saves 29.676 ms, and their sum grows by 29.370 ms.
+Peak VRAM is 8,190 MiB in both runs. Process swap and
+system swap-out growth are zero. All 512 IDs,
+probabilities, response and SLRU counters match.
+EXP-1663 remains the cumulative checkpoint. The
+candidate, including its integration patch, is saved in
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/rope-fwht-q4-exp1664`.
+
 ## EXP-1663 — Fuse FWHT and Q4 KV writes
 
 The Goose matcher groups FWHT, a zero-offset view, and
