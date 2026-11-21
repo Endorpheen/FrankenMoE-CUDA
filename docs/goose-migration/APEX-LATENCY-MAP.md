@@ -4,13 +4,74 @@
 
 Carry the qualified kernels, graph scopes, and memory paths
 forward together. Use the latest verified cumulative profile
-as the control. Apex 4096/2 is a prefill diagnostic. Use
-matched full 32K/512 A–B–B–A runs to measure end-to-end gains,
-including gains below 10%. Compare timings within each series.
-Keep the previous executable, request, and flags for rollback.
-Retain isolated patches and trace evidence when combinations
-need further qualification. Inspect machine code for material
-unexplained differences.
+as the control. Once a kernel improves on identical operands,
+run one matched full Apex 32K/512 A/B pair. Use 4096/2 to
+screen multiple candidates quickly. Repeat only for unstable
+timing, suspicious mismatches, or a regression. Judge prefill
+in seconds and verify decode, memory, all 512 output IDs,
+probabilities, response, and SLRU. Compare timings within
+each pair. Keep the previous executable, request, and flags
+for rollback. Retain isolated patches and trace evidence when
+combinations need further qualification. Inspect machine
+code for material unexplained differences.
+
+## EXP-1630 — Reuse Q8_1 across 128 routed Q4_K rows
+
+Hybrid `e7c9155a:vendor/flint/ggml/src/ggml-cuda/mmq.cu`
+groups compact rows by expert and passes expert boundaries
+and output IDs into the same tiled arithmetic used for dense
+matrices. Use the existing Goose 128 × 128 Q4_K arithmetic
+for wide descriptors on the qualified routed reference path.
+Stage one array of activation offsets per CTA for shared
+packing. The per-route mode reads its existing packing window.
+The same job records scatter output rows, and each CTA stays
+inside one expert plane. Narrow tails retain their existing
+path. Other MMQ formats and the decode graph keep their dispatch.
+
+The fixed uneven-expert case has 11,654 routes across two
+packing windows. All four combinations of old/new and
+shared/per-route packing produce the same 5,966,848 finite
+FP32 values. Compute Sanitizer reports zero errors. For the
+wide portion, CTAs drop from 2,944 to 368. The new kernel
+uses 187 registers and 39,424 static shared bytes per CTA.
+
+| Same routed operands | 16 rows, ms | 128 rows, ms |
+|---|---:|---:|
+| Wide kernel, shared packing | 1.754 | 1.116 |
+| Wide kernels, per-route packing | 1.885 | 1.270 |
+
+The short 4096/2 pair spends 3,217.237 → 3,111.666 ms in
+prefill. The full A–B–B–A uses the cumulative EXP-1629
+control, preserving dense Q4_K 128 × 256, Q6_K half-K,
+Flash and GDN MMA, and the accumulated graph and memory
+paths. It uses the same frozen request and runtime options
+with batch/ubatch 4096/4096 and 5,920 MiB expert SLRU.
+
+| Full unprofiled Apex 32K/512 | EXP-1629 control | Routed 128 rows | Candidate minus control |
+|---|---:|---:|---:|
+| Median prefill, ms | 25,199.206 | 24,315.125 | -884.080 |
+| Median prefill, tok/s | 1,300.36 | 1,347.64 | +47.28 |
+| Median decode, ms | 14,296.416 | 14,319.700 | +23.284 |
+| Median decode, tok/s | 35.74 | 35.69 | -0.06 |
+| Median prefill plus decode, ms | 39,495.622 | 38,634.825 | -860.797 |
+| Median client request, ms | 39,571.018 | 38,707.178 | -863.840 |
+| Maximum process RSS, KiB | 21,482,616 | 21,482,940 | +324 |
+| Maximum process VRAM, MiB | 8,220 | 8,220 | 0 |
+| Process swap, KiB / system swap-out growth, pages | 0 / 0 | 0 / 0 | 0 / 0 |
+
+Both pairs improve prefill and total time. Decode changes
+in opposite directions in the two pairs. All four responses,
+512 IDs, probabilities and SLRU counters match the frozen
+EXP-1629 response. The model is fully resident in all runs.
+The remaining prefill gap to 12,281.859 ms is 12,033.266 ms.
+Use the archived EXP-1630 candidate as the next cumulative
+control. New builds enable the path within the qualified
+SM89 routed MMQ scope. `GOOSE_MMQ_Q4_ROUTED_M128=0`
+restores the previous 16-row kernel.
+
+The executables, profile flags, fixture and traces, short
+pair, and full series with verified hashes are in
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/routed-m128-exp1630`.
 
 ## EXP-1629 — Cumulative Apex prefill checkpoint
 

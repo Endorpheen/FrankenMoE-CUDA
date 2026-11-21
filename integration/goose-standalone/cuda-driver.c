@@ -163,6 +163,7 @@ static struct {
     Function mmq_q4_dense_large;
     unsigned mmq_q4_large_rows, mmq_q4_large_cols;
     Function mmq_q4_routed_x128, mmq_q6_routed_x128;
+    Function mmq_q4_routed_m128;
     Function mmvq_pack, mmvq;
     Function dense_mma, dense_mma_reference, gdn_mma, flash_mma, flash_stage, flash_vec, flash_vec_merge;
     Function flash_vec_pack, flash_vec_packed;
@@ -1085,6 +1086,8 @@ static void load_cuda(void) {
                 error = cuda.function_get(&cuda.mmq_q4_routed_x64, cuda.module, "goose_mmq_q4_routed_x64");
             if (error == 0 && cuda.mmq_q4_routed_x64 && routed_x128)
                 error = cuda.function_get(&cuda.mmq_q4_routed_x128, cuda.module, "goose_mmq_q4_routed_x128");
+            if (error == 0 && cuda.mmq_q4_routed_x128 && fg_standalone_option_enabled("GOOSE_MMQ_Q4_ROUTED_M128"))
+                error = cuda.function_get(&cuda.mmq_q4_routed_m128, cuda.module, "goose_mmq_q4_routed_m128");
         }
         if (error == 0 && reference_arch && q6_reference) {
             error = cuda.function_get(&cuda.mmq_q6_matrix, cuda.module, "goose_mmq_q6_reference");
@@ -2413,7 +2416,9 @@ static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
                 void * args[] = {&weight, &cuda.mmq_packed.address, &matrix_output, &cuda.jobs.address,
                     &cuda.mmq_tiles.address, &stride, &extent, &rows, &tile, &first_route, &input_stride};
                 if (wide > 0) {
-                    error = cuda.launch(routed_x128, (unsigned) rows / 16, (unsigned) wide,
+                    const bool tall = kind == q4_kind && cuda.mmq_q4_routed_m128 && rows % 128 == 0;
+                    const Function matrix = tall ? cuda.mmq_q4_routed_m128 : routed_x128;
+                    error = cuda.launch(matrix, (unsigned) rows / (tall ? 128 : 16), (unsigned) wide,
                         1, 256, 1, 1, 0, NULL, args, NULL);
                     if (error == 0 && wide < batch) ++cuda_matrix_launches;
                     tile += wide;

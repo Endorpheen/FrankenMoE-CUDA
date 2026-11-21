@@ -653,21 +653,28 @@ fn mmq_q4_shared_column(sum: MmqPairSum, activation: u64, group: i64, lane: i64,
         right: mmq_q4_shared_acc(sum.right, dot_hi, hi_scales, ds0, ds1) };
 }
 
-fn mmq_dense_store_pair(out: u64, jobs: u64, tile: i64, col: i64, routes: i64,
+fn mmq_store_pair(out: u64, jobs: u64, words: i64, tile: i64, col: i64, routes: i64,
     row: i64, lane: i64, sum: MmqPairSum) {
     let live = routes - col;
     let operand = MmqOperand { route: tile + col, live: live, group: 0, col0: 0, col1: 0 };
-    mmq_wide_store(out, jobs, 2, operand, row, lane, sum.left);
-    mmq_wide_store(out, jobs, 2, operand, row + 16, lane, sum.right);
+    mmq_wide_store(out, jobs, words, operand, row, lane, sum.left);
+    mmq_wide_store(out, jobs, words, operand, row + 16, lane, sum.right);
 }
 
-fn mmq_stage_q8_half(stage: u64, packed_tile: u64, pitch: i64, routes: i64, thread: i64) {
+fn mmq_dense_store_pair(out: u64, jobs: u64, tile: i64, col: i64, routes: i64,
+    row: i64, lane: i64, sum: MmqPairSum) {
+    mmq_store_pair(out, jobs, 2, tile, col, routes, row, lane, sum);
+}
+
+fn mmq_stage_q8_half(stage: u64, packed_tile: u64, pitch: i64, routes: i64, thread: i64, offsets: u64) {
     for pass in 5 {
         let vector = thread + 256 * pass;
         if vector < 1152 {
             let slot = vector / 9;
             let live_slot = if slot < routes { slot } else { 0 };
-            let source = packed_tile + ((live_slot * pitch + 16 * (vector % 9)) as u64);
+            let offset = if offsets == 0 { (live_slot * pitch) as u64 }
+                else { mmq_shared_word(offsets + ((4 * live_slot) as u64)) as u64 };
+            let source = packed_tile + offset + ((16 * (vector % 9)) as u64);
             mmq_copy_16(stage + ((16 * vector) as u64), source);
         }
     }
@@ -817,7 +824,7 @@ export fn fg_device_mmq_q4_m64(weights: u64, packed: u64, out: u64, jobs: u64,
         mmq_q4_stage(w + ((32 * stride) as u64), stride, weight_stage + 10240, thread % 128, 128);
         for half in 2 {
             let q = (288 * k + 144 * half) as u64;
-            mmq_stage_q8_half(activate, packed_tile + q, pitch, routes, thread);
+            mmq_stage_q8_half(activate, packed_tile + q, pitch, routes, thread, 0);
             mmq_barrier();
             for group in 4 {
                 let g = 4 * half + group;
@@ -866,8 +873,9 @@ fn mmq_q4_stage_half(weights: u64, stride: i64, tile: u64, half: i64, lane: i64)
 
 // The larger CTA gives each warp a 32-by-64 region. Staging only half of
 // each 16-row slab keeps the shared allocation equal to that of M64.
-export fn fg_device_mmq_q4_m128(weights: u64, packed: u64, out: u64, jobs: u64,
-    stride: i64, extent: i64, row: i64, route: i64, first_route: i64, routes: i64, thread: i64, stage: u64) {
+fn mmq_q4_m128(weights: u64, packed: u64, out: u64, jobs: u64,
+    stride: i64, extent: i64, row: i64, route: i64, first_route: i64, routes: i64,
+    thread: i64, stage: u64, words: i64, input_stride: i64) {
     let lane = thread % 32;
     let warp = thread / 32;
     let col = 64 * (warp % 2);
@@ -879,7 +887,15 @@ export fn fg_device_mmq_q4_m128(weights: u64, packed: u64, out: u64, jobs: u64,
     let hi_stage = lo_stage + 2560;
     let activation = activate + ((144 * col) as u64);
     let pitch = 288 * extent;
-    let packed_tile = packed + ((pitch * (route - first_route)) as u64);
+    let offsets = if input_stride == 0 { 0 } else { stage + 38912 };
+    let packed_tile = if offsets == 0 { packed + ((pitch * (route - first_route)) as u64) } else { packed };
+    if offsets != 0 {
+        if thread < routes {
+            let source = mmq_source(0, thread, routes, pitch, jobs, route, words, input_stride);
+            mmq_shared_store(offsets + ((4 * thread) as u64), source as u32);
+        }
+        mmq_barrier();
+    }
     let zero = MmqSum { a: 0.0, b: 0.0, c: 0.0, d: 0.0 };
     let empty = MmqPairSum { left: zero, right: zero };
     var sum0 = empty;
@@ -895,7 +911,7 @@ export fn fg_device_mmq_q4_m128(weights: u64, packed: u64, out: u64, jobs: u64,
         for half in 2 {
             let q = (288 * k + 144 * half) as u64;
             mmq_q4_stage_half(w, stride, weight_stage, half, lane);
-            mmq_stage_q8_half(activate, packed_tile + q, pitch, routes, thread);
+            mmq_stage_q8_half(activate, packed_tile + q, pitch, routes, thread, offsets);
             mmq_barrier();
             for group in 4 {
                 let lo = mmq_ldm32(mmq_q4_shared_fragment(lo_stage, group, lane));
@@ -914,14 +930,25 @@ export fn fg_device_mmq_q4_m128(weights: u64, packed: u64, out: u64, jobs: u64,
             mmq_barrier();
         }
     }
-    mmq_dense_store_pair(out, jobs, route, col, routes, row + row_pair, lane, sum0);
-    mmq_dense_store_pair(out, jobs, route, col + 8, routes, row + row_pair, lane, sum1);
-    mmq_dense_store_pair(out, jobs, route, col + 16, routes, row + row_pair, lane, sum2);
-    mmq_dense_store_pair(out, jobs, route, col + 24, routes, row + row_pair, lane, sum3);
-    mmq_dense_store_pair(out, jobs, route, col + 32, routes, row + row_pair, lane, sum4);
-    mmq_dense_store_pair(out, jobs, route, col + 40, routes, row + row_pair, lane, sum5);
-    mmq_dense_store_pair(out, jobs, route, col + 48, routes, row + row_pair, lane, sum6);
-    mmq_dense_store_pair(out, jobs, route, col + 56, routes, row + row_pair, lane, sum7);
+    mmq_store_pair(out, jobs, words, route, col, routes, row + row_pair, lane, sum0);
+    mmq_store_pair(out, jobs, words, route, col + 8, routes, row + row_pair, lane, sum1);
+    mmq_store_pair(out, jobs, words, route, col + 16, routes, row + row_pair, lane, sum2);
+    mmq_store_pair(out, jobs, words, route, col + 24, routes, row + row_pair, lane, sum3);
+    mmq_store_pair(out, jobs, words, route, col + 32, routes, row + row_pair, lane, sum4);
+    mmq_store_pair(out, jobs, words, route, col + 40, routes, row + row_pair, lane, sum5);
+    mmq_store_pair(out, jobs, words, route, col + 48, routes, row + row_pair, lane, sum6);
+    mmq_store_pair(out, jobs, words, route, col + 56, routes, row + row_pair, lane, sum7);
+}
+
+export fn fg_device_mmq_q4_m128(weights: u64, packed: u64, out: u64, jobs: u64,
+    stride: i64, extent: i64, row: i64, route: i64, first_route: i64, routes: i64, thread: i64, stage: u64) {
+    mmq_q4_m128(weights, packed, out, jobs, stride, extent, row, route, first_route, routes, thread, stage, 2, 0);
+}
+
+export fn fg_device_mmq_q4_routed_m128(weights: u64, packed: u64, out: u64, jobs: u64,
+    stride: i64, extent: i64, row: i64, route: i64, first_route: i64, routes: i64,
+    thread: i64, stage: u64, input_stride: i64) {
+    mmq_q4_m128(weights, packed, out, jobs, stride, extent, row, route, first_route, routes, thread, stage, 3, input_stride);
 }
 
 fn mmq_q4_stage_quarter(weights: u64, stride: i64, tile: u64, quarter: i64, lane: i64) {
