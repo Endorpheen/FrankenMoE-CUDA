@@ -1,6 +1,95 @@
 # Apex runtime performance and historical optimization audit
 
-## EXP-1596 current CPU/GPU profile
+## Live Apex dispatch and Fusion audit
+
+The active independent checkpoint is EXP-1603. Compare its recorded
+device trace with the frozen EXP-1476 graph-node recording from
+EXP-1596. Both use the frozen Apex 32K/512 request, RTX 4070,
+4096/4096 batches, Q4_0 K/V and no prompt reuse. These recordings come
+from different sessions, use 5,920 versus 4,992 MiB expert budgets,
+and may sample different expert routes. The newer Goose trace warns
+of incomplete capture. Use the common 448 complete decode steps for
+the comparison and the full prefill slices for family attribution.
+
+Decode windows start at each runtime's corresponding GDN marker and
+end at the first GDN marker of step 449. The hybrid starts after 90
+tail-prefill GDN launches, leaving 15,330 decode markers for 511
+steps. The Goose one-token kernel is distinct. GPU-active time is
+the union of clipped kernel, copy and memset intervals. Launch
+counts are recorded API calls. Compare this window with the older
+full request separately.
+
+| Recorded decode activity over 448 steps | Frozen EXP-1476 | EXP-1603 |
+|---|---:|---:|
+| Direct CUDA launch calls | 6,736 | 929,152 |
+| CUDA Graph launch calls | 18,291 | 0 |
+| Kernels with nonzero graph node ID | 783,328 | 0 |
+| Device window, s | 7.995 | 14.855 |
+| Recorded GPU-active time, s | 6.195 | 8.869 |
+| Time outside recorded GPU operations, s | 1.801 | 5.986 |
+| H2D copies up to 4 KiB | 20,608 | 399,168 |
+| H2D total, GB | 45.185 | 34.652 |
+| D2H total, GB | 0.446 | 0.446 |
+
+The remaining 4.185 s gap includes host work, submission latency,
+stream waits and any missing trace events. The 2.367 s of direct
+Goose kernel launch API time overlaps the GPU timeline. The gap
+and API time cannot be added or assigned solely to CUDA Graph.
+The different cache budgets and continuations also affect copies.
+
+### Graph scopes actually replayed
+
+Join graph-linked kernels to `cudaGraphLaunch` by correlation ID
+and order each group by device start. There are 18,291 matching
+correlations in the clipped window. The dominant groups contain
+44 kernels on 12,936 launches and 43 kernels on 4,014. Both start
+with `k_get_rows_float`, run repeated Q8_1 pack and quantized
+projection pairs, apply GLU and expert reduction, continue
+through dense and recurrent or attention work, and end with
+`rms_norm_f32`, `mul_mat_vec_f` and `topk_moe_cuda`.
+An additional 446 launches contain 46 kernels ending at Top-K.
+The 27- and 20-kernel variants separate decode-step entry and output
+work. One group is clipped by the selected window.
+
+The one built standalone capture is the two-node vector Attention
+and merge pair in `cuda-driver.c`. It requires `GOOSE_CUDA_GRAPH=1`
+and leaves shared query packing outside replay. The 5,110 launches
+in EXP-1572 are evidence for that older opt-in package. The
+current direct-launch trace has zero. The historical
+`goose-graph-lifecycle.goose` manages tensor graph storage and hashes.
+It supplies no CUDA Graph capture or executable replay.
+
+### Executed families and reuse candidates
+
+| Scope | Frozen hybrid | Active Goose | Reuse and remaining dependency |
+|---|---|---|---|
+| Quantized prefill | `mul_mat_q`, 3,392 launches and 3.148 s, plus 480 fixups | MMQ dense and routed cooperative, reference and general families, 13.097 s combined in the recorded prefill | Both Q4_K/Q6_K use shared weight tiles and Tensor Cores. The reference-shaped dense paths preserve K-partition arithmetic, while general Stream-K and fixup use different dispatch. Preserve the tested [32-row tile](CUDA-PARITY-EXP1476.md#dense-q4_k-32-by-128-mmq-tiles) for a scheduling-controlled recheck. |
+| Expert grouping in prefill | `mm_ids_helper<8>` runs 936 times in 155.599 ms | Host compact jobs in `graph-dispatch.goose` → `matrix.goose` → `fg_cuda_expert_batch`. Device Q8 packing consumes the uploaded job offsets. No device grouping kernel appears. | The [existing 8-slot device body](../../goose/cuda/goose-cuda-mm-ids/device.goose) produces source, destination and expert ranges. Wire it with SLRU offsets and unchanged job ordering. The hybrid kernel time does not measure removable Goose host time. |
+| Decode MMVQ and gate/up Fusion | 175,168 `mul_mat_vec_q` and 175,168 `quantize_q8_1`, 2.341 s combined. The `has_fusion=true` Q4_K specialization accounts for 35,392 matvecs. | 193,088 each of `goose_mmvq_matvec` and `goose_mmvq_quantize`, 2.728 s combined. Separate GLU uses the vector route. | The built [Q4_K device body](../../goose/cuda/goose-cuda-mmvq-q4k/device.goose) is the non-fused specialization. Reuse its dot/reduction, the existing GLU body and the alias rules in [shared Fusion](../../goose/cuda/goose-shared-fusion.goose) after proving the routed and shared-expert pattern. A fused CUDA entry and dual weight lifetime are still required. |
+| Decode router fusion | 17,920 `topk_moe_cuda<256,false>` launches, 42.531 ms | 17,920 each of softmax, Top-K and normalized gather, 176.501 ms combined | The [full fused Goose row](../../goose/cuda/goose-cuda-reductions/topk/device-e8.goose) exists. CUDA composition imports only its `topk_winner`. Connect the dual IDs/weights result, handle the output strides and preserve qualified numerics and cache admission. This is a concrete unused implementation. |
+| Weighted expert reduction | 17,920 launches, 25.758 ms | 17,920 `goose_moe_weighted`, 42.870 ms | The Goose weighted reduction is already active. Include it when replaying the post-routing graph. |
+| RMS, RoPE and KV | 85,568 `rms_norm_f32` (109.709 ms), including multiply and scale specializations. The 8,960 `rope_multi` calls take 9.400 ms. | 85,568 `goose_rms_reference` (239.189 ms), 8,960 `goose_rope_decode` (23.631 ms) and separate cache writes | Weighted RMS and fixed-shape decode IMRoPE already execute. No dedicated RMS–RoPE fused symbol appears in this hybrid window. Use the observed multiply/scale and rotation routes to qualify additional fusion. |
+| Flash Attention | Prefill MMA 1.410 s. Decode vector plus merge 1.071 s in 4,480 query/merge pairs. | Whole-tile prefill MMA 2.949 s. Decode prepack, vector and merge execute separately with 4,480 calls each. Vector plus merge is 2.483 s. | Reuse the ready two-node replay as a control and extend only to dependency-safe neighboring work. Stream-K prefill remains experimental after the [isolated recheck](CUDA-PARITY-EXP1476.md#flash-attention-stream-k-on-the-exp-1603-checkpoint). |
+| GDN and SSM | 240 `gdn_single` calls, 0.469 s; 240 long SSM calls, 0.205 s | 240 `goose_gdn_mma` calls, 1.349 s; 240 long SSM calls, 0.204 s | Both high-performance families execute. Decode GDN executes 13,440 times on each side in the common window (49.283 to 101.464 ms). Retain the optimized SSM route and capture existing compatible launches. |
+| Transfers and waits | Decode graph replay and event ordering are live; 52,418 stream sync API calls | Live deferred matrix waits, async packets and expert upload overlap. Decode still records 22,848 context sync calls and 100,529 synchronous H2D calls. | Start replay after host SLRU slot selection and required upload fences. End at CPU-visible routing, logits or state publication. Keep packet, expert-slot and activation lifetimes valid through graph completion. Transfer and waiting times overlap. |
+
+Prioritize lowering direct submissions for a real decode layer slice.
+Use the existing capture lifecycle as a reference. Match graph keys,
+addresses, updates and events against the live activation plan before
+replaying; exercise shape changes and rejected captures. Measure
+direct launches, recorded device gaps and full request performance
+separately. The graph counts and kernel times above confirm the gap
+in executed infrastructure, with the end-to-end gain of a larger
+Goose scope still open.
+
+The source traces are stored as `hybrid-full.nsys-rep` in
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/launch-vram-exp1597`
+and `vector-params-apex.nsys-rep` in the sibling
+`vector-params-exp1603`. Their SHA-256 values are
+`5183929ce3e40ee167eca4533e8b6dfa94d2dfa30d7d8bc7cd62e01ce23f46c9`
+and `2e417bfaa61c60b05b082e618f8faacf50e06df2c9d03595a45706b5d9d7eb33`.
+
+## EXP-1596 CPU/GPU profile
 
 This diagnostic compares the immutable EXP-1476 release
 (`e7c9155a`) with independent Goose at `4f73f42e`. Both use
