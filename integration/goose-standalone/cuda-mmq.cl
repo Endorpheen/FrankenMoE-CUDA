@@ -203,10 +203,10 @@ __kernel void name(__global const uint8_t * weights, __global const uint8_t * pa
     __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(row)); \
     __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(column)); \
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread)); \
-    if (width == 64) { \
-        fg_device_mmq_x64_g((uint64_t) weights, (uint64_t) packed, (uint64_t) output, \
-            (uint64_t) jobs, stride, extent, kind, 16u * row, rows, first_route + 64u * column, \
-            first_route, 64, 2, 0, sms, thread, (uint64_t) shared); \
+    if (width >= 64) { \
+        fg_device_mmq_wide_g((uint64_t) weights, (uint64_t) packed, (uint64_t) output, \
+            (uint64_t) jobs, stride, extent, kind, 16u * row, rows, first_route + width * column, \
+            first_route, width, 2, 0, sms, thread, (uint64_t) shared, 2 * width); \
     } else { \
         fg_device_mmq_dense_shared_g((uint64_t) weights, (uint64_t) packed, (uint64_t) output, \
             (uint64_t) jobs, stride, extent, kind, 16u * row, rows, first_route + 32u * column, \
@@ -225,9 +225,9 @@ __kernel void name(__global const uint8_t * weights, __global const uint8_t * pa
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread)); \
     const uint64_t at = ((uint64_t) first + tile) * 3; \
     if (width == 64) { \
-        fg_device_mmq_x64_g((uint64_t) weights + tiles[at + 2], (uint64_t) packed, \
+        fg_device_mmq_wide_g((uint64_t) weights + tiles[at + 2], (uint64_t) packed, \
             (uint64_t) output, (uint64_t) jobs, stride, extent, kind, 16u * row, rows, tiles[at], \
-            first_route, tiles[at + 1], 3, input_stride, 0, thread, (uint64_t) shared); \
+            first_route, tiles[at + 1], 3, input_stride, 0, thread, (uint64_t) shared, 128); \
     } else { \
         fg_device_mmq_routed_shared_g((uint64_t) weights + tiles[at + 2], (uint64_t) packed, \
             (uint64_t) output, (uint64_t) jobs, stride, extent, kind, 16u * row, rows, \
@@ -239,6 +239,8 @@ MMQ_DENSE_SHARED(goose_mmq_q4_dense_shared, 12, 1280, 32)
 MMQ_DENSE_SHARED(goose_mmq_q6_dense_shared, 14, 1104, 32)
 MMQ_DENSE_SHARED(goose_mmq_q4_dense_x64, 12, 1280, 64)
 MMQ_DENSE_SHARED(goose_mmq_q6_dense_x64, 14, 1104, 64)
+MMQ_DENSE_SHARED(goose_mmq_q4_dense_x128, 12, 1280, 128)
+MMQ_DENSE_SHARED(goose_mmq_q6_dense_x128, 14, 1104, 128)
 MMQ_ROUTED_SHARED(goose_mmq_q4_routed_shared, 12, 1280, 32)
 MMQ_ROUTED_SHARED(goose_mmq_q6_routed_shared, 14, 1104, 32)
 MMQ_ROUTED_SHARED(goose_mmq_q4_routed_x64, 12, 1280, 64)

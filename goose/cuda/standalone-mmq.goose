@@ -44,12 +44,12 @@ fn mmq_q6_fragment(weight_block: u64, word: i64) -> u32 {
     return q6_mmq_bytes(ql as i64, qh as i64, (tx & 8) / 4, word % 32 >= 16) as u32;
 }
 
-fn mmq_q6_stage(weights: u64, stride: i64, tile: u64, thread: i64) {
+fn mmq_q6_stage(weights: u64, stride: i64, tile: u64, thread: i64, threads: i64) {
     // The Q6_K loader expands each low word into two fragment groups.
     // Shared layout: 16 groups of 16 rows by 16 bytes, 16 signed scales
     // per row, then the 16 FP32 conversion factors.
-    for pass in 4 {
-        let word = thread + 128 * pass;
+    for pass in 512 / threads {
+        let word = thread + threads * pass;
         let row = word / 32;
         let tx = word % 32;
         let source = weights + ((row * stride) as u64);
@@ -103,11 +103,11 @@ fn mmq_q4_shared_scales(stage: u64, group: i64, lane: i64) -> MmqScales {
         m0: mmq_shared_float(at + 4), m1: mmq_shared_float(at + 68) };
 }
 
-fn mmq_q4_stage(weights: u64, stride: i64, tile: u64, thread: i64) {
-    // Four warps unpack all 16 rows of the block once. Eight groups of
+fn mmq_q4_stage(weights: u64, stride: i64, tile: u64, thread: i64, threads: i64) {
+    // Cooperatively unpack all 16 rows of the block once. Eight groups of
     // 32 int8 values are interleaved by row, with 16-byte LDSM alignment.
-    for pass in 4 {
-        let word = thread + 128 * pass;
+    for pass in 512 / threads {
+        let word = thread + threads * pass;
         let row = word / 32;
         let pair = (word % 32) / 8;
         let lane = word % 8;
@@ -116,15 +116,17 @@ fn mmq_q4_stage(weights: u64, stride: i64, tile: u64, thread: i64) {
         mmq_shared_store(address, q4_mmq_nibbles(packed as i64, false) as u32);
         mmq_shared_store(address + 512, q4_mmq_nibbles(packed as i64, true) as u32);
     }
-    let row = thread / 8;
-    let group = thread % 8;
-    let weight = weights + ((row * stride) as u64);
-    let packed = mmq_scale_min(weight + 4, group);
-    let d = mmq_half_round(mmq_half(weight) * ((packed >> 8) as f32));
-    let minimum = mmq_half_round(-mmq_half(weight + 2) * ((packed & 255) as f32));
-    let at = tile + ((4096 + 8 * (16 * group + row)) as u64);
-    mmq_shared_store_float(at, d);
-    mmq_shared_store_float(at + 4, minimum);
+    if thread < 128 {
+        let row = thread / 8;
+        let group = thread % 8;
+        let weight = weights + ((row * stride) as u64);
+        let packed = mmq_scale_min(weight + 4, group);
+        let d = mmq_half_round(mmq_half(weight) * ((packed >> 8) as f32));
+        let minimum = mmq_half_round(-mmq_half(weight + 2) * ((packed & 255) as f32));
+        let at = tile + ((4096 + 8 * (16 * group + row)) as u64);
+        mmq_shared_store_float(at, d);
+        mmq_shared_store_float(at + 4, minimum);
+    }
 }
 
 fn mmq_q4_block(previous: MmqSum, a: u64, b: u64, source: u64, source0: u64, source1: u64,
@@ -274,7 +276,7 @@ fn mmq_reference(w0: u64, w1: u64, source: u64, source0: u64, source1: u64,
             if kind == 12 {
                 let w = (144 * k) as u64;
                 if lane >= 0 {
-                    mmq_q4_stage(shared_weights + w, stride, stage, thread_block);
+                    mmq_q4_stage(shared_weights + w, stride, stage, thread_block, 128);
                     mmq_barrier();
                 }
                 partial = mmq_q4_block(partial, w0 + w, w1 + w, source + q, source0 + q,
@@ -283,7 +285,7 @@ fn mmq_reference(w0: u64, w1: u64, source: u64, source0: u64, source1: u64,
             } else {
                 let w = (210 * k) as u64;
                 if lane >= 0 {
-                    mmq_q6_stage(shared_weights + w, stride, stage, thread_block);
+                    mmq_q6_stage(shared_weights + w, stride, stage, thread_block, 128);
                     mmq_barrier();
                 }
                 for half in 2 {
@@ -533,10 +535,11 @@ fn mmq_wide_store(out: u64, jobs: u64, words: i64, operand: MmqOperand, row: i64
 }
 
 // Share one weight tile across two eight-route accumulators in each warp.
-// The planner keeps dense blocks inside a 128-column reference partition.
-export fn fg_device_mmq_x64(weights: u64, packed: u64, out: u64, jobs: u64, stride: i64,
+// All warps stage weights and synchronize on each block of K. The planner
+// keeps each dense block inside one reference partition.
+export fn fg_device_mmq_wide(weights: u64, packed: u64, out: u64, jobs: u64, stride: i64,
     extent: i64, kind: i64, row: i64, rows: i64, route: i64, first_route: i64, routes: i64, words: i64,
-    input_stride: i64, reference_sms: i64, thread: i64, stage: u64) {
+    input_stride: i64, reference_sms: i64, thread: i64, stage: u64, threads: i64) {
     let lane = thread % 32;
     let warp_start = 16 * (thread / 32);
     let left = mmq_wide_operand(packed, jobs, route, first_route, routes, warp_start, words, 288 * extent, input_stride, lane);
@@ -563,7 +566,7 @@ export fn fg_device_mmq_x64(weights: u64, packed: u64, out: u64, jobs: u64, stri
         for k in begin .. stop {
             let q = (288 * k) as u64;
             if kind == 12 {
-                mmq_q4_stage(base + ((144 * k) as u64), stride, stage, thread);
+                mmq_q4_stage(base + ((144 * k) as u64), stride, stage, thread, threads);
                 mmq_barrier();
                 if left.live > 0 {
                     for group in 8 {
@@ -579,7 +582,7 @@ export fn fg_device_mmq_x64(weights: u64, packed: u64, out: u64, jobs: u64, stri
                     }
                 }
             } else {
-                mmq_q6_stage(base + ((210 * k) as u64), stride, stage, thread);
+                mmq_q6_stage(base + ((210 * k) as u64), stride, stage, thread, threads);
                 mmq_barrier();
                 if left.live > 0 {
                     for half in 2 {

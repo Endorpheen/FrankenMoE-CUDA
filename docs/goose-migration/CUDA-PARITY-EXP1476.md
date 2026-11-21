@@ -3662,6 +3662,68 @@ under `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/gdn-decode-exp159
 Executable SHA-256
 `0a6f572af594c270efa1eee1ac72ca255260363af02fb652f18c65c2811469b7`.
 
+## Dense MMQ 16-by-128 cooperative tiles
+
+EXP-1598 extends the existing dense cooperative Q4_K/Q6_K
+kernel on SM89 from 64 to 128 columns. The eight warps
+still share one weight tile. All 256 threads unpack its 512
+data words in two passes. Scale metadata uses the original
+shared layout. Dense windows align to a 128-column group
+when the 16 MiB pack budget permits, without crossing a
+reference K partition. Other shapes, small windows and the
+fallback for unaligned output tails use the existing paths.
+Set `GOOSE_MMQ_DENSE_X128=0` to select the old width.
+
+The 4,092-column multi-window Q4_K fixture and the 4,096-column
+Q6_K fixture match all 1,048,064 FP32 results bitwise. Compute
+Sanitizer reports zero errors in both. The 2,048-row fixture
+halves the device block count from 8,192 to 4,096 per case.
+Registers per thread and shared memory per block stay at or
+below the matching 64-column entry, with zero spills in the
+SM89 offline assembly. Isolated device measurements are in
+milliseconds and exclude packing and transfers.
+
+| Dense fixture | 16 × 64 | 16 × 128, four loader warps | 16 × 128, eight loader warps |
+|---|---:|---:|---:|
+| Q4_K matmul, ms | 2.960 | 2.811 | 2.431 |
+| Q6_K matmul, ms | 3.163 | 3.023 | 2.852 |
+
+The first four-loader experiment saves 106 ms of prefill in
+one clean pair. Its other pair is excluded from speed
+attribution because system swap-out grows in both arms.
+The eight-loader default uses a fresh same-binary A–B–B–A
+at 32K/512, 4096/4096, 5,920 MiB expert budget and the fixed
+Apex settings. All comparisons use the same prompt and
+continuation. The measurements exclude profiling.
+
+| Full Apex metric | A, 16 × 64 | B, 16 × 128 |
+|---|---:|---:|
+| A–B prefill, tok/s | 1,102.887 | 1,124.429 |
+| B–A prefill, tok/s | 1,100.239 | 1,126.631 |
+| Median prefill, tok/s | 1,101.563 | 1,125.530 |
+| Median prefill, s | 29.747 | 29.113 |
+| Median decode, steps/s | 30.772 | 30.662 |
+| Max sampled process / card VRAM, MiB | 8,200 / 10,414 | 8,200 / 10,414 |
+| Maximum RSS high-water, KiB | 22,954,912 | 22,954,456 |
+| Process swap and system swap-out growth | 0 | 0 |
+
+Prefill saves 569 and 698 ms respectively. Decode changes
+by +169 and −49 ms with the prefill-only selector. Exact
+text, IDs, probability rows, stop reason, the SLRU counters
+and 5,301,139 resident model pages match across all arms.
+The default-on CUDA trace records 2,000 Q4_K and 320 Q6_K
+128-column launches. They create 10,608,000 blocks in the
+visible trace. The separately recorded EXP-1596 trace had
+21,257,600 blocks for the corresponding 64-column families.
+The routed paths retain their existing launch widths. Their
+expert-boundary and short-tail work remains to be measured.
+The host dependency list contains only libc and libm.
+
+Both builds, the full runs, fixture results and traces are
+under `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/dense-mmq-x128-exp1598`.
+Default executable SHA-256
+`692f93507df48b8ab430a44254e00d10f85632cca6d9da320c2f441cac9605d6`.
+
 ## Long Attention partition probe
 
 EXP-2026-11-20-1562 holds the existing vector kernel fixed

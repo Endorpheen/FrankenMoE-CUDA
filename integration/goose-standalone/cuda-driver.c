@@ -116,6 +116,7 @@ static struct {
     Function mmq_q4_dense_x64, mmq_q4_routed_x64;
     Function mmq_q6_dense_shared, mmq_q6_routed_shared;
     Function mmq_q6_dense_x64, mmq_q6_routed_x64;
+    Function mmq_q4_dense_x128, mmq_q6_dense_x128;
     Function mmvq_pack, mmvq;
     Function dense_mma, dense_mma_reference, gdn_mma, flash_mma, flash_stage, flash_vec, flash_vec_merge;
     Function flash_vec_pack, flash_vec_packed;
@@ -507,6 +508,7 @@ static void load_cuda(void) {
     const bool q4_shared = fg_standalone_option_enabled("GOOSE_MMQ_Q4_WIDE_SHARED");
     const bool q4_routed_shared = fg_standalone_option_enabled("GOOSE_MMQ_Q4_ROUTED_SHARED");
     const bool q4_x64 = fg_standalone_option_enabled("GOOSE_MMQ_Q4_X64");
+    const bool dense_x128 = fg_standalone_option_enabled("GOOSE_MMQ_DENSE_X128");
     const char * ssm_setting = getenv("GOOSE_SSM_REFERENCE");
     const bool ssm_reference = ssm_setting && strcmp(ssm_setting, "1") == 0;
     const char * activation_setting = getenv("GOOSE_CUDA_ACTIVATION_REFERENCE");
@@ -548,6 +550,8 @@ static void load_cuda(void) {
                 error = cuda.function_get(&cuda.mmq_q4_routed_shared, cuda.module, "goose_mmq_q4_routed_shared");
             if (error == 0 && q4_x64 && q4_shared)
                 error = cuda.function_get(&cuda.mmq_q4_dense_x64, cuda.module, "goose_mmq_q4_dense_x64");
+            if (error == 0 && q4_x64 && q4_shared && dense_x128)
+                error = cuda.function_get(&cuda.mmq_q4_dense_x128, cuda.module, "goose_mmq_q4_dense_x128");
             if (error == 0 && q4_x64 && q4_routed_shared)
                 error = cuda.function_get(&cuda.mmq_q4_routed_x64, cuda.module, "goose_mmq_q4_routed_x64");
         }
@@ -559,6 +563,8 @@ static void load_cuda(void) {
                 error = cuda.function_get(&cuda.mmq_q6_routed_shared, cuda.module, "goose_mmq_q6_routed_shared");
             if (error == 0 && q6_shared && q6_x64)
                 error = cuda.function_get(&cuda.mmq_q6_dense_x64, cuda.module, "goose_mmq_q6_dense_x64");
+            if (error == 0 && q6_shared && q6_x64 && dense_x128)
+                error = cuda.function_get(&cuda.mmq_q6_dense_x128, cuda.module, "goose_mmq_q6_dense_x128");
             if (error == 0 && q6_shared && q6_x64)
                 error = cuda.function_get(&cuda.mmq_q6_routed_x64, cuda.module, "goose_mmq_q6_routed_x64");
         }
@@ -1744,6 +1750,7 @@ static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
         kind == q4_kind ? cuda.mmq_q4_routed_shared : cuda.mmq_q6_routed_shared;
     const Function dense_shared = kind == q4_kind ? cuda.mmq_q4_dense_shared : cuda.mmq_q6_dense_shared;
     const Function dense_x64 = kind == q4_kind ? cuda.mmq_q4_dense_x64 : cuda.mmq_q6_dense_x64;
+    const Function dense_x128 = kind == q4_kind ? cuda.mmq_q4_dense_x128 : cuda.mmq_q6_dense_x128;
     // These column counts have the same reference tile width, grid and K
     // partitions as the geometry baked into the cooperative kernels.
     const bool wide_geometry = count == wide_reference_columns || (cuda.mmq_dense_partial &&
@@ -1771,7 +1778,7 @@ static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
     int error;
     for (;;) {
         if (cuda.mmq_align_window && dense_wide && !shared) {
-            const int group = dense_x64 && window_tiles >= 8 ? 8 : 4;
+            const int group = dense_x128 && window_tiles >= 16 ? 16 : dense_x64 && window_tiles >= 8 ? 8 : 4;
             window_tiles = fg143_mmq_dense_window(tile_count, window_tiles, group);
         }
         const int64_t window_routes = window_tiles * routes_per_tile;
@@ -1824,13 +1831,15 @@ static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
                     1, 128, 1, 1, 0, NULL, args, NULL);
             } else if (dense_wide && !shared && first % 4 == 0 &&
                 first_route == 8 * first && routes >= 32) {
+                const bool x128 = dense_x128 && first % 16 == 0 && batch % 16 == 0 && routes >= 128;
                 const bool x64 = dense_x64 && first % 8 == 0 && batch % 8 == 0 && routes >= 64;
-                const unsigned group = x64 ? 8 : 4;
+                const unsigned group = x128 ? 16 : x64 ? 8 : 4;
+                const Function matrix = x128 ? dense_x128 : x64 ? dense_x64 : dense_shared;
                 const unsigned complete = routes / (8 * group);
                 void * args[] = {&weight, &cuda.mmq_packed.address, &matrix_output, &cuda.jobs.address,
                     &stride, &extent, &rows, &first_route, &cuda.multiprocessors};
-                error = cuda.launch(x64 ? dense_x64 : dense_shared, (unsigned) rows / 16, complete,
-                    1, 128, 1, 1, 0, NULL, args, NULL);
+                error = cuda.launch(matrix, (unsigned) rows / 16, complete,
+                    1, x128 ? 256 : 128, 1, 1, 0, NULL, args, NULL);
                 first += (int) (complete * group);
                 if (error == 0 && first < end) {
                     // Its packed rows remain in the same window as the wide prefix.
