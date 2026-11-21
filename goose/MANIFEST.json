@@ -4047,8 +4047,8 @@
       "experiment": "EXP-2026-11-07-145-goose-cpu-backend-api",
       "task": "P1-10",
       "status": "slice",
-      "sha256": "5c2351c4277710f8346a95f47fecb28032c2893d43f529a6ede25cdc3f0bc6de",
-      "integration_commit": "d7286af560727bc7f45c09dba560d9d85f4f91e4"
+      "sha256": "07203076973084750e75f2a5046f54d86bec09a77c7929a21663cf363b3bd093",
+      "integration_commit": "f461f140b10927148010d4b83230ce29855e7e7d"
     },
     {
       "goose": "cuda/standalone-vector.goose",
@@ -4082,8 +4082,8 @@
       "experiment": "EXP-2026-11-21-1598-dense-mmq-x128",
       "task": "P3-09",
       "status": "slice",
-      "sha256": "90448caa66b1051442264620df25a03aa91b3f1a73c973f885c0eeacf8d17fb9",
-      "integration_commit": "4d827f1ba5798fb6a4ad41d27d3bf1847479d350",
+      "sha256": "34439d7bdb7b4c8adaed335a2f3a9d7670b45aa999e149c8d3c5f45f652b4430",
+      "integration_commit": "60ba8ec4c5887e93e94a039a54442d5ac75c6e98",
       "gate": "Apex 32K/512 same-binary differential and SM89 CUDA trace, CUDA-PARITY-EXP1476.md#dense-mmq-16-by-128-cooperative-tiles"
     },
     {
