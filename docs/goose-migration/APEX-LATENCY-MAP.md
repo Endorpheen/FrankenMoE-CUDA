@@ -2621,3 +2621,27 @@ delta counts only time with that symbol active alone.
 | `rope_multi` | 10,220 | 0 | 10.798 | 0.000 | -10.798 | -10.798 | 1.057 | 0.000 |
 | `goose_flash_vec_pack_query` | 0 | 5,110 | 0.000 | 8.367 | +8.367 | +8.367 | 0.000 | 1.637 |
 | `flash_attn_combine_results` | 5,110 | 0 | 8.353 | 0.000 | -8.353 | -8.352 | 1.635 | 0.000 |
+
+## EXP-1667 — Normalize only reported probabilities
+
+The pre-sampling probability reporter still partially sorts the raw
+logits and accumulates the same ordered FP32 exponential sum. It now
+divides only the selected token and the requested top rows by that sum.
+Token selection still uses the full softmax API.
+
+| RTX 4070, Apex 32K/512 at 4096/4096 | Control | Candidate | Delta |
+|---|---:|---:|---:|
+| Prefill, ms | 15,393.189 | 15,643.048 | +249.859 |
+| Decode, ms | 18,943.204 | 18,367.849 | −575.356 |
+| Client latency, ms | 34,462.912 | 34,137.982 | −324.930 |
+| Prefill, tokens/s | 2,128.73 | 2,094.73 | −34.00 |
+| Decode, tokens/s | 26.98 | 27.82 | +0.84 |
+| Peak process VRAM, MiB | 8,188 | 8,188 | 0 |
+| Peak process RSS, KiB | 21,480,792 | 21,480,444 | −348 |
+
+The warmed pair used the same Fried Goose candidate and the same CUDA
+images. All 512 token IDs, probability rows, content and SLRU counters
+matched. Process swap and system swap-out remained zero. The focused
+test checked 240 rows across several vocabulary sizes, tied logits,
+and non-finite inputs. The accepted experimental checkpoint reduces
+client latency. The historical 2,140.49 prefill observation is separate.

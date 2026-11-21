@@ -218,7 +218,7 @@ export fn fg_sampler_greedy(lv: f32[:], n: i64) -> i64 {
     return sm_greedy(lv, n);
 }
 
-fn softmax_in_place(lv: f32[:], p: f32[:], n: i64, sorted: i64) -> f64 {
+fn sm_exponentials(lv: f32[:], p: f32[:], n: i64, sorted: i64) -> f32 {
     var max_l: f32 = lv[0];
     if sorted == 0 {
         var i: i64 = 1;
@@ -237,7 +237,12 @@ fn softmax_in_place(lv: f32[:], p: f32[:], n: i64, sorted: i64) -> f64 {
         cum = cum + e;
         i = i + 1;
     }
-    i = 0;
+    return cum;
+}
+
+fn softmax_in_place(lv: f32[:], p: f32[:], n: i64, sorted: i64) -> f64 {
+    let cum = sm_exponentials(lv, p, n, sorted);
+    var i: i64 = 0;
     while i < n {
         p[i] = p[i] / cum;
         i = i + 1;
@@ -377,16 +382,17 @@ fn sm_pre_sample_logprobs(logits: f32[:], work_ids: i64[:], work_p: f32[:],
        sm_apply_top_k(logits, work_ids, logits.len, top) != top {
         return false;
     }
-    if !(softmax_in_place(logits, work_p, logits.len, 1) > 0.0) { return false; }
+    let sum = sm_exponentials(logits, work_p, logits.len, 1);
+    if !(sum > 0.0) { return false; }
     ids[0] = selected;
     var found = false;
     for i in logits.len {
         if i < top {
             ids[i + 1] = work_ids[i];
-            logp[i + 1] = sm_report_logprob(work_p[i]);
+            logp[i + 1] = sm_report_logprob(work_p[i] / sum);
         }
         if work_ids[i] == selected {
-            logp[0] = sm_report_logprob(work_p[i]);
+            logp[0] = sm_report_logprob(work_p[i] / sum);
             found = true;
         }
         if found && i >= top - 1 { break; }
