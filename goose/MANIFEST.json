@@ -4082,8 +4082,8 @@
       "experiment": "EXP-2026-11-21-1598-dense-mmq-x128",
       "task": "P3-09",
       "status": "slice",
-      "sha256": "34439d7bdb7b4c8adaed335a2f3a9d7670b45aa999e149c8d3c5f45f652b4430",
-      "integration_commit": "60ba8ec4c5887e93e94a039a54442d5ac75c6e98",
+      "sha256": "836ed0d1d44d068d44f2aeac8179754cf73151e204aa1bdf9e5bdc60382101c6",
+      "integration_commit": "1f3e1b081879397417923c6995c3a4856dabc09a",
       "gate": "Apex 32K/512 same-binary differential and SM89 CUDA trace, CUDA-PARITY-EXP1476.md#dense-mmq-16-by-128-cooperative-tiles"
     },
     {
