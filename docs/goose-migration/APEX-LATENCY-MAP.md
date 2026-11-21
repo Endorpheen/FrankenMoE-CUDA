@@ -22,6 +22,37 @@ experimental cumulative checkpoint when correctness passes.
 Retain small gains and verify interactions between changes.
 Track historical bests separately from each fresh pair.
 
+## EXP-1647 — Prefetch dense Q6_K activation halves
+
+Keep the 128 × 128 Q6_K weight tile and its integer
+pair and FP32 accumulation order. Alternate two shared
+Q8_1 buffers and prefetch the next half with aligned
+`cp.async` while the block consumes the current one.
+The shared weight tile is reused across both halves.
+This uses 70.5 KiB shared memory per block. Set
+`GOOSE_MMQ_Q6_PIPELINE=0` for the synchronous half-K tile.
+
+| Warmed Apex 32,768/512, 4096/4096 | EXP-1646 control | EXP-1647 | Change |
+|---|---:|---:|---:|
+| Prefill, ms | 22,335.590 | 21,837.226 | -498.364 |
+| Prefill, tok/s | 1,467.08 | 1,500.56 | +33.48 |
+| Decode, ms | 14,655.171 | 14,344.251 | -310.920 |
+| Decode, tok/s | 34.87 | 35.62 | +0.76 |
+| Prefill plus decode, ms | 36,990.761 | 36,181.477 | -809.284 |
+| Peak process RSS, KiB | 21,482,316 | 21,484,000 | +1,684 |
+| Peak process VRAM, MiB | 8,220 | 8,220 | 0 |
+| Process swap and system swap-out growth | 0 / 0 | 0 / 0 | 0 / 0 |
+
+All 512 IDs, probabilities, response, and SLRU match.
+The candidate records 320 Q6_K pipeline launches and
+retains 1,545 Q4_K pipeline launches, 320 dense Q8_1
+reuses and 360 shared Q8_1 reuses. Use EXP-1647 as the
+cumulative control. Its recorded prefill advances the
+historical best from 1,485.81 to 1,500.56 tok/s. The
+decode result is a pair observation for a prefill change.
+The binary and matched evidence are in
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/q6-pipeline-exp1647`.
+
 ## EXP-1646 — Pipeline prepared Q4_K quarters
 
 The prepared 128 × 256 tile uses two shared-memory banks

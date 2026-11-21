@@ -153,7 +153,7 @@ static struct {
     Module module;
     Function kernel, attention_tiles, attention_merge, gdn, gdn_decode, q4_rows, vector, vector_flat, vector_flat4, rms_reference;
     Function mmq_pack, mmq_pack_shared, mmq_matrix, mmq_q4_matrix, mmq_q6_matrix;
-    Function mmq_pack_k_major, mmq_q6_dense_half_k;
+    Function mmq_pack_k_major, mmq_q6_dense_half_k, mmq_q6_dense_pipeline;
     Function mmq_q4_dense_shared, mmq_q4_routed_shared;
     Function mmq_q4_dense_x64, mmq_q4_routed_x64;
     Function mmq_q6_dense_shared, mmq_q6_routed_shared;
@@ -279,6 +279,7 @@ enum { ACTIVATION_WORDS = 5, ACTIVATION_RECORDS = 256 };
 enum { GDN_MMA_SHARED_BYTES = 93312 };
 enum { Q4_PIPE_SHARED_BYTES = 2 * 30720 };
 enum { Q6_HALF_K_SHARED_BYTES = 53760 };
+enum { Q6_PIPE_SHARED_BYTES = Q6_HALF_K_SHARED_BYTES + 18432 };
 static _Thread_local struct {
     bool active, unavailable, defer_waits, pending;
     bool retire, reuse, selective_eviction;
@@ -287,7 +288,7 @@ static _Thread_local struct {
     int64_t ranges[ACTIVATION_RECORDS * ACTIVATION_WORDS];
     int64_t large_output[ACTIVATION_WORDS];
     uint64_t hits, skipped_download_bytes, expired_bytes;
-    uint64_t shared_pack_reuses, dense_pack_reuses, flat_vectors, flat4_vectors, q4_prepared, q4_pipelined;
+    uint64_t shared_pack_reuses, dense_pack_reuses, flat_vectors, flat4_vectors, q4_prepared, q4_pipelined, q6_pipelined;
     size_t packet_used;
 } activations;
 
@@ -1135,6 +1136,13 @@ static void load_cuda(void) {
                 if (error == 0) error = cuda.function_set_attribute(cuda.mmq_q6_dense_half_k,
                     max_dynamic_shared_size, Q6_HALF_K_SHARED_BYTES);
                 if (error == 0) error = cuda.function_get(&cuda.mmq_pack_k_major, cuda.module, "goose_mmq_pack_k_major");
+                if (error == 0 && fg_standalone_option_enabled("GOOSE_MMQ_Q6_PIPELINE")) {
+                    int setup = cuda.function_get(&cuda.mmq_q6_dense_pipeline, cuda.module,
+                        "goose_mmq_q6_dense_m128_pipeline");
+                    if (setup == 0) setup = cuda.function_set_attribute(cuda.mmq_q6_dense_pipeline,
+                        max_dynamic_shared_size, Q6_PIPE_SHARED_BYTES);
+                    if (setup != 0) cuda.mmq_q6_dense_pipeline = NULL;
+                }
             }
             if (error == 0 && q6_shared && q6_x64)
                 error = cuda.function_get(&cuda.mmq_q6_routed_x64, cuda.module, "goose_mmq_q6_routed_x64");
@@ -1401,6 +1409,7 @@ int fg_cuda_activation_graph_begin(bool planned) {
     activations.flat4_vectors = 0;
     activations.q4_prepared = 0;
     activations.q4_pipelined = 0;
+    activations.q6_pipelined = 0;
     activations.unavailable = false;
     activations.defer_waits = planned && fg_standalone_option_enabled("GOOSE_CUDA_DEFER_WAITS");
     activations.retire = fg_standalone_option_enabled("GOOSE_ACTIVATION_LIFETIMES");
@@ -1482,6 +1491,9 @@ int fg_cuda_activation_graph_end(bool success, bool all, uint64_t host, int64_t 
     }
     if (activations.q4_pipelined && getenv("GOOSE_MMQ_SHARED_REUSE_REPORT")) {
         fprintf(stderr, "Goose CUDA MMQ: pipelined %" PRIu64 " dense Q4_K launches\n", activations.q4_pipelined);
+    }
+    if (activations.q6_pipelined && getenv("GOOSE_MMQ_SHARED_REUSE_REPORT")) {
+        fprintf(stderr, "Goose CUDA MMQ: pipelined %" PRIu64 " dense Q6_K launches\n", activations.q6_pipelined);
     }
     if (activations.flat_vectors && getenv("GOOSE_CUDA_VECTOR_FLAT_REPORT")) {
         fprintf(stderr, "Goose CUDA vector: %" PRIu64 " flat launches, %" PRIu64 " using float4\n",
@@ -2545,10 +2557,13 @@ static int launch_mmq(DevicePtr weight, uint64_t stride, int extent, int kind,
                 error = cuda.launch(cuda.mmq_q4_routed_down_m128, (unsigned) rows / 128, (unsigned) batch,
                     1, 256, 1, 1, 0, NULL, args, NULL);
             } else if (q6_half_k) {
+                const bool pipeline = cuda.mmq_q6_dense_pipeline != NULL;
+                const Function matrix = pipeline ? cuda.mmq_q6_dense_pipeline : cuda.mmq_q6_dense_half_k;
                 void * args[] = {&weight, &cuda.mmq_packed.address, &matrix_output, &cuda.jobs.address,
                     &stride, &extent, &first_route, &columns};
-                error = cuda.launch(cuda.mmq_q6_dense_half_k, (unsigned) rows / 128,
-                    1 + (routes - 1) / 128, 1, 256, 1, 1, Q6_HALF_K_SHARED_BYTES, NULL, args, NULL);
+                error = cuda.launch(matrix, (unsigned) rows / 128, 1 + (routes - 1) / 128,
+                    1, 256, 1, 1, pipeline ? Q6_PIPE_SHARED_BYTES : Q6_HALF_K_SHARED_BYTES, NULL, args, NULL);
+                if (error == 0 && pipeline) ++activations.q6_pipelined;
             } else if (dense_m64 && !shared && first % 16 == 0 && first_route == 8 * first) {
                 const bool large = cuda.mmq_q4_dense_large && routes >= cuda.mmq_q4_large_cols &&
                     (unsigned) rows % cuda.mmq_q4_large_rows == 0;

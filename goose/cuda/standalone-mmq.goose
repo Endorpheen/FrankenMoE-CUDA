@@ -687,13 +687,15 @@ fn mmq_stage_q8_half(stage: u64, packed_tile: u64, pitch: i64, routes: i64, thre
     }
 }
 
-fn mmq_stage_q8_block(stage: u64, packed_tile: u64, routes: i64, thread: i64) {
+fn mmq_stage_q8_block(stage: u64, packed_tile: u64, routes: i64, thread: i64, ahead: bool) {
     for pass in 5 {
         let vector = thread + 256 * pass;
         if vector < 1152 {
             let offset = 16 * vector;
             let source = if vector < routes * 9 { offset } else { 16 * (vector % 9) };
-            mmq_copy_16(stage + (offset as u64), packed_tile + (source as u64));
+            let dst = stage + (offset as u64);
+            let src = packed_tile + (source as u64);
+            if ahead { mmq_copy_async_16(dst, src); } else { mmq_copy_16(dst, src); }
         }
     }
 }
@@ -724,7 +726,7 @@ fn mmq_q6_finish_rows(sum: MmqPairSum, part: MmqPairSum, lo_da: f32, lo_db: f32,
 // scaling order of the existing Q6_K reference path.
 export fn fg_device_mmq_q6_half_k(weights: u64, packed: u64, out: u64, jobs: u64,
     stride: i64, extent: i64, row: i64, route: i64, first_route: i64, routes: i64,
-    packed_columns: i64, thread: i64, stage: u64) {
+    packed_columns: i64, thread: i64, stage: u64, ahead: bool) {
     let lane = thread % 32;
     let warp = thread / 32;
     let col = 64 * (warp % 2);
@@ -746,12 +748,25 @@ export fn fg_device_mmq_q6_half_k(weights: u64, packed: u64, out: u64, jobs: u64
     var sum5 = empty;
     var sum6 = empty;
     var sum7 = empty;
+    let q8_stride = 144 * packed_columns;
+    if ahead { mmq_stage_q8_block(activate, packed_tile, routes, thread, true); }
     for k in extent {
         mmq_q6_stage(weight_src + ((210 * k) as u64), stride, weight_stage, lane, 32);
         for half in 2 {
-            let offset = (144 * packed_columns * (2 * k + half)) as u64;
-            mmq_stage_q8_block(activate, packed_tile + offset, routes, thread);
-            mmq_barrier();
+            let current = 2 * k + half;
+            let bank = if ahead { (18432 * half) as u64 } else { 0 as u64 };
+            if ahead {
+                mmq_copy_wait();
+                mmq_barrier();
+                let next = current + 1;
+                if next < 2 * extent {
+                    mmq_stage_q8_block(activate + 18432 - bank, packed_tile + ((q8_stride * next) as u64),
+                        routes, thread, true);
+                }
+            } else {
+                mmq_stage_q8_block(activate, packed_tile + ((q8_stride * current) as u64), routes, thread, false);
+                mmq_barrier();
+            }
             var part0 = empty;
             var part1 = empty;
             var part2 = empty;
@@ -768,14 +783,14 @@ export fn fg_device_mmq_q6_half_k(weights: u64, packed: u64, out: u64, jobs: u64
                 let hy = mmq_ldm16(mmq_q6_shared_fragment(hi_stage, group + 1, lane));
                 let ls = mmq_q6_shared_scales(lo_stage, lane / 4, group);
                 let hs = mmq_q6_shared_scales(hi_stage, lane / 4, group);
-                part0 = mmq_q6_shared_column(part0, activation, pair, lane, lx, ly, hx, hy, ls, hs);
-                part1 = mmq_q6_shared_column(part1, activation + 1152, pair, lane, lx, ly, hx, hy, ls, hs);
-                part2 = mmq_q6_shared_column(part2, activation + 2304, pair, lane, lx, ly, hx, hy, ls, hs);
-                part3 = mmq_q6_shared_column(part3, activation + 3456, pair, lane, lx, ly, hx, hy, ls, hs);
-                part4 = mmq_q6_shared_column(part4, activation + 4608, pair, lane, lx, ly, hx, hy, ls, hs);
-                part5 = mmq_q6_shared_column(part5, activation + 5760, pair, lane, lx, ly, hx, hy, ls, hs);
-                part6 = mmq_q6_shared_column(part6, activation + 6912, pair, lane, lx, ly, hx, hy, ls, hs);
-                part7 = mmq_q6_shared_column(part7, activation + 8064, pair, lane, lx, ly, hx, hy, ls, hs);
+                part0 = mmq_q6_shared_column(part0, activation + bank, pair, lane, lx, ly, hx, hy, ls, hs);
+                part1 = mmq_q6_shared_column(part1, activation + bank + 1152, pair, lane, lx, ly, hx, hy, ls, hs);
+                part2 = mmq_q6_shared_column(part2, activation + bank + 2304, pair, lane, lx, ly, hx, hy, ls, hs);
+                part3 = mmq_q6_shared_column(part3, activation + bank + 3456, pair, lane, lx, ly, hx, hy, ls, hs);
+                part4 = mmq_q6_shared_column(part4, activation + bank + 4608, pair, lane, lx, ly, hx, hy, ls, hs);
+                part5 = mmq_q6_shared_column(part5, activation + bank + 5760, pair, lane, lx, ly, hx, hy, ls, hs);
+                part6 = mmq_q6_shared_column(part6, activation + bank + 6912, pair, lane, lx, ly, hx, hy, ls, hs);
+                part7 = mmq_q6_shared_column(part7, activation + bank + 8064, pair, lane, lx, ly, hx, hy, ls, hs);
             }
             let d_offset = (4352 + 4 * (lane / 4)) as u64;
             let lo_da = mmq_shared_float(lo_stage + d_offset);
@@ -790,7 +805,9 @@ export fn fg_device_mmq_q6_half_k(weights: u64, packed: u64, out: u64, jobs: u64
             sum5 = mmq_q6_finish_rows(sum5, part5, lo_da, lo_db, hi_da, hi_db);
             sum6 = mmq_q6_finish_rows(sum6, part6, lo_da, lo_db, hi_da, hi_db);
             sum7 = mmq_q6_finish_rows(sum7, part7, lo_da, lo_db, hi_da, hi_db);
-            mmq_barrier();
+            // The next block of weights may overwrite the shared tile
+            // only after both activation halves have finished reading it.
+            if !ahead || half == 1 { mmq_barrier(); }
         }
     }
     mmq_dense_store_pair(out, jobs, route, col, routes, row + row_pair, lane, sum0);
