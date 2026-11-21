@@ -3773,8 +3773,9 @@
       "experiment": "EXP-2026-11-07-145-goose-cpu-backend-api",
       "task": "P1-10",
       "status": "slice",
-      "sha256": "df069f68616b0a70a96e76bfb2ecb87e01f14ff0f0b48bcc9bc0d98be1807a4b",
-      "gate": "EXP-1617 full FFN shape and lifetime matcher, Apex differential, input/output alias and SLRU eviction fixtures"
+      "sha256": "3f7e3ea6254d400e3fa81a61d876c6c213d510552b5ede764ca0587f00ca7801",
+      "gate": "EXP-1617 full FFN shape and lifetime matcher, Apex differential, input/output alias and SLRU eviction fixtures; EXP-1660 exact direct SSM device probe and warmed Apex 32K/512 differential",
+      "integration_commit": "1140a49fcc16a85be03e7dd7365584170991c4e2"
     },
     {
       "goose": "cpu/goose-cpu-backend-api/backend/kernel-template.goose",
@@ -5904,7 +5905,9 @@
       "experiment": "EXP-2026-11-08-170-goose-cuda-ssm-convolution",
       "task": "P3-13",
       "status": "slice",
-      "sha256": "08d30ca2c6e65127e95075a668bf219891dd9bdeb5f0bfd802cb65651daa4e81"
+      "sha256": "e86259e1eae7264bee9ec1810c1571e85e822708e3df97a071b622d66045d2fd",
+      "gate": "EXP-1660 exact direct SSM device probe and warmed Apex 32K/512 differential",
+      "integration_commit": "1140a49fcc16a85be03e7dd7365584170991c4e2"
     },
     {
       "goose": "cuda/goose-cuda-ssm-convolution/host.goose",
