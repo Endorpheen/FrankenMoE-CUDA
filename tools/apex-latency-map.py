@@ -2,6 +2,7 @@
 """Compare complete Apex 32K/512 CUDA traces and separate CPU clock profiles."""
 
 import argparse
+from bisect import bisect_left, bisect_right
 from collections import Counter, defaultdict
 from contextlib import closing
 from dataclasses import dataclass, field
@@ -149,7 +150,190 @@ def mmq_format(name, demangled):
     return "Unresolved format"
 
 
-def read_phase(db, pid, left, right):
+def decode_idle(db, pid, left, right, idle):
+    """Partition idle wall time and relate memcpy calls to recorded device work."""
+    cp = (pid, right, left)
+    api_calls = list(db.execute("""
+        select a.start,a.end,s.value,a.correlationId,a.globalTid,a.callchainId
+        from CUPTI_ACTIVITY_KIND_RUNTIME a join StringIds s on a.nameId=s.id
+        where (a.globalTid >> 24) & 16777215 = ? and a.start < ? and a.end > ?
+        order by a.start,a.end
+    """, cp))
+    api_by_id = defaultdict(list)
+    for call in api_calls:
+        api_by_id[call[3]].append(call)
+
+    kernels = list(db.execute("""
+        select k.start,k.end,k.correlationId,s.value
+        from CUPTI_ACTIVITY_KIND_KERNEL k join StringIds s on k.shortName=s.id
+        where (k.globalPid >> 24) & 16777215 = ? and k.start < ? and k.end > ?
+        order by k.start,k.end
+    """, cp))
+    kernel_starts = [row[0] for row in kernels]
+    kernel_ends = sorted((end, name) for _, end, _, name in kernels)
+    end_times = [row[0] for row in kernel_ends]
+    starts_at_gap_end = {end: set() for _, end in idle}
+    ends_at_gap_start = {start: set() for start, _ in idle}
+    device_range = {}
+
+    def observe_device(start, end, correlation):
+        if start in starts_at_gap_end:
+            starts_at_gap_end[start].add(correlation)
+        if end in ends_at_gap_start:
+            ends_at_gap_start[end].add(correlation)
+        old_start, old_end = device_range.get(correlation, (start, end))
+        device_range[correlation] = min(start, old_start), max(end, old_end)
+
+    for start, end, correlation, _ in kernels:
+        observe_device(start, end, correlation)
+
+    copies = defaultdict(list)
+    for start, end, correlation, kind, size, source, dest, stream in db.execute("""
+        select m.start,m.end,m.correlationId,m.copyKind,m.bytes,m.srcKind,m.dstKind,m.streamId
+        from CUPTI_ACTIVITY_KIND_MEMCPY m
+        where (m.globalPid >> 24) & 16777215 = ? and m.start < ? and m.end > ?
+    """, cp):
+        observe_device(start, end, correlation)
+        if correlation in api_by_id:
+            copies[correlation].append((start, end, kind, size, source, dest, stream))
+
+    for start, end in db.execute("""
+        select m.start,m.end from CUPTI_ACTIVITY_KIND_MEMSET m
+        where (m.globalPid >> 24) & 16777215 = ? and m.start < ? and m.end > ?
+    """, cp):
+        observe_device(start, end, None)
+
+    types = dict(db.execute("select id,label from ENUM_CUDA_MEMCPY_OPER"))
+    kinds = dict(db.execute("select id,label from ENUM_CUDA_MEM_KIND"))
+    copy_stats = defaultdict(Counter)
+    copy_context = defaultdict(Counter)
+    call_stats = Counter()
+    call_rows = {}
+    annotated = []
+    for start, end, name, correlation, _, _ in api_calls:
+        family = api_family(name)
+        row = family
+        copy = None
+        if family == "Synchronous memcpy API":
+            matches = copies.get(correlation, ())
+            if len(matches) == 1 and len(api_by_id[correlation]) == 1:
+                copy = matches[0]
+                begins, done, kind, size, source, dest, stream = copy
+                row = f"{types[kind]} {size} B {kinds[source]} to {kinds[dest]} (stream {stream})"
+                previous = bisect_right(end_times, begins) - 1
+                following = bisect_left(kernel_starts, done)
+                context = (
+                    kernel_ends[previous][1] if previous >= 0 else "Outside window",
+                    kernels[following][3] if following < len(kernels) else "Outside window",
+                )
+                copy_context[row][context] += 1
+                copy_stats[row]["device_ns"] += min(done, right) - max(begins, left)
+                copy_stats[row]["returned_before_copy"] += end <= begins
+            else:
+                row = "Synchronous memcpy without unique correlation"
+            copy_stats[row]["api_ns"] += min(end, right) - max(start, left)
+            copy_stats[row]["calls"] += 1
+        call_stats[row] += 1
+        call_rows[correlation] = row
+        annotated.append((start, end, row, copy, correlation))
+
+    idle_totals, gap_counts, next_submission = Counter(), Counter(), Counter()
+    graph_launch, offline = Counter(), Counter()
+    thread_count = len({row[4] for row in api_calls})
+    completed_calls = sorted((end, row) for _, end, row, _, _ in annotated) if thread_count == 1 else []
+    completed_times = [end for end, _ in completed_calls]
+    # Sweep only device-idle intervals. Concurrent API rows get one shared bin.
+    pos = 0
+    for gap_start, gap_end in idle:
+        while pos < len(annotated) and annotated[pos][1] <= gap_start:
+            pos += 1
+        spans = []
+        points = {gap_start, gap_end}
+        index = pos
+        while index < len(annotated) and annotated[index][0] < gap_end:
+            start, end, row, copy, correlation = annotated[index]
+            lo, hi = max(start, gap_start), min(end, gap_end)
+            if lo < hi:
+                spans.append((lo, hi, row, copy, correlation))
+                points.update((lo, hi))
+            index += 1
+        boundary = sorted(points)
+        gap_rows = set()
+        linked = starts_at_gap_end[gap_end]
+        upcoming = api_by_id.get(next(iter(linked)), ()) if len(linked) == 1 else ()
+        for lo, hi in zip(boundary, boundary[1:]):
+            hits = [(row, copy, correlation) for start, end, row, copy, correlation in spans
+                    if start <= lo < end]
+            n = hi - lo
+            if len(hits) == 1:
+                row, copy, correlation = hits[0]
+                if copy:
+                    if hi <= copy[0]:
+                        copy_stats[row]["idle_before_copy_ns"] += n
+                    elif lo >= copy[1]:
+                        copy_stats[row]["idle_after_copy_ns"] += n
+                    else:
+                        raise ValueError("linked GPU copy inside a device-idle slice")
+                if row == "Graph launch":
+                    if correlation not in device_range:
+                        graph_launch["No correlated device activity"] += n
+                    else:
+                        first, last = device_range[correlation]
+                        before = max(0, min(hi, first) - lo)
+                        after = max(0, hi - max(lo, last))
+                        graph_launch["Before first correlated activity"] += before
+                        graph_launch["After last correlated activity"] += after
+                        graph_launch["Between correlated activities"] += n - before - after
+            elif hits:
+                row = "Overlapping CUDA APIs"
+            elif len(upcoming) == 1:
+                call = upcoming[0]
+                if call[1] <= lo:
+                    row = "No CUDA API, next activity already submitted"
+                elif call[0] >= hi:
+                    row = "No CUDA API, before next submission"
+                else:
+                    raise ValueError("linked CUDA API inside an uncovered idle slice")
+                next_submission[row, api_family(call[2])] += n
+                prior_index = bisect_right(completed_times, lo) - 1
+                prior_row = completed_calls[prior_index][1] if prior_index >= 0 else "Unknown"
+                same_submission = ends_at_gap_start[gap_start] == linked
+                offline[row, call_rows[call[3]], prior_row, same_submission] += n
+            else:
+                row = "No CUDA API, next activity unlinked"
+            idle_totals[row] += n
+            gap_rows.add(row)
+        gap_counts.update(gap_rows)
+    if sum(idle_totals.values()) != sum(end - start for start, end in idle):
+        raise ValueError("decode idle partition does not reconcile")
+
+    return {
+        "api_threads": thread_count,
+        "api_calls_with_callchain": sum(row[5] is not None for row in api_calls),
+        "rows": {
+            row: {"idle_ns": idle_totals[row], "api_calls": call_stats.get(row),
+                  "gaps_touched": gap_counts[row], **copy_stats.get(row, {})}
+            for row in sorted(idle_totals.keys() | call_stats.keys())
+        },
+        "copy_kernel_neighbors": {
+            row: [{"previous_kernel": prev, "next_kernel": after, "count": count}
+                  for (prev, after), count in stats.most_common()]
+            for row, stats in copy_context.items()
+        },
+        "next_submission": [
+            {"idle_row": row, "next_api_family": family, "idle_ns": ns}
+            for (row, family), ns in sorted(next_submission.items())
+        ],
+        "graph_launch_idle_ns": dict(graph_launch),
+        "outside_cuda_api": [
+            {"idle_row": row, "next_call": following, "last_completed_call": previous,
+             "same_device_submission": same_submission, "idle_ns": ns}
+            for (row, following, previous, same_submission), ns in offline.most_common()
+        ],
+    }
+
+
+def read_phase(db, pid, left, right, include_decode_idle=False):
     gpu, names, cpu, cpu_names, os_waits = (defaultdict(Activity) for _ in range(5))
     mmq, shapes = defaultdict(Activity), defaultdict(Activity)
     graph, api_total = Activity(), Activity()
@@ -230,7 +414,7 @@ def read_phase(db, pid, left, right):
     size_counts, size_ns = Counter(replay_nodes.values()), Counter()
     for correlation, count in replay_nodes.items():
         size_ns[count] += replay_ns[correlation]
-    return {
+    result = {
         "start_ns": left,
         "end_ns": right,
         "window_ms": (right - left) / 1e6,
@@ -258,9 +442,12 @@ def read_phase(db, pid, left, right):
         "cuda_api_union": api_total.report(gpu_idle_overlap_ms=intersection(api_total.intervals, idle) / 1e6),
         "os_waits": host_report(os_waits),
     }
+    if include_decode_idle:
+        result["idle_attribution"] = decode_idle(db, pid, left, right, idle)
+    return result
 
 
-def traces(path, run, marker, rms, warmup_markers):
+def traces(path, run, marker, rms, warmup_markers, include_decode_idle=False):
     pid = int((run / "pid.txt").read_text())
     response = json.loads((run / "r1.json").read_text())
     timings = response["timings"]
@@ -288,7 +475,7 @@ def traces(path, run, marker, rms, warmup_markers):
         return {
             "timings": timings,
             "prefill": read_phase(db, pid, left, split),
-            "decode": read_phase(db, pid, split, end),
+            "decode": read_phase(db, pid, split, end, include_decode_idle),
         }
 
 
@@ -350,6 +537,7 @@ def clock_profile(run):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--decode-idle", action="store_true", help="include disjoint decode idle attribution")
     for runtime in ("hybrid", "goose"):
         parser.add_argument(f"--{runtime}-trace", required=True, type=Path)
         parser.add_argument(f"--{runtime}-gpu-run", required=True, type=Path)
@@ -368,7 +556,8 @@ def main():
         ("goose", "goose_gdn_decode", "goose_rms_reference", 0),
     ):
         report[runtime] = {
-            "gpu": traces(getattr(args, f"{runtime}_trace"), getattr(args, f"{runtime}_gpu_run"), marker, rms, warmup),
+            "gpu": traces(getattr(args, f"{runtime}_trace"), getattr(args, f"{runtime}_gpu_run"),
+                          marker, rms, warmup, args.decode_idle),
             "cpu": clock_profile(getattr(args, f"{runtime}_cpu_run")),
         }
     print(json.dumps(report, indent=2, sort_keys=True))

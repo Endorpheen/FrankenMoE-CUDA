@@ -274,6 +274,182 @@ inside these device windows. This leaves unobserved scheduling
 and waiting open. API wall sums can include earlier GPU work and
 must remain separate from sampled CPU time and exclusive GPU time.
 
+## Decode idle attribution for EXP-1618
+
+The `--decode-idle` analyzer option partitions the same device idle
+windows. It joins host CUDA calls to kernels and copies by process
+and CUPTI correlation ID. Host APIs in each decode window come from
+one thread. There are zero recorded CUDA API call chains, zero
+target-process OS runtime rows, and no CPU scheduling trace. The
+separate clock profiles cannot identify which functions ran inside
+specific idle intervals.
+
+| Disjoint idle observation | Hybrid calls | Goose calls | Hybrid, ms | Goose, ms | Δ, ms | Module or next test |
+|---|---:|---:|---:|---:|---:|---|
+| Synchronous expert H2D | 0 | 62,571 | 0.000 | 2,682.964 | +2,682.964 | Expert cache plane fills. Test staged transfers with explicit slot and consumer dependencies. |
+| No CUDA API, next submit has not started | — | — | 825.915 | 1,366.265 | +540.350 | Submission boundary is measured. Time spent in individual host functions is unresolved. |
+| No CUDA API, next activity already submitted | — | — | 28.207 | 515.956 | +487.749 | Next device activity and its completed submit are correlated. Device or driver wait reason is unresolved. |
+| Direct kernel launch | 6,736 | 422,229 | 1.851 | 480.956 | +479.104 | Driver launch calls in the graph executor. Compare the extended graph. |
+| Graph launch | 20,873 | 122,921 | 529.579 | 947.275 | +417.696 | Driver replay calls. Separate gaps before their first node from gaps between nodes. |
+| Synchronous H2D, 8,192 B | 0 | 42,411 | 0.000 | 378.349 | +378.349 | Mostly adjacent to RMSNorm. Verify the staged tensor, then reuse device storage or retain an ordered pinned copy. |
+| Top-K IDs, synchronous D2H | 0 | 20,440 | 0.000 | 349.643 | +349.643 | Host SLRU consumes expert IDs. Preserve readiness while changing how the IDs reach the host. |
+| SSM convolution input, synchronous H2D | 0 | 15,329 | 0.000 | 211.689 | +211.689 | `cuda_position` and `fg_cuda_position`. Confirm the operand address and test GPU residency. |
+| Logits, synchronous D2H | 0 | 511 | 0.000 | 42.492 | +42.492 | Graph output publication to host sampling. A GPU sampler would need to preserve the response and probabilities contract. |
+| Graph setup and node update | 314 | 16,257 | 6.859 | 37.109 | +30.250 | Graph instantiation and parameter updates. Test stable addresses and replay reuse. |
+| CUDA allocation and mapping | 0 | 1 | 0.000 | 0.015 | +0.015 | Allocation within the measured window. |
+| Other CUDA API | 1 | 1 | 0.898 | 0.012 | -0.886 | Remaining API events. |
+| Asynchronous copy API | 112,081 | 312,213 | 232.821 | 224.582 | -8.239 | Enqueue calls on both runtimes. |
+| CUDA synchronization and waits | 59,766 | 26,060 | 395.938 | 220.557 | -175.381 | Hybrid stream waits and Goose context waits. This row counts only their GPU-idle overlap. |
+| **Total** | **199,771** | **1,040,944** | **2,022.067** | **7,457.862** | **+5,435.795** | Every idle nanosecond appears once. |
+
+Rows give exact temporal attribution. The intervals are an
+exposure measurement, with no assumption that removing a call
+would recover the whole interval. The analyzer also reports
+the number of distinct idle intervals each row touches. There
+were no overlapping target CUDA API calls in either decode
+window. Displayed milliseconds are rounded independently.
+
+### Handoffs outside CUDA and graph launch
+
+| Timing evidence | Hybrid, ms | Goose, ms | What is established |
+|---|---:|---:|---|
+| No active CUDA API before next submit | 825.915 | 1,366.265 | 55,956 Hybrid and 72,361 Goose idle intervals touch this row. |
+| Logits readback returned, next 8,192 B upload has not started | — | 1,232.479 | Inter-token host window, a subset of the preceding row. |
+| Top-K readback returned, next expert H2D has not started | — | 30.545 | Brackets the host route and SLRU path, a subset of the first row. |
+| No active CUDA API and next activity already submitted | 28.207 | 515.956 | 42,191 Hybrid and 629,122 Goose idle intervals touch this row. |
+| Same graph replay on both sides of an uncovered gap | 0.007 | 1.563 | Subset of the already-submitted row between activities of the same replay. |
+| During graph launch before first correlated activity | 529.578 | 947.209 | Most graph-launch idle overlap is before the next replay starts. |
+| During graph launch between correlated activities | 0.001 | 0.009 | Idle inside the replay's recorded activity span. |
+| During graph launch after last correlated activity | 0.000 | 0.057 | Idle after the replay's last recorded activity while the launch call is still active. |
+
+The dominant untraced Goose boundary starts after publishing
+logits for CPU sampling. `q35_sample_generate` selects the
+token and formats requested probabilities before the next
+`q35_generation_eval`. `q35_model_step` constructs the next
+graph and opens the KV ticket before device execution. These
+are source-confirmed steps inside the measured handoff.
+Their individual wall durations, allocator contribution and
+time off CPU remain unknown. The Hybrid's host-only time
+before an asynchronous copy totals 810.899 ms. The 1,232.479 ms
+Goose handoff is already included in the +540.350 ms comparison.
+
+The Top-K to first expert upload boundary contains CPU route
+extraction, SLRU planning and upload preparation. Its 30.545 ms
+measures the interval between CUDA APIs. Another 41.146 ms
+after Top-K precedes an asynchronous packet upload. Those
+intervals are separate from blocking expert uploads.
+
+The 515.956 ms with a completed submit before the next Goose
+device activity includes 180.626 ms before direct kernel
+activity, 169.356 ms before graph activity, 124.898 ms before
+async copies and 41.076 ms before synchronous API copies.
+This establishes submission order. Driver queueing, stream
+dependencies and hardware scheduling remain unresolved
+within these intervals.
+
+### Synchronous copies
+
+All 141,262 blocking API calls match one recorded GPU transfer
+on stream 7. GPU copy time is shown separately and is already
+in the GPU busy union. "Before" and "after" refer to the linked
+copy's timestamps and count only time inside the API call with
+no recorded GPU activity.
+
+| Direction and host memory | Bytes per call | Calls | API wall, ms | GPU copy, ms | Idle before copy, ms | Idle after copy, ms |
+|---|---:|---:|---:|---:|---:|---:|
+| Expert H2D, pageable | 589,824 | 34,097 | 2,140.691 | 818.338 | 1,629.647 | 0.000 |
+| Expert H2D, pageable | 860,160 | 14,593 | 1,200.172 | 503.909 | 999.660 | 0.000 |
+| Expert H2D, pinned | 589,824 | 13,881 | 706.844 | 362.129 | 26.573 | 27.084 |
+| Activation or norm input H2D, pageable | 8,192 | 42,411 | 5,401.968 | 23.627 | 377.754 | 0.595 |
+| SSM convolution input H2D, pageable | 131,072 | 15,329 | 212.079 | 98.043 | 211.668 | 0.021 |
+| Top-K IDs D2H, pageable | 32 | 20,440 | 626.070 | 19.352 | 298.366 | 51.276 |
+| Logits D2H, pageable | 993,280 | 511 | 62.777 | 20.285 | 3.043 | 39.450 |
+
+In total, 3,546.712 ms of the copy API idle overlap precedes
+the associated transfer and 118.425 ms follows it. The 1,845.684
+ms of actual copy-engine activity is separate. Of 106,430
+pageable H2D calls, 104,162 return before the associated
+device copy starts. No pinned expert H2D or synchronous
+D2H call in this trace returns before its device copy starts.
+
+The source below refers to the profiled `efa4c82c` build.
+
+- **Expert fills, high confidence.** All 62,571 copies fall between
+  `goose_route_topk` and `goose_mmvq_quantize`. Each cache fill
+  uploads three planes, with 47,978 Q4_K transfers and 14,593
+  Q6_K transfers in the window. `fg_cuda_routed_graph` reads the
+  IDs, resolves active routes and calls `fg_cuda_prepare_experts`.
+  `ec_prepare` calls `slru_plan_impl` and sends each plane via
+  `ec_fill_plane → fg_cuda_expert_upload → expert_upload`.
+  `fg_cuda_expert_stage_enabled` rejects eight or fewer active
+  experts, so the decode path remains synchronous even when
+  `GOOSE_CUDA_EXPERT_OVERLAP=1`. Slot reuse must follow the
+  previous expert read, and new projections must wait for their
+  own weights. Those are device ordering constraints. The
+  current per-plane host blocking is an implementation choice.
+  Source [SLRU and plane fills](../../goose/model/expert-device-cache.goose)
+  and [CUDA cache transport](../../integration/goose-standalone/cuda-driver.c).
+- **Top-K IDs, high confidence.** All 20,440 transfers sit
+  between the Top-K and the routed input quantizer, one
+  eight-element i32 vector for every layer and decode step.
+  `fg_cuda_routed_graph → fg_cuda_activation_read_address →
+  activation_download_record` supplies IDs to the CPU SLRU.
+  This consumer must see completed Top-K results before it
+  selects slots. A pinned async copy alone still needs a
+  host-visible completion point.
+  Source [CUDA routed graph](../../integration/goose-standalone/cuda-driver.c).
+- **8,192-byte H2D, strong association with vector inputs,
+  unresolved individual operands.** The next kernel is
+  `goose_rms_reference` for 41,389 calls and
+  `goose_vector_ops` for 1,022. 40,369 are between
+  `goose_vector_ops` and `goose_rms_reference`.
+  This size equals one 2,048-element F32 vector. The
+  corresponding source path is `fg_cuda_vector → vector_input →
+  activation_input → upload_packet`, or the compact input
+  branch in `vector_input`. The trace has no source pointer
+  or stack to split norm weights, activations and compact
+  inputs. `upload_packet` uses synchronous H2D above 4,096 B.
+  A device-only consumer requires ordered device access and
+  stable staging storage. Capture both operand identities
+  before making a residency change.
+  Source [vector input staging](../../integration/goose-standalone/cuda-driver.c).
+- **SSM input, high confidence on the operation.** All 15,329
+  transfers sit between `goose_tensor_blit` and
+  `goose_ssm_conv`. The call path is
+  `cuda_position → fg_cuda_position → upload_inputs →
+  activation_input → upload_packet`. The 131,072-byte input
+  is consistent with the recurrent convolution's F32 operand
+  shape. The trace cannot distinguish the exact host operand
+  address. GPU residency or pinned staging must preserve the
+  current recurrent-state ordering.
+  Source [SSM dispatch](../../goose/cpu/goose-cpu-backend-api/cuda-position.goose)
+  and [CUDA input staging](../../integration/goose-standalone/cuda-driver.c).
+- **Logits, high confidence.** There is one 248,320-element
+  F32 readback following the final matvec on each step.
+  `fg_cuda_activation_graph_end → fg_cuda_activation_read_address →
+  activation_download_record` publishes the output for
+  host sampling. The current sampler requires completed logits.
+  Source [graph output](../../integration/goose-standalone/graph-execute.c)
+  and [step generation](../../goose/model/qwen35-generation.goose).
+
+The CPU-only profile has 378 ms of sampled execution for Goose
+and 200 ms for Hybrid in decode, with 228 and 120 ms respectively
+in the CUDA driver. Goose samples include `fg_cuda_vector`
+(4 ms exclusive, 142 ms inclusive), `fg_cuda_routed_graph`
+(2 ms exclusive, 96 ms inclusive) and `execute_graph_node_g`
+(2 ms exclusive, 196 ms inclusive). These inclusive stacks
+overlap. They do not measure the wall duration of
+`ec_prepare`, SLRU, dispatch or off-CPU waits. Do not add
+them to the idle rows.
+
+The archived machine-readable expansion is
+`decode-idle-exp1618.json` in the EXP-1618 evidence directory.
+Its SHA-256 is
+`e1e56d72f6db3dc083222a28041108aa28578849af9c929d117e610f431d7270`.
+It retains the seven transfer fingerprints, nearest kernels,
+API counts, unlabeled intervals by their neighboring calls,
+and integer nanoseconds for reconciliation.
+
 ## Sampled CPU execution
 
 Clock samples assign exclusive time to the leaf function. Counts
