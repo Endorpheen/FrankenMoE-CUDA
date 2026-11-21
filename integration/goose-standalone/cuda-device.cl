@@ -261,24 +261,27 @@ static uint32_t fg174s_umulhi(uint32_t a, uint32_t b) {
 }
 
 // Eight pointer words precede the Goose-generated strides and launch plan.
+typedef struct { uint64_t words[57]; } gdn_launch_packet;
+
 static uint64_t fg174s_dget(int64_t packet, int64_t table, int64_t index) {
-    __global uint64_t * data = (__global uint64_t *) packet;
+    const uint64_t * data = (const uint64_t *) packet;
     return data[(table == 0 ? 0 : table == 2 ? 8 : 32) + index];
 }
 
 static float fg174s_df(int64_t packet, int64_t index) {
-    return as_float((uint32_t) ((__global uint64_t *) packet)[49 + index]);
+    return as_float((uint32_t) ((const uint64_t *) packet)[49 + index]);
 }
 
 static uint32_t fg174s_dm(int64_t packet, int64_t row, int64_t index) {
-    return (uint32_t) ((__global uint64_t *) packet)[50 + 3 * row + index];
+    return (uint32_t) ((const uint64_t *) packet)[50 + 3 * row + index];
 }
 
 static void fg174s_sync(void) { fg_device_barrier(); }
 
 #include "gdn-device.h"
 
-__kernel void goose_gated_delta_net(__global uint64_t * packet) {
+__kernel void goose_gated_delta_net(gdn_launch_packet arguments) {
+    const uint64_t * packet = arguments.words;
     uint32_t head, sequence, segment, lane;
     __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(head));
     __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(sequence));

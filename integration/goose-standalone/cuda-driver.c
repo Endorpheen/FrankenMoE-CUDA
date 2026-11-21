@@ -2192,10 +2192,8 @@ int64_t fg_cuda_gdn(sl_i64 plan, sl_f32 q, sl_f32 k, sl_f32 v, sl_f32 gate, sl_f
         packet[6] = output;
         packet[7] = publish ? initial_device : output + score_bytes;
         memcpy(packet + 8, plan.data, sizeof(packet) - 8 * sizeof(*packet));
-        error = reserve(&cuda.attention_config, sizeof packet);
     }
-    if (error == 0) error = upload_packet(cuda.attention_config.address, packet, sizeof packet);
-    void * args[] = {&cuda.attention_config.address};
+    void * args[] = {packet};
     if (error == 0) {
         if (mma) {
             error = cuda.launch(cuda.gdn_mma, (unsigned) (heads * sequences), 1, 1, 256, 1, 1, GDN_MMA_SHARED_BYTES, NULL, args, NULL);

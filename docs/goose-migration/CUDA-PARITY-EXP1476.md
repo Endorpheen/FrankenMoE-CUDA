@@ -67,8 +67,10 @@ the entry. Apply the full-request gate on the package schedule.
 ## Mechanisms
 
 [The runtime performance audit](APEX-PERFORMANCE-AUDIT.md)
-records cross-mechanism timing and the historical optimization
-ledger, including lost KV laziness and expert upload overlap.
+records cross-mechanism timing and the [historical optimization
+ledger](APEX-PERFORMANCE-AUDIT.md#historical-optimization-ledger),
+including restored lazy KV, expert upload overlap and GDN
+parameter passing.
 
 **32 mechanisms: PARITY 0, PARTIAL 31, MISSING 0, INCORRECT 1.**
 
@@ -3119,6 +3121,61 @@ Binary and artifacts are under
 `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/flash-prepack-exp1582`.
 Default executable SHA-256
 `5fef71d24ccf728e939413d11c531c31fd8a624e2cf27c5923621aff69faedf4`.
+
+## GDN launch parameters
+
+EXP-1583 restores the by-value launch ABI of EXP-172.
+The hybrid's `fg174s_kernel` and `fg174m_kernel` took
+plans as kernel arguments. The independent CUDA adapter
+had put them in a 456-byte device buffer first. It now
+passes the validated packet through the CUDA Driver API.
+Both numerical bodies, launch geometry and resident-state
+publication remain the existing Goose paths. The previous
+binary is preserved at EXP-1582.
+
+On SM89 the generated PTX loads the plan directly from
+kernel parameter space. PTXAS preserves the 384/544 byte
+scalar/MMA stack sizes with zero spill bytes above those
+frames. In the actual 4096/129 trace, scalar registers
+fall from 96 to 56 and MMA registers rise from 96 to 128.
+
+| Short Apex 4096/129 CUDA trace | Uploaded A | By-value B |
+|---|---:|---:|
+| Explicit 456-byte H2D copies | 3,870 | 0 |
+| Scalar GDN time, ms (3,840 launches) | 150.734 | 119.380 |
+| MMA GDN time, ms (30 launches) | 171.021 | 172.911 |
+
+| Unprofiled Apex 32K/512, 4096/4096 | Uploaded A | By-value B |
+|---|---:|---:|
+| A–B prefill, tok/s | 934.735 | 934.047 |
+| A–B decode, steps/s | 26.000 | 26.230 |
+| A–B decode, s | 19.654 | 19.481 |
+| B–A prefill, tok/s | 934.862 | 938.592 |
+| B–A decode, steps/s | 25.915 | 26.289 |
+| B–A decode, s | 19.718 | 19.437 |
+| Median prefill, tok/s | 934.799 | 936.319 |
+| Median decode, steps/s | 25.958 | 26.260 |
+| Peak process VRAM, MiB | 7,272 | 7,272 |
+| Process RSS high-water range, KiB | 22,939,236–22,939,300 | 22,939,224–22,939,280 |
+| Process swap and system swap-out growth | 0 | 0 |
+
+Both orders preserve content, IDs, probability rows,
+stop reason, cache counters and all 5,301,139 resident
+model pages. The existing opening echo remains, so full
+generation quality and fresh EXP-1476 parity stay open.
+The consistent result is the decode gain. Prefill changes
+direction between pairs. The executable depends on libc
+and libm.
+
+The control is EXP-1582 `9c40db17`. Request SHA-256 is
+`484a12de00ec057e4b78d480ebb185153bb10af607eb23192a72995ba3026d0f`.
+The SHA-256 of sorted compact UTF-8 response JSON with
+the timing object omitted is
+`91438c31e73c9980bd8eb34172ce630b60d96724a75a0f91ddaf69f292d78f95`.
+Candidate executable SHA-256 is
+`d7ce21e116177c7a56239ea33fb389bb940223cfffb17e0f1d6fbbd776a7a53c`.
+Raw evidence and the executable are under
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/gdn-launch-params-exp1583`.
 
 ## Long Attention partition probe
 

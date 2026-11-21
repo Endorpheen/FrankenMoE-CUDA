@@ -70,7 +70,8 @@ static F4_g fg174m_mma(F4_g d, uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a
 
 #include "gdn-mma-device.h"
 
-__kernel void goose_gdn_mma(__global const uint64_t * packet) {
+__kernel void goose_gdn_mma(gdn_launch_packet arguments) {
+    const uint64_t * packet = arguments.words;
     uint32_t task, thread;
     uint64_t shared;
     __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(task));
