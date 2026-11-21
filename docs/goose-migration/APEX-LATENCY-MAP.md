@@ -22,6 +22,36 @@ experimental cumulative checkpoint when correctness passes.
 Retain small gains and verify interactions between changes.
 Track historical bests separately from each fresh pair.
 
+## EXP-1646 — Pipeline prepared Q4_K quarters
+
+The prepared 128 × 256 tile uses two shared-memory banks
+totaling 60 KiB per block. Each block waits for the current
+bank, then prefetches the next quarter's weights and Q8_1
+activations with aligned `cp.async` copies while it
+computes. Alternate banks preserve the original quarter
+sequence and arithmetic. The synchronous prepared tile
+remains available via `GOOSE_MMQ_Q4_PIPELINE=0`.
+
+| Warmed Apex 32,768/512, 4096/4096 | EXP-1645 control | EXP-1646 | Change |
+|---|---:|---:|---:|
+| Prefill, ms | 22,603.330 | 22,053.940 | -549.390 |
+| Prefill, tok/s | 1,449.70 | 1,485.81 | +36.11 |
+| Decode, ms | 14,471.383 | 14,521.839 | +50.456 |
+| Decode, tok/s | 35.31 | 35.19 | -0.12 |
+| Prefill plus decode, ms | 37,074.713 | 36,575.779 | -498.934 |
+| Peak process RSS, KiB | 21,483,944 | 21,483,460 | -484 |
+| Peak process VRAM, MiB | 8,220 | 8,220 | 0 |
+| Process swap and system swap-out growth | 0 / 0 | 0 / 0 | 0 / 0 |
+
+All 512 IDs, probabilities, response, and SLRU match.
+The candidate records 1,545 pipelined launches and
+1,545 weight preparations, with 320 dense and 360 shared
+Q8_1 reuses retained. The prefill record advances from
+1,480.24 to 1,485.81 tok/s. EXP-1646 is the cumulative
+experimental control for the next pair. Its binary and
+matched evidence are at
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/q4-pipeline-exp1646`.
+
 ## EXP-1645 — Combine dense Q8_1 reuse with Q4_K preparation
 
 Keep the EXP-1643 dense pack cache. Both isolated warmed

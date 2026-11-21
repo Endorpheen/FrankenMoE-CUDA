@@ -3,7 +3,7 @@
 __asm__(".extern .shared .align 16 .b8 goose_flash_shared[];");
 
 static void fg175l_cp16(uint64_t dst, uint64_t src) {
-    __asm__ volatile("cp.async.cg.shared.global [%0], [%1], 16;" :: "r"((uint32_t) dst), "l"(src) : "memory");
+    fg_cuda_cp16(dst, src);
 }
 
 static void fg_flash_mask_half(uint64_t dst, uint32_t bits) { *(__local uint16_t *) dst = (uint16_t) bits; }
@@ -39,7 +39,7 @@ static uint32_t fg175c_fg176i_mulh2(uint32_t a, uint32_t b) {
 static float fg175c_fg176i_expf(float v) { return fg_attn_exp(v); }
 static float fg175c_fg176i_fmaf(float a, float b, float c) { return fg_device_fma(a, b, c); }
 static float fg175c_fg176i_shflx(float x, int32_t d) { return fg_device_shfl(x, d); }
-static void fg175c_fg176i_cpwait(void) { __asm__ volatile("cp.async.wait_all;" ::: "memory"); }
+static void fg175c_fg176i_cpwait(void) { fg_cuda_cpwait(); }
 static void fg175c_fg176i_barrier(void) { fg_device_barrier(); }
 
 static Flash_U4_g fg175c_fg176i_ldm4(uint64_t address) {

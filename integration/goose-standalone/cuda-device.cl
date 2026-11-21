@@ -670,6 +670,11 @@ __kernel void goose_tensor_blit(__global uint8_t * x, __global uint8_t * y,
 }
 
 #ifdef GOOSE_CUDA_MMQ_IMAGE
+static void fg_cuda_cp16(uint64_t dst, uint64_t src) {
+    __asm__ volatile("cp.async.cg.shared.global [%0], [%1], 16;" :: "r"((uint32_t) dst), "l"(src) : "memory");
+}
+static void fg_cuda_cpwait(void) { __asm__ volatile("cp.async.wait_all;" ::: "memory"); }
+
 #include "cuda-mmq.cl"
 #include "cuda-mmvq.cl"
 #include "cuda-dense-mma.cl"

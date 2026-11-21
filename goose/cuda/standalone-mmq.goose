@@ -28,6 +28,8 @@ extern "fg_mmq_shared_store_float" fn mmq_shared_store_float(address: u64, value
 extern "fg_mmq_shared_word" fn mmq_shared_word(address: u64) -> u32;
 extern "fg_mmq_half_value" fn mmq_half_value(bits: u32) -> f32;
 extern "fg_mmq_copy_16" fn mmq_copy_16(destination: u64, source: u64);
+extern "fg_cuda_cp16" fn mmq_copy_async_16(destination: u64, source: u64);
+extern "fg_cuda_cpwait" fn mmq_copy_wait();
 extern "fg_mmq_barrier" fn mmq_barrier();
 extern "fg182d_ld_u8" fn ld_u8(src: u64, byte: u64) -> u32;
 extern "fg_mmq_index" fn mmq_index(address: u64, index: i64) -> u64;
@@ -997,18 +999,22 @@ export fn fg_device_mmq_q4_prepare(weights: u64, prepared: u64, stride: i64, ext
     mmq_q4_stage_quarter(source, stride, target, quarter_tile % 4, lane, true);
 }
 
-fn mmq_q4_load_prepared(tile: u64, source: u64, lane: i64) {
+fn mmq_q4_load_prepared(tile: u64, source: u64, lane: i64, ahead: bool) {
     for pass in 3 {
         let vector = lane + 32 * pass;
         if vector < 80 {
             let offset = (16 * vector) as u64;
-            mmq_copy_16(tile + offset, source + offset);
+            if ahead {
+                mmq_copy_async_16(tile + offset, source + offset);
+            } else {
+                mmq_copy_16(tile + offset, source + offset);
+            }
         }
     }
 }
 
 fn mmq_stage_q8_quarter(stage: u64, packed_tile: u64, pitch: i64, routes: i64, columns: i64,
-    quarter_in_half: i64, thread: i64) {
+    quarter_in_half: i64, thread: i64, ahead: bool) {
     let vectors = 5 * columns;
     for pass in 1 + (vectors - 1) / 256 {
         let vector = thread + 256 * pass;
@@ -1017,9 +1023,18 @@ fn mmq_stage_q8_quarter(stage: u64, packed_tile: u64, pitch: i64, routes: i64, c
             let live_slot = if slot < routes { slot } else { 0 };
             let part = vector % 5;
             let offset = if part == 0 { 0 } else { 64 * quarter_in_half + 16 * part };
-            mmq_copy_16(stage + ((16 * vector) as u64), packed_tile + ((live_slot * pitch + offset) as u64));
+            let dst = stage + ((16 * vector) as u64);
+            let src = packed_tile + ((live_slot * pitch + offset) as u64);
+            if ahead { mmq_copy_async_16(dst, src); } else { mmq_copy_16(dst, src); }
         }
     }
+}
+
+fn mmq_q4_prefetch(weight_stage: u64, activation_stage: u64, weight_src: u64, packed_tile: u64,
+    pitch: i64, routes: i64, columns: i64, quarter: i64, thread: i64) {
+    mmq_q4_load_prepared(weight_stage, weight_src + ((1280 * quarter) as u64), thread % 32, true);
+    mmq_stage_q8_quarter(activation_stage, packed_tile + ((144 * (quarter / 2)) as u64),
+        pitch, routes, columns, quarter % 2, thread, true);
 }
 
 fn mmq_q4_quarter_column(sum: MmqPairSum, activation: u64, group: i64, scale_offset: i64, lane: i64,
@@ -1041,7 +1056,7 @@ fn mmq_q4_quarter_column(sum: MmqPairSum, activation: u64, group: i64, scale_off
 // the staged weights and activations within the same shared allocation.
 export fn fg_device_mmq_q4_large(weights: u64, packed: u64, out: u64, jobs: u64,
     stride: i64, extent: i64, row: i64, route: i64, first_route: i64, routes: i64,
-    thread: i64, stage: u64, height: i64, columns: i64, prepared: bool) {
+    thread: i64, stage: u64, height: i64, columns: i64, prepared: bool, ahead: bool) {
     let lane = thread % 32;
     let warp = thread / 32;
     let column_warps = columns / 128;
@@ -1074,45 +1089,60 @@ export fn fg_device_mmq_q4_large(weights: u64, packed: u64, out: u64, jobs: u64,
     var sum13 = empty;
     var sum14 = empty;
     var sum15 = empty;
+    if ahead {
+        mmq_q4_prefetch(weight_stage, activate, weight_src, packed_tile, pitch, routes, columns, 0, thread);
+    }
     for k in extent {
         let w = weight_src + ((144 * k) as u64);
         for quarter in 4 {
             let q = (288 * k + 144 * (quarter / 2)) as u64;
             let local = quarter % 2;
             let scale_offset = 8 * local;
-            if prepared {
-                mmq_q4_load_prepared(weight_stage, weight_src + ((1280 * (4 * k + quarter)) as u64), lane);
-            } else {
-                mmq_q4_stage_quarter(w, stride, weight_stage, quarter, lane, false);
-                if height == 256 {
-                    mmq_q4_stage_quarter(w + ((128 * stride) as u64), stride, weight_stage + 10240, quarter, lane, false);
+            let bank = if ahead && local != 0 { 30720 as u64 } else { 0 as u64 };
+            if ahead {
+                mmq_copy_wait();
+                mmq_barrier();
+                let next = 4 * k + quarter + 1;
+                if next < 4 * extent {
+                    let other = 30720 - bank;
+                    mmq_q4_prefetch(weight_stage + other, activate + other, weight_src, packed_tile,
+                        pitch, routes, columns, next, thread);
                 }
+            } else {
+                if prepared {
+                    mmq_q4_load_prepared(weight_stage, weight_src + ((1280 * (4 * k + quarter)) as u64), lane, false);
+                } else {
+                    mmq_q4_stage_quarter(w, stride, weight_stage, quarter, lane, false);
+                    if height == 256 {
+                        mmq_q4_stage_quarter(w + ((128 * stride) as u64), stride, weight_stage + 10240, quarter, lane, false);
+                    }
+                }
+                mmq_stage_q8_quarter(activate, packed_tile + q, pitch, routes, columns, local, thread, false);
+                mmq_barrier();
             }
-            mmq_stage_q8_quarter(activate, packed_tile + q, pitch, routes, columns, local, thread);
-            mmq_barrier();
             for group in 2 {
-                let lo = mmq_ldm32(mmq_q4_shared_fragment(lo_stage, group, lane));
-                let hi = mmq_ldm32(mmq_q4_shared_fragment(hi_stage, group, lane));
-                let lo_scales = mmq_q4_scales_at(lo_stage + 1024, group, lane);
-                let hi_scales = mmq_q4_scales_at(hi_stage + 1024, group, lane);
-                sum0 = mmq_q4_quarter_column(sum0, activation, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
-                sum1 = mmq_q4_quarter_column(sum1, activation + 640, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
-                sum2 = mmq_q4_quarter_column(sum2, activation + 1280, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
-                sum3 = mmq_q4_quarter_column(sum3, activation + 1920, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
-                sum4 = mmq_q4_quarter_column(sum4, activation + 2560, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
-                sum5 = mmq_q4_quarter_column(sum5, activation + 3200, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
-                sum6 = mmq_q4_quarter_column(sum6, activation + 3840, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
-                sum7 = mmq_q4_quarter_column(sum7, activation + 4480, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
-                sum8 = mmq_q4_quarter_column(sum8, activation + 5120, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
-                sum9 = mmq_q4_quarter_column(sum9, activation + 5760, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
-                sum10 = mmq_q4_quarter_column(sum10, activation + 6400, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
-                sum11 = mmq_q4_quarter_column(sum11, activation + 7040, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
-                sum12 = mmq_q4_quarter_column(sum12, activation + 7680, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
-                sum13 = mmq_q4_quarter_column(sum13, activation + 8320, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
-                sum14 = mmq_q4_quarter_column(sum14, activation + 8960, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
-                sum15 = mmq_q4_quarter_column(sum15, activation + 9600, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
+                let lo = mmq_ldm32(mmq_q4_shared_fragment(lo_stage + bank, group, lane));
+                let hi = mmq_ldm32(mmq_q4_shared_fragment(hi_stage + bank, group, lane));
+                let lo_scales = mmq_q4_scales_at(lo_stage + bank + 1024, group, lane);
+                let hi_scales = mmq_q4_scales_at(hi_stage + bank + 1024, group, lane);
+                sum0 = mmq_q4_quarter_column(sum0, activation + bank, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
+                sum1 = mmq_q4_quarter_column(sum1, activation + bank + 640, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
+                sum2 = mmq_q4_quarter_column(sum2, activation + bank + 1280, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
+                sum3 = mmq_q4_quarter_column(sum3, activation + bank + 1920, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
+                sum4 = mmq_q4_quarter_column(sum4, activation + bank + 2560, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
+                sum5 = mmq_q4_quarter_column(sum5, activation + bank + 3200, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
+                sum6 = mmq_q4_quarter_column(sum6, activation + bank + 3840, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
+                sum7 = mmq_q4_quarter_column(sum7, activation + bank + 4480, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
+                sum8 = mmq_q4_quarter_column(sum8, activation + bank + 5120, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
+                sum9 = mmq_q4_quarter_column(sum9, activation + bank + 5760, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
+                sum10 = mmq_q4_quarter_column(sum10, activation + bank + 6400, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
+                sum11 = mmq_q4_quarter_column(sum11, activation + bank + 7040, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
+                sum12 = mmq_q4_quarter_column(sum12, activation + bank + 7680, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
+                sum13 = mmq_q4_quarter_column(sum13, activation + bank + 8320, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
+                sum14 = mmq_q4_quarter_column(sum14, activation + bank + 8960, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
+                sum15 = mmq_q4_quarter_column(sum15, activation + bank + 9600, group, scale_offset, lane, lo, hi, lo_scales, hi_scales);
             }
-            mmq_barrier();
+            if !ahead { mmq_barrier(); }
         }
     }
     mmq_dense_store_pair(out, jobs, route, col, routes, row + row_pair, lane, sum0);
