@@ -58,6 +58,43 @@ the next target after the current MMQ work.
 The trace and analysis are in
 `/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/profile-exp1647`.
 
+## EXP-1658 — Evaluate the causal Flash mask in registers
+
+The whole-tile eight-query Flash MMA path derives two
+visibility bounds per warp outside the KV tile loop.
+It uses those bounds to supply the same zero and
+negative-infinity operands to the original score FMA.
+It skips the causal mask's shared-memory stores and
+reads on that path. The four-query and Stream-K paths
+keep their shared-mask handling.
+
+The warmed 4,096-query, 32,768-key fixture fell from
+70.470 to 64.439 ms. The 16,777,216 long-case values
+and 69,632 ragged-case values are finite and match
+bitwise, including wrapped query indices.
+
+| Warmed Apex 32,768/512, 4096/4096 | EXP-1656 control | EXP-1658 | Candidate minus control |
+|---|---:|---:|---:|
+| Prefill, ms | 20,810.044 | 20,732.266 | -77.778 |
+| Prefill, tok/s | 1,574.62 | 1,580.53 | +5.91 |
+| Decode, ms | 14,731.693 | 14,895.397 | +163.704 |
+| Decode, tok/s | 34.69 | 34.31 | -0.38 |
+| Prefill plus decode, ms | 35,541.737 | 35,627.663 | +85.926 |
+| Peak process RSS, KiB | 21,485,196 | 21,482,556 | -2,640 |
+| Peak process VRAM, MiB | 8,220 | 8,220 | 0 |
+| Process swap and system swap-out growth | 0 / 0 | 0 / 0 | 0 / 0 |
+
+Both runs match all 512 IDs, probabilities, response,
+SLRU, and 100% model residency. Keep this prefill gain
+in the experimental cumulative checkpoint. The pair's
+decode difference offsets the prefill gain in combined
+latency. The historical prefill maximum remains 1,609.20
+tok/s on EXP-1656. Its executable is the rollback.
+The [benchmark journal](../../benchmarks/experiment-history.jsonl)
+records the exact timings and hashes. The matched raw
+evidence and binary are in
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/flash-register-mask-exp1658`.
+
 ## EXP-1656 — Run the existing GDN V32 prefill kernel
 
 Expose the existing Goose 32-column state slice through

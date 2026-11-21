@@ -10221,6 +10221,11 @@ fn process_tile_apex_nc4_np2(
     // L1775-1777: skipped when np==1 && nbatch_combine==DKQ/2
 }
 
+fn add_causal(value: f32, key: i64, visible: i64) -> f32 {
+    let mask = if key < visible { 0.0 } else { frombits(0xff800000 as u32) };
+    return fmaf(1.0, mask, value);
+}
+
 fn process_tile_apex_nc8_np1(
     q_f2: u64,
     k_h2: u64,
@@ -10255,7 +10260,8 @@ fn process_tile_apex_nc8_np1(
     vkqregs: u64,
     kmax: u64,
     rowsums: u64,
-    smem: u64) {
+    smem: u64,
+    register_causal: bool) {
     var qr: QueryRegs = QueryRegs {
         0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32
     }
@@ -11895,16 +11901,23 @@ fn process_tile_apex_nc8_np1(
     // L1330; the K/V cp.async preload may now overwrite the Q image (shared union)
     // ---- Initial async preload of mask and K for kb0=kb0_start (L1334-1347, nstages>1 branch).
     // ncols2=8>1 makes the mask load unconditional; K tile at smem+0, tile_mask at smem+32768.
-    load_mask(
-        mask_h,
-        smem + 32768,
-        stride_mask,
-        (kb0_start * 32) as i64,
-        (jt as i64) * (ncols1 as i64),
-        ne01z,
-        ncols1,
-        tx,
-        ty);
+    // Two query groups share this warp. Wrapped queries in a ragged CTA
+    // use the same visibility as the shared-mask loader.
+    let query = (jt as i64) * 8 + 2 * (ty as i64);
+    let left = if register_causal { (mask_h as i64) + query % ne01z } else { 0 };
+    let right = if register_causal { (mask_h as i64) + (query + 1) % ne01z } else { 0 };
+    if !register_causal {
+        load_mask(
+            mask_h,
+            smem + 32768,
+            stride_mask,
+            (kb0_start * 32) as i64,
+            (jt as i64) * (ncols1 as i64),
+            ne01z,
+            ncols1,
+            tx,
+            ty);
+    }
     load_kv(k_h2, smem, stride_k, (kb0_start * 32) as i64, tx, ty);
     // ---- kb0 loop (L1349-1390): ncols2>1 && !use_sparse selects the oob_check=false path with
     // constexpr k_VKQ_sup=nbatch_fa=32; the first iterate waits the preload cp.asyncs (iter L634-635).
@@ -12891,37 +12904,61 @@ fn process_tile_apex_nc8_np1(
             if true {
                 let l0__u49: i32 = 0;
                 // half2 pairs, l0 even: (j,i),(j,i+1)
-                let mh2__u50 = ( (cb + gi_c(l0__u49, tx)) / 8) * 20 + ( (rb__u49 + gj_c(l0__u49, tx)) / 2);
-                let w__u50 = ldu(mt + ( (mh2__u50 as u64) * (4 as u64)));
-                kqc[ (0 as i32)] = fmaf(slope, hlo(w__u50), kqc[ (0 as i32)]);
-                kqc[ (1 as i32)] = fmaf(slope, hhi(w__u50), kqc[ (1 as i32)]);
+                if register_causal {
+                    let first_key = kv_row0 + ((tx % 4) as i64) * 2 + 0;
+                    kqc[ (0 as i32)] = add_causal(kqc[ (0 as i32)], first_key, left);
+                    kqc[ (1 as i32)] = add_causal(kqc[ (1 as i32)], first_key + 1, left);
+                } else {
+                    let mh2__u50 = ( (cb + gi_c(l0__u49, tx)) / 8) * 20 + ( (rb__u49 + gj_c(l0__u49, tx)) / 2);
+                    let w__u50 = ldu(mt + ( (mh2__u50 as u64) * (4 as u64)));
+                    kqc[ (0 as i32)] = fmaf(slope, hlo(w__u50), kqc[ (0 as i32)]);
+                    kqc[ (1 as i32)] = fmaf(slope, hhi(w__u50), kqc[ (1 as i32)]);
+                }
             }
 
             if true {
                 let l0__u49: i32 = 2;
                 // half2 pairs, l0 even: (j,i),(j,i+1)
-                let mh2__u51 = ( (cb + gi_c(l0__u49, tx)) / 8) * 20 + ( (rb__u49 + gj_c(l0__u49, tx)) / 2);
-                let w__u51 = ldu(mt + ( (mh2__u51 as u64) * (4 as u64)));
-                kqc[ (2 as i32)] = fmaf(slope, hlo(w__u51), kqc[ (2 as i32)]);
-                kqc[ (3 as i32)] = fmaf(slope, hhi(w__u51), kqc[ (3 as i32)]);
+                if register_causal {
+                    let first_key = kv_row0 + ((tx % 4) as i64) * 2 + 0;
+                    kqc[ (2 as i32)] = add_causal(kqc[ (2 as i32)], first_key, right);
+                    kqc[ (3 as i32)] = add_causal(kqc[ (3 as i32)], first_key + 1, right);
+                } else {
+                    let mh2__u51 = ( (cb + gi_c(l0__u49, tx)) / 8) * 20 + ( (rb__u49 + gj_c(l0__u49, tx)) / 2);
+                    let w__u51 = ldu(mt + ( (mh2__u51 as u64) * (4 as u64)));
+                    kqc[ (2 as i32)] = fmaf(slope, hlo(w__u51), kqc[ (2 as i32)]);
+                    kqc[ (3 as i32)] = fmaf(slope, hhi(w__u51), kqc[ (3 as i32)]);
+                }
             }
 
             if true {
                 let l0__u49: i32 = 4;
                 // half2 pairs, l0 even: (j,i),(j,i+1)
-                let mh2__u52 = ( (cb + gi_c(l0__u49, tx)) / 8) * 20 + ( (rb__u49 + gj_c(l0__u49, tx)) / 2);
-                let w__u52 = ldu(mt + ( (mh2__u52 as u64) * (4 as u64)));
-                kqc[ (4 as i32)] = fmaf(slope, hlo(w__u52), kqc[ (4 as i32)]);
-                kqc[ (5 as i32)] = fmaf(slope, hhi(w__u52), kqc[ (5 as i32)]);
+                if register_causal {
+                    let first_key = kv_row0 + ((tx % 4) as i64) * 2 + 8;
+                    kqc[ (4 as i32)] = add_causal(kqc[ (4 as i32)], first_key, left);
+                    kqc[ (5 as i32)] = add_causal(kqc[ (5 as i32)], first_key + 1, left);
+                } else {
+                    let mh2__u52 = ( (cb + gi_c(l0__u49, tx)) / 8) * 20 + ( (rb__u49 + gj_c(l0__u49, tx)) / 2);
+                    let w__u52 = ldu(mt + ( (mh2__u52 as u64) * (4 as u64)));
+                    kqc[ (4 as i32)] = fmaf(slope, hlo(w__u52), kqc[ (4 as i32)]);
+                    kqc[ (5 as i32)] = fmaf(slope, hhi(w__u52), kqc[ (5 as i32)]);
+                }
             }
 
             if true {
                 let l0__u49: i32 = 6;
                 // half2 pairs, l0 even: (j,i),(j,i+1)
-                let mh2__u53 = ( (cb + gi_c(l0__u49, tx)) / 8) * 20 + ( (rb__u49 + gj_c(l0__u49, tx)) / 2);
-                let w__u53 = ldu(mt + ( (mh2__u53 as u64) * (4 as u64)));
-                kqc[ (6 as i32)] = fmaf(slope, hlo(w__u53), kqc[ (6 as i32)]);
-                kqc[ (7 as i32)] = fmaf(slope, hhi(w__u53), kqc[ (7 as i32)]);
+                if register_causal {
+                    let first_key = kv_row0 + ((tx % 4) as i64) * 2 + 8;
+                    kqc[ (6 as i32)] = add_causal(kqc[ (6 as i32)], first_key, right);
+                    kqc[ (7 as i32)] = add_causal(kqc[ (7 as i32)], first_key + 1, right);
+                } else {
+                    let mh2__u53 = ( (cb + gi_c(l0__u49, tx)) / 8) * 20 + ( (rb__u49 + gj_c(l0__u49, tx)) / 2);
+                    let w__u53 = ldu(mt + ( (mh2__u53 as u64) * (4 as u64)));
+                    kqc[ (6 as i32)] = fmaf(slope, hlo(w__u53), kqc[ (6 as i32)]);
+                    kqc[ (7 as i32)] = fmaf(slope, hhi(w__u53), kqc[ (7 as i32)]);
+                }
             }
             l0__u49 = (8 as i32);
             var l__u49: i32 = 0;
@@ -13016,37 +13053,61 @@ fn process_tile_apex_nc8_np1(
             if true {
                 let l0__u62: i32 = 0;
                 // half2 pairs, l0 even: (j,i),(j,i+1)
-                let mh2__u63 = ( (cb + gi_c(l0__u62, tx)) / 8) * 20 + ( (rb__u62 + gj_c(l0__u62, tx)) / 2);
-                let w__u63 = ldu(mt + ( (mh2__u63 as u64) * (4 as u64)));
-                kqc[ (8 as i32)] = fmaf(slope, hlo(w__u63), kqc[ (8 as i32)]);
-                kqc[ (9 as i32)] = fmaf(slope, hhi(w__u63), kqc[ (9 as i32)]);
+                if register_causal {
+                    let first_key = kv_row0 + ((tx % 4) as i64) * 2 + 16;
+                    kqc[ (8 as i32)] = add_causal(kqc[ (8 as i32)], first_key, left);
+                    kqc[ (9 as i32)] = add_causal(kqc[ (9 as i32)], first_key + 1, left);
+                } else {
+                    let mh2__u63 = ( (cb + gi_c(l0__u62, tx)) / 8) * 20 + ( (rb__u62 + gj_c(l0__u62, tx)) / 2);
+                    let w__u63 = ldu(mt + ( (mh2__u63 as u64) * (4 as u64)));
+                    kqc[ (8 as i32)] = fmaf(slope, hlo(w__u63), kqc[ (8 as i32)]);
+                    kqc[ (9 as i32)] = fmaf(slope, hhi(w__u63), kqc[ (9 as i32)]);
+                }
             }
 
             if true {
                 let l0__u62: i32 = 2;
                 // half2 pairs, l0 even: (j,i),(j,i+1)
-                let mh2__u64 = ( (cb + gi_c(l0__u62, tx)) / 8) * 20 + ( (rb__u62 + gj_c(l0__u62, tx)) / 2);
-                let w__u64 = ldu(mt + ( (mh2__u64 as u64) * (4 as u64)));
-                kqc[ (10 as i32)] = fmaf(slope, hlo(w__u64), kqc[ (10 as i32)]);
-                kqc[ (11 as i32)] = fmaf(slope, hhi(w__u64), kqc[ (11 as i32)]);
+                if register_causal {
+                    let first_key = kv_row0 + ((tx % 4) as i64) * 2 + 16;
+                    kqc[ (10 as i32)] = add_causal(kqc[ (10 as i32)], first_key, right);
+                    kqc[ (11 as i32)] = add_causal(kqc[ (11 as i32)], first_key + 1, right);
+                } else {
+                    let mh2__u64 = ( (cb + gi_c(l0__u62, tx)) / 8) * 20 + ( (rb__u62 + gj_c(l0__u62, tx)) / 2);
+                    let w__u64 = ldu(mt + ( (mh2__u64 as u64) * (4 as u64)));
+                    kqc[ (10 as i32)] = fmaf(slope, hlo(w__u64), kqc[ (10 as i32)]);
+                    kqc[ (11 as i32)] = fmaf(slope, hhi(w__u64), kqc[ (11 as i32)]);
+                }
             }
 
             if true {
                 let l0__u62: i32 = 4;
                 // half2 pairs, l0 even: (j,i),(j,i+1)
-                let mh2__u65 = ( (cb + gi_c(l0__u62, tx)) / 8) * 20 + ( (rb__u62 + gj_c(l0__u62, tx)) / 2);
-                let w__u65 = ldu(mt + ( (mh2__u65 as u64) * (4 as u64)));
-                kqc[ (12 as i32)] = fmaf(slope, hlo(w__u65), kqc[ (12 as i32)]);
-                kqc[ (13 as i32)] = fmaf(slope, hhi(w__u65), kqc[ (13 as i32)]);
+                if register_causal {
+                    let first_key = kv_row0 + ((tx % 4) as i64) * 2 + 24;
+                    kqc[ (12 as i32)] = add_causal(kqc[ (12 as i32)], first_key, left);
+                    kqc[ (13 as i32)] = add_causal(kqc[ (13 as i32)], first_key + 1, left);
+                } else {
+                    let mh2__u65 = ( (cb + gi_c(l0__u62, tx)) / 8) * 20 + ( (rb__u62 + gj_c(l0__u62, tx)) / 2);
+                    let w__u65 = ldu(mt + ( (mh2__u65 as u64) * (4 as u64)));
+                    kqc[ (12 as i32)] = fmaf(slope, hlo(w__u65), kqc[ (12 as i32)]);
+                    kqc[ (13 as i32)] = fmaf(slope, hhi(w__u65), kqc[ (13 as i32)]);
+                }
             }
 
             if true {
                 let l0__u62: i32 = 6;
                 // half2 pairs, l0 even: (j,i),(j,i+1)
-                let mh2__u66 = ( (cb + gi_c(l0__u62, tx)) / 8) * 20 + ( (rb__u62 + gj_c(l0__u62, tx)) / 2);
-                let w__u66 = ldu(mt + ( (mh2__u66 as u64) * (4 as u64)));
-                kqc[ (14 as i32)] = fmaf(slope, hlo(w__u66), kqc[ (14 as i32)]);
-                kqc[ (15 as i32)] = fmaf(slope, hhi(w__u66), kqc[ (15 as i32)]);
+                if register_causal {
+                    let first_key = kv_row0 + ((tx % 4) as i64) * 2 + 24;
+                    kqc[ (14 as i32)] = add_causal(kqc[ (14 as i32)], first_key, right);
+                    kqc[ (15 as i32)] = add_causal(kqc[ (15 as i32)], first_key + 1, right);
+                } else {
+                    let mh2__u66 = ( (cb + gi_c(l0__u62, tx)) / 8) * 20 + ( (rb__u62 + gj_c(l0__u62, tx)) / 2);
+                    let w__u66 = ldu(mt + ( (mh2__u66 as u64) * (4 as u64)));
+                    kqc[ (14 as i32)] = fmaf(slope, hlo(w__u66), kqc[ (14 as i32)]);
+                    kqc[ (15 as i32)] = fmaf(slope, hhi(w__u66), kqc[ (15 as i32)]);
+                }
             }
             l0__u62 = (8 as i32);
             var l__u62: i32 = 0;
@@ -14160,7 +14221,9 @@ fn process_tile_apex_nc8_np1(
         barrier();
 
         if !last {
-            load_mask(mask_h, mt, stride_mask, kv_row0 + 32, query0, n_queries, ncols1, tx, ty);
+            if !register_causal {
+                load_mask(mask_h, mt, stride_mask, kv_row0 + 32, query0, n_queries, ncols1, tx, ty);
+            }
             load_kv(k_h2, kt, stride_k, kv_row0 + 32, tx, ty);
         }
         // ---- VKQ += probs @ V^T, swapped operands (A=B_probs, B=A_V trans-V fragment); f16
@@ -18673,7 +18736,8 @@ fn process_tile(
     vkqregs: u64,
     kmax: u64,
     rowsums: u64,
-    smem: u64) {
+    smem: u64,
+    register_causal: bool) {
     if ncols1 == 4 && np == 2 {
         process_tile_apex_nc4_np2(
             q_f2,
@@ -18746,7 +18810,8 @@ fn process_tile(
                 vkqregs,
                 kmax,
                 rowsums,
-                smem);
+                smem,
+                register_causal);
         }
     }
 }
@@ -18786,6 +18851,7 @@ fn main() {
         0 as u64,
         0 as u64,
         0 as u64,
-        0 as u64);
+        0 as u64,
+        false);
 }
 

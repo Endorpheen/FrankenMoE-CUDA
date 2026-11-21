@@ -2,7 +2,7 @@ extern "fg_attn_word" fn flash_word(config: u64, index: i64) -> i64;
 
 fn flash_causal_part(q: u64, k: u64, v: u64, out: u64, fix: u64, cfg: u64, scale: f32,
     tile: i32, group: i32, start: i32, stop: i32, needs_fixup: bool, is_fixup: bool,
-    worker: i32, workers: i32, lane: i32, warp: i32, shared: u64) {
+    worker: i32, workers: i32, lane: i32, warp: i32, shared: u64, register_causal: bool) {
     let queries = flash_word(cfg, 2);
     let heads = flash_word(cfg, 3);
     let keys = flash_word(cfg, 6);
@@ -14,7 +14,7 @@ fn flash_causal_part(q: u64, k: u64, v: u64, out: u64, fix: u64, cfg: u64, scale
     process_tile(q + ((head * flash_word(cfg, 8)) as u64), k + kv_offset, v + kv_offset,
         prefix as u64, 0, out + ((head * 1024) as u64), fix, scale, 1.0, queries, heads as i32, 8,
         flash_word(cfg, 7) / 8, flash_word(cfg, 8) / 8, 128, 128, 0, tile, 0, start, stop,
-        columns, value_partitions, needs_fixup, is_fixup, worker, workers, lane, warp, 0, 0, 0, 0, shared);
+        columns, value_partitions, needs_fixup, is_fixup, worker, workers, lane, warp, 0, 0, 0, 0, shared, register_causal);
 }
 
 // One block handles eight causal queries for eight heads sharing the same KV head.
@@ -25,7 +25,7 @@ export fn fg_flash_causal_mma(q: u64, k: u64, v: u64, out: u64, cfg: u64, scale:
     let end = ((tile as i64) + 1) * 8;
     let visible = prefix + (if end < queries { end } else { queries }) - 1;
     flash_causal_part(q, k, v, out, 0, cfg, scale, tile, group, 0, ((visible + 31) / 32) as i32,
-        false, false, 0, 1, lane, warp, shared);
+        false, false, 0, 1, lane, warp, shared, true);
 }
 
 // Partition the flattened KV tiles among workers. A split writes its
@@ -55,7 +55,7 @@ export fn fg_flash_stream_mma(q: u64, k: u64, v: u64, out: u64, fix: u64, cfg: u
         let capped = if stop < bound { stop } else { bound };
         let kv_end = if capped <= start { start + 1 } else { capped };
         flash_causal_part(q, k, v, out, fix, cfg, scale, tile as i32, (output / tiles_per_head) as i32,
-            start as i32, kv_end as i32, !partial && start != 0, partial, worker, workers, lane, warp, shared);
+            start as i32, kv_end as i32, !partial && start != 0, partial, worker, workers, lane, warp, shared, false);
         cursor += length;
         if cursor < limit { barrier(); }
     }
