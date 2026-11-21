@@ -22,6 +22,38 @@ experimental cumulative checkpoint when correctness passes.
 Retain small gains and verify interactions between changes.
 Track historical bests separately from each fresh pair.
 
+## EXP-1645 — Combine dense Q8_1 reuse with Q4_K preparation
+
+Keep the EXP-1643 dense pack cache. Both isolated warmed
+pairs saved prefill time, by 176 ms and 84 ms, with exact
+responses and 320 eliminated packs. The dense input must
+remain live across adjacent projections, occupy a single
+packing window, and pass the Goose check for linear jobs.
+Its Q8_1 scratch buffer is independent of the Q4_K
+prepared-weight image in attention scratch.
+
+| Warmed Apex 32,768/512, 4096/4096 | EXP-1644 | EXP-1645 | Change |
+|---|---:|---:|---:|
+| Prefill, ms | 22,407.441 | 22,164.402 | -243.040 |
+| Prefill, tok/s | 1,462.37 | 1,478.41 | +16.04 |
+| Decode, ms | 14,469.922 | 14,609.506 | +139.584 |
+| Decode, tok/s | 35.31 | 34.98 | -0.34 |
+| Prefill plus decode, ms | 36,877.363 | 36,773.908 | -103.455 |
+| Peak process RSS, KiB | 21,481,828 | 21,482,100 | +272 |
+| Peak process VRAM, MiB | 8,220 | 8,220 | 0 |
+| Process swap and system swap-out growth | 0 / 0 | 0 / 0 | 0 / 0 |
+
+The candidate records 1,545 prepared Q4_K projections,
+320 dense Q8_1 reuses, and 360 shared Q8_1 reuses.
+All 512 IDs, probabilities, response, and SLRU match.
+Use EXP-1645 as the cumulative experimental control.
+Keep the separate EXP-1644 historical best at
+1,480.24 tok/s. `GOOSE_MMQ_DENSE_REUSE=0` restores
+repacking for the dense path.
+
+The saved runs and executable are in
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/mmq-cumulative-exp1645`.
+
 ## EXP-1644 — Prepare dense Q4_K weights once per projection
 
 The Goose preparation kernel expands Q4_K nibbles and
