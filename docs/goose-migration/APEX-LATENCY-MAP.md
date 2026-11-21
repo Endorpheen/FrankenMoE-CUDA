@@ -15,6 +15,46 @@ for rollback. Retain isolated patches and trace evidence when
 combinations need further qualification. Inspect machine
 code for material unexplained differences.
 
+## EXP-1632 — Prefill trace after routed MMQ changes
+
+Profile the EXP-1631 candidate with the frozen Apex
+32K/512 request. Its response and probabilities match
+the unprofiled run. The trace records 640 launches of
+`goose_mmq_q4_routed_m128` and 320 launches of
+`goose_mmq_q4_routed_down_m128`. The previous generic
+`goose_mmq_matmul` remains on 20 small tail launches and
+uses 1.111 ms total. The full request timing reference
+remains the unprofiled EXP-1631 A/B series.
+
+| Prefill diagnostic interval, ms | Optimized Hybrid | EXP-1629 | EXP-1631 | EXP-1631 minus Hybrid |
+|---|---:|---:|---:|---:|
+| Device window | 12,024.513 | 25,696.958 | 24,297.551 | +12,273.038 |
+| All MMQ exclusive time | 3,090.333 | 8,384.830 | 7,135.471 | +4,045.138 |
+| GPU idle union | 1,116.869 | 3,605.845 | 3,542.178 | +2,425.309 |
+| Flash Attention MMA exclusive time | 1,418.364 | 2,940.684 | 2,954.766 | +1,536.402 |
+| Pointwise and GLU exclusive time | 489.568 | 1,619.501 | 1,626.915 | +1,137.347 |
+| GDN exclusive time | 460.678 | 1,352.278 | 1,358.527 | +897.849 |
+| Bulk H2D exclusive time | 3,467.884 | 3,892.114 | 4,299.160 | +831.276 |
+
+Separate the prefill idle intervals by CUDA API and
+correlated copy. All categories are disjoint. The largest
+correlated copy group comprises 31,184 synchronous H2D
+copies of 589,824 bytes from pageable memory. Its API
+intersects 1,478.082 ms of device idle. The DMA takes
+741.860 ms in total. The idle is almost entirely before
+the corresponding DMA. The pinned copies of that size
+intersect 100.410 ms of idle across 18,631 calls.
+Another 1,276.072 ms of idle occurs before the next CUDA
+submission with no active CUDA API. Its cause requires
+host attribution. These overlap measurements rank the
+current-projection pageable upload for a staging A/B.
+They bound the exposed interval and do not predict the
+gain from staging. Preserve the existing expert-slot
+ordering and measure ring waits in the candidate.
+
+The trace, reconciled idle breakdown and raw run are in
+`/home/end0/AI/LlamaServer/franken-goose-mmq-coop.gZoAAj/prefill-idle-exp1632`.
+
 ## EXP-1631 — Route the Q4_K down projection through 128 rows
 
 The Apex `2048 × 32736 × 512` down projection used
