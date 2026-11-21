@@ -13,9 +13,9 @@
       "experiment": "EXP-2026-11-17-921-goose-sampler",
       "task": "P6-10",
       "status": "ported",
-      "sha256": "f88b3845ecf4ddab666ed2523214dd4c6adddbba90233d4323d0f1834ea17120",
-      "gate": "207 comparisons vs llama_sampler_chain, 0 mismatches; MT19937 700 draws x 3 seeds; 5 mutants rejected",
-      "integration_commit": "b3be31e059622577eff79fecb872fb17def19ee6"
+      "sha256": "f59567c4634080f1063c4ab5971b0cf023c3a9d528432565c1ec8bf6d297c76b",
+      "gate": "207 comparisons vs llama_sampler_chain, 0 mismatches; MT19937 700 draws x 3 seeds; 5 mutants rejected; EXP-1667 240 bitwise cases and exact Apex 32K/512 probabilities",
+      "integration_commit": "e2b64d687358b44b5e0da1ec0ea795777ce88953"
     },
     {
       "goose": "misc/unicode-tables.goose",
