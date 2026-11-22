@@ -1,0 +1,13 @@
+--- a/mmvq.goose
++++ b/mmvq.goose
+@@ -27,0 +28,10 @@
++
++// At most two quant blocks fit in the first warp of the original row kernel.
++export fn fg_mmvq_short_row(weights: u64, packed: u64, out: u64,
++                            extent: i64, kind: i64, lane: i64) {
++    let partial = if kind == 12 { mmvq_q4_partial(weights, packed, 0, 0, extent, 8, lane) }
++        else { mmvq_q6_partial(weights, packed, 0, 0, extent, 8, lane) };
++    // The other three warps of the original kernel each contribute +0.
++    let sum = mmvq_warp_sum(partial + 0.0);
++    if lane == 0 { mmvq_store(out, sum); }
++}

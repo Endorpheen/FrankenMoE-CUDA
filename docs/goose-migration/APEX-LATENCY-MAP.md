@@ -2714,3 +2714,12 @@ validate a pure borrowed-slice loop. The clean reverse pair saves
 490 ms decode and 654 ms client time with identical 512 IDs and
 SLRU counters. The new default checkpoint is 3,035.23 prefill and
 41.06 decode tok/s at 8,766 MiB process VRAM.
+
+## EXP-1710 — Split expert transfers and pack short down rows per CTA
+
+The [ordinary 32,768/512 pair](../../experiments/EXP-2026-11-22-1710-decode-split-and-down/README.md)
+saves 464 ms decode and 440 ms client time. Decode rises from a fresh
+40.11 to 41.63 tok/s with matching 512 IDs and SLRU counters. Prefill
+is 3000.79 tok/s versus 3006.25 in the pair. Peak process VRAM stays
+8766 MiB and both arms have zero swap-out. This refreshes the decode
+checkpoint. EXP-1701 remains the historical prefill best and rollback.

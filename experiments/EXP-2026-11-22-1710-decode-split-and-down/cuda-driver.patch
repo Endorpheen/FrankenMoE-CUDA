@@ -1,0 +1,54 @@
+--- a/cuda-driver.c
++++ b/cuda-driver.c
+@@ -231 +231 @@
+-    Function mmvq_pack, mmvq;
++    Function mmvq_pack, mmvq, mmvq_short;
+@@ -1202,0 +1203,2 @@
++        if (error == 0 && mmvq)
++            (void) cuda.function_get(&cuda.mmvq_short, cuda.module, "goose_mmvq_short_rows");
+@@ -2606,0 +2609,16 @@
++// Find the down-projection suffix in the queued copies. The SLRU may plan
++// all three planes during its first lookup, before the other tensor lookups.
++static size_t expert_down_split(const struct expert_upload_job * jobs, size_t count,
++        uint64_t tensor, size_t plane_bytes, size_t experts) {
++    size_t split = count;
++    while (split > 0) {
++        const struct expert_upload_job * job = &jobs[split - 1];
++        const uint64_t source = (uintptr_t) job->source;
++        if (source < tensor || job->bytes != plane_bytes) break;
++        const uint64_t offset = source - tensor;
++        if (offset % plane_bytes != 0 || offset / plane_bytes >= experts) break;
++        --split;
++    }
++    return split;
++}
++
+@@ -3527,3 +3544,0 @@
+-        // The gate and up planes are queued first; everything after them is the
+-        // down plane, which only the last projection of this layer reads.
+-        if (stage_all && p == 1) cuda.expert_upload_split = cuda.expert_upload_count;
+@@ -3531 +3546,18 @@
+-    if (stage_all && error == 0) error = submit_expert_stage();
++    if (stage_all && error == 0) {
++        if (cuda.expert_split_planes) {
++            const uint64_t gate_up_bytes = stride_up * hidden * experts;
++            const uint64_t down_bytes_all = stride_down * width * experts;
++            const uint64_t down_base = (uint64_t) plan.data[2];
++            bool disjoint = true;
++            for (size_t p = 0; p < 2; ++p) {
++                const uint64_t source = (uint64_t) plan.data[p];
++                if (source <= down_base ? down_base - source < gate_up_bytes
++                                        : source - down_base < down_bytes_all) disjoint = false;
++            }
++            if (disjoint) {
++                cuda.expert_upload_split = expert_down_split(cuda.expert_upload_jobs, cuda.expert_upload_count,
++                    down_base, (size_t) (stride_down * width), experts);
++            }
++        }
++        error = submit_expert_stage();
++    }
+@@ -3619 +3651,3 @@
+-        kernels[count++] = ffn_kernel(cuda.mmvq, (unsigned) output_rows, routes, 128, matrix_down);
++        const bool short_down = cuda.mmvq_short && down_extent <= 2 && output_rows % 4 == 0;
++        kernels[count++] = ffn_kernel(short_down ? cuda.mmvq_short : cuda.mmvq,
++            (unsigned) (short_down ? output_rows / 4 : output_rows), routes, 128, matrix_down);
