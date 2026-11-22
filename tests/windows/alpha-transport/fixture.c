@@ -27,9 +27,12 @@ void __wrap_fg_q35_generation_profile(sl_i64 profile) {
 
 int64_t fg_http_tokenize(sl_u8 prompt, sl_i64 out) {
     static const char suffix[] = "<|im_start|>assistant\n<think>";
-    if (prompt.len < sizeof(suffix) - 1 || out.len < 1 ||
-        memcmp(prompt.data + prompt.len - (sizeof(suffix) - 1), suffix, sizeof(suffix) - 1))
-        return -1;
+    static const char native[] = "native fixture";
+    const bool native_prompt = prompt.len == sizeof(native) - 1 &&
+        !memcmp(prompt.data, native, sizeof(native) - 1);
+    const bool chat_prompt = prompt.len >= sizeof(suffix) - 1 &&
+        !memcmp(prompt.data + prompt.len - (sizeof(suffix) - 1), suffix, sizeof(suffix) - 1);
+    if ((!native_prompt && !chat_prompt) || out.len < 1) return -1;
     out.data[0] = 0;
     return 1;
 }
@@ -52,7 +55,9 @@ void fg_http_listening(int64_t port) { fprintf(stderr, "listening on port %lld\n
 int64_t fg_http_set_timeout(int64_t fd) { return fg_win_socket_timeout(fd); }
 
 int wmain(int argc, wchar_t **argv) {
-    if (argc != 2 || !fg_win_network_ready()) return 1;
+    if (argc != 3 || !fg_win_network_ready()) return 1;
+    const long limit = wcstol(argv[2], NULL, 10);
+    if (limit <= 0) return 1;
     char *path = fg_win_to_utf8(argv[1]);
     size_t size = 0;
     void *file = path ? fg_win_map_model(path, &size) : NULL;
@@ -61,6 +66,6 @@ int wmain(int argc, wchar_t **argv) {
     fg_goose_host_ensure_init();
     static unsigned char request[262144], output[65536], response[524288];
     static int64_t ids[2048];
-    return ih_serve(8815, 7, (sl_u8){request, sizeof request}, (sl_u8){output, sizeof output},
+    return ih_serve(8815, limit, (sl_u8){request, sizeof request}, (sl_u8){output, sizeof output},
         (sl_u8){response, sizeof response}, (sl_i64){ids, sizeof ids / sizeof *ids}) < 0;
 }

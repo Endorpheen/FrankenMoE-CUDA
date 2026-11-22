@@ -100,3 +100,58 @@ void fg_http_windows_sse(int64_t fd, sl_u8 body) {
         send_all(socket, prefix, sizeof prefix - 1) && send_all(socket, body.data, (size_t)body.len))
         send_all(socket, suffix, sizeof suffix - 1);
 }
+
+static const char *request_method = "unknown";
+static const char *request_route = "unmatched";
+
+void fg_http_windows_request(int64_t method, int64_t route) {
+    request_method = method == 1 ? "GET" : method == 2 ? "POST" : "unknown";
+    switch (route) {
+        case 1: request_route = "/health"; break;
+        case 3: request_route = "/props"; break;
+        case 5: request_route = "/v1/models"; break;
+        case 11: request_route = "/completion"; break;
+        case 12: request_route = "/v1/completions"; break;
+        case 13: request_route = "/v1/chat/completions"; break;
+        case 15: request_route = "/v1/responses"; break;
+        case 39: request_route = "/tools"; break;
+        case 101: request_route = "static-asset"; break;
+        default: request_route = "unmatched"; break;
+    }
+}
+
+void fg_http_windows_response(int64_t status, sl_u8 error_body) {
+    FILE *log = _wfopen(L"frankenmoe-http.log", L"ab");
+    if (!log) return;
+    fprintf(log, "%s %s %lld", request_method, request_route, (long long)status);
+    if (status >= 400 && error_body.data && error_body.len > 0 && error_body.len <= 160) {
+        // Error payloads originate from fixed server messages.
+        fprintf(log, " %.*s", (int)error_body.len, (const char *)error_body.data);
+    }
+    fputc('\n', log);
+    fclose(log);
+}
+
+void fg_http_windows_ignored(int64_t field) {
+    static unsigned warned;
+    if (field < 1 || field > 3) return;
+    const unsigned bit = 1u << (unsigned)field;
+    if (warned & bit) return;
+    warned |= bit;
+    const char *name = field == 1 ? "tools" : field == 2 ? "tool_choice" : "response_format";
+    fprintf(stderr, "FrankenMoE HTTP: %s is unsupported and ignored\n", name);
+    FILE *log = _wfopen(L"frankenmoe-http.log", L"ab");
+    if (log) {
+        fprintf(log, "warning: %s is unsupported and ignored\n", name);
+        fclose(log);
+    }
+}
+
+void fg_http_windows_timing(int64_t prompt, int64_t generated, double prefill, double decode) {
+    fprintf(stderr, "FrankenMoE generation: prefill %lld tokens, %.1f ms, %.2f tok/s; "
+        "decode %lld generated tokens, %.1f ms, %.2f tok/s\n",
+        (long long)prompt, 1000.0 * prefill, prefill > 0.0 ? prompt / prefill : 0.0,
+        (long long)generated, 1000.0 * decode,
+        generated > 1 && decode > 0.0 ? (generated - 1) / decode : 0.0);
+    fflush(stderr);
+}

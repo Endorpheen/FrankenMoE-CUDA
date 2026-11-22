@@ -1,10 +1,53 @@
 import json
+import os
+import sys
 import time
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
-def fetch(path, data=None):
-    payload = None if data is None else json.dumps(data).encode()
+LEGACY = os.environ.get("FRANKENMOE_HTTP_LEGACY") == "1"
+CHAT = "/v1/chat/completions"
+data = {
+    "model": "Apex-35B-V1.0-Q4_K_M",
+    "messages": [{"role": "user", "content": "PRIVATE-FIXTURE-PROMPT гусь"}],
+    "temperature": 0,
+    "max_tokens": 2,
+}
+tool = {"type": "function", "function": {"name": "get_datetime", "parameters": {"type": "object"}}}
+parts = [{"type": "text", "text": "Hello, "}, {"type": "text", "text": "world"}]
+ui = {
+    **data, "tools": [tool, {**tool, "function": {**tool["function"], "name": "get_info"}}],
+    "return_progress": True, "sse_ping_interval": 1, "reasoning_format": "auto",
+    "reasoning_control": True, "backend_sampling": False, "timings_per_token": True,
+}
+native = {"prompt": "native fixture", "n_predict": 2, "temperature": 0}
+cases = [
+    ("plain chat", CHAT, data, False, 200, 200, "chat"),
+    ("OpenAI content parts", CHAT, {**data, "messages": [{"role": "user", "content": parts}]}, False, 400, 200, "chat"),
+    ("tools", CHAT, {**data, "tools": [tool]}, False, 400, 200, "chat"),
+    ("empty tools", CHAT, {**data, "tools": []}, False, 400, 200, "chat"),
+    ("tool_choice alone", CHAT, {**data, "tool_choice": "auto"}, False, 400, 200, "chat"),
+    ("response_format", CHAT, {**data, "response_format": {"type": "json_object"}}, False, 400, 200, "chat"),
+    ("full UI JSON", CHAT, ui, False, 400, 200, "chat"),
+    ("full UI SSE", CHAT, {**ui, "stream": True}, False, 400, 200, "chat-sse"),
+    ("full UI SSE without tools", CHAT, {**{k: v for k, v in ui.items() if k != "tools"}, "stream": True}, False, 200, 200, "chat-sse"),
+    ("native completion", "/completion", native, False, 200, 200, "native"),
+    ("chat body on native route", "/completion", data, False, 400, 400, "route-error"),
+    ("native completion SSE", "/completion", {**native, "stream": True}, False, 400, 200, "native-sse"),
+    ("OpenAI text SSE", "/v1/completions", {"prompt": native["prompt"], "max_tokens": 2, "temperature": 0, "stream": True}, False, 404, 200, "text-sse"),
+    ("native alias", "/v1/completion", native, False, 404, 200, "native"),
+    ("trailing slash and UTF-8 BOM", CHAT + "/", data, True, 404, 200, "chat"),
+    ("unsupported image part", CHAT, {**data, "messages": [{"role":"user", "content":[{"type":"image_url","image_url":{"url":"https://invalid.example"}}]}]}, False, 400, 400, "text-only-error"),
+]
+
+if sys.argv[1:] == ["--count"]:
+    print(6 + len(cases))
+    raise SystemExit
+
+def fetch(path, data=None, bom=False):
+    payload = None if data is None else json.dumps(data).encode("utf-8")
+    if bom:
+        payload = b"\xef\xbb\xbf" + payload
     request = Request("http://127.0.0.1:8815" + path, payload,
                       {"Content-Type": "application/json"} if payload else {})
     try:
@@ -27,19 +70,35 @@ code, mime, body = fetch("/")
 assert code == 200 and mime == "text/html" and b"/immutable/assets/ember." in body
 code, mime, body = fetch("/favicon.svg")
 assert code == 200 and mime == "image/svg+xml" and b"<svg" in body
-code, _, _ = fetch("/../model-path.txt")
-assert code == 404
-
+assert fetch("/../model-path.txt")[0] == 404
 code, _, body = fetch("/v1/models")
 assert code == 200 and json.loads(body)["data"][0]["id"] == "frankenmoe"
-data = {"model": "frankenmoe", "messages": [{"role": "user", "content": "Unicode test \u0433\u0443\u0441\u044c"}],
-        "temperature": 0, "max_tokens": 1}
-code, _, body = fetch("/v1/chat/completions", data)
-assert code == 200, body
-assert json.loads(body)["choices"][0]["message"]["content"] == "fixture reply"
-code, mime, body = fetch("/v1/chat/completions", {**data, "stream": True})
-assert code == 200 and mime == "text/event-stream", body
-assert body.endswith(b"data: [DONE]\n\n")
-chunk = json.loads(body.splitlines()[0][6:])
-assert chunk["choices"][0]["delta"]["content"] == "fixture reply"
-print("Windows WinSock, Cyrillic file mapping, Ember assets, OpenAI chat and SSE passed with fixture model.")
+assert fetch("/props?PRIVATE-FIXTURE-QUERY")[0] == 200
+
+for name, path, request, bom, before, after, kind in cases:
+    status, mime, body = fetch(path, request, bom)
+    assert status == (before if LEGACY else after), (name, status, body)
+    print(f"{name}: {status}")
+    if status >= 400:
+        if not LEGACY:
+            detail = json.loads(body)["error"]
+            assert "unsupported chat feature" not in detail
+            if kind == "route-error":
+                assert "/v1/chat/completions" in detail
+            if kind == "text-only-error":
+                assert "text parts" in detail
+        continue
+    if kind.endswith("-sse"):
+        assert mime == "text/event-stream" and body.endswith(b"data: [DONE]\n\n")
+        response = json.loads(body.splitlines()[0][6:])
+    else:
+        response = json.loads(body)
+    if kind == "chat":
+        answer = response["choices"][0]["message"]["content"]
+    elif kind == "chat-sse":
+        answer = response["choices"][0]["delta"]["content"]
+    elif kind == "text-sse":
+        answer = response["choices"][0]["text"]
+    else:
+        answer = response["text"]
+    assert answer == "fixture reply", (name, answer)

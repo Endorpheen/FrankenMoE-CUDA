@@ -19,12 +19,24 @@ src="$root/integration/goose-standalone"
 mkdir -p "$out/transport-fixture"
 model="$out/transport-fixture/Модель с пробелами.gguf"
 printf 'GGUF\003\000\000\000' > "$model"
-export WINEPREFIX="$out/wineprefix" WINEARCH=win64 WINEDEBUG=-all
+export WINEPREFIX="${FRANKENMOE_WINEPREFIX:-$out/wineprefix}" WINEARCH=win64 WINEDEBUG=-all
 export FRANKENMOE_WEB_ROOT
 FRANKENMOE_WEB_ROOT=$(winepath -w "$out/web")
-timeout 30s wine "$out/transport-fixture.exe" "$(winepath -w "$model")" > "$out/transport-fixture/log.txt" 2>&1 &
+limit=$(python3 "$here/probe.py" --count)
+cd "$out/transport-fixture"
+rm -f -- frankenmoe-http.log
+timeout 30s wine "$out/transport-fixture.exe" "$(winepath -w "$model")" "$limit" > "$out/transport-fixture/log.txt" 2>&1 &
 server=$!
 trap 'kill "$server" 2>/dev/null || true' EXIT
 python3 "$here/probe.py"
 wait "$server"
 trap - EXIT
+if [[ "${FRANKENMOE_HTTP_LEGACY:-0}" != 1 ]]; then
+    rg -q '^POST /v1/chat/completions 200' frankenmoe-http.log
+    rg -q '^POST /completion 400 .*send messages to /v1/chat/completions' frankenmoe-http.log
+    for option in tools tool_choice response_format; do
+        test "$(grep -c "^warning: $option is unsupported and ignored" frankenmoe-http.log)" -eq 1
+    done
+    ! rg 'PRIVATE-FIXTURE-PROMPT|PRIVATE-FIXTURE-QUERY' frankenmoe-http.log
+    rg -q 'prefill [0-9]+ tokens, .*tok/s; decode [0-9]+ generated tokens, .*tok/s' log.txt
+fi

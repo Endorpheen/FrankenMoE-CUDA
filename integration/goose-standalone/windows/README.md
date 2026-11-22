@@ -50,11 +50,27 @@ its server console.
 
 ## API covered by the alpha
 
-- `GET /health`, `GET /v1/models`, and the native `POST /completion`.
-- Text-only `POST /v1/chat/completions` using the Apex/Qwen3.5 chat format.
-- Simple OpenAI JSON and SSE framing. The SSE content arrives after
-  generation, in one chunk. The alpha does not implement tools,
-  multimodal messages, or structured output.
+- `GET /health`, `GET /props`, and `GET /v1/models`.
+- `POST /v1/chat/completions` accepts system, user and assistant messages
+  with string content or arrays of text parts. The text parts are joined
+  in order and rendered with the Apex chat format.
+- `POST /v1/completions` returns OpenAI text completion JSON. Native
+  `POST /completion` (also `/v1/completion`) accepts a prompt string or
+  token IDs. Send chat messages to `/v1/chat/completions`.
+- JSON and SSE work on all three completion routes. The SSE content
+  arrives in one chunk after generation, followed by `[DONE]`.
+- The OpenAI routes ignore `tools`, `tool_choice`, and `response_format`
+  with a warning once per field per server process. Tool calls,
+  multimodal parts, and structured output are unsupported.
+- For basic text chat through an OpenAI-compatible client, use the
+  base URL `http://127.0.0.1:8080/v1` and Chat Completions mode. This
+  transport does not support running OpenCode agent tools.
+
+The terminal reports prefill and decode timings and throughput after
+each generation. `frankenmoe-http.log` in the server working directory
+records the method, canonical route, response status, and fixed error
+message when applicable. It excludes query strings, HTTP request
+bodies, credentials, and generated text.
 
 ## Reporting an issue
 
