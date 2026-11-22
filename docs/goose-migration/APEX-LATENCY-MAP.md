@@ -2645,3 +2645,15 @@ matched. Process swap and system swap-out remained zero. The focused
 test checked 240 rows across several vocabulary sizes, tied logits,
 and non-finite inputs. The accepted experimental checkpoint reduces
 client latency. The historical 2,140.49 prefill observation is separate.
+
+## Reproduced expert pinning and matched Optimized Hybrid
+
+The [EXP-1687 reproduction and cumulative checkpoint](../../experiments/EXP-2026-11-22-1687-matched-expert-pinning/README.md)
+confirm the gain of the 12 GiB explicit host registration profile.
+The combined Goose path delivers 2,448.30 prefill and 32.33 decode
+tokens/s at the 5,920 MiB GPU expert budget. With 120 ranges
+registered on each runtime and the GPU expert budget matched at
+5,632 MiB, the fresh pair measures Goose 2,724.41 / 34.03 and
+Optimized Hybrid 3,043.31 / 67.63 tokens/s. The remaining phase
+deltas are 1.260 s prefill and 7.459 s decode. Keep this fresh
+comparison separate from the historical hybrid medians.

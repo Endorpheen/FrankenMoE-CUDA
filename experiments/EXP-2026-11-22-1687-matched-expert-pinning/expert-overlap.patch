@@ -1,0 +1,270 @@
+diff --git a/integration/goose-standalone/cuda-driver.c b/integration/goose-standalone/cuda-driver.c
+index 0330b87e6..671a62f55 100644
+--- a/integration/goose-standalone/cuda-driver.c
++++ b/integration/goose-standalone/cuda-driver.c
+@@ -76,6 +76,9 @@ struct vmm_mapping {
+ enum { MIB_BYTES = 1024 * 1024, DEFAULT_ACTIVATION_BYTES = 64 * MIB_BYTES,
+     WIDE_ACTIVATION_BYTES = 384 * MIB_BYTES };
+ enum { EXPERT_HOST_SLOTS = 3, EXPERT_HOST_SLOT_BYTES = 4 * MIB_BYTES };
++// Release events kept for expert waves, so a transfer may run while an earlier
++// layer still computes instead of waiting for the immediately preceding one.
++enum { EXPERT_SLOT_EVENTS = 4 };
+ enum { MMVQ_GRAPH_SLOTS = 1024, MMVQ_GRAPH_KEY_WORDS = 16 };
+
+ struct mmvq_graph_entry {
+@@ -84,7 +87,11 @@ struct mmvq_graph_entry {
+ };
+ enum { DECODE_GRAPH_REGIONS = 128 };
+ enum { REPLAY_OPS = 128, REPLAY_ARGS = 32, REPLAY_BYTES = 64 * 1024 };
+-enum replay_kind { replay_kernel, replay_h2d, replay_d2d, replay_wait };
++enum replay_kind { replay_kernel, replay_h2d, replay_d2d, replay_wait, replay_wait_planes };
++
++static bool replay_is_wait(enum replay_kind kind) {
++    return kind == replay_wait || kind == replay_wait_planes;
++}
+
+ struct replay_layout {
+     Function function;
+@@ -238,11 +245,15 @@ static struct {
+     size_t state_logical_bytes;
+     struct expert_cache experts;
+     Stream expert_stream;
+-    Event expert_slots_ready, expert_uploads_ready;
++    Event expert_slots_ready, expert_uploads_ready, expert_planes_ready;
++    Event expert_slots_ring[EXPERT_SLOT_EVENTS];
++    unsigned expert_slots_index, expert_slots_records;
+     bool expert_upload_queued, expert_decode_overlap;
+     bool expert_prefill_staging, expert_current_staging;
++    bool expert_split_planes, expert_planes_split;
++    bool expert_async_copies;
+     struct expert_upload_job * expert_upload_jobs;
+-    size_t expert_upload_count, expert_upload_capacity;
++    size_t expert_upload_count, expert_upload_capacity, expert_upload_split;
+     struct expert_host_ring expert_host;
+     sl_i64 expert_pins;
+     int64_t expert_pinned_bytes;
+@@ -425,6 +436,8 @@ static int record_buffered_decode(void) {
+                 op->copy.bytes, cuda.graph_stream);
+         } else if (op->kind == replay_d2d) {
+             error = cuda.copy_device_async(op->copy.dst, op->copy.src, op->copy.bytes, cuda.graph_stream);
++        } else if (op->kind == replay_wait_planes) {
++            error = cuda.stream_wait_event(cuda.graph_stream, cuda.expert_planes_ready, wait_external);
+         } else {
+             error = cuda.stream_wait_event(cuda.graph_stream, cuda.expert_uploads_ready, wait_external);
+         }
+@@ -452,7 +465,7 @@ static bool update_replay_region(struct replay_region *region) {
+         if (old->kind != op->kind) return false;
+         if (op->kind == replay_kernel) {
+             if (old->kernel.layout != op->kernel.layout || old->kernel.start != op->kernel.start) return false;
+-        } else if (op->kind != replay_wait &&
++        } else if (op->kind != replay_wait && op->kind != replay_wait_planes &&
+             (old->copy.dst != op->copy.dst || old->copy.src != op->copy.src || old->copy.bytes != op->copy.bytes)) {
+             return false;
+         }
+@@ -483,7 +496,7 @@ static bool store_replay_region(struct replay_region *region, Graph graph, Graph
+     for (size_t i = 0; i < replay_buffer.count; ++i) {
+         enum { gpu_kernel = 0, gpu_memcpy = 1, gpu_event_wait = 6 };
+         const enum replay_kind kind = replay_buffer.ops[i].kind;
+-        const int expected = kind == replay_kernel ? gpu_kernel : kind == replay_wait ? gpu_event_wait : gpu_memcpy;
++        const int expected = kind == replay_kernel ? gpu_kernel : replay_is_wait(kind) ? gpu_event_wait : gpu_memcpy;
+         int type;
+         if (cuda.graph_node_type(next, &type) != 0 || type != expected) return false;
+         region->nodes[i] = next;
+@@ -685,6 +698,19 @@ static int decode_copy_device(DevicePtr dst, DevicePtr src, size_t bytes) {
+     return error == 0 ? decode_raw.copy_device(dst, src, bytes) : error;
+ }
+
++static int decode_wait_for_expert_planes(void) {
++    enum { wait_external = 1 };
++    if (decode_capture.buffering) {
++        if (replay_buffer.count < REPLAY_OPS) {
++            replay_buffer.ops[replay_buffer.count++] = (struct replay_operation) { .kind = replay_wait_planes };
++            return 0;
++        }
++        const int recorded = record_buffered_decode();
++        if (recorded != 0) return recorded;
++    }
++    return cuda.stream_wait_event(cuda.graph_stream, cuda.expert_planes_ready, wait_external);
++}
++
+ static int decode_wait_for_experts(void) {
+     enum { wait_external = 1 };
+     if (decode_capture.buffering) {
+@@ -939,14 +965,27 @@ static void release_expert_stream(void) {
+     *ring = (struct expert_host_ring) {0};
+     if (cuda.expert_stream) cuda.stream_destroy(cuda.expert_stream);
+     if (cuda.expert_uploads_ready) cuda.event_destroy(cuda.expert_uploads_ready);
++    if (cuda.expert_planes_ready) cuda.event_destroy(cuda.expert_planes_ready);
+     if (cuda.expert_slots_ready) cuda.event_destroy(cuda.expert_slots_ready);
++    for (size_t i = 0; i < EXPERT_SLOT_EVENTS; ++i)
++        if (cuda.expert_slots_ring[i]) cuda.event_destroy(cuda.expert_slots_ring[i]);
+     cuda.expert_stream = NULL;
+     cuda.expert_uploads_ready = NULL;
++    cuda.expert_planes_ready = NULL;
+     cuda.expert_slots_ready = NULL;
++    for (size_t i = 0; i < EXPERT_SLOT_EVENTS; ++i) cuda.expert_slots_ring[i] = NULL;
++    cuda.expert_slots_index = 0;
++    cuda.expert_slots_records = 0;
++}
++
++// A rejected experiment must leave the accepted profile unchanged. These
++// settings are enabled only when the variable is explicitly set to 1.
++static bool expert_option_explicit(const char * name) {
++    const char * setting = getenv(name);
++    return setting && strcmp(setting, "1") == 0;
+ }
+
+-static void init_expert_stream(void) {
+-    enum { nonblocking_stream = 1, disable_timing = 2 };
++static void init_expert_stream(void) {    enum { nonblocking_stream = 1, disable_timing = 2 };
+     if (!fg_standalone_option_enabled("GOOSE_CUDA_EXPERT_OVERLAP")) return;
+ #define EXPERT_LOAD(field, symbol) do { cuda.field = dlsym(cuda.library, symbol); if (!cuda.field) return; } while (0)
+     EXPERT_LOAD(upload_async, "cuMemcpyHtoDAsync_v2");
+@@ -958,8 +997,12 @@ static void init_expert_stream(void) {
+     EXPERT_LOAD(event_record, "cuEventRecord");
+ #undef EXPERT_LOAD
+     int error = cuda.stream_create(&cuda.expert_stream, nonblocking_stream);
+-    if (error == 0) error = cuda.event_create(&cuda.expert_slots_ready, disable_timing);
++    for (size_t i = 0; i < EXPERT_SLOT_EVENTS && error == 0; ++i)
++        error = cuda.event_create(&cuda.expert_slots_ring[i], disable_timing);
+     if (error == 0) error = cuda.event_create(&cuda.expert_uploads_ready, disable_timing);
++    if (error == 0) error = cuda.event_create(&cuda.expert_planes_ready, disable_timing);
++    if (error == 0) cuda.expert_split_planes = expert_option_explicit("GOOSE_CUDA_EXPERT_SPLIT_PLANES");
++    if (error == 0) cuda.expert_async_copies = expert_option_explicit("GOOSE_CUDA_EXPERT_ASYNC_COPIES");
+     if (error != 0) release_expert_stream();
+     if (error == 0 && fg_standalone_option_enabled("GOOSE_CUDA_EXPERT_STAGE_PAGEABLE") &&
+         cuda.host_alloc && cuda.host_free) {
+@@ -2336,7 +2379,13 @@ static int64_t expert_upload(int64_t offset, uint64_t source, int64_t bytes, boo
+         if (cuda.expert_upload_count == cuda.expert_upload_capacity) return -1;
+         status = 0;
+         if (cuda.expert_upload_count == 0) {
+-            // The chosen slots may still be read by the previous projection.
++            // The chosen slots may still be read by an earlier projection. The
++            // release point is rotated so the transfer stream can wait for a
++            // wave further back and overlap with the layer that is computing.
++            cuda.expert_upload_split = 0;
++            cuda.expert_slots_ready = cuda.expert_slots_ring[cuda.expert_slots_index];
++            cuda.expert_slots_index = (cuda.expert_slots_index + 1) % EXPERT_SLOT_EVENTS;
++            if (cuda.expert_slots_records < EXPERT_SLOT_EVENTS) ++cuda.expert_slots_records;
+             status = cuda.event_record(cuda.expert_slots_ready, NULL);
+         }
+         if (status == 0) {
+@@ -2349,6 +2398,15 @@ static int64_t expert_upload(int64_t offset, uint64_t source, int64_t bytes, boo
+         const struct expert_upload_job job = {address, host, (size_t) bytes, true};
+         activations.pending = true;
+         status = submit_pageable_expert(&job, NULL);
++    } else if (cuda.expert_async_copies && cuda.expert_host.enabled && bytes <= EXPERT_HOST_SLOT_BYTES) {
++        // A blocking pageable copy costs about 245 us of host time per expert
++        // plane beyond the transfer itself, and the host cannot submit the next
++        // dependent kernel until it returns. The ring keeps the same legacy
++        // stream order at a fraction of that cost.
++        const struct expert_upload_job job = {address, host, (size_t) bytes, !pinned};
++        activations.pending = true;
++        status = pinned ? cuda.upload_async(address, host, (size_t) bytes, NULL)
++                        : submit_pageable_expert(&job, NULL);
+     } else {
+         status = cuda.upload(address, host, (size_t) bytes);
+     }
+@@ -2428,18 +2486,15 @@ static int submit_parallel_experts(const struct expert_upload_job * jobs, size_t
+     return error;
+ }
+
+-static int submit_expert_stage(void) {
+-    if (cuda.expert_upload_count == 0) return 0;
+-    // Existing readers release cache slots before this stream writes them.
+-    // Consumers wait on the recorded completion event.
+-    int status = cuda.stream_wait_event(cuda.expert_stream, cuda.expert_slots_ready, 0);
+-    const bool parallel = expert_copy_worker.running && cuda.expert_upload_count >= 32;
+-    for (size_t i = 0; status == 0 && i < cuda.expert_upload_count;) {
++static int submit_expert_stage_range(size_t begin, size_t end) {
++    const bool parallel = expert_copy_worker.running && end - begin >= 32;
++    int status = 0;
++    for (size_t i = begin; status == 0 && i < end;) {
+         const struct expert_upload_job * job = &cuda.expert_upload_jobs[i];
+         activations.pending = true;
+         size_t count = 0, bytes = 0;
+         if (parallel && job->pageable) {
+-            while (i + count < cuda.expert_upload_count && job[count].pageable &&
++            while (i + count < end && job[count].pageable &&
+                 job[count].bytes <= EXPERT_HOST_SLOT_BYTES - bytes) bytes += job[count++].bytes;
+         }
+         if (count >= 4) {
+@@ -2451,10 +2506,40 @@ static int submit_expert_stage(void) {
+             ++i;
+         }
+     }
++    return status;
++}
++
++static Event expert_slot_release(void) {
++    // The newest release fences the immediately preceding wave. Using the one
++    // recorded before it lets the next wave's transfers run while the current
++    // layer computes; a wave's destination slots were last read by an evicted
++    // wave many layers earlier, so one wave of slack keeps the order intact.
++    if (cuda.expert_slots_records < 2) return cuda.expert_slots_ready;
++    return cuda.expert_slots_ring[(cuda.expert_slots_index + EXPERT_SLOT_EVENTS - 2) % EXPERT_SLOT_EVENTS];
++}
++
++static int submit_expert_stage(void) {
++    if (cuda.expert_upload_count == 0) return 0;
++    // Existing readers release cache slots before this stream writes them.
++    // Consumers wait on the recorded completion events.
++    int status = cuda.stream_wait_event(cuda.expert_stream, expert_slot_release(), 0);
++    // The routed gate and up projections read the first two planes, so the
++    // third plane may keep transferring while they run. Split the wave only
++    // when both parts are nonempty and the caller asked for it.
++    const size_t total = cuda.expert_upload_count;
++    const size_t split = cuda.expert_split_planes && cuda.expert_upload_split > 0 &&
++        cuda.expert_upload_split < total ? cuda.expert_upload_split : total;
++    if (status == 0) status = submit_expert_stage_range(0, split);
++    if (status == 0 && split < total) {
++        status = cuda.event_record(cuda.expert_planes_ready, cuda.expert_stream);
++        if (status == 0) status = submit_expert_stage_range(split, total);
++    }
+     if (status == 0) status = seal_expert_host_slot(cuda.expert_stream);
+     if (status == 0) status = cuda.event_record(cuda.expert_uploads_ready, cuda.expert_stream);
+     if (status == 0) {
++        cuda.expert_planes_split = split < total;
+         cuda.expert_upload_count = 0;
++        cuda.expert_upload_split = 0;
+         cuda.expert_upload_queued = true;
+         return 0;
+     }
+@@ -3210,6 +3295,9 @@ int64_t fg_cuda_routed_graph(sl_i64 plan, sl_i64 glu, sl_i64 norm, sl_i64 shared
+             packet.jobs[p][r * words + 1] = (int64_t) r * (p == 2 ? width : hidden) * 4;
+             packet.jobs[p][r * words + 2] = offset;
+         }
++        // The gate and up planes are queued first; everything after them is the
++        // down plane, which only the last projection of this layer reads.
++        if (stage_all && p == 1) cuda.expert_upload_split = cuda.expert_upload_count;
+     }
+     if (stage_all && error == 0) error = submit_expert_stage();
+     if (error == 0) {
+@@ -3296,6 +3384,9 @@ int64_t fg_cuda_routed_graph(sl_i64 plan, sl_i64 glu, sl_i64 norm, sl_i64 shared
+         }
+         kernels[count++] = ffn_kernel(cuda.vector, (unsigned) vector[24], 1, 128, gl);
+         kernels[count++] = ffn_kernel(cuda.mmvq_pack, 2 * (unsigned) down_extent, routes, 128, pack_down);
++        // The down plane is only read from here on, so its transfer can continue
++        // while the gate and up projections above run.
++        const size_t expert_down_wait_index = stage_all && cuda.expert_planes_split ? count : 0;
+         kernels[count++] = ffn_kernel(cuda.mmvq, (unsigned) output_rows, routes, 128, matrix_down);
+         if (!stage_all) kernels[count++] = normalize_routes;
+         kernels[count++] = ffn_kernel(cuda.moe_weighted, (unsigned) 1, (unsigned) ((width + 255) / 256), 256, reduce);
+@@ -3316,10 +3407,15 @@ int64_t fg_cuda_routed_graph(sl_i64 plan, sl_i64 glu, sl_i64 norm, sl_i64 shared
+         if (stage_all) {
+             error = launch_cuda_kernels(kernels, expert_wait_index, NULL);
+             if (error == 0) {
++                error = cuda.expert_planes_split ? decode_wait_for_expert_planes() : decode_wait_for_experts();
++            }
++            const size_t middle_end = expert_down_wait_index ? expert_down_wait_index : count;
++            if (error == 0) error = launch_cuda_kernels(kernels + expert_wait_index, middle_end - expert_wait_index, NULL);
++            if (error == 0 && expert_down_wait_index) {
+                 error = decode_wait_for_experts();
+-                if (error == 0) cuda.expert_upload_queued = false;
++                if (error == 0) error = launch_cuda_kernels(kernels + expert_down_wait_index, count - expert_down_wait_index, NULL);
+             }
+-            if (error == 0) error = launch_cuda_kernels(kernels + expert_wait_index, count - expert_wait_index, NULL);
++            if (error == 0) cuda.expert_upload_queued = false;
+         } else {
+             error = graph ? cuda.graph_launch(graph, cuda.graph_stream) : launch_cuda_kernels(kernels, count, NULL);
+         }

@@ -1,0 +1,71 @@
+--- a/goose/sampling/sampler-chain-full.goose
++++ b/goose/sampling/sampler-chain-full.goose
+@@ -376,23 +376,41 @@
+
+ // Match the server's pre-sampling probabilities: partially sort the raw
+ // vocabulary, then accumulate the F32 softmax in that same order.
+-fn sm_pre_sample_logprobs(logits: f32[:], work_ids: i64[:], work_p: f32[:],
++fn sm_pre_sample_logprobs(logits: f32[:], work_ids: i64[:],
+                           selected: i64, top: i64, ids: i64[:], logp: f32[:]) -> bool {
+     if top <= 0 || top > logits.len || ids.len < top + 1 || logp.len < top + 1 ||
+        sm_apply_top_k(logits, work_ids, logits.len, top) != top {
+         return false;
+     }
+-    let sum = sm_exponentials(logits, work_p, logits.len, 1);
++    let max_l = logits[0];
++    var sum: f32 = 0.0;
++    var at: i64 = 0;
++    // Keep the FP32 additions left-associated in the same vocabulary order.
++    while at <= logits.len - 8 {
++        sum = sum + c_expf(logits[at] - max_l)
++            + c_expf(logits[at + 1] - max_l)
++            + c_expf(logits[at + 2] - max_l)
++            + c_expf(logits[at + 3] - max_l)
++            + c_expf(logits[at + 4] - max_l)
++            + c_expf(logits[at + 5] - max_l)
++            + c_expf(logits[at + 6] - max_l)
++            + c_expf(logits[at + 7] - max_l);
++        at += 8;
++    }
++    while at < logits.len {
++        sum += c_expf(logits[at] - max_l);
++        at += 1;
++    }
+     if !(sum > 0.0) { return false; }
+     ids[0] = selected;
+     var found = false;
+     for i in logits.len {
+         if i < top {
+             ids[i + 1] = work_ids[i];
+-            logp[i + 1] = sm_report_logprob(work_p[i] / sum);
++            logp[i + 1] = sm_report_logprob(c_expf(logits[i] - max_l) / sum);
+         }
+         if work_ids[i] == selected {
+-            logp[0] = sm_report_logprob(work_p[i] / sum);
++            logp[0] = sm_report_logprob(c_expf(logits[i] - max_l) / sum);
+             found = true;
+         }
+         if found && i >= top - 1 { break; }
+--- a/goose/model/qwen35-generation.goose
++++ b/goose/model/qwen35-generation.goose
+@@ -92,8 +92,10 @@
+     let filter = seeded || s.typical_p < 1.0;
+     let recent = if s.repeat_last_n < 0 { capacity } else { s.repeat_last_n };
+     let repeats = recent > 0 && s.repeat_penalty != 1.0;
+-    if filter || top > 0 {
++    if filter {
+         probabilities.resize(vocabulary, 0.0);
++    }
++    if filter || top > 0 {
+         order.resize(vocabulary, 0);
+     }
+     if s.typical_p < 1.0 {
+@@ -169,7 +171,7 @@
+         if top > 0 {
+             let at = produced * (top + 1);
+             let end = at + top + 1;
+-            if !sm_pre_sample_logprobs(logits[..], order[..], probabilities[..], next, top,
++            if !sm_pre_sample_logprobs(logits[..], order[..], next, top,
+                                        prob_ids[at .. end], logp[at .. end]) { return -1; }
+         }
+         ids[produced] = next;
