@@ -1,0 +1,18 @@
+--- a/flash-vec.goose
++++ b/flash-vec.goose
+@@ -35,2 +35,3 @@
+ extern "fg175v_shfl_xor" fn shfl_xor(v: f32, o: i32) -> f32;
++extern "fg175v_shfl_idx" fn shfl_idx(v: f32, source: i32) -> f32;
+ extern "fg175v_syncwarp" fn syncwarp();
+@@ -409,3 +410,2 @@
+             ksum[j] = ksum[j] * ksc + kreg[j];
+-            sm_st_f32(smem, ( (j * 128 + tid)) as u64, kreg[j]);
+             vkqscale[j] = ksc;
+@@ -413,6 +413,5 @@
+         j = (1 as i32);
+-        syncwarp();
+         for key in 32 {
+             let row = (ty as i64) * 32 + key;
+-            let probability = sm_f32(smem, row as u64);
++            let probability = shfl_idx(kreg[0], key as i32);
+             let valid = k0v + row < (kvlim as i64);

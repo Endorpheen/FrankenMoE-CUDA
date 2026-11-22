@@ -1,0 +1,11 @@
+--- a/integration/goose-standalone/cuda-flash-vec.cl
++++ b/integration/goose-standalone/cuda-flash-vec.cl
+@@ -16,2 +16,8 @@
+ static float fg175v_shfl_xor(float v, int32_t delta) { return fg_device_shfl(v, delta); }
++static float fg175v_shfl_idx(float value, int32_t source) {
++    uint32_t result;
++    __asm__ volatile("shfl.sync.idx.b32 %0, %1, %2, 31, -1;"
++        : "=r"(result) : "r"(as_uint(value)), "r"(source));
++    return as_float(result);
++}
+ static void fg175v_syncwarp(void) { __asm__ volatile("bar.warp.sync -1;" ::: "memory"); }
