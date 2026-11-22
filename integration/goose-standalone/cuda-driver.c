@@ -1,11 +1,19 @@
 #include "cpu.h"
 #include "goose-cuda-image.h"
 
+#ifndef _WIN32
 #include <dlfcn.h>
+#endif
 #include <inttypes.h>
 #include <limits.h>
 #include <pthread.h>
+#ifdef _WIN32
+#include "windows/platform.h"
+#define dlsym(module, name) ((void *)GetProcAddress((HMODULE)(module), (name)))
+#define dlclose(module) FreeLibrary((HMODULE)(module))
+#else
 #include <sched.h>
+#endif
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -1015,7 +1023,11 @@ static void cleanup(void) {
 
 static void load_cuda(void) {
     if (goose_cuda_image[0] == 0) return;
+#ifdef _WIN32
+    cuda.library = LoadLibraryExW(L"nvcuda.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+#else
     cuda.library = dlopen("libcuda.so.1", RTLD_NOW | RTLD_LOCAL);
+#endif
     if (!cuda.library) return;
 #define LOAD(field, name) do { cuda.field = dlsym(cuda.library, name); if (!cuda.field) return; } while (0)
     LOAD(init, "cuInit");
@@ -2197,8 +2209,14 @@ int64_t fg_cuda_expert_pin_info(sl_i64 info) {
         }
         budget = (int64_t) value * mib;
     }
+#ifdef _WIN32
+    const int64_t page = (int64_t)fg_win_page_size();
+    const uint64_t total = fg_win_memory(false);
+    const int64_t pages = page ? (int64_t)(total / (uint64_t)page) : 0;
+#else
     const long page = sysconf(_SC_PAGESIZE);
     const long pages = sysconf(_SC_PHYS_PAGES);
+#endif
     const uint64_t available = fg143_storage_ram_available();
     if (page <= 0 || pages <= 0 || pages > INT64_MAX / page || available > INT64_MAX) return 0;
     info.data[0] = page;

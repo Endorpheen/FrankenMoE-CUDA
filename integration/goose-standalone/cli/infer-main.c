@@ -5,11 +5,18 @@
 
 #include <errno.h>
 #include <inttypes.h>
+#ifdef _WIN32
+#include <wchar.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef _WIN32
+#include "windows/platform.h"
+#else
 #include <sys/socket.h>
 #include <sys/time.h>
+#endif
 
 extern int64_t fg_cuda_dense_bytes(void);
 extern int64_t fg_cuda_expert_bytes(void);
@@ -44,9 +51,13 @@ void fg_http_listening(int64_t port) {
 }
 
 int64_t fg_http_set_timeout(int64_t fd) {
+#ifdef _WIN32
+    return fg_win_socket_timeout(fd);
+#else
     const struct timeval timeout = { .tv_sec = 30 };
     if (setsockopt((int) fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof timeout) != 0) return -1;
     return setsockopt((int) fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof timeout);
+#endif
 }
 
 static int64_t positive_integer(const char * text) {
@@ -63,6 +74,12 @@ static int serve(const char * model, int64_t port, int64_t limit, int64_t capaci
     }
     static unsigned char request[262144], output[65536], response[524288];
     static int64_t ids[2048];
+#ifdef _WIN32
+    if (!fg_win_network_ready()) {
+        fputs("Windows networking initialization failed\n", stderr);
+        return 1;
+    }
+#endif
     fg_goose_host_ensure_init();
     hose_host_load_context(model, capacity);
     const int64_t served = ih_serve(port, limit, (sl_u8) { request, sizeof request },
@@ -73,7 +90,36 @@ static int serve(const char * model, int64_t port, int64_t limit, int64_t capaci
     return 1;
 }
 
+#ifdef _WIN32
+static int run_cli(int argc, char **argv);
+
+static void default_web_root(void) {
+    if (GetEnvironmentVariableW(L"FRANKENMOE_WEB_ROOT", NULL, 0)) return;
+    wchar_t path[4096];
+    const DWORD size = GetModuleFileNameW(NULL, path, 4096);
+    if (!size || size >= 4096) return;
+    wchar_t *name = wcsrchr(path, L'\\');
+    if (!name || (size_t)(name - path) + 5 > 4096) return;
+    wcscpy(name + 1, L"web");
+    SetEnvironmentVariableW(L"FRANKENMOE_WEB_ROOT", path);
+}
+
+int wmain(int argc, wchar_t **wide) {
+    default_web_root();
+    char **argv = calloc((size_t)argc + 1, sizeof(*argv));
+    if (!argv) return 1;
+    int count = 0;
+    while (count < argc && (argv[count] = fg_win_to_utf8(wide[count])) != NULL) ++count;
+    const int status = count == argc ? run_cli(argc, argv) : 1;
+    while (count) free(argv[--count]);
+    free(argv);
+    return status;
+}
+
+static int run_cli(int argc, char **argv) {
+#else
 int main(int argc, char ** argv) {
+#endif
     const char * program = argv[0];
     int64_t context = HOSE_DEFAULT_CONTEXT;
     int64_t batch = HOSE_DEFAULT_PREFILL_BATCH;

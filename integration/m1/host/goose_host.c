@@ -42,6 +42,10 @@
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
+#ifdef _WIN32
+#include <winsock2.h>
+#include <limits.h>
+#endif
 
 // ---- the IQ table contract, installed at init ------------------------------
 //
@@ -545,15 +549,27 @@ uint64_t qz_tmp(int64_t off) {
 // directly from Goose. These three are substrate primitives, the same category as
 // qz_st_u8 and qz_ld_u8 - they move bytes, they decide nothing.
 int64_t qz_rd(int64_t fd, uint64_t buf, int64_t n) {
+#ifdef _WIN32
+    return n < 0 || n > INT_MAX ? -1 : recv((SOCKET)fd, (char *)(uintptr_t)buf, (int)n, 0);
+#else
     return (int64_t) read((int) fd, (void *) (uintptr_t) buf, (size_t) n);
+#endif
 }
 
 int64_t qz_wr(int64_t fd, uint64_t buf, int64_t n) {
+#ifdef _WIN32
+    return n < 0 || n > INT_MAX ? -1 : send((SOCKET)fd, (const char *)(uintptr_t)buf, (int)n, 0);
+#else
     return (int64_t) write((int) fd, (const void *) (uintptr_t) buf, (size_t) n);
+#endif
 }
 
 int64_t qz_cl(int64_t fd) {
+#ifdef _WIN32
+    return closesocket((SOCKET)fd);
+#else
     return (int64_t) close((int) fd);
+#endif
 }
 // ---- the 14 IQ table views the unit declares -------------------------------
 

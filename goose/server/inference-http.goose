@@ -6,6 +6,8 @@ extern "fg_http_eog" fn ih_eog(ids: i64[:]) -> i64;
 extern "fg_http_stats" fn ih_stats_abi(stats: i64[:]);
 extern "fg_http_listening" fn ih_listening(port: i64);
 extern "fg_http_set_timeout" fn ih_timeout(fd: i64) -> i64;
+extern "fg_http_windows_asset" fn ih_windows_asset(fd: i64, path: const u8[:]) -> bool;
+extern "fg_http_windows_sse" fn ih_windows_sse(fd: i64, body: const u8[:]);
 
 fn ih_line_end(text: const u8[:], start: i64) -> i64 {
     var end = start;
@@ -40,7 +42,8 @@ fn ih_read(fd: i64, request: u8[:], meta: i64[:]) -> i64 {
     let target = headers[line[3] .. line[3] + line[4]];
     var path_len: i64 = 0;
     while path_len < target.len && target[path_len] != '?' { path_len += 1; }
-    let route = route_id(method, target[0 .. path_len]);
+    let parsed_route = route_id(method, target[0 .. path_len]);
+    let route: i64 = if parsed_route == 0 && method == 1 { 101 } else { parsed_route };
 
     var hosts: i64 = 0;
     var host_ok: i64 = 1;
@@ -74,8 +77,9 @@ fn ih_read(fd: i64, request: u8[:], meta: i64[:]) -> i64 {
     }
 
     if rq_host_violation(hosts, line[7], host_ok, if hosts > 0 { 1 } else { 0 }) != 0 { return 400; }
-    if route != 1 && route != 3 && route != 11 { return 404; }
-    if route == 11 && length <= 0 { return 400; }
+    if route != 1 && route != 3 && route != 5 && route != 11 && route != 13 && route != 101 { return 404; }
+    if (route == 11 || route == 13) && length <= 0 { return 400; }
+    if route == 13 && json == 0 { return 400; }
     if length < 0 { length = 0; }
     if length > request.len - header { return 413; }
     let end = header + length;
@@ -88,6 +92,8 @@ fn ih_read(fd: i64, request: u8[:], meta: i64[:]) -> i64 {
     meta[1] = length;
     meta[2] = route;
     meta[3] = json;
+    meta[4] = line[3];
+    meta[5] = path_len;
     return 0;
 }
 
@@ -100,12 +106,12 @@ fn ih_response(fd: i64, status: i64, body: const u8[:]) {
 }
 
 struct IhCompletion {
-    limit: i64, top: i64, return_tokens: bool, sampler: Q35Sample
+    limit: i64, top: i64, return_tokens: bool, chat: bool, stream: bool, sampler: Q35Sample
 }
 
 fn ih_completion_defaults() -> IhCompletion {
     let s = q35_sample_defaults();
-    return IhCompletion { limit: 1, top: 0, return_tokens: false, sampler: s };
+    return IhCompletion { limit: 1, top: 0, return_tokens: false, chat: false, stream: false, sampler: s };
 }
 
 fn ih_integer_array(response: u8[:], at: i64, ids: const i64[:]) -> i64 {
@@ -219,9 +225,16 @@ fn ih_generate(fd: i64, prompt: const i64[:], opts: const IhCompletion &,
         return;
     }
     var timing: f64[3] = [0.0; 3];
+    let pipeline = top > 0 && prob_pipeline_start(stats[0], top, limit);
     let count = q35_sample_generate(prompt, stats[0], stats[5], eog[..], limit, opts.sampler, ids,
-        timing, top, prob_ids[..], logp[..]);
-    if count <= 0 || count > limit {
+        timing, top, prob_ids[..], logp[..], pipeline);
+    var reports_ready = true;
+    if pipeline {
+        let wait_start = q35_generation_now();
+        reports_ready = prob_pipeline_finish(count, prob_ids[..], logp[..]);
+        if count > 1 { timing[1] += q35_generation_now() - wait_start; }
+    }
+    if count <= 0 || count > limit || !reports_ready {
         ih_response(fd, 500, "{\"error\":\"generation failed\"}");
         return;
     }
@@ -230,6 +243,31 @@ fn ih_generate(fd: i64, prompt: const i64[:], opts: const IhCompletion &,
     let bytes = ih_detokenize(ids[0 .. visible], output);
     if bytes < 0 || bytes > output.len {
         ih_response(fd, 500, "{\"error\":\"detokenization failed\"}");
+        return;
+    }
+    if opts.chat {
+        let reason = if stopped_eos { "stop" } else { "length" };
+        var n = cp_put(response, 0, "{\"id\":\"chatcmpl-local\",\"created\":0,\"model\":\"frankenmoe\",\"object\":");
+        n = cp_put(response, n, if opts.stream { "\"chat.completion.chunk\"" } else { "\"chat.completion\"" });
+        n = cp_put(response, n, if opts.stream { ",\"choices\":[{\"index\":0,\"delta\":" }
+                                else { ",\"choices\":[{\"index\":0,\"message\":" });
+        n = cp_put(response, n, "{\"role\":\"assistant\",\"content\":");
+        n = esc_string(response, n, output, 0, bytes, 1);
+        n = cp_put(response, n, "},\"finish_reason\":\"");
+        n = cp_put(response, n, reason);
+        n = cp_put(response, n, "\"}],\"usage\":{\"prompt_tokens\":");
+        n = cp_uint(response, n, prompt.len);
+        n = cp_put(response, n, ",\"completion_tokens\":");
+        n = cp_uint(response, n, count);
+        n = cp_put(response, n, ",\"total_tokens\":");
+        n = cp_uint(response, n, prompt.len + count);
+        n = cp_put(response, n, "}}");
+        if n < 0 || n > response.len {
+            ih_response(fd, 500, "{\"error\":\"response too large\"}");
+            return;
+        }
+        if opts.stream { ih_windows_sse(fd, response[0 .. n]); }
+        else { ih_response(fd, 200, response[0 .. n]); }
         return;
     }
     var n = cp_put(response, 0, "{\"ids\":");
@@ -351,8 +389,72 @@ fn ih_option(key: const u8[:], kind: i64, integer: i64, number: f64, opts: IhCom
     return false;
 }
 
-fn ih_generate_json(fd: i64, body: const u8[:], output: u8[:], response: u8[:], ids: i64[:]) {
-    if !ih_flat_object(body) {
+fn ih_chat_depth_ok(body: const u8[:]) -> bool {
+    var depth: i64 = 0;
+    var quoted: bool = false;
+    var escaped: bool = false;
+    for i in body.len {
+        let byte = body[i];
+        if quoted {
+            if escaped { escaped = false; }
+            else if byte == 92 { escaped = true; }
+            else if byte == 34 { quoted = false; }
+        } else if byte == 34 {
+            quoted = true;
+        } else if byte == 123 || byte == 91 {
+            depth += 1;
+            if depth > 8 { return false; }
+        } else if byte == 125 || byte == 93 {
+            depth -= 1;
+            if depth < 0 { return false; }
+        }
+    }
+    return depth == 0 && !quoted;
+}
+
+fn ih_generate_chat(fd: i64, p: const PNode, root: i64, opts: const IhCompletion &,
+                    output: u8[:], response: u8[:], ids: i64[:]) {
+    let messages = pget(p, root, "messages");
+    if messages < 0 || p.jk[messages] != PJ_K_ARRAY || p.jn[messages] <= 0 {
+        ih_response(fd, 400, "{\"error\":\"messages must be a nonempty array\"}");
+        return;
+    }
+    var prompt: u8[>..] = [];
+    prompt.resize(response.len, 0);
+    var at: i64 = 0;
+    for i in p.jn[messages] {
+        let message = p.jchild[p.jf[messages] + i];
+        let role, role_len = pget_str(p, message, "role");
+        let text, len = pget_str(p, message, "content");
+        if role < 0 || text < 0 {
+            ih_response(fd, 400, "{\"error\":\"Windows Alpha accepts text messages\"}");
+            return;
+        }
+        let name = p.sbuf[role .. role + role_len];
+        if !rq_eq(name, "system") && !rq_eq(name, "assistant") && !rq_eq(name, "user") {
+            ih_response(fd, 400, "{\"error\":\"unsupported message role\"}");
+            return;
+        }
+        at = cp_put(prompt[..], at, "<|im_start|>");
+        at = cp_put(prompt[..], at, name);
+        at = cp_put(prompt[..], at, "\n");
+        at = cp_put(prompt[..], at, p.sbuf[text .. text + len]);
+        at = cp_put(prompt[..], at, "<|im_end|>\n");
+        if at < 0 || at > prompt.len {
+            ih_response(fd, 413, "{\"error\":\"chat prompt too large\"}");
+            return;
+        }
+    }
+    at = cp_put(prompt[..], at, "<|im_start|>assistant\n<think>");
+    if at < 0 || at > prompt.len {
+        ih_response(fd, 413, "{\"error\":\"chat prompt too large\"}");
+        return;
+    }
+    ih_generate_text(fd, prompt[0 .. at], opts, output, response, ids);
+}
+
+fn ih_generate_json(fd: i64, body: const u8[:], output: u8[:], response: u8[:], ids: i64[:], chat: bool) {
+    if !(if chat { ih_chat_depth_ok(body) } else { ih_flat_object(body) }) {
         ih_response(fd, 400, "{\"error\":\"expected a flat completion object\"}");
         return;
     }
@@ -379,15 +481,39 @@ fn ih_generate_json(fd: i64, body: const u8[:], output: u8[:], response: u8[:], 
         jkl: table[12*n..13*n], jchild: table[13*n..14*n], sbuf: strings[..] };
     let prompt = pget(p, root, "prompt");
     var opts = ih_completion_defaults();
+    if chat { opts.chat = true; opts.limit = 256; }
     let first = p.jf[root];
     for i in p.jn[root] {
         let edge = first + i;
         let key = p.sbuf[p.jkey[edge] .. p.jkey[edge]+p.jkl[edge]];
         let child = p.jchild[edge];
-        if !ih_option(key, p.jk[child], p.jv[child], doubles[child], opts) {
+        if chat {
+            if rq_eq(key, "messages") || rq_eq(key, "model") || rq_eq(key, "stream_options") { continue; }
+            if rq_eq(key, "stream") && p.jk[child] == PJ_K_BOOL {
+                opts.stream = p.jv[child] != 0;
+                continue;
+            }
+            if rq_eq(key, "max_tokens") || rq_eq(key, "max_completion_tokens") {
+                if p.jk[child] != PJ_K_INT && p.jk[child] != PJ_K_UINT {
+                    ih_response(fd, 400, "{\"error\":\"invalid max_tokens\"}");
+                    return;
+                }
+                opts.limit = p.jv[child];
+                continue;
+            }
+            if rq_eq(key, "tools") || rq_eq(key, "tool_choice") || rq_eq(key, "response_format") {
+                ih_response(fd, 400, "{\"error\":\"unsupported chat feature\"}");
+                return;
+            }
+        }
+        if !ih_option(key, p.jk[child], p.jv[child], doubles[child], opts) && !chat {
             ih_response(fd, 400, "{\"error\":\"unsupported completion option\"}");
             return;
         }
+    }
+    if chat {
+        ih_generate_chat(fd, p, root, opts, output, response, ids);
+        return;
     }
     if prompt >= 0 && p.jk[prompt] == PJ_K_ARRAY {
         ih_generate_ids(fd, p, prompt, opts, output, response, ids);
@@ -402,7 +528,7 @@ fn ih_generate_json(fd: i64, body: const u8[:], output: u8[:], response: u8[:], 
 }
 
 fn ih_request(fd: i64, request: u8[:], output: u8[:], response: u8[:], ids: i64[:]) {
-    var meta: i64[4] = [0; 4];
+    var meta: i64[6] = [0; 6];
     let status = ih_read(fd, request, meta);
     if status == 404 {
         ih_response(fd, status, "{\"error\":\"route not found\"}");
@@ -410,6 +536,12 @@ fn ih_request(fd: i64, request: u8[:], output: u8[:], response: u8[:], ids: i64[
         ih_response(fd, status, "{\"error\":\"invalid request framing\"}");
     } else if meta[2] == 1 {
         ih_response(fd, 200, "{\"status\":\"ok\"}");
+    } else if meta[2] == 101 {
+        if !ih_windows_asset(fd, request[meta[4] .. meta[4] + meta[5]]) {
+            ih_response(fd, 404, "{\"error\":\"file not found\"}");
+        }
+    } else if meta[2] == 5 {
+        ih_response(fd, 200, "{\"object\":\"list\",\"data\":[{\"id\":\"frankenmoe\",\"object\":\"model\",\"created\":0,\"owned_by\":\"local\"}]}");
     } else if meta[2] == 3 {
         var stats: i64[24] = [0; 24];
         ih_stats_abi(stats);
@@ -467,7 +599,7 @@ fn ih_request(fd: i64, request: u8[:], output: u8[:], response: u8[:], ids: i64[
     } else {
         let body = request[meta[0] .. meta[0]+meta[1]];
         if meta[3] != 0 {
-            ih_generate_json(fd, body, output, response, ids);
+            ih_generate_json(fd, body, output, response, ids, meta[2] == 13);
         } else {
             let opts = ih_completion_defaults();
             ih_generate_text(fd, body, opts, output, response, ids);

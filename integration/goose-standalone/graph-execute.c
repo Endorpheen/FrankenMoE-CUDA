@@ -10,7 +10,11 @@
 #include <pthread.h>
 #include <fcntl.h>
 #include <inttypes.h>
+#ifdef _WIN32
+#include "windows/platform.h"
+#else
 #include <sched.h>
+#endif
 #include <stdatomic.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -242,7 +246,12 @@ uint64_t fg143_storage_alignment(void) {
 
 uint64_t fg143_storage_alloc(uint64_t bytes) {
     if (bytes > SIZE_MAX) return 0;
+#ifdef _WIN32
+    _Static_assert(GGML_MEM_ALIGN <= 16, "Win64 CRT heap alignment");
+    return (uint64_t)(uintptr_t)malloc((size_t)bytes);
+#else
     return (uint64_t) (uintptr_t) aligned_alloc(GGML_MEM_ALIGN, (size_t) bytes);
+#endif
 }
 
 void * fg_standalone_graph_alloc(struct ggml_cgraph * graph) {
@@ -263,6 +272,9 @@ int64_t fg143_storage_slot(uint64_t address, uint64_t tensor) {
 }
 
 uint64_t fg143_storage_ram_available(void) {
+#ifdef _WIN32
+    return fg_win_memory(true);
+#else
     FILE * file = fopen("/proc/meminfo", "r");
     if (!file) return 0;
     uint64_t kib = 0;
@@ -272,6 +284,7 @@ uint64_t fg143_storage_ram_available(void) {
     }
     fclose(file);
     return kib <= UINT64_MAX / 1024 ? kib * 1024 : 0;
+#endif
 }
 
 void fg143_storage_ram_error(uint64_t required, uint64_t available) {
@@ -621,6 +634,7 @@ enum ggml_status fg_standalone_graph_plan_compute(struct fg_standalone_graph_pla
     return compute_graph(plan->graph, false, plan->output, (sl_i64) {plan->deadlines, plan->nodes});
 }
 
+#ifndef _WIN32
 bool fg_q35_checkpoint_enabled(void) {
     const char * path = getenv("GOOSE_APEX_TRACE_DIR");
     return path && *path;
@@ -676,3 +690,13 @@ enum ggml_status fg_q35_checkpoint_compute(struct fg_standalone_graph_plan * pla
     if (!valid) fprintf(stderr, "Goose: numerical checkpoint failed for prefix %" PRId64 "\n", prefix);
     return valid ? GGML_STATUS_SUCCESS : GGML_STATUS_FAILED;
 }
+
+#else
+bool fg_q35_checkpoint_enabled(void) { return false; }
+
+enum ggml_status fg_q35_checkpoint_compute(struct fg_standalone_graph_plan *plan,
+        sl_i64 frames, sl_i64 layers, int64_t prefix, int64_t tokens) {
+    (void)frames; (void)layers; (void)prefix; (void)tokens;
+    return fg_standalone_graph_plan_compute(plan);
+}
+#endif

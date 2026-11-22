@@ -1,0 +1,17 @@
+#include <windows.h>
+#include "launcher-resources.h"
+
+IDD_SETTINGS DIALOGEX 0, 0, 286, 170
+STYLE DS_SETFONT | DS_MODALFRAME | WS_CAPTION | WS_SYSMENU
+CAPTION "FrankenMoE settings"
+FONT 9, "Segoe UI"
+BEGIN
+    GROUPBOX "Hardware profile", -1, 8, 8, 270, 64
+    AUTORADIOBUTTON "Automatic (recommended)", IDC_AUTOMATIC, 18, 22, 244, 10, WS_GROUP | WS_TABSTOP
+    AUTORADIOBUTTON "Economy (smaller context and memory budget)", IDC_ECONOMY, 18, 39, 244, 10
+    AUTORADIOBUTTON "Performance (within available memory)", IDC_PERFORMANCE, 18, 55, 244, 10
+    LTEXT "", IDC_PROFILE_DETAILS, 10, 79, 264, 42
+    PUSHBUTTON "Choose different model...", IDC_PICK_MODEL, 10, 137, 114, 22
+    DEFPUSHBUTTON "Save", IDOK, 151, 137, 58, 22
+    PUSHBUTTON "Cancel", IDCANCEL, 216, 137, 58, 22
+END

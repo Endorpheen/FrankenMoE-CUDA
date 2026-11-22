@@ -92,3 +92,4 @@ that broke.
 | regression | extra-objects-provenance | `tests/regression/extra-objects-provenance` | 18 hand-built objects | P10-06 | fast | 18/18 2026-11-19 |
 | integration | goose-modules | `tests/integration/goose-modules` | m1 stage build doors | P10-06 | integration | FG_MODULES 8/8 against runtime/goose-stage 2026-11-19 |
 | regression | set-self-contained | `tests/regression/set-self-contained` | a hash-matching set that cannot load | rule 22 | fast | release ok, checkpoint FAILS 2026-11-19 |
+| windows | alpha-transport | `tests/windows/alpha-transport` | Windows Alpha | WinSock, Cyrillic GGUF path, Ember assets, OpenAI JSON and SSE | integration | opt-in fixture, no real GGUF inference |
