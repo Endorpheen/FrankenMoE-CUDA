@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <pthread.h>
 #include <fcntl.h>
 #include <inttypes.h>
 #include <sys/mman.h>
@@ -429,6 +430,37 @@ int64_t fg_http_eog(sl_i64 ids) {
     return H.n_eog;
 }
 
+static pthread_once_t exchange_once = PTHREAD_ONCE_INIT;
+static pthread_key_t exchange_key;
+static bool exchange_key_available;
+static _Thread_local struct {
+    uint8_t *data;
+    size_t capacity;
+    bool borrowed;
+} decode_exchange;
+
+static void init_exchange_key(void) {
+    exchange_key_available = pthread_key_create(&exchange_key, free) == 0;
+}
+
+static uint8_t *borrow_decode_exchange(size_t bytes) {
+    if (decode_exchange.borrowed) return NULL;
+    if (decode_exchange.capacity < bytes) {
+        if (pthread_once(&exchange_once, init_exchange_key) != 0 || !exchange_key_available) return NULL;
+        uint8_t *data = malloc(bytes);
+        if (!data) return NULL;
+        if (pthread_setspecific(exchange_key, data) != 0) {
+            free(data);
+            return NULL;
+        }
+        free(decode_exchange.data);
+        decode_exchange.data = data;
+        decode_exchange.capacity = bytes;
+    }
+    decode_exchange.borrowed = true;
+    return decode_exchange.data;
+}
+
 int64_t fg_q35_generation_eval(sl_i32 tokens, sl_f32 output, uint8_t prefill) {
     if (!tokens.data || tokens.len <= 0 || output.len < 0 ||
         (output.len != 0 && !output.data) ||
@@ -439,7 +471,11 @@ int64_t fg_q35_generation_eval(sl_i32 tokens, sl_f32 output, uint8_t prefill) {
     if (token_bytes > SIZE_MAX - logit_bytes) return -1;
     // Nested Goose exports start at frame zero and can reuse the caller's
     // arena slots. Pin both borrowed slices outside that arena until return.
-    uint8_t * exchange = malloc(token_bytes + logit_bytes);
+    const size_t total_bytes = token_bytes + logit_bytes;
+    uint8_t * exchange = !prefill && tokens.len == 1 ?
+        borrow_decode_exchange(total_bytes) : NULL;
+    const bool reused = exchange != NULL;
+    if (!reused) exchange = malloc(total_bytes);
     if (!exchange) return -1;
     memcpy(exchange, tokens.data, token_bytes);
     const bool previous = fg_standalone_set_cpu_prefill(prefill != 0);
@@ -447,7 +483,8 @@ int64_t fg_q35_generation_eval(sl_i32 tokens, sl_f32 output, uint8_t prefill) {
         (sl_f32) {exchange + token_bytes, output.len});
     fg_standalone_set_cpu_prefill(previous);
     if (result > 0) memcpy(output.data, exchange + token_bytes, logit_bytes);
-    free(exchange);
+    if (reused) decode_exchange.borrowed = false;
+    else free(exchange);
     return result;
 }
 

@@ -2753,3 +2753,12 @@ Of that, 2599.612 ms occur outside CUDA before the next submission
 and 767.552 ms overlap the 32-byte route readback API call. The largest
 subset outside CUDA is 1449.037 ms from logits to next token upload.
 CPU samples do not establish which functions own that wall interval.
+
+## EXP-1716 — Reuse the host allocation for decode logits
+
+The [ordinary 32,768/512 pair](../../experiments/EXP-2026-11-22-1716-reuse-logit-exchange/README.md)
+raises decode from a fresh 45.31 to 45.88 tok/s and saves 129 ms client
+time. Prefill is 3004.73 versus 3007.91 tok/s, and VRAM, RAM, swap,
+output tokens and SLRU are preserved within the recorded differences.
+This pair measures the allocation change as a whole. The remaining
+logits-to-selection and graph setup intervals still need attribution.
