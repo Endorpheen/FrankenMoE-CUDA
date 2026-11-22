@@ -18,7 +18,7 @@ int64_t __wrap_fg_http_eog(sl_i64 ids) {
 
 int64_t __wrap_fg_q35_generation_eval(sl_i32 tokens, sl_f32 logits, uint8_t prefill) {
     if (tokens.len < 1 || (logits.len != 0 && logits.len != 4)) return -1;
-    const int64_t best = prefill ? 2 : 3;
+    const int64_t best = prefill ? (tokens.data[0] == 2 ? 0 : tokens.data[0] == 1 ? 1 : 2) : 3;
     for (int64_t i = 0; i < logits.len; ++i) logits.data[i] = i == best ? 20.0f : -20.0f;
     return logits.len;
 }
@@ -29,6 +29,14 @@ void __wrap_fg_q35_generation_profile(sl_i64 profile) {
     profile.data[2] = 0;
 }
 
+static bool prompt_contains(sl_u8 prompt, const char *text) {
+    const int64_t len = strlen(text);
+    for (int64_t i = 0; i + len <= prompt.len; ++i) {
+        if (memcmp(prompt.data + i, text, (size_t)len) == 0) return true;
+    }
+    return false;
+}
+
 int64_t fg_http_tokenize(sl_u8 prompt, sl_i64 out) {
     static const char suffix[] = "<|im_start|>assistant\n<think>";
     static const char native[] = "native fixture";
@@ -37,15 +45,27 @@ int64_t fg_http_tokenize(sl_u8 prompt, sl_i64 out) {
     const bool chat_prompt = prompt.len >= sizeof(suffix) - 1 &&
         !memcmp(prompt.data + prompt.len - (sizeof(suffix) - 1), suffix, sizeof(suffix) - 1);
     if ((!native_prompt && !chat_prompt) || out.len < 1) return -1;
-    out.data[0] = 0;
+    if (chat_prompt && prompt_contains(prompt, "RECOVERY-FOLLOWUP-FIXTURE") &&
+        (!prompt_contains(prompt, "<function=search>\n<parameter=query>\nbrowser\n</parameter>") ||
+         !prompt_contains(prompt, "<tool_response>\nUnknown tool: search\n</tool_response>"))) return -1;
+    out.data[0] = prompt_contains(prompt, "UNKNOWN-TOOL-FIXTURE") ? 2 :
+        prompt_contains(prompt, "MIXED-TOOL-FIXTURE") ? 1 : 0;
     return 1;
 }
 
 int64_t fg_http_detokenize(sl_i64 ids, sl_u8 out) {
     static const char result[] = "fixture reply";
-    if (ids.len < 1 || ids.data[0] != 2 || out.len < sizeof(result) - 1) return -1;
-    memcpy(out.data, result, sizeof(result) - 1);
-    return sizeof(result) - 1;
+    static const char mixed[] = "thinking</think>\nOpening the browser.\n"
+        "<tool_call>\n<function=skill>\n<parameter=id>\nbrowser\n</parameter>\n</function>\n</tool_call>\n"
+        "<tool_call>\n<function=search>\n<parameter=query>\nbrowser\n</parameter>\n</function>\n</tool_call>";
+    static const char unknown[] = "thinking</think>\n"
+        "<tool_call>\n<function=search>\n<parameter=query>\nbrowser\n</parameter>\n</function>\n</tool_call>";
+    if (ids.len < 1 || ids.data[0] < 0 || ids.data[0] > 2) return -1;
+    const char *text = ids.data[0] == 0 ? unknown : ids.data[0] == 1 ? mixed : result;
+    const int64_t size = strlen(text);
+    if (out.len < size) return -1;
+    memcpy(out.data, text, (size_t)size);
+    return size;
 }
 
 void fg_http_stats(sl_i64 stats) {

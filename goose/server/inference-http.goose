@@ -76,6 +76,30 @@ fn ih_log_generation(prompt: i64, generated: i64, prefill: f64, decode: f64) {
     ih_console(line[0 .. n]);
 }
 
+fn ih_log_prefill_progress(processed: i64, total: i64, seconds: f64) {
+    var line: u8[192] = [0; 192];
+    var n = cp_put(line, 0, "🪿 [prefill] ");
+    n = cp_uint(line, n, processed);
+    n = cp_put(line, n, " / ");
+    n = cp_uint(line, n, total);
+    n = cp_put(line, n, " tokens | ");
+    n = cp_fixed(line, n, if seconds > 0.0 { (processed as f64) / seconds } else { 0.0 }, 2);
+    n = cp_put(line, n, " tok/s | ");
+    n = cp_fixed(line, n, seconds, 2);
+    n = cp_put(line, n, if processed == total { " s (done)\n" } else { " s\n" });
+    ih_console(line[0 .. n]);
+}
+
+fn ih_log_context(positions: i64, capacity: i64) {
+    var line: u8[160] = [0; 160];
+    var n = cp_put(line, 0, "🧱 [kv]      context ");
+    n = cp_uint(line, n, positions);
+    n = cp_put(line, n, " / ");
+    n = cp_uint(line, n, capacity);
+    n = cp_put(line, n, " positions | prompt reused 0 tokens\n");
+    ih_console(line[0 .. n]);
+}
+
 fn ih_log_decode_progress(generated: i64, limit: i64, speed: f64) {
     var line: u8[192] = [0; 192];
     var n = cp_put(line, 0, "🔥 [decode] ");
@@ -196,12 +220,14 @@ fn ih_response(fd: i64, status: i64, body: const u8[:]) {
 }
 
 struct IhCompletion {
-    limit: i64, top: i64, return_tokens: bool, chat: bool, oai_text: bool, stream: bool, call_id: i64, sampler: Q35Sample
+    limit: i64, top: i64, return_tokens: bool, chat: bool, oai_text: bool, stream: bool,
+    live_timings: bool, prompt_progress: bool, call_id: i64, sampler: Q35Sample
 }
 
 fn ih_completion_defaults() -> IhCompletion {
     let s = q35_sample_defaults();
-    return IhCompletion { limit: 1, top: 0, return_tokens: false, chat: false, oai_text: false, stream: false, call_id: 0, sampler: s };
+    return IhCompletion { limit: 1, top: 0, return_tokens: false, chat: false, oai_text: false, stream: false,
+        live_timings: false, prompt_progress: false, call_id: 0, sampler: s };
 }
 
 fn ih_integer_array(response: u8[:], at: i64, ids: const i64[:]) -> i64 {
@@ -310,14 +336,14 @@ fn ih_tool_allowed(catalog: const u8[:], name: const u8[:]) -> bool {
 }
 
 fn ih_tool_output(src: const u8[:], catalog: const u8[:], arguments: u8[:], out: u8[:],
-                  at: i64, index: i64, stream: bool, call_id: i64) -> i64 {
+                  at: i64, index: i64, stream: bool, call_id: i64, report_unknown: bool) -> i64 {
     let lo, hi = ih_trim(src);
     let tool = src[lo .. hi];
     if tool.len < 23 || !rq_eq(tool[0 .. 10], "<function=") { return -1; }
     let name_end = find_at(tool, ">");
     if name_end <= 10 { return -1; }
     let name = tool[10 .. name_end];
-    if !ih_tool_identifier(name) || !ih_tool_allowed(catalog, name) { return -1; }
+    if !ih_tool_identifier(name) || (!report_unknown && !ih_tool_allowed(catalog, name)) { return -1; }
     var pos = name_end + 1;
     var n = cp_put(arguments, 0, "{");
     var count: i64 = 0;
@@ -392,6 +418,29 @@ fn ih_chat_sse_data(fd: i64, body: const u8[:]) -> bool {
            ht_write_all_impl(fd, "\n\n") == 0;
 }
 
+fn ih_chat_sse_progress_header(response: u8[:]) -> i64 {
+    return cp_put(response, 0, "{\"id\":\"chatcmpl-local\",\"created\":0,\"model\":\"frankenmoe\",\"object\":\"chat.completion.chunk\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":null}]");
+}
+
+fn ih_chat_send_progress(stream: i64[:], response: const u8[:], at: i64) {
+    if at > response.len || !ih_chat_sse_start(stream[0], stream) { return; }
+    if !ih_chat_sse_data(stream[0], response[0 .. at]) { stream[3] = -1; }
+}
+
+fn ih_publish_prefill(processed: i64, total: i64, seconds: f64, stream: i64[:], response: u8[:]) {
+    ih_log_prefill_progress(processed, total, seconds);
+    if stream[9] == 0 || stream[3] < 0 { return; }
+    var n = ih_chat_sse_progress_header(response);
+    n = cp_put(response, n, ",\"prompt_progress\":{\"total\":");
+    n = cp_uint(response, n, total);
+    n = cp_put(response, n, ",\"cache\":0,\"processed\":");
+    n = cp_uint(response, n, processed);
+    n = cp_put(response, n, ",\"time_ms\":");
+    n = fmt_double(response, n, seconds * 1000.0);
+    n = cp_put(response, n, "}}");
+    ih_chat_send_progress(stream, response, n);
+}
+
 fn ih_chat_sse_delta(fd: i64, offset: i64, bound: i64, text: const u8[:],
                      field: const u8[:], stream: i64[:], index: i64, response: u8[:]) {
     let start = if stream[index] > offset { stream[index] } else { offset };
@@ -411,8 +460,10 @@ fn ih_chat_sse_delta(fd: i64, offset: i64, bound: i64, text: const u8[:],
     else { stream[3] = -1; }
 }
 
-fn ih_chat_stream_observe(ids: const i64[:], stream: i64[:], output: u8[:], response: u8[:]) {
-    let now = (q35_generation_now() * 1000.0) as i64;
+fn ih_chat_stream_observe(ids: const i64[:], prompt: i64, start_time: f64, prefill_done: f64,
+                          stream: i64[:], output: u8[:], response: u8[:]) {
+    let timestamp = q35_generation_now();
+    let now = (timestamp * 1000.0) as i64;
     if stream[5] == 0 {
         stream[5] = now;
         stream[6] = ids.len;
@@ -422,6 +473,14 @@ fn ih_chat_stream_observe(ids: const i64[:], stream: i64[:], output: u8[:], resp
         stream[6] = ids.len;
     }
     if stream[4] == 0 || stream[3] < 0 { return; }
+    if stream[8] != 0 {
+        let timing: f64[3] = [prefill_done - start_time, timestamp - prefill_done, prompt as f64];
+        var n = ih_chat_sse_progress_header(response);
+        n = ih_timing_fields(response, n, ids.len, timing[..]);
+        n = cp_put(response, n, "}");
+        ih_chat_send_progress(stream, response, n);
+        if stream[3] < 0 { return; }
+    }
     let size = ih_detokenize(ids, output);
     if size <= 0 || size > output.len { return; }
     let text = output[0 .. size];
@@ -432,7 +491,6 @@ fn ih_chat_stream_observe(ids: const i64[:], stream: i64[:], output: u8[:], resp
     let bound = if closed >= 0 { closed } else { size - 24 };
     let early_tool = find_at(text[reason .. size], "<tool_call>");
     let safe_bound = if early_tool >= 0 && reason + early_tool < bound { reason + early_tool } else { bound };
-    if stream[1] == 0 { stream[1] = start; }
     ih_chat_sse_delta(fd, start, safe_bound, text, "\"reasoning_content\":", stream, 1, response);
     if closed >= 0 && stream[3] >= 0 {
         let trim, _ = ih_trim(text[answer .. size]);
@@ -447,7 +505,7 @@ fn ih_chat_output(fd: i64, output: const u8[:], response: u8[:], catalog: const 
     let thought_start, closed, answer = ih_apex_chat_bounds(output);
     var thought_end = closed;
     var answer_start = answer;
-    if thought_end < 0 && (thought_start > 0 || !done || stream[3] > 0) {
+    if thought_end < 0 && (thought_start > 0 || !done || stream[1] > 0) {
         let tool = find_at(output, "<tool_call>");
         thought_end = if tool >= thought_start { tool } else { output.len };
         answer_start = thought_end;
@@ -470,33 +528,42 @@ fn ih_chat_output(fd: i64, output: const u8[:], response: u8[:], catalog: const 
     let answer = output[answer_start .. output.len];
     let first = if catalog.len > 0 { find_at(answer, "<tool_call>") } else { -1 };
     var calls: i64 = 0;
+    var tool_suffix = false;
     let fields = n;
     if first >= 0 {
         var arguments: u8[>..] = [];
         arguments.resize(response.len, 0);
-        n = cp_put(response, n, ",\"tool_calls\":[");
-        var pos = first;
-        while pos + 11 <= answer.len && rq_eq(answer[pos .. pos + 11], "<tool_call>") {
-            let start = pos + 11;
-            let end = find_at(answer[start .. answer.len], "</tool_call>");
-            if end < 0 { break; }
-            let next = ih_tool_output(answer[start .. start + end], catalog, arguments[..], response,
-                if calls == 0 { n } else { cp_put(response, n, ",") }, calls, opts.stream, opts.call_id);
-            if next < 0 { break; }
-            n = next;
-            calls += 1;
-            pos = start + end + 12;
-            let skip, _ = ih_trim(answer[pos .. answer.len]);
-            pos += skip;
+        for pass in 2 {
+            n = cp_put(response, fields, ",\"tool_calls\":[");
+            var pos = first;
+            while pos + 11 <= answer.len && rq_eq(answer[pos .. pos + 11], "<tool_call>") {
+                let start = pos + 11;
+                let end = find_at(answer[start .. answer.len], "</tool_call>");
+                if end < 0 { break; }
+                let next = ih_tool_output(answer[start .. start + end], catalog, arguments[..], response,
+                    if calls == 0 { n } else { cp_put(response, n, ",") }, calls, opts.stream, opts.call_id, pass != 0);
+                if next >= 0 {
+                    n = next;
+                    calls += 1;
+                }
+                pos = start + end + 12;
+                let skip, _ = ih_trim(answer[pos .. answer.len]);
+                pos += skip;
+            }
+            tool_suffix = pos == answer.len;
+            if !tool_suffix { calls = 0; break; }
+            if calls > 0 { break; }
         }
-        if pos != answer.len { calls = 0; }
         n = if calls > 0 { cp_put(response, n, "]") } else { fields };
     }
     n = cp_put(response, n, ",\"content\":");
-    let length = if calls > 0 { first } else { answer.len };
+    let length = if tool_suffix { first } else { answer.len };
     let low, high = ih_trim(answer[0 .. length]);
     let sent = if stream[2] > answer_start + low { stream[2] - answer_start } else { low };
-    if calls > 0 && high <= sent { n = cp_put(response, n, "null"); }
+    if tool_suffix && calls == 0 && high <= sent {
+        n = cp_put(response, n, "\"The requested tool call could not be executed.\"");
+    }
+    else if calls > 0 && high <= sent { n = cp_put(response, n, "null"); }
     else if high <= sent { n = cp_put(response, n, "\"\""); }
     else { n = esc_string(response, n, answer, sent, high - sent, 1); }
     n = cp_put(response, n, "},\"finish_reason\":\"");
@@ -574,7 +641,9 @@ fn ih_generate(fd: i64, prompt: const i64[:], opts: const IhCompletion &, catalo
     var timing: f64[3] = [0.0; 3];
     let pipeline = top > 0 && prob_pipeline_start(stats[0], top, limit);
     let chat_stream: i64 = if opts.chat && opts.stream { 1 } else { 0 };
-    var stream: i64[8] = [fd, 0, 0, 0, chat_stream, 0, 0, limit];
+    let live_timings: i64 = if chat_stream != 0 && opts.live_timings { 1 } else { 0 };
+    let prompt_progress: i64 = if chat_stream != 0 && opts.prompt_progress { 1 } else { 0 };
+    var stream: i64[10] = [fd, 0, 0, 0, chat_stream, 0, 0, limit, live_timings, prompt_progress];
     let count = q35_sample_generate(prompt, stats[0], stats[5], eog[..], limit, opts.sampler, sampled,
         timing, top, prob_ids[..], logp[..], pipeline, stream[..], text, response);
     var reports_ready = true;
@@ -589,6 +658,7 @@ fn ih_generate(fd: i64, prompt: const i64[:], opts: const IhCompletion &, catalo
         return;
     }
     ih_log_generation(prompt.len, count, timing[0], timing[1]);
+    ih_log_context(prompt.len + count - 1, stats[5]);
     let stopped_eos = bt_is_eog_impl(eog[..], eog.len, sampled[count - 1]) != 0;
     let visible = if stopped_eos { count - 1 } else { count };
     let bytes = ih_detokenize(sampled[0 .. visible], text);
@@ -878,7 +948,7 @@ fn ih_generate_chat(fd: i64, p: const PNode, numbers: const f64[:], root: i64, o
             at = cp_put(prompt[..], at, "\n");
             at = ih_chat_json(p, numbers, def, prompt[..], at);
         }
-        at = cp_put(prompt[..], at, "\n</tools>\n\nIf you choose to call a function ONLY reply in the following format with NO suffix:\n\n<tool_call>\n<function=example_function_name>\n<parameter=example_parameter>\nvalue\n</parameter>\n</function>\n</tool_call>\n\nInclude all required parameters. Reason before the call, never after. If there is no function call available, answer normally.");
+        at = cp_put(prompt[..], at, "\n</tools>\n\nIf you choose to call a function ONLY reply in the following format with NO suffix:\n\n<tool_call>\n<function=example_function_name>\n<parameter=example_parameter>\nvalue\n</parameter>\n</function>\n</tool_call>\n\nUse only function names listed in <tools>. Include all required parameters. Reason before the call, never after. If a tool result reports an error, use it to correct your next call. If there is no function call available, answer normally.");
     }
     var tool_group = false;
     for i in p.jn[messages] {
@@ -1029,6 +1099,10 @@ fn ih_generate_json(fd: i64, raw: const u8[:], output: u8[:], response: u8[:], i
             if rq_eq(key, "stream") && p.jk[child] == PJ_K_BOOL {
                 opts.stream = p.jv[child] != 0;
                 continue;
+            }
+            if chat && p.jk[child] == PJ_K_BOOL {
+                if rq_eq(key, "timings_per_token") { opts.live_timings = p.jv[child] != 0; continue; }
+                if rq_eq(key, "return_progress") { opts.prompt_progress = p.jv[child] != 0; continue; }
             }
             if rq_eq(key, "max_tokens") || rq_eq(key, "max_completion_tokens") {
                 if p.jk[child] != PJ_K_INT && p.jk[child] != PJ_K_UINT {

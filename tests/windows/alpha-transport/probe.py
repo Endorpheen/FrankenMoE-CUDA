@@ -21,6 +21,15 @@ ui = {
     "reasoning_control": True, "backend_sampling": False, "timings_per_token": True,
 }
 native = {"prompt": "native fixture", "n_predict": 2, "temperature": 0}
+mixed_tools = {
+    **data,
+    "messages": [{"role": "user", "content": "MIXED-TOOL-FIXTURE"}],
+    "tools": [{**tool, "function": {**tool["function"], "name": "skill"}}],
+}
+unknown_tool = {
+    **mixed_tools,
+    "messages": [{"role": "user", "content": "UNKNOWN-TOOL-FIXTURE"}],
+}
 cases = [
     ("server tool catalog", "/tools", None, False, 404, 200, "empty-list"),
     ("resumable streams", "/v1/streams/lookup", {"conversation_ids": ["fixture"]}, False, 404, 200, "empty-list"),
@@ -31,6 +40,18 @@ cases = [
     ("tools", CHAT, {**data, "tools": [tool]}, False, 400, 200, "chat"),
     ("empty tools", CHAT, {**data, "tools": []}, False, 400, 200, "chat"),
     ("tool_choice alone", CHAT, {**data, "tool_choice": "auto"}, False, 400, 200, "chat"),
+    ("mixed tool names", CHAT, mixed_tools, False, 400, 200, "mixed-tools"),
+    ("mixed tool names SSE", CHAT, {**mixed_tools, "stream": True}, False, 400, 200, "mixed-tools-sse"),
+    ("unknown tool recovery", CHAT, unknown_tool, False, 400, 200, "unknown-tool"),
+    ("unknown tool recovery SSE", CHAT, {**unknown_tool, "stream": True}, False, 400, 200, "unknown-tool-sse"),
+    ("tool recovery follow-up", CHAT, {**mixed_tools, "messages": [
+        {"role": "user", "content": "RECOVERY-FOLLOWUP-FIXTURE"},
+        {"role": "assistant", "content": None, "tool_calls": [
+            {"id": "call_1", "type": "function", "function": {
+                "name": "search", "arguments": "{\"query\":\"browser\"}"}},
+        ]},
+        {"role": "tool", "tool_call_id": "call_1", "content": "Unknown tool: search"},
+    ]}, False, 400, 200, "chat"),
     ("response_format", CHAT, {**data, "response_format": {"type": "json_object"}}, False, 400, 200, "chat"),
     ("full UI JSON", CHAT, ui, False, 400, 200, "chat"),
     ("full UI SSE", CHAT, {**ui, "stream": True}, False, 400, 200, "chat-sse"),
@@ -43,6 +64,15 @@ cases = [
     ("trailing slash and UTF-8 BOM", CHAT + "/", data, True, 404, 200, "chat"),
     ("unsupported image part", CHAT, {**data, "messages": [{"role":"user", "content":[{"type":"image_url","image_url":{"url":"https://invalid.example"}}]}]}, False, 400, 400, "text-only-error"),
 ]
+
+selected_cases = os.environ.get("FRANKENMOE_HTTP_CASES")
+if selected_cases:
+    cases_by_name = {case[0]: case for case in cases}
+    names = selected_cases.split("|")
+    unknown = set(names) - cases_by_name.keys()
+    if unknown:
+        raise SystemExit(f"Unknown HTTP cases: {', '.join(sorted(unknown))}")
+    cases = [cases_by_name[name] for name in names]
 
 if sys.argv[1:] == ["--count"]:
     print(6 + len(cases))
@@ -101,6 +131,24 @@ for name, path, request, bom, before, after, kind in cases:
         response = json.loads(body)
     if kind == "empty-list":
         assert mime == "application/json" and response == [], (name, response)
+        continue
+    if kind in ("mixed-tools", "mixed-tools-sse"):
+        choice = response["choices"][0]
+        assert choice["finish_reason"] == "tool_calls", (name, choice)
+        message = choice["delta" if kind.endswith("-sse") else "message"]
+        assert message["content"] == "Opening the browser.", (name, message)
+        calls = message["tool_calls"]
+        assert len(calls) == 1 and calls[0]["function"]["name"] == "skill", (name, calls)
+        assert json.loads(calls[0]["function"]["arguments"]) == {"id": "browser"}
+        continue
+    if kind in ("unknown-tool", "unknown-tool-sse"):
+        choice = response["choices"][0]
+        assert choice["finish_reason"] == "tool_calls", (name, choice)
+        message = choice["delta" if kind.endswith("-sse") else "message"]
+        assert message["content"] is None, (name, message)
+        calls = message["tool_calls"]
+        assert len(calls) == 1 and calls[0]["function"]["name"] == "search", (name, calls)
+        assert json.loads(calls[0]["function"]["arguments"]) == {"query": "browser"}
         continue
     if kind == "chat":
         answer = response["choices"][0]["message"]["content"]

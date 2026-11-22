@@ -57,6 +57,12 @@ model server at a time. Use a separate OpenCode project and isolated settings.
   and a real tool call. Verify `message` versus `delta`, stable call IDs,
   valid JSON arguments, tool finish reason, terminal SSE event, and a
   follow-up containing the tool response.
+- Exercise recovery from a rejected call. A response with one advertised
+  and one unknown tool must preserve the advertised call. If every emitted
+  call names an unknown tool, OpenCode should record a tool error and issue
+  another model request with that result in history. Check that framing the
+  error does not execute any unadvertised tool. Run one real browser task to
+  verify that the model can recover and use the requested tool.
 - Confirm that SSE delivers distinct events while generation is active.
   For a long answer record time to first useful event and time to completion.
   A response buffered until generation ends can distort the client rate even
