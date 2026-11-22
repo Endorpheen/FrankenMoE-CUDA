@@ -1,0 +1,21 @@
+--- a/cuda-driver.c
++++ b/cuda-driver.c
+@@ -233 +233 @@
+-    Function flash_vec_pack, flash_vec_packed, flash_vec_paired;
++    Function flash_vec_pack, flash_vec_packed, flash_vec_paired, flash_vec_quad;
+@@ -1310,0 +1311,2 @@
++            if (error == 0)
++                (void) cuda.function_get(&cuda.flash_vec_quad, cuda.module, "goose_flash_vec_q4_packed_quad");
+@@ -3880,2 +3882,10 @@
+-    const struct kernel_node_params vector = { .function = paired ? cuda.flash_vec_paired : prepacked ? cuda.flash_vec_packed : cuda.flash_vec,
+-        .grid_x = (unsigned) (paired ? heads / 2 : heads),
++    const bool quad = paired && cuda.flash_vec_quad && (heads / c[4]) % 4 == 0;
++    static bool quad_logged;
++    if (quad && !quad_logged) {
++        quad_logged = true;
++        fprintf(stderr, "Goose CUDA: four query heads share packed K/V\n");
++    }
++    const Function function = quad ? cuda.flash_vec_quad : paired ? cuda.flash_vec_paired :
++        prepacked ? cuda.flash_vec_packed : cuda.flash_vec;
++    const struct kernel_node_params vector = { .function = function,
++        .grid_x = (unsigned) (heads / (quad ? 4 : paired ? 2 : 1)),

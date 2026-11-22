@@ -2733,3 +2733,12 @@ raises decode from a fresh 41.92 to 43.58 tok/s and prefill from
 and both arms have zero swap-out. The experimental checkpoint
 records a 91 MiB RSS increase already present before the first
 request. EXP-1710 is available for rollback.
+
+## EXP-1713 — Share each long-context K/V row across four query heads
+
+The [ordinary 32,768/512 pair](../../experiments/EXP-2026-11-22-1713-flash-gqa-quad/README.md)
+raises decode from a fresh 43.65 to 45.49 tok/s and prefill from
+2995.89 to 3002.35 tok/s. The full request saves 494 ms, with matching
+512 IDs, text and SLRU counters, 8766 MiB process VRAM, and zero swap-out.
+Peak RSS is 92.31 MiB higher in this pair and comparable to the
+same control binary's prior peer measurement.
