@@ -2706,3 +2706,11 @@ preserve the five-alternative acceptance payload. The ordinary Apex
 pair improves 33.76 to 36.62 decode tok/s and saves 1.224 seconds at
 the client. The frozen hybrid diagnostic measures 66.33 with reports
 and 71.17 without. Future optimization retains the original payload.
+
+## EXP-1701 — Remove ownership bookkeeping from sampler order initialization
+
+The [sampler helper and paired Apex results](../../experiments/EXP-2026-11-22-1701-sampler-order/README.md)
+validate a pure borrowed-slice loop. The clean reverse pair saves
+490 ms decode and 654 ms client time with identical 512 IDs and
+SLRU counters. The new default checkpoint is 3,035.23 prefill and
+41.06 decode tok/s at 8,766 MiB process VRAM.

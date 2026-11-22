@@ -1,0 +1,25 @@
+--- a/main.goose
++++ b/main.goose
+@@ -25243,4 +25243,10 @@
+ // fp: 0 top_p, 1 min_p, 2 temp, 3 typical_p.
+ // out: 0 selected position, 1 token id, 2 surviving candidate count.
++fn sm_initialize_order(ids: i64[:], count: i64) {
++    for index in count {
++        ids[index] = index;
++    }
++}
++
+ fn sm_select(lv: f32[:], id: i64[:], p: f32[:], typical_work: f32[:], n_in: i64,
+                     ip: const i64[:], fp: const f32[:], state: i64[:], out: i64[:]) -> i64 {
+@@ -25257,9 +25263,6 @@
+
+     var n: i64 = n_in;
+-    var i: i64 = 0;
+-    while i < n {
+-        id[i] = i;
+-        i = i + 1;
+-    }
++    sm_initialize_order(id, n);
++    var i: i64 = n;
+
+     // top_k
