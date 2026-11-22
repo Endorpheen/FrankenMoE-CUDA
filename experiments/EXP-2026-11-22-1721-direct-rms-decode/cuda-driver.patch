@@ -1,0 +1,23 @@
+--- a/cuda-driver.c
++++ b/cuda-driver.c
+@@ -234,0 +235 @@
++    Function rms_decode_2048;
+@@ -1342,0 +1344,2 @@
++        if (error == 0 && rms_reference)
++            (void) cuda.function_get(&cuda.rms_decode_2048, cuda.module, "goose_rms_decode_2048");
+@@ -4290,2 +4293,13 @@
+-            void * args[] = {&staged[0], &staged[1], &output, plan, &param0, (void *) &vectors, &param1};
+-            error = cuda.launch(cuda.rms_reference, (unsigned) plan[24], 1, 1, lanes, 1, 1, 0, NULL, args, NULL);
++            if (vec && width == 2048 && plan[1] == width && plan[24] == 1 && !(plan[23] & 16) &&
++                cuda.rms_decode_2048 && !fg143_cpu_prefill()) {
++                static bool rms_decode_logged;
++                if (!rms_decode_logged) {
++                    rms_decode_logged = true;
++                    fprintf(stderr, "Goose CUDA: direct single-row RMSNorm for decode\n");
++                }
++                void *args[] = {&staged[0], &staged[1], &output, &param0};
++                error = cuda.launch(cuda.rms_decode_2048, 1, 1, 1, 512, 1, 1, 0, NULL, args, NULL);
++            } else {
++                void * args[] = {&staged[0], &staged[1], &output, plan, &param0, (void *) &vectors, &param1};
++                error = cuda.launch(cuda.rms_reference, (unsigned) plan[24], 1, 1, lanes, 1, 1, 0, NULL, args, NULL);
++            }

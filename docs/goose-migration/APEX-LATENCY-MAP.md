@@ -2788,3 +2788,12 @@ raises decode from a fresh 49.27 to 49.95 tok/s. Prefill is 2986.82
 versus 3012.82 tok/s, and the total request saves 47 ms. All 512 IDs,
 text, and SLRU counts match. VRAM stays at 8766 MiB. The record
 preserves the prefill and RSS tradeoff and startup-only system swap.
+
+## EXP-1721 — Pass a contiguous single-row RMSNorm directly
+
+The [ordinary 32,768/512 pair](../../experiments/EXP-2026-11-22-1721-direct-rms-decode/README.md)
+records 51.09 decode and 3015.02 prefill tok/s. The fresh EXP-1720
+control is 48.74 decode, below its historical 49.95 sample.
+Client time saves 471 ms within the pair. All 512 IDs, text, and
+SLRU match, peak VRAM stays 8766 MiB, and the 97 MiB RSS difference
+and system swap-out counts are recorded.

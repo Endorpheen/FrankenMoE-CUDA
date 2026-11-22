@@ -1,0 +1,24 @@
+--- a/rms-reference.goose
++++ b/rms-reference.goose
+@@ -189,0 +190,21 @@
++
++extern "fg_device_mul_rn" fn rms_mul_rn(a: f32, b: f32) -> f32;
++
++// One contiguous 2048-element row, with one vector per thread.
++export fn fg_rms_decode_2048(x: u64, weights: u64, out: u64, shared: u64,
++                            tid: i32, eps: f32) {
++    let v = load4(x, tid);
++    let xy = fma(v.x, v.x, v.y * v.y);
++    let xyz = fma(v.z, v.z, xy);
++    let sum = block_sum(0.0 + fma(v.w, v.w, xyz), shared, tid, 512);
++    let scale = rsqrt(rms_mul_rn(sum, 0.00048828125) + eps);
++    var result = RmsVec {scale * v.x, scale * v.y, scale * v.z, scale * v.w};
++    if weights != 0 {
++        let w = load4(weights, tid);
++        result.x *= w.x;
++        result.y *= w.y;
++        result.z *= w.z;
++        result.w *= w.w;
++    }
++    store4(out, tid, result);
++}
