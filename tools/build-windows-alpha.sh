@@ -18,20 +18,8 @@ sha256sum "$unit/main.goose" "$cpu/cpu.c" "$cpu/cpu.h" "$cuda/goose-cuda-image.h
 sum_file="$out/build-inputs.sha256"
 sha256sum -c "$sum_file"
 
-python3 - "$unit/main.goose" "$root/goose/server/inference-http.goose" "$out/main.goose" <<'PY'
-from pathlib import Path
-import sys
-source, patch, dest = map(Path, sys.argv[1:])
-text = source.read_text()
-marker = '// ---- composed from goose/server/inference-http.goose ----\n'
-if text.count(marker) != 1:
-    raise SystemExit("Expected the standalone Goose composition and its HTTP module")
-start = text.index(marker) + len(marker)
-end = text.find('// ---- composed from ', start)
-if end < 0:
-    end = len(text)
-dest.write_text(text[:start] + patch.read_text() + '\n' + text[end:])
-PY
+python3 "$root/tools/compose-alpha-runtime.py" "$unit/main.goose" \
+ "$root/goose/server/inference-http.goose" "$out/main.goose"
 cp "$cpu"/{cpu.h,ggml-version.h} "$out/"
 cp "$cuda/goose-cuda-image.h" "$out/"
 printf '#include "main.h"\n' > "$out/goose-unit.h"
@@ -53,7 +41,7 @@ build "$src/windows/web.c" web
 build "$src/slru-runtime-shim.c" slru-shim -DFG_SLRU_SHARED_UNIT
 build "$root/integration/m1/host/goose_host.c" goose-host
 build "$src/ggml-system.c" ggml-system
-build "$src/cli/infer-main.c" infer-main
+build "$src/cli/infer-main.c" infer-main -DFG_CHAT_ALPHA
 build "$ggml/src/ggml.c" ggml
 build "$ggml/src/ggml-quants.c" ggml-quants
 build "$prob/probability.c" probability -Dgoose_init=fg_probability_init -Dgg_init_globals=fg_probability_globals

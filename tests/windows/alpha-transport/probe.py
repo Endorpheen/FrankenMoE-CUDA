@@ -23,6 +23,7 @@ ui = {
 native = {"prompt": "native fixture", "n_predict": 2, "temperature": 0}
 cases = [
     ("plain chat", CHAT, data, False, 200, 200, "chat"),
+    ("OpenCode output budget", CHAT, {**data, "max_tokens": 65536}, False, 400, 200, "chat"),
     ("OpenAI content parts", CHAT, {**data, "messages": [{"role": "user", "content": parts}]}, False, 400, 200, "chat"),
     ("tools", CHAT, {**data, "tools": [tool]}, False, 400, 200, "chat"),
     ("empty tools", CHAT, {**data, "tools": []}, False, 400, 200, "chat"),
@@ -90,13 +91,15 @@ for name, path, request, bom, before, after, kind in cases:
         continue
     if kind.endswith("-sse"):
         assert mime == "text/event-stream" and body.endswith(b"data: [DONE]\n\n")
-        response = json.loads(body.splitlines()[0][6:])
+        events = [json.loads(line[6:]) for line in body.splitlines()
+                  if line.startswith(b"data: ") and line != b"data: [DONE]"]
+        response = events[-1]
     else:
         response = json.loads(body)
     if kind == "chat":
         answer = response["choices"][0]["message"]["content"]
     elif kind == "chat-sse":
-        answer = response["choices"][0]["delta"]["content"]
+        answer = "".join(event["choices"][0]["delta"].get("content") or "" for event in events)
     elif kind == "text-sse":
         answer = response["choices"][0]["text"]
     else:

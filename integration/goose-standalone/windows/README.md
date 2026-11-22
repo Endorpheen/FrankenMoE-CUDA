@@ -51,20 +51,24 @@ its server console.
 ## API covered by the alpha
 
 - `GET /health`, `GET /props`, and `GET /v1/models`.
-- `POST /v1/chat/completions` accepts system, user and assistant messages
-  with string content or arrays of text parts. The text parts are joined
-  in order and rendered with the Apex chat format.
+- `POST /v1/chat/completions` accepts system, user, assistant, and tool messages.
+  It renders text parts, tool definitions, and tool results with the Apex
+  chat format. Reasoning is returned as `reasoning_content`. Supported tool
+  calls are returned as `tool_calls` for the client to execute.
 - `POST /v1/completions` returns OpenAI text completion JSON. Native
   `POST /completion` (also `/v1/completion`) accepts a prompt string or
   token IDs. Send chat messages to `/v1/chat/completions`.
-- JSON and SSE work on all three completion routes. The SSE content
-  arrives in one chunk after generation, followed by `[DONE]`.
-- The OpenAI routes ignore `tools`, `tool_choice`, and `response_format`
-  with a warning once per field per server process. Tool calls,
-  multimodal parts, and structured output are unsupported.
-- For basic text chat through an OpenAI-compatible client, use the
-  base URL `http://127.0.0.1:8080/v1` and Chat Completions mode. This
-  transport does not support running OpenCode agent tools.
+- All three completion routes support JSON and SSE. Chat SSE streams
+  text and reasoning; tool calls, usage, and timings are sent at the end.
+  The text and native completion routes send one result event.
+- The chat default is 8,192 output tokens. Set `max_tokens` or
+  `max_completion_tokens` to request up to 65,536 within the context budget.
+- This preview supports text messages and Apex function calling. Tool
+  arguments use strings. `tool_choice: none` disables the tool catalog;
+  forced tool selection, multimodal parts, and structured output are outside
+  the alpha API.
+- For OpenCode use `http://127.0.0.1:8080/v1` and enable tools and reasoning
+  for the Apex model in its OpenAI-compatible provider settings.
 
 The terminal reports prefill and decode timings and throughput after
 each generation. `frankenmoe-http.log` in the server working directory

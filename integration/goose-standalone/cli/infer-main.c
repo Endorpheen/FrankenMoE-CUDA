@@ -72,13 +72,21 @@ static int serve(const char * model, int64_t port, int64_t limit, int64_t capaci
         fputs("invalid port or connection limit\n", stderr);
         return 2;
     }
-    static unsigned char request[262144], output[65536], response[524288];
+#ifdef FG_CHAT_ALPHA
+    static unsigned char request[2 * 1024 * 1024];
+#else
+    static unsigned char request[262144];
+#endif
+    static unsigned char output[65536], response[524288];
     static int64_t ids[2048];
 #ifdef _WIN32
     if (!fg_win_network_ready()) {
         fputs("Windows networking initialization failed\n", stderr);
         return 1;
     }
+#endif
+#ifdef FG_CHAT_ALPHA
+    ih_log_loading(capacity);
 #endif
     fg_goose_host_ensure_init();
     hose_host_load_context(model, capacity);

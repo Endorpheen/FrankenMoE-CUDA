@@ -10,12 +10,16 @@
 // Only test executables link this deterministic model oracle.
 int64_t __wrap_fg_q35_generation_prepare(void) { return 0; }
 void __wrap_hose_reset_state(void) {}
-int64_t __wrap_fg_http_eog(sl_i64 ids) { (void)ids; return 0; }
+int64_t __wrap_fg_http_eog(sl_i64 ids) {
+    if (ids.len != 1) return -1;
+    ids.data[0] = 3;
+    return 1;
+}
 
 int64_t __wrap_fg_q35_generation_eval(sl_i32 tokens, sl_f32 logits, uint8_t prefill) {
-    (void)prefill;
     if (tokens.len < 1 || (logits.len != 0 && logits.len != 4)) return -1;
-    for (int64_t i = 0; i < logits.len; ++i) logits.data[i] = i == 2 ? 20.0f : -20.0f;
+    const int64_t best = prefill ? 2 : 3;
+    for (int64_t i = 0; i < logits.len; ++i) logits.data[i] = i == best ? 20.0f : -20.0f;
     return logits.len;
 }
 
@@ -48,6 +52,7 @@ void fg_http_stats(sl_i64 stats) {
     assert(stats.len >= 6);
     memset(stats.data, 0, (size_t)stats.len * sizeof(*stats.data));
     stats.data[0] = 4;
+    stats.data[2] = 1;
     stats.data[5] = 32768;
 }
 

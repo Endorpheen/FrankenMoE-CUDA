@@ -146,9 +146,7 @@ div.px-2.flex.items-center.justify-between:has(> div > button > div > svg:not([c
  * The supplied artwork. The small mark goes into the original logo slot above; the wide mark is a branding block at the top of
  * the chat area.
  *
- * The block is absolutely positioned inside .chat-screen, which already exists: an absolutely positioned element cannot move
- * another one, so the composer, the greeting and every control keep their coordinates whatever size this artwork takes. It is
- * pointer-transparent for the same reason.
+ * Keep the greeting layout on an empty screen. In a conversation the large mark gets its own row above the messages.
  */
 .chat-screen {
 	position: relative;
@@ -165,6 +163,14 @@ div.px-2.flex.items-center.justify-between:has(> div > button > div > svg:not([c
 	background: url("./gooselogo-big.png") center / contain no-repeat;
 	pointer-events: none;
 	opacity: 0.96;
+}
+
+.chat-screen:has(> .chat-messages)::before {
+	position: static;
+	transform: none;
+	align-self: center;
+	flex: none;
+	margin-top: 0.75rem;
 }
 
 /* A phone gets the emblem only; the wide mark would take a third of the screen. */

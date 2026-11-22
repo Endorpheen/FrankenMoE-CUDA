@@ -34,9 +34,8 @@ trap - EXIT
 if [[ "${FRANKENMOE_HTTP_LEGACY:-0}" != 1 ]]; then
     rg -q '^POST /v1/chat/completions 200' frankenmoe-http.log
     rg -q '^POST /completion 400 .*send messages to /v1/chat/completions' frankenmoe-http.log
-    for option in tools tool_choice response_format; do
-        test "$(grep -c "^warning: $option is unsupported and ignored" frankenmoe-http.log)" -eq 1
-    done
+    test "$(grep -c '^warning: response_format is unsupported and ignored' frankenmoe-http.log)" -eq 1
     ! rg 'PRIVATE-FIXTURE-PROMPT|PRIVATE-FIXTURE-QUERY' frankenmoe-http.log
-    rg -q 'prefill [0-9]+ tokens, .*tok/s; decode [0-9]+ generated tokens, .*tok/s' log.txt
+    rg -q 'prefill [0-9]+ tokens \| .*tok/s' log.txt
+    rg -q 'decode +[0-9]+ tokens \| .*tok/s' log.txt
 fi
