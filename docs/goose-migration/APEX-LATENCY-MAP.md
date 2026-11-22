@@ -2668,3 +2668,13 @@ the capture. At the same process VRAM, the 6,400 MiB bank beats a
 uploads remove 48,671 synchronous H2D calls and improve prefill
 in both ordinary pairs, with a small decode slowdown. Keep the
 two runnable checkpoints and both raw measurements.
+
+## EXP-1690 — Use the cache read-only during large prefill projections
+
+A [210 MiB temporary plane](../../experiments/EXP-2026-11-22-1690-temporary-prefill-experts/README.md)
+handles misses without populating the SLRU. Compared with spending
+those bytes on persistent slots, it gives 3,003.86 and 3,012.58
+prefill tokens/s in forward and reverse warmed pairs. The measured
+requests are 1.77 and 1.24 seconds shorter. The clean forward
+candidate uses 8,668 MiB VRAM with zero process or system swap-out.
+Cold prefill is slower in both pairs and decode remains below target.

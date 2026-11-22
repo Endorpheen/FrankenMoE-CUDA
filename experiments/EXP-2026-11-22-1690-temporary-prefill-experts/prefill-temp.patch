@@ -1,0 +1,147 @@
+--- a/integration/goose-standalone/cuda-driver.c
++++ b/integration/goose-standalone/cuda-driver.c
+@@ -29,2 +29,3 @@
+ extern bool fg_standalone_option_enabled(const char * name);
++extern uint8_t fg143_cpu_prefill(void);
+ extern void ec_reset(sl_i64 groups, sl_i64 layers, uint64_t words32, sl_i64 words64);
+@@ -137,2 +138,4 @@
+     struct device_buffer weights;
++    size_t bank_bytes, prefill_offset, prefill_bytes;
++    uint64_t prefill_projections, prefill_hits, prefill_upload_bytes;
+     sl_i64 groups, layers, work;
+@@ -2186,2 +2189,23 @@
+
++enum { EXPERT_LAYOUT_GROUP = 9, EXPERT_LAYOUT_LAYER = 4, TEMP_PREFILL_MIN_EXPERTS = 64 };
++
++static bool expert_prefill_layout(struct expert_cache * cache, sl_i64 groups, size_t bank_bytes) {
++    cache->bank_bytes = bank_bytes;
++    if (!fg_standalone_option_enabled("GOOSE_CUDA_PREFILL_TEMP_WEIGHTS")) return true;
++    if (groups.len % EXPERT_LAYOUT_GROUP != 0 || bank_bytes > SIZE_MAX - 255) return false;
++    for (int64_t i = 0; i < groups.len; i += EXPERT_LAYOUT_GROUP) {
++        const int64_t * group = groups.data + i;
++        if (group[5] <= 0 || group[3] < TEMP_PREFILL_MIN_EXPERTS) continue;
++        for (int p = 0; p < 3; ++p) {
++            if (group[p] <= 0 || (uint64_t) group[p] > SIZE_MAX / (uint64_t) group[3]) return false;
++            const size_t bytes = (size_t) group[p] * (size_t) group[3];
++            if (bytes > cache->prefill_bytes) cache->prefill_bytes = bytes;
++        }
++    }
++    if (cache->prefill_bytes == 0) return true;
++    cache->prefill_offset = (bank_bytes + 255) & ~(size_t) 255;
++    return cache->prefill_offset <= INT64_MAX &&
++        cache->prefill_bytes <= INT64_MAX - cache->prefill_offset;
++}
++
+ int64_t fg_cuda_load_experts(sl_i64 groups, sl_i64 layers, int64_t bytes, int64_t words32, int64_t words64) {
+@@ -2200,3 +2224,4 @@
+     if (!cache.groups.data || !cache.layers.data || !cache.work.data ||
+-        !cache.state || start_context() != 1) {
++        !cache.state || !expert_prefill_layout(&cache, groups, (size_t) bytes) ||
++        start_context() != 1) {
+         free_expert_metadata(&cache);
+@@ -2204,3 +2229,13 @@
+     }
+-    int status = cuda.experts.weights.address ? -1 : reserve(&cache.weights, (size_t) bytes);
++    const size_t total_bytes = cache.prefill_bytes ?
++        cache.prefill_offset + cache.prefill_bytes : cache.bank_bytes;
++    size_t available = 0, total = 0;
++    int status = cuda.experts.weights.address ? -1 : 0;
++    if (status == 0 && cache.prefill_bytes &&
++        (cuda.memory_info(&available, &total) != 0 || total_bytes > available)) status = -1;
++    if (status == 0) status = reserve(&cache.weights, total_bytes);
++    if (status == 0 && cache.prefill_bytes) {
++        fprintf(stderr, "Goose CUDA: %zu byte expert bank, %zu byte temporary prefill plane\n",
++            cache.bank_bytes, cache.prefill_bytes);
++    }
+     if (status == 0) {
+@@ -2222,3 +2257,3 @@
+ int64_t fg_cuda_expert_bytes(void) {
+-    return (int64_t) cuda.experts.weights.bytes;
++    return (int64_t) cuda.experts.bank_bytes;
+ }
+@@ -2309,2 +2344,7 @@
+     stats.data[5] = cuda.expert_pins.len / 2;
++    if (cuda.experts.prefill_bytes) {
++        fprintf(stderr, "Goose CUDA prefill temporary: %" PRIu64 " projections, %" PRIu64
++            " resident planes, %" PRIu64 " uploaded bytes\n", cuda.experts.prefill_projections,
++            cuda.experts.prefill_hits, cuda.experts.prefill_upload_bytes);
++    }
+     pthread_mutex_unlock(&cuda_lock);
+@@ -2593,2 +2633,72 @@
+
++// Large prefill projections read resident slots without changing their SLRU
++// order. A single plane holds only misses and can be reused after each launch.
++static int64_t prepare_prefill_plane(uint64_t tensor, int64_t bytes, sl_i64 active, sl_i64 offsets) {
++    struct expert_cache * cache = &cuda.experts;
++    if (!cache->prefill_bytes || !fg143_cpu_prefill() || !activations.active ||
++        active.len < TEMP_PREFILL_MIN_EXPERTS) return 0;
++    if (bytes <= 0 || offsets.len < active.len ||
++        (uint64_t) bytes > cache->prefill_bytes / (uint64_t) active.len) return -1;
++    size_t selected = 0;
++    for (int64_t i = 0; i < active.len; ++i) selected += active.data[i] >= 0;
++    if (selected < TEMP_PREFILL_MIN_EXPERTS) return 0;
++
++    for (int64_t i = 0; i < cache->layers.len / EXPERT_LAYOUT_LAYER; ++i) {
++        const int64_t * layer = cache->layers.data + i * EXPERT_LAYOUT_LAYER;
++        if (layer[0] < 0) continue;
++        const int64_t * group = cache->groups.data + layer[0] * EXPERT_LAYOUT_GROUP;
++        if (group[3] != active.len || group[5] <= 0) continue;
++        size_t plane_offset = 0;
++        int plane = 0;
++        while (plane < 3 && (uint64_t) layer[1 + plane] != tensor) {
++            plane_offset += (size_t) group[plane];
++            ++plane;
++        }
++        if (plane == 3 || group[plane] != bytes) continue;
++
++        const int32_t * slots = (const int32_t *) (uintptr_t) cache->work.data[i];
++        const size_t span = (size_t) group[0] + (size_t) group[1] + (size_t) group[2];
++        uint64_t hits = 0;
++        for (int64_t e = 0; e < active.len; ++e) {
++            offsets.data[e] = -1;
++            if (active.data[e] < 0) continue;
++            const int32_t slot = slots[e];
++            if (slot < 0) {
++                offsets.data[e] = (int64_t) (cache->prefill_offset + (size_t) e * (size_t) bytes);
++            } else {
++                if (slot >= group[5]) return -1;
++                const size_t offset = (size_t) group[6] + (size_t) slot * span + plane_offset;
++                if (offset > cache->bank_bytes || (size_t) bytes > cache->bank_bytes - offset) return -1;
++                offsets.data[e] = (int64_t) offset;
++                ++hits;
++            }
++        }
++        uint64_t uploaded = 0;
++        for (int64_t e = 0; e < active.len;) {
++            if (active.data[e] < 0 || slots[e] >= 0) {
++                ++e;
++                continue;
++            }
++            int64_t last = e + 1;
++            while (last < active.len && active.data[last] >= 0 && slots[last] < 0) ++last;
++            const size_t size = (size_t) (last - e) * (size_t) bytes;
++            const uint64_t source = tensor + (uint64_t) e * (uint64_t) bytes;
++            const void * host = (const void *) (uintptr_t) source;
++            const DevicePtr dst = cache->weights.address + (uint64_t) offsets.data[e];
++            // The prior reader and its replacement are ordered on the legacy stream.
++            activations.pending = true;
++            const int status = expert_source_pinned(source, size) ?
++                cuda.upload_async(dst, host, size, NULL) : cuda.upload(dst, host, size);
++            if (status != 0) return -1;
++            uploaded += size;
++            e = last;
++        }
++        ++cache->prefill_projections;
++        cache->prefill_hits += hits;
++        cache->prefill_upload_bytes += uploaded;
++        return 1;
++    }
++    return 0;
++}
++
+ int64_t fg_cuda_prepare_experts(uint64_t tensor, int64_t bytes, sl_i64 active, sl_i64 offsets) {
+@@ -2596,2 +2706,4 @@
+     if (!cuda.experts.weights.address) return 0;
++    const int64_t temporary = prepare_prefill_plane(tensor, bytes, active, offsets);
++    if (temporary != 0) return temporary;
+     return prepare_expert_offsets(tensor, bytes, active, offsets, false);
