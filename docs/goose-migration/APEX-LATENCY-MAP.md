@@ -2771,3 +2771,12 @@ operation order. Decode rises 45.80 to 46.39 tok/s and client time
 falls 145 ms. All 512 IDs, text and SLRU counts match, process VRAM
 stays at 8766 MiB, and system swap-out is confined to candidate startup.
 The candidate is retained with the 93 MiB RSS delta recorded.
+
+## EXP-1719 — Remove the addressable local frame in one-token GDN
+
+The [ordinary 32,768/512 pair](../../experiments/EXP-2026-11-22-1719-gdn-register-state/README.md)
+raises decode from 47.02 to 49.26 tok/s. Decode saves 494 ms, and all
+512 IDs, text and SLRU counts match. The sm_89 decode kernel's 384-byte
+local frame disappears. Registers rise from 47 to 56, without spills.
+Process VRAM stays at 8766 MiB, swap-out stays at zero, and the candidate
+records 94.75 MiB higher peak RSS with a difference already at readiness.

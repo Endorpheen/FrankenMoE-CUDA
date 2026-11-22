@@ -21,6 +21,7 @@ moving independently and retain its tested production path.
 | Read CUDA parameter aggregates directly when their address does not need to escape | Candidate | [EXP-1603 vector plans](CUDA-PARITY-EXP1476.md#vector-plans-in-cuda-kernel-parameters) |
 | Specialize large CUDA helpers at call sites with constant mode arguments | Candidate | [EXP-1609 Flash lowering](CUDA-PARITY-EXP1476.md#flash-attention-device-lowering-and-l2-prefetch) |
 | Elide empty ownership scopes in borrowed scalar loops | Candidate | [KeelWing Apex CPU sampler](#keelwing-ownership-scopes-in-the-apex-sampler) |
+| Specialize fixed-size CUDA recurrences and scalar-replace nonescaping arrays | Candidate | [EXP-1719 GDN local frame](#fixed-size-gdn-state-in-registers) |
 
 ## KeelWing ownership scopes in the Apex sampler
 
@@ -321,3 +322,47 @@ repeat these checks and the uniform/general Stream-K fixup
 fixtures, then compare actual kernel time, stack and spills.
 See [EXP-1609](CUDA-PARITY-EXP1476.md#flash-attention-device-lowering-and-l2-prefetch)
 for the raw artifacts and the unrelated cache-hint screen.
+
+## Fixed-size GDN state in registers
+
+**Problem.** In published KeelWing, the specialized call
+`gdn_body(..., true)` gives the CUDA lowering a fixed value width
+of 128 and an eight-lane reduction. The recurrent loops have
+16 elements per lane, but their nonescaping `s`, `kr`, and `qr`
+arrays still become an addressable local frame.
+
+**Reproduction.** Use the EXP-1665 GDN fragment with SHA-256
+`5b4fd50e6fb876a7c46407c88f0078f1a6563661a9e2c0e9e5b3a078a8e53463`,
+published KeelWing SHA-256
+`e2e46ade68cafa25eb05239b6d7d5e2afc674da393637132dc2bfdbd8865d41a`,
+Clang 18.1.8 at `-O2` for the sm_80 PTX image, and ptxas 12.4.131
+at `sm_89`. Inspect `goose_gdn_decode` in
+`build/exp1719-gdn-register-state/goose-cuda-mmq.ptx` and the
+pre-change image under `build/exp1717-shared-residual-fusion`.
+
+Before, the PTX has a `.local .align 4 .b8 __local_depot4[384]`
+declaration, nine local load sites and 101 local store sites.
+After the source specialization, it has no local declaration or
+local memory instructions. ptxas reports 47 to 56 registers and
+zero spills in both cases. The new recurrence uses numbered state
+and K scalars in the first loop, then loads Q as each new state
+element is consumed. See the [Goose patch and full pair](../../experiments/EXP-2026-11-22-1719-gdn-register-state/README.md).
+
+**Candidate compiler work.** Specialize device call sites with
+constant mode arguments before loop lowering. When loop bounds and
+array indices become constant, scalar-replace fixed-size,
+nonescaping local arrays. Preserve FP32 reduction order and explicit
+multiply and FMA boundaries. Retain the general path for dynamic
+sizes and when provenance shows that an address must remain visible.
+Register use and local spills need to be reported for each target.
+The source workaround demonstrates the result of several changes
+together, so an isolated compiler speedup is still unmeasured.
+
+**Acceptance.** Compile the unmodified fragment with and without
+the compiler optimization. Compare state and output on identical
+single-token Q/K/V/state inputs, inspect PTX and ptxas, and run the
+unprofiled 32,768/512 Apex pair with matching IDs, text, SLRU and
+memory accounting. Recheck the generic prefill entry and dynamic
+bounds. The source workaround saves 494.448 ms decode in the
+full request with all 512 IDs preserved. Keep this compiler item
+in candidate status until the compiler-only version is measured.
