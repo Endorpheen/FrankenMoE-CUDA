@@ -51,3 +51,28 @@ env -u GOOSE_CPU_PROBABILITY_PIPELINE -u APEX_EXPECT_REFERENCE "${profile[@]}" \
 
 This working profile does not replace the explicit-five compatibility
 comparison and does not alter the frozen hybrid configuration.
+
+## Full decode profile of the default API path
+
+The warmed 32K/512 Nsight capture is under
+`build/apex-fast-checkpoint/decode-nsys`. The decoded tokens match
+the ordinary default API checkpoint. Nsight timings are diagnostic.
+The 13.638-second decode window consists of 9.229 seconds of GPU
+activity and 4.409 seconds without device activity. The logits-to-
+next-submit interval is 1.809 seconds versus 3.917 seconds in the
+earlier explicit-five profile. This is not a fresh hybrid run.
+
+| Exclusive CUDA work over 511 decode steps | Time, ms | Launches or copies |
+|---|---:|---:|
+| MMVQ | 2,803.861 | 220,238 |
+| Packed Vector Attention | 2,442.516 | 5,110 |
+| Bulk H2D | 1,425.655 | 54,145 |
+| Generic pointwise | 753.070 | 276,445 |
+| RMSNorm | 362.447 | 97,598 |
+| GDN | 352.263 | 15,330 |
+
+The previous full hybrid trace reports 1,218.477 ms of exclusive
+vector attention. Matching only the partition count did not speed
+full Apex in EXP-1562. Use the active kernel's launch geometry and
+memory access pattern as the comparison, including the 64-part,
+128-thread, 76-register Goose launches in this capture.
