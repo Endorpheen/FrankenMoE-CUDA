@@ -2762,3 +2762,12 @@ time. Prefill is 3004.73 versus 3007.91 tok/s, and VRAM, RAM, swap,
 output tokens and SLRU are preserved within the recorded differences.
 This pair measures the allocation change as a whole. The remaining
 logits-to-selection and graph setup intervals still need attribution.
+
+## EXP-1717 — Fuse the shared FFN scale and residual adds
+
+The [ordinary 32,768/512 pair](../../experiments/EXP-2026-11-22-1717-shared-residual-fusion/README.md)
+replaces three pointwise nodes with one without changing FP32
+operation order. Decode rises 45.80 to 46.39 tok/s and client time
+falls 145 ms. All 512 IDs, text and SLRU counts match, process VRAM
+stays at 8766 MiB, and system swap-out is confined to candidate startup.
+The candidate is retained with the 93 MiB RSS delta recorded.

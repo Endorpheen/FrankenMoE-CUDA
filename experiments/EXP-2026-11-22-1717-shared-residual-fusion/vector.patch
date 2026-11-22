@@ -1,0 +1,13 @@
+--- a/vector.goose
++++ b/vector.goose
+@@ -162,0 +163,10 @@
++
++extern "fg_device_mul_rn" fn cv_mul_rn(a: f32, b: f32) -> f32;
++
++export fn fg_moe_add_shared_residual(routed: u64, shared: u64, gate: u64,
++                                      residual: u64, output: u64, index: u64) {
++    let offset = 4 * index;
++    let product = cv_mul_rn(cv_load(shared + offset), cv_load(gate));
++    let mixture = cv_load(routed + offset) + product;
++    cv_store(output + offset, mixture + cv_load(residual + offset));
++}

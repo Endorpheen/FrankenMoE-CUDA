@@ -1,0 +1,35 @@
+--- a/cuda-driver.c
++++ b/cuda-driver.c
+@@ -233,0 +234 @@
++    Function moe_add_shared_residual;
+@@ -1330,0 +1332,2 @@
++        if (error == 0)
++            (void) cuda.function_get(&cuda.moe_add_shared_residual, cuda.module, "goose_moe_add_shared_residual");
+@@ -3620,0 +3624,8 @@
++        const bool fused_tail = full && cuda.moe_add_shared_residual;
++        static bool fused_tail_logged;
++        if (fused_tail && !fused_tail_logged) {
++            fused_tail_logged = true;
++            fprintf(stderr, "Goose CUDA: fused shared expert scale and residual adds\n");
++        }
++        void * fused_add[] = {&routed_out, &sh_down, &route_gate, &residual, &output};
++        const size_t shared_tail_count = fused_tail ? 5 : 6;
+@@ -3640,2 +3651,2 @@
+-            memcpy(kernels + count, shared_tail, sizeof shared_tail);
+-            count += 6;
++            memcpy(kernels + count, shared_tail, shared_tail_count * sizeof shared_tail[0]);
++            count += shared_tail_count;
+@@ -3663,2 +3674,8 @@
+-                memcpy(kernels + count, shared_tail, sizeof shared_tail);
+-                count += 6;
++                memcpy(kernels + count, shared_tail, shared_tail_count * sizeof shared_tail[0]);
++                count += shared_tail_count;
++            }
++            if (fused_tail) {
++                kernels[count++] = ffn_kernel(cuda.moe_add_shared_residual, (unsigned) (width / 128), 1, 128, fused_add);
++            } else {
++                kernels[count++] = ffn_kernel(cuda.vector, (unsigned) plans[3][24], 1, 128, add_shared);
++                kernels[count++] = ffn_kernel(cuda.vector, (unsigned) plans[4][24], 1, 128, add_residual);
+@@ -3666,2 +3682,0 @@
+-            kernels[count++] = ffn_kernel(cuda.vector, (unsigned) plans[3][24], 1, 128, add_shared);
+-            kernels[count++] = ffn_kernel(cuda.vector, (unsigned) plans[4][24], 1, 128, add_residual);
