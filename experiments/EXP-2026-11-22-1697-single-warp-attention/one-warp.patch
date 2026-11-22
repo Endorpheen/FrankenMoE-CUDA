@@ -1,0 +1,85 @@
+--- a/flash-vec.goose
++++ b/flash-vec.goose
+@@ -710 +710,82 @@
+
++
++extern "fg175v_shfl_idx" fn shfl_idx(v: f32, source: i32) -> f32;
++
++export fn fv_one_warp(q: u64, k: u64, v: u64, out: u64, meta: u64, keys: i64,
++                      kr: i64, vr: i64, part: i32, parts: i32, lane: i32) {
++    let w = lane as u64;
++    let q0 = ld_i32(q, 4 * w);
++    let q1 = ld_i32(q, 4 * (w + 32));
++    let d0 = 64 + 2 * (w / 8);
++    let d1 = d0 + 8;
++    let dx0 = ld_f32(q, 4 * d0);
++    let dy0 = ld_f32(q, 4 * (d0 + 1));
++    let dx1 = ld_f32(q, 4 * d1);
++    let dy1 = ld_f32(q, 4 * (d1 + 1));
++    let column = (lane as i64) * 4;
++    var max_score = fv_negmax();
++    var sum: f32 = 0.0;
++    var a = VecFlash4 { 0.0, 0.0, 0.0, 0.0 };
++    var b = VecFlash4 { 0.0, 0.0, 0.0, 0.0 };
++    var first: i64 = (part as i64) * 32;
++    let stride: i64 = (parts as i64) * 32;
++    while first < keys {
++        var own = fv_negmax();
++        var highest = max_score;
++        for row in 32 {
++            let i = first + row;
++            var score = fv_negmax();
++            if i < keys {
++                score = fv_wr_sum(fv_vec_dot_kq4(k + ((kr * i) as u64), lane,
++                    q0, q1, dx0, dy0, dx1, dy1));
++            }
++            highest = fmaxf(highest, score + (3.0 as f32) * (0.6931 as f32));
++            if lane == row as i32 { own = score; }
++        }
++        let old_scale = expf(max_score - highest);
++        max_score = highest;
++        let p = if first + (lane as i64) < keys { expf(own - highest) } else { 0.0 };
++        sum = sum * old_scale + p;
++        for row in 32 {
++            let i = first + row;
++            let weight = shfl_idx(p, row as i32);
++            let addr = v + ((vr * i) as u64);
++            let low = fv_bounded_v4(addr, column, i < keys);
++            let high = fv_bounded_v4(addr, 128 + column, i < keys);
++            if row == 0 {
++                a.v0 = fma_rn(old_scale, a.v0, mul_rn(low.v0, weight));
++                a.v1 = fma_rn(old_scale, a.v1, mul_rn(low.v1, weight));
++                a.v2 = fma_rn(old_scale, a.v2, mul_rn(low.v2, weight));
++                a.v3 = fma_rn(old_scale, a.v3, mul_rn(low.v3, weight));
++                b.v0 = fma_rn(old_scale, b.v0, mul_rn(high.v0, weight));
++                b.v1 = fma_rn(old_scale, b.v1, mul_rn(high.v1, weight));
++                b.v2 = fma_rn(old_scale, b.v2, mul_rn(high.v2, weight));
++                b.v3 = fma_rn(old_scale, b.v3, mul_rn(high.v3, weight));
++            } else {
++                a.v0 = fma_rn(low.v0, weight, a.v0);
++                a.v1 = fma_rn(low.v1, weight, a.v1);
++                a.v2 = fma_rn(low.v2, weight, a.v2);
++                a.v3 = fma_rn(low.v3, weight, a.v3);
++                b.v0 = fma_rn(high.v0, weight, b.v0);
++                b.v1 = fma_rn(high.v1, weight, b.v1);
++                b.v2 = fma_rn(high.v2, weight, b.v2);
++                b.v3 = fma_rn(high.v3, weight, b.v3);
++            }
++        }
++        first += stride;
++    }
++    let den = fv_wr_sum(sum);
++    let offset = (4 * column) as u64;
++    st_f32(out, offset, a.v0);
++    st_f32(out, offset + 4, a.v1);
++    st_f32(out, offset + 8, a.v2);
++    st_f32(out, offset + 12, a.v3);
++    st_f32(out, offset + 512, b.v0);
++    st_f32(out, offset + 516, b.v1);
++    st_f32(out, offset + 520, b.v2);
++    st_f32(out, offset + 524, b.v3);
++    if lane == 0 {
++        st_f32(meta, 0, max_score);
++        st_f32(meta, 4, den);
++    }
++}

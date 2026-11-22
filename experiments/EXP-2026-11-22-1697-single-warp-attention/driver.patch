@@ -1,0 +1,11 @@
+--- a/integration/goose-standalone/cuda-driver.c
++++ b/integration/goose-standalone/cuda-driver.c
+@@ -3810,2 +3810,3 @@
+     bool prepacked = cuda.flash_vec_pack && parts >= min_prepack_parts;
++    if (prepacked) parts = 11;
+     if (parts > 1) {
+@@ -3836,3 +3837,3 @@
+     const struct kernel_node_params vector = { .function = prepacked ? cuda.flash_vec_packed : cuda.flash_vec, .grid_x = (unsigned) heads,
+-        .grid_y = (unsigned) parts, .grid_z = 1, .block_x = 128, .block_y = 1, .block_z = 1, .params = args };
++        .grid_y = (unsigned) parts, .grid_z = 1, .block_x = prepacked ? 32 : 128, .block_y = 1, .block_z = 1, .params = args };
+     void * merge_args[] = {&matrix, &meta, &output, &parts, &heads};
