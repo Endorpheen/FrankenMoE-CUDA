@@ -1,0 +1,25 @@
+--- a/cuda-mmvq.cl
++++ b/cuda-mmvq.cl
+@@ -88,0 +89,22 @@
++
++__kernel void goose_mmvq_dense_quantize(__global const uint8_t * input,
++    __global uint8_t * packed, int32_t extent) {
++    uint32_t block, thread;
++    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(block));
++    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
++    const MmvqFastDiv_g divisor = {0, 0, 1};
++    const int64_t width = (int64_t) extent * 256;
++    fg178q_quant_g((uint64_t) input, (uint64_t) packed,
++        width, 0, 0, 0, width, 1, 1, divisor, block, 0, 0, thread, 128);
++}
++
++__kernel void goose_mmvq_dense_matvec(__global const uint8_t * weights,
++    __global const uint8_t * packed, __global uint8_t * output, uint64_t stride,
++    int32_t extent, int32_t kind) {
++    uint32_t row, thread;
++    __local float shared[96];
++    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(row));
++    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
++    fg_mmvq_row_g((uint64_t) weights + (uint64_t) row * stride, (uint64_t) packed,
++        (uint64_t) output + (uint64_t) row * 4, (uint64_t) shared, extent, kind, thread);
++}

@@ -2780,3 +2780,11 @@ raises decode from 47.02 to 49.26 tok/s. Decode saves 494 ms, and all
 local frame disappears. Registers rise from 47 to 56, without spills.
 Process VRAM stays at 8766 MiB, swap-out stays at zero, and the candidate
 records 94.75 MiB higher peak RSS with a difference already at readiness.
+
+## EXP-1720 — Omit the dense single-job MMVQ descriptor
+
+The [ordinary 32,768/512 pair](../../experiments/EXP-2026-11-22-1720-direct-dense-mmvq/README.md)
+raises decode from a fresh 49.27 to 49.95 tok/s. Prefill is 2986.82
+versus 3012.82 tok/s, and the total request saves 47 ms. All 512 IDs,
+text, and SLRU counts match. VRAM stays at 8766 MiB. The record
+preserves the prefill and RSS tradeoff and startup-only system swap.

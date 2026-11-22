@@ -1,0 +1,65 @@
+--- a/cuda-driver.c
++++ b/cuda-driver.c
+@@ -231 +231 @@
+-    Function mmvq_pack, mmvq, mmvq_short;
++    Function mmvq_pack, mmvq, mmvq_short, mmvq_dense_pack, mmvq_dense_row;
+@@ -1205,0 +1206,4 @@
++        if (error == 0 && mmvq) {
++            (void) cuda.function_get(&cuda.mmvq_dense_pack, cuda.module, "goose_mmvq_dense_quantize");
++            (void) cuda.function_get(&cuda.mmvq_dense_row, cuda.module, "goose_mmvq_dense_matvec");
++        }
+@@ -3274 +3278,2 @@
+-static int launch_mmvq(DevicePtr weight, uint64_t stride, int extent, int kind, int rows, int count, int words) {
++static int launch_mmvq(DevicePtr weight, uint64_t stride, int extent, int kind, int rows, int count,
++                       int words, const int64_t *dense_offsets) {
+@@ -3279,2 +3284,7 @@
+-        void * pack[] = {&matrix_input, &cuda.mmq_packed.address, &cuda.jobs.address, &extent, &words};
+-        void * matrix[] = {&weight, &cuda.mmq_packed.address, &matrix_output, &cuda.jobs.address,
++        DevicePtr input = matrix_input, output = matrix_output;
++        if (dense_offsets) {
++            input += (uint64_t) dense_offsets[0];
++            output += (uint64_t) dense_offsets[1];
++        }
++        void * packet_pack[] = {&input, &cuda.mmq_packed.address, &cuda.jobs.address, &extent, &words};
++        void * packet_matrix[] = {&weight, &cuda.mmq_packed.address, &output, &cuda.jobs.address,
+@@ -3281,0 +3292,6 @@
++        void * dense_pack[] = {&input, &cuda.mmq_packed.address, &extent};
++        void * dense_matrix[] = {&weight, &cuda.mmq_packed.address, &output, &stride, &extent, &kind};
++        void **pack = dense_offsets ? dense_pack : packet_pack;
++        void **matrix = dense_offsets ? dense_matrix : packet_matrix;
++        const Function pack_function = dense_offsets ? cuda.mmvq_dense_pack : cuda.mmvq_pack;
++        const Function matrix_function = dense_offsets ? cuda.mmvq_dense_row : cuda.mmvq;
+@@ -3286 +3302 @@
+-                { .function = cuda.mmvq_pack, .grid_x = (unsigned) (2 * extent), .grid_y = (unsigned) count,
++                { .function = pack_function, .grid_x = (unsigned) (2 * extent), .grid_y = (unsigned) count,
+@@ -3288 +3304 @@
+-                { .function = cuda.mmvq, .grid_x = (unsigned) rows, .grid_y = (unsigned) count,
++                { .function = matrix_function, .grid_x = (unsigned) rows, .grid_y = (unsigned) count,
+@@ -3292,2 +3308,3 @@
+-            const uint64_t key[MMVQ_GRAPH_KEY_WORDS] = {weight, stride, matrix_input, matrix_output,
+-                cuda.mmq_packed.address, cuda.jobs.address, ((uint64_t) extent << 32) | (unsigned) rows,
++            const uint64_t key[MMVQ_GRAPH_KEY_WORDS] = {weight, stride, input, output,
++                cuda.mmq_packed.address, dense_offsets ? 0 : cuda.jobs.address,
++                ((uint64_t) extent << 32) | (unsigned) rows,
+@@ -3300 +3317 @@
+-            error = cuda.launch(cuda.mmvq_pack, (unsigned) (2 * extent), (unsigned) count, 1, 128, 1, 1, 0, NULL, pack, NULL);
++            error = cuda.launch(pack_function, (unsigned) (2 * extent), (unsigned) count, 1, 128, 1, 1, 0, NULL, pack, NULL);
+@@ -3302 +3319 @@
+-                error = cuda.launch(cuda.mmvq, (unsigned) rows, (unsigned) count, 1, 128, 1, 1, 0, NULL, matrix, NULL);
++                error = cuda.launch(matrix_function, (unsigned) rows, (unsigned) count, 1, 128, 1, 1, 0, NULL, matrix, NULL);
+@@ -3323,0 +3341,12 @@
++    if (kind != 0 && extent <= INT_MAX / 256 && job_words == 2 && jobs.len == 2 &&
++        cuda.mmvq_dense_pack && cuda.mmvq_dense_row && jobs.data[0] >= 0 && jobs.data[1] >= 0 &&
++        (uint64_t) jobs.data[0] <= UINT64_MAX - matrix_input &&
++        (uint64_t) jobs.data[1] <= UINT64_MAX - matrix_output) {
++        static bool dense_mmvq_logged;
++        if (!dense_mmvq_logged && !fg143_cpu_prefill()) {
++            dense_mmvq_logged = true;
++            fprintf(stderr, "Goose CUDA: dense decode MMVQ uses direct tensor addresses\n");
++        }
++        return launch_mmvq(weight, (uint64_t) row_stride, (int) extent, (int) kind,
++            (int) rows, 1, job_words, jobs.data);
++    }
+@@ -3338 +3367 @@
+-        return launch_mmvq(weight, (uint64_t) row_stride, (int) extent, (int) kind, (int) rows, count, job_words);
++        return launch_mmvq(weight, (uint64_t) row_stride, (int) extent, (int) kind, (int) rows, count, job_words, NULL);
