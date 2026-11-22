@@ -1,0 +1,20 @@
+--- a/integration/goose-standalone/cuda-driver.c
++++ b/integration/goose-standalone/cuda-driver.c
+@@ -139,2 +139,3 @@
+     size_t bank_bytes, prefill_offset, prefill_bytes;
++    bool prefill_wait_decode, decode_seen;
+     uint64_t prefill_projections, prefill_hits, prefill_upload_bytes;
+@@ -2194,2 +2195,3 @@
+     if (!fg_standalone_option_enabled("GOOSE_CUDA_PREFILL_TEMP_WEIGHTS")) return true;
++    cache->prefill_wait_decode = fg_standalone_option_enabled("GOOSE_CUDA_PREFILL_TEMP_WARM_ONLY");
+     if (groups.len % EXPERT_LAYOUT_GROUP != 0 || bank_bytes > SIZE_MAX - 255) return false;
+@@ -2629,2 +2631,3 @@
+     }
++    if (status == 1 && cache->prefill_wait_decode && !fg143_cpu_prefill()) cache->decode_seen = true;
+     if (status < 0) reset_expert_stage();
+@@ -2638,3 +2641,4 @@
+     if (!cache->prefill_bytes || !fg143_cpu_prefill() || !activations.active ||
+-        active.len < TEMP_PREFILL_MIN_EXPERTS) return 0;
++        active.len < TEMP_PREFILL_MIN_EXPERTS ||
++        (cache->prefill_wait_decode && !cache->decode_seen)) return 0;
+     if (bytes <= 0 || offsets.len < active.len ||
