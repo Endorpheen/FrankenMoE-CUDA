@@ -2688,3 +2688,13 @@ not improve prefill. The larger SLRU wins both orderings by client
 time and records a clean 3,015.00 prefill / 34.19 decode at
 8,766 MiB VRAM. Keep the 3,043 / 67 target open and refresh the
 decode latency profile from this endpoint.
+
+## Full decode differential on the 3,015 prefill checkpoint
+
+The [complete 32K/512 profile and probability differential](../../experiments/EXP-2026-11-22-decode-parity-profile/README.md)
+measures a 7.343 s decode window gap, split into 4.621 s extra GPU
+idle and 2.723 s extra GPU busy. Vector Attention alone accounts for
+1.249 s of additional exclusive device time. The retained fast
+no-probability configuration measures 39.75 decode tok/s and the
+unchanged five-alternative workload 33.73 in the same process.
+The original probability payload remains the parity workload.
