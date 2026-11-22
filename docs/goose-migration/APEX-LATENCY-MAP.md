@@ -2742,3 +2742,14 @@ raises decode from a fresh 43.65 to 45.49 tok/s and prefill from
 512 IDs, text and SLRU counters, 8766 MiB process VRAM, and zero swap-out.
 Peak RSS is 92.31 MiB higher in this pair and comparable to the
 same control binary's prior peer measurement.
+
+## EXP-1715 — Reprofile EXP-1713 on the warmed full request
+
+The [CPU/GPU refresh](../../experiments/EXP-2026-11-22-1715-decode-profile-quad/README.md)
+covers 32,768 input and 512 output tokens. Exclusive Vector Attention
+falls from 2471.305 to 1498.611 ms versus the earlier no-probability
+Goose trace. The current decode still has 4106.993 ms of GPU idle.
+Of that, 2599.612 ms occur outside CUDA before the next submission
+and 767.552 ms overlap the 32-byte route readback API call. The largest
+subset outside CUDA is 1449.037 ms from logits to next token upload.
+CPU samples do not establish which functions own that wall interval.

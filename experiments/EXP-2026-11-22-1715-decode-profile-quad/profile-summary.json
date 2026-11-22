@@ -1,0 +1,698 @@
+{
+  "gpu_run_timings": {
+    "cache_n": 0,
+    "prompt_n": 32768,
+    "prompt_ms": 11052.89937602356,
+    "prompt_per_token_ms": 0.33730772021556277,
+    "prompt_per_second": 2964.651978202371,
+    "predicted_n": 512,
+    "predicted_ms": 12155.33304901328,
+    "predicted_per_token_ms": 23.787344518616987,
+    "predicted_per_second": 42.0391607485803
+  },
+  "cpu_run_timings": {
+    "cache_n": 0,
+    "prompt_n": 32768,
+    "prompt_ms": 10882.484310073778,
+    "prompt_per_token_ms": 0.33210706512676325,
+    "prompt_per_second": 3011.0771645833734,
+    "predicted_n": 512,
+    "predicted_ms": 11166.985851014033,
+    "predicted_per_token_ms": 21.853201274000064,
+    "predicted_per_second": 45.75988604423619
+  },
+  "phases": {
+    "prefill": {
+      "window_ms": 11026.705388,
+      "gpu_busy_ms": 10519.273537,
+      "gpu_idle_ms": 507.431851,
+      "families": {
+        "RMSNorm": {
+          "count": 1714,
+          "sum_ms": 423.553828,
+          "mean_us": 247.114252042007,
+          "union_ms": 423.553828,
+          "bytes": 0,
+          "exclusive_ms": 423.553828
+        },
+        "MMQ pack": {
+          "count": 3200,
+          "sum_ms": 350.332777,
+          "mean_us": 109.4789928125,
+          "union_ms": 350.332777,
+          "bytes": 0,
+          "exclusive_ms": 350.283784
+        },
+        "MMQ": {
+          "count": 6360,
+          "sum_ms": 3001.651919,
+          "mean_us": 471.9578488993711,
+          "union_ms": 3001.651919,
+          "bytes": 0,
+          "exclusive_ms": 2998.890278
+        },
+        "SSM convolution": {
+          "count": 511,
+          "sum_ms": 151.672571,
+          "mean_us": 296.8152074363992,
+          "union_ms": 151.672571,
+          "bytes": 0,
+          "exclusive_ms": 151.672571
+        },
+        "Pointwise and GLU": {
+          "count": 4067,
+          "sum_ms": 681.706133,
+          "mean_us": 167.61891640029506,
+          "union_ms": 681.706133,
+          "bytes": 0,
+          "exclusive_ms": 681.706133
+        },
+        "GDN": {
+          "count": 270,
+          "sum_ms": 608.46307,
+          "mean_us": 2253.5669259259257,
+          "union_ms": 608.46307,
+          "bytes": 0,
+          "exclusive_ms": 608.46307
+        },
+        "Dense and generic matmul": {
+          "count": 720,
+          "sum_ms": 348.374199,
+          "mean_us": 483.85305416666665,
+          "union_ms": 348.374199,
+          "bytes": 0,
+          "exclusive_ms": 348.374199
+        },
+        "MoE router": {
+          "count": 1080,
+          "sum_ms": 13.43611,
+          "mean_us": 12.440842592592592,
+          "union_ms": 13.43611,
+          "bytes": 0,
+          "exclusive_ms": 13.43611
+        },
+        "MoE weighted reduction": {
+          "count": 5160,
+          "sum_ms": 228.440388,
+          "mean_us": 44.27139302325581,
+          "union_ms": 228.440388,
+          "bytes": 0,
+          "exclusive_ms": 228.440388
+        },
+        "RoPE": {
+          "count": 360,
+          "sum_ms": 37.411699,
+          "mean_us": 103.9213861111111,
+          "union_ms": 37.411699,
+          "bytes": 0,
+          "exclusive_ms": 37.411699
+        },
+        "KV FWHT": {
+          "count": 200,
+          "sum_ms": 132.951592,
+          "mean_us": 664.75796,
+          "union_ms": 132.951592,
+          "bytes": 0,
+          "exclusive_ms": 132.951592
+        },
+        "Other kernels": {
+          "count": 160,
+          "sum_ms": 19.722641,
+          "mean_us": 123.26650625,
+          "union_ms": 19.722641,
+          "bytes": 0,
+          "exclusive_ms": 19.722641
+        },
+        "Flash Attention MMA": {
+          "count": 240,
+          "sum_ms": 1789.785853,
+          "mean_us": 7457.441054166667,
+          "union_ms": 1789.785853,
+          "bytes": 0,
+          "exclusive_ms": 1789.785853
+        },
+        "Tensor gather and blit": {
+          "count": 152,
+          "sum_ms": 39.393445,
+          "mean_us": 259.16740131578945,
+          "union_ms": 39.393445,
+          "bytes": 0,
+          "exclusive_ms": 39.393445
+        },
+        "MMVQ pack": {
+          "count": 314,
+          "sum_ms": 0.39117,
+          "mean_us": 1.2457643312101911,
+          "union_ms": 0.39117,
+          "bytes": 0,
+          "exclusive_ms": 0.39117
+        },
+        "MMVQ": {
+          "count": 314,
+          "sum_ms": 6.686527,
+          "mean_us": 21.29467197452229,
+          "union_ms": 6.686527,
+          "bytes": 0,
+          "exclusive_ms": 6.686527
+        },
+        "KV writes": {
+          "count": 20,
+          "sum_ms": 0.066017,
+          "mean_us": 3.30085,
+          "union_ms": 0.066017,
+          "bytes": 0,
+          "exclusive_ms": 0.066017
+        },
+        "Other Attention": {
+          "count": 20,
+          "sum_ms": 54.745591,
+          "mean_us": 2737.27955,
+          "union_ms": 54.745591,
+          "bytes": 0,
+          "exclusive_ms": 54.745591
+        },
+        "H2D bulk": {
+          "count": 62835,
+          "sum_ms": 2630.229865,
+          "mean_us": 41.859311928065566,
+          "union_ms": 2630.229865,
+          "bytes": 58503981160,
+          "exclusive_ms": 2627.116825
+        },
+        "H2D packets up to 4 KiB": {
+          "count": 2187,
+          "sum_ms": 1.204406,
+          "mean_us": 0.5507114769090078,
+          "union_ms": 1.204406,
+          "bytes": 464576,
+          "exclusive_ms": 0.902
+        },
+        "D2H": {
+          "count": 361,
+          "sum_ms": 2.166776,
+          "mean_us": 6.002149584487535,
+          "union_ms": 2.166776,
+          "bytes": 42936320,
+          "exclusive_ms": 2.166776
+        }
+      },
+      "graph_sizes": {
+        "2": {
+          "replays": 4,
+          "kernel_ms": 0.950731
+        }
+      },
+      "sampled_cpu_ms": 1242,
+      "cpu_family_ms": {
+        "Other CPU functions": 888,
+        "System libraries": 202,
+        "CUDA driver": 152
+      },
+      "top_cpu_samples": [
+        {
+          "symbol": "gg_function_250",
+          "exclusive_ms": 448,
+          "inclusive_ms": 772
+        },
+        {
+          "symbol": "gg_mod",
+          "exclusive_ms": 134,
+          "inclusive_ms": 134
+        },
+        {
+          "symbol": "<static>@0x197030 (<libc.so.6>)",
+          "exclusive_ms": 126,
+          "inclusive_ms": 126
+        },
+        {
+          "symbol": "<static>@0x3a579f (<libcuda.so.580.178.04>)",
+          "exclusive_ms": 100,
+          "inclusive_ms": 148
+        },
+        {
+          "symbol": "gg_packed_198_avx2",
+          "exclusive_ms": 88,
+          "inclusive_ms": 88
+        },
+        {
+          "symbol": "gg_div",
+          "exclusive_ms": 74,
+          "inclusive_ms": 74
+        },
+        {
+          "symbol": "<static>@0x72245d6588c0 ([vdso])",
+          "exclusive_ms": 48,
+          "inclusive_ms": 48
+        },
+        {
+          "symbol": "gg_function_251",
+          "exclusive_ms": 40,
+          "inclusive_ms": 128
+        },
+        {
+          "symbol": "<static>@0xac784 (<libc.so.6>)",
+          "exclusive_ms": 28,
+          "inclusive_ms": 28
+        },
+        {
+          "symbol": "gg_function_199",
+          "exclusive_ms": 26,
+          "inclusive_ms": 46
+        },
+        {
+          "symbol": "<static>@0x4a40d5 (<libcuda.so.580.178.04>)",
+          "exclusive_ms": 24,
+          "inclusive_ms": 202
+        },
+        {
+          "symbol": "gg_packed_199_avx2",
+          "exclusive_ms": 22,
+          "inclusive_ms": 22
+        },
+        {
+          "symbol": "<static>@0x1ccd36 (<libcuda.so.580.178.04>)",
+          "exclusive_ms": 20,
+          "inclusive_ms": 202
+        },
+        {
+          "symbol": "gg_function_197",
+          "exclusive_ms": 20,
+          "inclusive_ms": 20
+        },
+        {
+          "symbol": "<static>@0x26378e (<libcuda.so.580.178.04>)",
+          "exclusive_ms": 8,
+          "inclusive_ms": 228
+        },
+        {
+          "symbol": "gg_function_198",
+          "exclusive_ms": 8,
+          "inclusive_ms": 96
+        },
+        {
+          "symbol": "gg_function_173",
+          "exclusive_ms": 6,
+          "inclusive_ms": 36
+        },
+        {
+          "symbol": "clock_gettime",
+          "exclusive_ms": 4,
+          "inclusive_ms": 52
+        }
+      ]
+    },
+    "decode": {
+      "window_ms": 12152.052502,
+      "gpu_busy_ms": 8045.059108,
+      "gpu_idle_ms": 4106.993394,
+      "families": {
+        "GDN": {
+          "count": 15330,
+          "sum_ms": 353.830997,
+          "mean_us": 23.080952185257665,
+          "union_ms": 353.830997,
+          "bytes": 0,
+          "exclusive_ms": 353.830997
+        },
+        "RMSNorm": {
+          "count": 97598,
+          "sum_ms": 362.507168,
+          "mean_us": 3.7142888993626917,
+          "union_ms": 362.507168,
+          "bytes": 0,
+          "exclusive_ms": 362.507168
+        },
+        "MMVQ pack": {
+          "count": 158918,
+          "sum_ms": 183.896702,
+          "mean_us": 1.1571798160057387,
+          "union_ms": 183.896702,
+          "bytes": 0,
+          "exclusive_ms": 168.726163
+        },
+        "MMVQ": {
+          "count": 220238,
+          "sum_ms": 2713.911253,
+          "mean_us": 12.322629396380279,
+          "union_ms": 2713.911253,
+          "bytes": 0,
+          "exclusive_ms": 2564.754027
+        },
+        "Pointwise and GLU": {
+          "count": 276445,
+          "sum_ms": 788.345419,
+          "mean_us": 2.851726090180687,
+          "union_ms": 788.345419,
+          "bytes": 0,
+          "exclusive_ms": 739.46016
+        },
+        "Dense and generic matmul": {
+          "count": 40880,
+          "sum_ms": 248.569527,
+          "mean_us": 6.080467881604696,
+          "union_ms": 248.569527,
+          "bytes": 0,
+          "exclusive_ms": 227.001161
+        },
+        "MoE router": {
+          "count": 61320,
+          "sum_ms": 145.813073,
+          "mean_us": 2.37790399543379,
+          "union_ms": 145.813073,
+          "bytes": 0,
+          "exclusive_ms": 140.218785
+        },
+        "MoE weighted reduction": {
+          "count": 20440,
+          "sum_ms": 26.992273,
+          "mean_us": 1.320561301369863,
+          "union_ms": 26.992273,
+          "bytes": 0,
+          "exclusive_ms": 26.992273
+        },
+        "Tensor gather and blit": {
+          "count": 35768,
+          "sum_ms": 91.475407,
+          "mean_us": 2.5574649686870945,
+          "union_ms": 91.475407,
+          "bytes": 0,
+          "exclusive_ms": 91.475407
+        },
+        "SSM convolution": {
+          "count": 15329,
+          "sum_ms": 48.790068,
+          "mean_us": 3.1828604605649424,
+          "union_ms": 48.790068,
+          "bytes": 0,
+          "exclusive_ms": 48.790068
+        },
+        "RoPE": {
+          "count": 10220,
+          "sum_ms": 22.572559,
+          "mean_us": 2.208665264187867,
+          "union_ms": 22.572559,
+          "bytes": 0,
+          "exclusive_ms": 22.572559
+        },
+        "KV FWHT": {
+          "count": 20440,
+          "sum_ms": 43.842472,
+          "mean_us": 2.1449350293542073,
+          "union_ms": 43.842472,
+          "bytes": 0,
+          "exclusive_ms": 43.842472
+        },
+        "KV writes": {
+          "count": 10220,
+          "sum_ms": 23.353863,
+          "mean_us": 2.285113796477495,
+          "union_ms": 23.353863,
+          "bytes": 0,
+          "exclusive_ms": 23.353863
+        },
+        "Vector Attention": {
+          "count": 15330,
+          "sum_ms": 1498.611084,
+          "mean_us": 97.75675694716243,
+          "union_ms": 1498.611084,
+          "bytes": 0,
+          "exclusive_ms": 1498.611084
+        },
+        "H2D packets up to 4 KiB": {
+          "count": 256005,
+          "sum_ms": 113.170565,
+          "mean_us": 0.4420638854709869,
+          "union_ms": 113.170565,
+          "bytes": 36881400,
+          "exclusive_ms": 93.803574
+        },
+        "H2D bulk": {
+          "count": 54145,
+          "sum_ms": 1599.049177,
+          "mean_us": 29.53272097146551,
+          "union_ms": 1599.049177,
+          "bytes": 34718400512,
+          "exclusive_ms": 1339.308012
+        },
+        "D2H": {
+          "count": 20951,
+          "sum_ms": 40.07017,
+          "mean_us": 1.9125659873037086,
+          "union_ms": 40.07017,
+          "bytes": 508220160,
+          "exclusive_ms": 40.07017
+        }
+      },
+      "graph_sizes": {
+        "2": {
+          "replays": 2552,
+          "kernel_ms": 33.385531
+        },
+        "49": {
+          "replays": 14819,
+          "kernel_ms": 3470.297232
+        },
+        "48": {
+          "replays": 5110,
+          "kernel_ms": 2502.278352
+        },
+        "22": {
+          "replays": 511,
+          "kernel_ms": 502.190736
+        }
+      },
+      "sampled_cpu_ms": 256,
+      "cpu_family_ms": {
+        "CUDA driver": 158,
+        "System libraries": 60,
+        "Other CPU functions": 36,
+        "Expert cache and SLRU": 2
+      },
+      "top_cpu_samples": [
+        {
+          "symbol": "<static>@0x3a579f (<libcuda.so.580.178.04>)",
+          "exclusive_ms": 88,
+          "inclusive_ms": 190
+        },
+        {
+          "symbol": "<static>@0x1ccd36 (<libcuda.so.580.178.04>)",
+          "exclusive_ms": 28,
+          "inclusive_ms": 158
+        },
+        {
+          "symbol": "<static>@0xac784 (<libc.so.6>)",
+          "exclusive_ms": 24,
+          "inclusive_ms": 24
+        },
+        {
+          "symbol": "<static>@0x72245d6588c0 ([vdso])",
+          "exclusive_ms": 22,
+          "inclusive_ms": 22
+        },
+        {
+          "symbol": "<static>@0x26378e (<libcuda.so.580.178.04>)",
+          "exclusive_ms": 20,
+          "inclusive_ms": 90
+        },
+        {
+          "symbol": "<static>@0x4a40d5 (<libcuda.so.580.178.04>)",
+          "exclusive_ms": 18,
+          "inclusive_ms": 156
+        },
+        {
+          "symbol": "<static>@0x197030 (<libc.so.6>)",
+          "exclusive_ms": 12,
+          "inclusive_ms": 12
+        },
+        {
+          "symbol": "gg_function_973",
+          "exclusive_ms": 6,
+          "inclusive_ms": 10
+        },
+        {
+          "symbol": "gg_owned_unwind_checked",
+          "exclusive_ms": 6,
+          "inclusive_ms": 6
+        },
+        {
+          "symbol": "<static>@0x23d62c (<libcuda.so.580.178.04>)",
+          "exclusive_ms": 2,
+          "inclusive_ms": 2
+        },
+        {
+          "symbol": "<static>@0x24cf95 (<libcuda.so.580.178.04>)",
+          "exclusive_ms": 2,
+          "inclusive_ms": 82
+        },
+        {
+          "symbol": "<static>@0x642a9 (<libc.so.6>)",
+          "exclusive_ms": 2,
+          "inclusive_ms": 4
+        },
+        {
+          "symbol": "fg143_storage_allocate_output",
+          "exclusive_ms": 2,
+          "inclusive_ms": 6
+        },
+        {
+          "symbol": "fg156_tget",
+          "exclusive_ms": 2,
+          "inclusive_ms": 2
+        },
+        {
+          "symbol": "fg158_prop",
+          "exclusive_ms": 2,
+          "inclusive_ms": 2
+        },
+        {
+          "symbol": "fg_cuda_activation_prepare",
+          "exclusive_ms": 2,
+          "inclusive_ms": 2
+        },
+        {
+          "symbol": "gg_div",
+          "exclusive_ms": 2,
+          "inclusive_ms": 2
+        },
+        {
+          "symbol": "gg_function_185",
+          "exclusive_ms": 2,
+          "inclusive_ms": 2
+        }
+      ],
+      "idle_attribution": {
+        "Asynchronous memcpy API": {
+          "idle_ns": 84461406,
+          "api_calls": 79201,
+          "gaps_touched": 24572
+        },
+        "CUDA synchronization and waits": {
+          "idle_ns": 20231981,
+          "api_calls": 11139,
+          "gaps_touched": 20912
+        },
+        "Device-to-Host 32 B Device to Pageable (stream 7)": {
+          "idle_ns": 767551606,
+          "api_calls": 20440,
+          "gaps_touched": 902999,
+          "device_ns": 19508530,
+          "returned_before_copy": 0,
+          "api_ns": 5513318521,
+          "calls": 20440,
+          "idle_before_copy_ns": 698995054,
+          "idle_after_copy_ns": 68556552
+        },
+        "Device-to-Host 993280 B Device to Pageable (stream 7)": {
+          "idle_ns": 44994702,
+          "api_calls": 511,
+          "gaps_touched": 1021,
+          "device_ns": 20561640,
+          "returned_before_copy": 0,
+          "api_ns": 65556342,
+          "calls": 511,
+          "idle_before_copy_ns": 3156476,
+          "idle_after_copy_ns": 41838226
+        },
+        "Direct launch": {
+          "idle_ns": 20730177,
+          "api_calls": 10816,
+          "gaps_touched": 10646
+        },
+        "Graph launch": {
+          "idle_ns": 439850788,
+          "api_calls": 22992,
+          "gaps_touched": 303190
+        },
+        "Graph setup and update": {
+          "idle_ns": 10404525,
+          "api_calls": 15711,
+          "gaps_touched": 3174
+        },
+        "Host-to-Device 8192 B Pageable to Device (stream 7)": {
+          "idle_ns": 11394103,
+          "api_calls": 1021,
+          "gaps_touched": 3521,
+          "device_ns": 634439,
+          "returned_before_copy": 992,
+          "api_ns": 22795389,
+          "calls": 1021,
+          "idle_before_copy_ns": 11379238,
+          "idle_after_copy_ns": 14865
+        },
+        "No CUDA API, before next submission": {
+          "idle_ns": 2599611624,
+          "api_calls": null,
+          "gaps_touched": 33384
+        },
+        "No CUDA API, next activity already submitted": {
+          "idle_ns": 98051870,
+          "api_calls": null,
+          "gaps_touched": 61133
+        },
+        "Other CUDA API": {
+          "idle_ns": 9710612,
+          "api_calls": 30345,
+          "gaps_touched": 10278
+        }
+      },
+      "outside_api_top_gaps": [
+        {
+          "idle_row": "No CUDA API, before next submission",
+          "next_call": "Host-to-Device 8192 B Pageable to Device (stream 7)",
+          "last_completed_call": "Device-to-Host 993280 B Device to Pageable (stream 7)",
+          "same_device_submission": false,
+          "idle_ns": 1449037389
+        },
+        {
+          "idle_row": "No CUDA API, before next submission",
+          "next_call": "Graph launch",
+          "last_completed_call": "Asynchronous memcpy API",
+          "same_device_submission": false,
+          "idle_ns": 609207630
+        },
+        {
+          "idle_row": "No CUDA API, before next submission",
+          "next_call": "Asynchronous memcpy API",
+          "last_completed_call": "Device-to-Host 32 B Device to Pageable (stream 7)",
+          "same_device_submission": false,
+          "idle_ns": 359892531
+        },
+        {
+          "idle_row": "No CUDA API, before next submission",
+          "next_call": "Asynchronous memcpy API",
+          "last_completed_call": "Other CUDA API",
+          "same_device_submission": false,
+          "idle_ns": 174109261
+        },
+        {
+          "idle_row": "No CUDA API, next activity already submitted",
+          "next_call": "Asynchronous memcpy API",
+          "last_completed_call": "Asynchronous memcpy API",
+          "same_device_submission": false,
+          "idle_ns": 80449023
+        },
+        {
+          "idle_row": "No CUDA API, next activity already submitted",
+          "next_call": "Direct launch",
+          "last_completed_call": "Direct launch",
+          "same_device_submission": false,
+          "idle_ns": 10270366
+        },
+        {
+          "idle_row": "No CUDA API, before next submission",
+          "next_call": "Asynchronous memcpy API",
+          "last_completed_call": "CUDA synchronization and waits",
+          "same_device_submission": false,
+          "idle_ns": 3862172
+        },
+        {
+          "idle_row": "No CUDA API, next activity already submitted",
+          "next_call": "Graph launch",
+          "last_completed_call": "Graph launch",
+          "same_device_submission": false,
+          "idle_ns": 2607091
+        }
+      ]
+    }
+  }
+}
