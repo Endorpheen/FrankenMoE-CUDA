@@ -1,0 +1,138 @@
+--- a/flash-vec.goose
++++ b/flash-vec.goose
+@@ -710,0 +711,135 @@
++
++struct FvHeadPair { a: f32, b: f32 }
++struct FvPackedQuery { w0: i32, w1: i32, d0: f32, s0: f32, d1: f32, s1: f32 }
++
++fn fv_load_packed_head(q: u64, lane: i64) -> FvPackedQuery {
++    let word = lane as u64;
++    let ds = 64 + 2 * (word / 8);
++    return FvPackedQuery { ld_i32(q, 4 * word), ld_i32(q, 4 * (word + 32)),
++        ld_f32(q, 4 * ds), ld_f32(q, 4 * (ds+1)), ld_f32(q, 4 * (ds+8)), ld_f32(q, 4 * (ds+9)) };
++}
++
++fn fv_dot_head_pair(k: u64, lane: i32, a: FvPackedQuery, b: FvPackedQuery) -> FvHeadPair {
++    let block_address = k + ((18 * (lane / 8)) as u64);
++    let nibble = lane % 8 / 4;
++    let column = 2 + 4 * (lane % 4);
++    let k0 = fv_q4_word(block_address, column, nibble);
++    let k1 = fv_q4_word(block_address + 72, column, nibble);
++    let scale0 = h2f(ld_u16(block_address, 0));
++    let scale1 = h2f(ld_u16(block_address + 72, 0));
++    var x: f32 = 0.0;
++    var y: f32 = 0.0;
++    x += scale0 * ((dp4a(k0, a.w0, 0) as f32) * a.d0 - a.s0);
++    y += scale0 * ((dp4a(k0, b.w0, 0) as f32) * b.d0 - b.s0);
++    x += scale1 * ((dp4a(k1, a.w1, 0) as f32) * a.d1 - a.s1);
++    y += scale1 * ((dp4a(k1, b.w1, 0) as f32) * b.d1 - b.s1);
++    return FvHeadPair { fv_wr_sum(x), fv_wr_sum(y) };
++}
++
++fn fv_pair_value(acc: VecFlash4, value: VecFlash4, p: f32, prior: f32, first: bool) -> VecFlash4 {
++    if first {
++        return VecFlash4 { fma_rn(prior, acc.v0, mul_rn(value.v0, p)),
++            fma_rn(prior, acc.v1, mul_rn(value.v1, p)), fma_rn(prior, acc.v2, mul_rn(value.v2, p)),
++            fma_rn(prior, acc.v3, mul_rn(value.v3, p)) };
++    }
++    return VecFlash4 { fma_rn(value.v0, p, acc.v0), fma_rn(value.v1, p, acc.v1),
++        fma_rn(value.v2, p, acc.v2), fma_rn(value.v3, p, acc.v3) };
++}
++
++fn fv_pair_spill_value(smem: u64, offset: u64, values: VecFlash4, scale: f32) {
++    sm_st_f32(smem, offset, mul_rn(values.v0, scale));
++    sm_st_f32(smem, offset + 1, mul_rn(values.v1, scale));
++    sm_st_f32(smem, offset + 2, mul_rn(values.v2, scale));
++    sm_st_f32(smem, offset + 3, mul_rn(values.v3, scale));
++}
++
++fn fv_pair_finish(out: u64, meta: u64, low: VecFlash4, high: VecFlash4,
++                   maximum: f32, total: f32, lane: i32, warp: i32, smem: u64) {
++    if lane == 0 { sm_st_f32(smem, (1024 + warp) as u64, maximum); }
++    if warp == 0 && lane >= 4 {
++        sm_st_f32(smem, (1024 + lane) as u64, fv_negmax());
++        sm_st_f32(smem, (1088 + lane) as u64, 0.0);
++    }
++    barrier();
++    let block_max = fv_wr_max(sm_f32(smem, (1024 + lane) as u64));
++    let scale = expf(maximum - block_max);
++    let index = (warp * 256 + 4 * lane) as u64;
++    fv_pair_spill_value(smem, index, low, scale);
++    fv_pair_spill_value(smem, index + 128, high, scale);
++    let warp_total = fv_wr_sum(total * scale);
++    if lane == 0 { sm_st_f32(smem, (1088 + warp) as u64, warp_total); }
++    barrier();
++    let block_total = fv_wr_sum(sm_f32(smem, (1088 + lane) as u64));
++    let tid = (warp * 32 + lane) as u64;
++    for half in 2 {
++        let column = tid + 128 * (half as u64);
++        var sum: f32 = 0.0;
++        for w in 4 { sum += sm_f32(smem, column + 256 * (w as u64)); }
++        st_f32(out, 4 * column, sum);
++    }
++    if tid == 0 {
++        st_f32(meta, 0, block_max);
++        st_f32(meta, 4, block_total);
++    }
++    barrier();
++}
++
++export fn fv_packed_heads_pair(q: u64, k: u64, v: u64, out0: u64, out1: u64,
++                               meta0: u64, meta1: u64, keys: i64, kr: i64, vr: i64,
++                               part: i32, parts: i32, lane: i32, warp: i32, smem: u64) {
++    let q0 = fv_load_packed_head(q, lane as i64);
++    let q1 = fv_load_packed_head(q + 320, lane as i64);
++    var max0 = fv_negmax();
++    var max1 = fv_negmax();
++    var sum0: f32 = 0.0;
++    var sum1: f32 = 0.0;
++    var low0 = VecFlash4 {0.0, 0.0, 0.0, 0.0};
++    var high0 = VecFlash4 {0.0, 0.0, 0.0, 0.0};
++    var low1 = VecFlash4 {0.0, 0.0, 0.0, 0.0};
++    var high1 = VecFlash4 {0.0, 0.0, 0.0, 0.0};
++    let tid = (warp * 32 + lane) as i64;
++    let column = (lane as i64) * 4;
++    var first = (part as i64) * 128;
++    while first < keys {
++        var own0 = fv_negmax();
++        var own1 = fv_negmax();
++        var next0 = max0;
++        var next1 = max1;
++        for r in 32 {
++            let index = first + (warp as i64) * 32 + r;
++            let scores = if index < keys { fv_dot_head_pair(k + ((index * kr) as u64), lane, q0, q1) }
++                else { FvHeadPair { fv_negmax(), fv_negmax() } };
++            next0 = fmaxf(next0, scores.a + (3.0 as f32) * (0.6931 as f32));
++            next1 = fmaxf(next1, scores.b + (3.0 as f32) * (0.6931 as f32));
++            if lane == r as i32 { own0 = scores.a; own1 = scores.b; }
++        }
++        let prior0 = expf(max0 - next0);
++        let prior1 = expf(max1 - next1);
++        max0 = next0;
++        max1 = next1;
++        let prob0 = if first + tid < keys { expf(own0 - next0) } else { 0.0 };
++        let prob1 = if first + tid < keys { expf(own1 - next1) } else { 0.0 };
++        sum0 = sum0 * prior0 + prob0;
++        sum1 = sum1 * prior1 + prob1;
++        sm_st_f32(smem, tid as u64, prob0);
++        sm_st_f32(smem, (tid + 128) as u64, prob1);
++        syncwarp();
++        for r in 32 {
++            let row = (warp as i64) * 32 + r;
++            let index = first + row;
++            let address = v + ((vr * index) as u64);
++            let low = fv_bounded_v4(address, column, index < keys);
++            let high = fv_bounded_v4(address, column + 128, index < keys);
++            let p0 = sm_f32(smem, row as u64);
++            let p1 = sm_f32(smem, (row + 128) as u64);
++            low0 = fv_pair_value(low0, low, p0, prior0, r == 0);
++            high0 = fv_pair_value(high0, high, p0, prior0, r == 0);
++            low1 = fv_pair_value(low1, low, p1, prior1, r == 0);
++            high1 = fv_pair_value(high1, high, p1, prior1, r == 0);
++        }
++        syncwarp();
++        first += (parts as i64) * 128;
++    }
++    fv_pair_finish(out0, meta0, low0, high0, max0, sum0, lane, warp, smem);
++    fv_pair_finish(out1, meta1, low1, high1, max1, sum1, lane, warp, smem);
++}

@@ -2723,3 +2723,13 @@ saves 464 ms decode and 440 ms client time. Decode rises from a fresh
 is 3000.79 tok/s versus 3006.25 in the pair. Peak process VRAM stays
 8766 MiB and both arms have zero swap-out. This refreshes the decode
 checkpoint. EXP-1701 remains the historical prefill best and rollback.
+
+## EXP-1712 — Pair query heads in long packed attention
+
+The [ordinary 32,768/512 pair](../../experiments/EXP-2026-11-22-1712-flash-gqa-pair/README.md)
+raises decode from a fresh 41.92 to 43.58 tok/s and prefill from
+3008.50 to 3015.70 tok/s. Decode saves 464 ms and the client saves
+490 ms. Answers and SLRU counts match, VRAM stays at 8766 MiB,
+and both arms have zero swap-out. The experimental checkpoint
+records a 91 MiB RSS increase already present before the first
+request. EXP-1710 is available for rollback.

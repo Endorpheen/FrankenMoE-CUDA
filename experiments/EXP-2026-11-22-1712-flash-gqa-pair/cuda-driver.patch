@@ -1,0 +1,23 @@
+--- a/cuda-driver.c
++++ b/cuda-driver.c
+@@ -233 +233 @@
+-    Function flash_vec_pack, flash_vec_packed;
++    Function flash_vec_pack, flash_vec_packed, flash_vec_paired;
+@@ -1307 +1307 @@
+-        if (error == 0 && flash_vec && vec_pack)
++        if (error == 0 && flash_vec && vec_pack) {
+@@ -1308,0 +1309,3 @@
++            if (error == 0)
++                (void) cuda.function_get(&cuda.flash_vec_paired, cuda.module, "goose_flash_vec_q4_packed_pair");
++        }
+@@ -3870 +3873,9 @@
+-    const struct kernel_node_params vector = { .function = prepacked ? cuda.flash_vec_packed : cuda.flash_vec, .grid_x = (unsigned) heads,
++    const bool paired = prepacked && cuda.flash_vec_paired && c[4] > 0 && heads % c[4] == 0 &&
++        (heads / c[4]) % 2 == 0;
++    static bool paired_logged;
++    if (paired && !paired_logged) {
++        paired_logged = true;
++        fprintf(stderr, "Goose CUDA: paired query heads share packed K/V\n");
++    }
++    const struct kernel_node_params vector = { .function = paired ? cuda.flash_vec_paired : prepacked ? cuda.flash_vec_packed : cuda.flash_vec,
++        .grid_x = (unsigned) (paired ? heads / 2 : heads),
