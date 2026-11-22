@@ -1,0 +1,85 @@
+--- a/integration/goose-standalone/cuda-driver.c
++++ b/integration/goose-standalone/cuda-driver.c
+@@ -140,3 +140,4 @@
+     Event prefill_release, prefill_ready;
+-    bool prefill_double;
++    bool prefill_double, prefill_compact;
++    uint64_t prefill_full_buffer, prefill_skipped_capacity;
+     unsigned prefill_next_slot;
+@@ -2206,2 +2207,3 @@
+     cache->prefill_double = fg_standalone_option_enabled("GOOSE_CUDA_PREFILL_TEMP_DOUBLE");
++    cache->prefill_compact = cache->prefill_double && fg_standalone_option_enabled("GOOSE_CUDA_PREFILL_TEMP_COMPACT");
+     if (groups.len % EXPERT_LAYOUT_GROUP != 0 || bank_bytes > SIZE_MAX - 255) return false;
+@@ -2219,3 +2221,3 @@
+     return cache->prefill_offset <= INT64_MAX &&
+-        cache->prefill_bytes <= (INT64_MAX - cache->prefill_offset) / (cache->prefill_double ? 2 : 1);
++        cache->prefill_bytes <= (INT64_MAX - cache->prefill_offset) / (cache->prefill_double && !cache->prefill_compact ? 2 : 1);
+ }
+@@ -2242,3 +2244,3 @@
+     const size_t total_bytes = cache.prefill_bytes ?
+-        cache.prefill_offset + cache.prefill_bytes * (cache.prefill_double ? 2 : 1) : cache.bank_bytes;
++        cache.prefill_offset + cache.prefill_bytes * (cache.prefill_double && !cache.prefill_compact ? 2 : 1) : cache.bank_bytes;
+     size_t available = 0, total = 0;
+@@ -2254,4 +2256,4 @@
+     if (status == 0 && cache.prefill_bytes) {
+-        fprintf(stderr, "Goose CUDA: %zu byte expert bank, %zu byte temporary prefill plane, %u buffers\n",
+-            cache.bank_bytes, cache.prefill_bytes, cache.prefill_double ? 2u : 1u);
++        fprintf(stderr, "Goose CUDA: %zu byte expert bank, %zu byte temporary prefill workspace, %u buffers\n",
++            cache.bank_bytes, total_bytes - cache.prefill_offset, cache.prefill_double ? 2u : 1u);
+     }
+@@ -2369,2 +2371,6 @@
+             cuda.experts.prefill_prefetch_discarded);
++        if (cuda.experts.prefill_compact) {
++            fprintf(stderr, "Goose CUDA prefill compact: %" PRIu64 " full-buffer projections, %" PRIu64
++                " prefetch skips for capacity\n", cuda.experts.prefill_full_buffer, cuda.experts.prefill_skipped_capacity);
++        }
+     }
+@@ -2657,2 +2663,3 @@
+         sl_i64 active, const int32_t * slots, size_t scratch, Stream stream) {
++    size_t packed = 0;
+     for (int64_t e = 0; e < active.len;) {
+@@ -2667,3 +2674,5 @@
+         const void * host = (const void *) (uintptr_t) source;
+-        const DevicePtr dst = cache->weights.address + scratch + (size_t) e * bytes;
++        const size_t offset = cache->prefill_compact ? packed : (size_t) e * bytes;
++        const DevicePtr dst = cache->weights.address + scratch + offset;
++        packed += size;
+         activations.pending = true;
+@@ -2721,3 +2730,12 @@
+
+-        const bool prefetched = pipeline && next == tensor && cache->prefill_next_bytes == bytes &&
++        const int32_t * slots = (const int32_t *) (uintptr_t) cache->work.data[i];
++        const size_t slab_bytes = cache->prefill_compact ?
++            (cache->prefill_bytes / 2) & ~(size_t) 255 : cache->prefill_bytes;
++        size_t misses = 0;
++        if (cache->prefill_compact) {
++            for (int64_t e = 0; e < active.len; ++e) misses += active.data[e] >= 0 && slots[e] < 0;
++        }
++        const bool fits = !cache->prefill_compact || misses * (size_t) bytes <= slab_bytes;
++        if (!fits) ++cache->prefill_full_buffer;
++        const bool prefetched = pipeline && fits && next == tensor && cache->prefill_next_bytes == bytes &&
+             cache->prefill_next_count == active.len && cache->prefill_next_fills == cache->fills &&
+@@ -2727,6 +2745,6 @@
+         const unsigned slab = prefetched ? cache->prefill_next_slot : 0;
+-        const size_t scratch = cache->prefill_offset + slab * cache->prefill_bytes;
+-        const int32_t * slots = (const int32_t *) (uintptr_t) cache->work.data[i];
++        const size_t scratch = cache->prefill_offset + slab * slab_bytes;
+         const size_t span = (size_t) group[0] + (size_t) group[1] + (size_t) group[2];
+         uint64_t hits = 0;
++        size_t packed = 0;
+         for (int64_t e = 0; e < active.len; ++e) {
+@@ -2736,3 +2754,4 @@
+             if (slot < 0) {
+-                offsets.data[e] = (int64_t) (scratch + (size_t) e * (size_t) bytes);
++                offsets.data[e] = (int64_t) (scratch + (cache->prefill_compact ? packed : (size_t) e * (size_t) bytes));
++                packed += (size_t) bytes;
+             } else {
+@@ -2754,4 +2773,6 @@
+             const unsigned next_slab = 1 - slab;
+-            const size_t next_scratch = cache->prefill_offset + next_slab * cache->prefill_bytes;
+-            if (expert_source_pinned(source, next_bytes * (size_t) active.len)) {
++            const size_t next_scratch = cache->prefill_offset + next_slab * slab_bytes;
++            const bool next_fits = !cache->prefill_compact || misses * next_bytes <= slab_bytes;
++            if (!fits || !next_fits) ++cache->prefill_skipped_capacity;
++            if (fits && next_fits && expert_source_pinned(source, next_bytes * (size_t) active.len)) {
+                 int status = cuda.event_record(cache->prefill_release, NULL);

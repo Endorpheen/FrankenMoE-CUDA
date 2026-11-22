@@ -1,0 +1,37 @@
+--- a/integration/goose-standalone/cuda-driver.c
++++ b/integration/goose-standalone/cuda-driver.c
+@@ -138,3 +138,3 @@
+     struct device_buffer weights;
+-    size_t bank_bytes, prefill_offset, prefill_bytes;
++    size_t bank_bytes, prefill_offset, prefill_bytes, prefill_workspace;
+     Event prefill_release, prefill_ready;
+@@ -2220,4 +2220,17 @@
+     cache->prefill_offset = (bank_bytes + 255) & ~(size_t) 255;
+-    return cache->prefill_offset <= INT64_MAX &&
+-        cache->prefill_bytes <= (INT64_MAX - cache->prefill_offset) / (cache->prefill_double && !cache->prefill_compact ? 2 : 1);
++    const size_t planes = cache->prefill_double && !cache->prefill_compact ? 2 : 1;
++    if (cache->prefill_offset > INT64_MAX ||
++        cache->prefill_bytes > (INT64_MAX - cache->prefill_offset) / planes) return false;
++    cache->prefill_workspace = cache->prefill_bytes * planes;
++    const char * budget = getenv("GOOSE_CUDA_PREFILL_TEMP_MIB");
++    if (cache->prefill_compact && budget) {
++        char * end;
++        const intmax_t mib = strtoimax(budget, &end, 10);
++        if (end == budget || *end || mib <= 0 || mib > (INT64_MAX - cache->prefill_offset) / MIB_BYTES)
++            return false;
++        const size_t requested = (size_t) mib * MIB_BYTES;
++        if (requested < cache->prefill_bytes) return false;
++        cache->prefill_workspace = requested;
++    }
++    return true;
+ }
+@@ -2244,3 +2257,3 @@
+     const size_t total_bytes = cache.prefill_bytes ?
+-        cache.prefill_offset + cache.prefill_bytes * (cache.prefill_double && !cache.prefill_compact ? 2 : 1) : cache.bank_bytes;
++        cache.prefill_offset + cache.prefill_workspace : cache.bank_bytes;
+     size_t available = 0, total = 0;
+@@ -2732,3 +2745,3 @@
+         const size_t slab_bytes = cache->prefill_compact ?
+-            (cache->prefill_bytes / 2) & ~(size_t) 255 : cache->prefill_bytes;
++            (cache->prefill_workspace / 2) & ~(size_t) 255 : cache->prefill_bytes;
+         size_t misses = 0;

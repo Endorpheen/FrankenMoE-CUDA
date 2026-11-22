@@ -2678,3 +2678,13 @@ prefill tokens/s in forward and reverse warmed pairs. The measured
 requests are 1.77 and 1.24 seconds shorter. The clean forward
 candidate uses 8,668 MiB VRAM with zero process or system swap-out.
 Cold prefill is slower in both pairs and decode remains below target.
+
+## EXP-1694 — Allocate 100 MiB to the SLRU bank
+
+The [cold-aware pipeline and VRAM differential](../../experiments/EXP-2026-11-22-1694-prefill-vram-allocation/README.md)
+compare the 6,190 / 210 MiB checkpoint with two ways to use another
+100 MiB. The 310 MiB workspace removes 36 capacity skips, but does
+not improve prefill. The larger SLRU wins both orderings by client
+time and records a clean 3,015.00 prefill / 34.19 decode at
+8,766 MiB VRAM. Keep the 3,043 / 67 target open and refresh the
+decode latency profile from this endpoint.
