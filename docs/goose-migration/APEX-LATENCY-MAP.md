@@ -2657,3 +2657,14 @@ registered on each runtime and the GPU expert budget matched at
 Optimized Hybrid 3,043.31 / 67.63 tokens/s. The remaining phase
 deltas are 1.260 s prefill and 7.459 s decode. Keep this fresh
 comparison separate from the historical hybrid medians.
+
+## VRAM reserve and direct pinned uploads
+
+The [full 5,632 / 6,400 MiB differential and EXP-1689](../../experiments/EXP-2026-11-22-1689-direct-pinned-prefill/README.md)
+separate cache traffic from prefill critical-path time. The larger
+bank saves about 9.56 GB decode H2D and about 0.58 GB prefill H2D in
+the capture. At the same process VRAM, the 6,400 MiB bank beats a
+6,272 MiB bank paired with a 512 MiB tensor arena. Direct pinned
+uploads remove 48,671 synchronous H2D calls and improve prefill
+in both ordinary pairs, with a small decode slowdown. Keep the
+two runnable checkpoints and both raw measurements.

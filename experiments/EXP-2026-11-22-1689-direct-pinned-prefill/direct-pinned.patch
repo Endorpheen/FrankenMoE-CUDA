@@ -1,0 +1,26 @@
+--- a/integration/goose-standalone/cuda-driver.c
++++ b/integration/goose-standalone/cuda-driver.c
+@@ -2351,7 +2351,8 @@
+         cuda.expert_upload_jobs = jobs;
+         cuda.expert_upload_capacity = capacity;
+     }
+-    cuda.expert_current_staging = !stage_all && cuda.expert_prefill_staging && cuda.expert_host.enabled;
++    cuda.expert_current_staging = !stage_all && cuda.expert_prefill_staging &&
++        (cuda.expert_host.enabled || cuda.expert_pins.len > 0);
+     return true;
+ }
+
+@@ -2392,7 +2393,12 @@
+             cuda.expert_upload_jobs[cuda.expert_upload_count++] =
+                 (struct expert_upload_job) {address, host, (size_t) bytes, !pinned};
+         }
+-    } else if (!staged && cuda.expert_current_staging && !pinned && bytes <= EXPERT_HOST_SLOT_BYTES) {
++    } else if (!staged && cuda.expert_current_staging && pinned) {
++        // Immutable registered mappings need no pageable staging slot.
++        activations.pending = true;
++        status = cuda.upload_async(address, host, (size_t) bytes, NULL);
++    } else if (!staged && cuda.expert_current_staging && cuda.expert_host.enabled &&
++               bytes <= EXPERT_HOST_SLOT_BYTES) {
+         // The legacy stream orders the upload between the old slot reader
+         // and the current projection. Event fences protect the host ring.
+         const struct expert_upload_job job = {address, host, (size_t) bytes, true};
