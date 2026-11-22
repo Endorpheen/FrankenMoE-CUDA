@@ -22,6 +22,9 @@ ui = {
 }
 native = {"prompt": "native fixture", "n_predict": 2, "temperature": 0}
 cases = [
+    ("server tool catalog", "/tools", None, False, 404, 200, "empty-list"),
+    ("resumable streams", "/v1/streams/lookup", {"conversation_ids": ["fixture"]}, False, 404, 200, "empty-list"),
+    ("server tool execution unavailable", "/tools", {"tool": "fixture"}, False, 404, 404, "unavailable"),
     ("plain chat", CHAT, data, False, 200, 200, "chat"),
     ("OpenCode output budget", CHAT, {**data, "max_tokens": 65536}, False, 400, 200, "chat"),
     ("OpenAI content parts", CHAT, {**data, "messages": [{"role": "user", "content": parts}]}, False, 400, 200, "chat"),
@@ -96,6 +99,9 @@ for name, path, request, bom, before, after, kind in cases:
         response = events[-1]
     else:
         response = json.loads(body)
+    if kind == "empty-list":
+        assert mime == "application/json" and response == [], (name, response)
+        continue
     if kind == "chat":
         answer = response["choices"][0]["message"]["content"]
     elif kind == "chat-sse":

@@ -179,6 +179,7 @@ void fg_http_windows_request(int64_t method, int64_t route) {
         case 12: request_route = "/v1/completions"; break;
         case 13: request_route = "/v1/chat/completions"; break;
         case 15: request_route = "/v1/responses"; break;
+        case 36: request_route = "/v1/streams/lookup"; break;
         case 39: request_route = "/tools"; break;
         case 101: request_route = "static-asset"; break;
         default: request_route = "unmatched"; break;

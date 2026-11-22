@@ -164,9 +164,11 @@ fn ih_read(fd: i64, request: u8[:], meta: i64[:]) -> i64 {
     }
 
     if rq_host_violation(hosts, line[7], host_ok, if hosts > 0 { 1 } else { 0 }) != 0 { return 400; }
-    if route != 1 && route != 3 && route != 5 && route != 11 && route != 12 && route != 13 && route != 101 { return 404; }
-    if (route == 11 || route == 12 || route == 13) && length <= 0 { return 400; }
-    if (route == 12 || route == 13) && json == 0 { return 400; }
+    let list_tools = route == 39 && method == 1;
+    if route != 1 && route != 3 && route != 5 && route != 11 && route != 12 && route != 13 &&
+       route != 36 && !list_tools && route != 101 { return 404; }
+    if (route == 11 || route == 12 || route == 13 || route == 36) && length <= 0 { return 400; }
+    if (route == 12 || route == 13 || route == 36) && json == 0 { return 400; }
     if length < 0 { length = 0; }
     if length > request.len - header { return 413; }
     let end = header + length;
@@ -1071,6 +1073,9 @@ fn ih_request(fd: i64, request: u8[:], output: u8[:], response: u8[:], ids: i64[
         ih_response(fd, status, "{\"error\":\"invalid request framing\"}");
     } else if meta[2] == 1 {
         ih_response(fd, 200, "{\"status\":\"ok\"}");
+    } else if meta[2] == 36 || meta[2] == 39 {
+        // Standalone has no resumable sessions or server-side tool catalog.
+        ih_response(fd, 200, "[]");
     } else if meta[2] == 101 {
         if !ih_windows_asset(fd, request[meta[4] .. meta[4] + meta[5]]) {
             ih_response(fd, 404, "{\"error\":\"file not found\"}");
