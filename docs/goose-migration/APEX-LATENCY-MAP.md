@@ -2698,3 +2698,11 @@ idle and 2.723 s extra GPU busy. Vector Attention alone accounts for
 no-probability configuration measures 39.75 decode tok/s and the
 unchanged five-alternative workload 33.73 in the same process.
 The original probability payload remains the parity workload.
+
+## EXP-1695 — Overlap CPU probability reporting with decode
+
+The [Goose worker and one-off Hybrid differential](../../experiments/EXP-2026-11-22-1695-probability-pipeline/README.md)
+preserve the five-alternative acceptance payload. The ordinary Apex
+pair improves 33.76 to 36.62 decode tok/s and saves 1.224 seconds at
+the client. The frozen hybrid diagnostic measures 66.33 with reports
+and 71.17 without. Future optimization retains the original payload.

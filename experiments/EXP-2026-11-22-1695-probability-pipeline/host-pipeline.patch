@@ -1,0 +1,48 @@
+--- a/main.goose
++++ b/main.goose
+@@ -1874,5 +1874,9 @@
+
++extern "fg_prob_pipeline_start" fn prob_pipeline_start(vocab: i64, top: i64, limit: i64) -> bool;
++extern "fg_prob_pipeline_submit" fn prob_pipeline_submit(logits: const f32[:], selected: i64) -> bool;
++extern "fg_prob_pipeline_finish" fn prob_pipeline_finish(count: i64, ids: i64[:], logp: f32[:]) -> bool;
++
+ fn q35_sample_generate(tokens: const i64[:], vocabulary: i64, capacity: i64, eog: const i64[:],
+                        limit: i64, s: const Q35Sample &, ids: i64[:], timing: f64[:],
+-                       top: i64, prob_ids: i64[:], logp: f32[:]) -> i64 {
++                       top: i64, prob_ids: i64[:], logp: f32[:], pipeline: bool) -> i64 {
+     if timing.len != 0 && timing.len != 3 { return -1; }
+@@ -1985,6 +1989,10 @@
+         if top > 0 {
+-            let at = produced * (top + 1);
+-            let end = at + top + 1;
+-            if !sm_pre_sample_logprobs(logits[..], order[..], next, top,
+-                                       prob_ids[at .. end], logp[at .. end]) { return -1; }
++            if pipeline {
++                if !prob_pipeline_submit(logits[..], next) { return -1; }
++            } else {
++                let at = produced * (top + 1);
++                let end = at + top + 1;
++                if !sm_pre_sample_logprobs(logits[..], order[..], next, top,
++                                           prob_ids[at .. end], logp[at .. end]) { return -1; }
++            }
+         }
+@@ -2016,3 +2024,3 @@
+     return q35_sample_generate(tokens, vocabulary, capacity, eog, limit, s, ids, timing,
+-        0, no_ids, no_probs);
++        0, no_ids, no_probs, false);
+ }
+@@ -86360,5 +86368,12 @@
+     var timing: f64[3] = [0.0; 3];
++    let pipeline = top > 0 && prob_pipeline_start(stats[0], top, limit);
+     let count = q35_sample_generate(prompt, stats[0], stats[5], eog[..], limit, opts.sampler, ids,
+-        timing, top, prob_ids[..], logp[..]);
+-    if count <= 0 || count > limit {
++        timing, top, prob_ids[..], logp[..], pipeline);
++    var reports_ready = true;
++    if pipeline {
++        let wait_start = q35_generation_now();
++        reports_ready = prob_pipeline_finish(count, prob_ids[..], logp[..]);
++        if count > 1 { timing[1] += q35_generation_now() - wait_start; }
++    }
++    if count <= 0 || count > limit || !reports_ready {
+         ih_response(fd, 500, "{\"error\":\"generation failed\"}");
