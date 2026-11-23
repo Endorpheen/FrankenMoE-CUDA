@@ -26,7 +26,11 @@ A complete module is one file named after the native module it replaces
 (`jinja/lexer.goose` replaces `common/jinja/lexer.cpp`). A partial slice is
 named after the decision it implements (`server/route-table.goose`,
 `cuda/flash-attention/...`). The experiment that proved each file, its gate
-result and its SHA256 are in `MANIFEST.json`.
+result and its SHA-256 are in `MANIFEST.json`. When a file evolves after its
+original experiment, `integration_commit` identifies the Git revision with
+the exact current bytes. The original experiment and its gate remain
+historical evidence. Run `python3 tools/check-goose-tree.py` to verify the
+files, hashes and recorded revisions.
 
 `tools/build-main-runtime.sh` composes the source unit for the Goose build gate.
 The [standalone chat build](../docs/BUILD.md) records the separate checkpoint

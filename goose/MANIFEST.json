@@ -1,7 +1,7 @@
 {
   "schema": 2,
-  "updated_at": "2026-11-21",
-  "rule": "goose/ is the working tree; each experiment stays the frozen proof. Canonical modules sit at their native path, slice experiments under the native directory named by the ledger. Regenerate with tools/sync-goose-tree.py.",
+  "updated_at": "2026-11-23",
+  "rule": "goose/ is the working tree; experiment metadata records the original slice and gate. An integration_commit pins the exact bytes of an integrated file, including later revisions of an experiment slice. Verify with tools/check-goose-tree.py.",
   "native_tree": "/home/end0/AI/LlamaServer/llama.cpp-flint-cuda",
   "entries": [
     {
@@ -75,9 +75,9 @@
       "experiment": "EXP-2026-11-17-920-goose-tokenizer",
       "task": "P7-06",
       "status": "ported",
-      "sha256": "f0e2f39e278bf7817edb43d28e3c73b188685a437fb5118ff528d263542ebff9",
+      "sha256": "d90ea337f71c1854c094b4885cf6a821b9e1d273a3a3e5fdf613eb2a72b01a6a",
       "gate": "tokenizer gate:496640 pieces and 140 detokenize calls exact;detokenize byte-map mutant rejected",
-      "integration_commit": "4a3d4e384d263197e581908ddf0c6e2c06d8d45e"
+      "integration_commit": "64d58b686ce37d1f7e0ca8a6a2a86bd99fd72543"
     },
     {
       "goose": "chat/parse-params.goose",
@@ -1513,8 +1513,9 @@
       "experiment": "EXP-2026-11-15-621-p9-03-stream-policy",
       "task": "",
       "status": "ported",
-      "sha256": "cfdf41c3e97a899aa055a5f7d84e201dfa2272430b06f078d46403f61b028212",
-      "gate": "37 cases / 55 checks / 0 failures, 12/12 mutations"
+      "sha256": "ff7e4149da183fa1f0b2f8b8a938cad8f7c5d78eacd4c20c36142b3db108773b",
+      "gate": "37 cases / 55 checks / 0 failures, 12/12 mutations",
+      "integration_commit": "f427909daa9fb475592b336867145d072d4231b6"
     },
     {
       "goose": "model/hook-rules.goose",
@@ -3866,7 +3867,8 @@
       "experiment": "EXP-2026-11-07-145-goose-cpu-backend-api",
       "task": "P1-10",
       "status": "slice",
-      "sha256": "663e7508e39cbdcff5916aede077b30c385bb7bae8ca1c81a0d4a7d577a7a322"
+      "sha256": "10a776ef0127bf2a060a5aa66bcec9047c71511799abb9b4a89145bda6b946ae",
+      "integration_commit": "724cd68904240b4d5ecd3a68fa7ecd04f3231511"
     },
     {
       "goose": "cpu/goose-cpu-backend-api/codec/entry.goose",
@@ -3931,7 +3933,8 @@
       "experiment": "EXP-2026-11-07-145-goose-cpu-backend-api",
       "task": "P1-10",
       "status": "slice",
-      "sha256": "2aae85037b31283357e7c700eeeb1c54ae7520c765b31f307ba5a0c62f3b3ad9"
+      "sha256": "de8982f3e4aec42816da8457a99165c420aed665f4da12779d72d1f992abe6de",
+      "integration_commit": "0eee14b8a1aa68dd464df3954ece5ab547d412cf"
     },
     {
       "goose": "cpu/goose-cpu-backend-api/control/kernel-template.goose",
@@ -3983,7 +3986,8 @@
       "experiment": "EXP-2026-11-07-145-goose-cpu-backend-api",
       "task": "P1-10",
       "status": "slice",
-      "sha256": "3c70337e20fe87ff045dff70082021fee4a00a81a219a65a226676e50c47ff9a"
+      "sha256": "7d5276915a2ad9c3625c5334de8c6e5092ead61935df358ac78c8969ea146e2a",
+      "integration_commit": "fe336818132db85750f9b60ddbbe0cd5dbf166da"
     },
     {
       "goose": "cpu/goose-cpu-backend-api/executor/kernel-template.goose",
@@ -4080,7 +4084,10 @@
     {
       "goose": "cuda/standalone-vector.goose",
       "native": "ggml/src/ggml-cuda/binbcast*; ggml/src/ggml-cuda/unary*",
-      "native_targets": ["ggml/src/ggml-cuda/binbcast*", "ggml/src/ggml-cuda/unary*"],
+      "native_targets": [
+        "ggml/src/ggml-cuda/binbcast*",
+        "ggml/src/ggml-cuda/unary*"
+      ],
       "experiment": "EXP-2026-11-21-1603-vector-parameters",
       "task": "P3-04",
       "status": "slice",
@@ -4091,7 +4098,9 @@
     {
       "goose": "cuda/standalone-rms-reference.goose",
       "native": "ggml/src/ggml-cuda/norm.cu",
-      "native_targets": ["ggml/src/ggml-cuda/norm.cu"],
+      "native_targets": [
+        "ggml/src/ggml-cuda/norm.cu"
+      ],
       "experiment": "EXP-2026-11-21-1603-vector-parameters",
       "task": "P3-01",
       "status": "slice",
@@ -4124,7 +4133,8 @@
       "experiment": "EXP-2026-11-07-145-goose-cpu-backend-api",
       "task": "P1-10",
       "status": "slice",
-      "sha256": "c1ef1ac70e8a53ad83305eea43dd793f734534e5acbf90be81365bb0008e9017"
+      "sha256": "a09e9a008ec87cb3f5673933053aecc08314a26d2d8709ead255209b768ed845",
+      "integration_commit": "d2183b33f28b4c48abe33bea9289f79d248a49cf"
     },
     {
       "goose": "cpu/goose-cpu-backend-api/pre-contract-fix/kernel.goose",
@@ -4176,7 +4186,8 @@
       "experiment": "EXP-2026-11-07-145-goose-cpu-backend-api",
       "task": "P1-10",
       "status": "slice",
-      "sha256": "5671fae47299a64047021519b9d797787e814f68e3cbb6bdce91346cc52343af"
+      "sha256": "e2c9b61e1467304087dd1bf77d9374040a8750122abd873dcfced2d5c2ff54b9",
+      "integration_commit": "9be39db429447060dfac179f9b2b5d5efdddb90d"
     },
     {
       "goose": "cpu/goose-cpu-backend-api/reductions.goose",
@@ -4332,7 +4343,8 @@
       "experiment": "EXP-2026-11-07-145-goose-cpu-backend-api",
       "task": "P1-10",
       "status": "slice",
-      "sha256": "1ff1e334fc4df021da1c5f4750b54e26c38e44af60f365d4e1326e900aa6a762"
+      "sha256": "df1102d47971853af61db889c6f3fe185d683882b0b10e01a658fed960741d73",
+      "integration_commit": "08672a0b083701f0d585ca1685365bb468fd1c28"
     },
     {
       "goose": "cpu/goose-cpu-backend-api/stateful/kernel.goose",
@@ -4371,7 +4383,8 @@
       "experiment": "EXP-2026-11-07-145-goose-cpu-backend-api",
       "task": "P1-10",
       "status": "slice",
-      "sha256": "7394059176c68a6ef631c76457bf9fe4c45b5ff9eb6c1c539a6523418f6d6563"
+      "sha256": "a51bd0c6dee387067ff3b7feaf82e1f84c7044bd39bac937f4f50b5e96bc6675",
+      "integration_commit": "4f73f42ec1fbaa86033e0f492051363c10eb84e5"
     },
     {
       "goose": "cpu/goose-cpu-backend-api/tensor-base.goose",
@@ -4397,7 +4410,8 @@
       "experiment": "EXP-2026-11-07-145-goose-cpu-backend-api",
       "task": "P1-10",
       "status": "slice",
-      "sha256": "092ee2174b52a4941f09d70790862e020395416e5e74c6c67a79b6073855dcb3"
+      "sha256": "7386a4885f99112f09fcbbc211d3a18b9db5292da92aaa5e3611d3d4870c13f6",
+      "integration_commit": "c039ec8cd54d40e8c8610d06fefd1b94cdfab165"
     },
     {
       "goose": "cpu/goose-buffer-audit/parent-exp146/source/fg146_backend.goose",
@@ -5734,7 +5748,8 @@
       "experiment": "EXP-2026-11-08-169-goose-cuda-reductions",
       "task": "P3-05",
       "status": "slice",
-      "sha256": "6e083dc76d01867534b8aaebd9883b38841c79ed5c4876a187d1b7ffe6426d10"
+      "sha256": "617d3b8c1a6c67054184ba06846934eb99975f9d0f2165f3b72ed2ca7e509614",
+      "integration_commit": "7c4c4e31e91e35232e2b0334aacc0ba3e3c7db71"
     },
     {
       "goose": "cuda/goose-cuda-reductions/topk/device-e9.goose",
@@ -6131,7 +6146,8 @@
       "experiment": "EXP-2026-11-08-172-goose-cuda-gdn",
       "task": "P3-12",
       "status": "slice",
-      "sha256": "f6fe74486bbc0479cf975a90baa0a15a012774ed706f8de4382c71f1c40b147a"
+      "sha256": "b59a492b735af40a2042bf90c8e169921ae7d89db5b5402519729b43b38a5126",
+      "integration_commit": "4f73f42ec1fbaa86033e0f492051363c10eb84e5"
     },
     {
       "goose": "cuda/goose-cuda-gdn/scalar-host.goose",
@@ -6601,7 +6617,8 @@
       "experiment": "EXP-2026-11-08-173-goose-cuda-flash-attention",
       "task": "P1-07",
       "status": "slice",
-      "sha256": "d7f59a5fd2dddbd352f4981c86db59d0ae8bc8ff0dec9f753b54805c7dfe79a9"
+      "sha256": "37f42ffe3ce6c5c0424e5d52c191dd7b3e023fdd8336cefa6f63fdbec0f765f4",
+      "integration_commit": "9c40db177d16eab82e02aa1f5a605c6590795f7c"
     },
     {
       "goose": "cuda/goose-cuda-flash-attention/worker-host-host.goose",
@@ -7163,7 +7180,8 @@
       "experiment": "EXP-2026-11-08-185-goose-cuda-mmvq-q4k",
       "task": "P3-08",
       "status": "slice",
-      "sha256": "bbbd768a5763ba89d22737e22510845f61a9cfacc5b2b7a469819b40857af385"
+      "sha256": "96e0648144bc43bdfbfb300459140f8336506d0466606bcf3b26b1c56e3aee70",
+      "integration_commit": "02ae9f238f2cb3518f05a2616e709e8b9b92e83f"
     },
     {
       "goose": "cuda/goose-cuda-mmvq-q4k/host.goose",
@@ -7189,7 +7207,8 @@
       "experiment": "EXP-2026-11-08-186-goose-cuda-mmvq-q6k",
       "task": "P3-08",
       "status": "slice",
-      "sha256": "2198f414b53813bbbec36d33659a06434311de881ca7ed20694af195d45a429a"
+      "sha256": "f5422bf96bb9852191aa7c91d8c07bd898acd206867e8bd98df77db8b7415b2e",
+      "integration_commit": "02ae9f238f2cb3518f05a2616e709e8b9b92e83f"
     },
     {
       "goose": "cuda/goose-cuda-mmvq-q6k/host.goose",
@@ -7271,7 +7290,8 @@
       "experiment": "EXP-2026-11-08-195-goose-cuda-vmm-pool",
       "task": "P3-17",
       "status": "slice",
-      "sha256": "2b615a4fa194ef9ef5819605194a93ce0b0ccebb32834192e9c8b94b3afcb000"
+      "sha256": "3455dca32be1e71678997dc05168b3517ae116cc2886bd065a8804b746df0d26",
+      "integration_commit": "269c9c34aa3ad716942d69657e563639c865a02f"
     },
     {
       "goose": "cuda/goose-cuda-pinned-pool.goose",
@@ -7282,7 +7302,8 @@
       "experiment": "EXP-2026-11-08-196-goose-cuda-pinned-pool",
       "task": "",
       "status": "slice",
-      "sha256": "59df9467c3675f122505d40094bc206f850f810b4a7aa55135647e55ebf5f7de"
+      "sha256": "fdeb768eec4b51930424e7c954dba516bbdefaa254011ac14675899a49ad702c",
+      "integration_commit": "7af29f82eea4bd405032237034a1b6990be3dc3c"
     },
     {
       "goose": "kv/goose-kv-cells.goose",
@@ -8829,7 +8850,8 @@
       "experiment": "EXP-2026-11-11-283-goose-cuda-argsort",
       "task": "P3-05",
       "status": "slice",
-      "sha256": "1e7802c578519adf968386fc1e08cd7c0ee9d3d5688dfa635ed5e0e6132b40f5"
+      "sha256": "406b82e488ce19f0c78717ad0bc34e1181da2cafe783e0ebff693c074c848650",
+      "integration_commit": "1524a43999ffb9de56e49fce5fde6293e347f68b"
     },
     {
       "goose": "cuda/goose-cuda-argsort/host.goose",
@@ -10456,7 +10478,8 @@
       "experiment": "EXP-2026-11-12-255-goose-mmq-load-q4k",
       "task": "P3-07",
       "status": "slice",
-      "sha256": "d14744566ee4379e027525cfdd058a23c312a4d23ea7a55ec020282581fd9121"
+      "sha256": "9deb2adef60dbd3c106c038bb67f280b8c74bdd6448b9bd2943992c15c289e65",
+      "integration_commit": "6cf0f7e491d7453d111b81e5032bb7ea009efe0d"
     },
     {
       "goose": "cuda/goose-mmq-load-q4k/host.goose",
@@ -10516,7 +10539,8 @@
       "experiment": "EXP-2026-11-12-257-goose-mmq-load-q6k",
       "task": "P3-07",
       "status": "slice",
-      "sha256": "297ae821c85923353736cbaea026b5bd0bf398e303e0f7ff26958d2781352c87"
+      "sha256": "7781a18c63239aad922fda1d1127126c6917800af6c4a1419f43c09e2ae4f6c4",
+      "integration_commit": "6cf0f7e491d7453d111b81e5032bb7ea009efe0d"
     },
     {
       "goose": "cuda/goose-mmq-load-q6k/host.goose",
@@ -13547,6 +13571,206 @@
       "task": "P7-04",
       "status": "slice",
       "sha256": "6d828de28ece9147998b4ea2f0044574896689fede1a2429d3f6fce4dadf5b0f"
+    },
+    {
+      "goose": "cpu/goose-cpu-backend-api/cuda-position.goose",
+      "native": "",
+      "native_targets": [],
+      "experiment": "",
+      "task": "",
+      "status": "slice",
+      "sha256": "1473e800fd0d82e04a3e621b671e100b435e16ac4fa7b96f4ece0c35cad40fe2",
+      "integration_commit": "f1b7dcf53d06f8e1386c2fff14b76b57688a61d3"
+    },
+    {
+      "goose": "cpu/goose-cpu-backend-api/cuda-routing.goose",
+      "native": "",
+      "native_targets": [],
+      "experiment": "",
+      "task": "",
+      "status": "slice",
+      "sha256": "a5d7780ccc709a5127709defbee36160a48931de169378a29327aa60ce4ed135",
+      "integration_commit": "0dd239207130382465ea0aaea9b28f0faa60213f"
+    },
+    {
+      "goose": "cpu/goose-cpu-backend-api/cuda-transform.goose",
+      "native": "",
+      "native_targets": [],
+      "experiment": "",
+      "task": "",
+      "status": "slice",
+      "sha256": "35376fcde0f5fe7d40f70ed5ea327e8fc355177881e862f1a9d1319c78c80655",
+      "integration_commit": "c039ec8cd54d40e8c8610d06fefd1b94cdfab165"
+    },
+    {
+      "goose": "cpu/goose-cpu-backend-api/cuda-vector.goose",
+      "native": "",
+      "native_targets": [],
+      "experiment": "",
+      "task": "",
+      "status": "slice",
+      "sha256": "74cde5572b313f45dce361abcf7dbaf97186d13eb564f174be87428fa7f2eb5d",
+      "integration_commit": "debf22de29e4bd21c6a1e5eb7f689c908d32610f"
+    },
+    {
+      "goose": "cpu/goose-cpu-backend-api/flash-attention.goose",
+      "native": "",
+      "native_targets": [],
+      "experiment": "",
+      "task": "",
+      "status": "slice",
+      "sha256": "873a8a88ffb110ae0a12321140ba32ace2f2f2cd43bca48e2448b69d713ac16a",
+      "integration_commit": "ff4e7da9ac56b9d5aa7cbed5444aaa9f962593a2"
+    },
+    {
+      "goose": "cpu/goose-cpu-backend-api/graph-lifetimes.goose",
+      "native": "",
+      "native_targets": [],
+      "experiment": "",
+      "task": "",
+      "status": "slice",
+      "sha256": "5affe9a3ca47405cddcf189aea6e12564659ab432e882eb56832eda7d3959812",
+      "integration_commit": "7916697ca75f1ec8e98b19352f6096093d4b8a23"
+    },
+    {
+      "goose": "cpu/goose-cpu-backend-api/graph-residency.goose",
+      "native": "",
+      "native_targets": [],
+      "experiment": "",
+      "task": "",
+      "status": "slice",
+      "sha256": "3add352b7bf820b81ddbf1798e5e08294b328e1eef195ba859f432d46b341f7d",
+      "integration_commit": "8e44cf5e49eba25482ab4a543e67a27654ed0b1b"
+    },
+    {
+      "goose": "cpu/goose-cpu-backend-api/graph-storage.goose",
+      "native": "",
+      "native_targets": [],
+      "experiment": "",
+      "task": "",
+      "status": "slice",
+      "sha256": "b875e66b37c4f5762b8e4898215a643458c27491550ad978c23e1bc455a52644",
+      "integration_commit": "b4184741b55c121c7db22739a70ca88b7b123dd8"
+    },
+    {
+      "goose": "cpu/goose-cpu-backend-api/standalone.goose",
+      "native": "",
+      "native_targets": [],
+      "experiment": "",
+      "task": "",
+      "status": "slice",
+      "sha256": "b3861328c8277a483557eb35f0d7fa5471409395d3b94aef1d85576279f0ea83",
+      "integration_commit": "0dd239207130382465ea0aaea9b28f0faa60213f"
+    },
+    {
+      "goose": "cuda/standalone-dense-mma.goose",
+      "native": "",
+      "native_targets": [],
+      "experiment": "",
+      "task": "",
+      "status": "slice",
+      "sha256": "1c11e4513902c19c39c5ce1839ceb53db1686434263b04622c566bceb114b6b5",
+      "integration_commit": "07b85872513f4cf2cf221c3399c464e04a862cb8"
+    },
+    {
+      "goose": "cuda/standalone-flash-stage.goose",
+      "native": "",
+      "native_targets": [],
+      "experiment": "",
+      "task": "",
+      "status": "slice",
+      "sha256": "b18c8a02cc3ac21ce302d129c691cc0ff7b502871f8e3b83dda1b61f64c4f310",
+      "integration_commit": "3e616cb2243f15611661822b2a046b4fe6554c07"
+    },
+    {
+      "goose": "cuda/standalone-matmul.goose",
+      "native": "",
+      "native_targets": [],
+      "experiment": "",
+      "task": "",
+      "status": "slice",
+      "sha256": "f58eab14565d7c0a0a01e51f2c1109ffd9e9f358d9cb363b9cb67235f4658408",
+      "integration_commit": "89612359beb70dd540c49aa5e80fdef81646ba0b"
+    },
+    {
+      "goose": "cuda/standalone-mmvq.goose",
+      "native": "",
+      "native_targets": [],
+      "experiment": "",
+      "task": "",
+      "status": "slice",
+      "sha256": "2f8ccaf890a821376dcb48fa3fca6265e4bf46ef4d1aed390fe9ce4e3d0302a0",
+      "integration_commit": "02ae9f238f2cb3518f05a2616e709e8b9b92e83f"
+    },
+    {
+      "goose": "cuda/standalone-q4-attention.goose",
+      "native": "",
+      "native_targets": [],
+      "experiment": "",
+      "task": "",
+      "status": "slice",
+      "sha256": "02dba892303472ffa0d6e15fa821d8f87f60b1ba631d73157248e7b0e27aca75",
+      "integration_commit": "f1aa281b6d6f22e90f74044548b54aca4c536978"
+    },
+    {
+      "goose": "cuda/standalone-rope.goose",
+      "native": "",
+      "native_targets": [],
+      "experiment": "",
+      "task": "",
+      "status": "slice",
+      "sha256": "18071a4890a5b51bfb7a3dd15cfa195b0c5bc64a110903df71a0e39ae89f64ca",
+      "integration_commit": "f1b7dcf53d06f8e1386c2fff14b76b57688a61d3"
+    },
+    {
+      "goose": "cuda/standalone-routing.goose",
+      "native": "",
+      "native_targets": [],
+      "experiment": "",
+      "task": "",
+      "status": "slice",
+      "sha256": "8f379c8ba0ae31213b268c13a3fe014579adb83b25d7962c9eba6fe63629b22d",
+      "integration_commit": "0dd239207130382465ea0aaea9b28f0faa60213f"
+    },
+    {
+      "goose": "model/expert-device-cache.goose",
+      "native": "",
+      "native_targets": [],
+      "experiment": "",
+      "task": "",
+      "status": "slice",
+      "sha256": "2e6d503dc23139da3341526336a68c603a031853e7267d5a9e6c05473c6d42ef",
+      "integration_commit": "00d5bd50ced90cf9f5eca510a3195a1f9c9907e9"
+    },
+    {
+      "goose": "model/qwen35-generation.goose",
+      "native": "",
+      "native_targets": [],
+      "experiment": "",
+      "task": "",
+      "status": "slice",
+      "sha256": "27fef33911bbd4f3e11f001eaca95515197bf7294eaa70dc5dd7c7c80cd1f74e",
+      "integration_commit": "0eee14b8a1aa68dd464df3954ece5ab547d412cf"
+    },
+    {
+      "goose": "model/qwen35-step.goose",
+      "native": "",
+      "native_targets": [],
+      "experiment": "",
+      "task": "",
+      "status": "slice",
+      "sha256": "6c9079fa7487bfdabcf5f5aae27aab1abe48ddc05452138a6153d7d05171cd87",
+      "integration_commit": "ac6d2707b448e2b356bb4fec5e8e23dc6c541448"
+    },
+    {
+      "goose": "server/inference-http.goose",
+      "native": "",
+      "native_targets": [],
+      "experiment": "",
+      "task": "",
+      "status": "slice",
+      "sha256": "ffe8128e0c2940c0e9b695d41d732a0922cd0b5b7abb89fd76a4b17769e4f17e",
+      "integration_commit": "1952fde11338a8fb18eb6b13ac3cd0abe1e8d52e"
     },
     {
       "goose": "_archive/franken-goose-live-20261107/source/leaves.goose",
@@ -47228,8 +47452,9 @@
       "source": "source/attention.goose",
       "task": "P11-01",
       "status": "slice",
-      "sha256": "28f2cfcb56aecae4e31d6b3c030d11eeeaa20d7c25add0febb7645821bff533d",
-      "gate": "8 real-weight cases /29 stages /1069056 exact F32-F16 values /6 semantic mutations; persistent KV pending"
+      "sha256": "83a1026316748fd3d907263b819047f7857a3bc84078340fb312bea898dc17c9",
+      "gate": "8 real-weight cases /29 stages /1069056 exact F32-F16 values /6 semantic mutations; persistent KV pending",
+      "integration_commit": "45d8e13d1c674c608a815e36e420d5a875e03e3b"
     },
     {
       "goose": "model/qwen35-kv.goose",
@@ -47241,8 +47466,9 @@
       "source": "source/cache.goose",
       "task": "P11-01",
       "status": "slice",
-      "sha256": "f4af61270982d83071186f0e9aebabd18158055ba8e65d8efcc29bb95d2939fd",
-      "gate": "6 exact real-weight steps /1 aborted graph /49 planner +50 host checks /42 invalid layouts /6 mutations; not full-model or CUDA acceptance"
+      "sha256": "3ff48769d4daecd17e1ace2a60a4d1b8e0f6994ddc2c4793c21703adb9f87fa9",
+      "gate": "6 exact real-weight steps /1 aborted graph /49 planner +50 host checks /42 invalid layouts /6 mutations; not full-model or CUDA acceptance",
+      "integration_commit": "00e5f6056903de1e7c14e52bebb62ef95c39f870"
     },
     {
       "goose": "model/qwen35-gdn.goose",
@@ -47255,8 +47481,9 @@
       "source": "source/runtime.goose",
       "task": "P11-01",
       "status": "slice",
-      "sha256": "c3d54bf3d9694584f89984c08753db04b2726ca357ca9aad296601c612fa9aa6",
-      "gate": "8 real-weight steps /7239360 exact F32 values /210 invalid inputs /115 config-host checks /5 mutations; not full model or CUDA acceptance"
+      "sha256": "efcf3c268ecc40e13edfb29e9369894009412a9bbda6d67a8bd82116a7d47913",
+      "gate": "8 real-weight steps /7239360 exact F32 values /210 invalid inputs /115 config-host checks /5 mutations; not full model or CUDA acceptance",
+      "integration_commit": "45d8e13d1c674c608a815e36e420d5a875e03e3b"
     },
     {
       "goose": "model/qwen35-trunk.goose",
@@ -47269,8 +47496,9 @@
       "source": "source/runtime.goose",
       "task": "P11-01",
       "status": "slice",
-      "sha256": "e8adc1a095d3725b8c19ac1f5ad65b40b5b338fe5a8a7473ccb9eb49aa374270",
-      "gate": "40 real layers/logits,3 graph steps,checkpoint replay;12 FFN cases/815560 exact values;24 binder bounds;6 semantic mutations; CPU math only, native loader/backend retained"
+      "sha256": "76453f72320d6fdf3b5187d644893d636f2ebaa9104875c503b4456fe24d46f8",
+      "gate": "40 real layers/logits,3 graph steps,checkpoint replay;12 FFN cases/815560 exact values;24 binder bounds;6 semantic mutations; CPU math only, native loader/backend retained",
+      "integration_commit": "45d8e13d1c674c608a815e36e420d5a875e03e3b"
     },
     {
       "goose": "model/gguf-reader.goose",
@@ -47310,8 +47538,8 @@
       "source": "source/model.goose",
       "task": "P11-01",
       "status": "slice",
-      "sha256": "2dbf32e736112e3769135f07aa15603221e0f949bd9896624f88d03f9027c29d",
-      "integration_commit": "69629f760ac8cf42a2f73b28fe7ab8af7d94ce1f",
+      "sha256": "c80dd250903a1b97622b8039d0664be4f3b71c534823771e48a16571ad3d5c2d",
+      "integration_commit": "00d5bd50ced90cf9f5eca510a3195a1f9c9907e9",
       "gate": "733 zero-copy weights/config/context lifetime;79 contracts,3 model mutants,full logits/replay;mapping borrowed; EXP-1601 exact Apex 32K/512 host KV memory differential"
     },
     {
@@ -47391,8 +47619,8 @@
     {
       "goose": "server/http-listener.goose",
       "status": "integrated",
-      "sha256": "2cd7c4c63feeb200367497a241ae51bcece43dc3b38fc4893f37691c09bf03aa",
-      "integration_commit": "57e08a255b9688a452c2d24321fa5c6ed5f1689d"
+      "sha256": "ca03c6cdf9a8383969f77104793a0e6895ac8ff566b967e74ba15c163ec285e4",
+      "integration_commit": "b1dd61f4b560f61b3fbbe796d010286957edec47"
     },
     {
       "goose": "misc/sampler-dry.goose",
@@ -47455,9 +47683,9 @@
       "experiment": "EXP-2026-11-19-1422-slru-door-carries-maps",
       "task": "P9-03",
       "status": "ported",
-      "sha256": "cbe5a0c5f122dc872d5c32b3942392bc2b17336b703ecca305d18cc640f73a23",
+      "sha256": "0ab207225e7458bcf2e9d4edde2abe586a38e4cb6741362c7bb8989526ef1710",
       "gate": "eviction second half performed by the door; 61441 decisions matched (EXP-2026-11-19-1422)",
-      "integration_commit": "9e9090bf89a6235021ec9fb1e18c6c9bd97ef2c3"
+      "integration_commit": "dbf0e17db91cc249bbe0db709b4910d325cbc4a6"
     },
     {
       "goose": "model/tokenizer-decisions.goose",
@@ -47507,9 +47735,9 @@
       "experiment": "EXP-2026-11-18-977-goose-http-request",
       "task": "P8-09",
       "status": "ported",
-      "sha256": "8d072594b06eb116e8e8737ac45624b572843569612a477e2dd7fa04ba73d795",
+      "sha256": "915d46b8d8df056ff5eb48803c5112ea74510ffcf9d44b6272a5d94314fc7389",
       "gate": "request parsing in Goose (EXP-2026-11-18-977); body consumed before the next request in EXP-2026-11-18-992",
-      "integration_commit": "8db057439b63f3d4c253966b58b700e2ba4b8625"
+      "integration_commit": "b1dd61f4b560f61b3fbbe796d010286957edec47"
     },
     {
       "goose": "server/http-response.goose",
