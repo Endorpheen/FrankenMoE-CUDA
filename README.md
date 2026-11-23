@@ -1,82 +1,62 @@
 # FrankenMoE-CUDA
 
-Runs Mixture-of-Experts models that do not fit in GPU memory on one consumer GPU. Derived from
-`llama.cpp` and being migrated, module by module, to the **Goose** language. Reference setup:
-Apex-35B-V1.0 Q4_K_M, Ryzen 9 5950X, 64 GB RAM, RTX 4070 12 GB.
+FrankenMoE runs Mixture-of-Experts models that exceed a single GPU's memory.
+The standalone runtime uses Goose for model execution and C adapters for the
+operating system and CUDA driver. The reference model is Apex-35B-V1.0 Q4_K_M
+on a Ryzen 9 5950X with 64 GB RAM and an RTX 4070 12 GB.
 
-## Current accepted runtime
+## Run the Linux chat server
 
-**EXP-2026-11-19-1476** — the newest accepted cumulative build, published as
-[v0.10.0-exp1476](https://github.com/Endorpheen/FrankenMoE-CUDA/releases/tag/v0.10.0-exp1476) (Latest).
+In a Linux chat package built from this tree, run the server from the extracted
+directory. Python 3 enables the **Goose on Fire** terminal dashboard by default
+in an interactive terminal. The launcher discovers the bundled web assets.
 
-| | |
-|---|---|
-| decode | **62.86 tok/s** median (62.53 / 63.26 / 62.86) |
-| prefill | **2940.9 tok/s** median (2690.8 / 2947.1 / 2940.9) |
-| RAM / VRAM | 20.8 GB RSS / 9511 MiB |
-| answer hash | `c2ff42cc1219` (the record hash of the accepted baseline) |
-| profile | ctx 262144, `-b 4096 -ub 4096 -ngl all -fit off --cpu-moe --moe-cache-mib 4992`, KV q4_0 |
-| source | `e7c9155a01938b1825189240e7088620c6c7cd85`, tag `v0.10.0-exp1476` |
-| archive | `frankenmoe-apex-exp1476-linux-x86_64.tar.gz`, sha256 `23857b8834736c60e161a430d0e3de4d7c2dc50eb6e84414f74aa18f89a32833` |
-
-All 20 accepted Goose components are in the shipped library
-(`tools/check-accepted-components.py`), and `tools/check-cumulative-baseline.py` passes on the
-release set. Earlier checkpoints and releases stay untouched: EXP906 remains the historical
-control, EXP1298 the previous baseline.
-
-## Goose migration
-
-121 of 152 functional requirements are DONE; the remaining 31 are listed with their acceptance
-criteria in the [migration ledger](docs/goose-migration/tasks.json). Goose sources live under
-[`goose/`](goose/README.md), with provenance and hashes in
-[`goose/MANIFEST.json`](goose/MANIFEST.json) enforced by `python3 tools/check-goose-tree.py`.
-
-The migration is not complete, and the shipped runtime is not claimed to be C++-free.
-
-## Tests
-
-Permanent checks live in [`tests/`](tests/README.md): one directory per test with a `run.sh`, a
-`tier` and a `README.md`, and [`tests/REGISTRY.md`](tests/REGISTRY.md) lists each with the
-experiment and the requirement it covers.
-
-```
-bash tests/run.sh list          # every registered test
-bash tests/run.sh fast          # no model, no GPU, then tools/check.sh fast
-bash tests/run.sh grammar       # one area
-bash tests/run.sh integration   # tools/check.sh integration plus integration-tier tests
+```bash
+./frankenmoe-server --ctx-size 262144 --batch-size 4096 --ubatch-size 4096 \
+  --cache-type-k q4_0 --cache-type-v q4_0 --expert-cache-mib 6290 \
+  --threads 8 --threads-batch 16 --cpu-mask 0f0f --cpu-mask-batch ffff \
+  --cpu-strict 1 --cpu-strict-batch 1 /path/to/Apex-35B-V1.0-Q4_K_M.gguf --serve 9101
 ```
 
-`fast`, `integration` and `full` delegate to [`tools/check.sh`](tools/check.sh), which owns the
-stamps and the build ladder. Anything that starts a server or loads a model goes through
-[`tools/apex-test.sh`](tools/apex-test.sh), which holds the lock and owns the `127.0.0.1:9101`
-endpoint; those runs need explicit permission and are never implied by a tier.
+Open the web UI at `http://127.0.0.1:9101/` or set the OpenCode provider's
+OpenAI-compatible base URL to `http://127.0.0.1:9101/v1`. Use
+`FRANKENMOE_CONSOLE=0` for plain server output and `FRANKENMOE_LOG=/path/to/log`
+to capture raw logs from the dashboard. Adjust CPU masks and cache capacity to
+fit your machine.
 
-## Run
+[v0.12.0-chat-alpha](https://github.com/Endorpheen/FrankenMoE-CUDA/releases/tag/v0.12.0-chat-alpha)
+packages the earlier EXP-1805 host for Linux x86-64 and Windows x64. Use
+`start.bat` in the Windows package. The terminal launcher and the newer
+cumulative Linux build described here apply to packages built from this tree.
 
-```
-tar -xzf frankenmoe-apex-exp1476-linux-x86_64.tar.gz -C /opt/frankenmoe
-cd /opt/frankenmoe && sha256sum -c SHA256SUMS
-LD_LIBRARY_PATH=$PWD ./llama-server --model Apex-35B-V1.0-Q4_K_M.gguf \
-  --host 127.0.0.1 --port 9101 -c 262144 -b 4096 -ub 4096 -ngl all -fit off \
-  --cpu-moe --moe-cache-mib 4992 --cache-type-k q4_0 --cache-type-v q4_0
-```
+## Apex checkpoint
 
-Expect roughly 62–63 tok/s decode and ~2900 tok/s prefill at 32K input / 512 output on an RTX 4070
-with the model resident in page cache.
+The cumulative Linux build adds EXP-1806's early decode submission and
+[EXP-1808's asynchronous prefill job packs](experiments/EXP-2026-11-23-1808-prefill-jobpack-async/README.md)
+to [EXP-1805's expert route prefetch](experiments/EXP-2026-11-23-1805-route-prefetch/README.md).
+The saved standalone checkpoint `37ac0f1d…` recorded **3122.4 tok/s prefill**
+and **78.225 tok/s decode** on the Apex 32K/512 workload with a 262144-token
+context and 6290 MiB expert cache. The separately measured **81.292 tok/s**
+result belongs to the [EXP-1806 candidate](experiments/EXP-2026-11-23-1806-decode-region-split/README.md).
+These are single-response results from the archived binaries. See the
+[build inputs and provenance](integration/goose-standalone/apex-checkpoint/README.md).
 
 ## Build
 
-Prerequisites: Linux x86_64, GCC 13, CMake 3.24+, Ninja, CUDA toolkit, and the pinned Goose
-compiler recorded in `runtime/compiler/current.json`.
+Use `tools/build-linux-chat-alpha.sh` with the pinned Goose toolchain, the
+pre-chat Goose unit, the EXP-1805 archive and the EXP-1786 build inputs.
+See the [checkpoint build recipe](integration/goose-standalone/apex-checkpoint/README.md).
+To package the output, place the web assets in its `web/` directory and
+run `bash tools/package-linux-chat-alpha.sh BUILD_DIR RELEASE_TAG`.
 
-```
-scripts/prepare_upstreams.sh        # pinned upstream checkouts, see UPSTREAMS.md
-bash tools/build-main-runtime.sh    # compose and typecheck the Goose unit
-bash tools/check.sh fast            # the gate CI runs on every pull request
-```
+## Checks
 
-CI pins the public Goose `v2026.4` release; its SHA256 is in
-[the workflow](.github/workflows/ci.yml).
+The [model acceptance registry](docs/goose-migration/model-architectures.json)
+tracks which architectures have been validated against a reference. The
+[Goose tree check](tools/check-goose-tree.py) verifies source provenance.
+`bash tools/check.sh fast` composes and compiles the Goose unit without model
+weights. Historical tests and experiments retain the context of their original
+runtime and may refer to upstream sources from older revisions.
 
 ## Measurement rules
 

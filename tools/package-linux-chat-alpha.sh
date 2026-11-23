@@ -8,8 +8,14 @@ case "$tag" in *[!a-zA-Z0-9.-]*|'') exit 2;; esac
 package="FrankenMoE-$tag-linux-x64"
 staging="$build/package/$package"
 mkdir -p "$staging/licenses"
-file "$build/frankenmoe-server" | grep -q 'ELF 64-bit.*x86-64'
-install -m 0755 "$build/frankenmoe-server" "$staging/"
+binary="$build/frankenmoe-server.bin"
+if [[ ! -f "$binary" ]]; then
+    binary="$build/frankenmoe-server"
+fi
+file "$binary" | grep -q 'ELF 64-bit.*x86-64'
+install -m 0755 "$binary" "$staging/frankenmoe-server.bin"
+install -m 0755 "$root/tools/frankenmoe-server-launch.sh" "$staging/frankenmoe-server"
+install -m 0644 "$root/tools/frankenmoe-console.py" "$staging/"
 install -m 0644 "$root/LICENSE" "$staging/"
 install -m 0644 "$root/vendor/flint/LICENSE" "$staging/licenses/ggml-MIT.txt"
 install -m 0644 "$root/runtime/LICENSE.BigMoeOnEdge" "$staging/licenses/BigMoeOnEdge.txt"
@@ -26,8 +32,8 @@ Start from the extracted directory. Choose a GPU expert cache that fits
 your free VRAM after the model's CUDA allocations.
 
 ```bash
-FRANKENMOE_WEB_ROOT="$PWD/web" ./frankenmoe-server \
-  --ctx-size 32768 --batch-size 2048 --ubatch-size 2048 \
+./frankenmoe-server \
+  --ctx-size 262144 --batch-size 4096 --ubatch-size 4096 \
   --cache-type-k q4_0 --cache-type-v q4_0 --expert-cache-mib 5600 \
   --threads 8 --threads-batch 16 "/path/to/Apex-35B-V1.0-Q4_K_M.gguf" --serve 8080
 ```
@@ -42,8 +48,11 @@ within the context budget. This alpha uses the Apex text chat template.
 Structured output, forced tool selection, and multimodal inputs remain
 outside the alpha API. See the repository's OpenCode smoke checklist.
 
-The console shows model and CUDA allocations, generation progress and
-prefill/decode throughput. Set NO_COLOR=1 for unstyled terminal output.
+On an interactive Linux terminal with Python 3, the launcher opens the dashboard
+with startup events, prefill/decode, VRAM, RAM and expert telemetry. Set
+FRANKENMOE_CONSOLE=0 for plain server logs, or FRANKENMOE_LOG to a file path to
+save the raw log from the dashboard. Redirected output and systems without
+Python 3 use the native server directly.
 The HTTP log records routes and status codes and omits prompt and output text.
 DOC
 if find "$staging" \( -type l -o -iname '*.gguf' \) -print -quit | grep -q .; then

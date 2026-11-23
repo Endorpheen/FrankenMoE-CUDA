@@ -99,7 +99,7 @@ static int serve(const char * model, int64_t port, int64_t limit, int64_t capaci
 }
 
 #ifdef FG_CHAT_ALPHA
-// Accepted runtime profile (EXP-2026-11-23-1805, cumulative from EXP-1724):
+// Accepted chat runtime profile, cumulative from EXP-1724:
 // these switches select the graph replay, compact routing, split expert planes,
 // pinned batch DMA and the other accepted CUDA paths. A value set by the user in
 // the environment always wins; GOOSE_RUNTIME_DEFAULTS=0 skips the whole table.
@@ -160,6 +160,10 @@ static void apply_runtime_defaults(void) {
     {"GOOSE_MMQ_SHARED_REUSE", "1"},
     {"GOOSE_MMQ_DENSE_REUSE", "1"},
     {"GOOSE_CUDA_EXPERT_SPLIT_PLANES", "1"},
+#ifdef FG_APEX_CUMULATIVE
+    {"GOOSE_DECODE_SPLIT", "4"},
+    {"GOOSE_DECODE_SPLIT_COUNT", "1"},
+#endif
     };
     const char * off = getenv("GOOSE_RUNTIME_DEFAULTS");
     if (off && strcmp(off, "0") == 0) return;

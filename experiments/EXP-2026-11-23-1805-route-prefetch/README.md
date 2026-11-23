@@ -38,7 +38,7 @@ only decides which expert weights are copied early.
    predicts ~87 tok/s at k=8 (`results/prefetch-sim.json`). Inserting prefetched experts
    at the cold end of probation is worse; touching predicted residents does not matter.
 
-## Mechanism (`source/cuda-driver.patch`, kernel `source/pred2.cu`)
+## Mechanism (`source/cuda-driver.patch`, kernel [CUDA source at EXP-1805](https://github.com/Endorpheen/FrankenMoE-CUDA/blob/ee917ddc4/experiments/EXP-2026-11-23-1805-route-prefetch/source/pred2.cu))
 
 - The router device pointers are learned from the dense F32 256-row matvecs seen by
   `fg_cuda_plane`, in first-seen (layer) order; the layer of a routed FFN call is learned

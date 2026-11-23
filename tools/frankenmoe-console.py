@@ -563,9 +563,24 @@ def main():
         stream = sys.stdin.buffer
 
     sys.stdout.write("\x1b[?1049h\x1b[?25l")
-    stopping = []
-    signal.signal(signal.SIGINT, lambda *_: stopping.append(1))
-    signal.signal(signal.SIGTERM, lambda *_: stopping.append(1))
+    stopping = False
+    tail = collections.deque(maxlen=12)
+
+    def stop(signum, _frame):
+        nonlocal stopping
+        stopping = True
+        if child is not None and child.poll() is None:
+            child.send_signal(signum)
+
+    def feed(raw):
+        text = raw.decode("utf-8", "replace")
+        tail.append(text)
+        if save:
+            save.write(text + "\n")
+        t.feed(text)
+
+    signal.signal(signal.SIGINT, stop)
+    signal.signal(signal.SIGTERM, stop)
     buf = b""
     try:
         last = 0.0
@@ -577,12 +592,12 @@ def main():
                     buf += chunk
                     *lines, buf = buf.split(b"\n")
                     for raw in lines:
-                        text = raw.decode("utf-8", "replace")
-                        if save: save.write(text + "\n")
-                        t.feed(text)
+                        feed(raw)
                 elif args.log:
                     time.sleep(0.2)
-                elif child is None or child.poll() is not None:
+                else:
+                    if buf:
+                        feed(buf)
                     break
             now = time.monotonic()
             if now - last >= 0.25:
@@ -591,12 +606,21 @@ def main():
                 sys.stdout.write("\x1b[H" + "\n".join(render(t, cols, rows)))
                 sys.stdout.flush()
                 last = now
+    except BaseException:
+        if child is not None and child.poll() is None:
+            child.terminate()
+            child.wait()
+        raise
     finally:
         sys.stdout.write("\x1b[?25h\x1b[?1049l")
         sys.stdout.flush()
-        if child is not None and child.poll() is None:
-            child.send_signal(signal.SIGINT)
-    return child.wait() if child is not None else 0
+        if save:
+            save.close()
+    status = child.wait() if child is not None else 0
+    if status > 0 and not stopping:
+        for line in tail:
+            print(line, file=sys.stderr)
+    return 128 - status if status < 0 else status
 
 
 if __name__ == "__main__":
