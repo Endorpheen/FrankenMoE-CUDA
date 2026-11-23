@@ -125,7 +125,8 @@
       "task": "",
       "status": "ported",
       "sha256": "1b65bc5240f802298d73c49f82823119b42a1fbffdb55b64598afb850beb5473",
-      "gate": "12 cases / 26 values / 0 failures, 12/12 mutations"
+      "gate": "12 cases / 26 values / 0 failures, 12/12 mutations",
+      "integration_commit": "255919e4a569e8410243079683f7c0e7f247ef59"
     },
     {
       "goose": "cli/cli-protocol.goose",
@@ -173,7 +174,8 @@
       "task": "",
       "status": "ported",
       "sha256": "ab6d8984e19e84440d0284f633644c541c5c1973e9ede94dc680fc3f80782c95",
-      "gate": "905 cases / 0 failures, 12/12 mutations"
+      "gate": "905 cases / 0 failures, 12/12 mutations",
+      "integration_commit": "255919e4a569e8410243079683f7c0e7f247ef59"
     },
     {
       "goose": "server/console-editing.goose",
@@ -185,7 +187,8 @@
       "task": "",
       "status": "ported",
       "sha256": "5e4b1a5d0950f1e0a4515e359f5ac5455836484bdeb065b6e105bb0e5198fcaa",
-      "gate": "291 cases / 0 failures, 12/12 mutations"
+      "gate": "291 cases / 0 failures, 12/12 mutations",
+      "integration_commit": "255919e4a569e8410243079683f7c0e7f247ef59"
     },
     {
       "goose": "server/hf-cache-naming.goose",
@@ -209,7 +212,8 @@
       "task": "",
       "status": "ported",
       "sha256": "2c1c99e8839afb94f4520292ec98a9d66724486ca00bb2ca9db79dafd4a3cfbb",
-      "gate": "31 cases / 0 diffs, 16/16 mutations"
+      "gate": "31 cases / 0 diffs, 16/16 mutations",
+      "integration_commit": "255919e4a569e8410243079683f7c0e7f247ef59"
     },
     {
       "goose": "server/server-schema.goose",
@@ -221,7 +225,8 @@
       "task": "",
       "status": "ported",
       "sha256": "a3aa7925f80361efcc66e635e35c7a98e2c055e4206c18d33ed4c287f217565d",
-      "gate": "181 lines / 0 diffs, 12/12 mutations"
+      "gate": "181 lines / 0 diffs, 12/12 mutations",
+      "integration_commit": "255919e4a569e8410243079683f7c0e7f247ef59"
     },
     {
       "goose": "server/mcp-stdio.goose",
@@ -233,7 +238,8 @@
       "task": "",
       "status": "ported",
       "sha256": "7c5a2bcff7e575190d041194b8214525280c732e4c10f6ec0b51da6db9c1ece5",
-      "gate": "94 cases / 0 failures, 12/12 mutations"
+      "gate": "94 cases / 0 failures, 12/12 mutations",
+      "integration_commit": "255919e4a569e8410243079683f7c0e7f247ef59"
     },
     {
       "goose": "server/decision-core.goose",
@@ -245,7 +251,8 @@
       "task": "",
       "status": "ported",
       "sha256": "e975e8f55cc29f0726211af121546eba7c30ac5acb31f79736933c62cf61a9e5",
-      "gate": "400 cases / 0 failures, 12/12 mutations"
+      "gate": "400 cases / 0 failures, 12/12 mutations",
+      "integration_commit": "255919e4a569e8410243079683f7c0e7f247ef59"
     },
     {
       "goose": "server/mcp-core.goose",
@@ -257,7 +264,8 @@
       "task": "",
       "status": "ported",
       "sha256": "fa9d4235aa81000fbf9bce8f36cab8637cadd6642acf3b14ae9c58f4433ff484",
-      "gate": "26 cases / 0 failures, 12/12 mutations"
+      "gate": "26 cases / 0 failures, 12/12 mutations",
+      "integration_commit": "255919e4a569e8410243079683f7c0e7f247ef59"
     },
     {
       "goose": "server/tools-pure.goose",
@@ -293,7 +301,8 @@
       "task": "",
       "status": "ported",
       "sha256": "33a266e926b70c9274408021517d14c0bb8d4de3cbee064b020a5033360c6e2f",
-      "gate": "20000 cases / 0 diffs, 14/14 mutations"
+      "gate": "20000 cases / 0 diffs, 14/14 mutations",
+      "integration_commit": "255919e4a569e8410243079683f7c0e7f247ef59"
     },
     {
       "goose": "model/model-saver.goose",
@@ -426,7 +435,8 @@
       "task": "",
       "status": "ported",
       "sha256": "d2d101cdba3a6c01c31f1b65d1e6a11d71a77d46890839fde5716fec758d050c",
-      "gate": "734 cases / 90461 values / 0 failures, 12/12 mutations"
+      "gate": "734 cases / 90461 values / 0 failures, 12/12 mutations",
+      "integration_commit": "255919e4a569e8410243079683f7c0e7f247ef59"
     },
     {
       "goose": "model/quant-allow.goose",
@@ -740,7 +750,8 @@
       "task": "",
       "status": "ported",
       "sha256": "699c222303023735556273927979029481c7635ad19d6267cd55c8db50e277d3",
-      "gate": "39 cases / 587 checks / 0 failures, 12/12 mutations"
+      "gate": "39 cases / 587 checks / 0 failures, 12/12 mutations",
+      "integration_commit": "255919e4a569e8410243079683f7c0e7f247ef59"
     },
     {
       "goose": "model/gguf-tensors.goose",
@@ -752,7 +763,8 @@
       "task": "",
       "status": "ported",
       "sha256": "68baaa82cfba49af380dbac213e4d15d5a6576895135b536354451e4975d2270",
-      "gate": "41 cases / 307 checks / 0 failures, 12/12 mutations"
+      "gate": "41 cases / 307 checks / 0 failures, 12/12 mutations",
+      "integration_commit": "255919e4a569e8410243079683f7c0e7f247ef59"
     },
     {
       "goose": "model/gguf-writer.goose",
@@ -812,7 +824,8 @@
       "task": "",
       "status": "ported",
       "sha256": "1bb33167c5504bd99d2f5fcc9461b8561e4a700d8e46511781e6b667d06b9323",
-      "gate": "30 cases / 182 values / 0 failures, 12/12 mutations"
+      "gate": "30 cases / 182 values / 0 failures, 12/12 mutations",
+      "integration_commit": "255919e4a569e8410243079683f7c0e7f247ef59"
     },
     {
       "goose": "jinja/value.goose",
@@ -860,7 +873,8 @@
       "task": "",
       "status": "ported",
       "sha256": "f30fd74bc6a699edd916c315c31b6a31b666311a9348b4223fac879948c66511",
-      "gate": "gbnf 13/13, cases 13/0, parse 9/9, 27/27 mutations + parse 5/5; base EXP593 gates unchanged"
+      "gate": "gbnf 13/13, cases 13/0, parse 9/9, 27/27 mutations + parse 5/5; base EXP593 gates unchanged",
+      "integration_commit": "255919e4a569e8410243079683f7c0e7f247ef59"
     },
     {
       "goose": "server/cors-policy.goose",
@@ -885,7 +899,8 @@
       "task": "",
       "status": "ported",
       "sha256": "9f35d3e6c1ad884f395d89e713a846b69b3169232df8041f40a70fd4cb8bcd90",
-      "gate": "133 cases / 287 values / 0 failures, 12/12 mutations"
+      "gate": "133 cases / 287 values / 0 failures, 12/12 mutations",
+      "integration_commit": "255919e4a569e8410243079683f7c0e7f247ef59"
     },
     {
       "goose": "server/api-key-policy.goose",
@@ -898,7 +913,7 @@
       "status": "ported",
       "sha256": "0e32d93c8a9884f6697f7c5fd66c4bb5fa681039d7986be3bc16f2257f8dd1a3",
       "gate": "1121 cases / 1157 values / 0 failures, 12/12 mutations",
-      "integration_commit": "964c20d66eff0c27dd9c97f486cb40194b44dac5"
+      "integration_commit": "255919e4a569e8410243079683f7c0e7f247ef59"
     },
     {
       "goose": "server/web-assets.goose",
@@ -910,7 +925,8 @@
       "task": "",
       "status": "ported",
       "sha256": "531c9b40c57542b084cbde764a9706bd8784d3aab004fad906d66bba564525ca",
-      "gate": "51 cases / 294 values / 0 failures, 12/12 mutations"
+      "gate": "51 cases / 294 values / 0 failures, 12/12 mutations",
+      "integration_commit": "255919e4a569e8410243079683f7c0e7f247ef59"
     },
     {
       "goose": "server/mime-table.goose",
@@ -946,7 +962,8 @@
       "task": "",
       "status": "ported",
       "sha256": "84d4b69d8f30e9c430dd58d6754c4a28160addf92a0d51ad5ee0cdf57673a926",
-      "gate": "22 cases / 290 values / 0 failures, 12/12 mutations"
+      "gate": "22 cases / 290 values / 0 failures, 12/12 mutations",
+      "integration_commit": "255919e4a569e8410243079683f7c0e7f247ef59"
     },
     {
       "goose": "server/hot-reload.goose",
@@ -958,7 +975,8 @@
       "task": "",
       "status": "ported",
       "sha256": "e023e03d50dbadbe1500e8293af5175e9ceadd59737bdd36b19f312fb182147d",
-      "gate": "14 cases / 98 values / 0 failures, 12/12 mutations"
+      "gate": "14 cases / 98 values / 0 failures, 12/12 mutations",
+      "integration_commit": "255919e4a569e8410243079683f7c0e7f247ef59"
     },
     {
       "goose": "server/connectors.goose",
@@ -970,7 +988,8 @@
       "task": "",
       "status": "ported",
       "sha256": "1148df99cd512deb03adf09fba60bf1608ece87fe1a65ffe6fc5b43878e66b96",
-      "gate": "13 cases / 133 values / 0 failures, 12/12 mutations"
+      "gate": "13 cases / 133 values / 0 failures, 12/12 mutations",
+      "integration_commit": "255919e4a569e8410243079683f7c0e7f247ef59"
     },
     {
       "goose": "server/mcp-integration.goose",
@@ -1045,7 +1064,8 @@
       "task": "",
       "status": "ported",
       "sha256": "08e100ab9a4b6c5e95095194495b79056bab397c817e598b355aec6ce7a20ef5",
-      "gate": "443 cases / 1469 fragments / 0 failures, 12/12 mutations"
+      "gate": "443 cases / 1469 fragments / 0 failures, 12/12 mutations",
+      "integration_commit": "255919e4a569e8410243079683f7c0e7f247ef59"
     },
     {
       "goose": "misc/test-runner.goose",
@@ -1285,7 +1305,8 @@
       "task": "",
       "status": "ported",
       "sha256": "02223d1e010bb601e1abc7f43c780b3a66365bf7eadc08a610bd63867f02a08d",
-      "gate": "60 cases / 60 values / 0 failures, 12/12 mutations"
+      "gate": "60 cases / 60 values / 0 failures, 12/12 mutations",
+      "integration_commit": "255919e4a569e8410243079683f7c0e7f247ef59"
     },
     {
       "goose": "cuda/cuda-target-flags.goose",
@@ -1309,7 +1330,8 @@
       "task": "",
       "status": "ported",
       "sha256": "19c74b32843b7e826385183360f8a095adff5d419b2a53cc8e26935fe72d8edd",
-      "gate": "30 cases / 30 values / 0 failures, 12/12 mutations"
+      "gate": "30 cases / 30 values / 0 failures, 12/12 mutations",
+      "integration_commit": "255919e4a569e8410243079683f7c0e7f247ef59"
     },
     {
       "goose": "misc/device-headers.goose",
@@ -1429,7 +1451,8 @@
       "task": "",
       "status": "ported",
       "sha256": "6e83d4cf95cfd52598039607a11b657b8550946f71f4cc2eb58584623d4198db",
-      "gate": "73 cases / 73 values / 0 failures, 12/12 mutations"
+      "gate": "73 cases / 73 values / 0 failures, 12/12 mutations",
+      "integration_commit": "255919e4a569e8410243079683f7c0e7f247ef59"
     },
     {
       "goose": "misc/build-env.goose",
@@ -1453,7 +1476,8 @@
       "task": "",
       "status": "ported",
       "sha256": "b4cd0b42e126813ec2d3181ec7b1093d1944f6e8d434cce41c854b953bdde771",
-      "gate": "54 cases / 54 values / 0 failures, 12/12 mutations"
+      "gate": "54 cases / 54 values / 0 failures, 12/12 mutations",
+      "integration_commit": "255919e4a569e8410243079683f7c0e7f247ef59"
     },
     {
       "goose": "misc/common-strings.goose",
@@ -1465,7 +1489,8 @@
       "task": "",
       "status": "ported",
       "sha256": "5d69a5e064e3b1985820b9b174bce569578e4e3c4c2e9048f07d52d9b85cc117",
-      "gate": "140 comparisons / 1012 bytes / 0 failures, 12/12 mutations"
+      "gate": "140 comparisons / 1012 bytes / 0 failures, 12/12 mutations",
+      "integration_commit": "255919e4a569e8410243079683f7c0e7f247ef59"
     },
     {
       "goose": "model/expert-lru.goose",
@@ -1501,7 +1526,8 @@
       "task": "",
       "status": "ported",
       "sha256": "c12fb953249510fd947a4420705b2d6fbcb5347906bae109f35f5cbcf4f90c90",
-      "gate": "302 cases / 0 failures, 12/12 mutations"
+      "gate": "302 cases / 0 failures, 12/12 mutations",
+      "integration_commit": "255919e4a569e8410243079683f7c0e7f247ef59"
     },
     {
       "goose": "model/overlap-rules.goose",
