@@ -4,10 +4,33 @@ Runs Mixture-of-Experts models that do not fit in GPU memory on one consumer GPU
 `llama.cpp` and being migrated, module by module, to the **Goose** language. Reference setup:
 Apex-35B-V1.0 Q4_K_M, Ryzen 9 5950X, 64 GB RAM, RTX 4070 12 GB.
 
-## Current accepted runtime
+## Latest release
 
-**EXP-2026-11-19-1476** — the newest accepted cumulative build, published as
-[v0.10.0-exp1476](https://github.com/Endorpheen/FrankenMoE-CUDA/releases/tag/v0.10.0-exp1476) (Latest).
+[v0.12.0-chat-alpha](https://github.com/Endorpheen/FrankenMoE-CUDA/releases/tag/v0.12.0-chat-alpha)
+(Latest) packages the standalone Pure Goose chat host for **Linux x86-64** and **Windows x64**
+with the cumulative runtime from EXP-1722 through
+[EXP-2026-11-23-1805](https://github.com/Endorpheen/FrankenMoE-CUDA/blob/claude/apex-100-prefetch/experiments/EXP-2026-11-23-1805-route-prefetch/README.md).
+It serves a web chat and an OpenAI-compatible `/v1` API for OpenCode.
+
+| | |
+|---|---|
+| decode, 32K prompt / 512 output | **79.85 tok/s**, against 76.91 for EXP-1786 in two A/B pairs, 512 token ids identical |
+| prefill, 32K prompt | about **3075 tok/s** |
+| decode, short chat (34 prompt / 384 output) | **87.19 tok/s**, against 35.47 for v0.11.2 on the same flags |
+| RAM / VRAM | 21.5 GB RSS / 8770 MiB peak sampled (32K profile) |
+| profile | ctx 262144, expert cache 6290 MiB, batch/ubatch 4096, KV q4_0, threads 8/16 |
+| archives | `FrankenMoE-v0.12.0-chat-alpha-linux-x64.tar.gz`, `FrankenMoE-v0.12.0-chat-alpha-windows-x64.zip`, see `SHA256SUMS` |
+
+All figures are single-response numbers on one RTX 4070, not aggregate throughput. The newest step,
+EXP-1805, predicts the experts of the next layer from the current one and copies them while the
+current layer computes. The model still uses its own routes, so outputs do not change. The Windows
+build passed the HTTP transport gate and a CPU-only model start under Wine. GPU inference on native
+Windows still needs community testing.
+
+### Previous runtime record
+
+**EXP-2026-11-19-1476**, the `llama-server` based cumulative build published as
+[v0.10.0-exp1476](https://github.com/Endorpheen/FrankenMoE-CUDA/releases/tag/v0.10.0-exp1476).
 
 | | |
 |---|---|
@@ -52,6 +75,22 @@ stamps and the build ladder. Anything that starts a server or loads a model goes
 endpoint; those runs need explicit permission and are never implied by a tier.
 
 ## Run
+
+The chat host from the latest release (Linux; on Windows use `start.bat` from the ZIP):
+
+```
+tar -xzf FrankenMoE-v0.12.0-chat-alpha-linux-x64.tar.gz && cd FrankenMoE-v0.12.0-chat-alpha-linux-x64
+FRANKENMOE_WEB_ROOT="$PWD/web" ./frankenmoe-server --ctx-size 262144 --batch-size 4096 \
+  --ubatch-size 4096 --cache-type-k q4_0 --cache-type-v q4_0 --expert-cache-mib 6290 \
+  --threads 8 --threads-batch 16 /path/to/Apex-35B-V1.0-Q4_K_M.gguf --serve 8080
+```
+
+Open http://127.0.0.1:8080/ or point OpenCode at http://127.0.0.1:8080/v1. The accepted runtime
+switches are on by default; any `GOOSE_*` variable you set wins, `GOOSE_EXPERT_PREFETCH=0` turns off
+the route prefetch and `GOOSE_RUNTIME_DEFAULTS=0` restores the bare defaults. Choose an expert
+cache that fits your free VRAM.
+
+The previous `llama-server` record build:
 
 ```
 tar -xzf frankenmoe-apex-exp1476-linux-x86_64.tar.gz -C /opt/frankenmoe
