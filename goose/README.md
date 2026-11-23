@@ -5,22 +5,22 @@ grouped by what it does rather than by the experiment that proved it.
 
 ## Groups
 
-| directory | files | what is inside |
-|---|---:|---|
-| `jinja/` | 16 | the Jinja stack: lexer, parser, value model, JSON output, built-ins, runtime |
-| `json/` | 73 | JSON text parsing, rendering, JSON-schema decoding and introspection |
-| `grammar/` | 1 | GBNF grammar text parsing |
-| `server/` | 65 | HTTP server decisions: routing, limits, SSE, providers, MCP and startup/shutdown |
-| `cpu/` | 245 | CPU backends, quantized kernels, MoE, allocator, scheduler and optimizer work |
-| `cuda/` | 236 | CUDA operators: attention, quantization, reductions, RoPE, SSM, MoE |
-| `kv/` | 90 | KV cache, memory, batch, context and recurrent state |
-| `model/` | 101 | model loading, GGUF, tokenizer, quantization and graph construction |
-| `sampling/` | 5 | sampler decisions and output selection |
-| `metrics/` | 2 | metrics, trace and deterministic-workload text encoders |
-| `chat/` | 18 | chat templates, tool calls and message conversion |
-| `cli/` | 7 | the session line protocol, config validation and resolution |
-| `misc/` | 72 | common helpers and slices whose native file the ledger does not name |
-| `_archive/` | 3335 | sources preserved from other checkouts and branches, not part of the tree |
+| directory | what is inside |
+|---|---|
+| `jinja/` | the Jinja stack: lexer, parser, value model, JSON output, built-ins, runtime |
+| `json/` | JSON text parsing, rendering, JSON-schema decoding and introspection |
+| `grammar/` | GBNF grammar text parsing |
+| `server/` | HTTP server decisions: routing, limits, SSE, providers, MCP and startup/shutdown |
+| `cpu/` | CPU backends, quantized kernels, MoE, allocator, scheduler and optimizer work |
+| `cuda/` | CUDA operators: attention, quantization, reductions, RoPE, SSM, MoE |
+| `kv/` | KV cache, memory, batch, context and recurrent state |
+| `model/` | model loading, GGUF, tokenizer, quantization and graph construction |
+| `sampling/` | sampler decisions and output selection |
+| `metrics/` | metrics, trace and deterministic-workload text encoders |
+| `chat/` | chat templates, tool calls and message conversion |
+| `cli/` | the session line protocol, config validation and resolution |
+| `misc/` | common helpers and slices whose native file the ledger does not name |
+| `_archive/` | historical sources preserved from other checkouts and branches |
 
 A complete module is one file named after the native module it replaces
 (`jinja/lexer.goose` replaces `common/jinja/lexer.cpp`). A partial slice is
@@ -28,10 +28,9 @@ named after the decision it implements (`server/route-table.goose`,
 `cuda/flash-attention/...`). The experiment that proved each file, its gate
 result and its SHA256 are in `MANIFEST.json`.
 
-An accepted module is not automatically one unit: `tools/build-main-runtime.sh`
-composes the compatible ones into the growing main build (38 modules, 2347
-specializations), and `tools/check-composition.sh` keeps the per-set smoke test
-green. Alternative ports of one subsystem are merged by decision, not concatenated.
+`tools/build-main-runtime.sh` composes the source unit for the Goose build gate.
+The [standalone chat build](../docs/BUILD.md) records the separate checkpoint
+inputs used by the benchmarked Apex lineage.
 
 ## Reading the tree
 

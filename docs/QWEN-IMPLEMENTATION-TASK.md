@@ -1,5 +1,7 @@
 # Task specification for the local Qwen3.8 Flash Next
 
+**Historical reference.** This is the old Qwen experiment queue. Current qualification is tracked in the [model registry](goose-migration/MODEL-ARCHITECTURES.md).
+
 Prepared: 2026-09-06; status updated after EXP-038. The executor is the local Qwen. The user is Igor. Communication and reports in Russian; code comments and commit messages in English.
 
 ## 0. Current continuation point — do not repeat closed stages

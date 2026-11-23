@@ -1,86 +1,20 @@
-# Releases
+# Standalone chat releases
 
-Releases are the tested snapshots of this repository. A release is created only
-from `main` after an accepted milestone, never from a working branch, and it is
-announced with an annotated tag and GitHub Release notes.
+The published [v0.12.0-chat-alpha](https://github.com/Endorpheen/FrankenMoE-CUDA/releases/tag/v0.12.0-chat-alpha)
+is the EXP-1805 Linux and Windows chat release. Its
+[build record](../experiments/EXP-2026-11-23-1805-route-prefetch/release/README.md)
+documents the platform checks and input artifacts. The cumulative Linux
+source and its newer checkpoint are documented in the [build guide](BUILD.md).
 
-## Version scheme
+To prepare a package, use `tools/package-linux-chat-alpha.sh` or
+`tools/package-windows-alpha.sh` with the corresponding built server and web
+assets. Publish the versioned package and its `SHA256SUMS`. The model GGUF is
+distributed separately.
 
-`vMAJOR.MINOR.PATCH`, starting at `v0.1.0`:
+Release notes should identify the source revision, compiler and runtime inputs,
+supported model and profile, measured checkpoint and platform coverage.
+Distinguish the native GPU inference result from the HTTP fixture, Wine
+startup, and archived benchmark results.
 
-- **MAJOR** changes when the runtime contract changes incompatibly (ABI, model
-  format, server API).
-- **MINOR** changes when an accepted batch of Goose slices lands or a new model
-  path becomes usable (for example a P7-08 closure or Edge0 support).
-- **PATCH** changes for documentation, tooling and fixes that do not alter the
-  runtime contract.
-
-The version describes the repository state, not a promise of production
-readiness. Pre-releases use `-rc.N` and are marked as pre-release on GitHub.
-
-## Release criteria
-
-All of these must hold before a tag is created:
-
-1. `git status` is clean and `HEAD` equals `origin/main`.
-2. `python3 tools/check-goose-tree.py` is green.
-3. The ledger and `docs/goose-migration/STATUS.md` describe the same state.
-4. The build named in the release notes was actually measured; numbers carry
-   their configuration and hashes.
-5. No file above 100 MB is in the tag tree (GitHub rejects such pushes).
-
-Optional, and required for a runtime release:
-
-6. The runtime bundle starts on the reference host, and the notes record the
-   binary hash, the library manifest and the Apex measurement.
-
-## Assets
-
-GitHub allows 2 GiB per asset. Two kinds are published:
-
-| asset | when | content |
-|---|---|---|
-| source archives | always (GitHub generates them) | the tagged tree |
-| `goose-runtime-<version>-linux-x86_64.tar.zst` | runtime release | the run set: `llama-server`, the libraries it selects, `MANIFEST.sha256`, `LAUNCH.txt` |
-
-The runtime bundle is a compressed copy of the isolated run set that was
-verified with `ldd`, `strace` and a real request. It is never the working
-`runtime/` directory. Stage it under `releases/` (ignored by Git), record
-SHA256 next to it, and pass it with `--asset`.
-
-## Creating a release
-
-```
-# dry run first: checks, tag name, notes, assets; changes nothing
-scripts/make-release.sh --version v0.1.0 --notes-file /tmp/notes.md
-
-# real run after Igor approves
-scripts/make-release.sh --version v0.1.0 --notes-file /tmp/notes.md --yes
-```
-
-The script refuses to run when the tree is dirty, `HEAD` is not `origin/main`,
-the ledger check fails, or the tag already exists. It creates an annotated tag,
-pushes it, publishes the GitHub Release with `gh`, uploads the assets and prints
-their SHA256.
-
-## Notes format
-
-`docs/goose-migration/RELEASE-NOTES-TEMPLATE.md` is the skeleton: what changed,
-which slices closed, the measured numbers with their configuration, what is
-still open, and the verification commands that were run.
-
-## Retention of heavy assets
-
-The runtime bundle is the only heavy asset, and GitHub keeps **one** of them:
-the newest. Publishing a runtime release deletes the runtime asset from every
-older release automatically (the release notes stay; only the archive is
-removed). The local copy stays in `builds/` and is managed by
-`scripts/prune-local-builds.sh`.
-
-`scripts/make-release.sh` performs this purge unless `--keep-old-runtime` is
-given. It only purges after the new asset exists and the release was created
-successfully, so a failed publish cannot leave the project without a binary.
-
-GitHub Actions is not required for this: tags, notes and assets are created by
-`gh` from the release script. Actions would only add CI checks (grammar tests,
-goose tree check); none are configured and none are needed to publish.
+The older `llama-server` package format and retention procedure are preserved
+in Git as `4c4ad0aef:docs/RELEASES.md`.

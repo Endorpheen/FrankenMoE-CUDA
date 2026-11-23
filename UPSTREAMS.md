@@ -1,5 +1,7 @@
 # Pinned upstream revisions
 
+**Historical reference.** These pins reproduce the early integration. See [the standalone build inputs](docs/BUILD.md) for the current runtime.
+
 Pinned on 2026-08-30.
 
 | Project | Repository | Branch | Commit |

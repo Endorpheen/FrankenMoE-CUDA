@@ -1,5 +1,7 @@
 # EXP923: reuse identical within-token group projections
 
+**Historical reference.** This note records an Edge0 experiment from the Flint lineage. See [the model registry](../../docs/goose-migration/MODEL-ARCHITECTURES.md) for current qualification.
+
 Reference EXP921, exact six-ELF checkpoint retained; EXP922 is rejected.
 Scope: pinned Q4 DU pack,75/256,ctx512,t8,ngl48,MTPoff,normalEOS,all accepted
 host caches unchanged. No Apex and no foreign process changes.

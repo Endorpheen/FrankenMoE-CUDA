@@ -1,5 +1,7 @@
 # EXP924: bounded readonly expert mappings
 
+**Historical reference.** This note records an Edge0 experiment from the Flint lineage. See [the model registry](../../docs/goose-migration/MODEL-ARCHITECTURES.md) for current qualification.
+
 Reference EXP92344276ead1667a2c9bacfa13c461132b20be55792; six-ELF checkpoint
 edge0-projection-checkpoint-20261117 immutable. New host-only profile75/256:
 decode37.835605s, CPU22.557858140s, expert pread5.634450233s, graph0.414696322s,

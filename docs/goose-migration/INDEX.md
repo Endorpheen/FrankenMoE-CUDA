@@ -1,9 +1,10 @@
 # docs/goose-migration: where to look
 
-292 markdown files hold this migration's record. This index lists the ones that describe the
-**current state** first, because a plan read behind a stale note is how the state gets misread.
+This index covers the staged migration and its checkpoint evidence. Start with
+[current state](../CURRENT_STATE.md) for the standalone chat runtime or the
+[model registry](MODEL-ARCHITECTURES.md) for architecture qualification.
 
-## Start here
+## Migration checkpoint documents
 
 | file | title |
 |---|---|

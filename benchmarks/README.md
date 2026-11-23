@@ -68,13 +68,13 @@ contradictory numbers before. When included they stay visibly separate.
 6. `source` is `measured`, `historical:<where>` or `reconstructed:<where>`, and `completeness`
    says what is missing. A reconstructed row is never presented as measured.
 
-## The pinned baseline
+## Historical hybrid baseline
 
-`runtime/goose-stage/BEST-CONFIG.json` is the configuration the next optimisation stage must
-start from. It is verified, not asserted:
+`runtime/goose-stage/BEST-CONFIG.json` records the older hybrid profile.
+The launcher below requires its original machine-local library set:
 
 ```
-bash runtime/goose-stage/run-apex.sh          # defaults: cache 4352, port 8081
+bash runtime/goose-stage/run-apex.sh          # original hybrid launcher; see its versioned flags
 ```
 
 The script refuses to start if either `libggml-cpu` hash differs from `63ad4984` or the port is

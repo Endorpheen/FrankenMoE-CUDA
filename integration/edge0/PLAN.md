@@ -1,5 +1,7 @@
 # Edge0 first inference integration (continuing EXP915)
 
+**Historical reference.** This note records an Edge0 experiment from the Flint lineage. See [the model registry](../../docs/goose-migration/MODEL-ARCHITECTURES.md) for current qualification.
+
 Status: IN PROGRESS, no model generation claimed.
 
 ## Hypothesis

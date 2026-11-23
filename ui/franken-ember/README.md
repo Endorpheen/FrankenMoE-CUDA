@@ -1,5 +1,7 @@
 # FrankenMoE Ember Goose
 
+**Historical reference.** This theme and its legacy preview recipes were prepared for llama-ui. See [the standalone chat packaging guide](../../docs/BUILD.md) for the current web asset layout.
+
 A dark theme for the llama-ui that ships with this runtime, plus the FrankenMoE mark. It is a skin: the interface, its layout,
 its controls and its behaviour are the original ones. Nothing in this directory changes JavaScript, the API, the server or any
 accepted build.

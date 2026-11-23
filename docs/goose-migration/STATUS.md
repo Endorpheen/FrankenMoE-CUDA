@@ -1,7 +1,10 @@
 # FrankenMoE migration status
 
-Updated: 2026-11-20. This file is the current state; update it in the same change
-as every accepted slice.
+For the standalone chat runtime, see [current state](../CURRENT_STATE.md).
+
+## Migration checkpoint notes through 2026-11-20
+
+The notes below record the checkpoints, open gates and ledger counts from the migration.
 
 The active [Apex 32K/512 acceptance checklist](APEX-32K-ACCEPTANCE.md)
 records the required gates and their evidence for the independent runtime.

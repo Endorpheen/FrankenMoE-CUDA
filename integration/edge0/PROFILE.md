@@ -1,5 +1,7 @@
 # Edge0 decode profiling and optimisation (EXP920)
 
+**Historical reference.** This note records an Edge0 experiment from the Flint lineage. See [the model registry](../../docs/goose-migration/MODEL-ARCHITECTURES.md) for current qualification.
+
 Control: immutable EXP916 first-answer checkpoint, commit d02a274a1e3aa03e7dc7d1459d191229bf7f1d7a.
 First step is measurement, not an assumed I/O or compute bottleneck.
 Instrument positioned expert/D-U reads, PLE provider, CPU tensor copies from GPU,

@@ -1,44 +1,33 @@
-# Build
+# Build and package the standalone chat host
 
-## Verified environment
+## Linux x86-64
 
-| Component | Version |
-| --- | --- |
-| OS | Ubuntu 26.04 LTS, kernel 7.0 |
-| CPU | AMD Ryzen 9 5950X |
-| RAM | 64 GB installed, about 60 GiB visible |
-| GPU | NVIDIA RTX 4070 12 GB, compute capability 8.9 |
-| Driver | 580.173.02 |
-| CUDA Toolkit | 12.4.131 |
-| Compiler | GCC/G++ 13.4.0 |
-| CMake / Ninja | 4.2.3 / 1.13.2 |
+Use the [cumulative Apex build recipe](../integration/goose-standalone/apex-checkpoint/README.md).
+It pins the KeelWing ownership v2 Goose compiler, the pre-chat Goose unit,
+the EXP-1805 Linux archive and the EXP-1786 build headers. Keep those
+inputs together with their checksums. The recipe uses GCC 13 and replaces
+the archived CUDA driver object with the cumulative driver built from this
+tree.
 
-The machine had a CUDA 12.4 toolkit despite an initial expectation of CUDA 13.0. The build therefore pins GCC 13 and `sm_89` by default.
-
-## Reproducible build
+Put the matching web assets in the output directory as `web/` and package
+the bundle from the repository root:
 
 ```bash
-scripts/build.sh
+bash tools/package-linux-chat-alpha.sh BUILD_DIR RELEASE_TAG
 ```
 
-Supported environment overrides:
+The package contains the native server, terminal launcher and dashboard,
+web assets and licenses. See the [launch command](../README.md#run-the-linux-chat-server).
 
-```text
-BUILD_DIR  JOBS  CC  CXX  CUDACXX  CUDA_ARCH
-```
+## Windows x64
 
-The script prepares the pinned upstream trees, applies the integration patch, configures CUDA, and builds the runtime and tests.
+See the [v0.12.0 build record](../experiments/EXP-2026-11-23-1805-route-prefetch/release/README.md)
+for the MinGW build inputs and the [Windows guide](../integration/goose-standalone/windows/README.md)
+for the launcher and troubleshooting. Linux EXP-1808 results apply to the
+measured Linux checkpoint.
 
-## Tests
+## Source checks
 
-```bash
-scripts/test_small.sh
-```
-
-The test script runs 13 CTest cases, a resident-versus-streamed 64-token greedy comparison on CUDA, and an overlap smoke test. Set `KEEP_TMP=1` to preserve CLI logs and token streams.
-
-The three upstream baselines were also built and tested before integration:
-
-- official llama.cpp CUDA: 62/62;
-- BigMoeOnEdge CPU: 12/12;
-- expert-tier CUDA: 62/62.
+`bash tools/check.sh fast` composes and compiles the Goose unit.
+The [test index](../tests/README.md) identifies the model, platform and
+checkpoint dependencies of the other fixtures. Historical fixtures use their recorded source revisions.

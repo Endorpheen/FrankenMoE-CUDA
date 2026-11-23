@@ -5,6 +5,8 @@ The standalone runtime uses Goose for model execution and C adapters for the
 operating system and CUDA driver. The reference model is Apex-35B-V1.0 Q4_K_M
 on a Ryzen 9 5950X with 64 GB RAM and an RTX 4070 12 GB.
 
+Learn about the language in the [original Goose repository](https://github.com/aardappel/goose).
+
 ## Run the Linux chat server
 
 In a Linux chat package built from this tree, run the server from the extracted
@@ -29,6 +31,8 @@ packages the earlier EXP-1805 host for Linux x86-64 and Windows x64. Use
 `start.bat` in the Windows package. The terminal launcher and the newer
 cumulative Linux build described here apply to packages built from this tree.
 
+![Goose on Fire terminal dashboard with Apex startup logs](docs/assets/goose-on-fire.png)
+
 ## Apex checkpoint
 
 The cumulative Linux build adds EXP-1806's early decode submission and
@@ -43,11 +47,9 @@ These are single-response results from the archived binaries. See the
 
 ## Build
 
-Use `tools/build-linux-chat-alpha.sh` with the pinned Goose toolchain, the
-pre-chat Goose unit, the EXP-1805 archive and the EXP-1786 build inputs.
-See the [checkpoint build recipe](integration/goose-standalone/apex-checkpoint/README.md).
-To package the output, place the web assets in its `web/` directory and
-run `bash tools/package-linux-chat-alpha.sh BUILD_DIR RELEASE_TAG`.
+See the [build and packaging guide](docs/BUILD.md) for the pinned Goose toolchain,
+checkpoint inputs and Linux and Windows packaging paths. The [current state](docs/CURRENT_STATE.md)
+tracks the published release, cumulative Linux sources and platform coverage.
 
 ## Checks
 
@@ -76,15 +78,15 @@ runtime and may refer to upstream sources from older revisions.
 | `tests/` | permanent tests, registry and the unified runner |
 | `docs/goose-migration/` | ledger, status, coverage documents, compiler records |
 | `experiments/` | one directory per slice: hypothesis, source, gate, results |
-| `runtime/` | runtime build scripts and baselines |
+| [`integration/`](integration/README.md) | standalone host and C adapters, with older integration fixtures indexed separately |
+| `runtime/` | compiler records and historical runtime checkpoints |
 | `tools/` | build, gate, audit and measurement entry points |
 | `patches/`, `benchmarks/`, `results/` | integration patches and measurement records |
 
 ## Attribution and license
 
-The runtime derives from `llama.cpp` and keeps upstream attribution and licenses. The Apex, Qwen
-and Flint models are distributed under their own licenses. This repository's own work is
-Apache-2.0; see [`LICENSE`](LICENSE).
+FrankenMoE is licensed under Apache-2.0. Upstream components and model weights
+retain their respective licenses. See [`LICENSE`](LICENSE).
 
-- [Migration ledger](docs/goose-migration/tasks.json) · [Goose sources](goose/README.md) ·
-  [Pinned upstreams](UPSTREAMS.md) · [Experiment journal](experiments/EXPERIMENTS.md)
+- [Roadmap](ROADMAP.md) · [Goose sources](goose/README.md) ·
+  [Experiment journal](experiments/EXPERIMENTS.md) · [Migration archive](docs/goose-migration/INDEX.md)

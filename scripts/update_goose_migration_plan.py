@@ -1,9 +1,10 @@
 from pathlib import Path
-import json,collections,hashlib
+import json,collections,hashlib,sys
 root=Path(__file__).resolve().parents[1];base=root/'docs/goose-migration';d=json.loads((base/'tasks.json').read_text());audit=json.loads((base/'source-audit.json').read_text());h=json.loads((base/'apex-history.json').read_text()) if (base/'apex-history.json').exists() else {'profile':{},'measurements':[]};tasks=d['tasks'];ids=[x['id'] for x in tasks];assert len(ids)==len(set(ids));assert all(x['status'] in ['TODO','PARTIAL','IN_PROGRESS','BLOCKED','DONE'] for x in tasks);assert all(x['acceptance'] and x['sources'] and (x['status']!='DONE' or x['evidence']) for x in tasks);assert all(dep in ids for x in tasks for dep in x['depends_on']);assigned=[i for b in d['batches'] for i in b['scope']];assert len(assigned)==len(set(assigned))==len(tasks) and set(assigned)==set(ids);counts=collections.Counter(x['status'] for x in tasks);core=[x for x in tasks if x['workstream']=='APEX_COMMON'];cc=collections.Counter(x['status'] for x in core);remaining=len(tasks)-counts['DONE'];lines=[]
 def ln(s=''):lines.append(s)
 def cell(s):return str(s).replace('|','/').replace('\n',' ')
-ln('# FrankenMoE -> Fried Goose: complete migration plan')
+ln('# Historical Goose migration ledger report')
+ln();ln('This report renders the archived staged migration ledger. See docs/CURRENT_STATE.md for the standalone runtime.');ln()
 ln();ln('Updated: '+d['date']+'. Source/experiment checkpoint: `'+d['baseline_checkpoint']+'`.');ln();ln('**One shared universal runtime. First finish the complete functional Apex implementation, then extend the same Goose modules to Qwen and other architectures. Production is unchanged.**');ln();ln(f"**Functional tasks: {len(tasks)} total; {counts['DONE']} DONE; {counts['PARTIAL']} PARTIAL; {counts['IN_PROGRESS']} IN_PROGRESS; {counts['BLOCKED']} BLOCKED; {counts['TODO']} TODO. Remaining: {remaining}.**");ln();ln(f"**Current Apex/common milestone: {len(core)} tasks; {cc['DONE']} DONE; {len(core)-cc['DONE']} remaining (including {cc['PARTIAL']} partial).**");ln();ln('Task count is not code coverage, effort percentage, speed or a completion-date estimate. A bounded completed module does not complete its parent subsystem. Archived history is not proof that all modules run together.');ln()
 campaign=d.get('campaign_13')
 if campaign:
@@ -85,7 +86,11 @@ ln('## Dependencies,compiler limits and end condition');ln();ln('Candidate unavo
 ln('## After full functional migration: comprehensive checks and optimization');ln()
 for x in d['post_migration_queue_not_in_functional_total']:ln('- '+x['id']+' — '+x['title']+': '+x['gate'])
 ln();ln('These are not substitutes for functional migration and are excluded from its functional-task counter. Historical speed/safety claims remain scoped; no new superiority claim before independent evidence.');ln()
-ln('## Progress update commands');ln();ln('Edit `docs/goose-migration/tasks.json` status/evidence/history and append fixed-profile results to `docs/goose-migration/apex-history.json`. Then run:');ln();ln('```bash');ln('python3 scripts/update_goose_migration_plan.py');ln('```');ln();ln('The generator verifies stable unique IDs,valid statuses,completion evidence and dependency references,and derives all counters/tables from the ledger. Source inventory is [source-audit.json](docs/goose-migration/source-audit.json); future scope additions require an explicit audit/history entry.');ln()
+ln('## Progress update commands');ln();ln('Edit `docs/goose-migration/tasks.json` status/evidence/history and append fixed-profile results to `docs/goose-migration/apex-history.json`. Then run:');ln();ln('```bash');ln('python3 scripts/update_goose_migration_plan.py > migration-ledger-report.md');ln('```');ln();ln('The generator verifies stable unique IDs,valid statuses,completion evidence and dependency references,and derives all counters/tables from the ledger. Source inventory is [source-audit.json](docs/goose-migration/source-audit.json); future scope additions require an explicit audit/history entry.');ln()
 ln('## Change history');ln()
-for x in d['history']:ln('- '+x['checkpoint']+': '+x['event'])
-(root/'GOOSE_MIGRATION_PLAN.md').write_text('\n'.join(lines)+'\n');print(json.dumps({'tasks':len(tasks),'done':counts['DONE'],'remaining':remaining,'apex_total':len(core),'apex_done':cc['DONE'],'apex_remaining':len(core)-cc['DONE'],'plan_lines':len(lines),'history_rows':len(ms)},indent=2))
+for entry in d['history']:
+    if 'checkpoint' in entry:
+        ln(f"- {entry['checkpoint']}: {entry['event']}")
+    else:
+        ln(f"- {entry['date']} {entry['task']} ({entry['experiment']}, {entry['status']}): {entry['change']}")
+print('\n'.join(lines));print(json.dumps({'tasks':len(tasks),'done':counts['DONE'],'remaining':remaining,'apex_total':len(core),'apex_done':cc['DONE'],'apex_remaining':len(core)-cc['DONE'],'plan_lines':len(lines),'history_rows':len(ms)},indent=2),file=sys.stderr)

@@ -19,11 +19,11 @@ goose/misc/       slices with no named native file
 goose/_archive/   preserved sources from other checkouts (not current code)
 ```
 
-4061 `.goose` files. A complete module is one file named after the native
+A complete module is one file named after the native
 module (`jinja/lexer.goose`); a partial slice is named after the decision it
 implements (`server/route-table.goose`). `goose/MANIFEST.json` maps every file
 to its experiment, native path, gate result and SHA256.
 
-The experiments keep the proof (fixture, build, mutations); they are no longer
-the place to read the code. Current project state:
-[`docs/goose-migration/STATUS.md`](docs/goose-migration/STATUS.md).
+Experiment cards preserve fixtures and results. The
+[standalone integration map](integration/README.md) identifies the live host,
+and [current state](docs/CURRENT_STATE.md) identifies the runtime and checkpoints.

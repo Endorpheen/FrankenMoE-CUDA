@@ -1,5 +1,7 @@
 # FrankenMoE upstream synchronization and maintenance plan
 
+**Historical reference.** This is a preserved proposal for an earlier upstream synchronization workflow. See the [current build guide](BUILD.md).
+
 Status: PLANNED. Nothing in this document is implemented. It describes the
 pipeline that starts only after the runtime is fully migrated to Goose and the
 repository is ready for publication. Until then the migration plan and the

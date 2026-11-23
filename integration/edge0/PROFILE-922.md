@@ -1,5 +1,7 @@
 # EXP922: find the next Edge0 FFN bottleneck
 
+**Historical reference.** This note records an Edge0 experiment from the Flint lineage. See [the model registry](../../docs/goose-migration/MODEL-ARCHITECTURES.md) for current qualification.
+
 Control EXP921 edb893ab89afd8194e75af6e9861e0910e7d957d, immutable six-ELF
 checkpoint /home/end0/AI/LlamaServer/edge0-dense-checkpoint-20261117.
 Fixed75/256 request, ctx512,b/ub1,t8,ngl48,MTPoff,greedy,officiallocalJinja

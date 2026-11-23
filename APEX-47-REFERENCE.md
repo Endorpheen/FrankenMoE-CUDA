@@ -1,5 +1,7 @@
 # APEX-47: эталонный комплект, 47,64 токена/с
 
+**Historical reference.** This 47.64 tok/s checkpoint belongs to the earlier hybrid runtime. See [current results](docs/CURRENT_STATE.md).
+
 Зафиксирован рабочий запуск FrankenMoE, показавший лучший результат проекта. Всё необходимое для воспроизведения
 лежит в одном каталоге и не ссылается на внешние экспериментальные деревья.
 

@@ -1,5 +1,7 @@
 # EXP921: profile the accepted cached Edge0 path
 
+**Historical reference.** This note records an Edge0 experiment from the Flint lineage. See [the model registry](../../docs/goose-migration/MODEL-ARCHITECTURES.md) for current qualification.
+
 Reference commit4f4cdeb235178475bba61a8444aeb0cdd3b0a1bd, accepted binary set
 /home/end0/AI/LlamaServer/edge0-cached-checkpoint-20261117. Do not overwrite it.
 Current fixed75/256 gate: prefill4.178624,decode4.5936155,processVRAM5296MiB,

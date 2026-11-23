@@ -5,6 +5,10 @@ experiment. Experiments stay the place for hypotheses, one-off diagnostics, meas
 reports; when an experiment's result is accepted, its regression check moves here and the
 experiment card points at the new path.
 
+For the standalone source build, start with `bash tools/check.sh fast` and the
+[build guide](../docs/BUILD.md). The registry includes older hybrid fixtures. Their
+CMake, library and model prerequisites belong to the recorded revisions.
+
 ## Layout
 
 | directory | what belongs there |

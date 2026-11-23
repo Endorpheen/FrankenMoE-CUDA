@@ -1,5 +1,7 @@
 # P6-10: what removing the replaced sampler C++ involves
 
+**Historical reference.** This proposal describes the old native sampler. See [the integration map](../README.md) for the standalone path.
+
 Prepared, **not applied**. Rule 15 forbids deleting C++ before proven replacement and Igor's
 acceptance, and rule 10 says an accepted feature is enabled by default with the env flag existing
 only to disable it. Both constrain the removal, so this is the inventory and the exact steps.

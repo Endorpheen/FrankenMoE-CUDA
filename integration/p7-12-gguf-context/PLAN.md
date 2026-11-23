@@ -1,5 +1,7 @@
 # Replacing the loader's GGUF context with the ported reader
 
+**Historical reference.** This snapshot describes the gradual migration of the old GGUF loader. See [the integration map](../README.md) for the standalone path.
+
 Status: **started** - integral keys are served by the port (EXP-2026-11-19-1340); strings, arrays, tensor
 descriptors and the split-file path remain native. Every measurement it depends on exists (below); the edit itself is large enough
 that it must be done as a block with its own acceptance, not appended to a session.

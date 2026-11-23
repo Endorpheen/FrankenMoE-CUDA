@@ -1,5 +1,7 @@
 # Experiment record
 
+**Historical reference.** This is the early experiment record. Continue in the [experiment journal](../experiments/EXPERIMENTS.md).
+
 ## Baseline validation
 
 - Official llama.cpp CUDA: 62/62 tests.

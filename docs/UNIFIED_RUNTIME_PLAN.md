@@ -1,5 +1,7 @@
 # Unified runtime and model profiles — design proposal
 
+**Historical reference.** This proposal predates the standalone chat host. See [current state](CURRENT_STATE.md) for the current runtime.
+
 Status: DESIGN. No universal default is promoted by this document. Immediate performance work still targets a new>=5% gain above EXP090; model-specific fallback bundles remain preserved.
 
 ## What is currently verified

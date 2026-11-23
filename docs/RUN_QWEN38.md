@@ -1,5 +1,7 @@
 # Running Qwen3.8-Flash-Next UD-IQ3_XXS
 
+**Historical reference.** These commands target the earlier Qwen hybrid setup. See the [model registry](goose-migration/MODEL-ARCHITECTURES.md) for current evidence.
+
 ## Model files
 
 Repository: `unsloth/Qwen3.8-Flash-Next-GGUF`, directory `UD-IQ3_XXS`.
