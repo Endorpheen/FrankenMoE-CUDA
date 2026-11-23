@@ -6,7 +6,7 @@ execution and HTTP decisions; C adapters provide system and CUDA driver calls.
 
 | Lineage | What is available |
 |---|---|
-| Published v0.12.0 chat alpha | EXP-1805 chat host for Linux x86-64 and Windows x64. The Windows evidence includes Wine checks. |
+| Published v0.12.1 chat alpha | OpenCode continuation and reasoning accounting on Linux x86-64 (EXP-1808) and Windows x64 (EXP-1805 CUDA host). Windows HTTP coverage is from Wine. |
 | Cumulative Linux sources | EXP-1805 route prefetch, EXP-1806 early decode submission and EXP-1808 asynchronous prefill job packs. The build uses the pinned checkpoint archive and device images. |
 | Other architectures | See the [model registry](goose-migration/MODEL-ARCHITECTURES.md) for the evidence and remaining qualification per model. |
 

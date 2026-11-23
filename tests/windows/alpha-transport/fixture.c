@@ -48,6 +48,11 @@ int64_t fg_http_tokenize(sl_u8 prompt, sl_i64 out) {
     if (chat_prompt && prompt_contains(prompt, "RECOVERY-FOLLOWUP-FIXTURE") &&
         (!prompt_contains(prompt, "<function=search>\n<parameter=query>\nbrowser\n</parameter>") ||
          !prompt_contains(prompt, "<tool_response>\nUnknown tool: search\n</tool_response>"))) return -1;
+    if (chat_prompt && prompt_contains(prompt, "RECOVERY-FOLLOWUP-FIXTURE")) {
+        const bool active_reasoning = prompt_contains(prompt, "<think>\nReasoning continuity fixture.\n</think>");
+        const bool new_turn = prompt_contains(prompt, "NEW-USER-TURN-FIXTURE");
+        if (active_reasoning == new_turn) return -1;
+    }
     out.data[0] = prompt_contains(prompt, "UNKNOWN-TOOL-FIXTURE") ? 2 :
         prompt_contains(prompt, "MIXED-TOOL-FIXTURE") ? 1 : 0;
     return 1;

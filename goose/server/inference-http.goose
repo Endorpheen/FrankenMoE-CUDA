@@ -500,8 +500,23 @@ fn ih_chat_stream_observe(ids: const i64[:], prompt: i64, start_time: f64, prefi
     }
 }
 
+// Detokenized prefix length is monotone. Attribute a token that straddles a
+// reasoning delimiter to reasoning if it contributes any bytes to that span.
+fn ih_chat_token_boundary(ids: const i64[:], scratch: u8[:], offset: i64) -> i64 {
+    var low: i64 = 0;
+    var high = ids.len;
+    while low < high {
+        let mid = low + (high - low) / 2;
+        let size = if mid == 0 { 0 } else { ih_detokenize(ids[0 .. mid], scratch) };
+        if size < 0 || size > scratch.len { return -1; }
+        if size < offset { low = mid + 1; }
+        else { high = mid; }
+    }
+    return low;
+}
+
 fn ih_chat_output(fd: i64, output: const u8[:], response: u8[:], catalog: const u8[:], opts: const IhCompletion &,
-                  done: bool, count: i64, prompt_count: i64, timing: const f64[:], stream: i64[:]) {
+                  done: bool, count: i64, prompt_count: i64, timing: const f64[:], stream: i64[:], visible_ids: const i64[:]) {
     let thought_start, closed, answer = ih_apex_chat_bounds(output);
     var thought_end = closed;
     var answer_start = answer;
@@ -509,6 +524,16 @@ fn ih_chat_output(fd: i64, output: const u8[:], response: u8[:], catalog: const 
         let tool = find_at(output, "<tool_call>");
         thought_end = if tool >= thought_start { tool } else { output.len };
         answer_start = thought_end;
+    }
+
+    var reasoning_tokens: i64 = 0;
+    if thought_end > thought_start {
+        let low, high = ih_trim(output[thought_start .. thought_end]);
+        if high > low {
+            let first = ih_chat_token_boundary(visible_ids, response, thought_start + low + 1);
+            let last = ih_chat_token_boundary(visible_ids, response, thought_start + high);
+            if first > 0 && last >= first { reasoning_tokens = last - first + 1; }
+        }
     }
 
     var n = cp_put(response, 0, "{\"id\":\"chatcmpl-local\",\"created\":0,\"model\":\"frankenmoe\",\"object\":");
@@ -574,7 +599,9 @@ fn ih_chat_output(fd: i64, output: const u8[:], response: u8[:], catalog: const 
     n = cp_uint(response, n, count);
     n = cp_put(response, n, ",\"total_tokens\":");
     n = cp_uint(response, n, prompt_count + count);
-    n = cp_put(response, n, "}");
+    n = cp_put(response, n, ",\"completion_tokens_details\":{\"reasoning_tokens\":");
+    n = cp_uint(response, n, reasoning_tokens);
+    n = cp_put(response, n, "}}");
     n = ih_timing_fields(response, n, count, timing);
     n = cp_put(response, n, "}");
     if n > response.len {
@@ -673,7 +700,7 @@ fn ih_generate(fd: i64, prompt: const i64[:], opts: const IhCompletion &, catalo
         var wide_response: u8[>..] = [];
         if bytes * 8 + 4096 > response.len { wide_response.resize(bytes * 8 + 4096, 0); }
         let serialized = if wide_response.len > 0 { wide_response[..] } else { response };
-        ih_chat_output(fd, text[0 .. bytes], serialized, catalog, opts, stopped_eos, count, prompt.len, timing, stream[..]);
+        ih_chat_output(fd, text[0 .. bytes], serialized, catalog, opts, stopped_eos, count, prompt.len, timing, stream[..], sampled[0 .. visible]);
         return;
     }
     if opts.oai_text {
@@ -913,7 +940,8 @@ fn ih_apex_history_calls(p: const PNode, numbers: const f64[:], calls: i64, out:
     return n;
 }
 
-fn ih_generate_chat(fd: i64, p: const PNode, numbers: const f64[:], root: i64, opts: const IhCompletion &,
+fn ih_generate_chat(fd: i64, p: const PNode, numbers: const f64[:], root: i64, raw_size: i64,
+                    opts: const IhCompletion &,
                     output: u8[:], response: u8[:], ids: i64[:]) {
     let messages = pget(p, root, "messages");
     if messages < 0 || p.jk[messages] != PJ_K_ARRAY || p.jn[messages] <= 0 {
@@ -921,7 +949,7 @@ fn ih_generate_chat(fd: i64, p: const PNode, numbers: const f64[:], root: i64, o
         return;
     }
     var prompt: u8[>..] = [];
-    prompt.resize(response.len, 0);
+    prompt.resize(response.len + raw_size, 0);
     var at: i64 = 0;
     var catalog: u8[>..] = [];
     catalog.resize(response.len, 0);
@@ -951,6 +979,13 @@ fn ih_generate_chat(fd: i64, p: const PNode, numbers: const f64[:], root: i64, o
             at = ih_chat_json(p, numbers, def, prompt[..], at);
         }
         at = cp_put(prompt[..], at, "\n</tools>\n\nIf you choose to call a function ONLY reply in the following format with NO suffix:\n\n<tool_call>\n<function=example_function_name>\n<parameter=example_parameter>\nvalue\n</parameter>\n</function>\n</tool_call>\n\nUse only function names listed in <tools>. Include all required parameters. Reason before the call, never after. If a tool result reports an error, use it to correct your next call. If there is no function call available, answer normally.");
+    }
+    var last_query: i64 = -1;
+    for i in p.jn[messages] {
+        let message = p.jchild[p.jf[messages] + i];
+        if p.jk[message] != PJ_K_OBJECT { continue; }
+        let off, len = pget_str(p, message, "role");
+        if off >= 0 && rq_eq(p.sbuf[off .. off + len], "user") { last_query = i; }
     }
     var tool_group = false;
     for i in p.jn[messages] {
@@ -989,14 +1024,41 @@ fn ih_generate_chat(fd: i64, p: const PNode, numbers: const f64[:], root: i64, o
             at = cp_put(prompt[..], at, name);
             at = cp_put(prompt[..], at, "\n");
         }
+        var body_off: i64 = 0;
+        var body_len: i64 = 0;
+        if content >= 0 && p.jk[content] == PJ_K_STRING {
+            body_off = p.js[content];
+            body_len = p.jl[content];
+        }
+        if assistant {
+            var reason_off, reason_len = pget_str(p, message, "reasoning_content");
+            if reason_off < 0 && body_len > 0 {
+                let start, end, answer = ih_apex_chat_bounds(p.sbuf[body_off .. body_off + body_len]);
+                if end >= start {
+                    reason_off = body_off + start;
+                    reason_len = end - start;
+                    body_off += answer;
+                    body_len -= answer;
+                }
+            }
+            // The Apex template retains reasoning only within the current user turn.
+            if last_query >= 0 && i > last_query {
+                at = cp_put(prompt[..], at, "<think>\n");
+                if reason_off >= 0 && reason_len > 0 {
+                    let reason = p.sbuf[reason_off .. reason_off + reason_len];
+                    let low, high = ih_trim(reason);
+                    at = cp_put(prompt[..], at, reason[low .. high]);
+                }
+                at = cp_put(prompt[..], at, "\n</think>\n\n");
+            }
+        }
         if content < 0 || p.jk[content] == 0 {
             if !assistant {
                 ih_response(fd, 400, "{\"error\":\"message requires content\"}");
                 return;
             }
         } else if p.jk[content] == PJ_K_STRING {
-            let off = p.js[content];
-            at = cp_put(prompt[..], at, p.sbuf[off .. off + p.jl[content]]);
+            at = cp_put(prompt[..], at, p.sbuf[body_off .. body_off + body_len]);
         } else if p.jk[content] == PJ_K_ARRAY {
             for part in p.jn[content] {
                 let child = p.jchild[p.jf[content] + part];
@@ -1124,7 +1186,7 @@ fn ih_generate_json(fd: i64, raw: const u8[:], output: u8[:], response: u8[:], i
         }
     }
     if chat {
-        ih_generate_chat(fd, p, doubles[..], root, opts, output, response, ids);
+        ih_generate_chat(fd, p, doubles[..], root, raw.len, opts, output, response, ids);
         return;
     }
     if prompt >= 0 && p.jk[prompt] == PJ_K_ARRAY {

@@ -46,11 +46,20 @@ cases = [
     ("unknown tool recovery SSE", CHAT, {**unknown_tool, "stream": True}, False, 400, 200, "unknown-tool-sse"),
     ("tool recovery follow-up", CHAT, {**mixed_tools, "messages": [
         {"role": "user", "content": "RECOVERY-FOLLOWUP-FIXTURE"},
-        {"role": "assistant", "content": None, "tool_calls": [
+        {"role": "assistant", "content": None, "reasoning_content": "Reasoning continuity fixture.", "tool_calls": [
             {"id": "call_1", "type": "function", "function": {
                 "name": "search", "arguments": "{\"query\":\"browser\"}"}},
         ]},
         {"role": "tool", "tool_call_id": "call_1", "content": "Unknown tool: search"},
+    ]}, False, 400, 200, "chat"),
+    ("new turn drops previous reasoning", CHAT, {**mixed_tools, "messages": [
+        {"role": "user", "content": "RECOVERY-FOLLOWUP-FIXTURE"},
+        {"role": "assistant", "content": None, "reasoning_content": "Reasoning continuity fixture.", "tool_calls": [
+            {"id": "call_1", "type": "function", "function": {
+                "name": "search", "arguments": "{\"query\":\"browser\"}"}},
+        ]},
+        {"role": "tool", "tool_call_id": "call_1", "content": "Unknown tool: search"},
+        {"role": "user", "content": "NEW-USER-TURN-FIXTURE"},
     ]}, False, 400, 200, "chat"),
     ("response_format", CHAT, {**data, "response_format": {"type": "json_object"}}, False, 400, 200, "chat"),
     ("full UI JSON", CHAT, ui, False, 400, 200, "chat"),
@@ -132,6 +141,13 @@ for name, path, request, bom, before, after, kind in cases:
     if kind == "empty-list":
         assert mime == "application/json" and response == [], (name, response)
         continue
+    if path == CHAT and not LEGACY:
+        usage = response["usage"]
+        reason = usage["completion_tokens_details"]["reasoning_tokens"]
+        assert usage["total_tokens"] == usage["prompt_tokens"] + usage["completion_tokens"], usage
+        assert 0 <= reason <= usage["completion_tokens"], usage
+        if kind in ("mixed-tools", "mixed-tools-sse", "unknown-tool", "unknown-tool-sse"):
+            assert reason == 1, usage
     if kind in ("mixed-tools", "mixed-tools-sse"):
         choice = response["choices"][0]
         assert choice["finish_reason"] == "tool_calls", (name, choice)

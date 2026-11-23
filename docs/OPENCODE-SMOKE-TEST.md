@@ -83,3 +83,34 @@ model server at a time. Use a separate OpenCode project and isolated settings.
 - Save a pass/fail table with server and client versions, statuses, the names
   and outcomes of tool calls, and timing fields. Keep credentials, real user
   prompts, model reasoning, and private file contents out of shared artifacts.
+
+## Reasoning and tool continuation
+
+Use a fresh OpenCode session with the FrankenMoE Apex provider. Keep the
+same model, context and sampling settings as the session under comparison.
+
+1. Put two distinctive values in two small files. Ask Apex to read the
+   first file, then the second, and write both values to a third file.
+   Require each input file to be read once. Check the resulting file and
+   the actual tool cards. An intention to write the file is insufficient.
+2. Repeat with the original project and a bounded task. Give it a specific
+   file to create and one verification command. Verify that successful
+   inspection moves on to the write and verification steps. Record any
+   repeated call and its actual output, especially successful exit codes
+   paired with empty or unhelpful tool output.
+3. Compare the finalized prompt and completion counts with the server's
+   prefill and decode lines for the same request. Check that reasoning is
+   separately counted when the response includes it. The total context
+   is measured per request. A session can generate more tokens over time
+   than its context window without reaching the compaction threshold.
+
+For a short wire-level regression check, run this against a separate
+candidate server with the Apex model:
+
+```bash
+python3 integration/goose-standalone/tests/opencode-chat-continuation.py --port 9197
+```
+
+The test sends five small requests. It verifies that the current turn's
+reasoning is present after a tool call, that a new user turn drops the
+earlier reasoning, and that JSON and SSE use the same token counts.

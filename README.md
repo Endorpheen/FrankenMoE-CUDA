@@ -26,10 +26,10 @@ OpenAI-compatible base URL to `http://127.0.0.1:9101/v1`. Use
 to capture raw logs from the dashboard. Adjust CPU masks and cache capacity to
 fit your machine.
 
-[v0.12.0-chat-alpha](https://github.com/Endorpheen/FrankenMoE-CUDA/releases/tag/v0.12.0-chat-alpha)
-packages the earlier EXP-1805 host for Linux x86-64 and Windows x64. Use
-`start.bat` in the Windows package. The terminal launcher and the newer
-cumulative Linux build described here apply to packages built from this tree.
+[v0.12.1-chat-alpha](https://github.com/Endorpheen/FrankenMoE-CUDA/releases/tag/v0.12.1-chat-alpha)
+packages the OpenCode chat continuation fix for Linux x86-64 and Windows x64.
+Linux uses the cumulative EXP-1808 host. On Windows, use `start.bat` from
+the ZIP; the CUDA host follows the previous EXP-1805 Windows release.
 
 ![Goose on Fire terminal dashboard with Apex startup logs](docs/assets/goose-on-fire.png)
 
