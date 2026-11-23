@@ -45,9 +45,11 @@ pattern and therefore the output.
 Making slots sequential at fill time therefore requires replacing the index with
 a key→slot map plus a separate free list (and eviction ties the two), that is a
 re-architecture of the SLRU core in the Goose unit, not a change of an allocation
-line. Its upper bound is also bounded by the same measurement that limits the
-policy: Belady headroom 2.3 % (EXP-1816), because the number of misses — not their
-placement — is what the cache can change.
+line. Note that this payoff is independent of the eviction policy: it does not
+change how many experts are missed, only how many transfers carry them, so the
+2.3 % Belady headroom of EXP-1816 does not cap it — the cap is the 63 % share of
+adjacent pairs that are already source-contiguous, that is about 2.7x fewer
+transfers.
 
 ## What the numbers say about the prize
 
