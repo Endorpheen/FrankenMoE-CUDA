@@ -37,7 +37,7 @@ http://127.0.0.1:8080/v1 as the OpenAI-compatible base URL. Enable tools
 and reasoning for the model. The server runs inference. OpenCode
 executes approved tools and returns their results to the server.
 
-Chat defaults to 8,192 output tokens and accepts requests up to 65,536
+Chat defaults to 8,192 output tokens and accepts requests up to 131,072
 within the context budget. This alpha uses the Apex text chat template.
 Structured output, forced tool selection, and multimodal inputs remain
 outside the alpha API. See the repository's OpenCode smoke checklist.

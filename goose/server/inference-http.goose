@@ -603,7 +603,9 @@ fn ih_generate(fd: i64, prompt: const i64[:], opts: const IhCompletion &, catalo
     var limit = opts.limit;
     if opts.chat || opts.oai_text {
         if limit > available { limit = available; }
-        if limit > 65536 { limit = 65536; }
+        // Chat and OpenAI text completions: up to 131072 generated tokens (reasoning included),
+        // still bounded by the context left after the prompt.
+        if limit > 131072 { limit = 131072; }
     } else if limit > ids.len || limit > available {
         ih_response(fd, 400, "{\"error\":\"n_predict exceeds the native completion limit or context\"}");
         return;

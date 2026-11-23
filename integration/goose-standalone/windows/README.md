@@ -62,7 +62,7 @@ its server console.
   text and reasoning; tool calls, usage, and timings are sent at the end.
   The text and native completion routes send one result event.
 - The chat default is 8,192 output tokens. Set `max_tokens` or
-  `max_completion_tokens` to request up to 65,536 within the context budget.
+  `max_completion_tokens` to request up to 131,072 within the context budget.
 - This preview supports text messages and Apex function calling. Tool
   arguments use strings. `tool_choice: none` disables the tool catalog;
   forced tool selection, multimodal parts, and structured output are outside
