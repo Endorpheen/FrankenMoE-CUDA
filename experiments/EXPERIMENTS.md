@@ -1018,3 +1018,15 @@ Historical records/failed experiments are preserved. The audit changes no code a
   CPU serialization/MUL_MAT_ID — EXP-048). Default VARIANTS=1 stays; not carried into the baseline/launcher;
   the VARIANTS=2 code is correct and stays opt-in in the exp052 tree; L1 was not added.
 - Artifacts: `experiments/EXP-2026-09-09-052-two-variant-l2-only-implementation.md`, `results/archive/EXP-2026-09-09-052/` (harness, script, logs, SHA256SUMS.txt, `ab/pair{1..8}-{A,B}/`).
+
+## EXP-2026-11-23-1805 — Expert prefetch from a one-layer-ahead route prediction — ACCEPTED
+
+- Hypothesis: the router of layer L+1 applied to the FFN input of layer L predicts most
+  decode cold misses one layer early; copying them while layer L computes hides part of
+  the exposed expert transfer without changing any arithmetic.
+- Result on the fixed Apex profile (32K/512, ctx 262144, cache 6290 MiB), pairs A1/B1 and
+  B2/A2 against EXP-1786: decode 76.91 -> 79.85 tok/s (+3.8 %), prefill +0.3 %, full
+  request -0.27 s, VRAM and RSS unchanged, no swap, all 512 ids and text exact.
+- Default on; `GOOSE_EXPERT_PREFETCH=0` disables it. Offline: eviction policies have no
+  headroom (best causal -2.55 % traffic); prediction recall of misses 67 % at top-8.
+- Card: `experiments/EXP-2026-11-23-1805-route-prefetch/README.md`.

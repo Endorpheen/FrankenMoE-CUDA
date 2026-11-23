@@ -1,0 +1,48 @@
+{
+ "records": 20440,
+ "tokens": 511,
+ "router_exact_set_rate": 0.9999510763209394,
+ "norm_recon_rel_err": 1.461908851752014e-07,
+ "misses": 16459,
+ "P1_prev_residual_top8": {
+  "miss_recall": 0.6690283400809717,
+  "route_recall": 0.8129610115911485,
+  "extra_per_layer": 8
+ },
+ "P1_prev_residual_top10": {
+  "miss_recall": 0.7822621457489879,
+  "route_recall": 0.8876574338903106,
+  "extra_per_layer": 10
+ },
+ "P1_prev_residual_top12": {
+  "miss_recall": 0.8478618421052632,
+  "route_recall": 0.926037432886748,
+  "extra_per_layer": 12
+ },
+ "P1_prev_residual_top16": {
+  "miss_recall": 0.9109311740890689,
+  "route_recall": 0.9612248482111496,
+  "extra_per_layer": 16
+ },
+ "P1b_prev_input_top8": {
+  "miss_recall": 0.6649164979757085,
+  "route_recall": 0.810351748707913,
+  "extra_per_layer": 8
+ },
+ "P1b_prev_input_top10": {
+  "miss_recall": 0.7765688259109311,
+  "route_recall": 0.8845840232826534,
+  "extra_per_layer": 10
+ },
+ "P1b_prev_input_top12": {
+  "miss_recall": 0.8421052631578947,
+  "route_recall": 0.9236037934668072,
+  "extra_per_layer": 12
+ },
+ "P1b_prev_input_top16": {
+  "miss_recall": 0.9080845141700404,
+  "route_recall": 0.959374529580009,
+  "extra_per_layer": 16
+ },
+ "layer0_misses": 651
+}

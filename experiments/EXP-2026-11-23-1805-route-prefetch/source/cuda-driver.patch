@@ -1,0 +1,198 @@
+--- /home/end0/.codex/worktrees/pure-goose-inkling-mini/FrankenMoE-CUDA/build/exp1786-split-planes/build-inputs/cuda-driver.c	2026-11-23 10:32:11.379365901 +0300
++++ /home/end0/AI/claude-apex-100/checkpoints/exp1805-route-prefetch/src/cuda-driver.c	2026-11-23 17:08:14.750390258 +0300
+@@ -3568,6 +3568,151 @@
+     return error == 0 ? 0 : -1;
+ }
+ 
++// ---- Expert prefetch from a one-layer-ahead route prediction (EXP-PF1) ----
++// At the decode FFN of layer L the router of layer L+1 is applied to the FFN
++// input of layer L on a side stream. After the FFN of L is submitted, the
++// predicted experts of L+1 go through the regular SLRU prepare path, so their
++// misses are copied while L computes. The prediction only chooses which expert
++// weights are copied early; the model always uses its own routes, and every
++// consumer still waits on the regular readiness events. GOOSE_EXPERT_PREFETCH=0
++// disables it.
++#include "pred-image.h"
++enum { PF_LAYERS = 64, PF_EXPERTS = 256, PF_MAX_K = 32 };
++static struct {
++    int state;                 // 0 untried, 1 ready, -1 off
++    unsigned k;
++    Function route;
++    Stream stream;
++    DevicePtr dev_logits, dev_counter, dev_host;
++    volatile int32_t * host_ids;   // [0] sequence, [1..k] predicted ids
++    int seq;
++    uint64_t router_host[PF_LAYERS];
++    DevicePtr router_dev[PF_LAYERS];
++    int routers;
++    uint64_t layer_up[PF_LAYERS];
++    int layers;
++    struct { uint64_t w[3]; int64_t plane[3]; uint64_t down_base; size_t down_plane; bool disjoint, ok; } plan[PF_LAYERS];
++    int pending;
++    uint64_t launched, waves, jobs, skipped, ns_launch, ns_wait, ns_prepare, ns_submit;
++} pf = {.pending = -1};
++static uint64_t pf_now(void) { struct timespec t; clock_gettime(CLOCK_MONOTONIC, &t); return (uint64_t) t.tv_sec * 1000000000ull + (uint64_t) t.tv_nsec; }
++
++static bool pf_init(void) {
++    if (pf.state) return pf.state == 1;
++    pf.state = -1;
++    const char * off = getenv("GOOSE_EXPERT_PREFETCH");
++    if (off && off[0] == '0' && !off[1]) return false;
++    const char * k = getenv("GOOSE_EXPERT_PREFETCH_K");
++    pf.k = k ? (unsigned) strtoul(k, NULL, 10) : 8;
++    if (pf.k == 0 || pf.k > PF_MAX_K) return false;
++    int (*host_device)(DevicePtr *, void *, unsigned) =
++        (int (*)(DevicePtr *, void *, unsigned)) dlsym(cuda.library, "cuMemHostGetDevicePointer_v2");
++    Module module = NULL;
++    void * host = NULL;
++    if (!host_device || !cuda.host_alloc || !cuda.zero ||
++        cuda.module_load(&module, pred_image) != 0 ||
++        cuda.function_get(&pf.route, module, "goose_pred_route") != 0 ||
++        cuda.stream_create(&pf.stream, 1 /* CU_STREAM_NON_BLOCKING */) != 0 ||
++        cuda.alloc(&pf.dev_logits, PF_EXPERTS * 4) != 0 ||
++        cuda.alloc(&pf.dev_counter, 64) != 0 || cuda.zero(pf.dev_counter, 0, 64) != 0 ||
++        cuda.host_alloc(&host, (PF_MAX_K + 1) * 4, 2 /* CU_MEMHOSTALLOC_DEVICEMAP */) != 0 ||
++        host_device(&pf.dev_host, host, 0) != 0) {
++        fputs("Goose CUDA: expert prefetch unavailable\n", stderr);
++        return false;
++    }
++    pf.host_ids = host;
++    pf.host_ids[0] = 0;
++    pf.state = 1;
++    fprintf(stderr, "Goose CUDA: expert prefetch from predicted routes active k=%u\n", pf.k);
++    return true;
++}
++
++// A dense F32 256 x hidden matrix is a router; first-seen order is the layer order.
++static void pf_note_router(uint64_t host, DevicePtr device, int64_t kind, int64_t rows, int64_t row_stride, int64_t bytes) {
++    if (kind != 0 || rows != PF_EXPERTS || row_stride <= 0 || bytes != rows * row_stride || !device) return;
++    for (int i = 0; i < pf.routers; ++i) if (pf.router_host[i] == host) return;
++    if (pf.routers == PF_LAYERS) return;
++    pf.router_host[pf.routers] = host;
++    pf.router_dev[pf.routers++] = device;
++}
++
++static int pf_layer(uint64_t up) {
++    for (int i = 0; i < pf.layers; ++i) if (pf.layer_up[i] == up) return i;
++    if (pf.layers == PF_LAYERS) return -1;
++    pf.layer_up[pf.layers] = up;
++    return pf.layers++;
++}
++
++static void pf_launch(int layer, DevicePtr input, int64_t width) {
++    pf.pending = -1;
++    const int next = layer + 1;
++    if (!pf_init() || layer < 0 || next >= pf.layers || pf.routers != pf.layers || !pf.plan[next].ok) return;
++    const uint64_t t0 = pf_now();
++    DevicePtr w = pf.router_dev[next];
++    int iw = (int) width, k = (int) pf.k, seq = pf.seq = pf.seq == 0x7fffffff ? 1 : pf.seq + 1;
++    void * args[] = {&w, &input, &pf.dev_logits, &pf.dev_counter, &pf.dev_host, &iw, &k, &seq};
++    if (cuda.launch(pf.route, PF_EXPERTS, 1, 1, 256, 1, 1, 0, pf.stream, args, NULL) != 0) {
++        pf.state = -1;
++        fputs("Goose CUDA: expert prefetch disabled after launch failure\n", stderr);
++        return;
++    }
++    pf.pending = next;
++    ++pf.launched;
++    pf.ns_launch += pf_now() - t0;
++}
++
++static int pf_submit(void) {
++    const int next = pf.pending;
++    pf.pending = -1;
++    if (next < 0 || pf.state != 1) return 0;
++    const uint64_t t0 = pf_now();
++    if (cuda.expert_upload_count != 0) { ++pf.skipped; return 0; }
++    // The kernel publishes the sequence number after the ids; a late answer is skipped.
++    for (unsigned spin = 0; pf.host_ids[0] != pf.seq; ++spin) {
++        if (spin > 2000000) { ++pf.skipped; return 0; }
++        __builtin_ia32_pause();
++    }
++    __atomic_thread_fence(__ATOMIC_ACQUIRE);
++    const uint64_t t1 = pf_now();
++    pf.ns_wait += t1 - t0;
++    int64_t heads[PF_MAX_K], offsets[PF_MAX_K];
++    const unsigned k = pf.k;
++    for (unsigned i = 0; i < k; ++i) {
++        const int64_t id = pf.host_ids[1 + i];
++        if (id < 0 || id >= PF_EXPERTS) { ++pf.skipped; return 0; }
++        unsigned at = i;
++        while (at && heads[at - 1] > id) { heads[at] = heads[at - 1]; --at; }
++        heads[at] = id;
++    }
++    const sl_i64 active = {heads, (int64_t) k}, out = {offsets, (int64_t) k};
++    for (size_t p = 0; p < 3; ++p) {
++        const int64_t ready = prepare_expert_offsets(pf.plan[next].w[p], pf.plan[next].plane[p], active, out, true, true, p != 0);
++        if (ready != 1) {
++            reset_expert_stage();
++            ++pf.skipped;
++            return 0;
++        }
++    }
++    const size_t jobs = cuda.expert_upload_count;
++    const uint64_t t2 = pf_now();
++    pf.ns_prepare += t2 - t1;
++    if (jobs == 0) return 0;
++    if (cuda.expert_split_planes && pf.plan[next].disjoint)
++        cuda.expert_upload_split = expert_down_split(cuda.expert_upload_jobs, jobs,
++            pf.plan[next].down_base, pf.plan[next].down_plane, PF_EXPERTS);
++    const int status = submit_expert_stage(cuda.experts.one_touch);
++    if (status == 0) { ++pf.waves; pf.jobs += jobs; }
++    pf.ns_submit += pf_now() - t2;
++    if (pf.waves % 10000 == 0)
++        fprintf(stderr, "Goose CUDA: expert prefetch launched=%llu waves=%llu jobs=%llu skipped=%llu us launch=%llu wait=%llu prepare=%llu submit=%llu\n",
++            (unsigned long long) pf.launched, (unsigned long long) pf.waves,
++            (unsigned long long) pf.jobs, (unsigned long long) pf.skipped,
++            (unsigned long long) (pf.ns_launch / 1000), (unsigned long long) (pf.ns_wait / 1000),
++            (unsigned long long) (pf.ns_prepare / 1000), (unsigned long long) (pf.ns_submit / 1000));
++    return status;
++}
++// ---- end EXP-PF1 ----
++
+ int64_t fg_cuda_plane(uint64_t weights, int64_t weight_bytes, int64_t row_stride,
+                      int64_t extent, int64_t kind, int64_t rows, sl_i64 jobs) {
+     DevicePtr weight = 0;
+@@ -3575,6 +3720,7 @@
+         const int64_t offset = dw_cuda_dense_offset(cuda.dense_ranges, weights, weight_bytes);
+         if (offset >= 0) weight = cuda.dense.address + (uint64_t) offset;
+     }
++    if (weight) pf_note_router(weights, weight, kind, rows, row_stride, weight_bytes);
+     if (!weight && activation_input((sl_u8) {(void *) (uintptr_t) weights, weight_bytes}, &cuda.weight, &weight) != 0) {
+         fprintf(stderr, "Goose CUDA: matrix weight transfer failed\n");
+         return -1;
+@@ -3738,6 +3884,26 @@
+     if (error == 0 && (!input || !probs || (full && !residual) || (reused_input && input != output))) {
+         return finish_context() == 0 ? 0 : -1;
+     }
++    const int pf_this = compact && stage_all && error == 0 ? pf_layer((uint64_t) plan.data[0]) : -1;
++    if (pf_this >= 0) {
++        const uint64_t gate_up_bytes = stride_up * hidden * experts, down_all = stride_down * width * experts;
++        const uint64_t down_base = (uint64_t) plan.data[2];
++        bool disjoint = true;
++        for (size_t p = 0; p < 2; ++p) {
++            const uint64_t source = (uint64_t) plan.data[p];
++            if (source <= down_base ? down_base - source < gate_up_bytes : source - down_base < down_all) disjoint = false;
++        }
++        pf.plan[pf_this].w[0] = (uint64_t) plan.data[0];
++        pf.plan[pf_this].w[1] = (uint64_t) plan.data[1];
++        pf.plan[pf_this].w[2] = (uint64_t) plan.data[2];
++        pf.plan[pf_this].plane[0] = pf.plan[pf_this].plane[1] = (int64_t) (stride_up * hidden);
++        pf.plan[pf_this].plane[2] = (int64_t) (stride_down * width);
++        pf.plan[pf_this].down_base = down_base;
++        pf.plan[pf_this].down_plane = (size_t) (stride_down * width);
++        pf.plan[pf_this].disjoint = disjoint;
++        pf.plan[pf_this].ok = true;
++        pf_launch(pf_this, input, width);
++    }
+     if (stage_all && error == 0) error = begin_expert_prepare();
+     const sl_i64 active_routes = {heads, compact ? routes : experts};
+     const sl_i64 device_offsets = {offsets, active_routes.len};
+@@ -3975,6 +4141,8 @@
+             error = activation_publish(out_host, output_bytes, output, true);
+         }
+     }
++    if (error == 0 && pf_this >= 0 && pf.pending >= 0) error = pf_submit();
++    else pf.pending = -1;
+     if (stage_all && error) reset_expert_stage();
+     const int popped = finish_context();
+     if (error || popped) {

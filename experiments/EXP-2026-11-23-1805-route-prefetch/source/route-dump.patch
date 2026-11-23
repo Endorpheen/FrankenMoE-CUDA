@@ -1,0 +1,25 @@
+3740a3741,3764
+>     // Diagnostic only (GOOSE_ROUTE_DUMP=<file>): for decode calls after the
+>     // first GOOSE_ROUTE_DUMP_SKIP, append ids, the FFN input and the residual.
+>     if (error == 0 && compact) {
+>         static FILE * dump_file; static int dump_init; static uint64_t dump_calls, dump_skip;
+>         if (!dump_init) {
+>             dump_init = 1;
+>             const char * path = getenv("GOOSE_ROUTE_DUMP");
+>             const char * skip = getenv("GOOSE_ROUTE_DUMP_SKIP");
+>             dump_skip = skip ? strtoull(skip, NULL, 10) : 0;
+>             if (path) dump_file = fopen(path, "wb");
+>             if (dump_file) fprintf(stderr, "Goose CUDA: route dump active skip=%llu\n", (unsigned long long) dump_skip);
+>         }
+>         if (dump_file && dump_calls++ >= dump_skip) {
+>             static float vin[8192], vres[8192];
+>             int st = cuda.download(vin, input, (size_t) width * 4);
+>             if (st == 0 && full) st = cuda.download(vres, residual, (size_t) width * 4);
+>             const int32_t hdr[2] = {(int32_t) width, st};
+>             fwrite(hdr, sizeof hdr, 1, dump_file);
+>             fwrite(ids, sizeof ids, 1, dump_file);
+>             fwrite(vin, 4, (size_t) width, dump_file);
+>             fwrite(vres, 4, (size_t) width, dump_file);
+>             fflush(dump_file);
+>         }
+>     }
