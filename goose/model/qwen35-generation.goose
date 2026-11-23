@@ -1,4 +1,4 @@
-const Q35_MAX_PREFILL_BATCH: i64 = 4096;
+const Q35_MAX_PREFILL_BATCH: i64 = 8192;
 
 extern "fg_q35_generation_eval" fn q35_generation_eval(tokens: const i32[:], logits: f32[:], prefill: bool) -> i64;
 extern "fg_q35_generation_profile" fn q35_generation_profile(profile: i64[:]);
@@ -78,7 +78,7 @@ fn q35_sample_generate(tokens: const i64[:], vocabulary: i64, capacity: i64, eog
     if !q35_prefill_valid(profile[0], profile[1]) { return -1; }
     // The native evaluator re-enters Goose. Keep its borrowed token slice
     // in fixed storage, outside the allocator frames used by that call.
-    var batch: i32[4096] = [0; 4096];
+    var batch: i32[8192] = [0; 8192];
     var logits: f32[>..] = [];
     logits.resize(vocabulary, 0.0);
     var candidates: f32[>..] = [];

@@ -83,7 +83,7 @@ export fn q35_model_step(owner: i64[:], handles: const i64[:], layers: i64[:],
                          tokens: const i32[:], logit_rows: i64, logits: f32[:]) -> i64 {
     if owner.len < 13 || owner[0] != 9191 || owner[5] <= 0 || owner[5] > 128 || owner[8] <= 0 ||
        handles.len < 4 || layers.len < owner[5] * 32 || moe.len < 3 || moe[1] <= 0 || moe[1] > 64 ||
-       tokens.len > 4096 || logit_rows < -1 || logit_rows > 1 ||
+       tokens.len > 8192 || logit_rows < -1 || logit_rows > 1 ||
        (logit_rows == 0 && logits.len != 0) || q35_kv_read_rows(state, tokens.len) <= 0 { return -1; }
     for i in tokens.len {
         if tokens[i] < 0 || (tokens[i] as i64) >= owner[8] { return -1; }
