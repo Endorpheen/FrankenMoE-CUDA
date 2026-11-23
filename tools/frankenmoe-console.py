@@ -494,7 +494,7 @@ def render(t, cols, rows):
 
     # event log
     footer_h = 3
-    log_h = max(3, rows - len(out) - footer_h)
+    log_h = min(12, len(t.events)) if rows is None else max(3, rows - len(out) - footer_h)
     events = list(t.events)[-log_h:]
     for stamp, tag, text in events:
         icon, tag_color, _ = TAGS.get(tag, TAGS["LOG"])
@@ -515,7 +515,7 @@ def render(t, cols, rows):
         out += box([pad(left, width(left) + 2) + spark(t.decode_hist, spark_w) + "  " + sig], cols)
     else:
         out += box([left, spark(t.decode_hist, inner - 13) + "  " + sig], cols)
-    return out[:rows]
+    return out if rows is None else out[:rows]
 
 
 # ---------------------------------------------------------------- input loop
@@ -549,7 +549,7 @@ def main():
             t.feed(line)
         t.sample_system()
         cols, rows = size()
-        print("\n".join(render(t, cols, args.height or rows)))
+        print("\n".join(render(t, cols, args.height)))
         return 0
 
     child = None
