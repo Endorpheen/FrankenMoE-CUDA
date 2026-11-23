@@ -1,0 +1,57 @@
+--- /home/end0/AI/claude-apex-100/checkpoints/exp1805-route-prefetch/src/cuda-driver.c	2026-11-23 17:08:14.750390258 +0300
++++ /tmp/claude-split.c	2026-11-23 18:38:57.660058250 +0300
+@@ -103,7 +103,7 @@
+     uint64_t key[MMVQ_GRAPH_KEY_WORDS];
+     GraphExec executable;
+ };
+-enum { DECODE_GRAPH_REGIONS = 128 };
++enum { DECODE_GRAPH_REGIONS = 256 };
+ enum { REPLAY_OPS = 128, REPLAY_ARGS = 32, REPLAY_BYTES = 64 * 1024 };
+ enum replay_kind { replay_kernel, replay_h2d, replay_d2d, replay_wait, replay_wait_planes };
+ 
+@@ -666,8 +666,14 @@
+     return true;
+ }
+ 
++// Diagnostic/candidate (GOOSE_DECODE_SPLIT=N): after a decode FFN submission, submit the
++// following region every N buffered kernels so the GPU starts the next layer while the
++// host still records the rest. Kernels and their order are unchanged.
++static int decode_split_every = -1, decode_split_armed;
++static int decode_capture_submit(void);
+ static int decode_launch(Function kernel, unsigned gx, unsigned gy, unsigned gz, unsigned bx, unsigned by,
+                          unsigned bz, unsigned shared, void * stream, void ** params, void ** extra) {
++    if (decode_split_every < 0) { const char * v = getenv("GOOSE_DECODE_SPLIT"); decode_split_every = v ? atoi(v) : 0; }
+     const int error = stream ? decode_capture_submit() : decode_capture_begin();
+     if (error != 0) return error;
+     if (decode_capture.capturing) {
+@@ -676,7 +682,13 @@
+     }
+     if (decode_capture.buffering) {
+         const unsigned shape[] = {gx, gy, gz, bx, by, bz, shared};
+-        if (!extra && buffer_decode_kernel(replay_layout_for(kernel), shape, params)) return 0;
++        if (!extra && buffer_decode_kernel(replay_layout_for(kernel), shape, params)) {
++            if (decode_split_armed && decode_split_every > 0 && decode_capture.kernels >= decode_split_every) {
++                decode_split_armed = decode_split_armed > 1 ? decode_split_armed - 1 : 0;
++                return decode_capture_submit();
++            }
++            return 0;
++        }
+         const int recorded = record_buffered_decode();
+         if (recorded != 0) return recorded;
+     }
+@@ -3811,6 +3823,7 @@
+         }
+         if (!reused_input) return 0;
+     }
++    decode_split_armed = 0;
+     if (fg_cuda_activation_read_address(ids_host, routes * 4) != 0) return -1;
+     int32_t ids[routes];
+     memcpy(ids, (const void *) (uintptr_t) ids_host, sizeof ids);
+@@ -4149,6 +4162,7 @@
+         fprintf(stderr, "Goose CUDA: routed FFN launch failed (%d)\n", error ? error : popped);
+         return -1;
+     }
++    if (compact) { static int count = -1; if (count < 0) { const char * v = getenv("GOOSE_DECODE_SPLIT_COUNT"); count = v ? atoi(v) : 2; } decode_split_armed = count; }
+     if (compact) {
+         static bool reported;
+         if (!reported) {
