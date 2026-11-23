@@ -13769,8 +13769,8 @@
       "experiment": "",
       "task": "",
       "status": "slice",
-      "sha256": "ffe8128e0c2940c0e9b695d41d732a0922cd0b5b7abb89fd76a4b17769e4f17e",
-      "integration_commit": "1952fde11338a8fb18eb6b13ac3cd0abe1e8d52e"
+      "sha256": "bf06cc7394d6ff931f7bed2e967dfa61c97d7d583358605d0598eab9ab70b053",
+      "integration_commit": "dee4eaf94c18fe066e1a967c5fd676157f6095fd"
     },
     {
       "goose": "_archive/franken-goose-live-20261107/source/leaves.goose",
