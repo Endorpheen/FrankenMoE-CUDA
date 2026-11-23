@@ -86,7 +86,7 @@ export fn q35_gdn_layer(c: i64, x: i64, conv: i64, state: i64, weights: i64[:], 
     if !qg_cfg_ok(cfg) { return 0; }
     let hidden: i64 = ne(x, 0); let count: i64 = ne(x, 1);
     let vd: i64 = head * nv; let channels: i64 = head * (2 * nk + nv);
-    if hidden <= 0 || count <= 0 || count > 4096 || !qg_shape(x, hidden, count, 1) || prop(x, 0) != 0 ||
+    if hidden <= 0 || count <= 0 || count > 8192 || !qg_shape(x, hidden, count, 1) || prop(x, 0) != 0 ||
        !qg_shape(conv, kernel - 1, channels, 1) || prop(conv, 0) != 0 ||
        !qg_shape(state, head, head, nv) || prop(state, 0) != 0 { return 0; }
     var i: i64 = 0;

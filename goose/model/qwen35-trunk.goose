@@ -71,7 +71,7 @@ export fn q35_moe_ffn(c: i64, x: i64, weights: i64[:], cfg: i64[:],
     let scale: f32 = float_bits(cfg[2]);
     if !(scale >= 0.0) || !(scale <= 3.4028234663852886e38) { return 0; }
     let hidden: i64 = ne(x, 0); let count: i64 = ne(x, 1);
-    if hidden <= 0 || count <= 0 || count > 4096 || prop(x, 0) != 0 || !qm_shape(x, hidden, count, 1) { return 0; }
+    if hidden <= 0 || count <= 0 || count > 8192 || prop(x, 0) != 0 || !qm_shape(x, hidden, count, 1) { return 0; }
     var i: i64 = 0; while i < 8 { if weights[i] == 0 { return 0; } i += 1; }
     let ff: i64 = ne(weights[1], 1); let shared: i64 = ne(weights[4], 1);
     if ff <= 0 || shared <= 0 || !qm_shape(weights[0], hidden, experts, 1) || prop(weights[0], 0) != 0 ||
