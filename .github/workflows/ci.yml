@@ -31,6 +31,8 @@ jobs:
         run: python3 tools/check-goose-tree.py
       - name: Edge0 pack validation
         run: python3 tools/tests/test_edge0_preflight.py
+      - name: Terminal logging fallback
+        run: python3 tools/tests/test_frankenmoe_console.py
       - name: Generated artefacts policy
         run: python3 tools/check-generated-files.py
       - name: Tracked python tools compile

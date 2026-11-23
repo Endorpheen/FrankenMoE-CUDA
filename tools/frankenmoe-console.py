@@ -538,7 +538,6 @@ def main():
     PLAIN = args.no_color or os.environ.get("NO_COLOR") is not None
     command = args.command[1:] if args.command[:1] == ["--"] else args.command
     t = Telemetry(args)
-    save = open(args.save, "a", buffering=1) if args.save else None
 
     def size():
         s = shutil.get_terminal_size((132, 40))
@@ -551,6 +550,28 @@ def main():
         cols, rows = size()
         print("\n".join(render(t, cols, args.height)))
         return 0
+
+    save = None
+    save_error = None
+
+    def stop_saving(error=None):
+        nonlocal save, save_error
+        if save is not None:
+            try:
+                save.close()
+            except OSError as exc:
+                if error is None:
+                    error = exc
+            save = None
+        if error is not None and save_error is None:
+            save_error = f"Could not save the server log: {error}"
+            t.feed(save_error)
+
+    if args.save:
+        try:
+            save = open(args.save, "a", buffering=1)
+        except OSError as exc:
+            stop_saving(exc)
 
     child = None
     if command:
@@ -575,8 +596,11 @@ def main():
     def feed(raw):
         text = raw.decode("utf-8", "replace")
         tail.append(text)
-        if save:
-            save.write(text + "\n")
+        if save is not None:
+            try:
+                save.write(text + "\n")
+            except OSError as exc:
+                stop_saving(exc)
         t.feed(text)
 
     signal.signal(signal.SIGINT, stop)
@@ -614,8 +638,9 @@ def main():
     finally:
         sys.stdout.write("\x1b[?25h\x1b[?1049l")
         sys.stdout.flush()
-        if save:
-            save.close()
+        stop_saving()
+        if save_error is not None:
+            print(save_error, file=sys.stderr)
     status = child.wait() if child is not None else 0
     if status > 0 and not stopping:
         for line in tail:
