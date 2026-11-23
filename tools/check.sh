@@ -110,7 +110,7 @@ mark_done() { printf '%s' "$2" > "$(stamp_path "$1")"; }
 level_fast() {
     step "FAST: compose, typecheck and compile the unit"
     local fp
-    fp=$(fingerprint goose tools/compose-goose.py tools/build-main-runtime.sh)
+    fp=$(fingerprint goose tools/compose-goose.py tools/compose-alpha-runtime.py tools/build-main-runtime.sh)
     if should_run fast "$fp"; then
         local out=$ROOT/build/goose-main
         if bash "$ROOT/tools/build-main-runtime.sh" "$out" >"$STAMP_DIR/fast.log" 2>&1; then
@@ -119,7 +119,7 @@ level_fast() {
             mark_done fast "$fp"
         else
             bad "unit build failed; see $STAMP_DIR/fast.log"
-            grep -E "error|duplicate" "$STAMP_DIR/fast.log" | head -5 | sed 's/^/    /'
+            tail -n 45 "$STAMP_DIR/fast.log" | sed 's/^/    /'
         fi
     else
         ok "unit unchanged, previous result reused ($(cat "$(stamp_path fast)" | cut -c1-12))"

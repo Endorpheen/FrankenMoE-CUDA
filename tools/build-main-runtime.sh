@@ -204,12 +204,13 @@ MODULES=(
 # content rather than by timestamp. A restored or copied unit has a fresh mtime and
 # an old body, which is how build/goose-main came to hold a listener without
 # hl_serve_full while its dates said otherwise.
-UNIT_HASH=$(cd "$ROOT" && { sed -n '1,400p' tools/build-main-runtime.sh; \
+UNIT_HASH=$(cd "$ROOT" && { cat tools/build-main-runtime.sh tools/compose-goose.py tools/compose-alpha-runtime.py; \
     find goose -name '*.goose' -print0 | sort -z | xargs -0 sha256sum; } \
     | sha256sum | cut -d' ' -f1)
 
 echo "[1/5] compose ${#MODULES[@]} modules"
 python3 "$ROOT/tools/compose-goose.py" "$UNIT" "${MODULES[@]/#/$ROOT/}"
+python3 "$ROOT/tools/compose-alpha-runtime.py" --from-tree "$UNIT"
 
 echo "[2/5] typecheck"
 # A pipeline's exit status is the last command's, so `| tail` used to swallow a typecheck failure

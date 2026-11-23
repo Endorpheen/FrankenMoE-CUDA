@@ -52,6 +52,7 @@ MODULES=("${COMMON[@]}" "${ARCH[@]}")
 
 echo "[1/5] compose ${#MODULES[@]} modules (${#COMMON[@]} common + ${#ARCH[@]} arch/family)"
 python3 "$ROOT/tools/compose-goose.py" "$UNIT" "${MODULES[@]/#/$ROOT/}"
+python3 "$ROOT/tools/compose-alpha-runtime.py" --from-tree "$UNIT"
 
 echo "[2/5] typecheck"
 "$GOOSE" check "$UNIT" 2>&1 | grep -E "typechecked ok|error" | tail -2

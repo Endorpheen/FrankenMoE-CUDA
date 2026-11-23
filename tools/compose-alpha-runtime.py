@@ -10,20 +10,41 @@ def replace_once(text, before, after):
     return text.replace(before, after, 1)
 
 
-source, http, output = map(Path, sys.argv[1:])
-text = source.read_text()
-marker = "// ---- composed from goose/server/inference-http.goose ----\n"
-if text.count(marker) != 1:
-    raise SystemExit("Expected exactly one standalone inference HTTP module")
-start = text.index(marker) + len(marker)
-end = text.find("// ---- composed from ", start)
-if end < 0:
-    end = len(text)
-text = text[:start] + http.read_text() + "\n" + text[end:]
+from_tree = sys.argv[1:2] == ["--from-tree"]
+if from_tree:
+    output = Path(sys.argv[2])
+    text = output.read_text()
+    # The source-tree host reports probabilities synchronously. Only the
+    # release checkpoint links the worker and its queue.
+    text = replace_once(text, "    let pipeline = top > 0 && prob_pipeline_start(stats[0], top, limit);\n", "")
+    text = replace_once(text, "timing, top, prob_ids[..], logp[..], pipeline, stream[..], text, response);",
+                        "timing, top, prob_ids[..], logp[..], stream[..], text, response);")
+    text = replace_once(text, """    var reports_ready = true;
+    if pipeline {
+        let wait_start = q35_generation_now();
+        reports_ready = prob_pipeline_finish(count, prob_ids[..], logp[..]);
+        if count > 1 { timing[1] += q35_generation_now() - wait_start; }
+    }
+    if count <= 0 || count > limit || !reports_ready {""",
+                        "    if count <= 0 || count > limit {")
+else:
+    source, http, output = map(Path, sys.argv[1:])
+    text = source.read_text()
+    marker = "// ---- composed from goose/server/inference-http.goose ----\n"
+    if text.count(marker) != 1:
+        raise SystemExit("Expected exactly one standalone inference HTTP module")
+    start = text.index(marker) + len(marker)
+    end = text.find("// ---- composed from ", start)
+    if end < 0:
+        end = len(text)
+    text = text[:start] + http.read_text() + "\n" + text[end:]
 stream_params = "observer: i64[:], stream_text: u8[:], stream_response: u8[:]"
 wrapper_call = ("    let result = q35_sample_generate_impl(tokens, vocabulary, capacity, eog, limit, s, ids, timing, "
                 "top, prob_ids, logp, pipeline);")
-if text.count(wrapper_call) == 1:
+if from_tree:
+    text = replace_once(text, "logp: f32[:]) -> i64 {",
+                        f"logp: f32[:], {stream_params}) -> i64 {{")
+elif text.count(wrapper_call) == 1:
     # Checkpoints from EXP-1724 on split the sampler loop into an implementation
     # and a scope wrapper: both take the stream observer, the wrapper forwards it.
     text = text.replace("logp: f32[:], pipeline: bool) -> i64 {",
@@ -79,14 +100,15 @@ text = replace_once(
         }
         if last {""",
 )
+sampler_args = "0, no_ids, no_probs" + ("" if from_tree else ", false")
 text = replace_once(
     text,
     "    return q35_sample_generate(tokens, vocabulary, capacity, eog, limit, s, ids, timing,\n"
-    "        0, no_ids, no_probs, false);",
-    """    var observer: i64[0] = [];
+    f"        {sampler_args});",
+    f"""    var observer: i64[0] = [];
     var stream_text: u8[0] = [];
     var stream_response: u8[0] = [];
     return q35_sample_generate(tokens, vocabulary, capacity, eog, limit, s, ids, timing,
-        0, no_ids, no_probs, false, observer[..], stream_text[..], stream_response[..]);""",
+        {sampler_args}, observer[..], stream_text[..], stream_response[..]);""",
 )
 output.write_text(text)
