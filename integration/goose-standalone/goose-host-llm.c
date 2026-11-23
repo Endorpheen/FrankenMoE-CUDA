@@ -13,7 +13,11 @@
 #include <pthread.h>
 #include <fcntl.h>
 #include <inttypes.h>
+#ifdef _WIN32
+#include "windows/platform.h"
+#else
 #include <sys/mman.h>
+#endif
 #include <sys/stat.h>
 #include <unistd.h>
 #include <time.h>
@@ -65,7 +69,11 @@ static int64_t prefill_ubatch = HOSE_DEFAULT_PREFILL_BATCH;
 static int64_t expert_cache_request;
 
 int64_t fg_model_mincore(uint64_t address, int64_t bytes, sl_u8 flags) {
+    #ifdef _WIN32
+    return fg_win_resident((void *)(uintptr_t)address, (size_t)bytes, flags.data);
+    #else
     return mincore((void *) (uintptr_t) address, (size_t) bytes, flags.data);
+    #endif
 }
 
 int64_t fg_model_populate(uint64_t address, int64_t bytes) {
@@ -307,6 +315,11 @@ static int64_t model_step(sl_i32 tokens, int64_t logit_rows, sl_f32 output) {
 // ---- API ---------------------------------------------------------------
 
 void hose_host_load_context(const char * path, int64_t capacity) {
+#ifdef _WIN32
+    H.page_size = (int64_t)fg_win_page_size();
+    H.base = fg_win_map_model(path, &H.size);
+    if (!H.base) die("model open or mapping");
+#else
     struct stat st;
     const int fd = open(path, O_RDONLY | O_CLOEXEC);
     if (fd < 0 || fstat(fd, &st) != 0 || !S_ISREG(st.st_mode) || st.st_size <= 0) die("model open");
@@ -316,6 +329,7 @@ void hose_host_load_context(const char * path, int64_t capacity) {
     H.base = mmap(NULL, H.size, PROT_READ, MAP_PRIVATE, fd, 0);
     close(fd);
     if (H.base == MAP_FAILED) die("model mmap");
+#endif
     load_vocab();
     init_trunk(capacity);
     int64_t residency[4] = {0};

@@ -51,12 +51,11 @@ by the sidebar. It appears when the panel is wide enough and disappears into the
 emblem is shown, which the specification allows.
 
 The artwork is the supplied pair: `assets/gooselogo.png` (1254×1254, RGBA) in the small slot and `assets/gooselogo-big.png`
-(2172×724, RGBA) as the branding block. The wide one is an absolutely positioned `::before` on `.chat-screen` — an absolutely
-positioned element cannot move another, so the composer, the greeting and every control keep their coordinates; it is hidden
-below 768 px where it would take a third of the screen. Sizes are set only on the artwork itself (1.0625rem square for the mark,
-`min(22rem, 52%)` at 3:1 for the block).
+(2172×724, RGBA) as the branding block. The wide `::before` is positioned over the empty chat screen and takes a separate row
+above the messages once a conversation starts. It is hidden below 768 px. Sizes are set on the artwork itself (1.0625rem
+square for the mark, `min(22rem, 52%)` at 3:1 for the block).
 
-## Proof that the layout is untouched
+## Empty chat layout checks
 
 Every button, link, input and textarea was measured in the original page and in the themed one at the same viewport:
 
