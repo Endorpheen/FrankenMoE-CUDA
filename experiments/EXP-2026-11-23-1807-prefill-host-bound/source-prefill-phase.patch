@@ -1,0 +1,116 @@
+--- checkpoints/exp1805-route-prefetch/src/cuda-driver.c	2026-11-23 17:08:14.750390258 +0300
++++ /tmp/opencode/apex-pfstage/build-inputs/cuda-driver.c	2026-11-23 20:04:45.542402621 +0300
+@@ -18,6 +18,7 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
++#include <time.h>
+ #include <unistd.h>
+ 
+ extern int64_t dw_cuda_dense_offset(sl_i64 ranges, uint64_t address, int64_t bytes);
+@@ -368,6 +369,28 @@
+     int (*sync)(void);
+ } cuda;
+ 
++// Diagnostic (GOOSE_PREFILL_TRACE=1): how much of the expert staging travels as
++// a direct pinned transfer and how much through a host memcpy into the pinned
++// ring, which is the part that costs processor time instead of DMA time.
++static struct {
++    uint64_t staged_jobs, staged_bytes, pinned_jobs, pinned_bytes;
++    uint64_t ring_copies, ring_bytes, parallel_copies, parallel_bytes;
++    uint64_t pend_jobs, pend_bytes;
++} pf_trace;
++static uint64_t pf_t_ec, pf_t_submit, pf_t_queue, pf_c_ec, pf_c_submit;
++static int64_t pf_clock(void) {
++    struct timespec ts; clock_gettime(CLOCK_MONOTONIC, &ts);
++    return (int64_t) ts.tv_sec * 1000000000ll + ts.tv_nsec;
++}
++static int pf_trace_on = -1;
++static int pf_trace_active(void) {
++    if (pf_trace_on < 0) {
++        const char * v = getenv("GOOSE_PREFILL_TRACE");
++        pf_trace_on = v && strcmp(v, "1") == 0;
++    }
++    return pf_trace_on;
++}
++
+ enum { ACTIVATION_WORDS = 5, ACTIVATION_RECORDS = 256 };
+ enum { GDN_MMA_SHARED_BYTES = 93312 };
+ enum { GDN_V32_SHARED_BYTES = 38016 };
+@@ -2512,6 +2535,17 @@
+     stats.data[3] = (int64_t) cuda.experts.uploaded_bytes;
+     stats.data[4] = cuda.expert_pinned_bytes;
+     stats.data[5] = cuda.expert_pins.len / 2;
++    if (pf_trace_active() && pf_c_ec) {
++        fprintf(stderr, "Goose prefill phases: ec_prepare %llu calls, %.2f s total, %.1f us each\n",
++            (unsigned long long) pf_c_ec, pf_t_ec / 1e9, (double) pf_t_ec / (double) pf_c_ec / 1e3);
++    }
++    if (pf_trace_active() && pf_trace.staged_jobs) {
++        fprintf(stderr, "Goose prefill staging: staged %" PRIu64 " jobs/%.2f GB, pinned %" PRIu64 "/%.2f GB, "
++            "ring memcpy %" PRIu64 "/%.2f GB, parallel memcpy %" PRIu64 "/%.2f GB, direct %" PRIu64 "/%.2f GB\n",
++            pf_trace.staged_jobs, pf_trace.staged_bytes / 1e9, pf_trace.pinned_jobs, pf_trace.pinned_bytes / 1e9,
++            pf_trace.ring_copies, pf_trace.ring_bytes / 1e9, pf_trace.parallel_copies,
++            pf_trace.parallel_bytes / 1e9, pf_trace.pend_jobs, pf_trace.pend_bytes / 1e9);
++    }
+     if (cuda.experts.prefill_bytes) {
+         fprintf(stderr, "Goose CUDA prefill temporary: %" PRIu64 " projections, %" PRIu64
+                     " resident planes, %" PRIu64 " uploaded bytes, %" PRIu64 " prefetched, %" PRIu64
+@@ -2608,6 +2642,10 @@
+         if (status == 0) {
+             cuda.expert_upload_jobs[cuda.expert_upload_count++] =
+                 (struct expert_upload_job) {address, host, (size_t) bytes, !pinned};
++            if (pf_trace_active()) {
++                ++pf_trace.staged_jobs; pf_trace.staged_bytes += (uint64_t) bytes;
++                if (pinned) { ++pf_trace.pinned_jobs; pf_trace.pinned_bytes += (uint64_t) bytes; }
++            }
+         }
+     } else if (!staged && cuda.expert_current_staging && pinned) {
+         // Immutable registered mappings need no pageable staging slot.
+@@ -2627,6 +2665,7 @@
+         // stream order at a fraction of that cost.
+         const struct expert_upload_job job = {address, host, (size_t) bytes, !pinned};
+         activations.pending = true;
++        if (pf_trace_active()) { ++pf_trace.pend_jobs; pf_trace.pend_bytes += (uint64_t) bytes; }
+         status = pinned ? cuda.upload_async(address, host, (size_t) bytes, NULL)
+                         : submit_pageable_expert(&job, NULL);
+     } else {
+@@ -2678,6 +2717,7 @@
+ 
+ static int submit_pageable_expert(const struct expert_upload_job * job, Stream stream) {
+     uint8_t * storage;
++    if (pf_trace_active()) { ++pf_trace.ring_copies; pf_trace.ring_bytes += job->bytes; }
+     const int error = reserve_expert_host_slot(job->bytes, stream, &storage);
+     if (error != 0) return error;
+     memcpy(storage, job->source, job->bytes);
+@@ -2692,6 +2732,7 @@
+     while (split + 1 < count && first_bytes < bytes / 2) {
+         first_bytes += jobs[split++].bytes;
+     }
++    if (pf_trace_active()) { ++pf_trace.parallel_copies; pf_trace.parallel_bytes += bytes; }
+     pthread_mutex_lock(&expert_copy_worker.lock);
+     expert_copy_worker.task = (struct expert_copy_task) {jobs, split, storage};
+     pthread_cond_signal(&expert_copy_worker.ready);
+@@ -2791,6 +2832,9 @@
+ 
+ static int submit_expert_stage(bool batch_enabled) {
+     if (cuda.expert_upload_count == 0) return 0;
++    const int64_t pf_s0 = pf_trace_active() ? pf_clock() : 0;
++    struct pf_guard { int64_t t0; } pf_g = {pf_s0};
++    (void) pf_g;
+     // Existing readers release cache slots before this stream writes them.
+     // Consumers wait on the recorded completion events.
+     int status = cuda.stream_wait_event(cuda.expert_stream, expert_slot_release(), 0);
+@@ -2841,11 +2885,13 @@
+     struct expert_cache * cache = &cuda.experts;
+     const uint64_t state = (uint64_t) (uintptr_t) cache->state;
+     const int64_t policy = compact ? (next_plane ? 2 : 1) : 0;
++    const int64_t pf_t0 = pf_trace_active() ? pf_clock() : 0;
+     const int64_t status = cache->one_touch ?
+         exp1744_prepare(cache->groups, cache->layers, state, cache->work, tensor, bytes,
+             active, offsets, stage_all, compact, policy) :
+         compact ? ec_prepare_compact(cache->groups, cache->layers, state, cache->work, tensor, bytes, active, offsets, stage_all) :
+         ec_prepare(cache->groups, cache->layers, state, cache->work, tensor, bytes, active, offsets, stage_all);
++    if (pf_t0) { pf_t_ec += (uint64_t) (pf_clock() - pf_t0); ++pf_c_ec; }
+     if (cuda.expert_current_staging) {
+         cuda.expert_current_staging = false;
+         if (seal_expert_host_slot(NULL) != 0) {

@@ -1,0 +1,66 @@
+--- checkpoints/exp1805-route-prefetch/src/cuda-driver.c	2026-11-23 17:08:14.750390258 +0300
++++ /tmp/opencode/apex-jobs/build-inputs/cuda-driver.c	2026-11-23 20:22:52.480759781 +0300
+@@ -1961,6 +1961,49 @@
+         fg143_activation_record_slot(activation_ranges()) < ACTIVATION_RECORDS;
+ }
+ 
++enum { JOBS_RING = 4 };
++static struct {
++    void * host;
++    size_t bytes;
++    Event done;
++    int busy;
++} jobs_ring[JOBS_RING];
++static unsigned jobs_ring_next;
++static int jobs_ring_state;
++
++static int upload_jobs_async(DevicePtr device, const void * data, size_t bytes) {
++    const char * disable = getenv("GOOSE_JOBS_ASYNC");
++    if (disable && strcmp(disable, "0") == 0) return -2;
++    if (jobs_ring_state == 2) return -2;
++    if (jobs_ring_state == 0) {
++        if (!cuda.host_alloc || !cuda.upload_async || !cuda.event_create ||
++            !cuda.event_record || !cuda.event_sync) { jobs_ring_state = 2; return -2; }
++        for (unsigned i = 0; i < JOBS_RING; ++i)
++            if (cuda.event_create(&jobs_ring[i].done, 0) != 0) { jobs_ring_state = 2; return -2; }
++        jobs_ring_state = 1;
++    }
++    const unsigned slot = jobs_ring_next;
++    if (jobs_ring[slot].bytes < bytes) {
++        if (jobs_ring[slot].busy) { if (cuda.event_sync(jobs_ring[slot].done) != 0) return -1; jobs_ring[slot].busy = 0; }
++        if (jobs_ring[slot].host && cuda.host_free) cuda.host_free(jobs_ring[slot].host);
++        void * host = NULL;
++        const size_t want = (bytes + MIB_BYTES - 1) / MIB_BYTES * MIB_BYTES;
++        if (cuda.host_alloc(&host, want, 0) != 0 || !host) { jobs_ring[slot].host = NULL; jobs_ring[slot].bytes = 0; return -1; }
++        jobs_ring[slot].host = host;
++        jobs_ring[slot].bytes = want;
++    }
++    if (jobs_ring[slot].busy) {
++        if (cuda.event_sync(jobs_ring[slot].done) != 0) return -1;
++        jobs_ring[slot].busy = 0;
++    }
++    memcpy(jobs_ring[slot].host, data, bytes);
++    if (cuda.upload_async(device, jobs_ring[slot].host, bytes, NULL) != 0) return -1;
++    if (cuda.event_record(jobs_ring[slot].done, NULL) != 0) return -1;
++    jobs_ring[slot].busy = 1;
++    jobs_ring_next = (slot + 1) % JOBS_RING;
++    return 0;
++}
++
+ static int upload_packet(DevicePtr device, const void * data, size_t bytes) {
+     if (!activations.active || !activations.defer_waits || !cuda.async_packets || bytes > 4096) {
+         return cuda.upload(device, data, bytes);
+@@ -3511,7 +3554,12 @@
+     }
+     const size_t job_bytes = (size_t) jobs.len * sizeof(*jobs.data);
+     int error = reserve(&cuda.jobs, job_bytes);
+-    if (error == 0) error = upload_packet(cuda.jobs.address, jobs.data, job_bytes);
++    if (error == 0) {
++        // Only the large packs pay the synchronous copy; a small pack keeps the
++        // pinned packet ring it already used, so decode is untouched.
++        const int queued = job_bytes > 4096 ? upload_jobs_async(cuda.jobs.address, jobs.data, job_bytes) : -2;
++        error = queued == -2 ? upload_packet(cuda.jobs.address, jobs.data, job_bytes) : queued;
++    }
+     if (error == 0 && cuda.mmq_matrix && kind != 0 && jobs.len / job_words >= 16) {
+         const int result = launch_mmq(weight, (uint64_t) row_stride, (int) extent, (int) kind,
+                                       (int) rows, jobs, job_words, shared_rows, input_stride);
