@@ -520,6 +520,8 @@ def render(t, cols, rows):
 
 # ---------------------------------------------------------------- input loop
 
+LOG_MAX_BYTES = 8 * 1024 * 1024
+
 def main():
     global PLAIN
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -553,6 +555,8 @@ def main():
 
     save = None
     save_error = None
+    saved_bytes = 0
+    save_path = os.path.realpath(args.save) if args.save else None
 
     def stop_saving(error=None):
         nonlocal save, save_error
@@ -567,9 +571,14 @@ def main():
             save_error = f"Could not save the server log: {error}"
             t.feed(save_error)
 
-    if args.save:
+    def open_save():
+        nonlocal save, saved_bytes
+        save = open(save_path, "ab", buffering=0)
+        saved_bytes = os.fstat(save.fileno()).st_size
+
+    if save_path is not None:
         try:
-            save = open(args.save, "a", buffering=1)
+            open_save()
         except OSError as exc:
             stop_saving(exc)
 
@@ -594,11 +603,25 @@ def main():
             child.send_signal(signum)
 
     def feed(raw):
+        nonlocal saved_bytes
         text = raw.decode("utf-8", "replace")
         tail.append(text)
         if save is not None:
             try:
-                save.write(text + "\n")
+                entry = raw[:LOG_MAX_BYTES - 1] + b"\n"
+                if saved_bytes + len(entry) > LOG_MAX_BYTES and os.path.isfile(save_path):
+                    stop_saving()
+                    if save_error is None:
+                        backup_path = save_path + ".1"
+                        os.replace(save_path, backup_path)
+                        if saved_bytes > LOG_MAX_BYTES:
+                            os.truncate(backup_path, LOG_MAX_BYTES)
+                        open_save()
+                if save is not None:
+                    written = save.write(entry)
+                    if written != len(entry):
+                        raise OSError("short server log write")
+                    saved_bytes += written
             except OSError as exc:
                 stop_saving(exc)
         t.feed(text)

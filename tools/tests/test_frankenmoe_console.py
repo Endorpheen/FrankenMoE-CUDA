@@ -21,6 +21,30 @@ class OptionalLogTest(unittest.TestCase):
                     self.assertIn("Could not save the server log:", proc.stderr)
                     self.assertNotIn("Traceback", proc.stderr)
 
+    def test_rotation_keeps_one_bounded_backup(self):
+        console = Path(__file__).resolve().parents[1] / "frankenmoe-console.py"
+        with tempfile.TemporaryDirectory() as tmp:
+            log = Path(tmp) / "server.log"
+            wrapper = (
+                "import runpy, sys; "
+                "module = runpy.run_path(sys.argv.pop(1)); "
+                "module['main'].__globals__['LOG_MAX_BYTES'] = 32; "
+                "sys.exit(module['main']())"
+            )
+            lines = "for i in range(10): print(f'entry-{i:02d}', flush=True)"
+            proc = subprocess.run(
+                [sys.executable, "-c", wrapper, str(console), "--save", str(log), "--",
+                 sys.executable, "-c", lines],
+                capture_output=True, text=True, timeout=10,
+            )
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            self.assertEqual(log.read_bytes(), b"entry-09\n")
+            self.assertEqual(
+                log.with_suffix(".log.1").read_bytes(),
+                b"entry-06\nentry-07\nentry-08\n",
+            )
+            self.assertEqual(len(list(Path(tmp).iterdir())), 2)
+
 
 if __name__ == "__main__":
     unittest.main()
