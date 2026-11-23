@@ -42,10 +42,13 @@ key outside its own probe chain: a later lookup would terminate at an empty slot
 before reaching it and report a false miss, which silently changes the hit
 pattern and therefore the output.
 
-Making slots sequential at fill time therefore requires replacing the index with
-a key→slot map plus a separate free list (and eviction ties the two), that is a
-re-architecture of the SLRU core in the Goose unit, not a change of an allocation
-line. Note that this payoff is independent of the eviction policy: it does not
+The slot itself is chosen by `slru_plan_impl` from the LRU lists it maintains
+(`keys`, `prev`, `next`, `prot`, `head`, `tail`, the protected/probationary split
+that the engine reports as `1904/1531 rebalance`): a fill takes the slot of the
+entry the policy evicts, which is why consecutive misses receive scattered slots
+by construction. Sequential placement would therefore need the cache to be
+*compacted* — residents moved down to keep the occupied range dense — and that
+movement is itself extra copies, more than the merge would save. Note that this payoff is independent of the eviction policy: it does not
 change how many experts are missed, only how many transfers carry them, so the
 2.3 % Belady headroom of EXP-1816 does not cap it — the cap is the 63 % share of
 adjacent pairs that are already source-contiguous, that is about 2.7x fewer
