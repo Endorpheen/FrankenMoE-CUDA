@@ -55,3 +55,26 @@ candidate hashes, and the exact failure mode.
 `runs/ub8k-001401` (abort), `runs/ub8k2-002456` and `runs/ub8k3-002636` (500s),
 `runs/ub6k-002717` (4096 works, 6144 fails); build tree `/tmp/opencode/apex-ub`
 with `main.goose` carrying the raised limits.
+
+## Second probe: the step guard is not the limit either
+
+The step entry guard was instrumented (`why=1..12` printed through the server
+console) and the unit rebuilt (goose 150 s, gcc 231 s, candidate `f37b9aca…`).
+At 6144 the guard **passes** — no `step guard failed` line appears — and the
+generation still returns 500, so the failure is deeper, in the graph
+construction of the step.
+
+Combined with the earlier probe (no `mt:` projection line at 6144, so the
+experts are never reached), the failure sits between the step entry and the
+first expert projection, in the prefill graph build. Each probe costs a full
+Goose rebuild.
+
+## Why the payoff is capped anyway
+
+At 4096 tokens the prompt is 6.04 s of kernels plus about 4.9 s of host blocking
+in the plan copies and 1.5 s of other host work. With four passes instead of
+eight the expert traffic halves (55.3 GB -> about 28 GB, that is 6 s -> 3 s of
+DMA), which projects to roughly 9.5 s for the prompt, about 3450 tok/s — below
+the 3500 target — and the attention tiling change would alter the output, which
+the acceptance criteria forbid. With two passes the mask becomes 16384^2, which
+does not fit. The lever is therefore recorded, not pursued.
