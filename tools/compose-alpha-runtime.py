@@ -20,11 +20,22 @@ end = text.find("// ---- composed from ", start)
 if end < 0:
     end = len(text)
 text = text[:start] + http.read_text() + "\n" + text[end:]
-text = replace_once(
-    text,
-    "logp: f32[:], pipeline: bool) -> i64 {",
-    "logp: f32[:], pipeline: bool, observer: i64[:], stream_text: u8[:], stream_response: u8[:]) -> i64 {",
-)
+stream_params = "observer: i64[:], stream_text: u8[:], stream_response: u8[:]"
+wrapper_call = ("    let result = q35_sample_generate_impl(tokens, vocabulary, capacity, eog, limit, s, ids, timing, "
+                "top, prob_ids, logp, pipeline);")
+if text.count(wrapper_call) == 1:
+    # Checkpoints from EXP-1724 on split the sampler loop into an implementation
+    # and a scope wrapper: both take the stream observer, the wrapper forwards it.
+    text = text.replace("logp: f32[:], pipeline: bool) -> i64 {",
+                        f"logp: f32[:], pipeline: bool, {stream_params}) -> i64 {{")
+    text = replace_once(text, wrapper_call, wrapper_call.replace(
+        "logp, pipeline);", "logp, pipeline, observer, stream_text, stream_response);"))
+else:
+    text = replace_once(
+        text,
+        "logp: f32[:], pipeline: bool) -> i64 {",
+        f"logp: f32[:], pipeline: bool, {stream_params}) -> i64 {{",
+    )
 text = replace_once(
     text,
     "    var batch_end: i64 = 0;\n    while read < tokens.len {",
