@@ -29,7 +29,7 @@ cp "$ROOT/goose/cuda/standalone-vector.goose" "$OUT/vector.goose"
 sed -n '/^fn cv_offset(/,/^}/p' "$ROOT/goose/cuda/standalone-vector.goose" |
     sed 's/cv_offset/rms_offset/g; s/cv_word/rms_word/g' > "$OUT/rms-reference.goose"
 sed -n '/^struct F4 {/,/^}/p; /^extern "fg168_\(load\|store\|load4\|store4\|shuffle\|barrier\|rsqrt\|fma\)"/p;
-        /^fn warp(/,/^}/p; /^fn block_sum(/,/^}/p; /^fn rms_row(/,/^}/p' \
+        /^fn warp(/,/^}/p; /^fn block_sum(/,/^}/p; /^fn rms_row(/,/^}/p; /^fn rms_row_one(/,/^}/p' \
     "$ROOT/goose/cuda/goose-cuda-normalization/device.goose" |
     sed 's/\bF4\b/RmsVec/g; s/store(shared,/rms_shared_store(shared,/; s/load(shared,/rms_shared_load(shared,/' >> "$OUT/rms-reference.goose"
 cat "$ROOT/goose/cuda/standalone-rms-reference.goose" >> "$OUT/rms-reference.goose"
