@@ -1,0 +1,5 @@
+ptxas info    : 0 bytes gmem
+ptxas info    : Compiling entry function 'goose_moe_shared_residual_prefill' for 'sm_89'
+ptxas info    : Function properties for goose_moe_shared_residual_prefill
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 22 registers, used 0 barriers, 396 bytes cmem[0]

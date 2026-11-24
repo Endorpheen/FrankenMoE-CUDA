@@ -1,0 +1,21 @@
+--- a/cuda-device.cl
++++ b/cuda-device.cl
+@@ -722,0 +723,18 @@
++#pragma OPENCL FP_CONTRACT OFF
++__kernel void goose_moe_weighted4(__global const float4 * experts, __global const float * weights,
++                                 __global float4 * dst, int64_t width, int64_t used) {
++    uint32_t token, tile, thread;
++    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(token));
++    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(tile));
++    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
++    const uint64_t first = (uint64_t)token * 8;
++    const uint64_t column = (uint64_t)tile * 256 + thread;
++    const uint64_t index = first * 512 + column;
++    float4 sum = experts[index] * weights[first];
++    #pragma unroll
++    for (unsigned expert = 1; expert < 8; ++expert)
++        sum += experts[index + 512 * expert] * weights[first + expert];
++    dst[(uint64_t)token * 512 + column] = sum;
++}
++#pragma OPENCL FP_CONTRACT ON
++
