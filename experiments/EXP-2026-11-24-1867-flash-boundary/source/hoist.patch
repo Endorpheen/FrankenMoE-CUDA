@@ -1,0 +1,12 @@
+--- a/flash-mma.goose
++++ b/flash-mma.goose
+@@ -11908,0 +11909 @@
++    let full_tiles = ((if left < right { left } else { right }) / 32) as i32;
+@@ -11934,0 +11936 @@
++        let interior = register_causal && kb0 < full_tiles;
+@@ -12904 +12906 @@
+-            if register_causal && kv_row0 + 31 < left && kv_row0 + 31 < right {
++            if interior {
+@@ -13064 +13066 @@
+-            if register_causal && kv_row0 + 31 < left && kv_row0 + 31 < right {
++            if interior {

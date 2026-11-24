@@ -1,0 +1,9 @@
+ptxas info    : 0 bytes gmem
+ptxas info    : Compiling entry function 'goose_flash_causal_mma' for 'sm_89'
+ptxas info    : Function properties for goose_flash_causal_mma
+    128 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 255 registers, used 1 barriers, 128 bytes cumulative stack size, 396 bytes cmem[0], 16 bytes cmem[2]
+ptxas info    : Function properties for flash_mma_gg_function_4
+    0 bytes stack frame, 148 bytes spill stores, 80 bytes spill loads
+ptxas info    : Function properties for flash_mma_gg_function_40
+    0 bytes stack frame, 132 bytes spill stores, 124 bytes spill loads
