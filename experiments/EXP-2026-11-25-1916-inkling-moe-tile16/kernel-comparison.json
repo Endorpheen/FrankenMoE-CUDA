@@ -1,0 +1,38 @@
+{
+  "A": {
+    "warm_window_ms": 6489.221278,
+    "kernels": [
+      [
+        "goose_i2_nl_mmq",
+        96,
+        53759,
+        328.590581
+      ],
+      [
+        "goose_i2_xs_mmq",
+        96,
+        53759,
+        1101.949554
+      ]
+    ],
+    "iq4_combined_kernel_ms": 1430.540135
+  },
+  "B": {
+    "warm_window_ms": 5944.496781,
+    "kernels": [
+      [
+        "goose_i2_nl_mmq16",
+        96,
+        29686,
+        230.059943
+      ],
+      [
+        "goose_i2_xs_mmq16",
+        96,
+        29686,
+        627.74236
+      ]
+    ],
+    "iq4_combined_kernel_ms": 857.8023029999999
+  }
+}
