@@ -1,0 +1,184 @@
+{
+  "arms": [
+    {
+      "arm": "a",
+      "run": "cx-pfconsumer-a-20261124-112528",
+      "vmhwm_kib": 21490956,
+      "vm_swap_kib": 0,
+      "system_swap_out_pages": 0,
+      "peak_sampled_vram_mib": 8774,
+      "replies": [
+        {
+          "exact": true,
+          "timings": {
+            "cache_n": 0,
+            "prompt_n": 32768,
+            "prompt_ms": 11889.872944011586,
+            "prompt_per_token_ms": 0.3628501264651973,
+            "prompt_per_second": 2755.9588024448844,
+            "predicted_n": 512,
+            "predicted_ms": 6175.169113004813,
+            "predicted_per_token_ms": 12.084479673199242,
+            "predicted_per_second": 82.75077016495656
+          },
+          "full_seconds": 18.165013
+        },
+        {
+          "exact": true,
+          "timings": {
+            "cache_n": 0,
+            "prompt_n": 32768,
+            "prompt_ms": 10091.309359995648,
+            "prompt_per_token_ms": 0.30796232177721095,
+            "prompt_per_second": 3247.1504768152436,
+            "predicted_n": 512,
+            "predicted_ms": 6121.552297991002,
+            "predicted_per_token_ms": 11.979554399199612,
+            "predicted_per_second": 83.475558996319
+          },
+          "full_seconds": 16.30141
+        }
+      ]
+    },
+    {
+      "arm": "b",
+      "run": "cx-pfconsumer-b-20261124-112640",
+      "vmhwm_kib": 21491692,
+      "vm_swap_kib": 0,
+      "system_swap_out_pages": 0,
+      "peak_sampled_vram_mib": 8774,
+      "replies": [
+        {
+          "exact": true,
+          "timings": {
+            "cache_n": 0,
+            "prompt_n": 32768,
+            "prompt_ms": 11835.031593975145,
+            "prompt_per_token_ms": 0.3611765012809798,
+            "prompt_per_second": 2768.7294064074313,
+            "predicted_n": 512,
+            "predicted_ms": 6139.751673006685,
+            "predicted_per_token_ms": 12.015169614494493,
+            "predicted_per_second": 83.22812178977904
+          },
+          "full_seconds": 18.070144
+        },
+        {
+          "exact": true,
+          "timings": {
+            "cache_n": 0,
+            "prompt_n": 32768,
+            "prompt_ms": 10065.13733000611,
+            "prompt_per_token_ms": 0.30716361480731535,
+            "prompt_per_second": 3255.593930379101,
+            "predicted_n": 512,
+            "predicted_ms": 6129.8629219818395,
+            "predicted_per_token_ms": 11.995817851236476,
+            "predicted_per_second": 83.36238615834971
+          },
+          "full_seconds": 16.284384
+        }
+      ]
+    },
+    {
+      "arm": "b2",
+      "run": "cx-pfconsumer-b2-20261124-112800",
+      "vmhwm_kib": 21489396,
+      "vm_swap_kib": 0,
+      "system_swap_out_pages": 0,
+      "peak_sampled_vram_mib": 8774,
+      "replies": [
+        {
+          "exact": true,
+          "timings": {
+            "cache_n": 0,
+            "prompt_n": 32768,
+            "prompt_ms": 11963.854348985478,
+            "prompt_per_token_ms": 0.36510785977128535,
+            "prompt_per_second": 2738.916660480633,
+            "predicted_n": 512,
+            "predicted_ms": 6191.421522991732,
+            "predicted_per_token_ms": 12.116284780805737,
+            "predicted_per_second": 82.53355034904517
+          },
+          "full_seconds": 18.251164
+        },
+        {
+          "exact": true,
+          "timings": {
+            "cache_n": 0,
+            "prompt_n": 32768,
+            "prompt_ms": 10140.358221979113,
+            "prompt_per_token_ms": 0.3094591742547337,
+            "prompt_per_second": 3231.4440262056746,
+            "predicted_n": 512,
+            "predicted_ms": 6160.95681101433,
+            "predicted_per_token_ms": 12.056666949147417,
+            "predicted_per_second": 82.94166241945621
+          },
+          "full_seconds": 16.392536
+        }
+      ]
+    },
+    {
+      "arm": "a2",
+      "run": "cx-pfconsumer-a2-20261124-112949",
+      "vmhwm_kib": 21491512,
+      "vm_swap_kib": 0,
+      "system_swap_out_pages": 0,
+      "peak_sampled_vram_mib": 8774,
+      "replies": [
+        {
+          "exact": true,
+          "timings": {
+            "cache_n": 0,
+            "prompt_n": 32768,
+            "prompt_ms": 11888.40297900606,
+            "prompt_per_token_ms": 0.36280526669330015,
+            "prompt_per_second": 2756.299568400027,
+            "predicted_n": 512,
+            "predicted_ms": 6146.039737010142,
+            "predicted_per_token_ms": 12.027475023503213,
+            "predicted_per_second": 83.14297041115222
+          },
+          "full_seconds": 18.130211
+        },
+        {
+          "exact": true,
+          "timings": {
+            "cache_n": 0,
+            "prompt_n": 32768,
+            "prompt_ms": 10098.370312014595,
+            "prompt_per_token_ms": 0.308177804932086,
+            "prompt_per_second": 3244.880014056732,
+            "predicted_n": 512,
+            "predicted_ms": 6130.046413978562,
+            "predicted_per_token_ms": 11.99617693537879,
+            "predicted_per_second": 83.35989085412936
+          },
+          "full_seconds": 16.318195
+        }
+      ]
+    }
+  ],
+  "trace": {
+    "control_run": "cx-pfconsumer-trace-a-20261124-113225",
+    "causal_flash_ms_by_ubatch": [
+      28.143186,
+      82.327992,
+      133.326738,
+      186.857128,
+      238.925867,
+      292.582005,
+      346.715334,
+      402.697702
+    ],
+    "pack_kernel_union_ms": 381.380357,
+    "h2d_union_ms": 2552.682391,
+    "pack_h2d_intersection_ms": 28.158735,
+    "kernel_union_ms": 7781.522949,
+    "kernels_h2d_intersection_ms": 474.553578,
+    "candidate_run": "cx-pfconsumer-trace-b-20261124-113330",
+    "candidate_trace_status": "Expert bank allocation rejected due to available VRAM"
+  }
+}

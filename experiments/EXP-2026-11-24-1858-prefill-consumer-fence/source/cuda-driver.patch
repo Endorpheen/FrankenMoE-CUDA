@@ -1,0 +1,149 @@
+--- a/integration/goose-standalone/apex-checkpoint/cuda-driver.c
++++ b/integration/goose-standalone/apex-checkpoint/cuda-driver.c
+@@ -155,7 +155,7 @@
+ struct expert_cache {
+     struct device_buffer weights;
+     size_t bank_bytes, prefill_offset, prefill_bytes, prefill_workspace;
+-    Event prefill_release, prefill_ready;
++    Event prefill_release, prefill_ready, prefill_ready_alt;
+     bool prefill_double, prefill_compact;
+     uint64_t prefill_full_buffer, prefill_skipped_capacity;
+     unsigned prefill_next_slot;
+@@ -896,6 +896,7 @@
+     DevicePtr scores_device;
+     uint32_t mailbox_sequence;
+ } route_compact_pending;
++static _Thread_local Event prefill_consumer_ready;
+ static _Thread_local uint64_t cuda_blits[3];
+ static _Thread_local struct {
+     uint64_t source, destination;
+@@ -1109,6 +1110,7 @@
+             release_flash_graph();
+             release_mmvq_graphs();
+             if (cuda.experts.prefill_ready) cuda.event_destroy(cuda.experts.prefill_ready);
++            if (cuda.experts.prefill_ready_alt) cuda.event_destroy(cuda.experts.prefill_ready_alt);
+             if (cuda.experts.prefill_release) cuda.event_destroy(cuda.experts.prefill_release);
+             for (size_t i = 0; i < DECODE_GRAPH_REGIONS; ++i) {
+                 if (cuda.decode_regions[i]) cuda.graph_exec_destroy(cuda.decode_regions[i]);
+@@ -1816,6 +1818,8 @@
+     }
+     int error = 0;
+     decode_capture.scope = false;
++    // Graph completion synchronizes both DMA slabs and all consumers.
++    prefill_consumer_ready = NULL;
+     if (activations.pending || decode_capture.capturing) {
+         if (push_context() != 1) error = -1;
+         else {
+@@ -2481,6 +2485,9 @@
+         enum { disable_timing = 2 };
+         status = cuda.expert_stream ? cuda.event_create(&cache.prefill_release, disable_timing) : -1;
+         if (status == 0) status = cuda.event_create(&cache.prefill_ready, disable_timing);
++        if (status == 0 && fg_standalone_option_enabled("GOOSE_EXPERIMENT_PREFILL_CONSUMER_FENCE") &&
++            cuda.event_create(&cache.prefill_ready_alt, disable_timing) != 0)
++            cache.prefill_ready_alt = NULL;
+     }
+     if (status == 0) status = reserve(&cache.weights, total_bytes);
+     if (status == 0 && cache.prefill_bytes) {
+@@ -2504,6 +2511,7 @@
+         cuda.experts = cache;
+     } else {
+         if (cache.prefill_ready) cuda.event_destroy(cache.prefill_ready);
++        if (cache.prefill_ready_alt) cuda.event_destroy(cache.prefill_ready_alt);
+         if (cache.prefill_release) cuda.event_destroy(cache.prefill_release);
+         free_expert_metadata(&cache);
+     }
+@@ -2987,11 +2995,26 @@
+ // The temporary bytes are separate from the stable SLRU bank. The release
+ // event fences all earlier scratch readers before the transfer stream writes
+ // its alternate plane. A readiness event fences the consumer against DMA.
++static Event prefill_slab_ready(const struct expert_cache *cache, unsigned slab) {
++    return slab == 1 && cache->prefill_ready_alt ? cache->prefill_ready_alt : cache->prefill_ready;
++}
++
++static int wait_prefill_consumer(void) {
++    if (!prefill_consumer_ready) return 0;
++    const int status = cuda.stream_wait_event(NULL, prefill_consumer_ready, 0);
++    if (status == 0) prefill_consumer_ready = NULL;
++    return status;
++}
++
+ static int64_t prepare_prefill_plane(uint64_t tensor, int64_t bytes, sl_i64 active, sl_i64 offsets) {
+     struct expert_cache * cache = &cuda.experts;
+     const uint64_t next = cache->prefill_next_tensor;
+     cache->prefill_next_tensor = 0;
+-    if (next && cuda.stream_wait_event(NULL, cache->prefill_ready, 0) != 0) return -1;
++    if (next) {
++        const Event ready = prefill_slab_ready(cache, cache->prefill_next_slot);
++        if (cache->prefill_ready_alt && next == tensor) prefill_consumer_ready = ready;
++        else if (cuda.stream_wait_event(NULL, ready, 0) != 0) return -1;
++    }
+     if (!cache->prefill_bytes || !fg143_cpu_prefill() || !activations.active ||
+         active.len < TEMP_PREFILL_MIN_EXPERTS ||
+         (cache->prefill_wait_decode && !cache->decode_seen)) return 0;
+@@ -3055,8 +3078,11 @@
+                 ++hits;
+             }
+         }
+-        if (!prefetched && prefill_upload_misses(cache, tensor, (size_t) bytes, active, slots, scratch, NULL) != 0)
+-            return -1;
++        if (!prefetched) {
++            if (wait_prefill_consumer() != 0 ||
++                prefill_upload_misses(cache, tensor, (size_t) bytes, active, slots, scratch, NULL) != 0)
++                return -1;
++        }
+         // Gate and up can be visited in either order. Once both are prepared,
+         // the graph next consumes the down plane with the same route set.
+         if (pipeline && plane != 2 && hits < selected) {
+@@ -3072,7 +3098,8 @@
+                 if (status == 0) status = cuda.stream_wait_event(cuda.expert_stream, cache->prefill_release, 0);
+                 if (status == 0) status = prefill_upload_misses(cache, source, next_bytes, active, slots,
+                     next_scratch, cuda.expert_stream);
+-                if (status == 0) status = cuda.event_record(cache->prefill_ready, cuda.expert_stream);
++                if (status == 0)
++                    status = cuda.event_record(prefill_slab_ready(cache, next_slab), cuda.expert_stream);
+                 if (status != 0) {
+                     (void) cuda.sync();
+                     return -1;
+@@ -3093,9 +3120,10 @@
+ }
+ 
+ int64_t fg_cuda_prepare_experts(uint64_t tensor, int64_t bytes, sl_i64 active, sl_i64 offsets) {
+-    if (begin_expert_prepare(false) != 0) return -1;
++    if (wait_prefill_consumer() != 0 || begin_expert_prepare(false) != 0) return -1;
+     if (!cuda.experts.weights.address) return 0;
+     const int64_t temporary = prepare_prefill_plane(tensor, bytes, active, offsets);
++    if (temporary != 1 && wait_prefill_consumer() != 0) return -1;
+     if (temporary != 0) return temporary;
+     return prepare_expert_offsets(tensor, bytes, active, offsets, false, false, false);
+ }
+@@ -3352,6 +3380,14 @@
+                     32, 1, 1, 0, NULL, pack_args, NULL);
+             }
+         }
++        if (error == 0 && prefill_consumer_ready) {
++            error = wait_prefill_consumer();
++            if (error == 0) {
++                static _Thread_local unsigned consumed;
++                if (++consumed == 1 || consumed % 100 == 0)
++                    fprintf(stderr, "Goose CUDA: deferred prefill consumer fences=%u\n", consumed);
++            }
++        }
+         if (error == 0) {
+             const int workers = cuda.mmq_stream && !reference ?
+                 (int) fg143_mmq_stream_workers(rows, batch, extent, cuda.multiprocessors) : 0;
+@@ -3597,6 +3633,7 @@
+             dense_mmvq_logged = true;
+             fprintf(stderr, "Goose CUDA: dense decode MMVQ uses direct tensor addresses\n");
+         }
++        if (wait_prefill_consumer() != 0) return -1;
+         return launch_mmvq(weight, (uint64_t) row_stride, (int) extent, (int) kind,
+             (int) rows, 1, job_words, jobs.data);
+     }
+@@ -3615,6 +3652,7 @@
+         return result;
+     }
+ 
++    if (error == 0) error = wait_prefill_consumer();
+     const int count = (int) (jobs.len / job_words);
+     if (error == 0 && cuda.mmvq && kind != 0 && extent <= INT_MAX / 256 &&
+         (count == 1 || (job_words == 3 && count == 8) ||
