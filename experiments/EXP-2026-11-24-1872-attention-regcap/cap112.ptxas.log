@@ -1,0 +1,6 @@
+ptxas info    : Overriding maximum register limit 256 for 'goose_flash_vec_q4_packed_quad' with  112 of maxrregcount option
+ptxas info    : 0 bytes gmem
+ptxas info    : Compiling entry function 'goose_flash_vec_q4_packed_quad' for 'sm_89'
+ptxas info    : Function properties for goose_flash_vec_q4_packed_quad
+    8 bytes stack frame, 24 bytes spill stores, 16 bytes spill loads
+ptxas info    : Used 112 registers, used 1 barriers, 8 bytes cumulative stack size, 4608 bytes smem, 408 bytes cmem[0]

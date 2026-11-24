@@ -1,0 +1,152 @@
+{
+  "id": "EXP-2026-11-24-1872",
+  "status": "REJECTED",
+  "baseline": "EXP-1863",
+  "device": "RTX 4070 SM89",
+  "entry": "goose_flash_vec_q4_packed_quad",
+  "control_registers": 142,
+  "control_ctas_per_sm": 3,
+  "full_apex_run": false,
+  "variants": {
+    "128": {
+      "max_ctas_per_sm": 4,
+      "scenarios": {
+        "17": {
+          "parts": 2,
+          "matched_output_words": 40960,
+          "control_us": [
+            116.416,
+            116.395
+          ],
+          "candidate_us": [
+            126.763,
+            126.763
+          ],
+          "change_pct": 8.897775448754587
+        },
+        "129": {
+          "parts": 2,
+          "matched_output_words": 40960,
+          "control_us": [
+            175.659,
+            175.669
+          ],
+          "candidate_us": [
+            195.797,
+            195.797
+          ],
+          "change_pct": 11.461084798251209
+        },
+        "32769": {
+          "parts": 64,
+          "matched_output_words": 40960,
+          "control_us": [
+            1828.149,
+            1687.467
+          ],
+          "candidate_us": [
+            1965.6,
+            1950.592
+          ],
+          "change_pct": 11.394190946906612
+        },
+        "33279": {
+          "parts": 64,
+          "matched_output_words": 40960,
+          "control_us": [
+            1698.741,
+            1701.44
+          ],
+          "candidate_us": [
+            1967.851,
+            1955.115
+          ],
+          "change_pct": 15.375210907889914
+        },
+        "65537": {
+          "parts": 64,
+          "matched_output_words": 40960,
+          "control_us": [
+            3295.904,
+            3290.912
+          ],
+          "candidate_us": [
+            3817.269,
+            3832.48
+          ],
+          "change_pct": 16.137280895655802
+        }
+      }
+    },
+    "112": {
+      "max_ctas_per_sm": 4,
+      "scenarios": {
+        "17": {
+          "parts": 2,
+          "matched_output_words": 40960,
+          "control_us": [
+            103.285,
+            103.285
+          ],
+          "candidate_us": [
+            128.117,
+            128.117
+          ],
+          "change_pct": 24.042213293314617
+        },
+        "129": {
+          "parts": 2,
+          "matched_output_words": 40960,
+          "control_us": [
+            155.851,
+            155.861
+          ],
+          "candidate_us": [
+            198.24,
+            198.219
+          ],
+          "change_pct": 27.187596242685565
+        },
+        "32769": {
+          "parts": 64,
+          "matched_output_words": 40960,
+          "control_us": [
+            1694.144,
+            1698.411
+          ],
+          "candidate_us": [
+            2053.76,
+            2036.021
+          ],
+          "change_pct": 20.55164912580636
+        },
+        "33279": {
+          "parts": 64,
+          "matched_output_words": 40960,
+          "control_us": [
+            1708.715,
+            1701.888
+          ],
+          "candidate_us": [
+            2052.736,
+            2040.011
+          ],
+          "change_pct": 20.00068609568455
+        },
+        "65537": {
+          "parts": 64,
+          "matched_output_words": 40960,
+          "control_us": [
+            3291.275,
+            3282.069
+          ],
+          "candidate_us": [
+            3999.168,
+            4004.352
+          ],
+          "change_pct": 21.75720607349927
+        }
+      }
+    }
+  }
+}
