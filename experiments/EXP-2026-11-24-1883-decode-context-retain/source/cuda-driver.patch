@@ -1,0 +1,36 @@
+--- a/cuda-driver.c
++++ b/cuda-driver.c
+@@ -861,0 +862,2 @@
++static _Thread_local bool decode_context_retained;
++static _Thread_local uint64_t decode_context_scopes, decode_context_pairs;
+@@ -1676,0 +1679,4 @@
++    if (decode_context_retained) {
++        pthread_mutex_unlock(&cuda_lock);
++        return 0;
++    }
+@@ -1684,0 +1691,4 @@
++    if (decode_context_retained) {
++        ++decode_context_pairs;
++        return 1;
++    }
+@@ -1761,0 +1772,8 @@
++    if (planned && !fg143_cpu_prefill() &&
++        fg_standalone_option_enabled("GOOSE_DECODE_CONTEXT_RETAIN")) {
++        pthread_once(&cuda_once, init_cuda);
++        pthread_mutex_lock(&cuda_lock);
++        if (cuda.status == 1 && cuda.push(cuda.context) == 0)
++            decode_context_retained = true;
++        pthread_mutex_unlock(&cuda_lock);
++    }
+@@ -1901,0 +1920,11 @@
++    if (decode_context_retained) {
++        Context previous = NULL;
++        pthread_mutex_lock(&cuda_lock);
++        const int popped = cuda.pop(&previous);
++        decode_context_retained = false;
++        pthread_mutex_unlock(&cuda_lock);
++        if (popped != 0 || previous != cuda.context) error = -1;
++        if (++decode_context_scopes == 1 || decode_context_scopes % 511 == 0)
++            fprintf(stderr, "Goose CUDA: retained decode contexts=%" PRIu64 " avoided pairs=%" PRIu64 "\n",
++                    decode_context_scopes, decode_context_pairs);
++    }
