@@ -1,0 +1,24 @@
+--- a/prefill.h
++++ b/prefill.h
+@@ -87,6 +87,15 @@
+-    prefill_projection(d, aux[at], scratch->control_input[0], 2 * model_width,
+-        scratch->control_hidden[0], 64, count);
+-    prefill_projection(d, aux[at + 1], scratch->control_hidden[0], 64,
+-        scratch->forget[0], model_width, count);
+-    prefill_projection(d, aux[at + 2], scratch->control_hidden[0], 64,
+-        scratch->gain[0], model_width, count);
++    if (uses_resident_plan()) {
++        float combined[max_prefill_batch][2 * model_width];
++        project_control_group(d, aux, at, scratch->control_input[0], count, combined[0]);
++        for (int t = 0; t < count; ++t) {
++            memcpy(scratch->gain[t], combined[t], sizeof scratch->gain[t]);
++            memcpy(scratch->forget[t], combined[t] + model_width, sizeof scratch->forget[t]);
++        }
++    } else {
++        prefill_projection(d, aux[at], scratch->control_input[0], 2 * model_width,
++            scratch->control_hidden[0], 64, count);
++        prefill_projection(d, aux[at + 1], scratch->control_hidden[0], 64,
++            scratch->forget[0], model_width, count);
++        prefill_projection(d, aux[at + 2], scratch->control_hidden[0], 64,
++            scratch->gain[0], model_width, count);
++    }

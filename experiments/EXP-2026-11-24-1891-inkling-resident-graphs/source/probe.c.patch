@@ -1,0 +1,55 @@
+--- a/probe.c
++++ b/probe.c
+@@ -109,0 +110,9 @@
++static bool uses_resident_plan(void) {
++    static int resident_plan = -1;
++    if (resident_plan < 0) {
++        const char *config = getenv("I2_RESIDENT_PLAN");
++        resident_plan = config && strcmp(config, "1") == 0;
++    }
++    return resident_plan != 0;
++}
++
+@@ -115,2 +124,9 @@
+-    void *storage=fg_standalone_graph_alloc(graph);
+-    assert(storage && fg_standalone_graph_compute(graph)==GGML_STATUS_SUCCESS);
++    void *storage = NULL;
++    struct fg_standalone_graph_plan *plan = NULL;
++    if (uses_resident_plan() && count == 1 && ggml_graph_n_nodes(graph) > 2) {
++        plan = fg_standalone_graph_plan_alloc(graph, nodes[0]);
++        assert(plan && MEASURE(8, fg_standalone_graph_plan_compute(plan)) == GGML_STATUS_SUCCESS);
++    } else {
++        storage = fg_standalone_graph_alloc(graph);
++        assert(storage && fg_standalone_graph_compute(graph) == GGML_STATUS_SUCCESS);
++    }
+@@ -125,0 +142 @@
++    fg_standalone_graph_plan_free(plan);
+@@ -178,0 +196,14 @@
++static void project_control_group(struct decoder *d, const int64_t *aux, int at, float *norm,
++                                  int count, float *combined) {
++    struct ggml_context *ctx = context();
++    struct ggml_tensor *input = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, 2 * model_width, count);
++    assert(input);
++    input->data = norm;
++    struct ggml_tensor *h = ggml_mul_mat(ctx, load(ctx, named(d, aux[at])), input);
++    struct ggml_tensor *forget = ggml_mul_mat(ctx, load(ctx, named(d, aux[at + 1])), h);
++    struct ggml_tensor *gain = ggml_mul_mat(ctx, load(ctx, named(d, aux[at + 2])), h);
++    struct ggml_tensor *results[] = {ggml_concat(ctx, gain, forget, 0)};
++    evaluate(ctx, results, 1, combined, 2 * count * model_width);
++    ggml_free(ctx);
++}
++
+@@ -184,3 +215,10 @@
+-    project(d,aux[at],norm,2*model_width,h,64);
+-    project(d,aux[at+1],h,64,forget,model_width);
+-    project(d,aux[at+2],h,64,gain,model_width);
++    if (uses_resident_plan()) {
++        float combined[2 * model_width];
++        project_control_group(d, aux, at, norm, 1, combined);
++        memcpy(gain, combined, sizeof gain);
++        memcpy(forget, combined + model_width, sizeof forget);
++    } else {
++        project(d,aux[at],norm,2*model_width,h,64);
++        project(d,aux[at+1],h,64,forget,model_width);
++        project(d,aux[at+2],h,64,gain,model_width);
++    }
