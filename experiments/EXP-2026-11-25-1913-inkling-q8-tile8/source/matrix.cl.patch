@@ -1,0 +1,29 @@
+--- a/matrix.cl
++++ b/matrix.cl
+@@ -0,0 +1,12 @@
++#define UINT64_C(x) x##UL
++#define INT64_C(x) x##L
++
++typedef uchar uint8_t;
++typedef ushort uint16_t;
++typedef uint uint32_t;
++typedef ulong uint64_t;
++typedef char int8_t;
++typedef int int32_t;
++typedef long int64_t;
++static double gg_double_bits(uint64_t bits) { return as_double(bits); }
++
+@@ -57,0 +70,13 @@
++    if (kind == 8 && words == 2 && job_tile == 8 && first + 7 < (uint32_t)count) {
++        i2_matrix_eight_g(w,
++            input_address + job[0 * words + 0], input_address + job[1 * words + 0],
++            input_address + job[2 * words + 0], input_address + job[3 * words + 0],
++            input_address + job[4 * words + 0], input_address + job[5 * words + 0],
++            input_address + job[6 * words + 0], input_address + job[7 * words + 0],
++            output_address + job[0 * words + 1], output_address + job[1 * words + 1],
++            output_address + job[2 * words + 1], output_address + job[3 * words + 1],
++            output_address + job[4 * words + 1], output_address + job[5 * words + 1],
++            output_address + job[6 * words + 1], output_address + job[7 * words + 1],
++            groups, kind, lane);
++        return;
++    }
