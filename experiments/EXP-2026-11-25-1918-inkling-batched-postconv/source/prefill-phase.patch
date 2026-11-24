@@ -1,0 +1,28 @@
+--- a/prefill.h
++++ b/prefill.h
+@@ -189,0 +190,2 @@
++static _Thread_local double input_prep, attention_graph_time, postconv, glue_prep, moe_graph_time;
++
+@@ -200,0 +203 @@
++    const double t_prep = now();
+@@ -201,0 +205,2 @@
++    const double t_attn = now();
++    input_prep += t_attn - t_prep;
+@@ -263,0 +269,2 @@
++    const double t_glue = now();
++    attention_graph_time += t_glue - t_attn;
+@@ -267,0 +275,2 @@
++    const double t_postconv = now();
++    postconv += t_postconv - t_glue;
+@@ -270,0 +280,2 @@
++    const double t_moe = now();
++    glue_prep += t_moe - t_postconv;
+@@ -283,0 +295 @@
++        moe_graph_time += now() - t_moe;
+@@ -321,0 +334,2 @@
++    const double prefill_start = now();
++    input_prep = attention_graph_time = postconv = glue_prep = moe_graph_time = 0;
+@@ -352,0 +367,3 @@
++    fprintf(stderr, "I2 prefill phases first=%d count=%d wall=%.4f input_prep=%.4f attn=%.4f postconv=%.4f glue_prep=%.4f moe=%.4f\n",
++            begin, count, (now()-prefill_start)*1000.0, input_prep*1000.0, attention_graph_time*1000.0,
++            postconv*1000.0, glue_prep*1000.0, moe_graph_time*1000.0);
