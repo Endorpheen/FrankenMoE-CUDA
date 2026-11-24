@@ -1,0 +1,254 @@
+--- a/flash-mma.goose
++++ b/flash-mma.goose
+@@ -12904,57 +12904,68 @@
+-            if true {
+-                let l0__u49: i32 = 0;
+-                // half2 pairs, l0 even: (j,i),(j,i+1)
+-                if register_causal {
+-                    let first_key = kv_row0 + ((tx % 4) as i64) * 2 + 0;
+-                    kqc[ (0 as i32)] = add_causal(kqc[ (0 as i32)], first_key, left);
+-                    kqc[ (1 as i32)] = add_causal(kqc[ (1 as i32)], first_key + 1, left);
+-                } else {
+-                    let mh2__u50 = ( (cb + gi_c(l0__u49, tx)) / 8) * 20 + ( (rb__u49 + gj_c(l0__u49, tx)) / 2);
+-                    let w__u50 = ldu(mt + ( (mh2__u50 as u64) * (4 as u64)));
+-                    kqc[ (0 as i32)] = fmaf(slope, hlo(w__u50), kqc[ (0 as i32)]);
+-                    kqc[ (1 as i32)] = fmaf(slope, hhi(w__u50), kqc[ (1 as i32)]);
+-                }
+-            }
+-
+-            if true {
+-                let l0__u49: i32 = 2;
+-                // half2 pairs, l0 even: (j,i),(j,i+1)
+-                if register_causal {
+-                    let first_key = kv_row0 + ((tx % 4) as i64) * 2 + 0;
+-                    kqc[ (2 as i32)] = add_causal(kqc[ (2 as i32)], first_key, right);
+-                    kqc[ (3 as i32)] = add_causal(kqc[ (3 as i32)], first_key + 1, right);
+-                } else {
+-                    let mh2__u51 = ( (cb + gi_c(l0__u49, tx)) / 8) * 20 + ( (rb__u49 + gj_c(l0__u49, tx)) / 2);
+-                    let w__u51 = ldu(mt + ( (mh2__u51 as u64) * (4 as u64)));
+-                    kqc[ (2 as i32)] = fmaf(slope, hlo(w__u51), kqc[ (2 as i32)]);
+-                    kqc[ (3 as i32)] = fmaf(slope, hhi(w__u51), kqc[ (3 as i32)]);
+-                }
+-            }
+-
+-            if true {
+-                let l0__u49: i32 = 4;
+-                // half2 pairs, l0 even: (j,i),(j,i+1)
+-                if register_causal {
+-                    let first_key = kv_row0 + ((tx % 4) as i64) * 2 + 8;
+-                    kqc[ (4 as i32)] = add_causal(kqc[ (4 as i32)], first_key, left);
+-                    kqc[ (5 as i32)] = add_causal(kqc[ (5 as i32)], first_key + 1, left);
+-                } else {
+-                    let mh2__u52 = ( (cb + gi_c(l0__u49, tx)) / 8) * 20 + ( (rb__u49 + gj_c(l0__u49, tx)) / 2);
+-                    let w__u52 = ldu(mt + ( (mh2__u52 as u64) * (4 as u64)));
+-                    kqc[ (4 as i32)] = fmaf(slope, hlo(w__u52), kqc[ (4 as i32)]);
+-                    kqc[ (5 as i32)] = fmaf(slope, hhi(w__u52), kqc[ (5 as i32)]);
+-                }
+-            }
+-
+-            if true {
+-                let l0__u49: i32 = 6;
+-                // half2 pairs, l0 even: (j,i),(j,i+1)
+-                if register_causal {
+-                    let first_key = kv_row0 + ((tx % 4) as i64) * 2 + 8;
+-                    kqc[ (6 as i32)] = add_causal(kqc[ (6 as i32)], first_key, right);
+-                    kqc[ (7 as i32)] = add_causal(kqc[ (7 as i32)], first_key + 1, right);
+-                } else {
+-                    let mh2__u53 = ( (cb + gi_c(l0__u49, tx)) / 8) * 20 + ( (rb__u49 + gj_c(l0__u49, tx)) / 2);
+-                    let w__u53 = ldu(mt + ( (mh2__u53 as u64) * (4 as u64)));
+-                    kqc[ (6 as i32)] = fmaf(slope, hlo(w__u53), kqc[ (6 as i32)]);
+-                    kqc[ (7 as i32)] = fmaf(slope, hhi(w__u53), kqc[ (7 as i32)]);
++            if register_causal && kv_row0 + 31 < left && kv_row0 + 31 < right {
++                kqc[(0 as i32)] = fmaf(1.0, 0.0, kqc[(0 as i32)]);
++                kqc[(1 as i32)] = fmaf(1.0, 0.0, kqc[(1 as i32)]);
++                kqc[(2 as i32)] = fmaf(1.0, 0.0, kqc[(2 as i32)]);
++                kqc[(3 as i32)] = fmaf(1.0, 0.0, kqc[(3 as i32)]);
++                kqc[(4 as i32)] = fmaf(1.0, 0.0, kqc[(4 as i32)]);
++                kqc[(5 as i32)] = fmaf(1.0, 0.0, kqc[(5 as i32)]);
++                kqc[(6 as i32)] = fmaf(1.0, 0.0, kqc[(6 as i32)]);
++                kqc[(7 as i32)] = fmaf(1.0, 0.0, kqc[(7 as i32)]);
++            } else {
++                if true {
++                    let l0__u49: i32 = 0;
++                    // half2 pairs, l0 even: (j,i),(j,i+1)
++                    if register_causal {
++                        let first_key = kv_row0 + ((tx % 4) as i64) * 2 + 0;
++                        kqc[ (0 as i32)] = add_causal(kqc[ (0 as i32)], first_key, left);
++                        kqc[ (1 as i32)] = add_causal(kqc[ (1 as i32)], first_key + 1, left);
++                    } else {
++                        let mh2__u50 = ( (cb + gi_c(l0__u49, tx)) / 8) * 20 + ( (rb__u49 + gj_c(l0__u49, tx)) / 2);
++                        let w__u50 = ldu(mt + ( (mh2__u50 as u64) * (4 as u64)));
++                        kqc[ (0 as i32)] = fmaf(slope, hlo(w__u50), kqc[ (0 as i32)]);
++                        kqc[ (1 as i32)] = fmaf(slope, hhi(w__u50), kqc[ (1 as i32)]);
++                    }
++                }
++
++                if true {
++                    let l0__u49: i32 = 2;
++                    // half2 pairs, l0 even: (j,i),(j,i+1)
++                    if register_causal {
++                        let first_key = kv_row0 + ((tx % 4) as i64) * 2 + 0;
++                        kqc[ (2 as i32)] = add_causal(kqc[ (2 as i32)], first_key, right);
++                        kqc[ (3 as i32)] = add_causal(kqc[ (3 as i32)], first_key + 1, right);
++                    } else {
++                        let mh2__u51 = ( (cb + gi_c(l0__u49, tx)) / 8) * 20 + ( (rb__u49 + gj_c(l0__u49, tx)) / 2);
++                        let w__u51 = ldu(mt + ( (mh2__u51 as u64) * (4 as u64)));
++                        kqc[ (2 as i32)] = fmaf(slope, hlo(w__u51), kqc[ (2 as i32)]);
++                        kqc[ (3 as i32)] = fmaf(slope, hhi(w__u51), kqc[ (3 as i32)]);
++                    }
++                }
++
++                if true {
++                    let l0__u49: i32 = 4;
++                    // half2 pairs, l0 even: (j,i),(j,i+1)
++                    if register_causal {
++                        let first_key = kv_row0 + ((tx % 4) as i64) * 2 + 8;
++                        kqc[ (4 as i32)] = add_causal(kqc[ (4 as i32)], first_key, left);
++                        kqc[ (5 as i32)] = add_causal(kqc[ (5 as i32)], first_key + 1, left);
++                    } else {
++                        let mh2__u52 = ( (cb + gi_c(l0__u49, tx)) / 8) * 20 + ( (rb__u49 + gj_c(l0__u49, tx)) / 2);
++                        let w__u52 = ldu(mt + ( (mh2__u52 as u64) * (4 as u64)));
++                        kqc[ (4 as i32)] = fmaf(slope, hlo(w__u52), kqc[ (4 as i32)]);
++                        kqc[ (5 as i32)] = fmaf(slope, hhi(w__u52), kqc[ (5 as i32)]);
++                    }
++                }
++
++                if true {
++                    let l0__u49: i32 = 6;
++                    // half2 pairs, l0 even: (j,i),(j,i+1)
++                    if register_causal {
++                        let first_key = kv_row0 + ((tx % 4) as i64) * 2 + 8;
++                        kqc[ (6 as i32)] = add_causal(kqc[ (6 as i32)], first_key, right);
++                        kqc[ (7 as i32)] = add_causal(kqc[ (7 as i32)], first_key + 1, right);
++                    } else {
++                        let mh2__u53 = ( (cb + gi_c(l0__u49, tx)) / 8) * 20 + ( (rb__u49 + gj_c(l0__u49, tx)) / 2);
++                        let w__u53 = ldu(mt + ( (mh2__u53 as u64) * (4 as u64)));
++                        kqc[ (6 as i32)] = fmaf(slope, hlo(w__u53), kqc[ (6 as i32)]);
++                        kqc[ (7 as i32)] = fmaf(slope, hhi(w__u53), kqc[ (7 as i32)]);
++                    }
+@@ -13053,57 +13064,68 @@
+-            if true {
+-                let l0__u62: i32 = 0;
+-                // half2 pairs, l0 even: (j,i),(j,i+1)
+-                if register_causal {
+-                    let first_key = kv_row0 + ((tx % 4) as i64) * 2 + 16;
+-                    kqc[ (8 as i32)] = add_causal(kqc[ (8 as i32)], first_key, left);
+-                    kqc[ (9 as i32)] = add_causal(kqc[ (9 as i32)], first_key + 1, left);
+-                } else {
+-                    let mh2__u63 = ( (cb + gi_c(l0__u62, tx)) / 8) * 20 + ( (rb__u62 + gj_c(l0__u62, tx)) / 2);
+-                    let w__u63 = ldu(mt + ( (mh2__u63 as u64) * (4 as u64)));
+-                    kqc[ (8 as i32)] = fmaf(slope, hlo(w__u63), kqc[ (8 as i32)]);
+-                    kqc[ (9 as i32)] = fmaf(slope, hhi(w__u63), kqc[ (9 as i32)]);
+-                }
+-            }
+-
+-            if true {
+-                let l0__u62: i32 = 2;
+-                // half2 pairs, l0 even: (j,i),(j,i+1)
+-                if register_causal {
+-                    let first_key = kv_row0 + ((tx % 4) as i64) * 2 + 16;
+-                    kqc[ (10 as i32)] = add_causal(kqc[ (10 as i32)], first_key, right);
+-                    kqc[ (11 as i32)] = add_causal(kqc[ (11 as i32)], first_key + 1, right);
+-                } else {
+-                    let mh2__u64 = ( (cb + gi_c(l0__u62, tx)) / 8) * 20 + ( (rb__u62 + gj_c(l0__u62, tx)) / 2);
+-                    let w__u64 = ldu(mt + ( (mh2__u64 as u64) * (4 as u64)));
+-                    kqc[ (10 as i32)] = fmaf(slope, hlo(w__u64), kqc[ (10 as i32)]);
+-                    kqc[ (11 as i32)] = fmaf(slope, hhi(w__u64), kqc[ (11 as i32)]);
+-                }
+-            }
+-
+-            if true {
+-                let l0__u62: i32 = 4;
+-                // half2 pairs, l0 even: (j,i),(j,i+1)
+-                if register_causal {
+-                    let first_key = kv_row0 + ((tx % 4) as i64) * 2 + 24;
+-                    kqc[ (12 as i32)] = add_causal(kqc[ (12 as i32)], first_key, left);
+-                    kqc[ (13 as i32)] = add_causal(kqc[ (13 as i32)], first_key + 1, left);
+-                } else {
+-                    let mh2__u65 = ( (cb + gi_c(l0__u62, tx)) / 8) * 20 + ( (rb__u62 + gj_c(l0__u62, tx)) / 2);
+-                    let w__u65 = ldu(mt + ( (mh2__u65 as u64) * (4 as u64)));
+-                    kqc[ (12 as i32)] = fmaf(slope, hlo(w__u65), kqc[ (12 as i32)]);
+-                    kqc[ (13 as i32)] = fmaf(slope, hhi(w__u65), kqc[ (13 as i32)]);
+-                }
+-            }
+-
+-            if true {
+-                let l0__u62: i32 = 6;
+-                // half2 pairs, l0 even: (j,i),(j,i+1)
+-                if register_causal {
+-                    let first_key = kv_row0 + ((tx % 4) as i64) * 2 + 24;
+-                    kqc[ (14 as i32)] = add_causal(kqc[ (14 as i32)], first_key, right);
+-                    kqc[ (15 as i32)] = add_causal(kqc[ (15 as i32)], first_key + 1, right);
+-                } else {
+-                    let mh2__u66 = ( (cb + gi_c(l0__u62, tx)) / 8) * 20 + ( (rb__u62 + gj_c(l0__u62, tx)) / 2);
+-                    let w__u66 = ldu(mt + ( (mh2__u66 as u64) * (4 as u64)));
+-                    kqc[ (14 as i32)] = fmaf(slope, hlo(w__u66), kqc[ (14 as i32)]);
+-                    kqc[ (15 as i32)] = fmaf(slope, hhi(w__u66), kqc[ (15 as i32)]);
++            if register_causal && kv_row0 + 31 < left && kv_row0 + 31 < right {
++                kqc[(8 as i32)] = fmaf(1.0, 0.0, kqc[(8 as i32)]);
++                kqc[(9 as i32)] = fmaf(1.0, 0.0, kqc[(9 as i32)]);
++                kqc[(10 as i32)] = fmaf(1.0, 0.0, kqc[(10 as i32)]);
++                kqc[(11 as i32)] = fmaf(1.0, 0.0, kqc[(11 as i32)]);
++                kqc[(12 as i32)] = fmaf(1.0, 0.0, kqc[(12 as i32)]);
++                kqc[(13 as i32)] = fmaf(1.0, 0.0, kqc[(13 as i32)]);
++                kqc[(14 as i32)] = fmaf(1.0, 0.0, kqc[(14 as i32)]);
++                kqc[(15 as i32)] = fmaf(1.0, 0.0, kqc[(15 as i32)]);
++            } else {
++                if true {
++                    let l0__u62: i32 = 0;
++                    // half2 pairs, l0 even: (j,i),(j,i+1)
++                    if register_causal {
++                        let first_key = kv_row0 + ((tx % 4) as i64) * 2 + 16;
++                        kqc[ (8 as i32)] = add_causal(kqc[ (8 as i32)], first_key, left);
++                        kqc[ (9 as i32)] = add_causal(kqc[ (9 as i32)], first_key + 1, left);
++                    } else {
++                        let mh2__u63 = ( (cb + gi_c(l0__u62, tx)) / 8) * 20 + ( (rb__u62 + gj_c(l0__u62, tx)) / 2);
++                        let w__u63 = ldu(mt + ( (mh2__u63 as u64) * (4 as u64)));
++                        kqc[ (8 as i32)] = fmaf(slope, hlo(w__u63), kqc[ (8 as i32)]);
++                        kqc[ (9 as i32)] = fmaf(slope, hhi(w__u63), kqc[ (9 as i32)]);
++                    }
++                }
++
++                if true {
++                    let l0__u62: i32 = 2;
++                    // half2 pairs, l0 even: (j,i),(j,i+1)
++                    if register_causal {
++                        let first_key = kv_row0 + ((tx % 4) as i64) * 2 + 16;
++                        kqc[ (10 as i32)] = add_causal(kqc[ (10 as i32)], first_key, right);
++                        kqc[ (11 as i32)] = add_causal(kqc[ (11 as i32)], first_key + 1, right);
++                    } else {
++                        let mh2__u64 = ( (cb + gi_c(l0__u62, tx)) / 8) * 20 + ( (rb__u62 + gj_c(l0__u62, tx)) / 2);
++                        let w__u64 = ldu(mt + ( (mh2__u64 as u64) * (4 as u64)));
++                        kqc[ (10 as i32)] = fmaf(slope, hlo(w__u64), kqc[ (10 as i32)]);
++                        kqc[ (11 as i32)] = fmaf(slope, hhi(w__u64), kqc[ (11 as i32)]);
++                    }
++                }
++
++                if true {
++                    let l0__u62: i32 = 4;
++                    // half2 pairs, l0 even: (j,i),(j,i+1)
++                    if register_causal {
++                        let first_key = kv_row0 + ((tx % 4) as i64) * 2 + 24;
++                        kqc[ (12 as i32)] = add_causal(kqc[ (12 as i32)], first_key, left);
++                        kqc[ (13 as i32)] = add_causal(kqc[ (13 as i32)], first_key + 1, left);
++                    } else {
++                        let mh2__u65 = ( (cb + gi_c(l0__u62, tx)) / 8) * 20 + ( (rb__u62 + gj_c(l0__u62, tx)) / 2);
++                        let w__u65 = ldu(mt + ( (mh2__u65 as u64) * (4 as u64)));
++                        kqc[ (12 as i32)] = fmaf(slope, hlo(w__u65), kqc[ (12 as i32)]);
++                        kqc[ (13 as i32)] = fmaf(slope, hhi(w__u65), kqc[ (13 as i32)]);
++                    }
++                }
++
++                if true {
++                    let l0__u62: i32 = 6;
++                    // half2 pairs, l0 even: (j,i),(j,i+1)
++                    if register_causal {
++                        let first_key = kv_row0 + ((tx % 4) as i64) * 2 + 24;
++                        kqc[ (14 as i32)] = add_causal(kqc[ (14 as i32)], first_key, right);
++                        kqc[ (15 as i32)] = add_causal(kqc[ (15 as i32)], first_key + 1, right);
++                    } else {
++                        let mh2__u66 = ( (cb + gi_c(l0__u62, tx)) / 8) * 20 + ( (rb__u62 + gj_c(l0__u62, tx)) / 2);
++                        let w__u66 = ldu(mt + ( (mh2__u66 as u64) * (4 as u64)));
++                        kqc[ (14 as i32)] = fmaf(slope, hlo(w__u66), kqc[ (14 as i32)]);
++                        kqc[ (15 as i32)] = fmaf(slope, hhi(w__u66), kqc[ (15 as i32)]);
++                    }

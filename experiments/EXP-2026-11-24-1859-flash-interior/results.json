@@ -1,0 +1,96 @@
+{
+  "id": "EXP-2026-11-24-1859",
+  "status": "INCONCLUSIVE",
+  "component": "CUDA causal Flash Attention",
+  "method": "Hoist causal bounds checks for fully visible tiles",
+  "control_commit": "b805ff1c51d6e252352887e1858005942d952e03",
+  "checkpoint": "EXP-1856",
+  "gpu": "NVIDIA GeForce RTX 4070",
+  "kernel": "goose_flash_causal_mma",
+  "probe": {
+    "fixture_shapes_q_kv_prefix": [
+      [
+        8,
+        8,
+        1
+      ],
+      [
+        16,
+        46,
+        31
+      ],
+      [
+        17,
+        48,
+        32
+      ],
+      [
+        513,
+        573,
+        61
+      ],
+      [
+        4096,
+        32768,
+        28673
+      ]
+    ],
+    "timed_fixture": [
+      4096,
+      32768,
+      28673
+    ],
+    "launches_per_block": 3,
+    "output_word_mismatches": {
+      "i32": 0,
+      "full": 0
+    },
+    "variant_timings": {
+      "control": {
+        "blocks_ms_per_launch": [
+          43.41747029622396,
+          41.27232106526693,
+          41.7067616780599,
+          41.19824981689453,
+          41.381876627604164,
+          41.67748260498047
+        ],
+        "median_ms": 41.52967961629231
+      },
+      "i32": {
+        "blocks_ms_per_launch": [
+          45.77899678548177,
+          45.777974446614586,
+          45.665618896484375,
+          46.2260996500651,
+          45.5936024983724,
+          45.99022928873698
+        ],
+        "median_ms": 45.77848561604818
+      },
+      "full": {
+        "blocks_ms_per_launch": [
+          31.021738688151043,
+          31.372042338053387,
+          31.606101989746094,
+          31.939478556315105,
+          31.37604268391927,
+          31.887359619140625
+        ],
+        "median_ms": 31.49107233683268
+      }
+    }
+  },
+  "apex": {
+    "workload": "32K/512",
+    "context": 262144,
+    "cache_mib": 6290,
+    "status": "not_run",
+    "available_vram_mib": 9136,
+    "minimum_preflight_vram_mib": 9700,
+    "prefill_tok_s": null,
+    "decode_tok_s": null,
+    "peak_vram_mib": null,
+    "peak_ram_mib": null
+  }
+}

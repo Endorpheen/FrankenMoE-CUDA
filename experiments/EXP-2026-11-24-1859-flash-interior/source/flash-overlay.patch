@@ -1,0 +1,29 @@
+--- a/cuda-driver.c
++++ b/cuda-driver.c
+@@ -1154,0 +1155,20 @@
++static int load_flash_overlay(const char * path) {
++    FILE * file = fopen(path, "rb");
++    if (file == NULL) return -1;
++    if (fseek(file, 0, SEEK_END) != 0) { fclose(file); return -1; }
++    const long size = ftell(file);
++    if (size <= 0 || size > 8 * 1024 * 1024 || fseek(file, 0, SEEK_SET) != 0) {
++        fclose(file);
++        return -1;
++    }
++    char * image = calloc((size_t) size + 1, 1);
++    if (!image) { fclose(file); return -1; }
++    const size_t got = fread(image, 1, (size_t) size, file);
++    fclose(file);
++    Module candidate = NULL;
++    int error = got == (size_t) size ? cuda.module_load(&candidate, image) : -1;
++    free(image);
++    if (error == 0) error = cuda.function_get(&cuda.flash_mma, candidate, "goose_flash_causal_mma");
++    return error;
++}
++
+@@ -1384,0 +1405,5 @@
++        const char * flash_overlay = getenv("GOOSE_EXPERIMENT_FLASH_OVERLAY");
++        if (error == 0 && flash_mma && flash_overlay && *flash_overlay) {
++            error = load_flash_overlay(flash_overlay);
++            fprintf(stderr, "Goose CUDA: causal Flash overlay result=%d\n", error);
++        }

@@ -1,0 +1,67 @@
+--- a/flash-mma.goose
++++ b/flash-mma.goose
+@@ -10228,0 +10229,5 @@
++fn add_causal_local(value: f32, key: i32, visible: i32) -> f32 {
++    let mask = if key < visible { 0.0 } else { frombits(0xff800000 as u32) };
++    return fmaf(1.0, mask, value);
++}
++
+@@ -11934,0 +11940,2 @@
++        let visible_left = (left - kv_row0) as i32;
++        let visible_right = (right - kv_row0) as i32;
+@@ -12908,3 +12915,3 @@
+-                    let first_key = kv_row0 + ((tx % 4) as i64) * 2 + 0;
+-                    kqc[ (0 as i32)] = add_causal(kqc[ (0 as i32)], first_key, left);
+-                    kqc[ (1 as i32)] = add_causal(kqc[ (1 as i32)], first_key + 1, left);
++                    let first_key = (tx % 4) * 2 + 0;
++                    kqc[ (0 as i32)] = add_causal_local(kqc[ (0 as i32)], first_key, visible_left);
++                    kqc[ (1 as i32)] = add_causal_local(kqc[ (1 as i32)], first_key + 1, visible_left);
+@@ -12923,3 +12930,3 @@
+-                    let first_key = kv_row0 + ((tx % 4) as i64) * 2 + 0;
+-                    kqc[ (2 as i32)] = add_causal(kqc[ (2 as i32)], first_key, right);
+-                    kqc[ (3 as i32)] = add_causal(kqc[ (3 as i32)], first_key + 1, right);
++                    let first_key = (tx % 4) * 2 + 0;
++                    kqc[ (2 as i32)] = add_causal_local(kqc[ (2 as i32)], first_key, visible_right);
++                    kqc[ (3 as i32)] = add_causal_local(kqc[ (3 as i32)], first_key + 1, visible_right);
+@@ -12938,3 +12945,3 @@
+-                    let first_key = kv_row0 + ((tx % 4) as i64) * 2 + 8;
+-                    kqc[ (4 as i32)] = add_causal(kqc[ (4 as i32)], first_key, left);
+-                    kqc[ (5 as i32)] = add_causal(kqc[ (5 as i32)], first_key + 1, left);
++                    let first_key = (tx % 4) * 2 + 8;
++                    kqc[ (4 as i32)] = add_causal_local(kqc[ (4 as i32)], first_key, visible_left);
++                    kqc[ (5 as i32)] = add_causal_local(kqc[ (5 as i32)], first_key + 1, visible_left);
+@@ -12953,3 +12960,3 @@
+-                    let first_key = kv_row0 + ((tx % 4) as i64) * 2 + 8;
+-                    kqc[ (6 as i32)] = add_causal(kqc[ (6 as i32)], first_key, right);
+-                    kqc[ (7 as i32)] = add_causal(kqc[ (7 as i32)], first_key + 1, right);
++                    let first_key = (tx % 4) * 2 + 8;
++                    kqc[ (6 as i32)] = add_causal_local(kqc[ (6 as i32)], first_key, visible_right);
++                    kqc[ (7 as i32)] = add_causal_local(kqc[ (7 as i32)], first_key + 1, visible_right);
+@@ -13057,3 +13064,3 @@
+-                    let first_key = kv_row0 + ((tx % 4) as i64) * 2 + 16;
+-                    kqc[ (8 as i32)] = add_causal(kqc[ (8 as i32)], first_key, left);
+-                    kqc[ (9 as i32)] = add_causal(kqc[ (9 as i32)], first_key + 1, left);
++                    let first_key = (tx % 4) * 2 + 16;
++                    kqc[ (8 as i32)] = add_causal_local(kqc[ (8 as i32)], first_key, visible_left);
++                    kqc[ (9 as i32)] = add_causal_local(kqc[ (9 as i32)], first_key + 1, visible_left);
+@@ -13072,3 +13079,3 @@
+-                    let first_key = kv_row0 + ((tx % 4) as i64) * 2 + 16;
+-                    kqc[ (10 as i32)] = add_causal(kqc[ (10 as i32)], first_key, right);
+-                    kqc[ (11 as i32)] = add_causal(kqc[ (11 as i32)], first_key + 1, right);
++                    let first_key = (tx % 4) * 2 + 16;
++                    kqc[ (10 as i32)] = add_causal_local(kqc[ (10 as i32)], first_key, visible_right);
++                    kqc[ (11 as i32)] = add_causal_local(kqc[ (11 as i32)], first_key + 1, visible_right);
+@@ -13087,3 +13094,3 @@
+-                    let first_key = kv_row0 + ((tx % 4) as i64) * 2 + 24;
+-                    kqc[ (12 as i32)] = add_causal(kqc[ (12 as i32)], first_key, left);
+-                    kqc[ (13 as i32)] = add_causal(kqc[ (13 as i32)], first_key + 1, left);
++                    let first_key = (tx % 4) * 2 + 24;
++                    kqc[ (12 as i32)] = add_causal_local(kqc[ (12 as i32)], first_key, visible_left);
++                    kqc[ (13 as i32)] = add_causal_local(kqc[ (13 as i32)], first_key + 1, visible_left);
+@@ -13102,3 +13109,3 @@
+-                    let first_key = kv_row0 + ((tx % 4) as i64) * 2 + 24;
+-                    kqc[ (14 as i32)] = add_causal(kqc[ (14 as i32)], first_key, right);
+-                    kqc[ (15 as i32)] = add_causal(kqc[ (15 as i32)], first_key + 1, right);
++                    let first_key = (tx % 4) * 2 + 24;
++                    kqc[ (14 as i32)] = add_causal_local(kqc[ (14 as i32)], first_key, visible_right);
++                    kqc[ (15 as i32)] = add_causal_local(kqc[ (15 as i32)], first_key + 1, visible_right);
