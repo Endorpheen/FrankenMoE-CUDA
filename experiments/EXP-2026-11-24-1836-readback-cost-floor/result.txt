@@ -1,0 +1,5 @@
+2 KB DtoH, device idle, 2000 calls:
+  pageable blocking       4.97 us/call
+  pinned blocking         4.22 us/call
+  pinned async+event      4.20 us/call
+  16 gathered + 1 ev     26.76 us/16 calls (1.67 us/call)
