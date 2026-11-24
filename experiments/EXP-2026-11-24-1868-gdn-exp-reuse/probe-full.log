@@ -1,0 +1,15 @@
+control active CTA/SM 2
+full active CTA/SM 1
+full128 active CTA/SM 2
+nt=64 control score_mismatches=0 state_mismatches=0
+nt=64 full score_mismatches=0 state_mismatches=0
+nt=64 full128 score_mismatches=0 state_mismatches=0
+nt=128 control score_mismatches=0 state_mismatches=0
+nt=128 full score_mismatches=0 state_mismatches=0
+nt=128 full128 score_mismatches=0 state_mismatches=0
+nt=4096 control score_mismatches=0 state_mismatches=0
+nt=4096 full score_mismatches=0 state_mismatches=0
+nt=4096 full128 score_mismatches=0 state_mismatches=0
+control ms/launch [2.7228672027587892, 2.4280576705932617, 2.4387584686279298, 2.3998607635498046, 2.4683008193969727, 2.3983600616455076] median 2.4334080696105955
+full ms/launch [3.150192070007324, 2.891007995605469, 2.8769792556762694, 2.8732799530029296, 2.873753547668457, 2.872319984436035] median 2.8753664016723635
+full128 ms/launch [2.2941055297851562, 2.3270368576049805, 2.301747131347656, 2.339776039123535, 2.3205408096313476, 2.3294015884399415] median 2.3237888336181642

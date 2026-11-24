@@ -1,0 +1,12 @@
+nt=64 control score_mismatches=0 state_mismatches=0
+nt=64 candidate score_mismatches=0 state_mismatches=0
+nt=65 control score_mismatches=0 state_mismatches=0
+nt=65 candidate score_mismatches=0 state_mismatches=0
+nt=79 control score_mismatches=0 state_mismatches=0
+nt=79 candidate score_mismatches=0 state_mismatches=0
+nt=128 control score_mismatches=0 state_mismatches=0
+nt=128 candidate score_mismatches=0 state_mismatches=0
+nt=4096 control score_mismatches=0 state_mismatches=0
+nt=4096 candidate score_mismatches=0 state_mismatches=0
+control ms/launch [2.7093360900878904, 2.4106895446777346, 2.3877632141113283, 2.4157520294189454, 2.4385536193847654, 2.4401920318603514] median 2.4271528244018556
+candidate ms/launch [2.6392160415649415, 2.503526306152344, 2.3862607955932615, 2.3836671829223635, 2.3633295059204102, 2.376206398010254] median 2.3849639892578125

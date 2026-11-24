@@ -1,0 +1,51 @@
+--- a/gdn-mma.goose
++++ b/gdn-mma.goose
+@@ -289,0 +290,36 @@
++fn gate_scan_v32(smem: u64, g: u64, beta: u64, goff: i64, sb2: i64, t0: i64, valid: i32, lane: i32, pre: i64, bet: i64) {
++    var carry: f32 = 0.0;
++    var base: i32 = 0;
++
++    while base < 16 {
++        let t = base + lane;
++        var gv: f32 = 0.0;
++        var bv: f32 = 0.0;
++
++        if t < valid {
++            gv = load(g, (goff + (t0 + (t as i64)) * sb2) as u64);
++            bv = load(beta, (goff + (t0 + (t as i64)) * sb2) as u64);
++        }
++        var o: i32 = 1;
++
++        while o < 32 {
++            let pv = shfl_up(gv, o);
++
++            if lane >= o {
++                gv += pv;
++            }
++            o *= 2;
++        }
++        gv += carry;
++        let final_prefix = shfl(gv, valid - 1);
++
++        if t < 16 {
++            sm_store_f32(smem + (pre as u64) * (4 as u64), t as u64, gv);
++            sm_store_f32(smem + (bet as u64) * (4 as u64), t as u64, bv);
++            sm_store_f32(smem + (9504 as u64) * (4 as u64), t as u64, expf(gv));
++            sm_store_f32(smem + (9520 as u64) * (4 as u64), t as u64, expf(final_prefix - gv));
++        }
++        carry = shfl(gv, 31);
++        base += 32;
++    }
++}
+@@ -365 +401 @@
+-            gate_scan(smem, g, beta, goff, sb2, t0, valid, lane, 9472, 9488);
++            gate_scan_v32(smem, g, beta, goff, sb2, t0, valid, lane, 9472, 9488);
+@@ -448 +484 @@
+-                let dec = expf(sm_f32(smem + (9472 as u64) * (4 as u64), t as u64));
++                let dec = sm_f32(smem + (9504 as u64) * (4 as u64), t as u64);
+@@ -519 +555 @@
+-                xs * expf(sm_f32(smem + (9472 as u64) * (4 as u64), (valid - 1) as u64) - sm_f32(smem + (9472 as u64) * (4 as u64), t as u64)));
++                xs * sm_f32(smem + (9520 as u64) * (4 as u64), t as u64));
+@@ -523 +559 @@
+-        let dec2 = expf(sm_f32(smem + (9472 as u64) * (4 as u64), (valid - 1) as u64));
++        let dec2 = sm_f32(smem + (9504 as u64) * (4 as u64), (valid - 1) as u64);

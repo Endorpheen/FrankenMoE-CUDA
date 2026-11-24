@@ -1,0 +1,5 @@
+ptxas info    : 0 bytes gmem
+ptxas info    : Compiling entry function 'goose_gdn_mma_v32' for 'sm_89'
+ptxas info    : Function properties for goose_gdn_mma_v32
+    80 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 128 registers, used 1 barriers, 80 bytes cumulative stack size, 808 bytes cmem[0], 72 bytes cmem[2]
