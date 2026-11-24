@@ -37,8 +37,15 @@ time.
 
 Candidate: route every DtoH through a pinned bounce buffer
 (`cuMemcpyDtoHAsync_v2` into pinned staging, wait on a recorded event, then hand
-the caller its bytes). It engaged (`runs/bounce2-075101`, 63 936 copies counted over
-three requests) and the effect was **none**:
+the caller its bytes).
+
+**Correction (EXP-1834):** the bounce did **not** engage in this experiment. The
+gate required `cuda.event_sync`, which this profile loads only for
+`GOOSE_CUDA_EXPERT_STAGE_PAGEABLE`; the counters below came from the plain
+instrumentation wrapper, not from the bounce. The "pinned staging does not help"
+conclusion is only established by `runs/bon3-080045` and `runs/actb-080235` in
+EXP-1834, where the gate really is active. The numbers recorded here remain valid
+as neutral A/B arms, but they are not evidence about pinned staging.
 
 | run | prefill tok/s | decode tok/s | text |
 | --- | ---: | ---: | --- |
