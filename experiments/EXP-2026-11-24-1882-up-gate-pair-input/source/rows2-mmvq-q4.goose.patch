@@ -1,0 +1,141 @@
+--- a/mmvq-q4.goose
++++ b/mmvq-q4.goose
+@@ -111,0 +112,138 @@
++
++
++struct Q4InputPair { u0: i32, u1: i32, u2: i32, u3: i32, d0: f32, d1: f32, s1: i32, s2: i32 }
++struct Q4DotPair { up: f32, gate: f32 }
++
++fn impl_vmmq_common(
++    v0: i32,
++    v1: i32,
++    u0: i32,
++    u1: i32,
++    u2: i32,
++    u3: i32,
++    sc0: i32,
++    sc1: i32,
++    m0: i32,
++    m1: i32,
++    dmx: f32,
++    dmy: f32,
++    d8_0: f32,
++    d8_1: f32,
++    s1: i32,
++    s2: i32) -> f32 {
++    var sd: f32 = 0.0;
++    var sm: f32 = 0.0;
++    // i = 0: nibbles 0..3, q8 words (u0, u1)
++    let a0: i32 = (v0 >> 0) & (0x0F0F0F0F as i32);
++    let b0: i32 = (v1 >> 0) & (0x0F0F0F0F as i32);
++    let d1: i32 = dp4a(b0, u1, dp4a(a0, u0, 0 as i32));
++    sd = sd + d8_0 * ( (d1 * sc0) as f32);
++    sm = sm + d8_0 * ( (s1 * m0) as f32);
++    // i = 1: nibbles 4..7, q8 words (u2, u3)
++    let a1: i32 = (v0 >> 4) & (0x0F0F0F0F as i32);
++    let b1: i32 = (v1 >> 4) & (0x0F0F0F0F as i32);
++    let d2: i32 = dp4a(b1, u3, dp4a(a1, u2, 0 as i32));
++    sd = sd + d8_1 * ( (d2 * sc1) as f32);
++    sm = sm + d8_1 * ( (s2 * m1) as f32);
++    return dmx * sd - dmy * sm;
++}
++fn mmvq_q4_pair_weight(vx: u64, xb: i64, kqs: i64, bq8: i64, q: Q4InputPair) -> f32 {
++    // q4 = qs + 16*bq8_offset + 4*((iqs/2)%4), read as q4[0] and q4[4]
++    let qoff: i64 = xb + (16 as i64) + 16 * bq8 + 4 * ( (kqs / 2) % 4);
++    let v0: i32 = ld_i32(vx, (qoff as u64));
++    let v1: i32 = ld_i32(vx, ( (qoff + (16 as i64)) as u64));
++    // scales is uint8[12] at xb+4; native reads u16 words at jm, jm+2, jm+4
++    let j: i64 = bq8 / 2;
++    let jm: i64 = j & 1;
++    let sbase: i64 = xb + (4 as i64);
++    let s0: u32 = ld_u16(vx, ( (sbase + 2 * jm) as u64));
++    let s2: u32 = ld_u16(vx, ( (sbase + 2 * (jm + 2)) as u64));
++    let s4: u32 = ld_u16(vx, ( (sbase + 2 * (jm + 4)) as u64));
++    // branchless hi mask: hi = -(j >= 2)
++    var hi: u32 = 0 as u32;
++
++    if j >= 2 as i64 {
++        hi = 4294967295 as u32;
++    }
++    let a0: u32 = ( (s0 & (0x3f3f as u32)) & (~ hi)) | ( ( ( (s4 & (0x0f0f as u32)) | ( (s0 & (0xc0c0 as u32)) >> 2)) & hi));
++    let a1: u32 = ( (s2 & (0x3f3f as u32)) & (~ hi)) | ( ( ( (s4 >> 4) & (0x0f0f as u32)) | ( (s2 & (0xc0c0 as u32)) >> 2)) & hi);
++    // In native `sc` and `m` alias the two u16 words of aux at different byte offsets:
++    //   sc = (uint8_t*)aux      -> bytes 0,1 = the two low bytes of aux[0]
++    //   m  = sc + 2             -> bytes 2,3 = the two low bytes of aux[1]
++    // So the two scales come from aux[0] and the two mins from aux[1]; taking the low
++    // byte of each word as a scale and the high byte as a min is wrong.
++    let sc0: i32 = (a0 & (255 as u32)) as i32;
++    let sc1: i32 = ( (a0 >> 8) & (255 as u32)) as i32;
++    let m0: i32 = (a1 & (255 as u32)) as i32;
++    let m1: i32 = ( (a1 >> 8) & (255 as u32)) as i32;
++    let dmx: f32 = ld_h2(vx, (xb as u64));
++    // ld_h2b takes the HIGH half of the half2 at the given offset, so the base is the
++    // block start -- passing xb+2 would read the element at xb+4.
++    let dmy: f32 = ld_h2b(vx, (xb as u64));
++    return impl_vmmq_common(v0, v1, q.u0, q.u1, q.u2, q.u3, sc0, sc1, m0, m1, dmx, dmy, q.d0, q.d1, q.s1, q.s2);
++}
++
++export fn fg185q_pair8(up: u64, gate: u64, vy: u64, tid: i64) -> Q4DotPair {
++    let kbx = tid / 16;
++    let kqs = 2 * (tid % 16);
++    let ybase: i64 = 0;
++    let kby = 8 * kbx;
++    let xb: i64 = kbx * (144 as i64);
++    // bq8_offset = QR4_K*((iqs/2)/(QI8_1/2)) = 2*((iqs/2)/4)
++    let bq8: i64 = 2 * ( (kqs / 2) / 4);
++    // q8 blocks bq8i = bq8_1 + bq8_offset + i, i in 0..1
++    // ybase is a BLOCK index (native advances the block_q8_1 pointer), so it must be
++    // scaled to bytes along with kby and bq8. Adding it raw read block 64's data as
++    // byte offset 64 of block 0.
++    let yb: i64 = (ybase + kby + bq8) * (36 as i64);
++    let d8_0: f32 = ld_h2(vy, (yb as u64));
++    let d8_1: f32 = ld_h2(vy, ( (yb + (36 as i64)) as u64));
++    // u words: q8.qs + 4*((iqs/2)%4), read at +0 and +16 for both q8 blocks
++    let ubase: i64 = yb + (4 as i64) + 4 * ( (kqs / 2) % 4);
++    let u0: i32 = ld_i32(vy, (ubase as u64));
++    let u1: i32 = ld_i32(vy, ( (ubase + (16 as i64)) as u64));
++    let ub1: i64 = ubase + (36 as i64);
++    let u2: i32 = ld_i32(vy, (ub1 as u64));
++    let u3: i32 = ld_i32(vy, ( (ub1 + (16 as i64)) as u64));
++    let ones = 0x01010101 as i32;
++    let s1 = dp4a(ones, u1, dp4a(ones, u0, 0));
++    let s2 = dp4a(ones, u3, dp4a(ones, u2, 0));
++    let q = Q4InputPair {u0, u1, u2, u3, d8_0, d8_1, s1, s2};
++    return Q4DotPair {0.0 + mmvq_q4_pair_weight(up, xb, kqs, bq8, q),
++                      0.0 + mmvq_q4_pair_weight(gate, xb, kqs, bq8, q)};
++}
++
++struct Q4RowsPair { u0: f32, g0: f32, u1: f32, g1: f32 }
++export fn fg185q_pair_rows2(up: u64, gate: u64, vy: u64, stride: u64, tid: i64) -> Q4RowsPair {
++    let kbx = tid / 16;
++    let kqs = 2 * (tid % 16);
++    let ybase: i64 = 0;
++    let kby = 8 * kbx;
++    let xb: i64 = kbx * (144 as i64);
++    // bq8_offset = QR4_K*((iqs/2)/(QI8_1/2)) = 2*((iqs/2)/4)
++    let bq8: i64 = 2 * ( (kqs / 2) / 4);
++    // q8 blocks bq8i = bq8_1 + bq8_offset + i, i in 0..1
++    // ybase is a BLOCK index (native advances the block_q8_1 pointer), so it must be
++    // scaled to bytes along with kby and bq8. Adding it raw read block 64's data as
++    // byte offset 64 of block 0.
++    let yb: i64 = (ybase + kby + bq8) * (36 as i64);
++    let d8_0: f32 = ld_h2(vy, (yb as u64));
++    let d8_1: f32 = ld_h2(vy, ( (yb + (36 as i64)) as u64));
++    // u words: q8.qs + 4*((iqs/2)%4), read at +0 and +16 for both q8 blocks
++    let ubase: i64 = yb + (4 as i64) + 4 * ( (kqs / 2) % 4);
++    let u0: i32 = ld_i32(vy, (ubase as u64));
++    let u1: i32 = ld_i32(vy, ( (ubase + (16 as i64)) as u64));
++    let ub1: i64 = ubase + (36 as i64);
++    let u2: i32 = ld_i32(vy, (ub1 as u64));
++    let u3: i32 = ld_i32(vy, ( (ub1 + (16 as i64)) as u64));
++    let ones = 0x01010101 as i32;
++    let s1 = dp4a(ones, u1, dp4a(ones, u0, 0));
++    let s2 = dp4a(ones, u3, dp4a(ones, u2, 0));
++    let q = Q4InputPair {u0, u1, u2, u3, d8_0, d8_1, s1, s2};
++    return Q4RowsPair {
++        0.0 + mmvq_q4_pair_weight(up, xb, kqs, bq8, q),
++        0.0 + mmvq_q4_pair_weight(gate, xb, kqs, bq8, q),
++        0.0 + mmvq_q4_pair_weight(up + stride, xb, kqs, bq8, q),
++        0.0 + mmvq_q4_pair_weight(gate + stride, xb, kqs, bq8, q)
++    };
++}

@@ -1,0 +1,47 @@
+--- a/cuda-device.cl
++++ b/cuda-device.cl
+@@ -759,2 +759,2 @@
+-    uint32_t row, route, thread;
+-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(row));
++    uint32_t row_pair, route, thread;
++    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(row_pair));
+@@ -764 +764 @@
+-    const uint64_t row_offset = (uint64_t)row * stride;
++    const uint64_t row_offset = (uint64_t)row_pair * 2 * stride;
+@@ -767,3 +767,4 @@
+-    float u = fg185q_partial_g((uint64_t)weights + up + row_offset, input, 0, 0, extent, 8, thread);
+-    float g = fg185q_partial_g((uint64_t)weights + gate + row_offset, input, 0, 0, extent, 8, thread);
+-    __local float sums[2][96];
++    const Q4RowsPair_g pair = fg185q_pair_rows2_g((uint64_t)weights + up + row_offset,
++        (uint64_t)weights + gate + row_offset, input, stride, thread);
++    float u0 = pair.u0_g, g0 = pair.g0_g, u1 = pair.u1_g, g1 = pair.g1_g;
++    __local float sums[4][96];
+@@ -771,2 +772,5 @@
+-        sums[0][32 * (warp - 1) + lane] = u;
+-        sums[1][32 * (warp - 1) + lane] = g;
++        const uint32_t index = 32 * (warp - 1) + lane;
++        sums[0][index] = u0;
++        sums[1][index] = g0;
++        sums[2][index] = u1;
++        sums[3][index] = g1;
+@@ -777,2 +781,5 @@
+-            u += sums[0][32 * i + lane];
+-            g += sums[1][32 * i + lane];
++            const uint32_t index = 32 * i + lane;
++            u0 += sums[0][index];
++            g0 += sums[1][index];
++            u1 += sums[2][index];
++            g1 += sums[3][index];
+@@ -780,2 +787,4 @@
+-        u = warp_sum_g(u);
+-        g = warp_sum_g(g);
++        u0 = warp_sum_g(u0);
++        g0 = warp_sum_g(g0);
++        u1 = warp_sum_g(u1);
++        g1 = warp_sum_g(g1);
+@@ -783,2 +792,3 @@
+-            fg_device_global_store((uint64_t)output + up_jobs[3 * route + 1] + (uint64_t)row * 4,
+-                fg_vector_swiglu_reference_g(g, u));
++            const uint64_t dst = (uint64_t)output + up_jobs[3 * route + 1] + (uint64_t)row_pair * 8;
++            fg_device_global_store(dst, fg_vector_swiglu_reference_g(g0, u0));
++            fg_device_global_store(dst + 4, fg_vector_swiglu_reference_g(g1, u1));

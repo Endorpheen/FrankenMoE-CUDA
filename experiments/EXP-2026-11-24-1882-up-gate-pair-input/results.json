@@ -1,0 +1,70 @@
+{
+  "id": "EXP-2026-11-24-1882",
+  "status": "REJECTED at isolated GPU validation",
+  "baseline": "EXP-1880",
+  "gpu": "RTX 4070 SM89",
+  "kernel": "goose_mmvq_up_gate_glu",
+  "profile": "ten synthetic layers; 2048 input, 512 output, eight routes",
+  "matched_fp32_words_per_probe": 122880,
+  "full_apex_run": false,
+  "repeat_timings": {
+    "pair": {
+      "reference": {
+        "samples_us_per_layer": [
+          23.52,
+          23.221,
+          23.882,
+          23.395,
+          23.085,
+          23.186,
+          23.611,
+          23.45
+        ],
+        "median": 23.4225
+      },
+      "fused": {
+        "samples_us_per_layer": [
+          23.619,
+          23.739,
+          23.542,
+          23.65,
+          23.73,
+          23.166,
+          23.494,
+          23.89
+        ],
+        "median": 23.6345
+      },
+      "change_pct": 0.9051126054007819
+    },
+    "rows2": {
+      "reference": {
+        "samples_us_per_layer": [
+          21.928,
+          21.888,
+          21.901,
+          21.92,
+          21.923,
+          21.925,
+          21.912,
+          21.928
+        ],
+        "median": 21.9215
+      },
+      "fused": {
+        "samples_us_per_layer": [
+          23.069,
+          23.123,
+          23.123,
+          23.074,
+          23.083,
+          23.099,
+          23.853,
+          23.093
+        ],
+        "median": 23.096
+      },
+      "change_pct": 5.357753803343734
+    }
+  }
+}

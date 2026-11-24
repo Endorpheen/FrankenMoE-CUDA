@@ -1,0 +1,4 @@
+--- a/frankenmoe-fragment.py
++++ b/frankenmoe-fragment.py
+@@ -18,0 +19 @@
++    "mmvq-q4": {"Q4DotPair": "Q4DotPair_g", "Q4RowsPair": "Q4RowsPair_g"},

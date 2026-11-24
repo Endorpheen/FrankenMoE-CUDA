@@ -1,0 +1,9 @@
+--- a/cuda-device.cl
++++ b/cuda-device.cl
+@@ -767,2 +767,4 @@
+-    float u = fg185q_partial_g((uint64_t)weights + up + row_offset, input, 0, 0, extent, 8, thread);
+-    float g = fg185q_partial_g((uint64_t)weights + gate + row_offset, input, 0, 0, extent, 8, thread);
++    const Q4DotPair_g pair = fg185q_pair8_g((uint64_t)weights + up + row_offset,
++                                          (uint64_t)weights + gate + row_offset, input, thread);
++    float u = pair.up_g;
++    float g = pair.gate_g;

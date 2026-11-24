@@ -1,0 +1,5 @@
+Compared 122880 FP32 values bitwise
+reference 21.918 us per layer
+fused 21.880 us per layer
+fused 21.918 us per layer
+reference 23.139 us per layer

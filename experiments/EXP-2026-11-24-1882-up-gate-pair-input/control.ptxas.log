@@ -1,0 +1,5 @@
+ptxas info    : 0 bytes gmem
+ptxas info    : Compiling entry function 'goose_mmvq_up_gate_glu' for 'sm_89'
+ptxas info    : Function properties for goose_mmvq_up_gate_glu
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 40 registers, used 1 barriers, 768 bytes smem, 404 bytes cmem[0], 4 bytes cmem[2]
