@@ -107,6 +107,7 @@ for module in q4k q6k matmul q4-attention gdn gdn-mma q4-set-rows vector rms-ref
     "$GOOSE" --standalone -o "$OUT/$module.c" --header "$OUT/$module.h" "$OUT/$module.goose"
     python3 - "$OUT" "$module" <<'PY'
 from pathlib import Path
+import os
 import sys
 
 out, module = Path(sys.argv[1]), sys.argv[2]
@@ -130,6 +131,15 @@ if module == "vector":
 if module == "mmq":
     fragment = fragment.replace("static void fg_device_mmq_q4_large_g(",
                                 "static __attribute__((always_inline)) void fg_device_mmq_q4_large_g(")
+if module == "flash-mma" and os.getenv("GOOSE_FLASH_INLINE_CAUSAL") == "1":
+    # Registry EXP-1609: the causal entry passes constants through a large shared
+    # helper, and the CUDA pipeline leaves an out-of-line call on this path. Inlining
+    # the body and the wrapper specialises it; the Stream-K entry grows, but Stream-K
+    # is off by default and is measured separately when it is on.
+    fragment = fragment.replace("static void process_tile_apex_nc8_np1_g(",
+                                "static __attribute__((always_inline)) void process_tile_apex_nc8_np1_g(")
+    fragment = fragment.replace("static void flash_causal_part_g(",
+                                "static __attribute__((always_inline)) void flash_causal_part_g(")
 if module in ("q4-attention", "gdn", "rope", "ssm-conv", "fwht", "routing"):
     types = source.split("/* ---- types ---- */", 1)[1].split("/* ---- data ---- */", 1)[0]
     excluded = ("gs_rhdr;", "gs_rref;", "gs_pref;", "sl_u8;")
