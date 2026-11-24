@@ -1,0 +1,242 @@
+[
+  {
+    "arm": "A1",
+    "run": "cx-mail-a-20261124-105138",
+    "peak_vram_mib": 8774,
+    "vmhwm_kib": 21491540,
+    "vm_swap_kib": 0,
+    "pswpout_delta": 0,
+    "replies": [
+      {
+        "exact": true,
+        "timings": {
+          "cache_n": 0,
+          "prompt_n": 32768,
+          "prompt_ms": 11983.788692014059,
+          "prompt_per_token_ms": 0.3657162076420306,
+          "prompt_per_second": 2734.3606301933914,
+          "predicted_n": 512,
+          "predicted_ms": 6308.010029984871,
+          "predicted_per_token_ms": 12.344442328737516,
+          "predicted_per_second": 81.00811469401319
+        },
+        "full_seconds": 18.388748
+      },
+      {
+        "exact": true,
+        "timings": {
+          "cache_n": 0,
+          "prompt_n": 32768,
+          "prompt_ms": 10136.267775000306,
+          "prompt_per_token_ms": 0.30933434371949176,
+          "prompt_per_second": 3232.748061452926,
+          "predicted_n": 512,
+          "predicted_ms": 6275.1825579907745,
+          "predicted_per_token_ms": 12.280200700569031,
+          "predicted_per_second": 81.43189385770077
+        },
+        "full_seconds": 16.502089
+      }
+    ]
+  },
+  {
+    "arm": "B1",
+    "run": "cx-mail-b-20261124-105247",
+    "peak_vram_mib": 8774,
+    "vmhwm_kib": 21490928,
+    "vm_swap_kib": 0,
+    "pswpout_delta": 0,
+    "replies": [
+      {
+        "exact": true,
+        "timings": {
+          "cache_n": 0,
+          "prompt_n": 32768,
+          "prompt_ms": 11891.34308201028,
+          "prompt_per_token_ms": 0.362894991516427,
+          "prompt_per_second": 2755.6180806500147,
+          "predicted_n": 512,
+          "predicted_ms": 6196.086006995756,
+          "predicted_per_token_ms": 12.125412929541596,
+          "predicted_per_second": 82.47141815382325
+        },
+        "full_seconds": 18.187077
+      },
+      {
+        "exact": true,
+        "timings": {
+          "cache_n": 0,
+          "prompt_n": 32768,
+          "prompt_ms": 10077.189242991153,
+          "prompt_per_token_ms": 0.3075314100033921,
+          "prompt_per_second": 3251.7003709929004,
+          "predicted_n": 512,
+          "predicted_ms": 6151.433211023686,
+          "predicted_per_token_ms": 12.038029767169641,
+          "predicted_per_second": 83.07007204179045
+        },
+        "full_seconds": 16.31458
+      }
+    ]
+  },
+  {
+    "arm": "B2",
+    "run": "cx-mail-b2-20261124-105402",
+    "peak_vram_mib": 8774,
+    "vmhwm_kib": 21491072,
+    "vm_swap_kib": 0,
+    "pswpout_delta": 0,
+    "replies": [
+      {
+        "exact": true,
+        "timings": {
+          "cache_n": 0,
+          "prompt_n": 32768,
+          "prompt_ms": 11897.743431007257,
+          "prompt_per_token_ms": 0.3630903146669695,
+          "prompt_per_second": 2754.1357056500146,
+          "predicted_n": 512,
+          "predicted_ms": 6220.849226985592,
+          "predicted_per_token_ms": 12.173873242633253,
+          "predicted_per_second": 82.14312569790617
+        },
+        "full_seconds": 18.21901
+      },
+      {
+        "exact": true,
+        "timings": {
+          "cache_n": 0,
+          "prompt_n": 32768,
+          "prompt_ms": 10092.946119984845,
+          "prompt_per_token_ms": 0.3080122717280531,
+          "prompt_per_second": 3246.6238906315693,
+          "predicted_n": 512,
+          "predicted_ms": 6162.0136910059955,
+          "predicted_per_token_ms": 12.058735207448132,
+          "predicted_per_second": 82.92743665043291
+        },
+        "full_seconds": 16.345479
+      }
+    ]
+  },
+  {
+    "arm": "A2",
+    "run": "cx-mail-a2-20261124-105509",
+    "peak_vram_mib": 8774,
+    "vmhwm_kib": 21491120,
+    "vm_swap_kib": 0,
+    "pswpout_delta": 0,
+    "replies": [
+      {
+        "exact": true,
+        "timings": {
+          "cache_n": 0,
+          "prompt_n": 32768,
+          "prompt_ms": 11874.842639022972,
+          "prompt_per_token_ms": 0.36239143795846473,
+          "prompt_per_second": 2759.4470929928934,
+          "predicted_n": 512,
+          "predicted_ms": 6285.558631992899,
+          "predicted_per_token_ms": 12.300506129144615,
+          "predicted_per_second": 81.29746772213026
+        },
+        "full_seconds": 18.254722
+      },
+      {
+        "exact": true,
+        "timings": {
+          "cache_n": 0,
+          "prompt_n": 32768,
+          "prompt_ms": 10077.808678004658,
+          "prompt_per_token_ms": 0.3075503136598101,
+          "prompt_per_second": 3251.500504421945,
+          "predicted_n": 512,
+          "predicted_ms": 6251.415039005224,
+          "predicted_per_token_ms": 12.233688921732336,
+          "predicted_per_second": 81.7414932158007
+        },
+        "full_seconds": 16.418371
+      }
+    ]
+  },
+  {
+    "arm": "Verify",
+    "run": "cx-mail-verify-20261124-105700",
+    "peak_vram_mib": 8774,
+    "vmhwm_kib": 21491320,
+    "vm_swap_kib": 0,
+    "pswpout_delta": 0,
+    "replies": [
+      {
+        "exact": true,
+        "timings": {
+          "cache_n": 0,
+          "prompt_n": 32768,
+          "prompt_ms": 11921.988497982966,
+          "prompt_per_token_ms": 0.36383021539254656,
+          "prompt_per_second": 2748.534777192906,
+          "predicted_n": 512,
+          "predicted_ms": 6317.934631020762,
+          "predicted_per_token_ms": 12.36386424857292,
+          "predicted_per_second": 80.88086215565036
+        },
+        "full_seconds": 18.337002
+      },
+      {
+        "exact": true,
+        "timings": {
+          "cache_n": 0,
+          "prompt_n": 32768,
+          "prompt_ms": 10098.995090986136,
+          "prompt_per_token_ms": 0.3081968716731609,
+          "prompt_per_second": 3244.67926806372,
+          "predicted_n": 512,
+          "predicted_ms": 6288.190466002561,
+          "predicted_per_token_ms": 12.305656489241803,
+          "predicted_per_second": 81.26344180615217
+        },
+        "full_seconds": 16.474808
+      }
+    ]
+  },
+  {
+    "arm": "Default",
+    "run": "cx-mail-default-20261124-105812",
+    "peak_vram_mib": 8774,
+    "vmhwm_kib": 21492280,
+    "vm_swap_kib": 0,
+    "pswpout_delta": 0,
+    "replies": [
+      {
+        "exact": true,
+        "timings": {
+          "cache_n": 0,
+          "prompt_n": 32768,
+          "prompt_ms": 11876.96840701392,
+          "prompt_per_token_ms": 0.3624563112492041,
+          "prompt_per_second": 2758.9532006036934,
+          "predicted_n": 512,
+          "predicted_ms": 6170.233240991365,
+          "predicted_per_token_ms": 12.074820432468425,
+          "predicted_per_second": 82.81696656217458
+        },
+        "full_seconds": 18.145179
+      },
+      {
+        "exact": true,
+        "timings": {
+          "cache_n": 0,
+          "prompt_n": 32768,
+          "prompt_ms": 10091.155821981374,
+          "prompt_per_token_ms": 0.3079576361688652,
+          "prompt_per_second": 3247.1998825567716,
+          "predicted_n": 512,
+          "predicted_ms": 6151.044685015222,
+          "predicted_per_token_ms": 12.037269442299847,
+          "predicted_per_second": 83.0753190990248
+        },
+        "full_seconds": 16.329755
+      }
+    ]
+  }
+]

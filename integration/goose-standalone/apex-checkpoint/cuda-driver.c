@@ -6,6 +6,7 @@
 #include "fused-image.h"
 #include "shared-image.h"
 #include "compact-route-image.h"
+#include "route-mailbox-image.h"
 #include "softmax-image.h"
 
 #include <dlfcn.h>
@@ -253,6 +254,10 @@ static struct {
     Function moe_add_shared_residual;
     Function rms_decode_2048, route_compact8, route_softmax_fixed;
     struct device_buffer route_weights;
+    Function route_mailbox_kernel;
+    uint32_t *route_mailbox_host;
+    DevicePtr route_mailbox_device;
+    uint32_t route_mailbox_sequence;
     Function mmq_stream, mmq_stream_fixup;
     Function flash_stream, flash_fixup_uniform, flash_fixup_general;
     Function rope_phases, rope_apply, ssm_conv, ssm_conv_decode, ssm_conv_long;
@@ -429,6 +434,7 @@ static const struct replay_layout * replay_layout_for(Function function) {
     while (index < entries && strcmp(goose_cuda_arg_counts[index].name, name) != 0) ++index;
     const size_t args = function == cuda.route_softmax_fixed ? 3 :
         function == cuda.route_compact8 ? 4 :
+        function == cuda.route_mailbox_kernel ? 6 :
         function == cuda.mmvq_up_gate_glu ? 7 :
         function == cuda.mmvq_shared_up_gate_glu ? 6 :
         index == entries ? REPLAY_ARGS + 1 : goose_cuda_arg_counts[index].count;
@@ -888,6 +894,7 @@ static _Thread_local uint64_t cuda_routes[5];
 static _Thread_local struct {
     uint64_t scores_host, ids_host;
     DevicePtr scores_device;
+    uint32_t mailbox_sequence;
 } route_compact_pending;
 static _Thread_local uint64_t cuda_blits[3];
 static _Thread_local struct {
@@ -1095,6 +1102,10 @@ static void cleanup(void) {
                 cuda.sync();
                 cuda.host_free(cuda.packet_host);
             }
+            if (cuda.route_mailbox_host) {
+                cuda.sync();
+                cuda.host_free(cuda.route_mailbox_host);
+            }
             release_flash_graph();
             release_mmvq_graphs();
             if (cuda.experts.prefill_ready) cuda.event_destroy(cuda.experts.prefill_ready);
@@ -1120,6 +1131,25 @@ static void cleanup(void) {
     free(cuda.expert_upload_jobs);
     free_expert_metadata(&cuda.experts);
     if (cuda.library) dlclose(cuda.library);
+}
+
+static int init_route_mailbox(void) {
+    int (*host_device)(DevicePtr *, void *, unsigned) =
+        (int (*)(DevicePtr *, void *, unsigned)) dlsym(cuda.library, "cuMemHostGetDevicePointer_v2");
+    if (!host_device || !cuda.host_alloc || !cuda.host_free) return -1;
+    Module module = NULL;
+    int error = cuda.module_load(&module, route_mailbox_image);
+    if (error == 0) error = cuda.function_get(&cuda.route_mailbox_kernel, module, "goose_route_compact8");
+    void *host = NULL;
+    if (error == 0) error = cuda.host_alloc(&host, 64, 2);
+    if (error == 0) error = host_device(&cuda.route_mailbox_device, host, 0);
+    if (error != 0) {
+        if (host) cuda.host_free(host);
+        return error;
+    }
+    cuda.route_mailbox_host = host;
+    memset(host, 0, 64);
+    return 0;
 }
 
 static void load_cuda(void) {
@@ -1451,6 +1481,12 @@ static void load_cuda(void) {
             if ((!disable || strcmp(disable,"1") != 0) &&
                 cuda.module_load(&routing, compact_route_image) == 0)
                 (void)cuda.function_get(&cuda.route_compact8, routing, "goose_route_compact8");
+            const char *mailbox = getenv("GOOSE_ROUTE_MAILBOX");
+            if (cuda.route_compact8 && (!mailbox || strcmp(mailbox, "0") != 0)) {
+                const int setup = init_route_mailbox();
+                if (setup != 0) cuda.route_mailbox_kernel = NULL;
+                fprintf(stderr, "Goose CUDA: route mailbox initialization result=%d\n", setup);
+            }
         }
         if (error == 0 && mmvq && major == 8 && minor == 9) {
             const char *disable = getenv("GOOSE_CUDA_DISABLE_ROUTER_UNROLL");
@@ -3826,6 +3862,68 @@ static bool dense_weight(uint64_t host, int64_t bytes, DevicePtr * device) {
     return true;
 }
 
+static int64_t read_routed_ids(uint64_t host) {
+    const uint32_t seq = route_compact_pending.mailbox_sequence;
+    if (!seq || route_compact_pending.ids_host != host)
+        return fg_cuda_activation_read_address(host, 32);
+    const sl_i64 ranges = activation_ranges();
+    const int64_t found = fg143_activation_overlap(ranges, host, 32, 0);
+    if (found < 0 || fg143_activation_overlap(ranges, host, 32, found + 1) >= 0 ||
+        (activations.large_output[1] > 0 &&
+         fg143_activation_overlap(activation_large_range(), host, 32, 0) >= 0))
+        return fg_cuda_activation_read_address(host, 32);
+    int64_t *record = activations.ranges + found * ACTIVATION_WORDS;
+    if ((uint64_t) record[0] != host || record[1] != 32 || record[3] != 0)
+        return fg_cuda_activation_read_address(host, 32);
+
+    if (push_context() != 1) return -1;
+    const int error = decode_capture_submit();
+    bool ready = false;
+#ifdef VERIFY_ROUTE_MAILBOX
+    static _Thread_local unsigned verified, forced;
+    const bool force_fallback = (verified + forced + 1) % 257 == 0;
+#else
+    const bool force_fallback = false;
+#endif
+    if (error == 0 && !force_fallback) {
+        for (unsigned spin = 0; spin < 200000; ++spin) {
+            if (__atomic_load_n(cuda.route_mailbox_host + 8, __ATOMIC_ACQUIRE) == seq) {
+                memcpy((void *)(uintptr_t) host, cuda.route_mailbox_host, 32);
+                record[3] = 1;
+                ready = true;
+                break;
+            }
+            __builtin_ia32_pause();
+        }
+    }
+#ifdef VERIFY_ROUTE_MAILBOX
+    int verify_error = 0;
+    if (ready) {
+        uint32_t expected[8];
+        verify_error = decode_raw.download(expected, cuda.activations.address + (uint64_t) record[2], sizeof expected);
+        if (verify_error == 0 && memcmp(expected, (const void *)(uintptr_t) host, sizeof expected) != 0) {
+            fputs("Goose CUDA: route mailbox verification mismatch\n", stderr);
+            verify_error = -1;
+        }
+        ++verified;
+    } else if (force_fallback) {
+        ++forced;
+    }
+    if (verify_error != 0) {
+        (void) finish_context();
+        return -1;
+    }
+    if ((verified + forced) % 10000 == 0)
+        fprintf(stderr, "Goose CUDA: mailbox verified=%u forced-fallback=%u\n", verified, forced);
+#endif
+    if (finish_context() != 0 || error != 0) return -1;
+    static _Thread_local unsigned reads, fallbacks;
+    if (!ready) ++fallbacks;
+    if (++reads == 1 || reads % 10000 == 0)
+        fprintf(stderr, "Goose CUDA: route mailbox reads=%u fallbacks=%u\n", reads, fallbacks);
+    return ready ? 0 : fg_cuda_activation_read_address(host, 32);
+}
+
 int64_t fg_cuda_routed_graph(sl_i64 plan, sl_i64 glu, sl_i64 norm, sl_i64 shared, int64_t step, int64_t deadline) {
     enum { routes = 8, experts = 256, words = 3 };
     if (!fg_cuda_routed_graph_enabled()) return 0;
@@ -3872,7 +3970,7 @@ int64_t fg_cuda_routed_graph(sl_i64 plan, sl_i64 glu, sl_i64 norm, sl_i64 shared
         if (!reused_input) return 0;
     }
     decode_split_armed = 0;
-    if (fg_cuda_activation_read_address(ids_host, routes * 4) != 0) return -1;
+    if (read_routed_ids(ids_host) != 0) return -1;
     int32_t ids[routes];
     memcpy(ids, (const void *) (uintptr_t) ids_host, sizeof ids);
     const bool stage_all = full && cuda.expert_decode_overlap && activations.defer_waits;
@@ -4934,7 +5032,10 @@ int64_t fg_cuda_routing(sl_i64 config, sl_u8 x, sl_u8 y, sl_u8 out) {
     const int64_t op = config.data[0];
     const bool compact = op == 1 && config.data[3] != 0;
     const bool topk = compact && cuda.moe_topk;
-    if (op == 1) route_compact_pending.ids_host = 0;
+    if (op == 1) {
+        route_compact_pending.ids_host = 0;
+        route_compact_pending.mailbox_sequence = 0;
+    }
     float scale = 0.0f;
     if (op == 0) {
         const uint32_t bits = (uint32_t)config.data[21];
@@ -4972,7 +5073,16 @@ int64_t fg_cuda_routing(sl_i64 config, sl_u8 x, sl_u8 y, sl_u8 out) {
         } else if (compact_weights) {
             float default_scale = 1.0f;
             void * compact_args[] = {&staged[0], &output, &cuda.route_weights.address, &default_scale};
-            error = cuda.launch(cuda.route_compact8, 1, 1, 1, 32, 1, 1, 0, NULL, compact_args, NULL);
+            if (cuda.route_mailbox_kernel && (output & 15u) == 0) {
+                uint32_t seq = ++cuda.route_mailbox_sequence;
+                if (seq == 0) seq = ++cuda.route_mailbox_sequence;
+                void * mailbox_args[] = {&staged[0], &output, &cuda.route_weights.address, &default_scale,
+                    &cuda.route_mailbox_device, &seq};
+                error = cuda.launch(cuda.route_mailbox_kernel, 1, 1, 1, 32, 1, 1, 0, NULL, mailbox_args, NULL);
+                if (error == 0) route_compact_pending.mailbox_sequence = seq;
+            } else {
+                error = cuda.launch(cuda.route_compact8, 1, 1, 1, 32, 1, 1, 0, NULL, compact_args, NULL);
+            }
         } else {
             error = cuda.launch(operations[op], (unsigned) groups, 1, 1,
                 (unsigned) config.data[2], 1, 1, 0, NULL, args, NULL);
