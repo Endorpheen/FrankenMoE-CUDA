@@ -1,0 +1,43 @@
+--- a/cuda-driver.c
++++ b/cuda-driver.c
+@@ -4,0 +5 @@
++#include "fwht-fixed-image.h"
+@@ -269,0 +271 @@
++    Function fwht_fixed[2], fwht_q4_fixed[2];
+@@ -1540,0 +1543,13 @@
++        const char * fwht_fixed = getenv("GOOSE_FWHT_FIXED");
++        if (error == 0 && major == 8 && (!fwht_fixed || strcmp(fwht_fixed, "0") != 0) &&
++            cuda.device_attribute(&minor, compute_capability_minor, device) == 0 && minor == 9) {
++            Module image = NULL;
++            if (cuda.module_load(&image, fwht_fixed_image) == 0) {
++                (void) cuda.function_get(&cuda.fwht_fixed[0], image, "goose_kv_fwht_64");
++                (void) cuda.function_get(&cuda.fwht_fixed[1], image, "goose_kv_fwht_256");
++                if (cuda.fwht_q4) {
++                    (void) cuda.function_get(&cuda.fwht_q4_fixed[0], image, "goose_fwht_q4_64");
++                    (void) cuda.function_get(&cuda.fwht_q4_fixed[1], image, "goose_fwht_q4_256");
++                }
++            }
++        }
+@@ -2326,0 +2342,6 @@
++static Function prefill_fwht(Function fallback, const Function fixed[2], int32_t width, int64_t rows) {
++    if ((width != 64 && width != 256) || rows < 128 || !fixed[width == 256] || !fg143_cpu_prefill())
++        return fallback;
++    return fixed[width == 256];
++}
++
+@@ -2351 +2372,6 @@
+-            error = cuda.launch(cuda.fwht_q4, (unsigned) ((groups + 3) / 4), 1, 1, 128, 1, 1, 0, NULL, fused, NULL);
++            const Function kernel = prefill_fwht(cuda.fwht_q4, cuda.fwht_q4_fixed, rotation, groups);
++            error = cuda.launch(kernel, (unsigned) ((groups + 3) / 4), 1, 1, 128, 1, 1, 0, NULL, fused, NULL);
++            if (error == 0 && kernel != cuda.fwht_q4) {
++                static _Thread_local bool logged;
++                if (!logged) { logged = true; fputs("Goose CUDA: fixed prefill FWHT Q4 selected\n", stderr); }
++            }
+@@ -5240 +5266,6 @@
+-        error = cuda.launch(cuda.fwht, (unsigned) blocks, 1, 1, 128, 1, 1, 0, NULL, args, NULL);
++        const Function kernel = prefill_fwht(cuda.fwht, cuda.fwht_fixed, width, rows);
++        error = cuda.launch(kernel, (unsigned) blocks, 1, 1, 128, 1, 1, 0, NULL, args, NULL);
++        if (error == 0 && kernel != cuda.fwht) {
++            static _Thread_local bool logged;
++            if (!logged) { logged = true; fputs("Goose CUDA: fixed prefill FWHT selected\n", stderr); }
++        }

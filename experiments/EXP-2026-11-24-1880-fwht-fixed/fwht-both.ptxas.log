@@ -1,0 +1,17 @@
+ptxas info    : 0 bytes gmem
+ptxas info    : Compiling entry function 'goose_fwht_q4_256' for 'sm_89'
+ptxas info    : Function properties for goose_fwht_q4_256
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 40 registers, used 0 barriers, 4096 bytes smem, 388 bytes cmem[0]
+ptxas info    : Compiling entry function 'goose_fwht_q4_64' for 'sm_89'
+ptxas info    : Function properties for goose_fwht_q4_64
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 24 registers, used 0 barriers, 1024 bytes smem, 388 bytes cmem[0]
+ptxas info    : Compiling entry function 'goose_kv_fwht_256' for 'sm_89'
+ptxas info    : Function properties for goose_kv_fwht_256
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 34 registers, used 0 barriers, 388 bytes cmem[0]
+ptxas info    : Compiling entry function 'goose_kv_fwht_64' for 'sm_89'
+ptxas info    : Function properties for goose_kv_fwht_64
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 17 registers, used 0 barriers, 388 bytes cmem[0]

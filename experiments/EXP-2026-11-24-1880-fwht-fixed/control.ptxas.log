@@ -1,0 +1,5 @@
+ptxas info    : 0 bytes gmem
+ptxas info    : Compiling entry function 'goose_kv_fwht' for 'sm_89'
+ptxas info    : Function properties for goose_kv_fwht
+    64 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 38 registers, used 0 barriers, 64 bytes cumulative stack size, 388 bytes cmem[0]
