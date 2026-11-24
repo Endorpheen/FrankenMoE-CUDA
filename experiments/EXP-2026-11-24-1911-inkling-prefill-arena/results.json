@@ -1,0 +1,142 @@
+{
+  "runs": {
+    "A1": {
+      "cold": {
+        "prefill": 73.64825882885302,
+        "decode": 10.938843720641355
+      },
+      "warm": {
+        "prefill": 81.9199447922125,
+        "decode": 10.972022086894368
+      },
+      "fingerprints": 1086,
+      "vram_peak_mib": 9564,
+      "rss_peak_kib": 12563820,
+      "swap_kib": 0,
+      "swapout_pages": 0,
+      "expert_traffic": [
+        [
+          2598,
+          11205402624
+        ],
+        [
+          1249,
+          5387046912
+        ]
+      ],
+      "exact": true
+    },
+    "B1": {
+      "cold": {
+        "prefill": 110.93181251332625,
+        "decode": 10.659423678422778
+      },
+      "warm": {
+        "prefill": 130.11327611751545,
+        "decode": 10.77214355918898
+      },
+      "fingerprints": 1086,
+      "vram_peak_mib": 9858,
+      "rss_peak_kib": 12508376,
+      "swap_kib": 0,
+      "swapout_pages": 0,
+      "expert_traffic": [
+        [
+          2598,
+          11205402624
+        ],
+        [
+          1249,
+          5387046912
+        ]
+      ],
+      "exact": true
+    },
+    "A2": {
+      "cold": {
+        "prefill": 74.30757836111641,
+        "decode": 10.854770880555938
+      },
+      "warm": {
+        "prefill": 82.9081841994603,
+        "decode": 10.736738665955011
+      },
+      "fingerprints": 1086,
+      "vram_peak_mib": 9562,
+      "rss_peak_kib": 12563496,
+      "swap_kib": 0,
+      "swapout_pages": 0,
+      "expert_traffic": [
+        [
+          2598,
+          11205402624
+        ],
+        [
+          1249,
+          5387046912
+        ]
+      ],
+      "exact": true
+    },
+    "B2": {
+      "cold": {
+        "prefill": 109.75419611854173,
+        "decode": 10.971075290378337
+      },
+      "warm": {
+        "prefill": 130.36753442653063,
+        "decode": 11.125285615230611
+      },
+      "fingerprints": 1086,
+      "vram_peak_mib": 9858,
+      "rss_peak_kib": 12508572,
+      "swap_kib": 0,
+      "swapout_pages": 0,
+      "expert_traffic": [
+        [
+          2598,
+          11205402624
+        ],
+        [
+          1249,
+          5387046912
+        ]
+      ],
+      "exact": true
+    }
+  },
+  "means": {
+    "A": {
+      "cold": {
+        "prefill": 73.97791859498471,
+        "decode": 10.896807300598645
+      },
+      "warm": {
+        "prefill": 82.4140644958364,
+        "decode": 10.85438037642469
+      }
+    },
+    "B": {
+      "cold": {
+        "prefill": 110.343004315934,
+        "decode": 10.815249484400557
+      },
+      "warm": {
+        "prefill": 130.24040527202305,
+        "decode": 10.948714587209796
+      }
+    }
+  },
+  "conditions": {
+    "context": 1024,
+    "prompt_tokens": 512,
+    "generated_tokens": 16,
+    "batch": 512,
+    "ubatch": 512,
+    "cpu_parallel_prep": false,
+    "kv": "q4_0/q4_0",
+    "gpu": "RTX 4070",
+    "A_activation_mib": 64,
+    "B_activation_mib": 384
+  }
+}
