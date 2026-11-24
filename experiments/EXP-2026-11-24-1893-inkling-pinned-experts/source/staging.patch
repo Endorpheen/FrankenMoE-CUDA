@@ -1,0 +1,39 @@
+--- a/cuda-driver-reference.c
++++ b/cuda-driver-reference.c
+@@ -2295,0 +2296,2 @@
++static _Thread_local bool cuda_inkling_quants;
++
+@@ -2296,0 +2299,7 @@
++    static int stage_small = -1;
++    static uint64_t small_staged;
++    if (stage_small < 0) {
++        const char *setting = getenv("I2_STAGE_DECODE_EXPERTS");
++        stage_small = setting && strcmp(setting, "1") == 0;
++    }
++    const bool specialize = cuda_inkling_quants && stage_small;
+@@ -2298 +2307 @@
+-    if (active_experts <= 0 || (!stage_all && active_experts <= 8) ||
++    if (active_experts <= 0 || (!stage_all && active_experts <= 8 && !specialize) ||
+@@ -2311,0 +2321,3 @@
++    if (specialize && active_experts <= 8 && (++small_staged == 1 || small_staged % 500 == 0)) {
++        fprintf(stderr, "Inkling: staged short expert groups=%" PRIu64 "\n", small_staged);
++    }
+@@ -2485,0 +2498,15 @@
++    static int log_routes = -1;
++    if (log_routes < 0) log_routes = getenv("I2_ROUTE_LOG") != NULL;
++    if (log_routes && cache->layers.data) {
++        for (int64_t logical = 0; logical < cache->layers.len / 4; ++logical) {
++            const int64_t *layer = cache->layers.data + 4 * logical;
++            if ((uint64_t) layer[1] == tensor || (uint64_t) layer[3] == tensor) {
++                fprintf(stderr, "I2 route %" PRId64 " %d", logical, (uint64_t) layer[1] == tensor ? 0 : 2);
++                for (int64_t expert = 0; expert < active.len; ++expert) {
++                    if (active.data[expert] >= 0) fprintf(stderr, " %" PRId64, expert);
++                }
++                fputc('\n', stderr);
++                break;
++            }
++        }
++    }
+@@ -2976 +3003 @@
+-static _Thread_local bool cuda_inkling_quants;
++

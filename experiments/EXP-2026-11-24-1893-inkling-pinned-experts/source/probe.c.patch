@@ -1,0 +1,20 @@
+--- a/probe.c
++++ b/probe.c
+@@ -362,0 +363,3 @@
++extern void i2_pins_init(int argc, char **argv);
++extern void i2_pin_experts(sl_i64 groups, sl_i64 layers);
++extern int i2_release_pins(void);
+@@ -413,2 +416,9 @@
+-    return fg_cuda_load_experts(ints(groups[0], groups_count * 9), ints(layers, physical * 4),
+-        slots * (up + down), words32, words64);
++    const sl_i64 layouts = ints(groups[0], groups_count * 9);
++    const sl_i64 mappings = ints(layers, physical * 4);
++    const int64_t bytes = fg_cuda_load_experts(layouts, mappings, slots * (up + down), words32, words64);
++    const char *pin = getenv("I2_INSTALL_PINS");
++    if (bytes > 0 && pin && strcmp(pin, "1") == 0) {
++        i2_pins_init(0, NULL);
++        i2_pin_experts(layouts, mappings);
++    }
++    return bytes;
+@@ -572,0 +583 @@
++    assert(i2_release_pins() == 0);

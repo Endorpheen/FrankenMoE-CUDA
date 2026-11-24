@@ -1,0 +1,22 @@
+--- a/cuda-driver.c
++++ b/cuda-driver.c
+@@ -154,0 +155,19 @@
++
++int i2_release_pins(void) {
++    if (!cuda.expert_pins.len) {
++        return 0;
++    }
++    if (start_context() != 1) {
++        return -1;
++    }
++    int status = cuda.sync();
++    if (!status) {
++        status = (int)ec_manage_pins(cuda.expert_pins, 0);
++    }
++    if (!status) {
++        free(cuda.expert_pins.data);
++        cuda.expert_pins = (sl_i64){0};
++        cuda.expert_pinned_bytes = 0;
++    }
++    return finish_context() == 0 ? status : -1;
++}
