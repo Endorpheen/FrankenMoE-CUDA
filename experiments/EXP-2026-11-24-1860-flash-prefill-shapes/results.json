@@ -1,0 +1,297 @@
+{
+  "id": "EXP-2026-11-24-1860",
+  "status": "INCONCLUSIVE",
+  "component": "Attention / CUDA",
+  "method": "Hoist causal bounds checks for fully visible tiles",
+  "parent": "EXP-2026-11-24-1859",
+  "control_checkpoint": "EXP-1856",
+  "gpu": "NVIDIA GeForce RTX 4070",
+  "kernel": "goose_flash_causal_mma",
+  "launches_per_timing_block": 3,
+  "fixtures": [
+    {
+      "queries": 4096,
+      "keys": 4096,
+      "prefix": 1,
+      "timings": {
+        "control": {
+          "blocks_ms_per_launch": [
+            3.398687998453776,
+            3.4595092137654624,
+            3.4577067693074546,
+            3.448831876118978,
+            3.4134400685628257,
+            3.4481493631998696
+          ],
+          "median_ms": 3.448490619659424
+        },
+        "full": {
+          "blocks_ms_per_launch": [
+            2.6712748209635415,
+            2.670602798461914,
+            2.666602611541748,
+            2.682880083719889,
+            2.6695680618286133,
+            2.63645871480306
+          ],
+          "median_ms": 2.6700854301452637
+        }
+      },
+      "output_word_mismatches": 0,
+      "measured_kernel_time_reduction_pct": 22.572344697026793,
+      "baseline_trace_group_ms": 28.1,
+      "estimated_trace_saving_ms": 6.342828859864529
+    },
+    {
+      "queries": 4096,
+      "keys": 8192,
+      "prefix": 4097,
+      "timings": {
+        "control": {
+          "blocks_ms_per_launch": [
+            8.41715176900228,
+            9.070197423299154,
+            8.949759801228842,
+            9.18835194905599,
+            9.049802780151367,
+            9.11291758219401
+          ],
+          "median_ms": 9.060000101725262
+        },
+        "full": {
+          "blocks_ms_per_launch": [
+            6.5594024658203125,
+            6.734165191650391,
+            6.582293192545573,
+            6.758058547973633,
+            6.698325475056966,
+            6.920085271199544
+          ],
+          "median_ms": 6.716245333353678
+        }
+      },
+      "output_word_mismatches": 0,
+      "measured_kernel_time_reduction_pct": 25.86925763858735,
+      "baseline_trace_group_ms": 82.3,
+      "estimated_trace_saving_ms": 21.29039903655739
+    },
+    {
+      "queries": 4096,
+      "keys": 12288,
+      "prefix": 8193,
+      "timings": {
+        "control": {
+          "blocks_ms_per_launch": [
+            13.436106363932291,
+            14.53158442179362,
+            13.756757100423178,
+            14.129151662190756,
+            13.83355712890625,
+            14.260223388671875
+          ],
+          "median_ms": 13.981354395548504
+        },
+        "full": {
+          "blocks_ms_per_launch": [
+            10.083605448404947,
+            10.614208221435547,
+            10.335914611816406,
+            10.555327733357748,
+            10.319189071655273,
+            10.722304026285807
+          ],
+          "median_ms": 10.445621172587078
+        }
+      },
+      "output_word_mismatches": 0,
+      "measured_kernel_time_reduction_pct": 25.288917818199074,
+      "baseline_trace_group_ms": 133.3,
+      "estimated_trace_saving_ms": 33.71012745165937
+    },
+    {
+      "queries": 4096,
+      "keys": 16384,
+      "prefix": 12289,
+      "timings": {
+        "control": {
+          "blocks_ms_per_launch": [
+            18.717535654703777,
+            19.520853678385418,
+            19.205120086669922,
+            19.7096430460612,
+            19.933514912923176,
+            19.689130147298176
+          ],
+          "median_ms": 19.604991912841797
+        },
+        "full": {
+          "blocks_ms_per_launch": [
+            14.381397247314453,
+            14.759904225667318,
+            14.446250915527344,
+            14.691327412923178,
+            14.434986114501953,
+            14.816149393717447
+          ],
+          "median_ms": 14.568789164225262
+        }
+      },
+      "output_word_mismatches": 0,
+      "measured_kernel_time_reduction_pct": 25.68836942655246,
+      "baseline_trace_group_ms": 186.9,
+      "estimated_trace_saving_ms": 48.01156245822655
+    },
+    {
+      "queries": 4096,
+      "keys": 20480,
+      "prefix": 16385,
+      "timings": {
+        "control": {
+          "blocks_ms_per_launch": [
+            24.394388834635418,
+            25.040555318196613,
+            24.70807393391927,
+            25.085609436035156,
+            25.306058247884113,
+            25.10028839111328
+          ],
+          "median_ms": 25.063082377115883
+        },
+        "full": {
+          "blocks_ms_per_launch": [
+            18.707040150960285,
+            18.895413716634113,
+            18.615637461344402,
+            18.929322560628254,
+            18.206378936767578,
+            18.91181818644206
+          ],
+          "median_ms": 18.8012269337972
+        }
+      },
+      "output_word_mismatches": 0,
+      "measured_kernel_time_reduction_pct": 24.984378813023167,
+      "baseline_trace_group_ms": 238.9,
+      "estimated_trace_saving_ms": 59.687680984312344
+    },
+    {
+      "queries": 4096,
+      "keys": 24576,
+      "prefix": 20481,
+      "timings": {
+        "control": {
+          "blocks_ms_per_launch": [
+            30.04596201578776,
+            30.55750274658203,
+            30.237632751464844,
+            30.54186757405599,
+            30.222335815429688,
+            31.036394755045574
+          ],
+          "median_ms": 30.389750162760414
+        },
+        "full": {
+          "blocks_ms_per_launch": [
+            22.7413330078125,
+            23.008939107259113,
+            22.586026509602863,
+            23.427691141764324,
+            22.835166931152344,
+            23.28978220621745
+          ],
+          "median_ms": 22.922053019205727
+        }
+      },
+      "output_word_mismatches": 0,
+      "measured_kernel_time_reduction_pct": 24.573078434536132,
+      "baseline_trace_group_ms": 292.6,
+      "estimated_trace_saving_ms": 71.90082749945273
+    },
+    {
+      "queries": 4096,
+      "keys": 28672,
+      "prefix": 24577,
+      "timings": {
+        "control": {
+          "blocks_ms_per_launch": [
+            35.597557067871094,
+            36.07347106933594,
+            35.93591562906901,
+            36.12808481852213,
+            35.72386169433594,
+            36.46850077311198
+          ],
+          "median_ms": 36.00469334920247
+        },
+        "full": {
+          "blocks_ms_per_launch": [
+            27.017898559570312,
+            27.57214864095052,
+            27.336021423339844,
+            27.491221110026043,
+            26.648480733235676,
+            27.823104858398438
+          ],
+          "median_ms": 27.413621266682945
+        }
+      },
+      "output_word_mismatches": 0,
+      "measured_kernel_time_reduction_pct": 23.860978343007666,
+      "baseline_trace_group_ms": 346.7,
+      "estimated_trace_saving_ms": 82.72601191520758
+    },
+    {
+      "queries": 4096,
+      "keys": 32768,
+      "prefix": 28673,
+      "timings": {
+        "control": {
+          "blocks_ms_per_launch": [
+            41.279284159342446,
+            41.62423451741537,
+            41.33273569742838,
+            41.599316914876304,
+            41.68678283691406,
+            41.704681396484375
+          ],
+          "median_ms": 41.611775716145836
+        },
+        "full": {
+          "blocks_ms_per_launch": [
+            31.18419138590495,
+            31.409151713053387,
+            31.133323669433594,
+            31.950848897298176,
+            31.661173502604168,
+            31.60063934326172
+          ],
+          "median_ms": 31.504895528157554
+        }
+      },
+      "output_word_mismatches": 0,
+      "measured_kernel_time_reduction_pct": 24.28850971641352,
+      "baseline_trace_group_ms": 402.7,
+      "estimated_trace_saving_ms": 97.80982862799725
+    }
+  ],
+  "apex": {
+    "workload": "32K/512",
+    "context": 262144,
+    "cache_mib": 6290,
+    "status": "not_run",
+    "baseline_prefill_tok_s": 3239.967,
+    "baseline_decode_tok_s": 83.53972,
+    "candidate_prefill_tok_s": null,
+    "candidate_decode_tok_s": null,
+    "candidate_peak_ram_mib": null,
+    "candidate_peak_vram_mib": null,
+    "available_vram_mib": 9158,
+    "preflight_threshold_mib": 9700
+  },
+  "projection": {
+    "assumption": "The measured time ratio of each standalone shape transfers to its traced runtime group and its entire saving reaches the prefill critical path.",
+    "estimated_prefill_saving_ms": 421.47926683327773,
+    "projected_prefill_tok_s": 3380.8615702297147,
+    "saving_required_for_3500_ms": 751.3975423647389
+  }
+}

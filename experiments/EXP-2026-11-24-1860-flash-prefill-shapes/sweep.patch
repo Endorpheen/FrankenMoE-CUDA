@@ -1,0 +1,18 @@
+--- a/probe.py
++++ b/probe.py
+@@ -21 +21 @@
+-for name in ("control", "i32", "full"):
++for name in ("control", "full"):
+@@ -46 +46,2 @@
+-for queries, keys, prefix in [(8, 8, 1), (16, 46, 31), (17, 48, 32), (513, 573, 61), (4096, 32768, 28673)]:
++for keys in range(4096, 32769, 4096):
++    queries, prefix = 4096, keys - 4096 + 1
+@@ -67 +68 @@
+-    matches = {name: np.count_nonzero(results[name] != results["control"]) for name in ("i32", "full")}
++    matches = {name: np.count_nonzero(results[name] != results["control"]) for name in ("full",)}
+@@ -72 +73 @@
+-        for order in (("control", "i32", "full"), ("full", "i32", "control")) * 3:
++        for order in (("control", "full"), ("full", "control")) * 3:
+@@ -83 +84 @@
+-            print(name, "ms per launch", values, "median", median(values), flush=True)
++            print(keys, name, "ms per launch", values, "median", median(values), flush=True)
