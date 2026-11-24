@@ -1,7 +1,40 @@
-# EXP-2026-11-24-1841 — One-layer-ahead expert loading is impossible: a layer is 4 GiB, the headroom is 2.56 MiB
+# EXP-2026-11-24-1841 — One-layer-ahead expert loading: corrected arithmetic
 
-Status: **REJECTED by arithmetic before any code, with the numbers taken from the
-model and the engine.** Baseline `37ac0f1d` unchanged (prefill 3122.4, decode 78.225).
+Status: **CORRECTED, then re-scoped.** The original version of this card rejected the
+lever on a wrong per-layer figure; the model parse has been redone with physical
+quantised sizes and the conclusion changes from "impossible" to "possible with a
+residency trade". Baseline `37ac0f1d` unchanged (prefill 3122.4, decode 78.225).
+
+## Correction (read this first)
+
+The first version of this card stated "a layer is 4096 MiB, the headroom is
+2.56 MiB, the change needs a factor of 1600 more VRAM". That was wrong: the parse
+used a type table that treated ggml type ids as bytes per element instead of
+quantisation block sizes, which inflated the expert tensors to 144 GiB.
+
+Redone with block sizes (`Q4_K` = 144 bytes per 256 elements, `Q6_K` = 210 per 256):
+
+| quantity | corrected value |
+| --- | ---: |
+| model file | 20.22 GiB |
+| sum of physical tensor bytes | 20.21 GiB (matches the file) |
+| expert tensors | 18.65 GiB over 41 layers |
+| **expert bytes per layer** | **498.0 MiB** (min 432, max 498) |
+| cache 6290 MiB | holds **12.6 expert layers** |
+| one extra layer | **498 MiB** |
+| 13 layers would need | 6474 MiB, i.e. **184 MiB above the 6290 MiB limit** |
+
+So the lever is not excluded by 1600×; it costs about **8 % of the cache's residency**
+(12.6 layers become 11.6 when one layer's worth is dedicated to the prefetch buffer),
+or 184 MiB of extra VRAM if the budget were raised.
+
+Retracted: the 4096 MiB per layer, the 0.06 % headroom figure and the factor of 1600.
+Retained: the engine-side measurement that the cache reports 6287.4 MiB used of
+6290.0 MiB with 2.56 MiB free, which is why a reservation can only come from the
+residency of the current layers, not from slack.
+
+The rest of this card is the original text, kept for the record; its conclusion is
+superseded by the section "Revised conclusion" at the end.
 
 ## What the next step needed
 
@@ -77,3 +110,22 @@ to prove on a single step.
   `/home/end0/AI/LocalAI/Models/Apex-35B-V1.0-Q4_K_M.gguf`; the parse is reproducible
   from the format header and needs no engine hooks.
 - `runs/base32768-20261124-082000` — the device timeline (0.237 s overlap).
+
+## Revised conclusion
+
+With 498 MiB per expert layer and a 6290 MiB cache holding 12.6 layers, a
+one-layer-ahead reservation is **possible inside the same budget** by dedicating one
+layer's worth of residency to the prefetch buffer: residency falls from 12.6 to 11.6
+layers, which costs roughly 8 % of the re-use capacity, while the copies that are
+currently serialised (2.232 s in the EXP-1838 window) could be issued during the
+previous layer's kernels.
+
+Whether that trade is positive is a measurement, not an argument: the expected cost
+is a slightly higher miss traffic (a few GB at 22.5 GB/s, about 0.2-0.3 s), the
+expected gain is up to the 2.232 s of currently un-overlapped transfer. The transfer
+engine-s measured volume (90.7 GB per request) and the 22.5 GB/s link figure are
+independent of this parse and stand unchanged.
+
+The next experiment is therefore: reserve one layer of the expert cache for the next
+layer's planes, issue the copies one layer ahead, verify bit-exactness and measure
+both the overlap (trace) and the request time.
