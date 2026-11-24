@@ -1,0 +1,12 @@
+--- a/probe.c
++++ b/trace.c
+@@ -0,0 +1 @@
++#include <nvToolsExt.h>
+@@ -493,0 +495 @@
++    nvtxRangePushA("inkling-prefill");
+@@ -516,0 +519 @@
++    nvtxRangePop();
+@@ -522,0 +526 @@
++    nvtxRangePushA("inkling-decode");
+@@ -527,0 +532 @@
++    nvtxRangePop();

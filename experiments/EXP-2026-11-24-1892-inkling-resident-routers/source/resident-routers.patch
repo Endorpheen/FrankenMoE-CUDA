@@ -1,0 +1,26 @@
+--- a/probe.c
++++ b/probe.c
+@@ -0,0 +1 @@
++#include <inttypes.h>
+@@ -387,0 +389,3 @@
++    const char *config = getenv("I2_RESIDENT_ROUTERS");
++    const bool keep_routers = adaptive && config && strcmp(config, "1") == 0;
++    int64_t router_bytes = 0;
+@@ -390 +394,14 @@
+-        if(r[2]==GGML_TYPE_Q8_0 && i!=d->globals[0]) {
++        bool router = false;
++        if (keep_routers && r[2] == GGML_TYPE_F32 && r[4] == model_width && r[5] == experts) {
++            for (int layer = 0; layer < physical; ++layer) {
++                if (d->core[layer * 10 + 5] == i) {
++                    router = true;
++                    break;
++                }
++            }
++        }
++        if (router) {
++            const int64_t before = used;
++            place_range(ranges, &words, &used, budget, d->data + r[10], r[9]);
++            router_bytes += used - before;
++        } else if(r[2]==GGML_TYPE_Q8_0 && i!=d->globals[0]) {
+@@ -411,0 +429 @@
++    printf("Resident router weights: %" PRId64 " bytes\n", router_bytes);
