@@ -1,0 +1,5 @@
+ptxas info    : 0 bytes gmem
+ptxas info    : Compiling entry function 'goose_rms_reference' for 'sm_89'
+ptxas info    : Function properties for goose_rms_reference
+    64 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 38 registers, used 1 barriers, 64 bytes cumulative stack size, 128 bytes smem, 596 bytes cmem[0]

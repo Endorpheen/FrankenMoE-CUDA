@@ -1,0 +1,24 @@
+--- a/cuda-driver.c
++++ b/cuda-driver.c
+@@ -3,0 +4 @@
++#include "rms-onevec-image.h"
+@@ -237 +238 @@
+-    Function kernel, attention_tiles, attention_merge, gdn, gdn_decode, q4_rows, vector, vector_flat, vector_flat4, rms_reference;
++    Function kernel, attention_tiles, attention_merge, gdn, gdn_decode, q4_rows, vector, vector_flat, vector_flat4, rms_reference, rms_reference_one;
+@@ -1473,0 +1475,12 @@
++        const char * rms_onevec = getenv("GOOSE_RMS_ONEVEC");
++        if (error == 0 && rms_reference && major == 8 &&
++            (!rms_onevec || strcmp(rms_onevec, "0") != 0) &&
++            cuda.device_attribute(&minor, compute_capability_minor, device) == 0 && minor == 9) {
++            Module image = NULL;
++            Function kernel = NULL;
++            if (cuda.module_load(&image, rms_onevec_image) == 0 &&
++                cuda.function_get(&kernel, image, "goose_rms_reference_one") == 0) {
++                cuda.rms_reference_one = kernel;
++                fputs("Goose CUDA: SM89 one-vector RMSNorm available\n", stderr);
++            }
++        }
+@@ -4905,0 +4919,3 @@
++            } else if (cuda.rms_reference_one && vectors == 1 && fg143_cpu_prefill()) {
++                void * args[] = {&staged[0], &staged[1], &output, plan, &param0, &param1};
++                error = cuda.launch(cuda.rms_reference_one, (unsigned) plan[24], 1, 1, lanes, 1, 1, 0, NULL, args, NULL);
