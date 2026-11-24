@@ -1,0 +1,12 @@
+--- a/cuda-mmvq.cl
++++ b/cuda-mmvq.cl
+@@ -105 +105 @@
+-    __local float shared[96];
++    __local float shared[192];
+@@ -108,2 +108,4 @@
+-    fg_mmvq_row_g((uint64_t) weights + (uint64_t) row * stride, (uint64_t) packed,
+-        (uint64_t) output + (uint64_t) row * 4, (uint64_t) shared, extent, kind, thread);
++    const uint32_t row_slot = thread / 128;
++    const uint64_t dense_row = 2ul * row + row_slot;
++    fg_mmvq_row_g((uint64_t) weights + dense_row * stride, (uint64_t) packed,
++        (uint64_t) output + dense_row * 4, (uint64_t) (shared + 96 * row_slot), extent, kind, thread % 128);

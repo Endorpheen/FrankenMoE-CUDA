@@ -1,0 +1,5 @@
+ptxas info    : 0 bytes gmem
+ptxas info    : Compiling entry function 'goose_mmvq_dense_matvec' for 'sm_89'
+ptxas info    : Function properties for goose_mmvq_dense_matvec
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 40 registers, used 1 barriers, 768 bytes smem, 392 bytes cmem[0], 8 bytes cmem[2]
