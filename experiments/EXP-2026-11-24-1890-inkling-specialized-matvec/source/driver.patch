@@ -1,0 +1,10 @@
+--- a/cuda-driver-reference.c
++++ b/cuda-driver-reference.c
+@@ -2985,0 +2986,2 @@
++#include "inkling-matrix-driver.h"
++
+@@ -3006,0 +3009,4 @@
++    if (error == 0 && inkling && i2_matrix_enabled()) {
++        return i2_launch_matrix(weight, (uint64_t) row_stride, (int) extent, (int) kind,
++                                (int) rows, count, job_words);
++    }
