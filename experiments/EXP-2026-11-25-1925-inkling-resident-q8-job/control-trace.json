@@ -1,0 +1,177 @@
+{
+  "intervals": 63,
+  "trace_wall_ms_per_token": 79.58538738095237,
+  "http_decode_ms_per_token": 79.15560084132714,
+  "host_phases_ms_per_token": {
+    "total": 78.85864920634921,
+    "attention": 31.553525396825396,
+    "bridge": 1.0360904761904761,
+    "moe": 42.1752126984127,
+    "head": 2.294193650793651,
+    "other_backend": 1.7996269841269878
+  },
+  "gpu_exclusive_ms_per_token": {
+    "no GPU activity": 33.40803326984127,
+    "H2D": 9.36883007936508,
+    "kernel": 34.79918580952381,
+    "D2D": 0.3938586666666667,
+    "D2H": 0.1874588253968254,
+    "overlap": 1.4280207301587302
+  },
+  "gpu_inactive_exclusive_api_ms_per_token": {
+    "sync API": 0.8735440952380953,
+    "copy API": 6.967657761904762,
+    "launch API": 3.672324841269841,
+    "other CUDA API": 0.07642750793650793,
+    "no GPU activity": 21.81807906349206,
+    "concurrent_api_or_other": 0.0
+  },
+  "kernel_sum_ms_per_token": {
+    "goose_i2_matrix_iq4_xs": 9.618527126984127,
+    "goose_i2_flash_mma": 9.39887815873016,
+    "goose_i2_matrix_q8_0": 7.1926302698412705,
+    "goose_vector_ops": 5.908357968253969,
+    "goose_i2_matrix_iq4_nl": 2.2277615396825396,
+    "goose_quantized_matmul": 0.3083759682539683,
+    "goose_route_sort": 0.29130117460317456,
+    "goose_set_q4_rows": 0.28001514285714285,
+    "goose_tanh_f32": 0.25696144444444446,
+    "goose_tensor_blit": 0.1895121746031746,
+    "goose_route_gather": 0.09399709523809524,
+    "goose_i2_prepare_attention": 0.08791863492063492,
+    "goose_route_reduce": 0.07718846031746031,
+    "goose_i2_flash_mma_merge": 0.0712268888888889,
+    "goose_i2_moe_epilogue": 0.06927263492063492,
+    "goose_moe_weighted": 0.06436550793650793,
+    "goose_i2_attention_gate": 0.048465999999999995,
+    "goose_i2_update_history": 0.04245034920634921
+  },
+  "copy_sizes": [
+    {
+      "direction": "H2D",
+      "bytes_each": 2820096,
+      "calls_per_token": 40.82539682539682,
+      "ms_per_token": 6.591705682539683
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 1492992,
+      "calls_per_token": 40.82539682539682,
+      "ms_per_token": 3.4795276349206348
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 9216,
+      "calls_per_token": 601.0,
+      "ms_per_token": 0.34785822222222224
+    },
+    {
+      "direction": "D2D",
+      "bytes_each": 589824,
+      "calls_per_token": 160.0,
+      "ms_per_token": 0.3209919841269841
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 16,
+      "calls_per_token": 689.0,
+      "ms_per_token": 0.23721828571428571
+    },
+    {
+      "direction": "D2H",
+      "bytes_each": 9216,
+      "calls_per_token": 96.0,
+      "ms_per_token": 0.11182058730158731
+    },
+    {
+      "direction": "D2D",
+      "bytes_each": 8192,
+      "calls_per_token": 80.0,
+      "ms_per_token": 0.07286668253968255
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 176,
+      "calls_per_token": 144.0,
+      "ms_per_token": 0.052057761904761905
+    },
+    {
+      "direction": "D2H",
+      "bytes_each": 32,
+      "calls_per_token": 48.0,
+      "ms_per_token": 0.04362825396825397
+    },
+    {
+      "direction": "D2H",
+      "bytes_each": 804096,
+      "calls_per_token": 1.0,
+      "ms_per_token": 0.03200998412698413
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 136,
+      "calls_per_token": 96.0,
+      "ms_per_token": 0.028972492063492065
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 192,
+      "calls_per_token": 73.14285714285714,
+      "ms_per_token": 0.023001761904761907
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 24,
+      "calls_per_token": 13.603174603174603,
+      "ms_per_token": 0.019285142857142855
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 512,
+      "calls_per_token": 48.0,
+      "ms_per_token": 0.013920253968253967
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 8,
+      "calls_per_token": 48.0,
+      "ms_per_token": 0.013473571428571429
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 48,
+      "calls_per_token": 5.634920634920635,
+      "ms_per_token": 0.008921761904761905
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 168,
+      "calls_per_token": 13.603174603174603,
+      "ms_per_token": 0.004378968253968254
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 72,
+      "calls_per_token": 2.5873015873015874,
+      "ms_per_token": 0.004151
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 96,
+      "calls_per_token": 2.0634920634920637,
+      "ms_per_token": 0.002394253968253968
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 144,
+      "calls_per_token": 5.634920634920635,
+      "ms_per_token": 0.002024761904761905
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 120,
+      "calls_per_token": 2.5873015873015874,
+      "ms_per_token": 0.0012245714285714284
+    }
+  ]
+}

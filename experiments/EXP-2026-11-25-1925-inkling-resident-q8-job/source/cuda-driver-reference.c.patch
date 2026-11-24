@@ -1,0 +1,22 @@
+--- a/cuda-driver-reference.c
++++ b/cuda-driver-reference.c
+@@ -3037,0 +3038,16 @@
++    if (inkling && kind == 8 && job_words == 2 && jobs.len == 2 &&
++        jobs.data[0] == 0 && jobs.data[1] == 0 && i2_matrix_enabled()) {
++        const char *setting = getenv("I2_RESIDENT_Q8_JOB");
++        if (!setting || strcmp(setting, "0") != 0) {
++            static struct device_buffer zero_job;
++            int error = 0;
++            if (!zero_job.address) {
++                error = reserve(&zero_job, 2 * sizeof(int64_t));
++                if (!error) error = cuda.zero(zero_job.address, 0, 2 * sizeof(int64_t));
++                if (error && zero_job.address) release_buffer(&zero_job);
++            }
++            if (error) return -1;
++            return i2_launch_matrix(weight, (uint64_t)row_stride, (int)extent,
++                (int)kind, (int)rows, 1, 2, zero_job.address);
++        }
++    }
+@@ -3062 +3078 @@
+-                                (int) rows, count, job_words);
++                                (int) rows, count, job_words, cuda.jobs.address);
