@@ -1,0 +1,36 @@
+--- a/mmvq.goose
++++ b/mmvq.goose
+@@ -37,0 +38,33 @@
++
++fn mmvq_fixed_partial(weights: u64, packed: u64, kind: i64, thread: i64) -> f32 {
++    if kind == 12 {
++        return mmvq_q4_partial(weights, packed, 0, 0, 8, 8, thread);
++    }
++    return mmvq_q6_partial(weights, packed, 0, 0, 8, 8, thread);
++}
++
++export fn fg_mmvq_fold_two(weights: u64, packed: u64, out: u64, shared: u64, kind: i64, tid: i64) {
++    let lane = tid & 31;
++    let low = mmvq_fixed_partial(weights, packed, kind, tid);
++    let high = mmvq_fixed_partial(weights, packed, kind, tid + 64);
++    if tid >= 32 {
++        mmvq_shared_store(shared + (4 * lane) as u64, low);
++        mmvq_shared_store(shared + (4 * (lane + 32)) as u64, high);
++    }
++    mmvq_barrier();
++    if tid < 32 {
++        let first = low + mmvq_shared_load(shared + (4 * lane) as u64);
++        let last = (first + high) + mmvq_shared_load(shared + (4 * (lane + 32)) as u64);
++        let sum = mmvq_warp_sum(last);
++        if lane == 0 { mmvq_store(out, sum); }
++    }
++}
++
++export fn fg_mmvq_fold_four(weights: u64, packed: u64, out: u64, kind: i64, lane: i64) {
++    let a = mmvq_fixed_partial(weights, packed, kind, lane);
++    let b = mmvq_fixed_partial(weights, packed, kind, lane + 32);
++    let c = mmvq_fixed_partial(weights, packed, kind, lane + 64);
++    let d = mmvq_fixed_partial(weights, packed, kind, lane + 96);
++    let sum = mmvq_warp_sum(((a + b) + c) + d);
++    if lane == 0 { mmvq_store(out, sum); }
++}

@@ -1,0 +1,21 @@
+ptxas info    : 0 bytes gmem
+ptxas info    : Compiling entry function 'goose_mmvq_fold_four_q6' for 'sm_89'
+ptxas info    : Function properties for goose_mmvq_fold_four_q6
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 40 registers, used 0 barriers, 392 bytes cmem[0], 8 bytes cmem[2]
+ptxas info    : Function properties for fg_mmvq_fold_four_g
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Compiling entry function 'goose_mmvq_fold_four_q4' for 'sm_89'
+ptxas info    : Function properties for goose_mmvq_fold_four_q4
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 40 registers, used 0 barriers, 392 bytes cmem[0], 4 bytes cmem[2]
+ptxas info    : Function properties for fg_mmvq_fold_four_g
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Compiling entry function 'goose_mmvq_fold_two_q6' for 'sm_89'
+ptxas info    : Function properties for goose_mmvq_fold_two_q6
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 36 registers, used 1 barriers, 256 bytes smem, 392 bytes cmem[0], 4 bytes cmem[2]
+ptxas info    : Compiling entry function 'goose_mmvq_fold_two_q4' for 'sm_89'
+ptxas info    : Function properties for goose_mmvq_fold_two_q4
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 36 registers, used 1 barriers, 256 bytes smem, 392 bytes cmem[0], 4 bytes cmem[2]

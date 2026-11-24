@@ -1,0 +1,6 @@
+q4 bit-exact FP32 rows (both variants) 131072
+q4 same_matrix {'control': 13.173333058754602, 'fold_two': 12.0319997270902, 'fold_four': 13.296000038584074}
+q4 rotating_matrices {'control': 21.359999974568687, 'fold_two': 21.312000850836434, 'fold_four': 21.861333400011063}
+q6 bit-exact FP32 rows (both variants) 131072
+q6 same_matrix {'control': 13.168000305692354, 'fold_two': 12.853333726525307, 'fold_four': 11.775999640425045}
+q6 rotating_matrices {'control': 30.36266565322876, 'fold_two': 30.319999903440475, 'fold_four': 30.298667649428047}

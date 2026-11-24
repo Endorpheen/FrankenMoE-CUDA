@@ -1,0 +1,41 @@
+--- a/cuda-mmvq.cl
++++ b/cuda-mmvq.cl
+@@ -110,0 +111,38 @@
++
++__kernel void goose_mmvq_fold_two_q4(__global const uint8_t * weights, __global const uint8_t * packed,
++    __global uint8_t * output, uint64_t stride, int32_t extent, int32_t runtime_kind) {
++    uint32_t row, thread;
++    __local float shared[64];
++    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(row));
++    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
++    fg_mmvq_fold_two_g((uint64_t) weights + (uint64_t) row * stride, (uint64_t) packed,
++        (uint64_t) output + (uint64_t) row * 4, (uint64_t) shared, 12, thread);
++}
++
++__kernel void goose_mmvq_fold_two_q6(__global const uint8_t * weights, __global const uint8_t * packed,
++    __global uint8_t * output, uint64_t stride, int32_t extent, int32_t runtime_kind) {
++    uint32_t row, thread;
++    __local float shared[64];
++    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(row));
++    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
++    fg_mmvq_fold_two_g((uint64_t) weights + (uint64_t) row * stride, (uint64_t) packed,
++        (uint64_t) output + (uint64_t) row * 4, (uint64_t) shared, 14, thread);
++}
++
++__kernel void goose_mmvq_fold_four_q4(__global const uint8_t * weights, __global const uint8_t * packed,
++    __global uint8_t * output, uint64_t stride, int32_t extent, int32_t runtime_kind) {
++    uint32_t row, thread;
++    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(row));
++    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
++    fg_mmvq_fold_four_g((uint64_t) weights + (uint64_t) row * stride, (uint64_t) packed,
++        (uint64_t) output + (uint64_t) row * 4, 12, thread);
++}
++
++__kernel void goose_mmvq_fold_four_q6(__global const uint8_t * weights, __global const uint8_t * packed,
++    __global uint8_t * output, uint64_t stride, int32_t extent, int32_t runtime_kind) {
++    uint32_t row, thread;
++    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(row));
++    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
++    fg_mmvq_fold_four_g((uint64_t) weights + (uint64_t) row * stride, (uint64_t) packed,
++        (uint64_t) output + (uint64_t) row * 4, 14, thread);
++}
