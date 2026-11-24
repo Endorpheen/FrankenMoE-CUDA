@@ -1,0 +1,192 @@
+{
+  "experiment": "EXP-2026-11-24-1888",
+  "status": "DIAGNOSTIC",
+  "gpu": "RTX 4070",
+  "model": "Inkling-2-Mini-AD-IQ4_XS",
+  "context": 128,
+  "input_ids": [
+    151194,
+    151451,
+    149884
+  ],
+  "output_ids": [
+    149878,
+    220,
+    35730,
+    220,
+    50044,
+    149879,
+    151698,
+    11,
+    151523,
+    11,
+    149880,
+    220,
+    47459,
+    947,
+    220,
+    136699,
+    82
+  ],
+  "expert_bank_mib": 6013.62,
+  "dense_mib": 1152.58,
+  "recorded_cpu_and_cuda_logit_hashes_equal": false,
+  "means": {
+    "cpu": {
+      "decode_tok_s": 3.121519,
+      "prefill_s": 1.1339245,
+      "ttft_s": 1.719862,
+      "attention_s": 0.17596299999999998,
+      "gpu_allocation_delta_mib": 7234.0,
+      "peak_rss_kib": 6724540
+    },
+    "cuda": {
+      "decode_tok_s": 3.1869815,
+      "prefill_s": 1.1359439999999998,
+      "ttft_s": 1.7726609999999998,
+      "attention_s": 0.10024849999999999,
+      "gpu_allocation_delta_mib": 7326.88,
+      "peak_rss_kib": 6725950
+    }
+  },
+  "runs": [
+    {
+      "run": "control",
+      "mode": "cpu",
+      "decode_tok_s": 3.110114,
+      "prefill_s": 1.132988,
+      "ttft_s": 1.707007,
+      "attention_s": 0.176344,
+      "gpu_allocation_delta_mib": 7233.88,
+      "attention_device": {
+        "calls": 0,
+        "H2D": 0,
+        "D2H": 0,
+        "resident": 0
+      },
+      "expert_cache": {
+        "hits": 13337,
+        "fills": 1255,
+        "evictions": 0,
+        "bytes": 5412925440,
+        "pinned": 0,
+        "ranges": 0
+      },
+      "peak_rss_kib": 6724676,
+      "system_swap_out_delta": 0
+    },
+    {
+      "run": "device",
+      "mode": "cuda",
+      "decode_tok_s": 3.187869,
+      "prefill_s": 1.125246,
+      "ttft_s": 1.809033,
+      "attention_s": 0.100075,
+      "gpu_allocation_delta_mib": 7330.88,
+      "attention_device": {
+        "calls": 912,
+        "H2D": 73306368,
+        "D2H": 11206656,
+        "resident": 53589696
+      },
+      "expert_cache": {
+        "hits": 13337,
+        "fills": 1255,
+        "evictions": 0,
+        "bytes": 5412925440,
+        "pinned": 0,
+        "ranges": 0
+      },
+      "peak_rss_kib": 6725880,
+      "system_swap_out_delta": 0
+    },
+    {
+      "run": "device-repeat",
+      "mode": "cuda",
+      "decode_tok_s": 3.186094,
+      "prefill_s": 1.146642,
+      "ttft_s": 1.736289,
+      "attention_s": 0.100422,
+      "gpu_allocation_delta_mib": 7322.88,
+      "attention_device": {
+        "calls": 912,
+        "H2D": 73306368,
+        "D2H": 11206656,
+        "resident": 53589696
+      },
+      "expert_cache": {
+        "hits": 13337,
+        "fills": 1255,
+        "evictions": 0,
+        "bytes": 5412925440,
+        "pinned": 0,
+        "ranges": 0
+      },
+      "peak_rss_kib": 6726020,
+      "system_swap_out_delta": 0
+    },
+    {
+      "run": "control-repeat",
+      "mode": "cpu",
+      "decode_tok_s": 3.132924,
+      "prefill_s": 1.134861,
+      "ttft_s": 1.732717,
+      "attention_s": 0.175582,
+      "gpu_allocation_delta_mib": 7234.12,
+      "attention_device": {
+        "calls": 0,
+        "H2D": 0,
+        "D2H": 0,
+        "resident": 0
+      },
+      "expert_cache": {
+        "hits": 13337,
+        "fills": 1255,
+        "evictions": 0,
+        "bytes": 5412925440,
+        "pinned": 0,
+        "ranges": 0
+      },
+      "peak_rss_kib": 6724404,
+      "system_swap_out_delta": 0
+    },
+    {
+      "run": "shadow",
+      "mode": "shadow",
+      "decode_tok_s": 3.098504,
+      "prefill_s": 1.140111,
+      "ttft_s": 1.713201,
+      "attention_s": 0.272835,
+      "gpu_allocation_delta_mib": 7330.38,
+      "attention_device": {
+        "calls": 912,
+        "H2D": 73306368,
+        "D2H": 11206656,
+        "resident": 53589696
+      },
+      "expert_cache": {
+        "hits": 13337,
+        "fills": 1255,
+        "evictions": 0,
+        "bytes": 5412925440,
+        "pinned": 0,
+        "ranges": 0
+      },
+      "peak_rss_kib": 6725960,
+      "system_swap_out_delta": 0,
+      "shadow": {
+        "elements": "2801664",
+        "unequal": "805759",
+        "max_abs": "1.90734863e-06",
+        "mean_abs": "7.47359865e-09"
+      }
+    }
+  ],
+  "artifact_sha256": {
+    "model": "aa512b04414b533a25b262a00ac99c93ed43a9e17979bdf1753cd81cc4ba8274",
+    "model-shadow": "07693f1f365940c48fa8611094d5c77abcc08f262feb604a5ad49e96b2201221",
+    "attention.cubin": "42dff34b98e1bacfe5a1962d3bae7934f1b149b7266aadc6f62f9f25f93bc7a7",
+    "driver-control.o": "ea52aee082565e33b98ce6c7b8e058a7a6f4310088e32cceb0a22643a5bb0687",
+    "cuda-driver.o": "fe496caadc1b00fd6d519930e62cab9c17d24877d0756736173abd9098190d46"
+  }
+}

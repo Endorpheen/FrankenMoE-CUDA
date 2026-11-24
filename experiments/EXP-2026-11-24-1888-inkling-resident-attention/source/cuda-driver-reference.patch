@@ -1,0 +1,38 @@
+--- a/cuda-driver-reference.c
++++ b/cuda-driver-reference.c
+@@ -2975,0 +2976,10 @@
++static _Thread_local bool cuda_inkling_quants;
++
++void fg_cuda_enable_inkling_quants(bool enabled) {
++    cuda_inkling_quants = enabled;
++}
++
++uint8_t fg_cuda_inkling_quants_enabled(void) {
++    return cuda_inkling_quants;
++}
++
+@@ -2977,0 +2988,2 @@
++    const bool k_quant = kind == 12 || kind == 14;
++    const bool inkling = cuda_inkling_quants && (kind == 8 || kind == 20 || kind == 23);
+@@ -2979 +2991 @@
+-        (kind != 0 && kind != 12 && kind != 14) ||
++        (kind != 0 && !k_quant && !inkling) || (inkling && extent % (kind == 23 ? 256 : 32) != 0) ||
+@@ -2987 +2999 @@
+-    if (error == 0 && cuda.mmq_matrix && kind != 0 && jobs.len / job_words >= 16) {
++    if (error == 0 && cuda.mmq_matrix && k_quant && jobs.len / job_words >= 16) {
+@@ -2995 +3007 @@
+-    if (error == 0 && cuda.mmvq && kind != 0 && extent <= INT_MAX / 256 &&
++    if (error == 0 && cuda.mmvq && k_quant && extent <= INT_MAX / 256 &&
+@@ -3039 +3051,11 @@
+-    else cuda_matrix_kind = type;
++    else {
++        cuda_matrix_kind = type;
++        if (inkling) {
++            static _Thread_local unsigned reported;
++            const unsigned bit = 1u << type;
++            if (!(reported & bit)) {
++                reported |= bit;
++                fprintf(stderr,"Goose CUDA: Inkling quantized matrix kind %d active\n",type);
++            }
++        }
++    }
