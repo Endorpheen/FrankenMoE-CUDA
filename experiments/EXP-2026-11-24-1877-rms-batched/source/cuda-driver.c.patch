@@ -1,0 +1,52 @@
+--- a/cuda-driver.c
++++ b/cuda-driver.c
+@@ -1,6 +1,7 @@
+ #include "cpu.h"
+ #include "goose-cuda-image.h"
+ #include "flash-interior-image.h"
++#include "rms-onevec-image.h"
+ #include "moe-epilogue-image.h"
+ #include "attention-cubin.h"
+ #include "attention-first-row-image.h"
+@@ -235,7 +236,7 @@
+     void * library;
+     Context context;
+     Module module;
+-    Function kernel, attention_tiles, attention_merge, gdn, gdn_decode, q4_rows, vector, vector_flat, vector_flat4, rms_reference;
++    Function kernel, attention_tiles, attention_merge, gdn, gdn_decode, q4_rows, vector, vector_flat, vector_flat4, rms_reference, rms_reference_one, rms_reference_one_warp4;
+     Function mmq_pack, mmq_pack_shared, mmq_pack_glu, mmq_matrix, mmq_q4_matrix, mmq_q6_matrix;
+     Function mmq_pack_k_major, mmq_q6_dense_half_k, mmq_q6_dense_pipeline;
+     Function mmq_q4_dense_shared, mmq_q4_routed_shared;
+@@ -1473,6 +1474,19 @@
+         if (error == 0 && cuda.vector_flat && fg_standalone_option_enabled("GOOSE_CUDA_VECTOR_FLAT4"))
+             error = cuda.function_get(&cuda.vector_flat4, cuda.module, "goose_vector_flat4");
+         if (error == 0 && rms_reference) error = cuda.function_get(&cuda.rms_reference, cuda.module, "goose_rms_reference");
++        const char * rms_onevec = getenv("GOOSE_RMS_BATCHED");
++        if (error == 0 && rms_reference && major == 8 &&
++            (!rms_onevec || strcmp(rms_onevec, "0") != 0) &&
++            cuda.device_attribute(&minor, compute_capability_minor, device) == 0 && minor == 9) {
++            Module image = NULL;
++            Function kernel = NULL;
++            if (cuda.module_load(&image, rms_onevec_image) == 0 &&
++                cuda.function_get(&kernel, image, "goose_rms_reference_one") == 0) {
++                cuda.rms_reference_one = kernel;
++                (void) cuda.function_get(&cuda.rms_reference_one_warp4, image, "goose_rms_reference_one_warp4");
++                fputs("Goose CUDA: SM89 batched RMSNorm available\n", stderr);
++            }
++        }
+         if (error == 0 && rms_reference)
+             (void) cuda.function_get(&cuda.rms_decode_2048, cuda.module, "goose_rms_decode_2048");
+         cuda.rms_postscale = cuda.rms_reference && fg_standalone_option_enabled("GOOSE_CUDA_RMS_POSTSCALE");
+@@ -4915,6 +4929,12 @@
+                 }
+                 void *args[] = {&staged[0], &staged[1], &output, &param0};
+                 error = cuda.launch(cuda.rms_decode_2048, 1, 1, 1, 512, 1, 1, 0, NULL, args, NULL);
++            } else if (cuda.rms_reference_one && vectors == 1 && fg143_cpu_prefill()) {
++                void * args[] = {&staged[0], &staged[1], &output, plan, &param0, &param1};
++                const bool warp4 = width == 128 && cuda.rms_reference_one_warp4 && plan[24] >= 128;
++                const unsigned blocks = warp4 ? 1 + ((unsigned) plan[24] - 1) / 4 : (unsigned) plan[24];
++                const Function kernel = warp4 ? cuda.rms_reference_one_warp4 : cuda.rms_reference_one;
++                error = cuda.launch(kernel, blocks, 1, 1, warp4 ? 128 : lanes, 1, 1, 0, NULL, args, NULL);
+             } else {
+                 void * args[] = {&staged[0], &staged[1], &output, plan, &param0, (void *) &vectors, &param1};
+                 error = cuda.launch(cuda.rms_reference, (unsigned) plan[24], 1, 1, lanes, 1, 1, 0, NULL, args, NULL);

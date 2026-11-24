@@ -1,0 +1,13 @@
+--- a/rms-reference.goose
++++ b/rms-reference.goose
+@@ -189,0 +190,2 @@
++    let valid = i < n / 4;
++    let v = if valid { load4(x, i) } else { RmsVec {0.0, 0.0, 0.0, 0.0} };
+@@ -191,2 +193 @@
+-    if i < n / 4 {
+-        let v = load4(x, i);
++    if valid {
+@@ -200,2 +201 @@
+-    if i < n / 4 {
+-        let v = load4(x, i);
++    if valid {

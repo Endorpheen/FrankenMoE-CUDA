@@ -1,0 +1,9 @@
+ptxas info    : 0 bytes gmem
+ptxas info    : Compiling entry function 'goose_rms_reference_one_warp4' for 'sm_89'
+ptxas info    : Function properties for goose_rms_reference_one_warp4
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 38 registers, used 0 barriers, 592 bytes cmem[0]
+ptxas info    : Compiling entry function 'goose_rms_reference_one' for 'sm_89'
+ptxas info    : Function properties for goose_rms_reference_one
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 34 registers, used 1 barriers, 128 bytes smem, 592 bytes cmem[0]
