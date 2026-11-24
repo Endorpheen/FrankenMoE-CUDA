@@ -7,31 +7,42 @@ residency trade". Baseline `37ac0f1d` unchanged (prefill 3122.4, decode 78.225).
 
 ## Correction (read this first)
 
-The first version of this card stated "a layer is 4096 MiB, the headroom is
-2.56 MiB, the change needs a factor of 1600 more VRAM". That was wrong: the parse
-used a type table that treated ggml type ids as bytes per element instead of
-quantisation block sizes, which inflated the expert tensors to 144 GiB.
+Two errors in the first version of this card, both corrected here with per-layer
+numbers:
 
-Redone with block sizes (`Q4_K` = 144 bytes per 256 elements, `Q6_K` = 210 per 256):
+1. **Type table.** The parse treated ggml type ids as bytes per element instead of
+   quantisation block sizes, which inflated the expert tensors to 144 GiB.
+2. **Uniform layer size.** The redone parse then quoted 498 MiB per layer, which is
+   the largest layer, not the typical one.
 
-| quantity | corrected value |
+Per layer, from the shipped file (`Q4_K` = 144 bytes per 256 elements,
+`Q6_K` = 210 per 256):
+
+| tensors per layer | bytes |
+| --- | ---: |
+| `ffn_gate_exps` | 144.0 MiB |
+| `ffn_up_exps` | 144.0 MiB |
+| `ffn_down_exps` | 210.0 MiB (21 layers, `Q6_K`) or 144.0 MiB (20 layers, `Q4_K`) |
+| **layer total** | **498.0 MiB** on 21 layers, **432.0 MiB** on 20 layers |
+
+| quantity | value |
 | --- | ---: |
 | model file | 20.22 GiB |
 | sum of physical tensor bytes | 20.21 GiB (matches the file) |
-| expert tensors | 18.65 GiB over 41 layers |
-| **expert bytes per layer** | **498.0 MiB** (min 432, max 498) |
-| cache 6290 MiB | holds **12.6 expert layers** |
-| one extra layer | **498 MiB** |
-| 13 layers would need | 6474 MiB, i.e. **184 MiB above the 6290 MiB limit** |
+| expert tensors | 18.65 GiB = 19 098 MiB over 41 layers |
+| **mean expert layer** | **465.8 MiB** |
+| consecutive layers that fit in 6290 MiB | **13** (6078 MiB used, 212 MiB left) |
 
-So the lever is not excluded by 1600×; it costs about **8 % of the cache's residency**
-(12.6 layers become 11.6 when one layer's worth is dedicated to the prefetch buffer),
-or 184 MiB of extra VRAM if the budget were raised.
+So the cache holds 13 layers, not 12.6, and the reservation needed for one layer
+ahead is 432-498 MiB, that is **7.7-7.9 % of the 6290 MiB budget**, or equivalently
+one of those 13 resident layers.
 
-Retracted: the 4096 MiB per layer, the 0.06 % headroom figure and the factor of 1600.
-Retained: the engine-side measurement that the cache reports 6287.4 MiB used of
-6290.0 MiB with 2.56 MiB free, which is why a reservation can only come from the
-residency of the current layers, not from slack.
+Retracted: 4096 MiB per layer, the 0.06 % headroom figure, the factor of 1600 and the
+"13 layers would need 6474 MiB" line. Retained: the engine reports 6287.4 MiB used of
+6290.0 MiB, so there is no *slack* to take — but the cache is a buffer this runtime
+owns and sizes, and it is already partitioned into two banks (`expert_cache
+1904/1531`), so re-partitioning it for a prefetch arena is a policy change, not an
+impossibility.
 
 The rest of this card is the original text, kept for the record; its conclusion is
 superseded by the section "Revised conclusion" at the end.
@@ -113,19 +124,16 @@ to prove on a single step.
 
 ## Revised conclusion
 
-With 498 MiB per expert layer and a 6290 MiB cache holding 12.6 layers, a
-one-layer-ahead reservation is **possible inside the same budget** by dedicating one
-layer's worth of residency to the prefetch buffer: residency falls from 12.6 to 11.6
-layers, which costs roughly 8 % of the re-use capacity, while the copies that are
-currently serialised (2.232 s in the EXP-1838 window) could be issued during the
-previous layer's kernels.
+A one-layer-ahead reservation is available inside the same 6290 MiB budget by
+re-partitioning it: 13 resident layers become 12 plus one arena of 432-498 MiB for the
+next layer's planes. The costs and the prize are both measurable:
 
-Whether that trade is positive is a measurement, not an argument: the expected cost
-is a slightly higher miss traffic (a few GB at 22.5 GB/s, about 0.2-0.3 s), the
-expected gain is up to the 2.232 s of currently un-overlapped transfer. The transfer
-engine-s measured volume (90.7 GB per request) and the 22.5 GB/s link figure are
-independent of this parse and stand unchanged.
+- cost: 7.7 % fewer resident layers, so roughly 7-8 % less re-use between adjacent
+  layers, i.e. a few GB more miss traffic (about 0.2-0.3 s at 22.5 GB/s);
+- prize: the expert copies that are currently serialised with compute (2.232 s in the
+  EXP-1838 window, 0.237 s of overlap) could be issued during the previous layer's
+  kernels.
 
-The next experiment is therefore: reserve one layer of the expert cache for the next
-layer's planes, issue the copies one layer ahead, verify bit-exactness and measure
-both the overlap (trace) and the request time.
+That trade is a measurement, not an argument, and it is the next experiment. The
+engine-side figures (90.7 GB per request, 22.5 GB/s link, 2.232 s of copies) come from
+`props` and the CUPTI trace and are unaffected by the parse error.
