@@ -247,6 +247,16 @@ runtime; do not fork it. Check:
 - API and agent scenarios;
 - no regression against the accepted Apex.
 
+## Model queued after Inkling
+
+After the current Inkling optimization is concluded, the next architecture
+integration is Prism ML Ternary Bonsai 2.5 27B PQ2_0 MTP. The GGUF
+`Ternary-Bonsai-2.5-27B-PQ2_0-mtp.gguf` is already available locally.
+Integrate it into the same modular runtime and verify the existing
+architecture regression gates. The current Inkling targets are at least
+500 tok/s prefill and 25 tok/s single-response decode, with correctness
+and Apex performance preserved.
+
 ## Blocking conditions
 
 | transition | condition |
