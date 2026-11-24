@@ -1,0 +1,31 @@
+--- a/cuda-driver.c
++++ b/cuda-driver.c
+@@ -4,0 +5 @@
++#include "mmq-pack-batched-image.h"
+@@ -240 +241 @@
+-    Function mmq_pack, mmq_pack_shared, mmq_pack_glu, mmq_matrix, mmq_q4_matrix, mmq_q6_matrix;
++    Function mmq_pack, mmq_pack_warp4, mmq_pack_shared, mmq_pack_glu, mmq_matrix, mmq_q4_matrix, mmq_q6_matrix;
+@@ -1282,0 +1284,9 @@
++        const char * pack_batched = getenv("GOOSE_MMQ_PACK_BATCHED");
++        if (error == 0 && mmq && major == 8 && (!pack_batched || strcmp(pack_batched, "0") != 0) &&
++            cuda.device_attribute(&minor, compute_capability_minor, device) == 0 && minor == 9) {
++            Module image = NULL;
++            Function kernel = NULL;
++            if (cuda.module_load(&image, mmq_pack_batched_image) == 0 &&
++                cuda.function_get(&kernel, image, "goose_mmq_pack_q8_warp4") == 0)
++                cuda.mmq_pack_warp4 = kernel;
++        }
+@@ -3392,2 +3402,11 @@
+-                error = cuda.launch(cuda.mmq_pack, (unsigned) (2 * extent), routes, 1,
+-                    32, 1, 1, 0, NULL, pack_args, NULL);
++                const bool grouped = cuda.mmq_pack_warp4 && routes >= 128 &&
++                    (layout == mmq_d4_reciprocal || layout == mmq_ds4_reciprocal) && fg143_cpu_prefill();
++                const unsigned groups = (unsigned) (2 * extent);
++                error = cuda.launch(grouped ? cuda.mmq_pack_warp4 : cuda.mmq_pack,
++                    grouped ? 1 + (groups - 1) / 4 : groups, routes, 1, grouped ? 128 : 32,
++                    1, 1, 0, NULL, pack_args, NULL);
++                if (error == 0 && grouped) {
++                    static _Thread_local uint64_t packed;
++                    if (++packed == 1 || packed % 500 == 0)
++                        fprintf(stderr, "Goose CUDA: batched Q8_1 packs=%" PRIu64 "\n", packed);
++                }

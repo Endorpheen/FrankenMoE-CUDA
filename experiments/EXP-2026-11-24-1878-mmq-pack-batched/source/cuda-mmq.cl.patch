@@ -1,0 +1,31 @@
+--- a/cuda-mmq.cl
++++ b/cuda-mmq.cl
+@@ -157,0 +158,28 @@
++__kernel void goose_mmq_pack_q8_warp2(__global const uint8_t * input, __global const uint64_t * jobs,
++    __global uint8_t * packed, int32_t extent, int32_t layout, int32_t first, int32_t job_words) {
++    uint32_t group, job, lane;
++    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(group));
++    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(job));
++    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
++    group = 2 * group + lane / 32;
++    if (group >= 2u * (uint32_t)extent) return;
++    lane %= 32;
++    const uint64_t route = (uint64_t) first + job;
++    pack_mmq_row((uint64_t) input + jobs[route * job_words],
++        (uint64_t) packed + (uint64_t) job * 288 * extent, extent, layout, group, lane);
++}
++
++__kernel void goose_mmq_pack_q8_warp4(__global const uint8_t * input, __global const uint64_t * jobs,
++    __global uint8_t * packed, int32_t extent, int32_t layout, int32_t first, int32_t job_words) {
++    uint32_t group, job, lane;
++    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(group));
++    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(job));
++    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
++    group = 4 * group + lane / 32;
++    if (group >= 2u * (uint32_t)extent) return;
++    lane %= 32;
++    const uint64_t route = (uint64_t) first + job;
++    pack_mmq_row((uint64_t) input + jobs[route * job_words],
++        (uint64_t) packed + (uint64_t) job * 288 * extent, extent, layout, group, lane);
++}
++
