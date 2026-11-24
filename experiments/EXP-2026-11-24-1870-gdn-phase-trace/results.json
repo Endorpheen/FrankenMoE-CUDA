@@ -1,0 +1,1254 @@
+{
+  "a": {
+    "run": "cx-gdn-phase-a-20261124-125611",
+    "kernel_selected": false,
+    "phases": {
+      "prefill": {
+        "range_ms": 9862.385935,
+        "kernel_union_ms": 7454.265776,
+        "memcpy_union_ms": 2524.173995,
+        "gpu_union_ms": 9489.506285,
+        "visible_gpu_gap_ms": 372.87965,
+        "sample_count": 40,
+        "clock_and_power": {
+          "graphics_mhz": {
+            "median": 2812.5,
+            "min": 2505.0,
+            "max": 2835.0
+          },
+          "sm_mhz": {
+            "median": 2812.5,
+            "min": 2505.0,
+            "max": 2835.0
+          },
+          "memory_mhz": {
+            "median": 10251.0,
+            "min": 10251.0,
+            "max": 10251.0
+          },
+          "temperature_c": {
+            "median": 63.0,
+            "min": 50.0,
+            "max": 67.0
+          },
+          "power_w": {
+            "median": 175.15,
+            "min": 34.53,
+            "max": 181.96
+          },
+          "gpu_util_pct": {
+            "median": 99.0,
+            "min": 0.0,
+            "max": 99.0
+          },
+          "device_vram_mib": {
+            "median": 10824.0,
+            "min": 10824.0,
+            "max": 10825.0
+          }
+        },
+        "kernels": {
+          "goose_rms_reference": {
+            "count": 1711,
+            "sum_ms": 421.791847,
+            "bytes": 0
+          },
+          "goose_mmq_pack_k_major": {
+            "count": 320,
+            "sum_ms": 21.422233,
+            "bytes": 0
+          },
+          "goose_mmq_q6_dense_m128_pipeline": {
+            "count": 320,
+            "sum_ms": 310.611377,
+            "bytes": 0
+          },
+          "goose_ssm_conv_direct": {
+            "count": 240,
+            "sum_ms": 149.965275,
+            "bytes": 0
+          },
+          "goose_ssm_conv_save_tail": {
+            "count": 240,
+            "sum_ms": 0.404762,
+            "bytes": 0
+          },
+          "goose_mmq_pack_q8": {
+            "count": 2200,
+            "sum_ms": 226.877732,
+            "bytes": 0
+          },
+          "goose_mmq_q4_reference": {
+            "count": 480,
+            "sum_ms": 44.817394,
+            "bytes": 0
+          },
+          "goose_vector_ops": {
+            "count": 1541,
+            "sum_ms": 234.825133,
+            "bytes": 0
+          },
+          "goose_vector_flat4": {
+            "count": 2520,
+            "sum_ms": 447.045781,
+            "bytes": 0
+          },
+          "goose_gdn_mma_v32": {
+            "count": 240,
+            "sum_ms": 601.773486,
+            "bytes": 0
+          },
+          "goose_mmq_q4_prepare": {
+            "count": 1680,
+            "sum_ms": 33.865044,
+            "bytes": 0
+          },
+          "goose_mmq_q4_dense_m128n256_pipeline": {
+            "count": 1680,
+            "sum_ms": 924.953145,
+            "bytes": 0
+          },
+          "goose_mmq_q4_dense_m128n256": {
+            "count": 320,
+            "sum_ms": 66.374958,
+            "bytes": 0
+          },
+          "goose_dense_mma_reference": {
+            "count": 280,
+            "sum_ms": 269.279478,
+            "bytes": 0
+          },
+          "goose_route_reduce": {
+            "count": 360,
+            "sum_ms": 6.43823,
+            "bytes": 0
+          },
+          "goose_route_topk": {
+            "count": 360,
+            "sum_ms": 4.668625,
+            "bytes": 0
+          },
+          "goose_mmq_pack_shared": {
+            "count": 360,
+            "sum_ms": 29.24696,
+            "bytes": 0
+          },
+          "goose_mmq_q4_routed_m128": {
+            "count": 640,
+            "sum_ms": 591.492363,
+            "bytes": 0
+          },
+          "goose_mmq_q4_routed_x64": {
+            "count": 720,
+            "sum_ms": 358.093501,
+            "bytes": 0
+          },
+          "goose_mmq_pack_swiglu": {
+            "count": 320,
+            "sum_ms": 105.25458,
+            "bytes": 0
+          },
+          "goose_mmq_q6_routed_m128_pipeline": {
+            "count": 160,
+            "sum_ms": 286.315815,
+            "bytes": 0
+          },
+          "goose_mmq_q6_routed_x64": {
+            "count": 180,
+            "sum_ms": 147.659135,
+            "bytes": 0
+          },
+          "goose_route_norm": {
+            "count": 360,
+            "sum_ms": 2.450393,
+            "bytes": 0
+          },
+          "goose_moe_weighted": {
+            "count": 5160,
+            "sum_ms": 225.957531,
+            "bytes": 0
+          },
+          "goose_quantized_matmul": {
+            "count": 400,
+            "sum_ms": 28.400514,
+            "bytes": 0
+          },
+          "goose_rope_phases": {
+            "count": 180,
+            "sum_ms": 12.137895,
+            "bytes": 0
+          },
+          "goose_rope_apply": {
+            "count": 180,
+            "sum_ms": 25.372934,
+            "bytes": 0
+          },
+          "goose_kv_fwht": {
+            "count": 200,
+            "sum_ms": 129.758891,
+            "bytes": 0
+          },
+          "goose_fwht_q4": {
+            "count": 160,
+            "sum_ms": 19.709358,
+            "bytes": 0
+          },
+          "goose_flash_q4_stage": {
+            "count": 160,
+            "sum_ms": 8.683565,
+            "bytes": 0
+          },
+          "goose_flash_causal_mma": {
+            "count": 80,
+            "sum_ms": 1314.334603,
+            "bytes": 0
+          },
+          "goose_tensor_blit": {
+            "count": 150,
+            "sum_ms": 38.393626,
+            "bytes": 0
+          },
+          "goose_mmq_q4_routed_down_m128": {
+            "count": 160,
+            "sum_ms": 250.276145,
+            "bytes": 0
+          },
+          "goose_dense_mma": {
+            "count": 40,
+            "sum_ms": 52.965365,
+            "bytes": 0
+          },
+          "goose_mmvq_quantize": {
+            "count": 310,
+            "sum_ms": 0.379742,
+            "bytes": 0
+          },
+          "goose_mmvq_matvec": {
+            "count": 310,
+            "sum_ms": 5.703567,
+            "bytes": 0
+          },
+          "goose_ssm_conv": {
+            "count": 30,
+            "sum_ms": 0.148323,
+            "bytes": 0
+          },
+          "goose_gated_delta_net": {
+            "count": 30,
+            "sum_ms": 2.299862,
+            "bytes": 0
+          },
+          "goose_set_q4_rows": {
+            "count": 20,
+            "sum_ms": 0.065987,
+            "bytes": 0
+          },
+          "goose_q4_attention_tiles": {
+            "count": 10,
+            "sum_ms": 50.732132,
+            "bytes": 0
+          },
+          "goose_q4_attention_merge": {
+            "count": 10,
+            "sum_ms": 1.239275,
+            "bytes": 0
+          },
+          "goose_mmq_matmul": {
+            "count": 20,
+            "sum_ms": 1.186663,
+            "bytes": 0
+          },
+          "goose_mmvq_dense_quantize": {
+            "count": 1,
+            "sum_ms": 0.001312,
+            "bytes": 0
+          },
+          "goose_mmvq_dense_matvec": {
+            "count": 1,
+            "sum_ms": 0.891239,
+            "bytes": 0
+          }
+        },
+        "copies": {
+          "1": {
+            "count": 64358,
+            "sum_ms": 2522.720503,
+            "bytes": 57823739136
+          },
+          "2": {
+            "count": 361,
+            "sum_ms": 2.447644,
+            "bytes": 42936320
+          }
+        },
+        "host_runtime": {
+          "cuMemcpyHtoD_v2": {
+            "count": 3638,
+            "sum_ms": 7889.127819,
+            "bytes": 0
+          },
+          "cuLaunchKernel": {
+            "count": 24844,
+            "sum_ms": 81.005201,
+            "bytes": 0
+          },
+          "cuEventSynchronize": {
+            "count": 4080,
+            "sum_ms": 3.551796,
+            "bytes": 0
+          },
+          "cuMemcpyHtoDAsync_v2": {
+            "count": 60720,
+            "sum_ms": 146.520762,
+            "bytes": 0
+          },
+          "cuEventRecord": {
+            "count": 5414,
+            "sum_ms": 8.772984,
+            "bytes": 0
+          },
+          "cuMemcpyDtoH_v2": {
+            "count": 361,
+            "sum_ms": 901.479409,
+            "bytes": 0
+          },
+          "cuStreamWaitEvent": {
+            "count": 1334,
+            "sum_ms": 1.823639,
+            "bytes": 0
+          },
+          "cuCtxSynchronize": {
+            "count": 219,
+            "sum_ms": 85.817322,
+            "bytes": 0
+          },
+          "cuStreamBeginCapture_v2": {
+            "count": 1,
+            "sum_ms": 0.003417,
+            "bytes": 0
+          },
+          "cuStreamEndCapture": {
+            "count": 1,
+            "sum_ms": 0.001283,
+            "bytes": 0
+          },
+          "cuGraphInstantiateWithFlags": {
+            "count": 1,
+            "sum_ms": 0.118003,
+            "bytes": 0
+          },
+          "cuGraphDestroy": {
+            "count": 1,
+            "sum_ms": 0.00516,
+            "bytes": 0
+          },
+          "cuGraphLaunch": {
+            "count": 1,
+            "sum_ms": 0.031419,
+            "bytes": 0
+          }
+        }
+      },
+      "decode": {
+        "range_ms": 6809.279349,
+        "kernel_union_ms": 5155.779768,
+        "memcpy_union_ms": 458.605776,
+        "gpu_union_ms": 5364.459285,
+        "visible_gpu_gap_ms": 1444.820064,
+        "sample_count": 27,
+        "clock_and_power": {
+          "graphics_mhz": {
+            "median": 2835.0,
+            "min": 2805.0,
+            "max": 2835.0
+          },
+          "sm_mhz": {
+            "median": 2835.0,
+            "min": 2805.0,
+            "max": 2835.0
+          },
+          "memory_mhz": {
+            "median": 10251.0,
+            "min": 10251.0,
+            "max": 10251.0
+          },
+          "temperature_c": {
+            "median": 61.0,
+            "min": 60.0,
+            "max": 64.0
+          },
+          "power_w": {
+            "median": 142.51,
+            "min": 138.44,
+            "max": 180.52
+          },
+          "gpu_util_pct": {
+            "median": 94.0,
+            "min": 87.0,
+            "max": 99.0
+          },
+          "device_vram_mib": {
+            "median": 10824.0,
+            "min": 10824.0,
+            "max": 10825.0
+          }
+        },
+        "kernels": {
+          "goose_rms_decode_2048": {
+            "count": 41391,
+            "sum_ms": 51.261747,
+            "bytes": 0
+          },
+          "goose_mmvq_dense_quantize": {
+            "count": 97601,
+            "sum_ms": 95.95841,
+            "bytes": 0
+          },
+          "goose_mmvq_dense_matvec": {
+            "count": 97601,
+            "sum_ms": 1534.240337,
+            "bytes": 0
+          },
+          "goose_tensor_blit": {
+            "count": 35770,
+            "sum_ms": 90.031394,
+            "bytes": 0
+          },
+          "goose_ssm_conv": {
+            "count": 15330,
+            "sum_ms": 47.593886,
+            "bytes": 0
+          },
+          "goose_rms_reference": {
+            "count": 56210,
+            "sum_ms": 163.451996,
+            "bytes": 0
+          },
+          "goose_vector_ops": {
+            "count": 174251,
+            "sum_ms": 452.947787,
+            "bytes": 0
+          },
+          "goose_gdn_decode": {
+            "count": 15330,
+            "sum_ms": 110.779632,
+            "bytes": 0
+          },
+          "goose_quantized_matmul": {
+            "count": 40880,
+            "sum_ms": 246.280174,
+            "bytes": 0
+          },
+          "goose_router_softmax_fixed": {
+            "count": 20440,
+            "sum_ms": 36.790447,
+            "bytes": 0
+          },
+          "goose_route_compact8": {
+            "count": 20440,
+            "sum_ms": 92.290625,
+            "bytes": 0
+          },
+          "goose_pred_route": {
+            "count": 19929,
+            "sum_ms": 218.200222,
+            "bytes": 0
+          },
+          "goose_mmvq_quantize": {
+            "count": 61320,
+            "sum_ms": 67.426876,
+            "bytes": 0
+          },
+          "goose_mmvq_shared_up_gate_glu": {
+            "count": 20440,
+            "sum_ms": 81.923105,
+            "bytes": 0
+          },
+          "goose_mmvq_matvec": {
+            "count": 20440,
+            "sum_ms": 75.324599,
+            "bytes": 0
+          },
+          "goose_mmvq_up_gate_glu": {
+            "count": 20440,
+            "sum_ms": 479.127864,
+            "bytes": 0
+          },
+          "goose_mmvq_short_rows": {
+            "count": 20440,
+            "sum_ms": 316.56036,
+            "bytes": 0
+          },
+          "goose_moe_weighted": {
+            "count": 20440,
+            "sum_ms": 25.380743,
+            "bytes": 0
+          },
+          "goose_moe_add_shared_residual": {
+            "count": 20440,
+            "sum_ms": 15.807966,
+            "bytes": 0
+          },
+          "goose_rope_decode": {
+            "count": 10220,
+            "sum_ms": 19.052937,
+            "bytes": 0
+          },
+          "goose_kv_fwht": {
+            "count": 20440,
+            "sum_ms": 43.643016,
+            "bytes": 0
+          },
+          "goose_set_q4_rows": {
+            "count": 10220,
+            "sum_ms": 23.364638,
+            "bytes": 0
+          },
+          "goose_flash_vec_pack_query": {
+            "count": 5110,
+            "sum_ms": 7.976351,
+            "bytes": 0
+          },
+          "goose_flash_vec_q4_packed_quad": {
+            "count": 5110,
+            "sum_ms": 839.889011,
+            "bytes": 0
+          },
+          "goose_flash_vec_combine": {
+            "count": 5110,
+            "sum_ms": 20.903077,
+            "bytes": 0
+          }
+        },
+        "copies": {
+          "1": {
+            "count": 169511,
+            "sum_ms": 442.034248,
+            "bytes": 7340749312
+          },
+          "2": {
+            "count": 511,
+            "sum_ms": 25.154335,
+            "bytes": 507566080
+          }
+        },
+        "host_runtime": {
+          "cuMemcpyHtoD_v2": {
+            "count": 1022,
+            "sum_ms": 12.578851,
+            "bytes": 0
+          },
+          "cuLaunchKernel": {
+            "count": 30682,
+            "sum_ms": 120.685836,
+            "bytes": 0
+          },
+          "cuGraphLaunch": {
+            "count": 63364,
+            "sum_ms": 1690.611262,
+            "bytes": 0
+          },
+          "cuMemcpyHtoDAsync_v2": {
+            "count": 33585,
+            "sum_ms": 100.432141,
+            "bytes": 0
+          },
+          "cuCtxSynchronize": {
+            "count": 1022,
+            "sum_ms": 494.451841,
+            "bytes": 0
+          },
+          "cuGraphExecDestroy": {
+            "count": 2,
+            "sum_ms": 0.067157,
+            "bytes": 0
+          },
+          "cuGraphDestroy": {
+            "count": 2,
+            "sum_ms": 0.014888,
+            "bytes": 0
+          },
+          "cuStreamBeginCapture_v2": {
+            "count": 2,
+            "sum_ms": 0.001844,
+            "bytes": 0
+          },
+          "cuStreamWaitEvent": {
+            "count": 14851,
+            "sum_ms": 7.08507,
+            "bytes": 0
+          },
+          "cuStreamEndCapture": {
+            "count": 2,
+            "sum_ms": 0.001323,
+            "bytes": 0
+          },
+          "cuGraphInstantiateWithFlags": {
+            "count": 2,
+            "sum_ms": 0.118613,
+            "bytes": 0
+          },
+          "cuGraphGetRootNodes": {
+            "count": 4,
+            "sum_ms": 0.001082,
+            "bytes": 0
+          },
+          "cuGraphNodeGetType": {
+            "count": 25,
+            "sum_ms": 0.001241,
+            "bytes": 0
+          },
+          "cuGraphNodeGetDependentNodes": {
+            "count": 48,
+            "sum_ms": 0.004399,
+            "bytes": 0
+          },
+          "cuGraphExecKernelNodeSetParams_v2": {
+            "count": 35259,
+            "sum_ms": 38.983708,
+            "bytes": 0
+          },
+          "cuEventRecord": {
+            "count": 44544,
+            "sum_ms": 20.808478,
+            "bytes": 0
+          },
+          "cuMemcpyDtoH_v2": {
+            "count": 511,
+            "sum_ms": 68.741458,
+            "bytes": 0
+          }
+        }
+      }
+    },
+    "system_swapout_pages_delta": 21914,
+    "trace_sha256": "1d0aad98676f2f6a46507edbe170140dfd9390f568f4af80e10b161a7b03a31f",
+    "exact_outputs_and_props": true
+  },
+  "b": {
+    "run": "cx-gdn-phase-b-20261124-125744",
+    "kernel_selected": true,
+    "phases": {
+      "prefill": {
+        "range_ms": 9827.220516,
+        "kernel_union_ms": 7394.864393,
+        "memcpy_union_ms": 2529.658164,
+        "gpu_union_ms": 9451.92741,
+        "visible_gpu_gap_ms": 375.293106,
+        "sample_count": 40,
+        "clock_and_power": {
+          "graphics_mhz": {
+            "median": 2835.0,
+            "min": 2505.0,
+            "max": 2850.0
+          },
+          "sm_mhz": {
+            "median": 2835.0,
+            "min": 2505.0,
+            "max": 2850.0
+          },
+          "memory_mhz": {
+            "median": 10251.0,
+            "min": 10251.0,
+            "max": 10251.0
+          },
+          "temperature_c": {
+            "median": 60.0,
+            "min": 46.0,
+            "max": 65.0
+          },
+          "power_w": {
+            "median": 175.45,
+            "min": 33.25,
+            "max": 181.11
+          },
+          "gpu_util_pct": {
+            "median": 99.0,
+            "min": 0.0,
+            "max": 99.0
+          },
+          "device_vram_mib": {
+            "median": 10824.0,
+            "min": 10824.0,
+            "max": 10825.0
+          }
+        },
+        "kernels": {
+          "goose_rms_reference": {
+            "count": 1711,
+            "sum_ms": 418.301438,
+            "bytes": 0
+          },
+          "goose_mmq_pack_k_major": {
+            "count": 320,
+            "sum_ms": 21.545548,
+            "bytes": 0
+          },
+          "goose_mmq_q6_dense_m128_pipeline": {
+            "count": 320,
+            "sum_ms": 308.21874,
+            "bytes": 0
+          },
+          "goose_ssm_conv_direct": {
+            "count": 240,
+            "sum_ms": 150.38346,
+            "bytes": 0
+          },
+          "goose_ssm_conv_save_tail": {
+            "count": 240,
+            "sum_ms": 0.40375,
+            "bytes": 0
+          },
+          "goose_mmq_pack_q8": {
+            "count": 2200,
+            "sum_ms": 226.802736,
+            "bytes": 0
+          },
+          "goose_mmq_q4_reference": {
+            "count": 480,
+            "sum_ms": 44.564489,
+            "bytes": 0
+          },
+          "goose_vector_ops": {
+            "count": 1541,
+            "sum_ms": 233.214049,
+            "bytes": 0
+          },
+          "goose_vector_flat4": {
+            "count": 2520,
+            "sum_ms": 445.679937,
+            "bytes": 0
+          },
+          "goose_gdn_mma_v32": {
+            "count": 240,
+            "sum_ms": 571.747213,
+            "bytes": 0
+          },
+          "goose_mmq_q4_prepare": {
+            "count": 1680,
+            "sum_ms": 33.692497,
+            "bytes": 0
+          },
+          "goose_mmq_q4_dense_m128n256_pipeline": {
+            "count": 1680,
+            "sum_ms": 918.512477,
+            "bytes": 0
+          },
+          "goose_mmq_q4_dense_m128n256": {
+            "count": 320,
+            "sum_ms": 65.752865,
+            "bytes": 0
+          },
+          "goose_dense_mma_reference": {
+            "count": 280,
+            "sum_ms": 268.164735,
+            "bytes": 0
+          },
+          "goose_route_reduce": {
+            "count": 360,
+            "sum_ms": 6.387514,
+            "bytes": 0
+          },
+          "goose_route_topk": {
+            "count": 360,
+            "sum_ms": 4.642671,
+            "bytes": 0
+          },
+          "goose_mmq_pack_shared": {
+            "count": 360,
+            "sum_ms": 29.255406,
+            "bytes": 0
+          },
+          "goose_mmq_q4_routed_m128": {
+            "count": 640,
+            "sum_ms": 587.901781,
+            "bytes": 0
+          },
+          "goose_mmq_q4_routed_x64": {
+            "count": 720,
+            "sum_ms": 356.94185,
+            "bytes": 0
+          },
+          "goose_mmq_pack_swiglu": {
+            "count": 320,
+            "sum_ms": 105.401654,
+            "bytes": 0
+          },
+          "goose_mmq_q6_routed_m128_pipeline": {
+            "count": 160,
+            "sum_ms": 285.564896,
+            "bytes": 0
+          },
+          "goose_mmq_q6_routed_x64": {
+            "count": 180,
+            "sum_ms": 147.341763,
+            "bytes": 0
+          },
+          "goose_route_norm": {
+            "count": 360,
+            "sum_ms": 2.448578,
+            "bytes": 0
+          },
+          "goose_moe_weighted": {
+            "count": 5160,
+            "sum_ms": 225.475095,
+            "bytes": 0
+          },
+          "goose_quantized_matmul": {
+            "count": 400,
+            "sum_ms": 28.414307,
+            "bytes": 0
+          },
+          "goose_rope_phases": {
+            "count": 180,
+            "sum_ms": 12.049047,
+            "bytes": 0
+          },
+          "goose_rope_apply": {
+            "count": 180,
+            "sum_ms": 25.021728,
+            "bytes": 0
+          },
+          "goose_kv_fwht": {
+            "count": 200,
+            "sum_ms": 129.630402,
+            "bytes": 0
+          },
+          "goose_fwht_q4": {
+            "count": 160,
+            "sum_ms": 19.600058,
+            "bytes": 0
+          },
+          "goose_flash_q4_stage": {
+            "count": 160,
+            "sum_ms": 8.645942,
+            "bytes": 0
+          },
+          "goose_flash_causal_mma": {
+            "count": 80,
+            "sum_ms": 1309.683046,
+            "bytes": 0
+          },
+          "goose_tensor_blit": {
+            "count": 150,
+            "sum_ms": 39.584786,
+            "bytes": 0
+          },
+          "goose_mmq_q4_routed_down_m128": {
+            "count": 160,
+            "sum_ms": 248.704292,
+            "bytes": 0
+          },
+          "goose_dense_mma": {
+            "count": 40,
+            "sum_ms": 52.84331,
+            "bytes": 0
+          },
+          "goose_mmvq_quantize": {
+            "count": 310,
+            "sum_ms": 0.378723,
+            "bytes": 0
+          },
+          "goose_mmvq_matvec": {
+            "count": 310,
+            "sum_ms": 5.680556,
+            "bytes": 0
+          },
+          "goose_ssm_conv": {
+            "count": 30,
+            "sum_ms": 0.148129,
+            "bytes": 0
+          },
+          "goose_gated_delta_net": {
+            "count": 30,
+            "sum_ms": 2.282484,
+            "bytes": 0
+          },
+          "goose_set_q4_rows": {
+            "count": 20,
+            "sum_ms": 0.065601,
+            "bytes": 0
+          },
+          "goose_q4_attention_tiles": {
+            "count": 10,
+            "sum_ms": 50.486072,
+            "bytes": 0
+          },
+          "goose_q4_attention_merge": {
+            "count": 10,
+            "sum_ms": 1.234604,
+            "bytes": 0
+          },
+          "goose_mmq_matmul": {
+            "count": 20,
+            "sum_ms": 1.185035,
+            "bytes": 0
+          },
+          "goose_mmvq_dense_quantize": {
+            "count": 1,
+            "sum_ms": 0.00128,
+            "bytes": 0
+          },
+          "goose_mmvq_dense_matvec": {
+            "count": 1,
+            "sum_ms": 0.879849,
+            "bytes": 0
+          }
+        },
+        "copies": {
+          "1": {
+            "count": 64358,
+            "sum_ms": 2528.367528,
+            "bytes": 57823739136
+          },
+          "2": {
+            "count": 361,
+            "sum_ms": 2.248822,
+            "bytes": 42936320
+          }
+        },
+        "host_runtime": {
+          "cuMemcpyHtoD_v2": {
+            "count": 3638,
+            "sum_ms": 7898.7265,
+            "bytes": 0
+          },
+          "cuLaunchKernel": {
+            "count": 24844,
+            "sum_ms": 77.331212,
+            "bytes": 0
+          },
+          "cuEventSynchronize": {
+            "count": 4080,
+            "sum_ms": 3.192412,
+            "bytes": 0
+          },
+          "cuMemcpyHtoDAsync_v2": {
+            "count": 60720,
+            "sum_ms": 141.292524,
+            "bytes": 0
+          },
+          "cuEventRecord": {
+            "count": 5414,
+            "sum_ms": 8.30918,
+            "bytes": 0
+          },
+          "cuMemcpyDtoH_v2": {
+            "count": 361,
+            "sum_ms": 897.393018,
+            "bytes": 0
+          },
+          "cuStreamWaitEvent": {
+            "count": 1334,
+            "sum_ms": 1.607311,
+            "bytes": 0
+          },
+          "cuCtxSynchronize": {
+            "count": 219,
+            "sum_ms": 85.905305,
+            "bytes": 0
+          },
+          "cuStreamBeginCapture_v2": {
+            "count": 1,
+            "sum_ms": 0.003667,
+            "bytes": 0
+          },
+          "cuStreamEndCapture": {
+            "count": 1,
+            "sum_ms": 0.001793,
+            "bytes": 0
+          },
+          "cuGraphInstantiateWithFlags": {
+            "count": 1,
+            "sum_ms": 0.108565,
+            "bytes": 0
+          },
+          "cuGraphDestroy": {
+            "count": 1,
+            "sum_ms": 0.006172,
+            "bytes": 0
+          },
+          "cuGraphLaunch": {
+            "count": 1,
+            "sum_ms": 0.068359,
+            "bytes": 0
+          }
+        }
+      },
+      "decode": {
+        "range_ms": 6786.509208,
+        "kernel_union_ms": 5157.786108,
+        "memcpy_union_ms": 455.27959,
+        "gpu_union_ms": 5363.129919,
+        "visible_gpu_gap_ms": 1423.379289,
+        "sample_count": 27,
+        "clock_and_power": {
+          "graphics_mhz": {
+            "median": 2835.0,
+            "min": 2835.0,
+            "max": 2835.0
+          },
+          "sm_mhz": {
+            "median": 2835.0,
+            "min": 2835.0,
+            "max": 2835.0
+          },
+          "memory_mhz": {
+            "median": 10251.0,
+            "min": 10251.0,
+            "max": 10251.0
+          },
+          "temperature_c": {
+            "median": 58.0,
+            "min": 58.0,
+            "max": 62.0
+          },
+          "power_w": {
+            "median": 141.33,
+            "min": 138.0,
+            "max": 178.64
+          },
+          "gpu_util_pct": {
+            "median": 93.0,
+            "min": 86.0,
+            "max": 99.0
+          },
+          "device_vram_mib": {
+            "median": 10824.0,
+            "min": 10824.0,
+            "max": 10825.0
+          }
+        },
+        "kernels": {
+          "goose_rms_decode_2048": {
+            "count": 41391,
+            "sum_ms": 51.254747,
+            "bytes": 0
+          },
+          "goose_mmvq_dense_quantize": {
+            "count": 97601,
+            "sum_ms": 95.977152,
+            "bytes": 0
+          },
+          "goose_mmvq_dense_matvec": {
+            "count": 97601,
+            "sum_ms": 1534.484112,
+            "bytes": 0
+          },
+          "goose_tensor_blit": {
+            "count": 35770,
+            "sum_ms": 89.959049,
+            "bytes": 0
+          },
+          "goose_ssm_conv": {
+            "count": 15330,
+            "sum_ms": 47.539645,
+            "bytes": 0
+          },
+          "goose_rms_reference": {
+            "count": 56210,
+            "sum_ms": 163.406978,
+            "bytes": 0
+          },
+          "goose_vector_ops": {
+            "count": 174251,
+            "sum_ms": 452.658896,
+            "bytes": 0
+          },
+          "goose_gdn_decode": {
+            "count": 15330,
+            "sum_ms": 110.910193,
+            "bytes": 0
+          },
+          "goose_quantized_matmul": {
+            "count": 40880,
+            "sum_ms": 246.531824,
+            "bytes": 0
+          },
+          "goose_router_softmax_fixed": {
+            "count": 20440,
+            "sum_ms": 36.776292,
+            "bytes": 0
+          },
+          "goose_route_compact8": {
+            "count": 20440,
+            "sum_ms": 91.762905,
+            "bytes": 0
+          },
+          "goose_pred_route": {
+            "count": 19929,
+            "sum_ms": 218.820132,
+            "bytes": 0
+          },
+          "goose_mmvq_quantize": {
+            "count": 61320,
+            "sum_ms": 67.486424,
+            "bytes": 0
+          },
+          "goose_mmvq_shared_up_gate_glu": {
+            "count": 20440,
+            "sum_ms": 84.217066,
+            "bytes": 0
+          },
+          "goose_mmvq_matvec": {
+            "count": 20440,
+            "sum_ms": 75.129591,
+            "bytes": 0
+          },
+          "goose_mmvq_up_gate_glu": {
+            "count": 20440,
+            "sum_ms": 479.881765,
+            "bytes": 0
+          },
+          "goose_mmvq_short_rows": {
+            "count": 20440,
+            "sum_ms": 316.429852,
+            "bytes": 0
+          },
+          "goose_moe_weighted": {
+            "count": 20440,
+            "sum_ms": 25.364266,
+            "bytes": 0
+          },
+          "goose_moe_add_shared_residual": {
+            "count": 20440,
+            "sum_ms": 15.82095,
+            "bytes": 0
+          },
+          "goose_rope_decode": {
+            "count": 10220,
+            "sum_ms": 19.071543,
+            "bytes": 0
+          },
+          "goose_kv_fwht": {
+            "count": 20440,
+            "sum_ms": 43.65043,
+            "bytes": 0
+          },
+          "goose_set_q4_rows": {
+            "count": 10220,
+            "sum_ms": 23.371968,
+            "bytes": 0
+          },
+          "goose_flash_vec_pack_query": {
+            "count": 5110,
+            "sum_ms": 7.974911,
+            "bytes": 0
+          },
+          "goose_flash_vec_q4_packed_quad": {
+            "count": 5110,
+            "sum_ms": 838.896393,
+            "bytes": 0
+          },
+          "goose_flash_vec_combine": {
+            "count": 5110,
+            "sum_ms": 20.891392,
+            "bytes": 0
+          }
+        },
+        "copies": {
+          "1": {
+            "count": 169511,
+            "sum_ms": 443.904401,
+            "bytes": 7340749312
+          },
+          "2": {
+            "count": 511,
+            "sum_ms": 20.502368,
+            "bytes": 507566080
+          }
+        },
+        "host_runtime": {
+          "cuMemcpyHtoD_v2": {
+            "count": 1022,
+            "sum_ms": 12.179663,
+            "bytes": 0
+          },
+          "cuLaunchKernel": {
+            "count": 30682,
+            "sum_ms": 119.451866,
+            "bytes": 0
+          },
+          "cuGraphLaunch": {
+            "count": 63364,
+            "sum_ms": 1645.73665,
+            "bytes": 0
+          },
+          "cuMemcpyHtoDAsync_v2": {
+            "count": 33585,
+            "sum_ms": 103.376747,
+            "bytes": 0
+          },
+          "cuCtxSynchronize": {
+            "count": 1022,
+            "sum_ms": 492.760071,
+            "bytes": 0
+          },
+          "cuGraphExecDestroy": {
+            "count": 2,
+            "sum_ms": 0.040076,
+            "bytes": 0
+          },
+          "cuGraphDestroy": {
+            "count": 2,
+            "sum_ms": 0.007755,
+            "bytes": 0
+          },
+          "cuStreamBeginCapture_v2": {
+            "count": 2,
+            "sum_ms": 0.001092,
+            "bytes": 0
+          },
+          "cuStreamWaitEvent": {
+            "count": 14851,
+            "sum_ms": 6.845001,
+            "bytes": 0
+          },
+          "cuStreamEndCapture": {
+            "count": 2,
+            "sum_ms": 0.000982,
+            "bytes": 0
+          },
+          "cuGraphInstantiateWithFlags": {
+            "count": 2,
+            "sum_ms": 0.090941,
+            "bytes": 0
+          },
+          "cuGraphGetRootNodes": {
+            "count": 4,
+            "sum_ms": 0.000791,
+            "bytes": 0
+          },
+          "cuGraphNodeGetType": {
+            "count": 25,
+            "sum_ms": 0.001586,
+            "bytes": 0
+          },
+          "cuGraphNodeGetDependentNodes": {
+            "count": 48,
+            "sum_ms": 0.003537,
+            "bytes": 0
+          },
+          "cuGraphExecKernelNodeSetParams_v2": {
+            "count": 35259,
+            "sum_ms": 38.577674,
+            "bytes": 0
+          },
+          "cuEventRecord": {
+            "count": 44544,
+            "sum_ms": 20.426364,
+            "bytes": 0
+          },
+          "cuMemcpyDtoH_v2": {
+            "count": 511,
+            "sum_ms": 63.669087,
+            "bytes": 0
+          }
+        }
+      }
+    },
+    "system_swapout_pages_delta": 3802,
+    "trace_sha256": "012bbc7352775fc2539f1b59296276a637313d1508924f209e8a376b3fbfc37a",
+    "exact_outputs_and_props": true
+  }
+}
