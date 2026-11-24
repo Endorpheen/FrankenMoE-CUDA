@@ -1,0 +1,8 @@
+--- a/cuda-driver.c
++++ b/cuda-driver.c
+@@ -1385 +1384,0 @@
+-        if (error == 0 && flash_mma) error = cuda.function_get(&cuda.flash_mma, cuda.module, "goose_flash_causal_mma");
+@@ -1396,0 +1396,3 @@
++        }
++        if (error == 0 && flash_mma && !cuda.flash_mma) {
++            error = cuda.function_get(&cuda.flash_mma, cuda.module, "goose_flash_causal_mma");
