@@ -1,0 +1,61 @@
+--- a/cpu.goose
++++ b/cpu.goose
+@@ -4324,0 +4325,50 @@
++extern "fg_cuda_moe_epilogue_enabled" fn moe_epilogue_enabled() -> bool;
++extern "fg_cuda_moe_epilogue" fn moe_epilogue(routed: u64, shared: u64, gate: u64, residual: u64,
++    output: u64, rows: i64, step: i64, deadline: i64) -> i64;
++
++fn try_moe_epilogue(graph: u64, step: i64, deadlines: const i64[:], mul: u64) -> i64 {
++    if step + 2 >= deadlines.len || deadlines[step] != step + 1 || deadlines[step + 1] != step + 2 {
++        return 0;
++    }
++    let mix = graph_node(graph, step + 1);
++    let sum = graph_node(graph, step + 2);
++    if graph_prop(mix, 2) != 2 || graph_prop(sum, 2) != 2 ||
++       storage_get(mul, STORAGE_VIEW, 0) != 0 || storage_get(mix, STORAGE_VIEW, 0) != 0 ||
++       storage_get(sum, STORAGE_VIEW, 0) != 0 { return 0; }
++
++    var inputs: u64[10] = [0; 10];
++    graph_inputs(mix, inputs[..]);
++    if inputs[1] != mul { return 0; }
++    graph_inputs(sum, inputs[..]);
++    if inputs[0] != mix { return 0; }
++
++    var p: i64[71] = [0; 71];
++    graph_describe(mul, p[..]);
++    let rows = p[31];
++    if rows < 2 || rows > 4096 ||
++       !routed_dense(packet_tensor(p[..], 0), 2048, rows, 1, 0) ||
++       !routed_dense(packet_tensor(p[..], 10), 1, rows, 1, 0) ||
++       !routed_dense(packet_tensor(p[..], 30), 2048, rows, 1, 0) { return 0; }
++    let shared = p[57] as! u64;
++    let gate = p[70] as! u64;
++
++    graph_describe(mix, p[..]);
++    if !routed_dense(packet_tensor(p[..], 0), 2048, rows, 1, 0) ||
++       !routed_dense(packet_tensor(p[..], 30), 2048, rows, 1, 0) { return 0; }
++    let routed = p[57] as! u64;
++
++    graph_describe(sum, p[..]);
++    if !routed_dense(packet_tensor(p[..], 10), 2048, rows, 1, 0) ||
++       !routed_dense(packet_tensor(p[..], 30), 2048, rows, 1, 0) { return 0; }
++    let output = p[58] as! u64;
++    let residual = p[70] as! u64;
++    let bytes = (rows * 8192) as u64;
++    if (routed | shared | residual | output) % 16 != 0 ||
++       routed == 0 || shared == 0 || gate == 0 || residual == 0 || output == 0 ||
++       activation_spans_overlap(output, bytes, routed, bytes) ||
++       activation_spans_overlap(output, bytes, shared, bytes) ||
++       activation_spans_overlap(output, bytes, residual, bytes) ||
++       activation_spans_overlap(output, bytes, gate, (rows * 4) as u64) { return 0; }
++    return moe_epilogue(routed, shared, gate, residual, output, rows, step, deadlines[step + 2]);
++}
++
+@@ -4331,0 +4382 @@
++    let use_moe_epilogue = !observe && deadlines.len != 0 && cpu_prefill() && moe_epilogue_enabled();
+@@ -4336,0 +4388,5 @@
++        if use_moe_epilogue && graph_prop(tensor, 2) == 7 {
++            let fused = try_moe_epilogue(graph, i, deadlines, tensor);
++            if fused > 0 { i += 3; continue; }
++            if fused < 0 { outcome = i + 1; break; }
++        }

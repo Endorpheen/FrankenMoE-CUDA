@@ -1,0 +1,6 @@
+tokens=4 words=8192 mismatches=0
+tokens=4 inplace_words=8192 inplace_mismatches=0
+tokens=4092 words=8380416 mismatches=0
+tokens=4092 inplace_words=8380416 inplace_mismatches=0
+tokens=4096 words=8388608 mismatches=0
+tokens=4096 inplace_words=8388608 inplace_mismatches=0
