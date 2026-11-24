@@ -899,3 +899,38 @@ come from Igor directly. For every marked message:
       still running when its predicted time is up is a defect to investigate, not to wait out;
     - the same applies to monitors: a watcher that cannot report within seconds is the wrong tool,
       and rule 38 already forbids the watchers that never terminate.
+
+40. Every experiment starts from the last accepted baseline, component for component.
+
+    An accepted result is a set of exact artefacts, not a source revision: the binary,
+    the CUDA images, the archives and objects it was linked from, the sources that
+    produced them, and the flags and environment of the accepted run. The baseline is
+    re-verified before an experiment, never assumed.
+
+    - Before the first measurement of a session or an experiment, run the accepted
+      binary and confirm its numbers and its bit-exactness (the accepted prefill,
+      decode, peak VRAM, RSS and swap, and the recorded response text and token ids).
+      If the baseline does not reproduce, the experiment does not start; fixing the
+      baseline is the work.
+    - Substitute **only** the component under study. Everything else stays byte-identical:
+      the same archive, the same objects, the same images, the same flags, the same
+      environment. A rebuild of a working component "to be consistent" is a separate
+      experiment on its own, and it is never mixed into the measurement of another change.
+    - Never swap a working component for an unverified rebuild. A regenerated artefact is
+      unproven until it reproduces the accepted behaviour bit-for-bit; until then it may
+      not replace what works, and a measurement taken on it is not evidence about the
+      change being tested.
+    - All previously accepted optimisations stay in the baseline cumulatively. A new
+      experiment extends the accepted set; it never starts from an older or reduced one.
+    - On a confirmed gain, the result becomes the new baseline and its artefacts are
+      preserved by rule 22. On a regression, revert to the previous baseline and record
+      the rollback; a degraded base is never carried forward "to be fixed later".
+    - The record of each experiment states which artefacts were held fixed and which one
+      was replaced, with their hashes, so a later reader can repeat the comparison.
+
+    The rule exists because on 2026-11-24 a rebuilt CUDA image, regenerated from sources
+    that had drifted from the accepted ones, measured 2168 tok/s against the accepted
+    3101 and produced a different response text; two kernels were missing from it and
+    the rest were not equivalent. Every kernel experiment built on that image was
+    unmeasurable, and hours went into reconstructing what the accepted image had been
+    instead of into the change under study.
