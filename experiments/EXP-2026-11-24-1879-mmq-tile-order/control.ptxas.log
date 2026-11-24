@@ -1,0 +1,7 @@
+ptxas info    : 0 bytes gmem
+ptxas info    : Compiling entry function 'goose_mmq_q4_dense_m128n256_pipeline' for 'sm_89'
+ptxas info    : Function properties for goose_mmq_q4_dense_m128n256_pipeline
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 226 registers, used 1 barriers, 404 bytes cmem[0]
+ptxas info    : Function properties for fg_device_mmq_q4_large_g
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads

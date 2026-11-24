@@ -1,0 +1,28 @@
+--- a/cuda-driver.c
++++ b/cuda-driver.c
+@@ -4,0 +5 @@
++#include "mmq-group4-image.h"
+@@ -1325,5 +1326,18 @@
+-                            int setup = cuda.function_get(&cuda.mmq_q4_dense_pipeline, cuda.module,
+-                                "goose_mmq_q4_dense_m128n256_pipeline");
+-                            if (setup == 0) setup = cuda.function_set_attribute(cuda.mmq_q4_dense_pipeline,
+-                                max_dynamic_shared_size, Q4_PIPE_SHARED_BYTES);
+-                            if (setup != 0) cuda.mmq_q4_dense_pipeline = NULL;
++                            const char * group4 = getenv("GOOSE_MMQ_Q4_GROUP4");
++                            if (!group4 || strcmp(group4, "0") != 0) {
++                                Module image = NULL;
++                                Function kernel = NULL;
++                                if (cuda.module_load(&image, mmq_group4_image) == 0 &&
++                                    cuda.function_get(&kernel, image, "goose_mmq_q4_dense_m128n256_group4") == 0 &&
++                                    cuda.function_set_attribute(kernel, max_dynamic_shared_size, Q4_PIPE_SHARED_BYTES) == 0) {
++                                    cuda.mmq_q4_dense_pipeline = kernel;
++                                    fputs("Goose CUDA: SM89 dense Q4 MMQ group4 pipeline selected\n", stderr);
++                                }
++                            }
++                            if (!cuda.mmq_q4_dense_pipeline) {
++                                int setup = cuda.function_get(&cuda.mmq_q4_dense_pipeline, cuda.module,
++                                    "goose_mmq_q4_dense_m128n256_pipeline");
++                                if (setup == 0) setup = cuda.function_set_attribute(cuda.mmq_q4_dense_pipeline,
++                                    max_dynamic_shared_size, Q4_PIPE_SHARED_BYTES);
++                                if (setup != 0) cuda.mmq_q4_dense_pipeline = NULL;
++                            }

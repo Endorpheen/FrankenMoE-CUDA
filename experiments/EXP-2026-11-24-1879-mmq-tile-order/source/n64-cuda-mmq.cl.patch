@@ -1,0 +1,10 @@
+--- a/cuda-mmq.cl
++++ b/cuda-mmq.cl
+@@ -369 +369 @@
+-    const int32_t left = routes - (int32_t) (128u * tile);
++    const int32_t left = routes - (int32_t) (64u * tile);
+@@ -371,2 +371,2 @@
+-        stride, extent, 128u * row, first_route + 128u * tile, first_route,
+-        left < 128 ? left : 128, thread, shared, 128, 128, true, true);
++        stride, extent, 128u * row, first_route + 64u * tile, first_route,
++        left < 64 ? left : 64, thread, shared, 128, 64, true, true);

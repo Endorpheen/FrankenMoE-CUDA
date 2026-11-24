@@ -1,0 +1,53 @@
+--- a/cuda-mmq.cl
++++ b/cuda-mmq.cl
+@@ -373,0 +374,50 @@
++__kernel void goose_mmq_q4_dense_m128n256_group4(__global const uint8_t * weights,
++    __global const uint8_t * packed, __global uint8_t * output, __global const uint64_t * jobs,
++    uint64_t stride, int32_t extent, int32_t first_route, int32_t routes) {
++    uint32_t row, tile, thread;
++    uint64_t shared;
++    __asm__("mov.u64 %0, goose_mmq_q4_pipeline_shared;" : "=l"(shared));
++    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(row));
++    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(tile));
++    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
++    uint32_t row_tiles, column_tiles;
++    __asm__("mov.u32 %0, %%nctaid.x;" : "=r"(row_tiles));
++    __asm__("mov.u32 %0, %%nctaid.y;" : "=r"(column_tiles));
++    const uint32_t linear = row_tiles * tile + row;
++    const uint32_t group_size = 4u * column_tiles;
++    const uint32_t first_row = 4u * (linear / group_size);
++    const uint32_t left_rows = row_tiles - first_row;
++    const uint32_t active_rows = left_rows < 4u ? left_rows : 4u;
++    const uint32_t local_index = linear % group_size;
++    row = first_row + local_index % active_rows;
++    tile = local_index / active_rows;
++    const int32_t left = routes - (int32_t) (256u * tile);
++    fg_device_mmq_q4_large_g((uint64_t) weights, (uint64_t) packed, (uint64_t) output, (uint64_t) jobs,
++        stride, extent, 128u * row, first_route + 256u * tile, first_route,
++        left < 256 ? left : 256, thread, shared, 128, 256, true, true);
++}
++__kernel void goose_mmq_q4_dense_m128n256_group8(__global const uint8_t * weights,
++    __global const uint8_t * packed, __global uint8_t * output, __global const uint64_t * jobs,
++    uint64_t stride, int32_t extent, int32_t first_route, int32_t routes) {
++    uint32_t row, tile, thread;
++    uint64_t shared;
++    __asm__("mov.u64 %0, goose_mmq_q4_pipeline_shared;" : "=l"(shared));
++    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(row));
++    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(tile));
++    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
++    uint32_t row_tiles, column_tiles;
++    __asm__("mov.u32 %0, %%nctaid.x;" : "=r"(row_tiles));
++    __asm__("mov.u32 %0, %%nctaid.y;" : "=r"(column_tiles));
++    const uint32_t linear = row_tiles * tile + row;
++    const uint32_t group_size = 8u * column_tiles;
++    const uint32_t first_row = 8u * (linear / group_size);
++    const uint32_t left_rows = row_tiles - first_row;
++    const uint32_t active_rows = left_rows < 8u ? left_rows : 8u;
++    const uint32_t local_index = linear % group_size;
++    row = first_row + local_index % active_rows;
++    tile = local_index / active_rows;
++    const int32_t left = routes - (int32_t) (256u * tile);
++    fg_device_mmq_q4_large_g((uint64_t) weights, (uint64_t) packed, (uint64_t) output, (uint64_t) jobs,
++        stride, extent, 128u * row, first_route + 256u * tile, first_route,
++        left < 256 ? left : 256, thread, shared, 128, 256, true, true);
++}
