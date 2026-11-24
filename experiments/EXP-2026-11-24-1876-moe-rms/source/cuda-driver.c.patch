@@ -1,0 +1,79 @@
+--- a/cuda-driver.c
++++ b/cuda-driver.c
+@@ -4,0 +5 @@
++#include "moe-epilogue-rms-image.h"
+@@ -302 +303 @@
+-    Function moe_prefill_epilogue;
++    Function moe_prefill_epilogue, moe_prefill_epilogue_rms;
+@@ -1536,0 +1538,8 @@
++        const char * moe_rms = getenv("GOOSE_MOE_EPILOGUE_RMS");
++        if (cuda.moe_prefill_epilogue && cuda.rms_reference && (!moe_rms || strcmp(moe_rms, "0") != 0)) {
++            Module image = NULL;
++            Function kernel = NULL;
++            if (cuda.module_load(&image, moe_epilogue_rms_image) == 0 &&
++                cuda.function_get(&kernel, image, "goose_moe_epilogue_rms") == 0)
++                cuda.moe_prefill_epilogue_rms = kernel;
++        }
+@@ -5274,0 +5284,62 @@
++}
++
++uint8_t fg_cuda_moe_epilogue_rms_enabled(void) {
++    return cuda.moe_prefill_epilogue_rms != NULL;
++}
++
++static bool epilogue_overlap(uint64_t a, uint64_t na, uint64_t b, uint64_t nb) {
++    return a <= b ? b - a < na : a - b < nb;
++}
++
++int64_t fg_cuda_moe_epilogue_rms(uint64_t routed, uint64_t shared, uint64_t gate, uint64_t residual,
++                                uint64_t layer, uint64_t norm, uint64_t weight, int64_t rows,
++                                int64_t step, int64_t layer_deadline, int64_t norm_deadline, float epsilon) {
++    if (!fg_cuda_moe_epilogue_rms_enabled() || !activations.retire || !activations.reuse ||
++        rows < 2 || rows > 4096) return 0;
++    const int64_t bytes = rows * 8192, gate_bytes = rows * 4;
++    const int64_t rslot = fg143_activation_overlap(activation_ranges(), routed, bytes, 0);
++    const int64_t sslot = fg143_activation_overlap(activation_ranges(), shared, bytes, 0);
++    if (rslot < 0 || sslot < 0 || rslot == sslot) return 0;
++    int64_t * rrecord = activations.ranges + (size_t) rslot * ACTIVATION_WORDS;
++    int64_t * srecord = activations.ranges + (size_t) sslot * ACTIVATION_WORDS;
++    if ((uint64_t)rrecord[0] != routed || rrecord[1] != bytes || rrecord[4] != step + 1 ||
++        (uint64_t)srecord[0] != shared || srecord[1] != bytes || srecord[4] != step) return 0;
++    for (int64_t i = 0; i < activations.count; ++i) {
++        const int64_t * record = activations.ranges + (size_t)i * ACTIVATION_WORDS;
++        if (record[1] && epilogue_overlap(norm, bytes, (uint64_t)record[0], record[1]) &&
++            (record[4] < 0 || record[4] > step + 2)) return 0;
++    }
++    if (activations.large_output[1] > 0 &&
++        epilogue_overlap(norm, bytes, (uint64_t)activations.large_output[0], activations.large_output[1]))
++        return 0;
++    DevicePtr w = 0;
++    if (!dense_weight(weight, 8192, &w)) return 0;
++    if (fg_cuda_activation_prepare(layer, bytes, true, true, step, layer_deadline) != 0) return -1;
++    if (rrecord[1] != bytes || srecord[1] != bytes) return 0;
++    DevicePtr r = activation_device(routed, bytes), s = activation_device(shared, bytes),
++              g = activation_device(gate, gate_bytes), x = activation_device(residual, bytes);
++    if (!r || !s || !g || !x || (r | s | x | w) % 16 != 0) return 0;
++    if (epilogue_overlap(r, bytes, s, bytes) || epilogue_overlap(r, bytes, x, bytes) ||
++        epilogue_overlap(s, bytes, x, bytes) || epilogue_overlap(r, bytes, g, gate_bytes) ||
++        epilogue_overlap(s, bytes, g, gate_bytes)) return 0;
++    if (start_context() != 1) return -1;
++    void * args[] = {&r, &s, &g, &x, &w, &r, &s, &epsilon};
++    activations.pending = true;
++    const int error = cuda.launch(cuda.moe_prefill_epilogue_rms, (unsigned)rows, 1, 1, 512, 1, 1, 0, NULL, args, NULL);
++    if (finish_context() != 0 || error != 0) return -1;
++
++    for (int64_t i = 0; i < activations.count; ++i) {
++        int64_t * record = activations.ranges + (size_t)i * ACTIVATION_WORDS;
++        if (record != rrecord && record != srecord && record[1] &&
++            epilogue_overlap(norm, bytes, (uint64_t)record[0], record[1])) record[1] = 0;
++    }
++    rrecord[0] = (int64_t)layer;
++    rrecord[3] = 0;
++    rrecord[4] = layer_deadline;
++    srecord[0] = (int64_t)norm;
++    srecord[3] = 0;
++    srecord[4] = norm_deadline;
++    static _Thread_local uint64_t fused_rms;
++    if (++fused_rms == 1 || fused_rms % 39 == 0)
++        fprintf(stderr, "Goose CUDA: fused MoE and RMS prefill groups=%" PRIu64 "\n", fused_rms);
++    return 2;

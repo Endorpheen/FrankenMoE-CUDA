@@ -1,0 +1,32 @@
+--- a/cpu.goose
++++ b/cpu.goose
+@@ -4325,0 +4326,3 @@
++extern "fg_cuda_moe_epilogue_rms_enabled" fn moe_epilogue_rms_enabled() -> bool;
++extern "fg_cuda_moe_epilogue_rms" fn moe_epilogue_rms(routed: u64, shared: u64, gate: u64, residual: u64,
++    layer: u64, norm: u64, weight: u64, rows: i64, step: i64, layer_deadline: i64, norm_deadline: i64, epsilon: f32) -> i64;
+@@ -4371,0 +4375,22 @@
++    if step + 3 < deadlines.len && moe_epilogue_rms_enabled() {
++        let rms = graph_node(graph, step + 3);
++        if graph_prop(rms, 2) == 25 && storage_get(rms, STORAGE_VIEW, 0) == 0 {
++            graph_inputs(rms, inputs[..]);
++            if inputs[0] == sum && inputs[1] != 0 && inputs[2] == 0 {
++                graph_describe(rms, p[..]);
++                let norm = p[58] as! u64;
++                let weight = p[70] as! u64;
++                let epsilon = from_bits(p[41] as! u32);
++                if norm != 0 && weight != 0 && (norm | weight) % 16 == 0 &&
++                   epsilon > 0.0 && epsilon <= 1.0 &&
++                   routed_dense(packet_tensor(p[..], 30), 2048, rows, 1, 0) &&
++                   routed_dense(packet_tensor(p[..], 10), 2048, 1, 1, 0) &&
++                   !activation_spans_overlap(norm, bytes, output, bytes) &&
++                   !activation_spans_overlap(norm, bytes, weight, 8192) {
++                    let combined = moe_epilogue_rms(routed, shared, gate, residual, output, norm, weight,
++                        rows, step, deadlines[step + 2], deadlines[step + 3], epsilon);
++                    if combined != 0 { return combined; }
++                }
++            }
++        }
++    }
+@@ -4390 +4415 @@
+-            if fused > 0 { i += 3; continue; }
++            if fused > 0 { i += 2 + fused; continue; }
