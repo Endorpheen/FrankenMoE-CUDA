@@ -1,0 +1,5 @@
+--- a/prefill.h
++++ b/prefill.h
+@@ -216 +216 @@
+-    evaluate(ctx, moe_root, 1, scratch->linear[0], count * model_width);
++    evaluate_moe(layer, ctx, moe_root, scratch->linear[0], count * model_width);

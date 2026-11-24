@@ -1,0 +1,1798 @@
+{
+  "upstream": {
+    "whole": {
+      "window_ms": 7809.909014,
+      "gpu_union_ms": 1172.90641,
+      "calls": [
+        [
+          "cudaStreamSynchronize_v3020",
+          15400,
+          1144.97572
+        ],
+        [
+          "cudaGraphLaunch_v10000",
+          2583,
+          113.633703
+        ],
+        [
+          "cudaLaunchKernel_v7000",
+          36977,
+          88.289995
+        ],
+        [
+          "cudaMemcpyAsync_v3020",
+          7480,
+          24.881243
+        ],
+        [
+          "cudaHostRegister_v4000",
+          3,
+          18.427644
+        ],
+        [
+          "cudaMemcpy2DAsync_v3020",
+          360,
+          1.73672
+        ],
+        [
+          "cudaGraphExecUpdate_v10020",
+          41,
+          1.241384
+        ],
+        [
+          "cudaHostUnregister_v4000",
+          3,
+          1.031856
+        ],
+        [
+          "cudaGraphDestroy_v10000",
+          41,
+          0.913011
+        ],
+        [
+          "cudaEventRecord_v3020",
+          201,
+          0.546392
+        ],
+        [
+          "cudaEventSynchronize_v3020",
+          201,
+          0.356518
+        ],
+        [
+          "cudaMemsetAsync_v3020",
+          88,
+          0.184704
+        ],
+        [
+          "cudaStreamBeginCapture_v10000",
+          41,
+          0.14987
+        ],
+        [
+          "cudaStreamEndCapture_v10000",
+          41,
+          0.129549
+        ],
+        [
+          "cuLaunchKernel",
+          48,
+          0.082785
+        ],
+        [
+          "cuKernelGetFunction",
+          48,
+          0.030697
+        ],
+        [
+          "cudaMallocHost_v3020",
+          2,
+          0.022983
+        ],
+        [
+          "cudaFreeHost_v3020",
+          2,
+          0.022141
+        ],
+        [
+          "cudaMalloc_v3020",
+          2,
+          0.019577
+        ],
+        [
+          "cudaFree_v3020",
+          2,
+          0.006982
+        ]
+      ],
+      "kernels": [
+        [
+          "void mul_mat_vec_q_moe<(ggml_type)23, (int)2, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int)",
+          42,
+          9.394025
+        ],
+        [
+          "void mul_mat_vec_q<(ggml_type)8, (int)1, (bool)0, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+          450,
+          6.109864
+        ],
+        [
+          "void mul_mat_q<(ggml_type)23, (int)8, (bool)0, (ggml_prec)30, (bool)0, (bool)0>(const char *, const char *, const int *, const int *, const ggml_cuda_mm_id_tile_spec *, float *, float *, const float *, ggml_glu_op, float, const float *, const float *, uint3, int, int, int, int, int, uint3, uint3, int, int, int, uint3, uint3, int, int, int, uint3)",
+          21,
+          6.007307
+        ],
+        [
+          "void mul_mat_vec_q<(ggml_type)8, (int)4, (bool)0, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+          640,
+          5.695639
+        ],
+        [
+          "void mul_mat_vec_q<(ggml_type)8, (int)8, (bool)0, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+          496,
+          4.467801
+        ],
+        [
+          "void mul_mat_vec_q_moe<(ggml_type)20, (int)2, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int)",
+          42,
+          4.308378
+        ],
+        [
+          "void mul_mat_q<(ggml_type)8, (int)16, (bool)0, (ggml_prec)30, (bool)0, (bool)0>(const char *, const char *, const int *, const int *, const ggml_cuda_mm_id_tile_spec *, float *, float *, const float *, ggml_glu_op, float, const float *, const float *, uint3, int, int, int, int, int, uint3, uint3, int, int, int, uint3, uint3, int, int, int, uint3)",
+          432,
+          3.858659
+        ],
+        [
+          "void mul_mat_q<(ggml_type)20, (int)8, (bool)0, (ggml_prec)30, (bool)0, (bool)0>(const char *, const char *, const int *, const int *, const ggml_cuda_mm_id_tile_spec *, float *, float *, const float *, ggml_glu_op, float, const float *, const float *, uint3, int, int, int, int, int, uint3, uint3, int, int, int, uint3, uint3, int, int, int, uint3)",
+          21,
+          3.458276
+        ],
+        [
+          "void cpy_scalar<&cpy_1_scalar<float, __half>>(const char *, char *, long, long, long, long, long, long, long, long, long, long, long, long, long, long, long)",
+          384,
+          3.073188
+        ],
+        [
+          "void k_bin_bcast<&op_mul, float, float, float, const float *>(const T2 *, const T3 *, T4 *, unsigned int, unsigned int, unsigned int, uint3, uint3, uint3, uint3, uint3, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, T5...)",
+          2132,
+          2.795587
+        ],
+        [
+          "void k_bin_bcast<&op_add, float, float, float, const float *>(const T2 *, const T3 *, T4 *, unsigned int, unsigned int, unsigned int, uint3, uint3, uint3, uint3, uint3, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, T5...)",
+          1952,
+          2.586311
+        ],
+        [
+          "void scale_f32<float>(const T1 *, T1 *, float, float, unsigned int, uint3, uint3, uint3, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int)",
+          2076,
+          2.28967
+        ],
+        [
+          "quantize_q8_1(const float *, void *, long, long, long, long, long, unsigned int, uint3)",
+          1904,
+          2.230349
+        ],
+        [
+          "void mul_mat_vec_f<float, float, (int)1, (int)32, (bool)0, (bool)0>(const T1 *, const float *, const int *, ggml_cuda_mm_fusion_args_device, float *, int, uint3, int, int, int, uint3, int, int, int, uint3, int, int, int, int)",
+          176,
+          2.22155
+        ],
+        [
+          "void concat_non_cont<unsigned int, (int)0>(const char *, const char *, char *, long, long, long, long, unsigned long, unsigned long, unsigned long, unsigned long, long, long, long, long, unsigned long, unsigned long, unsigned long, unsigned long, long, long, long, long, unsigned long, unsigned long, unsigned long, unsigned long)",
+          576,
+          2.214504
+        ],
+        [
+          "void cpy_scalar<&cpy_1_scalar<float, float>>(const char *, char *, long, long, long, long, long, long, long, long, long, long, long, long, long, long, long)",
+          1216,
+          2.10344
+        ],
+        [
+          "void cpy_scalar_transpose<float>(const char *, char *, long, long, long, long, long, long, long, long, long, long, long, long, long, long, long)",
+          672,
+          2.093038
+        ],
+        [
+          "void rms_norm_f32<float, (int)1024, (int)1, (bool)1, (bool)0, (bool)0, (bool)0, float>(const T1 *, T1 *, int, int, int, long, long, long, float, const float *, long, long, long, uint3, uint3, uint3, uint3, const T8 *, long, long, long, uint3, uint3, uint3, uint3, float)",
+          1248,
+          2.037878
+        ],
+        [
+          "void concat_cont<unsigned int, (int)1>(const T1 *, const T1 *, T1 *, long, long, long, long, long, long)",
+          1040,
+          1.891992
+        ],
+        [
+          "void k_get_rows_float_vec<float>(const T1 *, const int *, T1 *, long, long, uint3, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)",
+          192,
+          1.651153
+        ],
+        [
+          "void mul_mat_q_few<(ggml_type)8, (int)2, (int)1, (bool)0>(const char *, const int4 *, float *, int, int, int, long, int, int, long, int, int, long, int, bool, const int *)",
+          144,
+          1.575124
+        ],
+        [
+          "void mul_mat_q_few<(ggml_type)8, (int)1, (int)1, (bool)0>(const char *, const int4 *, float *, int, int, int, long, int, int, long, int, int, long, int, bool, const int *)",
+          144,
+          1.42373
+        ],
+        [
+          "void flash_attn_ext_f16<(int)128, (int)128, (int)8, (int)1, (bool)0, (bool)0, (bool)0>(const char *, const char *, const char *, const char *, const char *, const int *, const int *, float *, float2 *, float, float, float, float, unsigned int, float, int, uint3, int, int, int, int, int, int, int, int, int, int, int, long, int, int, long, int, int, int, int, long, long)",
+          96,
+          1.250739
+        ],
+        [
+          "void rms_norm_f32<float, (int)1024, (int)1, (bool)1, (bool)1, (bool)0, (bool)0, float>(const T1 *, T1 *, int, int, int, long, long, long, float, const float *, long, long, long, uint3, uint3, uint3, uint3, const T8 *, long, long, long, uint3, uint3, uint3, uint3, float)",
+          616,
+          1.219959
+        ],
+        [
+          "ggml_cuda_batch_copy_kernel(const ggml_cuda_batch_copy_descriptor *, unsigned long)",
+          2,
+          1.217206
+        ],
+        [
+          "void gemmSN_TN_kernel<float, (int)128, (int)16, (int)2, (int)4, (int)4, (int)4, (bool)1, cublasGemvTensorStridedBatched<const float>, cublasGemvTensorStridedBatched<const float>, cublasGemvTensorStridedBatched<float>>(cublasGemmSmallNParams<T9, T10, T11, T1>)",
+          144,
+          1.212175
+        ],
+        [
+          "void mul_mat_vec_q<(ggml_type)23, (int)1, (bool)0, (bool)1, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+          21,
+          1.142872
+        ],
+        [
+          "ampere_sgemm_128x128_tn",
+          144,
+          1.089944
+        ],
+        [
+          "void ssm_conv_f32<(bool)0, (unsigned long)128, (unsigned long)4>(const float *, const float *, const float *, int, int, int, int, float *, int, int, int, long)",
+          768,
+          1.048926
+        ],
+        [
+          "void unary_op_kernel<&op_tanh, float>(const T2 *, T2 *, int)",
+          936,
+          1.03596
+        ],
+        [
+          "void k_bin_bcast<&op_sub, float, float, float, const float *>(const T2 *, const T3 *, T4 *, unsigned int, unsigned int, unsigned int, uint3, uint3, uint3, uint3, uint3, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, T5...)",
+          576,
+          0.954218
+        ],
+        [
+          "void reduce_rows_f32<(bool)0>(const float *, float *, int)",
+          768,
+          0.925944
+        ],
+        [
+          "void k_bin_bcast<&op_div, float, float, float, const float *>(const T2 *, const T3 *, T4 *, unsigned int, unsigned int, unsigned int, uint3, uint3, uint3, uint3, uint3, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, T5...)",
+          768,
+          0.910292
+        ],
+        [
+          "void concat_cont<unsigned int, (int)0>(const T1 *, const T1 *, T1 *, long, long, long, long, long, long)",
+          576,
+          0.8415
+        ],
+        [
+          "void mul_mat_vec_f<float, float, (int)1, (int)256, (bool)0, (bool)0>(const T1 *, const float *, const int *, ggml_cuda_mm_fusion_args_device, float *, int, uint3, int, int, int, uint3, int, int, int, uint3, int, int, int, int)",
+          397,
+          0.832216
+        ],
+        [
+          "void k_bin_bcast<&op_repeat, float, float, float, >(const T2 *, const T3 *, T4 *, unsigned int, unsigned int, unsigned int, uint3, uint3, uint3, uint3, uint3, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, T5...)",
+          480,
+          0.780408
+        ],
+        [
+          "pad_f32(const float *, unsigned long, unsigned long, unsigned long, unsigned long, float *, int, int, int, int, int, int, int, int, int, int, int, int, bool)",
+          192,
+          0.757459
+        ],
+        [
+          "void soft_max_f32<(bool)1, (int)0, (int)0, float>(const float *, const T4 *, const float *, float *, soft_max_params)",
+          480,
+          0.687901
+        ],
+        [
+          "void fill_kernel<float>(T1 *, long, T1)",
+          816,
+          0.665526
+        ],
+        [
+          "void mul_mat_q_stream_k_fixup<(ggml_type)8, (int)16, (bool)0, (ggml_prec)30>(const int *, const ggml_cuda_mm_id_tile_spec *, float *, float *, uint3, int, int, int, uint3, int, uint3, int, uint3)",
+          240,
+          0.656342
+        ],
+        [
+          "void quantize_mmq_q8_1<(mmq_q8_1_ds_layout)0, (bool)0>(const float *, const int *, void *, long, long, long, long, long, int, int, int)",
+          517,
+          0.645184
+        ],
+        [
+          "void mul_mat_vec_q<(ggml_type)20, (int)1, (bool)0, (bool)1, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+          21,
+          0.60297
+        ],
+        [
+          "void unary_op_kernel<&op_sqr, float>(const T2 *, T2 *, int)",
+          576,
+          0.569213
+        ],
+        [
+          "void mul_mat_f<float, (int)32, (int)12, (int)8>(const T1 *, const float *, float *, int, int, int, int, int, int, int, int, int, int, int, int)",
+          45,
+          0.568858
+        ],
+        [
+          "void op_clamp_kernel<float>(const T1 *, T1 *, T1, T1, unsigned int, uint3, uint3, uint3, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int)",
+          580,
+          0.567785
+        ],
+        [
+          "void topk_moe_cuda<(int)128, (bool)1>(const float *, float *, int *, float *, int, int, float, float, topk_moe_config)",
+          192,
+          0.552158
+        ],
+        [
+          "void flash_attn_ext_f16<(int)128, (int)128, (int)16, (int)1, (bool)0, (bool)0, (bool)0>(const char *, const char *, const char *, const char *, const char *, const int *, const int *, float *, float2 *, float, float, float, float, unsigned int, float, int, uint3, int, int, int, int, int, int, int, int, int, int, int, long, int, int, long, int, int, int, int, long, long)",
+          48,
+          0.548511
+        ],
+        [
+          "void unary_op_kernel<&op_sqrt, float>(const T2 *, T2 *, int)",
+          576,
+          0.535426
+        ],
+        [
+          "void mul_mat_f<float, (int)32, (int)8, (int)8>(const T1 *, const float *, float *, int, int, int, int, int, int, int, int, int, int, int, int)",
+          45,
+          0.514172
+        ],
+        [
+          "void mul_mat_f<float, (int)32, (int)4, (int)8>(const T1 *, const float *, float *, int, int, int, int, int, int, int, int, int, int, int, int)",
+          45,
+          0.497627
+        ],
+        [
+          "void k_set_rows<float, long, float>(const T1 *, const T2 *, T3 *, long, long, long, long, long, long, long, long, long, long, long, long, long, long, uint3, uint3, uint3, uint3, uint3)",
+          384,
+          0.496052
+        ],
+        [
+          "void mul_mat_vec_q<(ggml_type)8, (int)1, (bool)0, (bool)1, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+          192,
+          0.492348
+        ],
+        [
+          "moe_weighted_reduction_f32(const float *, const float *, const float *, float *, long, int)",
+          192,
+          0.469501
+        ],
+        [
+          "void quantize_mmq_few_q8_1<(mmq_q8_1_ds_layout)0>(const float *, void *, long, long, long, long, int, int)",
+          288,
+          0.398333
+        ],
+        [
+          "void unary_gated_op_kernel<&op_sigmoid, float>(const T2 *, const T2 *, T2 *, long, long, long, long)",
+          276,
+          0.365979
+        ],
+        [
+          "std::enable_if<!T7, void>::type internal::gemvx::kernel<int, int, float, float, float, float, (bool)0, (bool)1, (bool)1, (bool)0, (int)6, (bool)0, cublasGemvParamsEx<int, cublasGemvTensorStridedBatched<const float>, cublasGemvTensorStridedBatched<const float>, cublasGemvTensorStridedBatched<float>, float>>(T13)",
+          132,
+          0.362745
+        ],
+        [
+          "void k_get_rows_float<float, float>(const T1 *, const int *, T2 *, long, long, uint3, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)",
+          194,
+          0.32765
+        ],
+        [
+          "void cpy_scalar_contiguous<float, __half>(const char *, char *, long)",
+          192,
+          0.26352
+        ],
+        [
+          "void flash_attn_ext_vec<(int)128, (int)1, (ggml_type)1, (ggml_type)1, (bool)0>(const char *, const char *, const char *, const char *, const char *, const int *, const int *, float *, float2 *, float, float, float, float, unsigned int, float, int, uint3, int, int, int, int, int, int, int, int, int, int, int, long, int, int, long, int, int, int, int, long, long)",
+          48,
+          0.24873
+        ],
+        [
+          "ampere_sgemm_32x32_sliced1x4_tn",
+          76,
+          0.225694
+        ],
+        [
+          "void rms_norm_f32<float, (int)32, (int)1, (bool)1, (bool)0, (bool)0, (bool)0, float>(const T1 *, T1 *, int, int, int, long, long, long, float, const float *, long, long, long, uint3, uint3, uint3, uint3, const T8 *, long, long, long, uint3, uint3, uint3, uint3, float)",
+          192,
+          0.220125
+        ],
+        [
+          "void cpy_scalar_contiguous<__half, float>(const char *, char *, long)",
+          192,
+          0.214595
+        ],
+        [
+          "void mul_mat_q<(ggml_type)8, (int)16, (bool)1, (ggml_prec)30, (bool)0, (bool)0>(const char *, const char *, const int *, const int *, const ggml_cuda_mm_id_tile_spec *, float *, float *, const float *, ggml_glu_op, float, const float *, const float *, uint3, int, int, int, int, int, uint3, uint3, int, int, int, uint3, uint3, int, int, int, uint3)",
+          64,
+          0.208415
+        ],
+        [
+          "void mul_mat_q_stream_k_fixup<(ggml_type)8, (int)16, (bool)1, (ggml_prec)30>(const int *, const ggml_cuda_mm_id_tile_spec *, float *, float *, uint3, int, int, int, uint3, int, uint3, int, uint3)",
+          64,
+          0.200445
+        ],
+        [
+          "void mul_mat_vec_f<float, float, (int)3, (int)32, (bool)0, (bool)0>(const T1 *, const float *, const int *, ggml_cuda_mm_fusion_args_device, float *, int, uint3, int, int, int, uint3, int, int, int, uint3, int, int, int, int)",
+          16,
+          0.194559
+        ],
+        [
+          "ampere_sgemm_128x32_tn",
+          44,
+          0.171007
+        ],
+        [
+          "void flash_attn_stream_k_fixup_general<(int)128, (int)16, (int)1>(float *, const float2 *, int, int, int, int, uint3, uint3, uint3, uint3)",
+          48,
+          0.169152
+        ],
+        [
+          "k_compute_batched_ptrs(const void *, const void *, char *, const void **, void **, long, long, long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, long, long)",
+          144,
+          0.151331
+        ],
+        [
+          "void flash_attn_stream_k_fixup_uniform<(int)128, (int)8, (int)1>(float *, const float2 *, int, int, int, int, int, int, uint3, uint3, uint3)",
+          96,
+          0.127871
+        ],
+        [
+          "void gemmSN_TN_kernel<float, (int)128, (int)16, (int)2, (int)4, (int)4, (int)4, (bool)0, cublasGemvTensorStridedBatched<const float>, cublasGemvTensorStridedBatched<const float>, cublasGemvTensorStridedBatched<float>>(cublasGemmSmallNParams<T9, T10, T11, T1>)",
+          12,
+          0.10848
+        ],
+        [
+          "void cutlass::Kernel2<cutlass_80_tensorop_s1688gemm_64x64_16x6_tn_align1>(T1::Params)",
+          24,
+          0.098591
+        ],
+        [
+          "void mul_mat_vec_f<float, float, (int)3, (int)256, (bool)0, (bool)0>(const T1 *, const float *, const int *, ggml_cuda_mm_fusion_args_device, float *, int, uint3, int, int, int, uint3, int, int, int, uint3, int, int, int, int)",
+          32,
+          0.086369
+        ],
+        [
+          "void flash_attn_combine_results<(int)128>(const float *, const float2 *, float *, int)",
+          48,
+          0.067582
+        ],
+        [
+          "void mm_ids_helper<(int)8>(const int *, int *, int *, ggml_cuda_mm_id_tile_spec *, int, int, int, uint3, int, int, bool, int)",
+          42,
+          0.065218
+        ],
+        [
+          "void cublasLt::splitKreduce_kernel<(int)32, (int)16, int, float, float, float, (bool)0, float, float, float, (bool)1, (bool)0, (bool)0>(cublasLt::cublasSplitKParams<T6>, const T4 *, const T9 *, T8 *, T5 *, const T6 *, const T6 *, const T10 *, const T4 *, T10 *, void *, long, T6 *, int *, T6 *, const T6 *, const T6 *, const T6 *, const T6 *)",
+          24,
+          0.036028
+        ],
+        [
+          "void quantize_mmq_q8_1<(mmq_q8_1_ds_layout)0, (bool)1>(const float *, const int *, void *, long, long, long, long, long, int, int, int)",
+          21,
+          0.030275
+        ],
+        [
+          "softcap_f32(const float *, float *, float, float, int)",
+          2,
+          0.006816
+        ],
+        [
+          "void cpy_scalar_contiguous<int, float>(const char *, char *, long)",
+          4,
+          0.004258
+        ],
+        [
+          "void unary_op_kernel<&op_log, float>(const T2 *, T2 *, int)",
+          4,
+          0.003712
+        ]
+      ],
+      "copies": [
+        [
+          1,
+          2814,
+          176404080,
+          11.184451
+        ],
+        [
+          2,
+          4028,
+          115130376,
+          7.767423
+        ],
+        [
+          8,
+          798,
+          47450064,
+          0.843873
+        ]
+      ],
+      "cuda_graph_intervals": [
+        2583,
+        1050.976328
+      ]
+    },
+    "prefill_approx": {
+      "window_ms": 1812.446,
+      "gpu_union_ms": 88.507851,
+      "calls": [
+        [
+          "cudaLaunchKernel_v7000",
+          22234,
+          64.296835
+        ],
+        [
+          "cudaStreamSynchronize_v3020",
+          661,
+          24.856952
+        ],
+        [
+          "cudaHostRegister_v4000",
+          3,
+          18.427644
+        ],
+        [
+          "cudaMemcpyAsync_v3020",
+          673,
+          3.430052
+        ],
+        [
+          "cudaMemcpy2DAsync_v3020",
+          357,
+          1.716342
+        ],
+        [
+          "cudaHostUnregister_v4000",
+          3,
+          1.031856
+        ],
+        [
+          "cudaEventRecord_v3020",
+          9,
+          0.036168
+        ],
+        [
+          "cudaMallocHost_v3020",
+          2,
+          0.022983
+        ],
+        [
+          "cudaFreeHost_v3020",
+          2,
+          0.022141
+        ],
+        [
+          "cudaEventSynchronize_v3020",
+          9,
+          0.020238
+        ],
+        [
+          "cudaMalloc_v3020",
+          2,
+          0.019577
+        ],
+        [
+          "cudaFree_v3020",
+          2,
+          0.006982
+        ]
+      ],
+      "kernels": [
+        [
+          "void mul_mat_vec_q_moe<(ggml_type)23, (int)2, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int)",
+          42,
+          9.394025
+        ],
+        [
+          "void mul_mat_q<(ggml_type)23, (int)8, (bool)0, (ggml_prec)30, (bool)0, (bool)0>(const char *, const char *, const int *, const int *, const ggml_cuda_mm_id_tile_spec *, float *, float *, const float *, ggml_glu_op, float, const float *, const float *, uint3, int, int, int, int, int, uint3, uint3, int, int, int, uint3, uint3, int, int, int, uint3)",
+          21,
+          6.007307
+        ],
+        [
+          "void mul_mat_vec_q<(ggml_type)8, (int)4, (bool)0, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+          631,
+          5.614232
+        ],
+        [
+          "void mul_mat_vec_q<(ggml_type)8, (int)8, (bool)0, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+          496,
+          4.467801
+        ],
+        [
+          "void mul_mat_vec_q_moe<(ggml_type)20, (int)2, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int)",
+          42,
+          4.308378
+        ],
+        [
+          "void mul_mat_q<(ggml_type)8, (int)16, (bool)0, (ggml_prec)30, (bool)0, (bool)0>(const char *, const char *, const int *, const int *, const ggml_cuda_mm_id_tile_spec *, float *, float *, const float *, ggml_glu_op, float, const float *, const float *, uint3, int, int, int, int, int, uint3, uint3, int, int, int, uint3, uint3, int, int, int, uint3)",
+          432,
+          3.858659
+        ],
+        [
+          "void mul_mat_q<(ggml_type)20, (int)8, (bool)0, (ggml_prec)30, (bool)0, (bool)0>(const char *, const char *, const int *, const int *, const ggml_cuda_mm_id_tile_spec *, float *, float *, const float *, ggml_glu_op, float, const float *, const float *, uint3, int, int, int, int, int, uint3, uint3, int, int, int, uint3, uint3, int, int, int, uint3)",
+          21,
+          3.458276
+        ],
+        [
+          "void cpy_scalar<&cpy_1_scalar<float, __half>>(const char *, char *, long, long, long, long, long, long, long, long, long, long, long, long, long, long, long)",
+          286,
+          2.294667
+        ],
+        [
+          "void concat_non_cont<unsigned int, (int)0>(const char *, const char *, char *, long, long, long, long, unsigned long, unsigned long, unsigned long, unsigned long, long, long, long, long, unsigned long, unsigned long, unsigned long, unsigned long, long, long, long, long, unsigned long, unsigned long, unsigned long, unsigned long)",
+          571,
+          2.194632
+        ],
+        [
+          "void k_bin_bcast<&op_mul, float, float, float, const float *>(const T2 *, const T3 *, T4 *, unsigned int, unsigned int, unsigned int, uint3, uint3, uint3, uint3, uint3, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, T5...)",
+          1584,
+          2.110345
+        ],
+        [
+          "void mul_mat_vec_f<float, float, (int)1, (int)32, (bool)0, (bool)0>(const T1 *, const float *, const int *, ggml_cuda_mm_fusion_args_device, float *, int, uint3, int, int, int, uint3, int, int, int, uint3, int, int, int, int)",
+          132,
+          2.085006
+        ],
+        [
+          "void k_bin_bcast<&op_add, float, float, float, const float *>(const T2 *, const T3 *, T4 *, unsigned int, unsigned int, unsigned int, uint3, uint3, uint3, uint3, uint3, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, T5...)",
+          1447,
+          1.966413
+        ],
+        [
+          "void cpy_scalar_transpose<float>(const char *, char *, long, long, long, long, long, long, long, long, long, long, long, long, long, long, long)",
+          500,
+          1.843472
+        ],
+        [
+          "void scale_f32<float>(const T1 *, T1 *, float, float, unsigned int, uint3, uint3, uint3, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int)",
+          1547,
+          1.762182
+        ],
+        [
+          "void cpy_scalar<&cpy_1_scalar<float, float>>(const char *, char *, long, long, long, long, long, long, long, long, long, long, long, long, long, long, long)",
+          898,
+          1.612275
+        ],
+        [
+          "void mul_mat_q_few<(ggml_type)8, (int)2, (int)1, (bool)0>(const char *, const int4 *, float *, int, int, int, long, int, int, long, int, int, long, int, bool, const int *)",
+          144,
+          1.575124
+        ],
+        [
+          "void rms_norm_f32<float, (int)1024, (int)1, (bool)1, (bool)0, (bool)0, (bool)0, float>(const T1 *, T1 *, int, int, int, long, long, long, float, const float *, long, long, long, uint3, uint3, uint3, uint3, const T8 *, long, long, long, uint3, uint3, uint3, uint3, float)",
+          933,
+          1.548033
+        ],
+        [
+          "void concat_cont<unsigned int, (int)1>(const T1 *, const T1 *, T1 *, long, long, long, long, long, long)",
+          768,
+          1.533112
+        ],
+        [
+          "void k_get_rows_float_vec<float>(const T1 *, const int *, T1 *, long, long, uint3, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)",
+          143,
+          1.527569
+        ],
+        [
+          "quantize_q8_1(const float *, void *, long, long, long, long, long, unsigned int, uint3)",
+          1211,
+          1.449518
+        ],
+        [
+          "void mul_mat_q_few<(ggml_type)8, (int)1, (int)1, (bool)0>(const char *, const int4 *, float *, int, int, int, long, int, int, long, int, int, long, int, bool, const int *)",
+          144,
+          1.42373
+        ],
+        [
+          "void flash_attn_ext_f16<(int)128, (int)128, (int)8, (int)1, (bool)0, (bool)0, (bool)0>(const char *, const char *, const char *, const char *, const char *, const int *, const int *, float *, float2 *, float, float, float, float, unsigned int, float, int, uint3, int, int, int, int, int, int, int, int, int, int, int, long, int, int, long, int, int, int, int, long, long)",
+          95,
+          1.237651
+        ],
+        [
+          "ggml_cuda_batch_copy_kernel(const ggml_cuda_batch_copy_descriptor *, unsigned long)",
+          2,
+          1.217206
+        ],
+        [
+          "void gemmSN_TN_kernel<float, (int)128, (int)16, (int)2, (int)4, (int)4, (int)4, (bool)1, cublasGemvTensorStridedBatched<const float>, cublasGemvTensorStridedBatched<const float>, cublasGemvTensorStridedBatched<float>>(cublasGemmSmallNParams<T9, T10, T11, T1>)",
+          144,
+          1.212175
+        ],
+        [
+          "ampere_sgemm_128x128_tn",
+          143,
+          1.08508
+        ],
+        [
+          "void rms_norm_f32<float, (int)1024, (int)1, (bool)1, (bool)1, (bool)0, (bool)0, float>(const T1 *, T1 *, int, int, int, long, long, long, float, const float *, long, long, long, uint3, uint3, uint3, uint3, const T8 *, long, long, long, uint3, uint3, uint3, uint3, float)",
+          457,
+          0.905536
+        ],
+        [
+          "void ssm_conv_f32<(bool)0, (unsigned long)128, (unsigned long)4>(const float *, const float *, const float *, int, int, int, int, float *, int, int, int, long)",
+          571,
+          0.804995
+        ],
+        [
+          "void unary_op_kernel<&op_tanh, float>(const T2 *, T2 *, int)",
+          702,
+          0.803537
+        ],
+        [
+          "void k_bin_bcast<&op_sub, float, float, float, const float *>(const T2 *, const T3 *, T4 *, unsigned int, unsigned int, unsigned int, uint3, uint3, uint3, uint3, uint3, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, T5...)",
+          431,
+          0.765389
+        ],
+        [
+          "void reduce_rows_f32<(bool)0>(const float *, float *, int)",
+          572,
+          0.695063
+        ],
+        [
+          "void k_bin_bcast<&op_div, float, float, float, const float *>(const T2 *, const T3 *, T4 *, unsigned int, unsigned int, unsigned int, uint3, uint3, uint3, uint3, uint3, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, T5...)",
+          572,
+          0.67587
+        ],
+        [
+          "void mul_mat_q_stream_k_fixup<(ggml_type)8, (int)16, (bool)0, (ggml_prec)30>(const int *, const ggml_cuda_mm_id_tile_spec *, float *, float *, uint3, int, int, int, uint3, int, uint3, int, uint3)",
+          240,
+          0.656342
+        ],
+        [
+          "void quantize_mmq_q8_1<(mmq_q8_1_ds_layout)0, (bool)0>(const float *, const int *, void *, long, long, long, long, long, int, int, int)",
+          517,
+          0.645184
+        ],
+        [
+          "void k_bin_bcast<&op_repeat, float, float, float, >(const T2 *, const T3 *, T4 *, unsigned int, unsigned int, unsigned int, uint3, uint3, uint3, uint3, uint3, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, T5...)",
+          357,
+          0.592025
+        ],
+        [
+          "void mul_mat_f<float, (int)32, (int)12, (int)8>(const T1 *, const float *, float *, int, int, int, int, int, int, int, int, int, int, int, int)",
+          45,
+          0.568858
+        ],
+        [
+          "pad_f32(const float *, unsigned long, unsigned long, unsigned long, unsigned long, float *, int, int, int, int, int, int, int, int, int, int, int, int, bool)",
+          143,
+          0.565687
+        ],
+        [
+          "void flash_attn_ext_f16<(int)128, (int)128, (int)16, (int)1, (bool)0, (bool)0, (bool)0>(const char *, const char *, const char *, const char *, const char *, const int *, const int *, float *, float2 *, float, float, float, float, unsigned int, float, int, uint3, int, int, int, int, int, int, int, int, int, int, int, long, int, int, long, int, int, int, int, long, long)",
+          48,
+          0.548511
+        ],
+        [
+          "void mul_mat_f<float, (int)32, (int)8, (int)8>(const T1 *, const float *, float *, int, int, int, int, int, int, int, int, int, int, int, int)",
+          45,
+          0.514172
+        ],
+        [
+          "void soft_max_f32<(bool)1, (int)0, (int)0, float>(const float *, const T4 *, const float *, float *, soft_max_params)",
+          357,
+          0.508735
+        ],
+        [
+          "void fill_kernel<float>(T1 *, long, T1)",
+          620,
+          0.507867
+        ],
+        [
+          "void mul_mat_vec_f<float, float, (int)1, (int)256, (bool)0, (bool)0>(const T1 *, const float *, const int *, ggml_cuda_mm_fusion_args_device, float *, int, uint3, int, int, int, uint3, int, int, int, uint3, int, int, int, int)",
+          262,
+          0.488534
+        ],
+        [
+          "void mul_mat_f<float, (int)32, (int)4, (int)8>(const T1 *, const float *, float *, int, int, int, int, int, int, int, int, int, int, int, int)",
+          44,
+          0.486587
+        ],
+        [
+          "void concat_cont<unsigned int, (int)0>(const T1 *, const T1 *, T1 *, long, long, long, long, long, long)",
+          288,
+          0.46713
+        ],
+        [
+          "void unary_op_kernel<&op_sqr, float>(const T2 *, T2 *, int)",
+          429,
+          0.431544
+        ],
+        [
+          "void op_clamp_kernel<float>(const T1 *, T1 *, T1, T1, unsigned int, uint3, uint3, uint3, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int)",
+          432,
+          0.422986
+        ],
+        [
+          "void topk_moe_cuda<(int)128, (bool)1>(const float *, float *, int *, float *, int, int, float, float, topk_moe_config)",
+          143,
+          0.416545
+        ],
+        [
+          "void unary_op_kernel<&op_sqrt, float>(const T2 *, T2 *, int)",
+          429,
+          0.399019
+        ],
+        [
+          "void quantize_mmq_few_q8_1<(mmq_q8_1_ds_layout)0>(const float *, void *, long, long, long, long, int, int)",
+          288,
+          0.398333
+        ],
+        [
+          "moe_weighted_reduction_f32(const float *, const float *, const float *, float *, long, int)",
+          142,
+          0.372189
+        ],
+        [
+          "void k_set_rows<float, long, float>(const T1 *, const T2 *, T3 *, long, long, long, long, long, long, long, long, long, long, long, long, long, long, uint3, uint3, uint3, uint3, uint3)",
+          286,
+          0.371642
+        ],
+        [
+          "std::enable_if<!T7, void>::type internal::gemvx::kernel<int, int, float, float, float, float, (bool)0, (bool)1, (bool)1, (bool)0, (int)6, (bool)0, cublasGemvParamsEx<int, cublasGemvTensorStridedBatched<const float>, cublasGemvTensorStridedBatched<const float>, cublasGemvTensorStridedBatched<float>, float>>(T13)",
+          130,
+          0.358681
+        ],
+        [
+          "void unary_gated_op_kernel<&op_sigmoid, float>(const T2 *, const T2 *, T2 *, long, long, long, long)",
+          206,
+          0.289247
+        ],
+        [
+          "void k_get_rows_float<float, float>(const T1 *, const int *, T2 *, long, long, uint3, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)",
+          143,
+          0.239072
+        ],
+        [
+          "void cpy_scalar_contiguous<float, __half>(const char *, char *, long)",
+          143,
+          0.213122
+        ],
+        [
+          "void mul_mat_q<(ggml_type)8, (int)16, (bool)1, (ggml_prec)30, (bool)0, (bool)0>(const char *, const char *, const int *, const int *, const ggml_cuda_mm_id_tile_spec *, float *, float *, const float *, ggml_glu_op, float, const float *, const float *, uint3, int, int, int, int, int, uint3, uint3, int, int, int, uint3, uint3, int, int, int, uint3)",
+          64,
+          0.208415
+        ],
+        [
+          "void mul_mat_q_stream_k_fixup<(ggml_type)8, (int)16, (bool)1, (ggml_prec)30>(const int *, const ggml_cuda_mm_id_tile_spec *, float *, float *, uint3, int, int, int, uint3, int, uint3, int, uint3)",
+          64,
+          0.200445
+        ],
+        [
+          "void mul_mat_vec_f<float, float, (int)3, (int)32, (bool)0, (bool)0>(const T1 *, const float *, const int *, ggml_cuda_mm_fusion_args_device, float *, int, uint3, int, int, int, uint3, int, int, int, uint3, int, int, int, int)",
+          12,
+          0.181183
+        ],
+        [
+          "void flash_attn_stream_k_fixup_general<(int)128, (int)16, (int)1>(float *, const float2 *, int, int, int, int, uint3, uint3, uint3, uint3)",
+          48,
+          0.169152
+        ],
+        [
+          "void rms_norm_f32<float, (int)32, (int)1, (bool)1, (bool)0, (bool)0, (bool)0, float>(const T1 *, T1 *, int, int, int, long, long, long, float, const float *, long, long, long, uint3, uint3, uint3, uint3, const T8 *, long, long, long, uint3, uint3, uint3, uint3, float)",
+          143,
+          0.1656
+        ],
+        [
+          "void cpy_scalar_contiguous<__half, float>(const char *, char *, long)",
+          143,
+          0.162179
+        ],
+        [
+          "k_compute_batched_ptrs(const void *, const void *, char *, const void **, void **, long, long, long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, long, long)",
+          143,
+          0.150275
+        ],
+        [
+          "void flash_attn_stream_k_fixup_uniform<(int)128, (int)8, (int)1>(float *, const float2 *, int, int, int, int, int, int, uint3, uint3, uint3)",
+          95,
+          0.126623
+        ],
+        [
+          "void gemmSN_TN_kernel<float, (int)128, (int)16, (int)2, (int)4, (int)4, (int)4, (bool)0, cublasGemvTensorStridedBatched<const float>, cublasGemvTensorStridedBatched<const float>, cublasGemvTensorStridedBatched<float>>(cublasGemmSmallNParams<T9, T10, T11, T1>)",
+          11,
+          0.103264
+        ],
+        [
+          "void mm_ids_helper<(int)8>(const int *, int *, int *, ggml_cuda_mm_id_tile_spec *, int, int, int, uint3, int, int, bool, int)",
+          42,
+          0.065218
+        ],
+        [
+          "void mul_mat_vec_f<float, float, (int)3, (int)256, (bool)0, (bool)0>(const T1 *, const float *, const int *, ggml_cuda_mm_fusion_args_device, float *, int, uint3, int, int, int, uint3, int, int, int, uint3, int, int, int, int)",
+          23,
+          0.064098
+        ],
+        [
+          "void quantize_mmq_q8_1<(mmq_q8_1_ds_layout)0, (bool)1>(const float *, const int *, void *, long, long, long, long, long, int, int, int)",
+          21,
+          0.030275
+        ],
+        [
+          "void cpy_scalar_contiguous<int, float>(const char *, char *, long)",
+          3,
+          0.00317
+        ],
+        [
+          "void unary_op_kernel<&op_log, float>(const T2 *, T2 *, int)",
+          3,
+          0.002784
+        ]
+      ],
+      "copies": [
+        [
+          1,
+          123,
+          47524716,
+          2.25486
+        ],
+        [
+          2,
+          313,
+          45326848,
+          2.072911
+        ],
+        [
+          8,
+          594,
+          43905024,
+          0.648129
+        ]
+      ],
+      "cuda_graph_intervals": [
+        0,
+        null
+      ]
+    },
+    "decode_approx": {
+      "window_ms": 5997.463014,
+      "gpu_union_ms": 1084.398559,
+      "calls": [
+        [
+          "cudaStreamSynchronize_v3020",
+          14739,
+          1120.118768
+        ],
+        [
+          "cudaGraphLaunch_v10000",
+          2583,
+          113.633703
+        ],
+        [
+          "cudaLaunchKernel_v7000",
+          14743,
+          23.99316
+        ],
+        [
+          "cudaMemcpyAsync_v3020",
+          6807,
+          21.451191
+        ],
+        [
+          "cudaGraphExecUpdate_v10020",
+          41,
+          1.241384
+        ],
+        [
+          "cudaGraphDestroy_v10000",
+          41,
+          0.913011
+        ],
+        [
+          "cudaEventRecord_v3020",
+          192,
+          0.510224
+        ],
+        [
+          "cudaEventSynchronize_v3020",
+          192,
+          0.33628
+        ],
+        [
+          "cudaMemsetAsync_v3020",
+          88,
+          0.184704
+        ],
+        [
+          "cudaStreamBeginCapture_v10000",
+          41,
+          0.14987
+        ],
+        [
+          "cudaStreamEndCapture_v10000",
+          41,
+          0.129549
+        ],
+        [
+          "cuLaunchKernel",
+          48,
+          0.082785
+        ],
+        [
+          "cuKernelGetFunction",
+          48,
+          0.030697
+        ],
+        [
+          "cudaMemcpy2DAsync_v3020",
+          3,
+          0.020378
+        ]
+      ],
+      "kernels": [
+        [
+          "void mul_mat_vec_q<(ggml_type)8, (int)1, (bool)0, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+          450,
+          6.109864
+        ],
+        [
+          "void mul_mat_vec_q<(ggml_type)23, (int)1, (bool)0, (bool)1, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+          21,
+          1.142872
+        ],
+        [
+          "quantize_q8_1(const float *, void *, long, long, long, long, long, unsigned int, uint3)",
+          693,
+          0.780831
+        ],
+        [
+          "void cpy_scalar<&cpy_1_scalar<float, __half>>(const char *, char *, long, long, long, long, long, long, long, long, long, long, long, long, long, long, long)",
+          98,
+          0.778521
+        ],
+        [
+          "void k_bin_bcast<&op_mul, float, float, float, const float *>(const T2 *, const T3 *, T4 *, unsigned int, unsigned int, unsigned int, uint3, uint3, uint3, uint3, uint3, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, T5...)",
+          548,
+          0.685242
+        ],
+        [
+          "void k_bin_bcast<&op_add, float, float, float, const float *>(const T2 *, const T3 *, T4 *, unsigned int, unsigned int, unsigned int, uint3, uint3, uint3, uint3, uint3, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, T5...)",
+          505,
+          0.619898
+        ],
+        [
+          "void mul_mat_vec_q<(ggml_type)20, (int)1, (bool)0, (bool)1, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+          21,
+          0.60297
+        ],
+        [
+          "void scale_f32<float>(const T1 *, T1 *, float, float, unsigned int, uint3, uint3, uint3, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int)",
+          529,
+          0.527488
+        ],
+        [
+          "void mul_mat_vec_q<(ggml_type)8, (int)1, (bool)0, (bool)1, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+          192,
+          0.492348
+        ],
+        [
+          "void cpy_scalar<&cpy_1_scalar<float, float>>(const char *, char *, long, long, long, long, long, long, long, long, long, long, long, long, long, long, long)",
+          318,
+          0.491165
+        ],
+        [
+          "void rms_norm_f32<float, (int)1024, (int)1, (bool)1, (bool)0, (bool)0, (bool)0, float>(const T1 *, T1 *, int, int, int, long, long, long, float, const float *, long, long, long, uint3, uint3, uint3, uint3, const T8 *, long, long, long, uint3, uint3, uint3, uint3, float)",
+          315,
+          0.489845
+        ],
+        [
+          "void concat_cont<unsigned int, (int)0>(const T1 *, const T1 *, T1 *, long, long, long, long, long, long)",
+          288,
+          0.37437
+        ],
+        [
+          "void concat_cont<unsigned int, (int)1>(const T1 *, const T1 *, T1 *, long, long, long, long, long, long)",
+          272,
+          0.35888
+        ],
+        [
+          "void mul_mat_vec_f<float, float, (int)1, (int)256, (bool)0, (bool)0>(const T1 *, const float *, const int *, ggml_cuda_mm_fusion_args_device, float *, int, uint3, int, int, int, uint3, int, int, int, uint3, int, int, int, int)",
+          135,
+          0.343682
+        ],
+        [
+          "void rms_norm_f32<float, (int)1024, (int)1, (bool)1, (bool)1, (bool)0, (bool)0, float>(const T1 *, T1 *, int, int, int, long, long, long, float, const float *, long, long, long, uint3, uint3, uint3, uint3, const T8 *, long, long, long, uint3, uint3, uint3, uint3, float)",
+          159,
+          0.314423
+        ],
+        [
+          "void cpy_scalar_transpose<float>(const char *, char *, long, long, long, long, long, long, long, long, long, long, long, long, long, long, long)",
+          172,
+          0.249566
+        ],
+        [
+          "void flash_attn_ext_vec<(int)128, (int)1, (ggml_type)1, (ggml_type)1, (bool)0>(const char *, const char *, const char *, const char *, const char *, const int *, const int *, float *, float2 *, float, float, float, float, unsigned int, float, int, uint3, int, int, int, int, int, int, int, int, int, int, int, long, int, int, long, int, int, int, int, long, long)",
+          48,
+          0.24873
+        ],
+        [
+          "void ssm_conv_f32<(bool)0, (unsigned long)128, (unsigned long)4>(const float *, const float *, const float *, int, int, int, int, float *, int, int, int, long)",
+          197,
+          0.243931
+        ],
+        [
+          "void k_bin_bcast<&op_div, float, float, float, const float *>(const T2 *, const T3 *, T4 *, unsigned int, unsigned int, unsigned int, uint3, uint3, uint3, uint3, uint3, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, T5...)",
+          196,
+          0.234422
+        ],
+        [
+          "void unary_op_kernel<&op_tanh, float>(const T2 *, T2 *, int)",
+          234,
+          0.232423
+        ],
+        [
+          "void reduce_rows_f32<(bool)0>(const float *, float *, int)",
+          196,
+          0.230881
+        ],
+        [
+          "ampere_sgemm_32x32_sliced1x4_tn",
+          76,
+          0.225694
+        ],
+        [
+          "pad_f32(const float *, unsigned long, unsigned long, unsigned long, unsigned long, float *, int, int, int, int, int, int, int, int, int, int, int, int, bool)",
+          49,
+          0.191772
+        ],
+        [
+          "void k_bin_bcast<&op_sub, float, float, float, const float *>(const T2 *, const T3 *, T4 *, unsigned int, unsigned int, unsigned int, uint3, uint3, uint3, uint3, uint3, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, T5...)",
+          145,
+          0.188829
+        ],
+        [
+          "void k_bin_bcast<&op_repeat, float, float, float, >(const T2 *, const T3 *, T4 *, unsigned int, unsigned int, unsigned int, uint3, uint3, uint3, uint3, uint3, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, T5...)",
+          123,
+          0.188383
+        ],
+        [
+          "void soft_max_f32<(bool)1, (int)0, (int)0, float>(const float *, const T4 *, const float *, float *, soft_max_params)",
+          123,
+          0.179166
+        ],
+        [
+          "ampere_sgemm_128x32_tn",
+          44,
+          0.171007
+        ],
+        [
+          "void fill_kernel<float>(T1 *, long, T1)",
+          196,
+          0.157659
+        ],
+        [
+          "void op_clamp_kernel<float>(const T1 *, T1 *, T1, T1, unsigned int, uint3, uint3, uint3, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int)",
+          148,
+          0.144799
+        ],
+        [
+          "void unary_op_kernel<&op_sqr, float>(const T2 *, T2 *, int)",
+          147,
+          0.137669
+        ],
+        [
+          "void mul_mat_vec_f<float, float, (int)1, (int)32, (bool)0, (bool)0>(const T1 *, const float *, const int *, ggml_cuda_mm_fusion_args_device, float *, int, uint3, int, int, int, uint3, int, int, int, uint3, int, int, int, int)",
+          44,
+          0.136544
+        ],
+        [
+          "void unary_op_kernel<&op_sqrt, float>(const T2 *, T2 *, int)",
+          147,
+          0.136407
+        ],
+        [
+          "void topk_moe_cuda<(int)128, (bool)1>(const float *, float *, int *, float *, int, int, float, float, topk_moe_config)",
+          49,
+          0.135613
+        ],
+        [
+          "void k_set_rows<float, long, float>(const T1 *, const T2 *, T3 *, long, long, long, long, long, long, long, long, long, long, long, long, long, long, uint3, uint3, uint3, uint3, uint3)",
+          98,
+          0.12441
+        ],
+        [
+          "void k_get_rows_float_vec<float>(const T1 *, const int *, T1 *, long, long, uint3, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)",
+          49,
+          0.123584
+        ],
+        [
+          "void cutlass::Kernel2<cutlass_80_tensorop_s1688gemm_64x64_16x6_tn_align1>(T1::Params)",
+          24,
+          0.098591
+        ],
+        [
+          "moe_weighted_reduction_f32(const float *, const float *, const float *, float *, long, int)",
+          50,
+          0.097312
+        ],
+        [
+          "void k_get_rows_float<float, float>(const T1 *, const int *, T2 *, long, long, uint3, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)",
+          51,
+          0.088578
+        ],
+        [
+          "void mul_mat_vec_q<(ggml_type)8, (int)4, (bool)0, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+          9,
+          0.081407
+        ],
+        [
+          "void unary_gated_op_kernel<&op_sigmoid, float>(const T2 *, const T2 *, T2 *, long, long, long, long)",
+          70,
+          0.076732
+        ],
+        [
+          "void flash_attn_combine_results<(int)128>(const float *, const float2 *, float *, int)",
+          48,
+          0.067582
+        ],
+        [
+          "void rms_norm_f32<float, (int)32, (int)1, (bool)1, (bool)0, (bool)0, (bool)0, float>(const T1 *, T1 *, int, int, int, long, long, long, float, const float *, long, long, long, uint3, uint3, uint3, uint3, const T8 *, long, long, long, uint3, uint3, uint3, uint3, float)",
+          49,
+          0.054525
+        ],
+        [
+          "void cpy_scalar_contiguous<__half, float>(const char *, char *, long)",
+          49,
+          0.052416
+        ],
+        [
+          "void cpy_scalar_contiguous<float, __half>(const char *, char *, long)",
+          49,
+          0.050398
+        ],
+        [
+          "void cublasLt::splitKreduce_kernel<(int)32, (int)16, int, float, float, float, (bool)0, float, float, float, (bool)1, (bool)0, (bool)0>(cublasLt::cublasSplitKParams<T6>, const T4 *, const T9 *, T8 *, T5 *, const T6 *, const T6 *, const T10 *, const T4 *, T10 *, void *, long, T6 *, int *, T6 *, const T6 *, const T6 *, const T6 *, const T6 *)",
+          24,
+          0.036028
+        ],
+        [
+          "void mul_mat_vec_f<float, float, (int)3, (int)256, (bool)0, (bool)0>(const T1 *, const float *, const int *, ggml_cuda_mm_fusion_args_device, float *, int, uint3, int, int, int, uint3, int, int, int, uint3, int, int, int, int)",
+          9,
+          0.022271
+        ],
+        [
+          "void concat_non_cont<unsigned int, (int)0>(const char *, const char *, char *, long, long, long, long, unsigned long, unsigned long, unsigned long, unsigned long, long, long, long, long, unsigned long, unsigned long, unsigned long, unsigned long, long, long, long, long, unsigned long, unsigned long, unsigned long, unsigned long)",
+          5,
+          0.019872
+        ],
+        [
+          "void mul_mat_vec_f<float, float, (int)3, (int)32, (bool)0, (bool)0>(const T1 *, const float *, const int *, ggml_cuda_mm_fusion_args_device, float *, int, uint3, int, int, int, uint3, int, int, int, uint3, int, int, int, int)",
+          4,
+          0.013376
+        ],
+        [
+          "void flash_attn_ext_f16<(int)128, (int)128, (int)8, (int)1, (bool)0, (bool)0, (bool)0>(const char *, const char *, const char *, const char *, const char *, const int *, const int *, float *, float2 *, float, float, float, float, unsigned int, float, int, uint3, int, int, int, int, int, int, int, int, int, int, int, long, int, int, long, int, int, int, int, long, long)",
+          1,
+          0.013088
+        ],
+        [
+          "void mul_mat_f<float, (int)32, (int)4, (int)8>(const T1 *, const float *, float *, int, int, int, int, int, int, int, int, int, int, int, int)",
+          1,
+          0.01104
+        ],
+        [
+          "softcap_f32(const float *, float *, float, float, int)",
+          2,
+          0.006816
+        ],
+        [
+          "void gemmSN_TN_kernel<float, (int)128, (int)16, (int)2, (int)4, (int)4, (int)4, (bool)0, cublasGemvTensorStridedBatched<const float>, cublasGemvTensorStridedBatched<const float>, cublasGemvTensorStridedBatched<float>>(cublasGemmSmallNParams<T9, T10, T11, T1>)",
+          1,
+          0.005216
+        ],
+        [
+          "ampere_sgemm_128x128_tn",
+          1,
+          0.004864
+        ],
+        [
+          "std::enable_if<!T7, void>::type internal::gemvx::kernel<int, int, float, float, float, float, (bool)0, (bool)1, (bool)1, (bool)0, (int)6, (bool)0, cublasGemvParamsEx<int, cublasGemvTensorStridedBatched<const float>, cublasGemvTensorStridedBatched<const float>, cublasGemvTensorStridedBatched<float>, float>>(T13)",
+          2,
+          0.004064
+        ],
+        [
+          "void flash_attn_stream_k_fixup_uniform<(int)128, (int)8, (int)1>(float *, const float2 *, int, int, int, int, int, int, uint3, uint3, uint3)",
+          1,
+          0.001248
+        ],
+        [
+          "void cpy_scalar_contiguous<int, float>(const char *, char *, long)",
+          1,
+          0.001088
+        ],
+        [
+          "k_compute_batched_ptrs(const void *, const void *, char *, const void **, void **, long, long, long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, long, long)",
+          1,
+          0.001056
+        ],
+        [
+          "void unary_op_kernel<&op_log, float>(const T2 *, T2 *, int)",
+          1,
+          0.000928
+        ]
+      ],
+      "copies": [
+        [
+          1,
+          2691,
+          128879364,
+          8.929591
+        ],
+        [
+          2,
+          3715,
+          69803528,
+          5.694512
+        ],
+        [
+          8,
+          204,
+          3545040,
+          0.195744
+        ]
+      ],
+      "cuda_graph_intervals": [
+        2583,
+        1050.976328
+      ]
+    }
+  },
+  "goose": {
+    "prefill": {
+      "window_ms": 3184.939654,
+      "gpu_union_ms": 684.733676,
+      "calls": [
+        [
+          "cuMemcpyDtoH_v2",
+          2433,
+          145.552796
+        ],
+        [
+          "cuCtxSynchronize",
+          993,
+          97.11145
+        ],
+        [
+          "cuMemcpyHtoD_v2",
+          8946,
+          86.21241
+        ],
+        [
+          "cuLaunchKernel",
+          7905,
+          26.282381
+        ],
+        [
+          "cuMemcpyHtoDAsync_v2",
+          4466,
+          13.778214
+        ],
+        [
+          "cuMemHostAlloc",
+          2,
+          7.287702
+        ],
+        [
+          "cuMemAlloc_v2",
+          57,
+          7.195471
+        ],
+        [
+          "cuEventSynchronize",
+          2290,
+          1.541586
+        ],
+        [
+          "cuEventRecord",
+          2477,
+          1.280535
+        ],
+        [
+          "cuStreamWaitEvent",
+          184,
+          0.426535
+        ],
+        [
+          "cuMemFree_v2",
+          3,
+          0.160421
+        ],
+        [
+          "cuModuleLoadData",
+          2,
+          0.10198
+        ],
+        [
+          "cuEventCreate",
+          3,
+          0.001743
+        ]
+      ],
+      "kernels": [
+        [
+          "goose_i2_matrix_iq4_xs",
+          96,
+          195.342989
+        ],
+        [
+          "goose_i2_matrix_q8_0",
+          1281,
+          51.798044
+        ],
+        [
+          "goose_i2_matrix_iq4_nl",
+          96,
+          43.798977
+        ],
+        [
+          "goose_i2_attention_value",
+          1152,
+          20.960338
+        ],
+        [
+          "goose_i2_attention_score",
+          1152,
+          7.239738
+        ],
+        [
+          "goose_quantized_matmul",
+          96,
+          3.138952
+        ],
+        [
+          "goose_vector_ops",
+          768,
+          3.12571
+        ],
+        [
+          "goose_i2_attention_softmax",
+          1152,
+          2.319573
+        ],
+        [
+          "goose_i2_attention_merge",
+          1152,
+          1.189649
+        ],
+        [
+          "goose_route_sort",
+          96,
+          1.140411
+        ],
+        [
+          "goose_vector_flat4",
+          384,
+          0.772599
+        ],
+        [
+          "goose_tensor_blit",
+          192,
+          0.719327
+        ],
+        [
+          "goose_moe_weighted",
+          96,
+          0.383001
+        ],
+        [
+          "goose_route_gather",
+          96,
+          0.295418
+        ],
+        [
+          "goose_route_reduce",
+          96,
+          0.207427
+        ]
+      ],
+      "copies": [
+        [
+          1,
+          13412,
+          6885571216,
+          409.855672
+        ],
+        [
+          2,
+          2433,
+          203310336,
+          9.992622
+        ]
+      ]
+    },
+    "decode": {
+      "window_ms": 11532.520201,
+      "gpu_union_ms": 2392.708292,
+      "calls": [
+        [
+          "cuMemcpyDtoH_v2",
+          44096,
+          1295.663035
+        ],
+        [
+          "cuMemcpyHtoD_v2",
+          85652,
+          1282.186084
+        ],
+        [
+          "cuCtxSynchronize",
+          31808,
+          665.887264
+        ],
+        [
+          "cuLaunchKernel",
+          117824,
+          331.90347
+        ],
+        [
+          "cuMemcpyHtoDAsync_v2",
+          46080,
+          116.894766
+        ]
+      ],
+      "kernels": [
+        [
+          "goose_i2_matrix_iq4_xs",
+          3072,
+          676.595549
+        ],
+        [
+          "goose_i2_matrix_q8_0",
+          41024,
+          482.090842
+        ],
+        [
+          "goose_i2_matrix_iq4_nl",
+          3072,
+          158.785146
+        ],
+        [
+          "goose_vector_ops",
+          36864,
+          85.810793
+        ],
+        [
+          "goose_i2_attention_value",
+          3072,
+          79.524216
+        ],
+        [
+          "goose_quantized_matmul",
+          3072,
+          74.606859
+        ],
+        [
+          "goose_route_sort",
+          3072,
+          36.270347
+        ],
+        [
+          "goose_i2_attention_score",
+          3072,
+          35.782995
+        ],
+        [
+          "goose_tensor_blit",
+          6144,
+          14.453199
+        ],
+        [
+          "goose_moe_weighted",
+          3072,
+          8.278286
+        ],
+        [
+          "goose_route_gather",
+          3072,
+          7.664092
+        ],
+        [
+          "goose_i2_attention_softmax",
+          3072,
+          6.225829
+        ],
+        [
+          "goose_route_reduce",
+          3072,
+          6.154518
+        ],
+        [
+          "goose_i2_attention_merge",
+          3072,
+          3.241174
+        ]
+      ],
+      "copies": [
+        [
+          1,
+          131732,
+          8460059648,
+          659.916209
+        ],
+        [
+          2,
+          44096,
+          591478784,
+          57.308238
+        ]
+      ]
+    },
+    "whole": {
+      "window_ms": 14772.918641,
+      "gpu_union_ms": 3077.441968,
+      "calls": [
+        [
+          "cuMemcpyDtoH_v2",
+          46529,
+          1441.215831
+        ],
+        [
+          "cuMemcpyHtoD_v2",
+          94598,
+          1368.398494
+        ],
+        [
+          "cuCtxSynchronize",
+          32801,
+          762.998714
+        ],
+        [
+          "cuLaunchKernel",
+          125729,
+          358.185851
+        ],
+        [
+          "cuMemcpyHtoDAsync_v2",
+          50546,
+          130.67298
+        ],
+        [
+          "cuMemHostAlloc",
+          2,
+          7.287702
+        ],
+        [
+          "cuMemAlloc_v2",
+          57,
+          7.195471
+        ],
+        [
+          "cuEventSynchronize",
+          2290,
+          1.541586
+        ],
+        [
+          "cuEventRecord",
+          2477,
+          1.280535
+        ],
+        [
+          "cuStreamWaitEvent",
+          184,
+          0.426535
+        ],
+        [
+          "cuMemFree_v2",
+          3,
+          0.160421
+        ],
+        [
+          "cuModuleLoadData",
+          2,
+          0.10198
+        ],
+        [
+          "cuEventCreate",
+          3,
+          0.001743
+        ]
+      ],
+      "kernels": [
+        [
+          "goose_i2_matrix_iq4_xs",
+          3168,
+          871.938538
+        ],
+        [
+          "goose_i2_matrix_q8_0",
+          42305,
+          533.888886
+        ],
+        [
+          "goose_i2_matrix_iq4_nl",
+          3168,
+          202.584123
+        ],
+        [
+          "goose_i2_attention_value",
+          4224,
+          100.484554
+        ],
+        [
+          "goose_vector_ops",
+          37632,
+          88.936503
+        ],
+        [
+          "goose_quantized_matmul",
+          3168,
+          77.745811
+        ],
+        [
+          "goose_i2_attention_score",
+          4224,
+          43.022733
+        ],
+        [
+          "goose_route_sort",
+          3168,
+          37.410758
+        ],
+        [
+          "goose_tensor_blit",
+          6336,
+          15.172526
+        ],
+        [
+          "goose_moe_weighted",
+          3168,
+          8.661287
+        ],
+        [
+          "goose_i2_attention_softmax",
+          4224,
+          8.545402
+        ],
+        [
+          "goose_route_gather",
+          3168,
+          7.95951
+        ],
+        [
+          "goose_route_reduce",
+          3168,
+          6.361945
+        ],
+        [
+          "goose_i2_attention_merge",
+          4224,
+          4.430823
+        ],
+        [
+          "goose_vector_flat4",
+          384,
+          0.772599
+        ]
+      ],
+      "copies": [
+        [
+          1,
+          145144,
+          15345630864,
+          1069.771881
+        ],
+        [
+          2,
+          46529,
+          794789120,
+          67.30086
+        ]
+      ]
+    }
+  }
+}

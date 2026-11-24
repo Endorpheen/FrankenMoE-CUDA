@@ -1,0 +1,42 @@
+--- a/probe.c
++++ b/probe.c
+@@ -229,0 +230,34 @@
++static uint32_t cpu_moe_layers(void) {
++    static bool initialized;
++    static uint32_t mask;
++    if (!initialized) {
++        const char *value = getenv("I2_CPU_MOE_MASK");
++        if (value && *value) {
++            char *end;
++            const unsigned long parsed = strtoul(value, &end, 0);
++            assert(!*end && parsed < (1u << physical));
++            mask = (uint32_t)parsed;
++        }
++        initialized = true;
++    }
++    return mask;
++}
++
++static uint64_t cpu_moe_calls;
++static double cpu_moe_elapsed;
++
++static void evaluate_moe(int layer, struct ggml_context *ctx, struct ggml_tensor **roots,
++                         float *output, int size) {
++    const bool cpu = (cpu_moe_layers() & (1u << layer)) != 0;
++    if (cpu) {
++        fg_cuda_enable_inkling_quants(false);
++        const double start = now();
++        evaluate(ctx, roots, 1, output, size);
++        cpu_moe_elapsed += now() - start;
++        ++cpu_moe_calls;
++        fg_cuda_enable_inkling_quants(true);
++    } else {
++        evaluate(ctx, roots, 1, output, size);
++    }
++}
++
+@@ -292 +326 @@
+-    evaluate(ctx,moe_root,1,proj,model_width);
++    evaluate_moe(physical_layer, ctx, moe_root, proj, model_width);
+@@ -571,0 +606 @@
++    printf("Inkling CPU expert groups=%" PRIu64 " elapsed=%.6f s\n",cpu_moe_calls,cpu_moe_elapsed);
