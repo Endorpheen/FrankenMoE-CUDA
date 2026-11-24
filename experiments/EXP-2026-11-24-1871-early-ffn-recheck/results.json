@@ -1,0 +1,146 @@
+{
+  "id": "EXP-2026-11-24-1871",
+  "status": "REJECTED",
+  "baseline": "EXP-1863",
+  "gpu": "RTX 4070",
+  "profile": "Apex 32K/512",
+  "context": 262144,
+  "expert_cache_mib": 6290,
+  "binary_sha256": "43d549a9368a0eae0bbc7ac27fabbe1c9e64fe0f7ac642b26676cd5060da8a8b",
+  "arms": {
+    "a": {
+      "run": "cx-ffn-defer-a1-20261124-130401",
+      "requests": [
+        {
+          "phase": "warmup",
+          "cache_n": 0,
+          "prompt_n": 32768,
+          "prompt_ms": 11612.763037002878,
+          "prompt_per_token_ms": 0.3543934032288476,
+          "prompt_per_second": 2821.7229522025145,
+          "predicted_n": 512,
+          "predicted_ms": 6346.343270008219,
+          "predicted_per_token_ms": 12.419458454027827,
+          "predicted_per_second": 80.51880874690508,
+          "client_s": 18.061505,
+          "reply_sha256": "8cc4882b586f943fc4012d500912710a6e3ad570f183e59a6db1a9a89e60e353"
+        },
+        {
+          "phase": "measured",
+          "cache_n": 0,
+          "prompt_n": 32768,
+          "prompt_ms": 9702.938464994077,
+          "prompt_per_token_ms": 0.2961101826475243,
+          "prompt_per_second": 3377.12128322974,
+          "predicted_n": 512,
+          "predicted_ms": 6135.09613100905,
+          "predicted_per_token_ms": 12.006058964792661,
+          "predicted_per_second": 83.29127842304159,
+          "client_s": 15.929892,
+          "reply_sha256": "a0a698d69f535140b59092511b0df26f23d6f989204f67e61ec7c35994544127"
+        }
+      ],
+      "prefetch_cumulative": {
+        "launched": 19958,
+        "waves": 10000,
+        "jobs": 48873,
+        "skipped": 0,
+        "launch_us": 53934,
+        "wait_us": 109579,
+        "prepare_us": 30194,
+        "submit_us": 70619
+      },
+      "peak_sampled_vram_mib": 8774,
+      "peak_rss_kib": 21492692,
+      "system_swapout_delta_pages": 0,
+      "process_swap_kib": 0
+    },
+    "b": {
+      "run": "cx-ffn-defer-b1-20261124-130515",
+      "requests": [
+        {
+          "phase": "warmup",
+          "cache_n": 0,
+          "prompt_n": 32768,
+          "prompt_ms": 11615.865002997452,
+          "prompt_per_token_ms": 0.3544880677184281,
+          "prompt_per_second": 2820.969423417393,
+          "predicted_n": 512,
+          "predicted_ms": 8811.400578008033,
+          "predicted_per_token_ms": 17.243445358137052,
+          "predicted_per_second": 57.99305064797318,
+          "client_s": 20.522837,
+          "reply_sha256": "128c03237282ad95025bcd8b3de95bc2abb3044dc931742361908958a526f66f"
+        },
+        {
+          "phase": "measured",
+          "cache_n": 0,
+          "prompt_n": 32768,
+          "prompt_ms": 9811.866217001807,
+          "prompt_per_token_ms": 0.29943439382940085,
+          "prompt_per_second": 3339.6297172519803,
+          "predicted_n": 512,
+          "predicted_ms": 8607.372294005472,
+          "predicted_per_token_ms": 16.844172786703467,
+          "predicted_per_second": 59.36771206653643,
+          "client_s": 18.50991,
+          "reply_sha256": "d61f8a919b2752f93830725b6224697e449c3011883f0229723283d6f25a430b"
+        }
+      ],
+      "prefetch_cumulative": {
+        "launched": 19958,
+        "waves": 10000,
+        "jobs": 48873,
+        "skipped": 0,
+        "launch_us": 50592,
+        "wait_us": 170527,
+        "prepare_us": 35153,
+        "submit_us": 452317
+      },
+      "peak_sampled_vram_mib": 8772,
+      "peak_rss_kib": 21493856,
+      "system_swapout_delta_pages": 0,
+      "process_swap_kib": 0
+    }
+  },
+  "changes": {
+    "prompt_per_second": {
+      "control": 3377.12128322974,
+      "candidate": 3339.6297172519803,
+      "change_pct": -1.1101634449416142,
+      "delta": -37.49156597775982
+    },
+    "predicted_per_second": {
+      "control": 83.29127842304159,
+      "candidate": 59.36771206653643,
+      "change_pct": -28.722774832433096,
+      "delta": -23.923566356505162
+    },
+    "prompt_ms": {
+      "control": 9702.938464994077,
+      "candidate": 9811.866217001807,
+      "change_pct": 1.122626433226559,
+      "delta": 108.9277520077303
+    },
+    "predicted_ms": {
+      "control": 6135.09613100905,
+      "candidate": 8607.372294005472,
+      "change_pct": 40.29726853831388,
+      "delta": 2472.2761629964225
+    },
+    "client_s": {
+      "control": 15.929892,
+      "candidate": 18.50991,
+      "change_pct": 16.196079672103238,
+      "delta": 2.580018000000001
+    }
+  },
+  "all_replies_and_props_exact": true,
+  "prior_trace_graph_count_by_kernel_nodes": {
+    "2": 2555,
+    "4": 20440,
+    "11": 20440,
+    "26": 5110,
+    "27": 14819
+  }
+}
