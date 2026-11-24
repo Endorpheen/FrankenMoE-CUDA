@@ -151,3 +151,16 @@ export fn fg_vector_ops(x: u64, y: u64, dst: u64, cfg: u64, param0: f32, param1:
         else if gl != 0 { cv_load(x + (xb as u64)) } else { 0.0 };
     cv_store(dst + ((4 * index) as u64), cv_value(op, a, b, param0, param1));
 }
+
+// Restored from EXP-2026-11-22-1717: the fused routed+shared+gate+residual tail the
+// routed FFN uses when present. It was applied as a patch at the time and never
+// reached the tracked sources, which made the shipped CUDA image unreproducible.
+extern "fg_device_mul_rn" fn cv_mul_rn(a: f32, b: f32) -> f32;
+
+export fn fg_moe_add_shared_residual(routed: u64, shared: u64, gate: u64,
+                                      residual: u64, output: u64, index: u64) {
+    let offset = 4 * index;
+    let product = cv_mul_rn(cv_load(shared + offset), cv_load(gate));
+    let mixture = cv_load(routed + offset) + product;
+    cv_store(output + offset, mixture + cv_load(residual + offset));
+}

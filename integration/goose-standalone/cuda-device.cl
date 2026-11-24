@@ -741,3 +741,13 @@ static void fg_cuda_cpwait(void) { __asm__ volatile("cp.async.wait_all;" ::: "me
 #include "cuda-flash-mma.cl"
 #include "cuda-flash-vec.cl"
 #endif
+
+__kernel void goose_moe_add_shared_residual(__global const uint8_t * routed,
+    __global const uint8_t * shared, __global const uint8_t * gate,
+    __global const uint8_t * residual, __global uint8_t * output) {
+    uint32_t block, lane;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(block));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
+    fg_moe_add_shared_residual_g((uint64_t) routed, (uint64_t) shared, (uint64_t) gate,
+        (uint64_t) residual, (uint64_t) output, (uint64_t) block * 128 + lane);
+}

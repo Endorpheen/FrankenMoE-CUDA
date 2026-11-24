@@ -30,3 +30,25 @@ export fn fg_reference_rms_one(x: u64, weights: u64, out: u64, cfg: u64, eps: f3
     rms_row_one(x + (start as u64), dst, shared, m, 0, width as i32, thread, lanes,
         weighted, false, scaled, eps, postscale, scaled);
 }
+
+// Restored from EXP-2026-11-22-1721: one contiguous 2048-element row, one vector per
+// thread, the shape the decode path launches for this model.
+extern "fg_device_mul_rn" fn rms_mul_rn(a: f32, b: f32) -> f32;
+
+export fn fg_rms_decode_2048(x: u64, weights: u64, out: u64, shared: u64,
+                            tid: i32, eps: f32) {
+    let v = load4(x, tid);
+    let xy = fma(v.x, v.x, v.y * v.y);
+    let xyz = fma(v.z, v.z, xy);
+    let sum = block_sum(0.0 + fma(v.w, v.w, xyz), shared, tid, 512);
+    let scale = rsqrt(rms_mul_rn(sum, 0.00048828125) + eps);
+    var result = RmsVec {scale * v.x, scale * v.y, scale * v.z, scale * v.w};
+    if weights != 0 {
+        let w = load4(weights, tid);
+        result.x *= w.x;
+        result.y *= w.y;
+        result.z *= w.z;
+        result.w *= w.w;
+    }
+    store4(out, tid, result);
+}
