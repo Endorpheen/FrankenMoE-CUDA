@@ -2912,14 +2912,14 @@ static int submit_expert_stage(bool batch_enabled) {
     return -1;
 }
 
-static int begin_expert_prepare(void) {
+static int begin_expert_prepare(bool defer_prior_wave) {
     decode_capture.scope = false;
     if (decode_capture_submit() != 0) return -1;
     if (cuda.expert_upload_count != 0) {
         reset_expert_stage();
         return -1;
     }
-    if (cuda.expert_upload_queued) {
+    if (cuda.expert_upload_queued && !defer_prior_wave) {
         // The current projection may consume a plane staged by the last one.
         if (cuda.stream_wait_event(NULL, cuda.expert_uploads_ready, 0) != 0) return -1;
         cuda.expert_upload_queued = false;
@@ -3093,7 +3093,7 @@ static int64_t prepare_prefill_plane(uint64_t tensor, int64_t bytes, sl_i64 acti
 }
 
 int64_t fg_cuda_prepare_experts(uint64_t tensor, int64_t bytes, sl_i64 active, sl_i64 offsets) {
-    if (begin_expert_prepare() != 0) return -1;
+    if (begin_expert_prepare(false) != 0) return -1;
     if (!cuda.experts.weights.address) return 0;
     const int64_t temporary = prepare_prefill_plane(tensor, bytes, active, offsets);
     if (temporary != 0) return temporary;
@@ -4063,7 +4063,22 @@ int64_t fg_cuda_routed_graph(sl_i64 plan, sl_i64 glu, sl_i64 norm, sl_i64 shared
         pf.plan[pf_this].ok = true;
         pf_launch(pf_this, input, width);
     }
-    if (stage_all && error == 0) error = begin_expert_prepare();
+    if (stage_all && error == 0) {
+        static int defer_prior_wave = -1;
+        if (defer_prior_wave < 0) {
+            const char * setting = getenv("GOOSE_DEFER_PREFETCH_FENCE");
+            defer_prior_wave = !setting || strcmp(setting, "0") != 0;
+        }
+        // Shared FFN uses dense weights. The expert consumer fences below
+        // cover the previous wave and any newer copies on the same stream.
+        const bool defer = defer_prior_wave && compact && cuda.decode_graph_enabled;
+        if (defer && cuda.expert_upload_queued) {
+            static _Thread_local unsigned deferred;
+            if (++deferred == 1 || deferred % 10000 == 0)
+                fprintf(stderr, "Goose CUDA: deferred prefetch fences=%u\n", deferred);
+        }
+        error = begin_expert_prepare(defer);
+    }
     const sl_i64 active_routes = {heads, compact ? routes : experts};
     const sl_i64 device_offsets = {offsets, active_routes.len};
     for (size_t p = 0; p < 3 && error == 0; ++p) {

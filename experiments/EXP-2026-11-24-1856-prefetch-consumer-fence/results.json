@@ -1,0 +1,202 @@
+[
+  {
+    "arm": "A1",
+    "run": "cx-fence-a-20261124-110633",
+    "vram_mib": 8774,
+    "vmhwm_kib": 21490872,
+    "vm_swap_kib": 0,
+    "swap_out_pages": 0,
+    "replies": [
+      {
+        "exact": true,
+        "timings": {
+          "cache_n": 0,
+          "prompt_n": 32768,
+          "prompt_ms": 11906.261183001334,
+          "prompt_per_token_ms": 0.3633502558288981,
+          "prompt_per_second": 2752.1653940183287,
+          "predicted_n": 512,
+          "predicted_ms": 6198.134934005793,
+          "predicted_per_token_ms": 12.129422571439909,
+          "predicted_per_second": 82.44415545012114
+        },
+        "full_seconds": 18.199409
+      },
+      {
+        "exact": true,
+        "timings": {
+          "cache_n": 0,
+          "prompt_n": 32768,
+          "prompt_ms": 10096.894576010527,
+          "prompt_per_token_ms": 0.30813276904329,
+          "prompt_per_second": 3245.3542773294216,
+          "predicted_n": 512,
+          "predicted_ms": 6167.134808987612,
+          "predicted_per_token_ms": 12.068756964750708,
+          "predicted_per_second": 82.85857465857553
+        },
+        "full_seconds": 16.350486
+      }
+    ]
+  },
+  {
+    "arm": "B1",
+    "run": "cx-fence-b-20261124-110834",
+    "vram_mib": 8774,
+    "vmhwm_kib": 21490404,
+    "vm_swap_kib": 0,
+    "swap_out_pages": 0,
+    "replies": [
+      {
+        "exact": true,
+        "timings": {
+          "cache_n": 0,
+          "prompt_n": 32768,
+          "prompt_ms": 11920.181177003542,
+          "prompt_per_token_ms": 0.36377506033336005,
+          "prompt_per_second": 2748.951506141211,
+          "predicted_n": 512,
+          "predicted_ms": 6159.302334010135,
+          "predicted_per_token_ms": 12.053429225068758,
+          "predicted_per_second": 82.96394174034697
+        },
+        "full_seconds": 18.177771
+      },
+      {
+        "exact": true,
+        "timings": {
+          "cache_n": 0,
+          "prompt_n": 32768,
+          "prompt_ms": 10112.24583699368,
+          "prompt_per_token_ms": 0.3086012523496606,
+          "prompt_per_second": 3240.4275497461367,
+          "predicted_n": 512,
+          "predicted_ms": 6106.232991995057,
+          "predicted_per_token_ms": 11.949575326800502,
+          "predicted_per_second": 83.68498232378187
+        },
+        "full_seconds": 16.305756
+      }
+    ]
+  },
+  {
+    "arm": "B2",
+    "run": "cx-fence-b2-20261124-110950",
+    "vram_mib": 8774,
+    "vmhwm_kib": 21491392,
+    "vm_swap_kib": 0,
+    "swap_out_pages": 0,
+    "replies": [
+      {
+        "exact": true,
+        "timings": {
+          "cache_n": 0,
+          "prompt_n": 32768,
+          "prompt_ms": 11891.04176600813,
+          "prompt_per_token_ms": 0.36288579608179106,
+          "prompt_per_second": 2755.687907317842,
+          "predicted_n": 512,
+          "predicted_ms": 6176.167108002119,
+          "predicted_per_token_ms": 12.086432696677337,
+          "predicted_per_second": 82.73739862671874
+        },
+        "full_seconds": 18.166953
+      },
+      {
+        "exact": true,
+        "timings": {
+          "cache_n": 0,
+          "prompt_n": 32768,
+          "prompt_ms": 10078.109535999829,
+          "prompt_per_token_ms": 0.3075594951171823,
+          "prompt_per_second": 3251.403438606222,
+          "predicted_n": 512,
+          "predicted_ms": 6127.612268988742,
+          "predicted_per_token_ms": 11.991413442248026,
+          "predicted_per_second": 83.39300490439352
+        },
+        "full_seconds": 16.296404
+      }
+    ]
+  },
+  {
+    "arm": "A2",
+    "run": "cx-fence-a2-20261124-111059",
+    "vram_mib": 8774,
+    "vmhwm_kib": 21490996,
+    "vm_swap_kib": 0,
+    "swap_out_pages": 0,
+    "replies": [
+      {
+        "exact": true,
+        "timings": {
+          "cache_n": 0,
+          "prompt_n": 32768,
+          "prompt_ms": 11865.88675098028,
+          "prompt_per_token_ms": 0.3621181259454431,
+          "prompt_per_second": 2761.5298112711994,
+          "predicted_n": 512,
+          "predicted_ms": 6228.9789089991245,
+          "predicted_per_token_ms": 12.189782600781065,
+          "predicted_per_second": 82.03591751799779
+        },
+        "full_seconds": 18.194863
+      },
+      {
+        "exact": true,
+        "timings": {
+          "cache_n": 0,
+          "prompt_n": 32768,
+          "prompt_ms": 10089.473579981131,
+          "prompt_per_token_ms": 0.3079062982171976,
+          "prompt_per_second": 3247.741295939969,
+          "predicted_n": 512,
+          "predicted_ms": 6162.353779014666,
+          "predicted_per_token_ms": 12.059400741711675,
+          "predicted_per_second": 82.92286005067803
+        },
+        "full_seconds": 16.345266
+      }
+    ]
+  },
+  {
+    "arm": "Default",
+    "run": "cx-fence-default-20261124-111241",
+    "vram_mib": 8774,
+    "vmhwm_kib": 21490920,
+    "vm_swap_kib": 0,
+    "swap_out_pages": 0,
+    "replies": [
+      {
+        "exact": true,
+        "timings": {
+          "cache_n": 0,
+          "prompt_n": 32768,
+          "prompt_ms": 11892.107315012254,
+          "prompt_per_token_ms": 0.36291831405677044,
+          "prompt_per_second": 2755.4409939300344,
+          "predicted_n": 512,
+          "predicted_ms": 6169.666987989331,
+          "predicted_per_token_ms": 12.073712305262879,
+          "predicted_per_second": 82.82456751633086
+        },
+        "full_seconds": 18.162044
+      },
+      {
+        "exact": true,
+        "timings": {
+          "cache_n": 0,
+          "prompt_n": 32768,
+          "prompt_ms": 10113.681863993406,
+          "prompt_per_token_ms": 0.3086450764158144,
+          "prompt_per_second": 3239.9674461444342,
+          "predicted_n": 512,
+          "predicted_ms": 6116.8505790119525,
+          "predicted_per_token_ms": 11.970353383585035,
+          "predicted_per_second": 83.53972250905322
+        },
+        "full_seconds": 16.320241
+      }
+    ]
+  }
+]
