@@ -1,0 +1,142 @@
+{
+  "runs": {
+    "A1": {
+      "memory": {
+        "board_peak_mib": 9259,
+        "process_hwm_kib": 11248720,
+        "process_swap_kib": 0,
+        "swap_out_pages": 0
+      },
+      "states_match": true,
+      "state_count": 318,
+      "prefill_cache": [
+        "I2 prefill expert fills=2273 bytes=9803649024",
+        "I2 prefill expert fills=862 bytes=3717881856"
+      ],
+      "cold": {
+        "prefill": 70.5134273521423,
+        "decode": 11.270075517965894,
+        "client_seconds": 3.574234,
+        "ids_match": true,
+        "text_match": true
+      },
+      "warm": {
+        "prefill": 134.87315897480588,
+        "decode": 11.337856560186955,
+        "client_seconds": 2.516777,
+        "ids_match": true,
+        "text_match": true
+      }
+    },
+    "B1": {
+      "memory": {
+        "board_peak_mib": 9266,
+        "process_hwm_kib": 11248672,
+        "process_swap_kib": 0,
+        "swap_out_pages": 0
+      },
+      "states_match": true,
+      "state_count": 318,
+      "prefill_cache": [
+        "I2 prefill expert fills=2273 bytes=9803649024",
+        "I2 prefill expert fills=862 bytes=3717881856"
+      ],
+      "cold": {
+        "prefill": 68.80194673018845,
+        "decode": 14.412606220172691,
+        "client_seconds": 3.310634,
+        "ids_match": true,
+        "text_match": true
+      },
+      "warm": {
+        "prefill": 126.02337639652005,
+        "decode": 14.124462547405523,
+        "client_seconds": 2.328308,
+        "ids_match": true,
+        "text_match": true
+      }
+    },
+    "B2": {
+      "memory": {
+        "board_peak_mib": 9264,
+        "process_hwm_kib": 11248720,
+        "process_swap_kib": 0,
+        "swap_out_pages": 0
+      },
+      "states_match": true,
+      "state_count": 318,
+      "prefill_cache": [
+        "I2 prefill expert fills=2273 bytes=9803649024",
+        "I2 prefill expert fills=862 bytes=3717881856"
+      ],
+      "cold": {
+        "prefill": 70.56385011390346,
+        "decode": 15.242248732226113,
+        "client_seconds": 3.208577,
+        "ids_match": true,
+        "text_match": true
+      },
+      "warm": {
+        "prefill": 132.11995836348734,
+        "decode": 14.327558014086986,
+        "client_seconds": 2.258802,
+        "ids_match": true,
+        "text_match": true
+      }
+    },
+    "A2": {
+      "memory": {
+        "board_peak_mib": 9541,
+        "process_hwm_kib": 11248664,
+        "process_swap_kib": 0,
+        "swap_out_pages": 0
+      },
+      "states_match": true,
+      "state_count": 318,
+      "prefill_cache": [
+        "I2 prefill expert fills=2273 bytes=9803649024",
+        "I2 prefill expert fills=862 bytes=3717881856"
+      ],
+      "cold": {
+        "prefill": 69.52948074958786,
+        "decode": 12.204234545662338,
+        "client_seconds": 3.476486,
+        "ids_match": true,
+        "text_match": true
+      },
+      "warm": {
+        "prefill": 127.41596002185277,
+        "decode": 12.315206943397511,
+        "client_seconds": 2.46536,
+        "ids_match": true,
+        "text_match": true
+      }
+    }
+  },
+  "means": {
+    "A": {
+      "cold": {
+        "prefill": 70.02145405086509,
+        "decode": 11.737155031814115,
+        "client_seconds": 3.52536
+      },
+      "warm": {
+        "prefill": 131.14455949832933,
+        "decode": 11.826531751792233,
+        "client_seconds": 2.4910685
+      }
+    },
+    "B": {
+      "cold": {
+        "prefill": 69.68289842204595,
+        "decode": 14.827427476199402,
+        "client_seconds": 3.2596055
+      },
+      "warm": {
+        "prefill": 129.0716673800037,
+        "decode": 14.226010280746255,
+        "client_seconds": 2.293555
+      }
+    }
+  }
+}
