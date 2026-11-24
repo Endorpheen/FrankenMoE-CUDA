@@ -1,0 +1,45 @@
+--- a/cuda-driver.c
++++ b/cuda-driver.c
+@@ -3,0 +4 @@
++#include "mmq-q4-narrow-image.h"
+@@ -247,0 +249 @@
++    bool mmq_q4_pipeline_narrow;
+@@ -380 +382 @@
+-enum { Q4_PIPE_SHARED_BYTES = 2 * 30720 };
++enum { Q4_PIPE_SHARED_BYTES = 2 * 30720, Q4_PIPE_NARROW_SHARED_BYTES = 2 * 20480 };
+@@ -1322,5 +1324,19 @@
+-                            int setup = cuda.function_get(&cuda.mmq_q4_dense_pipeline, cuda.module,
+-                                "goose_mmq_q4_dense_m128n256_pipeline");
+-                            if (setup == 0) setup = cuda.function_set_attribute(cuda.mmq_q4_dense_pipeline,
+-                                max_dynamic_shared_size, Q4_PIPE_SHARED_BYTES);
+-                            if (setup != 0) cuda.mmq_q4_dense_pipeline = NULL;
++                            const char * narrow = getenv("GOOSE_MMQ_Q4_NARROW");
++                            if (!narrow || strcmp(narrow, "0") != 0) {
++                                Module image = NULL;
++                                Function kernel = NULL;
++                                if (cuda.module_load(&image, mmq_q4_narrow_image) == 0 &&
++                                    cuda.function_get(&kernel, image, "goose_mmq_q4_dense_m128n256_pipeline") == 0 &&
++                                    cuda.function_set_attribute(kernel, max_dynamic_shared_size, Q4_PIPE_NARROW_SHARED_BYTES) == 0) {
++                                    cuda.mmq_q4_dense_pipeline = kernel;
++                                    cuda.mmq_q4_pipeline_narrow = true;
++                                    fputs("Goose CUDA: SM89 dense Q4 MMQ 128x128 pipeline selected\n", stderr);
++                                }
++                            }
++                            if (!cuda.mmq_q4_dense_pipeline) {
++                                int setup = cuda.function_get(&cuda.mmq_q4_dense_pipeline, cuda.module,
++                                    "goose_mmq_q4_dense_m128n256_pipeline");
++                                if (setup == 0) setup = cuda.function_set_attribute(cuda.mmq_q4_dense_pipeline,
++                                    max_dynamic_shared_size, Q4_PIPE_SHARED_BYTES);
++                                if (setup != 0) cuda.mmq_q4_dense_pipeline = NULL;
++                            }
+@@ -3427 +3443,4 @@
+-                const unsigned column_tile = large ? cuda.mmq_q4_large_cols : 128;
++                const bool narrow = pipeline && cuda.mmq_q4_pipeline_narrow;
++                const unsigned column_tile = large && !narrow ? cuda.mmq_q4_large_cols : 128;
++                const unsigned shared_bytes = !pipeline ? 0 :
++                    narrow ? Q4_PIPE_NARROW_SHARED_BYTES : Q4_PIPE_SHARED_BYTES;
+@@ -3431,2 +3450,2 @@
+-                    1 + (routes - 1) / column_tile, 1, 256, 1, 1,
+-                    pipeline ? Q4_PIPE_SHARED_BYTES : 0, NULL, args, NULL);
++                    1 + (routes - 1) / column_tile, 1, narrow ? 128 : 256, 1, 1,
++                    shared_bytes, NULL, args, NULL);

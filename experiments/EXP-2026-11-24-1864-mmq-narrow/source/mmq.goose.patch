@@ -1,0 +1,34 @@
+--- a/mmq.goose
++++ b/mmq.goose
+@@ -1054 +1054 @@
+-    quarter_in_half: i64, thread: i64, ahead: bool) {
++    quarter_in_half: i64, thread: i64, threads: i64, ahead: bool) {
+@@ -1056,2 +1056,2 @@
+-    for pass in 1 + (vectors - 1) / 256 {
+-        let vector = thread + 256 * pass;
++    for pass in 1 + (vectors - 1) / threads {
++        let vector = thread + threads * pass;
+@@ -1072,0 +1073,4 @@
++    if columns == 128 {
++        let second = 1280 * (4 * (pitch / 288) + quarter);
++        mmq_q4_load_prepared(weight_stage + 1280, weight_src + (second as u64), thread % 32, true);
++    }
+@@ -1074 +1078 @@
+-        pitch, routes, columns, quarter % 2, thread, true);
++        pitch, routes, columns, quarter % 2, thread, if columns == 128 { 128 } else { 256 }, true);
+@@ -1103,2 +1107,4 @@
+-    let weight_stage = stage + ((1280 * warp) as u64);
+-    let weight_offset = if prepared { 5120 * extent * (row / 16 + warp) } else { stride * (row + 16 * warp) };
++    let stage_rows = if ahead && columns == 128 { 2 * warp } else { warp };
++    let bank_bytes = (80 * (height + columns)) as u64;
++    let weight_stage = stage + ((1280 * stage_rows) as u64);
++    let weight_offset = if prepared { 5120 * extent * (row / 16 + stage_rows) } else { stride * (row + 16 * warp) };
+@@ -1138 +1144 @@
+-            let bank = if ahead && local != 0 { 30720 as u64 } else { 0 as u64 };
++            let bank = if ahead && local != 0 { bank_bytes } else { 0 as u64 };
+@@ -1144 +1150 @@
+-                    let other = 30720 - bank;
++                    let other = bank_bytes - bank;
+@@ -1157 +1163 @@
+-                mmq_stage_q8_quarter(activate, packed_tile + q, pitch, routes, columns, local, thread, false);
++                mmq_stage_q8_quarter(activate, packed_tile + q, pitch, routes, columns, local, thread, 256, false);
