@@ -16,8 +16,9 @@ request; Goose diagnostic constructs one sequence per process with the
 model pages already warm. Upstream reports 65 predicted tokens in its
 decode timing. Goose reports 64 measured intervals after its first
 output. These are comparable workloads with distinct timers and
-placement. Both token sequences are saved; they diverge at output
-token 8, so later expert routing is not a controlled equality.
+placement. Both token sequences are saved. The normal upstream profile
+first diverges from Goose at output token 8, the near-VRAM profile
+at token 3. Later expert routing is therefore not held identical.
 
 | Runner | Prefill tok/s | Decode tok/s | Peak process VRAM MiB | Peak RSS GiB |
 | --- | ---: | ---: | ---: | ---: |

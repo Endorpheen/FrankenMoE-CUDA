@@ -310,7 +310,8 @@
       "resident_pages": 3661313,
       "resident_bytes_page_rounded": 14996738048,
       "file_bytes": 14996735968
-    }
+    },
+    "first_output_difference_normal_vs_goose": 8
   },
   "scalar_cpu_one_layer": {
     "context": 128,
