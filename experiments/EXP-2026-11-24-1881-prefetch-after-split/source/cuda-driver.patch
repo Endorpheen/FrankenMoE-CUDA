@@ -1,0 +1,58 @@
+--- a/cuda-driver.c
++++ b/cuda-driver.c
+@@ -684,0 +685,3 @@
++static _Thread_local bool prefetch_after_split_pending;
++static int pf_submit_after_split(void);
++static int pf_finish_deferred(bool submit);
+@@ -700 +703,2 @@
+-                return decode_capture_submit();
++                const int submitted = decode_capture_submit();
++                return submitted == 0 && prefetch_after_split_pending ? pf_submit_after_split() : submitted;
+@@ -1874,0 +1879 @@
++    if (prefetch_after_split_pending) error = pf_finish_deferred(success);
+@@ -1878 +1883,2 @@
+-            error = !success && decode_capture.capturing ? decode_capture_discard() : cuda.sync();
++            const int drained = !success && decode_capture.capturing ? decode_capture_discard() : cuda.sync();
++            if (error == 0) error = drained;
+@@ -3876,0 +3883,25 @@
++static int pf_submit_after_split(void) {
++    prefetch_after_split_pending = false;
++    static _Thread_local uint64_t submitted;
++    const int error = pf_submit();
++    if (error == 0 && (++submitted == 1 || submitted % 10000 == 0))
++        fprintf(stderr, "Goose CUDA: prefetch waves issued after split=%" PRIu64 "\n", submitted);
++    return error;
++}
++
++static int pf_finish_deferred(bool submit) {
++    if (!prefetch_after_split_pending) return 0;
++    prefetch_after_split_pending = false;
++    if (!submit) { pf.pending = -1; return 0; }
++    if (push_context() != 1) { pf.pending = -1; return -1; }
++    int error = decode_capture_submit();
++    if (error == 0) {
++        static _Thread_local uint64_t fallback;
++        error = pf_submit();
++        if (error == 0 && (++fallback == 1 || fallback % 10000 == 0))
++            fprintf(stderr, "Goose CUDA: deferred prefetch fallback=%" PRIu64 "\n", fallback);
++    } else {
++        pf.pending = -1;
++    }
++    return finish_context() == 0 ? error : -1;
++}
+@@ -4039,0 +4071 @@
++    if (prefetch_after_split_pending && pf_finish_deferred(true) != 0) return -1;
+@@ -4385,2 +4417,11 @@
+-    if (error == 0 && pf_this >= 0 && pf.pending >= 0) error = pf_submit();
+-    else pf.pending = -1;
++    if (error == 0 && pf_this >= 0 && pf.pending >= 0) {
++        static int after_split = -1;
++        if (after_split < 0) {
++            const char *setting = getenv("GOOSE_PREFETCH_AFTER_SPLIT");
++            after_split = !setting || strcmp(setting, "0") != 0;
++        }
++        if (after_split && compact && cuda.decode_early_ffn && cuda.decode_reuse &&
++            decode_capture.scope && !decode_capture.capturing && decode_split_every > 0)
++            prefetch_after_split_pending = true;
++        else error = pf_submit();
++    } else pf.pending = -1;
