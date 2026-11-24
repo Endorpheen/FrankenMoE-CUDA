@@ -1,0 +1,74 @@
+--- a/native-kv-driver.h
++++ b/native-kv-driver.h
+@@ -4,0 +5 @@
++#include "attention-postconv-image.h"
+@@ -10 +11,3 @@
+-    struct device_buffer cache, prepare_state;
++    struct device_buffer cache, prepare_state, postconv;
++    int postconv_end;
++    bool postconv_resident;
+@@ -25 +28 @@
+-    struct device_buffer raw, projected_input, prepared_kv;
++    struct device_buffer raw, projected_input, prepared_kv, postconv_input;
+@@ -220,0 +224,43 @@
++static int nk_postconv(const struct inkling_attention_batch *batch,
++    const struct inkling_attention_projection *projection, DevicePtr input, DevicePtr output) {
++    static Module module;
++    static Function kernel;
++    struct native_kv_slot *slot = &nk.slots[batch->slot];
++    const size_t row_bytes = 2304 * sizeof(float);
++    int error = 0;
++    if (projection->rows != 2304 || !projection->postconv_host_history) return -1;
++    if (!module) error = cuda.module_load(&module, attention_postconv_cubin);
++    if (!error && !kernel) error = cuda.function_get(&kernel, module, "goose_i2_attention_postconv");
++    if (!error && !slot->postconv.address) {
++        error = reserve(&slot->postconv, 7 * row_bytes);
++        if (!error) error = nk_upload(slot->postconv.address, projection->postconv_weights, 4 * row_bytes);
++    }
++    DevicePtr weights = slot->postconv.address;
++    DevicePtr history = weights + 4 * row_bytes;
++    if (!error && !slot->postconv_resident) {
++        error = nk_upload(history, projection->postconv_host_history, 3 * row_bytes);
++    } else if (!error && slot->postconv_end != batch->first) {
++        return -1;
++    }
++    int rows = batch->count;
++    void *args[] = {&input, &weights, &history, &output, &rows};
++    if (!error) error = cuda.launch(kernel, 2304 / 128, 1, 1, 128, 1, 1, 0, NULL, args, NULL);
++    if (!error) {
++        slot->postconv_resident = true;
++        slot->postconv_end = batch->first + rows;
++    }
++    return error;
++}
++
++static int nk_postconv_restore(const struct inkling_attention_batch *batch,
++    const struct inkling_attention_projection *projection) {
++    struct native_kv_slot *slot = &nk.slots[batch->slot];
++    if (!slot->postconv_resident) return 0;
++    if (!projection->postconv_host_history || slot->postconv_end != batch->first) return -1;
++    const size_t row_bytes = 2304 * sizeof(float);
++    const int error = cuda.download(projection->postconv_host_history,
++        slot->postconv.address + 4 * row_bytes, 3 * row_bytes);
++    if (!error) slot->postconv_resident = false;
++    return error;
++}
++
+@@ -249 +295,10 @@
+-    error = nk_project_q8(out, final, projection->weights, NK_QUERY, rows, batch->count);
++    DevicePtr projected = final;
++    if (projection->postconv_weights) {
++        if (!graph) return -1;
++        error = reserve(&nk.postconv_input, target_bytes);
++        projected = nk.postconv_input.address;
++    } else if (projection->postconv_host_history) {
++        error = nk_postconv_restore(batch, projection);
++    }
++    if (!error) error = nk_project_q8(out, projected, projection->weights, NK_QUERY, rows, batch->count);
++    if (!error && projection->postconv_weights) error = nk_postconv(batch, projection, projected, final);
+@@ -372 +427,4 @@
+-        for (int i = 0; i < INKLING_VISITS; ++i) nk.slots[i].length = 0;
++        for (int i = 0; i < INKLING_VISITS; ++i) {
++            nk.slots[i].length = 0;
++            nk.slots[i].postconv_resident = false;
++        }
