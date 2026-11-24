@@ -26,12 +26,18 @@ Goose CUDA: prefetch accuracy 15000 layers: 153399 predicted hits, 206601 misses
 | text | `f8664331bd30` |
 | fills / evictions / uploaded | 95 076 / 91 641 / 181.4 GB (same as the baseline block) |
 
-## What it settles
+## What it settles, and what it does not
 
-Partial prefetching — copying only the experts that are missing, ahead of the layer —
-can cover at most **43 % of the demand**. The copies that could be hidden are
-therefore at most 0.43 × 2.232 s ≈ **0.96 s**, which is below the 1.13 s the 3500
-target needs, before counting the cost of the reserve that must hold them.
+The counter measures **demands**, that is how many of the expert ids a layer asked for
+had already been staged: 42.6-44.8 %.
+
+**Correction.** Demand coverage is not byte coverage and not time coverage. The three
+planes of a layer are not equal (`ffn_down_exps` is 210 MiB against 144 MiB for each of
+the gate and up planes), and the ids are counted per demand rather than weighted by
+plane bytes or by transfer time. Converting 43 % of demands into "0.43 × 2.232 s" was
+therefore not a measurement, and the statement that the prefetch "cannot close the
+target" is withdrawn as unsupported. The correct next step is to weight the same
+counter by plane bytes so that coverage is expressed in transfer time.
 
 Combined with EXP-1843 (a static one-layer reserve costs +19.1 % traffic and −9.2 %
 decode) and EXP-1840 (enabling the prediction in prefill moved nothing), the partial
