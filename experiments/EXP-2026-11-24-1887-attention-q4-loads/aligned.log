@@ -1,0 +1,7 @@
+Registers reference=142 candidate=131
+Active CTAs per SM reference=3 candidate=3
+keys=17 parts=2 bitwise=40960 graph_us_10_layers reference=116.395/116.395 candidate=138.144/146.325
+keys=129 parts=2 bitwise=40960 graph_us_10_layers reference=175.744/175.712 candidate=215.733/215.744
+keys=32769 parts=64 bitwise=40960 graph_us_10_layers reference=1688.480/1701.323 candidate=2104.992/2102.677
+keys=33279 parts=64 bitwise=40960 graph_us_10_layers reference=1702.261/1713.749 candidate=2126.379/2127.307
+keys=65537 parts=64 bitwise=40960 graph_us_10_layers reference=3304.480/3297.387 candidate=4117.141/4123.371

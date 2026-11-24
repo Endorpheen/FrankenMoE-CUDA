@@ -1,0 +1,5 @@
+ptxas info    : 0 bytes gmem
+ptxas info    : Compiling entry function 'goose_flash_vec_q4_packed_quad' for 'sm_89'
+ptxas info    : Function properties for goose_flash_vec_q4_packed_quad
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 131 registers, used 1 barriers, 4608 bytes smem, 408 bytes cmem[0]

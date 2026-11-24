@@ -1,0 +1,92 @@
+{
+  "experiment": "EXP-2026-11-24-1887",
+  "status": "REJECTED",
+  "scope": "CUDA graph fixture",
+  "components": [
+    "Attention",
+    "KV-cache",
+    "CUDA"
+  ],
+  "gpu": "RTX 4070",
+  "baseline": "EXP-1765 manual2 cubin, used by EXP-1880",
+  "baseline_header_sha256": "0e2eef76d4bbab0b4b39383c955705337d6ffd8056e3e3f630679d1b73286236",
+  "cubins_sha256": {
+    "control": "c219b5e90fda801708ffd35cf9cfebcc7f3b1e9205d3342873d68f6195341300",
+    "rebuilt": "97e7ca5a5224e66a3fb0926bf2463f5f28c02de0f36f97de3d76e2de4db81866",
+    "address": "97e7ca5a5224e66a3fb0926bf2463f5f28c02de0f36f97de3d76e2de4db81866",
+    "aligned": "673d27a9277174fb0ed59933af22f24a99c64d3882bb1ee393cd6bd84d9871e8"
+  },
+  "gpu_correctness": "FP32 outputs, partials and metadata exact at every length",
+  "results": [
+    {
+      "keys": 17,
+      "parts": 2,
+      "output_words": 40960,
+      "control_us": [
+        116.395,
+        116.395
+      ],
+      "aligned_us": [
+        138.144,
+        146.325
+      ],
+      "change_percent": 22.199836762747548
+    },
+    {
+      "keys": 129,
+      "parts": 2,
+      "output_words": 40960,
+      "control_us": [
+        175.744,
+        175.712
+      ],
+      "aligned_us": [
+        215.733,
+        215.744
+      ],
+      "change_percent": 22.76842620413364
+    },
+    {
+      "keys": 32769,
+      "parts": 64,
+      "output_words": 40960,
+      "control_us": [
+        1688.48,
+        1701.323
+      ],
+      "aligned_us": [
+        2104.992,
+        2102.677
+      ],
+      "change_percent": 24.127242792575252
+    },
+    {
+      "keys": 33279,
+      "parts": 64,
+      "output_words": 40960,
+      "control_us": [
+        1702.261,
+        1713.749
+      ],
+      "aligned_us": [
+        2126.379,
+        2127.307
+      ],
+      "change_percent": 24.522059361652904
+    },
+    {
+      "keys": 65537,
+      "parts": 64,
+      "output_words": 40960,
+      "control_us": [
+        3304.48,
+        3297.387
+      ],
+      "aligned_us": [
+        4117.141,
+        4123.371
+      ],
+      "change_percent": 24.820933229948405
+    }
+  ]
+}
