@@ -1,0 +1,12 @@
+--- a/probe.c
++++ b/probe.c
+@@ -245,0 +246,3 @@
++extern void i2_simd_init(int argc, char **argv);
++extern void i2_simd_scope(bool active);
++
+@@ -253,0 +257 @@
++        i2_simd_scope(true);
+@@ -257,0 +262 @@
++        i2_simd_scope(false);
+@@ -525,0 +531 @@
++    i2_simd_init(0, NULL);
