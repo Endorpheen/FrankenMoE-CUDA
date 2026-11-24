@@ -1,0 +1,100 @@
+--- a/cuda-driver.c
++++ b/cuda-driver.c
+@@ -4038,0 +4039,37 @@
++    const bool stage_all = full && cuda.expert_decode_overlap && activations.defer_waits;
++    const bool compact = stage_all && cuda.compact_moe_ids && !fg143_cpu_prefill();
++    // Both Q4_K projections consume the same packed input. The down pack
++    // can reuse it after the two matvecs and SwiGLU have completed.
++    int input_extent = (int) (width / 256), down_extent = (int) (hidden / 256);
++    int hidden_rows = (int) hidden, output_rows = (int) width;
++    int q4 = 12, down_kind = (int) plan.data[9], job_words = words;
++    uint64_t stride_up = (uint64_t) input_extent * 144;
++    uint64_t stride_down = (uint64_t) down_extent * (down_kind == 12 ? 144 : 210);
++    const size_t routed_pack = (size_t) (input_extent > down_extent ? input_extent : down_extent) * 288 * routes;
++    const size_t shared_pack = (size_t) shared_extent * 288;
++    const size_t packed_bytes = routed_pack > shared_pack ? routed_pack : shared_pack;
++    const size_t pack_space = packed_bytes + (stage_all ? shared_pack : 0);
++    const size_t middle_bytes = (size_t) hidden * routes * 4;
++    const size_t down_bytes = (size_t) width * routes * 4;
++    struct {
++        int64_t jobs[3][routes * words];
++        int64_t config[22];
++        int32_t ids[routes];
++        int64_t dense_jobs[2];
++    } packet;
++    _Static_assert(sizeof(packet) % 16 == 0, "routed graph packet alignment");
++    const size_t shared_bytes = full ? (size_t) (3 * shared_hidden + 4 * width + 2) * 4 : 0;
++    const size_t scratch_bytes = sizeof packet + pack_space + 3 * middle_bytes + down_bytes + routes * 4 + shared_bytes;
++    const int64_t * shared_glu_plan = full ? shared.data + 8 : NULL;
++    const bool shared_fused = stage_all && compact && cuda.experts.one_touch &&
++            cuda.mmvq_shared_up_gate_glu && width == 2048 && shared_hidden == 512 &&
++            (cuda.activation_reference || shared_glu_plan[0] == 15) && shared_glu_plan[1] == shared_hidden &&
++            shared_glu_plan[2] == shared_hidden && shared_glu_plan[3] == 1 &&
++            shared_glu_plan[6] == shared_hidden && shared_glu_plan[14] == shared_hidden &&
++            shared_glu_plan[10] == 4 && shared_glu_plan[18] == 4 && shared_glu_plan[22] == 0;
++
++    static int early_shared_enabled = -1;
++    if (early_shared_enabled < 0) {
++        const char * setting = getenv("GOOSE_EARLY_SHARED_FFN");
++        early_shared_enabled = setting && strcmp(setting, "1") == 0;
++    }
+@@ -4039,0 +4077,22 @@
++    const bool early_shared = early_shared_enabled && shared_fused && cuda.mmvq_dense_pack &&
++        decode_capture.scope && decode_capture.buffering && route_compact_pending.mailbox_sequence &&
++        route_compact_pending.ids_host == ids_host && cuda.routed_graph_scratch.address &&
++        cuda.routed_graph_scratch.bytes >= scratch_bytes;
++    if (early_shared) {
++        DevicePtr early_input = activation_device(input_host, output_bytes);
++        DevicePtr early_packed = cuda.routed_graph_scratch.address + sizeof packet;
++        DevicePtr early_glu = early_packed + pack_space + 3 * middle_bytes + down_bytes + routes * 4 +
++            (uint64_t) output_bytes + 2 * (uint64_t) shared_hidden * 4;
++        void * pack_args[] = {&early_input, &early_packed, &input_extent};
++        void * glu_args[] = {&dense_weights[0], &dense_weights[1], &early_packed, &early_glu, &stride_up, &input_extent};
++        const struct kernel_node_params early_kernels[] = {
++            ffn_kernel(cuda.mmvq_dense_pack, 2 * (unsigned) input_extent, 1, 128, pack_args),
++            ffn_kernel(cuda.mmvq_shared_up_gate_glu, (unsigned) shared_hidden, 1, 128, glu_args),
++        };
++        if (push_context() != 1) return -1;
++        const int launched = launch_cuda_kernels(early_kernels, 2, NULL);
++        if (finish_context() != 0 || launched) return -1;
++        static _Thread_local unsigned shared_submissions;
++        if (++shared_submissions == 1 || shared_submissions % 10000 == 0)
++            fprintf(stderr, "Goose CUDA: early shared FFN submissions=%u\n", shared_submissions);
++    }
+@@ -4043,2 +4101,0 @@
+-    const bool stage_all = full && cuda.expert_decode_overlap && activations.defer_waits;
+-    const bool compact = stage_all && cuda.compact_moe_ids && !fg143_cpu_prefill();
+@@ -4081,22 +4137,0 @@
+-    // Both Q4_K projections consume the same packed input. The down pack
+-    // can reuse it after the two matvecs and SwiGLU have completed.
+-    int input_extent = (int) (width / 256), down_extent = (int) (hidden / 256);
+-    int hidden_rows = (int) hidden, output_rows = (int) width;
+-    int q4 = 12, down_kind = (int) plan.data[9], job_words = words;
+-    uint64_t stride_up = (uint64_t) input_extent * 144;
+-    uint64_t stride_down = (uint64_t) down_extent * (down_kind == 12 ? 144 : 210);
+-    const size_t routed_pack = (size_t) (input_extent > down_extent ? input_extent : down_extent) * 288 * routes;
+-    const size_t shared_pack = (size_t) shared_extent * 288;
+-    const size_t packed_bytes = routed_pack > shared_pack ? routed_pack : shared_pack;
+-    const size_t pack_space = packed_bytes + (stage_all ? shared_pack : 0);
+-    const size_t middle_bytes = (size_t) hidden * routes * 4;
+-    const size_t down_bytes = (size_t) width * routes * 4;
+-    struct {
+-        int64_t jobs[3][routes * words];
+-        int64_t config[22];
+-        int32_t ids[routes];
+-        int64_t dense_jobs[2];
+-    } packet;
+-    _Static_assert(sizeof(packet) % 16 == 0, "routed graph packet alignment");
+-    const size_t shared_bytes = full ? (size_t) (3 * shared_hidden + 4 * width + 2) * 4 : 0;
+-    const size_t scratch_bytes = sizeof packet + pack_space + 3 * middle_bytes + down_bytes + routes * 4 + shared_bytes;
+@@ -4253,6 +4287,0 @@
+-        const bool shared_fused = stage_all && compact && cuda.experts.one_touch &&
+-            cuda.mmvq_shared_up_gate_glu && width == 2048 && shared_hidden == 512 &&
+-            plans[0][0] == 15 && plans[0][1] == shared_hidden &&
+-            plans[0][2] == shared_hidden && plans[0][3] == 1 &&
+-            plans[0][6] == shared_hidden && plans[0][14] == shared_hidden &&
+-            plans[0][10] == 4 && plans[0][18] == 4 && plans[0][22] == 0;
+@@ -4285 +4314,2 @@
+-                kernels[count++] = ffn_kernel(cuda.mmvq_shared_up_gate_glu, shared_rows, 1, 128, shared_fused_args);
++                if (!early_shared)
++                    kernels[count++] = ffn_kernel(cuda.mmvq_shared_up_gate_glu, shared_rows, 1, 128, shared_fused_args);
