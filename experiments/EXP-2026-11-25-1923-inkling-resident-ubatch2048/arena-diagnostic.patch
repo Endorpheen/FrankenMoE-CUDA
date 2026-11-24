@@ -1,0 +1,18 @@
+--- a/cuda-driver-reference.c
++++ b/cuda-driver-reference.c
+@@ -1794,0 +1795,15 @@
++    extern uint8_t fg_cuda_inkling_quants_enabled(void);
++    if (cuda.direct_wide_vectors && fg_cuda_inkling_quants_enabled()) {
++        static int calls;
++        if (calls++ < 8) {
++            const int64_t arena = cuda.activations.bytes;
++            const int64_t free_slot = fg143_activation_slot(activation_ranges(), arena, bytes);
++            fprintf(stderr, "I2 wide vector bytes=%" PRId64 " arena=%" PRId64
++                " target=%d target_bytes=%" PRId64 " active=%d reuse=%d unavailable=%d"
++                " x_full=%d y_full=%d y_start=%d slot=%" PRId64 " record=%" PRId64 "\n",
++                bytes, arena, output == activations.target, activations.target_bytes,
++                activations.active, activations.reuse, activations.unavailable,
++                activation_device(x, bytes) != 0, activation_device(y, bytes) != 0,
++                activation_device(y, 1) != 0, free_slot, fg143_activation_record_slot(activation_ranges()));
++        }
++    }
