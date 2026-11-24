@@ -1,0 +1,138 @@
+{
+  "runs": {
+    "A1": {
+      "cold": {
+        "prefill": 146.7020652669613,
+        "decode": 10.532340125543664,
+        "exact": true
+      },
+      "warm": {
+        "prefill": 176.20561814619867,
+        "decode": 10.732496967771802,
+        "exact": true
+      },
+      "states": true,
+      "fingerprints": 1086,
+      "vram_mib": 9818,
+      "rss_peak_kib": 12513960,
+      "process_swap_kib": 0,
+      "swapout_pages": 0,
+      "expert_traffic": [
+        [
+          2598,
+          11205402624
+        ],
+        [
+          1249,
+          5387046912
+        ]
+      ]
+    },
+    "B1": {
+      "cold": {
+        "prefill": 146.6439792270327,
+        "decode": 14.482874847183083,
+        "exact": true
+      },
+      "warm": {
+        "prefill": 182.68499324236316,
+        "decode": 13.509633875447536,
+        "exact": true
+      },
+      "states": true,
+      "fingerprints": 1086,
+      "vram_mib": 9818,
+      "rss_peak_kib": 12515480,
+      "process_swap_kib": 0,
+      "swapout_pages": 0,
+      "expert_traffic": [
+        [
+          2598,
+          11205402624
+        ],
+        [
+          1249,
+          5387046912
+        ]
+      ]
+    },
+    "B2": {
+      "cold": {
+        "prefill": 146.0045360385828,
+        "decode": 13.327049043156466,
+        "exact": true
+      },
+      "warm": {
+        "prefill": 183.41165557205042,
+        "decode": 14.661966643650366,
+        "exact": true
+      },
+      "states": true,
+      "fingerprints": 1086,
+      "vram_mib": 9818,
+      "rss_peak_kib": 12514592,
+      "process_swap_kib": 0,
+      "swapout_pages": 0,
+      "expert_traffic": [
+        [
+          2598,
+          11205402624
+        ],
+        [
+          1249,
+          5387046912
+        ]
+      ]
+    },
+    "A2": {
+      "cold": {
+        "prefill": 146.8641457734388,
+        "decode": 10.513076778772133,
+        "exact": true
+      },
+      "warm": {
+        "prefill": 181.99487997456015,
+        "decode": 11.116600406048617,
+        "exact": true
+      },
+      "states": true,
+      "fingerprints": 1086,
+      "vram_mib": 9811,
+      "rss_peak_kib": 12514336,
+      "process_swap_kib": 0,
+      "swapout_pages": 0,
+      "expert_traffic": [
+        [
+          2598,
+          11205402624
+        ],
+        [
+          1249,
+          5387046912
+        ]
+      ]
+    }
+  },
+  "means": {
+    "A": {
+      "cold": {
+        "prefill": 146.78310552020005,
+        "decode": 10.522708452157898
+      },
+      "warm": {
+        "prefill": 179.1002490603794,
+        "decode": 10.92454868691021
+      }
+    },
+    "B": {
+      "cold": {
+        "prefill": 146.32425763280776,
+        "decode": 13.904961945169774
+      },
+      "warm": {
+        "prefill": 183.0483244072068,
+        "decode": 14.08580025954895
+      }
+    }
+  }
+}
