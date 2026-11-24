@@ -1,0 +1,38 @@
+prefill window 6.021 s
+  kernels           3.717 s ( 61.7%)
+  memcpys           2.232 s ( 37.1%)  sum, overlaps possible
+  union             5.712 s ( 94.9%)
+  GPU idle          0.310 s (  5.1%)
+  staging HtoD     50.000 GB in 2.220 s of transfer (all HtoD 50.131 GB)
+
+top kernels by time
+  goose_flash_causal_mma                           41     479.3 ms  12.9%
+  goose_mmq_q4_dense_m128n256_pipeline            724     321.2 ms   8.6%
+  goose_gdn_mma_v32                               124     317.1 ms   8.5%
+  goose_mmq_q4_routed_m128                        329     303.1 ms   8.2%
+  goose_mmq_q4_dense_m128n256                     300     268.1 ms   7.2%
+  goose_vector_flat4                             1235     235.4 ms   6.3%
+  goose_rms_reference                             783     222.0 ms   6.0%
+  goose_mmq_q4_routed_x64                         329     186.1 ms   5.0%
+  goose_mmq_q6_dense_m128_pipeline                169     172.2 ms   4.6%
+  goose_dense_mma_reference                       165     158.4 ms   4.3%
+  goose_mmq_q6_routed_m128_pipeline                84     150.5 ms   4.0%
+  goose_mmq_q4_routed_down_m128                    80     125.6 ms   3.4%
+
+idle gaps > 50 us, attributed to the call in flight
+  call                                      s    gaps
+  cuMemcpyHtoD_v2                       0.145     556
+  cuMemcpyDtoH_v2                       0.049     328
+  cuLaunchKernel                        0.005      64
+  cuMemAlloc_v2                         0.003       8
+  cuMemSetAccess                        0.003      22
+  cuCtxSynchronize                      0.002      10
+  cuMemHostAlloc                        0.001       1
+  cuMemcpyHtoDAsync_v2                  0.001      15
+
+submission
+  cuLaunchKernel             calls    11581  host     39.7 ms
+  cuMemcpyHtoDAsync_v2       calls    80547  host    180.8 ms
+  cuMemcpyHtoD_v2            calls     1859  host   4874.6 ms
+  cuEventRecord              calls     2426  host      4.5 ms
+  cuCtxSynchronize           calls       86  host     26.7 ms
