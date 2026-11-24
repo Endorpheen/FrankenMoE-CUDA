@@ -1,0 +1,127 @@
+--- a/flash-vec-device.h
++++ b/flash-vec-device.h
+@@ -7555,0 +7556,37 @@
++static void fv_quad_store_max(uint64_t shared, float maximum, int32_t lane, int32_t warp) {
++    if (lane == 0) fg175v_sm_st_f32(shared, 1024 + warp, maximum);
++    if (warp == 0 && lane >= 4) {
++        fg175v_sm_st_f32(shared, 1024 + lane, flash_vec_gg_function_17(0));
++        fg175v_sm_st_f32(shared, 1088 + lane, 0.0f);
++    }
++}
++
++static float fv_quad_scale_values(uint64_t shared, VecFlash4_g low, VecFlash4_g high,
++                                  float maximum, float total, int32_t lane, int32_t warp) {
++    const float block_max = flash_vec_gg_function_33(fg175v_sm_f32(shared, 1024 + lane), 0);
++    const float scale = fg175v_expf(maximum - block_max);
++    const uint64_t index = (uint64_t)(warp * 256 + 4 * lane);
++    flash_vec_gg_function_41(shared, index, low, scale, 0);
++    flash_vec_gg_function_41(shared, index + 128, high, scale, 0);
++    const float warp_total = flash_vec_gg_function_27(total * scale, 0);
++    if (lane == 0) fg175v_sm_st_f32(shared, 1088 + warp, warp_total);
++    return block_max;
++}
++
++static void fv_quad_store_output(uint64_t out, uint64_t meta, uint64_t shared,
++                                 float block_max, int32_t lane, int32_t warp) {
++    const float block_total = flash_vec_gg_function_27(fg175v_sm_f32(shared, 1088 + lane), 0);
++    const uint64_t tid = (uint64_t)(warp * 32 + lane);
++    for (unsigned segment = 0; segment < 2; ++segment) {
++        const uint64_t column = tid + 128 * segment;
++        float sum = 0.0f;
++        for (unsigned w = 0; w < 4; ++w)
++            sum += fg175v_sm_f32(shared, column + 256 * w);
++        fg175v_st_f32(out, 4 * column, sum);
++    }
++    if (tid == 0) {
++        fg175v_st_f32(meta, 0, block_max);
++        fg175v_st_f32(meta, 4, block_total);
++    }
++}
++
+@@ -8987,72 +9024,14 @@
+-  t272 = ((uint64_t)(v3));
+-  t273 = ((uint64_t)(((int64_t)UINT64_C(0))));
+-  t274 = ((uint64_t)(((uint64_t)(v9))));
+-  t275 = ((uint64_t)(((uint64_t)((uint64_t)(t273) * (uint64_t)(t274)))));
+-  t276 = ((uint64_t)(((uint64_t)((uint64_t)(t272) + (uint64_t)(t275)))));
+-  t277 = ((uint64_t)(v4));
+-  t278 = ((uint64_t)(((int64_t)UINT64_C(0))));
+-  t279 = ((uint64_t)(((uint64_t)(v9))));
+-  t280 = ((uint64_t)(((uint64_t)((uint64_t)(t278) * (uint64_t)(t279)))));
+-  t281 = ((uint64_t)(((uint64_t)((uint64_t)(t277) + (uint64_t)(t280)))));
+-  t282 = v16;
+-  t283 = v17;
+-  t284 = ((float)(v14));
+-  t285 = ((float)(v15));
+-  t286 = ((int32_t)(v10));
+-  t287 = ((int32_t)(v11));
+-  t288 = ((uint64_t)(v12));
+-  flash_vec_gg_function_40(t276, t281, t282, t283, t284, t285, t286, t287, t288, base + 0);
+-  t289 = ((uint64_t)(v3));
+-  t290 = ((uint64_t)(((int64_t)UINT64_C(1024))));
+-  t291 = ((uint64_t)(((uint64_t)(v9))));
+-  t292 = ((uint64_t)(((uint64_t)((uint64_t)(t290) * (uint64_t)(t291)))));
+-  t293 = ((uint64_t)(((uint64_t)((uint64_t)(t289) + (uint64_t)(t292)))));
+-  t294 = ((uint64_t)(v4));
+-  t295 = ((uint64_t)(((int64_t)UINT64_C(8))));
+-  t296 = ((uint64_t)(((uint64_t)(v9))));
+-  t297 = ((uint64_t)(((uint64_t)((uint64_t)(t295) * (uint64_t)(t296)))));
+-  t298 = ((uint64_t)(((uint64_t)((uint64_t)(t294) + (uint64_t)(t297)))));
+-  t299 = v21;
+-  t300 = v22;
+-  t301 = ((float)(v19));
+-  t302 = ((float)(v20));
+-  t303 = ((int32_t)(v10));
+-  t304 = ((int32_t)(v11));
+-  t305 = ((uint64_t)(v12));
+-  flash_vec_gg_function_40(t293, t298, t299, t300, t301, t302, t303, t304, t305, base + 0);
+-  t306 = ((uint64_t)(v3));
+-  t307 = ((uint64_t)(((int64_t)UINT64_C(2048))));
+-  t308 = ((uint64_t)(((uint64_t)(v9))));
+-  t309 = ((uint64_t)(((uint64_t)((uint64_t)(t307) * (uint64_t)(t308)))));
+-  t310 = ((uint64_t)(((uint64_t)((uint64_t)(t306) + (uint64_t)(t309)))));
+-  t311 = ((uint64_t)(v4));
+-  t312 = ((uint64_t)(((int64_t)UINT64_C(16))));
+-  t313 = ((uint64_t)(((uint64_t)(v9))));
+-  t314 = ((uint64_t)(((uint64_t)((uint64_t)(t312) * (uint64_t)(t313)))));
+-  t315 = ((uint64_t)(((uint64_t)((uint64_t)(t311) + (uint64_t)(t314)))));
+-  t316 = v26;
+-  t317 = v27;
+-  t318 = ((float)(v24));
+-  t319 = ((float)(v25));
+-  t320 = ((int32_t)(v10));
+-  t321 = ((int32_t)(v11));
+-  t322 = ((uint64_t)(v12));
+-  flash_vec_gg_function_40(t310, t315, t316, t317, t318, t319, t320, t321, t322, base + 0);
+-  t323 = ((uint64_t)(v3));
+-  t324 = ((uint64_t)(((int64_t)UINT64_C(3072))));
+-  t325 = ((uint64_t)(((uint64_t)(v9))));
+-  t326 = ((uint64_t)(((uint64_t)((uint64_t)(t324) * (uint64_t)(t325)))));
+-  t327 = ((uint64_t)(((uint64_t)((uint64_t)(t323) + (uint64_t)(t326)))));
+-  t328 = ((uint64_t)(v4));
+-  t329 = ((uint64_t)(((int64_t)UINT64_C(24))));
+-  t330 = ((uint64_t)(((uint64_t)(v9))));
+-  t331 = ((uint64_t)(((uint64_t)((uint64_t)(t329) * (uint64_t)(t330)))));
+-  t332 = ((uint64_t)(((uint64_t)((uint64_t)(t328) + (uint64_t)(t331)))));
+-  t333 = v31;
+-  t334 = v32;
+-  t335 = ((float)(v29));
+-  t336 = ((float)(v30));
+-  t337 = ((int32_t)(v10));
+-  t338 = ((int32_t)(v11));
+-  t339 = ((uint64_t)(v12));
+-  flash_vec_gg_function_40(t327, t332, t333, t334, t335, t336, t337, t338, t339, base + 0);
++  fv_quad_store_max(v12 + 0 * 4608, v14, v10, v11);
++  fv_quad_store_max(v12 + 1 * 4608, v19, v10, v11);
++  fv_quad_store_max(v12 + 2 * 4608, v24, v10, v11);
++  fv_quad_store_max(v12 + 3 * 4608, v29, v10, v11);
++  fg175v_barrier();
++  const float maximum0 = fv_quad_scale_values(v12 + 0 * 4608, v16, v17, v14, v15, v10, v11);
++  const float maximum1 = fv_quad_scale_values(v12 + 1 * 4608, v21, v22, v19, v20, v10, v11);
++  const float maximum2 = fv_quad_scale_values(v12 + 2 * 4608, v26, v27, v24, v25, v10, v11);
++  const float maximum3 = fv_quad_scale_values(v12 + 3 * 4608, v31, v32, v29, v30, v10, v11);
++  fg175v_barrier();
++  fv_quad_store_output(v3 + (uint64_t)v9 * 0 * 1024, v4 + (uint64_t)v9 * 0 * 8, v12 + 0 * 4608, maximum0, v10, v11);
++  fv_quad_store_output(v3 + (uint64_t)v9 * 1 * 1024, v4 + (uint64_t)v9 * 1 * 8, v12 + 1 * 4608, maximum1, v10, v11);
++  fv_quad_store_output(v3 + (uint64_t)v9 * 2 * 1024, v4 + (uint64_t)v9 * 2 * 8, v12 + 2 * 4608, maximum2, v10, v11);
++  fv_quad_store_output(v3 + (uint64_t)v9 * 3 * 1024, v4 + (uint64_t)v9 * 3 * 8, v12 + 3 * 4608, maximum3, v10, v11);

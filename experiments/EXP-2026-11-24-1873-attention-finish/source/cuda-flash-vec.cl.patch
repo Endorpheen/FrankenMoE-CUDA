@@ -1,0 +1,5 @@
+--- a/cuda-flash-vec.cl
++++ b/cuda-flash-vec.cl
+@@ -92 +92 @@
+-    __local uint32_t shared[1152];
++    __local uint32_t shared[4608];
