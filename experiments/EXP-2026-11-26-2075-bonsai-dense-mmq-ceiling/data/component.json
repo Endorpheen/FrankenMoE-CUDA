@@ -1,0 +1,86 @@
+{
+  "cublas_version": 120604,
+  "cases": [
+    {
+      "tensor": "blk.0.attn_qkv.weight",
+      "width": 5120,
+      "rows": 10240,
+      "tokens": 1024,
+      "relative_l2_to_cumulative": 0.0003280802338849753,
+      "max_abs_sampled_vs_cpu": 1.5182180504780263e-05,
+      "expanded_weight_bytes": 104857600,
+      "diagnostic_kernel_ns": [
+        [
+          "bonsai_pack_half",
+          45473
+        ],
+        [
+          "bonsai_pq2_half_full_5120",
+          1586996
+        ],
+        [
+          "bonsai_pq2_expand_half",
+          224962
+        ],
+        [
+          "Kernel2",
+          1886968
+        ]
+      ]
+    },
+    {
+      "tensor": "blk.0.ffn_up.weight",
+      "width": 5120,
+      "rows": 17408,
+      "tokens": 1024,
+      "relative_l2_to_cumulative": 0.0003277954529039562,
+      "max_abs_sampled_vs_cpu": 9.452029189560562e-06,
+      "expanded_weight_bytes": 178257920,
+      "diagnostic_kernel_ns": [
+        [
+          "bonsai_pack_half",
+          64129
+        ],
+        [
+          "bonsai_pq2_half_full_5120",
+          2698977
+        ],
+        [
+          "bonsai_pq2_expand_half",
+          579015
+        ],
+        [
+          "Kernel2",
+          3225000
+        ]
+      ]
+    },
+    {
+      "tensor": "blk.0.ffn_down.weight",
+      "width": 17408,
+      "rows": 5120,
+      "tokens": 1024,
+      "relative_l2_to_cumulative": 0.0003279220836702734,
+      "max_abs_sampled_vs_cpu": 1.4060283319849987e-05,
+      "expanded_weight_bytes": 178257920,
+      "diagnostic_kernel_ns": [
+        [
+          "bonsai_pack_half",
+          211746
+        ],
+        [
+          "bonsai_pq2_half_unpack_half2_17408",
+          2695554
+        ],
+        [
+          "bonsai_pq2_expand_half",
+          423333
+        ],
+        [
+          "ampere_s16816gemm_fp16_256x128_ldg8_stages_32x3_tn",
+          3354569
+        ]
+      ]
+    }
+  ]
+}

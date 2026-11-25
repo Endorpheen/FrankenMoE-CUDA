@@ -942,6 +942,14 @@ release still needs the architecture regression gates.
   Both up projections are 5–6% slower with pack included.
   [Source, diagnostics and reproduction](EXP-2026-11-26-2074-bonsai-q8-int4-digits/README.md).
 
+### EXP-2026-11-26-2075 — Dense FP16 GEMM diagnostic for Bonsai PQ2
+
+- **Status:** Rejected below the component performance threshold.
+- **Evidence:** Sampled CPU matches on RTX 4070. Dense cuBLAS
+  FFN down is 3.35 ms without expansion and 3.99 ms with pack
+  and expansion, versus 2.91 ms on EXP-2073 including pack.
+  [Source, diagnostics and reproduction](EXP-2026-11-26-2075-bonsai-dense-mmq-ceiling/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
