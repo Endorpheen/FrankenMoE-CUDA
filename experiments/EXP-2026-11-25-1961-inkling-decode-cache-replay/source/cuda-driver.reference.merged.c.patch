@@ -1,0 +1,65 @@
+--- a/cuda-driver.reference.merged.c
++++ b/cuda-driver.reference.merged.c
+@@ -3058,6 +3058,34 @@
+     return 0;
+ }
+ 
++static _Thread_local struct {
++    bool active, started;
++    int position, visit;
++} i2_expert_trace;
++
++static void i2_trace_experts(uint64_t tensor, sl_i64 active) {
++    enum { experts = 128, layers = 24 };
++    struct expert_cache *cache = &cuda.experts;
++    if (!i2_expert_trace.active || cache->groups.len != 9 || active.len != experts ||
++        cache->layers.len != 4 * layers || cache->groups.data[3] != experts) return;
++    int layer = 0;
++    while (layer < layers && (uint64_t)cache->layers.data[4 * layer + 1] != tensor) ++layer;
++    if (layer == layers) return;
++    const int64_t slots = cache->groups.data[5];
++    if (!i2_expert_trace.started) {
++        const int32_t *keys = cache->state + cache->groups.data[7];
++        fprintf(stderr, "I2 trace initial slots=%" PRId64, slots);
++        for (int64_t i = 0; i < slots; ++i) fprintf(stderr, " %d", keys[i]);
++        fputc('\n', stderr);
++        i2_expert_trace.started = true;
++    }
++    uint64_t bits[2] = {0};
++    for (int i = 0; i < experts; ++i)
++        if (active.data[i] >= 0) bits[i / 64] |= UINT64_C(1) << (i % 64);
++    fprintf(stderr, "I2 trace route token=%d visit=%d layer=%d mask=%016" PRIx64 "%016" PRIx64 "\n",
++            i2_expert_trace.position, i2_expert_trace.visit++, layer, bits[1], bits[0]);
++}
++
+ static void i2_warm_visit(uint64_t tensor, sl_i64 active);
+ static const int64_t *i2_warm_bucket_ranks(void);
+ extern int64_t i2_ec_prepare_buckets(sl_i64 groups, sl_i64 layers, uint64_t words32, sl_i64 words64,
+@@ -3067,7 +3095,10 @@
+ static int64_t prepare_expert_offsets(uint64_t tensor, int64_t bytes, sl_i64 active, sl_i64 offsets,
+                                       bool stage_all, bool compact, bool next_plane) {
+     struct expert_cache * cache = &cuda.experts;
+-    if (cuda_inkling_quants) i2_warm_visit(tensor, active);
++    if (cuda_inkling_quants) {
++        i2_trace_experts(tensor, active);
++        i2_warm_visit(tensor, active);
++    }
+     const uint64_t state = (uint64_t) (uintptr_t) cache->state;
+     const int64_t *ranks = cuda_inkling_quants ? i2_warm_bucket_ranks() : NULL;
+     int64_t status;
+@@ -4202,6 +4233,15 @@
+ void fg_cuda_inkling_expert_phase(bool prefill, int position, int count) {
+     static int enabled = -1;
+     if (!cuda_inkling_quants) return;
++    static int trace_enabled = -1;
++    if (trace_enabled < 0) {
++        const char *trace = getenv("I2_EXPERT_ROUTE_TRACE");
++        trace_enabled = trace && strcmp(trace, "1") == 0;
++    }
++    if (prefill && position == 0) i2_expert_trace.started = false;
++    i2_expert_trace.active = trace_enabled && !prefill && count == 1;
++    i2_expert_trace.position = position;
++    i2_expert_trace.visit = 0;
+     inkling_decode_overlap = !prefill && count == 1 &&
+         fg_standalone_option_enabled("I2_DECODE_EXPERT_HIT_OVERLAP");
+     if (inkling_overlap_groups && getenv("I2_DECODE_EXPERT_HIT_OVERLAP_LOG")) {
