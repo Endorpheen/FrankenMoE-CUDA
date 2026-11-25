@@ -1,0 +1,20 @@
+--- a/inkling-matrix-driver.h
++++ b/inkling-matrix-driver.h
+@@ -15 +15 @@
+-    static Function kernels[4];
++    static Function kernels[5];
+@@ -19 +19,6 @@
+-    const int index = xs_blocks ? 3 : kind == 8 ? 0 : kind == 20 ? 1 : 2;
++    const char *wide = getenv("I2_Q8_TILE8");
++    const bool q8_wide = kind == 8 && words == 2 && count >= 16 && wide && strcmp(wide, "1") == 0;
++    const bool q8_pairs = kind == 8 && words == 2 && width % 64 == 0 &&
++        count == 1 &&
++        fg_standalone_option_enabled("I2_Q8_PAIRED_BLOCKS");
++    const int index = q8_pairs ? 4 : xs_blocks ? 3 : kind == 8 ? 0 : kind == 20 ? 1 : 2;
+@@ -21 +26 @@
+-        "goose_i2_matrix_q8_0", "goose_i2_matrix_iq4_nl", "goose_i2_matrix_iq4_xs", "goose_i2_matrix_iq4_xs_blocks"
++        "goose_i2_matrix_q8_0", "goose_i2_matrix_iq4_nl", "goose_i2_matrix_iq4_xs", "goose_i2_matrix_iq4_xs_blocks", "goose_i2_matrix_q8_pair1"
+@@ -29,2 +34 @@
+-    const char *wide = getenv("I2_Q8_TILE8");
+-    if (kind == 8 && words == 2 && count >= 16 && wide && strcmp(wide, "1") == 0) tile = 8;
++    if (q8_wide) tile = 8;

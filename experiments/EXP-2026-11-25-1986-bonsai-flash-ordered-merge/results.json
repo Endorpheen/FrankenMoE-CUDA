@@ -1,0 +1,108 @@
+{
+  "profile": "4097/16",
+  "context": 36864,
+  "ubatch": 1024,
+  "request_sha256": "3e19644b64428f8e5333c51082b695ee755695643191b313a52e790d1f61c280",
+  "arms": {
+    "control": {
+      "prefill_ms": 15860.248,
+      "decode_ms": 972.839,
+      "workspace_bytes": 1720400640
+    },
+    "ordered": {
+      "prefill_ms": 15826.239,
+      "decode_ms": 972.797,
+      "workspace_bytes": 1720400640
+    }
+  },
+  "native_output_bytes_equal": true,
+  "ids_match_prism": true,
+  "output": [
+    {
+      "step": 0,
+      "token": 11846,
+      "logit": 19.361496
+    },
+    {
+      "step": 1,
+      "token": 13,
+      "logit": 19.5620117
+    },
+    {
+      "step": 2,
+      "token": 58737,
+      "logit": 15.057806
+    },
+    {
+      "step": 3,
+      "token": 1092,
+      "logit": 18.5416832
+    },
+    {
+      "step": 4,
+      "token": 488,
+      "logit": 15.5356989
+    },
+    {
+      "step": 5,
+      "token": 1000,
+      "logit": 17.0775223
+    },
+    {
+      "step": 6,
+      "token": 3222,
+      "logit": 17.9598351
+    },
+    {
+      "step": 7,
+      "token": 6570,
+      "logit": 17.2562923
+    },
+    {
+      "step": 8,
+      "token": 11,
+      "logit": 19.0341969
+    },
+    {
+      "step": 9,
+      "token": 279,
+      "logit": 16.7745285
+    },
+    {
+      "step": 10,
+      "token": 4530,
+      "logit": 15.2448301
+    },
+    {
+      "step": 11,
+      "token": 310,
+      "logit": 17.8254013
+    },
+    {
+      "step": 12,
+      "token": 12904,
+      "logit": 13.9986973
+    },
+    {
+      "step": 13,
+      "token": 11,
+      "logit": 18.674881
+    },
+    {
+      "step": 14,
+      "token": 321,
+      "logit": 16.6596832
+    },
+    {
+      "step": 15,
+      "token": 799,
+      "logit": 17.4050751
+    }
+  ],
+  "artifacts_sha256": {
+    "bonsai-ordered-merge": "fe313387031f0bbd3eaa34fb8edeb6f405e2c4a43da0be956f15c9a1de37a95a",
+    "flash-ordered-merge.cubin": "f9875a5edaae0ffa98bf304d8acce2b7c01c67a6a7bcf89c106d6bf408e2b2fe",
+    "frozen-goose.ptx": "42e1f5c0885a3bbab3656e3bba2dc6ef8b998a4581d365b6c1e48fc842f789d7",
+    "attribution.nsys-rep": "00739b86e456d7726e78d5ccb8fbc6b7bf1c7b0fa5925422d7af067c61c12913"
+  }
+}

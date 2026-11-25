@@ -1,0 +1,17 @@
+ptxas info    : Compiling entry function 'bonsai_verify_pair_tail3' for 'sm_89'
+ptxas info    : Function properties for bonsai_verify_pair_tail3
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 153 registers, used 0 barriers, 396 bytes cmem[0]
+ptxas info    : Compiling entry function 'bonsai_verify_pair_tail2' for 'sm_89'
+ptxas info    : Function properties for bonsai_verify_pair_tail2
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 120 registers, used 0 barriers, 396 bytes cmem[0]
+ptxas info    : Compiling entry function 'bonsai_verify_four_tail2' for 'sm_89'
+ptxas info    : Function properties for bonsai_verify_four_tail2
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 203 registers, used 0 barriers, 396 bytes cmem[0]
+--
+ptxas info    : Compiling entry function 'bonsai_verify_q4_four_gqa2' for 'sm_89'
+ptxas info    : Function properties for bonsai_verify_q4_four_gqa2
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 201 registers, used 0 barriers, 396 bytes cmem[0]

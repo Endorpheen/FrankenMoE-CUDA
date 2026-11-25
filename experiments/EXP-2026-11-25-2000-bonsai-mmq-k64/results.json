@@ -1,0 +1,159 @@
+{
+  "profile": "4097/16",
+  "context": 36864,
+  "ubatch": 1024,
+  "kv": "q4_0/q4_0",
+  "arms": {
+    "a1": {
+      "prefill_ms": 6527.527,
+      "decode_ms": 973.529,
+      "prefill_toks_s": 627.6496443446347,
+      "decode_toks_s": 16.435052268602167,
+      "workspace_bytes": 1720400640
+    },
+    "b1": {
+      "prefill_ms": 5050.943,
+      "decode_ms": 974.463,
+      "prefill_toks_s": 811.1356631821028,
+      "decode_toks_s": 16.41929965529733,
+      "workspace_bytes": 1720400640
+    },
+    "b2": {
+      "prefill_ms": 5051.897,
+      "decode_ms": 974.492,
+      "prefill_toks_s": 810.982488360313,
+      "decode_toks_s": 16.418811031799134,
+      "workspace_bytes": 1720400640
+    },
+    "a2": {
+      "prefill_ms": 6533.983,
+      "decode_ms": 973.56,
+      "prefill_toks_s": 627.029485690428,
+      "decode_toks_s": 16.434528945314106,
+      "workspace_bytes": 1720400640
+    }
+  },
+  "means": {
+    "prefill_ms": {
+      "k128": 6530.755,
+      "k64": 5051.42
+    },
+    "prefill_toks_s": {
+      "k128": 627.3395650175314,
+      "k64": 811.059075771208
+    },
+    "decode_toks_s": {
+      "k128": 16.43479060695814,
+      "k64": 16.41905534354823
+    }
+  },
+  "short_budget_gap_ms": 4232.02,
+  "all_native_output_bytes_equal": true,
+  "ids_match_prism": true,
+  "output": [
+    {
+      "step": 0,
+      "token": 11846,
+      "logit": 19.6576195
+    },
+    {
+      "step": 1,
+      "token": 13,
+      "logit": 19.5944595
+    },
+    {
+      "step": 2,
+      "token": 58737,
+      "logit": 14.7398405
+    },
+    {
+      "step": 3,
+      "token": 1092,
+      "logit": 18.4565201
+    },
+    {
+      "step": 4,
+      "token": 488,
+      "logit": 16.1919174
+    },
+    {
+      "step": 5,
+      "token": 1000,
+      "logit": 17.4311848
+    },
+    {
+      "step": 6,
+      "token": 3222,
+      "logit": 18.0111523
+    },
+    {
+      "step": 7,
+      "token": 6570,
+      "logit": 17.136488
+    },
+    {
+      "step": 8,
+      "token": 11,
+      "logit": 19.0046978
+    },
+    {
+      "step": 9,
+      "token": 279,
+      "logit": 16.3880234
+    },
+    {
+      "step": 10,
+      "token": 4530,
+      "logit": 14.8468933
+    },
+    {
+      "step": 11,
+      "token": 310,
+      "logit": 17.6717834
+    },
+    {
+      "step": 12,
+      "token": 12904,
+      "logit": 14.2589397
+    },
+    {
+      "step": 13,
+      "token": 11,
+      "logit": 18.6806011
+    },
+    {
+      "step": 14,
+      "token": 321,
+      "logit": 16.6043358
+    },
+    {
+      "step": 15,
+      "token": 799,
+      "logit": 17.5472565
+    }
+  ],
+  "small_273_8": {
+    "small-control": {
+      "prefill_ms": 708.853,
+      "decode_ms": 448.47,
+      "prefill_toks_s": 385.12921578945145,
+      "decode_toks_s": 17.838428434454922,
+      "workspace_bytes": 1112077568
+    },
+    "small-k64": {
+      "prefill_ms": 586.476,
+      "decode_ms": 447.921,
+      "prefill_toks_s": 465.4921940539766,
+      "decode_toks_s": 17.860292328334683,
+      "workspace_bytes": 1112077568
+    }
+  },
+  "small_output_exact": true,
+  "default_profile_output_exact": true,
+  "artifacts_sha256": {
+    "bonsai-mmq-k64": "b135cec3440d1ecba846574ae5f1499212919e17510fe232ad0795e3662e5321",
+    "mmq-k64.cubin": "2b8e197fbbbcddb5e9a4180de292f27b4fa10d6167bf7a62198069c992d86138",
+    "frozen-goose.ptx": "42e1f5c0885a3bbab3656e3bba2dc6ef8b998a4581d365b6c1e48fc842f789d7",
+    "profile.nsys-rep": "1b8bbd42f29d6eb8ce529b30f42066eb73fb6b793c01983ce8cc73fedd0c0a32"
+  }
+}

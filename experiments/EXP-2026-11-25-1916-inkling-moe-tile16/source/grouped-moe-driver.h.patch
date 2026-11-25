@@ -1,0 +1,35 @@
+--- a/grouped-moe-driver.h
++++ b/grouped-moe-driver.h
+@@ -5,2 +5,5 @@
+-    static Function pack, multiply[2];
+-    const int entry = kind == 23 ? 0 : 1;
++    static Function pack, multiply[4];
++    const bool wide = fg_standalone_option_enabled("I2_MOE_TILE16");
++    const int entry = (kind == 23 ? 0 : 1) + (wide ? 2 : 0);
++    const char *const kernels[] = {"goose_i2_xs_mmq", "goose_i2_nl_mmq",
++        "goose_i2_xs_mmq16", "goose_i2_nl_mmq16"};
+@@ -10 +13,20 @@
+-    const int64_t tile_count = fg143_mmq_tiles(jobs, 3, 8, (sl_i64){tiles, 3ll * count});
++    int64_t tile_count = fg143_mmq_tiles(jobs, 3, 8, (sl_i64){tiles, 3ll * count});
++    if (wide && tile_count > 0) {
++        int64_t write = 0;
++        for (int64_t read = 0; read < tile_count; ++read) {
++            const int64_t first = tiles[3 * read];
++            int64_t size = tiles[3 * read + 1];
++            const int64_t plane = tiles[3 * read + 2];
++            if (size == 8 && read + 1 < tile_count &&
++                    tiles[3 * (read + 1)] == first + size &&
++                    tiles[3 * (read + 1) + 2] == plane) {
++                size += tiles[3 * (read + 1) + 1];
++                ++read;
++            }
++            tiles[3 * write] = first;
++            tiles[3 * write + 1] = size;
++            tiles[3 * write + 2] = plane;
++            ++write;
++        }
++        tile_count = write;
++    }
+@@ -16 +38 @@
+-        entry == 0 ? "goose_i2_xs_mmq" : "goose_i2_nl_mmq");
++        kernels[entry]);

@@ -1,0 +1,76 @@
+{
+  "workload": {
+    "prompt_tokens": 1024,
+    "generated_tokens": 64,
+    "decode_intervals": 63,
+    "context": 2048,
+    "batch": 1024,
+    "ubatch": 512,
+    "kv": "q4_0/q4_0",
+    "gpu": "RTX 4070",
+    "request_sha256": "627f9cf2c6fb7364cc2b1ac647f826f0178ec4e1ac89d161e61dc62eb2d3477e"
+  },
+  "runs": {
+    "upstream": {
+      "cold": {
+        "prefill_tokens_per_s": 296.2143573710513,
+        "decode_tokens_per_s": 13.886911167413107,
+        "prefill_ms": 3456.956,
+        "decode_ms": 4536.646,
+        "client_seconds": 7.99495,
+        "rss_peak_kib": 15010040,
+        "process_swap_kib": 0,
+        "system_swapout_pages": 0
+      },
+      "warm": {
+        "prefill_tokens_per_s": 294.6005530089678,
+        "decode_tokens_per_s": 14.435741245524921,
+        "prefill_ms": 3475.893,
+        "decode_ms": 4364.168,
+        "client_seconds": 7.84121,
+        "rss_peak_kib": 15010040,
+        "process_swap_kib": 0,
+        "system_swapout_pages": 0
+      },
+      "board_peak_mib": 11173,
+      "goose_cache_uploads": []
+    },
+    "goose": {
+      "cold": {
+        "prefill_tokens_per_s": 151.97234535342776,
+        "decode_tokens_per_s": 13.922984079193656,
+        "prefill_ms": 6738.068019010825,
+        "decode_ms": 4524.892051995266,
+        "client_seconds": 11.657135,
+        "rss_peak_kib": 12899856,
+        "process_swap_kib": 0,
+        "system_swapout_pages": 0
+      },
+      "warm": {
+        "prefill_tokens_per_s": 166.96110654587557,
+        "decode_tokens_per_s": 13.975345723026768,
+        "prefill_ms": 6133.164909988409,
+        "decode_ms": 4507.938569004182,
+        "client_seconds": 10.85509,
+        "rss_peak_kib": 12916088,
+        "process_swap_kib": 0,
+        "system_swapout_pages": 0
+      },
+      "board_peak_mib": 9835,
+      "goose_cache_uploads": [
+        [
+          5079,
+          21906173952
+        ],
+        [
+          4489,
+          19361452032
+        ]
+      ]
+    }
+  },
+  "ids_equal": {
+    "cold": true,
+    "warm": true
+  }
+}

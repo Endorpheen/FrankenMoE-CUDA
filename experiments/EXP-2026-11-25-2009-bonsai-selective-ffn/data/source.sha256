@@ -1,0 +1,16 @@
+91c99c27f07859620f10dad0757d376be5a1610c99ef85e5a4437927436be87f  build/bonsai-ik-source-audit/delta-net.cu
+a3418384c8b8ac0ba029a73509d444d4e53726e678d2cd678ba78731a7a97a7e  build/bonsai-ik-source-audit/fattn-new-mma.cu
+a4f4e136c8074ce90497f07e8e31cb1d3ede8a43ae820a4c5d09809e9c590fe3  build/bonsai-ik-source-audit/fattn.cu
+935135e625da976e08dc98186a64c31eb7a1567cc0129ee4cbfb04d93ae5af1b  build/bonsai-ik-source-audit/ggml-cuda.cu
+a99d07c207683fc2e14007438af00aa1f98e5d080f7ac9d715dddcc2cf9f92f8  build/bonsai-ik-source-audit/iqk_mmvq.cu
+5c523180f8f74796c1607544e9b04f4ef1828a1ed5bf26dd5b2d64cfa7ebf315  build/bonsai-ik-source-audit/mmq.cu
+8b0c2736ea09f9900f1d6007e09b6b97e0a593ec72769aced4af4f2569c7e7e2  build/bonsai-ik-source-audit/mmvq.cu
+e6a2c8a750fde485d0cfa7d51a9958b05a430dd4acb2477660bc13958a9ed4f4  build/bonsai-ik-source-audit/ssm-conv.cu
+96125f8de0e729d30e96cfbd397359001baf8e6cbe53c749f501959631dead5c  build/bonsai-ik-source-audit/fattn-mma-f16-interface.cuh
+9643cd5de68000bad2bdae4dd28cf9a725b33836876cff0aaede590b19deddcb  build/bonsai-ik-source-audit/fattn-mma-f16.cuh
+ca67d6210e11458e84440f8862cc16306dfb07ba61893a7705801c153d5a77bd  build/bonsai-ik-source-audit/mmq.cuh
+e1c44f22eb907e45873af3d72d68749431b850e523959ac873235e8883c2cc0e  build/bonsai-ik-source-audit/vecdotq.cuh
+890524da4f1925fe4b585cf97c2043caa93d38d9a6d3d4e6e88085e85dfa8764  build/bonsai-ik-source-audit/build_qwen35.cpp
+b2585a484a82159204654751c088d390d225d4325ad05202871aecb4c29cc2ec  build/bonsai-ik-source-audit/llama-build-context.cpp
+41099cca912816195c7296dfe53ba2235eaaca1084e823183fdc4fe66a9d5e22  build/bonsai-ik-source-audit/llama-delta-net.cpp
+f7f86b04fd9efa6e144646c6afc8373aa37b3c1a95f0965b7399743c58c66818  build/bonsai-ik-source-audit/llama-model.cpp

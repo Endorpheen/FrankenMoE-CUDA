@@ -1,0 +1,44 @@
+--- a/numeric.goose
++++ b/numeric.goose
+@@ -596,3 +596,41 @@
+     }
+     return if ok { 0 } else { -1 };
+ }
++
++export fn inkling_row_major_i2_postconv_batch(input: const f32[:], weights: const f32[:],
++    history: f32[:], out: f32[:], width: i64, from_channel: i64, to_channel: i64) -> i64 {
++    if width < 1 || input.len % width != 0 || input.len != out.len ||
++        input.len < width || weights.len != width * 4 || history.len != width * 3 ||
++        from_channel < 0 || to_channel > width || to_channel <= from_channel {
++        return -1;
++    }
++    let rows = input.len / width;
++    let inverse: f32 = 1.0 / i2_sqrt(5.0);
++    for t in rows {
++        for offset in to_channel - from_channel {
++            let i = from_channel + offset;
++            let k = i * 4;
++            let current = input[t * width + i];
++            var value: f32 = 0.0;
++            for tap in 3 {
++                let prior = t + tap - 3;
++                let sample = if prior < 0 { history[i * 3 + t + tap] } else { input[prior * width + i] };
++                value += sample * weights[k + tap];
++            }
++            value += current * weights[k + 3];
++            out[t * width + i] = (current + value) * inverse;
++        }
++    }
++    for offset in to_channel - from_channel {
++        let i = from_channel + offset;
++        for tap in 3 {
++            let prior = rows + tap - 3;
++            if prior < 0 {
++                history[i * 3 + tap] = history[i * 3 + rows + tap];
++            } else {
++                history[i * 3 + tap] = input[prior * width + i];
++            }
++        }
++    }
++    return to_channel - from_channel;
++}

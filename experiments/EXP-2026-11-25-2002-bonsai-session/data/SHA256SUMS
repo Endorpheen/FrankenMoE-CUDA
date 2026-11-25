@@ -1,0 +1,7 @@
+4641e7c786ee89aa5227137398bfa919ea53eec262894aa5e9eef7fbd20c2ef9  build/bonsai-mmq-k64-2000-default/mmq-k64-backend.c
+0a42cbf13e99232661c4d9a3d3b2fc9c718438c9f5f3879f2a9d0ee0a7079b48  build/bonsai-mmq-k64-2000-default/ffn-tail.o
+2b8e197fbbbcddb5e9a4180de292f27b4fa10d6167bf7a62198069c992d86138  build/bonsai-mmq-k64-2000-default/mmq-k64.cubin
+42e1f5c0885a3bbab3656e3bba2dc6ef8b998a4581d365b6c1e48fc842f789d7  build/bonsai-mmq-k64-2000-default/frozen-goose.ptx
+b135cec3440d1ecba846574ae5f1499212919e17510fe232ad0795e3662e5321  build/bonsai-mmq-k64-2000-default/bonsai-mmq-k64
+b6d111621c56a4d38357fd9a8f5c2fedcb2d4acc79870ec7b9c68b94597cc328  build/bonsai-session-2002/bonsai-session.o
+851435bed095fc0be1d5c532d8f1b10aad3330e886ee800e2e9eccef9facfb38  build/bonsai-session-2002/check-session

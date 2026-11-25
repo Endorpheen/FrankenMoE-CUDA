@@ -1,0 +1,14 @@
+Error when processing events: Source ID=
+Type=ErrorInformation (18)
+ Error information:
+ ProcessEventsError (4005)
+  Properties:
+   ErrorText (100)=/dvs/p4/build/sw/devtools/Agora/Rel/QuadD_Main/QuadD/Common/Core/FlatData.h(1205): Throw in function void FlatData::Object<Class, Allocator>::SetData(StringType&, const char*, size_t, bool) [with StringType = short unsigned int [2]; Class = QuadDAnalysis::FlatData::EventInternal; BlockAllocator = QuadDAnalysis::NodeAllocator; size_t = long unsigned int]
+Dynamic exception type: boost::wrapexcept<QuadDCommon::OutOfMemoryException>
+std::exception::what: OutOfMemoryException
+[QuadDCommon::tag_message*] = String of size 6 (offset 65530) exceeds the max size 65535.
+
+Installed CUDA driver version (13.0) is not supported by this build of Nsight Systems. CUDA trace will be collected using libraries for driver version 12.6
+Number of NVTX events collected: 	88379.
+Number of CUDA events collected: 	1109021.
+Number of CUPTI events produced: 	1322841, CUPTI buffers: 50.

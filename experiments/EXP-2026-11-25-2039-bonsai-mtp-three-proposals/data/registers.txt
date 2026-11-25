@@ -1,0 +1,17 @@
+ptxas info    : Compiling entry function 'bonsai_conv_verify_prefix_four' for 'sm_89'
+ptxas info    : Function properties for bonsai_conv_verify_prefix_four
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 34 registers, used 0 barriers, 408 bytes cmem[0]
+ptxas info    : Compiling entry function 'bonsai_verify_q4_four_gqa2' for 'sm_89'
+ptxas info    : Function properties for bonsai_verify_q4_four_gqa2
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 201 registers, used 0 barriers, 396 bytes cmem[0]
+--
+ptxas info    : Compiling entry function 'bonsai_pq2_mvq_q8_four_2' for 'sm_89'
+ptxas info    : Function properties for bonsai_pq2_mvq_q8_four_2
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 64 registers, used 0 barriers, 384 bytes cmem[0]
+ptxas info    : Compiling entry function 'bonsai_pq2_mvq_q8_four_1' for 'sm_89'
+ptxas info    : Function properties for bonsai_pq2_mvq_q8_four_1
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 40 registers, used 0 barriers, 384 bytes cmem[0]

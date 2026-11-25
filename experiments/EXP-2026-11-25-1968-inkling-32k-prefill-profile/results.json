@@ -1,0 +1,176 @@
+{
+  "raw_directory": "build/inkling-apex-gate/prefill-profile-1968/trace-6464",
+  "argv": [
+    "/home/end0/.codex/worktrees/hybrid-exp1768-slru/FrankenMoE-CUDA/build/inkling-apex-gate/prefill-profile-1968/frankenmoe-infer",
+    "--expert-cache-mib",
+    "6464",
+    "--ctx-size",
+    "36864",
+    "--batch-size",
+    "4096",
+    "--ubatch-size",
+    "4096",
+    "--cache-type-k",
+    "q4_0",
+    "--cache-type-v",
+    "q4_0",
+    "--threads",
+    "8",
+    "--threads-batch",
+    "16",
+    "--cpu-mask",
+    "0f0f",
+    "--cpu-mask-batch",
+    "ffff",
+    "--cpu-strict",
+    "1",
+    "--cpu-strict-batch",
+    "1",
+    "/home/end0/AI/LocalAI/Models/Inkling-2-Mini-AD-IQ4_XS.gguf",
+    "--serve",
+    "9101"
+  ],
+  "env": [
+    "GOOSE_CUDA_WIDE_VECTOR=1",
+    "I2_PARALLEL_PREP=1",
+    "I2_Q8_TILE8=1",
+    "I2_FLASH_PARALLEL_SCORES=1",
+    "I2_RESIDENT_VECTOR_CONSTANTS=1",
+    "I2_DECODE_EXPERT_HIT_OVERLAP=1",
+    "I2_SHARED_ATTENTION_INPUTS=1",
+    "I2_SAMPLER_SCAN=1",
+    "I2_MOE_TILE16=1",
+    "I2_PREFILL_TEAM=1",
+    "GOOSE_CUDA_ACTIVATION_MIB=736",
+    "I2_DECODE_EXPERT_HIT_OVERLAP_LOG=1",
+    "I2_WARM_ROUTE_LOG=1",
+    "I2_SPECIALIZED_MATVEC=1",
+    "I2_RESIDENT_PLAN=1",
+    "I2_RESIDENT_ROUTERS=1",
+    "GOOSE_CUDA_DEFER_WAITS=1",
+    "GOOSE_CUDA_DEFER_MATRIX_WAITS=1",
+    "GOOSE_CUDA_ARENA_REUSE=1",
+    "GOOSE_ACTIVATION_LIFETIMES=1",
+    "I2_JOIN_ATTENTION_MOE=1",
+    "I2_DECODE_LFU=1",
+    "I2_PARALLEL_LOGITS=1"
+  ],
+  "additional_nsys_env": [
+    "NSYS_NVTX_PROFILER_REGISTER_ONLY=0"
+  ],
+  "unset_environment": [
+    "I2_CHECK_STATE"
+  ],
+  "nsys_argv": [
+    "--capture-range=nvtx",
+    "--nvtx-capture=Inkling late prefill",
+    "--capture-range-end=stop",
+    "--kill=none",
+    "--trace=cuda,nvtx",
+    "--sample=none",
+    "--cpuctxsw=none",
+    "--stats=false"
+  ],
+  "binary_sha256": "c0cf1e951ded4a684a253b8200d67bec7ed23794efe937b39f61af32a7983a64",
+  "timings": {
+    "cache_n": 0,
+    "prompt_n": 32768,
+    "prompt_ms": 126795.64222798217,
+    "prompt_per_token_ms": 3.869495917601995,
+    "prompt_per_second": 258.43159452658637,
+    "predicted_n": 512,
+    "predicted_ms": 24332.174712995766,
+    "predicted_per_token_ms": 47.616780260265685,
+    "predicted_per_second": 21.00099995283512
+  },
+  "exact_output_ids": 512,
+  "peak_board_mib": 11517,
+  "resources": [
+    "VmHWM:\t14770972 kB",
+    "VmRSS:\t13979308 kB",
+    "VmSwap:\t       0 kB"
+  ],
+  "swapout_samples": {
+    "swap-after.txt": 14548320,
+    "swap-before-request.txt": 14548320,
+    "swap-before.txt": 14548320
+  },
+  "q8_kernel_shapes": [
+    {
+      "phase": "Inkling attention",
+      "grid_x": 768,
+      "grid_y": 512,
+      "block_x": 128,
+      "calls": 96,
+      "kernel_ms": 2108.328157
+    },
+    {
+      "phase": "Inkling attention",
+      "grid_x": 576,
+      "grid_y": 512,
+      "block_x": 128,
+      "calls": 192,
+      "kernel_ms": 1279.50278
+    },
+    {
+      "phase": "Inkling attention",
+      "grid_x": 256,
+      "grid_y": 512,
+      "block_x": 128,
+      "calls": 96,
+      "kernel_ms": 701.069591
+    },
+    {
+      "phase": "Inkling attention",
+      "grid_x": 96,
+      "grid_y": 512,
+      "block_x": 128,
+      "calls": 48,
+      "kernel_ms": 135.812538
+    },
+    {
+      "phase": "Inkling MoE",
+      "grid_x": 576,
+      "grid_y": 512,
+      "block_x": 128,
+      "calls": 48,
+      "kernel_ms": 82.64896499999999
+    },
+    {
+      "phase": "Inkling attention",
+      "grid_x": 16,
+      "grid_y": 512,
+      "block_x": 128,
+      "calls": 72,
+      "kernel_ms": 78.760121
+    },
+    {
+      "phase": "Inkling MoE",
+      "grid_x": 16,
+      "grid_y": 512,
+      "block_x": 128,
+      "calls": 24,
+      "kernel_ms": 26.484952999999997
+    },
+    {
+      "phase": "Inkling attention",
+      "grid_x": 6,
+      "grid_y": 512,
+      "block_x": 128,
+      "calls": 48,
+      "kernel_ms": 8.378952
+    },
+    {
+      "phase": "Inkling attention",
+      "grid_x": 8,
+      "grid_y": 512,
+      "block_x": 128,
+      "calls": 16,
+      "kernel_ms": 3.778985
+    }
+  ],
+  "failed_profile_paths": [
+    "build/inkling-apex-gate/prefill-profile-1968/trace",
+    "build/inkling-apex-gate/prefill-profile-1968/host-phases"
+  ]
+}

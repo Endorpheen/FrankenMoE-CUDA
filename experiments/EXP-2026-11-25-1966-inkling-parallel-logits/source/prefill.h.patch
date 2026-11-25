@@ -1,0 +1,42 @@
+--- a/prefill.h
++++ b/prefill.h
+@@ -113,6 +113,7 @@
+     sl_f32 postconv_weights;
+     float *postconv_history;
+     int postconv_rows;
++    float *logits;
+ };
+ 
+ extern int64_t inkling_row_major_i2_postconv_batch(sl_f32 input, sl_f32 weights,
+@@ -120,6 +121,13 @@
+ 
+ void fg_i2_prefill_partition(uint64_t address, int64_t begin, int64_t end) {
+     const struct i2_prefill_work *work = (const void *)(uintptr_t)address;
++    if (work->logits) {
++        float *values = work->logits + begin;
++        const int64_t count = end - begin;
++        assert(I2_CALL(i2_text_logits)(vec(values, count), count, 30.0f) == count);
++        for (int64_t i = 0; i < count; ++i) assert(isfinite(values[i]));
++        return;
++    }
+     struct decoder *d = work->decoder;
+     struct prefill_token *tokens = work->tokens;
+     struct prefill_workspace *scratch = work->scratch;
+@@ -388,7 +396,7 @@
+     const char *team_setting = getenv("I2_PREFILL_TEAM");
+     if (tasks > 1 && (!team_setting || strcmp(team_setting, "0") != 0)) {
+         (void)use_cached_history();
+-        if (prefill_team_open(&team, tasks)) workers = &team;
++        if (prefill_team_open(&team, tasks, true)) workers = &team;
+     }
+     for (int i = 0; i < logical; ++i) {
+         prefill_layer(d, tokens, scratch, count, begin, d->visits + i * 4, workers);
+@@ -399,7 +407,7 @@
+     }
+     if (need_logits) {
+         struct prefill_token *last = tokens + count - 1;
+-        read_token_logits(d, begin + count - 1, last->current, last->blocks, last->count);
++        read_token_logits(d, begin + count - 1, last->current, last->blocks, last->count, false);
+     }
+     prefill_direct_output = NULL;
+     prefill_direct_output_size = 0;

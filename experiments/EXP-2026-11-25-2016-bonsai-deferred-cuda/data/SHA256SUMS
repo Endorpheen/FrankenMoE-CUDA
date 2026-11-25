@@ -1,0 +1,4 @@
+739221fcb84cc52e91b817a465a598b5b82ce41da483c83f1a614e8b96299016  build/checkpoint-inkling-exp1969-before-bonsai/frankenmoe-infer
+1087dd754bd08381ea5b003fa1fef791ac5dd7fde16b97c941a0d80256a73cc9  build/bonsai-ffn-q8-prefill-2014-default/frankenmoe-infer
+5951a239c747e872bd6a0abf98d30e548beff42a91becc149ae8c133cc5d1bb0  build/bonsai-ffn-q8-prefill-2014-default/pq2-int8.cubin
+81fb6961d977fc443fb9d3c9b2fbada96897e9c7cbfe354297310a3ccf8919c8  build/bonsai-lazy-cuda-2016/frankenmoe-infer

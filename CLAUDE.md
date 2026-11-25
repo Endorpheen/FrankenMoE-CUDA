@@ -305,6 +305,41 @@ The compiler agent owns implementation. Do not change Fried Goose or
 interfere with that agent while maintaining this registry. Continue the
 main Apex optimization and preserve the working runtime and its tests.
 
+## Mandatory release gate
+
+Run the [Release Gate](docs/RELEASE-GATE.md) before publishing any FrankenMoE
+package. Register each OS × backend × model combination in the shared release
+matrix and run its applicable checks against the actual candidate archives.
+Fix real build, missing-module, dependency and correctness failures before
+publication. Report PASS, FAIL, NOT TESTED and NOT APPLICABLE separately.
+Unavailable native GPU hardware permits a qualified release with an explicit
+untested status. Wine is not native CUDA evidence. Publish the generated
+report and checksums with the archives. Extend the same gate for new models
+and Vulkan.
+
+## Optimization registry maintenance
+
+Search the existing [optimization registry](experiments/EXPERIMENTS.md)
+before writing a new optimization or kernel. Match the operation, tensor
+layout, GPU, model, arithmetic contract, and measured conditions. Consult
+both accepted and rejected experiments before adapting a prior approach.
+
+On completion, update the existing entry or add one entry per distinct
+method in that registry. Record the method name, EXP ID, exact source
+commit SHA, source paths and artifact hashes, mechanism, reason for the
+verdict, measured before/after prefill, decode, peak VRAM and RAM, and
+the correctness checks and known numeric differences. Specify GPU,
+shape, quantization, architecture and benchmark conditions, and link to
+raw evidence and reproduction. Mark unmeasured fields explicitly.
+Use accepted, experimental, or rejected status with the verified scope.
+Keep possible reuse separate from performance confirmed for that case.
+Do not duplicate an existing entry or count an isolated kernel gain as
+a model-level improvement.
+
+## Deferred Vulkan backend
+
+See the [Vulkan backend roadmap](docs/roadmap/VULKAN-BACKEND.md). Keep CUDA optimization as the priority. Start Vulkan implementation only after Igor says `«Начинай Vulkan»`.
+
 ## Communication with Igor
 
 Do not use Markdown blockquotes (`>`) in messages to Igor: his interface renders

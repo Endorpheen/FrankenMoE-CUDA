@@ -1,0 +1,116 @@
+[
+  {
+    "tensor": "blk.0.attn_qkv.weight",
+    "width": 5120,
+    "rows": 10240,
+    "query_tokens": 1024,
+    "output_bytes_equal": true,
+    "ctas_sampled": 160,
+    "phase_median_fraction": {
+      "issue_input_copies": 0.08340310675766839,
+      "unpack_weights": 0.5266885272327751,
+      "wait_and_barrier": 0.008736003069794954,
+      "matrix_load_mma_and_barrier": 0.3807059089391076
+    },
+    "phase_weighted_fraction": {
+      "issue_input_copies": 0.08354158316154657,
+      "unpack_weights": 0.5274606096901954,
+      "wait_and_barrier": 0.008780399395655029,
+      "matrix_load_mma_and_barrier": 0.38021740775260304
+    },
+    "gpu_ms": {
+      "baseline": 3.1830719709396362,
+      "instrumented": 3.2363359928131104
+    },
+    "samples_ms": {
+      "baseline": [
+        3.2080960273742676,
+        3.180255889892578,
+        3.1787519454956055,
+        3.1858880519866943
+      ],
+      "instrumented": [
+        3.2440319061279297,
+        3.234816074371338,
+        3.2358078956604004,
+        3.2368640899658203
+      ]
+    }
+  },
+  {
+    "tensor": "blk.0.ffn_up.weight",
+    "width": 5120,
+    "rows": 17408,
+    "query_tokens": 1024,
+    "output_bytes_equal": true,
+    "ctas_sampled": 272,
+    "phase_median_fraction": {
+      "issue_input_copies": 0.08298126354347996,
+      "unpack_weights": 0.5251493622723853,
+      "wait_and_barrier": 0.008680798436660652,
+      "matrix_load_mma_and_barrier": 0.3837953244111632
+    },
+    "phase_weighted_fraction": {
+      "issue_input_copies": 0.08305231525040908,
+      "unpack_weights": 0.5241005109364332,
+      "wait_and_barrier": 0.008729396017535387,
+      "matrix_load_mma_and_barrier": 0.38411777779562234
+    },
+    "gpu_ms": {
+      "baseline": 5.382656097412109,
+      "instrumented": 5.488080024719238
+    },
+    "samples_ms": {
+      "baseline": [
+        5.592319965362549,
+        5.381120204925537,
+        5.384191989898682,
+        5.380320072174072
+      ],
+      "instrumented": [
+        5.487616062164307,
+        5.488639831542969,
+        5.4832000732421875,
+        5.48854398727417
+      ]
+    }
+  },
+  {
+    "tensor": "blk.0.ffn_down.weight",
+    "width": 17408,
+    "rows": 5120,
+    "query_tokens": 1024,
+    "output_bytes_equal": true,
+    "ctas_sampled": 80,
+    "phase_median_fraction": {
+      "issue_input_copies": 0.08266110654164949,
+      "unpack_weights": 0.5317060072786639,
+      "wait_and_barrier": 0.008818251613874992,
+      "matrix_load_mma_and_barrier": 0.37614838832505804
+    },
+    "phase_weighted_fraction": {
+      "issue_input_copies": 0.08304821667144564,
+      "unpack_weights": 0.5315397530060746,
+      "wait_and_barrier": 0.00880824744214333,
+      "matrix_load_mma_and_barrier": 0.37660378288033647
+    },
+    "gpu_ms": {
+      "baseline": 5.457024097442627,
+      "instrumented": 5.525903940200806
+    },
+    "samples_ms": {
+      "baseline": [
+        5.4726080894470215,
+        5.4527997970581055,
+        5.457920074462891,
+        5.456128120422363
+      ],
+      "instrumented": [
+        5.519743919372559,
+        5.528575897216797,
+        5.5232319831848145,
+        5.528672218322754
+      ]
+    }
+  }
+]

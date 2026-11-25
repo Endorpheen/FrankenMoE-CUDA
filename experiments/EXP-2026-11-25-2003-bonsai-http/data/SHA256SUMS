@@ -1,0 +1,7 @@
+05e925b3adf837c8d9682f6f6ac1bf6abc3fff2a3e28bf47d3343be75425e088  build/bonsai-http-2003-link/frankenmoe-infer
+fb851d873c97b63773dd039c58ff6fcb3524a33750cf0e7e05528bf5feb180f9  build/bonsai-http-2003-link/bonsai-goose.o
+157012ba18a7eae8527623e34adc4fc11fc4804306a4424065d5c13ac3904ca7  build/bonsai-http-2003-link/model-host.o
+41fba8f5dcbc7ac4f79a67c7faa83748a7ccf3b0597af95f202a0ec060c2dc1d  build/bonsai-http-2003-link/frozen-model-host.o
+38eb3b7a72f976c7959347e42dffc907ce60d2f0c2f8d0a5e9870d75e1f5f478  build/checkpoint-inkling-exp1969-before-bonsai/libfranken-inference.a
+2b8e197fbbbcddb5e9a4180de292f27b4fa10d6167bf7a62198069c992d86138  build/bonsai-mmq-k64-2000-default/mmq-k64.cubin
+42e1f5c0885a3bbab3656e3bba2dc6ef8b998a4581d365b6c1e48fc842f789d7  build/bonsai-mmq-k64-2000-default/frozen-goose.ptx

@@ -1,0 +1,8 @@
+--- a/inkling-matrix-driver.h
++++ b/inkling-matrix-driver.h
+@@ -13 +13 @@
+-                            int kind, int rows, int count, int words) {
++                            int kind, int rows, int count, int words, DevicePtr job_address) {
+@@ -34 +34 @@
+-        void *args[] = {&weight, &matrix_input, &matrix_output, &cuda.jobs.address,
++        void *args[] = {&weight, &matrix_input, &matrix_output, &job_address,

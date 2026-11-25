@@ -1,0 +1,167 @@
+{
+  "order": [
+    "B1",
+    "A1",
+    "A2",
+    "B2"
+  ],
+  "runs": {
+    "B1": {
+      "cold": {
+        "prefill": 163.60946970275654,
+        "decode": 13.847024912245178,
+        "client": 11.23841,
+        "exact": true
+      },
+      "warm": {
+        "prefill": 180.70644809137323,
+        "decode": 13.920130685811824,
+        "client": 10.406213,
+        "exact": true
+      },
+      "state_match": true,
+      "fingerprints": 2302,
+      "expert_traffic": [
+        [
+          5079,
+          21906173952
+        ],
+        [
+          4489,
+          19361452032
+        ]
+      ],
+      "peak_vram_mib": 9845,
+      "rss_peak_kib": 12915256,
+      "swap_kib": 0,
+      "swapout_pages": 0
+    },
+    "A1": {
+      "cold": {
+        "prefill": 152.22422281959393,
+        "decode": 13.851502651071886,
+        "client": 11.69493,
+        "exact": true
+      },
+      "warm": {
+        "prefill": 165.96024559050505,
+        "decode": 13.861951071826086,
+        "client": 10.924548,
+        "exact": true
+      },
+      "state_match": true,
+      "fingerprints": 2302,
+      "expert_traffic": [
+        [
+          5079,
+          21906173952
+        ],
+        [
+          4489,
+          19361452032
+        ]
+      ],
+      "peak_vram_mib": 9837,
+      "rss_peak_kib": 12915352,
+      "swap_kib": 0,
+      "swapout_pages": 0
+    },
+    "A2": {
+      "cold": {
+        "prefill": 153.55137260655906,
+        "decode": 13.875351968877855,
+        "client": 11.615646,
+        "exact": true
+      },
+      "warm": {
+        "prefill": 165.2949719378399,
+        "decode": 13.723226506481687,
+        "client": 11.004435,
+        "exact": true
+      },
+      "state_match": true,
+      "fingerprints": 2302,
+      "expert_traffic": [
+        [
+          5079,
+          21906173952
+        ],
+        [
+          4489,
+          19361452032
+        ]
+      ],
+      "peak_vram_mib": 9837,
+      "rss_peak_kib": 12914924,
+      "swap_kib": 0,
+      "swapout_pages": 0
+    },
+    "B2": {
+      "cold": {
+        "prefill": 162.10574699177897,
+        "decode": 13.860810879948554,
+        "client": 11.261456,
+        "exact": true
+      },
+      "warm": {
+        "prefill": 180.84465525490938,
+        "decode": 13.862411465977559,
+        "client": 10.414113,
+        "exact": true
+      },
+      "state_match": true,
+      "fingerprints": 2302,
+      "expert_traffic": [
+        [
+          5079,
+          21906173952
+        ],
+        [
+          4489,
+          19361452032
+        ]
+      ],
+      "peak_vram_mib": 9837,
+      "rss_peak_kib": 12915556,
+      "swap_kib": 0,
+      "swapout_pages": 0
+    }
+  },
+  "mean": {
+    "A": {
+      "cold": {
+        "prefill": 152.8877977130765,
+        "decode": 13.86342730997487,
+        "client": 11.655287999999999
+      },
+      "warm": {
+        "prefill": 165.62760876417246,
+        "decode": 13.792588789153886,
+        "client": 10.964491500000001
+      }
+    },
+    "B": {
+      "cold": {
+        "prefill": 162.85760834726776,
+        "decode": 13.853917896096867,
+        "client": 11.249933
+      },
+      "warm": {
+        "prefill": 180.7755516731413,
+        "decode": 13.891271075894691,
+        "client": 10.410163
+      }
+    }
+  },
+  "conditions": {
+    "model": "Inkling-2-Mini AD-IQ4_XS",
+    "hardware": "RTX 4070",
+    "context": 2048,
+    "prompt": 1024,
+    "generated": 64,
+    "batch": 1024,
+    "ubatch": 512,
+    "kv": "q4_0/q4_0",
+    "activation_mib": 384
+  }
+}

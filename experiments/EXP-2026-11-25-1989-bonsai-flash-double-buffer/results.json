@@ -1,0 +1,119 @@
+{
+  "verdict": "INCONCLUSIVE",
+  "component_bit_exact": true,
+  "short": {
+    "prompt_tokens": 1025,
+    "generated": 16,
+    "context": 36864,
+    "ubatch": 1024,
+    "cache": "q4_0/q4_0",
+    "output_bytes_equal": true,
+    "arms": {
+      "single": {
+        "prefill_ms": 4054.569,
+        "decode_ms": 964.306,
+        "workspace_bytes": 1720400640
+      },
+      "double": {
+        "prefill_ms": 3827.824,
+        "decode_ms": 965.375,
+        "workspace_bytes": 1720400640
+      }
+    },
+    "output": [
+      {
+        "step": 0,
+        "token": 11,
+        "logit": 20.0705318
+      },
+      {
+        "step": 1,
+        "token": 279,
+        "logit": 15.0278759
+      },
+      {
+        "step": 2,
+        "token": 4530,
+        "logit": 14.61693
+      },
+      {
+        "step": 3,
+        "token": 314,
+        "logit": 17.4041195
+      },
+      {
+        "step": 4,
+        "token": 12904,
+        "logit": 14.8065758
+      },
+      {
+        "step": 5,
+        "token": 11,
+        "logit": 18.0149918
+      },
+      {
+        "step": 6,
+        "token": 321,
+        "logit": 19.5616608
+      },
+      {
+        "step": 7,
+        "token": 799,
+        "logit": 20.2890034
+      },
+      {
+        "step": 8,
+        "token": 21254,
+        "logit": 20.5410709
+      },
+      {
+        "step": 9,
+        "token": 421,
+        "logit": 19.1998138
+      },
+      {
+        "step": 10,
+        "token": 1000,
+        "logit": 19.7224007
+      },
+      {
+        "step": 11,
+        "token": 8381,
+        "logit": 21.6731453
+      },
+      {
+        "step": 12,
+        "token": 678,
+        "logit": 19.658205
+      },
+      {
+        "step": 13,
+        "token": 15673,
+        "logit": 20.6571674
+      },
+      {
+        "step": 14,
+        "token": 13,
+        "logit": 20.0415554
+      },
+      {
+        "step": 15,
+        "token": 198,
+        "logit": 17.3865204
+      }
+    ]
+  },
+  "profile": {
+    "prompt_tokens": 4097,
+    "generated": 16,
+    "mode": "single_buffer",
+    "flash_ns": 211856091,
+    "flash_share": 0.013674690932067747,
+    "raw_trace_sha256": "bd84abbfcad779e6a76e331abc2640ff88744b8e70f84d1d3060b64e74035523"
+  },
+  "artifacts_sha256": {
+    "bonsai-flash-double": "5efe2763992a843b36329db73c10b174c0ea164a0efbe45379b406fd2bdab56c",
+    "flash-double.cubin": "7529a63292c130340f4f3a6f0d4afe4cf5d355f60f6eb17c63372e934aaf5545",
+    "frozen-goose.ptx": "42e1f5c0885a3bbab3656e3bba2dc6ef8b998a4581d365b6c1e48fc842f789d7"
+  }
+}

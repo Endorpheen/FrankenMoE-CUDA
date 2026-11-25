@@ -1,0 +1,70 @@
+--- backend.c
++++ backend.c
+@@ -19,7 +19,7 @@
+ enum kernel {
+     NORM, ROTATE, MATRIX, ADD, DECAY, CONV, GDN, SPLIT, ROPE, Q4, TILES, GATE,
+     EMBED, SWIGLU, MERGE, GDN_BATCH, ROPE_PHASES, ROPE_APPLY,
+-    EMBED_BATCH, CONV_BATCH, PACK_HALF, MMQ, FLASH_TILE_F32, FLASH_MERGE_F32, FLASH_TILE_STAGED, FLASH_STAGE_KV, KERNEL_COUNT
++    EMBED_BATCH, CONV_BATCH, PACK_HALF, MMQ, FLASH_TILE_F32, FLASH_MERGE_F32, FLASH_TILE_STAGED, FLASH_STAGE_KV, FLASH_FOUR, FLASH_FOUR_MERGE, KERNEL_COUNT
+ };
+ 
+ typedef struct {
+@@ -31,7 +31,7 @@
+     int64_t bound[LAYERS * 15], states[LAYERS * 2], globals[3], b[24];
+     CUdeviceptr token_ids, phases, packed, packed_source;
+     size_t partial_capacity;
+-    int use_flash_f32, stage_kv;
++    int use_flash_f32, stage_kv, flash_four;
+     CUdeviceptr stage_k, stage_v;
+     unsigned stage_capacity_chunks;
+     unsigned context, position, ubatch, count, wave;
+@@ -85,23 +85,25 @@
+ static int flash_f32(model *m, CUdeviceptr q, CUdeviceptr k, CUdeviceptr v, CUdeviceptr dst) {
+     unsigned count = m->count, keys = m->position + count, first = m->position + 1;
+     unsigned tiles = (keys+127)/128;
+-    const size_t group_bytes = (size_t)tiles * 16 * 258 * sizeof(float);
+-    const unsigned wave = (unsigned)(m->partial_capacity / group_bytes);
+-    if (wave == 0) return 1;
+-    const unsigned groups = 4*((count+1)/2);
+     unsigned chunks = (keys+31)/32;
+     const int staged = m->stage_kv && chunks <= m->stage_capacity_chunks;
++    const int four = staged && m->flash_four && (size_t)tiles * 32 * 258 * sizeof(float) <= m->partial_capacity;
++    const unsigned width = four ? 4 : 2;
++    const size_t group_bytes = (size_t)tiles * 8 * width * 258 * sizeof(float);
++    const unsigned wave = (unsigned)(m->partial_capacity / group_bytes);
++    if (wave == 0) return 1;
++    const unsigned groups = 4*((count+width-1)/width);
+     if (staged && launch(m, FLASH_STAGE_KV, chunks, 4, 1, 128,
+         (void *[]){&k,&v,&m->stage_k,&m->stage_v,&keys,&chunks})) return -1;
+     for (unsigned start = 0; start < groups; start += wave) {
+         const unsigned remaining = groups - start;
+         const unsigned active = remaining < wave ? remaining : wave;
+         const int tile_rc = staged
+-            ? launch(m, FLASH_TILE_STAGED, active, tiles, 1, 128,
++            ? launch(m, four ? FLASH_FOUR : FLASH_TILE_STAGED, active, tiles, 1, 128,
+                 (void *[]){&q,&m->stage_k,&m->stage_v,&m->partial,&count,&keys,&first,&tiles,&start,&chunks})
+             : launch(m, FLASH_TILE_F32, active, tiles, 1, 128,
+                 (void *[]){&q,&k,&v,&m->partial,&count,&keys,&first,&tiles,&start});
+-        if (tile_rc || launch(m, FLASH_MERGE_F32, active*12, 1, 1, 32,
++        if (tile_rc || launch(m, four ? FLASH_FOUR_MERGE : FLASH_MERGE_F32, active*6*width, 1, 1, 32,
+             (void *[]){&m->partial,&dst,&count,&first,&tiles,&start})) return -1;
+     }
+     return 0;
+@@ -360,6 +362,9 @@
+     m->use_flash_f32 = flag && strcmp(flag, "1") == 0;
+     const char *stage = getenv("BONSAI_FLASH_REUSE");
+     m->stage_kv = m->use_flash_f32 && stage && strcmp(stage, "1") == 0;
++    const char *group = getenv("BONSAI_FLASH_FOUR");
++    m->flash_four = m->stage_kv && group && strcmp(group, "1") == 0;
++    if (m->flash_four) fputs("Flash group: four tokens\n", stderr);
+     fprintf(stderr, "Prefill attention: %s\n", !m->use_flash_f32 ? "tiled Q4" :
+         m->stage_kv ? "staged Bonsai FP32 Flash" : "direct Bonsai FP32 Flash");
+     CUdevice device;
+@@ -383,6 +388,7 @@
+         "goose_rope_phases", "goose_rope_apply", "bonsai_embed_batch", "bonsai_conv_batch",
+         "bonsai_pack_half", "bonsai_pq2_mmq", "bonsai_flash_f32_tile", "bonsai_flash_f32_merge",
+         "bonsai_flash_staged_tile", "bonsai_flash_stage_kv",
++        "bonsai_flash_four", "bonsai_flash_four_merge",
+     };
+     if (check(cuInit(0), "driver") || check(cuDeviceGet(&device, 0), "device") ||
+         check(cuCtxCreate(&m->cuda, 0, device), "context") ||

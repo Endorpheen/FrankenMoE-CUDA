@@ -1,0 +1,13 @@
+ptxas info    : 0 bytes gmem
+ptxas info    : Compiling entry function 'i2_q8_packed8' for 'sm_89'
+ptxas info    : Function properties for i2_q8_packed8
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 40 registers, used 0 barriers, 396 bytes cmem[0]
+ptxas info    : Compiling entry function 'i2_q8_packed4' for 'sm_89'
+ptxas info    : Function properties for i2_q8_packed4
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 40 registers, used 0 barriers, 396 bytes cmem[0]
+ptxas info    : Compiling entry function 'i2_pack_q8_input8' for 'sm_89'
+ptxas info    : Function properties for i2_pack_q8_input8
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 30 registers, used 0 barriers, 380 bytes cmem[0]

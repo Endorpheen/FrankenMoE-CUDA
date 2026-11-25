@@ -1,0 +1,28 @@
+--- a/inkling-matrix.goose
++++ b/inkling-matrix.goose
+@@ -128,0 +129,25 @@
++
++export fn i2_matrix_xs_blocks(weights: u64, input: u64, output: u64, blocks: i64, lane: u64) {
++    var sum: f32 = 0.0;
++    let lane_byte = lane & 15;
++    let shift = 4 * (lane >> 4);
++    for tile in blocks {
++        let at = weights + (tile as u64) * 136;
++        let scale = load_half(at);
++        let high_bits = load_word(at + 2);
++        let low01 = load_word(at + 4);
++        let low23 = load_word(at + 6);
++        for sub in 8 {
++            let low_bits = if sub < 4 { low01 } else { low23 };
++            let low = (low_bits >> (4 * (sub & 3))) & 15;
++            let high = (high_bits >> (2 * sub)) & 3;
++            let adjusted = scale * (((low + 16 * high) as i32 - 32) as f32);
++            let packed = load_byte(at + 8 + (sub as u64) * 16 + lane_byte);
++            let value = adjusted * iq4_code((packed >> shift) & 15);
++            let position = 4 * ((tile as u64) * 256 + (sub as u64) * 32 + lane);
++            sum = multiply_add(value, load(input + position), sum);
++        }
++    }
++    sum = reduce_lane(sum);
++    if lane == 0 { store(output, sum); }
++}

@@ -1,0 +1,26 @@
+{
+  "identical_text_sections": 176,
+  "changed_text_sections": [
+    ".text.nk_execute"
+  ],
+  "added": [],
+  "removed": [],
+  "apex_hot_sections": {
+    ".text.launch_matrix": {
+      "old": "264fec7be0a86926843f6d88d211d72894db5b0306d2decb9ce284e3ca18a30b",
+      "new": "264fec7be0a86926843f6d88d211d72894db5b0306d2decb9ce284e3ca18a30b"
+    },
+    ".text.fg_cuda_plane": {
+      "old": "4badf2b3ea8760a62f73c035146b1da6c321ad8432edf266ac7bf130f15cc4b4",
+      "new": "4badf2b3ea8760a62f73c035146b1da6c321ad8432edf266ac7bf130f15cc4b4"
+    },
+    ".text.fg_cuda_expert_batch": {
+      "old": "6a6b6309ee6414f3143450a2ec768dd7aa2330cf2c4696cd4bda774a9f9a9ba7",
+      "new": "6a6b6309ee6414f3143450a2ec768dd7aa2330cf2c4696cd4bda774a9f9a9ba7"
+    },
+    ".text.fg_cuda_routed_graph": {
+      "old": "682eb646a1767c9a97ed5be8fc12c518d8e7a04df15e543919aaee52c990c725",
+      "new": "682eb646a1767c9a97ed5be8fc12c518d8e7a04df15e543919aaee52c990c725"
+    }
+  }
+}

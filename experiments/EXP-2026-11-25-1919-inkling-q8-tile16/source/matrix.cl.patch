@@ -1,0 +1,54 @@
+--- a/matrix.cl
++++ b/matrix.cl
+@@ -115,0 +116,51 @@
++
++__kernel void goose_i2_matrix_q8_0_tile16(__global const uint8_t *weights,
++    __global const uint8_t *input, __global uint8_t *output, __global const uint64_t *jobs,
++    uint64_t row_stride, int32_t width, int32_t rows, int32_t job_base) {
++    uint32_t x, y, thread;
++    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(x));
++    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(y));
++    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
++    const uint32_t row = 4 * x + (thread >> 5);
++    if (row >= (uint32_t)rows) {
++        return;
++    }
++    __global const uint64_t *job = jobs + 2 * ((uint64_t)job_base + 16 * y);
++    const uint64_t w = (uint64_t)weights + row * row_stride;
++    const uint64_t in = (uint64_t)input;
++    const uint64_t out = (uint64_t)output + 4 * (uint64_t)row;
++    i2_matrix_sixteen_g(w,
++        in + job[0],
++        in + job[2],
++        in + job[4],
++        in + job[6],
++        in + job[8],
++        in + job[10],
++        in + job[12],
++        in + job[14],
++        in + job[16],
++        in + job[18],
++        in + job[20],
++        in + job[22],
++        in + job[24],
++        in + job[26],
++        in + job[28],
++        in + job[30],
++        out + job[1],
++        out + job[3],
++        out + job[5],
++        out + job[7],
++        out + job[9],
++        out + job[11],
++        out + job[13],
++        out + job[15],
++        out + job[17],
++        out + job[19],
++        out + job[21],
++        out + job[23],
++        out + job[25],
++        out + job[27],
++        out + job[29],
++        out + job[31],
++        width / 32, thread & 31);
++}

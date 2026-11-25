@@ -1,0 +1,75 @@
+--- a/inkling-matrix.goose
++++ b/inkling-matrix.goose
+@@ -153,0 +154,72 @@
++
++export fn i2_q8_pair1(weights: u64, input0: u64, output0: u64, pairs: i64,
++    lane: u64) {
++    var accum0: f32 = 0.0;
++    for pair in pairs {
++        let address = weights + (pair as u64) * 68;
++        let position = (pair as u64) * 256 + lane * 4;
++        let first = load_half(address) * (load_signed_byte(address + 2 + lane) as f32);
++        let second = load_half(address + 34) * (load_signed_byte(address + 36 + lane) as f32);
++        accum0 = multiply_add(first, load(input0 + position), accum0);
++        accum0 = multiply_add(second, load(input0 + position + 128), accum0);
++    }
++    accum0 = reduce_lane(accum0);
++    if lane == 0 {
++        store(output0, accum0);
++    }
++}
++
++export fn i2_q8_pair8(weights: u64, input0: u64, input1: u64, input2: u64,
++    input3: u64, input4: u64, input5: u64, input6: u64,
++    input7: u64, output0: u64, output1: u64, output2: u64,
++    output3: u64, output4: u64, output5: u64, output6: u64,
++    output7: u64, pairs: i64, lane: u64) {
++    var accum0: f32 = 0.0;
++    var accum1: f32 = 0.0;
++    var accum2: f32 = 0.0;
++    var accum3: f32 = 0.0;
++    var accum4: f32 = 0.0;
++    var accum5: f32 = 0.0;
++    var accum6: f32 = 0.0;
++    var accum7: f32 = 0.0;
++    for pair in pairs {
++        let address = weights + (pair as u64) * 68;
++        let position = (pair as u64) * 256 + lane * 4;
++        let first = load_half(address) * (load_signed_byte(address + 2 + lane) as f32);
++        accum0 = multiply_add(first, load(input0 + position), accum0);
++        accum1 = multiply_add(first, load(input1 + position), accum1);
++        accum2 = multiply_add(first, load(input2 + position), accum2);
++        accum3 = multiply_add(first, load(input3 + position), accum3);
++        accum4 = multiply_add(first, load(input4 + position), accum4);
++        accum5 = multiply_add(first, load(input5 + position), accum5);
++        accum6 = multiply_add(first, load(input6 + position), accum6);
++        accum7 = multiply_add(first, load(input7 + position), accum7);
++        let second = load_half(address + 34) * (load_signed_byte(address + 36 + lane) as f32);
++        accum0 = multiply_add(second, load(input0 + position + 128), accum0);
++        accum1 = multiply_add(second, load(input1 + position + 128), accum1);
++        accum2 = multiply_add(second, load(input2 + position + 128), accum2);
++        accum3 = multiply_add(second, load(input3 + position + 128), accum3);
++        accum4 = multiply_add(second, load(input4 + position + 128), accum4);
++        accum5 = multiply_add(second, load(input5 + position + 128), accum5);
++        accum6 = multiply_add(second, load(input6 + position + 128), accum6);
++        accum7 = multiply_add(second, load(input7 + position + 128), accum7);
++    }
++    accum0 = reduce_lane(accum0);
++    accum1 = reduce_lane(accum1);
++    accum2 = reduce_lane(accum2);
++    accum3 = reduce_lane(accum3);
++    accum4 = reduce_lane(accum4);
++    accum5 = reduce_lane(accum5);
++    accum6 = reduce_lane(accum6);
++    accum7 = reduce_lane(accum7);
++    if lane == 0 {
++        store(output0, accum0);
++        store(output1, accum1);
++        store(output2, accum2);
++        store(output3, accum3);
++        store(output4, accum4);
++        store(output5, accum5);
++        store(output6, accum6);
++        store(output7, accum7);
++    }
++}

@@ -1,0 +1,213 @@
+ptxas info    : 0 bytes gmem
+ptxas info    : Compiling entry function 'bonsai_mmq_reuse_64x256_w16' for 'sm_89'
+ptxas info    : Function properties for bonsai_mmq_reuse_64x256_w16
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 64 registers, used 1 barriers, 46080 bytes smem, 388 bytes cmem[0], 8 bytes cmem[2]
+ptxas info    : Compiling entry function 'bonsai_mmq_reuse_32x256_w8' for 'sm_89'
+ptxas info    : Function properties for bonsai_mmq_reuse_32x256_w8
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 64 registers, used 1 barriers, 41472 bytes smem, 388 bytes cmem[0], 8 bytes cmem[2]
+ptxas info    : Compiling entry function 'bonsai_mmq_reuse_64x256_w8' for 'sm_89'
+ptxas info    : Function properties for bonsai_mmq_reuse_64x256_w8
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 96 registers, used 1 barriers, 46080 bytes smem, 388 bytes cmem[0], 8 bytes cmem[2]
+ptxas info    : Compiling entry function 'bonsai_mmq_reuse_64x192_w8' for 'sm_89'
+ptxas info    : Function properties for bonsai_mmq_reuse_64x192_w8
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 70 registers, used 1 barriers, 36864 bytes smem, 388 bytes cmem[0], 8 bytes cmem[2]
+ptxas info    : Compiling entry function 'bonsai_pq2_matvec_rows4' for 'sm_89'
+ptxas info    : Function properties for bonsai_pq2_matvec_rows4
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 40 registers, used 0 barriers, 384 bytes cmem[0]
+ptxas info    : Compiling entry function 'bonsai_pq2_matvec_rows2' for 'sm_89'
+ptxas info    : Function properties for bonsai_pq2_matvec_rows2
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 37 registers, used 0 barriers, 384 bytes cmem[0]
+ptxas info    : Compiling entry function 'bonsai_decode_gqa3' for 'sm_89'
+ptxas info    : Function properties for bonsai_decode_gqa3
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 80 registers, used 0 barriers, 396 bytes cmem[0]
+ptxas info    : Compiling entry function 'bonsai_decode_gqa2' for 'sm_89'
+ptxas info    : Function properties for bonsai_decode_gqa2
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 64 registers, used 0 barriers, 396 bytes cmem[0]
+ptxas info    : Compiling entry function 'bonsai_decode_gqa1' for 'sm_89'
+ptxas info    : Function properties for bonsai_decode_gqa1
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 40 registers, used 0 barriers, 396 bytes cmem[0]
+ptxas info    : Compiling entry function 'bonsai_pq2_mmq_128x128_k64' for 'sm_89'
+ptxas info    : Function properties for bonsai_pq2_mmq_128x128_k64
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 94 registers, used 1 barriers, 36864 bytes smem, 388 bytes cmem[0]
+ptxas info    : Compiling entry function 'bonsai_pq2_mmq_128x64_k64' for 'sm_89'
+ptxas info    : Function properties for bonsai_pq2_mmq_128x64_k64
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 55 registers, used 1 barriers, 27648 bytes smem, 388 bytes cmem[0]
+ptxas info    : Compiling entry function 'bonsai_pq2_mmq_64x128_k64' for 'sm_89'
+ptxas info    : Function properties for bonsai_pq2_mmq_64x128_k64
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 56 registers, used 1 barriers, 27648 bytes smem, 388 bytes cmem[0], 8 bytes cmem[2]
+ptxas info    : Compiling entry function 'bonsai_pq2_mmq_64x64_k64' for 'sm_89'
+ptxas info    : Function properties for bonsai_pq2_mmq_64x64_k64
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 40 registers, used 1 barriers, 18432 bytes smem, 388 bytes cmem[0], 8 bytes cmem[2]
+ptxas info    : Compiling entry function 'bonsai_ffn_tail' for 'sm_89'
+ptxas info    : Function properties for bonsai_ffn_tail
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 30 registers, used 1 barriers, 4096 bytes smem, 388 bytes cmem[0], 8 bytes cmem[2]
+ptxas info    : Compiling entry function 'bonsai_ffn_fused_64x64' for 'sm_89'
+ptxas info    : Function properties for bonsai_ffn_fused_64x64
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 64 registers, used 1 barriers, 34816 bytes smem, 396 bytes cmem[0]
+ptxas info    : Compiling entry function 'bonsai_ffn_fused_32x64' for 'sm_89'
+ptxas info    : Function properties for bonsai_ffn_fused_32x64
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 44 registers, used 1 barriers, 34816 bytes smem, 396 bytes cmem[0], 16 bytes cmem[2]
+ptxas info    : Compiling entry function 'bonsai_decay_reuse8' for 'sm_89'
+ptxas info    : Function properties for bonsai_decay_reuse8
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 41 registers, used 0 barriers, 412 bytes cmem[0]
+ptxas info    : Compiling entry function 'bonsai_decay_reuse4' for 'sm_89'
+ptxas info    : Function properties for bonsai_decay_reuse4
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 38 registers, used 0 barriers, 412 bytes cmem[0]
+ptxas info    : Compiling entry function 'bonsai_decay_reuse2' for 'sm_89'
+ptxas info    : Function properties for bonsai_decay_reuse2
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 39 registers, used 0 barriers, 412 bytes cmem[0]
+ptxas info    : Compiling entry function 'bonsai_decay_warp_pack' for 'sm_89'
+ptxas info    : Function properties for bonsai_decay_warp_pack
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 40 registers, used 0 barriers, 412 bytes cmem[0]
+ptxas info    : Compiling entry function 'bonsai_pq2_mmq_64x64' for 'sm_89'
+ptxas info    : Function properties for bonsai_pq2_mmq_64x64
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 40 registers, used 1 barriers, 34816 bytes smem, 388 bytes cmem[0], 8 bytes cmem[2]
+ptxas info    : Compiling entry function 'bonsai_pq2_mmq_64x32' for 'sm_89'
+ptxas info    : Function properties for bonsai_pq2_mmq_64x32
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 37 registers, used 1 barriers, 26112 bytes smem, 388 bytes cmem[0], 8 bytes cmem[2]
+ptxas info    : Compiling entry function 'bonsai_pq2_mmq_32x64' for 'sm_89'
+ptxas info    : Function properties for bonsai_pq2_mmq_32x64
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 40 registers, used 1 barriers, 26112 bytes smem, 388 bytes cmem[0], 8 bytes cmem[2]
+ptxas info    : Compiling entry function 'bonsai_pq2_mmq_lookup' for 'sm_89'
+ptxas info    : Function properties for bonsai_pq2_mmq_lookup
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 41 registers, used 1 barriers, 17408 bytes smem, 388 bytes cmem[0], 8 bytes cmem[2]
+ptxas info    : Compiling entry function 'bonsai_pq2_mmq_async' for 'sm_89'
+ptxas info    : Function properties for bonsai_pq2_mmq_async
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 41 registers, used 1 barriers, 17408 bytes smem, 388 bytes cmem[0], 8 bytes cmem[2]
+ptxas info    : Compiling entry function 'bonsai_pq2_mmq_ldmatrix' for 'sm_89'
+ptxas info    : Function properties for bonsai_pq2_mmq_ldmatrix
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 37 registers, used 1 barriers, 17408 bytes smem, 388 bytes cmem[0], 8 bytes cmem[2]
+ptxas info    : Compiling entry function 'bonsai_flash_async_tile' for 'sm_89'
+ptxas info    : Function properties for bonsai_flash_async_tile
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 64 registers, used 1 barriers, 41216 bytes smem, 408 bytes cmem[0], 24 bytes cmem[2]
+ptxas info    : Compiling entry function 'bonsai_flash_ldmatrix_tile' for 'sm_89'
+ptxas info    : Function properties for bonsai_flash_ldmatrix_tile
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 72 registers, used 1 barriers, 41216 bytes smem, 408 bytes cmem[0], 24 bytes cmem[2]
+ptxas info    : Compiling entry function 'bonsai_flash_compact_ordered_merge' for 'sm_89'
+ptxas info    : Function properties for bonsai_flash_compact_ordered_merge
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 40 registers, used 1 barriers, 260 bytes smem, 384 bytes cmem[0]
+ptxas info    : Compiling entry function 'bonsai_flash_compact_merge' for 'sm_89'
+ptxas info    : Function properties for bonsai_flash_compact_merge
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 44 registers, used 0 barriers, 384 bytes cmem[0]
+ptxas info    : Compiling entry function 'bonsai_flash_compact_tile' for 'sm_89'
+ptxas info    : Function properties for bonsai_flash_compact_tile
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 93 registers, used 1 barriers, 41216 bytes smem, 408 bytes cmem[0], 24 bytes cmem[2]
+ptxas info    : Compiling entry function 'bonsai_flash_ordered_merge' for 'sm_89'
+ptxas info    : Function properties for bonsai_flash_ordered_merge
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 40 registers, used 1 barriers, 260 bytes smem, 384 bytes cmem[0]
+ptxas info    : Compiling entry function 'bonsai_flash_stage_kv' for 'sm_89'
+ptxas info    : Function properties for bonsai_flash_stage_kv
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 39 registers, used 1 barriers, 16896 bytes smem, 392 bytes cmem[0]
+ptxas info    : Compiling entry function 'bonsai_flash_staged_tile' for 'sm_89'
+ptxas info    : Function properties for bonsai_flash_staged_tile
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 93 registers, used 1 barriers, 41216 bytes smem, 408 bytes cmem[0], 24 bytes cmem[2]
+ptxas info    : Compiling entry function 'bonsai_flash_skewed_tile' for 'sm_89'
+ptxas info    : Function properties for bonsai_flash_skewed_tile
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 94 registers, used 1 barriers, 41216 bytes smem, 404 bytes cmem[0], 24 bytes cmem[2]
+ptxas info    : Compiling entry function 'bonsai_flash_f32_merge' for 'sm_89'
+ptxas info    : Function properties for bonsai_flash_f32_merge
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 40 registers, used 0 barriers, 384 bytes cmem[0]
+ptxas info    : Compiling entry function 'bonsai_flash_f32_tile' for 'sm_89'
+ptxas info    : Function properties for bonsai_flash_f32_tile
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 71 registers, used 1 barriers, 36864 bytes smem, 404 bytes cmem[0], 24 bytes cmem[2]
+ptxas info    : Compiling entry function 'bonsai_pq2_matvec_exchange' for 'sm_89'
+ptxas info    : Function properties for bonsai_pq2_matvec_exchange
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 29 registers, used 0 barriers, 384 bytes cmem[0]
+ptxas info    : Compiling entry function 'bonsai_pq2_matvec_ordered' for 'sm_89'
+ptxas info    : Function properties for bonsai_pq2_matvec_ordered
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 26 registers, used 0 barriers, 384 bytes cmem[0]
+ptxas info    : Compiling entry function 'bonsai_conv_batch' for 'sm_89'
+ptxas info    : Function properties for bonsai_conv_batch
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 28 registers, used 0 barriers, 388 bytes cmem[0]
+ptxas info    : Compiling entry function 'bonsai_embed_batch' for 'sm_89'
+ptxas info    : Function properties for bonsai_embed_batch
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 14 registers, used 0 barriers, 376 bytes cmem[0]
+ptxas info    : Compiling entry function 'bonsai_pq2_mmq' for 'sm_89'
+ptxas info    : Function properties for bonsai_pq2_mmq
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 40 registers, used 1 barriers, 17408 bytes smem, 388 bytes cmem[0], 8 bytes cmem[2]
+ptxas info    : Compiling entry function 'bonsai_pack_half' for 'sm_89'
+ptxas info    : Function properties for bonsai_pack_half
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 10 registers, used 0 barriers, 372 bytes cmem[0]
+ptxas info    : Compiling entry function 'bonsai_attention_gate' for 'sm_89'
+ptxas info    : Function properties for bonsai_attention_gate
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 16 registers, used 0 barriers, 376 bytes cmem[0]
+ptxas info    : Compiling entry function 'bonsai_split_q_gate' for 'sm_89'
+ptxas info    : Function properties for bonsai_split_q_gate
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 12 registers, used 0 barriers, 376 bytes cmem[0]
+ptxas info    : Compiling entry function 'bonsai_residual' for 'sm_89'
+ptxas info    : Function properties for bonsai_residual
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 12 registers, used 0 barriers, 376 bytes cmem[0]
+ptxas info    : Compiling entry function 'bonsai_conv_step' for 'sm_89'
+ptxas info    : Function properties for bonsai_conv_step
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 26 registers, used 0 barriers, 384 bytes cmem[0]
+ptxas info    : Compiling entry function 'bonsai_decay' for 'sm_89'
+ptxas info    : Function properties for bonsai_decay
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 20 registers, used 0 barriers, 408 bytes cmem[0]
+ptxas info    : Compiling entry function 'bonsai_norm' for 'sm_89'
+ptxas info    : Function properties for bonsai_norm
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 23 registers, used 0 barriers, 404 bytes cmem[0]
+ptxas info    : Compiling entry function 'bonsai_swiglu' for 'sm_89'
+ptxas info    : Function properties for bonsai_swiglu
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 16 registers, used 0 barriers, 380 bytes cmem[0]
+ptxas info    : Compiling entry function 'bonsai_pq2_matvec' for 'sm_89'
+ptxas info    : Function properties for bonsai_pq2_matvec
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 36 registers, used 0 barriers, 384 bytes cmem[0]
+ptxas info    : Compiling entry function 'bonsai_fwht1024' for 'sm_89'
+ptxas info    : Function properties for bonsai_fwht1024
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 20 registers, used 1 barriers, 4096 bytes smem, 396 bytes cmem[0], 8 bytes cmem[2]
+ptxas info    : Compiling entry function 'bonsai_pq2_row' for 'sm_89'
+ptxas info    : Function properties for bonsai_pq2_row
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 14 registers, used 0 barriers, 376 bytes cmem[0]

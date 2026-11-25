@@ -1,0 +1,68 @@
+--- backend.c
++++ backend.c
+@@ -19,7 +19,7 @@
+ enum kernel {
+     NORM, ROTATE, MATRIX, ADD, DECAY, CONV, GDN, SPLIT, ROPE, Q4, TILES, GATE,
+     EMBED, SWIGLU, MERGE, GDN_BATCH, ROPE_PHASES, ROPE_APPLY,
+-    EMBED_BATCH, CONV_BATCH, PACK_HALF, MMQ, FLASH_TILE_F32, FLASH_MERGE_F32, FLASH_TILE_STAGED, FLASH_STAGE_KV, FLASH_MERGE_ORDERED, KERNEL_COUNT
++    EMBED_BATCH, CONV_BATCH, PACK_HALF, MMQ, FLASH_TILE_F32, FLASH_MERGE_F32, FLASH_TILE_STAGED, FLASH_STAGE_KV, FLASH_MERGE_ORDERED, FLASH_TILE_COMPACT, FLASH_MERGE_COMPACT, FLASH_MERGE_COMPACT_ORDERED, KERNEL_COUNT
+ };
+ 
+ typedef struct {
+@@ -31,7 +31,7 @@
+     int64_t bound[LAYERS * 15], states[LAYERS * 2], globals[3], b[24];
+     CUdeviceptr token_ids, phases, packed, packed_source;
+     size_t partial_capacity;
+-    int use_flash_f32, stage_kv, ordered_merge;
++    int use_flash_f32, stage_kv, ordered_merge, compact_heads;
+     CUdeviceptr stage_k, stage_v;
+     unsigned stage_capacity_chunks;
+     unsigned context, position, ubatch, count, wave;
+@@ -88,22 +88,25 @@
+     const size_t group_bytes = (size_t)tiles * 16 * 258 * sizeof(float);
+     const unsigned wave = (unsigned)(m->partial_capacity / group_bytes);
+     if (wave == 0) return 1;
+-    const unsigned groups = 4*((count+1)/2);
+     unsigned chunks = (keys+31)/32;
+     const int staged = m->stage_kv && chunks <= m->stage_capacity_chunks;
+     const int ordered = staged && m->ordered_merge && keys >= 2048;
++    const int compact = staged && m->compact_heads;
++    const unsigned groups = 4*(compact ? (count*6+15)/16 : (count+1)/2);
++    const enum kernel merge = compact
++        ? (ordered ? FLASH_MERGE_COMPACT_ORDERED : FLASH_MERGE_COMPACT)
++        : (ordered ? FLASH_MERGE_ORDERED : FLASH_MERGE_F32);
+     if (staged && launch(m, FLASH_STAGE_KV, chunks, 4, 1, 128,
+         (void *[]){&k,&v,&m->stage_k,&m->stage_v,&keys,&chunks})) return -1;
+     for (unsigned start = 0; start < groups; start += wave) {
+         const unsigned remaining = groups - start;
+         const unsigned active = remaining < wave ? remaining : wave;
+         const int tile_rc = staged
+-            ? launch(m, FLASH_TILE_STAGED, active, tiles, 1, 128,
++            ? launch(m, compact ? FLASH_TILE_COMPACT : FLASH_TILE_STAGED, active, tiles, 1, 128,
+                 (void *[]){&q,&m->stage_k,&m->stage_v,&m->partial,&count,&keys,&first,&tiles,&start,&chunks})
+             : launch(m, FLASH_TILE_F32, active, tiles, 1, 128,
+                 (void *[]){&q,&k,&v,&m->partial,&count,&keys,&first,&tiles,&start});
+-        if (tile_rc || launch(m, ordered ? FLASH_MERGE_ORDERED : FLASH_MERGE_F32,
+-            active*12, 1, 1, ordered ? 128 : 32,
++        if (tile_rc || launch(m, merge, active*(compact ? 16 : 12), 1, 1, ordered ? 128 : 32,
+             (void *[]){&m->partial,&dst,&count,&first,&tiles,&start})) return -1;
+     }
+     return 0;
+@@ -364,6 +367,9 @@
+     m->stage_kv = m->use_flash_f32 && stage && strcmp(stage, "1") == 0;
+     const char *merge = getenv("BONSAI_FLASH_ORDERED_MERGE");
+     m->ordered_merge = m->stage_kv && merge && strcmp(merge, "1") == 0;
++    const char *compact = getenv("BONSAI_FLASH_COMPACT");
++    m->compact_heads = m->stage_kv && compact && strcmp(compact, "1") == 0;
++    if (m->compact_heads) fputs("Flash query layout: compact 6:1\n", stderr);
+     if (m->ordered_merge) fputs("Flash merge: ordered parallel coefficients\n", stderr);
+     fprintf(stderr, "Prefill attention: %s\n", !m->use_flash_f32 ? "tiled Q4" :
+         m->stage_kv ? "staged Bonsai FP32 Flash" : "direct Bonsai FP32 Flash");
+@@ -388,6 +394,7 @@
+         "goose_rope_phases", "goose_rope_apply", "bonsai_embed_batch", "bonsai_conv_batch",
+         "bonsai_pack_half", "bonsai_pq2_mmq", "bonsai_flash_f32_tile", "bonsai_flash_f32_merge",
+         "bonsai_flash_staged_tile", "bonsai_flash_stage_kv", "bonsai_flash_ordered_merge",
++        "bonsai_flash_compact_tile", "bonsai_flash_compact_merge", "bonsai_flash_compact_ordered_merge",
+     };
+     if (check(cuInit(0), "driver") || check(cuDeviceGet(&device, 0), "device") ||
+         check(cuCtxCreate(&m->cuda, 0, device), "context") ||

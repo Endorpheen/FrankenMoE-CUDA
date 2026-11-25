@@ -1,0 +1,46 @@
+--- a/inkling-matrix.goose
++++ b/inkling-matrix.goose
+@@ -85,0 +86,43 @@
++
++export fn i2_matrix_eight(weights: u64, input0: u64, input1: u64, input2: u64, input3: u64, input4: u64, input5: u64, input6: u64, input7: u64,
++    output0: u64, output1: u64, output2: u64, output3: u64, output4: u64, output5: u64, output6: u64, output7: u64,
++    groups: i64, kind: i64, lane: u64) {
++    var a: f32 = 0.0;
++    var b: f32 = 0.0;
++    var c: f32 = 0.0;
++    var d: f32 = 0.0;
++    var e: f32 = 0.0;
++    var f: f32 = 0.0;
++    var g: f32 = 0.0;
++    var h: f32 = 0.0;
++    for group in groups {
++        let at = 4 * (32 * (group as u64) + lane);
++        let value = quant_value(weights, group as u64, lane, kind);
++        a = multiply_add(value, load(input0 + at), a);
++        b = multiply_add(value, load(input1 + at), b);
++        c = multiply_add(value, load(input2 + at), c);
++        d = multiply_add(value, load(input3 + at), d);
++        e = multiply_add(value, load(input4 + at), e);
++        f = multiply_add(value, load(input5 + at), f);
++        g = multiply_add(value, load(input6 + at), g);
++        h = multiply_add(value, load(input7 + at), h);
++    }
++    a = reduce_lane(a);
++    b = reduce_lane(b);
++    c = reduce_lane(c);
++    d = reduce_lane(d);
++    e = reduce_lane(e);
++    f = reduce_lane(f);
++    g = reduce_lane(g);
++    h = reduce_lane(h);
++    if lane == 0 {
++        store(output0, a);
++        store(output1, b);
++        store(output2, c);
++        store(output3, d);
++        store(output4, e);
++        store(output5, f);
++        store(output6, g);
++        store(output7, h);
++    }
++}

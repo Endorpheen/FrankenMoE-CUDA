@@ -1,0 +1,37 @@
+ptxas info    : 0 bytes gmem
+ptxas info    : Compiling entry function 'goose_i2_nl_mmq32' for 'sm_89'
+ptxas info    : Function properties for goose_i2_nl_mmq32
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 47 registers, used 0 barriers, 408 bytes cmem[0]
+ptxas info    : Compiling entry function 'goose_i2_xs_mmq32' for 'sm_89'
+ptxas info    : Function properties for goose_i2_xs_mmq32
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 48 registers, used 0 barriers, 408 bytes cmem[0]
+ptxas info    : Compiling entry function 'goose_i2_nl_mmq24' for 'sm_89'
+ptxas info    : Function properties for goose_i2_nl_mmq24
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 44 registers, used 0 barriers, 408 bytes cmem[0]
+ptxas info    : Compiling entry function 'goose_i2_xs_mmq24' for 'sm_89'
+ptxas info    : Function properties for goose_i2_xs_mmq24
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 47 registers, used 0 barriers, 408 bytes cmem[0]
+ptxas info    : Compiling entry function 'goose_i2_nl_mmq16' for 'sm_89'
+ptxas info    : Function properties for goose_i2_nl_mmq16
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 40 registers, used 0 barriers, 408 bytes cmem[0]
+ptxas info    : Compiling entry function 'goose_i2_xs_mmq16' for 'sm_89'
+ptxas info    : Function properties for goose_i2_xs_mmq16
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 40 registers, used 0 barriers, 408 bytes cmem[0]
+ptxas info    : Compiling entry function 'goose_i2_nl_mmq' for 'sm_89'
+ptxas info    : Function properties for goose_i2_nl_mmq
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 35 registers, used 0 barriers, 408 bytes cmem[0]
+ptxas info    : Compiling entry function 'goose_i2_xs_mmq' for 'sm_89'
+ptxas info    : Function properties for goose_i2_xs_mmq
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 40 registers, used 0 barriers, 408 bytes cmem[0]
+ptxas info    : Compiling entry function 'goose_i2_moe_pack' for 'sm_89'
+ptxas info    : Function properties for goose_i2_moe_pack
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 14 registers, used 0 barriers, 384 bytes cmem[0]

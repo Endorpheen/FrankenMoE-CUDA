@@ -1,0 +1,154 @@
+{
+  "profile": "4097/16",
+  "context": 36864,
+  "ubatch": 1024,
+  "kv": "q4_0/q4_0",
+  "request_sha256": "3e19644b64428f8e5333c51082b695ee755695643191b313a52e790d1f61c280",
+  "arms": {
+    "a1": {
+      "prefill_ms": 15470.667,
+      "decode_ms": 974.206,
+      "prefill_toks_s": 264.8237467718748,
+      "decode_toks_s": 16.42363114166819,
+      "workspace_bytes": 1720400640
+    },
+    "b1": {
+      "prefill_ms": 12755.16,
+      "decode_ms": 974.65,
+      "prefill_toks_s": 321.203340452021,
+      "decode_toks_s": 16.41614938695942,
+      "workspace_bytes": 1720400640
+    },
+    "b2": {
+      "prefill_ms": 12575.689,
+      "decode_ms": 973.958,
+      "prefill_toks_s": 325.7873186908487,
+      "decode_toks_s": 16.427813108984168,
+      "workspace_bytes": 1720400640
+    },
+    "a2": {
+      "prefill_ms": 15509.754,
+      "decode_ms": 974.48,
+      "prefill_toks_s": 264.15634961070305,
+      "decode_toks_s": 16.41901321730564,
+      "workspace_bytes": 1720400640
+    }
+  },
+  "means": {
+    "prefill_toks_s": {
+      "control": 264.4900481912889,
+      "async": 323.4953295714348
+    },
+    "decode_toks_s": {
+      "control": 16.421322179486914,
+      "async": 16.421981247971793
+    }
+  },
+  "selected_f32_logits_and_token_ids_bit_exact": true,
+  "ids_match_prism": true,
+  "prism_timings": {
+    "cache_n": 0,
+    "prompt_n": 4097,
+    "prompt_ms": 3241.717,
+    "prompt_per_token_ms": 0.7912416402245546,
+    "prompt_per_second": 1263.836417552797,
+    "predicted_n": 16,
+    "predicted_ms": 282.839,
+    "predicted_per_token_ms": 18.855933333333333,
+    "predicted_per_second": 53.03370468711882
+  },
+  "output": [
+    {
+      "step": 0,
+      "token": 11846,
+      "logit": 19.361496
+    },
+    {
+      "step": 1,
+      "token": 13,
+      "logit": 19.5620117
+    },
+    {
+      "step": 2,
+      "token": 58737,
+      "logit": 15.057806
+    },
+    {
+      "step": 3,
+      "token": 1092,
+      "logit": 18.5416832
+    },
+    {
+      "step": 4,
+      "token": 488,
+      "logit": 15.5356989
+    },
+    {
+      "step": 5,
+      "token": 1000,
+      "logit": 17.0775223
+    },
+    {
+      "step": 6,
+      "token": 3222,
+      "logit": 17.9598351
+    },
+    {
+      "step": 7,
+      "token": 6570,
+      "logit": 17.2562923
+    },
+    {
+      "step": 8,
+      "token": 11,
+      "logit": 19.0341969
+    },
+    {
+      "step": 9,
+      "token": 279,
+      "logit": 16.7745285
+    },
+    {
+      "step": 10,
+      "token": 4530,
+      "logit": 15.2448301
+    },
+    {
+      "step": 11,
+      "token": 310,
+      "logit": 17.8254013
+    },
+    {
+      "step": 12,
+      "token": 12904,
+      "logit": 13.9986973
+    },
+    {
+      "step": 13,
+      "token": 11,
+      "logit": 18.674881
+    },
+    {
+      "step": 14,
+      "token": 321,
+      "logit": 16.6596832
+    },
+    {
+      "step": 15,
+      "token": 799,
+      "logit": 17.4050751
+    }
+  ],
+  "artifacts_sha256": {
+    "bonsai-mmq-loads": "4cc1dc601b3d573e3182823d3648432b10c9ec8ce0fd34f7b8ffb377541538f6",
+    "pq2-mmq-loads.cubin": "bfc8c8a86e90b72c90e384228a0d6d8b70f6db07dd98a84f9ff168bef1d288ce",
+    "frozen-goose.ptx": "42e1f5c0885a3bbab3656e3bba2dc6ef8b998a4581d365b6c1e48fc842f789d7",
+    "profile.nsys-rep": "272abdaeeb6db55f84610308e6d32048f059b604e03fcaa459dde5003774c082"
+  },
+  "default_mode_artifacts_sha256": {
+    "bonsai-mmq-loads": "db93cfdd2bb9d1c23ecac3519b0f06f09e3e2e76752a469877ab1159230e12d0",
+    "pq2-mmq-loads.cubin": "bfc8c8a86e90b72c90e384228a0d6d8b70f6db07dd98a84f9ff168bef1d288ce",
+    "frozen-goose.ptx": "42e1f5c0885a3bbab3656e3bba2dc6ef8b998a4581d365b6c1e48fc842f789d7"
+  },
+  "default_short_output_matches_control": true
+}

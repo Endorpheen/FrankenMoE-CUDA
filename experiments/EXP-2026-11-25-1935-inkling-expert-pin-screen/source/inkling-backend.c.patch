@@ -1,0 +1,18 @@
+--- a/inkling-backend.c
++++ b/inkling-backend.c
+@@ -605,0 +606,2 @@
++extern void i2_pins_init(int argc, char **argv);
++extern void i2_pin_experts(sl_i64 groups, sl_i64 layers);
+@@ -624,2 +626,10 @@
+-    return fg_cuda_load_experts(ints(groups, 9), ints(layers, physical * 4), slots * (up + down),
+-                                spans + 4 * slots + 4 + 5 * experts, physical + experts + 5);
++    const sl_i64 group_layout = ints(groups, 9);
++    const sl_i64 layer_layout = ints(layers, physical * 4);
++    const int64_t bytes = fg_cuda_load_experts(group_layout, layer_layout, slots * (up + down),
++        spans + 4 * slots + 4 + 5 * experts, physical + experts + 5);
++    const char *pins = getenv("I2_INSTALL_PINS");
++    if (bytes > 0 && pins && strcmp(pins, "1") == 0) {
++        i2_pins_init(0, NULL);
++        i2_pin_experts(group_layout, layer_layout);
++    }
++    return bytes;

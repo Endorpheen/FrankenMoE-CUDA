@@ -1,5 +1,720 @@
 # Experiment log
 
+## Bonsai 2.5 27B CUDA optimization methods
+
+The entries below use the resident PQ2_0-mtp GGUF on RTX 4070 (sm89),
+context 36864, batch/ubatch 4096/1024, Q4_0 K/V, greedy with EOG masked,
+and MTP disabled. Results refer to the experimental Bonsai HTTP line.
+Existing Apex and Inkling release artifacts are unchanged. A shared
+release still needs the architecture regression gates.
+
+### EXP-2026-11-25-2012 — Q8 DP4A for single-token PQ2 projections
+
+- **Status:** ACCEPTED in the Bonsai experimental runtime.
+  Source commit `d435df2aa5f61cb433824136c9788b0063f0f5aa`.
+  [CUDA kernel and pack](EXP-2026-11-25-2012-bonsai-dp4a/source/dp4a.cl),
+  [phase dispatch](EXP-2026-11-25-2012-bonsai-dp4a/source/compose.py),
+  [binary and image SHA-256](EXP-2026-11-25-2012-bonsai-dp4a/data/SHA256SUMS).
+- **Mechanism:** Pack signed Q8 activations with an F16 scale per 32 inputs,
+  reuse them across projections and use DP4A to form integer partial dots.
+  PQ2 keeps one weight scale per 128 coefficients. FP32 applies group
+  scales and reduces the partials. Two output rows per warp reuse the
+  activation on normal projections; vocabulary uses one. Decode projection
+  work falls without changing weight storage or adding a device allocation.
+- **Measured 32K/512 A/B:** prefill `619.76 → 620.51 tok/s`, decode
+  `16.657 → 27.063 tok/s (+62.47%)`, VRAM `8932 → 8932 MiB`,
+  peak RSS `7,457,360 → 7,457,168 KiB`. Decode saves 11.796 s.
+  Two balanced 4097/64 pairs show `+70.60%` decode. A separate rebuild
+  with Q8 enabled by default confirms `27.028 tok/s` on 32K/512.
+  [Raw performance and memory](EXP-2026-11-25-2012-bonsai-dp4a/data/results.json).
+- **Correctness:** 512 IDs and UTF-8 text SHA-256 match PrismML in all
+  long runs. Four task fixtures preserve complete free generations
+  (23, 63, 258, and 47 IDs), independent task scores, and all 37
+  sampled same-history top-1 selections. Logits differ: maximum observed
+  absolute delta 0.39847, minimum top-10 overlap 9/10. Projection
+  L2 relative to FP32 is 0.81–0.95% on the measured fixtures.
+  [Quality data](EXP-2026-11-25-2012-bonsai-dp4a/data/quality.json).
+- **Limits:** Verified on sm89 with 32-lane warps, Bonsai PQ2_0
+  dimensions divisible by 128 and one decode token. Dispatch uses
+  output widths above 1024. Prefill continues to use FP16; the
+  prompt-ending logits use the FP32 projection. Control switch:
+  `BONSAI_DECODE_Q8=off`. Broader numerical equivalence is unverified.
+- **Potential reuse:** Other resident PQ2_0 models and single-column
+  PQ2 verification paths with the same packing semantics may benefit.
+  Multi-column verification and other quant formats need independent
+  kernels and gates. No Apex, Inkling, or hybrid speedup is established.
+  [Experiment and exact reproduction](EXP-2026-11-25-2012-bonsai-dp4a/README.md).
+
+### EXP-2026-11-25-2013 — Parallel output for exact wide RMSNorm
+
+- **Status:** ACCEPTED in the Bonsai experimental runtime.
+  Source commit `7d939604ff69271a3b0a68349642d8cea3dd391f`.
+  [CUDA source](EXP-2026-11-25-2013-bonsai-wide-norm/source/norm.cl),
+  [Bonsai dispatch](EXP-2026-11-25-2013-bonsai-wide-norm/source/compose.py),
+  [binary and image SHA-256](EXP-2026-11-25-2013-bonsai-wide-norm/data/SHA256SUMS).
+- **Mechanism:** Preserve the original ordered warp reduction and square
+  root. Broadcast the divisor and parallelize independent divisions,
+  weights and writes. Stage input in shared memory for small batches.
+  Measured one-row dispatch falls from 33.74 to 4.76 us.
+- **Measured 32K/512 A/B:** prefill `619.99 → 620.89 tok/s`, decode
+  `27.082 → 32.255 tok/s (+19.10%)`, VRAM `8932 → 8932 MiB`,
+  peak RSS `7,457,228 → 7,457,300 KiB`. One long pair saves 3.026 s
+  decode. Two balanced 4097/64 pairs show `+22.29%` decode.
+  [Raw performance and memory](EXP-2026-11-25-2013-bonsai-wide-norm/data/results.json).
+- **Correctness:** Seven component shapes match every FP32 output byte.
+  Short and long response IDs and text match the corresponding controls;
+  all 512 long IDs and the text hash also match PrismML. No numerical
+  difference was observed for the tested RMSNorm inputs.
+- **Limits:** Verified on sm89 for contiguous 5120-wide weighted RMSNorm,
+  one row per token and unchanged model epsilon. Use 512 threads with
+  20,484 bytes of shared memory up to 512 rows; use 128 threads above
+  that. Gated RMSNorm, L2, other widths and per-head layouts remain on
+  their old paths. Control switch: `BONSAI_WIDE_NORM=0`.
+- **Potential reuse:** Other low-row-count RMSNorm kernels with serial
+  per-lane reductions. Preserve the lane accumulation order and output
+  contract and retune for shape and device. No measured cross-model gain.
+  [Experiment and exact reproduction](EXP-2026-11-25-2013-bonsai-wide-norm/README.md).
+
+### EXP-2026-11-25-2014 — Selective Q8 for late Bonsai FFN gate/up
+
+- **Status:** ACCEPTED in the experimental Bonsai HTTP line for the
+  last 16 layers. All 64 layers and last 32 are REJECTED on quality.
+  Source commit `e15a59b3b9ba6d48c77e123194e08412c1b2c8f4`.
+  [Dispatch](EXP-2026-11-25-2014-bonsai-ffn-q8-prefill/source/compose.py),
+  [reused CUDA kernels](EXP-2026-11-25-1994-bonsai-pq2-int8/source/pq2-int8.cl),
+  [artifact SHA-256](EXP-2026-11-25-2014-bonsai-ffn-q8-prefill/data/SHA256SUMS).
+- **Mechanism:** Gate/up share one Q8 activation pack with an F32
+  scale per 128 values. The integer Tensor Core matmuls reuse
+  existing pack and attention scratch while FP16 remains active for
+  the other projections and layers. Cumulative DP4A decode is unchanged.
+- **Measured on 32K/512 in two opposite-order pairs:** prefill
+  `591.452 → 609.561 tok/s (+3.06%)`, saving 1.646 s. Decode
+  `30.458 → 30.741 tok/s` is an observation with identical decode
+  arithmetic. VRAM `8932 → 8932 MiB`, peak RSS
+  `7,456,372–7,457,376 → 7,457,252–7,457,656 KiB`, swap-out zero.
+  Historical EXP-2013 rates were not used as the control.
+  [Paired timing and memory](EXP-2026-11-25-2014-bonsai-ffn-q8-prefill/data/results.json).
+- **Correctness:** 512 IDs and text SHA-256 match PrismML in all four
+  long arms. Last 16 preserves four free-generation sequences,
+  independent task scores and 37/37 sampled same-history top-1.
+  Maximum absolute logit delta is 0.42170, minimum top-10 overlap
+  is 9/10. All layers and last 32 reduce code-trace scores from
+  18/63 to 13/63 and 17/63 respectively on the cumulative runtime.
+  [Quality evidence](EXP-2026-11-25-2014-bonsai-ffn-q8-prefill/README.md#cumulative-quality-gate).
+- **Limits and potential reuse:** Verified on RTX 4070 for Bonsai
+  PQ2_0 gate/up only, widths 5120 → 17408, batches of at least 128
+  and layers 48–63. Control switch: `BONSAI_FFN_Q8_PREFILL=0`.
+  Other resident PQ2_0 FFNs could reuse the shared activation pack
+  after their own whole-model numerical gate. Layer sensitivity,
+  other GPUs and benefits to Apex/Inkling remain unverified.
+  [Exact reproduction](EXP-2026-11-25-2014-bonsai-ffn-q8-prefill/README.md).
+- **Projection-scope extension:** EXP-2023, source commit
+  `08109cfa31e75bb715ebd38cacceb40df18333a3`, uses the exact EXP-2019
+  CUDA image on RTX 4070. Extending only gate or only up into
+  layers 0–47 still reduces code-trace accuracy from 18/63 to
+  13/63 and 17/63 respectively. Both preserve 11/11 sampled
+  same-history top-1, yet the free outputs diverge after 59
+  and 91 tokens. Both configurations are REJECTED. Diagnostic
+  prefill is 598.579 → 553.197 ms and 580.745 → 549.438 ms;
+  no paired 32K/512, peak VRAM or peak RAM claim is made.
+  [Dispatch, quality, hashes and reproduction](EXP-2026-11-25-2023-bonsai-asymmetric-ffn-q8/README.md).
+
+### EXP-2026-11-25-2015 — Ordered look-ahead for Q4 decode
+
+- **Status:** EXPERIMENTAL, no promotion. Source commit
+  `d6188b73bdc7fca40b47f1e6f0c8c1d577f8fda5`.
+  [Kernel generator](EXP-2026-11-25-2015-bonsai-gqa-lookahead/source/emit.py),
+  [dispatch](EXP-2026-11-25-2015-bonsai-gqa-lookahead/source/compose.py),
+  [SHA-256 manifest](EXP-2026-11-25-2015-bonsai-gqa-lookahead/data/SHA256SUMS).
+- **Mechanism:** Prepare independent QK and optional V fragments for
+  neighboring Q4 cache rows, then apply the original ordered softmax
+  recurrence and merge. On the 32768-key component, the tile and
+  merge improve `0.526 → 0.454 ms`. With 16 disjoint cache pairs,
+  the corresponding result is `0.551 → 0.461 ms`.
+- **Full HTTP:** Two 4097/64 pairs improve average decode by 3.80%.
+  Two 32K/512 pairs disagree: decode `31.456 → 30.462` and
+  `32.143 → 32.795 tok/s`. Prefill `612.179 → 607.390` and
+  `636.212 → 624.386 tok/s`. Overall wall time is higher in
+  both long candidate arms. Peak VRAM is 8932 MiB in every arm.
+  Long peak RSS ranges from 7,456,828 to 7,457,772 KiB and
+  process and system swap-out stay zero.
+  [Paired evidence](EXP-2026-11-25-2015-bonsai-gqa-lookahead/data/results.json).
+- **Correctness:** All component partials and merged output bytes
+  match the frozen kernel on seven lengths. All 512 IDs and text
+  SHA-256 in each long arm match PrismML. No numeric discrepancy
+  was observed at the tested boundaries.
+- **Limits and potential reuse:** Verified only for RTX 4070,
+  Bonsai PQ2_0 with Q4_0 cache, 256-wide heads, 6:1 GQA and
+  one query. 64–96 registers per thread across variants, no spills.
+  The approach may be reusable for ordered softmax on other Q4
+  layouts after a whole-model profile. No cross-model or long-model
+  gain is established. Off by default.
+  [Full experiment and reproduction](EXP-2026-11-25-2015-bonsai-gqa-lookahead/README.md).
+
+### EXP-2026-11-25-2016 — Deferred Bonsai CUDA driver binding
+
+- **Status:** ACCEPTED for Linux startup compatibility in the experimental
+  Bonsai build. Source commit `a0d761eafddc60b61c555cc290e3b572d1f1a40d`.
+  [Driver bindings](EXP-2026-11-25-2016-bonsai-deferred-cuda/source/cuda-loader.inc),
+  [artifact hashes](EXP-2026-11-25-2016-bonsai-deferred-cuda/data/SHA256SUMS).
+- **Mechanism:** Resolve Bonsai's CUDA entry points only when opening
+  a Bonsai model. This restores the frozen runtime's ELF startup
+  dependencies and prevents missing driver symbols from blocking
+  the common frontend before model selection.
+- **Evidence:** Incomplete driver stub gives matching CLI usage
+  and exit 2 with frozen and corrected binaries. The eager-link
+  build exits 127. On RTX 4070, Bonsai 4097/64 answers match all
+  64 IDs and text. Prefill `817.40 → 806.01 tok/s`, decode
+  `35.11 → 36.11 tok/s`, VRAM `8932 → 8932 MiB`, peak RSS
+  `7,456,972 → 7,456,600 KiB`, swap-out zero. One functional
+  pair does not establish a performance effect.
+- **Limits and possible reuse:** Linux CUDA driver ABI only.
+  Other optional GPU backends can follow the same deferred-bind
+  pattern. The exact Apex control at context 262144 and 6290 MiB
+  failed allocation before inference. Apex/Inkling model-level
+  gates remain open.
+  [Evidence and reproduction](EXP-2026-11-25-2016-bonsai-deferred-cuda/README.md).
+
+### EXP-2026-11-25-2017 — Stage exact single-token GDN decay products
+
+- **Status:** ACCEPTED in the Bonsai experimental runtime. Source commit
+  `d5454e619bbbc55fc85eed86f069662e35edb0b8`.
+  [CUDA](EXP-2026-11-25-2017-bonsai-decode-decay/source/decay.cl),
+  [dispatch](EXP-2026-11-25-2017-bonsai-decode-decay/source/compose.py),
+  [artifact hashes](EXP-2026-11-25-2017-bonsai-decode-decay/data/SHA256SUMS).
+- **Mechanism:** Parallel F32 product preparation, independent alpha and beta
+  warps with the original lane and reduction order, unchanged epilogue.
+  Uses the existing EXP-1998 warp pack for 2–31 tokens. Full CUDA traces show
+  the decay kernel sum `31.802 → 4.668 ms` over 15 decode steps
+  (1.809 ms/step saved). No added global memory.
+- **Scored HTTP:** At 4110/64 across two balanced pairs, prefill
+  `784.15 → 801.55`, decode `35.85 → 38.60 tok/s (+7.68%)`.
+  At 32K/512, prefill `600.46 → 611.03` and `606.23 → 621.01`,
+  decode `30.916 → 30.602` and `30.787 → 32.552 tok/s`.
+  Full client wall improves in both long pairs, but long decode gain
+  varies by pair and the larger prefill shifts are not caused by
+  the small-tail change. VRAM `8932 → 8932 MiB`, long peak RSS
+  `7,457,232–7,457,444 → 7,457,328–7,457,540 KiB`, swap-out zero.
+  [Timing and resources](EXP-2026-11-25-2017-bonsai-decode-decay/data/results.json).
+- **Correctness and limits:** Both component outputs bit-exact on seven
+  real-weight cases. All 512 long IDs and text hashes match PrismML.
+  Verified on RTX 4070, Bonsai PQ2_0 GDN, F32 width 5120, 48 heads,
+  256 threads and 40,960 shared bytes per staged block. Small-batch
+  only. Potential reuse is limited to matching ordered F32 gates,
+  with launch and occupancy retuning. No Apex or Inkling gain measured.
+  [Reproduction and scopes](EXP-2026-11-25-2017-bonsai-decode-decay/README.md).
+
+### EXP-2026-11-25-2018 — Share Flash K/V between same-head query panels
+
+- **Status:** ACCEPTED in the Bonsai experimental runtime. Source commit
+  `61f63eceaa62f7a6e69eb736ec4865c0e74b4346`.
+  [CUDA generator](EXP-2026-11-25-2018-bonsai-flash-kv-panels/source/emit.py),
+  [dispatch](EXP-2026-11-25-2018-bonsai-flash-kv-panels/source/compose.py),
+  [artifact hashes](EXP-2026-11-25-2018-bonsai-flash-kv-panels/data/SHA256SUMS).
+- **Mechanism:** Two compact query panels on one KV head reuse staged K/V
+  inside one CTA. Overwrite scores with probabilities after a warp
+  barrier. Preserve all FP32 orders and the original merge. The initial
+  61,952-byte shared layout loses time. The 50,176-byte layout improves
+  the measured complete Flash layer at 32768/1024 `60.690 → 57.460 ms`.
+- **Scored HTTP:** At 32K/512 across two balanced pairs, prefill
+  `605.85 → 618.45 tok/s (+2.08%)` and decode
+  `32.687 → 32.667 tok/s (-0.06%)`. Mean prefill saves 1.102 s.
+  VRAM `8932 → 8932 MiB`, long peak RSS
+  `7,457,288–7,457,316 → 7,457,328–7,457,464 KiB`, swap-out zero.
+  [Timing and resources](EXP-2026-11-25-2018-bonsai-flash-kv-panels/data/results.json).
+- **Correctness and limits:** All component outputs and aligned partials
+  match on six shapes. All 512 long IDs and text hashes match PrismML.
+  Actual CUDA trace shows 53,184 launches of the new path. Verified
+  on RTX 4070, Bonsai Q4_0 K/V, compact 256-wide 6:1 GQA, at least
+  8192 visible keys and even query-panel alignment. Requires supported
+  dynamic shared memory and two panels per scratch wave. Control switch
+  `BONSAI_FLASH_KV_PANEL=0`. Other same-head grouped paths may reuse
+  this design after layout, ordering and occupancy checks. No gain for
+  Apex, Inkling or other cards is established.
+  [Details and reproduction](EXP-2026-11-25-2018-bonsai-flash-kv-panels/README.md).
+
+### EXP-2026-11-25-2019 — Reuse packed PQ2 weights across K64 stages
+
+- **Status:** ACCEPTED in the Bonsai experimental runtime for packed
+  weight reuse. Alternating activation buffers are REJECTED at the
+  component gate. Source commit `d0492094f1dab56b0d5438353c4a9aaa952ea4a9`.
+  [CUDA generator](EXP-2026-11-25-2019-bonsai-mmq-pipeline/source/emit.py),
+  [dispatch](EXP-2026-11-25-2019-bonsai-mmq-pipeline/source/compose.py),
+  [artifact hashes](EXP-2026-11-25-2019-bonsai-mmq-pipeline/data/SHA256SUMS).
+- **Mechanism:** Read the scale and the two packed code bytes together
+  for each 128-weight block. Keep them in registers for both K64
+  half-stages. Preserve the FP16 operands and original FP32 MMA order,
+  with the same shared and global memory. Cross-trace FP16 MMQ time
+  falls `29.734 → 27.133 s` with 11,776 calls at 32K/16.
+- **Scored HTTP:** At 32K/512 across two balanced pairs, prefill
+  `618.13 → 648.79 tok/s (+4.96%)`, decode `32.672 → 32.703 tok/s`.
+  Mean prefill saves 2.505 s. Peak VRAM `8932 → 8932 MiB`,
+  peak RSS `7,457,340–7,457,900 → 7,457,420–7,457,444 KiB`.
+  Process and system swap-out stay zero.
+  [Timing and resources](EXP-2026-11-25-2019-bonsai-mmq-pipeline/data/results.json).
+- **Correctness and limits:** Nine real-matrix component shapes and
+  tails match every output byte. All 512 long response IDs and text
+  hashes match PrismML. Verified on RTX 4070, Bonsai PQ2_0 and wide
+  64x64/64x128 FP16 K64 tiles. The kernel uses 56/72 registers and
+  18,432/27,648 B shared memory, no spills. Existing Q8 prefill and
+  DP4A decode dispatch stay unchanged. Control switch
+  `BONSAI_MMQ_CACHED_PQ2=0`. Potential reuse requires paired stages
+  within one scale group and a matching operand layout. No other
+  architecture or card speedup is measured.
+  [Details and reproduction](EXP-2026-11-25-2019-bonsai-mmq-pipeline/README.md).
+- **Apex qualification:** EXP-2020, source commit
+  `39b6e9f93fc0999caae4c8f28fbbe733e74ab61c`, compares this exact shared
+  binary with frozen EXP-1969 on Apex 32K/512, context 262144 and
+  6290 MiB SLRU. All IDs, text and cache properties match across six
+  paired arms. VRAM stays 8774 MiB and scored swap-out stays zero.
+  Aggregate rates `3436.47 → 3432.30 prefill` and
+  `80.644 → 80.475 decode tok/s` leave strict performance equivalence
+  inconclusive. The shared CUDA archive members are byte-identical.
+  [Evidence and reproduction](EXP-2026-11-25-2020-bonsai-apex-regression/README.md).
+- **Inkling qualification:** EXP-2021, source commit
+  `a70e66ef9591d510bb3899a796909089e03f7448`, compares this exact shared
+  binary with frozen EXP-1969 on Inkling 32K/512, context 36864,
+  6720 MiB expert cache, AD-IQ4_XS and Q4_0 K/V. All IDs, text and
+  cache properties match in A–B–B–A. VRAM stays 9810 MiB, peak RSS
+  is within the control range, with scored swap-out zero. Aggregate
+  rates `296.187 → 295.499 prefill` and `22.023 → 21.975 decode tok/s`
+  leave strict performance equivalence inconclusive. The initial
+  control timeout was before full file-page preparation.
+  [Evidence and reproduction](EXP-2026-11-25-2021-bonsai-inkling-regression/README.md).
+
+### EXP-2026-11-25-2022 — Exact PQ2 packed half2 expansion
+
+- **Status:** EXPERIMENTAL, no runtime promotion. Source commit
+  `83135672c12544969d39ac23500ae7a5cfffdf44`.
+  [CUDA](EXP-2026-11-25-2022-bonsai-pq2-half2/source/unpack.cl),
+  [tile generator](EXP-2026-11-25-2022-bonsai-pq2-half2/source/emit.py),
+  [CUDA image hashes](EXP-2026-11-25-2022-bonsai-pq2-half2/data/SHA256SUMS).
+- **Mechanism:** Construct the half factors -1, 0, 1, 2 of packed
+  PQ2 codes, and apply the existing stored scale with two FP16x2
+  multiplies. Compare alongside the previously studied LUT on the
+  accepted cached-scale K64 staging. Preserve the FP16 operands
+  and FP32 MMA order.
+- **Evidence:** Every finite scale/code-byte combination matches
+  (16,252,928 cases), including signed zero and subnormals.
+  Nine real-model projection and tail outputs match every byte.
+  Isolated RTX 4070 times are mixed: FFN down layer 42 at 1024
+  tokens `3.435 → 3.333 ms`, QKV at 1024 `2.098 → 2.247 ms`.
+  No model prefill, decode, VRAM or RAM measurement was taken.
+  [Component samples](EXP-2026-11-25-2022-bonsai-pq2-half2/data/component.json).
+- **Limits and potential reuse:** Finite PQ2_0 half scales only.
+  K64 with FP16 operands and sm89 in the measured block.
+  The packed transform may be reused when the half rounding,
+  lane mapping and occupancy match. No cross-model or
+  whole-request speedup is established.
+  [Reproduction and full measurements](EXP-2026-11-25-2022-bonsai-pq2-half2/README.md).
+
+### EXP-2026-11-25-2024 — Native Bonsai MTP input projection
+
+- **Status:** EXPERIMENTAL, verified input stem only. Source commit
+  `eaa5d0b74d416232fc0245205423bbdc542d3d5a`.
+  [Goose graph](EXP-2026-11-25-2024-bonsai-mtp-stem/source/stem.goose),
+  [CUDA Q4 kernel](EXP-2026-11-25-2024-bonsai-mtp-stem/source/stem.cl),
+  [artifact hashes](EXP-2026-11-25-2024-bonsai-mtp-stem/data/SHA256SUMS).
+- **Mechanism:** Reuse the resident embedding, inverse Hadamard, and
+  weight-specific RMSNorm. Concatenate normalized E then H and apply
+  the Q4_0 10240x5120 EH projection. Existing scratch is reused in
+  the diagnostic. This is a prerequisite for native draft inference.
+- **Evidence and limits:** RTX 4070, Bonsai PQ2_0-mtp, Q4_0 draft EH,
+  context 1024 and ubatch 128. For two captured trunk states,
+  embeddings and all normalized input values match an independent
+  reconstruction byte for byte. All 5120 EH outputs agree with
+  the independent FP64 oracle within max abs 1.90e-6 and relative
+  L2 2.77e-7. The normal eight output IDs and selected logits match
+  with and without capture. No prefill, decode, peak VRAM or RAM
+  speed claim. Draft transformer, KV state and verification remain
+  open. Other dense MTP heads may reuse this pattern only with the
+  same input order, layouts and norm contract.
+  [Evidence and reproduction](EXP-2026-11-25-2024-bonsai-mtp-stem/README.md).
+
+### EXP-2026-11-25-2025 — Native Bonsai MTP draft layer
+
+- **Status:** EXPERIMENTAL, verified single-row forward with independent
+  Q4_0 KV. Builds on EXP-2024.
+  [Goose graph](EXP-2026-11-25-2025-bonsai-mtp-head/source/head.goose),
+  [CUDA Q4 kernel](EXP-2026-11-25-2025-bonsai-mtp-head/source/head.cl),
+  [artifact hashes](EXP-2026-11-25-2025-bonsai-mtp-head/data/SHA256SUMS).
+- **Mechanism:** Execute the native Q4_0 draft projections in their original
+  basis, reuse the existing gated attention and FFN operators, and score
+  with the shared PQ2_0 head.
+- **Evidence and limits:** RTX 4070, Q4_0 K/V, context 1024, ubatch 128.
+  Four positions replayed for 993,280 bit-identical logits. FP64 oracle
+  for draft FFN and final norm reached relative L2 at most 4.24e-7.
+  156 sampled vocabulary logits agree within 1.15e-6 absolute error.
+  Isolated draft KV occupied 4,608 bytes. Ordinary eight-token smoke
+  matched EXP-2024. Throughput, acceptance and peak memory are unmeasured.
+  Other dense MTP layers can consider the scoped Q4 matvec and separate
+  cache, subject to geometry, layout and numerical validation.
+  [Evidence and reproduction](EXP-2026-11-25-2025-bonsai-mtp-head/README.md).
+
+### EXP-2026-11-25-2026 — Bonsai MTP reference arithmetic
+
+- **Status:** EXPERIMENTAL, comparative diagnosis on RTX 4070. With
+  identical hidden inputs and positions, the default PrismML draft
+  matches three of four Goose IDs. It matches four of four with
+  reference cache rotation disabled. Prefill, decode and peak
+  VRAM or RAM were not measured.
+- **Mechanism:** PrismML's default Q4_0 cache rotates K and V before
+  quantization. It also uses Q8_1 activations for the Q4_0 EH
+  projection. Independent arithmetic reconstructs both runtimes'
+  EH within 7.21e-6 absolute error. Disabling reference rotation
+  preserves the reference EH bytes and reduces final relative
+  logit L2 at all four positions.
+- **Reuse:** Separate activation quantization, cache format and
+  cache transform when comparing draft paths. Test acceptance
+  and wall time before enabling any such method in a drafter.
+  [Source, pinned reference, and measured traces](EXP-2026-11-25-2026-bonsai-mtp-prism/README.md).
+
+### EXP-2026-11-25-2027 — Bonsai exact target verification gate
+
+- **Status:** EXPERIMENTAL rollback verified. Direct commit of the
+  existing three-row prefill graph is REJECTED for bitwise verification.
+- **Mechanism:** Compare ordinary Q8 decode to three-row target
+  logits. Force a false final proposal, restore logical KV/GDN
+  ownership, and replay the retained inputs serially.
+- **Evidence:** RTX 4070, context 1024, Q4_0 K/V, two short prompts.
+  Six greedy selections match and the causal prefix is exact when
+  the final proposal changes. Direct commit differs in 128/128 state
+  planes per prompt, with 0.322–0.656% relative logit L2. After
+  rollback and replay over 157 MB of active state and both subsequent
+  logit rows match bitwise in each fixture.
+- **Limits and reuse:** An exact verifier must reproduce the decode
+  arithmetic across projections and stateful operations. Host
+  snapshots are diagnostic. Prefill, decode, peak VRAM/RAM and
+  speculative acceptance are unmeasured.
+  [Source, state gate, and measured results](EXP-2026-11-25-2027-bonsai-mtp-target-verify/README.md).
+
+### EXP-2026-11-25-2028 — Three-row PQ2 Q8 weight-code reuse
+
+- **Status:** EXPERIMENTAL, bit-exact and faster projection component.
+  Full verifier still fails the bitwise state gate.
+- **Mechanism:** Reuse Q8 packing and the EXP-2012 PQ2 DP4A operand
+  order. Unpack each weight-code pair once for three tokens, with
+  independent accumulators. [CUDA source](EXP-2026-11-25-2028-bonsai-mtp-q8-batch/source/verify-mvq.cl).
+- **Evidence:** RTX 4070, 843,261 exact projection values across four
+  real tensors. Median vocabulary pack+projection of three tokens
+  decreased from 2.265 to 0.992 ms. No spills. Full target control
+  and candidate match all six sampled greedy selections against
+  serial, but 122/128 candidate state planes differ on both inputs.
+  No model throughput or peak memory measured. No additional device
+  buffers over EXP-2027.
+- **Reuse:** Apply to token tiles with common PQ2 weights, separate
+  Q8 operands and unchanged per-token reduction. Register pressure
+  and model-level benefit require their own measurement.
+  [Metrics, hashes and reproduction](EXP-2026-11-25-2028-bonsai-mtp-q8-batch/README.md).
+
+### EXP-2026-11-25-2029 — Exact three-row Bonsai target
+
+- **Status:** EXPERIMENTAL, verified bitwise in three short fixtures.
+- **Mechanism:** Reuse the EXP-2028 PQ2 Q8 batched projections.
+  Use the single-row decode arithmetic and positional configs for
+  shape-sensitive FP32 projections, decay, convolution, GDN, RoPE
+  and Q4 attention. Preserve the layer's recurrent ownership.
+- **Evidence:** RTX 4070, context 1024, ubatch 128, Q4_0 K/V. For
+  32, 129 and 255-token prefixes, all 2,234,880 logits and all
+  128 state planes per fixture match. Forced rejection remains
+  exact after diagnostic rollback. At 129, target-only wall time
+  is 68.581 ms for three serial calls vs 27.879 ms for the batch.
+  The adapter adds 1,280 device bytes. No full-request speed, peak
+  VRAM/RAM or natural speculative acceptance measured.
+- **Reuse:** Pair exact weight-sharing projections with ordered
+  recurrent and positional operators. Model-specific geometry and
+  partial-commit behavior require separate checks.
+  [Source, timing and reproduction](EXP-2026-11-25-2029-bonsai-mtp-exact-verify/README.md).
+
+### EXP-2026-11-25-2030 — Device-resident Bonsai prefix commit
+
+- **Status:** EXPERIMENTAL, exact target transaction on short and
+  32,767-token prefixes. Integrating natural draft generation remains open.
+- **Mechanism:** Store GDN recurrence and convolution history for the
+  intermediate rows directly on the device. Commit one to three inputs
+  by selecting ownership and lowering the append-only KV cursor.
+- **Evidence:** RTX 4070, Q4_0 K/V, contexts 1024 and 36,864. Nine
+  prefix decisions and the subsequent ordinary decode step matched
+  the serial oracle's visible state and logits, with six forced
+  rejections. Long diagnostic target time is 48.58–55.88 ms per
+  three-row call. Additional device workspace is 299.25 MiB.
+  Prefill/decode throughput and peak RAM/VRAM were not measured.
+- **Reuse:** Recurrent paths with an always-kept anchor, separate state
+  slots and append-only KV can apply pointer-based partial commit.
+  [Source, evidence and reproduction](EXP-2026-11-25-2030-bonsai-mtp-device-commit/README.md).
+
+### EXP-2026-11-25-2031 — End-to-end Bonsai greedy MTP
+
+- **Status:** EXPERIMENTAL, verified greedy decode gain. The 32K/512
+  total request is slower while draft KV catch-up remains serial.
+- **Mechanism:** Combine the native two-proposal drafter, exact
+  three-row target and device prefix commit. Repair retained draft
+  KV with the actual target hidden rows.
+- **Evidence:** RTX 4070, Q4_0 K/V, 32K/512, context 36,864,
+  ubatch 1024. Prefill 645.83 → 577.06 tok/s, decode 32.60 →
+  46.14 tok/s (+41.52%), combined 66.416 → 67.860 s. All 512
+  IDs and selected logits match across A–B–B–A. Acceptance
+  326/370 (88.11%). About 339.79 MiB extra device allocation;
+  peak RSS remains within 388 KiB of the control range, no
+  process swaps. Peak VRAM was not sampled. The 129/64 smoke
+  improves decode from 41.41 to 59.46 tok/s with matching IDs.
+- **Reuse:** Separate the draft history repair from exact target
+  commit. Measure draft catch-up, natural acceptance and wall time
+  before enabling a speculative path.
+  [Source, measured results and reproduction](EXP-2026-11-25-2031-bonsai-mtp-greedy/README.md).
+
+### EXP-2026-11-25-2032 — Bit-exact batched Bonsai draft prefill
+
+- **Status:** Verified within the experimental MTP path.
+- **Mechanism:** Batch the prompt-only K/V graph over at most 128
+  tokens, shift target hidden rows on device and reuse each
+  Q4 weight for four exact per-token accumulators.
+- **Evidence:** RTX 4070, Q4_0 K/V, 32K/512, context 36,864,
+  A–B–B–A. Prefill 578.39 → 610.08 tok/s, decode 46.29 →
+  46.14 tok/s, combined 67.695 → 64.787 s. Raw draft K/V,
+  output IDs, selected logits and 326/370 acceptance match.
+  Device allocation grows by 216 bytes, peak RSS ranges overlap,
+  no process swap. Peak VRAM not sampled.
+- **Reuse:** Keep the prefix update KV-only and use device-resident
+  shifted hidden inputs whenever the draft geometry and arithmetic
+  contract match.
+  [Source, measured evidence and reproduction](EXP-2026-11-25-2032-bonsai-mtp-batch-prefill/README.md).
+
+### EXP-2026-11-25-2033 — Share exact Bonsai verifier attention
+
+- **Status:** Verified within the experimental MTP path.
+- **Mechanism:** Share Q4 K/V loads across three query positions and
+  two GQA heads. Preserve per-query FP32 reduction, causal bounds
+  and frozen tile merge. Use the existing partial buffer.
+- **Evidence:** RTX 4070, Q4_0 K/V, 32K/512, context 36,864,
+  A–B–B–A. Decode 46.40 → 50.79 tok/s, prefill 610.95 →
+  611.27 tok/s, combined 64.649 → 63.668 s. Target saves
+  5.197 ms per block. All 512 IDs and selected logits match.
+  No additional workspace. Peak RSS ranges overlap, no process
+  swap, no peak VRAM sample. The one-head candidate is slower
+  on long contexts and is not dispatched.
+- **Reuse:** Keep separate numerical state for each query when
+  reusing K/V. Register and scratch budgets depend on geometry.
+  [Source, measured evidence and reproduction](EXP-2026-11-25-2033-bonsai-mtp-attention-reuse/README.md).
+
+### EXP-2026-11-25-2034 — Device choice for Bonsai MTP
+
+- **Status:** Verified within the experimental MTP path.
+- **Mechanism:** Reduce logits on device with exact tie handling,
+  EOG mask and invalid-logit reporting. Transfer 12 bytes per
+  selected row in place of its 993,280-byte FP32 logits.
+- **Evidence:** RTX 4070, Q4_0 K/V, 32K/512, context 36,864,
+  A–B–B–A. Decode 50.97 → 53.54 tok/s, prefill 611.77 →
+  610.77 tok/s, total 63.592 → 63.194 s. All 512 IDs and
+  selected logits and 326/370 acceptance match. Extra device
+  allocation 39,824 bytes, peak RSS increases by less than
+  501 KiB across the sampled ranges, no process swap. Peak
+  VRAM not sampled.
+- **Reuse:** Keep logits resident for greedy sampling when
+  the tie, mask and error contract match.
+  [Source, measured evidence and reproduction](EXP-2026-11-25-2034-bonsai-mtp-device-argmax/README.md).
+
+### EXP-2026-11-25-2035 — Measured Bonsai MTP phase budget
+
+- **Status:** DIAGNOSTIC, no new optimization. EXP-2034,
+  RTX 4070, 32K/512, context 36,864, Q4_0 K/V.
+- **Evidence:** CUDA correlation links all 549,921 kernels.
+  Prefill wall 53.432 s, including 30.008 s projection activity
+  and 14.704 s Attention and 0.155 s uncovered GPU time.
+  Decode wall 9.570 s, including 3.661 s target Attention
+  and 3.543 s target projection activity. Device-choice decode
+  copies 11,100 B back to the host. All 512 IDs and selected
+  logits match EXP-2031, with 326/370 proposals accepted.
+- **Priorities:** Use absolute projection and Flash budgets for
+  prefill. For decode, target Attention merge and the shared
+  PQ2 projection dominate. The profile does not support host
+  dispatch as the primary wall-time limit.
+  [Trace data, attribution and reproduction](EXP-2026-11-25-2035-bonsai-mtp-phase-budget/README.md).
+
+### EXP-2026-11-25-2036 — Parallel exact Bonsai target merge
+
+- **Status:** Verified within the experimental MTP path.
+- **Mechanism:** Merge three independent Q4 attention queries
+  in one launch. Prepare coefficients with warp prefix maxima,
+  retain chronological accumulation and exact FP32 division.
+- **Evidence:** RTX 4070, Q4_0 K/V, 32K/512, context 36,864,
+  A–B–B–A. Decode 53.53 → 61.51 tok/s, prefill 611.89 →
+  612.02 tok/s, combined 63.099 → 61.848 s. Target saves
+  6.724 ms per block. All 512 IDs, selected logits and 326/370
+  acceptance match. No new device allocations. Peak RSS
+  ranges overlap, no process swap, peak VRAM not sampled.
+- **Reuse:** Parallelize coefficient preparation while maintaining
+  independent ordered state per query.
+  [Source, measured evidence and reproduction](EXP-2026-11-25-2036-bonsai-mtp-verify-merge/README.md).
+
+### EXP-2026-11-25-2037 — Compressed shared PQ2 fragments
+
+- **Status:** REJECTED at the component gate. Keep EXP-2019.
+- **Mechanism:** Stage compact weight codes and expand FP16 A
+  fragments in registers, keeping the K64/K128 FP16 MMA order.
+- **Evidence:** RTX 4070, seven real GGUF fixtures, all 51,898,369
+  results bitwise exact. Six variants lose on every shape;
+  even the best FFN down variants take 6.84–13.43% longer.
+  Limiting unroll reduces the register count to 56–80 from 128
+  without recovering control time. No full model or memory claims.
+- **Reuse:** Keep the cached CTA-level expansion when several
+  warp groups consume the same weight fragments on these tiles.
+  [Source, measured evidence and reproduction](EXP-2026-11-25-2037-bonsai-mmq-packed-fragment/README.md).
+
+### EXP-2026-11-25-2038 — Bonsai Q8 draft vocabulary
+
+- **Status:** Verified decode improvement within experimental MTP.
+- **Mechanism:** Reuse the EXP-2012 Q8 DP4A PQ2 vocabulary
+  projection only for draft proposals. Target arithmetic,
+  verification and commit are unchanged.
+- **Evidence:** RTX 4070, Q4_0 K/V, 32K/512, context 36,864,
+  A–B–B–A. Decode 61.62 → 64.11 tok/s, drafter time
+  1.212 → 0.896 s, prefill 612.85 → 611.01 tok/s.
+  All 512 IDs, selected logits and 326/370 acceptance match.
+  The two additional free generations match through EOG.
+  Maximum draft logit change 0.05074 on a fixed-history
+  probe. No new allocations. Peak RSS ranges overlap,
+  no process swap, peak VRAM not sampled.
+- **Reuse:** Quantize the proposal scoring projection with
+  unchanged target verification and an acceptance gate.
+  [Source, measured evidence and reproduction](EXP-2026-11-25-2038-bonsai-mtp-q8-head/README.md).
+
+### EXP-2026-11-25-2039 — Bonsai four-row verification
+
+- **Status:** REJECTED for throughput in the tested geometry.
+- **Mechanism:** Verify three proposals with exact four-row
+  PQ2 and Attention and a third intermediate GDN prefix.
+- **Evidence:** RTX 4070, Q4_0 K/V, 32K/512, context 36,864,
+  A–B–B–A. Decode 64.22 → 61.49 tok/s. Blocks 185 → 145,
+  target time per block 37.632 → 49.126 ms. Prefill
+  611.99 → 611.56 tok/s. All 512 IDs and selected logits,
+  plus the four forced-commit state checks, match. Additional
+  explicit GPU allocation 150.57 MiB. No process swap.
+- **Reuse:** Keep two proposals unless a new exact kernel or a
+  measured acceptance change can recover at least 2.44 ms per
+  four-row block at the current workload.
+  [Source, measured evidence and reproduction](EXP-2026-11-25-2039-bonsai-mtp-three-proposals/README.md).
+
+### EXP-2026-11-25-2040 — Bonsai layer-bounded Q8 FFN down
+
+- **Status:** Last 16 rejected by the sequence gate. Last eight
+  matches the quality suite and shows no repeatable speed gain.
+  Last four was tested on code trace only.
+- **Mechanism:** Reuse the prefill integer MMQ on selected late
+  down projections, using a materialized F32 FFN activation and
+  the existing activation and scale scratch.
+- **Evidence:** Last 16 changes code-trace top-1 at step 203
+  on fixed history. Last eight retains all 391 IDs across four
+  free tasks. RTX 4070, Q4_0 K/V, 32K/512, A–B–B–A:
+  prefill 612.67 → 612.20 tok/s, decode 64.17 → 63.96,
+  all 512 IDs and 326/370 acceptance match. Max selected
+  logit delta 0.09450. Allocations match, no process swap.
+- **Reuse:** Keep FP16 down. Account for the SwiGLU/FWHT/pack
+  path and recheck full-quality boundaries before deployment.
+  [Source, measured evidence and reproduction](EXP-2026-11-25-2040-bonsai-ffn-down-q8/README.md).
+
+### EXP-2026-11-25-2041 — Reuse packed Bonsai Flash Q panels
+
+- **Status:** Verified within experimental Bonsai prefill.
+- **Mechanism:** Pack each query once in consumer panel order
+  and use aligned asynchronous copies for the repeated Flash tiles.
+  Preserve the FP16 values, MMA and ordered merge.
+- **Evidence:** RTX 4070, Q4_0 K/V, 32K/512, A–B–B–A.
+  Prefill 611.30 → 615.12 tok/s, decode 64.20 → 64.09,
+  combined 61.565 → 61.244 s. Both pairs save prefill and
+  overall time. All 512 IDs and selected logits match.
+  No added allocations or process swap. Direct register fragments
+  lose the six component shapes despite smaller shared storage.
+- **Reuse:** Prepack in exact consumer layout when multiple tiles
+  use the same query. Check the prior workspace lifetime.
+  [Source, measured evidence and reproduction](EXP-2026-11-25-2041-bonsai-flash-query-pack/README.md).
+
+### EXP-2026-11-25-2042 — Exact causal-tail split for Bonsai verification
+
+- **Status:** Verified within experimental MTP.
+- **Mechanism:** Separate the common visible key region from
+  the at-most-two-key tail in three-query Q4 attention. Preserve
+  per-query FP32 operation and reduction order.
+- **Evidence:** RTX 4070, Q4_0 K/V, 32K/512, A–B–B–A.
+  Decode 64.30 → 67.29 tok/s, prefill 615.85 → 616.11,
+  target saves 1.997 ms/block. All 512 IDs and selected
+  logits match, no new allocation or process swap.
+  Distributing scalar softmax updates across lanes loses to
+  the tail-only candidate in the long component checks.
+- **Reuse:** Keep the common valid loop and a bounded exact
+  tail whenever query masks are nested.
+  [Source, measured evidence and reproduction](EXP-2026-11-25-2042-bonsai-mtp-lane-softmax/README.md).
+
+### EXP-2026-11-25-2043 — Paired Q4 tiles for four verifier rows
+
+- **Status:** Verified within experimental Bonsai MTP at 32K/512.
+- **Mechanism:** Divide four queries into two independent pairs
+  in one launch and share K/V across three heads per warp. Keep
+  exact causal order and the device prefix transaction.
+- **Evidence:** RTX 4070, Q4_0 K/V, A–B–B–A. Decode
+  67.52 → 70.34 tok/s, prefill 615.04 → 615.28. Target
+  blocks 185 → 145. Both pairs improve combined time and
+  match all 512 IDs and selected logits. Additional explicit
+  GPU allocation 150.57 MiB, no process swap.
+- **Reuse:** Explore smaller query groups when the merged tile
+  carries too much register state. Compare the net decode
+  result and capacity, including acceptance and GDN prefix slots.
+  [Source, measured evidence and reproduction](EXP-2026-11-25-2043-bonsai-mtp-pair-tiles/README.md).
+
+### EXP-2026-11-25-2044 — Exact Bonsai FFN input fusion
+
+- **Status:** Verified within experimental Bonsai prefill.
+- **Mechanism:** Fuse residual add, RMSNorm, signed FWHT and
+  exact FP16 or Q8 pack. Preserve the residual and use the same
+  gate/up projections and arithmetic.
+- **Evidence:** RTX 4070, Q4_0 K/V, 32K/512, A–B–B–A.
+  Prefill 614.13 → 618.14 tok/s, decode 70.61 → 70.33,
+  combined 60.594 → 60.276 s. Both pairs improve prefill and
+  overall time. All 512 IDs and selected logits match.
+  No added allocations or process swap.
+- **Reuse:** Preserve exact packet identity and later residual
+  consumers when fusing the input transform.
+  [Source, measured evidence and reproduction](EXP-2026-11-25-2044-bonsai-ffn-prefix/README.md).
+
+### EXP-2026-11-25-2045 — Exact multi-step Bonsai GDN
+
+- **Status:** Exact experimental component. No default change.
+- **Mechanism:** Carry the GDN column shard across verifier tokens
+  in registers and still write every exact selectable state.
+- **Evidence:** RTX 4070, 11,010,048 exact recurrent values.
+  Four-step random-state component 41.37 → 17.82 µs.
+  On Q4_0 32K/512, paired decode 70.67 → 71.12 tok/s,
+  combined 60.222 → 60.229 s. Both reproductions of the
+  candidate match all 512 IDs and selected logits. No added
+  allocations or process swap. Full-request gain unproven.
+- **Reuse:** Preserve per-token rounding and prefix ownership
+  when removing intermediate state reads in another verifier.
+  [Source, measured evidence and reproduction](EXP-2026-11-25-2045-bonsai-mtp-gdn-prefix-fusion/README.md).
+
+### EXP-2026-11-25-2046 — Exact Bonsai five-row verification
+
+- **Status:** REJECTED for throughput in the measured geometry.
+- **Mechanism:** Share PQ2 across five target rows and partition
+  exact Q4 Attention into one three-row and one two-row group.
+- **Evidence:** RTX 4070, 32K/512, Q4_0 K/V, A–B–B–A.
+  Decode 70.64 → 68.80 tok/s, blocks 145 → 121, target
+  41.552 → 49.661 ms/block. All 512 IDs and selected logits
+  match, as do all five forced-commit state checks. Extra
+  explicit GPU allocation 150.58 MiB. No process swap.
+- **Reuse:** Keep four rows for this workload. At observed
+  acceptance the fifth row needs 1.60 ms/block lower cost
+  to match the control.
+  [Source, measured evidence and reproduction](EXP-2026-11-25-2046-bonsai-mtp-five-rows/README.md).
+
+### EXP-2026-11-25-2047 — Exact Bonsai verifier warp layouts
+
+- **Status:** Verified decode improvement with four target rows.
+- **Evidence:** RTX 4070, Q4_0 K/V, 32K/512, A–B–C–C–B–A.
+  Four-row decode 70.65 → 72.12 tok/s. Five rows reach 70.89.
+  All 512 IDs, selected logits and checked state prefixes match.
+  No additional four-row allocation. Total wall gain inconclusive.
+  [Source, measured evidence and reproduction](EXP-2026-11-25-2047-bonsai-mtp-pq2-warp-rows/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.

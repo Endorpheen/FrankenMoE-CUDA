@@ -1,0 +1,4 @@
+profile_prefill_cpu_ms=53749.546
+profile_decode_cpu_ms=10177.385
+mtp_blocks=185 proposed=370 accepted=326 commit_1=14 commit_2=16 commit_3=155 draft_ms=1209.501 target_ms=8252.053 catchup_ms=107.209
+prompt_n=32768 prefill_ms=53431.787 decode_n=512 decode_ms=9570.438 ubatch=1024

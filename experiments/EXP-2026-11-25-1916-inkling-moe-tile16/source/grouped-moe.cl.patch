@@ -1,0 +1,48 @@
+--- a/grouped-moe.cl
++++ b/grouped-moe.cl
+@@ -49 +49 @@
+-    ulong stride, int width, int rows, int kind) {
++    ulong stride, int width, int rows, int kind, bool wide) {
+@@ -63,0 +64,2 @@
++    float4 acc_hi = (float4)(0);
++    const bool has_hi = wide && count > 8;
+@@ -75,0 +78,12 @@
++        if (has_hi) {
++            b = (uint2)(0);
++            if ((lane >> 2) + 8 < count) {
++                const __global ushort *hi = input + 8 * (ulong)width;
++                b.x = *(__global const uint *)(hi + k + col);
++                b.y = *(__global const uint *)(hi + k + col + 8);
++            }
++            __asm__ volatile("mma.sync.aligned.m16n8k16.row.col.f32.f16.f16.f32 "
++                "{%0,%1,%2,%3}, {%4,%5,%6,%7}, {%8,%9}, {%0,%1,%2,%3};"
++                : "+f"(acc_hi.x), "+f"(acc_hi.y), "+f"(acc_hi.z), "+f"(acc_hi.w)
++                : "r"(a0.x), "r"(a1.x), "r"(a0.y), "r"(a1.y), "r"(b.x), "r"(b.y));
++        }
+@@ -86,0 +101,13 @@
++    if (has_hi) {
++        const uint hi_col = col + 8;
++        if (hi_col < count) {
++            __global float *target = (__global float *)(output + jobs[3 * (first + hi_col) + 1]);
++            if (row < (uint)rows) target[row] = acc_hi.x;
++            if (row + 8 < (uint)rows) target[row + 8] = acc_hi.z;
++        }
++        if (hi_col + 1 < count) {
++            __global float *target = (__global float *)(output + jobs[3 * (first + hi_col + 1) + 1]);
++            if (row < (uint)rows) target[row] = acc_hi.y;
++            if (row + 8 < (uint)rows) target[row + 8] = acc_hi.w;
++        }
++    }
+@@ -90 +117 @@
+-#define MOE_MMQ(ENTRY, TYPE) \
++#define MOE_MMQ(ENTRY, TYPE, WIDE) \
+@@ -94 +121 @@
+-    grouped_mmq(weight, packed, output, jobs, tiles, stride, width, rows, TYPE); \
++    grouped_mmq(weight, packed, output, jobs, tiles, stride, width, rows, TYPE, WIDE); \
+@@ -97,2 +124,4 @@
+-MOE_MMQ(goose_i2_xs_mmq, 23)
+-MOE_MMQ(goose_i2_nl_mmq, 20)
++MOE_MMQ(goose_i2_xs_mmq, 23, false)
++MOE_MMQ(goose_i2_nl_mmq, 20, false)
++MOE_MMQ(goose_i2_xs_mmq16, 23, true)
++MOE_MMQ(goose_i2_nl_mmq16, 20, true)

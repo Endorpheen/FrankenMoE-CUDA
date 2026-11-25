@@ -1,0 +1,4 @@
+d00d373e2e3e3f53f4c8d7c543d1192b8d3d8e1cc449ea704871cf945735891f  build/bonsai-ffn-q8-prefill-2014-http/frankenmoe-infer
+5951a239c747e872bd6a0abf98d30e548beff42a91becc149ae8c133cc5d1bb0  build/bonsai-ffn-q8-prefill-2014-http/pq2-int8.cubin
+1087dd754bd08381ea5b003fa1fef791ac5dd7fde16b97c941a0d80256a73cc9  build/bonsai-ffn-q8-prefill-2014-default/frankenmoe-infer
+5951a239c747e872bd6a0abf98d30e548beff42a91becc149ae8c133cc5d1bb0  build/bonsai-ffn-q8-prefill-2014-default/pq2-int8.cubin

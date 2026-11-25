@@ -1,0 +1,22 @@
+--- a/inkling-matrix-driver.h
++++ b/inkling-matrix-driver.h
+@@ -15 +15 @@
+-    static Function kernels[3];
++    static Function kernels[4];
+@@ -17 +17,4 @@
+-    const int index = kind == 8 ? 0 : kind == 20 ? 1 : 2;
++    const char *tile16 = getenv("I2_Q8_TILE16");
++    const bool use_tile16 = kind == 8 && words == 2 && count >= 16 && count % 16 == 0 &&
++                            (!tile16 || strcmp(tile16, "0") != 0);
++    const int index = use_tile16 ? 3 : kind == 8 ? 0 : kind == 20 ? 1 : 2;
+@@ -19 +22 @@
+-        "goose_i2_matrix_q8_0", "goose_i2_matrix_iq4_nl", "goose_i2_matrix_iq4_xs"
++        "goose_i2_matrix_q8_0", "goose_i2_matrix_iq4_nl", "goose_i2_matrix_iq4_xs", "goose_i2_matrix_q8_0_tile16"
+@@ -28,0 +32 @@
++    if (use_tile16) tile = 16;
+@@ -35,0 +40,2 @@
++        void *tile16_args[] = {&weight, &matrix_input, &matrix_output, &cuda.jobs.address,
++                              &stride, &width, &rows, &base};
+@@ -37 +43 @@
+-                            1, 128, 1, 1, 0, NULL, args, NULL);
++                            1, 128, 1, 1, 0, NULL, use_tile16 ? tile16_args : args, NULL);

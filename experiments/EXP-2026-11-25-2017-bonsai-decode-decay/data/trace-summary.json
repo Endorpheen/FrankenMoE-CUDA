@@ -1,0 +1,258 @@
+{
+  "trace-a": {
+    "timings": {
+      "cache_n": 0,
+      "prompt_n": 32768,
+      "prompt_ms": 53993.754334020196,
+      "prompt_per_token_ms": 1.6477586161505187,
+      "prompt_per_second": 606.8850074267507,
+      "predicted_n": 16,
+      "predicted_ms": 488.7752419745084,
+      "predicted_per_token_ms": 32.58501613163389,
+      "predicted_per_second": 30.688952123279417
+    },
+    "ids": [
+      279,
+      4530,
+      310,
+      12904,
+      11,
+      321,
+      799,
+      21254,
+      421,
+      1000,
+      8381,
+      678,
+      15673,
+      13,
+      198,
+      1812
+    ],
+    "kernels": [
+      {
+        "kernel": "bonsai_pq2_mvq_q8_2",
+        "calls": 5520,
+        "time_ms": 236.003837
+      },
+      {
+        "kernel": "bonsai_decode_gqa3",
+        "calls": 240,
+        "time_ms": 95.37249
+      },
+      {
+        "kernel": "goose_q4_attention_merge",
+        "calls": 240,
+        "time_ms": 31.928419
+      },
+      {
+        "kernel": "bonsai_decay",
+        "calls": 720,
+        "time_ms": 31.801599
+      },
+      {
+        "kernel": "bonsai_fwht1024",
+        "calls": 3870,
+        "time_ms": 10.981735
+      },
+      {
+        "kernel": "bonsai_pq2_mvq_q8_1",
+        "calls": 15,
+        "time_ms": 10.916806
+      },
+      {
+        "kernel": "bonsai_norm_wide_512_1",
+        "calls": 1935,
+        "time_ms": 10.14297
+      },
+      {
+        "kernel": "goose_gdn_decode",
+        "calls": 720,
+        "time_ms": 8.084801
+      },
+      {
+        "kernel": "bonsai_pq2_matvec_ordered",
+        "calls": 480,
+        "time_ms": 6.455602
+      },
+      {
+        "kernel": "bonsai_norm",
+        "calls": 1920,
+        "time_ms": 4.428885
+      },
+      {
+        "kernel": "bonsai_mv_pack_q8",
+        "calls": 3855,
+        "time_ms": 3.867302
+      },
+      {
+        "kernel": "bonsai_residual",
+        "calls": 1920,
+        "time_ms": 1.969599
+      },
+      {
+        "kernel": "goose_set_q4_rows",
+        "calls": 480,
+        "time_ms": 1.403035
+      },
+      {
+        "kernel": "bonsai_conv_step",
+        "calls": 720,
+        "time_ms": 1.269435
+      },
+      {
+        "kernel": "bonsai_swiglu",
+        "calls": 960,
+        "time_ms": 1.26478
+      },
+      {
+        "kernel": "goose_rope_decode",
+        "calls": 480,
+        "time_ms": 1.244724
+      },
+      {
+        "kernel": "bonsai_attention_gate",
+        "calls": 240,
+        "time_ms": 0.32304
+      },
+      {
+        "kernel": "bonsai_split_q_gate",
+        "calls": 240,
+        "time_ms": 0.230877
+      },
+      {
+        "kernel": "bonsai_pq2_row",
+        "calls": 15,
+        "time_ms": 0.019678
+      }
+    ]
+  },
+  "trace-b": {
+    "timings": {
+      "cache_n": 0,
+      "prompt_n": 32768,
+      "prompt_ms": 54552.79158501071,
+      "prompt_per_token_ms": 1.664819079132407,
+      "prompt_per_second": 600.6658696638277,
+      "predicted_n": 16,
+      "predicted_ms": 461.9291079870891,
+      "predicted_per_token_ms": 30.79527386580594,
+      "predicted_per_second": 32.4725152423589
+    },
+    "ids": [
+      279,
+      4530,
+      310,
+      12904,
+      11,
+      321,
+      799,
+      21254,
+      421,
+      1000,
+      8381,
+      678,
+      15673,
+      13,
+      198,
+      1812
+    ],
+    "kernels": [
+      {
+        "kernel": "bonsai_pq2_mvq_q8_2",
+        "calls": 5520,
+        "time_ms": 238.495287
+      },
+      {
+        "kernel": "bonsai_decode_gqa3",
+        "calls": 240,
+        "time_ms": 94.856785
+      },
+      {
+        "kernel": "goose_q4_attention_merge",
+        "calls": 240,
+        "time_ms": 31.517082
+      },
+      {
+        "kernel": "bonsai_fwht1024",
+        "calls": 3870,
+        "time_ms": 10.999544
+      },
+      {
+        "kernel": "bonsai_pq2_mvq_q8_1",
+        "calls": 15,
+        "time_ms": 10.981143
+      },
+      {
+        "kernel": "bonsai_norm_wide_512_1",
+        "calls": 1935,
+        "time_ms": 9.861825
+      },
+      {
+        "kernel": "goose_gdn_decode",
+        "calls": 720,
+        "time_ms": 7.074035
+      },
+      {
+        "kernel": "bonsai_pq2_matvec_ordered",
+        "calls": 480,
+        "time_ms": 6.771873
+      },
+      {
+        "kernel": "bonsai_decay_stage_256_0",
+        "calls": 720,
+        "time_ms": 4.668441
+      },
+      {
+        "kernel": "bonsai_norm",
+        "calls": 1920,
+        "time_ms": 4.432866
+      },
+      {
+        "kernel": "bonsai_mv_pack_q8",
+        "calls": 3855,
+        "time_ms": 3.89003
+      },
+      {
+        "kernel": "bonsai_residual",
+        "calls": 1920,
+        "time_ms": 1.967429
+      },
+      {
+        "kernel": "goose_set_q4_rows",
+        "calls": 480,
+        "time_ms": 1.411452
+      },
+      {
+        "kernel": "bonsai_swiglu",
+        "calls": 960,
+        "time_ms": 1.278568
+      },
+      {
+        "kernel": "bonsai_conv_step",
+        "calls": 720,
+        "time_ms": 1.273424
+      },
+      {
+        "kernel": "goose_rope_decode",
+        "calls": 480,
+        "time_ms": 1.244783
+      },
+      {
+        "kernel": "bonsai_attention_gate",
+        "calls": 240,
+        "time_ms": 0.334059
+      },
+      {
+        "kernel": "bonsai_split_q_gate",
+        "calls": 240,
+        "time_ms": 0.231595
+      },
+      {
+        "kernel": "bonsai_pq2_row",
+        "calls": 15,
+        "time_ms": 0.019104
+      }
+    ]
+  }
+}

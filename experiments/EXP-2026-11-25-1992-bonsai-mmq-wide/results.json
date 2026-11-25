@@ -1,0 +1,182 @@
+{
+  "profile": "4097/16",
+  "context": 36864,
+  "ubatch": 1024,
+  "kv": "q4_0/q4_0",
+  "request_sha256": "3e19644b64428f8e5333c51082b695ee755695643191b313a52e790d1f61c280",
+  "arms": {
+    "a1": {
+      "prefill_ms": 8400.492,
+      "decode_ms": 973.098,
+      "prefill_toks_s": 487.7095293942307,
+      "decode_toks_s": 16.442331604833225,
+      "workspace_bytes": 1720400640,
+      "measured_peak_vram_mib": 8932,
+      "peak_kib": {
+        "VmHWM": 7418452,
+        "VmRSS": 5844076,
+        "VmSwap": 0
+      },
+      "pswpout_delta": 0
+    },
+    "b1": {
+      "prefill_ms": 6940.259,
+      "decode_ms": 974.716,
+      "prefill_toks_s": 590.3237905098355,
+      "decode_toks_s": 16.415037816143368,
+      "workspace_bytes": 1720400640,
+      "measured_peak_vram_mib": 8932,
+      "peak_kib": {
+        "VmHWM": 7418700,
+        "VmRSS": 7407360,
+        "VmSwap": 0
+      },
+      "pswpout_delta": 0
+    },
+    "b2": {
+      "prefill_ms": 6942.046,
+      "decode_ms": 973.615,
+      "prefill_toks_s": 590.1718311863679,
+      "decode_toks_s": 16.433600550525618,
+      "workspace_bytes": 1720400640,
+      "measured_peak_vram_mib": 8932,
+      "peak_kib": {
+        "VmHWM": 7418912,
+        "VmRSS": 6187904,
+        "VmSwap": 0
+      },
+      "pswpout_delta": 0
+    },
+    "a2": {
+      "prefill_ms": 8425.564,
+      "decode_ms": 974.702,
+      "prefill_toks_s": 486.25824929939404,
+      "decode_toks_s": 16.41527359131304,
+      "workspace_bytes": 1720400640,
+      "measured_peak_vram_mib": 8932,
+      "peak_kib": {
+        "VmHWM": 7418616,
+        "VmRSS": 6014468,
+        "VmSwap": 0
+      },
+      "pswpout_delta": 0
+    }
+  },
+  "means": {
+    "prefill_toks_s": {
+      "32x32": 486.98388934681236,
+      "64x64": 590.2478108481016
+    },
+    "decode_toks_s": {
+      "32x32": 16.428802598073133,
+      "64x64": 16.424319183334493
+    }
+  },
+  "ids_and_selected_logits_bit_exact": true,
+  "ids_match_prism": true,
+  "output": [
+    {
+      "step": 0,
+      "token": 11846,
+      "logit": 19.6576195
+    },
+    {
+      "step": 1,
+      "token": 13,
+      "logit": 19.5944595
+    },
+    {
+      "step": 2,
+      "token": 58737,
+      "logit": 14.7398405
+    },
+    {
+      "step": 3,
+      "token": 1092,
+      "logit": 18.4565201
+    },
+    {
+      "step": 4,
+      "token": 488,
+      "logit": 16.1919174
+    },
+    {
+      "step": 5,
+      "token": 1000,
+      "logit": 17.4311848
+    },
+    {
+      "step": 6,
+      "token": 3222,
+      "logit": 18.0111523
+    },
+    {
+      "step": 7,
+      "token": 6570,
+      "logit": 17.136488
+    },
+    {
+      "step": 8,
+      "token": 11,
+      "logit": 19.0046978
+    },
+    {
+      "step": 9,
+      "token": 279,
+      "logit": 16.3880234
+    },
+    {
+      "step": 10,
+      "token": 4530,
+      "logit": 14.8468933
+    },
+    {
+      "step": 11,
+      "token": 310,
+      "logit": 17.6717834
+    },
+    {
+      "step": 12,
+      "token": 12904,
+      "logit": 14.2589397
+    },
+    {
+      "step": 13,
+      "token": 11,
+      "logit": 18.6806011
+    },
+    {
+      "step": 14,
+      "token": 321,
+      "logit": 16.6043358
+    },
+    {
+      "step": 15,
+      "token": 799,
+      "logit": 17.5472565
+    }
+  ],
+  "prism_timings": {
+    "cache_n": 0,
+    "prompt_n": 4097,
+    "prompt_ms": 3241.717,
+    "prompt_per_token_ms": 0.7912416402245546,
+    "prompt_per_second": 1263.836417552797,
+    "predicted_n": 16,
+    "predicted_ms": 282.839,
+    "predicted_per_token_ms": 18.855933333333333,
+    "predicted_per_second": 53.03370468711882
+  },
+  "default_profile_output_matches_wide": true,
+  "artifacts_sha256": {
+    "bonsai-mmq-wide": "88572acf4e796ae724d629eb21ef13aa478b7a54b863bfd0781cac65994d559d",
+    "pq2-mmq-wide.cubin": "ac98fadb66f5c4db0bfe533a75e469129501146ea232be6c6281c9f0fe3d5e86",
+    "frozen-goose.ptx": "42e1f5c0885a3bbab3656e3bba2dc6ef8b998a4581d365b6c1e48fc842f789d7"
+  },
+  "default_artifacts_sha256": {
+    "bonsai-mmq-wide": "baa41097a84aeda00504d32e5a187371eabeeef93f5828e3af9ecdbce075f912",
+    "pq2-mmq-wide.cubin": "ac98fadb66f5c4db0bfe533a75e469129501146ea232be6c6281c9f0fe3d5e86",
+    "frozen-goose.ptx": "42e1f5c0885a3bbab3656e3bba2dc6ef8b998a4581d365b6c1e48fc842f789d7",
+    "profile.nsys-rep": "abe4fd48b854e29c59d9877541f7cd99625bc42133e92a6d028fbf469462a033"
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "control": [
+    {
+      "span_ns": 32121225,
+      "kernel_ns": {
+        "bonsai_flash_stage_kv": 569357,
+        "bonsai_flash_staged_tile": 25835685,
+        "bonsai_flash_f32_merge": 5673023
+      }
+    },
+    {
+      "span_ns": 31325745,
+      "kernel_ns": {
+        "bonsai_flash_stage_kv": 478996,
+        "bonsai_flash_staged_tile": 25300916,
+        "bonsai_flash_f32_merge": 5505359
+      }
+    },
+    {
+      "span_ns": 30989264,
+      "kernel_ns": {
+        "bonsai_flash_stage_kv": 486388,
+        "bonsai_flash_staged_tile": 24959247,
+        "bonsai_flash_f32_merge": 5502959
+      }
+    }
+  ],
+  "ordered": [
+    {
+      "span_ns": 27599266,
+      "kernel_ns": {
+        "bonsai_flash_stage_kv": 506034,
+        "bonsai_flash_staged_tile": 24621104,
+        "bonsai_flash_ordered_merge": 2168059
+      }
+    },
+    {
+      "span_ns": 27641214,
+      "kernel_ns": {
+        "bonsai_flash_stage_kv": 520465,
+        "bonsai_flash_staged_tile": 24907382,
+        "bonsai_flash_ordered_merge": 2173151
+      }
+    },
+    {
+      "span_ns": 27628383,
+      "kernel_ns": {
+        "bonsai_flash_stage_kv": 470198,
+        "bonsai_flash_staged_tile": 24785599,
+        "bonsai_flash_ordered_merge": 2332909
+      }
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+Flash fragments: async staging and ldmatrix
+PQ2 MMQ: async activation and warp fragment loads
+Prefill GDN: frozen Goose MMA V32
+PQ2 MMQ: wide tiles for 128 or more tokens
+PQ2 MMQ: K64 exact wide tiles
+Batch decay: reuse alpha/beta weights
+FFN tail: fused SwiGLU, FWHT and FP16 packing
+Flash query layout: compact 6:1
+Flash merge: ordered parallel coefficients
+Prefill attention: staged Bonsai FP32 Flash
+Decode matrix: bonsai_pq2_matvec_ordered
+Device GGUF payload: 7481217024 bytes (includes inactive MTP tensors)
+Device workspace: 1720400640 bytes (Q4_0 K/V, GDN, activations)
+Device free: 609157120 / 12447973376 bytes
+Prefill 4096/4097, 4.958 s
+prompt_n=4097 prefill_ms=5022.298 decode_n=16 decode_ms=972.608 ubatch=1024

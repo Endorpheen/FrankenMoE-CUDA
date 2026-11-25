@@ -1,0 +1,5 @@
+--- a/native-kv-driver.h
++++ b/native-kv-driver.h
+@@ -125 +125 @@
+-        if ((q4 & 2) && fg_standalone_option_enabled("I2_DECODE_WARP_SOFTMAX")) {
++        if ((q4 & 3) == 3 && fg_standalone_option_enabled("I2_DECODE_WARP_SOFTMAX")) {

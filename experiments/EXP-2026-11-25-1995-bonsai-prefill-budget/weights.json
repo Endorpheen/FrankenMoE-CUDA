@@ -1,0 +1,205 @@
+{
+  "trunk": {
+    "tensors": 400,
+    "weights": 24326963200,
+    "stored_bytes": 6461849600,
+    "nonzero_groups": [
+      63407958,
+      560484619,
+      1790596648,
+      2452086003,
+      1215165572
+    ],
+    "code_counts": [
+      8180477374,
+      7968364988,
+      8178120838,
+      0
+    ],
+    "groups_requiring_residual": 3667251575,
+    "minimum_residual_weights": 4882417147,
+    "fraction_groups_requiring_residual": 0.6029937308410118
+  },
+  "by_projection": {
+    "attn_gate.weight": {
+      "tensors": 48,
+      "weights": 1509949440,
+      "stored_bytes": 401080320,
+      "nonzero_groups": [
+        3932107,
+        34769176,
+        111093904,
+        152216244,
+        75475929
+      ],
+      "code_counts": [
+        507963018,
+        494440008,
+        507546414,
+        0
+      ]
+    },
+    "attn_qkv.weight": {
+      "tensors": 48,
+      "weights": 2516582400,
+      "stored_bytes": 668467200,
+      "nonzero_groups": [
+        6562264,
+        58015131,
+        185292056,
+        253646469,
+        125629680
+      ],
+      "code_counts": [
+        846037549,
+        824525030,
+        846019821,
+        0
+      ]
+    },
+    "ffn_down.weight": {
+      "tensors": 64,
+      "weights": 5704253440,
+      "stored_bytes": 1515192320,
+      "nonzero_groups": [
+        14877584,
+        131527966,
+        420001794,
+        574923536,
+        284732480
+      ],
+      "code_counts": [
+        1917723976,
+        1869021358,
+        1917508106,
+        0
+      ]
+    },
+    "ffn_gate.weight": {
+      "tensors": 64,
+      "weights": 5704253440,
+      "stored_bytes": 1515192320,
+      "nonzero_groups": [
+        14852749,
+        131281264,
+        419688795,
+        575039131,
+        285201421
+      ],
+      "code_counts": [
+        1918988582,
+        1867671509,
+        1917593349,
+        0
+      ]
+    },
+    "ffn_up.weight": {
+      "tensors": 64,
+      "weights": 5704253440,
+      "stored_bytes": 1515192320,
+      "nonzero_groups": [
+        14885668,
+        131531358,
+        420034546,
+        574900346,
+        284711442
+      ],
+      "code_counts": [
+        1917557292,
+        1869106184,
+        1917589964,
+        0
+      ]
+    },
+    "ssm_out.weight": {
+      "tensors": 48,
+      "weights": 1509949440,
+      "stored_bytes": 401080320,
+      "nonzero_groups": [
+        3934285,
+        34778996,
+        111131367,
+        152204405,
+        75438307
+      ],
+      "code_counts": [
+        507710056,
+        494541267,
+        507698117,
+        0
+      ]
+    },
+    "attn_k.weight": {
+      "tensors": 16,
+      "weights": 83886080,
+      "stored_bytes": 22282240,
+      "nonzero_groups": [
+        218622,
+        1930251,
+        6166615,
+        8456270,
+        4199762
+      ],
+      "code_counts": [
+        28211726,
+        27454741,
+        28219613,
+        0
+      ]
+    },
+    "attn_output.weight": {
+      "tensors": 16,
+      "weights": 503316480,
+      "stored_bytes": 133693440,
+      "nonzero_groups": [
+        1311617,
+        11591003,
+        37021230,
+        50742958,
+        25162312
+      ],
+      "code_counts": [
+        169257278,
+        164804895,
+        169254307,
+        0
+      ]
+    },
+    "attn_q.weight": {
+      "tensors": 16,
+      "weights": 1006632960,
+      "stored_bytes": 267386880,
+      "nonzero_groups": [
+        2614867,
+        23129388,
+        73993171,
+        101500326,
+        50420488
+      ],
+      "code_counts": [
+        338813259,
+        329334300,
+        338485401,
+        0
+      ]
+    },
+    "attn_v.weight": {
+      "tensors": 16,
+      "weights": 83886080,
+      "stored_bytes": 22282240,
+      "nonzero_groups": [
+        218195,
+        1930086,
+        6173170,
+        8456318,
+        4193751
+      ],
+      "code_counts": [
+        28214638,
+        27465696,
+        28205746,
+        0
+      ]
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "ids": [
+    197
+  ],
+  "text": "\t",
+  "count": 1,
+  "content": "\t",
+  "tokens": [
+    197
+  ],
+  "stop": true,
+  "stop_type": "limit",
+  "tokens_evaluated": 13,
+  "tokens_predicted": 1,
+  "timings": {
+    "cache_n": 0,
+    "prompt_n": 13,
+    "prompt_ms": 193.66756299859844,
+    "prompt_per_token_ms": 14.897504846046035,
+    "prompt_per_second": 67.12533476808443,
+    "predicted_n": 1,
+    "predicted_ms": 0.0,
+    "predicted_per_token_ms": 0.0,
+    "predicted_per_second": 0.0
+  }
+}

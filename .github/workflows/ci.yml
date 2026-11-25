@@ -33,6 +33,8 @@ jobs:
         run: python3 tools/tests/test_edge0_preflight.py
       - name: Terminal logging fallback
         run: python3 tools/tests/test_frankenmoe_console.py
+      - name: Release Gate fixture tests
+        run: python3 tools/multimodel-release/test-release-gate.py
       - name: Generated artefacts policy
         run: python3 tools/check-generated-files.py
       - name: Tracked python tools compile

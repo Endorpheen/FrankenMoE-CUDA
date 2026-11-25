@@ -1,0 +1,45 @@
+--- a/native-kv-driver.h
++++ b/native-kv-driver.h
+@@ -162,0 +163,23 @@
++static int nk_project_decode_inputs(const DevicePtr *input, DevicePtr output,
++                                    const uint8_t *const *sources, const int *widths, bool sliding) {
++    static Function kernel;
++    DevicePtr weights[8] = {0};
++    const int count = sliding ? 6 : 8;
++    for (int i = 0; i < count; ++i) {
++        if (!dense_weight((uint64_t)(uintptr_t)sources[i], (int64_t)widths[i] * 2448, &weights[i]))
++            return 0;
++    }
++    int error = i2_matrix_module ? 0 : cuda.module_load(&i2_matrix_module, matrix_cubin);
++    if (!error && !kernel) {
++        error = cuda.function_get(&kernel, i2_matrix_module, "goose_i2_matrix_q8_attention_projections");
++    }
++    DevicePtr q = input[0], k = input[1], v = input[2];
++    void *args[] = {&q, &k, &v, &output, &weights[0], &weights[1], &weights[2], &weights[3],
++                    &weights[4], &weights[5], &weights[6], &weights[7]};
++    if (!error) error = cuda.launch(kernel, (unsigned)(sliding ? 8600 : 8664) / 4, 1, 1,
++                                    128, 1, 1, 0, NULL, args, NULL);
++    if (error) return -1;
++    ++cuda_matrix_launches;
++    return 1;
++}
++
+@@ -202,5 +225,13 @@
+-    DevicePtr next = nk.raw.address;
+-    for (int i = 0; !error && i < (sliding ? 6 : 8); ++i) {
+-        error = nk_project_q8(input[source[i]], next,
+-                              src->weights[i], hidden, widths[i], count);
+-        next += (size_t)count * widths[i] * sizeof(float);
++    int packed_projection = 0;
++    if (!error && graph && count == 1 && i2_matrix_enabled() &&
++        fg_standalone_option_enabled("I2_DECODE_Q8_PROJECTION_PACK")) {
++        packed_projection = nk_project_decode_inputs(input, nk.raw.address, src->weights, widths, sliding);
++        if (packed_projection < 0) error = -1;
++    }
++    if (packed_projection == 0) {
++        DevicePtr next = nk.raw.address;
++        for (int i = 0; !error && i < (sliding ? 6 : 8); ++i) {
++            error = nk_project_q8(input[source[i]], next,
++                                  src->weights[i], hidden, widths[i], count);
++            next += (size_t)count * widths[i] * sizeof(float);
++        }

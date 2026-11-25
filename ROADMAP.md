@@ -21,3 +21,11 @@ runtime and qualification status.
 The earlier experiment queue is preserved in the Git
 history at `4c4ad0aef:ROADMAP.md`. The
 [Goose migration record](GOOSE_MIGRATION_PLAN.md) indexes the older work.
+
+## Current model work
+
+- [Inkling performance evidence](docs/INKLING_PERFORMANCE.md) and supported
+  launch settings are recorded with the multi-model checkpoints.
+- Bonsai work focuses on full prefill against the PrismML 32K/512 reference.
+  Preserve the measured exact MTP decode checkpoint while optimizing prefill.
+- [Vulkan backend roadmap](docs/roadmap/VULKAN-BACKEND.md) is a deferred design.

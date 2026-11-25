@@ -1,0 +1,302 @@
+{
+  "assumptions": {
+    "sms": 46,
+    "clock_ghz": 2.775,
+    "peak_observed_ghz": 2.835,
+    "stock_ghz": 2.48,
+    "dense_ops_per_sm_cycle": {
+      "FP16_to_FP32": 512,
+      "FP8_to_FP32": 1024,
+      "INT8": 2048,
+      "INT4": 4096
+    }
+  },
+  "observed_frequency_dense_peaks_tops": {
+    "FP16_to_FP32": 65.35679999999999,
+    "FP8_to_FP32": 130.71359999999999,
+    "INT8": 261.42719999999997,
+    "INT4": 522.8543999999999
+  },
+  "requests": [
+    {
+      "tokens": 4096,
+      "target_ms": 819.2,
+      "elapsed_ms": 6936.456568,
+      "throughput": 590.5032288237921,
+      "budget_gap_ms": 6117.256568,
+      "mmq_ops": 199237828608000,
+      "attention_ops": 3299340189696,
+      "decay_ops": 193273528320,
+      "observed_mmq_tops": 36.18663368037555,
+      "observed_attention_tops": 14.907904044783695,
+      "two_subsystem_floor_ms": {
+        "stock": {
+          "FP16_to_FP32 + FP16_to_FP32": 3467.5701946704066,
+          "INT8 + FP16_to_FP32": 909.2577122019635,
+          "INT8 + FP8_to_FP32": 881.0142698457223,
+          "INT4 + FP16_to_FP32": 482.872298457223,
+          "INT4 + FP8_to_FP32": 454.62885610098175
+        },
+        "trace_median": {
+          "FP16_to_FP32 + FP16_to_FP32": 3098.9456154171567,
+          "INT8 + FP16_to_FP32": 812.5978833372503,
+          "INT8 + FP8_to_FP32": 787.3568970152762,
+          "INT4 + FP16_to_FP32": 431.5399279905994,
+          "INT4 + FP8_to_FP32": 406.29894166862516
+        },
+        "trace_max": {
+          "FP16_to_FP32 + FP16_to_FP32": 3033.359464826317,
+          "INT8 + FP16_to_FP32": 795.4000445364619,
+          "INT8 + FP8_to_FP32": 770.6932589832069,
+          "INT4 + FP16_to_FP32": 422.4068078214861,
+          "INT4 + FP8_to_FP32": 397.70002226823095
+        }
+      },
+      "slack_fraction": 0.06238066742058886,
+      "planning_budget": {
+        "Embedding": {
+          "measured_ms": 0.143587,
+          "analytic_floor_ms": 0.0,
+          "budget_ms": 0.008957052892920094,
+          "required_reduction_ms": 0.1346299471070799
+        },
+        "FWHT": {
+          "measured_ms": 150.525649,
+          "analytic_floor_ms": 0.0,
+          "budget_ms": 9.389890448537294,
+          "required_reduction_ms": 141.13575855146271
+        },
+        "Normalization": {
+          "measured_ms": 112.225084,
+          "analytic_floor_ms": 0.0,
+          "budget_ms": 7.000675641251648,
+          "required_reduction_ms": 105.22440835874835
+        },
+        "F16 activation packing": {
+          "measured_ms": 86.838775,
+          "analytic_floor_ms": 0.0,
+          "budget_ms": 5.417060742486346,
+          "required_reduction_ms": 81.42171425751366
+        },
+        "PQ2 batched matrix": {
+          "measured_ms": 5505.840371,
+          "analytic_floor_ms": 381.057955346651,
+          "budget_ms": 700.7453028204045,
+          "required_reduction_ms": 4805.095068179595
+        },
+        "F32 decay and beta": {
+          "measured_ms": 348.515847,
+          "analytic_floor_ms": 5.914412220916569,
+          "budget_ms": 27.28611838168714,
+          "required_reduction_ms": 321.22972861831283
+        },
+        "Causal convolution": {
+          "measured_ms": 69.756837,
+          "analytic_floor_ms": 0.0,
+          "budget_ms": 4.351478049209228,
+          "required_reduction_ms": 65.40535895079077
+        },
+        "GDN": {
+          "measured_ms": 171.573484,
+          "analytic_floor_ms": 0.0,
+          "budget_ms": 10.702868443595724,
+          "required_reduction_ms": 160.87061555640426
+        },
+        "Residual adds": {
+          "measured_ms": 61.283865,
+          "analytic_floor_ms": 0.0,
+          "budget_ms": 3.8229284008132662,
+          "required_reduction_ms": 57.46093659918673
+        },
+        "SwiGLU": {
+          "measured_ms": 117.269294,
+          "analytic_floor_ms": 0.0,
+          "budget_ms": 7.315336827661257,
+          "required_reduction_ms": 109.95395717233873
+        },
+        "Attention split and gate": {
+          "measured_ms": 23.022176,
+          "analytic_floor_ms": 0.0,
+          "budget_ms": 1.4361387043542628,
+          "required_reduction_ms": 21.586037295645735
+        },
+        "RoPE and Q4 cache writes": {
+          "measured_ms": 20.635195,
+          "analytic_floor_ms": 0.0,
+          "budget_ms": 1.2872372364539981,
+          "required_reduction_ms": 19.347957763546002
+        },
+        "Attention stage, tiles and merge": {
+          "measured_ms": 221.314826,
+          "analytic_floor_ms": 25.24098632197415,
+          "budget_ms": 37.47220330480694,
+          "required_reduction_ms": 183.84262269519306
+        },
+        "Scalar PQ2 projections": {
+          "measured_ms": 39.780731,
+          "analytic_floor_ms": 0.0,
+          "budget_ms": 2.481548550258909,
+          "required_reduction_ms": 37.29918244974109
+        },
+        "Final vocabulary projection": {
+          "measured_ms": 1.739937,
+          "analytic_floor_ms": 0.0,
+          "budget_ms": 0.10853843132977713,
+          "required_reduction_ms": 1.6313985686702228
+        },
+        "GPU transfer": {
+          "measured_ms": 0.050466,
+          "analytic_floor_ms": 0.0,
+          "budget_ms": 0.0031481027620474376,
+          "required_reduction_ms": 0.04731789723795256
+        },
+        "GPU idle": {
+          "measured_ms": 5.940444,
+          "analytic_floor_ms": 0.0,
+          "budget_ms": 0.37056886149463264,
+          "required_reduction_ms": 5.569875138505368
+        }
+      }
+    },
+    {
+      "tokens": 32768,
+      "target_ms": 6553.6,
+      "elapsed_ms": 68834.910764,
+      "throughput": 476.03751695625573,
+      "budget_gap_ms": 62281.310764,
+      "mmq_ops": 1594243206348800,
+      "attention_ops": 211112674983936,
+      "decay_ops": 1546188226560,
+      "observed_mmq_tops": 36.057912242718324,
+      "observed_attention_tops": 13.831223187456057,
+      "two_subsystem_floor_ms": {
+        "stock": {
+          "FP16_to_FP32 + FP16_to_FP32": 30908.885919775596,
+          "INT8 + FP16_to_FP32": 10438.012876297336,
+          "INT8 + FP8_to_FP32": 8630.818612061712,
+          "INT4 + FP16_to_FP32": 7026.200702384292,
+          "INT4 + FP8_to_FP32": 5219.006438148668
+        },
+        "trace_median": {
+          "FP16_to_FP32 + FP16_to_FP32": 27623.07642560126,
+          "INT8 + FP16_to_FP32": 9328.386282240503,
+          "INT8 + FP8_to_FP32": 7713.308165013711,
+          "INT4 + FP16_to_FP32": 6279.271258347044,
+          "INT4 + FP8_to_FP32": 4664.193141120251
+        },
+        "trace_max": {
+          "FP16_to_FP32 + FP16_to_FP32": 27038.461051514456,
+          "INT8 + FP16_to_FP32": 9130.960117536999,
+          "INT8 + FP8_to_FP32": 7550.063547764743,
+          "INT4 + FP16_to_FP32": 6146.376628540756,
+          "INT4 + FP8_to_FP32": 4565.4800587684995
+        }
+      },
+      "slack_fraction": 0.028727289793090166,
+      "planning_budget": {
+        "Embedding": {
+          "measured_ms": 1.079797,
+          "analytic_floor_ms": 0.0,
+          "budget_ms": 0.03101964133670938,
+          "required_reduction_ms": 1.0487773586632907
+        },
+        "FWHT": {
+          "measured_ms": 1203.579548,
+          "analytic_floor_ms": 0.0,
+          "budget_ms": 34.575578464432475,
+          "required_reduction_ms": 1169.0039695355674
+        },
+        "Normalization": {
+          "measured_ms": 848.253598,
+          "analytic_floor_ms": 0.0,
+          "budget_ms": 24.36802692777741,
+          "required_reduction_ms": 823.8855710722225
+        },
+        "F16 activation packing": {
+          "measured_ms": 693.866313,
+          "analytic_floor_ms": 0.0,
+          "budget_ms": 19.932898651214007,
+          "required_reduction_ms": 673.933414348786
+        },
+        "PQ2 batched matrix": {
+          "measured_ms": 44213.408575,
+          "analytic_floor_ms": 3049.115023893459,
+          "budget_ms": 4231.653613863929,
+          "required_reduction_ms": 39981.75496113608
+        },
+        "F32 decay and beta": {
+          "measured_ms": 2771.789517,
+          "analytic_floor_ms": 47.31529776733255,
+          "budget_ms": 125.58205819703247,
+          "required_reduction_ms": 2646.2074588029677
+        },
+        "Causal convolution": {
+          "measured_ms": 559.132013,
+          "analytic_floor_ms": 0.0,
+          "budget_ms": 16.062347370044858,
+          "required_reduction_ms": 543.0696656299551
+        },
+        "GDN": {
+          "measured_ms": 1369.065552,
+          "analytic_floor_ms": 0.0,
+          "budget_ms": 39.32954285804095,
+          "required_reduction_ms": 1329.7360091419591
+        },
+        "Residual adds": {
+          "measured_ms": 492.60937,
+          "analytic_floor_ms": 0.0,
+          "budget_ms": 14.151332126781577,
+          "required_reduction_ms": 478.4580378732184
+        },
+        "SwiGLU": {
+          "measured_ms": 935.721891,
+          "analytic_floor_ms": 0.0,
+          "budget_ms": 26.880753928495327,
+          "required_reduction_ms": 908.8411370715047
+        },
+        "Attention split and gate": {
+          "measured_ms": 181.81308,
+          "analytic_floor_ms": 0.0,
+          "budget_ms": 5.222997037334285,
+          "required_reduction_ms": 176.59008296266572
+        },
+        "RoPE and Q4 cache writes": {
+          "measured_ms": 165.274626,
+          "analytic_floor_ms": 0.0,
+          "budget_ms": 4.747892076546594,
+          "required_reduction_ms": 160.5267339234534
+        },
+        "Attention stage, tiles and merge": {
+          "measured_ms": 15263.48553,
+          "analytic_floor_ms": 1615.078117226792,
+          "budget_ms": 2007.159872187688,
+          "required_reduction_ms": 13256.325657812313
+        },
+        "Scalar PQ2 projections": {
+          "measured_ms": 41.733392,
+          "analytic_floor_ms": 0.0,
+          "budget_ms": 1.1988872460326307,
+          "required_reduction_ms": 40.53450475396737
+        },
+        "Final vocabulary projection": {
+          "measured_ms": 1.749275,
+          "analytic_floor_ms": 0.0,
+          "budget_ms": 0.0502519298528078,
+          "required_reduction_ms": 1.6990230701471924
+        },
+        "GPU transfer": {
+          "measured_ms": 0.117056,
+          "analytic_floor_ms": 0.0,
+          "budget_ms": 0.0033627016340199625,
+          "required_reduction_ms": 0.11369329836598004
+        },
+        "GPU idle": {
+          "measured_ms": 92.231631,
+          "analytic_floor_ms": 0.0,
+          "budget_ms": 2.6495647918263585,
+          "required_reduction_ms": 89.58206620817364
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,172 @@
+[
+  {
+    "kv_tokens": 65,
+    "query_tokens": 9,
+    "max_absolute_error": 0.00018081068992614746,
+    "relative_l2": 0.00028707730234600604,
+    "ordered_gpu_ms": [
+      [
+        "compact",
+        0.03999999910593033
+      ],
+      [
+        "ldmatrix",
+        0.03145600110292435
+      ],
+      [
+        "async",
+        0.02457600086927414
+      ],
+      [
+        "async",
+        0.023552000522613525
+      ],
+      [
+        "ldmatrix",
+        0.02969600073993206
+      ],
+      [
+        "compact",
+        0.02969600073993206
+      ]
+    ],
+    "bit_exact_to_compact": true,
+    "extra_staging_bytes": 393216
+  },
+  {
+    "kv_tokens": 257,
+    "query_tokens": 33,
+    "max_absolute_error": 6.964764907024801e-05,
+    "relative_l2": 0.0002946519525721669,
+    "ordered_gpu_ms": [
+      [
+        "compact",
+        0.0615679994225502
+      ],
+      [
+        "ldmatrix",
+        0.053247999399900436
+      ],
+      [
+        "async",
+        0.03788800165057182
+      ],
+      [
+        "async",
+        0.03788800165057182
+      ],
+      [
+        "ldmatrix",
+        0.052352000027894974
+      ],
+      [
+        "compact",
+        0.052191998809576035
+      ]
+    ],
+    "bit_exact_to_compact": true,
+    "extra_staging_bytes": 1179648
+  },
+  {
+    "kv_tokens": 8192,
+    "query_tokens": 128,
+    "max_absolute_error": 1.220405101776123e-05,
+    "relative_l2": 0.0002890267933253199,
+    "ordered_gpu_ms": [
+      [
+        "compact",
+        4.649888038635254
+      ],
+      [
+        "ldmatrix",
+        4.549280166625977
+      ],
+      [
+        "async",
+        2.0252161026000977
+      ],
+      [
+        "async",
+        2.0285439491271973
+      ],
+      [
+        "ldmatrix",
+        4.568064212799072
+      ],
+      [
+        "compact",
+        4.589568138122559
+      ]
+    ],
+    "bit_exact_to_compact": true,
+    "extra_staging_bytes": 33554432
+  },
+  {
+    "kv_tokens": 32768,
+    "query_tokens": 128,
+    "max_absolute_error": 5.903493729420006e-06,
+    "relative_l2": 0.0002866628346964717,
+    "ordered_gpu_ms": [
+      [
+        "compact",
+        17.802335739135742
+      ],
+      [
+        "ldmatrix",
+        17.525632858276367
+      ],
+      [
+        "async",
+        8.285887718200684
+      ],
+      [
+        "async",
+        8.33011245727539
+      ],
+      [
+        "ldmatrix",
+        17.540096282958984
+      ],
+      [
+        "compact",
+        17.697792053222656
+      ]
+    ],
+    "bit_exact_to_compact": true,
+    "extra_staging_bytes": 134217728
+  },
+  {
+    "kv_tokens": 1024,
+    "query_tokens": 1024,
+    "max_absolute_error": 0.0005867928266525269,
+    "relative_l2": 0.0002638265723362565,
+    "ordered_gpu_ms": [
+      [
+        "compact",
+        1.7637120485305786
+      ],
+      [
+        "ldmatrix",
+        1.6394239664077759
+      ],
+      [
+        "async",
+        0.953279972076416
+      ],
+      [
+        "async",
+        0.9552639722824097
+      ],
+      [
+        "ldmatrix",
+        1.6299200057983398
+      ],
+      [
+        "compact",
+        1.6621119976043701
+      ]
+    ],
+    "bit_exact_to_compact": true,
+    "extra_staging_bytes": 4194304
+  }
+]

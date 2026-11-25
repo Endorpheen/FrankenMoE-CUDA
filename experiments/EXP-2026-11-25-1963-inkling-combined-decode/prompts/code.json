@@ -1,0 +1,1 @@
+{"prompt": "Explain why a breadth-first search finds shortest paths in an unweighted graph. Then provide a minimal Python implementation that reconstructs the path. State the time and space complexity.", "n_predict": 64, "temperature": 1.0, "seed": 123, "cache_prompt": false, "ignore_eos": true, "return_tokens": true, "top_p": 0.95, "top_k": 20, "min_p": 0}

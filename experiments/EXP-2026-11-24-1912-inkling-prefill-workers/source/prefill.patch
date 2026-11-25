@@ -1,0 +1,46 @@
+--- a/prefill.h
++++ b/prefill.h
+@@ -162,0 +163,2 @@
++#include "prefill-team.h"
++
+@@ -165 +167 @@
+-static void prepare_prefill(struct i2_prefill_work *work, int count) {
++static int prefill_task_count(int count) {
+@@ -166,0 +169 @@
++    if (count < 64 || (setting && strcmp(setting, "0") == 0)) return 1;
+@@ -170,2 +173,10 @@
+-    if (count >= 64 && tasks > 1 && (!setting || strcmp(setting, "0") != 0)) {
+-        // Initialize the mode on the request thread before sharing it.
++    return tasks > 1 ? tasks : 1;
++}
++
++static void prepare_prefill(struct i2_prefill_team *team, struct i2_prefill_work *work, int count) {
++    if (team) {
++        prefill_team_run(team, work, count);
++        return;
++    }
++    const int tasks = prefill_task_count(count);
++    if (tasks > 1) {
+@@ -180 +191 @@
+-                          int count, int begin, const int64_t *visit) {
++                          int count, int begin, const int64_t *visit, struct i2_prefill_team *team) {
+@@ -190 +201 @@
+-    prepare_prefill(&setup, count);
++    prepare_prefill(team, &setup, count);
+@@ -259 +270 @@
+-    prepare_prefill(&setup, count);
++    prepare_prefill(team, &setup, count);
+@@ -320,0 +332,8 @@
++    struct i2_prefill_team team = {0};
++    struct i2_prefill_team *workers = NULL;
++    const int tasks = prefill_task_count(count);
++    const char *team_setting = getenv("I2_PREFILL_TEAM");
++    if (tasks > 1 && (!team_setting || strcmp(team_setting, "0") != 0)) {
++        (void)use_cached_history();
++        if (prefill_team_open(&team, tasks)) workers = &team;
++    }
+@@ -322 +341 @@
+-        prefill_layer(d, tokens, scratch, count, begin, d->visits + i * 4);
++        prefill_layer(d, tokens, scratch, count, begin, d->visits + i * 4, workers);
+@@ -323,0 +343 @@
++    if (workers) prefill_team_close(workers);

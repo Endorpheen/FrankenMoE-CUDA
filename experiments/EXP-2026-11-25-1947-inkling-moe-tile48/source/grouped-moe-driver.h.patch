@@ -1,0 +1,16 @@
+--- a/grouped-moe-driver.h
++++ b/grouped-moe-driver.h
+@@ -5 +5 @@
+-    static Function pack, multiply[6];
++    static Function pack, multiply[8];
+@@ -9 +9,2 @@
+-    const int entry = (kind == 23 ? 0 : 1) + (tile32 ? 4 : wide ? 2 : 0);
++    const bool tile48 = tile32 && fg_standalone_option_enabled("I2_MOE_TILE48");
++    const int entry = (kind == 23 ? 0 : 1) + (tile48 ? 6 : tile32 ? 4 : wide ? 2 : 0);
+@@ -11 +12,2 @@
+-        "goose_i2_xs_mmq16", "goose_i2_nl_mmq16", "goose_i2_xs_mmq32", "goose_i2_nl_mmq32"};
++        "goose_i2_xs_mmq16", "goose_i2_nl_mmq16", "goose_i2_xs_mmq32", "goose_i2_nl_mmq32",
++        "goose_i2_xs_mmq48", "goose_i2_nl_mmq48"};
+@@ -21 +23 @@
+-            const int64_t limit = tile32 ? 32 : 16;
++            const int64_t limit = tile48 ? 48 : tile32 ? 32 : 16;

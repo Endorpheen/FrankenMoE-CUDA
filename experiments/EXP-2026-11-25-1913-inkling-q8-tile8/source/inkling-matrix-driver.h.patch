@@ -1,0 +1,5 @@
+--- a/inkling-matrix-driver.h
++++ b/inkling-matrix-driver.h
+@@ -26,0 +27,2 @@
++    const char *wide = getenv("I2_Q8_TILE8");
++    if (kind == 8 && words == 2 && count >= 16 && wide && strcmp(wide, "1") == 0) tile = 8;

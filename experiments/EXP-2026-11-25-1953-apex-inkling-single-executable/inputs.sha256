@@ -1,0 +1,11 @@
+207608e4e09fc5f545b6277d8c231bd6b2af7799e15063c2a994a1667c8aee69  build/checkpoint-apex-exp1880-before-inkling/checkpoint/lib.a
+c81561ed7396405fd8cf124afa09befb1230a1138eef8de0e27e4f50d145d27b  build/inkling-exp-baseline/device-attention/inkling-moe-tile32/libfranken-inference.a
+e2e46ade68cafa25eb05239b6d7d5e2afc674da393637132dc2bfdbd8865d41a  /home/end0/AI/Fried-Goose/releases/fried-goose-v0.3.0-preview-keelwing/bin/goose
+cbb5b2a4db87d200142fdf8007abcafb0c990edd7b775440159d1a94cab6f042  /home/end0/AI/claude-apex-100/release/merge/goose-host-llm.speed.c
+8617fdf64227e7e6f6ea33aa472e8ecabdee02d26a472509c7b94b08e34e4441  /home/end0/AI/claude-apex-100/release/merge/graph-execute.speed.c
+f977e2c70bbd2c0213d2adbeb55fd95b9150b7a5e242c71a3181188102f7cac7  /home/end0/AI/claude-apex-100/checkpoints/codex-20261124-moe-epilogue-accepted/cpu.goose
+4aa6417a5fd7c5be2d8ea61afe74ab99f134a4fbab1b24e22cc038ac230c06ed  build/inkling-apex-gate/single-link-1953/cpu.o
+f0185b7b9dbe1fe9d2d57c6ffec37b66853a0f836dfde2c5c7e7f22ebeaa67f1  build/inkling-apex-gate/single-link-1953/cuda-driver.o
+4c90cdf94f421cf79db29b01ca6959d504515b6e8e73cf9215a5fc72c0a9dd00  build/inkling-apex-gate/single-link-1953/graph-execute.o
+41fba8f5dcbc7ac4f79a67c7faa83748a7ccf3b0597af95f202a0ec060c2dc1d  build/inkling-apex-gate/single-link-1953/model-host.o
+007a595d9267c582d5a5c9845e35d2e4a745bb420dc921bded6a97843f3adb5f  build/inkling-apex-gate/single-link-1953/frankenmoe-infer

@@ -1,0 +1,118 @@
+--- a/cuda-driver-reference.c
++++ b/cuda-driver-reference.c
+@@ -1,0 +2 @@
++#include "inkling-route-mailbox-image.h"
+@@ -221,0 +223,5 @@
++    Function inkling_mailbox;
++    uint32_t *inkling_mailbox_host;
++    DevicePtr inkling_mailbox_device;
++    uint32_t inkling_mailbox_sequence;
++    bool inkling_mailbox_attempted;
+@@ -987,0 +994 @@
++            if (cuda.inkling_mailbox_host) cuda.host_free(cuda.inkling_mailbox_host);
+@@ -1444,0 +1452,52 @@
++static _Thread_local struct {
++    uint64_t host;
++    DevicePtr device;
++    uint32_t sequence;
++    uint64_t reads, hits, timeouts, verified, forced;
++} inkling_route_mail;
++
++static int read_inkling_route_mail(int64_t *range, DevicePtr device) {
++    if (!inkling_route_mail.sequence || range[1] != 32 ||
++        (uint64_t)range[0] != inkling_route_mail.host || device != inkling_route_mail.device) return 0;
++    const uint32_t sequence = inkling_route_mail.sequence;
++    inkling_route_mail.sequence = 0;
++    if (decode_capture_submit() != 0) return -1;
++    ++inkling_route_mail.reads;
++    const char *diagnostic = getenv("I2_VERIFY_ROUTE_MAILBOX");
++    const bool verify = diagnostic && strcmp(diagnostic, "1") == 0;
++    const bool force = verify && inkling_route_mail.reads % 257 == 0;
++    bool ready = false;
++    if (!force) {
++        for (unsigned spin = 0; spin < 4096; ++spin) {
++            if (__atomic_load_n(cuda.inkling_mailbox_host + 8, __ATOMIC_ACQUIRE) == sequence) {
++                memcpy((void *)(uintptr_t)range[0], cuda.inkling_mailbox_host, 32);
++                ready = true;
++                break;
++            }
++#if defined(__x86_64__) || defined(__i386__)
++            __builtin_ia32_pause();
++#endif
++        }
++    }
++    if (ready && verify) {
++        uint32_t expected[8];
++        if (cuda.download(expected, device, sizeof expected) != 0 ||
++            memcmp(expected, (const void *)(uintptr_t)range[0], sizeof expected) != 0) {
++            fputs("Inkling route mailbox verification mismatch\n", stderr);
++            return -1;
++        }
++        ++inkling_route_mail.verified;
++    }
++    inkling_route_mail.hits += ready;
++    inkling_route_mail.forced += force;
++    inkling_route_mail.timeouts += !ready && !force;
++    if ((verify || getenv("I2_ROUTE_MAILBOX_LOG")) &&
++        (inkling_route_mail.reads == 1 || inkling_route_mail.reads % 1000 == 0)) {
++        fprintf(stderr, "I2 route mailbox reads=%" PRIu64 " hits=%" PRIu64
++            " timeout=%" PRIu64 " verified=%" PRIu64 " forced=%" PRIu64 "\n",
++            inkling_route_mail.reads, inkling_route_mail.hits, inkling_route_mail.timeouts,
++            inkling_route_mail.verified, inkling_route_mail.forced);
++    }
++    return ready ? 1 : 0;
++}
++
+@@ -1447,2 +1506,5 @@
+-    const int error = cuda.download((void *) (uintptr_t) range[0],
+-        base + (uint64_t) range[2], (size_t) range[1]);
++    const DevicePtr address = base + (uint64_t)range[2];
++    const int published = read_inkling_route_mail(range, address);
++    if (published < 0) return -1;
++    const int error = published == 1 ? 0 :
++        cuda.download((void *)(uintptr_t)range[0], address, (size_t)range[1]);
+@@ -1497,0 +1560 @@
++    inkling_route_mail.sequence = 0;
+@@ -4327,0 +4391,21 @@
++static bool inkling_mailbox_ready(void) {
++    if (cuda.inkling_mailbox_attempted) return cuda.inkling_mailbox_host != NULL;
++    cuda.inkling_mailbox_attempted = true;
++    int (*host_device)(DevicePtr *, void *, unsigned) =
++        (int (*)(DevicePtr *, void *, unsigned))dlsym(cuda.library, "cuMemHostGetDevicePointer_v2");
++    if (!host_device || !cuda.host_alloc || !cuda.host_free) return false;
++    Module module = NULL;
++    int error = cuda.module_load(&module, route_mailbox_cubin);
++    if (!error) error = cuda.function_get(&cuda.inkling_mailbox, module, "goose_i2_route_mailbox");
++    void *host = NULL;
++    if (!error) error = cuda.host_alloc(&host, 64, 2);
++    if (!error) error = host_device(&cuda.inkling_mailbox_device, host, 0);
++    if (error) {
++        if (host) cuda.host_free(host);
++        return false;
++    }
++    memset(host, 0, 64);
++    cuda.inkling_mailbox_host = host;
++    return true;
++}
++
+@@ -4348,2 +4432,18 @@
+-        error = cuda.launch(operations[op], (unsigned) groups, 1, 1,
+-            (unsigned) config.data[2], 1, 1, 0, NULL, args, NULL);
++        const char *mailbox = getenv("I2_ROUTE_MAILBOX");
++        if (cuda_inkling_quants && activations.active && op == 1 && !topk &&
++            groups == 1 && config.data[2] == 128 && config.data[4] == 128 &&
++            config.data[12] == 8 && x.len == 512 && out.len == 32 &&
++            (!mailbox || strcmp(mailbox, "0") != 0) && inkling_mailbox_ready()) {
++            uint32_t sequence = ++cuda.inkling_mailbox_sequence;
++            if (sequence == 0) sequence = ++cuda.inkling_mailbox_sequence;
++            void *mailbox_args[] = {&staged[0], &output, &staged[2], &cuda.inkling_mailbox_device, &sequence};
++            error = cuda.launch(cuda.inkling_mailbox, 1, 1, 1, 128, 1, 1, 0, NULL, mailbox_args, NULL);
++            if (!error) {
++                inkling_route_mail.host = host;
++                inkling_route_mail.device = output;
++                inkling_route_mail.sequence = sequence;
++            }
++        } else {
++            error = cuda.launch(operations[op], (unsigned) groups, 1, 1,
++                (unsigned) config.data[2], 1, 1, 0, NULL, args, NULL);
++        }

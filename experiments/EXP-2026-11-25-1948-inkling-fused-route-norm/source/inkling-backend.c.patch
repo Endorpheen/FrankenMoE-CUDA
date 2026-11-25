@@ -1,0 +1,14 @@
+--- a/inkling-backend.c
++++ b/inkling-backend.c
+@@ -326,0 +327,2 @@
++extern int64_t fg_q35_moe_norm_node(int64_t context, int64_t input, int64_t ids, int64_t scale_bits);
++
+@@ -355,0 +358,8 @@
++    const char *route_norm = getenv("I2_FUSED_ROUTE_NORM");
++    if (!route_norm || strcmp(route_norm, "0") != 0) {
++        const int64_t eight_bits = 0x41000000;
++        struct ggml_tensor *normalized = (struct ggml_tensor *)(intptr_t)
++            fg_q35_moe_norm_node((intptr_t)ctx, nodes[1], nodes[3], eight_bits);
++        assert(normalized && moe->src[1] == (struct ggml_tensor *)(intptr_t)nodes[4]);
++        moe->src[1] = normalized;
++    }

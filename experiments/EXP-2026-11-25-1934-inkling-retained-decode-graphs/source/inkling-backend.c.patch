@@ -1,0 +1,96 @@
+--- a/inkling-backend.c
++++ b/inkling-backend.c
+@@ -153,0 +154,7 @@
++struct inkling_decode_graph {
++    struct ggml_context *context;
++    struct fg_standalone_graph_plan *plan;
++    struct ggml_tensor *output, *inputs[3], *messages[3], *residual;
++    struct inkling_attention_graph_call attention;
++};
++
+@@ -161,0 +169,2 @@
++    bool retain_decode_graphs;
++    struct inkling_decode_graph decode_attention[logical], decode_moe[logical];
+@@ -179,0 +189,17 @@
++static void execute_decode_graph(struct inkling_decode_graph *entry, float *output) {
++    if (!entry->plan) {
++        struct ggml_cgraph *graph = ggml_new_graph_custom(entry->context, 256, false);
++        assert(graph);
++        ggml_build_forward_expand(graph, entry->output);
++        entry->plan = fg_standalone_graph_plan_alloc(graph, entry->output);
++        assert(entry->plan);
++    }
++    assert(MEASURE(8, fg_standalone_graph_plan_compute(entry->plan)) == GGML_STATUS_SUCCESS);
++    memcpy(output, entry->output->data, model_width * sizeof(*output));
++}
++
++static void drop_decode_graph(struct inkling_decode_graph *entry) {
++    fg_standalone_graph_plan_free(entry->plan);
++    if (entry->context) ggml_free(entry->context);
++}
++
+@@ -292,0 +319,10 @@
++    struct inkling_decode_graph *entry = count == 1 && d->retain_decode_graphs ? &d->decode_moe[slot] : NULL;
++    if (entry && entry->plan) {
++        assert((entry->messages[0] != NULL) == (message != NULL));
++        entry->inputs[0]->data = ffn;
++        if (message) entry->messages[0]->data = message;
++        entry->residual->data = residual;
++        entry->output->op_params[2] = position;
++        execute_decode_graph(entry, out);
++        return;
++    }
+@@ -294,0 +331 @@
++    if (entry) entry->inputs[0] = input;
+@@ -296,2 +333,3 @@
+-        input = controller_node(ctx, d, aux, 18 + 3 * 3, input,
+-                                rows_input(ctx, message, model_width, count), NULL);
++        struct ggml_tensor *memory = rows_input(ctx, message, model_width, count);
++        if (entry) entry->messages[0] = memory;
++        input = controller_node(ctx, d, aux, 18 + 3 * 3, input, memory, NULL);
+@@ -315,0 +354,7 @@
++    if (entry) {
++        entry->context = ctx;
++        entry->output = epilogue;
++        entry->residual = epilogue->src[1];
++        execute_decode_graph(entry, out);
++        return;
++    }
+@@ -358,0 +404,11 @@
++    struct inkling_decode_graph *entry = count == 1 && d->retain_decode_graphs ? &d->decode_attention[slot] : NULL;
++    if (entry && entry->plan) {
++        assert((entry->messages[0] != NULL) == (message != NULL));
++        entry->attention.batch.first = begin;
++        for (int i = 0; i < 3; ++i) {
++            if (entry->inputs[i]) entry->inputs[i]->data = input[i];
++            if (message) entry->messages[i]->data = message[i];
++        }
++        execute_decode_graph(entry, out);
++        return;
++    }
+@@ -359,0 +416,4 @@
++    if (entry) {
++        entry->attention = call;
++        metadata = &entry->attention;
++    }
+@@ -368,0 +429 @@
++    if (entry && signal) entry->inputs[0] = signal;
+@@ -376,0 +438 @@
++            if (entry && !signal) entry->inputs[i] = x;
+@@ -378,0 +441 @@
++                if (entry) entry->messages[i] = memory;
+@@ -385,0 +449,6 @@
++    if (entry) {
++        entry->context = ctx;
++        entry->output = node;
++        execute_decode_graph(entry, out);
++        return;
++    }
+@@ -616,0 +686,4 @@
++    for (int i = 0; i < logical; ++i) {
++        drop_decode_graph(&d->decode_attention[i]);
++        drop_decode_graph(&d->decode_moe[i]);
++    }
+@@ -702,0 +776,2 @@
++    const char *retain = getenv("I2_RETAIN_DECODE_GRAPHS");
++    d->retain_decode_graphs = !prompt && (!retain || strcmp(retain, "0") != 0);

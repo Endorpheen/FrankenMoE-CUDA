@@ -1,0 +1,85 @@
+--- backend.c
++++ backend.c
+@@ -19,7 +19,7 @@
+ enum kernel {
+     NORM, ROTATE, MATRIX, ADD, DECAY, CONV, GDN, SPLIT, ROPE, Q4, TILES, GATE,
+     EMBED, SWIGLU, MERGE, GDN_BATCH, ROPE_PHASES, ROPE_APPLY,
+-    EMBED_BATCH, CONV_BATCH, PACK_HALF, MMQ, KERNEL_COUNT
++    EMBED_BATCH, CONV_BATCH, PACK_HALF, MMQ, FLASH_TILE_F32, FLASH_MERGE_F32, KERNEL_COUNT
+ };
+ 
+ typedef struct {
+@@ -30,6 +30,8 @@
+     CUdeviceptr weights, memory, positions, rope_q, rope_k, attention, partial;
+     int64_t bound[LAYERS * 15], states[LAYERS * 2], globals[3], b[24];
+     CUdeviceptr token_ids, phases, packed, packed_source;
++    size_t partial_capacity;
++    int use_flash_f32;
+     unsigned context, position, ubatch, count, wave;
+     int64_t eog[64], eog_count;
+     float epsilon;
+@@ -78,6 +80,24 @@
+     return launch(m, m->count > 1 ? GDN_BATCH : GDN, 48, 1, 8, 128, (void *[]){ packet });
+ }
+ 
++static int flash_f32(model *m, CUdeviceptr q, CUdeviceptr k, CUdeviceptr v, CUdeviceptr dst) {
++    unsigned count = m->count, keys = m->position + count, first = m->position + 1;
++    unsigned tiles = (keys+127)/128;
++    const size_t group_bytes = (size_t)tiles * 16 * 258 * sizeof(float);
++    const unsigned wave = (unsigned)(m->partial_capacity / group_bytes);
++    if (wave == 0) return 1;
++    const unsigned groups = 4*((count+1)/2);
++    for (unsigned start = 0; start < groups; start += wave) {
++        const unsigned remaining = groups - start;
++        const unsigned active = remaining < wave ? remaining : wave;
++        if (launch(m, FLASH_TILE_F32, active, tiles, 1, 128,
++            (void *[]){&q,&k,&v,&m->partial,&count,&keys,&first,&tiles,&start}) ||
++            launch(m, FLASH_MERGE_F32, active*12, 1, 1, 32,
++            (void *[]){&m->partial,&dst,&count,&first,&tiles,&start})) return -1;
++    }
++    return 0;
++}
++
+ int64_t bonsai_launch(uint64_t context, int64_t op, int64_t a, int64_t b, int64_t c,
+                       int64_t d, int64_t e, int64_t f, int64_t g, int64_t h) {
+     model *m = (model *)(uintptr_t)context;
+@@ -145,6 +165,10 @@
+             return launch(m, Q4, (tasks+127)/128, 1, 1, 128, (void *[]){ &p[0], &p[1], &stride, &blocks, &tasks });
+         }
+         case TILES: {
++            if (m->use_flash_f32 && count >= 8) {
++                const int rc = flash_f32(m, p[0], p[1], p[2], p[3]);
++                if (rc <= 0) return rc;
++            }
+             CUdeviceptr no_mask = 0;
+             const unsigned tiles = ((unsigned)e + count + 254)/256;
+             const unsigned tasks = 24 * count;
+@@ -232,7 +256,8 @@
+     const size_t cache = m->context * (size_t)KV_BYTES;
+     const size_t partial_per_task = ((m->context + 255)/256) * (256 + 2) * sizeof(float);
+     const size_t all_tasks = 24 * m->ubatch * partial_per_task;
+-    const size_t partial = all_tasks < ATTENTION_BYTES ? all_tasks : ATTENTION_BYTES;
++    const size_t partial = !m->use_flash_f32 && all_tasks < ATTENTION_BYTES ? all_tasks : ATTENTION_BYTES;
++    m->partial_capacity = partial;
+     CUdeviceptr ptr = 0;
+     for (unsigned layer = 0; layer < LAYERS; ++layer) {
+         const int attention = m->bound[layer * 15] == 0;
+@@ -314,6 +339,9 @@
+     model *m = calloc(1, sizeof(*m));
+     if (!m) return NULL;
+     m->context = context; m->ubatch = ubatch;
++    const char *flag = getenv("BONSAI_FLASH_F32");
++    m->use_flash_f32 = flag && strcmp(flag, "1") == 0;
++    fprintf(stderr, "Prefill attention: %s\n", m->use_flash_f32 ? "Bonsai FP32 Flash" : "tiled Q4");
+     CUdevice device;
+     const char *mode = getenv("BONSAI_MATVEC");
+     if (!mode || strcmp(mode, "ordered") == 0) {
+@@ -333,7 +361,7 @@
+         "goose_set_q4_rows", "goose_q4_attention_tiles", "bonsai_attention_gate", "bonsai_pq2_row",
+         "bonsai_swiglu", "goose_q4_attention_merge", "goose_gated_delta_net",
+         "goose_rope_phases", "goose_rope_apply", "bonsai_embed_batch", "bonsai_conv_batch",
+-        "bonsai_pack_half", "bonsai_pq2_mmq",
++        "bonsai_pack_half", "bonsai_pq2_mmq", "bonsai_flash_f32_tile", "bonsai_flash_f32_merge",
+     };
+     if (check(cuInit(0), "driver") || check(cuDeviceGet(&device, 0), "device") ||
+         check(cuCtxCreate(&m->cuda, 0, device), "context") ||

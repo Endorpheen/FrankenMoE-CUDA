@@ -1,0 +1,18 @@
+--- a/cuda-driver-reference.c
++++ b/cuda-driver-reference.c
+@@ -233,0 +234 @@
++    void *inkling_prefill_readback;
+@@ -987,0 +989 @@
++            if (cuda.inkling_prefill_readback) cuda.host_free(cuda.inkling_prefill_readback);
+@@ -3014,0 +3017,11 @@
++}
++
++void *fg_cuda_inkling_prefill_readback(size_t bytes) {
++    const size_t capacity = 36 * (size_t)MIB_BYTES;
++    if (!cuda_inkling_quants || bytes == 0 || bytes > capacity || start_context() != 1) return NULL;
++    if (!cuda.inkling_prefill_readback && cuda.host_alloc && cuda.host_free) {
++        void *buffer = NULL;
++        if (cuda.host_alloc(&buffer, capacity, 0) == 0) cuda.inkling_prefill_readback = buffer;
++    }
++    void *buffer = cuda.inkling_prefill_readback;
++    return finish_context() == 0 ? buffer : NULL;

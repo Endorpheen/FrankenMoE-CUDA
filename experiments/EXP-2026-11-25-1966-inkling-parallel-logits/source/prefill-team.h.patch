@@ -1,0 +1,37 @@
+--- a/prefill-team.h
++++ b/prefill-team.h
+@@ -5,7 +5,7 @@
+     int64_t handles[15];
+     int tasks, count, pending;
+     uint64_t generation;
+-    bool stop, failed;
++    bool stop, failed, prefill;
+ };
+ 
+ extern int64_t i2_prefill_team_start(uint64_t team, int64_t tasks, sl_i64 handles);
+@@ -14,7 +14,7 @@
+ 
+ void fg_i2_prefill_team_worker(uint64_t handle, int64_t task) {
+     struct i2_prefill_team *team = (void *)(uintptr_t)handle;
+-    const int affinity_error = fg143_gather_affinity(1, task);
++    const int affinity_error = fg143_gather_affinity(team->prefill, task);
+     pthread_mutex_lock(&team->lock);
+     if (affinity_error) {
+         team->failed = true;
+@@ -39,7 +39,7 @@
+     pthread_mutex_unlock(&team->lock);
+ }
+ 
+-static bool prefill_team_open(struct i2_prefill_team *team, int tasks) {
++static bool prefill_team_open(struct i2_prefill_team *team, int tasks, bool prefill) {
+     if (pthread_mutex_init(&team->lock, NULL) != 0) return false;
+     if (pthread_cond_init(&team->job_ready, NULL) != 0) {
+         pthread_mutex_destroy(&team->lock);
+@@ -51,6 +51,7 @@
+         return false;
+     }
+     team->tasks = tasks;
++    team->prefill = prefill;
+     assert(i2_prefill_team_start((uint64_t)(uintptr_t)team, tasks, ints(team->handles, tasks - 1)) == tasks - 1);
+     return true;
+ }

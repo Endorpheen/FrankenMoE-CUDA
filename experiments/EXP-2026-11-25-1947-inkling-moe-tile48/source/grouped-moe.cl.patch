@@ -1,0 +1,11 @@
+--- a/grouped-moe.cl
++++ b/grouped-moe.cl
+@@ -143 +143 @@
+-    float4 accum[4];
++    float4 accum[8];
+@@ -193,0 +194,5 @@
++
++MOE_MMQ_MANY(goose_i2_xs_mmq48, 23, 6)
++MOE_MMQ_MANY(goose_i2_nl_mmq48, 20, 6)
++MOE_MMQ_MANY(goose_i2_xs_mmq64, 23, 8)
++MOE_MMQ_MANY(goose_i2_nl_mmq64, 20, 8)

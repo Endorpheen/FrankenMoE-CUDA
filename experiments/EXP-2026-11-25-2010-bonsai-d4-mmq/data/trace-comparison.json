@@ -1,0 +1,762 @@
+{
+  "prism": {
+    "timings": {
+      "cache_n": 0,
+      "prompt_n": 32768,
+      "prompt_ms": 28437.252,
+      "prompt_per_token_ms": 0.8678360595703125,
+      "prompt_per_second": 1152.2913676750481,
+      "predicted_n": 16,
+      "predicted_ms": 309.488,
+      "predicted_per_token_ms": 20.632533333333335,
+      "predicted_per_second": 48.467145737476095
+    },
+    "ids": [
+      279,
+      4530,
+      310,
+      12904,
+      11,
+      321,
+      799,
+      21254,
+      421,
+      1000,
+      8381,
+      678,
+      15673,
+      13,
+      198,
+      1812
+    ],
+    "prefill": {
+      "gpu_span_ns": 28405450161,
+      "kernels": {
+        "k_get_rows": {
+          "calls": 33,
+          "ns": 1706844,
+          "instances": {
+            "void k_get_rows<(int)128, (int)1, &dequantize_pq2_0, float>(const void *, const int *, T4 *, long, long, uint3, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)": 33
+          }
+        },
+        "fwht_cuda_block": {
+          "calls": 5601,
+          "ns": 866066092,
+          "instances": {
+            "void fwht_cuda_block<(int)1024, (int)256, float, (bool)0>(const T3 *, float *, long, float, const float *, int)": 32,
+            "void fwht_cuda_block<(int)1024, (int)256, float, (bool)1>(const T3 *, float *, long, float, const float *, int)": 5568,
+            "void fwht_cuda_block<(int)1024, (int)512, float, (bool)0>(const T3 *, float *, long, float, const float *, int)": 1
+          }
+        },
+        "k_bin_bcast": {
+          "calls": 33,
+          "ns": 1944575,
+          "instances": {
+            "void k_bin_bcast<&op_mul, float, float, float, const float *>(const T2 *, const T3 *, T4 *, unsigned int, unsigned int, unsigned int, uint3, uint3, uint3, uint3, uint3, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, T5...)": 33
+          }
+        },
+        "add_rms_norm_fwht_f32": {
+          "calls": 2642,
+          "ns": 416849457,
+          "instances": {
+            "void add_rms_norm_fwht_f32<(int)5120, (int)1024, (bool)0, (bool)0, (ggml_cuda_q8_1_layout)0>(const float *, const float *, const float *, const float *, float *, float *, void *, float, float)": 32,
+            "void add_rms_norm_fwht_f32<(int)5120, (int)1024, (bool)1, (bool)0, (ggml_cuda_q8_1_layout)0>(const float *, const float *, const float *, const float *, float *, float *, void *, float, float)": 2528,
+            "void add_rms_norm_fwht_f32<(int)5120, (int)1024, (bool)0, (bool)1, (ggml_cuda_q8_1_layout)3>(const float *, const float *, const float *, const float *, float *, float *, void *, float, float)": 1,
+            "void add_rms_norm_fwht_f32<(int)5120, (int)1024, (bool)1, (bool)1, (ggml_cuda_q8_1_layout)3>(const float *, const float *, const float *, const float *, float *, float *, void *, float, float)": 79,
+            "void add_rms_norm_fwht_f32<(int)5120, (int)1024, (bool)1, (bool)1, (ggml_cuda_q8_1_layout)0>(const float *, const float *, const float *, const float *, float *, float *, void *, float, float)": 1,
+            "void add_rms_norm_fwht_f32<(int)5120, (int)1024, (bool)0, (bool)1, (ggml_cuda_q8_1_layout)0>(const float *, const float *, const float *, const float *, float *, float *, void *, float, float)": 1
+          }
+        },
+        "scale_f32": {
+          "calls": 96,
+          "ns": 784747,
+          "instances": {
+            "void scale_f32<float>(const T1 *, T1 *, float, float, long)": 96
+          }
+        },
+        "k_get_rows_float": {
+          "calls": 1538,
+          "ns": 4967030,
+          "instances": {
+            "void k_get_rows_float<float, float>(const T1 *, const int *, T2 *, long, long, uint3, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)": 1538
+          }
+        },
+        "quantize_mmq_q8_1": {
+          "calls": 12704,
+          "ns": 865259064,
+          "instances": {
+            "void quantize_mmq_q8_1<(mmq_q8_1_ds_layout)0, (bool)0, (bool)0, (bool)0>(const float *, const int *, void *, long, long, long, long, long, int, int, int, const float *, const float *, const float *)": 12704
+          }
+        },
+        "mul_mat_q": {
+          "calls": 12704,
+          "ns": 15462909731,
+          "instances": {
+            "void mul_mat_q<(ggml_type)142, (int)128, (bool)0, (ggml_prec)30, (bool)0>(const char *, const char *, const int *, const int *, const int *, float *, float *, const float *, ggml_glu_op, float, uint3, int, int, int, int, int, uint3, uint3, int, int, int, uint3, uint3, int, int, int, uint3)": 12704
+          }
+        },
+        "concat_dim0_transpose_u32": {
+          "calls": 1536,
+          "ns": 296263797,
+          "instances": {
+            "concat_dim0_transpose_u32(const unsigned int *, const char *, unsigned int *, int, int, int, unsigned long, int)": 1536
+          }
+        },
+        "cpy_scalar": {
+          "calls": 3648,
+          "ns": 306615034,
+          "instances": {
+            "void cpy_scalar<&cpy_1_scalar<float, float>>(const char *, char *, long, long, long, long, long, long, long, long, long, long, long, long, long, long, long)": 3648
+          }
+        },
+        "ssm_conv_long_token_f32": {
+          "calls": 1536,
+          "ns": 421168228,
+          "instances": {
+            "void ssm_conv_long_token_f32<(bool)1, (unsigned long)128, (unsigned long)4, (long)32>(const float *, const float *, const float *, int, int, int, int, float *, int, int, int, long)": 1536
+          }
+        },
+        "l2_norm_f32": {
+          "calls": 1536,
+          "ns": 80808137,
+          "instances": {
+            "void l2_norm_f32<(int)32>(const float *, float *, int, int, int, long, long, long, float)": 1536
+          }
+        },
+        "Kernel2": {
+          "calls": 3072,
+          "ns": 162307916,
+          "instances": {
+            "void cutlass::Kernel2<cutlass_80_tensorop_s1688gemm_64x64_16x6_tn_align4>(T1::Params)": 3072
+          }
+        },
+        "splitKreduce_kernel": {
+          "calls": 3072,
+          "ns": 5732113,
+          "instances": {
+            "void cublasLt::splitKreduce_kernel<(int)32, (int)16, int, float, float, float, (bool)0, float, float, float, (bool)1, (bool)0, (bool)0>(cublasLt::cublasSplitKParams<T6>, const T4 *, const T9 *, T8 *, T5 *, const T6 *, const T6 *, const T10 *, const T4 *, T10 *, void *, long, T6 *, int *, T6 *, const T6 *, const T6 *, const T6 *, const T6 *)": 3072
+          }
+        },
+        "gated_delta_net_cuda": {
+          "calls": 1584,
+          "ns": 3340684595,
+          "instances": {
+            "void gated_delta_net_cuda<(int)128, (bool)0, (bool)0, (bool)1, (bool)0>(const float *, const float *, const float *, const float *, const float *, const float *, const float *, const float *, float *, float *, long, long, long, long, long, long, long, long, long, long, long, long, uint3, uint3, float, long, int, const int *, long)": 1584
+          }
+        },
+        "rms_norm_f32": {
+          "calls": 2640,
+          "ns": 193694040,
+          "instances": {
+            "void rms_norm_f32<(int)32, (int)1, (bool)1, (bool)1, (bool)0, (bool)0>(const float *, float *, int, int, int, long, long, long, float, const float *, long, long, long, uint3, uint3, uint3, uint3, const float *, long, long, long, uint3, uint3, uint3, uint3, float)": 1584,
+            "void rms_norm_f32<(int)128, (int)1, (bool)1, (bool)1, (bool)0, (bool)0>(const float *, float *, int, int, int, long, long, long, float, const float *, long, long, long, uint3, uint3, uint3, uint3, const float *, long, long, long, uint3, uint3, uint3, uint3, float)": 1056
+          }
+        },
+        "unary_gated_op_kernel": {
+          "calls": 4191,
+          "ns": 1256266882,
+          "instances": {
+            "void unary_gated_op_kernel<&op_silu, float>(const T2 *, const T2 *, T2 *, long, long, long, long)": 3663,
+            "void unary_gated_op_kernel<&op_sigmoid, float>(const T2 *, const T2 *, T2 *, long, long, long, long)": 528
+          }
+        },
+        "add_rms_norm_f32": {
+          "calls": 1551,
+          "ns": 224343113,
+          "instances": {
+            "void add_rms_norm_f32<(int)1024>(const float *, const float *, const float *, float *, float *, int, float)": 1551
+          }
+        },
+        "rope_multi": {
+          "calls": 1056,
+          "ns": 30672159,
+          "instances": {
+            "void rope_multi<(bool)1, (bool)0, float, float>(const T3 *, T4 *, int, int, int, int, int, int, int, int, int, int, int, const int *, float, float, float, rope_corr_dims, float, const float *, mrope_sections, bool, const long *, int, bool)": 1056
+          }
+        },
+        "fwht_cuda": {
+          "calls": 2112,
+          "ns": 83617906,
+          "instances": {
+            "void fwht_cuda<(int)256, float, (bool)0>(const T2 *, float *, long, float, const float *, int)": 1056,
+            "void fwht_cuda<(int)64, float, (bool)0>(const T2 *, float *, long, float, const float *, int)": 1056
+          }
+        },
+        "mul_mat_q_stream_k_fixup": {
+          "calls": 1024,
+          "ns": 7201404,
+          "instances": {
+            "void mul_mat_q_stream_k_fixup<(ggml_type)142, (int)128, (bool)0, (ggml_prec)30>(const int *, const int *, float *, float *, uint3, int, int, int, uint3, int, uint3, int, uint3)": 1024
+          }
+        },
+        "k_set_rows_quant": {
+          "calls": 1056,
+          "ns": 18809108,
+          "instances": {
+            "void k_set_rows_quant<long, block_q4_0, (int)32, &quantize_f32_q4_0_block>(const float *, const T1 *, T2 *, long, long, long, long, long, long, long, long, long, long, long, long, long, long, uint3, uint3, uint3, uint3, uint3)": 1056
+          }
+        },
+        "flash_attn_mask_to_KV_max": {
+          "calls": 496,
+          "ns": 2451779,
+          "instances": {
+            "void flash_attn_mask_to_KV_max<(int)32>(const __half2 *, int *, int, long, long)": 496
+          }
+        },
+        "flash_attn_ext_f16": {
+          "calls": 528,
+          "ns": 4064582077,
+          "instances": {
+            "void flash_attn_ext_f16<(int)256, (int)256, (int)32, (int)2, (bool)0, (bool)0, (bool)0, (ggml_type)2>(const char *, const char *, const char *, const char *, const char *, const int *, float *, float2 *, float, float, float, float, unsigned int, float, int, uint3, int, int, int, int, int, int, int, int, int, int, int, long, int, int, long, int, int, int, int, int, long)": 512,
+            "void flash_attn_ext_f16<(int)256, (int)256, (int)8, (int)8, (bool)0, (bool)0, (bool)0, (ggml_type)2>(const char *, const char *, const char *, const char *, const char *, const int *, float *, float2 *, float, float, float, float, unsigned int, float, int, uint3, int, int, int, int, int, int, int, int, int, int, int, long, int, int, long, int, int, int, int, int, long)": 16
+          }
+        },
+        "flash_attn_stream_k_fixup_general": {
+          "calls": 512,
+          "ns": 14457421,
+          "instances": {
+            "void flash_attn_stream_k_fixup_general<(int)256, (int)32, (int)2>(float *, const float2 *, int, int, int, int, uint3, uint3, uint3, uint3)": 512
+          }
+        },
+        "mul_mat_vec_pq2_0_mc": {
+          "calls": 397,
+          "ns": 15435253,
+          "instances": {
+            "void mul_mat_vec_pq2_0_mc<(int)4, (bool)0, (bool)0, (int)4, (int)4, (int)1, (int)1>(const void *, const void *, float *, int, int, int, int, int, const float *, const void *, const float *, ggml_glu_op, float)": 397
+          }
+        },
+        "ssm_conv_gdn_fused_f32": {
+          "calls": 48,
+          "ns": 130275,
+          "instances": {
+            "void ssm_conv_gdn_fused_f32<(int)4>(const float *, const int *, long, const float *, long, long, const float *, int, float *, ggml_cuda_gdn_conv_snaps, int, float *, float *, int, int, int, float)": 48
+          }
+        },
+        "mul_mat_vec_f": {
+          "calls": 48,
+          "ns": 320803,
+          "instances": {
+            "void mul_mat_vec_f<float, float, (int)4, (int)256, (bool)0, (bool)0>(const T1 *, const float *, const int *, ggml_cuda_mm_fusion_args_device, float *, int, uint3, int, int, int, uint3, int, int, int, uint3, int, int, int, int)": 48
+          }
+        },
+        "fwht_quantize_q8_1": {
+          "calls": 175,
+          "ns": 351666,
+          "instances": {
+            "void fwht_quantize_q8_1<(int)1024, (int)512, (ggml_cuda_q8_1_layout)3, float, (bool)1>(const T4 *, const float *, void *, long, long, unsigned int, uint3, float)": 174,
+            "void fwht_quantize_q8_1<(int)1024, (int)512, (ggml_cuda_q8_1_layout)0, float, (bool)1>(const T4 *, const float *, void *, long, long, unsigned int, uint3, float)": 1
+          }
+        },
+        "flash_attn_stream_k_fixup_uniform": {
+          "calls": 16,
+          "ns": 57026,
+          "instances": {
+            "void flash_attn_stream_k_fixup_uniform<(int)256, (int)8, (int)8>(float *, const float2 *, int, int, int, int, int, int, uint3, uint3, uint3)": 16
+          }
+        },
+        "mul_mat_vec_q": {
+          "calls": 3,
+          "ns": 894318,
+          "instances": {
+            "void mul_mat_vec_q<(ggml_type)142, (int)1, (bool)1, (bool)1, (bool)0, (bool)0, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)": 1,
+            "void mul_mat_vec_q<(ggml_type)142, (int)1, (bool)1, (bool)0, (bool)0, (bool)0, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)": 1,
+            "void mul_mat_vec_q<(ggml_type)142, (int)1, (bool)0, (bool)0, (bool)0, (bool)0, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)": 1
+          }
+        }
+      }
+    },
+    "decode": {
+      "gpu_span_ns": 305397898,
+      "kernels": {
+        "k_get_rows": {
+          "calls": 15,
+          "ns": 27906,
+          "instances": {
+            "void k_get_rows<(int)128, (int)1, &dequantize_pq2_0, float>(const void *, const int *, T4 *, long, long, uint3, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)": 15
+          }
+        },
+        "fwht_cuda_block": {
+          "calls": 15,
+          "ns": 22239,
+          "instances": {
+            "void fwht_cuda_block<(int)1024, (int)512, float, (bool)0>(const T3 *, float *, long, float, const float *, int)": 15
+          }
+        },
+        "k_bin_bcast": {
+          "calls": 15,
+          "ns": 23104,
+          "instances": {
+            "void k_bin_bcast<&op_mul, float, float, float, const float *>(const T2 *, const T3 *, T4 *, unsigned int, unsigned int, unsigned int, uint3, uint3, uint3, uint3, uint3, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, T5...)": 15
+          }
+        },
+        "add_rms_norm_fwht_f32": {
+          "calls": 1935,
+          "ns": 11475585,
+          "instances": {
+            "void add_rms_norm_fwht_f32<(int)5120, (int)1024, (bool)0, (bool)1, (ggml_cuda_q8_1_layout)0>(const float *, const float *, const float *, const float *, float *, float *, void *, float, float)": 1920,
+            "void add_rms_norm_fwht_f32<(int)5120, (int)1024, (bool)1, (bool)1, (ggml_cuda_q8_1_layout)0>(const float *, const float *, const float *, const float *, float *, float *, void *, float, float)": 15
+          }
+        },
+        "mul_mat_vec_q": {
+          "calls": 5055,
+          "ns": 231175028,
+          "instances": {
+            "void mul_mat_vec_q<(ggml_type)142, (int)1, (bool)0, (bool)0, (bool)0, (bool)0, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)": 2190,
+            "void mul_mat_vec_q<(ggml_type)142, (int)1, (bool)1, (bool)0, (bool)0, (bool)0, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)": 1905,
+            "void mul_mat_vec_q<(ggml_type)142, (int)1, (bool)1, (bool)1, (bool)0, (bool)0, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)": 960
+          }
+        },
+        "ssm_conv_gdn_fused_f32": {
+          "calls": 720,
+          "ns": 1673192,
+          "instances": {
+            "void ssm_conv_gdn_fused_f32<(int)4>(const float *, const int *, long, const float *, long, long, const float *, int, float *, ggml_cuda_gdn_conv_snaps, int, float *, float *, int, int, int, float)": 720
+          }
+        },
+        "mul_mat_vec_f": {
+          "calls": 720,
+          "ns": 4049531,
+          "instances": {
+            "void mul_mat_vec_f<float, float, (int)1, (int)256, (bool)0, (bool)0>(const T1 *, const float *, const int *, ggml_cuda_mm_fusion_args_device, float *, int, uint3, int, int, int, uint3, int, int, int, uint3, int, int, int, int)": 720
+          }
+        },
+        "gated_delta_net_cuda": {
+          "calls": 720,
+          "ns": 6316840,
+          "instances": {
+            "void gated_delta_net_cuda<(int)128, (bool)0, (bool)0, (bool)1, (bool)0>(const float *, const float *, const float *, const float *, const float *, const float *, const float *, const float *, float *, float *, long, long, long, long, long, long, long, long, long, long, long, long, uint3, uint3, float, long, int, const int *, long)": 720
+          }
+        },
+        "rms_norm_f32": {
+          "calls": 1200,
+          "ns": 1564018,
+          "instances": {
+            "void rms_norm_f32<(int)32, (int)1, (bool)1, (bool)1, (bool)0, (bool)0>(const float *, float *, int, int, int, long, long, long, float, const float *, long, long, long, uint3, uint3, uint3, uint3, const float *, long, long, long, uint3, uint3, uint3, uint3, float)": 720,
+            "void rms_norm_f32<(int)128, (int)1, (bool)1, (bool)1, (bool)0, (bool)0>(const float *, float *, int, int, int, long, long, long, float, const float *, long, long, long, uint3, uint3, uint3, uint3, const float *, long, long, long, uint3, uint3, uint3, uint3, float)": 480
+          }
+        },
+        "unary_gated_op_kernel": {
+          "calls": 960,
+          "ns": 880344,
+          "instances": {
+            "void unary_gated_op_kernel<&op_silu, float>(const T2 *, const T2 *, T2 *, long, long, long, long)": 720,
+            "void unary_gated_op_kernel<&op_sigmoid, float>(const T2 *, const T2 *, T2 *, long, long, long, long)": 240
+          }
+        },
+        "cpy_scalar": {
+          "calls": 960,
+          "ns": 1342566,
+          "instances": {
+            "void cpy_scalar<&cpy_1_scalar<float, float>>(const char *, char *, long, long, long, long, long, long, long, long, long, long, long, long, long, long, long)": 960
+          }
+        },
+        "fwht_quantize_q8_1": {
+          "calls": 1920,
+          "ns": 3621642,
+          "instances": {
+            "void fwht_quantize_q8_1<(int)1024, (int)512, (ggml_cuda_q8_1_layout)0, float, (bool)1>(const T4 *, const float *, void *, long, long, unsigned int, uint3, float)": 1920
+          }
+        },
+        "rope_multi": {
+          "calls": 480,
+          "ns": 529316,
+          "instances": {
+            "void rope_multi<(bool)1, (bool)0, float, float>(const T3 *, T4 *, int, int, int, int, int, int, int, int, int, int, int, const int *, float, float, float, rope_corr_dims, float, const float *, mrope_sections, bool, const long *, int, bool)": 480
+          }
+        },
+        "fwht_cuda": {
+          "calls": 960,
+          "ns": 891346,
+          "instances": {
+            "void fwht_cuda<(int)256, float, (bool)0>(const T2 *, float *, long, float, const float *, int)": 480,
+            "void fwht_cuda<(int)64, float, (bool)0>(const T2 *, float *, long, float, const float *, int)": 480
+          }
+        },
+        "k_set_rows_quant": {
+          "calls": 480,
+          "ns": 791547,
+          "instances": {
+            "void k_set_rows_quant<long, block_q4_0, (int)32, &quantize_f32_q4_0_block>(const float *, const T1 *, T2 *, long, long, long, long, long, long, long, long, long, long, long, long, long, long, uint3, uint3, uint3, uint3, uint3)": 480
+          }
+        },
+        "flash_attn_ext_f16": {
+          "calls": 240,
+          "ns": 26873271,
+          "instances": {
+            "void flash_attn_ext_f16<(int)256, (int)256, (int)1, (int)8, (bool)0, (bool)0, (bool)0, (ggml_type)2>(const char *, const char *, const char *, const char *, const char *, const int *, float *, float2 *, float, float, float, float, unsigned int, float, int, uint3, int, int, int, int, int, int, int, int, int, int, int, long, int, int, long, int, int, int, int, int, long)": 240
+          }
+        },
+        "flash_attn_stream_k_fixup_uniform": {
+          "calls": 240,
+          "ns": 786190,
+          "instances": {
+            "void flash_attn_stream_k_fixup_uniform<(int)256, (int)1, (int)8>(float *, const float2 *, int, int, int, int, int, int, uint3, uint3, uint3)": 240
+          }
+        },
+        "k_get_rows_float": {
+          "calls": 30,
+          "ns": 38079,
+          "instances": {
+            "void k_get_rows_float<float, float>(const T1 *, const int *, T2 *, long, long, uint3, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)": 30
+          }
+        }
+      }
+    }
+  },
+  "goose": {
+    "timings": {
+      "cache_n": 0,
+      "prompt_n": 32768,
+      "prompt_ms": 53448.679284978425,
+      "prompt_per_token_ms": 1.6311242457573982,
+      "prompt_per_second": 613.0740822478908,
+      "predicted_n": 16,
+      "predicted_ms": 905.7444750214927,
+      "predicted_per_token_ms": 60.382965001432844,
+      "predicted_per_second": 16.5609621848856
+    },
+    "ids": [
+      279,
+      4530,
+      310,
+      12904,
+      11,
+      321,
+      799,
+      21254,
+      421,
+      1000,
+      8381,
+      678,
+      15673,
+      13,
+      198,
+      1812
+    ],
+    "prefill": {
+      "gpu_span_ns": 53446897622,
+      "kernels": {
+        "bonsai_embed_batch": {
+          "calls": 32,
+          "ns": 1135762,
+          "instances": {
+            "bonsai_embed_batch": 32
+          }
+        },
+        "bonsai_fwht1024": {
+          "calls": 6434,
+          "ns": 564417915,
+          "instances": {
+            "bonsai_fwht1024": 6434
+          }
+        },
+        "bonsai_norm": {
+          "calls": 8449,
+          "ns": 854082503,
+          "instances": {
+            "bonsai_norm": 8449
+          }
+        },
+        "bonsai_pack_half": {
+          "calls": 6144,
+          "ns": 216731146,
+          "instances": {
+            "bonsai_pack_half": 6144
+          }
+        },
+        "bonsai_pq2_mmq_64x128_k64": {
+          "calls": 12800,
+          "ns": 31919615120,
+          "instances": {
+            "bonsai_pq2_mmq_64x128_k64": 12800
+          }
+        },
+        "bonsai_decay_reuse8": {
+          "calls": 1536,
+          "ns": 624647531,
+          "instances": {
+            "bonsai_decay_reuse8": 1536
+          }
+        },
+        "bonsai_conv_batch": {
+          "calls": 1536,
+          "ns": 567700573,
+          "instances": {
+            "bonsai_conv_batch": 1536
+          }
+        },
+        "goose_gdn_mma_v32": {
+          "calls": 1536,
+          "ns": 1397847979,
+          "instances": {
+            "goose_gdn_mma_v32": 1536
+          }
+        },
+        "bonsai_residual": {
+          "calls": 4224,
+          "ns": 497645251,
+          "instances": {
+            "bonsai_residual": 4224
+          }
+        },
+        "bonsai_ffn_tail": {
+          "calls": 2048,
+          "ns": 819682892,
+          "instances": {
+            "bonsai_ffn_tail": 2048
+          }
+        },
+        "bonsai_split_q_gate": {
+          "calls": 528,
+          "ns": 105326244,
+          "instances": {
+            "bonsai_split_q_gate": 528
+          }
+        },
+        "goose_rope_phases": {
+          "calls": 1024,
+          "ns": 75681617,
+          "instances": {
+            "goose_rope_phases": 1024
+          }
+        },
+        "goose_rope_apply": {
+          "calls": 1024,
+          "ns": 63348025,
+          "instances": {
+            "goose_rope_apply": 1024
+          }
+        },
+        "goose_set_q4_rows": {
+          "calls": 1056,
+          "ns": 27852190,
+          "instances": {
+            "goose_set_q4_rows": 1056
+          }
+        },
+        "bonsai_flash_stage_kv": {
+          "calls": 512,
+          "ns": 132151644,
+          "instances": {
+            "bonsai_flash_stage_kv": 512
+          }
+        },
+        "bonsai_flash_async_tile": {
+          "calls": 53456,
+          "ns": 12566962956,
+          "instances": {
+            "bonsai_flash_async_tile": 53456
+          }
+        },
+        "bonsai_flash_compact_merge": {
+          "calls": 112,
+          "ns": 1409690,
+          "instances": {
+            "bonsai_flash_compact_merge": 112
+          }
+        },
+        "bonsai_attention_gate": {
+          "calls": 528,
+          "ns": 79416604,
+          "instances": {
+            "bonsai_attention_gate": 528
+          }
+        },
+        "bonsai_flash_compact_ordered_merge": {
+          "calls": 53344,
+          "ns": 2785974309,
+          "instances": {
+            "bonsai_flash_compact_ordered_merge": 53344
+          }
+        },
+        "bonsai_pq2_row": {
+          "calls": 1,
+          "ns": 1312,
+          "instances": {
+            "bonsai_pq2_row": 1
+          }
+        },
+        "bonsai_pq2_matvec_rows2": {
+          "calls": 369,
+          "ns": 39506931,
+          "instances": {
+            "bonsai_pq2_matvec_rows2": 369
+          }
+        },
+        "bonsai_decay": {
+          "calls": 48,
+          "ns": 2139578,
+          "instances": {
+            "bonsai_decay": 48
+          }
+        },
+        "bonsai_conv_step": {
+          "calls": 48,
+          "ns": 86049,
+          "instances": {
+            "bonsai_conv_step": 48
+          }
+        },
+        "goose_gdn_decode": {
+          "calls": 48,
+          "ns": 475945,
+          "instances": {
+            "goose_gdn_decode": 48
+          }
+        },
+        "bonsai_swiglu": {
+          "calls": 64,
+          "ns": 83485,
+          "instances": {
+            "bonsai_swiglu": 64
+          }
+        },
+        "bonsai_pq2_matvec_ordered": {
+          "calls": 32,
+          "ns": 434341,
+          "instances": {
+            "bonsai_pq2_matvec_ordered": 32
+          }
+        },
+        "goose_rope_decode": {
+          "calls": 32,
+          "ns": 79392,
+          "instances": {
+            "goose_rope_decode": 32
+          }
+        },
+        "bonsai_decode_gqa3": {
+          "calls": 16,
+          "ns": 6072626,
+          "instances": {
+            "bonsai_decode_gqa3": 16
+          }
+        },
+        "goose_q4_attention_merge": {
+          "calls": 16,
+          "ns": 2022621,
+          "instances": {
+            "goose_q4_attention_merge": 16
+          }
+        }
+      }
+    },
+    "decode": {
+      "gpu_span_ns": 904798715,
+      "kernels": {
+        "bonsai_pq2_row": {
+          "calls": 15,
+          "ns": 18851,
+          "instances": {
+            "bonsai_pq2_row": 15
+          }
+        },
+        "bonsai_fwht1024": {
+          "calls": 3870,
+          "ns": 10882073,
+          "instances": {
+            "bonsai_fwht1024": 3870
+          }
+        },
+        "bonsai_norm": {
+          "calls": 3855,
+          "ns": 103412603,
+          "instances": {
+            "bonsai_norm": 3855
+          }
+        },
+        "bonsai_pq2_matvec_rows2": {
+          "calls": 5535,
+          "ns": 592344558,
+          "instances": {
+            "bonsai_pq2_matvec_rows2": 5535
+          }
+        },
+        "bonsai_decay": {
+          "calls": 720,
+          "ns": 31702680,
+          "instances": {
+            "bonsai_decay": 720
+          }
+        },
+        "bonsai_conv_step": {
+          "calls": 720,
+          "ns": 1272849,
+          "instances": {
+            "bonsai_conv_step": 720
+          }
+        },
+        "goose_gdn_decode": {
+          "calls": 720,
+          "ns": 7024998,
+          "instances": {
+            "goose_gdn_decode": 720
+          }
+        },
+        "bonsai_residual": {
+          "calls": 1920,
+          "ns": 1952555,
+          "instances": {
+            "bonsai_residual": 1920
+          }
+        },
+        "bonsai_swiglu": {
+          "calls": 960,
+          "ns": 1223194,
+          "instances": {
+            "bonsai_swiglu": 960
+          }
+        },
+        "bonsai_pq2_matvec_ordered": {
+          "calls": 480,
+          "ns": 6427806,
+          "instances": {
+            "bonsai_pq2_matvec_ordered": 480
+          }
+        },
+        "bonsai_split_q_gate": {
+          "calls": 240,
+          "ns": 229605,
+          "instances": {
+            "bonsai_split_q_gate": 240
+          }
+        },
+        "goose_rope_decode": {
+          "calls": 480,
+          "ns": 1173971,
+          "instances": {
+            "goose_rope_decode": 480
+          }
+        },
+        "goose_set_q4_rows": {
+          "calls": 480,
+          "ns": 1406037,
+          "instances": {
+            "goose_set_q4_rows": 480
+          }
+        },
+        "bonsai_decode_gqa3": {
+          "calls": 240,
+          "ns": 90449640,
+          "instances": {
+            "bonsai_decode_gqa3": 240
+          }
+        },
+        "goose_q4_attention_merge": {
+          "calls": 240,
+          "ns": 30230079,
+          "instances": {
+            "goose_q4_attention_merge": 240
+          }
+        },
+        "bonsai_attention_gate": {
+          "calls": 240,
+          "ns": 313476,
+          "instances": {
+            "bonsai_attention_gate": 240
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,4 @@
+prism-unrotated.log:llama_kv_cache: n_rot_k = 0, n_embd_head_k_all = 256
+prism-unrotated.log:llama_kv_cache: n_rot_v = 0, n_embd_head_k_all = 256
+prism.log:llama_kv_cache: n_rot_k = 256, n_embd_head_k_all = 256
+prism.log:llama_kv_cache: n_rot_v = 64, n_embd_head_k_all = 256

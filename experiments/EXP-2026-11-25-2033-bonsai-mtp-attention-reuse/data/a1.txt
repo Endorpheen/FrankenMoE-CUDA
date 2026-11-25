@@ -1,0 +1,6 @@
+Device workspace: 2036174848 bytes (Q4_0 K/V, GDN, activations)
+Device free: 768606208 / 12447973376 bytes
+draft_device_bytes=42508504
+mtp_blocks=185 proposed=370 accepted=326 commit_1=14 commit_2=16 commit_3=155 draft_ms=1433.389 target_ms=9361.169 catchup_ms=84.649
+prompt_n=32768 prefill_ms=53424.188 decode_n=512 decode_ms=10995.453 ubatch=1024
+max_rss_kib=7419928 major_faults=0 swaps=0

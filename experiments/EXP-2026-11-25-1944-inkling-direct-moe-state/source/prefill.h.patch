@@ -1,0 +1,45 @@
+--- a/prefill.h
++++ b/prefill.h
+@@ -4 +4,2 @@
+-    float current[model_width];
++    float *current;
++    float current_storage[model_width];
+@@ -40 +41 @@
+-        memcpy(token->current, token->prelude, sizeof token->current);
++        memcpy(token->current, token->prelude, sizeof token->current_storage);
+@@ -52 +53,5 @@
+-    float attention[max_prefill_batch][attn_width];
++    union {
++        float attention[max_prefill_batch][attn_width];
++        float current[max_prefill_batch][model_width];
++    };
++    bool direct_moe_state;
+@@ -164 +169 @@
+-                memcpy(scratch->inputs[0][t], token->current, sizeof token->current);
++                memcpy(scratch->inputs[0][t], token->current, sizeof token->current_storage);
+@@ -168 +173 @@
+-                    memcpy(message[i] + t * model_width, token->messages[i], sizeof token->current);
++                    memcpy(message[i] + t * model_width, token->messages[i], sizeof token->current_storage);
+@@ -319,0 +325,6 @@
++        float *destination = scratch->linear[0];
++        float *previous_output = prefill_direct_output;
++        if (scratch->direct_moe_state) {
++            destination = scratch->current[0];
++            prefill_direct_output = destination;
++        }
+@@ -321,3 +332,6 @@
+-                     scratch->residual[0], scratch->linear[0]);
+-        for (int t = 0; t < count; ++t) {
+-            memcpy(tokens[t].current, scratch->linear[t], sizeof tokens[t].current);
++                     scratch->residual[0], destination);
++        prefill_direct_output = previous_output;
++        if (!scratch->direct_moe_state) {
++            for (int t = 0; t < count; ++t) {
++                memcpy(tokens[t].current, scratch->linear[t], sizeof tokens[t].current_storage);
++            }
+@@ -377,0 +392,3 @@
++    const char *direct_state = getenv("I2_DIRECT_MOE_STATE");
++    scratch->direct_moe_state = prefill_direct_output &&
++        (!direct_state || strcmp(direct_state, "0") != 0);
+@@ -380,0 +398 @@
++        tokens[t].current = scratch->direct_moe_state ? scratch->current[t] : tokens[t].current_storage;

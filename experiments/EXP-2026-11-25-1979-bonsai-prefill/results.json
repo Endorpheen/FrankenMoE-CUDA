@@ -1,0 +1,186 @@
+{
+  "gpu": "NVIDIA GeForce RTX 4070",
+  "context": 36864,
+  "cache": "q4_0/q4_0",
+  "ubatch": 1024,
+  "request_sha256": "1f62448c0a6d29a776f76df4f24d0ca162c7a5d10774f879d94f859ac3e81ecb",
+  "all_512_ids_equal_prism": true,
+  "prefill_ms": 577586.785,
+  "prefill_tokens": 32768,
+  "prefill_toks_s": 56.73259993301266,
+  "decode_ms": 51721.942,
+  "decode_tokens": 512,
+  "decode_toks_s": 9.899086929102545,
+  "prefill_milestones": [
+    {
+      "pos": 4096,
+      "seconds": 21.811
+    },
+    {
+      "pos": 8192,
+      "seconds": 58.682
+    },
+    {
+      "pos": 12288,
+      "seconds": 105.695
+    },
+    {
+      "pos": 16384,
+      "seconds": 167.78
+    },
+    {
+      "pos": 20480,
+      "seconds": 245.788
+    },
+    {
+      "pos": 24576,
+      "seconds": 341.225
+    },
+    {
+      "pos": 28672,
+      "seconds": 452.946
+    },
+    {
+      "pos": 32768,
+      "seconds": 577.587
+    }
+  ],
+  "process_peak_vram_mib": 8788,
+  "board_peak_vram_mib": 11420,
+  "pid": 3015924,
+  "wall_with_load_s": 630.7471063779958,
+  "pswpout_before": 15211004,
+  "pswpout_after": 15211004,
+  "peak_kib": {
+    "VmHWM": 7418448,
+    "VmRSS": 5307088,
+    "VmSwap": 0,
+    "RssAnon": 19676,
+    "RssFile": 5279224
+  },
+  "returncode": 0,
+  "argv_without_input_ids": [
+    "taskset",
+    "0f0f",
+    "build/bonsai-prefill-1979-final/bonsai-batch-infer",
+    "~/AI/LocalAI/Models/Ternary-Bonsai-2.5-27B-PQ2_0-mtp.gguf",
+    "build/bonsai-prefill-1979-final/prefill.cubin",
+    "build/bonsai-prefill-1979-final/frozen-goose.ptx",
+    "36864",
+    "512",
+    "--ignore-eos"
+  ],
+  "env": {
+    "PATH": "/usr/bin:/bin",
+    "HOME": "~",
+    "LANG": "C",
+    "CUDA_VISIBLE_DEVICES": "0",
+    "BONSAI_UBATCH": "1024"
+  },
+  "artifacts_sha256": {
+    "bonsai-batch-infer": "f7ffe07b88b90152248de59959142fdf1082a1cc73e76ebaf80417e8d2e0bd1c",
+    "prefill.cubin": "a667e844b420d84f7f57c34542032e1eafa11a415a12d7fb0fe42b41bc2d0d84",
+    "frozen-goose.ptx": "42e1f5c0885a3bbab3656e3bba2dc6ef8b998a4581d365b6c1e48fc842f789d7",
+    "32k512.jsonl": "4cd110b287f2602f76f088c268adccd5f30c3719dc3cf52665093584545791fa",
+    "profile-1025-8.nsys-rep": "3f252adcfb650b2dbf8779020644393ce1172c6d22758db7d5721f85e3bf5a49"
+  },
+  "short_1025_8": {
+    "request_sha256": "12fe39e1909defbed07f7814a63b090802fdf032cbd9ad1f159c8b7316c7a1d0",
+    "goose": {
+      "prompt_tokens": 1025,
+      "prefill_ms": 4396.148,
+      "decode_tokens": 8,
+      "decode_ms": 525.703,
+      "ubatch": 1024,
+      "prefill_toks_s": 233.15866526786633,
+      "decode_toks_s": 15.217717989054657
+    },
+    "prism": {
+      "cache_n": 0,
+      "prompt_n": 1025,
+      "prompt_ms": 877.083,
+      "prompt_per_token_ms": 0.855690731707317,
+      "prompt_per_second": 1168.6465249012922,
+      "predicted_n": 8,
+      "predicted_ms": 134.51,
+      "predicted_per_token_ms": 19.215714285714284,
+      "predicted_per_second": 52.04074046539291
+    },
+    "goose_ids": [
+      11,
+      279,
+      4530,
+      314,
+      12904,
+      11,
+      321,
+      799
+    ],
+    "prism_ids": [
+      11,
+      279,
+      4530,
+      310,
+      12904,
+      11,
+      321,
+      799
+    ],
+    "exact": false,
+    "first_divergence": 4
+  },
+  "diagnostic_pair_ids": {
+    "short": {
+      "1": [
+        17,
+        369,
+        264,
+        3050
+      ],
+      "128": [
+        17,
+        369,
+        264,
+        3050
+      ]
+    },
+    "boundary": {
+      "1": [
+        1330,
+        22980,
+        421,
+        1000,
+        8381,
+        678,
+        15673,
+        13,
+        198,
+        1812,
+        5020,
+        220,
+        15,
+        15,
+        15,
+        22
+      ],
+      "128": [
+        1330,
+        22980,
+        421,
+        1000,
+        8381,
+        678,
+        15673,
+        13,
+        198,
+        1812,
+        5020,
+        220,
+        15,
+        15,
+        15,
+        22
+      ]
+    }
+  }
+}

@@ -1,0 +1,36 @@
+--- a/cpu.goose
++++ b/cpu.goose
+@@ -1867,11 +1867,16 @@
+         p.d.ne[1] == p.z.ne[0] && p.d.ne[2] == p.z.ne[1] && p.d.ne[3] == 1;
+ }
+ 
++extern "fg_cuda_inkling_quants_enabled" fn cuda_inkling_quants_enabled() -> bool;
++
+ fn cuda_matrix_layout(p: const Node &) -> bool {
++    let inkling = (p.x.kind == 8 || p.x.kind == 20 || p.x.kind == 23) &&
++        p.x.ne[0] <= 2147483647 && (p.op != 30 || matrix_index_layout(p)) &&
++        cuda_inkling_quants_enabled();
+     let f32_layout = p.x.kind == 0 && p.x.nb[0] == 4 && p.x.ne[0] <= 2147483647 &&
+         (p.x.nb[1] | p.x.nb[2] | p.x.nb[3]) % 4 == 0 &&
+         (p.op != 30 || matrix_index_layout(p));
+-    return p.nth == 1 && (p.x.kind == 12 || p.x.kind == 14 || f32_layout) &&
++    return p.nth == 1 && (p.x.kind == 12 || p.x.kind == 14 || f32_layout || inkling) &&
+         p.y.kind == 0 && p.y.nb[0] == 4 && p.d.kind == 0 &&
+         (p.y.nb[1] | p.y.nb[2] | p.y.nb[3]) % 4 == 0 &&
+         p.x.nb[1] >= 0 && p.x.nb[1] % 2 == 0 &&
+@@ -2059,11 +2064,13 @@
+                      routes: const i64[:], jobs: i64[:], offsets: i64[:]) -> bool {
+     let indexed = p.op == 30;
+     let span = add_size(mul_size(p.d.ne[0] - 1, p.x.nb[1]), row_bytes);
+-    let cached = if indexed && p.x.kind != 0 && p.x.nb[2] == span {
++    let k_quant = p.x.kind == 12 || p.x.kind == 14;
++    let cacheable = k_quant || ((p.x.kind == 20 || p.x.kind == 23) && cuda_inkling_quants_enabled());
++    let cached = if indexed && cacheable && p.x.nb[2] == span {
+         cuda_prepare_experts(weights, span, routes[heads .. heads + planes], offsets)
+     } else { 0 };
+     if cached < 0 { return false; }
+-    let extent = if p.x.kind == 0 { p.x.ne[0] } else { p.x.ne[0] / 256 };
++    let extent = if k_quant { p.x.ne[0] / 256 } else { p.x.ne[0] };
+     var words: i64 = 0;
+     for plane in planes {
+         var route = if indexed { routes[heads + plane] } else { 0 };

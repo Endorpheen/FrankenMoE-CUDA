@@ -1,0 +1,50 @@
+--- a/matrix.cl
++++ b/matrix.cl
+@@ -115,0 +116,47 @@
++
++__kernel void goose_i2_matrix_q8_attention_projections(
++    uint64_t input_q, uint64_t input_k, uint64_t input_v, uint64_t output,
++    uint64_t weight_q, uint64_t weight_k, uint64_t weight_v, uint64_t weight_r,
++    uint64_t weight_sink, uint64_t weight_gate, uint64_t weight_key_taps, uint64_t weight_value_taps) {
++    uint32_t block, thread;
++    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(block));
++    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
++    const uint32_t index = block * 4 + (thread >> 5);
++    uint32_t row;
++    uint64_t weight, input;
++    if (index < 3072) {
++        row = index;
++        weight = weight_q;
++        input = input_q;
++    } else if (index < 4096) {
++        row = index - 3072;
++        weight = weight_k;
++        input = input_k;
++    } else if (index < 5120) {
++        row = index - 4096;
++        weight = weight_v;
++        input = input_v;
++    } else if (index < 5504) {
++        row = index - 5120;
++        weight = weight_r;
++        input = input_q;
++    } else if (index < 5528) {
++        row = index - 5504;
++        weight = weight_sink;
++        input = input_q;
++    } else if (index < 8600) {
++        row = index - 5528;
++        weight = weight_gate;
++        input = input_q;
++    } else if (index < 8632) {
++        row = index - 8600;
++        weight = weight_key_taps;
++        input = input_k;
++    } else {
++        row = index - 8632;
++        weight = weight_value_taps;
++        input = input_v;
++    }
++    i2_matrix_one_g(weight + (uint64_t)row * 2448, input,
++                    output + 4 * (uint64_t)index, 72, 8, thread & 31);
++}

@@ -1,0 +1,17 @@
+--- a/flash-mma.cl
++++ b/flash-mma.cl
+@@ -99,0 +100,2 @@
++    const bool parallel_scores = (q4 & 2) != 0 && queries == 1;
++    q4 &= 1;
+@@ -139,0 +142,6 @@
++        if (parallel_scores) {
++            if (thread < 32) i2_online_adjust_key_g((uint64_t)scores,(uint64_t)key_pos,
++                (uint64_t)relative,(uint64_t)bias,(uint64_t)sinks,missing,start,
++                query_pos[query],qhead,thread,window,scale);
++            sync_group();
++        }
+@@ -142 +150,3 @@
+-                i2_online_row_g((uint64_t)scores,(uint64_t)probs,(uint64_t)maxval,(uint64_t)sum,(uint64_t)alpha,
++                if (parallel_scores) i2_online_prepared_row_g((uint64_t)scores,(uint64_t)probs,
++                    (uint64_t)maxval,(uint64_t)sum,(uint64_t)alpha);
++                else i2_online_row_g((uint64_t)scores,(uint64_t)probs,(uint64_t)maxval,(uint64_t)sum,(uint64_t)alpha,
