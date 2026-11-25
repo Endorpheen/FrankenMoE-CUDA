@@ -455,6 +455,43 @@ One experiment at a time. The cycle is always:
 5. Verdict: ACCEPTED or REJECTED, always backed by numbers.
 6. One atomic commit, English message, `EXP-YYYY-MM-DD-NNN` in the subject.
 
+### Staged acceptance for optimization experiments
+
+Select the smallest check that can change the next decision, based on the
+risk and scope of the change. Record the hypothesis, reference and acceptance
+criteria before running the relevant stage.
+
+1. **Component probe.** For every hypothesis, run a minimal correctness and
+   timing check on representative inputs. Include required packing, data
+   movement or setup in the relevant cost. Stop or revise the candidate if
+   the proposed mechanism or useful speedup does not survive the probe.
+2. **Targeted candidate check.** For a promising result, exercise known
+   divergence points and affected boundaries and run a short, controlled A/B.
+   Use the latest accepted reference. Carry forward valid saved results where
+   the build, inputs and conditions match. Add a run only when its result can
+   resolve a named uncertainty, test a new risk or corroborate a gain needed
+   for the next decision.
+3. **Promotion or release.** Before promoting a substantial change into the
+   working runtime, complete the applicable full quality suite, long
+   generations and regression gates for affected architectures. Before
+   publishing, run the mandatory [Release Gate](docs/RELEASE-GATE.md) in full.
+   A component probe or short A/B does not replace either gate.
+
+For arithmetic-preserving changes, require bitwise equality on the affected
+outputs and state. For new numerical methods, choose tolerances and quality
+metrics justified by the reference and the intended use before checking a
+candidate. Experimental builds may retain documented numerical differences.
+Use fixed-history logits, targeted state checks and independently scored
+tasks as appropriate. A fixed L2 cutoff or a single different token does
+not by itself reject a numerical approach. Promotion requires convincing
+evidence that quality has no material regression.
+
+Record unsuccessful but promising variants, their evidence and the
+conditions for retesting in the existing optimization registry. Reuse
+accepted measurements and fixtures to avoid repeating checks that offer
+no new diagnostic information. This policy preserves all Release Gate
+requirements and the rules for serial runs and approvals.
+
 ## Moving from one experiment to the next
 
 An experiment is NOT finished when the measurements are done. It is finished
