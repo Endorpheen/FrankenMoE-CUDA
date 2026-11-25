@@ -1095,6 +1095,16 @@ release still needs the architecture regression gates.
   three versus one maximum active CTA per SM. Keep EXP-2086.
   [Component results and reproduction](EXP-2026-11-26-2090-bonsai-down-k128/README.md).
 
+### EXP-2026-11-26-2091 — Full Bonsai GPU comparison with PrismML
+
+- **Diagnostic.** Complete 32K/512 captures on RTX 4070, both cold,
+  512 returned IDs and text identical. PrismML uses the generic
+  J128 PQ2 MMQ, with the SM90+ specialization outside this dispatch.
+- **Evidence:** Goose costs 3.04 s more in prefill PQ2/pack and
+  3.38 s more in decode attention. Decode GPU gap difference is
+  0.69 s. The prior unprofiled results remain the scored baselines.
+  [Full traces, kernel geometry and reproduction](EXP-2026-11-26-2091-bonsai-prism-full-comparison/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
