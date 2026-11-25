@@ -768,6 +768,14 @@ release still needs the architecture regression gates.
   cases match, while code trace drops 18/63 → 17/63.
   [Source, diagnostics and reproduction](EXP-2026-11-25-2053-bonsai-q8-middle-layers/README.md).
 
+### EXP-2026-11-25-2054 — Split-K for Bonsai FP16 PQ2 projections
+
+- **Status:** Rejected at the component performance gate.
+- **Evidence:** On RTX 4070, two/four parts give at most 2.22e-5
+  relative L2 vs unsplit FP16. With pack and reduction, full FFN
+  down takes 3.87 ms unsplit versus 4.06 / 4.16 ms split.
+  [Source, diagnostics and reproduction](EXP-2026-11-25-2054-bonsai-mmq-split-k/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.

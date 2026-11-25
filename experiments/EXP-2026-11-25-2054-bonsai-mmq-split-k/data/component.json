@@ -1,0 +1,178 @@
+[
+  {
+    "tensor": "blk.0.attn_qkv.weight",
+    "width": 5120,
+    "rows": 10239,
+    "tokens": 129,
+    "partitions": {
+      "2": {
+        "relative_l2": 4.870545581070473e-06,
+        "max_abs": 6.4849853515625e-05,
+        "partial_bytes": 10566648
+      },
+      "4": {
+        "relative_l2": 6.495497927971883e-06,
+        "max_abs": 8.296966552734375e-05,
+        "partial_bytes": 21133296
+      }
+    },
+    "diagnostic_kernel_ns": [
+      [
+        "bonsai_pack_half",
+        3456
+      ],
+      [
+        "bonsai_pq2_cached_64x128_k64",
+        594249
+      ],
+      [
+        "bonsai_pq2_cached_split_k",
+        595465
+      ],
+      [
+        "bonsai_pq2_sum_split_k",
+        9889
+      ],
+      [
+        "bonsai_pq2_cached_split_k",
+        595049
+      ],
+      [
+        "bonsai_pq2_sum_split_k",
+        21920
+      ]
+    ]
+  },
+  {
+    "tensor": "blk.0.attn_qkv.weight",
+    "width": 5120,
+    "rows": 10240,
+    "tokens": 1024,
+    "partitions": {
+      "2": {
+        "relative_l2": 4.850101504416671e-06,
+        "max_abs": 6.771087646484375e-05,
+        "partial_bytes": 83886080
+      },
+      "4": {
+        "relative_l2": 6.4530427152931225e-06,
+        "max_abs": 9.632110595703125e-05,
+        "partial_bytes": 167772160
+      }
+    },
+    "diagnostic_kernel_ns": [
+      [
+        "bonsai_pack_half",
+        44481
+      ],
+      [
+        "bonsai_pq2_cached_64x128_k64",
+        2096865
+      ],
+      [
+        "bonsai_pq2_cached_split_k",
+        2249635
+      ],
+      [
+        "bonsai_pq2_sum_split_k",
+        267876
+      ],
+      [
+        "bonsai_pq2_cached_split_k",
+        2197154
+      ],
+      [
+        "bonsai_pq2_sum_split_k",
+        476167
+      ]
+    ]
+  },
+  {
+    "tensor": "blk.0.ffn_up.weight",
+    "width": 5120,
+    "rows": 17408,
+    "tokens": 1024,
+    "partitions": {
+      "2": {
+        "relative_l2": 4.844825070904335e-06,
+        "max_abs": 1.8358230590820312e-05,
+        "partial_bytes": 142606336
+      },
+      "4": {
+        "relative_l2": 6.4394844230264425e-06,
+        "max_abs": 2.5272369384765625e-05,
+        "partial_bytes": 285212672
+      }
+    },
+    "diagnostic_kernel_ns": [
+      [
+        "bonsai_pack_half",
+        58816
+      ],
+      [
+        "bonsai_pq2_cached_64x128_k64",
+        4006877
+      ],
+      [
+        "bonsai_pq2_cached_split_k",
+        3908316
+      ],
+      [
+        "bonsai_pq2_sum_split_k",
+        454759
+      ],
+      [
+        "bonsai_pq2_cached_split_k",
+        3708666
+      ],
+      [
+        "bonsai_pq2_sum_split_k",
+        784044
+      ]
+    ]
+  },
+  {
+    "tensor": "blk.0.ffn_down.weight",
+    "width": 17408,
+    "rows": 5120,
+    "tokens": 1024,
+    "partitions": {
+      "2": {
+        "relative_l2": 1.669790617597755e-05,
+        "max_abs": 0.000659942626953125,
+        "partial_bytes": 41943040
+      },
+      "4": {
+        "relative_l2": 2.2172502212924883e-05,
+        "max_abs": 0.001125335693359375,
+        "partial_bytes": 83886080
+      }
+    },
+    "diagnostic_kernel_ns": [
+      [
+        "bonsai_pack_half",
+        226819
+      ],
+      [
+        "bonsai_pq2_cached_64x128_k64",
+        3642072
+      ],
+      [
+        "bonsai_pq2_cached_split_k",
+        3702617
+      ],
+      [
+        "bonsai_pq2_sum_split_k",
+        130434
+      ],
+      [
+        "bonsai_pq2_cached_split_k",
+        3688153
+      ],
+      [
+        "bonsai_pq2_sum_split_k",
+        249380
+      ]
+    ]
+  }
+]
