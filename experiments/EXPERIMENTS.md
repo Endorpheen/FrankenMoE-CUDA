@@ -733,6 +733,15 @@ release still needs the architecture regression gates.
   the request is 8,932 MiB in both arms.
   [Source, measured evidence and reproduction](EXP-2026-11-25-2049-bonsai-flash-fused-merge/README.md).
 
+### EXP-2026-11-25-2050 — Bonsai prefill attribution after fused Flash
+
+- **Status:** Diagnostic, no runtime change.
+- **Evidence:** Matched RTX 4070 traces at 32K/16. Flash falls
+  from 14.63 s to 8.02 s while matrix work is about 29.93 s.
+  PrismML measures 4.06 s for Flash and 16.33 s for the
+  main matrix and activation packing kernels.
+  [Attribution and Bonsai acceptance levels](EXP-2026-11-25-2050-bonsai-prefill-attribution/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
