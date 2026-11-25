@@ -513,6 +513,27 @@ accepted measurements and fixtures to avoid repeating checks that offer
 no new diagnostic information. This policy preserves all Release Gate
 requirements and the rules for serial runs and approvals.
 
+### Bonsai cumulative checkpoint policy
+
+Keep separate stable and cumulative experimental checkpoints in
+[the Bonsai checkpoint registry](experiments/bonsai-checkpoints.json).
+Use the stable line for the working runtime. For new PQ2 MMQ work,
+probe the experimental line as well and test promising changes against
+its current checkpoint. Verify compatibility with retained changes
+and measure the combination as a whole. Preserve useful individual
+results in the experiment registry. Prefer the combination with the
+best measured request performance and quality evidence when changes
+conflict. Do not sum isolated gains.
+
+Use staged acceptance to limit exploratory checks. Run one comparable
+32K/512 pair for a promising cumulative candidate and record prefill,
+decode, total time, process VRAM, fixed-history logit evidence and
+known quality regressions. Update the experimental checkpoint only
+with applicable combined evidence. Preserve prior checkpoint receipts.
+Before moving any numerical combination to the stable line, verify
+the quality of the whole combination and the applicable regression
+gates. The mandatory Release Gate remains in force.
+
 ## Moving from one experiment to the next
 
 An experiment is NOT finished when the measurements are done. It is finished

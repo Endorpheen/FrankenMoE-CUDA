@@ -1,0 +1,66 @@
+{
+  "schema": 1,
+  "workload": {
+    "input_tokens": 32768,
+    "output_tokens": 512,
+    "model_sha256": "ededc9fc0a8a6a8dd30914d107b2d2ce7674d789f1d05a1a481f240609aa6c23",
+    "gpu": "RTX 4070",
+    "context": 36864,
+    "batch": 4096,
+    "ubatch": 1024,
+    "kv": "Q4_0",
+    "mtp": false,
+    "request": "experiments/EXP-2026-11-25-1977-bonsai-prism-32k-reference/request.json"
+  },
+  "shared_sha256": {
+    "cuda/frozen-goose.ptx": "42e1f5c0885a3bbab3656e3bba2dc6ef8b998a4581d365b6c1e48fc842f789d7",
+    "profiles/bonsai.argv": "538100a28af5d8f0dc191f7ff57c81be3972300156556d6be84b3ce83a5019b5",
+    "profiles/bonsai.env": "e3218c807eee10196a6b3c6a05c2e5bab19d45657c92d0ebe91b438b1e7216f9"
+  },
+  "stable": {
+    "id": "EXP-2049",
+    "status": "accepted",
+    "artifact_sha256": {
+      "frankenmoe-infer": "2e41a1e03fbb5b2d7a8197f7dadf8d6047b39fc9fb264e95932840777d6eacc3",
+      "pipeline.cubin": "e88c54f07dc46a69be0c9487c7e0bf82f3370c64771b9315cbf13943a55a6872"
+    },
+    "profile_overrides": {},
+    "results": "experiments/EXP-2026-11-25-2049-bonsai-flash-fused-merge/data/results.json",
+    "prefill_tok_s": 748.0963988872633,
+    "decode_tok_s": 32.70294788283062,
+    "process_vram_after_mib": 8932,
+    "quality": {
+      "matched_prism_ids": 512,
+      "component_flash_bit_exact": true,
+      "full_model_fixed_history_logits_measured": false
+    }
+  },
+  "experimental": {
+    "id": "EXP-2059",
+    "parent": "EXP-2049",
+    "status": "experimental",
+    "artifact_sha256": {
+      "frankenmoe-infer": "63d7721e80e164fefbf63da062d11250cc414e6ee95daccfe6a0ac6c73177bf8",
+      "pipeline.cubin": "3ef9a1b9faf8065e2cb5691183afaff248eed3fc6db1b2788b815b6544448ad6"
+    },
+    "profile_overrides": {
+      "BONSAI_MMQ_HALF_ACC": "1"
+    },
+    "results": "experiments/EXP-2026-11-25-2059-bonsai-fp16-acc-long-control/data/results.json",
+    "prefill_tok_s": 815.16106214123,
+    "decode_tok_s": 32.71297490369825,
+    "process_vram_after_mib": 8932,
+    "quality": {
+      "matched_prism_ids": 512,
+      "incident_extraction_matched_ids": 47,
+      "incident_extraction_correct_in_both": true,
+      "code_trace_correct_cells_control": 18,
+      "code_trace_correct_cells_candidate": 13,
+      "code_trace_total_cells": 63,
+      "code_trace_first_divergent_output_token": 60,
+      "code_trace_divergence_max_abs_logit_delta": 0.31863832473754883,
+      "incident_extraction_sampled_max_abs_logit_delta": 0.4467592239379883,
+      "extended_quality_gate": "pending"
+    }
+  }
+}

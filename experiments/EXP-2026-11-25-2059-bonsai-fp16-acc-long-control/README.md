@@ -41,6 +41,23 @@ gain with projected savings from other experiments. Prioritize routes
 that preserve arithmetic for the working baseline. No other model
 path changes.
 
+## Cumulative experimental checkpoint
+
+The [checkpoint registry](../bonsai-checkpoints.json) identifies this
+line separately from the accepted EXP-2049 build. To stage the exact
+EXP-2059 artifacts with its experimental default configuration:
+
+```bash
+FRANKENMOE_CHECKPOINTS=/path/to/checkpoints FRANKENMOE_UI_PACKAGE=/path/to/ui \
+  bash tools/multimodel-release/stage-bonsai-experimental.sh \
+  build/bonsai-cumulative-exp2059/package build/bonsai-fp16-acc-2057
+```
+
+This stages a separate local package and records its contents and
+provenance. Subsequent promising PQ2 MMQ changes need a combined
+comparison against this line. Expanded quality evaluation is pending
+for any proposed move to the stable line.
+
 ## Reproduce
 
 Build the EXP-2057 artifacts and use its HTTP profile. Set
