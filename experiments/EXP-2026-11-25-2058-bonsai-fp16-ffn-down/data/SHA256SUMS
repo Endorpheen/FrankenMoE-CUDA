@@ -1,0 +1,3 @@
+3ef9a1b9faf8065e2cb5691183afaff248eed3fc6db1b2788b815b6544448ad6  build/bonsai-fp16-ffn-down-final-2058/pq2-int8.cubin
+d87433cee5d76fdca81e9706f67c52085a72b4de2dae0314889cef93ac0296db  build/bonsai-fp16-ffn-down-final-2058/frankenmoe-infer
+ef7bd4e473d709596848eaf9c2cbb92e8dbf0c4c73de2226084a58717292dc63  build/bonsai-fp16-ffn-down-final-2058/bonsai-quality

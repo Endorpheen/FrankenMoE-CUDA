@@ -801,6 +801,14 @@ release still needs the architecture regression gates.
   18/63 → 13/63 and same-history replay confirms the first divergence.
   [Source, diagnostics and reproduction](EXP-2026-11-25-2057-bonsai-mmq-fp16-accumulator/README.md).
 
+### EXP-2026-11-25-2058 — FP16 Bonsai MMA partials only in FFN down
+
+- **Status:** Not promoted after the independent quality gate.
+- **Evidence:** EXP-2057 CUBIN reused. Code trace drops 18/63 → 15/63
+  even when the changed arithmetic is limited to FFN down. All 11 sampled
+  top-1 choices match, while direct replay at output step 92 changes 15 → 16.
+  [Source, diagnostics and reproduction](EXP-2026-11-25-2058-bonsai-fp16-ffn-down/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
