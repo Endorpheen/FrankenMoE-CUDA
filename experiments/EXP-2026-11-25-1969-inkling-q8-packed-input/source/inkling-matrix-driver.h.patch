@@ -1,0 +1,63 @@
+--- a/inkling-matrix-driver.h
++++ b/inkling-matrix-driver.h
+@@ -1,4 +1,49 @@
+ #include "matrix-image.h"
++#include "q8-packed-image.h"
++
++static int i2_packed_q8(DevicePtr weight, uint64_t stride, int width, int rows, int count,
++                        DevicePtr jobs) {
++    const bool shape = (width == 2304 && (rows == 1024 || rows == 2304 || rows == 3072)) ||
++        (width == 3072 && rows == 2304);
++    if (!shape || count < 512 || count > 4096 || count % 8) return 1;
++    static int enabled = -1;
++    if (enabled < 0) {
++        const char *setting = getenv("I2_Q8_PACKED_INPUT");
++        enabled = setting && strcmp(setting, "1") == 0;
++    }
++    if (!enabled) return 1;
++
++    static Module module;
++    static Function pack, multiply;
++    int error = 0;
++    if (!module) error = cuda.module_load(&module, q8_packed_cubin);
++    if (!error && !pack) error = cuda.function_get(&pack, module, "i2_pack_q8_input8");
++    if (!error && !multiply) error = cuda.function_get(&multiply, module, "i2_q8_packed8");
++    if (error) return -1;
++
++    // The regular and grouped matrix launches reuse this work buffer on
++    // the same stream. No separate persistent allocation is needed.
++    error = reserve(&cuda.mmq_packed, (size_t)count * width * sizeof(float));
++    if (error == 2) return 1;
++    if (error) return -1;
++    if (activations.active && activations.defer_waits) activations.pending = true;
++    void *pack_args[] = {&matrix_input, &jobs, &cuda.mmq_packed.address, &width};
++    void *matrix_args[] = {&weight, &cuda.mmq_packed.address, &matrix_output, &jobs, &stride, &width};
++    error = cuda.launch(pack, (width + 127) / 128, count / 8, 1, 128, 1, 1, 0, NULL, pack_args, NULL);
++    if (!error) error = cuda.launch(multiply, rows / 8, count / 8, 1, 256, 1, 1, 0, NULL,
++                                    matrix_args, NULL);
++    if (!error) error = finish_matrix_launches(error);
++    if (error) return -1;
++    ++cuda_matrix_launches;
++    cuda_matrix_kind = 8;
++    static bool reported;
++    if (!reported) {
++        reported = true;
++        fputs("Inkling Q8: vector-packed eight input rows active\n", stderr);
++    }
++    return 0;
++}
++
+ 
+ static bool i2_matrix_enabled(void) {
+     static int enabled = -1;
+@@ -11,6 +56,10 @@
+ 
+ static int i2_launch_matrix(DevicePtr weight, uint64_t stride, int width,
+                             int kind, int rows, int count, int words, DevicePtr job_address) {
++    if (kind == 8 && words == 2) {
++        const int selected = i2_packed_q8(weight, stride, width, rows, count, job_address);
++        if (selected <= 0) return selected;
++    }
+     static Module module;
+     static Function kernels[4];
+     static unsigned reported;
