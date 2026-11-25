@@ -475,14 +475,28 @@ criteria before running the relevant stage.
    the workload, build and conditions still apply. Repeat the full A/B only
    when a result is ambiguous, variation is large, or a regression is
    suspected. Record the reason for the repeat.
-3. **Targeted quality and promotion.** Add quality tests when arithmetic
-   changes or a discrepancy is detected. Choose fixtures that probe the
-   changed behavior or known divergence rather than rerunning many tests
-   by default. Before promoting a substantial change into the working
-   runtime, complete the applicable quality, long-generation and regression
-   gates for affected architectures. Reuse an existing full-workload result
-   when it already covers the applicable promotion requirement. Before
-   publishing, run the mandatory [Release Gate](docs/RELEASE-GATE.md) in full.
+3. **Targeted quality and promotion.** For numerical Bonsai candidates,
+   start with the existing CodeTrace fixture as a diagnostic. When it
+   reveals a discrepancy, use at most one short, independently scored
+   fact-extraction task during exploration. Evaluate final-answer
+   correctness as well as output IDs. A different token or a lower
+   CodeTrace score alone is not grounds to reject a promising candidate.
+   A lower score is a risk signal to characterize, not a reason to run a
+   large suite by default. Keep ambiguous candidates experimental. If
+   independent tasks confirm a material quality loss, do not promote the
+   candidate to the working runtime.
+
+   Budget about one minute total for search-stage quality diagnostics
+   per candidate, excluding model load. Include any targeted fixed-history
+   or logit replay in that budget. Stop or skip diagnostics that would
+   exceed it and record the quality check as incomplete, never PASS.
+   This budget does not replace the full paired 32K/512 for promising
+   candidates. Before promoting a numerical optimization into the working
+   runtime, carry out the expanded quality evaluation. Complete applicable
+   long-generation and affected-architecture regression gates before
+   promoting substantial changes. Reuse existing full-workload evidence
+   where it covers the applicable gate. Before publishing, run the
+   mandatory [Release Gate](docs/RELEASE-GATE.md) in full.
 
 For arithmetic-preserving changes, require bitwise equality on the affected
 outputs and state. For new numerical methods, choose tolerances and quality
