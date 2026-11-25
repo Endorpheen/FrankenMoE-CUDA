@@ -1,0 +1,51 @@
+{
+  "scope": "Single-request control on RTX 4070, MTP off in both runtimes",
+  "context": 36864,
+  "batch": 4096,
+  "ubatch": 1024,
+  "kv": "Q4_0",
+  "request_sha256": "1f62448c0a6d29a776f76df4f24d0ca162c7a5d10774f879d94f859ac3e81ecb",
+  "prism_revision": "910442b0ce1128ef85d7730cbcae835cce60cdd4",
+  "prism": {
+    "timings": {
+      "cache_n": 0,
+      "prompt_n": 32768,
+      "prompt_ms": 30436.43,
+      "prompt_per_token_ms": 0.9288461303710938,
+      "prompt_per_second": 1076.604582074836,
+      "predicted_n": 512,
+      "predicted_ms": 10727.84,
+      "predicted_per_token_ms": 20.99381604696673,
+      "predicted_per_second": 47.63307431878178
+    },
+    "client_seconds": 41.174094,
+    "process_vram_after_mib": 8288,
+    "process_memory_kib": {
+      "VmHWM": 7651032,
+      "VmRSS": 1067432,
+      "VmSwap": 0
+    }
+  },
+  "franken": {
+    "timings": {
+      "cache_n": 0,
+      "prompt_n": 32768,
+      "prompt_ms": 50312.50189401908,
+      "prompt_per_token_ms": 1.5354157072149377,
+      "prompt_per_second": 651.2894164759338,
+      "predicted_n": 512,
+      "predicted_ms": 15619.957863993477,
+      "predicted_per_token_ms": 30.56743221916532,
+      "predicted_per_second": 32.71455687969156
+    },
+    "client_seconds": 65.953334,
+    "process_vram_after_mib": 8932,
+    "process_memory_kib": {
+      "VmHWM": 7456336,
+      "VmRSS": 161188,
+      "VmSwap": 0
+    }
+  },
+  "matched_token_ids": 512,
+  "content_sha256": "53764f218fba3848f952165d8ea70641e0eccf596831424dd416540e012b3401"
+}

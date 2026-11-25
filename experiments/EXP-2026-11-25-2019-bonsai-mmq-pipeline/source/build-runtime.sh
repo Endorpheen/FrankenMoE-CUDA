@@ -3,15 +3,16 @@ set -euo pipefail
 src=$(cd "$(dirname "$0")" && pwd)
 out=${1:?Specify a new scratch directory}
 dev=${2:?Specify the cached MMQ image directory}
-root=$(git rev-parse --show-toplevel)
-base="$root/build/bonsai-flash-kv-panels-2018-http"
-archive="$root/build/bonsai-dp4a-2012-default/libfranken-inference.a"
-host="$root/build/bonsai-mmq-k64-2000-default"
-http="$root/build/bonsai-http-2003-link"
-apex="$root/build/checkpoint-apex-exp1880-before-inkling"
-inkling="$root/build/checkpoint-inkling-exp1969-before-bonsai"
+root=$(git -C "$src" rev-parse --show-toplevel)
+checkpoints=${FRANKENMOE_CHECKPOINTS:-$root/build}
+base="$checkpoints/bonsai-flash-kv-panels-2018-http"
+archive="$checkpoints/bonsai-dp4a-2012-default/libfranken-inference.a"
+host="$checkpoints/bonsai-mmq-k64-2000-default"
+http="$checkpoints/bonsai-http-2003-link"
+apex="$checkpoints/checkpoint-apex-exp1880-before-inkling"
+inkling="$checkpoints/checkpoint-inkling-exp1969-before-bonsai"
 session="$src/../../EXP-2026-11-25-2002-bonsai-session/source"
-device="$root/build/inkling-exp-baseline/device-attention"
+device="$checkpoints/inkling-exp-baseline/device-attention"
 main=${FRANKEN_MAIN:-/home/end0/AI/FrankenMoE-CUDA-main}
 cuda=${CUDA_HOME:-/usr/local/cuda}
 mkdir "$out"

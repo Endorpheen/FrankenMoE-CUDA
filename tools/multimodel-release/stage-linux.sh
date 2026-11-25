@@ -2,13 +2,14 @@
 set -euo pipefail
 
 src=$(cd "$(dirname "$0")" && pwd)
-root=$(git rev-parse --show-toplevel)
+root=$(git -C "$src" rev-parse --show-toplevel)
 out=${1:?Specify a fresh staging directory}
 ui=${FRANKENMOE_UI_PACKAGE:?Set the verified chat UI package directory}
-apex="$root/build/checkpoint-apex-exp1880-before-inkling/checkpoint"
-ink="$root/build/checkpoint-inkling-exp1969-before-bonsai"
-bonsai="$root/build/bonsai-mmq-pipeline-2019-http"
-mtp="$root/build/bonsai-mtp-warp-rows-2047"
+checkpoints=${FRANKENMOE_CHECKPOINTS:-$root/build}
+apex="$checkpoints/checkpoint-apex-exp1880-before-inkling/checkpoint"
+ink="$checkpoints/checkpoint-inkling-exp1969-before-bonsai"
+bonsai=${FRANKENMOE_BONSAI_HTTP_BUILD:-$checkpoints/bonsai-mmq-pipeline-2019-http}
+mtp="$checkpoints/bonsai-mtp-warp-rows-2047"
 
 mkdir "$out"
 mkdir -p "$out"/{bin,profiles,cuda}
@@ -19,7 +20,7 @@ install -m 755 "$bonsai/frankenmoe-infer" "$out/bin/bonsai-server"
 install -m 755 "$mtp/bonsai-mtp-warp-rows" "$out/bin/bonsai-mtp"
 install -m 644 "$bonsai/pipeline.cubin" "$out/cuda/bonsai-http.cubin"
 install -m 644 "$mtp/mvq.cubin" "$out/cuda/bonsai-mtp.cubin"
-install -m 644 "$root/build/bonsai-mtp-head-2025/frozen-goose.ptx" "$out/cuda/frozen-goose.ptx"
+install -m 644 "$checkpoints/bonsai-mtp-head-2025/frozen-goose.ptx" "$out/cuda/frozen-goose.ptx"
 install -m 644 "$ui/frankenmoe-console.py" "$ui/LICENSE" "$out/"
 install -m 644 "$root/docs/MULTIMODEL-ALPHA.md" "$out/README.md"
 cp -a "$ui/web" "$ui/licenses" "$out/"
