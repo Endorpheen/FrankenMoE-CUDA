@@ -1,0 +1,6 @@
+{
+  "retained_sections_bit_exact": 96,
+  "added": [
+    ".text.bonsai_verify_merge_parallel"
+  ]
+}

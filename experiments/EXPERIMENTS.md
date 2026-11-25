@@ -1125,6 +1125,16 @@ release still needs the architecture regression gates.
   extraction passes both arms. Expanded quality remains open.
   [Experiment, observations and reproduction](EXP-2026-11-26-2093-bonsai-decode-direct-mma/README.md).
 
+### EXP-2026-11-26-2094 — Exact ordered merge for long Bonsai decode
+
+- **Retained in the cumulative experimental checkpoint.** Reuse the
+  EXP-2036 parallel merge on a single query with unchanged arithmetic.
+- **32K/512:** 1019.45 → 1027.62 prefill and 34.69 → 37.27 decode
+  tok/s. Full request saves 1.273 s. Both arms are cold-gated and
+  match 512 PrismML IDs and text, VRAM 8932 MiB. The trace confirms
+  8,176 decode merges at 1.109 → 0.100 s aggregate kernel time.
+  [Experiment and reusable source](EXP-2026-11-26-2094-bonsai-decode-ordered-merge/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
