@@ -1,0 +1,48 @@
+--- backend.c
++++ backend.c
+@@ -19,7 +19,7 @@
+ enum kernel {
+     NORM, ROTATE, MATRIX, ADD, DECAY, CONV, GDN, SPLIT, ROPE, Q4, TILES, GATE,
+     EMBED, SWIGLU, MERGE, GDN_BATCH, ROPE_PHASES, ROPE_APPLY,
+-    EMBED_BATCH, CONV_BATCH, PACK_HALF, MMQ, FLASH_TILE_F32, FLASH_MERGE_F32, FLASH_TILE_STAGED, FLASH_STAGE_KV, FLASH_MERGE_ORDERED, FLASH_TILE_COMPACT, FLASH_MERGE_COMPACT, FLASH_MERGE_COMPACT_ORDERED, FLASH_TILE_ASYNC, KERNEL_COUNT
++    EMBED_BATCH, CONV_BATCH, PACK_HALF, MMQ, FLASH_TILE_F32, FLASH_MERGE_F32, FLASH_TILE_STAGED, FLASH_STAGE_KV, FLASH_MERGE_ORDERED, FLASH_TILE_COMPACT, FLASH_MERGE_COMPACT, FLASH_MERGE_COMPACT_ORDERED, FLASH_TILE_ASYNC, MMQ_ASYNC, KERNEL_COUNT
+ };
+ 
+ typedef struct {
+@@ -31,7 +31,7 @@
+     int64_t bound[LAYERS * 15], states[LAYERS * 2], globals[3], b[24];
+     CUdeviceptr token_ids, phases, packed, packed_source;
+     size_t partial_capacity;
+-    int use_flash_f32, stage_kv, ordered_merge, compact_heads, async_fragments;
++    int use_flash_f32, stage_kv, ordered_merge, compact_heads, async_fragments, async_mmq;
+     CUdeviceptr stage_k, stage_v;
+     unsigned stage_capacity_chunks;
+     unsigned context, position, ubatch, count, wave;
+@@ -147,7 +147,7 @@
+                     (void *[]){ &p[1], &m->packed, &pairs })) return -1;
+                 m->packed_source = p[1];
+             }
+-            return launch(m, MMQ, (out_width+31)/32, (count+31)/32, 1, 128,
++            return launch(m, m->async_mmq ? MMQ_ASYNC : MMQ, (out_width+31)/32, (count+31)/32, 1, 128,
+                 (void *[]){ &p[0], &m->packed, &p[2], &in_width, &out_width, &tokens });
+         case ADD:
+             return launch(m, ADD, 20 * count, 1, 1, 256, (void *[]){ &p[0], &p[1], &p[2] });
+@@ -374,6 +374,9 @@
+     const char *frags = getenv("BONSAI_FLASH_ASYNC");
+     m->async_fragments = m->compact_heads && frags && strcmp(frags, "1") == 0;
+     if (m->async_fragments) fputs("Flash fragments: async staging and ldmatrix\n", stderr);
++    const char *mmq = getenv("BONSAI_PQ2_MMQ_ASYNC");
++    m->async_mmq = !mmq || strcmp(mmq,"1") == 0;
++    if (m->async_mmq) fputs("PQ2 MMQ: async activation and warp fragment loads\n",stderr);
+     if (m->compact_heads) fputs("Flash query layout: compact 6:1\n", stderr);
+     if (m->ordered_merge) fputs("Flash merge: ordered parallel coefficients\n", stderr);
+     fprintf(stderr, "Prefill attention: %s\n", !m->use_flash_f32 ? "tiled Q4" :
+@@ -399,7 +402,7 @@
+         "goose_rope_phases", "goose_rope_apply", "bonsai_embed_batch", "bonsai_conv_batch",
+         "bonsai_pack_half", "bonsai_pq2_mmq", "bonsai_flash_f32_tile", "bonsai_flash_f32_merge",
+         "bonsai_flash_staged_tile", "bonsai_flash_stage_kv", "bonsai_flash_ordered_merge",
+-        "bonsai_flash_compact_tile", "bonsai_flash_compact_merge", "bonsai_flash_compact_ordered_merge", "bonsai_flash_async_tile",
++        "bonsai_flash_compact_tile", "bonsai_flash_compact_merge", "bonsai_flash_compact_ordered_merge", "bonsai_flash_async_tile", "bonsai_pq2_mmq_async",
+     };
+     if (check(cuInit(0), "driver") || check(cuDeviceGet(&device, 0), "device") ||
+         check(cuCtxCreate(&m->cuda, 0, device), "context") ||
