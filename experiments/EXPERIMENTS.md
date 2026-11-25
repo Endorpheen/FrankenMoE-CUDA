@@ -443,6 +443,26 @@ release still needs the architecture regression gates.
   slots and append-only KV can apply pointer-based partial commit.
   [Source, evidence and reproduction](EXP-2026-11-25-2030-bonsai-mtp-device-commit/README.md).
 
+### EXP-2026-11-25-2031 — End-to-end Bonsai greedy MTP
+
+- **Status:** EXPERIMENTAL, verified greedy decode gain. The 32K/512
+  total request is slower while draft KV catch-up remains serial.
+- **Mechanism:** Combine the native two-proposal drafter, exact
+  three-row target and device prefix commit. Repair retained draft
+  KV with the actual target hidden rows.
+- **Evidence:** RTX 4070, Q4_0 K/V, 32K/512, context 36,864,
+  ubatch 1024. Prefill 645.83 → 577.06 tok/s, decode 32.60 →
+  46.14 tok/s (+41.52%), combined 66.416 → 67.860 s. All 512
+  IDs and selected logits match across A–B–B–A. Acceptance
+  326/370 (88.11%). About 339.79 MiB extra device allocation;
+  peak RSS remains within 388 KiB of the control range, no
+  process swaps. Peak VRAM was not sampled. The 129/64 smoke
+  improves decode from 41.41 to 59.46 tok/s with matching IDs.
+- **Reuse:** Separate the draft history repair from exact target
+  commit. Measure draft catch-up, natural acceptance and wall time
+  before enabling a speculative path.
+  [Source, measured results and reproduction](EXP-2026-11-25-2031-bonsai-mtp-greedy/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.

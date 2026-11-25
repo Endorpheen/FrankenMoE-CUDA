@@ -1,0 +1,4 @@
+Device workspace: 1722387200 bytes (Q4_0 K/V, GDN, activations)
+Device free: 1081868288 / 12447973376 bytes
+prompt_n=32768 prefill_ms=50331.364 decode_n=512 decode_ms=15625.465 ubatch=1024
+max_rss_kib=7420260 major_faults=0 swaps=0
