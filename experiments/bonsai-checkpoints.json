@@ -36,23 +36,24 @@
     }
   },
   "experimental": {
-    "id": "EXP-2071",
-    "parent": "EXP-2070",
+    "id": "EXP-2073",
+    "parent": "EXP-2071",
     "status": "experimental",
     "artifact_sha256": {
-      "frankenmoe-infer": "ad8c1c26464da6a7f5f92cb3fb6776b9eee178701b2eb773f53cc60156427362",
-      "pipeline.cubin": "012ae2e2e1bc1a8e7c93a499675683b62b3038434f4903d9f1258d5cebfa2ffe"
+      "frankenmoe-infer": "addb0e67ae86169e873ee0f347a2aff5f6a61f957c33db43ad93602d6490d547",
+      "pipeline.cubin": "8f3cec0d2ed4bf1740955f659de91a27b8b5c2588561c0239b906d5104de5bc8"
     },
     "profile_overrides": {
       "BONSAI_MMQ_HALF_ACC": "1",
       "BONSAI_MMQ_HALF_FULL": "1",
       "BONSAI_MMQ_HALF_FULL6144": "1",
       "BONSAI_FLASH_FP8_QK": "1",
-      "BONSAI_MMQ_HALF2_DOWN": "1"
+      "BONSAI_MMQ_HALF2_DOWN": "1",
+      "BONSAI_FFN_Q8_FULL128": "1"
     },
-    "results": "experiments/EXP-2026-11-26-2071-bonsai-cumulative-half-unpack/data/results.json",
-    "prefill_tok_s": 870.3971416270165,
-    "decode_tok_s": 32.7554962163286,
+    "results": "experiments/EXP-2026-11-26-2073-bonsai-q8-full-tiles/data/results.json",
+    "prefill_tok_s": 877.7992814123688,
+    "decode_tok_s": 32.74356417539244,
     "process_vram_after_mib": 8932,
     "quality": {
       "matched_prism_ids": 512,
@@ -74,7 +75,9 @@
       "fp8_qk_fixed_history_logits_measured": false,
       "fp8_qk_expanded_quality_gate": "pending",
       "ffn_down_half2_component_bit_exact": true,
-      "ffn_down_half2_fixed_history_logits_measured": false
+      "ffn_down_half2_fixed_history_logits_measured": false,
+      "ffn_q8_full128_component_bit_exact": true,
+      "ffn_q8_full128_fixed_history_logits_measured": false
     }
   },
   "experimental_history": [
@@ -210,6 +213,48 @@
         "fp8_qk_preserves_512_ids_on_reference": true,
         "fp8_qk_fixed_history_logits_measured": false,
         "fp8_qk_expanded_quality_gate": "pending"
+      }
+    },
+    {
+      "id": "EXP-2071",
+      "parent": "EXP-2070",
+      "status": "experimental",
+      "artifact_sha256": {
+        "frankenmoe-infer": "ad8c1c26464da6a7f5f92cb3fb6776b9eee178701b2eb773f53cc60156427362",
+        "pipeline.cubin": "012ae2e2e1bc1a8e7c93a499675683b62b3038434f4903d9f1258d5cebfa2ffe"
+      },
+      "profile_overrides": {
+        "BONSAI_MMQ_HALF_ACC": "1",
+        "BONSAI_MMQ_HALF_FULL": "1",
+        "BONSAI_MMQ_HALF_FULL6144": "1",
+        "BONSAI_FLASH_FP8_QK": "1",
+        "BONSAI_MMQ_HALF2_DOWN": "1"
+      },
+      "results": "experiments/EXP-2026-11-26-2071-bonsai-cumulative-half-unpack/data/results.json",
+      "prefill_tok_s": 870.3971416270165,
+      "decode_tok_s": 32.7554962163286,
+      "process_vram_after_mib": 8932,
+      "quality": {
+        "matched_prism_ids": 512,
+        "incident_extraction_matched_ids": 47,
+        "incident_extraction_correct_in_both": true,
+        "code_trace_correct_cells_control": 18,
+        "code_trace_correct_cells_candidate": 13,
+        "code_trace_total_cells": 63,
+        "code_trace_first_divergent_output_token": 60,
+        "code_trace_divergence_max_abs_logit_delta": 0.31863832473754883,
+        "incident_extraction_sampled_max_abs_logit_delta": 0.4467592239379883,
+        "extended_quality_gate": "pending",
+        "inherited_model_quality_evidence": "EXP-2059",
+        "specialized_matrix_component_bit_exact": true,
+        "specialization_fixed_history_logits_measured": false,
+        "width6144_component_bit_exact": true,
+        "width6144_fixed_history_logits_measured": false,
+        "fp8_qk_preserves_512_ids_on_reference": true,
+        "fp8_qk_fixed_history_logits_measured": false,
+        "fp8_qk_expanded_quality_gate": "pending",
+        "ffn_down_half2_component_bit_exact": true,
+        "ffn_down_half2_fixed_history_logits_measured": false
       }
     }
   ]

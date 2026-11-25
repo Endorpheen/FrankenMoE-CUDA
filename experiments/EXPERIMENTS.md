@@ -926,6 +926,14 @@ release still needs the architecture regression gates.
   check: cumulative 2.74 ms vs E4M3 2.81–2.96 ms with pack.
   [Source, diagnostics and reproduction](EXP-2026-11-26-2072-bonsai-pq2-fp8-mmq/README.md).
 
+### EXP-2026-11-26-2073 — Exact full Q8 tiles for cumulative Bonsai gate/up
+
+- **Status:** Retained only inside the already active selective Q8 path.
+- **Evidence:** Bitwise component output. One RTX 4070 32K/512 pair
+  gives 871.46 → 877.80 tok/s prefill. Both match 512 PrismML IDs
+  and text. VRAM remains 8,932 MiB after each request.
+  [Source, diagnostics and reproduction](EXP-2026-11-26-2073-bonsai-q8-full-tiles/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
