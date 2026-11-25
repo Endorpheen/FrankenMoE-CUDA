@@ -1,0 +1,108 @@
+--- backend.c
++++ backend.c
+@@ -19,7 +19,7 @@
+ enum kernel {
+     NORM, ROTATE, MATRIX, ADD, DECAY, CONV, GDN, SPLIT, ROPE, Q4, TILES, GATE,
+     EMBED, SWIGLU, MERGE, GDN_BATCH, ROPE_PHASES, ROPE_APPLY,
+-    EMBED_BATCH, CONV_BATCH, PACK_HALF, MMQ, KERNEL_COUNT
++    EMBED_BATCH, CONV_BATCH, PACK_HALF, MMQ, PAD_QUERY, UNPAD_ATTN, FLASH_STAGE, FLASH_MMA, KERNEL_COUNT
+ };
+ 
+ typedef struct {
+@@ -30,6 +30,8 @@
+     CUdeviceptr weights, memory, positions, rope_q, rope_k, attention, partial;
+     int64_t bound[LAYERS * 15], states[LAYERS * 2], globals[3], b[24];
+     CUdeviceptr token_ids, phases, packed, packed_source;
++    CUdeviceptr flash_query, flash_out, flash_cache, flash_config;
++    int use_flash;
+     unsigned context, position, ubatch, count, wave;
+     int64_t eog[64], eog_count;
+     float epsilon;
+@@ -78,6 +80,21 @@
+     return launch(m, m->count > 1 ? GDN_BATCH : GDN, 48, 1, 8, 128, (void *[]){ packet });
+ }
+ 
++static int flash_attention(model *m, CUdeviceptr query, CUdeviceptr key, CUdeviceptr value, CUdeviceptr output) {
++    const unsigned count = m->count;
++    int64_t keys = m->position + (int64_t)count;
++    int64_t padded = (keys + 31) & ~INT64_C(31), row = KV_BYTES, head = 144;
++    const size_t span = (size_t)padded * 4 * 512;
++    CUdeviceptr key_half = m->flash_cache, value_half = m->flash_cache + span;
++    float scale = 1.0f / 16.0f;
++    return launch(m, PAD_QUERY, count * 32, 1, 1, 256, (void *[]){&query, &m->flash_query}) ||
++           launch(m, FLASH_STAGE, (unsigned)padded, 4, 1, 128, (void *[]){&key, &key_half, &keys, &padded, &row, &head}) ||
++           launch(m, FLASH_STAGE, (unsigned)padded, 4, 1, 128, (void *[]){&value, &value_half, &keys, &padded, &row, &head}) ||
++           check(cuLaunchKernel(m->kernel[FLASH_MMA], (count+7)/8, 4, 1, 128, 1, 1, 33792, NULL,
++               (void *[]){&m->flash_query, &key_half, &value_half, &m->flash_out, &m->flash_config, &scale}, NULL), "Flash MMA") ||
++           launch(m, UNPAD_ATTN, count * 24, 1, 1, 256, (void *[]){&m->flash_out, &output});
++}
++
+ int64_t bonsai_launch(uint64_t context, int64_t op, int64_t a, int64_t b, int64_t c,
+                       int64_t d, int64_t e, int64_t f, int64_t g, int64_t h) {
+     model *m = (model *)(uintptr_t)context;
+@@ -145,6 +162,7 @@
+             return launch(m, Q4, (tasks+127)/128, 1, 1, 128, (void *[]){ &p[0], &p[1], &stride, &blocks, &tasks });
+         }
+         case TILES: {
++            if (m->use_flash && count >= 8) return flash_attention(m, p[0], p[1], p[2], p[3]);
+             CUdeviceptr no_mask = 0;
+             const unsigned tiles = ((unsigned)e + count + 254)/256;
+             const unsigned tasks = 24 * count;
+@@ -251,6 +269,12 @@
+     m->rope_k = reserve(&ptr, 27 * 8);
+     m->attention = reserve(&ptr, 22 * 8);
+     m->partial = reserve(&ptr, partial);
++    if (m->use_flash) {
++        m->flash_query = reserve(&ptr, (size_t)32 * 1024 * m->ubatch);
++        m->flash_out = reserve(&ptr, (size_t)32 * 1024 * m->ubatch);
++        m->flash_cache = reserve(&ptr, (size_t)((m->context + 31) & ~31u) * 4 * 1024);
++        m->flash_config = reserve(&ptr, 22 * sizeof(int64_t));
++    }
+     if (check(cuMemAlloc(&m->memory, ptr), "state and scratch") ||
+         check(cuMemsetD8(m->memory, 0, ptr), "state initialization")) return -1;
+     for (unsigned i = 0; i < LAYERS * 2; ++i) m->states[i] += m->memory;
+@@ -262,6 +286,10 @@
+         sign += words[i];
+     }
+     m->phases += m->memory; m->token_ids += m->memory; m->packed += m->memory;
++    if (m->use_flash) {
++        m->flash_query += m->memory; m->flash_out += m->memory;
++        m->flash_cache += m->memory; m->flash_config += m->memory;
++    }
+     fprintf(stderr, "Device workspace: %llu bytes (Q4_0 K/V, GDN, activations)\n", (unsigned long long)ptr);
+     return 0;
+ }
+@@ -314,6 +342,9 @@
+     model *m = calloc(1, sizeof(*m));
+     if (!m) return NULL;
+     m->context = context; m->ubatch = ubatch;
++    const char *flash = getenv("BONSAI_FLASH");
++    m->use_flash = flash && strcmp(flash, "1") == 0;
++    fprintf(stderr, "Prefill attention: %s\n", m->use_flash ? "padded Flash MMA" : "tiled Q4");
+     CUdevice device;
+     const char *mode = getenv("BONSAI_MATVEC");
+     if (!mode || strcmp(mode, "ordered") == 0) {
+@@ -333,7 +364,8 @@
+         "goose_set_q4_rows", "goose_q4_attention_tiles", "bonsai_attention_gate", "bonsai_pq2_row",
+         "bonsai_swiglu", "goose_q4_attention_merge", "goose_gated_delta_net",
+         "goose_rope_phases", "goose_rope_apply", "bonsai_embed_batch", "bonsai_conv_batch",
+-        "bonsai_pack_half", "bonsai_pq2_mmq",
++        "bonsai_pack_half", "bonsai_pq2_mmq", "bonsai_pad_query", "bonsai_unpad_attention",
++        "goose_flash_q4_stage", "goose_flash_causal_mma",
+     };
+     if (check(cuInit(0), "driver") || check(cuDeviceGet(&device, 0), "device") ||
+         check(cuCtxCreate(&m->cuda, 0, device), "context") ||
+@@ -387,6 +419,13 @@
+     if (check(cuMemcpyHtoD(m->positions, positions, 16 * count), "positions") ||
+         check(cuMemcpyHtoD(m->attention, cfg, sizeof(cfg)), "attention configuration") ||
+         (count > 1 && check(cuMemcpyHtoD(m->token_ids, tokens, 4 * count), "token ids"))) return -1;
++    if (m->use_flash && count >= 8) {
++        int64_t flash_config[22];
++        memcpy(flash_config, cfg, sizeof(cfg));
++        flash_config[3] = 32;
++        flash_config[7] = flash_config[15] = 32768;
++        if (check(cuMemcpyHtoD(m->flash_config, flash_config, sizeof(flash_config)), "Flash configuration")) return -1;
++    }
+     const int64_t result = bonsai_graph((uintptr_t)m, slice(m->bound, LAYERS*15), slice(m->states, LAYERS*2),
+         slice(m->globals, 3), slice(m->b, 24), tokens[0], pos, logits != NULL);
+     if (result != 0) { fprintf(stderr, "Goose graph failed: %lld\n", (long long)result); return -1; }

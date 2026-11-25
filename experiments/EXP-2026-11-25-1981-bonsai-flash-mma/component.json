@@ -1,0 +1,106 @@
+[
+  {
+    "kv_tokens": 65,
+    "query_tokens": 16,
+    "max_absolute_error": 0.00043255090713500977,
+    "relative_l2": 0.000535329629201442,
+    "ordered_gpu_ms": [
+      [
+        "tiles",
+        0.14313599467277527
+      ],
+      [
+        "flash",
+        0.05222399905323982
+      ],
+      [
+        "flash",
+        0.04710400104522705
+      ],
+      [
+        "tiles",
+        0.13104000687599182
+      ]
+    ],
+    "pass_error_gate": true,
+    "additional_scratch_bytes": 1441792
+  },
+  {
+    "kv_tokens": 257,
+    "query_tokens": 33,
+    "max_absolute_error": 0.0004105418920516968,
+    "relative_l2": 0.0009132670820690691,
+    "ordered_gpu_ms": [
+      [
+        "tiles",
+        0.47334399819374084
+      ],
+      [
+        "flash",
+        0.058368001133203506
+      ],
+      [
+        "flash",
+        0.05734400078654289
+      ],
+      [
+        "tiles",
+        0.46694400906562805
+      ]
+    ],
+    "pass_error_gate": true,
+    "additional_scratch_bytes": 3342336
+  },
+  {
+    "kv_tokens": 8192,
+    "query_tokens": 128,
+    "max_absolute_error": 0.0005181208252906799,
+    "relative_l2": 0.004681759048253298,
+    "ordered_gpu_ms": [
+      [
+        "tiles",
+        50.953311920166016
+      ],
+      [
+        "flash",
+        1.043552041053772
+      ],
+      [
+        "flash",
+        1.0383360385894775
+      ],
+      [
+        "tiles",
+        51.081214904785156
+      ]
+    ],
+    "pass_error_gate": false,
+    "additional_scratch_bytes": 41943040
+  },
+  {
+    "kv_tokens": 32768,
+    "query_tokens": 128,
+    "max_absolute_error": 0.00046896375715732574,
+    "relative_l2": 0.009331817738711834,
+    "ordered_gpu_ms": [
+      [
+        "tiles",
+        221.02879333496094
+      ],
+      [
+        "flash",
+        3.6370561122894287
+      ],
+      [
+        "flash",
+        3.625983953475952
+      ],
+      [
+        "tiles",
+        222.57151794433594
+      ]
+    ],
+    "pass_error_gate": false,
+    "additional_scratch_bytes": 142606336
+  }
+]
