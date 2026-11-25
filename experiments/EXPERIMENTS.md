@@ -595,6 +595,24 @@ release still needs the architecture regression gates.
   four-row block at the current workload.
   [Source, measured evidence and reproduction](EXP-2026-11-25-2039-bonsai-mtp-three-proposals/README.md).
 
+### EXP-2026-11-25-2040 — Bonsai layer-bounded Q8 FFN down
+
+- **Status:** Last 16 rejected by the sequence gate. Last eight
+  matches the quality suite and shows no repeatable speed gain.
+  Last four was tested on code trace only.
+- **Mechanism:** Reuse the prefill integer MMQ on selected late
+  down projections, using a materialized F32 FFN activation and
+  the existing activation and scale scratch.
+- **Evidence:** Last 16 changes code-trace top-1 at step 203
+  on fixed history. Last eight retains all 391 IDs across four
+  free tasks. RTX 4070, Q4_0 K/V, 32K/512, A–B–B–A:
+  prefill 612.67 → 612.20 tok/s, decode 64.17 → 63.96,
+  all 512 IDs and 326/370 acceptance match. Max selected
+  logit delta 0.09450. Allocations match, no process swap.
+- **Reuse:** Keep FP16 down. Account for the SwiGLU/FWHT/pack
+  path and recheck full-quality boundaries before deployment.
+  [Source, measured evidence and reproduction](EXP-2026-11-25-2040-bonsai-ffn-down-q8/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
