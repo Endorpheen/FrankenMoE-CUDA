@@ -750,6 +750,15 @@ release still needs the architecture regression gates.
   Full 1024-token pack plus kernel is slower on QKV, FFN up and FFN down.
   [Source, diagnostics and reproduction](EXP-2026-11-25-2051-bonsai-mmq-int4-residual/README.md).
 
+### EXP-2026-11-25-2052 — Two Q8 scales for Bonsai prefill
+
+- **Status:** Rejected for all-layer Q8 FFN gate/up after the quality gate.
+- **Evidence:** On RTX 4070, the 128-token variant lowers relative L2
+  versus one scale from about 0.646% to 0.593%. Full matrix and pack
+  microprofiles are faster than FP16. Code-trace accuracy drops
+  18/63 → 17/63 and same-history replay confirms the first divergence.
+  [Source, diagnostics and reproduction](EXP-2026-11-25-2052-bonsai-mmq-q8-two-scales/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
