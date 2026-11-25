@@ -1,0 +1,22 @@
+--- a/graph-execute.c
++++ b/graph-execute.c
+@@ -2,0 +3 @@
++#include "situ.h"
+@@ -434,0 +436,2 @@
++extern int64_t fg_cuda_inkling_moe_situ(sl_u8 input, sl_u8 output);
++
+@@ -464,0 +468,14 @@
++    }
++    if (t->op == GGML_OP_CUSTOM && t->op_params[0] == INKLING_MOE_SITU &&
++            fg_cuda_inkling_quants_enabled()) {
++        const struct ggml_tensor *in = t->src[0];
++        if (!in || in->type != GGML_TYPE_F32 || t->type != GGML_TYPE_F32 ||
++            in->ne[0] != 2304 || t->ne[0] != 1152 || in->ne[1] != 8 || t->ne[1] != 8 ||
++            in->ne[2] != t->ne[2] || in->ne[3] != 1 || t->ne[3] != 1 ||
++            !ggml_is_contiguous(in) || !ggml_is_contiguous(t)) return false;
++        if (mode == 1) {
++            for (int i = 0; i < sizes.len; ++i) sizes.data[i] = 0;
++            return true;
++        }
++        return fg_cuda_inkling_moe_situ(borrowed_bytes(in, ggml_nbytes(in)),
++                                      borrowed_bytes(t, ggml_nbytes(t))) == 1;
