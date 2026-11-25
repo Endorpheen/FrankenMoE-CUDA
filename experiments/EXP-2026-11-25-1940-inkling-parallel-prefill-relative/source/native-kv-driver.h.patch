@@ -1,0 +1,12 @@
+--- a/native-kv-driver.h
++++ b/native-kv-driver.h
+@@ -22 +22 @@
+-    Function pack, attention, attention_decode, merge;
++    Function pack, attention, attention_decode, attention_prefill, merge;
+@@ -130,0 +131,6 @@
++        } else if (queries > 1 && q4 == 1 && fg_standalone_option_enabled("I2_PREFILL_PARALLEL_RELATIVE")) {
++            if (!nk.attention_prefill) {
++                error = cuda.function_get(&nk.attention_prefill, nk.module, "goose_i2_flash_mma_prefill");
++                if (error) return error;
++            }
++            kernel = nk.attention_prefill;
