@@ -661,6 +661,21 @@ release still needs the architecture regression gates.
   result and capacity, including acceptance and GDN prefix slots.
   [Source, measured evidence and reproduction](EXP-2026-11-25-2043-bonsai-mtp-pair-tiles/README.md).
 
+### EXP-2026-11-25-2044 — Exact Bonsai FFN input fusion
+
+- **Status:** Verified within experimental Bonsai prefill.
+- **Mechanism:** Fuse residual add, RMSNorm, signed FWHT and
+  exact FP16 or Q8 pack. Preserve the residual and use the same
+  gate/up projections and arithmetic.
+- **Evidence:** RTX 4070, Q4_0 K/V, 32K/512, A–B–B–A.
+  Prefill 614.13 → 618.14 tok/s, decode 70.61 → 70.33,
+  combined 60.594 → 60.276 s. Both pairs improve prefill and
+  overall time. All 512 IDs and selected logits match.
+  No added allocations or process swap.
+- **Reuse:** Preserve exact packet identity and later residual
+  consumers when fusing the input transform.
+  [Source, measured evidence and reproduction](EXP-2026-11-25-2044-bonsai-ffn-prefix/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
