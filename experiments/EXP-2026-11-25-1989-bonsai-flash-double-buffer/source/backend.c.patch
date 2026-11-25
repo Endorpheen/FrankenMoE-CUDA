@@ -1,0 +1,49 @@
+--- backend.c
++++ backend.c
+@@ -19,7 +19,7 @@
+ enum kernel {
+     NORM, ROTATE, MATRIX, ADD, DECAY, CONV, GDN, SPLIT, ROPE, Q4, TILES, GATE,
+     EMBED, SWIGLU, MERGE, GDN_BATCH, ROPE_PHASES, ROPE_APPLY,
+-    EMBED_BATCH, CONV_BATCH, PACK_HALF, MMQ, FLASH_TILE_F32, FLASH_MERGE_F32, FLASH_TILE_STAGED, FLASH_STAGE_KV, FLASH_MERGE_ORDERED, FLASH_TILE_COMPACT, FLASH_MERGE_COMPACT, FLASH_MERGE_COMPACT_ORDERED, FLASH_TILE_ASYNC, KERNEL_COUNT
++    EMBED_BATCH, CONV_BATCH, PACK_HALF, MMQ, FLASH_TILE_F32, FLASH_MERGE_F32, FLASH_TILE_STAGED, FLASH_STAGE_KV, FLASH_MERGE_ORDERED, FLASH_TILE_COMPACT, FLASH_MERGE_COMPACT, FLASH_MERGE_COMPACT_ORDERED, FLASH_TILE_ASYNC, FLASH_TILE_DOUBLE, KERNEL_COUNT
+ };
+ 
+ typedef struct {
+@@ -31,7 +31,7 @@
+     int64_t bound[LAYERS * 15], states[LAYERS * 2], globals[3], b[24];
+     CUdeviceptr token_ids, phases, packed, packed_source;
+     size_t partial_capacity;
+-    int use_flash_f32, stage_kv, ordered_merge, compact_heads, async_fragments;
++    int use_flash_f32, stage_kv, ordered_merge, compact_heads, async_fragments, double_buffer;
+     CUdeviceptr stage_k, stage_v;
+     unsigned stage_capacity_chunks;
+     unsigned context, position, ubatch, count, wave;
+@@ -93,7 +93,8 @@
+     const int ordered = staged && m->ordered_merge && keys >= 2048;
+     const int compact = staged && m->compact_heads;
+     const enum kernel tile_kind = compact
+-        ? (m->async_fragments ? FLASH_TILE_ASYNC : FLASH_TILE_COMPACT) : FLASH_TILE_STAGED;
++        ? (m->double_buffer ? FLASH_TILE_DOUBLE :
++            m->async_fragments ? FLASH_TILE_ASYNC : FLASH_TILE_COMPACT) : FLASH_TILE_STAGED;
+     const unsigned groups = 4*(compact ? (count*6+15)/16 : (count+1)/2);
+     const enum kernel merge = compact
+         ? (ordered ? FLASH_MERGE_COMPACT_ORDERED : FLASH_MERGE_COMPACT)
+@@ -373,6 +374,9 @@
+     m->compact_heads = m->stage_kv && compact && strcmp(compact, "1") == 0;
+     const char *frags = getenv("BONSAI_FLASH_ASYNC");
+     m->async_fragments = m->compact_heads && frags && strcmp(frags, "1") == 0;
++    const char *buffers = getenv("BONSAI_FLASH_DOUBLE");
++    m->double_buffer = m->async_fragments && buffers && strcmp(buffers,"1") == 0;
++    if (m->double_buffer) fputs("Flash staging: double buffer\n",stderr);
+     if (m->async_fragments) fputs("Flash fragments: async staging and ldmatrix\n", stderr);
+     if (m->compact_heads) fputs("Flash query layout: compact 6:1\n", stderr);
+     if (m->ordered_merge) fputs("Flash merge: ordered parallel coefficients\n", stderr);
+@@ -399,7 +403,7 @@
+         "goose_rope_phases", "goose_rope_apply", "bonsai_embed_batch", "bonsai_conv_batch",
+         "bonsai_pack_half", "bonsai_pq2_mmq", "bonsai_flash_f32_tile", "bonsai_flash_f32_merge",
+         "bonsai_flash_staged_tile", "bonsai_flash_stage_kv", "bonsai_flash_ordered_merge",
+-        "bonsai_flash_compact_tile", "bonsai_flash_compact_merge", "bonsai_flash_compact_ordered_merge", "bonsai_flash_async_tile",
++        "bonsai_flash_compact_tile", "bonsai_flash_compact_merge", "bonsai_flash_compact_ordered_merge", "bonsai_flash_async_tile", "bonsai_flash_double_tile",
+     };
+     if (check(cuInit(0), "driver") || check(cuDeviceGet(&device, 0), "device") ||
+         check(cuCtxCreate(&m->cuda, 0, device), "context") ||
