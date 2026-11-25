@@ -5,16 +5,20 @@ Shorter workloads are for numerical and functional diagnostics.
 
 ## Current FrankenMoE reference
 
-[EXP-1967](../experiments/EXP-2026-11-25-1967-inkling-32k-upstream-parity/README.md)
-established a first-request baseline of **267.75 prefill / 21.90
-decode tok/s** on the RTX 4070. The executable is EXP-1966,
-SHA-256 `7d35aeac4782888964c3b0c7e049de06527656653c56063f5a889343e9d56378`.
+[EXP-1969](../experiments/EXP-2026-11-25-1969-inkling-q8-packed-input/README.md)
+established the current first-request baseline of **296.24 prefill /
+22.03 decode tok/s** on the RTX 4070. It passed the warm Apex gate in
+[EXP-1970](../experiments/EXP-2026-11-25-1970-apex-q8-regression-gate/README.md).
+The executable is EXP-1969,
+SHA-256 `739221fcb84cc52e91b817a465a598b5b82ce41da483c83f1a614e8b96299016`.
+Use the **packed** arms in the EXP-1969 receipt.
 
 Use the recorded Inkling-2-Mini IQ4_XS GGUF, exact 32768 input IDs
 and 512-output request from the experiment receipt. Context
 36864, logical batch/ubatch 4096, Q4_0 K/V, expert limit 6720 MiB,
 threads 8/16 and CPU masks 0f0f/ffff. The reference enables the
-joined attention/MoE bridge, LFU decode and parallel CPU softcap.
+joined attention/MoE bridge, LFU decode, parallel CPU softcap and
+packed Q8 prefill input (`I2_Q8_PACKED_INPUT=1`).
 Use the full argv/env in the receipt. Preserve the frozen reference
 and its request when evaluating a candidate.
 
@@ -38,6 +42,6 @@ and its request when evaluating a candidate.
   throughput. Keep first-request and warm observations distinct.
 
 The next target is **500 prefill / 25 decode tok/s** at 32K/512.
-The current means imply about 56.85 s to remove from prefill and
-2.89 s from decode. Reprofile the reference and prioritize the
+The current means imply about 45.08 s to remove from prefill and
+2.75 s from decode. Reprofile the reference and prioritize the
 largest exposed losses before selecting an implementation.
