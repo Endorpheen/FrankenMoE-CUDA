@@ -724,6 +724,15 @@ release still needs the architecture regression gates.
   8,932 MiB in both arms.
   [Source, measured evidence and reproduction](EXP-2026-11-25-2048-bonsai-mmq-full-tile/README.md).
 
+### EXP-2026-11-25-2049 — Bonsai ordered Flash merge inside the CUDA block
+
+- **Status:** Accepted for the Bonsai HTTP candidate.
+- **Evidence:** RTX 4070, 32K/512, A–B–B–A. Prefill
+  647.76 → 748.10 tok/s (+15.49%); decode around 32.7 tok/s.
+  Every response matches 512 IDs and text. Process VRAM after
+  the request is 8,932 MiB in both arms.
+  [Source, measured evidence and reproduction](EXP-2026-11-25-2049-bonsai-flash-fused-merge/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
