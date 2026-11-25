@@ -561,6 +561,24 @@ release still needs the architecture regression gates.
   warp groups consume the same weight fragments on these tiles.
   [Source, measured evidence and reproduction](EXP-2026-11-25-2037-bonsai-mmq-packed-fragment/README.md).
 
+### EXP-2026-11-25-2038 — Bonsai Q8 draft vocabulary
+
+- **Status:** Verified decode improvement within experimental MTP.
+- **Mechanism:** Reuse the EXP-2012 Q8 DP4A PQ2 vocabulary
+  projection only for draft proposals. Target arithmetic,
+  verification and commit are unchanged.
+- **Evidence:** RTX 4070, Q4_0 K/V, 32K/512, context 36,864,
+  A–B–B–A. Decode 61.62 → 64.11 tok/s, drafter time
+  1.212 → 0.896 s, prefill 612.85 → 611.01 tok/s.
+  All 512 IDs, selected logits and 326/370 acceptance match.
+  The two additional free generations match through EOG.
+  Maximum draft logit change 0.05074 on a fixed-history
+  probe. No new allocations. Peak RSS ranges overlap,
+  no process swap, peak VRAM not sampled.
+- **Reuse:** Quantize the proposal scoring projection with
+  unchanged target verification and an acceptance gate.
+  [Source, measured evidence and reproduction](EXP-2026-11-25-2038-bonsai-mtp-q8-head/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.

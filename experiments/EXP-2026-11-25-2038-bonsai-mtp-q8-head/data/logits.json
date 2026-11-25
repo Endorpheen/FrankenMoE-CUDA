@@ -1,0 +1,38 @@
+[
+  {
+    "position": 0,
+    "logits": 248320,
+    "max_absolute_difference": 0.050736427307128906,
+    "relative_l2": 0.0033180622453384415,
+    "control_top_id": 68,
+    "candidate_top_id": 68,
+    "top10_overlap": 10
+  },
+  {
+    "position": 1,
+    "logits": 248320,
+    "max_absolute_difference": 0.03483027219772339,
+    "relative_l2": 0.0036299109280682642,
+    "control_top_id": 198,
+    "candidate_top_id": 198,
+    "top10_overlap": 10
+  },
+  {
+    "position": 2,
+    "logits": 248320,
+    "max_absolute_difference": 0.036047935485839844,
+    "relative_l2": 0.0029467506204052894,
+    "control_top_id": 16,
+    "candidate_top_id": 16,
+    "top10_overlap": 10
+  },
+  {
+    "position": 3,
+    "logits": 248320,
+    "max_absolute_difference": 0.03300154209136963,
+    "relative_l2": 0.0023875230247899183,
+    "control_top_id": 16,
+    "candidate_top_id": 16,
+    "top10_overlap": 10
+  }
+]
