@@ -1,0 +1,16 @@
+ptxas info    : Compiling entry function 'bonsai_pack_query_panels' for 'sm_89'
+ptxas info    : Function properties for bonsai_pack_query_panels
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 15 registers, used 0 barriers, 376 bytes cmem[0]
+ptxas info    : Compiling entry function 'bonsai_flash_q_linear_panel' for 'sm_89'
+ptxas info    : Function properties for bonsai_flash_q_linear_panel
+    8 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 80 registers, used 1 barriers, 8 bytes cumulative stack size, 408 bytes cmem[0], 16 bytes cmem[2]
+ptxas info    : Compiling entry function 'bonsai_flash_q_direct_panel' for 'sm_89'
+ptxas info    : Function properties for bonsai_flash_q_direct_panel
+    8 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 72 registers, used 1 barriers, 8 bytes cumulative stack size, 408 bytes cmem[0], 8 bytes cmem[2]
+ptxas info    : Compiling entry function 'bonsai_flash_q_packed_panel' for 'sm_89'
+ptxas info    : Function properties for bonsai_flash_q_packed_panel
+    8 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 80 registers, used 1 barriers, 8 bytes cumulative stack size, 408 bytes cmem[0], 16 bytes cmem[2]

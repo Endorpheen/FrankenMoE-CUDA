@@ -613,6 +613,22 @@ release still needs the architecture regression gates.
   path and recheck full-quality boundaries before deployment.
   [Source, measured evidence and reproduction](EXP-2026-11-25-2040-bonsai-ffn-down-q8/README.md).
 
+### EXP-2026-11-25-2041 — Reuse packed Bonsai Flash Q panels
+
+- **Status:** Verified within experimental Bonsai prefill.
+- **Mechanism:** Pack each query once in consumer panel order
+  and use aligned asynchronous copies for the repeated Flash tiles.
+  Preserve the FP16 values, MMA and ordered merge.
+- **Evidence:** RTX 4070, Q4_0 K/V, 32K/512, A–B–B–A.
+  Prefill 611.30 → 615.12 tok/s, decode 64.20 → 64.09,
+  combined 61.565 → 61.244 s. Both pairs save prefill and
+  overall time. All 512 IDs and selected logits match.
+  No added allocations or process swap. Direct register fragments
+  lose the six component shapes despite smaller shared storage.
+- **Reuse:** Prepack in exact consumer layout when multiple tiles
+  use the same query. Check the prior workspace lifetime.
+  [Source, measured evidence and reproduction](EXP-2026-11-25-2041-bonsai-flash-query-pack/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
