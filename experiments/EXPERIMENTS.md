@@ -967,6 +967,16 @@ release still needs the architecture regression gates.
   or Graph launch is recorded.
   [Host/device attribution and reproduction](EXP-2026-11-26-2077-bonsai-full-pipeline-after-fp8-pv/README.md).
 
+### EXP-2026-11-26-2078 — Broader Q8 gate/up on cumulative Bonsai
+
+- **Experimental.** Extend the existing PQ2 × Q8 prefill path from the
+  last 16 FFN layers to all 64 on the same executable and CUBIN.
+- **32K/512:** 913.46 → 962.01 prefill and 32.69 → 32.50 decode tok/s.
+  Client time 51.526 → 49.806 s, VRAM 8932 MiB in both arms. All 512 IDs
+  and text match PrismML. CodeTrace 13/63 → 21/63 and fact extraction
+  remains correct. Combined quality and decode repeatability are open.
+  [Experiment and evidence](EXP-2026-11-26-2078-bonsai-cumulative-broad-q8/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.

@@ -1,0 +1,58 @@
+[
+  {
+    "tensor": "blk.0.ffn_gate.weight",
+    "width": 5120,
+    "rows": 17408,
+    "tokens": 1024,
+    "relative_l2": 0.006460738368332386,
+    "max_abs": 0.027139902114868164,
+    "diagnostic_kernel_ns": {
+      "bonsai_pack_half": 36928,
+      "bonsai_pq2_half_full_5120": 2690855,
+      "bonsai_pack_q8_128": 45728,
+      "bonsai_pq2_mmq_int8_full_n128": 2223584
+    }
+  },
+  {
+    "tensor": "blk.0.ffn_up.weight",
+    "width": 5120,
+    "rows": 17408,
+    "tokens": 1024,
+    "relative_l2": 0.006465167738497257,
+    "max_abs": 0.01707359030842781,
+    "diagnostic_kernel_ns": {
+      "bonsai_pack_half": 61569,
+      "bonsai_pq2_half_full_5120": 2688966,
+      "bonsai_pack_q8_128": 46273,
+      "bonsai_pq2_mmq_int8_full_n128": 2228672
+    }
+  },
+  {
+    "tensor": "blk.32.ffn_gate.weight",
+    "width": 5120,
+    "rows": 17408,
+    "tokens": 1024,
+    "relative_l2": 0.00645595183596015,
+    "max_abs": 0.021560698747634888,
+    "diagnostic_kernel_ns": {
+      "bonsai_pack_half": 36897,
+      "bonsai_pq2_half_full_5120": 3255246,
+      "bonsai_pack_q8_128": 46017,
+      "bonsai_pq2_mmq_int8_full_n128": 2223968
+    }
+  },
+  {
+    "tensor": "blk.32.ffn_up.weight",
+    "width": 5120,
+    "rows": 17408,
+    "tokens": 1024,
+    "relative_l2": 0.006475301459431648,
+    "max_abs": 0.020701229572296143,
+    "diagnostic_kernel_ns": {
+      "bonsai_pack_half": 34560,
+      "bonsai_pq2_half_full_5120": 2688263,
+      "bonsai_pack_q8_128": 45857,
+      "bonsai_pq2_mmq_int8_full_n128": 2227104
+    }
+  }
+]
