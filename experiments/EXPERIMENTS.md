@@ -272,6 +272,32 @@ release still needs the architecture regression gates.
   control timeout was before full file-page preparation.
   [Evidence and reproduction](EXP-2026-11-25-2021-bonsai-inkling-regression/README.md).
 
+### EXP-2026-11-25-2022 — Exact PQ2 packed half2 expansion
+
+- **Status:** EXPERIMENTAL, no runtime promotion. Source commit
+  `83135672c12544969d39ac23500ae7a5cfffdf44`.
+  [CUDA](EXP-2026-11-25-2022-bonsai-pq2-half2/source/unpack.cl),
+  [tile generator](EXP-2026-11-25-2022-bonsai-pq2-half2/source/emit.py),
+  [CUDA image hashes](EXP-2026-11-25-2022-bonsai-pq2-half2/data/SHA256SUMS).
+- **Mechanism:** Construct the half factors -1, 0, 1, 2 of packed
+  PQ2 codes, and apply the existing stored scale with two FP16x2
+  multiplies. Compare alongside the previously studied LUT on the
+  accepted cached-scale K64 staging. Preserve the FP16 operands
+  and FP32 MMA order.
+- **Evidence:** Every finite scale/code-byte combination matches
+  (16,252,928 cases), including signed zero and subnormals.
+  Nine real-model projection and tail outputs match every byte.
+  Isolated RTX 4070 times are mixed: FFN down layer 42 at 1024
+  tokens `3.435 → 3.333 ms`, QKV at 1024 `2.098 → 2.247 ms`.
+  No model prefill, decode, VRAM or RAM measurement was taken.
+  [Component samples](EXP-2026-11-25-2022-bonsai-pq2-half2/data/component.json).
+- **Limits and potential reuse:** Finite PQ2_0 half scales only.
+  K64 with FP16 operands and sm89 in the measured block.
+  The packed transform may be reused when the half rounding,
+  lane mapping and occupancy match. No cross-model or
+  whole-request speedup is established.
+  [Reproduction and full measurements](EXP-2026-11-25-2022-bonsai-pq2-half2/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
