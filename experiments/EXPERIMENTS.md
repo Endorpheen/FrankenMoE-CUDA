@@ -369,6 +369,25 @@ release still needs the architecture regression gates.
   and wall time before enabling any such method in a drafter.
   [Source, pinned reference, and measured traces](EXP-2026-11-25-2026-bonsai-mtp-prism/README.md).
 
+### EXP-2026-11-25-2027 — Bonsai exact target verification gate
+
+- **Status:** EXPERIMENTAL rollback verified. Direct commit of the
+  existing three-row prefill graph is REJECTED for bitwise verification.
+- **Mechanism:** Compare ordinary Q8 decode to three-row target
+  logits. Force a false final proposal, restore logical KV/GDN
+  ownership, and replay the retained inputs serially.
+- **Evidence:** RTX 4070, context 1024, Q4_0 K/V, two short prompts.
+  Six greedy selections match and the causal prefix is exact when
+  the final proposal changes. Direct commit differs in 128/128 state
+  planes per prompt, with 0.322–0.656% relative logit L2. After
+  rollback and replay over 157 MB of active state and both subsequent
+  logit rows match bitwise in each fixture.
+- **Limits and reuse:** An exact verifier must reproduce the decode
+  arithmetic across projections and stateful operations. Host
+  snapshots are diagnostic. Prefill, decode, peak VRAM/RAM and
+  speculative acceptance are unmeasured.
+  [Source, state gate, and measured results](EXP-2026-11-25-2027-bonsai-mtp-target-verify/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
