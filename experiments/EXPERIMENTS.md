@@ -1105,6 +1105,15 @@ release still needs the architecture regression gates.
   0.69 s. The prior unprofiled results remain the scored baselines.
   [Full traces, kernel geometry and reproduction](EXP-2026-11-26-2091-bonsai-prism-full-comparison/README.md).
 
+### EXP-2026-11-26-2092 — Pack Bonsai decode KV tiles into CTAs
+
+- **Rejected at the component gate.** Run several independent
+  GQA3 warps per CTA with the original 256-row partials and merge.
+- **Evidence:** Bitwise partials and final output at 32768, 32769
+  and 33279 keys. The best 2-warp candidate takes 7.88–10.35%
+  longer than the 1-warp control, including merge. Runtime unchanged.
+  [Component results and reproduction](EXP-2026-11-26-2092-bonsai-decode-gqa-warps/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.

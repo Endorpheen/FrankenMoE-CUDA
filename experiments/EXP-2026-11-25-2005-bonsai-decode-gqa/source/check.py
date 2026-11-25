@@ -23,7 +23,10 @@ def function(module, name):
     return fn
 
 
-def check_case(keys, functions, event_pair, rng):
+WARP_COUNTS = {"warps2": 2, "warps4": 4, "warps8": 8}
+
+
+def check_case(keys, functions, event_pair, rng, reference=0, variants=(1, 2, 3)):
     tiles = (keys + 255) // 256
     partial_count = 24 * tiles * 258
     config = (L * 22)(256, 256, 1, 24, 4, 4, keys, 24576, 1024, 576, 144, 576, 144,
@@ -55,6 +58,10 @@ def check_case(keys, functions, event_pair, rng):
             if heads == 0:
                 component.dispatch(functions[0], (24, tiles), 32,
                                    (q, k, v, D(0), scratch, cfg, F(1 / 16), I(0)))
+            elif heads in WARP_COUNTS:
+                warps = WARP_COUNTS[heads]
+                component.dispatch(functions["multi"], (8, (tiles + warps - 1) // warps), 32 * warps,
+                                   (q, k, v, scratch, U(keys), U(tiles), F(1 / 16)))
             else:
                 component.dispatch(functions[heads], (24 // heads, tiles), 32,
                                    (q, k, v, scratch, U(keys), U(tiles), F(1 / 16)))
@@ -63,11 +70,11 @@ def check_case(keys, functions, event_pair, rng):
         def read(ptr, count):
             return np.ctypeslib.as_array(gpu.download(ptr, count)).copy()
 
-        run(0)
+        run(reference)
         partial_ref, result_ref = read(scratch, partial_count), read(out, 24 * 256)
         assert np.isfinite(result_ref).all()
         report = {}
-        for heads in (1, 2, 3):
+        for heads in variants:
             run(heads)
             partial, result = read(scratch, partial_count), read(out, 24 * 256)
             assert np.isfinite(result).all()
@@ -76,9 +83,10 @@ def check_case(keys, functions, event_pair, rng):
                 "output_exact": result_ref.tobytes() == result.tobytes(),
                 "max_output_error": float(np.max(np.abs(result_ref - result))),
             }
-        times = {heads: [] for heads in (0, 1, 2, 3)}
+        order = (reference, *variants)
+        times = {heads: [] for heads in order}
         for _ in range(5):
-            for heads in (0, 1, 2, 3, 3, 2, 1, 0):
+            for heads in (*order, *reversed(order)):
                 times[heads].append(component.elapsed(lambda: run(heads), *event_pair))
         return {"keys": keys, "variants": report,
                 "median_ms": {heads: median(samples) for heads, samples in times.items()},
@@ -100,7 +108,14 @@ try:
     funcs.update({h: function(trial, f"bonsai_decode_gqa{h}") for h in (1, 2, 3)})
     events = component.cuda_event(), component.cuda_event()
     rng = np.random.default_rng(2005)
-    print(json.dumps([check_case(n, funcs, events, rng)
-                      for n in (65, 257, 1024, 8192, 32768, 33279)], indent=2))
+    if sys.argv[5:] == ["--warp-tiles"]:
+        funcs["multi"] = function(trial, "bonsai_decode_gqa3_warp_tiles")
+        values = [check_case(n, funcs, events, rng, 3, tuple(WARP_COUNTS))
+                  for n in (32768, 32769, 33279)]
+        assert all(result["partials_exact"] and result["output_exact"]
+                   for value in values for result in value["variants"].values())
+    else:
+        values = [check_case(n, funcs, events, rng) for n in (65, 257, 1024, 8192, 32768, 33279)]
+    print(json.dumps(values, indent=2))
 finally:
     gpu.call("cuCtxDestroy_v2", ctx)
