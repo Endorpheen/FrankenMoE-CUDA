@@ -918,6 +918,14 @@ release still needs the architecture regression gates.
   after each request. Earlier cumulative result was 867.99 tok/s.
   [Source, diagnostics and reproduction](EXP-2026-11-26-2071-bonsai-cumulative-half-unpack/README.md).
 
+### EXP-2026-11-26-2072 — E4M3 matrix products for Bonsai PQ2
+
+- **Status:** Rejected below the component performance threshold.
+- **Evidence:** Sampled CPU matches, about 2.57% relative L2 vs
+  EXP-2071. An apparent FFN-up win disappears in the reverse
+  check: cumulative 2.74 ms vs E4M3 2.81–2.96 ms with pack.
+  [Source, diagnostics and reproduction](EXP-2026-11-26-2072-bonsai-pq2-fp8-mmq/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.

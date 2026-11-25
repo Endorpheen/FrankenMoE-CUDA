@@ -1,0 +1,3 @@
+b90b2b27fcac1bdfe191e2d92f8d8b6ce34ac3ce3535e347b4e3fa2c24b16228  build/bonsai-pq2-fp8-mmq-2072/pipeline.cubin
+c4707d1520c39cc9d17493d9ddf8c33c6e6769e7637f267c12b45af3143b2640  build/bonsai-pq2-fp8-mmq-2072/component-trace.sqlite
+02e23256bf2a3b7ffa07dfc26dba4aaefa033e76d916b15ac25577f5d11c0ab4  build/bonsai-pq2-fp8-mmq-2072/reverse-trace.sqlite

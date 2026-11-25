@@ -1,0 +1,25 @@
+[
+  {
+    "tensor": "blk.0.ffn_up.weight",
+    "width": 5120,
+    "rows": 17408,
+    "tokens": 1024,
+    "fp8": {
+      "64": {
+        "relative_l2_to_cumulative": 0.025693338364362717,
+        "max_abs_sampled_vs_cpu": 4.9406044535516e-05
+      },
+      "128": {
+        "relative_l2_to_cumulative": 0.025693338364362717,
+        "max_abs_sampled_vs_cpu": 4.9406044535516e-05
+      }
+    },
+    "diagnostic_kernel_ns": {
+      "bonsai_pack_pq2_fp8": 45729,
+      "bonsai_pq2_mmq_fp8_n128": 2768743,
+      "bonsai_pq2_mmq_fp8_n64": 2916265,
+      "bonsai_pack_half": 45184,
+      "bonsai_pq2_half_full_5120": 2692614
+    }
+  }
+]
