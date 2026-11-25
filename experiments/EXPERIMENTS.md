@@ -842,6 +842,14 @@ release still needs the architecture regression gates.
   8.02 s, 8.31 s, 4.06 s respectively. All 16 returned IDs match.
   [Attribution and reproduction](EXP-2026-11-25-2062-bonsai-cumulative-prefill-profile/README.md).
 
+### EXP-2026-11-25-2063 — Shallow K staging on cumulative Bonsai MMQ
+
+- **Status:** Rejected below the component performance threshold.
+- **Evidence:** Bitwise results against EXP-2059 on four RTX 4070
+  shapes. Full FFN down, pack included, takes 3.24 ms on the
+  cumulative control and 3.68 ms on the best shallow-stage variant.
+  [Source, diagnostics and reproduction](EXP-2026-11-25-2063-bonsai-mmq-shallow-stage/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
