@@ -1,0 +1,112 @@
+{
+  "clock_calibration": [
+    {
+      "monotonic_ns": 290028371493863,
+      "utc_ns": 1795650811229600160,
+      "uncertainty_ns": 80
+    },
+    {
+      "monotonic_ns": 290071956217607,
+      "utc_ns": 1795650854814323904,
+      "uncertainty_ns": 80
+    }
+  ],
+  "utc_epoch_ns": 1795650787787531543,
+  "guard_ns": 10000,
+  "samples_read": 22337,
+  "perf_data_sha256": "5b4d48349b5dd8e19aead66ca4c82e675f77c0022e77df4a06491fa20d016f38",
+  "trace_sqlite_sha256": "b2c5948ccc05d08bdba99c386cee45bf23cd3b9b971b50be2dff2a68cc7e3455",
+  "prefill": {
+    "wall_ns": 29934601377,
+    "gpu_gap_ns": 89969581,
+    "gpu_gap_cuda_api_overlap_ns": {
+      "cuLaunchKernel": 18154067,
+      "cuMemcpyDtoH_v2": 817642,
+      "cuMemcpyHtoD_v2": 32052916,
+      "cuMemsetD8_v2": 10336672
+    },
+    "gpu_gap_cuda_api_union_overlap_ns": 61361297,
+    "gpu_gap_interior_ns": 54907645,
+    "samples": {
+      "main_thread": 14920,
+      "inside_gpu_gap": 22,
+      "uncertain_gap_boundary": 12,
+      "other_threads": 94
+    },
+    "main_thread_leaf_group": {
+      "kernel": 3185,
+      "frankenmoe": 4,
+      "libc": 1346,
+      "cuda_driver": 8449,
+      "[vdso]": 1916,
+      "inlined": 3,
+      "profiler": 17
+    },
+    "gpu_gap_leaf_group": {
+      "kernel": 11,
+      "frankenmoe": 4,
+      "libc": 2,
+      "cuda_driver": 5
+    },
+    "gpu_gap_cuda_api_samples": {
+      "outside_cuda_api": 9,
+      "cuMemsetD8_v2": 6,
+      "cuLaunchKernel": 2,
+      "cuMemcpyHtoD_v2": 4,
+      "cuMemcpyDtoH_v2": 1
+    },
+    "outside_cuda_api_gap_top_leaf": {
+      "kernel: [unknown]": 3,
+      "libc: __memmove_avx_unaligned_erms": 2,
+      "frankenmoe: gg_function_4601": 2,
+      "frankenmoe: memcpy@plt": 1,
+      "frankenmoe: gg_function_4588": 1
+    }
+  },
+  "decode": {
+    "wall_ns": 13621370557,
+    "gpu_gap_ns": 982511508,
+    "gpu_gap_cuda_api_overlap_ns": {
+      "cuLaunchKernel": 186254630,
+      "cuMemcpyDtoH_v2": 400495150,
+      "cuMemcpyHtoD_v2": 19163483
+    },
+    "gpu_gap_cuda_api_union_overlap_ns": 605913263,
+    "gpu_gap_interior_ns": 514845213,
+    "samples": {
+      "main_thread": 6794,
+      "inside_gpu_gap": 258,
+      "other_threads": 529,
+      "uncertain_gap_boundary": 227
+    },
+    "main_thread_leaf_group": {
+      "frankenmoe": 157,
+      "cuda_driver": 4170,
+      "kernel": 744,
+      "profiler": 228,
+      "[vdso]": 870,
+      "libc": 576,
+      "inlined": 49
+    },
+    "gpu_gap_leaf_group": {
+      "frankenmoe": 153,
+      "cuda_driver": 55,
+      "libc": 24,
+      "[vdso]": 13,
+      "kernel": 11,
+      "profiler": 2
+    },
+    "gpu_gap_cuda_api_samples": {
+      "outside_cuda_api": 177,
+      "cuMemcpyDtoH_v2": 61,
+      "cuLaunchKernel": 16,
+      "cuMemcpyHtoD_v2": 4
+    },
+    "outside_cuda_api_gap_top_leaf": {
+      "frankenmoe: gg_function_368": 136,
+      "libc: __memmove_avx_unaligned_erms": 22,
+      "frankenmoe: gg_index": 17,
+      "cuda_driver: [unknown]": 2
+    }
+  }
+}

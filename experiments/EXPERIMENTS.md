@@ -1167,6 +1167,16 @@ release still needs the architecture regression gates.
   signs. Decode and the +70% targets remain open. No runtime change.
   [Full comparison and effective settings](EXP-2026-11-26-2097-bonsai-prism-prefill-parity/README.md).
 
+### EXP-2026-11-26-2098 — Bonsai host work inside GPU gaps
+
+- **Diagnostic.** One cold 32K/512 on EXP-2096. Nsight and CPU
+  sampling align on the same request and verify 512 IDs and text.
+- **Evidence:** Decode has 982.5 ms of GPU gap, including 400.5 ms
+  overlapping host readback and 186.3 ms overlapping launch APIs.
+  In guarded gaps outside CUDA APIs, 153 of 177 samples land in
+  the greedy scan or index helper. Prefill gap is 90.0 ms.
+  [Host timing and reproducible analysis](EXP-2026-11-26-2098-bonsai-host-perf/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.

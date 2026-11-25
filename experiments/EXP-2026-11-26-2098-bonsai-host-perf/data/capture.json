@@ -1,0 +1,55 @@
+{
+  "checkpoint": "EXP-2096",
+  "source_commit": "3601c5adc",
+  "workload": {
+    "input_tokens": 32768,
+    "output_tokens": 512,
+    "model_sha256": "ededc9fc0a8a6a8dd30914d107b2d2ce7674d789f1d05a1a481f240609aa6c23",
+    "gpu": "RTX 4070",
+    "context": 36864,
+    "batch": 4096,
+    "ubatch": 1024,
+    "kv": "Q4_0",
+    "mtp": false,
+    "request": "experiments/EXP-2026-11-25-1977-bonsai-prism-32k-reference/request.json"
+  },
+  "artifact_sha256": {
+    "frankenmoe-infer": "892ad0a8596878bfb9c611ceac243fe50cfff383379cd4e9e66fedca8e632fbd",
+    "pipeline.cubin": "fbaa46a0db3e5efc853f56a6a94af2571d153e4d039e7639b8f1262349b9ec0b"
+  },
+  "frozen_ptx_sha256": "42e1f5c0885a3bbab3656e3bba2dc6ef8b998a4581d365b6c1e48fc842f789d7",
+  "profile_overrides": {
+    "BONSAI_MMQ_HALF_ACC": "1",
+    "BONSAI_MMQ_HALF_FULL": "1",
+    "BONSAI_MMQ_HALF_FULL6144": "1",
+    "BONSAI_FLASH_FP8_QK": "1",
+    "BONSAI_MMQ_HALF2_DOWN": "1",
+    "BONSAI_FFN_Q8_FULL128": "1",
+    "BONSAI_FLASH_FP8_PV": "1",
+    "BONSAI_FFN_Q8_PREFILL": "1",
+    "BONSAI_FFN_Q8_PAIRLOAD": "1",
+    "BONSAI_FFN_Q8_PANEL": "1",
+    "BONSAI_FFN_Q8_SPREAD": "1",
+    "BONSAI_DECODE_DIRECT_MMA": "1",
+    "BONSAI_DECODE_ORDERED_MERGE": "1",
+    "BONSAI_DECODE_DIRECT_HALF2": "1",
+    "BONSAI_FFN_DOWN_Q8_FUSED": "1"
+  },
+  "perf": {
+    "event": "cpu-clock",
+    "frequency_hz": 499,
+    "clock": "CLOCK_MONOTONIC",
+    "stack": "dwarf,4096",
+    "kernel_symbol_maps_available": false,
+    "perf_event_paranoid": 1
+  },
+  "cold_prefill_gate": {
+    "cold_prefill": "PASS",
+    "computed_prompt_tokens": 32768,
+    "cached_prompt_tokens": 0,
+    "engine": "goose",
+    "request_sha256": "1f62448c0a6d29a776f76df4f24d0ca162c7a5d10774f879d94f859ac3e81ecb",
+    "response_sha256": "495247f7731b1518ddc6f5543bff6b36e778cf4118c3794db8981e53344fd382"
+  },
+  "score_eligible": false
+}
