@@ -1,0 +1,20 @@
+--- a/cuda-driver.reference.merged.c
++++ b/cuda-driver.reference.merged.c
+@@ -44,6 +44,8 @@
+ extern void ec_reset(sl_i64 groups, sl_i64 layers, uint64_t words32, sl_i64 words64);
+ extern int64_t ec_prepare(sl_i64 groups, sl_i64 layers, uint64_t words32, sl_i64 words64,
+     uint64_t tensor, int64_t bytes, sl_i64 heads, sl_i64 result, uint8_t stage_all);
++extern int64_t inkling_ec_prepare(sl_i64 groups, sl_i64 layers, uint64_t words32, sl_i64 words64,
++    uint64_t tensor, int64_t bytes, sl_i64 heads, sl_i64 result, uint8_t stage_all);
+ extern int64_t ec_prepare_compact(sl_i64 groups, sl_i64 layers, uint64_t words32, sl_i64 words64,
+     uint64_t tensor, int64_t bytes, sl_i64 ids, sl_i64 result, uint8_t stage_all);
+ extern void exp1744_init(int argc, char **argv);
+@@ -3075,7 +3077,7 @@
+             status = i2_ec_prepare_buckets(cache->groups, cache->layers, state, cache->work,
+                 tensor, bytes, active, offsets, stage_all, (sl_i64){(void *)ranks, 3072}, (sl_i64){links, 3072});
+         } else {
+-            status = ec_prepare(cache->groups, cache->layers, state, cache->work,
++            status = inkling_ec_prepare(cache->groups, cache->layers, state, cache->work,
+                 tensor, bytes, active, offsets, stage_all);
+         }
+     } else {

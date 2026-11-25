@@ -1,0 +1,30 @@
+--- a/infer-main.c
++++ b/infer-main.c
+@@ -11,6 +11,8 @@
+ #include <sys/socket.h>
+ #include <sys/time.h>
+ 
++extern int64_t hose_configure_kv(bool value, const char *format);
++extern int64_t hose_kv_format(void);
+ extern int64_t fg_cuda_dense_bytes(void);
+ extern int64_t fg_cuda_expert_bytes(void);
+ extern void fg_cuda_expert_stats(sl_i64 stats);
+@@ -36,6 +38,7 @@
+     if (stats.len >= 22) stats.data[21] = hose_expert_cache_limit();
+     if (stats.len >= 23) stats.data[22] = fg_standalone_cpu_batch_threads();
+     if (stats.len >= 24) stats.data[23] = fg_standalone_cpu_decode_threads();
++    if (stats.len >= 25) stats.data[24] = hose_kv_format();
+ }
+ 
+ void fg_http_listening(int64_t port) {
+@@ -84,8 +87,8 @@
+     bool cpu_strict = false, cpu_strict_batch = false;
+     while (argc >= 2) {
+         if (strcmp(argv[1], "--cache-type-k") == 0 || strcmp(argv[1], "--cache-type-v") == 0) {
+-            if (argc < 3 || strcmp(argv[2], "q4_0") != 0) {
+-                fprintf(stderr, "%s requires q4_0 in the standalone Apex runtime\n", argv[1]);
++            if (argc < 3 || hose_configure_kv(strcmp(argv[1], "--cache-type-v") == 0, argv[2]) != 0) {
++                fprintf(stderr, "%s requires q4_0 or f16\n", argv[1]);
+                 return 2;
+             }
+             argc -= 2;
