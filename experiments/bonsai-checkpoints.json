@@ -36,12 +36,12 @@
     }
   },
   "experimental": {
-    "id": "EXP-2095",
-    "parent": "EXP-2094",
+    "id": "EXP-2096",
+    "parent": "EXP-2095",
     "status": "experimental",
     "artifact_sha256": {
-      "frankenmoe-infer": "fc6e3579a6b6348981cf7df5168448cf2b8b67f98cab0ebe7cdeee81a430fc32",
-      "pipeline.cubin": "af9523f496c2900c20f585fdb05bdac22e8c95a97569cf4a0455ab9bda89ebef"
+      "frankenmoe-infer": "892ad0a8596878bfb9c611ceac243fe50cfff383379cd4e9e66fedca8e632fbd",
+      "pipeline.cubin": "fbaa46a0db3e5efc853f56a6a94af2571d153e4d039e7639b8f1262349b9ec0b"
     },
     "profile_overrides": {
       "BONSAI_MMQ_HALF_ACC": "1",
@@ -57,11 +57,12 @@
       "BONSAI_FFN_Q8_SPREAD": "1",
       "BONSAI_DECODE_DIRECT_MMA": "1",
       "BONSAI_DECODE_ORDERED_MERGE": "1",
-      "BONSAI_DECODE_DIRECT_HALF2": "1"
+      "BONSAI_DECODE_DIRECT_HALF2": "1",
+      "BONSAI_FFN_DOWN_Q8_FUSED": "1"
     },
-    "results": "experiments/EXP-2026-11-26-2095-bonsai-decode-q4-half2-unpack/data/results.json",
-    "prefill_tok_s": 1018.8458559135969,
-    "decode_tok_s": 37.84366072069591,
+    "results": "experiments/EXP-2026-11-26-2096-bonsai-ffn-down-fused-q8/data/results.json",
+    "prefill_tok_s": 1094.5134584834086,
+    "decode_tok_s": 37.830703568257505,
     "process_vram_after_mib": 8932,
     "quality": {
       "matched_prism_ids": 512,
@@ -142,6 +143,17 @@
         "matched_prism_ids": 512,
         "component_exact_partials_and_output": true,
         "unchanged_cuda_code_sections": 97
+      },
+      "prefill_fused_q8_down": {
+        "matched_prism_ids": 512,
+        "code_trace_cells": [
+          22,
+          21
+        ],
+        "code_trace_total_cells": 63,
+        "incident_matched_output_ids": 47,
+        "incident_both_correct": true,
+        "extended_quality_gate": "pending"
       }
     }
   },
@@ -907,6 +919,116 @@
           "matched_prism_ids": 512,
           "component_exact_output_values": 43008,
           "unchanged_cuda_code_sections": 96
+        }
+      }
+    },
+    {
+      "id": "EXP-2095",
+      "parent": "EXP-2094",
+      "status": "experimental",
+      "artifact_sha256": {
+        "frankenmoe-infer": "fc6e3579a6b6348981cf7df5168448cf2b8b67f98cab0ebe7cdeee81a430fc32",
+        "pipeline.cubin": "af9523f496c2900c20f585fdb05bdac22e8c95a97569cf4a0455ab9bda89ebef"
+      },
+      "profile_overrides": {
+        "BONSAI_MMQ_HALF_ACC": "1",
+        "BONSAI_MMQ_HALF_FULL": "1",
+        "BONSAI_MMQ_HALF_FULL6144": "1",
+        "BONSAI_FLASH_FP8_QK": "1",
+        "BONSAI_MMQ_HALF2_DOWN": "1",
+        "BONSAI_FFN_Q8_FULL128": "1",
+        "BONSAI_FLASH_FP8_PV": "1",
+        "BONSAI_FFN_Q8_PREFILL": "1",
+        "BONSAI_FFN_Q8_PAIRLOAD": "1",
+        "BONSAI_FFN_Q8_PANEL": "1",
+        "BONSAI_FFN_Q8_SPREAD": "1",
+        "BONSAI_DECODE_DIRECT_MMA": "1",
+        "BONSAI_DECODE_ORDERED_MERGE": "1",
+        "BONSAI_DECODE_DIRECT_HALF2": "1"
+      },
+      "results": "experiments/EXP-2026-11-26-2095-bonsai-decode-q4-half2-unpack/data/results.json",
+      "prefill_tok_s": 1018.8458559135969,
+      "decode_tok_s": 37.84366072069591,
+      "process_vram_after_mib": 8932,
+      "quality": {
+        "matched_prism_ids": 512,
+        "incident_extraction_matched_ids": 47,
+        "incident_extraction_correct_in_both": true,
+        "code_trace_correct_cells_control": 18,
+        "code_trace_correct_cells_candidate": 13,
+        "code_trace_total_cells": 63,
+        "code_trace_first_divergent_output_token": 60,
+        "code_trace_divergence_max_abs_logit_delta": 0.31863832473754883,
+        "incident_extraction_sampled_max_abs_logit_delta": 0.4467592239379883,
+        "extended_quality_gate": "pending",
+        "inherited_model_quality_evidence": "EXP-2059",
+        "specialized_matrix_component_bit_exact": true,
+        "specialization_fixed_history_logits_measured": false,
+        "width6144_component_bit_exact": true,
+        "width6144_fixed_history_logits_measured": false,
+        "fp8_qk_preserves_512_ids_on_reference": true,
+        "fp8_qk_fixed_history_logits_measured": false,
+        "fp8_qk_expanded_quality_gate": "pending",
+        "ffn_down_half2_component_bit_exact": true,
+        "ffn_down_half2_fixed_history_logits_measured": false,
+        "ffn_q8_full128_component_bit_exact": true,
+        "ffn_q8_full128_fixed_history_logits_measured": false,
+        "fp8_pv_preserves_512_ids_on_reference": true,
+        "fp8_pv_fixed_history_logits_measured": false,
+        "fp8_pv_expanded_quality_gate": "pending",
+        "broad_q8": {
+          "code_trace_cells_a": 13,
+          "code_trace_cells_b": 21,
+          "code_trace_total_cells": 63,
+          "code_trace_first_divergent_output_token": 60,
+          "code_trace_sampled_max_abs_logit_delta": 0.482417,
+          "incident_extraction_matched_ids": 47,
+          "incident_extraction_correct_in_both": true,
+          "incident_extraction_sampled_max_abs_logit_delta": 0.740173,
+          "extended_quality_gate": "pending",
+          "decode_throughput_delta_pct_single_pair": -0.5828298058876968
+        },
+        "paired_weight_load": {
+          "component_bit_exact": true,
+          "full_responses_matching_prism": 4,
+          "unchanged_cuda_code_sections": 91
+        },
+        "panel_activation_layout": {
+          "component_bit_exact": true,
+          "full_responses_matching_prism": 4,
+          "unchanged_cuda_code_sections": 92,
+          "decode_throughput_delta_pct": -0.23444978290175778,
+          "decode_pair_effect_changes_sign": true
+        },
+        "paired_selector": {
+          "component_bit_exact": true,
+          "selector_input_pairs_exhausted": 65536,
+          "full_responses_matching_prism": 4,
+          "full_responses_passing_cold_gate": 4,
+          "unchanged_cuda_code_sections": 94,
+          "decode_throughput_delta_pct": -0.21192463367902814,
+          "decode_pair_effect_changes_sign": true
+        },
+        "long_decode_direct_mma": {
+          "matched_prism_ids": 512,
+          "code_trace_short_forced_scope_cells": [
+            22,
+            16
+          ],
+          "code_trace_short_forced_scope_total_cells": 63,
+          "incident_matched_output_ids": 47,
+          "incident_both_correct": true,
+          "extended_quality_gate": "pending"
+        },
+        "long_decode_ordered_merge": {
+          "matched_prism_ids": 512,
+          "component_exact_output_values": 43008,
+          "unchanged_cuda_code_sections": 96
+        },
+        "long_decode_half2_unpack": {
+          "matched_prism_ids": 512,
+          "component_exact_partials_and_output": true,
+          "unchanged_cuda_code_sections": 97
         }
       }
     }

@@ -25,6 +25,8 @@ NAMES = {
     "broadcast_mmq": "bonsai_pq2_half_unpack_half2_17408_broadcast",
     "clock_mmq": "bonsai_pq2_half_unpack_half2_17408_clock",
     "k128_mmq": "bonsai_pq2_half_unpack_half2_17408_k128",
+    "q8_tail": "bonsai_ffn_tail_q8_panel",
+    "q8_mmq": "bonsai_pq2_mmq_int8_down_n128_spread",
 }
 TOKENS, WIDTH, ROWS = 1024, 17408, 5120
 PHASES = ("weight_reads", "activation_copy_issue", "unpack",
@@ -43,12 +45,17 @@ def run_case(kernels, raw, signs, rng, events, candidate):
     grid = ROWS // 64, TOKENS // 128
     counter_bytes = grid[0] * grid[1] * 2 * len(PHASES) * 8
     counters = gpu.allocate(counter_bytes) if candidate == "clock" else None
+    scales = gpu.allocate(TOKENS * (WIDTH//128) * 4) if candidate == "q8" else None
 
     def launch(label):
-        tail = "panel_tail" if label == "panel" else "token_tail"
+        tail = f"{label}_tail" if label in ("panel", "q8") else "token_tail"
+        tail_args = gate_device, up_device, signs, packed
+        if label == "q8":
+            tail_args = (*tail_args, scales)
         component.dispatch(kernels[tail], (WIDTH // 1024, TOKENS),
-                           256, (gate_device, up_device, signs, packed, U(WIDTH)))
-        arguments = weight, packed, output, *shape
+                           256, (*tail_args, U(WIDTH)))
+        arguments = ((weight, packed, scales, output, *shape) if label == "q8"
+                     else (weight, packed, output, *shape))
         if label == "clock":
             arguments = (*arguments, counters)
         component.dispatch(kernels[f"{label}_mmq"], grid, 256, arguments,
@@ -62,13 +69,20 @@ def run_case(kernels, raw, signs, rng, events, candidate):
         launch(candidate)
         actual = np.ctypeslib.as_array(gpu.download(output, TOKENS * ROWS))
         assert np.isfinite(expected).all() and not expected[:ROWS].any()
-        assert actual.tobytes() == expected.tobytes()
+        bit_exact = actual.tobytes() == expected.tobytes()
+        if candidate != "q8":
+            assert bit_exact
+        assert np.isfinite(actual).all() and not actual[:ROWS].any()
+        delta = actual - expected
+        relative_l2 = float(np.linalg.norm(delta) / np.linalg.norm(expected))
+        max_abs = float(np.max(np.abs(delta)))
         timings = {"token": [], candidate: []}
         for label in ("token", candidate, candidate, "token") * 4:
             timings[label].append(component.elapsed(lambda: launch(label), *events))
         before, after = map(median, (timings["token"], timings[candidate]))
         result = {
-            "width": WIDTH, "rows": ROWS, "tokens": TOKENS, "bit_exact": True,
+            "width": WIDTH, "rows": ROWS, "tokens": TOKENS, "bit_exact": bit_exact,
+            "relative_l2": relative_l2, "max_abs": max_abs,
             "raw_ms": timings, "token_median_ms": before, f"{candidate}_median_ms": after,
             "time_reduction_pct": (1 - after / before) * 100,
         }
@@ -86,15 +100,16 @@ def run_case(kernels, raw, signs, rng, events, candidate):
                 result[f"{parity}_phase_clock_share"] = dict(zip(PHASES, (total / total.sum()).tolist()))
         return result
     finally:
-        if counters is not None:
-            gpu.call("cuMemFree_v2", counters)
+        for temporary in (counters, scales):
+            if temporary is not None:
+                gpu.call("cuMemFree_v2", temporary)
         for pointer in (output, packed, up_device, gate_device, weight):
             gpu.call("cuMemFree_v2", pointer)
 
 
 def main():
     candidate = sys.argv[4] if len(sys.argv) > 4 else "panel"
-    if candidate not in ("panel", "broadcast", "clock", "k128"):
+    if candidate not in ("panel", "broadcast", "clock", "k128", "q8"):
         raise ValueError(f"Unknown candidate: {candidate}")
     device, context = I(), P()
     gpu.call("cuInit", U(0))
@@ -104,8 +119,8 @@ def main():
         module = component.rec.Layer.load(Path(sys.argv[3]).read_bytes())
         kernels = {}
         labels = ["token_tail", "token_mmq", f"{candidate}_mmq"]
-        if candidate == "panel":
-            labels.append("panel_tail")
+        if candidate in ("panel", "q8"):
+            labels.append(f"{candidate}_tail")
         for label in labels:
             fn = P()
             gpu.call("cuModuleGetFunction", ct.byref(fn), module, NAMES[label].encode())

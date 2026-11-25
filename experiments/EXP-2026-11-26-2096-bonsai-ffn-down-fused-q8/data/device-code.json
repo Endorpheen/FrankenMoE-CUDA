@@ -1,0 +1,7 @@
+{
+  "retained_sections_bit_exact": 98,
+  "added": [
+    ".text.bonsai_ffn_tail_q8_panel",
+    ".text.bonsai_pq2_mmq_int8_down_n128_spread"
+  ]
+}

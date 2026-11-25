@@ -1145,6 +1145,18 @@ release still needs the architecture regression gates.
   512 PrismML IDs and text, VRAM 8932 MiB.
   [Experiment and reusable source](EXP-2026-11-26-2095-bonsai-decode-q4-half2-unpack/README.md).
 
+### EXP-2026-11-26-2096 — Fused Q8 Bonsai FFN down
+
+- **Retained in the cumulative experimental checkpoint.** Fuse Q8
+  packing into SwiGLU/FWHT and use panel-major INT8 down MMQ.
+- **32K/512 mean:** 1024.37 → 1094.51 prefill and 37.94 → 37.83
+  decode tok/s. Full request saves 2.009 s. All four pass cold prefill,
+  match 512 PrismML IDs and text, and report 8932 MiB VRAM.
+  CodeTrace 22/63 → 21/63 and fact extraction passes both arms.
+  Prefill exceeds the saved PrismML control; contemporary paired
+  parity and combined quality acceptance remain open.
+  [Experiment and reusable source](EXP-2026-11-26-2096-bonsai-ffn-down-fused-q8/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
