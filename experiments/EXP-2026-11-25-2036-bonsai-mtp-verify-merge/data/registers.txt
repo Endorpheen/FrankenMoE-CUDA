@@ -1,0 +1,8 @@
+ptxas info    : Compiling entry function 'bonsai_verify_merge_parallel' for 'sm_89'
+ptxas info    : Function properties for bonsai_verify_merge_parallel
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 35 registers, used 1 barriers, 400 bytes smem, 376 bytes cmem[0], 8 bytes cmem[2]
+ptxas info    : Compiling entry function 'bonsai_verify_merge_direct' for 'sm_89'
+ptxas info    : Function properties for bonsai_verify_merge_direct
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 32 registers, used 0 barriers, 376 bytes cmem[0]

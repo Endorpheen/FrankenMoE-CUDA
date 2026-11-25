@@ -531,6 +531,22 @@ release still needs the architecture regression gates.
   dispatch as the primary wall-time limit.
   [Trace data, attribution and reproduction](EXP-2026-11-25-2035-bonsai-mtp-phase-budget/README.md).
 
+### EXP-2026-11-25-2036 — Parallel exact Bonsai target merge
+
+- **Status:** Verified within the experimental MTP path.
+- **Mechanism:** Merge three independent Q4 attention queries
+  in one launch. Prepare coefficients with warp prefix maxima,
+  retain chronological accumulation and exact FP32 division.
+- **Evidence:** RTX 4070, Q4_0 K/V, 32K/512, context 36,864,
+  A–B–B–A. Decode 53.53 → 61.51 tok/s, prefill 611.89 →
+  612.02 tok/s, combined 63.099 → 61.848 s. Target saves
+  6.724 ms per block. All 512 IDs, selected logits and 326/370
+  acceptance match. No new device allocations. Peak RSS
+  ranges overlap, no process swap, peak VRAM not sampled.
+- **Reuse:** Parallelize coefficient preparation while maintaining
+  independent ordered state per query.
+  [Source, measured evidence and reproduction](EXP-2026-11-25-2036-bonsai-mtp-verify-merge/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
