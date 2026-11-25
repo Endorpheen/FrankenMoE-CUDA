@@ -1,0 +1,18 @@
+{
+  "control": "EXP-2086",
+  "gpu": "RTX 4070",
+  "target": "sm_89",
+  "control_image_sha256": "5413db4395cdf149b72d284022824356217dc86dcddb3f894ec28022e55c0cc0",
+  "probe_image_sha256": "7e2658638b3d04340e6ac99736a6914094a7315ea7e708dd6c406caeb9dfaf74",
+  "mmq_registers_per_thread": {
+    "control": 79,
+    "candidate": 80
+  },
+  "mmq_shared_bytes_per_cta": 27648,
+  "mmq_spill_bytes_per_thread": {
+    "control": 0,
+    "candidate": 0
+  },
+  "component_time_reduction_gate_pct": 5,
+  "full_request_measurements": null
+}

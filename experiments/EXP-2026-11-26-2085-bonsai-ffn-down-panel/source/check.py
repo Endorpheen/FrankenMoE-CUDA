@@ -1,4 +1,4 @@
-"""Time the fused FFN tail and half2 down projection with both layouts."""
+"""Time the fused FFN tail and half2 down projection against a candidate."""
 
 import ctypes as ct
 import importlib.util
@@ -22,11 +22,12 @@ NAMES = {
     "token_mmq": "bonsai_pq2_half_unpack_half2_17408",
     "panel_tail": "bonsai_ffn_tail_panel128",
     "panel_mmq": "bonsai_pq2_half_unpack_half2_17408_panel",
+    "broadcast_mmq": "bonsai_pq2_half_unpack_half2_17408_broadcast",
 }
 TOKENS, WIDTH, ROWS = 1024, 17408, 5120
 
 
-def run_case(kernels, raw, signs, rng, events):
+def run_case(kernels, raw, signs, rng, events, candidate):
     stage = component.rec.Layer.stage
     gate = rng.normal(0, .7, (TOKENS, WIDTH)).astype(np.float32)
     gate[0] = 0
@@ -37,7 +38,8 @@ def run_case(kernels, raw, signs, rng, events):
     shape = U(WIDTH), U(ROWS), U(TOKENS)
 
     def launch(label):
-        component.dispatch(kernels[f"{label}_tail"], (WIDTH // 1024, TOKENS),
+        tail = "panel_tail" if label == "panel" else "token_tail"
+        component.dispatch(kernels[tail], (WIDTH // 1024, TOKENS),
                            256, (gate_device, up_device, signs, packed, U(WIDTH)))
         component.dispatch(kernels[f"{label}_mmq"], (ROWS // 64, TOKENS // 128),
                            256, (weight, packed, output, *shape))
@@ -45,17 +47,17 @@ def run_case(kernels, raw, signs, rng, events):
     try:
         launch("token")
         expected = np.ctypeslib.as_array(gpu.download(output, TOKENS * ROWS)).copy()
-        launch("panel")
+        launch(candidate)
         actual = np.ctypeslib.as_array(gpu.download(output, TOKENS * ROWS))
         assert np.isfinite(expected).all() and not expected[:ROWS].any()
         assert actual.tobytes() == expected.tobytes()
-        timings = {"token": [], "panel": []}
-        for label in ("token", "panel", "panel", "token") * 4:
+        timings = {"token": [], candidate: []}
+        for label in ("token", candidate, candidate, "token") * 4:
             timings[label].append(component.elapsed(lambda: launch(label), *events))
-        before, after = map(median, (timings["token"], timings["panel"]))
+        before, after = map(median, (timings["token"], timings[candidate]))
         return {
             "width": WIDTH, "rows": ROWS, "tokens": TOKENS, "bit_exact": True,
-            "raw_ms": timings, "token_median_ms": before, "panel_median_ms": after,
+            "raw_ms": timings, "token_median_ms": before, f"{candidate}_median_ms": after,
             "time_reduction_pct": (1 - after / before) * 100,
         }
     finally:
@@ -64,6 +66,9 @@ def run_case(kernels, raw, signs, rng, events):
 
 
 def main():
+    candidate = sys.argv[4] if len(sys.argv) > 4 else "panel"
+    if candidate not in ("panel", "broadcast"):
+        raise ValueError(f"Unknown candidate: {candidate}")
     device, context = I(), P()
     gpu.call("cuInit", U(0))
     gpu.call("cuDeviceGet", ct.byref(device), I(0))
@@ -71,9 +76,12 @@ def main():
     try:
         module = component.rec.Layer.load(Path(sys.argv[3]).read_bytes())
         kernels = {}
-        for label, name in NAMES.items():
+        labels = ["token_tail", "token_mmq", f"{candidate}_mmq"]
+        if candidate == "panel":
+            labels.append("panel_tail")
+        for label in labels:
             fn = P()
-            gpu.call("cuModuleGetFunction", ct.byref(fn), module, name.encode())
+            gpu.call("cuModuleGetFunction", ct.byref(fn), module, NAMES[label].encode())
             kernels[label] = fn
         events = component.cuda_event(), component.cuda_event()
         inventory = gpu.inventory
@@ -91,7 +99,7 @@ def main():
                 assert tensor["type"] == 142 and tensor["shape"] == [WIDTH, ROWS]
                 offset = inventory["data_offset"] + tensor["offset"]
                 raw = weights[offset:offset+ROWS*(WIDTH//128)*34]
-                results.append({"tensor": name, **run_case(kernels, raw, signs, rng, events)})
+                results.append({"tensor": name, **run_case(kernels, raw, signs, rng, events, candidate)})
         print(json.dumps(results, indent=2))
     finally:
         gpu.call("cuCtxDestroy_v2", context)

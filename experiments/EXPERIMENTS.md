@@ -1067,6 +1067,15 @@ release still needs the architecture regression gates.
   same activation pack. Keep EXP-2086's M64 × N128 path.
   [Component results and reproduction](EXP-2026-11-26-2087-bonsai-q8-spread-n64/README.md).
 
+### EXP-2026-11-26-2088 — Warp scale broadcast for Bonsai FFN down
+
+- **Rejected at the component gate.** One scale load per 16 lanes
+  and a warp shuffle, with unchanged half2 operands and arithmetic.
+- **Evidence:** Bitwise results on four real PQ2 weights on RTX 4070.
+  End-to-end component time increases 0.99–1.48%, including fused
+  preparation. EXP-2086 remains the cumulative checkpoint.
+  [Component results and reproduction](EXP-2026-11-26-2088-bonsai-ffn-down-scale-broadcast/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
