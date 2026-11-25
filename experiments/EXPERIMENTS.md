@@ -351,6 +351,24 @@ release still needs the architecture regression gates.
   cache, subject to geometry, layout and numerical validation.
   [Evidence and reproduction](EXP-2026-11-25-2025-bonsai-mtp-head/README.md).
 
+### EXP-2026-11-25-2026 — Bonsai MTP reference arithmetic
+
+- **Status:** EXPERIMENTAL, comparative diagnosis on RTX 4070. With
+  identical hidden inputs and positions, the default PrismML draft
+  matches three of four Goose IDs. It matches four of four with
+  reference cache rotation disabled. Prefill, decode and peak
+  VRAM or RAM were not measured.
+- **Mechanism:** PrismML's default Q4_0 cache rotates K and V before
+  quantization. It also uses Q8_1 activations for the Q4_0 EH
+  projection. Independent arithmetic reconstructs both runtimes'
+  EH within 7.21e-6 absolute error. Disabling reference rotation
+  preserves the reference EH bytes and reduces final relative
+  logit L2 at all four positions.
+- **Reuse:** Separate activation quantization, cache format and
+  cache transform when comparing draft paths. Test acceptance
+  and wall time before enabling any such method in a drafter.
+  [Source, pinned reference, and measured traces](EXP-2026-11-25-2026-bonsai-mtp-prism/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
