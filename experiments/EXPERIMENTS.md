@@ -776,6 +776,14 @@ release still needs the architecture regression gates.
   down takes 3.87 ms unsplit versus 4.06 / 4.16 ms split.
   [Source, diagnostics and reproduction](EXP-2026-11-25-2054-bonsai-mmq-split-k/README.md).
 
+### EXP-2026-11-25-2055 — Resident Bonsai PQ2 code and scale planes
+
+- **Status:** Rejected below the component performance threshold.
+- **Evidence:** Bitwise results on four RTX 4070 shapes. Full FFN
+  down saves only 0.59% before one-time repack. The widest measured
+  gain is 1.73% on QKV; no loader or runtime dispatch change.
+  [Source, diagnostics and reproduction](EXP-2026-11-25-2055-bonsai-mmq-resident-planes/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.

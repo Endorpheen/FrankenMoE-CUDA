@@ -1,0 +1,58 @@
+[
+  {
+    "tensor": "blk.0.attn_qkv.weight",
+    "width": 5120,
+    "rows": 10239,
+    "tokens": 129,
+    "resident_bytes": 13925040,
+    "bit_exact": true,
+    "diagnostic_kernel_ns": {
+      "bonsai_pack_half": 6464,
+      "bonsai_pq2_cached_64x128_k64": 594697,
+      "bonsai_pack_pq2_resident_planes": 51169,
+      "bonsai_pq2_cached_64x128_planes": 593257
+    }
+  },
+  {
+    "tensor": "blk.0.attn_qkv.weight",
+    "width": 5120,
+    "rows": 10240,
+    "tokens": 1024,
+    "resident_bytes": 13926400,
+    "bit_exact": true,
+    "diagnostic_kernel_ns": {
+      "bonsai_pack_half": 64865,
+      "bonsai_pq2_cached_64x128_k64": 2110209,
+      "bonsai_pack_pq2_resident_planes": 58529,
+      "bonsai_pq2_cached_64x128_planes": 2072512
+    }
+  },
+  {
+    "tensor": "blk.0.ffn_up.weight",
+    "width": 5120,
+    "rows": 17408,
+    "tokens": 1024,
+    "resident_bytes": 23674880,
+    "bit_exact": true,
+    "diagnostic_kernel_ns": {
+      "bonsai_pack_half": 31776,
+      "bonsai_pq2_cached_64x128_k64": 3573879,
+      "bonsai_pack_pq2_resident_planes": 105218,
+      "bonsai_pq2_cached_64x128_planes": 3538262
+    }
+  },
+  {
+    "tensor": "blk.0.ffn_down.weight",
+    "width": 17408,
+    "rows": 5120,
+    "tokens": 1024,
+    "resident_bytes": 23674880,
+    "bit_exact": true,
+    "diagnostic_kernel_ns": {
+      "bonsai_pack_half": 194244,
+      "bonsai_pq2_cached_64x128_k64": 3643704,
+      "bonsai_pack_pq2_resident_planes": 99937,
+      "bonsai_pq2_cached_64x128_planes": 3621080
+    }
+  }
+]
