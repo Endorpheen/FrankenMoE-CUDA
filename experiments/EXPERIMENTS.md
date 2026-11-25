@@ -463,6 +463,23 @@ release still needs the architecture regression gates.
   before enabling a speculative path.
   [Source, measured results and reproduction](EXP-2026-11-25-2031-bonsai-mtp-greedy/README.md).
 
+### EXP-2026-11-25-2032 — Bit-exact batched Bonsai draft prefill
+
+- **Status:** Verified within the experimental MTP path.
+- **Mechanism:** Batch the prompt-only K/V graph over at most 128
+  tokens, shift target hidden rows on device and reuse each
+  Q4 weight for four exact per-token accumulators.
+- **Evidence:** RTX 4070, Q4_0 K/V, 32K/512, context 36,864,
+  A–B–B–A. Prefill 578.39 → 610.08 tok/s, decode 46.29 →
+  46.14 tok/s, combined 67.695 → 64.787 s. Raw draft K/V,
+  output IDs, selected logits and 326/370 acceptance match.
+  Device allocation grows by 216 bytes, peak RSS ranges overlap,
+  no process swap. Peak VRAM not sampled.
+- **Reuse:** Keep the prefix update KV-only and use device-resident
+  shifted hidden inputs whenever the draft geometry and arithmetic
+  contract match.
+  [Source, measured evidence and reproduction](EXP-2026-11-25-2032-bonsai-mtp-batch-prefill/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
