@@ -884,6 +884,14 @@ release still needs the architecture regression gates.
   all 512 PrismML IDs and text. VRAM is 8,932 MiB after each request.
   [Source, diagnostics and reproduction](EXP-2026-11-25-2067-bonsai-mmq-width6144/README.md).
 
+### EXP-2026-11-25-2068 — Warp row reuse on cumulative Bonsai full tiles
+
+- **Status:** Rejected below the component performance threshold.
+- **Evidence:** Bitwise results against EXP-2067 on all full shapes.
+  The candidate uses 95 vs 80 registers and takes 11–13% longer.
+  Calculated maximum active blocks per SM decrease from three to two.
+  [Source, diagnostics and reproduction](EXP-2026-11-25-2068-bonsai-cumulative-warp-row-reuse/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
