@@ -867,6 +867,15 @@ release still needs the architecture regression gates.
   IDs and text match, with VRAM 8,932 MiB after each request.
   [Source, diagnostics and reproduction](EXP-2026-11-25-2065-bonsai-cumulative-full-tiles/README.md).
 
+### EXP-2026-11-25-2066 — Full Bonsai pipeline profile after cumulative MMQ
+
+- **Status:** Diagnostic, no runtime change.
+- **Evidence:** EXP-2065, 32K/512, all IDs and text verified. Prefill
+  has 24.48 s matrix/pack, 8.44 s Attention and 81.9 ms traced GPU
+  gaps. Decode has 989.5 ms traced GPU gaps. H2D at startup is
+  975.5 ms of GPU activity. No in-request CUDA allocation or graph.
+  [Host/device attribution and reproduction](EXP-2026-11-25-2066-bonsai-full-pipeline-profile/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.

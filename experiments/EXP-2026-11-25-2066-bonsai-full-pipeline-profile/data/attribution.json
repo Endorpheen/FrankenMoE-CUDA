@@ -1,0 +1,371 @@
+{
+  "matched_ids": 512,
+  "server_timings": {
+    "cache_n": 0,
+    "prompt_n": 32768,
+    "prompt_ms": 38913.26343500987,
+    "prompt_per_token_ms": 1.1875385569766195,
+    "prompt_per_second": 842.0779217021146,
+    "predicted_n": 512,
+    "predicted_ms": 15748.580434010364,
+    "predicted_per_token_ms": 30.819139792583883,
+    "predicted_per_second": 32.447368963900594
+  },
+  "client_seconds": 54.68645,
+  "client_marker_span_ns": 54696904380,
+  "response_tail_after_last_readback_ns": 5798655,
+  "waiting_for_request_after_ready_ns": 11649262223,
+  "proc_request_window_counters": {
+    "user_ticks": 4555,
+    "system_ticks": 1061,
+    "minor_faults": 144063,
+    "major_faults": 0,
+    "ticks_per_second": 100
+  },
+  "process_vram_after_mib": 8944,
+  "ready_memory": [
+    "VmHWM:\t 8000456 kB",
+    "VmRSS:\t  686968 kB",
+    "VmSwap:\t       0 kB"
+  ],
+  "after_memory": [
+    "VmHWM:\t 8000456 kB",
+    "VmRSS:\t  783212 kB",
+    "VmSwap:\t       0 kB"
+  ],
+  "startup": {
+    "wall_ns": 1912508408,
+    "gpu_active_ns": 979488005,
+    "gpu_trace_idle_ns": 933020403,
+    "gpu_kernel_groups_ns": {},
+    "gpu_top_kernel_sums": {},
+    "gpu_kernel_count": 0,
+    "gpu_graph_node_count": 0,
+    "gpu_transfers": {
+      "Host-to-Device": {
+        "count": 4,
+        "ns": 975504173,
+        "bytes": 7481331712
+      }
+    },
+    "gpu_memset_ns": 3983832,
+    "host_cuda_api": {
+      "cuCtxCreate_v2": {
+        "count": 1,
+        "ns": 108299506
+      },
+      "cuModuleLoad": {
+        "count": 2,
+        "ns": 13811038
+      },
+      "cuMemAlloc_v2": {
+        "count": 2,
+        "ns": 1285991
+      },
+      "cuMemcpyHtoD_v2": {
+        "count": 4,
+        "ns": 979697686
+      },
+      "cuMemsetD8_v2": {
+        "count": 1,
+        "ns": 24816
+      },
+      "cuMemGetInfo_v2": {
+        "count": 1,
+        "ns": 46958
+      }
+    },
+    "host_cuda_api_union_ns": 1103165995,
+    "host_cuda_api_gpu_busy_overlap_ns": 979470294,
+    "host_cuda_api_gpu_idle_overlap_ns": 123695701,
+    "host_osrt_api": {
+      "pthread_create": {
+        "count": 1,
+        "ns": 103936
+      },
+      "ioctl": {
+        "count": 123,
+        "ns": 106750005
+      },
+      "mmap64": {
+        "count": 2,
+        "ns": 2170033
+      },
+      "sem_timedwait": {
+        "count": 1,
+        "ns": 321044
+      },
+      "fread": {
+        "count": 4,
+        "ns": 2371803
+      },
+      "pthread_mutex_lock": {
+        "count": 1,
+        "ns": 222449
+      },
+      "munmap": {
+        "count": 1,
+        "ns": 172132514
+      }
+    },
+    "cuda_allocations": [
+      {
+        "offset_ns": 759511672,
+        "bytes": 7481217024,
+        "type": 0
+      },
+      {
+        "offset_ns": 1736001743,
+        "bytes": 1720400640,
+        "type": 0
+      }
+    ]
+  },
+  "prefill": {
+    "wall_ns": 38942137756,
+    "gpu_active_ns": 38860240529,
+    "gpu_trace_idle_ns": 81897227,
+    "gpu_kernel_groups_ns": {
+      "remaining": 3130153974,
+      "matrix_and_pack": 24475953739,
+      "gdn_decay_conv": 2810318376,
+      "attention": 8443436516
+    },
+    "gpu_top_kernel_sums": {
+      "bonsai_pq2_half_full_5120": {
+        "count": 7440,
+        "ns": 13318589888
+      },
+      "bonsai_flash_kv_fused_ordered": {
+        "count": 400,
+        "ns": 7609883838
+      },
+      "bonsai_pq2_half_full_17408": {
+        "count": 1984,
+        "ns": 5522674005
+      },
+      "bonsai_pq2_cached_fp16_acc_k32": {
+        "count": 2352,
+        "ns": 2847260021
+      },
+      "bonsai_pq2_mmq_int8": {
+        "count": 1024,
+        "ns": 2509487833
+      },
+      "goose_gdn_mma_v32": {
+        "count": 1536,
+        "ns": 1535926863
+      },
+      "bonsai_ffn_tail": {
+        "count": 2048,
+        "ns": 865575534
+      },
+      "bonsai_decay_reuse8": {
+        "count": 1536,
+        "ns": 666573041
+      },
+      "bonsai_fwht1024": {
+        "count": 6434,
+        "ns": 618210675
+      },
+      "bonsai_flash_tile_group2": {
+        "count": 2800,
+        "ns": 611751563
+      },
+      "bonsai_conv_batch": {
+        "count": 1536,
+        "ns": 606934172
+      },
+      "bonsai_residual": {
+        "count": 4224,
+        "ns": 521495065
+      }
+    },
+    "gpu_kernel_count": 56085,
+    "gpu_graph_node_count": 0,
+    "gpu_transfers": {
+      "Host-to-Device": {
+        "count": 104,
+        "ns": 77217,
+        "bytes": 662460
+      },
+      "Device-to-Host": {
+        "count": 1,
+        "ns": 39520,
+        "bytes": 993280
+      }
+    },
+    "gpu_memset_ns": 261187,
+    "host_cuda_api": {
+      "cuMemsetD8_v2": {
+        "count": 97,
+        "ns": 281575
+      },
+      "cuMemcpyHtoD_v2": {
+        "count": 104,
+        "ns": 24279768562
+      },
+      "cuLaunchKernel": {
+        "count": 56085,
+        "ns": 14580583413
+      },
+      "cuMemcpyDtoH_v2": {
+        "count": 1,
+        "ns": 41954506
+      }
+    },
+    "host_cuda_api_union_ns": 38902588056,
+    "host_cuda_api_gpu_busy_overlap_ns": 38850983835,
+    "host_cuda_api_gpu_idle_overlap_ns": 51604221,
+    "host_osrt_api": {
+      "accept": {
+        "count": 1,
+        "ns": 5955684
+      },
+      "pthread_rwlock_wrlock": {
+        "count": 1,
+        "ns": 225164
+      }
+    },
+    "cuda_allocations": []
+  },
+  "decode": {
+    "wall_ns": 15748967969,
+    "gpu_active_ns": 14759443752,
+    "gpu_trace_idle_ns": 989524217,
+    "gpu_kernel_groups_ns": {
+      "matrix_and_pack": 8893503904,
+      "remaining": 1077812938,
+      "gdn_decay_conv": 447443229,
+      "attention": 4320323372
+    },
+    "gpu_top_kernel_sums": {
+      "bonsai_pq2_mvq_q8_2": {
+        "count": 188048,
+        "ns": 8164730184
+      },
+      "bonsai_decode_gqa3": {
+        "count": 8176,
+        "ns": 3237605898
+      },
+      "goose_q4_attention_merge": {
+        "count": 8176,
+        "ns": 1082717474
+      },
+      "bonsai_fwht1024": {
+        "count": 131838,
+        "ns": 372319669
+      },
+      "bonsai_pq2_mvq_q8_1": {
+        "count": 511,
+        "ns": 371922544
+      },
+      "bonsai_norm_wide_512_1": {
+        "count": 65919,
+        "ns": 337160191
+      },
+      "goose_gdn_decode": {
+        "count": 24528,
+        "ns": 242155574
+      },
+      "bonsai_pq2_matvec_ordered": {
+        "count": 16352,
+        "ns": 224183403
+      },
+      "bonsai_decay_stage_256_0": {
+        "count": 24528,
+        "ns": 161802977
+      },
+      "bonsai_norm": {
+        "count": 65408,
+        "ns": 151119695
+      },
+      "bonsai_mv_pack_q8": {
+        "count": 131327,
+        "ns": 132022814
+      },
+      "bonsai_residual": {
+        "count": 65408,
+        "ns": 67023281
+      }
+    },
+    "gpu_kernel_count": 837018,
+    "gpu_graph_node_count": 0,
+    "gpu_transfers": {
+      "Host-to-Device": {
+        "count": 1022,
+        "ns": 296256,
+        "bytes": 98112
+      },
+      "Device-to-Host": {
+        "count": 511,
+        "ns": 20064053,
+        "bytes": 507566080
+      }
+    },
+    "gpu_memset_ns": 0,
+    "host_cuda_api": {
+      "cuMemcpyDtoH_v2": {
+        "count": 512,
+        "ns": 9798399756
+      },
+      "cuMemcpyHtoD_v2": {
+        "count": 1022,
+        "ns": 20548188
+      },
+      "cuLaunchKernel": {
+        "count": 837018,
+        "ns": 5442105027
+      }
+    },
+    "host_cuda_api_union_ns": 15261052971,
+    "host_cuda_api_gpu_busy_overlap_ns": 14649401475,
+    "host_cuda_api_gpu_idle_overlap_ns": 611651496,
+    "host_osrt_api": {
+      "pthread_rwlock_wrlock": {
+        "count": 11,
+        "ns": 1778116
+      }
+    },
+    "cuda_allocations": []
+  },
+  "generic_fp16_partial_dispatches": [
+    {
+      "grid_x": 80,
+      "grid_y": 8,
+      "count": 2112,
+      "ns": 2387041023
+    },
+    {
+      "grid_x": 272,
+      "grid_y": 8,
+      "count": 96,
+      "ns": 284276491
+    },
+    {
+      "grid_x": 160,
+      "grid_y": 8,
+      "count": 48,
+      "ns": 81824816
+    },
+    {
+      "grid_x": 96,
+      "grid_y": 8,
+      "count": 48,
+      "ns": 51901618
+    },
+    {
+      "grid_x": 192,
+      "grid_y": 8,
+      "count": 16,
+      "ns": 33989032
+    },
+    {
+      "grid_x": 16,
+      "grid_y": 8,
+      "count": 32,
+      "ns": 8227041
+    }
+  ],
+  "trace_sqlite_sha256": "14fe7a47ea60aca90833b93cbf6cf625a105bb5ff8d07dfa1fb2202a21dc33c6"
+}
