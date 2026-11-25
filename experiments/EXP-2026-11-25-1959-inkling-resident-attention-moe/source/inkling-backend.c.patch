@@ -1,0 +1,243 @@
+--- a/inkling-backend.c
++++ b/inkling-backend.c
+@@ -34,6 +34,7 @@
+ #include "native-kv.h"
+ #include "moe-epilogue.h"
+ #include "situ.h"
++#include "bridge.h"
+ #include "inkling-backend.h"
+ 
+ #include <assert.h>
+@@ -167,6 +168,8 @@
+     struct fg_standalone_graph_plan *plan;
+     struct ggml_tensor *output, *inputs[3], *messages[3], *residual;
+     struct inkling_attention_graph_call attention;
++    struct inkling_bridge bridge;
++    bool bridge_started;
+ };
+ 
+ struct decoder {
+@@ -178,7 +181,7 @@
+     size_t flash_floats;
+     float *flash_workspace, *kh, *vh, *ha, *hf;
+     bool retain_decode_graphs;
+-    struct inkling_decode_graph decode_attention[logical], decode_moe[logical];
++    struct inkling_decode_graph decode_attention[logical], decode_moe[logical], decode_joined[logical];
+ };
+ 
+ static sl_f32 vec(float *p,int64_t n) { return (sl_f32){p,n}; }
+@@ -324,22 +327,10 @@
+     return uses_resident_plan() && (!setting || strcmp(setting, "0") != 0);
+ }
+ 
+-static void moe_resident(struct decoder *d, const int64_t *core, const int64_t *aux,
+-                         int slot, int position, int count, float *ffn, float *message,
+-                         float *residual, float *out) {
+-    struct inkling_decode_graph *entry = count == 1 && d->retain_decode_graphs ? &d->decode_moe[slot] : NULL;
+-    if (entry && entry->plan) {
+-        assert((entry->messages[0] != NULL) == (message != NULL));
+-        entry->inputs[0]->data = ffn;
+-        if (message) entry->messages[0]->data = message;
+-        entry->residual->data = residual;
+-        entry->output->op_params[2] = position;
+-        execute_decode_graph(entry, out);
+-        return;
+-    }
+-    struct ggml_context *ctx = context();
+-    struct ggml_tensor *input = rows_input(ctx, ffn, model_width, count);
+-    if (entry) entry->inputs[0] = input;
++static struct ggml_tensor *moe_node(struct ggml_context *ctx, struct decoder *d,
++        const int64_t *core, const int64_t *aux, int slot, int position, int count,
++        struct ggml_tensor *input, float *message, struct ggml_tensor *residual,
++        struct inkling_decode_graph *entry) {
+     if (message) {
+         struct ggml_tensor *memory = rows_input(ctx, message, model_width, count);
+         if (entry) entry->messages[0] = memory;
+@@ -371,8 +362,29 @@
+     epilogue->op_params[1] = slot;
+     epilogue->op_params[2] = position;
+     epilogue->src[0] = moe;
+-    epilogue->src[1] = rows_input(ctx, residual, model_width, count);
++    epilogue->src[1] = residual;
+     epilogue->src[2] = load(ctx, named(d, aux[3]));
++    return epilogue;
++}
++
++static void moe_resident(struct decoder *d, const int64_t *core, const int64_t *aux,
++                         int slot, int position, int count, float *ffn, float *message,
++                         float *residual, float *out) {
++    struct inkling_decode_graph *entry = count == 1 && d->retain_decode_graphs ? &d->decode_moe[slot] : NULL;
++    if (entry && entry->plan) {
++        assert((entry->messages[0] != NULL) == (message != NULL));
++        entry->inputs[0]->data = ffn;
++        if (message) entry->messages[0]->data = message;
++        entry->residual->data = residual;
++        entry->output->op_params[2] = position;
++        execute_decode_graph(entry, out);
++        return;
++    }
++    struct ggml_context *ctx = context();
++    struct ggml_tensor *input = rows_input(ctx, ffn, model_width, count);
++    if (entry) entry->inputs[0] = input;
++    struct ggml_tensor *epilogue = moe_node(ctx, d, core, aux, slot, position, count,
++        input, message, rows_input(ctx, residual, model_width, count), entry);
+     if (entry) {
+         entry->context = ctx;
+         entry->output = epilogue;
+@@ -419,27 +431,9 @@
+     return (sliding || aux[10] < 0) && (!sharing || strcmp(sharing, "0") != 0);
+ }
+ 
+-static void attention_graph(struct decoder *d, const int64_t *core, const int64_t *aux,
+-                            int slot, int begin, int count, bool sliding,
+-                            float *input[3], float *message[3], float *out) {
+-    const struct inkling_attention_graph_call call = bind_attention_graph(d, core, aux, slot, begin, count, sliding);
+-    struct inkling_decode_graph *entry = count == 1 && d->retain_decode_graphs ? &d->decode_attention[slot] : NULL;
+-    if (entry && entry->plan) {
+-        assert((entry->messages[0] != NULL) == (message != NULL));
+-        entry->attention.batch.first = begin;
+-        for (int i = 0; i < 3; ++i) {
+-            if (entry->inputs[i]) entry->inputs[i]->data = input[i];
+-            if (message) entry->messages[i]->data = message[i];
+-        }
+-        execute_decode_graph(entry, out);
+-        return;
+-    }
+-    const struct inkling_attention_graph_call *metadata = &call;
+-    if (entry) {
+-        entry->attention = call;
+-        metadata = &entry->attention;
+-    }
+-    struct ggml_context *ctx = context();
++static struct ggml_tensor *attention_node(struct ggml_context *ctx, struct decoder *d,
++        const int64_t *aux, int count, bool sliding, float *input[3], float *message[3],
++        const struct inkling_attention_graph_call *metadata, struct inkling_decode_graph *entry) {
+     struct ggml_tensor *node = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, model_width, count);
+     assert(node);
+     node->op = GGML_OP_CUSTOM;
+@@ -468,6 +462,31 @@
+         struct ggml_tensor *gain = load(ctx, named(d, aux[sliding ? 11 : 12 + i]));
+         node->src[i] = ggml_mul(ctx, normalized, gain);
+     }
++    return node;
++}
++
++static void attention_graph(struct decoder *d, const int64_t *core, const int64_t *aux,
++                            int slot, int begin, int count, bool sliding,
++                            float *input[3], float *message[3], float *out) {
++    const struct inkling_attention_graph_call call = bind_attention_graph(d, core, aux, slot, begin, count, sliding);
++    struct inkling_decode_graph *entry = count == 1 && d->retain_decode_graphs ? &d->decode_attention[slot] : NULL;
++    if (entry && entry->plan) {
++        assert((entry->messages[0] != NULL) == (message != NULL));
++        entry->attention.batch.first = begin;
++        for (int i = 0; i < 3; ++i) {
++            if (entry->inputs[i]) entry->inputs[i]->data = input[i];
++            if (message) entry->messages[i]->data = message[i];
++        }
++        execute_decode_graph(entry, out);
++        return;
++    }
++    const struct inkling_attention_graph_call *metadata = &call;
++    if (entry) {
++        entry->attention = call;
++        metadata = &entry->attention;
++    }
++    struct ggml_context *ctx = context();
++    struct ggml_tensor *node = attention_node(ctx, d, aux, count, sliding, input, message, metadata, entry);
+     if (entry) {
+         entry->context = ctx;
+         entry->output = node;
+@@ -479,6 +498,60 @@
+     ggml_free(ctx);
+ }
+ 
++static bool use_joined_bridge(void) {
++    const char *setting = getenv("I2_JOIN_ATTENTION_MOE");
++    return setting && strcmp(setting, "1") == 0;
++}
++
++static void joined_layer(struct decoder *d, const int64_t *core, const int64_t *aux,
++        int slot, int position, bool sliding, bool add_residual, float *input[3],
++        float (*messages)[model_width], float *cur, float *history, int rows) {
++    struct inkling_decode_graph *entry = &d->decode_joined[slot];
++    float bridge_input[(INKLING_BRIDGE_ROWS + 1) * model_width];
++    assert(rows >= 0 && rows <= INKLING_BRIDGE_ROWS);
++    memcpy(bridge_input, cur, model_width * sizeof(float));
++    memcpy(bridge_input + model_width, history, rows * model_width * sizeof(float));
++    entry->bridge = (struct inkling_bridge) {
++        .postconv = coefficients(d, aux[2], 4 * model_width).data,
++        .query = coefficients(d, aux[9], model_width).data,
++        .initial_history = d->ha + slot * 3 * model_width,
++        .input = bridge_input, .slot = slot, .rows = rows, .position = position,
++        .restart = !entry->bridge_started, .add_residual = add_residual,
++    };
++    if (entry->plan) {
++        entry->attention.batch.first = position;
++        for (int i = 0; i < 3; ++i) {
++            if (entry->inputs[i]) entry->inputs[i]->data = input[i];
++            if (messages) entry->messages[i]->data = messages[i];
++        }
++        if (messages) entry->residual->data = messages[3];
++        entry->output->op_params[2] = position;
++    } else {
++        struct ggml_context *ctx = context();
++        entry->context = ctx;
++        entry->attention = bind_attention_graph(d, core, aux, slot, position, 1, sliding);
++        float *attn_messages[3];
++        for (int i = 0; i < 3; ++i) attn_messages[i] = messages ? messages[i] : NULL;
++        struct ggml_tensor *attention = attention_node(ctx, d, aux, 1, sliding,
++            input, messages ? attn_messages : NULL, &entry->attention, entry);
++        struct ggml_tensor *bridge = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, model_width, 2);
++        assert(bridge);
++        bridge->op = GGML_OP_CUSTOM;
++        bridge->op_params[0] = INKLING_BRIDGE_GRAPH;
++        const struct inkling_bridge *metadata = &entry->bridge;
++        memcpy(bridge->op_params + 2, &metadata, sizeof metadata);
++        bridge->src[0] = attention;
++        struct ggml_tensor *ffn = ggml_view_1d(ctx, bridge, model_width, 0);
++        struct ggml_tensor *next = ggml_view_1d(ctx, bridge, model_width, model_width * sizeof(float));
++        struct inkling_decode_graph moe = {0};
++        entry->output = moe_node(ctx, d, core, aux, slot, position, 1,
++            ffn, messages ? messages[3] : NULL, next, &moe);
++        entry->residual = moe.messages[0];
++    }
++    execute_decode_graph(entry, cur);
++    entry->bridge_started = true;
++}
++
+ static void layer(struct decoder *d,int physical_layer,int slot,int absolute,int sliding,
+                   float *cur,float *blocks,int *count,float (*messages)[model_width]) {
+     const int64_t *core=d->core+10*physical_layer, *aux=d->aux+30*physical_layer;
+@@ -497,6 +570,16 @@
+         float *input[] = {inputs[0], inputs[1], inputs[2]};
+         float *message[] = {messages ? messages[0] : NULL, messages ? messages[1] : NULL,
+                             messages ? messages[2] : NULL};
++        if (d->retain_decode_graphs && use_joined_bridge() && use_cached_history() && use_resident_moe()) {
++            const bool add_residual = physical_layer % 6 != 0;
++            if (!add_residual) {
++                assert(*count < INKLING_BRIDGE_ROWS);
++                save_history_row(blocks + (*count) * model_width, cur);
++                ++*count;
++            }
++            joined_layer(d, core, aux, slot, absolute, sliding, add_residual, input, messages, cur, blocks, *count);
++            return;
++        }
+         attention_graph(d, core, aux, slot, absolute, 1, sliding, input, messages ? message : NULL, proj);
+     } else {
+         for(int i=0;i<3;i++){
+@@ -708,6 +791,7 @@
+     for (int i = 0; i < logical; ++i) {
+         drop_decode_graph(&d->decode_attention[i]);
+         drop_decode_graph(&d->decode_moe[i]);
++        drop_decode_graph(&d->decode_joined[i]);
+     }
+     free(d->hf);
+     free(d->ha);
+@@ -783,6 +867,7 @@
+ int inkling_backend_reset(struct decoder *d) {
+     if (!d || reset_inkling_attention(d) != 0) return -1;
+     d->position = 0;
++    for (int i = 0; i < logical; ++i) d->decode_joined[i].bridge_started = false;
+     return 0;
+ }
+ 
