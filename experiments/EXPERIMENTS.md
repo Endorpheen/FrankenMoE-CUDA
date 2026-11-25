@@ -1086,6 +1086,15 @@ release still needs the architecture regression gates.
   Nsight Compute counters unavailable with ERR_NVGPUCTRPERM.
   [Method and phase observations](EXP-2026-11-26-2089-bonsai-ffn-down-phase-budget/README.md).
 
+### EXP-2026-11-26-2090 — Joint K128 staging for Bonsai FFN down
+
+- **Rejected at the component gate.** Stage two K64 halves together
+  with the same FP16/FP32 order. Shared memory grows to 55,296 B.
+- **Evidence:** Bitwise results on four real PQ2 weights on RTX 4070.
+  End-to-end component time increases 40.02–46.68%. CUDA reports
+  three versus one maximum active CTA per SM. Keep EXP-2086.
+  [Component results and reproduction](EXP-2026-11-26-2090-bonsai-down-k128/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.

@@ -24,6 +24,7 @@ NAMES = {
     "panel_mmq": "bonsai_pq2_half_unpack_half2_17408_panel",
     "broadcast_mmq": "bonsai_pq2_half_unpack_half2_17408_broadcast",
     "clock_mmq": "bonsai_pq2_half_unpack_half2_17408_clock",
+    "k128_mmq": "bonsai_pq2_half_unpack_half2_17408_k128",
 }
 TOKENS, WIDTH, ROWS = 1024, 17408, 5120
 PHASES = ("weight_reads", "activation_copy_issue", "unpack",
@@ -50,7 +51,8 @@ def run_case(kernels, raw, signs, rng, events, candidate):
         arguments = weight, packed, output, *shape
         if label == "clock":
             arguments = (*arguments, counters)
-        component.dispatch(kernels[f"{label}_mmq"], grid, 256, arguments)
+        component.dispatch(kernels[f"{label}_mmq"], grid, 256, arguments,
+                           shared_bytes=55296 if label == "k128" else 0)
 
     try:
         if counters is not None:
@@ -92,7 +94,7 @@ def run_case(kernels, raw, signs, rng, events, candidate):
 
 def main():
     candidate = sys.argv[4] if len(sys.argv) > 4 else "panel"
-    if candidate not in ("panel", "broadcast", "clock"):
+    if candidate not in ("panel", "broadcast", "clock", "k128"):
         raise ValueError(f"Unknown candidate: {candidate}")
     device, context = I(), P()
     gpu.call("cuInit", U(0))
@@ -108,6 +110,13 @@ def main():
             fn = P()
             gpu.call("cuModuleGetFunction", ct.byref(fn), module, NAMES[label].encode())
             kernels[label] = fn
+        if candidate == "k128":
+            gpu.call("cuFuncSetAttribute", kernels["k128_mmq"], I(8), I(55296))
+            for label, shared in (("token", 0), ("k128", 55296)):
+                blocks = I()
+                gpu.call("cuOccupancyMaxActiveBlocksPerMultiprocessor",
+                         ct.byref(blocks), kernels[f"{label}_mmq"], I(256), gpu.S(shared))
+                print(f"{label}: {blocks.value} max active CTAs per SM", file=sys.stderr)
         events = component.cuda_event(), component.cuda_event()
         inventory = gpu.inventory
         tensors = {tensor["name"]: tensor for tensor in inventory["tensors"]}

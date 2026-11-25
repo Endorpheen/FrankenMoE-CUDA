@@ -34,10 +34,10 @@ def elapsed(run, start, stop):
     return ms.value
 
 
-def dispatch(kernel, grid, lanes, args):
+def dispatch(kernel, grid, lanes, args, shared_bytes=0):
     params = (P * len(args))(*(ct.addressof(v) for v in args))
     gpu.call('cuLaunchKernel', kernel, U(grid[0]), U(grid[1]), U(1),
-             U(lanes), U(1), U(1), U(0), P(), params, P())
+             U(lanes), U(1), U(1), U(shared_bytes), P(), params, P())
 
 
 def run_case(kernels, event_pair, matrix, width, rows, tokens, rng):
