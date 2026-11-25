@@ -1,5 +1,80 @@
 # Experiment log
 
+## Bonsai 2.5 27B CUDA optimization methods
+
+The entries below use the resident PQ2_0-mtp GGUF on RTX 4070 (sm89),
+context 36864, batch/ubatch 4096/1024, Q4_0 K/V, greedy with EOG masked,
+and MTP disabled. Results refer to the experimental Bonsai HTTP line.
+Existing Apex and Inkling release artifacts are unchanged. A shared
+release still needs the architecture regression gates.
+
+### EXP-2026-11-25-2012 — Q8 DP4A for single-token PQ2 projections
+
+- **Status:** ACCEPTED in the Bonsai experimental runtime.
+  Source commit `d435df2aa5f61cb433824136c9788b0063f0f5aa`.
+  [CUDA kernel and pack](EXP-2026-11-25-2012-bonsai-dp4a/source/dp4a.cl),
+  [phase dispatch](EXP-2026-11-25-2012-bonsai-dp4a/source/compose.py),
+  [binary and image SHA-256](EXP-2026-11-25-2012-bonsai-dp4a/data/SHA256SUMS).
+- **Mechanism:** Pack signed Q8 activations with an F16 scale per 32 inputs,
+  reuse them across projections and use DP4A to form integer partial dots.
+  PQ2 keeps one weight scale per 128 coefficients. FP32 applies group
+  scales and reduces the partials. Two output rows per warp reuse the
+  activation on normal projections; vocabulary uses one. Decode projection
+  work falls without changing weight storage or adding a device allocation.
+- **Measured 32K/512 A/B:** prefill `619.76 → 620.51 tok/s`, decode
+  `16.657 → 27.063 tok/s (+62.47%)`, VRAM `8932 → 8932 MiB`,
+  peak RSS `7,457,360 → 7,457,168 KiB`. Decode saves 11.796 s.
+  Two balanced 4097/64 pairs show `+70.60%` decode. A separate rebuild
+  with Q8 enabled by default confirms `27.028 tok/s` on 32K/512.
+  [Raw performance and memory](EXP-2026-11-25-2012-bonsai-dp4a/data/results.json).
+- **Correctness:** 512 IDs and UTF-8 text SHA-256 match PrismML in all
+  long runs. Four task fixtures preserve complete free generations
+  (23, 63, 258, and 47 IDs), independent task scores, and all 37
+  sampled same-history top-1 selections. Logits differ: maximum observed
+  absolute delta 0.39847, minimum top-10 overlap 9/10. Projection
+  L2 relative to FP32 is 0.81–0.95% on the measured fixtures.
+  [Quality data](EXP-2026-11-25-2012-bonsai-dp4a/data/quality.json).
+- **Limits:** Verified on sm89 with 32-lane warps, Bonsai PQ2_0
+  dimensions divisible by 128 and one decode token. Dispatch uses
+  output widths above 1024. Prefill continues to use FP16; the
+  prompt-ending logits use the FP32 projection. Control switch:
+  `BONSAI_DECODE_Q8=off`. Broader numerical equivalence is unverified.
+- **Potential reuse:** Other resident PQ2_0 models and single-column
+  PQ2 verification paths with the same packing semantics may benefit.
+  Multi-column verification and other quant formats need independent
+  kernels and gates. No Apex, Inkling, or hybrid speedup is established.
+  [Experiment and exact reproduction](EXP-2026-11-25-2012-bonsai-dp4a/README.md).
+
+### EXP-2026-11-25-2013 — Parallel output for exact wide RMSNorm
+
+- **Status:** ACCEPTED in the Bonsai experimental runtime.
+  Source commit `7d939604ff69271a3b0a68349642d8cea3dd391f`.
+  [CUDA source](EXP-2026-11-25-2013-bonsai-wide-norm/source/norm.cl),
+  [Bonsai dispatch](EXP-2026-11-25-2013-bonsai-wide-norm/source/compose.py),
+  [binary and image SHA-256](EXP-2026-11-25-2013-bonsai-wide-norm/data/SHA256SUMS).
+- **Mechanism:** Preserve the original ordered warp reduction and square
+  root. Broadcast the divisor and parallelize independent divisions,
+  weights and writes. Stage input in shared memory for small batches.
+  Measured one-row dispatch falls from 33.74 to 4.76 us.
+- **Measured 32K/512 A/B:** prefill `619.99 → 620.89 tok/s`, decode
+  `27.082 → 32.255 tok/s (+19.10%)`, VRAM `8932 → 8932 MiB`,
+  peak RSS `7,457,228 → 7,457,300 KiB`. One long pair saves 3.026 s
+  decode. Two balanced 4097/64 pairs show `+22.29%` decode.
+  [Raw performance and memory](EXP-2026-11-25-2013-bonsai-wide-norm/data/results.json).
+- **Correctness:** Seven component shapes match every FP32 output byte.
+  Short and long response IDs and text match the corresponding controls;
+  all 512 long IDs and the text hash also match PrismML. No numerical
+  difference was observed for the tested RMSNorm inputs.
+- **Limits:** Verified on sm89 for contiguous 5120-wide weighted RMSNorm,
+  one row per token and unchanged model epsilon. Use 512 threads with
+  20,484 bytes of shared memory up to 512 rows; use 128 threads above
+  that. Gated RMSNorm, L2, other widths and per-head layouts remain on
+  their old paths. Control switch: `BONSAI_WIDE_NORM=0`.
+- **Potential reuse:** Other low-row-count RMSNorm kernels with serial
+  per-lane reductions. Preserve the lane accumulation order and output
+  contract and retune for shape and device. No measured cross-model gain.
+  [Experiment and exact reproduction](EXP-2026-11-25-2013-bonsai-wide-norm/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.

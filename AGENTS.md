@@ -311,6 +311,25 @@ runs at `-O1` and mutations at `-O0`. The lead accepts personally; there is no
 automatic accept step. Keep the helper count at the level the lead can review
 (5-6 is the current point); adjust it by the queue, not by ambition.
 
+## Optimization registry maintenance
+
+Search the existing [optimization registry](experiments/EXPERIMENTS.md)
+before writing a new optimization or kernel. Match the operation, tensor
+layout, GPU, model, arithmetic contract, and measured conditions. Consult
+both accepted and rejected experiments before adapting a prior approach.
+
+On completion, update the existing entry or add one entry per distinct
+method in that registry. Record the method name, EXP ID, exact source
+commit SHA, source paths and artifact hashes, mechanism, reason for the
+verdict, measured before/after prefill, decode, peak VRAM and RAM, and
+the correctness checks and known numeric differences. Specify GPU,
+shape, quantization, architecture and benchmark conditions, and link to
+raw evidence and reproduction. Mark unmeasured fields explicitly.
+Use accepted, experimental, or rejected status with the verified scope.
+Keep possible reuse separate from performance confirmed for that case.
+Do not duplicate an existing entry or count an isolated kernel gain as
+a model-level improvement.
+
 ## Deferred Vulkan backend
 
 See the [Vulkan backend roadmap](docs/roadmap/VULKAN-BACKEND.md). Keep CUDA optimization as the priority. Start Vulkan implementation only after Igor says `«Начинай Vulkan»`.
