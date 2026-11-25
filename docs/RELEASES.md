@@ -7,6 +7,8 @@ platform coverage.
 
 ## Candidate assembly and verification
 
+Run the mandatory [Release Gate](RELEASE-GATE.md) for every candidate.
+
 Use the exact checkpoint inputs recorded in the experiment registry.
 Treat the original paths as immutable. Assemble into a fresh directory:
 

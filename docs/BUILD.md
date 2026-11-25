@@ -46,3 +46,26 @@ is not a native Windows CUDA generation result.
 See [release verification and publication](RELEASES.md) for the
 distinction between artifact checks, Wine transport and native
 NVIDIA tests.
+
+## Windows multi-model host
+
+The Windows multi-model link step uses the EXP-1969 Inkling COFF
+checkpoint, a Windows common adapter checkpoint, and the v0.12.1 chat
+host objects. Pass the directories explicitly. The linker isolates the
+Inkling and Bonsai Goose entry points and uses the ordinary system NVIDIA
+driver on native Windows. It also exposes a CUDA-free `--model-check`
+path for checking real GGUF files and tokenization under Wine.
+
+```bash
+FRANKEN_MAIN=/path/to/checkout-with-win32-headers \
+  bash tools/multimodel-release/link-windows-multimodel.sh \
+  build/windows-multimodel /path/to/inkling-coff /path/to/common-coff /path/to/chat-coff
+bash tools/multimodel-release/stage-windows.sh build/windows-staged \
+  /path/to/extracted-apex-windows build/windows-multimodel/frankenmoe-multimodel.exe \
+  /path/to/bonsai-mtp.exe /path/to/verified-linux-staging
+```
+
+The COFF inputs are build checkpoints, not Linux object files. Archive
+them with their source and compiler provenance before reassembling a
+release. This link command does not compile their upstream source units.
+Use the [Release Gate](RELEASE-GATE.md) on the final archives.

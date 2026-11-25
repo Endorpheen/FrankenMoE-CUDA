@@ -248,6 +248,18 @@ build.
 Measurements are manual and strictly one at a time: no scripts, no parallel
 runs, no background work alongside benchmarks.
 
+## Mandatory release gate
+
+Run the [Release Gate](docs/RELEASE-GATE.md) before publishing any FrankenMoE
+package. Register each OS × backend × model combination in the shared release
+matrix and run its applicable checks against the actual candidate archives.
+Fix real build, missing-module, dependency and correctness failures before
+publication. Report PASS, FAIL, NOT TESTED and NOT APPLICABLE separately.
+Unavailable native GPU hardware permits a qualified release with an explicit
+untested status. Wine is not native CUDA evidence. Publish the generated
+report and checksums with the archives. Extend the same gate for new models
+and Vulkan.
+
 ## Communication with Igor
 
 Do not use Markdown blockquotes (`>`) in messages to Igor: his interface renders
