@@ -950,6 +950,14 @@ release still needs the architecture regression gates.
   and expansion, versus 2.91 ms on EXP-2073 including pack.
   [Source, diagnostics and reproduction](EXP-2026-11-26-2075-bonsai-dense-mmq-ceiling/README.md).
 
+### EXP-2026-11-26-2076 — E4M3 PV on cumulative Bonsai Flash
+
+- **Status:** Retained in the cumulative experimental checkpoint.
+- **Evidence:** 89 retained machine-code sections match. One RTX 4070
+  32K/512 pair gives 870.98 → 912.33 tok/s prefill. Both match 512
+  PrismML IDs and text. VRAM remains 8,932 MiB after each request.
+  [Source, diagnostics and reproduction](EXP-2026-11-26-2076-bonsai-flash-fp8-pv/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.

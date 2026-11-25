@@ -1,0 +1,7 @@
+{
+  "retained_sections_bit_exact": 89,
+  "added": [
+    ".text.bonsai_flash_fp8_qkpv",
+    ".text.bonsai_flash_stage_v_fp8"
+  ]
+}

@@ -36,12 +36,12 @@
     }
   },
   "experimental": {
-    "id": "EXP-2073",
-    "parent": "EXP-2071",
+    "id": "EXP-2076",
+    "parent": "EXP-2073",
     "status": "experimental",
     "artifact_sha256": {
-      "frankenmoe-infer": "addb0e67ae86169e873ee0f347a2aff5f6a61f957c33db43ad93602d6490d547",
-      "pipeline.cubin": "8f3cec0d2ed4bf1740955f659de91a27b8b5c2588561c0239b906d5104de5bc8"
+      "frankenmoe-infer": "f51973e849947193e9e54dafe2d5d60a0c41996ec551c324a5de9be2ae18432d",
+      "pipeline.cubin": "e7984b1ad5463ad98ca011816c5cc66a50706004282712e46ce149f57e0b9eb5"
     },
     "profile_overrides": {
       "BONSAI_MMQ_HALF_ACC": "1",
@@ -49,11 +49,12 @@
       "BONSAI_MMQ_HALF_FULL6144": "1",
       "BONSAI_FLASH_FP8_QK": "1",
       "BONSAI_MMQ_HALF2_DOWN": "1",
-      "BONSAI_FFN_Q8_FULL128": "1"
+      "BONSAI_FFN_Q8_FULL128": "1",
+      "BONSAI_FLASH_FP8_PV": "1"
     },
-    "results": "experiments/EXP-2026-11-26-2073-bonsai-q8-full-tiles/data/results.json",
-    "prefill_tok_s": 877.7992814123688,
-    "decode_tok_s": 32.74356417539244,
+    "results": "experiments/EXP-2026-11-26-2076-bonsai-flash-fp8-pv/data/results.json",
+    "prefill_tok_s": 912.3333118595206,
+    "decode_tok_s": 32.743408157499495,
     "process_vram_after_mib": 8932,
     "quality": {
       "matched_prism_ids": 512,
@@ -77,7 +78,10 @@
       "ffn_down_half2_component_bit_exact": true,
       "ffn_down_half2_fixed_history_logits_measured": false,
       "ffn_q8_full128_component_bit_exact": true,
-      "ffn_q8_full128_fixed_history_logits_measured": false
+      "ffn_q8_full128_fixed_history_logits_measured": false,
+      "fp8_pv_preserves_512_ids_on_reference": true,
+      "fp8_pv_fixed_history_logits_measured": false,
+      "fp8_pv_expanded_quality_gate": "pending"
     }
   },
   "experimental_history": [
@@ -255,6 +259,51 @@
         "fp8_qk_expanded_quality_gate": "pending",
         "ffn_down_half2_component_bit_exact": true,
         "ffn_down_half2_fixed_history_logits_measured": false
+      }
+    },
+    {
+      "id": "EXP-2073",
+      "parent": "EXP-2071",
+      "status": "experimental",
+      "artifact_sha256": {
+        "frankenmoe-infer": "addb0e67ae86169e873ee0f347a2aff5f6a61f957c33db43ad93602d6490d547",
+        "pipeline.cubin": "8f3cec0d2ed4bf1740955f659de91a27b8b5c2588561c0239b906d5104de5bc8"
+      },
+      "profile_overrides": {
+        "BONSAI_MMQ_HALF_ACC": "1",
+        "BONSAI_MMQ_HALF_FULL": "1",
+        "BONSAI_MMQ_HALF_FULL6144": "1",
+        "BONSAI_FLASH_FP8_QK": "1",
+        "BONSAI_MMQ_HALF2_DOWN": "1",
+        "BONSAI_FFN_Q8_FULL128": "1"
+      },
+      "results": "experiments/EXP-2026-11-26-2073-bonsai-q8-full-tiles/data/results.json",
+      "prefill_tok_s": 877.7992814123688,
+      "decode_tok_s": 32.74356417539244,
+      "process_vram_after_mib": 8932,
+      "quality": {
+        "matched_prism_ids": 512,
+        "incident_extraction_matched_ids": 47,
+        "incident_extraction_correct_in_both": true,
+        "code_trace_correct_cells_control": 18,
+        "code_trace_correct_cells_candidate": 13,
+        "code_trace_total_cells": 63,
+        "code_trace_first_divergent_output_token": 60,
+        "code_trace_divergence_max_abs_logit_delta": 0.31863832473754883,
+        "incident_extraction_sampled_max_abs_logit_delta": 0.4467592239379883,
+        "extended_quality_gate": "pending",
+        "inherited_model_quality_evidence": "EXP-2059",
+        "specialized_matrix_component_bit_exact": true,
+        "specialization_fixed_history_logits_measured": false,
+        "width6144_component_bit_exact": true,
+        "width6144_fixed_history_logits_measured": false,
+        "fp8_qk_preserves_512_ids_on_reference": true,
+        "fp8_qk_fixed_history_logits_measured": false,
+        "fp8_qk_expanded_quality_gate": "pending",
+        "ffn_down_half2_component_bit_exact": true,
+        "ffn_down_half2_fixed_history_logits_measured": false,
+        "ffn_q8_full128_component_bit_exact": true,
+        "ffn_q8_full128_fixed_history_logits_measured": false
       }
     }
   ]
