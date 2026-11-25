@@ -850,6 +850,15 @@ release still needs the architecture regression gates.
   cumulative control and 3.68 ms on the best shallow-stage variant.
   [Source, diagnostics and reproduction](EXP-2026-11-25-2063-bonsai-mmq-shallow-stage/README.md).
 
+### EXP-2026-11-25-2064 — Register cap for cumulative Bonsai PQ2
+
+- **Status:** Not promoted at the component gate.
+- **Evidence:** Bitwise results against EXP-2059 on RTX 4070.
+  Calculated maximum active blocks per SM increase 2 → 3.
+  Full FFN down, pack included, takes 3.277 → 3.130 ms,
+  while FFN up slows 3.028 → 3.395 ms.
+  [Source, diagnostics and reproduction](EXP-2026-11-25-2064-bonsai-mmq-register-cap/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
