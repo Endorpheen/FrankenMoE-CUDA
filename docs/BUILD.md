@@ -1,44 +1,48 @@
-# Build
+# Build and package FrankenMoE
 
-## Verified environment
+Goose model code is linked with native C host adapters and NVIDIA
+CUDA images. The [experiment registry](../experiments/EXPERIMENTS.md)
+records the source, compiler, image and kernel choices for each
+checkpoint.
 
-| Component | Version |
+## Verified Linux candidate inputs
+
+| Component | Checkpoint |
 | --- | --- |
-| OS | Ubuntu 26.04 LTS, kernel 7.0 |
-| CPU | AMD Ryzen 9 5950X |
-| RAM | 64 GB installed, about 60 GiB visible |
-| GPU | NVIDIA RTX 4070 12 GB, compute capability 8.9 |
-| Driver | 580.173.02 |
-| CUDA Toolkit | 12.4.131 |
-| Compiler | GCC/G++ 13.4.0 |
-| CMake / Ninja | 4.2.3 / 1.13.2 |
+| Apex HTTP | EXP-1880 |
+| Inkling HTTP | EXP-1969 |
+| Bonsai HTTP | EXP-2019 |
+| Bonsai greedy MTP CLI | EXP-2047 |
 
-The machine had a CUDA 12.4 toolkit despite an initial expectation of CUDA 13.0. The build therefore pins GCC 13 and `sm_89` by default.
-
-## Reproducible build
+The Bonsai generations use the published Fried Goose KeelWing
+compiler, GCC 13, Clang 18 for CUDA kernels and NVIDIA ptxas targeting
+SM89. Follow the build instructions in each experiment before
+assembling the package. Verify the input artifacts against the
+experiment SHA-256 receipts.
 
 ```bash
-scripts/build.sh
+FRANKENMOE_UI_PACKAGE=/path/to/verified/chat-package \
+  bash tools/multimodel-release/stage-linux.sh build/release-linux-candidate
+python3 tools/multimodel-release/smoke-linux.py \
+  build/release-linux-candidate . build/release-smoke
 ```
 
-Supported environment overrides:
+The packaged HTTP runtimes require glibc 2.43. Python 3 is optional
+for the terminal dashboard. The measured GPU is the RTX 4070 with
+compute capability 8.9. See [model profiles and coverage](MULTIMODEL-ALPHA.md).
 
-```text
-BUILD_DIR  JOBS  CC  CXX  CUDACXX  CUDA_ARCH
-```
-
-The script prepares the pinned upstream trees, applies the integration patch, configures CUDA, and builds the runtime and tests.
-
-## Tests
+## Windows Bonsai cross-build
 
 ```bash
-scripts/test_small.sh
+bash tools/multimodel-release/build-windows-bonsai.sh build/bonsai-windows
 ```
 
-The test script runs 13 CTest cases, a resident-versus-streamed 64-token greedy comparison on CUDA, and an overlap smoke test. Set `KEEP_TMP=1` to preserve CLI logs and token streams.
+This uses MinGW-w64 and the same generated Goose C unit as the Linux
+candidate. The Win32 adapter loads the NVIDIA driver from the system
+directory and maps GGUF files read-only. The Bonsai CUDA image and
+frozen PTX are supplied alongside the executable. The cross-build
+is not a native Windows CUDA generation result.
 
-The three upstream baselines were also built and tested before integration:
-
-- official llama.cpp CUDA: 62/62;
-- BigMoeOnEdge CPU: 12/12;
-- expert-tier CUDA: 62/62.
+See [release verification and publication](RELEASES.md) for the
+distinction between artifact checks, Wine transport and native
+NVIDIA tests.
