@@ -1,0 +1,25 @@
+{
+  "query": "SELECT s.value, k.gridX, k.gridY, k.blockX, COUNT(*), SUM(k.end-k.start)\nFROM CUPTI_ACTIVITY_KIND_KERNEL k JOIN StringIds s ON s.id=k.shortName\nWHERE s.value IN ('bonsai_pq2_mmq_int8_full_n128', 'bonsai_pq2_mmq_int8_full_n128_pairload')\nGROUP BY 1, 2, 3, 4 ORDER BY 6 DESC",
+  "profiles": {
+    "2079": [
+      {
+        "kernel": "bonsai_pq2_mmq_int8_full_n128",
+        "grid_x": 272,
+        "grid_y": 8,
+        "block_x": 256,
+        "launches": 3968,
+        "kernel_ns": 9015196227
+      }
+    ],
+    "2082": [
+      {
+        "kernel": "bonsai_pq2_mmq_int8_full_n128_pairload",
+        "grid_x": 272,
+        "grid_y": 8,
+        "block_x": 256,
+        "launches": 3968,
+        "kernel_ns": 8481745638
+      }
+    ]
+  }
+}

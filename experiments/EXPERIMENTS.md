@@ -1008,6 +1008,16 @@ release still needs the architecture regression gates.
   match PrismML on 512 IDs and text, VRAM 8932 MiB throughout.
   [Experiment and reusable source](EXP-2026-11-26-2081-bonsai-q8-paired-weight-load/README.md).
 
+### EXP-2026-11-26-2082 — Full Bonsai profile after exact paired PQ2 loads
+
+- **Diagnostic.** EXP-2081, 32K/512, all 512 response IDs and text
+  verified. Scored 976.17 prefill / 32.65 decode tok/s.
+- **Evidence:** Matrix and pack 21.707 s, attention 5.863 s, and
+  prefill GPU gaps 80.95 ms. The 3,968 full gate/up launches move
+  from 9.015 s in the prior trace to 8.482 s. The separate scored
+  prefill gap to PrismML remains 3.133 s. No runtime change.
+  [Trace attribution and repro](EXP-2026-11-26-2082-bonsai-full-pipeline-after-pairload/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
