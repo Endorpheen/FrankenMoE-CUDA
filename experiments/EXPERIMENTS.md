@@ -742,6 +742,14 @@ release still needs the architecture regression gates.
   main matrix and activation packing kernels.
   [Attribution and Bonsai acceptance levels](EXP-2026-11-25-2050-bonsai-prefill-attribution/README.md).
 
+### EXP-2026-11-25-2051 — Bonsai INT8 MMQ with INT4 rounding residual
+
+- **Status:** Rejected at the component performance gate.
+- **Evidence:** On RTX 4070, four real PQ2 fixtures agree with the
+  sampled CPU oracle and have at most 0.047% relative L2 vs FP16.
+  Full 1024-token pack plus kernel is slower on QKV, FFN up and FFN down.
+  [Source, diagnostics and reproduction](EXP-2026-11-25-2051-bonsai-mmq-int4-residual/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.

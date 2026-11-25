@@ -1,0 +1,75 @@
+{
+  "gpu": "RTX 4070, SM89",
+  "timing_scope": "Single diagnostic profiler sample per stage, not paired benchmark evidence",
+  "registers_per_thread": {
+    "fp16": 72,
+    "candidate": 76
+  },
+  "candidate_shared_bytes_per_cta": 29184,
+  "hashes": {
+    "pipeline.cubin": "c61473a7ce123641f69b5952ca2e54d4b6cd3ab5e96cbd1c468dc255f90f7697",
+    "component-trace.sqlite": "64f549e424775c97d5e2a48a98b18a053ef8bb9bf342cddc3dbb307c2dfe21ff"
+  },
+  "cases": [
+    {
+      "tensor": "blk.0.attn_qkv.weight",
+      "width": 5120,
+      "rows": 10239,
+      "tokens": 129,
+      "relative_l2_to_fp16": 0.0004593004414346069,
+      "max_abs_to_fp16": 0.003298044204711914,
+      "max_abs_sampled_vs_cpu": 4.011190313235602e-07,
+      "diagnostic_kernel_ns": {
+        "bonsai_pack_half": 9152,
+        "bonsai_pq2_cached_64x128_k64": 594056,
+        "bonsai_pack_q8_q4_residual": 6336,
+        "bonsai_pq2_mmq_q8_q4_residual": 571337
+      }
+    },
+    {
+      "tensor": "blk.0.attn_qkv.weight",
+      "width": 5120,
+      "rows": 10240,
+      "tokens": 1024,
+      "relative_l2_to_fp16": 0.0004599475360009819,
+      "max_abs_to_fp16": 0.004240751266479492,
+      "max_abs_sampled_vs_cpu": 5.04312479554514e-07,
+      "diagnostic_kernel_ns": {
+        "bonsai_pack_half": 64033,
+        "bonsai_pq2_cached_64x128_k64": 2101664,
+        "bonsai_pack_q8_q4_residual": 65025,
+        "bonsai_pq2_mmq_q8_q4_residual": 2883820
+      }
+    },
+    {
+      "tensor": "blk.0.ffn_up.weight",
+      "width": 5120,
+      "rows": 17408,
+      "tokens": 1024,
+      "relative_l2_to_fp16": 0.00046183710219338536,
+      "max_abs_to_fp16": 0.0013063251972198486,
+      "max_abs_sampled_vs_cpu": 1.6984524109364685e-07,
+      "diagnostic_kernel_ns": {
+        "bonsai_pack_half": 45856,
+        "bonsai_pq2_cached_64x128_k64": 3617399,
+        "bonsai_pack_q8_q4_residual": 46017,
+        "bonsai_pq2_mmq_q8_q4_residual": 4843625
+      }
+    },
+    {
+      "tensor": "blk.0.ffn_down.weight",
+      "width": 17408,
+      "rows": 5120,
+      "tokens": 1024,
+      "relative_l2_to_fp16": 0.00046284255222417414,
+      "max_abs_to_fp16": 0.017754554748535156,
+      "max_abs_sampled_vs_cpu": 8.835022375919266e-07,
+      "diagnostic_kernel_ns": {
+        "bonsai_pack_half": 193251,
+        "bonsai_pq2_cached_64x128_k64": 3650135,
+        "bonsai_pack_q8_q4_residual": 192131,
+        "bonsai_pq2_mmq_q8_q4_residual": 5589108
+      }
+    }
+  ]
+}
