@@ -1,0 +1,66 @@
+--- a/inkling-backend.c
++++ b/inkling-backend.c
+@@ -503,19 +503,32 @@
+     return setting && strcmp(setting, "1") == 0;
+ }
+ 
++static bool use_retained_bridge_history(void) {
++    static int enabled = -1;
++    if (enabled < 0) {
++        const char *setting = getenv("I2_BRIDGE_RETAIN_HISTORY");
++        enabled = setting && strcmp(setting, "1") == 0;
++    }
++    return enabled != 0;
++}
++
+ static void joined_layer(struct decoder *d, const int64_t *core, const int64_t *aux,
+-        int slot, int position, bool sliding, bool add_residual, float *input[3],
++        int slot, int visit, int position, bool sliding, bool add_residual, float *input[3],
+         float (*messages)[model_width], float *cur, float *history, int rows) {
+     struct inkling_decode_graph *entry = &d->decode_joined[slot];
+     float bridge_input[(INKLING_BRIDGE_ROWS + 1) * model_width];
+     assert(rows >= 0 && rows <= INKLING_BRIDGE_ROWS);
+-    memcpy(bridge_input, cur, model_width * sizeof(float));
+-    memcpy(bridge_input + model_width, history, rows * model_width * sizeof(float));
++    const bool retain_history = use_retained_bridge_history();
++    if (!retain_history) {
++        memcpy(bridge_input, cur, model_width * sizeof(float));
++        memcpy(bridge_input + model_width, history, rows * model_width * sizeof(float));
++    }
+     entry->bridge = (struct inkling_bridge) {
+         .postconv = coefficients(d, aux[2], 4 * model_width).data,
+         .query = coefficients(d, aux[9], model_width).data,
+         .initial_history = d->ha + slot * 3 * model_width,
+-        .input = bridge_input, .slot = slot, .rows = rows, .position = position,
++        .input = retain_history ? cur : bridge_input, .depth_history = history,
++        .slot = slot, .visit = visit, .rows = rows, .position = position, .retain_history = retain_history,
+         .restart = !entry->bridge_started, .add_residual = add_residual,
+     };
+     if (entry->plan) {
+@@ -552,7 +565,7 @@
+     entry->bridge_started = true;
+ }
+ 
+-static void layer(struct decoder *d,int physical_layer,int slot,int absolute,int sliding,
++static void layer(struct decoder *d,int physical_layer,int slot,int visit,int absolute,int sliding,
+                   float *cur,float *blocks,int *count,float (*messages)[model_width]) {
+     const int64_t *core=d->core+10*physical_layer, *aux=d->aux+30*physical_layer;
+     float inputs[3][model_width];
+@@ -577,7 +590,7 @@
+                 save_history_row(blocks + (*count) * model_width, cur);
+                 ++*count;
+             }
+-            joined_layer(d, core, aux, slot, absolute, sliding, add_residual, input, messages, cur, blocks, *count);
++            joined_layer(d, core, aux, slot, visit, absolute, sliding, add_residual, input, messages, cur, blocks, *count);
+             return;
+         }
+         attention_graph(d, core, aux, slot, absolute, 1, sliding, input, messages ? message : NULL, proj);
+@@ -689,7 +702,7 @@
+             }
+         }
+         if(pass>0)mix(bank,bank_count,bank_output,coefficients(d,d->aux[ip*30+17],4*model_width),4,messages[0]);
+-        layer(d,ip,slot,absolute,sliding,cur,blocks,&count,pass>0?messages:NULL);
++        layer(d,ip,slot,i,absolute,sliding,cur,blocks,&count,pass>0?messages:NULL);
+     }
+     fprintf(stderr,"Pure Goose visited 48 layers for token %d at position %d\n",input,absolute);
+     check_state("residual", absolute, cur, model_width);
