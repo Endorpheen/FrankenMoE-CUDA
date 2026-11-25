@@ -1,0 +1,147 @@
+{
+  "profile": "4097/16",
+  "context": 36864,
+  "ubatch": 1024,
+  "cache": "q4_0/q4_0",
+  "request_sha256": "3e19644b64428f8e5333c51082b695ee755695643191b313a52e790d1f61c280",
+  "arms": {
+    "a1": {
+      "prefill_ms": 15778.967,
+      "decode_ms": 973.259,
+      "prefill_toks_s": 259.6494434648352,
+      "decode_toks_s": 16.439611655273673,
+      "workspace_bytes": 1720400640
+    },
+    "b1": {
+      "prefill_ms": 15677.472,
+      "decode_ms": 974.134,
+      "prefill_toks_s": 261.33039816623494,
+      "decode_toks_s": 16.424845041852556,
+      "workspace_bytes": 1720400640
+    },
+    "b2": {
+      "prefill_ms": 15731.528,
+      "decode_ms": 973.684,
+      "prefill_toks_s": 260.43242589022503,
+      "decode_toks_s": 16.432435985391564,
+      "workspace_bytes": 1720400640
+    },
+    "a2": {
+      "prefill_ms": 15833.494,
+      "decode_ms": 1024.182,
+      "prefill_toks_s": 258.7552690517961,
+      "decode_toks_s": 15.622223393888977,
+      "workspace_bytes": 1720400640
+    }
+  },
+  "means": {
+    "prefill_toks_s": {
+      "control": 259.20235625831566,
+      "compact": 260.88141202823
+    },
+    "decode_toks_s": {
+      "control": 16.030917524581326,
+      "compact": 16.42864051362206
+    }
+  },
+  "all_native_output_bytes_equal": true,
+  "ids_match_prism": true,
+  "output": [
+    {
+      "step": 0,
+      "token": 11846,
+      "logit": 19.361496
+    },
+    {
+      "step": 1,
+      "token": 13,
+      "logit": 19.5620117
+    },
+    {
+      "step": 2,
+      "token": 58737,
+      "logit": 15.057806
+    },
+    {
+      "step": 3,
+      "token": 1092,
+      "logit": 18.5416832
+    },
+    {
+      "step": 4,
+      "token": 488,
+      "logit": 15.5356989
+    },
+    {
+      "step": 5,
+      "token": 1000,
+      "logit": 17.0775223
+    },
+    {
+      "step": 6,
+      "token": 3222,
+      "logit": 17.9598351
+    },
+    {
+      "step": 7,
+      "token": 6570,
+      "logit": 17.2562923
+    },
+    {
+      "step": 8,
+      "token": 11,
+      "logit": 19.0341969
+    },
+    {
+      "step": 9,
+      "token": 279,
+      "logit": 16.7745285
+    },
+    {
+      "step": 10,
+      "token": 4530,
+      "logit": 15.2448301
+    },
+    {
+      "step": 11,
+      "token": 310,
+      "logit": 17.8254013
+    },
+    {
+      "step": 12,
+      "token": 12904,
+      "logit": 13.9986973
+    },
+    {
+      "step": 13,
+      "token": 11,
+      "logit": 18.674881
+    },
+    {
+      "step": 14,
+      "token": 321,
+      "logit": 16.6596832
+    },
+    {
+      "step": 15,
+      "token": 799,
+      "logit": 17.4050751
+    }
+  ],
+  "prism_timing": {
+    "cache_n": 0,
+    "prompt_n": 4097,
+    "prompt_ms": 3241.717,
+    "prompt_per_token_ms": 0.7912416402245546,
+    "prompt_per_second": 1263.836417552797,
+    "predicted_n": 16,
+    "predicted_ms": 282.839,
+    "predicted_per_token_ms": 18.855933333333333,
+    "predicted_per_second": 53.03370468711882
+  },
+  "artifacts_sha256": {
+    "bonsai-flash-compact": "2ff338a6525637ec1156d3470b387f953717e845ce3bafbad0b38884f1dc9a74",
+    "flash-compact.cubin": "f339a67f8609c51b93738474e245340e8c66104b67ce17a057cd8b868fd090ac",
+    "frozen-goose.ptx": "42e1f5c0885a3bbab3656e3bba2dc6ef8b998a4581d365b6c1e48fc842f789d7"
+  }
+}
