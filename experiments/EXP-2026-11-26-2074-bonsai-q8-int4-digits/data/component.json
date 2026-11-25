@@ -1,0 +1,54 @@
+[
+  {
+    "tensor": "blk.48.ffn_gate.weight",
+    "width": 5120,
+    "rows": 17408,
+    "tokens": 1024,
+    "bit_exact": true,
+    "diagnostic_kernel_ns": {
+      "bonsai_pack_q8_128": 59745,
+      "bonsai_pq2_mmq_int8_full_n128": 2255452,
+      "bonsai_pack_q8_digit_planes": 45665,
+      "bonsai_pq2_mmq_q8_digits_n128": 2361438
+    }
+  },
+  {
+    "tensor": "blk.48.ffn_up.weight",
+    "width": 5120,
+    "rows": 17408,
+    "tokens": 1024,
+    "bit_exact": true,
+    "diagnostic_kernel_ns": {
+      "bonsai_pack_q8_128": 45441,
+      "bonsai_pq2_mmq_int8_full_n128": 2234044,
+      "bonsai_pack_q8_digit_planes": 45665,
+      "bonsai_pq2_mmq_q8_digits_n128": 2352573
+    }
+  },
+  {
+    "tensor": "blk.63.ffn_gate.weight",
+    "width": 5120,
+    "rows": 17408,
+    "tokens": 1024,
+    "bit_exact": true,
+    "diagnostic_kernel_ns": {
+      "bonsai_pack_q8_128": 42496,
+      "bonsai_pq2_mmq_int8_full_n128": 2792420,
+      "bonsai_pack_q8_digit_planes": 45857,
+      "bonsai_pq2_mmq_q8_digits_n128": 2358782
+    }
+  },
+  {
+    "tensor": "blk.63.ffn_up.weight",
+    "width": 5120,
+    "rows": 17408,
+    "tokens": 1024,
+    "bit_exact": true,
+    "diagnostic_kernel_ns": {
+      "bonsai_pack_q8_128": 39712,
+      "bonsai_pq2_mmq_int8_full_n128": 2239261,
+      "bonsai_pack_q8_digit_planes": 46113,
+      "bonsai_pq2_mmq_q8_digits_n128": 2365022
+    }
+  }
+]

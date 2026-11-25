@@ -934,6 +934,14 @@ release still needs the architecture regression gates.
   and text. VRAM remains 8,932 MiB after each request.
   [Source, diagnostics and reproduction](EXP-2026-11-26-2073-bonsai-q8-full-tiles/README.md).
 
+### EXP-2026-11-26-2074 — Exact Q8 dot products from INT4 digits
+
+- **Status:** Rejected below the component performance threshold.
+- **Evidence:** Bitwise results against EXP-2073 on four RTX 4070
+  full gate/up shapes. The candidate uses 126 vs 93 registers.
+  Both up projections are 5–6% slower with pack included.
+  [Source, diagnostics and reproduction](EXP-2026-11-26-2074-bonsai-q8-int4-digits/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
