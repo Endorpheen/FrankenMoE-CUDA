@@ -1,0 +1,69 @@
+--- a/grouped-moe.cl
++++ b/grouped-moe.cl
+@@ -127,0 +128,66 @@
++
++static __attribute__((always_inline)) void grouped_mmq_many(
++    __global const uchar *weight, __global const ushort *packed, __global uchar *output,
++    __global const ulong *jobs, __global const ulong *tiles,
++    ulong stride, int width, int rows, int kind, uint groups) {
++    uint x, tile, thread;
++    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(x));
++    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(tile));
++    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
++    const uint lane = thread & 31;
++    const uint row = 64 * x + 16 * (thread >> 5) + (lane >> 2);
++    const uint col = 2 * (lane & 3);
++    const ulong first = tiles[3 * (ulong)tile], count = tiles[3 * (ulong)tile + 1];
++    const __global uchar *w0 = weight + tiles[3 * (ulong)tile + 2] + row * stride;
++    const __global uchar *w1 = w0 + 8 * stride;
++    float4 accum[4];
++    #pragma unroll
++    for (uint g = 0; g < groups; ++g) accum[g] = (float4)(0);
++    for (int k = 0; k < width; k += 16) {
++        const uint2 a0 = row < (uint)rows ? iq4_pairs(w0, k, col, kind) : (uint2)(0);
++        const uint2 a1 = row + 8 < (uint)rows ? iq4_pairs(w1, k, col, kind) : (uint2)(0);
++        #pragma unroll
++        for (uint g = 0; g < groups; ++g) {
++            if (8 * g >= count) continue;
++            const uint index = 8 * g + (lane >> 2);
++            uint2 b = (uint2)(0);
++            if (index < count) {
++                const __global ushort *p = packed + (first + index) * width + k + col;
++                b.x = *(__global const uint *)p;
++                b.y = *(__global const uint *)(p + 8);
++            }
++            float4 acc = accum[g];
++            __asm__ volatile("mma.sync.aligned.m16n8k16.row.col.f32.f16.f16.f32 "
++                "{%0,%1,%2,%3}, {%4,%5,%6,%7}, {%8,%9}, {%0,%1,%2,%3};"
++                : "+f"(acc.x), "+f"(acc.y), "+f"(acc.z), "+f"(acc.w)
++                : "r"(a0.x), "r"(a1.x), "r"(a0.y), "r"(a1.y), "r"(b.x), "r"(b.y));
++            accum[g] = acc;
++        }
++    }
++    #pragma unroll
++    for (uint g = 0; g < groups; ++g) {
++        const uint column = col + 8 * g;
++        if (column < count) {
++            __global float *dst = (__global float *)(output + jobs[3 * (first + column) + 1]);
++            if (row < (uint)rows) dst[row] = accum[g].x;
++            if (row + 8 < (uint)rows) dst[row + 8] = accum[g].z;
++        }
++        if (column + 1 < count) {
++            __global float *dst = (__global float *)(output + jobs[3 * (first + column + 1) + 1]);
++            if (row < (uint)rows) dst[row] = accum[g].y;
++            if (row + 8 < (uint)rows) dst[row + 8] = accum[g].w;
++        }
++    }
++}
++
++#define MOE_MMQ_MANY(ENTRY, TYPE, GROUPS) \
++__kernel void ENTRY(__global const uchar *weight, __global const ushort *packed, \
++    __global uchar *output, __global const ulong *jobs, __global const ulong *tiles, \
++    ulong stride, int width, int rows) { \
++    grouped_mmq_many(weight, packed, output, jobs, tiles, stride, width, rows, TYPE, GROUPS); \
++}
++
++MOE_MMQ_MANY(goose_i2_xs_mmq24, 23, 3)
++MOE_MMQ_MANY(goose_i2_nl_mmq24, 20, 3)
++MOE_MMQ_MANY(goose_i2_xs_mmq32, 23, 4)
++MOE_MMQ_MANY(goose_i2_nl_mmq32, 20, 4)

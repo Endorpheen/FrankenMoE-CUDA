@@ -1,0 +1,21 @@
+--- a/grouped-moe-driver.h
++++ b/grouped-moe-driver.h
+@@ -5 +5,2 @@
+-    static Function pack, multiply[4];
++    static Function pack, multiply[6];
++    int count = (int)(jobs.len / 3);
+@@ -7 +8,2 @@
+-    const int entry = (kind == 23 ? 0 : 1) + (wide ? 2 : 0);
++    const bool tile32 = wide && count >= 4096 && fg_standalone_option_enabled("I2_MOE_TILE32");
++    const int entry = (kind == 23 ? 0 : 1) + (tile32 ? 4 : wide ? 2 : 0);
+@@ -9,2 +11 @@
+-        "goose_i2_xs_mmq16", "goose_i2_nl_mmq16"};
+-    int count = (int)(jobs.len / 3);
++        "goose_i2_xs_mmq16", "goose_i2_nl_mmq16", "goose_i2_xs_mmq32", "goose_i2_nl_mmq32"};
+@@ -20,3 +21,3 @@
+-            if (size == 8 && read + 1 < tile_count &&
+-                    tiles[3 * (read + 1)] == first + size &&
+-                    tiles[3 * (read + 1) + 2] == plane) {
++            const int64_t limit = tile32 ? 32 : 16;
++            while (size % 8 == 0 && size < limit && read + 1 < tile_count &&
++                   tiles[3 * (read + 1)] == first + size && tiles[3 * (read + 1) + 2] == plane) {
