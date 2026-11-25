@@ -818,6 +818,14 @@ release still needs the architecture regression gates.
   passes both arms; the saved CodeTrace has a five-cell loss.
   [Measured evidence and reproduction](EXP-2026-11-25-2059-bonsai-fp16-acc-long-control/README.md).
 
+### EXP-2026-11-25-2060 — Activation lookahead in cached Bonsai PQ2 MMQ
+
+- **Status:** Rejected below the component performance threshold.
+- **Evidence:** Bitwise results on four RTX 4070 shapes. On full FFN
+  down, pack plus matrix takes 3.83 ms with the cached control
+  versus 4.33 ms with the best lookahead candidate.
+  [Source, diagnostics and reproduction](EXP-2026-11-25-2060-bonsai-mmq-cached-pipeline/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.

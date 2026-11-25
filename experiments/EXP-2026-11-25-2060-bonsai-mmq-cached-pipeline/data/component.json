@@ -1,0 +1,54 @@
+[
+  {
+    "tensor": "blk.0.attn_qkv.weight",
+    "width": 5120,
+    "rows": 10239,
+    "tokens": 129,
+    "bit_exact": true,
+    "diagnostic_kernel_ns": {
+      "bonsai_pack_half": 7297,
+      "bonsai_pq2_cached_64x128_k64": 596041,
+      "bonsai_pq2_cached_pipeline_n64": 569385,
+      "bonsai_pq2_cached_pipeline_n128": 675595
+    }
+  },
+  {
+    "tensor": "blk.0.attn_qkv.weight",
+    "width": 5120,
+    "rows": 10240,
+    "tokens": 1024,
+    "bit_exact": true,
+    "diagnostic_kernel_ns": {
+      "bonsai_pack_half": 58849,
+      "bonsai_pq2_cached_64x128_k64": 2096352,
+      "bonsai_pq2_cached_pipeline_n64": 2801675,
+      "bonsai_pq2_cached_pipeline_n128": 2406629
+    }
+  },
+  {
+    "tensor": "blk.0.ffn_up.weight",
+    "width": 5120,
+    "rows": 17408,
+    "tokens": 1024,
+    "bit_exact": true,
+    "diagnostic_kernel_ns": {
+      "bonsai_pack_half": 33056,
+      "bonsai_pq2_cached_64x128_k64": 3568502,
+      "bonsai_pq2_cached_pipeline_n64": 4202561,
+      "bonsai_pq2_cached_pipeline_n128": 4130079
+    }
+  },
+  {
+    "tensor": "blk.0.ffn_down.weight",
+    "width": 17408,
+    "rows": 5120,
+    "tokens": 1024,
+    "bit_exact": true,
+    "diagnostic_kernel_ns": {
+      "bonsai_pack_half": 194468,
+      "bonsai_pq2_cached_64x128_k64": 3639095,
+      "bonsai_pq2_cached_pipeline_n64": 4332450,
+      "bonsai_pq2_cached_pipeline_n128": 4136864
+    }
+  }
+]
