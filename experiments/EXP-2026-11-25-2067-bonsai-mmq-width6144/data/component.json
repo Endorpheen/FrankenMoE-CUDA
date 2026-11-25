@@ -1,0 +1,32 @@
+{
+  "max_active_blocks_per_sm": {
+    "reference": 2,
+    "6144": 3
+  },
+  "cases": [
+    {
+      "tensor": "blk.0.ssm_out.weight",
+      "width": 6144,
+      "rows": 5120,
+      "tokens": 1024,
+      "bit_exact": true,
+      "diagnostic_kernel_ns": {
+        "bonsai_pack_half": 56640,
+        "bonsai_pq2_cached_fp16_acc_k32": 1046376,
+        "bonsai_pq2_half_full_6144": 955048
+      }
+    },
+    {
+      "tensor": "blk.3.attn_output.weight",
+      "width": 6144,
+      "rows": 5120,
+      "tokens": 1024,
+      "bit_exact": true,
+      "diagnostic_kernel_ns": {
+        "bonsai_pack_half": 56641,
+        "bonsai_pq2_cached_fp16_acc_k32": 1044776,
+        "bonsai_pq2_half_full_6144": 959879
+      }
+    }
+  ]
+}

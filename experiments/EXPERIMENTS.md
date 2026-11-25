@@ -876,6 +876,14 @@ release still needs the architecture regression gates.
   975.5 ms of GPU activity. No in-request CUDA allocation or graph.
   [Host/device attribution and reproduction](EXP-2026-11-25-2066-bonsai-full-pipeline-profile/README.md).
 
+### EXP-2026-11-25-2067 — Full width-6144 tiles on cumulative Bonsai MMQ
+
+- **Status:** Retained in the cumulative experimental checkpoint.
+- **Evidence:** Bitwise component results vs EXP-2065. One RTX 4070
+  32K/512 pair gives 837.67 → 849.18 tok/s prefill. Both match
+  all 512 PrismML IDs and text. VRAM is 8,932 MiB after each request.
+  [Source, diagnostics and reproduction](EXP-2026-11-25-2067-bonsai-mmq-width6144/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.

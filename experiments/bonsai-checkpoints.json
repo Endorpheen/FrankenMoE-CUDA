@@ -36,20 +36,21 @@
     }
   },
   "experimental": {
-    "id": "EXP-2065",
-    "parent": "EXP-2059",
+    "id": "EXP-2067",
+    "parent": "EXP-2065",
     "status": "experimental",
     "artifact_sha256": {
-      "frankenmoe-infer": "692b9359d93bad70555456bb4bc99cb488f1ec6709be1991cc03fb2e69567b60",
-      "pipeline.cubin": "f7820c3b0f2529af5f0a112844b838ca7307b139b4acf828a18c3b2e01394773"
+      "frankenmoe-infer": "8bceb3e4075ad58a4e7abfdfe086c2e795af662383be40079ee560e37cdd9e85",
+      "pipeline.cubin": "63580617e4db18afb8c8cac070fd1079afafe7bf15dbcb0e45945c17e5bc8da2"
     },
     "profile_overrides": {
       "BONSAI_MMQ_HALF_ACC": "1",
-      "BONSAI_MMQ_HALF_FULL": "1"
+      "BONSAI_MMQ_HALF_FULL": "1",
+      "BONSAI_MMQ_HALF_FULL6144": "1"
     },
-    "results": "experiments/EXP-2026-11-25-2065-bonsai-cumulative-full-tiles/data/results.json",
-    "prefill_tok_s": 845.3261083517972,
-    "decode_tok_s": 32.66917848607804,
+    "results": "experiments/EXP-2026-11-25-2067-bonsai-mmq-width6144/data/results.json",
+    "prefill_tok_s": 849.1833988965661,
+    "decode_tok_s": 32.71072570628192,
     "process_vram_after_mib": 8932,
     "quality": {
       "matched_prism_ids": 512,
@@ -64,7 +65,9 @@
       "extended_quality_gate": "pending",
       "inherited_model_quality_evidence": "EXP-2059",
       "specialized_matrix_component_bit_exact": true,
-      "specialization_fixed_history_logits_measured": false
+      "specialization_fixed_history_logits_measured": false,
+      "width6144_component_bit_exact": true,
+      "width6144_fixed_history_logits_measured": false
     }
   },
   "experimental_history": [
@@ -94,6 +97,38 @@
         "code_trace_divergence_max_abs_logit_delta": 0.31863832473754883,
         "incident_extraction_sampled_max_abs_logit_delta": 0.4467592239379883,
         "extended_quality_gate": "pending"
+      }
+    },
+    {
+      "id": "EXP-2065",
+      "parent": "EXP-2059",
+      "status": "experimental",
+      "artifact_sha256": {
+        "frankenmoe-infer": "692b9359d93bad70555456bb4bc99cb488f1ec6709be1991cc03fb2e69567b60",
+        "pipeline.cubin": "f7820c3b0f2529af5f0a112844b838ca7307b139b4acf828a18c3b2e01394773"
+      },
+      "profile_overrides": {
+        "BONSAI_MMQ_HALF_ACC": "1",
+        "BONSAI_MMQ_HALF_FULL": "1"
+      },
+      "results": "experiments/EXP-2026-11-25-2065-bonsai-cumulative-full-tiles/data/results.json",
+      "prefill_tok_s": 845.3261083517972,
+      "decode_tok_s": 32.66917848607804,
+      "process_vram_after_mib": 8932,
+      "quality": {
+        "matched_prism_ids": 512,
+        "incident_extraction_matched_ids": 47,
+        "incident_extraction_correct_in_both": true,
+        "code_trace_correct_cells_control": 18,
+        "code_trace_correct_cells_candidate": 13,
+        "code_trace_total_cells": 63,
+        "code_trace_first_divergent_output_token": 60,
+        "code_trace_divergence_max_abs_logit_delta": 0.31863832473754883,
+        "incident_extraction_sampled_max_abs_logit_delta": 0.4467592239379883,
+        "extended_quality_gate": "pending",
+        "inherited_model_quality_evidence": "EXP-2059",
+        "specialized_matrix_component_bit_exact": true,
+        "specialization_fixed_history_logits_measured": false
       }
     }
   ]
