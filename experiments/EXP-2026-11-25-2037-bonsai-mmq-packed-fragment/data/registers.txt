@@ -1,0 +1,29 @@
+ptxas info    : Compiling entry function 'bonsai_pq2_fragment_k128_m32' for 'sm_89'
+ptxas info    : Function properties for bonsai_pq2_fragment_k128_m32
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 56 registers, used 1 barriers, 35968 bytes smem, 388 bytes cmem[0]
+ptxas info    : Compiling entry function 'bonsai_pq2_fragment_k128_n64' for 'sm_89'
+ptxas info    : Function properties for bonsai_pq2_fragment_k128_n64
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 64 registers, used 1 barriers, 19712 bytes smem, 388 bytes cmem[0]
+ptxas info    : Compiling entry function 'bonsai_pq2_fragment_k128_loop' for 'sm_89'
+ptxas info    : Function properties for bonsai_pq2_fragment_k128_loop
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 79 registers, used 1 barriers, 37120 bytes smem, 388 bytes cmem[0]
+ptxas info    : Compiling entry function 'bonsai_pq2_fragment_k64_loop' for 'sm_89'
+ptxas info    : Function properties for bonsai_pq2_fragment_k64_loop
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 80 registers, used 1 barriers, 20736 bytes smem, 388 bytes cmem[0]
+ptxas info    : Compiling entry function 'bonsai_pq2_fragment_k128' for 'sm_89'
+ptxas info    : Function properties for bonsai_pq2_fragment_k128
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 128 registers, used 1 barriers, 37120 bytes smem, 388 bytes cmem[0], 8 bytes cmem[2]
+ptxas info    : Compiling entry function 'bonsai_pq2_fragment_k64' for 'sm_89'
+ptxas info    : Function properties for bonsai_pq2_fragment_k64
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 128 registers, used 1 barriers, 20736 bytes smem, 388 bytes cmem[0], 8 bytes cmem[2]
+--
+ptxas info    : Compiling entry function 'bonsai_pq2_cached_64x128_k64' for 'sm_89'
+ptxas info    : Function properties for bonsai_pq2_cached_64x128_k64
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 72 registers, used 1 barriers, 27648 bytes smem, 388 bytes cmem[0], 8 bytes cmem[2]

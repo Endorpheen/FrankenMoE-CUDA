@@ -547,6 +547,20 @@ release still needs the architecture regression gates.
   independent ordered state per query.
   [Source, measured evidence and reproduction](EXP-2026-11-25-2036-bonsai-mtp-verify-merge/README.md).
 
+### EXP-2026-11-25-2037 — Compressed shared PQ2 fragments
+
+- **Status:** REJECTED at the component gate. Keep EXP-2019.
+- **Mechanism:** Stage compact weight codes and expand FP16 A
+  fragments in registers, keeping the K64/K128 FP16 MMA order.
+- **Evidence:** RTX 4070, seven real GGUF fixtures, all 51,898,369
+  results bitwise exact. Six variants lose on every shape;
+  even the best FFN down variants take 6.84–13.43% longer.
+  Limiting unroll reduces the register count to 56–80 from 128
+  without recovering control time. No full model or memory claims.
+- **Reuse:** Keep the cached CTA-level expansion when several
+  warp groups consume the same weight fragments on these tiles.
+  [Source, measured evidence and reproduction](EXP-2026-11-25-2037-bonsai-mmq-packed-fragment/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
