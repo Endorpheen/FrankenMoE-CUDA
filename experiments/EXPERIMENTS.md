@@ -252,6 +252,15 @@ release still needs the architecture regression gates.
   within one scale group and a matching operand layout. No other
   architecture or card speedup is measured.
   [Details and reproduction](EXP-2026-11-25-2019-bonsai-mmq-pipeline/README.md).
+- **Apex qualification:** EXP-2020, source commit
+  `39b6e9f93fc0999caae4c8f28fbbe733e74ab61c`, compares this exact shared
+  binary with frozen EXP-1969 on Apex 32K/512, context 262144 and
+  6290 MiB SLRU. All IDs, text and cache properties match across six
+  paired arms. VRAM stays 8774 MiB and scored swap-out stays zero.
+  Aggregate rates `3436.47 → 3432.30 prefill` and
+  `80.644 → 80.475 decode tok/s` leave strict performance equivalence
+  inconclusive. The shared CUDA archive members are byte-identical.
+  [Evidence and reproduction](EXP-2026-11-25-2020-bonsai-apex-regression/README.md).
 
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
