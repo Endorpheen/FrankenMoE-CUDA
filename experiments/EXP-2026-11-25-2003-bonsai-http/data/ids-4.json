@@ -1,0 +1,26 @@
+{
+  "ids": [
+    1449
+  ],
+  "text": "else",
+  "count": 1,
+  "content": "else",
+  "tokens": [
+    1449
+  ],
+  "stop": true,
+  "stop_type": "limit",
+  "tokens_evaluated": 12,
+  "tokens_predicted": 1,
+  "timings": {
+    "cache_n": 0,
+    "prompt_n": 12,
+    "prompt_ms": 191.56035699415952,
+    "prompt_per_token_ms": 15.963363082846627,
+    "prompt_per_second": 62.64344141082316,
+    "predicted_n": 1,
+    "predicted_ms": 0.0,
+    "predicted_per_token_ms": 0.0,
+    "predicted_per_second": 0.0
+  }
+}

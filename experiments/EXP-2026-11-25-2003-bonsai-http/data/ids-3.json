@@ -1,0 +1,26 @@
+{
+  "ids": [
+    248068
+  ],
+  "text": "<think>",
+  "count": 1,
+  "content": "<think>",
+  "tokens": [
+    248068
+  ],
+  "stop": true,
+  "stop_type": "limit",
+  "tokens_evaluated": 13,
+  "tokens_predicted": 1,
+  "timings": {
+    "cache_n": 0,
+    "prompt_n": 13,
+    "prompt_ms": 194.26489100442268,
+    "prompt_per_token_ms": 14.94345315418636,
+    "prompt_per_second": 66.91893698745616,
+    "predicted_n": 1,
+    "predicted_ms": 0.0,
+    "predicted_per_token_ms": 0.0,
+    "predicted_per_second": 0.0
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "ids": [
+    17,
+    369,
+    264,
+    3050,
+    913,
+    314,
+    2972,
+    32
+  ],
+  "text": "2 is a specific type of **A",
+  "count": 8,
+  "content": "2 is a specific type of **A",
+  "tokens": [
+    17,
+    369,
+    264,
+    3050,
+    913,
+    314,
+    2972,
+    32
+  ],
+  "stop": true,
+  "stop_type": "limit",
+  "tokens_evaluated": 4,
+  "tokens_predicted": 8,
+  "timings": {
+    "cache_n": 0,
+    "prompt_n": 4,
+    "prompt_ms": 185.82425199565478,
+    "prompt_per_token_ms": 46.456062998913694,
+    "prompt_per_second": 21.5257155997783,
+    "predicted_n": 8,
+    "predicted_ms": 376.56019401038066,
+    "predicted_per_token_ms": 53.79431343005438,
+    "predicted_per_second": 18.58932545538
+  }
+}
