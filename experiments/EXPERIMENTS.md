@@ -579,6 +579,22 @@ release still needs the architecture regression gates.
   unchanged target verification and an acceptance gate.
   [Source, measured evidence and reproduction](EXP-2026-11-25-2038-bonsai-mtp-q8-head/README.md).
 
+### EXP-2026-11-25-2039 — Bonsai four-row verification
+
+- **Status:** REJECTED for throughput in the tested geometry.
+- **Mechanism:** Verify three proposals with exact four-row
+  PQ2 and Attention and a third intermediate GDN prefix.
+- **Evidence:** RTX 4070, Q4_0 K/V, 32K/512, context 36,864,
+  A–B–B–A. Decode 64.22 → 61.49 tok/s. Blocks 185 → 145,
+  target time per block 37.632 → 49.126 ms. Prefill
+  611.99 → 611.56 tok/s. All 512 IDs and selected logits,
+  plus the four forced-commit state checks, match. Additional
+  explicit GPU allocation 150.57 MiB. No process swap.
+- **Reuse:** Keep two proposals unless a new exact kernel or a
+  measured acceptance change can recover at least 2.44 ms per
+  four-row block at the current workload.
+  [Source, measured evidence and reproduction](EXP-2026-11-25-2039-bonsai-mtp-three-proposals/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
