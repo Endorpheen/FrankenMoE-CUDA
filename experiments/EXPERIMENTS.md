@@ -75,6 +75,40 @@ release still needs the architecture regression gates.
   contract and retune for shape and device. No measured cross-model gain.
   [Experiment and exact reproduction](EXP-2026-11-25-2013-bonsai-wide-norm/README.md).
 
+### EXP-2026-11-25-2014 — Selective Q8 for late Bonsai FFN gate/up
+
+- **Status:** ACCEPTED in the experimental Bonsai HTTP line for the
+  last 16 layers. All 64 layers and last 32 are REJECTED on quality.
+  Source commit `e15a59b3b9ba6d48c77e123194e08412c1b2c8f4`.
+  [Dispatch](EXP-2026-11-25-2014-bonsai-ffn-q8-prefill/source/compose.py),
+  [reused CUDA kernels](EXP-2026-11-25-1994-bonsai-pq2-int8/source/pq2-int8.cl),
+  [artifact SHA-256](EXP-2026-11-25-2014-bonsai-ffn-q8-prefill/data/SHA256SUMS).
+- **Mechanism:** Gate/up share one Q8 activation pack with an F32
+  scale per 128 values. The integer Tensor Core matmuls reuse
+  existing pack and attention scratch while FP16 remains active for
+  the other projections and layers. Cumulative DP4A decode is unchanged.
+- **Measured on 32K/512 in two opposite-order pairs:** prefill
+  `591.452 → 609.561 tok/s (+3.06%)`, saving 1.646 s. Decode
+  `30.458 → 30.741 tok/s` is an observation with identical decode
+  arithmetic. VRAM `8932 → 8932 MiB`, peak RSS
+  `7,456,372–7,457,376 → 7,457,252–7,457,656 KiB`, swap-out zero.
+  Historical EXP-2013 rates were not used as the control.
+  [Paired timing and memory](EXP-2026-11-25-2014-bonsai-ffn-q8-prefill/data/results.json).
+- **Correctness:** 512 IDs and text SHA-256 match PrismML in all four
+  long arms. Last 16 preserves four free-generation sequences,
+  independent task scores and 37/37 sampled same-history top-1.
+  Maximum absolute logit delta is 0.42170, minimum top-10 overlap
+  is 9/10. All layers and last 32 reduce code-trace scores from
+  18/63 to 13/63 and 17/63 respectively on the cumulative runtime.
+  [Quality evidence](EXP-2026-11-25-2014-bonsai-ffn-q8-prefill/README.md#cumulative-quality-gate).
+- **Limits and potential reuse:** Verified on RTX 4070 for Bonsai
+  PQ2_0 gate/up only, widths 5120 → 17408, batches of at least 128
+  and layers 48–63. Control switch: `BONSAI_FFN_Q8_PREFILL=0`.
+  Other resident PQ2_0 FFNs could reuse the shared activation pack
+  after their own whole-model numerical gate. Layer sensitivity,
+  other GPUs and benefits to Apex/Inkling remain unverified.
+  [Exact reproduction](EXP-2026-11-25-2014-bonsai-ffn-q8-prefill/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
