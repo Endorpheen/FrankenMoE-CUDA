@@ -109,6 +109,38 @@ release still needs the architecture regression gates.
   other GPUs and benefits to Apex/Inkling remain unverified.
   [Exact reproduction](EXP-2026-11-25-2014-bonsai-ffn-q8-prefill/README.md).
 
+### EXP-2026-11-25-2015 — Ordered look-ahead for Q4 decode
+
+- **Status:** EXPERIMENTAL, no promotion. Source commit
+  `d6188b73bdc7fca40b47f1e6f0c8c1d577f8fda5`.
+  [Kernel generator](EXP-2026-11-25-2015-bonsai-gqa-lookahead/source/emit.py),
+  [dispatch](EXP-2026-11-25-2015-bonsai-gqa-lookahead/source/compose.py),
+  [SHA-256 manifest](EXP-2026-11-25-2015-bonsai-gqa-lookahead/data/SHA256SUMS).
+- **Mechanism:** Prepare independent QK and optional V fragments for
+  neighboring Q4 cache rows, then apply the original ordered softmax
+  recurrence and merge. On the 32768-key component, the tile and
+  merge improve `0.526 → 0.454 ms`. With 16 disjoint cache pairs,
+  the corresponding result is `0.551 → 0.461 ms`.
+- **Full HTTP:** Two 4097/64 pairs improve average decode by 3.80%.
+  Two 32K/512 pairs disagree: decode `31.456 → 30.462` and
+  `32.143 → 32.795 tok/s`. Prefill `612.179 → 607.390` and
+  `636.212 → 624.386 tok/s`. Overall wall time is higher in
+  both long candidate arms. Peak VRAM is 8932 MiB in every arm.
+  Long peak RSS ranges from 7,456,828 to 7,457,772 KiB and
+  process and system swap-out stay zero.
+  [Paired evidence](EXP-2026-11-25-2015-bonsai-gqa-lookahead/data/results.json).
+- **Correctness:** All component partials and merged output bytes
+  match the frozen kernel on seven lengths. All 512 IDs and text
+  SHA-256 in each long arm match PrismML. No numeric discrepancy
+  was observed at the tested boundaries.
+- **Limits and potential reuse:** Verified only for RTX 4070,
+  Bonsai PQ2_0 with Q4_0 cache, 256-wide heads, 6:1 GQA and
+  one query. 64–96 registers per thread across variants, no spills.
+  The approach may be reusable for ordered softmax on other Q4
+  layouts after a whole-model profile. No cross-model or long-model
+  gain is established. Off by default.
+  [Full experiment and reproduction](EXP-2026-11-25-2015-bonsai-gqa-lookahead/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
