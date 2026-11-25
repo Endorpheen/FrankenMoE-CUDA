@@ -407,6 +407,25 @@ release still needs the architecture regression gates.
   and model-level benefit require their own measurement.
   [Metrics, hashes and reproduction](EXP-2026-11-25-2028-bonsai-mtp-q8-batch/README.md).
 
+### EXP-2026-11-25-2029 — Exact three-row Bonsai target
+
+- **Status:** EXPERIMENTAL, verified bitwise in three short fixtures.
+- **Mechanism:** Reuse the EXP-2028 PQ2 Q8 batched projections.
+  Use the single-row decode arithmetic and positional configs for
+  shape-sensitive FP32 projections, decay, convolution, GDN, RoPE
+  and Q4 attention. Preserve the layer's recurrent ownership.
+- **Evidence:** RTX 4070, context 1024, ubatch 128, Q4_0 K/V. For
+  32, 129 and 255-token prefixes, all 2,234,880 logits and all
+  128 state planes per fixture match. Forced rejection remains
+  exact after diagnostic rollback. At 129, target-only wall time
+  is 68.581 ms for three serial calls vs 27.879 ms for the batch.
+  The adapter adds 1,280 device bytes. No full-request speed, peak
+  VRAM/RAM or natural speculative acceptance measured.
+- **Reuse:** Pair exact weight-sharing projections with ordered
+  recurrent and positional operators. Model-specific geometry and
+  partial-commit behavior require separate checks.
+  [Source, timing and reproduction](EXP-2026-11-25-2029-bonsai-mtp-exact-verify/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
