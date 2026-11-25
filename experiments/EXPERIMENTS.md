@@ -958,6 +958,15 @@ release still needs the architecture regression gates.
   PrismML IDs and text. VRAM remains 8,932 MiB after each request.
   [Source, diagnostics and reproduction](EXP-2026-11-26-2076-bonsai-flash-fp8-pv/README.md).
 
+### EXP-2026-11-26-2077 — Full Bonsai pipeline profile after FP8 PV
+
+- **Status:** Diagnostic, no runtime change.
+- **Evidence:** EXP-2076, 32K/512, all IDs and text verified. Prefill
+  has 24.03 s matrix/pack, 5.98 s Attention and 81.2 ms traced GPU
+  gaps. Decode has 971.3 ms of gaps. No in-request CUDA allocation
+  or Graph launch is recorded.
+  [Host/device attribution and reproduction](EXP-2026-11-26-2077-bonsai-full-pipeline-after-fp8-pv/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
