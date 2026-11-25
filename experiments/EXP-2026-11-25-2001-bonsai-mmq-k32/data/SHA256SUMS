@@ -1,0 +1,3 @@
+eb9bc7b703b17d18887852fe8ea9661e2602bd3b7425ac0ffc796fdc60c2e264  build/bonsai-mmq-k32-2001-runtime/bonsai-mmq-k32
+5da8c0b3aba77deb42a99fd86406b59fa4099e443231094f9d011482b7bf7eb6  build/bonsai-mmq-k32-2001-runtime/mmq-k32.cubin
+42e1f5c0885a3bbab3656e3bba2dc6ef8b998a4581d365b6c1e48fc842f789d7  build/bonsai-mmq-k32-2001-runtime/frozen-goose.ptx
