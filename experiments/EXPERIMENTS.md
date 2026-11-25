@@ -676,6 +676,21 @@ release still needs the architecture regression gates.
   consumers when fusing the input transform.
   [Source, measured evidence and reproduction](EXP-2026-11-25-2044-bonsai-ffn-prefix/README.md).
 
+### EXP-2026-11-25-2045 — Exact multi-step Bonsai GDN
+
+- **Status:** Exact experimental component. No default change.
+- **Mechanism:** Carry the GDN column shard across verifier tokens
+  in registers and still write every exact selectable state.
+- **Evidence:** RTX 4070, 11,010,048 exact recurrent values.
+  Four-step random-state component 41.37 → 17.82 µs.
+  On Q4_0 32K/512, paired decode 70.67 → 71.12 tok/s,
+  combined 60.222 → 60.229 s. Both reproductions of the
+  candidate match all 512 IDs and selected logits. No added
+  allocations or process swap. Full-request gain unproven.
+- **Reuse:** Preserve per-token rounding and prefix ownership
+  when removing intermediate state reads in another verifier.
+  [Source, measured evidence and reproduction](EXP-2026-11-25-2045-bonsai-mtp-gdn-prefix-fusion/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
