@@ -759,6 +759,15 @@ release still needs the architecture regression gates.
   18/63 → 17/63 and same-history replay confirms the first divergence.
   [Source, diagnostics and reproduction](EXP-2026-11-25-2052-bonsai-mmq-q8-two-scales/README.md).
 
+### EXP-2026-11-25-2053 — Bonsai Q8 gate/up in layers 32–47
+
+- **Status:** Experimental, promotion open.
+- **Evidence:** RTX 4070, one 32K/512 pair, 744.98 → 764.08 tok/s
+  prefill. Both match all 512 PrismML IDs and the response text.
+  VRAM after the request stays at 8,932 MiB. Three independent
+  cases match, while code trace drops 18/63 → 17/63.
+  [Source, diagnostics and reproduction](EXP-2026-11-25-2053-bonsai-q8-middle-layers/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
