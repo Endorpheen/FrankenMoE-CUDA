@@ -1,0 +1,13 @@
+--- a/inkling-matrix-driver.h
++++ b/inkling-matrix-driver.h
+@@ -2,0 +3,2 @@
++static Module i2_matrix_module;
++
+@@ -14 +15,0 @@
+-    static Module module;
+@@ -21 +22 @@
+-    int error = module ? 0 : cuda.module_load(&module, matrix_cubin);
++    int error = i2_matrix_module ? 0 : cuda.module_load(&i2_matrix_module, matrix_cubin);
+@@ -23 +24 @@
+-        error = cuda.function_get(&kernels[index], module, names[index]);
++        error = cuda.function_get(&kernels[index], i2_matrix_module, names[index]);
