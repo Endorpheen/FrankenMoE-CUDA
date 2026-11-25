@@ -1,0 +1,38 @@
+--- a/inkling-backend.c
++++ b/inkling-backend.c
+@@ -180,0 +181 @@
++    bool cache_loop_rms;
+@@ -253,0 +255,8 @@
++static void mix_normalized_history(float *blocks, int count, float *normalized,
++                                    sl_f32 query, int queries, float *out) {
++    float probabilities[12];
++    assert(count >= 0 && count < 12);
++    assert(i2_depth_mix_cached(vec(blocks, count * model_width), vec(normalized, model_width),
++        query, vec(probabilities, count + 1), vec(out, queries * model_width)) == queries);
++}
++
+@@ -257,5 +266,3 @@
+-        float normalized[model_width], probabilities[12];
+-        assert(i2_rms_gain(vec(cur, model_width), vec(NULL, 0), 1e-6f,
+-                           vec(normalized, model_width)) == model_width);
+-        assert(i2_depth_mix_cached(vec(blocks, count * model_width), vec(normalized, model_width),
+-            query, vec(probabilities, count + 1), vec(out, queries * model_width)) == queries);
++        float normalized[model_width];
++        save_history_row(normalized, cur);
++        mix_normalized_history(blocks, count, normalized, query, queries, out);
+@@ -603 +610,2 @@
+-                memcpy(bank_output,cur,sizeof cur);
++                if (d->cache_loop_rms) save_history_row(bank_output, cur);
++                else memcpy(bank_output,cur,sizeof cur);
+@@ -608 +616,7 @@
+-        if(pass>0)mix(bank,bank_count,bank_output,coefficients(d,d->aux[ip*30+17],4*model_width),4,messages[0]);
++        if (pass > 0) {
++            const sl_f32 queries = coefficients(d, d->aux[ip*30+17], 4*model_width);
++            if (d->cache_loop_rms)
++                mix_normalized_history(bank, bank_count, bank_output, queries, 4, messages[0]);
++            else
++                mix(bank, bank_count, bank_output, queries, 4, messages[0]);
++        }
+@@ -728,0 +743,2 @@
++    const char *loop_rms = getenv("I2_CACHE_LOOP_RMS");
++    d->cache_loop_rms = use_cached_history() && (!loop_rms || strcmp(loop_rms, "0") != 0);

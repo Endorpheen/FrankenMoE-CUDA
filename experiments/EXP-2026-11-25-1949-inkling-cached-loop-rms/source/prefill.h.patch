@@ -1,0 +1,14 @@
+--- a/prefill.h
++++ b/prefill.h
+@@ -39 +39,2 @@
+-        memcpy(token->previous, token->current, sizeof token->previous);
++        if (d->cache_loop_rms) save_history_row(token->previous, token->current);
++        else memcpy(token->previous, token->current, sizeof token->previous);
+@@ -44,2 +45,5 @@
+-        mix(token->bank, token->bank_count, token->previous,
+-            coefficients(d, d->aux[layer * 30 + 17], 4 * model_width), 4, token->messages[0]);
++        const sl_f32 queries = coefficients(d, d->aux[layer * 30 + 17], 4 * model_width);
++        if (d->cache_loop_rms)
++            mix_normalized_history(token->bank, token->bank_count, token->previous, queries, 4, token->messages[0]);
++        else
++            mix(token->bank, token->bank_count, token->previous, queries, 4, token->messages[0]);
