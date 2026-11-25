@@ -784,6 +784,15 @@ release still needs the architecture regression gates.
   gain is 1.73% on QKV; no loader or runtime dispatch change.
   [Source, diagnostics and reproduction](EXP-2026-11-25-2055-bonsai-mmq-resident-planes/README.md).
 
+### EXP-2026-11-25-2056 — E4M3 QK in long Bonsai Flash prefill
+
+- **Status:** Experimental, promotion open.
+- **Evidence:** RTX 4070, one 32K/512 pair, 745.81 → 764.12 tok/s
+  prefill and 32.65 → 32.07 tok/s decode. All 512 PrismML IDs and
+  text match and VRAM is 8,932 MiB after each request. Component
+  output has about 2.28% relative L2 on the long fixture.
+  [Source, diagnostics and reproduction](EXP-2026-11-25-2056-bonsai-flash-fp8-qk/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.

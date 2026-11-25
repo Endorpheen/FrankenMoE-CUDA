@@ -1,0 +1,47 @@
+[
+  {
+    "keys": 257,
+    "queries": 31,
+    "values": 190464,
+    "relative_l2": 0.022886991500854492,
+    "p95_row_l2": 0.027769332751631737,
+    "max_abs": 0.006508920341730118,
+    "diagnostic_kernel_ns": {
+      "bonsai_flash_stage_kv": 6944,
+      "bonsai_flash_kv_fused_ordered": 29984,
+      "bonsai_flash_stage_k_fp8": 3808,
+      "bonsai_flash_stage_v_only": 6336,
+      "bonsai_flash_fp8_qk": 26080
+    }
+  },
+  {
+    "keys": 8192,
+    "queries": 1024,
+    "values": 6291456,
+    "relative_l2": 0.022938264533877373,
+    "p95_row_l2": 0.026205534115433693,
+    "max_abs": 0.0011510374024510384,
+    "diagnostic_kernel_ns": {
+      "bonsai_flash_stage_kv": 101025,
+      "bonsai_flash_kv_fused_ordered": 7145232,
+      "bonsai_flash_stage_k_fp8": 17472,
+      "bonsai_flash_stage_v_only": 68289,
+      "bonsai_flash_fp8_qk": 6646408
+    }
+  },
+  {
+    "keys": 32767,
+    "queries": 1023,
+    "values": 6285312,
+    "relative_l2": 0.022756405174732208,
+    "p95_row_l2": 0.026006892323493958,
+    "max_abs": 0.000505049480125308,
+    "diagnostic_kernel_ns": {
+      "bonsai_flash_stage_kv": 484360,
+      "bonsai_flash_kv_fused_ordered": 31391115,
+      "bonsai_flash_stage_k_fp8": 93762,
+      "bonsai_flash_stage_v_only": 294596,
+      "bonsai_flash_fp8_qk": 27073672
+    }
+  }
+]
