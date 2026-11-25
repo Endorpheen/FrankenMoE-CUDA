@@ -859,6 +859,14 @@ release still needs the architecture regression gates.
   while FFN up slows 3.028 → 3.395 ms.
   [Source, diagnostics and reproduction](EXP-2026-11-25-2064-bonsai-mmq-register-cap/README.md).
 
+### EXP-2026-11-25-2065 — Full tiles on cumulative Bonsai FP16 MMQ
+
+- **Status:** Retained in the cumulative experimental checkpoint.
+- **Evidence:** Bitwise component results vs EXP-2059. RTX 4070,
+  one 32K/512 pair, prefill 814.28 → 845.33 tok/s. All 512 PrismML
+  IDs and text match, with VRAM 8,932 MiB after each request.
+  [Source, diagnostics and reproduction](EXP-2026-11-25-2065-bonsai-cumulative-full-tiles/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
