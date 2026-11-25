@@ -715,6 +715,15 @@ release still needs the architecture regression gates.
   No additional four-row allocation. Total wall gain inconclusive.
   [Source, measured evidence and reproduction](EXP-2026-11-25-2047-bonsai-mtp-pq2-warp-rows/README.md).
 
+### EXP-2026-11-25-2048 — Full-tile Bonsai PQ2 MMQ specialization
+
+- **Status:** Rejected for promotion after a diagnostic pair.
+- **Evidence:** 33,554,432 FP32 values and all 512 response IDs match.
+  Prefill 646.38 → 649.84 tok/s in one pair; the 270 ms observation
+  does not establish a repeatable gain. Process VRAM after request is
+  8,932 MiB in both arms.
+  [Source, measured evidence and reproduction](EXP-2026-11-25-2048-bonsai-mmq-full-tile/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
