@@ -514,6 +514,23 @@ release still needs the architecture regression gates.
   the tie, mask and error contract match.
   [Source, measured evidence and reproduction](EXP-2026-11-25-2034-bonsai-mtp-device-argmax/README.md).
 
+### EXP-2026-11-25-2035 — Measured Bonsai MTP phase budget
+
+- **Status:** DIAGNOSTIC, no new optimization. EXP-2034,
+  RTX 4070, 32K/512, context 36,864, Q4_0 K/V.
+- **Evidence:** CUDA correlation links all 549,921 kernels.
+  Prefill wall 53.432 s, including 30.008 s projection activity
+  and 14.704 s Attention and 0.155 s uncovered GPU time.
+  Decode wall 9.570 s, including 3.661 s target Attention
+  and 3.543 s target projection activity. Device-choice decode
+  copies 11,100 B back to the host. All 512 IDs and selected
+  logits match EXP-2031, with 326/370 proposals accepted.
+- **Priorities:** Use absolute projection and Flash budgets for
+  prefill. For decode, target Attention merge and the shared
+  PQ2 projection dominate. The profile does not support host
+  dispatch as the primary wall-time limit.
+  [Trace data, attribution and reproduction](EXP-2026-11-25-2035-bonsai-mtp-phase-budget/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.

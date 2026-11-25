@@ -1,0 +1,2440 @@
+{
+  "prefill": {
+    "wall_ms": 53431.787521,
+    "gpu_active_union_ms": 53276.330293,
+    "gpu_kernel_union_ms": 53273.668118,
+    "gpu_copy_union_ms": 2.662175,
+    "gpu_gap_ms": 155.457228,
+    "stage_group_event_ms": {
+      "pass.draft_prefill": {
+        "pass.draft_prefill.other": 33.306073,
+        "draft.projections": 2696.531039,
+        "copy": 2.544001
+      },
+      "pass.target_prefill": {
+        "pass.target_prefill.other": 3100.774487,
+        "matrix.other": 9419.688824,
+        "gdn.decay": 656.178142,
+        "gdn.conv": 595.04289,
+        "gdn.recurrence": 1479.813916,
+        "matrix.ffn_gate": 6660.069777,
+        "matrix.ffn_up": 6610.89365,
+        "matrix.ffn_down": 7315.327592,
+        "attention.tiles_merge": 14704.471951,
+        "matrix.vocabulary": 1.569777,
+        "copy": 0.118174
+      }
+    },
+    "group_event_ms": {
+      "attention.tiles_merge": 14704.471951,
+      "matrix.other": 9419.688824,
+      "matrix.ffn_down": 7315.327592,
+      "matrix.ffn_gate": 6660.069777,
+      "matrix.ffn_up": 6610.89365,
+      "pass.target_prefill.other": 3100.774487,
+      "draft.projections": 2696.531039,
+      "gdn.recurrence": 1479.813916,
+      "gdn.decay": 656.178142,
+      "gdn.conv": 595.04289,
+      "pass.draft_prefill.other": 33.306073,
+      "copy": 2.662175,
+      "matrix.vocabulary": 1.569777
+    },
+    "kernel_event_ms": {
+      "bonsai_pq2_cached_64x128_k64": 27332.259987,
+      "bonsai_flash_kv_lean2": 11236.329239,
+      "bonsai_flash_compact_ordered_merge": 2729.197915,
+      "bonsai_mtp_q4_four": 2694.669737,
+      "bonsai_pq2_mmq_int8": 2400.511813,
+      "goose_gdn_mma_v32": 1479.327099,
+      "bonsai_ffn_tail": 862.706561,
+      "bonsai_decay_reuse8": 655.857885,
+      "bonsai_fwht1024": 603.601471,
+      "bonsai_conv_batch": 594.956745,
+      "bonsai_flash_tile_group2": 590.17567,
+      "bonsai_residual": 525.809029,
+      "bonsai_norm": 430.221705,
+      "bonsai_norm_wide_128_0": 313.572352,
+      "bonsai_pack_half": 219.893451,
+      "bonsai_flash_stage_kv": 139.16262,
+      "bonsai_split_q_gate": 107.529878,
+      "goose_rope_phases": 96.510611,
+      "bonsai_attention_gate": 84.70951,
+      "goose_rope_apply": 68.309013,
+      "bonsai_pq2_matvec_rows2": 42.252247,
+      "goose_set_q4_rows": 31.841673,
+      "bonsai_pack_q8_128": 12.196691,
+      "bonsai_norm_wide_512_1": 6.614426,
+      "bonsai_decode_gqa3": 6.162238,
+      "bonsai_embed_batch": 2.482877,
+      "Device-to-Device": 2.260598,
+      "goose_q4_attention_merge": 2.000311,
+      "bonsai_mtp_concat": 1.618899,
+      "bonsai_flash_compact_merge": 1.443958,
+      "goose_gdn_decode": 0.486817,
+      "bonsai_pq2_matvec_ordered": 0.435431,
+      "Host-to-Device": 0.361833,
+      "bonsai_decay_stage_256_0": 0.320257,
+      "bonsai_mtp_eh_q4": 0.21069,
+      "bonsai_conv_step": 0.086145,
+      "goose_rope_decode": 0.085312,
+      "bonsai_swiglu": 0.083518,
+      "Device-to-Host": 0.039744,
+      "bonsai_mtp_mat_q4": 0.031713,
+      "bonsai_pq2_row": 0.002624
+    },
+    "copy_payload_bytes": {
+      "Host-to-Device": 1373288,
+      "Device-to-Device": 671744000,
+      "Device-to-Host": 993280
+    },
+    "detail": [
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "matrix.ffn_down",
+        "kernel_or_copy": "bonsai_pq2_cached_64x128_k64",
+        "grid_x": 80,
+        "event_ms": 7301.493083,
+        "calls": 2048,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "matrix.ffn_up",
+        "kernel_or_copy": "bonsai_pq2_cached_64x128_k64",
+        "grid_x": 272,
+        "event_ms": 5402.170069,
+        "calls": 1536,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "matrix.ffn_gate",
+        "kernel_or_copy": "bonsai_pq2_cached_64x128_k64",
+        "grid_x": 272,
+        "event_ms": 5398.184681,
+        "calls": 1536,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_kv_lean2",
+        "grid_x": 4,
+        "event_ms": 3892.664457,
+        "calls": 18432,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "matrix.other",
+        "kernel_or_copy": "bonsai_pq2_cached_64x128_k64",
+        "grid_x": 160,
+        "event_ms": 3158.534253,
+        "calls": 1536,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "matrix.other",
+        "kernel_or_copy": "bonsai_pq2_cached_64x128_k64",
+        "grid_x": 80,
+        "event_ms": 2569.087359,
+        "calls": 2048,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_prefill",
+        "group": "draft.projections",
+        "kernel_or_copy": "bonsai_mtp_q4_four",
+        "grid_x": 1280,
+        "event_ms": 2269.419875,
+        "calls": 256,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_kv_lean2",
+        "grid_x": 5,
+        "event_ms": 2111.744271,
+        "calls": 9840,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "matrix.other",
+        "kernel_or_copy": "bonsai_pq2_cached_64x128_k64",
+        "grid_x": 96,
+        "event_ms": 1956.530159,
+        "calls": 1536,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "gdn.recurrence",
+        "kernel_or_copy": "goose_gdn_mma_v32",
+        "grid_x": 192,
+        "event_ms": 1479.327099,
+        "calls": 1536,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_kv_lean2",
+        "grid_x": 6,
+        "event_ms": 1337.671009,
+        "calls": 6144,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "matrix.other",
+        "kernel_or_copy": "bonsai_pq2_cached_64x128_k64",
+        "grid_x": 192,
+        "event_ms": 1285.641734,
+        "calls": 512,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "matrix.ffn_up",
+        "kernel_or_copy": "bonsai_pq2_mmq_int8",
+        "grid_x": 272,
+        "event_ms": 1201.088136,
+        "calls": 512,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "matrix.ffn_gate",
+        "kernel_or_copy": "bonsai_pq2_mmq_int8",
+        "grid_x": 272,
+        "event_ms": 1199.423677,
+        "calls": 512,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_kv_lean2",
+        "grid_x": 7,
+        "event_ms": 1122.725375,
+        "calls": 5232,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_compact_ordered_merge",
+        "grid_x": 128,
+        "event_ms": 1087.758604,
+        "calls": 18432,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "pass.target_prefill.other",
+        "kernel_or_copy": "bonsai_ffn_tail",
+        "grid_x": 17,
+        "event_ms": 862.706561,
+        "calls": 2048,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_kv_lean2",
+        "grid_x": 3,
+        "event_ms": 769.638586,
+        "calls": 4208,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "gdn.decay",
+        "kernel_or_copy": "bonsai_decay_reuse8",
+        "grid_x": 1536,
+        "event_ms": 655.857885,
+        "calls": 1536,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_kv_lean2",
+        "grid_x": 9,
+        "event_ms": 596.664988,
+        "calls": 2736,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "gdn.conv",
+        "kernel_or_copy": "bonsai_conv_batch",
+        "grid_x": 40,
+        "event_ms": 594.956745,
+        "calls": 1536,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_compact_ordered_merge",
+        "grid_x": 160,
+        "event_ms": 538.671879,
+        "calls": 9840,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "pass.target_prefill.other",
+        "kernel_or_copy": "bonsai_residual",
+        "grid_x": 20480,
+        "event_ms": 509.085868,
+        "calls": 3968,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_prefill",
+        "group": "draft.projections",
+        "kernel_or_copy": "bonsai_mtp_q4_four",
+        "grid_x": 256,
+        "event_ms": 425.249862,
+        "calls": 512,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "pass.target_prefill.other",
+        "kernel_or_copy": "bonsai_fwht1024",
+        "grid_x": 5,
+        "event_ms": 358.67652,
+        "calls": 4258,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_kv_lean2",
+        "grid_x": 8,
+        "event_ms": 332.335602,
+        "calls": 1552,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_compact_ordered_merge",
+        "grid_x": 192,
+        "event_ms": 304.65188,
+        "calls": 6160,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "pass.target_prefill.other",
+        "kernel_or_copy": "bonsai_norm_wide_128_0",
+        "grid_x": 1024,
+        "event_ms": 304.087775,
+        "calls": 3968,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "pass.target_prefill.other",
+        "kernel_or_copy": "bonsai_norm",
+        "grid_x": 49152,
+        "event_ms": 263.184163,
+        "calls": 1488,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "matrix.other",
+        "kernel_or_copy": "bonsai_pq2_cached_64x128_k64",
+        "grid_x": 16,
+        "event_ms": 260.618649,
+        "calls": 1024,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_kv_lean2",
+        "grid_x": 10,
+        "event_ms": 258.949605,
+        "calls": 1216,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "pass.target_prefill.other",
+        "kernel_or_copy": "bonsai_fwht1024",
+        "grid_x": 6,
+        "event_ms": 241.866423,
+        "calls": 2112,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_kv_lean2",
+        "grid_x": 11,
+        "event_ms": 236.416516,
+        "calls": 1104,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_compact_ordered_merge",
+        "grid_x": 224,
+        "event_ms": 227.340487,
+        "calls": 5232,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_kv_lean2",
+        "grid_x": 12,
+        "event_ms": 219.029116,
+        "calls": 1040,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_compact_ordered_merge",
+        "grid_x": 96,
+        "event_ms": 193.540193,
+        "calls": 4208,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_kv_lean2",
+        "grid_x": 14,
+        "event_ms": 189.72859,
+        "calls": 864,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_kv_lean2",
+        "grid_x": 15,
+        "event_ms": 168.761124,
+        "calls": 816,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_tile_group2",
+        "grid_x": 36,
+        "event_ms": 153.963204,
+        "calls": 688,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_tile_group2",
+        "grid_x": 42,
+        "event_ms": 125.361819,
+        "calls": 576,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "matrix.other",
+        "kernel_or_copy": "bonsai_pack_half",
+        "grid_x": 12288,
+        "event_ms": 118.238613,
+        "calls": 1984,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_tile_group2",
+        "grid_x": 50,
+        "event_ms": 109.365635,
+        "calls": 480,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "pass.target_prefill.other",
+        "kernel_or_copy": "bonsai_split_q_gate",
+        "grid_x": 24576,
+        "event_ms": 103.864139,
+        "calls": 496,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_compact_ordered_merge",
+        "grid_x": 288,
+        "event_ms": 101.156783,
+        "calls": 2736,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "pass.target_prefill.other",
+        "kernel_or_copy": "bonsai_attention_gate",
+        "grid_x": 24576,
+        "event_ms": 82.279758,
+        "calls": 496,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_tile_group2",
+        "grid_x": 63,
+        "event_ms": 82.182045,
+        "calls": 384,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "pass.target_prefill.other",
+        "kernel_or_copy": "bonsai_norm",
+        "grid_x": 32768,
+        "event_ms": 81.930635,
+        "calls": 1488,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "pass.target_prefill.other",
+        "kernel_or_copy": "goose_rope_phases",
+        "grid_x": 8,
+        "event_ms": 77.824908,
+        "calls": 1024,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "pass.target_prefill.other",
+        "kernel_or_copy": "bonsai_norm",
+        "grid_x": 24576,
+        "event_ms": 59.162855,
+        "calls": 496,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_tile_group2",
+        "grid_x": 84,
+        "event_ms": 58.967761,
+        "calls": 288,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_compact_ordered_merge",
+        "grid_x": 256,
+        "event_ms": 58.76329,
+        "calls": 1552,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "pass.target_prefill.other",
+        "kernel_or_copy": "goose_rope_apply",
+        "grid_x": 24576,
+        "event_ms": 56.288846,
+        "calls": 496,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "matrix.other",
+        "kernel_or_copy": "bonsai_pack_half",
+        "grid_x": 10240,
+        "event_ms": 54.081653,
+        "calls": 1984,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "matrix.ffn_gate",
+        "kernel_or_copy": "bonsai_pack_half",
+        "grid_x": 10240,
+        "event_ms": 40.978075,
+        "calls": 1488,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_compact_ordered_merge",
+        "grid_x": 320,
+        "event_ms": 38.974494,
+        "calls": 1216,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_tile_group2",
+        "grid_x": 127,
+        "event_ms": 37.347546,
+        "calls": 192,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_compact_ordered_merge",
+        "grid_x": 352,
+        "event_ms": 34.638829,
+        "calls": 1104,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "pass.target_prefill.other",
+        "kernel_or_copy": "goose_set_q4_rows",
+        "grid_x": 256,
+        "event_ms": 29.199081,
+        "calls": 1024,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_compact_ordered_merge",
+        "grid_x": 384,
+        "event_ms": 27.98783,
+        "calls": 1104,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_compact_ordered_merge",
+        "grid_x": 448,
+        "event_ms": 25.600337,
+        "calls": 864,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_compact_ordered_merge",
+        "grid_x": 480,
+        "event_ms": 21.663773,
+        "calls": 816,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_compact_ordered_merge",
+        "grid_x": 576,
+        "event_ms": 19.501426,
+        "calls": 688,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_prefill",
+        "group": "pass.draft_prefill.other",
+        "kernel_or_copy": "goose_rope_phases",
+        "grid_x": 1,
+        "event_ms": 18.685703,
+        "calls": 256,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "pass.target_prefill.other",
+        "kernel_or_copy": "bonsai_residual",
+        "grid_x": 20460,
+        "event_ms": 16.589521,
+        "calls": 128,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_compact_ordered_merge",
+        "grid_x": 672,
+        "event_ms": 16.346828,
+        "calls": 576,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "matrix.ffn_down",
+        "kernel_or_copy": "bonsai_pq2_matvec_rows2",
+        "grid_x": 640,
+        "event_ms": 13.834509,
+        "calls": 64,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_tile_group2",
+        "grid_x": 254,
+        "event_ms": 13.531568,
+        "calls": 96,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_compact_ordered_merge",
+        "grid_x": 800,
+        "event_ms": 13.048151,
+        "calls": 480,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "matrix.ffn_gate",
+        "kernel_or_copy": "bonsai_pack_q8_128",
+        "grid_x": 10240,
+        "event_ms": 11.857456,
+        "calls": 496,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "pass.target_prefill.other",
+        "kernel_or_copy": "bonsai_norm",
+        "grid_x": 4096,
+        "event_ms": 11.829096,
+        "calls": 496,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "pass.target_prefill.other",
+        "kernel_or_copy": "bonsai_norm_wide_128_0",
+        "grid_x": 1023,
+        "event_ms": 9.484577,
+        "calls": 128,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "pass.target_prefill.other",
+        "kernel_or_copy": "goose_rope_apply",
+        "grid_x": 4096,
+        "event_ms": 9.219759,
+        "calls": 496,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_stage_kv",
+        "grid_x": 1024,
+        "event_ms": 9.120926,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_compact_ordered_merge",
+        "grid_x": 1008,
+        "event_ms": 8.750946,
+        "calls": 384,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_tile_group2",
+        "grid_x": 24,
+        "event_ms": 8.536688,
+        "calls": 64,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_stage_kv",
+        "grid_x": 864,
+        "event_ms": 8.167959,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "pass.target_prefill.other",
+        "kernel_or_copy": "bonsai_norm",
+        "grid_x": 49104,
+        "event_ms": 8.142481,
+        "calls": 48,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "matrix.ffn_gate",
+        "kernel_or_copy": "bonsai_pq2_matvec_rows2",
+        "grid_x": 2176,
+        "event_ms": 8.030001,
+        "calls": 64,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_stage_kv",
+        "grid_x": 992,
+        "event_ms": 7.878355,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_stage_kv",
+        "grid_x": 896,
+        "event_ms": 7.842036,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "matrix.ffn_up",
+        "kernel_or_copy": "bonsai_pq2_matvec_rows2",
+        "grid_x": 2176,
+        "event_ms": 7.635445,
+        "calls": 64,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_stage_kv",
+        "grid_x": 960,
+        "event_ms": 7.597107,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_stage_kv",
+        "grid_x": 832,
+        "event_ms": 7.540403,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_stage_kv",
+        "grid_x": 928,
+        "event_ms": 7.412815,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_compact_ordered_merge",
+        "grid_x": 1344,
+        "event_ms": 6.917078,
+        "calls": 288,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_stage_kv",
+        "grid_x": 800,
+        "event_ms": 6.830639,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_stage_kv",
+        "grid_x": 768,
+        "event_ms": 6.507913,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_decode_gqa3",
+        "grid_x": 8,
+        "event_ms": 6.162238,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_stage_kv",
+        "grid_x": 736,
+        "event_ms": 6.14871,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_stage_kv",
+        "grid_x": 704,
+        "event_ms": 6.032387,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_prefill",
+        "group": "pass.draft_prefill.other",
+        "kernel_or_copy": "bonsai_norm_wide_512_1",
+        "grid_x": 128,
+        "event_ms": 5.915156,
+        "calls": 765,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_stage_kv",
+        "grid_x": 672,
+        "event_ms": 5.319066,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_stage_kv",
+        "grid_x": 640,
+        "event_ms": 4.977496,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_stage_kv",
+        "grid_x": 544,
+        "event_ms": 4.784571,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_stage_kv",
+        "grid_x": 608,
+        "event_ms": 4.778552,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_stage_kv",
+        "grid_x": 576,
+        "event_ms": 4.53775,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_stage_kv",
+        "grid_x": 512,
+        "event_ms": 4.253844,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_compact_ordered_merge",
+        "grid_x": 2032,
+        "event_ms": 3.885107,
+        "calls": 192,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_stage_kv",
+        "grid_x": 480,
+        "event_ms": 3.777359,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "matrix.other",
+        "kernel_or_copy": "bonsai_pq2_matvec_rows2",
+        "grid_x": 1280,
+        "event_ms": 3.764199,
+        "calls": 48,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "matrix.other",
+        "kernel_or_copy": "bonsai_pack_half",
+        "grid_x": 12276,
+        "event_ms": 3.649669,
+        "calls": 64,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "pass.target_prefill.other",
+        "kernel_or_copy": "bonsai_split_q_gate",
+        "grid_x": 24552,
+        "event_ms": 3.649096,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_stage_kv",
+        "grid_x": 448,
+        "event_ms": 3.508845,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "matrix.other",
+        "kernel_or_copy": "bonsai_pq2_matvec_rows2",
+        "grid_x": 640,
+        "event_ms": 3.486249,
+        "calls": 64,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_stage_kv",
+        "grid_x": 416,
+        "event_ms": 3.252168,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_stage_kv",
+        "grid_x": 384,
+        "event_ms": 2.974021,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_prefill",
+        "group": "pass.draft_prefill.other",
+        "kernel_or_copy": "bonsai_fwht1024",
+        "grid_x": 5,
+        "event_ms": 2.871485,
+        "calls": 257,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_stage_kv",
+        "grid_x": 320,
+        "event_ms": 2.766148,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_stage_kv",
+        "grid_x": 352,
+        "event_ms": 2.691013,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "matrix.other",
+        "kernel_or_copy": "bonsai_pq2_matvec_rows2",
+        "grid_x": 768,
+        "event_ms": 2.61564,
+        "calls": 48,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "pass.target_prefill.other",
+        "kernel_or_copy": "bonsai_norm",
+        "grid_x": 32736,
+        "event_ms": 2.547994,
+        "calls": 48,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_prefill",
+        "group": "pass.draft_prefill.other",
+        "kernel_or_copy": "goose_set_q4_rows",
+        "grid_x": 32,
+        "event_ms": 2.541986,
+        "calls": 512,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "pass.target_prefill.other",
+        "kernel_or_copy": "bonsai_attention_gate",
+        "grid_x": 24552,
+        "event_ms": 2.408057,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_prefill",
+        "group": "copy",
+        "kernel_or_copy": "Device-to-Device",
+        "grid_x": 0,
+        "event_ms": 2.260598,
+        "calls": 545,
+        "bytes": 671744000
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_stage_kv",
+        "grid_x": 288,
+        "event_ms": 2.22438,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "goose_q4_attention_merge",
+        "grid_x": 24,
+        "event_ms": 2.000311,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_stage_kv",
+        "grid_x": 256,
+        "event_ms": 1.921622,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_stage_kv",
+        "grid_x": 224,
+        "event_ms": 1.919417,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "pass.target_prefill.other",
+        "kernel_or_copy": "bonsai_norm",
+        "grid_x": 24552,
+        "event_ms": 1.750674,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "pass.target_prefill.other",
+        "kernel_or_copy": "goose_rope_apply",
+        "grid_x": 24552,
+        "event_ms": 1.710738,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "matrix.other",
+        "kernel_or_copy": "bonsai_pack_half",
+        "grid_x": 10230,
+        "event_ms": 1.688789,
+        "calls": 64,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_prefill",
+        "group": "draft.projections",
+        "kernel_or_copy": "bonsai_mtp_concat",
+        "grid_x": 2560,
+        "event_ms": 1.612883,
+        "calls": 255,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "matrix.vocabulary",
+        "kernel_or_copy": "bonsai_pq2_matvec_rows2",
+        "grid_x": 31040,
+        "event_ms": 1.569777,
+        "calls": 1,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_prefill",
+        "group": "pass.draft_prefill.other",
+        "kernel_or_copy": "bonsai_embed_batch",
+        "grid_x": 20,
+        "event_ms": 1.442703,
+        "calls": 256,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_compact_merge",
+        "grid_x": 4064,
+        "event_ms": 1.396373,
+        "calls": 96,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_stage_kv",
+        "grid_x": 192,
+        "event_ms": 1.327476,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "matrix.other",
+        "kernel_or_copy": "bonsai_pq2_matvec_rows2",
+        "grid_x": 1536,
+        "event_ms": 1.316427,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "matrix.ffn_gate",
+        "kernel_or_copy": "bonsai_pack_half",
+        "grid_x": 10230,
+        "event_ms": 1.256652,
+        "calls": 48,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_stage_kv",
+        "grid_x": 160,
+        "event_ms": 1.126095,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "pass.target_prefill.other",
+        "kernel_or_copy": "bonsai_embed_batch",
+        "grid_x": 20,
+        "event_ms": 1.040174,
+        "calls": 32,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_prefill",
+        "group": "pass.draft_prefill.other",
+        "kernel_or_copy": "bonsai_norm",
+        "grid_x": 512,
+        "event_ms": 0.99806,
+        "calls": 255,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_tile_group2",
+        "grid_x": 12,
+        "event_ms": 0.919404,
+        "calls": 32,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_stage_kv",
+        "grid_x": 128,
+        "event_ms": 0.811147,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_prefill",
+        "group": "pass.draft_prefill.other",
+        "kernel_or_copy": "goose_rope_apply",
+        "grid_x": 512,
+        "event_ms": 0.790242,
+        "calls": 255,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "pass.target_prefill.other",
+        "kernel_or_copy": "bonsai_norm_wide_512_1",
+        "grid_x": 1,
+        "event_ms": 0.659462,
+        "calls": 129,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_stage_kv",
+        "grid_x": 96,
+        "event_ms": 0.641704,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "gdn.recurrence",
+        "kernel_or_copy": "goose_gdn_decode",
+        "grid_x": 48,
+        "event_ms": 0.486817,
+        "calls": 48,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "matrix.other",
+        "kernel_or_copy": "bonsai_pq2_matvec_ordered",
+        "grid_x": 256,
+        "event_ms": 0.435431,
+        "calls": 32,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "pass.target_prefill.other",
+        "kernel_or_copy": "bonsai_norm",
+        "grid_x": 4092,
+        "event_ms": 0.369699,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_stage_kv",
+        "grid_x": 64,
+        "event_ms": 0.36007,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "matrix.ffn_gate",
+        "kernel_or_copy": "bonsai_pack_q8_128",
+        "grid_x": 10230,
+        "event_ms": 0.339235,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "gdn.decay",
+        "kernel_or_copy": "bonsai_decay_stage_256_0",
+        "grid_x": 48,
+        "event_ms": 0.320257,
+        "calls": 48,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "pass.target_prefill.other",
+        "kernel_or_copy": "goose_rope_apply",
+        "grid_x": 4092,
+        "event_ms": 0.296388,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_prefill",
+        "group": "copy",
+        "kernel_or_copy": "Host-to-Device",
+        "grid_x": 0,
+        "event_ms": 0.283403,
+        "calls": 770,
+        "bytes": 710828
+      },
+      {
+        "pass_name": "pass.draft_prefill",
+        "group": "draft.projections",
+        "kernel_or_copy": "bonsai_mtp_eh_q4",
+        "grid_x": 1280,
+        "event_ms": 0.21069,
+        "calls": 1,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "pass.target_prefill.other",
+        "kernel_or_copy": "bonsai_fwht1024",
+        "grid_x": 17,
+        "event_ms": 0.187043,
+        "calls": 64,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "pass.target_prefill.other",
+        "kernel_or_copy": "bonsai_residual",
+        "grid_x": 20,
+        "event_ms": 0.13364,
+        "calls": 128,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_stage_kv",
+        "grid_x": 32,
+        "event_ms": 0.130626,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "pass.target_prefill.other",
+        "kernel_or_copy": "bonsai_norm",
+        "grid_x": 48,
+        "event_ms": 0.12784,
+        "calls": 48,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "pass.target_prefill.other",
+        "kernel_or_copy": "goose_set_q4_rows",
+        "grid_x": 1,
+        "event_ms": 0.094686,
+        "calls": 32,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "gdn.conv",
+        "kernel_or_copy": "bonsai_conv_step",
+        "grid_x": 40,
+        "event_ms": 0.086145,
+        "calls": 48,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "pass.target_prefill.other",
+        "kernel_or_copy": "bonsai_swiglu",
+        "grid_x": 68,
+        "event_ms": 0.083518,
+        "calls": 64,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "copy",
+        "kernel_or_copy": "Host-to-Device",
+        "grid_x": 0,
+        "event_ms": 0.07843,
+        "calls": 104,
+        "bytes": 662460
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "pass.target_prefill.other",
+        "kernel_or_copy": "bonsai_norm",
+        "grid_x": 32,
+        "event_ms": 0.062336,
+        "calls": 48,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "pass.target_prefill.other",
+        "kernel_or_copy": "bonsai_norm",
+        "grid_x": 4,
+        "event_ms": 0.054497,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "pass.target_prefill.other",
+        "kernel_or_copy": "bonsai_norm",
+        "grid_x": 24,
+        "event_ms": 0.053118,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_flash_compact_merge",
+        "grid_x": 192,
+        "event_ms": 0.047585,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "pass.target_prefill.other",
+        "kernel_or_copy": "goose_rope_decode",
+        "grid_x": 24,
+        "event_ms": 0.043552,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "copy",
+        "kernel_or_copy": "Device-to-Host",
+        "grid_x": 0,
+        "event_ms": 0.039744,
+        "calls": 1,
+        "bytes": 993280
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "pass.target_prefill.other",
+        "kernel_or_copy": "goose_rope_decode",
+        "grid_x": 4,
+        "event_ms": 0.039295,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_prefill",
+        "group": "draft.projections",
+        "kernel_or_copy": "bonsai_mtp_mat_q4",
+        "grid_x": 256,
+        "event_ms": 0.031713,
+        "calls": 2,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_prefill",
+        "group": "pass.draft_prefill.other",
+        "kernel_or_copy": "bonsai_norm_wide_512_1",
+        "grid_x": 127,
+        "event_ms": 0.023616,
+        "calls": 3,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "pass.target_prefill.other",
+        "kernel_or_copy": "bonsai_attention_gate",
+        "grid_x": 24,
+        "event_ms": 0.021695,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "pass.target_prefill.other",
+        "kernel_or_copy": "bonsai_split_q_gate",
+        "grid_x": 24,
+        "event_ms": 0.016643,
+        "calls": 16,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_prefill",
+        "group": "pass.draft_prefill.other",
+        "kernel_or_copy": "bonsai_norm_wide_512_1",
+        "grid_x": 1,
+        "event_ms": 0.016192,
+        "calls": 3,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_prefill",
+        "group": "draft.projections",
+        "kernel_or_copy": "bonsai_mtp_concat",
+        "grid_x": 2540,
+        "event_ms": 0.006016,
+        "calls": 1,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_prefill",
+        "group": "pass.draft_prefill.other",
+        "kernel_or_copy": "goose_set_q4_rows",
+        "grid_x": 1,
+        "event_ms": 0.00592,
+        "calls": 2,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_prefill",
+        "group": "pass.draft_prefill.other",
+        "kernel_or_copy": "bonsai_norm",
+        "grid_x": 508,
+        "event_ms": 0.004896,
+        "calls": 1,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_prefill",
+        "group": "pass.draft_prefill.other",
+        "kernel_or_copy": "bonsai_norm",
+        "grid_x": 4,
+        "event_ms": 0.003361,
+        "calls": 1,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_prefill",
+        "group": "pass.draft_prefill.other",
+        "kernel_or_copy": "goose_rope_apply",
+        "grid_x": 508,
+        "event_ms": 0.00304,
+        "calls": 1,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_prefill",
+        "group": "pass.draft_prefill.other",
+        "kernel_or_copy": "goose_rope_decode",
+        "grid_x": 4,
+        "event_ms": 0.002465,
+        "calls": 1,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_prefill",
+        "group": "pass.target_prefill.other",
+        "kernel_or_copy": "bonsai_pq2_row",
+        "grid_x": 20,
+        "event_ms": 0.001376,
+        "calls": 1,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_prefill",
+        "group": "pass.draft_prefill.other",
+        "kernel_or_copy": "bonsai_pq2_row",
+        "grid_x": 20,
+        "event_ms": 0.001248,
+        "calls": 1,
+        "bytes": 0
+      }
+    ],
+    "nvtx_pass_host_wall_ms": {
+      "pass.draft_prefill": 13191.691483,
+      "pass.target_prefill": 40167.943198
+    },
+    "cuda_api_wall_ms": {
+      "cuMemcpyHtoD_v2": 13418.872832,
+      "cuLaunchKernel": 39832.882448,
+      "cuMemcpyDtoDAsync_v2": 26.370528,
+      "cuCtxSynchronize": 71.763342,
+      "cuMemcpyDtoH_v2": 42.289263
+    }
+  },
+  "decode": {
+    "wall_ms": 9570.434492,
+    "gpu_active_union_ms": 9237.243563,
+    "gpu_kernel_union_ms": 9235.601046,
+    "gpu_copy_union_ms": 1.642517,
+    "gpu_gap_ms": 333.190929,
+    "stage_group_event_ms": {
+      "pass.draft_decode": {
+        "pass.draft_decode.other": 20.548364,
+        "draft.projections": 361.380445,
+        "attention.tiles_merge": 187.910474,
+        "matrix.vocabulary": 607.321323,
+        "choice": 2.316996,
+        "copy": 0.805322
+      },
+      "pass.draft_repair": {
+        "pass.draft_repair.other": 9.881008,
+        "draft.projections": 66.80655,
+        "copy": 0.413493
+      },
+      "pass.target_verify": {
+        "pass.target_verify.other": 425.931046,
+        "matrix.other": 1080.665649,
+        "gdn.decay": 127.126417,
+        "gdn.conv": 19.686264,
+        "gdn.recurrence": 201.192369,
+        "matrix.ffn_gate": 753.814888,
+        "matrix.ffn_up": 848.249094,
+        "matrix.ffn_down": 682.638079,
+        "attention.tiles_merge": 3660.590155,
+        "matrix.vocabulary": 177.493968,
+        "choice": 2.047957,
+        "copy": 0.423702
+      }
+    },
+    "group_event_ms": {
+      "attention.tiles_merge": 3848.500629,
+      "matrix.other": 1080.665649,
+      "matrix.ffn_up": 848.249094,
+      "matrix.vocabulary": 784.815291,
+      "matrix.ffn_gate": 753.814888,
+      "matrix.ffn_down": 682.638079,
+      "draft.projections": 428.186995,
+      "pass.target_verify.other": 425.931046,
+      "gdn.recurrence": 201.192369,
+      "gdn.decay": 127.126417,
+      "pass.draft_decode.other": 20.548364,
+      "gdn.conv": 19.686264,
+      "pass.draft_repair.other": 9.881008,
+      "choice": 4.364953,
+      "copy": 1.642517
+    },
+    "kernel_event_ms": {
+      "bonsai_pq2_mvq_q8_three_2": 3133.897141,
+      "bonsai_verify_q4_gqa2": 2325.731157,
+      "goose_q4_attention_merge": 1381.517334,
+      "bonsai_pq2_matvec_rows2": 607.321323,
+      "bonsai_mtp_mat_q4": 309.347986,
+      "goose_gdn_decode": 201.192369,
+      "bonsai_pq2_matvec_ordered": 178.471008,
+      "bonsai_pq2_mvq_q8_three_1": 177.29742,
+      "bonsai_fwht1024": 141.493854,
+      "bonsai_decode_gqa3": 141.252138,
+      "bonsai_norm_wide_512_1": 134.405889,
+      "bonsai_decay_stage_256_0": 127.126417,
+      "bonsai_mtp_eh_q4": 118.839009,
+      "bonsai_norm": 59.300175,
+      "bonsai_mv_pack_q8": 53.196109,
+      "goose_rope_decode": 40.481714,
+      "bonsai_residual": 27.638149,
+      "goose_set_q4_rows": 26.089085,
+      "bonsai_conv_verify_prefix": 19.686264,
+      "bonsai_swiglu": 18.297827,
+      "bonsai_attention_gate": 4.194207,
+      "bonsai_choice_tiles": 3.536706,
+      "bonsai_split_q_gate": 3.45102,
+      "bonsai_choice_final": 0.828247,
+      "bonsai_pq2_row": 0.766124,
+      "Host-to-Device": 0.668528,
+      "Device-to-Host": 0.562664,
+      "Device-to-Device": 0.411325,
+      "bonsai_embed_batch": 0.242374
+    },
+    "copy_payload_bytes": {
+      "Host-to-Device": 284284,
+      "Device-to-Host": 11100,
+      "Device-to-Device": 7577600
+    },
+    "detail": [
+      {
+        "pass_name": "pass.target_verify",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_verify_q4_gqa2",
+        "grid_x": 12,
+        "event_ms": 2325.731157,
+        "calls": 2960,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_verify",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "goose_q4_attention_merge",
+        "grid_x": 24,
+        "event_ms": 1334.858998,
+        "calls": 8880,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_verify",
+        "group": "matrix.ffn_up",
+        "kernel_or_copy": "bonsai_pq2_mvq_q8_three_2",
+        "grid_x": 2176,
+        "event_ms": 848.249094,
+        "calls": 11840,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_verify",
+        "group": "matrix.ffn_gate",
+        "kernel_or_copy": "bonsai_pq2_mvq_q8_three_2",
+        "grid_x": 2176,
+        "event_ms": 741.279534,
+        "calls": 11840,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_verify",
+        "group": "matrix.ffn_down",
+        "kernel_or_copy": "bonsai_pq2_mvq_q8_three_2",
+        "grid_x": 640,
+        "event_ms": 667.589278,
+        "calls": 11840,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_decode",
+        "group": "matrix.vocabulary",
+        "kernel_or_copy": "bonsai_pq2_matvec_rows2",
+        "grid_x": 31040,
+        "event_ms": 607.321323,
+        "calls": 370,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_verify",
+        "group": "matrix.other",
+        "kernel_or_copy": "bonsai_pq2_mvq_q8_three_2",
+        "grid_x": 1280,
+        "event_ms": 311.65373,
+        "calls": 8880,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_verify",
+        "group": "matrix.other",
+        "kernel_or_copy": "bonsai_pq2_mvq_q8_three_2",
+        "grid_x": 640,
+        "event_ms": 244.312828,
+        "calls": 11840,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_verify",
+        "group": "gdn.recurrence",
+        "kernel_or_copy": "goose_gdn_decode",
+        "grid_x": 48,
+        "event_ms": 201.192369,
+        "calls": 26640,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_verify",
+        "group": "matrix.other",
+        "kernel_or_copy": "bonsai_pq2_mvq_q8_three_2",
+        "grid_x": 768,
+        "event_ms": 191.321316,
+        "calls": 8880,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_verify",
+        "group": "matrix.other",
+        "kernel_or_copy": "bonsai_pq2_matvec_ordered",
+        "grid_x": 256,
+        "event_ms": 178.471008,
+        "calls": 17760,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_verify",
+        "group": "matrix.vocabulary",
+        "kernel_or_copy": "bonsai_pq2_mvq_q8_three_1",
+        "grid_x": 62080,
+        "event_ms": 177.29742,
+        "calls": 185,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_decode",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "bonsai_decode_gqa3",
+        "grid_x": 8,
+        "event_ms": 141.252138,
+        "calls": 370,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_decode",
+        "group": "draft.projections",
+        "kernel_or_copy": "bonsai_mtp_mat_q4",
+        "grid_x": 4352,
+        "event_ms": 130.755199,
+        "calls": 740,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_verify",
+        "group": "matrix.other",
+        "kernel_or_copy": "bonsai_pq2_mvq_q8_three_2",
+        "grid_x": 1536,
+        "event_ms": 129.491361,
+        "calls": 2960,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_verify",
+        "group": "gdn.decay",
+        "kernel_or_copy": "bonsai_decay_stage_256_0",
+        "grid_x": 48,
+        "event_ms": 127.126417,
+        "calls": 26640,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_verify",
+        "group": "pass.target_verify.other",
+        "kernel_or_copy": "bonsai_norm_wide_512_1",
+        "grid_x": 3,
+        "event_ms": 120.833993,
+        "calls": 23865,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_decode",
+        "group": "draft.projections",
+        "kernel_or_copy": "bonsai_mtp_mat_q4",
+        "grid_x": 1280,
+        "event_ms": 110.003223,
+        "calls": 740,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_verify",
+        "group": "pass.target_verify.other",
+        "kernel_or_copy": "bonsai_fwht1024",
+        "grid_x": 5,
+        "event_ms": 67.011984,
+        "calls": 24050,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_decode",
+        "group": "draft.projections",
+        "kernel_or_copy": "bonsai_mtp_eh_q4",
+        "grid_x": 1280,
+        "event_ms": 62.669698,
+        "calls": 370,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_repair",
+        "group": "draft.projections",
+        "kernel_or_copy": "bonsai_mtp_eh_q4",
+        "grid_x": 1280,
+        "event_ms": 56.169311,
+        "calls": 326,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_decode",
+        "group": "attention.tiles_merge",
+        "kernel_or_copy": "goose_q4_attention_merge",
+        "grid_x": 24,
+        "event_ms": 46.658336,
+        "calls": 370,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_decode",
+        "group": "draft.projections",
+        "kernel_or_copy": "bonsai_mtp_mat_q4",
+        "grid_x": 3072,
+        "event_ms": 46.486967,
+        "calls": 370,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_verify",
+        "group": "pass.target_verify.other",
+        "kernel_or_copy": "bonsai_fwht1024",
+        "grid_x": 17,
+        "event_ms": 37.716634,
+        "calls": 11840,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_verify",
+        "group": "pass.target_verify.other",
+        "kernel_or_copy": "bonsai_fwht1024",
+        "grid_x": 6,
+        "event_ms": 33.356198,
+        "calls": 11840,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_verify",
+        "group": "pass.target_verify.other",
+        "kernel_or_copy": "bonsai_residual",
+        "grid_x": 60,
+        "event_ms": 26.722563,
+        "calls": 23680,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_verify",
+        "group": "pass.target_verify.other",
+        "kernel_or_copy": "bonsai_norm",
+        "grid_x": 144,
+        "event_ms": 24.295478,
+        "calls": 8880,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_verify",
+        "group": "pass.target_verify.other",
+        "kernel_or_copy": "goose_set_q4_rows",
+        "grid_x": 1,
+        "event_ms": 21.981972,
+        "calls": 5920,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_verify",
+        "group": "gdn.conv",
+        "kernel_or_copy": "bonsai_conv_verify_prefix",
+        "grid_x": 40,
+        "event_ms": 19.686264,
+        "calls": 8880,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_verify",
+        "group": "pass.target_verify.other",
+        "kernel_or_copy": "goose_rope_decode",
+        "grid_x": 24,
+        "event_ms": 19.54166,
+        "calls": 8880,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_verify",
+        "group": "pass.target_verify.other",
+        "kernel_or_copy": "goose_rope_decode",
+        "grid_x": 4,
+        "event_ms": 18.249215,
+        "calls": 8880,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_verify",
+        "group": "pass.target_verify.other",
+        "kernel_or_copy": "bonsai_swiglu",
+        "grid_x": 204,
+        "event_ms": 17.623639,
+        "calls": 11840,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_verify",
+        "group": "matrix.ffn_down",
+        "kernel_or_copy": "bonsai_mv_pack_q8",
+        "grid_x": 408,
+        "event_ms": 15.048801,
+        "calls": 11840,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_verify",
+        "group": "matrix.other",
+        "kernel_or_copy": "bonsai_mv_pack_q8",
+        "grid_x": 144,
+        "event_ms": 12.885542,
+        "calls": 11840,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_verify",
+        "group": "matrix.ffn_gate",
+        "kernel_or_copy": "bonsai_mv_pack_q8",
+        "grid_x": 120,
+        "event_ms": 12.535354,
+        "calls": 11840,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_verify",
+        "group": "matrix.other",
+        "kernel_or_copy": "bonsai_mv_pack_q8",
+        "grid_x": 120,
+        "event_ms": 12.529864,
+        "calls": 11840,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_verify",
+        "group": "pass.target_verify.other",
+        "kernel_or_copy": "bonsai_norm",
+        "grid_x": 96,
+        "event_ms": 11.846452,
+        "calls": 8880,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_decode",
+        "group": "draft.projections",
+        "kernel_or_copy": "bonsai_mtp_mat_q4",
+        "grid_x": 256,
+        "event_ms": 11.465358,
+        "calls": 740,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_repair",
+        "group": "draft.projections",
+        "kernel_or_copy": "bonsai_mtp_mat_q4",
+        "grid_x": 256,
+        "event_ms": 10.637239,
+        "calls": 652,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_verify",
+        "group": "pass.target_verify.other",
+        "kernel_or_copy": "bonsai_norm",
+        "grid_x": 72,
+        "event_ms": 10.009139,
+        "calls": 2960,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_verify",
+        "group": "pass.target_verify.other",
+        "kernel_or_copy": "bonsai_norm",
+        "grid_x": 12,
+        "event_ms": 9.711966,
+        "calls": 2960,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_decode",
+        "group": "pass.draft_decode.other",
+        "kernel_or_copy": "bonsai_norm_wide_512_1",
+        "grid_x": 1,
+        "event_ms": 8.905921,
+        "calls": 1850,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_repair",
+        "group": "pass.draft_repair.other",
+        "kernel_or_copy": "bonsai_norm_wide_512_1",
+        "grid_x": 1,
+        "event_ms": 4.665975,
+        "calls": 978,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_verify",
+        "group": "pass.target_verify.other",
+        "kernel_or_copy": "bonsai_attention_gate",
+        "grid_x": 72,
+        "event_ms": 3.69906,
+        "calls": 2960,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_verify",
+        "group": "pass.target_verify.other",
+        "kernel_or_copy": "bonsai_split_q_gate",
+        "grid_x": 72,
+        "event_ms": 3.088719,
+        "calls": 2960,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_decode",
+        "group": "pass.draft_decode.other",
+        "kernel_or_copy": "bonsai_fwht1024",
+        "grid_x": 5,
+        "event_ms": 2.298082,
+        "calls": 740,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_decode",
+        "group": "pass.draft_decode.other",
+        "kernel_or_copy": "goose_set_q4_rows",
+        "grid_x": 1,
+        "event_ms": 2.183318,
+        "calls": 740,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_repair",
+        "group": "pass.draft_repair.other",
+        "kernel_or_copy": "goose_set_q4_rows",
+        "grid_x": 1,
+        "event_ms": 1.923795,
+        "calls": 652,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_decode",
+        "group": "choice",
+        "kernel_or_copy": "bonsai_choice_tiles",
+        "grid_x": 243,
+        "event_ms": 1.770998,
+        "calls": 370,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_verify",
+        "group": "choice",
+        "kernel_or_copy": "bonsai_choice_tiles",
+        "grid_x": 243,
+        "event_ms": 1.765708,
+        "calls": 185,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_decode",
+        "group": "pass.draft_decode.other",
+        "kernel_or_copy": "bonsai_norm",
+        "grid_x": 4,
+        "event_ms": 1.255309,
+        "calls": 370,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_decode",
+        "group": "pass.draft_decode.other",
+        "kernel_or_copy": "bonsai_norm",
+        "grid_x": 24,
+        "event_ms": 1.189695,
+        "calls": 370,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_repair",
+        "group": "pass.draft_repair.other",
+        "kernel_or_copy": "bonsai_fwht1024",
+        "grid_x": 5,
+        "event_ms": 1.110956,
+        "calls": 326,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_decode",
+        "group": "pass.draft_decode.other",
+        "kernel_or_copy": "goose_rope_decode",
+        "grid_x": 24,
+        "event_ms": 1.01056,
+        "calls": 370,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_repair",
+        "group": "pass.draft_repair.other",
+        "kernel_or_copy": "bonsai_norm",
+        "grid_x": 4,
+        "event_ms": 0.992136,
+        "calls": 326,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_decode",
+        "group": "pass.draft_decode.other",
+        "kernel_or_copy": "bonsai_residual",
+        "grid_x": 20,
+        "event_ms": 0.915586,
+        "calls": 740,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_decode",
+        "group": "pass.draft_decode.other",
+        "kernel_or_copy": "goose_rope_decode",
+        "grid_x": 4,
+        "event_ms": 0.850859,
+        "calls": 370,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_repair",
+        "group": "pass.draft_repair.other",
+        "kernel_or_copy": "goose_rope_decode",
+        "grid_x": 4,
+        "event_ms": 0.82942,
+        "calls": 326,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_decode",
+        "group": "pass.draft_decode.other",
+        "kernel_or_copy": "bonsai_swiglu",
+        "grid_x": 68,
+        "event_ms": 0.674188,
+        "calls": 370,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_decode",
+        "group": "choice",
+        "kernel_or_copy": "bonsai_choice_final",
+        "grid_x": 1,
+        "event_ms": 0.545998,
+        "calls": 370,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_decode",
+        "group": "pass.draft_decode.other",
+        "kernel_or_copy": "bonsai_attention_gate",
+        "grid_x": 24,
+        "event_ms": 0.495147,
+        "calls": 370,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_decode",
+        "group": "pass.draft_decode.other",
+        "kernel_or_copy": "bonsai_pq2_row",
+        "grid_x": 20,
+        "event_ms": 0.407398,
+        "calls": 370,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_decode",
+        "group": "pass.draft_decode.other",
+        "kernel_or_copy": "bonsai_split_q_gate",
+        "grid_x": 24,
+        "event_ms": 0.362301,
+        "calls": 370,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_repair",
+        "group": "pass.draft_repair.other",
+        "kernel_or_copy": "bonsai_pq2_row",
+        "grid_x": 20,
+        "event_ms": 0.358726,
+        "calls": 326,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_decode",
+        "group": "copy",
+        "kernel_or_copy": "Device-to-Host",
+        "grid_x": 0,
+        "event_ms": 0.356392,
+        "calls": 370,
+        "bytes": 4440
+      },
+      {
+        "pass_name": "pass.target_verify",
+        "group": "choice",
+        "kernel_or_copy": "bonsai_choice_final",
+        "grid_x": 3,
+        "event_ms": 0.282249,
+        "calls": 185,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.draft_decode",
+        "group": "copy",
+        "kernel_or_copy": "Host-to-Device",
+        "grid_x": 0,
+        "event_ms": 0.243523,
+        "calls": 740,
+        "bytes": 71040
+      },
+      {
+        "pass_name": "pass.target_verify",
+        "group": "pass.target_verify.other",
+        "kernel_or_copy": "bonsai_embed_batch",
+        "grid_x": 20,
+        "event_ms": 0.242374,
+        "calls": 185,
+        "bytes": 0
+      },
+      {
+        "pass_name": "pass.target_verify",
+        "group": "copy",
+        "kernel_or_copy": "Host-to-Device",
+        "grid_x": 0,
+        "event_ms": 0.21743,
+        "calls": 742,
+        "bytes": 150652
+      },
+      {
+        "pass_name": "pass.draft_repair",
+        "group": "copy",
+        "kernel_or_copy": "Host-to-Device",
+        "grid_x": 0,
+        "event_ms": 0.207575,
+        "calls": 652,
+        "bytes": 62592
+      },
+      {
+        "pass_name": "pass.target_verify",
+        "group": "copy",
+        "kernel_or_copy": "Device-to-Host",
+        "grid_x": 0,
+        "event_ms": 0.206272,
+        "calls": 185,
+        "bytes": 6660
+      },
+      {
+        "pass_name": "pass.draft_repair",
+        "group": "copy",
+        "kernel_or_copy": "Device-to-Device",
+        "grid_x": 0,
+        "event_ms": 0.205918,
+        "calls": 185,
+        "bytes": 3788800
+      },
+      {
+        "pass_name": "pass.draft_decode",
+        "group": "copy",
+        "kernel_or_copy": "Device-to-Device",
+        "grid_x": 0,
+        "event_ms": 0.205407,
+        "calls": 185,
+        "bytes": 3788800
+      },
+      {
+        "pass_name": "pass.target_verify",
+        "group": "matrix.vocabulary",
+        "kernel_or_copy": "bonsai_mv_pack_q8",
+        "grid_x": 120,
+        "event_ms": 0.196548,
+        "calls": 185,
+        "bytes": 0
+      }
+    ],
+    "nvtx_pass_host_wall_ms": {
+      "pass.draft_decode": 1209.49256,
+      "pass.draft_repair": 107.190952,
+      "pass.target_verify": 8251.150679
+    },
+    "cuda_api_wall_ms": {
+      "cuMemcpyHtoD_v2": 91.187201,
+      "cuLaunchKernel": 3682.019788,
+      "cuMemcpyDtoH_v2": 5673.950494,
+      "cuMemcpyDtoDAsync_v2": 2.434617,
+      "cuCtxSynchronize": 31.061542
+    }
+  },
+  "traced_gpu_events": 554409,
+  "traced_gpu_kernels": 549921,
+  "all_kernels_linked_to_cuda_api": true,
+  "explicit_device_allocations_bytes": [
+    7481217024,
+    2036174848,
+    39824,
+    42508504
+  ]
+}
