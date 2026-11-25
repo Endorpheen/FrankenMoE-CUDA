@@ -977,6 +977,16 @@ release still needs the architecture regression gates.
   remains correct. Combined quality and decode repeatability are open.
   [Experiment and evidence](EXP-2026-11-26-2078-bonsai-cumulative-broad-q8/README.md).
 
+### EXP-2026-11-26-2079 — Full Bonsai profile after broad Q8
+
+- **Diagnostic.** EXP-2078, 32K/512, all 512 IDs and text verified.
+  Scored checkpoint 962.01 prefill / 32.50 decode tok/s.
+- **Evidence:** 22.226 s matrix/pack, 5.846 s attention, 2.765 s
+  GDN/decay/convolution and 77.97 ms of traced GPU gaps in prefill.
+  Breaks down the remaining FP16 projection geometries and records
+  a targeted component probe. No runtime change.
+  [Trace attribution and repro](EXP-2026-11-26-2079-bonsai-full-pipeline-after-broad-q8/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.

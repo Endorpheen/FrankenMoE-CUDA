@@ -1,0 +1,100 @@
+{
+  "query": "SELECT s.value, k.gridX, k.gridY, COUNT(*), SUM(k.end-k.start)\nFROM CUPTI_ACTIVITY_KIND_KERNEL k JOIN StringIds s ON s.id=k.shortName\nWHERE s.value IN ('bonsai_pq2_mmq_int8_full_n128', 'bonsai_pq2_half_full_5120',\n                  'bonsai_pq2_half_unpack_half2_17408')\nGROUP BY 1, 2, 3 ORDER BY 5 DESC",
+  "profiles": {
+    "2077": [
+      {
+        "kernel": "bonsai_pq2_half_full_5120",
+        "grid_x": 272,
+        "grid_y": 8,
+        "launches": 2976,
+        "kernel_ns": 8249536755
+      },
+      {
+        "kernel": "bonsai_pq2_half_unpack_half2_17408",
+        "grid_x": 80,
+        "grid_y": 8,
+        "launches": 1984,
+        "kernel_ns": 5459281313
+      },
+      {
+        "kernel": "bonsai_pq2_half_full_5120",
+        "grid_x": 160,
+        "grid_y": 8,
+        "launches": 1488,
+        "kernel_ns": 2404438383
+      },
+      {
+        "kernel": "bonsai_pq2_mmq_int8_full_n128",
+        "grid_x": 272,
+        "grid_y": 8,
+        "launches": 992,
+        "kernel_ns": 2251324578
+      },
+      {
+        "kernel": "bonsai_pq2_half_full_5120",
+        "grid_x": 96,
+        "grid_y": 8,
+        "launches": 1488,
+        "kernel_ns": 1481218419
+      },
+      {
+        "kernel": "bonsai_pq2_half_full_5120",
+        "grid_x": 192,
+        "grid_y": 8,
+        "launches": 496,
+        "kernel_ns": 971640622
+      },
+      {
+        "kernel": "bonsai_pq2_half_full_5120",
+        "grid_x": 16,
+        "grid_y": 8,
+        "launches": 992,
+        "kernel_ns": 187330132
+      }
+    ],
+    "2079": [
+      {
+        "kernel": "bonsai_pq2_mmq_int8_full_n128",
+        "grid_x": 272,
+        "grid_y": 8,
+        "launches": 3968,
+        "kernel_ns": 9015196227
+      },
+      {
+        "kernel": "bonsai_pq2_half_unpack_half2_17408",
+        "grid_x": 80,
+        "grid_y": 8,
+        "launches": 1984,
+        "kernel_ns": 5347371862
+      },
+      {
+        "kernel": "bonsai_pq2_half_full_5120",
+        "grid_x": 160,
+        "grid_y": 8,
+        "launches": 1488,
+        "kernel_ns": 2364490922
+      },
+      {
+        "kernel": "bonsai_pq2_half_full_5120",
+        "grid_x": 96,
+        "grid_y": 8,
+        "launches": 1488,
+        "kernel_ns": 1457500023
+      },
+      {
+        "kernel": "bonsai_pq2_half_full_5120",
+        "grid_x": 192,
+        "grid_y": 8,
+        "launches": 496,
+        "kernel_ns": 946962879
+      },
+      {
+        "kernel": "bonsai_pq2_half_full_5120",
+        "grid_x": 16,
+        "grid_y": 8,
+        "launches": 992,
+        "kernel_ns": 182994748
+      }
+    ]
+  }
+}
