@@ -998,6 +998,16 @@ release still needs the architecture regression gates.
   both fact extraction answers correct with all 47 IDs matching.
   [Experiment and reusable source](EXP-2026-11-26-2080-bonsai-gdn-projection-int8/README.md).
 
+### EXP-2026-11-26-2081 — Exact paired PQ2 loads for Bonsai Q8 gate/up
+
+- **Retained in the cumulative experimental checkpoint.** Reuse the
+  existing Q8 MMA and FP32 accumulation with aligned paired PQ2 code
+  loads and vector shared stores. Four bit-exact components save 5.90–7.48%.
+- **32K/512 mean:** 957.55 → 976.17 prefill and 32.62 → 32.65 decode
+  tok/s. Both pairs improve prefill and request time. All four responses
+  match PrismML on 512 IDs and text, VRAM 8932 MiB throughout.
+  [Experiment and reusable source](EXP-2026-11-26-2081-bonsai-q8-paired-weight-load/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.

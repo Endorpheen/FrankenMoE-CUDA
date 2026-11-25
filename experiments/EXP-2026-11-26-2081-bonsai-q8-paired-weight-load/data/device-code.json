@@ -1,0 +1,6 @@
+{
+  "retained_sections_bit_exact": 91,
+  "added": [
+    ".text.bonsai_pq2_mmq_int8_full_n128_pairload"
+  ]
+}
