@@ -900,6 +900,15 @@ release still needs the architecture regression gates.
   calculated resident warps remain at 24 per SM.
   [Source, diagnostics and reproduction](EXP-2026-11-25-2069-bonsai-cumulative-n192/README.md).
 
+### EXP-2026-11-25-2070 — FP8 QK and cumulative Bonsai MMQ
+
+- **Status:** Retained in the cumulative experimental checkpoint.
+- **Evidence:** 84 retained CUDA code sections are byte-identical.
+  RTX 4070, one 32K/512 pair, 846.26 → 867.99 tok/s prefill.
+  Both match all 512 PrismML IDs and text. VRAM is 8,932 MiB
+  after each request. Expanded combined quality remains open.
+  [Source, diagnostics and reproduction](EXP-2026-11-25-2070-bonsai-cumulative-fp8-qk/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
