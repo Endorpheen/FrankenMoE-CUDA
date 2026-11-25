@@ -834,6 +834,14 @@ release still needs the architecture regression gates.
   sample without a repeatable gain established.
   [Source, diagnostics and reproduction](EXP-2026-11-25-2061-bonsai-mmq-warp-row-reuse/README.md).
 
+### EXP-2026-11-25-2062 — Profile the cumulative Bonsai prefill checkpoint
+
+- **Status:** Diagnostic, no runtime change.
+- **Evidence:** Matched 32K/16 traces. Main matrices and pack:
+  stable 29.93 s, cumulative 26.04 s, PrismML 16.33 s. Flash:
+  8.02 s, 8.31 s, 4.06 s respectively. All 16 returned IDs match.
+  [Attribution and reproduction](EXP-2026-11-25-2062-bonsai-cumulative-prefill-profile/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.

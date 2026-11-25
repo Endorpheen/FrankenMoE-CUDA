@@ -1,0 +1,475 @@
+{
+  "token_ids": [
+    279,
+    4530,
+    310,
+    12904,
+    11,
+    321,
+    799,
+    21254,
+    421,
+    1000,
+    8381,
+    678,
+    15673,
+    13,
+    198,
+    1812
+  ],
+  "traces": {
+    "prism": {
+      "trace_sqlite_sha256": "85aef1ca93a10d21dab150ad65161d28cbc0c08da2cff78ca51efa4ade52600f",
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 32768,
+        "prompt_ms": 28437.252,
+        "prompt_per_token_ms": 0.8678360595703125,
+        "prompt_per_second": 1152.2913676750481,
+        "predicted_n": 16,
+        "predicted_ms": 309.488,
+        "predicted_per_token_ms": 20.632533333333335,
+        "predicted_per_second": 48.467145737476095
+      },
+      "gpu_prefill_span_ns": 28405450161,
+      "prefill": {
+        "k_get_rows": {
+          "ns": 1706844,
+          "calls": 33
+        },
+        "fwht_cuda_block": {
+          "ns": 866066092,
+          "calls": 5601
+        },
+        "k_bin_bcast": {
+          "ns": 1944575,
+          "calls": 33
+        },
+        "add_rms_norm_fwht_f32": {
+          "ns": 416849457,
+          "calls": 2642
+        },
+        "scale_f32": {
+          "ns": 784747,
+          "calls": 96
+        },
+        "k_get_rows_float": {
+          "ns": 4967030,
+          "calls": 1538
+        },
+        "quantize_mmq_q8_1": {
+          "ns": 865259064,
+          "calls": 12704
+        },
+        "mul_mat_q": {
+          "ns": 15462909731,
+          "calls": 12704
+        },
+        "concat_dim0_transpose_u32": {
+          "ns": 296263797,
+          "calls": 1536
+        },
+        "cpy_scalar": {
+          "ns": 306615034,
+          "calls": 3648
+        },
+        "ssm_conv_long_token_f32": {
+          "ns": 421168228,
+          "calls": 1536
+        },
+        "l2_norm_f32": {
+          "ns": 80808137,
+          "calls": 1536
+        },
+        "Kernel2": {
+          "ns": 162307916,
+          "calls": 3072
+        },
+        "splitKreduce_kernel": {
+          "ns": 5732113,
+          "calls": 3072
+        },
+        "gated_delta_net_cuda": {
+          "ns": 3340684595,
+          "calls": 1584
+        },
+        "rms_norm_f32": {
+          "ns": 193694040,
+          "calls": 2640
+        },
+        "unary_gated_op_kernel": {
+          "ns": 1256266882,
+          "calls": 4191
+        },
+        "add_rms_norm_f32": {
+          "ns": 224343113,
+          "calls": 1551
+        },
+        "rope_multi": {
+          "ns": 30672159,
+          "calls": 1056
+        },
+        "fwht_cuda": {
+          "ns": 83617906,
+          "calls": 2112
+        },
+        "mul_mat_q_stream_k_fixup": {
+          "ns": 7201404,
+          "calls": 1024
+        },
+        "k_set_rows_quant": {
+          "ns": 18809108,
+          "calls": 1056
+        },
+        "flash_attn_mask_to_KV_max": {
+          "ns": 2451779,
+          "calls": 496
+        },
+        "flash_attn_ext_f16": {
+          "ns": 4064582077,
+          "calls": 528
+        },
+        "flash_attn_stream_k_fixup_general": {
+          "ns": 14457421,
+          "calls": 512
+        },
+        "mul_mat_vec_pq2_0_mc": {
+          "ns": 15435253,
+          "calls": 397
+        },
+        "ssm_conv_gdn_fused_f32": {
+          "ns": 130275,
+          "calls": 48
+        },
+        "mul_mat_vec_f": {
+          "ns": 320803,
+          "calls": 48
+        },
+        "fwht_quantize_q8_1": {
+          "ns": 351666,
+          "calls": 175
+        },
+        "flash_attn_stream_k_fixup_uniform": {
+          "ns": 57026,
+          "calls": 16
+        },
+        "mul_mat_vec_q": {
+          "ns": 894318,
+          "calls": 3
+        }
+      },
+      "matrix_and_pack_ns": 16328168795,
+      "flash_ns": 4064582077
+    },
+    "stable": {
+      "trace_sqlite_sha256": "264e31538181b64689e59d934da45a2f43464d6a4eb6e8804390582d06caef27",
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 32768,
+        "prompt_ms": 43882.16790097067,
+        "prompt_per_token_ms": 1.3391774872122397,
+        "prompt_per_second": 746.7270093389159,
+        "predicted_n": 16,
+        "predicted_ms": 457.94761599972844,
+        "predicted_per_token_ms": 30.52984106664856,
+        "predicted_per_second": 32.754838055558075
+      },
+      "gpu_prefill_span_ns": 43880132421,
+      "prefill": {
+        "bonsai_embed_batch": {
+          "ns": 1122707,
+          "calls": 32
+        },
+        "bonsai_fwht1024": {
+          "ns": 600524444,
+          "calls": 6434
+        },
+        "bonsai_norm_wide_128_0": {
+          "ns": 306653822,
+          "calls": 4096
+        },
+        "bonsai_pack_half": {
+          "ns": 222094108,
+          "calls": 5632
+        },
+        "bonsai_pq2_cached_64x128_k64": {
+          "ns": 27289767383,
+          "calls": 11776
+        },
+        "bonsai_decay_reuse8": {
+          "ns": 657547074,
+          "calls": 1536
+        },
+        "bonsai_conv_batch": {
+          "ns": 593612409,
+          "calls": 1536
+        },
+        "bonsai_norm": {
+          "ns": 428563202,
+          "calls": 4224
+        },
+        "goose_gdn_mma_v32": {
+          "ns": 1474458119,
+          "calls": 1536
+        },
+        "bonsai_residual": {
+          "ns": 525404767,
+          "calls": 4224
+        },
+        "bonsai_ffn_tail": {
+          "ns": 869243548,
+          "calls": 2048
+        },
+        "bonsai_split_q_gate": {
+          "ns": 112209858,
+          "calls": 528
+        },
+        "goose_rope_phases": {
+          "ns": 80350555,
+          "calls": 1024
+        },
+        "goose_rope_apply": {
+          "ns": 67338721,
+          "calls": 1024
+        },
+        "goose_set_q4_rows": {
+          "ns": 28319875,
+          "calls": 1056
+        },
+        "bonsai_flash_stage_kv": {
+          "ns": 141082181,
+          "calls": 512
+        },
+        "bonsai_flash_tile_group2": {
+          "ns": 576681438,
+          "calls": 2800
+        },
+        "bonsai_flash_compact_merge": {
+          "ns": 1420559,
+          "calls": 112
+        },
+        "bonsai_attention_gate": {
+          "ns": 79462717,
+          "calls": 528
+        },
+        "bonsai_pack_q8_128": {
+          "ns": 11558138,
+          "calls": 512
+        },
+        "bonsai_pq2_mmq_int8": {
+          "ns": 2407498405,
+          "calls": 1024
+        },
+        "bonsai_flash_compact_ordered_merge": {
+          "ns": 69434622,
+          "calls": 2688
+        },
+        "bonsai_flash_kv_fused_ordered": {
+          "ns": 7233971364,
+          "calls": 400
+        },
+        "bonsai_pq2_row": {
+          "ns": 1408,
+          "calls": 1
+        },
+        "bonsai_norm_wide_512_1": {
+          "ns": 667045,
+          "calls": 129
+        },
+        "bonsai_pq2_matvec_rows2": {
+          "ns": 42611311,
+          "calls": 369
+        },
+        "bonsai_decay_stage_256_0": {
+          "ns": 315621,
+          "calls": 48
+        },
+        "bonsai_conv_step": {
+          "ns": 86721,
+          "calls": 48
+        },
+        "goose_gdn_decode": {
+          "ns": 486758,
+          "calls": 48
+        },
+        "bonsai_swiglu": {
+          "ns": 85604,
+          "calls": 64
+        },
+        "bonsai_pq2_matvec_ordered": {
+          "ns": 437124,
+          "calls": 32
+        },
+        "goose_rope_decode": {
+          "ns": 82881,
+          "calls": 32
+        },
+        "bonsai_decode_gqa3": {
+          "ns": 6133680,
+          "calls": 16
+        },
+        "goose_q4_attention_merge": {
+          "ns": 2029787,
+          "calls": 16
+        }
+      },
+      "matrix_and_pack_ns": 29930918034,
+      "flash_ns": 8022590164
+    },
+    "experimental": {
+      "trace_sqlite_sha256": "8f36a65224acf6d5f875f6f2ccd0bdef8ed3e2fff06001914c35356ed3deaa5a",
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 32768,
+        "prompt_ms": 40356.126971018966,
+        "prompt_per_token_ms": 1.231571257660491,
+        "prompt_per_second": 811.9708817333178,
+        "predicted_n": 16,
+        "predicted_ms": 458.3963539917022,
+        "predicted_per_token_ms": 30.559756932780147,
+        "predicted_per_second": 32.72277335842756
+      },
+      "gpu_prefill_span_ns": 40354361932,
+      "prefill": {
+        "bonsai_embed_batch": {
+          "ns": 1118452,
+          "calls": 32
+        },
+        "bonsai_fwht1024": {
+          "ns": 619000085,
+          "calls": 6434
+        },
+        "bonsai_norm_wide_128_0": {
+          "ns": 311202549,
+          "calls": 4096
+        },
+        "bonsai_pack_half": {
+          "ns": 226434068,
+          "calls": 5632
+        },
+        "bonsai_pq2_cached_fp16_acc_k32": {
+          "ns": 23328715871,
+          "calls": 11776
+        },
+        "bonsai_decay_reuse8": {
+          "ns": 672257817,
+          "calls": 1536
+        },
+        "bonsai_conv_batch": {
+          "ns": 606280614,
+          "calls": 1536
+        },
+        "bonsai_norm": {
+          "ns": 434508504,
+          "calls": 4224
+        },
+        "goose_gdn_mma_v32": {
+          "ns": 1500421654,
+          "calls": 1536
+        },
+        "bonsai_residual": {
+          "ns": 519170987,
+          "calls": 4224
+        },
+        "bonsai_ffn_tail": {
+          "ns": 863950109,
+          "calls": 2048
+        },
+        "bonsai_split_q_gate": {
+          "ns": 108384505,
+          "calls": 528
+        },
+        "goose_rope_phases": {
+          "ns": 81783064,
+          "calls": 1024
+        },
+        "goose_rope_apply": {
+          "ns": 68827757,
+          "calls": 1024
+        },
+        "goose_set_q4_rows": {
+          "ns": 29636546,
+          "calls": 1056
+        },
+        "bonsai_flash_stage_kv": {
+          "ns": 143186475,
+          "calls": 512
+        },
+        "bonsai_flash_tile_group2": {
+          "ns": 600153436,
+          "calls": 2800
+        },
+        "bonsai_flash_compact_merge": {
+          "ns": 1443468,
+          "calls": 112
+        },
+        "bonsai_attention_gate": {
+          "ns": 79538335,
+          "calls": 528
+        },
+        "bonsai_pack_q8_128": {
+          "ns": 11803318,
+          "calls": 512
+        },
+        "bonsai_pq2_mmq_int8": {
+          "ns": 2471169049,
+          "calls": 1024
+        },
+        "bonsai_flash_compact_ordered_merge": {
+          "ns": 70940390,
+          "calls": 2688
+        },
+        "bonsai_flash_kv_fused_ordered": {
+          "ns": 7497227992,
+          "calls": 400
+        },
+        "bonsai_pq2_row": {
+          "ns": 1313,
+          "calls": 1
+        },
+        "bonsai_norm_wide_512_1": {
+          "ns": 672276,
+          "calls": 129
+        },
+        "bonsai_pq2_matvec_rows2": {
+          "ns": 41205021,
+          "calls": 369
+        },
+        "bonsai_decay_stage_256_0": {
+          "ns": 315644,
+          "calls": 48
+        },
+        "bonsai_conv_step": {
+          "ns": 86878,
+          "calls": 48
+        },
+        "goose_gdn_decode": {
+          "ns": 477785,
+          "calls": 48
+        },
+        "bonsai_swiglu": {
+          "ns": 84832,
+          "calls": 64
+        },
+        "bonsai_pq2_matvec_ordered": {
+          "ns": 933681,
+          "calls": 32
+        },
+        "goose_rope_decode": {
+          "ns": 81723,
+          "calls": 32
+        },
+        "bonsai_decode_gqa3": {
+          "ns": 6153040,
+          "calls": 16
+        },
+        "goose_q4_attention_merge": {
+          "ns": 2049160,
+          "calls": 16
+        }
+      },
+      "matrix_and_pack_ns": 26038122306,
+      "flash_ns": 8312951761
+    }
+  }
+}
