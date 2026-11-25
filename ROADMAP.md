@@ -29,3 +29,15 @@ history at `4c4ad0aef:ROADMAP.md`. The
 - Bonsai work focuses on full prefill against the PrismML 32K/512 reference.
   Preserve the measured exact MTP decode checkpoint while optimizing prefill.
 - [Vulkan backend roadmap](docs/roadmap/VULKAN-BACKEND.md) is a deferred design.
+
+## Planned model after AMD/Vulkan
+
+[Surogate 3.7 35B-A3B](https://huggingface.co/surogate/Surogate3.7-35B-A3B)
+is a Qwen3.5 MoE derivative with an MTP head. The work order is Bonsai
+performance, AMD/Vulkan integration, then Surogate 3.7.
+
+For the future integration audit, verify the GGUF metadata and tensor
+mapping, quantization support, and whether the chosen GGUF preserves
+the MTP tensors. Check which existing Qwen3.5 MoE routing, expert,
+attention, GDN and MTP kernels can be reused with the model's actual
+geometry and tensor formats. Compatibility is pending that audit.
