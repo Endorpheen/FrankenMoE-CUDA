@@ -1135,6 +1135,16 @@ release still needs the architecture regression gates.
   8,176 decode merges at 1.109 → 0.100 s aggregate kernel time.
   [Experiment and reusable source](EXP-2026-11-26-2094-bonsai-decode-ordered-merge/README.md).
 
+### EXP-2026-11-26-2095 — Exact paired Q4 unpack for Bonsai direct MMA
+
+- **Retained in the cumulative experimental checkpoint.** Use half2
+  unpack with the original operand bits and ordered merge.
+- **32K/512 mean:** 1022.52 → 1018.85 prefill and 37.26 → 37.84
+  decode tok/s. Decode saves 213 ms across two balanced pairs.
+  Client time has mixed signs. All four pass cold prefill and match
+  512 PrismML IDs and text, VRAM 8932 MiB.
+  [Experiment and reusable source](EXP-2026-11-26-2095-bonsai-decode-q4-half2-unpack/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
