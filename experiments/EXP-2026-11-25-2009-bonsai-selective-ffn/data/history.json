@@ -1,0 +1,742 @@
+{
+  "off": {
+    "matching_selected_ids": 196,
+    "rows": [
+      {
+        "position": 1,
+        "reference_id": 90,
+        "candidate_id": 90,
+        "max_abs_delta": 0.0
+      },
+      {
+        "position": 2,
+        "reference_id": 198,
+        "candidate_id": 198,
+        "max_abs_delta": 0.0
+      },
+      {
+        "position": 3,
+        "reference_id": 220,
+        "candidate_id": 220,
+        "max_abs_delta": 0.0
+      },
+      {
+        "position": 4,
+        "reference_id": 328,
+        "candidate_id": 328,
+        "max_abs_delta": 0.0
+      },
+      {
+        "position": 9,
+        "reference_id": 198,
+        "candidate_id": 198,
+        "max_abs_delta": 0.0
+      },
+      {
+        "position": 17,
+        "reference_id": 220,
+        "candidate_id": 220,
+        "max_abs_delta": 0.0
+      },
+      {
+        "position": 25,
+        "reference_id": 16,
+        "candidate_id": 16,
+        "max_abs_delta": 0.0
+      },
+      {
+        "position": 33,
+        "reference_id": 220,
+        "candidate_id": 220,
+        "max_abs_delta": 0.0
+      },
+      {
+        "position": 41,
+        "reference_id": 16,
+        "candidate_id": 16,
+        "max_abs_delta": 0.0
+      },
+      {
+        "position": 49,
+        "reference_id": 220,
+        "candidate_id": 220,
+        "max_abs_delta": 0.0
+      },
+      {
+        "position": 57,
+        "reference_id": 11,
+        "candidate_id": 11,
+        "max_abs_delta": 0.0
+      },
+      {
+        "position": 60,
+        "reference_id": 15,
+        "candidate_id": 15,
+        "max_abs_delta": 0.0
+      },
+      {
+        "position": 65,
+        "reference_id": 1089,
+        "candidate_id": 1089,
+        "max_abs_delta": 0.0
+      },
+      {
+        "position": 73,
+        "reference_id": 15,
+        "candidate_id": 15,
+        "max_abs_delta": 0.0
+      },
+      {
+        "position": 81,
+        "reference_id": 20,
+        "candidate_id": 20,
+        "max_abs_delta": 0.0
+      },
+      {
+        "position": 89,
+        "reference_id": 15,
+        "candidate_id": 15,
+        "max_abs_delta": 0.0
+      },
+      {
+        "position": 97,
+        "reference_id": 220,
+        "candidate_id": 220,
+        "max_abs_delta": 0.0
+      },
+      {
+        "position": 105,
+        "reference_id": 15,
+        "candidate_id": 15,
+        "max_abs_delta": 0.0
+      },
+      {
+        "position": 113,
+        "reference_id": 16,
+        "candidate_id": 16,
+        "max_abs_delta": 0.0
+      },
+      {
+        "position": 121,
+        "reference_id": 24,
+        "candidate_id": 24,
+        "max_abs_delta": 0.0
+      },
+      {
+        "position": 129,
+        "reference_id": 220,
+        "candidate_id": 220,
+        "max_abs_delta": 0.0
+      },
+      {
+        "position": 137,
+        "reference_id": 11,
+        "candidate_id": 11,
+        "max_abs_delta": 0.0
+      },
+      {
+        "position": 145,
+        "reference_id": 11,
+        "candidate_id": 11,
+        "max_abs_delta": 0.0
+      },
+      {
+        "position": 153,
+        "reference_id": 198,
+        "candidate_id": 198,
+        "max_abs_delta": 0.0
+      },
+      {
+        "position": 161,
+        "reference_id": 220,
+        "candidate_id": 220,
+        "max_abs_delta": 0.0
+      },
+      {
+        "position": 169,
+        "reference_id": 198,
+        "candidate_id": 198,
+        "max_abs_delta": 0.0
+      },
+      {
+        "position": 177,
+        "reference_id": 220,
+        "candidate_id": 220,
+        "max_abs_delta": 0.0
+      },
+      {
+        "position": 185,
+        "reference_id": 16,
+        "candidate_id": 16,
+        "max_abs_delta": 0.0
+      },
+      {
+        "position": 193,
+        "reference_id": 11,
+        "candidate_id": 11,
+        "max_abs_delta": 0.0
+      },
+      {
+        "position": 196,
+        "reference_id": 16,
+        "candidate_id": 16,
+        "max_abs_delta": 0.0
+      }
+    ]
+  },
+  "plain": {
+    "matching_selected_ids": 196,
+    "rows": [
+      {
+        "position": 1,
+        "reference_id": 90,
+        "candidate_id": 90,
+        "max_abs_delta": 0.2664220333099365
+      },
+      {
+        "position": 2,
+        "reference_id": 198,
+        "candidate_id": 198,
+        "max_abs_delta": 0.24910354614257812
+      },
+      {
+        "position": 3,
+        "reference_id": 220,
+        "candidate_id": 220,
+        "max_abs_delta": 0.3196544647216797
+      },
+      {
+        "position": 4,
+        "reference_id": 328,
+        "candidate_id": 328,
+        "max_abs_delta": 0.2033390998840332
+      },
+      {
+        "position": 9,
+        "reference_id": 198,
+        "candidate_id": 198,
+        "max_abs_delta": 0.18762588500976562
+      },
+      {
+        "position": 17,
+        "reference_id": 220,
+        "candidate_id": 220,
+        "max_abs_delta": 0.3937671184539795
+      },
+      {
+        "position": 25,
+        "reference_id": 16,
+        "candidate_id": 16,
+        "max_abs_delta": 0.20123624801635742
+      },
+      {
+        "position": 33,
+        "reference_id": 220,
+        "candidate_id": 220,
+        "max_abs_delta": 0.3190040588378906
+      },
+      {
+        "position": 41,
+        "reference_id": 16,
+        "candidate_id": 16,
+        "max_abs_delta": 0.2720189690589905
+      },
+      {
+        "position": 49,
+        "reference_id": 220,
+        "candidate_id": 220,
+        "max_abs_delta": 0.34867382049560547
+      },
+      {
+        "position": 57,
+        "reference_id": 11,
+        "candidate_id": 11,
+        "max_abs_delta": 0.3637847900390625
+      },
+      {
+        "position": 60,
+        "reference_id": 15,
+        "candidate_id": 15,
+        "max_abs_delta": 0.3578977584838867
+      },
+      {
+        "position": 65,
+        "reference_id": 1089,
+        "candidate_id": 1089,
+        "max_abs_delta": 0.3297882080078125
+      },
+      {
+        "position": 73,
+        "reference_id": 15,
+        "candidate_id": 15,
+        "max_abs_delta": 0.17660140991210938
+      },
+      {
+        "position": 81,
+        "reference_id": 20,
+        "candidate_id": 20,
+        "max_abs_delta": 0.1984395980834961
+      },
+      {
+        "position": 89,
+        "reference_id": 15,
+        "candidate_id": 15,
+        "max_abs_delta": 0.293698787689209
+      },
+      {
+        "position": 97,
+        "reference_id": 220,
+        "candidate_id": 220,
+        "max_abs_delta": 0.3948945999145508
+      },
+      {
+        "position": 105,
+        "reference_id": 15,
+        "candidate_id": 15,
+        "max_abs_delta": 0.3119335174560547
+      },
+      {
+        "position": 113,
+        "reference_id": 16,
+        "candidate_id": 16,
+        "max_abs_delta": 0.2273550033569336
+      },
+      {
+        "position": 121,
+        "reference_id": 24,
+        "candidate_id": 24,
+        "max_abs_delta": 0.15254902839660645
+      },
+      {
+        "position": 129,
+        "reference_id": 220,
+        "candidate_id": 220,
+        "max_abs_delta": 0.2748548686504364
+      },
+      {
+        "position": 137,
+        "reference_id": 11,
+        "candidate_id": 11,
+        "max_abs_delta": 0.3425931930541992
+      },
+      {
+        "position": 145,
+        "reference_id": 11,
+        "candidate_id": 11,
+        "max_abs_delta": 0.5295829772949219
+      },
+      {
+        "position": 153,
+        "reference_id": 198,
+        "candidate_id": 198,
+        "max_abs_delta": 0.2585301399230957
+      },
+      {
+        "position": 161,
+        "reference_id": 220,
+        "candidate_id": 220,
+        "max_abs_delta": 0.32040536403656006
+      },
+      {
+        "position": 169,
+        "reference_id": 198,
+        "candidate_id": 198,
+        "max_abs_delta": 0.2652401924133301
+      },
+      {
+        "position": 177,
+        "reference_id": 220,
+        "candidate_id": 220,
+        "max_abs_delta": 0.32218074798583984
+      },
+      {
+        "position": 185,
+        "reference_id": 16,
+        "candidate_id": 16,
+        "max_abs_delta": 0.20883846282958984
+      },
+      {
+        "position": 193,
+        "reference_id": 11,
+        "candidate_id": 11,
+        "max_abs_delta": 0.3664591312408447
+      },
+      {
+        "position": 196,
+        "reference_id": 16,
+        "candidate_id": 16,
+        "max_abs_delta": 0.2009449005126953
+      }
+    ]
+  },
+  "residual": {
+    "matching_selected_ids": 193,
+    "rows": [
+      {
+        "position": 1,
+        "reference_id": 90,
+        "candidate_id": 90,
+        "max_abs_delta": 0.12080778181552887
+      },
+      {
+        "position": 2,
+        "reference_id": 198,
+        "candidate_id": 198,
+        "max_abs_delta": 0.17417025566101074
+      },
+      {
+        "position": 3,
+        "reference_id": 220,
+        "candidate_id": 220,
+        "max_abs_delta": 0.3306668996810913
+      },
+      {
+        "position": 4,
+        "reference_id": 328,
+        "candidate_id": 328,
+        "max_abs_delta": 0.20151972770690918
+      },
+      {
+        "position": 9,
+        "reference_id": 198,
+        "candidate_id": 198,
+        "max_abs_delta": 0.19798541069030762
+      },
+      {
+        "position": 17,
+        "reference_id": 220,
+        "candidate_id": 220,
+        "max_abs_delta": 0.33947646617889404
+      },
+      {
+        "position": 25,
+        "reference_id": 16,
+        "candidate_id": 16,
+        "max_abs_delta": 0.19486427307128906
+      },
+      {
+        "position": 33,
+        "reference_id": 220,
+        "candidate_id": 220,
+        "max_abs_delta": 0.3117396831512451
+      },
+      {
+        "position": 41,
+        "reference_id": 16,
+        "candidate_id": 16,
+        "max_abs_delta": 0.2215099334716797
+      },
+      {
+        "position": 49,
+        "reference_id": 220,
+        "candidate_id": 220,
+        "max_abs_delta": 0.22166013717651367
+      },
+      {
+        "position": 57,
+        "reference_id": 11,
+        "candidate_id": 11,
+        "max_abs_delta": 0.30072784423828125
+      },
+      {
+        "position": 60,
+        "reference_id": 15,
+        "candidate_id": 11,
+        "max_abs_delta": 0.6843910217285156
+      },
+      {
+        "position": 65,
+        "reference_id": 1089,
+        "candidate_id": 1089,
+        "max_abs_delta": 0.296173095703125
+      },
+      {
+        "position": 73,
+        "reference_id": 15,
+        "candidate_id": 15,
+        "max_abs_delta": 0.13497471809387207
+      },
+      {
+        "position": 81,
+        "reference_id": 20,
+        "candidate_id": 20,
+        "max_abs_delta": 0.46060943603515625
+      },
+      {
+        "position": 89,
+        "reference_id": 15,
+        "candidate_id": 15,
+        "max_abs_delta": 0.24149799346923828
+      },
+      {
+        "position": 97,
+        "reference_id": 220,
+        "candidate_id": 220,
+        "max_abs_delta": 0.32563018798828125
+      },
+      {
+        "position": 105,
+        "reference_id": 15,
+        "candidate_id": 15,
+        "max_abs_delta": 0.2391442060470581
+      },
+      {
+        "position": 113,
+        "reference_id": 16,
+        "candidate_id": 16,
+        "max_abs_delta": 0.23914745450019836
+      },
+      {
+        "position": 121,
+        "reference_id": 24,
+        "candidate_id": 24,
+        "max_abs_delta": 0.2511827349662781
+      },
+      {
+        "position": 129,
+        "reference_id": 220,
+        "candidate_id": 220,
+        "max_abs_delta": 0.4010467529296875
+      },
+      {
+        "position": 137,
+        "reference_id": 11,
+        "candidate_id": 11,
+        "max_abs_delta": 0.4305856227874756
+      },
+      {
+        "position": 145,
+        "reference_id": 11,
+        "candidate_id": 11,
+        "max_abs_delta": 0.2776893973350525
+      },
+      {
+        "position": 153,
+        "reference_id": 198,
+        "candidate_id": 198,
+        "max_abs_delta": 0.2395949363708496
+      },
+      {
+        "position": 161,
+        "reference_id": 220,
+        "candidate_id": 220,
+        "max_abs_delta": 0.29006320238113403
+      },
+      {
+        "position": 169,
+        "reference_id": 198,
+        "candidate_id": 198,
+        "max_abs_delta": 0.30405569076538086
+      },
+      {
+        "position": 177,
+        "reference_id": 220,
+        "candidate_id": 220,
+        "max_abs_delta": 0.45940321683883667
+      },
+      {
+        "position": 185,
+        "reference_id": 16,
+        "candidate_id": 16,
+        "max_abs_delta": 0.18724536895751953
+      },
+      {
+        "position": 193,
+        "reference_id": 11,
+        "candidate_id": 11,
+        "max_abs_delta": 0.3175845146179199
+      },
+      {
+        "position": 196,
+        "reference_id": 16,
+        "candidate_id": 17,
+        "max_abs_delta": 0.2151789665222168
+      }
+    ]
+  },
+  "last16": {
+    "matching_selected_ids": 196,
+    "rows": [
+      {
+        "position": 1,
+        "reference_id": 90,
+        "candidate_id": 90,
+        "max_abs_delta": 0.08697009086608887
+      },
+      {
+        "position": 2,
+        "reference_id": 198,
+        "candidate_id": 198,
+        "max_abs_delta": 0.032668113708496094
+      },
+      {
+        "position": 3,
+        "reference_id": 220,
+        "candidate_id": 220,
+        "max_abs_delta": 0.0455327033996582
+      },
+      {
+        "position": 4,
+        "reference_id": 328,
+        "candidate_id": 328,
+        "max_abs_delta": 0.03599977493286133
+      },
+      {
+        "position": 9,
+        "reference_id": 198,
+        "candidate_id": 198,
+        "max_abs_delta": 0.06547999382019043
+      },
+      {
+        "position": 17,
+        "reference_id": 220,
+        "candidate_id": 220,
+        "max_abs_delta": 0.11922788619995117
+      },
+      {
+        "position": 25,
+        "reference_id": 16,
+        "candidate_id": 16,
+        "max_abs_delta": 0.014972686767578125
+      },
+      {
+        "position": 33,
+        "reference_id": 220,
+        "candidate_id": 220,
+        "max_abs_delta": 0.08266687393188477
+      },
+      {
+        "position": 41,
+        "reference_id": 16,
+        "candidate_id": 16,
+        "max_abs_delta": 0.02573835849761963
+      },
+      {
+        "position": 49,
+        "reference_id": 220,
+        "candidate_id": 220,
+        "max_abs_delta": 0.08611083030700684
+      },
+      {
+        "position": 57,
+        "reference_id": 11,
+        "candidate_id": 11,
+        "max_abs_delta": 0.05086255073547363
+      },
+      {
+        "position": 60,
+        "reference_id": 15,
+        "candidate_id": 15,
+        "max_abs_delta": 0.058084964752197266
+      },
+      {
+        "position": 65,
+        "reference_id": 1089,
+        "candidate_id": 1089,
+        "max_abs_delta": 0.023700714111328125
+      },
+      {
+        "position": 73,
+        "reference_id": 15,
+        "candidate_id": 15,
+        "max_abs_delta": 0.029922008514404297
+      },
+      {
+        "position": 81,
+        "reference_id": 20,
+        "candidate_id": 20,
+        "max_abs_delta": 0.024965524673461914
+      },
+      {
+        "position": 89,
+        "reference_id": 15,
+        "candidate_id": 15,
+        "max_abs_delta": 0.018309831619262695
+      },
+      {
+        "position": 97,
+        "reference_id": 220,
+        "candidate_id": 220,
+        "max_abs_delta": 0.03272819519042969
+      },
+      {
+        "position": 105,
+        "reference_id": 15,
+        "candidate_id": 15,
+        "max_abs_delta": 0.03613990545272827
+      },
+      {
+        "position": 113,
+        "reference_id": 16,
+        "candidate_id": 16,
+        "max_abs_delta": 0.0625448226928711
+      },
+      {
+        "position": 121,
+        "reference_id": 24,
+        "candidate_id": 24,
+        "max_abs_delta": 0.06510353088378906
+      },
+      {
+        "position": 129,
+        "reference_id": 220,
+        "candidate_id": 220,
+        "max_abs_delta": 0.053755760192871094
+      },
+      {
+        "position": 137,
+        "reference_id": 11,
+        "candidate_id": 11,
+        "max_abs_delta": 0.12952136993408203
+      },
+      {
+        "position": 145,
+        "reference_id": 11,
+        "candidate_id": 11,
+        "max_abs_delta": 0.04403376579284668
+      },
+      {
+        "position": 153,
+        "reference_id": 198,
+        "candidate_id": 198,
+        "max_abs_delta": 0.05261564254760742
+      },
+      {
+        "position": 161,
+        "reference_id": 220,
+        "candidate_id": 220,
+        "max_abs_delta": 0.06310319900512695
+      },
+      {
+        "position": 169,
+        "reference_id": 198,
+        "candidate_id": 198,
+        "max_abs_delta": 0.10068988800048828
+      },
+      {
+        "position": 177,
+        "reference_id": 220,
+        "candidate_id": 220,
+        "max_abs_delta": 0.03754007816314697
+      },
+      {
+        "position": 185,
+        "reference_id": 16,
+        "candidate_id": 16,
+        "max_abs_delta": 0.017982006072998047
+      },
+      {
+        "position": 193,
+        "reference_id": 11,
+        "candidate_id": 11,
+        "max_abs_delta": 0.10747146606445312
+      },
+      {
+        "position": 196,
+        "reference_id": 16,
+        "candidate_id": 16,
+        "max_abs_delta": 0.04740035533905029
+      }
+    ]
+  }
+}
