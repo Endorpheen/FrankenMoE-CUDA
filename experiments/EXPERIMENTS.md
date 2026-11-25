@@ -223,6 +223,36 @@ release still needs the architecture regression gates.
   Apex, Inkling or other cards is established.
   [Details and reproduction](EXP-2026-11-25-2018-bonsai-flash-kv-panels/README.md).
 
+### EXP-2026-11-25-2019 — Reuse packed PQ2 weights across K64 stages
+
+- **Status:** ACCEPTED in the Bonsai experimental runtime for packed
+  weight reuse. Alternating activation buffers are REJECTED at the
+  component gate. Source commit `d0492094f1dab56b0d5438353c4a9aaa952ea4a9`.
+  [CUDA generator](EXP-2026-11-25-2019-bonsai-mmq-pipeline/source/emit.py),
+  [dispatch](EXP-2026-11-25-2019-bonsai-mmq-pipeline/source/compose.py),
+  [artifact hashes](EXP-2026-11-25-2019-bonsai-mmq-pipeline/data/SHA256SUMS).
+- **Mechanism:** Read the scale and the two packed code bytes together
+  for each 128-weight block. Keep them in registers for both K64
+  half-stages. Preserve the FP16 operands and original FP32 MMA order,
+  with the same shared and global memory. Cross-trace FP16 MMQ time
+  falls `29.734 → 27.133 s` with 11,776 calls at 32K/16.
+- **Scored HTTP:** At 32K/512 across two balanced pairs, prefill
+  `618.13 → 648.79 tok/s (+4.96%)`, decode `32.672 → 32.703 tok/s`.
+  Mean prefill saves 2.505 s. Peak VRAM `8932 → 8932 MiB`,
+  peak RSS `7,457,340–7,457,900 → 7,457,420–7,457,444 KiB`.
+  Process and system swap-out stay zero.
+  [Timing and resources](EXP-2026-11-25-2019-bonsai-mmq-pipeline/data/results.json).
+- **Correctness and limits:** Nine real-matrix component shapes and
+  tails match every output byte. All 512 long response IDs and text
+  hashes match PrismML. Verified on RTX 4070, Bonsai PQ2_0 and wide
+  64x64/64x128 FP16 K64 tiles. The kernel uses 56/72 registers and
+  18,432/27,648 B shared memory, no spills. Existing Q8 prefill and
+  DP4A decode dispatch stay unchanged. Control switch
+  `BONSAI_MMQ_CACHED_PQ2=0`. Potential reuse requires paired stages
+  within one scale group and a matching operand layout. No other
+  architecture or card speedup is measured.
+  [Details and reproduction](EXP-2026-11-25-2019-bonsai-mmq-pipeline/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
