@@ -706,6 +706,15 @@ release still needs the architecture regression gates.
   to match the control.
   [Source, measured evidence and reproduction](EXP-2026-11-25-2046-bonsai-mtp-five-rows/README.md).
 
+### EXP-2026-11-25-2047 — Exact Bonsai verifier warp layouts
+
+- **Status:** Verified decode improvement with four target rows.
+- **Evidence:** RTX 4070, Q4_0 K/V, 32K/512, A–B–C–C–B–A.
+  Four-row decode 70.65 → 72.12 tok/s. Five rows reach 70.89.
+  All 512 IDs, selected logits and checked state prefixes match.
+  No additional four-row allocation. Total wall gain inconclusive.
+  [Source, measured evidence and reproduction](EXP-2026-11-25-2047-bonsai-mtp-pq2-warp-rows/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
