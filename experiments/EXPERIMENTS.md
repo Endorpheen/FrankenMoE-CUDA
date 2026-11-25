@@ -645,6 +645,22 @@ release still needs the architecture regression gates.
   tail whenever query masks are nested.
   [Source, measured evidence and reproduction](EXP-2026-11-25-2042-bonsai-mtp-lane-softmax/README.md).
 
+### EXP-2026-11-25-2043 — Paired Q4 tiles for four verifier rows
+
+- **Status:** Verified within experimental Bonsai MTP at 32K/512.
+- **Mechanism:** Divide four queries into two independent pairs
+  in one launch and share K/V across three heads per warp. Keep
+  exact causal order and the device prefix transaction.
+- **Evidence:** RTX 4070, Q4_0 K/V, A–B–B–A. Decode
+  67.52 → 70.34 tok/s, prefill 615.04 → 615.28. Target
+  blocks 185 → 145. Both pairs improve combined time and
+  match all 512 IDs and selected logits. Additional explicit
+  GPU allocation 150.57 MiB, no process swap.
+- **Reuse:** Explore smaller query groups when the merged tile
+  carries too much register state. Compare the net decode
+  result and capacity, including acceptance and GDN prefix slots.
+  [Source, measured evidence and reproduction](EXP-2026-11-25-2043-bonsai-mtp-pair-tiles/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
