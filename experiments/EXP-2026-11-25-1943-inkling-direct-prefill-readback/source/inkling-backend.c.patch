@@ -1,0 +1,17 @@
+--- a/inkling-backend.c
++++ b/inkling-backend.c
+@@ -121,0 +122,4 @@
++static _Thread_local float *prefill_direct_output;
++static _Thread_local size_t prefill_direct_output_size;
++extern void *fg_cuda_inkling_prefill_readback(size_t bytes);
++
+@@ -123,0 +128,5 @@
++    if (output == prefill_direct_output && count == 1 && nodes[0] &&
++        !nodes[0]->data && !nodes[0]->view_src && nodes[0]->type == GGML_TYPE_F32 &&
++        (size_t)size == prefill_direct_output_size && ggml_nelements(nodes[0]) == size) {
++        nodes[0]->data = output;
++    }
+@@ -141 +150,2 @@
+-        memcpy(output+at,nodes[i]->data,(size_t)n*sizeof(float));
++        if (output + at != nodes[i]->data)
++            memcpy(output + at, nodes[i]->data, (size_t)n * sizeof(float));
