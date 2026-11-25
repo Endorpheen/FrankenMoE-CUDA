@@ -1,0 +1,155 @@
+[
+  {
+    "case": "incident-extraction",
+    "prompt_tokens": 229,
+    "budget": 128,
+    "output_tokens": [
+      47,
+      47
+    ],
+    "free_generation_ids_same": true,
+    "matching_prefix": 47,
+    "scores": [
+      {
+        "json": true,
+        "correct": true,
+        "value": {
+          "open_database_prod": [
+            "INC-42",
+            "INC-45",
+            "INC-49",
+            "INC-52"
+          ]
+        }
+      },
+      {
+        "json": true,
+        "correct": true,
+        "value": {
+          "open_database_prod": [
+            "INC-42",
+            "INC-45",
+            "INC-49",
+            "INC-52"
+          ]
+        }
+      }
+    ],
+    "answers": [
+      "{\n  \"open_database_prod\": [\n    \"INC-42\",\n    \"INC-45\",\n    \"INC-49\",\n    \"INC-52\"\n  ]\n}",
+      "{\n  \"open_database_prod\": [\n    \"INC-42\",\n    \"INC-45\",\n    \"INC-49\",\n    \"INC-52\"\n  ]\n}"
+    ],
+    "fp16_ended_by_eog": true,
+    "int8_ended_by_eog": true,
+    "expected": {
+      "open_database_prod": [
+        "INC-42",
+        "INC-45",
+        "INC-49",
+        "INC-52"
+      ]
+    },
+    "teacher_forced_steps": 47,
+    "readings": [
+      {
+        "step": 0,
+        "reference_id": 90,
+        "candidate_id": 90,
+        "top1_agrees": true,
+        "top10_overlap": 10,
+        "normalized_rmse": 0.01934085601553708,
+        "max_absolute": 0.2912454605102539,
+        "kl_ref_to_candidate": 3.177343674458857e-05,
+        "fp16_winner_rank": 1
+      },
+      {
+        "step": 1,
+        "reference_id": 198,
+        "candidate_id": 198,
+        "top1_agrees": true,
+        "top10_overlap": 10,
+        "normalized_rmse": 0.026364330746639533,
+        "max_absolute": 0.39413774013519287,
+        "kl_ref_to_candidate": 7.719815074210869e-07,
+        "fp16_winner_rank": 1
+      },
+      {
+        "step": 2,
+        "reference_id": 220,
+        "candidate_id": 220,
+        "top1_agrees": true,
+        "top10_overlap": 10,
+        "normalized_rmse": 0.026752309954949725,
+        "max_absolute": 0.19709038734436035,
+        "kl_ref_to_candidate": 1.9701289698541628e-06,
+        "fp16_winner_rank": 1
+      },
+      {
+        "step": 3,
+        "reference_id": 328,
+        "candidate_id": 328,
+        "top1_agrees": true,
+        "top10_overlap": 10,
+        "normalized_rmse": 0.034487786615587324,
+        "max_absolute": 0.3822927474975586,
+        "kl_ref_to_candidate": 3.063881837939184e-08,
+        "fp16_winner_rank": 1
+      },
+      {
+        "step": 8,
+        "reference_id": 498,
+        "candidate_id": 498,
+        "top1_agrees": true,
+        "top10_overlap": 10,
+        "normalized_rmse": 0.013715220086634198,
+        "max_absolute": 0.1417226791381836,
+        "kl_ref_to_candidate": 3.807654075698196e-06,
+        "fp16_winner_rank": 1
+      },
+      {
+        "step": 16,
+        "reference_id": 487,
+        "candidate_id": 487,
+        "top1_agrees": true,
+        "top10_overlap": 10,
+        "normalized_rmse": 0.01655594174786664,
+        "max_absolute": 0.1305815577507019,
+        "kl_ref_to_candidate": 2.136364889571151e-09,
+        "fp16_winner_rank": 1
+      },
+      {
+        "step": 24,
+        "reference_id": 487,
+        "candidate_id": 487,
+        "top1_agrees": true,
+        "top10_overlap": 10,
+        "normalized_rmse": 0.042217065306082976,
+        "max_absolute": 0.3459606170654297,
+        "kl_ref_to_candidate": 5.794985293793904e-09,
+        "fp16_winner_rank": 1
+      },
+      {
+        "step": 32,
+        "reference_id": 487,
+        "candidate_id": 487,
+        "top1_agrees": true,
+        "top10_overlap": 10,
+        "normalized_rmse": 0.033036647047107466,
+        "max_absolute": 0.27904701232910156,
+        "kl_ref_to_candidate": 3.9010367769140374e-09,
+        "fp16_winner_rank": 1
+      },
+      {
+        "step": 40,
+        "reference_id": 1,
+        "candidate_id": 1,
+        "top1_agrees": true,
+        "top10_overlap": 10,
+        "normalized_rmse": 0.014651963767730342,
+        "max_absolute": 0.13569259643554688,
+        "kl_ref_to_candidate": 5.0795661119703326e-08,
+        "fp16_winner_rank": 1
+      }
+    ]
+  }
+]

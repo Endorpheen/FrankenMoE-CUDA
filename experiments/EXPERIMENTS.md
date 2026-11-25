@@ -987,6 +987,17 @@ release still needs the architecture regression gates.
   a targeted component probe. No runtime change.
   [Trace attribution and repro](EXP-2026-11-26-2079-bonsai-full-pipeline-after-broad-q8/README.md).
 
+### EXP-2026-11-26-2080 — Bonsai full-tile INT8 GDN input projections
+
+- **Experimental alternative.** Reuse PQ2 × Q8 N128 for the input
+  QKV and gate projections, sharing one pack. Retain EXP-2078 as
+  the primary cumulative profile.
+- **Evidence:** 969.70 → 980.81 prefill, 32.86 → 32.57 decode tok/s,
+  49.365 → 49.121 s client at 32K/512. All 512 IDs and text match
+  PrismML, VRAM 8932 MiB. CodeTrace 22/63 → 13/63 at ubatch 128,
+  both fact extraction answers correct with all 47 IDs matching.
+  [Experiment and reusable source](EXP-2026-11-26-2080-bonsai-gdn-projection-int8/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
