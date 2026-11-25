@@ -497,6 +497,23 @@ release still needs the architecture regression gates.
   reusing K/V. Register and scratch budgets depend on geometry.
   [Source, measured evidence and reproduction](EXP-2026-11-25-2033-bonsai-mtp-attention-reuse/README.md).
 
+### EXP-2026-11-25-2034 — Device choice for Bonsai MTP
+
+- **Status:** Verified within the experimental MTP path.
+- **Mechanism:** Reduce logits on device with exact tie handling,
+  EOG mask and invalid-logit reporting. Transfer 12 bytes per
+  selected row in place of its 993,280-byte FP32 logits.
+- **Evidence:** RTX 4070, Q4_0 K/V, 32K/512, context 36,864,
+  A–B–B–A. Decode 50.97 → 53.54 tok/s, prefill 611.77 →
+  610.77 tok/s, total 63.592 → 63.194 s. All 512 IDs and
+  selected logits and 326/370 acceptance match. Extra device
+  allocation 39,824 bytes, peak RSS increases by less than
+  501 KiB across the sampled ranges, no process swap. Peak
+  VRAM not sampled.
+- **Reuse:** Keep logits resident for greedy sampling when
+  the tie, mask and error contract match.
+  [Source, measured evidence and reproduction](EXP-2026-11-25-2034-bonsai-mtp-device-argmax/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
