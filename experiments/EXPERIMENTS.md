@@ -1018,6 +1018,15 @@ release still needs the architecture regression gates.
   prefill gap to PrismML remains 3.133 s. No runtime change.
   [Trace attribution and repro](EXP-2026-11-26-2082-bonsai-full-pipeline-after-pairload/README.md).
 
+### EXP-2026-11-26-2083 — Wider M128 Bonsai INT8 gate/up tile
+
+- **Rejected at the component gate.** Reuse one Q8 activation panel
+  across twice as many rows with 512 threads and exact arithmetic.
+- **Evidence:** Bitwise results on four real PQ2 weights on RTX 4070.
+  M128 × N128 is 9.35–10.83% slower, including pack. Keep EXP-2081
+  with M64 × N128. No full performance run or runtime change.
+  [Component results and reproduction](EXP-2026-11-26-2083-bonsai-q8-m128n128/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.

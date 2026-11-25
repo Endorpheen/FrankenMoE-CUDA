@@ -25,10 +25,11 @@ NAMES = {
     "pack": "bonsai_pack_q8_128",
     "scalar": "bonsai_pq2_mmq_int8_full_n128",
     "paired": "bonsai_pq2_mmq_int8_full_n128_pairload",
+    "m128": "bonsai_pq2_mmq_int8_full_m128n128",
 }
 
 
-def run_case(kernels, raw, tokens, rng, events):
+def run_case(kernels, raw, tokens, rng, events, control, candidate):
     width, rows = 5120, 17408
     data = rng.normal(0, .7, (tokens, width)).astype(np.float32)
     data[0] = 0
@@ -38,28 +39,28 @@ def run_case(kernels, raw, tokens, rng, events):
     groups = tokens * (width // 128)
     scales = gpu.allocate(groups * 4)
     output = gpu.allocate(tokens * rows * 4)
-    grid = rows // 64, tokens // 128
     params = weight, packed, scales, output, U(width), U(rows), U(tokens)
 
     def launch(label):
         component.dispatch(kernels["pack"], ((groups + 3) // 4, 1),
                            128, (source, packed, scales, U(groups)))
-        component.dispatch(kernels[label], grid, 256, params)
+        tile_rows = 128 if label == "m128" else 64
+        component.dispatch(kernels[label], (rows // tile_rows, tokens // 128), 4 * tile_rows, params)
 
     try:
-        launch("scalar")
+        launch(control)
         expected = np.ctypeslib.as_array(gpu.download(output, tokens * rows)).copy()
-        launch("paired")
+        launch(candidate)
         actual = np.ctypeslib.as_array(gpu.download(output, tokens * rows))
         assert np.isfinite(expected).all() and not expected[:rows].any()
         assert actual.view(np.uint32).tobytes() == expected.view(np.uint32).tobytes()
-        readings = {"scalar": [], "paired": []}
-        for label in ("scalar", "paired", "paired", "scalar") * 4:
+        readings = {control: [], candidate: []}
+        for label in (control, candidate, candidate, control) * 4:
             readings[label].append(component.elapsed(lambda: launch(label), *events))
-        before, after = map(median, (readings["scalar"], readings["paired"]))
+        before, after = map(median, (readings[control], readings[candidate]))
         return {
             "width": width, "rows": rows, "tokens": tokens, "bit_exact": True,
-            "raw_ms": readings, "scalar_median_ms": before, "paired_median_ms": after,
+            "raw_ms": readings, f"{control}_median_ms": before, f"{candidate}_median_ms": after,
             "elapsed_reduction_pct": (1 - after / before) * 100,
         }
     finally:
@@ -68,6 +69,9 @@ def run_case(kernels, raw, tokens, rng, events):
 
 
 def main():
+    control, candidate = sys.argv[4:] or ("scalar", "paired")
+    if (control, candidate) not in (("scalar", "paired"), ("paired", "m128")):
+        raise ValueError(f"Unknown control/candidate pair: {control}, {candidate}")
     device, context = I(), P()
     gpu.call("cuInit", U(0))
     gpu.call("cuDeviceGet", ct.byref(device), I(0))
@@ -75,9 +79,9 @@ def main():
     try:
         module = component.rec.Layer.load(Path(sys.argv[3]).read_bytes())
         kernels = {}
-        for label, name in NAMES.items():
+        for label in ("pack", control, candidate):
             function = P()
-            gpu.call("cuModuleGetFunction", ct.byref(function), module, name.encode())
+            gpu.call("cuModuleGetFunction", ct.byref(function), module, NAMES[label].encode())
             kernels[label] = function
         events = component.cuda_event(), component.cuda_event()
         tensors = {tensor["name"]: tensor for tensor in gpu.inventory["tensors"]}
@@ -90,7 +94,7 @@ def main():
                 assert tensor["type"] == 142 and (width, rows) == (5120, 17408)
                 start = gpu.inventory["data_offset"] + tensor["offset"]
                 raw = weights[start:start + rows * (width // 128) * 34]
-                results.append({"tensor": name, **run_case(kernels, raw, 1024, rng, events)})
+                results.append({"tensor": name, **run_case(kernels, raw, 1024, rng, events, control, candidate)})
         print(json.dumps(results, indent=2))
     finally:
         gpu.call("cuCtxDestroy_v2", context)
