@@ -308,6 +308,29 @@ release still needs the architecture regression gates.
   whole-request speedup is established.
   [Reproduction and full measurements](EXP-2026-11-25-2022-bonsai-pq2-half2/README.md).
 
+### EXP-2026-11-25-2024 — Native Bonsai MTP input projection
+
+- **Status:** EXPERIMENTAL, verified input stem only. Source commit
+  `eaa5d0b74d416232fc0245205423bbdc542d3d5a`.
+  [Goose graph](EXP-2026-11-25-2024-bonsai-mtp-stem/source/stem.goose),
+  [CUDA Q4 kernel](EXP-2026-11-25-2024-bonsai-mtp-stem/source/stem.cl),
+  [artifact hashes](EXP-2026-11-25-2024-bonsai-mtp-stem/data/SHA256SUMS).
+- **Mechanism:** Reuse the resident embedding, inverse Hadamard, and
+  weight-specific RMSNorm. Concatenate normalized E then H and apply
+  the Q4_0 10240x5120 EH projection. Existing scratch is reused in
+  the diagnostic. This is a prerequisite for native draft inference.
+- **Evidence and limits:** RTX 4070, Bonsai PQ2_0-mtp, Q4_0 draft EH,
+  context 1024 and ubatch 128. For two captured trunk states,
+  embeddings and all normalized input values match an independent
+  reconstruction byte for byte. All 5120 EH outputs agree with
+  the independent FP64 oracle within max abs 1.90e-6 and relative
+  L2 2.77e-7. The normal eight output IDs and selected logits match
+  with and without capture. No prefill, decode, peak VRAM or RAM
+  speed claim. Draft transformer, KV state and verification remain
+  open. Other dense MTP heads may reuse this pattern only with the
+  same input order, layouts and norm contract.
+  [Evidence and reproduction](EXP-2026-11-25-2024-bonsai-mtp-stem/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
