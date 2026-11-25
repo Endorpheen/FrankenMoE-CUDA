@@ -58,6 +58,9 @@ def check_case(keys, functions, event_pair, rng, reference=0, variants=(1, 2, 3)
             if heads == 0:
                 component.dispatch(functions[0], (24, tiles), 32,
                                    (q, k, v, D(0), scratch, cfg, F(1 / 16), I(0)))
+            elif heads == "direct_mma":
+                component.dispatch(functions[heads], (4, tiles), 128,
+                                   (q, k, v, scratch, U(keys), U(tiles)))
             elif heads in WARP_COUNTS:
                 warps = WARP_COUNTS[heads]
                 component.dispatch(functions["multi"], (8, (tiles + warps - 1) // warps), 32 * warps,
@@ -82,6 +85,7 @@ def check_case(keys, functions, event_pair, rng, reference=0, variants=(1, 2, 3)
                 "partials_exact": partial_ref.tobytes() == partial.tobytes(),
                 "output_exact": result_ref.tobytes() == result.tobytes(),
                 "max_output_error": float(np.max(np.abs(result_ref - result))),
+                "relative_output_l2": float(np.linalg.norm(result_ref-result) / np.linalg.norm(result_ref)),
             }
         order = (reference, *variants)
         times = {heads: [] for heads in order}
@@ -114,6 +118,10 @@ try:
                   for n in (32768, 32769, 33279)]
         assert all(result["partials_exact"] and result["output_exact"]
                    for value in values for result in value["variants"].values())
+    elif sys.argv[5:] == ["--decode-mma"]:
+        funcs["direct_mma"] = function(trial, "bonsai_decode_direct_q4_mma")
+        values = [check_case(n, funcs, events, rng, 3, ("direct_mma",))
+                  for n in (32768, 32769, 33279)]
     else:
         values = [check_case(n, funcs, events, rng) for n in (65, 257, 1024, 8192, 32768, 33279)]
     print(json.dumps(values, indent=2))

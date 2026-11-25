@@ -1114,6 +1114,17 @@ release still needs the architecture regression gates.
   longer than the 1-warp control, including merge. Runtime unchanged.
   [Component results and reproduction](EXP-2026-11-26-2092-bonsai-decode-gqa-warps/README.md).
 
+### EXP-2026-11-26-2093 — Direct Q4 FP16 MMA for long Bonsai decode
+
+- **Retained in the cumulative experimental checkpoint.** Use direct
+  Q4 reads and half MMA for six heads per KV tile, with the old merge.
+- **32K/512 mean:** 1023.90 → 1018.33 prefill and 32.80 → 34.64 decode
+  tok/s. Full request saves 651 ms. All four runs pass cold prefill,
+  match 512 PrismML IDs and text, and report 8932 MiB VRAM.
+  Short forced-scope CodeTrace falls 22/63 → 16/63, while fact
+  extraction passes both arms. Expanded quality remains open.
+  [Experiment, observations and reproduction](EXP-2026-11-26-2093-bonsai-decode-direct-mma/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.

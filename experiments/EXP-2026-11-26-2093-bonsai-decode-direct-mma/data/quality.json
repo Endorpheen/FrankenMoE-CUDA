@@ -1,0 +1,426 @@
+[
+  {
+    "case": "code-trace",
+    "prompt_tokens": 440,
+    "budget": 320,
+    "output_tokens": [
+      259,
+      255
+    ],
+    "free_generation_ids_same": false,
+    "matching_prefix": 59,
+    "scores": [
+      {
+        "json": true,
+        "correct": false,
+        "value": {
+          "traces": [
+            [
+              1,
+              5,
+              12,
+              6,
+              15
+            ],
+            [
+              5,
+              8,
+              11,
+              13
+            ],
+            [
+              2,
+              1,
+              1,
+              9,
+              1,
+              2
+            ],
+            [
+              9,
+              10,
+              12,
+              15,
+              1
+            ],
+            [
+              0,
+              0,
+              1,
+              3,
+              6,
+              10
+            ],
+            [
+              7,
+              13,
+              11,
+              15,
+              13,
+              11,
+              9
+            ],
+            [
+              11,
+              11,
+              11,
+              5,
+              11
+            ],
+            [
+              3,
+              9,
+              12,
+              13
+            ],
+            [
+              0,
+              5,
+              15,
+              7,
+              15
+            ],
+            [
+              12,
+              11,
+              15,
+              13,
+              11
+            ],
+            [
+              5,
+              8,
+              12,
+              15,
+              13,
+              13
+            ],
+            [
+              8,
+              17,
+              2,
+              17,
+              4
+            ]
+          ]
+        }
+      },
+      {
+        "json": true,
+        "correct": false,
+        "value": {
+          "traces": [
+            [
+              1,
+              5,
+              12,
+              6,
+              15
+            ],
+            [
+              5,
+              8,
+              11,
+              13
+            ],
+            [
+              2,
+              1,
+              1,
+              9,
+              10,
+              11
+            ],
+            [
+              9,
+              10,
+              12,
+              15,
+              1
+            ],
+            [
+              0,
+              1,
+              1,
+              3,
+              4,
+              6
+            ],
+            [
+              7,
+              13,
+              11,
+              9,
+              5,
+              3,
+              1
+            ],
+            [
+              11,
+              11,
+              11,
+              5,
+              11
+            ],
+            [
+              3,
+              9,
+              12,
+              13
+            ],
+            [
+              3,
+              8,
+              18,
+              9,
+              14
+            ],
+            [
+              12,
+              11,
+              11,
+              10,
+              9
+            ],
+            [
+              5,
+              8,
+              12,
+              15,
+              13,
+              13
+            ],
+            [
+              8,
+              17,
+              1,
+              1,
+              5
+            ]
+          ]
+        }
+      }
+    ],
+    "answers": [
+      "{\n  \"traces\": [\n    [1, 5, 12, 6, 15],\n    [5, 8, 11, 13],\n    [2, 1, 1, 9, 1, 2],\n    [9, 10, 12, 15, 1],\n    [0, 0, 1, 3, 6, 10],\n    [7, 13, 11, 15, 13, 11, 9],\n    [11, 11, 11, 5, 11],\n    [3, 9, 12, 13],\n    [0, 5, 15, 7, 15],\n    [12, 11, 15, 13, 11],\n    [5, 8, 12, 15, 13, 13],\n    [8, 17, 2, 17, 4]\n  ]\n}",
+      "{\n  \"traces\": [\n    [1, 5, 12, 6, 15],\n    [5, 8, 11, 13],\n    [2, 1, 1, 9, 10, 11],\n    [9, 10, 12, 15, 1],\n    [0, 1, 1, 3, 4, 6],\n    [7, 13, 11, 9, 5, 3, 1],\n    [11, 11, 11, 5, 11],\n    [3, 9, 12, 13],\n    [3, 8, 18, 9, 14],\n    [12, 11, 11, 10, 9],\n    [5, 8, 12, 15, 13, 13],\n    [8, 17, 1, 1, 5]\n  ]\n}"
+    ],
+    "fp16_ended_by_eog": true,
+    "int8_ended_by_eog": true,
+    "expected": {
+      "traces": [
+        [
+          1,
+          6,
+          13,
+          6,
+          9
+        ],
+        [
+          5,
+          13,
+          7,
+          16
+        ],
+        [
+          2,
+          1,
+          1,
+          10,
+          1,
+          3
+        ],
+        [
+          9,
+          2,
+          4,
+          11,
+          15
+        ],
+        [
+          0,
+          0,
+          1,
+          3,
+          5,
+          12
+        ],
+        [
+          7,
+          3,
+          8,
+          3,
+          6,
+          14,
+          15
+        ],
+        [
+          11,
+          5,
+          16,
+          8,
+          10
+        ],
+        [
+          3,
+          12,
+          4,
+          3
+        ],
+        [
+          0,
+          5,
+          15,
+          7,
+          12
+        ],
+        [
+          12,
+          2,
+          9,
+          7,
+          12
+        ],
+        [
+          5,
+          13,
+          0,
+          5,
+          15,
+          3
+        ],
+        [
+          8,
+          8,
+          10,
+          3,
+          7
+        ]
+      ]
+    },
+    "teacher_forced_steps": 64,
+    "readings": [
+      {
+        "step": 0,
+        "reference_id": 90,
+        "candidate_id": 90,
+        "top1_agrees": true,
+        "top10_overlap": 10,
+        "normalized_rmse": 0.004501164935046981,
+        "max_absolute": 0.03850585222244263,
+        "kl_ref_to_candidate": 2.653881575144473e-07,
+        "fp16_winner_rank": 1
+      },
+      {
+        "step": 1,
+        "reference_id": 198,
+        "candidate_id": 198,
+        "top1_agrees": true,
+        "top10_overlap": 10,
+        "normalized_rmse": 0.013331197887333127,
+        "max_absolute": 0.17575478553771973,
+        "kl_ref_to_candidate": 6.389704211704206e-08,
+        "fp16_winner_rank": 1
+      },
+      {
+        "step": 2,
+        "reference_id": 220,
+        "candidate_id": 220,
+        "top1_agrees": true,
+        "top10_overlap": 10,
+        "normalized_rmse": 0.027484279529460854,
+        "max_absolute": 0.233290433883667,
+        "kl_ref_to_candidate": 3.2631679059771638e-06,
+        "fp16_winner_rank": 1
+      },
+      {
+        "step": 3,
+        "reference_id": 328,
+        "candidate_id": 328,
+        "top1_agrees": true,
+        "top10_overlap": 10,
+        "normalized_rmse": 0.02024026487215223,
+        "max_absolute": 0.22863006591796875,
+        "kl_ref_to_candidate": 4.924353572491367e-08,
+        "fp16_winner_rank": 1
+      },
+      {
+        "step": 8,
+        "reference_id": 198,
+        "candidate_id": 198,
+        "top1_agrees": true,
+        "top10_overlap": 10,
+        "normalized_rmse": 0.014495900595491523,
+        "max_absolute": 0.14338970184326172,
+        "kl_ref_to_candidate": 8.975187103536123e-08,
+        "fp16_winner_rank": 1
+      },
+      {
+        "step": 16,
+        "reference_id": 220,
+        "candidate_id": 220,
+        "top1_agrees": true,
+        "top10_overlap": 9,
+        "normalized_rmse": 0.015615925061708875,
+        "max_absolute": 0.13806676864624023,
+        "kl_ref_to_candidate": 8.995410508945957e-07,
+        "fp16_winner_rank": 1
+      },
+      {
+        "step": 24,
+        "reference_id": 16,
+        "candidate_id": 16,
+        "top1_agrees": true,
+        "top10_overlap": 10,
+        "normalized_rmse": 0.0114153949188901,
+        "max_absolute": 0.145904541015625,
+        "kl_ref_to_candidate": 0.000558133896883731,
+        "fp16_winner_rank": 1
+      },
+      {
+        "step": 32,
+        "reference_id": 220,
+        "candidate_id": 220,
+        "top1_agrees": true,
+        "top10_overlap": 10,
+        "normalized_rmse": 0.016915968642533384,
+        "max_absolute": 0.18536722660064697,
+        "kl_ref_to_candidate": 1.2425909390477536e-07,
+        "fp16_winner_rank": 1
+      },
+      {
+        "step": 40,
+        "reference_id": 16,
+        "candidate_id": 16,
+        "top1_agrees": true,
+        "top10_overlap": 10,
+        "normalized_rmse": 0.0166776724977588,
+        "max_absolute": 0.0955362319946289,
+        "kl_ref_to_candidate": 0.0005436978602687478,
+        "fp16_winner_rank": 1
+      },
+      {
+        "step": 48,
+        "reference_id": 220,
+        "candidate_id": 220,
+        "top1_agrees": true,
+        "top10_overlap": 9,
+        "normalized_rmse": 0.01737280612080505,
+        "max_absolute": 0.13423776626586914,
+        "kl_ref_to_candidate": 3.0121061939614627e-06,
+        "fp16_winner_rank": 1
+      },
+      {
+        "step": 56,
+        "reference_id": 11,
+        "candidate_id": 11,
+        "top1_agrees": true,
+        "top10_overlap": 10,
+        "normalized_rmse": 0.02520135841071891,
+        "max_absolute": 0.19117307662963867,
+        "kl_ref_to_candidate": 8.105427234668712e-06,
+        "fp16_winner_rank": 1
+      }
+    ]
+  }
+]

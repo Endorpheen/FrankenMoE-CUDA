@@ -1,0 +1,6 @@
+{
+  "retained_sections_bit_exact": 95,
+  "added": [
+    ".text.bonsai_decode_direct_q4_mma"
+  ]
+}
