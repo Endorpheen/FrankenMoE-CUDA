@@ -1057,6 +1057,16 @@ release still needs the architecture regression gates.
   from 7.991 to 6.811 s across the same 3,968 launches.
   [Experiment and reusable source](EXP-2026-11-26-2086-bonsai-q8-paired-selector/README.md).
 
+### EXP-2026-11-26-2087 — N64 Bonsai tiles with paired PQ2 selectors
+
+- **Rejected at the component gate.** M64 × N64 with the existing
+  panel pack and arithmetic. CUDA reports maximum active CTAs per SM
+  increasing from three to four.
+- **Evidence:** Bitwise results on four real PQ2 weights on RTX 4070.
+  End-to-end component time increases 25.21–33.76%, including the
+  same activation pack. Keep EXP-2086's M64 × N128 path.
+  [Component results and reproduction](EXP-2026-11-26-2087-bonsai-q8-spread-n64/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
