@@ -1,0 +1,170 @@
+{
+  "short_profile": "1025/32",
+  "ctx_size": 36864,
+  "ubatch": 1024,
+  "cache": "q4_0/q4_0",
+  "request_sha256": "d746ab21897a1d9460c7e338cbd584f52894763b1abcbf236ba6b93e0d1faf80",
+  "arms": [
+    {
+      "arm": "a1",
+      "prefill_ms": 4375.914,
+      "prefill_toks_s": 234.23677887636734,
+      "decode_ms": 2337.05,
+      "decode_toks_s": 13.692475556791681,
+      "device_workspace_bytes": 1569405696
+    },
+    {
+      "arm": "b1",
+      "prefill_ms": 4154.87,
+      "prefill_toks_s": 246.69845265916865,
+      "decode_ms": 1998.511,
+      "decode_toks_s": 16.011920875091505,
+      "device_workspace_bytes": 1569405696
+    },
+    {
+      "arm": "b2",
+      "prefill_ms": 4383.746,
+      "prefill_toks_s": 233.81829147947897,
+      "decode_ms": 1994.299,
+      "decode_toks_s": 16.045738377244334,
+      "device_workspace_bytes": 1569405696
+    },
+    {
+      "arm": "a2",
+      "prefill_ms": 4165.612,
+      "prefill_toks_s": 246.06228328514513,
+      "decode_ms": 2341.547,
+      "decode_toks_s": 13.666178812554264,
+      "device_workspace_bytes": 1569405696
+    }
+  ],
+  "means": {
+    "prefill": {
+      "control_toks_s": 240.14953108075622,
+      "candidate_toks_s": 240.2583720693238,
+      "improvement_percent": 0.04532217409618511
+    },
+    "decode": {
+      "control_toks_s": 13.679327184672973,
+      "candidate_toks_s": 16.02882962616792,
+      "improvement_percent": 17.17557018540685
+    }
+  },
+  "all_goose_token_ids_and_selected_f32_logits_equal": true,
+  "goose_ids": [
+    11,
+    279,
+    4530,
+    314,
+    12904,
+    11,
+    321,
+    799,
+    21254,
+    421,
+    1000,
+    8381,
+    678,
+    15673,
+    13,
+    198,
+    1812,
+    5020,
+    220,
+    15,
+    15,
+    17,
+    17,
+    25,
+    2500,
+    635,
+    23438,
+    9150,
+    1330,
+    20934,
+    440,
+    2086
+  ],
+  "prism_ids": [
+    11,
+    279,
+    4530,
+    310,
+    12904,
+    11,
+    321,
+    799,
+    21254,
+    421,
+    682,
+    264,
+    2086,
+    25969,
+    30,
+    198,
+    1812,
+    5020,
+    220,
+    15,
+    15,
+    17,
+    17,
+    25,
+    2500,
+    635,
+    23438,
+    9150,
+    1330,
+    20934,
+    440,
+    2086
+  ],
+  "prism_timings": {
+    "cache_n": 0,
+    "prompt_n": 1025,
+    "prompt_ms": 875.324,
+    "prompt_per_token_ms": 0.8539746341463414,
+    "prompt_per_second": 1170.9949687201538,
+    "predicted_n": 32,
+    "predicted_ms": 573.213,
+    "predicted_per_token_ms": 18.49074193548387,
+    "predicted_per_second": 54.081118188177875
+  },
+  "prism_differences": [
+    {
+      "output_pos": 4,
+      "goose": 314,
+      "prism": 310
+    },
+    {
+      "output_pos": 11,
+      "goose": 1000,
+      "prism": 682
+    },
+    {
+      "output_pos": 12,
+      "goose": 8381,
+      "prism": 264
+    },
+    {
+      "output_pos": 13,
+      "goose": 678,
+      "prism": 2086
+    },
+    {
+      "output_pos": 14,
+      "goose": 15673,
+      "prism": 25969
+    },
+    {
+      "output_pos": 15,
+      "goose": 13,
+      "prism": 30
+    }
+  ],
+  "artifacts_sha256": {
+    "bonsai-ordered-infer": "a5a662ee8031d215ae86666130bf347d1a075f589e1f2b2511b180ec41646610",
+    "ordered.cubin": "8047e8fe0b385a146a766763197bf83aeb4344c3c413b6b7c51e4a3da89b1b78",
+    "frozen-goose.ptx": "42e1f5c0885a3bbab3656e3bba2dc6ef8b998a4581d365b6c1e48fc842f789d7"
+  }
+}
