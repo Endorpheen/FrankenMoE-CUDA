@@ -809,6 +809,15 @@ release still needs the architecture regression gates.
   top-1 choices match, while direct replay at output step 92 changes 15 → 16.
   [Source, diagnostics and reproduction](EXP-2026-11-25-2058-bonsai-fp16-ffn-down/README.md).
 
+### EXP-2026-11-25-2059 — Long control for Bonsai FP16 MMQ partials
+
+- **Status:** Experimental, promotion open.
+- **Evidence:** EXP-2057 CUBIN reused. RTX 4070 32K/512 prefill
+  737.64 → 815.16 tok/s. All 512 PrismML IDs and text match and
+  post-request process VRAM remains 8,932 MiB. Incident extraction
+  passes both arms; the saved CodeTrace has a five-cell loss.
+  [Measured evidence and reproduction](EXP-2026-11-25-2059-bonsai-fp16-acc-long-control/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
