@@ -108,6 +108,16 @@ release still needs the architecture regression gates.
   after their own whole-model numerical gate. Layer sensitivity,
   other GPUs and benefits to Apex/Inkling remain unverified.
   [Exact reproduction](EXP-2026-11-25-2014-bonsai-ffn-q8-prefill/README.md).
+- **Projection-scope extension:** EXP-2023, source commit
+  `08109cfa31e75bb715ebd38cacceb40df18333a3`, uses the exact EXP-2019
+  CUDA image on RTX 4070. Extending only gate or only up into
+  layers 0–47 still reduces code-trace accuracy from 18/63 to
+  13/63 and 17/63 respectively. Both preserve 11/11 sampled
+  same-history top-1, yet the free outputs diverge after 59
+  and 91 tokens. Both configurations are REJECTED. Diagnostic
+  prefill is 598.579 → 553.197 ms and 580.745 → 549.438 ms;
+  no paired 32K/512, peak VRAM or peak RAM claim is made.
+  [Dispatch, quality, hashes and reproduction](EXP-2026-11-25-2023-bonsai-asymmetric-ffn-q8/README.md).
 
 ### EXP-2026-11-25-2015 — Ordered look-ahead for Q4 decode
 
