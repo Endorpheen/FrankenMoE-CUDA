@@ -1,0 +1,4 @@
+05e925b3adf837c8d9682f6f6ac1bf6abc3fff2a3e28bf47d3343be75425e088  build/bonsai-http-2003-link/frankenmoe-infer
+1f62448c0a6d29a776f76df4f24d0ca162c7a5d10774f879d94f859ac3e81ecb  experiments/EXP-2026-11-25-1977-bonsai-prism-32k-reference/request.json
+2b8e197fbbbcddb5e9a4180de292f27b4fa10d6167bf7a62198069c992d86138  /home/end0/.codex/worktrees/hybrid-exp1768-slru/FrankenMoE-CUDA/build/bonsai-mmq-k64-2000-default/mmq-k64.cubin
+42e1f5c0885a3bbab3656e3bba2dc6ef8b998a4581d365b6c1e48fc842f789d7  /home/end0/.codex/worktrees/hybrid-exp1768-slru/FrankenMoE-CUDA/build/bonsai-mmq-k64-2000-default/frozen-goose.ptx
