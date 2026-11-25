@@ -1027,6 +1027,16 @@ release still needs the architecture regression gates.
   with M64 × N128. No full performance run or runtime change.
   [Component results and reproduction](EXP-2026-11-26-2083-bonsai-q8-m128n128/README.md).
 
+### EXP-2026-11-26-2084 — Panel-major Q8 activations in Bonsai gate/up
+
+- **Retained in the cumulative experimental checkpoint.** Change the
+  full-tile pack and consumer together, preserving exact arithmetic.
+- **32K/512 mean:** 979.19 → 986.57 prefill and 32.71 → 32.63 decode
+  tok/s. All four responses match 512 PrismML IDs and text, VRAM
+  8932 MiB throughout. Traces confirm 3,968 full MMQ calls switch
+  to the new layout, from 8.482 to 7.991 s.
+  [Experiment and reusable source](EXP-2026-11-26-2084-bonsai-q8-panel-layout/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.

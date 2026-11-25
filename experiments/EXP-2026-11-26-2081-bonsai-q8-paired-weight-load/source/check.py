@@ -26,6 +26,8 @@ NAMES = {
     "scalar": "bonsai_pq2_mmq_int8_full_n128",
     "paired": "bonsai_pq2_mmq_int8_full_n128_pairload",
     "m128": "bonsai_pq2_mmq_int8_full_m128n128",
+    "panel": "bonsai_pq2_mmq_int8_full_n128_panel",
+    "panel_pack": "bonsai_pack_q8_panel128",
 }
 
 
@@ -42,7 +44,8 @@ def run_case(kernels, raw, tokens, rng, events, control, candidate):
     params = weight, packed, scales, output, U(width), U(rows), U(tokens)
 
     def launch(label):
-        component.dispatch(kernels["pack"], ((groups + 3) // 4, 1),
+        pack = "panel_pack" if label == "panel" else "pack"
+        component.dispatch(kernels[pack], ((groups + 3) // 4, 1),
                            128, (source, packed, scales, U(groups)))
         tile_rows = 128 if label == "m128" else 64
         component.dispatch(kernels[label], (rows // tile_rows, tokens // 128), 4 * tile_rows, params)
@@ -70,7 +73,7 @@ def run_case(kernels, raw, tokens, rng, events, control, candidate):
 
 def main():
     control, candidate = sys.argv[4:] or ("scalar", "paired")
-    if (control, candidate) not in (("scalar", "paired"), ("paired", "m128")):
+    if (control, candidate) not in (("scalar", "paired"), ("paired", "m128"), ("paired", "panel")):
         raise ValueError(f"Unknown control/candidate pair: {control}, {candidate}")
     device, context = I(), P()
     gpu.call("cuInit", U(0))
@@ -79,7 +82,10 @@ def main():
     try:
         module = component.rec.Layer.load(Path(sys.argv[3]).read_bytes())
         kernels = {}
-        for label in ("pack", control, candidate):
+        labels = ["pack", control, candidate]
+        if candidate == "panel":
+            labels.append("panel_pack")
+        for label in labels:
             function = P()
             gpu.call("cuModuleGetFunction", ct.byref(function), module, NAMES[label].encode())
             kernels[label] = function
