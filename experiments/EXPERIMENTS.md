@@ -194,6 +194,35 @@ release still needs the architecture regression gates.
   with launch and occupancy retuning. No Apex or Inkling gain measured.
   [Reproduction and scopes](EXP-2026-11-25-2017-bonsai-decode-decay/README.md).
 
+### EXP-2026-11-25-2018 — Share Flash K/V between same-head query panels
+
+- **Status:** ACCEPTED in the Bonsai experimental runtime. Source commit
+  `61f63eceaa62f7a6e69eb736ec4865c0e74b4346`.
+  [CUDA generator](EXP-2026-11-25-2018-bonsai-flash-kv-panels/source/emit.py),
+  [dispatch](EXP-2026-11-25-2018-bonsai-flash-kv-panels/source/compose.py),
+  [artifact hashes](EXP-2026-11-25-2018-bonsai-flash-kv-panels/data/SHA256SUMS).
+- **Mechanism:** Two compact query panels on one KV head reuse staged K/V
+  inside one CTA. Overwrite scores with probabilities after a warp
+  barrier. Preserve all FP32 orders and the original merge. The initial
+  61,952-byte shared layout loses time. The 50,176-byte layout improves
+  the measured complete Flash layer at 32768/1024 `60.690 → 57.460 ms`.
+- **Scored HTTP:** At 32K/512 across two balanced pairs, prefill
+  `605.85 → 618.45 tok/s (+2.08%)` and decode
+  `32.687 → 32.667 tok/s (-0.06%)`. Mean prefill saves 1.102 s.
+  VRAM `8932 → 8932 MiB`, long peak RSS
+  `7,457,288–7,457,316 → 7,457,328–7,457,464 KiB`, swap-out zero.
+  [Timing and resources](EXP-2026-11-25-2018-bonsai-flash-kv-panels/data/results.json).
+- **Correctness and limits:** All component outputs and aligned partials
+  match on six shapes. All 512 long IDs and text hashes match PrismML.
+  Actual CUDA trace shows 53,184 launches of the new path. Verified
+  on RTX 4070, Bonsai Q4_0 K/V, compact 256-wide 6:1 GQA, at least
+  8192 visible keys and even query-panel alignment. Requires supported
+  dynamic shared memory and two panels per scratch wave. Control switch
+  `BONSAI_FLASH_KV_PANEL=0`. Other same-head grouped paths may reuse
+  this design after layout, ordering and occupancy checks. No gain for
+  Apex, Inkling or other cards is established.
+  [Details and reproduction](EXP-2026-11-25-2018-bonsai-flash-kv-panels/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
