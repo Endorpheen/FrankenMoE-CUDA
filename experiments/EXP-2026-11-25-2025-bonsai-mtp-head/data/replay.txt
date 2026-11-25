@@ -1,0 +1,1 @@
+Draft replay: 4 rows, 993280 logits byte-identical; isolated KV 4608 bytes

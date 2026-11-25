@@ -1,0 +1,4 @@
+{"position": 0, "ffn_norm_max_abs": 6.804735433796338e-06, "ffn_norm_relative_l2": 4.2375624553147036e-07, "checked_logits": 39, "logit_max_abs": 1.144378465767204e-06, "gpu_top_id": 68}
+{"position": 1, "ffn_norm_max_abs": 3.637506047482475e-06, "ffn_norm_relative_l2": 1.9285398490352322e-07, "checked_logits": 39, "logit_max_abs": 6.335274167490468e-07, "gpu_top_id": 198}
+{"position": 2, "ffn_norm_max_abs": 3.436359627961849e-06, "ffn_norm_relative_l2": 2.624208494622824e-07, "checked_logits": 39, "logit_max_abs": 1.0051325372018027e-06, "gpu_top_id": 16}
+{"position": 3, "ffn_norm_max_abs": 5.911237280997739e-06, "ffn_norm_relative_l2": 2.746652593670703e-07, "checked_logits": 39, "logit_max_abs": 8.64763801899926e-07, "gpu_top_id": 16}

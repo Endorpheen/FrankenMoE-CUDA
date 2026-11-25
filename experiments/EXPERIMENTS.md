@@ -331,6 +331,26 @@ release still needs the architecture regression gates.
   same input order, layouts and norm contract.
   [Evidence and reproduction](EXP-2026-11-25-2024-bonsai-mtp-stem/README.md).
 
+### EXP-2026-11-25-2025 — Native Bonsai MTP draft layer
+
+- **Status:** EXPERIMENTAL, verified single-row forward with independent
+  Q4_0 KV. Builds on EXP-2024.
+  [Goose graph](EXP-2026-11-25-2025-bonsai-mtp-head/source/head.goose),
+  [CUDA Q4 kernel](EXP-2026-11-25-2025-bonsai-mtp-head/source/head.cl),
+  [artifact hashes](EXP-2026-11-25-2025-bonsai-mtp-head/data/SHA256SUMS).
+- **Mechanism:** Execute the native Q4_0 draft projections in their original
+  basis, reuse the existing gated attention and FFN operators, and score
+  with the shared PQ2_0 head.
+- **Evidence and limits:** RTX 4070, Q4_0 K/V, context 1024, ubatch 128.
+  Four positions replayed for 993,280 bit-identical logits. FP64 oracle
+  for draft FFN and final norm reached relative L2 at most 4.24e-7.
+  156 sampled vocabulary logits agree within 1.15e-6 absolute error.
+  Isolated draft KV occupied 4,608 bytes. Ordinary eight-token smoke
+  matched EXP-2024. Throughput, acceptance and peak memory are unmeasured.
+  Other dense MTP layers can consider the scoped Q4 matvec and separate
+  cache, subject to geometry, layout and numerical validation.
+  [Evidence and reproduction](EXP-2026-11-25-2025-bonsai-mtp-head/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
