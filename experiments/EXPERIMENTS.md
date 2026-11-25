@@ -629,6 +629,22 @@ release still needs the architecture regression gates.
   use the same query. Check the prior workspace lifetime.
   [Source, measured evidence and reproduction](EXP-2026-11-25-2041-bonsai-flash-query-pack/README.md).
 
+### EXP-2026-11-25-2042 — Exact causal-tail split for Bonsai verification
+
+- **Status:** Verified within experimental MTP.
+- **Mechanism:** Separate the common visible key region from
+  the at-most-two-key tail in three-query Q4 attention. Preserve
+  per-query FP32 operation and reduction order.
+- **Evidence:** RTX 4070, Q4_0 K/V, 32K/512, A–B–B–A.
+  Decode 64.30 → 67.29 tok/s, prefill 615.85 → 616.11,
+  target saves 1.997 ms/block. All 512 IDs and selected
+  logits match, no new allocation or process swap.
+  Distributing scalar softmax updates across lanes loses to
+  the tail-only candidate in the long component checks.
+- **Reuse:** Keep the common valid loop and a bounded exact
+  tail whenever query masks are nested.
+  [Source, measured evidence and reproduction](EXP-2026-11-25-2042-bonsai-mtp-lane-softmax/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
