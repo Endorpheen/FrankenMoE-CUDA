@@ -909,6 +909,15 @@ release still needs the architecture regression gates.
   after each request. Expanded combined quality remains open.
   [Source, diagnostics and reproduction](EXP-2026-11-25-2070-bonsai-cumulative-fp8-qk/README.md).
 
+### EXP-2026-11-26-2071 — Exact FP16x2 unpack for cumulative Bonsai FFN down
+
+- **Status:** Retained only for full FFN down in the cumulative line.
+- **Evidence:** Bitwise component output and faster FFN down in both
+  trace orders. One 32K/512 pair gives 859.41 → 870.40 tok/s prefill.
+  Both match all 512 PrismML IDs and text. VRAM is 8,932 MiB
+  after each request. Earlier cumulative result was 867.99 tok/s.
+  [Source, diagnostics and reproduction](EXP-2026-11-26-2071-bonsai-cumulative-half-unpack/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
