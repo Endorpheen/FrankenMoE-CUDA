@@ -1,0 +1,1 @@
+build/bonsai-ffn-q8-prefill-2014-default/frankenmoe-infer: symbol lookup error: build/bonsai-ffn-q8-prefill-2014-default/frankenmoe-infer: undefined symbol: cuMemcpyHtoD_v2

@@ -1,0 +1,7 @@
+Goose CUDA: SM89 causal Flash interior tiles selected
+Goose CUDA: SM89 bounded-key Attention available
+Goose CUDA: Attention first-row variant loaded
+Goose CUDA: Attention V unroll selected for SM89
+Goose CUDA: SM89 batched RMSNorm available
+Goose CUDA: route mailbox initialization result=0
+Goose GPU expert cache: requested 6290 MiB, available 6228172800 bytes after model allocations
