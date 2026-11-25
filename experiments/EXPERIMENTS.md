@@ -261,6 +261,16 @@ release still needs the architecture regression gates.
   `80.644 → 80.475 decode tok/s` leave strict performance equivalence
   inconclusive. The shared CUDA archive members are byte-identical.
   [Evidence and reproduction](EXP-2026-11-25-2020-bonsai-apex-regression/README.md).
+- **Inkling qualification:** EXP-2021, source commit
+  `a70e66ef9591d510bb3899a796909089e03f7448`, compares this exact shared
+  binary with frozen EXP-1969 on Inkling 32K/512, context 36864,
+  6720 MiB expert cache, AD-IQ4_XS and Q4_0 K/V. All IDs, text and
+  cache properties match in A–B–B–A. VRAM stays 9810 MiB, peak RSS
+  is within the control range, with scored swap-out zero. Aggregate
+  rates `296.187 → 295.499 prefill` and `22.023 → 21.975 decode tok/s`
+  leave strict performance equivalence inconclusive. The initial
+  control timeout was before full file-page preparation.
+  [Evidence and reproduction](EXP-2026-11-25-2021-bonsai-inkling-regression/README.md).
 
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
