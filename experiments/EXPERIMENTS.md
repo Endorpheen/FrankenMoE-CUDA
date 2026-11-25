@@ -388,6 +388,25 @@ release still needs the architecture regression gates.
   speculative acceptance are unmeasured.
   [Source, state gate, and measured results](EXP-2026-11-25-2027-bonsai-mtp-target-verify/README.md).
 
+### EXP-2026-11-25-2028 — Three-row PQ2 Q8 weight-code reuse
+
+- **Status:** EXPERIMENTAL, bit-exact and faster projection component.
+  Full verifier still fails the bitwise state gate.
+- **Mechanism:** Reuse Q8 packing and the EXP-2012 PQ2 DP4A operand
+  order. Unpack each weight-code pair once for three tokens, with
+  independent accumulators. [CUDA source](EXP-2026-11-25-2028-bonsai-mtp-q8-batch/source/verify-mvq.cl).
+- **Evidence:** RTX 4070, 843,261 exact projection values across four
+  real tensors. Median vocabulary pack+projection of three tokens
+  decreased from 2.265 to 0.992 ms. No spills. Full target control
+  and candidate match all six sampled greedy selections against
+  serial, but 122/128 candidate state planes differ on both inputs.
+  No model throughput or peak memory measured. No additional device
+  buffers over EXP-2027.
+- **Reuse:** Apply to token tiles with common PQ2 weights, separate
+  Q8 operands and unchanged per-token reduction. Register pressure
+  and model-level benefit require their own measurement.
+  [Metrics, hashes and reproduction](EXP-2026-11-25-2028-bonsai-mtp-q8-batch/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
