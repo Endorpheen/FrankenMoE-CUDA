@@ -1076,6 +1076,16 @@ release still needs the architecture regression gates.
   preparation. EXP-2086 remains the cumulative checkpoint.
   [Component results and reproduction](EXP-2026-11-26-2088-bonsai-ffn-down-scale-broadcast/README.md).
 
+### EXP-2026-11-26-2089 — Phase probe for Bonsai half2 FFN down
+
+- **Diagnostic.** Clock samples distinguish K-step parity and
+  indicate sizeable fragment/MMA and staging-wait intervals.
+- **Evidence:** Bitwise results on four real PQ2 weights on RTX 4070.
+  Instrumentation adds 48–58% component time and changes register
+  allocation from 79 to 146. No scaling to full request time.
+  Nsight Compute counters unavailable with ERR_NVGPUCTRPERM.
+  [Method and phase observations](EXP-2026-11-26-2089-bonsai-ffn-down-phase-budget/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.

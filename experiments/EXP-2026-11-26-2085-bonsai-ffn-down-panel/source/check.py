@@ -23,8 +23,11 @@ NAMES = {
     "panel_tail": "bonsai_ffn_tail_panel128",
     "panel_mmq": "bonsai_pq2_half_unpack_half2_17408_panel",
     "broadcast_mmq": "bonsai_pq2_half_unpack_half2_17408_broadcast",
+    "clock_mmq": "bonsai_pq2_half_unpack_half2_17408_clock",
 }
 TOKENS, WIDTH, ROWS = 1024, 17408, 5120
+PHASES = ("weight_reads", "activation_copy_issue", "unpack",
+          "copy_wait_and_first_barrier", "fragment_load_mma_and_fp32", "final_barrier")
 
 
 def run_case(kernels, raw, signs, rng, events, candidate):
@@ -36,15 +39,22 @@ def run_case(kernels, raw, signs, rng, events, candidate):
     packed = gpu.allocate(TOKENS * WIDTH * 2)
     output = gpu.allocate(TOKENS * ROWS * 4)
     shape = U(WIDTH), U(ROWS), U(TOKENS)
+    grid = ROWS // 64, TOKENS // 128
+    counter_bytes = grid[0] * grid[1] * 2 * len(PHASES) * 8
+    counters = gpu.allocate(counter_bytes) if candidate == "clock" else None
 
     def launch(label):
         tail = "panel_tail" if label == "panel" else "token_tail"
         component.dispatch(kernels[tail], (WIDTH // 1024, TOKENS),
                            256, (gate_device, up_device, signs, packed, U(WIDTH)))
-        component.dispatch(kernels[f"{label}_mmq"], (ROWS // 64, TOKENS // 128),
-                           256, (weight, packed, output, *shape))
+        arguments = weight, packed, output, *shape
+        if label == "clock":
+            arguments = (*arguments, counters)
+        component.dispatch(kernels[f"{label}_mmq"], grid, 256, arguments)
 
     try:
+        if counters is not None:
+            gpu.call("cuMemsetD8_v2", counters, ct.c_uint8(0), gpu.S(counter_bytes))
         launch("token")
         expected = np.ctypeslib.as_array(gpu.download(output, TOKENS * ROWS)).copy()
         launch(candidate)
@@ -55,19 +65,34 @@ def run_case(kernels, raw, signs, rng, events, candidate):
         for label in ("token", candidate, candidate, "token") * 4:
             timings[label].append(component.elapsed(lambda: launch(label), *events))
         before, after = map(median, (timings["token"], timings[candidate]))
-        return {
+        result = {
             "width": WIDTH, "rows": ROWS, "tokens": TOKENS, "bit_exact": True,
             "raw_ms": timings, "token_median_ms": before, f"{candidate}_median_ms": after,
             "time_reduction_pct": (1 - after / before) * 100,
         }
+        if counters is not None:
+            clocks = np.frombuffer(bytes(gpu.download(counters, counter_bytes // 4)), dtype="<u8")
+            clocks = clocks.reshape(grid[1], grid[0], 2, len(PHASES))
+            assert np.count_nonzero(np.any(clocks, axis=(2, 3))) == 40
+            active = clocks[::2, ::8].reshape(40, 2, len(PHASES))
+            assert np.all(active.sum(axis=2) > 0)
+            result["sampled_ctas"] = len(active)
+            result["sampled_clock_cycles"] = active.tolist()
+            for step, parity in enumerate(("even", "odd")):
+                elapsed = active[:, step]
+                total = elapsed.sum(axis=0)
+                result[f"{parity}_phase_clock_share"] = dict(zip(PHASES, (total / total.sum()).tolist()))
+        return result
     finally:
+        if counters is not None:
+            gpu.call("cuMemFree_v2", counters)
         for pointer in (output, packed, up_device, gate_device, weight):
             gpu.call("cuMemFree_v2", pointer)
 
 
 def main():
     candidate = sys.argv[4] if len(sys.argv) > 4 else "panel"
-    if candidate not in ("panel", "broadcast"):
+    if candidate not in ("panel", "broadcast", "clock"):
         raise ValueError(f"Unknown candidate: {candidate}")
     device, context = I(), P()
     gpu.call("cuInit", U(0))
