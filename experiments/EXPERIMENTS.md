@@ -892,6 +892,14 @@ release still needs the architecture regression gates.
   Calculated maximum active blocks per SM decrease from three to two.
   [Source, diagnostics and reproduction](EXP-2026-11-25-2068-bonsai-cumulative-warp-row-reuse/README.md).
 
+### EXP-2026-11-25-2069 — Twelve-warp N192 cumulative Bonsai tiles
+
+- **Status:** Rejected below the component performance threshold.
+- **Evidence:** Bitwise results against EXP-2067 including the
+  1023-token tail. Full matrices take 10.5–13.3% longer with N192;
+  calculated resident warps remain at 24 per SM.
+  [Source, diagnostics and reproduction](EXP-2026-11-25-2069-bonsai-cumulative-n192/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
