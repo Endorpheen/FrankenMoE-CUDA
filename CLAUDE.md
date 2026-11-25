@@ -513,6 +513,34 @@ accepted measurements and fixtures to avoid repeating checks that offer
 no new diagnostic information. This policy preserves all Release Gate
 requirements and the rules for serial runs and approvals.
 
+### Benchmark integrity and reproducibility
+
+Freeze the reference workload before collecting results. For Bonsai performance
+claims, use the established 32K/512 workload with identical GGUF bytes and raw
+input IDs in the control and candidate. Do not select prompts, seeds, requests,
+or runs after seeing which ones favor a candidate. Report all valid runs and
+document exclusions with the observed reason. Component probes and short
+requests are diagnostic evidence. The full request is the basis for throughput
+and end-to-end speedup claims.
+
+Record and match effective argv and environment, context and batch/ubatch,
+KV format and cache state, precision settings, MTP, sampling and stopping
+rules, placement, and execution conditions. Document every difference before
+measurement. If the experiment changes arithmetic or another setting under
+test, record it as an explicit experimental variable and apply the relevant
+correctness and quality gates. Treat comparisons with other changed settings
+or workloads as separate results.
+
+For each scored comparison, retain prefill and decode throughput, total
+request time, VRAM and RAM with their measurement scope, correctness and quality
+results, and SHA-256 for the GGUF, request, executable and device images.
+Identify the source commit and build settings. Record the full executed graph
+for prefill and decode, including actual kernel dispatch, fallbacks, transfers,
+synchronization and CUDA Graph use where applicable. Link the matching
+execution trace or equivalent evidence and identify any unverified paths.
+Keep traced timings separate from unprofiled performance results. Preserve
+the staged acceptance process and the mandatory Release Gate.
+
 ### Bonsai cumulative checkpoint policy
 
 Keep separate stable and cumulative experimental checkpoints in
