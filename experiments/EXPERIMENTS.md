@@ -141,6 +141,30 @@ release still needs the architecture regression gates.
   gain is established. Off by default.
   [Full experiment and reproduction](EXP-2026-11-25-2015-bonsai-gqa-lookahead/README.md).
 
+### EXP-2026-11-25-2016 — Deferred Bonsai CUDA driver binding
+
+- **Status:** ACCEPTED for Linux startup compatibility in the experimental
+  Bonsai build. Source commit `a0d761eafddc60b61c555cc290e3b572d1f1a40d`.
+  [Driver bindings](EXP-2026-11-25-2016-bonsai-deferred-cuda/source/cuda-loader.inc),
+  [artifact hashes](EXP-2026-11-25-2016-bonsai-deferred-cuda/data/SHA256SUMS).
+- **Mechanism:** Resolve Bonsai's CUDA entry points only when opening
+  a Bonsai model. This restores the frozen runtime's ELF startup
+  dependencies and prevents missing driver symbols from blocking
+  the common frontend before model selection.
+- **Evidence:** Incomplete driver stub gives matching CLI usage
+  and exit 2 with frozen and corrected binaries. The eager-link
+  build exits 127. On RTX 4070, Bonsai 4097/64 answers match all
+  64 IDs and text. Prefill `817.40 → 806.01 tok/s`, decode
+  `35.11 → 36.11 tok/s`, VRAM `8932 → 8932 MiB`, peak RSS
+  `7,456,972 → 7,456,600 KiB`, swap-out zero. One functional
+  pair does not establish a performance effect.
+- **Limits and possible reuse:** Linux CUDA driver ABI only.
+  Other optional GPU backends can follow the same deferred-bind
+  pattern. The exact Apex control at context 262144 and 6290 MiB
+  failed allocation before inference. Apex/Inkling model-level
+  gates remain open.
+  [Evidence and reproduction](EXP-2026-11-25-2016-bonsai-deferred-cuda/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
