@@ -1,0 +1,232 @@
+{
+  "timings": {
+    "cache_n": 0,
+    "prompt_n": 32768,
+    "prompt_ms": 52935.340020019794,
+    "prompt_per_token_ms": 1.6154583746343931,
+    "prompt_per_second": 619.0193543218455,
+    "predicted_n": 16,
+    "predicted_ms": 557.8102209838107,
+    "predicted_per_token_ms": 37.18734806558738,
+    "predicted_per_second": 26.890866168684536
+  },
+  "kernels": [
+    {
+      "kernel": "bonsai_pq2_mvq_q8_2",
+      "grid_x": 2176,
+      "block_x": 128,
+      "calls": 1920,
+      "duration_ms": 108.042586
+    },
+    {
+      "kernel": "bonsai_norm",
+      "grid_x": 1,
+      "block_x": 32,
+      "calls": 1935,
+      "duration_ms": 98.739087
+    },
+    {
+      "kernel": "bonsai_decode_gqa3",
+      "grid_x": 8,
+      "block_x": 32,
+      "calls": 240,
+      "duration_ms": 90.449952
+    },
+    {
+      "kernel": "bonsai_pq2_mvq_q8_2",
+      "grid_x": 640,
+      "block_x": 128,
+      "calls": 1920,
+      "duration_ms": 74.579743
+    },
+    {
+      "kernel": "bonsai_decay",
+      "grid_x": 48,
+      "block_x": 32,
+      "calls": 720,
+      "duration_ms": 31.723491
+    },
+    {
+      "kernel": "goose_q4_attention_merge",
+      "grid_x": 24,
+      "block_x": 32,
+      "calls": 240,
+      "duration_ms": 30.672969
+    },
+    {
+      "kernel": "bonsai_pq2_mvq_q8_2",
+      "grid_x": 1280,
+      "block_x": 128,
+      "calls": 720,
+      "duration_ms": 23.050955
+    },
+    {
+      "kernel": "bonsai_pq2_mvq_q8_2",
+      "grid_x": 768,
+      "block_x": 128,
+      "calls": 720,
+      "duration_ms": 14.016453
+    },
+    {
+      "kernel": "bonsai_pq2_mvq_q8_1",
+      "grid_x": 62080,
+      "block_x": 128,
+      "calls": 15,
+      "duration_ms": 10.937714
+    },
+    {
+      "kernel": "bonsai_pq2_mvq_q8_2",
+      "grid_x": 1536,
+      "block_x": 128,
+      "calls": 240,
+      "duration_ms": 9.49575
+    },
+    {
+      "kernel": "goose_gdn_decode",
+      "grid_x": 48,
+      "block_x": 128,
+      "calls": 720,
+      "duration_ms": 7.009511
+    },
+    {
+      "kernel": "bonsai_pq2_matvec_ordered",
+      "grid_x": 256,
+      "block_x": 128,
+      "calls": 480,
+      "duration_ms": 6.449128
+    },
+    {
+      "kernel": "bonsai_fwht1024",
+      "grid_x": 5,
+      "block_x": 256,
+      "calls": 1950,
+      "duration_ms": 5.444366
+    },
+    {
+      "kernel": "bonsai_fwht1024",
+      "grid_x": 17,
+      "block_x": 256,
+      "calls": 960,
+      "duration_ms": 2.759972
+    },
+    {
+      "kernel": "bonsai_fwht1024",
+      "grid_x": 6,
+      "block_x": 256,
+      "calls": 960,
+      "duration_ms": 2.685335
+    },
+    {
+      "kernel": "bonsai_residual",
+      "grid_x": 20,
+      "block_x": 256,
+      "calls": 1920,
+      "duration_ms": 1.97798
+    },
+    {
+      "kernel": "bonsai_norm",
+      "grid_x": 48,
+      "block_x": 32,
+      "calls": 720,
+      "duration_ms": 1.902833
+    },
+    {
+      "kernel": "bonsai_mv_pack_q8",
+      "grid_x": 40,
+      "block_x": 128,
+      "calls": 1935,
+      "duration_ms": 1.895083
+    },
+    {
+      "kernel": "goose_set_q4_rows",
+      "grid_x": 1,
+      "block_x": 128,
+      "calls": 480,
+      "duration_ms": 1.402793
+    },
+    {
+      "kernel": "bonsai_conv_step",
+      "grid_x": 40,
+      "block_x": 256,
+      "calls": 720,
+      "duration_ms": 1.271601
+    },
+    {
+      "kernel": "bonsai_swiglu",
+      "grid_x": 68,
+      "block_x": 256,
+      "calls": 960,
+      "duration_ms": 1.238983
+    },
+    {
+      "kernel": "bonsai_mv_pack_q8",
+      "grid_x": 136,
+      "block_x": 128,
+      "calls": 960,
+      "duration_ms": 1.022505
+    },
+    {
+      "kernel": "bonsai_mv_pack_q8",
+      "grid_x": 48,
+      "block_x": 128,
+      "calls": 960,
+      "duration_ms": 0.945904
+    },
+    {
+      "kernel": "bonsai_norm",
+      "grid_x": 32,
+      "block_x": 32,
+      "calls": 720,
+      "duration_ms": 0.922847
+    },
+    {
+      "kernel": "bonsai_norm",
+      "grid_x": 4,
+      "block_x": 32,
+      "calls": 240,
+      "duration_ms": 0.800327
+    },
+    {
+      "kernel": "bonsai_norm",
+      "grid_x": 24,
+      "block_x": 32,
+      "calls": 240,
+      "duration_ms": 0.795019
+    },
+    {
+      "kernel": "goose_rope_decode",
+      "grid_x": 24,
+      "block_x": 128,
+      "calls": 240,
+      "duration_ms": 0.595847
+    },
+    {
+      "kernel": "goose_rope_decode",
+      "grid_x": 4,
+      "block_x": 128,
+      "calls": 240,
+      "duration_ms": 0.553443
+    },
+    {
+      "kernel": "bonsai_attention_gate",
+      "grid_x": 24,
+      "block_x": 256,
+      "calls": 240,
+      "duration_ms": 0.318458
+    },
+    {
+      "kernel": "bonsai_split_q_gate",
+      "grid_x": 24,
+      "block_x": 256,
+      "calls": 240,
+      "duration_ms": 0.228768
+    },
+    {
+      "kernel": "bonsai_pq2_row",
+      "grid_x": 20,
+      "block_x": 256,
+      "calls": 15,
+      "duration_ms": 0.018562
+    }
+  ]
+}
