@@ -1,0 +1,52 @@
+--- backend.c
++++ backend.c
+@@ -19,7 +19,7 @@
+ enum kernel {
+     NORM, ROTATE, MATRIX, ADD, DECAY, CONV, GDN, SPLIT, ROPE, Q4, TILES, GATE,
+     EMBED, SWIGLU, MERGE, GDN_BATCH, ROPE_PHASES, ROPE_APPLY,
+-    EMBED_BATCH, CONV_BATCH, PACK_HALF, MMQ, FLASH_TILE_F32, FLASH_MERGE_F32, FLASH_TILE_STAGED, FLASH_STAGE_KV, FLASH_MERGE_ORDERED, FLASH_TILE_COMPACT, FLASH_MERGE_COMPACT, FLASH_MERGE_COMPACT_ORDERED, FLASH_TILE_ASYNC, MMQ_ASYNC, GDN_V32, MMQ_WIDE, KERNEL_COUNT
++    EMBED_BATCH, CONV_BATCH, PACK_HALF, MMQ, FLASH_TILE_F32, FLASH_MERGE_F32, FLASH_TILE_STAGED, FLASH_STAGE_KV, FLASH_MERGE_ORDERED, FLASH_TILE_COMPACT, FLASH_MERGE_COMPACT, FLASH_MERGE_COMPACT_ORDERED, FLASH_TILE_ASYNC, MMQ_ASYNC, GDN_V32, MMQ_WIDE, DECAY_REUSE4, DECAY_REUSE8, KERNEL_COUNT
+ };
+ 
+ typedef struct {
+@@ -31,7 +31,7 @@
+     int64_t bound[LAYERS * 15], states[LAYERS * 2], globals[3], b[24];
+     CUdeviceptr token_ids, phases, packed, packed_source;
+     size_t partial_capacity;
+-    int use_flash_f32, stage_kv, ordered_merge, compact_heads, async_fragments, async_mmq, gdn_prefill_v32, wide_mmq;
++    int use_flash_f32, stage_kv, ordered_merge, compact_heads, async_fragments, async_mmq, gdn_prefill_v32, wide_mmq, decay_reuse;
+     CUdeviceptr stage_k, stage_v;
+     unsigned stage_capacity_chunks;
+     unsigned context, position, ubatch, count, wave;
+@@ -159,6 +159,12 @@
+         case ADD:
+             return launch(m, ADD, 20 * count, 1, 1, 256, (void *[]){ &p[0], &p[1], &p[2] });
+         case DECAY:
++            if (m->decay_reuse && count>=32) {
++                unsigned tokens=count;
++                const unsigned tile=count>=256 ? 8 : 4;
++                return launch(m,tile==8 ? DECAY_REUSE8 : DECAY_REUSE4,12*((count+tile-1)/tile),
++                    1,1,128,(void *[]){&p[0],&p[1],&p[2],&p[3],&p[4],&p[5],&p[6],&tokens});
++            }
+             return launch(m, DECAY, 48 * count, 1, 1, 32, (void *[]){ &p[0], &p[1], &p[2], &p[3], &p[4], &p[5], &p[6] });
+         case CONV: {
+             unsigned tokens = count;
+@@ -390,6 +396,9 @@
+     const char *wide = getenv("BONSAI_PQ2_MMQ_WIDE");
+     m->wide_mmq = !wide || strcmp(wide,"1") == 0;
+     if (m->wide_mmq) fputs("PQ2 MMQ: wide tiles for 128 or more tokens\n",stderr);
++    const char *decay=getenv("BONSAI_DECAY_REUSE");
++    m->decay_reuse=!decay || strcmp(decay,"1")==0;
++    if (m->decay_reuse) fputs("Batch decay: reuse alpha/beta weights\n",stderr);
+     if (m->compact_heads) fputs("Flash query layout: compact 6:1\n", stderr);
+     if (m->ordered_merge) fputs("Flash merge: ordered parallel coefficients\n", stderr);
+     fprintf(stderr, "Prefill attention: %s\n", !m->use_flash_f32 ? "tiled Q4" :
+@@ -415,7 +424,7 @@
+         "goose_rope_phases", "goose_rope_apply", "bonsai_embed_batch", "bonsai_conv_batch",
+         "bonsai_pack_half", "bonsai_pq2_mmq", "bonsai_flash_f32_tile", "bonsai_flash_f32_merge",
+         "bonsai_flash_staged_tile", "bonsai_flash_stage_kv", "bonsai_flash_ordered_merge",
+-        "bonsai_flash_compact_tile", "bonsai_flash_compact_merge", "bonsai_flash_compact_ordered_merge", "bonsai_flash_async_tile", "bonsai_pq2_mmq_async", "goose_gdn_mma_v32", "bonsai_pq2_mmq_64x64",
++        "bonsai_flash_compact_tile", "bonsai_flash_compact_merge", "bonsai_flash_compact_ordered_merge", "bonsai_flash_async_tile", "bonsai_pq2_mmq_async", "goose_gdn_mma_v32", "bonsai_pq2_mmq_64x64", "bonsai_decay_reuse4", "bonsai_decay_reuse8",
+     };
+     if (check(cuInit(0), "driver") || check(cuDeviceGet(&device, 0), "device") ||
+         check(cuCtxCreate(&m->cuda, 0, device), "context") ||

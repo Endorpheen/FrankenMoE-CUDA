@@ -1,0 +1,144 @@
+{
+  "profile": "4097/16",
+  "context": 36864,
+  "ubatch": 1024,
+  "kv": "q4_0/q4_0",
+  "arms": {
+    "a1": {
+      "prefill_ms": 6913.653,
+      "decode_ms": 973.11,
+      "prefill_toks_s": 592.5955497043313,
+      "decode_toks_s": 16.44212884463216,
+      "workspace_bytes": 1720400640
+    },
+    "b1": {
+      "prefill_ms": 6669.951,
+      "decode_ms": 973.341,
+      "prefill_toks_s": 614.2473910228126,
+      "decode_toks_s": 16.438226685200767,
+      "workspace_bytes": 1720400640
+    },
+    "b2": {
+      "prefill_ms": 6679.696,
+      "decode_ms": 974.158,
+      "prefill_toks_s": 613.3512662851723,
+      "decode_toks_s": 16.424440388520136,
+      "workspace_bytes": 1720400640
+    },
+    "a2": {
+      "prefill_ms": 6938.68,
+      "decode_ms": 973.194,
+      "prefill_toks_s": 590.4581274824607,
+      "decode_toks_s": 16.440709663232614,
+      "workspace_bytes": 1720400640
+    }
+  },
+  "means": {
+    "prefill_toks_s": {
+      "control": 591.526838593396,
+      "reuse": 613.7993286539925
+    },
+    "decode_toks_s": {
+      "control": 16.441419253932388,
+      "reuse": 16.43133353686045
+    },
+    "prefill_ms": {
+      "control": 6926.1665,
+      "reuse": 6674.8235
+    }
+  },
+  "extra_prefill_ms_to_5000": 5855.423500000001,
+  "output": [
+    {
+      "step": 0,
+      "token": 11846,
+      "logit": 19.6576195
+    },
+    {
+      "step": 1,
+      "token": 13,
+      "logit": 19.5944595
+    },
+    {
+      "step": 2,
+      "token": 58737,
+      "logit": 14.7398405
+    },
+    {
+      "step": 3,
+      "token": 1092,
+      "logit": 18.4565201
+    },
+    {
+      "step": 4,
+      "token": 488,
+      "logit": 16.1919174
+    },
+    {
+      "step": 5,
+      "token": 1000,
+      "logit": 17.4311848
+    },
+    {
+      "step": 6,
+      "token": 3222,
+      "logit": 18.0111523
+    },
+    {
+      "step": 7,
+      "token": 6570,
+      "logit": 17.136488
+    },
+    {
+      "step": 8,
+      "token": 11,
+      "logit": 19.0046978
+    },
+    {
+      "step": 9,
+      "token": 279,
+      "logit": 16.3880234
+    },
+    {
+      "step": 10,
+      "token": 4530,
+      "logit": 14.8468933
+    },
+    {
+      "step": 11,
+      "token": 310,
+      "logit": 17.6717834
+    },
+    {
+      "step": 12,
+      "token": 12904,
+      "logit": 14.2589397
+    },
+    {
+      "step": 13,
+      "token": 11,
+      "logit": 18.6806011
+    },
+    {
+      "step": 14,
+      "token": 321,
+      "logit": 16.6043358
+    },
+    {
+      "step": 15,
+      "token": 799,
+      "logit": 17.5472565
+    }
+  ],
+  "all_id_and_selected_logits_bit_exact": true,
+  "ids_match_prism": true,
+  "profiler_decay_ns": 79379752,
+  "baseline_decay_ns": 345863000,
+  "profiler_default_output_matches": true,
+  "default_artifacts_sha256": {
+    "bonsai-decay-reuse": "2c6e6d8ec396c250e52456e28f215816041523bea2e995ae1d18a5b0b04fa677",
+    "decay-reuse.cubin": "ca66a8be14a6568cec78f07cade5620e53a5f032d06abfc20612ac145e098e17",
+    "frozen-goose.ptx": "42e1f5c0885a3bbab3656e3bba2dc6ef8b998a4581d365b6c1e48fc842f789d7",
+    "profile.nsys-rep": "f96593e4437d9f44a1b82588f79483e84f092c5886a73524e0d7d08b12ec8f21"
+  }
+}
