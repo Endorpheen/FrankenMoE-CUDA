@@ -1157,6 +1157,16 @@ release still needs the architecture regression gates.
   parity and combined quality acceptance remain open.
   [Experiment and reusable source](EXP-2026-11-26-2096-bonsai-ffn-down-fused-q8/README.md).
 
+### EXP-2026-11-26-2097 — Fresh Bonsai 32K/512 comparison with PrismML
+
+- **Diagnostic.** Two sequential opposite-order pairs, unchanged
+  PrismML and EXP-2096 builds. All four cold-prefill gates pass,
+  and 512 IDs and text match in every run.
+- **Evidence:** Goose 1094.19 prefill / 37.82 decode, PrismML
+  1095.12 / 48.08 tok/s. Prefill gap averages 27 ms with opposite
+  signs. Decode and the +70% targets remain open. No runtime change.
+  [Full comparison and effective settings](EXP-2026-11-26-2097-bonsai-prism-prefill-parity/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
