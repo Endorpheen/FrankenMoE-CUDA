@@ -1,0 +1,53 @@
+{
+  "tensor_count": 866,
+  "payload_bytes": 7481217024,
+  "short_file_rejected": true,
+  "validated_tensor_bindings": 866,
+  "embedding_exact_cpu_cuda": true,
+  "q2_0_reference_fixture": true,
+  "ordered_fwht": [
+    {
+      "width": 5120,
+      "geometry": [
+        0,
+        0,
+        1
+      ],
+      "fwht_sha256": "7c90a1a06aca401c4e6f1bad5e4ff596d5cbeb50d749f411e15a9d858e446069"
+    },
+    {
+      "width": 6144,
+      "geometry": [
+        128,
+        16,
+        3
+      ],
+      "fwht_sha256": "aeb7844caa14b2f0b549a1d222a83e4c7c92f29cc71aedc0c6199652972d8530"
+    },
+    {
+      "width": 17408,
+      "geometry": [
+        0,
+        0,
+        1
+      ],
+      "fwht_sha256": "fdb6d6de16795a3a8b68fc28624df1a9fab49caaeff2cdcb350c44ab3fc5420f"
+    }
+  ],
+  "sampled_output_rows": [
+    0,
+    1,
+    255,
+    32768,
+    248046,
+    248319
+  ],
+  "first_layer_ffn_max_sampled_error": 3.6646272821849735e-11,
+  "max_head_absolute_error": 2.9685907065868378e-09,
+  "device_total_bytes": 12447973376,
+  "device_free_before_bytes": 10142679040,
+  "device_free_after_reservations_bytes": 749142016,
+  "reserved_q4_kv_bytes": 679477248,
+  "reserved_gdn_bytes": 156893184,
+  "reserved_workspace_bytes": 1073741824
+}

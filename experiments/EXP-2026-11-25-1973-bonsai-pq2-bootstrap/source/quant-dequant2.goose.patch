@@ -1,0 +1,58 @@
+--- a/quant-dequant2.goose
++++ b/quant-dequant2.goose
+@@ -53,6 +53,7 @@
+ const T_NVFP4: i64 = 40;
+ const T_Q1_0: i64 = 41;
+ const T_Q2_0: i64 = 42;
++const T_PQ2_0: i64 = 142;
+ 
+ // ---- geometry -------------------------------------------------------------
+ 
+@@ -63,6 +64,7 @@
+ fn blk_elems(t: i64) -> i64 {
+     if t == T_Q1_0 { return 128; }
+     if t == T_Q2_0 { return 64; }
++    if t == T_PQ2_0 { return 128; }
+     if t == T_MXFP4 { return 32; }
+     if t == T_IQ4_NL { return 32; }
+     if t == T_NVFP4 { return 64; }
+@@ -85,6 +87,7 @@
+ fn blk_bytes(t: i64) -> i64 {
+     if t == T_Q1_0 { return 18; }
+     if t == T_Q2_0 { return 18; }
++    if t == T_PQ2_0 { return 34; }
+     if t == T_Q2_K { return 84; }
+     if t == T_Q3_K { return 110; }
+     if t == T_Q4_K { return 144; }
+@@ -309,16 +312,16 @@
+     }
+ }
+ 
+-fn dq_q2_0(src: const u8[:], n: i64, out: f32[:]) {
+-    let nb = n / QK2_0;
++fn dq_q2_0(src: const u8[:], n: i64, out: f32[:], elements: i64, bytes: i64) {
++    let nb = n / elements;
+     var i: i64 = 0;
+     while i < nb {
+-        let o = i * 18;
++        let o = i * bytes;
+         let d = half(u16at(src, o));
+         var j: i64 = 0;
+-        while j < QK2_0 {
++        while j < elements {
+             let q = (u8at(src, o + 2 + j / 4) >> ((j & 3) * 2)) & 3;
+-            out[i * QK2_0 + j] = ((q - 1) as f32) * d;
++            out[i * elements + j] = ((q - 1) as f32) * d;
+             j = j + 1;
+         }
+         i = i + 1;
+@@ -909,7 +912,8 @@
+     }
+ 
+     if t == T_Q1_0 { dq_q1_0(src, n, out); }
+-    if t == T_Q2_0 { dq_q2_0(src, n, out); }
++    if t == T_Q2_0 { dq_q2_0(src, n, out, QK2_0, 18); }
++    if t == T_PQ2_0 { dq_q2_0(src, n, out, 128, 34); }
+     if t == T_Q2_K { dq_q2_K(src, n, out); }
+     if t == T_Q3_K { dq_q3_K(src, n, out); }
+     if t == T_Q4_K { dq_q4_K(src, n, out); }
