@@ -461,21 +461,28 @@ Select the smallest check that can change the next decision, based on the
 risk and scope of the change. Record the hypothesis, reference and acceptance
 criteria before running the relevant stage.
 
-1. **Component probe.** For every hypothesis, run a minimal correctness and
-   timing check on representative inputs. Include required packing, data
-   movement or setup in the relevant cost. Stop or revise the candidate if
-   the proposed mechanism or useful speedup does not survive the probe.
-2. **Targeted candidate check.** For a promising result, exercise known
-   divergence points and affected boundaries and run a short, controlled A/B.
-   Use the latest accepted reference. Carry forward valid saved results where
-   the build, inputs and conditions match. Add a run only when its result can
-   resolve a named uncertainty, test a new risk or corroborate a gain needed
-   for the next decision.
-3. **Promotion or release.** Before promoting a substantial change into the
-   working runtime, complete the applicable full quality suite, long
-   generations and regression gates for affected architectures. Before
+1. **Component probe.** During exploration, use fast correctness and timing
+   checks on representative inputs to screen each hypothesis. Include relevant
+   packing, data movement and setup. Short requests can diagnose numerical
+   or execution-boundary risks. They do not replace the reference workload.
+2. **Reference-workload A/B.** For a promising Bonsai candidate, run one
+   full paired A/B at 32K/512 against the latest accepted FrankenMoE baseline.
+   Match the GGUF, raw input IDs, context, batch/ubatch, KV formats, sampler,
+   seed, EOS and MTP policies, cache state, placement, and execution
+   conditions. Compare prefill, decode, total request time, process VRAM and
+   correctness against the accepted baseline and the matching PrismML
+   llama.cpp reference. Preserve legitimate saved reference results when
+   the workload, build and conditions still apply. Repeat the full A/B only
+   when a result is ambiguous, variation is large, or a regression is
+   suspected. Record the reason for the repeat.
+3. **Targeted quality and promotion.** Add quality tests when arithmetic
+   changes or a discrepancy is detected. Choose fixtures that probe the
+   changed behavior or known divergence rather than rerunning many tests
+   by default. Before promoting a substantial change into the working
+   runtime, complete the applicable quality, long-generation and regression
+   gates for affected architectures. Reuse an existing full-workload result
+   when it already covers the applicable promotion requirement. Before
    publishing, run the mandatory [Release Gate](docs/RELEASE-GATE.md) in full.
-   A component probe or short A/B does not replace either gate.
 
 For arithmetic-preserving changes, require bitwise equality on the affected
 outputs and state. For new numerical methods, choose tolerances and quality
