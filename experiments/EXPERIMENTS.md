@@ -480,6 +480,23 @@ release still needs the architecture regression gates.
   contract match.
   [Source, measured evidence and reproduction](EXP-2026-11-25-2032-bonsai-mtp-batch-prefill/README.md).
 
+### EXP-2026-11-25-2033 — Share exact Bonsai verifier attention
+
+- **Status:** Verified within the experimental MTP path.
+- **Mechanism:** Share Q4 K/V loads across three query positions and
+  two GQA heads. Preserve per-query FP32 reduction, causal bounds
+  and frozen tile merge. Use the existing partial buffer.
+- **Evidence:** RTX 4070, Q4_0 K/V, 32K/512, context 36,864,
+  A–B–B–A. Decode 46.40 → 50.79 tok/s, prefill 610.95 →
+  611.27 tok/s, combined 64.649 → 63.668 s. Target saves
+  5.197 ms per block. All 512 IDs and selected logits match.
+  No additional workspace. Peak RSS ranges overlap, no process
+  swap, no peak VRAM sample. The one-head candidate is slower
+  on long contexts and is not dispatched.
+- **Reuse:** Keep separate numerical state for each query when
+  reusing K/V. Register and scratch budgets depend on geometry.
+  [Source, measured evidence and reproduction](EXP-2026-11-25-2033-bonsai-mtp-attention-reuse/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
