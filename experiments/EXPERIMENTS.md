@@ -691,6 +691,21 @@ release still needs the architecture regression gates.
   when removing intermediate state reads in another verifier.
   [Source, measured evidence and reproduction](EXP-2026-11-25-2045-bonsai-mtp-gdn-prefix-fusion/README.md).
 
+### EXP-2026-11-25-2046 — Exact Bonsai five-row verification
+
+- **Status:** REJECTED for throughput in the measured geometry.
+- **Mechanism:** Share PQ2 across five target rows and partition
+  exact Q4 Attention into one three-row and one two-row group.
+- **Evidence:** RTX 4070, 32K/512, Q4_0 K/V, A–B–B–A.
+  Decode 70.64 → 68.80 tok/s, blocks 145 → 121, target
+  41.552 → 49.661 ms/block. All 512 IDs and selected logits
+  match, as do all five forced-commit state checks. Extra
+  explicit GPU allocation 150.58 MiB. No process swap.
+- **Reuse:** Keep four rows for this workload. At observed
+  acceptance the fifth row needs 1.60 ms/block lower cost
+  to match the control.
+  [Source, measured evidence and reproduction](EXP-2026-11-25-2046-bonsai-mtp-five-rows/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
