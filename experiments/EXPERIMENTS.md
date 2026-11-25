@@ -1046,6 +1046,17 @@ release still needs the architecture regression gates.
   with preparation. Keep the EXP-2084 token-major down path.
   [Component results and reproduction](EXP-2026-11-26-2085-bonsai-ffn-down-panel/README.md).
 
+### EXP-2026-11-26-2086 — Exact paired PQ2 selectors for Bonsai gate/up
+
+- **Retained in the cumulative experimental checkpoint.** Spread each
+  pair of PQ2 bytes jointly before the existing PRMT lookups. All
+  65,536 input pairs and four real component outputs preserve bits.
+- **32K/512 mean:** 985.43 → 1015.48 prefill and 32.66 → 32.59 decode
+  tok/s. All four runs pass the cold-prefill gate and match PrismML on
+  512 IDs and text. VRAM 8932 MiB. The traced gate/up family reduces
+  from 7.991 to 6.811 s across the same 3,968 launches.
+  [Experiment and reusable source](EXP-2026-11-26-2086-bonsai-q8-paired-selector/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
