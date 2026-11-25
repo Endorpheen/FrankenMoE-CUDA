@@ -1,0 +1,90 @@
+[
+  {
+    "tensor": "blk.0.attn_qkv.weight",
+    "width": 5120,
+    "rows": 10239,
+    "tokens": 129,
+    "segments": {
+      "32": {
+        "relative_l2": 0.0003278555232100189,
+        "max_abs": 0.003468930721282959
+      },
+      "64": {
+        "relative_l2": 0.00043977570021525025,
+        "max_abs": 0.0037589073181152344
+      }
+    },
+    "diagnostic_kernel_ns": {
+      "bonsai_pack_half": 3392,
+      "bonsai_pq2_cached_64x128_k64": 592297,
+      "bonsai_pq2_cached_fp16_acc_k32": 490600,
+      "bonsai_pq2_cached_fp16_acc_k64": 504776
+    }
+  },
+  {
+    "tensor": "blk.0.attn_qkv.weight",
+    "width": 5120,
+    "rows": 10240,
+    "tokens": 1024,
+    "segments": {
+      "32": {
+        "relative_l2": 0.00032804685179144144,
+        "max_abs": 0.003403991460800171
+      },
+      "64": {
+        "relative_l2": 0.00044061607331968844,
+        "max_abs": 0.004422426223754883
+      }
+    },
+    "diagnostic_kernel_ns": {
+      "bonsai_pack_half": 64290,
+      "bonsai_pq2_cached_64x128_k64": 2096479,
+      "bonsai_pq2_cached_fp16_acc_k32": 1717883,
+      "bonsai_pq2_cached_fp16_acc_k64": 1747611
+    }
+  },
+  {
+    "tensor": "blk.0.ffn_up.weight",
+    "width": 5120,
+    "rows": 17408,
+    "tokens": 1024,
+    "segments": {
+      "32": {
+        "relative_l2": 0.00032771157566457987,
+        "max_abs": 0.0008638501167297363
+      },
+      "64": {
+        "relative_l2": 0.0004386937653180212,
+        "max_abs": 0.001249551773071289
+      }
+    },
+    "diagnostic_kernel_ns": {
+      "bonsai_pack_half": 31681,
+      "bonsai_pq2_cached_64x128_k64": 4119839,
+      "bonsai_pq2_cached_fp16_acc_k32": 2972205,
+      "bonsai_pq2_cached_fp16_acc_k64": 3152976
+    }
+  },
+  {
+    "tensor": "blk.0.ffn_down.weight",
+    "width": 17408,
+    "rows": 5120,
+    "tokens": 1024,
+    "segments": {
+      "32": {
+        "relative_l2": 0.0003285008715465665,
+        "max_abs": 0.009123802185058594
+      },
+      "64": {
+        "relative_l2": 0.0004397123120725155,
+        "max_abs": 0.014903068542480469
+      }
+    },
+    "diagnostic_kernel_ns": {
+      "bonsai_pack_half": 197827,
+      "bonsai_pq2_cached_64x128_k64": 3644952,
+      "bonsai_pq2_cached_fp16_acc_k32": 2961133,
+      "bonsai_pq2_cached_fp16_acc_k64": 3002510
+    }
+  }
+]

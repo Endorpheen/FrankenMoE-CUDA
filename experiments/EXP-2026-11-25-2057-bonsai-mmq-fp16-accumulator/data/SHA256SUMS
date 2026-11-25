@@ -1,0 +1,4 @@
+3ef9a1b9faf8065e2cb5691183afaff248eed3fc6db1b2788b815b6544448ad6  build/bonsai-fp16-acc-2057/pipeline.cubin
+665824bb94369c1fc300508b690fc278ab3d5ea6bdabd32075560e41a9603578  build/bonsai-fp16-acc-2057/component-trace.sqlite
+63d7721e80e164fefbf63da062d11250cc414e6ee95daccfe6a0ac6c73177bf8  build/bonsai-fp16-acc-2057/frankenmoe-infer
+088014be614455b590adea84538498c5f130d7d8881b57905d650d332b0099da  build/bonsai-fp16-acc-2057/quality-fixture/bonsai-quality

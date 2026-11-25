@@ -793,6 +793,14 @@ release still needs the architecture regression gates.
   output has about 2.28% relative L2 on the long fixture.
   [Source, diagnostics and reproduction](EXP-2026-11-25-2056-bonsai-flash-fp8-qk/README.md).
 
+### EXP-2026-11-25-2057 — Bonsai FP16 MMA partial accumulation
+
+- **Status:** Rejected for broad cached-MMQ dispatch after independent quality.
+- **Evidence:** RTX 4070 component trace, K32 full FFN down with pack
+  3.84 → 3.16 ms, relative L2 0.033%. Code-trace accuracy drops
+  18/63 → 13/63 and same-history replay confirms the first divergence.
+  [Source, diagnostics and reproduction](EXP-2026-11-25-2057-bonsai-mmq-fp16-accumulator/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
