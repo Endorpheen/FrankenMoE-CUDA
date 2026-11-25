@@ -426,6 +426,23 @@ release still needs the architecture regression gates.
   partial-commit behavior require separate checks.
   [Source, timing and reproduction](EXP-2026-11-25-2029-bonsai-mtp-exact-verify/README.md).
 
+### EXP-2026-11-25-2030 — Device-resident Bonsai prefix commit
+
+- **Status:** EXPERIMENTAL, exact target transaction on short and
+  32,767-token prefixes. Integrating natural draft generation remains open.
+- **Mechanism:** Store GDN recurrence and convolution history for the
+  intermediate rows directly on the device. Commit one to three inputs
+  by selecting ownership and lowering the append-only KV cursor.
+- **Evidence:** RTX 4070, Q4_0 K/V, contexts 1024 and 36,864. Nine
+  prefix decisions and the subsequent ordinary decode step matched
+  the serial oracle's visible state and logits, with six forced
+  rejections. Long diagnostic target time is 48.58–55.88 ms per
+  three-row call. Additional device workspace is 299.25 MiB.
+  Prefill/decode throughput and peak RAM/VRAM were not measured.
+- **Reuse:** Recurrent paths with an always-kept anchor, separate state
+  slots and append-only KV can apply pointer-based partial commit.
+  [Source, evidence and reproduction](EXP-2026-11-25-2030-bonsai-mtp-device-commit/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
