@@ -1,0 +1,13 @@
+ptxas info    : 0 bytes gmem
+ptxas info    : Compiling entry function 'i2_bridge_mix' for 'sm_89'
+ptxas info    : Function properties for i2_bridge_mix
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 40 registers, used 1 barriers, 48 bytes smem, 388 bytes cmem[0], 88 bytes cmem[2]
+ptxas info    : Compiling entry function 'i2_bridge_score' for 'sm_89'
+ptxas info    : Function properties for i2_bridge_score
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 26 registers, used 1 barriers, 11264 bytes smem, 388 bytes cmem[0]
+ptxas info    : Compiling entry function 'i2_bridge_prepare' for 'sm_89'
+ptxas info    : Function properties for i2_bridge_prepare
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 33 registers, used 1 barriers, 11268 bytes smem, 404 bytes cmem[0]

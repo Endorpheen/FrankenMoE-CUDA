@@ -1,0 +1,57 @@
+--- backend.c
++++ backend.c
+@@ -19,7 +19,7 @@
+ enum kernel {
+     NORM, ROTATE, MATRIX, ADD, DECAY, CONV, GDN, SPLIT, ROPE, Q4, TILES, GATE,
+     EMBED, SWIGLU, MERGE, GDN_BATCH, ROPE_PHASES, ROPE_APPLY,
+-    EMBED_BATCH, CONV_BATCH, PACK_HALF, MMQ, FLASH_TILE_F32, FLASH_MERGE_F32, FLASH_TILE_STAGED, FLASH_STAGE_KV, FLASH_MERGE_ORDERED, FLASH_TILE_COMPACT, FLASH_MERGE_COMPACT, FLASH_MERGE_COMPACT_ORDERED, FLASH_TILE_ASYNC, MMQ_ASYNC, GDN_V32, MMQ_WIDE, DECAY_REUSE4, DECAY_REUSE8, KERNEL_COUNT
++    EMBED_BATCH, CONV_BATCH, PACK_HALF, MMQ, FLASH_TILE_F32, FLASH_MERGE_F32, FLASH_TILE_STAGED, FLASH_STAGE_KV, FLASH_MERGE_ORDERED, FLASH_TILE_COMPACT, FLASH_MERGE_COMPACT, FLASH_MERGE_COMPACT_ORDERED, FLASH_TILE_ASYNC, MMQ_ASYNC, GDN_V32, MMQ_WIDE, DECAY_REUSE4, DECAY_REUSE8, FFN_TAIL, KERNEL_COUNT
+ };
+ 
+ typedef struct {
+@@ -31,7 +31,7 @@
+     int64_t bound[LAYERS * 15], states[LAYERS * 2], globals[3], b[24];
+     CUdeviceptr token_ids, phases, packed, packed_source;
+     size_t partial_capacity;
+-    int use_flash_f32, stage_kv, ordered_merge, compact_heads, async_fragments, async_mmq, gdn_prefill_v32, wide_mmq, decay_reuse;
++    int use_flash_f32, stage_kv, ordered_merge, compact_heads, async_fragments, async_mmq, gdn_prefill_v32, wide_mmq, decay_reuse, ffn_tail;
+     CUdeviceptr stage_k, stage_v;
+     unsigned stage_capacity_chunks;
+     unsigned context, position, ubatch, count, wave;
+@@ -118,6 +118,17 @@
+     return 0;
+ }
+ 
++int64_t bonsai_ffn_tail_launch(uint64_t context,int64_t g,int64_t u,int64_t s,int64_t owner) {
++    model *m=(model *)(uintptr_t)context;
++    if (!m->ffn_tail || m->count<32) return 0;
++    CUdeviceptr gate=g,up=u,signs=s;
++    unsigned width=17408;
++    if (launch(m,FFN_TAIL,17,m->count,1,256,(void *[]){&gate,&up,&signs,&m->packed,&width})) return -1;
++    // The next projection is the only consumer of this rotation output.
++    m->packed_source=(CUdeviceptr)owner;
++    return 1;
++}
++
+ int64_t bonsai_launch(uint64_t context, int64_t op, int64_t a, int64_t b, int64_t c,
+                       int64_t d, int64_t e, int64_t f, int64_t g, int64_t h) {
+     model *m = (model *)(uintptr_t)context;
+@@ -399,6 +410,9 @@
+     const char *decay=getenv("BONSAI_DECAY_REUSE");
+     m->decay_reuse=!decay || strcmp(decay,"1")==0;
+     if (m->decay_reuse) fputs("Batch decay: reuse alpha/beta weights\n",stderr);
++    const char *tail=getenv("BONSAI_FFN_TAIL");
++    m->ffn_tail=!tail || strcmp(tail,"1")==0;
++    if (m->ffn_tail) fputs("FFN tail: fused SwiGLU, FWHT and FP16 packing\n",stderr);
+     if (m->compact_heads) fputs("Flash query layout: compact 6:1\n", stderr);
+     if (m->ordered_merge) fputs("Flash merge: ordered parallel coefficients\n", stderr);
+     fprintf(stderr, "Prefill attention: %s\n", !m->use_flash_f32 ? "tiled Q4" :
+@@ -424,7 +438,7 @@
+         "goose_rope_phases", "goose_rope_apply", "bonsai_embed_batch", "bonsai_conv_batch",
+         "bonsai_pack_half", "bonsai_pq2_mmq", "bonsai_flash_f32_tile", "bonsai_flash_f32_merge",
+         "bonsai_flash_staged_tile", "bonsai_flash_stage_kv", "bonsai_flash_ordered_merge",
+-        "bonsai_flash_compact_tile", "bonsai_flash_compact_merge", "bonsai_flash_compact_ordered_merge", "bonsai_flash_async_tile", "bonsai_pq2_mmq_async", "goose_gdn_mma_v32", "bonsai_pq2_mmq_64x64", "bonsai_decay_reuse4", "bonsai_decay_reuse8",
++        "bonsai_flash_compact_tile", "bonsai_flash_compact_merge", "bonsai_flash_compact_ordered_merge", "bonsai_flash_async_tile", "bonsai_pq2_mmq_async", "goose_gdn_mma_v32", "bonsai_pq2_mmq_64x64", "bonsai_decay_reuse4", "bonsai_decay_reuse8", "bonsai_ffn_tail",
+     };
+     if (check(cuInit(0), "driver") || check(cuDeviceGet(&device, 0), "device") ||
+         check(cuCtxCreate(&m->cuda, 0, device), "context") ||

@@ -1,0 +1,1147 @@
+[
+  {
+    "tokens": 4096,
+    "outputs": [
+      60466,
+      63080,
+      30,
+      198,
+      3367,
+      440,
+      264,
+      63001,
+      11846,
+      13,
+      58737,
+      1092,
+      488,
+      1000,
+      3222,
+      6570
+    ],
+    "phases": {
+      "model_load": {
+        "wall_ns": 1288241401,
+        "cpu_process_ms": 1291.833,
+        "gpu_union_ns": 871659063,
+        "kernel_union_ns": 0,
+        "copy_union_ns": 867921391,
+        "memset_union_ns": 3737672,
+        "gpu_idle_ns": 416582338,
+        "kernel_groups": {},
+        "copy_by_kind": {
+          "1": {
+            "bytes": 7481331712,
+            "event_ns": 867921391,
+            "calls": 4
+          }
+        },
+        "main_thread_apis": {
+          "CUPTI_ACTIVITY_KIND_RUNTIME": {
+            "union_ns": 986772098,
+            "union_in_gpu_gaps_ns": 115128496,
+            "by_name": {
+              "cuMemcpyHtoD_v2": {
+                "calls": 4,
+                "union_ns": 871879265,
+                "union_in_gpu_gaps_ns": 235663
+              },
+              "cuCtxCreate_v2": {
+                "calls": 1,
+                "union_ns": 101234314,
+                "union_in_gpu_gaps_ns": 101234314
+              },
+              "cuModuleLoad": {
+                "calls": 2,
+                "union_ns": 12229944,
+                "union_in_gpu_gaps_ns": 12229944
+              },
+              "cuMemAlloc_v2": {
+                "calls": 2,
+                "union_ns": 1352591,
+                "union_in_gpu_gaps_ns": 1352591
+              },
+              "cuMemGetInfo_v2": {
+                "calls": 1,
+                "union_ns": 49053,
+                "union_in_gpu_gaps_ns": 49053
+              },
+              "cuMemsetD8_v2": {
+                "calls": 1,
+                "union_ns": 26931,
+                "union_in_gpu_gaps_ns": 26931
+              }
+            }
+          },
+          "OSRT_API": {
+            "union_ns": 164347448,
+            "union_in_gpu_gaps_ns": 164345344,
+            "by_name": {
+              "ioctl": {
+                "calls": 457,
+                "union_ns": 97397945,
+                "union_in_gpu_gaps_ns": 97397945
+              },
+              "munmap": {
+                "calls": 7,
+                "union_ns": 60970431,
+                "union_in_gpu_gaps_ns": 60968327
+              },
+              "mmap64": {
+                "calls": 25,
+                "union_ns": 2717386,
+                "union_in_gpu_gaps_ns": 2717386
+              },
+              "fread": {
+                "calls": 8,
+                "union_ns": 1950143,
+                "union_in_gpu_gaps_ns": 1950143
+              },
+              "fclose": {
+                "calls": 31,
+                "union_ns": 225185,
+                "union_in_gpu_gaps_ns": 225185
+              },
+              "open64": {
+                "calls": 43,
+                "union_ns": 223477,
+                "union_in_gpu_gaps_ns": 223477
+              },
+              "fopen": {
+                "calls": 38,
+                "union_ns": 199538,
+                "union_in_gpu_gaps_ns": 199538
+              },
+              "sem_timedwait": {
+                "calls": 9,
+                "union_ns": 190301,
+                "union_in_gpu_gaps_ns": 190301
+              },
+              "mmap": {
+                "calls": 16,
+                "union_ns": 181245,
+                "union_in_gpu_gaps_ns": 181245
+              },
+              "pthread_create": {
+                "calls": 3,
+                "union_ns": 109157,
+                "union_in_gpu_gaps_ns": 109157
+              },
+              "fgets": {
+                "calls": 1,
+                "union_ns": 64081,
+                "union_in_gpu_gaps_ns": 64081
+              },
+              "open": {
+                "calls": 7,
+                "union_ns": 36521,
+                "union_in_gpu_gaps_ns": 36521
+              },
+              "write": {
+                "calls": 10,
+                "union_ns": 18716,
+                "union_in_gpu_gaps_ns": 18716
+              },
+              "pipe2": {
+                "calls": 3,
+                "union_ns": 15128,
+                "union_in_gpu_gaps_ns": 15128
+              },
+              "socket": {
+                "calls": 2,
+                "union_ns": 13156,
+                "union_in_gpu_gaps_ns": 13156
+              },
+              "connect": {
+                "calls": 1,
+                "union_ns": 11913,
+                "union_in_gpu_gaps_ns": 11913
+              },
+              "read": {
+                "calls": 3,
+                "union_ns": 7635,
+                "union_in_gpu_gaps_ns": 7635
+              },
+              "fwrite": {
+                "calls": 3,
+                "union_ns": 6481,
+                "union_in_gpu_gaps_ns": 6481
+              },
+              "fcntl": {
+                "calls": 3,
+                "union_ns": 6093,
+                "union_in_gpu_gaps_ns": 6093
+              },
+              "bind": {
+                "calls": 1,
+                "union_ns": 1784,
+                "union_in_gpu_gaps_ns": 1784
+              },
+              "fstat": {
+                "calls": 1,
+                "union_ns": 1132,
+                "union_in_gpu_gaps_ns": 1132
+              }
+            }
+          }
+        },
+        "distinct_gpu_idle_intervals": 6
+      },
+      "prefill": {
+        "wall_ns": 6936456568,
+        "cpu_process_ms": 6940.266,
+        "gpu_union_ns": 6930516124,
+        "kernel_union_ns": 6930465658,
+        "copy_union_ns": 50466,
+        "memset_union_ns": 0,
+        "gpu_idle_ns": 5940444,
+        "kernel_groups": {
+          "Embedding": {
+            "event_ns": 143587,
+            "calls": 5
+          },
+          "FWHT": {
+            "event_ns": 150525649,
+            "calls": 1286
+          },
+          "Normalization": {
+            "event_ns": 112225084,
+            "calls": 1281
+          },
+          "F16 activation packing": {
+            "event_ns": 86838775,
+            "calls": 1024
+          },
+          "PQ2 batched matrix": {
+            "event_ns": 5505840371,
+            "calls": 1600
+          },
+          "F32 decay and beta": {
+            "event_ns": 348515847,
+            "calls": 240
+          },
+          "Causal convolution": {
+            "event_ns": 69756837,
+            "calls": 240
+          },
+          "GDN": {
+            "event_ns": 171573484,
+            "calls": 240
+          },
+          "Residual adds": {
+            "event_ns": 61283865,
+            "calls": 640
+          },
+          "SwiGLU": {
+            "event_ns": 117269294,
+            "calls": 320
+          },
+          "Attention split and gate": {
+            "event_ns": 23022176,
+            "calls": 160
+          },
+          "RoPE and Q4 cache writes": {
+            "event_ns": 20635195,
+            "calls": 448
+          },
+          "Attention stage, tiles and merge": {
+            "event_ns": 221314826,
+            "calls": 2144
+          },
+          "Scalar PQ2 projections": {
+            "event_ns": 39780731,
+            "calls": 400
+          },
+          "Final vocabulary projection": {
+            "event_ns": 1739937,
+            "calls": 1
+          }
+        },
+        "copy_by_kind": {
+          "1": {
+            "bytes": 84092,
+            "event_ns": 11169,
+            "calls": 20
+          },
+          "2": {
+            "bytes": 993280,
+            "event_ns": 39297,
+            "calls": 1
+          }
+        },
+        "main_thread_apis": {
+          "CUPTI_ACTIVITY_KIND_RUNTIME": {
+            "union_ns": 6934717462,
+            "union_in_gpu_gaps_ns": 5887107,
+            "by_name": {
+              "cuLaunchKernel": {
+                "calls": 10029,
+                "union_ns": 3634791451,
+                "union_in_gpu_gaps_ns": 2783946
+              },
+              "cuMemcpyHtoD_v2": {
+                "calls": 20,
+                "union_ns": 3251442059,
+                "union_in_gpu_gaps_ns": 2461702
+              },
+              "cuMemcpyDtoH_v2": {
+                "calls": 1,
+                "union_ns": 48479042,
+                "union_in_gpu_gaps_ns": 636549
+              },
+              "cuCtxSynchronize": {
+                "calls": 1,
+                "union_ns": 4910,
+                "union_in_gpu_gaps_ns": 4910
+              }
+            }
+          },
+          "OSRT_API": {
+            "union_ns": 0,
+            "union_in_gpu_gaps_ns": 0,
+            "by_name": {}
+          }
+        },
+        "distinct_gpu_idle_intervals": 10051
+      },
+      "decode": {
+        "wall_ns": 978528685,
+        "cpu_process_ms": 979.054,
+        "gpu_union_ns": 952966142,
+        "kernel_union_ns": 952373525,
+        "copy_union_ns": 592617,
+        "memset_union_ns": 0,
+        "gpu_idle_ns": 25562543,
+        "kernel_groups": {
+          "Embedding": {
+            "event_ns": 19716,
+            "calls": 15
+          },
+          "FWHT": {
+            "event_ns": 10809186,
+            "calls": 3870
+          },
+          "Normalization": {
+            "event_ns": 103308165,
+            "calls": 3855
+          },
+          "Scalar PQ2 projections": {
+            "event_ns": 595036091,
+            "calls": 6000
+          },
+          "F32 decay and beta": {
+            "event_ns": 31793922,
+            "calls": 720
+          },
+          "Causal convolution": {
+            "event_ns": 1277906,
+            "calls": 720
+          },
+          "GDN": {
+            "event_ns": 7043465,
+            "calls": 720
+          },
+          "Residual adds": {
+            "event_ns": 1985543,
+            "calls": 1920
+          },
+          "SwiGLU": {
+            "event_ns": 1264089,
+            "calls": 960
+          },
+          "Attention split and gate": {
+            "event_ns": 446141,
+            "calls": 480
+          },
+          "RoPE and Q4 cache writes": {
+            "event_ns": 2613254,
+            "calls": 960
+          },
+          "Attention stage, tiles and merge": {
+            "event_ns": 170446517,
+            "calls": 480
+          },
+          "Final vocabulary projection": {
+            "event_ns": 26329530,
+            "calls": 15
+          }
+        },
+        "copy_by_kind": {
+          "1": {
+            "bytes": 2880,
+            "event_ns": 8670,
+            "calls": 30
+          },
+          "2": {
+            "bytes": 14899200,
+            "event_ns": 583947,
+            "calls": 15
+          }
+        },
+        "main_thread_apis": {
+          "CUPTI_ACTIVITY_KIND_RUNTIME": {
+            "union_ns": 963757594,
+            "union_in_gpu_gaps_ns": 13588770,
+            "by_name": {
+              "cuMemcpyDtoH_v2": {
+                "calls": 15,
+                "union_ns": 726265304,
+                "union_in_gpu_gaps_ns": 10044621
+              },
+              "cuLaunchKernel": {
+                "calls": 20715,
+                "union_ns": 237063860,
+                "union_in_gpu_gaps_ns": 3119580
+              },
+              "cuMemcpyHtoD_v2": {
+                "calls": 30,
+                "union_ns": 428430,
+                "union_in_gpu_gaps_ns": 424569
+              }
+            }
+          },
+          "OSRT_API": {
+            "union_ns": 11923,
+            "union_in_gpu_gaps_ns": 0,
+            "by_name": {
+              "pthread_mutex_lock": {
+                "calls": 1,
+                "union_ns": 11923,
+                "union_in_gpu_gaps_ns": 0
+              }
+            }
+          }
+        },
+        "distinct_gpu_idle_intervals": 20761
+      }
+    },
+    "blocks": [
+      {
+        "first_token": 0,
+        "last_token": 4096,
+        "wall_ns": 6936456568,
+        "kernel_ns": {
+          "Embedding": 143587,
+          "FWHT": 150525649,
+          "Normalization": 112225084,
+          "F16 activation packing": 86838775,
+          "PQ2 batched matrix": 5505840371,
+          "F32 decay and beta": 348515847,
+          "Causal convolution": 69756837,
+          "GDN": 171573484,
+          "Residual adds": 61283865,
+          "SwiGLU": 117269294,
+          "Attention split and gate": 23022176,
+          "RoPE and Q4 cache writes": 20635195,
+          "Attention stage, tiles and merge": 221314826,
+          "Scalar PQ2 projections": 39780731,
+          "Final vocabulary projection": 1739937
+        }
+      }
+    ],
+    "peak_process_vram_mib": 8960,
+    "peak_board_vram_mib": 11427,
+    "high_utilization_sm_mhz": {
+      "samples": 32,
+      "min": 2775,
+      "median": 2775.0,
+      "max": 2835
+    },
+    "wall_record": {
+      "wall_with_init_s": 12.056334578985116,
+      "pswpout_before": 15211004,
+      "pswpout_after": 15211004
+    },
+    "settings": {
+      "command": [
+        "/usr/local/bin/nsys",
+        "profile",
+        "--trace=cuda,nvtx,osrt",
+        "--sample=none",
+        "--cpuctxsw=none",
+        "--osrt-threshold=1000",
+        "--force-overwrite=false",
+        "-o",
+        "build/bonsai-prefill-budget-1995/4096/trace",
+        "taskset",
+        "0f0f",
+        "build/bonsai-prefill-budget-1995/bonsai-profile",
+        "~/AI/LocalAI/Models/Ternary-Bonsai-2.5-27B-PQ2_0-mtp.gguf",
+        "build/bonsai-mmq-wide-1992-default/pq2-mmq-wide.cubin",
+        "build/bonsai-mmq-wide-1992-default/frozen-goose.ptx",
+        "36864",
+        "16",
+        "--ignore-eos",
+        "1812"
+      ],
+      "env": {
+        "PATH": "/usr/bin:/bin",
+        "HOME": "~",
+        "LANG": "C",
+        "CUDA_VISIBLE_DEVICES": "0",
+        "BONSAI_UBATCH": "1024",
+        "BONSAI_FLASH_F32": "1",
+        "BONSAI_FLASH_REUSE": "1",
+        "BONSAI_FLASH_ORDERED_MERGE": "1",
+        "BONSAI_FLASH_COMPACT": "1",
+        "BONSAI_FLASH_ASYNC": "1"
+      },
+      "prompt_tokens": 4096,
+      "output_tokens": 16
+    },
+    "trace_sha256": "03bb59b7e41ad598eb4c0eb6387ce383fb998fc3982d9832567b292b45ddc4a4"
+  },
+  {
+    "tokens": 32768,
+    "outputs": [
+      279,
+      4530,
+      310,
+      12904,
+      11,
+      321,
+      799,
+      21254,
+      421,
+      1000,
+      8381,
+      678,
+      15673,
+      13,
+      198,
+      1812
+    ],
+    "phases": {
+      "model_load": {
+        "wall_ns": 1223281063,
+        "cpu_process_ms": 1227.62,
+        "gpu_union_ns": 820271948,
+        "kernel_union_ns": 0,
+        "copy_union_ns": 816415334,
+        "memset_union_ns": 3856614,
+        "gpu_idle_ns": 403009115,
+        "kernel_groups": {},
+        "copy_by_kind": {
+          "1": {
+            "bytes": 7481331712,
+            "event_ns": 816415334,
+            "calls": 4
+          }
+        },
+        "main_thread_apis": {
+          "CUPTI_ACTIVITY_KIND_RUNTIME": {
+            "union_ns": 930332696,
+            "union_in_gpu_gaps_ns": 110075219,
+            "by_name": {
+              "cuMemcpyHtoD_v2": {
+                "calls": 4,
+                "union_ns": 820488037,
+                "union_in_gpu_gaps_ns": 230560
+              },
+              "cuCtxCreate_v2": {
+                "calls": 1,
+                "union_ns": 95490502,
+                "union_in_gpu_gaps_ns": 95490502
+              },
+              "cuModuleLoad": {
+                "calls": 2,
+                "union_ns": 12894844,
+                "union_in_gpu_gaps_ns": 12894844
+              },
+              "cuMemAlloc_v2": {
+                "calls": 2,
+                "union_ns": 1389722,
+                "union_in_gpu_gaps_ns": 1389722
+              },
+              "cuMemGetInfo_v2": {
+                "calls": 1,
+                "union_ns": 45536,
+                "union_in_gpu_gaps_ns": 45536
+              },
+              "cuMemsetD8_v2": {
+                "calls": 1,
+                "union_ns": 24055,
+                "union_in_gpu_gaps_ns": 24055
+              }
+            }
+          },
+          "OSRT_API": {
+            "union_ns": 148732766,
+            "union_in_gpu_gaps_ns": 148731429,
+            "by_name": {
+              "ioctl": {
+                "calls": 457,
+                "union_ns": 82716945,
+                "union_in_gpu_gaps_ns": 82716945
+              },
+              "munmap": {
+                "calls": 7,
+                "union_ns": 59820637,
+                "union_in_gpu_gaps_ns": 59819300
+              },
+              "mmap64": {
+                "calls": 25,
+                "union_ns": 2691415,
+                "union_in_gpu_gaps_ns": 2691415
+              },
+              "fread": {
+                "calls": 8,
+                "union_ns": 2147367,
+                "union_in_gpu_gaps_ns": 2147367
+              },
+              "fclose": {
+                "calls": 30,
+                "union_ns": 223621,
+                "union_in_gpu_gaps_ns": 223621
+              },
+              "open64": {
+                "calls": 43,
+                "union_ns": 220127,
+                "union_in_gpu_gaps_ns": 220127
+              },
+              "fopen": {
+                "calls": 38,
+                "union_ns": 200316,
+                "union_in_gpu_gaps_ns": 200316
+              },
+              "sem_timedwait": {
+                "calls": 9,
+                "union_ns": 188277,
+                "union_in_gpu_gaps_ns": 188277
+              },
+              "mmap": {
+                "calls": 16,
+                "union_ns": 186814,
+                "union_in_gpu_gaps_ns": 186814
+              },
+              "pthread_create": {
+                "calls": 3,
+                "union_ns": 78868,
+                "union_in_gpu_gaps_ns": 78868
+              },
+              "pthread_cond_wait": {
+                "calls": 1,
+                "union_ns": 78468,
+                "union_in_gpu_gaps_ns": 78468
+              },
+              "fgets": {
+                "calls": 1,
+                "union_ns": 63100,
+                "union_in_gpu_gaps_ns": 63100
+              },
+              "open": {
+                "calls": 7,
+                "union_ns": 35567,
+                "union_in_gpu_gaps_ns": 35567
+              },
+              "pipe2": {
+                "calls": 3,
+                "union_ns": 15500,
+                "union_in_gpu_gaps_ns": 15500
+              },
+              "write": {
+                "calls": 10,
+                "union_ns": 15069,
+                "union_in_gpu_gaps_ns": 15069
+              },
+              "socket": {
+                "calls": 2,
+                "union_ns": 13746,
+                "union_in_gpu_gaps_ns": 13746
+              },
+              "connect": {
+                "calls": 1,
+                "union_ns": 12974,
+                "union_in_gpu_gaps_ns": 12974
+              },
+              "fwrite": {
+                "calls": 4,
+                "union_ns": 8556,
+                "union_in_gpu_gaps_ns": 8556
+              },
+              "read": {
+                "calls": 3,
+                "union_ns": 6682,
+                "union_in_gpu_gaps_ns": 6682
+              },
+              "fcntl": {
+                "calls": 3,
+                "union_ns": 5752,
+                "union_in_gpu_gaps_ns": 5752
+              },
+              "bind": {
+                "calls": 1,
+                "union_ns": 1753,
+                "union_in_gpu_gaps_ns": 1753
+              },
+              "fstat": {
+                "calls": 1,
+                "union_ns": 1212,
+                "union_in_gpu_gaps_ns": 1212
+              }
+            }
+          }
+        },
+        "distinct_gpu_idle_intervals": 6
+      },
+      "prefill": {
+        "wall_ns": 68834910764,
+        "cpu_process_ms": 69049.745,
+        "gpu_union_ns": 68742679133,
+        "kernel_union_ns": 68742562077,
+        "copy_union_ns": 117056,
+        "memset_union_ns": 0,
+        "gpu_idle_ns": 92231631,
+        "kernel_groups": {
+          "Embedding": {
+            "event_ns": 1079797,
+            "calls": 33
+          },
+          "FWHT": {
+            "event_ns": 1203579548,
+            "calls": 8482
+          },
+          "Normalization": {
+            "event_ns": 848253598,
+            "calls": 8449
+          },
+          "F16 activation packing": {
+            "event_ns": 693866313,
+            "calls": 8192
+          },
+          "PQ2 batched matrix": {
+            "event_ns": 44213408575,
+            "calls": 12800
+          },
+          "F32 decay and beta": {
+            "event_ns": 2771789517,
+            "calls": 1584
+          },
+          "Causal convolution": {
+            "event_ns": 559132013,
+            "calls": 1584
+          },
+          "GDN": {
+            "event_ns": 1369065552,
+            "calls": 1584
+          },
+          "Residual adds": {
+            "event_ns": 492609370,
+            "calls": 4224
+          },
+          "SwiGLU": {
+            "event_ns": 935721891,
+            "calls": 2112
+          },
+          "Attention split and gate": {
+            "event_ns": 181813080,
+            "calls": 1056
+          },
+          "RoPE and Q4 cache writes": {
+            "event_ns": 165274626,
+            "calls": 3136
+          },
+          "Attention stage, tiles and merge": {
+            "event_ns": 15263485530,
+            "calls": 107456
+          },
+          "Scalar PQ2 projections": {
+            "event_ns": 41733392,
+            "calls": 400
+          },
+          "Final vocabulary projection": {
+            "event_ns": 1749275,
+            "calls": 1
+          }
+        },
+        "copy_by_kind": {
+          "1": {
+            "bytes": 662460,
+            "event_ns": 77696,
+            "calls": 104
+          },
+          "2": {
+            "bytes": 993280,
+            "event_ns": 39360,
+            "calls": 1
+          }
+        },
+        "main_thread_apis": {
+          "CUPTI_ACTIVITY_KIND_RUNTIME": {
+            "union_ns": 68808616347,
+            "union_in_gpu_gaps_ns": 91997134,
+            "by_name": {
+              "cuLaunchKernel": {
+                "calls": 161093,
+                "union_ns": 53356045794,
+                "union_in_gpu_gaps_ns": 71112772
+              },
+              "cuMemcpyHtoD_v2": {
+                "calls": 104,
+                "union_ns": 12066994584,
+                "union_in_gpu_gaps_ns": 15904148
+              },
+              "cuCtxSynchronize": {
+                "calls": 8,
+                "union_ns": 3316273820,
+                "union_in_gpu_gaps_ns": 4314674
+              },
+              "cuMemcpyDtoH_v2": {
+                "calls": 1,
+                "union_ns": 69302149,
+                "union_in_gpu_gaps_ns": 665540
+              }
+            }
+          },
+          "OSRT_API": {
+            "union_ns": 1033256,
+            "union_in_gpu_gaps_ns": 1696,
+            "by_name": {
+              "pthread_rwlock_wrlock": {
+                "calls": 13,
+                "union_ns": 968704,
+                "union_in_gpu_gaps_ns": 1696
+              },
+              "pthread_mutex_lock": {
+                "calls": 4,
+                "union_ns": 64552,
+                "union_in_gpu_gaps_ns": 0
+              }
+            }
+          }
+        },
+        "distinct_gpu_idle_intervals": 161199
+      },
+      "decode": {
+        "wall_ns": 1337935188,
+        "cpu_process_ms": 1392.886,
+        "gpu_union_ns": 1312277859,
+        "kernel_union_ns": 1311684119,
+        "copy_union_ns": 593740,
+        "memset_union_ns": 0,
+        "gpu_idle_ns": 25657329,
+        "kernel_groups": {
+          "Embedding": {
+            "event_ns": 19133,
+            "calls": 15
+          },
+          "FWHT": {
+            "event_ns": 10903458,
+            "calls": 3870
+          },
+          "Normalization": {
+            "event_ns": 103587085,
+            "calls": 3855
+          },
+          "Scalar PQ2 projections": {
+            "event_ns": 598892592,
+            "calls": 6000
+          },
+          "F32 decay and beta": {
+            "event_ns": 31800140,
+            "calls": 720
+          },
+          "Causal convolution": {
+            "event_ns": 1278676,
+            "calls": 720
+          },
+          "GDN": {
+            "event_ns": 7050711,
+            "calls": 720
+          },
+          "Residual adds": {
+            "event_ns": 1973027,
+            "calls": 1920
+          },
+          "SwiGLU": {
+            "event_ns": 1253761,
+            "calls": 960
+          },
+          "Attention split and gate": {
+            "event_ns": 551602,
+            "calls": 480
+          },
+          "RoPE and Q4 cache writes": {
+            "event_ns": 2555833,
+            "calls": 960
+          },
+          "Attention stage, tiles and merge": {
+            "event_ns": 525750129,
+            "calls": 480
+          },
+          "Final vocabulary projection": {
+            "event_ns": 26067972,
+            "calls": 15
+          }
+        },
+        "copy_by_kind": {
+          "1": {
+            "bytes": 2880,
+            "event_ns": 8544,
+            "calls": 30
+          },
+          "2": {
+            "bytes": 14899200,
+            "event_ns": 585196,
+            "calls": 15
+          }
+        },
+        "main_thread_apis": {
+          "CUPTI_ACTIVITY_KIND_RUNTIME": {
+            "union_ns": 1323228624,
+            "union_in_gpu_gaps_ns": 13810315,
+            "by_name": {
+              "cuMemcpyDtoH_v2": {
+                "calls": 15,
+                "union_ns": 995269260,
+                "union_in_gpu_gaps_ns": 9926951
+              },
+              "cuLaunchKernel": {
+                "calls": 20715,
+                "union_ns": 327632425,
+                "union_in_gpu_gaps_ns": 3560697
+              },
+              "cuMemcpyHtoD_v2": {
+                "calls": 30,
+                "union_ns": 326939,
+                "union_in_gpu_gaps_ns": 322667
+              }
+            }
+          },
+          "OSRT_API": {
+            "union_ns": 208685,
+            "union_in_gpu_gaps_ns": 19923,
+            "by_name": {
+              "pthread_rwlock_wrlock": {
+                "calls": 3,
+                "union_ns": 190650,
+                "union_in_gpu_gaps_ns": 1888
+              },
+              "pthread_mutex_lock": {
+                "calls": 1,
+                "union_ns": 18035,
+                "union_in_gpu_gaps_ns": 18035
+              }
+            }
+          }
+        },
+        "distinct_gpu_idle_intervals": 20761
+      }
+    },
+    "blocks": [
+      {
+        "first_token": 0,
+        "last_token": 4096,
+        "wall_ns": 6878000000,
+        "kernel_ns": {
+          "Embedding": 134020,
+          "FWHT": 149682945,
+          "Normalization": 105251434,
+          "F16 activation packing": 86551887,
+          "PQ2 batched matrix": 5512303121,
+          "F32 decay and beta": 346157591,
+          "Causal convolution": 69709623,
+          "GDN": 170800237,
+          "Residual adds": 61268297,
+          "SwiGLU": 117247396,
+          "Attention split and gate": 23212579,
+          "RoPE and Q4 cache writes": 20581681,
+          "Attention stage, tiles and merge": 210082467
+        }
+      },
+      {
+        "first_token": 4096,
+        "last_token": 8192,
+        "wall_ns": 7314000000,
+        "kernel_ns": {
+          "PQ2 batched matrix": 5525224512,
+          "Residual adds": 61468046,
+          "Embedding": 133027,
+          "FWHT": 150515489,
+          "Normalization": 104885737,
+          "F16 activation packing": 86771144,
+          "F32 decay and beta": 346559718,
+          "Causal convolution": 69880680,
+          "GDN": 171499137,
+          "SwiGLU": 117347188,
+          "Attention split and gate": 22881886,
+          "RoPE and Q4 cache writes": 20567833,
+          "Attention stage, tiles and merge": 629208967
+        }
+      },
+      {
+        "first_token": 8192,
+        "last_token": 12288,
+        "wall_ns": 7792000000,
+        "kernel_ns": {
+          "PQ2 batched matrix": 5530601972,
+          "Residual adds": 61883803,
+          "Embedding": 166499,
+          "FWHT": 150264782,
+          "Normalization": 104898311,
+          "F16 activation packing": 86868265,
+          "F32 decay and beta": 346295353,
+          "Causal convolution": 69841093,
+          "GDN": 170681939,
+          "SwiGLU": 117351584,
+          "Attention split and gate": 22874644,
+          "RoPE and Q4 cache writes": 20598132,
+          "Attention stage, tiles and merge": 1100856612
+        }
+      },
+      {
+        "first_token": 12288,
+        "last_token": 16384,
+        "wall_ns": 8288000000,
+        "kernel_ns": {
+          "FWHT": 150367941,
+          "Normalization": 105297132,
+          "F16 activation packing": 86863458,
+          "PQ2 batched matrix": 5528957468,
+          "F32 decay and beta": 346177675,
+          "Causal convolution": 69841280,
+          "GDN": 171823394,
+          "Residual adds": 61378699,
+          "SwiGLU": 117581777,
+          "Attention split and gate": 22915592,
+          "RoPE and Q4 cache writes": 20646206,
+          "Attention stage, tiles and merge": 1595681652,
+          "Embedding": 135811
+        }
+      },
+      {
+        "first_token": 16384,
+        "last_token": 20480,
+        "wall_ns": 8794000000,
+        "kernel_ns": {
+          "Normalization": 104812661,
+          "FWHT": 150131439,
+          "F16 activation packing": 86794379,
+          "PQ2 batched matrix": 5530182678,
+          "F32 decay and beta": 346052960,
+          "Causal convolution": 69848185,
+          "GDN": 171434662,
+          "Residual adds": 61708269,
+          "SwiGLU": 116649826,
+          "Attention split and gate": 22528208,
+          "RoPE and Q4 cache writes": 20552526,
+          "Attention stage, tiles and merge": 2100854669,
+          "Embedding": 102755
+        }
+      },
+      {
+        "first_token": 20480,
+        "last_token": 24576,
+        "wall_ns": 9347000000,
+        "kernel_ns": {
+          "PQ2 batched matrix": 5531692374,
+          "Residual adds": 61745898,
+          "Embedding": 138657,
+          "FWHT": 150479495,
+          "Normalization": 104804322,
+          "F16 activation packing": 86637510,
+          "F32 decay and beta": 345853915,
+          "Causal convolution": 69836382,
+          "GDN": 170620610,
+          "SwiGLU": 116165063,
+          "Attention split and gate": 22496876,
+          "RoPE and Q4 cache writes": 20948455,
+          "Attention stage, tiles and merge": 2651709361
+        }
+      },
+      {
+        "first_token": 24576,
+        "last_token": 28672,
+        "wall_ns": 9885000000,
+        "kernel_ns": {
+          "Residual adds": 61619740,
+          "Embedding": 133569,
+          "FWHT": 150601313,
+          "Normalization": 106256384,
+          "F16 activation packing": 86610945,
+          "PQ2 batched matrix": 5526894503,
+          "F32 decay and beta": 346019822,
+          "Causal convolution": 69838958,
+          "GDN": 170724472,
+          "SwiGLU": 116066981,
+          "Attention split and gate": 22451264,
+          "RoPE and Q4 cache writes": 20553085,
+          "Attention stage, tiles and merge": 3191189646
+        }
+      },
+      {
+        "first_token": 28672,
+        "last_token": 32768,
+        "wall_ns": 10536910764,
+        "kernel_ns": {
+          "PQ2 batched matrix": 5527551947,
+          "Residual adds": 61536618,
+          "Embedding": 135459,
+          "FWHT": 151536144,
+          "Normalization": 112047617,
+          "F16 activation packing": 86768725,
+          "F32 decay and beta": 348672483,
+          "Causal convolution": 70335812,
+          "GDN": 171481101,
+          "SwiGLU": 117312076,
+          "Attention split and gate": 22452031,
+          "RoPE and Q4 cache writes": 20826708,
+          "Attention stage, tiles and merge": 3783902156,
+          "Scalar PQ2 projections": 41733392,
+          "Final vocabulary projection": 1749275
+        }
+      }
+    ],
+    "peak_process_vram_mib": 8960,
+    "peak_board_vram_mib": 11420,
+    "high_utilization_sm_mhz": {
+      "samples": 280,
+      "min": 2745,
+      "median": 2775.0,
+      "max": 2820
+    },
+    "wall_record": {
+      "wall_with_init_s": 76.50109586899634,
+      "pswpout_before": 15211004,
+      "pswpout_after": 15211004
+    },
+    "settings": {
+      "command": [
+        "/usr/local/bin/nsys",
+        "profile",
+        "--trace=cuda,nvtx,osrt",
+        "--sample=none",
+        "--cpuctxsw=none",
+        "--osrt-threshold=1000",
+        "--force-overwrite=false",
+        "-o",
+        "build/bonsai-prefill-budget-1995/32768/trace",
+        "taskset",
+        "0f0f",
+        "build/bonsai-prefill-budget-1995/bonsai-profile",
+        "~/AI/LocalAI/Models/Ternary-Bonsai-2.5-27B-PQ2_0-mtp.gguf",
+        "build/bonsai-mmq-wide-1992-default/pq2-mmq-wide.cubin",
+        "build/bonsai-mmq-wide-1992-default/frozen-goose.ptx",
+        "36864",
+        "16",
+        "--ignore-eos",
+        "1812"
+      ],
+      "env": {
+        "PATH": "/usr/bin:/bin",
+        "HOME": "~",
+        "LANG": "C",
+        "CUDA_VISIBLE_DEVICES": "0",
+        "BONSAI_UBATCH": "1024",
+        "BONSAI_FLASH_F32": "1",
+        "BONSAI_FLASH_REUSE": "1",
+        "BONSAI_FLASH_ORDERED_MERGE": "1",
+        "BONSAI_FLASH_COMPACT": "1",
+        "BONSAI_FLASH_ASYNC": "1"
+      },
+      "prompt_tokens": 32768,
+      "output_tokens": 16
+    },
+    "trace_sha256": "827e1befbac87689d4a25d226352cecdbefe8e3713f5852bd16525e435777b1e"
+  }
+]

@@ -1,0 +1,8 @@
+ptxas info    : Compiling entry function 'bonsai_verify_q4_gqa2' for 'sm_89'
+ptxas info    : Function properties for bonsai_verify_q4_gqa2
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 150 registers, used 0 barriers, 396 bytes cmem[0]
+ptxas info    : Compiling entry function 'bonsai_verify_q4_gqa1' for 'sm_89'
+ptxas info    : Function properties for bonsai_verify_q4_gqa1
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 80 registers, used 0 barriers, 396 bytes cmem[0]

@@ -1,0 +1,386 @@
+{
+  "phase_timings": [
+    {
+      "first": 0.0,
+      "count": 4096.0,
+      "wall": 18328.4743,
+      "input": 1002.9521,
+      "attention": 8113.9366,
+      "postconv": 268.3513,
+      "glue": 526.1462,
+      "moe": 6966.1488
+    },
+    {
+      "first": 4096.0,
+      "count": 4096.0,
+      "wall": 18177.7159,
+      "input": 1011.3718,
+      "attention": 8397.4348,
+      "postconv": 259.9191,
+      "glue": 518.3752,
+      "moe": 6557.5168
+    },
+    {
+      "first": 8192.0,
+      "count": 4096.0,
+      "wall": 18392.5153,
+      "input": 993.5696,
+      "attention": 8600.7065,
+      "postconv": 250.2533,
+      "glue": 523.0829,
+      "moe": 6590.5666
+    },
+    {
+      "first": 12288.0,
+      "count": 4096.0,
+      "wall": 18615.2626,
+      "input": 1001.6046,
+      "attention": 8846.6413,
+      "postconv": 246.9481,
+      "glue": 521.7688,
+      "moe": 6564.5111
+    },
+    {
+      "first": 16384.0,
+      "count": 4096.0,
+      "wall": 18779.9957,
+      "input": 972.7408,
+      "attention": 9039.4116,
+      "postconv": 245.9409,
+      "glue": 510.6821,
+      "moe": 6580.2201
+    },
+    {
+      "first": 20480.0,
+      "count": 4096.0,
+      "wall": 19089.7152,
+      "input": 997.4006,
+      "attention": 9289.6806,
+      "postconv": 253.2037,
+      "glue": 520.6155,
+      "moe": 6567.4833
+    },
+    {
+      "first": 24576.0,
+      "count": 4096.0,
+      "wall": 19657.0093,
+      "input": 1029.9,
+      "attention": 9657.4185,
+      "postconv": 250.8948,
+      "glue": 525.7047,
+      "moe": 6673.9276
+    },
+    {
+      "first": 28672.0,
+      "count": 4096.0,
+      "wall": 19596.4942,
+      "input": 985.367,
+      "attention": 9730.5382,
+      "postconv": 263.6163,
+      "glue": 517.0378,
+      "moe": 6664.8675
+    }
+  ],
+  "phase_totals_ms": {
+    "wall": 150637.1825,
+    "input": 7994.9065,
+    "attention": 71675.7681,
+    "postconv": 2039.1275,
+    "glue": 4163.4132,
+    "moe": 53165.2418
+  },
+  "final_ubatch_range_ms": 19596.422523,
+  "gpu_exclusive_ms": {
+    "no GPU activity": 4523.731477,
+    "H2D": 2085.79339,
+    "kernel": 10828.343322,
+    "D2D": 0.623227,
+    "D2H": 1931.124154,
+    "overlap": 226.806953
+  },
+  "kernel_sum_ms": {
+    "goose_i2_matrix_q8_0": 4362.616855,
+    "goose_i2_flash_mma_prefill": 2660.764913,
+    "goose_i2_xs_mmq16": 2283.773748,
+    "goose_i2_nl_mmq16": 785.706504,
+    "goose_quantized_matmul": 186.555784,
+    "goose_vector_ops": 172.574763,
+    "goose_i2_flash_mma_merge": 101.601902,
+    "goose_vector_flat4": 85.146581,
+    "goose_i2_moe_pack": 74.201757,
+    "goose_i2_prepare_attention": 66.955136,
+    "goose_tensor_blit": 61.691298,
+    "goose_i2_moe_epilogue": 59.599788,
+    "goose_i2_moe_situ": 48.518344,
+    "goose_moe_weighted": 41.564438,
+    "goose_tanh_f32": 28.595025,
+    "goose_i2_attention_gate": 16.27087,
+    "goose_set_q4_rows": 12.27887,
+    "goose_route_sort": 5.94451,
+    "goose_route_reduce": 0.448033,
+    "goose_route_gather": 0.278047,
+    "goose_i2_update_history": 0.063109
+  },
+  "copies": [
+    {
+      "direction": "H2D",
+      "bytes_each": 2820096,
+      "count": 2578
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 1492992,
+      "count": 2578
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 65536,
+      "count": 688
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 37748736,
+      "count": 448
+    },
+    {
+      "direction": "D2D",
+      "bytes_each": 589824,
+      "count": 160
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 9216,
+      "count": 153
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 176,
+      "count": 144
+    },
+    {
+      "direction": "D2H",
+      "bytes_each": 37748736,
+      "count": 96
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 786432,
+      "count": 96
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 136,
+      "count": 96
+    },
+    {
+      "direction": "D2D",
+      "bytes_each": 8192,
+      "count": 80
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 32768,
+      "count": 48
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 512,
+      "count": 48
+    },
+    {
+      "direction": "D2H",
+      "bytes_each": 131072,
+      "count": 48
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 50712,
+      "count": 10
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 50520,
+      "count": 10
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 49800,
+      "count": 4
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 49776,
+      "count": 4
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 49656,
+      "count": 4
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 50424,
+      "count": 4
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 50592,
+      "count": 4
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 50544,
+      "count": 4
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 50568,
+      "count": 4
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 50616,
+      "count": 4
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 49608,
+      "count": 2
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 49824,
+      "count": 2
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 49704,
+      "count": 2
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 49848,
+      "count": 2
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 50184,
+      "count": 2
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 50160,
+      "count": 2
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 50400,
+      "count": 2
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 50136,
+      "count": 2
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 50280,
+      "count": 2
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 50328,
+      "count": 2
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 49944,
+      "count": 2
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 50376,
+      "count": 2
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 50664,
+      "count": 2
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 50640,
+      "count": 2
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 50256,
+      "count": 2
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 49920,
+      "count": 2
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 50688,
+      "count": 2
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 50736,
+      "count": 2
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 50448,
+      "count": 2
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 50496,
+      "count": 2
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 50304,
+      "count": 2
+    },
+    {
+      "direction": "H2D",
+      "bytes_each": 50064,
+      "count": 2
+    },
+    {
+      "direction": "D2H",
+      "bytes_each": 804096,
+      "count": 1
+    }
+  ],
+  "nvtx_phase_gpu_ms": {
+    "Inkling input prep": {
+      "no GPU activity": 985.5589589999998
+    },
+    "Inkling attention": {
+      "no GPU activity": 400.45373500000005,
+      "H2D": 1006.8485749999998,
+      "kernel": 7358.67245,
+      "D2D": 0.6232269999999999,
+      "D2H": 964.1565929999999
+    },
+    "Inkling postconv": {
+      "no GPU activity": 263.798481
+    },
+    "Inkling FFN prep": {
+      "no GPU activity": 517.1999460000001
+    },
+    "Inkling MoE": {
+      "no GPU activity": 923.8771200000001,
+      "H2D": 1078.9440150000003,
+      "kernel": 3468.541592999999,
+      "D2H": 966.9352409999999,
+      "overlap": 226.806953
+    }
+  }
+}

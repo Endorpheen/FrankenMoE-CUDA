@@ -1,0 +1,44 @@
+--- a/inkling-backend.c
++++ b/inkling-backend.c
+@@ -254 +254,2 @@
+-    const int64_t *aux, int at, struct ggml_tensor *signal, struct ggml_tensor *memory) {
++    const int64_t *aux, int at, struct ggml_tensor *signal, struct ggml_tensor *memory,
++    struct ggml_tensor *normalized_signal) {
+@@ -256 +257 @@
+-    struct ggml_tensor *x = ggml_rms_norm(ctx, signal, eps);
++    struct ggml_tensor *x = normalized_signal ? normalized_signal : ggml_rms_norm(ctx, signal, eps);
+@@ -279 +280 @@
+-    struct ggml_tensor *result[] = {controller_node(ctx, d, aux, at, signal, memory)};
++    struct ggml_tensor *result[] = {controller_node(ctx, d, aux, at, signal, memory, NULL)};
+@@ -296 +297 @@
+-                                rows_input(ctx, message, model_width, count));
++                                rows_input(ctx, message, model_width, count), NULL);
+@@ -348,0 +350,5 @@
++static bool share_attention_inputs(bool sliding, const int64_t *aux) {
++    const char *sharing = getenv("I2_SHARED_ATTENTION_INPUTS");
++    return (sliding || aux[10] < 0) && (!sharing || strcmp(sharing, "0") != 0);
++}
++
+@@ -359,0 +366,3 @@
++    const bool shared = share_attention_inputs(sliding, aux);
++    struct ggml_tensor *signal = shared ? rows_input(ctx, input[0], model_width, count) : NULL;
++    struct ggml_tensor *normalized_signal = signal ? ggml_rms_norm(ctx, signal, 1e-6f) : NULL;
+@@ -361,3 +370,12 @@
+-        struct ggml_tensor *x = rows_input(ctx, input[i], model_width, count);
+-        if (message) {
+-            x = controller_node(ctx, d, aux, 18 + 3 * i, x, rows_input(ctx, message[i], model_width, count));
++        if (i > 0 && shared && sliding && !message) {
++            node->src[i] = node->src[0];
++            continue;
++        }
++        struct ggml_tensor *normalized = normalized_signal;
++        if (message || !normalized) {
++            struct ggml_tensor *x = signal ? signal : rows_input(ctx, input[i], model_width, count);
++            if (message) {
++                struct ggml_tensor *memory = rows_input(ctx, message[i], model_width, count);
++                x = controller_node(ctx, d, aux, 18 + 3 * i, x, memory, normalized_signal);
++            }
++            normalized = ggml_rms_norm(ctx, x, 1e-6f);
+@@ -366 +384 @@
+-        node->src[i] = ggml_mul(ctx, ggml_rms_norm(ctx, x, 1e-6f), gain);
++        node->src[i] = ggml_mul(ctx, normalized, gain);

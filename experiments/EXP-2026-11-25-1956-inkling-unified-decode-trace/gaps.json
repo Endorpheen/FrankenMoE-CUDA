@@ -1,0 +1,355 @@
+{
+  "steps": 128,
+  "captured_logit_copies": 245,
+  "idle_ms_per_step": 20.4450660859375,
+  "idle_by_transition": [
+    {
+      "after": "activation D2H",
+      "before": "activation H2D",
+      "calls_per_step": 96.0,
+      "ms_per_step": 4.7091686015625
+    },
+    {
+      "after": "logits D2H",
+      "before": "activation H2D",
+      "calls_per_step": 1.0,
+      "ms_per_step": 2.3053650703125
+    },
+    {
+      "after": "goose_i2_matrix_iq4_xs_blocks",
+      "before": "expert H2D",
+      "calls_per_step": 21.109375,
+      "ms_per_step": 2.183678171875
+    },
+    {
+      "after": "goose_vector_ops",
+      "before": "activation H2D",
+      "calls_per_step": 360.0,
+      "ms_per_step": 1.920993375
+    },
+    {
+      "after": "routing ID D2H",
+      "before": "other copy (1)",
+      "calls_per_step": 47.9453125,
+      "ms_per_step": 1.36032965625
+    },
+    {
+      "after": "activation H2D",
+      "before": "goose_vector_ops",
+      "calls_per_step": 552.0,
+      "ms_per_step": 1.3193491875
+    },
+    {
+      "after": "expert H2D",
+      "before": "expert H2D",
+      "calls_per_step": 25.2265625,
+      "ms_per_step": 1.083786375
+    },
+    {
+      "after": "goose_vector_ops",
+      "before": "other copy (1)",
+      "calls_per_step": 248.0,
+      "ms_per_step": 0.503836296875
+    },
+    {
+      "after": "goose_i2_moe_epilogue",
+      "before": "activation D2H",
+      "calls_per_step": 48.0,
+      "ms_per_step": 0.4828468359375
+    },
+    {
+      "after": "goose_moe_weighted",
+      "before": "activation H2D",
+      "calls_per_step": 48.0,
+      "ms_per_step": 0.4693011875
+    },
+    {
+      "after": "goose_tanh_f32",
+      "before": "activation H2D",
+      "calls_per_step": 96.0,
+      "ms_per_step": 0.4551676328125
+    },
+    {
+      "after": "goose_route_sort",
+      "before": "routing ID D2H",
+      "calls_per_step": 48.0,
+      "ms_per_step": 0.335827578125
+    },
+    {
+      "after": "goose_vector_ops",
+      "before": "goose_vector_ops",
+      "calls_per_step": 288.0,
+      "ms_per_step": 0.2860934375
+    },
+    {
+      "after": "other copy (8)",
+      "before": "activation D2H",
+      "calls_per_step": 40.0,
+      "ms_per_step": 0.23920496875
+    },
+    {
+      "after": "goose_i2_matrix_q8_0",
+      "before": "goose_tanh_f32",
+      "calls_per_step": 192.0,
+      "ms_per_step": 0.226146265625
+    },
+    {
+      "after": "goose_i2_matrix_q8_0",
+      "before": "goose_i2_matrix_q8_0",
+      "calls_per_step": 352.0,
+      "ms_per_step": 0.217688671875
+    },
+    {
+      "after": "expert H2D",
+      "before": "other copy (1)",
+      "calls_per_step": 22.5078125,
+      "ms_per_step": 0.19131815625
+    },
+    {
+      "after": "other copy (8)",
+      "before": "other copy (1)",
+      "calls_per_step": 40.0,
+      "ms_per_step": 0.1822656328125
+    },
+    {
+      "after": "other copy (8)",
+      "before": "other copy (8)",
+      "calls_per_step": 160.0,
+      "ms_per_step": 0.1629615390625
+    },
+    {
+      "after": "goose_vector_ops",
+      "before": "goose_i2_matrix_q8_0",
+      "calls_per_step": 96.0,
+      "ms_per_step": 0.1599698515625
+    },
+    {
+      "after": "other copy (1)",
+      "before": "goose_i2_matrix_iq4_xs_blocks",
+      "calls_per_step": 54.6171875,
+      "ms_per_step": 0.1530488515625
+    },
+    {
+      "after": "other copy (1)",
+      "before": "goose_i2_matrix_q8_0",
+      "calls_per_step": 48.0,
+      "ms_per_step": 0.14699465625
+    },
+    {
+      "after": "goose_vector_ops",
+      "before": "other copy (8)",
+      "calls_per_step": 40.0,
+      "ms_per_step": 0.1239263984375
+    },
+    {
+      "after": "activation H2D",
+      "before": "goose_i2_moe_epilogue",
+      "calls_per_step": 48.0,
+      "ms_per_step": 0.1062310390625
+    },
+    {
+      "after": "goose_tensor_blit",
+      "before": "goose_i2_matrix_q8_0",
+      "calls_per_step": 96.0,
+      "ms_per_step": 0.0985569375
+    },
+    {
+      "after": "goose_tanh_f32",
+      "before": "goose_vector_ops",
+      "calls_per_step": 96.0,
+      "ms_per_step": 0.0712946171875
+    },
+    {
+      "after": "other copy (1)",
+      "before": "goose_quantized_matmul",
+      "calls_per_step": 48.0,
+      "ms_per_step": 0.0660355
+    },
+    {
+      "after": "goose_i2_matrix_q8_0",
+      "before": "activation D2H",
+      "calls_per_step": 8.0,
+      "ms_per_step": 0.0648849609375
+    },
+    {
+      "after": "other copy (1)",
+      "before": "goose_tensor_blit",
+      "calls_per_step": 96.0,
+      "ms_per_step": 0.0632838828125
+    },
+    {
+      "after": "other copy (1)",
+      "before": "goose_route_sort",
+      "calls_per_step": 48.0,
+      "ms_per_step": 0.062192609375
+    },
+    {
+      "after": "goose_route_gather",
+      "before": "other copy (1)",
+      "calls_per_step": 48.0,
+      "ms_per_step": 0.0614520703125
+    },
+    {
+      "after": "goose_i2_matrix_iq4_nl",
+      "before": "other copy (1)",
+      "calls_per_step": 48.0,
+      "ms_per_step": 0.0610603359375
+    },
+    {
+      "after": "other copy (1)",
+      "before": "goose_vector_ops",
+      "calls_per_step": 48.0,
+      "ms_per_step": 0.0428150625
+    },
+    {
+      "after": "goose_i2_moe_situ",
+      "before": "other copy (1)",
+      "calls_per_step": 32.1953125,
+      "ms_per_step": 0.042644015625
+    },
+    {
+      "after": "goose_quantized_matmul",
+      "before": "goose_vector_ops",
+      "calls_per_step": 48.0,
+      "ms_per_step": 0.0382682421875
+    },
+    {
+      "after": "other copy (1)",
+      "before": "goose_route_reduce",
+      "calls_per_step": 48.0,
+      "ms_per_step": 0.031092828125
+    },
+    {
+      "after": "other copy (1)",
+      "before": "goose_i2_matrix_iq4_nl",
+      "calls_per_step": 48.0,
+      "ms_per_step": 0.03032378125
+    },
+    {
+      "after": "other copy (1)",
+      "before": "goose_route_gather",
+      "calls_per_step": 48.0,
+      "ms_per_step": 0.029513875
+    },
+    {
+      "after": "goose_i2_flash_mma_merge",
+      "before": "goose_i2_attention_gate",
+      "calls_per_step": 48.0,
+      "ms_per_step": 0.027582140625
+    },
+    {
+      "after": "goose_i2_flash_mma_decode",
+      "before": "goose_i2_flash_mma_merge",
+      "calls_per_step": 48.0,
+      "ms_per_step": 0.027417515625
+    },
+    {
+      "after": "goose_vector_ops",
+      "before": "goose_moe_weighted",
+      "calls_per_step": 48.0,
+      "ms_per_step": 0.0269287890625
+    },
+    {
+      "after": "goose_i2_attention_gate",
+      "before": "goose_i2_matrix_q8_0",
+      "calls_per_step": 48.0,
+      "ms_per_step": 0.026499265625
+    },
+    {
+      "after": "goose_i2_update_history",
+      "before": "goose_set_q4_rows",
+      "calls_per_step": 48.0,
+      "ms_per_step": 0.0264223203125
+    },
+    {
+      "after": "goose_i2_matrix_q8_0",
+      "before": "goose_i2_prepare_attention",
+      "calls_per_step": 48.0,
+      "ms_per_step": 0.0263812734375
+    },
+    {
+      "after": "goose_i2_prepare_attention",
+      "before": "goose_i2_update_history",
+      "calls_per_step": 48.0,
+      "ms_per_step": 0.026175546875
+    },
+    {
+      "after": "goose_set_q4_rows",
+      "before": "goose_i2_flash_mma_decode",
+      "calls_per_step": 48.0,
+      "ms_per_step": 0.0261347265625
+    },
+    {
+      "after": "goose_route_reduce",
+      "before": "goose_vector_ops",
+      "calls_per_step": 48.0,
+      "ms_per_step": 0.0251005703125
+    },
+    {
+      "after": "goose_i2_matrix_iq4_xs_blocks",
+      "before": "goose_i2_moe_situ",
+      "calls_per_step": 32.0625,
+      "ms_per_step": 0.0248911875
+    },
+    {
+      "after": "goose_set_q4_rows",
+      "before": "goose_set_q4_rows",
+      "calls_per_step": 48.0,
+      "ms_per_step": 0.024684328125
+    },
+    {
+      "after": "goose_i2_matrix_q8_0",
+      "before": "other copy (8)",
+      "calls_per_step": 40.0,
+      "ms_per_step": 0.0216140546875
+    },
+    {
+      "after": "expert H2D",
+      "before": "goose_i2_moe_situ",
+      "calls_per_step": 0.2265625,
+      "ms_per_step": 0.0180700703125
+    },
+    {
+      "after": "goose_i2_matrix_q8_0",
+      "before": "logits D2H",
+      "calls_per_step": 1.0,
+      "ms_per_step": 0.0120583515625
+    },
+    {
+      "after": "routing ID D2H",
+      "before": "expert H2D",
+      "calls_per_step": 0.0546875,
+      "ms_per_step": 0.0107453359375
+    },
+    {
+      "after": "activation H2D",
+      "before": "goose_i2_matrix_q8_0",
+      "calls_per_step": 1.0,
+      "ms_per_step": 0.00425815625
+    },
+    {
+      "after": "other copy (1)",
+      "before": "expert H2D",
+      "calls_per_step": 0.0234375,
+      "ms_per_step": 0.001122296875
+    },
+    {
+      "after": "expert H2D",
+      "before": "goose_i2_matrix_iq4_xs_blocks",
+      "calls_per_step": 0.03125,
+      "ms_per_step": 2.82578125e-05
+    },
+    {
+      "after": "goose_i2_moe_situ",
+      "before": "expert H2D",
+      "calls_per_step": 0.0234375,
+      "ms_per_step": 2.27421875e-05
+    },
+    {
+      "after": "goose_i2_matrix_iq4_xs_blocks",
+      "before": "other copy (1)",
+      "calls_per_step": 0.0078125,
+      "ms_per_step": 1.1e-05
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+ptxas info    : Compiling entry function 'bonsai_choice_final' for 'sm_89'
+ptxas info    : Function properties for bonsai_choice_final
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 18 registers, used 1 barriers, 96 bytes smem, 372 bytes cmem[0]
+ptxas info    : Compiling entry function 'bonsai_choice_tiles' for 'sm_89'
+ptxas info    : Function properties for bonsai_choice_tiles
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 20 registers, used 1 barriers, 96 bytes smem, 384 bytes cmem[0]

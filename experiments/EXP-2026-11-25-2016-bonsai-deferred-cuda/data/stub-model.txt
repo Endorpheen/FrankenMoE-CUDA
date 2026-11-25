@@ -1,0 +1,2 @@
+Bonsai CUDA driver missing cuInit
+GENERATE Bonsai model or CUDA placement

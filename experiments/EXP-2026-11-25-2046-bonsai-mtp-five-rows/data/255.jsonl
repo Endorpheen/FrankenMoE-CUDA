@@ -1,0 +1,5 @@
+{"prompt":255,"committed":1,"forced_reject":1,"exact_logit_rows":2,"state_bytes":161611776,"follow_state_bytes":161630208,"target_ms":33.509362,"commit_us":0.300}
+{"prompt":255,"committed":2,"forced_reject":1,"exact_logit_rows":3,"state_bytes":161630208,"follow_state_bytes":161648640,"target_ms":31.512906,"commit_us":0.391}
+{"prompt":255,"committed":3,"forced_reject":1,"exact_logit_rows":4,"state_bytes":161648640,"follow_state_bytes":161667072,"target_ms":31.600722,"commit_us":0.531}
+{"prompt":255,"committed":4,"forced_reject":1,"exact_logit_rows":5,"state_bytes":161667072,"follow_state_bytes":161685504,"target_ms":31.256101,"commit_us":0.561}
+{"prompt":255,"committed":5,"forced_reject":0,"exact_logit_rows":6,"state_bytes":161685504,"follow_state_bytes":161703936,"target_ms":31.595191,"commit_us":0.361}

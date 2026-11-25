@@ -1,0 +1,13 @@
+ptxas info    : 0 bytes gmem
+ptxas info    : Compiling entry function 'bonsai_decode_gqa3' for 'sm_89'
+ptxas info    : Function properties for bonsai_decode_gqa3
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 80 registers, used 0 barriers, 396 bytes cmem[0]
+ptxas info    : Compiling entry function 'bonsai_decode_gqa2' for 'sm_89'
+ptxas info    : Function properties for bonsai_decode_gqa2
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 64 registers, used 0 barriers, 396 bytes cmem[0]
+ptxas info    : Compiling entry function 'bonsai_decode_gqa1' for 'sm_89'
+ptxas info    : Function properties for bonsai_decode_gqa1
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 40 registers, used 0 barriers, 396 bytes cmem[0]

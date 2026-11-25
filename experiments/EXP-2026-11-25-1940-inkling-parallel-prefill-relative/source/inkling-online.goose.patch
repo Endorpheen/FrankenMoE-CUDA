@@ -1,0 +1,23 @@
+--- a/inkling-online.goose
++++ b/inkling-online.goose
+@@ -79,0 +80,20 @@
++
++export fn i2_online_prepared_row_at(logits: u64, probabilities: u64, maxima: u64, totals: u64, rescale: u64, row: i64) {
++    let base = row * 32;
++    let before = shared_read(maxima, row);
++    var maximum = before;
++    for i in 32 {
++        let score = shared_read(logits, base + i);
++        if score > maximum { maximum = score; }
++    }
++    let alpha = exp(before - maximum);
++    var total = shared_read(totals, row) * alpha;
++    for i in 32 {
++        let w = exp(shared_read(logits, base + i) - maximum);
++        probability_write(probabilities, base + i, w);
++        total += w;
++    }
++    shared_write(maxima, row, maximum);
++    shared_write(totals, row, total);
++    shared_write(rescale, row, alpha);
++}

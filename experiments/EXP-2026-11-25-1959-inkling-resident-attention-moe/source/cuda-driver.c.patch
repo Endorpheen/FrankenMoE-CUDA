@@ -1,0 +1,8 @@
+--- a/cuda-driver.c
++++ b/cuda-driver.c
+@@ -171,3 +171,5 @@
+ #include "tanh-driver.h"
+ 
+ #include "moe-epilogue-driver.h"
++
++#include "bridge-driver.h"

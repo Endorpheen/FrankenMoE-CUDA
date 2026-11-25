@@ -1,0 +1,132 @@
+[
+  {
+    "kv_tokens": 65,
+    "query_tokens": 16,
+    "max_absolute_error": 0.00018386216834187508,
+    "relative_l2": 0.0002841818786691874,
+    "ordered_gpu_ms": [
+      [
+        "staged",
+        0.04118400067090988
+      ],
+      [
+        "four",
+        0.04710400104522705
+      ],
+      [
+        "four",
+        0.0461760014295578
+      ],
+      [
+        "staged",
+        0.032607998698949814
+      ]
+    ],
+    "bit_exact_f32": true,
+    "extra_staging_bytes": 393216
+  },
+  {
+    "kv_tokens": 257,
+    "query_tokens": 33,
+    "max_absolute_error": 6.604939699172974e-05,
+    "relative_l2": 0.00029511770117096603,
+    "ordered_gpu_ms": [
+      [
+        "staged",
+        0.061503998935222626
+      ],
+      [
+        "four",
+        0.05929600074887276
+      ],
+      [
+        "four",
+        0.05820799991488457
+      ],
+      [
+        "staged",
+        0.056063998490571976
+      ]
+    ],
+    "bit_exact_f32": true,
+    "extra_staging_bytes": 1179648
+  },
+  {
+    "kv_tokens": 8192,
+    "query_tokens": 128,
+    "max_absolute_error": 1.2211501598358154e-05,
+    "relative_l2": 0.0002892289194278419,
+    "ordered_gpu_ms": [
+      [
+        "staged",
+        6.81385612487793
+      ],
+      [
+        "four",
+        6.756351947784424
+      ],
+      [
+        "four",
+        6.780928134918213
+      ],
+      [
+        "staged",
+        6.762495994567871
+      ]
+    ],
+    "bit_exact_f32": true,
+    "extra_staging_bytes": 33554432
+  },
+  {
+    "kv_tokens": 32768,
+    "query_tokens": 128,
+    "max_absolute_error": 5.922280251979828e-06,
+    "relative_l2": 0.0002864154812414199,
+    "ordered_gpu_ms": [
+      [
+        "staged",
+        29.288799285888672
+      ],
+      [
+        "four",
+        31.419391632080078
+      ],
+      [
+        "four",
+        31.42019271850586
+      ],
+      [
+        "staged",
+        29.267648696899414
+      ]
+    ],
+    "bit_exact_f32": true,
+    "extra_staging_bytes": 134217728
+  },
+  {
+    "kv_tokens": 1024,
+    "query_tokens": 1024,
+    "max_absolute_error": 0.000732421875,
+    "relative_l2": 0.0002690214605536312,
+    "ordered_gpu_ms": [
+      [
+        "staged",
+        2.116703987121582
+      ],
+      [
+        "four",
+        2.2958080768585205
+      ],
+      [
+        "four",
+        2.285696029663086
+      ],
+      [
+        "staged",
+        2.027519941329956
+      ]
+    ],
+    "bit_exact_f32": true,
+    "extra_staging_bytes": 4194304
+  }
+]

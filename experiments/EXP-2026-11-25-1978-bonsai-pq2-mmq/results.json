@@ -1,0 +1,113 @@
+{
+  "candidate_cubin_sha256": "d3500d3279c209513224d093a946ebe657bb77d97a16ce8ead9986b4d9fd039c",
+  "cases": [
+    {
+      "tensor": "blk.0.attn_qkv.weight",
+      "rows": 10239,
+      "width": 5120,
+      "tokens": 33,
+      "relative_l2_to_f32_matvec": 0.0002056425146292895,
+      "max_abs_to_f32_matvec": 0.0012545585632324219,
+      "max_abs_to_independent_rounded_reference": 1.9574504221964162e-05,
+      "ordered_kernel_ms": [
+        [
+          "scalar",
+          3.849247932434082
+        ],
+        [
+          "mmq",
+          0.38700801134109497
+        ],
+        [
+          "mmq",
+          0.3604480028152466
+        ],
+        [
+          "scalar",
+          3.738624095916748
+        ]
+      ]
+    },
+    {
+      "tensor": "blk.0.attn_qkv.weight",
+      "rows": 10240,
+      "width": 5120,
+      "tokens": 128,
+      "relative_l2_to_f32_matvec": 0.0002063073916360736,
+      "max_abs_to_f32_matvec": 0.002049684524536133,
+      "max_abs_to_independent_rounded_reference": 2.438163573970087e-05,
+      "ordered_kernel_ms": [
+        [
+          "scalar",
+          16.228063583374023
+        ],
+        [
+          "mmq",
+          0.74726402759552
+        ],
+        [
+          "mmq",
+          0.7434239983558655
+        ],
+        [
+          "scalar",
+          14.492480278015137
+        ]
+      ]
+    },
+    {
+      "tensor": "blk.3.attn_output.weight",
+      "rows": 5120,
+      "width": 6144,
+      "tokens": 128,
+      "relative_l2_to_f32_matvec": 0.00020838718046434224,
+      "max_abs_to_f32_matvec": 0.009275436401367188,
+      "max_abs_to_independent_rounded_reference": 3.1147239496931434e-05,
+      "ordered_kernel_ms": [
+        [
+          "scalar",
+          9.712448120117188
+        ],
+        [
+          "mmq",
+          0.5123519897460938
+        ],
+        [
+          "mmq",
+          0.47513601183891296
+        ],
+        [
+          "scalar",
+          8.931584358215332
+        ]
+      ]
+    },
+    {
+      "tensor": "blk.0.ffn_down.weight",
+      "rows": 5120,
+      "width": 17408,
+      "tokens": 256,
+      "relative_l2_to_f32_matvec": 0.00020893356122542173,
+      "max_abs_to_f32_matvec": 0.007038116455078125,
+      "max_abs_to_independent_rounded_reference": 0.0001041477189573925,
+      "ordered_kernel_ms": [
+        [
+          "scalar",
+          46.69968032836914
+        ],
+        [
+          "mmq",
+          2.6572799682617188
+        ],
+        [
+          "mmq",
+          2.6963839530944824
+        ],
+        [
+          "scalar",
+          48.243743896484375
+        ]
+      ]
+    }
+  ]
+}

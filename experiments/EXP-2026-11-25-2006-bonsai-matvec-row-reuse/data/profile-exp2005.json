@@ -1,0 +1,208 @@
+{
+  "prefill": {
+    "gpu_span_ns": 53530566516,
+    "kernel_ns": 53436900261,
+    "kernels": {
+      "bonsai_pq2_mmq_64x128_k64": {
+        "ns": 31981245251,
+        "calls": 12800
+      },
+      "bonsai_flash_async_tile": {
+        "ns": 12566481038,
+        "calls": 53456
+      },
+      "bonsai_flash_compact_ordered_merge": {
+        "ns": 2796322443,
+        "calls": 53344
+      },
+      "goose_gdn_mma_v32": {
+        "ns": 1396413250,
+        "calls": 1536
+      },
+      "bonsai_norm": {
+        "ns": 853747493,
+        "calls": 8449
+      },
+      "bonsai_ffn_tail": {
+        "ns": 819863180,
+        "calls": 2048
+      },
+      "bonsai_decay_reuse8": {
+        "ns": 625263967,
+        "calls": 1536
+      },
+      "bonsai_conv_batch": {
+        "ns": 569194529,
+        "calls": 1536
+      },
+      "bonsai_fwht1024": {
+        "ns": 567397289,
+        "calls": 6434
+      },
+      "bonsai_residual": {
+        "ns": 496025796,
+        "calls": 4224
+      },
+      "bonsai_pack_half": {
+        "ns": 224246346,
+        "calls": 6144
+      },
+      "bonsai_flash_stage_kv": {
+        "ns": 131522426,
+        "calls": 512
+      },
+      "bonsai_split_q_gate": {
+        "ns": 104999428,
+        "calls": 528
+      },
+      "bonsai_attention_gate": {
+        "ns": 80121119,
+        "calls": 528
+      },
+      "goose_rope_phases": {
+        "ns": 75842273,
+        "calls": 1024
+      },
+      "goose_rope_apply": {
+        "ns": 64998479,
+        "calls": 1024
+      },
+      "bonsai_pq2_matvec_ordered": {
+        "ns": 41714089,
+        "calls": 401
+      },
+      "goose_set_q4_rows": {
+        "ns": 28033256,
+        "calls": 1056
+      },
+      "bonsai_decode_gqa3": {
+        "ns": 6082906,
+        "calls": 16
+      },
+      "bonsai_decay": {
+        "ns": 2147235,
+        "calls": 48
+      },
+      "goose_q4_attention_merge": {
+        "ns": 2025478,
+        "calls": 16
+      },
+      "bonsai_flash_compact_merge": {
+        "ns": 1393238,
+        "calls": 112
+      },
+      "bonsai_embed_batch": {
+        "ns": 1094819,
+        "calls": 32
+      },
+      "goose_gdn_decode": {
+        "ns": 474672,
+        "calls": 48
+      },
+      "bonsai_conv_step": {
+        "ns": 86299,
+        "calls": 48
+      },
+      "bonsai_swiglu": {
+        "ns": 85245,
+        "calls": 64
+      },
+      "goose_rope_decode": {
+        "ns": 77406,
+        "calls": 32
+      },
+      "bonsai_pq2_row": {
+        "ns": 1311,
+        "calls": 1
+      }
+    },
+    "copies": [
+      {
+        "kind": 1,
+        "calls": 99,
+        "bytes": 641372,
+        "ns": 70015
+      }
+    ]
+  },
+  "decode": {
+    "gpu_span_ns": 928976360,
+    "kernel_ns": 905479300,
+    "kernels": {
+      "bonsai_pq2_matvec_ordered": {
+        "ns": 622901814,
+        "calls": 6015
+      },
+      "bonsai_norm": {
+        "ns": 104526975,
+        "calls": 3855
+      },
+      "bonsai_decode_gqa3": {
+        "ns": 90155267,
+        "calls": 240
+      },
+      "bonsai_decay": {
+        "ns": 31841716,
+        "calls": 720
+      },
+      "goose_q4_attention_merge": {
+        "ns": 30391579,
+        "calls": 240
+      },
+      "bonsai_fwht1024": {
+        "ns": 10956045,
+        "calls": 3870
+      },
+      "goose_gdn_decode": {
+        "ns": 7047091,
+        "calls": 720
+      },
+      "bonsai_residual": {
+        "ns": 1996281,
+        "calls": 1920
+      },
+      "goose_set_q4_rows": {
+        "ns": 1415868,
+        "calls": 480
+      },
+      "bonsai_conv_step": {
+        "ns": 1282169,
+        "calls": 720
+      },
+      "bonsai_swiglu": {
+        "ns": 1252314,
+        "calls": 960
+      },
+      "goose_rope_decode": {
+        "ns": 1141342,
+        "calls": 480
+      },
+      "bonsai_attention_gate": {
+        "ns": 320860,
+        "calls": 240
+      },
+      "bonsai_split_q_gate": {
+        "ns": 231034,
+        "calls": 240
+      },
+      "bonsai_pq2_row": {
+        "ns": 18945,
+        "calls": 15
+      }
+    },
+    "copies": [
+      {
+        "kind": 1,
+        "calls": 28,
+        "bytes": 2688,
+        "ns": 8000
+      },
+      {
+        "kind": 2,
+        "calls": 14,
+        "bytes": 13905920,
+        "ns": 550863
+      }
+    ]
+  }
+}

@@ -1,0 +1,36 @@
+--- a/prefill.h
++++ b/prefill.h
+@@ -110,0 +111,3 @@
++    sl_f32 postconv_weights;
++    float *postconv_history;
++    int postconv_rows;
+@@ -112,0 +116,3 @@
++extern int64_t inkling_row_major_i2_postconv_batch(sl_f32 input, sl_f32 weights,
++    sl_f32 history, sl_f32 out, int64_t width, int64_t from_channel, int64_t to_channel);
++
+@@ -121,0 +128,9 @@
++    if (work->postconv_rows) {
++        const int64_t items = (int64_t)work->postconv_rows * model_width;
++        assert(inkling_row_major_i2_postconv_batch(
++            vec(scratch->linear[0], items),
++            work->postconv_weights,
++            vec(work->postconv_history, 3 * model_width),
++            vec(scratch->residual[0], items), model_width, begin, end) == end - begin);
++        return;
++    }
+@@ -264,3 +279,12 @@
+-    for (int t = 0; t < count; ++t) {
+-        assert(i2_postconv_token(vec(scratch->linear[t], model_width), coefficients(d, aux[2], 4 * model_width),
+-            vec(d->ha + slot * 3 * model_width, 3 * model_width), vec(scratch->residual[t], model_width)) == model_width);
++    const char *postconv_batch = getenv("I2_PREFILL_POSTCONV_BATCH");
++    if (team && (!postconv_batch || strcmp(postconv_batch, "0") != 0)) {
++        setup.postconv_weights = coefficients(d, aux[2], 4 * model_width);
++        setup.postconv_history = d->ha + slot * 3 * model_width;
++        setup.postconv_rows = count;
++        prefill_team_run(team, &setup, model_width);
++        setup.postconv_rows = 0;
++    } else {
++        for (int t = 0; t < count; ++t) {
++            assert(i2_postconv_token(vec(scratch->linear[t], model_width), coefficients(d, aux[2], 4 * model_width),
++                vec(d->ha + slot * 3 * model_width, 3 * model_width), vec(scratch->residual[t], model_width)) == model_width);
++        }

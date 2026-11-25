@@ -1,0 +1,19 @@
+--- a/flash-mma.cl
++++ b/flash-mma.cl
+@@ -217 +217 @@
+-    uint query_tile, head, part, thread;
++    uint head, part, thread;
+@@ -220 +219,0 @@
+-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(query_tile));
+@@ -225 +224 @@
+-    const int64_t query = 16 * (int64_t)query_tile;
++    const int64_t query = 0;
+@@ -228 +227 @@
+-    const int tail = (int)(queries - query < 16 ? queries - query : 16);
++    const int tail = 1;
+@@ -230 +229 @@
+-    q4 &= 1;
++    q4 = 1;
+@@ -304 +303 @@
+-        #pragma unroll
++        #pragma unroll 1

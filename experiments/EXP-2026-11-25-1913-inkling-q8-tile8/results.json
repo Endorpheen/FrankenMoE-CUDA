@@ -1,0 +1,128 @@
+{
+  "conditions": {
+    "prompt": 512,
+    "generation": 16,
+    "context": 1024,
+    "batch": 512,
+    "ubatch": 512,
+    "arena_mib": 384,
+    "kv": "q4_0/q4_0",
+    "hardware": "RTX 4070"
+  },
+  "runs": {
+    "A1": {
+      "cold": {
+        "prompt": 141.64352955593284,
+        "predicted": 10.534179084755062,
+        "exact": true
+      },
+      "warm": {
+        "prompt": 174.66358482619052,
+        "predicted": 10.758601708903146,
+        "exact": true
+      },
+      "states_exact": true,
+      "fingerprints": 1086,
+      "vram_mib": 9822,
+      "rss_kib": 12515772,
+      "swap_kib": 0,
+      "swapout_pages": 0,
+      "expert_bytes": [
+        11205402624,
+        5387046912
+      ],
+      "tile": 4
+    },
+    "B1": {
+      "cold": {
+        "prompt": 142.67102007226063,
+        "predicted": 10.673673317358412,
+        "exact": true
+      },
+      "warm": {
+        "prompt": 182.04580527298532,
+        "predicted": 11.03713262046753,
+        "exact": true
+      },
+      "states_exact": true,
+      "fingerprints": 1086,
+      "vram_mib": 9822,
+      "rss_kib": 12515356,
+      "swap_kib": 0,
+      "swapout_pages": 0,
+      "expert_bytes": [
+        11205402624,
+        5387046912
+      ],
+      "tile": 8
+    },
+    "B2": {
+      "cold": {
+        "prompt": 138.90654159583582,
+        "predicted": 10.751780552235967,
+        "exact": true
+      },
+      "warm": {
+        "prompt": 183.1015815717757,
+        "predicted": 10.628804329772967,
+        "exact": true
+      },
+      "states_exact": true,
+      "fingerprints": 1086,
+      "vram_mib": 9822,
+      "rss_kib": 12515676,
+      "swap_kib": 0,
+      "swapout_pages": 0,
+      "expert_bytes": [
+        11205402624,
+        5387046912
+      ],
+      "tile": 8
+    },
+    "A2": {
+      "cold": {
+        "prompt": 136.44538333170638,
+        "predicted": 9.369120127618936,
+        "exact": true
+      },
+      "warm": {
+        "prompt": 172.66465316881778,
+        "predicted": 10.851959069576239,
+        "exact": true
+      },
+      "states_exact": true,
+      "fingerprints": 1086,
+      "vram_mib": 9822,
+      "rss_kib": 12514584,
+      "swap_kib": 0,
+      "swapout_pages": 0,
+      "expert_bytes": [
+        11205402624,
+        5387046912
+      ],
+      "tile": 4
+    }
+  },
+  "means": {
+    "A": {
+      "cold": {
+        "prompt": 139.04445644381963,
+        "predicted": 9.951649606186999
+      },
+      "warm": {
+        "prompt": 173.66411899750415,
+        "predicted": 10.805280389239693
+      }
+    },
+    "B": {
+      "cold": {
+        "prompt": 140.78878083404823,
+        "predicted": 10.712726934797189
+      },
+      "warm": {
+        "prompt": 182.57369342238053,
+        "predicted": 10.832968475120248
+      }
+    }
+  }
+}

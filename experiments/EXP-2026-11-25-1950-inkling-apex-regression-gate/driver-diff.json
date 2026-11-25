@@ -1,0 +1,75 @@
+{
+  "env_options": {
+    "only_reference": [
+      "GOOSE_CUDA_COMPACT_MOE_IDS",
+      "GOOSE_CUDA_DECODE_EARLY_FFN",
+      "GOOSE_CUDA_DISABLE_ATTENTION_FIRST_ROW",
+      "GOOSE_CUDA_DISABLE_ATTENTION_KEY_BOUND",
+      "GOOSE_CUDA_DISABLE_ATTENTION_UNROLL",
+      "GOOSE_CUDA_DISABLE_CACHE_BALANCE",
+      "GOOSE_CUDA_DISABLE_EXPERT_BATCH",
+      "GOOSE_CUDA_DISABLE_FUSED_SHARED",
+      "GOOSE_CUDA_DISABLE_FUSED_UP_GATE",
+      "GOOSE_CUDA_DISABLE_ONE_TOUCH_SLRU",
+      "GOOSE_CUDA_DISABLE_ROUTER_UNROLL",
+      "GOOSE_CUDA_DISABLE_ROUTE_COMPACT8",
+      "GOOSE_CUDA_EXPERT_ASYNC_COPIES",
+      "GOOSE_CUDA_EXPERT_SPLIT_PLANES",
+      "GOOSE_CUDA_PREFILL_TEMP_COMPACT",
+      "GOOSE_CUDA_PREFILL_TEMP_DOUBLE",
+      "GOOSE_CUDA_PREFILL_TEMP_MIB",
+      "GOOSE_CUDA_PREFILL_TEMP_WARM_ONLY",
+      "GOOSE_CUDA_PREFILL_TEMP_WEIGHTS",
+      "GOOSE_DECODE_SPLIT",
+      "GOOSE_DECODE_SPLIT_COUNT",
+      "GOOSE_DEFER_PREFETCH_FENCE",
+      "GOOSE_EXPERT_PREFETCH",
+      "GOOSE_EXPERT_PREFETCH_K",
+      "GOOSE_FLASH_INTERIOR",
+      "GOOSE_FWHT_FIXED",
+      "GOOSE_JOBS_ASYNC",
+      "GOOSE_MOE_PREFILL_EPILOGUE",
+      "GOOSE_RMS_BATCHED",
+      "GOOSE_ROUTE_MAILBOX"
+    ],
+    "only_combined": []
+  },
+  "kernel_names": {
+    "only_reference": [
+      "goose_flash_vec_q4_packed_pair",
+      "goose_flash_vec_q4_packed_quad",
+      "goose_fwht_q4_256",
+      "goose_fwht_q4_64",
+      "goose_kv_fwht_256",
+      "goose_kv_fwht_64",
+      "goose_mmvq_dense_matvec",
+      "goose_mmvq_dense_quantize",
+      "goose_mmvq_shared_up_gate_glu",
+      "goose_mmvq_short_rows",
+      "goose_mmvq_up_gate_glu",
+      "goose_moe_add_shared_residual",
+      "goose_moe_shared_residual_prefill",
+      "goose_pred_route",
+      "goose_rms_decode_2048",
+      "goose_rms_reference_one",
+      "goose_rms_reference_one_warp4",
+      "goose_route_compact8",
+      "goose_router_softmax_fixed"
+    ],
+    "only_combined": []
+  },
+  "archive_member_sha256": {
+    "reference": {
+      "main.o": "111b329dd020d3df9238ea4ae98c23387a579672e97b8af207bdb8c8355fe9a6",
+      "graph-execute.o": "01b3983f801a4042b32e07da5fe1b2cce041c952042e9ceffd8af80f4e475743",
+      "model-host.o": "30654c4e3cd30404ffb2372aebbb0f8fd79fe4871b2f2afb9f53c8a3ecd54f46",
+      "cuda-driver.o": "f49d1d331b84f527de7c30dfff17501d2d8ee7bed6e1792b40f5314c20067e4b"
+    },
+    "combined": {
+      "main.o": "94ade3a235222f92f8ec4e8ab2a866aaf3aa7de168b639a8c98169cc06b7bea5",
+      "graph-execute.o": "4791780a1334496187172d2ecffe961bcde2319014f1eef34039b06a8fa234cc",
+      "model-host.o": "7b5d116f89ae375028adebd1b5eb204ea797e809662e6337b8c933579093336e",
+      "cuda-driver.o": "896b535467acf7f1dd84d2066b74a9d0c9a1125a456ea46d7cd9f82ab0d2e5ac"
+    }
+  }
+}

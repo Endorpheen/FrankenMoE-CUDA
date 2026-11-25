@@ -1,0 +1,15 @@
+--- a/prefill.h
++++ b/prefill.h
+@@ -211,0 +212,3 @@
++    const char *cuda_postconv = getenv("I2_ATTENTION_POSTCONV");
++    const bool device_postconv = resident_attention && count > 1 &&
++        (!cuda_postconv || strcmp(cuda_postconv, "0") != 0);
+@@ -222 +225 @@
+-                        scratch->linear[0]);
++                        device_postconv ? scratch->residual[0] : scratch->linear[0], device_postconv);
+@@ -280 +283 @@
+-    if (team && (!postconv_batch || strcmp(postconv_batch, "0") != 0)) {
++    if (!device_postconv && team && (!postconv_batch || strcmp(postconv_batch, "0") != 0)) {
+@@ -286 +289 @@
+-    } else {
++    } else if (!device_postconv) {

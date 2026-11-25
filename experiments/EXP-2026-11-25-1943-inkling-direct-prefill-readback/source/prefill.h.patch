@@ -1,0 +1,22 @@
+--- a/prefill.h
++++ b/prefill.h
+@@ -54 +54,2 @@
+-    float linear[max_prefill_batch][model_width];
++    float (*linear)[model_width];
++    float linear_storage[max_prefill_batch][model_width];
+@@ -364,0 +366,12 @@
++    scratch->linear = scratch->linear_storage;
++    const char *readback = getenv("I2_DIRECT_PREFILL_READBACK");
++    if (count >= 512 && use_attention_graph() && use_resident_moe() &&
++        (!readback || strcmp(readback, "0") != 0)) {
++        const size_t elements = (size_t)count * model_width;
++        if (readback && strcmp(readback, "pinned") == 0) {
++            float (*pinned)[model_width] = fg_cuda_inkling_prefill_readback(elements * sizeof(float));
++            if (pinned) scratch->linear = pinned;
++        }
++        prefill_direct_output = scratch->linear[0];
++        prefill_direct_output_size = elements;
++    }
+@@ -390,0 +404,2 @@
++    prefill_direct_output = NULL;
++    prefill_direct_output_size = 0;

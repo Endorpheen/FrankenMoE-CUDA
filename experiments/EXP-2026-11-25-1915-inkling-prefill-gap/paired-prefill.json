@@ -1,0 +1,234 @@
+{
+  "goose": {
+    "anchor_logits_readbacks": 128,
+    "window_ms": 6273.6946,
+    "reported_warm_prefill_ms": 6273.694599978626,
+    "exclusive_ms": {
+      "no GPU activity": 1879.006229,
+      "H2D": 1116.408004,
+      "kernel": 2643.503,
+      "D2D": 0.539467,
+      "D2H": 234.97245,
+      "overlap": 399.26545
+    },
+    "idle_and_api_exclusive_ms": {
+      "explicit sync": 6.508514,
+      "copy API": 239.440544,
+      "launch API": 10.691347,
+      "other CUDA API": 2.526431,
+      "no GPU activity": 1619.839393
+    },
+    "copy_bytes": {
+      "H2D": 23622565856,
+      "D2D": 95027200,
+      "D2H": 908346624
+    },
+    "api": [
+      {
+        "name": "cuMemcpyHtoD_v2",
+        "calls": 2754,
+        "api_wall_ms": 2590.733477
+      },
+      {
+        "name": "cuMemcpyDtoH_v2",
+        "calls": 288,
+        "api_wall_ms": 386.619562
+      },
+      {
+        "name": "cuCtxSynchronize",
+        "calls": 194,
+        "api_wall_ms": 265.220674
+      },
+      {
+        "name": "cuMemcpyHtoDAsync_v2",
+        "calls": 9554,
+        "api_wall_ms": 35.367091
+      },
+      {
+        "name": "cuLaunchKernel",
+        "calls": 7281,
+        "api_wall_ms": 33.935789
+      },
+      {
+        "name": "cuEventSynchronize",
+        "calls": 6758,
+        "api_wall_ms": 4.967197
+      },
+      {
+        "name": "cuEventRecord",
+        "calls": 6950,
+        "api_wall_ms": 3.904359
+      },
+      {
+        "name": "cuMemcpyDtoD_v2",
+        "calls": 360,
+        "api_wall_ms": 2.1766
+      },
+      {
+        "name": "cuMemsetD8_v2",
+        "calls": 96,
+        "api_wall_ms": 0.911953
+      },
+      {
+        "name": "cuStreamWaitEvent",
+        "calls": 192,
+        "api_wall_ms": 0.45517
+      }
+    ],
+    "summed_kernel_ms": {
+      "goose_i2_xs_mmq": 1101.949554,
+      "goose_i2_matrix_q8_0": 1044.005317,
+      "goose_i2_nl_mmq": 328.590581,
+      "goose_i2_flash_mma": 281.775755,
+      "goose_vector_ops": 113.535738,
+      "goose_quantized_matmul": 45.174865,
+      "goose_vector_flat4": 33.551024,
+      "goose_i2_prepare_attention": 15.598716,
+      "goose_tensor_blit": 15.176667,
+      "goose_i2_moe_epilogue": 13.772239,
+      "goose_i2_moe_pack": 12.882522,
+      "goose_i2_flash_mma_merge": 11.71612,
+      "goose_tanh_f32": 10.233722,
+      "goose_moe_weighted": 8.403624,
+      "goose_i2_attention_gate": 1.996149,
+      "goose_set_q4_rows": 1.967251,
+      "goose_route_sort": 1.835872,
+      "goose_route_gather": 0.262625,
+      "goose_route_reduce": 0.24951,
+      "goose_i2_update_history": 0.090599
+    }
+  },
+  "upstream": {
+    "anchor_logits_readbacks": 130,
+    "window_ms": 3622.788,
+    "reported_warm_prefill_ms": 3622.788,
+    "exclusive_ms": {
+      "no GPU activity": 303.386679,
+      "H2D": 2411.566707,
+      "kernel": 899.346313,
+      "D2D": 4.835004,
+      "D2H": 3.653297
+    },
+    "idle_and_api_exclusive_ms": {
+      "explicit sync": 9.726629,
+      "copy API": 10.05178,
+      "launch API": 21.37576,
+      "other CUDA API": 27.953318,
+      "no GPU activity": 234.279192
+    },
+    "copy_bytes": {
+      "H2D": 24326174736,
+      "D2D": 1878799848,
+      "D2H": 80682920
+    },
+    "api": [
+      {
+        "name": "cudaMemcpyAsync_v3020",
+        "calls": 759,
+        "api_wall_ms": 2430.982026
+      },
+      {
+        "name": "cudaStreamSynchronize_v3020",
+        "calls": 675,
+        "api_wall_ms": 460.62146
+      },
+      {
+        "name": "cudaLaunchKernel_v7000",
+        "calls": 24527,
+        "api_wall_ms": 417.114667
+      },
+      {
+        "name": "cudaHostRegister_v4000",
+        "calls": 2,
+        "api_wall_ms": 25.761486
+      },
+      {
+        "name": "cudaMemcpy2DAsync_v3020",
+        "calls": 360,
+        "api_wall_ms": 11.420473
+      },
+      {
+        "name": "cudaMemsetAsync_v3020",
+        "calls": 184,
+        "api_wall_ms": 1.424374
+      },
+      {
+        "name": "cudaHostUnregister_v4000",
+        "calls": 2,
+        "api_wall_ms": 1.178636
+      },
+      {
+        "name": "cuLaunchKernel",
+        "calls": 96,
+        "api_wall_ms": 0.846837
+      },
+      {
+        "name": "cuKernelGetFunction",
+        "calls": 96,
+        "api_wall_ms": 0.154013
+      },
+      {
+        "name": "cudaEventRecord_v3020",
+        "calls": 1,
+        "api_wall_ms": 0.003116
+      },
+      {
+        "name": "cudaEventSynchronize_v3020",
+        "calls": 1,
+        "api_wall_ms": 0.002284
+      }
+    ],
+    "summed_kernel_ms": {
+      "mul_mat_q": 226.751638,
+      "k_get_rows_float_vec": 162.04367,
+      "mul_mat_vec_f": 82.367193,
+      "k_bin_bcast": 68.867565,
+      "cpy_scalar": 59.683419,
+      "cpy_scalar_transpose": 44.664484,
+      "concat_cont": 33.722564,
+      "gemmSN_TN_kernel": 31.341719,
+      "ampere_sgemm_128x128_tn": 26.771101,
+      "scale_f32": 21.59101,
+      "flash_attn_ext_f16": 17.288581,
+      "rms_norm_f32": 17.012699,
+      "cpy_scalar_contiguous": 12.521255,
+      "quantize_mmq_q8_1": 12.470968,
+      "moe_weighted_reduction_f32": 11.256809,
+      "unary_op_kernel": 10.471447,
+      "concat_non_cont": 9.383675,
+      "mul_mat_q_stream_k_fixup": 7.313972,
+      "unary_gated_op_kernel": 6.748408,
+      "kernel": 6.605913,
+      "mul_mat_vec_q": 6.033144,
+      "ssm_conv_long_token_f32": 5.541923,
+      "reduce_rows_f32": 2.462968,
+      "fwht_cuda": 2.329743,
+      "k_set_rows_quant": 2.086887,
+      "mm_ids_helper": 2.013624,
+      "dequantize_block_q4_0": 1.979799,
+      "flash_attn_stream_k_fixup_general": 1.603852,
+      "Kernel2": 1.418199,
+      "quantize_q8_1": 0.665068,
+      "soft_max_f32": 0.62225,
+      "fill_kernel": 0.536705,
+      "pad_f32": 0.509065,
+      "topk_moe_cuda": 0.493923,
+      "mul_mat_f": 0.483653,
+      "mul_mat_vec_q_moe": 0.458439,
+      "op_clamp_kernel": 0.399661,
+      "splitKreduce_kernel": 0.231585,
+      "k_get_rows_float": 0.227363,
+      "ssm_conv_f32": 0.226049,
+      "k_compute_batched_ptrs": 0.141091,
+      "softcap_f32": 0.003232
+    }
+  },
+  "goose_minus_upstream_ms": {
+    "D2D": -4.2955369999999995,
+    "D2H": 231.319153,
+    "H2D": -1295.158703,
+    "kernel": 1744.1566870000001,
+    "no GPU activity": 1575.6195500000001,
+    "overlap": 399.26545
+  }
+}

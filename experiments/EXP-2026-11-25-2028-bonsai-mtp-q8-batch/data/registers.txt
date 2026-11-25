@@ -1,0 +1,17 @@
+ptxas info    : Compiling entry function 'bonsai_pq2_mvq_q8_three_2' for 'sm_89'
+ptxas info    : Function properties for bonsai_pq2_mvq_q8_three_2
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 64 registers, used 0 barriers, 384 bytes cmem[0]
+ptxas info    : Compiling entry function 'bonsai_pq2_mvq_q8_three_1' for 'sm_89'
+ptxas info    : Function properties for bonsai_pq2_mvq_q8_three_1
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 40 registers, used 0 barriers, 384 bytes cmem[0]
+--
+ptxas info    : Compiling entry function 'bonsai_pq2_mvq_q8_2' for 'sm_89'
+ptxas info    : Function properties for bonsai_pq2_mvq_q8_2
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 40 registers, used 0 barriers, 384 bytes cmem[0]
+ptxas info    : Compiling entry function 'bonsai_pq2_mvq_q8_1' for 'sm_89'
+ptxas info    : Function properties for bonsai_pq2_mvq_q8_1
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 33 registers, used 0 barriers, 384 bytes cmem[0]

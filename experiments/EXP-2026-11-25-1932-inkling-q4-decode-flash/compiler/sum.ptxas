@@ -1,0 +1,17 @@
+ptxas info    : 0 bytes gmem
+ptxas info    : Compiling entry function 'goose_i2_flash_mma_decode' for 'sm_89'
+ptxas info    : Function properties for goose_i2_flash_mma_decode
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 64 registers, used 1 barriers, 3264 bytes smem, 472 bytes cmem[0], 16 bytes cmem[2]
+ptxas info    : Compiling entry function 'goose_i2_flash_mma_merge' for 'sm_89'
+ptxas info    : Function properties for goose_i2_flash_mma_merge
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 37 registers, used 0 barriers, 384 bytes cmem[0]
+ptxas info    : Compiling entry function 'goose_i2_flash_mma' for 'sm_89'
+ptxas info    : Function properties for goose_i2_flash_mma
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 72 registers, used 1 barriers, 3264 bytes smem, 472 bytes cmem[0], 16 bytes cmem[2]
+ptxas info    : Compiling entry function 'goose_i2_pack_f16' for 'sm_89'
+ptxas info    : Function properties for goose_i2_pack_f16
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 8 registers, used 0 barriers, 372 bytes cmem[0]

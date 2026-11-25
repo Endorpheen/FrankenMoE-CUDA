@@ -1,0 +1,140 @@
+{
+  "conditions": {
+    "hardware": "RTX 4070",
+    "context": 1024,
+    "kv": "q4_0/q4_0",
+    "prompt": 512,
+    "generation": 16,
+    "batch": 512,
+    "ubatch": 512,
+    "activation_mib": 384
+  },
+  "runs": {
+    "A1": {
+      "cold": {
+        "prompt": 110.46999692533117,
+        "predicted": 10.979680753980764
+      },
+      "warm": {
+        "prompt": 130.36656345487364,
+        "predicted": 11.109380615347048
+      },
+      "exact": true,
+      "fingerprints": 1086,
+      "vram_mib": 9819,
+      "rss_kib": 12508096,
+      "swap_kib": 0,
+      "swapout_pages": 0,
+      "prefill_traffic": [
+        [
+          2598,
+          11205402624
+        ],
+        [
+          1249,
+          5387046912
+        ]
+      ]
+    },
+    "B1": {
+      "cold": {
+        "prompt": 136.058875896884,
+        "predicted": 10.903054795605316
+      },
+      "warm": {
+        "prompt": 176.8025871946457,
+        "predicted": 10.530731668917928
+      },
+      "exact": true,
+      "fingerprints": 1086,
+      "vram_mib": 9819,
+      "rss_kib": 12515152,
+      "swap_kib": 0,
+      "swapout_pages": 0,
+      "prefill_traffic": [
+        [
+          2598,
+          11205402624
+        ],
+        [
+          1249,
+          5387046912
+        ]
+      ]
+    },
+    "B2": {
+      "cold": {
+        "prompt": 144.1377263634163,
+        "predicted": 10.469610680905944
+      },
+      "warm": {
+        "prompt": 177.94277744203643,
+        "predicted": 10.780223699388234
+      },
+      "exact": true,
+      "fingerprints": 1086,
+      "vram_mib": 9819,
+      "rss_kib": 12515700,
+      "swap_kib": 0,
+      "swapout_pages": 0,
+      "prefill_traffic": [
+        [
+          2598,
+          11205402624
+        ],
+        [
+          1249,
+          5387046912
+        ]
+      ]
+    },
+    "A2": {
+      "cold": {
+        "prompt": 112.24586821812393,
+        "predicted": 10.656722506674
+      },
+      "warm": {
+        "prompt": 131.14900475276397,
+        "predicted": 10.600924860555718
+      },
+      "exact": true,
+      "fingerprints": 1086,
+      "vram_mib": 9819,
+      "rss_kib": 12508612,
+      "swap_kib": 0,
+      "swapout_pages": 0,
+      "prefill_traffic": [
+        [
+          2598,
+          11205402624
+        ],
+        [
+          1249,
+          5387046912
+        ]
+      ]
+    }
+  },
+  "means": {
+    "A": {
+      "cold": {
+        "prompt": 111.35793257172756,
+        "predicted": 10.818201630327383
+      },
+      "warm": {
+        "prompt": 130.7577841038188,
+        "predicted": 10.855152737951382
+      }
+    },
+    "B": {
+      "cold": {
+        "prompt": 140.09830113015016,
+        "predicted": 10.68633273825563
+      },
+      "warm": {
+        "prompt": 177.37268231834105,
+        "predicted": 10.65547768415308
+      }
+    }
+  }
+}

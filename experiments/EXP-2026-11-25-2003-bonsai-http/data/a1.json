@@ -1,0 +1,40 @@
+{
+  "ids": [
+    1330,
+    22980,
+    421,
+    1000,
+    8381,
+    678,
+    15673,
+    13
+  ],
+  "text": " two observations that would challenge your explanation.",
+  "count": 8,
+  "content": " two observations that would challenge your explanation.",
+  "tokens": [
+    1330,
+    22980,
+    421,
+    1000,
+    8381,
+    678,
+    15673,
+    13
+  ],
+  "stop": true,
+  "stop_type": "limit",
+  "tokens_evaluated": 273,
+  "tokens_predicted": 8,
+  "timings": {
+    "cache_n": 0,
+    "prompt_n": 273,
+    "prompt_ms": 587.2165960026905,
+    "prompt_per_token_ms": 2.1509765421343974,
+    "prompt_per_second": 464.9051165419534,
+    "predicted_n": 8,
+    "predicted_ms": 447.4434299918357,
+    "predicted_per_token_ms": 63.92048999883367,
+    "predicted_per_second": 15.644435767282861
+  }
+}

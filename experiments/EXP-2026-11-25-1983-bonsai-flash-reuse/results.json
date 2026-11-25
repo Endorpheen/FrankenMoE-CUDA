@@ -1,0 +1,134 @@
+{
+  "profile": "4097/16",
+  "context": 36864,
+  "ubatch": 1024,
+  "cache": "q4_0/q4_0",
+  "arms": {
+    "a1": {
+      "prefill_ms": 16784.115,
+      "decode_ms": 974.607,
+      "prefill_toks_s": 244.0998527476724,
+      "decode_toks_s": 16.41687367318314,
+      "workspace_bytes": 1569405696
+    },
+    "b1": {
+      "prefill_ms": 15821.154,
+      "decode_ms": 974.345,
+      "prefill_toks_s": 258.9570899821846,
+      "decode_toks_s": 16.421288147422114,
+      "workspace_bytes": 1720400640
+    },
+    "b2": {
+      "prefill_ms": 15832.269,
+      "decode_ms": 1032.274,
+      "prefill_toks_s": 258.7752898842232,
+      "decode_toks_s": 15.499760722443849,
+      "workspace_bytes": 1720400640
+    },
+    "a2": {
+      "prefill_ms": 16619.246,
+      "decode_ms": 976.036,
+      "prefill_toks_s": 246.52141258394033,
+      "decode_toks_s": 16.392837969091303,
+      "workspace_bytes": 1569405696
+    }
+  },
+  "means": {
+    "prefill_toks_s": {
+      "control": 245.31063266580637,
+      "staged": 258.8661899332039
+    },
+    "decode_toks_s": {
+      "control": 16.40485582113722,
+      "staged": 15.960524434932982
+    }
+  },
+  "outputs_equal": true,
+  "outputs": [
+    {
+      "step": 0,
+      "token": 11846,
+      "logit": 19.361496
+    },
+    {
+      "step": 1,
+      "token": 13,
+      "logit": 19.5620117
+    },
+    {
+      "step": 2,
+      "token": 58737,
+      "logit": 15.057806
+    },
+    {
+      "step": 3,
+      "token": 1092,
+      "logit": 18.5416832
+    },
+    {
+      "step": 4,
+      "token": 488,
+      "logit": 15.5356989
+    },
+    {
+      "step": 5,
+      "token": 1000,
+      "logit": 17.0775223
+    },
+    {
+      "step": 6,
+      "token": 3222,
+      "logit": 17.9598351
+    },
+    {
+      "step": 7,
+      "token": 6570,
+      "logit": 17.2562923
+    },
+    {
+      "step": 8,
+      "token": 11,
+      "logit": 19.0341969
+    },
+    {
+      "step": 9,
+      "token": 279,
+      "logit": 16.7745285
+    },
+    {
+      "step": 10,
+      "token": 4530,
+      "logit": 15.2448301
+    },
+    {
+      "step": 11,
+      "token": 310,
+      "logit": 17.8254013
+    },
+    {
+      "step": 12,
+      "token": 12904,
+      "logit": 13.9986973
+    },
+    {
+      "step": 13,
+      "token": 11,
+      "logit": 18.674881
+    },
+    {
+      "step": 14,
+      "token": 321,
+      "logit": 16.6596832
+    },
+    {
+      "step": 15,
+      "token": 799,
+      "logit": 17.4050751
+    }
+  ],
+  "artifacts_sha256": {
+    "bonsai-flash-reuse": "500d92c66f574f7c68104c7b92bd5ec9b80f178d37da2ba7488474a9679aeceb",
+    "flash-reuse.cubin": "4fd7b10030ecbaebcb8358c6fa8c6fde08b586a34756a296178508d9bd7da2f7",
+    "frozen-goose.ptx": "42e1f5c0885a3bbab3656e3bba2dc6ef8b998a4581d365b6c1e48fc842f789d7"
+  }
+}

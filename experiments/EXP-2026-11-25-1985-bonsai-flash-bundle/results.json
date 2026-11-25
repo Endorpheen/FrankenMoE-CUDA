@@ -1,0 +1,157 @@
+{
+  "verdict": "REJECTED",
+  "profile": "4097/16",
+  "context": 36864,
+  "ubatch": 1024,
+  "cache": "q4_0/q4_0",
+  "request_sha256": "3e19644b64428f8e5333c51082b695ee755695643191b313a52e790d1f61c280",
+  "arms": {
+    "a1": {
+      "prefill_ms": 15792.546,
+      "decode_ms": 975.655,
+      "prefill_toks_s": 259.4261875190992,
+      "decode_toks_s": 16.399239485268872,
+      "generated_ids": [
+        11846,
+        13,
+        58737,
+        1092,
+        488,
+        1000,
+        3222,
+        6570,
+        11,
+        279,
+        4530,
+        310,
+        12904,
+        11,
+        321,
+        799
+      ],
+      "workspace_bytes": 1720400640
+    },
+    "b1": {
+      "prefill_ms": 15776.239,
+      "decode_ms": 975.609,
+      "prefill_toks_s": 259.6943415981464,
+      "decode_toks_s": 16.40001271000985,
+      "generated_ids": [
+        11846,
+        13,
+        58737,
+        1092,
+        488,
+        1000,
+        3222,
+        6570,
+        11,
+        279,
+        4530,
+        310,
+        2050,
+        11,
+        321,
+        799
+      ],
+      "workspace_bytes": 1720400640
+    },
+    "b2": {
+      "prefill_ms": 15791.691,
+      "decode_ms": 1033.281,
+      "prefill_toks_s": 259.4402334746798,
+      "decode_toks_s": 15.48465519060159,
+      "generated_ids": [
+        11846,
+        13,
+        58737,
+        1092,
+        488,
+        1000,
+        3222,
+        6570,
+        11,
+        279,
+        4530,
+        310,
+        2050,
+        11,
+        321,
+        799
+      ],
+      "workspace_bytes": 1720400640
+    },
+    "a2": {
+      "prefill_ms": 15920.047,
+      "decode_ms": 975.645,
+      "prefill_toks_s": 257.34848647117684,
+      "decode_toks_s": 16.399407571401483,
+      "generated_ids": [
+        11846,
+        13,
+        58737,
+        1092,
+        488,
+        1000,
+        3222,
+        6570,
+        11,
+        279,
+        4530,
+        310,
+        12904,
+        11,
+        321,
+        799
+      ],
+      "workspace_bytes": 1720400640
+    }
+  },
+  "means": {
+    "prefill_toks_s": {
+      "control": 258.387336995138,
+      "bundle": 259.5672875364131
+    },
+    "decode_toks_s": {
+      "control": 16.399323528335177,
+      "bundle": 15.94233395030572
+    }
+  },
+  "prism_timings": {
+    "cache_n": 0,
+    "prompt_n": 4097,
+    "prompt_ms": 3241.717,
+    "prompt_per_token_ms": 0.7912416402245546,
+    "prompt_per_second": 1263.836417552797,
+    "predicted_n": 16,
+    "predicted_ms": 282.839,
+    "predicted_per_token_ms": 18.855933333333333,
+    "predicted_per_second": 53.03370468711882
+  },
+  "prism_ids": [
+    11846,
+    13,
+    58737,
+    1092,
+    488,
+    1000,
+    3222,
+    6570,
+    11,
+    279,
+    4530,
+    310,
+    12904,
+    11,
+    321,
+    799
+  ],
+  "bundle_changed_positions": [
+    13
+  ],
+  "artifacts_sha256": {
+    "bonsai-flash-bundle": "26d0681c9f05c28cf0a205021826d1e9c7dadea36aeca146053092d65928d4fe",
+    "flash-bundle.cubin": "72814deeb8a7445622e7437aaed4b792dbbd78972e78f75c0bc943e146cf05a0",
+    "frozen-goose.ptx": "42e1f5c0885a3bbab3656e3bba2dc6ef8b998a4581d365b6c1e48fc842f789d7"
+  }
+}

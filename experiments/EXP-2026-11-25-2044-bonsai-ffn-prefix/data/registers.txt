@@ -1,0 +1,8 @@
+ptxas info    : Compiling entry function 'bonsai_ffn_prefix_q8' for 'sm_89'
+ptxas info    : Function properties for bonsai_ffn_prefix_q8
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 26 registers, used 1 barriers, 20496 bytes smem, 412 bytes cmem[0], 8 bytes cmem[2]
+ptxas info    : Compiling entry function 'bonsai_ffn_prefix_fp16' for 'sm_89'
+ptxas info    : Function properties for bonsai_ffn_prefix_fp16
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 26 registers, used 1 barriers, 20496 bytes smem, 404 bytes cmem[0], 8 bytes cmem[2]

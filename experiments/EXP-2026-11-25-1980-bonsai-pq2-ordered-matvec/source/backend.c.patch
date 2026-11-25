@@ -1,0 +1,32 @@
+--- backend.c
++++ backend.c
+@@ -25,6 +25,7 @@
+ typedef struct {
+     CUcontext cuda;
+     CUmodule module, frozen;
++    const char *decode_kernel;
+     CUfunction kernel[KERNEL_COUNT];
+     CUdeviceptr weights, memory, positions, rope_q, rope_k, attention, partial;
+     int64_t bound[LAYERS * 15], states[LAYERS * 2], globals[3], b[24];
+@@ -314,8 +315,20 @@
+     if (!m) return NULL;
+     m->context = context; m->ubatch = ubatch;
+     CUdevice device;
++    const char *mode = getenv("BONSAI_MATVEC");
++    if (!mode || strcmp(mode, "ordered") == 0) {
++        m->decode_kernel = "bonsai_pq2_matvec_ordered";
++    } else if (strcmp(mode, "exchange") == 0) {
++        m->decode_kernel = "bonsai_pq2_matvec_exchange";
++    } else if (strcmp(mode, "scalar") == 0) {
++        m->decode_kernel = "bonsai_pq2_matvec";
++    } else {
++        fprintf(stderr, "Invalid BONSAI_MATVEC mode\n");
++        goto error;
++    }
++    fprintf(stderr, "Decode matrix: %s\n", m->decode_kernel);
+     const char *names[KERNEL_COUNT] = {
+-        "bonsai_norm", "bonsai_fwht1024", "bonsai_pq2_matvec", "bonsai_residual", "bonsai_decay",
++        "bonsai_norm", "bonsai_fwht1024", m->decode_kernel, "bonsai_residual", "bonsai_decay",
+         "bonsai_conv_step", "goose_gdn_decode", "bonsai_split_q_gate", "goose_rope_decode",
+         "goose_set_q4_rows", "goose_q4_attention_tiles", "bonsai_attention_gate", "bonsai_pq2_row",
+         "bonsai_swiglu", "goose_q4_attention_merge", "goose_gated_delta_net",

@@ -1,0 +1,77 @@
+--- a/native-kv-driver.h
++++ b/native-kv-driver.h
+@@ -11,2 +11,2 @@
+-    int length, rows;
+-    bool sliding;
++    int length, rows, ring_start;
++    bool sliding, mirror_ready;
+@@ -37,0 +38,8 @@
++static struct native_kv_rows nk_offset_rows(struct native_kv_rows rows, int offset, size_t row_bytes) {
++    return (struct native_kv_rows){
++        rows.keys + (size_t)offset * row_bytes,
++        rows.values + (size_t)offset * row_bytes,
++        rows.positions + (size_t)offset * sizeof(int64_t),
++    };
++}
++
+@@ -272,0 +281,4 @@
++    const bool mirror = batch->sliding && fg_standalone_option_enabled("I2_SLIDING_KV_RING");
++    const bool ring_decode = mirror && batch->count == 1;
++    const int storage_rows = mirror ? 2 * capacity : capacity;
++    const size_t cache_bytes = nk_cache_bytes(storage_rows, row_bytes);
+@@ -278 +290 @@
+-        error = reserve(&slot->cache, nk_cache_bytes(capacity, row_bytes) + NK_BIAS * sizeof(float));
++        error = reserve(&slot->cache, cache_bytes + NK_BIAS * sizeof(float));
+@@ -283 +295 @@
+-            error = nk_upload(slot->cache.address + nk_cache_bytes(capacity, row_bytes), batch->bias, NK_BIAS * sizeof(float));
++            error = nk_upload(slot->cache.address + cache_bytes, batch->bias, NK_BIAS * sizeof(float));
+@@ -286 +298 @@
+-    const struct native_kv_rows resident = nk_rows(slot->cache.address, capacity, row_bytes);
++    const struct native_kv_rows resident = nk_rows(slot->cache.address, storage_rows, row_bytes);
+@@ -288 +300,10 @@
+-    const int history = batch->sliding && batch->first > capacity ? capacity : batch->first;
++    int history = batch->sliding && batch->first > capacity ? capacity : batch->first;
++    int ring_start = slot->ring_start;
++    if (!error && ring_decode) {
++        if (!slot->mirror_ready) error = nk_copy(resident, capacity, resident, 0, history, row_bytes);
++        if (history == capacity) {
++            --history;
++            ring_start = (ring_start + 1) % capacity;
++        }
++        rows = nk_offset_rows(resident, ring_start, row_bytes);
++    }
+@@ -290 +311 @@
+-    if (!error && batch->sliding) {
++    if (!error && batch->sliding && !ring_decode) {
+@@ -293 +314 @@
+-        if (!error) error = nk_copy(rows, 0, resident, 0, history, row_bytes);
++        if (!error) error = nk_copy(rows, 0, resident, slot->ring_start, history, row_bytes);
+@@ -319 +340 @@
+-                                  slot->cache.address + nk_cache_bytes(capacity, row_bytes), out);
++                                  slot->cache.address + cache_bytes, out);
+@@ -325,2 +346,16 @@
+-        const int keep = total < capacity ? total : capacity;
+-        error = nk_copy(resident, 0, rows, total - keep, keep, row_bytes);
++        if (ring_decode) {
++            const int index = ring_start + history;
++            const int copy = index >= capacity ? index - capacity : index + capacity;
++            error = nk_copy(resident, copy, resident, index, 1, row_bytes);
++            if (!error) {
++                slot->ring_start = ring_start;
++                slot->mirror_ready = true;
++            }
++        } else {
++            const int keep = total < capacity ? total : capacity;
++            error = nk_copy(resident, 0, rows, total - keep, keep, row_bytes);
++            if (!error) {
++                slot->ring_start = 0;
++                slot->mirror_ready = false;
++            }
++        }
+@@ -372 +407,5 @@
+-        for (int i = 0; i < INKLING_VISITS; ++i) nk.slots[i].length = 0;
++        for (int i = 0; i < INKLING_VISITS; ++i) {
++            nk.slots[i].length = 0;
++            nk.slots[i].ring_start = 0;
++            nk.slots[i].mirror_ready = false;
++        }

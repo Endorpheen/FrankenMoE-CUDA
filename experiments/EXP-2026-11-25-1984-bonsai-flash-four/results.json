@@ -1,0 +1,67 @@
+{
+  "verdict": "REJECTED",
+  "profile": "273/8",
+  "context": 36864,
+  "ubatch": 128,
+  "kv": "q4_0/q4_0",
+  "arms": {
+    "two": {
+      "prefill_ms": 1234.114,
+      "decode_ms": 462.28,
+      "workspace_bytes": 1112077568
+    },
+    "four": {
+      "prefill_ms": 1348.763,
+      "decode_ms": 463.665,
+      "workspace_bytes": 1112077568
+    }
+  },
+  "all_id_and_selected_logit_bytes_equal": true,
+  "output": [
+    {
+      "step": 0,
+      "token": 1330,
+      "logit": 15.2787466
+    },
+    {
+      "step": 1,
+      "token": 22980,
+      "logit": 16.3195019
+    },
+    {
+      "step": 2,
+      "token": 421,
+      "logit": 18.2167854
+    },
+    {
+      "step": 3,
+      "token": 1000,
+      "logit": 19.4661255
+    },
+    {
+      "step": 4,
+      "token": 8381,
+      "logit": 20.2567253
+    },
+    {
+      "step": 5,
+      "token": 678,
+      "logit": 18.6413498
+    },
+    {
+      "step": 6,
+      "token": 15673,
+      "logit": 20.5051842
+    },
+    {
+      "step": 7,
+      "token": 13,
+      "logit": 18.0533981
+    }
+  ],
+  "artifacts_sha256": {
+    "bonsai-flash-four": "e6a583483f514e35d82d76e1c5569f888c0790b9a93d52b82585c495a2232c82",
+    "flash-four.cubin": "87f8d2c0412645112f4ac0a7cef835a637a15f1bb4fb2a002b313b73fafe9043",
+    "frozen-goose.ptx": "42e1f5c0885a3bbab3656e3bba2dc6ef8b998a4581d365b6c1e48fc842f789d7"
+  }
+}

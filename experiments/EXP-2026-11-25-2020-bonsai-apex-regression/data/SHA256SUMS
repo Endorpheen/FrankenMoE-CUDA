@@ -1,0 +1,5 @@
+739221fcb84cc52e91b817a465a598b5b82ce41da483c83f1a614e8b96299016  build/checkpoint-inkling-exp1969-before-bonsai/frankenmoe-infer
+38eb3b7a72f976c7959347e42dffc907ce60d2f0c2f8d0a5e9870d75e1f5f478  build/checkpoint-inkling-exp1969-before-bonsai/libfranken-inference.a
+037cbcf91a0d19e2215e0acb1fe303ea82ce094e110ef0aa6d98fd39df0dceee  build/bonsai-mmq-pipeline-2019-http/frankenmoe-infer
+3a06081942f2c5be3c04cdac40cfeda8bbf19ad4b9c22bd6d1463ab0d2b7ae1a  build/bonsai-dp4a-2012-default/libfranken-inference.a
+d81f501a24aa29e1933662fbb8b05d3a1eec5bf7709c622fe7ec63371d8d2d9f  build/checkpoint-apex-exp1880-before-inkling/evidence/request.json

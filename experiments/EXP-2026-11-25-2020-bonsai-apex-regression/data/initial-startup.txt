@@ -1,0 +1,11 @@
+Goose CUDA: SM89 causal Flash interior tiles selected
+Goose CUDA: SM89 bounded-key Attention available
+Goose CUDA: Attention first-row variant loaded
+Goose CUDA: Attention V unroll selected for SM89
+Goose CUDA: SM89 batched RMSNorm available
+Goose CUDA: route mailbox initialization result=0
+Goose CUDA: 6592856064 byte expert bank, 220200960 byte temporary prefill workspace, 2 buffers
+Goose CUDA: expert cache 1904/1531 rebalance selected
+Goose CUDA: one-touch SLRU enabled at 6290 MiB
+Goose CUDA: registered 120 expert mmap ranges (19504005120 bytes)
+GENERATE model RAM residency after CUDA placement

@@ -1,0 +1,27 @@
+ptxas info    : 0 bytes gmem
+ptxas info    : Compiling entry function 'goose_i2_matrix_q8_pair1' for 'sm_89'
+ptxas info    : Function properties for goose_i2_matrix_q8_pair1
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 39 registers, used 0 barriers, 416 bytes cmem[0]
+ptxas info    : Compiling entry function 'goose_i2_matrix_q8_pairs' for 'sm_89'
+ptxas info    : Function properties for goose_i2_matrix_q8_pairs
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 40 registers, used 0 barriers, 416 bytes cmem[0]
+ptxas info    : Compiling entry function 'goose_i2_matrix_iq4_xs_blocks' for 'sm_89'
+ptxas info    : Function properties for goose_i2_matrix_iq4_xs_blocks
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 38 registers, used 0 barriers, 416 bytes cmem[0]
+ptxas info    : Compiling entry function 'goose_i2_matrix_iq4_xs' for 'sm_89'
+ptxas info    : Function properties for goose_i2_matrix_iq4_xs
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 37 registers, used 0 barriers, 416 bytes cmem[0]
+ptxas info    : Compiling entry function 'goose_i2_matrix_iq4_nl' for 'sm_89'
+ptxas info    : Function properties for goose_i2_matrix_iq4_nl
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 40 registers, used 0 barriers, 416 bytes cmem[0]
+ptxas info    : Compiling entry function 'goose_i2_matrix_q8_0' for 'sm_89'
+ptxas info    : Function properties for goose_i2_matrix_q8_0
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 40 registers, used 0 barriers, 416 bytes cmem[0]
+ptxas info    : Function properties for i2_matrix_four_g
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads

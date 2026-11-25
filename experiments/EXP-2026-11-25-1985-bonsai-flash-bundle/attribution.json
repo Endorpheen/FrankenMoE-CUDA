@@ -1,0 +1,53 @@
+[
+  {
+    "span_ns": 29355667,
+    "kernels": {
+      "bonsai_flash_stage_kv": {
+        "calls": 1,
+        "duration_ns": 507721
+      },
+      "bonsai_flash_staged_tile": {
+        "calls": 37,
+        "duration_ns": 23593796
+      },
+      "bonsai_flash_f32_merge": {
+        "calls": 37,
+        "duration_ns": 5214017
+      }
+    }
+  },
+  {
+    "span_ns": 29337107,
+    "kernels": {
+      "bonsai_flash_stage_kv": {
+        "calls": 1,
+        "duration_ns": 493546
+      },
+      "bonsai_flash_staged_tile": {
+        "calls": 37,
+        "duration_ns": 23577541
+      },
+      "bonsai_flash_f32_merge": {
+        "calls": 37,
+        "duration_ns": 5226532
+      }
+    }
+  },
+  {
+    "span_ns": 29313746,
+    "kernels": {
+      "bonsai_flash_stage_kv": {
+        "calls": 1,
+        "duration_ns": 475561
+      },
+      "bonsai_flash_staged_tile": {
+        "calls": 37,
+        "duration_ns": 23587013
+      },
+      "bonsai_flash_f32_merge": {
+        "calls": 37,
+        "duration_ns": 5211364
+      }
+    }
+  }
+]

@@ -1,0 +1,6 @@
+32767.log:Device workspace: 2036174848 bytes (Q4_0 K/V, GDN, activations)
+32767.log:Device free: 769654784 / 12447973376 bytes
+255.log:Device workspace: 620448256 bytes (Q4_0 K/V, GDN, activations)
+255.log:Device free: 2184970240 / 12447973376 bytes
+129.log:Device workspace: 620448256 bytes (Q4_0 K/V, GDN, activations)
+129.log:Device free: 2184314880 / 12447973376 bytes

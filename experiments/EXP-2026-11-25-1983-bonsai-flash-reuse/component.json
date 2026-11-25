@@ -1,0 +1,172 @@
+[
+  {
+    "kv_tokens": 65,
+    "query_tokens": 16,
+    "max_absolute_error": 0.00018386216834187508,
+    "relative_l2": 0.0002841818786691874,
+    "ordered_gpu_ms": [
+      [
+        "original",
+        0.05523199960589409
+      ],
+      [
+        "skewed",
+        0.043007999658584595
+      ],
+      [
+        "staged",
+        0.04198399931192398
+      ],
+      [
+        "staged",
+        0.09382399916648865
+      ],
+      [
+        "skewed",
+        0.048128001391887665
+      ],
+      [
+        "original",
+        0.05100800096988678
+      ]
+    ],
+    "bit_exact_f32": true,
+    "extra_staging_bytes": 393216
+  },
+  {
+    "kv_tokens": 257,
+    "query_tokens": 33,
+    "max_absolute_error": 6.604939699172974e-05,
+    "relative_l2": 0.00029511770117096603,
+    "ordered_gpu_ms": [
+      [
+        "original",
+        0.1462399959564209
+      ],
+      [
+        "skewed",
+        0.10035199671983719
+      ],
+      [
+        "staged",
+        0.054976001381874084
+      ],
+      [
+        "staged",
+        0.054016001522541046
+      ],
+      [
+        "skewed",
+        0.09932799637317657
+      ],
+      [
+        "original",
+        0.13926400244235992
+      ]
+    ],
+    "bit_exact_f32": true,
+    "extra_staging_bytes": 1179648
+  },
+  {
+    "kv_tokens": 8192,
+    "query_tokens": 128,
+    "max_absolute_error": 1.2211501598358154e-05,
+    "relative_l2": 0.0002892289194278419,
+    "ordered_gpu_ms": [
+      [
+        "original",
+        16.064191818237305
+      ],
+      [
+        "skewed",
+        13.787039756774902
+      ],
+      [
+        "staged",
+        5.822591781616211
+      ],
+      [
+        "staged",
+        6.246399879455566
+      ],
+      [
+        "skewed",
+        13.519871711730957
+      ],
+      [
+        "original",
+        14.310400009155273
+      ]
+    ],
+    "bit_exact_f32": true,
+    "extra_staging_bytes": 33554432
+  },
+  {
+    "kv_tokens": 32768,
+    "query_tokens": 128,
+    "max_absolute_error": 5.922280251979828e-06,
+    "relative_l2": 0.0002864154812414199,
+    "ordered_gpu_ms": [
+      [
+        "original",
+        67.31523132324219
+      ],
+      [
+        "skewed",
+        60.417728424072266
+      ],
+      [
+        "staged",
+        29.2938232421875
+      ],
+      [
+        "staged",
+        29.276159286499023
+      ],
+      [
+        "skewed",
+        60.42512130737305
+      ],
+      [
+        "original",
+        66.18726348876953
+      ]
+    ],
+    "bit_exact_f32": true,
+    "extra_staging_bytes": 134217728
+  },
+  {
+    "kv_tokens": 1024,
+    "query_tokens": 1024,
+    "max_absolute_error": 0.000732421875,
+    "relative_l2": 0.0002690214605536312,
+    "ordered_gpu_ms": [
+      [
+        "original",
+        6.1829118728637695
+      ],
+      [
+        "skewed",
+        4.469759941101074
+      ],
+      [
+        "staged",
+        2.0152320861816406
+      ],
+      [
+        "staged",
+        2.022144079208374
+      ],
+      [
+        "skewed",
+        4.539072036743164
+      ],
+      [
+        "original",
+        6.118175983428955
+      ]
+    ],
+    "bit_exact_f32": true,
+    "extra_staging_bytes": 4194304
+  }
+]

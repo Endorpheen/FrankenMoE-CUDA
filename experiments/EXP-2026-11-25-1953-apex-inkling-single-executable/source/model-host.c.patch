@@ -1,0 +1,235 @@
+--- a/model-host.c
++++ b/model-host.c
+@@ -13,7 +13,11 @@
+ #include <pthread.h>
+ #include <fcntl.h>
+ #include <inttypes.h>
++#ifdef _WIN32
++#include "windows/platform.h"
++#else
+ #include <sys/mman.h>
++#endif
+ #include <sys/stat.h>
+ #include <unistd.h>
+ #include <time.h>
+@@ -26,11 +30,17 @@
+ #include "goose-host-llm.h"
+ #include "goose-host.h"
+ #include "graph-execute.h"
++#include "apex-cached-decode.h"
++#include "inkling-backend.h"
+ 
+ #define MAX_REQ   262144
+ 
+ extern bool fg_q35_checkpoint_enabled(void);
+ 
++extern __typeof__(bt_tokenize) bt_tokenize_inkling2;
++extern void inkling_tokenizer_init(int argc, char **argv);
++extern void inkling_model_init(int argc, char **argv);
++
+ const char * die(const char * what) { fprintf(stderr, "GENERATE %s\n", what); exit(1); }
+ 
+ double fg_q35_generation_now(void) {
+@@ -56,6 +66,9 @@
+     int64_t layer_count, expert_cache_limit, acfg[14], gcfg[7], mcfg[3], kv_state[6];
+     int64_t handles[4];
+     int64_t * records;
++    struct decoder *inkling;
++    bool inkling_tokenizer;
++    int64_t kv_format;
+     int64_t * scratch_cpts, * scratch_seg, * scratch_sym, * scratch_heap, * scratch_hc, * scratch_info;
+     uint8_t * scratch_enc;
+ } host_t;
+@@ -66,8 +79,33 @@
+ static int64_t prefill_ubatch = HOSE_DEFAULT_PREFILL_BATCH;
+ static int64_t expert_cache_request;
+ 
++enum { HOST_KV_Q4_0 = 1, HOST_KV_F16 = 2 };
++static int64_t requested_kv[2];
++
++int64_t hose_configure_kv(bool value, const char *format) {
++    int64_t type;
++    if (strcmp(format, "q4_0") == 0) type = HOST_KV_Q4_0;
++    else if (strcmp(format, "f16") == 0) type = HOST_KV_F16;
++    else return -1;
++    requested_kv[value] = type;
++    return 0;
++}
++
++int64_t hose_kv_format(void) {
++    return H.kv_format;
++}
++
++static bool kv_compatible(int64_t type) {
++    return (!requested_kv[0] || requested_kv[0] == type) &&
++           (!requested_kv[1] || requested_kv[1] == type);
++}
++
+ int64_t fg_model_mincore(uint64_t address, int64_t bytes, sl_u8 flags) {
++    #ifdef _WIN32
++    return fg_win_resident((void *)(uintptr_t)address, (size_t)bytes, flags.data);
++    #else
+     return mincore((void *) (uintptr_t) address, (size_t) bytes, flags.data);
++    #endif
+ }
+ 
+ int64_t fg_model_populate(uint64_t address, int64_t bytes) {
+@@ -136,6 +174,17 @@
+                       (sl_i64){ H.kvsl, 512 }, (sl_u8){ (unsigned char *) key, n });
+ }
+ 
++static bool metadata_is(const char *key, const char *value) {
++    const int64_t index = find_key(key);
++    if (index < 0) return false;
++    uint8_t name[32] = {0};
++    const int64_t bytes = H.size < 67108864 ? (int64_t)H.size : 67108864;
++    const int64_t length = gr_kv_to_str((sl_u8){H.base, bytes}, (sl_i64){H.state, 8},
++        (sl_i64){H.kv, 256*8}, index, sizeof(name), (sl_u8){name, sizeof(name)});
++    const size_t expected = strlen(value);
++    return length >= 0 && (size_t)length == expected && !memcmp(name, value, expected);
++}
++
+ void load_vocab(void) {
+     const int64_t hdr = H.size < 67108864 ? (int64_t) H.size : 67108864;
+     H.kv = calloc(256 * 8, sizeof(int64_t));
+@@ -147,6 +196,8 @@
+                  (sl_i64){ H.kvsl, 512 }, (sl_i64){ H.tensl, 8192 }) != 0) {
+         die("reader");
+     }
++    H.inkling_tokenizer = metadata_is("tokenizer.ggml.pre", "inkling2");
++    if (H.inkling_tokenizer) inkling_tokenizer_init(0, NULL);
+     const int64_t ti = find_key("tokenizer.ggml.tokens");
+     const int64_t mi = find_key("tokenizer.ggml.merges");
+     const int64_t yi = find_key("tokenizer.ggml.token_type");
+@@ -225,7 +276,9 @@
+ }
+ 
+ int64_t tokenize(const unsigned char * text, int64_t len, int64_t * ids, int64_t cap) {
+-    return bt_tokenize((sl_u8){ H.blob, H.blob_len },
++    if (!text || len < 0 || len > MAX_REQ || !ids || cap < 0) return -1;
++    __typeof__(&bt_tokenize) encode = H.inkling_tokenizer ? bt_tokenize_inkling2 : bt_tokenize;
++    return encode((sl_u8){ H.blob, H.blob_len },
+                        (sl_i64){ H.tok_off, H.n_tok }, (sl_i64){ H.tok_len, H.n_tok },
+                        (sl_i64){ H.tok_slots, H.n_tok_slots },
+                        (sl_i64){ H.mrg_off, H.n_mrg }, (sl_i64){ H.mrg_len, H.n_mrg },
+@@ -309,6 +362,11 @@
+ // ---- API ---------------------------------------------------------------
+ 
+ void hose_host_load_context(const char * path, int64_t capacity) {
++#ifdef _WIN32
++    H.page_size = (int64_t)fg_win_page_size();
++    H.base = fg_win_map_model(path, &H.size);
++    if (!H.base) die("model open or mapping");
++#else
+     struct stat st;
+     const int fd = open(path, O_RDONLY | O_CLOEXEC);
+     if (fd < 0 || fstat(fd, &st) != 0 || !S_ISREG(st.st_mode) || st.st_size <= 0) die("model open");
+@@ -318,7 +376,24 @@
+     H.base = mmap(NULL, H.size, PROT_READ, MAP_PRIVATE, fd, 0);
+     close(fd);
+     if (H.base == MAP_FAILED) die("model mmap");
++#endif
+     load_vocab();
++    if (metadata_is("general.architecture", "inkling2_loop")) {
++        inkling_model_init(0, NULL);
++        H.kv_format = requested_kv[0] ? requested_kv[0] :
++            requested_kv[1] ? requested_kv[1] : HOST_KV_Q4_0;
++        if (!kv_compatible(H.kv_format)) die("Inkling requires matching formats for K and V");
++        if (H.n_tok != INKLING_TEXT_VOCAB || !H.inkling_tokenizer) die("Inkling vocabulary");
++        const enum inkling_kv_format format = H.kv_format == HOST_KV_Q4_0 ? INKLING_KV_Q4_0 : INKLING_KV_F16;
++        H.inkling = inkling_backend_open(H.base, H.size, capacity, expert_cache_request, format);
++        if (!H.inkling) die("Inkling model loading or CUDA placement");
++        H.layer_count = 24;
++        H.owner[10] = capacity;
++        H.expert_cache_limit = expert_cache_request;
++        return;
++    }
++    if (!kv_compatible(HOST_KV_Q4_0)) die("Apex requires q4_0 for both KV caches");
++    H.kv_format = HOST_KV_Q4_0;
+     init_trunk(capacity);
+     int64_t residency[4] = {0};
+     const int64_t status = warm_model(residency);
+@@ -363,18 +438,26 @@
+     return detokenize(ids, n, out, cap);
+ }
+ 
+-void hose_reset_state(void) { reset_state(); }
++void hose_reset_state(void) {
++    if (H.inkling) {
++        if (inkling_backend_reset(H.inkling) != 0) die("Inkling model state reset");
++        return;
++    }
++    reset_state();
++}
+ 
+ int64_t hose_step(const int32_t * tokens, int64_t count, float ** logits) {
+     if (!logits) return -1;
+     *logits = NULL;
++    if (H.inkling && count != 1) return -1;
+     if (count <= 0 || count > 4096 || H.n_tok <= 0 || (uint64_t) H.n_tok > SIZE_MAX / sizeof(float) / count) {
+         return -1;
+     }
+     const int64_t capacity = count * H.n_tok;
+     float * buffer = malloc((size_t) capacity * sizeof(*buffer));
+     if (!buffer) return -1;
+-    const int64_t n = model_step((sl_i32) { (int32_t *) tokens, count }, -1, (sl_f32) { buffer, capacity });
++    const int64_t n = H.inkling ? inkling_backend_eval(H.inkling, tokens, count, false, buffer, capacity) :
++        model_step((sl_i32) { (int32_t *) tokens, count }, -1, (sl_f32) { buffer, capacity });
+     if (n < 0) free(buffer);
+     else *logits = buffer;
+     return n;
+@@ -422,7 +505,7 @@
+     hose_prefill_profile(profile.data);
+     if (profile.len >= 3) {
+         const char * tail = getenv("GOOSE_PREFILL_CHECKPOINT_TAIL");
+-        profile.data[2] = tail && strcmp(tail, "1") == 0;
++        profile.data[2] = !H.inkling && tail && strcmp(tail, "1") == 0;
+     }
+ }
+ 
+@@ -471,6 +554,7 @@
+ } decode_plan;
+ 
+ void fg_q35_generation_scope_enter(void) {
++    if (H.inkling) return;
+     if (decode_plan.depth++ == 0) {
+         const char *reuse = getenv("GOOSE_DECODE_PLAN_REUSE");
+         decode_plan.enabled = (!reuse || strcmp(reuse, "0") != 0) && !fg_q35_checkpoint_enabled();
+@@ -478,6 +562,7 @@
+ }
+ 
+ void fg_q35_generation_scope_leave(void) {
++    if (H.inkling) return;
+     if (--decode_plan.depth == 0 &&
+         q35_decode_plan_close((sl_i64) { H.owner, 13 },
+             (sl_i64) { decode_plan.words, Q35_DECODE_PLAN_WORDS }) != 0) {
+@@ -515,10 +600,16 @@
+     if (!reused) exchange = malloc(total_bytes);
+     if (!exchange) return -1;
+     memcpy(exchange, tokens.data, token_bytes);
+-    const bool previous = fg_standalone_set_cpu_prefill(prefill != 0);
+-    const int64_t result = generation_step((sl_i32) { (int32_t *) exchange, tokens.len },
+-        (sl_f32) { (float *) (exchange + token_bytes), output.len }, prefill != 0);
+-    fg_standalone_set_cpu_prefill(previous);
++    int64_t result;
++    if (H.inkling) {
++        result = inkling_backend_eval(H.inkling, (const int32_t *)exchange, tokens.len,
++            prefill != 0, (float *)(exchange + token_bytes), output.len);
++    } else {
++        const bool previous = fg_standalone_set_cpu_prefill(prefill != 0);
++        result = generation_step((sl_i32) { (int32_t *) exchange, tokens.len },
++            (sl_f32) { (float *) (exchange + token_bytes), output.len }, prefill != 0);
++        fg_standalone_set_cpu_prefill(previous);
++    }
+     if (result > 0) memcpy(output.data, exchange + token_bytes, logit_bytes);
+     if (reused) decode_exchange.borrowed = false;
+     else free(exchange);
+@@ -538,7 +629,7 @@
+     if (timing) { timing[0] = 0.0; timing[1] = 0.0; timing[2] = 0.0; }
+     if (!text || len <= 0 || len > MAX_REQ || max_tokens <= 0 || !out_ids) return -1;
+     static int64_t ids[MAX_REQ];
+-    const int64_t n_ids = tokenize(text, len, ids, MAX_REQ);
++    const int64_t n_ids = hose_tokenize(text, len, ids, MAX_REQ);
+     return hose_generate_ids(ids, n_ids, max_tokens, ignore_eos, out_ids, timing);
+ }
+ 

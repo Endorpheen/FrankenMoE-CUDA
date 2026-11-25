@@ -1,0 +1,5 @@
+{"prompt":32,"row":0,"input":1092,"serial_next":488,"batch_next":488,"relative_l2":0.00356871156,"max_abs":0.0697536469}
+{"prompt":32,"row":1,"input":488,"serial_next":1000,"batch_next":1000,"relative_l2":0.00408714796,"max_abs":0.0706515312}
+{"prompt":32,"row":2,"input":1000,"serial_next":12904,"batch_next":12904,"relative_l2":0.00473209621,"max_abs":0.0825247765}
+{"prompt":32,"all_accepted_differing_state_planes":122,"state_planes":128,"causal_exact_logit_rows":2}
+{"prompt":32,"forced_rejected_id":1001,"batch_replacement_id":1000,"serial_replacement_id":1000,"committed_position":34,"restored_bytes":157538304,"compared_state_bytes":157519872,"exact_replay_logit_rows":2}

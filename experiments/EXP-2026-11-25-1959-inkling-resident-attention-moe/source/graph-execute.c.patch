@@ -1,0 +1,28 @@
+--- a/graph-execute.c
++++ b/graph-execute.c
+@@ -1,6 +1,7 @@
+ #include "graph-execute.h"
+ #include "moe-epilogue.h"
+ #include "situ.h"
++#include "bridge.h"
+ #include "native-kv.h"
+ 
+ #include "cpu.h"
+@@ -507,6 +508,17 @@
+ 
+ uint8_t fg143_graph_regular(uint64_t address, sl_i64 packet, int64_t mode, sl_i64 sizes, uint64_t workspace) {
+     const struct ggml_tensor * t = (const void *) (uintptr_t) address;
++    if (t->op == GGML_OP_CUSTOM && t->op_params[0] == INKLING_BRIDGE_GRAPH &&
++            fg_cuda_inkling_quants_enabled()) {
++        if (mode == 1) {
++            for (int i = 0; i < sizes.len; ++i) sizes.data[i] = 0;
++            return true;
++        }
++        const struct inkling_bridge *bridge = NULL;
++        memcpy(&bridge, t->op_params + 2, sizeof bridge);
++        if (!bridge || !t->src[0] || !t->src[0]->data || !t->data) return false;
++        return inkling_bridge_execute(bridge, t->src[0]->data, t->data) == 0;
++    }
+     if (t->op == GGML_OP_CUSTOM && t->op_params[0] == INKLING_ATTENTION_GRAPH &&
+             fg_cuda_inkling_quants_enabled()) {
+         if (mode == 1) {

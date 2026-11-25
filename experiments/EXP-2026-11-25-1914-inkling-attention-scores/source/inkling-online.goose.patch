@@ -1,0 +1,33 @@
+--- a/inkling-online.goose
++++ b/inkling-online.goose
+@@ -49,0 +50,30 @@
++
++export fn i2_online_adjust_key(logits: u64, key_positions: u64, relative: u64, bias: u64, sinks: u64,
++    tail: i64, key_start: i64, query_position: i64, query_head: i64, key: i64, window: i64, scale: f32) {
++    let score = if key < tail {
++        adjusted_score(shared_read(logits, key), query_position, position(key_positions, key_start + key),
++            window, relative, bias, load(sinks, query_head), query_head * 16, scale)
++    } else { neg_inf() };
++    shared_write(logits, key, score);
++}
++
++export fn i2_online_prepared_row(logits: u64, probabilities: u64, maxima: u64, totals: u64, rescale: u64) {
++    let row: i64 = 0;
++    let base: i64 = 0;
++    let before = shared_read(maxima, row);
++    var maximum = before;
++    for i in 32 {
++        let score = shared_read(logits, i);
++        if score > maximum { maximum = score; }
++    }
++    let alpha = exp(before - maximum);
++    var total = shared_read(totals, row) * alpha;
++    for i in 32 {
++        let w = exp(shared_read(logits, base + i) - maximum);
++        probability_write(probabilities, base + i, w);
++        total += w;
++    }
++    shared_write(maxima, row, maximum);
++    shared_write(totals, row, total);
++    shared_write(rescale, row, alpha);
++}

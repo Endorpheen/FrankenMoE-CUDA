@@ -1,0 +1,40 @@
+{
+  "layer": 0,
+  "tokens": [
+    {
+      "token": 1511,
+      "max_absolute_error_output_history_state": [
+        1.7854493865598897e-06,
+        3.898480418484951e-06,
+        8.645507625359983e-07
+      ]
+    },
+    {
+      "token": 17,
+      "max_absolute_error_output_history_state": [
+        3.043826932724869e-07,
+        3.898480418484951e-06,
+        2.1112473627127315e-06
+      ]
+    },
+    {
+      "token": 248046,
+      "max_absolute_error_output_history_state": [
+        3.3384051079110577e-07,
+        3.898480418484951e-06,
+        2.006410992017038e-06
+      ]
+    },
+    {
+      "token": 1511,
+      "max_absolute_error_output_history_state": [
+        8.400488145099416e-07,
+        3.898480418484951e-06,
+        2.392295748165907e-06
+      ]
+    }
+  ],
+  "deterministic_reset": true,
+  "frozen_cuda_image_sha256": "777e4931dc563cfff51f808df42eed20074a0206c6c1c0b45176c85c0864579c",
+  "candidate_cuda_image_sha256": "66b658f9a9164b2e195e82d50c1d388968bbc80d3e7da0c7df8511073f0714cc"
+}

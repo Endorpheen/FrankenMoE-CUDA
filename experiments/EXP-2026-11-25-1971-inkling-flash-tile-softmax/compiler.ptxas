@@ -1,0 +1,29 @@
+ptxas info    : 0 bytes gmem
+ptxas info    : Compiling entry function 'i2_flash_prefill_all_softmax' for 'sm_89'
+ptxas info    : Function properties for i2_flash_prefill_all_softmax
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 78 registers, used 1 barriers, 3264 bytes smem, 472 bytes cmem[0], 24 bytes cmem[2]
+ptxas info    : Compiling entry function 'i2_flash_prefill_softmax' for 'sm_89'
+ptxas info    : Function properties for i2_flash_prefill_softmax
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 64 registers, used 1 barriers, 3264 bytes smem, 472 bytes cmem[0], 24 bytes cmem[2]
+ptxas info    : Compiling entry function 'i2_flash_prefill_all' for 'sm_89'
+ptxas info    : Function properties for i2_flash_prefill_all
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 68 registers, used 1 barriers, 3264 bytes smem, 472 bytes cmem[0], 16 bytes cmem[2]
+ptxas info    : Compiling entry function 'i2_flash_prefill_half' for 'sm_89'
+ptxas info    : Function properties for i2_flash_prefill_half
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 72 registers, used 1 barriers, 3264 bytes smem, 472 bytes cmem[0], 16 bytes cmem[2]
+ptxas info    : Compiling entry function 'i2_flash_prefill_combined' for 'sm_89'
+ptxas info    : Function properties for i2_flash_prefill_combined
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 69 registers, used 1 barriers, 3264 bytes smem, 472 bytes cmem[0], 16 bytes cmem[2]
+ptxas info    : Compiling entry function 'i2_flash_prefill_prune' for 'sm_89'
+ptxas info    : Function properties for i2_flash_prefill_prune
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 64 registers, used 1 barriers, 3264 bytes smem, 472 bytes cmem[0], 16 bytes cmem[2]
+ptxas info    : Compiling entry function 'i2_flash_prefill_vector' for 'sm_89'
+ptxas info    : Function properties for i2_flash_prefill_vector
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 72 registers, used 1 barriers, 3264 bytes smem, 472 bytes cmem[0], 16 bytes cmem[2]

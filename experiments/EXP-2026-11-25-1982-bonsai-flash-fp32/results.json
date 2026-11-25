@@ -1,0 +1,701 @@
+{
+  "profile": "1025/32",
+  "context": 36864,
+  "ubatch": 1024,
+  "cache": "q4_0/q4_0",
+  "arms": {
+    "a1": {
+      "prefill_ms": 4367.894,
+      "decode_ms": 1995.53,
+      "prefill_toks_s": 234.66686691572642,
+      "decode_toks_s": 16.035840102629376,
+      "workspace_bytes": 1569405696,
+      "outputs": [
+        {
+          "step": 0,
+          "token": 11,
+          "logit": 19.9973259
+        },
+        {
+          "step": 1,
+          "token": 279,
+          "logit": 15.3361988
+        },
+        {
+          "step": 2,
+          "token": 4530,
+          "logit": 15.0348482
+        },
+        {
+          "step": 3,
+          "token": 314,
+          "logit": 17.2705593
+        },
+        {
+          "step": 4,
+          "token": 12904,
+          "logit": 14.8071232
+        },
+        {
+          "step": 5,
+          "token": 11,
+          "logit": 18.0953827
+        },
+        {
+          "step": 6,
+          "token": 321,
+          "logit": 19.3399734
+        },
+        {
+          "step": 7,
+          "token": 799,
+          "logit": 20.3071289
+        },
+        {
+          "step": 8,
+          "token": 21254,
+          "logit": 20.5224819
+        },
+        {
+          "step": 9,
+          "token": 421,
+          "logit": 19.1984882
+        },
+        {
+          "step": 10,
+          "token": 1000,
+          "logit": 19.6714134
+        },
+        {
+          "step": 11,
+          "token": 8381,
+          "logit": 21.6157093
+        },
+        {
+          "step": 12,
+          "token": 678,
+          "logit": 19.6431561
+        },
+        {
+          "step": 13,
+          "token": 15673,
+          "logit": 20.6364536
+        },
+        {
+          "step": 14,
+          "token": 13,
+          "logit": 20.079628
+        },
+        {
+          "step": 15,
+          "token": 198,
+          "logit": 17.4097939
+        },
+        {
+          "step": 16,
+          "token": 1812,
+          "logit": 13.7373142
+        },
+        {
+          "step": 17,
+          "token": 5020,
+          "logit": 21.6042824
+        },
+        {
+          "step": 18,
+          "token": 220,
+          "logit": 19.1515102
+        },
+        {
+          "step": 19,
+          "token": 15,
+          "logit": 20.5265656
+        },
+        {
+          "step": 20,
+          "token": 15,
+          "logit": 20.0473022
+        },
+        {
+          "step": 21,
+          "token": 17,
+          "logit": 20.5077515
+        },
+        {
+          "step": 22,
+          "token": 17,
+          "logit": 19.3880577
+        },
+        {
+          "step": 23,
+          "token": 25,
+          "logit": 17.0618
+        },
+        {
+          "step": 24,
+          "token": 2500,
+          "logit": 17.9940948
+        },
+        {
+          "step": 25,
+          "token": 635,
+          "logit": 20.1283512
+        },
+        {
+          "step": 26,
+          "token": 23438,
+          "logit": 20.7720718
+        },
+        {
+          "step": 27,
+          "token": 9150,
+          "logit": 21.9407921
+        },
+        {
+          "step": 28,
+          "token": 1330,
+          "logit": 19.4635963
+        },
+        {
+          "step": 29,
+          "token": 20934,
+          "logit": 19.4952011
+        },
+        {
+          "step": 30,
+          "token": 440,
+          "logit": 20.6643467
+        },
+        {
+          "step": 31,
+          "token": 2086,
+          "logit": 20.2658958
+        }
+      ]
+    },
+    "b1": {
+      "prefill_ms": 3912.312,
+      "decode_ms": 1996.205,
+      "prefill_toks_s": 261.9934197477093,
+      "decode_toks_s": 16.030417717619184,
+      "workspace_bytes": 1569405696,
+      "outputs": [
+        {
+          "step": 0,
+          "token": 11,
+          "logit": 20.0705318
+        },
+        {
+          "step": 1,
+          "token": 279,
+          "logit": 15.0278759
+        },
+        {
+          "step": 2,
+          "token": 4530,
+          "logit": 14.61693
+        },
+        {
+          "step": 3,
+          "token": 314,
+          "logit": 17.4041195
+        },
+        {
+          "step": 4,
+          "token": 12904,
+          "logit": 14.8065758
+        },
+        {
+          "step": 5,
+          "token": 11,
+          "logit": 18.0149918
+        },
+        {
+          "step": 6,
+          "token": 321,
+          "logit": 19.5616608
+        },
+        {
+          "step": 7,
+          "token": 799,
+          "logit": 20.2890034
+        },
+        {
+          "step": 8,
+          "token": 21254,
+          "logit": 20.5410709
+        },
+        {
+          "step": 9,
+          "token": 421,
+          "logit": 19.1998138
+        },
+        {
+          "step": 10,
+          "token": 1000,
+          "logit": 19.7224007
+        },
+        {
+          "step": 11,
+          "token": 8381,
+          "logit": 21.6731453
+        },
+        {
+          "step": 12,
+          "token": 678,
+          "logit": 19.658205
+        },
+        {
+          "step": 13,
+          "token": 15673,
+          "logit": 20.6571674
+        },
+        {
+          "step": 14,
+          "token": 13,
+          "logit": 20.0415554
+        },
+        {
+          "step": 15,
+          "token": 198,
+          "logit": 17.3865204
+        },
+        {
+          "step": 16,
+          "token": 1812,
+          "logit": 13.4344959
+        },
+        {
+          "step": 17,
+          "token": 5020,
+          "logit": 21.682148
+        },
+        {
+          "step": 18,
+          "token": 220,
+          "logit": 19.1937103
+        },
+        {
+          "step": 19,
+          "token": 15,
+          "logit": 20.4334774
+        },
+        {
+          "step": 20,
+          "token": 15,
+          "logit": 19.9858704
+        },
+        {
+          "step": 21,
+          "token": 17,
+          "logit": 20.5095634
+        },
+        {
+          "step": 22,
+          "token": 17,
+          "logit": 19.4757786
+        },
+        {
+          "step": 23,
+          "token": 25,
+          "logit": 17.0647278
+        },
+        {
+          "step": 24,
+          "token": 2500,
+          "logit": 18.0342941
+        },
+        {
+          "step": 25,
+          "token": 635,
+          "logit": 20.2823162
+        },
+        {
+          "step": 26,
+          "token": 23438,
+          "logit": 20.8490219
+        },
+        {
+          "step": 27,
+          "token": 9150,
+          "logit": 22.0209885
+        },
+        {
+          "step": 28,
+          "token": 1330,
+          "logit": 19.505291
+        },
+        {
+          "step": 29,
+          "token": 20934,
+          "logit": 19.5421143
+        },
+        {
+          "step": 30,
+          "token": 440,
+          "logit": 20.6867638
+        },
+        {
+          "step": 31,
+          "token": 2086,
+          "logit": 20.351265
+        }
+      ]
+    },
+    "b2": {
+      "prefill_ms": 4149.381,
+      "decode_ms": 1996.229,
+      "prefill_toks_s": 247.02479719264147,
+      "decode_toks_s": 16.030224989217167,
+      "workspace_bytes": 1569405696,
+      "outputs": [
+        {
+          "step": 0,
+          "token": 11,
+          "logit": 20.0705318
+        },
+        {
+          "step": 1,
+          "token": 279,
+          "logit": 15.0278759
+        },
+        {
+          "step": 2,
+          "token": 4530,
+          "logit": 14.61693
+        },
+        {
+          "step": 3,
+          "token": 314,
+          "logit": 17.4041195
+        },
+        {
+          "step": 4,
+          "token": 12904,
+          "logit": 14.8065758
+        },
+        {
+          "step": 5,
+          "token": 11,
+          "logit": 18.0149918
+        },
+        {
+          "step": 6,
+          "token": 321,
+          "logit": 19.5616608
+        },
+        {
+          "step": 7,
+          "token": 799,
+          "logit": 20.2890034
+        },
+        {
+          "step": 8,
+          "token": 21254,
+          "logit": 20.5410709
+        },
+        {
+          "step": 9,
+          "token": 421,
+          "logit": 19.1998138
+        },
+        {
+          "step": 10,
+          "token": 1000,
+          "logit": 19.7224007
+        },
+        {
+          "step": 11,
+          "token": 8381,
+          "logit": 21.6731453
+        },
+        {
+          "step": 12,
+          "token": 678,
+          "logit": 19.658205
+        },
+        {
+          "step": 13,
+          "token": 15673,
+          "logit": 20.6571674
+        },
+        {
+          "step": 14,
+          "token": 13,
+          "logit": 20.0415554
+        },
+        {
+          "step": 15,
+          "token": 198,
+          "logit": 17.3865204
+        },
+        {
+          "step": 16,
+          "token": 1812,
+          "logit": 13.4344959
+        },
+        {
+          "step": 17,
+          "token": 5020,
+          "logit": 21.682148
+        },
+        {
+          "step": 18,
+          "token": 220,
+          "logit": 19.1937103
+        },
+        {
+          "step": 19,
+          "token": 15,
+          "logit": 20.4334774
+        },
+        {
+          "step": 20,
+          "token": 15,
+          "logit": 19.9858704
+        },
+        {
+          "step": 21,
+          "token": 17,
+          "logit": 20.5095634
+        },
+        {
+          "step": 22,
+          "token": 17,
+          "logit": 19.4757786
+        },
+        {
+          "step": 23,
+          "token": 25,
+          "logit": 17.0647278
+        },
+        {
+          "step": 24,
+          "token": 2500,
+          "logit": 18.0342941
+        },
+        {
+          "step": 25,
+          "token": 635,
+          "logit": 20.2823162
+        },
+        {
+          "step": 26,
+          "token": 23438,
+          "logit": 20.8490219
+        },
+        {
+          "step": 27,
+          "token": 9150,
+          "logit": 22.0209885
+        },
+        {
+          "step": 28,
+          "token": 1330,
+          "logit": 19.505291
+        },
+        {
+          "step": 29,
+          "token": 20934,
+          "logit": 19.5421143
+        },
+        {
+          "step": 30,
+          "token": 440,
+          "logit": 20.6867638
+        },
+        {
+          "step": 31,
+          "token": 2086,
+          "logit": 20.351265
+        }
+      ]
+    },
+    "a2": {
+      "prefill_ms": 4156.639,
+      "decode_ms": 1994.313,
+      "prefill_toks_s": 246.59346168863834,
+      "decode_toks_s": 16.04562573678254,
+      "workspace_bytes": 1569405696,
+      "outputs": [
+        {
+          "step": 0,
+          "token": 11,
+          "logit": 19.9973259
+        },
+        {
+          "step": 1,
+          "token": 279,
+          "logit": 15.3361988
+        },
+        {
+          "step": 2,
+          "token": 4530,
+          "logit": 15.0348482
+        },
+        {
+          "step": 3,
+          "token": 314,
+          "logit": 17.2705593
+        },
+        {
+          "step": 4,
+          "token": 12904,
+          "logit": 14.8071232
+        },
+        {
+          "step": 5,
+          "token": 11,
+          "logit": 18.0953827
+        },
+        {
+          "step": 6,
+          "token": 321,
+          "logit": 19.3399734
+        },
+        {
+          "step": 7,
+          "token": 799,
+          "logit": 20.3071289
+        },
+        {
+          "step": 8,
+          "token": 21254,
+          "logit": 20.5224819
+        },
+        {
+          "step": 9,
+          "token": 421,
+          "logit": 19.1984882
+        },
+        {
+          "step": 10,
+          "token": 1000,
+          "logit": 19.6714134
+        },
+        {
+          "step": 11,
+          "token": 8381,
+          "logit": 21.6157093
+        },
+        {
+          "step": 12,
+          "token": 678,
+          "logit": 19.6431561
+        },
+        {
+          "step": 13,
+          "token": 15673,
+          "logit": 20.6364536
+        },
+        {
+          "step": 14,
+          "token": 13,
+          "logit": 20.079628
+        },
+        {
+          "step": 15,
+          "token": 198,
+          "logit": 17.4097939
+        },
+        {
+          "step": 16,
+          "token": 1812,
+          "logit": 13.7373142
+        },
+        {
+          "step": 17,
+          "token": 5020,
+          "logit": 21.6042824
+        },
+        {
+          "step": 18,
+          "token": 220,
+          "logit": 19.1515102
+        },
+        {
+          "step": 19,
+          "token": 15,
+          "logit": 20.5265656
+        },
+        {
+          "step": 20,
+          "token": 15,
+          "logit": 20.0473022
+        },
+        {
+          "step": 21,
+          "token": 17,
+          "logit": 20.5077515
+        },
+        {
+          "step": 22,
+          "token": 17,
+          "logit": 19.3880577
+        },
+        {
+          "step": 23,
+          "token": 25,
+          "logit": 17.0618
+        },
+        {
+          "step": 24,
+          "token": 2500,
+          "logit": 17.9940948
+        },
+        {
+          "step": 25,
+          "token": 635,
+          "logit": 20.1283512
+        },
+        {
+          "step": 26,
+          "token": 23438,
+          "logit": 20.7720718
+        },
+        {
+          "step": 27,
+          "token": 9150,
+          "logit": 21.9407921
+        },
+        {
+          "step": 28,
+          "token": 1330,
+          "logit": 19.4635963
+        },
+        {
+          "step": 29,
+          "token": 20934,
+          "logit": 19.4952011
+        },
+        {
+          "step": 30,
+          "token": 440,
+          "logit": 20.6643467
+        },
+        {
+          "step": 31,
+          "token": 2086,
+          "logit": 20.2658958
+        }
+      ]
+    }
+  },
+  "ids_match_control": true,
+  "max_selected_logit_delta": 0.4179182000000008,
+  "artifacts_sha256": {
+    "bonsai-flash-fp32": "1f5b86a1e3f35a84a633c63333e471fa60e3172e347f72cadbbe04e2f822ea5c",
+    "flash-fp32.cubin": "ed1235d5c8f386b4792118af0aaa9db2f26b53aab580990583da9fe2e2cbfb65",
+    "frozen-goose.ptx": "42e1f5c0885a3bbab3656e3bba2dc6ef8b998a4581d365b6c1e48fc842f789d7"
+  },
+  "means": {
+    "prefill_toks_s": {
+      "control": 240.63016430218238,
+      "fp32": 254.5091084701754
+    },
+    "decode_toks_s": {
+      "control": 16.04073291970596,
+      "fp32": 16.030321353418174
+    }
+  }
+}

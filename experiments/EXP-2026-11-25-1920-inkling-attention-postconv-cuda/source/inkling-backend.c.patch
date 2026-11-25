@@ -1,0 +1,12 @@
+--- a/inkling-backend.c
++++ b/inkling-backend.c
+@@ -351,2 +351,4 @@
+-                            float *input[3], float *message[3], float *out) {
+-    const struct inkling_attention_graph_call call = bind_attention_graph(d, core, aux, slot, begin, count, sliding);
++                            float *input[3], float *message[3], float *out, bool device_postconv) {
++    struct inkling_attention_graph_call call = bind_attention_graph(d, core, aux, slot, begin, count, sliding);
++    call.output.postconv_host_history = d->ha + slot * 3 * model_width;
++    if (device_postconv) call.output.postconv_weights = coefficients(d, aux[2], 4 * model_width).data;
+@@ -391 +393 @@
+-        attention_graph(d, core, aux, slot, absolute, 1, sliding, input, messages ? message : NULL, proj);
++        attention_graph(d, core, aux, slot, absolute, 1, sliding, input, messages ? message : NULL, proj, false);

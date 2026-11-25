@@ -1,0 +1,360 @@
+--- backend.c
++++ backend.c
+@@ -11,13 +11,15 @@
+ #include <sys/mman.h>
+ #include <sys/stat.h>
+ #include <unistd.h>
++#include <time.h>
+ 
+ enum { LAYERS = 64, POSITIONS_MAX = 262144, VOCAB = 248320, KV_BYTES = 576,
+-       GDN_STATE = 48 * 128 * 128, GDN_HISTORY = 3 * 10240, CONTEXT_MIN = 1 };
++       GDN_STATE = 48 * 128 * 128, GDN_HISTORY = 3 * 10240, CONTEXT_MIN = 1, UBATCH_MAX = 1024, ATTENTION_BYTES = 32 * 1024 * 1024 };
+ 
+ enum kernel {
+     NORM, ROTATE, MATRIX, ADD, DECAY, CONV, GDN, SPLIT, ROPE, Q4, TILES, GATE,
+-    EMBED, SWIGLU, MERGE, KERNEL_COUNT
++    EMBED, SWIGLU, MERGE, GDN_BATCH, ROPE_PHASES, ROPE_APPLY,
++    EMBED_BATCH, CONV_BATCH, PACK_HALF, MMQ, KERNEL_COUNT
+ };
+ 
+ typedef struct {
+@@ -26,7 +28,8 @@
+     CUfunction kernel[KERNEL_COUNT];
+     CUdeviceptr weights, memory, positions, rope_q, rope_k, attention, partial;
+     int64_t bound[LAYERS * 15], states[LAYERS * 2], globals[3], b[24];
+-    unsigned context, position;
++    CUdeviceptr token_ids, phases, packed, packed_source;
++    unsigned context, position, ubatch, count, wave;
+     int64_t eog[64], eog_count;
+     float epsilon;
+ } model;
+@@ -53,14 +56,25 @@
+ static int gdn(model *m, const CUdeviceptr p[8]) {
+     uint64_t packet[57];
+     memcpy(packet, p, 8 * sizeof(*p));
+-    const uint64_t config[49] = {
++    uint64_t config[49] = {
+         1, 128, 2048, 2048, 1, 128, 2048, 2048, 1, 128, 6144, 6144,
+         1, 1, 48, 48, 1, 1, 48, 48, 1, 128, 16384, GDN_STATE,
+         128, 48, 1, 1, 0, 0, 1, 0, 0, 0, 8, 32, 4, 32, 1, GDN_STATE,
+         0, f32_bits(1.0f / sqrtf(128.0f)), 1, 4, 16, 1, 0, 1, 6144,
+     };
++    if (m->count > 1) {
++        const uint64_t count = m->count;
++        config[2] = config[6] = 4096;
++        config[3] = config[7] = 4096 * count;
++        config[10] = 10240;
++        config[11] = 10240 * count;
++        config[15] = config[19] = 48 * count;
++        config[26] = count;
++        config[38] = 0;
++        config[48] = 6144 * count;
++    }
+     memcpy(packet + 8, config, sizeof(config));
+-    return launch(m, GDN, 48, 1, 8, 128, (void *[]){ packet });
++    return launch(m, m->count > 1 ? GDN_BATCH : GDN, 48, 1, 8, 128, (void *[]){ packet });
+ }
+ 
+ int64_t bonsai_launch(uint64_t context, int64_t op, int64_t a, int64_t b, int64_t c,
+@@ -68,57 +82,93 @@
+     model *m = (model *)(uintptr_t)context;
+     CUdeviceptr p[] = { a, b, c, d, e, f, g, h };
+     unsigned n = (unsigned)e, rows = (unsigned)f, mode = (unsigned)g;
++    const unsigned count = m->count;
++    unsigned stride = mode == 1 ? 10240 : n * rows;
+     unsigned out_width = 0, in_width = 0, heads = 0;
+     float scale = 1.0f / 16.0f;
+     int start = 0;
+     switch (op) {
+         case NORM:
+-            return launch(m, NORM, rows, 1, 1, 32, (void *[]){ &p[0], &p[1], &p[2], &p[3], &n, &m->epsilon, &mode });
++            return launch(m, NORM, rows * count, 1, 1, 32,
++                (void *[]){ &p[0], &p[1], &p[2], &p[3], &n, &m->epsilon, &mode, &rows, &stride });
+         case ROTATE: {
+-            const unsigned width = (unsigned)d, inverse = (unsigned)e;
+-            const unsigned head = f ? 128 : 0, keys = f ? 16 : 0, repeat = f ? 3 : 1;
+-            return launch(m, ROTATE, width/1024, 1, 1, 256,
+-                (void *[]){ &p[0], &p[1], &p[2], (void *)&inverse, (void *)&head, (void *)&keys, (void *)&repeat });
++            unsigned width = (unsigned)d, inverse = (unsigned)e;
++            unsigned head = f ? 128 : 0, keys = f ? 16 : 0, repeat = f ? 3 : 1;
++            m->packed_source = 0;
++            return launch(m, ROTATE, width/1024, count, 1, 256,
++                (void *[]){ &p[0], &p[1], &p[2], &inverse, &head, &keys, &repeat, &width });
+         }
+         case MATRIX:
+             in_width = (unsigned)d; out_width = (unsigned)e;
+-            return launch(m, MATRIX, (out_width+3)/4, 1, 1, 128, (void *[]){ &p[0], &p[1], &p[2], &in_width, &out_width });
++            if (count == 1) {
++                return launch(m, MATRIX, (out_width+3)/4, 1, 1, 128,
++                    (void *[]){ &p[0], &p[1], &p[2], &in_width, &out_width });
++            }
++            unsigned pairs = count * in_width / 2, tokens = count;
++            if (m->packed_source != p[1]) {
++                if (launch(m, PACK_HALF, (pairs+255)/256, 1, 1, 256,
++                    (void *[]){ &p[1], &m->packed, &pairs })) return -1;
++                m->packed_source = p[1];
++            }
++            return launch(m, MMQ, (out_width+31)/32, (count+31)/32, 1, 128,
++                (void *[]){ &p[0], &m->packed, &p[2], &in_width, &out_width, &tokens });
+         case ADD:
+-            return launch(m, ADD, 20, 1, 1, 256, (void *[]){ &p[0], &p[1], &p[2] });
++            return launch(m, ADD, 20 * count, 1, 1, 256, (void *[]){ &p[0], &p[1], &p[2] });
+         case DECAY:
+-            return launch(m, DECAY, 48, 1, 1, 32, (void *[]){ &p[0], &p[1], &p[2], &p[3], &p[4], &p[5], &p[6] });
+-        case CONV:
++            return launch(m, DECAY, 48 * count, 1, 1, 32, (void *[]){ &p[0], &p[1], &p[2], &p[3], &p[4], &p[5], &p[6] });
++        case CONV: {
++            unsigned tokens = count;
++            if (count > 1) {
++                return launch(m, CONV_BATCH, 40, 1, 1, 256, (void *[]){ &p[0], &p[1], &p[2], &p[3], &tokens });
++            }
+             return launch(m, CONV, 40, 1, 1, 256, (void *[]){ &p[0], &p[1], &p[2], &p[3] });
++        }
+         case GDN:
+             return gdn(m, p);
+         case SPLIT:
+-            return launch(m, SPLIT, 24, 1, 1, 256, (void *[]){ &p[0], &p[1], &p[2] });
++            return launch(m, SPLIT, 24 * count, 1, 1, 256, (void *[]){ &p[0], &p[1], &p[2] });
+         case ROPE: {
+             heads = (unsigned)c;
+             CUdeviceptr config = heads == 24 ? m->rope_q : m->rope_k, no_factors = 0;
+-            return launch(m, ROPE, heads, 1, 1, 128, (void *[]){ &p[0], &m->positions, &no_factors, &p[1], &config });
++            if (count == 1) {
++                return launch(m, ROPE, heads, 1, 1, 128, (void *[]){ &p[0], &m->positions, &no_factors, &p[1], &config });
++            }
++            if (launch(m, ROPE_PHASES, (count+127)/128, 1, 1, 128,
++                (void *[]){ &m->positions, &no_factors, &m->phases, &config })) return -1;
++            return launch(m, ROPE_APPLY, heads * count, 1, 1, 128,
++                (void *[]){ &p[0], &p[1], &m->phases, &config });
+         }
+         case Q4: {
+-            uint64_t stride = 4096, tasks = 32;
++            uint64_t stride = 4096, tasks = 32 * count;
+             unsigned blocks = 32;
+-            return launch(m, Q4, 1, 1, 1, 128, (void *[]){ &p[0], &p[1], &stride, &blocks, &tasks });
++            return launch(m, Q4, (tasks+127)/128, 1, 1, 128, (void *[]){ &p[0], &p[1], &stride, &blocks, &tasks });
+         }
+         case TILES: {
+             CUdeviceptr no_mask = 0;
+-            const unsigned tiles = ((unsigned)e + 255)/256;
+-            if (launch(m, TILES, 24, tiles, 1, 32, (void *[]){
+-                &p[0], &p[1], &p[2], &no_mask, &m->partial, &m->attention, &scale, &start }) != 0) return -1;
+-            return launch(m, MERGE, 24, 1, 1, 32, (void *[]){ &m->partial, &p[3], &m->attention, &start });
++            const unsigned tiles = ((unsigned)e + count + 254)/256;
++            const unsigned tasks = 24 * count;
++            for (; (unsigned)start < tasks; start += (int)m->wave) {
++                const unsigned left = tasks - (unsigned)start;
++                const unsigned active = left < m->wave ? left : m->wave;
++                if (launch(m, TILES, active, tiles, 1, 32, (void *[]){
++                    &p[0], &p[1], &p[2], &no_mask, &m->partial, &m->attention, &scale, &start }) ||
++                    launch(m, MERGE, active, 1, 1, 32,
++                        (void *[]){ &m->partial, &p[3], &m->attention, &start })) return -1;
++            }
++            return 0;
+         }
+         case GATE:
+-            return launch(m, GATE, 24, 1, 1, 256, (void *[]){ &p[0], &p[1], &p[2] });
++            return launch(m, GATE, 24 * count, 1, 1, 256, (void *[]){ &p[0], &p[1], &p[2] });
+         case EMBED: {
++            if (count > 1) {
++                return launch(m, EMBED_BATCH, 20, count, 1, 256, (void *[]){ &p[0], &p[1], &m->token_ids });
++            }
+             unsigned id = (unsigned)c, width = 5120;
+             return launch(m, EMBED, 20, 1, 1, 256, (void *[]){ &p[0], &p[1], &width, &id });
+         }
+         case SWIGLU:
+-            out_width = 17408;
+-            return launch(m, SWIGLU, 68, 1, 1, 256, (void *[]){ &p[0], &p[1], &p[2], &out_width });
++            out_width = 17408 * count;
++            return launch(m, SWIGLU, 68 * count, 1, 1, 256, (void *[]){ &p[0], &p[1], &p[2], &out_width });
+         default:
+             return -1;
+     }
+@@ -163,10 +213,11 @@
+     return start;
+ }
+ 
+-static int rope_config(CUdeviceptr dest, int64_t heads) {
++static int rope_config(CUdeviceptr dest, int64_t heads, int64_t tokens) {
+     const int64_t conf[27] = {
+-        2, heads, 1, 1, 1024, 256, heads, 1, 1, 64, 40, 0, 11, 11, 10, 0,
+-        4, 1024, heads * 1024, heads * 1024, 1,
++        tokens == 1 ? 2 : 0, heads * tokens, 1, (tokens+127)/128, 1024 * tokens,
++        256, heads, tokens, 1, 64, 40, 0, 11, 11, 10, 0,
++        4, 1024, heads * 1024, tokens * heads * 1024, 1,
+         f32_bits(powf(1e7f, -1.0f / 32)), f32_bits(1), 0, f32_bits(1), 0, 0,
+     };
+     return check(cuMemcpyHtoD(dest, conf, sizeof(conf)), "RoPE configuration");
+@@ -178,16 +229,23 @@
+         5120, 5120, 17408, 17408, 17408, 17408, 5120, VOCAB, 5120, 6144, 17408,
+     };
+     const size_t cache = m->context * (size_t)KV_BYTES;
+-    const size_t partial = 24 * ((m->context + 255)/256) * (256 + 2) * sizeof(float);
++    const size_t partial_per_task = ((m->context + 255)/256) * (256 + 2) * sizeof(float);
++    const size_t all_tasks = 24 * m->ubatch * partial_per_task;
++    const size_t partial = all_tasks < ATTENTION_BYTES ? all_tasks : ATTENTION_BYTES;
+     CUdeviceptr ptr = 0;
+     for (unsigned layer = 0; layer < LAYERS; ++layer) {
+         const int attention = m->bound[layer * 15] == 0;
+         m->states[2 * layer] = reserve(&ptr, attention ? cache : 4 * GDN_HISTORY);
+         m->states[2 * layer + 1] = reserve(&ptr, attention ? cache : 4 * GDN_STATE);
+     }
+-    for (unsigned i = 0; i < 23; ++i) m->b[i] = reserve(&ptr, words[i] * sizeof(float));
++    for (unsigned i = 0; i < 23; ++i) {
++        m->b[i] = reserve(&ptr, words[i] * sizeof(float) * (i < 19 ? m->ubatch : 1));
++    }
+     m->b[23] = reserve(&ptr, 4 * GDN_STATE);
+-    m->positions = reserve(&ptr, 16);
++    m->positions = reserve(&ptr, 16 * m->ubatch);
++    m->phases = reserve(&ptr, 1024 * m->ubatch);
++    m->token_ids = reserve(&ptr, 4 * m->ubatch);
++    m->packed = reserve(&ptr, 2 * 17408 * m->ubatch);
+     m->rope_q = reserve(&ptr, 27 * 8);
+     m->rope_k = reserve(&ptr, 27 * 8);
+     m->attention = reserve(&ptr, 22 * 8);
+@@ -202,7 +260,7 @@
+         if (check(cuMemcpyHtoD(m->b[i], sign, words[i] * sizeof(*sign)), "Hadamard signs")) return -1;
+         sign += words[i];
+     }
+-    if (rope_config(m->rope_q, 24) || rope_config(m->rope_k, 4)) return -1;
++    m->phases += m->memory; m->token_ids += m->memory; m->packed += m->memory;
+     fprintf(stderr, "Device workspace: %llu bytes (Q4_0 K/V, GDN, activations)\n", (unsigned long long)ptr);
+     return 0;
+ }
+@@ -250,17 +308,19 @@
+     return workspace(m, signs);
+ }
+ 
+-static model *bonsai_open(const char *gguf, const char *cubin, const char *frozen, unsigned context) {
++static model *bonsai_open(const char *gguf, const char *cubin, const char *frozen, unsigned context, unsigned ubatch) {
+     if (context < CONTEXT_MIN || context > POSITIONS_MAX) return NULL;
+     model *m = calloc(1, sizeof(*m));
+     if (!m) return NULL;
+-    m->context = context;
++    m->context = context; m->ubatch = ubatch;
+     CUdevice device;
+     const char *names[KERNEL_COUNT] = {
+         "bonsai_norm", "bonsai_fwht1024", "bonsai_pq2_matvec", "bonsai_residual", "bonsai_decay",
+         "bonsai_conv_step", "goose_gdn_decode", "bonsai_split_q_gate", "goose_rope_decode",
+         "goose_set_q4_rows", "goose_q4_attention_tiles", "bonsai_attention_gate", "bonsai_pq2_row",
+-        "bonsai_swiglu", "goose_q4_attention_merge",
++        "bonsai_swiglu", "goose_q4_attention_merge", "goose_gated_delta_net",
++        "goose_rope_phases", "goose_rope_apply", "bonsai_embed_batch", "bonsai_conv_batch",
++        "bonsai_pack_half", "bonsai_pq2_mmq",
+     };
+     if (check(cuInit(0), "driver") || check(cuDeviceGet(&device, 0), "device") ||
+         check(cuCtxCreate(&m->cuda, 0, device), "context") ||
+@@ -291,24 +351,42 @@
+     return NULL;
+ }
+ 
+-static int evaluate(model *m, unsigned token, float *logits) {
+-    if (m->position >= m->context || token >= VOCAB) return -1;
+-    const int pos = (int)m->position, keys = pos + 1;
+-    const int64_t tiles = (keys + 255)/256;
+-    const int32_t positions[4] = {pos, pos, pos, 0};
++static int evaluate_batch(model *m, const unsigned *tokens, unsigned count, float *logits) {
++    if (count == 0 || count > m->ubatch || count > m->context - m->position || (logits && count != 1)) return -1;
++    const int pos = (int)m->position, keys = pos + (int)count;
++    const int64_t tiles = (keys + 255)/256, per_task = tiles * 258 * 4;
++    const int64_t tasks = 24 * count;
++    m->wave = (unsigned)(ATTENTION_BYTES / per_task);
++    if (m->wave > tasks) m->wave = (unsigned)tasks;
++    if (m->count != count && (rope_config(m->rope_q, 24, count) || rope_config(m->rope_k, 4, count))) return -1;
++    m->count = count;
++    m->packed_source = 0;
++    int32_t positions[4 * UBATCH_MAX];
++    for (unsigned t = 0; t < count; ++t) {
++        if (tokens[t] >= VOCAB) return -1;
++        positions[t] = positions[count+t] = positions[2*count+t] = pos + (int)t;
++        positions[3*count+t] = 0;
++    }
+     const int64_t cfg[22] = {
+-        256, 256, 1, 24, 4, 4, keys, 24576, 1024, KV_BYTES, 144, KV_BYTES, 144,
+-        0, 1024, 24576, 256, tiles, 24, 24, 24 * tiles * 258 * 4, keys,
++        256, 256, count, 24, 4, 4, keys, 24576, 1024, KV_BYTES, 144, KV_BYTES, 144,
++        0, 1024, 24576, 256, tiles, tasks, m->wave, m->wave * per_task, pos+1,
+     };
+-    if (check(cuMemcpyHtoD(m->positions, positions, sizeof(positions)), "position") ||
+-        check(cuMemcpyHtoD(m->attention, cfg, sizeof(cfg)), "attention configuration")) return -1;
++    if (check(cuMemcpyHtoD(m->positions, positions, 16 * count), "positions") ||
++        check(cuMemcpyHtoD(m->attention, cfg, sizeof(cfg)), "attention configuration") ||
++        (count > 1 && check(cuMemcpyHtoD(m->token_ids, tokens, 4 * count), "token ids"))) return -1;
+     const int64_t result = bonsai_graph((uintptr_t)m, slice(m->bound, LAYERS*15), slice(m->states, LAYERS*2),
+-        slice(m->globals, 3), slice(m->b, 24), token, pos, logits != NULL);
++        slice(m->globals, 3), slice(m->b, 24), tokens[0], pos, logits != NULL);
+     if (result != 0) { fprintf(stderr, "Goose graph failed: %lld\n", (long long)result); return -1; }
+-    ++m->position;
++    m->position += count;
+     return logits ? check(cuMemcpyDtoH(logits, m->b[19], VOCAB * sizeof(float)), "logits") : 0;
+ }
+ 
++static double seconds(void) {
++    struct timespec now;
++    clock_gettime(CLOCK_MONOTONIC, &now);
++    return (double)now.tv_sec + (double)now.tv_nsec / 1000000000;
++}
++
+ int main(int argc, char **argv) {
+     if (argc < 7) {
+         fprintf(stderr, "usage: %s model.gguf bonsai.cubin frozen.ptx context generate [--ignore-eos] input_id ...\n", argv[0]);
+@@ -319,16 +397,38 @@
+     const int ignore_eos = strcmp(argv[6], "--ignore-eos") == 0;
+     const int first = 6 + ignore_eos;
+     if (argc <= first || !generate || (uint64_t)(argc - first) + generate - 1 > context) return 2;
++    const char *env = getenv("BONSAI_UBATCH");
++    char *end = NULL;
++    const unsigned long ubatch = env ? strtoul(env, &end, 10) : 128;
++    if (ubatch < 1 || ubatch > UBATCH_MAX || (end && (*end || end == env))) return 2;
+     goose_init(0, NULL);
+-    model *m = bonsai_open(argv[1], argv[2], argv[3], context);
++    model *m = bonsai_open(argv[1], argv[2], argv[3], context, (unsigned)ubatch);
+     if (!m) return 1;
+     float *logits = malloc(VOCAB * sizeof(*logits));
+     int status = logits ? 0 : 1;
+-    for (int i = first; i < argc && !status; ++i) {
+-        char *end;
+-        const unsigned long token = strtoul(argv[i], &end, 10);
+-        if (*end || end == argv[i] || token >= VOCAB || evaluate(m, token, i+1 == argc ? logits : NULL)) status = 1;
++    const unsigned prompt = (unsigned)(argc - first);
++    unsigned *ids = malloc(prompt * sizeof(*ids));
++    if (!ids) status = 1;
++    for (unsigned i = 0; i < prompt && !status; ++i) {
++        const char *arg = argv[first+i];
++        unsigned long token = strtoul(arg, &end, 10);
++        if (*end || end == arg || token >= VOCAB) status = 1;
++        else ids[i] = (unsigned)token;
++    }
++    const double start = seconds();
++    for (unsigned at = 0; at < prompt && !status;) {
++        const unsigned remaining = prompt - at;
++        const unsigned count = remaining == 1 ? 1 : (remaining-1 < ubatch ? remaining-1 : (unsigned)ubatch);
++        if (evaluate_batch(m, ids + at, count, remaining == 1 ? logits : NULL)) status = 1;
++        at += count;
++        if (!status && at % 4096 == 0) {
++            if (check(cuCtxSynchronize(), "prefill milestone")) status = 1;
++            else fprintf(stderr, "Prefill %u/%u, %.3f s\n", at, prompt, seconds() - start);
++        }
+     }
++    const double prefill = seconds() - start;
++    const double decoding = seconds();
++    unsigned generated = 0;
+     for (unsigned i = 0; i < generate && !status; ++i) {
+         for (unsigned id = 0; id < VOCAB; ++id) if (!isfinite(logits[id])) status = 1;
+         if (status) break;
+@@ -340,9 +440,14 @@
+         int stop = 0;
+         for (int64_t j = 0; j < m->eog_count; ++j) if (m->eog[j] == best) stop = 1;
+         printf("{\"step\":%u,\"token\":%u,\"logit\":%.9g}\n", i, best, logits[best]);
++        ++generated;
+         if (stop) break;
+-        if (i+1 < generate && evaluate(m, best, logits)) status = 1;
++        if (i+1 < generate && evaluate_batch(m, &best, 1, logits)) status = 1;
+     }
++    if (!status) fprintf(stderr,
++        "prompt_n=%u prefill_ms=%.3f decode_n=%u decode_ms=%.3f ubatch=%lu\n",
++        prompt, 1000 * prefill, generated, 1000 * (seconds()-decoding), ubatch);
++    free(ids);
+     free(logits);
+     cuCtxDestroy(m->cuda);
+     free(m);

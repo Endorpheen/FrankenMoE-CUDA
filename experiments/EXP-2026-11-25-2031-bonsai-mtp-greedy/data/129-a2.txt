@@ -1,0 +1,3 @@
+Device workspace: 306660608 bytes (Q4_0 K/V, GDN, activations)
+Device free: 2497052672 / 12447973376 bytes
+prompt_n=129 prefill_ms=218.880 decode_n=64 decode_ms=1514.343 ubatch=128

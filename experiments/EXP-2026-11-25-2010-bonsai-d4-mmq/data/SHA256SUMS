@@ -1,0 +1,6 @@
+49d9cd53390f667bbaf83aad6903bca73ee1329626ebf2302bbcc7ab6e726b1c  build/bonsai-prism-cuda-audit-2010/trace.nsys-rep
+dcde60b72b4deba58c2f515674e1257842ca91dbc43c79ace6d18b82b8fbd499  build/bonsai-goose-cuda-audit-2010/trace.nsys-rep
+9b9a60f4249d573ada560e359f80576e7d479ccbc6c0606ae74813b023ddd1a5  build/bonsai-row-reuse-2006-http/frankenmoe-infer
+b161ee59f6b0b1b591e3a8d3815a712a674d785dadaeca1158bd3d7723f630af  build/bonsai-row-reuse-2006-http/rows.cubin
+c8e47ae6ca58aebb38c7690f7f538f328d7bc17d7fc8fceae3c9e5cfcfb2b6ea  build/bonsai-d4-2010-quality-all/bonsai-quality
+65e77fdd831f5441192bc24970410934f5a7154498bab9ab92fcfbc1e4532d81  build/bonsai-d4-2010-quality-all/pq2-int8.cubin

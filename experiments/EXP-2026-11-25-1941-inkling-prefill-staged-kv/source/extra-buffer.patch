@@ -1,0 +1,55 @@
+--- a/native-kv-driver.h
++++ b/native-kv-driver.h
+@@ -22 +22 @@
+-    Function pack, attention, attention_decode, attention_prefill, merge;
++    Function pack, attention, attention_decode, attention_prefill, attention_prefill_f16, unpack_kv, merge;
+@@ -25 +25 @@
+-    struct device_buffer raw, projected_input, prepared_kv;
++    struct device_buffer raw, projected_input, prepared_kv, unpacked_kv;
+@@ -90,0 +91,26 @@
++static int nk_stage_prefill_kv(struct native_kv_rows *rows, int total) {
++    const size_t plane = (size_t)total * NK_KV * sizeof(uint16_t);
++    const size_t needed = 2 * plane;
++    if (needed > nk.unpacked_kv.bytes) {
++        size_t free_bytes = 0, total_bytes = 0;
++        if (cuda.memory_info(&free_bytes, &total_bytes) != 0 ||
++            needed - nk.unpacked_kv.bytes + 256 * MIB_BYTES > free_bytes) return 0;
++        const int allocated = reserve(&nk.unpacked_kv, needed);
++        if (allocated == 2) return 0;
++        if (allocated != 0) return -1;
++        if (getenv("I2_PREFILL_STAGE_KV_LOG"))
++            fprintf(stderr, "Inkling prefill KV workspace: %zu bytes\n", needed);
++    }
++    int error = 0;
++    if (!nk.unpack_kv)
++        error = cuda.function_get(&nk.unpack_kv, nk.module, "goose_i2_prefill_unpack_kv");
++    uint32_t tasks = (uint32_t)total * (NK_KV / 2);
++    DevicePtr k = nk.unpacked_kv.address, v = k + plane;
++    void *args[] = {&rows->keys, &rows->values, &k, &v, &tasks};
++    if (!error) error = cuda.launch(nk.unpack_kv, (tasks + 255) / 256, 1, 1, 256, 1, 1, 0, NULL, args, NULL);
++    if (error) return -1;
++    rows->keys = k;
++    rows->values = v;
++    return 1;
++}
++
+@@ -94 +120,6 @@
+-    const size_t row_bytes = nk_row_bytes(batch->format);
++    const bool eligible = !batch->sliding && total >= 4096 && batch->count >= 16 && batch->format == INKLING_KV_Q4_0 &&
++        fg_standalone_option_enabled("I2_PREFILL_PARALLEL_RELATIVE") &&
++        fg_standalone_option_enabled("I2_PREFILL_STAGE_KV");
++    const int staged = eligible ? nk_stage_prefill_kv(&rows, total) : 0;
++    if (staged < 0) return -1;
++    const size_t row_bytes = staged ? NK_KV * sizeof(uint16_t) : nk_row_bytes(batch->format);
+@@ -118 +149 @@
+-        int32_t q4 = batch->format == INKLING_KV_Q4_0;
++        int32_t q4 = !staged && batch->format == INKLING_KV_Q4_0;
+@@ -125 +156,7 @@
+-        if ((q4 & 3) == 3 && fg_standalone_option_enabled("I2_DECODE_WARP_SOFTMAX")) {
++        if (staged) {
++            if (!nk.attention_prefill_f16) {
++                error = cuda.function_get(&nk.attention_prefill_f16, nk.module, "goose_i2_flash_mma_prefill_f16");
++                if (error) return error;
++            }
++            kernel = nk.attention_prefill_f16;
++        } else if ((q4 & 3) == 3 && fg_standalone_option_enabled("I2_DECODE_WARP_SOFTMAX")) {

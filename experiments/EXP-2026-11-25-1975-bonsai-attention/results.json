@@ -1,0 +1,33 @@
+{
+  "layer": 3,
+  "tokens": [
+    {
+      "token": 1511,
+      "position": 4093,
+      "cache_rows": 1,
+      "max_absolute_error": 1.5860674587031554e-06
+    },
+    {
+      "token": 17,
+      "position": 4094,
+      "cache_rows": 2,
+      "max_absolute_error": 4.144288269003482e-05
+    },
+    {
+      "token": 248046,
+      "position": 4095,
+      "cache_rows": 3,
+      "max_absolute_error": 1.676105245795867e-05
+    },
+    {
+      "token": 1511,
+      "position": 4096,
+      "cache_rows": 4,
+      "max_absolute_error": 1.555838661770892e-05
+    }
+  ],
+  "bit_exact_cache": true,
+  "deterministic_reset": true,
+  "frozen_cuda_image_sha256": "777e4931dc563cfff51f808df42eed20074a0206c6c1c0b45176c85c0864579c",
+  "candidate_cuda_image_sha256": "fc1e08b97ac6c28957bc01b2b46938f9fa579a8eed1d3cc14b943139fdc54bd0"
+}

@@ -1,0 +1,33 @@
+--- a/cuda-driver.reference.merged.c
++++ b/cuda-driver.reference.merged.c
+@@ -3086,6 +3086,8 @@
+             i2_expert_trace.position, i2_expert_trace.visit++, layer, bits[1], bits[0]);
+ }
+ 
++#include "decode-lfu.h"
++
+ static void i2_warm_visit(uint64_t tensor, sl_i64 active);
+ static const int64_t *i2_warm_bucket_ranks(void);
+ extern int64_t i2_ec_prepare_buckets(sl_i64 groups, sl_i64 layers, uint64_t words32, sl_i64 words64,
+@@ -3103,7 +3105,12 @@
+     const int64_t *ranks = cuda_inkling_quants ? i2_warm_bucket_ranks() : NULL;
+     int64_t status;
+     if (cuda_inkling_quants) {
+-        if (ranks) {
++        const int layer = i2_lfu_layer(tensor, active.len);
++        if (layer >= 0) {
++            status = i2_ec_prepare_lfu(cache->groups, cache->layers, state, cache->work,
++                tensor, bytes, active, offsets, stage_all);
++            if (status == 1) i2_lfu_observe(layer, tensor, active);
++        } else if (ranks) {
+             int64_t links[3072];
+             status = i2_ec_prepare_buckets(cache->groups, cache->layers, state, cache->work,
+                 tensor, bytes, active, offsets, stage_all, (sl_i64){(void *)ranks, 3072}, (sl_i64){links, 3072});
+@@ -4239,6 +4246,7 @@
+         trace_enabled = trace && strcmp(trace, "1") == 0;
+     }
+     if (prefill && position == 0) i2_expert_trace.started = false;
++    i2_lfu_phase(prefill, position, count);
+     i2_expert_trace.active = trace_enabled && !prefill && count == 1;
+     i2_expert_trace.position = position;
+     i2_expert_trace.visit = 0;

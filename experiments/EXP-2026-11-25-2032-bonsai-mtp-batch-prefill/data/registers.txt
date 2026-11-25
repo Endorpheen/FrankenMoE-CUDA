@@ -1,0 +1,4 @@
+ptxas info    : Compiling entry function 'bonsai_mtp_q4_four' for 'sm_89'
+ptxas info    : Function properties for bonsai_mtp_q4_four
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 40 registers, used 0 barriers, 388 bytes cmem[0]

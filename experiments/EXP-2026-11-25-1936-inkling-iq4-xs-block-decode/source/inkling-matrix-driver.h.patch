@@ -1,0 +1,13 @@
+--- a/inkling-matrix-driver.h
++++ b/inkling-matrix-driver.h
+@@ -15 +15 @@
+-    static Function kernels[3];
++    static Function kernels[4];
+@@ -17 +17,3 @@
+-    const int index = kind == 8 ? 0 : kind == 20 ? 1 : 2;
++    const bool xs_blocks = kind == 23 && count <= 8 && width % 256 == 0 &&
++        fg_standalone_option_enabled("I2_DECODE_IQ4_XS_BLOCKS");
++    const int index = xs_blocks ? 3 : kind == 8 ? 0 : kind == 20 ? 1 : 2;
+@@ -19 +21 @@
+-        "goose_i2_matrix_q8_0", "goose_i2_matrix_iq4_nl", "goose_i2_matrix_iq4_xs"
++        "goose_i2_matrix_q8_0", "goose_i2_matrix_iq4_nl", "goose_i2_matrix_iq4_xs", "goose_i2_matrix_iq4_xs_blocks"

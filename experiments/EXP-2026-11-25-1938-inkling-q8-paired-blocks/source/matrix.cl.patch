@@ -1,0 +1,54 @@
+--- a/matrix.cl
++++ b/matrix.cl
+@@ -130,0 +131,51 @@
++
++__kernel void goose_i2_matrix_q8_pairs(__global const uint8_t *weights, __global const uint8_t *input,
++    __global uint8_t *output, __global const uint64_t *jobs, uint64_t row_stride,
++    int32_t width, int32_t rows, int32_t count, int32_t job_base, int32_t words, int32_t tile) {
++    uint32_t x, y, thread;
++    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(x));
++    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(y));
++    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
++    const uint32_t row = 4 * x + (thread >> 5);
++    if (row >= (uint32_t)rows) return;
++    __global const uint64_t *job = jobs + 2 * ((uint64_t)job_base + (uint64_t)y * tile);
++    const uint64_t weight = (uint64_t)weights + row * row_stride;
++    const uint64_t src = (uint64_t)input;
++    const uint64_t dst = (uint64_t)output + 4 * (uint64_t)row;
++    const int32_t pairs = width / 64;
++    if (tile == 1) {
++        i2_q8_pair1_g(weight, src + job[0], dst + job[1], pairs, thread & 31);
++        return;
++    }
++    i2_q8_pair8_g(weight,
++        src + job[0],
++        src + job[2],
++        src + job[4],
++        src + job[6],
++        src + job[8],
++        src + job[10],
++        src + job[12],
++        src + job[14],
++        dst + job[1],
++        dst + job[3],
++        dst + job[5],
++        dst + job[7],
++        dst + job[9],
++        dst + job[11],
++        dst + job[13],
++        dst + job[15],
++        pairs, thread & 31);
++}
++
++__kernel void goose_i2_matrix_q8_pair1(__global const uint8_t *weights, __global const uint8_t *input,
++    __global uint8_t *output, __global const uint64_t *jobs, uint64_t row_stride,
++    int32_t width, int32_t rows, int32_t count, int32_t job_base, int32_t words, int32_t tile) {
++    uint32_t x, thread;
++    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(x));
++    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
++    const uint32_t row = 4 * x + (thread >> 5);
++    if (row >= (uint32_t)rows) return;
++    __global const uint64_t *job = jobs + 2 * (uint64_t)job_base;
++    i2_q8_pair1_g((uint64_t)weights + row * row_stride, (uint64_t)input + job[0],
++                   (uint64_t)output + 4 * (uint64_t)row + job[1], width / 64, thread & 31);
++}

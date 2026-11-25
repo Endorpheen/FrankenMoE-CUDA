@@ -1,0 +1,15 @@
+--- a/bridge.h
++++ b/bridge.h
+@@ -3,9 +3,9 @@
+ enum { INKLING_BRIDGE_GRAPH = 0x49324252, INKLING_BRIDGE_WIDTH = 2304, INKLING_BRIDGE_ROWS = 11 };
+ 
+ struct inkling_bridge {
+-    const float *postconv, *query, *initial_history, *input;
+-    int slot, rows, position;
+-    bool restart, add_residual;
++    const float *postconv, *query, *initial_history, *input, *depth_history;
++    int slot, visit, rows, position;
++    bool restart, add_residual, retain_history;
+ };
+ 
+ int inkling_bridge_execute(const struct inkling_bridge *bridge, const void *attention, void *output);

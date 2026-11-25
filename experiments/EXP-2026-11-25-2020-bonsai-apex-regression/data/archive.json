@@ -1,0 +1,112 @@
+{
+  "main.o": {
+    "control": "111b329dd020d3df9238ea4ae98c23387a579672e97b8af207bdb8c8355fe9a6",
+    "candidate": "111b329dd020d3df9238ea4ae98c23387a579672e97b8af207bdb8c8355fe9a6",
+    "exact": true
+  },
+  "cpu.o": {
+    "control": "4aa6417a5fd7c5be2d8ea61afe74ab99f134a4fbab1b24e22cc038ac230c06ed",
+    "candidate": "4aa6417a5fd7c5be2d8ea61afe74ab99f134a4fbab1b24e22cc038ac230c06ed",
+    "exact": true
+  },
+  "graph-execute.o": {
+    "control": "27a27a8a5d59e34523a6349a96b30562caeaf13473a646d7180edea3bc965317",
+    "candidate": "27a27a8a5d59e34523a6349a96b30562caeaf13473a646d7180edea3bc965317",
+    "exact": true
+  },
+  "cuda-driver.o": {
+    "control": "f139761ea3db081698fd983c88880efda4024aaedf65a6b90dd063e74952b1fc",
+    "candidate": "f139761ea3db081698fd983c88880efda4024aaedf65a6b90dd063e74952b1fc",
+    "exact": true
+  },
+  "graph-bindings.o": {
+    "control": "60dbbb462cdb971c49bfb12056afd2362fe9e731754b55db4d8892c111f1027d",
+    "candidate": "60dbbb462cdb971c49bfb12056afd2362fe9e731754b55db4d8892c111f1027d",
+    "exact": true
+  },
+  "model-host.o": {
+    "control": "41fba8f5dcbc7ac4f79a67c7faa83748a7ccf3b0597af95f202a0ec060c2dc1d",
+    "candidate": "679b84413d33aef6c91f0eb16954f4e89335d7c8841951f6ad33cb02e50dfd55",
+    "exact": false
+  },
+  "libc-forwards.o": {
+    "control": "8bf730cdd1415fb144b3fc847ba41829c9bf9140807df99f39b305e5bfa1709d",
+    "candidate": "8bf730cdd1415fb144b3fc847ba41829c9bf9140807df99f39b305e5bfa1709d",
+    "exact": true
+  },
+  "slru-shim.o": {
+    "control": "68f0e4d875c1c329e4c069226385e8b6884a66460a79b4b1808b8ef60dab8c88",
+    "candidate": "68f0e4d875c1c329e4c069226385e8b6884a66460a79b4b1808b8ef60dab8c88",
+    "exact": true
+  },
+  "goose-host.o": {
+    "control": "f7f369d06aba5c236231d3c1f3e35cbba2816bb95f3a8d5ddfec96a41da365c5",
+    "candidate": "f7f369d06aba5c236231d3c1f3e35cbba2816bb95f3a8d5ddfec96a41da365c5",
+    "exact": true
+  },
+  "ggml.o": {
+    "control": "827316064e7536f0509f3d8476e26f23080622241d949067d848738ebdf75564",
+    "candidate": "827316064e7536f0509f3d8476e26f23080622241d949067d848738ebdf75564",
+    "exact": true
+  },
+  "ggml-quants.o": {
+    "control": "31b0dfb0745cc662b2a9e6d668247be3de81279d38ed7465efaaabae9c5d7658",
+    "candidate": "31b0dfb0745cc662b2a9e6d668247be3de81279d38ed7465efaaabae9c5d7658",
+    "exact": true
+  },
+  "ggml-system.o": {
+    "control": "868e09c9fd05e933a22611b68996047a68458e57c535b330bc61005bb5c0cede",
+    "candidate": "868e09c9fd05e933a22611b68996047a68458e57c535b330bc61005bb5c0cede",
+    "exact": true
+  },
+  "probability.o": {
+    "control": "0b4c9e19a5722e8978233b915dfdbfc2f62b23474c9e9a0a57e787cf94f19b5c",
+    "candidate": "0b4c9e19a5722e8978233b915dfdbfc2f62b23474c9e9a0a57e787cf94f19b5c",
+    "exact": true
+  },
+  "probability-pipeline.o": {
+    "control": "737a8c870bf4fbc13b15b4b77a21f7b1f0c17f3bce3e8e90d52c68f8ee28bc3e",
+    "candidate": "737a8c870bf4fbc13b15b4b77a21f7b1f0c17f3bce3e8e90d52c68f8ee28bc3e",
+    "exact": true
+  },
+  "sampler-scan.o": {
+    "control": "c9f7d49e104394e1f844a75e1c4c6830acb9a05565ecb936d1335ca6eed46217",
+    "candidate": "c9f7d49e104394e1f844a75e1c4c6830acb9a05565ecb936d1335ca6eed46217",
+    "exact": true
+  },
+  "planner-link.o": {
+    "control": "6a69ccc323de3bb0b34df4a52e4720c432f5c060ed40a742bd4115f6c84bc189",
+    "candidate": "6a69ccc323de3bb0b34df4a52e4720c432f5c060ed40a742bd4115f6c84bc189",
+    "exact": true
+  },
+  "inkling-model.o": {
+    "control": "d66b10691e88f1076f89330b5943b50de8a904f745c305f3ab9e48c05d55e5c0",
+    "candidate": "d66b10691e88f1076f89330b5943b50de8a904f745c305f3ab9e48c05d55e5c0",
+    "exact": true
+  },
+  "prior.o": {
+    "control": "40093b676c7f6528048a0a116f171d5cdf61498d1aac96b6a0d96acb1ce1db86",
+    "candidate": "40093b676c7f6528048a0a116f171d5cdf61498d1aac96b6a0d96acb1ce1db86",
+    "exact": true
+  },
+  "bucket.o": {
+    "control": "bc2a8102cff4dae533965f974f27f8deee87e4d3ed8b4742a67c2e370aa3f49c",
+    "candidate": "bc2a8102cff4dae533965f974f27f8deee87e4d3ed8b4742a67c2e370aa3f49c",
+    "exact": true
+  },
+  "tokenizer.o": {
+    "control": "126847030ad316a0b63a514960f5098e16ddd18785972d1361fc8e22264d6926",
+    "candidate": "126847030ad316a0b63a514960f5098e16ddd18785972d1361fc8e22264d6926",
+    "exact": true
+  },
+  "inkling-backend.o": {
+    "control": "84b45564db6c27a6fbf7eb08c998dbb62f4b4b11edaaadb591a78ce75a3082fd",
+    "candidate": "84b45564db6c27a6fbf7eb08c998dbb62f4b4b11edaaadb591a78ce75a3082fd",
+    "exact": true
+  },
+  "lfu.o": {
+    "control": "76caf2c138aba695234a40c73f80186131139a5f65268819d388bc9d82f1045b",
+    "candidate": "76caf2c138aba695234a40c73f80186131139a5f65268819d388bc9d82f1045b",
+    "exact": true
+  }
+}

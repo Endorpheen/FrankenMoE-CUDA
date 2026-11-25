@@ -1,0 +1,132 @@
+[
+  {
+    "kv_tokens": 65,
+    "query_tokens": 16,
+    "max_absolute_error": 0.00018386216834187508,
+    "relative_l2": 0.0002841818786691874,
+    "ordered_gpu_ms": [
+      [
+        "staged",
+        0.03753599897027016
+      ],
+      [
+        "bundle",
+        0.03379200026392937
+      ],
+      [
+        "bundle",
+        0.03276799991726875
+      ],
+      [
+        "staged",
+        0.03276799991726875
+      ]
+    ],
+    "relative_l2_to_staged": 0.0,
+    "extra_staging_bytes": 393216
+  },
+  {
+    "kv_tokens": 257,
+    "query_tokens": 33,
+    "max_absolute_error": 6.604939699172974e-05,
+    "relative_l2": 0.00029511770117096603,
+    "ordered_gpu_ms": [
+      [
+        "staged",
+        0.06329599767923355
+      ],
+      [
+        "bundle",
+        0.05423999950289726
+      ],
+      [
+        "bundle",
+        0.05427199974656105
+      ],
+      [
+        "staged",
+        0.054976001381874084
+      ]
+    ],
+    "relative_l2_to_staged": 0.0,
+    "extra_staging_bytes": 1179648
+  },
+  {
+    "kv_tokens": 8192,
+    "query_tokens": 128,
+    "max_absolute_error": 1.2211501598358154e-05,
+    "relative_l2": 0.0002892289194278419,
+    "ordered_gpu_ms": [
+      [
+        "staged",
+        6.265632152557373
+      ],
+      [
+        "bundle",
+        4.603551864624023
+      ],
+      [
+        "bundle",
+        4.588672161102295
+      ],
+      [
+        "staged",
+        6.262688159942627
+      ]
+    ],
+    "relative_l2_to_staged": 2.5078466592276527e-07,
+    "extra_staging_bytes": 33554432
+  },
+  {
+    "kv_tokens": 32768,
+    "query_tokens": 128,
+    "max_absolute_error": 5.922280251979828e-06,
+    "relative_l2": 0.0002864154812414199,
+    "ordered_gpu_ms": [
+      [
+        "staged",
+        29.275039672851562
+      ],
+      [
+        "bundle",
+        22.067455291748047
+      ],
+      [
+        "bundle",
+        22.047744750976562
+      ],
+      [
+        "staged",
+        29.277183532714844
+      ]
+    ],
+    "relative_l2_to_staged": 4.672956208651158e-07,
+    "extra_staging_bytes": 134217728
+  },
+  {
+    "kv_tokens": 1024,
+    "query_tokens": 1024,
+    "max_absolute_error": 0.000732421875,
+    "relative_l2": 0.0002690214605536312,
+    "ordered_gpu_ms": [
+      [
+        "staged",
+        2.061471939086914
+      ],
+      [
+        "bundle",
+        1.9035840034484863
+      ],
+      [
+        "bundle",
+        1.9063999652862549
+      ],
+      [
+        "staged",
+        2.023423910140991
+      ]
+    ],
+    "relative_l2_to_staged": 3.4736078902142253e-08,
+    "extra_staging_bytes": 4194304
+  }
+]

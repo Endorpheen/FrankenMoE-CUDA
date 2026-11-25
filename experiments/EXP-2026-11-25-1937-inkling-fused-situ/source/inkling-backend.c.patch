@@ -1,0 +1,16 @@
+--- a/inkling-backend.c
++++ b/inkling-backend.c
+@@ -35,0 +36 @@
++#include "situ.h"
+@@ -344,0 +346,11 @@
++    const char *situ = getenv("I2_FUSED_MOE_SITU");
++    if (!situ || strcmp(situ, "0") != 0) {
++        struct ggml_tensor *hidden = (struct ggml_tensor *)(intptr_t)nodes[6];
++        struct ggml_tensor *gate_up = (struct ggml_tensor *)(intptr_t)nodes[5];
++        assert(hidden && gate_up);
++        hidden->op = GGML_OP_CUSTOM;
++        memset(hidden->op_params, 0, sizeof hidden->op_params);
++        memset(hidden->src, 0, sizeof hidden->src);
++        hidden->op_params[0] = INKLING_MOE_SITU;
++        hidden->src[0] = gate_up;
++    }

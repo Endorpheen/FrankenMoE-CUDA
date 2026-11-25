@@ -1,0 +1,18 @@
+--- a/matrix.cl
++++ b/matrix.cl
+@@ -115,0 +116,15 @@
++
++__kernel void goose_i2_matrix_iq4_xs_blocks(__global const uint8_t *weights, __global const uint8_t *input,
++    __global uint8_t *output, __global const uint64_t *jobs, uint64_t row_stride,
++    int32_t width, int32_t rows, int32_t count, int32_t job_base, int32_t words, int32_t tile) {
++    uint32_t x, y, thread;
++    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(x));
++    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(y));
++    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
++    const uint32_t row = 4 * x + (thread >> 5);
++    if (row >= (uint32_t)rows || y >= (uint32_t)count) return;
++    __global const uint64_t *job = jobs + (uint64_t)words * ((uint64_t)job_base + y);
++    const uint64_t w = (uint64_t)weights + row * row_stride + plane_at(job, words);
++    i2_matrix_xs_blocks_g(w, (uint64_t)input + job[0], (uint64_t)output + job[1] + 4 * (uint64_t)row,
++                         width / 256, thread & 31);
++}

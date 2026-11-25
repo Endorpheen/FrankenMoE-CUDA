@@ -1,0 +1,61 @@
+--- a/matrix.cl
++++ b/matrix.cl
+@@ -130,0 +131,58 @@
++
++static __attribute__((always_inline)) void q8_shared_tile(
++    __global const uint8_t *weights, __global const float *input, __global float *output,
++    __global const uint64_t *jobs, uint64_t row_stride, int width, int rows, int job_base,
++    __local float *staging, uint row_warps, uint tile_width) {
++    uint x, y, thread;
++    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(x));
++    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(y));
++    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
++    const uint lane = thread & 31;
++    const uint row = x * row_warps + (thread >> 5);
++    const bool valid = row < (uint)rows;
++    __global const uint64_t *job = jobs + 2 * ((uint64_t)job_base + 8 * (uint64_t)y);
++    const uint64_t weight = (uint64_t)weights + row * row_stride;
++    float sum[8] = {0.0f};
++    for (uint first = 0; first < (uint)width; first += tile_width) {
++        for (uint at = thread; at < 8 * tile_width; at += row_warps * 32) {
++            const uint token = at / tile_width;
++            const uint channel = at % tile_width;
++            staging[at] = input[(job[2 * token] >> 2) + first + channel];
++        }
++        __asm__ volatile("bar.sync 0;" ::: "memory");
++        if (valid) {
++            for (uint group = 0; group < tile_width / 32; ++group) {
++                const uint64_t q8 = weight + ((first >> 5) + group) * 34;
++                const float value = i2m_load_half(q8) * (float)i2m_load_i8(q8 + 2 + lane);
++                #pragma unroll
++                for (uint token = 0; token < 8; ++token) {
++                    sum[token] = i2m_fma(value, staging[token * tile_width + group * 32 + lane], sum[token]);
++                }
++            }
++        }
++        __asm__ volatile("bar.sync 0;" ::: "memory");
++    }
++    if (valid) {
++        #pragma unroll
++        for (uint token = 0; token < 8; ++token) {
++            #pragma unroll
++            for (int step = 16; step > 0; step >>= 1) sum[token] += i2m_shuffle(sum[token], step);
++            if (lane == 0) output[(job[2 * token + 1] >> 2) + row] = sum[token];
++        }
++    }
++}
++
++#define I2_Q8_SHARED(ENTRY, WARPS, TILE) \
++__kernel void ENTRY(__global const uint8_t *weights, __global const float *input, \
++    __global float *output, __global const uint64_t *jobs, uint64_t row_stride, \
++    int32_t width, int32_t rows, int32_t count, int32_t job_base, int32_t words, int32_t tile) { \
++    __local float staging[8 * TILE]; \
++    q8_shared_tile(weights, input, output, jobs, row_stride, width, rows, job_base, staging, WARPS, TILE); \
++}
++
++I2_Q8_SHARED(goose_i2_matrix_q8_shared4, 4, 256)
++I2_Q8_SHARED(goose_i2_matrix_q8_shared8, 8, 256)
++I2_Q8_SHARED(goose_i2_matrix_q8_shared16, 16, 256)
++
++I2_Q8_SHARED(goose_i2_matrix_q8_shared8_wide, 8, 768)
++I2_Q8_SHARED(goose_i2_matrix_q8_shared16_wide, 16, 768)

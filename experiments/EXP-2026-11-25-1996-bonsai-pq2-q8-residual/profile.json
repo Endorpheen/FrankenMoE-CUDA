@@ -1,0 +1,200 @@
+{
+  "prefill": {
+    "gpu_span_ns": 5265524330,
+    "kernel_ns": 5259515942,
+    "kernels": {
+      "bonsai_pq2_mmq_q8_residual": {
+        "ns": 3790707654,
+        "calls": 1600
+      },
+      "bonsai_decay": {
+        "ns": 357586046,
+        "calls": 240
+      },
+      "bonsai_flash_async_tile": {
+        "ns": 199031285,
+        "calls": 1024
+      },
+      "goose_gdn_mma_v32": {
+        "ns": 179005266,
+        "calls": 192
+      },
+      "bonsai_fwht1024": {
+        "ns": 154573596,
+        "calls": 1286
+      },
+      "bonsai_swiglu": {
+        "ns": 116517752,
+        "calls": 320
+      },
+      "bonsai_norm": {
+        "ns": 113572757,
+        "calls": 1281
+      },
+      "bonsai_pack_q8_residual": {
+        "ns": 93106725,
+        "calls": 1024
+      },
+      "bonsai_conv_batch": {
+        "ns": 71674690,
+        "calls": 192
+      },
+      "bonsai_residual": {
+        "ns": 62438576,
+        "calls": 640
+      },
+      "bonsai_pq2_matvec_ordered": {
+        "ns": 42314685,
+        "calls": 401
+      },
+      "bonsai_flash_compact_ordered_merge": {
+        "ns": 18684038,
+        "calls": 912
+      },
+      "bonsai_split_q_gate": {
+        "ns": 12919341,
+        "calls": 80
+      },
+      "goose_q4_attention_tiles": {
+        "ns": 11307124,
+        "calls": 16
+      },
+      "bonsai_attention_gate": {
+        "ns": 10205352,
+        "calls": 80
+      },
+      "goose_rope_phases": {
+        "ns": 9675775,
+        "calls": 128
+      },
+      "goose_rope_apply": {
+        "ns": 8086915,
+        "calls": 128
+      },
+      "goose_set_q4_rows": {
+        "ns": 3665662,
+        "calls": 160
+      },
+      "bonsai_flash_stage_kv": {
+        "ns": 1936543,
+        "calls": 64
+      },
+      "bonsai_flash_compact_merge": {
+        "ns": 1428984,
+        "calls": 112
+      },
+      "goose_gdn_decode": {
+        "ns": 477034,
+        "calls": 48
+      },
+      "goose_q4_attention_merge": {
+        "ns": 298407,
+        "calls": 16
+      },
+      "bonsai_embed_batch": {
+        "ns": 135010,
+        "calls": 4
+      },
+      "bonsai_conv_step": {
+        "ns": 87076,
+        "calls": 48
+      },
+      "goose_rope_decode": {
+        "ns": 78305,
+        "calls": 32
+      },
+      "bonsai_pq2_row": {
+        "ns": 1344,
+        "calls": 1
+      }
+    },
+    "copies": [
+      {
+        "kind": 1,
+        "calls": 13,
+        "bytes": 62592,
+        "ns": 7840
+      }
+    ]
+  },
+  "decode": {
+    "gpu_span_ns": 976958997,
+    "kernel_ns": 952960271,
+    "kernels": {
+      "bonsai_pq2_matvec_ordered": {
+        "ns": 622519668,
+        "calls": 6015
+      },
+      "goose_q4_attention_tiles": {
+        "ns": 165711119,
+        "calls": 240
+      },
+      "bonsai_norm": {
+        "ns": 103423910,
+        "calls": 3855
+      },
+      "bonsai_decay": {
+        "ns": 31736484,
+        "calls": 720
+      },
+      "bonsai_fwht1024": {
+        "ns": 10806939,
+        "calls": 3870
+      },
+      "goose_gdn_decode": {
+        "ns": 7006921,
+        "calls": 720
+      },
+      "goose_q4_attention_merge": {
+        "ns": 4310536,
+        "calls": 240
+      },
+      "bonsai_residual": {
+        "ns": 1941682,
+        "calls": 1920
+      },
+      "goose_set_q4_rows": {
+        "ns": 1400429,
+        "calls": 480
+      },
+      "bonsai_conv_step": {
+        "ns": 1276895,
+        "calls": 720
+      },
+      "bonsai_swiglu": {
+        "ns": 1227169,
+        "calls": 960
+      },
+      "goose_rope_decode": {
+        "ns": 1137177,
+        "calls": 480
+      },
+      "bonsai_split_q_gate": {
+        "ns": 228711,
+        "calls": 240
+      },
+      "bonsai_attention_gate": {
+        "ns": 213495,
+        "calls": 240
+      },
+      "bonsai_pq2_row": {
+        "ns": 19136,
+        "calls": 15
+      }
+    },
+    "copies": [
+      {
+        "kind": 1,
+        "calls": 28,
+        "bytes": 2688,
+        "ns": 7904
+      },
+      {
+        "kind": 2,
+        "calls": 14,
+        "bytes": 13905920,
+        "ns": 545445
+      }
+    ]
+  }
+}

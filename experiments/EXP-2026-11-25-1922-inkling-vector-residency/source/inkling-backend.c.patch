@@ -1,0 +1,29 @@
+--- a/inkling-backend.c
++++ b/inkling-backend.c
+@@ -559 +559,2 @@
+-static int64_t place_inkling_weights(struct decoder *d,int64_t tensor_count,int64_t budget,bool adaptive) {
++static int64_t place_inkling_weights(struct decoder *d,int64_t tensor_count,int64_t budget,bool adaptive,int64_t available,
++                                      int64_t explicit_experts,int64_t *constant_bytes) {
+@@ -599,0 +601,13 @@
++    const int64_t variable_bytes = explicit_experts > 0 ? explicit_experts : budget - used;
++    const char *constant_setting = getenv("I2_RESIDENT_VECTOR_CONSTANTS");
++    if (adaptive && (!constant_setting || strcmp(constant_setting, "0") != 0)) {
++        const int64_t before = used;
++        for (int i = 0; i < tensor_count; ++i) {
++            const int64_t *r = d->tensor + 12 * i;
++            if (r[2] == GGML_TYPE_F32 && r[4] == model_width &&
++                r[9] == model_width * (int64_t)sizeof(float)) {
++                place_range(ranges, &words, &used, available - variable_bytes, d->data + r[10], r[9]);
++            }
++        }
++        *constant_bytes = used - before;
++    }
+@@ -602,0 +617 @@
++    printf("Resident vector constants: %" PRId64 " bytes\n", *constant_bytes);
+@@ -678,2 +693,4 @@
+-    const int64_t resident = place_inkling_weights(d, st[3], budget, true);
+-    const int64_t expert_budget = expert_limit > 0 ? expert_limit : budget - resident;
++    int64_t constant_bytes = 0;
++    const int64_t resident = place_inkling_weights(d, st[3], budget, true, available,
++                                                     expert_limit, &constant_bytes);
++    const int64_t expert_budget = expert_limit > 0 ? expert_limit : budget - (resident - constant_bytes);

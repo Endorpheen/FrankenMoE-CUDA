@@ -1,0 +1,96 @@
+--- a/inkling-backend.c
++++ b/inkling-backend.c
+@@ -172,6 +172,8 @@
+     bool bridge_started;
+ };
+ 
++struct i2_prefill_team;
++
+ struct decoder {
+     const uint8_t *data;
+     int64_t tensor[768*12], globals[5], core[24*10], aux[24*30], visits[48*4];
+@@ -181,6 +183,7 @@
+     size_t flash_floats;
+     float *flash_workspace, *kh, *vh, *ha, *hf;
+     bool retain_decode_graphs;
++    struct i2_prefill_team *logits_team;
+     struct inkling_decode_graph decode_attention[logical], decode_moe[logical], decode_joined[logical];
+ };
+ 
+@@ -651,16 +654,19 @@
+     }
+ }
+ 
+-static void read_token_logits(struct decoder *d, int absolute, float *cur, float *blocks, int count) {
++static bool parallel_decode_logits(struct decoder *d, float *logits);
++
++static void read_token_logits(struct decoder *d, int absolute, float *cur, float *blocks, int count, bool decode) {
+     float normalized[model_width];
+     mix(blocks,count,cur,coefficients(d,d->globals[4],model_width),1,normalized);
+     assert(i2_rms_gain(vec(normalized,model_width),coefficients(d,d->globals[3],model_width),
+                       1e-6f,vec(normalized,model_width))==model_width);
+     float *logits = d->logits;
+     project(d,d->globals[2],normalized,model_width,logits,out_width);
+-    assert(i2_text_logits(vec(logits,out_width),vocabulary,30.0f)==vocabulary);
++    const bool handled = decode && parallel_decode_logits(d, logits);
++    if (!handled) assert(i2_text_logits(vec(logits,out_width),vocabulary,30.0f)==vocabulary);
+     check_state("logits", absolute, logits, out_width);
+-    for (int i = 0; i < vocabulary; ++i) assert(isfinite(logits[i]));
++    if (!handled) for (int i = 0; i < vocabulary; ++i) assert(isfinite(logits[i]));
+ 
+ }
+ 
+@@ -693,7 +699,7 @@
+     }
+     fprintf(stderr,"Pure Goose visited 48 layers for token %d at position %d\n",input,absolute);
+     check_state("residual", absolute, cur, model_width);
+-    if (need_logits) read_token_logits(d, absolute, cur, blocks, count);
++    if (need_logits) read_token_logits(d, absolute, cur, blocks, count, true);
+ }
+ 
+ static void place_range(int64_t *ranges,int64_t *words,int64_t *used,int64_t budget,
+@@ -780,6 +786,33 @@
+ 
+ #include "prefill.h"
+ 
++extern int64_t fg_standalone_cpu_decode_threads(void);
++
++static bool parallel_decode_logits(struct decoder *d, float *logits) {
++    static int enabled = -1;
++    if (enabled < 0) {
++        const char *setting = getenv("I2_PARALLEL_LOGITS");
++        enabled = setting && strcmp(setting, "1") == 0;
++    }
++    if (!enabled) return false;
++    if (!d->logits_team) {
++        const int64_t configured = fg_standalone_cpu_decode_threads();
++        const int tasks = configured > 4 ? 4 : configured;
++        if (tasks < 2) return false;
++        struct i2_prefill_team *team = calloc(1, sizeof(*team));
++        if (!team) return false;
++        if (!prefill_team_open(team, tasks, false)) {
++            free(team);
++            return false;
++        }
++        d->logits_team = team;
++    }
++    const struct i2_prefill_work work = {.logits = logits};
++    prefill_team_run(d->logits_team, &work, vocabulary);
++    return true;
++}
++
++
+ static double now(void) {
+     struct timespec ts;
+     clock_gettime(CLOCK_MONOTONIC,&ts);
+@@ -788,6 +821,10 @@
+ 
+ 
+ static void free_decoder(struct decoder *d) {
++    if (d->logits_team) {
++        prefill_team_close(d->logits_team);
++        free(d->logits_team);
++    }
+     for (int i = 0; i < logical; ++i) {
+         drop_decode_graph(&d->decode_attention[i]);
+         drop_decode_graph(&d->decode_moe[i]);

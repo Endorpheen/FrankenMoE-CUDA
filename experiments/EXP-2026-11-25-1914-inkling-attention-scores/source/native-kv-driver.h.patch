@@ -1,0 +1,5 @@
+--- a/native-kv-driver.h
++++ b/native-kv-driver.h
+@@ -118,0 +119,2 @@
++        if (queries == 1 && batch->count == 1 &&
++                fg_standalone_option_enabled("I2_FLASH_PARALLEL_SCORES")) q4 |= 2;

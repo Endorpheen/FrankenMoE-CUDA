@@ -1,0 +1,4 @@
+options: --ctx-size N --batch-size N --ubatch-size N --cache-type-k q4_0 --cache-type-v q4_0 --expert-cache-mib N
+         --threads N --threads-batch N --cpu-mask HEX --cpu-mask-batch HEX --cpu-strict 0|1 --cpu-strict-batch 0|1
+usage: build/checkpoint-inkling-exp1969-before-bonsai/frankenmoe-infer [OPTIONS] MODEL.gguf PROMPT [MAX_TOKENS]
+       build/checkpoint-inkling-exp1969-before-bonsai/frankenmoe-infer [OPTIONS] MODEL.gguf --serve PORT [MAX_CONNECTIONS]

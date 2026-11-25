@@ -1,0 +1,5 @@
+--- a/native-kv.h
++++ b/native-kv.h
+@@ -26,0 +27,2 @@
++    const float *postconv_weights;
++    float *postconv_host_history;

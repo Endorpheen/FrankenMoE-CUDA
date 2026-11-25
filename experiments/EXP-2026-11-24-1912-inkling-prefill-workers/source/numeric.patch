@@ -1,0 +1,25 @@
+--- a/numeric.goose
++++ b/numeric.goose
+@@ -576,0 +577,22 @@
++
++extern "fg_i2_prefill_team_worker" fn i2_team_participant(team: u64, task: i64);
++
++thread_fn i2_prefill_team_worker(team: u64, task: i64) {
++    i2_team_participant(team, task);
++}
++
++export fn i2_prefill_team_start(team: u64, tasks: i64, handles: i64[:]) -> i64 {
++    if team == 0 || tasks <= 1 || tasks > 16 || handles.len != tasks - 1 { return -1; }
++    for task in 1 .. tasks {
++        handles[task - 1] = thread_spawn_contained(i2_prefill_team_worker, team, task);
++    }
++    return tasks - 1;
++}
++
++export fn i2_prefill_team_join(handles: const i64[:]) -> i64 {
++    var ok = true;
++    for id in handles {
++        if !thread_wait(id) { ok = false; }
++    }
++    return if ok { 0 } else { -1 };
++}

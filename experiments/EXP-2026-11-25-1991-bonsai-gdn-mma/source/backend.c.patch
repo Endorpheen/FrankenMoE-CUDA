@@ -1,0 +1,59 @@
+--- backend.c
++++ backend.c
+@@ -19,7 +19,7 @@
+ enum kernel {
+     NORM, ROTATE, MATRIX, ADD, DECAY, CONV, GDN, SPLIT, ROPE, Q4, TILES, GATE,
+     EMBED, SWIGLU, MERGE, GDN_BATCH, ROPE_PHASES, ROPE_APPLY,
+-    EMBED_BATCH, CONV_BATCH, PACK_HALF, MMQ, FLASH_TILE_F32, FLASH_MERGE_F32, FLASH_TILE_STAGED, FLASH_STAGE_KV, FLASH_MERGE_ORDERED, FLASH_TILE_COMPACT, FLASH_MERGE_COMPACT, FLASH_MERGE_COMPACT_ORDERED, FLASH_TILE_ASYNC, MMQ_ASYNC, KERNEL_COUNT
++    EMBED_BATCH, CONV_BATCH, PACK_HALF, MMQ, FLASH_TILE_F32, FLASH_MERGE_F32, FLASH_TILE_STAGED, FLASH_STAGE_KV, FLASH_MERGE_ORDERED, FLASH_TILE_COMPACT, FLASH_MERGE_COMPACT, FLASH_MERGE_COMPACT_ORDERED, FLASH_TILE_ASYNC, MMQ_ASYNC, GDN_V32, KERNEL_COUNT
+ };
+ 
+ typedef struct {
+@@ -31,7 +31,7 @@
+     int64_t bound[LAYERS * 15], states[LAYERS * 2], globals[3], b[24];
+     CUdeviceptr token_ids, phases, packed, packed_source;
+     size_t partial_capacity;
+-    int use_flash_f32, stage_kv, ordered_merge, compact_heads, async_fragments, async_mmq;
++    int use_flash_f32, stage_kv, ordered_merge, compact_heads, async_fragments, async_mmq, gdn_prefill_v32;
+     CUdeviceptr stage_k, stage_v;
+     unsigned stage_capacity_chunks;
+     unsigned context, position, ubatch, count, wave;
+@@ -79,6 +79,10 @@
+         config[48] = 6144 * count;
+     }
+     memcpy(packet + 8, config, sizeof(config));
++    if (m->gdn_prefill_v32 && m->count >= 64) {
++        return check(cuLaunchKernel(m->kernel[GDN_V32], 192, 1, 1, 256, 1, 1, 38016, NULL,
++                    (void *[]){ packet }, NULL), "Bonsai GDN V32");
++    }
+     return launch(m, m->count > 1 ? GDN_BATCH : GDN, 48, 1, 8, 128, (void *[]){ packet });
+ }
+ 
+@@ -377,6 +381,9 @@
+     const char *mmq = getenv("BONSAI_PQ2_MMQ_ASYNC");
+     m->async_mmq = !mmq || strcmp(mmq,"1") == 0;
+     if (m->async_mmq) fputs("PQ2 MMQ: async activation and warp fragment loads\n",stderr);
++    const char *gdn_mode = getenv("BONSAI_GDN_V32");
++    m->gdn_prefill_v32 = !gdn_mode || strcmp(gdn_mode,"1") == 0;
++    if (m->gdn_prefill_v32) fputs("Prefill GDN: frozen Goose MMA V32\n",stderr);
+     if (m->compact_heads) fputs("Flash query layout: compact 6:1\n", stderr);
+     if (m->ordered_merge) fputs("Flash merge: ordered parallel coefficients\n", stderr);
+     fprintf(stderr, "Prefill attention: %s\n", !m->use_flash_f32 ? "tiled Q4" :
+@@ -402,7 +409,7 @@
+         "goose_rope_phases", "goose_rope_apply", "bonsai_embed_batch", "bonsai_conv_batch",
+         "bonsai_pack_half", "bonsai_pq2_mmq", "bonsai_flash_f32_tile", "bonsai_flash_f32_merge",
+         "bonsai_flash_staged_tile", "bonsai_flash_stage_kv", "bonsai_flash_ordered_merge",
+-        "bonsai_flash_compact_tile", "bonsai_flash_compact_merge", "bonsai_flash_compact_ordered_merge", "bonsai_flash_async_tile", "bonsai_pq2_mmq_async",
++        "bonsai_flash_compact_tile", "bonsai_flash_compact_merge", "bonsai_flash_compact_ordered_merge", "bonsai_flash_async_tile", "bonsai_pq2_mmq_async", "goose_gdn_mma_v32",
+     };
+     if (check(cuInit(0), "driver") || check(cuDeviceGet(&device, 0), "device") ||
+         check(cuCtxCreate(&m->cuda, 0, device), "context") ||
+@@ -412,6 +419,8 @@
+         CUmodule module = strncmp(names[i], "goose_", 6) == 0 ? m->frozen : m->module;
+         if (check(cuModuleGetFunction(&m->kernel[i], module, names[i]), names[i])) goto error;
+     }
++    if (m->gdn_prefill_v32 && check(cuFuncSetAttribute(m->kernel[GDN_V32],
++        CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES,38016),"GDN V32 shared memory")) goto error;
+     int fd = open(gguf, O_RDONLY);
+     if (fd < 0) { perror(gguf); goto error; }
+     struct stat info;

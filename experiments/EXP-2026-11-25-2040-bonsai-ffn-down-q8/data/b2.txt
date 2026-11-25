@@ -1,0 +1,8 @@
+Q8 FFN down: last 8 layers
+Device workspace: 2036174848 bytes (Q4_0 K/V, GDN, activations)
+Device free: 763625472 / 12447973376 bytes
+choice_device_bytes=39824
+draft_device_bytes=42508504
+mtp_blocks=185 proposed=370 accepted=326 commit_1=14 commit_2=16 commit_3=155 draft_ms=897.199 target_ms=6989.473 catchup_ms=100.085
+prompt_n=32768 prefill_ms=53653.530 decode_n=512 decode_ms=7988.254 ubatch=1024
+max_rss_kib=7420124 major_faults=0 swaps=0

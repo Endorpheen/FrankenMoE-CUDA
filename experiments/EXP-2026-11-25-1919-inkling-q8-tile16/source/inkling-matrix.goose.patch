@@ -1,0 +1,85 @@
+--- a/inkling-matrix.goose
++++ b/inkling-matrix.goose
+@@ -128,0 +129,82 @@
++
++export fn i2_matrix_sixteen(weights: u64, input0: u64, input1: u64, input2: u64,
++    input3: u64, input4: u64, input5: u64, input6: u64,
++    input7: u64, input8: u64, input9: u64, input10: u64,
++    input11: u64, input12: u64, input13: u64, input14: u64,
++    input15: u64, output0: u64, output1: u64, output2: u64,
++    output3: u64, output4: u64, output5: u64, output6: u64,
++    output7: u64, output8: u64, output9: u64, output10: u64,
++    output11: u64, output12: u64, output13: u64, output14: u64,
++    output15: u64,
++    groups: i64, lane: u64) {
++    var sum0: f32 = 0.0;
++    var sum1: f32 = 0.0;
++    var sum2: f32 = 0.0;
++    var sum3: f32 = 0.0;
++    var sum4: f32 = 0.0;
++    var sum5: f32 = 0.0;
++    var sum6: f32 = 0.0;
++    var sum7: f32 = 0.0;
++    var sum8: f32 = 0.0;
++    var sum9: f32 = 0.0;
++    var sum10: f32 = 0.0;
++    var sum11: f32 = 0.0;
++    var sum12: f32 = 0.0;
++    var sum13: f32 = 0.0;
++    var sum14: f32 = 0.0;
++    var sum15: f32 = 0.0;
++    for group in groups {
++        let at = 4 * (32 * (group as u64) + lane);
++        let value = quant_value(weights, group as u64, lane, 8);
++        sum0 = multiply_add(value, load(input0 + at), sum0);
++        sum1 = multiply_add(value, load(input1 + at), sum1);
++        sum2 = multiply_add(value, load(input2 + at), sum2);
++        sum3 = multiply_add(value, load(input3 + at), sum3);
++        sum4 = multiply_add(value, load(input4 + at), sum4);
++        sum5 = multiply_add(value, load(input5 + at), sum5);
++        sum6 = multiply_add(value, load(input6 + at), sum6);
++        sum7 = multiply_add(value, load(input7 + at), sum7);
++        sum8 = multiply_add(value, load(input8 + at), sum8);
++        sum9 = multiply_add(value, load(input9 + at), sum9);
++        sum10 = multiply_add(value, load(input10 + at), sum10);
++        sum11 = multiply_add(value, load(input11 + at), sum11);
++        sum12 = multiply_add(value, load(input12 + at), sum12);
++        sum13 = multiply_add(value, load(input13 + at), sum13);
++        sum14 = multiply_add(value, load(input14 + at), sum14);
++        sum15 = multiply_add(value, load(input15 + at), sum15);
++    }
++    sum0 = reduce_lane(sum0);
++    sum1 = reduce_lane(sum1);
++    sum2 = reduce_lane(sum2);
++    sum3 = reduce_lane(sum3);
++    sum4 = reduce_lane(sum4);
++    sum5 = reduce_lane(sum5);
++    sum6 = reduce_lane(sum6);
++    sum7 = reduce_lane(sum7);
++    sum8 = reduce_lane(sum8);
++    sum9 = reduce_lane(sum9);
++    sum10 = reduce_lane(sum10);
++    sum11 = reduce_lane(sum11);
++    sum12 = reduce_lane(sum12);
++    sum13 = reduce_lane(sum13);
++    sum14 = reduce_lane(sum14);
++    sum15 = reduce_lane(sum15);
++    if lane == 0 {
++        store(output0, sum0);
++        store(output1, sum1);
++        store(output2, sum2);
++        store(output3, sum3);
++        store(output4, sum4);
++        store(output5, sum5);
++        store(output6, sum6);
++        store(output7, sum7);
++        store(output8, sum8);
++        store(output9, sum9);
++        store(output10, sum10);
++        store(output11, sum11);
++        store(output12, sum12);
++        store(output13, sum13);
++        store(output14, sum14);
++        store(output15, sum15);
++    }
++}

@@ -1,0 +1,553 @@
+--- a/cuda-driver-reference.c
++++ b/cuda-driver-reference.c
+@@ -24,6 +24,7 @@
+ #include <stdlib.h>
+ #include <string.h>
+ #include <unistd.h>
++#include <time.h>
+ 
+ extern int64_t dw_cuda_dense_offset(sl_i64 ranges, uint64_t address, int64_t bytes);
+ extern int64_t qr_state_offset(sl_i64 ranges, uint64_t address, int64_t bytes, int64_t kind);
+@@ -281,6 +282,7 @@
+     bool defer_matrix_waits;
+     bool async_packets;
+     unsigned char * packet_host;
++    void *inkling_prefill_readback;
+     struct device_buffer dense;
+     sl_i64 dense_ranges;
+     struct device_buffer state;
+@@ -1104,6 +1106,7 @@
+                 release_expert_stream();
+             }
+             if (cuda.expert_pins.len > 0) ec_manage_pins(cuda.expert_pins, 0);
++            if (cuda.inkling_prefill_readback) cuda.host_free(cuda.inkling_prefill_readback);
+             if (cuda.packet_host) {
+                 cuda.sync();
+                 cuda.host_free(cuda.packet_host);
+@@ -2463,9 +2466,11 @@
+ 
+ enum { EXPERT_LAYOUT_GROUP = 9, EXPERT_LAYOUT_LAYER = 4, TEMP_PREFILL_MIN_EXPERTS = 64 };
+ 
++static _Thread_local bool cuda_inkling_quants;
++
+ static bool expert_prefill_layout(struct expert_cache * cache, sl_i64 groups, size_t bank_bytes) {
+     cache->bank_bytes = bank_bytes;
+-    if (!fg_standalone_option_enabled("GOOSE_CUDA_PREFILL_TEMP_WEIGHTS")) return true;
++    if (cuda_inkling_quants || !fg_standalone_option_enabled("GOOSE_CUDA_PREFILL_TEMP_WEIGHTS")) return true;
+     cache->prefill_wait_decode = fg_standalone_option_enabled("GOOSE_CUDA_PREFILL_TEMP_WARM_ONLY");
+     cache->prefill_double = fg_standalone_option_enabled("GOOSE_CUDA_PREFILL_TEMP_DOUBLE");
+     cache->prefill_compact = cache->prefill_double && fg_standalone_option_enabled("GOOSE_CUDA_PREFILL_TEMP_COMPACT");
+@@ -2710,9 +2715,19 @@
+     ring->storage = storage;
+ }
+ 
++static _Thread_local bool inkling_decode_overlap;
++static _Thread_local size_t inkling_overlap_current_uploads;
++static _Thread_local uint64_t inkling_overlap_groups, inkling_overlap_resident, inkling_overlap_missing;
++
+ uint8_t fg_cuda_expert_stage_enabled(int64_t active_experts, uint8_t stage_all) {
+     const size_t planes = stage_all ? 3 : 2;
+-    if (active_experts <= 0 || (!stage_all && active_experts <= 8) ||
++    static int small_enabled = -1;
++    if (small_enabled < 0 && cuda_inkling_quants && active_experts <= 8) {
++        small_enabled = fg_standalone_option_enabled("I2_STAGE_SMALL_EXPERTS");
++    }
++    const bool small_inkling = cuda_inkling_quants && small_enabled == 1 &&
++        cuda.expert_prefill_staging && cuda.expert_host.enabled;
++    if (active_experts <= 0 || (!stage_all && active_experts <= 8 && !small_inkling) ||
+         !activations.active || !activations.defer_waits ||
+         !cuda.defer_matrix_waits || !cuda.expert_stream ||
+         (uint64_t) active_experts > SIZE_MAX / planes / sizeof(*cuda.expert_upload_jobs)) return false;
+@@ -2750,7 +2765,8 @@
+     const void * host = (const void *) (uintptr_t) source;
+     int status;
+     const bool pinned = (staged || cuda.expert_current_staging) && expert_source_pinned(source, (uint64_t) bytes);
+-    if (staged && (pinned || (cuda.expert_host.enabled && bytes <= EXPERT_HOST_SLOT_BYTES))) {
++    const bool current = !staged && inkling_decode_overlap && cuda.expert_current_staging;
++    if ((staged || current) && (pinned || (cuda.expert_host.enabled && bytes <= EXPERT_HOST_SLOT_BYTES))) {
+         if (cuda.expert_upload_count == cuda.expert_upload_capacity) return -1;
+         status = 0;
+         if (cuda.expert_upload_count == 0) {
+@@ -2766,6 +2782,7 @@
+         if (status == 0) {
+             cuda.expert_upload_jobs[cuda.expert_upload_count++] =
+                 (struct expert_upload_job) {address, host, (size_t) bytes, !pinned};
++            if (current) ++inkling_overlap_current_uploads;
+         }
+     } else if (!staged && cuda.expert_current_staging && pinned) {
+         // Immutable registered mappings need no pageable staging slot.
+@@ -2805,6 +2822,7 @@
+ static void reset_expert_stage(void) {
+     struct expert_cache * cache = &cuda.experts;
+     cuda.expert_upload_count = 0;
++    inkling_overlap_current_uploads = 0;
+     ec_reset(cache->groups, cache->layers, (uint64_t) (uintptr_t) cache->state, cache->work);
+ }
+ 
+@@ -2866,6 +2884,50 @@
+     return error;
+ }
+ 
++static int submit_expert_uploads(size_t limit) {
++    if (limit == 0) return 0;
++    if (limit > cuda.expert_upload_count) return -1;
++    // Existing readers release cache slots before this stream writes them.
++    // Consumers wait on the recorded completion event.
++    int status = cuda.stream_wait_event(cuda.expert_stream, cuda.expert_slots_ready, 0);
++    const bool parallel = expert_copy_worker.running && limit >= 32;
++    for (size_t i = 0; status == 0 && i < limit;) {
++        const struct expert_upload_job * job = &cuda.expert_upload_jobs[i];
++        activations.pending = true;
++        size_t count = 0, bytes = 0;
++        if (parallel && job->pageable) {
++            while (i + count < limit && job[count].pageable &&
++                job[count].bytes <= EXPERT_HOST_SLOT_BYTES - bytes) bytes += job[count++].bytes;
++        }
++        if (count >= 4) {
++            status = submit_parallel_experts(job, count, bytes);
++            i += count;
++        } else {
++            status = job->pageable ? submit_pageable_expert(job, cuda.expert_stream) :
++                cuda.upload_async(job->destination, job->source, job->bytes, cuda.expert_stream);
++            ++i;
++        }
++    }
++    if (status == 0) status = seal_expert_host_slot(cuda.expert_stream);
++    if (status == 0) status = cuda.event_record(cuda.expert_uploads_ready, cuda.expert_stream);
++    if (status == 0) {
++        cuda.expert_upload_count -= limit;
++        if (cuda.expert_upload_count) {
++            memmove(cuda.expert_upload_jobs, cuda.expert_upload_jobs + limit,
++                    cuda.expert_upload_count * sizeof(*cuda.expert_upload_jobs));
++        }
++        inkling_overlap_current_uploads = limit >= inkling_overlap_current_uploads
++            ? 0 : inkling_overlap_current_uploads - limit;
++        cuda.expert_upload_queued = true;
++        return 0;
++    }
++    if (cuda.sync() != 0) cuda.expert_host.enabled = false;
++    cuda.expert_host.used = 0;
++    reset_expert_stage();
++    fprintf(stderr, "Goose CUDA: staged expert upload failed (%d)\n", status);
++    return -1;
++}
++
+ static bool valid_pinned_batch(const struct expert_upload_job *jobs, size_t n) {
+     for (size_t i = 0; i < n; ++i) {
+         if (jobs[i].pageable || !jobs[i].bytes) return false;
+@@ -2994,16 +3056,36 @@
+     return 0;
+ }
+ 
++static void i2_warm_visit(uint64_t tensor, sl_i64 active);
++static const int64_t *i2_warm_bucket_ranks(void);
++extern int64_t i2_ec_prepare_buckets(sl_i64 groups, sl_i64 layers, uint64_t words32, sl_i64 words64,
++    uint64_t tensor, int64_t bytes, sl_i64 heads, sl_i64 result, uint8_t stage_all, sl_i64 ranks, sl_i64 links);
++
++
+ static int64_t prepare_expert_offsets(uint64_t tensor, int64_t bytes, sl_i64 active, sl_i64 offsets,
+                                       bool stage_all, bool compact, bool next_plane) {
+     struct expert_cache * cache = &cuda.experts;
++    if (cuda_inkling_quants) i2_warm_visit(tensor, active);
+     const uint64_t state = (uint64_t) (uintptr_t) cache->state;
+-    const int64_t policy = compact ? (next_plane ? 2 : 1) : 0;
+-    const int64_t status = cache->one_touch ?
+-        exp1744_prepare(cache->groups, cache->layers, state, cache->work, tensor, bytes,
+-            active, offsets, stage_all, compact, policy) :
+-        compact ? ec_prepare_compact(cache->groups, cache->layers, state, cache->work, tensor, bytes, active, offsets, stage_all) :
+-        ec_prepare(cache->groups, cache->layers, state, cache->work, tensor, bytes, active, offsets, stage_all);
++    const int64_t *ranks = cuda_inkling_quants ? i2_warm_bucket_ranks() : NULL;
++    int64_t status;
++    if (cuda_inkling_quants) {
++        if (ranks) {
++            int64_t links[3072];
++            status = i2_ec_prepare_buckets(cache->groups, cache->layers, state, cache->work,
++                tensor, bytes, active, offsets, stage_all, (sl_i64){(void *)ranks, 3072}, (sl_i64){links, 3072});
++        } else {
++            status = ec_prepare(cache->groups, cache->layers, state, cache->work,
++                tensor, bytes, active, offsets, stage_all);
++        }
++    } else {
++        const int64_t policy = compact ? (next_plane ? 2 : 1) : 0;
++        status = cache->one_touch ?
++            exp1744_prepare(cache->groups, cache->layers, state, cache->work, tensor, bytes,
++                active, offsets, stage_all, compact, policy) :
++            compact ? ec_prepare_compact(cache->groups, cache->layers, state, cache->work, tensor, bytes, active, offsets, stage_all) :
++            ec_prepare(cache->groups, cache->layers, state, cache->work, tensor, bytes, active, offsets, stage_all);
++    }
+     if (cuda.expert_current_staging) {
+         cuda.expert_current_staging = false;
+         if (seal_expert_host_slot(NULL) != 0) {
+@@ -3647,15 +3729,39 @@
+     return 0;
+ }
+ 
++void *fg_cuda_inkling_prefill_readback(size_t bytes) {
++    const size_t capacity = 36 * (size_t)MIB_BYTES;
++    if (!cuda_inkling_quants || bytes == 0 || bytes > capacity || start_context() != 1) return NULL;
++    if (!cuda.inkling_prefill_readback && cuda.host_alloc && cuda.host_free) {
++        void *buffer = NULL;
++        if (cuda.host_alloc(&buffer, capacity, 0) == 0) cuda.inkling_prefill_readback = buffer;
++    }
++    void *buffer = cuda.inkling_prefill_readback;
++    return finish_context() == 0 ? buffer : NULL;
++}
++
++void fg_cuda_enable_inkling_quants(bool enabled) {
++    cuda_inkling_quants = enabled;
++}
++
++uint8_t fg_cuda_inkling_quants_enabled(void) {
++    return cuda_inkling_quants;
++}
++
++#include "grouped-moe-driver.h"
++#include "inkling-matrix-driver.h"
++
+ static int launch_matrix(DevicePtr weight, int64_t row_stride, int64_t extent,
+                          int64_t kind, int64_t rows, sl_i64 jobs, int job_words, int64_t shared_rows, int64_t input_stride) {
++    const bool k_quant = kind == 12 || kind == 14;
++    const bool inkling = cuda_inkling_quants && (kind == 8 || kind == 20 || kind == 23);
+     if (!weight || rows <= 0 || rows > INT_MAX || extent <= 0 || extent > INT_MAX ||
+-        (kind != 0 && kind != 12 && kind != 14) ||
++        (kind != 0 && !k_quant && !inkling) || (inkling && extent % (kind == 23 ? 256 : 32) != 0) ||
+         jobs.len <= 0 || jobs.len % job_words != 0 || jobs.len / job_words > INT_MAX ||
+         (uint64_t) jobs.len > SIZE_MAX / sizeof(*jobs.data)) return -1;
+     if (matrix_glu_active && (kind == 0 || extent != 2 || job_words != 3 ||
+         shared_rows != 0 || jobs.len / job_words < 16)) return -1;
+-    if (kind != 0 && extent <= INT_MAX / 256 && job_words == 2 && jobs.len == 2 &&
++    if (!cuda_inkling_quants && kind != 0 && extent <= INT_MAX / 256 && job_words == 2 && jobs.len == 2 &&
+         cuda.mmvq_dense_pack && cuda.mmvq_dense_row && jobs.data[0] >= 0 && jobs.data[1] >= 0 &&
+         (uint64_t) jobs.data[0] <= UINT64_MAX - matrix_input &&
+         (uint64_t) jobs.data[1] <= UINT64_MAX - matrix_output) {
+@@ -3667,15 +3773,33 @@
+         return launch_mmvq(weight, (uint64_t) row_stride, (int) extent, (int) kind,
+             (int) rows, 1, job_words, jobs.data);
+     }
++    if (inkling && kind == 8 && job_words == 2 && jobs.len == 2 &&
++        jobs.data[0] == 0 && jobs.data[1] == 0 && i2_matrix_enabled()) {
++        const char *setting = getenv("I2_RESIDENT_Q8_JOB");
++        if (!setting || strcmp(setting, "0") != 0) {
++            static struct device_buffer zero_job;
++            int error = 0;
++            if (!zero_job.address) {
++                error = reserve(&zero_job, 2 * sizeof(int64_t));
++                if (!error) error = cuda.zero(zero_job.address, 0, 2 * sizeof(int64_t));
++                if (error && zero_job.address) release_buffer(&zero_job);
++            }
++            if (error) return -1;
++            return i2_launch_matrix(weight, (uint64_t)row_stride, (int)extent,
++                (int)kind, (int)rows, 1, 2, zero_job.address);
++        }
++    }
+     const size_t job_bytes = (size_t) jobs.len * sizeof(*jobs.data);
+     int error = reserve(&cuda.jobs, job_bytes);
+-    if (error == 0) {
++    if (error == 0 && cuda_inkling_quants) {
++        error = upload_packet(cuda.jobs.address, jobs.data, job_bytes);
++    } else if (error == 0) {
+         // Only the large packs pay the synchronous copy; a small pack keeps the
+         // pinned packet ring it already used, so decode is untouched.
+         const int queued = job_bytes > 4096 ? upload_jobs_async(cuda.jobs.address, jobs.data, job_bytes) : -2;
+         error = queued == -2 ? upload_packet(cuda.jobs.address, jobs.data, job_bytes) : queued;
+     }
+-    if (error == 0 && cuda.mmq_matrix && kind != 0 && jobs.len / job_words >= 16) {
++    if (error == 0 && cuda.mmq_matrix && k_quant && jobs.len / job_words >= 16) {
+         const int result = launch_mmq(weight, (uint64_t) row_stride, (int) extent, (int) kind,
+                                       (int) rows, jobs, job_words, shared_rows, input_stride);
+         if (result == 0) cuda_matrix_kind = (int) kind;
+@@ -3683,7 +3807,22 @@
+     }
+ 
+     const int count = (int) (jobs.len / job_words);
+-    if (error == 0 && cuda.mmvq && kind != 0 && extent <= INT_MAX / 256 &&
++    if (error == 0 && inkling && (kind == 20 || kind == 23) && job_words == 3 &&
++            count >= 16 && count <= 32768 && extent <= 8192 && rows >= 32 &&
++            row_stride % 2 == 0 && row_stride >= (kind == 23 ? extent / 256 * 136 : extent / 32 * 18) &&
++            fg_standalone_option_enabled("I2_GROUPED_MOE_MMQ")) {
++        const int result = launch_grouped_iq4_mmq(weight, (uint64_t)row_stride, (int)extent, (int)rows, (int)kind, jobs);
++        if (result == 0) {
++            ++cuda_matrix_launches;
++            cuda_matrix_kind = (int)kind;
++        }
++        return result;
++    }
++    if (error == 0 && inkling && i2_matrix_enabled()) {
++        return i2_launch_matrix(weight, (uint64_t) row_stride, (int) extent, (int) kind,
++                                (int) rows, count, job_words, cuda.jobs.address);
++    }
++    if (error == 0 && cuda.mmvq && k_quant && extent <= INT_MAX / 256 &&
+         (count == 1 || (job_words == 3 && count == 8) ||
+          (cuda.mmvq_dense_tail && job_words == 2 && count <= 8))) {
+         return launch_mmvq(weight, (uint64_t) row_stride, (int) extent, (int) kind, (int) rows, count, job_words, NULL);
+@@ -3727,7 +3866,17 @@
+     }
+     if (start != 0) error = finish_matrix_launches(error);
+     if (error != 0) fprintf(stderr, "Goose CUDA: matrix kernel failed (%d)\n", error);
+-    else cuda_matrix_kind = type;
++    else {
++        cuda_matrix_kind = type;
++        if (inkling) {
++            static _Thread_local unsigned reported;
++            const unsigned bit = 1u << type;
++            if (!(reported & bit)) {
++                reported |= bit;
++                fprintf(stderr,"Goose CUDA: Inkling quantized matrix kind %d active\n",type);
++            }
++        }
++    }
+     return error == 0 ? 0 : -1;
+ }
+ 
+@@ -3891,6 +4040,209 @@
+     return launch_matrix(weight, row_stride, extent, kind, rows, jobs, 2, 0, 0);
+ }
+ 
++extern void i2_prior_init(int argc, char **argv);
++extern int64_t i2_slru_prefill_prior(uint64_t keys, uint64_t prev, uint64_t next, uint64_t prot,
++    uint64_t head, uint64_t tail, sl_i64 frequency, sl_i64 visits, sl_i64 entries,
++    sl_i64 scratch, sl_i64 protected_count, int64_t experts);
++
++enum { i2_prior_layers = 24, i2_prior_experts = 128, i2_prior_cap = i2_prior_layers * i2_prior_experts };
++
++static _Thread_local struct {
++    bool track;
++    int64_t frequency[i2_prior_cap], visits[i2_prior_layers];
++} i2_prior;
++
++static void init_inkling_prior(void) {
++    i2_prior_init(0, NULL);
++}
++
++static void i2_apply_prior(int64_t *frequency, int64_t *visits) {
++    struct expert_cache * cache = &cuda.experts;
++    if (cache->groups.len == 9 && cache->layers.len == 4 * i2_prior_layers && cache->state) {
++        const int64_t *g = cache->groups.data;
++        const int64_t slots = g[5];
++        const int64_t scalar = g[8] + g[3];
++        if (g[3] == i2_prior_experts && slots >= 2 && slots <= i2_prior_cap && scalar + 1 < cache->work.len) {
++            static pthread_once_t prior_init_once = PTHREAD_ONCE_INIT;
++            pthread_once(&prior_init_once, init_inkling_prior);
++            int64_t entries[i2_prior_cap], scratch[i2_prior_cap];
++            const uint64_t keys = (uint64_t)(uintptr_t)(cache->state + g[7]);
++            const uint64_t stride = 4 * slots;
++            const uint64_t head = keys + 4 * stride;
++            (void)i2_slru_prefill_prior(keys, keys + stride, keys + 2 * stride, keys + 3 * stride, head, head + 8,
++                (sl_i64){frequency, i2_prior_cap}, (sl_i64){visits, i2_prior_layers},
++                (sl_i64){entries, slots}, (sl_i64){scratch, slots},
++                (sl_i64){cache->work.data + scalar + 1, 1}, i2_prior_experts);
++        }
++    }
++}
++
++enum { i2_warm_visits = 48 };
++static _Thread_local struct {
++    bool track, reuse;
++    int count, previous_count, step;
++    uint8_t sequence[i2_warm_visits], last_sequence[i2_warm_visits];
++    uint64_t recorded[i2_prior_cap], last[i2_prior_cap];
++    int64_t rank[i2_prior_cap];
++    uint64_t policy_ns;
++    bool buckets, measure;
++
++} i2_warm;
++
++extern void i2_bucket_init(int argc, char **argv);
++
++static void init_inkling_buckets(void) {
++    i2_bucket_init(0, NULL);
++}
++
++int64_t fg_i2_warm_tick(void) {
++    struct timespec ts;
++    if (!i2_warm.measure || clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts) != 0) return 0;
++    return (int64_t)ts.tv_sec * 1000000000 + ts.tv_nsec;
++}
++
++void fg_i2_warm_spent(int64_t start) {
++    if (start > 0) i2_warm.policy_ns += fg_i2_warm_tick() - start;
++}
++
++static const int64_t *i2_warm_bucket_ranks(void) {
++    return i2_warm.track && i2_warm.reuse && i2_warm.buckets ? i2_warm.rank : NULL;
++}
++
++static void i2_warm_phase(bool prefill, int position, int count) {
++    static int enabled = -1;
++    if (enabled < 0) enabled = fg_standalone_option_enabled("I2_WARM_ROUTE_REUSE");
++    if (!enabled) return;
++
++    if (prefill && position == 0) {
++        i2_warm.count = count;
++        i2_warm.step = 0;
++        i2_warm.track = true;
++        i2_warm.reuse = i2_warm.previous_count == count;
++        i2_warm.buckets = fg_standalone_option_enabled("I2_WARM_ROUTE_BUCKETS");
++        i2_warm.measure = getenv("I2_WARM_ROUTE_LOG") != NULL;
++        i2_warm.policy_ns = 0;
++        if (i2_warm.reuse && i2_warm.buckets) {
++            static pthread_once_t bucket_init = PTHREAD_ONCE_INIT;
++            pthread_once(&bucket_init, init_inkling_buckets);
++            const int64_t start = fg_i2_warm_tick();
++            for (int i = 0; i < i2_prior_cap; ++i) {
++                const uint64_t remaining = i2_warm.last[i];
++                i2_warm.rank[i] = remaining ? i2_warm_visits - __builtin_ctzll(remaining) : 0;
++            }
++            fg_i2_warm_spent(start);
++        }
++        memset(i2_warm.recorded, 0, sizeof(i2_warm.recorded));
++        return;
++    }
++    if (!i2_warm.track) return;
++    if (!prefill && i2_warm.measure)
++        fprintf(stderr, "I2 warm policy mode=%s cpu_ns=%" PRIu64 "\n",
++                i2_warm.buckets ? "bucket" : "sort", i2_warm.policy_ns);
++    if (!prefill && i2_warm.step == i2_warm_visits) {
++        memcpy(i2_warm.last, i2_warm.recorded, sizeof(i2_warm.last));
++        memcpy(i2_warm.last_sequence, i2_warm.sequence, sizeof(i2_warm.sequence));
++        i2_warm.previous_count = i2_warm.count;
++    } else {
++        i2_warm.previous_count = 0;
++    }
++    i2_warm.track = false;
++    i2_warm.reuse = false;
++}
++
++// Called under cuda_lock. One observation per gate/up projection.
++static void i2_warm_visit(uint64_t tensor, sl_i64 active) {
++    struct expert_cache *cache = &cuda.experts;
++    if (!i2_warm.track || active.len != i2_prior_experts ||
++        cache->groups.len != 9 || cache->layers.len != 4 * i2_prior_layers) return;
++    for (int layer = 0; layer < i2_prior_layers; ++layer) {
++        if ((uint64_t)cache->layers.data[4 * layer + 1] != tensor) continue;
++        if (i2_warm.step >= i2_warm_visits) {
++            i2_warm.track = false;
++            i2_warm.reuse = false;
++            i2_warm.previous_count = 0;
++            return;
++        }
++        const int step = i2_warm.step++;
++        i2_warm.sequence[step] = layer;
++        if (i2_warm.reuse && i2_warm.last_sequence[step] != layer) i2_warm.reuse = false;
++        if (i2_warm.reuse && i2_warm.buckets) {
++            const int64_t begin = fg_i2_warm_tick();
++            const int base = layer * i2_prior_experts;
++            const uint64_t bit = UINT64_C(1) << step;
++            for (int e = 0; e < i2_prior_experts; ++e) {
++                const uint64_t old = i2_warm.last[base + e];
++                if (old & bit) {
++                    const uint64_t remaining = old >> (step + 1);
++                    i2_warm.rank[base + e] = remaining ?
++                        i2_warm_visits - step - 1 - __builtin_ctzll(remaining) : 0;
++                }
++            }
++            fg_i2_warm_spent(begin);
++        } else if (i2_warm.reuse) {
++            const int64_t begin = fg_i2_warm_tick();
++            int64_t score[i2_prior_cap], visits[i2_prior_layers];
++            for (int i = 0; i < i2_prior_layers; ++i) visits[i] = 1;
++            for (int i = 0; i < i2_prior_cap; ++i) {
++                const uint64_t remaining = i2_warm.last[i] >> step;
++                score[i] = remaining ? i2_warm_visits - step - __builtin_ctzll(remaining) : 0;
++            }
++            i2_apply_prior(score, visits);
++            fg_i2_warm_spent(begin);
++        }
++        for (int e = 0; e < i2_prior_experts; ++e) {
++            if (active.data[e] >= 0) i2_warm.recorded[layer * i2_prior_experts + e] |= UINT64_C(1) << step;
++        }
++        return;
++    }
++}
++
++void fg_cuda_inkling_expert_phase(bool prefill, int position, int count) {
++    static int enabled = -1;
++    if (!cuda_inkling_quants) return;
++    inkling_decode_overlap = !prefill && count == 1 &&
++        fg_standalone_option_enabled("I2_DECODE_EXPERT_HIT_OVERLAP");
++    if (inkling_overlap_groups && getenv("I2_DECODE_EXPERT_HIT_OVERLAP_LOG")) {
++        fprintf(stderr, "I2 overlap groups=%" PRIu64 " resident=%" PRIu64 " missing=%" PRIu64 "\n",
++                inkling_overlap_groups, inkling_overlap_resident, inkling_overlap_missing);
++    }
++    inkling_overlap_groups = inkling_overlap_resident = inkling_overlap_missing = 0;
++    if (getenv("I2_WARM_ROUTE_LOG")) {
++        static _Thread_local uint64_t begin_bytes, begin_fills;
++        static _Thread_local bool measuring;
++        if ((prefill && position == 0) || (!prefill && measuring)) {
++            int64_t stats[6] = {0};
++            fg_cuda_expert_stats((sl_i64){stats, 6});
++            if (prefill) {
++                begin_bytes = stats[3];
++                begin_fills = stats[1];
++                measuring = true;
++            } else {
++                fprintf(stderr, "I2 prefill expert fills=%" PRIu64 " bytes=%" PRIu64 "\n",
++                        (uint64_t)stats[1] - begin_fills, (uint64_t)stats[3] - begin_bytes);
++                measuring = false;
++            }
++        }
++    }
++    i2_warm_phase(prefill, position, count);
++    if (enabled < 0) enabled = fg_standalone_option_enabled("I2_EXPERT_PREFILL_PRIOR");
++    if (!enabled) return;
++    if (prefill) {
++        if (position == 0) {
++            memset(&i2_prior, 0, sizeof(i2_prior));
++            i2_prior.track = true;
++        }
++        return;
++    }
++    if (!i2_prior.track) return;
++    i2_prior.track = false;
++    pthread_mutex_lock(&cuda_lock);
++    i2_apply_prior(i2_prior.frequency, i2_prior.visits);
++    pthread_mutex_unlock(&cuda_lock);
++}
++
++#include "expert-decode-overlap.h"
++
+ int64_t fg_cuda_expert_batch(int64_t weight_bytes, int64_t row_stride,
+                             int64_t extent, int64_t kind, int64_t rows, sl_i64 jobs,
+                             int64_t shared_rows, int64_t input_stride) {
+@@ -3901,8 +4253,30 @@
+         const int64_t offset = jobs.data[i];
+         if (offset < 0 || (uint64_t) offset > bank->bytes - (uint64_t) weight_bytes) return -1;
+     }
+-    int status = launch_matrix(bank->address, row_stride, extent, kind, rows, jobs, 3, shared_rows, input_stride);
+-    if (status == 0) status = submit_expert_stage(false);
++    if (!cuda_inkling_quants) {
++        int status = launch_matrix(bank->address, row_stride, extent, kind, rows, jobs, 3, shared_rows, input_stride);
++        if (status == 0) status = submit_expert_stage(false);
++        if (status == 0) ++cuda_cached_projections;
++        return status;
++    }
++    if (i2_prior.track && cuda_inkling_quants && kind == 23 && cuda.experts.groups.len == 9) {
++        const int64_t *g = cuda.experts.groups.data;
++        const int64_t span = g[0] + g[1] + g[2];
++        if (span > 0 && g[3] == i2_prior_experts) {
++            const int32_t *keys = cuda.experts.state + g[7];
++            const int64_t first = (jobs.data[2] - g[6]) / span;
++            if (first >= 0 && first < g[5] && keys[first] >= 0 && keys[first] < i2_prior_cap)
++                ++i2_prior.visits[keys[first] / i2_prior_experts];
++            for (int64_t i = 2; i < jobs.len; i += 3) {
++                const int64_t slot = (jobs.data[i] - g[6]) / span;
++                if (slot >= 0 && slot < g[5] && keys[slot] >= 0 && keys[slot] < i2_prior_cap)
++                    ++i2_prior.frequency[keys[slot]];
++            }
++        }
++    }
++    int status = launch_expert_overlap(bank->address, weight_bytes, row_stride, extent, kind, rows,
++                                       jobs, shared_rows, input_stride);
++    if (status == 0) status = submit_expert_uploads(cuda.expert_upload_count);
+     if (status == 0) ++cuda_cached_projections;
+     return status;
+ }
+@@ -4918,7 +5292,7 @@
+     if (error == 0) error = vector_input(x, &cuda.input, &staged[0], plan + 6, (plan[23] & 1) != 0);
+     if (error == 0 && y.len > 0) {
+         const bool pack = (plan[23] & 2) != 0;
+-        const bool resident = cuda.decode_graph_enabled && !pack &&
++        const bool resident = (cuda.decode_graph_enabled || cuda_inkling_quants) && !pack &&
+             dense_weight((uint64_t) (uintptr_t) y.data, y.len, &staged[1]);
+         if (!resident) error = vector_input(y, &cuda.weight, &staged[1], plan + 14, pack);
+     }

@@ -1,0 +1,67 @@
+--- a/bridge-driver.h
++++ b/bridge-driver.h
+@@ -7,6 +7,7 @@
+         Module module;
+         Function prepare, score, mix;
+         struct device_buffer input, work;
++        int depth_position, depth_rows, depth_next_visit;
+         struct {
+             struct device_buffer data;
+             int position;
+@@ -14,7 +15,7 @@
+     } device;
+ 
+     if (!cuda_inkling_quants || bridge->slot < 0 || bridge->slot >= INKLING_VISITS ||
+-        bridge->rows < 0 || bridge->rows > INKLING_BRIDGE_ROWS || bridge->position < 0 ||
++        bridge->visit < 0 || bridge->visit >= INKLING_VISITS || bridge->rows < 0 || bridge->rows > INKLING_BRIDGE_ROWS || bridge->position < 0 ||
+         start_context() != 1) return -1;
+     const int slot = bridge->slot;
+     int error = 0;
+@@ -43,8 +44,46 @@
+     if (!error) error = activation_output(host, 2 * row_bytes, &mixed);
+     const DevicePtr src = activation_device((uint64_t)(uintptr_t)attention, row_bytes);
+     if (!error && !src) error = -1;
+-    if (!error) error = upload_packet(device.input.address, bridge->input, input_bytes);
+     const DevicePtr residual = device.input.address, past = residual + row_bytes;
++    if (!error && !bridge->retain_history) {
++        error = upload_packet(residual, bridge->input, input_bytes);
++    }
++    if (!error && bridge->retain_history) {
++        // Visits are ordered within a token. A loop can overwrite a suffix
++        // but the prefix already present below that row stays valid.
++        if (bridge->visit == 0) {
++            device.depth_position = bridge->position;
++            device.depth_rows = 0;
++            device.depth_next_visit = 0;
++        }
++        if (device.depth_position != bridge->position || bridge->visit != device.depth_next_visit) {
++            error = -1;
++        } else if (bridge->add_residual) {
++            if (device.depth_rows != bridge->rows) error = -1;
++            if (!error) error = upload_packet(residual, bridge->input, row_bytes);
++        } else {
++            const int row = bridge->rows - 1;
++            if (row < 0 || row > device.depth_rows) error = -1;
++            if (!error) error = upload_packet(past + row * row_bytes,
++                bridge->depth_history + row * width, row_bytes);
++            if (!error) device.depth_rows = bridge->rows;
++        }
++        static int check = -1;
++        if (check < 0) {
++            const char *setting = getenv("I2_BRIDGE_HISTORY_CHECK");
++            check = setting && strcmp(setting, "1") == 0;
++        }
++        if (!error && check && bridge->rows > 0) {
++            float observed[INKLING_BRIDGE_ROWS * width];
++            const size_t bytes = bridge->rows * row_bytes;
++            error = cuda.download(observed, past, bytes);
++            if (!error && memcmp(observed, bridge->depth_history, bytes) != 0) {
++                fprintf(stderr, "Inkling bridge history differs at slot=%d token=%d\n", slot, bridge->position);
++                error = -1;
++            }
++        }
++        if (!error) ++device.depth_next_visit;
++    }
+     const DevicePtr normalized = device.work.address, scores = normalized + row_bytes;
+     const DevicePtr next = mixed + row_bytes;
+     const int add = bridge->add_residual;

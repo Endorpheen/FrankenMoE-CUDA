@@ -1,0 +1,29 @@
+--- a/attention-bridge.cl
++++ b/attention-bridge.cl
+@@ -1,4 +1,4 @@
+-extern double __nv_exp(double);
++#include "depth-expf.h"
+ 
+ #define WIDTH 2304
+ #define LANES 128
+@@ -131,7 +131,7 @@
+         double total = 0.0;
+         for (int row = 0; row <= rows; ++row) {
+             const float delta = scores[row] - maximum;
+-            weights[row] = (float)__nv_exp((double)delta);
++            weights[row] = depth_expf(delta);
+             total += (double)weights[row];
+         }
+         const float inverse = divide_rn(1.0f, (float)total);
+@@ -148,3 +148,11 @@
+     sum += (double)term;
+     output[i] = (float)sum;
+ }
++
++#ifdef I2_EXPF_TEST
++__kernel __attribute__((reqd_work_group_size(LANES, 1, 1)))
++void i2_check_depth_expf(__global uint *output, uint base, uint count) {
++    const uint i = block_id() * LANES + lane_id();
++    if (i < count) output[i] = as_uint(depth_expf(as_float(0x80000000U | (base + i))));
++}
++#endif

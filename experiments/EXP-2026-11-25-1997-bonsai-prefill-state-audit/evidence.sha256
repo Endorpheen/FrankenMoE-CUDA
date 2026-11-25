@@ -1,0 +1,6 @@
+940f2b29b3d9d04efd2cd8727447eb85dfefb7d6a076130829df6fb72a41179e  build/bonsai-mmq-residual-1996-runtime/bonsai-state-audit
+9594a6e9d54323168311758766b2d1c360f78f93dd5f44fe5da0859f295ea97b  build/bonsai-mmq-residual-1996-runtime/pq2-residual.cubin
+42e1f5c0885a3bbab3656e3bba2dc6ef8b998a4581d365b6c1e48fc842f789d7  build/bonsai-mmq-residual-1996-runtime/frozen-goose.ptx
+6c1d6f6da0cbc2668ccb215ef912527c703bc793c641b5378eda66d36b29f474  build/bonsai-state-audit-1997/fp16-state.bin
+984159927b97d49534b9a57190eb7347276b689797e7a03f7d0567075dc6d718  build/bonsai-state-audit-1997/residual-state.bin
+e0eaa0f1d67395e6452298f3851f3c2e12e37b30a1c55e5a2b6e343ba8fe74fc  build/bonsai-state-audit-1997/reference-kv.bin
