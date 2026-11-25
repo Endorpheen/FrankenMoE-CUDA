@@ -1,0 +1,50 @@
+[
+  {
+    "tensor": "blk.0.attn_qkv.weight",
+    "width": 5120,
+    "rows": 10239,
+    "tokens": 129,
+    "bit_exact": true,
+    "diagnostic_kernel_ns": {
+      "bonsai_pack_half": 8447,
+      "bonsai_pq2_cached_64x128_k64": 593522,
+      "bonsai_pq2_cached_64x128_row_reuse": 590001
+    }
+  },
+  {
+    "tensor": "blk.0.attn_qkv.weight",
+    "width": 5120,
+    "rows": 10240,
+    "tokens": 1024,
+    "bit_exact": true,
+    "diagnostic_kernel_ns": {
+      "bonsai_pack_half": 45567,
+      "bonsai_pq2_cached_64x128_k64": 2592894,
+      "bonsai_pq2_cached_64x128_row_reuse": 2163530
+    }
+  },
+  {
+    "tensor": "blk.0.ffn_up.weight",
+    "width": 5120,
+    "rows": 17408,
+    "tokens": 1024,
+    "bit_exact": true,
+    "diagnostic_kernel_ns": {
+      "bonsai_pack_half": 33727,
+      "bonsai_pq2_cached_64x128_k64": 3581702,
+      "bonsai_pq2_cached_64x128_row_reuse": 3610820
+    }
+  },
+  {
+    "tensor": "blk.0.ffn_down.weight",
+    "width": 17408,
+    "rows": 5120,
+    "tokens": 1024,
+    "bit_exact": true,
+    "diagnostic_kernel_ns": {
+      "bonsai_pack_half": 193883,
+      "bonsai_pq2_cached_64x128_k64": 3649060,
+      "bonsai_pq2_cached_64x128_row_reuse": 3634404
+    }
+  }
+]

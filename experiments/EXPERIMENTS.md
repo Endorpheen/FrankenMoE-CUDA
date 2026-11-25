@@ -826,6 +826,14 @@ release still needs the architecture regression gates.
   versus 4.33 ms with the best lookahead candidate.
   [Source, diagnostics and reproduction](EXP-2026-11-25-2060-bonsai-mmq-cached-pipeline/README.md).
 
+### EXP-2026-11-25-2061 — Bonsai MMQ warp row reuse
+
+- **Status:** Not promoted at the component gate.
+- **Evidence:** Bitwise results on four RTX 4070 shapes. Full FFN down
+  3.843 → 3.828 ms, below threshold. QKV has a single favorable
+  sample without a repeatable gain established.
+  [Source, diagnostics and reproduction](EXP-2026-11-25-2061-bonsai-mmq-warp-row-reuse/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
