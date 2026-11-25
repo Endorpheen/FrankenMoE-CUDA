@@ -311,6 +311,10 @@ runs at `-O1` and mutations at `-O0`. The lead accepts personally; there is no
 automatic accept step. Keep the helper count at the level the lead can review
 (5-6 is the current point); adjust it by the queue, not by ambition.
 
+## Deferred Vulkan backend
+
+See the [Vulkan backend roadmap](docs/roadmap/VULKAN-BACKEND.md). Keep CUDA optimization as the priority. Start Vulkan implementation only after Igor says `«Начинай Vulkan»`.
+
 ## Integration-ready assignments
 
 Every helper result must fit the single Goose runtime without a rewrite. Before
