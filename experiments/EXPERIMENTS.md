@@ -165,6 +165,35 @@ release still needs the architecture regression gates.
   gates remain open.
   [Evidence and reproduction](EXP-2026-11-25-2016-bonsai-deferred-cuda/README.md).
 
+### EXP-2026-11-25-2017 — Stage exact single-token GDN decay products
+
+- **Status:** ACCEPTED in the Bonsai experimental runtime. Source commit
+  `d5454e619bbbc55fc85eed86f069662e35edb0b8`.
+  [CUDA](EXP-2026-11-25-2017-bonsai-decode-decay/source/decay.cl),
+  [dispatch](EXP-2026-11-25-2017-bonsai-decode-decay/source/compose.py),
+  [artifact hashes](EXP-2026-11-25-2017-bonsai-decode-decay/data/SHA256SUMS).
+- **Mechanism:** Parallel F32 product preparation, independent alpha and beta
+  warps with the original lane and reduction order, unchanged epilogue.
+  Uses the existing EXP-1998 warp pack for 2–31 tokens. Full CUDA traces show
+  the decay kernel sum `31.802 → 4.668 ms` over 15 decode steps
+  (1.809 ms/step saved). No added global memory.
+- **Scored HTTP:** At 4110/64 across two balanced pairs, prefill
+  `784.15 → 801.55`, decode `35.85 → 38.60 tok/s (+7.68%)`.
+  At 32K/512, prefill `600.46 → 611.03` and `606.23 → 621.01`,
+  decode `30.916 → 30.602` and `30.787 → 32.552 tok/s`.
+  Full client wall improves in both long pairs, but long decode gain
+  varies by pair and the larger prefill shifts are not caused by
+  the small-tail change. VRAM `8932 → 8932 MiB`, long peak RSS
+  `7,457,232–7,457,444 → 7,457,328–7,457,540 KiB`, swap-out zero.
+  [Timing and resources](EXP-2026-11-25-2017-bonsai-decode-decay/data/results.json).
+- **Correctness and limits:** Both component outputs bit-exact on seven
+  real-weight cases. All 512 long IDs and text hashes match PrismML.
+  Verified on RTX 4070, Bonsai PQ2_0 GDN, F32 width 5120, 48 heads,
+  256 threads and 40,960 shared bytes per staged block. Small-batch
+  only. Potential reuse is limited to matching ordered F32 gates,
+  with launch and occupancy retuning. No Apex or Inkling gain measured.
+  [Reproduction and scopes](EXP-2026-11-25-2017-bonsai-decode-decay/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
