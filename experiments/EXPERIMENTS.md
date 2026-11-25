@@ -1037,6 +1037,15 @@ release still needs the architecture regression gates.
   to the new layout, from 8.482 to 7.991 s.
   [Experiment and reusable source](EXP-2026-11-26-2084-bonsai-q8-panel-layout/README.md).
 
+### EXP-2026-11-26-2085 — Panel-major FP16 Bonsai FFN down
+
+- **Rejected at the component gate.** Write panel-major data directly
+  from the fused SwiGLU/FWHT/FP16 producer and keep exact half2 MMQ.
+- **Evidence:** Bitwise results on four real PQ2 weights on RTX 4070.
+  End-to-end component time varies from 0.22% slower to 1.83% faster
+  with preparation. Keep the EXP-2084 token-major down path.
+  [Component results and reproduction](EXP-2026-11-26-2085-bonsai-ffn-down-panel/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
