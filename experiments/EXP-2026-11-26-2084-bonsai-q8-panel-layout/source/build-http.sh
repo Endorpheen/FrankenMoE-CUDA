@@ -16,9 +16,14 @@ device="$build/inkling-exp-baseline/device-attention"
 archive="$build/bonsai-dp4a-2012-default/libfranken-inference.a"
 
 python3 "$src/prepare-host.py" "$base/backend.c" "$out/backend.c"
+host_source="$out/backend.c"
+if [[ ${FRANKENMOE_BENCH_COLD_LOG:-0} == 1 ]]; then
+    host_source="$out/backend-cold.c"
+    python3 "$root/tools/validate-cold-32k.py" instrument-bonsai "$out/backend.c" "$host_source"
+fi
 gcc-13 -O2 -Wall -Wextra -Werror -ffunction-sections -fdata-sections \
     -I"$host" -I"$session" -I"$cuda/include" -Dmain=bonsai_diagnostic_main \
-    -c "$out/backend.c" -o "$out/session-unlinked.o"
+    -c "$host_source" -o "$out/session-unlinked.o"
 objcopy --redefine-syms="$http/rename.txt" "$out/session-unlinked.o" "$out/bonsai-session.o"
 gcc-13 -O2 -std=gnu11 -D_GNU_SOURCE -DI2_NUMERIC_MODULE -Werror=implicit-function-declaration \
     -ffunction-sections -fdata-sections -I"$apex/build-inputs" -I"$apex/checkpoint" \

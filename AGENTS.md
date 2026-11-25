@@ -541,6 +541,33 @@ execution trace or equivalent evidence and identify any unverified paths.
 Keep traced timings separate from unprofiled performance results. Preserve
 the staged acceptance process and the mandatory Release Gate.
 
+#### Cold prefill gate for every 32K/512 arm
+
+Run the automatic cold-prefill gate on each control and candidate, including
+comparable llama.cpp runs. Start a dedicated server and use its first generation
+request. Before sending the frozen request, run `python3 tools/validate-cold-32k.py
+before` with the server PID, executable, fresh log, request and reference
+request SHA-256. It checks the raw token count, disabled prompt reuse, and
+process identity. Keep the receipt and send the same request file.
+
+After the timed response, run `python3 tools/validate-cold-32k.py after` before
+stopping the server or scoring the arm. It validates zero reused tokens and
+32,768 evaluated input tokens, corroborated by the same server's new log
+records. A constant HTTP `cache_n=0` is insufficient evidence of a reset.
+For PrismML use the existing empty-slot and prompt-evaluation logs. For
+Bonsai, use the tool's `instrument-bonsai` command on the generated benchmark
+host source before compiling both arms. It emits one record after a successful
+state reset and one after the evaluated position reaches 32,768 with final
+prefill logits. The EXP-2084 HTTP builder supports
+`FRANKENMOE_BENCH_COLD_LOG=1` for this in a separate build directory.
+Other Goose paths must supply equivalent reset and evaluated
+token evidence before scoring. See the tool's subcommand help for arguments.
+
+Run the gate outside the client's timed interval and keep its evidence with the
+result. Exclude an arm if reuse is reported or the reset or full evaluation
+cannot be proven. The gate reads the same request, response and logs and
+requires no extra generation or warm-up run.
+
 ### Bonsai cumulative checkpoint policy
 
 Keep separate stable and cumulative experimental checkpoints in
