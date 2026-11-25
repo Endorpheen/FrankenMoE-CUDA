@@ -1,0 +1,79 @@
+{
+  "verdict": "REJECTED_FOR_DEFAULT",
+  "profile": "4097/16",
+  "context": 36864,
+  "ubatch": 1024,
+  "kv": "q4_0/q4_0",
+  "request_sha256": "3e19644b64428f8e5333c51082b695ee755695643191b313a52e790d1f61c280",
+  "arms": {
+    "a1": {
+      "prefill_ms": 6921.33,
+      "decode_ms": 976.163,
+      "prefill_toks_s": 591.9382546418102,
+      "decode_toks_s": 16.390705240825557,
+      "workspace_bytes": 1720400640
+    },
+    "b1": {
+      "prefill_ms": 5267.257,
+      "decode_ms": 973.739,
+      "prefill_toks_s": 777.8242071727277,
+      "decode_toks_s": 16.431507827046055,
+      "workspace_bytes": 1720400640
+    },
+    "b2": {
+      "prefill_ms": 5263.624,
+      "decode_ms": 974.435,
+      "prefill_toks_s": 778.3610683437875,
+      "decode_toks_s": 16.41977145730603,
+      "workspace_bytes": 1720400640
+    },
+    "a2": {
+      "prefill_ms": 6938.488,
+      "decode_ms": 975.092,
+      "prefill_toks_s": 590.4744664831877,
+      "decode_toks_s": 16.408708101389408,
+      "workspace_bytes": 1720400640
+    }
+  },
+  "means": {
+    "prefill_toks_s": {
+      "fp16": 591.206360562499,
+      "q8_residual": 778.0926377582575
+    },
+    "decode_toks_s": {
+      "fp16": 16.39970667110748,
+      "q8_residual": 16.425639642176044
+    },
+    "prefill_ms": {
+      "fp16": 6929.909,
+      "q8_residual": 5265.4405
+    }
+  },
+  "all_short_ids_match_prism": true,
+  "ids": [
+    11846,
+    13,
+    58737,
+    1092,
+    488,
+    1000,
+    3222,
+    6570,
+    11,
+    279,
+    4530,
+    310,
+    12904,
+    11,
+    321,
+    799
+  ],
+  "remaining_short_ms_to_5000": 4446.0405,
+  "artifacts_sha256": {
+    "bonsai-mmq-residual": "4f7fa24dac9247be3bee517b9a18421c11390028b3fc870125fc5a1d428d9917",
+    "bonsai-quality": "2c7d66656dde07534b2912bee5a1e0a928203a599a9beddf3296cb86ff2df832",
+    "pq2-residual.cubin": "9594a6e9d54323168311758766b2d1c360f78f93dd5f44fe5da0859f295ea97b",
+    "frozen-goose.ptx": "42e1f5c0885a3bbab3656e3bba2dc6ef8b998a4581d365b6c1e48fc842f789d7",
+    "profile.nsys-rep": "9c318351019131040dbf2b97276c4ad8693ec12cdba3ed112f03cc42567cd74f"
+  }
+}
