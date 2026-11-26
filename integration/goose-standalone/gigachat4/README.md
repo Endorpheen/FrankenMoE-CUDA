@@ -61,3 +61,28 @@ The fixed 29/8 request SHA-256 is
 Before the fix, Goose and the reference matched for two output tokens.
 After the fix, they matched for all eight: 1292, 7154, 4008, 88, 57981,
 6958, 7780, 391. This gate covers one fixed request.
+
+## CUDA MLA key projection
+
+The loader expands the nine Q5_0 key-projection tensors to F32 using the
+existing Goose decoder and registers each head plane in the CUDA weight
+table. This moves the supported matrix operation off the CPU. The path is
+enabled with at least 6 GiB free VRAM and can be disabled with
+`GOOSE_GIGACHAT4_MLA_F32=0`. Expanded weights occupy 72 MiB each in RAM and
+VRAM, without changes to the GGUF file.
+
+The fixed 29/8 comparison used the same executable and ran control,
+candidate, candidate, control. It used the prior accepted GDN residency
+and an enabled prefill planner, dense placement, and expert cache.
+
+| Run | Prefill, tok/s | Decode, tok/s | VRAM after request, MiB |
+| --- | ---: | ---: | ---: |
+| Control 1 | 3.747 | 1.686 | 8303 |
+| Control 2 | 3.681 | 1.660 | 8312 |
+| CUDA MLA 1 | 5.976 | 2.709 | 8379 |
+| CUDA MLA 2 | 5.969 | 2.749 | 8386 |
+
+All four runs matched the eight reference tokens from the YaRN gate. Process
+swap and system swap-out delta were zero in all four runs. Median peak RSS
+increased by 80 MiB. Median prefill increased by 60.8 percent and median
+decode increased by 63.1 percent.

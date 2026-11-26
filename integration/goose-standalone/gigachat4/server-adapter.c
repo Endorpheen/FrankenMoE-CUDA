@@ -24,10 +24,19 @@ int giga_server_open(const void *mapping, size_t bytes, int64_t capacity) {
     giga_goose_init(0, NULL);
     int status = giga_bind_model(&model, mapping, bytes);
     if (status != 0) return status;
+    const char *mla_setting = getenv("GOOSE_GIGACHAT4_MLA_F32");
+    const int64_t minimum_mla_vram = INT64_C(6) * 1024 * 1024 * 1024;
+    const bool mla = (!mla_setting || strcmp(mla_setting, "0") != 0) &&
+                     fg_cuda_free_bytes() >= minimum_mla_vram;
+    if (mla && giga_expand_mla_weights(&model) != 0) {
+        giga_unbind_model(&model);
+        return -1;
+    }
     const char *dense = getenv("GOOSE_GIGACHAT4_DENSE");
-    if (dense && strcmp(dense, "1") == 0) {
+    if (mla || (dense && strcmp(dense, "1") == 0)) {
         const int64_t reserved = INT64_C(3) * 1024 * 1024 * 1024;
-        const int64_t resident = giga_place_dense((sl_u64){model.weights, GIGA_TENSOR_COUNT}, reserved);
+        const int64_t resident = giga_place_dense((sl_u64){model.weights, GIGA_TENSOR_COUNT}, reserved,
+            (sl_i64){model.offsets, GIGA_LAYER_COUNT + 1}, (sl_i64){model.kinds, GIGA_LAYER_COUNT}, mla);
         if (resident < 0) {
             giga_unbind_model(&model);
             return -1;

@@ -7,6 +7,7 @@
 
 void giga_unbind_model(struct giga_bindings *bindings) {
     if (!bindings) return;
+    if (bindings->mla_weights) ggml_free(bindings->mla_weights);
     if (bindings->descriptors) ggml_free(bindings->descriptors);
     memset(bindings, 0, sizeof(*bindings));
 }
@@ -84,4 +85,38 @@ int64_t giga_dense_span(uint64_t address, sl_i64 out) {
     out.data[0] = (int64_t)(uintptr_t)tensor->data;
     out.data[1] = (int64_t)ggml_nbytes(tensor);
     return 1;
+}
+
+extern int64_t qz_dequant(int64_t type, sl_u8 src, int64_t elements, sl_f32 out);
+
+int giga_expand_mla_weights(struct giga_bindings *bindings) {
+    if (!bindings || bindings->mla_weights) return -1;
+    const int64_t elements = 128 * 512 * 32;
+    struct ggml_context *ctx = ggml_init((struct ggml_init_params){
+        .mem_size = 9 * (ggml_tensor_overhead() + (size_t)elements * sizeof(float)),
+    });
+    if (!ctx) return -1;
+    uint64_t expanded[33] = {0};
+    for (int layer = 0; layer < 33; ++layer) {
+        if (bindings->kinds[layer] == 0) continue;
+        int64_t slot = bindings->offsets[layer] + 16;
+        const struct ggml_tensor *source = (const void *)(uintptr_t)bindings->weights[slot];
+        if (!source || source->type != GGML_TYPE_Q5_0 || source->ne[0] != 128 ||
+            source->ne[1] != 512 || source->ne[2] != 32 || source->ne[3] != 1) {
+            ggml_free(ctx);
+            return -1;
+        }
+        struct ggml_tensor *target = ggml_new_tensor_3d(ctx, GGML_TYPE_F32, 128, 512, 32);
+        if (qz_dequant(source->type, (sl_u8){source->data, ggml_nbytes(source)}, elements,
+                       (sl_f32){target->data, elements}) != elements) {
+            ggml_free(ctx);
+            return -1;
+        }
+        expanded[layer] = (uintptr_t)target;
+    }
+    for (int layer = 0; layer < 33; ++layer) {
+        if (expanded[layer]) bindings->weights[bindings->offsets[layer] + 16] = expanded[layer];
+    }
+    bindings->mla_weights = ctx;
+    return 0;
 }

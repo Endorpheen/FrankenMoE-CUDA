@@ -21,6 +21,7 @@ struct giga_graph_config {
 
 struct giga_bindings {
     struct ggml_context *descriptors;
+    struct ggml_context *mla_weights;
     uint64_t weights[GIGA_TENSOR_COUNT];
     int64_t offsets[GIGA_LAYER_COUNT + 1];
     int64_t kinds[GIGA_LAYER_COUNT];
@@ -28,5 +29,6 @@ struct giga_bindings {
 };
 
 int giga_bind_model(struct giga_bindings *out, const void *mapping, size_t bytes);
+int giga_expand_mla_weights(struct giga_bindings *bindings);
 void giga_unbind_model(struct giga_bindings *bindings);
 #endif
