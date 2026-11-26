@@ -1,9 +1,40 @@
 # Vulkan backend for FrankenMoE
 
-**Status: deferred.** All implementation and validation items are open.
-Start only after Igor explicitly says **«Начинай Vulkan»**. CUDA optimization
-of Bonsai, Apex and Inkling has priority. This document authorizes no Vulkan
-builds, runtime changes, shader compilation, benchmarks, or release changes.
+**Status: initial Vulkan bring-up.** Device selection, compute queue creation
+and a transfer round-trip are implemented for the standalone probe. Model
+execution and release qualification are open. Keep the existing CUDA
+inference path unchanged during bring-up.
+
+## Verified bring-up
+
+The probe builds as Linux ELF and Windows PE x64. It dynamically loads
+Vulkan and selects a Vulkan 1.3 compute device with timeline semaphores and
+synchronization2. Automatic probe selection requires an AMD integrated or
+discrete GPU. The explicit device-index path can select another supported GPU;
+CPU devices also require `--allow-cpu`.
+
+The self-test copies 65540 bytes from host-visible staging through a
+device-local buffer and back. The test uses a compute queue, scoped copy
+barriers, a timeline semaphore and explicit cache maintenance for
+noncoherent memory. The build has no direct Vulkan or CUDA link dependency.
+
+| Environment | Build | Device and transfer | Model inference |
+| --- | --- | --- | --- |
+| Linux x64, Mesa Lavapipe 26.0.8 | PASS | PASS | NOT TESTED |
+| Linux x64, RTX 4070, NVIDIA 580.178.04 | PASS | PASS | NOT TESTED |
+| Windows x64 probe, Wine with Linux Lavapipe | PASS | PASS | NOT TESTED |
+| Native Linux AMD RADV and Windows AMD ICD | Build targets available | NOT TESTED | NOT TESTED |
+
+The Linux fixture also checks the absent ICD, invalid device index, CLI
+arguments and software-device exclusion from default selection.
+
+```bash
+bash tools/build-goose-vulkan.sh build/vulkan-bringup/linux linux
+bash tools/build-goose-vulkan.sh build/vulkan-bringup/windows windows
+bash integration/goose-standalone/tests/vulkan/device.sh \
+    build/vulkan-bringup/linux/frankenmoe-vulkan-probe \
+    /usr/share/vulkan/icd.d/lvp_icd.json
+```
 
 ## Source audit and integration boundary
 
@@ -155,7 +186,7 @@ point. Keep all checkpoints open until their specified tests have run.
 
 ## Release checklist
 
-- [ ] Igor explicitly authorizes Vulkan implementation.
+- [x] Igor explicitly authorizes Vulkan implementation.
 - [ ] Exact source/artifact/model references and CUDA regression baselines are frozen.
 - [ ] Linux RADV and Windows AMD ICD pass initialization and lifetime tests.
 - [ ] Reference kernels pass layout, precision, state and invalid-input fixtures.

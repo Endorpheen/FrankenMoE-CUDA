@@ -336,9 +336,11 @@ Keep possible reuse separate from performance confirmed for that case.
 Do not duplicate an existing entry or count an isolated kernel gain as
 a model-level improvement.
 
-## Deferred Vulkan backend
+## Vulkan backend
 
-See the [Vulkan backend roadmap](docs/roadmap/VULKAN-BACKEND.md). Keep CUDA optimization as the priority. Start Vulkan implementation only after Igor says `«Начинай Vulkan»`.
+See the [Vulkan backend roadmap](docs/roadmap/VULKAN-BACKEND.md). AMD/Vulkan
+bring-up is the current task. Preserve the accepted CUDA inference paths.
+Advertise support only within the tested OS, driver, GPU and model scope.
 
 ## Communication with Igor
 
