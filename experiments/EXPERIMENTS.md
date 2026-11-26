@@ -1211,6 +1211,16 @@ release still needs the architecture regression gates.
   readback. Mixed full-request deltas, +2 MiB process VRAM.
   [Experiment, measurements and CPU audit](EXP-2026-11-26-2101-bonsai-http-avx2-greedy/README.md).
 
+### EXP-2026-11-26-2102 — Direct host logit readback for Bonsai
+
+- **Experimental alternative.** Avoid a host exchange copy on
+  single-token CPU-logit requests. CUDA image and Goose object match
+  EXP-2101 byte-for-byte. Short HTTP output and probabilities match.
+- **Evidence:** Cold CPU-only selection 32K/512 shows 38.85 → 38.74
+  decode tok/s and all 512 IDs and text matching. VRAM 8932 MiB.
+  No measured gain. Keep the cumulative EXP-2101 route.
+  [Full measurement and reproduction](EXP-2026-11-26-2102-bonsai-direct-host-logits/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.

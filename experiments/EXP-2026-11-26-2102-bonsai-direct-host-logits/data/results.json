@@ -1,0 +1,260 @@
+{
+  "parent": "EXP-2101",
+  "source_base_commit": "b8ea9cbd2",
+  "workload": {
+    "input_tokens": 32768,
+    "output_tokens": 512,
+    "model_sha256": "ededc9fc0a8a6a8dd30914d107b2d2ce7674d789f1d05a1a481f240609aa6c23",
+    "gpu": "RTX 4070",
+    "context": 36864,
+    "batch": 4096,
+    "ubatch": 1024,
+    "kv": "Q4_0",
+    "mtp": false,
+    "request": "experiments/EXP-2026-11-25-1977-bonsai-prism-32k-reference/request.json"
+  },
+  "artifact_sha256": {
+    "frankenmoe-infer": "83814adc387120c61f5cc7ed3dc24dd02087cecf53e990a4aa327d09c40c7e4c",
+    "pipeline.cubin": "2a18d1857ecb4067e30eb9ab6cc4f9c61cab7d6c46985b02c59cb57616b5c7cd",
+    "main.o": "a4979543a827c9f5fd0b419b4a4ad33ebb442a218c93f88c1794f706e4652a34"
+  },
+  "request_sha256": "1f62448c0a6d29a776f76df4f24d0ca162c7a5d10774f879d94f859ac3e81ecb",
+  "measurement_order": [
+    "A",
+    "B"
+  ],
+  "scored_scope": "AVX2 CPU greedy with full logit reads in both arms",
+  "arms": {
+    "A": {
+      "argv": [
+        "frankenmoe-infer",
+        "--ctx-size",
+        "36864",
+        "--batch-size",
+        "4096",
+        "--ubatch-size",
+        "1024",
+        "--cache-type-k",
+        "q4_0",
+        "--cache-type-v",
+        "q4_0",
+        "--threads",
+        "8",
+        "--threads-batch",
+        "16",
+        "--cpu-mask",
+        "0f0f",
+        "--cpu-mask-batch",
+        "ffff",
+        "--cpu-strict",
+        "1",
+        "--cpu-strict-batch",
+        "1",
+        "Ternary-Bonsai-2.5-27B-PQ2_0-mtp.gguf",
+        "--serve",
+        "19197"
+      ],
+      "affinity": "0-31",
+      "effective_runtime_env": {
+        "BONSAI_CUDA_IMAGE": "pipeline.cubin",
+        "BONSAI_DECODE_DIRECT_HALF2": "1",
+        "BONSAI_DECODE_DIRECT_MMA": "1",
+        "BONSAI_DECODE_ORDERED_MERGE": "1",
+        "BONSAI_FFN_DOWN_Q8_FUSED": "1",
+        "BONSAI_FFN_Q8_FULL128": "1",
+        "BONSAI_FFN_Q8_PAIRLOAD": "1",
+        "BONSAI_FFN_Q8_PANEL": "1",
+        "BONSAI_FFN_Q8_PREFILL": "1",
+        "BONSAI_FFN_Q8_SPREAD": "1",
+        "BONSAI_FLASH_ASYNC": "1",
+        "BONSAI_FLASH_COMPACT": "1",
+        "BONSAI_FLASH_F32": "1",
+        "BONSAI_FLASH_FP8_PV": "1",
+        "BONSAI_FLASH_FP8_QK": "1",
+        "BONSAI_FLASH_ORDERED_MERGE": "1",
+        "BONSAI_FLASH_REUSE": "1",
+        "BONSAI_FROZEN_PTX": "frozen-goose.ptx",
+        "BONSAI_HTTP_DEVICE_CHOICE": "0",
+        "BONSAI_HTTP_DIRECT_LOGITS": "0",
+        "BONSAI_HTTP_HOST_SCAN": "1",
+        "BONSAI_MMQ_HALF2_DOWN": "1",
+        "BONSAI_MMQ_HALF_ACC": "1",
+        "BONSAI_MMQ_HALF_FULL6144": "1",
+        "BONSAI_MMQ_HALF_FULL": "1"
+      },
+      "gpu_before_launch": {
+        "name": "NVIDIA GeForce RTX 4070",
+        "driver_version": "580.178.04",
+        "memory.free [MiB]": "9872 MiB",
+        "clocks.current.sm [MHz]": "210 MHz",
+        "clocks.current.memory [MHz]": "810 MHz",
+        "temperature.gpu": "51"
+      },
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 32768,
+        "prompt_ms": 29737.53735795617,
+        "prompt_per_token_ms": 0.9075176195665335,
+        "prompt_per_second": 1101.9069805803217,
+        "predicted_n": 512,
+        "predicted_ms": 13154.787776991725,
+        "predicted_per_token_ms": 25.743224612508268,
+        "predicted_per_second": 38.845172469734585
+      },
+      "cold_prefill_gate": {
+        "cold_prefill": "PASS",
+        "computed_prompt_tokens": 32768,
+        "cached_prompt_tokens": 0,
+        "engine": "goose",
+        "request_sha256": "1f62448c0a6d29a776f76df4f24d0ca162c7a5d10774f879d94f859ac3e81ecb",
+        "response_sha256": "45216d2ca84a5d68c5a08c4d2fbc773f463d2a73cc8691ba9af27d593e41bd10"
+      },
+      "client_s": 42.953786,
+      "process_vram_after_mib": 8932,
+      "process_memory_kib": {
+        "VmHWM": 7458388,
+        "VmRSS": 162104,
+        "VmSwap": 0
+      }
+    },
+    "B": {
+      "argv": [
+        "frankenmoe-infer",
+        "--ctx-size",
+        "36864",
+        "--batch-size",
+        "4096",
+        "--ubatch-size",
+        "1024",
+        "--cache-type-k",
+        "q4_0",
+        "--cache-type-v",
+        "q4_0",
+        "--threads",
+        "8",
+        "--threads-batch",
+        "16",
+        "--cpu-mask",
+        "0f0f",
+        "--cpu-mask-batch",
+        "ffff",
+        "--cpu-strict",
+        "1",
+        "--cpu-strict-batch",
+        "1",
+        "Ternary-Bonsai-2.5-27B-PQ2_0-mtp.gguf",
+        "--serve",
+        "19197"
+      ],
+      "affinity": "0-31",
+      "effective_runtime_env": {
+        "BONSAI_CUDA_IMAGE": "pipeline.cubin",
+        "BONSAI_DECODE_DIRECT_HALF2": "1",
+        "BONSAI_DECODE_DIRECT_MMA": "1",
+        "BONSAI_DECODE_ORDERED_MERGE": "1",
+        "BONSAI_FFN_DOWN_Q8_FUSED": "1",
+        "BONSAI_FFN_Q8_FULL128": "1",
+        "BONSAI_FFN_Q8_PAIRLOAD": "1",
+        "BONSAI_FFN_Q8_PANEL": "1",
+        "BONSAI_FFN_Q8_PREFILL": "1",
+        "BONSAI_FFN_Q8_SPREAD": "1",
+        "BONSAI_FLASH_ASYNC": "1",
+        "BONSAI_FLASH_COMPACT": "1",
+        "BONSAI_FLASH_F32": "1",
+        "BONSAI_FLASH_FP8_PV": "1",
+        "BONSAI_FLASH_FP8_QK": "1",
+        "BONSAI_FLASH_ORDERED_MERGE": "1",
+        "BONSAI_FLASH_REUSE": "1",
+        "BONSAI_FROZEN_PTX": "frozen-goose.ptx",
+        "BONSAI_HTTP_DEVICE_CHOICE": "0",
+        "BONSAI_HTTP_DIRECT_LOGITS": "1",
+        "BONSAI_HTTP_HOST_SCAN": "1",
+        "BONSAI_MMQ_HALF2_DOWN": "1",
+        "BONSAI_MMQ_HALF_ACC": "1",
+        "BONSAI_MMQ_HALF_FULL6144": "1",
+        "BONSAI_MMQ_HALF_FULL": "1"
+      },
+      "gpu_before_launch": {
+        "name": "NVIDIA GeForce RTX 4070",
+        "driver_version": "580.178.04",
+        "memory.free [MiB]": "9878 MiB",
+        "clocks.current.sm [MHz]": "210 MHz",
+        "clocks.current.memory [MHz]": "405 MHz",
+        "temperature.gpu": "51"
+      },
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 32768,
+        "prompt_ms": 30150.824606011156,
+        "prompt_per_token_ms": 0.9201301454471178,
+        "prompt_per_second": 1086.80277996334,
+        "predicted_n": 512,
+        "predicted_ms": 13190.051196026616,
+        "predicted_per_token_ms": 25.812233260326057,
+        "predicted_per_second": 38.74132043960028
+      },
+      "cold_prefill_gate": {
+        "cold_prefill": "PASS",
+        "computed_prompt_tokens": 32768,
+        "cached_prompt_tokens": 0,
+        "engine": "goose",
+        "request_sha256": "1f62448c0a6d29a776f76df4f24d0ca162c7a5d10774f879d94f859ac3e81ecb",
+        "response_sha256": "d8ddf267c60ffd823afc1b47a9237f305c5f3b753c9531359d8a386724781250"
+      },
+      "client_s": 43.405308,
+      "process_vram_after_mib": 8932,
+      "process_memory_kib": {
+        "VmHWM": 7458936,
+        "VmRSS": 162212,
+        "VmSwap": 0
+      }
+    }
+  },
+  "parent_cuda_dispatch_trace": "EXP-2101 AVX2-only trace",
+  "candidate_cuda_trace": null,
+  "smoke": {
+    "greedy": {
+      "output_ids": [
+        2253,
+        314,
+        27676,
+        314
+      ],
+      "probability_rows": 0,
+      "matching_ids_text_and_requested_probabilities": true
+    },
+    "eos": {
+      "output_ids": [
+        2253,
+        314,
+        27676,
+        314
+      ],
+      "probability_rows": 0,
+      "matching_ids_text_and_requested_probabilities": true
+    },
+    "probability": {
+      "output_ids": [
+        2253,
+        314,
+        27676,
+        314
+      ],
+      "probability_rows": 4,
+      "matching_ids_text_and_requested_probabilities": true
+    },
+    "stochastic": {
+      "output_ids": [
+        7244,
+        310,
+        12904,
+        11
+      ],
+      "probability_rows": 0,
+      "matching_ids_text_and_requested_probabilities": true
+    }
+  },
+  "matched_prism_ids": 512,
+  "text_matches_prism": true,
+  "text_sha256": "53764f218fba3848f952165d8ea70641e0eccf596831424dd416540e012b3401"
+}
