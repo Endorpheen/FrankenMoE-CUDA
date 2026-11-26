@@ -1,0 +1,144 @@
+--- a/cuda-driver.reference.merged.c
++++ b/cuda-driver.reference.merged.c
+@@ -1992,13 +1992,15 @@
+     const bool pre_attention = !host_next;
+     const int queries = full_outputs ? 3 : 1;
+     if (full_outputs) output = full_outputs;
+-    DevicePtr normalized = pre_attention ? next : i2_attention_scratch;
++    const bool boundary = pre_attention && save_history;
++    DevicePtr normalized = boundary ? raw + rows * (size_t)plane_bytes :
++                           (pre_attention ? next : i2_attention_scratch);
+     DevicePtr saved_current = raw + 3 * (size_t)plane_bytes;
+     DevicePtr residual_input = host_input ? normalized + plane_bytes : saved_current;
+     DevicePtr current = pre_attention && !host_input ? saved_current : next;
+     const size_t required = 6 * (size_t)plane_bytes + 4 * sizeof(DevicePtr) +
+         (6 * batch + width) * sizeof(float);
+-    int status = cuda.activations.bytes - split >= required && normalized &&
++    int status = (!boundary || rows < 4) && cuda.activations.bytes - split >= required && normalized &&
+         (pre_attention || (i2_residual_host == (uint64_t)(uintptr_t)host_next &&
+                            i2_residual_device == next)) ? 0 : -1;
+     if (!status && !module) status = cuda.module_load(&module, i2_lazy_prelude_image);
+@@ -2033,6 +2035,19 @@
+     const int popped = finish_context();
+     return !status && !popped;
+ }
++
++bool inkling_arena_boundary_read(float *output, bool last_only) {
++    enum { row_bytes = 2304 * sizeof(float), rows = 4096, plane_bytes = rows * row_bytes };
++    if (!i2_arena_probe.active || start_context() != 1) return false;
++    const size_t split = activation_usable_bytes();
++    const DevicePtr plane = cuda.activations.address + split + 2 * (size_t)plane_bytes;
++    const size_t offset = last_only ? (rows - 1) * (size_t)row_bytes : 0;
++    const size_t bytes = last_only ? row_bytes : plane_bytes;
++    const int status = cuda.activations.bytes - split < 3 * (size_t)plane_bytes ? -1 :
++                       cuda.download(output, plane + offset, bytes);
++    const int popped = finish_context();
++    return !status && !popped;
++}
+ 
+ static int activation_reserve_output(size_t bytes) {
+     if (i2_arena_probe.active) ++i2_arena_probe.spills;
+--- a/inkling-backend.c
++++ b/inkling-backend.c
+@@ -131,6 +131,7 @@
+ extern void inkling_arena_residual_open(float *host);
+ extern void inkling_moe_retain_output(float *host);
+ extern uint64_t inkling_prefill_full_scratch(size_t bytes);
++extern bool inkling_arena_boundary_read(float *output, bool last_only);
+ 
+ static void evaluate(struct ggml_context *ctx, struct ggml_tensor **nodes, int count,
+                      float *output, int size) {
+--- a/prefill.h
++++ b/prefill.h
+@@ -114,7 +114,7 @@
+     float *postconv_history;
+     int postconv_rows;
+     float *logits;
+-    bool skip_host_mix, device_attention_mix, device_current;
++    bool skip_host_mix, device_attention_mix, device_current, device_boundary;
+ };
+ 
+ extern int64_t inkling_row_major_i2_postconv_batch(sl_f32 input, sl_f32 weights,
+@@ -153,7 +153,7 @@
+             if (layer % 6 == 0) {
+                 assert(token->count < 11);
+                 float *history = token->blocks + token->count++ * model_width;
+-                save_history_row(history, token->current);
++                if (!work->device_boundary) save_history_row(history, token->current);
+             } else if (!work->skip_host_mix) {
+                 for (int i = 0; i < model_width; ++i) {
+                     next[i] += token->current[i];
+@@ -242,7 +242,7 @@
+ 
+ static void prefill_layer(struct decoder *d, struct prefill_token *tokens, struct prefill_workspace *scratch,
+                           int count, int begin, const int64_t *visit, struct i2_prefill_team *team,
+-                          bool *device_current, bool retain_current) {
++                          bool *device_current, bool retain_current, bool *boundary_history) {
+     const int layer = (int)visit[0], slot = (int)visit[1], pass = (int)visit[2];
+     const bool sliding = visit[3] != 0;
+     const int64_t *core = d->core + 10 * layer;
+@@ -265,7 +265,14 @@
+     const bool device_attention_mix = direct_depthmix && layer != 0 && aux[10] >= 0 && mixed_path;
+     setup.device_attention_mix = device_attention_mix;
+     setup.device_current = *device_current;
+-    assert(!*device_current || (device_attention_mix && layer % 6 != 0 && layer < 18));
++    const bool device_boundary = *device_current && layer == 12;
++    setup.device_boundary = device_boundary;
++    assert(!*device_current || (device_attention_mix && (layer % 6 != 0 || device_boundary) && layer < 18));
++    if (device_boundary) {
++        assert(tokens[0].count == 2);
++        *boundary_history = true;
++        fprintf(stderr, "Inkling resident block history begin=%d layer=%d pass=%d\n", begin, layer, pass);
++    }
+     retain_current = retain_current && direct_depthmix && (!mix_setting || strcmp(mix_setting, "0") != 0);
+     prepare_prefill(team, &setup, count);
+     if (device_attention_mix) {
+@@ -276,7 +283,7 @@
+         assert(sliding || full_outputs);
+         assert(inkling_arena_depthmix(*device_current ? NULL : input, NULL,
+                                     coefficients(d, aux[10], queries * model_width).data,
+-                                    input, tokens[0].count, false, full_outputs));
++                                    input, tokens[0].count, device_boundary, full_outputs));
+         for (int q = 0; q < queries; ++q)
+             for (size_t i = 0; i < values; ++i) scratch->inputs[q][0][i] = NAN;
+     }
+@@ -491,7 +498,13 @@
+         if (prefill_team_open(&team, tasks, true)) workers = &team;
+     }
+     inkling_arena_window(count == 4096, begin);
+-    bool device_current = false;
++    bool device_current = false, boundary_history = false;
++    const char *boundary_setting = getenv("I2_DEVICE_BLOCK_HISTORY");
++    const char *sliding_setting = getenv("I2_SLIDING_DEVICE_DEPTHMIX");
++    const char *full_setting = getenv("I2_FULL_DEVICE_DEPTHMIX");
++    const bool boundary_enabled = (!boundary_setting || strcmp(boundary_setting, "0") != 0) &&
++        (!sliding_setting || strcmp(sliding_setting, "0") != 0) &&
++        (!full_setting || strcmp(full_setting, "0") != 0);
+     const char *keep = getenv("I2_RETAIN_PREFILL_MOE");
+     const char *full = getenv("I2_FULL_DEVICE_DEPTHMIX");
+     const bool use_full = !full || strcmp(full, "0") != 0;
+@@ -499,13 +512,22 @@
+         const int64_t *current = d->visits + i * 4;
+         const int64_t *next = i + 1 < logical ? current + 4 : NULL;
+         const bool retain = (!keep || strcmp(keep, "0") != 0) && count == 4096 &&
+-            current[0] < 18 && next && next[0] < 18 && next[0] % 6 != 0 && (next[3] || use_full) &&
++            current[0] < 18 && next && next[0] < 18 && (next[0] % 6 != 0 || (boundary_enabled && next[0] == 12)) && (next[3] || use_full) &&
+             d->aux[next[0] * 30 + 10] >= 0;
+-        prefill_layer(d, tokens, scratch, count, begin, current, workers, &device_current, retain);
++        if (boundary_history && current[0] == 6 && current[2] > 0) {
++            assert(inkling_arena_boundary_read(scratch->inputs[0][0], false));
++            for (int t = 0; t < count; ++t)
++                memcpy(tokens[t].blocks + 2 * model_width, scratch->inputs[0][t], sizeof tokens[t].current);
++            boundary_history = false;
++        }
++        prefill_layer(d, tokens, scratch, count, begin, current, workers,
++                      &device_current, retain, &boundary_history);
+         if (begin == 4096 && count > 1 && getenv("I2_DRAFT_PARITY"))
+             check_state(count == 1 ? "draft-single-visit" : "draft-batch-visit", i,
+                         tokens[1].current, model_width);
+     }
++    if (boundary_history && need_logits)
++        assert(inkling_arena_boundary_read(tokens[count - 1].blocks + 2 * model_width, true));
+     inkling_arena_window(false, begin);
+     if (workers) prefill_team_close(workers);
+     for (int t = 0; t < count; ++t) {
