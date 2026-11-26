@@ -41,12 +41,20 @@ fn cuda_q4_kv_layout(t: const Tensor &, available: i64) -> bool {
     return last <= t.bytes && t.bytes <= available;
 }
 
+fn mla_f16_layout(t: const Tensor &, width: i64, available: i64) -> bool {
+    if t.kind != 1 || t.ne[0] != width || t.ne[2] != 1 || t.ne[3] != 1 ||
+       t.nb[0] != 2 || t.nb[1] < width * 2 || t.nb[1] % 2 != 0 { return false; }
+    let last = (t.ne[1] - 1) * t.nb[1] + width * 2;
+    return last <= t.bytes && t.bytes <= available;
+}
+
 fn flash_cuda(p: const Node &, mask: const Tensor &, q: const u8[:], k: const u8[:],
               v: const u8[:], masks: const u8[:], dst: u8[:]) -> i64 {
     let masked = mask.bytes > 0;
+    let mla = p.x.ne[0] == 576 && mla_f16_layout(p.y, 576, k.len) && mla_f16_layout(p.z, 512, v.len);
     if p.x.ne[3] != 1 || p.fp[1] != 0.0 || p.fp[2] != 0.0 ||
        p.x.nb[0] != 4 || p.x.nb[1] % 4 != 0 || p.x.nb[2] % 4 != 0 || !dense_scalar(p.d, 4) ||
-       !cuda_q4_kv_layout(p.y, k.len) || !cuda_q4_kv_layout(p.z, v.len) ||
+       (!mla && (!cuda_q4_kv_layout(p.y, k.len) || !cuda_q4_kv_layout(p.z, v.len))) ||
        (masked && (mask.ne[2] != 1 || mask.ne[3] != 1 || mask.nb[0] != 2 || mask.nb[1] % 2 != 0)) {
         return 0;
     }
@@ -62,10 +70,10 @@ fn flash_cuda(p: const Node &, mask: const Tensor &, q: const u8[:], k: const u8
     // Words 18..20 size the launches and bound the partial softmax buffer.
     // Word 21 gives the first query's causal key count, or zero for an explicit
     // mask or ordinary unmasked attention.
-    let config: i64[22] = [p.x.ne[0], p.z.ne[0], positions, heads, p.y.ne[2], p.z.ne[2], p.y.ne[1],
+    let config: i64[23] = [p.x.ne[0], p.z.ne[0], positions, heads, p.y.ne[2], p.z.ne[2], p.y.ne[1],
         p.x.nb[1], p.x.nb[2], p.y.nb[1], p.y.nb[2], p.z.nb[1], p.z.nb[2], mask.nb[1],
-        p.d.nb[1], p.d.nb[2], segment, tiles, tasks, batch, mul_size(batch, per_task), p.ip[5]];
-    return cuda_q4_attention(config, q[0 .. p.x.bytes], k[0 .. p.y.bytes], v[0 .. p.z.bytes],
+        p.d.nb[1], p.d.nb[2], segment, tiles, tasks, batch, mul_size(batch, per_task), p.ip[5], if mla { 1 } else { 0 }];
+    return cuda_q4_attention(config[0 .. (if mla { 23 } else { 22 })], q[0 .. p.x.bytes], k[0 .. p.y.bytes], v[0 .. p.z.bytes],
         masks[0 .. mask.bytes], dst[0 .. p.d.bytes], p.fp[0]);
 }
 

@@ -232,6 +232,26 @@ __kernel void goose_q4_attention_merge(__global float * scratch, __global uint8_
         task, (int64_t) query_base + task, lane);
 }
 
+__kernel void goose_mla_attention_tiles(__global uint8_t * q, __global uint8_t * k,
+    __global uint8_t * v, __global uint8_t * mask, __global float * scratch,
+    __global int64_t * cfg, float scale, int32_t query_base) {
+    uint32_t task, tile, lane;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(task));
+    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(tile));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
+    fg_mla_attn_tiles_g((uint64_t) q, (uint64_t) k, (uint64_t) v, (uint64_t) mask,
+        (uint64_t) scratch, (uint64_t) cfg, scale, task, (int64_t) query_base + task, tile, lane);
+}
+
+__kernel void goose_mla_attention_merge(__global float * scratch, __global uint8_t * output,
+    __global int64_t * cfg, int32_t query_base) {
+    uint32_t task, lane;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(task));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
+    fg_mla_attn_merge_g((uint64_t) scratch, (uint64_t) output, (uint64_t) cfg,
+        task, (int64_t) query_base + task, lane);
+}
+
 static float fg174s_load(uint64_t address, uint64_t index) {
     return fg_device_global_load(address + 4 * index);
 }

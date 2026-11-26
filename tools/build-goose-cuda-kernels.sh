@@ -175,6 +175,7 @@ if module == "mmq-quant":
     (out / "mmq-quant-types.h").write_text(types[start:end] + "\n")
 PY
 done
+sed -i 's/\ba16_f32\b/mla_a16_f32/g' "$OUT/q4-attention-device.h"
 "$CLANG" -target nvptx64-nvidia-cuda -Xclang -target-cpu -Xclang sm_70 \
     -nocudalib -O2 -x cl -cl-std=CL1.2 -I "$OUT" -S \
     "$ROOT/integration/goose-standalone/cuda-device.cl" -o "$OUT/goose-cuda.ptx"

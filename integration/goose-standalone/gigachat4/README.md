@@ -86,3 +86,28 @@ All four runs matched the eight reference tokens from the YaRN gate. Process
 swap and system swap-out delta were zero in all four runs. Median peak RSS
 increased by 80 MiB. Median prefill increased by 60.8 percent and median
 decode increased by 63.1 percent.
+
+## CUDA F16 MLA attention
+
+A separate Goose kernel computes F16 attention for 576-wide keys and
+512-wide values. Its dispatcher preserves the Q4 path and selects the F16
+kernel for the MLA layout. Disable the F16 path with
+`GOOSE_GIGACHAT4_MLA_ATTENTION=0`.
+
+| Run | Prefill, tok/s | Decode, tok/s | VRAM after request, MiB |
+| --- | ---: | ---: | ---: |
+| Control 1 | 5.875 | 2.619 | 8379 |
+| Control 2 | 6.054 | 2.733 | 8377 |
+| CUDA F16 1 | 8.840 | 4.057 | 8379 |
+| CUDA F16 2 | 8.908 | 4.037 | 8379 |
+
+All eight output IDs matched the external reference in each fixed 29/8
+run. The two medians increased by 48.8 percent for prefill and 51.2 percent
+for decode. Median peak RSS increased by 58 MiB. Process swap was zero
+in every run. The first pair recorded 73 and 91 pages of system swap-out,
+and the reverse pair recorded none.
+
+A diagnostic run exercised eight CUDA attention nodes per model step.
+The existing Q4 CUDA test matched byte for byte with one and 29 queries
+and 257 keys. The existing Q4 PTX instructions also matched after
+label normalization in both generated images.

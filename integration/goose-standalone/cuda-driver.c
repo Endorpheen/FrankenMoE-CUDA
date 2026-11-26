@@ -204,7 +204,7 @@ static struct {
     void * library;
     Context context;
     Module module;
-    Function kernel, attention_tiles, attention_merge, gdn, gdn_decode, q4_rows, vector, vector_flat, vector_flat4, rms_reference;
+    Function kernel, attention_tiles, attention_merge, mla_attention_tiles, mla_attention_merge, gdn, gdn_decode, q4_rows, vector, vector_flat, vector_flat4, rms_reference;
     Function mmq_pack, mmq_pack_shared, mmq_pack_glu, mmq_matrix, mmq_q4_matrix, mmq_q6_matrix;
     Function mmq_pack_k_major, mmq_q6_dense_half_k, mmq_q6_dense_pipeline;
     Function mmq_q4_dense_shared, mmq_q4_routed_shared;
@@ -1248,6 +1248,8 @@ static void load_cuda(void) {
         }
         if (error == 0) error = cuda.function_get(&cuda.attention_tiles, cuda.module, "goose_q4_attention_tiles");
         if (error == 0) error = cuda.function_get(&cuda.attention_merge, cuda.module, "goose_q4_attention_merge");
+        if (error == 0) error = cuda.function_get(&cuda.mla_attention_tiles, cuda.module, "goose_mla_attention_tiles");
+        if (error == 0) error = cuda.function_get(&cuda.mla_attention_merge, cuda.module, "goose_mla_attention_merge");
         if (error == 0 && flash_mma) error = cuda.function_get(&cuda.flash_mma, cuda.module, "goose_flash_causal_mma");
         if (error == 0 && flash_mma) error = cuda.function_get(&cuda.flash_stage, cuda.module, "goose_flash_q4_stage");
         if (error == 0 && flash_stream) error = cuda.function_get(&cuda.flash_stream, cuda.module, "goose_flash_stream_mma");
@@ -3597,7 +3599,10 @@ static int launch_flash_mma(const int64_t * c, DevicePtr * staged, DevicePtr out
 }
 
 int64_t fg_cuda_q4_attention(sl_i64 config, sl_u8 q, sl_u8 k, sl_u8 v, sl_u8 mask, sl_u8 out, float scale) {
-    if (config.len != 22 || config.data[17] <= 0 || config.data[17] > 65535 ||
+    const bool mla = config.len == 23 && config.data[22] == 1;
+    const char *mla_setting = mla ? getenv("GOOSE_GIGACHAT4_MLA_ATTENTION") : NULL;
+    if (mla_setting && strcmp(mla_setting, "0") == 0) return 0;
+    if ((config.len != 22 && !mla) || config.data[17] <= 0 || config.data[17] > 65535 ||
         config.data[18] <= 0 || config.data[18] > INT_MAX ||
         config.data[19] <= 0 || config.data[19] > config.data[18] || config.data[20] <= 0 ||
         config.data[20] % config.data[19] != 0 || (uint64_t) config.data[20] > SIZE_MAX ||
@@ -3618,11 +3623,11 @@ int64_t fg_cuda_q4_attention(sl_i64 config, sl_u8 q, sl_u8 k, sl_u8 v, sl_u8 mas
     if (error == 0) error = upload_inputs(data, buffers, staged, sizeof(data) / sizeof(*data));
 
     bool mma = false;
-    if (error == 0 && flash_mma_shape(config.data, mask.len)) {
+    if (error == 0 && !mla && flash_mma_shape(config.data, mask.len)) {
         error = launch_flash_mma(config.data, staged, output, scale, &mma);
     }
     bool vector = false;
-    if (error == 0 && flash_vec_shape(config.data, mask.len)) {
+    if (error == 0 && !mla && flash_vec_shape(config.data, mask.len)) {
         error = launch_flash_vec(config.data, staged, output, scale, &vector);
     }
     const bool tiled = mma || vector;
@@ -3647,8 +3652,8 @@ int64_t fg_cuda_q4_attention(sl_i64 config, sl_u8 q, sl_u8 k, sl_u8 v, sl_u8 mas
     void * merge_args[] = {&cuda.attention_scratch.address, &output, &staged[4], &start};
     while (error == 0 && !tiled && start < tasks) {
         const int count = tasks - start < capacity ? tasks - start : capacity;
-        error = cuda.launch(cuda.attention_tiles, (unsigned) count, tiles, 1, 32, 1, 1, 0, NULL, tile_args, NULL);
-        if (error == 0) error = cuda.launch(cuda.attention_merge, (unsigned) count, 1, 1, 32, 1, 1, 0, NULL, merge_args, NULL);
+        error = cuda.launch(mla ? cuda.mla_attention_tiles : cuda.attention_tiles, (unsigned) count, tiles, 1, 32, 1, 1, 0, NULL, tile_args, NULL);
+        if (error == 0) error = cuda.launch(mla ? cuda.mla_attention_merge : cuda.attention_merge, (unsigned) count, 1, 1, 32, 1, 1, 0, NULL, merge_args, NULL);
         start += count;
     }
     if (error == 0) error = activation_publish(host, out.len, output, false);
