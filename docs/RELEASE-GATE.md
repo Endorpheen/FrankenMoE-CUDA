@@ -3,8 +3,9 @@
 Every FrankenMoE package release uses the same
 [architecture and backend matrix](../tools/multimodel-release/release-matrix.json)
 and [runner](../tools/multimodel-release/release-gate.py). Extend the existing
-matrix when a model or backend enters release scope. Vulkan is planned. Add
-its rows and an execution adapter here when it is implemented.
+matrix when a model or backend enters release scope. Qwen2.5 Vulkan has
+separate native AMD and diagnostic rows. Results from explicit Vulkan
+device selection or Wine with Lavapipe do not qualify native AMD hardware.
 
 ## Checklist
 
@@ -44,6 +45,16 @@ Wine CPU, and bounds startup and request waits. Warm file-cache residency
 ahead of the live block if a model profile requires it. On a native Windows
 host, run the same gate against the same archives with weights and PE
 `objdump` available. Live checks run on the current host only.
+
+Use the default distribution for any archive containing CUDA executables.
+For independent Vulkan-only archives, add `--distribution vulkan`. This
+mode verifies that every file belongs to the Vulkan distribution, then
+evaluates all four Vulkan rows in the same registry. Use
+`--vulkan-device-index N` to exercise a separate explicit-device Linux
+diagnostic and `--vulkan-wine-icd PATH` with an isolated Wine prefix to
+exercise the software Vulkan diagnostic. Real AMD tests select an eligible
+AMD device using the native loader. The full CUDA+Vulkan matrix is still
+mandatory for combined archives.
 
 A local build plan maps each platform to a trusted command, a timeout and
 the mapping of archive-relative executable names to built files. One command

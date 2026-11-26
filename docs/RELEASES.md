@@ -5,6 +5,15 @@ provides Linux and Windows x64 archives and SHA-256 checksums. See the
 [multi-model guide](MULTIMODEL-ALPHA.md) for verified model profiles and
 platform coverage.
 
+The [v0.14.0-vulkan-alpha release](https://github.com/Endorpheen/FrankenMoE-CUDA/releases/tag/v0.14.0-vulkan-alpha)
+provides a separate experimental distribution for Qwen2.5-0.5B Q4_0
+on Vulkan. It includes both x64 platforms, SHA-256 and the Release
+Gate reports. See the [Vulkan setup guide](releases/VULKAN-ALPHA.md).
+The combined CUDA+Vulkan candidate remains unpublished after a
+Windows Apex CPU one-token generation timeout under Wine. Linux
+Apex and Inkling residency checks in that combined gate were also
+inconclusive. Existing CUDA archives and checkpoints are preserved.
+
 ## Candidate assembly and verification
 
 Run the mandatory [Release Gate](RELEASE-GATE.md) for every candidate.

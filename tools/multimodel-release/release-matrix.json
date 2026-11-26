@@ -3,7 +3,7 @@
   "backends": {
     "cuda": "active",
     "cpu": "compatibility",
-    "vulkan": "planned"
+    "vulkan": "experimental"
   },
   "models": {
     "apex": {
@@ -469,6 +469,30 @@
       "expected_text_sha256": "b0ae7e4906da8dbd07e8c7ca68cbdc64716ba2676b3b4f734ec23ad4a6fca9b6",
       "vram_limit_mib": 12288,
       "ram_limit_mib": 16384
+    },
+    "qwen2-vulkan": {
+      "weights": "qwen2.5-0.5b-instruct-q4_0.gguf",
+      "weights_sha256": "7671c0c304e6ce5a7fc577bcb12aba01e2c155cc2efd29b2213c95b18edaf6ed",
+      "request": {
+        "prompt": [
+          785,
+          6722,
+          315,
+          9625,
+          374
+        ],
+        "n_predict": 4,
+        "temperature": 0,
+        "return_tokens": true
+      },
+      "expected_ids": [
+        12095,
+        11,
+        323,
+        432
+      ],
+      "expected_text_sha256": "70927c13f7363422481717d52f3bf0fff2bb54e499a0cba7c2a1b001f5baac8d",
+      "ram_limit_mib": 2048
     }
   },
   "rows": [
@@ -618,6 +642,48 @@
       "entry": null,
       "files": [],
       "runner": null
+    },
+    {
+      "os": "linux-x64",
+      "backend": "vulkan",
+      "model": "qwen2-vulkan",
+      "entry": "vulkan/frankenmoe-vulkan",
+      "files": [
+        "vulkan/README.md"
+      ],
+      "runner": "linux-vulkan-amd"
+    },
+    {
+      "os": "linux-x64",
+      "backend": "vulkan",
+      "model": "qwen2-vulkan",
+      "entry": "vulkan/frankenmoe-vulkan",
+      "files": [
+        "vulkan/README.md"
+      ],
+      "runner": "linux-vulkan-explicit",
+      "validation": "explicit-device"
+    },
+    {
+      "os": "windows-x64",
+      "backend": "vulkan",
+      "model": "qwen2-vulkan",
+      "entry": "vulkan/frankenmoe-vulkan.exe",
+      "files": [
+        "vulkan/README.md"
+      ],
+      "runner": "windows-vulkan-amd"
+    },
+    {
+      "os": "windows-x64",
+      "backend": "vulkan",
+      "model": "qwen2-vulkan",
+      "entry": "vulkan/frankenmoe-vulkan.exe",
+      "files": [
+        "vulkan/README.md"
+      ],
+      "runner": "wine-vulkan",
+      "validation": "wine-lavapipe"
     }
   ],
   "required_platforms": {
@@ -627,6 +693,25 @@
     ],
     "cpu": [
       "windows-x64"
+    ],
+    "vulkan": [
+      "linux-x64",
+      "windows-x64"
+    ]
+  },
+  "backend_models": {
+    "cuda": [
+      "apex",
+      "inkling",
+      "bonsai"
+    ],
+    "cpu": [
+      "apex",
+      "inkling",
+      "bonsai"
+    ],
+    "vulkan": [
+      "qwen2-vulkan"
     ]
   }
 }

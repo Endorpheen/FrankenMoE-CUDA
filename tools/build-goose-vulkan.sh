@@ -19,7 +19,7 @@ case "$target" in
     windows)
         cc=${WINDOWS_CC:-x86_64-w64-mingw32-gcc}
         executable=frankenmoe-vulkan-probe.exe
-        libs=(-static)
+        libs=(-static -Wl,--no-insert-timestamp)
         ;;
     *)
         printf '%s\n' 'Expected linux or windows' >&2

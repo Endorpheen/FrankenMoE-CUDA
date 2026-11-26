@@ -47,6 +47,16 @@ class Archives(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "duplicate checksum"):
             gate.sums(entry * 2)
 
+    def test_vulkan_distribution_excludes_cuda_entries(self):
+        matrix = {"rows": [
+            {"os": "linux-x64", "backend": "cuda", "entry": "bin/apex-server", "files": ["cuda/module.cubin"]},
+            {"os": "linux-x64", "backend": "vulkan", "entry": "vulkan/frankenmoe-vulkan", "files": ["vulkan/README.md"]},
+            {"os": "windows-x64", "backend": "vulkan", "entry": "vulkan/frankenmoe-vulkan.exe", "files": []},
+        ]}
+        files = gate.distribution_files(matrix, "linux-x64")
+        self.assertEqual({str(path) for path in files},
+                         {"README.md", "LICENSE", "vulkan/frankenmoe-vulkan", "vulkan/README.md"})
+
 
 if __name__ == "__main__":
     unittest.main()

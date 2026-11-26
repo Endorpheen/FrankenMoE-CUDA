@@ -9,6 +9,12 @@ Learn about the language in the [original Goose repository](https://github.com/a
 
 ## Downloads and verified models
 
+The [experimental Vulkan alpha](https://github.com/Endorpheen/FrankenMoE-CUDA/releases/tag/v0.14.0-vulkan-alpha)
+provides separate Linux and Windows x64 downloads for Qwen2.5-0.5B Q4_0.
+It has no CUDA dependency. CLI, local chat and SSE were verified on
+Linux RTX 4070 and on the Windows executable under Wine with Lavapipe.
+Native AMD hardware remains untested. See the [Vulkan setup guide](docs/releases/VULKAN-ALPHA.md).
+
 The [v0.13.0-alpha](https://github.com/Endorpheen/FrankenMoE-CUDA/releases/tag/v0.13.0-alpha)
 Linux x64 package runs Apex, Inkling and Bonsai on Goose/CUDA. Short
 real-model generation was verified on an RTX 4070 12 GB (SM89). The bundled

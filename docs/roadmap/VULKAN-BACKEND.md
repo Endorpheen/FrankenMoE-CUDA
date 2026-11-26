@@ -1,11 +1,13 @@
 # Vulkan backend for FrankenMoE
 
-**Status: Qwen2.5 Vulkan text CLI and local chat server.** The Vulkan binary
+**Status: experimental Qwen2.5 Vulkan distribution.** The Vulkan binary
 loads the supported Qwen2.5-0.5B Q4_0 GGUF layout, accepts raw token IDs or
 UTF-8 prompts, and generates greedy output. HTTP includes text completion
-and ChatML chat, with SSE on OpenAI-style routes. Native AMD tests and
-release qualification remain open. Keep the existing CUDA inference path
-unchanged during bring-up.
+and ChatML chat, with SSE on OpenAI-style routes. The separate Linux and
+Windows alpha archives passed reproducible build and software or explicit
+device smoke checks. Native AMD tests remain open. Keep the existing CUDA
+inference path unchanged during bring-up.
+[Vulkan alpha release](https://github.com/Endorpheen/FrankenMoE-CUDA/releases/tag/v0.14.0-vulkan-alpha)
 
 ## Verified bring-up
 

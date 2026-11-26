@@ -143,13 +143,18 @@ def fetch(url, route, payload=None, timeout=2):
         return json.load(response)
 
 
-def process_memory(pid):
+def process_rss(pid):
     if os.name == "nt":
         command = f"(Get-Process -Id {int(pid)}).PeakWorkingSet64"
         ram = int(run(["powershell", "-NoProfile", "-Command", command]).strip()) / 1048576
     else:
         fields = dict(line.split(":", 1) for line in Path(f"/proc/{pid}/status").read_text().splitlines())
         ram = int(fields["VmHWM"].split()[0]) / 1024
+    return ram
+
+
+def process_memory(pid):
+    ram = process_rss(pid)
     gpu = run(["nvidia-smi", "--query-compute-apps=pid,used_gpu_memory", "--format=csv,noheader,nounits"])
     samples = [v.strip() for p, v in (line.split(",", 1) for line in gpu.splitlines()) if p.strip() == str(pid)]
     vram = sum(map(int, samples)) if samples and all(v.isdecimal() for v in samples) else None
@@ -205,8 +210,35 @@ def wine_metadata(row, spec, model, root, weights, prefix):
         row["wine_model_check"] = ("FAIL", (getattr(e, "stderr", None) or str(e)).strip())
 
 
-def probe(row, spec, model, root, logs, weights, prefix, gpu_index):
+def has_amd_gpu():
+    if os.name == "nt":
+        try:
+            ids = run(["powershell", "-NoProfile", "-Command",
+                       "(Get-CimInstance Win32_VideoController).PNPDeviceID"])
+            return "VEN_1002" in ids.upper()
+        except (OSError, subprocess.SubprocessError):
+            return False
+    for path in Path("/sys/bus/pci/devices").glob("*"):
+        try:
+            if (path / "vendor").read_text().strip() == "0x1002" and (path / "class").read_text().startswith("0x03"):
+                return True
+        except OSError:
+            continue
+    return False
+
+
+def probe(row, spec, model, root, logs, weights, prefix, gpu_index, vulkan_device=None, vulkan_wine_icd=None):
     kind = spec["runner"]
+    vulkan = "-vulkan" in kind
+    if kind in ("linux-vulkan-amd", "windows-vulkan-amd"):
+        if (os.name == "nt") != (kind == "windows-vulkan-amd") or not has_amd_gpu():
+            row["launch"] = ("NOT TESTED", "Native AMD display device not available on this host")
+            return
+    if kind == "linux-vulkan-explicit" and (os.name == "nt" or vulkan_device is None):
+        return
+    if kind == "wine-vulkan" and (os.name == "nt" or prefix is None or vulkan_wine_icd is None or
+                                  shutil.which("wine") is None):
+        return
     if kind == "windows-cuda" and os.name != "nt":
         return
     if kind == "wine-cpu" and (prefix is None or shutil.which("wine") is None):
@@ -215,6 +247,9 @@ def probe(row, spec, model, root, logs, weights, prefix, gpu_index):
         return
     weight = weights / model["weights"] if weights else None
     if not weight or not weight.is_file():
+        return
+    if model.get("weights_sha256") and sha(weight) != model["weights_sha256"]:
+        row["model_load"] = ("FAIL", "Model SHA-256 does not match the reference")
         return
     if kind.endswith("-cuda"):
         try:
@@ -237,7 +272,19 @@ def probe(row, spec, model, root, logs, weights, prefix, gpu_index):
     command = [str(root / spec["entry"])]
     env = {k: v for k, v in os.environ.items() if not k.startswith(("GOOSE_", "BONSAI_", "I2_", "GGML_"))}
     env.update(FRANKENMOE_CONSOLE="0", CUDA_VISIBLE_DEVICES=str(gpu_index))
-    if kind == "linux-cuda":
+    if vulkan:
+        env["CUDA_VISIBLE_DEVICES"] = ""
+        if kind == "wine-vulkan":
+            command.insert(0, "wine")
+            env.update(WINEDEBUG="-all", WINEPREFIX=str(prefix), VK_DRIVER_FILES=str(vulkan_wine_icd))
+            env.pop("VK_ICD_FILENAMES", None)
+            weight = "Z:" + str(weight.resolve()).replace("/", "\\")
+        command += [str(weight), "--ctx-size", "96", "--serve", str(port)]
+        if kind == "wine-vulkan":
+            command += ["--device-index", "0", "--allow-cpu", "--max-requests", "2"]
+        elif kind == "linux-vulkan-explicit":
+            command += ["--device-index", str(vulkan_device)]
+    elif kind == "linux-cuda":
         env["GOOSE_CUDA"] = "1"
         command = [str(root / "frankenmoe"), spec["model"], str(weight), str(port)]
     else:
@@ -305,6 +352,16 @@ def probe(row, spec, model, root, logs, weights, prefix, gpu_index):
                     row["memory"] = ("NOT TESTED" if kind == "windows-cuda" else "FAIL", evidence)
                 else:
                     row["memory"] = ("PASS", evidence)
+            elif vulkan:
+                try:
+                    ram = process_rss(proc.pid)
+                    evidence = f"Peak process RSS {ram:.1f} MiB"
+                    if not 0 < ram <= model["ram_limit_mib"]:
+                        row["memory"] = ("FAIL", evidence)
+                    else:
+                        row["memory"] = ("NOT TESTED", evidence + "; device-attributed VRAM unavailable")
+                except (OSError, ValueError, KeyError, subprocess.SubprocessError):
+                    row["memory"] = ("NOT TESTED", "Process memory sampling unavailable")
         except (OSError, ValueError, KeyError, subprocess.SubprocessError) as e:
             step = "memory" if row["generation"][0] == "PASS" else "generation"
             row[step] = ("FAIL", f"{type(e).__name__}: {e}")
@@ -318,6 +375,19 @@ def probe(row, spec, model, root, logs, weights, prefix, gpu_index):
                     proc.wait()
 
 
+def row_key(spec):
+    return "/".join(spec[part] for part in ("os", "backend", "model")) + (
+        "/" + spec["validation"] if spec.get("validation") else "")
+
+
+def distribution_files(matrix, platform):
+    allowed = {"README.md", "LICENSE"}
+    for spec in matrix["rows"]:
+        if spec["os"] == platform and spec["backend"] == "vulkan" and spec["entry"]:
+            allowed.update((spec["entry"], *spec["files"]))
+    return {PurePosixPath(name) for name in allowed}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--linux", type=Path, required=True)
@@ -327,25 +397,40 @@ def main():
     parser.add_argument("--weights", type=Path, help="run live checks using these GGUFs")
     parser.add_argument("--wine-prefix", type=Path, help="isolated Wine prefix; CUDA stays disabled")
     parser.add_argument("--gpu-index", type=int, default=0)
+    parser.add_argument("--vulkan-device-index", type=int, help="separate Linux diagnostic using an explicit Vulkan device")
+    parser.add_argument("--vulkan-wine-icd", type=Path, help="software ICD for the separate Wine Vulkan diagnostic")
     parser.add_argument("--only", action="append", default=[], metavar="OS/BACKEND/MODEL",
                         help="rerun only the specified model row; repeat to select multiple rows")
     parser.add_argument("--build-plan", type=Path, help="trusted JSON map of OS to build command and matching executable hashes")
     parser.add_argument("--matrix", type=Path, default=Path(__file__).with_name("release-matrix.json"))
+    parser.add_argument("--distribution", choices=("all", "vulkan"), default="all",
+                        help="physical archive scope; Vulkan-only archives may contain no CUDA package files")
     args = parser.parse_args()
+    if args.vulkan_device_index is not None and not 0 <= args.vulkan_device_index < 2**32 - 1:
+        parser.error("invalid Vulkan device index")
+    if args.vulkan_wine_icd:
+        args.vulkan_wine_icd = args.vulkan_wine_icd.resolve()
+        if not args.vulkan_wine_icd.is_file():
+            parser.error("Wine Vulkan ICD must be an existing JSON manifest")
     args.output = args.output.resolve()
     args.output.mkdir()
     weights = args.weights.resolve() if args.weights else None
     prefix = args.wine_prefix.resolve() if args.wine_prefix else None
     config = json.loads(args.matrix.read_text())
-    keys = ["/".join(spec[part] for part in ("os", "backend", "model")) for spec in config["rows"]]
+    registry = [row_key(spec) for spec in config["rows"]]
+    rows = [spec for spec in config["rows"] if args.distribution == "all" or spec["backend"] == "vulkan"]
+    if not rows:
+        parser.error("the matrix has no rows for this distribution")
+    keys = [row_key(spec) for spec in rows]
     required = {f"{platform}/{backend}/{model}"
                 for backend, platforms in config["required_platforms"].items()
-                for platform in platforms for model in config["models"]}
-    if len(set(keys)) != len(keys) or set(args.only) - set(keys) or required - set(keys):
+                for platform in platforms
+                for model in config.get("backend_models", {}).get(backend, config["models"])}
+    if len(set(registry)) != len(registry) or set(args.only) - set(keys) or required - set(registry):
         parser.error("duplicate rows, missing required combinations or unknown --only selection")
     build_plan = json.loads(args.build_plan.read_text()) if args.build_plan else {}
     expected = sums(args.sha256.read_text())
-    report = {"scope": args.only or "all", "archives": {}, "rows": {}}
+    report = {"distribution": args.distribution, "scope": args.only or "all", "archives": {}, "rows": {}}
     extracted = {}
     for os_name, archive in (("linux-x64", args.linux), ("windows-x64", args.windows)):
         digest = sha(archive)
@@ -360,6 +445,8 @@ def main():
         try:
             root = extract(archive, args.output / os_name)
             files = check_contents(root)
+            if args.distribution == "vulkan" and set(files) - distribution_files(config, os_name):
+                raise ValueError("Vulkan-only archive contains files outside its declared distribution")
             info["contents_sha256"] = ("PASS", f"{len(files)} verified files")
             info["files"] = {str(path): checksum for path, checksum in sorted(files.items())}
             extracted[os_name] = root
@@ -374,9 +461,9 @@ def main():
         except (OSError, ValueError, subprocess.SubprocessError) as e:
             build_outputs[os_name] = str(e)
 
-    for spec in config["rows"]:
+    for spec in rows:
         os_name = spec["os"]
-        key = "/".join(spec[part] for part in ("os", "backend", "model"))
+        key = row_key(spec)
         if args.only and key not in args.only:
             continue
         row = dict.fromkeys(CHECKS, ("NOT TESTED", ""))
@@ -400,7 +487,8 @@ def main():
         if static_checks(row, root, spec):
             wine_metadata(row, spec, config["models"][spec["model"]], root, weights, prefix)
             try:
-                probe(row, spec, config["models"][spec["model"]], root, args.output, weights, prefix, args.gpu_index)
+                probe(row, spec, config["models"][spec["model"]], root, args.output, weights, prefix,
+                      args.gpu_index, args.vulkan_device_index, args.vulkan_wine_icd)
             except (OSError, subprocess.SubprocessError) as e:
                 row["launch"] = ("FAIL", str(e))
 
@@ -409,7 +497,8 @@ def main():
                     for check in ("archive_sha256", "contents_sha256"))
     report["verdict"] = "FAIL" if "FAIL" in statuses else "NOT TESTED" if "NOT TESTED" in statuses else "PASS"
     (args.output / "report.json").write_text(json.dumps(report, indent=2) + "\n")
-    lines = ["# Release Gate", "", f"Verdict: **{report['verdict']}**", ""]
+    lines = ["# Release Gate", "", f"Distribution: **{args.distribution}**", "",
+             f"Verdict: **{report['verdict']}**", ""]
     if args.only:
         lines += ["Selective rerun: " + ", ".join(args.only), ""]
     for info in report["archives"].values():
