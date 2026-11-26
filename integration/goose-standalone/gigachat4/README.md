@@ -295,3 +295,16 @@ and 10.214 decode tokens/s, with 8476 MiB VRAM after the request and zero
 swap delta. In the Nsight diagnostic, prefill device-to-host copies
 fell from 2096736256 to 796502016 bytes. All 93 large product-window
 copies disappeared.
+
+### EXP-2026-11-26-2143 — CUDA GDN Q/K head repetition
+
+The GigaChat4 graph tags the two GDN head-repeat nodes. Batched nodes matching
+the tagged F32 layout use the existing CUDA vector broadcast. Decode and
+untagged graphs keep their original dispatch.
+
+On the fixed 512/32 request, the control measured 47.88/9.84 tokens/s and
+the tagged candidate measured 142.61/10.20 tokens/s. Two earlier shape-only
+probes measured 140.19/9.95 and 143.29/10.24 tokens/s. All 32 generated token
+IDs matched the llama.cpp reference on this fixture. Post-request GPU memory
+was 8481 MiB versus 8490 MiB for the control. Process swap was zero and
+system swap-out did not increase.

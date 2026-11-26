@@ -16,6 +16,7 @@ fn giga_gdn_heads(ctx: u64, x: u64, tokens: i64, seqs: i64) -> u64 {
     let l2 = giga_scale(ctx, giga_rms(ctx, x, 0.000001 / 128.0), 1.0 / giga_sqrt(128.0));
     let grouped = giga_reshape4(ctx, l2, 128, 1, 16, tokens * seqs);
     let repeated = giga_repeat4(ctx, grouped, 128, 2, 16, tokens * seqs);
+    giga_op_param(repeated as! i64, 13, 2143);
     return giga_reshape4(ctx, repeated, 128, 32, tokens, seqs);
 }
 

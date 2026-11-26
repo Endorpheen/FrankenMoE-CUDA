@@ -8,6 +8,11 @@ fn cv_operation(p: const Node &) -> i64 {
     if p.op == OP_MUL { return CV_MUL; }
     if p.op == OP_DIV { return CV_DIV; }
     if p.op == OP_SCALE { return CV_SCALE; }
+    if p.op == OP_REPEAT && p.ip[13] == 2143 && p.x.ne[0] == 128 && p.x.ne[1] == 1 &&
+       p.x.ne[2] == 16 && p.x.ne[3] >= 16 && p.d.ne[0] == 128 &&
+       p.d.ne[1] == 2 && p.d.ne[2] == 16 && p.d.ne[3] == p.x.ne[3] {
+        return CV_SCALE;
+    }
     if p.op == OP_CLAMP { return CV_CLAMP; }
     if p.op == OP_RMS_NORM { return CV_RMS; }
     if p.op == OP_L2_NORM { return CV_L2; }
@@ -111,5 +116,7 @@ fn cv_try(p: const Node &, x: const u8[:], y: const u8[:], dst: u8[:], addresses
        !cv_wide_ready(addresses[0] as! u64, addresses[1] as! u64, addresses[2] as! u64, p.d.bytes) {
         return cv_multiply_windows(p, x, y, dst, config[..]);
     }
-    return cuda_vector(config, x[0 .. p.x.bytes], y[0 .. y_bytes], dst[0 .. p.d.bytes], p.fp[0], p.fp[1]);
+    let scale = if p.op == OP_REPEAT { 1.0 } else { p.fp[0] };
+    let bias = if p.op == OP_REPEAT { 0.0 } else { p.fp[1] };
+    return cuda_vector(config, x[0 .. p.x.bytes], y[0 .. y_bytes], dst[0 .. p.d.bytes], scale, bias);
 }
