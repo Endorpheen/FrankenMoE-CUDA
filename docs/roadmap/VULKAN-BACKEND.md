@@ -1,10 +1,10 @@
 # Vulkan backend for FrankenMoE
 
-**Status: first Qwen2.5 Vulkan inference.** The standalone Vulkan binary
-loads and verifies the supported Qwen2.5-0.5B Q4_0 GGUF layout and generates
-greedy token IDs. Prompt tokenization, text output, HTTP, native AMD tests
-and release qualification remain open. Keep the existing CUDA inference
-path unchanged during bring-up.
+**Status: standalone Qwen2.5 Vulkan text inference.** The Vulkan binary
+loads and verifies the supported Qwen2.5-0.5B Q4_0 GGUF layout, accepts
+raw token IDs or UTF-8 prompts and generates greedy output. HTTP, native
+AMD tests and release qualification remain open. Keep the existing CUDA
+inference path unchanged during bring-up.
 
 ## Verified bring-up
 
@@ -118,6 +118,36 @@ bash tools/build-goose-vulkan.sh build/vulkan-bringup/windows windows qwen2
 bash integration/goose-standalone/tests/vulkan/qwen2-smoke.sh \
     build/vulkan-bringup/linux/frankenmoe-vulkan "$QWEN_GGUF" --device-index 0
 ```
+
+### Text CLI and tokenizer
+
+The Vulkan unit links the existing Goose BPE and detokenizer. The build
+specializes the existing pre-tokenizer for Qwen2, which excludes combining
+marks from letter runs. It leaves the CUDA units and source unchanged.
+Token and merge tables, token attributes and end-of-generation IDs come
+from the GGUF metadata. Text mode stops at an end-of-generation token
+and writes UTF-8 to standard output. The raw-ID path preserves its
+original output contract. Text mode runs greedy continuation without
+applying a chat template or sampling configuration.
+
+`--prompt-file` reads UTF-8 bytes directly on both platforms. This avoids
+Windows command-line code page conversion. `--special` opts into parsing
+literal control-token spellings. `--tokenize-only` opens no Vulkan device
+and prints only token IDs.
+[Qwen tokenizer configuration](https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct/raw/main/tokenizer_config.json)
+
+```bash
+build/vulkan-bringup/linux/frankenmoe-vulkan "$QWEN_GGUF" --n-predict 4 \
+    --prompt 'The capital of France is'
+python3 integration/goose-standalone/tests/vulkan/tokenizer.py \
+    build/vulkan-bringup/linux/frankenmoe-vulkan "$QWEN_GGUF"
+```
+
+The six stored fixtures match the llama.cpp CPU tokenizer, covering
+ASCII, Cyrillic, CJK, emoji, combining marks, whitespace and split or
+literal special tokens. Direct text continuation on RTX 4070 and Windows
+x64 under Wine with Lavapipe matches the CPU continuation byte-for-byte
+after adding the CLI's final newline.
 
 ## Source audit and integration boundary
 

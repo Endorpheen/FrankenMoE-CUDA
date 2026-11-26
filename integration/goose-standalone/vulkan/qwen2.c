@@ -2,6 +2,7 @@
 #define _POSIX_C_SOURCE 200809L
 #include "qwen2.h"
 #include "qwen2_unit.h"
+#include "tokenizer.h"
 #include "upload.h"
 
 #include <stdio.h>
@@ -36,10 +37,53 @@ static int64_t metadata(fg_gguf *file, const char *name) {
     return gr_find_kv(file->data, WORDS(file->state), WORDS(file->metadata), WORDS(file->meta_slots), key(name));
 }
 
-static int validate_model(fg_gguf *file, fg_vk_qwen2 *model) {
+static int metadata_is(fg_gguf *file, const char *name, const char *value) {
     int64_t span[4];
-    if (gr_val_span(WORDS(file->state), WORDS(file->metadata), metadata(file, "general.architecture"), WORDS(span)) ||
-        span[0] != 8 || span[2] != 5 || memcmp(file->data.data + span[1], "qwen2", 5)) return 0;
+    return !gr_val_span(WORDS(file->state), WORDS(file->metadata), metadata(file, name), WORDS(span)) &&
+        span[0] == 8 && span[2] == (int64_t)strlen(value) &&
+        !memcmp(file->data.data + span[1], value, (size_t)span[2]);
+}
+
+static int64_t read_header(fg_gguf *file, FILE *model) {
+    if (fseeko(model, 0, SEEK_END)) return -1;
+    const int64_t size = ftello(model);
+    if (size < 24) return -1;
+    const size_t prefix = size > (64 << 20) ? 64 << 20 : (size_t)size;
+    file->data = (sl_u8){malloc(prefix), (int64_t)prefix};
+    if (!file->data.data || fseeko(model, 0, SEEK_SET) || fread(file->data.data, 1, prefix, model) != prefix ||
+        gr_parse(file->data, size, WORDS(file->state), WORDS(file->metadata), WORDS(file->tensors),
+                 WORDS(file->meta_slots), WORDS(file->tensor_slots))) return -1;
+    return size;
+}
+
+extern fg_vk_tokenizer *fg_vk_tokenizer_from_gguf(sl_u8 data, sl_i64 state, sl_i64 meta,
+    int64_t tokens, int64_t merges, int64_t types, int64_t eos);
+
+fg_vk_tokenizer *fg_vk_qwen2_tokenizer_open(const char *path) {
+    FILE *model = fopen(path, "rb");
+    if (!model) {
+        perror(path);
+        return NULL;
+    }
+    fg_gguf file = {0};
+    fg_vk_tokenizer *tokenizer = NULL;
+    int64_t eos;
+    if (read_header(&file, model) >= 0 && metadata_is(&file, "general.architecture", "qwen2") &&
+        metadata_is(&file, "tokenizer.ggml.model", "gpt2") && metadata_is(&file, "tokenizer.ggml.pre", "qwen2") &&
+        !gr_meta_int(file.data, WORDS(file.state), WORDS(file.metadata),
+                     metadata(&file, "tokenizer.ggml.eos_token_id"), words(&eos, 1)) &&
+        eos >= 0 && eos < FG_QWEN_VOCAB) {
+        tokenizer = fg_vk_tokenizer_from_gguf(file.data, WORDS(file.state), WORDS(file.metadata),
+            metadata(&file, "tokenizer.ggml.tokens"), metadata(&file, "tokenizer.ggml.merges"),
+            metadata(&file, "tokenizer.ggml.token_type"), eos);
+    }
+    free(file.data.data);
+    fclose(model);
+    return tokenizer;
+}
+
+static int validate_model(fg_gguf *file, fg_vk_qwen2 *model) {
+    if (!metadata_is(file, "general.architecture", "qwen2")) return 0;
     const struct { const char *name; int64_t expected; } dims[] = {
         {"qwen2.block_count", FG_QWEN_LAYERS}, {"qwen2.embedding_length", HIDDEN},
         {"qwen2.feed_forward_length", FFN}, {"qwen2.attention.head_count", HEADS},
@@ -191,14 +235,8 @@ int fg_vk_qwen2_open(fg_vk_qwen2 *m, const char *path, uint32_t context, uint32_
         return 0;
     }
     fg_gguf file = {0};
-    int64_t file_size = -1;
-    if (fseeko(model, 0, SEEK_END) == 0) file_size = ftello(model);
-    const size_t prefix = file_size > 64 << 20 ? 64 << 20 : file_size > 0 ? (size_t)file_size : 0;
-    file.data = (sl_u8){malloc(prefix), (int64_t)prefix};
-    int ok = prefix && file.data.data && fseeko(model, 0, SEEK_SET) == 0 &&
-        fread(file.data.data, 1, prefix, model) == prefix &&
-        gr_parse(file.data, file_size, WORDS(file.state), WORDS(file.metadata), WORDS(file.tensors),
-                 WORDS(file.meta_slots), WORDS(file.tensor_slots)) == 0 && validate_model(&file, m);
+    const int64_t file_size = read_header(&file, model);
+    int ok = file_size >= 0 && validate_model(&file, m);
     if (!ok) fputs("Qwen2 Vulkan: invalid or incompatible GGUF metadata\n", stderr);
     VkDeviceSize size = 0;
     fg_weight weights[WT_GLOBAL_COUNT + FG_QWEN_LAYERS * WT_COUNT];

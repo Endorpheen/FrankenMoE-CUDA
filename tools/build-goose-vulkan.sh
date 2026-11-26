@@ -53,11 +53,25 @@ fi
 
 if [[ "$mode" == qwen2 ]]; then
     goose=${GOOSE_BIN:-goose}
+    python3 - "$root/goose/misc/pretokenizer-qwen35.goose" "$out/pretokenizer-qwen2.goose" <<'PY'
+from pathlib import Path
+import sys
+
+source, output = map(Path, sys.argv[1:])
+text = source.read_text()
+anchor = "const PT_MARK: i64 = 0x0010;"
+if text.count(anchor) != 1:
+    raise ValueError("Qwen pre-tokenizer anchor changed")
+# Qwen2 classifies marks with punctuation instead of folding them into letter runs.
+output.write_text(text.replace(anchor, "const PT_MARK: i64 = 0;"))
+PY
     cat "$root/goose/misc/gguf-headers.goose" "$root/goose/model/"{gguf-tensors,gguf-reader}.goose \
+        "$root/goose/misc/"{unicode-tables,unicode-text}.goose "$out/pretokenizer-qwen2.goose" \
+        "$root/goose/model/"{bpe-tokenize,bpe-detokenize,tokenizer-engine}.goose \
         "$source_dir/qwen2-step.goose" > "$out/qwen2_unit.goose"
     "$goose" --standalone -o "$out/qwen2_unit.c" --header "$out/qwen2_unit.h" "$out/qwen2_unit.goose"
     "$cc" -std=c11 -O2 -w -ffunction-sections -fdata-sections -c "$out/qwen2_unit.c" -o "$out/qwen2_unit.o"
     "$cc" "${flags[@]}" -isystem "$out/vulkan-headers" -I"$out" -Wl,--gc-sections \
-        "$source_dir/"{loader,device,memory,queue,graph,upload,qwen2,infer-main}.c "$out/qwen2_unit.o" \
+        "$source_dir/"{loader,device,memory,queue,graph,upload,qwen2,tokenizer,infer-main}.c "$out/qwen2_unit.o" \
         "${libs[@]}" -lm -pthread -o "$out/frankenmoe-vulkan$suffix"
 fi
