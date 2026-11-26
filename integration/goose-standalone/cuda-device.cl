@@ -416,6 +416,22 @@ static void fg_vector_store4(uint64_t address, CVVec4_g v) {
     *(__global float4 *) address = (float4) (v.x_g, v.y_g, v.z_g, v.w_g);
 }
 
+static double fg_glu_pow2_int(int64_t exponent) {
+    return as_double((uint64_t)(exponent + 1023) << 52);
+}
+
+static int64_t fg_glu_round(double value) {
+    int64_t result;
+    __asm__("cvt.rni.s64.f64 %0, %1;" : "=l"(result) : "d"(value));
+    return result;
+}
+
+static float fg_glu_div_rn(float a, float b) {
+    float result;
+    __asm__("div.rn.f32 %0, %1, %2;" : "=f"(result) : "f"(a), "f"(b));
+    return result;
+}
+
 #include "vector-device.h"
 #include "cuda-rms-reference.cl"
 

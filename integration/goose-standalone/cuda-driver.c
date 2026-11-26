@@ -2995,7 +2995,7 @@ static int launch_mmvq(DevicePtr weight, uint64_t stride, int extent, int kind, 
 }
 
 static int launch_matrix(DevicePtr weight, int64_t row_stride, int64_t extent,
-                         int64_t kind, int64_t rows, sl_i64 jobs, int job_words, int64_t shared_rows, int64_t input_stride, bool allow_mmq) {
+                         int64_t kind, int64_t rows, sl_i64 jobs, int job_words, int64_t shared_rows, int64_t input_stride) {
     if (!weight || rows <= 0 || rows > INT_MAX || extent <= 0 || extent > INT_MAX ||
         (kind != 0 && kind != 12 && kind != 14) ||
         jobs.len <= 0 || jobs.len % job_words != 0 || jobs.len / job_words > INT_MAX ||
@@ -3005,7 +3005,7 @@ static int launch_matrix(DevicePtr weight, int64_t row_stride, int64_t extent,
     const size_t job_bytes = (size_t) jobs.len * sizeof(*jobs.data);
     int error = reserve(&cuda.jobs, job_bytes);
     if (error == 0) error = upload_packet(cuda.jobs.address, jobs.data, job_bytes);
-    if (error == 0 && allow_mmq && cuda.mmq_matrix && kind != 0 && jobs.len / job_words >= 16) {
+    if (error == 0 && cuda.mmq_matrix && kind != 0 && jobs.len / job_words >= 16) {
         const int result = launch_mmq(weight, (uint64_t) row_stride, (int) extent, (int) kind,
                                       (int) rows, jobs, job_words, shared_rows, input_stride);
         if (result == 0) cuda_matrix_kind = (int) kind;
@@ -3062,7 +3062,7 @@ static int launch_matrix(DevicePtr weight, int64_t row_stride, int64_t extent,
 }
 
 int64_t fg_cuda_plane(uint64_t weights, int64_t weight_bytes, int64_t row_stride,
-                     int64_t extent, int64_t kind, int64_t rows, sl_i64 jobs, bool allow_mmq) {
+                     int64_t extent, int64_t kind, int64_t rows, sl_i64 jobs) {
     DevicePtr weight = 0;
     if (cuda.dense_ranges.len > 0) {
         const int64_t offset = dw_cuda_dense_offset(cuda.dense_ranges, weights, weight_bytes);
@@ -3072,12 +3072,12 @@ int64_t fg_cuda_plane(uint64_t weights, int64_t weight_bytes, int64_t row_stride
         fprintf(stderr, "Goose CUDA: matrix weight transfer failed\n");
         return -1;
     }
-    return launch_matrix(weight, row_stride, extent, kind, rows, jobs, 2, 0, 0, allow_mmq);
+    return launch_matrix(weight, row_stride, extent, kind, rows, jobs, 2, 0, 0);
 }
 
 int64_t fg_cuda_expert_batch(int64_t weight_bytes, int64_t row_stride,
                             int64_t extent, int64_t kind, int64_t rows, sl_i64 jobs,
-                            int64_t shared_rows, int64_t input_stride, bool allow_mmq) {
+                            int64_t shared_rows, int64_t input_stride) {
     const struct device_buffer * bank = &cuda.experts.weights;
     if (!bank->address || weight_bytes <= 0 || (uint64_t) weight_bytes > bank->bytes ||
         jobs.len <= 0 || jobs.len % 3 != 0 || jobs.len / 3 > INT_MAX) return -1;
@@ -3085,7 +3085,7 @@ int64_t fg_cuda_expert_batch(int64_t weight_bytes, int64_t row_stride,
         const int64_t offset = jobs.data[i];
         if (offset < 0 || (uint64_t) offset > bank->bytes - (uint64_t) weight_bytes) return -1;
     }
-    int status = launch_matrix(bank->address, row_stride, extent, kind, rows, jobs, 3, shared_rows, input_stride, allow_mmq);
+    int status = launch_matrix(bank->address, row_stride, extent, kind, rows, jobs, 3, shared_rows, input_stride);
     if (status == 0) status = submit_expert_stage();
     if (status == 0) ++cuda_cached_projections;
     return status;

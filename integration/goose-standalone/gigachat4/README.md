@@ -252,3 +252,26 @@ RSS rose by approximately 49 MiB. All eight tokens matched the external
 reference in every measured run and on an independent 29/8 input.
 The initial all-MMQ CUDA SwiGLU candidate differed at the eighth token
 and was excluded from this checkpoint.
+
+## Restore MMQ after CUDA clamped SwiGLU
+
+The CUDA SwiGLU path uses a range-reduced exponential and explicitly
+rounded division before the MMQ activation pack. The regular vector
+formula remains active on shapes that do not enter MMQ. The experimental
+down-projection exclusion from MMQ is removed.
+
+The fully precise formula matched all 786432 CPU test values bit for bit
+on the synthetic tensor. Two runs of the shape-selective candidate on
+the fixed 128/32 request matched all 32 external reference IDs. The
+previous checkpoint first differed at token 18. An independent 29/8
+request matched all eight reference tokens.
+
+| 128/32 run | Prefill, tok/s | Decode, tok/s | VRAM after request, MiB |
+| --- | ---: | ---: | ---: |
+| Previous checkpoint | 29.903 | 11.165 | 8405 |
+| Restored MMQ down 1 | 32.846 | 10.664 | 8406 |
+| Restored MMQ down 2 | 33.153 | 10.625 | 8408 |
+
+Process swap and system swap-out delta were zero. Peak RSS increased by
+about 86 MiB. The decode streams diverge after token 17 in the control,
+so these decode rates do not isolate kernel latency on equal token streams.
