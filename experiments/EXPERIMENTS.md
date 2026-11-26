@@ -1232,6 +1232,15 @@ release still needs the architecture regression gates.
   application CPU loop established in default greedy decode.
   [Host sampling and queue attribution](EXP-2026-11-26-2103-bonsai-combined-host-audit/README.md).
 
+### EXP-2026-11-26-2104 — CUDA Graph component for Bonsai FFN decode
+
+- **Component verified.** Run EXP-2101's exact kernels with 16 real FFN
+  layers, unchanged operands and either one graph or one graph per layer.
+- **Evidence:** Bitwise results for 12 synchronized inputs. Medians
+  3.255 ms direct and 2.994 ms per-layer replay on GPU. Excludes
+  Attention, GDN, dynamic KV work and full inference. Runtime unchanged.
+  [Component results and integration scope](EXP-2026-11-26-2104-bonsai-ffn-graph-probe/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.

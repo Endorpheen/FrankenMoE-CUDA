@@ -1,0 +1,31 @@
+{
+  "checkpoint": "EXP-2101",
+  "gpu": "RTX 4070",
+  "target": "sm_89",
+  "model_sha256": "ededc9fc0a8a6a8dd30914d107b2d2ce7674d789f1d05a1a481f240609aa6c23",
+  "pipeline_cubin_sha256": "2a18d1857ecb4067e30eb9ab6cc4f9c61cab7d6c46985b02c59cb57616b5c7cd",
+  "native_submission_helper_sha256": "45a9764989726b295768225db2d45c9cc0795c5ce8fa5cff0059042a6d0e9f81",
+  "layers": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15
+  ],
+  "kernels_per_layer": 10,
+  "excluded_trials": [
+    "input upload lacked synchronization with nonblocking stream"
+  ],
+  "full_request_measurements": null
+}
