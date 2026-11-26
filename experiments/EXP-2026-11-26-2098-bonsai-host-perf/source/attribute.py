@@ -101,6 +101,7 @@ def phase(lo, hi, active, apis, samples, main_thread):
         api_ns[name] = overlap_ns(union((a,b) for a,b,n in api_rows if n == name), gaps)
     phase_samples = Counter()
     all_leaf = Counter()
+    all_symbols = Counter()
     gap_leaf = Counter()
     gap_api = Counter()
     outside_cuda_gap_leaf = Counter()
@@ -113,6 +114,7 @@ def phase(lo, hi, active, apis, samples, main_thread):
         dso, symbol = classify(frame)
         phase_samples["main_thread"] += 1
         all_leaf[dso] += 1
+        all_symbols[f"{dso}: {symbol}"] += 1
         i = bisect.bisect_right(gap_starts, at) - 1
         if i < 0 or at >= gaps[i][1]:
             continue
@@ -133,6 +135,7 @@ def phase(lo, hi, active, apis, samples, main_thread):
         "gpu_gap_cuda_api_union_overlap_ns": overlap_ns(union((a,b) for a,b,_ in api_rows), gaps),
         "gpu_gap_interior_ns": sum(max(0, end-start-2*GUARD_NS) for start,end in gaps),
         "samples": dict(phase_samples), "main_thread_leaf_group": dict(all_leaf),
+        "main_thread_top_leaf": dict(all_symbols.most_common(30)),
         "gpu_gap_leaf_group": dict(gap_leaf), "gpu_gap_cuda_api_samples": dict(gap_api),
         "outside_cuda_api_gap_top_leaf": dict(outside_cuda_gap_leaf.most_common(20)),
     }

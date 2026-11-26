@@ -1198,6 +1198,19 @@ release still needs the architecture regression gates.
   The trace confirms 511 reads of 12 B and no full decode readback.
   [Build provenance, measurements and reproduction](EXP-2026-11-26-2100-bonsai-http-device-choice/README.md).
 
+### EXP-2026-11-26-2101 — Cumulative GPU choice and CPU AVX2 for Bonsai
+
+- **Retained in the cumulative experimental checkpoint.** Use GPU
+  argmax for eligible greedy steps and exact AVX2 for host greedy.
+  The EXP-2100 CUDA image is byte-identical.
+- **Evidence:** CPU AVX2 restores the rebuilt scalar control from
+  29.78 to 38.59 decode tok/s. Versus frozen EXP-2096 in two fresh
+  pairs, the combined route measures 37.99 → 38.89 decode tok/s
+  and 1101.02 → 1094.97 prefill. All responses match 512 IDs and
+  text. The trace confirms 511 reads of 12 B with no full decode
+  readback. Mixed full-request deltas, +2 MiB process VRAM.
+  [Experiment, measurements and CPU audit](EXP-2026-11-26-2101-bonsai-http-avx2-greedy/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
