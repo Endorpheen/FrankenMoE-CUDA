@@ -1,10 +1,11 @@
 # Vulkan backend for FrankenMoE
 
-**Status: Qwen2.5 Vulkan text CLI and local HTTP completions.** The Vulkan
-binary loads the supported Qwen2.5-0.5B Q4_0 GGUF layout, accepts raw token
-IDs or UTF-8 prompts and generates greedy output. Chat, streaming, native
-AMD tests and release qualification remain open. Keep the existing CUDA
-inference path unchanged during bring-up.
+**Status: Qwen2.5 Vulkan text CLI and local chat server.** The Vulkan binary
+loads the supported Qwen2.5-0.5B Q4_0 GGUF layout, accepts raw token IDs or
+UTF-8 prompts, and generates greedy output. HTTP includes text completion
+and ChatML chat, with SSE on OpenAI-style routes. Native AMD tests and
+release qualification remain open. Keep the existing CUDA inference path
+unchanged during bring-up.
 
 ## Verified bring-up
 
@@ -155,25 +156,30 @@ The Vulkan unit reuses the standalone Goose HTTP framing and JSON parser.
 The native adapter keeps one resident model and handles requests serially.
 Each generation starts at position zero and writes its own visible K/V
 prefix. The listener binds to `127.0.0.1` only. It supports
-`GET /health`, `GET /v1/models`, `POST /tokenize`, `POST /completion`
-and `POST /v1/completions`. Completion accepts a prompt string or input
+`GET /health`, `GET /v1/models`, `POST /tokenize`, `POST /completion`,
+`POST /v1/completions` and `POST /v1/chat/completions`. Completion accepts a prompt string or input
 IDs and an output-token limit. The current mode is greedy and returns
-prompt/completion/total usage. Streaming, chat templates, tools and
-other sampler options remain unsupported.
+prompt/completion/total usage. Chat supports string messages with
+system, user and assistant roles. The built-in Qwen2 ChatML text template
+inserts control token IDs separately from message content. Both OpenAI-style
+routes support SSE, optional terminal usage and `[DONE]`. No tool calls,
+multimodal content or non-greedy sampler options are supported.
 
 ```bash
 build/vulkan-bringup/linux/frankenmoe-vulkan "$QWEN_GGUF" --serve 29188 \
-    --ctx-size 16 --max-requests 10
+    --ctx-size 96 --max-requests 15
 python3 integration/goose-standalone/tests/vulkan/http-smoke.py 29188
 ```
 
-The ten-request fixture passed on Linux RTX 4070 and a Windows x64 build
-under Wine with Lavapipe, using explicit device selection. Both completion
-paths match all four stored CPU reference IDs and the expected usage.
-The fixture runs a different prompt between the two completions to
-check cache isolation. It also checks malformed JSON, context limits,
-and rejection of unsupported chat and stream requests. The server
-exits after the optional request limit; without it the listener stays up.
+The fifteen-request fixture passed on Linux RTX 4070 and a Windows x64
+build under Wine with Lavapipe, using explicit device selection. Text
+completions match all four stored CPU reference IDs and usage. Chat using
+the default system message matches the CPU reference answer `Paris`
+and its 41 prompt tokens. SSE returns the same text and usage as non-streamed
+generation. A subsequent completion matches after a client disconnects
+mid-stream. The fixture checks malformed JSON, context limits and rejected
+requests. The server exits after the optional request limit.
+[Qwen ChatML template](https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct/raw/main/tokenizer_config.json)
 
 ## Source audit and integration boundary
 
