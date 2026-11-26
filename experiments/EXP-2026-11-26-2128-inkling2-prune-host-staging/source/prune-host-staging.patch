@@ -1,0 +1,99 @@
+--- a/prefill.h
++++ b/prefill.h
+@@ -116,7 +116,7 @@
+     float *postconv_history;
+     int postconv_rows;
+     float *logits;
+-    bool skip_host_mix, device_attention_mix, device_current, device_boundary, device_loop, device_prelude;
++    bool skip_host_mix, device_attention_mix, device_current, device_boundary, device_loop, device_prelude, poison_host;
+ };
+ 
+ extern int64_t inkling_row_major_i2_postconv_batch(sl_f32 input, sl_f32 weights,
+@@ -161,10 +161,10 @@
+                     next[i] += token->current[i];
+                 }
+             }
+-            if (work->skip_host_mix) {
+-                for (int i = 0; i < model_width; ++i) ffn[i] = NAN;
+-            } else {
++            if (!work->skip_host_mix) {
+                 mix(token->blocks, token->count, next, coefficients(d, aux[9], model_width), 1, ffn);
++            } else if (work->poison_host) {
++                for (int i = 0; i < model_width; ++i) ffn[i] = NAN;
+             }
+         }
+         return;
+@@ -280,7 +280,12 @@
+         fprintf(stderr, "Inkling resident block history begin=%d layer=%d pass=%d\n", begin, layer, pass);
+     }
+     retain_current = retain_current && direct_depthmix && (!mix_setting || strcmp(mix_setting, "0") != 0);
+-    prepare_prefill(team, &setup, count);
++    const char *prune = getenv("I2_PRUNE_PREFILL_HOST_STAGING");
++    const bool prune_host = !getenv("I2_CHECK_STATE") && (!prune || strcmp(prune, "0") != 0);
++    setup.poison_host = !prune_host;
++    const bool skip_attention_prep = prune_host && device_attention_mix && *device_current &&
++        layer != 6 && (!setup.message || device_loop);
++    if (!skip_attention_prep) prepare_prefill(team, &setup, count);
+     if (device_attention_mix) {
+         float *input = scratch->inputs[0][0];
+         const size_t values = (size_t)count * model_width;
+@@ -290,8 +295,10 @@
+         assert(inkling_arena_depthmix(*device_current ? NULL : input, NULL,
+                                     coefficients(d, aux[10], queries * model_width).data,
+                                     input, tokens[0].count, device_boundary, full_outputs));
+-        for (int q = 0; q < queries; ++q)
+-            for (size_t i = 0; i < values; ++i) scratch->inputs[q][0][i] = NAN;
++        if (!prune_host)
++            for (int q = 0; q < queries; ++q)
++                for (int t = 0; t < count; ++t)
++                    for (int c = 0; c < model_width; ++c) scratch->inputs[q][t][c] = NAN;
+     }
+     struct ggml_context *ctx;
+     int64_t work[16] = {0};
+@@ -304,16 +311,18 @@
+                                     d->ha + slot * 3 * model_width);
+             if (old_direct_output) prefill_direct_output = output;
+             if (direct_depthmix) {
+-                for (int t = 0; t < count; ++t)
+-                    for (int c = 0; c < model_width; ++c) scratch->residual[t][c] = NAN;
++                if (!prune_host)
++                    for (int t = 0; t < count; ++t)
++                        for (int c = 0; c < model_width; ++c) scratch->residual[t][c] = NAN;
+                 inkling_arena_residual_open(output);
+             }
+         }
+         const float *queries = device_loop ? coefficients(d, aux[17], 4 * model_width).data : NULL;
+         if (device_loop) {
+-            for (int q = 0; q < 3; ++q)
+-                for (int t = 0; t < count; ++t)
+-                    for (int c = 0; c < model_width; ++c) message[q][t * model_width + c] = NAN;
++            if (!prune_host)
++                for (int q = 0; q < 3; ++q)
++                    for (int t = 0; t < count; ++t)
++                        for (int c = 0; c < model_width; ++c) message[q][t * model_width + c] = NAN;
+             inkling_loop_bind(queries, message[0], message[1], message[2], NULL);
+         }
+         attention_graph(d, core, aux, slot, begin, count, sliding, input, pass > 0 ? message : NULL,
+@@ -404,7 +413,11 @@
+     setup.after_attention = true;
+     setup.message = NULL;
+     setup.skip_host_mix = direct_depthmix;
+-    prepare_prefill(team, &setup, count);
++    const bool skip_moe_prep = prune_host && direct_depthmix && layer % 6 != 0;
++    if (!skip_moe_prep) prepare_prefill(team, &setup, count);
++    if (skip_attention_prep || skip_moe_prep)
++        fprintf(stderr, "Inkling pruned host prep begin=%d layer=%d pass=%d attention=%d moe=%d\n",
++                begin, layer, pass, skip_attention_prep, skip_moe_prep);
+     if (begin == 4096 && count > 1 && slot == 0 && getenv("I2_DRAFT_PARITY")) {
+         check_state("draft-postconv", count, scratch->residual[1], model_width);
+         check_state("draft-moe-input", count, scratch->ff[1], model_width);
+@@ -426,7 +439,8 @@
+         if (pass > 0) {
+             for (int t = 0; t < count; ++t) {
+                 if (device_loop) {
+-                    for (int c = 0; c < model_width; ++c) scratch->gain[t][c] = NAN;
++                    if (!prune_host)
++                        for (int c = 0; c < model_width; ++c) scratch->gain[t][c] = NAN;
+                 } else {
+                     memcpy(scratch->gain[t], tokens[t].messages[3], sizeof scratch->gain[t]);
+                 }

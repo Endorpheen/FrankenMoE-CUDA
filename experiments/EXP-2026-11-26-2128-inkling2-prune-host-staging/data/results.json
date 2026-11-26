@@ -1,0 +1,23 @@
+{
+  "control_exp2126": {
+    "prompt_tokens": 32768,
+    "decode_tokens": 512,
+    "prefill_tok_s": 409.6204428813932,
+    "decode_tok_s": 36.23880945121179,
+    "output_token_hash": "17722fe02208c8d6bab5ccd7e3495c5b22a8820bae96103748dd627f3ff0bedb"
+  },
+  "candidate": {
+    "prompt_tokens": 32768,
+    "decode_tokens": 512,
+    "prefill_tok_s": 436.58116807596497,
+    "decode_tok_s": 35.99492080869427,
+    "output_token_hash": "17722fe02208c8d6bab5ccd7e3495c5b22a8820bae96103748dd627f3ff0bedb"
+  },
+  "peak_rss_kib": 13566552,
+  "end_process_swap_kib": 0,
+  "system_swapout_pages_delta": 0,
+  "end_board_mib": 11668,
+  "read_bytes": 0,
+  "attention_prep_skipped": 352,
+  "moe_prep_skipped": 320
+}
