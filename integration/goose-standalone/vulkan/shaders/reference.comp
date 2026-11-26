@@ -10,12 +10,18 @@ layout(set = 0, binding = 0, std430) readonly buffer Input { float x[]; };
 layout(set = 0, binding = 1, std430) readonly buffer Weights { uint packed[]; };
 #elif defined(OP_FWHT)
 layout(set = 0, binding = 1, std430) readonly buffer Signs { int signs[]; };
+#elif defined(OP_GDN)
+layout(set = 0, binding = 1, std430) buffer State { float state[]; };
 #else
 layout(set = 0, binding = 1, std430) readonly buffer Weights { float w[]; };
 #endif
 layout(set = 0, binding = 2, std430) writeonly buffer Output { float y[]; };
 #if defined(OP_ATTENTION)
 layout(set = 0, binding = 3, std430) readonly buffer Values { float v[]; };
+#elif defined(OP_CAUSAL_CONV)
+layout(set = 0, binding = 3, std430) buffer History { float history[]; };
+#elif defined(OP_GDN)
+layout(set = 0, binding = 3, std430) readonly buffer Gates { float gates[]; };
 #endif
 layout(push_constant) uniform Params {
     uint width; uint rows; uint batch; float epsilon;
@@ -123,6 +129,47 @@ void main() {
         float value = tile[i] * 0.03125;
         y[token + base + i] = inverse ? value * float(signs[base + i]) : value;
     }
+#elif defined(OP_CAUSAL_CONV)
+    uint c = gl_GlobalInvocationID.x;
+    if (c < p.width) {
+        float a = history[c], b = history[p.width + c], d = history[2u * p.width + c];
+        float sample_value = x[c];
+        uint tap = c * 4u;
+        precise float conv = a * w[tap] + b * w[tap + 1u] + d * w[tap + 2u] + sample_value * w[tap + 3u];
+        y[c] = conv / (1.0 + exp(-conv));
+        history[c] = b;
+        history[p.width + c] = d;
+        history[2u * p.width + c] = sample_value;
+    }
+#elif defined(OP_QK_NORM)
+    uint head = gl_WorkGroupID.x;
+    uint row = head * p.width;
+    if (head < 2u * p.kv_heads) {
+        precise float square = 0.0;
+        for (uint i = lane; i < p.width; i += 64u) square += x[row + i] * x[row + i];
+        float inv = 1.0 / max(sqrt(sum_group(square)), p.epsilon);
+        for (uint i = lane; i < p.width; i += 64u) y[row + i] = x[row + i] * inv;
+    } else {
+        for (uint i = lane; i < p.width; i += 64u) y[row + i] = x[row + i];
+    }
+#elif defined(OP_GDN)
+    uint head = gl_WorkGroupID.x, row = gl_WorkGroupID.y;
+    uint q = (head % p.kv_heads) * p.width, k = q + p.kv_heads * p.width;
+    uint out_index = head * p.width + row;
+    uint value_index = 2u * p.kv_heads * p.width + out_index;
+    uint base = out_index * p.width;
+    float decay = exp(gates[head]);
+    precise float dot = 0.0;
+    for (uint i = lane; i < p.width; i += 64u) dot += (state[base + i] * decay) * x[k + i];
+    float delta = (x[value_index] - sum_group(dot)) * gates[p.rows + head];
+    precise float score = 0.0;
+    for (uint i = lane; i < p.width; i += 64u) {
+        precise float updated = state[base + i] * decay + delta * x[k + i];
+        state[base + i] = updated;
+        score += updated * x[q + i];
+    }
+    float result = sum_group(score) * inversesqrt(float(p.width));
+    if (lane == 0) y[out_index] = result;
 #elif defined(OP_BIAS) || defined(OP_ADD)
     uint index = gl_GlobalInvocationID.x;
 #if defined(OP_BIAS)

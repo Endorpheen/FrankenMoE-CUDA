@@ -25,6 +25,9 @@ static const fg_vk_shader shaders[FG_VK_OP_COUNT] = {
     [FG_VK_PQ2_0] = { fg_pq2_0, sizeof(fg_pq2_0) },
     [FG_VK_GATHER_PQ2_0] = { fg_gather_pq2_0, sizeof(fg_gather_pq2_0) },
     [FG_VK_FWHT] = { fg_fwht, sizeof(fg_fwht) },
+    [FG_VK_CAUSAL_CONV] = { fg_causal_conv, sizeof(fg_causal_conv) },
+    [FG_VK_QK_NORM] = { fg_qk_norm, sizeof(fg_qk_norm) },
+    [FG_VK_GDN] = { fg_gdn, sizeof(fg_gdn) },
 };
 
 static VkResult create_pipeline(fg_vk_graph *graph, fg_vk_op op) {
@@ -209,6 +212,31 @@ static int record(fg_vk_graph *graph, fg_vk_op op, fg_vk_shape shape, fg_vk_view
         y = shape.batch;
         weight_bytes = (VkDeviceSize)shape.width * sizeof(int32_t);
         break;
+    case FG_VK_CAUSAL_CONV:
+        if (shape.batch != 1 || overlap(input, values) || overlap(weight, values)) return 0;
+        x = (uint32_t)((elements + 63) / 64);
+        weight_bytes = elements * 16;
+        value_bytes = elements * 12;
+        break;
+    case FG_VK_QK_NORM:
+        if (shape.batch != 1 || !shape.rows || !shape.kv_heads || shape.kv_heads > shape.rows ||
+            stride > UINT32_MAX || shape.kv_heads > shape.rows - shape.kv_heads ||
+            !isfinite(shape.epsilon) || shape.epsilon <= 0.0f) return 0;
+        input_bytes = output_bytes = stride * 4;
+        weight_bytes = 4;
+        x = shape.rows;
+        break;
+    case FG_VK_GDN:
+        if (shape.batch != 1 || shape.width > 256 || !shape.rows || !shape.kv_heads ||
+            shape.rows % shape.kv_heads || stride > UINT32_MAX / shape.width ||
+            stride * 3 > UINT32_MAX || overlap(input, weight) || overlap(weight, values)) return 0;
+        x = shape.rows;
+        y = shape.width;
+        input_bytes = (uint64_t)shape.width * (shape.rows + 2ull * shape.kv_heads) * 4;
+        weight_bytes = stride * shape.width * 4;
+        output_bytes = stride * 4;
+        value_bytes = (uint64_t)shape.rows * 8;
+        break;
     case FG_VK_BIAS:
         x = (uint32_t)((elements + 63) / 64);
         weight_bytes = (uint64_t)shape.width * 4;
@@ -284,8 +312,21 @@ static int record(fg_vk_graph *graph, fg_vk_op op, fg_vk_shape shape, fg_vk_view
 
 int fg_vk_graph_record(fg_vk_graph *graph, fg_vk_op op, fg_vk_shape shape,
     fg_vk_view input, fg_vk_view weight, fg_vk_view output) {
-    if (op == FG_VK_ATTENTION) return 0;
+    if (op == FG_VK_ATTENTION || op == FG_VK_CAUSAL_CONV || op == FG_VK_GDN) return 0;
     return record(graph, op, shape, input, weight, output, input);
+}
+
+int fg_vk_graph_conv(fg_vk_graph *graph, uint32_t channels, fg_vk_view input,
+    fg_vk_view coefficients, fg_vk_view history, fg_vk_view output) {
+    if (!input.buffer || !coefficients.buffer || !history.buffer) return 0;
+    return record(graph, FG_VK_CAUSAL_CONV, (fg_vk_shape){.width = channels, .batch = 1},
+        input, coefficients, output, history);
+}
+
+int fg_vk_graph_gdn(fg_vk_graph *graph, fg_vk_shape shape, fg_vk_view qkv,
+    fg_vk_view state, fg_vk_view gates, fg_vk_view output) {
+    if (!qkv.buffer || !state.buffer || !gates.buffer) return 0;
+    return record(graph, FG_VK_GDN, shape, qkv, state, output, gates);
 }
 
 int fg_vk_graph_attention(fg_vk_graph *graph, fg_vk_shape shape,

@@ -312,7 +312,7 @@ The local GGUF inventory confirms distinct requirements.
 | Model | Packed weight types in the local GGUF | Vulkan status |
 | --- | --- | --- |
 | Qwen2.5-0.5B Q4_0 | Q4_0, Q8_0 | Experimental CLI and HTTP release |
-| Bonsai 2.5 27B | PQ2_0, Q4_0 for the MTP head | Signed FWHT and PQ2_0 FFN pass the real-weight component gate |
+| Bonsai 2.5 27B | PQ2_0, Q4_0 for the MTP head | Real-weight FFN and full-shape recurrent component gates pass |
 | Apex 35B | Q4_K, Q6_K | Open. GDN, grouped MoE and oversubscribed expert placement |
 | Inkling-2-Mini | Q8_0, IQ4_NL, IQ4_XS | Open. Relative/sliding attention, recurrent depth loops and grouped MoE |
 
@@ -343,9 +343,31 @@ bash tools/build-goose-vulkan.sh "$out/linux" linux compute
 
 Fixture SHA-256 `09f64a1611b8775025d4335875976ff4f8d14ec83070787c74bb9bb0e4a0599a`.
 This is a layer fixture, not a model throughput or generation result.
-Next is the causal convolution and recurrent GDN branch, followed by
-Bonsai attention/KV semantics, model loading and end-to-end generation.
 [PrismML GGUF artifacts](https://huggingface.co/prism-ml/Ternary-Bonsai-2.5-27B-GGUF)
+
+### Bonsai recurrent component
+
+The Vulkan graph records four-tap causal convolution with SiLU,
+Q/K L2 normalization and a one-token GDN update. History is kept in
+three in-place rows and the GDN state is kept in head/value/key order.
+The shaders use FP32 and workgroup reductions without subgroup width
+requirements. State and history writes participate in the same graph
+dependencies as activations. Independent GDN rows own disjoint state
+cells. The C caller rejects overlapping input and state views.
+
+The deterministic synthetic fixture uses Bonsai's 48 value heads,
+16 key heads and head width 128 for three successive inputs. Linux
+Lavapipe, Linux RTX 4070, and Windows x64 through Wine with Lavapipe
+all pass. The largest errors against FP64 CPU calculations were
+5.21e-9 for state and 7.75e-10 for output. Convolution history appears
+exactly in the expected order, and resetting both state buffers
+reproduces the final state and output bytes on each device.
+
+This fixture does not yet execute the F32 decay and beta projections or
+gated output normalization on actual model weights. Connect those to
+the recurrent path, then complete Bonsai attention/KV, metadata loading
+and end-to-end generation before claiming model support.
+[Gated DeltaNet reference](https://arxiv.org/abs/2412.06464)
 
 ## Model order
 
