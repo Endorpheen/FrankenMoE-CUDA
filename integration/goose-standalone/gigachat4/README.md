@@ -388,3 +388,20 @@ All four runs matched all 32 stored reference IDs. The default-enabled
 build measured 151.94/17.25 with matching IDs, 8473 MiB post-request GPU
 memory and zero swap-out growth. The 2049/2 DSA check matched both
 reference IDs at 8485 MiB with no swap-out growth.
+
+### EXP-2026-11-27-2150 — Pair batched MLA heads within the scratch budget
+
+Batched GigaChat4 MLA pairs heads at the same query position. The
+paired tile rounds the prior accumulator product before the FMA,
+matching the ordinary tile's FP32 association. Compact scratch waves
+keep adjacent head slots together within the 32 MiB cap. The
+single-query EXP-2149 kernel remains separate. Set
+GOOSE_GIGA_MLA_BATCH_PAIR=0 to use ordinary batched tiles.
+
+The 2176/8 DSA off/on pairs measured prefill 130.60/142.56 and
+128.10/143.50 tokens/s, with decode 10.79/11.77 and 12.03/10.85.
+All four runs matched the eight reference IDs, used 8469–8471 MiB
+GPU memory after the request and recorded no process or system swap-out
+growth. The default-enabled build measured 142.15/11.99 with matching
+IDs at 8469 MiB. The scratch mapping check includes 32K geometry;
+a 32K/512 inference benchmark has not qualified this change at that size.

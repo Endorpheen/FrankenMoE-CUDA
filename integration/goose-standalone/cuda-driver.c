@@ -204,7 +204,7 @@ static struct {
     void * library;
     Context context;
     Module module;
-    Function kernel, attention_tiles, attention_merge, mla_attention_tiles, mla_attention_merge, mla_attention_pair, dsa_score, gdn, gdn_decode, q4_rows, vector, vector_flat, vector_flat4, rms_reference;
+    Function kernel, attention_tiles, attention_merge, mla_attention_tiles, mla_attention_merge, mla_attention_pair, mla_attention_batch_pair, mla_attention_batch_merge, dsa_score, gdn, gdn_decode, q4_rows, vector, vector_flat, vector_flat4, rms_reference;
     Function mmq_pack, mmq_pack_shared, mmq_pack_glu, mmq_matrix, mmq_q4_matrix, mmq_q6_matrix;
     Function mmq_pack_k_major, mmq_q6_dense_half_k, mmq_q6_dense_pipeline;
     Function mmq_q4_dense_shared, mmq_q4_routed_shared;
@@ -1257,6 +1257,11 @@ static void load_cuda(void) {
         const char * mla_pair_setting = getenv("GOOSE_GIGA_MLA_PAIR");
         if (error == 0 && (!mla_pair_setting || strcmp(mla_pair_setting, "0") != 0))
             (void) cuda.function_get(&cuda.mla_attention_pair, cuda.module, "goose_mla_attention_pair");
+        const char * mla_batch_pair_setting = getenv("GOOSE_GIGA_MLA_BATCH_PAIR");
+        if (error == 0 && (!mla_batch_pair_setting || strcmp(mla_batch_pair_setting, "0") != 0)) {
+            (void) cuda.function_get(&cuda.mla_attention_batch_pair, cuda.module, "goose_mla_attention_batch_pair");
+            (void) cuda.function_get(&cuda.mla_attention_batch_merge, cuda.module, "goose_mla_attention_batch_merge");
+        }
         if (error == 0) error = cuda.function_get(&cuda.dsa_score, cuda.module, "goose_dsa_score");
         if (error == 0 && flash_mma) error = cuda.function_get(&cuda.flash_mma, cuda.module, "goose_flash_causal_mma");
         if (error == 0 && flash_mma) error = cuda.function_get(&cuda.flash_stage, cuda.module, "goose_flash_q4_stage");
@@ -3687,17 +3692,26 @@ int64_t fg_cuda_q4_attention(sl_i64 config, sl_u8 q, sl_u8 k, sl_u8 v, sl_u8 mas
         }
     }
     const unsigned tiles = (unsigned) config.data[17];
+    const int64_t positions = config.data[2];
+    const int64_t pair_rows = positions > 0 && positions <= INT_MAX / 2 ? 2 * positions : 0;
+    const bool paired_shape = mla && giga_small_expert_wave && cuda.mla_attention_pair &&
+        config.data[0] == 576 && config.data[1] == 512 && config.data[4] == 1 && config.data[5] == 1 &&
+        pair_rows > 0 && tasks % pair_rows == 0 && (positions == 1 ||
+        (cuda.mla_attention_batch_pair && cuda.mla_attention_batch_merge && capacity >= 2));
+    if (paired_shape && capacity >= 2) capacity -= capacity % 2;
     int start = 0;
     void * tile_args[] = {&staged[0], &staged[1], &staged[2],
         &staged[3], &cuda.attention_scratch.address, &staged[4], &scale, &start};
     void * merge_args[] = {&cuda.attention_scratch.address, &output, &staged[4], &start};
     while (error == 0 && !tiled && start < tasks) {
         const int count = tasks - start < capacity ? tasks - start : capacity;
-        const bool pair = mla && giga_small_expert_wave && cuda.mla_attention_pair && config.data[0] == 576 && config.data[1] == 512 &&
-            config.data[2] == 1 && config.data[4] == 1 && config.data[5] == 1 && count % 2 == 0 && start % 2 == 0;
-        const Function tile = pair ? cuda.mla_attention_pair : mla ? cuda.mla_attention_tiles : cuda.attention_tiles;
+        const bool pair = paired_shape && count % 2 == 0 && start % 2 == 0;
+        const Function tile = pair ? (positions == 1 ? cuda.mla_attention_pair : cuda.mla_attention_batch_pair) :
+            mla ? cuda.mla_attention_tiles : cuda.attention_tiles;
         error = cuda.launch(tile, (unsigned) count / (pair ? 2 : 1), tiles, 1, 32, 1, 1, 0, NULL, tile_args, NULL);
-        if (error == 0) error = cuda.launch(mla ? cuda.mla_attention_merge : cuda.attention_merge, (unsigned) count, 1, 1, 32, 1, 1, 0, NULL, merge_args, NULL);
+        const Function merge = pair && positions > 1 ? cuda.mla_attention_batch_merge :
+            mla ? cuda.mla_attention_merge : cuda.attention_merge;
+        if (error == 0) error = cuda.launch(merge, (unsigned) count, 1, 1, 32, 1, 1, 0, NULL, merge_args, NULL);
         start += count;
     }
     if (error == 0) error = activation_publish(host, out.len, output, false);
