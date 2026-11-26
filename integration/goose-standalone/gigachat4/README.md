@@ -405,3 +405,19 @@ GPU memory after the request and recorded no process or system swap-out
 growth. The default-enabled build measured 142.15/11.99 with matching
 IDs at 8469 MiB. The scratch mapping check includes 32K geometry;
 a 32K/512 inference benchmark has not qualified this change at that size.
+
+### EXP-2026-11-27-2151 — Assemble the GigaChat4 DSA mask on CUDA
+
+Keep the existing DSA scoring and top-k. Build the final F16 causal mask
+directly from the selected indices with a clear and scatter operation.
+The Goose dispatch includes a host implementation for unsupported CUDA
+shapes. Set GOOSE_GIGA_DSA_MASK=0 to use the original graph.
+
+On 2176/8 with batch and ubatch 4096, the off/on pairs measured prefill
+121.55/203.40 and 121.16/202.14 tokens/s, with decode 11.91/12.27 and
+9.99/11.89 tokens/s. All four responses matched all eight reference IDs.
+Post-request GPU memory was 8928–8929 MiB off and 8913 MiB on, with
+zero process swap or system swap-out growth. The default-enabled
+build measured 204.57/11.67 at 8912 MiB with all eight IDs matching.
+The alternate host implementation and 32K/512 throughput have not
+been independently qualified in this experiment.

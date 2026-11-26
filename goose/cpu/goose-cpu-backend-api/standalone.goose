@@ -1,3 +1,6 @@
+extern "fg_cuda_giga_dsa_mask" fn cuda_giga_dsa_mask(mask: const u8[:], picks: const u8[:],
+    out: u8[:], cells: i64, count: i64, rows: i64) -> i64;
+
 fn packet_tensor(packet: const i64[:], at: i64) -> Tensor {
     var t: Tensor = default <Tensor>();
     for axis in 4 {
@@ -75,6 +78,31 @@ export fn fg143_node_run(packet: const i64[:], mode: i64,
     if mode == 1 { p.ip[15] = 1464816203; }
     if p.op == OP_CUSTOM && p.ip[0] == 0x46574854 {
         return mode == 1 || kv_fwht(p, x, dst);
+    }
+    if p.op == OP_CUSTOM && p.ip[0] == 0x4453414d {
+        if mode == 1 { return true; }
+        let cells = p.x.ne[0];
+        let count = p.y.ne[0];
+        let rows = p.x.ne[1];
+        if p.x.kind != 1 || p.y.kind != 26 || p.d.kind != 1 ||
+            !dense_scalar(p.x, 2) || !dense_scalar(p.y, 4) || !dense_scalar(p.d, 2) ||
+            !same_shape(p.x, p.d) || rows != p.y.ne[1] ||
+            p.x.ne[2] != 1 || p.x.ne[3] != 1 || p.y.ne[2] != 1 || p.y.ne[3] != 1 ||
+            cells <= 0 || count <= 0 || count > cells || rows <= 0 ||
+            p.x.bytes > x.len || p.y.bytes > y.len || p.d.bytes > dst.len { return false; }
+        let device = cuda_giga_dsa_mask(x[0..p.x.bytes], y[0..p.y.bytes], dst[0..p.d.bytes], cells, count, rows);
+        if device != 0 { return device > 0; }
+        if activation_read(x) != 0 || activation_read(y) != 0 { return false; }
+        for word in mul_size(cells, rows) { write16(dst, 2 * word, 0xfc00); }
+        for row in rows {
+            for j in count {
+                let key = (read32(y, 4 * (row * count + j)) as! i32) as i64;
+                if key < 0 || key >= cells { return false; }
+                let at = 2 * (row * cells + key);
+                write16(dst, at, read16(x, at));
+            }
+        }
+        return true;
     }
     if p.op == OP_CUSTOM && p.ip[0] == 0x4d4f4557 {
         return mode == 1 || moe_weighted(p, x, y, dst);

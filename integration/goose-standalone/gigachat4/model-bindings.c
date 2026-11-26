@@ -2,6 +2,7 @@
 #include "graph.h"
 #include "ggml.h"
 #include <string.h>
+#include <stdlib.h>
 
 #define WORDS(array) ((sl_i64){ (array), sizeof(array) / sizeof((array)[0]) })
 
@@ -119,4 +120,18 @@ int giga_expand_mla_weights(struct giga_bindings *bindings) {
     }
     bindings->mla_weights = ctx;
     return 0;
+}
+
+uint64_t giga_dsa_mask_node(uint64_t context, uint64_t original, uint64_t selected) {
+    const char *enabled = getenv("GOOSE_GIGA_DSA_MASK");
+    if (enabled && strcmp(enabled, "0") == 0) return 0;
+    struct ggml_tensor *mask = (void *)(uintptr_t)original;
+    struct ggml_tensor *picks = (void *)(uintptr_t)selected;
+    struct ggml_tensor *out = ggml_new_tensor_2d((void *)(uintptr_t)context, GGML_TYPE_F16,
+        mask->ne[0], mask->ne[1]);
+    out->op = GGML_OP_CUSTOM;
+    out->src[0] = mask;
+    out->src[1] = picks;
+    out->op_params[0] = 0x4453414d;
+    return (uintptr_t)out;
 }

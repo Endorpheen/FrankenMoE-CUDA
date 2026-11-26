@@ -210,7 +210,27 @@ static float fg_attn_neg_inf(void) {
     return as_float(0xff800000u);
 }
 
+static void fg_dsa_store_u16(uint64_t base, int64_t index, uint32_t value) {
+    ((__global uint16_t *)base)[index] = (uint16_t)value;
+}
+static int32_t fg_dsa_load_i32(uint64_t base, int64_t index) {
+    return ((__global const int32_t *)base)[index];
+}
 #include "q4-attention-device.h"
+static int64_t fg_dsa_mask_index(void) {
+    uint32_t block, lane;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(block));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
+    return (int64_t)block * 256 + lane;
+}
+__kernel void goose_giga_mask_clear(__global uint16_t * out, int64_t total) {
+    giga_device_mask_clear_g((uint64_t)out, total, fg_dsa_mask_index());
+}
+__kernel void goose_giga_mask_scatter(__global const uint16_t * mask, __global const int32_t * picks,
+    __global uint16_t * out, int64_t cells, int64_t count, int64_t total) {
+    giga_device_mask_scatter_g((uint64_t)mask, (uint64_t)picks, (uint64_t)out,
+        cells, count, total, fg_dsa_mask_index());
+}
 
 __kernel void goose_q4_attention_tiles(__global uint8_t * q, __global uint8_t * k,
     __global uint8_t * v, __global uint8_t * mask, __global float * scratch,

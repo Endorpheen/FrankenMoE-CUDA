@@ -1,3 +1,4 @@
+extern "giga_dsa_mask_node" fn giga_dsa_mask_node(ctx: u64, mask: u64, picks: u64) -> u64;
 extern "ggml_rope_ext" fn giga_rope(ctx: u64, x: u64, pos: u64, factors: u64,
                                    dims: i32, mode: i32, original_ctx: i32,
                                    base: f32, scale: f32, ext: f32, attn: f32,
@@ -56,9 +57,10 @@ export fn giga_dsa_index_mask(ctx: u64, q: u64, cached_k: u64, weights: u64,
                         (batch * 32768) as u64, 0);
     let ws = giga_view4(ctx, weights, 64, batch, 1, streams, 256,
                         (batch * 256) as u64, (batch * 256) as u64, 0);
+    let half_mask = giga_cast(ctx, mask_f32, 1);
     var score: u64 = 0;
     if cuda_dsa && streams == 1 && batch <= 4096 {
-        score = giga_lightning(ctx, qs, cached_k, ws, giga_cast(ctx, mask_f32, 1));
+        score = giga_lightning(ctx, qs, cached_k, ws, half_mask);
     } else {
         let q_rows = giga_permute(ctx, qs, 0, 2, 1, 3);
         let k_rows = giga_permute(ctx, cached_k, 0, 2, 1, 3);
@@ -73,6 +75,10 @@ export fn giga_dsa_index_mask(ctx: u64, q: u64, cached_k: u64, weights: u64,
     if count > 2048 { count = 2048; }
     let top = giga_top_k(ctx, score, count as i32);
     if cells > 4096 { giga_op_param(top as! i64, 13, 1); }
+    if cuda_dsa && streams == 1 {
+        let fused = giga_dsa_mask_node(ctx, half_mask, top);
+        if fused != 0 { return fused; }
+    }
     let picks = giga_cont(ctx, top);
-    return giga_mask_selected(ctx, mask_f32, picks, cells, count, batch, streams);
+    return giga_cast(ctx, giga_mask_selected(ctx, mask_f32, picks, cells, count, batch, streams), 1);
 }

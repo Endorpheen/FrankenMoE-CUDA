@@ -38,7 +38,7 @@ export fn giga_mla_layer(ctx: u64, graph: u64, projected: u64[:], index: u64[:],
     let written_k = giga_set_rows(ctx, kv_store, k_rows, rows);
     let written_idx = giga_set_rows(ctx, idx_store, idx_rows, rows);
     let kv_plane = kv_stride * (capacity as u64);
-    var selected = mask;
+    var selected = giga_cast(ctx, mask, 1);
     if cells <= 2048 {
         giga_expand(graph, written_idx);
     } else {
@@ -55,7 +55,7 @@ export fn giga_mla_layer(ctx: u64, graph: u64, projected: u64[:], index: u64[:],
     let k = giga_view4(ctx, written_k, 576, cells, 1, streams, kv_stride, kv_plane, kv_plane, 0);
     let v = giga_view4(ctx, written_k, 512, cells, 1, streams, kv_stride, kv_plane, kv_plane, 0);
     let values = giga_flash(ctx, giga_permute(ctx, q, 0, 2, 1, 3), k, v,
-                            giga_cast(ctx, selected, 1), scale, 0.0, 0.0);
+                            selected, scale, 0.0, 0.0);
     var count = cells;
     if count > 2048 { count = 2048; }
     giga_flash_limit(values, count as i32);

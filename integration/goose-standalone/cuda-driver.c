@@ -204,7 +204,7 @@ static struct {
     void * library;
     Context context;
     Module module;
-    Function kernel, attention_tiles, attention_merge, mla_attention_tiles, mla_attention_merge, mla_attention_pair, mla_attention_batch_pair, mla_attention_batch_merge, dsa_score, gdn, gdn_decode, q4_rows, vector, vector_flat, vector_flat4, rms_reference;
+    Function kernel, attention_tiles, attention_merge, mla_attention_tiles, mla_attention_merge, mla_attention_pair, mla_attention_batch_pair, mla_attention_batch_merge, dsa_score, dsa_mask_clear, dsa_mask_scatter, gdn, gdn_decode, q4_rows, vector, vector_flat, vector_flat4, rms_reference;
     Function mmq_pack, mmq_pack_shared, mmq_pack_glu, mmq_matrix, mmq_q4_matrix, mmq_q6_matrix;
     Function mmq_pack_k_major, mmq_q6_dense_half_k, mmq_q6_dense_pipeline;
     Function mmq_q4_dense_shared, mmq_q4_routed_shared;
@@ -1263,6 +1263,11 @@ static void load_cuda(void) {
             (void) cuda.function_get(&cuda.mla_attention_batch_merge, cuda.module, "goose_mla_attention_batch_merge");
         }
         if (error == 0) error = cuda.function_get(&cuda.dsa_score, cuda.module, "goose_dsa_score");
+        const char * dsa_mask_setting = getenv("GOOSE_GIGA_DSA_MASK");
+        if (error == 0 && (!dsa_mask_setting || strcmp(dsa_mask_setting, "0") != 0)) {
+            (void) cuda.function_get(&cuda.dsa_mask_clear, cuda.module, "goose_giga_mask_clear");
+            (void) cuda.function_get(&cuda.dsa_mask_scatter, cuda.module, "goose_giga_mask_scatter");
+        }
         if (error == 0 && flash_mma) error = cuda.function_get(&cuda.flash_mma, cuda.module, "goose_flash_causal_mma");
         if (error == 0 && flash_mma) error = cuda.function_get(&cuda.flash_stage, cuda.module, "goose_flash_q4_stage");
         if (error == 0 && flash_stream) error = cuda.function_get(&cuda.flash_stream, cuda.module, "goose_flash_stream_mma");
@@ -3617,6 +3622,28 @@ static int launch_flash_mma(const int64_t * c, DevicePtr * staged, DevicePtr out
     if (error == 0) *executed = true;
     else (void) cuda.sync();
     return error;
+}
+
+int64_t fg_cuda_giga_dsa_mask(sl_u8 mask, sl_u8 picks, sl_u8 out, int64_t cells, int64_t count, int64_t rows) {
+    if (!cuda.dsa_mask_clear || !cuda.dsa_mask_scatter || !giga_small_expert_wave || rows > 4096) return 0;
+    if (cells < 1 || cells > 1048576 || count < 1 || count > cells || rows < 1 || rows > 4096 ||
+        mask.len != cells * rows * 2 || picks.len != count * rows * 4 || out.len != mask.len) return -1;
+    const int active = start_context();
+    if (active != 1) return active;
+    DevicePtr device_mask = 0, device_picks = 0, output = 0;
+    const uint64_t host = (uint64_t)(uintptr_t)out.data;
+    const int64_t items = cells * rows, kept = count * rows;
+    int error = activation_output(host, out.len, &output);
+    if (error == 0) error = activation_input(mask, &cuda.input, &device_mask);
+    if (error == 0) error = activation_input(picks, &cuda.jobs, &device_picks);
+    void *clear_args[] = {&output, (void *)&items};
+    void *scatter_args[] = {&device_mask, &device_picks, &output, &cells, &count, (void *)&kept};
+    if (error == 0) error = cuda.launch(cuda.dsa_mask_clear, (unsigned)((items+255)/256), 1, 1, 256, 1, 1, 0, NULL, clear_args, NULL);
+    if (error == 0) error = cuda.launch(cuda.dsa_mask_scatter, (unsigned)((kept+255)/256), 1, 1, 256, 1, 1, 0, NULL, scatter_args, NULL);
+    if (error == 0) error = activation_publish(host, out.len, output, false);
+    if (finish_context() != 0 || error != 0) return -1;
+    if (getenv("GOOSE_GRAPH_LOG")) fprintf(stderr, "GigaChat4 CUDA DSA mask rows=%" PRId64 " cells=%" PRId64 "\n", rows, cells);
+    return 1;
 }
 
 int64_t fg_cuda_dsa_score(sl_i64 config, sl_u8 q, sl_u8 k, sl_u8 weights, sl_u8 mask, sl_u8 out) {
