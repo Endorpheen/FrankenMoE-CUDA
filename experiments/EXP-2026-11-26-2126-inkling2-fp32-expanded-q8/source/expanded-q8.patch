@@ -1,0 +1,66 @@
+--- a/inkling-matrix-driver.h
++++ b/inkling-matrix-driver.h
+@@ -19,12 +19,16 @@
+     if (!enabled) return 1;
+ 
+     static Module module;
+-    static Function pack, multiply, narrow4, wide2, wide4;
++    static Function pack, multiply, narrow4, wide2, wide4, expand, fp32w2, fp32w4;
++    const char *expand_setting = getenv("I2_Q8_FP32_EXPAND");
++    const bool expanded = count == 4096 && (shape || extra == 3) &&
++        (!expand_setting || strcmp(expand_setting, "0") != 0);
+     const char *wide_setting = getenv("I2_Q8_EXACT_TILE16");
+     const bool wide = extra == 1 || (shape && count % 16 == 0 && rows != 1024 &&
+         (!wide_setting || strcmp(wide_setting, "0") != 0));
+-    const int warps = wide ? ((width == 3072 || extra == 1) ? 2 : 4) : (extra == 2 ? 4 : 8);
+-    const int tile = wide ? 16 : 8;
++    const int warps = expanded ? (width == 3072 || extra == 3 ? 2 : 4) :
++                      (wide ? ((width == 3072 || extra == 1) ? 2 : 4) : (extra == 2 ? 4 : 8));
++    const int tile = wide || expanded ? 16 : 8;
+     int error = 0;
+     if (!module) error = cuda.module_load(&module, q8_packed_cubin);
+     if (!error && !pack) error = cuda.function_get(&pack, module, "i2_pack_q8_input8");
+@@ -32,24 +36,40 @@
+     if (!error && extra == 2 && !narrow4) error = cuda.function_get(&narrow4, module, "i2_q8_packed4");
+     if (!error && wide && warps == 2 && !wide2) error = cuda.function_get(&wide2, module, "i2_q8_packed16w2");
+     if (!error && wide && warps == 4 && !wide4) error = cuda.function_get(&wide4, module, "i2_q8_packed16w4");
++    if (!error && expanded && !expand) error = cuda.function_get(&expand, module, "i2_q8_expand_f32");
++    if (!error && expanded && warps == 2 && !fp32w2) error = cuda.function_get(&fp32w2, module, "i2_q8_fp32w2");
++    if (!error && expanded && warps == 4 && !fp32w4) error = cuda.function_get(&fp32w4, module, "i2_q8_fp32w4");
+     if (error) return -1;
+ 
+     // The regular and grouped matrix launches reuse this work buffer on
+     // the same stream. No separate persistent allocation is needed.
+-    error = reserve(&cuda.mmq_packed, (size_t)count * width * sizeof(float));
++    const size_t pack_bytes = (size_t)count * width * sizeof(float);
++    const size_t weight_bytes = expanded ? (size_t)rows * width * sizeof(float) : 0;
++    error = reserve(&cuda.mmq_packed, pack_bytes + weight_bytes);
+     if (error == 2) return 1;
+     if (error) return -1;
+     if (activations.active && activations.defer_waits) activations.pending = true;
+     void *pack_args[] = {&matrix_input, &jobs, &cuda.mmq_packed.address, &width};
+-    void *matrix_args[] = {&weight, &cuda.mmq_packed.address, &matrix_output, &jobs, &stride, &width};
++    DevicePtr weights_device = expanded ? cuda.mmq_packed.address + pack_bytes : weight;
++    void *matrix_args[] = {&weights_device, &cuda.mmq_packed.address, &matrix_output, &jobs, &stride, &width};
+     error = cuda.launch(pack, (width + 127) / 128, count / 8, 1, 128, 1, 1, 0, NULL, pack_args, NULL);
+-    const Function kernel = wide ? (warps == 2 ? wide2 : wide4) : (extra == 2 ? narrow4 : multiply);
++    if (!error && expanded) {
++        void *args[] = {&weight, &weights_device, &stride, &width};
++        error = cuda.launch(expand, (width + 127) / 128, rows, 1, 128, 1, 1, 0, NULL, args, NULL);
++    }
++    const Function kernel = expanded ? (warps == 2 ? fp32w2 : fp32w4) :
++                            (wide ? (warps == 2 ? wide2 : wide4) : (extra == 2 ? narrow4 : multiply));
+     if (!error) error = cuda.launch(kernel, rows / warps, count / tile, 1, 32 * warps, 1, 1, 0, NULL,
+                                     matrix_args, NULL);
+     if (!error) error = finish_matrix_launches(error);
+     if (error) return -1;
+     ++cuda_matrix_launches;
+     cuda_matrix_kind = 8;
++    static bool expand_reported;
++    if (expanded && !expand_reported) {
++        fputs("Inkling Q8 projection FP32 expansion active\n", stderr);
++        expand_reported = true;
++    }
+     static unsigned extra_reported;
+     if (extra && !(extra_reported & (1u << extra))) {
+         extra_reported |= 1u << extra;
