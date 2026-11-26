@@ -1,0 +1,266 @@
+{
+  "scope": "EXP-2106 diagnostic 32K/512 MTP; excluded from performance pairs",
+  "trace_sha256": "fafae069c4410dfbe6eb3cb11de36fbbd1d6a03b57761cc1efefeb075dffee00",
+  "trace_sqlite_sha256": "be2361d88d1e089b4f3ed0962e6cc284e549d00ab6cd9994410341bfc940118e",
+  "timings": {
+    "cache_n": 0,
+    "prompt_n": 32768,
+    "prompt_ms": 32751.837670977693,
+    "prompt_per_token_ms": 0.9995067648613798,
+    "prompt_per_second": 1000.4934785395761,
+    "predicted_n": 512,
+    "predicted_ms": 7112.768846040126,
+    "predicted_per_token_ms": 13.919312810254649,
+    "predicted_per_second": 71.842627120448
+  },
+  "cold_prefill": {
+    "cold_prefill": "PASS",
+    "computed_prompt_tokens": 32768,
+    "cached_prompt_tokens": 0,
+    "engine": "goose",
+    "request_sha256": "1f62448c0a6d29a776f76df4f24d0ca162c7a5d10774f879d94f859ac3e81ecb",
+    "response_sha256": "b8d8ad3cd9b862e09d37687cffbbd41bada73c09d138dc196b581ebe3364abb4"
+  },
+  "gpu_kernel_totals": {
+    "bonsai_pq2_mmq_int8_full_n128_spread": {
+      "calls": 3968,
+      "duration_ns": 6827396609
+    },
+    "bonsai_pq2_half_full_5120": {
+      "calls": 4464,
+      "duration_ns": 4982424587
+    },
+    "bonsai_flash_fp8_qkpv": {
+      "calls": 272,
+      "duration_ns": 3763629907
+    },
+    "bonsai_pq2_mmq_int8_down_n128_spread": {
+      "calls": 1984,
+      "duration_ns": 3494690702
+    },
+    "bonsai_mtp_q4_four": {
+      "calls": 768,
+      "duration_ns": 2689765356
+    },
+    "bonsai_decode_direct_q4_mma_half2": {
+      "calls": 9479,
+      "duration_ns": 2443079524
+    },
+    "bonsai_mvq_4_permutation_4": {
+      "calls": 51888,
+      "duration_ns": 2406732694
+    },
+    "bonsai_pq2_half_full_6144": {
+      "calls": 1984,
+      "duration_ns": 1903726509
+    },
+    "goose_gdn_mma_v32": {
+      "calls": 1536,
+      "duration_ns": 1491940142
+    },
+    "bonsai_flash_kv_fused_ordered": {
+      "calls": 128,
+      "duration_ns": 1353278428
+    },
+    "bonsai_ffn_tail_q8_panel": {
+      "calls": 1984,
+      "duration_ns": 773616208
+    },
+    "bonsai_fwht1024": {
+      "calls": 44542,
+      "duration_ns": 721126562
+    },
+    "bonsai_decay_reuse8": {
+      "calls": 1536,
+      "duration_ns": 663143085
+    },
+    "bonsai_conv_batch": {
+      "calls": 1536,
+      "duration_ns": 606211570
+    },
+    "bonsai_flash_tile_group2": {
+      "calls": 2800,
+      "duration_ns": 595769052
+    },
+    "bonsai_residual": {
+      "calls": 23246,
+      "duration_ns": 548591020
+    },
+    "bonsai_norm": {
+      "calls": 23872,
+      "duration_ns": 486849727
+    },
+    "bonsai_pq2_cached_fp16_acc_k32": {
+      "calls": 272,
+      "duration_ns": 441603332
+    },
+    "bonsai_mtp_mat_q4": {
+      "calls": 3701,
+      "duration_ns": 353762689
+    },
+    "bonsai_pq2_mvq_q8_1": {
+      "calls": 424,
+      "duration_ns": 315612391
+    },
+    "bonsai_pq2_mmq_int8": {
+      "calls": 128,
+      "duration_ns": 314360438
+    },
+    "bonsai_norm_wide_128_0": {
+      "calls": 4096,
+      "duration_ns": 313264054
+    },
+    "goose_gdn_decode": {
+      "calls": 27168,
+      "duration_ns": 193725248
+    },
+    "bonsai_pack_half": {
+      "calls": 4096,
+      "duration_ns": 181516078
+    },
+    "bonsai_pq2_matvec_ordered": {
+      "calls": 18112,
+      "duration_ns": 174321755
+    },
+    "bonsai_mtp_eh_q4": {
+      "calls": 793,
+      "duration_ns": 136217754
+    },
+    "bonsai_decay_stage_256_0": {
+      "calls": 27168,
+      "duration_ns": 124471003
+    },
+    "bonsai_verify_merge_parallel": {
+      "calls": 9479,
+      "duration_ns": 117363208
+    },
+    "bonsai_norm_wide_512_1": {
+      "calls": 22440,
+      "duration_ns": 114479364
+    },
+    "bonsai_split_q_gate": {
+      "calls": 3223,
+      "duration_ns": 112997875
+    },
+    "bonsai_mvq_4_permutation_2": {
+      "calls": 141,
+      "duration_ns": 105089367
+    },
+    "goose_rope_phases": {
+      "calls": 1280,
+      "duration_ns": 98060495
+    },
+    "bonsai_attention_gate": {
+      "calls": 3223,
+      "duration_ns": 83191197
+    },
+    "bonsai_flash_compact_ordered_merge": {
+      "calls": 2688,
+      "duration_ns": 72646904
+    },
+    "goose_rope_apply": {
+      "calls": 1280,
+      "duration_ns": 70688376
+    },
+    "goose_set_q4_rows": {
+      "calls": 7698,
+      "duration_ns": 54732007
+    },
+    "bonsai_pack_q8_panel128": {
+      "calls": 1984,
+      "duration_ns": 48167295
+    },
+    "bonsai_flash_stage_v_fp8": {
+      "calls": 272,
+      "duration_ns": 48029348
+    },
+    "bonsai_mv_pack_q8": {
+      "calls": 36917,
+      "duration_ns": 42981692
+    },
+    "bonsai_pq2_matvec_rows2": {
+      "calls": 369,
+      "duration_ns": 42338840
+    },
+    "goose_rope_decode": {
+      "calls": 19328,
+      "duration_ns": 41247326
+    },
+    "bonsai_flash_stage_kv": {
+      "calls": 240,
+      "duration_ns": 30970478
+    },
+    "bonsai_ffn_tail": {
+      "calls": 64,
+      "duration_ns": 26515432
+    },
+    "bonsai_flash_stage_k_fp8": {
+      "calls": 272,
+      "duration_ns": 25176284
+    },
+    "bonsai_pq2_mvq_q8_2": {
+      "calls": 368,
+      "duration_ns": 16205512
+    },
+    "bonsai_conv_verify_prefix_four": {
+      "calls": 6768,
+      "duration_ns": 16180139
+    },
+    "bonsai_swiglu": {
+      "calls": 9575,
+      "duration_ns": 14510001
+    },
+    "bonsai_choice_tiles": {
+      "calls": 565,
+      "duration_ns": 3728315
+    },
+    "bonsai_embed_batch": {
+      "calls": 429,
+      "duration_ns": 2725226
+    },
+    "bonsai_mtp_concat": {
+      "calls": 256,
+      "duration_ns": 1622456
+    },
+    "bonsai_pack_q8_128": {
+      "calls": 64,
+      "duration_ns": 1494130
+    },
+    "bonsai_flash_compact_merge": {
+      "calls": 112,
+      "duration_ns": 1480918
+    },
+    "bonsai_pq2_row": {
+      "calls": 795,
+      "duration_ns": 861835
+    },
+    "bonsai_choice_final": {
+      "calls": 565,
+      "duration_ns": 835897
+    },
+    "bonsai_conv_step": {
+      "calls": 96,
+      "duration_ns": 173312
+    }
+  },
+  "draft_q4_four_geometry_columns": [
+    "grid_x",
+    "grid_y",
+    "launches",
+    "duration_ns"
+  ],
+  "draft_q4_four_geometry": [
+    [
+      1280,
+      32,
+      256,
+      2273488341
+    ],
+    [
+      256,
+      32,
+      512,
+      416277015
+    ]
+  ]
+}

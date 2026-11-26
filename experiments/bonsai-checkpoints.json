@@ -1302,5 +1302,43 @@
         }
       }
     }
-  ]
+  ],
+  "experimental_mtp": {
+    "id": "EXP-2107",
+    "parent": "EXP-2106",
+    "ordinary_reference": "EXP-2105",
+    "status": "experimental",
+    "workload": {
+      "input_tokens": 32768,
+      "output_tokens": 512,
+      "model_sha256": "ededc9fc0a8a6a8dd30914d107b2d2ce7674d789f1d05a1a481f240609aa6c23",
+      "gpu": "RTX 4070",
+      "context": 36864,
+      "batch": 4096,
+      "ubatch": 1024,
+      "kv": "Q4_0",
+      "mtp": true,
+      "request": "experiments/EXP-2026-11-25-1977-bonsai-prism-32k-reference/request.json",
+      "verify_rows": 4
+    },
+    "artifact_sha256": {
+      "frankenmoe-infer": "6aea13b2742855b0dd213deced5f528fee848e1eb62b21cd111c5fe619c4964d",
+      "pipeline.cubin": "2a18d1857ecb4067e30eb9ab6cc4f9c61cab7d6c46985b02c59cb57616b5c7cd",
+      "mtp.cubin": "8c56c4e79e9afee837188324c66419c49fbef050b83c3f599978afa32313a0ec",
+      "q4.cubin": "79146c5aea566a43e569257f08f3422a038ef52d6f5250c61963d372a682b7dc"
+    },
+    "artifact_directory": "build/bonsai-mtp-draft-q4-2107",
+    "results": "experiments/EXP-2026-11-26-2107-bonsai-mtp-draft-q4/data/results.json",
+    "profile_image_environment": {
+      "BONSAI_HTTP_MTP_IMAGE": "mtp.cubin",
+      "BONSAI_HTTP_DRAFT_Q4_IMAGE": "q4.cubin"
+    },
+    "prefill_tok_s": 1016.7906154073664,
+    "effective_decode_tok_s": 72.33283916061922,
+    "prefill_ms": 32226.991250994615,
+    "decode_ms": 7064.565353473881,
+    "client_s": 39.357459,
+    "process_vram_after_mib": 9438,
+    "process_ram_hwm_mib": 7284.21875
+  }
 }

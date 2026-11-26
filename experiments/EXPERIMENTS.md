@@ -1266,6 +1266,18 @@ release still needs the architecture regression gates.
   rates describe distinct execution modes.
   [Source, diagnostics and reproduction](EXP-2026-11-26-2106-bonsai-http-mtp/README.md).
 
+### EXP-2026-11-26-2107 — Eight-token Q4 weight reuse in Bonsai MTP prefill
+
+- **Accepted experimentally over EXP-2106.** Reuse the unpacked Q4_0
+  weights across eight tokens in the draft conditioning and K/V projections.
+  Preserve the FP32 component outputs bitwise. Sixteen and 32 are slower.
+- **Cold 32K/512, MTP in both arms:** 1001.33 → 1016.79 prefill and
+  72.40 → 72.33 effective decode tok/s, 39.844 → 39.357 s request,
+  9438 MiB process VRAM in both arms and 7284 MiB peak process RAM.
+  Decode changes sign across pairs. All 512 IDs and text match, as do
+  the 369 accepted drafts out of 423.
+  [Profile, source and benchmarks](EXP-2026-11-26-2107-bonsai-mtp-draft-q4/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
