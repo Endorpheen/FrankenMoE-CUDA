@@ -10,7 +10,7 @@ typedef enum {
     FG_VK_CAUSAL_CONV, FG_VK_QK_NORM, FG_VK_GDN, FG_VK_GDN_GATES, FG_VK_GATED_RMS,
     FG_VK_HEAD_SLICE, FG_VK_SIGMOID_GATE, FG_VK_KV_STORE_Q4, FG_VK_ATTENTION_Q4,
     FG_VK_Q4_K, FG_VK_Q6_K, FG_VK_GATHER_Q4_K, FG_VK_IQ4_NL, FG_VK_IQ4_XS,
-    FG_VK_GATHER_Q8_0, FG_VK_OP_COUNT
+    FG_VK_GATHER_Q8_0, FG_VK_F32_PROJECT, FG_VK_MOE_ROUTE, FG_VK_OP_COUNT
 } fg_vk_op;
 
 typedef struct {
@@ -22,6 +22,8 @@ typedef struct {
 /* For a quantized projection stripe, position is the first output column and
  * context is the full output stride. The weight view contains only the stripe.
  * A gather uses position as the first token ID in the weight view.
+ * A MoE route uses width=experts, rows=selected, theta=weight scale.
+ * The output row contains selected uint32 IDs followed by their FP32 weights.
  * For FWHT, position selects forward or inverse; rows, kv_heads and context
  * describe head width, key head count and repeat count for grouped input. */
 typedef struct {

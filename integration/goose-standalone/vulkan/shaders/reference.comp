@@ -25,6 +25,8 @@ layout(set = 0, binding = 1, std430) readonly buffer Weights { float w[]; };
 #endif
 #if defined(OP_KV_STORE_Q4)
 layout(set = 0, binding = 2, std430) writeonly buffer Cache { uint cache[]; };
+#elif defined(OP_MOE_ROUTE)
+layout(set = 0, binding = 2, std430) writeonly buffer Routes { uint routes[]; };
 #else
 layout(set = 0, binding = 2, std430) writeonly buffer Output { float y[]; };
 #endif
@@ -46,6 +48,10 @@ layout(push_constant) uniform Params {
 } p;
 
 shared float partial[64];
+#if defined(OP_MOE_ROUTE)
+shared uint candidates[64], selected[64];
+shared float picked[64];
+#endif
 #if defined(OP_FWHT)
 shared float tile[1024];
 #endif
@@ -190,14 +196,86 @@ void main() {
         y[head] = parameters[p.rows + head] * softplus;
         y[p.rows + head] = 1.0 / (1.0 + exp(-beta));
     }
-#elif defined(QUANT_PROJECT)
+#elif defined(QUANT_PROJECT) || defined(OP_F32_PROJECT)
     uint row = gl_WorkGroupID.x;
     uint token = gl_WorkGroupID.y;
     precise float sum = 0.0;
-    for (uint i = lane; i < p.width; i += 64u) sum += decode_weight(row, i) * x[token * p.width + i];
+    for (uint i = lane; i < p.width; i += 64u) {
+#if defined(OP_F32_PROJECT)
+        float weight = w[row * p.width + i];
+#else
+        float weight = decode_weight(row, i);
+#endif
+        sum += weight * x[token * p.width + i];
+    }
     float result = sum_group(sum);
     uint stride = p.context == 0 ? p.rows : p.context;
     if (lane == 0) y[token * stride + p.position + row] = result;
+#elif defined(OP_MOE_ROUTE)
+    uint token = gl_WorkGroupID.x, base = token * p.width, out_base = token * (2u * p.rows);
+    float neg_inf = uintBitsToFloat(0xff800000u);
+    float local_max = neg_inf, bad = 0.0;
+    for (uint i = lane; i < p.width; i += 64u) {
+        float score = x[base + i];
+        if (isnan(score) || isinf(score)) bad = 1.0;
+        else local_max = max(local_max, score);
+    }
+    if (sum_group(bad) != 0.0) {
+        if (lane < p.rows) {
+            routes[out_base + lane] = 0xffffffffu;
+            routes[out_base + p.rows + lane] = 0u;
+        }
+        return;
+    }
+    partial[lane] = local_max;
+    barrier();
+    for (uint step = 32u; step != 0u; step >>= 1u) {
+        if (lane < step) partial[lane] = max(partial[lane], partial[lane + step]);
+        barrier();
+    }
+    float peak = partial[0];
+    barrier();
+    float local_sum = 0.0;
+    for (uint i = lane; i < p.width; i += 64u) local_sum += exp(x[base + i] - peak);
+    float denominator = sum_group(local_sum);
+    for (uint slot = 0u; slot < p.rows; ++slot) {
+        float best = -1.0;
+        uint id = 0xffffffffu;
+        for (uint i = lane; i < p.width; i += 64u) {
+            bool used = false;
+            for (uint k = 0u; k < slot; ++k) used = used || selected[k] == i;
+            float probability = exp(x[base + i] - peak) / denominator;
+            if (!used && probability > best) {
+                best = probability;
+                id = i;
+            }
+        }
+        partial[lane] = best;
+        candidates[lane] = id;
+        barrier();
+        for (uint step = 32u; step != 0u; step >>= 1u) {
+            if (lane < step) {
+                float other = partial[lane + step];
+                uint other_id = candidates[lane + step];
+                if (other > partial[lane] || (other == partial[lane] && other_id < candidates[lane])) {
+                    partial[lane] = other;
+                    candidates[lane] = other_id;
+                }
+            }
+            barrier();
+        }
+        if (lane == 0) {
+            selected[slot] = candidates[0];
+            picked[slot] = partial[0];
+        }
+        barrier();
+    }
+    float selected_sum = max(sum_group(lane < p.rows ? picked[lane] : 0.0), 0.00006103515625);
+    if (lane < p.rows) {
+        float scale = p.theta == 0.0 ? 1.0 : p.theta;
+        routes[out_base + lane] = selected[lane];
+        routes[out_base + p.rows + lane] = floatBitsToUint((picked[lane] / selected_sum) * scale);
+    }
 #elif defined(QUANT_GATHER)
     uint token = gl_WorkGroupID.x;
     uint id = ids[token];

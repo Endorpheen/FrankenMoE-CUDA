@@ -90,6 +90,7 @@ static int run_case(fg_vk_graph *graph, unsigned width, unsigned rows, unsigned 
 int test_attention(fg_vk_graph *graph);
 int test_projection(fg_vk_graph *graph);
 int test_moe_quant(fg_vk_graph *graph, const char *path);
+int test_moe_router(fg_vk_graph *graph, const char *path);
 int test_recurrent(fg_vk_graph *graph);
 int test_bonsai(fg_vk_graph *graph, const char *path);
 int test_bonsai_layer(fg_vk_graph *graph, const char *path);
@@ -97,7 +98,8 @@ int test_bonsai_attention_layer(fg_vk_graph *graph, const char *path);
 
 int main(int argc, char **argv) {
     if (argc < 3 || argc > 6) {
-        fputs("Usage: frankenmoe-vulkan-compute-test DEVICE_INDEX ALLOW_CPU_0_OR_1 [FFN_FIXTURE [GDN_FIXTURE [ATTENTION_FIXTURE]] | --moe-quant FIXTURE]\n", stderr);
+        fputs("Usage: frankenmoe-vulkan-compute-test DEVICE_INDEX ALLOW_CPU_0_OR_1 "
+              "[FFN_FIXTURE [GDN_FIXTURE [ATTENTION_FIXTURE]] | --moe-quant FIXTURE [ROUTER_FIXTURE]]\n", stderr);
         return 2;
     }
     char *end;
@@ -107,10 +109,10 @@ int main(int argc, char **argv) {
     fg_vk_device vk;
     if (!fg_vk_open(&vk, (uint32_t)index, argv[2][0] == '1')) return 1;
     fg_vk_graph graph;
-    const int moe_quant = argc == 5 && !strcmp(argv[3], "--moe-quant");
+    const int moe_quant = argc >= 5 && !strcmp(argv[3], "--moe-quant");
     int pass = fg_vk_graph_open(&graph, &vk, 26) &&
                run_case(&graph, WIDTH, ROWS, BATCH) && run_case(&graph, 32, 1, 1) && test_attention(&graph) && test_projection(&graph) && test_recurrent(&graph) &&
-               (moe_quant ? test_moe_quant(&graph, argv[4]) :
+               (moe_quant ? test_moe_quant(&graph, argv[4]) && (argc < 6 || test_moe_router(&graph, argv[5])) :
                    (argc == 3 || test_bonsai(&graph, argv[3])) &&
                    (argc < 5 || test_bonsai_layer(&graph, argv[4])) &&
                    (argc < 6 || test_bonsai_attention_layer(&graph, argv[5])));

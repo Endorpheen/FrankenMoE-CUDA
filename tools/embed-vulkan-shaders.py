@@ -12,7 +12,8 @@ def main():
                  "q8_0", "gather_q4_0", "bias", "add", "pq2_0", "gather_pq2_0", "fwht",
                  "causal_conv", "qk_norm", "gdn", "gdn_gates", "gated_rms",
                  "head_slice", "sigmoid_gate", "kv_store_q4", "attention_q4",
-                 "q4_k", "q6_k", "gather_q4_k", "iq4_nl", "iq4_xs", "gather_q8_0"):
+                 "q4_k", "q6_k", "gather_q4_k", "iq4_nl", "iq4_xs", "gather_q8_0",
+                 "f32_project", "moe_route"):
         code = (directory / f"{name}.spv").read_bytes()
         words = [word for word, in struct.iter_unpack("<I", code)]
         if len(words) < 5 or words[0] != 0x07230203:

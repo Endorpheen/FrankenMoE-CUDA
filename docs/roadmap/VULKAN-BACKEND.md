@@ -313,7 +313,7 @@ The local GGUF inventory confirms distinct requirements.
 | --- | --- | --- |
 | Qwen2.5-0.5B Q4_0 | Q4_0, Q8_0 | Experimental CLI and HTTP release |
 | Bonsai 2.5 27B | PQ2_0 trunk, Q4_0 KV | Experimental raw-ID and text CLI, serial HTTP completions, SSE and no-thinking ChatML. Short generation passes on Linux RTX 4070 and Windows EXE under Wine with RTX 4070. |
-| Apex 35B | Q4_K, Q6_K | Real-weight projection and embedding gather pass. Model graph, GDN wiring, grouped MoE and oversubscribed expert placement are open. |
+| Apex 35B | Q4_K, Q6_K | Real-weight projection, embedding gather and first-layer router pass. Model graph, GDN wiring, expert execution and oversubscribed placement are open. |
 | Inkling-2-Mini | Q8_0, IQ4_NL, IQ4_XS | Real-weight projection and embedding gather pass. Model graph, relative/sliding attention, recurrent depth loops and grouped MoE are open. |
 
 ### Bonsai FFN component
@@ -537,8 +537,37 @@ PYTHONPATH="$LLAMA_CPP/gguf-py" OPENBLAS_NUM_THREADS=1 \
 ```
 
 Fixture SHA-256 `b87e72da921c79ce799b2edaf9f9d7d5d3d0d73aa74e874db1b7a915606a1c03`.
-These operations are ready for model-graph integration. The fixture
-does not exercise routing, expert placement or generation.
+These operations are ready for model-graph integration.
+
+### Apex expert selection
+
+The Vulkan graph can project the FP32 router and produce a compact
+selection per token containing the expert IDs and their renormalized
+softmax weights. Ties select lower IDs first. Non-finite logits mark
+the entire route invalid with sentinel IDs and zero weights. The route
+is suitable for reading the chosen experts on the host before staging
+weights from an oversubscribed bank.
+
+The first-layer fixture uses the real 256-by-2048 Apex router, two
+real token embeddings, an equal-logits row and a non-finite row.
+Independent FP64 CPU calculations provide the expectation. All
+selected IDs matched and the maximum absolute weight error was
+1.49e-8 on Linux RTX 4070, Linux Lavapipe and Windows x64 under Wine
+with Lavapipe. The scale of 0.75 exercises the non-default weight
+scaling path. This is a router component test. Expert placement,
+evaluation and full-model generation remain open.
+
+```bash
+tests=integration/goose-standalone/tests/vulkan
+out=build/vulkan-bringup/moe-router
+bash tools/build-goose-vulkan.sh "$out/linux" linux compute
+PYTHONPATH="$LLAMA_CPP/gguf-py" OPENBLAS_NUM_THREADS=1 \
+    python3 "$tests/moe-router-fixture.py" "$APEX_GGUF" "$out/router.bin"
+"$out/linux/frankenmoe-vulkan-compute-test" 0 0 --moe-quant \
+    build/vulkan-bringup/moe-quant/real-weights.bin "$out/router.bin"
+```
+
+Fixture SHA-256 `5186da54c2968afd838722425b5cde8d08572ecf80b31fcc7081b79209622059`.
 
 ## Model order
 

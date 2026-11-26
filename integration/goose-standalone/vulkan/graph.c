@@ -40,6 +40,8 @@ static const fg_vk_shader shaders[FG_VK_OP_COUNT] = {
     [FG_VK_SIGMOID_GATE] = { fg_sigmoid_gate, sizeof(fg_sigmoid_gate) },
     [FG_VK_KV_STORE_Q4] = { fg_kv_store_q4, sizeof(fg_kv_store_q4) },
     [FG_VK_ATTENTION_Q4] = { fg_attention_q4, sizeof(fg_attention_q4) },
+    [FG_VK_F32_PROJECT] = { fg_f32_project, sizeof(fg_f32_project) },
+    [FG_VK_MOE_ROUTE] = { fg_moe_route, sizeof(fg_moe_route) },
 };
 
 static VkResult create_pipeline(fg_vk_graph *graph, fg_vk_op op) {
@@ -212,6 +214,7 @@ static int record(fg_vk_graph *graph, fg_vk_op op, fg_vk_shape shape, fg_vk_view
     case FG_VK_Q6_K:
     case FG_VK_IQ4_NL:
     case FG_VK_IQ4_XS:
+    case FG_VK_F32_PROJECT:
     case FG_VK_PQ2_0:
     case FG_VK_Q8_0: {
         const uint32_t output_stride = shape.context ? shape.context : shape.rows;
@@ -219,11 +222,20 @@ static int record(fg_vk_graph *graph, fg_vk_op op, fg_vk_shape shape, fg_vk_view
             (uint64_t)output_stride * shape.batch > UINT32_MAX) return 0;
         x = shape.rows;
         y = shape.batch;
-        weight_bytes = packed_matrix_bytes(shape.width, shape.rows, op);
+        if (op == FG_VK_F32_PROJECT && stride > UINT32_MAX) return 0;
+        weight_bytes = op == FG_VK_F32_PROJECT ? stride * 4 : packed_matrix_bytes(shape.width, shape.rows, op);
         if (!weight_bytes) return 0;
         output_bytes = (uint64_t)output_stride * shape.batch * 4;
         break;
     }
+    case FG_VK_MOE_ROUTE:
+        if (shape.width > 4096 || shape.rows > shape.width || !shape.rows || shape.rows > 64 ||
+            !isfinite(shape.theta) || shape.theta < 0.0f ||
+            (uint64_t)shape.rows * shape.batch > UINT32_MAX / 2) return 0;
+        weight_bytes = 4;
+        output_bytes = (uint64_t)shape.rows * shape.batch * 8;
+        x = shape.batch;
+        break;
     case FG_VK_GATHER_Q4_0:
     case FG_VK_GATHER_Q4_K:
     case FG_VK_GATHER_Q8_0:
