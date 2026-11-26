@@ -35,7 +35,8 @@ export fn giga_read_config(data: const u8[:], state: i64[:], kv: i64[:], slots: 
     let stretch = giga_f32(factor as u32);
     if !(stretch >= 1.0) { return -3; }
     let correction = 1.0 + 0.1 * giga_log(stretch);
-    let all_dims = 1.0 + 0.1 * giga_f32(log_mul as u32) * giga_log(stretch);
+    let yarn_multiplier = giga_f32(log_mul as u32) / 0.1;
+    let all_dims = 1.0 + 0.1 * yarn_multiplier * giga_log(stretch);
     let attention = giga_f32(attn_factor as u32);
     let rope_attention = ((correction / all_dims) * (1.0 / correction)) * attention;
     let mscale = (rope_attention * correction) * all_dims;

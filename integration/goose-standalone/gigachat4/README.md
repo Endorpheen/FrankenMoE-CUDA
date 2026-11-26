@@ -49,3 +49,15 @@ Runs followed resident, control, control, resident order without profiling.
 All four runs matched the eight reference IDs. Process swap and system
 swap-out delta were zero. A separate diagnostic run recorded 24 resident
 GDN operations per graph. Median decode increased by 11.3 percent.
+
+## YaRN reference parity
+
+GigaChat4 stores the YaRN logarithmic multiplier in conversion units.
+The loader normalizes it by 0.1 before deriving the RoPE attention factor,
+matching the external llama.cpp reference at 0541e50e2fd463b376a3332fd891243aa5ce9c6a.
+
+The fixed 29/8 request SHA-256 is
+`c3b98b3778170ecac6bf43632539968392dc3db635c299956ccfb87dc0aec3f4`.
+Before the fix, Goose and the reference matched for two output tokens.
+After the fix, they matched for all eight: 1292, 7154, 4008, 88, 57981,
+6958, 7780, 391. This gate covers one fixed request.
