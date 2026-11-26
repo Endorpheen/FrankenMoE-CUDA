@@ -71,6 +71,8 @@ export fn giga_dsa_index_mask(ctx: u64, q: u64, cached_k: u64, weights: u64,
     }
     var count = cells;
     if count > 2048 { count = 2048; }
-    let picks = giga_cont(ctx, giga_top_k(ctx, score, count as i32));
+    let top = giga_top_k(ctx, score, count as i32);
+    if cells > 4096 { giga_op_param(top as! i64, 13, 1); }
+    let picks = giga_cont(ctx, top);
     return giga_mask_selected(ctx, mask_f32, picks, cells, count, batch, streams);
 }

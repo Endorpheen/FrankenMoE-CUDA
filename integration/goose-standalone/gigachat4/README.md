@@ -184,3 +184,18 @@ Goose recorded 21.47 prefill and 6.63 decode tokens/s in this diagnostic,
 with 8429 MiB VRAM after the request and a peak RSS of 21.99 GiB. Process
 swap was zero. System swap-out increased by 575570 pages during the
 request. The numbers are not a paired end-to-end speed comparison.
+
+## Exact wide DSA top-k
+
+GigaChat4 selects a heap-based exact top-k on DSA score rows wider than
+4096 cells. The heap reuses the sort workspace and emits the same stable
+ordering, with earlier indices first for equal scores. Other graph
+operations retain their existing sort dispatch.
+
+On 32768 keys and eight queries, the previous scoring-plus-selection
+probe exceeded its 30-second limit. The bounded-heap probe completed in
+0.131 seconds, and the GigaChat4-tagged build repeated it in 0.142 seconds.
+All 16384 selected indices matched an independent stable sort.
+The output SHA-256 is
+`90b2c19ef326692ac85016e4994ca8aca775d6a1664b7c5f5913e4626465f031`.
+This is a synthetic DSA operation test. A 32K model run is pending.
