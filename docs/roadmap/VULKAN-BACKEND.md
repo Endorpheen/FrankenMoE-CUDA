@@ -1,10 +1,10 @@
 # Vulkan backend for FrankenMoE
 
-**Status: Vulkan reference operators and attention state.** Device
-selection, transfer, RMSNorm, Q4_0 matmul, SwiGLU, NeoX RoPE and causal
-GQA with an FP32 KV cache are implemented. Model execution and release
-qualification are open. Keep the existing CUDA inference path unchanged
-during bring-up.
+**Status: Vulkan Qwen2 reference operators.** Device selection, transfer,
+RMSNorm, Q4_0 and Q8_0 matmul, Q4_0 embedding gather, bias and residual
+addition, SwiGLU, NeoX RoPE and causal GQA with FP32 KV are implemented.
+Model loading, generation and release qualification are open. Keep the
+existing CUDA inference path unchanged during bring-up.
 
 ## Verified bring-up
 
@@ -70,6 +70,15 @@ Linux Lavapipe, RTX 4070 Vulkan and Windows EXE under Wine with Lavapipe.
 The fixture checks the K/V write boundary and rewinds to one visible
 token while leaving old rows resident. It rejects invalid head geometry.
 The fixture uses FP32 cache storage and one workgroup per query head.
+
+The projection fixture chains a Q4_0 gather, a Q8_0 projection recorded
+as two aligned weight stripes, a broadcast bias and an elementwise
+residual. All results match independent CPU arithmetic exactly on the
+three tested configurations above. It covers negative Q8 bytes, an
+out-of-range token ID, a partial final stripe and an invalid output
+offset. The stripe parameters allow the model host to keep each binding
+and dispatch within device limits while writing one contiguous logits
+array. [GGML packed block layouts](https://github.com/ggml-org/llama.cpp/blob/master/ggml/src/ggml-common.h)
 
 ```bash
 # Point GLSLANG_VALIDATOR and SPIRV_VAL to the tools if they are outside PATH.

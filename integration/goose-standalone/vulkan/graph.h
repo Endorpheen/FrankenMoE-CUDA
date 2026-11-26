@@ -5,7 +5,8 @@
 
 typedef enum {
     FG_VK_RMSNORM, FG_VK_Q4_0, FG_VK_SWIGLU, FG_VK_ROPE, FG_VK_KV_STORE,
-    FG_VK_ATTENTION, FG_VK_OP_COUNT
+    FG_VK_ATTENTION, FG_VK_Q8_0, FG_VK_GATHER_Q4_0, FG_VK_BIAS, FG_VK_ADD,
+    FG_VK_OP_COUNT
 } fg_vk_op;
 
 typedef struct {
@@ -14,6 +15,8 @@ typedef struct {
     VkDeviceSize size;
 } fg_vk_view;
 
+/* For a quantized projection stripe, position is the first output column and
+ * context is the full output stride. The weight view contains only the stripe. */
 typedef struct {
     uint32_t width, rows, batch;
     float epsilon;

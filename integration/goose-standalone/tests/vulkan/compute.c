@@ -87,6 +87,7 @@ static int run_case(fg_vk_graph *graph, unsigned width, unsigned rows, unsigned 
 }
 
 int test_attention(fg_vk_graph *graph);
+int test_projection(fg_vk_graph *graph);
 
 int main(int argc, char **argv) {
     if (argc != 3) {
@@ -101,7 +102,7 @@ int main(int argc, char **argv) {
     if (!fg_vk_open(&vk, (uint32_t)index, argv[2][0] == '1')) return 1;
     fg_vk_graph graph;
     int pass = fg_vk_graph_open(&graph, &vk, 5) &&
-               run_case(&graph, WIDTH, ROWS, BATCH) && run_case(&graph, 32, 1, 1) && test_attention(&graph);
+               run_case(&graph, WIDTH, ROWS, BATCH) && run_case(&graph, 32, 1, 1) && test_attention(&graph) && test_projection(&graph);
     fg_vk_graph_close(&graph);
     fg_vk_close(&vk);
     return pass ? 0 : 1;

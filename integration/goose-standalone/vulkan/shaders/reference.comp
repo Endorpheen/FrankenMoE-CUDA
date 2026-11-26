@@ -1,8 +1,12 @@
 #version 450
 
 layout(local_size_x = 64) in;
+#if defined(OP_GATHER_Q4_0)
+layout(set = 0, binding = 0, std430) readonly buffer Tokens { uint ids[]; };
+#else
 layout(set = 0, binding = 0, std430) readonly buffer Input { float x[]; };
-#if defined(OP_Q4_0)
+#endif
+#if defined(OP_Q4_0) || defined(OP_Q8_0) || defined(OP_GATHER_Q4_0)
 layout(set = 0, binding = 1, std430) readonly buffer Weights { uint packed[]; };
 #else
 layout(set = 0, binding = 1, std430) readonly buffer Weights { float w[]; };
@@ -31,9 +35,28 @@ float sum_group(float value) {
     return total;
 }
 
-#if defined(OP_Q4_0)
+#if defined(OP_Q4_0) || defined(OP_Q8_0) || defined(OP_GATHER_Q4_0)
 uint read_byte(uint offset) {
     return (packed[offset >> 2] >> ((offset & 3u) * 8u)) & 255u;
+}
+
+float decode_weight(uint row, uint column) {
+#if defined(OP_Q8_0)
+    uint block_size = 34u;
+#else
+    uint block_size = 18u;
+#endif
+    uint block = (row * (p.width / 32u) + (column >> 5)) * block_size;
+    uint index = column & 31u;
+    float scale = unpackHalf2x16(read_byte(block) | (read_byte(block + 1u) << 8u)).x;
+#if defined(OP_Q8_0)
+    uint raw = read_byte(block + 2u + index);
+    int code = int(raw ^ 128u) - 128;
+#else
+    uint raw = read_byte(block + 2u + (index & 15u));
+    int code = int((raw >> ((index >> 4) * 4u)) & 15u) - 8;
+#endif
+    return float(code) * scale;
 }
 #endif
 
@@ -45,21 +68,28 @@ void main() {
     for (uint i = lane; i < p.width; i += 64) sum += x[offset + i] * x[offset + i];
     float scale = inversesqrt(sum_group(sum) / float(p.width) + p.epsilon);
     for (uint i = lane; i < p.width; i += 64) y[offset + i] = x[offset + i] * scale * w[i];
-#elif defined(OP_Q4_0)
+#elif defined(OP_Q4_0) || defined(OP_Q8_0)
     uint row = gl_WorkGroupID.x;
     uint token = gl_WorkGroupID.y;
-    uint start = row * (p.width / 32u) * 18u;
     precise float sum = 0.0;
-    for (uint i = lane; i < p.width; i += 64) {
-        uint block = start + (i >> 5) * 18u;
-        uint index = i & 31u;
-        uint codes = read_byte(block + 2u + (index & 15u));
-        int code = int((codes >> ((index >> 4) * 4u)) & 15u) - 8;
-        float scale = unpackHalf2x16(read_byte(block) | (read_byte(block + 1u) << 8u)).x;
-        sum += (float(code) * scale) * x[token * p.width + i];
-    }
+    for (uint i = lane; i < p.width; i += 64u) sum += decode_weight(row, i) * x[token * p.width + i];
     float result = sum_group(sum);
-    if (lane == 0) y[token * p.rows + row] = result;
+    uint stride = p.context == 0 ? p.rows : p.context;
+    if (lane == 0) y[token * stride + p.position + row] = result;
+#elif defined(OP_GATHER_Q4_0)
+    uint token = gl_WorkGroupID.x;
+    uint row = ids[token];
+    for (uint i = lane; i < p.width; i += 64u) {
+        y[token * p.width + i] = row < p.rows ? decode_weight(row, i) : 0.0;
+    }
+#elif defined(OP_BIAS) || defined(OP_ADD)
+    uint index = gl_GlobalInvocationID.x;
+#if defined(OP_BIAS)
+    uint other = index % p.width;
+#else
+    uint other = index;
+#endif
+    if (index < p.width * p.batch) y[index] = x[index] + w[other];
 #elif defined(OP_SWIGLU)
     uint index = gl_GlobalInvocationID.x;
     if (index < p.width * p.batch) y[index] = (x[index] / (1.0 + exp(-x[index]))) * w[index];

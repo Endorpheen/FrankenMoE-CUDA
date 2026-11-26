@@ -18,6 +18,10 @@ static const fg_vk_shader shaders[FG_VK_OP_COUNT] = {
     [FG_VK_ROPE] = { fg_rope, sizeof(fg_rope) },
     [FG_VK_KV_STORE] = { fg_kv_store, sizeof(fg_kv_store) },
     [FG_VK_ATTENTION] = { fg_attention, sizeof(fg_attention) },
+    [FG_VK_Q8_0] = { fg_q8_0, sizeof(fg_q8_0) },
+    [FG_VK_GATHER_Q4_0] = { fg_gather_q4_0, sizeof(fg_gather_q4_0) },
+    [FG_VK_BIAS] = { fg_bias, sizeof(fg_bias) },
+    [FG_VK_ADD] = { fg_add, sizeof(fg_add) },
 };
 
 static VkResult create_pipeline(fg_vk_graph *graph, fg_vk_op op) {
@@ -136,6 +140,13 @@ static int overlap(fg_vk_view a, fg_vk_view b) {
     return a.buffer->buffer == b.buffer->buffer && a.offset < b.offset + b.size && b.offset < a.offset + a.size;
 }
 
+static VkDeviceSize packed_matrix_bytes(uint32_t width, uint32_t rows, unsigned block_size) {
+    if (width % 32 || !rows) return 0;
+    const uint64_t blocks = (uint64_t)(width / 32) * rows;
+    if (blocks > (UINT32_MAX - 3u) / block_size) return 0;
+    return (blocks * block_size + 3u) & ~(VkDeviceSize)3;
+}
+
 static void compute_barrier(fg_vk_graph *graph, VkPipelineStageFlags2 stage, VkAccessFlags2 access) {
     const VkMemoryBarrier2 memory = {
         .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
@@ -164,14 +175,28 @@ static int record(fg_vk_graph *graph, fg_vk_op op, fg_vk_shape shape, fg_vk_view
         weight_bytes = (VkDeviceSize)shape.width * 4;
         break;
     case FG_VK_Q4_0:
-        if (shape.width % 32 || !shape.rows || (uint64_t)shape.rows * shape.batch > UINT32_MAX) return 0;
+    case FG_VK_Q8_0: {
+        const uint32_t output_stride = shape.context ? shape.context : shape.rows;
+        if ((uint64_t)shape.position + shape.rows > output_stride ||
+            (uint64_t)output_stride * shape.batch > UINT32_MAX) return 0;
         x = shape.rows;
         y = shape.batch;
-        weight_bytes = (uint64_t)(shape.width / 32) * shape.rows * 18;
-        if (weight_bytes > UINT32_MAX - 3) return 0;
-        weight_bytes = (weight_bytes + 3) & ~(VkDeviceSize)3;
-        output_bytes = (uint64_t)shape.rows * shape.batch * 4;
+        weight_bytes = packed_matrix_bytes(shape.width, shape.rows, op == FG_VK_Q8_0 ? 34 : 18);
+        if (!weight_bytes) return 0;
+        output_bytes = (uint64_t)output_stride * shape.batch * 4;
         break;
+    }
+    case FG_VK_GATHER_Q4_0:
+        weight_bytes = packed_matrix_bytes(shape.width, shape.rows, 18);
+        if (!weight_bytes) return 0;
+        input_bytes = (uint64_t)shape.batch * 4;
+        x = shape.batch;
+        break;
+    case FG_VK_BIAS:
+        x = (uint32_t)((elements + 63) / 64);
+        weight_bytes = (uint64_t)shape.width * 4;
+        break;
+    case FG_VK_ADD:
     case FG_VK_SWIGLU:
         x = (uint32_t)((elements + 63) / 64);
         weight_bytes = input_bytes;
