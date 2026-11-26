@@ -308,3 +308,18 @@ probes measured 140.19/9.95 and 143.29/10.24 tokens/s. All 32 generated token
 IDs matched the llama.cpp reference on this fixture. Post-request GPU memory
 was 8481 MiB versus 8490 MiB for the control. Process swap was zero and
 system swap-out did not increase.
+
+### EXP-2026-11-26-2144 — CUDA logit softcap
+
+The GigaChat4 graph tags the logit softcap tanh for CUDA dispatch. The
+surrounding scales and sampling settings are unchanged. The CUDA expression
+uses an odd polynomial near zero and an exponential form elsewhere.
+
+On the fixed 512/32 request, alternating control and candidate trials measured
+control prefill 142.24 and 134.70 tokens/s, candidate prefill 143.26 and 138.37
+tokens/s, control decode 10.27 and 10.24 tokens/s, and candidate decode 11.00
+and 11.03 tokens/s. All four responses matched the reference token IDs.
+With a fixed seed and temperature 0.6, all 32 sampled IDs and the returned
+top-five IDs matched the control. Maximum absolute log-probability error
+was 3.82e-6 across 192 values. Post-request GPU memory was 8460–8469 MiB across
+both arms, and process swap and system swap-out growth were zero.

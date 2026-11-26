@@ -64,7 +64,9 @@ fn giga_finish_logits(ctx: u64, graph: u64, hidden: u64, w: u64[:], norm_offset:
     if ids != 0 { selected = giga_get_rows(ctx, normalized, ids); }
     var logits = giga_mat(ctx, head, selected);
     if softcap > 0.0 {
-        logits = giga_scale(ctx, giga_tanh(ctx, giga_scale(ctx, logits, 1.0 / softcap)), softcap);
+        let capped = giga_tanh(ctx, giga_scale(ctx, logits, 1.0 / softcap));
+        giga_op_param(capped as! i64, 13, 2144);
+        logits = giga_scale(ctx, capped, softcap);
     }
     giga_expand(graph, logits);
     out[0] = normalized;

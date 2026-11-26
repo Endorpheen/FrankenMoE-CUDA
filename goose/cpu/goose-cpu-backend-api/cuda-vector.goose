@@ -24,6 +24,7 @@ fn cv_operation(p: const Node &) -> i64 {
         return if routed_batch || dense_batch { CV_SWIGLU_CLAMPED_EXACT } else { CV_SWIGLU_CLAMPED };
     }
     if p.op == OP_UNARY {
+        if p.ip[0] == UNARY_OP_TANH && p.ip[13] == 2144 { return CV_LOGIT_TANH; }
         if p.ip[0] == UNARY_OP_SIGMOID { return CV_SIGMOID; }
         if p.ip[0] == UNARY_OP_SILU { return CV_SILU; }
         if p.ip[0] == UNARY_OP_SOFTPLUS { return CV_SOFTPLUS; }

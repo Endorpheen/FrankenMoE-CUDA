@@ -2,6 +2,7 @@ const CV_ADD: i64 = 1;
 const CV_SUB: i64 = 2;
 const CV_MUL: i64 = 3;
 const CV_DIV: i64 = 4;
+const CV_LOGIT_TANH: i64 = 18;
 const CV_SCALE: i64 = 5;
 const CV_CLAMP: i64 = 6;
 const CV_SIGMOID: i64 = 7;
@@ -112,6 +113,17 @@ fn cv_clamp_silu(x: f32) -> f32 {
 }
 
 fn cv_value(op: i64, a: f32, b: f32, param0: f32, param1: f32) -> f32 {
+    if op == CV_LOGIT_TANH {
+        let magnitude = if a < 0.0 { -a } else { a };
+        if magnitude < 0.125 {
+            let square = a * a;
+            return a + (a * square) * (-0.3333333333333333 +
+                square * (0.1333333333333333 - square * 0.053968253968254));
+        }
+        let exponential = exp32(-2.0 * magnitude);
+        let value = (1.0 - exponential) / (1.0 + exponential);
+        return if a < 0.0 { -value } else { value };
+    }
     if op == CV_SWIGLU_CLAMPED || op == CV_SWIGLU_CLAMPED_EXACT {
         let gate = cv_min(a, param1);
         let activation = if op == CV_SWIGLU_CLAMPED_EXACT { cv_clamp_silu(gate) } else { silu(gate) };
