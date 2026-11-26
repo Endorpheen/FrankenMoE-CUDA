@@ -1,12 +1,18 @@
 #version 450
 
 layout(local_size_x = 64) in;
-#if defined(OP_GATHER_Q4_0) || defined(OP_GATHER_PQ2_0)
+#if defined(OP_GATHER_Q4_0) || defined(OP_GATHER_PQ2_0) || defined(OP_GATHER_Q4_K) || defined(OP_GATHER_Q8_0)
+#define QUANT_GATHER
+#endif
+#if defined(OP_Q4_0) || defined(OP_Q8_0) || defined(OP_PQ2_0) || defined(OP_Q4_K) || defined(OP_Q6_K) || defined(OP_IQ4_NL) || defined(OP_IQ4_XS)
+#define QUANT_PROJECT
+#endif
+#if defined(QUANT_GATHER)
 layout(set = 0, binding = 0, std430) readonly buffer Tokens { uint ids[]; };
 #else
 layout(set = 0, binding = 0, std430) readonly buffer Input { float x[]; };
 #endif
-#if defined(OP_Q4_0) || defined(OP_Q8_0) || defined(OP_GATHER_Q4_0) || defined(OP_PQ2_0) || defined(OP_GATHER_PQ2_0)
+#if defined(QUANT_PROJECT) || defined(QUANT_GATHER)
 layout(set = 0, binding = 1, std430) readonly buffer Weights { uint packed[]; };
 #elif defined(OP_ATTENTION_Q4)
 layout(set = 0, binding = 1, std430) readonly buffer Keys { uint packed_keys[]; };
@@ -57,20 +63,65 @@ float sum_group(float value) {
     return total;
 }
 
-#if defined(OP_Q4_0) || defined(OP_Q8_0) || defined(OP_GATHER_Q4_0) || defined(OP_PQ2_0) || defined(OP_GATHER_PQ2_0)
+#if defined(QUANT_PROJECT) || defined(QUANT_GATHER)
 uint read_byte(uint offset) {
     return (packed[offset >> 2] >> ((offset & 3u) * 8u)) & 255u;
 }
 
+#if defined(OP_Q4_K) || defined(OP_GATHER_Q4_K) || defined(OP_Q6_K) || defined(OP_IQ4_XS)
+float read_half(uint offset) {
+    return unpackHalf2x16(read_byte(offset) | (read_byte(offset + 1u) << 8u)).x;
+}
+#endif
+
+#if defined(OP_IQ4_NL) || defined(OP_IQ4_XS)
+const int iq4_values[16] = int[16](-127, -104, -83, -65, -49, -35, -22, -10,
+    1, 13, 25, 38, 53, 69, 89, 113);
+#endif
+
 float decode_weight(uint row, uint column) {
-#if defined(OP_PQ2_0) || defined(OP_GATHER_PQ2_0)
+#if defined(OP_Q4_K) || defined(OP_GATHER_Q4_K)
+    uint block = (row * (p.width >> 8u) + (column >> 8u)) * 144u;
+    uint index = column & 255u, group = index >> 5u, scales = block + 4u;
+    uint d, m;
+    if (group < 4u) {
+        d = read_byte(scales + group) & 63u;
+        m = read_byte(scales + group + 4u) & 63u;
+    } else {
+        uint lower = read_byte(scales + group + 4u);
+        d = (lower & 15u) | ((read_byte(scales + group - 4u) >> 6u) << 4u);
+        m = (lower >> 4u) | ((read_byte(scales + group) >> 6u) << 4u);
+    }
+    uint quants = read_byte(block + 16u + (index >> 6u) * 32u + (index & 31u));
+    uint quant = (quants >> ((group & 1u) * 4u)) & 15u;
+    precise float decoded = (read_half(block) * float(d)) * float(quant) - read_half(block + 2u) * float(m);
+    return decoded;
+#elif defined(OP_Q6_K)
+    uint block = (row * (p.width >> 8u) + (column >> 8u)) * 210u;
+    uint index = column & 255u, half_block = index >> 7u, group = (index >> 5u) & 3u;
+    uint lane = index & 31u;
+    uint low = read_byte(block + half_block * 64u + (group & 1u) * 32u + lane);
+    uint high = read_byte(block + 128u + half_block * 32u + lane);
+    uint quant = ((low >> ((group >> 1u) * 4u)) & 15u) | (((high >> (group * 2u)) & 3u) << 4u);
+    int scale = int(read_byte(block + 192u + (index >> 4u)) ^ 128u) - 128;
+    return (read_half(block + 208u) * float(scale)) * float(int(quant) - 32);
+#elif defined(OP_IQ4_XS)
+    uint block = (row * (p.width >> 8u) + (column >> 8u)) * 136u;
+    uint index = column & 255u, group = index >> 5u;
+    uint high = read_byte(block + 2u + (group >> 2u)) >> ((group & 3u) * 2u);
+    uint low = read_byte(block + 4u + (group >> 1u)) >> ((group & 1u) * 4u);
+    int scale = int(((high & 3u) << 4u) | (low & 15u)) - 32;
+    uint pair = read_byte(block + 8u + group * 16u + (index & 15u));
+    uint code = (pair >> (((index >> 4u) & 1u) * 4u)) & 15u;
+    return (read_half(block) * float(scale)) * float(iq4_values[code]);
+#elif defined(OP_PQ2_0) || defined(OP_GATHER_PQ2_0)
     uint block = (row * (p.width / 128u) + (column >> 7)) * 34u;
     uint index = column & 127u;
     uint code = (read_byte(block + 2u + (index >> 2)) >> (2u * (index & 3u))) & 3u;
     float scale = unpackHalf2x16(read_byte(block) | (read_byte(block + 1u) << 8u)).x;
     return float(int(code) - 1) * scale;
 #else
-#if defined(OP_Q8_0)
+#if defined(OP_Q8_0) || defined(OP_GATHER_Q8_0)
     uint block_size = 34u;
 #else
     uint block_size = 18u;
@@ -78,12 +129,17 @@ float decode_weight(uint row, uint column) {
     uint block = (row * (p.width / 32u) + (column >> 5)) * block_size;
     uint index = column & 31u;
     float scale = unpackHalf2x16(read_byte(block) | (read_byte(block + 1u) << 8u)).x;
-#if defined(OP_Q8_0)
+#if defined(OP_Q8_0) || defined(OP_GATHER_Q8_0)
     uint raw = read_byte(block + 2u + index);
     int code = int(raw ^ 128u) - 128;
 #else
     uint raw = read_byte(block + 2u + (index & 15u));
-    int code = int((raw >> ((index >> 4) * 4u)) & 15u) - 8;
+    uint nibble = (raw >> ((index >> 4) * 4u)) & 15u;
+#if defined(OP_IQ4_NL)
+    int code = iq4_values[nibble];
+#else
+    int code = int(nibble) - 8;
+#endif
 #endif
     return float(code) * scale;
 #endif
@@ -134,7 +190,7 @@ void main() {
         y[head] = parameters[p.rows + head] * softplus;
         y[p.rows + head] = 1.0 / (1.0 + exp(-beta));
     }
-#elif defined(OP_Q4_0) || defined(OP_Q8_0) || defined(OP_PQ2_0)
+#elif defined(QUANT_PROJECT)
     uint row = gl_WorkGroupID.x;
     uint token = gl_WorkGroupID.y;
     precise float sum = 0.0;
@@ -142,7 +198,7 @@ void main() {
     float result = sum_group(sum);
     uint stride = p.context == 0 ? p.rows : p.context;
     if (lane == 0) y[token * stride + p.position + row] = result;
-#elif defined(OP_GATHER_Q4_0) || defined(OP_GATHER_PQ2_0)
+#elif defined(QUANT_GATHER)
     uint token = gl_WorkGroupID.x;
     uint id = ids[token];
     uint row = id - p.position;

@@ -14,11 +14,17 @@ typedef struct {
 static const fg_vk_shader shaders[FG_VK_OP_COUNT] = {
     [FG_VK_RMSNORM] = { fg_rmsnorm, sizeof(fg_rmsnorm) },
     [FG_VK_Q4_0] = { fg_q4_0, sizeof(fg_q4_0) },
+    [FG_VK_Q4_K] = { fg_q4_k, sizeof(fg_q4_k) },
+    [FG_VK_Q6_K] = { fg_q6_k, sizeof(fg_q6_k) },
+    [FG_VK_GATHER_Q4_K] = { fg_gather_q4_k, sizeof(fg_gather_q4_k) },
+    [FG_VK_IQ4_NL] = { fg_iq4_nl, sizeof(fg_iq4_nl) },
+    [FG_VK_IQ4_XS] = { fg_iq4_xs, sizeof(fg_iq4_xs) },
     [FG_VK_SWIGLU] = { fg_swiglu, sizeof(fg_swiglu) },
     [FG_VK_ROPE] = { fg_rope, sizeof(fg_rope) },
     [FG_VK_KV_STORE] = { fg_kv_store, sizeof(fg_kv_store) },
     [FG_VK_ATTENTION] = { fg_attention, sizeof(fg_attention) },
     [FG_VK_Q8_0] = { fg_q8_0, sizeof(fg_q8_0) },
+    [FG_VK_GATHER_Q8_0] = { fg_gather_q8_0, sizeof(fg_gather_q8_0) },
     [FG_VK_GATHER_Q4_0] = { fg_gather_q4_0, sizeof(fg_gather_q4_0) },
     [FG_VK_BIAS] = { fg_bias, sizeof(fg_bias) },
     [FG_VK_ADD] = { fg_add, sizeof(fg_add) },
@@ -153,8 +159,19 @@ static int overlap(fg_vk_view a, fg_vk_view b) {
 }
 
 static VkDeviceSize packed_matrix_bytes(uint32_t width, uint32_t rows, fg_vk_op op) {
-    const unsigned block_width = op == FG_VK_PQ2_0 || op == FG_VK_GATHER_PQ2_0 ? 128 : 32;
-    const unsigned block_size = op == FG_VK_Q4_0 || op == FG_VK_GATHER_Q4_0 ? 18 : 34;
+    unsigned block_width = 32, block_size = 34;
+    switch (op) {
+    case FG_VK_Q4_K:
+    case FG_VK_GATHER_Q4_K: block_width = 256; block_size = 144; break;
+    case FG_VK_Q6_K: block_width = 256; block_size = 210; break;
+    case FG_VK_IQ4_XS: block_width = 256; block_size = 136; break;
+    case FG_VK_Q4_0:
+    case FG_VK_IQ4_NL:
+    case FG_VK_GATHER_Q4_0: block_size = 18; break;
+    case FG_VK_PQ2_0:
+    case FG_VK_GATHER_PQ2_0: block_width = 128; break;
+    default: break;
+    }
     if (width % block_width || !rows) return 0;
     const uint64_t blocks = (uint64_t)(width / block_width) * rows;
     if (blocks > (UINT32_MAX - 3u) / block_size) return 0;
@@ -191,6 +208,10 @@ static int record(fg_vk_graph *graph, fg_vk_op op, fg_vk_shape shape, fg_vk_view
         if (op == FG_VK_GATED_RMS) value_bytes = input_bytes;
         break;
     case FG_VK_Q4_0:
+    case FG_VK_Q4_K:
+    case FG_VK_Q6_K:
+    case FG_VK_IQ4_NL:
+    case FG_VK_IQ4_XS:
     case FG_VK_PQ2_0:
     case FG_VK_Q8_0: {
         const uint32_t output_stride = shape.context ? shape.context : shape.rows;
@@ -204,6 +225,8 @@ static int record(fg_vk_graph *graph, fg_vk_op op, fg_vk_shape shape, fg_vk_view
         break;
     }
     case FG_VK_GATHER_Q4_0:
+    case FG_VK_GATHER_Q4_K:
+    case FG_VK_GATHER_Q8_0:
     case FG_VK_GATHER_PQ2_0:
         if ((uint64_t)shape.position + shape.rows > UINT32_MAX) return 0;
         weight_bytes = packed_matrix_bytes(shape.width, shape.rows, op);

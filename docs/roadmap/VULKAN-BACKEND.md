@@ -313,8 +313,8 @@ The local GGUF inventory confirms distinct requirements.
 | --- | --- | --- |
 | Qwen2.5-0.5B Q4_0 | Q4_0, Q8_0 | Experimental CLI and HTTP release |
 | Bonsai 2.5 27B | PQ2_0 trunk, Q4_0 KV | Experimental raw-ID and text CLI, serial HTTP completions, SSE and no-thinking ChatML. Short generation passes on Linux RTX 4070 and Windows EXE under Wine with RTX 4070. |
-| Apex 35B | Q4_K, Q6_K | Open. GDN, grouped MoE and oversubscribed expert placement |
-| Inkling-2-Mini | Q8_0, IQ4_NL, IQ4_XS | Open. Relative/sliding attention, recurrent depth loops and grouped MoE |
+| Apex 35B | Q4_K, Q6_K | Real-weight projection and embedding gather pass. Model graph, GDN wiring, grouped MoE and oversubscribed expert placement are open. |
+| Inkling-2-Mini | Q8_0, IQ4_NL, IQ4_XS | Real-weight projection and embedding gather pass. Model graph, relative/sliding attention, recurrent depth loops and grouped MoE are open. |
 
 ### Bonsai FFN component
 
@@ -508,6 +508,37 @@ Tested executable SHA-256 values:
 
 Long-sequence numerical checks, peak memory, throughput, native Windows
 and AMD hardware qualification remain open. Apex and Inkling Vulkan remain open.
+
+### Apex and Inkling quantized weight operations
+
+The Vulkan graph accepts Q4_K, Q6_K, IQ4_NL and IQ4_XS projection
+stripes and Q4_K and Q8_0 embedding gathers. The shaders read packed
+weights through 32-bit storage buffers and accumulate projections in
+FP32. They do not require shader integer-dot-product or subgroups.
+
+The component fixture uses seven real 512-element rows for each
+format. It covers Apex token embeddings and the first expert down
+projection, plus Inkling token embeddings and the first available
+IQ4_NL down and IQ4_XS gate/up expert tensors. The CPU oracle is
+llama.cpp `gguf-py` at `b8635075ffe27b135c49afb9a8b5c434bd42c502`
+with FP64 dot-product accumulation. Linux Lavapipe, Linux RTX 4070 and
+Windows x64 under Wine with Lavapipe each passed. The two gathers match
+every output element exactly. The maximum absolute projection errors
+for Q4_K, Q6_K, IQ4_NL, IQ4_XS and Q8_0 respectively are
+1.49e-8, 2.98e-8, 1.19e-7, 1.19e-7 and 1.91e-6.
+
+```bash
+tests=integration/goose-standalone/tests/vulkan
+out=build/vulkan-bringup/moe-quant
+bash tools/build-goose-vulkan.sh "$out/linux" linux compute
+PYTHONPATH="$LLAMA_CPP/gguf-py" OPENBLAS_NUM_THREADS=1 \
+    python3 "$tests/moe-quant-fixture.py" "$APEX_GGUF" "$INKLING_GGUF" "$out/real-weights.bin"
+"$out/linux/frankenmoe-vulkan-compute-test" 0 0 --moe-quant "$out/real-weights.bin"
+```
+
+Fixture SHA-256 `b87e72da921c79ce799b2edaf9f9d7d5d3d0d73aa74e874db1b7a915606a1c03`.
+These operations are ready for model-graph integration. The fixture
+does not exercise routing, expert placement or generation.
 
 ## Model order
 
