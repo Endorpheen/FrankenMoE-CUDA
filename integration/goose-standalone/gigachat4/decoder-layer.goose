@@ -19,7 +19,7 @@ export fn giga_decoder_gdn(ctx: u64, graph: u64, input: u64, w: u64[:],
     if giga_gdn_projections(ctx, norm, w[13], w[12], w[18], w[17], w[16], w[15],
                             per_stream, streams, projected) != 0 { return 0; }
     if giga_gdn_layer(ctx, projected, state[0], state[1], w[14], w[19], w[20],
-                      per_stream, streams, epsilon, result) != 0 { return 0; }
+                      per_stream, streams, epsilon, state[1] == state[3], result) != 0 { return 0; }
     giga_expand(graph, giga_copy(ctx, result[1], state[2]));
     giga_expand(graph, giga_copy(ctx, result[2], state[3]));
     return result[0];

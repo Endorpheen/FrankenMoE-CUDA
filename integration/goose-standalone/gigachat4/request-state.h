@@ -11,6 +11,7 @@ struct giga_request {
     int64_t capacity;
     int64_t committed;
     int64_t draft_committed;
+    bool device_state;
 };
 
 struct giga_step {

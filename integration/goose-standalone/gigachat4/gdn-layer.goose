@@ -1,3 +1,4 @@
+extern "fg158_set_param" fn giga_op_param(x: i64, slot: i64, value: i64);
 extern "ggml_transpose" fn giga_transpose(ctx: u64, x: u64) -> u64;
 extern "ggml_concat" fn giga_concat(ctx: u64, a: u64, b: u64, dim: i32) -> u64;
 extern "ggml_ssm_conv" fn giga_ssm_conv(ctx: u64, x: u64, weights: u64) -> u64;
@@ -21,7 +22,7 @@ fn giga_gdn_heads(ctx: u64, x: u64, tokens: i64, seqs: i64) -> u64 {
 export fn giga_gdn_layer(ctx: u64, projected: u64[:], conv_history: u64,
                          recurrent: u64, conv_weight: u64, norm_weight: u64,
                          output_weight: u64, tokens: i64, seqs: i64, epsilon: f32,
-                         out: u64[:]) -> i64 {
+                         publish_state: bool, out: u64[:]) -> i64 {
     if ctx == 0 || conv_history == 0 || recurrent == 0 || conv_weight == 0 ||
        norm_weight == 0 || output_weight == 0 || projected.len < 4 || out.len < 3 ||
        tokens < 1 || seqs < 1 || tokens > 1048576 / seqs || !(epsilon > 0.0) { return -1; }
@@ -42,6 +43,7 @@ export fn giga_gdn_layer(ctx: u64, projected: u64[:], conv_history: u64,
     let fused = giga_delta(ctx, giga_gdn_heads(ctx, q, tokens, seqs),
                          giga_gdn_heads(ctx, k, tokens, seqs), v, projected[3],
                          projected[2], state, 1);
+    if publish_state { giga_op_param(fused as! i64, 4, 1); }
     let output_bytes = (4096 * tokens * 4) as u64;
     let values = giga_view4(ctx, fused, 128, 32, tokens, seqs, 512, 16384, output_bytes, 0);
     let new_state = giga_view4(ctx, fused, 128, 128, 32, seqs,

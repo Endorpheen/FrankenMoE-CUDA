@@ -28,3 +28,24 @@ All four runs generated the same eight IDs: 1292, 7154, 15166, 347, 4620,
 926, 20201, 7919. Process swap was zero and system swap-out was unchanged.
 These are short-request diagnostics. The 32K/512 gate and model-specific
 OpenCode tool round trips remain pending.
+
+## Resident recurrent state
+
+The CUDA backend retains convolution history and the recurrent state of all
+24 GDN layers in 50 MiB. Disable this path with
+`GOOSE_GIGACHAT4_GDN_STATE=0`. The graph marks in-place recurrent updates for
+the existing Goose CUDA executor.
+
+The fixed 29/8 comparison used the same placement and prefill planner above.
+Runs followed resident, control, control, resident order without profiling.
+
+| Run | Prefill, tok/s | Decode, tok/s | VRAM after request, MiB |
+| --- | ---: | ---: | ---: |
+| Control 1 | 3.794 | 1.470 | 8261 |
+| Control 2 | 3.798 | 1.485 | 8261 |
+| Resident 1 | 3.832 | 1.645 | 8311 |
+| Resident 2 | 3.847 | 1.645 | 8311 |
+
+All four runs matched the eight reference IDs. Process swap and system
+swap-out delta were zero. A separate diagnostic run recorded 24 resident
+GDN operations per graph. Median decode increased by 11.3 percent.

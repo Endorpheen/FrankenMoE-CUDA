@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+extern int64_t fg_cuda_reset_model_state(void);
+
 static void allocate_mla(struct ggml_context *ctx, int64_t capacity, uint64_t state[3]) {
     state[0] = (uintptr_t)ggml_new_tensor_2d(ctx, GGML_TYPE_F16, 576, capacity);
     state[1] = (uintptr_t)ggml_new_tensor_2d(ctx, GGML_TYPE_F16, 128, capacity);
@@ -52,6 +54,11 @@ void giga_request_reset(struct giga_request *request) {
     for (struct ggml_tensor *tensor = ggml_get_first_tensor(request->descriptors);
          tensor; tensor = ggml_get_next_tensor(request->descriptors, tensor)) {
         memset(tensor->data, 0, ggml_nbytes(tensor));
+    }
+    if (request->device_state && fg_cuda_reset_model_state() != 0) {
+        request->committed = -1;
+        request->draft_committed = -1;
+        return;
     }
     request->committed = 0;
     request->draft_committed = 0;
@@ -166,4 +173,13 @@ int giga_step_commit(struct giga_request *request, const struct giga_step *step)
         step->count > request->capacity - *cursor) return -1;
     *cursor += step->count;
     return 0;
+}
+
+int64_t giga_state_span(uint64_t address, sl_i64 out) {
+    const struct ggml_tensor *tensor = (const void *)(uintptr_t)address;
+    if (!tensor || !tensor->data || out.len < 2 || tensor->type != GGML_TYPE_F32 ||
+        !ggml_is_contiguous(tensor)) return 0;
+    out.data[0] = (int64_t)(uintptr_t)tensor->data;
+    out.data[1] = (int64_t)ggml_nbytes(tensor);
+    return 1;
 }

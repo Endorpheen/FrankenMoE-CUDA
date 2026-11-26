@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+extern int64_t fg_cuda_free_bytes(void);
+
 static struct giga_bindings model;
 static struct giga_request request;
 static bool draft_enabled;
@@ -48,7 +50,18 @@ int giga_server_open(const void *mapping, size_t bytes, int64_t capacity) {
         }
     }
     status = giga_request_init(&request, &model, capacity);
-    if (status != 0) giga_unbind_model(&model);
+    const char *state = getenv("GOOSE_GIGACHAT4_GDN_STATE");
+    if (status == 0 && (!state || strcmp(state, "0") != 0) && fg_cuda_free_bytes() > 0) {
+        const int64_t resident = giga_place_gdn_state((sl_u64){request.state, 128},
+            (sl_i64){model.kinds, GIGA_LAYER_COUNT});
+        if (trace) fprintf(stderr, "GigaChat4: GDN state VRAM=%lld bytes\n", (long long)resident);
+        if (resident <= 0) status = -1;
+        else request.device_state = true;
+    }
+    if (status != 0) {
+        giga_request_free(&request);
+        giga_unbind_model(&model);
+    }
     const char *catchup = getenv("GOOSE_GIGACHAT4_MTP_CATCHUP");
     draft_enabled = status == 0 && catchup && strcmp(catchup, "1") == 0;
     if (trace) fprintf(stderr, "GigaChat4: model ready status=%d\n", status);
