@@ -1177,6 +1177,16 @@ release still needs the architecture regression gates.
   the greedy scan or index helper. Prefill gap is 90.0 ms.
   [Host timing and reproducible analysis](EXP-2026-11-26-2098-bonsai-host-perf/README.md).
 
+### EXP-2026-11-26-2099 — Bonsai HTTP device argmax component
+
+- **Component verified.** Reuse EXP-2034's exact choice kernels.
+  Test saved real logits, signed-zero ties, cross-CTA ties, EOG
+  masking and nonfinite fallback. All 76 finite tests match.
+- **Evidence:** On RTX 4070, readback of resident logits takes
+  107.04 µs vs 19.89 µs for device choice plus 12 B readback.
+  Ordinary HTTP integration and end-to-end speed remain unmeasured.
+  [Component data and required HTTP contract](EXP-2026-11-26-2099-bonsai-http-argmax-probe/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.

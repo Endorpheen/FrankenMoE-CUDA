@@ -1,0 +1,15 @@
+{
+  "control_checkpoint": "EXP-2096",
+  "fixture": "EXP-2096 CodeTrace arm A full-logit dump",
+  "fixture_sha256": "21bba94a8fa103c0c8ef07688b794365bade41e65280fc78769fe3215b36c55f",
+  "argmax_source_sha256": "a304fe49694a81d4cf27c2103c3bf3ec57385f6fb0e490324b7ee4b027bac971",
+  "control_cubin_sha256": "fbaa46a0db3e5efc853f56a6a94af2571d153e4d039e7639b8f1262349b9ec0b",
+  "component_cubin_sha256": "2a18d1857ecb4067e30eb9ab6cc4f9c61cab7d6c46985b02c59cb57616b5c7cd",
+  "vocabulary": 248320,
+  "input_bytes": 993280,
+  "output_bytes": 12,
+  "allocator_bytes_one_row": 33968,
+  "launcher": "CUDA Driver API, resident source, pageable destination",
+  "http_runtime_modified": false,
+  "request_measurements": null
+}
