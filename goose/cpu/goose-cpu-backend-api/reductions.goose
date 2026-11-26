@@ -153,21 +153,21 @@ fn normalize(p: const Node &, x: const u8[:], y: const u8[:], dst: u8[:]) -> boo
     return true;
 }
 
-fn topk_worse(data: const u8[:], base: i64, left: i64, right: i64, descending: bool) -> bool {
-    let a = from_bits(read32(data, base + 4 * left));
-    let b = from_bits(read32(data, base + 4 * right));
-    return if a == b { left > right } else if descending { a < b } else { a > b };
+fn topk_key(data: const u8[:], base: i64, index: i64, descending: bool) -> i64 {
+    var bits = read32(data, base + 4 * index);
+    if bits & 0x7fffffff == 0 { bits = 0; }
+    var order: u32 = if bits & 0x80000000 != 0 { bits ^ 0xffffffff } else { bits ^ 0x80000000 };
+    if !descending { order = order ^ 0xffffffff; }
+    let key = ((order as u64) << 32) | (0xffffffff - (index as u64));
+    return (key ^ 0x8000000000000000) as! i64;
 }
 
-fn topk_sift(data: const u8[:], base: i64, heap: i64[:], size: i64,
-             root: i64, value: i64, descending: bool) {
+fn topk_key_sift(heap: i64[:], size: i64, root: i64, value: i64) {
     var position = root;
     while 2 * position + 1 < size {
         var child = 2 * position + 1;
-        if child + 1 < size && topk_worse(data, base, heap[child + 1], heap[child], descending) {
-            child += 1;
-        }
-        if !topk_worse(data, base, heap[child], value, descending) { break; }
+        if child + 1 < size && heap[child + 1] < heap[child] { child += 1; }
+        if heap[child] >= value { break; }
         heap[position] = heap[child];
         position = child;
     }
@@ -183,25 +183,23 @@ fn topk_wide(p: const Node &, x: const u8[:], dst: u8[:], indices: i64[:]) -> bo
     var row = thread_first(p);
     while row < rows(p.x) {
         let base = offset(p.x, row * n);
-        for i in count { heap[i] = i; }
+        for i in count { heap[i] = topk_key(x, base, i, descending); }
         var parent = count / 2;
         while parent > 0 {
             parent -= 1;
-            topk_sift(x, base, heap, count, parent, heap[parent], descending);
+            topk_key_sift(heap, count, parent, heap[parent]);
         }
         for i in count .. n {
-            if topk_worse(x, base, heap[0], i, descending) {
-                topk_sift(x, base, heap, count, 0, i, descending);
-            }
+            let key = topk_key(x, base, i, descending);
+            if key > heap[0] { topk_key_sift(heap, count, 0, key); }
         }
         let output = offset(p.d, row * count);
         var remaining = count;
         while remaining > 0 {
             remaining -= 1;
-            write32(dst, output + 4 * remaining, heap[0] as u32);
-            if remaining > 0 {
-                topk_sift(x, base, heap, remaining, 0, heap[remaining], descending);
-            }
+            let index = 0xffffffff - ((heap[0] as! u64) & 0xffffffff);
+            write32(dst, output + 4 * remaining, index as u32);
+            if remaining > 0 { topk_key_sift(heap, remaining, 0, heap[remaining]); }
         }
         row += p.nth;
     }

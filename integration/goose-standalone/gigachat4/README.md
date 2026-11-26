@@ -199,3 +199,17 @@ All 16384 selected indices matched an independent stable sort.
 The output SHA-256 is
 `90b2c19ef326692ac85016e4994ca8aca775d6a1664b7c5f5913e4626465f031`.
 This is a synthetic DSA operation test. A 32K model run is pending.
+
+## Packed exact top-k heap keys
+
+The wide DSA heap stores an ordered score key with its stable index
+tie-breaker in the existing 64-bit index workspace. Each input score is
+read once. Heap comparisons no longer reload scores. Signed zero maps
+to a common key and equal scores retain their original index order.
+
+On a warmed synthetic 32768-key, one-query graph, scoring and top-k
+together took 2.468 and 2.062 ms in the control and 1.338 and 1.310 ms
+with packed keys, in control/candidate/candidate/control order. All
+2048 output indices matched byte for byte. The result SHA-256 is
+`1fed0858dfba9f0e35aed5b42329068d66cc91decd1b0d4d8692602b274aa482`.
+The measurement covers one DSA layer and excludes model execution.
