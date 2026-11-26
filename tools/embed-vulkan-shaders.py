@@ -8,7 +8,7 @@ import sys
 def main():
     directory = Path(sys.argv[1])
     shaders = []
-    for name in ("rmsnorm", "q4_0", "swiglu"):
+    for name in ("rmsnorm", "q4_0", "swiglu", "rope", "kv_store", "attention"):
         code = (directory / f"{name}.spv").read_bytes()
         words = [word for word, in struct.iter_unpack("<I", code)]
         if len(words) < 5 or words[0] != 0x07230203:

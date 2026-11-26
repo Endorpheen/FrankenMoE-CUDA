@@ -1,9 +1,10 @@
 # Vulkan backend for FrankenMoE
 
-**Status: Vulkan bring-up and first compute graph.** Device selection,
-transfer, and a short RMSNorm → Q4_0 matmul → SwiGLU graph are implemented.
-Model execution and release qualification are open. Keep the existing
-CUDA inference path unchanged during bring-up.
+**Status: Vulkan reference operators and attention state.** Device
+selection, transfer, RMSNorm, Q4_0 matmul, SwiGLU, NeoX RoPE and causal
+GQA with an FP32 KV cache are implemented. Model execution and release
+qualification are open. Keep the existing CUDA inference path unchanged
+during bring-up.
 
 ## Verified bring-up
 
@@ -59,6 +60,16 @@ short Q4 input view and an aliased RMSNorm write before recording.
 | Linux x64, RTX 4070, NVIDIA 580.178.04 | PASS | 1.35e-6 |
 | Windows x64 probe, Wine with Linux Lavapipe | PASS | 3.11e-6 |
 | Native Linux AMD RADV and Windows AMD ICD | NOT TESTED | — |
+
+The attention fixture adds NeoX RoPE with theta 1,000,000, FP32
+K/V writes at an explicit position and causal GQA with 14 query heads,
+two K/V heads and head width 64. Against a two-pass FP64 CPU reference,
+the maximum error is 2.22e-7 on Lavapipe and 2.01e-7 on RTX 4070.
+The five-token prefill and 2+1+2 submissions match bitwise on each of
+Linux Lavapipe, RTX 4070 Vulkan and Windows EXE under Wine with Lavapipe.
+The fixture checks the K/V write boundary and rewinds to one visible
+token while leaving old rows resident. It rejects invalid head geometry.
+The fixture uses FP32 cache storage and one workgroup per query head.
 
 ```bash
 # Point GLSLANG_VALIDATOR and SPIRV_VAL to the tools if they are outside PATH.
@@ -192,13 +203,20 @@ point. Keep all checkpoints open until their specified tests have run.
 ## Model order
 
 1. **Qwen2.5-0.5B-Instruct, Q4_0 GGUF** is the proposed first target. Choose
-   and record an exact GGUF revision after inspecting its tensor inventory.
+   The official Qwen artifact is pinned at revision
+   `9217f5db79a29953eb74d5343926648285ec7e67`, SHA-256
+   `7671c0c304e6ce5a7fc577bcb12aba01e2c155cc2efd29b2213c95b18edaf6ed`.
+   A ranged metadata read found 291 tensors, consisting of 169 Q4_0,
+   121 F32 and a Q8_0 output projection of shape [896, 151936].
+   The embedding is a separate Q4_0 tensor. Each layer has F32 Q/K/V
+   biases. The independent CPU reference and the full weight file are
+   still needed to accept inference on this artifact.
    It exercises GGUF, BPE, RMSNorm, RoPE, causal GQA, SwiGLU, quantized
    embedding/projections and sampling with modest VRAM. The existing
    `goose/model/qwen2.goose` and `base/{dense,trunk}.goose` are sources
    for graph contracts. Main's host audit does not establish a working
-   standalone Qwen2 inference path. Pin an independent CPU reference before
-   changing code.
+   standalone Qwen2 inference path.
+   [Pinned model file](https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/blob/9217f5db79a29953eb74d5343926648285ec7e67/qwen2.5-0.5b-instruct-q4_0.gguf)
 2. **Bonsai 2.5 27B.** Add PQ2_0 unpacking and signed Hadamard, GDN with
    model-specific recurrence, Q4_0 KV and causal GQA 6:1. First qualify
    resident main-model inference with MTP off. Check a 12 GiB budget

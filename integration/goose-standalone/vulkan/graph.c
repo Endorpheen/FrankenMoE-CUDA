@@ -3,7 +3,8 @@
 
 #include <math.h>
 
-_Static_assert(sizeof(fg_vk_shape) == 16, "Vulkan push constant layout");
+_Static_assert(sizeof(fg_vk_shape) == 32, "Vulkan push constant layout");
+enum { FG_VK_BINDINGS = 4 };
 
 typedef struct {
     const uint32_t *words;
@@ -14,6 +15,9 @@ static const fg_vk_shader shaders[FG_VK_OP_COUNT] = {
     [FG_VK_RMSNORM] = { fg_rmsnorm, sizeof(fg_rmsnorm) },
     [FG_VK_Q4_0] = { fg_q4_0, sizeof(fg_q4_0) },
     [FG_VK_SWIGLU] = { fg_swiglu, sizeof(fg_swiglu) },
+    [FG_VK_ROPE] = { fg_rope, sizeof(fg_rope) },
+    [FG_VK_KV_STORE] = { fg_kv_store, sizeof(fg_kv_store) },
+    [FG_VK_ATTENTION] = { fg_attention, sizeof(fg_attention) },
 };
 
 static VkResult create_pipeline(fg_vk_graph *graph, fg_vk_op op) {
@@ -53,9 +57,9 @@ void fg_vk_graph_close(fg_vk_graph *graph) {
 
 int fg_vk_graph_open(fg_vk_graph *graph, fg_vk_device *vk, uint32_t capacity) {
     *graph = (fg_vk_graph){.vk = vk, .capacity = capacity};
-    if (!capacity || capacity > UINT32_MAX / 3) return fg_vk_error("invalid dispatch capacity", VK_ERROR_INITIALIZATION_FAILED);
-    VkDescriptorSetLayoutBinding bindings[3] = {0};
-    for (uint32_t i = 0; i < 3; ++i) {
+    if (!capacity || capacity > UINT32_MAX / FG_VK_BINDINGS) return fg_vk_error("invalid dispatch capacity", VK_ERROR_INITIALIZATION_FAILED);
+    VkDescriptorSetLayoutBinding bindings[FG_VK_BINDINGS] = {0};
+    for (uint32_t i = 0; i < FG_VK_BINDINGS; ++i) {
         bindings[i] = (VkDescriptorSetLayoutBinding){
             .binding = i, .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
             .descriptorCount = 1, .stageFlags = VK_SHADER_STAGE_COMPUTE_BIT,
@@ -63,14 +67,14 @@ int fg_vk_graph_open(fg_vk_graph *graph, fg_vk_device *vk, uint32_t capacity) {
     }
     const VkDescriptorSetLayoutCreateInfo sets = {
         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-        .bindingCount = 3, .pBindings = bindings,
+        .bindingCount = FG_VK_BINDINGS, .pBindings = bindings,
     };
     const VkPushConstantRange push = {.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT, .size = sizeof(fg_vk_shape)};
     const VkPipelineLayoutCreateInfo layout = {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, .setLayoutCount = 1, .pSetLayouts = &graph->sets,
         .pushConstantRangeCount = 1, .pPushConstantRanges = &push,
     };
-    const VkDescriptorPoolSize slots = {.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, .descriptorCount = capacity * 3};
+    const VkDescriptorPoolSize slots = {.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, .descriptorCount = capacity * FG_VK_BINDINGS};
     const VkDescriptorPoolCreateInfo descriptors = {
         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO, .maxSets = capacity,
         .poolSizeCount = 1, .pPoolSizes = &slots,
@@ -144,12 +148,14 @@ static void compute_barrier(fg_vk_graph *graph, VkPipelineStageFlags2 stage, VkA
     graph->vk->CmdPipelineBarrier2(graph->cmd, &deps);
 }
 
-int fg_vk_graph_record(fg_vk_graph *graph, fg_vk_op op, fg_vk_shape shape,
-    fg_vk_view input, fg_vk_view weight, fg_vk_view output) {
+static int record(fg_vk_graph *graph, fg_vk_op op, fg_vk_shape shape, fg_vk_view input,
+    fg_vk_view weight, fg_vk_view output, fg_vk_view values) {
     if (!graph->recording || graph->used >= graph->capacity || (unsigned)op >= FG_VK_OP_COUNT) return 0;
     const uint64_t elements = (uint64_t)shape.width * shape.batch;
     if (!elements || elements > UINT32_MAX) return 0;
-    VkDeviceSize input_bytes = elements * 4, weight_bytes, output_bytes = input_bytes;
+    VkDeviceSize input_bytes = elements * 4, weight_bytes, output_bytes = input_bytes, value_bytes = 4;
+    const uint64_t stride = (uint64_t)shape.width * shape.rows;
+    const uint64_t end = (uint64_t)shape.position + shape.batch;
     uint32_t x, y = 1;
     switch (op) {
     case FG_VK_RMSNORM:
@@ -170,13 +176,41 @@ int fg_vk_graph_record(fg_vk_graph *graph, fg_vk_op op, fg_vk_shape shape,
         x = (uint32_t)((elements + 63) / 64);
         weight_bytes = input_bytes;
         break;
+    case FG_VK_ROPE:
+        if (shape.width % 2 || !stride || stride > UINT32_MAX || stride * shape.batch > UINT32_MAX ||
+            end > UINT32_MAX || !isfinite(shape.theta) || shape.theta <= 0.0f) return 0;
+        input_bytes = output_bytes = stride * shape.batch * 4;
+        weight_bytes = 4;
+        x = shape.rows;
+        y = shape.batch;
+        break;
+    case FG_VK_KV_STORE: {
+        if (!stride || stride > UINT32_MAX || end > shape.context || stride * shape.context > UINT32_MAX) return 0;
+        const uint64_t count = stride * shape.batch;
+        input_bytes = count * 4;
+        output_bytes = stride * shape.context * 4;
+        weight_bytes = 4;
+        x = (uint32_t)((count + 63) / 64);
+        break;
+    }
+    case FG_VK_ATTENTION: {
+        if (shape.width > 256 || !shape.rows || !shape.kv_heads || shape.rows % shape.kv_heads ||
+            stride > UINT32_MAX || stride * shape.batch > UINT32_MAX || end > shape.context ||
+            (uint64_t)shape.width * shape.kv_heads * shape.context > UINT32_MAX) return 0;
+        input_bytes = output_bytes = stride * shape.batch * 4;
+        weight_bytes = value_bytes = (uint64_t)shape.width * shape.kv_heads * shape.context * 4;
+        x = shape.rows;
+        y = shape.batch;
+        break;
+    }
     default:
         return 0;
     }
     fg_vk_device *vk = graph->vk;
     if (x > vk->properties.limits.maxComputeWorkGroupCount[0] || y > vk->properties.limits.maxComputeWorkGroupCount[1] ||
         !valid_view(vk, input, input_bytes) || !valid_view(vk, weight, weight_bytes) ||
-        !valid_view(vk, output, output_bytes) || overlap(input, output) || overlap(weight, output)) return 0;
+        !valid_view(vk, output, output_bytes) || !valid_view(vk, values, value_bytes) ||
+        overlap(input, output) || overlap(weight, output) || overlap(values, output)) return 0;
 
     VkDescriptorSet set;
     const VkDescriptorSetAllocateInfo alloc = {
@@ -185,17 +219,17 @@ int fg_vk_graph_record(fg_vk_graph *graph, fg_vk_op op, fg_vk_shape shape,
     };
     VkResult result = vk->AllocateDescriptorSets(vk->device, &alloc, &set);
     if (result != VK_SUCCESS) return fg_vk_error("allocate dispatch descriptors", result);
-    const fg_vk_view views[] = {input, weight, output};
-    VkDescriptorBufferInfo buffers[3];
-    VkWriteDescriptorSet writes[3];
-    for (uint32_t i = 0; i < 3; ++i) {
+    const fg_vk_view views[] = {input, weight, output, values};
+    VkDescriptorBufferInfo buffers[FG_VK_BINDINGS];
+    VkWriteDescriptorSet writes[FG_VK_BINDINGS];
+    for (uint32_t i = 0; i < FG_VK_BINDINGS; ++i) {
         buffers[i] = (VkDescriptorBufferInfo){ .buffer = views[i].buffer->buffer, .offset = views[i].offset, .range = views[i].size };
         writes[i] = (VkWriteDescriptorSet){
             .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, .dstSet = set, .dstBinding = i,
             .descriptorCount = 1, .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, .pBufferInfo = &buffers[i],
         };
     }
-    vk->UpdateDescriptorSets(vk->device, 3, writes, 0, NULL);
+    vk->UpdateDescriptorSets(vk->device, FG_VK_BINDINGS, writes, 0, NULL);
     if (graph->used || graph->epoch) compute_barrier(graph, VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                                     VK_ACCESS_2_SHADER_READ_BIT | VK_ACCESS_2_SHADER_WRITE_BIT);
     vk->CmdBindPipeline(graph->cmd, VK_PIPELINE_BIND_POINT_COMPUTE, graph->pipelines[op]);
@@ -204,6 +238,17 @@ int fg_vk_graph_record(fg_vk_graph *graph, fg_vk_op op, fg_vk_shape shape,
     vk->CmdDispatch(graph->cmd, x, y, 1);
     ++graph->used;
     return 1;
+}
+
+int fg_vk_graph_record(fg_vk_graph *graph, fg_vk_op op, fg_vk_shape shape,
+    fg_vk_view input, fg_vk_view weight, fg_vk_view output) {
+    if (op == FG_VK_ATTENTION) return 0;
+    return record(graph, op, shape, input, weight, output, input);
+}
+
+int fg_vk_graph_attention(fg_vk_graph *graph, fg_vk_shape shape,
+    fg_vk_view query, fg_vk_view keys, fg_vk_view values, fg_vk_view output) {
+    return record(graph, FG_VK_ATTENTION, shape, query, keys, output, values);
 }
 
 int fg_vk_graph_submit(fg_vk_graph *graph) {

@@ -8,7 +8,13 @@ layout(set = 0, binding = 1, std430) readonly buffer Weights { uint packed[]; };
 layout(set = 0, binding = 1, std430) readonly buffer Weights { float w[]; };
 #endif
 layout(set = 0, binding = 2, std430) writeonly buffer Output { float y[]; };
-layout(push_constant) uniform Params { uint width; uint rows; uint batch; float epsilon; } p;
+#if defined(OP_ATTENTION)
+layout(set = 0, binding = 3, std430) readonly buffer Values { float v[]; };
+#endif
+layout(push_constant) uniform Params {
+    uint width; uint rows; uint batch; float epsilon;
+    uint position; uint kv_heads; uint context; float theta;
+} p;
 
 shared float partial[64];
 
@@ -20,7 +26,9 @@ float sum_group(float value) {
         if (lane < step) partial[lane] += partial[lane + step];
         barrier();
     }
-    return partial[0];
+    float total = partial[0];
+    barrier();
+    return total;
 }
 
 #if defined(OP_Q4_0)
@@ -55,5 +63,44 @@ void main() {
 #elif defined(OP_SWIGLU)
     uint index = gl_GlobalInvocationID.x;
     if (index < p.width * p.batch) y[index] = (x[index] / (1.0 + exp(-x[index]))) * w[index];
+#elif defined(OP_ROPE)
+    uint token = gl_WorkGroupID.y;
+    uint head = gl_WorkGroupID.x;
+    uint base = (token * p.rows + head) * p.width;
+    uint half_width = p.width / 2u;
+    for (uint i = lane; i < half_width; i += 64u) {
+        float frequency = pow(p.theta, -float(i) / float(half_width));
+        float angle = float(p.position + token) * frequency;
+        float a = x[base + i], b = x[base + i + half_width];
+        float c = cos(angle), s = sin(angle);
+        y[base + i] = a * c - b * s;
+        y[base + i + half_width] = b * c + a * s;
+    }
+#elif defined(OP_KV_STORE)
+    uint i = gl_GlobalInvocationID.x;
+    uint stride = p.rows * p.width;
+    if (i < stride * p.batch) y[p.position * stride + i] = x[i];
+#elif defined(OP_ATTENTION)
+    uint head = gl_WorkGroupID.x, token = gl_WorkGroupID.y;
+    uint kv_head = head / (p.rows / p.kv_heads);
+    uint query = (token * p.rows + head) * p.width;
+    float peak = uintBitsToFloat(0xff800000u), denominator = 0.0;
+    float output_row[4] = float[4](0.0, 0.0, 0.0, 0.0);
+    float scale = inversesqrt(float(p.width));
+    for (uint k = 0; k <= p.position + token; ++k) {
+        uint kv = (k * p.kv_heads + kv_head) * p.width;
+        precise float dot = 0.0;
+        for (uint i = lane; i < p.width; i += 64u) dot += x[query + i] * w[kv + i];
+        float score = sum_group(dot) * scale;
+        float next = max(peak, score);
+        float old_weight = exp(peak - next), weight = exp(score - next);
+        denominator = denominator * old_weight + weight;
+        for (uint i = lane; i < p.width; i += 64u) {
+            uint j = i / 64u;
+            output_row[j] = output_row[j] * old_weight + v[kv + i] * weight;
+        }
+        peak = next;
+    }
+    for (uint i = lane; i < p.width; i += 64u) y[query + i] = output_row[i / 64u] / denominator;
 #endif
 }

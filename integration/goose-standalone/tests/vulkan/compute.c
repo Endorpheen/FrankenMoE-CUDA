@@ -38,9 +38,9 @@ static int run_case(fg_vk_graph *graph, unsigned width, unsigned rows, unsigned 
     for (unsigned i = 0; i < 7 && result == VK_SUCCESS; ++i) {
         if (host[i]) result = fg_vk_access_buffer(vk, &arena, views[i].offset, host[i], (size_t)sizes[i], 1);
     }
-    const fg_vk_shape rms = {width, 0, batch, 1e-5f};
-    const fg_vk_shape mat = {width, rows, batch, 0};
-    const fg_vk_shape activation = {rows, 0, batch, 0};
+    const fg_vk_shape rms = {.width = width, .batch = batch, .epsilon = 1e-5f};
+    const fg_vk_shape mat = {.width = width, .rows = rows, .batch = batch};
+    const fg_vk_shape activation = {.width = rows, .batch = batch};
     fg_vk_view short_weight = views[3];
     short_weight.size = 4;
     int pass = result == VK_SUCCESS && fg_vk_graph_begin(graph) &&
@@ -86,6 +86,8 @@ static int run_case(fg_vk_graph *graph, unsigned width, unsigned rows, unsigned 
     return pass;
 }
 
+int test_attention(fg_vk_graph *graph);
+
 int main(int argc, char **argv) {
     if (argc != 3) {
         fputs("Usage: frankenmoe-vulkan-compute-test DEVICE_INDEX ALLOW_CPU_0_OR_1\n", stderr);
@@ -98,8 +100,8 @@ int main(int argc, char **argv) {
     fg_vk_device vk;
     if (!fg_vk_open(&vk, (uint32_t)index, argv[2][0] == '1')) return 1;
     fg_vk_graph graph;
-    int pass = fg_vk_graph_open(&graph, &vk, 3) &&
-               run_case(&graph, WIDTH, ROWS, BATCH) && run_case(&graph, 32, 1, 1);
+    int pass = fg_vk_graph_open(&graph, &vk, 5) &&
+               run_case(&graph, WIDTH, ROWS, BATCH) && run_case(&graph, 32, 1, 1) && test_attention(&graph);
     fg_vk_graph_close(&graph);
     fg_vk_close(&vk);
     return pass ? 0 : 1;
