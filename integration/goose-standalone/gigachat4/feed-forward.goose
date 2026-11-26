@@ -9,6 +9,8 @@ extern "ggml_swiglu_clamp" fn giga_swiglu_limited(ctx: u64, gate: u64, up: u64, 
 extern "ggml_mul_mat_id" fn giga_mat_id(ctx: u64, w: u64, x: u64, ids: u64) -> u64;
 extern "ggml_build_forward_expand" fn giga_expand(graph: u64, x: u64);
 
+extern "fg_q35_moe_weighted_node" fn giga_weighted_experts(ctx: i64, down: i64, mix: i64) -> i64;
+
 fn giga_ff_activation(ctx: u64, gate: u64, up: u64, limit: f32) -> u64 {
     if limit > 0.000001 {
         let clamped = giga_swiglu_limited(ctx, gate, up, limit);
@@ -54,18 +56,24 @@ export fn giga_moe_ffn(ctx: u64, graph: u64, input: u64, weights: u64[:],
     let up = giga_mat_id(ctx, weights[3], x, picks);
     let gate = giga_mat_id(ctx, weights[2], x, picks);
     let active = giga_ff_activation(ctx, gate, up, routed_limit);
-    let routed = giga_mul(ctx, giga_mat_id(ctx, weights[4], active, picks), mix);
-    giga_expand(graph, routed);
+    let down = giga_mat_id(ctx, weights[4], active, picks);
+    var total: u64 = 0;
+    if tokens > (32 * 1024 * 1024) / (2560 * 8 * 4) {
+        total = giga_weighted_experts(ctx as! i64, down as! i64, mix as! i64) as! u64;
+    } else {
+        let routed = giga_mul(ctx, down, mix);
+        giga_expand(graph, routed);
 
-    var views: u64[8] = [0; 8];
-    for i in 8 {
-        views[i] = giga_view2(ctx, routed, 2560, tokens, 81920, (i as u64) * 10240);
-        giga_expand(graph, views[i]);
-    }
-    var total = views[0];
-    for i in 7 {
-        total = giga_add(ctx, total, views[i + 1]);
-        giga_expand(graph, total);
+        var views: u64[8] = [0; 8];
+        for i in 8 {
+            views[i] = giga_view2(ctx, routed, 2560, tokens, 81920, (i as u64) * 10240);
+            giga_expand(graph, views[i]);
+        }
+        total = views[0];
+        for i in 7 {
+            total = giga_add(ctx, total, views[i + 1]);
+            giga_expand(graph, total);
+        }
     }
     let shared = giga_dense_ffn(ctx, input, weights[5], weights[6], weights[7], shared_limit);
     return giga_add(ctx, total, shared);

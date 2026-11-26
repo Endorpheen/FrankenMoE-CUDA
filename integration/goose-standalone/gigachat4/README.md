@@ -275,3 +275,23 @@ request matched all eight reference tokens.
 Process swap and system swap-out delta were zero. Peak RSS increased by
 about 86 MiB. The decode streams diverge after token 17 in the control,
 so these decode rates do not isolate kernel latency on equal token streams.
+
+## Reduce large routed expert products in one node
+
+The GigaChat4 graph uses the existing Goose weighted expert reduction
+when materializing the expert products would exceed 32 MiB. Smaller
+graphs retain the previous route reduction. MMQ and the clamped SwiGLU
+path are unchanged.
+
+On the fixed 512/32 input with identical Q4/Q6 reference MMQ flags, two
+control runs measured 46.322 and 46.337 prefill tokens/s and 10.007 and
+9.765 decode tokens/s. Two fully fused candidate runs measured 47.767
+and 48.501 prefill tokens/s and 10.006 and 9.778 decode tokens/s.
+All four produced the same 32 IDs as the external reference. Process
+swap and system swap-out delta were zero.
+
+The final large-only variant also matched all 32 IDs at 47.874 prefill
+and 10.214 decode tokens/s, with 8476 MiB VRAM after the request and zero
+swap delta. In the Nsight diagnostic, prefill device-to-host copies
+fell from 2096736256 to 796502016 bytes. All 93 large product-window
+copies disappeared.
