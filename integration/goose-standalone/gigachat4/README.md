@@ -374,3 +374,17 @@ All outputs matched all 32 llama.cpp token IDs and swap-out was unchanged.
 Post-request GPU memory across the four runs was 8459–8469 MiB. On a
 second fixture the width-16 probe reproduced all 32 control tokens.
 Both Goose builds first differed from llama.cpp at token 31 on that fixture.
+
+### EXP-2026-11-27-2149 — Share MLA K/V reads across two query heads
+
+Use the paired-head principle from Apex EXP-1712 for single-query
+GigaChat4 MLA with a shared key head and value head. Both heads keep
+separate softmax accumulators and the existing partial-state merge.
+Set GOOSE_GIGA_MLA_PAIR=0 to use the original tile.
+
+On 512/32 the same-binary off/on pairs measured prefill 152.65/152.29
+and 153.51/151.57 tokens/s, with decode 15.52/16.93 and 15.21/16.26.
+All four runs matched all 32 stored reference IDs. The default-enabled
+build measured 151.94/17.25 with matching IDs, 8473 MiB post-request GPU
+memory and zero swap-out growth. The 2049/2 DSA check matched both
+reference IDs at 8485 MiB with no swap-out growth.

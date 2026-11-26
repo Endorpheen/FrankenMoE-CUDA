@@ -173,6 +173,79 @@ export fn fg_mla_attn_tiles(q: u64, k: u64, v: u64, mask: u64, scratch: u64, cfg
     }
 }
 
+export fn fg_mla_attn_pair(q: u64, k: u64, v: u64, mask: u64, scratch: u64, cfg: u64,
+    scale: f32, task: i64, head: i64, tile: i64, lane: i64) {
+    let keys = attn_active_keys(cfg, 0);
+    let segment = attn_word(cfg, 16);
+    let first = tile * segment;
+    if first >= keys { return; }
+    let last = if first + segment < keys { first + segment } else { keys };
+    let qstride = attn_word(cfg, 8);
+    let q0 = q + ((head * qstride) as u64);
+    let q1 = q0 + (qstride as u64);
+    let neg_inf = attn_neg_inf();
+    var max0 = neg_inf;
+    var max1 = neg_inf;
+    var mass0: f32 = 0.0;
+    var mass1: f32 = 0.0;
+    var query0: f32[18] = [0.0; 18];
+    var query1: f32[18] = [0.0; 18];
+    var sum0: f32[16] = [0.0; 16];
+    var sum1: f32[16] = [0.0; 16];
+    for b in 18 {
+        let offset = (4 * (32 * b + lane)) as u64;
+        query0[b] = attn_load(q0 + offset);
+        query1[b] = attn_load(q1 + offset);
+    }
+    let ks = attn_word(cfg, 9);
+    let vs = attn_word(cfg, 11);
+    for row in first .. last {
+        let bias = if mask != 0 { attn_half(attn_ld_u16(mask, (2 * row) as u64)) } else { 0.0 };
+        if bias == neg_inf { continue; }
+        let kp = k + ((row * ks) as u64);
+        let vp = v + ((row * vs) as u64);
+        var dot0: f32 = 0.0;
+        var dot1: f32 = 0.0;
+        for b in 18 {
+            let item = mla_half_value(kp, b, lane);
+            dot0 = attn_fma(query0[b], item, dot0);
+            dot1 = attn_fma(query1[b], item, dot1);
+        }
+        let score0 = attn_sum(dot0) * scale + bias;
+        let score1 = attn_sum(dot1) * scale + bias;
+        let next0 = if score0 > max0 { score0 } else { max0 };
+        let next1 = if score1 > max1 { score1 } else { max1 };
+        let prev0 = attn_exp(max0 - next0);
+        let prev1 = attn_exp(max1 - next1);
+        let weight0 = attn_exp(score0 - next0);
+        let weight1 = attn_exp(score1 - next1);
+        mass0 = mass0 * prev0 + weight0;
+        mass1 = mass1 * prev1 + weight1;
+        max0 = next0;
+        max1 = next1;
+        for b in 16 {
+            let item = mla_half_value(vp, b, lane);
+            sum0[b] = sum0[b] * prev0 + weight0 * item;
+            sum1[b] = sum1[b] * prev1 + weight1 * item;
+        }
+    }
+    let stride: i64 = 514 * 4;
+    let tiles = attn_word(cfg, 17);
+    let result0 = scratch + ((stride * (task * tiles + tile)) as u64);
+    let result1 = result0 + ((stride * tiles) as u64);
+    if lane == 0 {
+        attn_store(result0, max0);
+        attn_store(result0 + 4, mass0);
+        attn_store(result1, max1);
+        attn_store(result1 + 4, mass1);
+    }
+    for b in 16 {
+        let offset = (4 * (2 + b * 32 + lane)) as u64;
+        attn_store(result0 + offset, sum0[b]);
+        attn_store(result1 + offset, sum1[b]);
+    }
+}
+
 export fn fg_mla_attn_merge(scratch: u64, out: u64, cfg: u64, task: i64, query: i64, lane: i64) {
     let stride = attn_word(cfg, 1) + 2;
     let tiles = attn_word(cfg, 17);
