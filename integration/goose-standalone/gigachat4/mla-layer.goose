@@ -14,12 +14,12 @@ fn giga_rotate_index(ctx: u64, x: u64, rotation: u64, heads: i64, tokens: i64) -
 }
 
 // Cache storage is flattened across streams. Rows are global physical slot indices.
-export fn giga_mla_layer(ctx: u64, projected: u64[:], index: u64[:],
+export fn giga_mla_layer(ctx: u64, graph: u64, projected: u64[:], index: u64[:],
                          kv_store: u64, idx_store: u64, idx_rotation: u64, rows: u64, mask: u64,
                          tokens: i64, cells: i64, capacity: i64, streams: i64,
                          kv_stride: u64, idx_stride: u64, scale: f32,
                          wv: u64, wo: u64) -> u64 {
-    if ctx == 0 || kv_store == 0 || idx_store == 0 || rows == 0 || mask == 0 ||
+    if ctx == 0 || graph == 0 || kv_store == 0 || idx_store == 0 || rows == 0 || mask == 0 ||
        wv == 0 || wo == 0 || projected.len < 4 || index.len < 3 ||
        tokens < 1 || tokens > 1048576 || streams < 1 || tokens % streams != 0 ||
        cells < 1 || capacity < cells || capacity > 1048576 ||
@@ -38,11 +38,16 @@ export fn giga_mla_layer(ctx: u64, projected: u64[:], index: u64[:],
     let written_k = giga_set_rows(ctx, kv_store, k_rows, rows);
     let written_idx = giga_set_rows(ctx, idx_store, idx_rows, rows);
     let kv_plane = kv_stride * (capacity as u64);
-    let idx_plane = idx_stride * (capacity as u64);
-    let idx_keys = giga_view4(ctx, written_idx, 128, 1, cells, streams,
-                             idx_stride, idx_stride, idx_plane, 0);
-    let selected = giga_dsa_index_mask(ctx, index_q, idx_keys, index[2], mask,
+    var selected = mask;
+    if cells <= 2048 {
+        giga_expand(graph, written_idx);
+    } else {
+        let idx_plane = idx_stride * (capacity as u64);
+        let idx_keys = giga_view4(ctx, written_idx, 128, 1, cells, streams,
+                                  idx_stride, idx_stride, idx_plane, 0);
+        selected = giga_dsa_index_mask(ctx, index_q, idx_keys, index[2], mask,
                                        tokens, streams, cells);
+    }
 
     let batch = tokens / streams;
     let q = giga_view4(ctx, projected[0], 576, 32, batch, streams, 2304, 73728,

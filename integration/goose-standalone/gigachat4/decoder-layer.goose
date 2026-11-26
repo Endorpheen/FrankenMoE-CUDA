@@ -43,7 +43,7 @@ export fn giga_decoder_mla(ctx: u64, graph: u64, input: u64, w: u64[:], state: u
                         original_ctx, factors, rope, projected) != 0 { return 0; }
     if giga_dsa_index_project(ctx, norm, projected[2], pos, w[25], w[26], w[27], w[28],
                               tokens, 64, original_ctx, index_rope, index) != 0 { return 0; }
-    return giga_mla_layer(ctx, projected, index, state[0], state[1], state[2], rows, mask,
+    return giga_mla_layer(ctx, graph, projected, index, state[0], state[1], state[2], rows, mask,
                           tokens, cells, capacity, streams, kv_stride, idx_stride, scale, w[17], w[18]);
 }
 

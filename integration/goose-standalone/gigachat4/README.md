@@ -111,3 +111,30 @@ A diagnostic run exercised eight CUDA attention nodes per model step.
 The existing Q4 CUDA test matched byte for byte with one and 29 queries
 and 257 keys. The existing Q4 PTX instructions also matched after
 label normalization in both generated images.
+
+## Skip redundant short-context DSA ranking
+
+When the attention cache has at most 2048 cells, DSA ranking would select
+every cell. The decoder uses the original additive mask and still writes the
+index keys. Larger graph shapes continue to rank and select 2048 positions.
+
+The fixed 128/8 request SHA-256 is
+`ec82485b4a39190f1b9c195c589bf62565cb52a7a6ad624748a264cb3eecffad`.
+The configuration and memory placement were held fixed, with two runs per
+variant and identical generated IDs matching the external reference.
+
+| Run | Prefill, tok/s | Decode, tok/s | VRAM after request, MiB |
+| --- | ---: | ---: | ---: |
+| Control 1 | 5.939 | 2.891 | 8408 |
+| Control 2 | 5.914 | 2.848 | 8397 |
+| Skip ranking 1 | 16.594 | 4.761 | 8405 |
+| Skip ranking 2 | 16.622 | 4.634 | 8397 |
+
+The median speed ratios were 2.80 for prefill and 1.64 for decode. Peak
+RSS was approximately 18.58 GiB in all four runs. Process swap was zero.
+System swap-out rose by 81 pages in the first candidate run and was
+unchanged in the other three.
+
+A graph check at 2048 and 2049 live rows found eight index-cache writes
+in both cases and zero versus eight ranking nodes, respectively. It
+validated the graph transition without executing a long request.
