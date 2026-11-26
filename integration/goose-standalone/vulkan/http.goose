@@ -1,6 +1,7 @@
 extern "fg_vk_http_tokenize" fn vkh_tokenize(context: u64, text: const u8[:], ids: i64[:], special: bool) -> i64;
 extern "fg_vk_http_generate" fn vkh_generate(context: u64, prompt: const i64[:], limit: i64,
-    ignore_eog: bool, ids: i64[:], text: u8[:], info: i64[:]) -> i64;
+    ignore_eog: bool, ids: i64[:], text: u8[:], reasoning: u8[:], info: i64[:]) -> i64;
+extern "fg_vk_http_inkling_control" fn vkh_inkling_control(context: u64, id: i64) -> i64;
 extern "fg_vk_http_prefill" fn vkh_prefill(context: u64, prompt: const i64[:], limit: i64) -> i64;
 extern "fg_vk_http_next" fn vkh_next(context: u64, ignore_eog: bool, text: u8[:], id: i64[:]) -> i64;
 extern "fg_vk_http_now" fn vkh_now() -> i64;
@@ -115,16 +116,42 @@ fn vkh_bonsai_assistant(context: u64, prompt: i64[:], at: i64, ctrl: const i64[:
     return end + tail;
 }
 
+fn vkh_inkling_append(context: u64, ids: i64[:], at: i64, text: const u8[:], controls: bool) -> i64 {
+    if at < 0 || at > ids.len { return -1; }
+    if text.len == 0 { return at; }
+    let size = vkh_tokenize(context, text, ids[at .. ids.len], controls);
+    return if size > 0 { at + size } else { -1 };
+}
+
+fn vkh_inkling_effort(context: u64, ids: i64[:], at: i64) -> i64 {
+    return vkh_inkling_append(context, ids, at,
+        "<|message_system|><|content_text|>Thinking effort level: 0<|end_message|>", true);
+}
+
+fn vkh_inkling_message(context: u64, ids: i64[:], at: i64, role: const u8[:], text: const u8[:]) -> i64 {
+    let prefix = if role == "user" { "<|message_user|><|content_text|>" }
+        else if role == "assistant" { "<|message_model|><|content_text|>" }
+        else { "<|message_system|><|content_text|>" };
+    let tail = if role == "assistant" { "<|end_message|><|content_model_end_sampling|>" }
+        else { "<|end_message|>" };
+    let start = vkh_inkling_append(context, ids, at, prefix, true);
+    let end = vkh_inkling_append(context, ids, start, text, false);
+    return vkh_inkling_append(context, ids, end, tail, true);
+}
+
 fn vkh_chat_prompt(context: u64, array: i64, tree: const i64[:], size: i64,
-    strings: const u8[:], prompt: i64[:], scratch: u8[:], bonsai: bool) -> i64 {
+    strings: const u8[:], prompt: i64[:], scratch: u8[:], model_kind: i64) -> i64 {
     if tree[array] != PJ_K_ARRAY || tree[5 * size + array] <= 0 { return -1; }
+    let inkling = model_kind == 3;
+    let bonsai = model_kind == 1 || model_kind == 2;
     var control: i64[3] = [0; 3];
-    if vkh_tokenize(context, "<|im_start|>", control[0 .. 1], true) != 1 ||
+    if !inkling && (vkh_tokenize(context, "<|im_start|>", control[0 .. 1], true) != 1 ||
        vkh_tokenize(context, "<|im_end|>", control[1 .. 2], true) != 1 ||
-       vkh_tokenize(context, "\n", control[2 .. 3], false) != 1 { return -1; }
+       vkh_tokenize(context, "\n", control[2 .. 3], false) != 1) { return -1; }
     let first = tree[4 * size + array];
     var at: i64 = 0;
     var user = false;
+    var effort = false;
     for i in tree[5 * size + array] {
         let message = tree[13 * size + first + i];
         if tree[message] != PJ_K_OBJECT || tree[5 * size + message] != 2 { return -1; }
@@ -144,6 +171,15 @@ fn vkh_chat_prompt(context: u64, array: i64, tree: const i64[:], size: i64,
             else { return -1; }
         }
         if role != "system" && role != "user" && role != "assistant" { return -1; }
+        if inkling {
+            if !effort && role != "system" {
+                at = vkh_inkling_effort(context, prompt, at);
+                effort = true;
+            }
+            at = vkh_inkling_message(context, prompt, at, role, text);
+            if at < 0 { return -1; }
+            continue;
+        }
         if !bonsai && i == 0 && role != "system" {
             at = vkh_chat_frame(context, prompt, at, control, "system",
                 "You are Qwen, created by Alibaba Cloud. You are a helpful assistant.", true, scratch);
@@ -162,6 +198,7 @@ fn vkh_chat_prompt(context: u64, array: i64, tree: const i64[:], size: i64,
         };
         if at < 0 { return -1; }
     }
+    if inkling { return if effort { at } else { vkh_inkling_effort(context, prompt, at) }; }
     if bonsai {
         if !user { return -1; }
         return vkh_bonsai_assistant(context, prompt, at, control, "", false);
@@ -195,7 +232,7 @@ fn vkh_usage(out: u8[:], start: i64, prompt: i64, generated: i64) -> i64 {
 }
 
 fn vkh_stream_chunk(fd: i64, out: u8[:], route: i64, serial: i64, created: i64,
-    text: const u8[:], role: bool, finish: const u8[:], model: const u8[:]) -> bool {
+    text: const u8[:], role: bool, reasoning: bool, finish: const u8[:], model: const u8[:]) -> bool {
     var n = cp_put(out, 0, "data: ");
     n = vkh_identity(out, n, route, serial, created, true, model);
     n = cp_put(out, n, ",\"choices\":[{\"index\":0,");
@@ -204,7 +241,7 @@ fn vkh_stream_chunk(fd: i64, out: u8[:], route: i64, serial: i64, created: i64,
         if role {
             n = cp_put(out, n, "\"role\":\"assistant\"");
         } else if text.len > 0 {
-            n = cp_put(out, n, "\"content\":");
+            n = cp_put(out, n, if reasoning { "\"reasoning_content\":" } else { "\"content\":" });
             n = vkh_json_text(out, n, text);
         }
         n = cp_chr(out, n, 125);
@@ -231,18 +268,19 @@ fn vkh_complete_utf8(text: const u8[:]) -> i64 {
 }
 
 fn vkh_stream(context: u64, fd: i64, route: i64, serial: i64, created: i64,
-    prompt: const i64[:], limit: i64, ignore_eog: bool, report_usage: bool, out: u8[:], model: const u8[:]) {
+    prompt: const i64[:], limit: i64, ignore_eog: bool, report_usage: bool, inkling: bool, out: u8[:], model: const u8[:]) {
     if vkh_prefill(context, prompt, limit) != 0 {
         vkh_error(fd, 500, "Vulkan prefill failed");
         return;
     }
     let header = "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream; charset=utf-8\r\nCache-Control: no-cache\r\nConnection: close\r\n\r\n";
     if ht_write_all_impl(fd, header) != 0 { return; }
-    if route == 13 && !vkh_stream_chunk(fd, out, route, serial, created, "", true, "", model) { return; }
+    if route == 13 && !vkh_stream_chunk(fd, out, route, serial, created, "", true, false, "", model) { return; }
     var piece: u8[1028] = [0; 1028];
     var id: i64[1] = [0];
     var pending: i64 = 0;
     var count: i64 = 0;
+    var thinking = false;
     var finish: const u8[:] = "length";
     while count < limit {
         let got = vkh_next(context, ignore_eog, piece[pending .. piece.len], id);
@@ -252,17 +290,26 @@ fn vkh_stream(context: u64, fd: i64, route: i64, serial: i64, created: i64,
             ht_write_all_impl(fd, "data: [DONE]\n\n");
             return;
         }
-        pending += got;
         count += 1;
+        let control = if inkling { vkh_inkling_control(context, id[0]) } else { 0 };
+        if control != 0 {
+            if pending > 0 && !vkh_stream_chunk(fd, out, route, serial, created, piece[0 .. pending],
+                false, thinking, "", model) { return; }
+            pending = 0;
+            if control != 1 { thinking = control == 3; }
+            continue;
+        }
+        pending += got;
         let ready = vkh_complete_utf8(piece[0 .. pending]);
         if ready > 0 {
-            if !vkh_stream_chunk(fd, out, route, serial, created, piece[0 .. ready], false, "", model) { return; }
+            if !vkh_stream_chunk(fd, out, route, serial, created, piece[0 .. ready], false, thinking, "", model) { return; }
             for i in pending - ready { piece[i] = piece[ready + i]; }
             pending -= ready;
         }
     }
-    if pending > 0 && !vkh_stream_chunk(fd, out, route, serial, created, piece[0 .. pending], false, "", model) { return; }
-    if !vkh_stream_chunk(fd, out, route, serial, created, "", false, finish, model) { return; }
+    if pending > 0 && !vkh_stream_chunk(fd, out, route, serial, created, piece[0 .. pending],
+        false, thinking, "", model) { return; }
+    if !vkh_stream_chunk(fd, out, route, serial, created, "", false, false, finish, model) { return; }
     if report_usage {
         var n = cp_put(out, 0, "data: ");
         n = vkh_identity(out, n, route, serial, created, true, model);
@@ -298,10 +345,7 @@ fn vkh_decode_body(context: u64, fd: i64, body: const u8[:], route: i64, cap: i6
     }
     let model = vkh_name(model_kind);
     let bonsai = model_kind == 1 || model_kind == 2;
-    if route == 13 && model_kind == 3 {
-        vkh_error(fd, 400, "Inkling chat templates are not supported");
-        return;
-    }
+    let inkling = model_kind == 3;
     let field: const u8[:] = if route == 25 { "content" } else if route == 13 { "messages" } else { "prompt" };
     var input: i64 = -1;
     var limit: i64 = 16;
@@ -340,7 +384,15 @@ fn vkh_decode_body(context: u64, fd: i64, body: const u8[:], route: i64, cap: i6
             }
             report_usage = tree[size + child] != 0;
         }
-        else if bonsai && route == 13 && key == "enable_thinking" && kind == PJ_K_BOOL && value == 0 {}
+        else if (bonsai || inkling) && route == 13 && key == "enable_thinking" && kind == PJ_K_BOOL && value == 0 {}
+        else if inkling && route == 13 && key == "reasoning_effort" {
+            let at = tree[2 * size + node];
+            if !((kind == PJ_K_STRING && strings[at .. at + tree[3 * size + node]] == "none") ||
+                 (kind == PJ_K_INT && value == 0) || (kind == PJ_K_FLOAT && numbers[node] == 0.0)) {
+                vkh_error(fd, 400, "Inkling text chat requires reasoning_effort none");
+                return;
+            }
+        }
         else if route != 25 && key == "ignore_eos" && kind == PJ_K_BOOL { ignore_eog = value != 0; }
         else if route != 25 && key == "return_tokens" && kind == PJ_K_BOOL { return_tokens = value != 0; }
         else if route != 25 && key == "model" && kind == PJ_K_STRING {
@@ -364,7 +416,7 @@ fn vkh_decode_body(context: u64, fd: i64, body: const u8[:], route: i64, cap: i6
     }
     var count: i64 = -1;
     if route == 13 {
-        count = vkh_chat_prompt(context, input, tree[..], size, strings[..], prompt_ids, text, bonsai);
+        count = vkh_chat_prompt(context, input, tree[..], size, strings[..], prompt_ids, text, model_kind);
     } else if tree[input] == PJ_K_STRING {
         let at = tree[2 * size + input];
         count = vkh_tokenize(context, strings[at .. at + tree[3 * size + input]], prompt_ids, special);
@@ -400,13 +452,16 @@ fn vkh_decode_body(context: u64, fd: i64, body: const u8[:], route: i64, cap: i6
             return;
         }
         let created = vkh_now();
+        let inkling_chat = inkling && route == 13;
         if stream {
             vkh_stream(context, fd, route, serial, created, prompt_ids[0 .. count], limit,
-                ignore_eog, report_usage, response, model);
+                ignore_eog, report_usage, inkling_chat, response, model);
             return;
         }
-        var result: i64[2] = [0, 0];
-        let bytes = vkh_generate(context, prompt_ids[0 .. count], limit, ignore_eog, generated, text, result);
+        var result: i64[3] = [0, 0, 0];
+        var reasoning: u8[>..] = [];
+        if inkling_chat { reasoning.resize(text.len, 0); }
+        let bytes = vkh_generate(context, prompt_ids[0 .. count], limit, ignore_eog, generated, text, reasoning[..], result);
         if bytes < 0 || bytes > text.len || result[0] < 0 || result[0] > limit {
             vkh_error(fd, 500, "Vulkan inference failed");
             return;
@@ -424,7 +479,13 @@ fn vkh_decode_body(context: u64, fd: i64, body: const u8[:], route: i64, cap: i6
             n = cp_put(response, n, if route == 12 { "\"text\":" } else { "\"content\":" });
         }
         n = vkh_json_text(response, n, text[0 .. bytes]);
-        if route == 13 { n = cp_chr(response, n, 125); }
+        if route == 13 {
+            if result[2] > 0 {
+                n = cp_put(response, n, ",\"reasoning_content\":");
+                n = vkh_json_text(response, n, reasoning[0 .. result[2]]);
+            }
+            n = cp_chr(response, n, 125);
+        }
         n = cp_put(response, n, ",\"finish_reason\":");
         n = vkh_json_text(response, n, stop);
         if return_tokens {

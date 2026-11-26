@@ -314,7 +314,7 @@ The local GGUF inventory confirms distinct requirements.
 | Qwen2.5-0.5B Q4_0 | Q4_0, Q8_0 | Experimental CLI and HTTP release |
 | Bonsai 2.5 27B | PQ2_0 trunk, Q4_0 KV | Experimental raw-ID and text CLI, serial HTTP completions, SSE and no-thinking ChatML. Short generation passes on Linux RTX 4070 and Windows EXE under Wine with RTX 4070. |
 | Apex 35B | Q4_K/Q6_K weights, Q4_0 KV | Experimental complete 40-layer trunk, raw-ID and text CLI, serial HTTP. Short generation passes on Linux RTX 4070 and Windows EXE under Wine with RTX 4070. |
-| Inkling-2-Mini | Q8_0, IQ4_NL, IQ4_XS, Q4_0 KV | Experimental complete 48-visit model path, raw-ID and text CLI, serial HTTP completions. Short generation passes on Linux RTX 4070 and Windows EXE under Wine with RTX 4070. |
+| Inkling-2-Mini | Q8_0, IQ4_NL, IQ4_XS, Q4_0 KV | Experimental complete 48-visit model path, raw-ID and text CLI, serial HTTP completions and text chat. Short generation passes on Linux RTX 4070 and Windows EXE under Wine with RTX 4070. |
 
 ### Bonsai FFN component
 
@@ -711,9 +711,8 @@ reference request timed out at 40 seconds on the rotational
 model drive. A sequential read populated the filesystem cache
 for the paired correctness check. This was not a throughput
 comparison. The Windows x64 text CLI under Wine with NVIDIA's
-Vulkan ICD matches the first completion. The current component
-does not cover the Inkling chat template or qualify long
-sequences, memory, throughput, native Windows or AMD hardware.
+Vulkan ICD matches the first completion. These checks do not qualify
+long sequences, memory, throughput, native Windows or AMD hardware.
 
 ```bash
 tests=integration/goose-standalone/tests/vulkan
@@ -729,6 +728,16 @@ Tested executable SHA-256 values:
 
 - Linux `80855d8f37b3332f7ba05f07af7e051cc7a81c906b9c98e0d63f7175e2c2a743`.
 - Windows `0cf0650b42a54d0fc4cea42361d77891fa81f473c1dedc0dc2d93d725cf04229`.
+
+The Inkling text chat endpoint uses its own GGUF role and content
+markers and sends the zero-effort instruction. A model can still
+emit reasoning in that configuration. The HTTP chat outputs
+separate `reasoning_content` from visible `content`, for JSON and
+SSE. Raw completions preserve the model's original stream. A real
+15-ID chat prompt on Linux RTX 4070 matches all five CUDA output
+IDs. The same fixture verifies the JSON and SSE reasoning fields
+and usage counters. Tool calls, multimodal content and prior
+reasoning fields remain outside the text-chat contract.
 
 ## Model order
 

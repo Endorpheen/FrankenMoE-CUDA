@@ -26,6 +26,7 @@ typedef struct {
     fg_vk_tokenizer *tokenizer;
     float *logits;
     uint32_t previous, vocabulary, capacity;
+    uint32_t inkling_control[5];
 } fg_vk_http;
 
 static int step(fg_vk_http *h, uint32_t id, float *logits) {
@@ -89,23 +90,54 @@ int64_t fg_vk_http_next(uint64_t owner, uint8_t ignore_eog, sl_u8 text, sl_i64 i
     return n;
 }
 
+int64_t fg_vk_http_inkling_control(uint64_t owner, int64_t id) {
+    const fg_vk_http *h = (fg_vk_http *)(uintptr_t)owner;
+    for (unsigned i = 0; i < 5; ++i) {
+        if (id == h->inkling_control[i]) return i + 1;
+    }
+    return 0;
+}
+
+static int prepare_inkling_controls(fg_vk_http *h) {
+    const char *names[] = {"<|message_model|>", "<|content_text|>", "<|content_thinking|>",
+        "<|end_message|>", "<|content_model_end_sampling|>"};
+    for (unsigned i = 0; i < 5; ++i) {
+        if (fg_vk_tokenizer_encode(h->tokenizer, names[i], strlen(names[i]), 1, &h->inkling_control[i], 1) != 1) return 0;
+    }
+    return 1;
+}
+
 int64_t fg_vk_http_generate(uint64_t owner, sl_i64 prompt, int64_t limit,
-    uint8_t ignore_eog, sl_i64 ids, sl_u8 text, sl_i64 info) {
-    if (limit > ids.len || info.len < 2 || fg_vk_http_prefill(owner, prompt, limit)) return -1;
-    int64_t at = 0;
+    uint8_t ignore_eog, sl_i64 ids, sl_u8 text, sl_u8 reasoning, sl_i64 info) {
+    if (limit > ids.len || info.len < 3 || fg_vk_http_prefill(owner, prompt, limit)) return -1;
+    int64_t at = 0, thought = 0;
+    int thinking = 0;
+    uint8_t piece[1028];
     info.data[0] = 0;
     info.data[1] = 0;
     for (int64_t step = 0; step < limit; ++step) {
-        int64_t n = fg_vk_http_next(owner, ignore_eog, (sl_u8){text.data + at, text.len - at},
-                                    (sl_i64){ids.data + step, 1});
+        int64_t n = fg_vk_http_next(owner, ignore_eog, (sl_u8){piece, sizeof(piece)}, (sl_i64){ids.data + step, 1});
         if (n == -2) {
             info.data[1] = 1;
             break;
         }
         if (n < 0) return -1;
-        at += n;
         ++info.data[0];
+        const int64_t control = reasoning.len ? fg_vk_http_inkling_control(owner, ids.data[step]) : 0;
+        if (control) {
+            if (control != 1) thinking = control == 3;
+            continue;
+        }
+        if (n > text.len - at - thought || (thinking && n > reasoning.len - thought)) return -1;
+        if (thinking) {
+            memcpy(reasoning.data + thought, piece, (size_t)n);
+            thought += n;
+        } else {
+            memcpy(text.data + at, piece, (size_t)n);
+            at += n;
+        }
     }
+    info.data[2] = thought;
     return at;
 }
 
@@ -144,7 +176,9 @@ int fg_vk_http_run(const char *model_file, uint32_t capacity, uint32_t index, in
         if (h->tokenizer && h->logits) {
             if (kind == FG_VK_MODEL_BONSAI) h->bonsai = fg_vk_bonsai_open(model_file, capacity, index, cpu);
             if (kind == FG_VK_MODEL_APEX) h->apex = fg_vk_apex_open(model_file, capacity, index, cpu);
-            if (kind == FG_VK_MODEL_INKLING) h->inkling = fg_vk_inkling_open(model_file, capacity, index, cpu);
+            if (kind == FG_VK_MODEL_INKLING && prepare_inkling_controls(h)) {
+                h->inkling = fg_vk_inkling_open(model_file, capacity, index, cpu);
+            }
             if (h->bonsai || h->apex || h->inkling ||
                 (kind == FG_VK_MODEL_QWEN2 && fg_vk_qwen2_open(&h->model, model_file, capacity, index, cpu))) {
                 ok = fg_vk_http_serve((uintptr_t)h, port, requests, capacity, h->vocabulary, kind) >= 0;

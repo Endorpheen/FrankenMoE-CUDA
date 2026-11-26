@@ -1,0 +1,29 @@
+{
+  "prompt_text": "<|message_system|><|content_text|>Thinking effort level: 0<|end_message|><|message_user|><|content_text|>Paris?<|end_message|>",
+  "prompt_ids": [
+    200002,
+    200004,
+    34182,
+    279,
+    154554,
+    150628,
+    25,
+    220,
+    15,
+    200010,
+    200000,
+    200004,
+    3967,
+    30,
+    200010
+  ],
+  "output_ids": [
+    200001,
+    200008,
+    371,
+    150409,
+    171960
+  ],
+  "reasoning": "The user asks",
+  "content": ""
+}
