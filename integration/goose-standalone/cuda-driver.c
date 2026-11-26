@@ -2314,9 +2314,15 @@ static void init_expert_host_ring(void) {
     ring->storage = storage;
 }
 
+static _Thread_local bool giga_small_expert_wave;
+
+void fg_cuda_gigachat4_small_expert_wave(uint8_t enabled) {
+    giga_small_expert_wave = enabled != 0;
+}
+
 uint8_t fg_cuda_expert_stage_enabled(int64_t active_experts, uint8_t stage_all) {
     const size_t planes = stage_all ? 3 : 2;
-    if (active_experts <= 0 || (!stage_all && active_experts <= 8) ||
+    if (active_experts <= 0 || (!stage_all && active_experts <= 8 && !giga_small_expert_wave) ||
         !activations.active || !activations.defer_waits ||
         !cuda.defer_matrix_waits || !cuda.expert_stream ||
         (uint64_t) active_experts > SIZE_MAX / planes / sizeof(*cuda.expert_upload_jobs)) return false;

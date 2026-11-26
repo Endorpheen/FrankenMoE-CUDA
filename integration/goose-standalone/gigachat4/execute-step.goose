@@ -1,3 +1,4 @@
+extern "fg_cuda_gigachat4_small_expert_wave" fn giga_small_wave(enabled: bool);
 extern "fg_standalone_graph_alloc" fn giga_host_arena(graph: u64) -> u64;
 extern "fg_standalone_graph_compute" fn giga_host_compute(graph: u64) -> i32;
 extern "fg_standalone_graph_plan_alloc" fn giga_host_plan(graph: u64, output: u64) -> u64;
@@ -19,7 +20,9 @@ export fn giga_execute_step(request: u64, step: u64, graph: u64,
         if planned { giga_host_plan_free(arena); } else { giga_host_free(arena); }
         return -3;
     }
+    giga_small_wave(planned);
     let status = if planned { giga_host_plan_compute(arena) } else { giga_host_compute(graph) };
+    giga_small_wave(false);
     if status != 0 || giga_host_commit(request, step) != 0 {
         giga_host_reset(request);
         if planned { giga_host_plan_free(arena); } else { giga_host_free(arena); }

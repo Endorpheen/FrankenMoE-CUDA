@@ -336,3 +336,14 @@ On 512/32 the paired control/candidate trials measured prefill
 tokens/s. Every run matched all 32 reference token IDs, with no process swap
 or system swap-out growth. Post-request GPU memory was 8459–8469 MiB in the
 paired runs and 8483 MiB in the final check.
+
+### EXP-2026-11-26-2146 — Stage small GigaChat4 expert waves
+
+The planned GigaChat4 graph enables asynchronous staging for small expert
+waves while it computes. The thread-local switch is cleared before graph
+commit or error handling. Other callers retain the existing threshold.
+
+Two paired 512/32 comparisons measured prefill 141.17/141.79 and
+144.48/143.95 tokens/s, with decode 12.94/14.62 and 13.07/14.02 tokens/s.
+All four runs matched the 32 llama.cpp token IDs. Post-request GPU memory
+was 8469–8470 MiB and neither process swap nor system swap-out grew.
