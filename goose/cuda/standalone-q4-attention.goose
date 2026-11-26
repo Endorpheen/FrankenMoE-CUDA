@@ -482,3 +482,141 @@ export fn giga_mla_mma_tile(q: u64, k: u64, v: u64, mask: u64, scratch: u64, cfg
         attn_store(result + (4 * (2 + b * 32 + lane)) as u64, sum[b]);
     }
 }
+
+extern "fg_mla_pack_probability" fn mla_pack_probability(a: f32, b: f32) -> u32;
+
+fn mla_pv_rescale(acc: MlaMma4, p0: f32, p1: f32) -> MlaMma4 {
+    return MlaMma4 {acc.a*p0, acc.b*p1, acc.c*p0, acc.d*p1};
+}
+
+fn mla_pv_kpair(v: u64, stride: i64, row: i64, column: i64) -> u32 {
+    let a = attn_ld_u16(v, (row * stride + 2 * column) as u64);
+    let b = attn_ld_u16(v, ((row+1) * stride + 2 * column) as u64);
+    return a | (b << 16);
+}
+
+fn mla_pv_accumulate(v: u64, cfg: u64, shared: u64, start: i64, count: i64, column: i64,
+    group: i64, thread: i64, initial: MlaMma4) -> MlaMma4 {
+    let stride = attn_word(cfg, 11);
+    var acc = initial;
+    for tile in count / 16 {
+        let c = 16 * tile + 2 * thread;
+        let row = start+c;
+        let index = group*128+c;
+        let p0 = mla_pack_probability(mla_score_get(shared,index),mla_score_get(shared,index+1));
+        let p1 = mla_pack_probability(mla_score_get(shared,index+8),mla_score_get(shared,index+9));
+        acc = mla_mma_f16(acc, mla_pv_kpair(v,stride,row,column),
+            mla_pv_kpair(v,stride,row,column+8), mla_pv_kpair(v,stride,row+8,column),
+            mla_pv_kpair(v,stride,row+8,column+8), p0,p1);
+    }
+    return acc;
+}
+
+fn mla_pv_store(scratch: u64, slot0: i64, slot1: i64, column: i64, value: MlaMma4) {
+    attn_store(scratch + (4 * (slot0 + 2 + column)) as u64, value.a);
+    attn_store(scratch + (4 * (slot1 + 2 + column)) as u64, value.b);
+    attn_store(scratch + (4 * (slot0 + 10 + column)) as u64, value.c);
+    attn_store(scratch + (4 * (slot1 + 10 + column)) as u64, value.d);
+}
+export fn giga_mla_mma_pv_tile(q: u64, k: u64, v: u64, mask: u64, scratch: u64, cfg: u64, shared: u64,
+    scale: f32, task: i64, query: i64, tile: i64, warp: i64, lane: i64) {
+    let positions = attn_word(cfg, 2);
+    let col = query % positions;
+    let head = query / positions;
+    let qstride = attn_word(cfg, 7);
+    let kstride = attn_word(cfg, 9);
+    let cells = attn_word(cfg, 6);
+    let first = tile * 256;
+    let qbase = q + ((head * attn_word(cfg, 8) + col * qstride) as u64);
+    let mask_row = mask + (((col + warp) * attn_word(cfg, 13)) as u64);
+    let group = lane / 4;
+    let thread = lane % 4;
+    let neg_inf = attn_neg_inf();
+    var maximum = neg_inf;
+    var mass: f32 = 0.0;
+    var a = MlaMma4 {0.0, 0.0, 0.0, 0.0};
+    var b = a;
+    var c = a;
+    var d = a;
+
+    for phase in 2 {
+        let start = first + phase * 128;
+        if start >= cells { break; }
+        let block_key = start + 16 * warp;
+        if block_key < cells {
+            let k0 = k + ((block_key + group) * kstride) as u64;
+            let k1 = k0 + (8 * kstride) as u64;
+            let qr = qbase + (group * qstride) as u64;
+            var acc = MlaMma4 {0.0, 0.0, 0.0, 0.0};
+            for part in 36 {
+                let c = 16 * part + 2 * thread;
+                let kb = (2 * c) as u64;
+                let qb = (4 * c) as u64;
+                acc = mla_mma_f16(acc, mla_mma_kpair(k0 + kb), mla_mma_kpair(k1 + kb),
+                    mla_mma_kpair(k0 + kb + 16), mla_mma_kpair(k1 + kb + 16),
+                    mla_mma_qpair(qr + qb), mla_mma_qpair(qr + qb + 32));
+            }
+            let at = (2 * thread) * 128 + 16 * warp + group;
+            mla_score_put(shared, at, acc.a);
+            mla_score_put(shared, at + 128, acc.b);
+            mla_score_put(shared, at + 8, acc.c);
+            mla_score_put(shared, at + 136, acc.d);
+        }
+        mla_score_sync();
+        let count = if cells - start < 128 { cells - start } else { 128 };
+        var peak = neg_inf;
+        for offset in 4 {
+            let at = offset * 32 + lane;
+            if at < count {
+                let row = start + at;
+                let bias = if mask != 0 { attn_half(attn_ld_u16(mask_row, (2 * row) as u64)) } else { 0.0 };
+                let score = if bias == neg_inf { neg_inf } else { mla_score_get(shared, warp * 128 + at) * scale + bias };
+                mla_score_put(shared, warp * 128 + at, score);
+                if score > peak { peak = score; }
+            }
+        }
+        var delta: i32 = 16;
+        while delta > 0 {
+            let other = attn_shfl(peak, delta);
+            if other > peak { peak = other; }
+            delta /= 2;
+        }
+        let next = if peak > maximum { peak } else { maximum };
+        let rescale = if maximum == neg_inf { 0.0 } else { attn_exp(maximum - next) };
+        maximum = next;
+        var local_mass: f32 = 0.0;
+        for offset in 4 {
+            let at = offset * 32 + lane;
+            var probability: f32 = 0.0;
+            if at < count {
+                let score = mla_score_get(shared, warp * 128 + at);
+                if score != neg_inf { probability = attn_exp(score - next); }
+            }
+            mla_score_put(shared, warp * 128 + at, probability);
+            local_mass += probability;
+        }
+        mass = attn_fma(mass, rescale, attn_sum(local_mass));
+        if lane == 0 { mla_score_put(shared, 1024 + warp, rescale); }
+        mla_score_sync();
+
+        let p0 = mla_score_get(shared, 1024 + 2 * thread);
+        let p1 = mla_score_get(shared, 1024 + 2 * thread + 1);
+        let column = warp * 64 + group;
+        a = mla_pv_accumulate(v, cfg, shared, start, count, column, group, thread, mla_pv_rescale(a,p0,p1));
+        b = mla_pv_accumulate(v, cfg, shared, start, count, column+16, group, thread, mla_pv_rescale(b,p0,p1));
+        c = mla_pv_accumulate(v, cfg, shared, start, count, column+32, group, thread, mla_pv_rescale(c,p0,p1));
+        d = mla_pv_accumulate(v, cfg, shared, start, count, column+48, group, thread, mla_pv_rescale(d,p0,p1));
+        mla_score_sync();
+    }
+
+    let tiles = attn_word(cfg, 17);
+    let moments = scratch + ((4 * (((task + warp) * tiles + tile) * 514)) as u64);
+    if lane == 0 { attn_store(moments, maximum); attn_store(moments + 4, mass); }
+    let slot0 = ((task + 2 * thread) * tiles + tile) * 514;
+    let slot1 = slot0 + tiles * 514;
+    let column = warp * 64 + group;
+    mla_pv_store(scratch, slot0, slot1, column, a);
+    mla_pv_store(scratch, slot0, slot1, column+16, b);
+    mla_pv_store(scratch, slot0, slot1, column+32, c);
+    mla_pv_store(scratch, slot0, slot1, column+48, d);
+}

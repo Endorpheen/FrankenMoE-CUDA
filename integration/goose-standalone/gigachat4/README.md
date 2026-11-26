@@ -470,3 +470,22 @@ matched all eight reference IDs and used 8898 MiB after the request
 with no swap-out growth. A second 512/32 input matched all 32 IDs
 against the same binary without MMA. The 4352/2 diagnostic also
 matched both control IDs. No 32K/512 qualification is claimed.
+
+### EXP-2026-11-27-2155 — Use Tensor Cores for GigaChat4 MLA P×V
+
+The eligible prefill MLA tile computes the masked softmax maximum and
+mass in F32, packs the probabilities to F16 and applies the same
+m16n8k16 operation to P×V. Existing partial-state merge and decode
+dispatch stay in place. Set GOOSE_GIGA_MLA_PV_MMA=0 to retain the
+EXP-2154 QK-only tile.
+
+On 2176/8 with batch and ubatch 4096, off/on prefill measured
+298.39/341.94 and 299.00/332.92 tokens/s. All eight IDs matched the
+llama.cpp fixture. The seven-step decode measurements were lower
+in the two candidate arms. A separate 2176/32 pair measured
+300.76/343.63 prefill and 12.73/12.87 decode, with all 32 IDs
+matching between arms. The default-enabled build measured
+344.09/13.20 and matched those same 32 IDs at 8911 MiB VRAM after
+the request and 23,364,444 KiB peak RSS, without swap-out growth.
+A second 512/32 input matched all 32 QK-only control IDs. No
+32K/512 or separate cross-architecture qualification is claimed.

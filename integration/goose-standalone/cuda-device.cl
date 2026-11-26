@@ -245,6 +245,12 @@ static float fg_mla_score_get(uint64_t base, int64_t index) {
 static void fg_mla_score_sync(void) {
     __asm__ volatile("bar.sync 0;" ::: "memory");
 }
+static uint32_t fg_mla_pack_probability(float a, float b) {
+    uint16_t lo, hi;
+    __asm__("cvt.rn.f16.f32 %0, %1;" : "=h"(lo) : "f"(a));
+    __asm__("cvt.rn.f16.f32 %0, %1;" : "=h"(hi) : "f"(b));
+    return (uint32_t)lo | ((uint32_t)hi << 16);
+}
 #include "q4-attention-device.h"
 __kernel void goose_giga_mla_mma_tile(__global const float *q, __global const uint16_t *k,
     __global const uint16_t *v, __global const uint16_t *mask, __global float *scratch,
@@ -255,6 +261,20 @@ __kernel void goose_giga_mla_mma_tile(__global const float *q, __global const ui
     __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(tile));
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
     giga_mla_mma_tile_g((uint64_t)q,(uint64_t)k,(uint64_t)v,(uint64_t)mask,
+        (uint64_t)scratch,(uint64_t)cfg,(uint64_t)scores,scale,8*task,
+        (int64_t)query_base+8*task,tile,thread/32,thread%32);
+}
+
+#undef fg_mla_mma_f16
+__kernel void goose_giga_mla_mma_pv_tile(__global const float *q, __global const uint16_t *k,
+    __global const uint16_t *v, __global const uint16_t *mask, __global float *scratch,
+    __global int64_t *cfg, float scale, int32_t query_base) {
+    __local float scores[1032] __attribute__((aligned(16)));
+    uint32_t task, tile, thread;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(task));
+    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(tile));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
+    giga_mla_mma_pv_tile_g((uint64_t)q,(uint64_t)k,(uint64_t)v,(uint64_t)mask,
         (uint64_t)scratch,(uint64_t)cfg,(uint64_t)scores,scale,8*task,
         (int64_t)query_base+8*task,tile,thread/32,thread%32);
 }

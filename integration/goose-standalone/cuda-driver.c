@@ -1263,8 +1263,13 @@ static void load_cuda(void) {
             (void) cuda.function_get(&cuda.mla_attention_batch_merge, cuda.module, "goose_mla_attention_batch_merge");
         }
         const char * mla_mma_setting = getenv("GOOSE_GIGA_MLA_MMA");
-        if (error == 0 && sm80_image && (!mla_mma_setting || strcmp(mla_mma_setting, "0") != 0))
-            (void) cuda.function_get(&cuda.mla_mma_tile, cuda.module, "goose_giga_mla_mma_tile");
+        if (error == 0 && sm80_image && (!mla_mma_setting || strcmp(mla_mma_setting, "0") != 0)) {
+            const char * pv_mma_setting = getenv("GOOSE_GIGA_MLA_PV_MMA");
+            if (!pv_mma_setting || strcmp(pv_mma_setting, "0") != 0)
+                (void) cuda.function_get(&cuda.mla_mma_tile, cuda.module, "goose_giga_mla_mma_pv_tile");
+            if (!cuda.mla_mma_tile)
+                (void) cuda.function_get(&cuda.mla_mma_tile, cuda.module, "goose_giga_mla_mma_tile");
+        }
         if (error == 0) error = cuda.function_get(&cuda.dsa_score, cuda.module, "goose_dsa_score");
         const char * dsa_mask_setting = getenv("GOOSE_GIGA_DSA_MASK");
         if (error == 0 && (!dsa_mask_setting || strcmp(dsa_mask_setting, "0") != 0)) {
