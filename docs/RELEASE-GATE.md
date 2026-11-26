@@ -3,9 +3,9 @@
 Every FrankenMoE package release uses the same
 [architecture and backend matrix](../tools/multimodel-release/release-matrix.json)
 and [runner](../tools/multimodel-release/release-gate.py). Extend the existing
-matrix when a model or backend enters release scope. Qwen2.5 Vulkan has
+matrix when a model or backend enters release scope. Each Vulkan model has
 separate native AMD and diagnostic rows. Results from explicit Vulkan
-device selection or Wine with Lavapipe do not qualify native AMD hardware.
+device selection or Wine do not qualify native AMD hardware.
 
 ## Checklist
 
@@ -40,7 +40,7 @@ python3 tools/multimodel-release/release-gate.py \
 
 Omit `--weights` for an archive-only report. Omit `--wine-prefix` when no
 isolated prefix is available. The gate never downloads weights or runs
-benchmarks. It serializes generation, uses four tokens on GPU and one on
+benchmarks. It serializes generation, uses short model fixtures on GPU and one token on
 Wine CPU, and bounds startup and request waits. Warm file-cache residency
 ahead of the live block if a model profile requires it. On a native Windows
 host, run the same gate against the same archives with weights and PE
@@ -49,10 +49,10 @@ host, run the same gate against the same archives with weights and PE
 Use the default distribution for any archive containing CUDA executables.
 For independent Vulkan-only archives, add `--distribution vulkan`. This
 mode verifies that every file belongs to the Vulkan distribution, then
-evaluates all four Vulkan rows in the same registry. Use
+evaluates the Vulkan rows in the same registry. Use
 `--vulkan-device-index N` to exercise a separate explicit-device Linux
 diagnostic and `--vulkan-wine-icd PATH` with an isolated Wine prefix to
-exercise the software Vulkan diagnostic. Real AMD tests select an eligible
+exercise the Windows executable through the selected host ICD. Real AMD tests select an eligible
 AMD device using the native loader. The full CUDA+Vulkan matrix is still
 mandatory for combined archives.
 
@@ -85,6 +85,6 @@ check failed and 2 means applicable checks are still untested.
 
 Memory checks use peak process RSS and process-attributed VRAM sampled after
 generation. They are smoke limits, not performance regression measurements.
-If process-attributed VRAM is unavailable on Windows WDDM, record it as
+If process-attributed VRAM is unavailable, record it as
 NOT TESTED. A short regression gate does not replace the per-model
 performance baselines in the optimization registry.

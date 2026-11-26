@@ -1,7 +1,7 @@
 # FrankenMoE-CUDA
 
 FrankenMoE runs local LLM inference with Goose model code and native C adapters
-for the operating system and NVIDIA CUDA driver. It supports expert streaming
+for the operating system, CUDA and Vulkan. It supports expert streaming
 for models whose weights exceed GPU memory.
 Learn about the language in the [original Goose repository](https://github.com/aardappel/goose).
 
@@ -9,11 +9,12 @@ Learn about the language in the [original Goose repository](https://github.com/a
 
 ## Downloads and verified models
 
-The [experimental Vulkan alpha](https://github.com/Endorpheen/FrankenMoE-CUDA/releases/tag/v0.14.0-vulkan-alpha)
-provides separate Linux and Windows x64 downloads for Qwen2.5-0.5B Q4_0.
-It has no CUDA dependency. CLI, local chat and SSE were verified on
-Linux RTX 4070 and on the Windows executable under Wine with Lavapipe.
-Native AMD hardware remains untested. See the [Vulkan setup guide](docs/releases/VULKAN-ALPHA.md).
+The [experimental Vulkan multi-model alpha](https://github.com/Endorpheen/FrankenMoE-CUDA/releases/tag/v0.14.1-vulkan-multimodel-alpha)
+provides separate Linux and Windows x64 downloads for Apex, Inkling, Bonsai
+and the Qwen2.5-0.5B control. It has no CUDA dependency. Short real-model
+generation was verified on Linux RTX 4070 and with the Windows executable
+under Wine. Native AMD hardware and native Windows remain untested.
+See the [Vulkan setup guide](docs/releases/VULKAN-ALPHA.md).
 
 The [v0.13.0-alpha](https://github.com/Endorpheen/FrankenMoE-CUDA/releases/tag/v0.13.0-alpha)
 Linux x64 package runs Apex, Inkling and Bonsai on Goose/CUDA. Short
@@ -71,8 +72,8 @@ ZIP for the Bonsai MTP CLI.
   tracks the reference requirements for adding a model.
 - [Experiment registry](experiments/EXPERIMENTS.md) records source changes,
   benchmark conditions and correctness checks.
-- [Vulkan roadmap](docs/roadmap/VULKAN-BACKEND.md) describes the deferred AMD
-  backend.
+- [Vulkan roadmap](docs/roadmap/VULKAN-BACKEND.md) records the model bring-up
+  and remaining native AMD qualification.
 
 Run `bash tools/check.sh fast` to compose and compile the source-tree Goose
 unit without model weights.

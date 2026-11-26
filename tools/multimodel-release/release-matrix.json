@@ -493,6 +493,84 @@
       ],
       "expected_text_sha256": "70927c13f7363422481717d52f3bf0fff2bb54e499a0cba7c2a1b001f5baac8d",
       "ram_limit_mib": 2048
+    },
+    "apex-vulkan": {
+      "weights": "Apex-35B-V1.0-Q4_K_M.gguf",
+      "vulkan_args": [
+        "--apex"
+      ],
+      "request": {
+        "prompt": [
+          760,
+          6511,
+          314,
+          9338,
+          369
+        ],
+        "n_predict": 4,
+        "temperature": 0,
+        "return_tokens": true
+      },
+      "expected_ids": [
+        11751,
+        13,
+        561,
+        6511
+      ],
+      "expected_text_sha256": "1c9f324e7781700149128441e8f920ae777872a02f089e5e51b1f92137ba3651",
+      "ram_limit_mib": 4096,
+      "vram_limit_mib": 12288
+    },
+    "inkling-vulkan": {
+      "weights": "Inkling-2-Mini-AD-IQ4_XS.gguf",
+      "vulkan_args": [
+        "--inkling"
+      ],
+      "request": {
+        "prompt": [
+          371,
+          151451,
+          149879,
+          151194,
+          149884
+        ],
+        "n_predict": 2,
+        "temperature": 0,
+        "return_tokens": true
+      },
+      "expected_ids": [
+        152717,
+        13
+      ],
+      "expected_text_sha256": "9d0fe580f9faf59828d942e7da77ab321c428a28c89e25c6eee38aac53a3af34",
+      "ram_limit_mib": 4096,
+      "vram_limit_mib": 12288,
+      "requires_residency": true
+    },
+    "bonsai-vulkan": {
+      "weights": "Ternary-Bonsai-2.5-27B-PQ2_0-mtp.gguf",
+      "vulkan_args": [
+        "--bonsai"
+      ],
+      "request": {
+        "prompt": [
+          760,
+          6511,
+          314,
+          9338,
+          369
+        ],
+        "n_predict": 2,
+        "temperature": 0,
+        "return_tokens": true
+      },
+      "expected_ids": [
+        11751,
+        13
+      ],
+      "expected_text_sha256": "9d0fe580f9faf59828d942e7da77ab321c428a28c89e25c6eee38aac53a3af34",
+      "ram_limit_mib": 4096,
+      "vram_limit_mib": 12288
     }
   },
   "rows": [
@@ -683,7 +761,133 @@
         "vulkan/README.md"
       ],
       "runner": "wine-vulkan",
-      "validation": "wine-lavapipe"
+      "validation": "wine-vulkan"
+    },
+    {
+      "os": "linux-x64",
+      "backend": "vulkan",
+      "model": "apex-vulkan",
+      "entry": "vulkan/frankenmoe-vulkan",
+      "files": [
+        "vulkan/README.md"
+      ],
+      "runner": "linux-vulkan-amd"
+    },
+    {
+      "os": "linux-x64",
+      "backend": "vulkan",
+      "model": "apex-vulkan",
+      "entry": "vulkan/frankenmoe-vulkan",
+      "files": [
+        "vulkan/README.md"
+      ],
+      "runner": "linux-vulkan-explicit",
+      "validation": "explicit-device"
+    },
+    {
+      "os": "windows-x64",
+      "backend": "vulkan",
+      "model": "apex-vulkan",
+      "entry": "vulkan/frankenmoe-vulkan.exe",
+      "files": [
+        "vulkan/README.md"
+      ],
+      "runner": "windows-vulkan-amd"
+    },
+    {
+      "os": "windows-x64",
+      "backend": "vulkan",
+      "model": "apex-vulkan",
+      "entry": "vulkan/frankenmoe-vulkan.exe",
+      "files": [
+        "vulkan/README.md"
+      ],
+      "runner": "wine-vulkan",
+      "validation": "wine-vulkan"
+    },
+    {
+      "os": "linux-x64",
+      "backend": "vulkan",
+      "model": "inkling-vulkan",
+      "entry": "vulkan/frankenmoe-vulkan",
+      "files": [
+        "vulkan/README.md"
+      ],
+      "runner": "linux-vulkan-amd"
+    },
+    {
+      "os": "linux-x64",
+      "backend": "vulkan",
+      "model": "inkling-vulkan",
+      "entry": "vulkan/frankenmoe-vulkan",
+      "files": [
+        "vulkan/README.md"
+      ],
+      "runner": "linux-vulkan-explicit",
+      "validation": "explicit-device"
+    },
+    {
+      "os": "windows-x64",
+      "backend": "vulkan",
+      "model": "inkling-vulkan",
+      "entry": "vulkan/frankenmoe-vulkan.exe",
+      "files": [
+        "vulkan/README.md"
+      ],
+      "runner": "windows-vulkan-amd"
+    },
+    {
+      "os": "windows-x64",
+      "backend": "vulkan",
+      "model": "inkling-vulkan",
+      "entry": "vulkan/frankenmoe-vulkan.exe",
+      "files": [
+        "vulkan/README.md"
+      ],
+      "runner": "wine-vulkan",
+      "validation": "wine-vulkan"
+    },
+    {
+      "os": "linux-x64",
+      "backend": "vulkan",
+      "model": "bonsai-vulkan",
+      "entry": "vulkan/frankenmoe-vulkan",
+      "files": [
+        "vulkan/README.md"
+      ],
+      "runner": "linux-vulkan-amd"
+    },
+    {
+      "os": "linux-x64",
+      "backend": "vulkan",
+      "model": "bonsai-vulkan",
+      "entry": "vulkan/frankenmoe-vulkan",
+      "files": [
+        "vulkan/README.md"
+      ],
+      "runner": "linux-vulkan-explicit",
+      "validation": "explicit-device"
+    },
+    {
+      "os": "windows-x64",
+      "backend": "vulkan",
+      "model": "bonsai-vulkan",
+      "entry": "vulkan/frankenmoe-vulkan.exe",
+      "files": [
+        "vulkan/README.md"
+      ],
+      "runner": "windows-vulkan-amd"
+    },
+    {
+      "os": "windows-x64",
+      "backend": "vulkan",
+      "model": "bonsai-vulkan",
+      "entry": "vulkan/frankenmoe-vulkan.exe",
+      "files": [
+        "vulkan/README.md"
+      ],
+      "runner": "wine-vulkan",
+      "validation": "wine-vulkan"
     }
   ],
   "required_platforms": {
@@ -711,7 +915,10 @@
       "bonsai"
     ],
     "vulkan": [
-      "qwen2-vulkan"
+      "qwen2-vulkan",
+      "apex-vulkan",
+      "inkling-vulkan",
+      "bonsai-vulkan"
     ]
   }
 }

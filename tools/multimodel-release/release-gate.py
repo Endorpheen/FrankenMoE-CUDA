@@ -259,7 +259,7 @@ def probe(row, spec, model, root, logs, weights, prefix, gpu_index, vulkan_devic
         if not gpu:
             return
 
-    if kind == "linux-cuda" and model.get("requires_residency"):
+    if (kind == "linux-cuda" or (vulkan and os.name != "nt")) and model.get("requires_residency"):
         try:
             resident_weights(weight)
         except (OSError, ValueError, subprocess.SubprocessError) as e:
@@ -279,9 +279,9 @@ def probe(row, spec, model, root, logs, weights, prefix, gpu_index, vulkan_devic
             env.update(WINEDEBUG="-all", WINEPREFIX=str(prefix), VK_DRIVER_FILES=str(vulkan_wine_icd))
             env.pop("VK_ICD_FILENAMES", None)
             weight = "Z:" + str(weight.resolve()).replace("/", "\\")
-        command += [str(weight), "--ctx-size", "96", "--serve", str(port)]
+        command += [str(weight), *model.get("vulkan_args", []), "--ctx-size", "96", "--serve", str(port)]
         if kind == "wine-vulkan":
-            command += ["--device-index", "0", "--allow-cpu", "--max-requests", "2"]
+            command += ["--device-index", "0", "--allow-cpu"]
         elif kind == "linux-vulkan-explicit":
             command += ["--device-index", str(vulkan_device)]
     elif kind == "linux-cuda":
@@ -359,7 +359,17 @@ def probe(row, spec, model, root, logs, weights, prefix, gpu_index, vulkan_devic
                     if not 0 < ram <= model["ram_limit_mib"]:
                         row["memory"] = ("FAIL", evidence)
                     else:
-                        row["memory"] = ("NOT TESTED", evidence + "; device-attributed VRAM unavailable")
+                        vram = None
+                        if model.get("vram_limit_mib") and shutil.which("nvidia-smi"):
+                            try:
+                                _, vram = process_memory(proc.pid)
+                            except (OSError, ValueError, KeyError, subprocess.SubprocessError):
+                                pass
+                        if vram is None:
+                            row["memory"] = ("NOT TESTED", evidence + "; device-attributed VRAM unavailable")
+                        else:
+                            evidence += f", sampled VRAM {vram} MiB"
+                            row["memory"] = ("PASS" if 0 < vram <= model["vram_limit_mib"] else "FAIL", evidence)
                 except (OSError, ValueError, KeyError, subprocess.SubprocessError):
                     row["memory"] = ("NOT TESTED", "Process memory sampling unavailable")
         except (OSError, ValueError, KeyError, subprocess.SubprocessError) as e:
@@ -398,7 +408,7 @@ def main():
     parser.add_argument("--wine-prefix", type=Path, help="isolated Wine prefix; CUDA stays disabled")
     parser.add_argument("--gpu-index", type=int, default=0)
     parser.add_argument("--vulkan-device-index", type=int, help="separate Linux diagnostic using an explicit Vulkan device")
-    parser.add_argument("--vulkan-wine-icd", type=Path, help="software ICD for the separate Wine Vulkan diagnostic")
+    parser.add_argument("--vulkan-wine-icd", type=Path, help="host ICD for the separate Wine Vulkan diagnostic")
     parser.add_argument("--only", action="append", default=[], metavar="OS/BACKEND/MODEL",
                         help="rerun only the specified model row; repeat to select multiple rows")
     parser.add_argument("--build-plan", type=Path, help="trusted JSON map of OS to build command and matching executable hashes")
