@@ -1253,6 +1253,19 @@ release still needs the architecture regression gates.
   replayed decode nodes with unchanged kernel counts.
   [Implementation, measurements and evidence](EXP-2026-11-26-2105-bonsai-ffn-graph/README.md).
 
+### EXP-2026-11-26-2106 — Bonsai MTP in cumulative HTTP
+
+- **Experimental diagnostic over EXP-2105.** Attach the EXP-2047 four-row
+  verifier to the existing resident Bonsai model and HTTP sampling loop.
+  Prefix commit preserves accepted KV/GDN state. Use GPU argmax for
+  greedy and retain the original CPU path for sampling and probabilities.
+- **One cold 32K/512** measures 1003.09 prefill / 72.40 effective MTP
+  decode tok/s, 39.786 s client time, 9438 MiB process VRAM after the
+  request and 7283.27 MiB peak process RAM. Accept 369 of 423 proposals
+  (87.23%). All 512 IDs and text match PrismML. The ordinary and MTP
+  rates describe distinct execution modes.
+  [Source, diagnostics and reproduction](EXP-2026-11-26-2106-bonsai-http-mtp/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.

@@ -1,0 +1,196 @@
+{
+  "status": "experimental_diagnostic",
+  "parent": "EXP-2105",
+  "parent_commit": "5463b9def1c72e2d0558cf23e1f0930006bb027d",
+  "workload": {
+    "input_tokens": 32768,
+    "output_tokens": 512,
+    "model_sha256": "ededc9fc0a8a6a8dd30914d107b2d2ce7674d789f1d05a1a481f240609aa6c23",
+    "gpu": "RTX 4070",
+    "context": 36864,
+    "batch": 4096,
+    "ubatch": 1024,
+    "kv": "Q4_0",
+    "mtp": true,
+    "request": "experiments/EXP-2026-11-25-1977-bonsai-prism-32k-reference/request.json",
+    "verify_rows": 4,
+    "sampler": "greedy",
+    "ignore_eos": true
+  },
+  "artifact_sha256": {
+    "frankenmoe-infer": "d42ddb4f0b80594de6efac3a0b5926edcdaf1f62fa76bf5b6925955ddc534639",
+    "pipeline.cubin": "2a18d1857ecb4067e30eb9ab6cc4f9c61cab7d6c46985b02c59cb57616b5c7cd",
+    "mtp.cubin": "8c56c4e79e9afee837188324c66419c49fbef050b83c3f599978afa32313a0ec",
+    "main.o": "80f57ae5bf862ee7080a45e524c72bf35186d975009977d11019c2c7747d0ecc",
+    "model-host.o": "6067a2d9b13822ab13c8ac8c970c0281ddec25a37cf2046b022af692b54aed48",
+    "bonsai-session.o": "811a636c6ea5c8d764f961db34672eb991396a5967b94f6df790cffec8c995ca",
+    "mtp-goose.o": "95debf277dd5c0fcb8ad0a1f7fa4369db2e48da3056f3e2e6c5b7ae169306a52"
+  },
+  "source_inputs_sha256": {
+    "EXP-2105/backend.c": "c5a03bfa8b5a055f03cbe2ef50ce29c7218e1cf4d1ac25e6265d736a2a320d8a",
+    "EXP-2105/model-host.c": "839f5cffab3c4c442884ace936cb8f44da4a8179c65e49b5de08aeae5869ddb9",
+    "EXP-2101/main-scan.goose": "c2d197eeea1d09b73955c9a2a08c695e8b1b811f2084e221184372d04214b726",
+    "bonsai-ffn-prefix-2044-both/prefix.o": "fd420e2879a7c3561ac1a45e07c937943742d826b3562e6d47d5316bfa953543",
+    "bonsai-mtp-warp-rows-2047/backend.c": "a303840d2087c2714006715d2057154613a8112336bcea813d14486120bf1591",
+    "bonsai-mtp-five-2046/transaction.inc": "b3728f3e33d5b5caecc76005ec92d0c4ec114d227349a22da65de0ca89a59e43",
+    "bonsai-mtp-five-2046/verify-ops.inc": "0d9a633e6d286dd7bf37e11e13e932c21d214a1c13d021808f54684dd1dc7ccf",
+    "bonsai-mtp-pairs-2043/choice.inc": "4980af786f274fe244e9da404b88ac751f8aef2c2e384f342f12b110ed8caf65",
+    "bonsai-mtp-pairs-2043/greedy.inc": "832e3f1a24b49871640c3e32352ed6f7371fd196ba34295eed4432749461b2b8",
+    "bonsai-mtp-head-2038/head-probe.inc": "cbe8b033a58fd3dc8258c51981aaf1c3024d7b4fe23606c254f1107d5e978227"
+  },
+  "cold_prefill": {
+    "cold_prefill": "PASS",
+    "computed_prompt_tokens": 32768,
+    "cached_prompt_tokens": 0,
+    "engine": "goose",
+    "request_sha256": "1f62448c0a6d29a776f76df4f24d0ca162c7a5d10774f879d94f859ac3e81ecb",
+    "response_sha256": "c3cb4b6d503c723642e74f2abbdc18df18d41e2a51cf5e59df41e5db4737598f"
+  },
+  "full_runs": 1,
+  "timings": {
+    "cache_n": 0,
+    "prompt_n": 32768,
+    "prompt_ms": 32666.945660021156,
+    "prompt_per_token_ms": 0.9969160662848253,
+    "prompt_per_second": 1003.093473783272,
+    "predicted_n": 512,
+    "predicted_ms": 7058.0291749793105,
+    "predicted_per_token_ms": 13.81219016630002,
+    "predicted_per_second": 72.39981407437267
+  },
+  "client_s": 39.785585,
+  "process_vram_after_mib": 9438,
+  "process_memory_kib": {
+    "VmHWM": 7458064,
+    "VmRSS": 167084,
+    "VmSwap": 0
+  },
+  "argv": [
+    "/home/end0/.codex/worktrees/multimodel-release-main/FrankenMoE-CUDA/build/bonsai-http-mtp-2106/frankenmoe-infer",
+    "--ctx-size",
+    "36864",
+    "--batch-size",
+    "4096",
+    "--ubatch-size",
+    "1024",
+    "--cache-type-k",
+    "q4_0",
+    "--cache-type-v",
+    "q4_0",
+    "--threads",
+    "8",
+    "--threads-batch",
+    "16",
+    "--cpu-mask",
+    "0f0f",
+    "--cpu-mask-batch",
+    "ffff",
+    "--cpu-strict",
+    "1",
+    "--cpu-strict-batch",
+    "1",
+    "/home/end0/AI/LocalAI/Models/Ternary-Bonsai-2.5-27B-PQ2_0-mtp.gguf",
+    "--serve",
+    "19197"
+  ],
+  "bonsai_env": {
+    "BONSAI_CUDA_IMAGE": "/home/end0/.codex/worktrees/multimodel-release-main/FrankenMoE-CUDA/build/bonsai-http-mtp-2106/pipeline.cubin",
+    "BONSAI_DECODE_DIRECT_HALF2": "1",
+    "BONSAI_DECODE_DIRECT_MMA": "1",
+    "BONSAI_DECODE_ORDERED_MERGE": "1",
+    "BONSAI_FFN_DOWN_Q8_FUSED": "1",
+    "BONSAI_FFN_Q8_FULL128": "1",
+    "BONSAI_FFN_Q8_PAIRLOAD": "1",
+    "BONSAI_FFN_Q8_PANEL": "1",
+    "BONSAI_FFN_Q8_PREFILL": "1",
+    "BONSAI_FFN_Q8_SPREAD": "1",
+    "BONSAI_FLASH_ASYNC": "1",
+    "BONSAI_FLASH_COMPACT": "1",
+    "BONSAI_FLASH_F32": "1",
+    "BONSAI_FLASH_FP8_PV": "1",
+    "BONSAI_FLASH_FP8_QK": "1",
+    "BONSAI_FLASH_ORDERED_MERGE": "1",
+    "BONSAI_FLASH_REUSE": "1",
+    "BONSAI_FROZEN_PTX": "/home/end0/.codex/worktrees/multimodel-release-main/FrankenMoE-CUDA/build/bonsai-cumulative-exp2105/cuda/frozen-goose.ptx",
+    "BONSAI_HTTP_DEVICE_CHOICE": "1",
+    "BONSAI_HTTP_FFN_GRAPH": "1",
+    "BONSAI_HTTP_HOST_SCAN": "1",
+    "BONSAI_HTTP_MTP_IMAGE": "/home/end0/.codex/worktrees/multimodel-release-main/FrankenMoE-CUDA/build/bonsai-http-mtp-2106/mtp.cubin",
+    "BONSAI_MMQ_HALF2_DOWN": "1",
+    "BONSAI_MMQ_HALF_ACC": "1",
+    "BONSAI_MMQ_HALF_FULL6144": "1",
+    "BONSAI_MMQ_HALF_FULL": "1"
+  },
+  "ambient": [
+    "name, driver_version, memory.free [MiB], clocks.current.sm [MHz], clocks.current.memory [MHz], temperature.gpu",
+    "NVIDIA GeForce RTX 4070, 580.178.04, 10059 MiB, 240 MHz, 810 MHz, 51"
+  ],
+  "affinity_observed": "0-31",
+  "mtp": {
+    "blocks": 141,
+    "draft_proposed": 423,
+    "draft_accepted": 369,
+    "acceptance": 0.8723404255319149,
+    "accepted_counts_per_block": {
+      "0": 5,
+      "1": 15,
+      "2": 9,
+      "3": 112
+    }
+  },
+  "correctness": {
+    "matched_prism_ids": 512,
+    "matched_prism_text": true,
+    "short_http_cases": {
+      "greedy": {
+        "matched_ids": 32,
+        "matched_content": true,
+        "probability_rows": 0,
+        "stop_type": "limit"
+      },
+      "reset": {
+        "matched_ids": 32,
+        "matched_content": true,
+        "probability_rows": 0,
+        "stop_type": "limit"
+      },
+      "eos": {
+        "matched_ids": 12,
+        "matched_content": true,
+        "probability_rows": 0,
+        "stop_type": "eos"
+      },
+      "probability": {
+        "matched_ids": 4,
+        "matched_content": true,
+        "probability_rows": 4,
+        "stop_type": "limit"
+      },
+      "stochastic": {
+        "matched_ids": 4,
+        "matched_content": true,
+        "probability_rows": 0,
+        "stop_type": "limit"
+      }
+    },
+    "short_observed_accepted_counts": [
+      0,
+      1,
+      2,
+      3
+    ]
+  },
+  "historical_exp2047": {
+    "prefill_tok_s": 618.1,
+    "effective_decode_tok_s": 72.12,
+    "combined_s": 60.099,
+    "draft_accepted": 365,
+    "draft_proposed": 435
+  },
+  "historical_exp2105_without_mtp": {
+    "prefill_tok_s": 1089.6705929641407,
+    "decode_tok_s": 38.917025601016476,
+    "client_s": 43.2667995,
+    "process_vram_after_mib": 8944
+  }
+}
