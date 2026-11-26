@@ -35,7 +35,16 @@ fn moe_normalize(p: const Node &, probs: const u8[:], ids: const u8[:], dst: u8[
     return true;
 }
 
+extern "fg_cuda_giga_dsa_top_wide" fn cuda_giga_dsa_top_wide(x: const u8[:], dst: u8[:], cells: i64, rows: i64) -> i64;
+
 fn routing_cuda(p: const Node &, x: const u8[:], y: const u8[:], dst: u8[:]) -> i64 {
+    if p.op == OP_TOP_K && p.ip[13] == 1 && p.nth == 1 && p.x.kind == 0 && p.d.kind == 26 &&
+        p.x.ne[0] > 4096 && p.d.ne[0] == 2048 && p.x.ne[1] == p.d.ne[1] &&
+        p.x.ne[2] == 1 && p.x.ne[3] == 1 && p.d.ne[2] == 1 && p.d.ne[3] == 1 &&
+        dense_scalar(p.x, 4) && dense_scalar(p.d, 4) && p.x.bytes <= x.len && p.d.bytes <= dst.len {
+        let wide = cuda_giga_dsa_top_wide(x[0..p.x.bytes],dst[0..p.d.bytes],p.x.ne[0],p.x.ne[1]);
+        if wide != 0 { return wide; }
+    }
     let kind = if p.op == OP_SOFT_MAX { 0 } else if p.op == OP_ARGSORT || p.op == OP_TOP_K { 1 }
         else if p.op == OP_GET_ROWS { 2 } else if p.op == OP_SUM_ROWS { 3 } else { -1 };
     if kind < 0 || p.nth != 1 || !cv_layout(p.x, x.len) || p.d.bytes <= 0 ||

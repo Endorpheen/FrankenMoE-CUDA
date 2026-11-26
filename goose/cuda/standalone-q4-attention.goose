@@ -700,3 +700,95 @@ export fn giga_dsa_score_shared_q(q: u64, k: u64, weights: u64, mask: u64, out: 
         if cell+3 < cells { attn_store(output + 12,score3+bias3); }
     }
 }
+
+extern "fg_dsa_top_shift" fn dsa_top_shift(value: u64, bits: i64) -> u64;
+extern "fg_dsa_top_bits" fn dsa_top_bits(x: u64, index: i64) -> u32;
+extern "fg_dsa_bins_clear" fn dsa_bins_clear(bins: u64, index: i64);
+extern "fg_dsa_bins_get" fn dsa_bins_get(bins: u64, index: i64) -> u32;
+extern "fg_dsa_bins_add" fn dsa_bins_add(bins: u64, index: i64) -> u32;
+extern "fg_dsa_top_put_key" fn dsa_top_put_key(keys: u64, index: i64, value: u64);
+extern "fg_dsa_top_get_key" fn dsa_top_get_key(keys: u64, index: i64) -> u64;
+extern "fg_dsa_top_store" fn dsa_top_store(out: u64, index: i64, value: u32);
+
+fn dsa_top_key(x: u64, source: i64, index: i64) -> u64 {
+    var bits = dsa_top_bits(x,source + index);
+    if bits & 0x7fffffff == 0 { bits = 0; }
+    let ordered = if bits & 0x80000000 != 0 { bits ^ 0xffffffff } else { bits ^ 0x80000000 };
+    return dsa_top_shift(ordered as u64,32) | (0xffffffff - index as u64);
+}
+
+export fn giga_dsa_top_wide(x: u64, out: u64, cells: i64, row: i64, lane: i64, bins: u64, keys: u64) {
+    let source = row * cells;
+    var prefix: u64 = 0;
+    var mask: u64 = 0;
+    var remaining: u32 = 2048;
+    var shift: i64 = 60;
+    while shift >= 0 {
+        if lane < 16 { dsa_bins_clear(bins,lane); }
+        mla_score_sync();
+        var i = lane;
+        while i < cells {
+            let key = dsa_top_key(x,source,i);
+            if key & mask == prefix {
+                let digit = ((key >> (shift as u64)) & 15) as i64;
+                let ignored = dsa_bins_add(bins,digit);
+            }
+            i += 256;
+        }
+        mla_score_sync();
+        var digit: i64 = 15;
+        while digit > 0 {
+            let size = dsa_bins_get(bins,digit);
+            if remaining <= size { break; }
+            remaining -= size;
+            digit -= 1;
+        }
+        prefix |= dsa_top_shift(digit as u64,shift);
+        mask |= dsa_top_shift(15,shift);
+        shift -= 4;
+        mla_score_sync();
+    }
+
+    if lane == 0 { dsa_bins_clear(bins,0); }
+    mla_score_sync();
+    var i = lane;
+    while i < cells {
+        let key = dsa_top_key(x,source,i);
+        if key >= prefix {
+            let place = dsa_bins_add(bins,0) as i64;
+            if place < 2048 { dsa_top_put_key(keys,place,key); }
+        }
+        i += 256;
+    }
+    mla_score_sync();
+
+    var window: i64 = 2;
+    while window <= 2048 {
+        var span = window / 2;
+        while span > 0 {
+            var j = lane;
+            while j < 2048 {
+                let partner = j ^ span;
+                if partner > j {
+                    let a = dsa_top_get_key(keys,j);
+                    let b = dsa_top_get_key(keys,partner);
+                    let descending = j & window == 0;
+                    if (descending && a < b) || (!descending && a > b) {
+                        dsa_top_put_key(keys,j,b);
+                        dsa_top_put_key(keys,partner,a);
+                    }
+                }
+                j += 256;
+            }
+            mla_score_sync();
+            span /= 2;
+        }
+        window *= 2;
+    }
+    var j = lane;
+    while j < 2048 {
+        let key = dsa_top_get_key(keys,j);
+        dsa_top_store(out,row*2048+j,0xffffffff - ((key & 0xffffffff) as u32));
+        j += 256;
+    }
+}

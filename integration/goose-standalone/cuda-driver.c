@@ -204,7 +204,7 @@ static struct {
     void * library;
     Context context;
     Module module;
-    Function kernel, attention_tiles, attention_merge, mla_attention_tiles, mla_attention_merge, mla_attention_pair, mla_attention_batch_pair, mla_attention_batch_merge, mla_mma_tile, dsa_score, dsa_shared_q, dsa_mask_clear, dsa_mask_scatter, gdn, gdn_decode, q4_rows, vector, vector_flat, vector_flat4, rms_reference;
+    Function kernel, attention_tiles, attention_merge, mla_attention_tiles, mla_attention_merge, mla_attention_pair, mla_attention_batch_pair, mla_attention_batch_merge, mla_mma_tile, dsa_score, dsa_shared_q, dsa_top_wide, dsa_mask_clear, dsa_mask_scatter, gdn, gdn_decode, q4_rows, vector, vector_flat, vector_flat4, rms_reference;
     Function mmq_pack, mmq_pack_shared, mmq_pack_glu, mmq_matrix, mmq_q4_matrix, mmq_q6_matrix;
     Function mmq_pack_k_major, mmq_q6_dense_half_k, mmq_q6_dense_pipeline;
     Function mmq_q4_dense_shared, mmq_q4_routed_shared;
@@ -1271,6 +1271,9 @@ static void load_cuda(void) {
                 (void) cuda.function_get(&cuda.mla_mma_tile, cuda.module, "goose_giga_mla_mma_tile");
         }
         if (error == 0) error = cuda.function_get(&cuda.dsa_score, cuda.module, "goose_dsa_score");
+        const char * dsa_top_wide_setting = getenv("GOOSE_GIGA_DSA_TOP_WIDE");
+        if (error == 0 && (!dsa_top_wide_setting || strcmp(dsa_top_wide_setting, "0") != 0))
+            (void) cuda.function_get(&cuda.dsa_top_wide, cuda.module, "goose_giga_dsa_top_wide");
         const char * dsa_shared_q_setting = getenv("GOOSE_GIGA_DSA_SHARED_Q");
         if (error == 0 && (!dsa_shared_q_setting || strcmp(dsa_shared_q_setting,"0") != 0))
             (void) cuda.function_get(&cuda.dsa_shared_q, cuda.module, "goose_giga_dsa_score_shared_q");
@@ -3654,6 +3657,24 @@ int64_t fg_cuda_giga_dsa_mask(sl_u8 mask, sl_u8 picks, sl_u8 out, int64_t cells,
     if (error == 0) error = activation_publish(host, out.len, output, false);
     if (finish_context() != 0 || error != 0) return -1;
     if (getenv("GOOSE_GRAPH_LOG")) fprintf(stderr, "GigaChat4 CUDA DSA mask rows=%" PRId64 " cells=%" PRId64 "\n", rows, cells);
+    return 1;
+}
+
+int64_t fg_cuda_giga_dsa_top_wide(sl_u8 scores, sl_u8 ids, int64_t cells, int64_t rows) {
+    if (!cuda.dsa_top_wide || !giga_small_expert_wave || rows < 128) return 0;
+    if (cells <= 4096 || cells > 1048576 || rows < 1 || rows > 4096 ||
+        scores.len != cells*rows*4 || ids.len != rows*2048*4) return -1;
+    const int active = start_context();
+    if (active != 1) return active;
+    DevicePtr input = 0, output = 0;
+    const uint64_t host = (uint64_t)(uintptr_t)ids.data;
+    int error = activation_output(host, ids.len, &output);
+    if (error == 0) error = activation_input(scores, &cuda.input, &input);
+    void *args[] = {&input,&output,&cells};
+    if (error == 0) error = cuda.launch(cuda.dsa_top_wide, (unsigned)rows, 1, 1, 256, 1, 1, 0, NULL, args, NULL);
+    if (error == 0) error = activation_publish(host, ids.len, output, false);
+    if (finish_context() != 0 || error != 0) return -1;
+    if (getenv("GOOSE_GRAPH_LOG")) fprintf(stderr, "GigaChat4 CUDA wide top-k: %" PRId64 "x%" PRId64 "\n",rows,cells);
     return 1;
 }
 

@@ -506,3 +506,22 @@ at 9207/9198 MiB after the request with no swap-out growth.
 Both fixtures reproduced all output token IDs. Full DSA key-ID
 captures matched byte for byte on both fixtures, including ordering.
 No 32K/512 or separate cross-architecture qualification is claimed.
+
+### EXP-2026-11-27-2157 — Rank wide DSA prefill rows on CUDA
+
+For GigaChat4 DSA batches with at least 128 query rows and width
+greater than 4096, a radix cutoff selects the exact 2048 keys using
+the same score and index ordering as the CPU heap. The selected
+keys are sorted before GPU mask construction. Smaller batches,
+including single-token decode, retain the previous route. Set
+GOOSE_GIGA_DSA_TOP_WIDE=0 to disable the new path.
+
+Three paired 6144/32 runs measured median prefill 286.49 to 313.72
+tokens/s and median decode 12.10 to 12.07 tokens/s. All runs
+returned the same 32 token IDs. Peak RSS differed by at most
+716 KiB within a pair; post-request VRAM ranged from 9197 to
+9221 MiB. Process swap and system swap-out growth stayed at zero.
+The default build measured 312.03/11.83 at 9233 MiB and matched
+all 32 IDs. A separate 4352/2 diagnostic matched the captured DSA
+key IDs byte for byte. No 32K/512 or cross-architecture inference
+qualification is claimed.

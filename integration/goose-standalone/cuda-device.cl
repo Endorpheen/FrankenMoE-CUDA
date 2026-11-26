@@ -251,7 +251,41 @@ static uint32_t fg_mla_pack_probability(float a, float b) {
     __asm__("cvt.rn.f16.f32 %0, %1;" : "=h"(hi) : "f"(b));
     return (uint32_t)lo | ((uint32_t)hi << 16);
 }
+static uint64_t fg_dsa_top_shift(uint64_t value, int64_t bits) { return value << bits; }
+static uint32_t fg_dsa_top_bits(uint64_t base, int64_t index) {
+    return ((__global const uint32_t *)base)[index];
+}
+static void fg_dsa_bins_clear(uint64_t base, int64_t index) {
+    ((__local uint32_t *)base)[index] = 0;
+}
+static uint32_t fg_dsa_bins_get(uint64_t base, int64_t index) {
+    return ((__local const uint32_t *)base)[index];
+}
+static uint32_t fg_dsa_bins_add(uint64_t base, int64_t index) {
+    uint32_t old;
+    __asm__ volatile("atom.shared.add.u32 %0, [%1], 1;" : "=r"(old) :
+        "r"((uint32_t)(base + 4*index)) : "memory");
+    return old;
+}
+static void fg_dsa_top_put_key(uint64_t base, int64_t index, uint64_t value) {
+    ((__local uint64_t *)base)[index] = value;
+}
+static uint64_t fg_dsa_top_get_key(uint64_t base, int64_t index) {
+    return ((__local const uint64_t *)base)[index];
+}
+static void fg_dsa_top_store(uint64_t base, int64_t index, uint32_t value) {
+    ((__global uint32_t *)base)[index] = value;
+}
 #include "q4-attention-device.h"
+__kernel void goose_giga_dsa_top_wide(__global const float *x, __global int32_t *out, int64_t cells) {
+    __local uint32_t bins[16];
+    __local uint64_t keys[2048];
+    uint32_t row, lane;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(row));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
+    giga_dsa_top_wide_g((uint64_t)x,(uint64_t)out,cells,row,lane,(uint64_t)bins,(uint64_t)keys);
+}
+
 __kernel void goose_giga_mla_mma_tile(__global const float *q, __global const uint16_t *k,
     __global const uint16_t *v, __global const uint16_t *mask, __global float *scratch,
     __global int64_t *cfg, float scale, int32_t query_base) {
