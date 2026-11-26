@@ -313,7 +313,7 @@ The local GGUF inventory confirms distinct requirements.
 | --- | --- | --- |
 | Qwen2.5-0.5B Q4_0 | Q4_0, Q8_0 | Experimental CLI and HTTP release |
 | Bonsai 2.5 27B | PQ2_0 trunk, Q4_0 KV | Experimental raw-ID and text CLI, serial HTTP completions, SSE and no-thinking ChatML. Short generation passes on Linux RTX 4070 and Windows EXE under Wine with RTX 4070. |
-| Apex 35B | Q4_K, Q6_K | Real-weight projection, embedding gather and first-layer router pass. Model graph, GDN wiring, expert execution and oversubscribed placement are open. |
+| Apex 35B | Q4_K, Q6_K | Real-weight projection, embedding gather and the first routed expert branch pass. Full model graph, GDN and attention wiring, the shared expert and long-context placement are open. |
 | Inkling-2-Mini | Q8_0, IQ4_NL, IQ4_XS | Real-weight projection and embedding gather pass. Model graph, relative/sliding attention, recurrent depth loops and grouped MoE are open. |
 
 ### Bonsai FFN component
@@ -554,8 +554,7 @@ Independent FP64 CPU calculations provide the expectation. All
 selected IDs matched and the maximum absolute weight error was
 1.49e-8 on Linux RTX 4070, Linux Lavapipe and Windows x64 under Wine
 with Lavapipe. The scale of 0.75 exercises the non-default weight
-scaling path. This is a router component test. Expert placement,
-evaluation and full-model generation remain open.
+scaling path. This is a router component test.
 
 ```bash
 tests=integration/goose-standalone/tests/vulkan
@@ -568,6 +567,35 @@ PYTHONPATH="$LLAMA_CPP/gguf-py" OPENBLAS_NUM_THREADS=1 \
 ```
 
 Fixture SHA-256 `5186da54c2968afd838722425b5cde8d08572ecf80b31fcc7081b79209622059`.
+
+### Apex routed expert execution
+
+The split expert path loads only the routed gate, up and down slices
+from the GGUF. It bounds-checks the offsets and route IDs, uploads one
+packed request to a reusable device buffer and executes the Q4_K gate
+and up projections, SwiGLU, the Q6_K down projection and the ordered
+weighted sum. The eight slots in the first-layer fixture hold
+16,318,464 bytes of weights before any device-specific padding.
+
+The fixture starts with a real token embedding and the layer's real
+post-attention RMS weights. It checks all eight IDs, rejects an
+out-of-range ID before upload, and compares all 2048 output floats
+with an independent CPU calculation. The maximum absolute error is
+9.32e-9 across Linux RTX 4070, Linux Lavapipe and Windows x64 under
+Wine with Lavapipe. This validates the routed branch of one layer.
+The shared expert, layer interconnect and full-model generation
+remain open. The initial transfer path is synchronous.
+
+```bash
+tests=integration/goose-standalone/tests/vulkan
+out=build/vulkan-bringup/apex-experts
+bash tools/build-goose-vulkan.sh "$out/linux" linux compute
+PYTHONPATH="$LLAMA_CPP/gguf-py" OPENBLAS_NUM_THREADS=1 \
+    python3 "$tests/apex-experts-fixture.py" "$APEX_GGUF" "$out/experts.bin"
+"$out/linux/frankenmoe-vulkan-compute-test" 0 0 --apex-experts "$APEX_GGUF" "$out/experts.bin"
+```
+
+Fixture SHA-256 `6811e231e40508ccce7adeef291982f4df74dea49207525019a659467ee32563`.
 
 ## Model order
 

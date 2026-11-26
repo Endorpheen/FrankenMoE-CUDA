@@ -14,6 +14,8 @@ layout(set = 0, binding = 0, std430) readonly buffer Input { float x[]; };
 #endif
 #if defined(QUANT_PROJECT) || defined(QUANT_GATHER)
 layout(set = 0, binding = 1, std430) readonly buffer Weights { uint packed[]; };
+#elif defined(OP_MOE_WEIGHTED)
+layout(set = 0, binding = 1, std430) readonly buffer Routes { uint routes[]; };
 #elif defined(OP_ATTENTION_Q4)
 layout(set = 0, binding = 1, std430) readonly buffer Keys { uint packed_keys[]; };
 #elif defined(OP_FWHT)
@@ -275,6 +277,18 @@ void main() {
         float scale = p.theta == 0.0 ? 1.0 : p.theta;
         routes[out_base + lane] = selected[lane];
         routes[out_base + p.rows + lane] = floatBitsToUint((picked[lane] / selected_sum) * scale);
+    }
+#elif defined(OP_MOE_WEIGHTED)
+    uint i = gl_GlobalInvocationID.x;
+    if (i < p.width * p.batch) {
+        uint token = i / p.width, column = i % p.width;
+        uint source = token * p.rows * p.width + column;
+        uint coefficients = token * (2u * p.rows) + p.rows;
+        precise float sum = 0.0;
+        for (uint slot = 0u; slot < p.rows; ++slot) {
+            sum += x[source + slot * p.width] * uintBitsToFloat(routes[coefficients + slot]);
+        }
+        y[i] = sum;
     }
 #elif defined(QUANT_GATHER)
     uint token = gl_WorkGroupID.x;

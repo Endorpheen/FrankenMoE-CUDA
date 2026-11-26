@@ -42,6 +42,7 @@ static const fg_vk_shader shaders[FG_VK_OP_COUNT] = {
     [FG_VK_ATTENTION_Q4] = { fg_attention_q4, sizeof(fg_attention_q4) },
     [FG_VK_F32_PROJECT] = { fg_f32_project, sizeof(fg_f32_project) },
     [FG_VK_MOE_ROUTE] = { fg_moe_route, sizeof(fg_moe_route) },
+    [FG_VK_MOE_WEIGHTED] = { fg_moe_weighted, sizeof(fg_moe_weighted) },
 };
 
 static VkResult create_pipeline(fg_vk_graph *graph, fg_vk_op op) {
@@ -235,6 +236,12 @@ static int record(fg_vk_graph *graph, fg_vk_op op, fg_vk_shape shape, fg_vk_view
         weight_bytes = 4;
         output_bytes = (uint64_t)shape.rows * shape.batch * 8;
         x = shape.batch;
+        break;
+    case FG_VK_MOE_WEIGHTED:
+        if (!shape.rows || shape.rows > 64 || elements * shape.rows > UINT32_MAX) return 0;
+        input_bytes = elements * shape.rows * 4;
+        weight_bytes = (uint64_t)shape.rows * shape.batch * 8;
+        x = (uint32_t)((elements + 63) / 64);
         break;
     case FG_VK_GATHER_Q4_0:
     case FG_VK_GATHER_Q4_K:
