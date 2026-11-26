@@ -1,0 +1,60 @@
+--- a/inkling-backend.c
++++ b/inkling-backend.c
+@@ -989,7 +989,11 @@
+         memcpy(d->ha, draft->saved_history, bytes);
+         return false;
+     }
+-    fg_cuda_inkling_expert_phase(true, position, count);
++    const char *lfu = getenv("I2_VERIFY_LFU");
++    const bool preserve_lfu = !lfu || strcmp(lfu, "0") != 0;
++    int64_t stats_before[6] = {0}, stats_after[6] = {0};
++    fg_cuda_expert_stats(ints(stats_before, 6));
++    fg_cuda_inkling_expert_phase(!preserve_lfu, position, count);
+     d->draft.count = count;
+     inkling_draft_verification(true);
+     prefill(d, draft->tokens, position, count, true);
+@@ -997,7 +1001,9 @@
+     draft->begin = position;
+     draft->used = 0;
+     ++draft->groups;
+-    fprintf(stderr, "Inkling speculation start position=%d count=%d\n", position, count);
++    fg_cuda_expert_stats(ints(stats_after, 6));
++    fprintf(stderr, "Inkling speculation start position=%d count=%d lfu=%d fills=%" PRId64 " h2d=%" PRId64 "\n",
++            position, count, preserve_lfu, stats_after[1] - stats_before[1], stats_after[3] - stats_before[3]);
+     return true;
+ }
+ 
+--- a/decode-lfu.h
++++ b/decode-lfu.h
+@@ -21,7 +21,7 @@
+     }
+     if (!enabled) return;
+     if (prefill && position == 0) memset(&i2_lfu, 0, sizeof i2_lfu);
+-    i2_lfu.active = !prefill && count == 1;
++    i2_lfu.active = !prefill && count > 0;
+     if (i2_lfu.active) {
+         static pthread_once_t init = PTHREAD_ONCE_INIT;
+         pthread_once(&init, i2_lfu_init_goose);
+@@ -54,9 +54,9 @@
+ int64_t fg_i2_lfu_victims(uint64_t address, int64_t slots, int64_t layer, sl_i64 seen,
+                           int64_t generation, sl_i64 victims) {
+     if (!address || slots <= 0 || slots > I2_LFU_KEYS || layer < 0 || layer >= I2_LFU_LAYERS ||
+-        !seen.data || seen.len != I2_LFU_EXPERTS || !victims.data || victims.len <= 0 || victims.len > 8) return -1;
++        !seen.data || seen.len != I2_LFU_EXPERTS || !victims.data || victims.len <= 0 || victims.len > I2_LFU_EXPERTS) return -1;
+     const int32_t *keys = (const int32_t *)(uintptr_t)address;
+-    uint64_t scores[8];
++    uint64_t scores[I2_LFU_EXPERTS];
+     int64_t count = 0;
+     for (int64_t slot = 0; slot < slots; ++slot) {
+         const int32_t key = keys[slot];
+--- a/lfu.goose
++++ b/lfu.goose
+@@ -152,7 +152,7 @@
+         a = a + 1;
+     }
+ 
+-    var victims: i64[8] = [-1; 8];
++    var victims: i64[128] = [-1; 128];
+     let misses = nu - n_hit;
+     if misses < 0 || misses > victims.len ||
+         (misses > 0 && lfu_victims(key_of, n_slots, il, seen, gen, victims[0 .. misses]) != misses) {
