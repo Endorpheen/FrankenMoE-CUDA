@@ -26,15 +26,20 @@ history at `4c4ad0aef:ROADMAP.md`. The
 
 - [Inkling performance evidence](docs/INKLING_PERFORMANCE.md) and supported
   launch settings are recorded with the multi-model checkpoints.
-- Bonsai work focuses on full prefill against the PrismML 32K/512 reference.
-  Preserve the measured exact MTP decode checkpoint while optimizing prefill.
-- [Vulkan backend roadmap](docs/roadmap/VULKAN-BACKEND.md) is a deferred design.
+- Model optimization is paused at the
+  [Bonsai CUDA handoff](experiments/EXP-2026-11-26-2109-bonsai-mtp-handoff/README.md).
+  Preserve the stable CUDA release and both experimental checkpoints.
+- Next is [AMD/Vulkan on Linux and Windows](docs/roadmap/VULKAN-BACKEND.md),
+  with CUDA regression checks and the shared Release Gate. Mark all
+  unverified AMD configurations experimental in the two release archives.
 
 ## Planned model after AMD/Vulkan
 
 [Surogate 3.7 35B-A3B](https://huggingface.co/surogate/Surogate3.7-35B-A3B)
-is a Qwen3.5 MoE derivative with an MTP head. The work order is Bonsai
-performance, AMD/Vulkan integration, then Surogate 3.7.
+is a Qwen3.5 MoE derivative with an MTP head. Keep this model deferred.
+After the AMD/Vulkan releases, pause FrankenMoE development until Igor
+resumes it. The next development priority is Fried Goose IR, compiler
+backend and machine-code generation.
 
 For the future integration audit, verify the GGUF metadata and tensor
 mapping, quantization support, and whether the chosen GGUF preserves

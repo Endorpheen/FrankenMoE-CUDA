@@ -1,0 +1,376 @@
+{
+  "exp2047": {
+    "arms": [
+      {
+        "blocks": 145,
+        "proposed": 435,
+        "accepted": 365,
+        "draft_ms": 1055.021,
+        "target_ms": 5889.491,
+        "catchup_ms": 106.093,
+        "prefill_ms": 52952.278,
+        "decode_ms": 7081.516,
+        "log_sha256": "b959999a4829590e5e40d51523f0e38945455e9d125b75ffa25c40b1b04a81c1",
+        "output_sha256": "70483689089dc411b2703c3e0a30dc67af94b09b4d34fc28fcfcac86da9e4956"
+      },
+      {
+        "blocks": 145,
+        "proposed": 435,
+        "accepted": 365,
+        "draft_ms": 1065.74,
+        "target_ms": 5882.517,
+        "catchup_ms": 108.819,
+        "prefill_ms": 53075.376,
+        "decode_ms": 7089.382,
+        "log_sha256": "f8cb2b119ec8717dbf584bd75649f2ab74ab8c8862ced7c8238d296485bf8530",
+        "output_sha256": "70483689089dc411b2703c3e0a30dc67af94b09b4d34fc28fcfcac86da9e4956"
+      }
+    ],
+    "ids_matching_http": 512,
+    "raw_cuda_trace_available": false,
+    "mean_target_host_ms_per_block": 40.59313103448276
+  },
+  "exp2106_diagnostic": {
+    "trace_sha256": "fafae069c4410dfbe6eb3cb11de36fbbd1d6a03b57761cc1efefeb075dffee00",
+    "sqlite_sha256": "be2361d88d1e089b4f3ed0962e6cc284e549d00ab6cd9994410341bfc940118e",
+    "request_sha256": "1f62448c0a6d29a776f76df4f24d0ca162c7a5d10774f879d94f859ac3e81ecb",
+    "timings": {
+      "cache_n": 0,
+      "prompt_n": 32768,
+      "prompt_ms": 32751.837670977693,
+      "prompt_per_token_ms": 0.9995067648613798,
+      "prompt_per_second": 1000.4934785395761,
+      "predicted_n": 512,
+      "predicted_ms": 7112.768846040126,
+      "predicted_per_token_ms": 13.919312810254649,
+      "predicted_per_second": 71.842627120448
+    },
+    "verifier_blocks": 141,
+    "proposed": 423,
+    "accepted": 369,
+    "verifier_readback_window_sum_ms": 6064.937073,
+    "graph_nodes": {
+      "four_row_verifier": 0,
+      "draft_or_repair": 0,
+      "ordinary_tail": 640
+    },
+    "kernel_phases": {
+      "four_row_verifier": {
+        "bonsai_mvq_4_permutation_4": {
+          "launches": 51888,
+          "ns": 2406732694,
+          "graph_nodes": 0
+        },
+        "bonsai_decode_direct_q4_mma_half2": {
+          "launches": 9024,
+          "ns": 2330385631,
+          "graph_nodes": 0
+        },
+        "goose_gdn_decode": {
+          "launches": 27072,
+          "ns": 192737015,
+          "graph_nodes": 0
+        },
+        "bonsai_pq2_matvec_ordered": {
+          "launches": 18048,
+          "ns": 173192622,
+          "graph_nodes": 0
+        },
+        "bonsai_decay_stage_256_0": {
+          "launches": 27072,
+          "ns": 123839829,
+          "graph_nodes": 0
+        },
+        "bonsai_verify_merge_parallel": {
+          "launches": 9024,
+          "ns": 112121170,
+          "graph_nodes": 0
+        },
+        "bonsai_fwht1024": {
+          "launches": 36378,
+          "ns": 107745786,
+          "graph_nodes": 0
+        },
+        "bonsai_mvq_4_permutation_2": {
+          "launches": 141,
+          "ns": 105089367,
+          "graph_nodes": 0
+        },
+        "bonsai_norm_wide_512_1": {
+          "launches": 18189,
+          "ns": 91602031,
+          "graph_nodes": 0
+        },
+        "bonsai_norm": {
+          "launches": 18048,
+          "ns": 43220070,
+          "graph_nodes": 0
+        },
+        "bonsai_mv_pack_q8": {
+          "launches": 36237,
+          "ns": 42312629,
+          "graph_nodes": 0
+        },
+        "goose_rope_decode": {
+          "launches": 18048,
+          "ns": 38070619,
+          "graph_nodes": 0
+        },
+        "bonsai_residual": {
+          "launches": 18048,
+          "ns": 21431179,
+          "graph_nodes": 0
+        },
+        "goose_set_q4_rows": {
+          "launches": 4512,
+          "ns": 18408906,
+          "graph_nodes": 0
+        },
+        "bonsai_conv_verify_prefix_four": {
+          "launches": 6768,
+          "ns": 16180139,
+          "graph_nodes": 0
+        },
+        "bonsai_swiglu": {
+          "launches": 9024,
+          "ns": 13562885,
+          "graph_nodes": 0
+        },
+        "bonsai_attention_gate": {
+          "launches": 2256,
+          "ns": 3766301,
+          "graph_nodes": 0
+        },
+        "bonsai_split_q_gate": {
+          "launches": 2256,
+          "ns": 2448209,
+          "graph_nodes": 0
+        },
+        "bonsai_choice_tiles": {
+          "launches": 141,
+          "ns": 1665367,
+          "graph_nodes": 0
+        },
+        "bonsai_choice_final": {
+          "launches": 141,
+          "ns": 207834,
+          "graph_nodes": 0
+        },
+        "bonsai_embed_batch": {
+          "launches": 141,
+          "ns": 185222,
+          "graph_nodes": 0
+        }
+      },
+      "draft_or_repair": {
+        "bonsai_mtp_mat_q4": {
+          "launches": 3695,
+          "ns": 353672448,
+          "graph_nodes": 0
+        },
+        "bonsai_pq2_mvq_q8_1": {
+          "launches": 423,
+          "ns": 314891229,
+          "graph_nodes": 0
+        },
+        "bonsai_mtp_eh_q4": {
+          "launches": 790,
+          "ns": 135803187,
+          "graph_nodes": 0
+        },
+        "bonsai_decode_direct_q4_mma_half2": {
+          "launches": 423,
+          "ns": 104700186,
+          "graph_nodes": 0
+        },
+        "bonsai_norm_wide_512_1": {
+          "launches": 3216,
+          "ns": 15440269,
+          "graph_nodes": 0
+        },
+        "bonsai_verify_merge_parallel": {
+          "launches": 423,
+          "ns": 4864594,
+          "graph_nodes": 0
+        },
+        "goose_set_q4_rows": {
+          "launches": 1580,
+          "ns": 4729330,
+          "graph_nodes": 0
+        },
+        "bonsai_norm": {
+          "launches": 1213,
+          "ns": 3874061,
+          "graph_nodes": 0
+        },
+        "bonsai_fwht1024": {
+          "launches": 1213,
+          "ns": 3663559,
+          "graph_nodes": 0
+        },
+        "goose_rope_decode": {
+          "launches": 1213,
+          "ns": 3009249,
+          "graph_nodes": 0
+        },
+        "bonsai_choice_tiles": {
+          "launches": 423,
+          "ns": 2058148,
+          "graph_nodes": 0
+        },
+        "bonsai_residual": {
+          "launches": 846,
+          "ns": 1061307,
+          "graph_nodes": 0
+        },
+        "bonsai_pq2_row": {
+          "launches": 790,
+          "ns": 856555,
+          "graph_nodes": 0
+        },
+        "bonsai_swiglu": {
+          "launches": 423,
+          "ns": 785731,
+          "graph_nodes": 0
+        },
+        "bonsai_choice_final": {
+          "launches": 423,
+          "ns": 626527,
+          "graph_nodes": 0
+        },
+        "bonsai_attention_gate": {
+          "launches": 423,
+          "ns": 552292,
+          "graph_nodes": 0
+        },
+        "bonsai_split_q_gate": {
+          "launches": 423,
+          "ns": 528867,
+          "graph_nodes": 0
+        },
+        "bonsai_mv_pack_q8": {
+          "launches": 423,
+          "ns": 421123,
+          "graph_nodes": 0
+        }
+      },
+      "ordinary_tail": {
+        "bonsai_pq2_mvq_q8_2": {
+          "launches": 368,
+          "ns": 16205512,
+          "graph_nodes": 192
+        },
+        "bonsai_decode_direct_q4_mma_half2": {
+          "launches": 16,
+          "ns": 3963383,
+          "graph_nodes": 0
+        },
+        "bonsai_fwht1024": {
+          "launches": 261,
+          "ns": 742161,
+          "graph_nodes": 128
+        },
+        "bonsai_norm_wide_512_1": {
+          "launches": 138,
+          "ns": 737414,
+          "graph_nodes": 64
+        },
+        "bonsai_pq2_mvq_q8_1": {
+          "launches": 1,
+          "ns": 721162,
+          "graph_nodes": 0
+        },
+        "bonsai_pq2_matvec_ordered": {
+          "launches": 32,
+          "ns": 695014,
+          "graph_nodes": 0
+        },
+        "goose_gdn_decode": {
+          "launches": 48,
+          "ns": 469636,
+          "graph_nodes": 0
+        },
+        "bonsai_mtp_eh_q4": {
+          "launches": 3,
+          "ns": 414567,
+          "graph_nodes": 0
+        },
+        "bonsai_decay_stage_256_0": {
+          "launches": 48,
+          "ns": 312355,
+          "graph_nodes": 0
+        },
+        "bonsai_norm": {
+          "launches": 131,
+          "ns": 305411,
+          "graph_nodes": 0
+        },
+        "bonsai_mv_pack_q8": {
+          "launches": 257,
+          "ns": 247940,
+          "graph_nodes": 128
+        },
+        "bonsai_verify_merge_parallel": {
+          "launches": 16,
+          "ns": 192737,
+          "graph_nodes": 0
+        },
+        "bonsai_residual": {
+          "launches": 128,
+          "ns": 138851,
+          "graph_nodes": 64
+        },
+        "goose_set_q4_rows": {
+          "launches": 38,
+          "ns": 112100,
+          "graph_nodes": 0
+        },
+        "bonsai_mtp_mat_q4": {
+          "launches": 6,
+          "ns": 90241,
+          "graph_nodes": 0
+        },
+        "goose_rope_decode": {
+          "launches": 35,
+          "ns": 87390,
+          "graph_nodes": 0
+        },
+        "bonsai_conv_step": {
+          "launches": 48,
+          "ns": 86527,
+          "graph_nodes": 0
+        },
+        "bonsai_swiglu": {
+          "launches": 64,
+          "ns": 74857,
+          "graph_nodes": 64
+        },
+        "bonsai_attention_gate": {
+          "launches": 16,
+          "ns": 21792,
+          "graph_nodes": 0
+        },
+        "bonsai_split_q_gate": {
+          "launches": 16,
+          "ns": 15743,
+          "graph_nodes": 0
+        },
+        "bonsai_choice_tiles": {
+          "launches": 1,
+          "ns": 4800,
+          "graph_nodes": 0
+        },
+        "bonsai_pq2_row": {
+          "launches": 4,
+          "ns": 4224,
+          "graph_nodes": 0
+        },
+        "bonsai_choice_final": {
+          "launches": 1,
+          "ns": 1536,
+          "graph_nodes": 0
+        }
+      }
+    }
+  }
+}

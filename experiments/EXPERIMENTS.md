@@ -1287,6 +1287,19 @@ release still needs the architecture regression gates.
   and EXP-2107. No full inference run.
   [Component results and reproduction](EXP-2026-11-26-2108-bonsai-pq2-tile-order/README.md).
 
+### EXP-2026-11-26-2109 — Close the Bonsai CUDA optimization stage
+
+- **Offline diagnostic.** EXP-2047 CLI 72.12 versus EXP-2106 HTTP
+  72.40 effective MTP decode tok/s, with all 512 output IDs matching.
+  Graph replay is limited to the single-token tail. Four-row
+  verification retains EXP-2047's batched PQ2 and uses the newer
+  direct Attention independently per verified query. GPU greedy
+  choice was already active in EXP-2047.
+- **Preserved checkpoints:** EXP-2049 stable, EXP-2105 ordinary
+  experimental and EXP-2107 MTP experimental. Verify all recorded
+  executable and CUDA image hashes without rebuilding.
+  [Attribution, limitations and open work](EXP-2026-11-26-2109-bonsai-mtp-handoff/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
