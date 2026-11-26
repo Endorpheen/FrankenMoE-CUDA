@@ -1,0 +1,239 @@
+--- a/cuda-driver.reference.merged.c
++++ b/cuda-driver.reference.merged.c
+@@ -1969,9 +1969,11 @@
+ }
+ 
+ static _Thread_local uint64_t inkling_moe_resident_host;
++static _Thread_local DevicePtr inkling_moe_output_slot, inkling_moe_current;
+ 
+-void inkling_moe_retain_output(float *host) {
++void inkling_moe_retain_output(float *host, uint64_t device) {
+     inkling_moe_resident_host = (uint64_t)(uintptr_t)host;
++    inkling_moe_output_slot = device;
+ }
+ 
+ bool inkling_arena_depthmix(const float *host_input, const float *host_next,
+@@ -1995,12 +1997,12 @@
+     const bool boundary = pre_attention && save_history;
+     DevicePtr normalized = boundary ? raw + rows * (size_t)plane_bytes :
+                            (pre_attention ? next : i2_attention_scratch);
+-    DevicePtr saved_current = raw + 3 * (size_t)plane_bytes;
++    DevicePtr saved_current = inkling_moe_current;
+     DevicePtr residual_input = host_input ? normalized + plane_bytes : saved_current;
+     DevicePtr current = pre_attention && !host_input ? saved_current : next;
+     const size_t required = 6 * (size_t)plane_bytes + 4 * sizeof(DevicePtr) +
+         (6 * batch + width) * sizeof(float);
+-    int status = (!boundary || rows < 4) && cuda.activations.bytes - split >= required && normalized &&
++    int status = (host_input || saved_current) && (!boundary || rows < 4) && cuda.activations.bytes - split >= required && normalized &&
+         (pre_attention || (i2_residual_host == (uint64_t)(uintptr_t)host_next &&
+                            i2_residual_device == next)) ? 0 : -1;
+     if (!status && !module) status = cuda.module_load(&module, i2_lazy_prelude_image);
+@@ -2036,14 +2038,14 @@
+     return !status && !popped;
+ }
+ 
+-bool inkling_arena_boundary_read(float *output, bool last_only) {
++bool inkling_arena_boundary_read(float *output, int index, bool last_only) {
+     enum { row_bytes = 2304 * sizeof(float), rows = 4096, plane_bytes = rows * row_bytes };
+     if (!i2_arena_probe.active || start_context() != 1) return false;
+     const size_t split = activation_usable_bytes();
+-    const DevicePtr plane = cuda.activations.address + split + 2 * (size_t)plane_bytes;
++    const DevicePtr plane = cuda.activations.address + split + index * (size_t)plane_bytes;
+     const size_t offset = last_only ? (rows - 1) * (size_t)row_bytes : 0;
+     const size_t bytes = last_only ? row_bytes : plane_bytes;
+-    const int status = cuda.activations.bytes - split < 3 * (size_t)plane_bytes ? -1 :
++    const int status = index < 0 || index >= 4 || cuda.activations.bytes - split < (index + 1) * (size_t)plane_bytes ? -1 :
+                        cuda.download(output, plane + offset, bytes);
+     const int popped = finish_context();
+     return !status && !popped;
+@@ -2061,7 +2063,7 @@
+ } i2_device_loop;
+ 
+ bool inkling_loop_save(uint64_t storage, const float *previous) {
+-    if (!storage || !previous || !i2_arena_probe.active || start_context() != 1) return false;
++    if (!storage || (!previous && !inkling_moe_current) || !i2_arena_probe.active || start_context() != 1) return false;
+     static Module module;
+     static Function prepare;
+     const size_t split = activation_usable_bytes();
+@@ -2070,12 +2072,13 @@
+     DevicePtr scratch = storage + 2 * (size_t)i2_loop_plane;
+     DevicePtr scale = cuda.activations.address + split + 6 * (size_t)i2_loop_plane;
+     int add = 0;
+-    void *args[] = {&current, &current, &scratch, &current, &scale, &add};
++    DevicePtr previous_device = previous ? current : inkling_moe_current;
++    void *args[] = {&previous_device, &previous_device, &scratch, &current, &scale, &add};
+     int error = cuda.activations.bytes - split < 6 * (size_t)i2_loop_plane + i2_loop_batch * sizeof(float) ? -1 : 0;
+     if (!error && !module) error = cuda.module_load(&module, i2_lazy_prelude_image);
+     if (!error && !prepare) error = cuda.function_get(&prepare, module, "i2_lazy_prepare");
+     if (!error) error = cuda.copy_device(storage, source, i2_loop_plane);
+-    if (!error) error = cuda.upload(current, previous, i2_loop_plane);
++    if (!error && previous) error = cuda.upload(current, previous, i2_loop_plane);
+     if (!error) error = cuda.launch(prepare, i2_loop_batch, 1, 1, 128, 1, 1, 0, NULL, args, NULL);
+     if (!error) error = cuda.sync();
+     const int popped = finish_context();
+--- a/native-kv-driver.h
++++ b/native-kv-driver.h
+@@ -266,7 +266,8 @@
+         const uint64_t host = (uint64_t)(uintptr_t)src->input[i];
+         if (graph) input[i] = activation_device(host, row_input);
+         if (!input[i]) {
+-            if (i2_device_loop.storage && nk.projected_input.address == i2_device_loop.storage) {
++            if ((i2_device_loop.storage && nk.projected_input.address == i2_device_loop.storage) ||
++                (inkling_moe_current && nk.projected_input.address == inkling_moe_current)) {
+                 fputs("Inkling loop storage conflicts with attention input staging\n", stderr);
+                 return -1;
+             }
+--- a/inkling-backend.c
++++ b/inkling-backend.c
+@@ -129,9 +129,9 @@
+ extern unsigned inkling_arena_depthmix_close(void);
+ extern unsigned inkling_arena_depthmix_reads(void);
+ extern void inkling_arena_residual_open(float *host);
+-extern void inkling_moe_retain_output(float *host);
++extern void inkling_moe_retain_output(float *host, uint64_t device);
+ extern uint64_t inkling_prefill_full_scratch(size_t bytes);
+-extern bool inkling_arena_boundary_read(float *output, bool last_only);
++extern bool inkling_arena_boundary_read(float *output, int index, bool last_only);
+ extern uint64_t inkling_loop_storage(void);
+ extern bool inkling_loop_save(uint64_t storage, const float *previous);
+ extern void inkling_loop_bind(const float *queries, const float *q, const float *k,
+--- a/moe-epilogue-driver.h
++++ b/moe-epilogue-driver.h
+@@ -38,7 +38,8 @@
+     if (!error && retain_output) {
+         const size_t split = activation_usable_bytes();
+         if (cuda.activations.bytes - split < 6 * (size_t)output.len) error = -1;
+-        else dst = cuda.activations.address + split + 3 * (size_t)output.len;
++        else dst = inkling_moe_output_slot ? inkling_moe_output_slot :
++                   cuda.activations.address + split + 3 * (size_t)output.len;
+     } else if (!error) {
+         error = activation_output_for_input(host, output.len, &dst, input, NULL);
+     }
+@@ -47,7 +48,10 @@
+     void *args[] = {&src, &res, &coefficient, &history, &dst, &rows};
+     if (!error) error = cuda.launch(kernel, width / 128, 1, 1, 128, 1, 1, 0, NULL, args, NULL);
+     if (!error && !retain_output) error = activation_publish(host, output.len, dst, false);
+-    if (!error) state->length = position + rows;
++    if (!error) {
++        inkling_moe_current = retain_output ? dst : 0;
++        state->length = position + rows;
++    }
+     const int popped = finish_context();
+     if (!error && !popped) return 1;
+     fprintf(stderr, "Goose CUDA Inkling MoE epilogue: slot=%d position=%d error=%d context=%d\n",
+--- a/prefill.h
++++ b/prefill.h
+@@ -244,7 +244,8 @@
+ 
+ static void prefill_layer(struct decoder *d, struct prefill_token *tokens, struct prefill_workspace *scratch,
+                           int count, int begin, const int64_t *visit, struct i2_prefill_team *team,
+-                          bool *device_current, bool retain_current, bool *boundary_history, bool device_loop) {
++                          bool *device_current, bool retain_current, uint64_t output_slot,
++                          bool *boundary_history, bool *tail_history, bool device_loop) {
+     const int layer = (int)visit[0], slot = (int)visit[1], pass = (int)visit[2];
+     const bool sliding = visit[3] != 0;
+     const int64_t *core = d->core + 10 * layer;
+@@ -268,12 +269,13 @@
+     setup.device_attention_mix = device_attention_mix;
+     setup.device_current = *device_current;
+     setup.device_loop = device_loop;
+-    const bool device_boundary = *device_current && layer == 12;
++    const bool device_boundary = *device_current && (layer == 12 || layer == 18);
+     setup.device_boundary = device_boundary;
+-    assert(!*device_current || (device_attention_mix && (layer % 6 != 0 || device_boundary) && layer < 18));
++    assert(!*device_current || (device_attention_mix && (layer % 6 != 0 || device_boundary)));
+     if (device_boundary) {
+-        assert(tokens[0].count == 2);
+-        *boundary_history = true;
++        assert(tokens[0].count == layer / 6);
++        if (layer == 12) *boundary_history = true;
++        else *tail_history = true;
+         fprintf(stderr, "Inkling resident block history begin=%d layer=%d pass=%d\n", begin, layer, pass);
+     }
+     retain_current = retain_current && direct_depthmix && (!mix_setting || strcmp(mix_setting, "0") != 0);
+@@ -432,10 +434,10 @@
+             if (device_loop) inkling_loop_bind(coefficients(d, aux[17], 4 * model_width).data,
+                                                 NULL, NULL, NULL, messages);
+         }
+-        if (retain_current) inkling_moe_retain_output(scratch->linear[0]);
++        if (retain_current) inkling_moe_retain_output(scratch->linear[0], output_slot);
+         moe_resident(d, core, aux, slot, begin, count, scratch->ff[0], messages,
+                      scratch->residual[0], scratch->linear[0]);
+-        inkling_moe_retain_output(NULL);
++        inkling_moe_retain_output(NULL, 0);
+         if (device_loop) {
+             assert(inkling_loop_generated() == 8);
+             inkling_loop_bind(NULL, NULL, NULL, NULL, NULL);
+@@ -523,7 +525,7 @@
+         if (prefill_team_open(&team, tasks, true)) workers = &team;
+     }
+     inkling_arena_window(count == 4096, begin);
+-    bool device_current = false, boundary_history = false;
++    bool device_current = false, boundary_history = false, tail_history = false;
+     bool device_loop = false;
+     const char *loop_setting = getenv("I2_DEVICE_LOOP_MESSAGES");
+     const bool loop_enabled = !loop_setting || strcmp(loop_setting, "0") != 0;
+@@ -536,38 +538,53 @@
+     const char *keep = getenv("I2_RETAIN_PREFILL_MOE");
+     const char *full = getenv("I2_FULL_DEVICE_DEPTHMIX");
+     const bool use_full = !full || strcmp(full, "0") != 0;
++    const char *extend_setting = getenv("I2_DEVICE_REWIND_TAIL");
++    const bool extend = (!extend_setting || strcmp(extend_setting, "0") != 0) && boundary_enabled && loop_enabled;
+     for (int i = 0; i < logical; ++i) {
+         const int64_t *current = d->visits + i * 4;
+         const int64_t *next = i + 1 < logical ? current + 4 : NULL;
+-        const bool retain = (!keep || strcmp(keep, "0") != 0) && count == 4096 &&
+-            current[0] < 18 && next && next[0] < 18 && (next[0] % 6 != 0 || (boundary_enabled && next[0] == 12)) && (next[3] || use_full) &&
+-            d->aux[next[0] * 30 + 10] >= 0;
++        const bool rewind = next && next[0] == 6 && next[2] > 0;
++        const bool tail = next && next[0] >= 18;
++        const bool ordinary = current[0] < 18 && next && next[0] < 18 &&
++            (next[0] % 6 != 0 || (boundary_enabled && next[0] == 12));
++        const bool retain = (!keep || strcmp(keep, "0") != 0) && count == 4096 && next &&
++            (ordinary || (extend && ((rewind && boundary_history) || tail))) &&
++            (next[3] || use_full) && d->aux[next[0] * 30 + 10] >= 0;
++        const uint64_t output_slot = retain && tail ? inkling_loop_storage() : 0;
++        assert(!retain || !tail || output_slot);
+         if (current[2] < 0 && device_loop) {
+             inkling_loop_release();
+             device_loop = false;
+         }
+         if (boundary_history && current[0] == 6 && current[2] > 0) {
+             if (loop_enabled) {
+-                assert(!device_current);
+-                for (int t = 0; t < count; ++t)
+-                    memcpy(scratch->inputs[0][t], tokens[t].current, sizeof tokens[t].current);
+-                assert(inkling_loop_save(inkling_loop_storage(), scratch->inputs[0][0]));
++                if (!device_current) {
++                    for (int t = 0; t < count; ++t)
++                        memcpy(scratch->inputs[0][t], tokens[t].current, sizeof tokens[t].current);
++                }
++                assert(inkling_loop_save(inkling_loop_storage(), device_current ? NULL : scratch->inputs[0][0]));
++                if (device_current) {
++                    fprintf(stderr, "Inkling resident rewind begin=%d pass=%d\n", begin, (int)current[2]);
++                    device_current = false;
++                }
+                 device_loop = true;
+             } else {
+-                assert(inkling_arena_boundary_read(scratch->inputs[0][0], false));
++                assert(inkling_arena_boundary_read(scratch->inputs[0][0], 2, false));
+                 for (int t = 0; t < count; ++t)
+                     memcpy(tokens[t].blocks + 2 * model_width, scratch->inputs[0][t], sizeof tokens[t].current);
+             }
+             boundary_history = false;
+         }
+         prefill_layer(d, tokens, scratch, count, begin, current, workers,
+-                      &device_current, retain, &boundary_history, device_loop);
++                      &device_current, retain, output_slot, &boundary_history, &tail_history, device_loop);
+         if (begin == 4096 && count > 1 && getenv("I2_DRAFT_PARITY"))
+             check_state(count == 1 ? "draft-single-visit" : "draft-batch-visit", i,
+                         tokens[1].current, model_width);
+     }
+     if (boundary_history && need_logits)
+-        assert(inkling_arena_boundary_read(tokens[count - 1].blocks + 2 * model_width, true));
++        assert(inkling_arena_boundary_read(tokens[count - 1].blocks + 2 * model_width, 2, true));
++    if (tail_history && need_logits)
++        assert(inkling_arena_boundary_read(tokens[count - 1].blocks + 3 * model_width, 3, true));
+     inkling_arena_window(false, begin);
+     if (workers) prefill_team_close(workers);
+     for (int t = 0; t < count; ++t) {
