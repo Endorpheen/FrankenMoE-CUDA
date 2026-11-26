@@ -1,0 +1,67 @@
+{
+  "readback_intervals": {
+    "api_entry_to_choice_end": {
+      "count": 511,
+      "total_ns": 8690221083,
+      "median_ns": 16966523,
+      "max_ns": 20505124
+    },
+    "choice_end_to_copy_start": {
+      "count": 511,
+      "total_ns": 2262011,
+      "median_ns": 4640,
+      "max_ns": 8352
+    },
+    "copy_service": {
+      "count": 511,
+      "total_ns": 528076,
+      "median_ns": 896,
+      "max_ns": 4736
+    },
+    "copy_end_to_api_return": {
+      "count": 511,
+      "total_ns": 3293311,
+      "median_ns": 5203,
+      "max_ns": 22248
+    }
+  },
+  "gap_durations_ns": {
+    "before_late_host_api_entry": 6688793,
+    "host_api_started_after_gap_start": 54304351,
+    "host_api_spans_gap_start": 20494630,
+    "host_api_returned_before_gap": 649049922
+  },
+  "gap_counts": {
+    "host_api_started_after_gap_start": 597,
+    "host_api_spans_gap_start": 1903,
+    "host_api_returned_before_gap": 837073
+  },
+  "largest_transitions_gap_ns": {
+    "bonsai_fwht1024 -> bonsai_mv_pack_q8": 100170336,
+    "bonsai_mv_pack_q8 -> bonsai_pq2_mvq_q8_2": 84819365,
+    "bonsai_pq2_mvq_q8_2 -> bonsai_residual": 57463729,
+    "bonsai_norm_wide_512_1 -> bonsai_fwht1024": 53956932,
+    "copy_2 -> copy_1": 51800002,
+    "bonsai_pq2_mvq_q8_2 -> bonsai_pq2_mvq_q8_2": 48859361,
+    "bonsai_residual -> bonsai_norm_wide_512_1": 42887791,
+    "bonsai_pq2_mvq_q8_2 -> bonsai_swiglu": 32112479,
+    "goose_gdn_decode -> bonsai_norm": 23586936,
+    "bonsai_decay_stage_256_0 -> bonsai_conv_step": 23364920,
+    "bonsai_pq2_mvq_q8_2 -> bonsai_decay_stage_256_0": 21572982,
+    "bonsai_swiglu -> bonsai_fwht1024": 20854352,
+    "bonsai_norm -> bonsai_fwht1024": 20633203,
+    "bonsai_norm -> goose_gdn_decode": 16669683,
+    "bonsai_conv_step -> bonsai_norm": 15802679,
+    "copy_1 -> copy_1": 13024484,
+    "bonsai_pq2_matvec_ordered -> bonsai_pq2_matvec_ordered": 7328524,
+    "bonsai_norm -> goose_rope_decode": 7133315,
+    "goose_rope_decode -> goose_set_q4_rows": 7124668,
+    "bonsai_attention_gate -> bonsai_fwht1024": 6861041
+  },
+  "largest_next_ops_by_gap_before_late_api_ns": {
+    "copy_1": 6636993,
+    "bonsai_fwht1024": 35180,
+    "bonsai_pq2_row": 16235,
+    "bonsai_pq2_mvq_q8_2": 385
+  }
+}

@@ -1221,6 +1221,17 @@ release still needs the architecture regression gates.
   No measured gain. Keep the cumulative EXP-2101 route.
   [Full measurement and reproduction](EXP-2026-11-26-2102-bonsai-direct-host-logits/README.md).
 
+### EXP-2026-11-26-2103 — Host and queue audit of accumulated Bonsai decode
+
+- **Diagnostic.** Cold EXP-2101, CPU samples and CUDA events,
+  512 output IDs and text match. No runtime or kernel changes.
+- **Evidence:** 724 ms of decode GPU gaps. Next operation's host
+  API already returned for 649 ms. Only 6.69 ms lies before a
+  late next host API, and result transfer plus host return takes
+  6.08 ms total after the final choice kernels. No remaining major
+  application CPU loop established in default greedy decode.
+  [Host sampling and queue attribution](EXP-2026-11-26-2103-bonsai-combined-host-audit/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.

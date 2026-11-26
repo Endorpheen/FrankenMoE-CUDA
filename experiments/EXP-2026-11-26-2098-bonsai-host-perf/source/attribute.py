@@ -148,6 +148,7 @@ def digest(path):
 
 def main():
     directory = Path(sys.argv[1])
+    device_choice = sys.argv[2:] == ["--device-choice"]
     clocks = [json.loads((directory / f"clock-{name}.json").read_text()) for name in ("before","after")]
     offsets = [c["utc_ns"] - c["monotonic_ns"] for c in clocks]
     assert abs(offsets[0]-offsets[1]) < GUARD_NS
@@ -158,7 +159,12 @@ def main():
         copies = db.execute("""SELECT start,end,copyKind,bytes FROM CUPTI_ACTIVITY_KIND_MEMCPY
                                WHERE start >= ? AND end <= ? ORDER BY start""",(start,end)).fetchall()
         readbacks = [hi for _,hi,kind,size in copies if kind==2 and size==993280]
-        assert len(readbacks)==512
+        if device_choice:
+            choices = [(lo,hi) for lo,hi,kind,size in copies if kind==2 and size==12]
+            assert len(readbacks)==1 and len(choices)==511 and readbacks[0]<=choices[0][0]
+            readbacks.extend(hi for _,hi in choices)
+        else:
+            assert len(readbacks)==512
         active = [row[:2] for row in copies]
         for table in ("CUPTI_ACTIVITY_KIND_KERNEL","CUPTI_ACTIVITY_KIND_MEMSET"):
             active.extend(db.execute(f"SELECT start,end FROM {table} WHERE start >= ? AND end <= ?",(start,end)))

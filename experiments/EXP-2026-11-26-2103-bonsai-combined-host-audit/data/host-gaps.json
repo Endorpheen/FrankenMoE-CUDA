@@ -1,0 +1,173 @@
+{
+  "clock_calibration": [
+    {
+      "monotonic_ns": 293615527451615,
+      "utc_ns": 1795654398385557907,
+      "uncertainty_ns": 90
+    },
+    {
+      "monotonic_ns": 293660705930571,
+      "utc_ns": 1795654443564036873,
+      "uncertainty_ns": 90
+    }
+  ],
+  "utc_epoch_ns": 1795654374428374453,
+  "guard_ns": 10000,
+  "samples_read": 23279,
+  "perf_data_sha256": "b0d52f939b506b4c0cf9a85cd78982476d7b841068a705d94f58b7829dce5d6d",
+  "trace_sqlite_sha256": "8f04e8adf024717c5357948a44aad5dc26a4494990f366ff201365c5da088916",
+  "prefill": {
+    "wall_ns": 31387995970,
+    "gpu_gap_ns": 174871357,
+    "gpu_gap_cuda_api_overlap_ns": {
+      "cuLaunchKernel": 30070496,
+      "cuMemcpyDtoH_v2": 796203,
+      "cuMemcpyHtoD_v2": 35479593,
+      "cuMemsetD8_v2": 42501931
+    },
+    "gpu_gap_cuda_api_union_overlap_ns": 108848223,
+    "gpu_gap_interior_ns": 138221822,
+    "samples": {
+      "main_thread": 15634,
+      "inside_gpu_gap": 63,
+      "other_threads": 181,
+      "uncertain_gap_boundary": 24
+    },
+    "main_thread_leaf_group": {
+      "frankenmoe": 25,
+      "kernel": 3314,
+      "libc": 1454,
+      "cuda_driver": 8734,
+      "[vdso]": 2088,
+      "inlined": 1,
+      "profiler": 18
+    },
+    "main_thread_top_leaf": {
+      "cuda_driver: [unknown]": 8728,
+      "kernel: [unknown]": 3314,
+      "[vdso]: [unknown]": 2081,
+      "libc: __sched_yield": 1356,
+      "libc: clock_gettime@@GLIBC_2.17": 66,
+      "profiler: [unknown]": 18,
+      "libc: pthread_once@GLIBC_2.2.5": 14,
+      "libc: pthread_mutex_trylock@@GLIBC_2.34": 13,
+      "frankenmoe: gg_owned_leave": 8,
+      "[vdso]: __vdso_clock_gettime": 7,
+      "frankenmoe: gg_owned_enter": 6,
+      "cuda_driver: pthread_once@plt": 5,
+      "libc: __memmove_avx_unaligned_erms": 4,
+      "frankenmoe: gg_owned_enter_kind": 3,
+      "frankenmoe: bonsai_launch": 2,
+      "frankenmoe: gg_function_6912": 1,
+      "frankenmoe: gg_resize": 1,
+      "frankenmoe: gg_function_4588": 1,
+      "frankenmoe: gg_function_4604": 1,
+      "frankenmoe: gg_owned_unwind_to": 1,
+      "frankenmoe: gg_function_4587": 1,
+      "inlined: lll_mutex_unlock_optimized": 1,
+      "libc: __strcmp_avx2": 1,
+      "cuda_driver: cuLaunchKernel": 1
+    },
+    "gpu_gap_leaf_group": {
+      "frankenmoe": 23,
+      "kernel": 22,
+      "libc": 6,
+      "cuda_driver": 11,
+      "[vdso]": 1
+    },
+    "gpu_gap_cuda_api_samples": {
+      "outside_cuda_api": 29,
+      "cuMemsetD8_v2": 18,
+      "cuLaunchKernel": 6,
+      "cuMemcpyHtoD_v2": 10
+    },
+    "outside_cuda_api_gap_top_leaf": {
+      "frankenmoe: gg_owned_leave": 8,
+      "frankenmoe: gg_owned_enter": 6,
+      "libc: __memmove_avx_unaligned_erms": 4,
+      "frankenmoe: gg_owned_enter_kind": 3,
+      "kernel: [unknown]": 2,
+      "frankenmoe: gg_function_6912": 1,
+      "frankenmoe: gg_resize": 1,
+      "frankenmoe: gg_function_4588": 1,
+      "frankenmoe: gg_function_4604": 1,
+      "frankenmoe: gg_owned_unwind_to": 1,
+      "frankenmoe: gg_function_4587": 1
+    }
+  },
+  "decode": {
+    "wall_ns": 13751327270,
+    "gpu_gap_ns": 723848903,
+    "gpu_gap_cuda_api_overlap_ns": {
+      "cuLaunchKernel": 228789292,
+      "cuMemcpyDtoH_v2": 436475490,
+      "cuMemcpyHtoD_v2": 48043430
+    },
+    "gpu_gap_cuda_api_union_overlap_ns": 713308212,
+    "gpu_gap_interior_ns": 225950403,
+    "samples": {
+      "main_thread": 6860,
+      "uncertain_gap_boundary": 240,
+      "other_threads": 602,
+      "inside_gpu_gap": 110
+    },
+    "main_thread_leaf_group": {
+      "profiler": 254,
+      "cuda_driver": 4204,
+      "kernel": 817,
+      "[vdso]": 945,
+      "libc": 574,
+      "inlined": 53,
+      "frankenmoe": 13
+    },
+    "main_thread_top_leaf": {
+      "cuda_driver: [unknown]": 4201,
+      "[vdso]: [unknown]": 945,
+      "kernel: [unknown]": 817,
+      "libc: __sched_yield": 323,
+      "profiler: [unknown]": 245,
+      "libc: pthread_mutex_trylock@@GLIBC_2.34": 177,
+      "inlined: lll_mutex_unlock_optimized": 42,
+      "libc: _int_malloc": 16,
+      "libc: clock_gettime@@GLIBC_2.17": 14,
+      "libc: pthread_getspecific@@GLIBC_2.34": 10,
+      "libc: pthread_once@GLIBC_2.2.5": 8,
+      "frankenmoe: bonsai_launch": 7,
+      "libc: unlink_chunk.isra.0": 6,
+      "libc: malloc": 6,
+      "profiler: NSYS_OSRT_pthread_rwlock_wrlock_1": 5,
+      "frankenmoe: launch": 3,
+      "libc: __libc_malloc2": 3,
+      "cuda_driver: pthread_once@plt": 3,
+      "inlined: __pthread_rwlock_wrunlock": 3,
+      "inlined: lll_mutex_lock_optimized": 3,
+      "inlined: __GI___pthread_mutex_unlock_usercnt": 2,
+      "libc: __memmove_sse2_unaligned_erms": 2,
+      "frankenmoe: bonsai_bonsai_graph": 2,
+      "libc: __strcmp_avx2": 2,
+      "inlined: tcache_put_n": 2,
+      "libc: pthread_rwlock_trywrlock@GLIBC_2.2.5": 2,
+      "profiler: cuptiGetTimestamp": 2,
+      "libc: pthread_rwlock_unlock@@GLIBC_2.34": 2,
+      "inlined: tcache_get_n": 1,
+      "libc: __sbrk": 1
+    },
+    "gpu_gap_leaf_group": {
+      "cuda_driver": 69,
+      "profiler": 5,
+      "[vdso]": 18,
+      "libc": 11,
+      "inlined": 3,
+      "kernel": 4
+    },
+    "gpu_gap_cuda_api_samples": {
+      "cuLaunchKernel": 28,
+      "cuMemcpyDtoH_v2": 65,
+      "cuMemcpyHtoD_v2": 15,
+      "outside_cuda_api": 2
+    },
+    "outside_cuda_api_gap_top_leaf": {
+      "profiler: [unknown]": 2
+    }
+  }
+}
