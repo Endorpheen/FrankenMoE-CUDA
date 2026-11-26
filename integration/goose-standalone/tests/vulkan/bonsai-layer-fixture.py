@@ -43,6 +43,12 @@ def silu(x):
     return x / (1 + np.exp(-x))
 
 
+def finish(residual, w, sign):
+    normal = rotate(rms(residual, w["post_attention_norm.weight"]), sign[HIDDEN])
+    value = silu(w["ffn_gate.weight"] @ normal) * (w["ffn_up.weight"] @ normal)
+    return residual + w["ffn_down.weight"] @ rotate(value, sign[FFN])
+
+
 def step(x, w, sign, conv, state):
     h = rms(x, w["attn_norm.weight"])
     rotated = rotate(h, sign[HIDDEN])
@@ -62,13 +68,51 @@ def step(x, w, sign, conv, state):
     score = np.einsum("hvk,hk->hv", state, q) / np.float32(np.sqrt(WIDTH))
     gated = rms(score, w["ssm_norm.weight"], axis=1) * silu(z.reshape(HEADS, WIDTH))
     residual = x + w["ssm_out.weight"] @ rotate(gated.ravel(), sign[VALUES], grouped=True)
-    normal = rotate(rms(residual, w["post_attention_norm.weight"]), sign[HIDDEN])
-    value = silu(w["ffn_gate.weight"] @ normal) * (w["ffn_up.weight"] @ normal)
-    return residual + w["ffn_down.weight"] @ rotate(value, sign[FFN]), window[1:], state
+    return finish(residual, w, sign), window[1:], state
+
+
+def q4_row(x):
+    blocks = x.astype(np.float32).reshape(-1, 32)
+    largest = blocks[np.arange(len(blocks)), np.abs(blocks).argmax(axis=1)]
+    scale = largest / np.float32(-8)
+    inv = np.divide(1, scale, out=np.zeros_like(scale), where=scale != 0)
+    code = np.clip(np.trunc(blocks * inv[:, None] + np.float32(8.5)), 0, 15).astype(np.uint8)
+    bits = code[:, :16] | (code[:, 16:] << 4)
+    raw = np.column_stack((scale.astype("<f2").view(np.uint8).reshape(-1, 2), bits))
+    decoded = np.column_stack((bits & 15, bits >> 4)).astype(np.float32) - 8
+    return raw.tobytes(), (decoded * scale.astype("<f2").astype(np.float32)[:, None]).reshape(4, 256)
+
+
+def attention_step(x, position, w, sign, keys, values):
+    def rope(rows):
+        phase = position * (1e7 ** (-np.arange(32, dtype=np.float64) / 32))
+        a, b = rows[:, :32].copy(), rows[:, 32:64].copy()
+        rows[:, :32] = a * np.cos(phase) - b * np.sin(phase)
+        rows[:, 32:64] = b * np.cos(phase) + a * np.sin(phase)
+        return rows
+
+    h = rotate(rms(x, w["attn_norm.weight"]), sign[HIDDEN])
+    qg = (w["attn_q.weight"] @ h).reshape(24, 2, 256)
+    q = rope(rms(qg[:, 0], w["attn_q_norm.weight"], axis=-1))
+    k = rope(rms((w["attn_k.weight"] @ h).reshape(4, 256), w["attn_k_norm.weight"], axis=-1))
+    key_raw, key = q4_row(k)
+    value_raw, value = q4_row(w["attn_v.weight"] @ h)
+    keys.append(key)
+    values.append(value)
+    group = np.arange(24) // 6
+    score = np.einsum("hd,thd->ht", q, np.stack(keys)[:, group]) / 16
+    prob = np.exp(score - score.max(axis=1, keepdims=True))
+    prob /= prob.sum(axis=1, keepdims=True)
+    context = np.einsum("ht,thd->hd", prob, np.stack(values)[:, group]) / (1 + np.exp(-qg[:, 1]))
+    residual = x + w["attn_output.weight"] @ rotate(context.ravel(), sign[VALUES])
+    return finish(residual, w, sign), key_raw, value_raw
 
 
 def main():
-    model, path = map(Path, sys.argv[1:])
+    model, path = map(Path, sys.argv[1:3])
+    attention = sys.argv[3:] == ["--attention"]
+    if sys.argv[3:] and not attention:
+        raise SystemExit("Expected --attention")
     root = Path(__file__).resolve().parents[4]
     reader = root / "experiments/EXP-2026-11-25-1973-bonsai-pq2-bootstrap/source/inventory.py"
     with tempfile.TemporaryDirectory() as work:
@@ -90,13 +134,20 @@ def main():
         ("ssm_out.weight", VALUES, HIDDEN, 142), ("post_attention_norm.weight", HIDDEN, 1, 0),
         ("ffn_gate.weight", HIDDEN, FFN, 142), ("ffn_up.weight", HIDDEN, FFN, 142),
         ("ffn_down.weight", FFN, HIDDEN, 142),
+    ) if not attention else (
+        ("attn_norm.weight", HIDDEN, 1, 0), ("post_attention_norm.weight", HIDDEN, 1, 0),
+        ("ffn_gate.weight", HIDDEN, FFN, 142), ("ffn_up.weight", HIDDEN, FFN, 142),
+        ("ffn_down.weight", FFN, HIDDEN, 142),
+        ("attn_q.weight", HIDDEN, 12288, 142), ("attn_k.weight", HIDDEN, 1024, 142),
+        ("attn_v.weight", HIDDEN, 1024, 142), ("attn_q_norm.weight", 256, 1, 0),
+        ("attn_k_norm.weight", 256, 1, 0), ("attn_output.weight", VALUES, HIDDEN, 142),
     )
     weights = {}
     with model.open("rb") as file, path.open("wb") as out:
         for sign in sign_rows:
             out.write(sign.tobytes())
         for name, width, rows, kind in layout:
-            tensor = tensors[f"blk.0.{name}"]
+            tensor = tensors[f"blk.{3 if attention else 0}.{name}"]
             assert tensor["type"] == kind and tensor["shape"] == ([width] if rows == 1 else [width, rows])
             file.seek(parsed["data_offset"] + tensor["offset"])
             nbytes = width * rows * 4 if not kind else width // 128 * rows * 34
@@ -110,12 +161,20 @@ def main():
         row_bytes = HIDDEN // 128 * 34
         history = np.zeros((3, MIX), dtype=np.float32)
         state = np.zeros((HEADS, WIDTH, WIDTH), dtype=np.float32)
-        for token in TOKENS:
+        keys, values = [], []
+        for position, token in enumerate(TOKENS):
             file.seek(parsed["data_offset"] + embedding["offset"] + token * row_bytes)
             value = rotate(unpack(file.read(row_bytes), HIDDEN, 1).ravel(), signs[HIDDEN], inverse=True)
-            result, history, state = step(value, weights, signs, history, state)
-            for part in (value, result, history, state):
-                out.write(part.astype("<f4", copy=False).tobytes())
+            if attention:
+                result, key, val = attention_step(value, position, weights, signs, keys, values)
+                out.write(value.astype("<f4", copy=False).tobytes())
+                out.write(result.astype("<f4", copy=False).tobytes())
+                out.write(key)
+                out.write(val)
+            else:
+                result, history, state = step(value, weights, signs, history, state)
+                for part in (value, result, history, state):
+                    out.write(part.astype("<f4", copy=False).tobytes())
 
 
 if __name__ == "__main__":

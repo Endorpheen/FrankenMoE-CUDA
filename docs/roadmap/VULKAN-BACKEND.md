@@ -312,7 +312,7 @@ The local GGUF inventory confirms distinct requirements.
 | Model | Packed weight types in the local GGUF | Vulkan status |
 | --- | --- | --- |
 | Qwen2.5-0.5B Q4_0 | Q4_0, Q8_0 | Experimental CLI and HTTP release |
-| Bonsai 2.5 27B | PQ2_0, Q4_0 for the MTP head | Real-weight FFN and complete recurrent layer gates pass |
+| Bonsai 2.5 27B | PQ2_0, Q4_0 for the MTP head | Recurrent and attention layer fixtures run with real weights. Independent Q4 cache differences remain to be checked in generation. |
 | Apex 35B | Q4_K, Q6_K | Open. GDN, grouped MoE and oversubscribed expert placement |
 | Inkling-2-Mini | Q8_0, IQ4_NL, IQ4_XS | Open. Relative/sliding attention, recurrent depth loops and grouped MoE |
 
@@ -393,9 +393,47 @@ bash tools/build-goose-vulkan.sh "$out/linux" linux compute
 ```
 
 Fixture SHA-256 `8b6243f89bc325fc141b74d9a2ba06dcf93074d696e6f125de51b2271be4b34f`.
-Complete Bonsai attention/KV, metadata loading and end-to-end generation
-before claiming model support. No throughput or peak model memory is
-inferred from the layer fixture.
+No throughput or peak model memory is inferred from the layer fixture.
+
+### Complete real Bonsai attention layer
+
+The Vulkan recorder prepares Q and the sigmoid output gate from one
+interleaved projection. It uses 24 query heads and four KV heads,
+each 256 wide, and rotates the first 64 coordinates with base 1e7.
+Both K and V are Q4_0. The packer writes pairs of 18-byte blocks as
+non-overlapping 32-bit words. Its read side uses the same nibble
+ordering, FP16 scale and 6:1 grouped causal Attention. The layer
+finishes with the same residual and FFN tail as the recurrent path.
+
+The layer-3 fixture uses four successive real embeddings on Linux
+Lavapipe, Linux RTX 4070 and Windows x64 under Wine with Lavapipe.
+On the same FP32 K/V input bytes, Vulkan and the portable CPU packer
+write identical Q4 rows. Earlier and unused rows also match byte for
+byte. Independent NumPy and Vulkan projection arithmetic produces
+three different cache bytes of 4608 checked on each configuration.
+The maximum output error in that independent run is 5.86e-4. The
+original layer gate can fail on the independent run. Replaying with
+identical cache bytes retains the original `atol=2e-5, rtol=5e-4`
+gate and passes on all three platforms, with maximum output error
+4.01e-5. This isolates the observed discrepancy to data entering
+Attention from the quantized cache. Whole-model numerical and
+generation checks remain open.
+
+```bash
+tests=integration/goose-standalone/tests/vulkan
+out=build/vulkan-bringup/bonsai-attention-layer
+mkdir -p "$out"
+OPENBLAS_NUM_THREADS=1 python3 "$tests/bonsai-layer-fixture.py" "$BONSAI_GGUF" "$out/layer3.bin" --attention
+bash tools/build-goose-vulkan.sh "$out/linux" linux compute
+"$out/linux/frankenmoe-vulkan-compute-test" 0 0 \
+    build/vulkan-bringup/bonsai-first/ffn-layer0.bin \
+    build/vulkan-bringup/bonsai-full-layer/layer0.bin "$out/layer3.bin"
+```
+
+Fixture SHA-256 `454994ab8ec7f8f55e6f6fc9ecc74016fd39e735c51c8433145d633bc7a9e229`.
+The rebuilt Qwen2.5 CLI still matches the four saved IDs on RTX 4070.
+Next, connect the layer recorders to the complete Bonsai GGUF loader,
+embedding and vocabulary projections, then verify end-to-end output.
 
 ## Model order
 

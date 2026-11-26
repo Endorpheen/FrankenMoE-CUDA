@@ -3,7 +3,7 @@
 
 #include <math.h>
 
-_Static_assert(sizeof(fg_vk_shape) == 32, "Vulkan push constant layout");
+_Static_assert(sizeof(fg_vk_shape) == 36, "Vulkan push constant layout");
 enum { FG_VK_BINDINGS = 4 };
 
 typedef struct {
@@ -30,6 +30,10 @@ static const fg_vk_shader shaders[FG_VK_OP_COUNT] = {
     [FG_VK_GDN] = { fg_gdn, sizeof(fg_gdn) },
     [FG_VK_GDN_GATES] = { fg_gdn_gates, sizeof(fg_gdn_gates) },
     [FG_VK_GATED_RMS] = { fg_gated_rms, sizeof(fg_gated_rms) },
+    [FG_VK_HEAD_SLICE] = { fg_head_slice, sizeof(fg_head_slice) },
+    [FG_VK_SIGMOID_GATE] = { fg_sigmoid_gate, sizeof(fg_sigmoid_gate) },
+    [FG_VK_KV_STORE_Q4] = { fg_kv_store_q4, sizeof(fg_kv_store_q4) },
+    [FG_VK_ATTENTION_Q4] = { fg_attention_q4, sizeof(fg_attention_q4) },
 };
 
 static VkResult create_pipeline(fg_vk_graph *graph, fg_vk_op op) {
@@ -252,33 +256,48 @@ static int record(fg_vk_graph *graph, fg_vk_op op, fg_vk_shape shape, fg_vk_view
         weight_bytes = (uint64_t)shape.width * 4;
         break;
     case FG_VK_ADD:
+    case FG_VK_SIGMOID_GATE:
     case FG_VK_SWIGLU:
         x = (uint32_t)((elements + 63) / 64);
         weight_bytes = input_bytes;
         break;
+    case FG_VK_HEAD_SLICE:
+        if (shape.position > 1 || !stride || stride > UINT32_MAX / 2 || stride * shape.batch > UINT32_MAX / 2) return 0;
+        input_bytes = stride * shape.batch * 8;
+        output_bytes = stride * shape.batch * 4;
+        weight_bytes = 4;
+        x = (uint32_t)((stride * shape.batch + 63) / 64);
+        break;
     case FG_VK_ROPE:
         if (shape.width % 2 || !stride || stride > UINT32_MAX || stride * shape.batch > UINT32_MAX ||
-            end > UINT32_MAX || !isfinite(shape.theta) || shape.theta <= 0.0f) return 0;
+            end > UINT32_MAX || shape.rotary > shape.width || shape.rotary % 2 ||
+            !isfinite(shape.theta) || shape.theta <= 0.0f) return 0;
         input_bytes = output_bytes = stride * shape.batch * 4;
         weight_bytes = 4;
         x = shape.rows;
         y = shape.batch;
         break;
-    case FG_VK_KV_STORE: {
+    case FG_VK_KV_STORE:
+    case FG_VK_KV_STORE_Q4: {
         if (!stride || stride > UINT32_MAX || end > shape.context || stride * shape.context > UINT32_MAX) return 0;
         const uint64_t count = stride * shape.batch;
         input_bytes = count * 4;
-        output_bytes = stride * shape.context * 4;
+        const int q4 = op == FG_VK_KV_STORE_Q4;
+        if (q4 && stride % 64) return 0;
+        output_bytes = q4 ? stride / 32 * shape.context * 18 : stride * shape.context * 4;
         weight_bytes = 4;
-        x = (uint32_t)((count + 63) / 64);
+        x = q4 ? (uint32_t)((count / 64 + 63) / 64) : (uint32_t)((count + 63) / 64);
         break;
     }
-    case FG_VK_ATTENTION: {
+    case FG_VK_ATTENTION:
+    case FG_VK_ATTENTION_Q4: {
         if (shape.width > 256 || !shape.rows || !shape.kv_heads || shape.rows % shape.kv_heads ||
             stride > UINT32_MAX || stride * shape.batch > UINT32_MAX || end > shape.context ||
             (uint64_t)shape.width * shape.kv_heads * shape.context > UINT32_MAX) return 0;
         input_bytes = output_bytes = stride * shape.batch * 4;
-        weight_bytes = value_bytes = (uint64_t)shape.width * shape.kv_heads * shape.context * 4;
+        const uint64_t cache_elements = (uint64_t)shape.width * shape.kv_heads * shape.context;
+        if (op == FG_VK_ATTENTION_Q4 && shape.width % 64) return 0;
+        weight_bytes = value_bytes = op == FG_VK_ATTENTION_Q4 ? cache_elements / 32 * 18 : cache_elements * 4;
         x = shape.rows;
         y = shape.batch;
         break;
@@ -322,7 +341,7 @@ static int record(fg_vk_graph *graph, fg_vk_op op, fg_vk_shape shape, fg_vk_view
 
 int fg_vk_graph_record(fg_vk_graph *graph, fg_vk_op op, fg_vk_shape shape,
     fg_vk_view input, fg_vk_view weight, fg_vk_view output) {
-    if (op == FG_VK_ATTENTION || op == FG_VK_CAUSAL_CONV || op == FG_VK_GDN ||
+    if (op == FG_VK_ATTENTION || op == FG_VK_ATTENTION_Q4 || op == FG_VK_CAUSAL_CONV || op == FG_VK_GDN ||
         op == FG_VK_GDN_GATES || op == FG_VK_GATED_RMS) return 0;
     return record(graph, op, shape, input, weight, output, input);
 }
@@ -355,6 +374,10 @@ int fg_vk_graph_attention(fg_vk_graph *graph, fg_vk_shape shape,
     return record(graph, FG_VK_ATTENTION, shape, query, keys, output, values);
 }
 
+int fg_vk_graph_attention_q4(fg_vk_graph *graph, fg_vk_shape shape,
+    fg_vk_view query, fg_vk_view keys, fg_vk_view values, fg_vk_view output) {
+    return record(graph, FG_VK_ATTENTION_Q4, shape, query, keys, output, values);
+}
 int fg_vk_graph_submit(fg_vk_graph *graph) {
     if (!graph->recording || !graph->used) return 0;
     compute_barrier(graph, VK_PIPELINE_STAGE_2_HOST_BIT, VK_ACCESS_2_HOST_READ_BIT);
