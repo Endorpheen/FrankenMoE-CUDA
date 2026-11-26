@@ -213,3 +213,18 @@ with packed keys, in control/candidate/candidate/control order. All
 2048 output indices matched byte for byte. The result SHA-256 is
 `1fed0858dfba9f0e35aed5b42329068d66cc91decd1b0d4d8692602b274aa482`.
 The measurement covers one DSA layer and excludes model execution.
+
+## Warm the GGUF before CUDA placement
+
+The GigaChat4 server path now calls the existing Goose residency routine
+before registering expert pages for CUDA. The shared implementation
+checks the file mapping and warms missing pages. The original weights
+remain mapped from the same file.
+
+A startup observed only 19862 of 22175 MiB resident and no experts
+registered. Its short HTTP request timed out. With the warmup and the
+accepted SwiGLU path, startup reported all 22175 MiB resident and
+4050 MiB of pinned expert pages. The diagnostic 128/8 request finished
+at 20.89 prefill and 8.54 decode tokens/s and matched all eight external
+reference IDs. Process swap and system swap-out delta were zero.
+This is a startup correctness check rather than a paired speed comparison.
