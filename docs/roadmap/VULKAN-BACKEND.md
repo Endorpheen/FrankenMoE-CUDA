@@ -1,10 +1,10 @@
 # Vulkan backend for FrankenMoE
 
-**Status: Vulkan Qwen2 reference operators.** Device selection, transfer,
-RMSNorm, Q4_0 and Q8_0 matmul, Q4_0 embedding gather, bias and residual
-addition, SwiGLU, NeoX RoPE and causal GQA with FP32 KV are implemented.
-Model loading, generation and release qualification are open. Keep the
-existing CUDA inference path unchanged during bring-up.
+**Status: first Qwen2.5 Vulkan inference.** The standalone Vulkan binary
+loads and verifies the supported Qwen2.5-0.5B Q4_0 GGUF layout and generates
+greedy token IDs. Prompt tokenization, text output, HTTP, native AMD tests
+and release qualification remain open. Keep the existing CUDA inference
+path unchanged during bring-up.
 
 ## Verified bring-up
 
@@ -86,6 +86,37 @@ bash tools/build-goose-vulkan.sh build/vulkan-bringup/linux linux compute
 bash tools/build-goose-vulkan.sh build/vulkan-bringup/windows windows compute
 VK_DRIVER_FILES=/usr/share/vulkan/icd.d/lvp_icd.json \
     build/vulkan-bringup/linux/frankenmoe-vulkan-compute-test 0 1
+```
+
+### Real Qwen2.5 GGUF fixture
+
+The `qwen2` build target links the existing Goose GGUF parser and the
+Qwen2 layer ordering in `integration/goose-standalone/vulkan/qwen2-step.goose`.
+The C adapter verifies all 291 required tensor descriptors. It uploads
+weights into a device-local arena in 4 MiB chunks and keeps the model
+workspace and FP32 K/V device-local. The token input and final logits
+are host-visible. The initial reference processes one token per submission
+and exposes a raw token ID CLI. It splits the Q8_0 output into five
+dispatches. Both binaries dynamically load Vulkan with no CUDA linkage.
+
+The pinned GGUF SHA-256 verified locally. An independent llama.cpp CPU
+reference used the same file, FP32 K/V, Flash Attention off, and greedy
+decoding. Its server executable SHA-256 was
+`200682b17f13b293c2bd6c8c9df0692d022891168c09cc87c48c489f585c174b`.
+The full graph matched all four output IDs for the prompt
+`The capital of France is` on native Linux RTX 4070, native Linux
+Lavapipe, and the Windows x64 binary through Wine with Lavapipe.
+NVIDIA and Lavapipe agreed on the top ten first-step logits, with a
+maximum absolute difference of 2.53e-5 across the 151936 logits.
+The short fixture does not establish model speed, general numerical
+parity with llama.cpp or native AMD support.
+
+```bash
+# Point GOOSE_BIN, GLSLANG_VALIDATOR and SPIRV_VAL to the tools outside PATH.
+bash tools/build-goose-vulkan.sh build/vulkan-bringup/linux linux qwen2
+bash tools/build-goose-vulkan.sh build/vulkan-bringup/windows windows qwen2
+bash integration/goose-standalone/tests/vulkan/qwen2-smoke.sh \
+    build/vulkan-bringup/linux/frankenmoe-vulkan "$QWEN_GGUF" --device-index 0
 ```
 
 ## Source audit and integration boundary
@@ -218,8 +249,9 @@ point. Keep all checkpoints open until their specified tests have run.
    A ranged metadata read found 291 tensors, consisting of 169 Q4_0,
    121 F32 and a Q8_0 output projection of shape [896, 151936].
    The embedding is a separate Q4_0 tensor. Each layer has F32 Q/K/V
-   biases. The independent CPU reference and the full weight file are
-   still needed to accept inference on this artifact.
+   biases. The full weight file and one independent CPU raw-ID fixture have
+   been verified. Linux RADV, Windows AMD ICD and the normal user-facing
+   model entry points remain unqualified.
    It exercises GGUF, BPE, RMSNorm, RoPE, causal GQA, SwiGLU, quantized
    embedding/projections and sampling with modest VRAM. The existing
    `goose/model/qwen2.goose` and `base/{dense,trunk}.goose` are sources

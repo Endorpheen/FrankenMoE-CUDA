@@ -6,7 +6,7 @@ source_dir="$root/integration/goose-standalone/vulkan"
 out=${1:?Specify the output directory}
 target=${2:-linux}
 mode=${3:-probe}
-[[ "$mode" == probe || "$mode" == compute ]]
+[[ "$mode" == probe || "$mode" == compute || "$mode" == qwen2 ]]
 mkdir -p "$out"
 flags=(-std=c11 -O2 -Wall -Wextra -Werror)
 headers=${VULKAN_HEADERS:-/usr/include}
@@ -35,7 +35,7 @@ if [[ -d "$headers/vk_video" ]]; then cp -R "$headers/vk_video" "$out/vulkan-hea
     "$source_dir/"{loader,device,memory,queue,probe}.c \
     "${libs[@]}" -o "$out/$executable"
 
-if [[ "$mode" == compute ]]; then
+if [[ "$mode" != probe ]]; then
     glslang=${GLSLANG_VALIDATOR:-glslangValidator}
     spirv_val=${SPIRV_VAL:-spirv-val}
     suffix=${executable#frankenmoe-vulkan-probe}
@@ -49,4 +49,15 @@ if [[ "$mode" == compute ]]; then
         "$source_dir/"{loader,device,memory,queue,graph}.c \
         "$root/integration/goose-standalone/tests/vulkan/"{compute,attention,projection}.c \
         "${libs[@]}" -lm -o "$out/frankenmoe-vulkan-compute-test$suffix"
+fi
+
+if [[ "$mode" == qwen2 ]]; then
+    goose=${GOOSE_BIN:-goose}
+    cat "$root/goose/misc/gguf-headers.goose" "$root/goose/model/"{gguf-tensors,gguf-reader}.goose \
+        "$source_dir/qwen2-step.goose" > "$out/qwen2_unit.goose"
+    "$goose" --standalone -o "$out/qwen2_unit.c" --header "$out/qwen2_unit.h" "$out/qwen2_unit.goose"
+    "$cc" -std=c11 -O2 -w -ffunction-sections -fdata-sections -c "$out/qwen2_unit.c" -o "$out/qwen2_unit.o"
+    "$cc" "${flags[@]}" -isystem "$out/vulkan-headers" -I"$out" -Wl,--gc-sections \
+        "$source_dir/"{loader,device,memory,queue,graph,upload,qwen2,infer-main}.c "$out/qwen2_unit.o" \
+        "${libs[@]}" -lm -pthread -o "$out/frankenmoe-vulkan$suffix"
 fi
