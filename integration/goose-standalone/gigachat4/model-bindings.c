@@ -135,3 +135,9 @@ uint64_t giga_dsa_mask_node(uint64_t context, uint64_t original, uint64_t select
     out->op_params[0] = 0x4453414d;
     return (uintptr_t)out;
 }
+
+uint8_t giga_dsa_prefix_enabled(void) {
+    const char * prefix = getenv("GOOSE_GIGA_DSA_PREFIX");
+    const char * mask = getenv("GOOSE_GIGA_DSA_MASK");
+    return (!prefix || strcmp(prefix, "0") != 0) && (!mask || strcmp(mask, "0") != 0);
+}

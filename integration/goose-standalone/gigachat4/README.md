@@ -436,3 +436,19 @@ Post-request GPU memory was 9213/9212 MiB. Peak RSS was
 With the old DSA mask graph forced on 2176/8, all eight IDs matched the
 llama.cpp fixture. The 4352/2 input is a deterministic diagnostic
 input; this comparison does not establish a 32K/512 result.
+
+### EXP-2026-11-27-2153 — Keep the unranked causal prefix in DSA
+
+For a single-stream batch straddling the 2048-key limit, use the
+padded cell count as an upper bound on the number of visible keys.
+Score and rank only the suffix that might exclude a visible key.
+The mask producer preserves the original F16 prefix. Set
+GOOSE_GIGA_DSA_PREFIX=0 to rank the full batch.
+
+On 2176/8 with batch and ubatch 4096, off/on prefill measured
+261.85/280.24 and 261.82/278.36 tokens/s. Decode measured
+11.70/12.65 and 10.69/10.74 tokens/s. All four responses matched all
+eight reference IDs. Post-request GPU memory was 8912–8913 MiB off
+and 8904–8905 MiB on, with no swap-out growth. Default-enabled
+prefill and decode were 279.02/12.73, with matching IDs, 8912 MiB
+GPU memory and no swap-out growth.

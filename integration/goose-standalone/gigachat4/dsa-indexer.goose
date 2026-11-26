@@ -1,3 +1,4 @@
+extern "giga_dsa_prefix_enabled" fn giga_dsa_prefix_enabled() -> bool;
 extern "giga_dsa_mask_node" fn giga_dsa_mask_node(ctx: u64, mask: u64, picks: u64) -> u64;
 extern "ggml_rope_ext" fn giga_rope(ctx: u64, x: u64, pos: u64, factors: u64,
                                    dims: i32, mode: i32, original_ctx: i32,
@@ -53,6 +54,25 @@ export fn giga_dsa_index_mask(ctx: u64, q: u64, cached_k: u64, weights: u64,
        tokens < 1 || tokens > 1048576 || streams < 1 || tokens % streams != 0 ||
        cells < 1 || cells > 1048576 { return 0; }
     let batch = tokens / streams;
+    // Padded cells upper-bound the live causal keys in each row.
+    let prefix = 2048 - (cells - batch);
+    if cuda_dsa && streams == 1 && batch <= 4096 && prefix > 0 && prefix < batch &&
+       giga_dsa_prefix_enabled() {
+        let suffix = batch - prefix;
+        let qs = giga_view4(ctx, q, 128, 64, suffix, 1, 512, 32768,
+                            (batch * 32768) as u64, (prefix * 32768) as u64);
+        let ws = giga_view4(ctx, weights, 64, suffix, 1, 1, 256,
+                            (batch * 256) as u64, (batch * 256) as u64, (prefix * 256) as u64);
+        let row_bytes = cells * 2;
+        let masks = giga_view4(ctx, half_mask, cells, suffix, 1, 1,
+            row_bytes as u64, (row_bytes * batch) as u64, (row_bytes * batch) as u64,
+            (row_bytes * prefix) as u64);
+        let score = giga_lightning(ctx, qs, cached_k, ws, masks);
+        let top = giga_top_k(ctx, score, 2048);
+        if cells > 4096 { giga_op_param(top as! i64, 13, 1); }
+        return giga_dsa_mask_node(ctx, half_mask, top);
+    }
+
     let qs = giga_view4(ctx, q, 128, 64, batch, streams, 512, 32768,
                         (batch * 32768) as u64, 0);
     let ws = giga_view4(ctx, weights, 64, batch, 1, streams, 256,

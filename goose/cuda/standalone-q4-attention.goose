@@ -390,15 +390,15 @@ export fn fg_dsa_score(q: u64, k: u64, weights: u64, mask: u64, out: u64,
 extern "fg_dsa_store_u16" fn dsa_mask_store(base: u64, index: i64, value: u32);
 extern "fg_dsa_load_i32" fn dsa_mask_pick(base: u64, index: i64) -> i32;
 
-export fn giga_device_mask_clear(out: u64, total: i64, index: i64) {
-    if index < total { dsa_mask_store(out, index, 0xfc00); }
+export fn giga_device_mask_clear(mask: u64, out: u64, total: i64, prefix: i64, index: i64) {
+    if index < total { dsa_mask_store(out, index, if index < prefix { attn_ld_u16(mask, (2 * index) as u64) } else { 0xfc00 }); }
 }
 
 export fn giga_device_mask_scatter(mask: u64, picks: u64, out: u64,
-    cells: i64, count: i64, total: i64, index: i64) {
+    cells: i64, count: i64, total: i64, prefix: i64, index: i64) {
     if index >= total { return; }
     let key = dsa_mask_pick(picks, index) as i64;
     if key < 0 || key >= cells { return; }
-    let at = (index / count) * cells + key;
+    let at = (index / count + prefix) * cells + key;
     dsa_mask_store(out, at, attn_ld_u16(mask, (2 * at) as u64));
 }
