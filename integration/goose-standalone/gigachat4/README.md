@@ -360,3 +360,17 @@ All 32 output IDs matched the llama.cpp fixture in every run. Post-request
 GPU memory was 8460–8470 MiB and swap-out was unchanged. On the separate
 2049/2 DSA boundary fixture, both builds matched both llama.cpp token IDs
 and used 8483 MiB after the request without swap-out growth.
+
+### EXP-2026-11-26-2148 — Dense MMA for narrow GigaChat4 projections
+
+Use the existing residual-corrected Dense MMA kernel for width-16 F32
+projections in the planned GigaChat4 graph when the CUDA image provides it.
+The existing batch floor excludes single-token decode. An explicit
+GOOSE_DENSE_MMA setting keeps its existing behavior.
+
+The fixed 512/32 control/candidate pairs measured prefill 142.20/154.38 and
+142.06/155.56 tokens/s, with decode 16.00/16.04 and 15.19/15.67 tokens/s.
+All outputs matched all 32 llama.cpp token IDs and swap-out was unchanged.
+Post-request GPU memory across the four runs was 8459–8469 MiB. On a
+second fixture the width-16 probe reproduced all 32 control tokens.
+Both Goose builds first differed from llama.cpp at token 31 on that fixture.

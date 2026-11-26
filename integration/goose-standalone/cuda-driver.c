@@ -218,6 +218,7 @@ static struct {
     Function mmq_q4_routed_x128, mmq_q6_routed_x128, mmq_q6_routed_pipeline;
     Function mmq_q4_routed_m128, mmq_q4_routed_down_m128;
     Function mmvq_pack, mmvq;
+    Function giga_dense_mma;
     Function dense_mma, dense_mma_reference, gdn_mma, gdn_mma_v32, flash_mma, flash_stage, flash_vec, flash_vec_merge;
     Function flash_vec_pack, flash_vec_packed;
     Function mmq_stream, mmq_stream_fixup;
@@ -1243,6 +1244,9 @@ static void load_cuda(void) {
         if (error == 0 && stream_k) error = cuda.function_get(&cuda.mmq_stream, cuda.module, "goose_mmq_stream");
         if (error == 0 && stream_k) error = cuda.function_get(&cuda.mmq_stream_fixup, cuda.module, "goose_mmq_stream_fixup");
         if (error == 0 && dense_mma) error = cuda.function_get(&cuda.dense_mma, cuda.module, "goose_dense_mma");
+        if (error == 0 && !dense_setting && sm80_image) {
+            (void) cuda.function_get(&cuda.giga_dense_mma, cuda.module, "goose_dense_mma");
+        }
         if (error == 0 && reference_arch && dense_reference) {
             error = cuda.function_get(&cuda.dense_mma_reference, cuda.module, "goose_dense_mma_reference");
         }
@@ -3024,7 +3028,9 @@ static int launch_matrix(DevicePtr weight, int64_t row_stride, int64_t extent,
          (cuda.mmvq_dense_tail && job_words == 2 && count <= 8))) {
         return launch_mmvq(weight, (uint64_t) row_stride, (int) extent, (int) kind, (int) rows, count, job_words);
     }
-    if (error == 0 && cuda.dense_mma && kind == 0 && job_words == 2 && rows >= 16 && count >= 16 && count <= 8 * 65535) {
+    const Function dense_matrix = giga_small_expert_wave && extent == 16 && cuda.giga_dense_mma ?
+        cuda.giga_dense_mma : cuda.dense_mma;
+    if (error == 0 && dense_matrix && kind == 0 && job_words == 2 && rows >= 16 && count >= 16 && count <= 8 * 65535) {
         int32_t k = (int32_t) extent, m = (int32_t) rows;
         int32_t jobs_count = count;
         // These SM89 router geometries were traced in the frozen reference.
@@ -3033,7 +3039,7 @@ static int launch_matrix(DevicePtr weight, int64_t row_stride, int64_t extent,
             if (count == 124) partitions = 4;
             if (count == 4096) partitions = 1;
         }
-        Function matrix = partitions > 0 ? cuda.dense_mma_reference : cuda.dense_mma;
+        Function matrix = partitions > 0 ? cuda.dense_mma_reference : dense_matrix;
         void * args[] = {&weight, &matrix_input, &matrix_output, &cuda.jobs.address, &row_stride, &k, &m, &jobs_count,
             &partitions};
         error = cuda.launch(matrix, 1u + ((unsigned) rows - 1) / 64, 1u + ((unsigned) count - 1) / 8, 1,
