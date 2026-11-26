@@ -22,6 +22,9 @@ static const fg_vk_shader shaders[FG_VK_OP_COUNT] = {
     [FG_VK_GATHER_Q4_0] = { fg_gather_q4_0, sizeof(fg_gather_q4_0) },
     [FG_VK_BIAS] = { fg_bias, sizeof(fg_bias) },
     [FG_VK_ADD] = { fg_add, sizeof(fg_add) },
+    [FG_VK_PQ2_0] = { fg_pq2_0, sizeof(fg_pq2_0) },
+    [FG_VK_GATHER_PQ2_0] = { fg_gather_pq2_0, sizeof(fg_gather_pq2_0) },
+    [FG_VK_FWHT] = { fg_fwht, sizeof(fg_fwht) },
 };
 
 static VkResult create_pipeline(fg_vk_graph *graph, fg_vk_op op) {
@@ -140,9 +143,11 @@ static int overlap(fg_vk_view a, fg_vk_view b) {
     return a.buffer->buffer == b.buffer->buffer && a.offset < b.offset + b.size && b.offset < a.offset + a.size;
 }
 
-static VkDeviceSize packed_matrix_bytes(uint32_t width, uint32_t rows, unsigned block_size) {
-    if (width % 32 || !rows) return 0;
-    const uint64_t blocks = (uint64_t)(width / 32) * rows;
+static VkDeviceSize packed_matrix_bytes(uint32_t width, uint32_t rows, fg_vk_op op) {
+    const unsigned block_width = op == FG_VK_PQ2_0 || op == FG_VK_GATHER_PQ2_0 ? 128 : 32;
+    const unsigned block_size = op == FG_VK_Q4_0 || op == FG_VK_GATHER_Q4_0 ? 18 : 34;
+    if (width % block_width || !rows) return 0;
+    const uint64_t blocks = (uint64_t)(width / block_width) * rows;
     if (blocks > (UINT32_MAX - 3u) / block_size) return 0;
     return (blocks * block_size + 3u) & ~(VkDeviceSize)3;
 }
@@ -175,22 +180,34 @@ static int record(fg_vk_graph *graph, fg_vk_op op, fg_vk_shape shape, fg_vk_view
         weight_bytes = (VkDeviceSize)shape.width * 4;
         break;
     case FG_VK_Q4_0:
+    case FG_VK_PQ2_0:
     case FG_VK_Q8_0: {
         const uint32_t output_stride = shape.context ? shape.context : shape.rows;
         if ((uint64_t)shape.position + shape.rows > output_stride ||
             (uint64_t)output_stride * shape.batch > UINT32_MAX) return 0;
         x = shape.rows;
         y = shape.batch;
-        weight_bytes = packed_matrix_bytes(shape.width, shape.rows, op == FG_VK_Q8_0 ? 34 : 18);
+        weight_bytes = packed_matrix_bytes(shape.width, shape.rows, op);
         if (!weight_bytes) return 0;
         output_bytes = (uint64_t)output_stride * shape.batch * 4;
         break;
     }
     case FG_VK_GATHER_Q4_0:
-        weight_bytes = packed_matrix_bytes(shape.width, shape.rows, 18);
+    case FG_VK_GATHER_PQ2_0:
+        if ((uint64_t)shape.position + shape.rows > UINT32_MAX) return 0;
+        weight_bytes = packed_matrix_bytes(shape.width, shape.rows, op);
         if (!weight_bytes) return 0;
         input_bytes = (uint64_t)shape.batch * 4;
         x = shape.batch;
+        break;
+    case FG_VK_FWHT:
+        if (shape.width % 1024 || shape.position > 1) return 0;
+        if (shape.context > 1 && (shape.position || !shape.rows || !shape.kv_heads ||
+            (uint64_t)shape.rows * shape.kv_heads != shape.width / shape.context ||
+            shape.width % shape.context)) return 0;
+        x = shape.width / 1024;
+        y = shape.batch;
+        weight_bytes = (VkDeviceSize)shape.width * sizeof(int32_t);
         break;
     case FG_VK_BIAS:
         x = (uint32_t)((elements + 63) / 64);

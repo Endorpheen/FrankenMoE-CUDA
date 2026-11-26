@@ -88,10 +88,11 @@ static int run_case(fg_vk_graph *graph, unsigned width, unsigned rows, unsigned 
 
 int test_attention(fg_vk_graph *graph);
 int test_projection(fg_vk_graph *graph);
+int test_bonsai(fg_vk_graph *graph, const char *path);
 
 int main(int argc, char **argv) {
-    if (argc != 3) {
-        fputs("Usage: frankenmoe-vulkan-compute-test DEVICE_INDEX ALLOW_CPU_0_OR_1\n", stderr);
+    if (argc != 3 && argc != 4) {
+        fputs("Usage: frankenmoe-vulkan-compute-test DEVICE_INDEX ALLOW_CPU_0_OR_1 [BONSAI_FIXTURE]\n", stderr);
         return 2;
     }
     char *end;
@@ -101,8 +102,9 @@ int main(int argc, char **argv) {
     fg_vk_device vk;
     if (!fg_vk_open(&vk, (uint32_t)index, argv[2][0] == '1')) return 1;
     fg_vk_graph graph;
-    int pass = fg_vk_graph_open(&graph, &vk, 5) &&
-               run_case(&graph, WIDTH, ROWS, BATCH) && run_case(&graph, 32, 1, 1) && test_attention(&graph) && test_projection(&graph);
+    int pass = fg_vk_graph_open(&graph, &vk, 6) &&
+               run_case(&graph, WIDTH, ROWS, BATCH) && run_case(&graph, 32, 1, 1) && test_attention(&graph) && test_projection(&graph) &&
+               (argc == 3 || test_bonsai(&graph, argv[3]));
     fg_vk_graph_close(&graph);
     fg_vk_close(&vk);
     return pass ? 0 : 1;

@@ -39,15 +39,15 @@ if [[ "$mode" != probe ]]; then
     glslang=${GLSLANG_VALIDATOR:-glslangValidator}
     spirv_val=${SPIRV_VAL:-spirv-val}
     suffix=${executable#frankenmoe-vulkan-probe}
-    for shader in rmsnorm q4_0 swiglu rope kv_store attention q8_0 gather_q4_0 bias add; do
+    for shader in rmsnorm q4_0 swiglu rope kv_store attention q8_0 gather_q4_0 bias add pq2_0 gather_pq2_0 fwht; do
         "$glslang" -V --target-env vulkan1.2 -S comp "-DOP_${shader^^}" \
             "$source_dir/shaders/reference.comp" -o "$out/$shader.spv"
         "$spirv_val" --target-env vulkan1.2 "$out/$shader.spv"
     done
     python3 "$root/tools/embed-vulkan-shaders.py" "$out"
     "$cc" "${flags[@]}" -isystem "$out/vulkan-headers" -I"$out" -I"$source_dir" \
-        "$source_dir/"{loader,device,memory,queue,graph}.c \
-        "$root/integration/goose-standalone/tests/vulkan/"{compute,attention,projection}.c \
+        "$source_dir/"{loader,device,memory,queue,graph,upload}.c \
+        "$root/integration/goose-standalone/tests/vulkan/"{compute,attention,projection,bonsai}.c \
         "${libs[@]}" -lm -o "$out/frankenmoe-vulkan-compute-test$suffix"
 fi
 

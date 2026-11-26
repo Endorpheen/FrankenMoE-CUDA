@@ -304,6 +304,49 @@ point. Keep all checkpoints open until their specified tests have run.
 | 6. Full inference | `vulkan/model-host.c`, `goose/vulkan/qwen2-dense.goose`; use existing HTTP and CLI contracts with a separate linked model host | Pin the GGUF, tokenizer and chat template. Account for host logits/sampling and the non-CUDA release link. Only model-specific admitted operators are available initially. | Pass tokenize/detokenize, greedy IDs and logit tolerances, EOG/stop, chat and completion streaming, usage, cancellation, clear errors, and repeated long sessions. Establish prefill/decode, client TTFT, full wall time and memory baseline on both platforms. |
 | 7. Optimize and expand | `vulkan/shaders/`, `goose/vulkan/`, experiment registry and `.github/workflows/ci.yml` | Profile fixed workload first. Check command recording, barriers, exposed transfers, LDS and register pressure, decode weight bandwidth, then subgroup and matrix variants. A distinct pipeline can change numerical behavior. | Freeze the exact baseline, compare A–B–B–A, check full-request and kernel times separately and reprofile the critical path. Re-run affected architecture gates, test AMD-only packaging and keep CUDA release/CI coverage. |
 
+## Multi-model bring-up
+
+The scope includes all CUDA release models as additional Vulkan targets.
+The local GGUF inventory confirms distinct requirements.
+
+| Model | Packed weight types in the local GGUF | Vulkan status |
+| --- | --- | --- |
+| Qwen2.5-0.5B Q4_0 | Q4_0, Q8_0 | Experimental CLI and HTTP release |
+| Bonsai 2.5 27B | PQ2_0, Q4_0 for the MTP head | Signed FWHT and PQ2_0 FFN pass the real-weight component gate |
+| Apex 35B | Q4_K, Q6_K | Open. GDN, grouped MoE and oversubscribed expert placement |
+| Inkling-2-Mini | Q8_0, IQ4_NL, IQ4_XS | Open. Relative/sliding attention, recurrent depth loops and grouped MoE |
+
+### Bonsai FFN component
+
+The Vulkan graph records forward signed FWHT, both PQ2_0 projections,
+SwiGLU, the second FWHT and the down projection. The fixture extracts
+the three complete layer-0 matrices and sign vectors from the local
+Bonsai Q4_0/PQ2_0 MTP GGUF. The weights are uploaded to device-local
+memory with the existing staging path. The input is deterministic
+and synthetic. The GPU chain agrees with the independent CPU
+calculation at relative L2 below 1.37e-7 on RTX 4070, Linux Lavapipe,
+and Windows x64 under Wine with Lavapipe. The forward and grouped
+transform match bitwise. The inverse recovers the input exactly as
+floats, allowing positive and negative zero to compare equal.
+The offset PQ2 gather matches unpacking of the selected real weight row.
+The rebuilt Qwen2.5 Vulkan CLI matches the four saved CPU reference IDs
+on RTX 4070.
+
+```bash
+tests=integration/goose-standalone/tests/vulkan
+out=build/vulkan-bringup/bonsai-first
+mkdir -p "$out"
+python3 "$tests/bonsai-fixture.py" "$BONSAI_GGUF" "$out/ffn-layer0.bin"
+bash tools/build-goose-vulkan.sh "$out/linux" linux compute
+"$out/linux/frankenmoe-vulkan-compute-test" 0 0 "$out/ffn-layer0.bin"
+```
+
+Fixture SHA-256 `09f64a1611b8775025d4335875976ff4f8d14ec83070787c74bb9bb0e4a0599a`.
+This is a layer fixture, not a model throughput or generation result.
+Next is the causal convolution and recurrent GDN branch, followed by
+Bonsai attention/KV semantics, model loading and end-to-end generation.
+[PrismML GGUF artifacts](https://huggingface.co/prism-ml/Ternary-Bonsai-2.5-27B-GGUF)
+
 ## Model order
 
 1. **Qwen2.5-0.5B-Instruct, Q4_0 GGUF** is the proposed first target. Choose
