@@ -228,3 +228,27 @@ accepted SwiGLU path, startup reported all 22175 MiB resident and
 at 20.89 prefill and 8.54 decode tokens/s and matched all eight external
 reference IDs. Process swap and system swap-out delta were zero.
 This is a startup correctness check rather than a paired speed comparison.
+
+## CUDA clamped SwiGLU with precise down projections
+
+GigaChat4 routes clamped SwiGLU through one Goose CUDA vector operation.
+Its down projections use the existing direct path without MMQ activation
+packing. Other projections retain the existing selection policy. The CPU
+implementation remains available for execution without CUDA.
+
+The four 128/8 runs used the same placement and request, in
+control/candidate/candidate/control order without collecting logprobs.
+
+| Run | Prefill, tok/s | Decode, tok/s | VRAM after request, MiB |
+| --- | ---: | ---: | ---: |
+| Control 1 | 21.259 | 8.337 | 8425 |
+| Control 2 | 21.182 | 8.162 | 8393 |
+| CUDA SwiGLU 1 | 29.906 | 9.823 | 8396 |
+| CUDA SwiGLU 2 | 29.743 | 9.970 | 8389 |
+
+Median improvements were 40.5 percent for prefill and 20.0 percent for
+decode. Process swap and system swap-out delta were zero. Median peak
+RSS rose by approximately 49 MiB. All eight tokens matched the external
+reference in every measured run and on an independent 29/8 input.
+The initial all-MMQ CUDA SwiGLU candidate differed at the eighth token
+and was excluded from this checkpoint.

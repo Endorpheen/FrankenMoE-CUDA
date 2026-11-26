@@ -90,9 +90,9 @@ extern "fg_cuda_begin" fn cuda_begin(input: u64, input_bytes: i64, output: u64, 
 extern "fg_cuda_prepare_experts" fn cuda_prepare_experts(tensor: u64, bytes: i64,
     active: const i64[:], offsets: i64[:]) -> i64;
 extern "fg_cuda_plane" fn cuda_plane(weights: u64, weight_bytes: i64, stride: i64,
-                                    extent: i64, kind: i64, columns: i64, jobs: const i64[:]) -> i64;
+                                    extent: i64, kind: i64, columns: i64, jobs: const i64[:], allow_mmq: bool) -> i64;
 extern "fg_cuda_expert_batch" fn cuda_expert_batch(weight_bytes: i64, stride: i64,
-    extent: i64, kind: i64, columns: i64, jobs: const i64[:], shared_rows: i64, input_stride: i64) -> i64;
+    extent: i64, kind: i64, columns: i64, jobs: const i64[:], shared_rows: i64, input_stride: i64, allow_mmq: bool) -> i64;
 extern "fg_cuda_finish" fn cuda_finish(output: u64, output_bytes: i64) -> i64;
 
 fn matrix_index_layout(p: const Node &) -> bool {
@@ -322,7 +322,7 @@ fn cuda_matrix_planes(p: const Node &, weights: u64, weight_bytes: i64,
         }
         if cached == 0 {
             if cuda_plane(weights + (at as u64), span, p.x.nb[1], extent, p.x.kind,
-                          p.d.ne[0], jobs[0 .. words]) != 0 { return false; }
+                          p.d.ne[0], jobs[0 .. words], p.ip[13] != 1) != 0 { return false; }
             words = 0;
         }
     }
@@ -330,7 +330,7 @@ fn cuda_matrix_planes(p: const Node &, weights: u64, weight_bytes: i64,
         // With one input slot per token, all of its expert routes share this row.
         let shared_rows = if p.y.ne[1] == 1 && p.z.ne[0] > 1 && p.y.nb[2] > 0 { p.y.ne[2] } else { 0 };
         return cuda_expert_batch(span, p.x.nb[1], extent, p.x.kind, p.d.ne[0], jobs[0 .. words],
-            shared_rows, p.y.nb[2]) == 0;
+            shared_rows, p.y.nb[2], p.ip[13] != 1) == 0;
     }
     return true;
 }

@@ -12,6 +12,8 @@ fn cv_operation(p: const Node &) -> i64 {
     if p.op == OP_RMS_NORM { return CV_RMS; }
     if p.op == OP_L2_NORM { return CV_L2; }
     if p.op == OP_GLU && p.ip[0] == GLU_OP_SWIGLU && p.ip[12] == 0 { return CV_SWIGLU; }
+    if p.op == OP_GLU && p.ip[0] == GLU_OP_SWIGLU_CLAMP && p.ip[13] == 1 && p.ip[2] == 1 &&
+       p.fp[1] > 0.0 && p.fp[1] <= 3.4028234663852886e38 { return CV_SWIGLU_CLAMPED; }
     if p.op == OP_UNARY {
         if p.ip[0] == UNARY_OP_SIGMOID { return CV_SIGMOID; }
         if p.ip[0] == UNARY_OP_SILU { return CV_SILU; }
@@ -60,10 +62,10 @@ fn cv_try(p: const Node &, x: const u8[:], y: const u8[:], dst: u8[:], addresses
     }
     let norm = op == CV_RMS || op == CV_L2;
     let packed = op == CV_SWIGLU && p.ip[2] == 0;
-    let pair = op <= CV_DIV || (op == CV_SWIGLU && !packed) || (op == CV_RMS && p.ip[14] != 0);
+    let pair = op <= CV_DIV || op == CV_SWIGLU_CLAMPED || (op == CV_SWIGLU && !packed) || (op == CV_RMS && p.ip[14] != 0);
     if pair && !cv_layout(p.y, y.len) { return 0; }
     if norm && !same_shape(p.x, p.d) { return 0; }
-    if op == CV_SWIGLU && !packed && (!same_shape(p.x, p.d) || !same_shape(p.y, p.d)) { return 0; }
+    if (op == CV_SWIGLU_CLAMPED || (op == CV_SWIGLU && !packed)) && (!same_shape(p.x, p.d) || !same_shape(p.y, p.d)) { return 0; }
     for axis in 4 {
         if packed {
             let extent = if axis == 0 { mul_size(p.d.ne[axis], 2) } else { p.d.ne[axis] };

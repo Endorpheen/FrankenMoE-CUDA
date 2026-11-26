@@ -10,7 +10,11 @@ extern "ggml_mul_mat_id" fn giga_mat_id(ctx: u64, w: u64, x: u64, ids: u64) -> u
 extern "ggml_build_forward_expand" fn giga_expand(graph: u64, x: u64);
 
 fn giga_ff_activation(ctx: u64, gate: u64, up: u64, limit: f32) -> u64 {
-    if limit > 0.000001 { return giga_swiglu_limited(ctx, gate, up, limit); }
+    if limit > 0.000001 {
+        let clamped = giga_swiglu_limited(ctx, gate, up, limit);
+        giga_op_param(clamped as! i64, 13, 1);
+        return clamped;
+    }
     return giga_swiglu(ctx, gate, up);
 }
 
@@ -18,7 +22,9 @@ export fn giga_dense_ffn(ctx: u64, input: u64, gate: u64, up: u64,
                           down: u64, limit: f32) -> u64 {
     if ctx == 0 || input == 0 || gate == 0 || up == 0 || down == 0 { return 0; }
     let hidden = giga_ff_activation(ctx, giga_mat(ctx, gate, input), giga_mat(ctx, up, input), limit);
-    return giga_mat(ctx, down, hidden);
+    let output = giga_mat(ctx, down, hidden);
+    if limit > 0.000001 { giga_op_param(output as! i64, 13, 1); }
+    return output;
 }
 
 // Weight order follows the routed and shared FFN bindings.
@@ -50,7 +56,9 @@ export fn giga_moe_ffn(ctx: u64, graph: u64, input: u64, weights: u64[:],
     let up = giga_mat_id(ctx, weights[3], x, picks);
     let gate = giga_mat_id(ctx, weights[2], x, picks);
     let active = giga_ff_activation(ctx, gate, up, routed_limit);
-    let routed = giga_mul(ctx, giga_mat_id(ctx, weights[4], active, picks), mix);
+    let down = giga_mat_id(ctx, weights[4], active, picks);
+    if routed_limit > 0.000001 { giga_op_param(down as! i64, 13, 1); }
+    let routed = giga_mul(ctx, down, mix);
     giga_expand(graph, routed);
 
     var views: u64[8] = [0; 8];

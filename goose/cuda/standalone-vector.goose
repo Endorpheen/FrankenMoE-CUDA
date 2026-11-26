@@ -13,6 +13,7 @@ const CV_L2: i64 = 12;
 const CV_SIGMOID_REFERENCE: i64 = 13;
 const CV_SILU_REFERENCE: i64 = 14;
 const CV_SWIGLU_REFERENCE: i64 = 15;
+const CV_SWIGLU_CLAMPED: i64 = 16;
 const CV_FLAT_PLAN: i64 = 8;
 
 extern "fg_vector_word" fn cv_word(cfg: u64, i: i64) -> i64;
@@ -83,6 +84,9 @@ fn cv_norm(x: u64, y: u64, dst: u64, cfg: u64, op: i64, row: i64, lane: i64, eps
 }
 
 fn cv_value(op: i64, a: f32, b: f32, param0: f32, param1: f32) -> f32 {
+    if op == CV_SWIGLU_CLAMPED {
+        return silu(cv_min(a, param1)) * cv_min(cv_max(b, -param1), param1);
+    }
     if op == CV_SIGMOID_REFERENCE || op == CV_SILU_REFERENCE || op == CV_SWIGLU_REFERENCE {
         let s = cv_reciprocal(1.0 + exp32(-a));
         return if op == CV_SIGMOID_REFERENCE { s }
