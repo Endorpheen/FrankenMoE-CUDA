@@ -1241,6 +1241,18 @@ release still needs the architecture regression gates.
   Attention, GDN, dynamic KV work and full inference. Runtime unchanged.
   [Component results and integration scope](EXP-2026-11-26-2104-bonsai-ffn-graph-probe/README.md).
 
+### EXP-2026-11-26-2105 — Cumulative Bonsai FFN decode graph replay
+
+- **Accepted experimentally over EXP-2101.** Replay each Bonsai FFN as a
+  ten-node graph with the original kernels and buffers. Preserve GPU
+  greedy argmax and the CPU AVX2 fallback.
+- **Cold 32K/512 paired means:** 1085.67 → 1089.67 prefill, 38.62 → 38.92
+  decode tok/s, 43.478 → 43.267 s client time, 8934 → 8944 MiB process
+  VRAM after the request and 7283 MiB peak process RAM in both modes.
+  All four outputs match PrismML IDs and text. Nsight confirms 327040
+  replayed decode nodes with unchanged kernel counts.
+  [Implementation, measurements and evidence](EXP-2026-11-26-2105-bonsai-ffn-graph/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.

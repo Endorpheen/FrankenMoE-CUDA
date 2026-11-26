@@ -1,0 +1,461 @@
+{
+  "parent": "EXP-2101",
+  "parent_source": "b8ea9cbd2",
+  "workload": {
+    "input_tokens": 32768,
+    "output_tokens": 512,
+    "model_sha256": "ededc9fc0a8a6a8dd30914d107b2d2ce7674d789f1d05a1a481f240609aa6c23",
+    "gpu": "RTX 4070",
+    "context": 36864,
+    "batch": 4096,
+    "ubatch": 1024,
+    "kv": "Q4_0",
+    "mtp": false,
+    "request": "experiments/EXP-2026-11-25-1977-bonsai-prism-32k-reference/request.json"
+  },
+  "request_sha256": "1f62448c0a6d29a776f76df4f24d0ca162c7a5d10774f879d94f859ac3e81ecb",
+  "artifacts_sha256": {
+    "frankenmoe-infer": "04d27e6e088151380dbc43c3097d78c5c2898c272cd2770ba19aa61c92755b7a",
+    "pipeline.cubin": "2a18d1857ecb4067e30eb9ab6cc4f9c61cab7d6c46985b02c59cb57616b5c7cd",
+    "main.o": "a4979543a827c9f5fd0b419b4a4ad33ebb442a218c93f88c1794f706e4652a34",
+    "model-host.o": "11c9a0e9d09de95807ffd701b9a172af8013d092f12b680caace08d7d854f416",
+    "frozen-goose.ptx": "42e1f5c0885a3bbab3656e3bba2dc6ef8b998a4581d365b6c1e48fc842f789d7"
+  },
+  "historical_exp2101_tok_s": [
+    1094.970840538616,
+    38.88982846271939
+  ],
+  "saved_prism_tok_s": [
+    1095.12,
+    48.08
+  ],
+  "scored_run_order": [
+    "A",
+    "B",
+    "B2",
+    "A2"
+  ],
+  "summary": {
+    "control": {
+      "prefill_tok_s": 1085.6689686314862,
+      "decode_tok_s": 38.617414046046086,
+      "client_s": 43.477662,
+      "decode_ms": 13233.643706975272,
+      "process_vram_after_mib": 8934,
+      "process_ram_hwm_mib": 7282.95703125
+    },
+    "candidate": {
+      "prefill_tok_s": 1089.6705929641407,
+      "decode_tok_s": 38.917025601016476,
+      "client_s": 43.2667995,
+      "decode_ms": 13131.89911202062,
+      "process_vram_after_mib": 8944,
+      "process_ram_hwm_mib": 7282.98046875
+    }
+  },
+  "arms": {
+    "A": {
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 32768,
+        "prompt_ms": 30419.695758027956,
+        "prompt_per_token_ms": 0.9283354418343492,
+        "prompt_per_second": 1077.196835256063,
+        "predicted_n": 512,
+        "predicted_ms": 13363.356156973168,
+        "predicted_per_token_ms": 26.15138191188487,
+        "predicted_per_second": 38.23889702538189
+      },
+      "client_s": 43.842153,
+      "process_vram_after_mib": 8934,
+      "process_memory_kib": {
+        "VmHWM": 7457916,
+        "VmRSS": 162088,
+        "VmSwap": 0
+      },
+      "cold_prefill": {
+        "cold_prefill": "PASS",
+        "computed_prompt_tokens": 32768,
+        "cached_prompt_tokens": 0,
+        "engine": "goose",
+        "request_sha256": "1f62448c0a6d29a776f76df4f24d0ca162c7a5d10774f879d94f859ac3e81ecb",
+        "response_sha256": "e5979e94115f78903ee945418031adc9e3ed72d0e75be494c937ac9ea95b80c5"
+      },
+      "bonsai_env": {
+        "BONSAI_CUDA_IMAGE": "/home/end0/.codex/worktrees/multimodel-release-main/FrankenMoE-CUDA/build/bonsai-ffn-graph-2105/pipeline.cubin",
+        "BONSAI_DECODE_DIRECT_HALF2": "1",
+        "BONSAI_DECODE_DIRECT_MMA": "1",
+        "BONSAI_DECODE_ORDERED_MERGE": "1",
+        "BONSAI_FFN_DOWN_Q8_FUSED": "1",
+        "BONSAI_FFN_Q8_FULL128": "1",
+        "BONSAI_FFN_Q8_PAIRLOAD": "1",
+        "BONSAI_FFN_Q8_PANEL": "1",
+        "BONSAI_FFN_Q8_PREFILL": "1",
+        "BONSAI_FFN_Q8_SPREAD": "1",
+        "BONSAI_FLASH_ASYNC": "1",
+        "BONSAI_FLASH_COMPACT": "1",
+        "BONSAI_FLASH_F32": "1",
+        "BONSAI_FLASH_FP8_PV": "1",
+        "BONSAI_FLASH_FP8_QK": "1",
+        "BONSAI_FLASH_ORDERED_MERGE": "1",
+        "BONSAI_FLASH_REUSE": "1",
+        "BONSAI_FROZEN_PTX": "/home/end0/.codex/worktrees/multimodel-release-main/FrankenMoE-CUDA/build/bonsai-cumulative-exp2101/cuda/frozen-goose.ptx",
+        "BONSAI_HTTP_DEVICE_CHOICE": "1",
+        "BONSAI_HTTP_FFN_GRAPH": "0",
+        "BONSAI_HTTP_HOST_SCAN": "1",
+        "BONSAI_MMQ_HALF2_DOWN": "1",
+        "BONSAI_MMQ_HALF_ACC": "1",
+        "BONSAI_MMQ_HALF_FULL6144": "1",
+        "BONSAI_MMQ_HALF_FULL": "1"
+      },
+      "argv": [
+        "/home/end0/.codex/worktrees/multimodel-release-main/FrankenMoE-CUDA/build/bonsai-ffn-graph-2105/frankenmoe-infer",
+        "--ctx-size",
+        "36864",
+        "--batch-size",
+        "4096",
+        "--ubatch-size",
+        "1024",
+        "--cache-type-k",
+        "q4_0",
+        "--cache-type-v",
+        "q4_0",
+        "--threads",
+        "8",
+        "--threads-batch",
+        "16",
+        "--cpu-mask",
+        "0f0f",
+        "--cpu-mask-batch",
+        "ffff",
+        "--cpu-strict",
+        "1",
+        "--cpu-strict-batch",
+        "1",
+        "/home/end0/AI/LocalAI/Models/Ternary-Bonsai-2.5-27B-PQ2_0-mtp.gguf",
+        "--serve",
+        "19197"
+      ],
+      "affinity_observed": "0-31",
+      "ambient": [
+        "name, driver_version, memory.free [MiB], clocks.current.sm [MHz], clocks.current.memory [MHz], temperature.gpu",
+        "NVIDIA GeForce RTX 4070, 580.178.04, 9266 MiB, 225 MHz, 405 MHz, 50"
+      ],
+      "matched_prism_ids": 512,
+      "matched_prism_text": true
+    },
+    "B": {
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 32768,
+        "prompt_ms": 30310.026151011698,
+        "prompt_per_token_ms": 0.9249885910342925,
+        "prompt_per_second": 1081.0944153179578,
+        "predicted_n": 512,
+        "predicted_ms": 13267.45193701936,
+        "predicted_per_token_ms": 25.963702420781527,
+        "predicted_per_second": 38.5153081711333
+      },
+      "client_s": 43.640226,
+      "process_vram_after_mib": 8944,
+      "process_memory_kib": {
+        "VmHWM": 7457552,
+        "VmRSS": 163916,
+        "VmSwap": 0
+      },
+      "cold_prefill": {
+        "cold_prefill": "PASS",
+        "computed_prompt_tokens": 32768,
+        "cached_prompt_tokens": 0,
+        "engine": "goose",
+        "request_sha256": "1f62448c0a6d29a776f76df4f24d0ca162c7a5d10774f879d94f859ac3e81ecb",
+        "response_sha256": "52fba4432856ece09022a7b609b70100e066b0e2451f935065d897ce5922b167"
+      },
+      "bonsai_env": {
+        "BONSAI_CUDA_IMAGE": "/home/end0/.codex/worktrees/multimodel-release-main/FrankenMoE-CUDA/build/bonsai-ffn-graph-2105/pipeline.cubin",
+        "BONSAI_DECODE_DIRECT_HALF2": "1",
+        "BONSAI_DECODE_DIRECT_MMA": "1",
+        "BONSAI_DECODE_ORDERED_MERGE": "1",
+        "BONSAI_FFN_DOWN_Q8_FUSED": "1",
+        "BONSAI_FFN_Q8_FULL128": "1",
+        "BONSAI_FFN_Q8_PAIRLOAD": "1",
+        "BONSAI_FFN_Q8_PANEL": "1",
+        "BONSAI_FFN_Q8_PREFILL": "1",
+        "BONSAI_FFN_Q8_SPREAD": "1",
+        "BONSAI_FLASH_ASYNC": "1",
+        "BONSAI_FLASH_COMPACT": "1",
+        "BONSAI_FLASH_F32": "1",
+        "BONSAI_FLASH_FP8_PV": "1",
+        "BONSAI_FLASH_FP8_QK": "1",
+        "BONSAI_FLASH_ORDERED_MERGE": "1",
+        "BONSAI_FLASH_REUSE": "1",
+        "BONSAI_FROZEN_PTX": "/home/end0/.codex/worktrees/multimodel-release-main/FrankenMoE-CUDA/build/bonsai-cumulative-exp2101/cuda/frozen-goose.ptx",
+        "BONSAI_HTTP_DEVICE_CHOICE": "1",
+        "BONSAI_HTTP_FFN_GRAPH": "1",
+        "BONSAI_HTTP_HOST_SCAN": "1",
+        "BONSAI_MMQ_HALF2_DOWN": "1",
+        "BONSAI_MMQ_HALF_ACC": "1",
+        "BONSAI_MMQ_HALF_FULL6144": "1",
+        "BONSAI_MMQ_HALF_FULL": "1"
+      },
+      "argv": [
+        "/home/end0/.codex/worktrees/multimodel-release-main/FrankenMoE-CUDA/build/bonsai-ffn-graph-2105/frankenmoe-infer",
+        "--ctx-size",
+        "36864",
+        "--batch-size",
+        "4096",
+        "--ubatch-size",
+        "1024",
+        "--cache-type-k",
+        "q4_0",
+        "--cache-type-v",
+        "q4_0",
+        "--threads",
+        "8",
+        "--threads-batch",
+        "16",
+        "--cpu-mask",
+        "0f0f",
+        "--cpu-mask-batch",
+        "ffff",
+        "--cpu-strict",
+        "1",
+        "--cpu-strict-batch",
+        "1",
+        "/home/end0/AI/LocalAI/Models/Ternary-Bonsai-2.5-27B-PQ2_0-mtp.gguf",
+        "--serve",
+        "19197"
+      ],
+      "affinity_observed": "0-31",
+      "ambient": [
+        "name, driver_version, memory.free [MiB], clocks.current.sm [MHz], clocks.current.memory [MHz], temperature.gpu",
+        "NVIDIA GeForce RTX 4070, 580.178.04, 9288 MiB, 210 MHz, 405 MHz, 50"
+      ],
+      "matched_prism_ids": 512,
+      "matched_prism_text": true
+    },
+    "B2": {
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 32768,
+        "prompt_ms": 29836.645894974936,
+        "prompt_per_token_ms": 0.9105421720878581,
+        "prompt_per_second": 1098.246770610324,
+        "predicted_n": 512,
+        "predicted_ms": 12996.34628702188,
+        "predicted_per_token_ms": 25.433162988301135,
+        "predicted_per_second": 39.31874303089965
+      },
+      "client_s": 42.893373,
+      "process_vram_after_mib": 8944,
+      "process_memory_kib": {
+        "VmHWM": 7457992,
+        "VmRSS": 163808,
+        "VmSwap": 0
+      },
+      "cold_prefill": {
+        "cold_prefill": "PASS",
+        "computed_prompt_tokens": 32768,
+        "cached_prompt_tokens": 0,
+        "engine": "goose",
+        "request_sha256": "1f62448c0a6d29a776f76df4f24d0ca162c7a5d10774f879d94f859ac3e81ecb",
+        "response_sha256": "de0b5f8a344fba54148393dd8f65a696d1be9c1be6407523e6b9cb41d3dbc1e4"
+      },
+      "bonsai_env": {
+        "BONSAI_CUDA_IMAGE": "/home/end0/.codex/worktrees/multimodel-release-main/FrankenMoE-CUDA/build/bonsai-ffn-graph-2105/pipeline.cubin",
+        "BONSAI_DECODE_DIRECT_HALF2": "1",
+        "BONSAI_DECODE_DIRECT_MMA": "1",
+        "BONSAI_DECODE_ORDERED_MERGE": "1",
+        "BONSAI_FFN_DOWN_Q8_FUSED": "1",
+        "BONSAI_FFN_Q8_FULL128": "1",
+        "BONSAI_FFN_Q8_PAIRLOAD": "1",
+        "BONSAI_FFN_Q8_PANEL": "1",
+        "BONSAI_FFN_Q8_PREFILL": "1",
+        "BONSAI_FFN_Q8_SPREAD": "1",
+        "BONSAI_FLASH_ASYNC": "1",
+        "BONSAI_FLASH_COMPACT": "1",
+        "BONSAI_FLASH_F32": "1",
+        "BONSAI_FLASH_FP8_PV": "1",
+        "BONSAI_FLASH_FP8_QK": "1",
+        "BONSAI_FLASH_ORDERED_MERGE": "1",
+        "BONSAI_FLASH_REUSE": "1",
+        "BONSAI_FROZEN_PTX": "/home/end0/.codex/worktrees/multimodel-release-main/FrankenMoE-CUDA/build/bonsai-cumulative-exp2101/cuda/frozen-goose.ptx",
+        "BONSAI_HTTP_DEVICE_CHOICE": "1",
+        "BONSAI_HTTP_FFN_GRAPH": "1",
+        "BONSAI_HTTP_HOST_SCAN": "1",
+        "BONSAI_MMQ_HALF2_DOWN": "1",
+        "BONSAI_MMQ_HALF_ACC": "1",
+        "BONSAI_MMQ_HALF_FULL6144": "1",
+        "BONSAI_MMQ_HALF_FULL": "1"
+      },
+      "argv": [
+        "/home/end0/.codex/worktrees/multimodel-release-main/FrankenMoE-CUDA/build/bonsai-ffn-graph-2105/frankenmoe-infer",
+        "--ctx-size",
+        "36864",
+        "--batch-size",
+        "4096",
+        "--ubatch-size",
+        "1024",
+        "--cache-type-k",
+        "q4_0",
+        "--cache-type-v",
+        "q4_0",
+        "--threads",
+        "8",
+        "--threads-batch",
+        "16",
+        "--cpu-mask",
+        "0f0f",
+        "--cpu-mask-batch",
+        "ffff",
+        "--cpu-strict",
+        "1",
+        "--cpu-strict-batch",
+        "1",
+        "/home/end0/AI/LocalAI/Models/Ternary-Bonsai-2.5-27B-PQ2_0-mtp.gguf",
+        "--serve",
+        "19197"
+      ],
+      "affinity_observed": "0-31",
+      "ambient": [
+        "name, driver_version, memory.free [MiB], clocks.current.sm [MHz], clocks.current.memory [MHz], temperature.gpu",
+        "NVIDIA GeForce RTX 4070, 580.178.04, 10049 MiB, 2505 MHz, 10251 MHz, 48"
+      ],
+      "matched_prism_ids": 512,
+      "matched_prism_text": true
+    },
+    "A2": {
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 32768,
+        "prompt_ms": 29948.60529404832,
+        "prompt_per_token_ms": 0.9139589017959082,
+        "prompt_per_second": 1094.1411020069097,
+        "predicted_n": 512,
+        "predicted_ms": 13103.931256977376,
+        "predicted_per_token_ms": 25.643701089975295,
+        "predicted_per_second": 38.995931066710284
+      },
+      "client_s": 43.113171,
+      "process_vram_after_mib": 8934,
+      "process_memory_kib": {
+        "VmHWM": 7457580,
+        "VmRSS": 162008,
+        "VmSwap": 0
+      },
+      "cold_prefill": {
+        "cold_prefill": "PASS",
+        "computed_prompt_tokens": 32768,
+        "cached_prompt_tokens": 0,
+        "engine": "goose",
+        "request_sha256": "1f62448c0a6d29a776f76df4f24d0ca162c7a5d10774f879d94f859ac3e81ecb",
+        "response_sha256": "e4902f062ed9917174e48fe733acef816c2eefd96fb61690dcec8933efb320b2"
+      },
+      "bonsai_env": {
+        "BONSAI_CUDA_IMAGE": "/home/end0/.codex/worktrees/multimodel-release-main/FrankenMoE-CUDA/build/bonsai-ffn-graph-2105/pipeline.cubin",
+        "BONSAI_DECODE_DIRECT_HALF2": "1",
+        "BONSAI_DECODE_DIRECT_MMA": "1",
+        "BONSAI_DECODE_ORDERED_MERGE": "1",
+        "BONSAI_FFN_DOWN_Q8_FUSED": "1",
+        "BONSAI_FFN_Q8_FULL128": "1",
+        "BONSAI_FFN_Q8_PAIRLOAD": "1",
+        "BONSAI_FFN_Q8_PANEL": "1",
+        "BONSAI_FFN_Q8_PREFILL": "1",
+        "BONSAI_FFN_Q8_SPREAD": "1",
+        "BONSAI_FLASH_ASYNC": "1",
+        "BONSAI_FLASH_COMPACT": "1",
+        "BONSAI_FLASH_F32": "1",
+        "BONSAI_FLASH_FP8_PV": "1",
+        "BONSAI_FLASH_FP8_QK": "1",
+        "BONSAI_FLASH_ORDERED_MERGE": "1",
+        "BONSAI_FLASH_REUSE": "1",
+        "BONSAI_FROZEN_PTX": "/home/end0/.codex/worktrees/multimodel-release-main/FrankenMoE-CUDA/build/bonsai-cumulative-exp2101/cuda/frozen-goose.ptx",
+        "BONSAI_HTTP_DEVICE_CHOICE": "1",
+        "BONSAI_HTTP_FFN_GRAPH": "0",
+        "BONSAI_HTTP_HOST_SCAN": "1",
+        "BONSAI_MMQ_HALF2_DOWN": "1",
+        "BONSAI_MMQ_HALF_ACC": "1",
+        "BONSAI_MMQ_HALF_FULL6144": "1",
+        "BONSAI_MMQ_HALF_FULL": "1"
+      },
+      "argv": [
+        "/home/end0/.codex/worktrees/multimodel-release-main/FrankenMoE-CUDA/build/bonsai-ffn-graph-2105/frankenmoe-infer",
+        "--ctx-size",
+        "36864",
+        "--batch-size",
+        "4096",
+        "--ubatch-size",
+        "1024",
+        "--cache-type-k",
+        "q4_0",
+        "--cache-type-v",
+        "q4_0",
+        "--threads",
+        "8",
+        "--threads-batch",
+        "16",
+        "--cpu-mask",
+        "0f0f",
+        "--cpu-mask-batch",
+        "ffff",
+        "--cpu-strict",
+        "1",
+        "--cpu-strict-batch",
+        "1",
+        "/home/end0/AI/LocalAI/Models/Ternary-Bonsai-2.5-27B-PQ2_0-mtp.gguf",
+        "--serve",
+        "19197"
+      ],
+      "affinity_observed": "0-31",
+      "ambient": [
+        "name, driver_version, memory.free [MiB], clocks.current.sm [MHz], clocks.current.memory [MHz], temperature.gpu",
+        "NVIDIA GeForce RTX 4070, 580.178.04, 10052 MiB, 2835 MHz, 10251 MHz, 60"
+      ],
+      "matched_prism_ids": 512,
+      "matched_prism_text": true
+    }
+  },
+  "smoke": {
+    "greedy": {
+      "ids": [
+        2253,
+        314,
+        27676,
+        314
+      ],
+      "response_matches": true,
+      "probability_rows": 0
+    },
+    "eos": {
+      "ids": [
+        2253,
+        314,
+        27676,
+        314
+      ],
+      "response_matches": true,
+      "probability_rows": 0
+    },
+    "probability": {
+      "ids": [
+        2253,
+        314,
+        27676,
+        314
+      ],
+      "response_matches": true,
+      "probability_rows": 4
+    },
+    "stochastic": {
+      "ids": [
+        7244,
+        310,
+        12904,
+        11
+      ],
+      "response_matches": true,
+      "probability_rows": 0
+    }
+  },
+  "trace_artifact_sha256": "53f7e5cb9fb3a4090cfcfbdd130e949843aadedca0550877cbc8222a78f8e4bb"
+}
