@@ -1,0 +1,30 @@
+extern "fg_standalone_graph_alloc" fn giga_host_arena(graph: u64) -> u64;
+extern "fg_standalone_graph_compute" fn giga_host_compute(graph: u64) -> i32;
+extern "fg_standalone_graph_plan_alloc" fn giga_host_plan(graph: u64, output: u64) -> u64;
+extern "fg_standalone_graph_plan_compute" fn giga_host_plan_compute(plan: u64) -> i32;
+extern "fg_standalone_graph_plan_free" fn giga_host_plan_free(plan: u64);
+extern "giga_step_upload" fn giga_host_upload(step: u64, tokens: u64) -> i32;
+extern "giga_step_commit" fn giga_host_commit(request: u64, step: u64) -> i32;
+extern "giga_request_reset" fn giga_host_reset(request: u64);
+extern "fg_q35_release_graph" fn giga_host_free(memory: u64);
+
+// The caller owns descriptors and releases the returned arena after reading the outputs.
+export fn giga_execute_step(request: u64, step: u64, graph: u64,
+                            tokens: u64, output: u64, planned: bool, arena_out: u64[:]) -> i64 {
+    if request == 0 || step == 0 || graph == 0 || tokens == 0 ||
+       arena_out.len < 1 || arena_out[0] != 0 { return -1; }
+    let arena = if planned { giga_host_plan(graph, output) } else { giga_host_arena(graph) };
+    if arena == 0 { return -2; }
+    if giga_host_upload(step, tokens) != 0 {
+        if planned { giga_host_plan_free(arena); } else { giga_host_free(arena); }
+        return -3;
+    }
+    let status = if planned { giga_host_plan_compute(arena) } else { giga_host_compute(graph) };
+    if status != 0 || giga_host_commit(request, step) != 0 {
+        giga_host_reset(request);
+        if planned { giga_host_plan_free(arena); } else { giga_host_free(arena); }
+        return -4;
+    }
+    arena_out[0] = arena;
+    return 0;
+}

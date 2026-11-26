@@ -1,0 +1,47 @@
+--- a/goose-host-llm.c
++++ b/goose-host-llm.c
+@@ -30,6 +30,9 @@
+ #include "goose-host-llm.h"
+ #include "goose-host.h"
+ #include "graph-execute.h"
++#include "server-adapter.h"
++
++static bool gigachat4;
+
+ #define MAX_REQ   262144
+
+@@ -285,6 +288,7 @@
+
+ // Start a request from zero: KV bookkeeping plus every recurrent/KV cell buffer.
+ static void reset_state(void) {
++    if (gigachat4) { giga_server_reset(); return; }
+     if (qr_reset_state((sl_i64) { H.owner, 13 }, (sl_i64) { H.records, H.layer_count * 32 },
+         (sl_i64) { H.kv_state, 6 }) != 0) die("model state reset");
+ }
+@@ -303,6 +307,7 @@
+
+ static int64_t model_step(sl_i32 tokens, int64_t logit_rows, sl_f32 output) {
+     if (!tokens.data || (output.len != 0 && !output.data)) return -1;
++    if (gigachat4) return giga_server_step(tokens.data, tokens.len, logit_rows, output.data, output.len);
+     const int64_t result = q35_model_step((sl_i64) { H.owner, 13 }, (sl_i64) { H.handles, 4 },
+         (sl_i64) { H.records, H.layer_count * 32 }, (sl_i64) { H.acfg, 14 },
+         (sl_i64) { H.gcfg, 7 }, (sl_i64) { H.mcfg, 3 }, (sl_i64) { H.kv_state, 6 },
+@@ -331,6 +336,18 @@
+     if (H.base == MAP_FAILED) die("model mmap");
+ #endif
+     load_vocab();
++    int64_t architecture[4];
++    const int64_t arch_key = find_key("general.architecture");
++    if (gr_val_span((sl_i64){ H.state, 8 }, (sl_i64){ H.kv, 256 * 8 }, arch_key,
++                    (sl_i64){ architecture, 4 }) == 0 &&
++        architecture[0] == 8 && architecture[2] == 9 &&
++        memcmp(H.base + architecture[1], "gigachat4", 9) == 0) {
++        if (H.n_tok != 128256 || giga_server_open(H.base, H.size, capacity) != 0) die("GigaChat4 model loader");
++        gigachat4 = true;
++        H.owner[10] = capacity;
++        H.layer_count = 32;
++        return;
++    }
+     init_trunk(capacity);
+     int64_t residency[4] = {0};
+     const int64_t status = warm_model(residency);
