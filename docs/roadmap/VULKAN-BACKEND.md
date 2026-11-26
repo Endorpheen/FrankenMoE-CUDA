@@ -314,7 +314,7 @@ The local GGUF inventory confirms distinct requirements.
 | Qwen2.5-0.5B Q4_0 | Q4_0, Q8_0 | Experimental CLI and HTTP release |
 | Bonsai 2.5 27B | PQ2_0 trunk, Q4_0 KV | Experimental raw-ID and text CLI, serial HTTP completions, SSE and no-thinking ChatML. Short generation passes on Linux RTX 4070 and Windows EXE under Wine with RTX 4070. |
 | Apex 35B | Q4_K/Q6_K weights, Q4_0 KV | Experimental complete 40-layer trunk, raw-ID and text CLI, serial HTTP. Short generation passes on Linux RTX 4070 and Windows EXE under Wine with RTX 4070. |
-| Inkling-2-Mini | Q8_0, IQ4_NL, IQ4_XS | Real-weight projection and embedding gather pass. Model graph, relative/sliding attention, recurrent depth loops and grouped MoE are open. |
+| Inkling-2-Mini | Q8_0, IQ4_NL, IQ4_XS | Real-weight projection, embedding gather and first-layer routed expert evaluation pass. Model graph, relative/sliding attention and recurrent depth loops are open. |
 
 ### Bonsai FFN component
 
@@ -640,6 +640,30 @@ Tested executable SHA-256 values:
 
 - Linux `0b70fee6b55b3271104b6689e574dd4060a01d1d9bc4430d4dd4e2d173a1b93d`.
 - Windows `557d42b06bd466347b9d58d1b71c99399949a4326e74448d4a0290721695cc3f`.
+
+### Inkling routed expert execution
+
+The Inkling route ranks sigmoid probabilities with selection bias and
+normalizes the selected pre-bias probabilities with model scale eight.
+The portable Vulkan bank stages per-expert slices from the fused IQ4_XS
+gate/up plane and the IQ4_NL down plane. SiTU uses the checkpoint's
+gate cap four and up cap 25. The first-layer reference applies the real
+layer RMS multiplier to a real token embedding and compares
+all eight routed IDs and all 2304 output values against an independent
+CPU calculation. Linux RTX 4070, Linux Lavapipe and Windows x64 under
+Wine with Lavapipe all pass. The maximum absolute output error is
+5.97e-6. The Apex routed fixture still passes on RTX 4070.
+
+```bash
+tests=integration/goose-standalone/tests/vulkan
+out=build/vulkan-bringup/inkling-experts
+bash tools/build-goose-vulkan.sh "$out/linux" linux compute
+PYTHONPATH="$LLAMA_CPP/gguf-py" OPENBLAS_NUM_THREADS=1 \
+    python3 "$tests/inkling-experts-fixture.py" "$INKLING_GGUF" "$out/experts.bin"
+"$out/linux/frankenmoe-vulkan-compute-test" 0 0 --inkling-experts "$INKLING_GGUF" "$out/experts.bin"
+```
+
+Fixture SHA-256 `cb65be95bbe1bd94f5213ee14edcd4c6cb654a602548936b7d54cbbe55b63b06`.
 
 ## Model order
 

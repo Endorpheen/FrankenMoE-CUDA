@@ -28,5 +28,7 @@ int fg_vk_expert_bank_stage(fg_vk_expert_bank *bank, FILE *file, uint64_t file_b
 int fg_vk_expert_bank_record_split(fg_vk_graph *graph, const fg_vk_expert_bank *bank,
     uint32_t hidden, uint32_t ff, const fg_vk_op ops[FG_VK_EXPERT_PLANES],
     fg_vk_view input, const fg_vk_view scratch[3], fg_vk_view branches);
+int fg_vk_expert_bank_record_inkling(fg_vk_graph *graph, const fg_vk_expert_bank *bank,
+    uint32_t hidden, uint32_t ff, fg_vk_view input, fg_vk_view gate_up, fg_vk_view activated, fg_vk_view branches);
 
 #endif

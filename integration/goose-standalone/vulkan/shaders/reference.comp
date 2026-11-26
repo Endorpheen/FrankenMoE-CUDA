@@ -7,6 +7,9 @@ layout(local_size_x = 64) in;
 #if defined(OP_Q4_0) || defined(OP_Q8_0) || defined(OP_PQ2_0) || defined(OP_Q4_K) || defined(OP_Q6_K) || defined(OP_IQ4_NL) || defined(OP_IQ4_XS)
 #define QUANT_PROJECT
 #endif
+#if defined(OP_MOE_ROUTE) || defined(OP_INKLING_ROUTE)
+#define MOE_ROUTE
+#endif
 #if defined(QUANT_GATHER)
 layout(set = 0, binding = 0, std430) readonly buffer Tokens { uint ids[]; };
 #else
@@ -27,7 +30,7 @@ layout(set = 0, binding = 1, std430) readonly buffer Weights { float w[]; };
 #endif
 #if defined(OP_KV_STORE_Q4)
 layout(set = 0, binding = 2, std430) writeonly buffer Cache { uint cache[]; };
-#elif defined(OP_MOE_ROUTE)
+#elif defined(MOE_ROUTE)
 layout(set = 0, binding = 2, std430) writeonly buffer Routes { uint routes[]; };
 #else
 layout(set = 0, binding = 2, std430) writeonly buffer Output { float y[]; };
@@ -50,9 +53,14 @@ layout(push_constant) uniform Params {
 } p;
 
 shared float partial[64];
-#if defined(OP_MOE_ROUTE)
+#if defined(MOE_ROUTE)
 shared uint candidates[64], selected[64];
 shared float picked[64];
+#if defined(OP_INKLING_ROUTE)
+float inkling_probability(float logit) {
+    return 1.0 / (1.0 + exp(-logit));
+}
+#endif
 #endif
 #if defined(OP_FWHT)
 shared float tile[1024];
@@ -223,13 +231,17 @@ void main() {
     float result = sum_group(sum);
     uint stride = p.context == 0 ? p.rows : p.context;
     if (lane == 0) y[token * stride + p.position + row] = result;
-#elif defined(OP_MOE_ROUTE)
+#elif defined(MOE_ROUTE)
     uint token = gl_WorkGroupID.x, base = token * p.width, out_base = token * (2u * p.rows);
     float neg_inf = uintBitsToFloat(0xff800000u);
     float local_max = neg_inf, bad = 0.0;
     for (uint i = lane; i < p.width; i += 64u) {
         float score = x[base + i];
-        if (isnan(score) || isinf(score)) bad = 1.0;
+        if (isnan(score) || isinf(score)
+#if defined(OP_INKLING_ROUTE)
+            || isnan(w[i]) || isinf(w[i])
+#endif
+            ) bad = 1.0;
         else local_max = max(local_max, score);
     }
     if (sum_group(bad) != 0.0) {
@@ -239,6 +251,7 @@ void main() {
         }
         return;
     }
+#if !defined(OP_INKLING_ROUTE)
     partial[lane] = local_max;
     barrier();
     for (uint step = 32u; step != 0u; step >>= 1u) {
@@ -250,15 +263,20 @@ void main() {
     float local_sum = 0.0;
     for (uint i = lane; i < p.width; i += 64u) local_sum += exp(x[base + i] - peak);
     float denominator = sum_group(local_sum);
+#endif
     for (uint slot = 0u; slot < p.rows; ++slot) {
-        float best = -1.0;
+        float best = neg_inf;
         uint id = 0xffffffffu;
         for (uint i = lane; i < p.width; i += 64u) {
             bool used = false;
             for (uint k = 0u; k < slot; ++k) used = used || selected[k] == i;
-            float probability = exp(x[base + i] - peak) / denominator;
-            if (!used && probability > best) {
-                best = probability;
+#if defined(OP_INKLING_ROUTE)
+            float rank = inkling_probability(x[base + i]) + w[i];
+#else
+            float rank = exp(x[base + i] - peak) / denominator;
+#endif
+            if (!used && rank > best) {
+                best = rank;
                 id = i;
             }
         }
@@ -278,7 +296,11 @@ void main() {
         }
         if (lane == 0) {
             selected[slot] = candidates[0];
+#if defined(OP_INKLING_ROUTE)
+            picked[slot] = inkling_probability(x[base + candidates[0]]);
+#else
             picked[slot] = partial[0];
+#endif
         }
         barrier();
     }
@@ -419,6 +441,15 @@ void main() {
 #elif defined(OP_SWIGLU)
     uint index = gl_GlobalInvocationID.x;
     if (index < p.width * p.batch) y[index] = (x[index] / (1.0 + exp(-x[index]))) * w[index];
+#elif defined(OP_INKLING_SITU)
+    uint index = gl_GlobalInvocationID.x;
+    if (index < p.width * p.batch) {
+        float gate = x[index];
+        precise float clipped_gate = tanh(gate * 0.25) * 4.0;
+        float sigmoid = 1.0 / (1.0 + exp(-gate));
+        precise float clipped_up = tanh(w[index] * (1.0 / 25.0)) * 25.0;
+        y[index] = (clipped_gate * sigmoid) * clipped_up;
+    }
 #elif defined(OP_ROPE)
     uint token = gl_WorkGroupID.y;
     uint head = gl_WorkGroupID.x;

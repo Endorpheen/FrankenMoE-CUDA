@@ -72,14 +72,19 @@ int fg_vk_expert_bank_stage(fg_vk_expert_bank *bank, FILE *file, uint64_t file_b
     return 1;
 }
 
+static int valid_branches(fg_vk_graph *graph, const fg_vk_expert_bank *bank,
+    VkDeviceSize row_size, fg_vk_view branches) {
+    return bank->loaded && bank->upload.vk == graph->vk && row_size &&
+        branches.size / row_size >= bank->loaded &&
+        branches.offset <= UINT64_MAX - row_size * bank->loaded &&
+        (bank->loaded == 1 || row_size % graph->vk->properties.limits.minStorageBufferOffsetAlignment == 0);
+}
+
 int fg_vk_expert_bank_record_split(fg_vk_graph *graph, const fg_vk_expert_bank *bank,
     uint32_t hidden, uint32_t ff, const fg_vk_op ops[FG_VK_EXPERT_PLANES],
     fg_vk_view input, const fg_vk_view scratch[3], fg_vk_view branches) {
     const VkDeviceSize row_size = (VkDeviceSize)hidden * sizeof(float);
-    if (!bank->loaded || bank->upload.vk != graph->vk || !row_size ||
-        branches.size / row_size < bank->loaded ||
-        branches.offset > UINT64_MAX - row_size * bank->loaded ||
-        (bank->loaded > 1 && row_size % graph->vk->properties.limits.minStorageBufferOffsetAlignment)) return 0;
+    if (!valid_branches(graph, bank, row_size, branches)) return 0;
     const fg_vk_shape up = {.width = hidden, .rows = ff, .batch = 1};
     const fg_vk_shape down = {.width = ff, .rows = hidden, .batch = 1};
     const fg_vk_shape activate = {.width = ff, .batch = 1};
@@ -90,6 +95,27 @@ int fg_vk_expert_bank_record_split(fg_vk_graph *graph, const fg_vk_expert_bank *
             !fg_vk_graph_record(graph, ops[1], up, input, w[1], scratch[1]) ||
             !fg_vk_graph_record(graph, FG_VK_SWIGLU, activate, scratch[0], scratch[1], scratch[2]) ||
             !fg_vk_graph_record(graph, ops[2], down, scratch[2], w[2], output)) return 0;
+    }
+    return 1;
+}
+
+int fg_vk_expert_bank_record_inkling(fg_vk_graph *graph, const fg_vk_expert_bank *bank,
+    uint32_t hidden, uint32_t ff, fg_vk_view input, fg_vk_view gate_up, fg_vk_view activated, fg_vk_view branches) {
+    const VkDeviceSize row_size = (VkDeviceSize)hidden * sizeof(float);
+    const VkDeviceSize half = (VkDeviceSize)ff * sizeof(float);
+    if (!valid_branches(graph, bank, row_size, branches) || !ff || ff > UINT32_MAX / 2 ||
+        gate_up.size < 2 * half || gate_up.offset > UINT64_MAX - half) return 0;
+    const fg_vk_view gate = {gate_up.buffer, gate_up.offset, half};
+    const fg_vk_view up = {gate_up.buffer, gate_up.offset + half, half};
+    const fg_vk_shape fused = {.width = hidden, .rows = 2 * ff, .batch = 1};
+    const fg_vk_shape situ = {.width = ff, .batch = 1};
+    const fg_vk_shape down = {.width = ff, .rows = hidden, .batch = 1};
+    for (uint32_t slot = 0; slot < bank->loaded; ++slot) {
+        const fg_vk_view *w = bank->plane[slot];
+        const fg_vk_view output = {branches.buffer, branches.offset + slot * row_size, row_size};
+        if (!fg_vk_graph_record(graph, FG_VK_IQ4_XS, fused, input, w[0], gate_up) ||
+            !fg_vk_graph_record(graph, FG_VK_INKLING_SITU, situ, gate, up, activated) ||
+            !fg_vk_graph_record(graph, FG_VK_IQ4_NL, down, activated, w[1], output)) return 0;
     }
     return 1;
 }

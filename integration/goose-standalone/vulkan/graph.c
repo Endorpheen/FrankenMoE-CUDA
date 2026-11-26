@@ -47,6 +47,8 @@ static const fg_vk_shader shaders[FG_VK_OP_COUNT] = {
     [FG_VK_GDN_APPLY] = { fg_gdn_apply, sizeof(fg_gdn_apply) },
     [FG_VK_SIGMOID_GATE_SCALAR] = { fg_sigmoid_gate_scalar, sizeof(fg_sigmoid_gate_scalar) },
     [FG_VK_KV_FWHT] = { fg_kv_fwht, sizeof(fg_kv_fwht) },
+    [FG_VK_INKLING_ROUTE] = { fg_inkling_route, sizeof(fg_inkling_route) },
+    [FG_VK_INKLING_SITU] = { fg_inkling_situ, sizeof(fg_inkling_situ) },
 };
 
 static VkResult create_pipeline(fg_vk_graph *graph, fg_vk_op op) {
@@ -234,10 +236,11 @@ static int record(fg_vk_graph *graph, fg_vk_op op, fg_vk_shape shape, fg_vk_view
         break;
     }
     case FG_VK_MOE_ROUTE:
+    case FG_VK_INKLING_ROUTE:
         if (shape.width > 4096 || shape.rows > shape.width || !shape.rows || shape.rows > 64 ||
             !isfinite(shape.theta) || shape.theta < 0.0f ||
             (uint64_t)shape.rows * shape.batch > UINT32_MAX / 2) return 0;
-        weight_bytes = 4;
+        weight_bytes = op == FG_VK_INKLING_ROUTE ? (uint64_t)shape.width * sizeof(float) : 4;
         output_bytes = (uint64_t)shape.rows * shape.batch * 8;
         x = shape.batch;
         break;
@@ -317,6 +320,7 @@ static int record(fg_vk_graph *graph, fg_vk_op op, fg_vk_shape shape, fg_vk_view
     case FG_VK_ADD:
     case FG_VK_SIGMOID_GATE:
     case FG_VK_SWIGLU:
+    case FG_VK_INKLING_SITU:
         x = (uint32_t)((elements + 63) / 64);
         weight_bytes = input_bytes;
         break;

@@ -91,7 +91,7 @@ int test_attention(fg_vk_graph *graph);
 int test_projection(fg_vk_graph *graph);
 int test_moe_quant(fg_vk_graph *graph, const char *path);
 int test_moe_router(fg_vk_graph *graph, const char *path);
-int test_apex_experts(fg_vk_graph *graph, const char *path, const char *fixture);
+int test_routed_experts(fg_vk_graph *graph, const char *path, const char *fixture, int inkling);
 int test_recurrent(fg_vk_graph *graph);
 int test_bonsai(fg_vk_graph *graph, const char *path);
 int test_bonsai_layer(fg_vk_graph *graph, const char *path);
@@ -100,7 +100,8 @@ int test_bonsai_attention_layer(fg_vk_graph *graph, const char *path);
 int main(int argc, char **argv) {
     if (argc < 3 || argc > 6) {
         fputs("Usage: frankenmoe-vulkan-compute-test DEVICE_INDEX ALLOW_CPU_0_OR_1 "
-              "[FFN_FIXTURE [GDN_FIXTURE [ATTENTION_FIXTURE]] | --moe-quant FIXTURE [ROUTER_FIXTURE] | --apex-experts GGUF FIXTURE]\n", stderr);
+              "[FFN_FIXTURE [GDN_FIXTURE [ATTENTION_FIXTURE]] | --moe-quant FIXTURE [ROUTER_FIXTURE] | "
+              "--apex-experts GGUF FIXTURE | --inkling-experts GGUF FIXTURE]\n", stderr);
         return 2;
     }
     char *end;
@@ -112,10 +113,11 @@ int main(int argc, char **argv) {
     fg_vk_graph graph;
     const int moe_quant = argc >= 5 && !strcmp(argv[3], "--moe-quant");
     const int apex_experts = argc == 6 && !strcmp(argv[3], "--apex-experts");
+    const int inkling_experts = argc == 6 && !strcmp(argv[3], "--inkling-experts");
     int pass = fg_vk_graph_open(&graph, &vk, 40) &&
                run_case(&graph, WIDTH, ROWS, BATCH) && run_case(&graph, 32, 1, 1) && test_attention(&graph) && test_projection(&graph) && test_recurrent(&graph) &&
                (moe_quant ? test_moe_quant(&graph, argv[4]) && (argc < 6 || test_moe_router(&graph, argv[5])) :
-                   apex_experts ? test_apex_experts(&graph, argv[4], argv[5]) :
+                   (apex_experts || inkling_experts) ? test_routed_experts(&graph, argv[4], argv[5], inkling_experts) :
                    (argc == 3 || test_bonsai(&graph, argv[3])) &&
                    (argc < 5 || test_bonsai_layer(&graph, argv[4])) &&
                    (argc < 6 || test_bonsai_attention_layer(&graph, argv[5])));
