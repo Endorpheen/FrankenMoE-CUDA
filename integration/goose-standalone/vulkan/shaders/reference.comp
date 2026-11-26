@@ -1,0 +1,59 @@
+#version 450
+
+layout(local_size_x = 64) in;
+layout(set = 0, binding = 0, std430) readonly buffer Input { float x[]; };
+#if defined(OP_Q4_0)
+layout(set = 0, binding = 1, std430) readonly buffer Weights { uint packed[]; };
+#else
+layout(set = 0, binding = 1, std430) readonly buffer Weights { float w[]; };
+#endif
+layout(set = 0, binding = 2, std430) writeonly buffer Output { float y[]; };
+layout(push_constant) uniform Params { uint width; uint rows; uint batch; float epsilon; } p;
+
+shared float partial[64];
+
+float sum_group(float value) {
+    uint lane = gl_LocalInvocationID.x;
+    partial[lane] = value;
+    barrier();
+    for (uint step = 32; step != 0; step >>= 1) {
+        if (lane < step) partial[lane] += partial[lane + step];
+        barrier();
+    }
+    return partial[0];
+}
+
+#if defined(OP_Q4_0)
+uint read_byte(uint offset) {
+    return (packed[offset >> 2] >> ((offset & 3u) * 8u)) & 255u;
+}
+#endif
+
+void main() {
+    uint lane = gl_LocalInvocationID.x;
+#if defined(OP_RMSNORM)
+    uint offset = gl_WorkGroupID.x * p.width;
+    precise float sum = 0.0;
+    for (uint i = lane; i < p.width; i += 64) sum += x[offset + i] * x[offset + i];
+    float scale = inversesqrt(sum_group(sum) / float(p.width) + p.epsilon);
+    for (uint i = lane; i < p.width; i += 64) y[offset + i] = x[offset + i] * scale * w[i];
+#elif defined(OP_Q4_0)
+    uint row = gl_WorkGroupID.x;
+    uint token = gl_WorkGroupID.y;
+    uint start = row * (p.width / 32u) * 18u;
+    precise float sum = 0.0;
+    for (uint i = lane; i < p.width; i += 64) {
+        uint block = start + (i >> 5) * 18u;
+        uint index = i & 31u;
+        uint codes = read_byte(block + 2u + (index & 15u));
+        int code = int((codes >> ((index >> 4) * 4u)) & 15u) - 8;
+        float scale = unpackHalf2x16(read_byte(block) | (read_byte(block + 1u) << 8u)).x;
+        sum += (float(code) * scale) * x[token * p.width + i];
+    }
+    float result = sum_group(sum);
+    if (lane == 0) y[token * p.rows + row] = result;
+#elif defined(OP_SWIGLU)
+    uint index = gl_GlobalInvocationID.x;
+    if (index < p.width * p.batch) y[index] = (x[index] / (1.0 + exp(-x[index]))) * w[index];
+#endif
+}

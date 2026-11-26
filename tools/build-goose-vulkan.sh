@@ -5,6 +5,8 @@ root=$(cd "$(dirname "$0")/.." && pwd)
 source_dir="$root/integration/goose-standalone/vulkan"
 out=${1:?Specify the output directory}
 target=${2:-linux}
+mode=${3:-probe}
+[[ "$mode" == probe || "$mode" == compute ]]
 mkdir -p "$out"
 flags=(-std=c11 -O2 -Wall -Wextra -Werror)
 headers=${VULKAN_HEADERS:-/usr/include}
@@ -32,3 +34,19 @@ if [[ -d "$headers/vk_video" ]]; then cp -R "$headers/vk_video" "$out/vulkan-hea
 "$cc" "${flags[@]}" -isystem "$out/vulkan-headers" \
     "$source_dir/"{loader,device,memory,queue,probe}.c \
     "${libs[@]}" -o "$out/$executable"
+
+if [[ "$mode" == compute ]]; then
+    glslang=${GLSLANG_VALIDATOR:-glslangValidator}
+    spirv_val=${SPIRV_VAL:-spirv-val}
+    suffix=${executable#frankenmoe-vulkan-probe}
+    for shader in rmsnorm q4_0 swiglu; do
+        "$glslang" -V --target-env vulkan1.2 -S comp "-DOP_${shader^^}" \
+            "$source_dir/shaders/reference.comp" -o "$out/$shader.spv"
+        "$spirv_val" --target-env vulkan1.2 "$out/$shader.spv"
+    done
+    python3 "$root/tools/embed-vulkan-shaders.py" "$out"
+    "$cc" "${flags[@]}" -isystem "$out/vulkan-headers" -I"$out" -I"$source_dir" \
+        "$source_dir/"{loader,device,memory,queue,graph}.c \
+        "$root/integration/goose-standalone/tests/vulkan/compute.c" \
+        "${libs[@]}" -lm -o "$out/frankenmoe-vulkan-compute-test$suffix"
+fi

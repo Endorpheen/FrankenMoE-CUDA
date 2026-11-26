@@ -1,5 +1,7 @@
 #include "device.h"
 
+#include <string.h>
+
 void fg_vk_free_buffer(fg_vk_device *vk, fg_vk_buffer *buffer) {
     if (buffer->buffer) vk->DestroyBuffer(vk->device, buffer->buffer, NULL);
     if (buffer->memory) vk->FreeMemory(vk->device, buffer->memory, NULL);
@@ -42,9 +44,34 @@ VkResult fg_vk_alloc_buffer(fg_vk_device *vk, fg_vk_buffer *buffer, VkDeviceSize
     if (result == VK_SUCCESS) {
         buffer->size = size;
         buffer->properties = vk->memory.memoryTypes[type].propertyFlags;
+        buffer->usage = usage;
         return result;
     }
 fail:
     fg_vk_free_buffer(vk, buffer);
+    return result;
+}
+
+VkResult fg_vk_access_buffer(fg_vk_device *vk, const fg_vk_buffer *buffer,
+    VkDeviceSize offset, void *data, size_t size, int write) {
+    if (!data || !size || offset > buffer->size || size > buffer->size - offset ||
+        offset > SIZE_MAX || size > SIZE_MAX - (size_t)offset ||
+        !(buffer->properties & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)) return VK_ERROR_MEMORY_MAP_FAILED;
+    void *base = NULL;
+    VkResult result = vk->MapMemory(vk->device, buffer->memory, 0, VK_WHOLE_SIZE, 0, &base);
+    if (result != VK_SUCCESS) return result;
+    const VkMappedMemoryRange range = {
+        .sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE, .memory = buffer->memory, .size = VK_WHOLE_SIZE,
+    };
+    const int coherent = (buffer->properties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) != 0;
+    char *address = (char *)base + (size_t)offset;
+    if (write) {
+        memcpy(address, data, size);
+        if (!coherent) result = vk->FlushMappedMemoryRanges(vk->device, 1, &range);
+    } else {
+        if (!coherent) result = vk->InvalidateMappedMemoryRanges(vk->device, 1, &range);
+        if (result == VK_SUCCESS) memcpy(data, address, size);
+    }
+    vk->UnmapMemory(vk->device, buffer->memory);
     return result;
 }

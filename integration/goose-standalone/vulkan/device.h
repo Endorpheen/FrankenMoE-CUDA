@@ -12,9 +12,13 @@
     X(GetDeviceQueue) X(CreateBuffer) X(GetBufferMemoryRequirements) \
     X(AllocateMemory) X(BindBufferMemory) X(DestroyBuffer) X(FreeMemory) \
     X(MapMemory) X(UnmapMemory) X(FlushMappedMemoryRanges) X(InvalidateMappedMemoryRanges) \
-    X(CreateCommandPool) X(DestroyCommandPool) X(AllocateCommandBuffers) \
+    X(CreateCommandPool) X(DestroyCommandPool) X(AllocateCommandBuffers) X(ResetCommandPool) \
     X(BeginCommandBuffer) X(EndCommandBuffer) X(CmdCopyBuffer) X(CmdPipelineBarrier2) \
-    X(CreateSemaphore) X(DestroySemaphore) X(QueueSubmit2) X(WaitSemaphores) X(DeviceWaitIdle)
+    X(CreateSemaphore) X(DestroySemaphore) X(QueueSubmit2) X(WaitSemaphores) X(DeviceWaitIdle) \
+    X(CreateDescriptorSetLayout) X(DestroyDescriptorSetLayout) X(CreatePipelineLayout) X(DestroyPipelineLayout) \
+    X(CreateShaderModule) X(DestroyShaderModule) X(CreateComputePipelines) X(DestroyPipeline) \
+    X(CreateDescriptorPool) X(DestroyDescriptorPool) X(ResetDescriptorPool) X(AllocateDescriptorSets) \
+    X(UpdateDescriptorSets) X(CmdBindPipeline) X(CmdBindDescriptorSets) X(CmdPushConstants) X(CmdDispatch)
 
 typedef struct {
     void *loader;
@@ -42,6 +46,7 @@ typedef struct {
     VkBuffer buffer;
     VkDeviceMemory memory;
     VkMemoryPropertyFlags properties;
+    VkBufferUsageFlags usage;
     VkDeviceSize size;
 } fg_vk_buffer;
 
@@ -54,6 +59,9 @@ int fg_vk_error(const char *action, VkResult result);
 VkResult fg_vk_alloc_buffer(fg_vk_device *vk, fg_vk_buffer *buffer, VkDeviceSize size,
     VkBufferUsageFlags usage, VkMemoryPropertyFlags required, VkMemoryPropertyFlags preferred);
 void fg_vk_free_buffer(fg_vk_device *vk, fg_vk_buffer *buffer);
+VkResult fg_vk_access_buffer(fg_vk_device *vk, const fg_vk_buffer *buffer,
+    VkDeviceSize offset, void *data, size_t size, int write);
+int fg_vk_submit_wait(fg_vk_device *vk, VkCommandBuffer cmd, VkSemaphore done, uint64_t value);
 int fg_vk_roundtrip(fg_vk_device *vk, const void *input, void *output, size_t size);
 
 #endif

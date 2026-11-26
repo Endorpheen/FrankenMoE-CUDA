@@ -1,9 +1,9 @@
 # Vulkan backend for FrankenMoE
 
-**Status: initial Vulkan bring-up.** Device selection, compute queue creation
-and a transfer round-trip are implemented for the standalone probe. Model
-execution and release qualification are open. Keep the existing CUDA
-inference path unchanged during bring-up.
+**Status: Vulkan bring-up and first compute graph.** Device selection,
+transfer, and a short RMSNorm → Q4_0 matmul → SwiGLU graph are implemented.
+Model execution and release qualification are open. Keep the existing
+CUDA inference path unchanged during bring-up.
 
 ## Verified bring-up
 
@@ -34,6 +34,38 @@ bash tools/build-goose-vulkan.sh build/vulkan-bringup/windows windows
 bash integration/goose-standalone/tests/vulkan/device.sh \
     build/vulkan-bringup/linux/frankenmoe-vulkan-probe \
     /usr/share/vulkan/icd.d/lvp_icd.json
+```
+
+### Compute graph fixture
+
+The host records all three dispatches before a single timeline submission.
+The shaders use FP32, 32-bit storage words, and shared workgroup reduction,
+so no optional narrow-storage or subgroup features are enabled. Descriptor
+views validate bounds, alignment, usage and read/write overlap. The command
+pool, descriptor pool and timeline are reused across two graph epochs.
+Storage in this fixture is host-visible. A resident weight allocator and
+device-local graph transfers still need to be integrated into inference.
+[Khronos synchronization examples](https://docs.vulkan.org/guide/latest/synchronization_examples.html)
+
+The build embeds SPIR-V after validation for Vulkan 1.2. The tested tools
+were glslang 16.2.0 and SPIRV-Tools 2026.1. Only the build uses them.
+Test cases cover width 96 with 67 output rows and three input tokens,
+and width 32 with one output row and one token. The fixture rejects a
+short Q4 input view and an aliased RMSNorm write before recording.
+
+| Environment | Compute graph | Maximum absolute error vs FP64 CPU |
+| --- | --- | ---: |
+| Linux x64, Mesa Lavapipe 26.0.8 | PASS | 3.11e-6 |
+| Linux x64, RTX 4070, NVIDIA 580.178.04 | PASS | 1.35e-6 |
+| Windows x64 probe, Wine with Linux Lavapipe | PASS | 3.11e-6 |
+| Native Linux AMD RADV and Windows AMD ICD | NOT TESTED | — |
+
+```bash
+# Point GLSLANG_VALIDATOR and SPIRV_VAL to the tools if they are outside PATH.
+bash tools/build-goose-vulkan.sh build/vulkan-bringup/linux linux compute
+bash tools/build-goose-vulkan.sh build/vulkan-bringup/windows windows compute
+VK_DRIVER_FILES=/usr/share/vulkan/icd.d/lvp_icd.json \
+    build/vulkan-bringup/linux/frankenmoe-vulkan-compute-test 0 1
 ```
 
 ## Source audit and integration boundary
