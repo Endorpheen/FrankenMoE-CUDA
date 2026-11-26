@@ -21,7 +21,7 @@ def union_ns(rows):
     return elapsed
 
 
-def read_capture(path):
+def read_capture(path, device_choice=False):
     trace = path / "trace.sqlite"
     response = json.loads((path / "response.json").read_text())
     gate = json.loads((path / "cold.json").read_text())
@@ -42,9 +42,16 @@ def read_capture(path):
                       for marker in ("request-start-ns", "request-end-ns")]
         copies = db.execute("""SELECT start, end, copyKind, bytes FROM CUPTI_ACTIVITY_KIND_MEMCPY
                                WHERE start >= ? AND end <= ? ORDER BY start""", (start, end)).fetchall()
-        readbacks = [(lo, hi) for lo, hi, kind, size in copies if kind == 2 and size == 993280]
-        assert len(readbacks) == 512, (path, len(readbacks))
-        result["full_vocabulary_readbacks"] = len(readbacks)
+        full = [(lo, hi) for lo, hi, kind, size in copies if kind == 2 and size == 993280]
+        result["full_vocabulary_readbacks"] = len(full)
+        if device_choice:
+            reduced = [(lo, hi) for lo, hi, kind, size in copies if kind == 2 and size == 12]
+            assert len(full) == 1 and len(reduced) == 511 and full[0][1] <= reduced[0][0]
+            result["device_choice_readbacks"] = len(reduced)
+            readbacks = full + reduced
+        else:
+            assert len(full) == 512, (path, len(full))
+            readbacks = full
         result["response_tail_ns"] = end-readbacks[-1][1]
         for label, lo, hi in (("prefill", start, readbacks[0][1]),
                               ("decode", readbacks[0][1], readbacks[-1][1])):
@@ -92,7 +99,7 @@ def read_capture(path):
 def main():
     prism_path, goose_path = map(Path, sys.argv[1:3])
     prism, prism_response = read_capture(prism_path)
-    goose, goose_response = read_capture(goose_path)
+    goose, goose_response = read_capture(goose_path, sys.argv[3:] == ["--device-choice"])
     assert prism_response["tokens"] == goose_response["tokens"]
     assert prism_response["content"] == goose_response["content"]
     assert prism["cold_prefill_gate"]["request_sha256"] == goose["cold_prefill_gate"]["request_sha256"]

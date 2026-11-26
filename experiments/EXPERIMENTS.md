@@ -1187,6 +1187,17 @@ release still needs the architecture regression gates.
   Ordinary HTTP integration and end-to-end speed remain unmeasured.
   [Component data and required HTTP contract](EXP-2026-11-26-2099-bonsai-http-argmax-probe/README.md).
 
+### EXP-2026-11-26-2100 — Resident GPU choice in Bonsai HTTP decode
+
+- **Experimental alternative.** Preserve ordinary prefill and use
+  exact device choice for eligible greedy decode. Keep the CPU
+  path for other requests and read full logits on nonfinite fallback.
+- **Evidence:** Cold 32K/512 gives 29.78 → 38.97 decode tok/s on
+  the rebuilt runtime, with identical 512 IDs and text. The rebuilt
+  legacy arm regresses against EXP-2096, so do not promote it.
+  The trace confirms 511 reads of 12 B and no full decode readback.
+  [Build provenance, measurements and reproduction](EXP-2026-11-26-2100-bonsai-http-device-choice/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.

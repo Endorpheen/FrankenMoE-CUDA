@@ -1,0 +1,1589 @@
+{
+  "matched_ids": 512,
+  "matched_text": true,
+  "historical_exp2096": {
+    "client_s": 43.384267,
+    "timings": {
+      "cache_n": 0,
+      "prompt_n": 32768,
+      "prompt_ms": 29751.291869964916,
+      "prompt_per_token_ms": 0.9079373739613317,
+      "prompt_per_second": 1101.3975508431809,
+      "predicted_n": 512,
+      "predicted_ms": 13609.370224003214,
+      "predicted_per_token_ms": 26.63281844227635,
+      "predicted_per_second": 37.54765956022972
+    },
+    "cold_prefill_gate": {
+      "cold_prefill": "PASS",
+      "computed_prompt_tokens": 32768,
+      "cached_prompt_tokens": 0,
+      "engine": "goose",
+      "request_sha256": "1f62448c0a6d29a776f76df4f24d0ca162c7a5d10774f879d94f859ac3e81ecb",
+      "response_sha256": "8d531c848108baec0380518e1fade6c4ca4819d22ec16d88a82707a5b11158c7"
+    },
+    "process_vram_after_mib": 8944,
+    "process_memory": {
+      "VmHWM": "\t 8001664 kB",
+      "VmRSS": "\t  785976 kB",
+      "VmSwap": "\t       0 kB"
+    },
+    "trace_sqlite_sha256": "09759bbdc79d204df07078da2c9c2b8105d543779342f9b30ec511efb441fb8e",
+    "full_vocabulary_readbacks": 512,
+    "response_tail_ns": 5560626,
+    "prefill": {
+      "wall_ns": 29779777986,
+      "gpu_activity_union_ns": 29693268882,
+      "gpu_gap_ns": 86509104,
+      "copies_by_cupti_kind": {
+        "1": {
+          "count": 104,
+          "ns": 73502,
+          "bytes": 662460
+        },
+        "2": {
+          "count": 1,
+          "ns": 39361,
+          "bytes": 993280
+        }
+      },
+      "cuda_graph_kernel_nodes": 0,
+      "kernels": {
+        "bonsai_pq2_mmq_int8_full_n128_spread": {
+          "launches": 3968,
+          "ns": 6734091597
+        },
+        "bonsai_pq2_half_full_5120": {
+          "launches": 4464,
+          "ns": 4938157219
+        },
+        "bonsai_flash_fp8_qkpv": {
+          "launches": 272,
+          "ns": 3762009640
+        },
+        "bonsai_pq2_mmq_int8_down_n128_spread": {
+          "launches": 1984,
+          "ns": 3436202269
+        },
+        "bonsai_pq2_half_full_6144": {
+          "launches": 1984,
+          "ns": 1901356641
+        },
+        "goose_gdn_mma_v32": {
+          "launches": 1536,
+          "ns": 1495093210
+        },
+        "bonsai_flash_kv_fused_ordered": {
+          "launches": 128,
+          "ns": 1345793076
+        },
+        "bonsai_ffn_tail_q8_panel": {
+          "launches": 1984,
+          "ns": 774686743
+        },
+        "bonsai_decay_reuse8": {
+          "launches": 1536,
+          "ns": 660858586
+        },
+        "bonsai_fwht1024": {
+          "launches": 6434,
+          "ns": 608634792
+        },
+        "bonsai_conv_batch": {
+          "launches": 1536,
+          "ns": 599672526
+        },
+        "bonsai_flash_tile_group2": {
+          "launches": 2800,
+          "ns": 586591729
+        },
+        "bonsai_residual": {
+          "launches": 4224,
+          "ns": 525987560
+        },
+        "bonsai_norm": {
+          "launches": 4224,
+          "ns": 434851975
+        },
+        "bonsai_pq2_cached_fp16_acc_k32": {
+          "launches": 272,
+          "ns": 433163192
+        },
+        "bonsai_norm_wide_128_0": {
+          "launches": 4096,
+          "ns": 314919877
+        },
+        "bonsai_pq2_mmq_int8": {
+          "launches": 128,
+          "ns": 302031658
+        },
+        "bonsai_pack_half": {
+          "launches": 4096,
+          "ns": 172148249
+        },
+        "bonsai_split_q_gate": {
+          "launches": 528,
+          "ns": 109864846
+        },
+        "goose_rope_phases": {
+          "launches": 1024,
+          "ns": 80474421
+        },
+        "bonsai_attention_gate": {
+          "launches": 528,
+          "ns": 77770368
+        },
+        "bonsai_flash_compact_ordered_merge": {
+          "launches": 2688,
+          "ns": 70524619
+        },
+        "goose_rope_apply": {
+          "launches": 1024,
+          "ns": 69721984
+        },
+        "bonsai_flash_stage_v_fp8": {
+          "launches": 272,
+          "ns": 48470775
+        },
+        "bonsai_pack_q8_panel128": {
+          "launches": 1984,
+          "ns": 46407347
+        },
+        "bonsai_pq2_matvec_rows2": {
+          "launches": 369,
+          "ns": 41255024
+        },
+        "bonsai_flash_stage_kv": {
+          "launches": 240,
+          "ns": 29661514
+        },
+        "goose_set_q4_rows": {
+          "launches": 1056,
+          "ns": 29447659
+        },
+        "bonsai_ffn_tail": {
+          "launches": 64,
+          "ns": 26639706
+        },
+        "bonsai_flash_stage_k_fp8": {
+          "launches": 272,
+          "ns": 25912039
+        },
+        "bonsai_decode_direct_q4_mma_half2": {
+          "launches": 16,
+          "ns": 4112851
+        },
+        "bonsai_flash_compact_merge": {
+          "launches": 112,
+          "ns": 1445037
+        },
+        "bonsai_pack_q8_128": {
+          "launches": 64,
+          "ns": 1434449
+        },
+        "bonsai_embed_batch": {
+          "launches": 32,
+          "ns": 1125551
+        },
+        "bonsai_norm_wide_512_1": {
+          "launches": 129,
+          "ns": 676007
+        },
+        "goose_gdn_decode": {
+          "launches": 48,
+          "ns": 480741
+        },
+        "bonsai_pq2_matvec_ordered": {
+          "launches": 32,
+          "ns": 440201
+        },
+        "bonsai_decay_stage_256_0": {
+          "launches": 48,
+          "ns": 317061
+        },
+        "bonsai_verify_merge_parallel": {
+          "launches": 16,
+          "ns": 183555
+        },
+        "bonsai_conv_step": {
+          "launches": 48,
+          "ns": 85985
+        },
+        "bonsai_swiglu": {
+          "launches": 64,
+          "ns": 85506
+        },
+        "goose_rope_decode": {
+          "launches": 32,
+          "ns": 80356
+        },
+        "bonsai_pq2_row": {
+          "launches": 1,
+          "ns": 1312
+        }
+      },
+      "geometry_columns": [
+        "kernel",
+        "instance",
+        "grid_x",
+        "grid_y",
+        "grid_z",
+        "block_x",
+        "block_y",
+        "block_z",
+        "registers",
+        "static_smem",
+        "dynamic_smem",
+        "launches",
+        "ns"
+      ],
+      "hot_geometry": [
+        [
+          "bonsai_pq2_mmq_int8_full_n128_spread",
+          "bonsai_pq2_mmq_int8_full_n128_spread",
+          272,
+          8,
+          1,
+          256,
+          1,
+          1,
+          79,
+          28416,
+          0,
+          3968,
+          6734091597
+        ],
+        [
+          "bonsai_pq2_mmq_int8_down_n128_spread",
+          "bonsai_pq2_mmq_int8_down_n128_spread",
+          80,
+          8,
+          1,
+          256,
+          1,
+          1,
+          79,
+          28416,
+          0,
+          1984,
+          3436202269
+        ],
+        [
+          "bonsai_pq2_half_full_5120",
+          "bonsai_pq2_half_full_5120",
+          160,
+          8,
+          1,
+          256,
+          1,
+          1,
+          80,
+          27648,
+          0,
+          1488,
+          2366174544
+        ],
+        [
+          "bonsai_pq2_half_full_6144",
+          "bonsai_pq2_half_full_6144",
+          80,
+          8,
+          1,
+          256,
+          1,
+          1,
+          80,
+          27648,
+          0,
+          1984,
+          1901356641
+        ],
+        [
+          "bonsai_pq2_half_full_5120",
+          "bonsai_pq2_half_full_5120",
+          96,
+          8,
+          1,
+          256,
+          1,
+          1,
+          80,
+          27648,
+          0,
+          1488,
+          1438921696
+        ],
+        [
+          "bonsai_pq2_half_full_5120",
+          "bonsai_pq2_half_full_5120",
+          192,
+          8,
+          1,
+          256,
+          1,
+          1,
+          80,
+          27648,
+          0,
+          496,
+          952251597
+        ],
+        [
+          "bonsai_pq2_mmq_int8",
+          "bonsai_pq2_mmq_int8",
+          272,
+          16,
+          1,
+          256,
+          1,
+          1,
+          55,
+          18944,
+          0,
+          128,
+          302031658
+        ],
+        [
+          "bonsai_pq2_cached_fp16_acc_k32",
+          "bonsai_pq2_cached_fp16_acc_k32",
+          80,
+          8,
+          1,
+          256,
+          1,
+          1,
+          94,
+          27648,
+          0,
+          128,
+          260547560
+        ],
+        [
+          "bonsai_pq2_half_full_5120",
+          "bonsai_pq2_half_full_5120",
+          16,
+          8,
+          1,
+          256,
+          1,
+          1,
+          80,
+          27648,
+          0,
+          992,
+          180809382
+        ],
+        [
+          "bonsai_pq2_cached_fp16_acc_k32",
+          "bonsai_pq2_cached_fp16_acc_k32",
+          160,
+          8,
+          1,
+          256,
+          1,
+          1,
+          94,
+          27648,
+          0,
+          48,
+          81050277
+        ],
+        [
+          "bonsai_pq2_cached_fp16_acc_k32",
+          "bonsai_pq2_cached_fp16_acc_k32",
+          96,
+          8,
+          1,
+          256,
+          1,
+          1,
+          94,
+          27648,
+          0,
+          48,
+          50415667
+        ],
+        [
+          "bonsai_pq2_cached_fp16_acc_k32",
+          "bonsai_pq2_cached_fp16_acc_k32",
+          192,
+          8,
+          1,
+          256,
+          1,
+          1,
+          94,
+          27648,
+          0,
+          16,
+          33643128
+        ],
+        [
+          "bonsai_pq2_matvec_rows2",
+          "bonsai_pq2_matvec_rows2",
+          640,
+          1,
+          1,
+          128,
+          1,
+          1,
+          37,
+          0,
+          0,
+          128,
+          16396748
+        ],
+        [
+          "bonsai_pq2_matvec_rows2",
+          "bonsai_pq2_matvec_rows2",
+          2176,
+          1,
+          1,
+          128,
+          1,
+          1,
+          37,
+          0,
+          0,
+          128,
+          15813489
+        ],
+        [
+          "bonsai_pq2_cached_fp16_acc_k32",
+          "bonsai_pq2_cached_fp16_acc_k32",
+          16,
+          8,
+          1,
+          256,
+          1,
+          1,
+          94,
+          27648,
+          0,
+          32,
+          7506560
+        ],
+        [
+          "bonsai_pq2_matvec_rows2",
+          "bonsai_pq2_matvec_rows2",
+          1280,
+          1,
+          1,
+          128,
+          1,
+          1,
+          37,
+          0,
+          0,
+          48,
+          3550254
+        ],
+        [
+          "bonsai_pq2_matvec_rows2",
+          "bonsai_pq2_matvec_rows2",
+          768,
+          1,
+          1,
+          128,
+          1,
+          1,
+          37,
+          0,
+          0,
+          48,
+          2610689
+        ],
+        [
+          "bonsai_pq2_matvec_rows2",
+          "bonsai_pq2_matvec_rows2",
+          31040,
+          1,
+          1,
+          128,
+          1,
+          1,
+          37,
+          0,
+          0,
+          1,
+          1549972
+        ],
+        [
+          "bonsai_pq2_matvec_rows2",
+          "bonsai_pq2_matvec_rows2",
+          1536,
+          1,
+          1,
+          128,
+          1,
+          1,
+          37,
+          0,
+          0,
+          16,
+          1333872
+        ],
+        [
+          "bonsai_pq2_matvec_ordered",
+          "bonsai_pq2_matvec_ordered",
+          256,
+          1,
+          1,
+          128,
+          1,
+          1,
+          26,
+          0,
+          0,
+          32,
+          440201
+        ],
+        [
+          "bonsai_pq2_row",
+          "bonsai_pq2_row",
+          20,
+          1,
+          1,
+          256,
+          1,
+          1,
+          16,
+          0,
+          0,
+          1,
+          1312
+        ]
+      ]
+    },
+    "decode": {
+      "wall_ns": 13609855002,
+      "gpu_activity_union_ns": 12628854572,
+      "gpu_gap_ns": 981000430,
+      "copies_by_cupti_kind": {
+        "1": {
+          "count": 1022,
+          "ns": 301725,
+          "bytes": 98112
+        },
+        "2": {
+          "count": 511,
+          "ns": 20118485,
+          "bytes": 507566080
+        }
+      },
+      "cuda_graph_kernel_nodes": 0,
+      "kernels": {
+        "bonsai_pq2_mvq_q8_2": {
+          "launches": 188048,
+          "ns": 8150678605
+        },
+        "bonsai_decode_direct_q4_mma_half2": {
+          "launches": 8176,
+          "ns": 2103259522
+        },
+        "bonsai_fwht1024": {
+          "launches": 131838,
+          "ns": 375569284
+        },
+        "bonsai_pq2_mvq_q8_1": {
+          "launches": 511,
+          "ns": 373747284
+        },
+        "bonsai_norm_wide_512_1": {
+          "launches": 65919,
+          "ns": 336404056
+        },
+        "goose_gdn_decode": {
+          "launches": 24528,
+          "ns": 243503407
+        },
+        "bonsai_pq2_matvec_ordered": {
+          "launches": 16352,
+          "ns": 222233432
+        },
+        "bonsai_decay_stage_256_0": {
+          "launches": 24528,
+          "ns": 162875838
+        },
+        "bonsai_norm": {
+          "launches": 65408,
+          "ns": 150548826
+        },
+        "bonsai_mv_pack_q8": {
+          "launches": 131327,
+          "ns": 131447177
+        },
+        "bonsai_verify_merge_parallel": {
+          "launches": 8176,
+          "ns": 97341088
+        },
+        "bonsai_residual": {
+          "launches": 65408,
+          "ns": 67607303
+        },
+        "goose_set_q4_rows": {
+          "launches": 16352,
+          "ns": 48016061
+        },
+        "bonsai_conv_step": {
+          "launches": 24528,
+          "ns": 43425970
+        },
+        "bonsai_swiglu": {
+          "launches": 32704,
+          "ns": 42491718
+        },
+        "goose_rope_decode": {
+          "launches": 16352,
+          "ns": 40057250
+        },
+        "bonsai_attention_gate": {
+          "launches": 8176,
+          "ns": 10700754
+        },
+        "bonsai_split_q_gate": {
+          "launches": 8176,
+          "ns": 7862490
+        },
+        "bonsai_pq2_row": {
+          "launches": 511,
+          "ns": 664297
+        }
+      },
+      "geometry_columns": [
+        "kernel",
+        "instance",
+        "grid_x",
+        "grid_y",
+        "grid_z",
+        "block_x",
+        "block_y",
+        "block_z",
+        "registers",
+        "static_smem",
+        "dynamic_smem",
+        "launches",
+        "ns"
+      ],
+      "hot_geometry": [
+        [
+          "bonsai_pq2_mvq_q8_2",
+          "bonsai_pq2_mvq_q8_2",
+          2176,
+          1,
+          1,
+          128,
+          1,
+          1,
+          40,
+          0,
+          0,
+          65408,
+          3801240673
+        ],
+        [
+          "bonsai_pq2_mvq_q8_2",
+          "bonsai_pq2_mvq_q8_2",
+          640,
+          1,
+          1,
+          128,
+          1,
+          1,
+          40,
+          0,
+          0,
+          65408,
+          2676476918
+        ],
+        [
+          "bonsai_pq2_mvq_q8_2",
+          "bonsai_pq2_mvq_q8_2",
+          1280,
+          1,
+          1,
+          128,
+          1,
+          1,
+          40,
+          0,
+          0,
+          24528,
+          835881263
+        ],
+        [
+          "bonsai_pq2_mvq_q8_2",
+          "bonsai_pq2_mvq_q8_2",
+          768,
+          1,
+          1,
+          128,
+          1,
+          1,
+          40,
+          0,
+          0,
+          24528,
+          503591173
+        ],
+        [
+          "bonsai_pq2_mvq_q8_1",
+          "bonsai_pq2_mvq_q8_1",
+          62080,
+          1,
+          1,
+          128,
+          1,
+          1,
+          33,
+          0,
+          0,
+          511,
+          373747284
+        ],
+        [
+          "bonsai_pq2_mvq_q8_2",
+          "bonsai_pq2_mvq_q8_2",
+          1536,
+          1,
+          1,
+          128,
+          1,
+          1,
+          40,
+          0,
+          0,
+          8176,
+          333488578
+        ],
+        [
+          "bonsai_pq2_matvec_ordered",
+          "bonsai_pq2_matvec_ordered",
+          256,
+          1,
+          1,
+          128,
+          1,
+          1,
+          26,
+          0,
+          0,
+          16352,
+          222233432
+        ],
+        [
+          "bonsai_pq2_row",
+          "bonsai_pq2_row",
+          20,
+          1,
+          1,
+          256,
+          1,
+          1,
+          16,
+          0,
+          0,
+          511,
+          664297
+        ]
+      ]
+    }
+  },
+  "candidate_exp2100": {
+    "client_s": 43.063879,
+    "timings": {
+      "cache_n": 0,
+      "prompt_n": 32768,
+      "prompt_ms": 29761.026430001948,
+      "prompt_per_token_ms": 0.9082344491577743,
+      "prompt_per_second": 1101.0372937596915,
+      "predicted_n": 512,
+      "predicted_ms": 13239.418036944699,
+      "predicted_per_token_ms": 25.908841559578665,
+      "predicted_per_second": 38.596862684904316
+    },
+    "cold_prefill_gate": {
+      "cold_prefill": "PASS",
+      "computed_prompt_tokens": 32768,
+      "cached_prompt_tokens": 0,
+      "engine": "goose",
+      "request_sha256": "1f62448c0a6d29a776f76df4f24d0ca162c7a5d10774f879d94f859ac3e81ecb",
+      "response_sha256": "58cba3caff0c244c1db7d2978467b4dcff4670bf241d78d70bbf95e0d2beeaad"
+    },
+    "process_vram_after_mib": 8946,
+    "process_memory": {
+      "VmHWM": "\t 8000576 kB",
+      "VmRSS": "\t  786228 kB",
+      "VmSwap": "\t       0 kB"
+    },
+    "trace_sqlite_sha256": "429c602804ee4464295d745c10dd1dd420004d796b1d899d830f2da558b474fd",
+    "full_vocabulary_readbacks": 1,
+    "device_choice_readbacks": 511,
+    "response_tail_ns": 8794211,
+    "prefill": {
+      "wall_ns": 29817937497,
+      "gpu_activity_union_ns": 29705101329,
+      "gpu_gap_ns": 112836168,
+      "copies_by_cupti_kind": {
+        "1": {
+          "count": 104,
+          "ns": 75014,
+          "bytes": 662460
+        },
+        "2": {
+          "count": 1,
+          "ns": 39681,
+          "bytes": 993280
+        }
+      },
+      "cuda_graph_kernel_nodes": 0,
+      "kernels": {
+        "bonsai_pq2_mmq_int8_full_n128_spread": {
+          "launches": 3968,
+          "ns": 6747586604
+        },
+        "bonsai_pq2_half_full_5120": {
+          "launches": 4464,
+          "ns": 4945552387
+        },
+        "bonsai_flash_fp8_qkpv": {
+          "launches": 272,
+          "ns": 3758812162
+        },
+        "bonsai_pq2_mmq_int8_down_n128_spread": {
+          "launches": 1984,
+          "ns": 3427483155
+        },
+        "bonsai_pq2_half_full_6144": {
+          "launches": 1984,
+          "ns": 1897122745
+        },
+        "goose_gdn_mma_v32": {
+          "launches": 1536,
+          "ns": 1490245585
+        },
+        "bonsai_flash_kv_fused_ordered": {
+          "launches": 128,
+          "ns": 1344679881
+        },
+        "bonsai_ffn_tail_q8_panel": {
+          "launches": 1984,
+          "ns": 779440042
+        },
+        "bonsai_decay_reuse8": {
+          "launches": 1536,
+          "ns": 658982904
+        },
+        "bonsai_fwht1024": {
+          "launches": 6434,
+          "ns": 611428488
+        },
+        "bonsai_conv_batch": {
+          "launches": 1536,
+          "ns": 601112042
+        },
+        "bonsai_flash_tile_group2": {
+          "launches": 2800,
+          "ns": 593890452
+        },
+        "bonsai_residual": {
+          "launches": 4224,
+          "ns": 524089527
+        },
+        "bonsai_pq2_cached_fp16_acc_k32": {
+          "launches": 272,
+          "ns": 434678124
+        },
+        "bonsai_norm": {
+          "launches": 4224,
+          "ns": 434491091
+        },
+        "bonsai_norm_wide_128_0": {
+          "launches": 4096,
+          "ns": 307199696
+        },
+        "bonsai_pq2_mmq_int8": {
+          "launches": 128,
+          "ns": 302639748
+        },
+        "bonsai_pack_half": {
+          "launches": 4096,
+          "ns": 182353355
+        },
+        "bonsai_split_q_gate": {
+          "launches": 528,
+          "ns": 108831669
+        },
+        "goose_rope_phases": {
+          "launches": 1024,
+          "ns": 82438512
+        },
+        "bonsai_attention_gate": {
+          "launches": 528,
+          "ns": 78538540
+        },
+        "bonsai_flash_compact_ordered_merge": {
+          "launches": 2688,
+          "ns": 70152555
+        },
+        "goose_rope_apply": {
+          "launches": 1024,
+          "ns": 66793005
+        },
+        "bonsai_flash_stage_v_fp8": {
+          "launches": 272,
+          "ns": 46823881
+        },
+        "bonsai_pack_q8_panel128": {
+          "launches": 1984,
+          "ns": 46784535
+        },
+        "bonsai_pq2_matvec_rows2": {
+          "launches": 369,
+          "ns": 40946501
+        },
+        "bonsai_flash_stage_kv": {
+          "launches": 240,
+          "ns": 30477559
+        },
+        "goose_set_q4_rows": {
+          "launches": 1056,
+          "ns": 28524433
+        },
+        "bonsai_ffn_tail": {
+          "launches": 64,
+          "ns": 26952220
+        },
+        "bonsai_flash_stage_k_fp8": {
+          "launches": 272,
+          "ns": 24697227
+        },
+        "bonsai_decode_direct_q4_mma_half2": {
+          "launches": 16,
+          "ns": 4554241
+        },
+        "bonsai_flash_compact_merge": {
+          "launches": 112,
+          "ns": 1477530
+        },
+        "bonsai_pack_q8_128": {
+          "launches": 64,
+          "ns": 1460722
+        },
+        "bonsai_embed_batch": {
+          "launches": 32,
+          "ns": 1137872
+        },
+        "bonsai_norm_wide_512_1": {
+          "launches": 129,
+          "ns": 673733
+        },
+        "goose_gdn_decode": {
+          "launches": 48,
+          "ns": 478501
+        },
+        "bonsai_pq2_matvec_ordered": {
+          "launches": 32,
+          "ns": 437061
+        },
+        "bonsai_decay_stage_256_0": {
+          "launches": 48,
+          "ns": 316102
+        },
+        "bonsai_verify_merge_parallel": {
+          "launches": 16,
+          "ns": 186112
+        },
+        "bonsai_swiglu": {
+          "launches": 64,
+          "ns": 87905
+        },
+        "bonsai_conv_step": {
+          "launches": 48,
+          "ns": 86691
+        },
+        "goose_rope_decode": {
+          "launches": 32,
+          "ns": 80063
+        },
+        "bonsai_pq2_row": {
+          "launches": 1,
+          "ns": 1376
+        }
+      },
+      "geometry_columns": [
+        "kernel",
+        "instance",
+        "grid_x",
+        "grid_y",
+        "grid_z",
+        "block_x",
+        "block_y",
+        "block_z",
+        "registers",
+        "static_smem",
+        "dynamic_smem",
+        "launches",
+        "ns"
+      ],
+      "hot_geometry": [
+        [
+          "bonsai_pq2_mmq_int8_full_n128_spread",
+          "bonsai_pq2_mmq_int8_full_n128_spread",
+          272,
+          8,
+          1,
+          256,
+          1,
+          1,
+          79,
+          28416,
+          0,
+          3968,
+          6747586604
+        ],
+        [
+          "bonsai_pq2_mmq_int8_down_n128_spread",
+          "bonsai_pq2_mmq_int8_down_n128_spread",
+          80,
+          8,
+          1,
+          256,
+          1,
+          1,
+          79,
+          28416,
+          0,
+          1984,
+          3427483155
+        ],
+        [
+          "bonsai_pq2_half_full_5120",
+          "bonsai_pq2_half_full_5120",
+          160,
+          8,
+          1,
+          256,
+          1,
+          1,
+          80,
+          27648,
+          0,
+          1488,
+          2364911426
+        ],
+        [
+          "bonsai_pq2_half_full_6144",
+          "bonsai_pq2_half_full_6144",
+          80,
+          8,
+          1,
+          256,
+          1,
+          1,
+          80,
+          27648,
+          0,
+          1984,
+          1897122745
+        ],
+        [
+          "bonsai_pq2_half_full_5120",
+          "bonsai_pq2_half_full_5120",
+          96,
+          8,
+          1,
+          256,
+          1,
+          1,
+          80,
+          27648,
+          0,
+          1488,
+          1445111746
+        ],
+        [
+          "bonsai_pq2_half_full_5120",
+          "bonsai_pq2_half_full_5120",
+          192,
+          8,
+          1,
+          256,
+          1,
+          1,
+          80,
+          27648,
+          0,
+          496,
+          953361841
+        ],
+        [
+          "bonsai_pq2_mmq_int8",
+          "bonsai_pq2_mmq_int8",
+          272,
+          16,
+          1,
+          256,
+          1,
+          1,
+          55,
+          18944,
+          0,
+          128,
+          302639748
+        ],
+        [
+          "bonsai_pq2_cached_fp16_acc_k32",
+          "bonsai_pq2_cached_fp16_acc_k32",
+          80,
+          8,
+          1,
+          256,
+          1,
+          1,
+          94,
+          27648,
+          0,
+          128,
+          258711896
+        ],
+        [
+          "bonsai_pq2_half_full_5120",
+          "bonsai_pq2_half_full_5120",
+          16,
+          8,
+          1,
+          256,
+          1,
+          1,
+          80,
+          27648,
+          0,
+          992,
+          182167374
+        ],
+        [
+          "bonsai_pq2_cached_fp16_acc_k32",
+          "bonsai_pq2_cached_fp16_acc_k32",
+          160,
+          8,
+          1,
+          256,
+          1,
+          1,
+          94,
+          27648,
+          0,
+          48,
+          82901795
+        ],
+        [
+          "bonsai_pq2_cached_fp16_acc_k32",
+          "bonsai_pq2_cached_fp16_acc_k32",
+          96,
+          8,
+          1,
+          256,
+          1,
+          1,
+          94,
+          27648,
+          0,
+          48,
+          52498364
+        ],
+        [
+          "bonsai_pq2_cached_fp16_acc_k32",
+          "bonsai_pq2_cached_fp16_acc_k32",
+          192,
+          8,
+          1,
+          256,
+          1,
+          1,
+          94,
+          27648,
+          0,
+          16,
+          33336144
+        ],
+        [
+          "bonsai_pq2_matvec_rows2",
+          "bonsai_pq2_matvec_rows2",
+          640,
+          1,
+          1,
+          128,
+          1,
+          1,
+          37,
+          0,
+          0,
+          128,
+          16229857
+        ],
+        [
+          "bonsai_pq2_matvec_rows2",
+          "bonsai_pq2_matvec_rows2",
+          2176,
+          1,
+          1,
+          128,
+          1,
+          1,
+          37,
+          0,
+          0,
+          128,
+          15442529
+        ],
+        [
+          "bonsai_pq2_cached_fp16_acc_k32",
+          "bonsai_pq2_cached_fp16_acc_k32",
+          16,
+          8,
+          1,
+          256,
+          1,
+          1,
+          94,
+          27648,
+          0,
+          32,
+          7229925
+        ],
+        [
+          "bonsai_pq2_matvec_rows2",
+          "bonsai_pq2_matvec_rows2",
+          1280,
+          1,
+          1,
+          128,
+          1,
+          1,
+          37,
+          0,
+          0,
+          48,
+          3570386
+        ],
+        [
+          "bonsai_pq2_matvec_rows2",
+          "bonsai_pq2_matvec_rows2",
+          768,
+          1,
+          1,
+          128,
+          1,
+          1,
+          37,
+          0,
+          0,
+          48,
+          2292321
+        ],
+        [
+          "bonsai_pq2_matvec_rows2",
+          "bonsai_pq2_matvec_rows2",
+          31040,
+          1,
+          1,
+          128,
+          1,
+          1,
+          37,
+          0,
+          0,
+          1,
+          2090365
+        ],
+        [
+          "bonsai_pq2_matvec_rows2",
+          "bonsai_pq2_matvec_rows2",
+          1536,
+          1,
+          1,
+          128,
+          1,
+          1,
+          37,
+          0,
+          0,
+          16,
+          1321043
+        ],
+        [
+          "bonsai_pq2_matvec_ordered",
+          "bonsai_pq2_matvec_ordered",
+          256,
+          1,
+          1,
+          128,
+          1,
+          1,
+          26,
+          0,
+          0,
+          32,
+          437061
+        ],
+        [
+          "bonsai_pq2_row",
+          "bonsai_pq2_row",
+          20,
+          1,
+          1,
+          256,
+          1,
+          1,
+          16,
+          0,
+          0,
+          1,
+          1376
+        ]
+      ]
+    },
+    "decode": {
+      "wall_ns": 13248153909,
+      "gpu_activity_union_ns": 12625620930,
+      "gpu_gap_ns": 622532979,
+      "copies_by_cupti_kind": {
+        "1": {
+          "count": 1022,
+          "ns": 326828,
+          "bytes": 98112
+        },
+        "2": {
+          "count": 511,
+          "ns": 454110,
+          "bytes": 6132
+        }
+      },
+      "cuda_graph_kernel_nodes": 0,
+      "kernels": {
+        "bonsai_pq2_mvq_q8_2": {
+          "launches": 188048,
+          "ns": 8163279085
+        },
+        "bonsai_decode_direct_q4_mma_half2": {
+          "launches": 8176,
+          "ns": 2099203547
+        },
+        "bonsai_pq2_mvq_q8_1": {
+          "launches": 511,
+          "ns": 375899355
+        },
+        "bonsai_fwht1024": {
+          "launches": 131838,
+          "ns": 372424585
+        },
+        "bonsai_norm_wide_512_1": {
+          "launches": 65919,
+          "ns": 337272955
+        },
+        "goose_gdn_decode": {
+          "launches": 24528,
+          "ns": 243481105
+        },
+        "bonsai_pq2_matvec_ordered": {
+          "launches": 16352,
+          "ns": 223525761
+        },
+        "bonsai_decay_stage_256_0": {
+          "launches": 24528,
+          "ns": 163334349
+        },
+        "bonsai_norm": {
+          "launches": 65408,
+          "ns": 150417788
+        },
+        "bonsai_mv_pack_q8": {
+          "launches": 131327,
+          "ns": 131481150
+        },
+        "bonsai_verify_merge_parallel": {
+          "launches": 8176,
+          "ns": 100653901
+        },
+        "bonsai_residual": {
+          "launches": 65408,
+          "ns": 66417775
+        },
+        "goose_set_q4_rows": {
+          "launches": 16352,
+          "ns": 48101829
+        },
+        "bonsai_conv_step": {
+          "launches": 24528,
+          "ns": 43271362
+        },
+        "bonsai_swiglu": {
+          "launches": 32704,
+          "ns": 43151796
+        },
+        "goose_rope_decode": {
+          "launches": 16352,
+          "ns": 40047959
+        },
+        "bonsai_attention_gate": {
+          "launches": 8176,
+          "ns": 11215505
+        },
+        "bonsai_split_q_gate": {
+          "launches": 8176,
+          "ns": 7862737
+        },
+        "bonsai_choice_tiles": {
+          "launches": 511,
+          "ns": 2450465
+        },
+        "bonsai_choice_final": {
+          "launches": 511,
+          "ns": 784490
+        },
+        "bonsai_pq2_row": {
+          "launches": 511,
+          "ns": 562493
+        }
+      },
+      "geometry_columns": [
+        "kernel",
+        "instance",
+        "grid_x",
+        "grid_y",
+        "grid_z",
+        "block_x",
+        "block_y",
+        "block_z",
+        "registers",
+        "static_smem",
+        "dynamic_smem",
+        "launches",
+        "ns"
+      ],
+      "hot_geometry": [
+        [
+          "bonsai_pq2_mvq_q8_2",
+          "bonsai_pq2_mvq_q8_2",
+          2176,
+          1,
+          1,
+          128,
+          1,
+          1,
+          40,
+          0,
+          0,
+          65408,
+          3821610289
+        ],
+        [
+          "bonsai_pq2_mvq_q8_2",
+          "bonsai_pq2_mvq_q8_2",
+          640,
+          1,
+          1,
+          128,
+          1,
+          1,
+          40,
+          0,
+          0,
+          65408,
+          2657244184
+        ],
+        [
+          "bonsai_pq2_mvq_q8_2",
+          "bonsai_pq2_mvq_q8_2",
+          1280,
+          1,
+          1,
+          128,
+          1,
+          1,
+          40,
+          0,
+          0,
+          24528,
+          854872926
+        ],
+        [
+          "bonsai_pq2_mvq_q8_2",
+          "bonsai_pq2_mvq_q8_2",
+          768,
+          1,
+          1,
+          128,
+          1,
+          1,
+          40,
+          0,
+          0,
+          24528,
+          497929862
+        ],
+        [
+          "bonsai_pq2_mvq_q8_1",
+          "bonsai_pq2_mvq_q8_1",
+          62080,
+          1,
+          1,
+          128,
+          1,
+          1,
+          33,
+          0,
+          0,
+          511,
+          375899355
+        ],
+        [
+          "bonsai_pq2_mvq_q8_2",
+          "bonsai_pq2_mvq_q8_2",
+          1536,
+          1,
+          1,
+          128,
+          1,
+          1,
+          40,
+          0,
+          0,
+          8176,
+          331621824
+        ],
+        [
+          "bonsai_pq2_matvec_ordered",
+          "bonsai_pq2_matvec_ordered",
+          256,
+          1,
+          1,
+          128,
+          1,
+          1,
+          26,
+          0,
+          0,
+          16352,
+          223525761
+        ],
+        [
+          "bonsai_pq2_row",
+          "bonsai_pq2_row",
+          20,
+          1,
+          1,
+          256,
+          1,
+          1,
+          16,
+          0,
+          0,
+          511,
+          562493
+        ]
+      ]
+    }
+  }
+}
