@@ -19,32 +19,6 @@ typedef struct {
     VkDeviceSize device_offset;
 } fg_weight;
 
-extern fg_vk_tokenizer *fg_vk_tokenizer_from_gguf(sl_u8 data, sl_i64 state, sl_i64 meta,
-    int64_t tokens, int64_t merges, int64_t types, int64_t eos);
-
-fg_vk_tokenizer *fg_vk_qwen2_tokenizer_open(const char *path) {
-    FILE *model = fopen(path, "rb");
-    if (!model) {
-        perror(path);
-        return NULL;
-    }
-    fg_gguf file = {0};
-    fg_vk_tokenizer *tokenizer = NULL;
-    int64_t eos;
-    if (fg_gguf_read_header(&file, model) >= 0 && fg_gguf_metadata_is(&file, "general.architecture", "qwen2") &&
-        fg_gguf_metadata_is(&file, "tokenizer.ggml.model", "gpt2") && fg_gguf_metadata_is(&file, "tokenizer.ggml.pre", "qwen2") &&
-        !gr_meta_int(file.data, FG_GGUF_WORDS(file.state), FG_GGUF_WORDS(file.metadata),
-                     fg_gguf_metadata(&file, "tokenizer.ggml.eos_token_id"), fg_gguf_words(&eos, 1)) &&
-        eos >= 0 && eos < FG_QWEN_VOCAB) {
-        tokenizer = fg_vk_tokenizer_from_gguf(file.data, FG_GGUF_WORDS(file.state), FG_GGUF_WORDS(file.metadata),
-            fg_gguf_metadata(&file, "tokenizer.ggml.tokens"), fg_gguf_metadata(&file, "tokenizer.ggml.merges"),
-            fg_gguf_metadata(&file, "tokenizer.ggml.token_type"), eos);
-    }
-    free(file.data.data);
-    fclose(model);
-    return tokenizer;
-}
-
 static int validate_model(fg_gguf *file, fg_vk_qwen2 *model) {
     if (!fg_gguf_metadata_is(file, "general.architecture", "qwen2")) return 0;
     const struct { const char *name; int64_t expected; } dims[] = {

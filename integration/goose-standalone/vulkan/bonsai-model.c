@@ -19,6 +19,7 @@ typedef struct {
 struct fg_vk_bonsai {
     fg_vk_device vk;
     fg_vk_graph graph;
+    fg_vk_upload reset;
     fg_bonsai_slot layers[LAYERS];
     fg_vk_buffer globals[G_COUNT], state, scratch, host;
     fg_vk_view signs[3], extra[GX_COUNT], s[BS_COUNT];
@@ -244,6 +245,7 @@ static int allocate_work(fg_vk_bonsai *m, fg_vk_upload *upload) {
 void fg_vk_bonsai_close(fg_vk_bonsai *m) {
     if (!m) return;
     fg_vk_graph_close(&m->graph);
+    fg_vk_upload_close(&m->reset);
     for (unsigned i = 0; i < LAYERS; ++i) fg_vk_free_buffer(&m->vk, &m->layers[i].buffer);
     for (unsigned i = 0; i < G_COUNT; ++i) fg_vk_free_buffer(&m->vk, &m->globals[i]);
     fg_vk_free_buffer(&m->vk, &m->state);
@@ -262,7 +264,8 @@ fg_vk_bonsai *fg_vk_bonsai_open(const char *path, uint32_t capacity, uint32_t de
     fg_vk_upload upload = {0};
     int ok = m && fg_vk_open(&m->vk, device, allow_cpu) &&
         fg_vk_upload_open(&upload, &m->vk, CHUNK) && load_weights(m, file, &upload) &&
-        allocate_work(m, &upload) && fg_vk_graph_open(&m->graph, &m->vk, LAYERS * 26 + 32);
+        allocate_work(m, &upload) && fg_vk_graph_open(&m->graph, &m->vk, LAYERS * 26 + 32) &&
+        fg_vk_upload_open(&m->reset, &m->vk, 4);
     fg_vk_upload_close(&upload);
     fclose(file);
     if (!ok) { fg_vk_bonsai_close(m); return NULL; }
@@ -325,4 +328,13 @@ int fg_vk_bonsai_is_eog(const fg_vk_bonsai *m, uint32_t token) {
         if (m->eog[i] == token) return 1;
     }
     return 0;
+}
+
+int fg_vk_bonsai_reset(fg_vk_bonsai *m) {
+    if (!m->position && !m->failed) return 1;
+    if (!fg_vk_upload_zero(&m->reset, &m->state)) return 0;
+    m->graph.recording = 0;
+    m->position = 0;
+    m->failed = 0;
+    return 1;
 }

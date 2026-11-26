@@ -6,6 +6,7 @@
 #endif
 
 #include "http.h"
+#include "bonsai-model.h"
 #include "qwen2.h"
 #include "qwen2_unit.h"
 #include "tokenizer.h"
@@ -17,10 +18,15 @@
 
 typedef struct {
     fg_vk_qwen2 model;
+    fg_vk_bonsai *bonsai;
     fg_vk_tokenizer *tokenizer;
-    float logits[FG_QWEN_VOCAB];
-    uint32_t previous;
+    float *logits;
+    uint32_t previous, vocabulary, capacity;
 } fg_vk_http;
+
+static int step(fg_vk_http *h, uint32_t id, float *logits) {
+    return h->bonsai ? fg_vk_bonsai_step(h->bonsai, id, logits) : fg_vk_qwen2_step(&h->model, id, logits);
+}
 
 int64_t fg_vk_http_tokenize(uint64_t owner, sl_u8 prompt, sl_i64 ids, uint8_t special) {
     fg_vk_http *h = (fg_vk_http *)(uintptr_t)owner;
@@ -39,19 +45,22 @@ int64_t fg_vk_http_tokenize(uint64_t owner, sl_u8 prompt, sl_i64 ids, uint8_t sp
 
 int64_t fg_vk_http_prefill(uint64_t owner, sl_i64 prompt, int64_t limit) {
     fg_vk_http *h = (fg_vk_http *)(uintptr_t)owner;
-    fg_vk_qwen2 *m = &h->model;
     if (prompt.len <= 0 || limit <= 0 ||
-        prompt.len > m->context || limit - 1 > m->context - prompt.len) return -1;
+        prompt.len > h->capacity || limit - 1 > h->capacity - prompt.len) return -1;
     for (int64_t i = 0; i < prompt.len; ++i) {
-        if (prompt.data[i] < 0 || prompt.data[i] >= FG_QWEN_VOCAB) return -1;
+        if (prompt.data[i] < 0 || prompt.data[i] >= h->vocabulary) return -1;
     }
     // Submissions are synchronous. A rewind hides old KV and the next step
     // resets any command buffer left recording after a dispatch error.
-    m->position = 0;
-    m->graph.recording = 0;
+    if (h->bonsai) {
+        if (!fg_vk_bonsai_reset(h->bonsai)) return -1;
+    } else {
+        h->model.position = 0;
+        h->model.graph.recording = 0;
+    }
     h->previous = UINT32_MAX;
     for (int64_t i = 0; i < prompt.len; ++i) {
-        if (!fg_vk_qwen2_step(m, (uint32_t)prompt.data[i], i + 1 == prompt.len ? h->logits : NULL)) return -1;
+        if (!step(h, (uint32_t)prompt.data[i], i + 1 == prompt.len ? h->logits : NULL)) return -1;
     }
     return 0;
 }
@@ -59,9 +68,9 @@ int64_t fg_vk_http_prefill(uint64_t owner, sl_i64 prompt, int64_t limit) {
 int64_t fg_vk_http_next(uint64_t owner, uint8_t ignore_eog, sl_u8 text, sl_i64 id) {
     fg_vk_http *h = (fg_vk_http *)(uintptr_t)owner;
     if (id.len < 1 || text.len < 0 ||
-        (h->previous != UINT32_MAX && !fg_vk_qwen2_step(&h->model, h->previous, h->logits))) return -1;
+        (h->previous != UINT32_MAX && !step(h, h->previous, h->logits))) return -1;
     uint32_t token;
-    if (!fg_vk_choose(h->logits, FG_QWEN_VOCAB, ignore_eog ? h->tokenizer : NULL, &token)) return -1;
+    if (!fg_vk_choose(h->logits, h->vocabulary, ignore_eog ? h->tokenizer : NULL, &token)) return -1;
     if (!ignore_eog && fg_vk_tokenizer_is_eog(h->tokenizer, token)) return -2;
     const int n = fg_vk_tokenizer_piece(h->tokenizer, token, (char *)text.data, (size_t)text.len);
     if (n < 0 || n > text.len) return -1;
@@ -105,29 +114,38 @@ int64_t fg_vk_http_timeout(int64_t fd) {
 }
 
 void fg_vk_http_ready(int64_t port) {
-    fprintf(stderr, "Vulkan Qwen2 HTTP listening on 127.0.0.1:%lld\n", (long long)port);
+    fprintf(stderr, "Vulkan HTTP listening on 127.0.0.1:%lld\n", (long long)port);
     fflush(stderr);
 }
 
 int fg_vk_http_run(const char *model_file, uint32_t capacity, uint32_t index, int cpu,
-    uint32_t port, uint32_t requests) {
+    uint32_t port, uint32_t requests, fg_vk_model_kind kind) {
 #ifdef _WIN32
     if (!fg_win_network_ready()) return 0;
 #endif
     fg_vk_http *h = calloc(1, sizeof(*h));
     int ok = 0;
     if (h) {
-        h->tokenizer = fg_vk_qwen2_tokenizer_open(model_file);
-        if (h->tokenizer && fg_vk_qwen2_open(&h->model, model_file, capacity, index, cpu)) {
-            ok = fg_vk_http_serve((uintptr_t)h, port, requests, capacity) >= 0;
+        const int bonsai = kind == FG_VK_MODEL_BONSAI;
+        h->capacity = capacity;
+        h->vocabulary = bonsai ? FG_BONSAI_VOCAB : FG_QWEN_VOCAB;
+        h->tokenizer = fg_vk_model_tokenizer_open(model_file, kind);
+        h->logits = malloc(h->vocabulary * sizeof(*h->logits));
+        if (h->tokenizer && h->logits) {
+            if (bonsai) h->bonsai = fg_vk_bonsai_open(model_file, capacity, index, cpu);
+            if (h->bonsai || (!bonsai && fg_vk_qwen2_open(&h->model, model_file, capacity, index, cpu))) {
+                ok = fg_vk_http_serve((uintptr_t)h, port, requests, capacity, h->vocabulary, bonsai) >= 0;
+            }
         }
+        fg_vk_bonsai_close(h->bonsai);
         fg_vk_qwen2_close(&h->model);
         fg_vk_tokenizer_close(h->tokenizer);
+        free(h->logits);
         free(h);
     }
 #ifdef _WIN32
     WSACleanup();
 #endif
-    if (!ok) fputs("Vulkan Qwen2 HTTP stopped with an error\n", stderr);
+    if (!ok) fputs("Vulkan HTTP stopped with an error\n", stderr);
     return ok;
 }

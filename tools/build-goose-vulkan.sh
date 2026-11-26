@@ -53,17 +53,20 @@ fi
 
 if [[ "$mode" == qwen2 ]]; then
     goose=${GOOSE_BIN:-goose}
-    python3 - "$root/goose/misc/pretokenizer-qwen35.goose" "$out/pretokenizer-qwen2.goose" <<'PY'
+    python3 - "$root/goose/misc/pretokenizer-qwen35.goose" "$out/pretokenizer-vulkan.goose" <<'PY'
 from pathlib import Path
 import sys
 
 source, output = map(Path, sys.argv[1:])
 text = source.read_text()
-anchor = "const PT_MARK: i64 = 0x0010;"
-if text.count(anchor) != 1:
+anchor = "fn pt_scan(cpts: i64[:], n: i64, seg: i64[:], cap: i64) -> i64 {"
+if text.count(anchor) != 1 or text.count("(PT_LETTER | PT_MARK)") != 3 or text.count("& PT_PUNCT") != 2:
     raise ValueError("Qwen pre-tokenizer anchor changed")
-# Qwen2 classifies marks with punctuation instead of folding them into letter runs.
-output.write_text(text.replace(anchor, "const PT_MARK: i64 = 0;"))
+text = text.replace("(PT_LETTER | PT_MARK)", "letters").replace("& PT_PUNCT", "& punct")
+setup = ('extern "fg_vk_tokenizer_marks" fn pt_model_marks() -> i64;\n' + anchor +
+         '\n    let letters = PT_LETTER | (if pt_model_marks() != 0 { PT_MARK } else { 0 });' +
+         '\n    let punct = PT_SPACE | letters | PT_NUM;')
+output.write_text(text.replace(anchor, setup))
 PY
     python3 "$root/tools/compose-vulkan-http.py" "$root" "$out/http_helpers.goose"
     bootstrap="$root/experiments/EXP-2026-11-25-1973-bonsai-pq2-bootstrap/source"
@@ -72,7 +75,7 @@ PY
         "$root/goose/model/qwen35-model-loader.goose" > "$out/bonsai-model-names.goose"
     cat "$root/goose/misc/gguf-headers.goose" "$out/gguf-tensors-vulkan.goose" "$root/goose/model/gguf-reader.goose" \
         "$out/bonsai-model-names.goose" "$bootstrap/bonsai-layout.goose" \
-        "$root/goose/misc/"{unicode-tables,unicode-text}.goose "$out/pretokenizer-qwen2.goose" \
+        "$root/goose/misc/"{unicode-tables,unicode-text}.goose "$out/pretokenizer-vulkan.goose" \
         "$root/goose/model/"{bpe-tokenize,bpe-detokenize,tokenizer-engine}.goose \
         "$root/goose/server/"{http-request,http-listener,route-table,jsonparse}.goose "$out/http_helpers.goose" \
         "$source_dir/"{qwen2-step,bonsai-step,http}.goose > "$out/qwen2_unit.goose"

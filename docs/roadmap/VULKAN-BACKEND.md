@@ -312,7 +312,7 @@ The local GGUF inventory confirms distinct requirements.
 | Model | Packed weight types in the local GGUF | Vulkan status |
 | --- | --- | --- |
 | Qwen2.5-0.5B Q4_0 | Q4_0, Q8_0 | Experimental CLI and HTTP release |
-| Bonsai 2.5 27B | PQ2_0, Q4_0 for the MTP head | Experimental raw-ID CLI with MTP off. Short generation passes on Linux RTX 4070 and Windows EXE under Wine with RTX 4070. |
+| Bonsai 2.5 27B | PQ2_0 trunk, Q4_0 KV | Experimental raw-ID and text CLI, serial HTTP completions, SSE and no-thinking ChatML. Short generation passes on Linux RTX 4070 and Windows EXE under Wine with RTX 4070. |
 | Apex 35B | Q4_K, Q6_K | Open. GDN, grouped MoE and oversubscribed expert placement |
 | Inkling-2-Mini | Q8_0, IQ4_NL, IQ4_XS | Open. Relative/sliding attention, recurrent depth loops and grouped MoE |
 
@@ -472,9 +472,42 @@ Tested executable SHA-256 values:
 - Linux `9cefe4f8d805e86860595c473009f56c16720de6784e3c043a21dabba720eec4`.
 - Windows `a4f7b35b1778e2e92eeaf5168726f61d00e0d0a292ab99c853cdce56e181d668`.
 
-These are short correctness checks. Bonsai text and HTTP support,
-long-sequence numerical checks, peak memory, throughput, MTP and native
-AMD qualification remain open. Apex and Inkling Vulkan remain open.
+### Bonsai text and HTTP inference
+
+The Vulkan unit uses the GGUF's Qwen3.5 pretokenizer and shared Goose BPE.
+Plain text, raw token IDs, streaming completions and text-only ChatML
+with `enable_thinking: false` are available in the serial HTTP server.
+Each request clears recurrent and KV state on the device. Generation
+uses greedy selection. Tool calls, multimodal inputs, structured reasoning
+and MTP remain outside this path.
+
+On Linux RTX 4070, the nine-request smoke test passed. The two
+tokenization cases match llama.cpp using vocabulary metadata from the
+pinned Bonsai GGUF. The plain and chat generation cases match the visible
+text and generated IDs from EXP-2105 CUDA with greedy selection, Q4_0 KV,
+context 96, batch/ubatch 64 and MTP off. For plain completion the Vulkan
+HTTP API omits the terminating EOG from returned IDs. EOG stop, SSE usage
+and replay after intervening requests passed. The Windows x64 text CLI
+under Wine with NVIDIA's Vulkan ICD emitted the same plain completion.
+The Qwen2.5 tokenizer and HTTP suites passed on Linux.
+
+```bash
+tests=integration/goose-standalone/tests/vulkan
+out=build/vulkan-bringup/bonsai-http
+bash tools/build-goose-vulkan.sh "$out/linux" linux qwen2
+"$out/linux/frankenmoe-vulkan" "$BONSAI_GGUF" --bonsai --device-index 0 \
+    --serve 29188 --ctx-size 96 --max-requests 9
+# Run from a second shell.
+python3 "$tests/bonsai-http-smoke.py" 29188
+```
+
+Tested executable SHA-256 values:
+
+- Linux `659df2058149392fb0b325333901718144f2500968216f8a9ee3b80aadf0b5c7`.
+- Windows `e559ac3e3756a0d9414d72f845c8eb52c51d9e13b415a781947a7bf5da213e9c`.
+
+Long-sequence numerical checks, peak memory, throughput, native Windows
+and AMD hardware qualification remain open. Apex and Inkling Vulkan remain open.
 
 ## Model order
 

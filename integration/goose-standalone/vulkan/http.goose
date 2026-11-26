@@ -10,7 +10,9 @@ extern "fg_vk_http_ready" fn vkh_ready(port: i64);
 fn ih_log_request(method: i64, route: i64) {}
 fn ih_log_response(status: i64, body: const u8[:]) {}
 
-const VKH_MODEL: u8[:] = "qwen2.5-0.5b-instruct";
+fn vkh_name(bonsai: bool) -> const u8[:] {
+    return if bonsai { "bonsai-2.5-27b" } else { "qwen2.5-0.5b-instruct" };
+}
 
 fn vkh_error(fd: i64, status: i64, message: const u8[:]) {
     var out: u8[512] = [0; 512];
@@ -76,8 +78,44 @@ fn vkh_chat_frame(context: u64, ids: i64[:], at: i64, ctrl: const i64[:],
     return end + tail;
 }
 
+fn vkh_trim(text: const u8[:]) -> const u8[:] {
+    var advance: i64[1] = [1];
+    var start: i64 = 0;
+    var end: i64 = 0;
+    var at: i64 = 0;
+    while at < text.len {
+        let cpt = uc_cpt_from(text, at, advance);
+        if cpt < 0 || (uf_flags(cpt) & 256) == 0 { end = at + advance[0]; }
+        else if end == 0 { start = at + advance[0]; }
+        at += advance[0];
+    }
+    return if end > start { text[start .. end] } else { "" };
+}
+
+fn vkh_bonsai_assistant(context: u64, prompt: i64[:], at: i64, ctrl: const i64[:],
+    text: const u8[:], closed: bool) -> i64 {
+    let tail: i64 = if closed { 2 } else { 0 };
+    if at < 0 || prompt.len - at <= 1 + tail { return -1; }
+    prompt[at] = ctrl[0];
+    let begin = at + 1;
+    let bound = prompt.len - tail;
+    let prefix = vkh_tokenize(context, "assistant\n<think>\n\n</think>\n\n", prompt[begin .. bound], true);
+    if prefix <= 0 { return -1; }
+    var end = begin + prefix;
+    if text.len > 0 {
+        let count = vkh_tokenize(context, text, prompt[end .. bound], false);
+        if count <= 0 { return -1; }
+        end += count;
+    }
+    if closed {
+        prompt[end] = ctrl[1];
+        prompt[end + 1] = ctrl[2];
+    }
+    return end + tail;
+}
+
 fn vkh_chat_prompt(context: u64, array: i64, tree: const i64[:], size: i64,
-    strings: const u8[:], prompt: i64[:], scratch: u8[:]) -> i64 {
+    strings: const u8[:], prompt: i64[:], scratch: u8[:], bonsai: bool) -> i64 {
     if tree[array] != PJ_K_ARRAY || tree[5 * size + array] <= 0 { return -1; }
     var control: i64[3] = [0; 3];
     if vkh_tokenize(context, "<|im_start|>", control[0 .. 1], true) != 1 ||
@@ -85,6 +123,7 @@ fn vkh_chat_prompt(context: u64, array: i64, tree: const i64[:], size: i64,
        vkh_tokenize(context, "\n", control[2 .. 3], false) != 1 { return -1; }
     let first = tree[4 * size + array];
     var at: i64 = 0;
+    var user = false;
     for i in tree[5 * size + array] {
         let message = tree[13 * size + first + i];
         if tree[message] != PJ_K_OBJECT || tree[5 * size + message] != 2 { return -1; }
@@ -104,18 +143,32 @@ fn vkh_chat_prompt(context: u64, array: i64, tree: const i64[:], size: i64,
             else { return -1; }
         }
         if role != "system" && role != "user" && role != "assistant" { return -1; }
-        if i == 0 && role != "system" {
+        if !bonsai && i == 0 && role != "system" {
             at = vkh_chat_frame(context, prompt, at, control, "system",
                 "You are Qwen, created by Alibaba Cloud. You are a helpful assistant.", true, scratch);
             if at < 0 { return -1; }
         }
-        at = vkh_chat_frame(context, prompt, at, control, role, text, true, scratch);
+        if bonsai {
+            text = vkh_trim(text);
+            if role == "system" && i != 0 { return -1; }
+            if role == "system" && text.len == 0 { continue; }
+            if role == "user" { user = true; }
+        }
+        at = if bonsai && role == "assistant" {
+            vkh_bonsai_assistant(context, prompt, at, control, text, true)
+        } else {
+            vkh_chat_frame(context, prompt, at, control, role, text, true, scratch)
+        };
         if at < 0 { return -1; }
+    }
+    if bonsai {
+        if !user { return -1; }
+        return vkh_bonsai_assistant(context, prompt, at, control, "", false);
     }
     return vkh_chat_frame(context, prompt, at, control, "assistant", "", false, scratch);
 }
 
-fn vkh_identity(out: u8[:], start: i64, route: i64, serial: i64, created: i64, streaming: bool) -> i64 {
+fn vkh_identity(out: u8[:], start: i64, route: i64, serial: i64, created: i64, streaming: bool, model: const u8[:]) -> i64 {
     var n = cp_put(out, start, "{\"id\":");
     n = cp_put(out, n, if route == 13 { "\"chatcmpl-vulkan-" } else { "\"cmpl-vulkan-" });
     n = cp_uint(out, n, serial);
@@ -126,7 +179,8 @@ fn vkh_identity(out: u8[:], start: i64, route: i64, serial: i64, created: i64, s
     n = vkh_json_text(out, n, kind);
     n = cp_put(out, n, ",\"created\":");
     n = cp_uint(out, n, created);
-    return cp_put(out, n, ",\"model\":\"qwen2.5-0.5b-instruct\"");
+    n = cp_put(out, n, ",\"model\":");
+    return vkh_json_text(out, n, model);
 }
 
 fn vkh_usage(out: u8[:], start: i64, prompt: i64, generated: i64) -> i64 {
@@ -140,9 +194,9 @@ fn vkh_usage(out: u8[:], start: i64, prompt: i64, generated: i64) -> i64 {
 }
 
 fn vkh_stream_chunk(fd: i64, out: u8[:], route: i64, serial: i64, created: i64,
-    text: const u8[:], role: bool, finish: const u8[:]) -> bool {
+    text: const u8[:], role: bool, finish: const u8[:], model: const u8[:]) -> bool {
     var n = cp_put(out, 0, "data: ");
-    n = vkh_identity(out, n, route, serial, created, true);
+    n = vkh_identity(out, n, route, serial, created, true, model);
     n = cp_put(out, n, ",\"choices\":[{\"index\":0,");
     if route == 13 {
         n = cp_put(out, n, "\"delta\":{");
@@ -176,14 +230,14 @@ fn vkh_complete_utf8(text: const u8[:]) -> i64 {
 }
 
 fn vkh_stream(context: u64, fd: i64, route: i64, serial: i64, created: i64,
-    prompt: const i64[:], limit: i64, ignore_eog: bool, report_usage: bool, out: u8[:]) {
+    prompt: const i64[:], limit: i64, ignore_eog: bool, report_usage: bool, out: u8[:], model: const u8[:]) {
     if vkh_prefill(context, prompt, limit) != 0 {
         vkh_error(fd, 500, "Vulkan prefill failed");
         return;
     }
     let header = "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream; charset=utf-8\r\nCache-Control: no-cache\r\nConnection: close\r\n\r\n";
     if ht_write_all_impl(fd, header) != 0 { return; }
-    if route == 13 && !vkh_stream_chunk(fd, out, route, serial, created, "", true, "") { return; }
+    if route == 13 && !vkh_stream_chunk(fd, out, route, serial, created, "", true, "", model) { return; }
     var piece: u8[1028] = [0; 1028];
     var id: i64[1] = [0];
     var pending: i64 = 0;
@@ -201,16 +255,16 @@ fn vkh_stream(context: u64, fd: i64, route: i64, serial: i64, created: i64,
         count += 1;
         let ready = vkh_complete_utf8(piece[0 .. pending]);
         if ready > 0 {
-            if !vkh_stream_chunk(fd, out, route, serial, created, piece[0 .. ready], false, "") { return; }
+            if !vkh_stream_chunk(fd, out, route, serial, created, piece[0 .. ready], false, "", model) { return; }
             for i in pending - ready { piece[i] = piece[ready + i]; }
             pending -= ready;
         }
     }
-    if pending > 0 && !vkh_stream_chunk(fd, out, route, serial, created, piece[0 .. pending], false, "") { return; }
-    if !vkh_stream_chunk(fd, out, route, serial, created, "", false, finish) { return; }
+    if pending > 0 && !vkh_stream_chunk(fd, out, route, serial, created, piece[0 .. pending], false, "", model) { return; }
+    if !vkh_stream_chunk(fd, out, route, serial, created, "", false, finish, model) { return; }
     if report_usage {
         var n = cp_put(out, 0, "data: ");
-        n = vkh_identity(out, n, route, serial, created, true);
+        n = vkh_identity(out, n, route, serial, created, true, model);
         n = cp_put(out, n, ",\"choices\":[]");
         n = vkh_usage(out, n, prompt.len, count);
         n = cp_put(out, n, "}\n\n");
@@ -219,7 +273,7 @@ fn vkh_stream(context: u64, fd: i64, route: i64, serial: i64, created: i64,
     ht_write_all_impl(fd, "data: [DONE]\n\n");
 }
 
-fn vkh_decode_body(context: u64, fd: i64, body: const u8[:], route: i64, cap: i64, serial: i64,
+fn vkh_decode_body(context: u64, fd: i64, body: const u8[:], route: i64, cap: i64, serial: i64, vocabulary: i64, bonsai: bool,
     prompt_ids: i64[:], generated: i64[:], text: u8[:], response: u8[:]) {
     if !ih_chat_depth_ok(body) {
         vkh_error(fd, 400, "invalid JSON nesting");
@@ -241,6 +295,7 @@ fn vkh_decode_body(context: u64, fd: i64, body: const u8[:], route: i64, cap: i6
         vkh_error(fd, 400, "expected a JSON object");
         return;
     }
+    let model = vkh_name(bonsai);
     let field: const u8[:] = if route == 25 { "content" } else if route == 13 { "messages" } else { "prompt" };
     var input: i64 = -1;
     var limit: i64 = 16;
@@ -279,11 +334,12 @@ fn vkh_decode_body(context: u64, fd: i64, body: const u8[:], route: i64, cap: i6
             }
             report_usage = tree[size + child] != 0;
         }
+        else if bonsai && route == 13 && key == "enable_thinking" && kind == PJ_K_BOOL && value == 0 {}
         else if route != 25 && key == "ignore_eos" && kind == PJ_K_BOOL { ignore_eog = value != 0; }
         else if route != 25 && key == "return_tokens" && kind == PJ_K_BOOL { return_tokens = value != 0; }
         else if route != 25 && key == "model" && kind == PJ_K_STRING {
             let at = tree[2 * size + node];
-            if strings[at .. at + tree[3 * size + node]] != VKH_MODEL {
+            if strings[at .. at + tree[3 * size + node]] != model {
                 vkh_error(fd, 400, "unknown model");
                 return;
             }
@@ -302,7 +358,7 @@ fn vkh_decode_body(context: u64, fd: i64, body: const u8[:], route: i64, cap: i6
     }
     var count: i64 = -1;
     if route == 13 {
-        count = vkh_chat_prompt(context, input, tree[..], size, strings[..], prompt_ids, text);
+        count = vkh_chat_prompt(context, input, tree[..], size, strings[..], prompt_ids, text, bonsai);
     } else if tree[input] == PJ_K_STRING {
         let at = tree[2 * size + input];
         count = vkh_tokenize(context, strings[at .. at + tree[3 * size + input]], prompt_ids, special);
@@ -316,7 +372,7 @@ fn vkh_decode_body(context: u64, fd: i64, body: const u8[:], route: i64, cap: i6
         for i in count {
             let item = tree[13 * size + edge + i];
             let id = tree[size + item];
-            if tree[item] != PJ_K_INT || id < 0 || id >= 151936 {
+            if tree[item] != PJ_K_INT || id < 0 || id >= vocabulary {
                 vkh_error(fd, 400, "invalid prompt token ID");
                 return;
             }
@@ -340,7 +396,7 @@ fn vkh_decode_body(context: u64, fd: i64, body: const u8[:], route: i64, cap: i6
         let created = vkh_now();
         if stream {
             vkh_stream(context, fd, route, serial, created, prompt_ids[0 .. count], limit,
-                ignore_eog, report_usage, response);
+                ignore_eog, report_usage, response, model);
             return;
         }
         var result: i64[2] = [0, 0];
@@ -351,7 +407,7 @@ fn vkh_decode_body(context: u64, fd: i64, body: const u8[:], route: i64, cap: i6
         }
         let stop: const u8[:] = if result[1] != 0 { "stop" } else { "length" };
         if route == 12 || route == 13 {
-            n = vkh_identity(response, n, route, serial, created, false);
+            n = vkh_identity(response, n, route, serial, created, false, model);
             n = cp_put(response, n, ",\"choices\":[{\"index\":0,");
         } else {
             n = cp_chr(response, n, 123);
@@ -377,7 +433,7 @@ fn vkh_decode_body(context: u64, fd: i64, body: const u8[:], route: i64, cap: i6
     else { ih_response(fd, 200, response[0 .. n]); }
 }
 
-export fn fg_vk_http_serve(context: u64, port: i64, limit: i64, cap: i64) -> i64 {
+export fn fg_vk_http_serve(context: u64, port: i64, limit: i64, cap: i64, vocabulary: i64, bonsai: bool) -> i64 {
     if port <= 0 || port > 65535 || limit < 0 || cap <= 0 || cap > 32768 { return -1; }
     var opts: i64[1] = [0];
     let listener = ht_open_impl(port, opts);
@@ -404,11 +460,14 @@ export fn fg_vk_http_serve(context: u64, port: i64, limit: i64, cap: i64) -> i64
             if status != 0 { vkh_error(fd, status, "invalid HTTP request"); }
             else if meta[2] == 1 { ih_response(fd, 200, "{\"status\":\"ok\"}"); }
             else if meta[2] == 5 {
-                ih_response(fd, 200, "{\"object\":\"list\",\"data\":[{\"id\":\"qwen2.5-0.5b-instruct\",\"object\":\"model\",\"owned_by\":\"local\"}]}");
+                var n = cp_put(response[..], 0, "{\"object\":\"list\",\"data\":[{\"id\":");
+                n = vkh_json_text(response[..], n, vkh_name(bonsai));
+                n = cp_put(response[..], n, ",\"object\":\"model\",\"owned_by\":\"local\"}]}");
+                ih_response(fd, 200, response[0 .. n]);
             } else if meta[2] == 11 || meta[2] == 12 || meta[2] == 13 || meta[2] == 25 {
                 if meta[1] <= 0 || meta[3] == 0 { vkh_error(fd, 400, "expected application/json body"); }
                 else {
-                    vkh_decode_body(context, fd, request[meta[0] .. meta[0] + meta[1]], meta[2], cap, served + 1,
+                    vkh_decode_body(context, fd, request[meta[0] .. meta[0] + meta[1]], meta[2], cap, served + 1, vocabulary, bonsai,
                         prompt_ids, generated, text, response[..]);
                 }
             } else { vkh_error(fd, 404, "route is not supported by Vulkan"); }

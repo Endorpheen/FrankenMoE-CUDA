@@ -69,12 +69,12 @@ int main(int argc, char **argv) {
         else goto usage;
     }
     const int text_mode = prompt_text || prompt_file;
-    if (bonsai && (text_mode || port)) goto usage;
+    const fg_vk_model_kind kind = bonsai ? FG_VK_MODEL_BONSAI : FG_VK_MODEL_QWEN2;
     if (port) {
         if (start != argc || text_mode || dump || special || tokenize_only || predict != 1 ||
             (cpu && device == FG_VK_AUTO_DEVICE)) goto usage;
         goose_init(0, NULL);
-        return fg_vk_http_run(argv[1], server_context ? server_context : 512, device, cpu, port, requests) ? 0 : 1;
+        return fg_vk_http_run(argv[1], server_context ? server_context : 512, device, cpu, port, requests, kind) ? 0 : 1;
     }
     if (requests || server_context) goto usage;
     if ((prompt_text && prompt_file) || (cpu && device == FG_VK_AUTO_DEVICE) ||
@@ -94,12 +94,12 @@ int main(int argc, char **argv) {
         size_t bytes = prompt_text ? strlen(prompt_text) : 0;
         char *owned = prompt_file ? read_prompt(prompt_file, &bytes) : NULL;
         const char *text = prompt_text ? prompt_text : owned;
-        tokenizer = fg_vk_qwen2_tokenizer_open(argv[1]);
+        tokenizer = fg_vk_model_tokenizer_open(argv[1], kind);
         const int count = fg_vk_tokenizer_encode(tokenizer, text, bytes, special, ids, capacity);
         free(owned);
         ok = count > 0;
         if (ok) prompt = (unsigned)count;
-        else fputs("Unable to tokenize the Qwen2 prompt within the context limit\n", stderr);
+        else fputs("Unable to tokenize the prompt within the context limit\n", stderr);
     } else {
         for (unsigned i = 0; i < prompt && ok; ++i) ok = read_number(argv[start + i], vocabulary, &ids[i]);
     }
