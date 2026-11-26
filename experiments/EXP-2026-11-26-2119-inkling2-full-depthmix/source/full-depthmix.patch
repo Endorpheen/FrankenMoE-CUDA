@@ -1,0 +1,161 @@
+--- a/cuda-driver.reference.merged.c
++++ b/cuda-driver.reference.merged.c
+@@ -1976,7 +1976,7 @@
+ 
+ bool inkling_arena_depthmix(const float *host_input, const float *host_next,
+                             const float *host_query, float *host_output,
+-                            int rows, bool save_history) {
++                            int rows, bool save_history, uint64_t full_outputs) {
+     enum { batch = 4096, width = 2304, plane_bytes = batch * width * sizeof(float) };
+     static Module module;
+     static Function prepare, score, mix;
+@@ -1990,6 +1990,8 @@
+     DevicePtr scores = scales + batch * sizeof(float);
+     DevicePtr query = scores + 5 * batch * sizeof(float);
+     const bool pre_attention = !host_next;
++    const int queries = full_outputs ? 3 : 1;
++    if (full_outputs) output = full_outputs;
+     DevicePtr normalized = pre_attention ? next : i2_attention_scratch;
+     DevicePtr saved_current = raw + 3 * (size_t)plane_bytes;
+     DevicePtr residual_input = host_input ? normalized + plane_bytes : saved_current;
+@@ -2010,18 +2012,22 @@
+     DevicePtr upload = pre_attention ? next : (save_history ? planes[rows - 1] : residual_input);
+     if (!status && host_input) status = cuda.upload(upload, host_input, plane_bytes);
+     if (!status) status = cuda.upload(table, planes, rows * sizeof(DevicePtr));
+-    if (!status) status = cuda.upload(query, host_query, width * sizeof(float));
++
+     void *prep_args[] = {&current, &residual_input, &next, &normalized, &scales, (void *)&add};
+     void *score_args[] = {&table, &normalized, &query, &scores, &rows, (void *)&lazy_index, &scales};
+     void *mix_args[] = {&table, &normalized, &scores, &output, &rows, (void *)&lazy_index, &scales};
+     if (!status) status = cuda.launch(prepare, batch, 1, 1, 128, 1, 1, 0, NULL, prep_args, NULL);
+-    if (!status) status = cuda.launch(score, rows + 1, batch, 1, 128, 1, 1, 0, NULL, score_args, NULL);
+-    if (!status) status = cuda.launch(mix, width / 128, batch, 1, 128, 1, 1, 0, NULL, mix_args, NULL);
++    for (int q = 0; q < queries && !status; ++q) {
++        output = (full_outputs ? full_outputs : next + plane_bytes) + q * (size_t)plane_bytes;
++        status = cuda.upload(query, host_query + q * width, width * sizeof(float));
++        if (!status) status = cuda.launch(score, rows + 1, batch, 1, 128, 1, 1, 0, NULL, score_args, NULL);
++        if (!status) status = cuda.launch(mix, width / 128, batch, 1, 128, 1, 1, 0, NULL, mix_args, NULL);
++    }
+     if (!status) status = cuda.sync();
+     if (!status) {
+         i2_depthmix_input.host = (uint64_t)(uintptr_t)host_output;
+-        i2_depthmix_input.device = output;
+-        i2_depthmix_input.bytes = plane_bytes;
++        i2_depthmix_input.device = full_outputs ? full_outputs : output;
++        i2_depthmix_input.bytes = queries * (size_t)plane_bytes;
+         i2_depthmix_input.reads = 0;
+     }
+     const int popped = finish_context();
+--- a/native-kv-driver.h
++++ b/native-kv-driver.h
+@@ -27,6 +27,10 @@
+     uint64_t calls, queries, uploads;
+ } nk;
+ 
++uint64_t inkling_prefill_full_scratch(size_t bytes) {
++    return nk.raw.bytes >= bytes ? nk.raw.address : 0;
++}
++
+ static size_t nk_row_bytes(enum inkling_kv_format format) {
+     return format == INKLING_KV_Q4_0 ? NK_KV / 32 * 18 : NK_KV * sizeof(uint16_t);
+ }
+--- a/inkling-backend.c
++++ b/inkling-backend.c
+@@ -125,11 +125,12 @@
+ extern void *fg_cuda_inkling_prefill_readback(size_t bytes);
+ extern void fg_cuda_i2_prefill_conv(const float *weights, float *history);
+ extern void inkling_arena_window(bool active, int begin);
+-extern bool inkling_arena_depthmix(const float *past, const float *next, const float *query, float *output, int rows, bool save_history);
++extern bool inkling_arena_depthmix(const float *past, const float *next, const float *query, float *output, int rows, bool save_history, uint64_t full_outputs);
+ extern unsigned inkling_arena_depthmix_close(void);
+ extern unsigned inkling_arena_depthmix_reads(void);
+ extern void inkling_arena_residual_open(float *host);
+ extern void inkling_moe_retain_output(float *host);
++extern uint64_t inkling_prefill_full_scratch(size_t bytes);
+ 
+ static void evaluate(struct ggml_context *ctx, struct ggml_tensor **nodes, int count,
+                      float *output, int size) {
+--- a/prefill.h
++++ b/prefill.h
+@@ -184,6 +184,14 @@
+             }
+             continue;
+         }
++        if (work->device_attention_mix) {
++            if (!work->device_current) memcpy(scratch->inputs[0][t], token->current, sizeof token->current);
++            if (message) {
++                for (int i = 0; i < 3; ++i)
++                    memcpy(message[i] + t * model_width, token->messages[i], sizeof token->current);
++            }
++            continue;
++        }
+         float selected[3][model_width];
+         if (aux[10] >= 0) {
+             const int projections = sliding ? 1 : 3;
+@@ -251,8 +259,10 @@
+         use_cached_history() && use_resident_moe() && prefill_direct_output;
+     setup.shared_attention_input = resident_attention && share_attention_inputs(sliding, aux);
+     const char *mix_setting = getenv("I2_SLIDING_DEVICE_DEPTHMIX");
+-    const bool device_attention_mix = direct_depthmix && sliding && layer != 0 && aux[10] >= 0 &&
+-        setup.shared_attention_input && (!mix_setting || strcmp(mix_setting, "0") != 0);
++    const char *full_setting = getenv("I2_FULL_DEVICE_DEPTHMIX");
++    const bool mixed_path = sliding ? setup.shared_attention_input && (!mix_setting || strcmp(mix_setting, "0") != 0) :
++                                      (!full_setting || strcmp(full_setting, "0") != 0);
++    const bool device_attention_mix = direct_depthmix && layer != 0 && aux[10] >= 0 && mixed_path;
+     setup.device_attention_mix = device_attention_mix;
+     setup.device_current = *device_current;
+     assert(!*device_current || (device_attention_mix && layer % 6 != 0 && layer < 18));
+@@ -260,9 +270,15 @@
+     prepare_prefill(team, &setup, count);
+     if (device_attention_mix) {
+         float *input = scratch->inputs[0][0];
+-        assert(inkling_arena_depthmix(*device_current ? NULL : input, NULL, coefficients(d, aux[10], model_width).data,
+-                                    input, tokens[0].count, false));
+-        for (size_t i = 0; i < (size_t)count * model_width; ++i) input[i] = NAN;
++        const size_t values = (size_t)count * model_width;
++        const int queries = sliding ? 1 : 3;
++        const uint64_t full_outputs = sliding ? 0 : inkling_prefill_full_scratch(queries * values * sizeof(float));
++        assert(sliding || full_outputs);
++        assert(inkling_arena_depthmix(*device_current ? NULL : input, NULL,
++                                    coefficients(d, aux[10], queries * model_width).data,
++                                    input, tokens[0].count, false, full_outputs));
++        for (int q = 0; q < queries; ++q)
++            for (size_t i = 0; i < values; ++i) scratch->inputs[q][0][i] = NAN;
+     }
+     struct ggml_context *ctx;
+     int64_t work[16] = {0};
+@@ -285,8 +301,8 @@
+         if (device_attention_mix) {
+             const unsigned reads = inkling_arena_depthmix_reads();
+             assert(reads);
+-            fprintf(stderr, "Inkling sliding DepthMix begin=%d layer=%d pass=%d reads=%u\n",
+-                    begin, layer, pass, reads);
++            fprintf(stderr, "Inkling %s DepthMix begin=%d layer=%d pass=%d reads=%u\n",
++                    sliding ? "sliding" : "full", begin, layer, pass, reads);
+         }
+         if (device_postconv) {
+             fg_cuda_i2_prefill_conv(NULL, NULL);
+@@ -379,7 +395,7 @@
+             if (!*device_current) memcpy(stage[t], source, sizeof stage[t]);
+         }
+         assert(inkling_arena_depthmix(*device_current ? NULL : stage[0], scratch->residual[0],
+-                                    coefficients(d, aux[9], model_width).data, scratch->ff[0], rows, save_history));
++                                    coefficients(d, aux[9], model_width).data, scratch->ff[0], rows, save_history, 0));
+     }
+     if (use_resident_moe()) {
+         float *messages = NULL;
+@@ -477,11 +493,13 @@
+     inkling_arena_window(count == 4096, begin);
+     bool device_current = false;
+     const char *keep = getenv("I2_RETAIN_PREFILL_MOE");
++    const char *full = getenv("I2_FULL_DEVICE_DEPTHMIX");
++    const bool use_full = !full || strcmp(full, "0") != 0;
+     for (int i = 0; i < logical; ++i) {
+         const int64_t *current = d->visits + i * 4;
+         const int64_t *next = i + 1 < logical ? current + 4 : NULL;
+         const bool retain = (!keep || strcmp(keep, "0") != 0) && count == 4096 &&
+-            current[0] < 18 && next && next[0] < 18 && next[0] % 6 != 0 && next[3] &&
++            current[0] < 18 && next && next[0] < 18 && next[0] % 6 != 0 && (next[3] || use_full) &&
+             d->aux[next[0] * 30 + 10] >= 0;
+         prefill_layer(d, tokens, scratch, count, begin, current, workers, &device_current, retain);
+         if (begin == 4096 && count > 1 && getenv("I2_DRAFT_PARITY"))
