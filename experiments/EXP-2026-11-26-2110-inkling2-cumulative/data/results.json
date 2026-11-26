@@ -1,0 +1,40 @@
+{
+  "workload": "RTX 4070, IQ4_XS, 32K/512, uncached first request",
+  "control_exp1969": {
+    "prompt_tokens": 32768,
+    "decode_tokens": 512,
+    "prefill_tok_s": 287.7634096670549,
+    "decode_tok_s": 21.088581890310486,
+    "output_token_hash": "17722fe02208c8d6bab5ccd7e3495c5b22a8820bae96103748dd627f3ff0bedb"
+  },
+  "candidate": {
+    "prompt_tokens": 32768,
+    "decode_tokens": 512,
+    "prefill_tok_s": 309.46009344026675,
+    "decode_tok_s": 30.320988514826634,
+    "output_token_hash": "17722fe02208c8d6bab5ccd7e3495c5b22a8820bae96103748dd627f3ff0bedb"
+  },
+  "instrumented_repeat": {
+    "prompt_tokens": 32768,
+    "decode_tokens": 512,
+    "prefill_tok_s": 309.04758302870727,
+    "decode_tok_s": 30.31302003123212,
+    "output_token_hash": "17722fe02208c8d6bab5ccd7e3495c5b22a8820bae96103748dd627f3ff0bedb"
+  },
+  "verifier_seconds": {
+    "prepare": 0.789178,
+    "attention": 5.598042,
+    "depthmix": 0.372545,
+    "moe": 8.90872,
+    "logits": 0.926656
+  },
+  "candidate_memory": {
+    "peak_rss_kib": 14231788,
+    "end_process_swap_kib": 0,
+    "system_swapout_pages_delta": 0,
+    "end_board_mib": 11662
+  },
+  "proposal_groups": 32,
+  "fully_consumed_groups": 31,
+  "rejected_groups": 0
+}

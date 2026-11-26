@@ -1,0 +1,998 @@
+--- a/bridge-driver.h
++++ b/bridge-driver.h
+@@ -1,9 +1,7 @@
+ #include "bridge.h"
+ #include "bridge-image.h"
+ 
+-int inkling_bridge_execute(const struct inkling_bridge *bridge, const void *attention, void *output) {
+-    enum { width = INKLING_BRIDGE_WIDTH, lanes = 128, row_bytes = width * sizeof(float) };
+-    static struct bridge_cuda {
++static struct bridge_cuda {
+         Module module;
+         Function prepare, score, mix;
+         struct device_buffer input, work;
+@@ -11,8 +9,28 @@
+             struct device_buffer data;
+             int position;
+         } slots[INKLING_VISITS];
+-    } device;
++} device;
++
++bool inkling_draft_bridge_history(float *destination, int position) {
++    enum { row_bytes = INKLING_BRIDGE_WIDTH * sizeof(float), bytes = 3 * row_bytes };
++    if (!destination || start_context() != 1) return false;
++    int error = cuda.sync();
++    for (int i = 0; i < INKLING_VISITS && !error; ++i) {
++        const DevicePtr source = device.slots[i].data.address;
++        if (!source || device.slots[i].position != position) {
++            error = -1;
++        } else {
++            error = cuda.download(destination + i * (3 * INKLING_BRIDGE_WIDTH), source + 5 * row_bytes, bytes);
++        }
++    }
++    const int popped = finish_context();
++    if (!error && !popped) fprintf(stderr, "Inkling draft bridge position=%d bytes=%d\n",
++                                    position, INKLING_VISITS * bytes);
++    return !error && !popped;
++}
+ 
++int inkling_bridge_execute(const struct inkling_bridge *bridge, const void *attention, void *output) {
++    enum { width = INKLING_BRIDGE_WIDTH, lanes = 128, row_bytes = width * sizeof(float) };
+     if (!cuda_inkling_quants || bridge->slot < 0 || bridge->slot >= INKLING_VISITS ||
+         bridge->rows < 0 || bridge->rows > INKLING_BRIDGE_ROWS || bridge->position < 0 ||
+         start_context() != 1) return -1;
+--- a/cuda-driver.reference.merged.c
++++ b/cuda-driver.reference.merged.c
+@@ -1915,7 +1915,107 @@
+     return error;
+ }
+ 
++static _Thread_local struct {
++    bool active;
++    size_t peak_end;
++    unsigned spills, flushes;
++} i2_arena_probe;
++
++void inkling_arena_window(bool active, int begin) {
++    if (!active && i2_arena_probe.active) {
++        fprintf(stderr, "Inkling carveout begin=%d arena=%zu peak_end=%zu spills=%u flushes=%u\n",
++            begin, cuda.activations.bytes, i2_arena_probe.peak_end,
++            i2_arena_probe.spills, i2_arena_probe.flushes);
++    }
++    i2_arena_probe.active = active;
++    i2_arena_probe.peak_end = 0;
++    i2_arena_probe.spills = 0;
++    i2_arena_probe.flushes = 0;
++}
++
++static size_t activation_usable_bytes(void) {
++    const size_t reserved = 217 * (size_t)MIB_BYTES;
++    const size_t capacity = cuda.activations.bytes;
++    return i2_arena_probe.active && capacity > reserved ? capacity - reserved : capacity;
++}
++
++#include "i2-lazy-prelude-image.h"
++
++static _Thread_local struct {
++    uint64_t host;
++    DevicePtr device;
++    size_t bytes;
++    unsigned reads;
++} i2_depthmix_input;
++
++static _Thread_local uint64_t i2_residual_host;
++static _Thread_local DevicePtr i2_residual_device, i2_attention_scratch;
++
++void inkling_arena_residual_open(float *host) {
++    i2_residual_host = (uint64_t)(uintptr_t)host;
++    i2_residual_device = 0;
++    i2_attention_scratch = 0;
++}
++
++unsigned inkling_arena_depthmix_close(void) {
++    const unsigned reads = i2_depthmix_input.reads;
++    memset(&i2_depthmix_input, 0, sizeof i2_depthmix_input);
++    inkling_arena_residual_open(NULL);
++    return reads;
++}
++
++bool inkling_arena_depthmix(const float *host_input, const float *host_next,
++                            const float *host_query, float *host_output,
++                            int rows, bool save_history) {
++    enum { batch = 4096, width = 2304, plane_bytes = batch * width * sizeof(float) };
++    static Module module;
++    static Function prepare, score, mix;
++    if (rows < 1 || rows > 4 || !i2_arena_probe.active || start_context() != 1) return false;
++    const size_t split = activation_usable_bytes();
++    const DevicePtr raw = cuda.activations.address + split;
++    DevicePtr next = raw + 4 * (size_t)plane_bytes;
++    DevicePtr output = next + plane_bytes;
++    DevicePtr table = output + plane_bytes;
++    DevicePtr scales = table + 4 * sizeof(DevicePtr);
++    DevicePtr scores = scales + batch * sizeof(float);
++    DevicePtr query = scores + 5 * batch * sizeof(float);
++    DevicePtr normalized = i2_attention_scratch;
++    DevicePtr residual_input = normalized + plane_bytes;
++    const size_t required = 6 * (size_t)plane_bytes + 4 * sizeof(DevicePtr) +
++        (6 * batch + width) * sizeof(float);
++    int status = cuda.activations.bytes - split >= required && normalized &&
++        i2_residual_host == (uint64_t)(uintptr_t)host_next && i2_residual_device == next ? 0 : -1;
++    if (!status && !module) status = cuda.module_load(&module, i2_lazy_prelude_image);
++    if (!status && !prepare) status = cuda.function_get(&prepare, module, "i2_lazy_prepare");
++    if (!status && !score) status = cuda.function_get(&score, module, "i2_plane_score");
++    if (!status && !mix) status = cuda.function_get(&mix, module, "i2_plane_mix");
++    DevicePtr planes[4];
++    for (int i = 0; i < rows; ++i) planes[i] = raw + i * (size_t)plane_bytes;
++    const int add = !save_history;
++    const int lazy_index = -1;
++    if (!status) status = cuda.upload(save_history ? planes[rows - 1] : residual_input,
++                                      host_input, plane_bytes);
++    if (!status) status = cuda.upload(table, planes, rows * sizeof(DevicePtr));
++    if (!status) status = cuda.upload(query, host_query, width * sizeof(float));
++    void *prep_args[] = {&next, &residual_input, &next, &normalized, &scales, (void *)&add};
++    void *score_args[] = {&table, &normalized, &query, &scores, &rows, (void *)&lazy_index, &scales};
++    void *mix_args[] = {&table, &normalized, &scores, &output, &rows, (void *)&lazy_index, &scales};
++    if (!status) status = cuda.launch(prepare, batch, 1, 1, 128, 1, 1, 0, NULL, prep_args, NULL);
++    if (!status) status = cuda.launch(score, rows + 1, batch, 1, 128, 1, 1, 0, NULL, score_args, NULL);
++    if (!status) status = cuda.launch(mix, width / 128, batch, 1, 128, 1, 1, 0, NULL, mix_args, NULL);
++    if (!status) status = cuda.sync();
++    if (!status) {
++        i2_depthmix_input.host = (uint64_t)(uintptr_t)host_output;
++        i2_depthmix_input.device = output;
++        i2_depthmix_input.bytes = plane_bytes;
++        i2_depthmix_input.reads = 0;
++    }
++    const int popped = finish_context();
++    return !status && !popped;
++}
++
+ static int activation_reserve_output(size_t bytes) {
++    if (i2_arena_probe.active) ++i2_arena_probe.spills;
+     if (activations.active && activations.defer_waits) activations.pending = true;
+     const int error = activation_download_record(activations.large_output, cuda.output.address);
+     if (error != 0) return error;
+@@ -1984,8 +2084,8 @@
+             if (error == 2) activations.unavailable = true; // CUDA_ERROR_OUT_OF_MEMORY
+             else if (error != 0) return error;
+         }
+-        if (cuda.activations.address && (uint64_t) bytes <= cuda.activations.bytes) {
+-            const int64_t capacity = (int64_t) cuda.activations.bytes;
++        if (cuda.activations.address && (uint64_t) bytes <= activation_usable_bytes()) {
++            const int64_t capacity = (int64_t) activation_usable_bytes();
+             int64_t pos;
+             if (activations.reuse) {
+                 pos = fg143_activation_slot(activation_ranges(), capacity, bytes);
+@@ -2005,6 +2105,7 @@
+             }
+             if (pos == -2 || (activations.count == ACTIVATION_RECORDS &&
+                 (!activations.reuse || fg143_activation_record_slot(activation_ranges()) == ACTIVATION_RECORDS))) {
++                if (i2_arena_probe.active) ++i2_arena_probe.flushes;
+                 const int error = activation_download_all();
+                 if (error != 0) return error;
+                 activations.count = 0;
+@@ -2012,6 +2113,8 @@
+                 pos = 0;
+             }
+             if (pos >= 0) {
++                const size_t end = (size_t)pos + (size_t)bytes;
++                if (i2_arena_probe.active && end > i2_arena_probe.peak_end) i2_arena_probe.peak_end = end;
+                 *device = cuda.activations.address + (uint64_t) pos;
+                 return 0;
+             }
+@@ -2052,6 +2155,18 @@
+ }
+ 
+ static DevicePtr activation_device(uint64_t host, int64_t bytes) {
++    if (activations.active && i2_residual_device && bytes > 0) {
++        const uint64_t size = 36 * (size_t)MIB_BYTES;
++        if ((uint64_t)bytes <= size && host >= i2_residual_host &&
++            host - i2_residual_host <= size - (uint64_t)bytes)
++            return i2_residual_device + (host - i2_residual_host);
++    }
++    if (activations.active && i2_depthmix_input.device && bytes > 0 &&
++        (uint64_t)bytes <= i2_depthmix_input.bytes && host >= i2_depthmix_input.host) {
++        const uint64_t offset = host - i2_depthmix_input.host;
++        if (offset <= i2_depthmix_input.bytes - (uint64_t)bytes)
++            return i2_depthmix_input.device + offset;
++    }
+     if (activations.large_output[1] > 0) {
+         const int64_t offset = fg143_activation_lookup(activation_large_range(), host, bytes);
+         if (offset >= 0) return cuda.output.address + (uint64_t) offset;
+@@ -2064,9 +2179,9 @@
+ bool fg_cuda_wide_vector_ready(uint64_t x, uint64_t y, uint64_t output, int64_t bytes) {
+     if (!cuda.direct_wide_vectors || !activations.active || !activations.reuse ||
+         activations.unavailable || !cuda.activations.address || output != activations.target ||
+-        bytes <= 0 || bytes > activations.target_bytes || (uint64_t) bytes > cuda.activations.bytes ||
++        bytes <= 0 || bytes > activations.target_bytes || (uint64_t) bytes > activation_usable_bytes() ||
+         !activation_device(x, bytes) || !activation_device(y, bytes)) return false;
+-    return fg143_activation_slot(activation_ranges(), (int64_t) cuda.activations.bytes, bytes) >= 0 &&
++    return fg143_activation_slot(activation_ranges(), (int64_t) activation_usable_bytes(), bytes) >= 0 &&
+         fg143_activation_record_slot(activation_ranges()) < ACTIVATION_RECORDS;
+ }
+ 
+@@ -2130,9 +2245,11 @@
+ }
+ 
+ static int activation_input(sl_u8 data, struct device_buffer * staging, DevicePtr * device) {
+-    if (activations.count > 0 || activations.large_output[1] > 0) {
++    if (activations.count > 0 || activations.large_output[1] > 0 || i2_depthmix_input.device || i2_residual_device) {
+         const uint64_t host = (uint64_t) (uintptr_t) data.data;
+         const DevicePtr current = activation_device(host, data.len);
++        if (current && i2_depthmix_input.device && current >= i2_depthmix_input.device &&
++            current - i2_depthmix_input.device < i2_depthmix_input.bytes) ++i2_depthmix_input.reads;
+         if (current) {
+             *device = current;
+             ++activations.hits;
+@@ -3791,6 +3908,12 @@
+ #include "grouped-moe-driver.h"
+ #include "inkling-matrix-driver.h"
+ 
++static _Thread_local bool i2_exact_verify;
++
++void inkling_draft_verification(bool active) {
++    i2_exact_verify = active;
++}
++
+ static int launch_matrix(DevicePtr weight, int64_t row_stride, int64_t extent,
+                          int64_t kind, int64_t rows, sl_i64 jobs, int job_words, int64_t shared_rows, int64_t input_stride) {
+     const bool k_quant = kind == 12 || kind == 14;
+@@ -3848,7 +3971,7 @@
+ 
+     const int count = (int) (jobs.len / job_words);
+     if (error == 0 && inkling && (kind == 20 || kind == 23) && job_words == 3 &&
+-            count >= 16 && count <= 32768 && extent <= 8192 && rows >= 32 &&
++            !i2_exact_verify && count >= 16 && count <= 32768 && extent <= 8192 && rows >= 32 &&
+             row_stride % 2 == 0 && row_stride >= (kind == 23 ? extent / 256 * 136 : extent / 32 * 18) &&
+             fg_standalone_option_enabled("I2_GROUPED_MOE_MMQ")) {
+         const int result = launch_grouped_iq4_mmq(weight, (uint64_t)row_stride, (int)extent, (int)rows, (int)kind, jobs);
+--- a/inkling-backend.c
++++ b/inkling-backend.c
+@@ -123,6 +123,11 @@
+ static _Thread_local float *prefill_direct_output;
+ static _Thread_local size_t prefill_direct_output_size;
+ extern void *fg_cuda_inkling_prefill_readback(size_t bytes);
++extern void fg_cuda_i2_prefill_conv(const float *weights, float *history);
++extern void inkling_arena_window(bool active, int begin);
++extern bool inkling_arena_depthmix(const float *past, const float *next, const float *query, float *output, int rows, bool save_history);
++extern unsigned inkling_arena_depthmix_close(void);
++extern void inkling_arena_residual_open(float *host);
+ 
+ static void evaluate(struct ggml_context *ctx, struct ggml_tensor **nodes, int count,
+                      float *output, int size) {
+@@ -174,6 +179,16 @@
+ 
+ struct i2_prefill_team;
+ 
++enum { i2_draft_max = 16, i2_draft_order = 4 };
++
++struct i2_draft_state {
++    int32_t *history;
++    float *scores, *saved_history;
++    int32_t tokens[i2_draft_max];
++    int begin, count, used;
++    unsigned groups, accepted, rejects;
++};
++
+ struct decoder {
+     const uint8_t *data;
+     int64_t tensor[768*12], globals[5], core[24*10], aux[24*30], visits[48*4];
+@@ -183,6 +198,7 @@
+     size_t flash_floats;
+     float *flash_workspace, *kh, *vh, *ha, *hf;
+     bool retain_decode_graphs;
++    struct i2_draft_state draft;
+     struct i2_prefill_team *logits_team;
+     struct inkling_decode_graph decode_attention[logical], decode_moe[logical], decode_joined[logical];
+ };
+@@ -696,6 +712,8 @@
+         }
+         if(pass>0)mix(bank,bank_count,bank_output,coefficients(d,d->aux[ip*30+17],4*model_width),4,messages[0]);
+         layer(d,ip,slot,absolute,sliding,cur,blocks,&count,pass>0?messages:NULL);
++        if (absolute == 4097 && getenv("I2_DRAFT_PARITY"))
++            check_state("draft-serial-visit", i, cur, model_width);
+     }
+     fprintf(stderr,"Pure Goose visited 48 layers for token %d at position %d\n",input,absolute);
+     check_state("residual", absolute, cur, model_width);
+@@ -830,6 +848,9 @@
+         drop_decode_graph(&d->decode_moe[i]);
+         drop_decode_graph(&d->decode_joined[i]);
+     }
++    free(d->draft.history);
++    free(d->draft.scores);
++    free(d->draft.saved_history);
+     free(d->hf);
+     free(d->ha);
+     free(d->vh);
+@@ -904,10 +925,113 @@
+ int inkling_backend_reset(struct decoder *d) {
+     if (!d || reset_inkling_attention(d) != 0) return -1;
+     d->position = 0;
++    if (d->draft.groups) {
++        fprintf(stderr, "Inkling speculation groups=%u cached=%u rejects=%u\n",
++                d->draft.groups, d->draft.accepted, d->draft.rejects);
++    }
++    d->draft.count = d->draft.used = 0;
++    d->draft.groups = d->draft.accepted = d->draft.rejects = 0;
+     for (int i = 0; i < logical; ++i) d->decode_joined[i].bridge_started = false;
+     return 0;
+ }
+ 
++extern void inkling_draft_verification(bool active);
++extern bool inkling_draft_native_snapshot(bool restore, int position);
++extern bool inkling_draft_moe_snapshot(bool restore, int position);
++extern bool inkling_draft_bridge_history(float *destination, int position);
++
++static bool draft_init(struct decoder *d) {
++    struct i2_draft_state *draft = &d->draft;
++    if (draft->history) return true;
++    const char *enabled = getenv("I2_NGRAM_VERIFY");
++    if (!enabled || strcmp(enabled, "1") != 0 || d->position != 0 ||
++        d->format != INKLING_KV_Q4_0 || !use_attention_graph() ||
++        !use_cached_history() || !use_resident_moe() || !use_joined_bridge()) return false;
++    draft->history = malloc((size_t)d->capacity * sizeof(*draft->history));
++    draft->scores = malloc((size_t)i2_draft_max * vocabulary * sizeof(float));
++    draft->saved_history = malloc((size_t)logical * 3 * model_width * sizeof(float));
++    if (draft->history && draft->scores && draft->saved_history) return true;
++    free(draft->history);
++    free(draft->scores);
++    free(draft->saved_history);
++    draft->history = NULL;
++    draft->scores = draft->saved_history = NULL;
++    return false;
++}
++
++static int draft_propose(struct decoder *d, int32_t first) {
++    struct i2_draft_state *draft = &d->draft;
++    const int position = d->position;
++    const int limit = d->capacity - position < i2_draft_max ? d->capacity - position : i2_draft_max;
++    if (position < 2 * i2_draft_order || limit < 2) return 0;
++    draft->history[position] = first;
++    const int32_t *suffix = draft->history + position + 1 - i2_draft_order;
++    const size_t key_bytes = i2_draft_order * sizeof(int32_t);
++    for (int end = position - 2; end >= i2_draft_order; --end) {
++        if (memcmp(draft->history + end - i2_draft_order, suffix, key_bytes) != 0) continue;
++        const int remaining = position - end;
++        const int take = remaining < limit - 1 ? remaining : limit - 1;
++        draft->tokens[0] = first;
++        memcpy(draft->tokens + 1, draft->history + end, (size_t)take * sizeof(first));
++        return take + 1;
++    }
++    return 0;
++}
++
++static bool draft_start(struct decoder *d, int count) {
++    struct i2_draft_state *draft = &d->draft;
++    const size_t bytes = (size_t)logical * 3 * model_width * sizeof(float);
++    const int position = d->position;
++    memcpy(draft->saved_history, d->ha, bytes);
++    if ((d->decode_joined[0].bridge_started && !inkling_draft_bridge_history(d->ha, position)) ||
++        !inkling_draft_native_snapshot(false, position) ||
++        !inkling_draft_moe_snapshot(false, position)) {
++        memcpy(d->ha, draft->saved_history, bytes);
++        return false;
++    }
++    fg_cuda_inkling_expert_phase(true, position, count);
++    d->draft.count = count;
++    inkling_draft_verification(true);
++    prefill(d, draft->tokens, position, count, true);
++    inkling_draft_verification(false);
++    draft->begin = position;
++    draft->used = 0;
++    ++draft->groups;
++    fprintf(stderr, "Inkling speculation start position=%d count=%d\n", position, count);
++    return true;
++}
++
++static bool draft_reject(struct decoder *d) {
++    struct i2_draft_state *draft = &d->draft;
++    const int position = draft->begin;
++    if (!inkling_draft_native_snapshot(true, position) || !inkling_draft_moe_snapshot(true, position)) return false;
++    memcpy(d->ha, draft->saved_history, (size_t)logical * 3 * model_width * sizeof(float));
++    const bool retain = d->retain_decode_graphs;
++    d->retain_decode_graphs = true;
++    for (int i = 0; i < draft->used; ++i) {
++        fg_cuda_inkling_expert_phase(false, position + i, 1);
++        token(d, draft->tokens[i], position + i, false);
++    }
++    d->retain_decode_graphs = retain;
++    fprintf(stderr, "Inkling speculation rejected position=%d used=%d count=%d\n", position, draft->used, draft->count);
++    ++draft->rejects;
++    draft->count = draft->used = 0;
++    return true;
++}
++
++static void draft_take(struct decoder *d, float *logits, int64_t count) {
++    struct i2_draft_state *draft = &d->draft;
++    if (count) memcpy(logits, draft->scores + (size_t)draft->used * vocabulary, (size_t)count * sizeof(float));
++    if (draft->used) ++draft->accepted;
++    ++draft->used;
++    ++d->position;
++    if (draft->used == draft->count) {
++        fprintf(stderr, "Inkling speculation committed position=%d count=%d\n", draft->begin, draft->count);
++        for (int i = 0; i < logical; ++i) d->decode_joined[i].bridge_started = false;
++        draft->count = draft->used = 0;
++    }
++}
++
+ int64_t inkling_backend_eval(struct decoder *d, const int32_t *tokens, int64_t count,
+                              bool prompt, float *logits, int64_t logits_count) {
+     if (!d || !tokens || count <= 0 || count > max_prefill_batch ||
+@@ -919,6 +1043,23 @@
+ 
+     const char *retain = getenv("I2_RETAIN_DECODE_GRAPHS");
+     d->retain_decode_graphs = !prompt && (!retain || strcmp(retain, "0") != 0);
++    if (draft_init(d)) {
++        struct i2_draft_state *draft = &d->draft;
++        if (draft->count && !prompt && draft->tokens[draft->used] == tokens[0]) {
++            draft->history[d->position] = tokens[0];
++            draft_take(d, logits, logits_count);
++            return logits_count;
++        }
++        if (draft->count && !draft_reject(d)) return -1;
++        if (!prompt && logits_count && d->retain_decode_graphs) {
++            const int proposed = draft_propose(d, tokens[0]);
++            if (proposed > 1 && draft_start(d, proposed)) {
++                draft_take(d, logits, logits_count);
++                return logits_count;
++            }
++        }
++        memcpy(draft->history + d->position, tokens, (size_t)count * sizeof(*tokens));
++    }
+     fg_cuda_inkling_expert_phase(prompt, d->position, count);
+     if (prompt) prefill(d, tokens, d->position, count, logits_count != 0);
+     else token(d, tokens[0], d->position, logits_count != 0);
+--- a/inkling-matrix-driver.h
++++ b/inkling-matrix-driver.h
+@@ -5,7 +5,12 @@
+                         DevicePtr jobs) {
+     const bool shape = (width == 2304 && (rows == 1024 || rows == 2304 || rows == 3072)) ||
+         (width == 3072 && rows == 2304);
+-    if (!shape || count < 512 || count > 4096 || count % 8) return 1;
++    const char *control_setting = getenv("I2_PACK_CONTROL_SHAPES");
++    const int extra = (control_setting && strcmp(control_setting, "0") == 0) ? 0 :
++        width == 64 && rows == 2304 && count % 16 == 0 ? 1 :
++        width == 4608 && rows == 64 ? 2 :
++        width == 2304 && rows == 384 ? 3 : 0;
++    if ((!shape && !extra) || count < 512 || count > 4096 || count % 8) return 1;
+     static int enabled = -1;
+     if (enabled < 0) {
+         const char *setting = getenv("I2_Q8_PACKED_INPUT");
+@@ -14,11 +19,19 @@
+     if (!enabled) return 1;
+ 
+     static Module module;
+-    static Function pack, multiply;
++    static Function pack, multiply, narrow4, wide2, wide4;
++    const char *wide_setting = getenv("I2_Q8_EXACT_TILE16");
++    const bool wide = extra == 1 || (shape && count % 16 == 0 && rows != 1024 &&
++        (!wide_setting || strcmp(wide_setting, "0") != 0));
++    const int warps = wide ? ((width == 3072 || extra == 1) ? 2 : 4) : (extra == 2 ? 4 : 8);
++    const int tile = wide ? 16 : 8;
+     int error = 0;
+     if (!module) error = cuda.module_load(&module, q8_packed_cubin);
+     if (!error && !pack) error = cuda.function_get(&pack, module, "i2_pack_q8_input8");
+     if (!error && !multiply) error = cuda.function_get(&multiply, module, "i2_q8_packed8");
++    if (!error && extra == 2 && !narrow4) error = cuda.function_get(&narrow4, module, "i2_q8_packed4");
++    if (!error && wide && warps == 2 && !wide2) error = cuda.function_get(&wide2, module, "i2_q8_packed16w2");
++    if (!error && wide && warps == 4 && !wide4) error = cuda.function_get(&wide4, module, "i2_q8_packed16w4");
+     if (error) return -1;
+ 
+     // The regular and grouped matrix launches reuse this work buffer on
+@@ -30,12 +43,24 @@
+     void *pack_args[] = {&matrix_input, &jobs, &cuda.mmq_packed.address, &width};
+     void *matrix_args[] = {&weight, &cuda.mmq_packed.address, &matrix_output, &jobs, &stride, &width};
+     error = cuda.launch(pack, (width + 127) / 128, count / 8, 1, 128, 1, 1, 0, NULL, pack_args, NULL);
+-    if (!error) error = cuda.launch(multiply, rows / 8, count / 8, 1, 256, 1, 1, 0, NULL,
++    const Function kernel = wide ? (warps == 2 ? wide2 : wide4) : (extra == 2 ? narrow4 : multiply);
++    if (!error) error = cuda.launch(kernel, rows / warps, count / tile, 1, 32 * warps, 1, 1, 0, NULL,
+                                     matrix_args, NULL);
+     if (!error) error = finish_matrix_launches(error);
+     if (error) return -1;
+     ++cuda_matrix_launches;
+     cuda_matrix_kind = 8;
++    static unsigned extra_reported;
++    if (extra && !(extra_reported & (1u << extra))) {
++        extra_reported |= 1u << extra;
++        fprintf(stderr, "Inkling packed control Q8 width=%d rows=%d tile=%d warps=%d\n",
++                width, rows, tile, warps);
++    }
++    static bool wide_reported;
++    if (wide && !wide_reported) {
++        wide_reported = true;
++        fputs("Inkling Q8: exact packed sixteen-input kernel active\n", stderr);
++    }
+     static bool reported;
+     if (!reported) {
+         reported = true;
+--- a/prefill.h
++++ b/prefill.h
+@@ -114,6 +114,7 @@
+     float *postconv_history;
+     int postconv_rows;
+     float *logits;
++    bool skip_host_mix;
+ };
+ 
+ extern int64_t inkling_row_major_i2_postconv_batch(sl_f32 input, sl_f32 weights,
+@@ -151,13 +152,18 @@
+             float *ffn = scratch->ff[t];
+             if (layer % 6 == 0) {
+                 assert(token->count < 11);
+-                save_history_row(token->blocks + token->count++ * model_width, token->current);
+-            } else {
++                float *history = token->blocks + token->count++ * model_width;
++                save_history_row(history, token->current);
++            } else if (!work->skip_host_mix) {
+                 for (int i = 0; i < model_width; ++i) {
+                     next[i] += token->current[i];
+                 }
+             }
+-            mix(token->blocks, token->count, next, coefficients(d, aux[9], model_width), 1, ffn);
++            if (work->skip_host_mix) {
++                for (int i = 0; i < model_width; ++i) ffn[i] = NAN;
++            } else {
++                mix(token->blocks, token->count, next, coefficients(d, aux[9], model_width), 1, ffn);
++            }
+         }
+         return;
+     }
+@@ -233,18 +239,39 @@
+     const int64_t *core = d->core + 10 * layer;
+     const int64_t *aux = d->aux + 30 * layer;
+     const bool resident_attention = use_attention_graph();
++    const char *conv_setting = getenv("I2_PARALLEL_CUDA_POSTCONV");
++    const bool device_postconv = resident_attention && count > 1 &&
++        (!conv_setting || strcmp(conv_setting, "0") != 0);
+     float *message[] = {scratch->control_input[0],
+         scratch->control_input[0] + count * model_width, scratch->gain[0]};
+     struct i2_prefill_work setup = {d, tokens, scratch, aux, layer, pass, sliding,
+         resident_attention && pass > 0 ? message : NULL, false};
++    const bool direct_depthmix = count == 4096 && device_postconv &&
++        use_cached_history() && use_resident_moe() && prefill_direct_output;
+     setup.shared_attention_input = resident_attention && share_attention_inputs(sliding, aux);
+     prepare_prefill(team, &setup, count);
+     struct ggml_context *ctx;
+     int64_t work[16] = {0};
+     if (resident_attention) {
+         float *input[] = {scratch->inputs[0][0], scratch->inputs[1][0], scratch->inputs[2][0]};
++        float *output = device_postconv ? scratch->residual[0] : scratch->linear[0];
++        float *const old_direct_output = prefill_direct_output;
++        if (device_postconv) {
++            fg_cuda_i2_prefill_conv(coefficients(d, aux[2], 4 * model_width).data,
++                                    d->ha + slot * 3 * model_width);
++            if (old_direct_output) prefill_direct_output = output;
++            if (direct_depthmix) {
++                for (int t = 0; t < count; ++t)
++                    for (int c = 0; c < model_width; ++c) scratch->residual[t][c] = NAN;
++                inkling_arena_residual_open(output);
++            }
++        }
+         attention_graph(d, core, aux, slot, begin, count, sliding, input, pass > 0 ? message : NULL,
+-                        scratch->linear[0]);
++                        output);
++        if (device_postconv) {
++            fg_cuda_i2_prefill_conv(NULL, NULL);
++            prefill_direct_output = old_direct_output;
++        }
+     } else {
+         for (int i = 0; i < 3; ++i) {
+             if (pass > 0) {
+@@ -302,13 +329,13 @@
+         }
+     }
+     const char *postconv_batch = getenv("I2_PREFILL_POSTCONV_BATCH");
+-    if (team && (!postconv_batch || strcmp(postconv_batch, "0") != 0)) {
++    if (!device_postconv && team && (!postconv_batch || strcmp(postconv_batch, "0") != 0)) {
+         setup.postconv_weights = coefficients(d, aux[2], 4 * model_width);
+         setup.postconv_history = d->ha + slot * 3 * model_width;
+         setup.postconv_rows = count;
+         prefill_team_run(team, &setup, model_width);
+         setup.postconv_rows = 0;
+-    } else {
++    } else if (!device_postconv) {
+         for (int t = 0; t < count; ++t) {
+             assert(i2_postconv_token(vec(scratch->linear[t], model_width), coefficients(d, aux[2], 4 * model_width),
+                 vec(d->ha + slot * 3 * model_width, 3 * model_width), vec(scratch->residual[t], model_width)) == model_width);
+@@ -316,7 +343,24 @@
+     }
+     setup.after_attention = true;
+     setup.message = NULL;
++    setup.skip_host_mix = direct_depthmix;
+     prepare_prefill(team, &setup, count);
++    if (begin == 4096 && count > 1 && slot == 0 && getenv("I2_DRAFT_PARITY")) {
++        check_state("draft-postconv", count, scratch->residual[1], model_width);
++        check_state("draft-moe-input", count, scratch->ff[1], model_width);
++    }
++    if (direct_depthmix) {
++        float (*stage)[model_width] = scratch->inputs[0];
++        const int rows = tokens[0].count;
++        const bool save_history = layer % 6 == 0;
++        for (int t = 0; t < count; ++t) {
++            assert(tokens[t].count == rows);
++            const float *source = save_history ? tokens[t].blocks + (rows - 1) * model_width : tokens[t].current;
++            memcpy(stage[t], source, sizeof stage[t]);
++        }
++        assert(inkling_arena_depthmix(stage[0], scratch->residual[0],
++                                    coefficients(d, aux[9], model_width).data, scratch->ff[0], rows, save_history));
++    }
+     if (use_resident_moe()) {
+         float *messages = NULL;
+         if (pass > 0) {
+@@ -327,6 +371,11 @@
+         }
+         moe_resident(d, core, aux, slot, begin, count, scratch->ff[0], messages,
+                      scratch->residual[0], scratch->linear[0]);
++        if (direct_depthmix) {
++            const unsigned reads = inkling_arena_depthmix_close();
++            assert(reads);
++            fprintf(stderr, "Inkling direct DepthMix begin=%d layer=%d pass=%d rows=%d device_reads=%u\n", begin, layer, pass, count, reads);
++        }
+         for (int t = 0; t < count; ++t) {
+             memcpy(tokens[t].current, scratch->linear[t], sizeof tokens[t].current);
+         }
+@@ -398,16 +447,27 @@
+         (void)use_cached_history();
+         if (prefill_team_open(&team, tasks, true)) workers = &team;
+     }
++    inkling_arena_window(count == 4096, begin);
+     for (int i = 0; i < logical; ++i) {
+         prefill_layer(d, tokens, scratch, count, begin, d->visits + i * 4, workers);
++        if (begin == 4096 && count > 1 && getenv("I2_DRAFT_PARITY"))
++            check_state(count == 1 ? "draft-single-visit" : "draft-batch-visit", i,
++                        tokens[1].current, model_width);
+     }
++    inkling_arena_window(false, begin);
+     if (workers) prefill_team_close(workers);
+     for (int t = 0; t < count; ++t) {
+         check_state("residual", begin + t, tokens[t].current, model_width);
+     }
+     if (need_logits) {
+-        struct prefill_token *last = tokens + count - 1;
+-        read_token_logits(d, begin + count - 1, last->current, last->blocks, last->count, false);
++        const bool draft = d->draft.count > 1 && d->draft.count == count;
++        const int from = draft ? 0 : count - 1;
++        for (int t = from; t < count; ++t) {
++            struct prefill_token *row = tokens + t;
++            read_token_logits(d, begin + t, row->current, row->blocks, row->count, draft);
++            if (draft) memcpy(d->draft.scores + (size_t)t * vocabulary, d->logits,
++                              (size_t)vocabulary * sizeof(float));
++        }
+     }
+     prefill_direct_output = NULL;
+     prefill_direct_output_size = 0;
+--- a/native-kv-driver.h
++++ b/native-kv-driver.h
+@@ -1,5 +1,6 @@
+ #include "native-kv.h"
+ #include "flash-native-image.h"
++#include "flash-tiles-image.h"
+ #include "attention-gate-image.h"
+ #include "attention-input-image.h"
+ 
+@@ -93,9 +94,11 @@
+     const int64_t window = batch->sliding ? INKLING_WINDOW : 0;
+     const size_t row_bytes = nk_row_bytes(batch->format);
+     const float scale = 0x1.6a09e6p-4f;
+-    for (int first = 0; first < batch->count; first += NK_FLASH_QUERY_CHUNK) {
++    const bool exact_tail = batch->count > 1 && batch->count <= 16 && i2_exact_verify;
++    const int query_chunk = exact_tail ? 1 : NK_FLASH_QUERY_CHUNK;
++    for (int first = 0; first < batch->count; first += query_chunk) {
+         int64_t queries = batch->count - first;
+-        if (queries > NK_FLASH_QUERY_CHUNK) queries = NK_FLASH_QUERY_CHUNK;
++        if (queries > query_chunk) queries = query_chunk;
+         const int64_t last_key = history + first + queries;
+         if (last_key > total) return -1;
+         const int64_t lower = batch->sliding && history + first >= INKLING_WINDOW ?
+@@ -116,7 +119,7 @@
+         float scale_arg = scale;
+         int64_t window_arg = window;
+         int32_t q4 = batch->format == INKLING_KV_Q4_0;
+-        if (queries == 1 && batch->count == 1 &&
++        if (queries == 1 && (batch->count == 1 || exact_tail) &&
+                 fg_standalone_option_enabled("I2_FLASH_PARALLEL_SCORES")) q4 |= 2;
+         void *a[] = {&q0, &k0, &v0, &r0, &bias, &s0, &kp, &qp, &partial, &meta,
+                      &keys, &queries, &parts, &window_arg, &scale_arg, &q4};
+@@ -134,6 +137,22 @@
+                 if (error) return error;
+             }
+             kernel = nk.attention_prefill;
++            static int use_tiles = -1;
++            if (use_tiles < 0) {
++                const char *setting = getenv("I2_FLASH_TILE_SOFTMAX");
++                use_tiles = !setting || strcmp(setting, "0") != 0;
++            }
++            if (use_tiles && !batch->sliding) {
++                static Module module;
++                static Function selected;
++                if (!module) error = cuda.module_load(&module, flash_tiles_cubin);
++                if (!error && !selected) {
++                    error = cuda.function_get(&selected, module, "i2_flash_prefill_all_softmax");
++                    if (!error) fputs("Inkling Flash: tile softmax active for full attention\n", stderr);
++                }
++                if (error) return error;
++                kernel = selected;
++            }
+         }
+         error = cuda.launch(kernel, (unsigned)(queries + 15) / 16, NK_HEADS, (unsigned)parts,
+                             128, 1, 1, 0, NULL, a, NULL);
+@@ -143,6 +162,37 @@
+     return 0;
+ }
+ 
++#include "i2-decode-q8-image.h"
++
++static int nk_project_decode_inputs(const DevicePtr *input, DevicePtr output,
++                                    const uint8_t *const *sources, const int *widths, bool sliding) {
++    static Module module;
++    static Function kernel;
++    static bool reported;
++    DevicePtr weights[8] = {0};
++    const int count = sliding ? 6 : 8;
++    for (int i = 0; i < count; ++i) {
++        if (!dense_weight((uint64_t)(uintptr_t)sources[i], (int64_t)widths[i] * 2448, &weights[i]))
++            return 0;
++    }
++    int error = module ? 0 : cuda.module_load(&module, i2_decode_q8_image);
++    if (!error && !kernel) {
++        error = cuda.function_get(&kernel, module, "goose_i2_matrix_q8_attention_projections");
++    }
++    DevicePtr q = input[0], k = input[1], v = input[2];
++    void *args[] = {&q, &k, &v, &output, &weights[0], &weights[1], &weights[2], &weights[3],
++                    &weights[4], &weights[5], &weights[6], &weights[7]};
++    if (!error) error = cuda.launch(kernel, (unsigned)(sliding ? 8600 : 8664) / 4, 1, 1,
++                                    128, 1, 1, 0, NULL, args, NULL);
++    if (error) return -1;
++    ++cuda_matrix_launches;
++    if (!reported) {
++        fprintf(stderr, "Inkling fused Q8 decode projections active\n");
++        reported = true;
++    }
++    return 1;
++}
++
+ static int nk_project_q8(DevicePtr input, DevicePtr output, const uint8_t *weight, int width,
+                          int rows, int count) {
+     const int64_t stride = width / 32 * 34;
+@@ -213,11 +263,20 @@
+             if (!error) error = nk_upload(input[i], src->input[i], row_input);
+         }
+     }
+-    DevicePtr next = nk.raw.address;
+-    for (int i = 0; !error && i < (sliding ? 6 : 8); ++i) {
+-        error = nk_project_q8(input[source[i]], next,
+-                              src->weights[i], hidden, widths[i], count);
+-        next += (size_t)count * widths[i] * sizeof(float);
++    int packed_projection = 0;
++    const char *fused = getenv("I2_DECODE_Q8_PROJECTION_PACK");
++    if (!error && graph && count == 1 && i2_matrix_enabled() &&
++        (!fused || strcmp(fused, "0") != 0)) {
++        packed_projection = nk_project_decode_inputs(input, nk.raw.address, src->weights, widths, sliding);
++        if (packed_projection < 0) error = -1;
++    }
++    if (packed_projection == 0) {
++        DevicePtr next = nk.raw.address;
++        for (int i = 0; !error && i < (sliding ? 6 : 8); ++i) {
++            error = nk_project_q8(input[source[i]], next,
++                                  src->weights[i], hidden, widths[i], count);
++            next += (size_t)count * widths[i] * sizeof(float);
++        }
+     }
+     DevicePtr key = nk.prepared_kv.address, value = key + row_kv;
+     void *args[] = {&nk.raw.address, &slot->prepare_state.address, &past, &q, &r, &key,
+@@ -232,6 +291,53 @@
+     return error;
+ }
+ 
++#include "i2-parallel-conv-image.h"
++
++static _Thread_local const float *i2_conv_weights;
++static _Thread_local float *i2_conv_history;
++
++void fg_cuda_i2_prefill_conv(const float *weights, float *history) {
++    i2_conv_weights = weights;
++    i2_conv_history = history;
++}
++
++static int nk_parallel_conv(DevicePtr source, DevicePtr output, int rows) {
++    enum { row_bytes = 2304 * sizeof(float) };
++    static Module module;
++    static Function apply, commit;
++    static struct device_buffer state;
++    static bool reported;
++    int error = module ? 0 : cuda.module_load(&module, i2_parallel_conv_image);
++    if (!error && !apply) error = cuda.function_get(&apply, module, "i2_postconv_parallel");
++    if (!error && !commit) error = cuda.function_get(&commit, module, "i2_postconv_commit");
++    if (!error) error = reserve(&state, 7 * row_bytes);
++    DevicePtr weights = state.address;
++    DevicePtr history = weights + 4 * row_bytes;
++    if (!error) error = nk_upload(weights, i2_conv_weights, 4 * row_bytes);
++    if (!error) error = nk_upload(history, i2_conv_history, 3 * row_bytes);
++    void *args[] = {&source, &weights, &history, &output, &rows};
++    void *save[] = {&source, &history, &rows};
++    if (!error) error = cuda.launch(apply, 18, rows, 1, 128, 1, 1, 0, NULL, args, NULL);
++    if (!error) error = cuda.launch(commit, 18, 1, 1, 128, 1, 1, 0, NULL, save, NULL);
++    if (!error) error = cuda.download(i2_conv_history, history, 3 * row_bytes);
++    if (!error && !reported) {
++        fputs("Inkling batched CUDA convolution active\n", stderr);
++        reported = true;
++    }
++    return error;
++}
++
++static int nk_draft_fingerprint(const char *label, int count, DevicePtr device, size_t bytes) {
++    unsigned char host[4 * NK_QUERY];
++    if (bytes > sizeof host) return -1;
++    const int error = cuda.download(host, device, bytes);
++    if (error) return error;
++    uint64_t hash = UINT64_C(14695981039346656037);
++    for (size_t i = 0; i < bytes; ++i) hash = (hash ^ host[i]) * UINT64_C(1099511628211);
++    fprintf(stderr, "Inkling draft stage %s count=%d hash=%016" PRIx64 "\n", label, count, hash);
++    return 0;
++}
++
+ static int nk_output_project(const struct inkling_attention_batch *batch,
+                              const struct inkling_attention_projection *projection, DevicePtr out, DevicePtr device_gate, bool graph) {
+     const size_t rows = projection->rows;
+@@ -251,7 +357,16 @@
+     }
+     DevicePtr final = 0;
+     const uint64_t output = (uint64_t)(uintptr_t)batch->output;
+-    if (!error && graph) error = activation_output(output, target_bytes, &final);
++    const bool retain_conv = graph && output == i2_residual_host && output &&
++        target_bytes == 36 * (size_t)MIB_BYTES && i2_conv_weights && i2_conv_history;
++    if (!error && retain_conv) {
++        if (!cuda.activations.address) error = reserve(&cuda.activations, cuda.activation_capacity);
++        const size_t split = activation_usable_bytes();
++        if (error || cuda.activations.bytes - split < 6 * target_bytes) return -1;
++        final = cuda.activations.address + split + 4 * target_bytes;
++    } else if (!error && graph) {
++        error = activation_output(output, target_bytes, &final);
++    }
+     if (!error && !graph) {
+         error = reserve(&nk.projection, target_bytes);
+         final = nk.projection.address;
+@@ -260,7 +375,22 @@
+     if (!error) error = cuda.launch(gate, (elements + 255) / 256, 1, 1, 256, 1, 1, 0, NULL, args, NULL);
+     if (error) return error;
+ 
+-    error = nk_project_q8(out, final, projection->weights, NK_QUERY, rows, batch->count);
++    const bool convolve = graph && batch->count > 1 && i2_conv_weights && i2_conv_history;
++    DevicePtr projected = convolve ? nk.raw.address : final;
++    if (convolve && nk.raw.bytes < target_bytes) return -1;
++    error = nk_project_q8(out, projected, projection->weights, NK_QUERY, rows, batch->count);
++    const int row = 4097 - batch->first;
++    const bool observe = batch->slot == 0 && row >= 0 && row < batch->count &&
++        batch->count <= 16 && getenv("I2_DRAFT_PARITY");
++    if (!error && observe) error = nk_draft_fingerprint("output-project", batch->count, projected + row * rows * sizeof(float), rows * sizeof(float));
++    if (!error && convolve) error = nk_parallel_conv(projected, final, batch->count);
++    if (!error && observe && convolve) error = nk_draft_fingerprint("gpu-postconv", batch->count, final + row * rows * sizeof(float), rows * sizeof(float));
++    if (!error && retain_conv) {
++        if (nk.raw.bytes < 2 * target_bytes) return -1;
++        i2_residual_device = final;
++        i2_attention_scratch = nk.raw.address;
++        return 0;
++    }
+     if (!error) error = graph ? activation_publish(output, target_bytes, final, false)
+                               : cuda.download(batch->output, final, target_bytes);
+     return error;
+@@ -329,8 +459,16 @@
+         if (!error) error = nk_upload(r, batch->relative, relative_bytes);
+         if (!error) error = nk_upload(sink, batch->sinks, sink_bytes);
+     }
++    const int row = 4097 - batch->first;
++    const bool observe = batch->slot == 0 && row >= 0 && row < batch->count &&
++        batch->count <= 16 && getenv("I2_DRAFT_PARITY");
++    if (!error && observe) error = nk_draft_fingerprint("query", batch->count, q + row * (NK_QUERY * sizeof(uint16_t)), NK_QUERY * sizeof(uint16_t));
++    if (!error && observe) error = nk_draft_fingerprint("relative", batch->count, r + row * (NK_REL * sizeof(float)), NK_REL * sizeof(float));
++    if (!error && observe) error = nk_draft_fingerprint("key", batch->count, key_dst + row * (row_bytes), row_bytes);
++    if (!error && observe) error = nk_draft_fingerprint("value", batch->count, value_dst + row * (row_bytes), row_bytes);
+     if (!error) error = nk_compute(rows, history, total, batch, q, r, sink, query_pos,
+                                   slot->cache.address + nk_cache_bytes(capacity, row_bytes), out);
++    if (!error && observe) error = nk_draft_fingerprint("flash-output", batch->count, out + row * (NK_QUERY * sizeof(float)), NK_QUERY * sizeof(float));
+     if (!error) {
+         error = projection ? nk_output_project(batch, projection, out, gate, graph)
+                            : cuda.download(batch->output, out, output_bytes);
+@@ -378,6 +516,45 @@
+     return nk_execute(&call->batch, &call->output, &call->inputs, true);
+ }
+ 
++static struct device_buffer draft_native_backup;
++
++bool inkling_draft_native_snapshot(bool restore, int position) {
++    enum { prepare_bytes = 6 * NK_KV * sizeof(float) };
++    if (start_context() != 1) return false;
++    int error = cuda.sync();
++    size_t size = 0;
++    for (int i = 0; i < INKLING_VISITS && !error; ++i) {
++        const struct native_kv_slot *slot = &nk.slots[i];
++        if (!slot->cache.address || slot->prepare_state.bytes < prepare_bytes ||
++            (!restore && slot->length != position) || (restore && slot->length < position)) {
++            error = -1;
++        } else {
++            size += prepare_bytes;
++            if (slot->sliding) size += nk_cache_bytes(slot->rows, nk_row_bytes(slot->format));
++        }
++    }
++    if (!error && !restore) error = reserve(&draft_native_backup, size);
++    if (!error && draft_native_backup.bytes < size) error = -1;
++    DevicePtr backup = draft_native_backup.address;
++    for (int i = 0; i < INKLING_VISITS && !error; ++i) {
++        struct native_kv_slot *slot = &nk.slots[i];
++        const DevicePtr past = slot->prepare_state.address + slot->prepare_state.bytes - prepare_bytes;
++        error = restore ? cuda.copy_device(past, backup, prepare_bytes) :
++                          cuda.copy_device(backup, past, prepare_bytes);
++        backup += prepare_bytes;
++        if (!error && slot->sliding) {
++            const size_t bytes = nk_cache_bytes(slot->rows, nk_row_bytes(slot->format));
++            error = restore ? cuda.copy_device(slot->cache.address, backup, bytes) :
++                              cuda.copy_device(backup, slot->cache.address, bytes);
++            backup += bytes;
++        }
++        if (!error && restore) slot->length = position;
++    }
++    const int popped = finish_context();
++    if (!error && !popped) fprintf(stderr, "Inkling draft native restore=%d bytes=%zu\n", restore, size);
++    return !error && !popped;
++}
++
+ int inkling_attention_reset(void) {
+     if (!nk.module) return 0;
+     if (start_context() != 1) return -1;
+--- a/moe-epilogue-driver.h
++++ b/moe-epilogue-driver.h
+@@ -1,5 +1,10 @@
+ #include "moe-epilogue.h"
+-#include "moe-epilogue-image.h"
++#include "i2-probe-moe-image.h"
++
++static struct epilogue_state {
++        struct device_buffer buffer;
++        int length;
++} i2_epilogue_states[INKLING_VISITS];
+ 
+ int64_t fg_cuda_inkling_moe_epilogue(sl_u8 input, sl_u8 residual, sl_u8 weights, sl_u8 output,
+                                     int slot, int position, int rows) {
+@@ -14,11 +19,7 @@
+     if (start_context() != 1) return -1;
+     static Module module;
+     static Function kernel;
+-    static struct epilogue_state {
+-        struct device_buffer buffer;
+-        int length;
+-    } states[INKLING_VISITS];
+-    struct epilogue_state *state = &states[slot];
++    struct epilogue_state *state = &i2_epilogue_states[slot];
+     int error = position > 0 && state->length != position ? -1 : 0;
+     if (!error && !module) error = cuda.module_load(&module, moe_epilogue_cubin);
+     if (!error && !kernel) error = cuda.function_get(&kernel, module, "goose_i2_moe_epilogue");
+@@ -45,3 +46,30 @@
+             slot, position, error, popped);
+     return -1;
+ }
++
++static struct device_buffer i2_epilogue_backup;
++
++bool inkling_draft_moe_snapshot(bool restore, int position) {
++    enum { row_bytes = INKLING_MOE_EPILOGUE_WIDTH * sizeof(float), bytes = 3 * row_bytes };
++    if (start_context() != 1) return false;
++    int error = cuda.sync();
++    if (!error && !restore) error = reserve(&i2_epilogue_backup, INKLING_VISITS * (size_t)bytes);
++    if (!error && i2_epilogue_backup.bytes < INKLING_VISITS * (size_t)bytes) error = -1;
++    for (int i = 0; i < INKLING_VISITS && !error; ++i) {
++        struct epilogue_state *state = &i2_epilogue_states[i];
++        if (!state->buffer.address || (!restore && state->length != position) ||
++            (restore && state->length < position)) {
++            error = -1;
++            break;
++        }
++        const DevicePtr history = state->buffer.address + 4 * row_bytes;
++        const DevicePtr backup = i2_epilogue_backup.address + i * (size_t)bytes;
++        error = restore ? cuda.copy_device(history, backup, bytes) :
++                          cuda.copy_device(backup, history, bytes);
++        if (!error && restore) state->length = position;
++    }
++    const int popped = finish_context();
++    if (!error && !popped) fprintf(stderr, "Inkling draft MoE restore=%d bytes=%d\n",
++                                    restore, INKLING_VISITS * bytes);
++    return !error && !popped;
++}
