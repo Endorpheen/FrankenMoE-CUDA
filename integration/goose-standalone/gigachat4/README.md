@@ -323,3 +323,16 @@ With a fixed seed and temperature 0.6, all 32 sampled IDs and the returned
 top-five IDs matched the control. Maximum absolute log-probability error
 was 3.82e-6 across 192 values. Post-request GPU memory was 8460–8469 MiB across
 both arms, and process swap and system swap-out growth were zero.
+
+### EXP-2026-11-26-2145 — CUDA GDN head repetition for single-token decode
+
+Extend the tagged EXP-2143 dispatch to the single-token layout. The existing
+batched condition is unchanged. The diagnostic predicate accepted additional
+short batches, but the final predicate retains their original dispatch.
+
+On 512/32 the paired control/candidate trials measured prefill
+145.14/136.90 and 143.59/143.27 tokens/s, with decode 11.03/13.13 and
+11.11/12.93 tokens/s. The final single-token predicate measured 142.96/13.06
+tokens/s. Every run matched all 32 reference token IDs, with no process swap
+or system swap-out growth. Post-request GPU memory was 8459–8469 MiB in the
+paired runs and 8483 MiB in the final check.

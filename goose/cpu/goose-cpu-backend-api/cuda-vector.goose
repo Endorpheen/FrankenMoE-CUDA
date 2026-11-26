@@ -9,7 +9,7 @@ fn cv_operation(p: const Node &) -> i64 {
     if p.op == OP_DIV { return CV_DIV; }
     if p.op == OP_SCALE { return CV_SCALE; }
     if p.op == OP_REPEAT && p.ip[13] == 2143 && p.x.ne[0] == 128 && p.x.ne[1] == 1 &&
-       p.x.ne[2] == 16 && p.x.ne[3] >= 16 && p.d.ne[0] == 128 &&
+       p.x.ne[2] == 16 && (p.x.ne[3] == 1 || p.x.ne[3] >= 16) && p.d.ne[0] == 128 &&
        p.d.ne[1] == 2 && p.d.ne[2] == 16 && p.d.ne[3] == p.x.ne[3] {
         return CV_SCALE;
     }
