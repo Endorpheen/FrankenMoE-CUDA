@@ -347,3 +347,16 @@ Two paired 512/32 comparisons measured prefill 141.17/141.79 and
 144.48/143.95 tokens/s, with decode 12.94/14.62 and 13.07/14.02 tokens/s.
 All four runs matched the 32 llama.cpp token IDs. Post-request GPU memory
 was 8469–8470 MiB and neither process swap nor system swap-out grew.
+
+### EXP-2026-11-26-2147 — Increase MLA parallelism in single-token decode
+
+Use 64 keys per tile for a single MLA query. Batched MLA and ordinary
+attention retain 256 keys per tile. The partial-softmax workspace keeps its
+existing byte limit.
+
+On 512/32, the control/candidate pairs measured prefill 143.09/143.69 and
+141.31/143.88 tokens/s and decode 14.72/16.13 and 14.34/15.93 tokens/s.
+All 32 output IDs matched the llama.cpp fixture in every run. Post-request
+GPU memory was 8460–8470 MiB and swap-out was unchanged. On the separate
+2049/2 DSA boundary fixture, both builds matched both llama.cpp token IDs
+and used 8483 MiB after the request without swap-out growth.

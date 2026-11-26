@@ -62,7 +62,7 @@ fn flash_cuda(p: const Node &, mask: const Tensor &, q: const u8[:], k: const u8
     let heads = p.x.ne[2];
     let tasks = mul_size(positions, heads);
     if tasks > 2147483647 { return 0; }
-    let segment: i64 = 256;
+    let segment: i64 = if mla && positions == 1 { 64 } else { 256 };
     let tiles = 1 + (p.y.ne[1] - 1) / segment;
     if tiles > 65535 { return 0; }
     let per_task = mul_size(tiles, (p.z.ne[0] + 2) * 4);
