@@ -77,7 +77,7 @@ int giga_step_prepare(const struct giga_request *request, struct ggml_context *c
         .tokens = ggml_new_tensor_1d(ctx, GGML_TYPE_I32, count),
         .positions = ggml_new_tensor_1d(ctx, GGML_TYPE_I32, count),
         .rows = ggml_new_tensor_1d(ctx, GGML_TYPE_I64, count),
-        .mask = ggml_new_tensor_4d(ctx, GGML_TYPE_F32,
+        .mask = ggml_new_tensor_4d(ctx, GGML_TYPE_F16,
                                    padded_cells <= request->capacity ? padded_cells : live_cells,
                                    count, 1, 1),
         .output_ids = output_count > 0 && output_count < count ? ggml_new_tensor_1d(ctx, GGML_TYPE_I32, output_count) : NULL,
@@ -102,12 +102,12 @@ int giga_step_upload(const struct giga_step *step, const int32_t *tokens) {
     const size_t cells = (size_t)step->cells;
     int32_t positions[4096];
     int64_t rows[4096];
-    float *mask = step->mask->data;
+    uint16_t *mask = step->mask->data;
     for (size_t row = 0; row < count; ++row) {
         positions[row] = (int32_t)(step->base + row);
         rows[row] = positions[row];
         for (size_t cell = 0; cell < cells; ++cell) {
-            mask[row * cells + cell] = cell <= (size_t)positions[row] ? 0.0f : -INFINITY;
+            mask[row * cells + cell] = cell <= (size_t)positions[row] ? 0 : UINT16_C(0xfc00);
         }
     }
     memcpy(step->tokens->data, tokens, count * sizeof(*tokens));

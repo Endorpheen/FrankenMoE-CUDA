@@ -421,3 +421,18 @@ zero process swap or system swap-out growth. The default-enabled
 build measured 204.57/11.67 at 8912 MiB with all eight IDs matching.
 The alternate host implementation and 32K/512 throughput have not
 been independently qualified in this experiment.
+
+### EXP-2026-11-27-2152 — Produce the GigaChat4 causal mask in F16
+
+Populate the causal mask with the exact F16 representations of zero
+and negative infinity. Pass it directly to MLA and CUDA DSA. Widen it
+only when the fallback graph specifically needs F32.
+
+On the fixed 4352/2 diagnostic input, ordinary control and candidate
+runs measured 147.04/9.80 and 213.38/10.06 tokens/s. Prefill latency
+fell from 29.60 to 20.40 seconds and both generated token IDs matched.
+Post-request GPU memory was 9213/9212 MiB. Peak RSS was
+24,251,124/24,218,836 KiB with no process swap or system swap-out growth.
+With the old DSA mask graph forced on 2176/8, all eight IDs matched the
+llama.cpp fixture. The 4352/2 input is a deterministic diagnostic
+input; this comparison does not establish a 32K/512 result.

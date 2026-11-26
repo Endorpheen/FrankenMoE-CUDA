@@ -48,8 +48,8 @@ export fn giga_dsa_index_project(ctx: u64, input: u64, qr: u64, pos: u64,
 }
 
 export fn giga_dsa_index_mask(ctx: u64, q: u64, cached_k: u64, weights: u64,
-                              mask_f32: u64, tokens: i64, streams: i64, cells: i64, cuda_dsa: bool) -> u64 {
-    if ctx == 0 || q == 0 || cached_k == 0 || weights == 0 || mask_f32 == 0 ||
+                              half_mask: u64, tokens: i64, streams: i64, cells: i64, cuda_dsa: bool) -> u64 {
+    if ctx == 0 || q == 0 || cached_k == 0 || weights == 0 || half_mask == 0 ||
        tokens < 1 || tokens > 1048576 || streams < 1 || tokens % streams != 0 ||
        cells < 1 || cells > 1048576 { return 0; }
     let batch = tokens / streams;
@@ -57,7 +57,7 @@ export fn giga_dsa_index_mask(ctx: u64, q: u64, cached_k: u64, weights: u64,
                         (batch * 32768) as u64, 0);
     let ws = giga_view4(ctx, weights, 64, batch, 1, streams, 256,
                         (batch * 256) as u64, (batch * 256) as u64, 0);
-    let half_mask = giga_cast(ctx, mask_f32, 1);
+
     var score: u64 = 0;
     if cuda_dsa && streams == 1 && batch <= 4096 {
         score = giga_lightning(ctx, qs, cached_k, ws, half_mask);
@@ -69,7 +69,7 @@ export fn giga_dsa_index_mask(ctx: u64, q: u64, cached_k: u64, weights: u64,
         let weighted = giga_mul(ctx, giga_relu(ctx, by_head), ws);
         let summed = giga_sum_rows(ctx, weighted);
         let scores = giga_cont(ctx, giga_permute(ctx, summed, 2, 1, 0, 3));
-        score = giga_add(ctx, scores, mask_f32);
+        score = giga_add(ctx, scores, giga_cast(ctx, half_mask, 0));
     }
     var count = cells;
     if count > 2048 { count = 2048; }
@@ -80,5 +80,5 @@ export fn giga_dsa_index_mask(ctx: u64, q: u64, cached_k: u64, weights: u64,
         if fused != 0 { return fused; }
     }
     let picks = giga_cont(ctx, top);
-    return giga_cast(ctx, giga_mask_selected(ctx, mask_f32, picks, cells, count, batch, streams), 1);
+    return giga_cast(ctx, giga_mask_selected(ctx, giga_cast(ctx, half_mask, 0), picks, cells, count, batch, streams), 1);
 }

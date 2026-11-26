@@ -38,7 +38,7 @@ export fn giga_mla_layer(ctx: u64, graph: u64, projected: u64[:], index: u64[:],
     let written_k = giga_set_rows(ctx, kv_store, k_rows, rows);
     let written_idx = giga_set_rows(ctx, idx_store, idx_rows, rows);
     let kv_plane = kv_stride * (capacity as u64);
-    var selected = giga_cast(ctx, mask, 1);
+    var selected = mask;
     if cells <= 2048 {
         giga_expand(graph, written_idx);
     } else {
