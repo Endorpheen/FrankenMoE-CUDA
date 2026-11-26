@@ -4,6 +4,7 @@
 #include "http.h"
 #include "bonsai-model.h"
 #include "apex-model.h"
+#include "inkling-model.h"
 
 #include <inttypes.h>
 #include <stdio.h>
@@ -53,6 +54,7 @@ int main(int argc, char **argv) {
         if (!strcmp(argv[start], "--allow-cpu")) cpu = 1;
         else if (!strcmp(argv[start], "--bonsai") && kind == FG_VK_MODEL_QWEN2) kind = FG_VK_MODEL_BONSAI;
         else if (!strcmp(argv[start], "--apex") && kind == FG_VK_MODEL_QWEN2) kind = FG_VK_MODEL_APEX;
+        else if (!strcmp(argv[start], "--inkling") && kind == FG_VK_MODEL_QWEN2) kind = FG_VK_MODEL_INKLING;
         else if (!strcmp(argv[start], "--device-index") && start + 1 < argc) {
             if (!read_number(argv[++start], FG_VK_AUTO_DEVICE, &device)) goto usage;
         } else if (!strcmp(argv[start], "--n-predict") && start + 1 < argc) {
@@ -84,7 +86,7 @@ int main(int argc, char **argv) {
         (tokenize_only && dump)) goto usage;
     const unsigned capacity = 32768 - (tokenize_only ? 0 : predict - 1);
     unsigned prompt = text_mode ? 0 : (unsigned)(argc - ++start);
-    const unsigned vocabulary = kind == FG_VK_MODEL_APEX ? FG_APEX_VOCAB :
+    const unsigned vocabulary = kind == FG_VK_MODEL_INKLING ? FG_INKLING_VOCAB : kind == FG_VK_MODEL_APEX ? FG_APEX_VOCAB :
         kind == FG_VK_MODEL_BONSAI ? FG_BONSAI_VOCAB : FG_QWEN_VOCAB;
     if (prompt > capacity) goto usage;
 
@@ -105,7 +107,7 @@ int main(int argc, char **argv) {
         else fputs("Unable to tokenize the prompt within the context limit\n", stderr);
     } else {
         for (unsigned i = 0; i < prompt && ok; ++i) ok = read_number(argv[start + i], vocabulary, &ids[i]);
-        if (ok && kind == FG_VK_MODEL_APEX) {
+        if (ok && (kind == FG_VK_MODEL_APEX || kind == FG_VK_MODEL_INKLING)) {
             tokenizer = fg_vk_model_tokenizer_open(argv[1], kind);
             ok = tokenizer != NULL;
         }
@@ -121,14 +123,17 @@ int main(int argc, char **argv) {
     fg_vk_qwen2 *model = NULL;
     fg_vk_bonsai *bonsai_model = NULL;
     fg_vk_apex *apex_model = NULL;
+    fg_vk_inkling *inkling_model = NULL;
     if (logits && kind == FG_VK_MODEL_BONSAI) bonsai_model = fg_vk_bonsai_open(argv[1], prompt + predict - 1, device, cpu);
     if (logits && kind == FG_VK_MODEL_APEX) apex_model = fg_vk_apex_open(argv[1], prompt + predict - 1, device, cpu);
+    if (logits && kind == FG_VK_MODEL_INKLING) inkling_model = fg_vk_inkling_open(argv[1], prompt + predict - 1, device, cpu);
     if (logits && kind == FG_VK_MODEL_QWEN2) model = calloc(1, sizeof(*model));
-    ok = bonsai_model || apex_model || (model && fg_vk_qwen2_open(model, argv[1], prompt + predict - 1, device, cpu));
+    ok = bonsai_model || apex_model || inkling_model || (model && fg_vk_qwen2_open(model, argv[1], prompt + predict - 1, device, cpu));
     if (ok && model) fprintf(stderr, "Vulkan Qwen2 on %s, context=%u\n", model->vk.properties.deviceName, model->context);
     for (unsigned i = 0; i < prompt && ok; ++i) {
         float *output = i + 1 == prompt ? logits : NULL;
-        ok = apex_model ? fg_vk_apex_step(apex_model, ids[i], output) :
+        ok = inkling_model ? fg_vk_inkling_step(inkling_model, ids[i], output) :
+             apex_model ? fg_vk_apex_step(apex_model, ids[i], output) :
              bonsai_model ? fg_vk_bonsai_step(bonsai_model, ids[i], output) : fg_vk_qwen2_step(model, ids[i], output);
     }
     if (ok && dump) {
@@ -154,10 +159,11 @@ int main(int argc, char **argv) {
         } else {
             ok = printf("%u\n", token) > 0;
             if (bonsai_model && fg_vk_bonsai_is_eog(bonsai_model, token)) break;
-            if (apex_model && fg_vk_tokenizer_is_eog(tokenizer, token)) break;
+            if ((apex_model || inkling_model) && fg_vk_tokenizer_is_eog(tokenizer, token)) break;
         }
         if (ok && t + 1 < predict) {
-            ok = apex_model ? fg_vk_apex_step(apex_model, token, logits) :
+            ok = inkling_model ? fg_vk_inkling_step(inkling_model, token, logits) :
+                 apex_model ? fg_vk_apex_step(apex_model, token, logits) :
                  bonsai_model ? fg_vk_bonsai_step(bonsai_model, token, logits) : fg_vk_qwen2_step(model, token, logits);
         }
     }
@@ -165,6 +171,7 @@ int main(int argc, char **argv) {
     if (model) fg_vk_qwen2_close(model);
     fg_vk_bonsai_close(bonsai_model);
     fg_vk_apex_close(apex_model);
+    fg_vk_inkling_close(inkling_model);
     fg_vk_tokenizer_close(tokenizer);
     free(model); free(logits); free(ids);
     if (!ok) fputs("Vulkan inference failed\n", stderr);
@@ -174,6 +181,7 @@ usage:
           "       -- TOKEN ... | --prompt TEXT | --prompt-file UTF8_FILE [--special] [--tokenize-only]\n"
           "       --bonsai -- TOKEN ...\n"
           "       --apex -- TOKEN ...\n"
+          "       --inkling -- TOKEN ...\n"
           "       --serve PORT [--ctx-size N] [--max-requests N]\n", stderr);
     return 2;
 }

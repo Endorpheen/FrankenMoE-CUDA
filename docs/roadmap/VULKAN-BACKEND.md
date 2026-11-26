@@ -314,7 +314,7 @@ The local GGUF inventory confirms distinct requirements.
 | Qwen2.5-0.5B Q4_0 | Q4_0, Q8_0 | Experimental CLI and HTTP release |
 | Bonsai 2.5 27B | PQ2_0 trunk, Q4_0 KV | Experimental raw-ID and text CLI, serial HTTP completions, SSE and no-thinking ChatML. Short generation passes on Linux RTX 4070 and Windows EXE under Wine with RTX 4070. |
 | Apex 35B | Q4_K/Q6_K weights, Q4_0 KV | Experimental complete 40-layer trunk, raw-ID and text CLI, serial HTTP. Short generation passes on Linux RTX 4070 and Windows EXE under Wine with RTX 4070. |
-| Inkling-2-Mini | Q8_0, IQ4_NL, IQ4_XS, Q4_0 KV | Real-weight projection, embedding gather, routed expert evaluation and relative/sliding attention components pass. Model graph and recurrent depth loops are open. |
+| Inkling-2-Mini | Q8_0, IQ4_NL, IQ4_XS, Q4_0 KV | Experimental complete 48-visit model path, raw-ID and text CLI, serial HTTP completions. Short generation passes on Linux RTX 4070 and Windows EXE under Wine with RTX 4070. |
 
 ### Bonsai FFN component
 
@@ -686,6 +686,49 @@ out=build/vulkan-bringup/inkling-attention
 bash tools/build-goose-vulkan.sh "$out/linux" linux compute
 "$out/linux/frankenmoe-vulkan-compute-test" 0 0 --inkling-attention
 ```
+
+### Complete Inkling Vulkan model
+
+The `--inkling` path uses the 24 physical layers and 48 visits
+bound from `inkling2_loop` GGUF metadata. The reused Goose loop
+and layer routines handle residual depth mixing, controllers,
+clipping and short history. The Vulkan path executes the
+projections, relative/sink attention, Q4_0 KV writes and selected
+IQ4 experts. Each visit owns independent KV and short history.
+Full attention uses the configured context and sliding layers
+use a ring of at most 1024 positions. Each HTTP request resets
+both types of state. GPT-4o pretokenization uses the tested local
+Inkling scanner and direct-token lookup before BPE merges.
+This path uses greedy generation and the unpadded vocabulary.
+
+On Linux RTX 4070 the two five-token requests match the four
+generated CUDA IDs and visible text exactly. Replaying the first
+request after the second reproduces the first response. The
+reference executable SHA-256 is
+`739221fcb84cc52e91b817a465a598b5b82ce41da483c83f1a614e8b96299016`,
+with Q4_0 KV, context 96 and batch/ubatch 64. The cold CUDA
+reference request timed out at 40 seconds on the rotational
+model drive. A sequential read populated the filesystem cache
+for the paired correctness check. This was not a throughput
+comparison. The Windows x64 text CLI under Wine with NVIDIA's
+Vulkan ICD matches the first completion. The current component
+does not cover the Inkling chat template or qualify long
+sequences, memory, throughput, native Windows or AMD hardware.
+
+```bash
+tests=integration/goose-standalone/tests/vulkan
+out=build/vulkan-bringup/inkling-model
+bash tools/build-goose-vulkan.sh "$out/linux" linux qwen2
+"$out/linux/frankenmoe-vulkan" "$INKLING_GGUF" --inkling --device-index 0 \
+    --serve 29188 --ctx-size 96 --max-requests 5
+# Run from a second shell.
+python3 "$tests/inkling-http-smoke.py" 29188
+```
+
+Tested executable SHA-256 values:
+
+- Linux `80855d8f37b3332f7ba05f07af7e051cc7a81c906b9c98e0d63f7175e2c2a743`.
+- Windows `0cf0650b42a54d0fc4cea42361d77891fa81f473c1dedc0dc2d93d725cf04229`.
 
 ## Model order
 

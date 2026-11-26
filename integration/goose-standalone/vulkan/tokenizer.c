@@ -2,6 +2,7 @@
 #include "qwen2.h"
 #include "bonsai-model.h"
 #include "apex-model.h"
+#include "inkling-model.h"
 #include "gguf.h"
 
 #include <stdlib.h>
@@ -83,19 +84,21 @@ fg_vk_tokenizer *fg_vk_model_tokenizer_open(const char *path, fg_vk_model_kind k
     }
     fg_gguf file = {0};
     fg_vk_tokenizer *tokenizer = NULL;
-    const int qwen35 = kind != FG_VK_MODEL_QWEN2;
-    const char *type = kind == FG_VK_MODEL_APEX ? "qwen35moe" : qwen35 ? "qwen35" : "qwen2";
-    const int64_t vocabulary = kind == FG_VK_MODEL_APEX ? FG_APEX_VOCAB : qwen35 ? FG_BONSAI_VOCAB : FG_QWEN_VOCAB;
+    const int inkling = kind == FG_VK_MODEL_INKLING;
+    const int qwen35 = kind == FG_VK_MODEL_APEX || kind == FG_VK_MODEL_BONSAI;
+    const char *type = inkling ? "inkling2_loop" : kind == FG_VK_MODEL_APEX ? "qwen35moe" : qwen35 ? "qwen35" : "qwen2";
+    const int64_t vocabulary = inkling ? FG_INKLING_VOCAB :
+        kind == FG_VK_MODEL_APEX ? FG_APEX_VOCAB : qwen35 ? FG_BONSAI_VOCAB : FG_QWEN_VOCAB;
     int64_t eos;
     if (fg_gguf_read_header(&file, model) >= 0 && fg_gguf_metadata_is(&file, "general.architecture", type) &&
         fg_gguf_metadata_is(&file, "tokenizer.ggml.model", "gpt2") &&
-        fg_gguf_metadata_is(&file, "tokenizer.ggml.pre", qwen35 ? "qwen35" : "qwen2") &&
+        fg_gguf_metadata_is(&file, "tokenizer.ggml.pre", inkling ? "inkling2" : qwen35 ? "qwen35" : "qwen2") &&
         !gr_meta_int(file.data, FG_GGUF_WORDS(file.state), FG_GGUF_WORDS(file.metadata),
                      fg_gguf_metadata(&file, "tokenizer.ggml.eos_token_id"), fg_gguf_words(&eos, 1)) &&
         eos >= 0 && eos < vocabulary) {
         tokenizer = from_gguf(file.data, FG_GGUF_WORDS(file.state), FG_GGUF_WORDS(file.metadata),
             fg_gguf_metadata(&file, "tokenizer.ggml.tokens"), fg_gguf_metadata(&file, "tokenizer.ggml.merges"),
-            fg_gguf_metadata(&file, "tokenizer.ggml.token_type"), eos, vocabulary, qwen35);
+            fg_gguf_metadata(&file, "tokenizer.ggml.token_type"), eos, vocabulary, inkling ? 2 : qwen35);
     }
     free(file.data.data);
     fclose(model);

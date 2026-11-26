@@ -71,13 +71,40 @@ PY
     python3 "$root/tools/compose-vulkan-http.py" "$root" "$out/http_helpers.goose"
     bootstrap="$root/experiments/EXP-2026-11-25-1973-bonsai-pq2-bootstrap/source"
     patch -s "$root/goose/model/gguf-tensors.goose" -o "$out/gguf-tensors-vulkan.goose" < "$bootstrap/gguf-tensors.goose.patch"
-    sed -n '/^fn mr_name(/,/^fn mr_moe_name(/{ /^fn mr_moe_name(/d;p; }' \
+    sed -n '/^fn mr_text(/,/^fn mr_no_clamp(/{ /^fn mr_no_clamp(/d;p; }; /^fn mr_name(/,/^fn mr_moe_name(/{ /^fn mr_moe_name(/d;p; }' \
         "$root/goose/model/qwen35-model-loader.goose" > "$out/bonsai-model-names.goose"
+    python3 - "$root/goose/model/bpe-tokenize.goose" "$out/bpe-tokenize-vulkan.goose" <<'PY'
+from pathlib import Path
+import sys
+
+source, output = map(Path, sys.argv[1:])
+text = source.read_text()
+scanner = 'let n_word: i64 = pt_qwen35_body(text, cpts, seg, enc, info);'
+word = '        let added: i64 = bt_word(enc, off, len, gguf, tok_off, tok_len, tok_slots,'
+if text.count(scanner) != 1 or text.count(word) != 1:
+    raise ValueError("Vulkan BPE anchors changed")
+text = text.replace(scanner, '''let inkling = pt_model_marks() == 2;
+    let n_word: i64 = if inkling { pt_inkling2_body(text, cpts, seg, enc, info) }
+                   else { pt_qwen35_body(text, cpts, seg, enc, info) };''')
+output.write_text(text.replace(word, '''        if inkling {
+            let direct = bt_token_id(gguf, tok_off, tok_len, tok_slots, enc, off, len);
+            if direct >= 0 {
+                if nout >= ids.len { return -1; }
+                ids[nout] = direct;
+                nout += 1;
+                w += 1;
+                continue;
+            }
+        }
+''' + word))
+PY
     cat "$root/goose/misc/gguf-headers.goose" "$out/gguf-tensors-vulkan.goose" "$root/goose/model/gguf-reader.goose" \
         "$out/bonsai-model-names.goose" "$bootstrap/bonsai-layout.goose" \
         "$root/goose/misc/"{unicode-tables,unicode-text}.goose "$out/pretokenizer-vulkan.goose" \
-        "$root/goose/model/"{bpe-tokenize,bpe-detokenize,tokenizer-engine}.goose \
+        "$source_dir/inkling/pretokenizer.goose" "$out/bpe-tokenize-vulkan.goose" \
+        "$root/goose/model/"{bpe-detokenize,tokenizer-engine}.goose \
         "$root/goose/server/"{http-request,http-listener,route-table,jsonparse}.goose "$out/http_helpers.goose" \
+        "$source_dir/inkling/"{layout,prepare,layer,loop,step}.goose \
         "$source_dir/"{qwen2-step,bonsai-step,apex-step,http}.goose > "$out/qwen2_unit.goose"
     "$goose" --standalone -o "$out/qwen2_unit.c" --header "$out/qwen2_unit.h" "$out/qwen2_unit.goose"
     "$cc" -std=c11 -O2 -w -ffunction-sections -fdata-sections -c "$out/qwen2_unit.c" -o "$out/qwen2_unit.o"
@@ -89,7 +116,7 @@ PY
         socket=("$standalone/libc-forwards.c")
     fi
     "$cc" "${flags[@]}" -isystem "$out/vulkan-headers" -I"$out" -Wl,--gc-sections \
-        "$source_dir/"{loader,device,memory,queue,graph,upload,gguf,qwen2,bonsai-layer,bonsai-model,moe-bank,apex-model,tokenizer,http,infer-main}.c "$out/qwen2_unit.o" \
+        "$source_dir/"{loader,device,memory,queue,graph,upload,gguf,qwen2,bonsai-layer,bonsai-model,moe-bank,apex-model,inkling-model,tokenizer,http,infer-main}.c "$out/qwen2_unit.o" \
         "${socket[@]}" "$standalone/json-strtod-provider.c" \
         "${libs[@]}" -lm -pthread -o "$out/frankenmoe-vulkan$suffix"
 fi

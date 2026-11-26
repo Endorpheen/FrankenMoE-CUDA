@@ -11,6 +11,7 @@ fn ih_log_request(method: i64, route: i64) {}
 fn ih_log_response(status: i64, body: const u8[:]) {}
 
 fn vkh_name(model_kind: i64) -> const u8[:] {
+    if model_kind == 3 { return "inkling-2-mini"; }
     return if model_kind == 2 { "apex-35b" } else { if model_kind == 1 { "bonsai-2.5-27b" } else { "qwen2.5-0.5b-instruct" } };
 }
 
@@ -296,7 +297,11 @@ fn vkh_decode_body(context: u64, fd: i64, body: const u8[:], route: i64, cap: i6
         return;
     }
     let model = vkh_name(model_kind);
-    let bonsai = model_kind != 0;
+    let bonsai = model_kind == 1 || model_kind == 2;
+    if route == 13 && model_kind == 3 {
+        vkh_error(fd, 400, "Inkling chat templates are not supported");
+        return;
+    }
     let field: const u8[:] = if route == 25 { "content" } else if route == 13 { "messages" } else { "prompt" };
     var input: i64 = -1;
     var limit: i64 = 16;
