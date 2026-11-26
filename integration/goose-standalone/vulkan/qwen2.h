@@ -2,6 +2,7 @@
 #define FG_VULKAN_QWEN2_H
 
 #include "graph.h"
+#include "tokenizer.h"
 
 enum { FG_QWEN_LAYERS = 24, FG_QWEN_VOCAB = 151936 };
 
@@ -29,5 +30,6 @@ int fg_vk_qwen2_open(fg_vk_qwen2 *model, const char *path, uint32_t context,
     uint32_t index, int allow_cpu);
 void fg_vk_qwen2_close(fg_vk_qwen2 *model);
 int fg_vk_qwen2_step(fg_vk_qwen2 *model, uint32_t id, float *logits);
+int fg_vk_qwen2_choose(const float *logits, const fg_vk_tokenizer *ignore_eog, uint32_t *chosen);
 
 #endif

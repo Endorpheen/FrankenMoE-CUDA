@@ -5,6 +5,7 @@
 #include "tokenizer.h"
 #include "upload.h"
 
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -359,5 +360,16 @@ int fg_vk_qwen2_step(fg_vk_qwen2 *m, uint32_t id, float *logits) {
     if (!fg_vk_graph_submit(&m->graph) ||
         (logits && fg_vk_access_buffer(&m->vk, &m->host, output.offset, logits, (size_t)output.size, 0) != VK_SUCCESS)) return 0;
     ++m->position;
+    return 1;
+}
+
+int fg_vk_qwen2_choose(const float *logits, const fg_vk_tokenizer *ignore_eog, uint32_t *chosen) {
+    uint32_t best = UINT32_MAX;
+    for (uint32_t i = 0; i < FG_QWEN_VOCAB; ++i) {
+        if (!isfinite(logits[i])) return 0;
+        if ((best == UINT32_MAX || logits[i] > logits[best]) && !fg_vk_tokenizer_is_eog(ignore_eog, i)) best = i;
+    }
+    if (best == UINT32_MAX) return 0;
+    *chosen = best;
     return 1;
 }

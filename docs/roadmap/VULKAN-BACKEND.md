@@ -1,8 +1,8 @@
 # Vulkan backend for FrankenMoE
 
-**Status: standalone Qwen2.5 Vulkan text inference.** The Vulkan binary
-loads and verifies the supported Qwen2.5-0.5B Q4_0 GGUF layout, accepts
-raw token IDs or UTF-8 prompts and generates greedy output. HTTP, native
+**Status: Qwen2.5 Vulkan text CLI and local HTTP completions.** The Vulkan
+binary loads the supported Qwen2.5-0.5B Q4_0 GGUF layout, accepts raw token
+IDs or UTF-8 prompts and generates greedy output. Chat, streaming, native
 AMD tests and release qualification remain open. Keep the existing CUDA
 inference path unchanged during bring-up.
 
@@ -148,6 +148,32 @@ ASCII, Cyrillic, CJK, emoji, combining marks, whitespace and split or
 literal special tokens. Direct text continuation on RTX 4070 and Windows
 x64 under Wine with Lavapipe matches the CPU continuation byte-for-byte
 after adding the CLI's final newline.
+
+### Local HTTP completions
+
+The Vulkan unit reuses the standalone Goose HTTP framing and JSON parser.
+The native adapter keeps one resident model and handles requests serially.
+Each generation starts at position zero and writes its own visible K/V
+prefix. The listener binds to `127.0.0.1` only. It supports
+`GET /health`, `GET /v1/models`, `POST /tokenize`, `POST /completion`
+and `POST /v1/completions`. Completion accepts a prompt string or input
+IDs and an output-token limit. The current mode is greedy and returns
+prompt/completion/total usage. Streaming, chat templates, tools and
+other sampler options remain unsupported.
+
+```bash
+build/vulkan-bringup/linux/frankenmoe-vulkan "$QWEN_GGUF" --serve 29188 \
+    --ctx-size 16 --max-requests 10
+python3 integration/goose-standalone/tests/vulkan/http-smoke.py 29188
+```
+
+The ten-request fixture passed on Linux RTX 4070 and a Windows x64 build
+under Wine with Lavapipe, using explicit device selection. Both completion
+paths match all four stored CPU reference IDs and the expected usage.
+The fixture runs a different prompt between the two completions to
+check cache isolation. It also checks malformed JSON, context limits,
+and rejection of unsupported chat and stream requests. The server
+exits after the optional request limit; without it the listener stays up.
 
 ## Source audit and integration boundary
 

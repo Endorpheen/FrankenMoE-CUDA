@@ -1,9 +1,9 @@
 #include "qwen2.h"
 #include "qwen2_unit.h"
 #include "tokenizer.h"
+#include "http.h"
 
 #include <inttypes.h>
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -18,16 +18,6 @@ static int read_number(const char *text, uint32_t limit, uint32_t *value) {
     uintmax_t n = strtoumax(text, &end, 10);
     if (*text < '0' || *text > '9' || *end || n >= limit) return 0;
     *value = (uint32_t)n;
-    return 1;
-}
-
-static int choose(const float *logits, uint32_t *chosen) {
-    uint32_t best = 0;
-    for (uint32_t i = 0; i < FG_QWEN_VOCAB; ++i) {
-        if (!isfinite(logits[i])) return 0;
-        if (logits[i] > logits[best]) best = i;
-    }
-    *chosen = best;
     return 1;
 }
 
@@ -51,6 +41,7 @@ static char *read_prompt(const char *path, size_t *bytes) {
 
 int main(int argc, char **argv) {
     uint32_t device = FG_VK_AUTO_DEVICE, predict = 1;
+    uint32_t port = 0, requests = 0, server_context = 0;
     int cpu = 0, special = 0, tokenize_only = 0;
     const char *dump = NULL, *prompt_text = NULL, *prompt_file = NULL;
     if (argc < 3) goto usage;
@@ -66,9 +57,23 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[start], "--prompt-file") && start + 1 < argc) prompt_file = argv[++start];
         else if (!strcmp(argv[start], "--special")) special = 1;
         else if (!strcmp(argv[start], "--tokenize-only")) tokenize_only = 1;
+        else if (!strcmp(argv[start], "--serve") && start + 1 < argc) {
+            if (!read_number(argv[++start], 65536, &port) || !port) goto usage;
+        } else if (!strcmp(argv[start], "--ctx-size") && start + 1 < argc) {
+            if (!read_number(argv[++start], 32769, &server_context) || !server_context) goto usage;
+        } else if (!strcmp(argv[start], "--max-requests") && start + 1 < argc) {
+            if (!read_number(argv[++start], UINT32_MAX, &requests) || !requests) goto usage;
+        }
         else goto usage;
     }
     const int text_mode = prompt_text || prompt_file;
+    if (port) {
+        if (start != argc || text_mode || dump || special || tokenize_only || predict != 1 ||
+            (cpu && device == FG_VK_AUTO_DEVICE)) goto usage;
+        goose_init(0, NULL);
+        return fg_vk_http_run(argv[1], server_context ? server_context : 512, device, cpu, port, requests) ? 0 : 1;
+    }
+    if (requests || server_context) goto usage;
     if ((prompt_text && prompt_file) || (cpu && device == FG_VK_AUTO_DEVICE) ||
         (text_mode ? start != argc : start + 1 >= argc || special || tokenize_only) ||
         (tokenize_only && dump)) goto usage;
@@ -119,7 +124,7 @@ int main(int argc, char **argv) {
 #endif
     for (uint32_t t = 0; t < predict && ok; ++t) {
         uint32_t token;
-        ok = choose(logits, &token);
+        ok = fg_vk_qwen2_choose(logits, NULL, &token);
         if (!ok) break;
         if (text_mode) {
             if (fg_vk_tokenizer_is_eog(tokenizer, token)) break;
@@ -139,6 +144,7 @@ int main(int argc, char **argv) {
     return ok ? 0 : 1;
 usage:
     fputs("Usage: frankenmoe-vulkan MODEL [--device-index N] [--allow-cpu] [--n-predict N] [--logits FILE]\n"
-          "       -- TOKEN ... | --prompt TEXT | --prompt-file UTF8_FILE [--special] [--tokenize-only]\n", stderr);
+          "       -- TOKEN ... | --prompt TEXT | --prompt-file UTF8_FILE [--special] [--tokenize-only]\n"
+          "       --serve PORT [--ctx-size N] [--max-requests N]\n", stderr);
     return 2;
 }

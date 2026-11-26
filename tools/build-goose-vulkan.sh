@@ -65,13 +65,23 @@ if text.count(anchor) != 1:
 # Qwen2 classifies marks with punctuation instead of folding them into letter runs.
 output.write_text(text.replace(anchor, "const PT_MARK: i64 = 0;"))
 PY
+    python3 "$root/tools/compose-vulkan-http.py" "$root" "$out/http_helpers.goose"
     cat "$root/goose/misc/gguf-headers.goose" "$root/goose/model/"{gguf-tensors,gguf-reader}.goose \
         "$root/goose/misc/"{unicode-tables,unicode-text}.goose "$out/pretokenizer-qwen2.goose" \
         "$root/goose/model/"{bpe-tokenize,bpe-detokenize,tokenizer-engine}.goose \
-        "$source_dir/qwen2-step.goose" > "$out/qwen2_unit.goose"
+        "$root/goose/server/"{http-request,http-listener,route-table,jsonparse}.goose "$out/http_helpers.goose" \
+        "$source_dir/"{qwen2-step,http}.goose > "$out/qwen2_unit.goose"
     "$goose" --standalone -o "$out/qwen2_unit.c" --header "$out/qwen2_unit.h" "$out/qwen2_unit.goose"
     "$cc" -std=c11 -O2 -w -ffunction-sections -fdata-sections -c "$out/qwen2_unit.c" -o "$out/qwen2_unit.o"
+    standalone="$root/integration/goose-standalone"
+    if [[ "$target" == windows ]]; then
+        socket=("$standalone/windows/"{socket-forwards,platform}.c)
+        libs+=(-lws2_32 -lpsapi)
+    else
+        socket=("$standalone/libc-forwards.c")
+    fi
     "$cc" "${flags[@]}" -isystem "$out/vulkan-headers" -I"$out" -Wl,--gc-sections \
-        "$source_dir/"{loader,device,memory,queue,graph,upload,qwen2,tokenizer,infer-main}.c "$out/qwen2_unit.o" \
+        "$source_dir/"{loader,device,memory,queue,graph,upload,qwen2,tokenizer,http,infer-main}.c "$out/qwen2_unit.o" \
+        "${socket[@]}" "$standalone/json-strtod-provider.c" \
         "${libs[@]}" -lm -pthread -o "$out/frankenmoe-vulkan$suffix"
 fi
