@@ -1278,6 +1278,15 @@ release still needs the architecture regression gates.
   the 369 accepted drafts out of 423.
   [Profile, source and benchmarks](EXP-2026-11-26-2107-bonsai-mtp-draft-q4/README.md).
 
+### EXP-2026-11-26-2108 — Group Bonsai PQ2 gate/up tiles by weight row
+
+- **Rejected at the component gate.** Remap the current M64 × N128
+  grid to group two, four or eight token tiles for identical packed
+  weight rows. All four projections are bitwise exact. The best
+  alternate group is 5.03–7.46% slower. Retain the row-first layout
+  and EXP-2107. No full inference run.
+  [Component results and reproduction](EXP-2026-11-26-2108-bonsai-pq2-tile-order/README.md).
+
 ## EXP-2026-11-07-138: Whole Goose CPU compute modules
 
 - Engineering checkpoint: raw Q4_K/Q6_K MoE/tiled and full binary/unary CPU modules execute in Goose, real Apex exact.
