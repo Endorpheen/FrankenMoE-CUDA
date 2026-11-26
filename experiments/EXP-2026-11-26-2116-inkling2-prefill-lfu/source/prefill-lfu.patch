@@ -1,0 +1,21 @@
+--- a/decode-lfu.h
++++ b/decode-lfu.h
+@@ -20,8 +20,16 @@
+         enabled = setting && strcmp(setting, "1") == 0;
+     }
+     if (!enabled) return;
+-    if (prefill && position == 0) memset(&i2_lfu, 0, sizeof i2_lfu);
+-    i2_lfu.active = !prefill && count > 0;
++    static _Thread_local bool prefill_trained;
++    const char *setting = getenv("I2_PREFILL_LFU");
++    const bool use_prefill = prefill && count == 4096 &&
++        (!setting || strcmp(setting, "0") != 0);
++    if ((prefill && position == 0) || (!use_prefill && prefill_trained))
++        memset(&i2_lfu, 0, sizeof i2_lfu);
++    if (use_prefill && !prefill_trained)
++        fputs("Inkling prefill expert LFU active\n", stderr);
++    prefill_trained = use_prefill;
++    i2_lfu.active = (use_prefill || !prefill) && count > 0;
+     if (i2_lfu.active) {
+         static pthread_once_t init = PTHREAD_ONCE_INIT;
+         pthread_once(&init, i2_lfu_init_goose);
