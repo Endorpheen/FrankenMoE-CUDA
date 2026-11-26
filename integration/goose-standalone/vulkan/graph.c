@@ -28,6 +28,8 @@ static const fg_vk_shader shaders[FG_VK_OP_COUNT] = {
     [FG_VK_CAUSAL_CONV] = { fg_causal_conv, sizeof(fg_causal_conv) },
     [FG_VK_QK_NORM] = { fg_qk_norm, sizeof(fg_qk_norm) },
     [FG_VK_GDN] = { fg_gdn, sizeof(fg_gdn) },
+    [FG_VK_GDN_GATES] = { fg_gdn_gates, sizeof(fg_gdn_gates) },
+    [FG_VK_GATED_RMS] = { fg_gated_rms, sizeof(fg_gated_rms) },
 };
 
 static VkResult create_pipeline(fg_vk_graph *graph, fg_vk_op op) {
@@ -178,9 +180,11 @@ static int record(fg_vk_graph *graph, fg_vk_op op, fg_vk_shape shape, fg_vk_view
     uint32_t x, y = 1;
     switch (op) {
     case FG_VK_RMSNORM:
+    case FG_VK_GATED_RMS:
         if (!isfinite(shape.epsilon) || shape.epsilon <= 0.0f) return 0;
         x = shape.batch;
         weight_bytes = (VkDeviceSize)shape.width * 4;
+        if (op == FG_VK_GATED_RMS) value_bytes = input_bytes;
         break;
     case FG_VK_Q4_0:
     case FG_VK_PQ2_0:
@@ -236,6 +240,12 @@ static int record(fg_vk_graph *graph, fg_vk_op op, fg_vk_shape shape, fg_vk_view
         weight_bytes = stride * shape.width * 4;
         output_bytes = stride * 4;
         value_bytes = (uint64_t)shape.rows * 8;
+        break;
+    case FG_VK_GDN_GATES:
+        if (shape.batch != 1 || !shape.rows || stride > UINT32_MAX / 2) return 0;
+        x = shape.rows;
+        weight_bytes = stride * 8;
+        value_bytes = output_bytes = (uint64_t)shape.rows * 8;
         break;
     case FG_VK_BIAS:
         x = (uint32_t)((elements + 63) / 64);
@@ -312,7 +322,8 @@ static int record(fg_vk_graph *graph, fg_vk_op op, fg_vk_shape shape, fg_vk_view
 
 int fg_vk_graph_record(fg_vk_graph *graph, fg_vk_op op, fg_vk_shape shape,
     fg_vk_view input, fg_vk_view weight, fg_vk_view output) {
-    if (op == FG_VK_ATTENTION || op == FG_VK_CAUSAL_CONV || op == FG_VK_GDN) return 0;
+    if (op == FG_VK_ATTENTION || op == FG_VK_CAUSAL_CONV || op == FG_VK_GDN ||
+        op == FG_VK_GDN_GATES || op == FG_VK_GATED_RMS) return 0;
     return record(graph, op, shape, input, weight, output, input);
 }
 
@@ -327,6 +338,16 @@ int fg_vk_graph_gdn(fg_vk_graph *graph, fg_vk_shape shape, fg_vk_view qkv,
     fg_vk_view state, fg_vk_view gates, fg_vk_view output) {
     if (!qkv.buffer || !state.buffer || !gates.buffer) return 0;
     return record(graph, FG_VK_GDN, shape, qkv, state, output, gates);
+}
+
+int fg_vk_graph_gdn_gates(fg_vk_graph *graph, fg_vk_shape shape, fg_vk_view input,
+    fg_vk_view weights, fg_vk_view bias_scale, fg_vk_view output) {
+    return record(graph, FG_VK_GDN_GATES, shape, input, weights, output, bias_scale);
+}
+
+int fg_vk_graph_gated_rms(fg_vk_graph *graph, fg_vk_shape shape, fg_vk_view input,
+    fg_vk_view weights, fg_vk_view gate, fg_vk_view output) {
+    return record(graph, FG_VK_GATED_RMS, shape, input, weights, output, gate);
 }
 
 int fg_vk_graph_attention(fg_vk_graph *graph, fg_vk_shape shape,

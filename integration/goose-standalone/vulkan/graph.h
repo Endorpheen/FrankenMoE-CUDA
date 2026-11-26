@@ -7,7 +7,7 @@ typedef enum {
     FG_VK_RMSNORM, FG_VK_Q4_0, FG_VK_SWIGLU, FG_VK_ROPE, FG_VK_KV_STORE,
     FG_VK_ATTENTION, FG_VK_Q8_0, FG_VK_GATHER_Q4_0, FG_VK_BIAS, FG_VK_ADD,
     FG_VK_PQ2_0, FG_VK_GATHER_PQ2_0, FG_VK_FWHT,
-    FG_VK_CAUSAL_CONV, FG_VK_QK_NORM, FG_VK_GDN, FG_VK_OP_COUNT
+    FG_VK_CAUSAL_CONV, FG_VK_QK_NORM, FG_VK_GDN, FG_VK_GDN_GATES, FG_VK_GATED_RMS, FG_VK_OP_COUNT
 } fg_vk_op;
 
 typedef struct {
@@ -56,6 +56,10 @@ int fg_vk_graph_conv(fg_vk_graph *graph, uint32_t channels, fg_vk_view input,
 /* Q/K/V is one view. Gates packs log decay then beta; state uses [head][value][key]. */
 int fg_vk_graph_gdn(fg_vk_graph *graph, fg_vk_shape shape, fg_vk_view qkv,
     fg_vk_view state, fg_vk_view gates, fg_vk_view output);
+int fg_vk_graph_gdn_gates(fg_vk_graph *graph, fg_vk_shape shape, fg_vk_view input,
+    fg_vk_view weights, fg_vk_view bias_scale, fg_vk_view output);
+int fg_vk_graph_gated_rms(fg_vk_graph *graph, fg_vk_shape shape, fg_vk_view input,
+    fg_vk_view weights, fg_vk_view gate, fg_vk_view output);
 int fg_vk_graph_submit(fg_vk_graph *graph);
 
 #endif

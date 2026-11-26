@@ -22,6 +22,8 @@ layout(set = 0, binding = 3, std430) readonly buffer Values { float v[]; };
 layout(set = 0, binding = 3, std430) buffer History { float history[]; };
 #elif defined(OP_GDN)
 layout(set = 0, binding = 3, std430) readonly buffer Gates { float gates[]; };
+#elif defined(OP_GDN_GATES) || defined(OP_GATED_RMS)
+layout(set = 0, binding = 3, std430) readonly buffer Parameters { float parameters[]; };
 #endif
 layout(push_constant) uniform Params {
     uint width; uint rows; uint batch; float epsilon;
@@ -81,12 +83,33 @@ float decode_weight(uint row, uint column) {
 
 void main() {
     uint lane = gl_LocalInvocationID.x;
-#if defined(OP_RMSNORM)
+#if defined(OP_RMSNORM) || defined(OP_GATED_RMS)
     uint offset = gl_WorkGroupID.x * p.width;
     precise float sum = 0.0;
     for (uint i = lane; i < p.width; i += 64) sum += x[offset + i] * x[offset + i];
     float scale = inversesqrt(sum_group(sum) / float(p.width) + p.epsilon);
-    for (uint i = lane; i < p.width; i += 64) y[offset + i] = x[offset + i] * scale * w[i];
+    for (uint i = lane; i < p.width; i += 64) {
+        float result = x[offset + i] * scale * w[i];
+#if defined(OP_GATED_RMS)
+        float gate = parameters[offset + i];
+        result *= gate / (1.0 + exp(-gate));
+#endif
+        y[offset + i] = result;
+    }
+#elif defined(OP_GDN_GATES)
+    uint head = gl_WorkGroupID.x;
+    precise float alpha_dot = 0.0, beta_dot = 0.0;
+    for (uint i = lane; i < p.width; i += 64u) {
+        alpha_dot += x[i] * w[head * p.width + i];
+        beta_dot += x[i] * w[(p.rows + head) * p.width + i];
+    }
+    float alpha = sum_group(alpha_dot) + parameters[head];
+    float beta = sum_group(beta_dot);
+    if (lane == 0) {
+        float softplus = alpha < -16.0 ? exp(alpha) : max(alpha, 0.0) + log(1.0 + exp(-abs(alpha)));
+        y[head] = parameters[p.rows + head] * softplus;
+        y[p.rows + head] = 1.0 / (1.0 + exp(-beta));
+    }
 #elif defined(OP_Q4_0) || defined(OP_Q8_0) || defined(OP_PQ2_0)
     uint row = gl_WorkGroupID.x;
     uint token = gl_WorkGroupID.y;

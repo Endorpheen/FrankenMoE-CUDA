@@ -312,7 +312,7 @@ The local GGUF inventory confirms distinct requirements.
 | Model | Packed weight types in the local GGUF | Vulkan status |
 | --- | --- | --- |
 | Qwen2.5-0.5B Q4_0 | Q4_0, Q8_0 | Experimental CLI and HTTP release |
-| Bonsai 2.5 27B | PQ2_0, Q4_0 for the MTP head | Real-weight FFN and full-shape recurrent component gates pass |
+| Bonsai 2.5 27B | PQ2_0, Q4_0 for the MTP head | Real-weight FFN and complete recurrent layer gates pass |
 | Apex 35B | Q4_K, Q6_K | Open. GDN, grouped MoE and oversubscribed expert placement |
 | Inkling-2-Mini | Q8_0, IQ4_NL, IQ4_XS | Open. Relative/sliding attention, recurrent depth loops and grouped MoE |
 
@@ -363,11 +363,39 @@ all pass. The largest errors against FP64 CPU calculations were
 exactly in the expected order, and resetting both state buffers
 reproduces the final state and output bytes on each device.
 
-This fixture does not yet execute the F32 decay and beta projections or
-gated output normalization on actual model weights. Connect those to
-the recurrent path, then complete Bonsai attention/KV, metadata loading
-and end-to-end generation before claiming model support.
 [Gated DeltaNet reference](https://arxiv.org/abs/2412.06464)
+
+### Complete real Bonsai recurrent layer
+
+The reusable Vulkan layer recorder now adds the F32 decay/beta
+projections, gated RMS normalization, grouped transform, output
+projection, both residuals and FFN. It records 20 dispatches per
+token and keeps weights and temporary activations device-local.
+The fixture initializes the convolution history and GDN state once,
+then compares output, history and state after each of four steps.
+
+The test uses the real layer-0 tensors and CPU-unpacked embeddings
+of tokens 1511, 17, 248046 and 1511. Independent NumPy output is
+checked with `atol=2e-5, rtol=5e-4`. Linux RTX 4070, Linux Lavapipe,
+and Windows x64 under Wine with Lavapipe pass. Maximum absolute
+errors are 5.73e-6 for layer output, 8.40e-5 for convolution history
+and 2.82e-5 for GDN state. The history and state match the combined
+absolute and relative acceptance gate.
+
+```bash
+tests=integration/goose-standalone/tests/vulkan
+out=build/vulkan-bringup/bonsai-full-layer
+mkdir -p "$out"
+OPENBLAS_NUM_THREADS=1 python3 "$tests/bonsai-layer-fixture.py" "$BONSAI_GGUF" "$out/layer0.bin"
+bash tools/build-goose-vulkan.sh "$out/linux" linux compute
+"$out/linux/frankenmoe-vulkan-compute-test" 0 0 \
+    build/vulkan-bringup/bonsai-first/ffn-layer0.bin "$out/layer0.bin"
+```
+
+Fixture SHA-256 `8b6243f89bc325fc141b74d9a2ba06dcf93074d696e6f125de51b2271be4b34f`.
+Complete Bonsai attention/KV, metadata loading and end-to-end generation
+before claiming model support. No throughput or peak model memory is
+inferred from the layer fixture.
 
 ## Model order
 
