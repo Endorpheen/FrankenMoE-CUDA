@@ -2,6 +2,7 @@
 #include "qwen2_unit.h"
 #include "tokenizer.h"
 #include "http.h"
+#include "bonsai-model.h"
 
 #include <inttypes.h>
 #include <stdio.h>
@@ -42,12 +43,13 @@ static char *read_prompt(const char *path, size_t *bytes) {
 int main(int argc, char **argv) {
     uint32_t device = FG_VK_AUTO_DEVICE, predict = 1;
     uint32_t port = 0, requests = 0, server_context = 0;
-    int cpu = 0, special = 0, tokenize_only = 0;
+    int cpu = 0, special = 0, tokenize_only = 0, bonsai = 0;
     const char *dump = NULL, *prompt_text = NULL, *prompt_file = NULL;
     if (argc < 3) goto usage;
     int start = 2;
     for (; start < argc && strcmp(argv[start], "--"); ++start) {
         if (!strcmp(argv[start], "--allow-cpu")) cpu = 1;
+        else if (!strcmp(argv[start], "--bonsai")) bonsai = 1;
         else if (!strcmp(argv[start], "--device-index") && start + 1 < argc) {
             if (!read_number(argv[++start], FG_VK_AUTO_DEVICE, &device)) goto usage;
         } else if (!strcmp(argv[start], "--n-predict") && start + 1 < argc) {
@@ -67,6 +69,7 @@ int main(int argc, char **argv) {
         else goto usage;
     }
     const int text_mode = prompt_text || prompt_file;
+    if (bonsai && (text_mode || port)) goto usage;
     if (port) {
         if (start != argc || text_mode || dump || special || tokenize_only || predict != 1 ||
             (cpu && device == FG_VK_AUTO_DEVICE)) goto usage;
@@ -79,6 +82,7 @@ int main(int argc, char **argv) {
         (tokenize_only && dump)) goto usage;
     const unsigned capacity = 32768 - (tokenize_only ? 0 : predict - 1);
     unsigned prompt = text_mode ? 0 : (unsigned)(argc - ++start);
+    const unsigned vocabulary = bonsai ? FG_BONSAI_VOCAB : FG_QWEN_VOCAB;
     if (prompt > capacity) goto usage;
 
     uint32_t *ids = malloc((text_mode ? capacity : prompt) * sizeof(*ids));
@@ -97,7 +101,7 @@ int main(int argc, char **argv) {
         if (ok) prompt = (unsigned)count;
         else fputs("Unable to tokenize the Qwen2 prompt within the context limit\n", stderr);
     } else {
-        for (unsigned i = 0; i < prompt && ok; ++i) ok = read_number(argv[start + i], FG_QWEN_VOCAB, &ids[i]);
+        for (unsigned i = 0; i < prompt && ok; ++i) ok = read_number(argv[start + i], vocabulary, &ids[i]);
     }
     if (!ok || tokenize_only) {
         for (unsigned i = 0; ok && i < prompt; ++i) printf("%u\n", ids[i]);
@@ -106,16 +110,22 @@ int main(int argc, char **argv) {
         return ok ? 0 : 1;
     }
 
-    float *logits = malloc(FG_QWEN_VOCAB * sizeof(*logits));
-    fg_vk_qwen2 *model = calloc(1, sizeof(*model));
-    ok = logits && model && fg_vk_qwen2_open(model, argv[1], prompt + predict - 1, device, cpu);
-    if (ok) fprintf(stderr, "Vulkan Qwen2 on %s, context=%u\n", model->vk.properties.deviceName, model->context);
-    for (unsigned i = 0; i < prompt && ok; ++i) ok = fg_vk_qwen2_step(model, ids[i], i + 1 == prompt ? logits : NULL);
+    float *logits = malloc(vocabulary * sizeof(*logits));
+    fg_vk_qwen2 *model = NULL;
+    fg_vk_bonsai *bonsai_model = NULL;
+    if (logits && bonsai) bonsai_model = fg_vk_bonsai_open(argv[1], prompt + predict - 1, device, cpu);
+    if (logits && !bonsai) model = calloc(1, sizeof(*model));
+    ok = bonsai_model || (model && fg_vk_qwen2_open(model, argv[1], prompt + predict - 1, device, cpu));
+    if (ok && model) fprintf(stderr, "Vulkan Qwen2 on %s, context=%u\n", model->vk.properties.deviceName, model->context);
+    for (unsigned i = 0; i < prompt && ok; ++i) {
+        float *output = i + 1 == prompt ? logits : NULL;
+        ok = bonsai_model ? fg_vk_bonsai_step(bonsai_model, ids[i], output) : fg_vk_qwen2_step(model, ids[i], output);
+    }
     if (ok && dump) {
         FILE *file = fopen(dump, "wb");
         ok = file != NULL;
         if (ok) {
-            ok = fwrite(logits, sizeof(*logits), FG_QWEN_VOCAB, file) == FG_QWEN_VOCAB;
+            ok = fwrite(logits, sizeof(*logits), vocabulary, file) == vocabulary;
             if (fclose(file)) ok = 0;
         }
     }
@@ -124,7 +134,7 @@ int main(int argc, char **argv) {
 #endif
     for (uint32_t t = 0; t < predict && ok; ++t) {
         uint32_t token;
-        ok = fg_vk_qwen2_choose(logits, NULL, &token);
+        ok = fg_vk_choose(logits, vocabulary, NULL, &token);
         if (!ok) break;
         if (text_mode) {
             if (fg_vk_tokenizer_is_eog(tokenizer, token)) break;
@@ -133,18 +143,23 @@ int main(int argc, char **argv) {
             ok = bytes >= 0 && fwrite(piece, 1, (size_t)bytes, stdout) == (size_t)bytes;
         } else {
             ok = printf("%u\n", token) > 0;
+            if (bonsai_model && fg_vk_bonsai_is_eog(bonsai_model, token)) break;
         }
-        if (ok && t + 1 < predict) ok = fg_vk_qwen2_step(model, token, logits);
+        if (ok && t + 1 < predict) {
+            ok = bonsai_model ? fg_vk_bonsai_step(bonsai_model, token, logits) : fg_vk_qwen2_step(model, token, logits);
+        }
     }
     if (ok && text_mode) ok = fputc('\n', stdout) != EOF;
     if (model) fg_vk_qwen2_close(model);
+    fg_vk_bonsai_close(bonsai_model);
     fg_vk_tokenizer_close(tokenizer);
     free(model); free(logits); free(ids);
-    if (!ok) fputs("Vulkan Qwen2 inference failed\n", stderr);
+    if (!ok) fputs("Vulkan inference failed\n", stderr);
     return ok ? 0 : 1;
 usage:
     fputs("Usage: frankenmoe-vulkan MODEL [--device-index N] [--allow-cpu] [--n-predict N] [--logits FILE]\n"
           "       -- TOKEN ... | --prompt TEXT | --prompt-file UTF8_FILE [--special] [--tokenize-only]\n"
+          "       --bonsai -- TOKEN ...\n"
           "       --serve PORT [--ctx-size N] [--max-requests N]\n", stderr);
     return 2;
 }

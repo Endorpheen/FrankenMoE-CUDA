@@ -16,5 +16,6 @@ int fg_vk_upload_open(fg_vk_upload *upload, fg_vk_device *vk, VkDeviceSize capac
 void fg_vk_upload_close(fg_vk_upload *upload);
 int fg_vk_upload_write(fg_vk_upload *upload, const fg_vk_buffer *dest,
     VkDeviceSize offset, void *data, size_t size);
+int fg_vk_upload_zero(fg_vk_upload *upload, const fg_vk_buffer *dest);
 
 #endif

@@ -1,7 +1,7 @@
 #define _FILE_OFFSET_BITS 64
 #define _POSIX_C_SOURCE 200809L
 #include "qwen2.h"
-#include "qwen2_unit.h"
+#include "gguf.h"
 #include "tokenizer.h"
 #include "upload.h"
 
@@ -15,47 +15,9 @@ enum { HIDDEN = 896, FFN = 4864, HEAD_DIM = 64, HEADS = 14, KV_HEADS = 2,
 enum { GGML_F32 = 0, GGML_Q4_0 = 2, GGML_Q8_0 = 8 };
 
 typedef struct {
-    sl_u8 data;
-    int64_t state[8], metadata[8 * 256], tensors[12 * 512], meta_slots[512], tensor_slots[1024];
-} fg_gguf;
-
-typedef struct {
     uint64_t file_offset, bytes;
     VkDeviceSize device_offset;
 } fg_weight;
-
-static sl_u8 key(const char *text) {
-    return (sl_u8){(uint8_t *)text, (int64_t)strlen(text)};
-}
-
-static sl_i64 words(int64_t *data, size_t count) {
-    return (sl_i64){data, (int64_t)count};
-}
-
-#define WORDS(array) words((array), sizeof(array) / sizeof(*(array)))
-
-static int64_t metadata(fg_gguf *file, const char *name) {
-    return gr_find_kv(file->data, WORDS(file->state), WORDS(file->metadata), WORDS(file->meta_slots), key(name));
-}
-
-static int metadata_is(fg_gguf *file, const char *name, const char *value) {
-    int64_t span[4];
-    return !gr_val_span(WORDS(file->state), WORDS(file->metadata), metadata(file, name), WORDS(span)) &&
-        span[0] == 8 && span[2] == (int64_t)strlen(value) &&
-        !memcmp(file->data.data + span[1], value, (size_t)span[2]);
-}
-
-static int64_t read_header(fg_gguf *file, FILE *model) {
-    if (fseeko(model, 0, SEEK_END)) return -1;
-    const int64_t size = ftello(model);
-    if (size < 24) return -1;
-    const size_t prefix = size > (64 << 20) ? 64 << 20 : (size_t)size;
-    file->data = (sl_u8){malloc(prefix), (int64_t)prefix};
-    if (!file->data.data || fseeko(model, 0, SEEK_SET) || fread(file->data.data, 1, prefix, model) != prefix ||
-        gr_parse(file->data, size, WORDS(file->state), WORDS(file->metadata), WORDS(file->tensors),
-                 WORDS(file->meta_slots), WORDS(file->tensor_slots))) return -1;
-    return size;
-}
 
 extern fg_vk_tokenizer *fg_vk_tokenizer_from_gguf(sl_u8 data, sl_i64 state, sl_i64 meta,
     int64_t tokens, int64_t merges, int64_t types, int64_t eos);
@@ -69,14 +31,14 @@ fg_vk_tokenizer *fg_vk_qwen2_tokenizer_open(const char *path) {
     fg_gguf file = {0};
     fg_vk_tokenizer *tokenizer = NULL;
     int64_t eos;
-    if (read_header(&file, model) >= 0 && metadata_is(&file, "general.architecture", "qwen2") &&
-        metadata_is(&file, "tokenizer.ggml.model", "gpt2") && metadata_is(&file, "tokenizer.ggml.pre", "qwen2") &&
-        !gr_meta_int(file.data, WORDS(file.state), WORDS(file.metadata),
-                     metadata(&file, "tokenizer.ggml.eos_token_id"), words(&eos, 1)) &&
+    if (fg_gguf_read_header(&file, model) >= 0 && fg_gguf_metadata_is(&file, "general.architecture", "qwen2") &&
+        fg_gguf_metadata_is(&file, "tokenizer.ggml.model", "gpt2") && fg_gguf_metadata_is(&file, "tokenizer.ggml.pre", "qwen2") &&
+        !gr_meta_int(file.data, FG_GGUF_WORDS(file.state), FG_GGUF_WORDS(file.metadata),
+                     fg_gguf_metadata(&file, "tokenizer.ggml.eos_token_id"), fg_gguf_words(&eos, 1)) &&
         eos >= 0 && eos < FG_QWEN_VOCAB) {
-        tokenizer = fg_vk_tokenizer_from_gguf(file.data, WORDS(file.state), WORDS(file.metadata),
-            metadata(&file, "tokenizer.ggml.tokens"), metadata(&file, "tokenizer.ggml.merges"),
-            metadata(&file, "tokenizer.ggml.token_type"), eos);
+        tokenizer = fg_vk_tokenizer_from_gguf(file.data, FG_GGUF_WORDS(file.state), FG_GGUF_WORDS(file.metadata),
+            fg_gguf_metadata(&file, "tokenizer.ggml.tokens"), fg_gguf_metadata(&file, "tokenizer.ggml.merges"),
+            fg_gguf_metadata(&file, "tokenizer.ggml.token_type"), eos);
     }
     free(file.data.data);
     fclose(model);
@@ -84,7 +46,7 @@ fg_vk_tokenizer *fg_vk_qwen2_tokenizer_open(const char *path) {
 }
 
 static int validate_model(fg_gguf *file, fg_vk_qwen2 *model) {
-    if (!metadata_is(file, "general.architecture", "qwen2")) return 0;
+    if (!fg_gguf_metadata_is(file, "general.architecture", "qwen2")) return 0;
     const struct { const char *name; int64_t expected; } dims[] = {
         {"qwen2.block_count", FG_QWEN_LAYERS}, {"qwen2.embedding_length", HIDDEN},
         {"qwen2.feed_forward_length", FFN}, {"qwen2.attention.head_count", HEADS},
@@ -92,17 +54,17 @@ static int validate_model(fg_gguf *file, fg_vk_qwen2 *model) {
     };
     for (size_t i = 0; i < sizeof(dims) / sizeof(*dims); ++i) {
         int64_t value;
-        if (gr_meta_int(file->data, WORDS(file->state), WORDS(file->metadata),
-            metadata(file, dims[i].name), words(&value, 1)) || value != dims[i].expected) return 0;
+        if (gr_meta_int(file->data, FG_GGUF_WORDS(file->state), FG_GGUF_WORDS(file->metadata),
+            fg_gguf_metadata(file, dims[i].name), fg_gguf_words(&value, 1)) || value != dims[i].expected) return 0;
     }
     int64_t maximum, eps, theta;
-    if (gr_meta_int(file->data, WORDS(file->state), WORDS(file->metadata),
-            metadata(file, "qwen2.context_length"), words(&maximum, 1)) ||
+    if (gr_meta_int(file->data, FG_GGUF_WORDS(file->state), FG_GGUF_WORDS(file->metadata),
+            fg_gguf_metadata(file, "qwen2.context_length"), fg_gguf_words(&maximum, 1)) ||
         maximum < model->context ||
-        gr_meta_f32_bits(file->data, WORDS(file->state), WORDS(file->metadata),
-            metadata(file, "qwen2.attention.layer_norm_rms_epsilon"), words(&eps, 1)) ||
-        gr_meta_f32_bits(file->data, WORDS(file->state), WORDS(file->metadata),
-            metadata(file, "qwen2.rope.freq_base"), words(&theta, 1))) return 0;
+        gr_meta_f32_bits(file->data, FG_GGUF_WORDS(file->state), FG_GGUF_WORDS(file->metadata),
+            fg_gguf_metadata(file, "qwen2.attention.layer_norm_rms_epsilon"), fg_gguf_words(&eps, 1)) ||
+        gr_meta_f32_bits(file->data, FG_GGUF_WORDS(file->state), FG_GGUF_WORDS(file->metadata),
+            fg_gguf_metadata(file, "qwen2.rope.freq_base"), fg_gguf_words(&theta, 1))) return 0;
     const uint32_t eps_bits = (uint32_t)eps, theta_bits = (uint32_t)theta;
     memcpy(&model->epsilon, &eps_bits, sizeof(eps_bits));
     memcpy(&model->theta, &theta_bits, sizeof(theta_bits));
@@ -116,9 +78,9 @@ static VkDeviceSize align_size(VkDeviceSize v, VkDeviceSize alignment) {
 static int bind_weight(fg_gguf *file, const fg_vk_device *vk, fg_weight *weight, VkDeviceSize *end,
     const char *name, int64_t type, int64_t width, int64_t rows, uint64_t file_size) {
     int64_t info[9];
-    const int64_t index = gr_find_tensor(file->data, WORDS(file->state), WORDS(file->tensors),
-        WORDS(file->tensor_slots), key(name));
-    if (gr_tensor_info(WORDS(file->state), WORDS(file->tensors), index, WORDS(info)) ||
+    const int64_t index = gr_find_tensor(file->data, FG_GGUF_WORDS(file->state), FG_GGUF_WORDS(file->tensors),
+        FG_GGUF_WORDS(file->tensor_slots), fg_gguf_key(name));
+    if (gr_tensor_info(FG_GGUF_WORDS(file->state), FG_GGUF_WORDS(file->tensors), index, FG_GGUF_WORDS(info)) ||
         info[0] != type || info[1] != (rows == 1 ? 1 : 2) ||
         info[2] != width || info[3] != rows || info[7] <= 0 || info[8] < 0 ||
         (uint64_t)info[8] > file_size || (uint64_t)info[7] > file_size - (uint64_t)info[8]) {
@@ -171,17 +133,7 @@ static int upload_model(FILE *file, fg_vk_qwen2 *model, const fg_weight *weights
     int ok = chunk && fg_vk_upload_open(&upload, &model->vk, STAGING_BYTES);
     for (unsigned i = 0; ok && i < count; ++i) {
         const fg_weight *w = &weights[i];
-        ok = fseeko(file, w->file_offset, SEEK_SET) == 0;
-        for (uint64_t at = 0; ok && at < w->bytes;) {
-            const size_t bytes = w->bytes - at > STAGING_BYTES ? STAGING_BYTES : (size_t)(w->bytes - at);
-            const size_t padded = (size_t)align_size(bytes, 4);
-            ok = fread(chunk, 1, bytes, file) == bytes;
-            if (ok) {
-                memset(chunk + bytes, 0, padded - bytes);
-                ok = fg_vk_upload_write(&upload, &model->weights, w->device_offset + at, chunk, padded);
-            }
-            at += bytes;
-        }
+        ok = fg_gguf_upload(file, &upload, &model->weights, w->device_offset, w->file_offset, w->bytes, chunk);
     }
     fg_vk_upload_close(&upload);
     free(chunk);
@@ -236,7 +188,7 @@ int fg_vk_qwen2_open(fg_vk_qwen2 *m, const char *path, uint32_t context, uint32_
         return 0;
     }
     fg_gguf file = {0};
-    const int64_t file_size = read_header(&file, model);
+    const int64_t file_size = fg_gguf_read_header(&file, model);
     int ok = file_size >= 0 && validate_model(&file, m);
     if (!ok) fputs("Qwen2 Vulkan: invalid or incompatible GGUF metadata\n", stderr);
     VkDeviceSize size = 0;
@@ -363,9 +315,9 @@ int fg_vk_qwen2_step(fg_vk_qwen2 *m, uint32_t id, float *logits) {
     return 1;
 }
 
-int fg_vk_qwen2_choose(const float *logits, const fg_vk_tokenizer *ignore_eog, uint32_t *chosen) {
+int fg_vk_choose(const float *logits, uint32_t vocabulary, const fg_vk_tokenizer *ignore_eog, uint32_t *chosen) {
     uint32_t best = UINT32_MAX;
-    for (uint32_t i = 0; i < FG_QWEN_VOCAB; ++i) {
+    for (uint32_t i = 0; i < vocabulary; ++i) {
         if (!isfinite(logits[i])) return 0;
         if ((best == UINT32_MAX || logits[i] > logits[best]) && !fg_vk_tokenizer_is_eog(ignore_eog, i)) best = i;
     }

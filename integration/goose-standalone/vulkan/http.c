@@ -61,7 +61,7 @@ int64_t fg_vk_http_next(uint64_t owner, uint8_t ignore_eog, sl_u8 text, sl_i64 i
     if (id.len < 1 || text.len < 0 ||
         (h->previous != UINT32_MAX && !fg_vk_qwen2_step(&h->model, h->previous, h->logits))) return -1;
     uint32_t token;
-    if (!fg_vk_qwen2_choose(h->logits, ignore_eog ? h->tokenizer : NULL, &token)) return -1;
+    if (!fg_vk_choose(h->logits, FG_QWEN_VOCAB, ignore_eog ? h->tokenizer : NULL, &token)) return -1;
     if (!ignore_eog && fg_vk_tokenizer_is_eog(h->tokenizer, token)) return -2;
     const int n = fg_vk_tokenizer_piece(h->tokenizer, token, (char *)text.data, (size_t)text.len);
     if (n < 0 || n > text.len) return -1;

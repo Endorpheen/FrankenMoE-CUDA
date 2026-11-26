@@ -66,11 +66,16 @@ if text.count(anchor) != 1:
 output.write_text(text.replace(anchor, "const PT_MARK: i64 = 0;"))
 PY
     python3 "$root/tools/compose-vulkan-http.py" "$root" "$out/http_helpers.goose"
-    cat "$root/goose/misc/gguf-headers.goose" "$root/goose/model/"{gguf-tensors,gguf-reader}.goose \
+    bootstrap="$root/experiments/EXP-2026-11-25-1973-bonsai-pq2-bootstrap/source"
+    patch -s "$root/goose/model/gguf-tensors.goose" -o "$out/gguf-tensors-vulkan.goose" < "$bootstrap/gguf-tensors.goose.patch"
+    sed -n '/^fn mr_name(/,/^fn mr_moe_name(/{ /^fn mr_moe_name(/d;p; }' \
+        "$root/goose/model/qwen35-model-loader.goose" > "$out/bonsai-model-names.goose"
+    cat "$root/goose/misc/gguf-headers.goose" "$out/gguf-tensors-vulkan.goose" "$root/goose/model/gguf-reader.goose" \
+        "$out/bonsai-model-names.goose" "$bootstrap/bonsai-layout.goose" \
         "$root/goose/misc/"{unicode-tables,unicode-text}.goose "$out/pretokenizer-qwen2.goose" \
         "$root/goose/model/"{bpe-tokenize,bpe-detokenize,tokenizer-engine}.goose \
         "$root/goose/server/"{http-request,http-listener,route-table,jsonparse}.goose "$out/http_helpers.goose" \
-        "$source_dir/"{qwen2-step,http}.goose > "$out/qwen2_unit.goose"
+        "$source_dir/"{qwen2-step,bonsai-step,http}.goose > "$out/qwen2_unit.goose"
     "$goose" --standalone -o "$out/qwen2_unit.c" --header "$out/qwen2_unit.h" "$out/qwen2_unit.goose"
     "$cc" -std=c11 -O2 -w -ffunction-sections -fdata-sections -c "$out/qwen2_unit.c" -o "$out/qwen2_unit.o"
     standalone="$root/integration/goose-standalone"
@@ -81,7 +86,7 @@ PY
         socket=("$standalone/libc-forwards.c")
     fi
     "$cc" "${flags[@]}" -isystem "$out/vulkan-headers" -I"$out" -Wl,--gc-sections \
-        "$source_dir/"{loader,device,memory,queue,graph,upload,qwen2,tokenizer,http,infer-main}.c "$out/qwen2_unit.o" \
+        "$source_dir/"{loader,device,memory,queue,graph,upload,gguf,qwen2,bonsai-layer,bonsai-model,tokenizer,http,infer-main}.c "$out/qwen2_unit.o" \
         "${socket[@]}" "$standalone/json-strtod-provider.c" \
         "${libs[@]}" -lm -pthread -o "$out/frankenmoe-vulkan$suffix"
 fi

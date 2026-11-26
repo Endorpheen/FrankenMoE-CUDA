@@ -312,7 +312,7 @@ The local GGUF inventory confirms distinct requirements.
 | Model | Packed weight types in the local GGUF | Vulkan status |
 | --- | --- | --- |
 | Qwen2.5-0.5B Q4_0 | Q4_0, Q8_0 | Experimental CLI and HTTP release |
-| Bonsai 2.5 27B | PQ2_0, Q4_0 for the MTP head | Recurrent and attention layer fixtures run with real weights. Independent Q4 cache differences remain to be checked in generation. |
+| Bonsai 2.5 27B | PQ2_0, Q4_0 for the MTP head | Experimental raw-ID CLI with MTP off. Short generation passes on Linux RTX 4070 and Windows EXE under Wine with RTX 4070. |
 | Apex 35B | Q4_K, Q6_K | Open. GDN, grouped MoE and oversubscribed expert placement |
 | Inkling-2-Mini | Q8_0, IQ4_NL, IQ4_XS | Open. Relative/sliding attention, recurrent depth loops and grouped MoE |
 
@@ -432,8 +432,49 @@ bash tools/build-goose-vulkan.sh "$out/linux" linux compute
 
 Fixture SHA-256 `454994ab8ec7f8f55e6f6fc9ecc74016fd39e735c51c8433145d633bc7a9e229`.
 The rebuilt Qwen2.5 CLI still matches the four saved IDs on RTX 4070.
-Next, connect the layer recorders to the complete Bonsai GGUF loader,
-embedding and vocabulary projections, then verify end-to-end output.
+
+### Complete Bonsai raw-ID Vulkan inference
+
+The Vulkan unit reuses the Goose Bonsai tensor binder and GGUF reader.
+The loader maps all 64 trunk layers, keeps weights device-local and
+holds recurrence state and Q4 KV in a device-local arena. One weight
+allocation per layer keeps individual allocations bounded. Embedding
+and output weights use aligned storage views, and logits are written
+in stripes below the core workgroup and descriptor limits. The same
+Goose unit orders the layer execution. The raw-ID CLI reads GGUF EOG
+metadata and emits the terminating ID before stopping, as the CUDA
+reference does. The MTP tensors are validated with the original layout
+but are not uploaded or used.
+
+The local GGUF SHA-256 is
+`ededc9fc0a8a6a8dd30914d107b2d2ce7674d789f1d05a1a481f240609aa6c23`.
+The pinned EXP-2105 CUDA HTTP reference, Q4_0 KV, context 32,
+batch/ubatch 64, greedy, MTP off, yields the two frozen outputs under
+`integration/goose-standalone/tests/vulkan/bonsai-model.json`.
+On Linux RTX 4070, Vulkan matches both, stopping at `17, 248046` on
+the first fixture and emitting `315, 9625, 374, 315` on the second.
+Vulkan uses the shortest capacity for each CLI request, seven and
+eight positions. Windows x64 under Wine with NVIDIA's Vulkan ICD
+matches the EOG fixture on RTX 4070. The Vulkan Qwen2.5 control still
+matches four out of four reference IDs on RTX 4070.
+
+```bash
+tests=integration/goose-standalone/tests/vulkan
+out=build/vulkan-bringup/bonsai-model-first
+bash tools/build-goose-vulkan.sh "$out/linux" linux qwen2
+bash tools/build-goose-vulkan.sh "$out/windows" windows qwen2
+python3 "$tests/bonsai-model-smoke.py" "$out/linux/frankenmoe-vulkan" \
+    "$BONSAI_GGUF" --device-index 0
+```
+
+Tested executable SHA-256 values:
+
+- Linux `9cefe4f8d805e86860595c473009f56c16720de6784e3c043a21dabba720eec4`.
+- Windows `a4f7b35b1778e2e92eeaf5168726f61d00e0d0a292ab99c853cdce56e181d668`.
+
+These are short correctness checks. Bonsai text and HTTP support,
+long-sequence numerical checks, peak memory, throughput, MTP and native
+AMD qualification remain open. Apex and Inkling Vulkan remain open.
 
 ## Model order
 
