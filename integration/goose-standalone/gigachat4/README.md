@@ -452,3 +452,21 @@ eight reference IDs. Post-request GPU memory was 8912–8913 MiB off
 and 8904–8905 MiB on, with no swap-out growth. Default-enabled
 prefill and decode were 279.02/12.73, with matching IDs, 8912 MiB
 GPU memory and no swap-out growth.
+
+### EXP-2026-11-27-2154 — Use Tensor Cores for tiled GigaChat4 MLA QK
+
+For eligible GigaChat4 prefill shapes on SM80-class CUDA images, use
+FP16 inputs to the existing m16n8k16 operation for QK. Keep tile scores
+in 4 KiB of block shared memory. DSA masking, the FP32 weighted value
+recurrence and the existing partial-state merge remain in the tile
+path. Set GOOSE_GIGA_MLA_MMA=0 to use the previous paired MLA tile.
+
+On 2176/8 with batch and ubatch 4096, off/on prefill measured
+275.54/300.16 and 276.56/299.80 tokens/s. Decode measured
+11.06/11.82 and 12.54/11.94 tokens/s. All four responses matched all
+eight reference IDs. Post-request GPU memory was 8904–8905 MiB and
+no run grew swap. The default-enabled build measured 299.98/11.52,
+matched all eight reference IDs and used 8898 MiB after the request
+with no swap-out growth. A second 512/32 input matched all 32 IDs
+against the same binary without MMA. The 4352/2 diagnostic also
+matched both control IDs. No 32K/512 qualification is claimed.

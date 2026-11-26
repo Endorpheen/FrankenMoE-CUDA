@@ -402,3 +402,83 @@ export fn giga_device_mask_scatter(mask: u64, picks: u64, out: u64,
     let at = (index / count + prefix) * cells + key;
     dsa_mask_store(out, at, attn_ld_u16(mask, (2 * at) as u64));
 }
+
+struct MlaMma4 { a: f32, b: f32, c: f32, d: f32 }
+extern "fg_mla_mma_qpair" fn mla_mma_qpair(base: u64) -> u32;
+extern "fg_mla_mma_kpair" fn mla_mma_kpair(base: u64) -> u32;
+extern "fg_mla_mma_f16" fn mla_mma_f16(acc: MlaMma4, a0: u32, a1: u32, a2: u32,
+    a3: u32, b0: u32, b1: u32) -> MlaMma4;
+
+extern "fg_mla_score_put" fn mla_score_put(base: u64, index: i64, v: f32);
+extern "fg_mla_score_get" fn mla_score_get(base: u64, index: i64) -> f32;
+extern "fg_mla_score_sync" fn mla_score_sync();
+
+export fn giga_mla_mma_tile(q: u64, k: u64, v: u64, mask: u64, scratch: u64, cfg: u64, shared: u64,
+    scale: f32, task: i64, query: i64, tile: i64, warp: i64, lane: i64) {
+    let positions = attn_word(cfg, 2);
+    let col = query % positions;
+    let head = query / positions;
+    let qstride = attn_word(cfg, 7);
+    let kstride = attn_word(cfg, 9);
+    let vstride = attn_word(cfg, 11);
+    let cells = attn_word(cfg, 6);
+    let first = tile * 256;
+    let qbase = q + ((head * attn_word(cfg, 8) + col * qstride) as u64);
+    let mask_row = mask + (((col + warp) * attn_word(cfg, 13)) as u64);
+    let group = lane / 4;
+    let thread = lane % 4;
+    let neg_inf = attn_neg_inf();
+    var maximum = neg_inf;
+    var mass: f32 = 0.0;
+    var sum: f32[16] = [0.0; 16];
+
+    for phase in 2 {
+        let start = first + phase * 128;
+        if start >= cells { break; }
+        let block_key = start + 16 * warp;
+        if block_key < cells {
+            let k0 = k + ((block_key + group) * kstride) as u64;
+            let k1 = k0 + (8 * kstride) as u64;
+            let qr = qbase + (group * qstride) as u64;
+            var acc = MlaMma4 {0.0, 0.0, 0.0, 0.0};
+            for part in 36 {
+                let c = 16 * part + 2 * thread;
+                let kb = (2 * c) as u64;
+                let qb = (4 * c) as u64;
+                acc = mla_mma_f16(acc, mla_mma_kpair(k0 + kb), mla_mma_kpair(k1 + kb),
+                    mla_mma_kpair(k0 + kb + 16), mla_mma_kpair(k1 + kb + 16),
+                    mla_mma_qpair(qr + qb), mla_mma_qpair(qr + qb + 32));
+            }
+            let at = (2 * thread) * 128 + 16 * warp + group;
+            mla_score_put(shared, at, acc.a);
+            mla_score_put(shared, at + 128, acc.b);
+            mla_score_put(shared, at + 8, acc.c);
+            mla_score_put(shared, at + 136, acc.d);
+        }
+        mla_score_sync();
+        let count = if cells - start < 128 { cells - start } else { 128 };
+        for j in count {
+            let row = start + j;
+            let bias = if mask != 0 { attn_half(attn_ld_u16(mask_row, (2 * row) as u64)) } else { 0.0 };
+            if bias == neg_inf { continue; }
+            let score = mla_score_get(shared, warp * 128 + j) * scale + bias;
+            let next = if score > maximum { score } else { maximum };
+            let prev_weight = attn_exp(maximum - next);
+            let weight = attn_exp(score - next);
+            mass = attn_fma(mass, prev_weight, weight);
+            maximum = next;
+            let vp = v + ((row * vstride) as u64);
+            for b in 16 {
+                let value = mla_half_value(vp, b, lane);
+                sum[b] = attn_fma(weight, value, sum[b] * prev_weight);
+            }
+        }
+        mla_score_sync();
+    }
+
+    let result = scratch + ((4 * (((task + warp) * attn_word(cfg, 17) + tile) * 514)) as u64);
+    if lane == 0 { attn_store(result, maximum); attn_store(result + 4, mass); }
+    for b in 16 {
+        attn_store(result + (4 * (2 + b * 32 + lane)) as u64, sum[b]);
+    }
+}

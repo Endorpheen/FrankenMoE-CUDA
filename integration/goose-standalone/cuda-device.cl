@@ -216,7 +216,50 @@ static void fg_dsa_store_u16(uint64_t base, int64_t index, uint32_t value) {
 static int32_t fg_dsa_load_i32(uint64_t base, int64_t index) {
     return ((__global const int32_t *)base)[index];
 }
+static uint32_t fg_mla_mma_kpair(uint64_t base) {
+    return *(__global const uint32_t *)base;
+}
+static uint32_t fg_mla_mma_qpair(uint64_t base) {
+    const __global float *p = (const __global float *)base;
+    uint16_t a, b;
+    __asm__("cvt.rn.f16.f32 %0, %1;" : "=h"(a) : "f"(p[0]));
+    __asm__("cvt.rn.f16.f32 %0, %1;" : "=h"(b) : "f"(p[1]));
+    return (uint32_t)a | ((uint32_t)b << 16);
+}
+#ifdef GOOSE_CUDA_MMQ_IMAGE
+#define fg_mla_mma_f16(acc,a0,a1,a2,a3,b0,b1) ({ \
+    __typeof__(acc) d = (acc); \
+    __asm__ volatile("mma.sync.aligned.m16n8k16.row.col.f32.f16.f16.f32 " \
+        "{%0,%1,%2,%3}, {%4,%5,%6,%7}, {%8,%9}, {%0,%1,%2,%3};" \
+        : "+f"(d.a_g), "+f"(d.b_g), "+f"(d.c_g), "+f"(d.d_g) \
+        : "r"(a0), "r"(a1), "r"(a2), "r"(a3), "r"(b0), "r"(b1)); d; })
+#else
+#define fg_mla_mma_f16(acc,a0,a1,a2,a3,b0,b1) (acc)
+#endif
+static void fg_mla_score_put(uint64_t base, int64_t index, float value) {
+    ((__local float *)base)[index] = value;
+}
+static float fg_mla_score_get(uint64_t base, int64_t index) {
+    return ((__local const float *)base)[index];
+}
+static void fg_mla_score_sync(void) {
+    __asm__ volatile("bar.sync 0;" ::: "memory");
+}
 #include "q4-attention-device.h"
+__kernel void goose_giga_mla_mma_tile(__global const float *q, __global const uint16_t *k,
+    __global const uint16_t *v, __global const uint16_t *mask, __global float *scratch,
+    __global int64_t *cfg, float scale, int32_t query_base) {
+    __local float scores[1024] __attribute__((aligned(16)));
+    uint32_t task, tile, thread;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(task));
+    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(tile));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
+    giga_mla_mma_tile_g((uint64_t)q,(uint64_t)k,(uint64_t)v,(uint64_t)mask,
+        (uint64_t)scratch,(uint64_t)cfg,(uint64_t)scores,scale,8*task,
+        (int64_t)query_base+8*task,tile,thread/32,thread%32);
+}
+
+#undef fg_mla_mma_f16
 static int64_t fg_dsa_mask_index(void) {
     uint32_t block, lane;
     __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(block));
