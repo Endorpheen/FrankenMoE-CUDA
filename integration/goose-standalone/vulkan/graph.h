@@ -10,7 +10,8 @@ typedef enum {
     FG_VK_CAUSAL_CONV, FG_VK_QK_NORM, FG_VK_GDN, FG_VK_GDN_GATES, FG_VK_GATED_RMS,
     FG_VK_HEAD_SLICE, FG_VK_SIGMOID_GATE, FG_VK_KV_STORE_Q4, FG_VK_ATTENTION_Q4,
     FG_VK_Q4_K, FG_VK_Q6_K, FG_VK_GATHER_Q4_K, FG_VK_IQ4_NL, FG_VK_IQ4_XS,
-    FG_VK_GATHER_Q8_0, FG_VK_F32_PROJECT, FG_VK_MOE_ROUTE, FG_VK_MOE_WEIGHTED, FG_VK_OP_COUNT
+    FG_VK_GATHER_Q8_0, FG_VK_F32_PROJECT, FG_VK_MOE_ROUTE, FG_VK_MOE_WEIGHTED,
+    FG_VK_APEX_QK_NORM, FG_VK_GDN_APPLY, FG_VK_SIGMOID_GATE_SCALAR, FG_VK_KV_FWHT, FG_VK_OP_COUNT
 } fg_vk_op;
 
 typedef struct {
@@ -68,6 +69,8 @@ int fg_vk_graph_gdn(fg_vk_graph *graph, fg_vk_shape shape, fg_vk_view qkv,
     fg_vk_view state, fg_vk_view gates, fg_vk_view output);
 int fg_vk_graph_gdn_gates(fg_vk_graph *graph, fg_vk_shape shape, fg_vk_view input,
     fg_vk_view weights, fg_vk_view bias_scale, fg_vk_view output);
+int fg_vk_graph_gdn_apply(fg_vk_graph *graph, uint32_t heads, fg_vk_view alpha,
+    fg_vk_view beta, fg_vk_view bias_scale, fg_vk_view output);
 int fg_vk_graph_gated_rms(fg_vk_graph *graph, fg_vk_shape shape, fg_vk_view input,
     fg_vk_view weights, fg_vk_view gate, fg_vk_view output);
 int fg_vk_graph_submit(fg_vk_graph *graph);

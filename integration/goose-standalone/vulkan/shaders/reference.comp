@@ -40,7 +40,7 @@ layout(set = 0, binding = 3, std430) readonly buffer Values { uint packed_values
 layout(set = 0, binding = 3, std430) buffer History { float history[]; };
 #elif defined(OP_GDN)
 layout(set = 0, binding = 3, std430) readonly buffer Gates { float gates[]; };
-#elif defined(OP_GDN_GATES) || defined(OP_GATED_RMS)
+#elif defined(OP_GDN_GATES) || defined(OP_GDN_APPLY) || defined(OP_GATED_RMS)
 layout(set = 0, binding = 3, std430) readonly buffer Parameters { float parameters[]; };
 #endif
 layout(push_constant) uniform Params {
@@ -56,6 +56,8 @@ shared float picked[64];
 #endif
 #if defined(OP_FWHT)
 shared float tile[1024];
+#elif defined(OP_KV_FWHT)
+shared float tile[256];
 #endif
 
 float sum_group(float value) {
@@ -198,6 +200,14 @@ void main() {
         y[head] = parameters[p.rows + head] * softplus;
         y[p.rows + head] = 1.0 / (1.0 + exp(-beta));
     }
+#elif defined(OP_GDN_APPLY)
+    uint head = gl_GlobalInvocationID.x;
+    if (head < p.width) {
+        float alpha = x[head] + parameters[head];
+        float softplus = alpha < -16.0 ? exp(alpha) : max(alpha, 0.0) + log(1.0 + exp(-abs(alpha)));
+        y[head] = parameters[p.width + head] * softplus;
+        y[p.width + head] = 1.0 / (1.0 + exp(-w[head]));
+    }
 #elif defined(QUANT_PROJECT) || defined(OP_F32_PROJECT)
     uint row = gl_WorkGroupID.x;
     uint token = gl_WorkGroupID.y;
@@ -297,6 +307,21 @@ void main() {
     for (uint i = lane; i < p.width; i += 64u) {
         y[token * p.width + i] = id >= p.position && row < p.rows ? decode_weight(row, i) : 0.0;
     }
+#elif defined(OP_KV_FWHT)
+    uint base = gl_WorkGroupID.y * p.width + gl_WorkGroupID.x * p.rows;
+    float scale = p.rows == 64u ? 0.125 : 0.0625;
+    for (uint i = lane; i < p.rows; i += 64u) tile[i] = x[base + i] * scale;
+    barrier();
+    for (uint span = 1u; span < p.rows; span *= 2u) {
+        for (uint i = lane; i < p.rows / 2u; i += 64u) {
+            uint a = (i / span) * (2u * span) + i % span;
+            float left = tile[a], right = tile[a + span];
+            tile[a] = left + right;
+            tile[a + span] = left - right;
+        }
+        barrier();
+    }
+    for (uint i = lane; i < p.rows; i += 64u) y[base + i] = tile[i];
 #elif defined(OP_FWHT)
     uint base = gl_WorkGroupID.x * 1024u, token = gl_WorkGroupID.y * p.width;
     bool inverse = p.position != 0u;
@@ -336,13 +361,18 @@ void main() {
         history[p.width + c] = d;
         history[2u * p.width + c] = sample_value;
     }
-#elif defined(OP_QK_NORM)
+#elif defined(OP_QK_NORM) || defined(OP_APEX_QK_NORM)
     uint head = gl_WorkGroupID.x;
     uint row = head * p.width;
     if (head < 2u * p.kv_heads) {
         precise float square = 0.0;
         for (uint i = lane; i < p.width; i += 64u) square += x[row + i] * x[row + i];
-        float inv = 1.0 / max(sqrt(sum_group(square)), p.epsilon);
+        float sum = sum_group(square);
+#if defined(OP_APEX_QK_NORM)
+        float inv = inversesqrt(sum / float(p.width) + p.epsilon / float(p.width)) * inversesqrt(float(p.width));
+#else
+        float inv = 1.0 / max(sqrt(sum), p.epsilon);
+#endif
         for (uint i = lane; i < p.width; i += 64u) y[row + i] = x[row + i] * inv;
     } else {
         for (uint i = lane; i < p.width; i += 64u) y[row + i] = x[row + i];
@@ -373,9 +403,14 @@ void main() {
     uint other = index;
 #endif
     if (index < p.width * p.batch) y[index] = x[index] + w[other];
-#elif defined(OP_SIGMOID_GATE)
+#elif defined(OP_SIGMOID_GATE) || defined(OP_SIGMOID_GATE_SCALAR)
     uint index = gl_GlobalInvocationID.x;
-    if (index < p.width * p.batch) y[index] = x[index] / (1.0 + exp(-w[index]));
+#if defined(OP_SIGMOID_GATE_SCALAR)
+    uint gate = index / p.width;
+#else
+    uint gate = index;
+#endif
+    if (index < p.width * p.batch) y[index] = x[index] / (1.0 + exp(-w[gate]));
 #elif defined(OP_HEAD_SLICE)
     uint i = gl_GlobalInvocationID.x;
     if (i < p.rows * p.width * p.batch) {

@@ -39,7 +39,7 @@ if [[ "$mode" != probe ]]; then
     glslang=${GLSLANG_VALIDATOR:-glslangValidator}
     spirv_val=${SPIRV_VAL:-spirv-val}
     suffix=${executable#frankenmoe-vulkan-probe}
-    for shader in rmsnorm q4_0 swiglu rope kv_store attention q8_0 gather_q4_0 bias add pq2_0 gather_pq2_0 fwht causal_conv qk_norm gdn gdn_gates gated_rms head_slice sigmoid_gate kv_store_q4 attention_q4 q4_k q6_k gather_q4_k iq4_nl iq4_xs gather_q8_0 f32_project moe_route moe_weighted; do
+    for shader in rmsnorm q4_0 swiglu rope kv_store attention q8_0 gather_q4_0 bias add pq2_0 gather_pq2_0 fwht causal_conv qk_norm gdn gdn_gates gated_rms head_slice sigmoid_gate kv_store_q4 attention_q4 q4_k q6_k gather_q4_k iq4_nl iq4_xs gather_q8_0 f32_project moe_route moe_weighted apex_qk_norm gdn_apply sigmoid_gate_scalar kv_fwht; do
         "$glslang" -V --target-env vulkan1.2 -S comp "-DOP_${shader^^}" \
             "$source_dir/shaders/reference.comp" -o "$out/$shader.spv"
         "$spirv_val" --target-env vulkan1.2 "$out/$shader.spv"
@@ -78,7 +78,7 @@ PY
         "$root/goose/misc/"{unicode-tables,unicode-text}.goose "$out/pretokenizer-vulkan.goose" \
         "$root/goose/model/"{bpe-tokenize,bpe-detokenize,tokenizer-engine}.goose \
         "$root/goose/server/"{http-request,http-listener,route-table,jsonparse}.goose "$out/http_helpers.goose" \
-        "$source_dir/"{qwen2-step,bonsai-step,http}.goose > "$out/qwen2_unit.goose"
+        "$source_dir/"{qwen2-step,bonsai-step,apex-step,http}.goose > "$out/qwen2_unit.goose"
     "$goose" --standalone -o "$out/qwen2_unit.c" --header "$out/qwen2_unit.h" "$out/qwen2_unit.goose"
     "$cc" -std=c11 -O2 -w -ffunction-sections -fdata-sections -c "$out/qwen2_unit.c" -o "$out/qwen2_unit.o"
     standalone="$root/integration/goose-standalone"
@@ -89,7 +89,7 @@ PY
         socket=("$standalone/libc-forwards.c")
     fi
     "$cc" "${flags[@]}" -isystem "$out/vulkan-headers" -I"$out" -Wl,--gc-sections \
-        "$source_dir/"{loader,device,memory,queue,graph,upload,gguf,qwen2,bonsai-layer,bonsai-model,tokenizer,http,infer-main}.c "$out/qwen2_unit.o" \
+        "$source_dir/"{loader,device,memory,queue,graph,upload,gguf,qwen2,bonsai-layer,bonsai-model,moe-bank,apex-model,tokenizer,http,infer-main}.c "$out/qwen2_unit.o" \
         "${socket[@]}" "$standalone/json-strtod-provider.c" \
         "${libs[@]}" -lm -pthread -o "$out/frankenmoe-vulkan$suffix"
 fi

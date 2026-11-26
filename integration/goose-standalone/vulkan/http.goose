@@ -10,8 +10,8 @@ extern "fg_vk_http_ready" fn vkh_ready(port: i64);
 fn ih_log_request(method: i64, route: i64) {}
 fn ih_log_response(status: i64, body: const u8[:]) {}
 
-fn vkh_name(bonsai: bool) -> const u8[:] {
-    return if bonsai { "bonsai-2.5-27b" } else { "qwen2.5-0.5b-instruct" };
+fn vkh_name(model_kind: i64) -> const u8[:] {
+    return if model_kind == 2 { "apex-35b" } else { if model_kind == 1 { "bonsai-2.5-27b" } else { "qwen2.5-0.5b-instruct" } };
 }
 
 fn vkh_error(fd: i64, status: i64, message: const u8[:]) {
@@ -273,7 +273,7 @@ fn vkh_stream(context: u64, fd: i64, route: i64, serial: i64, created: i64,
     ht_write_all_impl(fd, "data: [DONE]\n\n");
 }
 
-fn vkh_decode_body(context: u64, fd: i64, body: const u8[:], route: i64, cap: i64, serial: i64, vocabulary: i64, bonsai: bool,
+fn vkh_decode_body(context: u64, fd: i64, body: const u8[:], route: i64, cap: i64, serial: i64, vocabulary: i64, model_kind: i64,
     prompt_ids: i64[:], generated: i64[:], text: u8[:], response: u8[:]) {
     if !ih_chat_depth_ok(body) {
         vkh_error(fd, 400, "invalid JSON nesting");
@@ -295,7 +295,8 @@ fn vkh_decode_body(context: u64, fd: i64, body: const u8[:], route: i64, cap: i6
         vkh_error(fd, 400, "expected a JSON object");
         return;
     }
-    let model = vkh_name(bonsai);
+    let model = vkh_name(model_kind);
+    let bonsai = model_kind != 0;
     let field: const u8[:] = if route == 25 { "content" } else if route == 13 { "messages" } else { "prompt" };
     var input: i64 = -1;
     var limit: i64 = 16;
@@ -433,7 +434,7 @@ fn vkh_decode_body(context: u64, fd: i64, body: const u8[:], route: i64, cap: i6
     else { ih_response(fd, 200, response[0 .. n]); }
 }
 
-export fn fg_vk_http_serve(context: u64, port: i64, limit: i64, cap: i64, vocabulary: i64, bonsai: bool) -> i64 {
+export fn fg_vk_http_serve(context: u64, port: i64, limit: i64, cap: i64, vocabulary: i64, model_kind: i64) -> i64 {
     if port <= 0 || port > 65535 || limit < 0 || cap <= 0 || cap > 32768 { return -1; }
     var opts: i64[1] = [0];
     let listener = ht_open_impl(port, opts);
@@ -461,13 +462,13 @@ export fn fg_vk_http_serve(context: u64, port: i64, limit: i64, cap: i64, vocabu
             else if meta[2] == 1 { ih_response(fd, 200, "{\"status\":\"ok\"}"); }
             else if meta[2] == 5 {
                 var n = cp_put(response[..], 0, "{\"object\":\"list\",\"data\":[{\"id\":");
-                n = vkh_json_text(response[..], n, vkh_name(bonsai));
+                n = vkh_json_text(response[..], n, vkh_name(model_kind));
                 n = cp_put(response[..], n, ",\"object\":\"model\",\"owned_by\":\"local\"}]}");
                 ih_response(fd, 200, response[0 .. n]);
             } else if meta[2] == 11 || meta[2] == 12 || meta[2] == 13 || meta[2] == 25 {
                 if meta[1] <= 0 || meta[3] == 0 { vkh_error(fd, 400, "expected application/json body"); }
                 else {
-                    vkh_decode_body(context, fd, request[meta[0] .. meta[0] + meta[1]], meta[2], cap, served + 1, vocabulary, bonsai,
+                    vkh_decode_body(context, fd, request[meta[0] .. meta[0] + meta[1]], meta[2], cap, served + 1, vocabulary, model_kind,
                         prompt_ids, generated, text, response[..]);
                 }
             } else { vkh_error(fd, 404, "route is not supported by Vulkan"); }

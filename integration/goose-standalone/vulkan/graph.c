@@ -43,6 +43,10 @@ static const fg_vk_shader shaders[FG_VK_OP_COUNT] = {
     [FG_VK_F32_PROJECT] = { fg_f32_project, sizeof(fg_f32_project) },
     [FG_VK_MOE_ROUTE] = { fg_moe_route, sizeof(fg_moe_route) },
     [FG_VK_MOE_WEIGHTED] = { fg_moe_weighted, sizeof(fg_moe_weighted) },
+    [FG_VK_APEX_QK_NORM] = { fg_apex_qk_norm, sizeof(fg_apex_qk_norm) },
+    [FG_VK_GDN_APPLY] = { fg_gdn_apply, sizeof(fg_gdn_apply) },
+    [FG_VK_SIGMOID_GATE_SCALAR] = { fg_sigmoid_gate_scalar, sizeof(fg_sigmoid_gate_scalar) },
+    [FG_VK_KV_FWHT] = { fg_kv_fwht, sizeof(fg_kv_fwht) },
 };
 
 static VkResult create_pipeline(fg_vk_graph *graph, fg_vk_op op) {
@@ -262,6 +266,12 @@ static int record(fg_vk_graph *graph, fg_vk_op op, fg_vk_shape shape, fg_vk_view
         y = shape.batch;
         weight_bytes = (VkDeviceSize)shape.width * sizeof(int32_t);
         break;
+    case FG_VK_KV_FWHT:
+        if ((shape.rows != 64 && shape.rows != 256) || shape.width % shape.rows) return 0;
+        x = shape.width / shape.rows;
+        y = shape.batch;
+        weight_bytes = 4;
+        break;
     case FG_VK_CAUSAL_CONV:
         if (shape.batch != 1 || overlap(input, values) || overlap(weight, values)) return 0;
         x = (uint32_t)((elements + 63) / 64);
@@ -269,6 +279,7 @@ static int record(fg_vk_graph *graph, fg_vk_op op, fg_vk_shape shape, fg_vk_view
         value_bytes = elements * 12;
         break;
     case FG_VK_QK_NORM:
+    case FG_VK_APEX_QK_NORM:
         if (shape.batch != 1 || !shape.rows || !shape.kv_heads || shape.kv_heads > shape.rows ||
             stride > UINT32_MAX || shape.kv_heads > shape.rows - shape.kv_heads ||
             !isfinite(shape.epsilon) || shape.epsilon <= 0.0f) return 0;
@@ -293,6 +304,12 @@ static int record(fg_vk_graph *graph, fg_vk_op op, fg_vk_shape shape, fg_vk_view
         weight_bytes = stride * 8;
         value_bytes = output_bytes = (uint64_t)shape.rows * 8;
         break;
+    case FG_VK_GDN_APPLY:
+        if (shape.batch != 1 || shape.width > UINT32_MAX / 2) return 0;
+        x = (uint32_t)((elements + 63) / 64);
+        weight_bytes = input_bytes;
+        value_bytes = output_bytes = input_bytes * 2;
+        break;
     case FG_VK_BIAS:
         x = (uint32_t)((elements + 63) / 64);
         weight_bytes = (uint64_t)shape.width * 4;
@@ -302,6 +319,10 @@ static int record(fg_vk_graph *graph, fg_vk_op op, fg_vk_shape shape, fg_vk_view
     case FG_VK_SWIGLU:
         x = (uint32_t)((elements + 63) / 64);
         weight_bytes = input_bytes;
+        break;
+    case FG_VK_SIGMOID_GATE_SCALAR:
+        x = (uint32_t)((elements + 63) / 64);
+        weight_bytes = (uint64_t)shape.batch * 4;
         break;
     case FG_VK_HEAD_SLICE:
         if (shape.position > 1 || !stride || stride > UINT32_MAX / 2 || stride * shape.batch > UINT32_MAX / 2) return 0;
@@ -384,7 +405,7 @@ static int record(fg_vk_graph *graph, fg_vk_op op, fg_vk_shape shape, fg_vk_view
 int fg_vk_graph_record(fg_vk_graph *graph, fg_vk_op op, fg_vk_shape shape,
     fg_vk_view input, fg_vk_view weight, fg_vk_view output) {
     if (op == FG_VK_ATTENTION || op == FG_VK_ATTENTION_Q4 || op == FG_VK_CAUSAL_CONV || op == FG_VK_GDN ||
-        op == FG_VK_GDN_GATES || op == FG_VK_GATED_RMS) return 0;
+        op == FG_VK_GDN_GATES || op == FG_VK_GDN_APPLY || op == FG_VK_GATED_RMS) return 0;
     return record(graph, op, shape, input, weight, output, input);
 }
 
@@ -404,6 +425,12 @@ int fg_vk_graph_gdn(fg_vk_graph *graph, fg_vk_shape shape, fg_vk_view qkv,
 int fg_vk_graph_gdn_gates(fg_vk_graph *graph, fg_vk_shape shape, fg_vk_view input,
     fg_vk_view weights, fg_vk_view bias_scale, fg_vk_view output) {
     return record(graph, FG_VK_GDN_GATES, shape, input, weights, output, bias_scale);
+}
+
+int fg_vk_graph_gdn_apply(fg_vk_graph *graph, uint32_t heads, fg_vk_view alpha,
+    fg_vk_view beta, fg_vk_view bias_scale, fg_vk_view output) {
+    return record(graph, FG_VK_GDN_APPLY, (fg_vk_shape){.width = heads, .batch = 1},
+        alpha, beta, output, bias_scale);
 }
 
 int fg_vk_graph_gated_rms(fg_vk_graph *graph, fg_vk_shape shape, fg_vk_view input,

@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 enum { FG_VK_TEXT_BYTES = 65536 };
-typedef enum { FG_VK_MODEL_QWEN2, FG_VK_MODEL_BONSAI } fg_vk_model_kind;
+typedef enum { FG_VK_MODEL_QWEN2, FG_VK_MODEL_BONSAI, FG_VK_MODEL_APEX } fg_vk_model_kind;
 typedef struct fg_vk_tokenizer fg_vk_tokenizer;
 
 fg_vk_tokenizer *fg_vk_model_tokenizer_open(const char *path, fg_vk_model_kind kind);

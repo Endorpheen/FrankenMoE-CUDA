@@ -7,6 +7,7 @@
 
 #include "http.h"
 #include "bonsai-model.h"
+#include "apex-model.h"
 #include "qwen2.h"
 #include "qwen2_unit.h"
 #include "tokenizer.h"
@@ -19,12 +20,14 @@
 typedef struct {
     fg_vk_qwen2 model;
     fg_vk_bonsai *bonsai;
+    fg_vk_apex *apex;
     fg_vk_tokenizer *tokenizer;
     float *logits;
     uint32_t previous, vocabulary, capacity;
 } fg_vk_http;
 
 static int step(fg_vk_http *h, uint32_t id, float *logits) {
+    if (h->apex) return fg_vk_apex_step(h->apex, id, logits);
     return h->bonsai ? fg_vk_bonsai_step(h->bonsai, id, logits) : fg_vk_qwen2_step(&h->model, id, logits);
 }
 
@@ -52,7 +55,9 @@ int64_t fg_vk_http_prefill(uint64_t owner, sl_i64 prompt, int64_t limit) {
     }
     // Submissions are synchronous. A rewind hides old KV and the next step
     // resets any command buffer left recording after a dispatch error.
-    if (h->bonsai) {
+    if (h->apex) {
+        if (!fg_vk_apex_reset(h->apex)) return -1;
+    } else if (h->bonsai) {
         if (!fg_vk_bonsai_reset(h->bonsai)) return -1;
     } else {
         h->model.position = 0;
@@ -126,18 +131,20 @@ int fg_vk_http_run(const char *model_file, uint32_t capacity, uint32_t index, in
     fg_vk_http *h = calloc(1, sizeof(*h));
     int ok = 0;
     if (h) {
-        const int bonsai = kind == FG_VK_MODEL_BONSAI;
         h->capacity = capacity;
-        h->vocabulary = bonsai ? FG_BONSAI_VOCAB : FG_QWEN_VOCAB;
+        h->vocabulary = kind == FG_VK_MODEL_APEX ? FG_APEX_VOCAB :
+            kind == FG_VK_MODEL_BONSAI ? FG_BONSAI_VOCAB : FG_QWEN_VOCAB;
         h->tokenizer = fg_vk_model_tokenizer_open(model_file, kind);
         h->logits = malloc(h->vocabulary * sizeof(*h->logits));
         if (h->tokenizer && h->logits) {
-            if (bonsai) h->bonsai = fg_vk_bonsai_open(model_file, capacity, index, cpu);
-            if (h->bonsai || (!bonsai && fg_vk_qwen2_open(&h->model, model_file, capacity, index, cpu))) {
-                ok = fg_vk_http_serve((uintptr_t)h, port, requests, capacity, h->vocabulary, bonsai) >= 0;
+            if (kind == FG_VK_MODEL_BONSAI) h->bonsai = fg_vk_bonsai_open(model_file, capacity, index, cpu);
+            if (kind == FG_VK_MODEL_APEX) h->apex = fg_vk_apex_open(model_file, capacity, index, cpu);
+            if (h->bonsai || h->apex || (kind == FG_VK_MODEL_QWEN2 && fg_vk_qwen2_open(&h->model, model_file, capacity, index, cpu))) {
+                ok = fg_vk_http_serve((uintptr_t)h, port, requests, capacity, h->vocabulary, kind) >= 0;
             }
         }
         fg_vk_bonsai_close(h->bonsai);
+        fg_vk_apex_close(h->apex);
         fg_vk_qwen2_close(&h->model);
         fg_vk_tokenizer_close(h->tokenizer);
         free(h->logits);

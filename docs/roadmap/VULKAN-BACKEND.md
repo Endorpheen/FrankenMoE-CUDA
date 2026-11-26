@@ -313,7 +313,7 @@ The local GGUF inventory confirms distinct requirements.
 | --- | --- | --- |
 | Qwen2.5-0.5B Q4_0 | Q4_0, Q8_0 | Experimental CLI and HTTP release |
 | Bonsai 2.5 27B | PQ2_0 trunk, Q4_0 KV | Experimental raw-ID and text CLI, serial HTTP completions, SSE and no-thinking ChatML. Short generation passes on Linux RTX 4070 and Windows EXE under Wine with RTX 4070. |
-| Apex 35B | Q4_K, Q6_K | Real-weight projection, embedding gather and the first routed expert branch pass. Full model graph, GDN and attention wiring, the shared expert and long-context placement are open. |
+| Apex 35B | Q4_K/Q6_K weights, Q4_0 KV | Experimental complete 40-layer trunk, raw-ID and text CLI, serial HTTP. Short generation passes on Linux RTX 4070 and Windows EXE under Wine with RTX 4070. |
 | Inkling-2-Mini | Q8_0, IQ4_NL, IQ4_XS | Real-weight projection and embedding gather pass. Model graph, relative/sliding attention, recurrent depth loops and grouped MoE are open. |
 
 ### Bonsai FFN component
@@ -507,7 +507,7 @@ Tested executable SHA-256 values:
 - Windows `e559ac3e3756a0d9414d72f845c8eb52c51d9e13b415a781947a7bf5da213e9c`.
 
 Long-sequence numerical checks, peak memory, throughput, native Windows
-and AMD hardware qualification remain open. Apex and Inkling Vulkan remain open.
+and AMD hardware qualification remain open.
 
 ### Apex and Inkling quantized weight operations
 
@@ -596,6 +596,50 @@ PYTHONPATH="$LLAMA_CPP/gguf-py" OPENBLAS_NUM_THREADS=1 \
 ```
 
 Fixture SHA-256 `6811e231e40508ccce7adeef291982f4df74dea49207525019a659467ee32563`.
+
+### Complete Apex Vulkan trunk
+
+The `--apex` path supports the pinned Q4_K_M tensor layout, all
+40 trunk layers and greedy generation with MTP off. GDN uses
+separate quantized alpha and beta projections and the Apex
+RMS-based Q/K normalization. Attention rotates each 256-wide Q/K
+head and each 64-wide V block before Q4_0 KV packing and applies
+the inverse V transform before the attention gate. Each layer
+adds the gated shared expert and the eight staged routed experts
+to the residual. Only selected expert weights are staged per
+layer. A new HTTP request clears both recurrent and KV state.
+
+The first experimental run omitted the Q/K/V Walsh–Hadamard
+transforms and returned a comma after `Paris` where CUDA returned
+a period. The Vulkan path now matches the two saved CUDA
+completions on Linux RTX 4070 (six generated IDs, exact text)
+and the first result survives replay after the second request.
+Both the promoted CUDA profile and the diagnostic CUDA run with
+MMVQ, MMQ, dense/GDN/Flash MMA and Flash Vec disabled produce
+the same fixture. The control uses context 96, batch/ubatch 64,
+Q4_0 KV and MTP off. The reference executable SHA-256 is
+`0ef188ef55f242ae548994ad793204fef6eb16b580aacb5c37093b5f27fda3ff`.
+
+Windows x64 through Wine with NVIDIA's Vulkan ICD matches the two
+generated IDs from the second request. The Linux Bonsai and Qwen2.5
+HTTP regression fixtures pass on the same rebuilt executable.
+These checks do not qualify native AMD, native Windows, long
+sequences, memory or throughput.
+
+```bash
+tests=integration/goose-standalone/tests/vulkan
+out=build/vulkan-bringup/apex-model/rotated
+bash tools/build-goose-vulkan.sh "$out/linux" linux qwen2
+"$out/linux/frankenmoe-vulkan" "$APEX_GGUF" --apex --device-index 0 \
+    --serve 29188 --ctx-size 96 --max-requests 5
+# Run from a second shell.
+python3 "$tests/apex-http-smoke.py" 29188
+```
+
+Tested executable SHA-256 values:
+
+- Linux `0b70fee6b55b3271104b6689e574dd4060a01d1d9bc4430d4dd4e2d173a1b93d`.
+- Windows `557d42b06bd466347b9d58d1b71c99399949a4326e74448d4a0290721695cc3f`.
 
 ## Model order
 
