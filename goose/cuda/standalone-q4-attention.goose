@@ -620,3 +620,83 @@ export fn giga_mla_mma_pv_tile(q: u64, k: u64, v: u64, mask: u64, scratch: u64, 
     mla_pv_store(scratch, slot0, slot1, column+32, c);
     mla_pv_store(scratch, slot0, slot1, column+48, d);
 }
+
+struct DsaKey4 { a: f32, b: f32, c: f32, d: f32 }
+fn dsa_key_load(k: u64, lane: i64) -> DsaKey4 {
+    return DsaKey4 {
+        attn_half(attn_ld_u16(k, (2 * lane) as u64)),
+        attn_half(attn_ld_u16(k, (2 * (32 + lane)) as u64)),
+        attn_half(attn_ld_u16(k, (2 * (64 + lane)) as u64)),
+        attn_half(attn_ld_u16(k, (2 * (96 + lane)) as u64))
+    };
+}
+fn dsa_shared_dot(query: DsaKey4, key: DsaKey4) -> f32 {
+    var dot = attn_fma(query.a, key.a, 0.0);
+    dot = attn_fma(query.b, key.b, dot);
+    dot = attn_fma(query.c, key.c, dot);
+    dot = attn_fma(query.d, key.d, dot);
+    return attn_sum(dot);
+}
+export fn giga_dsa_score_shared_q(q: u64, k: u64, weights: u64, mask: u64, out: u64,
+    cfg: u64, cell: i64, token: i64, lane: i64) {
+    let cells = attn_word(cfg, 0);
+    if cell >= cells { return; }
+    let mask_row = mask + (token * attn_word(cfg, 5)) as u64;
+    let key_stride = attn_word(cfg, 2);
+    let output = out + (4 * (token*cells + cell)) as u64;
+    let inf = attn_neg_inf();
+    let bias0 = if cell+0 < cells { attn_half(attn_ld_u16(mask_row, (2*(cell+0)) as u64)) } else { inf };
+    let bias1 = if cell+1 < cells { attn_half(attn_ld_u16(mask_row, (2*(cell+1)) as u64)) } else { inf };
+    let bias2 = if cell+2 < cells { attn_half(attn_ld_u16(mask_row, (2*(cell+2)) as u64)) } else { inf };
+    let bias3 = if cell+3 < cells { attn_half(attn_ld_u16(mask_row, (2*(cell+3)) as u64)) } else { inf };
+    if bias0 == inf && bias1 == inf && bias2 == inf && bias3 == inf {
+        if lane == 0 {
+            for j in 4 { if cell+j < cells { attn_store(output + (4*j) as u64, inf); } }
+        }
+        return;
+    }
+    let key0 = if bias0 != inf { dsa_key_load(k + ((cell+0) * key_stride) as u64, lane) } else { DsaKey4 {0.0,0.0,0.0,0.0} };
+    var score0: f32 = 0.0;
+    let key1 = if bias1 != inf { dsa_key_load(k + ((cell+1) * key_stride) as u64, lane) } else { DsaKey4 {0.0,0.0,0.0,0.0} };
+    var score1: f32 = 0.0;
+    let key2 = if bias2 != inf { dsa_key_load(k + ((cell+2) * key_stride) as u64, lane) } else { DsaKey4 {0.0,0.0,0.0,0.0} };
+    var score2: f32 = 0.0;
+    let key3 = if bias3 != inf { dsa_key_load(k + ((cell+3) * key_stride) as u64, lane) } else { DsaKey4 {0.0,0.0,0.0,0.0} };
+    var score3: f32 = 0.0;
+    let query = q + (token * attn_word(cfg, 3) + 4*lane) as u64;
+    let weight = weights + (token * attn_word(cfg, 4)) as u64;
+    for head in 64 {
+        let row = query + (512*head) as u64;
+        let values = DsaKey4 {attn_load(row),attn_load(row+128),attn_load(row+256),attn_load(row+384)};
+        if bias0 != inf {
+            let dot = dsa_shared_dot(values,key0);
+            if lane == 0 && dot > 0.0 {
+                score0 = attn_fma(dot,attn_load(weight + (4*head) as u64),score0);
+            }
+        }
+        if bias1 != inf {
+            let dot = dsa_shared_dot(values,key1);
+            if lane == 0 && dot > 0.0 {
+                score1 = attn_fma(dot,attn_load(weight + (4*head) as u64),score1);
+            }
+        }
+        if bias2 != inf {
+            let dot = dsa_shared_dot(values,key2);
+            if lane == 0 && dot > 0.0 {
+                score2 = attn_fma(dot,attn_load(weight + (4*head) as u64),score2);
+            }
+        }
+        if bias3 != inf {
+            let dot = dsa_shared_dot(values,key3);
+            if lane == 0 && dot > 0.0 {
+                score3 = attn_fma(dot,attn_load(weight + (4*head) as u64),score3);
+            }
+        }
+    }
+    if lane == 0 {
+        if cell+0 < cells { attn_store(output + 0,score0+bias0); }
+        if cell+1 < cells { attn_store(output + 4,score1+bias1); }
+        if cell+2 < cells { attn_store(output + 8,score2+bias2); }
+        if cell+3 < cells { attn_store(output + 12,score3+bias3); }
+    }
+}

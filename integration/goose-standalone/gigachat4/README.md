@@ -489,3 +489,20 @@ matching between arms. The default-enabled build measured
 the request and 23,364,444 KiB peak RSS, without swap-out growth.
 A second 512/32 input matched all 32 QK-only control IDs. No
 32K/512 or separate cross-architecture qualification is claimed.
+
+### EXP-2026-11-27-2156 — Reuse F32 queries across four DSA keys
+
+For eligible GigaChat4 prefill score batches a warp reuses one
+loaded F32 query across four keys. Each key keeps the original
+dot-product association, warp reduction, and ordered weighted head
+accumulation. Small query batches retain the previous kernel.
+Set GOOSE_GIGA_DSA_SHARED_Q=0 to use that kernel on all batches.
+
+On 4352/2 the clean off/on pairs measured prefill 274.48/286.19 and
+273.57/280.62 tokens/s. The single-step decode observations were
+10.51/10.16 and 10.84/9.57. On a distinct 6144/8 input the final
+off/default pair measured 265.42/285.88 prefill and 12.12/12.16 decode
+at 9207/9198 MiB after the request with no swap-out growth.
+Both fixtures reproduced all output token IDs. Full DSA key-ID
+captures matched byte for byte on both fixtures, including ordering.
+No 32K/512 or separate cross-architecture qualification is claimed.

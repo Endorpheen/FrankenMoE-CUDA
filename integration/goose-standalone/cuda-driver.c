@@ -204,7 +204,7 @@ static struct {
     void * library;
     Context context;
     Module module;
-    Function kernel, attention_tiles, attention_merge, mla_attention_tiles, mla_attention_merge, mla_attention_pair, mla_attention_batch_pair, mla_attention_batch_merge, mla_mma_tile, dsa_score, dsa_mask_clear, dsa_mask_scatter, gdn, gdn_decode, q4_rows, vector, vector_flat, vector_flat4, rms_reference;
+    Function kernel, attention_tiles, attention_merge, mla_attention_tiles, mla_attention_merge, mla_attention_pair, mla_attention_batch_pair, mla_attention_batch_merge, mla_mma_tile, dsa_score, dsa_shared_q, dsa_mask_clear, dsa_mask_scatter, gdn, gdn_decode, q4_rows, vector, vector_flat, vector_flat4, rms_reference;
     Function mmq_pack, mmq_pack_shared, mmq_pack_glu, mmq_matrix, mmq_q4_matrix, mmq_q6_matrix;
     Function mmq_pack_k_major, mmq_q6_dense_half_k, mmq_q6_dense_pipeline;
     Function mmq_q4_dense_shared, mmq_q4_routed_shared;
@@ -1271,6 +1271,9 @@ static void load_cuda(void) {
                 (void) cuda.function_get(&cuda.mla_mma_tile, cuda.module, "goose_giga_mla_mma_tile");
         }
         if (error == 0) error = cuda.function_get(&cuda.dsa_score, cuda.module, "goose_dsa_score");
+        const char * dsa_shared_q_setting = getenv("GOOSE_GIGA_DSA_SHARED_Q");
+        if (error == 0 && (!dsa_shared_q_setting || strcmp(dsa_shared_q_setting,"0") != 0))
+            (void) cuda.function_get(&cuda.dsa_shared_q, cuda.module, "goose_giga_dsa_score_shared_q");
         const char * dsa_mask_setting = getenv("GOOSE_GIGA_DSA_MASK");
         if (error == 0 && (!dsa_mask_setting || strcmp(dsa_mask_setting, "0") != 0)) {
             (void) cuda.function_get(&cuda.dsa_mask_clear, cuda.module, "goose_giga_mask_clear");
@@ -3671,8 +3674,12 @@ int64_t fg_cuda_dsa_score(sl_i64 config, sl_u8 q, sl_u8 k, sl_u8 weights, sl_u8 
     if (error == 0) error = upload_inputs(inputs, buffers, staged, sizeof(inputs) / sizeof(*inputs));
     if (error == 0) {
         void *args[] = {&staged[0], &staged[1], &staged[2], &staged[3], &output, &staged[4]};
-        error = cuda.launch(cuda.dsa_score, (unsigned)((config.data[0] + 3) / 4),
+        const bool shared_q = giga_small_expert_wave && cuda.dsa_shared_q && config.data[1] >= 128;
+        error = cuda.launch(shared_q ? cuda.dsa_shared_q : cuda.dsa_score,
+            shared_q ? (unsigned)((config.data[0] + 15) / 16) : (unsigned)((config.data[0] + 3) / 4),
             (unsigned)config.data[1], 1, 128, 1, 1, 0, NULL, args, NULL);
+        if (error == 0 && shared_q && getenv("GOOSE_GRAPH_LOG"))
+            fprintf(stderr, "GigaChat4 DSA shared Q: cells=%" PRId64 " rows=%" PRId64 "\n",config.data[0],config.data[1]);
     }
     if (error == 0) error = activation_publish(host, out.len, output, false);
     if (finish_context() != 0 || error != 0) return -1;

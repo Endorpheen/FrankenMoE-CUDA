@@ -384,6 +384,16 @@ __kernel void goose_dsa_score(__global uint8_t * q, __global uint8_t * k,
         (uint64_t) out, (uint64_t) cfg, 4 * tile + tid / 32, token, tid % 32);
 }
 
+__kernel void goose_giga_dsa_score_shared_q(__global uint8_t *q, __global uint8_t *k,
+    __global uint8_t *weights, __global uint8_t *mask, __global float *out, __global int64_t *cfg) {
+    uint32_t tile, token, tid;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(tile));
+    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(token));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(tid));
+    giga_dsa_score_shared_q_g((uint64_t)q,(uint64_t)k,(uint64_t)weights,(uint64_t)mask,
+        (uint64_t)out,(uint64_t)cfg,16*tile+4*(tid/32),token,tid%32);
+}
+
 static float fg174s_load(uint64_t address, uint64_t index) {
     return fg_device_global_load(address + 4 * index);
 }
