@@ -17,9 +17,10 @@ static float previous_hidden[2560];
 
 int giga_server_open(const void *mapping, size_t bytes, int64_t capacity) {
     trace = getenv("GOOSE_GIGACHAT4_TRACE") != NULL;
+    if (setenv("GOOSE_MMQ", "1", 0) != 0) return -1;
     const char *planned = getenv("GOOSE_GIGACHAT4_PLANNED");
     planned_prefill_only = planned && strcmp(planned, "prefill") == 0;
-    planned_enabled = planned_prefill_only || (planned && strcmp(planned, "1") == 0);
+    planned_enabled = !planned || planned_prefill_only || strcmp(planned, "1") == 0;
     if (trace) fputs("GigaChat4: binding model\n", stderr);
     giga_goose_init(0, NULL);
     int status = giga_bind_model(&model, mapping, bytes);

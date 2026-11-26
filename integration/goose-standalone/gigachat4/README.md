@@ -138,3 +138,27 @@ unchanged in the other three.
 A graph check at 2048 and 2049 live rows found eight index-cache writes
 in both cases and zero versus eight ranking nodes, respectively. It
 validated the graph transition without executing a long request.
+
+## Prompt MMQ and planned decode
+
+GigaChat4 enables the existing CUDA MMQ path and execution planning by
+default. Set `GOOSE_MMQ=0` to disable MMQ or
+`GOOSE_GIGACHAT4_PLANNED=prefill` to plan only the prompt. Any explicit
+environment value takes precedence over the model's defaults.
+
+The fixed 128/8 request was run in control, candidate, candidate, control
+order in one build, without profiling. The control used the prefill
+planner and disabled MMQ. The candidate kept the planner for both phases
+and enabled MMQ. Dense and expert placement were identical.
+
+| Run | Prefill, tok/s | Decode, tok/s | VRAM after request, MiB |
+| --- | ---: | ---: | ---: |
+| Control 1 | 16.503 | 4.744 | 8407 |
+| Control 2 | 15.986 | 4.587 | 8409 |
+| MMQ and planned decode 1 | 19.670 | 8.047 | 8409 |
+| MMQ and planned decode 2 | 20.256 | 8.304 | 8406 |
+
+All four runs matched the eight reference tokens. Median prefill increased
+by 22.9 percent and median decode by 75.2 percent. Process swap was zero.
+System swap-out was zero in the first pair and rose by 34,798 and 37,528
+pages in the second candidate and control runs, respectively.
