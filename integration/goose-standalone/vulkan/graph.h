@@ -12,7 +12,7 @@ typedef enum {
     FG_VK_Q4_K, FG_VK_Q6_K, FG_VK_GATHER_Q4_K, FG_VK_IQ4_NL, FG_VK_IQ4_XS,
     FG_VK_GATHER_Q8_0, FG_VK_F32_PROJECT, FG_VK_MOE_ROUTE, FG_VK_MOE_WEIGHTED,
     FG_VK_APEX_QK_NORM, FG_VK_GDN_APPLY, FG_VK_SIGMOID_GATE_SCALAR, FG_VK_KV_FWHT,
-    FG_VK_INKLING_ROUTE, FG_VK_INKLING_SITU, FG_VK_OP_COUNT
+    FG_VK_INKLING_ROUTE, FG_VK_INKLING_SITU, FG_VK_INKLING_ATTENTION, FG_VK_OP_COUNT
 } fg_vk_op;
 
 typedef struct {
@@ -61,6 +61,10 @@ int fg_vk_graph_record(fg_vk_graph *graph, fg_vk_op op, fg_vk_shape shape,
 int fg_vk_graph_attention(fg_vk_graph *graph, fg_vk_shape shape,
     fg_vk_view query, fg_vk_view keys, fg_vk_view values, fg_vk_view output);
 int fg_vk_graph_attention_q4(fg_vk_graph *graph, fg_vk_shape shape,
+    fg_vk_view query, fg_vk_view keys, fg_vk_view values, fg_vk_view output);
+/* Inkling query storage is Q, relative query, sinks, then the bias table.
+ * The rotary field is zero for full attention or the active sliding window. */
+int fg_vk_graph_inkling_attention(fg_vk_graph *graph, fg_vk_shape shape,
     fg_vk_view query, fg_vk_view keys, fg_vk_view values, fg_vk_view output);
 /* The convolution updates [time][channel] history in place, oldest first. */
 int fg_vk_graph_conv(fg_vk_graph *graph, uint32_t channels, fg_vk_view input,

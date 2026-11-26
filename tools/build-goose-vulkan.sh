@@ -39,7 +39,7 @@ if [[ "$mode" != probe ]]; then
     glslang=${GLSLANG_VALIDATOR:-glslangValidator}
     spirv_val=${SPIRV_VAL:-spirv-val}
     suffix=${executable#frankenmoe-vulkan-probe}
-    for shader in rmsnorm q4_0 swiglu rope kv_store attention q8_0 gather_q4_0 bias add pq2_0 gather_pq2_0 fwht causal_conv qk_norm gdn gdn_gates gated_rms head_slice sigmoid_gate kv_store_q4 attention_q4 q4_k q6_k gather_q4_k iq4_nl iq4_xs gather_q8_0 f32_project moe_route moe_weighted apex_qk_norm gdn_apply sigmoid_gate_scalar kv_fwht inkling_route inkling_situ; do
+    for shader in rmsnorm q4_0 swiglu rope kv_store attention q8_0 gather_q4_0 bias add pq2_0 gather_pq2_0 fwht causal_conv qk_norm gdn gdn_gates gated_rms head_slice sigmoid_gate kv_store_q4 attention_q4 q4_k q6_k gather_q4_k iq4_nl iq4_xs gather_q8_0 f32_project moe_route moe_weighted apex_qk_norm gdn_apply sigmoid_gate_scalar kv_fwht inkling_route inkling_situ inkling_attention; do
         "$glslang" -V --target-env vulkan1.2 -S comp "-DOP_${shader^^}" \
             "$source_dir/shaders/reference.comp" -o "$out/$shader.spv"
         "$spirv_val" --target-env vulkan1.2 "$out/$shader.spv"
@@ -47,7 +47,7 @@ if [[ "$mode" != probe ]]; then
     python3 "$root/tools/embed-vulkan-shaders.py" "$out"
     "$cc" "${flags[@]}" -isystem "$out/vulkan-headers" -I"$out" -I"$source_dir" \
         "$source_dir/"{loader,device,memory,queue,graph,upload,bonsai-layer,moe-bank}.c \
-        "$root/integration/goose-standalone/tests/vulkan/"{compute,attention,projection,moe-quant,moe-router,apex-experts,bonsai,recurrent,bonsai-layer}.c \
+        "$root/integration/goose-standalone/tests/vulkan/"{compute,attention,projection,moe-quant,moe-router,apex-experts,bonsai,recurrent,bonsai-layer,inkling-attention}.c \
         "${libs[@]}" -lm -o "$out/frankenmoe-vulkan-compute-test$suffix"
 fi
 

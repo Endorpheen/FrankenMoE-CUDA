@@ -49,6 +49,7 @@ static const fg_vk_shader shaders[FG_VK_OP_COUNT] = {
     [FG_VK_KV_FWHT] = { fg_kv_fwht, sizeof(fg_kv_fwht) },
     [FG_VK_INKLING_ROUTE] = { fg_inkling_route, sizeof(fg_inkling_route) },
     [FG_VK_INKLING_SITU] = { fg_inkling_situ, sizeof(fg_inkling_situ) },
+    [FG_VK_INKLING_ATTENTION] = { fg_inkling_attention, sizeof(fg_inkling_attention) },
 };
 
 static VkResult create_pipeline(fg_vk_graph *graph, fg_vk_op op) {
@@ -369,6 +370,15 @@ static int record(fg_vk_graph *graph, fg_vk_op op, fg_vk_shape shape, fg_vk_view
         y = shape.batch;
         break;
     }
+    case FG_VK_INKLING_ATTENTION:
+        if (shape.width != 128 || shape.rows != 24 || shape.kv_heads != 8 || shape.batch != 1 ||
+            !shape.context || shape.context > 1048576u || shape.position >= 1048576u ||
+            shape.rotary > shape.context || (!shape.rotary && end > shape.context)) return 0;
+        input_bytes = (24 * 128 + 24 * 16 + 24 + 16 * 1024) * sizeof(float);
+        output_bytes = 24 * 128 * sizeof(float);
+        weight_bytes = value_bytes = (uint64_t)shape.context * (128 * 8 / 32 * 18);
+        x = shape.rows;
+        break;
     default:
         return 0;
     }
@@ -408,7 +418,8 @@ static int record(fg_vk_graph *graph, fg_vk_op op, fg_vk_shape shape, fg_vk_view
 
 int fg_vk_graph_record(fg_vk_graph *graph, fg_vk_op op, fg_vk_shape shape,
     fg_vk_view input, fg_vk_view weight, fg_vk_view output) {
-    if (op == FG_VK_ATTENTION || op == FG_VK_ATTENTION_Q4 || op == FG_VK_CAUSAL_CONV || op == FG_VK_GDN ||
+    if (op == FG_VK_ATTENTION || op == FG_VK_ATTENTION_Q4 || op == FG_VK_INKLING_ATTENTION ||
+        op == FG_VK_CAUSAL_CONV || op == FG_VK_GDN ||
         op == FG_VK_GDN_GATES || op == FG_VK_GDN_APPLY || op == FG_VK_GATED_RMS) return 0;
     return record(graph, op, shape, input, weight, output, input);
 }
@@ -450,6 +461,11 @@ int fg_vk_graph_attention(fg_vk_graph *graph, fg_vk_shape shape,
 int fg_vk_graph_attention_q4(fg_vk_graph *graph, fg_vk_shape shape,
     fg_vk_view query, fg_vk_view keys, fg_vk_view values, fg_vk_view output) {
     return record(graph, FG_VK_ATTENTION_Q4, shape, query, keys, output, values);
+}
+
+int fg_vk_graph_inkling_attention(fg_vk_graph *graph, fg_vk_shape shape,
+    fg_vk_view query, fg_vk_view keys, fg_vk_view values, fg_vk_view output) {
+    return record(graph, FG_VK_INKLING_ATTENTION, shape, query, keys, output, values);
 }
 int fg_vk_graph_submit(fg_vk_graph *graph) {
     if (!graph->recording || !graph->used) return 0;

@@ -314,7 +314,7 @@ The local GGUF inventory confirms distinct requirements.
 | Qwen2.5-0.5B Q4_0 | Q4_0, Q8_0 | Experimental CLI and HTTP release |
 | Bonsai 2.5 27B | PQ2_0 trunk, Q4_0 KV | Experimental raw-ID and text CLI, serial HTTP completions, SSE and no-thinking ChatML. Short generation passes on Linux RTX 4070 and Windows EXE under Wine with RTX 4070. |
 | Apex 35B | Q4_K/Q6_K weights, Q4_0 KV | Experimental complete 40-layer trunk, raw-ID and text CLI, serial HTTP. Short generation passes on Linux RTX 4070 and Windows EXE under Wine with RTX 4070. |
-| Inkling-2-Mini | Q8_0, IQ4_NL, IQ4_XS | Real-weight projection, embedding gather and first-layer routed expert evaluation pass. Model graph, relative/sliding attention and recurrent depth loops are open. |
+| Inkling-2-Mini | Q8_0, IQ4_NL, IQ4_XS, Q4_0 KV | Real-weight projection, embedding gather, routed expert evaluation and relative/sliding attention components pass. Model graph and recurrent depth loops are open. |
 
 ### Bonsai FFN component
 
@@ -664,6 +664,28 @@ PYTHONPATH="$LLAMA_CPP/gguf-py" OPENBLAS_NUM_THREADS=1 \
 ```
 
 Fixture SHA-256 `cb65be95bbe1bd94f5213ee14edcd4c6cb654a602548936b7d54cbbe55b63b06`.
+
+### Inkling Q4 relative and sliding attention
+
+The Inkling-specific shader reads packed Q4_0 K/V through the
+shared decoder and computes causal 24:8 grouped attention with
+16-wide learned relative queries, learned denominator sinks,
+and optional sliding cache positions. The learned relative
+term vanishes at distances of 1024 or greater. The graph
+validates the query, auxiliary table and packed cache extents.
+
+The synthetic test writes the cache through the Vulkan Q4_0
+packer and checks every output against FP64 CPU accumulation.
+Full attention at seven keys, a sliding window after ring wrap,
+and full attention at 1026 keys pass on Linux RTX 4070, Linux
+Lavapipe and Windows x64 under Wine with Lavapipe. Maximum
+absolute error is 1.63e-7 across the three configurations.
+
+```bash
+out=build/vulkan-bringup/inkling-attention
+bash tools/build-goose-vulkan.sh "$out/linux" linux compute
+"$out/linux/frankenmoe-vulkan-compute-test" 0 0 --inkling-attention
+```
 
 ## Model order
 

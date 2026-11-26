@@ -19,7 +19,7 @@ layout(set = 0, binding = 0, std430) readonly buffer Input { float x[]; };
 layout(set = 0, binding = 1, std430) readonly buffer Weights { uint packed[]; };
 #elif defined(OP_MOE_WEIGHTED)
 layout(set = 0, binding = 1, std430) readonly buffer Routes { uint routes[]; };
-#elif defined(OP_ATTENTION_Q4)
+#elif defined(OP_ATTENTION_Q4) || defined(OP_INKLING_ATTENTION)
 layout(set = 0, binding = 1, std430) readonly buffer Keys { uint packed_keys[]; };
 #elif defined(OP_FWHT)
 layout(set = 0, binding = 1, std430) readonly buffer Signs { int signs[]; };
@@ -37,7 +37,7 @@ layout(set = 0, binding = 2, std430) writeonly buffer Output { float y[]; };
 #endif
 #if defined(OP_ATTENTION)
 layout(set = 0, binding = 3, std430) readonly buffer Values { float v[]; };
-#elif defined(OP_ATTENTION_Q4)
+#elif defined(OP_ATTENTION_Q4) || defined(OP_INKLING_ATTENTION)
 layout(set = 0, binding = 3, std430) readonly buffer Values { uint packed_values[]; };
 #elif defined(OP_CAUSAL_CONV)
 layout(set = 0, binding = 3, std430) buffer History { float history[]; };
@@ -164,7 +164,7 @@ float decode_weight(uint row, uint column) {
 }
 #endif
 
-#if defined(OP_ATTENTION_Q4)
+#if defined(OP_ATTENTION_Q4) || defined(OP_INKLING_ATTENTION)
 uint cache_byte(uint offset, bool value) {
     uint word = value ? packed_values[offset >> 2u] : packed_keys[offset >> 2u];
     return (word >> ((offset & 3u) * 8u)) & 255u;
@@ -496,6 +496,34 @@ void main() {
         uint start = (p.position * pairs_per_row + pair) * 9u;
         for (uint i = 0u; i < 9u; ++i) cache[start + i] = words[i];
     }
+#elif defined(OP_INKLING_ATTENTION)
+    uint head = gl_WorkGroupID.x, qbase = head * 128u, rbase = 3072u + head * 16u;
+    uint kvhead = head / 3u;
+    float sink = x[3456u + head];
+    float peak = 0.0, denominator = 1.0;
+    float output_lo = 0.0, output_hi = 0.0;
+    uint first = p.rotary == 0u ? 0u : (max(p.position + 1u, p.rotary) - p.rotary);
+    for (uint key = first; key <= p.position; ++key) {
+        uint kv = ((key % p.context) * 8u + kvhead) * 128u;
+        uint distance = p.position - key;
+        precise float dot = x[qbase + lane] * cache_value(kv + lane, false)
+            + x[qbase + lane + 64u] * cache_value(kv + lane + 64u, false);
+        float score = sum_group(dot) * 0.08838834765;
+        float relative = 0.0;
+        if (distance < 1024u) {
+            uint bias = 3480u + distance * 16u;
+            relative = sum_group(lane < 16u ? x[rbase + lane] * x[bias + lane] : 0.0);
+        }
+        score += relative - sink;
+        float next = max(peak, score);
+        float old_weight = exp(peak - next), weight = exp(score - next);
+        denominator = denominator * old_weight + weight;
+        output_lo = output_lo * old_weight + weight * cache_value(kv + lane, true);
+        output_hi = output_hi * old_weight + weight * cache_value(kv + lane + 64u, true);
+        peak = next;
+    }
+    y[qbase + lane] = output_lo / denominator;
+    y[qbase + lane + 64u] = output_hi / denominator;
 #elif defined(OP_ATTENTION) || defined(OP_ATTENTION_Q4)
     uint head = gl_WorkGroupID.x, token = gl_WorkGroupID.y;
     uint kv_head = head / (p.rows / p.kv_heads);

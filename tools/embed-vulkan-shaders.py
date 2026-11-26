@@ -14,7 +14,7 @@ def main():
                  "head_slice", "sigmoid_gate", "kv_store_q4", "attention_q4",
                  "q4_k", "q6_k", "gather_q4_k", "iq4_nl", "iq4_xs", "gather_q8_0",
                  "f32_project", "moe_route", "moe_weighted", "apex_qk_norm", "gdn_apply", "sigmoid_gate_scalar",
-                 "kv_fwht", "inkling_route", "inkling_situ"):
+                 "kv_fwht", "inkling_route", "inkling_situ", "inkling_attention"):
         code = (directory / f"{name}.spv").read_bytes()
         words = [word for word, in struct.iter_unpack("<I", code)]
         if len(words) < 5 or words[0] != 0x07230203:
