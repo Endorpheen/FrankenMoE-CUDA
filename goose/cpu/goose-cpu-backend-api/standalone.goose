@@ -9,6 +9,31 @@ fn packet_tensor(packet: const i64[:], at: i64) -> Tensor {
     return t;
 }
 
+extern "fg_cuda_dsa_score" fn cuda_dsa_score(config: i64[:], q: const u8[:], k: const u8[:],
+    weights: const u8[:], masks: const u8[:], dst: u8[:]) -> i64;
+
+fn dispatch_dsa_score(p: const Node &, mask: const Tensor &, q: const u8[:], k: const u8[:],
+                      weights: const u8[:], masks: const u8[:], dst: u8[:]) -> bool {
+    let queries = p.x.ne[2];
+    let cells = p.y.ne[2];
+    if queries < 1 || queries > 4096 || cells < 1 || cells > 1048576 ||
+       p.x.kind != 0 || p.y.kind != 1 || p.z.kind != 0 || mask.kind != 1 || p.d.kind != 0 ||
+       p.x.ne[0] != 128 || p.x.ne[1] != 64 || p.x.ne[3] != 1 ||
+       p.x.nb[0] != 4 || p.x.nb[1] != 512 || p.x.nb[2] != 32768 ||
+       p.y.ne[0] != 128 || p.y.ne[1] != 1 || p.y.ne[3] != 1 ||
+       p.y.nb[0] != 2 || p.y.nb[2] < 256 || p.y.nb[2] % 2 != 0 ||
+       p.z.ne[0] != 64 || p.z.ne[1] != queries || p.z.ne[2] != 1 || p.z.ne[3] != 1 ||
+       p.z.nb[0] != 4 || p.z.nb[1] != 256 ||
+       mask.ne[0] != cells || mask.ne[1] != queries || mask.ne[2] != 1 || mask.ne[3] != 1 ||
+       mask.nb[0] != 2 || mask.nb[1] < 2 * cells || mask.nb[1] % 2 != 0 ||
+       p.d.ne[0] != cells || p.d.ne[1] != queries || p.d.bytes != 4 * cells * queries ||
+       p.x.bytes > q.len || p.y.bytes > k.len || p.z.bytes > weights.len ||
+       mask.bytes > masks.len || p.d.bytes > dst.len { return false; }
+    var config: i64[6] = [cells, queries, p.y.nb[2], p.x.nb[2], p.z.nb[1], mask.nb[1]];
+    return cuda_dsa_score(config, q[0 .. p.x.bytes], k[0 .. p.y.bytes],
+        weights[0 .. p.z.bytes], masks[0 .. mask.bytes], dst[0 .. p.d.bytes]) == 1;
+}
+
 export fn fg143_node_run(packet: const i64[:], mode: i64,
     x: const u8[:], y: const u8[:], z: const u8[:], mask: const u8[:], dst: u8[:],
     scratch: f32[:], indices: i64[:],
@@ -56,6 +81,10 @@ export fn fg143_node_run(packet: const i64[:], mode: i64,
     }
     if p.op == OP_CUSTOM && p.ip[0] == 0x4d4f454e {
         return mode == 1 || moe_normalize(p, x, y, dst);
+    }
+    if mode == 0 && p.op == OP_LIGHTNING_INDEXER {
+        let mask_shape = packet_tensor(packet, 59);
+        return dispatch_dsa_score(p, mask_shape, x, y, z, mask, dst);
     }
     if mode == 0 && p.op == OP_FLASH_ATTN_EXT {
         if packet[69] != 0 { return false; }

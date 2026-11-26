@@ -162,3 +162,25 @@ All four runs matched the eight reference tokens. Median prefill increased
 by 22.9 percent and median decode by 75.2 percent. Process swap was zero.
 System swap-out was zero in the first pair and rose by 34,798 and 37,528
 pages in the second candidate and control runs, respectively.
+
+## CUDA DSA score reduction
+
+For longer caches, a fused Goose CUDA node evaluates the weighted ReLU
+reduction directly into the score matrix. This avoids materializing a
+64-head intermediate. The existing top-k and additive mask remain in the
+graph. The CPU graph remains available when CUDA is unavailable or
+`GOOSE_GIGACHAT4_DSA_CUDA=0` is set.
+
+On a synthetic shape of 2176 keys and 128 queries, one old score graph
+took 28.669405 seconds and the CUDA node took 0.114242 seconds. All
+278528 scores matched exactly, including 39790 masked positions. This
+comparison measures the score operation and excludes model execution.
+
+The real 2176/8 request crossed the threshold with a full 128-token
+prefill block. All eight output IDs matched the external reference:
+2759, 481, 87544, 15344, 6716, 4437, 1942, 20201. The request SHA-256
+is `cdf9a3e8a8de1a9fdb3b12eece9c0eead3f7817a30fffd935854aba3d6150daf`.
+Goose recorded 21.47 prefill and 6.63 decode tokens/s in this diagnostic,
+with 8429 MiB VRAM after the request and a peak RSS of 21.99 GiB. Process
+swap was zero. System swap-out increased by 575570 pages during the
+request. The numbers are not a paired end-to-end speed comparison.

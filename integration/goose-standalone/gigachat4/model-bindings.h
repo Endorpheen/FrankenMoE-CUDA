@@ -9,7 +9,7 @@ enum { GIGA_TENSOR_COUNT = 1036, GIGA_LAYER_COUNT = 33 };
 struct ggml_context;
 
 struct giga_graph_config {
-    float tuning[5];
+    float tuning[6];
     float routed_limits[32];
     float shared_limits[33];
     uint64_t factors[33];

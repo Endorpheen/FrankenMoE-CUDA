@@ -18,7 +18,7 @@ export fn giga_mla_layer(ctx: u64, graph: u64, projected: u64[:], index: u64[:],
                          kv_store: u64, idx_store: u64, idx_rotation: u64, rows: u64, mask: u64,
                          tokens: i64, cells: i64, capacity: i64, streams: i64,
                          kv_stride: u64, idx_stride: u64, scale: f32,
-                         wv: u64, wo: u64) -> u64 {
+                         wv: u64, wo: u64, cuda_dsa: bool) -> u64 {
     if ctx == 0 || graph == 0 || kv_store == 0 || idx_store == 0 || rows == 0 || mask == 0 ||
        wv == 0 || wo == 0 || projected.len < 4 || index.len < 3 ||
        tokens < 1 || tokens > 1048576 || streams < 1 || tokens % streams != 0 ||
@@ -46,7 +46,7 @@ export fn giga_mla_layer(ctx: u64, graph: u64, projected: u64[:], index: u64[:],
         let idx_keys = giga_view4(ctx, written_idx, 128, 1, cells, streams,
                                   idx_stride, idx_stride, idx_plane, 0);
         selected = giga_dsa_index_mask(ctx, index_q, idx_keys, index[2], mask,
-                                       tokens, streams, cells);
+                                       tokens, streams, cells, cuda_dsa);
     }
 
     let batch = tokens / streams;

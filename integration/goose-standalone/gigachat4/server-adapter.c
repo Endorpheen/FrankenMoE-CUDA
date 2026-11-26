@@ -25,6 +25,8 @@ int giga_server_open(const void *mapping, size_t bytes, int64_t capacity) {
     giga_goose_init(0, NULL);
     int status = giga_bind_model(&model, mapping, bytes);
     if (status != 0) return status;
+    const char *dsa = getenv("GOOSE_GIGACHAT4_DSA_CUDA");
+    if ((!dsa || strcmp(dsa, "0") != 0) && fg_cuda_free_bytes() > 0) model.config.tuning[5] = 1.0f;
     const char *mla_setting = getenv("GOOSE_GIGACHAT4_MLA_F32");
     const int64_t minimum_mla_vram = INT64_C(6) * 1024 * 1024 * 1024;
     const bool mla = (!mla_setting || strcmp(mla_setting, "0") != 0) &&

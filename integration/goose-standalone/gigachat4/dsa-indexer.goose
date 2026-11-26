@@ -3,6 +3,8 @@ extern "ggml_rope_ext" fn giga_rope(ctx: u64, x: u64, pos: u64, factors: u64,
                                    base: f32, scale: f32, ext: f32, attn: f32,
                                    beta_fast: f32, beta_slow: f32) -> u64;
 extern "ggml_cast" fn giga_cast(ctx: u64, x: u64, kind: i32) -> u64;
+extern "ggml_lightning_indexer" fn giga_lightning(ctx: u64, q: u64, k: u64,
+                                                  weights: u64, mask: u64) -> u64;
 extern "ggml_relu" fn giga_relu(ctx: u64, x: u64) -> u64;
 extern "ggml_top_k" fn giga_top_k(ctx: u64, x: u64, k: i32) -> u64;
 extern "ggml_cont" fn giga_cont(ctx: u64, x: u64) -> u64;
@@ -45,7 +47,7 @@ export fn giga_dsa_index_project(ctx: u64, input: u64, qr: u64, pos: u64,
 }
 
 export fn giga_dsa_index_mask(ctx: u64, q: u64, cached_k: u64, weights: u64,
-                              mask_f32: u64, tokens: i64, streams: i64, cells: i64) -> u64 {
+                              mask_f32: u64, tokens: i64, streams: i64, cells: i64, cuda_dsa: bool) -> u64 {
     if ctx == 0 || q == 0 || cached_k == 0 || weights == 0 || mask_f32 == 0 ||
        tokens < 1 || tokens > 1048576 || streams < 1 || tokens % streams != 0 ||
        cells < 1 || cells > 1048576 { return 0; }
@@ -54,14 +56,19 @@ export fn giga_dsa_index_mask(ctx: u64, q: u64, cached_k: u64, weights: u64,
                         (batch * 32768) as u64, 0);
     let ws = giga_view4(ctx, weights, 64, batch, 1, streams, 256,
                         (batch * 256) as u64, (batch * 256) as u64, 0);
-    let q_rows = giga_permute(ctx, qs, 0, 2, 1, 3);
-    let k_rows = giga_permute(ctx, cached_k, 0, 2, 1, 3);
-    let dot = giga_mat(ctx, k_rows, q_rows);
-    let by_head = giga_cont(ctx, giga_permute(ctx, dot, 2, 1, 0, 3));
-    let weighted = giga_mul(ctx, giga_relu(ctx, by_head), ws);
-    let summed = giga_sum_rows(ctx, weighted);
-    let scores = giga_cont(ctx, giga_permute(ctx, summed, 2, 1, 0, 3));
-    let score = giga_add(ctx, scores, mask_f32);
+    var score: u64 = 0;
+    if cuda_dsa && streams == 1 && batch <= 4096 {
+        score = giga_lightning(ctx, qs, cached_k, ws, giga_cast(ctx, mask_f32, 1));
+    } else {
+        let q_rows = giga_permute(ctx, qs, 0, 2, 1, 3);
+        let k_rows = giga_permute(ctx, cached_k, 0, 2, 1, 3);
+        let dot = giga_mat(ctx, k_rows, q_rows);
+        let by_head = giga_cont(ctx, giga_permute(ctx, dot, 2, 1, 0, 3));
+        let weighted = giga_mul(ctx, giga_relu(ctx, by_head), ws);
+        let summed = giga_sum_rows(ctx, weighted);
+        let scores = giga_cont(ctx, giga_permute(ctx, summed, 2, 1, 0, 3));
+        score = giga_add(ctx, scores, mask_f32);
+    }
     var count = cells;
     if count > 2048 { count = 2048; }
     let picks = giga_cont(ctx, giga_top_k(ctx, score, count as i32));

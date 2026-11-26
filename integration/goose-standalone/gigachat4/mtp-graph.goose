@@ -17,7 +17,7 @@ export fn giga_mtp_graph(ctx: u64, graph: u64, hidden: u64, w: u64[:],
     let input = giga_mat(ctx, w[41], giga_concat(ctx, e, h, 0));
     let attended = giga_decoder_mla(ctx, graph, input, w, state, batch[1], batch[2], batch[3],
         shape[0], shape[1], shape[2], shape[3], strides[0], strides[1], tuning[0], tuning[1],
-        shape[5] as i32, factors, rope, index_rope);
+        shape[5] as i32, factors, rope, index_rope, tuning.len > 5 && tuning[5] != 0.0);
     let next = giga_decoder_ffn(ctx, graph, input, attended, w, 29, 0, shape[0],
         true, tuning[0], false, 0.0, 1.0, 0.0, dense_limit);
     if next == 0 { return -3; }

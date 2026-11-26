@@ -204,3 +204,36 @@ export fn fg_mla_attn_merge(scratch: u64, out: u64, cfg: u64, task: i64, query: 
         attn_store(dst + ((4 * (32 * b + lane)) as u64), value);
     }
 }
+
+export fn fg_dsa_score(q: u64, k: u64, weights: u64, mask: u64, out: u64,
+                       cfg: u64, cell: i64, token: i64, lane: i64) {
+    let cells = attn_word(cfg, 0);
+    if cell >= cells { return; }
+    let mask_row = mask + ((token * attn_word(cfg, 5)) as u64);
+    let bias = attn_half(attn_ld_u16(mask_row, (2 * cell) as u64));
+    let target = out + ((4 * (token * cells + cell)) as u64);
+    if bias == attn_neg_inf() {
+        if lane == 0 { attn_store(target, bias); }
+        return;
+    }
+    let key = k + ((cell * attn_word(cfg, 2)) as u64);
+    let key0 = attn_half(attn_ld_u16(key, (2 * lane) as u64));
+    let key1 = attn_half(attn_ld_u16(key, (2 * (32 + lane)) as u64));
+    let key2 = attn_half(attn_ld_u16(key, (2 * (64 + lane)) as u64));
+    let key3 = attn_half(attn_ld_u16(key, (2 * (96 + lane)) as u64));
+    let query = q + ((token * attn_word(cfg, 3) + 4 * lane) as u64);
+    let weight = weights + ((token * attn_word(cfg, 4)) as u64);
+    var score: f32 = 0.0;
+    for head in 64 {
+        let row = query + ((512 * head) as u64);
+        var dot = attn_fma(attn_load(row), key0, 0.0);
+        dot = attn_fma(attn_load(row + 128), key1, dot);
+        dot = attn_fma(attn_load(row + 256), key2, dot);
+        dot = attn_fma(attn_load(row + 384), key3, dot);
+        dot = attn_sum(dot);
+        if lane == 0 && dot > 0.0 {
+            score = attn_fma(dot, attn_load(weight + ((head * 4) as u64)), score);
+        }
+    }
+    if lane == 0 { attn_store(target, score + bias); }
+}

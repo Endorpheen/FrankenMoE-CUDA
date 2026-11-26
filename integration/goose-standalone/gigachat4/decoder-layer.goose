@@ -30,7 +30,7 @@ export fn giga_decoder_mla(ctx: u64, graph: u64, input: u64, w: u64[:], state: u
                            pos: u64, rows: u64, mask: u64,
                            tokens: i64, cells: i64, capacity: i64, streams: i64,
                            kv_stride: u64, idx_stride: u64, epsilon: f32, scale: f32,
-                           original_ctx: i32, factors: u64, rope: f32[:], index_rope: f32[:]) -> u64 {
+                           original_ctx: i32, factors: u64, rope: f32[:], index_rope: f32[:], cuda_dsa: bool) -> u64 {
     if ctx == 0 || graph == 0 || input == 0 || w.len < 29 || state.len < 3 { return 0; }
     let norm = giga_norm_at(ctx, input, w, 0, epsilon);
     if norm == 0 { return 0; }
@@ -44,7 +44,7 @@ export fn giga_decoder_mla(ctx: u64, graph: u64, input: u64, w: u64[:], state: u
     if giga_dsa_index_project(ctx, norm, projected[2], pos, w[25], w[26], w[27], w[28],
                               tokens, 64, original_ctx, index_rope, index) != 0 { return 0; }
     return giga_mla_layer(ctx, graph, projected, index, state[0], state[1], state[2], rows, mask,
-                          tokens, cells, capacity, streams, kv_stride, idx_stride, scale, w[17], w[18]);
+                          tokens, cells, capacity, streams, kv_stride, idx_stride, scale, w[17], w[18], cuda_dsa);
 }
 
 export fn giga_decoder_ffn(ctx: u64, graph: u64, input: u64, attention: u64, w: u64[:],

@@ -204,7 +204,7 @@ static struct {
     void * library;
     Context context;
     Module module;
-    Function kernel, attention_tiles, attention_merge, mla_attention_tiles, mla_attention_merge, gdn, gdn_decode, q4_rows, vector, vector_flat, vector_flat4, rms_reference;
+    Function kernel, attention_tiles, attention_merge, mla_attention_tiles, mla_attention_merge, dsa_score, gdn, gdn_decode, q4_rows, vector, vector_flat, vector_flat4, rms_reference;
     Function mmq_pack, mmq_pack_shared, mmq_pack_glu, mmq_matrix, mmq_q4_matrix, mmq_q6_matrix;
     Function mmq_pack_k_major, mmq_q6_dense_half_k, mmq_q6_dense_pipeline;
     Function mmq_q4_dense_shared, mmq_q4_routed_shared;
@@ -1250,6 +1250,7 @@ static void load_cuda(void) {
         if (error == 0) error = cuda.function_get(&cuda.attention_merge, cuda.module, "goose_q4_attention_merge");
         if (error == 0) error = cuda.function_get(&cuda.mla_attention_tiles, cuda.module, "goose_mla_attention_tiles");
         if (error == 0) error = cuda.function_get(&cuda.mla_attention_merge, cuda.module, "goose_mla_attention_merge");
+        if (error == 0) error = cuda.function_get(&cuda.dsa_score, cuda.module, "goose_dsa_score");
         if (error == 0 && flash_mma) error = cuda.function_get(&cuda.flash_mma, cuda.module, "goose_flash_causal_mma");
         if (error == 0 && flash_mma) error = cuda.function_get(&cuda.flash_stage, cuda.module, "goose_flash_q4_stage");
         if (error == 0 && flash_stream) error = cuda.function_get(&cuda.flash_stream, cuda.module, "goose_flash_stream_mma");
@@ -3596,6 +3597,31 @@ static int launch_flash_mma(const int64_t * c, DevicePtr * staged, DevicePtr out
     if (error == 0) *executed = true;
     else (void) cuda.sync();
     return error;
+}
+
+int64_t fg_cuda_dsa_score(sl_i64 config, sl_u8 q, sl_u8 k, sl_u8 weights, sl_u8 mask, sl_u8 out) {
+    if (config.len != 6 || config.data[0] < 1 || config.data[0] > 1048576 ||
+        config.data[1] < 1 || config.data[1] > 4096 ||
+        q.len <= 0 || k.len <= 0 || weights.len <= 0 || mask.len <= 0 || out.len <= 0) return -1;
+    const int active = start_context();
+    if (active != 1) return active;
+
+    const sl_u8 inputs[] = {q, k, weights, mask,
+        {(uint8_t *)config.data, config.len * (int64_t)sizeof(*config.data)}};
+    struct device_buffer *buffers[] = {&cuda.input, &cuda.weight, &cuda.attention_value,
+        &cuda.jobs, &cuda.attention_config};
+    DevicePtr staged[5] = {0}, output = 0;
+    const uint64_t host = (uint64_t)(uintptr_t)out.data;
+    int error = activation_output(host, out.len, &output);
+    if (error == 0) error = upload_inputs(inputs, buffers, staged, sizeof(inputs) / sizeof(*inputs));
+    if (error == 0) {
+        void *args[] = {&staged[0], &staged[1], &staged[2], &staged[3], &output, &staged[4]};
+        error = cuda.launch(cuda.dsa_score, (unsigned)((config.data[0] + 3) / 4),
+            (unsigned)config.data[1], 1, 128, 1, 1, 0, NULL, args, NULL);
+    }
+    if (error == 0) error = activation_publish(host, out.len, output, false);
+    if (finish_context() != 0 || error != 0) return -1;
+    return 1;
 }
 
 int64_t fg_cuda_q4_attention(sl_i64 config, sl_u8 q, sl_u8 k, sl_u8 v, sl_u8 mask, sl_u8 out, float scale) {

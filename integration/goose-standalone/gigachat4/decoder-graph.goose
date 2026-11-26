@@ -32,7 +32,7 @@ export fn giga_decoder_graph(ctx: u64, graph: u64, weights: u64[:], offsets: i64
             attention = giga_decoder_mla(ctx, graph, hidden, w, local,
                 batch[1], batch[2], batch[3], shape[0], shape[1], shape[2], shape[3],
                 strides[0], strides[1], tuning[0], tuning[1], shape[5] as i32,
-                factors[layer], rope, index_rope);
+                factors[layer], rope, index_rope, tuning.len > 5 && tuning[5] != 0.0);
         }
         hidden = giga_decoder_ffn(ctx, graph, hidden, attention, w, ffn_offset,
             0, shape[0], layer == 0, tuning[0], normalize, tuning[2], tuning[3],

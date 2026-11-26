@@ -139,7 +139,7 @@ int giga_step_graph(struct giga_request *request, struct giga_bindings *model,
         step->output_count, config->original_context, step->draft_catchup };
     uint64_t strides[] = { ggml_row_size(GGML_TYPE_F16, 576), ggml_row_size(GGML_TYPE_F16, 128) };
     struct giga_graph_config options = *config;
-    sl_f32 tuning = { options.tuning, 5 };
+    sl_f32 tuning = { options.tuning, 6 };
     sl_f32 rope = { options.rope, 6 };
     sl_f32 index_rope = { options.index_rope, 6 };
     uint64_t result[2];
