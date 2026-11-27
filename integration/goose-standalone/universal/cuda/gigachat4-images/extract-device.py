@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 import sys
 
@@ -7,8 +8,6 @@ fragment = source.split("/* ---- prototypes ---- */", 1)[1].split("static void g
 if "gs_sp" in fragment:
     raise SystemExit(f"{module} uses the host stack ABI")
 if module == "gdn":
-    import re
-
     # Keep launch-shape literals visible to Clang when lowering the device loops.
     fragment = re.sub(r"static void (gdn(?:_body|_decode)?_g\()",
                       r"static __attribute__((always_inline)) void \1", fragment)
@@ -59,6 +58,13 @@ if module in ("gdn-mma", "flash-mma", "flash-vec", "rms-reference"):
 
         types, fragment = vector_prefix(types), vector_prefix(fragment)
     (out / f"{module}-types.h").write_text(types)
+if module == "q4-attention":
+    fragment = re.sub(r"\ba16_f32\b", "mla_a16_f32", fragment)
+    fragment = re.sub(
+        r"static void (giga_mla_mma_pv_(?:tile|indexed)_g\()",
+        r"static __attribute__((always_inline)) void \1",
+        fragment,
+    )
 (out / f"{module}-device.h").write_text(fragment)
 if module == "mmq-quant":
     types = source.split("/* ---- types ---- */", 1)[1].split("/* ---- data ---- */", 1)[0]

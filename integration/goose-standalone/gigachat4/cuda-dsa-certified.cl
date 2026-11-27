@@ -164,16 +164,11 @@ __kernel void goose_dsa_fallback_score(__global const uint8_t *q, __global const
     __global const int64_t *cfg, __global const uint32_t *status) {
     uint32_t tile, step, row, lane;
     __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(row));
-    if (status[row] == 0) return;
     __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(tile));
     __asm__("mov.u32 %0, %%nctaid.x;" : "=r"(step));
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
-    const int64_t tiles = cfg[0] / 16;
-    for (; tile < tiles; tile += step) {
-        giga_dsa_score_shared_q_g((uint64_t)q, (uint64_t)k, (uint64_t)weights,
-            (uint64_t)mask, (uint64_t)scores, (uint64_t)cfg, 16 * tile + 4 * (lane / 32),
-            row, lane % 32);
-    }
+    dsa_fallback_score_g((uint64_t)q, (uint64_t)k, (uint64_t)weights, (uint64_t)mask,
+        (uint64_t)scores, (uint64_t)cfg, (uint64_t)status, row, tile, step, lane);
 }
 
 __kernel void goose_dsa_fallback_top(__global const float *scores, __global uint32_t *ids,
@@ -182,8 +177,7 @@ __kernel void goose_dsa_fallback_top(__global const float *scores, __global uint
     __local uint64_t keys[2048];
     uint32_t row, lane;
     __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(row));
-    if (status[row] == 0) return;
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
-    giga_dsa_top_wide_g((uint64_t)scores, (uint64_t)ids, cells, row, lane,
+    dsa_fallback_top_g((uint64_t)scores, (uint64_t)ids, (uint64_t)status, cells, row, lane,
         (uint64_t)bins, (uint64_t)keys);
 }

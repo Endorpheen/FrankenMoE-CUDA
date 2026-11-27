@@ -450,3 +450,28 @@ export fn dsa_finalize(scores: u64, band: u64, counts: u64, out: u64, status: u6
     }
     if lane == 0 { write_word(status, row, 0); }
 }
+
+extern "giga_dsa_score_shared_q_g" fn fallback_score_tile(q: u64, k: u64, weights: u64, mask: u64,
+    scores: u64, config: u64, key: i64, row: i64, lane: i64);
+extern "giga_dsa_top_wide_g" fn fallback_top_row(scores: u64, ids: u64, cells: i64,
+    row: i64, lane: i64, bins: u64, keys: u64);
+
+export fn dsa_fallback_score(q: u64, k: u64, weights: u64, mask: u64, scores: u64,
+    config: u64, status: u64, row: i64, first_tile: i64, step: i64, thread: i64) {
+    if read_id(status, row) == 0 { return; }
+    let tiles = attn_word(config, 0) / 16;
+    let warp_offset = 4 * (thread / 32);
+    let lane = thread % 32;
+    var tile = first_tile;
+    while tile < tiles {
+        fallback_score_tile(q, k, weights, mask, scores, config, 16 * tile + warp_offset, row, lane);
+        tile += step;
+    }
+}
+
+export fn dsa_fallback_top(scores: u64, ids: u64, status: u64, cells: i64,
+    row: i64, lane: i64, bins: u64, keys: u64) {
+    if read_id(status, row) != 0 {
+        fallback_top_row(scores, ids, cells, row, lane, bins, keys);
+    }
+}

@@ -24,7 +24,6 @@ compile_device() {
 
 "$goose" --standalone -o "$scratch/q4-attention.c" --header "$scratch/q4-attention.h" "$src/dsa-mla.goose"
 python3 "$src/extract-device.py" "$scratch" q4-attention
-sed -i 's/\ba16_f32\b/mla_a16_f32/g' "$scratch/q4-attention-device.h"
 sed -i -E 's/static void (giga_mla_mma_pv_(tile|indexed)_g\()/static __attribute__((always_inline)) void \1/' \
     "$scratch/q4-attention-device.h"
 compile_device "$standalone/cuda-device.cl"
