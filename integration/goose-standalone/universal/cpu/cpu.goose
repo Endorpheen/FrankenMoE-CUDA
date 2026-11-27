@@ -4432,7 +4432,11 @@ fn execute_graph_node(tensor: u64, work: GraphWorkspace &, selective: bool, step
         if t == 0 { continue; }
         let src = storage_get(t, STORAGE_DATA, 0);
         if src == 0 && !graph_empty(t) { return false; }
-        if overwrite && activation_spans_overlap(address, bytes, src, storage_bytes(t)) { overwrite = false; }
+        if overwrite {
+            let source_bytes = if i < 3 { packet[9 + 10 * i] as! u64 }
+                else if i == 3 { packet[68] as! u64 } else { storage_bytes(t) };
+            if activation_spans_overlap(address, bytes, src, source_bytes) { overwrite = false; }
+        }
     }
     if graph_output_prepare(address, bytes as i64, fresh, overwrite, step, deadline) != 0 { return false; }
     if op == 86 { return graph_gdn(tensor); }
