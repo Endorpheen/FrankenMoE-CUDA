@@ -1,4 +1,4 @@
-# FrankenMoE migration status
+# GooseInfer migration status
 
 For the standalone chat runtime, see [current state](../CURRENT_STATE.md).
 
@@ -20,8 +20,8 @@ mixed-language sources and detected C++ source templates at `5ee89b4b`. The comm
 baseline contained 1,062,464 C++/CUDA lines including source templates. The worktree
 uses a complete checkout and the counter refuses a sparse index on this branch.
 
-`tools/build-standalone-runtime.sh` now links `frankenmoe-tokenize` and
-`frankenmoe-serve` from one composed Goose unit and the C system adapters.
+`tools/build-standalone-runtime.sh` now links `gooseinfer-tokenize` and
+`gooseinfer-serve` from one composed Goose unit and the C system adapters.
 Both binaries depend only on `libc` and `libm`. The tokenizer read the Apex GGUF and
 returned `[760, 6511, 314, 9338, 369]` for `The capital of France is` with BOS disabled.
 The standalone listener returned HTTP 200 with body `ok` on `GET /health`.

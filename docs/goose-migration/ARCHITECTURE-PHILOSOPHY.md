@@ -1,4 +1,4 @@
-# FrankenMoE architecture: modular source, one optimised compute path
+# GooseInfer architecture: modular source, one optimised compute path
 
 Recorded 2026-11-15. This is a direction, not a refactor instruction. The constraint is explicit
 and belongs at the top: **do not start a large architectural refactor for this concept now.**
@@ -11,7 +11,7 @@ Modularity in the source, no modularity in the final binary.
 
 Nine points, as given:
 
-1. **One FrankenMoE core on Goose.** Memory management, scheduler, model loading, GPU expert
+1. **One GooseInfer core on Goose.** Memory management, scheduler, model loading, GPU expert
    cache, CPU/GPU backends and the common infrastructure are shared, not copied.
 2. **Per-architecture units.** Apex, Qwen, LFM and the rest get their own modules for the
    computation that is genuinely theirs. Never a separate copy of the whole runtime per model.

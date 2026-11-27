@@ -1,7 +1,7 @@
 # Goose for VS Code
 
 Syntax highlighting, snippets and language configuration for Goose (`.goose`),
-the language the FrankenMoE runtime is written in.
+the language the GooseInfer runtime is written in.
 
 This package is isolated from the runtime: it only adds editor support, it does
 not change the compiler, the runtime or any program behaviour.
@@ -69,4 +69,4 @@ usage threshold.
 ## License
 
 MIT for this package. The samples under `linguist/samples/` are Apache-2.0,
-copied from the FrankenMoE-CUDA repository.
+copied from the GooseInfer repository.

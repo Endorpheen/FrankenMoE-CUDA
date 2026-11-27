@@ -1,11 +1,12 @@
-# Vulkan backend for FrankenMoE
+# Vulkan backend for GooseInfer
 
-**Status: deferred.** All implementation and validation items are open.
-Start only after Igor explicitly says **«Начинай Vulkan»**. CUDA optimization
-of Bonsai, Apex and Inkling has priority. This document authorizes no Vulkan
-builds, runtime changes, shader compilation, benchmarks, or release changes.
+**Status: experimental Vulkan multi-model distribution.**
+The v0.14.1 alpha supports the documented Apex, Inkling, Bonsai and
+Qwen2.5 GGUF variants. Short generation passed on Linux with the RTX 4070
+and under Wine. Native AMD, native Windows GPU and long-context results
+remain open. See the [Vulkan setup guide](../releases/VULKAN-ALPHA.md).
 
-## Source audit and integration boundary
+## Historical source audit and integration boundary
 
 The shipping source audit uses `origin/main` at `48480ea22`. Paths marked
 “main” below refer to that revision. The CUDA experiment line is

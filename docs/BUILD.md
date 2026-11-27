@@ -48,7 +48,7 @@ assembling the package. Verify the input artifacts against the
 experiment SHA-256 receipts.
 
 ```bash
-FRANKENMOE_UI_PACKAGE=/path/to/verified/chat-package \
+GOOSEINFER_UI_PACKAGE=/path/to/verified/chat-package \
   bash tools/multimodel-release/stage-linux.sh build/release-linux-candidate
 python3 tools/multimodel-release/smoke-linux.py \
   build/release-linux-candidate . build/release-smoke

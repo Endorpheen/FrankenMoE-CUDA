@@ -1,4 +1,4 @@
-# FrankenMoE roadmap
+# GooseInfer roadmap
 
 The [current state](docs/CURRENT_STATE.md) records the release, cumulative
 runtime and qualification status.
