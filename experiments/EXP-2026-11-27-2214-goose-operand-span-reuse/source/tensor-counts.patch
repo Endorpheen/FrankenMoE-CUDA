@@ -1,0 +1,48 @@
+diff --git a/integration/goose-standalone/universal/bonsai/model-host.c b/integration/goose-standalone/universal/bonsai/model-host.c
+index 52856ef1..230a4649 100644
+--- a/integration/goose-standalone/universal/bonsai/model-host.c
++++ b/integration/goose-standalone/universal/bonsai/model-host.c
+@@ -620,0 +621,7 @@ static _Thread_local struct {
++static _Thread_local int tensor_count_phase = -1;
++static _Thread_local uint64_t tensor_counts[2][5];
++
++void fg_tensor_count(int64_t kind, int64_t count) {
++    if (tensor_count_phase >= 0) tensor_counts[tensor_count_phase][kind] += (uint64_t) count;
++}
++
+@@ -621,0 +629 @@ void fg_q35_generation_scope_enter(void) {
++    if (H.gigachat4) memset(tensor_counts, 0, sizeof tensor_counts);
+@@ -629,0 +638,9 @@ void fg_q35_generation_scope_leave(void) {
++    if (H.gigachat4) {
++        for (int phase = 0; phase < 2; ++phase) {
++            const char *names[] = {"graph_describe", "tensor_span", "contiguity", "destination_reuse", "operand_reuse"};
++            for (int kind = 0; kind < 5; ++kind) {
++                fprintf(stderr, "tensor-count %s %s=%llu\n", phase ? "decode" : "prefill",
++                        names[kind], (unsigned long long) tensor_counts[phase][kind]);
++            }
++        }
++    }
+@@ -678,0 +696 @@ int64_t fg_q35_generation_eval(sl_i32 tokens, sl_f32 output, uint8_t prefill) {
++        if (H.gigachat4) tensor_count_phase = prefill ? 0 : 1;
+@@ -680,0 +699 @@ int64_t fg_q35_generation_eval(sl_i32 tokens, sl_f32 output, uint8_t prefill) {
++        tensor_count_phase = -1;
+diff --git a/integration/goose-standalone/universal/cpu/cpu.goose b/integration/goose-standalone/universal/cpu/cpu.goose
+index 58f68666..1d0567e2 100644
+--- a/integration/goose-standalone/universal/cpu/cpu.goose
++++ b/integration/goose-standalone/universal/cpu/cpu.goose
+@@ -3968,0 +3969,2 @@ extern "fg143_graph_layout" fn graph_layout(tensor: u64, packet: i64[:]) -> i64;
++extern "fg_tensor_count" fn count_tensor_operation(kind: i64, count: i64);
++
+@@ -3970,0 +3973,3 @@ fn graph_describe(tensor: u64, packet: i64[:]) {
++    count_tensor_operation(0, 1);
++    count_tensor_operation(1, 1 + (present & 1) + ((present >> 1) & 1) +
++        ((present >> 2) & 1) + ((present >> 4) & 1));
+@@ -4426 +4431,5 @@ fn execute_graph_node(tensor: u64, work: GraphWorkspace &, selective: bool, step
+-    if candidate { graph_describe(tensor, packet[..]); }
++    if candidate {
++        graph_describe(tensor, packet[..]);
++        count_tensor_operation(2, 1);
++        count_tensor_operation(3, 1);
++    }
+@@ -4435,0 +4445 @@ fn execute_graph_node(tensor: u64, work: GraphWorkspace &, selective: bool, step
++            if i < 4 { count_tensor_operation(4, 1); }
