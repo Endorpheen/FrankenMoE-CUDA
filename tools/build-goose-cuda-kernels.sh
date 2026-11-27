@@ -127,6 +127,9 @@ if module == "vector":
     # address through a device call would copy the plan to per-thread memory.
     fragment = fragment.replace("static GS_NOINLINE void cv_norm_g(",
                                 "static __attribute__((always_inline)) void cv_norm_g(")
+if module == "q4-attention":
+    fragment = fragment.replace("static void giga_mla_mma_pv_tile_g(",
+                                "static __attribute__((always_inline)) void giga_mla_mma_pv_tile_g(")
 if module == "mmq":
     fragment = fragment.replace("static void fg_device_mmq_q4_large_g(",
                                 "static __attribute__((always_inline)) void fg_device_mmq_q4_large_g(")

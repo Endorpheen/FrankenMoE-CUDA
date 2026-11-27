@@ -621,6 +621,36 @@ export fn giga_mla_mma_pv_tile(q: u64, k: u64, v: u64, mask: u64, scratch: u64, 
     mla_pv_store(scratch, slot0, slot1, column+48, d);
 }
 
+extern "fg_mla_any_visible" fn mla_any_visible(seen: u32) -> u32;
+
+export fn giga_mla_tile_visibility(mask: u64, output: u64, cfg: u64,
+    query_group: i64, tile: i64, thread: i64) {
+    let mask_row = mask + (((8 * query_group + thread / 32) * attn_word(cfg, 13)) as u64);
+    let cells = attn_word(cfg, 6);
+    var seen: u32 = 0;
+    for offset in 8 {
+        let at = 256 * tile + 32 * offset + thread % 32;
+        if at < cells && attn_ld_u16(mask_row, (2 * at) as u64) != 0xfc00 {
+            seen = 1;
+            break;
+        }
+    }
+    let visible = mla_any_visible(seen);
+    if thread == 0 {
+        let slot = query_group * attn_word(cfg, 17) + tile;
+        attn_store(output + (4 * slot) as u64, if visible == 0 { 0.0 } else { 1.0 });
+    }
+}
+
+export fn giga_mla_tile_empty(scratch: u64, task: i64, tiles: i64, tile: i64, thread: i64) {
+    var at = thread;
+    while at < 8 * 514 {
+        let slot = ((task + at / 514) * tiles + tile) * 514 + at % 514;
+        attn_store(scratch + (4 * slot) as u64, if at % 514 == 0 { attn_neg_inf() } else { 0.0 });
+        at += 256;
+    }
+}
+
 struct DsaKey4 { a: f32, b: f32, c: f32, d: f32 }
 fn dsa_key_load(k: u64, lane: i64) -> DsaKey4 {
     return DsaKey4 {

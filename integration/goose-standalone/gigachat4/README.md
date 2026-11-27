@@ -623,3 +623,20 @@ sequences matched, post-request VRAM 9553–9554 MiB, peak RSS
 default measured 448.08/14.35 at 9523 MiB and matched all 32 IDs.
 The scoped 512/32 check reproduced all 32 prior IDs. No 32K/512
 or separate cross-architecture inference qualification is claimed.
+
+### EXP-2026-11-27-2181 — Share visibility across GigaChat4 MLA heads
+
+For eligible tensor-core MLA prefill, scan the real F16 mask once
+per eight-query/256-key tile. All heads share the flag. Fully
+masked tiles publish the original empty partials; mixed tiles
+use the unchanged QK/PV body. Force inlining of the shared body
+so adding a kernel entry does not slow the original entry.
+Set GOOSE_GIGA_MLA_VISIBILITY=0 to disable the map.
+
+On 6144/32 the A-B-B-A means were 451.17 to 478.20 prefill
+and 14.16 to 14.01 decode tokens/s. The sum of both phases fell
+from 15.808 to 15.061 seconds. All 32 tokens matched, board
+VRAM after the request was 9523–9538 MiB and swap did not grow.
+The default build measured 480.18/14.22 on 6144/32 at 9538 MiB
+and 270.51/18.32 on 512/32 at 8493 MiB. Both matched all 32 IDs.
+No 32K/512 or separate cross-architecture qualification is claimed.

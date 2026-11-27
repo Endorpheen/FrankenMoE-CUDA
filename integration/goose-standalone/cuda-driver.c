@@ -218,7 +218,7 @@ static struct {
     Function mmq_q4_routed_x128, mmq_q6_routed_x128, mmq_q6_routed_pipeline;
     Function mmq_q4_routed_m128, mmq_q4_routed_down_m128;
     Function mmvq_pack, mmvq;
-    Function giga_dense_mma;
+    Function giga_dense_mma, mla_visibility_tile, mla_visibility_build;
     Function dense_mma, dense_mma_reference, gdn_mma, gdn_mma_v32, flash_mma, flash_stage, flash_vec, flash_vec_merge;
     Function flash_vec_pack, flash_vec_packed;
     Function mmq_stream, mmq_stream_fixup;
@@ -229,7 +229,7 @@ static struct {
     Function route_reduce, route_sort, route_topk, route_gather, route_norm, blit, blit_transpose, fwht, fwht_q4, moe_weighted;
     struct device_buffer input, output, weight, jobs;
     struct device_buffer mmq_packed, mmq_tiles, mmq_partials;
-    struct device_buffer attention_value, attention_scratch, attention_config;
+    struct device_buffer attention_value, attention_scratch, attention_config, mla_visibility;
     struct device_buffer gdn_beta;
     struct device_buffer activations;
     size_t activation_capacity;
@@ -1267,6 +1267,11 @@ static void load_cuda(void) {
             const char * pv_mma_setting = getenv("GOOSE_GIGA_MLA_PV_MMA");
             if (!pv_mma_setting || strcmp(pv_mma_setting, "0") != 0)
                 (void) cuda.function_get(&cuda.mla_mma_tile, cuda.module, "goose_giga_mla_mma_pv_tile");
+            const char * visibility = getenv("GOOSE_GIGA_MLA_VISIBILITY");
+            if (cuda.mla_mma_tile && (!visibility || strcmp(visibility, "0") != 0)) {
+                (void) cuda.function_get(&cuda.mla_visibility_tile, cuda.module, "goose_giga_mla_mma_pv_visible_tile");
+                (void) cuda.function_get(&cuda.mla_visibility_build, cuda.module, "goose_giga_mla_visibility");
+            }
             if (!cuda.mla_mma_tile)
                 (void) cuda.function_get(&cuda.mla_mma_tile, cuda.module, "goose_giga_mla_mma_tile");
         }
@@ -3830,14 +3835,25 @@ int64_t fg_cuda_q4_attention(sl_i64 config, sl_u8 q, sl_u8 k, sl_u8 v, sl_u8 mas
         config.data[4] == 1 && config.data[5] == 1 && config.data[16] == 256 && tasks % 8 == 0 && capacity >= 8;
     if (mla_mma) capacity -= capacity % 8;
     else if (paired_shape && capacity >= 2) capacity -= capacity % 2;
+    bool visible = false;
+    if (error == 0 && mla_mma && staged[3] && cuda.mla_visibility_build && cuda.mla_visibility_tile) {
+        const size_t flag_bytes = (size_t) (positions / 8) * tiles * sizeof(float);
+        const int admitted = reserve(&cuda.mla_visibility, flag_bytes);
+        if (admitted == 0) {
+            void * args[] = {&staged[3], &cuda.mla_visibility.address, &staged[4]};
+            error = cuda.launch(cuda.mla_visibility_build, (unsigned) (positions / 8), tiles,
+                1, 256, 1, 1, 0, NULL, args, NULL);
+            visible = error == 0;
+        } else if (admitted != 2) error = admitted;
+    }
     int start = 0;
     void * tile_args[] = {&staged[0], &staged[1], &staged[2],
-        &staged[3], &cuda.attention_scratch.address, &staged[4], &scale, &start};
+        &staged[3], &cuda.attention_scratch.address, &staged[4], &scale, &start, &cuda.mla_visibility.address};
     void * merge_args[] = {&cuda.attention_scratch.address, &output, &staged[4], &start};
     while (error == 0 && !tiled && start < tasks) {
         const int count = tasks - start < capacity ? tasks - start : capacity;
         const bool pair = !mla_mma && paired_shape && count % 2 == 0 && start % 2 == 0;
-        const Function tile = mla_mma ? cuda.mla_mma_tile : pair ? (positions == 1 ? cuda.mla_attention_pair : cuda.mla_attention_batch_pair) :
+        const Function tile = visible ? cuda.mla_visibility_tile : mla_mma ? cuda.mla_mma_tile : pair ? (positions == 1 ? cuda.mla_attention_pair : cuda.mla_attention_batch_pair) :
             mla ? cuda.mla_attention_tiles : cuda.attention_tiles;
         error = cuda.launch(tile, (unsigned) count / (mla_mma ? 8 : pair ? 2 : 1), tiles, 1, mla_mma ? 256 : 32, 1, 1, 0, NULL, tile_args, NULL);
         const Function merge = pair && positions > 1 ? cuda.mla_attention_batch_merge :

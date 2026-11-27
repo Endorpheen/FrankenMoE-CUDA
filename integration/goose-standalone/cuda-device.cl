@@ -276,6 +276,12 @@ static uint64_t fg_dsa_top_get_key(uint64_t base, int64_t index) {
 static void fg_dsa_top_store(uint64_t base, int64_t index, uint32_t value) {
     ((__global uint32_t *)base)[index] = value;
 }
+static uint32_t fg_mla_any_visible(uint32_t seen) {
+    uint32_t count;
+    __asm__ volatile("{ .reg .pred visible; setp.ne.u32 visible, %1, 0;"
+        " bar.red.popc.u32 %0, 0, visible; }" : "=r"(count) : "r"(seen) : "memory");
+    return count;
+}
 #include "q4-attention-device.h"
 __kernel void goose_giga_dsa_top_wide(__global const float *x, __global int32_t *out, int64_t cells) {
     __local uint32_t bins[16];
@@ -311,6 +317,32 @@ __kernel void goose_giga_mla_mma_pv_tile(__global const float *q, __global const
     giga_mla_mma_pv_tile_g((uint64_t)q,(uint64_t)k,(uint64_t)v,(uint64_t)mask,
         (uint64_t)scratch,(uint64_t)cfg,(uint64_t)scores,scale,8*task,
         (int64_t)query_base+8*task,tile,thread/32,thread%32);
+}
+__kernel void goose_giga_mla_mma_pv_visible_tile(__global const float *q, __global const uint16_t *k,
+    __global const uint16_t *v, __global const uint16_t *mask, __global float *scratch,
+    __global int64_t *cfg, float scale, int32_t query_base, __global const float *visible) {
+    __local float scores[1032] __attribute__((aligned(16)));
+    uint32_t task, tile, thread;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(task));
+    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(tile));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
+    const int64_t query = (int64_t)query_base + 8 * task;
+    const int64_t tiles = cfg[17];
+    if (visible[((query % cfg[2]) / 8) * tiles + tile] == 0.0f) {
+        giga_mla_tile_empty_g((uint64_t)scratch, 8 * task, tiles, tile, thread);
+        return;
+    }
+    giga_mla_mma_pv_tile_g((uint64_t)q,(uint64_t)k,(uint64_t)v,(uint64_t)mask,
+        (uint64_t)scratch,(uint64_t)cfg,(uint64_t)scores,scale,8*task,
+        (int64_t)query_base+8*task,tile,thread/32,thread%32);
+}
+__kernel void goose_giga_mla_visibility(__global const uint16_t *mask,
+    __global float *visible, __global const int64_t *cfg) {
+    uint32_t query_group, tile, thread;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(query_group));
+    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(tile));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
+    giga_mla_tile_visibility_g((uint64_t)mask, (uint64_t)visible, (uint64_t)cfg, query_group, tile, thread);
 }
 
 #undef fg_mla_mma_f16
