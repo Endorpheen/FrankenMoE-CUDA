@@ -5,8 +5,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-extern int64_t fg_cuda_free_bytes(void);
-
 static struct giga_bindings model;
 static struct giga_request request;
 static bool draft_enabled;
@@ -14,6 +12,24 @@ static bool trace;
 static bool planned_enabled;
 static bool planned_prefill_only;
 static float previous_hidden[2560];
+
+int32_t giga_server_expand_mla(void) { return giga_expand_mla_weights(&model); }
+
+void giga_server_placement_trace(int32_t kind, int64_t bytes, int64_t available) {
+    if (!trace) return;
+    if (kind == 1) {
+        fprintf(stderr, "GigaChat4: expert VRAM=%lld bytes, available=%lld bytes\n",
+                (long long)bytes, (long long)available);
+    } else {
+        fprintf(stderr, "GigaChat4: %s VRAM=%lld bytes\n",
+                kind == 0 ? "dense" : "state logical", (long long)bytes);
+    }
+}
+
+static bool setting_is(const char *name, const char *value) {
+    const char *setting = getenv(name);
+    return setting && strcmp(setting, value) == 0;
+}
 
 int giga_server_open(const void *mapping, size_t bytes, int64_t capacity) {
     trace = getenv("GOOSE_GIGACHAT4_TRACE") != NULL;
@@ -29,59 +45,30 @@ int giga_server_open(const void *mapping, size_t bytes, int64_t capacity) {
     giga_goose_init(0, NULL);
     int status = giga_bind_model(&model, mapping, bytes);
     if (status != 0) return status;
-    const char *dsa = getenv("GOOSE_GIGACHAT4_DSA_CUDA");
-    if ((!dsa || strcmp(dsa, "0") != 0) && fg_cuda_free_bytes() > 0) model.config.tuning[5] = 1.0f;
-    const char *mla_setting = getenv("GOOSE_GIGACHAT4_MLA_F32");
-    const int64_t minimum_mla_vram = INT64_C(6) * 1024 * 1024 * 1024;
-    const bool mla = (!mla_setting || strcmp(mla_setting, "0") != 0) &&
-                     fg_cuda_free_bytes() >= minimum_mla_vram;
-    if (mla && giga_expand_mla_weights(&model) != 0) {
+    sl_i64 kinds = {model.kinds, GIGA_LAYER_COUNT};
+    status = giga_server_place_weights((sl_u64){model.weights, GIGA_TENSOR_COUNT},
+        (sl_i64){model.offsets, GIGA_LAYER_COUNT + 1}, kinds, (sl_f32){model.config.tuning, 6},
+        (uintptr_t)mapping, (int64_t)bytes,
+        !setting_is("GOOSE_GIGACHAT4_DSA_CUDA", "0"),
+        !setting_is("GOOSE_GIGACHAT4_MLA_F32", "0"),
+        setting_is("GOOSE_GIGACHAT4_DENSE", "1"),
+        setting_is("GOOSE_GIGACHAT4_EXPERTS", "1"));
+    if (status != 0) {
         giga_unbind_model(&model);
-        return -1;
-    }
-    const char *dense = getenv("GOOSE_GIGACHAT4_DENSE");
-    if (mla || (dense && strcmp(dense, "1") == 0)) {
-        const int64_t reserved = INT64_C(3) * 1024 * 1024 * 1024;
-        const int64_t resident = giga_place_dense((sl_u64){model.weights, GIGA_TENSOR_COUNT}, reserved,
-            (sl_i64){model.offsets, GIGA_LAYER_COUNT + 1}, (sl_i64){model.kinds, GIGA_LAYER_COUNT}, mla);
-        if (resident < 0) {
-            giga_unbind_model(&model);
-            return -1;
-        }
-        if (trace) fprintf(stderr, "GigaChat4: dense VRAM=%lld bytes\n", (long long)resident);
-    }
-    const char *experts = getenv("GOOSE_GIGACHAT4_EXPERTS");
-    if (experts && strcmp(experts, "1") == 0) {
-        const int64_t reserve = INT64_C(3) * 1024 * 1024 * 1024;
-        const int64_t budget = INT64_C(4) * 1024 * 1024 * 1024;
-        int64_t memory[2] = {0};
-        const int64_t cached = giga_place_experts((sl_u64){model.weights, GIGA_TENSOR_COUNT},
-            (sl_i64){model.offsets, GIGA_LAYER_COUNT + 1}, (sl_i64){model.kinds, GIGA_LAYER_COUNT},
-            (uintptr_t)mapping, (int64_t)bytes, reserve, budget, (sl_i64){memory, 2});
-        if (trace) fprintf(stderr, "GigaChat4: expert VRAM=%lld bytes, available=%lld bytes\n",
-                           (long long)cached, (long long)memory[0]);
-        if (cached < 0) {
-            giga_unbind_model(&model);
-            return -1;
-        }
+        return status;
     }
     status = giga_request_init(&request, &model, capacity);
-    const char *state = getenv("GOOSE_GIGACHAT4_GDN_STATE");
-    extern uint8_t fg_cuda_giga_kv_configure(int64_t capacity);
-    const bool resident_kv = status == 0 && fg_cuda_giga_kv_configure(capacity);
-    if (status == 0 && (!state || strcmp(state, "0") != 0) && fg_cuda_free_bytes() > 0) {
-        const int64_t resident = giga_place_gdn_state((sl_u64){request.state, 128},
-            (sl_i64){model.kinds, GIGA_LAYER_COUNT}, resident_kv);
-        if (trace) fprintf(stderr, "GigaChat4: state logical VRAM=%lld bytes\n", (long long)resident);
-        if (resident <= 0) status = -1;
-        else request.device_state = true;
+    if (status == 0) {
+        const int32_t placed = giga_server_place_state((sl_u64){request.state, 128}, kinds, capacity,
+            !setting_is("GOOSE_GIGACHAT4_GDN_STATE", "0"));
+        if (placed < 0) status = -1;
+        else request.device_state = placed > 0;
     }
     if (status != 0) {
         giga_request_free(&request);
         giga_unbind_model(&model);
     }
-    const char *catchup = getenv("GOOSE_GIGACHAT4_MTP_CATCHUP");
-    draft_enabled = status == 0 && catchup && strcmp(catchup, "1") == 0;
+    draft_enabled = status == 0 && setting_is("GOOSE_GIGACHAT4_MTP_CATCHUP", "1");
     if (trace) fprintf(stderr, "GigaChat4: model ready status=%d\n", status);
     return status;
 }
@@ -138,24 +125,14 @@ static int64_t execute(const int32_t *tokens, int64_t count, int64_t emit,
     return status;
 }
 
+int64_t giga_server_execute(uint64_t tokens, int64_t count, int64_t emit,
+                            uint64_t logits, uint64_t draft_input, uint64_t next_input) {
+    return execute((const void *)(uintptr_t)tokens, count, emit, (void *)(uintptr_t)logits,
+                   (const void *)(uintptr_t)draft_input, (void *)(uintptr_t)next_input);
+}
+
 int64_t giga_server_step(const int32_t *tokens, int64_t count, int64_t rows,
                          float *logits, int64_t logit_capacity) {
-    if (!tokens || count < 1 || count > 4096 || rows < -1 || rows > 1 ||
-        (rows == 0 && logit_capacity != 0)) return -1;
-    const int64_t emit = rows < 0 ? count : rows;
-    if (emit > 0 && (!logits || logit_capacity < emit * 128256)) return -1;
-    for (int64_t i = 0; i < count; ++i) {
-        if (tokens[i] < 0 || tokens[i] >= 128256) return -1;
-    }
-
-    float *aligned = draft_enabled ? malloc((size_t)count * 2560 * sizeof(float)) : NULL;
-    if (draft_enabled && !aligned) return -1;
-    int64_t status = execute(tokens, count, emit, logits, NULL, aligned);
-    if (status == 0 && aligned) status = execute(tokens, count, 0, NULL, aligned, NULL);
-    free(aligned);
-    if (status != 0) {
-        giga_server_reset();
-        return status;
-    }
-    return emit * 128256;
+    return giga_run_server_step((uintptr_t)tokens, (sl_i32){(int32_t *)tokens, count}, rows,
+                                (uintptr_t)logits, logit_capacity, draft_enabled);
 }

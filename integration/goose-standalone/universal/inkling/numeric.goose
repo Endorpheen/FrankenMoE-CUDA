@@ -634,3 +634,179 @@ export fn inkling_row_major_i2_postconv_batch(input: const f32[:], weights: cons
     }
     return to_channel - from_channel;
 }
+
+extern "fg_cuda_load_experts" fn i2_load_expert_ranges(groups: i64[:], layers: i64[:],
+    bytes: i64, words32: i64, words64: i64) -> i64;
+extern "fg_cuda_load_dense" fn i2_load_dense_ranges(ranges: i64[:], bytes: i64) -> i64;
+
+export fn i2_place_expert_bank(tensors: const i64[:], core: const i64[:],
+        data: i64, budget: i64) -> i64 {
+    let layers_count = 24;
+    let experts_count = 128;
+    let up = tensors[12 * core[6] + 9] / experts_count;
+    let down = tensors[12 * core[7] + 9] / experts_count;
+    if up <= 0 || down <= 0 { return -1; }
+    var layers: i64[96] = [0; 96];
+    for layer in layers_count {
+        let u = 12 * core[10 * layer + 6];
+        let v = 12 * core[10 * layer + 7];
+        if tensors[u + 9] != up * experts_count || tensors[v + 9] != down * experts_count { return -1; }
+        layers[4 * layer + 1] = data + tensors[u + 10];
+        layers[4 * layer + 3] = data + tensors[v + 10];
+    }
+    let spans = layers_count * experts_count;
+    let fit = budget / (up + down);
+    let slots = if fit < spans { fit } else { spans };
+    if slots < experts_count { return -1; }
+    var groups: i64[9] = [up, 0, down, experts_count, layers_count, slots, 0, spans, layers_count];
+    return i2_load_expert_ranges(groups[..], layers[..], slots * (up + down),
+        spans + 4 * slots + 4 + 5 * experts_count, layers_count + experts_count + 5);
+}
+
+fn i2_append_dense_range(ranges: i64[:], state: i64[:], budget: i64, start: i64, bytes: i64) {
+    let aligned = (bytes + 31) / 32 * 32;
+    if aligned > budget - state[1] { return; }
+    let word = state[0];
+    ranges[word] = start;
+    ranges[word + 1] = bytes;
+    ranges[word + 2] = state[1];
+    state[0] += 3;
+    state[1] += aligned;
+}
+
+export fn i2_place_weights(tensors: const i64[:], core: const i64[:],
+        data: i64, excluded: i64, budget: i64, adaptive: bool, keep_routers: bool,
+        ranges: i64[:], totals: i64[:]) -> i64 {
+    var state: i64[2] = [0; 2];
+    var router_bytes: i64 = 0;
+    for i in tensors.len / 12 {
+        let r = 12 * i;
+        var router = false;
+        if keep_routers && tensors[r + 2] == 0 && tensors[r + 4] == 2304 && tensors[r + 5] == 128 {
+            for layer in 24 {
+                if core[10 * layer + 5] == i { router = true; break; }
+            }
+        }
+        if router || (tensors[r + 2] == 8 && i != excluded) {
+            let before = state[1];
+            i2_append_dense_range(ranges, state[..], budget, data + tensors[r + 10], tensors[r + 9]);
+            if router { router_bytes += state[1] - before; }
+        }
+    }
+    totals[0] = state[1];
+    totals[1] = router_bytes;
+    if !adaptive {
+        for phase in 2 {
+            for expert in 128 {
+                for layer in 24 {
+                    let repeated = layer >= 6 && layer < 18;
+                    if repeated != (phase == 0) { continue; }
+                    let a = 12 * core[layer * 10 + 6];
+                    let b = 12 * core[layer * 10 + 7];
+                    assert(tensors[a + 9] % 128 == 0 && tensors[b + 9] % 128 == 0);
+                    let up = tensors[a + 9] / 128;
+                    let down = tensors[b + 9] / 128;
+                    if (up + 31) / 32 * 32 + (down + 31) / 32 * 32 > budget - state[1] { continue; }
+                    i2_append_dense_range(ranges, state[..], budget, data + tensors[a + 10] + up * expert, up);
+                    i2_append_dense_range(ranges, state[..], budget, data + tensors[b + 10] + down * expert, down);
+                }
+            }
+        }
+    }
+    assert(state[0] > 0 && i2_load_dense_ranges(ranges[0..state[0]], state[1]) == state[1]);
+    return state[1];
+}
+
+extern "i2_serial_layer" fn i2_host_serial_layer(decoder: u64, physical: i32, slot: i32,
+    absolute: i32, sliding: i32, current: f32[:], history: f32[:], count: i32,
+    messages: f32[:]) -> i32;
+extern "i2_serial_mix" fn i2_host_serial_mix(decoder: u64, physical: i32, history: f32[:],
+    count: i32, output: f32[:], messages: f32[:]);
+extern "i2_serial_trace" fn i2_host_serial_trace(visit: i32, current: f32[:]);
+
+export fn i2_walk_serial_token(decoder: u64, visits: const i64[:], absolute: i32,
+        current: f32[:], history: f32[:], prelude: f32[:], bank_output: f32[:],
+        bank: f32[:], messages: f32[:], trace: bool) -> i32 {
+    let width = current.len;
+    var count: i32 = 0;
+    var prelude_count: i32 = 0;
+    var bank_count: i32 = 0;
+    for visit in visits.len / 4 {
+        let at = visit * 4;
+        let physical = visits[at] as i32;
+        let slot = visits[at + 1] as i32;
+        let pass = visits[at + 2];
+        let sliding = visits[at + 3] as i32;
+        if physical == 6 {
+            if pass == 0 {
+                for i in width { prelude[i] = current[i]; }
+                prelude_count = count;
+            } else {
+                bank_count = count - prelude_count - 1;
+                assert(bank_count >= 0 && bank_count < 11);
+                let first = ((prelude_count as i64) + 1) * width;
+                for i in (bank_count as i64) * width { bank[i] = history[first + i]; }
+                for i in width { bank_output[i] = current[i]; current[i] = prelude[i]; }
+                count = prelude_count;
+            }
+        }
+        if pass > 0 { i2_host_serial_mix(decoder, physical, bank, bank_count, bank_output, messages); }
+        count = i2_host_serial_layer(decoder, physical, slot, absolute, sliding, current,
+                                     history, count, if pass > 0 { messages } else { messages[0..0] });
+        if trace { i2_host_serial_trace(visit as i32, current); }
+    }
+    return count;
+}
+
+export fn i2_propose_draft(history: i32[:], result: i32[:], position: i64, first: i32) -> i32 {
+    let order = 4;
+    let remaining = history.len - position;
+    let limit = if remaining < result.len { remaining } else { result.len };
+    if position < 2 * order || limit < 2 { return 0; }
+    history[position] = first;
+    let suffix = position + 1 - order;
+    var end = position - 2;
+    while end >= order {
+        let candidate = end - order;
+        if history[candidate] == history[suffix] &&
+           history[candidate + 1] == history[suffix + 1] &&
+           history[candidate + 2] == history[suffix + 2] &&
+           history[candidate + 3] == first {
+            let available = position - end;
+            let take = if available < limit - 1 { available } else { limit - 1 };
+            result[0] = first;
+            for i in take { result[i + 1] = history[end + i]; }
+            return (take + 1) as i32;
+        }
+        end -= 1;
+    }
+    return 0;
+}
+
+extern "i2_adapter_draft_start" fn i2_start_draft(decoder: u64, count: i32) -> bool;
+extern "i2_adapter_draft_reject" fn i2_reject_draft(decoder: u64) -> bool;
+extern "i2_adapter_draft_take" fn i2_take_draft(decoder: u64, logits: f32[:]);
+extern "i2_adapter_run_step" fn i2_run_step(decoder: u64, tokens: const i32[:], prompt: bool, logits: f32[:]);
+
+export fn i2_eval_prepared(decoder: u64, tokens: const i32[:], prompt: bool, logits: f32[:],
+        history: i32[:], proposals: i32[:], position: i64, pending: bool,
+        used: i32, retain: bool) -> i64 {
+    if history.len > 0 {
+        if pending && !prompt && proposals[used as i64] == tokens[0] {
+            history[position] = tokens[0];
+            i2_take_draft(decoder, logits);
+            return logits.len;
+        }
+        if pending && !i2_reject_draft(decoder) { return -1; }
+        if !prompt && logits.len > 0 && retain {
+            let proposed = i2_propose_draft(history, proposals, position, tokens[0]);
+            if proposed > 1 && i2_start_draft(decoder, proposed) {
+                i2_take_draft(decoder, logits);
+                return logits.len;
+            }
+        }
+        for i in tokens.len { history[position + i] = tokens[i]; }
+    }
+    i2_run_step(decoder, tokens, prompt, logits);
+    return logits.len;
+}

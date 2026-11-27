@@ -82,7 +82,6 @@ static _Thread_local unsigned call_count[9];
 extern void fg_cuda_enable_inkling_quants(bool enabled);
 extern void fg_cuda_inkling_expert_phase(bool prefill, int position, int count);
 extern void i2_cuda_attention_stats(void);
-extern int64_t fg_cuda_load_dense(sl_i64 ranges, int64_t bytes);
 extern int64_t fg_cuda_free_bytes(void);
 
 enum { model_width=2304, ff=1152, experts=128, active=8 };
@@ -194,7 +193,7 @@ struct inkling_decode_graph {
 
 struct i2_prefill_team;
 
-enum { i2_draft_max = 16, i2_draft_order = 4 };
+enum { i2_draft_max = 16 };
 
 struct i2_draft_state {
     int32_t *history;
@@ -701,119 +700,67 @@ static void read_token_logits(struct decoder *d, int absolute, float *cur, float
 
 }
 
+extern int32_t i2_walk_serial_token(uint64_t decoder, sl_i64 visits, int32_t absolute,
+    sl_f32 current, sl_f32 history, sl_f32 prelude, sl_f32 bank_output, sl_f32 bank,
+    sl_f32 messages, uint8_t trace);
+
+int32_t i2_serial_layer(uint64_t decoder, int32_t physical, int32_t slot, int32_t absolute,
+    int32_t sliding, sl_f32 current, sl_f32 history, int32_t count, sl_f32 messages) {
+    int history_count = count;
+    layer((void *)(uintptr_t)decoder, physical, slot, absolute, sliding,
+          current.data, history.data, &history_count, messages.len ? (void *)messages.data : NULL);
+    return history_count;
+}
+
+void i2_serial_mix(uint64_t decoder, int32_t physical, sl_f32 history, int32_t count,
+    sl_f32 output, sl_f32 messages) {
+    struct decoder *d = (void *)(uintptr_t)decoder;
+    mix(history.data, count, output.data, coefficients(d, d->aux[physical * 30 + 17], 4 * model_width),
+        4, messages.data);
+}
+
+void i2_serial_trace(int32_t visit, sl_f32 current) {
+    check_state("draft-serial-visit", visit, current.data, (size_t)current.len);
+}
+
 static void token(struct decoder *d, int32_t input, int absolute, bool need_logits) {
     float cur[model_width], prelude[model_width], bank_output[model_width], blocks[12*model_width];
     float bank[12*model_width], messages[4][model_width];
-    int count=0, prelude_count=0, bank_count=0;
     weight emb=named(d,d->globals[0]);
     int64_t row=ggml_row_size(GGML_TYPE_Q8_0,model_width);
     assert(i2_embed_row((sl_u8){(uint8_t *)(uintptr_t)(emb.data+row*input),row},
                         coefficients(d,d->globals[1],model_width),1e-6f,vec(cur,model_width))==model_width);
-    for(int i=0;i<logical;i++){
-        const int64_t *v=d->visits+4*i;
-        const int ip=(int)v[0], slot=(int)v[1], pass=(int)v[2], sliding=(int)v[3];
-        if(ip==6){
-            if(pass==0){
-                memcpy(prelude,cur,sizeof cur);
-                prelude_count=count;
-            }else{
-                bank_count=count-prelude_count-1;
-                assert(bank_count>=0 && bank_count<11);
-                memcpy(bank,blocks+(prelude_count+1)*model_width,(size_t)bank_count*model_width*sizeof(float));
-                memcpy(bank_output,cur,sizeof cur);
-                memcpy(cur,prelude,sizeof cur);
-                count=prelude_count;
-            }
-        }
-        if(pass>0)mix(bank,bank_count,bank_output,coefficients(d,d->aux[ip*30+17],4*model_width),4,messages[0]);
-        layer(d,ip,slot,absolute,sliding,cur,blocks,&count,pass>0?messages:NULL);
-        if (absolute == 4097 && getenv("I2_DRAFT_PARITY"))
-            check_state("draft-serial-visit", i, cur, model_width);
-    }
+    const int count = i2_walk_serial_token((uintptr_t)d, ints(d->visits, logical * 4), absolute,
+        vec(cur, model_width), vec(blocks, 12 * model_width), vec(prelude, model_width),
+        vec(bank_output, model_width), vec(bank, 12 * model_width), vec(messages[0], 4 * model_width),
+        absolute == 4097 && getenv("I2_DRAFT_PARITY"));
     fprintf(stderr,"Pure Goose visited 48 layers for token %d at position %d\n",input,absolute);
     check_state("residual", absolute, cur, model_width);
     if (need_logits) read_token_logits(d, absolute, cur, blocks, count, true);
 }
 
-static void place_range(int64_t *ranges,int64_t *words,int64_t *used,int64_t budget,
-                        const uint8_t *host,int64_t bytes) {
-    const int64_t aligned=(bytes+31)/32*32;
-    if (aligned>budget-*used)return;
-    ranges[(*words)++]=(intptr_t)host;
-    ranges[(*words)++]=bytes;
-    ranges[(*words)++]=*used;
-    *used+=aligned;
-}
-
-extern int64_t fg_cuda_load_experts(sl_i64 groups, sl_i64 layers, int64_t bytes, int64_t words32, int64_t words64);
+extern int64_t i2_place_expert_bank(sl_i64 tensors, sl_i64 core, int64_t data, int64_t budget);
+extern int64_t i2_place_weights(sl_i64 tensors, sl_i64 core, int64_t data, int64_t excluded,
+    int64_t budget, uint8_t adaptive, uint8_t keep_routers, sl_i64 ranges, sl_i64 totals);
 extern void fg_cuda_expert_stats(sl_i64 stats);
 
 static int64_t load_inkling_expert_bank(struct decoder *d, int64_t budget) {
-    int64_t layers[physical * 4] = {0};
-    const int64_t *up0 = d->tensor + 12 * d->core[6];
-    const int64_t *down0 = d->tensor + 12 * d->core[7];
-    const int64_t up = up0[9] / experts, down = down0[9] / experts;
-    if (up <= 0 || down <= 0) return -1;
-    for (int l = 0; l < physical; ++l) {
-        const int64_t *u = d->tensor + 12 * d->core[10 * l + 6];
-        const int64_t *v = d->tensor + 12 * d->core[10 * l + 7];
-        if (u[9] != up * experts || v[9] != down * experts) return -1;
-        layers[4 * l + 1] = (int64_t)(uintptr_t)(d->data + u[10]);
-        layers[4 * l + 3] = (int64_t)(uintptr_t)(d->data + v[10]);
-    }
-    const int64_t spans = physical * experts;
-    const int64_t slots = budget / (up + down) < spans ? budget / (up + down) : spans;
-    if (slots < experts) return -1;
-    int64_t groups[] = {up, 0, down, experts, physical, slots, 0, spans, physical};
-    return fg_cuda_load_experts(ints(groups, 9), ints(layers, physical * 4), slots * (up + down),
-                                spans + 4 * slots + 4 + 5 * experts, physical + experts + 5);
+    return i2_place_expert_bank(ints(d->tensor, sizeof(d->tensor) / sizeof(*d->tensor)),
+        ints(d->core, physical * 10), (intptr_t)d->data, budget);
 }
 
-static int64_t place_inkling_weights(struct decoder *d,int64_t tensor_count,int64_t budget,bool adaptive) {
-    int64_t *ranges=calloc((size_t)(tensor_count+24*128*2)*3,sizeof(int64_t));
+static int64_t place_inkling_weights(struct decoder *d, int64_t tensor_count, int64_t budget, bool adaptive) {
+    const int64_t capacity = (tensor_count + physical * experts * 2) * 3;
+    int64_t *ranges = calloc((size_t)capacity, sizeof(*ranges));
     assert(ranges);
-    int64_t words=0,used=0;
     const char *config = getenv("I2_RESIDENT_ROUTERS");
-    const bool keep_routers = adaptive && (!config || strcmp(config, "0") != 0);
-    int64_t router_bytes = 0;
-    for(int i=0;i<tensor_count;i++){
-        int64_t *r=d->tensor+12*i;
-        bool router = false;
-        if (keep_routers && r[2] == GGML_TYPE_F32 && r[4] == model_width && r[5] == experts) {
-            for (int layer = 0; layer < physical; ++layer) {
-                if (d->core[layer * 10 + 5] == i) {
-                    router = true;
-                    break;
-                }
-            }
-        }
-        if (router) {
-            const int64_t before = used;
-            place_range(ranges, &words, &used, budget, d->data + r[10], r[9]);
-            router_bytes += used - before;
-        } else if(r[2]==GGML_TYPE_Q8_0 && i!=d->globals[0]) {
-            place_range(ranges,&words,&used,budget,d->data+r[10],r[9]);
-        }
-    }
-    int64_t dense=used;
-    for(int phase=0;!adaptive && phase<2;phase++){
-        for(int e=0;e<128;e++){
-            for(int l=0;l<24;l++){
-                bool loop=l>=6 && l<18;
-                if(loop!=(phase==0))continue;
-                int64_t *a=d->tensor+12*d->core[l*10+6], *b=d->tensor+12*d->core[l*10+7];
-                assert(a[9]%128==0 && b[9]%128==0);
-                int64_t up=a[9]/128, down=b[9]/128;
-                if((up+31)/32*32+(down+31)/32*32>budget-used) continue;
-                place_range(ranges,&words,&used,budget,d->data+a[10]+up*e,up);
-                place_range(ranges,&words,&used,budget,d->data+b[10]+down*e,down);
-            }
-        }
-    }
-    assert(words>0 && fg_cuda_load_dense(ints(ranges,words),used)==used);
+    int64_t totals[2];
+    const int64_t used = i2_place_weights(ints(d->tensor, tensor_count * 12), ints(d->core, physical * 10),
+        (intptr_t)d->data, d->globals[0], budget, adaptive, adaptive && (!config || strcmp(config, "0") != 0),
+        ints(ranges, capacity), ints(totals, 2));
     free(ranges);
-    printf("Resident weights: %.2f MiB, dense %.2f MiB\n",used/1048576.0,dense/1048576.0);
-    printf("Resident router weights: %" PRId64 " bytes\n", router_bytes);
+    printf("Resident weights: %.2f MiB, dense %.2f MiB\n", used / 1048576.0, totals[0] / 1048576.0);
+    printf("Resident router weights: %" PRId64 " bytes\n", totals[1]);
     return used;
 }
 
@@ -974,25 +921,6 @@ static bool draft_init(struct decoder *d) {
     return false;
 }
 
-static int draft_propose(struct decoder *d, int32_t first) {
-    struct i2_draft_state *draft = &d->draft;
-    const int position = d->position;
-    const int limit = d->capacity - position < i2_draft_max ? d->capacity - position : i2_draft_max;
-    if (position < 2 * i2_draft_order || limit < 2) return 0;
-    draft->history[position] = first;
-    const int32_t *suffix = draft->history + position + 1 - i2_draft_order;
-    const size_t key_bytes = i2_draft_order * sizeof(int32_t);
-    for (int end = position - 2; end >= i2_draft_order; --end) {
-        if (memcmp(draft->history + end - i2_draft_order, suffix, key_bytes) != 0) continue;
-        const int remaining = position - end;
-        const int take = remaining < limit - 1 ? remaining : limit - 1;
-        draft->tokens[0] = first;
-        memcpy(draft->tokens + 1, draft->history + end, (size_t)take * sizeof(first));
-        return take + 1;
-    }
-    return 0;
-}
-
 static bool draft_start(struct decoder *d, int count) {
     struct i2_draft_state *draft = &d->draft;
     const size_t bytes = (size_t)logical * 3 * model_width * sizeof(float);
@@ -1053,6 +981,30 @@ static void draft_take(struct decoder *d, float *logits, int64_t count) {
     }
 }
 
+extern int64_t i2_eval_prepared(uint64_t decoder, sl_i32 tokens, uint8_t prompt, sl_f32 logits,
+    sl_i32 history, sl_i32 proposals, int64_t position, uint8_t pending, int32_t used, uint8_t retain);
+
+uint8_t i2_adapter_draft_start(uint64_t decoder, int32_t count) {
+    return draft_start((void *)(uintptr_t)decoder, count);
+}
+
+uint8_t i2_adapter_draft_reject(uint64_t decoder) {
+    return draft_reject((void *)(uintptr_t)decoder);
+}
+
+void i2_adapter_draft_take(uint64_t decoder, sl_f32 logits) {
+    draft_take((void *)(uintptr_t)decoder, logits.data, logits.len);
+}
+
+void i2_adapter_run_step(uint64_t decoder, sl_i32 tokens, uint8_t prompt, sl_f32 logits) {
+    struct decoder *d = (void *)(uintptr_t)decoder;
+    fg_cuda_inkling_expert_phase(prompt, d->position, tokens.len);
+    if (prompt) prefill(d, tokens.data, d->position, tokens.len, logits.len != 0);
+    else token(d, tokens.data[0], d->position, logits.len != 0);
+    d->position += tokens.len;
+    if (logits.len) memcpy(logits.data, d->logits, (size_t)logits.len * sizeof(float));
+}
+
 int64_t inkling_backend_eval(struct decoder *d, const int32_t *tokens, int64_t count,
                              bool prompt, float *logits, int64_t logits_count) {
     if (!d || !tokens || count <= 0 || count > max_prefill_batch ||
@@ -1064,29 +1016,12 @@ int64_t inkling_backend_eval(struct decoder *d, const int32_t *tokens, int64_t c
 
     const char *retain = getenv("I2_RETAIN_DECODE_GRAPHS");
     d->retain_decode_graphs = !prompt && (!retain || strcmp(retain, "0") != 0);
-    if (draft_init(d)) {
-        struct i2_draft_state *draft = &d->draft;
-        if (draft->count && !prompt && draft->tokens[draft->used] == tokens[0]) {
-            draft->history[d->position] = tokens[0];
-            draft_take(d, logits, logits_count);
-            return logits_count;
-        }
-        if (draft->count && !draft_reject(d)) return -1;
-        if (!prompt && logits_count && d->retain_decode_graphs) {
-            const int proposed = draft_propose(d, tokens[0]);
-            if (proposed > 1 && draft_start(d, proposed)) {
-                draft_take(d, logits, logits_count);
-                return logits_count;
-            }
-        }
-        memcpy(draft->history + d->position, tokens, (size_t)count * sizeof(*tokens));
-    }
-    fg_cuda_inkling_expert_phase(prompt, d->position, count);
-    if (prompt) prefill(d, tokens, d->position, count, logits_count != 0);
-    else token(d, tokens[0], d->position, logits_count != 0);
-    d->position += count;
-    if (logits_count) memcpy(logits, d->logits, (size_t)logits_count * sizeof(*logits));
-    return logits_count;
+    const bool draft_ready = draft_init(d);
+    struct i2_draft_state *draft = &d->draft;
+    return i2_eval_prepared((uintptr_t)d, (sl_i32){(int32_t *)tokens, count}, prompt,
+        vec(logits, logits_count), (sl_i32){draft->history, draft_ready ? d->capacity : 0},
+        (sl_i32){draft->tokens, i2_draft_max}, d->position, draft->count != 0,
+        draft->used, d->retain_decode_graphs);
 }
 
 void inkling_backend_report(void) {

@@ -14,7 +14,7 @@ reader=${GOOSE_GGUF_READER:-"$runtime/goose/model/gguf-reader.goose"}
 base="$runtime/goose"
 cat "$base/misc/gguf-headers.goose" "$base/model/gguf-tensors.goose" "$base/model/gguf-offsets.goose" "$reader" layout.goose tensors.goose gated-norm.goose gdn-projections.goose gdn-layer.goose dsa-indexer.goose \
     mla-projections.goose mla-layer.goose feed-forward.goose decoder-layer.goose \
-    decoder-graph.goose mtp-graph.goose execute-step.goose graph-config.goose mtp-state.goose dense-placement.goose expert-placement.goose state-placement.goose request-lifecycle.goose step-inputs.goose > "$out/graph.goose"
+    decoder-graph.goose mtp-graph.goose execute-step.goose graph-config.goose mtp-state.goose dense-placement.goose expert-placement.goose state-placement.goose request-lifecycle.goose step-inputs.goose server-step.goose server-placement.goose model-descriptors.goose > "$out/graph.goose"
 "$goose" --standalone --header "$out/graph.h" -o "$out/graph.c" "$out/graph.goose"
 sed -i "s/void goose_init(/void giga_goose_init(/" "$out/graph.h"
 for unit in graph model-bindings request-state server-adapter; do
