@@ -45,6 +45,5 @@ int giga_step_graph(struct giga_request *request, struct giga_bindings *model,
                     struct ggml_context *ctx, struct ggml_cgraph *graph,
                     const struct giga_step *step, struct ggml_tensor *draft_hidden,
                     const struct giga_graph_config *config, struct giga_step_output *output);
-int giga_step_commit(struct giga_request *request, const struct giga_step *step);
 
 #endif

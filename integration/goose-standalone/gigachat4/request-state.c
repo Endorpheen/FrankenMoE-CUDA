@@ -153,15 +153,6 @@ int giga_step_graph(struct giga_request *request, struct giga_bindings *model,
     return 0;
 }
 
-int giga_step_commit(struct giga_request *request, const struct giga_step *step) {
-    if (!request || !step) return -1;
-    int64_t *cursor = step->draft ? &request->draft_committed : &request->committed;
-    if (*cursor != step->base || step->count < 1 ||
-        step->count > request->capacity - *cursor) return -1;
-    *cursor += step->count;
-    return 0;
-}
-
 int64_t giga_state_span(uint64_t address, sl_i64 out) {
     const struct ggml_tensor *tensor = (const void *)(uintptr_t)address;
     if (!tensor || !tensor->data || out.len < 2 || (tensor->type != GGML_TYPE_F32 && tensor->type != GGML_TYPE_F16) ||

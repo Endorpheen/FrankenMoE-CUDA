@@ -121,7 +121,9 @@ static int64_t execute(const int32_t *tokens, int64_t count, int64_t emit,
     if (status == 0) {
         if (trace) fprintf(stderr, "GigaChat4: computing %lld tokens, draft=%d\n", (long long)count, draft);
         status = giga_execute_step((uintptr_t)&request, (uintptr_t)&step, (uintptr_t)graph,
-                                  (uintptr_t)tokens, (uintptr_t)output.logits, planned, (sl_u64){ &arena, 1 });
+                                  (uintptr_t)tokens, (uintptr_t)output.logits, planned, (sl_u64){ &arena, 1 },
+                                  (sl_i64){step.draft ? &request.draft_committed : &request.committed, 1},
+                                  step.base, step.count, request.capacity);
     }
     if (trace) fprintf(stderr, "GigaChat4: step status=%lld\n", (long long)status);
     if (status == 0 && emit > 0) memcpy(logits, output.logits->data, (size_t)emit * 128256 * sizeof(float));
