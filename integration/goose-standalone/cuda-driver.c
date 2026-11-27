@@ -1704,10 +1704,14 @@ static size_t activation_growth_capacity(void) {
     if (!giga_small_expert_wave) return WIDE_ACTIVATION_BYTES;
     const char * setting = getenv("GOOSE_GIGA_WIDE_ACTIVATION");
     if (setting && strcmp(setting, "0") == 0) return WIDE_ACTIVATION_BYTES;
-    const size_t giga_bytes = 768 * MIB_BYTES, headroom = (size_t) 2048 * MIB_BYTES;
+    const size_t giga_bytes = 768 * MIB_BYTES;
+    const size_t giga_large_bytes = 1024 * MIB_BYTES;
+    const size_t headroom = (size_t) 2048 * MIB_BYTES;
     size_t available = 0, total = 0;
-    if (cuda.memory_info && cuda.memory_info(&available, &total) == 0 &&
-        available >= (size_t) giga_bytes + headroom) return giga_bytes;
+    if (cuda.memory_info && cuda.memory_info(&available, &total) == 0) {
+        if (available >= giga_large_bytes + headroom) return giga_large_bytes;
+        if (available >= giga_bytes + headroom) return giga_bytes;
+    }
     return WIDE_ACTIVATION_BYTES;
 }
 
@@ -1716,8 +1720,8 @@ static int activation_widen(void) {
     struct device_buffer larger = {0};
     size_t capacity = activation_growth_capacity();
     int error = reserve(&larger, capacity);
-    if (error == 2 && capacity > WIDE_ACTIVATION_BYTES) {
-        capacity = WIDE_ACTIVATION_BYTES;
+    while (error == 2 && capacity > WIDE_ACTIVATION_BYTES) {
+        capacity = capacity > 768 * MIB_BYTES ? 768 * MIB_BYTES : WIDE_ACTIVATION_BYTES;
         error = reserve(&larger, capacity);
     }
     if (error == 2) return 0;

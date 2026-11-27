@@ -590,3 +590,20 @@ The default-enabled build selected 768 MiB and measured 400.40/14.05
 at 9505 MiB post-request board memory, with matching IDs and no swap.
 No 32K/512 or separate cross-architecture inference qualification
 is claimed.
+
+### EXP-2026-11-27-2178 — Retain more wide GigaChat4 activations
+
+Select 1024 MiB at eligible GigaChat4 arena growth when at least
+2 GiB remains after allocation. Retain the 768 and 384 MiB
+fallbacks and the explicit GOOSE_CUDA_ACTIVATION_MIB override.
+
+On 6144/32, explicit 768/1024 MiB A-B-B-A means were 405.07 to
+425.30 prefill and 14.08 to 14.22 decode tokens/s. All 32 IDs
+matched, no swap-out growth, post-request board memory 9467–9473
+versus 9507 MiB and peak RSS about 511 MiB lower. Diagnostics
+recorded 2320 to 272 MiB D2H in the estimated prefill window,
+eliminating eight 256 MiB downloads. The automatic path selected
+1024 MiB, matched the 32 IDs and measured 420.53/14.35 at 9545 MiB
+post-request board memory. A 512/32 correctness check retained the
+small arena, matched 32 IDs and did not grow swap. No 32K/512 or
+separate cross-architecture inference qualification is claimed.
