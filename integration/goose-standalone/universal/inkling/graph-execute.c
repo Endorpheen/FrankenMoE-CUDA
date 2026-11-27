@@ -465,22 +465,34 @@ void fg143_graph_inputs(uint64_t address, sl_u64 sources) {
     }
 }
 
-void fg143_graph_describe(uint64_t address, sl_i64 metadata) {
-    const struct ggml_tensor * t = (const void *) (uintptr_t) address;
-    int64_t * packet = metadata.data;
-    const sl_u8 x = tensor_slice(t->src[0], packet);
-    const sl_u8 y = tensor_slice(t->src[1], packet + 10);
-    tensor_slice(t->src[2], packet + 20);
-    const sl_u8 dst = tensor_slice(t, packet + 30);
-    tensor_slice(t->src[3], packet + 59);
+static void describe_layout(const struct ggml_tensor *tensor, int64_t *metadata) {
+    _Static_assert(sizeof(tensor->ne) == 4 * sizeof(*metadata), "Tensor shape ABI");
+    _Static_assert(sizeof(tensor->nb) == 4 * sizeof(*metadata), "Tensor stride ABI");
+    _Static_assert(offsetof(struct ggml_tensor, nb) ==
+        offsetof(struct ggml_tensor, ne) + sizeof(tensor->ne), "Tensor layout ABI");
+    const unsigned char *layout = (const unsigned char *) tensor + offsetof(struct ggml_tensor, ne);
+    memcpy(metadata, layout, sizeof(tensor->ne) + sizeof(tensor->nb));
+    metadata[8] = tensor->type;
+}
+
+int64_t fg143_graph_layout(uint64_t address, sl_i64 metadata) {
+    const struct ggml_tensor *t = (const void *) (uintptr_t) address;
+    int64_t *packet = metadata.data;
+    int64_t present = 8;
+    if (t->src[0]) { describe_layout(t->src[0], packet); present |= 1; }
+    if (t->src[1]) { describe_layout(t->src[1], packet + 10); present |= 2; }
+    if (t->src[2]) { describe_layout(t->src[2], packet + 20); present |= 4; }
+    describe_layout(t, packet + 30);
+    if (t->src[3]) { describe_layout(t->src[3], packet + 59); present |= 16; }
     packet[40] = t->op;
     for (int i = 0; i < 16; ++i) packet[41 + i] = t->op_params[i];
     if (t->op == GGML_OP_TOP_K) packet[55] = t->src[0] && t->src[0]->op == GGML_OP_SOFT_MAX &&
         !t->src[0]->src[1] && !t->src[0]->src[2];
-    packet[57] = (int64_t) (uintptr_t) x.data;
-    packet[58] = (int64_t) (uintptr_t) dst.data;
+    packet[57] = t->src[0] ? (int64_t) (uintptr_t) t->src[0]->data : 0;
+    packet[58] = (int64_t) (uintptr_t) t->data;
     packet[69] = t->src[4] != NULL;
-    packet[70] = (int64_t) (uintptr_t) y.data;
+    packet[70] = t->src[1] ? (int64_t) (uintptr_t) t->src[1]->data : 0;
+    return present;
 }
 
 static sl_u8 borrowed_bytes(const struct ggml_tensor * t, int64_t bytes) {

@@ -3965,7 +3965,16 @@ extern "ggml_is_empty" fn graph_empty(tensor: u64) -> bool;
 extern "ggml_is_contiguous" fn graph_dense(tensor: u64) -> bool;
 extern "fg_cuda_activation_prepare" fn graph_output_prepare(address: u64, bytes: i64, fresh: bool,
     overwrite: bool, step: i64, deadline: i64) -> i32;
-extern "fg143_graph_describe" fn graph_describe(tensor: u64, packet: i64[:]);
+extern "fg143_graph_layout" fn graph_layout(tensor: u64, packet: i64[:]) -> i64;
+
+fn graph_describe(tensor: u64, packet: i64[:]) {
+    let present = graph_layout(tensor, packet);
+    if present & 1 != 0 { packet[9] = goose_tensor_span(packet[8], packet[0 .. 8]); }
+    if present & 2 != 0 { packet[19] = goose_tensor_span(packet[18], packet[10 .. 18]); }
+    if present & 4 != 0 { packet[29] = goose_tensor_span(packet[28], packet[20 .. 28]); }
+    packet[39] = goose_tensor_span(packet[38], packet[30 .. 38]);
+    if present & 16 != 0 { packet[68] = goose_tensor_span(packet[67], packet[59 .. 67]); }
+}
 extern "fg143_graph_regular" fn graph_regular(tensor: u64, packet: const i64[:], mode: i64,
     sizes: i64[:], workspace: u64) -> bool;
 extern "fg143_graph_gdn" fn graph_gdn(tensor: u64) -> bool;

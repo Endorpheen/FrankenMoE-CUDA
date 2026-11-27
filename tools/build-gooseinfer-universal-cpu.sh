@@ -13,7 +13,13 @@ case "$target" in
 esac
 mkdir -p -- "$out"
 
-"$goose" --standalone -o "$out/cpu.c" --header "$out/cpu.h" "$source_dir/cpu.goose"
+cp -R -- "$source_dir/codec" "$out/"
+{
+    cat "$source_dir/cpu.goose"
+    sed -e '/^import std;/d' -e 's/^export fn abi_/fn abi_/' "$root/goose/misc/ggml-type-table.goose"
+    sed '/^export fn goose_tensor_spans(/,$d' "$root/goose/tensor/tensor-span.goose"
+} >"$out/cpu.goose"
+"$goose" --standalone -o "$out/cpu.c" --header "$out/cpu.h" "$out/cpu.goose"
 "$cc" -O1 -std=c11 -ffunction-sections -fdata-sections -Wno-discarded-qualifiers \
     -Dgoose_init=goose_cpu_init -Dgg_init_globals=goose_cpu_globals -c "$out/cpu.c" -o "$out/cpu-unlinked.o"
 "$objcopy" --redefine-sym goose_cpu_init=fg143_cpu_init --redefine-sym goose_cpu_globals=fg143_cpu_init_globals \
