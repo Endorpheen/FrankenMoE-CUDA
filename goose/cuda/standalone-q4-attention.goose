@@ -620,6 +620,189 @@ export fn giga_mla_mma_pv_tile(q: u64, k: u64, v: u64, mask: u64, scratch: u64, 
     mla_pv_store(scratch, slot0, slot1, column+32, c);
     mla_pv_store(scratch, slot0, slot1, column+48, d);
 }
+fn mla_indexed_kpair(v: u64, stride: i64, row: i64, column: i64, indices: u64) -> u32 {
+    let a = attn_ld_u16(v, (((dsa_mask_pick(indices, row) as i64) * stride + 2 * column)) as u64);
+    let b = attn_ld_u16(v, (((dsa_mask_pick(indices, row + 1) as i64) * stride + 2 * column)) as u64);
+    return a | (b << 16);
+}
+
+fn mla_indexed_accumulate(v: u64, cfg: u64, shared: u64, start: i64, count: i64, column: i64,
+    group: i64, thread: i64, initial: MlaMma4, indices: u64) -> MlaMma4 {
+    let stride = attn_word(cfg, 11);
+    var acc = initial;
+    for tile in count / 16 {
+        let c = 16 * tile + 2 * thread;
+        let row = start+c;
+        let index = group*128+c;
+        let p0 = mla_pack_probability(mla_score_get(shared,index),mla_score_get(shared,index+1));
+        let p1 = mla_pack_probability(mla_score_get(shared,index+8),mla_score_get(shared,index+9));
+        acc = mla_mma_f16(acc, mla_indexed_kpair(v,stride,row,column,indices),
+            mla_indexed_kpair(v,stride,row,column+8,indices), mla_indexed_kpair(v,stride,row+8,column,indices),
+            mla_indexed_kpair(v,stride,row+8,column+8,indices), p0,p1);
+    }
+    return acc;
+}
+export fn giga_mla_mma_pv_indexed(q: u64, k: u64, v: u64, mask: u64, scratch: u64, cfg: u64, shared: u64,
+    scale: f32, task: i64, query: i64, tile: i64, warp: i64, lane: i64, keys: u64) {
+    let positions = attn_word(cfg, 2);
+    let col = query % positions;
+    let head = 8 * (query / positions);
+    let qstride = attn_word(cfg, 8);
+    let indices = keys + ((col * 2048 * 4) as u64);
+    let kstride = attn_word(cfg, 9);
+    let cells: i64 = 2048;
+    let first = tile * 256;
+    let qbase = q + ((head * attn_word(cfg, 8) + col * attn_word(cfg, 7)) as u64);
+    let mask_row = mask + ((col * attn_word(cfg, 13)) as u64);
+    let group = lane / 4;
+    let thread = lane % 4;
+    let neg_inf = attn_neg_inf();
+    var maximum = neg_inf;
+    var mass: f32 = 0.0;
+    var a = MlaMma4 {0.0, 0.0, 0.0, 0.0};
+    var b = a;
+    var c = a;
+    var d = a;
+
+    for phase in 2 {
+        let start = first + phase * 128;
+        if start >= cells { break; }
+        let block_key = start + 16 * warp;
+        if block_key < cells {
+            let k0 = k + (((dsa_mask_pick(indices, block_key + group) as i64) * kstride) as u64);
+            let k1 = k + (((dsa_mask_pick(indices, block_key + group + 8) as i64) * kstride) as u64);
+            let qr = qbase + (group * qstride) as u64;
+            var acc = MlaMma4 {0.0, 0.0, 0.0, 0.0};
+            for part in 36 {
+                let c = 16 * part + 2 * thread;
+                let kb = (2 * c) as u64;
+                let qb = (4 * c) as u64;
+                acc = mla_mma_f16(acc, mla_mma_kpair(k0 + kb), mla_mma_kpair(k1 + kb),
+                    mla_mma_kpair(k0 + kb + 16), mla_mma_kpair(k1 + kb + 16),
+                    mla_mma_qpair(qr + qb), mla_mma_qpair(qr + qb + 32));
+            }
+            let at = (2 * thread) * 128 + 16 * warp + group;
+            mla_score_put(shared, at, acc.a);
+            mla_score_put(shared, at + 128, acc.b);
+            mla_score_put(shared, at + 8, acc.c);
+            mla_score_put(shared, at + 136, acc.d);
+        }
+        mla_score_sync();
+        let count = if cells - start < 128 { cells - start } else { 128 };
+        var peak = neg_inf;
+        for offset in 4 {
+            let at = offset * 32 + lane;
+            if at < count {
+                let row = dsa_mask_pick(indices, start + at) as i64;
+                let bias = if mask != 0 { attn_half(attn_ld_u16(mask_row, (2 * row) as u64)) } else { 0.0 };
+                let score = if bias == neg_inf { neg_inf } else { mla_score_get(shared, warp * 128 + at) * scale + bias };
+                mla_score_put(shared, warp * 128 + at, score);
+                if score > peak { peak = score; }
+            }
+        }
+        var delta: i32 = 16;
+        while delta > 0 {
+            let other = attn_shfl(peak, delta);
+            if other > peak { peak = other; }
+            delta /= 2;
+        }
+        let next = if peak > maximum { peak } else { maximum };
+        let rescale = if maximum == neg_inf { 0.0 } else { attn_exp(maximum - next) };
+        maximum = next;
+        var local_mass: f32 = 0.0;
+        for offset in 4 {
+            let at = offset * 32 + lane;
+            var probability: f32 = 0.0;
+            if at < count {
+                let score = mla_score_get(shared, warp * 128 + at);
+                if score != neg_inf { probability = attn_exp(score - next); }
+            }
+            mla_score_put(shared, warp * 128 + at, probability);
+            local_mass += probability;
+        }
+        mass = attn_fma(mass, rescale, attn_sum(local_mass));
+        if lane == 0 { mla_score_put(shared, 1024 + warp, rescale); }
+        mla_score_sync();
+
+        let p0 = mla_score_get(shared, 1024 + 2 * thread);
+        let p1 = mla_score_get(shared, 1024 + 2 * thread + 1);
+        let column = warp * 64 + group;
+        a = mla_indexed_accumulate(v, cfg, shared, start, count, column, group, thread, mla_pv_rescale(a,p0,p1), indices);
+        b = mla_indexed_accumulate(v, cfg, shared, start, count, column+16, group, thread, mla_pv_rescale(b,p0,p1), indices);
+        c = mla_indexed_accumulate(v, cfg, shared, start, count, column+32, group, thread, mla_pv_rescale(c,p0,p1), indices);
+        d = mla_indexed_accumulate(v, cfg, shared, start, count, column+48, group, thread, mla_pv_rescale(d,p0,p1), indices);
+        mla_score_sync();
+    }
+
+    let tiles: i64 = 8;
+    let moments = scratch + ((4 * (((task + warp) * tiles + tile) * 514)) as u64);
+    if lane == 0 { attn_store(moments, maximum); attn_store(moments + 4, mass); }
+    let slot0 = ((task + 2 * thread) * tiles + tile) * 514;
+    let slot1 = slot0 + tiles * 514;
+    let column = warp * 64 + group;
+    mla_pv_store(scratch, slot0, slot1, column, a);
+    mla_pv_store(scratch, slot0, slot1, column+16, b);
+    mla_pv_store(scratch, slot0, slot1, column+32, c);
+    mla_pv_store(scratch, slot0, slot1, column+48, d);
+}
+export fn giga_mla_indexed_merge(scratch: u64, out: u64, cfg: u64, task: i64, query: i64, lane: i64) {
+    let stride = attn_word(cfg, 1) + 2;
+    let tiles: i64 = 8;
+    let pos = query % attn_word(cfg, 2);
+    let active_tiles = tiles;
+    let vblocks = attn_word(cfg, 1) / 32;
+    var maximum = attn_neg_inf();
+    var mass: f32 = 0.0;
+    var sum: f32[16] = [0.0; 16];
+    for i in active_tiles {
+        let row = scratch + ((4 * ((task * tiles + i) * stride)) as u64);
+        let partial = attn_load(row + 4);
+        if partial == 0.0 { continue; }
+        let peak = attn_load(row);
+        let next = if peak > maximum { peak } else { maximum };
+        let scale = attn_exp(maximum - next);
+        let weight = attn_exp(peak - next);
+        mass = mass * scale + partial * weight;
+        maximum = next;
+        for b in vblocks {
+            let value = attn_load(row + ((4 * (2 + 32 * b + lane)) as u64));
+            sum[b] = sum[b] * scale + value * weight;
+        }
+    }
+    let head = query / attn_word(cfg, 2);
+    let dst = out + ((head * attn_word(cfg, 14) + pos * attn_word(cfg, 15)) as u64);
+    for b in vblocks {
+        let value = if mass > 0.0 { sum[b] / mass } else { 0.0 };
+        attn_store(dst + ((4 * (32 * b + lane)) as u64), value);
+    }
+}
+
+extern "fg_mla_visible_ballot" fn mla_compact_ballot(seen: u32) -> u32;
+extern "fg_mla_mask_popcount" fn mla_compact_popcount(word: u32) -> u32;
+extern "fg_mla_store_index" fn mla_compact_store(base: u64, index: i64, value: i32);
+
+// One warp owns a row. Its ballots preserve ascending physical key order.
+export fn giga_mla_compact_mask(mask: u64, keys: u64, lengths: u64, cfg: u64, query: i64, lane: i64) {
+    let cells = attn_word(cfg, 6);
+    let stride = attn_word(cfg, 13);
+    let mask_row = mask + ((query * stride) as u64);
+    let before_lane = ((1 as u32) << (lane as u32)) - 1;
+    var total: i64 = 0;
+    var base: i64 = 0;
+    while base < cells {
+        let key = base + lane;
+        var seen: u32 = 0;
+        if key < cells && attn_ld_u16(mask_row, (2 * key) as u64) != 0xfc00 { seen = 1; }
+        let visible = mla_compact_ballot(seen);
+        let rank = total + (mla_compact_popcount(visible & before_lane) as i64);
+        if seen != 0 && rank < 2048 {
+            mla_compact_store(keys, query * 2048 + rank, key as i32);
+        }
+        total += mla_compact_popcount(visible) as i64;
+        base += 32;
+    }
+    if lane == 0 { mla_compact_store(lengths, query, total as i32); }
+}
 
 extern "fg_mla_any_visible" fn mla_any_visible(seen: u32) -> u32;
 

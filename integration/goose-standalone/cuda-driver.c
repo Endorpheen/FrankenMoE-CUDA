@@ -218,7 +218,7 @@ static struct {
     Function mmq_q4_routed_x128, mmq_q6_routed_x128, mmq_q6_routed_pipeline;
     Function mmq_q4_routed_m128, mmq_q4_routed_down_m128;
     Function mmvq_pack, mmvq;
-    Function giga_dense_mma, mla_visibility_tile, mla_visibility_build;
+    Function giga_dense_mma, mla_visibility_tile, mla_visibility_build, mla_compact_mask, mla_indexed_tile, mla_indexed_merge;
     Function dense_mma, dense_mma_reference, gdn_mma, gdn_mma_v32, flash_mma, flash_stage, flash_vec, flash_vec_merge;
     Function flash_vec_pack, flash_vec_packed;
     Function mmq_stream, mmq_stream_fixup;
@@ -229,7 +229,7 @@ static struct {
     Function route_reduce, route_sort, route_topk, route_gather, route_norm, blit, blit_transpose, fwht, fwht_q4, moe_weighted;
     struct device_buffer input, output, weight, jobs;
     struct device_buffer mmq_packed, mmq_tiles, mmq_partials;
-    struct device_buffer attention_value, attention_scratch, attention_config, mla_visibility;
+    struct device_buffer attention_value, attention_scratch, attention_config, mla_visibility, mla_indices;
     struct device_buffer gdn_beta;
     struct device_buffer activations;
     size_t activation_capacity;
@@ -1271,6 +1271,12 @@ static void load_cuda(void) {
             if (cuda.mla_mma_tile && (!visibility || strcmp(visibility, "0") != 0)) {
                 (void) cuda.function_get(&cuda.mla_visibility_tile, cuda.module, "goose_giga_mla_mma_pv_visible_tile");
                 (void) cuda.function_get(&cuda.mla_visibility_build, cuda.module, "goose_giga_mla_visibility");
+            }
+            const char * indexed = getenv("GOOSE_GIGA_MLA_INDEXED");
+            if (cuda.mla_mma_tile && (!indexed || strcmp(indexed, "0") != 0)) {
+                (void) cuda.function_get(&cuda.mla_compact_mask, cuda.module, "goose_giga_mla_compact_mask");
+                (void) cuda.function_get(&cuda.mla_indexed_tile, cuda.module, "goose_giga_mla_mma_pv_indexed");
+                (void) cuda.function_get(&cuda.mla_indexed_merge, cuda.module, "goose_giga_mla_indexed_merge");
             }
             if (!cuda.mla_mma_tile)
                 (void) cuda.function_get(&cuda.mla_mma_tile, cuda.module, "goose_giga_mla_mma_tile");
@@ -3837,8 +3843,32 @@ int64_t fg_cuda_q4_attention(sl_i64 config, sl_u8 q, sl_u8 k, sl_u8 v, sl_u8 mas
         config.data[4] == 1 && config.data[5] == 1 && config.data[16] == 256 && tasks % 8 == 0 && capacity >= 8;
     if (mla_mma) capacity -= capacity % 8;
     else if (paired_shape && capacity >= 2) capacity -= capacity % 2;
+    bool indexed = false;
+    if (error == 0 && mla_mma && staged[3] && positions <= 4096 &&
+        config.data[6] >= 8192 && config.data[3] == 32 &&
+        cuda.mla_compact_mask && cuda.mla_indexed_tile && cuda.mla_indexed_merge) {
+        const size_t key_bytes = (size_t)positions * 2048 * sizeof(int32_t);
+        const size_t length_bytes = (size_t)positions * sizeof(int32_t);
+        const int admitted = reserve(&cuda.mla_indices, key_bytes + length_bytes);
+        if (admitted == 0) {
+            DevicePtr lengths = cuda.mla_indices.address + key_bytes;
+            void * args[] = {&staged[3], &cuda.mla_indices.address, &lengths, &staged[4]};
+            error = cuda.launch(cuda.mla_compact_mask, (unsigned)((positions + 3) / 4),
+                1, 1, 128, 1, 1, 0, NULL, args, NULL);
+            int32_t counts[4096];
+            if (error == 0) error = cuda.download(counts, lengths, length_bytes);
+            indexed = error == 0;
+            for (int64_t row = 0; indexed && row < positions; ++row)
+                indexed = counts[row] == 2048;
+            if (indexed) {
+                size_t cap = (task_bytes * (size_t)capacity) / (8 * 514 * sizeof(float));
+                capacity = cap < (size_t) tasks ? (int)cap : tasks;
+                capacity -= capacity % 8;
+            }
+        } else if (admitted != 2) error = admitted;
+    }
     bool visible = false;
-    if (error == 0 && mla_mma && staged[3] && cuda.mla_visibility_build && cuda.mla_visibility_tile) {
+    if (error == 0 && mla_mma && !indexed && staged[3] && cuda.mla_visibility_build && cuda.mla_visibility_tile) {
         const size_t flag_bytes = (size_t) (positions / 8) * tiles * sizeof(float);
         const int admitted = reserve(&cuda.mla_visibility, flag_bytes);
         if (admitted == 0) {
@@ -3849,20 +3879,23 @@ int64_t fg_cuda_q4_attention(sl_i64 config, sl_u8 q, sl_u8 k, sl_u8 v, sl_u8 mas
         } else if (admitted != 2) error = admitted;
     }
     int start = 0;
+    DevicePtr flags = indexed ? cuda.mla_indices.address : cuda.mla_visibility.address;
     void * tile_args[] = {&staged[0], &staged[1], &staged[2],
-        &staged[3], &cuda.attention_scratch.address, &staged[4], &scale, &start, &cuda.mla_visibility.address};
+        &staged[3], &cuda.attention_scratch.address, &staged[4], &scale, &start, &flags};
     void * merge_args[] = {&cuda.attention_scratch.address, &output, &staged[4], &start};
     while (error == 0 && !tiled && start < tasks) {
         const int count = tasks - start < capacity ? tasks - start : capacity;
         const bool pair = !mla_mma && paired_shape && count % 2 == 0 && start % 2 == 0;
-        const Function tile = visible ? cuda.mla_visibility_tile : mla_mma ? cuda.mla_mma_tile : pair ? (positions == 1 ? cuda.mla_attention_pair : cuda.mla_attention_batch_pair) :
+        const Function tile = indexed ? cuda.mla_indexed_tile : visible ? cuda.mla_visibility_tile : mla_mma ? cuda.mla_mma_tile : pair ? (positions == 1 ? cuda.mla_attention_pair : cuda.mla_attention_batch_pair) :
             mla ? cuda.mla_attention_tiles : cuda.attention_tiles;
-        error = cuda.launch(tile, (unsigned) count / (mla_mma ? 8 : pair ? 2 : 1), tiles, 1, mla_mma ? 256 : 32, 1, 1, 0, NULL, tile_args, NULL);
-        const Function merge = pair && positions > 1 ? cuda.mla_attention_batch_merge :
+        error = cuda.launch(tile, (unsigned) count / (mla_mma ? 8 : pair ? 2 : 1), indexed ? 8 : tiles, 1, mla_mma ? 256 : 32, 1, 1, 0, NULL, tile_args, NULL);
+        const Function merge = indexed ? cuda.mla_indexed_merge : pair && positions > 1 ? cuda.mla_attention_batch_merge :
             mla ? cuda.mla_attention_merge : cuda.attention_merge;
         if (error == 0) error = cuda.launch(merge, (unsigned) count, 1, 1, 32, 1, 1, 0, NULL, merge_args, NULL);
         start += count;
     }
+    if (error == 0 && indexed && getenv("GOOSE_GRAPH_LOG"))
+        fprintf(stderr, "GigaChat4 indexed MLA: positions=%" PRId64 " cells=%" PRId64 "\n", positions, config.data[6]);
     if (error == 0 && mla_mma && getenv("GOOSE_GRAPH_LOG"))
         fprintf(stderr, "GigaChat4 MLA MMA: positions=%" PRId64 " cells=%" PRId64 "\n", positions, config.data[6]);
     if (error == 0) error = activation_publish(host, out.len, output, false);

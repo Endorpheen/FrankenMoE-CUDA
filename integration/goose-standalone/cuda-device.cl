@@ -282,6 +282,20 @@ static uint32_t fg_mla_any_visible(uint32_t seen) {
         " bar.red.popc.u32 %0, 0, visible; }" : "=r"(count) : "r"(seen) : "memory");
     return count;
 }
+static uint32_t fg_mla_visible_ballot(uint32_t seen) {
+    uint32_t vote;
+    __asm__ volatile("{ .reg .pred selected; setp.ne.u32 selected, %1, 0;"
+        " vote.sync.ballot.b32 %0, selected, 0xffffffff; }" : "=r"(vote) : "r"(seen));
+    return vote;
+}
+static uint32_t fg_mla_mask_popcount(uint32_t word) {
+    uint32_t count;
+    __asm__("popc.b32 %0, %1;" : "=r"(count) : "r"(word));
+    return count;
+}
+static void fg_mla_store_index(uint64_t base, int64_t index, int32_t value) {
+    ((__global int32_t *)base)[index] = value;
+}
 #include "q4-attention-device.h"
 __kernel void goose_giga_dsa_top_wide(__global const float *x, __global int32_t *out, int64_t cells) {
     __local uint32_t bins[16];
@@ -343,6 +357,40 @@ __kernel void goose_giga_mla_visibility(__global const uint16_t *mask,
     __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(tile));
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
     giga_mla_tile_visibility_g((uint64_t)mask, (uint64_t)visible, (uint64_t)cfg, query_group, tile, thread);
+}
+
+__kernel void goose_giga_mla_compact_mask(__global const uint16_t *mask,
+    __global int32_t *keys, __global int32_t *lengths, __global const int64_t *cfg) {
+    uint32_t group, thread;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(group));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
+    const uint32_t query = group * 4 + thread / 32;
+    if (query < cfg[2]) giga_mla_compact_mask_g((uint64_t)mask,
+        (uint64_t)keys, (uint64_t)lengths, (uint64_t)cfg, query, thread % 32);
+}
+
+__kernel void goose_giga_mla_mma_pv_indexed(__global const float *q, __global const uint16_t *k,
+    __global const uint16_t *v, __global const uint16_t *mask, __global float *scratch,
+    __global int64_t *cfg, float scale, int32_t query_base, __global const int32_t *keys) {
+    __local float scores[1032] __attribute__((aligned(16)));
+    uint32_t task, tile, thread;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(task));
+    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(tile));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
+    giga_mla_mma_pv_indexed_g((uint64_t)q,(uint64_t)k,(uint64_t)v,(uint64_t)mask,
+        (uint64_t)scratch,(uint64_t)cfg,(uint64_t)scores,scale,8*task,
+        (int64_t)query_base/8+task,tile,thread/32,thread%32,(uint64_t)keys);
+}
+
+__kernel void goose_giga_mla_indexed_merge(__global float *scratch, __global uint8_t *output,
+    __global int64_t *cfg, int32_t query_base) {
+    uint32_t task, lane;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(task));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
+    const int64_t absolute = (int64_t)query_base + task;
+    const int64_t group = absolute / 8;
+    const int64_t query = (8 * (group / cfg[2]) + (absolute % 8)) * cfg[2] + (group % cfg[2]);
+    giga_mla_indexed_merge_g((uint64_t)scratch, (uint64_t)output, (uint64_t)cfg, task, query, lane);
 }
 
 #undef fg_mla_mma_f16

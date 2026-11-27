@@ -664,3 +664,21 @@ three expected responses. The default diagnostic measured
 492.67/16.81 at 9610 MiB and matched all 32 IDs. Apex driver's
 compatibility stub compiled. No 32K/512 memory or cross-architecture
 inference qualification is claimed.
+
+### EXP-2026-11-27-2189 — Read selected GigaChat4 MLA keys by index
+
+On eligible long MLA prefill batches, compact the real mask into
+ordered lists. Admit the indexed path only when each row has
+exactly 2048 selected keys. Eight heads of one query share the
+same indexed K/V reads. Continue to use the ordinary attention
+path for other rows and shapes. Set GOOSE_GIGA_MLA_INDEXED=0 to
+disable the additional path.
+
+On the fixed 32768/512 input, same-binary control/default measured
+218.49/13.29 and 370.35/13.26 tokens/s. The phase sum fell from
+188.44 to 127.02 seconds. Both answers matched all 512 IDs of
+llama.cpp 0541e50 on the same input. Sampled board peaks were
+10397/10436 MiB, peak RSS 24,336,104/24,337,316 KiB and no swap-out
+growth. An independent diagnostic candidate ran 56 indexed layer
+batches, measured 369.30/13.35 and matched all 512 IDs again.
+No separate model-architecture regression inference is claimed.
