@@ -15,9 +15,10 @@ esac
 mkdir -p -- "$out"
 flags=(-std=c11 -ffunction-sections -fdata-sections)
 
-for module in probability planner; do
-    "$goose" --standalone -o "$out/$module.c" --header "$out/$module.h" "$source_dir/$module.goose"
-done
+cat "$source_dir/probability.goose" "$source_dir/probability-pipeline.goose" > "$out/probability.goose"
+"${GOOSE_CUDA_DRIVER_BIN:?Set GOOSE_CUDA_DRIVER_BIN to Fried Goose KeelWing v0.3.1-dev.1}" \
+    --standalone -o "$out/probability.c" --header "$out/probability.h" "$out/probability.goose"
+"$goose" --standalone -o "$out/planner.c" --header "$out/planner.h" "$source_dir/planner.goose"
 "$cc" -O1 "${flags[@]}" -w -Dgoose_init=fg_probability_init -Dgg_init_globals=fg_probability_globals \
     -c "$out/probability.c" -o "$out/probability.o"
 "$cc" -O1 "${flags[@]}" -I"$out" -c "$source_dir/probability-pipeline.c" -o "$out/probability-pipeline.o"
