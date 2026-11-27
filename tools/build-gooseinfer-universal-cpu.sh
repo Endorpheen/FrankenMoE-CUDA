@@ -16,6 +16,7 @@ mkdir -p -- "$out"
 cp -R -- "$source_dir/codec" "$out/"
 {
     cat "$source_dir/cpu.goose" "$source_dir/giga-dispatch.goose" "$source_dir/giga-dsa-schedule.goose" "$source_dir/iq-codebooks.goose"
+    cat "$source_dir/../cuda/driver-unary.goose"
     sed -e '/^import std;/d' -e 's/^export fn abi_/fn abi_/' "$root/goose/misc/ggml-type-table.goose"
     sed '/^export fn goose_tensor_spans(/,$d' "$root/goose/tensor/tensor-span.goose"
 } >"$out/cpu.goose"

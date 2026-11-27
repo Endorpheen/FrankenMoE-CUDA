@@ -161,7 +161,43 @@ void i2_cuda_attention_stats(void) {
 #ifdef INKLING_KV_TEST
 #endif
 
-#include "tanh-driver.h"
+#include "tanh-image.h"
+#include "situ-image.h"
+
+int32_t fg_cuda_unary_begin(void) { return start_context(); }
+int32_t fg_cuda_unary_end(void) { return finish_context(); }
+
+int32_t fg_cuda_unary_prepare(int32_t kind, sl_u8 input, sl_u8 output, sl_u64 plan) {
+    static Module modules[2];
+    static Function kernels[2];
+    int status = 0;
+    if (!modules[kind]) status = cuda.module_load(&modules[kind], kind ? situ_cubin : tanh_cubin);
+    if (!status && !kernels[kind]) status = cuda.function_get(&kernels[kind], modules[kind],
+        kind ? "goose_i2_moe_situ" : "goose_tanh_f32");
+    plan.data[0] = (uintptr_t)kernels[kind];
+    DevicePtr source = 0, destination = 0;
+    if (!status) status = activation_output_for_input((uintptr_t)output.data, output.len, &destination, input, NULL);
+    if (!status) status = activation_input(input, &cuda.input, &source);
+    plan.data[1] = source;
+    plan.data[2] = destination;
+    return status;
+}
+
+int32_t fg_cuda_unary_launch(int32_t kind, sl_u64 plan, uint32_t elements) {
+    uint32_t reference = cuda.activation_reference;
+    void *args[] = {&plan.data[1], &plan.data[2], &elements, &reference};
+    if (!kind) args[3] = NULL;
+    return cuda.launch((Function)(uintptr_t)plan.data[0], (elements + 255) / 256,
+        1, 1, 256, 1, 1, 0, NULL, args, NULL);
+}
+
+int32_t fg_cuda_unary_publish(sl_u8 output, uint64_t device) {
+    return activation_publish((uintptr_t)output.data, output.len, device, false);
+}
+
+void fg_cuda_unary_tanh_error(int32_t status, int32_t popped) {
+    fprintf(stderr, "Goose CUDA tanh: failed (%d, %d)\n", status, popped);
+}
 
 #include "moe-epilogue-driver.h"
 
