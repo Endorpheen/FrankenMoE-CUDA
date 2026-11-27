@@ -17,7 +17,11 @@ static float previous_hidden[2560];
 
 int giga_server_open(const void *mapping, size_t bytes, int64_t capacity) {
     trace = getenv("GOOSE_GIGACHAT4_TRACE") != NULL;
+#ifdef _WIN32
+    if (!getenv("GOOSE_MMQ") && _putenv_s("GOOSE_MMQ", "1") != 0) return -1;
+#else
     if (setenv("GOOSE_MMQ", "1", 0) != 0) return -1;
+#endif
     const char *planned = getenv("GOOSE_GIGACHAT4_PLANNED");
     planned_prefill_only = planned && strcmp(planned, "prefill") == 0;
     planned_enabled = !planned || planned_prefill_only || strcmp(planned, "1") == 0;

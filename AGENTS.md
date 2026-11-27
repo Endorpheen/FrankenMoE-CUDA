@@ -503,7 +503,73 @@ scratch path, or files proven reproducible from tracked sources. `runtime/`,
 restore as a whole, and `work/llama.cpp-integration` is off limits by rule 5.
 Mass deletions require Igor's explicit approval.
 
+## Reuse validated build and inference results
+
+Before repeating a costly build or inference test, check for existing results.
+When the executable SHA-256 matches a tested executable and its runtime
+dependencies, model files, parameters, workload, and relevant environment
+match, reuse the previous inference evidence. Record the matching hash,
+conditions, and result location in the acceptance record. Reuse an existing
+build for the same source revision, target, toolchain, and build settings when
+its artifact is available and its recorded SHA-256 verifies. Repeat a build or
+test only for a specific technical reason and state which condition changed
+or which required check the existing evidence does not cover.
+
+## Pinned compiler and build toolchain
+
+These rules are permanent and apply to every supported architecture, platform,
+backend, and experiment.
+
+1. Build the whole universal runtime with the repository's pinned toolchain for
+   the target platform. Use a single pinned version of each compiler for all
+   objects linked into that target.
+2. Keep the exact Fried Goose, GCC, Clang, ptxas, linker, and standard library
+   versions and the compiler and linker options in Git.
+3. Never change tool versions between experiments without a dedicated
+   toolchain experiment. Never mix objects produced by different versions of
+   the same compiler in one runtime.
+4. Qualify every compiler upgrade as a separate experiment. Check correctness,
+   prefill, decode, RAM, and VRAM for all supported architectures after the upgrade.
+5. Keep the accepted toolchain when an upgrade regresses. Resolve and verify
+   the cause before accepting the upgrade.
+6. Tie every accepted performance result to the exact source revision,
+   toolchain versions, and build options.
+
+## Generated code and build artifacts
+
+These rules are permanent and apply to all GooseInfer architectures, backends,
+platforms, branches, and experiments without exception.
+
+1. Make every fix, optimization, and functional change in the original Goose
+   source or in a Git-tracked generator or build-system input.
+2. Never edit generated C, generated headers, PTX, CUBIN, object files, binaries,
+   or any other derived artifact directly.
+3. To change generated output, change its authoritative source or the tracked
+   generator that emits it, then regenerate the output through the build.
+4. Every successful experiment must preserve in Git all required sources,
+   compiler and linker options, toolchain versions, and build commands.
+5. Accept an optimization only after it builds from tracked sources with the
+   declared toolchain and an empty output directory, without artifacts from
+   earlier experiments.
+6. Apply these rules from the first experiment change through release. Temporary
+   workarounds and exceptions are prohibited.
+
 ## Experiment storage
+
+Start every experiment in the existing task branch of this repository, using
+a Git worktree when isolation is needed. Use a new branch only under the
+project branch policy. From the first change, keep every unique source file,
+patch, generator, build setting and toolchain requirement in the repository
+worktree. Before the first build or measurement, verify that these inputs are
+tracked or appear as reviewable Git changes. Scratch directories are for
+reproducible outputs, caches and logs.
+
+Every candidate must build with the repository's documented command using
+only its source tree, declared tools and an empty output directory. Apply
+this check during development and again before acceptance. Keep accepted
+changes in the current integration branch and merge them promptly under the
+branch policy. Release Linux and Windows binaries from the same clean main
+revision using the documented commands.
 
 Evidence stays, build artefacts do not. Commit the Goose source, the build and
 gate scripts, the mutation descriptions, the recorded results (`.tsv`, logs,

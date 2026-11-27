@@ -1,0 +1,87 @@
+--- a/cuda-driver.reference.merged.c
++++ b/cuda-driver.reference.merged.c
+@@ -13,11 +13,17 @@
+ #include "route-mailbox-image.h"
+ #include "softmax-image.h"
+ 
++#ifdef _WIN32
++#include "windows/platform.h"
++#define dlsym(module, name) ((void *)GetProcAddress((HMODULE)(module), (name)))
++#define dlclose(module) FreeLibrary((HMODULE)(module))
++#else
+ #include <dlfcn.h>
++#include <sched.h>
++#endif
+ #include <inttypes.h>
+ #include <limits.h>
+ #include <pthread.h>
+-#include <sched.h>
+ #include <stdbool.h>
+ #include <stdint.h>
+ #include <stdio.h>
+@@ -1165,7 +1171,11 @@
+ 
+ static void load_cuda(void) {
+     if (goose_cuda_image[0] == 0) return;
++#ifdef _WIN32
++    cuda.library = (void *)LoadLibraryW(L"nvcuda.dll");
++#else
+     cuda.library = dlopen("libcuda.so.1", RTLD_NOW | RTLD_LOCAL);
++#endif
+     if (!cuda.library) return;
+ #define LOAD(field, name) do { cuda.field = dlsym(cuda.library, name); if (!cuda.field) return; } while (0)
+     LOAD(init, "cuInit");
+@@ -2945,8 +2955,14 @@
+         }
+         budget = (int64_t) value * mib;
+     }
++#ifdef _WIN32
++    const int64_t page = (int64_t)fg_win_page_size();
++    const uint64_t total = fg_win_memory(false);
++    const int64_t pages = page ? (int64_t)(total / (uint64_t)page) : 0;
++#else
+     const long page = sysconf(_SC_PAGESIZE);
+     const long pages = sysconf(_SC_PHYS_PAGES);
++#endif
+     const uint64_t available = fg143_storage_ram_available();
+     if (page <= 0 || pages <= 0 || pages > INT64_MAX / page || available > INT64_MAX) return 0;
+     info.data[0] = page;
+--- a/infer-main.c
++++ b/infer-main.c
+@@ -8,8 +8,12 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
++#ifdef _WIN32
++#include "windows/platform.h"
++#else
+ #include <sys/socket.h>
+ #include <sys/time.h>
++#endif
+ 
+ extern int64_t hose_configure_kv(bool value, const char *format);
+ extern int64_t hose_kv_format(void);
+@@ -47,9 +51,13 @@
+ }
+ 
+ int64_t fg_http_set_timeout(int64_t fd) {
++#ifdef _WIN32
++    return fg_win_socket_timeout(fd);
++#else
+     const struct timeval timeout = { .tv_sec = 30 };
+     if (setsockopt((int) fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof timeout) != 0) return -1;
+     return setsockopt((int) fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof timeout);
++#endif
+ }
+ 
+ static int64_t positive_integer(const char * text) {
+@@ -66,6 +74,9 @@
+     }
+     static unsigned char request[262144], output[65536], response[524288];
+     static int64_t ids[2048];
++#ifdef _WIN32
++    if (!fg_win_network_ready()) return 1;
++#endif
+     fg_goose_host_ensure_init();
+     hose_host_load_context(model, capacity);
+     const int64_t served = ih_serve(port, limit, (sl_u8) { request, sizeof request },

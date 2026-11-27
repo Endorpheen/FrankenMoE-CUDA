@@ -1,0 +1,169 @@
+--- a/backend-cold.c
++++ b/backend-cold.c
+@@ -8,14 +8,29 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
++#ifdef _WIN32
++#include "windows/platform.h"
++#else
+ #include <sys/mman.h>
++#endif
+ #include <sys/stat.h>
+ #include <unistd.h>
+ #include <time.h>
+ 
++#ifdef _WIN32
++#define dlsym(module, name) ((void *)GetProcAddress((HMODULE)(module), (name)))
++#define dlclose(module) FreeLibrary((HMODULE)(module))
++#else
+ #include <dlfcn.h>
++#endif
+ #include <pthread.h>
+ 
++#ifdef _WIN32
++#define BONSAI_SIZE_FMT "%llu"
++#else
++#define BONSAI_SIZE_FMT "%zu"
++#endif
++
+ #define BONSAI_CUDA_API(X) \
+     X(cuInit) \
+     X(cuDeviceGet) \
+@@ -25,6 +40,7 @@
+     X(cuCtxPopCurrent) \
+     X(cuCtxSynchronize) \
+     X(cuModuleLoad) \
++    X(cuModuleLoadData) \
+     X(cuModuleGetFunction) \
+     X(cuMemAlloc) \
+     X(cuMemGetInfo) \
+@@ -47,11 +63,19 @@
+ #define BONSAI_STRING(name) BONSAI_STRING_(name)
+ 
+ static void bonsai_bind_cuda(void) {
++#ifdef _WIN32
++    void *library = (void *)LoadLibraryW(L"nvcuda.dll");
++    if (!library) {
++        fprintf(stderr, "Bonsai CUDA driver: error %lu\n", (unsigned long)GetLastError());
++        return;
++    }
++#else
+     void *library = dlopen("libcuda.so.1", RTLD_NOW | RTLD_LOCAL);
+     if (!library) {
+         fprintf(stderr, "Bonsai CUDA driver: %s\n", dlerror());
+         return;
+     }
++#endif
+ #define BONSAI_RESOLVE(name) \
+     do { \
+         bonsai_cuda.fn_##name = (__typeof__(name) *)dlsym(library, BONSAI_STRING(name)); \
+@@ -694,7 +718,7 @@
+         m->mtp_layer[i] = i == 0 ? index : (index < 0 ? 0 : (int64_t)(m->weights + tensors[index*12+8]));
+     }
+     }
+-    fprintf(stderr, "Device GGUF payload: %zu bytes (includes inactive MTP tensors)\n", bytes);
++    fprintf(stderr, "Device GGUF payload: " BONSAI_SIZE_FMT " bytes (includes inactive MTP tensors)\n", bytes);
+     return workspace(m, signs);
+ }
+ 
+@@ -737,6 +761,15 @@
+ #include "mtp-abi.h"
+ #include "draft.inc"
+ 
++extern const unsigned char gooseinfer_bonsai_pipeline_image[];
++extern const unsigned char gooseinfer_bonsai_frozen_image[];
++extern const unsigned char gooseinfer_bonsai_mtp_image[];
++
++static CUresult bonsai_load_module(CUmodule *module, const char *path, const unsigned char *image) {
++    return path && *path ? bonsai_cuda.fn_cuModuleLoad(module, path) :
++        bonsai_cuda.fn_cuModuleLoadData(module, image);
++}
++
+ static model *bonsai_open(const char *gguf, const char *cubin, const char *frozen, unsigned context, unsigned ubatch) {
+     if (context < CONTEXT_MIN || context > POSITIONS_MAX) return NULL;
+     if (!bonsai_cuda_ready()) return NULL;
+@@ -744,7 +777,7 @@
+     if (!m) return NULL;
+     m->context = context; m->ubatch = ubatch;
+     const char *mtp_image = getenv("BONSAI_HTTP_MTP_IMAGE");
+-    if (mtp_image && *mtp_image) {
++    if (!mtp_image || *mtp_image) {
+         m->mtp_enabled = m->verify_native = m->verify_q8 = m->device_commit = 1;
+         m->verify_attention = m->verify_merge = m->verify_attn_tail = m->draft_q8_head = 1;
+         m->verify_rows = 4;
+@@ -874,10 +907,10 @@
+     };
+     if (check(bonsai_cuda.fn_cuInit(0), "driver") || check(bonsai_cuda.fn_cuDeviceGet(&device, 0), "device") ||
+         check(bonsai_cuda.fn_cuCtxCreate(&m->cuda, 0, device), "context") ||
+-        check(bonsai_cuda.fn_cuModuleLoad(&m->module, cubin), "Bonsai CUDA image") ||
+-        check(bonsai_cuda.fn_cuModuleLoad(&m->frozen, frozen), "frozen Goose CUDA image")) goto error;
++        check(bonsai_load_module(&m->module, cubin, gooseinfer_bonsai_pipeline_image), "Bonsai CUDA image") ||
++        check(bonsai_load_module(&m->frozen, frozen, gooseinfer_bonsai_frozen_image), "frozen Goose CUDA image")) goto error;
+     if (m->mtp_enabled &&
+-        check(bonsai_cuda.fn_cuModuleLoad(&m->mtp_module, mtp_image), "Bonsai MTP CUDA image")) goto error;
++        check(bonsai_load_module(&m->mtp_module, mtp_image, gooseinfer_bonsai_mtp_image), "Bonsai MTP CUDA image")) goto error;
+     const char *mtp_names[KERNEL_COUNT] = {
+         [MTP_EH] = "bonsai_mtp_eh_q4",
+          [MTP_MAT] = "bonsai_mtp_mat_q4",
+@@ -929,6 +962,13 @@
+     }
+     if (m->gdn_prefill_v32 && check(bonsai_cuda.fn_cuFuncSetAttribute(m->kernel[GDN_V32],
+         CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES,38016),"GDN V32 shared memory")) goto error;
++#ifdef _WIN32
++    size_t model_bytes = 0;
++    uint8_t *mapping = fg_win_map_model(gguf, &model_bytes);
++    if (!mapping) goto error;
++    const int loaded = model_bytes < 24 ? -1 : load_weights(m, mapping, model_bytes);
++    UnmapViewOfFile(mapping);
++#else
+     int fd = open(gguf, O_RDONLY);
+     if (fd < 0) { perror(gguf); goto error; }
+     struct stat info;
+@@ -938,6 +978,7 @@
+     if (mapping == MAP_FAILED) { perror("mmap"); goto error; }
+     const int loaded = load_weights(m, mapping, (size_t)info.st_size);
+     munmap(mapping, info.st_size);
++#endif
+     if (loaded != 0) goto error;
+     const char *device_choice = getenv("BONSAI_HTTP_DEVICE_CHOICE");
+     if (device_choice && !strcmp(device_choice, "1") && choice_open(m) != 0) goto error;
+@@ -948,7 +989,7 @@
+     ffn_graph_open(m);
+     size_t available = 0, total = 0;
+     if (!check(bonsai_cuda.fn_cuMemGetInfo(&available, &total), "free VRAM")) {
+-        fprintf(stderr, "Device free: %zu / %zu bytes\n", available, total);
++        fprintf(stderr, "Device free: " BONSAI_SIZE_FMT " / " BONSAI_SIZE_FMT " bytes\n", available, total);
+     }
+     return m;
+ error:
+@@ -1093,7 +1134,7 @@
+ 
+ struct bonsai_session *bonsai_session_open(const char *gguf, const char *cubin,
+     const char *frozen_ptx, unsigned context, unsigned ubatch) {
+-    if (!gguf || !cubin || !frozen_ptx || ubatch == 0 || ubatch > UBATCH_MAX) return NULL;
++    if (!gguf || ubatch == 0 || ubatch > UBATCH_MAX) return NULL;
+     struct bonsai_session *session = calloc(1, sizeof(*session));
+     if (!session) return NULL;
+     goose_init(0, NULL);
+--- a/model-host.c
++++ b/model-host.c
+@@ -411,7 +411,6 @@
+                 H.n_tok != BONSAI_SESSION_VOCAB) die("Bonsai context, ubatch, KV or vocabulary");
+         const char *image = getenv("BONSAI_CUDA_IMAGE");
+         const char *frozen = getenv("BONSAI_FROZEN_PTX");
+-        if (!image || !frozen) die("Bonsai requires BONSAI_CUDA_IMAGE and BONSAI_FROZEN_PTX");
+         H.bonsai = bonsai_session_open(path, image, frozen, (unsigned)capacity, (unsigned)prefill_ubatch);
+         if (!H.bonsai) die("Bonsai model or CUDA placement");
+         H.kv_format = HOST_KV_Q4_0;
+--- a/draft.inc
++++ b/draft.inc
+@@ -54,7 +54,7 @@
+     m->draft_carry = memory + 2 * plane;
+     m->draft_chain = m->draft_carry + DRAFT_HIDDEN_BYTES;
+     if (m->draft_batch) m->draft_rope_k = m->draft_chain + DRAFT_HIDDEN_BYTES;
+-    fprintf(stderr, "draft_device_bytes=%zu\n", bytes);
++    fprintf(stderr, "draft_device_bytes=" BONSAI_SIZE_FMT "\n", bytes);
+     return check(bonsai_cuda.fn_cuMemsetD8(m->draft_carry, 0, DRAFT_HIDDEN_BYTES), "draft zero seed");
+ }
+ 

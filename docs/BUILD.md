@@ -1,6 +1,46 @@
 # Build and package the standalone chat host
 
-## Linux x86-64
+## Universal runtime from source
+
+Run the following command from a GooseInfer checkout on Linux. Use a fresh
+output directory for each target.
+
+```bash
+export GOOSE_BIN=/path/to/keelwing-preview/bin/goose
+export APEX_PTXAS=/path/to/cuda-12.4/bin/ptxas
+export GOOSE_HOST_BIN=/path/to/keelwing-ownership-v2/bin/goose
+export GOOSE_HOST_STDLIB=/path/to/keelwing/stdlib
+export APEX_ROUTING_GOOSE=/path/to/goose-2026.3/goose
+bash tools/build-gooseinfer-universal.sh linux build/universal-linux
+bash tools/build-gooseinfer-universal.sh windows build/universal-windows
+```
+
+The Linux command writes `gooseinfer`. The Windows cross-build writes
+`gooseinfer.exe`. Each output directory receives a `SHA256SUMS` file.
+The script generates both backend images and all model objects from the
+checkout. Model weights are needed only to run inference.
+
+The v0.15.0 release uses the following pinned mixed toolchain. This release is grandfathered under the single-compiler policy for future builds.
+
+| Tool | Version |
+| --- | --- |
+| `GOOSE_BIN` | Fried Goose v0.3.0 preview KeelWing |
+| `APEX_PTXAS` | CUDA 12.4.99 ptxas for the selected GPU images |
+| `GOOSE_HOST_BIN` | KeelWing ownership v2, Fried Goose source revision `bb1452faa1e3f4e4ff4d715723c91a4fcf4e8c78` |
+| `GOOSE_HOST_STDLIB` | KeelWing v0.3.0 preview standard library |
+| `APEX_ROUTING_GOOSE` | Goose 2026.3 string compiler |
+| `CUDA_HOME` | CUDA 12.6 toolkit, including its headers, libdevice and ptxas 12.6.85 |
+| Clang | Clang 18.1.8 |
+| Linux C compiler | GCC 13.4.0 for the host, GCC 15.2 for GigaChat4 and the Vulkan Goose unit |
+| Windows cross-compiler | x86_64 MinGW GCC 13 and its binutils |
+| Vulkan shader tools | glslang 16.2.0 and SPIRV-Tools 2026.1 |
+
+The build also uses Bash, Python 3, Git, GNU binutils, `patch`, and Vulkan
+headers. Set `CUDA_HOME` if CUDA is installed outside `/usr/local/cuda`.
+If the Vulkan headers or shader tools are installed outside the usual search
+paths, set `VULKAN_HEADERS`, `GLSLANG_VALIDATOR`, and `SPIRV_VAL`.
+
+## Historical Linux x86-64 packaging
 
 Use the [cumulative Apex build recipe](../integration/goose-standalone/apex-checkpoint/README.md).
 It pins the KeelWing ownership v2 Goose compiler, the pre-chat Goose unit,

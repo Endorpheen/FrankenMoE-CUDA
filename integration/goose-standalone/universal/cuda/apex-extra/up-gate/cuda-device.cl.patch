@@ -1,0 +1,72 @@
+--- cuda-device.cl
++++ cuda-device.cl
+@@ -751,3 +751,69 @@
+ #include "cuda-flash-mma.cl"
+ #include "cuda-flash-vec.cl"
+ #endif
++
++__kernel void goose_mmvq_up_gate_glu(__global const uint8_t *weights,
++    __global const uint8_t *packed, __global uint8_t *output,
++    __global const uint64_t *up_jobs, __global const uint64_t *gate_jobs,
++    uint64_t stride, int32_t extent) {
++    uint32_t row, route, thread;
++    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(row));
++    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(route));
++    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
++    const uint32_t lane = thread % 32, warp = thread / 32;
++    const uint64_t row_offset = (uint64_t)row * stride;
++    const uint64_t input = (uint64_t)packed + (uint64_t)route * extent * 288;
++    const uint64_t up = up_jobs[3 * route + 2], gate = gate_jobs[3 * route + 2];
++    float u = fg185q_partial_g((uint64_t)weights + up + row_offset, input, 0, 0, extent, 8, thread);
++    float g = fg185q_partial_g((uint64_t)weights + gate + row_offset, input, 0, 0, extent, 8, thread);
++    __local float sums[2][96];
++    if (warp != 0) {
++        sums[0][32 * (warp - 1) + lane] = u;
++        sums[1][32 * (warp - 1) + lane] = g;
++    }
++    fg_device_barrier();
++    if (warp == 0) {
++        for (uint32_t i = 0; i < 3; ++i) {
++            u += sums[0][32 * i + lane];
++            g += sums[1][32 * i + lane];
++        }
++        u = warp_sum_g(u);
++        g = warp_sum_g(g);
++        if (lane == 0) {
++            fg_device_global_store((uint64_t)output + up_jobs[3 * route + 1] + (uint64_t)row * 4,
++                fg_vector_swiglu_reference_g(g, u));
++        }
++    }
++}
++
++__kernel void goose_mmvq_shared_up_gate_glu(__global const uint8_t *weights_up,
++    __global const uint8_t *weights_gate,
++    __global const uint8_t *packed, __global uint8_t *output,
++    uint64_t stride, int32_t extent) {
++    uint32_t row, thread;
++    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(row));
++    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
++    const uint32_t lane = thread % 32, warp = thread / 32;
++    const uint64_t row_offset = (uint64_t)row * stride;
++    const uint64_t input = (uint64_t)packed;
++    float u = fg185q_partial_g((uint64_t)weights_up + row_offset, input, 0, 0, extent, 8, thread);
++    float g = fg185q_partial_g((uint64_t)weights_gate + row_offset, input, 0, 0, extent, 8, thread);
++    __local float sums[2][96];
++    if (warp != 0) {
++        sums[0][32 * (warp - 1) + lane] = u;
++        sums[1][32 * (warp - 1) + lane] = g;
++    }
++    fg_device_barrier();
++    if (warp == 0) {
++        for (uint32_t i = 0; i < 3; ++i) {
++            u += sums[0][32 * i + lane];
++            g += sums[1][32 * i + lane];
++        }
++        u = warp_sum_g(u);
++        g = warp_sum_g(g);
++        if (lane == 0) {
++            fg_device_global_store((uint64_t)output + (uint64_t)row * 4,
++                fg_vector_swiglu_reference_g(g, u));
++        }
++    }
++}

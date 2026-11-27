@@ -1,0 +1,4 @@
+#ifndef INKLING_SITU_H
+#define INKLING_SITU_H
+enum { INKLING_MOE_SITU = 0x49325354 };
+#endif

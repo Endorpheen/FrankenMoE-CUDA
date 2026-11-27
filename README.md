@@ -77,8 +77,8 @@ ZIP for the Bonsai MTP CLI.
 
 ## Build and verification
 
-- [Build and packaging guide](docs/BUILD.md) covers the source-tree Apex build
-  and the separate release checkpoints.
+- [Universal build guide](docs/BUILD.md#universal-runtime-from-source) lists the
+  toolchain and the build command for each platform.
 - [Release Gate](docs/RELEASE-GATE.md) records evidence per OS, backend and
   model before publication.
 - [Architecture acceptance registry](docs/goose-migration/MODEL-ARCHITECTURES.md)

@@ -1,0 +1,19 @@
+--- a/gguf-tensors.goose
++++ b/gguf-tensors.goose
+@@ -498,7 +498,7 @@
+     if t == 40 as i64 || t == 42 as i64 {
+         return 64 as i64;
+     }
+-    if t == 41 as i64 {
++    if t == 41 as i64 || t == 142 as i64 {
+         return 128 as i64;
+     }
+     if t >= 10 as i64 && t <= 23 as i64 {
+@@ -547,6 +547,7 @@
+     if t == 40 as i64 { return 36 as i64; }  // nvfp4
+     if t == 41 as i64 { return 18 as i64; }  // q1_0
+     if t == 42 as i64 { return 18 as i64; }  // q2_0
++    if t == 142 as i64 { return 34 as i64; } // Prism PQ2_0
+     return 0 as i64;
+ }
+ 

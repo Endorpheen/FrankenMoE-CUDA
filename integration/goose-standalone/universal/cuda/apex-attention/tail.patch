@@ -1,0 +1,212 @@
+--- flash-vec-device.h
++++ flash-vec-device.h
+@@ -8067,24 +8067,14 @@
+   v41 = ((float)(v24));
+   v42 = flash_vec_gg_function_17(base + 0);
+   v43 = ((float)(v29));
+-  t29 = ((int64_t)UINT64_C(32));
++  const int64_t warp_keys_left = v5 - v35 - 32 * (int64_t)v11;
++  t29 = warp_keys_left < 0 ? 0 : (warp_keys_left > 32 ? 32 : warp_keys_left);
+   t28 = 0;
+ label3:;
+   if (t28 >= t29) goto label5;
+   v44 = t28;
+   {
+-  t30 = ((int64_t)(v35));
+-  t31 = ((int64_t)(((int64_t)(v11))));
+-  t32 = ((int64_t)(((int64_t)UINT64_C(32))));
+-  t33 = ((int64_t)(((int64_t)((uint64_t)(t31) * (uint64_t)(t32)))));
+-  t34 = ((int64_t)(((int64_t)((uint64_t)(t30) + (uint64_t)(t33)))));
+-  t35 = ((int64_t)(v44));
+-  v45 = ((int64_t)(((int64_t)((uint64_t)(t34) + (uint64_t)(t35)))));
+-  t36 = ((int64_t)(v45));
+-  t37 = ((int64_t)(v5));
+-  t38 = ((t36) < (t37));
+-  if (t38) {
+-  {
++  v45 = v35 + 32 * (int64_t)v11 + v44;
+   t39 = ((uint64_t)(v1));
+   t40 = ((int64_t)(v45));
+   t41 = ((int64_t)(v6));
+@@ -8096,16 +8086,6 @@
+   t47 = v23;
+   t48 = v28;
+   v46 = flash_vec_gg_function_43(t43, t44, t45, t46, t47, t48, base + 0);
+-  }
+-  } else {
+-  {
+-  memset(&(v46), 0, sizeof(v46));
+-  (v46).f12 = flash_vec_gg_function_17(base + 0);
+-  (v46).f13 = flash_vec_gg_function_17(base + 0);
+-  (v46).f14 = flash_vec_gg_function_17(base + 0);
+-  (v46).f15 = flash_vec_gg_function_17(base + 0);
+-  }
+-  }
+   t49 = ((float)(v37));
+   t50 = ((float)((v46).f12));
+   t51 = ((float)(((float)(gg_double_bits(UINT64_C(4613937818241073152))))));
+@@ -8345,39 +8325,121 @@
+   extern void (fg175v_syncwarp)(void);
+ #endif
+   fg175v_syncwarp();
+-  t169 = ((int64_t)UINT64_C(32));
+-  t168 = 0;
+-label6:;
+-  if (t168 >= t169) goto label8;
+-  v55 = t168;
+-  {
+-  t170 = ((int64_t)(((int64_t)(v11))));
+-  t171 = ((int64_t)(((int64_t)UINT64_C(32))));
+-  t172 = ((int64_t)(((int64_t)((uint64_t)(t170) * (uint64_t)(t171)))));
+-  t173 = ((int64_t)(v55));
+-  v56 = ((int64_t)(((int64_t)((uint64_t)(t172) + (uint64_t)(t173)))));
+-  t174 = ((int64_t)(v35));
+-  t175 = ((int64_t)(v56));
+-  v57 = ((int64_t)(((int64_t)((uint64_t)(t174) + (uint64_t)(t175)))));
+-  t176 = ((uint64_t)(v2));
+-  t177 = ((int64_t)(v7));
+-  t178 = ((int64_t)(v57));
+-  t179 = ((uint64_t)(((uint64_t)(((int64_t)((uint64_t)(t177) * (uint64_t)(t178)))))));
+-  v58 = ((uint64_t)(((uint64_t)((uint64_t)(t176) + (uint64_t)(t179)))));
+-  t180 = ((uint64_t)(v58));
+-  t181 = ((int64_t)(v34));
+-  t182 = ((int64_t)(v57));
+-  t183 = ((int64_t)(v5));
+-  t184 = ((t182) < (t183));
+-  v59 = flash_vec_gg_function_29(t180, t181, t184, base + 0);
+-  t185 = ((uint64_t)(v58));
+-  t186 = ((int64_t)(v34));
+-  t187 = ((int64_t)(((int64_t)UINT64_C(128))));
+-  t188 = ((int64_t)(((int64_t)((uint64_t)(t186) + (uint64_t)(t187)))));
+-  t189 = ((int64_t)(v57));
+-  t190 = ((int64_t)(v5));
+-  t191 = ((t189) < (t190));
+-  v60 = flash_vec_gg_function_29(t185, t188, t191, base + 0);
++  const int64_t value_keys_left = v5 - v35 - 32 * (int64_t)v11;
++  const int64_t value_count = value_keys_left < 0 ? 0 : (value_keys_left > 32 ? 32 : value_keys_left);
++  for (t168 = 0; t168 < value_count; ++t168) {
++    v55 = t168;
++    v56 = 32 * (int64_t)v11 + v55;
++    v57 = v35 + v56;
++    v58 = v2 + (uint64_t)v7 * (uint64_t)v57;
++    v59 = flash_vec_gg_function_29(v58, v34, 1, base + 0);
++    v60 = flash_vec_gg_function_29(v58, v34 + 128, 1, base + 0);
++  t192 = ((uint64_t)(v12));
++  t193 = ((int64_t)(v56));
++  t194 = ((int64_t)(((int64_t)UINT64_C(0))));
++  t195 = ((uint64_t)(((uint64_t)(((int64_t)((uint64_t)(t193) + (uint64_t)(t194)))))));
++#ifndef __cplusplus
++  extern float (fg175v_sm_f32)(uint64_t, uint64_t);
++#endif
++  t196 = fg175v_sm_f32(t192, t195);
++  v61 = ((float)(t196));
++  t197 = v16;
++  t198 = v59;
++  t199 = ((float)(v61));
++  t200 = ((float)(v47));
++  t201 = ((int64_t)(v55));
++  t202 = ((int64_t)(((int64_t)UINT64_C(0))));
++  t203 = ((t201) == (t202));
++  v16 = flash_vec_gg_function_39(t197, t198, t199, t200, t203, base + 0);
++  t204 = v17;
++  t205 = v60;
++  t206 = ((float)(v61));
++  t207 = ((float)(v47));
++  t208 = ((int64_t)(v55));
++  t209 = ((int64_t)(((int64_t)UINT64_C(0))));
++  t210 = ((t208) == (t209));
++  v17 = flash_vec_gg_function_39(t204, t205, t206, t207, t210, base + 0);
++  t211 = ((uint64_t)(v12));
++  t212 = ((int64_t)(v56));
++  t213 = ((int64_t)(((int64_t)UINT64_C(128))));
++  t214 = ((uint64_t)(((uint64_t)(((int64_t)((uint64_t)(t212) + (uint64_t)(t213)))))));
++#ifndef __cplusplus
++  extern float (fg175v_sm_f32)(uint64_t, uint64_t);
++#endif
++  t215 = fg175v_sm_f32(t211, t214);
++  v62 = ((float)(t215));
++  t216 = v21;
++  t217 = v59;
++  t218 = ((float)(v62));
++  t219 = ((float)(v49));
++  t220 = ((int64_t)(v55));
++  t221 = ((int64_t)(((int64_t)UINT64_C(0))));
++  t222 = ((t220) == (t221));
++  v21 = flash_vec_gg_function_39(t216, t217, t218, t219, t222, base + 0);
++  t223 = v22;
++  t224 = v60;
++  t225 = ((float)(v62));
++  t226 = ((float)(v49));
++  t227 = ((int64_t)(v55));
++  t228 = ((int64_t)(((int64_t)UINT64_C(0))));
++  t229 = ((t227) == (t228));
++  v22 = flash_vec_gg_function_39(t223, t224, t225, t226, t229, base + 0);
++  t230 = ((uint64_t)(v12));
++  t231 = ((int64_t)(v56));
++  t232 = ((int64_t)(((int64_t)UINT64_C(256))));
++  t233 = ((uint64_t)(((uint64_t)(((int64_t)((uint64_t)(t231) + (uint64_t)(t232)))))));
++#ifndef __cplusplus
++  extern float (fg175v_sm_f32)(uint64_t, uint64_t);
++#endif
++  t234 = fg175v_sm_f32(t230, t233);
++  v63 = ((float)(t234));
++  t235 = v26;
++  t236 = v59;
++  t237 = ((float)(v63));
++  t238 = ((float)(v51));
++  t239 = ((int64_t)(v55));
++  t240 = ((int64_t)(((int64_t)UINT64_C(0))));
++  t241 = ((t239) == (t240));
++  v26 = flash_vec_gg_function_39(t235, t236, t237, t238, t241, base + 0);
++  t242 = v27;
++  t243 = v60;
++  t244 = ((float)(v63));
++  t245 = ((float)(v51));
++  t246 = ((int64_t)(v55));
++  t247 = ((int64_t)(((int64_t)UINT64_C(0))));
++  t248 = ((t246) == (t247));
++  v27 = flash_vec_gg_function_39(t242, t243, t244, t245, t248, base + 0);
++  t249 = ((uint64_t)(v12));
++  t250 = ((int64_t)(v56));
++  t251 = ((int64_t)(((int64_t)UINT64_C(384))));
++  t252 = ((uint64_t)(((uint64_t)(((int64_t)((uint64_t)(t250) + (uint64_t)(t251)))))));
++#ifndef __cplusplus
++  extern float (fg175v_sm_f32)(uint64_t, uint64_t);
++#endif
++  t253 = fg175v_sm_f32(t249, t252);
++  v64 = ((float)(t253));
++  t254 = v31;
++  t255 = v59;
++  t256 = ((float)(v64));
++  t257 = ((float)(v53));
++  t258 = ((int64_t)(v55));
++  t259 = ((int64_t)(((int64_t)UINT64_C(0))));
++  t260 = ((t258) == (t259));
++  v31 = flash_vec_gg_function_39(t254, t255, t256, t257, t260, base + 0);
++  t261 = v32;
++  t262 = v60;
++  t263 = ((float)(v64));
++  t264 = ((float)(v53));
++  t265 = ((int64_t)(v55));
++  t266 = ((int64_t)(((int64_t)UINT64_C(0))));
++  t267 = ((t265) == (t266));
++  v32 = flash_vec_gg_function_39(t261, t262, t263, t264, t267, base + 0);
++  }
++  for (t168 = value_count; t168 < 32; ++t168) {
++    v55 = t168;
++    v56 = 32 * (int64_t)v11 + v55;
++    memset(&v59, 0, sizeof(v59));
++    memset(&v60, 0, sizeof(v60));
+   t192 = ((uint64_t)(v12));
+   t193 = ((int64_t)(v56));
+   t194 = ((int64_t)(((int64_t)UINT64_C(0))));
+@@ -8479,9 +8541,6 @@
+   t267 = ((t265) == (t266));
+   v32 = flash_vec_gg_function_39(t261, t262, t263, t264, t267, base + 0);
+   }
+-label7:;
+-  t168++; goto label6;
+-label8:;
+ #ifndef __cplusplus
+   extern void (fg175v_syncwarp)(void);
+ #endif
