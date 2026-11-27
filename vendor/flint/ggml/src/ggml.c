@@ -5358,59 +5358,6 @@ struct ggml_cgraph ggml_graph_view(struct ggml_cgraph * cgraph0, int i0, int i1)
     return cgraph;
 }
 
-void ggml_graph_cpy(struct ggml_cgraph * src, struct ggml_cgraph * dst) {
-    GGML_ASSERT(dst->size >= src->n_leafs);
-    GGML_ASSERT(dst->size >= src->n_nodes);
-    GGML_ASSERT(dst->visited_hash_set.size >= src->visited_hash_set.size);
-
-    dst->n_leafs = src->n_leafs;
-    dst->n_nodes = src->n_nodes;
-    dst->order   = src->order;
-
-    for (int i = 0; i < src->n_leafs; ++i) {
-        dst->leafs[i] = src->leafs[i];
-    }
-
-    for (int i = 0; i < src->n_nodes; ++i) {
-        dst->nodes[i] = src->nodes[i];
-    }
-
-    for (size_t i = 0; i < src->visited_hash_set.size; ++i) {
-        // copy all hashset keys (tensors) that are in use
-        if (ggml_bitset_get(src->visited_hash_set.used, i)) {
-            size_t new_hash_pos = ggml_hash_insert(&dst->visited_hash_set, src->visited_hash_set.keys[i]);
-            dst->use_counts[new_hash_pos] = src->use_counts[i];
-        }
-    }
-
-    if (dst->grads) {
-        memset(dst->grads,     0, dst->visited_hash_set.size*sizeof(struct ggml_tensor *));
-        memset(dst->grad_accs, 0, dst->visited_hash_set.size*sizeof(struct ggml_tensor *));
-    }
-    if (src->grads) {
-        GGML_ASSERT(dst->grads     != NULL);
-        GGML_ASSERT(dst->grad_accs != NULL);
-        for (int i = 0; i < src->n_nodes; ++i) {
-            const size_t igrad_src = ggml_hash_find(&src->visited_hash_set, src->nodes[i]);
-            const size_t igrad_dst = ggml_hash_find(&dst->visited_hash_set, dst->nodes[i]);
-
-            GGML_ASSERT(igrad_src != GGML_HASHSET_FULL);
-            GGML_ASSERT(ggml_bitset_get(src->visited_hash_set.used, igrad_src));
-            GGML_ASSERT(igrad_dst != GGML_HASHSET_FULL);
-            GGML_ASSERT(ggml_bitset_get(dst->visited_hash_set.used, igrad_dst));
-
-            dst->grads[igrad_dst]     = src->grads[igrad_src];
-            dst->grad_accs[igrad_dst] = src->grad_accs[igrad_src];
-        }
-    }
-}
-
-struct ggml_cgraph * ggml_graph_dup(struct ggml_context * ctx, struct ggml_cgraph * cgraph, bool force_grads) {
-    struct ggml_cgraph * result = ggml_new_graph_custom(ctx, cgraph->size, cgraph->grads || force_grads);
-    ggml_graph_cpy(cgraph, result);
-    return result;
-}
-
 struct ggml_tensor * ggml_set_zero(struct ggml_tensor * tensor) {
     if (ggml_is_empty(tensor)) {
         return tensor;
@@ -5422,42 +5369,6 @@ struct ggml_tensor * ggml_set_zero(struct ggml_tensor * tensor) {
         memset(tensor->data, 0, ggml_nbytes(tensor));
     }
     return tensor;
-}
-
-void ggml_graph_reset(struct ggml_cgraph * cgraph) {
-    if (!cgraph) {
-        return;
-    }
-    GGML_ASSERT(cgraph->grads != NULL);
-
-    for (int i = 0; i < cgraph->n_nodes; i++) {
-        struct ggml_tensor * node     = cgraph->nodes[i];
-        struct ggml_tensor * grad_acc = ggml_graph_get_grad_acc(cgraph, node);
-
-        if (node->op == GGML_OP_OPT_STEP_ADAMW) {
-            // clear momenta
-            ggml_set_zero(node->src[2]);
-            ggml_set_zero(node->src[3]);
-        }
-
-        // initial gradients of loss should be 1, 0 otherwise
-        if (grad_acc) {
-            if (node->flags & GGML_TENSOR_FLAG_LOSS) {
-                GGML_ASSERT(grad_acc->type == GGML_TYPE_F32);
-                GGML_ASSERT(ggml_is_scalar(grad_acc));
-
-                const float onef = 1.0f;
-                if (grad_acc->buffer) {
-                    ggml_backend_tensor_set(grad_acc, &onef, 0, sizeof(float));
-                } else {
-                    GGML_ASSERT(grad_acc->data);
-                    *((float *) grad_acc->data) = onef;
-                }
-            } else {
-                ggml_set_zero(grad_acc);
-            }
-        }
-    }
 }
 
 void ggml_graph_clear(struct ggml_cgraph * cgraph) {
@@ -5486,37 +5397,6 @@ struct ggml_tensor ** ggml_graph_nodes(struct ggml_cgraph * cgraph) {
 
 int ggml_graph_n_nodes(struct ggml_cgraph * cgraph) {
     return cgraph->n_nodes;
-}
-
-void ggml_graph_add_node(struct ggml_cgraph * cgraph, struct ggml_tensor * tensor) {
-    GGML_ASSERT(cgraph->size > cgraph->n_nodes);
-    cgraph->nodes[cgraph->n_nodes] = tensor;
-    cgraph->n_nodes++;
-}
-
-struct ggml_tensor * ggml_graph_get_tensor(const struct ggml_cgraph * cgraph, const char * name) {
-    for (int i = 0; i < cgraph->n_leafs; i++) {
-        struct ggml_tensor * leaf = cgraph->leafs[i];
-
-        if (strcmp(leaf->name, name) == 0) {
-            return leaf;
-        }
-    }
-
-    for (int i = 0; i < cgraph->n_nodes; i++) {
-        struct ggml_tensor * node = cgraph->nodes[i];
-
-        if (strcmp(node->name, name) == 0) {
-            return node;
-        }
-    }
-
-    return NULL;
-}
-
-struct ggml_tensor * ggml_graph_get_grad_acc(const struct ggml_cgraph * cgraph, const struct ggml_tensor * node) {
-    const size_t igrad = ggml_hash_find(&cgraph->visited_hash_set, node);
-    return igrad != GGML_HASHSET_FULL && ggml_bitset_get(cgraph->visited_hash_set.used, igrad) && cgraph->grad_accs ? cgraph->grad_accs[igrad] : NULL;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
