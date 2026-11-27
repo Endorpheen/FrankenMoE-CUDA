@@ -1,8 +1,27 @@
-#include "model-bindings.h"
+#include "request-state.h"
 #include "graph.h"
 #include "ggml.h"
 #include <string.h>
 #include <stdlib.h>
+
+_Static_assert(sizeof(struct giga_request) == 1088 &&
+    offsetof(struct giga_request, state) == 8 && offsetof(struct giga_request, draft) == 1032 &&
+    offsetof(struct giga_request, capacity) == 1056 && offsetof(struct giga_request, committed) == 1064 &&
+    offsetof(struct giga_request, draft_committed) == 1072 && offsetof(struct giga_request, device_state) == 1080 &&
+    offsetof(struct giga_bindings, kinds) == 8576, "GigaChat4 request ABI");
+
+_Static_assert(sizeof(struct giga_step) == 80 &&
+    offsetof(struct giga_step, output_ids) == 32 && offsetof(struct giga_step, base) == 40 &&
+    offsetof(struct giga_step, count) == 48 && offsetof(struct giga_step, output_count) == 56 &&
+    offsetof(struct giga_step, cells) == 64 && offsetof(struct giga_step, draft) == 72 &&
+    offsetof(struct giga_step, draft_catchup) == 73, "GigaChat4 step ABI");
+
+_Static_assert(sizeof(struct giga_graph_config) == 608 &&
+    offsetof(struct giga_graph_config, routed_limits) == 24 && offsetof(struct giga_graph_config, shared_limits) == 152 &&
+    offsetof(struct giga_graph_config, factors) == 288 && offsetof(struct giga_graph_config, rope) == 552 &&
+    offsetof(struct giga_graph_config, index_rope) == 576 && offsetof(struct giga_graph_config, original_context) == 600 &&
+    offsetof(struct giga_graph_config, normalize) == 604 && offsetof(struct giga_bindings, weights) == 16 &&
+    offsetof(struct giga_bindings, offsets) == 8304, "GigaChat4 graph config ABI");
 
 void giga_unbind_model(struct giga_bindings *bindings) {
     if (!bindings) return;
@@ -48,38 +67,10 @@ int giga_bind_model(struct giga_bindings *out, const void *mapping, size_t bytes
     return 0;
 }
 
-void fg457_st_i64(uint64_t address, uint64_t offset, int64_t value) {
-    memcpy((uint8_t *)(uintptr_t)address + offset, &value, sizeof(value));
-}
-
-float giga_bits_to_float(uint32_t bits) {
-    float value;
-    memcpy(&value, &bits, sizeof(value));
-    return value;
-}
-
-int64_t giga_dense_span(uint64_t address, sl_i64 out) {
-    const struct ggml_tensor *tensor = (const void *)(uintptr_t)address;
-    if (!tensor || !tensor->data || out.len < 2 || tensor->ne[2] != 1 || tensor->ne[3] != 1 ||
-        (tensor->type != GGML_TYPE_F32 && tensor->type != GGML_TYPE_Q4_K &&
-         tensor->type != GGML_TYPE_Q6_K)) return 0;
-    out.data[0] = (int64_t)(uintptr_t)tensor->data;
-    out.data[1] = (int64_t)ggml_nbytes(tensor);
-    return 1;
-}
-
-extern int64_t qz_dequant(int64_t type, sl_u8 src, int64_t elements, sl_f32 out);
-
-uint64_t giga_expand_mla_descriptor(uint64_t ctx, uint64_t address) {
-    const struct ggml_tensor *source = (const void *)(uintptr_t)address;
-    if (!source || source->type != GGML_TYPE_Q5_0 || source->ne[0] != 128 ||
-        source->ne[1] != 512 || source->ne[2] != 32 || source->ne[3] != 1) return 0;
-    const int64_t elements = 128 * 512 * 32;
-    struct ggml_tensor *target = ggml_new_tensor_3d((void *)(uintptr_t)ctx, GGML_TYPE_F32, 128, 512, 32);
-    if (qz_dequant(source->type, (sl_u8){source->data, ggml_nbytes(source)}, elements,
-                   (sl_f32){target->data, elements}) != elements) return 0;
-    return (uintptr_t)target;
-}
+_Static_assert(offsetof(struct ggml_tensor, ne) == 16 &&
+    offsetof(struct ggml_tensor, data) == 248 &&
+    GGML_TYPE_F32 == 0 && GGML_TYPE_F16 == 1 && GGML_TYPE_Q5_0 == 6 &&
+    GGML_TYPE_Q4_K == 12 && GGML_TYPE_Q6_K == 14, "GigaChat4 tensor ABI");
 
 int giga_expand_mla_weights(struct giga_bindings *bindings) {
     if (!bindings || bindings->mla_weights) return -1;
