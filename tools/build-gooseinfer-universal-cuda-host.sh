@@ -17,7 +17,7 @@ esac
 mkdir -p -- "$out"
 flags=(-O2 -std=gnu11 -D_GNU_SOURCE -ffunction-sections -fdata-sections -Werror=implicit-function-declaration -I"$standalone")
 
-"$cc" "${flags[@]}" -I"$images" -I"$cpu_headers" -c "$src/cuda-driver.c" -o "$out/cuda-driver.o"
+bash "$root/tools/build-gooseinfer-cuda-driver.sh" "$target" "$out" "$images"
 "$cc" "${flags[@]}" -DI2_NUMERIC_MODULE -Dmain=gooseinfer_cuda_entry -I"$model_headers" \
     -I"$root/vendor/flint/ggml/include" -I"$root/integration/m1/host" \
     -c "$src/infer-main.c" -o "$out/cuda-entry.o"

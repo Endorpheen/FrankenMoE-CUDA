@@ -62,6 +62,131 @@ export fn fg143_pinned_packet_slot(used: i64, capacity: i64, bytes: i64) -> i64 
 }
 
 
+const EXPERT_GROUP_WORDS: i64 = 9;
+const EXPERT_MIN_PREFILL_COUNT: i64 = 64;
+const EXPERT_MIB: u64 = 1048576;
+const EXPERT_SIGNED_LIMIT: u64 = 9223372036854775807;
+
+export fn fg143_expert_prefill_plan(groups: const i64[:], bank_bytes: u64, planes: u64,
+        budget_mib: u64, plan: u64[:]) -> bool {
+    let maximum: u64 = 0xffffffffffffffff;
+    if groups.len % EXPERT_GROUP_WORDS != 0 || bank_bytes > maximum - 255 { return false; }
+    var largest: u64 = 0;
+    var group: i64 = 0;
+    while group < groups.len {
+        let experts = groups[group + 3];
+        if groups[group + 5] > 0 && experts >= EXPERT_MIN_PREFILL_COUNT {
+            for plane in 0..3 {
+                let weight = groups[group + plane];
+                if weight <= 0 || (weight as u64) > maximum / (experts as u64) { return false; }
+                let bytes = (weight as u64) * (experts as u64);
+                if bytes > largest { largest = bytes; }
+            }
+        }
+        group += EXPERT_GROUP_WORDS;
+    }
+    if largest == 0 { return true; }
+    let offset = (bank_bytes + 255) & (maximum - 255);
+    if offset > EXPERT_SIGNED_LIMIT || largest > (EXPERT_SIGNED_LIMIT - offset) / planes { return false; }
+    var workspace = largest * planes;
+    if budget_mib != 0 {
+        if budget_mib > (EXPERT_SIGNED_LIMIT - offset) / EXPERT_MIB { return false; }
+        workspace = budget_mib * EXPERT_MIB;
+        if workspace < largest { return false; }
+    }
+    plan[0] = offset;
+    plan[1] = largest;
+    plan[2] = workspace;
+    return true;
+}
+
+export fn fg143_expert_balance_apex(groups: i64[:], bytes: i64, layer_words: i64) -> bool {
+    if groups.len != 18 || layer_words != 160 || bytes != 6592856064 { return false; }
+    let q4 = EXPERT_GROUP_WORDS;
+    if groups[0] != 589824 || groups[1] != 589824 || groups[2] != 860160 ||
+        groups[q4] != 589824 || groups[q4 + 1] != 589824 || groups[q4 + 2] != 589824 ||
+        groups[3] != 256 || groups[q4 + 3] != 256 || groups[4] != 20 || groups[q4 + 4] != 20 ||
+        groups[5] != 1616 || groups[q4 + 5] != 1863 || groups[6] != 0 { return false; }
+    let q6_slots: i64 = 1904;
+    let q4_slots: i64 = 1531;
+    let q6_bytes = q6_slots * (groups[0] + groups[1] + groups[2]);
+    let q4_bytes = q4_slots * (groups[q4] + groups[q4 + 1] + groups[q4 + 2]);
+    if q6_bytes + q4_bytes > bytes { return false; }
+    groups[q4 + 7] += 4 * (q6_slots - groups[5]);
+    groups[5] = q6_slots;
+    groups[q4 + 5] = q4_slots;
+    groups[q4 + 6] = q6_bytes;
+    return true;
+}
+
+export fn fg143_expert_source_pinned(spans: const i64[:], source: u64, bytes: u64) -> bool {
+    var i: i64 = 0;
+    while i + 1 < spans.len {
+        let base = spans[i] as u64;
+        let span = spans[i + 1] as u64;
+        if source < base { return false; }
+        if bytes <= span && source - base <= span - bytes { return true; }
+        i += 2;
+    }
+    return false;
+}
+
+const EXPERT_UPLOAD_BYTES: i64 = 32;
+
+fn expert_upload_word(jobs: const u8[:], word: i64) -> u64 {
+    var value: u64 = 0;
+    for byte in 8 {
+        value |= (jobs[word * 8 + byte] as u64) << ((byte * 8) as u64);
+    }
+    return value;
+}
+
+export fn fg143_expert_pinned_batch(jobs: const u8[:]) -> bool {
+    let count = jobs.len / EXPERT_UPLOAD_BYTES;
+    for i in count {
+        let bytes = expert_upload_word(jobs, 4 * i + 2);
+        if jobs[i * EXPERT_UPLOAD_BYTES + 24] != 0 || bytes == 0 { return false; }
+        let destination = expert_upload_word(jobs, 4 * i);
+        for previous in i {
+            let other = expert_upload_word(jobs, 4 * previous);
+            if destination < other {
+                if other - destination < bytes { return false; }
+            } else if destination - other < expert_upload_word(jobs, 4 * previous + 2) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+export fn fg143_expert_down_split(jobs: const u8[:], tensor: u64,
+        plane_bytes: u64, experts: u64) -> i64 {
+    var split = jobs.len / EXPERT_UPLOAD_BYTES;
+    if plane_bytes == 0 { return split; }
+    while split > 0 {
+        let word = 4 * (split - 1);
+        let source = expert_upload_word(jobs, word + 1);
+        if source < tensor || expert_upload_word(jobs, word + 2) != plane_bytes { break; }
+        let offset = source - tensor;
+        if offset % plane_bytes != 0 || offset / plane_bytes >= experts { break; }
+        split -= 1;
+    }
+    return split;
+}
+
+export fn fg143_expert_pageable_run(jobs: const u8[:], capacity: u64, total: u64[:]) -> i64 {
+    var count: i64 = 0;
+    var bytes: u64 = 0;
+    while count < jobs.len / EXPERT_UPLOAD_BYTES && jobs[count * EXPERT_UPLOAD_BYTES + 24] != 0 {
+        let size = expert_upload_word(jobs, 4 * count + 2);
+        if size > capacity - bytes { break; }
+        bytes += size;
+        count += 1;
+    }
+    total[0] = bytes;
+    return count;
+}
+
 export fn fg143_object_layout(previous_offset: u64, previous_size: u64, size: u64,
         alignment: u64, header: u64, capacity: u64, layout: u64[:]) -> i32 {
     let maximum: u64 = 0xffffffffffffffff;

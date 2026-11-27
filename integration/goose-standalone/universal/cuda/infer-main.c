@@ -87,7 +87,10 @@ static int serve(const char * model, int64_t port, int64_t limit, int64_t capaci
     return 1;
 }
 
+extern void goose_cuda_init(int argc, char **argv);
+
 int main(int argc, char ** argv) {
+    goose_cuda_init(argc, argv);
     const char * program = argv[0];
     int64_t context = HOSE_DEFAULT_CONTEXT;
     int64_t batch = HOSE_DEFAULT_PREFILL_BATCH;

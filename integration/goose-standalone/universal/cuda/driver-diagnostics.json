@@ -1,0 +1,1180 @@
+[
+  {
+    "symbol": "fg_cuda_host_diagnostic_0",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA VMM: freed base=%#llx\\n",
+    "types": [
+      "u64"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_1",
+    "mode": "fputs",
+    "stream": "stderr",
+    "format": "Goose CUDA: GOOSE_CUDA_ACTIVATION_MIB requires a valid budget of at least 64 MiB\\n",
+    "types": []
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_2",
+    "mode": "fputs",
+    "stream": "stderr",
+    "format": "Goose CUDA: Tensor Core paths require the SM80 image and compute capability 8 or newer\\n",
+    "types": []
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_3",
+    "mode": "fputs",
+    "stream": "stderr",
+    "format": "Goose CUDA: SM89 causal Flash interior tiles selected\\n",
+    "types": []
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_4",
+    "mode": "fputs",
+    "stream": "stderr",
+    "format": "Goose CUDA: SM89 bounded-key Attention available\\n",
+    "types": []
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_5",
+    "mode": "fputs",
+    "stream": "stderr",
+    "format": "Goose CUDA: Attention first-row variant loaded\\n",
+    "types": []
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_6",
+    "mode": "fputs",
+    "stream": "stderr",
+    "format": "Goose CUDA: Attention V unroll selected for SM89\\n",
+    "types": []
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_7",
+    "mode": "fputs",
+    "stream": "stderr",
+    "format": "Goose CUDA: SM89 batched RMSNorm available\\n",
+    "types": []
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_8",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: route mailbox initialization result=%d\\n",
+    "types": [
+      "i32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_9",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: initialization failed (%d)\\n",
+    "types": [
+      "i32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_10",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA VMM: mapped base=%#llx offset=%zu bytes=%zu\\n",
+    "types": [
+      "u64",
+      "u64",
+      "u64"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_11",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: %zu device bytes requested, %zu bytes available\\n",
+    "types": [
+      "u64",
+      "u64"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_12",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: context switch failed (%d)\\n",
+    "types": [
+      "i32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_13",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA MMQ: reused %llu shared Q8_1 packs\\n",
+    "types": [
+      "u64"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_14",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA MMQ: reused %llu dense Q8_1 packs\\n",
+    "types": [
+      "u64"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_15",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA MMQ: prepared %llu dense Q4_K weights\\n",
+    "types": [
+      "u64"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_16",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA MMQ: pipelined %llu dense Q4_K launches\\n",
+    "types": [
+      "u64"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_17",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA MMQ: pipelined %llu dense Q6_K launches\\n",
+    "types": [
+      "u64"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_18",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA MMQ: pipelined %llu routed Q6_K launches\\n",
+    "types": [
+      "u64"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_19",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: prepared %llu expert batches in parallel\\n",
+    "types": [
+      "u64"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_20",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA vector: %llu flat launches, %llu using float4\\n",
+    "types": [
+      "u64",
+      "u64"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_21",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: graph completion failed (%d)\\n",
+    "types": [
+      "i32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_22",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA decode regions: %zu replays, %zu updates, %zu kernels max\\n",
+    "types": [
+      "u64",
+      "u64",
+      "u64"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_23",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA decode reuse: %zu regions, %zu changed kernel nodes\\n",
+    "types": [
+      "u64",
+      "u64"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_24",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Inkling carveout begin=%d arena=%zu peak_end=%zu spills=%u flushes=%u\\n",
+    "types": [
+      "i32",
+      "u64",
+      "u64",
+      "u32",
+      "u32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_25",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "GigaChat4 CUDA activation arena: %zu MiB\\n",
+    "types": [
+      "u64"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_26",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: cannot allocate the requested %zu MiB activation arena\\n",
+    "types": [
+      "u64"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_27",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: model state allocation failed (%d)\\n",
+    "types": [
+      "i32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_28",
+    "mode": "fputs",
+    "stream": "stderr",
+    "format": "Goose CUDA: fixed prefill FWHT Q4 selected\\n",
+    "types": []
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_29",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: Q4 cache update failed (%d)\\n",
+    "types": [
+      "i32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_30",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: fused FWHT and Q4 cache write\\n",
+    "types": []
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_31",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: GDN state copy was not consumed by the graph\\n",
+    "types": []
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_32",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: dense weight upload failed (%d)\\n",
+    "types": [
+      "i32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_33",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: %zu byte expert bank, %zu byte temporary prefill workspace, %u buffers\\n",
+    "types": [
+      "u64",
+      "u64",
+      "u32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_34",
+    "mode": "fputs",
+    "stream": "stderr",
+    "format": "Goose CUDA: expert cache 1904/1531 rebalance selected\\n",
+    "types": []
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_35",
+    "mode": "fputs",
+    "stream": "stderr",
+    "format": "Goose CUDA: one-touch SLRU enabled at 6290 MiB\\n",
+    "types": []
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_36",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: expert cache allocation failed (%d)\\n",
+    "types": [
+      "i32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_37",
+    "mode": "fputs",
+    "stream": "stderr",
+    "format": "Goose CUDA: GOOSE_EXPERT_PIN_MIB requires a positive MiB budget\\n",
+    "types": []
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_38",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: mmap expert registration failed (%d)\\n",
+    "types": [
+      "i32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_39",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: mmap expert unregistration failed (%d)\\n",
+    "types": [
+      "i32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_40",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: registered %lld expert mmap ranges (%lld bytes)\\n",
+    "types": [
+      "i64",
+      "i64"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_41",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA prefill temporary: %llu projections, %llu resident planes, %llu uploaded bytes, %llu prefetched, %llu discarded\\n",
+    "types": [
+      "u64",
+      "u64",
+      "u64",
+      "u64",
+      "u64"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_42",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA prefill compact: %llu full-buffer projections, %llu prefetch skips for capacity\\n",
+    "types": [
+      "u64",
+      "u64"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_43",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: expert upload failed (%d)\\n",
+    "types": [
+      "i32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_44",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: staged expert upload failed (%d)\\n",
+    "types": [
+      "i32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_45",
+    "mode": "fputs",
+    "stream": "stderr",
+    "format": "Goose CUDA: batch DMA for pinned decode experts selected\\n",
+    "types": []
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_46",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: staged expert upload failed (%d)\\n",
+    "types": [
+      "i32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_47",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "I2 trace initial slots=%lld",
+    "types": [
+      "i64"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_48",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": " %d",
+    "types": [
+      "i32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_49",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "I2 trace route token=%d visit=%d layer=%d mask=%016llx%016llx\\n",
+    "types": [
+      "i32",
+      "i32",
+      "i32",
+      "u64",
+      "u64"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_50",
+    "mode": "fputs",
+    "stream": "stderr",
+    "format": "Inkling prefill expert LFU active\\n",
+    "types": []
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_51",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: input transfer failed (%d)\\n",
+    "types": [
+      "i32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_52",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: MMQ failed (%d), packed activations need %zu bytes\\n",
+    "types": [
+      "i32",
+      "u64"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_53",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA cached graph: setup failed (%d)\\n",
+    "types": [
+      "i32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_54",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: MMVQ failed (%d)\\n",
+    "types": [
+      "i32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_55",
+    "mode": "fputs",
+    "stream": "stderr",
+    "format": "Inkling Q8 projection FP32 expansion active\\n",
+    "types": []
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_56",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Inkling packed control Q8 width=%d rows=%d tile=%d warps=%d\\n",
+    "types": [
+      "i32",
+      "i32",
+      "i32",
+      "i32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_57",
+    "mode": "fputs",
+    "stream": "stderr",
+    "format": "Inkling Q8: exact packed sixteen-input kernel active\\n",
+    "types": []
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_58",
+    "mode": "fputs",
+    "stream": "stderr",
+    "format": "Inkling Q8: vector-packed eight input rows active\\n",
+    "types": []
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_59",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Inkling specialized matrix launch failed: %d\\n",
+    "types": [
+      "i32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_60",
+    "mode": "fputs",
+    "stream": "stderr",
+    "format": "Inkling verifier expert single-job dispatch active\\n",
+    "types": []
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_61",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Inkling specialized matrix kind %d (tile %d) active\\n",
+    "types": [
+      "i32",
+      "i32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_62",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: dense decode MMVQ uses direct tensor addresses\\n",
+    "types": []
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_63",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: dense MMA failed (%d)\\n",
+    "types": [
+      "i32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_64",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: matrix kernel failed (%d)\\n",
+    "types": [
+      "i32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_65",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: Inkling quantized matrix kind %d active\\n",
+    "types": [
+      "i32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_66",
+    "mode": "fputs",
+    "stream": "stderr",
+    "format": "Goose CUDA: expert prefetch unavailable\\n",
+    "types": []
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_67",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: expert prefetch from predicted routes active k=%u\\n",
+    "types": [
+      "u32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_68",
+    "mode": "fputs",
+    "stream": "stderr",
+    "format": "Goose CUDA: expert prefetch disabled after launch failure\\n",
+    "types": []
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_69",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: expert prefetch launched=%llu waves=%llu jobs=%llu skipped=%llu us launch=%llu wait=%llu prepare=%llu submit=%llu\\n",
+    "types": [
+      "u64",
+      "u64",
+      "u64",
+      "u64",
+      "u64",
+      "u64",
+      "u64",
+      "u64"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_70",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: matrix weight transfer failed\\n",
+    "types": []
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_71",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "I2 overlap groups=%llu resident=%llu missing=%llu\\n",
+    "types": [
+      "u64",
+      "u64",
+      "u64"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_72",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "I2 prefill expert fills=%llu bytes=%llu\\n",
+    "types": [
+      "u64",
+      "u64"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_73",
+    "mode": "fputs",
+    "stream": "stderr",
+    "format": "Goose CUDA: route mailbox verification mismatch\\n",
+    "types": []
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_74",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: mailbox verified=%u forced-fallback=%u\\n",
+    "types": [
+      "u32",
+      "u32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_75",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: route mailbox reads=%u fallbacks=%u\\n",
+    "types": [
+      "u32",
+      "u32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_76",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: deferred prefetch fences=%u\\n",
+    "types": [
+      "u32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_77",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: fused shared expert scale and residual adds\\n",
+    "types": []
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_78",
+    "mode": "fputs",
+    "stream": "stderr",
+    "format": "Goose CUDA: shared up/gate/SwiGLU fusion selected\\n",
+    "types": []
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_79",
+    "mode": "fputs",
+    "stream": "stderr",
+    "format": "Goose CUDA: routed up/gate/SwiGLU fusion selected\\n",
+    "types": []
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_80",
+    "mode": "fputs",
+    "stream": "stderr",
+    "format": "Goose CUDA: early decode FFN submission active\\n",
+    "types": []
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_81",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: routed FFN launch failed (%d)\\n",
+    "types": [
+      "i32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_82",
+    "mode": "fputs",
+    "stream": "stderr",
+    "format": "Goose CUDA: compact decode routes active\\n",
+    "types": []
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_83",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: compact route weights consumed=%llu\\n",
+    "types": [
+      "u64"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_84",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: fused SwiGLU Q8_1 down projection\\n",
+    "types": []
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_85",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: output transfer failed (%d)\\n",
+    "types": [
+      "i32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_86",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA Flash graph: setup failed (%d)\\n",
+    "types": [
+      "i32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_87",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: paired query heads share packed K/V\\n",
+    "types": []
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_88",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: four query heads share packed K/V\\n",
+    "types": []
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_89",
+    "mode": "fputs",
+    "stream": "stderr",
+    "format": "Goose CUDA: SM89 bounded-key Attention selected\\n",
+    "types": []
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_90",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: attention scratch wave %d of %d tasks\\n",
+    "types": [
+      "i32",
+      "i32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_91",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: Q4 attention failed (%d)\\n",
+    "types": [
+      "i32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_92",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA GDN: V32 slices\\n",
+    "types": []
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_93",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: GDN failed (%d)\\n",
+    "types": [
+      "i32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_94",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: direct single-row RMSNorm for decode\\n",
+    "types": []
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_95",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: vector operation failed (%d)\\n",
+    "types": [
+      "i32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_96",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "GigaChat4 CUDA clamped SwiGLU: words=%lld\\n",
+    "types": [
+      "i64"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_97",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: fused RMS and scale\\n",
+    "types": []
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_98",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: direct SSM failed (%d)\\n",
+    "types": [
+      "i32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_99",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: direct SSM and ordered tail (host reuse=%d)\\n",
+    "types": [
+      "i32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_100",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: unrolled router softmax launches=%llu\\n",
+    "types": [
+      "u64"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_101",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: routing operation %lld failed (%d)\\n",
+    "types": [
+      "i64",
+      "i32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_102",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: tiled transpose concat\\n",
+    "types": []
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_103",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: tensor transform %lld failed (%d)\\n",
+    "types": [
+      "i64",
+      "i32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_104",
+    "mode": "fputs",
+    "stream": "stderr",
+    "format": "Goose CUDA: fixed prefill FWHT selected\\n",
+    "types": []
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_105",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: KV FWHT failed (%d)\\n",
+    "types": [
+      "i32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_106",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: fused prefill MoE epilogues=%llu\\n",
+    "types": [
+      "u64"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_107",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: MoE weighted reduction failed (%d)\\n",
+    "types": [
+      "i32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_108",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: keep expert weights pageable (host RAM headroom, planned %lld bytes, available %lld bytes)\\n",
+    "types": [
+      "i64",
+      "i64"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_109",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: keep expert weights pageable (nonresident mmap pages, planned %lld bytes, available %lld bytes)\\n",
+    "types": [
+      "i64",
+      "i64"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_110",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "I2 warm policy mode=bucket cpu_ns=%llu\\n",
+    "types": [
+      "u64"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_111",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "I2 warm policy mode=sort cpu_ns=%llu\\n",
+    "types": [
+      "u64"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_112",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: RoPE failed (%d)\\n",
+    "types": [
+      "i32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_113",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: SSM convolution failed (%d)\\n",
+    "types": [
+      "i32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_114",
+    "mode": "fputs",
+    "stream": "stderr",
+    "format": "\\n",
+    "types": []
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_115",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA tanh: failed (%d, %d)\\n",
+    "types": [
+      "i32",
+      "i32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_116",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "GigaChat4 CUDA DSA mask rows=%jd cells=%jd\\n",
+    "types": [
+      "i64",
+      "i64"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_117",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "GigaChat4 CUDA wide top-k: %jdx%jd\\n",
+    "types": [
+      "i64",
+      "i64"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_118",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "GigaChat4 DSA shared Q: cells=%jd rows=%jd\\n",
+    "types": [
+      "i64",
+      "i64"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_119",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "GigaChat4 CUDA certified DSA: cells=%jd rows=%jd tile=%jd scratch=%zu\\n",
+    "types": [
+      "i64",
+      "i64",
+      "i64",
+      "u64"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_120",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "GigaChat4 indexed MLA: positions=%jd cells=%jd\\n",
+    "types": [
+      "i64",
+      "i64"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_121",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "GigaChat4 MLA MMA: positions=%jd cells=%jd\\n",
+    "types": [
+      "i64",
+      "i64"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_122",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA: GigaChat4 MLA failed (%d)\\n",
+    "types": [
+      "i32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_123",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Goose CUDA Inkling MoE epilogue: slot=%d position=%d error=%d context=%d\\n",
+    "types": [
+      "i32",
+      "i32",
+      "i32",
+      "i32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_124",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Inkling draft MoE restore=%d bytes=%d\\n",
+    "types": [
+      "i32",
+      "i32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_125",
+    "mode": "fputs",
+    "stream": "stderr",
+    "format": "Inkling batched CUDA convolution active\\n",
+    "types": []
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_126",
+    "mode": "fputs",
+    "stream": "stderr",
+    "format": "Inkling Flash: tile softmax active for full attention\\n",
+    "types": []
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_127",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Inkling native attention: CUDA error %d, context %d, slot %d at %d\\n",
+    "types": [
+      "i32",
+      "i32",
+      "i32",
+      "i32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_128",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Inkling draft bridge position=%d bytes=%d\\n",
+    "types": [
+      "i32",
+      "i32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_129",
+    "mode": "fprintf",
+    "stream": "stderr",
+    "format": "Inkling CUDA bridge: slot=%d token=%d status=%d context=%d\\n",
+    "types": [
+      "i32",
+      "i32",
+      "i32",
+      "i32"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_130",
+    "mode": "fprintf",
+    "stream": "stdout",
+    "format": "Inkling native attention: calls=%ju queries=%ju KV+bias=%zu workspace=%zu H2D=%ju\\n",
+    "types": [
+      "u64",
+      "u64",
+      "u64",
+      "u64",
+      "u64"
+    ]
+  },
+  {
+    "symbol": "fg_cuda_host_diagnostic_131",
+    "mode": "fprintf",
+    "stream": "stdout",
+    "format": "Inkling Attention calls=%ju H2D=%ju D2H=%ju resident=%zu\\n",
+    "types": [
+      "u64",
+      "u64",
+      "u64",
+      "u64"
+    ]
+  }
+]

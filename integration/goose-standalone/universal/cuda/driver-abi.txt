@@ -1,0 +1,59 @@
+# Dispatch name, CUDA symbol, argument types (x86-64 vendor ABI)
+vmm_get_granularity cuMemGetAllocationGranularity p_u64 c_p_void i32
+vmm_reserve cuMemAddressReserve p_u64 u64 u64 u64 u64
+vmm_free cuMemAddressFree u64 u64
+vmm_create cuMemCreate p_u64 u64 c_p_void u64
+vmm_map cuMemMap u64 u64 u64 u64 u64
+vmm_access cuMemSetAccess u64 u64 c_p_void u64
+vmm_unmap cuMemUnmap u64 u64
+vmm_release cuMemRelease u64
+stream_create cuStreamCreate pp_void u32
+stream_destroy cuStreamDestroy_v2 p_void
+graph_begin cuStreamBeginCapture_v2 p_void i32
+graph_end cuStreamEndCapture p_void pp_void
+graph_roots cuGraphGetRootNodes p_void pp_void p_u64
+graph_dependents cuGraphNodeGetDependentNodes p_void pp_void p_u64
+graph_instantiate cuGraphInstantiateWithFlags pp_void p_void u64
+graph_set_kernel cuGraphExecKernelNodeSetParams_v2 p_void p_void c_p_void
+graph_launch cuGraphLaunch p_void p_void
+graph_destroy cuGraphDestroy p_void
+graph_exec_destroy cuGraphExecDestroy p_void
+upload_async cuMemcpyHtoDAsync_v2 u64 c_p_void u64 p_void
+stream_wait_event cuStreamWaitEvent p_void p_void u32
+event_create cuEventCreate pp_void u32
+event_destroy cuEventDestroy_v2 p_void
+event_record cuEventRecord p_void p_void
+init cuInit u32
+device_get cuDeviceGet p_i32 i32
+device_attribute cuDeviceGetAttribute p_i32 i32 i32
+create cuCtxCreate_v2 pp_void u32 i32
+destroy cuCtxDestroy_v2 p_void
+push cuCtxPushCurrent_v2 p_void
+pop cuCtxPopCurrent_v2 pp_void
+module_load cuModuleLoadData pp_void c_p_void
+function_get cuModuleGetFunction pp_void p_void c_p_i8
+function_set_attribute cuFuncSetAttribute p_void i32 i32
+alloc cuMemAlloc_v2 p_u64 u64
+memory_info cuMemGetInfo_v2 p_u64 p_u64
+release cuMemFree_v2 u64
+upload cuMemcpyHtoD_v2 u64 c_p_void u64
+download cuMemcpyDtoH_v2 p_void u64 u64
+copy_device cuMemcpyDtoD_v2 u64 u64 u64
+zero cuMemsetD8_v2 u64 u8 u64
+launch cuLaunchKernel p_void u32 u32 u32 u32 u32 u32 u32 p_void pp_void pp_void
+sync cuCtxSynchronize
+graph_update cuGraphExecUpdate_v2 p_void p_void p_void
+copy_device_async cuMemcpyDtoDAsync_v2 u64 u64 u64 p_void
+function_param cuFuncGetParamInfo p_void u64 p_u64 p_u64
+function_name cuFuncGetName c_pp_i8 p_void
+graph_node_type cuGraphNodeGetType p_void p_i32
+upload_batch cuMemcpyBatchAsync_v2 p_u64 p_u64 p_u64 u64 p_void p_u64 u64 p_void
+event_sync cuEventSynchronize p_void
+host_register cuMemHostRegister_v2 p_void u64 u32
+host_unregister cuMemHostUnregister p_void
+host_alloc cuMemHostAlloc pp_void u64 u32
+host_free cuMemFreeHost p_void
+host_device_pointer cuMemHostGetDevicePointer_v2 p_u64 p_void u32
+
+zero_async cuMemsetD8Async u64 u8 u64 p_void
+module_unload cuModuleUnload p_void

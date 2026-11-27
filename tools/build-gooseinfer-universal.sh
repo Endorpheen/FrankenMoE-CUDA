@@ -16,6 +16,8 @@ esac
 : "${APEX_PTXAS:?Set APEX_PTXAS to CUDA 12.4 ptxas}"
 required=(python3 patch "$GOOSE_BIN" "$APEX_PTXAS" "$GOOSE_HOST_BIN" "$APEX_ROUTING_GOOSE" "${CUDA_HOME:-/usr/local/cuda}/bin/ptxas"
           "${CLANG:-clang-18}" "${GLSLANG_VALIDATOR:-glslangValidator}" "${SPIRV_VAL:-spirv-val}")
+: "${GOOSE_CUDA_DRIVER_BIN:?Set GOOSE_CUDA_DRIVER_BIN to Fried Goose KeelWing v0.3.1-dev.1}"
+required+=("$GOOSE_CUDA_DRIVER_BIN")
 if [[ $target == linux ]]; then
     required+=("${CC:-gcc-13}" "${GIGACHAT4_CC:-gcc-15}" "${VULKAN_GOOSE_CC:-gcc-15}" "${AR:-ar}" nm objcopy)
 else

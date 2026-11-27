@@ -47,7 +47,7 @@ def mark(base,names,ext,status,reason):
         marks[f]=(status,reason)
 both='Host Linux + Windows'
 mark(u,'main','.c',both,'Universal entry and backend selection')
-mark(d,'cuda-driver infer-main','.c',both,'CUDA driver dispatch, allocations and inference')
+mark(d,'infer-main','.c',both,'CUDA inference entry')
 mark(u/'inkling','graph-execute inkling-backend','.c',both,'Graph ABI, execution and Inkling backend')
 mark(u/'inkling','sampler-scan','.c','Host Windows','Inkling sampler scan')
 mark(u/'bonsai','backend-cold model-host','.c',both,'Bonsai session and model host')
