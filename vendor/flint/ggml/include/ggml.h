@@ -2201,26 +2201,6 @@
             struct ggml_tensor  * ids,
             int64_t               K);
 
-    // partition into non-overlapping windows with padding if needed
-    // example:
-    // a:   768   64   64    1
-    // w:    14
-    // res: 768   14   14    25
-    // used in sam
-    GGML_API struct ggml_tensor * ggml_win_part(
-            struct ggml_context * ctx,
-            struct ggml_tensor  * a,
-            int                   w);
-
-    // reverse of ggml_win_part
-    // used in sam
-    GGML_API struct ggml_tensor * ggml_win_unpart(
-            struct ggml_context * ctx,
-            struct ggml_tensor  * a,
-            int                   w0,
-            int                   h0,
-            int                   w);
-
     GGML_API struct ggml_tensor * ggml_unary(
             struct ggml_context * ctx,
              struct ggml_tensor * a,
@@ -2230,26 +2210,6 @@
         struct ggml_context * ctx,
         struct ggml_tensor  * a,
         enum ggml_unary_op op);
-
-    // used in sam
-    GGML_API struct ggml_tensor * ggml_get_rel_pos(
-            struct ggml_context * ctx,
-            struct ggml_tensor  * a,
-            int                   qh,
-            int                   kh);
-
-    // used in sam
-    GGML_API struct ggml_tensor * ggml_add_rel_pos(
-            struct ggml_context * ctx,
-            struct ggml_tensor  * a,
-            struct ggml_tensor  * pw,
-            struct ggml_tensor  * ph);
-
-    GGML_API struct ggml_tensor * ggml_add_rel_pos_inplace(
-            struct ggml_context * ctx,
-            struct ggml_tensor  * a,
-            struct ggml_tensor  * pw,
-            struct ggml_tensor  * ph);
 
     GGML_API struct ggml_tensor * ggml_rwkv_wkv6(
             struct ggml_context * ctx,
