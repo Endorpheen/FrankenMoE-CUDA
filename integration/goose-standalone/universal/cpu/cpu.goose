@@ -5975,9 +5975,69 @@ fn try_giga_dsa_graph(nodes: const u8[:], step: i64, deadlines: const i64[:], sc
     return if status > 0 { 2 } else { status };
 }
 
-extern "fg143_graph_visit_info" fn graph_visit_info(graph: u64, node: u64, count_use: bool, info: u64[:]) -> i64;
-extern "fg143_graph_visit_append" fn graph_visit_append(graph: u64, node: u64, leaf: bool) -> bool;
-extern "fg143_graph_visit_is_tail" fn graph_visit_is_tail(graph: u64, node: u64) -> bool;
+extern "ggml_hash_find" fn graph_visit_hash_find(table: u64, tensor: u64) -> u64;
+extern fn fg143_graph_name_unnamed(node: u64, leaf: bool, index: i32);
+
+const TENSOR_SOURCES: u64 = 152;
+const TENSOR_PARAM_FLAG: i32 = 4;
+const TENSOR_COMPUTE_FLAG: i32 = 16;
+const GRAPH_ORDER: u64 = 80;
+
+fn graph_visit_info(graph: u64, node: u64, count_use: bool, info: u64[:]) -> i64 {
+    let slot = graph_visit_hash_find(graph + GRAPH_HASH_SIZE, node);
+    if slot == 0xffffffffffffffff { return -1; }
+    let op = tensor_read_i32(node + TENSOR_OPERATION, 0);
+    var flags = tensor_read_i32(node + TENSOR_FLAGS, 0) as! i32;
+    if op != 0 {
+        flags |= TENSOR_COMPUTE_FLAG;
+        tensor_write_i32(node + TENSOR_FLAGS, flags);
+    }
+    let used = tensor_read_word(graph + GRAPH_HASH_USED) + (slot / 32) * 4;
+    let mask = (1 as! u32) << ((slot % 32) as! u32);
+    let bits = tensor_read_i32(used, 0) as! u32;
+    let first = (bits & mask) == 0;
+    info[10] = if first { 1 } else { 0 };
+    info[11] = if op == 0 && (flags & TENSOR_PARAM_FLAG) == 0 { 1 } else { 0 };
+    let uses = tensor_read_word(graph + GRAPH_USE_COUNTS) + slot * 4;
+    if first {
+        let keys = tensor_read_word(graph + GRAPH_HASH_KEYS);
+        tensor_write_word(keys + slot * 8, node);
+        tensor_write_i32(used, (bits | mask) as! i32);
+        tensor_write_i32(uses, if count_use { 1 } else { 0 });
+    } else if count_use {
+        tensor_write_i32(uses, (tensor_read_i32(uses, 0) as! i32) + 1);
+    }
+
+    let reverse = first && tensor_read_i32(graph + GRAPH_ORDER, 0) == 1;
+    var parents: i64 = 0;
+    for i in 10 {
+        let index = if reverse { 9 - i } else { i };
+        let parent = tensor_read_word(node + TENSOR_SOURCES + (index as! u64) * 8);
+        if parent != 0 && (first || (tensor_read_i32(parent + TENSOR_FLAGS, 0) & (TENSOR_COMPUTE_FLAG as! i64)) == 0) {
+            info[parents] = parent;
+            parents += 1;
+        }
+    }
+    return parents;
+}
+
+fn graph_visit_append(graph: u64, node: u64, leaf: bool) -> bool {
+    let count_address = graph + (if leaf { 8 as! u64 } else { 4 as! u64 });
+    let count = tensor_read_i32(count_address, 0);
+    if count >= tensor_read_i32(graph, 0) { return false; }
+    fg143_graph_name_unnamed(node, leaf, count as! i32);
+    let list = tensor_read_word(graph + (if leaf { GRAPH_LEAFS } else { GRAPH_NODES }));
+    tensor_write_word(list + (count as! u64) * 8, node);
+    tensor_write_i32(count_address, (count as! i32) + 1);
+    return true;
+}
+
+fn graph_visit_is_tail(graph: u64, node: u64) -> bool {
+    let count = tensor_read_i32(graph + 4, 0);
+    if count <= 0 { return false; }
+    let nodes = tensor_read_word(graph + GRAPH_NODES);
+    return tensor_read_word(nodes + ((count - 1) as! u64) * 8) == node;
+}
 
 recursive fn graph_visit_forward(graph: u64, node: u64, count_use: bool) -> bool {
     var info = default<u64[12]>();
@@ -6010,16 +6070,16 @@ fn tensor_layout(tensor: u64) -> i64[8] {
     return layout;
 }
 
-export fn ggml_nelements(tensor: u64) -> i64 { return fg143_geometry_product(tensor_shape(tensor), 0); }
-export fn ggml_nrows(tensor: u64) -> i64 { return fg143_geometry_product(tensor_shape(tensor), 1); }
-export fn ggml_n_dims(tensor: u64) -> i32 { return fg143_geometry_rank(tensor_shape(tensor)) as i32; }
-export fn ggml_is_scalar(tensor: u64) -> bool { return fg143_geometry_unit_from(tensor_shape(tensor), 0); }
-export fn ggml_is_vector(tensor: u64) -> bool { return fg143_geometry_unit_from(tensor_shape(tensor), 1); }
-export fn ggml_is_matrix(tensor: u64) -> bool { return fg143_geometry_unit_from(tensor_shape(tensor), 2); }
-export fn ggml_is_3d(tensor: u64) -> bool { return fg143_geometry_unit_from(tensor_shape(tensor), 3); }
-export fn ggml_is_empty(tensor: u64) -> bool { return fg143_geometry_empty(tensor_shape(tensor)); }
+export fn goose_abi_ggml_nelements(tensor: u64) -> i64 { return fg143_geometry_product(tensor_shape(tensor), 0); }
+export fn goose_abi_ggml_nrows(tensor: u64) -> i64 { return fg143_geometry_product(tensor_shape(tensor), 1); }
+export fn goose_abi_ggml_n_dims(tensor: u64) -> i32 { return fg143_geometry_rank(tensor_shape(tensor)) as i32; }
+export fn goose_abi_ggml_is_scalar(tensor: u64) -> bool { return fg143_geometry_unit_from(tensor_shape(tensor), 0); }
+export fn goose_abi_ggml_is_vector(tensor: u64) -> bool { return fg143_geometry_unit_from(tensor_shape(tensor), 1); }
+export fn goose_abi_ggml_is_matrix(tensor: u64) -> bool { return fg143_geometry_unit_from(tensor_shape(tensor), 2); }
+export fn goose_abi_ggml_is_3d(tensor: u64) -> bool { return fg143_geometry_unit_from(tensor_shape(tensor), 3); }
+export fn goose_abi_ggml_is_empty(tensor: u64) -> bool { return fg143_geometry_empty(tensor_shape(tensor)); }
 
-export fn ggml_nbytes(tensor: u64) -> u64 {
+export fn goose_abi_ggml_nbytes(tensor: u64) -> u64 {
     let bytes = goose_tensor_span(ctor_property(tensor as i64, 0), tensor_layout(tensor));
     if bytes < 0 { tensor_geometry_abort(); }
     return bytes as u64;
@@ -6029,23 +6089,23 @@ fn tensor_is_contiguous(tensor: u64, loose: i64) -> bool {
     return fg143_geometry_contiguous(ctor_property(tensor as i64, 0), tensor_layout(tensor), loose);
 }
 
-export fn ggml_is_contiguous(tensor: u64) -> bool { return tensor_is_contiguous(tensor, 0); }
-export fn ggml_is_contiguous_0(tensor: u64) -> bool { return tensor_is_contiguous(tensor, 0); }
-export fn ggml_is_contiguous_1(tensor: u64) -> bool { return tensor_is_contiguous(tensor, 1); }
-export fn ggml_is_contiguous_rows(tensor: u64) -> bool {
+export fn goose_abi_ggml_is_contiguous(tensor: u64) -> bool { return tensor_is_contiguous(tensor, 0); }
+export fn goose_abi_ggml_is_contiguous_0(tensor: u64) -> bool { return tensor_is_contiguous(tensor, 0); }
+export fn goose_abi_ggml_is_contiguous_1(tensor: u64) -> bool { return tensor_is_contiguous(tensor, 1); }
+export fn goose_abi_ggml_is_contiguous_rows(tensor: u64) -> bool {
     let layout = tensor_layout(tensor);
     return fg143_geometry_rows(ctor_property(tensor as i64, 0), layout[0], layout[4]);
 }
-export fn ggml_are_same_shape(a: u64, b: u64) -> bool {
+export fn goose_abi_ggml_are_same_shape(a: u64, b: u64) -> bool {
     return fg143_geometry_equal(tensor_shape(a), tensor_shape(b));
 }
-export fn ggml_are_same_stride(a: u64, b: u64) -> bool {
+export fn goose_abi_ggml_are_same_stride(a: u64, b: u64) -> bool {
     let first = tensor_layout(a);
     let second = tensor_layout(b);
     for i in 4 .. 8 { if first[i] != second[i] { return false; } }
     return true;
 }
-export fn ggml_can_repeat(a: u64, b: u64) -> bool {
+export fn goose_abi_ggml_can_repeat(a: u64, b: u64) -> bool {
     return fg143_geometry_repeat(tensor_shape(a), tensor_shape(b));
 }
 
@@ -6068,90 +6128,90 @@ const TENSOR_TYPE_F16: i64 = 1;
 const TENSOR_TYPE_F32: i64 = 0;
 const TENSOR_TYPE_I32: i64 = 26;
 
-export fn ggml_reshape_2d(ctx: u64, input: u64, n0: i64, n1: i64) -> u64 {
+export fn goose_abi_ggml_reshape_2d(ctx: u64, input: u64, n0: i64, n1: i64) -> u64 {
     return fg143_construct_reshape(ctx as i64, input as i64, [n0, n1], TENSOR_OP_RESHAPE) as u64;
 }
 
-export fn ggml_reshape_3d(ctx: u64, input: u64, n0: i64, n1: i64, n2: i64) -> u64 {
+export fn goose_abi_ggml_reshape_3d(ctx: u64, input: u64, n0: i64, n1: i64, n2: i64) -> u64 {
     return fg143_construct_reshape(ctx as i64, input as i64, [n0, n1, n2], TENSOR_OP_RESHAPE) as u64;
 }
 
-export fn ggml_reshape_4d(ctx: u64, input: u64, n0: i64, n1: i64, n2: i64, n3: i64) -> u64 {
+export fn goose_abi_ggml_reshape_4d(ctx: u64, input: u64, n0: i64, n1: i64, n2: i64, n3: i64) -> u64 {
     return fg143_construct_reshape(ctx as i64, input as i64, [n0, n1, n2, n3], TENSOR_OP_RESHAPE) as u64;
 }
 
-export fn ggml_view_2d(ctx: u64, input: u64, n0: i64, n1: i64, s1: u64, offset: u64) -> u64 {
+export fn goose_abi_ggml_view_2d(ctx: u64, input: u64, n0: i64, n1: i64, s1: u64, offset: u64) -> u64 {
     var strides: u64[1] = [s1];
     return fg143_construct_view(ctx as i64, input as i64, [n0, n1], strides, offset, TENSOR_OP_VIEW) as u64;
 }
 
-export fn ggml_view_3d(ctx: u64, input: u64, n0: i64, n1: i64, n2: i64, s1: u64, s2: u64, offset: u64) -> u64 {
+export fn goose_abi_ggml_view_3d(ctx: u64, input: u64, n0: i64, n1: i64, n2: i64, s1: u64, s2: u64, offset: u64) -> u64 {
     var strides: u64[2] = [s1, s2];
     return fg143_construct_view(ctx as i64, input as i64, [n0, n1, n2], strides, offset, TENSOR_OP_VIEW) as u64;
 }
 
-export fn ggml_view_4d(ctx: u64, input: u64, n0: i64, n1: i64, n2: i64, n3: i64, s1: u64, s2: u64, s3: u64, offset: u64) -> u64 {
+export fn goose_abi_ggml_view_4d(ctx: u64, input: u64, n0: i64, n1: i64, n2: i64, n3: i64, s1: u64, s2: u64, s3: u64, offset: u64) -> u64 {
     var strides: u64[3] = [s1, s2, s3];
     return fg143_construct_view(ctx as i64, input as i64, [n0, n1, n2, n3], strides, offset, TENSOR_OP_VIEW) as u64;
 }
 
-export fn ggml_permute(ctx: u64, input: u64, ax0: i32, ax1: i32, ax2: i32, ax3: i32) -> u64 {
+export fn goose_abi_ggml_permute(ctx: u64, input: u64, ax0: i32, ax1: i32, ax2: i32, ax3: i32) -> u64 {
     let axes: i64[4] = [ax0 as i64, ax1 as i64, ax2 as i64, ax3 as i64];
     return fg143_construct_axis_map(ctx as i64, input as i64, axes, TENSOR_OP_PERMUTE, false) as u64;
 }
 
-export fn ggml_transpose(ctx: u64, input: u64) -> u64 {
+export fn goose_abi_ggml_transpose(ctx: u64, input: u64) -> u64 {
     return fg143_construct_axis_map(ctx as i64, input as i64, [1, 0, 2, 3], TENSOR_OP_TRANSPOSE, true) as u64;
 }
 
-export fn ggml_mul_mat(ctx: u64, a: u64, b: u64) -> u64 {
+export fn goose_abi_ggml_mul_mat(ctx: u64, a: u64, b: u64) -> u64 {
     return fg143_construct_product(ctx as i64, a as i64, b as i64, 0, TENSOR_TYPE_F32, TENSOR_TYPE_I32, TENSOR_OP_MUL_MAT) as u64;
 }
 
-export fn ggml_mul_mat_id(ctx: u64, a: u64, b: u64, ids: u64) -> u64 {
+export fn goose_abi_ggml_mul_mat_id(ctx: u64, a: u64, b: u64, ids: u64) -> u64 {
     return fg143_construct_product(ctx as i64, a as i64, b as i64, ids as i64, TENSOR_TYPE_F32, TENSOR_TYPE_I32, TENSOR_OP_MUL_MAT_ID) as u64;
 }
 
-export fn ggml_cpy(ctx: u64, input: u64, b: u64) -> u64 {
+export fn goose_abi_ggml_cpy(ctx: u64, input: u64, b: u64) -> u64 {
     return fg143_construct_copy(ctx as i64, input as i64, b as i64, 0, TENSOR_OP_CPY, 0) as u64;
 }
 
-export fn ggml_cast(ctx: u64, input: u64, kind: i32) -> u64 {
+export fn goose_abi_ggml_cast(ctx: u64, input: u64, kind: i32) -> u64 {
     return fg143_construct_copy(ctx as i64, input as i64, 0, kind as i64, TENSOR_OP_CPY, 1) as u64;
 }
 
-export fn ggml_cont(ctx: u64, input: u64) -> u64 {
+export fn goose_abi_ggml_cont(ctx: u64, input: u64) -> u64 {
     return fg143_construct_copy(ctx as i64, input as i64, 0, 0, TENSOR_OP_CONT, 2) as u64;
 }
 
-export fn ggml_ssm_conv(ctx: u64, input: u64, kernel: u64) -> u64 {
+export fn goose_abi_ggml_ssm_conv(ctx: u64, input: u64, kernel: u64) -> u64 {
     return fg143_construct_ssm_conv(ctx as i64, input as i64, kernel as i64, TENSOR_TYPE_F32, TENSOR_OP_SSM_CONV) as u64;
 }
 
-export fn ggml_ssm_scan(ctx: u64, state: u64, x: u64, dt: u64, a: u64, b: u64, c: u64, ids: u64, snapshots: i64) -> u64 {
+export fn goose_abi_ggml_ssm_scan(ctx: u64, state: u64, x: u64, dt: u64, a: u64, b: u64, c: u64, ids: u64, snapshots: i64) -> u64 {
     let inputs: i64[7] = [state as i64, x as i64, dt as i64, a as i64, b as i64, c as i64, ids as i64];
     return fg143_construct_ssm_scan(ctx as i64, inputs, snapshots, TENSOR_TYPE_F32, TENSOR_TYPE_I32, TENSOR_OP_SSM_SCAN) as u64;
 }
 
-export fn ggml_gated_delta_net(ctx: u64, q: u64, k: u64, v: u64, g: u64, beta: u64, state: u64, snapshots: i64) -> u64 {
+export fn goose_abi_ggml_gated_delta_net(ctx: u64, q: u64, k: u64, v: u64, g: u64, beta: u64, state: u64, snapshots: i64) -> u64 {
     let inputs: i64[6] = [q as i64, k as i64, v as i64, g as i64, beta as i64, state as i64];
     return fg143_construct_gated_delta(ctx as i64, inputs, snapshots, TENSOR_TYPE_F32, TENSOR_OP_GATED_DELTA_NET) as u64;
 }
 
-export fn ggml_lightning_indexer(ctx: u64, q: u64, k: u64, weights: u64, mask: u64) -> u64 {
+export fn goose_abi_ggml_lightning_indexer(ctx: u64, q: u64, k: u64, weights: u64, mask: u64) -> u64 {
     let inputs: i64[4] = [q as i64, k as i64, weights as i64, mask as i64];
     return fg143_construct_indexer(ctx as i64, inputs, TENSOR_TYPE_F32, TENSOR_TYPE_F16, TENSOR_OP_LIGHTNING_INDEXER) as u64;
 }
 
-export fn ggml_argsort(ctx: u64, input: u64, order: i32) -> u64 {
+export fn goose_abi_ggml_argsort(ctx: u64, input: u64, order: i32) -> u64 {
     return fg143_construct_sort(ctx as i64, input as i64, 0, order as i64, 0, TENSOR_TYPE_I32, TENSOR_OP_ARGSORT, TENSOR_OP_VIEW) as u64;
 }
 
-export fn ggml_argsort_top_k(ctx: u64, input: u64, k: i32) -> u64 {
+export fn goose_abi_ggml_argsort_top_k(ctx: u64, input: u64, k: i32) -> u64 {
     return fg143_construct_sort(ctx as i64, input as i64, k as i64, TENSOR_SORT_ORDER_DESC, 1, TENSOR_TYPE_I32, TENSOR_OP_ARGSORT, TENSOR_OP_VIEW) as u64;
 }
 
-export fn ggml_top_k(ctx: u64, input: u64, k: i32) -> u64 {
+export fn goose_abi_ggml_top_k(ctx: u64, input: u64, k: i32) -> u64 {
     return fg143_construct_sort(ctx as i64, input as i64, k as i64, 0, 2, TENSOR_TYPE_I32, TENSOR_OP_TOP_K, TENSOR_OP_VIEW) as u64;
 }
 
@@ -6195,94 +6255,94 @@ fn tensor_norm(ctx: u64, a: u64, op: i64, eps: f32) -> u64 {
     return fg143_construct_elementwise(ctx as i64, a as i64, 0, op, 0, [tensor_float_word(eps)]) as u64;
 }
 
-export fn ggml_add(ctx: u64, a: u64, b: u64) -> u64 { return tensor_binary(ctx, a, b, TENSOR_OP_ADD); }
-export fn ggml_sub(ctx: u64, a: u64, b: u64) -> u64 { return tensor_binary(ctx, a, b, TENSOR_OP_SUB); }
-export fn ggml_mul(ctx: u64, a: u64, b: u64) -> u64 { return tensor_binary(ctx, a, b, TENSOR_OP_MUL); }
-export fn ggml_div(ctx: u64, a: u64, b: u64) -> u64 { return tensor_binary(ctx, a, b, TENSOR_OP_DIV); }
-export fn ggml_sqr(ctx: u64, a: u64) -> u64 { return tensor_unary(ctx, a, TENSOR_OP_SQR); }
-export fn ggml_sqrt(ctx: u64, a: u64) -> u64 { return tensor_unary(ctx, a, TENSOR_OP_SQRT); }
-export fn ggml_log(ctx: u64, a: u64) -> u64 { return tensor_unary(ctx, a, TENSOR_OP_LOG); }
-export fn ggml_norm(ctx: u64, a: u64, eps: f32) -> u64 { return tensor_norm(ctx, a, TENSOR_OP_NORM, eps); }
-export fn ggml_rms_norm(ctx: u64, a: u64, eps: f32) -> u64 { return tensor_norm(ctx, a, TENSOR_OP_RMS_NORM, eps); }
-export fn ggml_l2_norm(ctx: u64, a: u64, eps: f32) -> u64 { return tensor_norm(ctx, a, TENSOR_OP_L2_NORM, eps); }
+export fn goose_abi_ggml_add(ctx: u64, a: u64, b: u64) -> u64 { return tensor_binary(ctx, a, b, TENSOR_OP_ADD); }
+export fn goose_abi_ggml_sub(ctx: u64, a: u64, b: u64) -> u64 { return tensor_binary(ctx, a, b, TENSOR_OP_SUB); }
+export fn goose_abi_ggml_mul(ctx: u64, a: u64, b: u64) -> u64 { return tensor_binary(ctx, a, b, TENSOR_OP_MUL); }
+export fn goose_abi_ggml_div(ctx: u64, a: u64, b: u64) -> u64 { return tensor_binary(ctx, a, b, TENSOR_OP_DIV); }
+export fn goose_abi_ggml_sqr(ctx: u64, a: u64) -> u64 { return tensor_unary(ctx, a, TENSOR_OP_SQR); }
+export fn goose_abi_ggml_sqrt(ctx: u64, a: u64) -> u64 { return tensor_unary(ctx, a, TENSOR_OP_SQRT); }
+export fn goose_abi_ggml_log(ctx: u64, a: u64) -> u64 { return tensor_unary(ctx, a, TENSOR_OP_LOG); }
+export fn goose_abi_ggml_norm(ctx: u64, a: u64, eps: f32) -> u64 { return tensor_norm(ctx, a, TENSOR_OP_NORM, eps); }
+export fn goose_abi_ggml_rms_norm(ctx: u64, a: u64, eps: f32) -> u64 { return tensor_norm(ctx, a, TENSOR_OP_RMS_NORM, eps); }
+export fn goose_abi_ggml_l2_norm(ctx: u64, a: u64, eps: f32) -> u64 { return tensor_norm(ctx, a, TENSOR_OP_L2_NORM, eps); }
 
-export fn ggml_scale_bias(ctx: u64, a: u64, scale: f32, bias: f32) -> u64 {
+export fn goose_abi_ggml_scale_bias(ctx: u64, a: u64, scale: f32, bias: f32) -> u64 {
     return fg143_construct_elementwise(ctx as i64, a as i64, 0, TENSOR_OP_SCALE, 2,
         [tensor_float_word(scale), tensor_float_word(bias)]) as u64;
 }
 
-export fn ggml_scale(ctx: u64, a: u64, scale: f32) -> u64 {
-    return ggml_scale_bias(ctx, a, scale, 0.0 as f32);
+export fn goose_abi_ggml_scale(ctx: u64, a: u64, scale: f32) -> u64 {
+    return goose_abi_ggml_scale_bias(ctx, a, scale, 0.0 as f32);
 }
 
-export fn ggml_clamp(ctx: u64, a: u64, low: f32, high: f32) -> u64 {
+export fn goose_abi_ggml_clamp(ctx: u64, a: u64, low: f32, high: f32) -> u64 {
     return fg143_construct_elementwise(ctx as i64, a as i64, 0, TENSOR_OP_CLAMP, 0,
         [tensor_float_word(low), tensor_float_word(high)]) as u64;
 }
 
-export fn ggml_unary(ctx: u64, a: u64, op: i32) -> u64 {
+export fn goose_abi_ggml_unary(ctx: u64, a: u64, op: i32) -> u64 {
     return fg143_construct_elementwise(ctx as i64, a as i64, 0, TENSOR_OP_UNARY, 1, [op as i64]) as u64;
 }
 
-export fn ggml_sum_rows(ctx: u64, a: u64) -> u64 {
+export fn goose_abi_ggml_sum_rows(ctx: u64, a: u64) -> u64 {
     return fg143_construct_row_sum(ctx as i64, a as i64, ctor_property(a as i64, 0), TENSOR_OP_SUM_ROWS) as u64;
 }
 
-export fn ggml_view_1d(ctx: u64, a: u64, n0: i64, offset: u64) -> u64 {
+export fn goose_abi_ggml_view_1d(ctx: u64, a: u64, n0: i64, offset: u64) -> u64 {
     var stride_storage: u64[1];
     return fg143_construct_view(ctx as i64, a as i64, [n0], stride_storage[0 .. 0], offset, TENSOR_OP_VIEW) as u64;
 }
 
-export fn ggml_flash_attn_ext(ctx: u64, q: u64, k: u64, v: u64, mask: u64,
+export fn goose_abi_ggml_flash_attn_ext(ctx: u64, q: u64, k: u64, v: u64, mask: u64,
         scale: f32, max_bias: f32, soft_cap: f32) -> u64 {
     return fg143_construct_flash_attention(ctx as i64, q as i64, k as i64, v as i64, mask as i64,
         [tensor_float_word(scale), tensor_float_word(max_bias), tensor_float_word(soft_cap)],
         TENSOR_TYPE_F32, TENSOR_TYPE_F16, TENSOR_OP_FLASH_ATTN_EXT) as u64;
 }
 
-export fn ggml_get_rows(ctx: u64, a: u64, b: u64) -> u64 {
+export fn goose_abi_ggml_get_rows(ctx: u64, a: u64, b: u64) -> u64 {
     return fg143_construct_rows(ctx as i64, a as i64, b as i64, 0,
         [TENSOR_TYPE_F32, TENSOR_TYPE_F16, TENSOR_TYPE_I32, TENSOR_TYPE_I64], TENSOR_OP_GET_ROWS) as u64;
 }
 
-export fn ggml_set_rows(ctx: u64, a: u64, b: u64, ids: u64) -> u64 {
+export fn goose_abi_ggml_set_rows(ctx: u64, a: u64, b: u64, ids: u64) -> u64 {
     return fg143_construct_rows(ctx as i64, a as i64, b as i64, ids as i64,
         [TENSOR_TYPE_F32, TENSOR_TYPE_F16, TENSOR_TYPE_I32, TENSOR_TYPE_I64], TENSOR_OP_SET_ROWS) as u64;
 }
 
-export fn ggml_glu(ctx: u64, a: u64, op: i32, swapped: bool) -> u64 {
+export fn goose_abi_ggml_glu(ctx: u64, a: u64, op: i32, swapped: bool) -> u64 {
     return fg143_construct_glu(ctx as i64, a as i64, 0, TENSOR_OP_GLU, op as i64, swapped, []) as u64;
 }
-export fn ggml_swiglu(ctx: u64, a: u64) -> u64 {
-    return ggml_glu(ctx, a, TENSOR_GLU_OP_SWIGLU as i32, false);
+export fn goose_abi_ggml_swiglu(ctx: u64, a: u64) -> u64 {
+    return goose_abi_ggml_glu(ctx, a, TENSOR_GLU_OP_SWIGLU as i32, false);
 }
-export fn ggml_swiglu_swapped(ctx: u64, a: u64) -> u64 {
-    return ggml_glu(ctx, a, TENSOR_GLU_OP_SWIGLU as i32, true);
+export fn goose_abi_ggml_swiglu_swapped(ctx: u64, a: u64) -> u64 {
+    return goose_abi_ggml_glu(ctx, a, TENSOR_GLU_OP_SWIGLU as i32, true);
 }
-export fn ggml_swiglu_split(ctx: u64, a: u64, b: u64) -> u64 {
+export fn goose_abi_ggml_swiglu_split(ctx: u64, a: u64, b: u64) -> u64 {
     return fg143_construct_glu(ctx as i64, a as i64, b as i64, TENSOR_OP_GLU,
         TENSOR_GLU_OP_SWIGLU, false, []) as u64;
 }
-export fn ggml_swiglu_clamp(ctx: u64, a: u64, b: u64, limit: f32) -> u64 {
+export fn goose_abi_ggml_swiglu_clamp(ctx: u64, a: u64, b: u64, limit: f32) -> u64 {
     return fg143_construct_glu(ctx as i64, a as i64, b as i64, TENSOR_OP_GLU,
         TENSOR_GLU_OP_SWIGLU_CLAMP, false, [tensor_float_word(limit)]) as u64;
 }
 
-export fn ggml_repeat_4d(ctx: u64, a: u64, n0: i64, n1: i64, n2: i64, n3: i64) -> u64 {
+export fn goose_abi_ggml_repeat_4d(ctx: u64, a: u64, n0: i64, n1: i64, n2: i64, n3: i64) -> u64 {
     return fg143_construct_tile(ctx as i64, a as i64, 0, 0, [n0, n1, n2, n3], TENSOR_OP_REPEAT) as u64;
 }
-export fn ggml_concat(ctx: u64, a: u64, b: u64, axis: i32) -> u64 {
+export fn goose_abi_ggml_concat(ctx: u64, a: u64, b: u64, axis: i32) -> u64 {
     return fg143_construct_tile(ctx as i64, a as i64, b as i64, axis as i64, [], TENSOR_OP_CONCAT) as u64;
 }
 
-export fn ggml_soft_max_ext(ctx: u64, a: u64, mask: u64, scale: f32, max_bias: f32) -> u64 {
+export fn goose_abi_ggml_soft_max_ext(ctx: u64, a: u64, mask: u64, scale: f32, max_bias: f32) -> u64 {
     return fg143_construct_softmax(ctx as i64, a as i64, mask as i64,
         [tensor_float_word(scale), tensor_float_word(max_bias)], TENSOR_TYPE_F32, TENSOR_TYPE_F16, TENSOR_OP_SOFT_MAX) as u64;
 }
-export fn ggml_soft_max(ctx: u64, a: u64) -> u64 {
-    return ggml_soft_max_ext(ctx, a, 0, 1.0 as f32, 0.0 as f32);
+export fn goose_abi_ggml_soft_max(ctx: u64, a: u64) -> u64 {
+    return goose_abi_ggml_soft_max_ext(ctx, a, 0, 1.0 as f32, 0.0 as f32);
 }
-export fn ggml_fill(ctx: u64, a: u64, value: f32) -> u64 {
+export fn goose_abi_ggml_fill(ctx: u64, a: u64, value: f32) -> u64 {
     return fg143_construct_fill(ctx as i64, a as i64, tensor_float_word(value), TENSOR_TYPE_F32,
         TENSOR_TYPE_F16, TENSOR_OP_FILL) as u64;
 }
@@ -6291,7 +6351,7 @@ const TENSOR_OP_ROPE: i64 = 48;
 const TENSOR_ROPE_MROPE: i64 = 8;
 extern "fg158_i32" fn tensor_read_i32(address: u64, index: i64) -> i64;
 
-export fn ggml_rope_multi(ctx: u64, input: u64, positions: u64, factors: u64, dims: i32,
+export fn goose_abi_ggml_rope_multi(ctx: u64, input: u64, positions: u64, factors: u64, dims: i32,
         sections: u64, mode: i32, original_context: i32, base: f32, scale: f32,
         extension: f32, attention: f32, beta_fast: f32, beta_slow: f32) -> u64 {
     let config: i64[7] = [dims as i64, mode as i64, original_context as i64, TENSOR_ROPE_MROPE,
@@ -6308,33 +6368,33 @@ export fn ggml_rope_multi(ctx: u64, input: u64, positions: u64, factors: u64, di
                                 config, scales, axes[0 .. section_count]) as u64;
 }
 
-export fn ggml_rope_ext(ctx: u64, input: u64, positions: u64, factors: u64, dims: i32,
+export fn goose_abi_ggml_rope_ext(ctx: u64, input: u64, positions: u64, factors: u64, dims: i32,
         mode: i32, original_context: i32, base: f32, scale: f32,
         extension: f32, attention: f32, beta_fast: f32, beta_slow: f32) -> u64 {
-    return ggml_rope_multi(ctx, input, positions, factors, dims, 0, mode, original_context,
+    return goose_abi_ggml_rope_multi(ctx, input, positions, factors, dims, 0, mode, original_context,
                           base, scale, extension, attention, beta_fast, beta_slow);
 }
 
-export fn ggml_new_tensor_1d(ctx: u64, kind: i32, n0: i64) -> u64 {
+export fn goose_abi_ggml_new_tensor_1d(ctx: u64, kind: i32, n0: i64) -> u64 {
     return tensor_create(ctx, kind as i64, [n0], 0, 0);
 }
-export fn ggml_new_tensor_2d(ctx: u64, kind: i32, n0: i64, n1: i64) -> u64 {
+export fn goose_abi_ggml_new_tensor_2d(ctx: u64, kind: i32, n0: i64, n1: i64) -> u64 {
     return tensor_create(ctx, kind as i64, [n0, n1], 0, 0);
 }
-export fn ggml_new_tensor_3d(ctx: u64, kind: i32, n0: i64, n1: i64, n2: i64) -> u64 {
+export fn goose_abi_ggml_new_tensor_3d(ctx: u64, kind: i32, n0: i64, n1: i64, n2: i64) -> u64 {
     return tensor_create(ctx, kind as i64, [n0, n1, n2], 0, 0);
 }
-export fn ggml_new_tensor_4d(ctx: u64, kind: i32, n0: i64, n1: i64, n2: i64, n3: i64) -> u64 {
+export fn goose_abi_ggml_new_tensor_4d(ctx: u64, kind: i32, n0: i64, n1: i64, n2: i64, n3: i64) -> u64 {
     return tensor_create(ctx, kind as i64, [n0, n1, n2, n3], 0, 0);
 }
 
-export fn ggml_dup_tensor(ctx: u64, source: u64) -> u64 {
+export fn goose_abi_ggml_dup_tensor(ctx: u64, source: u64) -> u64 {
     let shape = tensor_shape(source);
     return ctor_tensor(ctx as i64, ctor_property(source as i64, 0),
                        shape[0], shape[1], shape[2], shape[3]) as u64;
 }
 
-export fn ggml_view_tensor(ctx: u64, source: u64) -> u64 {
+export fn goose_abi_ggml_view_tensor(ctx: u64, source: u64) -> u64 {
     let shape = tensor_shape(source);
     let result = ctor_view_storage(ctx as i64, source as i64, shape, 0);
     ctor_caption(result, source as i64, 1);
@@ -6378,14 +6438,14 @@ fn tensor_create(context: u64, kind: i64, shape: const i64[:], source: u64, offs
     let bytes = layout[4];
     let max_size: u64 = 18446744073709551615;
     if view != 0 && bytes != 0 {
-        if view_offset > max_size - bytes || bytes + view_offset > ggml_nbytes(view) {
+        if view_offset > max_size - bytes || bytes + view_offset > goose_abi_ggml_nbytes(view) {
             tensor_geometry_abort();
             return 0;
         }
     }
-    let allocate: u64 = if view == 0 && !ggml_get_no_alloc(context) { bytes } else { 0 };
+    let allocate: u64 = if view == 0 && !goose_abi_ggml_get_no_alloc(context) { bytes } else { 0 };
     if allocate > max_size - TENSOR_HEADER_BYTES { tensor_geometry_abort(); return 0; }
-    let object = ggml_new_object(context, 0, TENSOR_HEADER_BYTES + allocate);
+    let object = goose_abi_ggml_new_object(context, 0, TENSOR_HEADER_BYTES + allocate);
     if object == 0 { tensor_geometry_abort(); return 0; }
     let result = object + 32;
     let count = tensor_read_i32(context + 20, 0) as! i32;
@@ -6408,7 +6468,7 @@ fn tensor_create(context: u64, kind: i64, shape: const i64[:], source: u64, offs
     return result;
 }
 
-export fn ggml_new_tensor(context: u64, kind: i32, dims: i32, shape: u64) -> u64 {
+export fn goose_abi_ggml_new_tensor(context: u64, kind: i32, dims: i32, shape: u64) -> u64 {
     if dims < 1 || dims > 4 { tensor_geometry_abort(); return 0; }
     var extents: i64[4];
     tensor_copy_raw(unsafe_c_address<c_ptr<void>>(extents[0]), unsafe_c_ptr<c_ptr<const void>>(shape),
@@ -6420,7 +6480,7 @@ fn tensor_write_i32(address: u64, word: i32) {
     tensor_copy_raw(unsafe_c_ptr<c_ptr<void>>(address), unsafe_c_address<c_ptr<const void>>(word), 4);
 }
 
-export fn ggml_new_object(context: u64, kind: i32, bytes: u64) -> u64 {
+export fn goose_abi_ggml_new_object(context: u64, kind: i32, bytes: u64) -> u64 {
     let previous = tensor_read_word(context + 32);
     let offset: u64 = if previous != 0 { tensor_read_word(previous) } else { 0 };
     let size: u64 = if previous != 0 { tensor_read_word(previous + 8) } else { 0 };
@@ -6469,10 +6529,10 @@ export fn fg143_graph_overhead_custom(size: u64, grads: bool) -> u64 {
     return GRAPH_OBJECT_BYTES + ((offsets[7] + 15) & ~15);
 }
 
-export fn ggml_new_graph_custom(context: u64, size: u64, grads: bool) -> u64 {
+export fn goose_abi_ggml_new_graph_custom(context: u64, size: u64, grads: bool) -> u64 {
     var offsets: u64[8];
     let hash = tensor_graph_layout(size, grads, offsets);
-    let object = ggml_new_object(context, 1, offsets[7]);
+    let object = goose_abi_ggml_new_object(context, 1, offsets[7]);
     if object == 0 { tensor_geometry_abort(); return 0; }
     let graph = object + GRAPH_OBJECT_BYTES;
     tensor_set_raw(unsafe_c_ptr<c_ptr<void>>(graph), 0, GRAPH_HEADER_BYTES);
@@ -6495,7 +6555,7 @@ export fn ggml_new_graph_custom(context: u64, size: u64, grads: bool) -> u64 {
     return graph;
 }
 
-export fn ggml_graph_clear(graph: u64) {
+export fn goose_abi_ggml_graph_clear(graph: u64) {
     tensor_write_i32(graph + 4, 0);
     tensor_write_i32(graph + 8, 0);
     let hash_size = tensor_read_word(graph + GRAPH_HASH_SIZE);
@@ -6509,21 +6569,21 @@ const TENSOR_FLAGS: u64 = 148;
 const TENSOR_INPUT_FLAG: i32 = 1;
 const TENSOR_OUTPUT_FLAG: i32 = 2;
 
-export fn ggml_set_zero(tensor: u64) -> u64 {
+export fn goose_abi_ggml_set_zero(tensor: u64) -> u64 {
     if fg143_geometry_empty(tensor_shape(tensor)) { return tensor; }
     let data = tensor_read_word(tensor + TENSOR_DATA);
     if data == 0 || tensor_read_word(tensor + TENSOR_BUFFER) != 0 { tensor_geometry_abort(); return 0; }
-    tensor_set_raw(unsafe_c_ptr<c_ptr<void>>(data), 0, ggml_nbytes(tensor));
+    tensor_set_raw(unsafe_c_ptr<c_ptr<void>>(data), 0, goose_abi_ggml_nbytes(tensor));
     return tensor;
 }
 
-export fn ggml_set_input(tensor: u64) {
+export fn goose_abi_ggml_set_input(tensor: u64) {
     if tensor_read_i32(tensor + TENSOR_OPERATION, 0) != 0 { tensor_geometry_abort(); return; }
     let flags = tensor + TENSOR_FLAGS;
     tensor_write_i32(flags, (tensor_read_i32(flags, 0) as! i32) | TENSOR_INPUT_FLAG);
 }
 
-export fn ggml_set_output(tensor: u64) {
+export fn goose_abi_ggml_set_output(tensor: u64) {
     var current = tensor;
     while current != 0 {
         let flags = current + TENSOR_FLAGS;
@@ -6541,11 +6601,11 @@ fn arena_find_tensor(pool: u64, start: u64) -> u64 {
     return 0;
 }
 
-export fn ggml_get_first_tensor(context: u64) -> u64 {
+export fn goose_abi_ggml_get_first_tensor(context: u64) -> u64 {
     return arena_find_tensor(tensor_read_word(context + 8), tensor_read_word(context + 24));
 }
 
-export fn ggml_get_next_tensor(context: u64, tensor: u64) -> u64 {
+export fn goose_abi_ggml_get_next_tensor(context: u64, tensor: u64) -> u64 {
     let object = tensor - 32;
     return arena_find_tensor(tensor_read_word(context + 8), tensor_read_word(object + 16));
 }
@@ -6584,11 +6644,11 @@ export fn fg143_arena_init(requested: u64, buffer: u64, no_alloc: bool) -> u64 {
     return context;
 }
 
-export fn ggml_get_no_alloc(context: u64) -> bool {
+export fn goose_abi_ggml_get_no_alloc(context: u64) -> bool {
     return (tensor_read_i32(context + ARENA_CONTEXT_FLAGS, 0) & (ARENA_NO_ALLOC as i64)) != 0;
 }
 
-export fn ggml_free(context: u64) {
+export fn goose_abi_ggml_free(context: u64) {
     if context == 0 { return; }
     if (tensor_read_i32(context + ARENA_CONTEXT_FLAGS, 0) & (ARENA_OWNED as i64)) != 0 {
         tensor_release_pool(tensor_read_word(context + 8), tensor_read_word(context));
