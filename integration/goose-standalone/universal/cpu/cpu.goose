@@ -4754,37 +4754,64 @@ export fn fg143_storage_allocate(graph: u64) -> u64 {
     return storage;
 }
 
-extern "fg143_graph_nodes" fn graph_nodes(graph: u64) -> i64;
-extern "fg143_graph_node_bytes" fn graph_node_bytes(graph: u64) -> u8[:];
-
-extern "fg143_graph_pointer" fn graph_pointer(nodes: const u8[:], index: i64) -> u64;
-extern "fg143_graph_pointer_batch" fn graph_pointer_batch(nodes: const u8[:], first: i64, output: u64[:]);
-
-fn graph_node(nodes: const u8[:], index: i64) -> u64 {
-    let count = nodes.len / 8;
-    let position = if index < 0 { count + index } else { index };
-    if position < 0 || position >= count { return 0; }
-    return graph_pointer(nodes, position);
+struct GraphNodes {
+    address: u64,
+    count: i64,
 }
+
+fn graph_node(nodes: GraphNodes, index: i64) -> u64 {
+    let position = if index < 0 { nodes.count + index } else { index };
+    if position < 0 || position >= nodes.count { return 0; }
+    return tensor_read_word(nodes.address + (position as! u64) * 8);
+}
+
+fn graph_pointer_batch(nodes: GraphNodes, first: i64, output: u64[:]) {
+    let remaining = nodes.count - first;
+    let count = if remaining < output.len { remaining } else { output.len };
+    if count <= 0 { return; }
+    tensor_copy_raw(unsafe_c_address<c_ptr<void>>(output[0]),
+        unsafe_c_ptr<c_ptr<const void>>(nodes.address + (first as! u64) * 8), (count as! u64) * 8);
+}
+
 extern "fg158_prop" fn graph_prop(tensor: u64, field: i64) -> i64;
-extern "fg143_graph_inputs" fn graph_inputs(tensor: u64, sources: u64[:]);
 extern "ggml_is_empty" fn graph_empty(tensor: u64) -> bool;
 extern "fg_cuda_activation_prepare" fn graph_output_prepare(address: u64, bytes: i64, fresh: bool,
     overwrite: bool, step: i64, deadline: i64) -> i32;
-extern "fg143_graph_layout" fn graph_layout(tensor: u64, packet: i64[:]) -> i64;
 
 fn graph_describe(tensor: u64, packet: i64[:]) {
-    let present = graph_layout(tensor, packet);
+    let present = fg143_graph_layout(tensor, packet);
     if present & 1 != 0 { packet[9] = goose_tensor_span(packet[8], packet[0 .. 8]); }
     if present & 2 != 0 { packet[19] = goose_tensor_span(packet[18], packet[10 .. 18]); }
     if present & 4 != 0 { packet[29] = goose_tensor_span(packet[28], packet[20 .. 28]); }
     packet[39] = goose_tensor_span(packet[38], packet[30 .. 38]);
     if present & 16 != 0 { packet[68] = goose_tensor_span(packet[67], packet[59 .. 67]); }
 }
-extern "fg143_graph_regular" fn graph_regular(tensor: u64, packet: const i64[:], mode: i64,
-    sizes: i64[:], workspace: u64) -> bool;
-extern "fg143_graph_gdn" fn graph_gdn(tensor: u64) -> bool;
-extern "fg143_graph_scan" fn graph_scan(tensor: u64) -> bool;
+extern "fg_cuda_host_view_u8" fn graph_borrow_u8(address: u64, length: i64) -> u8[:];
+extern "fg_cuda_host_view_f32" fn graph_borrow_f32(address: u64, length: i64) -> f32[:];
+extern "fg_cuda_host_view_i64" fn graph_borrow_i64(address: u64, length: i64) -> i64[:];
+
+fn graph_borrow_tensor(tensor: u64, bytes: i64) -> u8[:] {
+    let data = if tensor == 0 { 0 } else { tensor_read_word(tensor + TENSOR_DATA) };
+    return graph_borrow_u8(data, bytes);
+}
+
+fn graph_regular(tensor: u64, packet: const i64[:], mode: i64, sizes: i64[:], workspace: u64) -> bool {
+    let op = packet[40];
+    if op == 95 || (mode == 0 && op == TENSOR_OP_UNARY) {
+        let special = inkling_graph_special(tensor, packet, mode, sizes);
+        if special >= 0 { return special != 0; }
+    }
+    let x = graph_borrow_tensor(decode_source(tensor, 0), packet[9]);
+    let y = graph_borrow_tensor(decode_source(tensor, 1), packet[19]);
+    let z = graph_borrow_tensor(decode_source(tensor, 2), packet[29]);
+    let mask = graph_borrow_tensor(decode_source(tensor, 3), packet[68]);
+    let output = graph_borrow_tensor(tensor, packet[39]);
+    if mode == 1 { return fg143_node_run(packet, mode, x, y, z, mask, output, graph_borrow_f32(0, 0), sizes); }
+    let scratch = graph_borrow_f32(workspace, sizes[0]);
+    let indices = graph_borrow_i64(workspace + (sizes[2] as! u64), sizes[1]);
+    return fg143_node_run(packet, mode, x, y, z, mask, output, scratch, indices);
+}
+
 extern "fg143_graph_resize" fn graph_resize(workspace: u64, bytes: i64) -> u64;
 extern "fg143_graph_observe" fn graph_observe(tensor: u64) -> bool;
 extern "fg_cuda_routed_graph_enabled" fn routed_graph_enabled() -> bool;
@@ -4795,7 +4822,6 @@ extern "fg_cuda_glu_pack_offer" fn offer_glu_pack(plan: const i64[:]) -> bool;
 extern "fg_cuda_glu_pack_close" fn close_glu_pack() -> bool;
 extern "fg_cuda_rms_scale" fn rms_scale(plan: const i64[:], input: u64, input_bytes: i64,
     output: u64, bytes: i64, step: i64, deadline: i64, eps: f32, scale: f32) -> i64;
-extern "fg143_read_contiguous_id" fn graph_read_id(address: u64, index: i64, wide: bool) -> i64;
 extern "fg_cuda_fwht_q4_enabled" fn fwht_q4_enabled() -> bool;
 extern "fg_cuda_fwht_q4_rows" fn fwht_q4_rows(input: u64, target: u64, width: i64, rows: i64,
     rotation: i32, scale: f32) -> i64;
@@ -4857,7 +4883,7 @@ fn shared_projection(p: const i64[:], width: i64, rows: i64, kind: i64) -> bool 
 
 // Match the complete shared expert and residual before extending the routed graph.
 // Each matched intermediate must have its final consumer inside this group.
-fn shared_ffn_plan(nodes: const u8[:], step: i64, deadlines: const i64[:], input: u64, routed: u64,
+fn shared_ffn_plan(nodes: GraphNodes, step: i64, deadlines: const i64[:], input: u64, routed: u64,
                    width: i64, shared: i64[:]) -> bool {
     if step + 14 >= deadlines.len || deadlines[step + 5] != step + 13 ||
        deadlines[step + 6] != step + 8 || deadlines[step + 7] != step + 8 ||
@@ -4881,22 +4907,22 @@ fn shared_ffn_plan(nodes: const u8[:], step: i64, deadlines: const i64[:], input
 
     var s: u64[10] = [0; 10];
     var packet: i64[71] = [0; 71];
-    graph_inputs(glu, s[..]);
+    fg143_graph_inputs(glu, s[..]);
     let gate = s[0]; let up = s[1];
     if !((gate == a && up == b) || (gate == b && up == a)) { return false; }
     graph_describe(up, packet[..]);
     let hidden = packet[1];
     if hidden <= 0 || hidden > 8192 || hidden % 256 != 0 ||
        !shared_projection(packet[..], width, hidden, 12) { return false; }
-    graph_inputs(up, s[..]);
+    fg143_graph_inputs(up, s[..]);
     if s[1] == 0 || storage_get(s[1], STORAGE_DATA, 0) != input { return false; }
     let up_weight = s[0];
-    graph_inputs(gate, s[..]);
+    fg143_graph_inputs(gate, s[..]);
     if s[1] == 0 || storage_get(s[1], STORAGE_DATA, 0) != input { return false; }
     let gate_weight = s[0];
     graph_describe(gate, packet[..]);
     if !shared_projection(packet[..], width, hidden, 12) { return false; }
-    graph_inputs(down, s[..]);
+    fg143_graph_inputs(down, s[..]);
     let down_weight = s[0];
     if s[1] != glu { return false; }
     graph_describe(down, packet[..]);
@@ -4907,29 +4933,29 @@ fn shared_ffn_plan(nodes: const u8[:], step: i64, deadlines: const i64[:], input
        !routed_dense(packet_tensor(packet[..], 30), hidden, 1, 1, 0) { return false; }
     graph_vector_plan(packet[..], CV_SWIGLU, shared[8 .. 34]);
 
-    graph_inputs(router, s[..]);
+    fg143_graph_inputs(router, s[..]);
     let router_weight = s[0];
     if s[1] == 0 || storage_get(s[1], STORAGE_DATA, 0) != input { return false; }
     graph_describe(router, packet[..]);
     if !routed_dense(packet_tensor(packet[..], 0), width, 1, 1, 0) ||
        !routed_dense(packet_tensor(packet[..], 10), width, 1, 1, 0) ||
        !routed_dense(packet_tensor(packet[..], 30), 1, 1, 1, 0) { return false; }
-    graph_inputs(sigmoid, s[..]);
+    fg143_graph_inputs(sigmoid, s[..]);
     if s[0] != router { return false; }
     graph_describe(sigmoid, packet[..]);
     if packet[41] != 7 || !routed_dense(packet_tensor(packet[..], 30), 1, 1, 1, 0) { return false; }
     graph_vector_plan(packet[..], CV_SIGMOID, shared[34 .. 60]);
-    graph_inputs(product, s[..]);
+    fg143_graph_inputs(product, s[..]);
     if s[0] != down || s[1] != sigmoid { return false; }
     graph_describe(product, packet[..]);
     if !routed_dense(packet_tensor(packet[..], 30), width, 1, 1, 0) { return false; }
     graph_vector_plan(packet[..], CV_MUL, shared[60 .. 86]);
-    graph_inputs(added, s[..]);
+    fg143_graph_inputs(added, s[..]);
     if s[0] != routed || s[1] != product { return false; }
     graph_describe(added, packet[..]);
     if !routed_dense(packet_tensor(packet[..], 30), width, 1, 1, 0) { return false; }
     graph_vector_plan(packet[..], CV_ADD, shared[86 .. 112]);
-    graph_inputs(output, s[..]);
+    fg143_graph_inputs(output, s[..]);
     if s[0] != added { return false; }
     let residual = s[1];
     graph_describe(output, packet[..]);
@@ -4947,7 +4973,7 @@ fn shared_ffn_plan(nodes: const u8[:], step: i64, deadlines: const i64[:], input
     return true;
 }
 
-fn try_routed_graph(nodes: const u8[:], step: i64, deadlines: const i64[:]) -> i64 {
+fn try_routed_graph(nodes: GraphNodes, step: i64, deadlines: const i64[:]) -> i64 {
     if step + 5 >= deadlines.len || deadlines[step] != step + 2 || deadlines[step + 1] != step + 2 ||
        deadlines[step + 2] != step + 3 || deadlines[step + 3] != step + 5 || deadlines[step + 4] != step + 5 {
         return 0;
@@ -4962,22 +4988,22 @@ fn try_routed_graph(nodes: const u8[:], step: i64, deadlines: const i64[:]) -> i
        graph_prop(glu_node, 2) != 100 || graph_prop(down_node, 2) != 30 ||
        graph_prop(norm_node, 2) != 95 || graph_prop(output, 2) != 95 { return 0; }
     var s: u64[10] = [0; 10];
-    graph_inputs(glu_node, s[..]);
+    fg143_graph_inputs(glu_node, s[..]);
     let gate_node = s[0];
     let up_node = s[1];
     if !((gate_node == first && up_node == second) || (gate_node == second && up_node == first)) { return 0; }
-    graph_inputs(up_node, s[..]);
+    fg143_graph_inputs(up_node, s[..]);
     let up = s[0]; let input = s[1]; let ids = s[2];
-    graph_inputs(gate_node, s[..]);
+    fg143_graph_inputs(gate_node, s[..]);
     let gate = s[0];
     if s[1] != input || s[2] != ids { return 0; }
-    graph_inputs(down_node, s[..]);
+    fg143_graph_inputs(down_node, s[..]);
     let down = s[0];
     if s[1] != glu_node || s[2] != ids { return 0; }
-    graph_inputs(norm_node, s[..]);
+    fg143_graph_inputs(norm_node, s[..]);
     let probs = s[0];
     if s[1] != ids { return 0; }
-    graph_inputs(output, s[..]);
+    fg143_graph_inputs(output, s[..]);
     if s[0] != down_node || s[1] != norm_node { return 0; }
 
     var matrix: i64[71] = [0; 71];
@@ -5037,7 +5063,7 @@ fn try_routed_graph(nodes: const u8[:], step: i64, deadlines: const i64[:]) -> i
     return if grouped > 0 { 6 } else { grouped };
 }
 
-fn try_direct_ssm(nodes: const u8[:], step: i64, deadlines: const i64[:], concat: u64) -> i64 {
+fn try_direct_ssm(nodes: GraphNodes, step: i64, deadlines: const i64[:], concat: u64) -> i64 {
     if step + 3 >= deadlines.len || deadlines[step] != step + 3 || deadlines[step + 1] > step + 2 ||
        deadlines[step + 2] > step + 3 { return 0; }
     let tail = graph_node(nodes, step + 1);
@@ -5047,15 +5073,15 @@ fn try_direct_ssm(nodes: const u8[:], step: i64, deadlines: const i64[:], concat
        graph_prop(conv, 2) != 76 || storage_get(tail, STORAGE_VIEW, 0) != concat ||
        storage_get(conv, STORAGE_VIEW, 0) != 0 { return 0; }
     var inputs: u64[10] = [0; 10];
-    graph_inputs(concat, inputs[..]);
+    fg143_graph_inputs(concat, inputs[..]);
     let history = inputs[0];
     let transposed = inputs[1];
     if history == 0 || transposed == 0 || graph_prop(transposed, 2) != 39 { return 0; }
-    graph_inputs(transposed, inputs[..]);
+    fg143_graph_inputs(transposed, inputs[..]);
     let mixed = inputs[0];
-    graph_inputs(copy, inputs[..]);
+    fg143_graph_inputs(copy, inputs[..]);
     if mixed == 0 || inputs[0] != tail || inputs[1] != history { return 0; }
-    graph_inputs(conv, inputs[..]);
+    fg143_graph_inputs(conv, inputs[..]);
     let weights = inputs[1];
     if inputs[0] != concat || weights == 0 { return 0; }
     var p: i64[71] = [0; 71];
@@ -5087,7 +5113,7 @@ fn try_direct_ssm(nodes: const u8[:], step: i64, deadlines: const i64[:], concat
     return direct_ssm(plan[..], step, deadlines[step + 3]);
 }
 
-fn try_glu_pack(nodes: const u8[:], step: i64, deadlines: const i64[:], glu: u64) -> bool {
+fn try_glu_pack(nodes: GraphNodes, step: i64, deadlines: const i64[:], glu: u64) -> bool {
     if step + 1 >= deadlines.len || deadlines[step] != step + 1 ||
        storage_get(glu, STORAGE_VIEW, 0) != 0 { return false; }
     let down = graph_node(nodes, step + 1);
@@ -5101,7 +5127,7 @@ fn try_glu_pack(nodes: const u8[:], step: i64, deadlines: const i64[:], glu: u64
        !routed_dense(packet_tensor(p[..], 20), 8, tokens, 1, 26) ||
        p[0] != 512 || p[1] != 2048 || p[2] != 256 || p[3] != 1 { return false; }
     var s: u64[10] = [0; 10];
-    graph_inputs(down, s[..]);
+    fg143_graph_inputs(down, s[..]);
     let down_w = s[0]; let ids = s[2];
     if down_w == 0 || ids == 0 || s[1] != glu { return false; }
     let out = storage_get(down, STORAGE_DATA, 0);
@@ -5109,7 +5135,7 @@ fn try_glu_pack(nodes: const u8[:], step: i64, deadlines: const i64[:], glu: u64
     if p[41] != 2 || p[42] != 0 || p[53] != 0 ||
        !routed_dense(packet_tensor(p[..], 0), 512, 8, tokens, 0) ||
        !routed_dense(packet_tensor(p[..], 10), 512, 8, tokens, 0) { return false; }
-    graph_inputs(glu, s[..]);
+    fg143_graph_inputs(glu, s[..]);
     let gate = s[0]; let up = s[1];
     if gate == 0 || up == 0 || graph_prop(gate, 2) != 30 ||
        graph_prop(up, 2) != 30 { return false; }
@@ -5123,10 +5149,10 @@ fn try_glu_pack(nodes: const u8[:], step: i64, deadlines: const i64[:], glu: u64
     if out == 0 || a == 0 || b == 0 || input == 0 ||
        activation_spans_overlap(out, (4 * 2048 * 8 * tokens) as u64, a, size as u64) ||
        activation_spans_overlap(out, (4 * 2048 * 8 * tokens) as u64, b, size as u64) { return false; }
-    graph_inputs(gate, s[..]);
+    fg143_graph_inputs(gate, s[..]);
     let gate_w = s[0];
     if gate_w == 0 || s[2] != ids { return false; }
-    graph_inputs(up, s[..]);
+    fg143_graph_inputs(up, s[..]);
     let up_w = s[0];
     if up_w == 0 || s[2] != ids { return false; }
     let plan: i64[8] = [storage_get(up_w, STORAGE_DATA, 0) as! i64,
@@ -5135,13 +5161,13 @@ fn try_glu_pack(nodes: const u8[:], step: i64, deadlines: const i64[:], glu: u64
     return offer_glu_pack(plan[..]);
 }
 
-fn try_rms_scale(nodes: const u8[:], step: i64, deadlines: const i64[:], rms: u64) -> i64 {
+fn try_rms_scale(nodes: GraphNodes, step: i64, deadlines: const i64[:], rms: u64) -> i64 {
     if step + 1 >= deadlines.len || deadlines[step] != step + 1 ||
        storage_get(rms, STORAGE_VIEW, 0) != 0 { return 0; }
     let scale = graph_node(nodes, step + 1);
     if graph_prop(scale, 2) != 32 || storage_get(scale, STORAGE_VIEW, 0) != 0 { return 0; }
     var inputs: u64[10] = [0; 10];
-    graph_inputs(scale, inputs[..]);
+    fg143_graph_inputs(scale, inputs[..]);
     if inputs[0] != rms { return 0; }
     var p: i64[71] = [0; 71];
     graph_describe(scale, p[..]);
@@ -5172,7 +5198,7 @@ fn try_rms_scale(nodes: const u8[:], step: i64, deadlines: const i64[:], rms: u6
     return rms_scale(cfg[..], inp, x.bytes, out, words * 4, step, deadlines[step + 1], eps, factor);
 }
 
-fn try_fwht_q4(nodes: const u8[:], step: i64, deadlines: const i64[:], fwht: u64) -> i64 {
+fn try_fwht_q4(nodes: GraphNodes, step: i64, deadlines: const i64[:], fwht: u64) -> i64 {
     if step + 2 >= deadlines.len || deadlines[step] != step + 2 ||
        deadlines[step + 1] > step + 2 || storage_get(fwht, STORAGE_VIEW, 0) != 0 { return 0; }
     let view = graph_node(nodes, step + 1);
@@ -5180,7 +5206,7 @@ fn try_fwht_q4(nodes: const u8[:], step: i64, deadlines: const i64[:], fwht: u64
     if graph_prop(view, 2) != 37 || graph_prop(update, 2) != 42 ||
        storage_get(view, STORAGE_VIEW, 0) != fwht || storage_get(view, STORAGE_VIEW_OFFSET, 0) != 0 { return 0; }
     var inputs: u64[10] = [0; 10];
-    graph_inputs(update, inputs[..]);
+    fg143_graph_inputs(update, inputs[..]);
     if inputs[0] != view || inputs[1] == 0 { return 0; }
     let ids_tensor = inputs[1];
     let target = storage_get(update, STORAGE_DATA, 0);
@@ -5207,10 +5233,10 @@ fn try_fwht_q4(nodes: const u8[:], step: i64, deadlines: const i64[:], fwht: u64
     let ids = storage_get(ids_tensor, STORAGE_DATA, 0);
     if ids == 0 || id_shape.bytes != rows * (if id_shape.kind == 27 { 8 } else { 4 }) { return 0; }
     if activation_read_address(ids, id_shape.bytes) != 0 { return -1; }
-    let first = graph_read_id(ids, 0, id_shape.kind == 27);
+    let first = fg143_read_contiguous_id(ids, 0, id_shape.kind == 27);
     if first < 0 || first > capacity - rows || (first + rows) > target_bytes / stride { return 0; }
     for i in rows {
-        if graph_read_id(ids, i, id_shape.kind == 27) != first + i { return 0; }
+        if fg143_read_contiguous_id(ids, i, id_shape.kind == 27) != first + i { return 0; }
     }
     return fwht_q4_rows(input, target + ((first * stride) as u64), width, rows, rotation as i32, 1.0 / sqrt32(rotation as f32));
 }
@@ -5224,7 +5250,7 @@ fn execute_graph_node(tensor: u64, work: GraphWorkspace &, selective: bool, step
     let address = storage_get(tensor, STORAGE_DATA, 0);
     if address == 0 { return false; }
     var sources: u64[10] = [0; 10];
-    graph_inputs(tensor, sources[..]);
+    fg143_graph_inputs(tensor, sources[..]);
     let fresh = storage_get(tensor, STORAGE_VIEW, 0) == 0;
     let candidate = selective && fresh &&
         (op == 29 || op == 30 || op == 25 || op == 7 ||
@@ -5267,7 +5293,7 @@ extern "fg_cuda_moe_epilogue_enabled" fn moe_epilogue_enabled() -> bool;
 extern "fg_cuda_moe_epilogue" fn moe_epilogue(routed: u64, shared: u64, gate: u64, residual: u64,
     output: u64, rows: i64, step: i64, deadline: i64) -> i64;
 
-fn try_moe_epilogue(nodes: const u8[:], step: i64, deadlines: const i64[:], mul: u64) -> i64 {
+fn try_moe_epilogue(nodes: GraphNodes, step: i64, deadlines: const i64[:], mul: u64) -> i64 {
     if step + 2 >= deadlines.len || deadlines[step] != step + 1 || deadlines[step + 1] != step + 2 {
         return 0;
     }
@@ -5278,9 +5304,9 @@ fn try_moe_epilogue(nodes: const u8[:], step: i64, deadlines: const i64[:], mul:
        storage_get(sum, STORAGE_VIEW, 0) != 0 { return 0; }
 
     var inputs: u64[10] = [0; 10];
-    graph_inputs(mix, inputs[..]);
+    fg143_graph_inputs(mix, inputs[..]);
     if inputs[1] != mul { return 0; }
-    graph_inputs(sum, inputs[..]);
+    fg143_graph_inputs(sum, inputs[..]);
     if inputs[0] != mix { return 0; }
 
     var p: i64[71] = [0; 71];
@@ -5387,8 +5413,8 @@ export fn fg143_graph_execute(graph: u64, output: u64, all: bool, deadlines: con
 
 export fn fg143_graph_run(graph: u64, selective: bool, deadlines: const i64[:], observe: bool) -> i64 {
     if graph == 0 { return -1; }
-    let nodes = graph_node_bytes(graph);
-    let count = nodes.len / 8;
+    let count = fg143_graph_nodes(graph);
+    let nodes = GraphNodes { address: tensor_read_word(graph + GRAPH_NODES), count: count };
     if deadlines.len != 0 && (deadlines.len != count || !selective) { return -1; }
     var work = GraphWorkspace { address: 0, capacity: 0 };
     var outcome: i64 = 0;
@@ -5477,7 +5503,7 @@ export fn fg143_storage_allocate_output(graph: u64, output: u64, deadlines: i64[
     if graph == 0 { return 0; }
     let count = fg143_storage_count(graph);
     let slots = fg143_storage_hash_size(graph);
-    let leaves = count - graph_nodes(graph);
+    let leaves = count - fg143_graph_nodes(graph);
     if count < 0 || leaves < 0 || slots <= 0 || deadlines.len != count - leaves { return 0; }
     let align = fg143_storage_alignment();
     let mask = align - 1;
@@ -5503,7 +5529,7 @@ export fn fg143_storage_allocate_output(graph: u64, output: u64, deadlines: i64[
         let t = fg143_storage_tensor(graph, i);
         if !storage_keep(graph, t, i, lifetimes[..]) { return 0; }
         if graph_prop(t, 2) == 0 { continue; }
-        graph_inputs(t, sources[..]);
+        fg143_graph_inputs(t, sources[..]);
         for j in 10 {
             if !storage_keep(graph, sources[j], i, lifetimes[..]) { return 0; }
         }
@@ -5904,7 +5930,7 @@ extern "fg_cuda_giga_dsa_certified_enabled" fn certified_dsa_enabled() -> bool;
 extern "fg_cuda_giga_dsa_certified_address" fn certified_dsa(config: i64[:],
     inputs: const u64[:], sizes: const i64[:], out: u64, out_bytes: i64) -> i64;
 
-fn try_giga_dsa_graph(nodes: const u8[:], step: i64, deadlines: const i64[:], score: u64) -> i64 {
+fn try_giga_dsa_graph(nodes: GraphNodes, step: i64, deadlines: const i64[:], score: u64) -> i64 {
     if step + 2 >= deadlines.len || deadlines[step] != step + 1 ||
        deadlines[step + 1] != step + 2 || storage_get(score, STORAGE_VIEW, 0) != 0 { return 0; }
     let top = graph_node(nodes, step + 1);
@@ -5914,12 +5940,12 @@ fn try_giga_dsa_graph(nodes: const u8[:], step: i64, deadlines: const i64[:], sc
 
     var p: i64[71] = [0; 71];
     var sources: u64[10] = [0; 10];
-    graph_inputs(scatter, sources[..]);
+    fg143_graph_inputs(scatter, sources[..]);
     if sources[1] != top { return 0; }
     graph_describe(scatter, p[..]);
     if p[41] != 0x4453414d { return 0; }
 
-    graph_inputs(top, sources[..]);
+    fg143_graph_inputs(top, sources[..]);
     if sources[0] != score { return 0; }
     graph_describe(top, p[..]);
     if p[54] != 1 { return 0; }
@@ -5928,7 +5954,7 @@ fn try_giga_dsa_graph(nodes: const u8[:], step: i64, deadlines: const i64[:], sc
     let rows = ids.ne[1];
     if out == 0 || !routed_dense(ids, 2048, rows, 1, 26) { return 0; }
 
-    graph_inputs(score, sources[..]);
+    fg143_graph_inputs(score, sources[..]);
     graph_describe(score, p[..]);
     let q = packet_tensor(p[..], 0);
     let k = packet_tensor(p[..], 10);
@@ -6031,9 +6057,9 @@ recursive fn graph_visit_forward(graph: u64, node: u64, count_use: bool) -> bool
 }
 
 export fn fg143_graph_expand_forward(graph: u64, node: u64) {
-    let old_nodes = graph_nodes(graph);
+    let old_nodes = fg143_graph_nodes(graph);
     assert(graph_visit_forward(graph, node, false));
-    assert(graph_nodes(graph) == old_nodes || graph_visit_is_tail(graph, node));
+    assert(fg143_graph_nodes(graph) == old_nodes || graph_visit_is_tail(graph, node));
 }
 
 extern "abort" fn tensor_geometry_abort();
@@ -6808,4 +6834,202 @@ export fn goose_abi_fg_standalone_graph_update_decode(plan: u64, rows: i64) {
         tensor_write_i32(node + TENSOR_PARAMETERS + DECODE_ATTENTION_KEY_COUNT, rows as! i32);
     }
     tensor_write_word(bindings + 8, tensor_read_word(bindings + 8) + 1);
+}
+
+export fn fg143_graph_nodes(graph: u64) -> i64 {
+    return tensor_read_i32(graph + 4, 0);
+}
+
+export fn fg143_graph_inputs(tensor: u64, sources: u64[:]) {
+    tensor_copy_raw(unsafe_c_address<c_ptr<void>>(sources[0]),
+                    unsafe_c_ptr<c_ptr<const void>>(tensor + TENSOR_SOURCES), 80);
+}
+
+fn graph_write_layout(tensor: u64, packet: i64[:], offset: i64) {
+    tensor_copy_raw(unsafe_c_address<c_ptr<void>>(packet[offset]),
+                    unsafe_c_ptr<c_ptr<const void>>(tensor + 16), 64);
+    packet[offset + 8] = tensor_read_i32(tensor, 0);
+}
+
+export fn fg143_graph_layout(tensor: u64, packet: i64[:]) -> i64 {
+    let first = decode_source(tensor, 0);
+    let second = decode_source(tensor, 1);
+    let third = decode_source(tensor, 2);
+    let fourth = decode_source(tensor, 3);
+    var present: i64 = 8;
+    if first != 0 { graph_write_layout(first, packet, 0); present |= 1; }
+    if second != 0 { graph_write_layout(second, packet, 10); present |= 2; }
+    if third != 0 { graph_write_layout(third, packet, 20); present |= 4; }
+    graph_write_layout(tensor, packet, 30);
+    if fourth != 0 { graph_write_layout(fourth, packet, 59); present |= 16; }
+    let op = tensor_read_i32(tensor + TENSOR_OPERATION, 0);
+    packet[40] = op;
+    for i in 16 { packet[41 + i] = tensor_read_i32(tensor + TENSOR_PARAMETERS, i); }
+    if op == TENSOR_OP_TOP_K {
+        let plain_softmax = first != 0 && tensor_read_i32(first + TENSOR_OPERATION, 0) == TENSOR_OP_SOFT_MAX &&
+            decode_source(first, 1) == 0 && decode_source(first, 2) == 0;
+        packet[55] = if plain_softmax { 1 } else { 0 };
+    }
+    packet[57] = if first != 0 { tensor_read_word(first + TENSOR_DATA) as! i64 } else { 0 };
+    packet[58] = tensor_read_word(tensor + TENSOR_DATA) as! i64;
+    packet[69] = if decode_source(tensor, 4) != 0 { 1 } else { 0 };
+    packet[70] = if second != 0 { tensor_read_word(second + TENSOR_DATA) as! i64 } else { 0 };
+    return present;
+}
+
+export fn fg143_read_contiguous_id(address: u64, index: i64, wide: bool) -> i64 {
+    if wide { return tensor_read_word(address + (index as! u64) * 8) as! i64; }
+    var value: i32 = 0;
+    tensor_copy_raw(unsafe_c_address<c_ptr<void>>(value),
+                    unsafe_c_ptr<c_ptr<const void>>(address + (index as! u64) * 4), 4);
+    return value as i64;
+}
+
+const INKLING_GRAPH_BRIDGE: i64 = 0x49324252;
+const INKLING_GRAPH_ATTENTION: i64 = 0x49324147;
+const INKLING_GRAPH_EPILOGUE: i64 = 0x49324d45;
+const INKLING_GRAPH_SITU: i64 = 0x49325354;
+const INKLING_TANH_OP: i64 = 4;
+const INKLING_GRAPH_CALL_WORDS: i64 = 29;
+
+extern fn inkling_bridge_execute(bridge: u64, attention: u64, output: u64) -> i32;
+extern fn inkling_attention_graph_execute(call: u64) -> i32;
+extern fn fg_cuda_inkling_moe_epilogue(input: u8[:], residual: u8[:], weights: u8[:],
+        output: u8[:], slot: i32, position: i32, rows: i32) -> i64;
+extern fn fg_cuda_host_getenv(name: u64) -> u64;
+extern fn fg_cuda_host_env_equal(value: u64, expected: u64) -> bool;
+
+fn graph_pointer_address(pointer: c_ptr<const void>) -> u64 {
+    var address: u64 = 0;
+    tensor_copy_raw(unsafe_c_address<c_ptr<void>>(address), unsafe_c_address<c_ptr<const void>>(pointer), 8);
+    return address;
+}
+
+fn inkling_tanh_enabled() -> bool {
+    let name: u8[13] = [73, 50, 95, 67, 85, 68, 65, 95, 84, 65, 78, 72, 0];
+    let zero: u8[2] = [48, 0];
+    let setting = fg_cuda_host_getenv(graph_pointer_address(unsafe_c_address<c_ptr<const void>>(name[0])));
+    return !fg_cuda_host_env_equal(setting, graph_pointer_address(unsafe_c_address<c_ptr<const void>>(zero[0])));
+}
+
+fn inkling_graph_attention(tensor: u64, metadata: u64) -> i32 {
+    if metadata == 0 || ctor_extent(tensor as i64, 0) != tensor_read_i32(metadata + 224, 0) ||
+        ctor_extent(tensor as i64, 1) != tensor_read_i32(metadata + 12, 0) { return 0; }
+    let batch = tensor_read_i32(metadata + 12, 0);
+    var call: u64[INKLING_GRAPH_CALL_WORDS];
+    tensor_copy_raw(unsafe_c_address<c_ptr<void>>(call[0]), unsafe_c_ptr<c_ptr<const void>>(metadata), 232);
+    for i in 3 {
+        let input = decode_source(tensor, i as! u64);
+        if input == 0 || tensor_read_i32(input, 0) != TENSOR_TYPE_F32 ||
+            ctor_extent(input as i64, 0) != 2304 || ctor_extent(input as i64, 1) != batch ||
+            !goose_abi_ggml_is_contiguous(input) { return 0; }
+        let data = tensor_read_word(input + TENSOR_DATA);
+        if data == 0 { return 0; }
+        call[10 + i] = data;
+    }
+    call[9] = tensor_read_word(tensor + TENSOR_DATA);
+    let address = graph_pointer_address(unsafe_c_address<c_ptr<const void>>(call[0]));
+    return if inkling_attention_graph_execute(address) == 0 { 1 } else { 0 };
+}
+
+fn inkling_graph_situ_valid(tensor: u64, input: u64) -> bool {
+    return input != 0 && tensor_read_i32(input, 0) == TENSOR_TYPE_F32 &&
+        tensor_read_i32(tensor, 0) == TENSOR_TYPE_F32 &&
+        ctor_extent(input as i64, 0) == 2304 && ctor_extent(tensor as i64, 0) == 1152 &&
+        ctor_extent(input as i64, 1) == 8 && ctor_extent(tensor as i64, 1) == 8 &&
+        ctor_extent(input as i64, 2) == ctor_extent(tensor as i64, 2) &&
+        ctor_extent(input as i64, 3) == 1 && ctor_extent(tensor as i64, 3) == 1 &&
+        goose_abi_ggml_is_contiguous(input) && goose_abi_ggml_is_contiguous(tensor);
+}
+
+fn inkling_graph_special(tensor: u64, packet: const i64[:], mode: i64, sizes: i64[:]) -> i32 {
+    if !cuda_inkling_quants_enabled() { return -1; }
+    let op = packet[40];
+    let tag = packet[41];
+    let input = decode_source(tensor, 0);
+    if op == TENSOR_OP_UNARY {
+        if mode != 0 || tag != INKLING_TANH_OP || tensor_read_i32(tensor, 0) != TENSOR_TYPE_F32 ||
+            input == 0 || tensor_read_i32(input, 0) != TENSOR_TYPE_F32 ||
+            !goose_abi_ggml_is_contiguous(tensor) || !goose_abi_ggml_is_contiguous(input) ||
+            !inkling_tanh_enabled() { return -1; }
+        let status = fg_cuda_tanh_f32(graph_borrow_tensor(input, goose_abi_ggml_nbytes(input) as! i64),
+                                      graph_borrow_tensor(tensor, goose_abi_ggml_nbytes(tensor) as! i64));
+        return if status == 0 { -1 } else if status > 0 { 1 } else { 0 };
+    }
+    if tag != INKLING_GRAPH_BRIDGE && tag != INKLING_GRAPH_ATTENTION &&
+        tag != INKLING_GRAPH_EPILOGUE && tag != INKLING_GRAPH_SITU { return -1; }
+    if tag == INKLING_GRAPH_SITU && !inkling_graph_situ_valid(tensor, input) { return 0; }
+    if mode == 1 {
+        for i in sizes.len { sizes[i] = 0; }
+        return 1;
+    }
+    if tag == INKLING_GRAPH_BRIDGE {
+        let bridge = tensor_read_word(tensor + TENSOR_PARAMETERS + 8);
+        if bridge == 0 || input == 0 { return 0; }
+        let source = tensor_read_word(input + TENSOR_DATA);
+        let output = tensor_read_word(tensor + TENSOR_DATA);
+        if source == 0 || output == 0 { return 0; }
+        return if inkling_bridge_execute(bridge, source, output) == 0 { 1 } else { 0 };
+    }
+    if tag == INKLING_GRAPH_ATTENTION {
+        return inkling_graph_attention(tensor, tensor_read_word(tensor + TENSOR_PARAMETERS + 8));
+    }
+    if tag == INKLING_GRAPH_EPILOGUE {
+        let residual = graph_borrow_tensor(decode_source(tensor, 1), packet[19]);
+        let weights = graph_borrow_tensor(decode_source(tensor, 2), packet[29]);
+        let status = fg_cuda_inkling_moe_epilogue(graph_borrow_tensor(input, packet[9]), residual, weights,
+            graph_borrow_tensor(tensor, packet[39]), packet[42] as! i32, packet[43] as! i32,
+            ctor_extent(tensor as i64, 1) as! i32);
+        return if status == 1 { 1 } else { 0 };
+    }
+    let status = fg_cuda_inkling_moe_situ(graph_borrow_tensor(input, goose_abi_ggml_nbytes(input) as! i64),
+                                        graph_borrow_tensor(tensor, goose_abi_ggml_nbytes(tensor) as! i64));
+    return if status == 1 { 1 } else { 0 };
+}
+
+fn state_tensor_packet(tensor: u64, packet: i64[:], slot: i64) -> u64 {
+    if tensor == 0 { return 0; }
+    graph_write_layout(tensor, packet, slot * 10);
+    packet[slot * 10 + 9] = goose_abi_ggml_nbytes(tensor) as! i64;
+    return tensor_read_word(tensor + TENSOR_DATA);
+}
+
+fn state_graph_packet(tensor: u64, packet: i64[:], addresses: u64[:]) {
+    for i in addresses.len - 1 {
+        addresses[i] = state_tensor_packet(decode_source(tensor, i as! u64), packet, i);
+    }
+    addresses[addresses.len - 1] = state_tensor_packet(tensor, packet, 7);
+    packet[80] = tensor_read_i32(tensor + TENSOR_OPERATION, 0);
+    packet[81] = tensor_read_i32(tensor + TENSOR_PARAMETERS, 0);
+}
+
+fn graph_gdn(tensor: u64) -> bool {
+    var packet: i64[83];
+    var addresses: u64[7];
+    state_graph_packet(tensor, packet, addresses);
+    packet[82] = tensor_read_i32(tensor + TENSOR_PARAMETERS, 4);
+    for i in 7 {
+        let slot = if i == 6 { 7 } else { i };
+        let bytes = packet[slot * 10 + 9];
+        if bytes < 0 || bytes % 4 != 0 || addresses[i] % 4 != 0 { return false; }
+    }
+    return fg143_gdn_run(packet,
+        graph_borrow_f32(addresses[0], packet[9] / 4),
+        graph_borrow_f32(addresses[1], packet[19] / 4),
+        graph_borrow_f32(addresses[2], packet[29] / 4),
+        graph_borrow_f32(addresses[3], packet[39] / 4),
+        graph_borrow_f32(addresses[4], packet[49] / 4),
+        graph_borrow_f32(addresses[5], packet[59] / 4),
+        graph_borrow_f32(addresses[6], packet[79] / 4));
+}
+
+fn graph_scan(tensor: u64) -> bool {
+    var packet: i64[82];
+    var addresses: u64[8];
+    state_graph_packet(tensor, packet, addresses);
+    return fg143_state_run(packet,
+        graph_borrow_u8(addresses[0], packet[9]), graph_borrow_u8(addresses[1], packet[19]),
+        graph_borrow_u8(addresses[2], packet[29]), graph_borrow_u8(addresses[3], packet[39]),
+        graph_borrow_u8(addresses[4], packet[49]), graph_borrow_u8(addresses[5], packet[59]),
+        graph_borrow_u8(addresses[6], packet[69]), graph_borrow_u8(addresses[7], packet[79]));
 }
