@@ -26,7 +26,7 @@ The v0.15.0 release uses the following pinned mixed toolchain. This release is g
 | Tool | Version |
 | --- | --- |
 | `GOOSE_BIN` | Fried Goose v0.3.0 preview KeelWing |
-| `GOOSE_CUDA_DRIVER_BIN` | Fried Goose v0.3.1-dev.1 KeelWing for the CUDA dispatcher |
+| `GOOSE_CUDA_DRIVER_BIN` | Fried Goose v0.3.1-dev.1 KeelWing for the CUDA dispatcher and universal CPU module |
 | `APEX_PTXAS` | CUDA 12.4.99 ptxas for the selected GPU images |
 | `GOOSE_HOST_BIN` | KeelWing ownership v2, Fried Goose source revision `bb1452faa1e3f4e4ff4d715723c91a4fcf4e8c78` |
 | `GOOSE_HOST_STDLIB` | KeelWing v0.3.0 preview standard library |

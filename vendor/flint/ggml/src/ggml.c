@@ -515,9 +515,7 @@ typedef struct { const int64_t *data; int64_t len; } ggml_shape_slice;
 typedef struct { uint64_t *data; int64_t len; } ggml_layout_slice;
 #endif
 
-#ifdef GOOSEINFER_TYPE_METADATA_ONLY
-#include "ggml-goose-geometry.inc"
-#else
+#ifndef GOOSEINFER_TYPE_METADATA_ONLY
 #include "ggml-geometry-reference.inc"
 #endif
 
@@ -660,25 +658,40 @@ bool ggml_get_no_alloc(struct ggml_context * ctx) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+#ifdef GOOSEINFER_TYPE_METADATA_ONLY
+static_assert(GGML_MEM_ALIGN == 16 && sizeof(struct ggml_object) == 32 &&
+              offsetof(struct ggml_object, offs) == 0 &&
+              offsetof(struct ggml_object, size) == 8 &&
+              offsetof(struct ggml_object, next) == 16 &&
+              offsetof(struct ggml_object, type) == 24 &&
+              offsetof(struct ggml_context, mem_size) == 0 &&
+              offsetof(struct ggml_context, mem_buffer) == 8 &&
+              offsetof(struct ggml_context, n_objects) == 20 &&
+              offsetof(struct ggml_context, objects_begin) == 24 &&
+              offsetof(struct ggml_context, objects_end) == 32 &&
+              GGML_OBJECT_TYPE_TENSOR == 0, "Goose arena ABI");
+
+extern struct ggml_object * ggml_new_object(struct ggml_context *, enum ggml_object_type, size_t);
+
+void fg143_arena_failure(int status, uint64_t needed, uint64_t capacity) {
+    GGML_ASSERT(status != -1);
+    if (status == -4) {
+        GGML_LOG_WARN("ggml_new_object: not enough space in the context's memory pool (needed %zu, available %zu)\n",
+                (size_t)needed, (size_t)capacity);
+#ifndef NDEBUG
+        GGML_ABORT("not enough space in the context's memory pool");
+#endif
+    } else {
+        GGML_LOG_WARN("ggml_new_object: overflow detected in context allocation\n");
+    }
+}
+#else
 static struct ggml_object * ggml_new_object(struct ggml_context * ctx, enum ggml_object_type type, size_t size) {
     // always insert objects at the end of the context's memory pool
     struct ggml_object * obj_cur = ctx->objects_end;
 
     const size_t cur_offs = obj_cur == NULL ? 0 : obj_cur->offs;
     const size_t cur_size = obj_cur == NULL ? 0 : obj_cur->size;
-#ifdef GOOSEINFER_TYPE_METADATA_ONLY
-    uint64_t layout[3] = {0};
-    const int status = fg143_object_layout(cur_offs, cur_size, size, GGML_MEM_ALIGN,
-        GGML_OBJECT_SIZE, ctx->mem_size, (ggml_layout_slice){layout, 3});
-    const size_t cur_end = layout[0], size_needed = layout[1];
-    const size_t needed = layout[2];
-    GGML_ASSERT(status != -1);
-    if (status == -2 || status == -3) {
-        GGML_LOG_WARN("%s: overflow detected in context allocation\n", __func__);
-        return NULL;
-    }
-    if (status == -4) {
-#else
     const size_t cur_end = cur_offs + cur_size;
     GGML_ASSERT(size <= SIZE_MAX - (GGML_MEM_ALIGN - 1));
     const size_t size_needed = GGML_PAD(size, GGML_MEM_ALIGN);
@@ -688,7 +701,6 @@ static struct ggml_object * ggml_new_object(struct ggml_context * ctx, enum ggml
     }
     const size_t needed = cur_end + size_needed + GGML_OBJECT_SIZE;
     if (needed > ctx->mem_size) {
-#endif
         GGML_LOG_WARN("%s: not enough space in the context's memory pool (needed %zu, available %zu)\n",
                 __func__, needed, ctx->mem_size);
 #ifndef NDEBUG
@@ -827,6 +839,9 @@ struct ggml_tensor * ggml_new_tensor(
     return ggml_new_tensor_impl(ctx, type, n_dims, ne, NULL, 0);
 }
 
+#endif
+
+#ifndef GOOSEINFER_TYPE_METADATA_ONLY
 struct ggml_tensor * ggml_new_tensor_1d(
         struct ggml_context * ctx,
         enum   ggml_type      type,
@@ -868,6 +883,8 @@ struct ggml_tensor * ggml_dup_tensor(struct ggml_context * ctx, const struct ggm
     return ggml_new_tensor(ctx, src->type, GGML_MAX_DIMS, src->ne);
 }
 
+#endif
+
 enum ggml_unary_op ggml_get_unary_op(const struct ggml_tensor * tensor) {
     GGML_ASSERT(tensor->op == GGML_OP_UNARY);
     return (enum ggml_unary_op) ggml_get_op_params_i32(tensor, 0);
@@ -886,6 +903,7 @@ struct ggml_tensor * ggml_format_name(struct ggml_tensor * tensor, const char * 
     return tensor;
 }
 
+#ifndef GOOSEINFER_TYPE_METADATA_ONLY
 struct ggml_tensor * ggml_view_tensor(
         struct ggml_context * ctx,
         struct ggml_tensor  * src) {
@@ -898,6 +916,8 @@ struct ggml_tensor * ggml_view_tensor(
 
     return result;
 }
+
+#endif
 
 struct ggml_tensor * ggml_get_first_tensor(const struct ggml_context * ctx) {
     struct ggml_object * obj = ctx->objects_begin;

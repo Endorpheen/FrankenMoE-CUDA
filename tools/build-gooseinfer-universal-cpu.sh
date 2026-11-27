@@ -5,7 +5,7 @@ target=${1:?Usage: build-gooseinfer-universal-cpu.sh linux|windows OUTPUT_DIR}
 out=$(realpath -m -- "${2:?Missing output directory}")
 root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 source_dir="$root/integration/goose-standalone/universal/cpu"
-goose=${GOOSE_BIN:-goose}
+goose=${GOOSE_CUDA_DRIVER_BIN:?Set GOOSE_CUDA_DRIVER_BIN to Fried Goose KeelWing v0.3.1-dev.1}
 case "$target" in
     linux) cc=${CC:-gcc-13}; objcopy=${OBJCOPY:-objcopy} ;;
     windows) cc=${WINDOWS_CC:-x86_64-w64-mingw32-gcc}; objcopy=${WINDOWS_OBJCOPY:-x86_64-w64-mingw32-objcopy} ;;
