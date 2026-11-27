@@ -2055,23 +2055,6 @@
         GGML_SCALE_FLAG_ANTIALIAS     = (1 << 9),
     };
 
-    // Move tensor elements by an offset given for each dimension. Elements that
-    // are shifted beyond the last position are wrapped around to the beginning.
-    GGML_API struct ggml_tensor * ggml_roll(
-            struct ggml_context * ctx,
-            struct ggml_tensor  * a,
-            int                   shift0,
-            int                   shift1,
-            int                   shift2,
-            int                   shift3);
-
-    // Convert matrix into a triangular one (upper, strict upper, lower or strict lower) by writing
-    // zeroes everywhere outside the masked area
-    GGML_API struct ggml_tensor * ggml_tri(
-            struct ggml_context * ctx,
-            struct ggml_tensor  * a,
-            enum ggml_tri_type    type);
-
     // Fill tensor a with constant c
     GGML_API struct ggml_tensor * ggml_fill(
             struct ggml_context * ctx,
@@ -2082,15 +2065,6 @@
             struct ggml_context * ctx,
             struct ggml_tensor  * a,
             float                 c);
-
-    // Ref: https://github.com/CompVis/stable-diffusion/blob/main/ldm/modules/diffusionmodules/util.py#L151
-    // timesteps: [N,]
-    // return: [N, dim]
-    GGML_API struct ggml_tensor * ggml_timestep_embedding(
-            struct ggml_context * ctx,
-            struct ggml_tensor  * timesteps,
-            int                   dim,
-            int                   max_period);
 
     // sort rows
     enum ggml_sort_order {
@@ -2115,12 +2089,6 @@
             struct ggml_context * ctx,
             struct ggml_tensor  * a,
             int                   k);
-
-    GGML_API struct ggml_tensor * ggml_arange(
-            struct ggml_context * ctx,
-            float                 start,
-            float                 stop,
-            float                 step);
 
     // q:    [n_embd_k, n_batch, n_head,    ne3 ]
     // k:    [n_embd_k, n_kv,    n_head_kv, ne3 ]
@@ -2186,27 +2154,6 @@
         struct ggml_context * ctx,
         struct ggml_tensor  * a,
         enum ggml_unary_op op);
-
-    /* Solves a specific equation of the form Ax=B, where A is a triangular matrix
-    *  without zeroes on the diagonal (i.e. invertible).
-    *  B can have any number of columns, but must have the same number of rows as A
-    *  If A is [n, n] and B is [n, m], then the result will be [n, m] as well
-    *  Has O(n^3) complexity (unlike most matrix ops out there), so use on cases
-    *  where n > 100 sparingly, pre-chunk if necessary.
-    *
-    *  If left = false, solves xA=B instead
-    *  If lower = false, assumes upper triangular instead
-    *  If uni = true, assumes diagonal of A to be all ones (will override actual values)
-    *
-    *  TODO: currently only lower, right, non-unitriangular variant is implemented
-    */
-    GGML_API struct ggml_tensor * ggml_solve_tri(
-        struct ggml_context * ctx,
-        struct ggml_tensor  * a,
-        struct ggml_tensor  * b,
-        bool                  left,
-        bool                  lower,
-        bool                  uni);
 
     // TODO: add ggml_gated_delta_net_set_bcast() to be able to configure Q, K broadcast type: tiled vs interleaved [TAG_GGML_GDN_BCAST]
     // ref: https://github.com/ggml-org/llama.cpp/pull/19468#discussion_r2786394306

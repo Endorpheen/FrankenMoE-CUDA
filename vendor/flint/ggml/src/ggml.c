@@ -4547,74 +4547,6 @@ struct ggml_tensor * ggml_rope_set_offset(
     return a;
 }
 
-// ggml_roll
-
-struct ggml_tensor * ggml_roll(
-        struct ggml_context * ctx,
-        struct ggml_tensor  * a,
-        int                   shift0,
-        int                   shift1,
-        int                   shift2,
-        int                   shift3) {
-    GGML_ASSERT(a->nb[0] == ggml_type_size(a->type));
-    GGML_ASSERT(abs(shift0) < a->ne[0]);
-    GGML_ASSERT(abs(shift1) < a->ne[1]);
-    GGML_ASSERT(abs(shift2) < a->ne[2]);
-    GGML_ASSERT(abs(shift3) < a->ne[3]);
-
-    struct ggml_tensor * result = ggml_dup_tensor(ctx, a);
-
-    ggml_set_op_params_i32(result, 0, shift0);
-    ggml_set_op_params_i32(result, 1, shift1);
-    ggml_set_op_params_i32(result, 2, shift2);
-    ggml_set_op_params_i32(result, 3, shift3);
-
-    result->op     = GGML_OP_ROLL;
-    result->src[0] = a;
-
-    return result;
-}
-
-// ggml_timestep_embedding
-
-struct ggml_tensor * ggml_timestep_embedding(
-        struct ggml_context * ctx,
-        struct ggml_tensor  * timesteps,
-        int                   dim,
-        int                   max_period) {
-
-    struct ggml_tensor * result = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, dim, timesteps->ne[0]);
-
-    ggml_set_op_params_i32(result, 0, dim);
-    ggml_set_op_params_i32(result, 1, max_period);
-
-    result->op     = GGML_OP_TIMESTEP_EMBEDDING;
-    result->src[0] = timesteps;
-
-    return result;
-}
-
-// ggml_tri
-
-struct ggml_tensor * ggml_tri(
-    struct ggml_context * ctx,
-    struct ggml_tensor  * a,
-    enum ggml_tri_type    type) {
-    GGML_ASSERT(a->type == GGML_TYPE_F32);
-
-    GGML_ASSERT(ggml_is_contiguous(a));
-    GGML_ASSERT(a->ne[0] == a->ne[1]);
-
-    struct ggml_tensor * result = ggml_dup_tensor(ctx, a);
-
-    ggml_set_op_params_i32(result, 0, type);
-
-    result->op = GGML_OP_TRI;
-    result->src[0] = a;
-
-    return result;
-}
-
 // ggml_fill
 
 static struct ggml_tensor * ggml_fill_impl(
@@ -4697,28 +4629,6 @@ struct ggml_tensor * ggml_top_k(
 
     result->op     = GGML_OP_TOP_K;
     result->src[0] = a;
-
-    return result;
-}
-
-// ggml_arange
-
-struct ggml_tensor * ggml_arange(
-        struct ggml_context * ctx,
-        float                 start,
-        float                 stop,
-        float                 step) {
-    GGML_ASSERT(stop > start);
-
-    const int64_t steps = (int64_t) ceilf((stop - start) / step);
-
-    struct ggml_tensor * result = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, steps);
-
-    ggml_set_op_params_f32(result, 0, start);
-    ggml_set_op_params_f32(result, 1, stop);
-    ggml_set_op_params_f32(result, 2, step);
-
-    result->op = GGML_OP_ARANGE;
 
     return result;
 }
@@ -4944,41 +4854,6 @@ struct ggml_tensor * ggml_unary_inplace(
         struct ggml_tensor  * a,
         enum ggml_unary_op    op) {
     return ggml_unary_impl(ctx, a, op, true);
-}
-
-// solve_tri
-
-struct ggml_tensor * ggml_solve_tri(
-        struct ggml_context * ctx,
-        struct ggml_tensor  * a,
-        struct ggml_tensor  * b,
-        bool                  left,
-        bool                  lower,
-        bool                  uni) {
-    GGML_ASSERT(a->type == GGML_TYPE_F32);
-    GGML_ASSERT(b->type == GGML_TYPE_F32);
-
-    // A must be square and lower diagonal
-    GGML_ASSERT(a->ne[0] == a->ne[1]);
-    // B must have same outer dimension as A
-    GGML_ASSERT(a->ne[1] == b->ne[1]);
-
-    // batch dimensions must be equal
-    GGML_ASSERT(a->ne[2] == b->ne[2]);
-    GGML_ASSERT(a->ne[3] == b->ne[3]);
-
-    GGML_ASSERT(ggml_is_contiguous(a));
-    GGML_ASSERT(ggml_is_contiguous(b));
-
-    GGML_ASSERT(lower && left && !uni); // TODO: support other variants
-
-    struct ggml_tensor * result = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, b->ne[0], b->ne[1], b->ne[2], b->ne[3]);
-
-    result->op     = GGML_OP_SOLVE_TRI;
-    result->src[0] = a;
-    result->src[1] = b;
-
-    return result;
 }
 
 // ggml_gated_delta_net
