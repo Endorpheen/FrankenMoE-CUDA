@@ -1,6 +1,3 @@
-extern "giga_open_descriptors" fn giga_open_bound_descriptors() -> u64;
-extern "giga_create_descriptor" fn giga_create_bound_descriptor(ctx: u64, data: u64,
-        available: u64, metadata: const i64[:]) -> u64;
 extern "ggml_free" fn giga_free_bound_descriptors(ctx: u64);
 
 export fn giga_parse_bound_model(header: const u8[:], mapping: u64, bytes: i64,
@@ -24,7 +21,7 @@ export fn giga_parse_bound_model(header: const u8[:], mapping: u64, bytes: i64,
     for i in 32 { routed[i] = limits[i]; }
     for i in 33 { shared[i] = limits[32 + i]; }
 
-    let ctx = giga_open_bound_descriptors();
+    let ctx = giga_open_descriptors();
     if ctx == 0 { return -3; }
     var descriptor: i64[9] = [0; 9];
     for i in 1036 {
@@ -34,7 +31,7 @@ export fn giga_parse_bound_model(header: const u8[:], mapping: u64, bytes: i64,
             return -4;
         }
         let offset = descriptor[8];
-        let tensor = giga_create_bound_descriptor(ctx, mapping + (offset as u64),
+        let tensor = giga_create_descriptor(ctx, mapping + (offset as u64),
                                                   (bytes - offset) as u64, descriptor[..]);
         if tensor == 0 {
             giga_free_bound_descriptors(ctx);

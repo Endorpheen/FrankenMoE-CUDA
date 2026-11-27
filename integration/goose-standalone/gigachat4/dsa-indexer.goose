@@ -1,5 +1,3 @@
-extern "giga_dsa_prefix_enabled" fn giga_dsa_prefix_enabled() -> bool;
-extern "giga_dsa_mask_node" fn giga_dsa_mask_node(ctx: u64, mask: u64, picks: u64) -> u64;
 extern "ggml_rope_ext" fn giga_rope(ctx: u64, x: u64, pos: u64, factors: u64,
                                    dims: i32, mode: i32, original_ctx: i32,
                                    base: f32, scale: f32, ext: f32, attn: f32,
