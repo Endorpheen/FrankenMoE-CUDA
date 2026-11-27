@@ -4,13 +4,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-extern int64_t fg_cuda_reset_model_state(void);
-
-static void allocate_mla(struct ggml_context *ctx, int64_t capacity, uint64_t state[3]) {
-    state[0] = (uintptr_t)ggml_new_tensor_2d(ctx, GGML_TYPE_F16, 576, capacity);
-    state[1] = (uintptr_t)ggml_new_tensor_2d(ctx, GGML_TYPE_F16, 128, capacity);
-}
-
 void giga_request_free(struct giga_request *request) {
     if (!request) return;
     if (request->descriptors) ggml_free(request->descriptors);
@@ -19,31 +12,18 @@ void giga_request_free(struct giga_request *request) {
 
 int giga_request_init(struct giga_request *request, const struct giga_bindings *model,
                       int64_t capacity) {
-    if (!request || request->descriptors || !model || !model->descriptors ||
-        capacity < 1 || capacity > 1048576) return -1;
-    struct giga_request pending = {0};
-    pending.capacity = capacity;
-    pending.descriptors = ggml_init((struct ggml_init_params){
-        .mem_size = 66 * ggml_tensor_overhead() + 24u * (3u * 8192u + 128u * 128u * 32u) * sizeof(float)
-                    + (size_t)capacity * 9u * (576u + 128u) * sizeof(uint16_t),
-    });
+    if (!request || request->descriptors || !model || !model->descriptors) return -1;
+    const uint64_t bytes = giga_request_bytes(capacity);
+    if (!bytes) return -1;
+    struct giga_request pending = {.capacity = capacity};
+    pending.descriptors = ggml_init((struct ggml_init_params){.mem_size = (size_t)bytes});
     if (!pending.descriptors) return -2;
-
-    for (int layer = 0; layer < 32; ++layer) {
-        uint64_t *state = pending.state + layer * 4;
-        if (model->kinds[layer] == 0) {
-            state[0] = (uintptr_t)ggml_new_tensor_3d(pending.descriptors, GGML_TYPE_F32, 3, 8192, 1);
-            state[1] = (uintptr_t)ggml_new_tensor_4d(pending.descriptors, GGML_TYPE_F32, 128, 128, 32, 1);
-            state[2] = state[0];
-            state[3] = state[1];
-        } else if (model->kinds[layer] == 1) {
-            allocate_mla(pending.descriptors, capacity, state);
-        } else {
-            giga_request_free(&pending);
-            return -1;
-        }
+    if (giga_request_allocate_state((uintptr_t)pending.descriptors, capacity,
+            (sl_i64){(int64_t *)model->kinds, 32}, (sl_u64){pending.state, 128},
+            (sl_u64){pending.draft, 3}) != 0) {
+        giga_request_free(&pending);
+        return -1;
     }
-    allocate_mla(pending.descriptors, capacity, pending.draft);
     giga_request_reset(&pending);
     *request = pending;
     return 0;
@@ -51,17 +31,8 @@ int giga_request_init(struct giga_request *request, const struct giga_bindings *
 
 void giga_request_reset(struct giga_request *request) {
     if (!request || !request->descriptors) return;
-    for (struct ggml_tensor *tensor = ggml_get_first_tensor(request->descriptors);
-         tensor; tensor = ggml_get_next_tensor(request->descriptors, tensor)) {
-        memset(tensor->data, 0, ggml_nbytes(tensor));
-    }
-    if (request->device_state && fg_cuda_reset_model_state() != 0) {
-        request->committed = -1;
-        request->draft_committed = -1;
-        return;
-    }
-    request->committed = 0;
-    request->draft_committed = 0;
+    const int64_t cursor = giga_request_clear_state((uintptr_t)request->descriptors, request->device_state);
+    request->committed = request->draft_committed = cursor;
 }
 
 int giga_step_prepare(const struct giga_request *request, struct ggml_context *ctx,
