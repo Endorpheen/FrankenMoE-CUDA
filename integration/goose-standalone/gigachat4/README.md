@@ -570,3 +570,23 @@ A separate default-enabled run at the high pin limit returned
 269.18/18.49 tokens/s at 8505 MiB post-request board memory.
 No 32K/512 or separate cross-architecture inference qualification
 is claimed.
+
+### EXP-2026-11-27-2177 — Grow the GigaChat4 wide activation arena
+
+For eligible GigaChat4 wide activation growth, use 768 MiB when
+at least 2 GiB remains after the allocation. Retain the existing
+384 MiB growth on low memory or allocation refusal. An explicit
+GOOSE_CUDA_ACTIVATION_MIB still takes precedence.
+Set GOOSE_GIGA_WIDE_ACTIVATION=0 to retain the original growth.
+
+On 6144/32 with 18545 MiB pinned host weights and 4093 MiB expert
+cache, the explicit 768 MiB A-B-B-A means were 341.43 to 406.60
+prefill and 14.20 to 14.20 decode tokens/s. All 32 output IDs
+matched and no swap-out growth occurred. Post-request board VRAM
+was 9234–9235 versus 9466–9467 MiB, and peak RSS was lower by about
+473 MiB. Paired diagnostic traces recorded 12499 to 2320 MiB D2H
+and 54512 to 42060 MiB H2D in the estimated prefill window.
+The default-enabled build selected 768 MiB and measured 400.40/14.05
+at 9505 MiB post-request board memory, with matching IDs and no swap.
+No 32K/512 or separate cross-architecture inference qualification
+is claimed.
