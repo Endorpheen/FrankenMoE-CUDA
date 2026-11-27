@@ -195,7 +195,56 @@ static int gdn(model *m, const CUdeviceptr p[8], unsigned tokens) {
     return launch(m, tokens > 1 ? GDN_BATCH : GDN, 48, 1, 8, 128, (void *[]){ packet });
 }
 
-#include "transaction.inc"
+typedef struct { const uint32_t *data; int64_t len; } bonsai_indices;
+extern int32_t bonsai_verify_conv_args(bonsai_const_words input, bonsai_const_words prefix,
+                                       uint32_t rows, bonsai_words output);
+extern int32_t bonsai_verify_gdn_rows(uint64_t context, bonsai_const_words input, bonsai_const_words prefix,
+                                      uint64_t state, uint32_t rows);
+extern int64_t bonsai_verify_commit(sl_i64 states, bonsai_words prefix, bonsai_indices layers,
+                                    uint32_t start, uint32_t rows, uint32_t kept);
+
+int64_t bonsai_gdn_defer_state_swap(uint64_t context) {
+    return ((const model *)(uintptr_t)context)->txn.phase == TXN_RUNNING;
+}
+
+int32_t bonsai_verify_emit_gdn(uint64_t context, bonsai_const_words args) {
+    return gdn((model *)(uintptr_t)context, (const CUdeviceptr *)args.data, 1);
+}
+
+static int launch_transaction_conv(model *m, const CUdeviceptr p[8]) {
+    const unsigned i = m->txn.next_layer;
+    if (i >= m->txn.layers) return -1;
+    uint64_t args[8];
+    const int32_t count = bonsai_verify_conv_args((bonsai_const_words){(const uint64_t *)p, 8},
+        (bonsai_const_words){(const uint64_t *)m->txn.prefix[i], 8}, m->verify_rows, (bonsai_words){args, 8});
+    if (count < 0) return -1;
+    void *params[8];
+    for (int32_t a = 0; a < count; ++a) params[a] = args + a;
+    const enum kernel kernel = count == 8 ? VERIFY_CONV_FIVE : count == 7 ? VERIFY_CONV_FOUR : VERIFY_CONV;
+    return launch(m, kernel, 40, 1, 1, 256, params);
+}
+
+static int launch_transaction_gdn(model *m, const CUdeviceptr p[8]) {
+    const unsigned i = m->txn.next_layer;
+    if (i >= m->txn.layers) return -1;
+    const unsigned layer = m->txn.layer_ids[i];
+    if (bonsai_verify_gdn_rows((uintptr_t)m, (bonsai_const_words){(const uint64_t *)p, 8},
+            (bonsai_const_words){(const uint64_t *)m->txn.prefix[i], 8},
+            (uint64_t)m->states[2 * layer + 1], m->verify_rows) != 0) return -1;
+    ++m->txn.next_layer;
+    return 0;
+}
+
+static int commit_target(model *m, unsigned kept) {
+    if (m->txn.phase != TXN_READY) return -1;
+    const int64_t position = bonsai_verify_commit((sl_i64){m->states, 2 * LAYERS},
+        (bonsai_words){(uint64_t *)m->txn.prefix, 8 * LAYERS},
+        (bonsai_indices){m->txn.layer_ids, m->txn.layers}, m->txn.start, m->verify_rows, kept);
+    if (position < 0) return -1;
+    m->position = (unsigned)position;
+    m->txn.phase = TXN_IDLE;
+    return 0;
+}
 #include "verify-ops.inc"
 
 extern int32_t bonsai_flash_schedule(uint64_t context, uint64_t position, uint64_t count,
