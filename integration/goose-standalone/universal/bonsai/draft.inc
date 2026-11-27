@@ -66,8 +66,8 @@ static int draft_forward(model *m, unsigned token, unsigned pos, CUdeviceptr hid
                          float *logits, int want_logits) {
     if (m->txn.phase != TXN_IDLE || pos >= m->context || token >= VOCAB) return -1;
     const unsigned target_pos = m->position, target_count = m->count, target_wave = m->wave;
-    const int target_decode = m->in_decode, target_graph = m->ffn_graph_enabled;
-    m->ffn_graph_enabled = 0;
+    const int target_decode = m->in_decode, target_graph = m->capture.enabled;
+    m->capture.enabled = 0;
     const CUdeviceptr rope_q = m->rope_q, rope_k = m->rope_k;
     m->rope_q = m->verify_rope_q;
     m->rope_k = m->verify_rope_k;
@@ -89,7 +89,7 @@ static int draft_forward(model *m, unsigned token, unsigned pos, CUdeviceptr hid
     m->rope_q = rope_q;
     m->rope_k = rope_k;
     m->in_decode = target_decode;
-    m->ffn_graph_enabled = target_graph;
+    m->capture.enabled = target_graph;
     m->position = target_pos;
     m->count = target_count;
     m->wave = target_wave;

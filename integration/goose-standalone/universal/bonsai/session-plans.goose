@@ -541,3 +541,108 @@ export fn bonsai_load_weights_plan(context: u64, file: const u8[:], mapping: u64
     }
     return bonsai_bind_weight_workspace(context, bytes, signs);
 }
+
+extern "fg_cuda_host_view_u8" fn bonsai_driver_name(address: u64, length: i64) -> u8[:];
+
+export fn bonsai_resolve_cuda_driver(windows: bool, names: const u64[:], addresses: u64[:]) -> i32 {
+    let count = names.len / 2;
+    if names.len != 38 || addresses.len != count + 1 { return -2; }
+    let library = if windows { unsafe_c_library_open("nvcuda.dll") }
+        else { unsafe_c_library_open("libcuda.so.1") };
+    if library == 0 { return -2; }
+    for i in count {
+        let name = bonsai_driver_name(names[2 * i], names[2 * i + 1] as! i64);
+        let symbol = unsafe_c_library_symbol(library, name);
+        if symbol == 0 {
+            unsafe_c_library_close(library);
+            return i as! i32;
+        }
+        addresses[i] = symbol;
+    }
+    addresses[count] = library;
+    return -1;
+}
+
+const BONSAI_CAPTURE_PHASE: u64 = 1032;
+const BONSAI_CAPTURE_LAYER: u64 = 1036;
+const BONSAI_CAPTURE_NEXT: u64 = 1040;
+const BONSAI_CAPTURE_ENABLED: u64 = 1044;
+const BONSAI_CAPTURE_GRAPHS: u64 = 8;
+const BONSAI_CAPTURE_NORM: u64 = 520;
+const BONSAI_CAPTURE_NODES: u64 = 10;
+
+extern fn bonsai_capture_driver(op: u32, first: u64, second: u64) -> i32;
+
+fn bonsai_capture_read_word(address: u64) -> u64 {
+    var word: u64 = 0;
+    bonsai_flash_copy(unsafe_c_address<c_ptr<void>>(word), unsafe_c_ptr<c_ptr<const void>>(address), 8);
+    return word;
+}
+
+fn bonsai_capture_read_flag(address: u64) -> u32 {
+    var flag: u32 = 0;
+    bonsai_flash_copy(unsafe_c_address<c_ptr<void>>(flag), unsafe_c_ptr<c_ptr<const void>>(address), 4);
+    return flag;
+}
+
+fn bonsai_capture_write_flag(address: u64, flag: u32) {
+    bonsai_flash_copy(unsafe_c_ptr<c_ptr<void>>(address), unsafe_c_address<c_ptr<const void>>(flag), 4);
+}
+
+export fn bonsai_capture_abort(capture: u64) {
+    if bonsai_capture_read_flag(capture + BONSAI_CAPTURE_PHASE) == 1 {
+        var graph: u64 = 0;
+        let stream = bonsai_capture_read_word(capture);
+        bonsai_capture_driver(6, stream, bonsai_flash_address(unsafe_c_address<c_ptr<const void>>(graph)));
+        if graph != 0 { bonsai_capture_driver(4, graph, 0); }
+    }
+    bonsai_capture_write_flag(capture + BONSAI_CAPTURE_PHASE, 0);
+    bonsai_capture_write_flag(capture + BONSAI_CAPTURE_ENABLED, 0);
+}
+
+export fn bonsai_capture_begin(capture: u64, norm: u64) -> i32 {
+    let layer = bonsai_capture_read_flag(capture + BONSAI_CAPTURE_LAYER);
+    if bonsai_capture_read_flag(capture + BONSAI_CAPTURE_PHASE) != 0 || layer >= 64 { return -1; }
+    bonsai_capture_write_flag(capture + BONSAI_CAPTURE_NEXT, 0);
+    let offset = 8 * (layer as! u64);
+    let norm_address = capture + BONSAI_CAPTURE_NORM + offset;
+    if bonsai_capture_read_word(capture + BONSAI_CAPTURE_GRAPHS + offset) != 0 {
+        if bonsai_capture_read_word(norm_address) != norm { return -1; }
+        bonsai_capture_write_flag(capture + BONSAI_CAPTURE_PHASE, 2);
+    } else {
+        if bonsai_capture_driver(0, bonsai_capture_read_word(capture), 0) != 0 {
+            bonsai_capture_write_flag(capture + BONSAI_CAPTURE_ENABLED, 0);
+            return 0;
+        }
+        bonsai_flash_copy(unsafe_c_ptr<c_ptr<void>>(norm_address), unsafe_c_address<c_ptr<const void>>(norm), 8);
+        bonsai_capture_write_flag(capture + BONSAI_CAPTURE_PHASE, 1);
+    }
+    return 0;
+}
+
+export fn bonsai_capture_finish(capture: u64) -> i32 {
+    let phase = bonsai_capture_read_flag(capture + BONSAI_CAPTURE_PHASE);
+    let next = bonsai_capture_read_flag(capture + BONSAI_CAPTURE_NEXT);
+    let layer = bonsai_capture_read_flag(capture + BONSAI_CAPTURE_LAYER);
+    if phase == 0 || (next as! u64) != BONSAI_CAPTURE_NODES || layer >= 64 { return -1; }
+    bonsai_capture_write_flag(capture + BONSAI_CAPTURE_LAYER, layer + 1);
+    let exec = capture + BONSAI_CAPTURE_GRAPHS + (layer as! u64) * 8;
+    if phase == 1 {
+        var graph: u64 = 0;
+        let stream = bonsai_capture_read_word(capture);
+        let captured = bonsai_capture_driver(1, stream,
+            bonsai_flash_address(unsafe_c_address<c_ptr<const void>>(graph)));
+        bonsai_capture_write_flag(capture + BONSAI_CAPTURE_PHASE, 0);
+        if captured != 0 || graph == 0 {
+            if graph != 0 { bonsai_capture_driver(4, graph, 0); }
+            return -1;
+        }
+        var nodes: u64 = 0;
+        let status = bonsai_capture_driver(2, graph, bonsai_flash_address(unsafe_c_address<c_ptr<const void>>(nodes)));
+        let valid = status == 0 && nodes == BONSAI_CAPTURE_NODES && bonsai_capture_driver(3, graph, exec) == 0;
+        bonsai_capture_driver(4, graph, 0);
+        if !valid { return -1; }
+    }
+    bonsai_capture_write_flag(capture + BONSAI_CAPTURE_PHASE, 0);
+    return bonsai_capture_driver(5, bonsai_capture_read_word(exec), 0);
+}

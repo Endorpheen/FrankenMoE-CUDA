@@ -39,71 +39,56 @@ static void ffn_graph_open(model *m) {
     if (!enabled || strcmp(enabled, "1") || m->q8_mode != 1 || !m->norm_wide) return;
     static pthread_once_t once = PTHREAD_ONCE_INIT;
     if (pthread_once(&once, bind_ffn_graph) != 0 || !ffn_driver.ready) return;
-    if (check(ffn_driver.create(&m->ffn_capture_stream, CU_STREAM_NON_BLOCKING),
+    if (check(ffn_driver.create(&m->capture.stream, CU_STREAM_NON_BLOCKING),
               "Bonsai FFN graph stream")) return;
-    m->ffn_graph_enabled = 1;
+    m->capture.enabled = 1;
 }
 
-static void ffn_graph_abort(model *m) {
-    if (m->ffn_graph_phase == 1) {
-        CUgraph graph = NULL;
-        (void)ffn_driver.end(m->ffn_capture_stream, &graph);
-        if (graph) (void)ffn_driver.graph_destroy(graph);
+_Static_assert(offsetof(struct bonsai_ffn_capture, stream) == 0 &&
+    offsetof(struct bonsai_ffn_capture, graphs) == 8 && offsetof(struct bonsai_ffn_capture, norm) == 520 &&
+    offsetof(struct bonsai_ffn_capture, phase) == 1032 && offsetof(struct bonsai_ffn_capture, layer) == 1036 &&
+    offsetof(struct bonsai_ffn_capture, next) == 1040 && offsetof(struct bonsai_ffn_capture, enabled) == 1044 &&
+    LAYERS == 64, "Bonsai FFN capture ABI");
+
+extern void bonsai_capture_abort(uint64_t capture);
+extern int32_t bonsai_capture_begin(uint64_t capture, uint64_t norm);
+extern int32_t bonsai_capture_finish(uint64_t capture);
+
+int32_t bonsai_capture_driver(uint32_t op, uint64_t first, uint64_t second) {
+    switch (op) {
+    case 0: return check(ffn_driver.begin((CUstream)(uintptr_t)first, CU_STREAM_CAPTURE_MODE_THREAD_LOCAL),
+                         "Bonsai FFN graph capture start");
+    case 1: return check(ffn_driver.end((CUstream)(uintptr_t)first, (CUgraph *)(uintptr_t)second),
+                         "Bonsai FFN graph capture end");
+    case 2: return check(ffn_driver.nodes((CUgraph)(uintptr_t)first, NULL, (size_t *)(uintptr_t)second),
+                         "Bonsai FFN graph nodes");
+    case 3: return check(ffn_driver.instantiate((CUgraphExec *)(uintptr_t)second, (CUgraph)(uintptr_t)first, 0),
+                         "Bonsai FFN graph instantiate");
+    case 4: return ffn_driver.graph_destroy((CUgraph)(uintptr_t)first);
+    case 5: return check(ffn_driver.launch((CUgraphExec)(uintptr_t)first, NULL), "Bonsai FFN graph launch");
+    case 6: return ffn_driver.end((CUstream)(uintptr_t)first, (CUgraph *)(uintptr_t)second);
+    default: return -1;
     }
-    m->ffn_graph_phase = 0;
-    m->ffn_graph_enabled = 0;
 }
+
+static void ffn_graph_abort(model *m) { bonsai_capture_abort((uintptr_t)&m->capture); }
 
 static void ffn_graph_close(model *m) {
-    if (!m->ffn_capture_stream) return;
+    if (!m->capture.stream) return;
     CUcontext current;
     if (bonsai_cuda.fn_cuCtxPushCurrent(m->cuda) != CUDA_SUCCESS) return;
     ffn_graph_abort(m);
     for (unsigned i = 0; i < LAYERS; ++i) {
-        if (m->ffn_graphs[i]) (void)ffn_driver.exec_destroy(m->ffn_graphs[i]);
+        if (m->capture.graphs[i]) (void)ffn_driver.exec_destroy(m->capture.graphs[i]);
     }
-    (void)ffn_driver.destroy(m->ffn_capture_stream);
+    (void)ffn_driver.destroy(m->capture.stream);
     (void)bonsai_cuda.fn_cuCtxPopCurrent(&current);
 }
 
 static int ffn_graph_begin(model *m, CUdeviceptr norm_weight) {
-    if (m->ffn_graph_phase || m->ffn_graph_layer >= LAYERS) return -1;
-    const unsigned scope = m->ffn_graph_layer;
-    m->ffn_graph_next = 0;
-    if (m->ffn_graphs[scope]) {
-        if (m->ffn_graph_norm[scope] != norm_weight) return -1;
-        m->ffn_graph_phase = 2;
-    } else {
-        const CUresult status = ffn_driver.begin(m->ffn_capture_stream, CU_STREAM_CAPTURE_MODE_THREAD_LOCAL);
-        if (status != CUDA_SUCCESS) {
-            (void)check(status, "Bonsai FFN graph capture start");
-            m->ffn_graph_enabled = 0;
-            return 0;
-        }
-        m->ffn_graph_norm[scope] = norm_weight;
-        m->ffn_graph_phase = 1;
-    }
-    return 0;
+    return bonsai_capture_begin((uintptr_t)&m->capture, norm_weight);
 }
 
 static int ffn_graph_finish(model *m) {
-    if (!m->ffn_graph_phase || m->ffn_graph_next != sizeof(ffn_graph_nodes)/sizeof(*ffn_graph_nodes)) return -1;
-    const unsigned scope = m->ffn_graph_layer++;
-    if (m->ffn_graph_phase == 1) {
-        CUgraph graph = NULL;
-        const CUresult captured = ffn_driver.end(m->ffn_capture_stream, &graph);
-        m->ffn_graph_phase = 0;
-        if (check(captured, "Bonsai FFN graph capture end") || !graph) {
-            if (graph) (void)ffn_driver.graph_destroy(graph);
-            return -1;
-        }
-        size_t count = 0;
-        const int status = check(ffn_driver.nodes(graph, NULL, &count), "Bonsai FFN graph nodes") ||
-            count != sizeof(ffn_graph_nodes)/sizeof(*ffn_graph_nodes) ||
-            check(ffn_driver.instantiate(&m->ffn_graphs[scope], graph, 0), "Bonsai FFN graph instantiate");
-        (void)ffn_driver.graph_destroy(graph);
-        if (status) return -1;
-    }
-    m->ffn_graph_phase = 0;
-    return check(ffn_driver.launch(m->ffn_graphs[scope], NULL), "Bonsai FFN graph launch");
+    return bonsai_capture_finish((uintptr_t)&m->capture);
 }

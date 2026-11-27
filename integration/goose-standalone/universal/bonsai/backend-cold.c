@@ -4,6 +4,7 @@
 #include <cuda.h>
 #include <fcntl.h>
 #include <math.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -62,32 +63,32 @@ static struct bonsai_cuda_api {
 #define BONSAI_STRING_(name) #name
 #define BONSAI_STRING(name) BONSAI_STRING_(name)
 
+typedef struct { const uint64_t *data; int64_t len; } bonsai_const_words;
+typedef struct { uint64_t *data; int64_t len; } bonsai_words;
+extern int32_t bonsai_resolve_cuda_driver(uint8_t windows, bonsai_const_words names, bonsai_words addresses);
+
 static void bonsai_bind_cuda(void) {
+#define BONSAI_SYMBOL(name) {(uint8_t *)BONSAI_STRING(name), sizeof(BONSAI_STRING(name)) - 1},
+    static const sl_u8 names[] = {BONSAI_CUDA_API(BONSAI_SYMBOL)};
+#undef BONSAI_SYMBOL
+    enum { COUNT = sizeof(names) / sizeof(*names) };
+    uint64_t addresses[COUNT + 1], symbol_names[2 * COUNT];
+    for (unsigned i = 0; i < COUNT; ++i) {
+        symbol_names[2 * i] = (uintptr_t)names[i].data;
+        symbol_names[2 * i + 1] = names[i].len;
+    }
+    _Static_assert(offsetof(struct bonsai_cuda_api, library) == COUNT * sizeof(uint64_t) &&
+        sizeof(struct bonsai_cuda_api) == sizeof(addresses), "Bonsai CUDA dispatch ABI");
 #ifdef _WIN32
-    void *library = (void *)LoadLibraryW(L"nvcuda.dll");
-    if (!library) {
-        fprintf(stderr, "Bonsai CUDA driver: error %lu\n", (unsigned long)GetLastError());
-        return;
-    }
+    const uint8_t windows = 1;
 #else
-    void *library = dlopen("libcuda.so.1", RTLD_NOW | RTLD_LOCAL);
-    if (!library) {
-        fprintf(stderr, "Bonsai CUDA driver: %s\n", dlerror());
-        return;
-    }
+    const uint8_t windows = 0;
 #endif
-#define BONSAI_RESOLVE(name) \
-    do { \
-        bonsai_cuda.fn_##name = (__typeof__(name) *)dlsym(library, BONSAI_STRING(name)); \
-        if (!bonsai_cuda.fn_##name) { \
-            fprintf(stderr, "Bonsai CUDA driver missing %s\n", BONSAI_STRING(name)); \
-            dlclose(library); \
-            return; \
-        } \
-    } while (0);
-    BONSAI_CUDA_API(BONSAI_RESOLVE)
-#undef BONSAI_RESOLVE
-    bonsai_cuda.library = library;
+    const int32_t status = bonsai_resolve_cuda_driver(windows, (bonsai_const_words){symbol_names, 2 * COUNT},
+                                                     (bonsai_words){addresses, COUNT + 1});
+    if (status == -1) memcpy(&bonsai_cuda, addresses, sizeof(addresses));
+    else if (status >= 0) fprintf(stderr, "Bonsai CUDA driver missing %s\n", (const char *)names[status].data);
+    else fputs("Bonsai CUDA driver unavailable\n", stderr);
 }
 
 static int bonsai_cuda_ready(void) {
@@ -142,11 +143,12 @@ typedef struct {
     unsigned context, position, ubatch, count, wave;
     int grouped_decode, matvec_rows2, flash_grouped;
     int64_t eog[64], eog_count;
-    CUstream ffn_capture_stream;
-    CUgraphExec ffn_graphs[LAYERS];
-    CUdeviceptr ffn_graph_norm[LAYERS];
-    unsigned ffn_graph_phase, ffn_graph_layer, ffn_graph_next;
-    int ffn_graph_enabled;
+    struct bonsai_ffn_capture {
+        CUstream stream;
+        CUgraphExec graphs[LAYERS];
+        CUdeviceptr norm[LAYERS];
+        unsigned phase, layer, next, enabled;
+    } capture;
     float epsilon;
 } model;
 
@@ -163,11 +165,11 @@ static int check(CUresult status, const char *where) {
 static int launch(model *m, enum kernel id, unsigned x, unsigned y, unsigned z,
                   unsigned threads, void **args) {
     CUstream stream = NULL;
-    if (m->ffn_graph_phase) {
-        if (m->ffn_graph_next >= sizeof(ffn_graph_nodes)/sizeof(*ffn_graph_nodes) ||
-            ffn_graph_nodes[m->ffn_graph_next++] != id) return -1;
-        if (m->ffn_graph_phase == 2) return 0;
-        stream = m->ffn_capture_stream;
+    if (m->capture.phase) {
+        if (m->capture.next >= sizeof(ffn_graph_nodes)/sizeof(*ffn_graph_nodes) ||
+            ffn_graph_nodes[m->capture.next++] != id) return -1;
+        if (m->capture.phase == 2) return 0;
+        stream = m->capture.stream;
     }
     const unsigned shared = id == FLASH_KV_PANEL ? FLASH_PANEL_SHARED : 0;
     return check(bonsai_cuda.fn_cuLaunchKernel(m->kernel[id], x, y, z, threads, 1, 1, shared, stream, args, NULL), "kernel launch");
@@ -179,8 +181,6 @@ static uint32_t f32_bits(float x) {
     return bits;
 }
 
-typedef struct { const uint64_t *data; int64_t len; } bonsai_const_words;
-typedef struct { uint64_t *data; int64_t len; } bonsai_words;
 extern uint8_t bonsai_gdn_packet(bonsai_const_words input, uint32_t tokens, bonsai_words packet);
 
 static int gdn(model *m, const CUdeviceptr p[8], unsigned tokens) {
@@ -320,7 +320,7 @@ int64_t bonsai_launch(uint64_t context, int64_t op, int64_t a, int64_t b, int64_
         return launch_verify_rows(m, (enum kernel)op, p);
     switch (op) {
         case NORM:
-            if (m->ffn_graph_enabled && m->in_decode && count == 1 &&
+            if (m->capture.enabled && m->in_decode && count == 1 &&
                     p[0] == (CUdeviceptr)m->b[13] && p[3] == (CUdeviceptr)m->b[1] &&
                     ffn_graph_begin(m, p[1])) return -1;
             if (m->norm_wide && mode == 0 && n == 5120 && rows == 1 && stride == n) {
@@ -456,7 +456,7 @@ int64_t bonsai_launch(uint64_t context, int64_t op, int64_t a, int64_t b, int64_
         case ADD: {
             const int status = launch(m, ADD, 20 * count, 1, 1, 256,
                 (void *[]){ &p[0], &p[1], &p[2] });
-            if (status || !m->ffn_graph_phase) return status;
+            if (status || !m->capture.phase) return status;
             if (p[0] != (CUdeviceptr)m->b[13] || p[1] != (CUdeviceptr)m->b[18] ||
                     p[2] != (CUdeviceptr)m->b[0]) return -1;
             return ffn_graph_finish(m);
@@ -945,7 +945,7 @@ static int evaluate_batch_output(model *m, const unsigned *tokens, unsigned coun
     if (check(bonsai_cuda.fn_cuMemcpyHtoD(m->positions, positions, 16 * count), "positions") ||
         check(bonsai_cuda.fn_cuMemcpyHtoD(m->attention, cfg, sizeof(cfg)), "attention configuration") ||
         (count > 1 && check(bonsai_cuda.fn_cuMemcpyHtoD(m->token_ids, tokens, 4 * count), "token ids"))) return -1;
-    m->ffn_graph_layer = 0;
+    m->capture.layer = 0;
     const int verify = exact_verify(m, count);
     if (m->txn.phase != TXN_IDLE || (verify && (logits || !device_only || init_verify_batch(m)))) return -1;
     if (verify) {
@@ -955,9 +955,9 @@ static int evaluate_batch_output(model *m, const unsigned *tokens, unsigned coun
     }
     const int64_t result = (verify ? bonsai_mtp_target_graph : bonsai_graph)((uintptr_t)m, slice(m->bound, LAYERS*15), slice(m->states, LAYERS*2),
         slice(m->globals, 3), slice(m->b, 24), tokens[0], pos, logits != NULL || device_only);
-    if (result != 0 || (verify && m->txn.next_layer != m->txn.layers) || m->ffn_graph_phase ||
-            (m->ffn_graph_enabled && m->in_decode && count == 1 && m->ffn_graph_layer != LAYERS)) {
-        if (m->ffn_capture_stream) ffn_graph_abort(m);
+    if (result != 0 || (verify && m->txn.next_layer != m->txn.layers) || m->capture.phase ||
+            (m->capture.enabled && m->in_decode && count == 1 && m->capture.layer != LAYERS)) {
+        if (m->capture.stream) ffn_graph_abort(m);
         fprintf(stderr, "Goose graph failed: %lld\n", (long long)result);
         return -1;
     }
