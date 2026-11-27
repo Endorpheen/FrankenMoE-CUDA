@@ -7,9 +7,6 @@
 #include "cpu.h"
 #include "ggml-impl.h"
 #include "goose-host.h"
-#define GGML_COMMON_DECL_C
-#define GGML_COMMON_IMPL_C
-#include "ggml-common.h"
 
 #include <pthread.h>
 #include <fcntl.h>
@@ -424,15 +421,8 @@ static bool float_slice(sl_u8 bytes, sl_f32 * out) {
 
 static uint8_t run_node(sl_i64 packet, int64_t mode, const sl_u8 inputs[5],
                         sl_f32 scratch, sl_i64 indices) {
-    return fg143_node_run(packet, mode, inputs[0], inputs[1], inputs[2], inputs[4], inputs[3], scratch, indices,
-        (sl_a8_u8) { (void *) iq2xxs_grid, 256 },
-        (sl_a8_u8) { (void *) iq2xs_grid, 512 },
-        (sl_a8_u8) { (void *) iq2s_grid, 1024 },
-        (sl_a4_u8) { (void *) iq3xxs_grid, 256 },
-        (sl_a4_u8) { (void *) iq3s_grid, 512 },
-        (sl_a8_i8) { (void *) iq1s_grid, NGRID_IQ1S },
-        (sl_u8) { (void *) ksigns_iq2xs, 128 },
-        (sl_i8) { (void *) kvalues_iq4nl, 16 });
+    return fg143_node_run(packet, mode, inputs[0], inputs[1], inputs[2], inputs[4],
+                          inputs[3], scratch, indices);
 }
 
 int64_t fg143_graph_nodes(uint64_t graph) {

@@ -16,7 +16,7 @@ esac
 mkdir -p -- "$out"
 
 for module in graph-execute inkling-backend; do
-    "$cc" -O2 -std=gnu11 -D_GNU_SOURCE -DI2_NUMERIC_MODULE -Werror=implicit-function-declaration \
+    "$cc" -O2 -std=gnu11 -D_GNU_SOURCE -DI2_NUMERIC_MODULE -DGOOSEINFER_TYPE_METADATA_ONLY -Werror=implicit-function-declaration \
         -ffunction-sections -fdata-sections "-fmacro-prefix-map=$root=." \
         -I"$source_dir/host" -I"$model_headers" -I"$cpu_headers" \
         -I"$root/vendor/flint/ggml/include" -I"$root/vendor/flint/ggml/src" \

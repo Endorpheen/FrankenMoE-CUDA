@@ -38,6 +38,22 @@ export fn fg143_vmm_scratch_growth(bytes: i64, mapped: i64, granularity: i64) ->
 }
 
 
+export fn fg143_vmm_prepare(bytes: u64, mapped: u64, limit: u64, granularity: u64,
+        failed: bool, has_address: bool, plan: i64[:]) -> bool {
+    let capacity = VMM_POOL_CAPACITY as u64;
+    if granularity == 0 || granularity > capacity || capacity % granularity != 0 { return false; }
+    plan[0] = VMM_POOL_CAPACITY;
+    if failed || bytes > limit || limit > capacity || mapped > capacity { return false; }
+    let unit = granularity as i64;
+    let growth = vmm_map_growth(bytes as i64, 0, mapped as i64, unit);
+    if growth <= 0 { return false; }
+    let reservation = if has_address { 0 } else { vmm_map_growth(limit as i64, 0, 0, unit) };
+    if !has_address && reservation <= 0 { return false; }
+    plan[1] = growth;
+    plan[2] = reservation;
+    return true;
+}
+
 export fn fg143_pinned_packet_slot(used: i64, capacity: i64, bytes: i64) -> i64 {
     if used < 0 || used > capacity || bytes <= 0 || bytes > 4096 { return -1; }
     let padding = (64 - used % 64) % 64;
@@ -426,6 +442,127 @@ fn activation_device_overlap(ranges: const i64[:], offset: i64, bytes: i64, firs
 
 export fn fg143_activation_device_overlap(ranges: const i64[:], offset: i64, bytes: i64, first: i64) -> i64 {
     return activation_device_overlap(ranges, offset, bytes, first);
+}
+
+fn activation_prepare_records(ranges: i64[:], host: u64, bytes: i64,
+        step: i64, overwrite: bool, counters: u64[:]) -> bool {
+    var overlap = false;
+    for i in ranges.len / ACT_WORDS {
+        let at = i * ACT_WORDS;
+        let size = ranges[at + 1];
+        if size <= 0 { continue; }
+        let deadline = ranges[at + 4];
+        let base = ranges[at] as! u64;
+        if step >= 0 && deadline >= 0 && deadline < step {
+            if ranges[at + 3] == 0 { counters[0] += size as u64; }
+            ranges[at + 1] = 0;
+        } else if overwrite && size <= bytes && base >= host && base - host <= (bytes - size) as u64 {
+            if ranges[at + 3] == 0 { counters[1] += size as u64; }
+            ranges[at + 1] = 0;
+        } else if bytes > 0 && activation_spans_overlap(host, bytes as u64, base, size as u64) {
+            overlap = true;
+        }
+    }
+    return overlap;
+}
+
+export fn fg143_activation_prepare_records(ranges: i64[:], large: i64[:], host: u64,
+        bytes: i64, step: i64, overwrite: bool, counters: u64[:]) -> bool {
+    let ordinary_overlap = activation_prepare_records(ranges, host, bytes, step, overwrite, counters);
+    let large_overlap = activation_prepare_records(large, host, bytes, step, overwrite, counters);
+    return ordinary_overlap || large_overlap;
+}
+
+struct ActivationPlacement {
+    offset: i64, evict: bool, flush: bool
+}
+
+fn activation_place(ranges: const i64[:], capacity: i64, bytes: i64, used: i64,
+        limit: i64, reuse: bool, selective: bool) -> ActivationPlacement {
+    let count = ranges.len / ACT_WORDS;
+    var offset: i64 = -2;
+    if reuse {
+        offset = fg143_activation_slot(ranges, capacity, bytes);
+    } else {
+        let aligned = (used + 127) & ~127;
+        if aligned <= capacity - bytes { offset = aligned; }
+    }
+    let evict = offset == -2 && reuse && selective;
+    if evict {
+        offset = fg143_activation_eviction_slot(ranges, capacity, bytes);
+        if offset < 0 { return ActivationPlacement {-1, false, false}; }
+    }
+    let full = count == limit && (!reuse || fg143_activation_record_slot(ranges) == count);
+    let freed_record = evict && activation_device_overlap(ranges, offset, bytes, 0) >= 0;
+    return ActivationPlacement {offset, evict, offset == -2 || (full && !freed_record)};
+}
+
+export fn fg143_activation_output_plan(ranges: const i64[:], capacity: i64, bytes: i64,
+        used: i64, limit: i64, reuse: bool, selective: bool, plan: i64[:]) {
+    let placement = activation_place(ranges, capacity, bytes, used, limit, reuse, selective);
+    plan[0] = placement.offset;
+    plan[1] = if placement.evict { 1 } else { 0 };
+    plan[2] = if placement.flush { 1 } else { 0 };
+}
+
+export fn fg143_activation_publish_record(ranges: i64[:], count: i64, host: u64,
+        bytes: i64, offset: i64, deadline: i64, reuse: bool) -> i64 {
+    let slot = if reuse { fg143_activation_record_slot(ranges[0..count * ACT_WORDS]) } else { count };
+    if slot >= ranges.len / ACT_WORDS { return -1; }
+    let at = slot * ACT_WORDS;
+    ranges[at] = host as! i64;
+    ranges[at + 1] = bytes;
+    ranges[at + 2] = offset;
+    ranges[at + 3] = 0;
+    ranges[at + 4] = deadline;
+    return slot;
+}
+
+extern "fg_cuda_activation_copy_to_host" fn activation_copy_to_host(host: u64, source: u64,
+    bytes: i64) -> i32;
+
+fn activation_download_at(ranges: i64[:], at: i64, base: u64) -> i32 {
+    if ranges[at + 1] == 0 || ranges[at + 3] != 0 { return 0; }
+    let error = activation_copy_to_host(ranges[at] as! u64, base + (ranges[at + 2] as! u64),
+                                        ranges[at + 1]);
+    if error == 0 { ranges[at + 3] = 1; }
+    return error;
+}
+
+export fn fg143_activation_download_all(ranges: i64[:], base: u64) -> i32 {
+    for i in ranges.len / ACT_WORDS {
+        let error = activation_download_at(ranges, i * ACT_WORDS, base);
+        if error != 0 { return error; }
+    }
+    return 0;
+}
+
+export fn fg143_activation_sync(ranges: i64[:], base: u64, address: u64, bytes: i64,
+        device: bool, invalidate: bool) -> i32 {
+    var start: i64 = 0;
+    while start < ranges.len / ACT_WORDS {
+        let hit = if device {
+            activation_device_overlap(ranges, address as! i64, bytes, start)
+        } else { activation_host_overlap(ranges, address, bytes, start) };
+        if hit < 0 { break; }
+        let at = hit * ACT_WORDS;
+        let error = activation_download_at(ranges, at, base);
+        if error != 0 { return error; }
+        if invalidate { ranges[at + 1] = 0; }
+        start = hit + 1;
+    }
+    return 0;
+}
+
+export fn fg143_activation_pending(ranges: const i64[:], host: u64, bytes: i64) -> bool {
+    var start: i64 = 0;
+    while start < ranges.len / ACT_WORDS {
+        let hit = activation_host_overlap(ranges, host, bytes, start);
+        if hit < 0 { break; }
+        if ranges[hit * ACT_WORDS + 3] == 0 { return true; }
+        start = hit + 1;
+    }
+    return false;
 }
 
 // Relocate an entire stale input on its last use if allocation would evict it.
@@ -4826,10 +4963,15 @@ extern "fg_cuda_giga_kv_write_enabled" fn giga_kv_write_enabled() -> bool;
 
 export fn fg143_node_run(packet: const i64[:], mode: i64,
     x: const u8[:], y: const u8[:], z: const u8[:], mask: const u8[:], dst: u8[:],
-    scratch: f32[:], indices: i64[:],
-    gxx: const u8[8][:], gxs: const u8[8][:], gs: const u8[8][:],
-    g3x: const u8[4][:], g3s: const u8[4][:], g1: const i8[8][:],
-    signs: const u8[:], palette: const i8[:]) -> bool {
+    scratch: f32[:], indices: i64[:]) -> bool {
+    let gxx = CPU_IQ2_XXS[..];
+    let gxs = CPU_IQ2_XS[..];
+    let gs = CPU_IQ2_S[..];
+    let g3x = CPU_IQ3_XXS[..];
+    let g3s = CPU_IQ3_S[..];
+    let g1 = CPU_IQ1_S[..];
+    let signs = CPU_IQ_SIGNS[..];
+    let palette = CPU_IQ4_PALETTE[..];
     if packet.len != 71 { return false; }
     var p: Node = default <Node>();
     p.x = packet_tensor(packet, 0);

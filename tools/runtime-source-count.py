@@ -86,6 +86,10 @@ while todo:
         continue
     visited.add(f)
     for name in re.findall(r'^\s*#\s*include\s+"([^"]+)"',(root/f).read_text(errors='replace'),re.M):
+        if (f == g / "src/ggml.c" and name in {"ggml-quants.h", "ggml-backend.h", "ggml-cpu.h", "ggml-quantization-reference.inc"}) or (
+            f == s / "ggml-system.c" and name in {"ggml-backend-impl.h", "ggml-system-reference.inc"}
+        ) or (f == g / "src/ggml-impl.h" and name in {"gguf.h", "ggml-impl-reference.inc"}):
+            continue
         candidates=[]
         if name not in {'main.h','cpu.h','goose-unit.h','qwen2_unit.h'} and (name != 'graph.h' or f.is_relative_to(s/'vulkan')):
             for folder in [f.parent]+include_dirs:
