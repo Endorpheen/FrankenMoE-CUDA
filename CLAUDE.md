@@ -378,6 +378,74 @@ The compiler agent owns implementation. Do not change Fried Goose or
 interfere with that agent while maintaining this registry. Continue the
 main Apex optimization and preserve the working runtime and its tests.
 
+## Permanent GooseInfer unification rules
+
+Unification is a permanent architectural constraint for all agents,
+development branches, integrations, and releases.
+
+1. Ship one universal GooseInfer executable per target platform. It must
+   contain all supported model architectures and backends for that platform.
+2. Maintain one authoritative build system in current `main`. A clean
+   checkout must build the universal executable with the declared
+   toolchain and platform dependencies.
+3. Integrate the required source and verified optimizations into `main`
+   promptly after acceptance. Keep their tests and provenance with the
+   implementation.
+4. Production builds must derive all project code and generated objects
+   from tracked inputs. Do not depend on old experiment builds, local
+   object files or archives, or uncommitted patches. Generate intermediate
+   objects as part of the official build.
+5. Detect model architecture from its metadata and automatically activate
+   its strongest qualified execution profile and fast paths.
+6. Keep architecture-specific graphs, policies, and dispatch in their
+   model modules behind stable shared interfaces.
+7. Preserve each architecture's best verified prefill, decode, and memory
+   efficiency against its comparable reference. Apply the mandatory
+   universal binary integration gate below.
+8. Keep C++ out of the executable runtime path. Use Goose for runtime
+   logic and maintain only the required native C bindings.
+9. Treat experimental executables as temporary test artifacts. Integrate
+   verified improvements into the universal executable. Retain the
+   evidence and retire redundant execution paths after verification.
+
+Keep every supported architecture and backend on the same release
+line. Resolve divergence during development and preserve proven work
+before closing experiment branches.
+
+## Mandatory universal binary integration gate
+
+Integrations and releases must qualify one universal GooseInfer
+executable built from the current `main` source or its proposed merge
+tree. Qualify the exact executable on each target platform. Separate
+checkpoint binaries are controls for comparison.
+
+1. For every supported architecture, pin its strongest confirmed
+   comparable result, source commits, executable hash, model and input
+   hashes, runtime profile, and the optimizations verified in use.
+   Keep the workload, hardware, quantization, placement, and first-request
+   or warmed conditions comparable. Older main results do not replace
+   a stronger confirmed reference.
+2. Integrate the required fast paths into that executable through the
+   architecture modules and shared interfaces. Detect the architecture
+   from the model and select its qualified execution profile automatically.
+   Verify the default path on the real workload, including the actual
+   dispatch of the required optimized kernels and memory policies.
+3. For Apex on RTX 4070, use EXP-1880 as the performance reference:
+   3505.42 prefill and 82.10 decode tok/s on 32768/512, with its frozen
+   profile and one full warm-up before the scored request. The scored
+   request must recompute all input tokens. Treat the other architectures'
+   strongest verified comparable records as their respective targets.
+4. An integration or release passes only after every supported
+   architecture passes correctness, prefill, decode, RAM, and VRAM checks
+   on the same candidate executable for that platform. Pin its SHA-256
+   and record the per-model results and fast-path evidence. Small speed
+   deviations are allowed within a justified acceptance tolerance
+   established before scoring, subject to the applicable regression
+   limits. Record the deviation against the strongest reference.
+5. Keep partial integrations under review until all required model
+   checks pass. Preserve verified work and measurements in the registry
+   so a later integration can reuse them.
+
 ## Mandatory release gate
 
 Run the [Release Gate](docs/RELEASE-GATE.md) before publishing any GooseInfer
