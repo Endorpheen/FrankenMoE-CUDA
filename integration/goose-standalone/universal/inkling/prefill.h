@@ -507,6 +507,56 @@ static void prefill_layer(struct decoder *d, struct prefill_token *tokens, struc
     }
 }
 
+extern void i2_prefill_edge_plan(sl_i64 visits, sl_i64 aux, uint8_t use_edges,
+    uint8_t boundary_enabled, uint8_t extend, uint8_t use_full, uint8_t keep_intermediate,
+    sl_i64 ordinary, sl_i64 boundary);
+
+extern void i2_run_prefill_visits(uint64_t work, sl_i64 visits, sl_i64 ordinary,
+    sl_i64 boundary, sl_i64 device, uint8_t loop_enabled);
+
+struct i2_prefill_visits {
+    struct decoder *decoder;
+    struct prefill_token *tokens;
+    struct prefill_workspace *scratch;
+    struct i2_prefill_team *workers;
+    int count, begin;
+};
+
+void i2_prefill_save_rewind(uint64_t address, int64_t pass, uint8_t current) {
+    struct i2_prefill_visits *work = (void *)(uintptr_t)address;
+    float (*inputs)[model_width] = work->scratch->inputs[0];
+    if (!current) {
+        for (int t = 0; t < work->count; ++t)
+            memcpy(inputs[t], work->tokens[t].current, sizeof work->tokens[t].current);
+    }
+    assert(inkling_loop_save(inkling_loop_storage(), current ? NULL : inputs[0]));
+    if (current) fprintf(stderr, "Inkling resident rewind begin=%d pass=%d\n", work->begin, (int)pass);
+}
+
+void i2_prefill_read_boundary(uint64_t address) {
+    struct i2_prefill_visits *work = (void *)(uintptr_t)address;
+    float (*inputs)[model_width] = work->scratch->inputs[0];
+    assert(inkling_arena_boundary_read(inputs[0], 2, false));
+    for (int t = 0; t < work->count; ++t)
+        memcpy(work->tokens[t].blocks + 2 * model_width, inputs[t], sizeof work->tokens[t].current);
+}
+
+void i2_prefill_run_visit(uint64_t address, int64_t index, sl_i64 device, uint8_t retain,
+                         uint64_t slot, uint8_t loop_live, uint8_t prelude_live) {
+    struct i2_prefill_visits *work = (void *)(uintptr_t)address;
+    bool current = device.data[0] != 0;
+    bool boundary = device.data[1] != 0;
+    bool tail = device.data[2] != 0;
+    prefill_layer(work->decoder, work->tokens, work->scratch, work->count, work->begin,
+                  work->decoder->visits + index * 4, work->workers, &current, retain, slot,
+                  &boundary, &tail, loop_live, prelude_live);
+    device.data[0] = current;
+    device.data[1] = boundary;
+    device.data[2] = tail;
+    if (work->begin == 4096 && work->count > 1 && getenv("I2_DRAFT_PARITY"))
+        check_state("draft-batch-visit", (int)index, work->tokens[1].current, model_width);
+}
+
 static void prefill(struct decoder *d, const int32_t *ids, int begin, int count, bool need_logits) {
     assert(count > 0 && count <= max_prefill_batch);
     struct prefill_token *tokens = calloc((size_t)count, sizeof *tokens);
@@ -540,8 +590,6 @@ static void prefill(struct decoder *d, const int32_t *ids, int begin, int count,
         if (prefill_team_open(&team, tasks, true)) workers = &team;
     }
     inkling_arena_window(count == 4096, begin);
-    bool device_current = false, boundary_history = false, tail_history = false;
-    bool device_loop = false;
     const char *loop_setting = getenv("I2_DEVICE_LOOP_MESSAGES");
     const bool loop_enabled = !loop_setting || strcmp(loop_setting, "0") != 0;
     const char *boundary_setting = getenv("I2_DEVICE_BLOCK_HISTORY");
@@ -560,59 +608,18 @@ static void prefill(struct decoder *d, const int32_t *ids, int begin, int count,
     const bool use_edges = extend && count == 4096 && prefill_direct_output && use_resident_moe() &&
         use_cached_history() && (!edges || strcmp(edges, "0") != 0) &&
         (!postconv || strcmp(postconv, "0") != 0) && !getenv("I2_CHECK_STATE");
-    bool device_prelude = false;
+    const bool keep_intermediate = count == 4096 && (!keep || strcmp(keep, "0") != 0);
+    int64_t ordinary_edges[logical], boundary_edges[logical];
+    i2_prefill_edge_plan(ints(d->visits, logical * 4), ints(d->aux, physical * 30),
+        use_edges, boundary_enabled, extend, use_full, keep_intermediate,
+        ints(ordinary_edges, logical), ints(boundary_edges, logical));
+    struct i2_prefill_visits work = {d, tokens, scratch, workers, count, begin};
+    int64_t device[4] = {0};
     inkling_prelude_clear();
-    for (int i = 0; i < logical; ++i) {
-        const int64_t *current = d->visits + i * 4;
-        const int64_t *next = i + 1 < logical ? current + 4 : NULL;
-        const bool rewind = next && next[0] == 6 && next[2] > 0;
-        const bool tail = next && next[0] >= 18;
-        const bool ordinary = current[0] < 18 && next && next[0] < 18 &&
-            (next[0] % 6 != 0 || (boundary_enabled && next[0] == 12));
-        const bool prelude_entry = use_edges && next && next[0] == 6 && next[2] == 0;
-        const bool final = use_edges && !next;
-        const bool retain = (!keep || strcmp(keep, "0") != 0) && count == 4096 &&
-            (final || (next && (ordinary || prelude_entry || (extend && ((rewind && boundary_history) || tail))) &&
-            (next[3] || use_full) && d->aux[next[0] * 30 + 10] >= 0));
-        const uint64_t output_slot = retain && (tail || final) ? inkling_loop_storage() : 0;
-        assert(!retain || !(tail || final) || output_slot);
-        if (device_current && use_edges && current[0] == 6 && current[2] == 0) {
-            assert(inkling_prelude_use(true));
-            device_prelude = true;
-        }
-        if (current[2] < 0 && device_loop) {
-            inkling_loop_release();
-            device_loop = false;
-        }
-        if (boundary_history && current[0] == 6 && current[2] > 0) {
-            if (loop_enabled) {
-                if (!device_current) {
-                    for (int t = 0; t < count; ++t)
-                        memcpy(scratch->inputs[0][t], tokens[t].current, sizeof tokens[t].current);
-                }
-                assert(inkling_loop_save(inkling_loop_storage(), device_current ? NULL : scratch->inputs[0][0]));
-                if (device_current) {
-                    fprintf(stderr, "Inkling resident rewind begin=%d pass=%d\n", begin, (int)current[2]);
-                    device_current = false;
-                }
-                if (device_prelude) {
-                    assert(inkling_prelude_use(false));
-                    device_current = true;
-                }
-                device_loop = true;
-            } else {
-                assert(inkling_arena_boundary_read(scratch->inputs[0][0], 2, false));
-                for (int t = 0; t < count; ++t)
-                    memcpy(tokens[t].blocks + 2 * model_width, scratch->inputs[0][t], sizeof tokens[t].current);
-            }
-            boundary_history = false;
-        }
-        prefill_layer(d, tokens, scratch, count, begin, current, workers,
-                      &device_current, retain, output_slot, &boundary_history, &tail_history, device_loop, device_prelude);
-        if (begin == 4096 && count > 1 && getenv("I2_DRAFT_PARITY"))
-            check_state(count == 1 ? "draft-single-visit" : "draft-batch-visit", i,
-                        tokens[1].current, model_width);
-    }
+    i2_run_prefill_visits((uintptr_t)&work, ints(d->visits, logical * 4),
+        ints(ordinary_edges, logical), ints(boundary_edges, logical), ints(device, 4), loop_enabled);
+    const bool device_current = device[0] != 0, boundary_history = device[1] != 0;
+    const bool tail_history = device[2] != 0, device_prelude = device[3] != 0;
     if (boundary_history && need_logits)
         assert(inkling_arena_boundary_read(tokens[count - 1].blocks + 2 * model_width, 2, true));
     if (tail_history && need_logits)

@@ -810,3 +810,100 @@ export fn i2_eval_prepared(decoder: u64, tokens: const i32[:], prompt: bool, log
     i2_run_step(decoder, tokens, prompt, logits);
     return logits.len;
 }
+
+const I2_RETAIN_OUTPUT: u64 = 1;
+const I2_USE_LOOP_STORAGE: u64 = 2;
+const I2_ENTER_PRELUDE: u64 = 4;
+const I2_SAVE_BOUNDARY: u64 = 8;
+const I2_RELEASE_LOOP: u64 = 16;
+
+fn i2_prefill_edges(visits: const i64[:], aux: const i64[:], visit: i64,
+        use_edges: bool, boundary_enabled: bool, boundary_history: bool, extend: bool,
+        use_full: bool, keep_intermediate: bool) -> u64 {
+    let at = visit * 4;
+    let current = visits[at];
+    let current_pass = visits[at + 2];
+    let more = at + 4 < visits.len;
+    let enter_prelude = use_edges && current == 6 && current_pass == 0;
+    let save_boundary = boundary_history && current == 6 && current_pass > 0;
+    var result: u64 = (if enter_prelude { I2_ENTER_PRELUDE } else { 0 }) |
+        (if save_boundary { I2_SAVE_BOUNDARY } else { 0 }) | (if current_pass < 0 { I2_RELEASE_LOOP } else { 0 });
+    if !keep_intermediate { return result; }
+    if !more {
+        return if use_edges { result | I2_RETAIN_OUTPUT | I2_USE_LOOP_STORAGE } else { result };
+    }
+    let next = visits[at + 4];
+    let pass = visits[at + 6];
+    let rewind = next == 6 && pass > 0;
+    let tail = next >= 18;
+    let ordinary = current < 18 && next < 18 && (next % 6 != 0 || (boundary_enabled && next == 12));
+    let prelude_entry = use_edges && next == 6 && pass == 0;
+    let retain = (ordinary || prelude_entry || (extend && ((rewind && boundary_history) || tail))) &&
+        (visits[at + 7] != 0 || use_full) && aux[next * 30 + 10] >= 0;
+    if retain {
+        result = result | I2_RETAIN_OUTPUT;
+        if tail { result = result | I2_USE_LOOP_STORAGE; }
+    }
+    return result;
+}
+
+
+export fn i2_prefill_edge_plan(visits: const i64[:], aux: const i64[:], use_edges: bool,
+        boundary_enabled: bool, extend: bool, use_full: bool, keep_intermediate: bool,
+        ordinary: i64[:], boundary: i64[:]) {
+    let count = visits.len / 4;
+    assert(visits.len % 4 == 0 && ordinary.len == count && boundary.len == count);
+    for visit in count {
+        ordinary[visit] = i2_prefill_edges(visits, aux, visit, use_edges, boundary_enabled,
+                                          false, extend, use_full, keep_intermediate) as i64;
+        boundary[visit] = i2_prefill_edges(visits, aux, visit, use_edges, boundary_enabled,
+                                          true, extend, use_full, keep_intermediate) as i64;
+    }
+}
+
+extern "inkling_loop_storage" fn i2_prefill_loop_storage() -> u64;
+extern "inkling_prelude_use" fn i2_prefill_use_prelude(save: bool) -> bool;
+extern "inkling_loop_release" fn i2_prefill_release_loop();
+extern "i2_prefill_save_rewind" fn i2_prefill_rewind_save(work: u64, pass: i64, current: bool);
+extern "i2_prefill_read_boundary" fn i2_prefill_boundary_read(work: u64);
+extern "i2_prefill_run_visit" fn i2_prefill_visit(work: u64, index: i64,
+    device: i64[:], retain: bool, slot: u64, loop_live: bool, prelude_live: bool);
+
+export fn i2_run_prefill_visits(work: u64, visits: const i64[:], ordinary: const i64[:],
+        boundary: const i64[:], device: i64[:], loop_enabled: bool) {
+    let count = visits.len / 4;
+    assert(visits.len % 4 == 0 && ordinary.len == count && boundary.len == count && device.len == 4);
+    var loop_live = false;
+    var prelude_live = false;
+    for visit in count {
+        let flags = (if device[1] != 0 { boundary[visit] } else { ordinary[visit] }) as u64;
+        let retain = (flags & I2_RETAIN_OUTPUT) != 0;
+        let external = (flags & I2_USE_LOOP_STORAGE) != 0;
+        let slot = if external { i2_prefill_loop_storage() } else { 0 };
+        assert(!external || slot != 0);
+        if device[0] != 0 && (flags & I2_ENTER_PRELUDE) != 0 {
+            assert(i2_prefill_use_prelude(true));
+            prelude_live = true;
+        }
+        if (flags & I2_RELEASE_LOOP) != 0 && loop_live {
+            i2_prefill_release_loop();
+            loop_live = false;
+        }
+        if (flags & I2_SAVE_BOUNDARY) != 0 {
+            if loop_enabled {
+                i2_prefill_rewind_save(work, visits[4 * visit + 2], device[0] != 0);
+                device[0] = 0;
+                if prelude_live {
+                    assert(i2_prefill_use_prelude(false));
+                    device[0] = 1;
+                }
+                loop_live = true;
+            } else {
+                i2_prefill_boundary_read(work);
+            }
+            device[1] = 0;
+        }
+        i2_prefill_visit(work, visit, device, retain, slot, loop_live, prelude_live);
+    }
+    device[3] = if prelude_live { 1 } else { 0 };
+}

@@ -42,7 +42,6 @@ extern uint64_t fg_cuda_take_flash_mmas(void);
 extern uint64_t fg_cuda_take_causal_attentions(void);
 extern uint64_t fg_cuda_take_gdns(void);
 extern uint64_t fg_cuda_take_gdn_mmas(void);
-extern int fg_cuda_state_graph_done(void);
 extern void fg_cuda_take_resident_state(uint64_t * kv, uint64_t * gdn);
 extern uint64_t fg_cuda_take_q4_writes(void);
 extern uint64_t fg_cuda_take_vectors(void);
@@ -51,7 +50,6 @@ extern uint64_t fg_cuda_take_moe_weighted(void);
 extern void fg_cuda_take_position(uint64_t * ropes, uint64_t * convs);
 extern void fg_cuda_take_routes(uint64_t * routes);
 extern void fg_cuda_take_blits(uint64_t * blits);
-extern int fg_cuda_activation_graph_begin(bool planned);
 extern int64_t fg_cuda_activation_read_address(uint64_t host, int64_t bytes);
 extern int64_t fg_cuda_state_read(uint64_t host, int64_t bytes);
 extern int fg_cuda_activation_graph_end(bool success, bool all, uint64_t host, int64_t bytes, uint64_t * hits,
@@ -681,8 +679,69 @@ uint8_t fg143_graph_observe(uint64_t address) {
     return 1;
 }
 
-static enum ggml_status compute_graph(struct ggml_cgraph * graph, bool all, const struct ggml_tensor * output,
-                                     sl_i64 deadlines) {
+uint8_t fg143_graph_restore_affinity(uint64_t address) {
+    if (!address) return true;
+    const cpu_set_t *previous = (const void *)(uintptr_t)address;
+    if (sched_setaffinity(0, sizeof *previous, previous) == 0) return true;
+    perror("Goose CPU affinity restore");
+    return false;
+}
+
+void fg143_graph_collect(uint64_t graph_address, int64_t failed, sl_u64 counters) {
+    const struct ggml_cgraph *graph = (const void *)(uintptr_t)graph_address;
+    if (failed > 0) {
+        const struct ggml_tensor *node = graph->nodes[failed - 1];
+        fprintf(stderr, "Goose graph: node %lld (%s) failed\n",
+                (long long)failed - 1, ggml_op_name(node->op));
+    }
+    uint64_t *c = counters.data;
+    c[0] = fg_cuda_take_matrices();
+    c[1] = fg_cuda_take_f32_matrices();
+    fg_cuda_take_matrix_launches(c + 2, c + 3);
+    fg_cuda_take_routed_graph(c + 4, c + 5, c + 6, c + 7);
+    c[8] = fg_cuda_take_mmq();
+    fg_cuda_take_mmq_stream(c + 9, c + 10);
+    c[11] = fg_cuda_take_dense_mma();
+    c[12] = fg_cuda_take_attentions();
+    c[13] = fg_cuda_take_flash_mmas();
+    c[14] = fg_cuda_take_causal_attentions();
+    c[15] = fg_cuda_take_gdns();
+    c[16] = fg_cuda_take_gdn_mmas();
+    fg_cuda_take_resident_state(c + 17, c + 18);
+    c[19] = fg_cuda_take_q4_writes();
+    c[20] = fg_cuda_take_vectors();
+    c[21] = fg_cuda_take_fwhts();
+    c[22] = fg_cuda_take_moe_weighted();
+    fg_cuda_take_position(c + 23, c + 24);
+    fg_cuda_take_routes(c + 25);
+    fg_cuda_take_blits(c + 30);
+}
+
+int32_t fg143_graph_publish(uint64_t output_address, uint8_t valid, uint8_t all, sl_u64 counters) {
+    const struct ggml_tensor *output = (const void *)(uintptr_t)output_address;
+    return fg_cuda_activation_graph_end(valid, all, output ? (uintptr_t)output->data : 0,
+        output ? (int64_t)ggml_nbytes(output) : 0, counters.data + 33,
+        counters.data + 34, counters.data + 35);
+}
+
+uint8_t fg143_graph_log_enabled(void) { return getenv("GOOSE_GRAPH_LOG") != NULL; }
+
+uint64_t fg143_graph_take_cpu_values(void) {
+    return atomic_exchange_explicit(&cpu_values, 0, memory_order_relaxed);
+}
+
+void fg143_graph_log_count(sl_u8 label, uint64_t count, sl_u8 unit) {
+    fprintf(stderr, "%.*s: %" PRIu64 "%.*s\n", (int)label.len, label.data, count, (int)unit.len, unit.data);
+}
+
+void fg143_graph_log_pair(sl_u8 label, uint64_t count, sl_u8 unit, uint64_t next, sl_u8 next_unit) {
+    fprintf(stderr, "%.*s: %" PRIu64 "%.*s, %" PRIu64 "%.*s\n",
+        (int)label.len, label.data, count, (int)unit.len, unit.data,
+        next, (int)next_unit.len, next_unit.data);
+}
+
+static enum ggml_status compute_graph(struct ggml_cgraph *graph, bool all,
+                                      const struct ggml_tensor *output, sl_i64 deadlines) {
     pthread_once(&cpu_init, init_cpu);
     const bool pin = cpu_affinity[cpu_prefill ? 0 : 1].count != 0;
     cpu_set_t previous;
@@ -690,94 +749,8 @@ static enum ggml_status compute_graph(struct ggml_cgraph * graph, bool all, cons
         perror("Goose CPU affinity snapshot");
         return GGML_STATUS_FAILED;
     }
-    const bool started = fg143_gather_affinity(cpu_prefill, 0) == 0 &&
-        fg_cuda_activation_graph_begin(deadlines.len != 0) == 0;
-    const int64_t failed = started ?
-        fg143_graph_run((uint64_t) (uintptr_t) graph, !all, deadlines, checkpoint != NULL) : -1;
-    bool restored = true;
-    if (pin && sched_setaffinity(0, sizeof previous, &previous) != 0) {
-        perror("Goose CPU affinity restore");
-        restored = false;
-    }
-    if (!started) return GGML_STATUS_FAILED;
-    if (failed > 0) {
-        const struct ggml_tensor * node = graph->nodes[failed - 1];
-        fprintf(stderr, "Goose graph: node %lld (%s) failed\n", (long long) failed - 1, ggml_op_name(node->op));
-    }
-    const uint64_t matrices = fg_cuda_take_matrices();
-    const uint64_t f32_matrices = fg_cuda_take_f32_matrices();
-    uint64_t matrix_launches, cached_projections;
-    fg_cuda_take_matrix_launches(&matrix_launches, &cached_projections);
-    uint64_t routed_groups, routed_replays, full_ffn_groups, full_ffn_replays;
-    fg_cuda_take_routed_graph(&routed_groups, &routed_replays, &full_ffn_groups, &full_ffn_replays);
-    const uint64_t mmq = fg_cuda_take_mmq();
-    uint64_t mmq_stream, mmq_fixups;
-    fg_cuda_take_mmq_stream(&mmq_stream, &mmq_fixups);
-    const uint64_t dense_mma = fg_cuda_take_dense_mma();
-    const uint64_t attentions = fg_cuda_take_attentions();
-    const uint64_t flash_mmas = fg_cuda_take_flash_mmas();
-    const uint64_t causal = fg_cuda_take_causal_attentions();
-    const uint64_t gdns = fg_cuda_take_gdns();
-    const uint64_t gdn_mmas = fg_cuda_take_gdn_mmas();
-    uint64_t resident_kv, resident_gdn;
-    fg_cuda_take_resident_state(&resident_kv, &resident_gdn);
-    const uint64_t writes = fg_cuda_take_q4_writes();
-    const uint64_t vectors = fg_cuda_take_vectors();
-    const uint64_t fwhts = fg_cuda_take_fwhts();
-    const uint64_t weighted = fg_cuda_take_moe_weighted();
-    uint64_t ropes, convs;
-    fg_cuda_take_position(&ropes, &convs);
-    uint64_t routes[5];
-    fg_cuda_take_routes(routes);
-    uint64_t blits[3];
-    fg_cuda_take_blits(blits);
-    const bool valid = failed == 0 && fg_cuda_state_graph_done() == 0 && restored;
-    uint64_t hits = 0, skipped_download_bytes = 0, expired_bytes = 0;
-    const int published = fg_cuda_activation_graph_end(valid, all,
-        output ? (uint64_t) (uintptr_t) output->data : 0,
-        output ? (int64_t) ggml_nbytes(output) : 0, &hits, &skipped_download_bytes, &expired_bytes);
-    if (getenv("GOOSE_GRAPH_LOG")) {
-        const uint64_t values = (uint64_t) atomic_exchange_explicit(&cpu_values, 0, memory_order_relaxed);
-        fprintf(stderr, "Goose CPU graph: %llu values\n", (unsigned long long) values);
-        if (matrices) fprintf(stderr, "Goose CUDA graph: %llu matrices\n", (unsigned long long) matrices);
-        if (f32_matrices) fprintf(stderr, "Goose CUDA F32 matrix: %llu nodes\n", (unsigned long long) f32_matrices);
-        if (matrix_launches) fprintf(stderr, "Goose CUDA matrix launches: %llu\n", (unsigned long long) matrix_launches);
-        if (cached_projections) fprintf(stderr, "Goose CUDA cached expert projections: %llu\n", (unsigned long long) cached_projections);
-        if (routed_groups) fprintf(stderr, "Goose CUDA routed FFN: %" PRIu64 " groups, %" PRIu64 " graph replays\n",
-            routed_groups, routed_replays);
-        if (full_ffn_groups) fprintf(stderr, "Goose CUDA full FFN: %" PRIu64 " groups, %" PRIu64 " graph replays\n",
-            full_ffn_groups, full_ffn_replays);
-        if (mmq) fprintf(stderr, "Goose CUDA MMQ projections: %llu nodes\n", (unsigned long long) mmq);
-        if (mmq_stream) fprintf(stderr, "Goose CUDA MMQ Stream-K: %" PRIu64 " windows, %" PRIu64 " fixups\n",
-            mmq_stream, mmq_fixups);
-        if (dense_mma) fprintf(stderr, "Goose CUDA dense MMA: %llu nodes\n", (unsigned long long) dense_mma);
-        if (attentions) fprintf(stderr, "Goose CUDA attention: %llu nodes\n", (unsigned long long) attentions);
-        if (flash_mmas) fprintf(stderr, "Goose CUDA Flash MMA: %llu nodes\n", (unsigned long long) flash_mmas);
-        if (causal) fprintf(stderr, "Goose CUDA causal attention: %llu nodes\n", (unsigned long long) causal);
-        if (gdns) fprintf(stderr, "Goose CUDA GDN: %llu nodes\n", (unsigned long long) gdns);
-        if (gdn_mmas) fprintf(stderr, "Goose CUDA GDN MMA: %llu nodes\n", (unsigned long long) gdn_mmas);
-        if (resident_kv) fprintf(stderr, "Goose CUDA resident KV: %llu nodes\n", (unsigned long long) resident_kv);
-        if (resident_gdn) fprintf(stderr, "Goose CUDA resident GDN: %llu nodes\n", (unsigned long long) resident_gdn);
-        if (writes) fprintf(stderr, "Goose CUDA resident Q4 writes: %llu nodes\n", (unsigned long long) writes);
-        if (vectors) fprintf(stderr, "Goose CUDA vector: %llu nodes\n", (unsigned long long) vectors);
-        if (fwhts) fprintf(stderr, "Goose CUDA KV FWHT: %llu nodes\n", (unsigned long long) fwhts);
-        if (weighted) fprintf(stderr, "Goose CUDA MoE weighted reduction: %llu tiles\n", (unsigned long long) weighted);
-        if (skipped_download_bytes) fprintf(stderr, "Goose CUDA overwritten downloads skipped: %" PRIu64 " bytes\n",
-            skipped_download_bytes);
-        if (expired_bytes) fprintf(stderr, "Goose CUDA dirty activations retired: %" PRIu64 " bytes\n", expired_bytes);
-        if (ropes) fprintf(stderr, "Goose CUDA RoPE: %llu nodes\n", (unsigned long long) ropes);
-        if (convs) fprintf(stderr, "Goose CUDA SSM convolution: %llu nodes\n", (unsigned long long) convs);
-        for (int i = 0; i < 5; ++i) {
-            const char * names[] = {"softmax", "sort", "gather", "row sum", "normalized gather"};
-            if (routes[i]) fprintf(stderr, "Goose CUDA %s: %llu nodes\n", names[i], (unsigned long long) routes[i]);
-        }
-        const char * blit_names[] = {"concat", "contiguous copy", "resident SSM writes"};
-        for (int i = 0; i < 3; ++i) {
-            if (blits[i]) fprintf(stderr, "Goose CUDA %s: %llu nodes\n", blit_names[i], (unsigned long long) blits[i]);
-        }
-        if (hits) fprintf(stderr, "Goose CUDA activation reuse: %llu inputs\n", (unsigned long long) hits);
-    }
-    return valid && published == 0 ? GGML_STATUS_SUCCESS : GGML_STATUS_FAILED;
+    return fg143_graph_execute((uintptr_t)graph, (uintptr_t)output, all, deadlines,
+                               checkpoint != NULL, cpu_prefill, pin ? (uintptr_t)&previous : 0);
 }
 
 enum ggml_status fg_standalone_graph_compute(struct ggml_cgraph * graph) {

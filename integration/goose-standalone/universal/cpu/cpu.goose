@@ -4517,6 +4517,78 @@ fn try_moe_epilogue(nodes: const u8[:], step: i64, deadlines: const i64[:], mul:
     return moe_epilogue(routed, shared, gate, residual, output, rows, step, deadlines[step + 2]);
 }
 
+extern "fg_cuda_activation_graph_begin" fn graph_activation_begin(planned: bool) -> i32;
+extern "fg143_graph_restore_affinity" fn graph_restore_affinity(previous: u64) -> bool;
+extern "fg143_graph_collect" fn graph_collect(graph: u64, failed: i64, counters: u64[:]);
+extern "fg_cuda_state_graph_done" fn graph_state_done() -> i32;
+extern "fg143_graph_publish" fn graph_publish(output: u64, valid: bool, all: bool, counters: u64[:]) -> i32;
+extern "fg143_graph_log_enabled" fn graph_log_enabled() -> bool;
+extern "fg143_graph_take_cpu_values" fn graph_take_cpu_values() -> u64;
+extern "fg143_graph_log_count" fn graph_log_count(label: const u8[:], count: u64, unit: const u8[:]);
+extern "fg143_graph_log_pair" fn graph_log_pair(label: const u8[:], count: u64,
+    unit: const u8[:], next: u64, next_unit: const u8[:]);
+
+fn graph_log_nonzero(label: const u8[:], count: u64, unit: const u8[:]) {
+    if count != 0 { graph_log_count(label, count, unit); }
+}
+
+fn graph_log_counters(counters: const u64[:]) {
+    graph_log_count("Goose CPU graph", graph_take_cpu_values(), " values");
+    graph_log_nonzero("Goose CUDA graph", counters[0], " matrices");
+    graph_log_nonzero("Goose CUDA F32 matrix", counters[1], " nodes");
+    graph_log_nonzero("Goose CUDA matrix launches", counters[2], "");
+    graph_log_nonzero("Goose CUDA cached expert projections", counters[3], "");
+    if counters[4] != 0 {
+        graph_log_pair("Goose CUDA routed FFN", counters[4], " groups", counters[5], " graph replays");
+    }
+    if counters[6] != 0 {
+        graph_log_pair("Goose CUDA full FFN", counters[6], " groups", counters[7], " graph replays");
+    }
+    graph_log_nonzero("Goose CUDA MMQ projections", counters[8], " nodes");
+    if counters[9] != 0 {
+        graph_log_pair("Goose CUDA MMQ Stream-K", counters[9], " windows", counters[10], " fixups");
+    }
+    graph_log_nonzero("Goose CUDA dense MMA", counters[11], " nodes");
+    graph_log_nonzero("Goose CUDA attention", counters[12], " nodes");
+    graph_log_nonzero("Goose CUDA Flash MMA", counters[13], " nodes");
+    graph_log_nonzero("Goose CUDA causal attention", counters[14], " nodes");
+    graph_log_nonzero("Goose CUDA GDN", counters[15], " nodes");
+    graph_log_nonzero("Goose CUDA GDN MMA", counters[16], " nodes");
+    graph_log_nonzero("Goose CUDA resident KV", counters[17], " nodes");
+    graph_log_nonzero("Goose CUDA resident GDN", counters[18], " nodes");
+    graph_log_nonzero("Goose CUDA resident Q4 writes", counters[19], " nodes");
+    graph_log_nonzero("Goose CUDA vector", counters[20], " nodes");
+    graph_log_nonzero("Goose CUDA KV FWHT", counters[21], " nodes");
+    graph_log_nonzero("Goose CUDA MoE weighted reduction", counters[22], " tiles");
+    graph_log_nonzero("Goose CUDA overwritten downloads skipped", counters[34], " bytes");
+    graph_log_nonzero("Goose CUDA dirty activations retired", counters[35], " bytes");
+    graph_log_nonzero("Goose CUDA RoPE", counters[23], " nodes");
+    graph_log_nonzero("Goose CUDA SSM convolution", counters[24], " nodes");
+    graph_log_nonzero("Goose CUDA softmax", counters[25], " nodes");
+    graph_log_nonzero("Goose CUDA sort", counters[26], " nodes");
+    graph_log_nonzero("Goose CUDA gather", counters[27], " nodes");
+    graph_log_nonzero("Goose CUDA row sum", counters[28], " nodes");
+    graph_log_nonzero("Goose CUDA normalized gather", counters[29], " nodes");
+    graph_log_nonzero("Goose CUDA concat", counters[30], " nodes");
+    graph_log_nonzero("Goose CUDA contiguous copy", counters[31], " nodes");
+    graph_log_nonzero("Goose CUDA resident SSM writes", counters[32], " nodes");
+    graph_log_nonzero("Goose CUDA activation reuse", counters[33], " inputs");
+}
+
+export fn fg143_graph_execute(graph: u64, output: u64, all: bool, deadlines: const i64[:],
+        observe: bool, prefill: bool, previous_affinity: u64) -> i32 {
+    let started = gather_affinity(prefill, 0) == 0 && graph_activation_begin(deadlines.len != 0) == 0;
+    let failed = if started { fg143_graph_run(graph, !all, deadlines, observe) } else { -1 };
+    let restored = if previous_affinity == 0 { true } else { graph_restore_affinity(previous_affinity) };
+    if !started { return -1; }
+    var counters: u64[36] = [0; 36];
+    graph_collect(graph, failed, counters[..]);
+    let valid = failed == 0 && graph_state_done() == 0 && restored;
+    let published = graph_publish(output, valid, all, counters[..]);
+    if graph_log_enabled() { graph_log_counters(counters[..]); }
+    return if valid && published == 0 { 0 } else { -1 };
+}
+
 export fn fg143_graph_run(graph: u64, selective: bool, deadlines: const i64[:], observe: bool) -> i64 {
     if graph == 0 { return -1; }
     let nodes = graph_node_bytes(graph);
