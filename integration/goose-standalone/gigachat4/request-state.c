@@ -66,32 +66,20 @@ void giga_request_reset(struct giga_request *request) {
 
 int giga_step_prepare(const struct giga_request *request, struct ggml_context *ctx,
                       int64_t count, int64_t output_count, bool draft, struct giga_step *step) {
-    if (!request || !ctx || !step || count < 1 || count > 4096 ||
-        output_count < 0 || output_count > count) return -1;
+    if (!request || !ctx || !step) return -1;
     const int64_t base = draft ? request->draft_committed : request->committed;
-    if (base < 0 || count > request->capacity - base) return -1;
-
-    const int64_t live_cells = base + count;
-    const int64_t padded_cells = (live_cells + 31) & ~INT64_C(31);
+    uint64_t tensors[5];
+    const int64_t cells = giga_prepare_step_inputs((uintptr_t)ctx, request->capacity,
+        base, count, output_count, (sl_u64){tensors, 5});
+    if (cells < 0) return -1;
     *step = (struct giga_step){
-        .tokens = ggml_new_tensor_1d(ctx, GGML_TYPE_I32, count),
-        .positions = ggml_new_tensor_1d(ctx, GGML_TYPE_I32, count),
-        .rows = ggml_new_tensor_1d(ctx, GGML_TYPE_I64, count),
-        .mask = ggml_new_tensor_4d(ctx, GGML_TYPE_F16,
-                                   padded_cells <= request->capacity ? padded_cells : live_cells,
-                                   count, 1, 1),
-        .output_ids = output_count > 0 && output_count < count ? ggml_new_tensor_1d(ctx, GGML_TYPE_I32, output_count) : NULL,
-        .draft = draft,
-        .base = base,
-        .count = count,
-        .output_count = output_count,
-        .cells = padded_cells <= request->capacity ? padded_cells : live_cells,
+        .tokens = (void *)(uintptr_t)tensors[0],
+        .positions = (void *)(uintptr_t)tensors[1],
+        .rows = (void *)(uintptr_t)tensors[2],
+        .mask = (void *)(uintptr_t)tensors[3],
+        .output_ids = (void *)(uintptr_t)tensors[4],
+        .draft = draft, .base = base, .count = count, .output_count = output_count, .cells = cells,
     };
-    ggml_set_input(step->tokens);
-    ggml_set_input(step->positions);
-    ggml_set_input(step->rows);
-    ggml_set_input(step->mask);
-    if (step->output_ids) ggml_set_input(step->output_ids);
     return 0;
 }
 
