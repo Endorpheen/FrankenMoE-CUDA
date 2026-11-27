@@ -3962,7 +3962,6 @@ extern "fg143_graph_node" fn graph_node(graph: u64, index: i64) -> u64;
 extern "fg158_prop" fn graph_prop(tensor: u64, field: i64) -> i64;
 extern "fg143_graph_inputs" fn graph_inputs(tensor: u64, sources: u64[:]);
 extern "ggml_is_empty" fn graph_empty(tensor: u64) -> bool;
-extern "ggml_is_contiguous" fn graph_dense(tensor: u64) -> bool;
 extern "fg_cuda_activation_prepare" fn graph_output_prepare(address: u64, bytes: i64, fresh: bool,
     overwrite: bool, step: i64, deadline: i64) -> i32;
 extern "fg143_graph_layout" fn graph_layout(tensor: u64, packet: i64[:]) -> i64;
@@ -4421,9 +4420,12 @@ fn execute_graph_node(tensor: u64, work: GraphWorkspace &, selective: bool, step
     var sources: u64[10] = [0; 10];
     graph_inputs(tensor, sources[..]);
     let fresh = storage_get(tensor, STORAGE_VIEW, 0) == 0;
-    var overwrite = selective && fresh && graph_dense(tensor) &&
+    let candidate = selective && fresh &&
         (op == 29 || op == 30 || op == 25 || op == 7 ||
          op == 2 || op == 8 || op == 35 || op == 32 || op == 91 || op == 48);
+    var packet: i64[71] = [0; 71];
+    if candidate { graph_describe(tensor, packet[..]); }
+    var overwrite = candidate && goose_tensor_dense(packet[38], packet[30 .. 38]);
     for i in sources.len {
         let t = sources[i];
         if t == 0 { continue; }
@@ -4435,9 +4437,8 @@ fn execute_graph_node(tensor: u64, work: GraphWorkspace &, selective: bool, step
     if op == 86 { return graph_gdn(tensor); }
     if op == 77 { return graph_scan(tensor); }
 
-    var packet: i64[71] = [0; 71];
     var sizes: i64[4] = [0; 4];
-    graph_describe(tensor, packet[..]);
+    if !candidate { graph_describe(tensor, packet[..]); }
     if !graph_regular(tensor, packet[..], 1, sizes[..], 0) { return false; }
     let required = sizes[3];
     if required > work.capacity {
