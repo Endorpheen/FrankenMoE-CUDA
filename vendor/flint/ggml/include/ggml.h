@@ -2011,21 +2011,6 @@
 
     // rotary position embedding backward, i.e compute dx from dy
     // a - dy
-    GGML_API struct ggml_tensor * ggml_rope_ext_back(
-            struct ggml_context * ctx,
-            struct ggml_tensor  * a, // gradients of ggml_rope result
-            struct ggml_tensor  * b, // positions
-            struct ggml_tensor  * c, // freq factors
-            int                   n_dims,
-            int                   mode,
-            int                   n_ctx_orig,
-            float                 freq_base,
-            float                 freq_scale,
-            float                 ext_factor,
-            float                 attn_factor,
-            float                 beta_fast,
-            float                 beta_slow);
-
     GGML_API struct ggml_tensor * ggml_rope_multi_back(
             struct ggml_context * ctx,
             struct ggml_tensor  * a,
@@ -2175,15 +2160,6 @@
     GGML_API void ggml_flash_attn_ext_add_sinks(
             struct ggml_tensor * a,
             struct ggml_tensor * sinks);
-
-    // TODO: needs to be adapted to ggml_flash_attn_ext
-    GGML_API struct ggml_tensor * ggml_flash_attn_back(
-           struct ggml_context * ctx,
-           struct ggml_tensor  * q,
-           struct ggml_tensor  * k,
-           struct ggml_tensor  * v,
-           struct ggml_tensor  * d,
-           bool                  masked);
 
     GGML_API struct ggml_tensor * ggml_ssm_conv(
             struct ggml_context * ctx,
