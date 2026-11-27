@@ -1,4 +1,9 @@
-static_assert(offsetof(struct ggml_tensor, ne) == 16 &&
+static_assert(offsetof(struct ggml_tensor, buffer) == 8 &&
+              offsetof(struct ggml_tensor, op) == 80 &&
+              offsetof(struct ggml_tensor, flags) == 148 &&
+              GGML_OP_NONE == 0 && GGML_TENSOR_FLAG_INPUT == 1 &&
+              GGML_TENSOR_FLAG_OUTPUT == 2 &&
+              offsetof(struct ggml_tensor, ne) == 16 &&
               offsetof(struct ggml_tensor, nb) == 48 &&
               sizeof(((struct ggml_tensor *)0)->nb) == 32 &&
               offsetof(struct ggml_tensor, view_src) == 232 &&

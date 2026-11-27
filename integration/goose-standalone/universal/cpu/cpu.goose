@@ -6351,7 +6351,6 @@ const TENSOR_VIEW_OFFSET: u64 = 240;
 const TENSOR_DATA: u64 = 248;
 
 extern fn fg143_arena_failure(status: i32, needed: u64, capacity: u64);
-extern "ggml_get_no_alloc" fn tensor_context_no_alloc(context: u64) -> bool;
 extern "memset" fn tensor_set_raw(dst: c_ptr<void>, value: i32, bytes: u64) -> c_ptr<void>;
 
 fn tensor_read_word(address: u64) -> u64 {
@@ -6384,7 +6383,7 @@ fn tensor_create(context: u64, kind: i64, shape: const i64[:], source: u64, offs
             return 0;
         }
     }
-    let allocate: u64 = if view == 0 && !tensor_context_no_alloc(context) { bytes } else { 0 };
+    let allocate: u64 = if view == 0 && !ggml_get_no_alloc(context) { bytes } else { 0 };
     if allocate > max_size - TENSOR_HEADER_BYTES { tensor_geometry_abort(); return 0; }
     let object = ggml_new_object(context, 0, TENSOR_HEADER_BYTES + allocate);
     if object == 0 { tensor_geometry_abort(); return 0; }
@@ -6441,4 +6440,158 @@ export fn ggml_new_object(context: u64, kind: i32, bytes: u64) -> u64 {
     else { tensor_write_word(context + 24, object); }
     tensor_write_word(context + 32, object);
     return object;
+}
+
+const GRAPH_HEADER_BYTES: u64 = 96;
+const GRAPH_OBJECT_BYTES: u64 = 32;
+const GRAPH_NODES: u64 = 16;
+const GRAPH_GRADS: u64 = 24;
+const GRAPH_GRAD_ACCS: u64 = 32;
+const GRAPH_LEAFS: u64 = 40;
+const GRAPH_USE_COUNTS: u64 = 48;
+const GRAPH_HASH_SIZE: u64 = 56;
+const GRAPH_HASH_USED: u64 = 64;
+const GRAPH_HASH_KEYS: u64 = 72;
+
+fn graph_bitset_bytes(size: u64) -> u64 { return ((size + 31) / 32) * 4; }
+
+fn tensor_graph_layout(size: u64, grads: bool, offsets: u64[:]) -> u64 {
+    let hash = fg143_graph_hash_size(size * 2);
+    if !fg143_graph_arena_layout(size, hash, GRAPH_HEADER_BYTES, 8, graph_bitset_bytes(hash), grads, offsets) {
+        tensor_geometry_abort();
+    }
+    return hash;
+}
+
+export fn fg143_graph_overhead_custom(size: u64, grads: bool) -> u64 {
+    var offsets: u64[8];
+    tensor_graph_layout(size, grads, offsets);
+    return GRAPH_OBJECT_BYTES + ((offsets[7] + 15) & ~15);
+}
+
+export fn ggml_new_graph_custom(context: u64, size: u64, grads: bool) -> u64 {
+    var offsets: u64[8];
+    let hash = tensor_graph_layout(size, grads, offsets);
+    let object = ggml_new_object(context, 1, offsets[7]);
+    if object == 0 { tensor_geometry_abort(); return 0; }
+    let graph = object + GRAPH_OBJECT_BYTES;
+    tensor_set_raw(unsafe_c_ptr<c_ptr<void>>(graph), 0, GRAPH_HEADER_BYTES);
+    tensor_write_i32(graph, size as! i32);
+    tensor_write_word(graph + GRAPH_NODES, graph + offsets[0]);
+    tensor_write_word(graph + GRAPH_LEAFS, graph + offsets[1]);
+    tensor_write_word(graph + GRAPH_USE_COUNTS, graph + offsets[2]);
+    tensor_write_word(graph + GRAPH_HASH_SIZE, hash);
+    tensor_write_word(graph + GRAPH_HASH_USED, graph + offsets[6]);
+    tensor_write_word(graph + GRAPH_HASH_KEYS, graph + offsets[3]);
+    tensor_set_raw(unsafe_c_ptr<c_ptr<void>>(graph + offsets[6]), 0, graph_bitset_bytes(hash));
+    if grads {
+        let grad = graph + offsets[4];
+        let accumulator = graph + offsets[5];
+        tensor_write_word(graph + GRAPH_GRADS, grad);
+        tensor_write_word(graph + GRAPH_GRAD_ACCS, accumulator);
+        tensor_set_raw(unsafe_c_ptr<c_ptr<void>>(grad), 0, hash * 8);
+        tensor_set_raw(unsafe_c_ptr<c_ptr<void>>(accumulator), 0, hash * 8);
+    }
+    return graph;
+}
+
+export fn ggml_graph_clear(graph: u64) {
+    tensor_write_i32(graph + 4, 0);
+    tensor_write_i32(graph + 8, 0);
+    let hash_size = tensor_read_word(graph + GRAPH_HASH_SIZE);
+    let used = tensor_read_word(graph + GRAPH_HASH_USED);
+    tensor_set_raw(unsafe_c_ptr<c_ptr<void>>(used), 0, graph_bitset_bytes(hash_size));
+}
+
+const TENSOR_BUFFER: u64 = 8;
+const TENSOR_OPERATION: u64 = 80;
+const TENSOR_FLAGS: u64 = 148;
+const TENSOR_INPUT_FLAG: i32 = 1;
+const TENSOR_OUTPUT_FLAG: i32 = 2;
+
+export fn ggml_set_zero(tensor: u64) -> u64 {
+    if fg143_geometry_empty(tensor_shape(tensor)) { return tensor; }
+    let data = tensor_read_word(tensor + TENSOR_DATA);
+    if data == 0 || tensor_read_word(tensor + TENSOR_BUFFER) != 0 { tensor_geometry_abort(); return 0; }
+    tensor_set_raw(unsafe_c_ptr<c_ptr<void>>(data), 0, ggml_nbytes(tensor));
+    return tensor;
+}
+
+export fn ggml_set_input(tensor: u64) {
+    if tensor_read_i32(tensor + TENSOR_OPERATION, 0) != 0 { tensor_geometry_abort(); return; }
+    let flags = tensor + TENSOR_FLAGS;
+    tensor_write_i32(flags, (tensor_read_i32(flags, 0) as! i32) | TENSOR_INPUT_FLAG);
+}
+
+export fn ggml_set_output(tensor: u64) {
+    var current = tensor;
+    while current != 0 {
+        let flags = current + TENSOR_FLAGS;
+        tensor_write_i32(flags, (tensor_read_i32(flags, 0) as! i32) | TENSOR_OUTPUT_FLAG);
+        current = tensor_read_word(current + TENSOR_VIEW_SOURCE);
+    }
+}
+
+fn arena_find_tensor(pool: u64, start: u64) -> u64 {
+    var object = start;
+    while object != 0 {
+        if tensor_read_i32(object + 24, 0) == 0 { return pool + tensor_read_word(object); }
+        object = tensor_read_word(object + 16);
+    }
+    return 0;
+}
+
+export fn ggml_get_first_tensor(context: u64) -> u64 {
+    return arena_find_tensor(tensor_read_word(context + 8), tensor_read_word(context + 24));
+}
+
+export fn ggml_get_next_tensor(context: u64, tensor: u64) -> u64 {
+    let object = tensor - 32;
+    return arena_find_tensor(tensor_read_word(context + 8), tensor_read_word(object + 16));
+}
+
+extern "malloc" fn tensor_allocate_context(bytes: u64) -> c_ptr<void>;
+extern "free" fn tensor_free_context(pointer: c_ptr<void>);
+extern "ggml_aligned_malloc" fn tensor_allocate_pool(bytes: u64) -> u64;
+extern "ggml_aligned_free" fn tensor_release_pool(pointer: u64, bytes: u64);
+
+const ARENA_CONTEXT_BYTES: u64 = 40;
+const ARENA_CONTEXT_FLAGS: u64 = 16;
+const ARENA_OWNED: i32 = 1;
+const ARENA_NO_ALLOC: i32 = 256;
+
+export fn fg143_arena_init(requested: u64, buffer: u64, no_alloc: bool) -> u64 {
+    let capacity = if requested == 0 { 16 } else { requested };
+    let owned = buffer == 0;
+    if owned && capacity > 0xfffffffffffffff0 { tensor_geometry_abort(); return 0; }
+    let bytes = if owned { (capacity + 15) & ~15 } else { capacity };
+    let pool = if owned { tensor_allocate_pool(bytes) } else { buffer };
+    if pool == 0 || pool % 16 != 0 { tensor_geometry_abort(); return 0; }
+    let allocated = tensor_allocate_context(ARENA_CONTEXT_BYTES);
+    if allocated == null {
+        if owned { tensor_release_pool(pool, bytes); }
+        tensor_geometry_abort();
+        return 0;
+    }
+    var context: u64 = 0;
+    tensor_copy_raw(unsafe_c_address<c_ptr<void>>(context), unsafe_c_address<c_ptr<const void>>(allocated), 8);
+    tensor_set_raw(allocated, 0, ARENA_CONTEXT_BYTES);
+    tensor_write_word(context, bytes);
+    tensor_write_word(context + 8, pool);
+    let allocated_flag: i32 = if owned { ARENA_OWNED } else { 0 };
+    let no_alloc_flag: i32 = if no_alloc { ARENA_NO_ALLOC } else { 0 };
+    tensor_write_i32(context + ARENA_CONTEXT_FLAGS, allocated_flag | no_alloc_flag);
+    return context;
+}
+
+export fn ggml_get_no_alloc(context: u64) -> bool {
+    return (tensor_read_i32(context + ARENA_CONTEXT_FLAGS, 0) & (ARENA_NO_ALLOC as i64)) != 0;
+}
+
+export fn ggml_free(context: u64) {
+    if context == 0 { return; }
+    if (tensor_read_i32(context + ARENA_CONTEXT_FLAGS, 0) & (ARENA_OWNED as i64)) != 0 {
+        tensor_release_pool(tensor_read_word(context + 8), tensor_read_word(context));
+    }
+    tensor_free_context(unsafe_c_ptr<c_ptr<void>>(context));
 }
