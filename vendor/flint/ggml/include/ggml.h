@@ -882,7 +882,6 @@
     GGML_API void ggml_set_input(struct ggml_tensor * tensor);
     GGML_API void ggml_set_output(struct ggml_tensor * tensor);
     GGML_API void ggml_set_param(struct ggml_tensor * tensor);
-    GGML_API void ggml_set_loss(struct ggml_tensor * tensor);
 
     //
     // operations on tensors with backpropagation
@@ -2801,37 +2800,6 @@
             ggml_custom_op_t      fun,
             int                   n_tasks,
             void                * userdata);
-
-    // loss function
-
-    GGML_API struct ggml_tensor * ggml_cross_entropy_loss(
-            struct ggml_context * ctx,
-            struct ggml_tensor  * a,  // logits
-            struct ggml_tensor  * b); // labels
-
-    GGML_API struct ggml_tensor * ggml_cross_entropy_loss_back(
-            struct ggml_context * ctx,
-            struct ggml_tensor  * a,  // logits
-            struct ggml_tensor  * b,  // labels
-            struct ggml_tensor  * c); // gradients of cross_entropy_loss result
-
-    // AdamW optimizer step
-    // Paper: https://arxiv.org/pdf/1711.05101v3.pdf
-    // PyTorch: https://pytorch.org/docs/stable/generated/torch.optim.AdamW.html
-    GGML_API struct ggml_tensor * ggml_opt_step_adamw(
-            struct ggml_context * ctx,
-            struct ggml_tensor  * a,
-            struct ggml_tensor  * grad,
-            struct ggml_tensor  * m,
-            struct ggml_tensor  * v,
-            struct ggml_tensor  * adamw_params); // parameters such as the learning rate
-
-    // stochastic gradient descent step (with weight decay)
-    GGML_API struct ggml_tensor * ggml_opt_step_sgd(
-        struct ggml_context * ctx,
-        struct ggml_tensor *  a,
-        struct ggml_tensor *  grad,
-        struct ggml_tensor *  sgd_params); // alpha, weight decay
 
     // build forward multiple tensors and select one of them for computing
     // this is useful for creating graphs that have constant topology but compute different things based on the input

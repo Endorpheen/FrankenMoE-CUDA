@@ -6271,93 +6271,6 @@ struct ggml_tensor * ggml_custom_inplace(
 
     return result;
 }
-// ggml_cross_entropy_loss
-
-struct ggml_tensor * ggml_cross_entropy_loss(
-        struct ggml_context * ctx,
-        struct ggml_tensor  * a,
-        struct ggml_tensor  * b) {
-    GGML_ASSERT(ggml_are_same_shape(a, b));
-
-    struct ggml_tensor * result = ggml_new_tensor_1d(ctx, a->type, 1);
-
-    result->op     = GGML_OP_CROSS_ENTROPY_LOSS;
-    result->src[0] = a;
-    result->src[1] = b;
-
-    return result;
-}
-
-// ggml_cross_entropy_loss_back
-
-struct ggml_tensor * ggml_cross_entropy_loss_back(
-        struct ggml_context * ctx,
-        struct ggml_tensor  * a,
-        struct ggml_tensor  * b,
-        struct ggml_tensor  * c) {
-    GGML_ASSERT(ggml_is_scalar(a));
-    GGML_ASSERT(ggml_are_same_shape(b, c));
-
-    struct ggml_tensor * result = ggml_dup_tensor(ctx, b);
-
-    result->op     = GGML_OP_CROSS_ENTROPY_LOSS_BACK;
-    result->src[0] = a;
-    result->src[1] = b;
-    result->src[2] = c;
-
-    return result;
-}
-
-// opt_step_adamw
-
-struct ggml_tensor * ggml_opt_step_adamw(
-        struct ggml_context * ctx,
-        struct ggml_tensor  * a,
-        struct ggml_tensor  * grad,
-        struct ggml_tensor  * m,
-        struct ggml_tensor  * v,
-        struct ggml_tensor  * adamw_params) {
-    GGML_ASSERT(a->flags & GGML_TENSOR_FLAG_PARAM);
-    GGML_ASSERT(ggml_are_same_shape(a, grad));
-    GGML_ASSERT(ggml_are_same_shape(a, m));
-    GGML_ASSERT(ggml_are_same_shape(a, v));
-    GGML_ASSERT(adamw_params->type == GGML_TYPE_F32);
-    GGML_ASSERT(ggml_nelements(adamw_params) == 7);
-
-    struct ggml_tensor * result = ggml_view_tensor(ctx, a);
-
-    result->op     = GGML_OP_OPT_STEP_ADAMW;
-    result->src[0] = a;
-    result->src[1] = grad;
-    result->src[2] = m;
-    result->src[3] = v;
-    result->src[4] = adamw_params;
-
-    return result;
-}
-
-// opt_step_sgd
-
-struct ggml_tensor * ggml_opt_step_sgd(
-        struct ggml_context * ctx,
-        struct ggml_tensor  * a,
-        struct ggml_tensor  * grad,
-        struct ggml_tensor  * params) {
-    GGML_ASSERT(a->flags & GGML_TENSOR_FLAG_PARAM);
-    GGML_ASSERT(ggml_are_same_shape(a, grad));
-    GGML_ASSERT(params->type == GGML_TYPE_F32);
-    GGML_ASSERT(ggml_nelements(params) == 2);
-
-    struct ggml_tensor * result = ggml_view_tensor(ctx, a);
-
-    result->op     = GGML_OP_OPT_STEP_SGD;
-    result->src[0] = a;
-    result->src[1] = grad;
-    result->src[2] = params;
-
-    return result;
-}
-
 // solve_tri
 
 struct ggml_tensor * ggml_solve_tri(
@@ -7072,12 +6985,6 @@ void ggml_set_output(struct ggml_tensor * tensor) {
 void ggml_set_param(struct ggml_tensor * tensor) {
     GGML_ASSERT(tensor->op == GGML_OP_NONE);
     tensor->flags |= GGML_TENSOR_FLAG_PARAM;
-}
-
-void ggml_set_loss(struct ggml_tensor * tensor) {
-    GGML_ASSERT(ggml_is_scalar(tensor));
-    GGML_ASSERT(tensor->type == GGML_TYPE_F32);
-    tensor->flags |= GGML_TENSOR_FLAG_LOSS;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
