@@ -640,6 +640,12 @@ FILE * ggml_fopen(const char * fname, const char * mode) {
 
 }
 
+#ifdef GOOSEINFER_TYPE_METADATA_ONLY
+#define GGML_TYPE_CODEC(...)
+#else
+#define GGML_TYPE_CODEC(...) __VA_ARGS__
+#endif
+
 static const struct ggml_type_traits type_traits[GGML_TYPE_COUNT] = {
     [GGML_TYPE_I8] = {
         .type_name                = "i8",
@@ -682,40 +688,40 @@ static const struct ggml_type_traits type_traits[GGML_TYPE_COUNT] = {
         .blck_size                = 1,
         .type_size                = sizeof(ggml_fp16_t),
         .is_quantized             = false,
-        .to_float                 = (ggml_to_float_t) ggml_fp16_to_fp32_row,
-        .from_float_ref           = (ggml_from_float_t) ggml_fp32_to_fp16_row,
+        GGML_TYPE_CODEC(.to_float                 = (ggml_to_float_t) ggml_fp16_to_fp32_row,)
+        GGML_TYPE_CODEC(.from_float_ref           = (ggml_from_float_t) ggml_fp32_to_fp16_row,)
     },
     [GGML_TYPE_Q1_0] = {
         .type_name                = "q1_0",
         .blck_size                = QK1_0,
         .type_size                = sizeof(block_q1_0),
         .is_quantized             = true,
-        .to_float                 = (ggml_to_float_t) dequantize_row_q1_0,
-        .from_float_ref           = (ggml_from_float_t) quantize_row_q1_0_ref,
+        GGML_TYPE_CODEC(.to_float                 = (ggml_to_float_t) dequantize_row_q1_0,)
+        GGML_TYPE_CODEC(.from_float_ref           = (ggml_from_float_t) quantize_row_q1_0_ref,)
     },
     [GGML_TYPE_Q2_0] = {
         .type_name                = "q2_0",
         .blck_size                = QK2_0,
         .type_size                = sizeof(block_q2_0),
         .is_quantized             = true,
-        .to_float                 = (ggml_to_float_t) dequantize_row_q2_0,
-        .from_float_ref           = (ggml_from_float_t) quantize_row_q2_0_ref,
+        GGML_TYPE_CODEC(.to_float                 = (ggml_to_float_t) dequantize_row_q2_0,)
+        GGML_TYPE_CODEC(.from_float_ref           = (ggml_from_float_t) quantize_row_q2_0_ref,)
     },
     [GGML_TYPE_Q4_0] = {
         .type_name                = "q4_0",
         .blck_size                = QK4_0,
         .type_size                = sizeof(block_q4_0),
         .is_quantized             = true,
-        .to_float                 = (ggml_to_float_t) dequantize_row_q4_0,
-        .from_float_ref           = (ggml_from_float_t) quantize_row_q4_0_ref,
+        GGML_TYPE_CODEC(.to_float                 = (ggml_to_float_t) dequantize_row_q4_0,)
+        GGML_TYPE_CODEC(.from_float_ref           = (ggml_from_float_t) quantize_row_q4_0_ref,)
     },
     [GGML_TYPE_Q4_1] = {
         .type_name                = "q4_1",
         .blck_size                = QK4_1,
         .type_size                = sizeof(block_q4_1),
         .is_quantized             = true,
-        .to_float                 = (ggml_to_float_t) dequantize_row_q4_1,
-        .from_float_ref           = (ggml_from_float_t) quantize_row_q4_1_ref,
+        GGML_TYPE_CODEC(.to_float                 = (ggml_to_float_t) dequantize_row_q4_1,)
+        GGML_TYPE_CODEC(.from_float_ref           = (ggml_from_float_t) quantize_row_q4_1_ref,)
     },
     [4] = { // GGML_TYPE_Q4_2
         .type_name                = "DEPRECATED",
@@ -734,159 +740,159 @@ static const struct ggml_type_traits type_traits[GGML_TYPE_COUNT] = {
         .blck_size                = QK5_0,
         .type_size                = sizeof(block_q5_0),
         .is_quantized             = true,
-        .to_float                 = (ggml_to_float_t) dequantize_row_q5_0,
-        .from_float_ref           = (ggml_from_float_t) quantize_row_q5_0_ref,
+        GGML_TYPE_CODEC(.to_float                 = (ggml_to_float_t) dequantize_row_q5_0,)
+        GGML_TYPE_CODEC(.from_float_ref           = (ggml_from_float_t) quantize_row_q5_0_ref,)
     },
     [GGML_TYPE_Q5_1] = {
         .type_name                = "q5_1",
         .blck_size                = QK5_1,
         .type_size                = sizeof(block_q5_1),
         .is_quantized             = true,
-        .to_float                 = (ggml_to_float_t) dequantize_row_q5_1,
-        .from_float_ref           = (ggml_from_float_t) quantize_row_q5_1_ref,
+        GGML_TYPE_CODEC(.to_float                 = (ggml_to_float_t) dequantize_row_q5_1,)
+        GGML_TYPE_CODEC(.from_float_ref           = (ggml_from_float_t) quantize_row_q5_1_ref,)
     },
     [GGML_TYPE_Q8_0] = {
         .type_name                = "q8_0",
         .blck_size                = QK8_0,
         .type_size                = sizeof(block_q8_0),
         .is_quantized             = true,
-        .to_float                 = (ggml_to_float_t) dequantize_row_q8_0,
-        .from_float_ref           = (ggml_from_float_t) quantize_row_q8_0_ref,
+        GGML_TYPE_CODEC(.to_float                 = (ggml_to_float_t) dequantize_row_q8_0,)
+        GGML_TYPE_CODEC(.from_float_ref           = (ggml_from_float_t) quantize_row_q8_0_ref,)
     },
     [GGML_TYPE_Q8_1] = {
         .type_name                = "q8_1",
         .blck_size                = QK8_1,
         .type_size                = sizeof(block_q8_1),
         .is_quantized             = true,
-        .from_float_ref           = (ggml_from_float_t) quantize_row_q8_1_ref,
+        GGML_TYPE_CODEC(.from_float_ref           = (ggml_from_float_t) quantize_row_q8_1_ref,)
     },
     [GGML_TYPE_MXFP4] = {
         .type_name                = "mxfp4",
         .blck_size                = QK_MXFP4,
         .type_size                = sizeof(block_mxfp4),
         .is_quantized             = true,
-        .to_float                 = (ggml_to_float_t) dequantize_row_mxfp4,
-        .from_float_ref           = (ggml_from_float_t)quantize_row_mxfp4_ref,
+        GGML_TYPE_CODEC(.to_float                 = (ggml_to_float_t) dequantize_row_mxfp4,)
+        GGML_TYPE_CODEC(.from_float_ref           = (ggml_from_float_t)quantize_row_mxfp4_ref,)
     },
     [GGML_TYPE_NVFP4] = {
         .type_name                = "nvfp4",
         .blck_size                = QK_NVFP4,
         .type_size                = sizeof(block_nvfp4),
         .is_quantized             = true,
-        .to_float                 = (ggml_to_float_t) dequantize_row_nvfp4,
-        .from_float_ref           = (ggml_from_float_t)quantize_row_nvfp4_ref,
+        GGML_TYPE_CODEC(.to_float                 = (ggml_to_float_t) dequantize_row_nvfp4,)
+        GGML_TYPE_CODEC(.from_float_ref           = (ggml_from_float_t)quantize_row_nvfp4_ref,)
     },
     [GGML_TYPE_Q2_K] = {
         .type_name                = "q2_K",
         .blck_size                = QK_K,
         .type_size                = sizeof(block_q2_K),
         .is_quantized             = true,
-        .to_float                 = (ggml_to_float_t) dequantize_row_q2_K,
-        .from_float_ref           = (ggml_from_float_t) quantize_row_q2_K_ref,
+        GGML_TYPE_CODEC(.to_float                 = (ggml_to_float_t) dequantize_row_q2_K,)
+        GGML_TYPE_CODEC(.from_float_ref           = (ggml_from_float_t) quantize_row_q2_K_ref,)
     },
     [GGML_TYPE_Q3_K] = {
         .type_name                = "q3_K",
         .blck_size                = QK_K,
         .type_size                = sizeof(block_q3_K),
         .is_quantized             = true,
-        .to_float                 = (ggml_to_float_t) dequantize_row_q3_K,
-        .from_float_ref           = (ggml_from_float_t) quantize_row_q3_K_ref,
+        GGML_TYPE_CODEC(.to_float                 = (ggml_to_float_t) dequantize_row_q3_K,)
+        GGML_TYPE_CODEC(.from_float_ref           = (ggml_from_float_t) quantize_row_q3_K_ref,)
     },
     [GGML_TYPE_Q4_K] = {
         .type_name                = "q4_K",
         .blck_size                = QK_K,
         .type_size                = sizeof(block_q4_K),
         .is_quantized             = true,
-        .to_float                 = (ggml_to_float_t) dequantize_row_q4_K,
-        .from_float_ref           = (ggml_from_float_t) quantize_row_q4_K_ref,
+        GGML_TYPE_CODEC(.to_float                 = (ggml_to_float_t) dequantize_row_q4_K,)
+        GGML_TYPE_CODEC(.from_float_ref           = (ggml_from_float_t) quantize_row_q4_K_ref,)
     },
     [GGML_TYPE_Q5_K] = {
         .type_name                = "q5_K",
         .blck_size                = QK_K,
         .type_size                = sizeof(block_q5_K),
         .is_quantized             = true,
-        .to_float                 = (ggml_to_float_t) dequantize_row_q5_K,
-        .from_float_ref           = (ggml_from_float_t) quantize_row_q5_K_ref,
+        GGML_TYPE_CODEC(.to_float                 = (ggml_to_float_t) dequantize_row_q5_K,)
+        GGML_TYPE_CODEC(.from_float_ref           = (ggml_from_float_t) quantize_row_q5_K_ref,)
     },
     [GGML_TYPE_Q6_K] = {
         .type_name                = "q6_K",
         .blck_size                = QK_K,
         .type_size                = sizeof(block_q6_K),
         .is_quantized             = true,
-        .to_float                 = (ggml_to_float_t) dequantize_row_q6_K,
-        .from_float_ref           = (ggml_from_float_t) quantize_row_q6_K_ref,
+        GGML_TYPE_CODEC(.to_float                 = (ggml_to_float_t) dequantize_row_q6_K,)
+        GGML_TYPE_CODEC(.from_float_ref           = (ggml_from_float_t) quantize_row_q6_K_ref,)
     },
     [GGML_TYPE_IQ2_XXS] = {
         .type_name                = "iq2_xxs",
         .blck_size                = QK_K,
         .type_size                = sizeof(block_iq2_xxs),
         .is_quantized             = true,
-        .to_float                 = (ggml_to_float_t) dequantize_row_iq2_xxs,
-        .from_float_ref           = NULL,
+        GGML_TYPE_CODEC(.to_float                 = (ggml_to_float_t) dequantize_row_iq2_xxs,)
+        GGML_TYPE_CODEC(.from_float_ref           = NULL,)
     },
     [GGML_TYPE_IQ2_XS] = {
         .type_name                = "iq2_xs",
         .blck_size                = QK_K,
         .type_size                = sizeof(block_iq2_xs),
         .is_quantized             = true,
-        .to_float                 = (ggml_to_float_t) dequantize_row_iq2_xs,
-        .from_float_ref           = NULL,
+        GGML_TYPE_CODEC(.to_float                 = (ggml_to_float_t) dequantize_row_iq2_xs,)
+        GGML_TYPE_CODEC(.from_float_ref           = NULL,)
     },
     [GGML_TYPE_IQ3_XXS] = {
         .type_name                = "iq3_xxs",
         .blck_size                = QK_K,
         .type_size                = sizeof(block_iq3_xxs),
         .is_quantized             = true,
-        .to_float                 = (ggml_to_float_t) dequantize_row_iq3_xxs,
-        .from_float_ref           = (ggml_from_float_t)quantize_row_iq3_xxs_ref,
+        GGML_TYPE_CODEC(.to_float                 = (ggml_to_float_t) dequantize_row_iq3_xxs,)
+        GGML_TYPE_CODEC(.from_float_ref           = (ggml_from_float_t)quantize_row_iq3_xxs_ref,)
     },
     [GGML_TYPE_IQ3_S] = {
         .type_name                = "iq3_s",
         .blck_size                = QK_K,
         .type_size                = sizeof(block_iq3_s),
         .is_quantized             = true,
-        .to_float                 = (ggml_to_float_t) dequantize_row_iq3_s,
-        .from_float_ref           = (ggml_from_float_t)quantize_row_iq3_s_ref,
+        GGML_TYPE_CODEC(.to_float                 = (ggml_to_float_t) dequantize_row_iq3_s,)
+        GGML_TYPE_CODEC(.from_float_ref           = (ggml_from_float_t)quantize_row_iq3_s_ref,)
     },
     [GGML_TYPE_IQ2_S] = {
         .type_name                = "iq2_s",
         .blck_size                = QK_K,
         .type_size                = sizeof(block_iq2_s),
         .is_quantized             = true,
-        .to_float                 = (ggml_to_float_t) dequantize_row_iq2_s,
-        .from_float_ref           = (ggml_from_float_t)quantize_row_iq2_s_ref,
+        GGML_TYPE_CODEC(.to_float                 = (ggml_to_float_t) dequantize_row_iq2_s,)
+        GGML_TYPE_CODEC(.from_float_ref           = (ggml_from_float_t)quantize_row_iq2_s_ref,)
     },
     [GGML_TYPE_IQ1_S] = {
         .type_name                = "iq1_s",
         .blck_size                = QK_K,
         .type_size                = sizeof(block_iq1_s),
         .is_quantized             = true,
-        .to_float                 = (ggml_to_float_t) dequantize_row_iq1_s,
-        .from_float_ref           = NULL,
+        GGML_TYPE_CODEC(.to_float                 = (ggml_to_float_t) dequantize_row_iq1_s,)
+        GGML_TYPE_CODEC(.from_float_ref           = NULL,)
     },
     [GGML_TYPE_IQ1_M] = {
         .type_name                = "iq1_m",
         .blck_size                = QK_K,
         .type_size                = sizeof(block_iq1_m),
         .is_quantized             = true,
-        .to_float                 = (ggml_to_float_t) dequantize_row_iq1_m,
-        .from_float_ref           = NULL,
+        GGML_TYPE_CODEC(.to_float                 = (ggml_to_float_t) dequantize_row_iq1_m,)
+        GGML_TYPE_CODEC(.from_float_ref           = NULL,)
     },
     [GGML_TYPE_IQ4_NL] = {
         .type_name                = "iq4_nl",
         .blck_size                = QK4_NL,
         .type_size                = sizeof(block_iq4_nl),
         .is_quantized             = true,
-        .to_float                 = (ggml_to_float_t) dequantize_row_iq4_nl,
-        .from_float_ref           = (ggml_from_float_t)quantize_row_iq4_nl_ref,
+        GGML_TYPE_CODEC(.to_float                 = (ggml_to_float_t) dequantize_row_iq4_nl,)
+        GGML_TYPE_CODEC(.from_float_ref           = (ggml_from_float_t)quantize_row_iq4_nl_ref,)
     },
     [GGML_TYPE_IQ4_XS] = {
         .type_name                = "iq4_xs",
         .blck_size                = QK_K,
         .type_size                = sizeof(block_iq4_xs),
         .is_quantized             = true,
-        .to_float                 = (ggml_to_float_t) dequantize_row_iq4_xs,
-        .from_float_ref           = (ggml_from_float_t)quantize_row_iq4_xs_ref,
+        GGML_TYPE_CODEC(.to_float                 = (ggml_to_float_t) dequantize_row_iq4_xs,)
+        GGML_TYPE_CODEC(.from_float_ref           = (ggml_from_float_t)quantize_row_iq4_xs_ref,)
     },
     [GGML_TYPE_Q8_K] = {
         .type_name                = "q8_K",
@@ -899,8 +905,8 @@ static const struct ggml_type_traits type_traits[GGML_TYPE_COUNT] = {
         .blck_size                = 1,
         .type_size                = sizeof(ggml_bf16_t),
         .is_quantized             = false,
-        .to_float                 = (ggml_to_float_t) ggml_bf16_to_fp32_row,
-        .from_float_ref           = (ggml_from_float_t) ggml_fp32_to_bf16_row_ref,
+        GGML_TYPE_CODEC(.to_float                 = (ggml_to_float_t) ggml_bf16_to_fp32_row,)
+        GGML_TYPE_CODEC(.from_float_ref           = (ggml_from_float_t) ggml_fp32_to_bf16_row_ref,)
     },
     [31] = { // GGML_TYPE_Q4_0_4_4
         .type_name                = "TYPE_Q4_0_4_4 REMOVED, use Q4_0 with runtime repacking",
@@ -925,16 +931,16 @@ static const struct ggml_type_traits type_traits[GGML_TYPE_COUNT] = {
         .blck_size                = QK_K,
         .type_size                = sizeof(block_tq1_0),
         .is_quantized             = true,
-        .to_float                 = (ggml_to_float_t) dequantize_row_tq1_0,
-        .from_float_ref           = (ggml_from_float_t) quantize_row_tq1_0_ref,
+        GGML_TYPE_CODEC(.to_float                 = (ggml_to_float_t) dequantize_row_tq1_0,)
+        GGML_TYPE_CODEC(.from_float_ref           = (ggml_from_float_t) quantize_row_tq1_0_ref,)
     },
     [GGML_TYPE_TQ2_0] = {
         .type_name                = "tq2_0",
         .blck_size                = QK_K,
         .type_size                = sizeof(block_tq2_0),
         .is_quantized             = true,
-        .to_float                 = (ggml_to_float_t) dequantize_row_tq2_0,
-        .from_float_ref           = (ggml_from_float_t) quantize_row_tq2_0_ref,
+        GGML_TYPE_CODEC(.to_float                 = (ggml_to_float_t) dequantize_row_tq2_0,)
+        GGML_TYPE_CODEC(.from_float_ref           = (ggml_from_float_t) quantize_row_tq2_0_ref,)
     },
     [36] = { // GGML_TYPE_IQ4_NL_4_4
         .type_name                = "TYPE_IQ4_NL_4_4 REMOVED, use IQ4_NL with runtime repacking",
@@ -956,11 +962,15 @@ static const struct ggml_type_traits type_traits[GGML_TYPE_COUNT] = {
     },
 };
 
+#undef GGML_TYPE_CODEC
+
+#ifndef GOOSEINFER_TYPE_METADATA_ONLY
 const struct ggml_type_traits * ggml_get_type_traits(enum ggml_type type) {
     assert(type >= 0);
     assert(type < GGML_TYPE_COUNT);
     return &type_traits[type];
 }
+#endif
 
 //
 // ggml object
@@ -8037,6 +8047,7 @@ void ggml_set_loss(struct ggml_tensor * tensor) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+#ifndef GOOSEINFER_TYPE_METADATA_ONLY
 void ggml_quantize_init(enum ggml_type type) {
     ggml_critical_section_start();
 
@@ -8153,6 +8164,7 @@ size_t ggml_quantize_chunk(
 
     return result;
 }
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 

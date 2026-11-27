@@ -57,3 +57,8 @@ separate from this reduction in linked code.
 EXP-2216 removed 84 more bytes by replacing scalar FP16 expansion with
 Goose. The scalar microbenchmark improved from 2.43–2.51 to 1.85–1.86
 ns/value. The row conversion remains linked.
+
+EXP-2218 removes `ggml-quants.c` from the universal Linux and Windows builds.
+The C input count decreases from 3 to 2 and the physical line count of those
+inputs drops from 13,871 to 8,244. The old C quantization reference remains
+available to separate test builds. All 43 type metadata entries matched.

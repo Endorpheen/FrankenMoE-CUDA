@@ -26,9 +26,8 @@ flags=(-std=c11 -D_GNU_SOURCE -ffunction-sections -fdata-sections
        "-fmacro-prefix-map=$root=$source_prefix"
        -I"$out" -I"$model_headers" -I"$standalone" -I"$host"
        -I"$ggml/include" -I"$ggml/src" -I"$ggml/src/ggml-cpu")
-for unit in ggml ggml-quants; do
-    "$cc" -O1 "${flags[@]}" "${hardening[@]}" -c "$ggml/src/$unit.c" -o "$out/$unit.o"
-done
+"$cc" -O1 "${flags[@]}" "${hardening[@]}" -DGOOSEINFER_TYPE_METADATA_ONLY \
+    -c "$ggml/src/ggml.c" -o "$out/ggml.o"
 for unit in ggml-system graph-bindings; do
     "$cc" -O1 "${flags[@]}" "${hardening[@]}" -c "$standalone/$unit.c" -o "$out/$unit.o"
 done

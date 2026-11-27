@@ -21,13 +21,16 @@ inputs=(
 )
 if [[ $target == linux ]]; then
     archive="$out/common/libgooseinfer-common.a"
-    "${AR:-ar}" rcs "$archive" \
-        "$out/common/"{graph-bindings,libc-forwards,slru-shim,goose-host,ggml,ggml-quants,ggml-system,probability,probability-pipeline,sampler-scan,planner-link}.o \
+    archive_tmp=$(mktemp -d "$out/common/.gooseinfer-common.XXXXXX")
+    trap 'rm -rf -- "$archive_tmp"' EXIT
+    "${AR:-ar}" rcs "$archive_tmp/libgooseinfer-common.a" \
+        "$out/common/"{graph-bindings,libc-forwards,slru-shim,goose-host,ggml,ggml-system,probability,probability-pipeline,sampler-scan,planner-link}.o \
         "$out/inkling-model/inkling-model.o" "$out/inkling/"{prior,bucket,tokenizer}.o
+    mv -- "$archive_tmp/libgooseinfer-common.a" "$archive"
     inputs+=("$archive" "$out/bonsai-images.o")
 else
     inputs+=("$out/bonsai-images.o"
-             "$out/common/"{platform,socket-forwards,web,graph-bindings,goose-host,slru-shim,ggml-system,ggml,ggml-quants,probability,probability-pipeline,sampler-scan,planner-link}.o
+             "$out/common/"{platform,socket-forwards,web,graph-bindings,goose-host,slru-shim,ggml-system,ggml,probability,probability-pipeline,sampler-scan,planner-link}.o
              "$out/inkling-model/inkling-model.o" "$out/inkling/"{inkling-sampler-scan,prior,bucket,tokenizer}.o)
 fi
 printf '%s\n' "${inputs[@]}" > "$out/link-inputs.argv"
