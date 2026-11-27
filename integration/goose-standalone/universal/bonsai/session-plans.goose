@@ -454,3 +454,90 @@ export fn bonsai_workspace_rebase(base: u64, rows: u64, flags: u64, states: i64[
     if (flags & 8) != 0 { for i in 11 .. 14 { layout[i] += base; } }
     if (flags & 16) != 0 { for i in 15 .. 17 { layout[i] += base; } }
 }
+
+extern fn bonsai_upload_weights(context: u64, mapping: u64, bytes: u64) -> u64;
+extern fn bonsai_bind_weight_workspace(context: u64, bytes: u64, signs: const i32[:]) -> i32;
+extern fn bonsai_log_gguf_parse(status: i64);
+extern "malloc" fn bonsai_load_alloc(bytes: u64) -> c_ptr<void>;
+extern "free" fn bonsai_load_free(memory: c_ptr<void>);
+extern "fg_cuda_host_view_i64" fn bonsai_load_i64(address: u64, length: i64) -> i64[:];
+
+fn bonsai_read_eog(file: const u8[:], header: i64[:], metadata: i64[:], slots: i64[:],
+                   output: i64[:]) -> i64 {
+    let vocabulary = gr_find_kv(file, header, metadata, slots, "tokenizer.ggml.tokens");
+    let memory = bonsai_load_alloc(2 * 248320 * 8);
+    if memory == null { return -1; }
+    let address = bonsai_flash_address(unsafe_c_ptr<c_ptr<const void>>(memory));
+    let offsets = bonsai_load_i64(address, 248320);
+    let lengths = bonsai_load_i64(address + 248320 * 8, 248320);
+    let count = gr_arr_str_offsets(file, header, metadata, vocabulary, offsets, lengths);
+    let names = ["tokenizer.ggml.eos_token_id", "tokenizer.ggml.eot_token_id", "tokenizer.ggml.eom_token_id"];
+    var control: i64[3] = [-1, -1, -1];
+    for i in 3 {
+        let index = gr_find_kv(file, header, metadata, slots, names[i]);
+        if index >= 0 && gr_meta_int(file, header, metadata, index, control[i .. i + 1]) != 0 {
+            bonsai_load_free(memory);
+            return -1;
+        }
+    }
+    let result = if count == 248320 { bt_eog_ids(file, offsets, lengths, control[0], control[1], control[2], output) } else { -1 };
+    bonsai_load_free(memory);
+    return result;
+}
+
+export fn bonsai_load_weights_plan(context: u64, file: const u8[:], mapping: u64, length: u64,
+        mtp_enabled: bool, globals: i64[:], bound_output: i64[:], mtp: i64[:],
+        mtp_layer: i64[:], eog: i64[:], epsilon: f32[:], result: i64[:]) -> i32 {
+    if file.len < 24 || globals.len != 3 || bound_output.len != 960 || mtp.len != 4 ||
+        mtp_layer.len != 15 || eog.len != 64 || epsilon.len != 1 || result.len != 1 { return -1; }
+    var header: i64[8];
+    var metadata: i64[4096];
+    var tensors: i64[12288];
+    var keys: i64[1024];
+    var slots: i64[2048];
+    var bound: i64[975];
+    var draft: i64[4];
+    let parse = gr_parse(file, length as! i64, header, metadata, tensors, keys, slots);
+    if parse != 0 { bonsai_log_gguf_parse(parse); return -1; }
+    if bonsai_bind_layout(file, header, metadata, tensors, keys, slots, globals, bound, draft) != 64 { return -1; }
+    let width_key = gr_find_kv(file, header, metadata, keys, "prism.hadamard.sign_widths");
+    if gr_arr_n(header, metadata, width_key) != 3 { return -1; }
+    let widths: i64[3] = [5120, 6144, 17408];
+    var word: i64[1];
+    for i in 3 {
+        if gr_array_int(file, header, metadata, width_key, i, word) != 0 || word[0] != widths[i] { return -1; }
+    }
+    let sign_key = gr_find_kv(file, header, metadata, keys, "prism.hadamard.sign_values");
+    if gr_arr_n(header, metadata, sign_key) != 28672 { return -1; }
+    var signs: i32[28672];
+    for i in signs.len {
+        if gr_array_int(file, header, metadata, sign_key, i, word) != 0 ||
+            (word[0] != -1 && word[0] != 1) { return -1; }
+        signs[i] = word[0] as! i32;
+    }
+    let eps_key = gr_find_kv(file, header, metadata, keys, "qwen35.attention.layer_norm_rms_epsilon");
+    if gr_meta_f32_bits(file, header, metadata, eps_key, word) != 0 { return -1; }
+    let raw = word[0] as! u32;
+    if raw == 0 || raw >= 0x7f800000 { return -1; }
+    bonsai_flash_copy(unsafe_c_address<c_ptr<void>>(epsilon[0]), unsafe_c_address<c_ptr<const void>>(raw), 4);
+    result[0] = bonsai_read_eog(file, header, metadata, keys, eog);
+    if result[0] <= 0 { return -1; }
+    let bytes = header[6] as! u64;
+    let weights = bonsai_upload_weights(context, mapping + (header[5] as! u64), bytes);
+    if weights == 0 { return -1; }
+    for i in globals.len { globals[i] = (weights + (tensors[globals[i] * 12 + 8] as! u64)) as! i64; }
+    for i in bound_output.len {
+        let index = bound[i];
+        bound_output[i] = if i % 15 == 0 { index }
+            else if index < 0 { 0 } else { (weights + (tensors[index * 12 + 8] as! u64)) as! i64 };
+    }
+    if mtp_enabled {
+        for i in mtp.len { mtp[i] = (weights + (tensors[draft[i] * 12 + 8] as! u64)) as! i64; }
+        for i in mtp_layer.len {
+            let index = bound[960 + i];
+            mtp_layer[i] = if i == 0 { index }
+                else if index < 0 { 0 } else { (weights + (tensors[index * 12 + 8] as! u64)) as! i64 };
+        }
+    }
+    return bonsai_bind_weight_workspace(context, bytes, signs);
+}

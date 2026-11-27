@@ -562,35 +562,6 @@ static sl_i64 slice(int64_t *data, int64_t len) {
     return (sl_i64){ data, len };
 }
 
-static int64_t key(sl_u8 file, sl_i64 st, sl_i64 kv, sl_i64 slots, const char *name) {
-    return gr_find_kv(file, st, kv, slots, (sl_u8){ (uint8_t *)name, (int64_t)strlen(name) });
-}
-
-static int load_eog(model *m, sl_u8 file, sl_i64 st, sl_i64 meta, sl_i64 slots) {
-    const int64_t vocabulary = key(file, st, meta, slots, "tokenizer.ggml.tokens");
-    int64_t *tokens = malloc(2 * VOCAB * sizeof(*tokens));
-    if (!tokens) return -1;
-    const sl_i64 offsets = slice(tokens, VOCAB), lengths = slice(tokens + VOCAB, VOCAB);
-    const int64_t count = gr_arr_str_offsets(file, st, meta, vocabulary, offsets, lengths);
-    const char *names[] = {"eos", "eot", "eom"};
-    int64_t control[3] = {-1, -1, -1};
-    for (unsigned i = 0; i < 3; ++i) {
-        char name[48];
-        snprintf(name, sizeof(name), "tokenizer.ggml.%s_token_id", names[i]);
-        const int64_t index = key(file, st, meta, slots, name);
-        if (index >= 0 && gr_meta_int(file, st, meta, index, slice(control + i, 1))) {
-            free(tokens);
-            return -1;
-        }
-    }
-    if (count == VOCAB) {
-        m->eog_count = bt_eog_ids(file, offsets, lengths, control[0], control[1], control[2],
-                                 slice(m->eog, sizeof(m->eog) / sizeof(*m->eog)));
-    }
-    free(tokens);
-    return m->eog_count > 0 ? 0 : -1;
-}
-
 static int rope_config(CUdeviceptr dest, int64_t heads, int64_t tokens) {
     const int64_t conf[27] = {
         tokens == 1 ? 2 : 0, heads * tokens, 1, (tokens+127)/128, 1024 * tokens,
@@ -641,56 +612,33 @@ static int workspace(model *m, const int32_t *sign) {
     return 0;
 }
 
-static int load_weights(model *m, uint8_t *mapping, size_t length) {
-    int64_t header[8], kv[8*512], tensors[12*1024], kv_slots[1024], tensor_slots[2048];
-    int64_t bound[65*15], draft[4], widths[3] = {5120, 6144, 17408};
-    int32_t signs[28672];
-    const sl_u8 file = { mapping, length > 67108864 ? 67108864 : (int64_t)length };
-    const sl_i64 st = slice(header, 8), meta = slice(kv, 8*512), ten = slice(tensors, 12*1024);
-    const sl_i64 ks = slice(kv_slots, 1024), ts = slice(tensor_slots, 2048);
-    const int64_t parse = gr_parse(file, (int64_t)length, st, meta, ten, ks, ts);
-    if (parse != 0) {
-        fprintf(stderr, "GGUF parse: %lld\n", (long long)parse);
-        return -1;
-    }
-    if (bonsai_bind_layout(file, st, meta, ten, ks, ts, slice(m->globals, 3),
-                           slice(bound, 65*15), slice(draft, 4)) != LAYERS) return -1;
-    int64_t index = key(file, st, meta, ks, "prism.hadamard.sign_widths");
-    if (gr_arr_n(st, meta, index) != 3) return -1;
-    int64_t value;
-    for (int i = 0; i < 3; ++i) {
-        if (gr_array_int(file, st, meta, index, i, slice(&value, 1)) || value != widths[i]) return -1;
-    }
-    index = key(file, st, meta, ks, "prism.hadamard.sign_values");
-    if (gr_arr_n(st, meta, index) != 28672) return -1;
-    for (unsigned i = 0; i < 28672; ++i) {
-        if (gr_array_int(file, st, meta, index, i, slice(&value, 1)) || (value != -1 && value != 1)) return -1;
-        signs[i] = (int32_t)value;
-    }
-    index = key(file, st, meta, ks, "qwen35.attention.layer_norm_rms_epsilon");
-    if (gr_meta_f32_bits(file, st, meta, index, slice(&value, 1))) return -1;
-    const uint32_t raw_eps = (uint32_t)value;
-    memcpy(&m->epsilon, &raw_eps, sizeof(raw_eps));
-    if (!isfinite(m->epsilon) || m->epsilon <= 0.0f) return -1;
-    if (load_eog(m, file, st, meta, ks)) return -1;
-    const size_t bytes = (size_t)header[6];
+typedef struct { const int32_t *data; int64_t len; } bonsai_const_i32;
+extern int32_t bonsai_load_weights_plan(uint64_t context, sl_u8 file, uint64_t mapping, uint64_t length,
+    uint8_t mtp_enabled, sl_i64 globals, sl_i64 bound, sl_i64 draft, sl_i64 draft_layer,
+    sl_i64 eog, sl_f32 epsilon, sl_i64 result);
+
+uint64_t bonsai_upload_weights(uint64_t context, uint64_t source, uint64_t bytes) {
+    model *m = (void *)(uintptr_t)context;
     if (check(bonsai_cuda.fn_cuMemAlloc(&m->weights, bytes), "resident GGUF weights") ||
-        check(bonsai_cuda.fn_cuMemcpyHtoD(m->weights, mapping + header[5], bytes), "resident GGUF upload")) return -1;
-    for (unsigned i = 0; i < 3; ++i) m->globals[i] = m->weights + tensors[m->globals[i]*12+8];
-    for (unsigned i = 0; i < LAYERS*15; ++i) {
-        m->bound[i] = i % 15 == 0 ? bound[i] : (bound[i] < 0 ? 0 : (int64_t)(m->weights + tensors[bound[i]*12+8]));
-    }
-    if (m->mtp_enabled) {
-    for (unsigned i = 0; i < 4; ++i) {
-        m->mtp[i] = (int64_t)(m->weights + tensors[draft[i]*12+8]);
-    }
-    for (unsigned i = 0; i < 15; ++i) {
-        const int64_t index = bound[LAYERS*15+i];
-        m->mtp_layer[i] = i == 0 ? index : (index < 0 ? 0 : (int64_t)(m->weights + tensors[index*12+8]));
-    }
-    }
-    fprintf(stderr, "Device GGUF payload: " BONSAI_SIZE_FMT " bytes (includes inactive MTP tensors)\n", bytes);
-    return workspace(m, signs);
+        check(bonsai_cuda.fn_cuMemcpyHtoD(m->weights, (const void *)(uintptr_t)source, bytes),
+              "resident GGUF upload")) return 0;
+    return m->weights;
+}
+
+int32_t bonsai_bind_weight_workspace(uint64_t context, uint64_t bytes, bonsai_const_i32 signs) {
+    fprintf(stderr, "Device GGUF payload: " BONSAI_SIZE_FMT " bytes (includes inactive MTP tensors)\n", (size_t)bytes);
+    return workspace((model *)(uintptr_t)context, signs.data);
+}
+
+void bonsai_log_gguf_parse(int64_t status) {
+    fprintf(stderr, "GGUF parse: %lld\n", (long long)status);
+}
+
+static int load_weights(model *m, uint8_t *mapping, size_t length) {
+    const sl_u8 file = {mapping, length > 67108864 ? 67108864 : (int64_t)length};
+    return bonsai_load_weights_plan((uintptr_t)m, file, (uintptr_t)mapping, length, m->mtp_enabled != 0,
+        slice(m->globals, 3), slice(m->bound, LAYERS * 15), slice(m->mtp, 4),
+        slice(m->mtp_layer, 15), slice(m->eog, 64), (sl_f32){&m->epsilon, 1}, slice(&m->eog_count, 1));
 }
 
 struct token_choice {
