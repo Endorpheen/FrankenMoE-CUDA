@@ -1,0 +1,36 @@
+[
+  {
+    "prompt": [
+      371,
+      151451,
+      149879,
+      151194,
+      149884
+    ],
+    "text": "The capital of France is",
+    "n_predict": 2,
+    "tokens": [
+      152717,
+      13
+    ],
+    "content": " Paris.",
+    "finish_reason": "length"
+  },
+  {
+    "prompt": [
+      17,
+      196986,
+      220,
+      17,
+      196977
+    ],
+    "text": "2 + 2 =",
+    "n_predict": 2,
+    "tokens": [
+      220,
+      20
+    ],
+    "content": " 5",
+    "finish_reason": "length"
+  }
+]

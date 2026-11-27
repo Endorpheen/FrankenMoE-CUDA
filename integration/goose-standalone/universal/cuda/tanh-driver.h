@@ -1,0 +1,51 @@
+#include "tanh-image.h"
+
+int64_t fg_cuda_tanh_f32(sl_u8 input, sl_u8 output) {
+    if (input.len != output.len || input.len <= 0 || input.len % sizeof(float) ||
+        input.len / sizeof(float) > INT_MAX) return -1;
+    const int active = start_context();
+    if (active != 1) return active;
+
+    static Module module;
+    static Function kernel;
+    int error = 0;
+    if (!kernel) {
+        if (!module) error = cuda.module_load(&module, tanh_cubin);
+        if (!error) error = cuda.function_get(&kernel, module, "goose_tanh_f32");
+    }
+    DevicePtr src = 0, dst = 0;
+    const uint64_t host = (uint64_t)(uintptr_t)output.data;
+    if (!error) error = activation_output_for_input(host, output.len, &dst, input, NULL);
+    if (!error) error = activation_input(input, &cuda.input, &src);
+    uint32_t count = (uint32_t)(input.len / sizeof(float));
+    void *args[] = {&src, &dst, &count};
+    if (!error) error = cuda.launch(kernel, (count + 255) / 256, 1, 1, 256, 1, 1, 0, NULL, args, NULL);
+    if (!error) error = activation_publish(host, output.len, dst, false);
+    const int popped = finish_context();
+    if (!error && !popped) return 1;
+    fprintf(stderr, "Goose CUDA tanh: failed (%d, %d)\n", error, popped);
+    return -1;
+}
+
+#include "situ-image.h"
+
+int64_t fg_cuda_inkling_moe_situ(sl_u8 input, sl_u8 output) {
+    if (output.len <= 0 || output.len % (1152 * 8 * (int64_t)sizeof(float)) != 0 ||
+        output.len / (int64_t)sizeof(float) > INT_MAX || input.len != 2 * output.len) return -1;
+    if (start_context() != 1) return -1;
+    static Module module;
+    static Function kernel;
+    int error = module ? 0 : cuda.module_load(&module, situ_cubin);
+    if (!error && !kernel) error = cuda.function_get(&kernel, module, "goose_i2_moe_situ");
+    DevicePtr src = 0, dst = 0;
+    const uint64_t host = (uint64_t)(uintptr_t)output.data;
+    if (!error) error = activation_output_for_input(host, output.len, &dst, input, NULL);
+    if (!error) error = activation_input(input, &cuda.input, &src);
+    uint32_t elements = (uint32_t)(output.len / sizeof(float));
+    uint32_t reference = cuda.activation_reference;
+    void *args[] = {&src, &dst, &elements, &reference};
+    if (!error) error = cuda.launch(kernel, (elements + 255) / 256, 1, 1, 256, 1, 1, 0, NULL, args, NULL);
+    if (!error) error = activation_publish(host, output.len, dst, false);
+    const int popped = finish_context();
+    return !error && !popped ? 1 : -1;
+}

@@ -119,6 +119,21 @@
       "results": "Next candidate designated by Igor. No integration or benchmark has been performed.",
       "limitations": "GGUF architecture identifier, CUDA coverage and generation quality are unverified.",
       "references": []
+    },
+    {
+      "id": "gigachat4",
+      "gguf_architecture": "gigachat4",
+      "model": "GigaChat4-37B-A4B",
+      "status": "partial",
+      "compute": "Recurrent gated delta blocks, MLA, sparse DSA selection and routed experts.",
+      "quantization": "GigaChat4-37B-A4B Q4_K_M is the exercised fixture.",
+      "kv_cache": "F16 MLA and DSA state with CUDA lazy VMM when supported.",
+      "cuda_kernels": "GigaChat4-specific DSA, indexed MLA and dense projection dispatch on RTX 4070.",
+      "goose_changes": "Separate GigaChat4 graph and model adapter linked to the shared Goose runtime.",
+      "validation": "Use the frozen 32768/512 token fixture and match output IDs, text, stopping and memory against EXP-2189.",
+      "results": "EXP-2189 measured 370.35 prefill and 13.26 decode tok/s, 10436 MiB sampled board peak, and 512 matching llama.cpp output IDs.",
+      "limitations": "Source integration candidate. The published multi-model packages do not ship this adapter. Full cross-architecture qualification remains open.",
+      "references": []
     }
   ]
 }

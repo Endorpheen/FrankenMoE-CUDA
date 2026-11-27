@@ -77,8 +77,8 @@ ZIP for the Bonsai MTP CLI.
 
 ## Build and verification
 
-- [Build and packaging guide](docs/BUILD.md) covers the source-tree Apex build
-  and the separate release checkpoints.
+- [Universal build guide](docs/BUILD.md#universal-runtime-from-source) lists the
+  toolchain and the build command for each platform.
 - [Release Gate](docs/RELEASE-GATE.md) records evidence per OS, backend and
   model before publication.
 - [Architecture acceptance registry](docs/goose-migration/MODEL-ARCHITECTURES.md)
@@ -87,6 +87,10 @@ ZIP for the Bonsai MTP CLI.
   benchmark conditions and correctness checks.
 - [Vulkan roadmap](docs/roadmap/VULKAN-BACKEND.md) records the experimental Vulkan
   backend and its remaining validation work.
+
+For the GigaChat4 source build, see the
+[GigaChat4 GooseInfer runtime guide](integration/goose-standalone/gigachat4/README.md).
+The GigaChat4 build has its own model adapter and uses the shared runtime.
 
 Run `bash tools/check.sh fast` to compose and compile the source-tree Goose
 unit without model weights.

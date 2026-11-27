@@ -1,0 +1,35 @@
+[
+  {
+    "prompt": [
+      760,
+      6511,
+      314,
+      9338,
+      369
+    ],
+    "n_predict": 4,
+    "tokens": [
+      11751,
+      13,
+      561,
+      6511
+    ],
+    "content": " Paris. The capital",
+    "finish_reason": "length"
+  },
+  {
+    "prompt": [
+      1511,
+      17,
+      248046,
+      1511
+    ],
+    "n_predict": 2,
+    "tokens": [
+      17,
+      198
+    ],
+    "content": "2\n",
+    "finish_reason": "length"
+  }
+]

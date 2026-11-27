@@ -1,0 +1,101 @@
+[
+  {
+    "case": "english",
+    "text": "The capital of France is",
+    "parse_special": false,
+    "tokens": [
+      785,
+      6722,
+      315,
+      9625,
+      374
+    ]
+  },
+  {
+    "case": "cyrillic",
+    "text": "Привет, мир! Как дела?",
+    "parse_special": false,
+    "tokens": [
+      53645,
+      26991,
+      8178,
+      11,
+      137144,
+      0,
+      128654,
+      129691,
+      30
+    ]
+  },
+  {
+    "case": "cjk_emoji",
+    "text": "中文 日本語🙂👩‍🔬",
+    "parse_special": false,
+    "tokens": [
+      104811,
+      75402,
+      21894,
+      102819,
+      145080,
+      145233,
+      378,
+      235,
+      147948
+    ]
+  },
+  {
+    "case": "mixed",
+    "text": "Café Café\n100.5 \t  x",
+    "parse_special": false,
+    "tokens": [
+      34,
+      2577,
+      963,
+      42773,
+      53839,
+      198,
+      16,
+      15,
+      15,
+      13,
+      20,
+      65497,
+      856
+    ]
+  },
+  {
+    "case": "literal_special",
+    "text": "<|im_start|>user\nHi<|im_end|>\n",
+    "parse_special": false,
+    "tokens": [
+      27,
+      91,
+      318,
+      4906,
+      91,
+      29,
+      872,
+      198,
+      13048,
+      27,
+      91,
+      318,
+      6213,
+      91,
+      397
+    ]
+  },
+  {
+    "case": "parsed_special",
+    "text": "<|im_start|>user\nHi<|im_end|>\n",
+    "parse_special": true,
+    "tokens": [
+      151644,
+      872,
+      198,
+      13048,
+      151645,
+      198
+    ]
+  }
+]

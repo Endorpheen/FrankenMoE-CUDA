@@ -1,0 +1,225 @@
+extern "fg170s_load" fn load(p: u64, i: u64) -> f32;
+extern "fg170s_store" fn store(p: u64, i: u64, v: f32);
+extern "fg170s_expf" fn expf(x: f32) -> f32;
+extern "fg170s_barrier" fn barrier();
+extern "fg170s_lc" fn lc();
+extern "fg170s_sync" fn sync();
+fn ssm_silu(x: f32) -> f32 {
+    return x / (1.0 + expf(-x));
+}
+export fn ssm_conv_serial(
+    src0: u64,
+    src1: u64,
+    bias: u64,
+    dst: u64,
+    src0_nb0: i32,
+    src0_nb1: i32,
+    src0_nb2: i32,
+    src1_nb1: i32,
+    dst_nb0: i32,
+    dst_nb1: i32,
+    dst_nb2: i32,
+    n_t: i32,
+    d_conv: i32,
+    apply_silu: bool,
+    use_bias: bool,
+    tid: i32,
+    bidx: i32,
+    bidy: i32) {
+    lc();
+    let xb = src0 + (bidx as u64) * (src0_nb2 as u64) + (bidy as u64) * (128 as u64) * (src0_nb1 as u64);
+    let wb = src1 + (bidy as u64) * (128 as u64) * (src1_nb1 as u64);
+    let yb = dst + (bidx as u64) * (dst_nb2 as u64) + (bidy as u64) * (128 as u64) * (dst_nb0 as u64);
+    let sx = (src0_nb1 as u64) / 4;
+    let sw = (src1_nb1 as u64) / 4;
+    let sy = (dst_nb1 as u64) / 4;
+    var x: f32[15] = default < f32[15] > ();
+    var w: f32[15] = default < f32[15] > ();
+    sync();
+    var j: i32 = 0;
+
+    while j < d_conv {
+        w[j] = load(wb, (tid as u64) * sw + (j as u64));
+        j += 1;
+    }
+    var b: f32 = 0.0;
+
+    if use_bias {
+        b = load(bias, (bidy as u64) * (128 as u64) + (tid as u64));
+    }
+    var i: i32 = 0;
+
+    while i < n_t {
+        var sumf: f32 = 0.0;
+
+        if i == 0 {
+            j = 0;
+
+            while j < d_conv {
+                x[j] = load(xb, (tid as u64) * sx + (j as u64));
+                j += 1;
+            }
+        } else {
+            x[ (i - 1) % d_conv] = load(xb, (tid as u64) * sx + ( (i + d_conv - 1) as u64));
+        }
+        j = 0;
+
+        while j < d_conv {
+            sumf += x[ (i + j) % d_conv] * w[j];
+            j += 1;
+        }
+        sumf += b;
+        let out = if apply_silu {
+            ssm_silu(sumf)
+        } else {
+            sumf
+        }
+        ;
+        store(yb, (i as u64) * sy + (tid as u64), out);
+        i += 1;
+    }
+}
+export fn ssm_conv_decode(src: u64, weight: u64, dst: u64, src_row: u64,
+                   weight_row: u64, channel: u64, apply_silu: bool) {
+    let input = src + channel * src_row;
+    let filter = weight + channel * weight_row;
+    var sum: f32 = ssm_long_acc(load(input, 0), load(filter, 0), 0.0);
+    sum = ssm_long_acc(load(input, 1), load(filter, 1), sum);
+    sum = ssm_long_acc(load(input, 2), load(filter, 2), sum);
+    sum = ssm_long_acc(load(input, 3), load(filter, 3), sum);
+    store(dst, channel, if apply_silu { ssm_long_silu(sum) } else { sum });
+}
+export fn ssm_conv_long(
+    src0: u64,
+    src1: u64,
+    bias: u64,
+    dst: u64,
+    smem: u64,
+    src0_nb0: i32,
+    src0_nb1: i32,
+    src0_nb2: i32,
+    src1_nb1: i32,
+    dst_nb0: i32,
+    dst_nb1: i32,
+    dst_nb2: i32,
+    n_t: i32,
+    d_conv: i32,
+    apply_silu: bool,
+    use_bias: bool,
+    bounded_tail: bool,
+    tid: i32,
+    bidx: i32,
+    bidy: i32,
+    bidz: i32) {
+    let xb = src0 + (bidx as u64) * (src0_nb2 as u64) + (bidy as u64) * (128 as u64) * (src0_nb1 as u64) + (bidz as u64) * (32 as u64) * (src0_nb0 as u64);
+    let wb = src1 + (bidy as u64) * (128 as u64) * (src1_nb1 as u64);
+    let yb = dst + (bidx as u64) * (dst_nb2 as u64) + (bidz as u64) * (32 as u64) * (dst_nb1 as u64) + (bidy as u64) * (128 as u64) * (dst_nb0 as u64);
+    let sx = (src0_nb1 as u64) / 4;
+    let sw = (src1_nb1 as u64) / 4;
+    let sy = (dst_nb1 as u64) / 4;
+    let local_n_t = if n_t - bidz * 32 < 32 {
+        n_t - bidz * 32
+    } else {
+        32
+    }
+    ;
+    let ncols = d_conv - 1 + 32;
+    let total = 128 * ncols;
+    let cut = local_n_t + d_conv - 1;
+    var row = tid / ncols;
+    var col = tid % ncols;
+    var idx: i32 = 0;
+
+    while idx < total {
+        if row < 128 {
+            if bounded_tail {
+                if col < cut {
+                    conv_shared_store(
+                        smem,
+                        (row as u64) * (ncols as u64) + (col as u64),
+                        load(xb, (row as u64) * sx + (col as u64)));
+                }
+            } else {
+                conv_shared_store(smem, (row as u64) * (ncols as u64) + (col as u64), load(xb, (row as u64) * sx + (col as u64)));
+            }
+        }
+        col += 128;
+        row += col / ncols;
+        col = col % ncols;
+        idx += 128;
+    }
+    barrier();
+    var w: f32[15] = default < f32[15] > ();
+    var j: i32 = 0;
+
+    while j < d_conv {
+        w[j] = load(wb, (tid as u64) * sw + (j as u64));
+        j += 1;
+    }
+    var b: f32 = 0.0;
+
+    if use_bias {
+        b = load(bias, (bidy as u64) * (128 as u64) + (tid as u64));
+    }
+    var i: i32 = 0;
+
+    while i < local_n_t {
+        var sumf: f32 = 0.0;
+        j = 0;
+
+        while j < d_conv {
+            let v = conv_shared_load(smem, (tid as u64) * (ncols as u64) + ((i + j) as u64));
+            sumf = ssm_long_acc(v, w[j], sumf);
+            j += 1;
+        }
+        sumf += b;
+        let out = if apply_silu {
+            ssm_long_silu(sumf)
+        } else {
+            sumf
+        }
+        ;
+        store(yb, (i as u64) * sy + (tid as u64), out);
+        i += 1;
+    }
+}
+export fn ssm_conv_direct(history: u64, mixed: u64, weights: u64, output: u64,
+    channels: u64, tokens: u64, channel: u64, first: u64, ssm_silu: bool) {
+    if channel >= channels || first >= tokens { return; }
+    let old = 3 * channel;
+    let seed = if first == 0 { old } else { (first - 3) * channels + channel };
+    let source = if first == 0 { history } else { mixed };
+    let step: u64 = if first == 0 { 1 } else { channels };
+    var x0 = load(source, seed);
+    var x1 = load(source, seed + step);
+    var x2 = load(source, seed + 2 * step);
+    let weight = 4 * channel;
+    let w0 = load(weights, weight);
+    let w1 = load(weights, weight + 1);
+    let w2 = load(weights, weight + 2);
+    let w3 = load(weights, weight + 3);
+    let count = if tokens - first < 32 { tokens - first } else { 32 };
+    for i in count as i64 {
+        let at = (first + (i as u64)) * channels + channel;
+        let x3 = load(mixed, at);
+        var sum = ssm_long_acc(x0, w0, 0.0);
+        sum = ssm_long_acc(x1, w1, sum);
+        sum = ssm_long_acc(x2, w2, sum);
+        sum = ssm_long_acc(x3, w3, sum) + 0.0;
+        store(output, at, if ssm_silu { ssm_long_silu(sum) } else { sum });
+        x0 = x1;
+        x1 = x2;
+        x2 = x3;
+    }
+}
+export fn ssm_conv_save_tail(history: u64, mixed: u64, channels: u64, tokens: u64, channel: u64) {
+    if channel >= channels { return; }
+    for i in 3 {
+        store(history, 3 * channel + (i as u64), load(mixed, (tokens - 3 + (i as u64)) * channels + channel));
+    }
+}
+extern "fg170s_shared_load" fn conv_shared_load(address: u64, index: u64) -> f32;
+extern "fg170s_shared_store" fn conv_shared_store(address: u64, index: u64, value: f32);
+extern "fg170s_fma" fn ssm_long_acc(x: f32, weight: f32, sum: f32) -> f32;
+extern "fg_device_reciprocal" fn ssm_long_reciprocal(value: f32) -> f32;
+fn ssm_long_silu(x: f32) -> f32 { return x * ssm_long_reciprocal(1.0 + expf(-x)); }

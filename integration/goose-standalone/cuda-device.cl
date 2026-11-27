@@ -210,7 +210,204 @@ static float fg_attn_neg_inf(void) {
     return as_float(0xff800000u);
 }
 
+static void fg_dsa_store_u16(uint64_t base, int64_t index, uint32_t value) {
+    ((__global uint16_t *)base)[index] = (uint16_t)value;
+}
+static int32_t fg_dsa_load_i32(uint64_t base, int64_t index) {
+    return ((__global const int32_t *)base)[index];
+}
+static uint32_t fg_mla_mma_kpair(uint64_t base) {
+    return *(__global const uint32_t *)base;
+}
+static uint32_t fg_mla_mma_qpair(uint64_t base) {
+    const __global float *p = (const __global float *)base;
+    uint16_t a, b;
+    __asm__("cvt.rn.f16.f32 %0, %1;" : "=h"(a) : "f"(p[0]));
+    __asm__("cvt.rn.f16.f32 %0, %1;" : "=h"(b) : "f"(p[1]));
+    return (uint32_t)a | ((uint32_t)b << 16);
+}
+#ifdef GOOSE_CUDA_MMQ_IMAGE
+#define fg_mla_mma_f16(acc,a0,a1,a2,a3,b0,b1) ({ \
+    __typeof__(acc) d = (acc); \
+    __asm__ volatile("mma.sync.aligned.m16n8k16.row.col.f32.f16.f16.f32 " \
+        "{%0,%1,%2,%3}, {%4,%5,%6,%7}, {%8,%9}, {%0,%1,%2,%3};" \
+        : "+f"(d.a_g), "+f"(d.b_g), "+f"(d.c_g), "+f"(d.d_g) \
+        : "r"(a0), "r"(a1), "r"(a2), "r"(a3), "r"(b0), "r"(b1)); d; })
+#else
+#define fg_mla_mma_f16(acc,a0,a1,a2,a3,b0,b1) (acc)
+#endif
+static void fg_mla_score_put(uint64_t base, int64_t index, float value) {
+    ((__local float *)base)[index] = value;
+}
+static float fg_mla_score_get(uint64_t base, int64_t index) {
+    return ((__local const float *)base)[index];
+}
+static void fg_mla_score_sync(void) {
+    __asm__ volatile("bar.sync 0;" ::: "memory");
+}
+static uint32_t fg_mla_pack_probability(float a, float b) {
+    uint16_t lo, hi;
+    __asm__("cvt.rn.f16.f32 %0, %1;" : "=h"(lo) : "f"(a));
+    __asm__("cvt.rn.f16.f32 %0, %1;" : "=h"(hi) : "f"(b));
+    return (uint32_t)lo | ((uint32_t)hi << 16);
+}
+static uint64_t fg_dsa_top_shift(uint64_t value, int64_t bits) { return value << bits; }
+static uint32_t fg_dsa_top_bits(uint64_t base, int64_t index) {
+    return ((__global const uint32_t *)base)[index];
+}
+static void fg_dsa_bins_clear(uint64_t base, int64_t index) {
+    ((__local uint32_t *)base)[index] = 0;
+}
+static uint32_t fg_dsa_bins_get(uint64_t base, int64_t index) {
+    return ((__local const uint32_t *)base)[index];
+}
+static uint32_t fg_dsa_bins_add(uint64_t base, int64_t index) {
+    uint32_t old;
+    __asm__ volatile("atom.shared.add.u32 %0, [%1], 1;" : "=r"(old) :
+        "r"((uint32_t)(base + 4*index)) : "memory");
+    return old;
+}
+static void fg_dsa_top_put_key(uint64_t base, int64_t index, uint64_t value) {
+    ((__local uint64_t *)base)[index] = value;
+}
+static uint64_t fg_dsa_top_get_key(uint64_t base, int64_t index) {
+    return ((__local const uint64_t *)base)[index];
+}
+static void fg_dsa_top_store(uint64_t base, int64_t index, uint32_t value) {
+    ((__global uint32_t *)base)[index] = value;
+}
+static uint32_t fg_mla_any_visible(uint32_t seen) {
+    uint32_t count;
+    __asm__ volatile("{ .reg .pred visible; setp.ne.u32 visible, %1, 0;"
+        " bar.red.popc.u32 %0, 0, visible; }" : "=r"(count) : "r"(seen) : "memory");
+    return count;
+}
+static uint32_t fg_mla_visible_ballot(uint32_t seen) {
+    uint32_t vote;
+    __asm__ volatile("{ .reg .pred selected; setp.ne.u32 selected, %1, 0;"
+        " vote.sync.ballot.b32 %0, selected, 0xffffffff; }" : "=r"(vote) : "r"(seen));
+    return vote;
+}
+static uint32_t fg_mla_mask_popcount(uint32_t word) {
+    uint32_t count;
+    __asm__("popc.b32 %0, %1;" : "=r"(count) : "r"(word));
+    return count;
+}
+static void fg_mla_store_index(uint64_t base, int64_t index, int32_t value) {
+    ((__global int32_t *)base)[index] = value;
+}
 #include "q4-attention-device.h"
+__kernel void goose_giga_dsa_top_wide(__global const float *x, __global int32_t *out, int64_t cells) {
+    __local uint32_t bins[16];
+    __local uint64_t keys[2048];
+    uint32_t row, lane;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(row));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
+    giga_dsa_top_wide_g((uint64_t)x,(uint64_t)out,cells,row,lane,(uint64_t)bins,(uint64_t)keys);
+}
+
+__kernel void goose_giga_mla_mma_tile(__global const float *q, __global const uint16_t *k,
+    __global const uint16_t *v, __global const uint16_t *mask, __global float *scratch,
+    __global int64_t *cfg, float scale, int32_t query_base) {
+    __local float scores[1024] __attribute__((aligned(16)));
+    uint32_t task, tile, thread;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(task));
+    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(tile));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
+    giga_mla_mma_tile_g((uint64_t)q,(uint64_t)k,(uint64_t)v,(uint64_t)mask,
+        (uint64_t)scratch,(uint64_t)cfg,(uint64_t)scores,scale,8*task,
+        (int64_t)query_base+8*task,tile,thread/32,thread%32);
+}
+
+#undef fg_mla_mma_f16
+__kernel void goose_giga_mla_mma_pv_tile(__global const float *q, __global const uint16_t *k,
+    __global const uint16_t *v, __global const uint16_t *mask, __global float *scratch,
+    __global int64_t *cfg, float scale, int32_t query_base) {
+    __local float scores[1032] __attribute__((aligned(16)));
+    uint32_t task, tile, thread;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(task));
+    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(tile));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
+    giga_mla_mma_pv_tile_g((uint64_t)q,(uint64_t)k,(uint64_t)v,(uint64_t)mask,
+        (uint64_t)scratch,(uint64_t)cfg,(uint64_t)scores,scale,8*task,
+        (int64_t)query_base+8*task,tile,thread/32,thread%32);
+}
+__kernel void goose_giga_mla_mma_pv_visible_tile(__global const float *q, __global const uint16_t *k,
+    __global const uint16_t *v, __global const uint16_t *mask, __global float *scratch,
+    __global int64_t *cfg, float scale, int32_t query_base, __global const float *visible) {
+    __local float scores[1032] __attribute__((aligned(16)));
+    uint32_t task, tile, thread;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(task));
+    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(tile));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
+    const int64_t query = (int64_t)query_base + 8 * task;
+    const int64_t tiles = cfg[17];
+    if (visible[((query % cfg[2]) / 8) * tiles + tile] == 0.0f) {
+        giga_mla_tile_empty_g((uint64_t)scratch, 8 * task, tiles, tile, thread);
+        return;
+    }
+    giga_mla_mma_pv_tile_g((uint64_t)q,(uint64_t)k,(uint64_t)v,(uint64_t)mask,
+        (uint64_t)scratch,(uint64_t)cfg,(uint64_t)scores,scale,8*task,
+        (int64_t)query_base+8*task,tile,thread/32,thread%32);
+}
+__kernel void goose_giga_mla_visibility(__global const uint16_t *mask,
+    __global float *visible, __global const int64_t *cfg) {
+    uint32_t query_group, tile, thread;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(query_group));
+    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(tile));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
+    giga_mla_tile_visibility_g((uint64_t)mask, (uint64_t)visible, (uint64_t)cfg, query_group, tile, thread);
+}
+
+__kernel void goose_giga_mla_compact_mask(__global const uint16_t *mask,
+    __global int32_t *keys, __global int32_t *lengths, __global const int64_t *cfg) {
+    uint32_t group, thread;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(group));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
+    const uint32_t query = group * 4 + thread / 32;
+    if (query < cfg[2]) giga_mla_compact_mask_g((uint64_t)mask,
+        (uint64_t)keys, (uint64_t)lengths, (uint64_t)cfg, query, thread % 32);
+}
+
+__kernel void goose_giga_mla_mma_pv_indexed(__global const float *q, __global const uint16_t *k,
+    __global const uint16_t *v, __global const uint16_t *mask, __global float *scratch,
+    __global int64_t *cfg, float scale, int32_t query_base, __global const int32_t *keys) {
+    __local float scores[1032] __attribute__((aligned(16)));
+    uint32_t task, tile, thread;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(task));
+    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(tile));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
+    giga_mla_mma_pv_indexed_g((uint64_t)q,(uint64_t)k,(uint64_t)v,(uint64_t)mask,
+        (uint64_t)scratch,(uint64_t)cfg,(uint64_t)scores,scale,8*task,
+        (int64_t)query_base/8+task,tile,thread/32,thread%32,(uint64_t)keys);
+}
+
+__kernel void goose_giga_mla_indexed_merge(__global float *scratch, __global uint8_t *output,
+    __global int64_t *cfg, int32_t query_base) {
+    uint32_t task, lane;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(task));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
+    const int64_t absolute = (int64_t)query_base + task;
+    const int64_t group = absolute / 8;
+    const int64_t query = (8 * (group / cfg[2]) + (absolute % 8)) * cfg[2] + (group % cfg[2]);
+    giga_mla_indexed_merge_g((uint64_t)scratch, (uint64_t)output, (uint64_t)cfg, task, query, lane);
+}
+
+#undef fg_mla_mma_f16
+static int64_t fg_dsa_mask_index(void) {
+    uint32_t block, lane;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(block));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
+    return (int64_t)block * 256 + lane;
+}
+__kernel void goose_giga_mask_clear(__global const uint16_t * mask, __global uint16_t * out, int64_t total, int64_t prefix) {
+    giga_device_mask_clear_g((uint64_t)mask, (uint64_t)out, total, prefix, fg_dsa_mask_index());
+}
+__kernel void goose_giga_mask_scatter(__global const uint16_t * mask, __global const int32_t * picks,
+    __global uint16_t * out, int64_t cells, int64_t count, int64_t total, int64_t prefix) {
+    giga_device_mask_scatter_g((uint64_t)mask, (uint64_t)picks, (uint64_t)out,
+        cells, count, total, prefix, fg_dsa_mask_index());
+}
 
 __kernel void goose_q4_attention_tiles(__global uint8_t * q, __global uint8_t * k,
     __global uint8_t * v, __global uint8_t * mask, __global float * scratch,
@@ -230,6 +427,85 @@ __kernel void goose_q4_attention_merge(__global float * scratch, __global uint8_
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
     fg_attn_merge_g((uint64_t) scratch, (uint64_t) output, (uint64_t) cfg,
         task, (int64_t) query_base + task, lane);
+}
+
+__kernel void goose_mla_attention_tiles(__global uint8_t * q, __global uint8_t * k,
+    __global uint8_t * v, __global uint8_t * mask, __global float * scratch,
+    __global int64_t * cfg, float scale, int32_t query_base) {
+    uint32_t task, tile, lane;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(task));
+    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(tile));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
+    fg_mla_attn_tiles_g((uint64_t) q, (uint64_t) k, (uint64_t) v, (uint64_t) mask,
+        (uint64_t) scratch, (uint64_t) cfg, scale, task, (int64_t) query_base + task, tile, lane);
+}
+
+__kernel void goose_mla_attention_pair(__global uint8_t * q, __global uint8_t * k,
+    __global uint8_t * v, __global uint8_t * mask, __global float * scratch,
+    __global int64_t * cfg, float scale, int32_t query_base) {
+    uint32_t task, tile, lane;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(task));
+    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(tile));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
+    fg_mla_attn_pair_g((uint64_t) q, (uint64_t) k, (uint64_t) v, (uint64_t) mask,
+        (uint64_t) scratch, (uint64_t) cfg, scale, 2 * task, (int64_t) query_base + 2 * task, tile, lane);
+}
+
+__kernel void goose_mla_attention_batch_pair(__global uint8_t * q, __global uint8_t * k,
+    __global uint8_t * v, __global uint8_t * mask, __global float * scratch,
+    __global int64_t * cfg, float scale, int32_t query_base) {
+    uint32_t task, tile, lane;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(task));
+    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(tile));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
+    const int64_t positions = cfg[2];
+    const int64_t pair = (int64_t)query_base / 2 + task;
+    const int64_t first_query = (pair / positions) * 2 * positions + pair % positions;
+    fg_mla_attn_batch_pair_g((uint64_t) q, (uint64_t) k, (uint64_t) v, (uint64_t) mask,
+        (uint64_t) scratch, (uint64_t) cfg, scale, 2 * task, first_query, tile, lane);
+}
+
+__kernel void goose_mla_attention_merge(__global float * scratch, __global uint8_t * output,
+    __global int64_t * cfg, int32_t query_base) {
+    uint32_t task, lane;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(task));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
+    fg_mla_attn_merge_g((uint64_t) scratch, (uint64_t) output, (uint64_t) cfg,
+        task, (int64_t) query_base + task, lane);
+}
+
+__kernel void goose_mla_attention_batch_merge(__global float * scratch, __global uint8_t * output,
+    __global int64_t * cfg, int32_t query_base) {
+    uint32_t task, lane;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(task));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
+    const int64_t positions = cfg[2];
+    const int64_t slot = (int64_t)query_base + task;
+    const int64_t pair = slot / 2;
+    const int64_t query = (pair / positions * 2 + slot % 2) * positions + pair % positions;
+    fg_mla_attn_merge_g((uint64_t) scratch, (uint64_t) output, (uint64_t) cfg,
+        task, query, lane);
+}
+
+__kernel void goose_dsa_score(__global uint8_t * q, __global uint8_t * k,
+    __global uint8_t * weights, __global uint8_t * mask, __global float * out,
+    __global int64_t * cfg) {
+    uint32_t tile, token, tid;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(tile));
+    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(token));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(tid));
+    fg_dsa_score_g((uint64_t) q, (uint64_t) k, (uint64_t) weights, (uint64_t) mask,
+        (uint64_t) out, (uint64_t) cfg, 4 * tile + tid / 32, token, tid % 32);
+}
+
+__kernel void goose_giga_dsa_score_shared_q(__global uint8_t *q, __global uint8_t *k,
+    __global uint8_t *weights, __global uint8_t *mask, __global float *out, __global int64_t *cfg) {
+    uint32_t tile, token, tid;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(tile));
+    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(token));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(tid));
+    giga_dsa_score_shared_q_g((uint64_t)q,(uint64_t)k,(uint64_t)weights,(uint64_t)mask,
+        (uint64_t)out,(uint64_t)cfg,16*tile+4*(tid/32),token,tid%32);
 }
 
 static float fg174s_load(uint64_t address, uint64_t index) {
@@ -383,6 +659,22 @@ static CVVec4_g fg_vector_load4(uint64_t address) {
 }
 static void fg_vector_store4(uint64_t address, CVVec4_g v) {
     *(__global float4 *) address = (float4) (v.x_g, v.y_g, v.z_g, v.w_g);
+}
+
+static double fg_glu_pow2_int(int64_t exponent) {
+    return as_double((uint64_t)(exponent + 1023) << 52);
+}
+
+static int64_t fg_glu_round(double value) {
+    int64_t result;
+    __asm__("cvt.rni.s64.f64 %0, %1;" : "=l"(result) : "d"(value));
+    return result;
+}
+
+static float fg_glu_div_rn(float a, float b) {
+    float result;
+    __asm__("div.rn.f32 %0, %1, %2;" : "=f"(result) : "f"(a), "f"(b));
+    return result;
 }
 
 #include "vector-device.h"

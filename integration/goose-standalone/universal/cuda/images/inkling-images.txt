@@ -1,0 +1,15 @@
+attention-gate-image.h attention_gate_cubin
+attention-input-image.h attention_input_cubin
+grouped-moe-image.h grouped_moe_cubin
+i2-lazy-prelude-image.h i2_lazy_prelude_image
+i2-parallel-conv-image.h i2_parallel_conv_image
+i2-probe-moe-image.h moe_epilogue_cubin
+q8-packed-image.h q8_packed_cubin
+situ-image.h situ_cubin
+tanh-image.h tanh_cubin
+bridge-image.h attention_bridge_cubin
+flash-tiles-image.h flash_tiles_cubin i2_flash_prefill_all_softmax device-types.h
+attention-image.h attention_cubin
+i2-decode-q8-image.h i2_decode_q8_image
+matrix-image.h matrix_cubin
+flash-native-image.h flash_native_cubin - device-types.h

@@ -1,0 +1,56 @@
+--- cuda-device.cl
++++ cuda-device.cl
+@@ -686,6 +686,22 @@
+     fg183f_row_g((uint64_t) src, (uint64_t) dst, width, rows, scale, block, 4, thread / 32, thread % 32, 32);
+ }
+ 
++__kernel void goose_kv_fwht_64(__global const float *src, __global float *dst,
++    int32_t width, int64_t rows, float scale) {
++    uint32_t block, thread;
++    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(block));
++    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
++    fwht_row64_g((uint64_t) src, (uint64_t) dst, rows, scale, 4l * block + thread / 32, thread % 32);
++}
++
++__kernel void goose_kv_fwht_256(__global const float *src, __global float *dst,
++    int32_t width, int64_t rows, float scale) {
++    uint32_t block, thread;
++    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(block));
++    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
++    fwht_row256_g((uint64_t) src, (uint64_t) dst, rows, scale, 4l * block + thread / 32, thread % 32);
++}
++
+ __kernel void goose_fwht_q4(__global const float *src, __global uchar *dst,
+     int32_t width, int64_t rows, float scale) {
+     __local float tile[4 * 256] __attribute__((aligned(16)));
+@@ -699,6 +715,30 @@
+         width, rows, scale, 4l * block + warp, thread % 32);
+ }
+ 
++__kernel void goose_fwht_q4_64(__global const float *src, __global uchar *dst, int32_t width, int64_t rows, float scale) {
++    __local float tile[4 * 64] __attribute__((aligned(16)));
++    uint32_t block, thread;
++    uint64_t shared;
++    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(block));
++    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
++    __asm__("cvta.shared.u64 %0, %1;" : "=l"(shared) : "l"((uint64_t) tile));
++    const uint32_t warp = thread / 32;
++    fwht_q4_write64_g((uint64_t)src, (uint64_t)dst, shared + 256ul * warp, rows, scale,
++                      4l * block + warp, thread % 32);
++}
++
++__kernel void goose_fwht_q4_256(__global const float *src, __global uchar *dst, int32_t width, int64_t rows, float scale) {
++    __local float tile[4 * 256] __attribute__((aligned(16)));
++    uint32_t block, thread;
++    uint64_t shared;
++    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(block));
++    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
++    __asm__("cvta.shared.u64 %0, %1;" : "=l"(shared) : "l"((uint64_t) tile));
++    const uint32_t warp = thread / 32;
++    fwht_q4_write256_g((uint64_t)src, (uint64_t)dst, shared + 1024ul * warp, rows, scale,
++                      4l * block + warp, thread % 32);
++}
++
+ #define fg179w_ld_f32 fg183f_ld_f32
+ static void fg179w_st_f32(uint64_t base, uint64_t byte, float value) {
+     fg_device_global_store(base + byte, value);

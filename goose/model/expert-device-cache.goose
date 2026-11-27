@@ -39,7 +39,7 @@ export fn ec_manage_pins(spans: const i64[:], acquire: i64) -> i64 {
     return spans.len / 2;
 }
 
-fn ec_pin_mapped(groups: const i64[:], layers: const i64[:]) {
+fn ec_pin_mapped(groups: const i64[:], layers: const i64[:], keep_resident: bool) {
     var info: i64[4] = [0; 4];
     if ec_pin_info(info[..]) != 1 { return; }
     let page = info[0];
@@ -88,11 +88,13 @@ fn ec_pin_mapped(groups: const i64[:], layers: const i64[:]) {
     }
     var total: i64 = 0;
     var pinned: i64 = 0;
-    let share = info[3] / used;
+    let budget = if keep_resident { info[3] - 12 * 1024 * 1024 } else { info[3] };
+    if budget <= 0 { return; }
+    let share = budget / used;
     for i in used {
         let bytes = end[i] - begin[i];
         // Admit complete spans so an expert transfer never crosses a pin boundary.
-        if info[3] < all_bytes && bytes > share * (i + 1) - total { continue; }
+        if budget < all_bytes && bytes > share * (i + 1) - total { continue; }
         total += bytes;
         spans[2 * pinned] = begin[i];
         spans[2 * pinned + 1] = bytes;
@@ -105,14 +107,23 @@ fn ec_pin_mapped(groups: const i64[:], layers: const i64[:]) {
         return;
     }
     var resident: i64[4] = [0; 4];
+    var ready: i64 = 0;
+    var ready_bytes: i64 = 0;
     for i in pinned {
+        let start = spans[2 * i];
         let bytes = spans[2 * i + 1];
-        if dw_ram_residency(spans[2 * i] as! u64, bytes, page, resident[..]) != 0 || resident[1] != bytes {
+        if dw_ram_residency(start as! u64, bytes, page, resident[..]) != 0 || resident[1] != bytes {
+            if keep_resident { continue; }
             ec_pin_reason(2, total, available);
             return;
         }
+        spans[2 * ready] = start;
+        spans[2 * ready + 1] = bytes;
+        ready += 1;
+        ready_bytes += bytes;
     }
-    ec_pin_register(spans[0 .. 2 * pinned], total);
+    if ready == 0 { return; }
+    ec_pin_register(spans[0 .. 2 * ready], ready_bytes);
 }
 
 fn ec_plane_bytes(t: i64, owner: const i64[:], experts: i64) -> i64 {
@@ -217,7 +228,7 @@ export fn qr_cuda_experts(owner: const i64[:], records: const i64[:], head: i64,
     }
     let layout = groups[0 .. found * EC_GROUP];
     let loaded = ec_load(layout, layers[..], used, words32, words64);
-    if loaded > 0 { ec_pin_mapped(layout, layers[..]); }
+    if loaded > 0 { ec_pin_mapped(layout, layers[..], owner.len > 13 && owner[13] == 1); }
     return loaded;
 }
 
