@@ -2345,13 +2345,14 @@ static void init_expert_host_ring(void) {
     ring->storage = storage;
 }
 
-static _Thread_local bool giga_small_expert_wave;
+static _Thread_local bool giga_small_expert_wave, giga_stage_prefill;
 
 void fg_cuda_gigachat4_small_expert_wave(uint8_t enabled) {
     giga_small_expert_wave = enabled != 0;
 }
 
 uint8_t fg_cuda_expert_stage_enabled(int64_t active_experts, uint8_t stage_all) {
+    giga_stage_prefill = giga_small_expert_wave && !stage_all && active_experts > 8;
     const size_t planes = stage_all ? 3 : 2;
     if (active_experts <= 0 || (!stage_all && active_experts <= 8 && !giga_small_expert_wave) ||
         !activations.active || !activations.defer_waits ||
@@ -2486,12 +2487,40 @@ static int submit_parallel_experts(const struct expert_upload_job * jobs, size_t
     return error;
 }
 
+static int submit_giga_pipelined_experts(const struct expert_upload_job * jobs,
+                                        size_t count, size_t bytes) {
+    uint8_t * storage;
+    int error = reserve_expert_host_slot(bytes, cuda.expert_stream, &storage);
+    if (error != 0) return error;
+    const size_t first_bytes = jobs[0].bytes;
+    pthread_mutex_lock(&expert_copy_worker.lock);
+    expert_copy_worker.task = (struct expert_copy_task) {jobs + 1, count - 1, storage + first_bytes};
+    pthread_cond_signal(&expert_copy_worker.ready);
+    pthread_mutex_unlock(&expert_copy_worker.lock);
+
+    memcpy(storage, jobs[0].source, first_bytes);
+    error = cuda.upload_async(jobs[0].destination, storage, first_bytes, cuda.expert_stream);
+    pthread_mutex_lock(&expert_copy_worker.lock);
+    while (expert_copy_worker.task.count != 0) pthread_cond_wait(&expert_copy_worker.done, &expert_copy_worker.lock);
+    pthread_mutex_unlock(&expert_copy_worker.lock);
+    storage += first_bytes;
+    for (size_t i = 1; error == 0 && i < count; ++i) {
+        error = cuda.upload_async(jobs[i].destination, storage, jobs[i].bytes, cuda.expert_stream);
+        storage += jobs[i].bytes;
+    }
+    if (error == 0) ++activations.expert_parallel_batches;
+    return error;
+}
+
 static int submit_expert_stage(void) {
     if (cuda.expert_upload_count == 0) return 0;
     // Existing readers release cache slots before this stream writes them.
     // Consumers wait on the recorded completion event.
     int status = cuda.stream_wait_event(cuda.expert_stream, cuda.expert_slots_ready, 0);
     const bool parallel = expert_copy_worker.running && cuda.expert_upload_count >= 32;
+    const char * pipeline_setting = parallel && giga_stage_prefill ? getenv("GOOSE_GIGA_STAGE_PIPELINE") : NULL;
+    const bool pipeline = parallel && giga_stage_prefill &&
+        (!pipeline_setting || strcmp(pipeline_setting, "0") != 0);
     for (size_t i = 0; status == 0 && i < cuda.expert_upload_count;) {
         const struct expert_upload_job * job = &cuda.expert_upload_jobs[i];
         activations.pending = true;
@@ -2500,7 +2529,10 @@ static int submit_expert_stage(void) {
             while (i + count < cuda.expert_upload_count && job[count].pageable &&
                 job[count].bytes <= EXPERT_HOST_SLOT_BYTES - bytes) bytes += job[count++].bytes;
         }
-        if (count >= 4) {
+        if (pipeline && count >= 2) {
+            status = submit_giga_pipelined_experts(job, count, bytes);
+            i += count;
+        } else if (count >= 4) {
             status = submit_parallel_experts(job, count, bytes);
             i += count;
         } else {

@@ -525,3 +525,23 @@ The default build measured 312.03/11.83 at 9233 MiB and matched
 all 32 IDs. A separate 4352/2 diagnostic matched the captured DSA
 key IDs byte for byte. No 32K/512 or cross-architecture inference
 qualification is claimed.
+
+### EXP-2026-11-27-2163 — Pipeline pageable expert staging
+
+For eligible GigaChat4 prefill staging waves, the CPU submission
+thread copies and enqueues the first plane while the existing worker
+fills the remaining planes in a disjoint part of the same ring slot.
+The worker is joined before its planes or the slot event are enqueued.
+The cache, projection order, upload order and 3 × 4 MiB ring are
+unchanged. Set GOOSE_GIGA_STAGE_PIPELINE=0 to disable this path.
+
+With pageable staging and its worker enabled, 512/32 A-B-B-A means
+improved from 165.15 to 185.99 prefill tokens/s (+12.6%); decode was
+15.34 to 15.32. All 32 output IDs matched. VRAM was 8466–8467 MiB,
+peak RSS stayed within 296 KiB and no swap-out growth occurred.
+A default-enabled diagnostic recorded 3470 parallel batches in
+prefill and none in decode. A separate 6144/32 off/default pair
+measured 310.80/12.20 and 317.49/12.05 tokens/s, with matching
+output IDs, 9215/9207 MiB VRAM and no swap-out growth. That pair
+is diagnostic. No 32K/512 or separate cross-architecture inference
+qualification is claimed.
