@@ -3958,7 +3958,17 @@ export fn fg143_storage_allocate(graph: u64) -> u64 {
 }
 
 extern "fg143_graph_nodes" fn graph_nodes(graph: u64) -> i64;
-extern "fg143_graph_node" fn graph_node(graph: u64, index: i64) -> u64;
+extern "fg143_graph_node_bytes" fn graph_node_bytes(graph: u64) -> u8[:];
+
+extern "fg143_graph_pointer" fn graph_pointer(nodes: const u8[:], index: i64) -> u64;
+extern "fg143_graph_pointer_batch" fn graph_pointer_batch(nodes: const u8[:], first: i64, output: u64[:]);
+
+fn graph_node(nodes: const u8[:], index: i64) -> u64 {
+    let count = nodes.len / 8;
+    let position = if index < 0 { count + index } else { index };
+    if position < 0 || position >= count { return 0; }
+    return graph_pointer(nodes, position);
+}
 extern "fg158_prop" fn graph_prop(tensor: u64, field: i64) -> i64;
 extern "fg143_graph_inputs" fn graph_inputs(tensor: u64, sources: u64[:]);
 extern "ggml_is_empty" fn graph_empty(tensor: u64) -> bool;
@@ -4050,22 +4060,22 @@ fn shared_projection(p: const i64[:], width: i64, rows: i64, kind: i64) -> bool 
 
 // Match the complete shared expert and residual before extending the routed graph.
 // Each matched intermediate must have its final consumer inside this group.
-fn shared_ffn_plan(graph: u64, step: i64, deadlines: const i64[:], input: u64, routed: u64,
+fn shared_ffn_plan(nodes: const u8[:], step: i64, deadlines: const i64[:], input: u64, routed: u64,
                    width: i64, shared: i64[:]) -> bool {
     if step + 14 >= deadlines.len || deadlines[step + 5] != step + 13 ||
        deadlines[step + 6] != step + 8 || deadlines[step + 7] != step + 8 ||
        deadlines[step + 8] != step + 9 || deadlines[step + 9] != step + 12 ||
        deadlines[step + 10] != step + 11 || deadlines[step + 11] != step + 12 ||
        deadlines[step + 12] != step + 13 || deadlines[step + 13] != step + 14 { return false; }
-    let a = graph_node(graph, step + 6);
-    let b = graph_node(graph, step + 7);
-    let glu = graph_node(graph, step + 8);
-    let down = graph_node(graph, step + 9);
-    let router = graph_node(graph, step + 10);
-    let sigmoid = graph_node(graph, step + 11);
-    let product = graph_node(graph, step + 12);
-    let added = graph_node(graph, step + 13);
-    let output = graph_node(graph, step + 14);
+    let a = graph_node(nodes, step + 6);
+    let b = graph_node(nodes, step + 7);
+    let glu = graph_node(nodes, step + 8);
+    let down = graph_node(nodes, step + 9);
+    let router = graph_node(nodes, step + 10);
+    let sigmoid = graph_node(nodes, step + 11);
+    let product = graph_node(nodes, step + 12);
+    let added = graph_node(nodes, step + 13);
+    let output = graph_node(nodes, step + 14);
     if graph_prop(a, 2) != 29 || graph_prop(b, 2) != 29 ||
        graph_prop(glu, 2) != 100 || graph_prop(down, 2) != 29 ||
        graph_prop(router, 2) != 29 || graph_prop(sigmoid, 2) != 91 ||
@@ -4140,17 +4150,17 @@ fn shared_ffn_plan(graph: u64, step: i64, deadlines: const i64[:], input: u64, r
     return true;
 }
 
-fn try_routed_graph(graph: u64, step: i64, deadlines: const i64[:]) -> i64 {
+fn try_routed_graph(nodes: const u8[:], step: i64, deadlines: const i64[:]) -> i64 {
     if step + 5 >= deadlines.len || deadlines[step] != step + 2 || deadlines[step + 1] != step + 2 ||
        deadlines[step + 2] != step + 3 || deadlines[step + 3] != step + 5 || deadlines[step + 4] != step + 5 {
         return 0;
     }
-    let first = graph_node(graph, step);
-    let second = graph_node(graph, step + 1);
-    let glu_node = graph_node(graph, step + 2);
-    let down_node = graph_node(graph, step + 3);
-    let norm_node = graph_node(graph, step + 4);
-    let output = graph_node(graph, step + 5);
+    let first = graph_node(nodes, step);
+    let second = graph_node(nodes, step + 1);
+    let glu_node = graph_node(nodes, step + 2);
+    let down_node = graph_node(nodes, step + 3);
+    let norm_node = graph_node(nodes, step + 4);
+    let output = graph_node(nodes, step + 5);
     if graph_prop(first, 2) != 30 || graph_prop(second, 2) != 30 ||
        graph_prop(glu_node, 2) != 100 || graph_prop(down_node, 2) != 30 ||
        graph_prop(norm_node, 2) != 95 || graph_prop(output, 2) != 95 { return 0; }
@@ -4212,7 +4222,7 @@ fn try_routed_graph(graph: u64, step: i64, deadlines: const i64[:]) -> i64 {
     plan[7] = width; plan[8] = hidden; plan[9] = down_kind;
     if full_ffn_enabled() {
         var shared: i64[138] = [0; 138];
-        if shared_ffn_plan(graph, step, deadlines, plan[3] as! u64, output, width, shared[..]) &&
+        if shared_ffn_plan(nodes, step, deadlines, plan[3] as! u64, output, width, shared[..]) &&
            !activation_spans_overlap(shared[5] as! u64, (width * 4) as u64, plan[4] as! u64, (experts * 4) as u64) &&
            !activation_spans_overlap(shared[5] as! u64, (width * 4) as u64, plan[5] as! u64, 32) &&
            !activation_spans_overlap(shared[5] as! u64, (width * 4) as u64, shared[4] as! u64, (width * 4) as u64) &&
@@ -4230,12 +4240,12 @@ fn try_routed_graph(graph: u64, step: i64, deadlines: const i64[:]) -> i64 {
     return if grouped > 0 { 6 } else { grouped };
 }
 
-fn try_direct_ssm(graph: u64, step: i64, deadlines: const i64[:], concat: u64) -> i64 {
+fn try_direct_ssm(nodes: const u8[:], step: i64, deadlines: const i64[:], concat: u64) -> i64 {
     if step + 3 >= deadlines.len || deadlines[step] != step + 3 || deadlines[step + 1] > step + 2 ||
        deadlines[step + 2] > step + 3 { return 0; }
-    let tail = graph_node(graph, step + 1);
-    let copy = graph_node(graph, step + 2);
-    let conv = graph_node(graph, step + 3);
+    let tail = graph_node(nodes, step + 1);
+    let copy = graph_node(nodes, step + 2);
+    let conv = graph_node(nodes, step + 3);
     if graph_prop(tail, 2) != 37 || graph_prop(copy, 2) != 34 ||
        graph_prop(conv, 2) != 76 || storage_get(tail, STORAGE_VIEW, 0) != concat ||
        storage_get(conv, STORAGE_VIEW, 0) != 0 { return 0; }
@@ -4280,10 +4290,10 @@ fn try_direct_ssm(graph: u64, step: i64, deadlines: const i64[:], concat: u64) -
     return direct_ssm(plan[..], step, deadlines[step + 3]);
 }
 
-fn try_glu_pack(graph: u64, step: i64, deadlines: const i64[:], glu: u64) -> bool {
+fn try_glu_pack(nodes: const u8[:], step: i64, deadlines: const i64[:], glu: u64) -> bool {
     if step + 1 >= deadlines.len || deadlines[step] != step + 1 ||
        storage_get(glu, STORAGE_VIEW, 0) != 0 { return false; }
-    let down = graph_node(graph, step + 1);
+    let down = graph_node(nodes, step + 1);
     if graph_prop(down, 2) != 30 { return false; }
     var p: i64[71] = [0; 71];
     graph_describe(down, p[..]);
@@ -4307,7 +4317,7 @@ fn try_glu_pack(graph: u64, step: i64, deadlines: const i64[:], glu: u64) -> boo
     if gate == 0 || up == 0 || graph_prop(gate, 2) != 30 ||
        graph_prop(up, 2) != 30 { return false; }
     if step < 2 || deadlines[step - 2] != step || deadlines[step - 1] != step { return false; }
-    let first = graph_node(graph, step - 2); let second = graph_node(graph, step - 1);
+    let first = graph_node(nodes, step - 2); let second = graph_node(nodes, step - 1);
     if !((first == gate && second == up) || (first == up && second == gate)) { return false; }
     let a = storage_get(gate, STORAGE_DATA, 0);
     let b = storage_get(up, STORAGE_DATA, 0);
@@ -4328,10 +4338,10 @@ fn try_glu_pack(graph: u64, step: i64, deadlines: const i64[:], glu: u64) -> boo
     return offer_glu_pack(plan[..]);
 }
 
-fn try_rms_scale(graph: u64, step: i64, deadlines: const i64[:], rms: u64) -> i64 {
+fn try_rms_scale(nodes: const u8[:], step: i64, deadlines: const i64[:], rms: u64) -> i64 {
     if step + 1 >= deadlines.len || deadlines[step] != step + 1 ||
        storage_get(rms, STORAGE_VIEW, 0) != 0 { return 0; }
-    let scale = graph_node(graph, step + 1);
+    let scale = graph_node(nodes, step + 1);
     if graph_prop(scale, 2) != 32 || storage_get(scale, STORAGE_VIEW, 0) != 0 { return 0; }
     var inputs: u64[10] = [0; 10];
     graph_inputs(scale, inputs[..]);
@@ -4365,11 +4375,11 @@ fn try_rms_scale(graph: u64, step: i64, deadlines: const i64[:], rms: u64) -> i6
     return rms_scale(cfg[..], inp, x.bytes, out, words * 4, step, deadlines[step + 1], eps, factor);
 }
 
-fn try_fwht_q4(graph: u64, step: i64, deadlines: const i64[:], fwht: u64) -> i64 {
+fn try_fwht_q4(nodes: const u8[:], step: i64, deadlines: const i64[:], fwht: u64) -> i64 {
     if step + 2 >= deadlines.len || deadlines[step] != step + 2 ||
        deadlines[step + 1] > step + 2 || storage_get(fwht, STORAGE_VIEW, 0) != 0 { return 0; }
-    let view = graph_node(graph, step + 1);
-    let update = graph_node(graph, step + 2);
+    let view = graph_node(nodes, step + 1);
+    let update = graph_node(nodes, step + 2);
     if graph_prop(view, 2) != 37 || graph_prop(update, 2) != 42 ||
        storage_get(view, STORAGE_VIEW, 0) != fwht || storage_get(view, STORAGE_VIEW_OFFSET, 0) != 0 { return 0; }
     var inputs: u64[10] = [0; 10];
@@ -4460,12 +4470,12 @@ extern "fg_cuda_moe_epilogue_enabled" fn moe_epilogue_enabled() -> bool;
 extern "fg_cuda_moe_epilogue" fn moe_epilogue(routed: u64, shared: u64, gate: u64, residual: u64,
     output: u64, rows: i64, step: i64, deadline: i64) -> i64;
 
-fn try_moe_epilogue(graph: u64, step: i64, deadlines: const i64[:], mul: u64) -> i64 {
+fn try_moe_epilogue(nodes: const u8[:], step: i64, deadlines: const i64[:], mul: u64) -> i64 {
     if step + 2 >= deadlines.len || deadlines[step] != step + 1 || deadlines[step + 1] != step + 2 {
         return 0;
     }
-    let mix = graph_node(graph, step + 1);
-    let sum = graph_node(graph, step + 2);
+    let mix = graph_node(nodes, step + 1);
+    let sum = graph_node(nodes, step + 2);
     if graph_prop(mix, 2) != 2 || graph_prop(sum, 2) != 2 ||
        storage_get(mul, STORAGE_VIEW, 0) != 0 || storage_get(mix, STORAGE_VIEW, 0) != 0 ||
        storage_get(sum, STORAGE_VIEW, 0) != 0 { return 0; }
@@ -4508,48 +4518,55 @@ fn try_moe_epilogue(graph: u64, step: i64, deadlines: const i64[:], mul: u64) ->
 
 export fn fg143_graph_run(graph: u64, selective: bool, deadlines: const i64[:], observe: bool) -> i64 {
     if graph == 0 { return -1; }
-    let count = graph_nodes(graph);
+    let nodes = graph_node_bytes(graph);
+    let count = nodes.len / 8;
     if deadlines.len != 0 && (deadlines.len != count || !selective) { return -1; }
     var work = GraphWorkspace { address: 0, capacity: 0 };
     var outcome: i64 = 0;
     let use_routed_graph = !observe && deadlines.len != 0 && routed_graph_enabled();
     let use_moe_epilogue = !observe && deadlines.len != 0 && cpu_prefill() && moe_epilogue_enabled();
     var i: i64 = 0;
+    var pointers: u64[16] = [0; 16];
+    var batch_start: i64 = -16;
     while i < count {
+        if i >= batch_start + 16 {
+            batch_start = i;
+            graph_pointer_batch(nodes, batch_start, pointers[..]);
+        }
         let step = if deadlines.len == 0 { -1 } else { i };
         let deadline = if deadlines.len == 0 { -1 } else { deadlines[i] };
-        let tensor = graph_node(graph, i);
+        let tensor = pointers[i - batch_start];
         if use_moe_epilogue && graph_prop(tensor, 2) == 7 {
-            let fused = try_moe_epilogue(graph, i, deadlines, tensor);
+            let fused = try_moe_epilogue(nodes, i, deadlines, tensor);
             if fused > 0 { i += 3; continue; }
             if fused < 0 { outcome = i + 1; break; }
         }
         if !observe && deadlines.len != 0 && graph_prop(tensor, 2) == 95 && fwht_q4_enabled() {
-            let fused = try_fwht_q4(graph, i, deadlines, tensor);
+            let fused = try_fwht_q4(nodes, i, deadlines, tensor);
             if fused > 0 { i += 3; continue; }
             if fused < 0 { outcome = i + 1; break; }
         }
         if !observe && deadlines.len != 0 && graph_prop(tensor, 2) == 25 {
-            let fused = try_rms_scale(graph, i, deadlines, tensor);
+            let fused = try_rms_scale(nodes, i, deadlines, tensor);
             if fused > 0 { i += 2; continue; }
             if fused < 0 { outcome = i + 1; break; }
         }
         if !observe && deadlines.len != 0 && graph_prop(tensor, 2) == 100 &&
-           try_glu_pack(graph, i, deadlines, tensor) {
+           try_glu_pack(nodes, i, deadlines, tensor) {
             // Keep both operands alive at the SwiGLU step until packing finishes.
-            let ok = execute_graph_node(graph_node(graph, i + 1), work, selective, i, deadlines[i + 1]);
+            let ok = execute_graph_node(graph_node(nodes, i + 1), work, selective, i, deadlines[i + 1]);
             let used = close_glu_pack();
             if !ok || !used { outcome = i + 1; break; }
             i += 2;
             continue;
         }
         if !observe && deadlines.len != 0 && graph_prop(tensor, 2) == 22 && direct_ssm_enabled() {
-            let grouped = try_direct_ssm(graph, i, deadlines, tensor);
+            let grouped = try_direct_ssm(nodes, i, deadlines, tensor);
             if grouped > 0 { i += 4; continue; }
             if grouped < 0 { outcome = i + 1; break; }
         }
         if use_routed_graph && graph_prop(tensor, 2) == 30 {
-            let grouped = try_routed_graph(graph, i, deadlines);
+            let grouped = try_routed_graph(nodes, i, deadlines);
             if grouped > 0 { i += grouped; continue; }
             if grouped < 0 { outcome = i + 1; break; }
         }

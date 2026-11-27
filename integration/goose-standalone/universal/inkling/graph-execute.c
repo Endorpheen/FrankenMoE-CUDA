@@ -450,11 +450,25 @@ static uint8_t run_node(sl_i64 packet, int64_t mode, const sl_u8 inputs[5],
 }
 
 int64_t fg143_graph_nodes(uint64_t graph) {
-    return ggml_graph_n_nodes((struct ggml_cgraph *) (uintptr_t) graph);
+    return ((const struct ggml_cgraph *) (uintptr_t) graph)->n_nodes;
 }
 
-uint64_t fg143_graph_node(uint64_t graph, int64_t index) {
-    return (uint64_t) (uintptr_t) ggml_graph_node((struct ggml_cgraph *) (uintptr_t) graph, (int) index);
+sl_u8 fg143_graph_node_bytes(uint64_t graph) {
+    const struct ggml_cgraph *view = (const void *) (uintptr_t) graph;
+    _Static_assert(sizeof(*view->nodes) == sizeof(uint64_t), "64-bit graph pointer ABI");
+    return (sl_u8) { (void *) view->nodes, (int64_t) view->n_nodes * sizeof(*view->nodes) };
+}
+
+uint64_t fg143_graph_pointer(sl_u8 nodes, int64_t index) {
+    struct ggml_tensor *tensor;
+    memcpy(&tensor, nodes.data + (size_t) index * sizeof tensor, sizeof tensor);
+    return (uint64_t) (uintptr_t) tensor;
+}
+
+void fg143_graph_pointer_batch(sl_u8 nodes, int64_t first, sl_u64 output) {
+    const int64_t remain = nodes.len / (int64_t) sizeof(uint64_t) - first;
+    const size_t count = (size_t) (remain < output.len ? remain : output.len);
+    memcpy(output.data, nodes.data + (size_t) first * sizeof(uint64_t), count * sizeof(uint64_t));
 }
 
 void fg143_graph_inputs(uint64_t address, sl_u64 sources) {
@@ -699,7 +713,7 @@ static enum ggml_status compute_graph(struct ggml_cgraph * graph, bool all, cons
     }
     if (!started) return GGML_STATUS_FAILED;
     if (failed > 0) {
-        const struct ggml_tensor * node = ggml_graph_node(graph, (int) (failed - 1));
+        const struct ggml_tensor * node = graph->nodes[failed - 1];
         fprintf(stderr, "Goose graph: node %lld (%s) failed\n", (long long) failed - 1, ggml_op_name(node->op));
     }
     const uint64_t matrices = fg_cuda_take_matrices();

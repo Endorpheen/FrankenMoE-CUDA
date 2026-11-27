@@ -30,17 +30,25 @@ decode tok/s, versus 294.48 and 12.63 for v0.15.0. Output matched. The
 microbenchmark gains have not yet translated into a throughput increase on
 this workload.
 
+## Additional microbenchmark savings
+
+| Operation | Saving per node | Prefill calls | Decode calls |
+| --- | ---: | ---: | ---: |
+| Batch graph node traversal (EXP-2215) | 0.89 ns | Pending | Pending |
+
 ## Remaining C code
 
 | Linux x86-64 build | C inputs | C source lines | Retained GGML text sections | Retained GGML text bytes |
 | --- | ---: | ---: | ---: | ---: |
 | v0.15.0 | 3 | 13,871 | 182 | 63,712 |
 | EXP-2214 | 3 | 13,871 | 182 | 63,712 |
+| EXP-2215 | 3 | 13,871 | 180 | 63,581 |
 
 The C inputs are `ggml.c`, `ggml-quants.c` and `ggml-system.c`. Source
 lines include all three files. Retained text counts non-empty input sections
 from their objects in the GNU linker map after section garbage collection.
 Both map-producing relinks matched the corresponding executable byte for
 byte. Both measurements exclude headers and other C adapters. A section
-count is not a function count. The current changes remove calls on hot
-paths, while other runtime callers still keep the same GGML sections linked.
+count is not a function count. EXP-2215 removed 131 bytes by eliminating all linked calls to the two GGML
+graph node accessors. The arithmetic microbenchmark savings above are kept
+separate from this reduction in linked code.

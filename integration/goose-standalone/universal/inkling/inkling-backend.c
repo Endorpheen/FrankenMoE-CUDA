@@ -31,6 +31,8 @@ int64_t inkling_row_major_i2_text_logits(sl_f32 gs_export_arg0, int64_t gs_expor
 
 #include "graph-execute.h"
 #include "ggml.h"
+
+extern int64_t fg143_graph_nodes(uint64_t graph);
 #include "native-kv.h"
 #include "moe-epilogue.h"
 #include "situ.h"
@@ -154,7 +156,7 @@ static void evaluate(struct ggml_context *ctx, struct ggml_tensor **nodes, int c
     for(int i=0;i<count;i++)ggml_build_forward_expand(graph,nodes[i]);
     void *storage = NULL;
     struct fg_standalone_graph_plan *plan = NULL;
-    if (uses_resident_plan() && count == 1 && ggml_graph_n_nodes(graph) > 2) {
+    if (uses_resident_plan() && count == 1 && fg143_graph_nodes((uint64_t)(uintptr_t)graph) > 2) {
         plan = fg_standalone_graph_plan_alloc(graph, nodes[0]);
         assert(plan && MEASURE(8, fg_standalone_graph_plan_compute(plan)) == GGML_STATUS_SUCCESS);
     } else {
