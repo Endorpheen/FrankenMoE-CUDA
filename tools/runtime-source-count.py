@@ -67,6 +67,7 @@ mark(d/'apex-routing','route softmax mailbox prediction','.cl',gpu,'Apex routing
 frozen=u/'bonsai-frozen-cuda'
 mark(frozen,'device-prelude','.cl',gpu,'Device compilation prelude')
 mark(s,'cuda-device','.cl',gpu,'Shared device source for GigaChat4, Apex and Bonsai')
+mark(s / "gigachat4", "cuda-dsa-certified", ".cl", gpu, "Experimental GigaChat4 DSA image adapter")
 mark(d/'apex-extra','epilogue','.cl',gpu,'Apex MoE device epilogue')
 for f in sorted(files):
     if f.name.endswith('.cl.patch') and f.is_relative_to(d/'apex-extra'):

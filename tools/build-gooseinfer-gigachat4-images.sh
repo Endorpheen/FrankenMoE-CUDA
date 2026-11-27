@@ -28,7 +28,7 @@ sed -i 's/\ba16_f32\b/mla_a16_f32/g' "$scratch/q4-attention-device.h"
 sed -i -E 's/static void (giga_mla_mma_pv_(tile|indexed)_g\()/static __attribute__((always_inline)) void \1/' \
     "$scratch/q4-attention-device.h"
 compile_device "$standalone/cuda-device.cl"
-for variant in dense vector dsa mla; do
+for variant in dense vector dsa mla certified-dsa; do
     case "$variant" in
         dense) entries=goose_dense_mma ;;
         vector) entries=goose_vector_ops,goose_vector_flat,goose_vector_flat4 ;;
@@ -40,9 +40,17 @@ for variant in dense vector dsa mla; do
             entries+=,goose_giga_mla_mma_pv_tile,goose_giga_mla_mma_pv_visible_tile,goose_giga_mla_visibility
             entries+=,goose_giga_mla_compact_mask,goose_giga_mla_mma_pv_indexed,goose_giga_mla_indexed_merge,goose_giga_mla_mma_tile
             ;;
+        certified-dsa)
+            "$goose" --standalone -o "$scratch/dsa-certified.c" --header "$scratch/dsa-certified.h" "$standalone/gigachat4/dsa-certified-device.goose"
+            python3 "$src/extract-device.py" "$scratch" dsa-certified
+            cp "$standalone/cuda-device.cl" "$scratch/certified-device.cl"
+            printf '\n#include "gigachat4/cuda-dsa-certified.cl"\n' >> "$scratch/certified-device.cl"
+            compile_device "$scratch/certified-device.cl"
+            entries=goose_dsa_pack_power2,goose_dsa_bound_metadata,goose_dsa_bound_query,goose_dsa_integer_score,goose_dsa_score_cutoff,goose_dsa_compact,goose_dsa_replay,goose_dsa_finalize,goose_dsa_fallback_score,goose_dsa_fallback_top
+            ;;
     esac
     "$ptxas" -arch=sm_89 --entry "$entries" "$scratch/device.ptx" -o "$scratch/$variant.cubin"
-    python3 - "$scratch/$variant.cubin" "$out/giga-$variant-image.h" "giga_${variant}_image" <<'PY'
+    python3 - "$scratch/$variant.cubin" "$out/giga-$variant-image.h" "giga_${variant//-/_}_image" <<'PY'
 from pathlib import Path
 import sys
 

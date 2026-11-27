@@ -54,15 +54,30 @@ static bool load_giga_mla(void) {
     return giga_mla.available;
 }
 
+struct giga_mla_waves {
+    void **tile_args;
+    void **merge_args;
+    int *start;
+    bool attempted;
+    Function tiles[6], merges[3];
+};
+
+int32_t giga_mla_launch_wave(uint64_t address, int32_t start, int32_t count, int32_t tile,
+                             int32_t merge, int32_t blocks, int32_t tile_rows, int32_t threads) {
+    struct giga_mla_waves *wave = (void *)(uintptr_t)address;
+    *wave->start = start;
+    wave->attempted = true;
+    const int error = cuda.launch(wave->tiles[tile], blocks, tile_rows, 1, threads, 1, 1, 0, NULL, wave->tile_args, NULL);
+    if (error) return error;
+    return cuda.launch(wave->merges[merge], count, 1, 1, 32, 1, 1, 0, NULL, wave->merge_args, NULL);
+}
+
 int64_t fg_cuda_giga_mla_attention(sl_i64 config, sl_u8 q, sl_u8 k, sl_u8 v, sl_u8 mask, sl_u8 out, float scale) {
     if (!giga_small_expert_wave || config.len != 23 || config.data[22] != 1) return 0;
     const char *mla_setting = getenv("GOOSE_GIGACHAT4_MLA_ATTENTION");
     if (mla_setting && strcmp(mla_setting, "0") == 0) return 0;
-    if (config.data[17] <= 0 || config.data[17] > 65535 ||
-        config.data[18] <= 0 || config.data[18] > INT_MAX ||
-        config.data[19] <= 0 || config.data[19] > config.data[18] || config.data[20] <= 0 ||
-        config.data[20] % config.data[19] != 0 || (uint64_t) config.data[20] > SIZE_MAX ||
-        q.len <= 0 || k.len <= 0 || v.len <= 0 || mask.len < 0 || out.len <= 0) return -1;
+    int64_t lengths[] = {q.len, k.len, v.len, mask.len, out.len};
+    if (giga_cuda_mla_validate(config, (sl_i64){lengths, 5}) != 1) return -1;
     const int active = start_context();
     if (active != 1) return active;
     if (!load_giga_mla()) return finish_context() == 0 ? 0 : -1;
@@ -94,19 +109,14 @@ int64_t fg_cuda_giga_mla_attention(sl_i64 config, sl_u8 q, sl_u8 k, sl_u8 v, sl_
     }
     const unsigned tiles = (unsigned) config.data[17];
     const int64_t positions = config.data[2];
-    const int64_t pair_rows = positions > 0 && positions <= INT_MAX / 2 ? 2 * positions : 0;
-    const bool paired_shape = giga_mla.mla_attention_pair &&
-        config.data[0] == 576 && config.data[1] == 512 && config.data[4] == 1 && config.data[5] == 1 &&
-        pair_rows > 0 && tasks % pair_rows == 0 && (positions == 1 ||
-        (giga_mla.mla_attention_batch_pair && giga_mla.mla_attention_batch_merge && capacity >= 2));
-    const bool mla_mma = giga_mla.mla_mma_tile && config.data[0] == 576 &&
-        config.data[1] == 512 && positions >= 8 && positions % 8 == 0 && config.data[6] % 16 == 0 &&
-        config.data[4] == 1 && config.data[5] == 1 && config.data[16] == 256 && tasks % 8 == 0 && capacity >= 8;
-    if (mla_mma) capacity -= capacity % 8;
-    else if (paired_shape && capacity >= 2) capacity -= capacity % 2;
+    int64_t plan[4];
+    giga_cuda_mla_plan(config, capacity, giga_mla.mla_attention_pair != NULL,
+        giga_mla.mla_attention_batch_pair && giga_mla.mla_attention_batch_merge,
+        giga_mla.mla_mma_tile != NULL, (sl_i64){plan, 4});
+    capacity = (int)plan[0];
+    const bool paired_shape = plan[1] != 0, mla_mma = plan[2] != 0;
     bool indexed = false;
-    if (error == 0 && mla_mma && staged[3] && positions <= 4096 &&
-        config.data[6] >= 8192 && config.data[3] == 32 &&
+    if (error == 0 && plan[3] && staged[3] &&
         giga_mla.mla_compact_mask && giga_mla.mla_indexed_tile && giga_mla.mla_indexed_merge) {
         const size_t key_bytes = (size_t)positions * 2048 * sizeof(int32_t);
         const size_t length_bytes = (size_t)positions * sizeof(int32_t);
@@ -118,14 +128,10 @@ int64_t fg_cuda_giga_mla_attention(sl_i64 config, sl_u8 q, sl_u8 k, sl_u8 v, sl_
                 1, 1, 128, 1, 1, 0, NULL, args, NULL);
             int32_t counts[4096];
             if (error == 0) error = cuda.download(counts, lengths, length_bytes);
-            indexed = error == 0;
-            for (int64_t row = 0; indexed && row < positions; ++row)
-                indexed = counts[row] == 2048;
-            if (indexed) {
-                size_t cap = (task_bytes * (size_t)capacity) / (8 * 514 * sizeof(float));
-                capacity = cap < (size_t) tasks ? (int)cap : tasks;
-                capacity -= capacity % 8;
-            }
+            const int next_capacity = error == 0
+                ? giga_cuda_mla_indexed_capacity((sl_i32){counts, positions}, task_bytes, capacity, tasks) : 0;
+            indexed = next_capacity > 0;
+            if (indexed) capacity = next_capacity;
         } else if (admitted != 2) error = admitted;
     }
     bool visible = false;
@@ -144,23 +150,20 @@ int64_t fg_cuda_giga_mla_attention(sl_i64 config, sl_u8 q, sl_u8 k, sl_u8 v, sl_
     void * tile_args[] = {&staged[0], &staged[1], &staged[2],
         &staged[3], &cuda.attention_scratch.address, &staged[4], &scale, &start, &flags};
     void * merge_args[] = {&cuda.attention_scratch.address, &output, &staged[4], &start};
-    while (error == 0 && start < tasks) {
-        const int count = tasks - start < capacity ? tasks - start : capacity;
-        const bool pair = !mla_mma && paired_shape && count % 2 == 0 && start % 2 == 0;
-        const Function tile = indexed ? giga_mla.mla_indexed_tile : visible ? giga_mla.mla_visibility_tile : mla_mma ? giga_mla.mla_mma_tile : pair ? (positions == 1 ? giga_mla.mla_attention_pair : giga_mla.mla_attention_batch_pair) :
-            giga_mla.mla_attention_tiles;
-        error = cuda.launch(tile, (unsigned) count / (mla_mma ? 8 : pair ? 2 : 1), indexed ? 8 : tiles, 1, mla_mma ? 256 : 32, 1, 1, 0, NULL, tile_args, NULL);
-        const Function merge = indexed ? giga_mla.mla_indexed_merge : pair && positions > 1 ? giga_mla.mla_attention_batch_merge :
-            giga_mla.mla_attention_merge;
-        if (error == 0) error = cuda.launch(merge, (unsigned) count, 1, 1, 32, 1, 1, 0, NULL, merge_args, NULL);
-        start += count;
-    }
+    struct giga_mla_waves wave = {
+        .tile_args = tile_args, .merge_args = merge_args, .start = &start,
+        .tiles = {giga_mla.mla_indexed_tile, giga_mla.mla_visibility_tile, giga_mla.mla_mma_tile,
+                  giga_mla.mla_attention_pair, giga_mla.mla_attention_batch_pair, giga_mla.mla_attention_tiles},
+        .merges = {giga_mla.mla_indexed_merge, giga_mla.mla_attention_batch_merge, giga_mla.mla_attention_merge},
+    };
+    if (error == 0) error = giga_cuda_mla_dispatch((uintptr_t)&wave, tasks, capacity, (int32_t)tiles,
+        positions, paired_shape, mla_mma, indexed, visible);
     if (error == 0 && indexed && getenv("GOOSE_GRAPH_LOG"))
         fprintf(stderr, "GigaChat4 indexed MLA: positions=%" PRId64 " cells=%" PRId64 "\n", positions, config.data[6]);
     if (error == 0 && mla_mma && getenv("GOOSE_GRAPH_LOG"))
         fprintf(stderr, "GigaChat4 MLA MMA: positions=%" PRId64 " cells=%" PRId64 "\n", positions, config.data[6]);
     if (error == 0) error = activation_publish(host, out.len, output, false);
-    if (error != 0 && start > 0) (void) cuda.sync();
+    if (error != 0 && wave.attempted) (void) cuda.sync();
     const int popped = finish_context();
     if (error != 0 || popped != 0) {
         fprintf(stderr, "Goose CUDA: GigaChat4 MLA failed (%d)\n", error ? error : popped);

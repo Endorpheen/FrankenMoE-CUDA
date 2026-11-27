@@ -4597,6 +4597,7 @@ export fn fg143_graph_run(graph: u64, selective: bool, deadlines: const i64[:], 
     var work = GraphWorkspace { address: 0, capacity: 0 };
     var outcome: i64 = 0;
     let use_routed_graph = !observe && deadlines.len != 0 && routed_graph_enabled();
+    let use_certified_dsa = !observe && deadlines.len != 0 && certified_dsa_enabled();
     let use_moe_epilogue = !observe && deadlines.len != 0 && cpu_prefill() && moe_epilogue_enabled();
     var i: i64 = 0;
     var pointers: u64[16] = [0; 16];
@@ -4609,6 +4610,11 @@ export fn fg143_graph_run(graph: u64, selective: bool, deadlines: const i64[:], 
         let step = if deadlines.len == 0 { -1 } else { i };
         let deadline = if deadlines.len == 0 { -1 } else { deadlines[i] };
         let tensor = pointers[i - batch_start];
+        if use_certified_dsa && graph_prop(tensor, 2) == 87 {
+            let fused = try_giga_dsa_graph(nodes, i, deadlines, tensor);
+            if fused > 0 { i += fused; continue; }
+            if fused < 0 { outcome = i + 1; break; }
+        }
         if use_moe_epilogue && graph_prop(tensor, 2) == 7 {
             let fused = try_moe_epilogue(nodes, i, deadlines, tensor);
             if fused > 0 { i += 3; continue; }
@@ -5092,4 +5098,60 @@ fn set_quantized_rows(p: const Node &, source: u64, destination: u64, ids: const
         if quantize_row(p.d.kind, from, to, width) != row_bytes { return false; }
     }
     return cuda_state_write(target, touched) == 0;
+}
+
+extern "fg_cuda_giga_dsa_certified_enabled" fn certified_dsa_enabled() -> bool;
+extern "fg_cuda_giga_dsa_certified_address" fn certified_dsa(config: i64[:],
+    inputs: const u64[:], sizes: const i64[:], out: u64, out_bytes: i64) -> i64;
+
+fn try_giga_dsa_graph(nodes: const u8[:], step: i64, deadlines: const i64[:], score: u64) -> i64 {
+    if step + 2 >= deadlines.len || deadlines[step] != step + 1 ||
+       deadlines[step + 1] != step + 2 || storage_get(score, STORAGE_VIEW, 0) != 0 { return 0; }
+    let top = graph_node(nodes, step + 1);
+    let scatter = graph_node(nodes, step + 2);
+    if graph_prop(top, 2) != 70 || graph_prop(scatter, 2) != 95 ||
+       storage_get(top, STORAGE_VIEW, 0) != 0 { return 0; }
+
+    var p: i64[71] = [0; 71];
+    var sources: u64[10] = [0; 10];
+    graph_inputs(scatter, sources[..]);
+    if sources[1] != top { return 0; }
+    graph_describe(scatter, p[..]);
+    if p[41] != 0x4453414d { return 0; }
+
+    graph_inputs(top, sources[..]);
+    if sources[0] != score { return 0; }
+    graph_describe(top, p[..]);
+    if p[54] != 1 { return 0; }
+    let out = storage_get(top, STORAGE_DATA, 0);
+    let ids = packet_tensor(p[..], 30);
+    let rows = ids.ne[1];
+    if out == 0 || !routed_dense(ids, 2048, rows, 1, 26) { return 0; }
+
+    graph_inputs(score, sources[..]);
+    graph_describe(score, p[..]);
+    let q = packet_tensor(p[..], 0);
+    let k = packet_tensor(p[..], 10);
+    let weights = packet_tensor(p[..], 20);
+    let mask = packet_tensor(p[..], 59);
+    let cells = k.ne[2];
+    if cells <= 4096 || cells > 32768 || cells % 16 != 0 || rows < 128 || rows > 4096 ||
+       !routed_dense(q, 128, 64, rows, 0) || !routed_dense(weights, 64, rows, 1, 0) ||
+       k.kind != 1 || k.ne[0] != 128 || k.ne[1] != 1 || k.ne[3] != 1 ||
+       k.nb[0] != 2 || k.nb[2] < 256 || k.nb[2] % 2 != 0 ||
+       mask.kind != 1 || mask.ne[0] != cells || mask.ne[1] != rows ||
+       mask.ne[2] != 1 || mask.ne[3] != 1 || mask.nb[0] != 2 || mask.nb[1] != 2 * cells ||
+       mask.bytes != 2 * cells * rows ||
+       !routed_dense(packet_tensor(p[..], 30), cells, rows, 1, 0) { return 0; }
+    var ptr: u64[4] = [0; 4];
+    var span: i64[4] = [q.bytes, k.bytes, weights.bytes, mask.bytes];
+    for i in 4 {
+        ptr[i] = storage_get(sources[i], STORAGE_DATA, 0);
+        if ptr[i] == 0 || span[i] <= 0 ||
+           activation_spans_overlap(out, ids.bytes as u64, ptr[i], span[i] as u64) { return 0; }
+    }
+    if graph_output_prepare(out, ids.bytes, true, false, step, deadlines[step + 1]) != 0 { return -1; }
+    var config: i64[6] = [cells, rows, k.nb[2], q.nb[2], weights.nb[1], mask.nb[1]];
+    let status = certified_dsa(config[..], ptr[..], span[..], out, ids.bytes);
+    return if status > 0 { 2 } else { status };
 }

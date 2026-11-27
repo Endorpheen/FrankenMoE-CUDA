@@ -1,5 +1,6 @@
 #include "cuda-driver.reference.merged.c"
 #include "giga-dsa-driver.inc"
+#include "giga-certified-dsa-driver.inc"
 #include "giga-mla-driver.inc"
 #include "attention-image.h"
 
