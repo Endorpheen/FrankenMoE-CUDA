@@ -4352,3 +4352,8 @@ uint64_t fg_cuda_take_moe_weighted(void) {
     cuda_moe_weighted_tiles = 0;
     return count;
 }
+
+uint8_t fg_cuda_giga_partial_pin(void) {
+    const char * setting = getenv("GOOSE_GIGA_PARTIAL_PIN");
+    return !setting || strcmp(setting, "0") != 0;
+}

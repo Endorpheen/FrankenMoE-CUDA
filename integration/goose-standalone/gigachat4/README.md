@@ -545,3 +545,28 @@ measured 310.80/12.20 and 317.49/12.05 tokens/s, with matching
 output IDs, 9215/9207 MiB VRAM and no swap-out growth. That pair
 is diagnostic. No 32K/512 or separate cross-architecture inference
 qualification is claimed.
+
+### EXP-2026-11-27-2169 — Keep fully resident expert pin ranges
+
+GigaChat4 registers the fully resident ranges within the requested
+pin budget and lets pageable staging handle ranges containing
+nonresident pages. Pin checks and bootstrap registration order are
+unchanged. The selection reserves 12 MiB for the pageable ring.
+Set GOOSE_GIGA_PARTIAL_PIN=0 to use all-or-nothing selection.
+The host pin limit can be set with GOOSE_EXPERT_PIN_MIB.
+
+On fully resident 512/32 A-B-B-A requests at a fixed 4093 MiB GPU
+expert cache, raising the host pin request from 4096 to 18601 MiB
+registered 4050/18545 MiB. Prefill rose from 186.16 to 268.96 and
+decode from 15.58 to 18.15 tokens/s. Peak RSS increased by 1.25 GiB,
+post-request VRAM by 27–30 MiB, and no swap-out growth occurred.
+All 32 IDs matched. These gains measure the larger pin limit.
+
+The range selection test preserved both eligible ranges when the
+middle range was unavailable. A live 512/32 diagnostic injected one
+missing-page report and registered 0/18343 MiB with the old/new
+policy. Both responses matched all 32 IDs and neither grew swap.
+A separate default-enabled run at the high pin limit returned
+269.18/18.49 tokens/s at 8505 MiB post-request board memory.
+No 32K/512 or separate cross-architecture inference qualification
+is claimed.
