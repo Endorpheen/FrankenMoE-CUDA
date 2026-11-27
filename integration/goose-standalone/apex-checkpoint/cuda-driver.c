@@ -4925,6 +4925,10 @@ void fg_cuda_take_position(uint64_t * ropes, uint64_t * convs) {
     cuda_convs = 0;
 }
 
+uint8_t fg_cuda_giga_kv_write_enabled(void) {
+    return 0;
+}
+
 int64_t fg_cuda_giga_dsa_top_wide(sl_u8 scores, sl_u8 ids, int64_t cells, int64_t rows) {
     (void) scores;
     (void) ids;

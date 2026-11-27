@@ -640,3 +640,27 @@ VRAM after the request was 9523–9538 MiB and swap did not grow.
 The default build measured 480.18/14.22 on 6144/32 at 9538 MiB
 and 270.51/18.32 on 512/32 at 8493 MiB. Both matched all 32 IDs.
 No 32K/512 or separate cross-architecture qualification is claimed.
+
+### EXP-2026-11-27-2185 — Keep GigaChat4 MLA and DSA state in lazy GPU KV
+
+Register the eight decoder F16 latent and index pairs as shared
+state ranges. Preserve host F16 writes and mirror the touched rows.
+MLA reads K and V from the same resident range, and DSA reads its
+resident index keys. The default admits lazy VMM on supported
+hardware for context up to 36864 with at least 2 GiB free before
+registration. GOOSE_GIGA_KV_RESIDENT=0 retains host staging.
+Explicit GOOSE_GIGA_KV_RESIDENT=1 with GOOSE_KV_LAZY_VMM=0
+tests the eager device mirror.
+
+At 6144/32, the diagnostic eager/lazy comparison used 9890/9615
+MiB board memory after the request. Lazy mapped 80 MiB of KV and
+index pages. Two clean off/lazy pairs without swap growth averaged
+489.60 to 494.21 prefill and 14.06 to 16.87 decode tokens/s.
+Post-request VRAM was 9533–9539 MiB off and 9605–9618 MiB lazy.
+One additional candidate arm grew system swap-out by 16 pages and
+is excluded from those means. All 32 output IDs matched. A same
+server 6144/512/6144 sequence with cold prompts reproduced all
+three expected responses. The default diagnostic measured
+492.67/16.81 at 9610 MiB and matched all 32 IDs. Apex driver's
+compatibility stub compiled. No 32K/512 memory or cross-architecture
+inference qualification is claimed.

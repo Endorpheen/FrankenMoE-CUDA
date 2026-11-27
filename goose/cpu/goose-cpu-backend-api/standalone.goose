@@ -37,6 +37,8 @@ fn dispatch_dsa_score(p: const Node &, mask: const Tensor &, q: const u8[:], k: 
         weights[0 .. p.z.bytes], masks[0 .. mask.bytes], dst[0 .. p.d.bytes]) == 1;
 }
 
+extern "fg_cuda_giga_kv_write_enabled" fn giga_kv_write_enabled() -> bool;
+
 export fn fg143_node_run(packet: const i64[:], mode: i64,
     x: const u8[:], y: const u8[:], z: const u8[:], mask: const u8[:], dst: u8[:],
     scratch: f32[:], indices: i64[:],
@@ -127,7 +129,25 @@ export fn fg143_node_run(packet: const i64[:], mode: i64,
         return set_quantized_rows(p, packet[57] as! u64, packet[58] as! u64, y, indices);
     }
     let addresses: i64[3] = [packet[57], packet[70], packet[58]];
-    return entry(p, x, y, z, dst, scratch, indices, addresses, gxx, gxs, gs, g3x, g3s, g1, signs, palette);
+    let ok = entry(p, x, y, z, dst, scratch, indices, addresses, gxx, gxs, gs, g3x, g3s, g1, signs, palette);
+    if !ok || mode != 0 || p.op != OP_SET_ROWS || p.d.kind != 1 || !giga_kv_write_enabled() {
+        return ok;
+    }
+    let width = p.d.ne[0];
+    if (width != 576 && width != 128) || p.d.ne[2] != 1 || p.d.ne[3] != 1 ||
+       p.x.ne[2] != 1 || p.x.ne[3] != 1 || p.d.nb[0] != 2 || p.d.nb[1] != width * 2 ||
+       p.x.ne[1] <= 0 || addresses[2] == 0 { return false; }
+    var first = p.d.ne[1];
+    var last: i64 = 0;
+    for row in p.x.ne[1] {
+        let id = read_index(p.y, y, row);
+        if id < 0 || id >= p.d.ne[1] { return false; }
+        first = low(first, id);
+        last = high(last, id + 1);
+    }
+    let at = first * p.d.nb[1];
+    return cuda_state_write((addresses[2] as! u64) + (at as u64), (last - first) * p.d.nb[1]) == 0;
+
 }
 
 extern "fg_cuda_fwht" fn cuda_fwht(src: const u8[:], dst: u8[:], width: i32, rows: i64, scale: f32) -> i64;

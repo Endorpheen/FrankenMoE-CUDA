@@ -177,7 +177,7 @@ int giga_step_commit(struct giga_request *request, const struct giga_step *step)
 
 int64_t giga_state_span(uint64_t address, sl_i64 out) {
     const struct ggml_tensor *tensor = (const void *)(uintptr_t)address;
-    if (!tensor || !tensor->data || out.len < 2 || tensor->type != GGML_TYPE_F32 ||
+    if (!tensor || !tensor->data || out.len < 2 || (tensor->type != GGML_TYPE_F32 && tensor->type != GGML_TYPE_F16) ||
         !ggml_is_contiguous(tensor)) return 0;
     out.data[0] = (int64_t)(uintptr_t)tensor->data;
     out.data[1] = (int64_t)ggml_nbytes(tensor);

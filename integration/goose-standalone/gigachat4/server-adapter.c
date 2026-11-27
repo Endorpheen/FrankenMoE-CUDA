@@ -63,10 +63,12 @@ int giga_server_open(const void *mapping, size_t bytes, int64_t capacity) {
     }
     status = giga_request_init(&request, &model, capacity);
     const char *state = getenv("GOOSE_GIGACHAT4_GDN_STATE");
+    extern uint8_t fg_cuda_giga_kv_configure(int64_t capacity);
+    const bool resident_kv = status == 0 && fg_cuda_giga_kv_configure(capacity);
     if (status == 0 && (!state || strcmp(state, "0") != 0) && fg_cuda_free_bytes() > 0) {
         const int64_t resident = giga_place_gdn_state((sl_u64){request.state, 128},
-            (sl_i64){model.kinds, GIGA_LAYER_COUNT});
-        if (trace) fprintf(stderr, "GigaChat4: GDN state VRAM=%lld bytes\n", (long long)resident);
+            (sl_i64){model.kinds, GIGA_LAYER_COUNT}, resident_kv);
+        if (trace) fprintf(stderr, "GigaChat4: state logical VRAM=%lld bytes\n", (long long)resident);
         if (resident <= 0) status = -1;
         else request.device_state = true;
     }
