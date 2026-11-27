@@ -725,19 +725,6 @@ export fn fg143_graph_hash_size(minimum: u64) -> u64 {
     return if low < GRAPH_HASH_PRIMES.len { GRAPH_HASH_PRIMES[low] } else { minimum | 1 };
 }
 
-export fn fg143_graph_hash_find(keys: const u8[:], used: const u32[:], key: u64) -> i64 {
-    let slots = keys.len / 8;
-    if slots <= 0 || used.len < (slots + 31) / 32 { return -1; }
-    let home = ((key >> 4) % (slots as u64)) as i64;
-    var slot = home;
-    loop {
-        let bit = (1 as u32) << ((slot % 32) as u32);
-        if (used[slot / 32] & bit) == 0 || graph_pointer(keys, slot) == key { return slot; }
-        slot += 1;
-        if slot == slots { slot = 0; }
-        if slot == home { return -1; }
-    }
-}
 
 struct Tensor {
     ne: i64[4], nb: i64[4], kind: i64, bytes: i64
@@ -2456,7 +2443,6 @@ fn softmax(
 }
 
 
-extern "fg143_copy_bytes" fn copy_bytes(dst: u64, src: u64, count: i64);
 extern "fg_cuda_state_read" fn cuda_state_read(src: u64, count: i64) -> i64;
 extern "fg_cuda_state_write" fn cuda_state_write(dst: u64, count: i64) -> i64;
 extern "fg_cuda_conv_read" fn cuda_conv_read(src: u64, count: i64) -> i64;
@@ -2490,7 +2476,7 @@ fn transforms(p: const Node &, x: const u8[:], y: const u8[:], dst: u8[:],
             let dest = addresses[2] as! u64;
             if op == 34 && cuda_match_state(dest, src, p.x.bytes) { return true; }
             if cuda_state_read(src, p.x.bytes) != 0 { return false; }
-            copy_bytes(dest, src, p.x.bytes);
+            fg143_copy_bytes(dest, src, p.x.bytes);
             if op == 34 && cuda_state_write(dest, p.x.bytes) != 0 { return false; }
             return true;
         }
@@ -4692,13 +4678,9 @@ fn state_entry(
     return false;
 }
 
-extern "fg143_storage_count" fn storage_count(graph: u64) -> i64;
-extern "fg143_storage_tensor" fn storage_tensor(graph: u64, index: i64) -> u64;
-extern "fg143_storage_contains" fn storage_contains(graph: u64, tensor: u64) -> i64;
 extern "ggml_nbytes" fn storage_bytes(tensor: u64) -> u64;
 extern "fg156_tget" fn storage_get(tensor: u64, field: i64, axis: i64) -> u64;
 extern "fg156_tset" fn storage_set(tensor: u64, field: i64, axis: i64, value: u64);
-extern "fg143_storage_alignment" fn storage_alignment() -> u64;
 extern "fg143_storage_alloc" fn storage_alloc(bytes: u64) -> u64;
 
 const STORAGE_VIEW: i64 = 2;
@@ -4707,12 +4689,12 @@ const STORAGE_DATA: i64 = 4;
 const STORAGE_MAX: u64 = 18446744073709551615;
 
 fn storage_member(graph: u64, tensor: u64, count: i64) -> bool {
-    let indexed = storage_contains(graph, tensor);
+    let indexed = fg143_storage_contains(graph, tensor);
     if indexed >= 0 { return indexed != 0; }
     // A GGML subgraph borrows the original hash, including tensors outside
     // the selected range. Check the actual members in this case.
     for i in count {
-        if storage_tensor(graph, i) == tensor { return true; }
+        if fg143_storage_tensor(graph, i) == tensor { return true; }
     }
     return false;
 }
@@ -4730,14 +4712,14 @@ fn storage_view_valid(graph: u64, tensor: u64, parent: u64, count: i64) -> bool 
 
 export fn fg143_storage_allocate(graph: u64) -> u64 {
     if graph == 0 { return 0; }
-    let count = storage_count(graph);
+    let count = fg143_storage_count(graph);
     if count < 0 { return 0; }
-    let align = storage_alignment();
+    let align = fg143_storage_alignment();
     let mask = align - 1;
     let aligned = STORAGE_MAX - mask;
     var needed: u64 = 0;
     for i in count {
-        let t = storage_tensor(graph, i);
+        let t = fg143_storage_tensor(graph, i);
         if t == 0 { return 0; }
         let parent = storage_get(t, STORAGE_VIEW, 0);
         if parent != 0 {
@@ -4754,7 +4736,7 @@ export fn fg143_storage_allocate(graph: u64) -> u64 {
     if storage == 0 { return 0; }
     var cursor: u64 = 0;
     for i in count {
-        let t = storage_tensor(graph, i);
+        let t = fg143_storage_tensor(graph, i);
         if storage_get(t, STORAGE_VIEW, 0) == 0 && storage_get(t, STORAGE_DATA, 0) == 0 {
             let bytes = storage_bytes(t);
             storage_set(t, STORAGE_DATA, 0, storage + cursor);
@@ -4762,7 +4744,7 @@ export fn fg143_storage_allocate(graph: u64) -> u64 {
         }
     }
     for i in count {
-        let t = storage_tensor(graph, i);
+        let t = fg143_storage_tensor(graph, i);
         let parent = storage_get(t, STORAGE_VIEW, 0);
         if parent != 0 && storage_get(t, STORAGE_DATA, 0) == 0 {
             let base = storage_get(parent, STORAGE_DATA, 0);
@@ -5473,7 +5455,6 @@ export fn fg143_graph_run(graph: u64, selective: bool, deadlines: const i64[:], 
     return outcome;
 }
 
-extern "fg143_storage_hash_size" fn storage_hash_size(graph: u64) -> i64;
 extern "fg143_storage_slot" fn storage_slot(graph: u64, tensor: u64) -> i64;
 extern "fg143_storage_ram_available" fn storage_ram_available() -> u64;
 extern "fg143_storage_ram_error" fn storage_ram_error(required: u64, available: u64);
@@ -5494,11 +5475,11 @@ fn storage_keep(graph: u64, tensor: u64, until: i64, lifetimes: i64[:]) -> bool 
 // views. Outputs and inputs that meet in the same node use disjoint blocks.
 export fn fg143_storage_allocate_output(graph: u64, output: u64, deadlines: i64[:]) -> u64 {
     if graph == 0 { return 0; }
-    let count = storage_count(graph);
-    let slots = storage_hash_size(graph);
+    let count = fg143_storage_count(graph);
+    let slots = fg143_storage_hash_size(graph);
     let leaves = count - graph_nodes(graph);
     if count < 0 || leaves < 0 || slots <= 0 || deadlines.len != count - leaves { return 0; }
-    let align = storage_alignment();
+    let align = fg143_storage_alignment();
     let mask = align - 1;
     let aligned = STORAGE_MAX - mask;
     var lifetimes: i64[>..] = [];
@@ -5506,7 +5487,7 @@ export fn fg143_storage_allocate_output(graph: u64, output: u64, deadlines: i64[
     lifetimes.resize(slots, -1);
     placements.resize(slots, 0);
     for i in count {
-        let t = storage_tensor(graph, i);
+        let t = fg143_storage_tensor(graph, i);
         if t == 0 { return 0; }
         let parent = storage_get(t, STORAGE_VIEW, 0);
         if parent != 0 {
@@ -5519,7 +5500,7 @@ export fn fg143_storage_allocate_output(graph: u64, output: u64, deadlines: i64[
     }
     var sources: u64[10] = [0; 10];
     for i in count {
-        let t = storage_tensor(graph, i);
+        let t = fg143_storage_tensor(graph, i);
         if !storage_keep(graph, t, i, lifetimes[..]) { return 0; }
         if graph_prop(t, 2) == 0 { continue; }
         graph_inputs(t, sources[..]);
@@ -5539,7 +5520,7 @@ export fn fg143_storage_allocate_output(graph: u64, output: u64, deadlines: i64[
     var reused: i64 = 0;
     var needed: u64 = 0;
     for i in count {
-        let t = storage_tensor(graph, i);
+        let t = fg143_storage_tensor(graph, i);
         if storage_get(t, STORAGE_VIEW, 0) != 0 || storage_get(t, STORAGE_DATA, 0) != 0 { continue; }
         let bytes = storage_bytes(t);
         if bytes > aligned { return 0; }
@@ -5576,7 +5557,7 @@ export fn fg143_storage_allocate_output(graph: u64, output: u64, deadlines: i64[
     }
     storage_report(needed, blocks, reused);
     for i in count {
-        let t = storage_tensor(graph, i);
+        let t = fg143_storage_tensor(graph, i);
         if storage_get(t, STORAGE_VIEW, 0) == 0 && storage_get(t, STORAGE_DATA, 0) == 0 {
             let slot = storage_slot(graph, t);
             storage_set(t, STORAGE_DATA, 0, storage + placements[slot]);
@@ -5584,7 +5565,7 @@ export fn fg143_storage_allocate_output(graph: u64, output: u64, deadlines: i64[
         }
     }
     for i in count {
-        let t = storage_tensor(graph, i);
+        let t = fg143_storage_tensor(graph, i);
         let parent = storage_get(t, STORAGE_VIEW, 0);
         if parent != 0 && storage_get(t, STORAGE_DATA, 0) == 0 {
             storage_set(t, STORAGE_DATA, 0,
@@ -5975,7 +5956,6 @@ fn try_giga_dsa_graph(nodes: const u8[:], step: i64, deadlines: const i64[:], sc
     return if status > 0 { 2 } else { status };
 }
 
-extern "ggml_hash_find" fn graph_visit_hash_find(table: u64, tensor: u64) -> u64;
 extern fn fg143_graph_name_unnamed(node: u64, leaf: bool, index: i32);
 
 const TENSOR_SOURCES: u64 = 152;
@@ -5984,7 +5964,7 @@ const TENSOR_COMPUTE_FLAG: i32 = 16;
 const GRAPH_ORDER: u64 = 80;
 
 fn graph_visit_info(graph: u64, node: u64, count_use: bool, info: u64[:]) -> i64 {
-    let slot = graph_visit_hash_find(graph + GRAPH_HASH_SIZE, node);
+    let slot = goose_abi_ggml_hash_find(graph + GRAPH_HASH_SIZE, node);
     if slot == 0xffffffffffffffff { return -1; }
     let op = tensor_read_i32(node + TENSOR_OPERATION, 0);
     var flags = tensor_read_i32(node + TENSOR_FLAGS, 0) as! i32;
@@ -6558,9 +6538,7 @@ export fn goose_abi_ggml_new_graph_custom(context: u64, size: u64, grads: bool) 
 export fn goose_abi_ggml_graph_clear(graph: u64) {
     tensor_write_i32(graph + 4, 0);
     tensor_write_i32(graph + 8, 0);
-    let hash_size = tensor_read_word(graph + GRAPH_HASH_SIZE);
-    let used = tensor_read_word(graph + GRAPH_HASH_USED);
-    tensor_set_raw(unsafe_c_ptr<c_ptr<void>>(used), 0, graph_bitset_bytes(hash_size));
+    goose_abi_ggml_hash_set_reset(graph + GRAPH_HASH_SIZE);
 }
 
 const TENSOR_BUFFER: u64 = 8;
@@ -6654,4 +6632,180 @@ export fn goose_abi_ggml_free(context: u64) {
         tensor_release_pool(tensor_read_word(context + 8), tensor_read_word(context));
     }
     tensor_free_context(unsafe_c_ptr<c_ptr<void>>(context));
+}
+
+const GRAPH_HASH_FULL: u64 = 0xffffffffffffffff;
+
+fn graph_hash_cell_used(used: u64, slot: u64) -> bool {
+    let word = tensor_read_i32(used + (slot / 32) * 4, 0) as! u32;
+    let bit = (1 as! u32) << ((slot % 32) as! u32);
+    return (word & bit) != 0;
+}
+
+export fn goose_abi_ggml_hash_find(table: u64, key: u64) -> u64 {
+    let slots = tensor_read_word(table);
+    if slots == 0 { return GRAPH_HASH_FULL; }
+    let used = tensor_read_word(table + 8);
+    let keys = tensor_read_word(table + 16);
+    let home = (key >> 4) % slots;
+    var slot = home;
+    loop {
+        if !graph_hash_cell_used(used, slot) || tensor_read_word(keys + slot * 8) == key { return slot; }
+        slot += 1;
+        if slot == slots { slot = 0; }
+        if slot == home { return GRAPH_HASH_FULL; }
+    }
+}
+
+export fn goose_abi_ggml_hash_set_reset(table: u64) {
+    let slots = tensor_read_word(table);
+    let used = tensor_read_word(table + 8);
+    tensor_set_raw(unsafe_c_ptr<c_ptr<void>>(used), 0, graph_bitset_bytes(slots));
+}
+
+export fn fg143_storage_slot(graph: u64, tensor: u64) -> i64 {
+    let slot = goose_abi_ggml_hash_find(graph + GRAPH_HASH_SIZE, tensor);
+    if slot == GRAPH_HASH_FULL || !graph_hash_cell_used(tensor_read_word(graph + GRAPH_HASH_USED), slot) {
+        return -1;
+    }
+    return slot as! i64;
+}
+
+const TENSOR_PARAMETERS: u64 = 84;
+
+export fn goose_abi_ggml_element_size(tensor: u64) -> u64 {
+    let kind = tensor_read_i32(tensor, 0);
+    assert(ab_range(kind));
+    return AB_SIZE[kind] as! u64;
+}
+
+export fn fg143_tensor_overhead() -> u64 {
+    return 32 + TENSOR_HEADER_BYTES;
+}
+
+export fn goose_abi_ggml_is_transposed(tensor: u64) -> bool {
+    return tensor_read_word(tensor + 48) > tensor_read_word(tensor + 56);
+}
+
+export fn goose_abi_ggml_get_unary_op(tensor: u64) -> i32 {
+    assert(tensor_read_i32(tensor + TENSOR_OPERATION, 0) == TENSOR_OP_UNARY);
+    return tensor_read_i32(tensor + TENSOR_PARAMETERS, 0) as! i32;
+}
+
+export fn goose_abi_ggml_get_glu_op(tensor: u64) -> i32 {
+    assert(tensor_read_i32(tensor + TENSOR_OPERATION, 0) == TENSOR_OP_GLU);
+    return tensor_read_i32(tensor + TENSOR_PARAMETERS, 0) as! i32;
+}
+
+extern "memmove" fn tensor_move_raw(destination: c_ptr<void>, source: c_ptr<const void>, bytes: u64) -> c_ptr<void>;
+
+export fn fg143_copy_bytes(destination: u64, source: u64, bytes: i64) {
+    if bytes > 0 {
+        tensor_move_raw(unsafe_c_ptr<c_ptr<void>>(destination), unsafe_c_ptr<c_ptr<const void>>(source), bytes as! u64);
+    }
+}
+
+export fn fg143_storage_count(graph: u64) -> i64 {
+    return tensor_read_i32(graph + 8, 0) + tensor_read_i32(graph + 4, 0);
+}
+
+export fn fg143_storage_tensor(graph: u64, index: i64) -> u64 {
+    let leaves = tensor_read_i32(graph + 8, 0);
+    if index < leaves {
+        return tensor_read_word(tensor_read_word(graph + GRAPH_LEAFS) + (index as! u64) * 8);
+    }
+    return tensor_read_word(tensor_read_word(graph + GRAPH_NODES) + ((index - leaves) as! u64) * 8);
+}
+
+export fn fg143_storage_contains(graph: u64, tensor: u64) -> i64 {
+    if tensor_read_i32(graph, 0) == 0 || tensor_read_word(graph + GRAPH_HASH_SIZE) == 0 { return -1; }
+    return if fg143_storage_slot(graph, tensor) >= 0 { 1 } else { 0 };
+}
+
+export fn fg143_storage_alignment() -> u64 { return 16; }
+
+export fn fg143_storage_hash_size(graph: u64) -> i64 {
+    return if tensor_read_i32(graph, 0) > 0 { tensor_read_word(graph + GRAPH_HASH_SIZE) as! i64 } else { 0 };
+}
+
+const DECODE_PLAN_BINDINGS: u64 = 32;
+const DECODE_BINDING_BYTES: u64 = 40;
+const DECODE_BINDING_LIMIT: u64 = 128;
+const DECODE_BINDINGS_HEADER: u64 = 16;
+const DECODE_ATTENTION_KEY_COUNT: u64 = 20;
+const DECODE_Q4_TYPE: i64 = 2;
+const DECODE_SET_ROWS_OP: i64 = 42;
+
+fn decode_source(tensor: u64, index: u64) -> u64 {
+    return tensor_read_word(tensor + TENSOR_SOURCES + index * 8);
+}
+
+fn decode_raw_kv(view: u64, rows: i64) -> u64 {
+    if view == 0 || tensor_read_i32(view + TENSOR_OPERATION, 0) != TENSOR_OP_PERMUTE ||
+        tensor_read_i32(view, 0) != DECODE_Q4_TYPE || ctor_extent(view as i64, 1) != rows ||
+        tensor_read_i32(view + TENSOR_PARAMETERS, 2) != 1 { return 0; }
+    let raw = decode_source(view, 0);
+    if raw == 0 || tensor_read_i32(raw, 0) != DECODE_Q4_TYPE ||
+        tensor_read_i32(raw + TENSOR_OPERATION, 0) != TENSOR_OP_VIEW ||
+        ctor_extent(raw as i64, 2) != rows ||
+        ctor_extent(raw as i64, 0) != ctor_extent(view as i64, 0) ||
+        ctor_extent(raw as i64, 1) != ctor_extent(view as i64, 2) ||
+        tensor_read_word(raw + 64) != tensor_read_word(view + 56) { return 0; }
+    let writer = decode_source(raw, 0);
+    return if writer != 0 && tensor_read_i32(writer + TENSOR_OPERATION, 0) == DECODE_SET_ROWS_OP { raw } else { 0 };
+}
+
+export fn goose_abi_fg_standalone_graph_bind_decode(plan: u64, rows: i64) -> bool {
+    if plan == 0 || rows <= 0 || rows > 2147483647 || tensor_read_word(plan + DECODE_PLAN_BINDINGS) != 0 { return false; }
+    let allocated = tensor_allocate_context(DECODE_BINDINGS_HEADER + DECODE_BINDING_LIMIT * DECODE_BINDING_BYTES);
+    if allocated == null { return false; }
+    var bindings: u64 = 0;
+    tensor_copy_raw(unsafe_c_address<c_ptr<void>>(bindings), unsafe_c_address<c_ptr<const void>>(allocated), 8);
+    let graph = tensor_read_word(plan);
+    let nodes = tensor_read_word(graph + GRAPH_NODES);
+    var count: u64 = 0;
+    for i in tensor_read_i32(graph + 4, 0) {
+        let node = tensor_read_word(nodes + (i as! u64) * 8);
+        if tensor_read_i32(node + TENSOR_OPERATION, 0) != TENSOR_OP_FLASH_ATTN_EXT { continue; }
+        let key = decode_source(node, 1);
+        let value = decode_source(node, 2);
+        let raw_key = decode_raw_kv(key, rows);
+        let raw_value = decode_raw_kv(value, rows);
+        if decode_source(node, 3) != 0 ||
+            tensor_read_i32(node + TENSOR_PARAMETERS + DECODE_ATTENTION_KEY_COUNT, 0) != rows ||
+            raw_key == 0 || raw_value == 0 || count == DECODE_BINDING_LIMIT {
+            tensor_free_context(allocated);
+            return false;
+        }
+        let layer = bindings + DECODE_BINDINGS_HEADER + count * DECODE_BINDING_BYTES;
+        tensor_write_word(layer, node);
+        tensor_write_word(layer + 8, key);
+        tensor_write_word(layer + 16, value);
+        tensor_write_word(layer + 24, raw_key);
+        tensor_write_word(layer + 32, raw_value);
+        count += 1;
+    }
+    if count == 0 {
+        tensor_free_context(allocated);
+        return false;
+    }
+    tensor_write_word(bindings, count);
+    tensor_write_word(bindings + 8, 0);
+    tensor_write_word(plan + DECODE_PLAN_BINDINGS, bindings);
+    return true;
+}
+
+export fn goose_abi_fg_standalone_graph_update_decode(plan: u64, rows: i64) {
+    let bindings = tensor_read_word(plan + DECODE_PLAN_BINDINGS);
+    let count = tensor_read_word(bindings);
+    for i in count as! i64 {
+        let layer = bindings + DECODE_BINDINGS_HEADER + (i as! u64) * DECODE_BINDING_BYTES;
+        let node = tensor_read_word(layer);
+        tensor_write_word(tensor_read_word(layer + 8) + 24, rows as! u64);
+        tensor_write_word(tensor_read_word(layer + 16) + 24, rows as! u64);
+        tensor_write_word(tensor_read_word(layer + 24) + 32, rows as! u64);
+        tensor_write_word(tensor_read_word(layer + 32) + 32, rows as! u64);
+        tensor_write_i32(node + TENSOR_PARAMETERS + DECODE_ATTENTION_KEY_COUNT, rows as! i32);
+    }
+    tensor_write_word(bindings + 8, tensor_read_word(bindings + 8) + 1);
 }

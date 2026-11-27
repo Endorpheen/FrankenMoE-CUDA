@@ -206,31 +206,6 @@ void fg141_witness(int64_t stage, int64_t kind, int64_t values) {
     fg143_witness(kind, values);
 }
 
-void fg143_copy_bytes(uint64_t dst, uint64_t src, int64_t length) {
-    if (length > 0) memmove((void *) (uintptr_t) dst, (const void *) (uintptr_t) src, (size_t) length);
-}
-
-int64_t fg143_storage_count(uint64_t address) {
-    const struct ggml_cgraph * graph = (const void *) (uintptr_t) address;
-    return (int64_t) graph->n_leafs + graph->n_nodes;
-}
-
-uint64_t fg143_storage_tensor(uint64_t address, int64_t index) {
-    const struct ggml_cgraph * graph = (const void *) (uintptr_t) address;
-    const int64_t leaves = graph->n_leafs;
-    return (uint64_t) (uintptr_t) (index < leaves ? graph->leafs[index] : graph->nodes[index - leaves]);
-}
-
-int64_t fg143_storage_contains(uint64_t address, uint64_t tensor) {
-    const struct ggml_cgraph * graph = (const void *) (uintptr_t) address;
-    if (graph->size == 0 || graph->visited_hash_set.size == 0) return -1;
-    return ggml_hash_contains(&graph->visited_hash_set, (void *) (uintptr_t) tensor);
-}
-
-uint64_t fg143_storage_alignment(void) {
-    return GGML_MEM_ALIGN;
-}
-
 uint64_t fg143_storage_alloc(uint64_t bytes) {
     if (bytes > SIZE_MAX) return 0;
 #ifdef _WIN32
@@ -244,18 +219,6 @@ uint64_t fg143_storage_alloc(uint64_t bytes) {
 void * fg_standalone_graph_alloc(struct ggml_cgraph * graph) {
     pthread_once(&cpu_init, init_cpu);
     return (void *) (uintptr_t) fg143_storage_allocate((uint64_t) (uintptr_t) graph);
-}
-
-int64_t fg143_storage_hash_size(uint64_t address) {
-    const struct ggml_cgraph * graph = (const void *) (uintptr_t) address;
-    return graph->size > 0 ? (int64_t) graph->visited_hash_set.size : 0;
-}
-
-int64_t fg143_storage_slot(uint64_t address, uint64_t tensor) {
-    const struct ggml_cgraph * graph = (const void *) (uintptr_t) address;
-    const struct ggml_hash_set * table = &graph->visited_hash_set;
-    const size_t slot = ggml_hash_find(table, (void *) (uintptr_t) tensor);
-    return slot != GGML_HASHSET_FULL && ggml_bitset_get(table->used, slot) ? (int64_t) slot : -1;
 }
 
 uint64_t fg143_storage_ram_available(void) {
@@ -285,8 +248,6 @@ void fg143_storage_report(uint64_t bytes, int64_t blocks, int64_t reused) {
             bytes, blocks, reused);
     }
 }
-
-enum { Q35_ATTN_KEY_COUNT_PARAM = 5 };
 
 struct q35_decode_attention {
     struct ggml_tensor *attention;
@@ -339,56 +300,14 @@ void fg_standalone_graph_plan_free(struct fg_standalone_graph_plan * plan) {
     free(plan);
 }
 
-static struct ggml_tensor * q35_raw_kv_view(struct ggml_tensor *view, int64_t rows) {
-    if (!view || view->op != GGML_OP_PERMUTE || view->type != GGML_TYPE_Q4_0 ||
-        view->ne[1] != rows || view->op_params[2] != 1) return NULL;
-    struct ggml_tensor *raw = view->src[0];
-    if (!raw || raw->type != GGML_TYPE_Q4_0 || raw->op != GGML_OP_VIEW || raw->ne[2] != rows ||
-        raw->ne[0] != view->ne[0] || raw->ne[1] != view->ne[2] ||
-        raw->nb[2] != view->nb[1] || !raw->src[0] || raw->src[0]->op != GGML_OP_SET_ROWS) return NULL;
-    return raw;
-}
-
-bool fg_standalone_graph_bind_decode(struct fg_standalone_graph_plan *plan, int64_t rows) {
-    if (!plan || plan->decode || rows <= 0 || rows > INT32_MAX) return false;
-    struct q35_decode_bindings *bindings = malloc(sizeof(*bindings));
-    if (!bindings) return false;
-    bindings->count = 0;
-    bindings->replays = 0;
-    for (int i = 0; i < plan->graph->n_nodes; ++i) {
-        struct ggml_tensor *node = plan->graph->nodes[i];
-        if (node->op != GGML_OP_FLASH_ATTN_EXT) continue;
-        struct ggml_tensor *raw_key = q35_raw_kv_view(node->src[1], rows);
-        struct ggml_tensor *raw_value = q35_raw_kv_view(node->src[2], rows);
-        if (node->src[3] || node->op_params[Q35_ATTN_KEY_COUNT_PARAM] != rows ||
-            !raw_key || !raw_value || bindings->count == sizeof(bindings->layers) / sizeof(bindings->layers[0])) {
-            free(bindings);
-            return false;
-        }
-        bindings->layers[bindings->count++] = (struct q35_decode_attention) {
-            node, node->src[1], node->src[2], raw_key, raw_value
-        };
-    }
-    if (bindings->count == 0) {
-        free(bindings);
-        return false;
-    }
-    plan->decode = bindings;
-    return true;
-}
-
-void fg_standalone_graph_update_decode(struct fg_standalone_graph_plan *plan, int64_t rows) {
-    struct q35_decode_bindings *bindings = plan->decode;
-    for (size_t i = 0; i < bindings->count; ++i) {
-        const struct q35_decode_attention *layer = &bindings->layers[i];
-        layer->raw_key->ne[2] = rows;
-        layer->raw_value->ne[2] = rows;
-        layer->key->ne[1] = rows;
-        layer->value->ne[1] = rows;
-        layer->attention->op_params[Q35_ATTN_KEY_COUNT_PARAM] = (int32_t)rows;
-    }
-    ++bindings->replays;
-}
+_Static_assert(offsetof(struct fg_standalone_graph_plan, graph) == 0 &&
+    offsetof(struct fg_standalone_graph_plan, decode) == 32 &&
+    offsetof(struct q35_decode_bindings, count) == 0 &&
+    offsetof(struct q35_decode_bindings, replays) == 8 &&
+    offsetof(struct q35_decode_bindings, layers) == 16 &&
+    sizeof(struct q35_decode_attention) == 40 &&
+    sizeof(struct q35_decode_bindings) == 5136 &&
+    GGML_TYPE_Q4_0 == 2 && GGML_OP_SET_ROWS == 42, "Goose decode plan ABI");
 
 uint64_t fg143_graph_resize(uint64_t address, int64_t bytes) {
     void * work = (void *) (uintptr_t) address;

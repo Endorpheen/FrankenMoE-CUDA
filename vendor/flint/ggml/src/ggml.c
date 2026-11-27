@@ -568,18 +568,6 @@ const char * ggml_glu_op_name(enum ggml_glu_op op) {
     return GGML_GLU_OP_NAME[op];
 }
 
-size_t ggml_element_size(const struct ggml_tensor * tensor) {
-    return ggml_type_size(tensor->type);
-}
-
-size_t ggml_tensor_overhead(void) {
-    return GGML_OBJECT_SIZE + GGML_TENSOR_SIZE;
-}
-
-bool ggml_is_transposed(const struct ggml_tensor * tensor) {
-    return tensor->nb[0] > tensor->nb[1];
-}
-
 // assert that pointer is aligned to GGML_MEM_ALIGN
 #define GGML_ASSERT_ALIGNED(ptr) \
     GGML_ASSERT(((uintptr_t) (ptr))%GGML_MEM_ALIGN == 0)
@@ -593,6 +581,15 @@ extern int32_t fg143_object_layout(uint64_t previous_offset, uint64_t previous_s
 extern uint8_t fg143_tensor_layout(int64_t type, ggml_shape_slice shape, ggml_layout_slice layout);
 extern uint8_t fg143_graph_arena_layout(uint64_t size, uint64_t hash_size, uint64_t base_size,
     uint64_t pointer_size, uint64_t bitset_size, uint8_t grads, ggml_layout_slice layout);
+#endif
+
+#ifdef GOOSEINFER_TYPE_METADATA_ONLY
+extern uint64_t fg143_tensor_overhead(void);
+
+size_t ggml_tensor_overhead(void) {
+    fg143_cpu_init(0, NULL);
+    return fg143_tensor_overhead();
+}
 #endif
 
 #ifdef GOOSEINFER_TYPE_METADATA_ONLY
@@ -653,6 +650,7 @@ struct ggml_context * ggml_init(struct ggml_init_params params) {
 
 #ifdef GOOSEINFER_TYPE_METADATA_ONLY
 static_assert(GGML_MEM_ALIGN == 16 && sizeof(struct ggml_object) == 32 &&
+              offsetof(struct ggml_tensor, op_params) == 84 &&
               offsetof(struct ggml_object, offs) == 0 &&
               offsetof(struct ggml_object, size) == 8 &&
               offsetof(struct ggml_object, next) == 16 &&
@@ -685,16 +683,6 @@ void fg143_arena_failure(int status, uint64_t needed, uint64_t capacity) {
 #include "ggml-arena-reference.inc"
 #endif
 
-
-enum ggml_unary_op ggml_get_unary_op(const struct ggml_tensor * tensor) {
-    GGML_ASSERT(tensor->op == GGML_OP_UNARY);
-    return (enum ggml_unary_op) ggml_get_op_params_i32(tensor, 0);
-}
-
-enum ggml_glu_op ggml_get_glu_op(const struct ggml_tensor * tensor) {
-    GGML_ASSERT(tensor->op == GGML_OP_GLU);
-    return (enum ggml_glu_op) ggml_get_op_params_i32(tensor, 0);
-}
 
 struct ggml_tensor * ggml_format_name(struct ggml_tensor * tensor, const char * fmt, ...) {
     va_list args;
@@ -829,22 +817,13 @@ void ggml_flash_attn_ext_set_n_kv_max(
 
 ////////////////////////////////////////////////////////////////////////////////
 
+#ifndef GOOSEINFER_TYPE_METADATA_ONLY
 void ggml_hash_set_reset(struct ggml_hash_set * hash_set) {
     memset(hash_set->used, 0, sizeof(ggml_bitset_t) * ggml_bitset_size(hash_set->size));
 }
+#endif
 
 #ifdef GOOSEINFER_TYPE_METADATA_ONLY
-typedef struct { const uint8_t *data; int64_t len; } ggml_hash_keys_slice;
-typedef struct { const uint32_t *data; int64_t len; } ggml_hash_bits_slice;
-extern int64_t fg143_graph_hash_find(ggml_hash_keys_slice keys, ggml_hash_bits_slice used, uint64_t key);
-
-size_t ggml_hash_find(const struct ggml_hash_set *table, const struct ggml_tensor *key) {
-    _Static_assert(sizeof(*table->keys) == 8, "Goose hash pointer ABI");
-    return (size_t)fg143_graph_hash_find(
-        (ggml_hash_keys_slice){(const uint8_t *)table->keys, (int64_t)(table->size * sizeof(*table->keys))},
-        (ggml_hash_bits_slice){table->used, (int64_t)ggml_bitset_size(table->size)}, (uintptr_t)key);
-}
-
 extern uint64_t fg143_graph_hash_size(uint64_t minimum);
 size_t ggml_hash_size(size_t minimum) {
     fg143_cpu_init(0, NULL);
