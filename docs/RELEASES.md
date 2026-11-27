@@ -1,9 +1,14 @@
-# FrankenMoE releases
+# GooseInfer releases
 
 The [v0.13.0-alpha release](https://github.com/Endorpheen/GooseInfer/releases/tag/v0.13.0-alpha)
 provides Linux and Windows x64 archives and SHA-256 checksums. See the
 [multi-model guide](MULTIMODEL-ALPHA.md) for verified model profiles and
 platform coverage.
+
+The [v0.14.1 Vulkan multi-model alpha](https://github.com/Endorpheen/GooseInfer/releases/tag/v0.14.1-vulkan-multimodel-alpha)
+ships separate Linux and Windows x64 Vulkan archives. See the
+[Vulkan guide](releases/VULKAN-ALPHA.md) for verified devices and model
+profiles. Published archives retain their recorded filenames and checksums.
 
 ## Candidate assembly and verification
 
@@ -13,7 +18,7 @@ Use the exact checkpoint inputs recorded in the experiment registry.
 Treat the original paths as immutable. Assemble into a fresh directory:
 
 ```bash
-FRANKENMOE_UI_PACKAGE=/path/to/verified/chat-package \
+GOOSEINFER_UI_PACKAGE=/path/to/verified/chat-package \
   bash tools/multimodel-release/stage-linux.sh build/release-linux-candidate
 python3 tools/multimodel-release/smoke-linux.py \
   build/release-linux-candidate . build/release-smoke

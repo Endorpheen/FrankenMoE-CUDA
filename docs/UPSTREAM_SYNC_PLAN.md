@@ -1,4 +1,4 @@
-# FrankenMoE upstream synchronization and maintenance plan
+# GooseInfer upstream synchronization and maintenance plan
 
 **Historical reference.** This is a preserved proposal for an earlier upstream synchronization workflow. See the [current build guide](BUILD.md).
 
@@ -9,7 +9,7 @@ current experiment queue have priority.
 
 ## 1. Purpose
 
-FrankenMoE is a fork of `llama.cpp`. Upstream keeps adding kernels, model
+GooseInfer tracks `llama.cpp` for upstream compatibility and potential ports. Upstream keeps adding kernels, model
 architectures, quantizers, server features, fixes and performance work. The
 fork must absorb the useful parts without ever returning hand-written C/C++ to
 the working runtime. This plan defines how upstream changes are discovered,
@@ -23,7 +23,7 @@ The three non-negotiables:
 2. No accepted change may accumulate a regression. The golden rule is the
    combined balance of prefill, decode, RAM and VRAM on the fixed Apex profile,
    not one number in isolation.
-3. Every decision is traceable to an upstream SHA and a FrankenMoE experiment
+3. Every decision is traceable to an upstream SHA and a GooseInfer experiment
    or task id. No change is accepted from memory or from a chat message.
 
 ## 2. What is tracked
@@ -37,7 +37,7 @@ The three non-negotiables:
 
 ### 2.2 Paths and subsystems
 
-| Upstream area | FrankenMoE area | Owner ledger |
+| Upstream area | GooseInfer area | Owner ledger |
 |---|---|---|
 | `ggml/src/ggml-cuda/**` | CUDA compute and host | P3-* |
 | `ggml/src/ggml-cpu/**`, `ggml/src/ggml-cpu/arch/**` | CPU math and control | P1-*, P2-* |
@@ -53,7 +53,7 @@ missing ledger row; both outcomes are recorded.
 
 ### 2.3 What is not tracked
 
-- Upstream changes for architectures, backends and tools that FrankenMoE has
+- Upstream changes for architectures, backends and tools that GooseInfer has
   explicitly retired. The retirement list is a versioned document; a retired
   item is not silently resurrected by a sync.
 - Style-only churn, comment edits and documentation that does not change a
@@ -104,7 +104,7 @@ in place without a transition record.
 An automated first pass proposes:
 
 - **not_required** -- the change touches a retired area, a test-only path, a
-  style-only edit, or a backend FrankenMoE does not ship;
+  style-only edit, or a backend GooseInfer does not ship;
 - **port** -- the change fixes correctness, safety, a numerical contract, or a
   measured performance loss on a supported path;
 - **deferred** -- the change is useful but depends on a subsystem that is not

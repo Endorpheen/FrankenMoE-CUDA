@@ -1,6 +1,6 @@
 # GooseInfer multi-model alpha
 
-Published FrankenMoE archives retain their original executable names.
+The published v0.13.0-alpha archives retain their original executable names.
 
 This package uses Goose for model execution and native C adapters for
 the operating system and NVIDIA CUDA driver. Model GGUF files are
@@ -14,7 +14,8 @@ VRAM and 64 GB system RAM. This is the tested system configuration.
 Bonsai CUDA images are built for SM89. No other GPU architecture was
 qualified for this package.
 
-Run one server at a time from the extracted directory:
+Run one server at a time. In the published v0.13.0-alpha archive, use
+`./frankenmoe` in place of `./gooseinfer` in the commands below.
 
 ```bash
 ./gooseinfer apex /path/to/Apex-35B-V1.0-Q4_K_M.gguf
@@ -25,8 +26,9 @@ Run one server at a time from the extracted directory:
 The default loopback ports are 9101, 9102 and 9103, respectively.
 Pass a different port after the model path if needed. The dashboard
 uses Python 3 when stdout is an interactive terminal. Set
-`FRANKENMOE_CONSOLE=0` for plain output, or set `FRANKENMOE_LOG`
-to a writable log location. The OpenAI-compatible base URL ends in
+`GOOSEINFER_CONSOLE=0` for plain output, or set `GOOSEINFER_LOG` to a
+writable log location. The published v0.13.0-alpha launcher uses the
+legacy `FRANKENMOE_CONSOLE` and `FRANKENMOE_LOG` variables. The OpenAI-compatible base URL ends in
 `/v1`. Native completion requests go to `/completion`.
 
 The bundled profiles preserve Apex context 262144 with a 6290 MiB

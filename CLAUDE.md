@@ -1,4 +1,4 @@
-# AGENTS.md — Rules for AI agents working in FrankenMoE-CUDA
+# AGENTS.md — Rules for AI agents working in GooseInfer
 
 Single source of truth for every AI agent (Claude or other) working in this
 repository. Read this file before building, measuring, or committing anything.
@@ -92,7 +92,7 @@ Non-negotiable. They are also carried verbatim into every handoff report.
     support for the other architectures and the ability to port them to Goose are
     intact: the shared loaders, graphs, backends and APIs must stay
     multi-architecture and must not acquire Apex-specific shortcuts. A working
-    Apex obtained at the cost of the rest of FrankenMoE is a failed migration.
+    Apex obtained at the cost of the rest of GooseInfer is a failed migration.
     Keep an explicit dependency map of what is shared and what is
     per-architecture, and keep every piece an unported architecture still needs.
     The removal order is unchanged and stricter: proven Apex readiness, then a
@@ -232,7 +232,7 @@ build.
     Absent measurements stay null. When diagnostic profiling is planned for an
     experiment, include its results in that experiment's push.
 
-21. Use one fixed endpoint for FrankenMoE runtime server runs and benchmarks:
+21. Use one fixed endpoint for GooseInfer runtime server runs and benchmarks:
     `127.0.0.1:9101`. Do not change the port between experiments or silently
     choose another port when it is occupied.
 
@@ -307,7 +307,7 @@ main Apex optimization and preserve the working runtime and its tests.
 
 ## Mandatory release gate
 
-Run the [Release Gate](docs/RELEASE-GATE.md) before publishing any FrankenMoE
+Run the [Release Gate](docs/RELEASE-GATE.md) before publishing any GooseInfer
 package. Register each OS × backend × model combination in the shared release
 matrix and run its applicable checks against the actual candidate archives.
 Fix real build, missing-module, dependency and correctness failures before
@@ -472,7 +472,7 @@ else.
 The report is written in Russian (Igor reads it directly) with English
 technical terms. The section set and their order are fixed:
 
-    ПЕРЕДАЧА РАБОТЫ — FrankenMoE-CUDA
+    ПЕРЕДАЧА РАБОТЫ — GooseInfer
     Дата: <YYYY-MM-DD>
     Ветка: <branch>
     Текущий commit: <full hash>
@@ -644,7 +644,7 @@ come from Igor directly. For every marked message:
 
     After deleting, verify the build, correctness and - when the path is hot - performance.
 
-    Do not keep dead code for compatibility with architectures officially excluded from FrankenMoE.
+    Do not keep dead code for compatibility with architectures officially excluded from GooseInfer.
 
     Every report states three numbers separately:
       1. C++ lines replaced by Goose;
@@ -803,9 +803,9 @@ come from Igor directly. For every marked message:
     | `libllama.so`              | `libgoose-runtime.so`   |
     | `libllama-server-impl.so`  | `libgoose-server.so`    |
     | `libggml.so`               | `libgoose-compute.so`   |
-    | `llama-server`             | `frankenmoe-server`     |
+    | `llama-server`             | `gooseinfer-serve`     |
 
-    This is a direction, not an instruction to rename anything now. FrankenMoE is the product and the runtime,
+    This is a direction, not an instruction to rename anything now. GooseInfer is the product and the runtime,
     Goose is the language and the substrate, Fried Goose is the compiler.
 
     Rules:
@@ -841,7 +841,7 @@ come from Igor directly. For every marked message:
       prettier number obtained by weakening the test is the failure this rule exists to prevent.
     - Every performance report states the profile it was measured under, and a figure without it is incomplete.
 
-    The principle in one line: FrankenMoE is made faster, it is not given an easier job.
+    The principle in one line: GooseInfer is made faster, it is not given an easier job.
 
 36. A permanent test lives in `tests/`; an experiment holds the hypothesis, not the regression
     check.

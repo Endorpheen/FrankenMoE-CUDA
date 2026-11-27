@@ -3,7 +3,7 @@
 Use **32K/512 as the sole primary Inkling performance workload**.
 Shorter workloads are for numerical and functional diagnostics.
 
-## Current FrankenMoE reference
+## Release checkpoint reference
 
 [EXP-1969](../experiments/EXP-2026-11-25-1969-inkling-q8-packed-input/README.md)
 established the current first-request baseline of **296.24 prefill /
@@ -22,9 +22,16 @@ packed Q8 prefill input (`I2_Q8_PACKED_INPUT=1`).
 Use the full argv/env in the receipt. Preserve the frozen reference
 and its request when evaluating a candidate.
 
+## Development branch observation
+
+[EXP-2128](https://github.com/Endorpheen/GooseInfer/blob/ad0694c288d4ecb55217945a85cf3757f65a886e/experiments/EXP-2026-11-26-2128-inkling2-prune-host-staging/README.md)
+recorded **436.58 prefill / 35.99 decode tok/s** on one 32K/512 run on
+the RTX 4070. All 512 output IDs matched EXP-2126. Paired measurements
+and cross-model acceptance remain open.
+
 ## Comparison protocol
 
-- Compare each candidate with the latest accepted FrankenMoE
+- Compare each candidate with the latest accepted GooseInfer
   reference. Execute arms sequentially with identical first-request
   conditions and cached model pages. Recompute the full prompt.
   Report prefill, decode, wall time, peak board VRAM, process RSS

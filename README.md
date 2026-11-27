@@ -1,10 +1,10 @@
-# GooseInfer (formerly FrankenMoE-CUDA)
+# GooseInfer
 
-GooseInfer runs local LLM inference with Goose model code and native C adapters
-for the operating system and NVIDIA CUDA driver. It supports expert streaming
-for models whose weights exceed GPU memory.
-See the [Vulkan backend status](docs/roadmap/VULKAN-BACKEND.md).
-Learn about the language in the [original Goose repository](https://github.com/aardappel/goose).
+GooseInfer is a high-performance LLM inference engine written in Goose.
+It supports multiple model architectures and streams expert weights for
+models larger than consumer GPU memory. GooseInfer provides CUDA and
+experimental Vulkan builds. See the [Goose language repository](https://github.com/aardappel/goose)
+for language documentation.
 
 ![Goose on Fire terminal dashboard with Apex startup logs](docs/assets/goose-on-fire.png)
 
@@ -30,6 +30,23 @@ These are single-response results from the corresponding release checkpoints.
 See the [multi-model guide](docs/MULTIMODEL-ALPHA.md) for the model profiles,
 measurement conditions and limits.
 
+The [v0.14.1 Vulkan multi-model alpha](https://github.com/Endorpheen/GooseInfer/releases/tag/v0.14.1-vulkan-multimodel-alpha)
+is a separate Linux and Windows x64 distribution for Apex, Inkling,
+Bonsai and the Qwen2.5 control model. Short generation was verified
+on Linux RTX 4070 and under Wine. Native AMD and native Windows GPU
+inference remain unverified. See the [Vulkan setup guide](docs/releases/VULKAN-ALPHA.md).
+
+### Development benchmarks
+
+| RTX 4070, 32K/512 | Prefill, tok/s | Decode, tok/s |
+| --- | ---: | ---: |
+| GigaChat4 37B A4B Q4_K_M HTTP ([EXP-2189](https://github.com/Endorpheen/GooseInfer/blob/6a46a6be0f7cc03767cbcf642e65176ac5333990/integration/goose-standalone/gigachat4/README.md#exp-2026-11-27-2189--read-selected-gigachat4-mla-keys-by-index)) | 370.35 | 13.26 |
+| Inkling 2 Mini AD-IQ4_XS ([EXP-2128 diagnostic](https://github.com/Endorpheen/GooseInfer/blob/ad0694c288d4ecb55217945a85cf3757f65a886e/experiments/EXP-2026-11-26-2128-inkling2-prune-host-staging/README.md)) | 436.58 | 35.99 |
+
+These measurements come from development branches. EXP-2189 matched all
+512 output token IDs from llama.cpp. EXP-2128 is a single diagnostic run
+with all 512 IDs matching EXP-2126.
+
 The published Windows ZIP includes Apex HTTP and an experimental Bonsai
 CUDA MTP CLI. Apex loaded real weights under Wine and returned HTTP 200 on
 `/health`. The one-token CPU request timed out. Native Windows CUDA
@@ -39,7 +56,9 @@ Inkling or Bonsai HTTP. Both have a separate
 
 ## Start a model on Linux
 
-Run one model per GPU from the extracted archive. New builds use the `gooseinfer` launcher. Published FrankenMoE release archives still use `frankenmoe`.
+Run one model per GPU. Newly staged packages use the `gooseinfer` launcher.
+If you downloaded the published v0.13.0-alpha archive above, substitute
+`./frankenmoe` in the same commands.
 
 ```bash
 ./gooseinfer apex /path/to/Apex-35B-V1.0-Q4_K_M.gguf
@@ -66,8 +85,8 @@ ZIP for the Bonsai MTP CLI.
   tracks the reference requirements for adding a model.
 - [Experiment registry](experiments/EXPERIMENTS.md) records source changes,
   benchmark conditions and correctness checks.
-- [Vulkan roadmap](docs/roadmap/VULKAN-BACKEND.md) describes the deferred AMD
-  backend.
+- [Vulkan roadmap](docs/roadmap/VULKAN-BACKEND.md) records the experimental Vulkan
+  backend and its remaining validation work.
 
 Run `bash tools/check.sh fast` to compose and compile the source-tree Goose
 unit without model weights.

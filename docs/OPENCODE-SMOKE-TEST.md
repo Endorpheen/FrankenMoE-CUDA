@@ -1,4 +1,4 @@
-# OpenCode and FrankenMoE chat smoke test
+# OpenCode and GooseInfer chat smoke test
 
 Run this checklist for each new model or HTTP compatibility change. Record the
 server build and SHA-256, model and quantization, chat-template source, OpenCode
@@ -14,7 +14,7 @@ model server at a time. Use a separate OpenCode project and isolated settings.
 2. Create a test directory containing `marker.txt`. Put a fresh, distinctive
    string in the file and keep the expected string out of the prompt. Reserve
    `output.txt` for write and edit tests.
-3. Run FrankenMoE on loopback. Check `GET /health`, `GET /v1/models`, and load
+3. Run GooseInfer on loopback. Check `GET /health`, `GET /v1/models`, and load
    the bundled web page in a fresh browser context. Confirm the selected
    model and capture statuses for relevant failed requests.
 4. Connect OpenCode using its OpenAI-compatible provider and a base URL ending
@@ -86,7 +86,7 @@ model server at a time. Use a separate OpenCode project and isolated settings.
 
 ## Reasoning and tool continuation
 
-Use a fresh OpenCode session with the FrankenMoE Apex provider. Keep the
+Use a fresh OpenCode session with the GooseInfer Apex provider. Keep the
 same model, context and sampling settings as the session under comparison.
 
 1. Put two distinctive values in two small files. Ask Apex to read the

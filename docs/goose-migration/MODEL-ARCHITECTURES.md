@@ -40,7 +40,7 @@ continuing Apex optimization.
    exact binary hash.
 
 ```bash
-FG_MODEL_CANDIDATE=/path/to/frankenmoe-infer \
+FG_MODEL_CANDIDATE=/path/to/gooseinfer-infer \
 FG_MODEL_REPORT=/path/to/new-acceptance-report \
   bash tests/run.sh models architecture-regressions
 ```

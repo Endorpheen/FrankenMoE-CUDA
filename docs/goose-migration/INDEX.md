@@ -9,7 +9,7 @@ This index covers the staged migration and its checkpoint evidence. Start with
 | file | title |
 |---|---|
 | `HANDOFF-20261119.md` | ПЕРЕДАЧА РАБОТЫ — FrankenMoE-CUDA → Codex |
-| `STATUS.md` | FrankenMoE migration status |
+| `STATUS.md` | GooseInfer migration status |
 | `REPRODUCTION-VERDICT-20261119.md` | The accepted runtime reproduces from neither path in the tree |
 | `BUILD-PROVENANCE-GAP.md` | Two build paths, and the release does not say which one made it |
 | `BASELINE-DEPENDS-ON-UNTRACKED-ARTEFACT.md` | The accepted checkpoint cannot load without an untracked experiment artefact |
@@ -43,7 +43,7 @@ This index covers the staged migration and its checkpoint evidence. Start with
 | `APEX-STATE-20261111.md` | Apex port: state and where it is blocked |
 | `APEX-TEST-PLAN.md` | Apex test plan — staged Goose runtime against the working Apex baseline |
 | `ARCHITECTURE-MAP.md` | Architecture dependency map (AGENTS.md rule 17) |
-| `ARCHITECTURE-PHILOSOPHY.md` | FrankenMoE architecture: modular source, one optimised compute path |
+| `ARCHITECTURE-PHILOSOPHY.md` | GooseInfer architecture: modular source, one optimised compute path |
 | `BIG-PLAN-AUDIT-20261112.md` | Big-plan audit, 2026-11-12 |
 | `BLOCKER-20261112-sched-cuda-split.md` | Blocker: our line aborts on a long prompt inside the scheduler, and the base library is not repr |
 | `BLOCKERS.md` | The remaining items, by the one thing that blocks each |
