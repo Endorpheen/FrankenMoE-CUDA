@@ -435,7 +435,8 @@ void hose_host_load_context(const char * path, int64_t capacity) {
     if (metadata_is("general.architecture", "gigachat4")) {
         fg_cuda_gigachat4_select_profile();
         if (fg_q35_generation_prepare() != 0) die("GigaChat4 model RAM residency");
-        if (H.n_tok != 128256 || giga_server_open(H.base, H.size, capacity) != 0)
+        giga_goose_init(0, NULL);
+        if (H.n_tok != 128256 || giga_server_open((uintptr_t)H.base, H.size, capacity) != 0)
             die("GigaChat4 model loader");
         H.gigachat4 = true;
         H.owner[10] = capacity;

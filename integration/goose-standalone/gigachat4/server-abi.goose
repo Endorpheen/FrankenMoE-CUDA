@@ -3,7 +3,6 @@ const GIGA_GRAPH_STEP_WORDS: i64 = 10;
 extern "ggml_graph_overhead_custom" fn giga_graph_overhead(nodes: u64, grads: bool) -> u64;
 extern "ggml_new_graph_custom" fn giga_new_graph(ctx: u64, nodes: u64, grads: bool) -> u64;
 extern "free" fn giga_free_workspace(pointer: c_ptr<void>);
-extern fn giga_server_trace_execution(value: i64, draft: bool, finished: bool);
 
 export fn giga_execute_bound(request: u64, model: u64, previous: u64, tokens: u64,
         count: i64, emit: i64, logits: u64, draft_input: u64, next_input: u64,
@@ -67,8 +66,6 @@ var giga_server_trace: bool;
 var giga_server_planned: bool;
 var giga_server_planned_prefill: bool;
 
-extern fn giga_server_log_placement(kind: i32, bytes: i64, available: i64);
-extern fn giga_server_log_open(status: i32, finished: bool);
 
 fn giga_server_model_address() -> u64 {
     return giga_pointer_address(unsafe_c_address<c_ptr<const void>>(giga_server_model[0]));
@@ -90,7 +87,12 @@ export fn giga_server_placement_trace(kind: i32, bytes: i64, available: i64) {
     if giga_server_trace { giga_server_log_placement(kind, bytes, available); }
 }
 
-export fn giga_server_open_bound(mapping: u64, bytes: u64, capacity: i64) -> i32 {
+export fn giga_server_open(mapping: u64, bytes: u64, capacity: i64) -> i32 {
+    if giga_enable_mmq() != 0 { return -1; }
+    return giga_server_open_bound(mapping, bytes, capacity);
+}
+
+fn giga_server_open_bound(mapping: u64, bytes: u64, capacity: i64) -> i32 {
     giga_server_trace = giga_env_value("GOOSE_GIGACHAT4_TRACE") != 0;
     let planned = giga_env_value("GOOSE_GIGACHAT4_PLANNED");
     giga_server_planned_prefill = giga_env_is(planned, "prefill");

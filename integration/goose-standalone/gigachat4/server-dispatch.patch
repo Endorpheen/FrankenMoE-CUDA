@@ -26,7 +26,7 @@
      const int64_t result = q35_model_step((sl_i64) { H.owner, 13 }, (sl_i64) { H.handles, 4 },
          (sl_i64) { H.records, H.layer_count * 32 }, (sl_i64) { H.acfg, 14 },
          (sl_i64) { H.gcfg, 7 }, (sl_i64) { H.mcfg, 3 }, (sl_i64) { H.kv_state, 6 },
-@@ -331,6 +336,19 @@
+@@ -331,6 +336,20 @@
      if (H.base == MAP_FAILED) die("model mmap");
  #endif
      load_vocab();
@@ -37,7 +37,8 @@
 +        architecture[0] == 8 && architecture[2] == 9 &&
 +        memcmp(H.base + architecture[1], "gigachat4", 9) == 0) {
 +        if (fg_q35_generation_prepare() != 0) die("GigaChat4 model RAM residency");
-+        if (H.n_tok != 128256 || giga_server_open(H.base, H.size, capacity) != 0) die("GigaChat4 model loader");
++        giga_goose_init(0, NULL);
++        if (H.n_tok != 128256 || giga_server_open((uintptr_t)H.base, H.size, capacity) != 0) die("GigaChat4 model loader");
 +        gigachat4 = true;
 +        H.owner[10] = capacity;
 +        H.layer_count = 32;
