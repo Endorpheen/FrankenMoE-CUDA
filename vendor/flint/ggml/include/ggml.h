@@ -2211,34 +2211,6 @@
         struct ggml_tensor  * a,
         enum ggml_unary_op op);
 
-    GGML_API struct ggml_tensor * ggml_rwkv_wkv6(
-            struct ggml_context * ctx,
-            struct ggml_tensor  * k,
-            struct ggml_tensor  * v,
-            struct ggml_tensor  * r,
-            struct ggml_tensor  * tf,
-            struct ggml_tensor  * td,
-            struct ggml_tensor  * state);
-
-    GGML_API struct ggml_tensor * ggml_gated_linear_attn(
-            struct ggml_context * ctx,
-            struct ggml_tensor  * k,
-            struct ggml_tensor  * v,
-            struct ggml_tensor  * q,
-            struct ggml_tensor  * g,
-            struct ggml_tensor  * state,
-            float scale);
-
-    GGML_API struct ggml_tensor * ggml_rwkv_wkv7(
-            struct ggml_context * ctx,
-            struct ggml_tensor  * r,
-            struct ggml_tensor  * w,
-            struct ggml_tensor  * k,
-            struct ggml_tensor  * v,
-            struct ggml_tensor  * a,
-            struct ggml_tensor  * b,
-            struct ggml_tensor  * state);
-
     /* Solves a specific equation of the form Ax=B, where A is a triangular matrix
     *  without zeroes on the diagonal (i.e. invertible).
     *  B can have any number of columns, but must have the same number of rows as A
