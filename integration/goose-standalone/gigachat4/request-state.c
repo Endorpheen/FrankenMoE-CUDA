@@ -100,26 +100,13 @@ int giga_step_upload(const struct giga_step *step, const int32_t *tokens) {
         !step->mask->data || (step->output_ids && !step->output_ids->data)) return -1;
     const size_t count = (size_t)step->count;
     const size_t cells = (size_t)step->cells;
-    int32_t positions[4096];
-    int64_t rows[4096];
-    uint16_t *mask = step->mask->data;
-    for (size_t row = 0; row < count; ++row) {
-        positions[row] = (int32_t)(step->base + row);
-        rows[row] = positions[row];
-        for (size_t cell = 0; cell < cells; ++cell) {
-            mask[row * cells + cell] = cell <= (size_t)positions[row] ? 0 : UINT16_C(0xfc00);
-        }
-    }
+    const sl_i32 output_ids = step->output_ids
+        ? (sl_i32){step->output_ids->data, step->output_count} : (sl_i32){0};
+    giga_fill_step_inputs(step->base, step->count, step->cells,
+        (sl_i32){step->positions->data, step->count},
+        (sl_i64){step->rows->data, step->count},
+        (sl_u16){step->mask->data, (int64_t)(count * cells)}, output_ids);
     memcpy(step->tokens->data, tokens, count * sizeof(*tokens));
-    memcpy(step->positions->data, positions, count * sizeof(*positions));
-    memcpy(step->rows->data, rows, count * sizeof(*rows));
-    if (step->output_ids) {
-        for (int64_t i = 0; i < step->output_count; ++i) {
-            positions[i] = (int32_t)(step->count - step->output_count + i);
-        }
-        memcpy(step->output_ids->data, positions,
-                                (size_t)step->output_count * sizeof(*positions));
-    }
     return 0;
 }
 
