@@ -365,3 +365,92 @@ export fn bonsai_verify_launch_rows(context: u64, operation: i32, input: const u
     }
     return 0;
 }
+
+const BONSAI_WORKSPACE_LAYERS: i64 = 64;
+const BONSAI_WORKSPACE_HISTORY: u64 = 3 * 10240 * 4;
+const BONSAI_WORKSPACE_GDN: u64 = 48 * 128 * 128 * 4;
+const BONSAI_WORKSPACE_ATTENTION: u64 = 32 * 1024 * 1024;
+
+fn bonsai_workspace_take(cursor: u64&, bytes: u64) -> u64 {
+    let start = cursor;
+    cursor += (bytes + 255) & ~255;
+    return start;
+}
+
+export fn bonsai_workspace_plan(context: u64, batch: u64, rows: u64, flags: u64,
+        bound: const i64[:], states: i64[:], scratch: i64[:], prefix: u64[:],
+        layer_ids: u32[:], layout: u64[:]) -> bool {
+    if context == 0 || context > 262144 || batch == 0 || batch > 1024 || rows > 5 ||
+        bound.len != 15 * BONSAI_WORKSPACE_LAYERS || states.len != 2 * BONSAI_WORKSPACE_LAYERS ||
+        scratch.len != 24 || prefix.len != 8 * BONSAI_WORKSPACE_LAYERS ||
+        layer_ids.len != BONSAI_WORKSPACE_LAYERS || layout.len != 17 { return false; }
+    let commit = (flags & 4) != 0;
+    if commit && rows < 3 { return false; }
+    let widths: u64[23] = [5120, 5120, 5120, 12288, 6144, 1024, 6144, 10240, 6144,
+        6144, 6144, 6144, 5120, 5120, 17408, 17408, 17408, 17408, 5120, 248320, 5120, 6144, 17408];
+    let cache = context * 576;
+    let all_tasks = 24 * batch * ((context + 255) / 256) * 258 * 4;
+    let partial = if (flags & 1) == 0 && all_tasks < BONSAI_WORKSPACE_ATTENTION { all_tasks }
+        else { BONSAI_WORKSPACE_ATTENTION };
+    var cursor: u64 = 0;
+    for layer in BONSAI_WORKSPACE_LAYERS {
+        let attention = bound[layer * 15] == 0;
+        states[2 * layer] = bonsai_workspace_take(&cursor, if attention { cache } else { BONSAI_WORKSPACE_HISTORY }) as! i64;
+        states[2 * layer + 1] = bonsai_workspace_take(&cursor, if attention { cache } else { BONSAI_WORKSPACE_GDN }) as! i64;
+    }
+    for i in widths.len {
+        let multiplier = if i < 19 { batch } else if i == 19 && (flags & 2) != 0 { rows } else { 1 };
+        scratch[i] = bonsai_workspace_take(&cursor, widths[i] * 4 * multiplier) as! i64;
+    }
+    scratch[23] = bonsai_workspace_take(&cursor, BONSAI_WORKSPACE_GDN) as! i64;
+    var layers: i64 = 0;
+    if commit {
+        for layer in BONSAI_WORKSPACE_LAYERS {
+            if bound[layer * 15] != 1 { continue; }
+            layer_ids[layers] = layer as! u32;
+            for i in (rows - 1) as! i64 {
+                prefix[8 * layers + 2 * i] = bonsai_workspace_take(&cursor, BONSAI_WORKSPACE_HISTORY);
+                prefix[8 * layers + 2 * i + 1] = bonsai_workspace_take(&cursor, BONSAI_WORKSPACE_GDN);
+            }
+            layers += 1;
+        }
+    }
+    layout[1] = partial;
+    layout[2] = layers as! u64;
+    layout[3] = bonsai_workspace_take(&cursor, 16 * batch);
+    layout[4] = bonsai_workspace_take(&cursor, 1024 * batch);
+    layout[5] = bonsai_workspace_take(&cursor, 4 * batch);
+    layout[6] = bonsai_workspace_take(&cursor, 2 * 17408 * batch);
+    layout[7] = bonsai_workspace_take(&cursor, 27 * 8);
+    layout[8] = bonsai_workspace_take(&cursor, 27 * 8);
+    layout[9] = bonsai_workspace_take(&cursor, 22 * 8);
+    layout[10] = bonsai_workspace_take(&cursor, partial);
+    if (flags & 8) != 0 {
+        layout[11] = bonsai_workspace_take(&cursor, 27 * 8);
+        layout[12] = bonsai_workspace_take(&cursor, 27 * 8);
+        layout[13] = bonsai_workspace_take(&cursor, rows * 192);
+    }
+    if (flags & 16) != 0 {
+        let limit = if context < 36864 { context } else { 36864 };
+        let chunks = (limit + 31) / 32;
+        layout[14] = chunks;
+        layout[15] = bonsai_workspace_take(&cursor, chunks * 4 * 16384);
+        layout[16] = bonsai_workspace_take(&cursor, chunks * 4 * 16384);
+    }
+    layout[0] = cursor;
+    return true;
+}
+
+export fn bonsai_workspace_rebase(base: u64, rows: u64, flags: u64, states: i64[:],
+                                  scratch: i64[:], prefix: u64[:], layout: u64[:]) {
+    for i in states.len { states[i] += base as! i64; }
+    for i in scratch.len { scratch[i] += base as! i64; }
+    for i in 3 .. 11 { layout[i] += base; }
+    if (flags & 4) != 0 {
+        for i in layout[2] as! i64 {
+            for j in (2 * (rows - 1)) as! i64 { prefix[8 * i + j] += base; }
+        }
+    }
+    if (flags & 8) != 0 { for i in 11 .. 14 { layout[i] += base; } }
+    if (flags & 16) != 0 { for i in 15 .. 17 { layout[i] += base; } }
+}

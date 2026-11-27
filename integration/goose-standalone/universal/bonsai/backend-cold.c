@@ -591,12 +591,6 @@ static int load_eog(model *m, sl_u8 file, sl_i64 st, sl_i64 meta, sl_i64 slots) 
     return m->eog_count > 0 ? 0 : -1;
 }
 
-static CUdeviceptr reserve(CUdeviceptr *ptr, size_t length) {
-    const CUdeviceptr start = *ptr;
-    *ptr += (length + 255) & ~(size_t)255;
-    return start;
-}
-
 static int rope_config(CUdeviceptr dest, int64_t heads, int64_t tokens) {
     const int64_t conf[27] = {
         tokens == 1 ? 2 : 0, heads * tokens, 1, (tokens+127)/128, 1024 * tokens,
@@ -607,81 +601,43 @@ static int rope_config(CUdeviceptr dest, int64_t heads, int64_t tokens) {
     return check(bonsai_cuda.fn_cuMemcpyHtoD(dest, conf, sizeof(conf)), "RoPE configuration");
 }
 
+typedef struct { uint32_t *data; int64_t len; } bonsai_mutable_indices;
+extern uint8_t bonsai_workspace_plan(uint64_t context, uint64_t batch, uint64_t rows, uint64_t flags,
+    sl_i64 bound, sl_i64 states, sl_i64 scratch, bonsai_words prefix,
+    bonsai_mutable_indices layer_ids, bonsai_words layout);
+extern void bonsai_workspace_rebase(uint64_t base, uint64_t rows, uint64_t flags,
+    sl_i64 states, sl_i64 scratch, bonsai_words prefix, bonsai_words layout);
+
 static int workspace(model *m, const int32_t *sign) {
-    const unsigned words[23] = {
-        5120, 5120, 5120, 12288, 6144, 1024, 6144, 10240, 6144, 6144, 6144, 6144,
-        5120, 5120, 17408, 17408, 17408, 17408, 5120, VOCAB, 5120, 6144, 17408,
-    };
-    const size_t cache = m->context * (size_t)KV_BYTES;
-    const size_t partial_per_task = ((m->context + 255)/256) * (256 + 2) * sizeof(float);
-    const size_t all_tasks = 24 * m->ubatch * partial_per_task;
-    const size_t partial = !m->use_flash_f32 && all_tasks < ATTENTION_BYTES ? all_tasks : ATTENTION_BYTES;
-    m->partial_capacity = partial;
-    CUdeviceptr ptr = 0;
-    for (unsigned layer = 0; layer < LAYERS; ++layer) {
-        const int attention = m->bound[layer * 15] == 0;
-        m->states[2 * layer] = reserve(&ptr, attention ? cache : 4 * GDN_HISTORY);
-        m->states[2 * layer + 1] = reserve(&ptr, attention ? cache : 4 * GDN_STATE);
-    }
-    for (unsigned i = 0; i < 23; ++i) {
-        m->b[i] = reserve(&ptr, words[i] * sizeof(float) * (i < 19 ? m->ubatch : i == 19 && m->mtp_enabled ? m->verify_rows : 1));
-    }
-    m->b[23] = reserve(&ptr, 4 * GDN_STATE);
-    if (m->device_commit) {
-        for (unsigned layer = 0; layer < LAYERS; ++layer) {
-            if (m->bound[layer * 15] != 1) continue;
-            const unsigned i = m->txn.layers++;
-            m->txn.layer_ids[i] = layer;
-            for (unsigned prefix = 0; prefix < m->verify_rows - 1; ++prefix) {
-                m->txn.prefix[i][prefix][0] = reserve(&ptr, sizeof(float) * GDN_HISTORY);
-                m->txn.prefix[i][prefix][1] = reserve(&ptr, sizeof(float) * GDN_STATE);
-            }
-        }
-    }
-    m->positions = reserve(&ptr, 16 * m->ubatch);
-    m->phases = reserve(&ptr, 1024 * m->ubatch);
-    m->token_ids = reserve(&ptr, 4 * m->ubatch);
-    m->packed = reserve(&ptr, 2 * 17408 * m->ubatch);
-    m->rope_q = reserve(&ptr, 27 * 8);
-    m->rope_k = reserve(&ptr, 27 * 8);
-    m->attention = reserve(&ptr, 22 * 8);
-    m->partial = reserve(&ptr, partial);
+    _Static_assert(LAYERS == 64 && VERIFY_ROWS == 5 && KV_BYTES == 576 && VOCAB == 248320 &&
+        ATTENTION_BYTES == 32 * 1024 * 1024 && sizeof(struct verify_position) == 192, "Bonsai workspace ABI");
+    const uint64_t flags = (m->use_flash_f32 ? 1 : 0) | (m->mtp_enabled ? 2 : 0) |
+        (m->device_commit ? 4 : 0) | (m->verify_native ? 8 : 0) | (m->stage_kv ? 16 : 0);
+    uint64_t values[17] = {0};
+    const bonsai_words layout = {values, 17};
+    const sl_i64 states = {m->states, 2 * LAYERS}, scratch = {m->b, 24};
+    const bonsai_words prefix = {(uint64_t *)m->txn.prefix, 8 * LAYERS};
+    if (!bonsai_workspace_plan(m->context, m->ubatch, m->verify_rows, flags,
+            (sl_i64){m->bound, 15 * LAYERS}, states, scratch, prefix,
+            (bonsai_mutable_indices){m->txn.layer_ids, LAYERS}, layout)) return -1;
+    m->partial_capacity = values[1];
+    m->txn.layers = values[2];
+    if (check(bonsai_cuda.fn_cuMemAlloc(&m->memory, values[0]), "state and scratch") ||
+        check(bonsai_cuda.fn_cuMemsetD8(m->memory, 0, values[0]), "state initialization")) return -1;
+    bonsai_workspace_rebase(m->memory, m->verify_rows, flags, states, scratch, prefix, layout);
+    m->positions = values[3]; m->phases = values[4]; m->token_ids = values[5]; m->packed = values[6];
+    m->rope_q = values[7]; m->rope_k = values[8]; m->attention = values[9]; m->partial = values[10];
     if (m->verify_native) {
-        m->verify_rope_q = reserve(&ptr, 27 * 8);
-        m->verify_rope_k = reserve(&ptr, 27 * 8);
-        m->verify_positions = reserve(&ptr, m->verify_rows * sizeof(struct verify_position));
-    }
-    if (m->stage_kv) {
-        const unsigned staging_limit = m->context < 36864 ? m->context : 36864;
-        m->stage_capacity_chunks = (staging_limit+31)/32;
-        const size_t bytes = (size_t)m->stage_capacity_chunks * 4 * 16384;
-        m->stage_k = reserve(&ptr, bytes);
-        m->stage_v = reserve(&ptr, bytes);
-    }
-    if (check(bonsai_cuda.fn_cuMemAlloc(&m->memory, ptr), "state and scratch") ||
-        check(bonsai_cuda.fn_cuMemsetD8(m->memory, 0, ptr), "state initialization")) return -1;
-    for (unsigned i = 0; i < LAYERS * 2; ++i) m->states[i] += m->memory;
-    for (unsigned i = 0; i < 24; ++i) m->b[i] += m->memory;
-    if (m->verify_native) {
-        m->verify_rope_q += m->memory;
-        m->verify_rope_k += m->memory;
-        m->verify_positions += m->memory;
+        m->verify_rope_q = values[11]; m->verify_rope_k = values[12]; m->verify_positions = values[13];
         if (rope_config(m->verify_rope_q, 24, 1) || rope_config(m->verify_rope_k, 4, 1)) return -1;
     }
-    for (unsigned i = 0; i < m->txn.layers; ++i) {
-        for (unsigned prefix = 0; prefix < m->verify_rows - 1; ++prefix) {
-            for (unsigned plane = 0; plane < 2; ++plane) m->txn.prefix[i][prefix][plane] += m->memory;
-        }
+    m->stage_capacity_chunks = values[14]; m->stage_k = values[15]; m->stage_v = values[16];
+    const unsigned signs[] = {5120, 6144, 17408};
+    for (unsigned i = 0; i < 3; ++i) {
+        if (check(bonsai_cuda.fn_cuMemcpyHtoD(m->b[20 + i], sign, signs[i] * sizeof(*sign)), "Hadamard signs")) return -1;
+        sign += signs[i];
     }
-    m->positions += m->memory; m->rope_q += m->memory; m->rope_k += m->memory;
-    m->attention += m->memory; m->partial += m->memory;
-    for (unsigned i = 20; i < 23; ++i) {
-        if (check(bonsai_cuda.fn_cuMemcpyHtoD(m->b[i], sign, words[i] * sizeof(*sign)), "Hadamard signs")) return -1;
-        sign += words[i];
-    }
-    m->phases += m->memory; m->token_ids += m->memory; m->packed += m->memory;
-    if (m->stage_kv) { m->stage_k += m->memory; m->stage_v += m->memory; }
-    fprintf(stderr, "Device workspace: %llu bytes (Q4_0 K/V, GDN, activations)\n", (unsigned long long)ptr);
+    fprintf(stderr, "Device workspace: %llu bytes (Q4_0 K/V, GDN, activations)\n", (unsigned long long)values[0]);
     return 0;
 }
 
