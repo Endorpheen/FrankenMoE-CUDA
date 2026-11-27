@@ -62,3 +62,21 @@ EXP-2218 removes `ggml-quants.c` from the universal Linux and Windows builds.
 The C input count decreases from 3 to 2 and the physical line count of those
 inputs drops from 13,871 to 8,244. The old C quantization reference remains
 available to separate test builds. All 43 type metadata entries matched.
+
+## Whole-runtime native source inventory
+
+Run `python3 tools/runtime-source-count.py` for physical source line counts in
+the current worktree. Add `--json` to save the per-file evidence and unresolved
+include names for comparison across revisions. No build or model is required.
+
+The inventory lists direct host and GPU build inputs separately from files
+reached through local includes. It covers the union of the Linux and Windows
+build recipes, including the Vulkan shader source. Maintain the direct input
+list alongside changes to the universal build scripts. Local include discovery
+includes conditional branches. Unresolved include names require review before
+using the inventory as a completion gate.
+
+Git-ignored build output and system headers are outside the inventory.
+Tracked compiler output under `generated`, archives, and separate tests have
+their own counts. A source line count measures physical file contents, not
+the code retained after preprocessing and linking.
