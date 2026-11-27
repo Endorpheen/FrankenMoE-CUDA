@@ -1,4 +1,6 @@
-# FrankenMoE multi-model alpha
+# GooseInfer multi-model alpha
+
+Published FrankenMoE archives retain their original executable names.
 
 This package uses Goose for model execution and native C adapters for
 the operating system and NVIDIA CUDA driver. Model GGUF files are
@@ -15,9 +17,9 @@ qualified for this package.
 Run one server at a time from the extracted directory:
 
 ```bash
-./frankenmoe apex /path/to/Apex-35B-V1.0-Q4_K_M.gguf
-./frankenmoe inkling /path/to/Inkling-2-Mini-AD-IQ4_XS.gguf
-./frankenmoe bonsai /path/to/Ternary-Bonsai-2.5-27B-PQ2_0-mtp.gguf
+./gooseinfer apex /path/to/Apex-35B-V1.0-Q4_K_M.gguf
+./gooseinfer inkling /path/to/Inkling-2-Mini-AD-IQ4_XS.gguf
+./gooseinfer bonsai /path/to/Ternary-Bonsai-2.5-27B-PQ2_0-mtp.gguf
 ```
 
 The default loopback ports are 9101, 9102 and 9103, respectively.

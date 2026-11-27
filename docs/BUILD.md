@@ -88,7 +88,7 @@ FRANKEN_MAIN=/path/to/checkout-with-win32-headers \
   bash tools/multimodel-release/link-windows-multimodel.sh \
   build/windows-multimodel /path/to/inkling-coff /path/to/common-coff /path/to/chat-coff
 bash tools/multimodel-release/stage-windows.sh build/windows-staged \
-  /path/to/extracted-apex-windows build/windows-multimodel/frankenmoe-multimodel.exe \
+  /path/to/extracted-apex-windows build/windows-multimodel/gooseinfer-multimodel.exe \
   /path/to/bonsai-mtp.exe /path/to/verified-linux-staging
 ```
 
@@ -96,3 +96,18 @@ The COFF inputs are build checkpoints, not Linux object files. Archive
 them with their source and compiler provenance before reassembling a
 release. This link command does not compile their upstream source units.
 Use the [Release Gate](RELEASE-GATE.md) on the final archives.
+
+## Renamed build outputs
+
+Fresh Linux builds produce `gooseinfer-infer`, `gooseinfer-server`,
+`gooseinfer-serve`, `gooseinfer-tokenize`, `libgooseinfer.a`, and
+`libgooseinfer-tensor.a` in the corresponding builders. The old names
+are compatibility aliases. New multi-model packages use `gooseinfer`
+on Linux and `gooseinfer-multimodel.exe` on Windows.
+
+New launchers prefer the `GOOSEINFER_*` environment settings and still
+read their `FRANKENMOE_*` predecessors. They also forward the legacy
+web-root setting to archived checkpoint binaries. Windows profile storage
+keeps its existing registry key and directory so saved settings survive
+the rename. Historical release asset names, checkpoint filenames and
+checksums are retained.
