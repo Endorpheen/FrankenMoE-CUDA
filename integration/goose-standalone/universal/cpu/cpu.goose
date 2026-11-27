@@ -732,8 +732,6 @@ struct Tensor {
 struct Node {
     x: Tensor, y: Tensor, z: Tensor, d: Tensor, op: i64, ith: i64, nth: i64, ip: i64[16], fp: f32[8]
 }
-extern "fg143_bits" fn bits(x: f32) -> u32;
-extern "fg143_from_bits" fn from_bits(x: u32) -> f32;
 fn half(x: u16) -> f32 { return half_codec :: expand_half(x); }
 fn to_half(x: f32) -> u16 { return half_codec :: narrow_half(x); }
 extern "fabsf" fn abs32(x: f32) -> f32;
@@ -3692,9 +3690,6 @@ fn codec_transform(
 extern "fg143_cpu_gather_threads" fn cpu_gather_threads() -> i64;
 extern "fg143_cpu_prefill" fn cpu_prefill() -> bool;
 extern "fg143_gather_affinity" fn gather_affinity(prefill: bool, task: i64) -> i64;
-extern "fg143_gather_index" fn gather_index(address: u64) -> i64;
-extern "fg143_gather_fetch" fn gather_fetch(address: u64, row: u8[:]);
-extern "fg143_gather_store" fn gather_store(address: u64, row: const f32[:]);
 extern "fg143_gather_witness" fn gather_witness(rows: i64, tasks: i64);
 
 struct CodecGather {
@@ -4812,7 +4807,6 @@ fn graph_regular(tensor: u64, packet: const i64[:], mode: i64, sizes: i64[:], wo
     return fg143_node_run(packet, mode, x, y, z, mask, output, scratch, indices);
 }
 
-extern "fg143_graph_resize" fn graph_resize(workspace: u64, bytes: i64) -> u64;
 extern "fg143_graph_observe" fn graph_observe(tensor: u64) -> bool;
 extern "fg_cuda_routed_graph_enabled" fn routed_graph_enabled() -> bool;
 extern "fg_cuda_full_ffn_enabled" fn full_ffn_enabled() -> bool;
@@ -5341,9 +5335,7 @@ fn try_moe_epilogue(nodes: GraphNodes, step: i64, deadlines: const i64[:], mul: 
 
 extern "fg_cuda_activation_graph_begin" fn graph_activation_begin(planned: bool) -> i32;
 extern "fg143_graph_restore_affinity" fn graph_restore_affinity(previous: u64) -> bool;
-extern "fg143_graph_collect" fn graph_collect(graph: u64, failed: i64, counters: u64[:]);
 extern "fg_cuda_state_graph_done" fn graph_state_done() -> i32;
-extern "fg143_graph_publish" fn graph_publish(output: u64, valid: bool, all: bool, counters: u64[:]) -> i32;
 extern "fg143_graph_log_enabled" fn graph_log_enabled() -> bool;
 extern "fg143_graph_take_cpu_values" fn graph_take_cpu_values() -> u64;
 extern "fg143_graph_log_count" fn graph_log_count(label: const u8[:], count: u64, unit: const u8[:]);
@@ -7033,3 +7025,146 @@ fn graph_scan(tensor: u64) -> bool {
         graph_borrow_u8(addresses[4], packet[49]), graph_borrow_u8(addresses[5], packet[59]),
         graph_borrow_u8(addresses[6], packet[69]), graph_borrow_u8(addresses[7], packet[79]));
 }
+
+extern fn fg_cuda_take_matrices() -> u64;
+extern fn fg_cuda_take_f32_matrices() -> u64;
+extern fn fg_cuda_take_mmq() -> u64;
+extern fn fg_cuda_take_dense_mma() -> u64;
+extern fn fg_cuda_take_attentions() -> u64;
+extern fn fg_cuda_take_flash_mmas() -> u64;
+extern fn fg_cuda_take_causal_attentions() -> u64;
+extern fn fg_cuda_take_gdns() -> u64;
+extern fn fg_cuda_take_gdn_mmas() -> u64;
+extern fn fg_cuda_take_q4_writes() -> u64;
+extern fn fg_cuda_take_vectors() -> u64;
+extern fn fg_cuda_take_fwhts() -> u64;
+extern fn fg_cuda_take_moe_weighted() -> u64;
+extern fn fg_cuda_take_matrix_launches(out0: u64, out1: u64);
+extern fn fg_cuda_take_routed_graph(out0: u64, out1: u64, out2: u64, out3: u64);
+extern fn fg_cuda_take_mmq_stream(out0: u64, out1: u64);
+extern fn fg_cuda_take_resident_state(out0: u64, out1: u64);
+extern fn fg_cuda_take_position(out0: u64, out1: u64);
+extern fn fg_cuda_take_routes(out0: u64);
+extern fn fg_cuda_take_blits(out0: u64);
+
+extern fn fg143_graph_log_failure(index: i64, op: i32);
+extern fn fg_cuda_activation_graph_end(valid: bool, all: bool, output: u64, bytes: i64,
+        hits: u64, skipped_download_bytes: u64, expired_bytes: u64) -> i32;
+
+fn graph_collect(graph: u64, failed: i64, counters: u64[:]) {
+    if failed > 0 {
+        let nodes = GraphNodes { address: tensor_read_word(graph + GRAPH_NODES), count: fg143_graph_nodes(graph) };
+        let node = graph_node(nodes, failed - 1);
+        fg143_graph_log_failure(failed - 1, tensor_read_i32(node + TENSOR_OPERATION, 0) as! i32);
+    }
+    let base = graph_pointer_address(unsafe_c_address<c_ptr<const void>>(counters[0]));
+    counters[0] = fg_cuda_take_matrices();
+    counters[1] = fg_cuda_take_f32_matrices();
+    fg_cuda_take_matrix_launches(base + 16, base + 24);
+    fg_cuda_take_routed_graph(base + 32, base + 40, base + 48, base + 56);
+    counters[8] = fg_cuda_take_mmq();
+    fg_cuda_take_mmq_stream(base + 72, base + 80);
+    counters[11] = fg_cuda_take_dense_mma();
+    counters[12] = fg_cuda_take_attentions();
+    counters[13] = fg_cuda_take_flash_mmas();
+    counters[14] = fg_cuda_take_causal_attentions();
+    counters[15] = fg_cuda_take_gdns();
+    counters[16] = fg_cuda_take_gdn_mmas();
+    fg_cuda_take_resident_state(base + 136, base + 144);
+    counters[19] = fg_cuda_take_q4_writes();
+    counters[20] = fg_cuda_take_vectors();
+    counters[21] = fg_cuda_take_fwhts();
+    counters[22] = fg_cuda_take_moe_weighted();
+    fg_cuda_take_position(base + 184, base + 192);
+    fg_cuda_take_routes(base + 200);
+    fg_cuda_take_blits(base + 240);
+}
+
+fn graph_publish(output: u64, valid: bool, all: bool, counters: u64[:]) -> i32 {
+    let data = if output != 0 { tensor_read_word(output + TENSOR_DATA) } else { 0 };
+    let bytes = if output != 0 { goose_abi_ggml_nbytes(output) as! i64 } else { 0 };
+    let base = graph_pointer_address(unsafe_c_address<c_ptr<const void>>(counters[33]));
+    return fg_cuda_activation_graph_end(valid, all, data, bytes, base, base + 8, base + 16);
+}
+
+const GRAPH_PLAN_BYTES: u64 = 40;
+const GRAPH_PLAN_OUTPUT: u64 = 8;
+const GRAPH_PLAN_ARENA: u64 = 16;
+const GRAPH_PLAN_COUNT: u64 = 24;
+
+extern fn fg143_graph_plan_log_replays(replays: u64);
+extern "realloc" fn graph_reallocate(memory: c_ptr<void>, bytes: u64) -> c_ptr<void>;
+
+export fn fg143_graph_plan_alloc(graph: u64, output: u64) -> u64 {
+    if graph == 0 { return 0; }
+    let count = fg143_graph_nodes(graph);
+    if count < 0 { return 0; }
+    let allocated = tensor_allocate_context(GRAPH_PLAN_BYTES + (count as! u64) * 8);
+    if allocated == null { return 0; }
+    let plan = graph_pointer_address(unsafe_c_ptr<c_ptr<const void>>(allocated));
+    tensor_write_word(plan, graph);
+    tensor_write_word(plan + GRAPH_PLAN_OUTPUT, output);
+    tensor_write_word(plan + GRAPH_PLAN_COUNT, count as! u64);
+    tensor_write_word(plan + DECODE_PLAN_BINDINGS, 0);
+    var deadlines = graph_borrow_i64(plan + GRAPH_PLAN_BYTES, count);
+    for i in count { deadlines[i] = -1; }
+    let arena = fg143_storage_allocate_output(graph, output, deadlines);
+    if arena == 0 {
+        tensor_free_context(allocated);
+        return 0;
+    }
+    tensor_write_word(plan + GRAPH_PLAN_ARENA, arena);
+    return plan;
+}
+
+export fn goose_abi_fg_standalone_graph_plan_free(plan: u64) {
+    if plan == 0 { return; }
+    let bindings = tensor_read_word(plan + DECODE_PLAN_BINDINGS);
+    if bindings != 0 && graph_log_enabled() {
+        fg143_graph_plan_log_replays(tensor_read_word(bindings + 8));
+    }
+    tensor_free_context(unsafe_c_ptr<c_ptr<void>>(bindings));
+    tensor_free_context(unsafe_c_ptr<c_ptr<void>>(tensor_read_word(plan + GRAPH_PLAN_ARENA)));
+    tensor_free_context(unsafe_c_ptr<c_ptr<void>>(plan));
+}
+
+fn graph_resize(address: u64, bytes: i64) -> u64 {
+    let work = unsafe_c_ptr<c_ptr<void>>(address);
+    if bytes == 0 {
+        tensor_free_context(work);
+        return 0;
+    }
+    if bytes < 0 { return 0; }
+    let resized = graph_reallocate(work, bytes as! u64);
+    return graph_pointer_address(unsafe_c_ptr<c_ptr<const void>>(resized));
+}
+
+fn gather_index(address: u64) -> i64 { return fg143_read_contiguous_id(address, 0, false); }
+
+fn gather_fetch(address: u64, row: u8[:]) {
+    if row.len == 0 { return; }
+    tensor_copy_raw(unsafe_c_slice_data<c_ptr<void>>(row),
+                    unsafe_c_ptr<c_ptr<const void>>(address), row.len as! u64);
+}
+
+fn gather_store(address: u64, row: const f32[:]) {
+    if row.len == 0 { return; }
+    tensor_copy_raw(unsafe_c_ptr<c_ptr<void>>(address),
+                    unsafe_c_slice_data<c_ptr<const void>>(row), (row.len as! u64) * 4);
+}
+
+fn bits(value: f32) -> u32 {
+    var word: u32 = 0;
+    tensor_copy_raw(unsafe_c_address<c_ptr<void>>(word), unsafe_c_address<c_ptr<const void>>(value), 4);
+    return word;
+}
+
+fn from_bits(word: u32) -> f32 {
+    var value: f32 = 0.0 as! f32;
+    tensor_copy_raw(unsafe_c_address<c_ptr<void>>(value), unsafe_c_address<c_ptr<const void>>(word), 4);
+    return value;
+}
+
+export fn fg143_bits(value: f32) -> u32 { return bits(value); }
+export fn fg143_from_bits(word: u32) -> f32 { return from_bits(word); }
+export fn fg143_codec_from_bits(word: u32) -> f32 { return from_bits(word); }

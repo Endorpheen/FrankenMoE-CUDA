@@ -27,31 +27,8 @@
 extern void fg143_cpu_init(int argc, char ** argv);
 extern uint8_t q35_cpumask_parse(sl_u8 text, sl_i64 mask);
 extern int64_t th_cpumask_next(sl_i64 mask, int64_t strict, int64_t first, sl_i64 local);
-extern uint64_t fg_cuda_take_matrices(void);
-extern uint64_t fg_cuda_take_f32_matrices(void);
-extern void fg_cuda_take_matrix_launches(uint64_t * launches, uint64_t * cached);
-extern void fg_cuda_take_routed_graph(uint64_t * groups, uint64_t * replays, uint64_t * full, uint64_t * full_replays);
-extern uint64_t fg_cuda_take_mmq(void);
-extern void fg_cuda_take_mmq_stream(uint64_t * windows, uint64_t * fixups);
-extern uint64_t fg_cuda_take_dense_mma(void);
-extern uint64_t fg_cuda_take_attentions(void);
-extern uint64_t fg_cuda_take_flash_mmas(void);
-extern uint64_t fg_cuda_take_causal_attentions(void);
-extern uint64_t fg_cuda_take_gdns(void);
-extern uint64_t fg_cuda_take_gdn_mmas(void);
-extern void fg_cuda_take_resident_state(uint64_t * kv, uint64_t * gdn);
-extern uint64_t fg_cuda_take_q4_writes(void);
-extern uint64_t fg_cuda_take_vectors(void);
-extern uint64_t fg_cuda_take_fwhts(void);
-extern uint64_t fg_cuda_take_moe_weighted(void);
-extern void fg_cuda_take_position(uint64_t * ropes, uint64_t * convs);
-extern void fg_cuda_take_routes(uint64_t * routes);
-extern void fg_cuda_take_blits(uint64_t * blits);
 extern int64_t fg_cuda_activation_read_address(uint64_t host, int64_t bytes);
 extern int64_t fg_cuda_state_read(uint64_t host, int64_t bytes);
-extern int fg_cuda_activation_graph_end(bool success, bool all, uint64_t host, int64_t bytes, uint64_t * hits,
-                                        uint64_t * skipped_download_bytes, uint64_t * expired_bytes);
-
 static pthread_once_t cpu_init = PTHREAD_ONCE_INIT;
 static atomic_uint_fast64_t cpu_values;
 static atomic_int_fast64_t cpu_batch_threads = 1;
@@ -160,40 +137,10 @@ int64_t fg143_gather_affinity(uint8_t prefill, int64_t worker) {
     return 0;
 }
 
-int64_t fg143_gather_index(uint64_t address) {
-    int32_t value;
-    memcpy(&value, (const void *) (uintptr_t) address, sizeof value);
-    return value;
-}
-
-void fg143_gather_fetch(uint64_t address, sl_u8 row) {
-    memcpy(row.data, (const void *) (uintptr_t) address, (size_t) row.len);
-}
-
-void fg143_gather_store(uint64_t address, sl_f32 row) {
-    memcpy((void *) (uintptr_t) address, row.data, (size_t) row.len * sizeof(*row.data));
-}
-
 void fg143_gather_witness(int64_t rows, int64_t tasks) {
     if (getenv("GOOSE_GRAPH_LOG")) {
         fprintf(stderr, "Goose CPU GET_ROWS: %" PRId64 " rows over %" PRId64 " threads\n", rows, tasks);
     }
-}
-
-uint32_t fg143_bits(float value) {
-    uint32_t bits;
-    memcpy(&bits, &value, sizeof bits);
-    return bits;
-}
-
-float fg143_from_bits(uint32_t bits) {
-    float value;
-    memcpy(&value, &bits, sizeof value);
-    return value;
-}
-
-float fg143_codec_from_bits(uint32_t bits) {
-    return fg143_from_bits(bits);
 }
 
 void fg143_witness(int64_t op, int64_t values) {
@@ -269,38 +216,24 @@ struct fg_standalone_graph_plan {
     int64_t deadlines[];
 };
 
-struct fg_standalone_graph_plan * fg_standalone_graph_plan_alloc(struct ggml_cgraph * graph, const struct ggml_tensor * output) {
+extern uint64_t fg143_graph_plan_alloc(uint64_t graph, uint64_t output);
+
+struct fg_standalone_graph_plan * fg_standalone_graph_plan_alloc(struct ggml_cgraph *graph, const struct ggml_tensor *output) {
     if (!graph || graph->n_nodes < 0) return NULL;
-    const size_t nodes = (size_t) graph->n_nodes;
-    if (nodes > (SIZE_MAX - sizeof(struct fg_standalone_graph_plan)) / sizeof(int64_t)) return NULL;
-    struct fg_standalone_graph_plan * plan = malloc(sizeof(*plan) + nodes * sizeof(int64_t));
-    if (!plan) return NULL;
-    plan->graph = graph;
-    plan->output = output;
-    plan->nodes = (int64_t) nodes;
-    plan->decode = NULL;
-    for (size_t i = 0; i < nodes; ++i) plan->deadlines[i] = -1;
     pthread_once(&cpu_init, init_cpu);
-    plan->arena = (void *) (uintptr_t) fg143_storage_allocate_output((uint64_t) (uintptr_t) graph,
-        (uint64_t) (uintptr_t) output, (sl_i64) {plan->deadlines, plan->nodes});
-    if (!plan->arena) {
-        free(plan);
-        return NULL;
-    }
-    return plan;
+    return (void *)(uintptr_t)fg143_graph_plan_alloc((uintptr_t)graph, (uintptr_t)output);
 }
 
-void fg_standalone_graph_plan_free(struct fg_standalone_graph_plan * plan) {
-    if (!plan) return;
-    if (plan->decode && getenv("GOOSE_GRAPH_LOG")) {
-        fprintf(stderr, "Goose decode plan reuses: %zu\n", plan->decode->replays);
-    }
-    free(plan->decode);
-    free(plan->arena);
-    free(plan);
+void fg143_graph_plan_log_replays(uint64_t replays) {
+    fprintf(stderr, "Goose decode plan reuses: %zu\n", (size_t)replays);
 }
 
 _Static_assert(offsetof(struct fg_standalone_graph_plan, graph) == 0 &&
+    offsetof(struct fg_standalone_graph_plan, output) == 8 &&
+    offsetof(struct fg_standalone_graph_plan, arena) == 16 &&
+    offsetof(struct fg_standalone_graph_plan, nodes) == 24 &&
+    offsetof(struct fg_standalone_graph_plan, deadlines) == 40 &&
+    sizeof(struct fg_standalone_graph_plan) == 40 &&
     offsetof(struct fg_standalone_graph_plan, decode) == 32 &&
     offsetof(struct q35_decode_bindings, count) == 0 &&
     offsetof(struct q35_decode_bindings, replays) == 8 &&
@@ -308,16 +241,6 @@ _Static_assert(offsetof(struct fg_standalone_graph_plan, graph) == 0 &&
     sizeof(struct q35_decode_attention) == 40 &&
     sizeof(struct q35_decode_bindings) == 5136 &&
     GGML_TYPE_Q4_0 == 2 && GGML_OP_SET_ROWS == 42, "Goose decode plan ABI");
-
-uint64_t fg143_graph_resize(uint64_t address, int64_t bytes) {
-    void * work = (void *) (uintptr_t) address;
-    if (bytes == 0) {
-        free(work);
-        return 0;
-    }
-    if (bytes < 0 || (uint64_t) bytes > SIZE_MAX) return 0;
-    return (uint64_t) (uintptr_t) realloc(work, (size_t) bytes);
-}
 
 _Static_assert(sizeof(struct inkling_attention_graph_call) == 232 &&
         offsetof(struct inkling_attention_graph_call, batch.count) == 12 &&
@@ -391,41 +314,9 @@ uint8_t fg143_graph_restore_affinity(uint64_t address) {
     return false;
 }
 
-void fg143_graph_collect(uint64_t graph_address, int64_t failed, sl_u64 counters) {
-    const struct ggml_cgraph *graph = (const void *)(uintptr_t)graph_address;
-    if (failed > 0) {
-        const struct ggml_tensor *node = graph->nodes[failed - 1];
-        fprintf(stderr, "Goose graph: node %lld (%s) failed\n",
-                (long long)failed - 1, ggml_op_name(node->op));
-    }
-    uint64_t *c = counters.data;
-    c[0] = fg_cuda_take_matrices();
-    c[1] = fg_cuda_take_f32_matrices();
-    fg_cuda_take_matrix_launches(c + 2, c + 3);
-    fg_cuda_take_routed_graph(c + 4, c + 5, c + 6, c + 7);
-    c[8] = fg_cuda_take_mmq();
-    fg_cuda_take_mmq_stream(c + 9, c + 10);
-    c[11] = fg_cuda_take_dense_mma();
-    c[12] = fg_cuda_take_attentions();
-    c[13] = fg_cuda_take_flash_mmas();
-    c[14] = fg_cuda_take_causal_attentions();
-    c[15] = fg_cuda_take_gdns();
-    c[16] = fg_cuda_take_gdn_mmas();
-    fg_cuda_take_resident_state(c + 17, c + 18);
-    c[19] = fg_cuda_take_q4_writes();
-    c[20] = fg_cuda_take_vectors();
-    c[21] = fg_cuda_take_fwhts();
-    c[22] = fg_cuda_take_moe_weighted();
-    fg_cuda_take_position(c + 23, c + 24);
-    fg_cuda_take_routes(c + 25);
-    fg_cuda_take_blits(c + 30);
-}
-
-int32_t fg143_graph_publish(uint64_t output_address, uint8_t valid, uint8_t all, sl_u64 counters) {
-    const struct ggml_tensor *output = (const void *)(uintptr_t)output_address;
-    return fg_cuda_activation_graph_end(valid, all, output ? (uintptr_t)output->data : 0,
-        output ? (int64_t)ggml_nbytes(output) : 0, counters.data + 33,
-        counters.data + 34, counters.data + 35);
+void fg143_graph_log_failure(int64_t index, int32_t op) {
+    fprintf(stderr, "Goose graph: node %lld (%s) failed\n",
+            (long long) index, ggml_op_name(op));
 }
 
 uint8_t fg143_graph_log_enabled(void) { return getenv("GOOSE_GRAPH_LOG") != NULL; }
