@@ -17,5 +17,6 @@ FLAGS=(-O1 -D_GNU_SOURCE -std=c11 -ffunction-sections -fdata-sections
 "$CC" "${FLAGS[@]}" -c "$BASE/src/ggml.c" -o "$OUT/ggml.o"
 "$CC" "${FLAGS[@]}" -c "$BASE/src/ggml-quants.c" -o "$OUT/ggml-quants.o"
 "$CC" "${FLAGS[@]}" -c "$ROOT/integration/goose-standalone/ggml-system.c" -o "$OUT/ggml-system.o"
-"$AR" rcs "$OUT/libfranken-tensor.a" "$OUT/ggml.o" "$OUT/ggml-quants.o" "$OUT/ggml-system.o"
-printf '%s/libfranken-tensor.a\n' "$OUT"
+"$AR" rcs "$OUT/libgooseinfer-tensor.a" "$OUT/ggml.o" "$OUT/ggml-quants.o" "$OUT/ggml-system.o"
+ln -sfn libgooseinfer-tensor.a "$OUT/libfranken-tensor.a"
+printf '%s/libgooseinfer-tensor.a\n' "$OUT"

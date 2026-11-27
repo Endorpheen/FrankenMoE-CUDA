@@ -21,7 +21,7 @@ output.mkdir(parents=True, exist_ok=True)
 receipt = output / "linux-smoke.json"
 report = json.loads(receipt.read_text()) if receipt.exists() else {}
 selected = sys.argv[4:] or list(requests)
-model_dir = Path(os.environ.get("FRANKENMOE_MODELS_DIR", str(Path.home() / "AI/LocalAI/Models")))
+model_dir = Path(os.environ.get("GOOSEINFER_MODELS_DIR", os.environ.get("FRANKENMOE_MODELS_DIR", str(Path.home() / "AI/LocalAI/Models"))))
 weight_files = {
     "apex": "Apex-35B-V1.0-Q4_K_M.gguf",
     "inkling": "Inkling-2-Mini-AD-IQ4_XS.gguf",
@@ -42,10 +42,13 @@ for name in selected:
     with socket.socket() as sock:
         sock.bind(("127.0.0.1", 0))
         port = sock.getsockname()[1]
-    command = [str(stage / "frankenmoe"), name, str(model), str(port)]
+    launcher = stage / "gooseinfer"
+    if not launcher.is_file():
+        launcher = stage / "frankenmoe"
+    command = [str(launcher), name, str(model), str(port)]
     env = {
         "PATH": "/usr/bin:/bin", "HOME": os.environ["HOME"], "LANG": "C",
-        "CUDA_VISIBLE_DEVICES": "0", "FRANKENMOE_CONSOLE": "0",
+        "CUDA_VISIBLE_DEVICES": "0", "GOOSEINFER_CONSOLE": "0", "FRANKENMOE_CONSOLE": "0",
     }
     request = json.loads((root / filename).read_text())
     request.update(prompt=request["prompt"][:129], n_predict=4, stream=False)

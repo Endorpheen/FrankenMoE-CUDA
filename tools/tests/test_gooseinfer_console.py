@@ -7,7 +7,7 @@ from pathlib import Path
 
 class OptionalLogTest(unittest.TestCase):
     def test_optional_log_errors_leave_child_running(self):
-        console = Path(__file__).resolve().parents[1] / "frankenmoe-console.py"
+        console = Path(__file__).resolve().parents[1] / "gooseinfer-console.py"
         with tempfile.TemporaryDirectory() as tmp:
             for target in ("/dev/full", str(Path(tmp) / "missing" / "server.log")):
                 with self.subTest(target=target):
@@ -22,7 +22,7 @@ class OptionalLogTest(unittest.TestCase):
                     self.assertNotIn("Traceback", proc.stderr)
 
     def test_rotation_keeps_one_bounded_backup(self):
-        console = Path(__file__).resolve().parents[1] / "frankenmoe-console.py"
+        console = Path(__file__).resolve().parents[1] / "gooseinfer-console.py"
         with tempfile.TemporaryDirectory() as tmp:
             log = Path(tmp) / "server.log"
             wrapper = (

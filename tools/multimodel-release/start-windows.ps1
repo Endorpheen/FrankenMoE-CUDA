@@ -14,9 +14,11 @@ $File = Get-Item -LiteralPath $Weights
 if ($File.PSIsContainer -or $File.Extension -ne '.gguf') {
     throw 'Weights must be a GGUF file.'
 }
-$Bin = 'frankenmoe-multimodel.exe'
+$Bin = 'gooseinfer-multimodel.exe'
+if (-not (Test-Path (Join-Path $PSScriptRoot $Bin))) { $Bin = 'frankenmoe-multimodel.exe' }
 $env:GOOSE_CUDA = '1'
-$env:FRANKENMOE_WEB_ROOT = Join-Path $PSScriptRoot 'web'
+$env:GOOSEINFER_WEB_ROOT = Join-Path $PSScriptRoot 'web'
+$env:FRANKENMOE_WEB_ROOT = $env:GOOSEINFER_WEB_ROOT
 $Context = '36864'
 $Ubatch = '4096'
 $Cache = @()

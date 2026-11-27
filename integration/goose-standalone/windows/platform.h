@@ -1,5 +1,5 @@
-#ifndef FRANKENMOE_WINDOWS_PLATFORM_H
-#define FRANKENMOE_WINDOWS_PLATFORM_H
+#ifndef GOOSEINFER_WINDOWS_PLATFORM_H
+#define GOOSEINFER_WINDOWS_PLATFORM_H
 
 #include <winsock2.h>
 #include <windows.h>

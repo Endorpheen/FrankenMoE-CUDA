@@ -1,4 +1,4 @@
-/* FrankenMoE Ember Goose — a dark theme for llama-ui.
+/* GooseInfer Ember Goose — a dark theme for llama-ui.
  *
  * Only colour tokens are overridden. Every value is a custom property the interface already uses, so layout, spacing, control
  * positions and behaviour are untouched by construction: nothing here sets a size, a margin or a display on a control.
@@ -122,7 +122,7 @@ div.px-2.flex.items-center.justify-between:has(> div > button > div > svg:not([c
 
 @container (min-width: 7.5rem) {
 div.px-2.flex.items-center.justify-between:has(> div > button > div > svg:not([class]))::after {
-	content: "FrankenMoE";
+	content: "GooseInfer";
 	position: absolute;
 	left: 2.75rem;
 	top: 50%;

@@ -1,7 +1,7 @@
-# FrankenMoE Pure Goose — Windows Alpha
+# GooseInfer Pure Goose — Windows Alpha
 
 Extract the ZIP and double-click **start.bat**. Select your Apex GGUF
-in the file picker. FrankenMoE opens **http://localhost:8080/** after
+in the file picker. GooseInfer opens **http://localhost:8080/** after
 the model server reports ready. Keep the console open. The model
 location is remembered per Windows user.
 
@@ -12,7 +12,7 @@ for its mapped weights and runtime. The launcher checks the
 driver, GPU, VRAM, GGUF header, web files, and loopback port.
 If a driver update is needed, follow the message to NVIDIA's
 driver page and retry. Administrator rights are unnecessary for
-extracting, selecting the model, and running FrankenMoE.
+extracting, selecting the model, and running GooseInfer.
 
 This package uses the independent Goose host and prebuilt CUDA PTX.
 The NVIDIA driver provides `nvcuda.dll`. Application support libraries
@@ -40,7 +40,7 @@ used for the Linux benchmarks matches the publisher's SHA-256:
 For direct control, open PowerShell in the extracted folder and run:
 
 ```powershell
-.\frankenmoe-server.exe --ctx-size 32768 --batch-size 2048 --ubatch-size 2048 --cache-type-k q4_0 --cache-type-v q4_0 --expert-cache-mib 5632 --threads 6 --threads-batch 12 "E:\Models\Apex-35B-V1.0-Q4_K_M.gguf" --serve 8080
+.\gooseinfer-server.exe --ctx-size 32768 --batch-size 2048 --ubatch-size 2048 --cache-type-k q4_0 --cache-type-v q4_0 --expert-cache-mib 5632 --threads 6 --threads-batch 12 "E:\Models\Apex-35B-V1.0-Q4_K_M.gguf" --serve 8080
 ```
 
 Adjust the numeric settings to fit your hardware. The direct CLI serves
@@ -71,7 +71,7 @@ its server console.
   for the Apex model in its OpenAI-compatible provider settings.
 
 The terminal reports prefill and decode timings and throughput after
-each generation. `frankenmoe-http.log` in the server working directory
+each generation. `gooseinfer-http.log` in the server working directory
 records the method, canonical route, response status, and fixed error
 message when applicable. It excludes query strings, HTTP request
 bodies, credentials, and generated text.
@@ -79,7 +79,7 @@ bodies, credentials, and generated text.
 ## Reporting an issue
 
 Double-click **collect-diagnostics.bat**. Review
-`frankenmoe-diagnostics.txt` and attach it to your issue along with
+`gooseinfer-diagnostics.txt` and attach it to your issue along with
 what you clicked and whether the browser opened. The report has fixed
 status fields for the Windows runtime, CUDA, memory, and the last
 startup result. It contains neither the GGUF path nor chat content.
