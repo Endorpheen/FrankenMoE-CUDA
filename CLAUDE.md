@@ -262,6 +262,40 @@ build.
 Measurements are manual and strictly one at a time: no scripts, no parallel
 runs, no background work alongside benchmarks.
 
+## Mandatory Git branch policy
+
+These rules apply to every agent and development branch.
+
+1. Treat `main` as the sole authoritative integration branch and the
+   current verified, working state of GooseInfer.
+2. Continue in the existing task branch when it can carry the work safely.
+   A change of approach alone does not require another branch.
+3. Before moving to a different development direction, finish the current
+   iteration, commit the verified work, run the applicable checks, and
+   merge the accepted result into `main`.
+4. Start a new working branch from the latest fetched `main`.
+5. Keep divergence bounded. Integrate verified optimizations promptly and
+   consolidate competing implementations of the same component.
+6. If a branch contains unfinished or unstable changes, integrate the
+   verified working subset and preserve the remaining research separately
+   with its provenance and results.
+7. Close completed working branches after successful integration. Before
+   removing a branch ref, verify ancestry or patch coverage and preserve
+   all unique unmerged work, including any uncommitted worktree changes.
+8. Keep parallel long-lived branches only for a documented need. Assign
+   each one a scope and synchronization cadence, and regularly integrate
+   relevant changes from `main`.
+9. Before creating a branch, fetch the current refs and check for reusable
+   unmerged work, open pull requests, and active worktrees.
+10. Audit existing branches for unmerged changes and maintain a sequenced
+    integration plan. For each candidate, record its source SHA,
+    dependencies, overlap, evidence, and regression gates. Revalidate
+    correctness, prefill, decode, RAM, and VRAM before promoting it.
+
+Follow the mandatory runtime architecture principles and release gate
+when integrating development branches. See the
+[branch integration plan](docs/BRANCH-INTEGRATION.md) for the current queue.
+
 ## Mandatory runtime architecture principles
 
 These rules apply to every agent, backend, and supported model
