@@ -4415,8 +4415,7 @@ fn execute_graph_node(tensor: u64, work: GraphWorkspace &, selective: bool, step
         return true;
     }
     let address = storage_get(tensor, STORAGE_DATA, 0);
-    let bytes = storage_bytes(tensor);
-    if address == 0 || bytes > 0x7fffffffffffffff { return false; }
+    if address == 0 { return false; }
     var sources: u64[10] = [0; 10];
     graph_inputs(tensor, sources[..]);
     let fresh = storage_get(tensor, STORAGE_VIEW, 0) == 0;
@@ -4425,6 +4424,8 @@ fn execute_graph_node(tensor: u64, work: GraphWorkspace &, selective: bool, step
          op == 2 || op == 8 || op == 35 || op == 32 || op == 91 || op == 48);
     var packet: i64[71] = [0; 71];
     if candidate { graph_describe(tensor, packet[..]); }
+    let bytes = if candidate { packet[39] as! u64 } else { storage_bytes(tensor) };
+    if bytes > 0x7fffffffffffffff { return false; }
     var overwrite = candidate && goose_tensor_dense(packet[38], packet[30 .. 38]);
     for i in sources.len {
         let t = sources[i];
