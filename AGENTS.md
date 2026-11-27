@@ -378,6 +378,40 @@ The compiler agent owns implementation. Do not change Fried Goose or
 interfere with that agent while maintaining this registry. Continue the
 main Apex optimization and preserve the working runtime and its tests.
 
+## Mandatory universal binary integration gate
+
+Integrations and releases must qualify one universal GooseInfer
+executable built from the current `main` source or its proposed merge
+tree. Qualify the exact executable on each target platform. Separate
+checkpoint binaries are controls for comparison.
+
+1. For every supported architecture, pin its strongest confirmed
+   comparable result, source commits, executable hash, model and input
+   hashes, runtime profile, and the optimizations verified in use.
+   Keep the workload, hardware, quantization, placement, and first-request
+   or warmed conditions comparable. Older main results do not replace
+   a stronger confirmed reference.
+2. Integrate the required fast paths into that executable through the
+   architecture modules and shared interfaces. Detect the architecture
+   from the model and select its qualified execution profile automatically.
+   Verify the default path on the real workload, including the actual
+   dispatch of the required optimized kernels and memory policies.
+3. For Apex on RTX 4070, use EXP-1880 as the performance reference:
+   3505.42 prefill and 82.10 decode tok/s on 32768/512, with its frozen
+   profile and one full warm-up before the scored request. The scored
+   request must recompute all input tokens. Treat the other architectures'
+   strongest verified comparable records as their respective targets.
+4. An integration or release passes only after every supported
+   architecture passes correctness, prefill, decode, RAM, and VRAM checks
+   on the same candidate executable for that platform. Pin its SHA-256
+   and record the per-model results and fast-path evidence. Small speed
+   deviations are allowed within a justified acceptance tolerance
+   established before scoring, subject to the applicable regression
+   limits. Record the deviation against the strongest reference.
+5. Keep partial integrations under review until all required model
+   checks pass. Preserve verified work and measurements in the registry
+   so a later integration can reuse them.
+
 ## Mandatory release gate
 
 Run the [Release Gate](docs/RELEASE-GATE.md) before publishing any GooseInfer
