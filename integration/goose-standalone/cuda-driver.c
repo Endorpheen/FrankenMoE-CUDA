@@ -3111,7 +3111,15 @@ static int launch_matrix(DevicePtr weight, int64_t row_stride, int64_t extent,
          (cuda.mmvq_dense_tail && job_words == 2 && count <= 8))) {
         return launch_mmvq(weight, (uint64_t) row_stride, (int) extent, (int) kind, (int) rows, count, job_words);
     }
-    const Function dense_matrix = giga_small_expert_wave && extent == 16 && cuda.giga_dense_mma ?
+    bool giga_mla_projection = false;
+    if (giga_small_expert_wave && kind == 0 && job_words == 2 && (count == 2048 || count == 4096)) {
+        const bool key = extent == 128 && rows == 512, value = extent == 512 && rows == 128;
+        if (key || value) {
+            const char * mode = getenv("GOOSE_GIGA_MLA_PROJECTION_MMA");
+            giga_mla_projection = !mode || strcmp(mode, "0") != 0;
+        }
+    }
+    const Function dense_matrix = giga_small_expert_wave && (extent == 16 || giga_mla_projection) && cuda.giga_dense_mma ?
         cuda.giga_dense_mma : cuda.dense_mma;
     if (error == 0 && dense_matrix && kind == 0 && job_words == 2 && rows >= 16 && count >= 16 && count <= 8 * 65535) {
         int32_t k = (int32_t) extent, m = (int32_t) rows;

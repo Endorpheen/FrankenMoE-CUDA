@@ -607,3 +607,19 @@ eliminating eight 256 MiB downloads. The automatic path selected
 post-request board memory. A 512/32 correctness check retained the
 small arena, matched 32 IDs and did not grow swap. No 32K/512 or
 separate cross-architecture inference qualification is claimed.
+
+### EXP-2026-11-27-2179 — Use Dense MMA for wide MLA projections
+
+Reuse the residual-corrected F32 Dense MMA kernel for the GigaChat4
+K128/M512 and K512/M128 MLA projection planes on 2048 and 4096
+job batches. Set GOOSE_GIGA_MLA_PROJECTION_MMA=0 to disable the
+additional shapes. A broader candidate diverged on 512/32, so
+the final gate admits only the measured large-batch geometry.
+
+On 6144/32 with 18545 MiB pinned, A-B-B-A means were 420.88 to
+448.95 prefill and 14.15 to 14.15 decode tokens/s. All four output
+sequences matched, post-request VRAM 9553–9554 MiB, peak RSS
+23,605,160–23,610,092 KiB, and no swap-out growth. The scoped
+default measured 448.08/14.35 at 9523 MiB and matched all 32 IDs.
+The scoped 512/32 check reproduced all 32 prior IDs. No 32K/512
+or separate cross-architecture inference qualification is claimed.
