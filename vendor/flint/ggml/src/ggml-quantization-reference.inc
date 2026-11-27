@@ -488,3 +488,39 @@ size_t ggml_quantize_chunk(
 
     return result;
 }
+
+// ggml_rope_back
+
+struct ggml_tensor * ggml_rope_multi_back(
+        struct ggml_context * ctx,
+        struct ggml_tensor  * a,
+        struct ggml_tensor  * b,
+        struct ggml_tensor  * c,
+        int                   n_dims,
+        int                   sections[4],
+        int                   mode,
+        int                   n_ctx_orig,
+        float                 freq_base,
+        float                 freq_scale,
+        float                 ext_factor,
+        float                 attn_factor,
+        float                 beta_fast,
+        float                 beta_slow) {
+    struct ggml_tensor * result = ggml_rope_multi(
+        ctx, a, b, c, n_dims, sections, mode, n_ctx_orig, freq_base, freq_scale, ext_factor, attn_factor, beta_fast, beta_slow);
+    result->op = GGML_OP_ROPE_BACK;
+    return result;
+}
+
+struct ggml_tensor * ggml_rope_set_offset(
+        struct ggml_tensor  * a,
+        int                   n_offs) {
+    GGML_ASSERT(a->op == GGML_OP_ROPE || a->op == GGML_OP_ROPE_BACK);
+    GGML_ASSERT(n_offs >= 0);
+
+    const int32_t mode = ggml_get_op_params_i32(a, 2);
+    GGML_ASSERT(mode != GGML_ROPE_TYPE_VISION);
+
+    ggml_set_op_params_i32(a, 15, n_offs);
+    return a;
+}

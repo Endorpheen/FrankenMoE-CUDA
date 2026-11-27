@@ -62,6 +62,546 @@ export fn fg143_pinned_packet_slot(used: i64, capacity: i64, bytes: i64) -> i64 
 }
 
 
+export fn fg143_object_layout(previous_offset: u64, previous_size: u64, size: u64,
+        alignment: u64, header: u64, capacity: u64, layout: u64[:]) -> i32 {
+    let maximum: u64 = 0xffffffffffffffff;
+    if layout.len != 3 || alignment == 0 || size > maximum - (alignment - 1) { return -1; }
+    let padded = ((size + alignment - 1) / alignment) * alignment;
+    layout[1] = padded;
+    if previous_offset > maximum - previous_size { return -2; }
+    let cursor = previous_offset + previous_size;
+    layout[0] = cursor;
+    if cursor > maximum - padded { return -2; }
+    if cursor + padded > maximum - header { return -3; }
+    layout[2] = cursor + padded + header;
+    if layout[2] > capacity { return -4; }
+    return 0;
+}
+
+export fn fg143_tensor_layout(kind: i64, shape: const i64[:], layout: u64[:]) -> bool {
+    if !ab_range(kind) || shape.len < 1 || shape.len > 4 || layout.len != 5 { return false; }
+    let quant_block = AB_BLCK[kind];
+    if quant_block == 0 || shape[0] < 0 || shape[0] % quant_block != 0 { return false; }
+    var elements = shape[0];
+    let width = AB_SIZE[kind] as u64;
+    let blocks = (shape[0] / quant_block) as u64;
+    if width == 0 || blocks > 0xffffffffffffffff / width { return false; }
+    var stride = width * blocks;
+    layout[0] = width;
+    layout[1] = stride;
+    for axis in 1 .. 4 {
+        let extent = if axis < shape.len { shape[axis] } else { 1 };
+        if extent < 0 { return false; }
+        if extent > 1 {
+            if 9223372036854775807 / extent <= elements { return false; }
+            elements *= extent;
+        }
+        if extent > 0 && stride > 0xffffffffffffffff / (extent as u64) { return false; }
+        stride *= extent as u64;
+        layout[axis + 1] = stride;
+    }
+    return true;
+}
+
+export fn fg143_graph_arena_layout(nodes: u64, hash_size: u64, base_size: u64, ptr_width: u64,
+        bitset_bytes: u64, grads: bool, out: u64[:]) -> bool {
+    if out.len != 8 || nodes > 2147483647 || hash_size > 4294967295 || ptr_width != 8 ||
+       base_size > 1024 || bitset_bytes > 536870912 { return false; }
+    let start = (base_size + 7) & ~7;
+    out[0] = start;
+    out[1] = out[0] + nodes * ptr_width;
+    out[2] = out[1] + nodes * ptr_width;
+    out[3] = (out[2] + hash_size * 4 + 7) & ~7;
+    let hash_end = out[3] + hash_size * ptr_width;
+    out[4] = if grads { hash_end } else { 0 };
+    out[5] = if grads { hash_end + hash_size * ptr_width } else { 0 };
+    out[6] = if grads { hash_end + hash_size * ptr_width * 2 } else { hash_end };
+    out[7] = out[6] + bitset_bytes;
+    return true;
+}
+
+extern "fg158_dup" fn ctor_duplicate(context: i64, input: i64) -> i64;
+extern "fg158_pred" fn ctor_predicate(kind: i64, first: i64, second: i64) -> i64;
+extern "fg158_set_op" fn ctor_set_op(tensor: i64, op: i64);
+extern "fg158_set_src" fn ctor_set_source(tensor: i64, index: i64, source: i64);
+extern "fg158_set_param" fn ctor_set_parameter(tensor: i64, index: i64, value: i64);
+extern "fg158_new" fn ctor_tensor(context: i64, kind: i64, n0: i64, n1: i64, n2: i64, n3: i64) -> i64;
+extern "fg158_ne" fn ctor_extent(tensor: i64, axis: i64) -> i64;
+
+fn ctor_attach(result: i64, op: i64, first: i64, second: i64) -> i64 {
+    ctor_set_op(result, op);
+    ctor_set_source(result, 0, first);
+    if second != 0 { ctor_set_source(result, 1, second); }
+    return result;
+}
+
+export fn fg143_construct_elementwise(context: i64, first: i64, second: i64,
+        op: i64, predicate: i64, params: const i64[:]) -> i64 {
+    if predicate == 4 { assert(ctor_predicate(predicate, second, first) != 0); }
+    if predicate == 2 || predicate == 1 { assert(ctor_predicate(predicate, first, 0) != 0); }
+    let result = ctor_duplicate(context, first);
+    for i in params.len { ctor_set_parameter(result, i, params[i]); }
+    return ctor_attach(result, op, first, second);
+}
+
+export fn fg143_construct_row_sum(context: i64, input: i64, kind: i64, op: i64) -> i64 {
+    let result = ctor_tensor(context, kind, 1, ctor_extent(input, 1),
+        ctor_extent(input, 2), ctor_extent(input, 3));
+    return ctor_attach(result, op, input, 0);
+}
+
+extern "fg143_ctor_view_storage" fn ctor_view_storage(context: i64, source: i64,
+        shape: const i64[:], offset: u64) -> i64;
+extern "fg143_ctor_caption" fn ctor_caption(tensor: i64, source: i64, kind: i64);
+extern "fg143_ctor_geometry" fn ctor_geometry(tensor: i64, geometry: u64[:], write: bool);
+extern "fg158_view" fn ctor_native_view(context: i64, input: i64) -> i64;
+
+export fn fg143_construct_reshape(context: i64, input: i64, shape: const i64[:], op: i64) -> i64 {
+    assert(ctor_predicate(0, input, 0) != 0);
+    var product: i64 = 1;
+    for i in shape.len { product *= shape[i]; }
+    assert(ctor_predicate(13, input, 0) == product);
+    let output = ctor_view_storage(context, input, shape, 0);
+    ctor_caption(output, input, 0);
+    return ctor_attach(output, op, input, 0);
+}
+
+export fn fg143_construct_view(context: i64, input: i64, shape: const i64[:],
+        strides: const u64[:], offset: u64, op: i64) -> i64 {
+    let output = ctor_view_storage(context, input, shape, offset);
+    ctor_caption(output, input, 1);
+    ctor_set_parameter(output, 0, (offset & 0xffffffff) as i64);
+    ctor_set_parameter(output, 1, (offset >> 32) as i64);
+    if shape.len > 1 {
+        var geometry: u64[8] = [0; 8];
+        ctor_geometry(output, geometry[..], false);
+        for axis in 1 .. 4 {
+            geometry[4 + axis] = if axis < shape.len { strides[axis - 1] }
+                else { geometry[3 + axis] * geometry[axis - 1] };
+        }
+        ctor_geometry(output, geometry[..], true);
+    }
+    return ctor_attach(output, op, input, 0);
+}
+
+export fn fg143_construct_axis_map(context: i64, input: i64, axes: const i64[:],
+        op: i64, transpose: bool) -> i64 {
+    assert(axes.len == 4);
+    var seen: u64 = 0;
+    var source: u64[8] = [0; 8];
+    var target: u64[8] = [0; 8];
+    ctor_geometry(input, source[..], false);
+    for i in 4 {
+        let axis = axes[i];
+        assert(axis >= 0 && axis < 4);
+        let flag = (1 as u64) << (axis as u32);
+        assert((seen & flag) == 0);
+        seen = seen | flag;
+        target[axis] = source[i];
+        target[4 + axis] = source[4 + i];
+    }
+    let output = ctor_native_view(context, input);
+    ctor_caption(output, input, if transpose { 3 } else { 2 });
+    ctor_geometry(output, target[..], true);
+    if !transpose {
+        for i in 4 { ctor_set_parameter(output, i, axes[i]); }
+    }
+    return ctor_attach(output, op, input, 0);
+}
+
+fn ctor_property(tensor: i64, field: i64) -> i64 { return graph_prop(tensor as! u64, field); }
+extern "fg158_name" fn ctor_copy_name(output: i64, first: i64, second: i64, style: i64);
+
+export fn fg143_construct_product(context: i64, first: i64, second: i64, ids: i64,
+        output_type: i64, id_type: i64, op: i64) -> i64 {
+    assert(ctor_predicate(10, first, 0) == 0);
+    var columns = ctor_extent(second, 1);
+    var fourth = ctor_extent(second, 3);
+    if ids == 0 {
+        assert(ctor_predicate(8, first, second) != 0);
+    } else {
+        assert(ctor_property(ids, 0) == id_type);
+        assert(ctor_extent(first, 3) == 1 && fourth == 1);
+        assert(ctor_extent(ids, 2) == 1 && ctor_extent(ids, 3) == 1);
+        assert(ctor_extent(ids, 1) == ctor_extent(second, 2));
+        assert(ctor_extent(first, 0) == ctor_extent(second, 0));
+        assert(columns > 0 && ctor_extent(ids, 0) % columns == 0);
+        columns = ctor_extent(ids, 0);
+        fourth = 1;
+    }
+    let output = ctor_tensor(context, output_type, ctor_extent(first, 1),
+        columns, ctor_extent(second, 2), fourth);
+    if ids != 0 { ctor_set_source(output, 2, ids); }
+    return ctor_attach(output, op, first, second);
+}
+
+export fn fg143_construct_copy(context: i64, input: i64, target: i64, kind: i64,
+        op: i64, mode: i64) -> i64 {
+    if mode == 0 {
+        assert(ctor_predicate(13, input, 0) == ctor_predicate(13, target, 0));
+        let output = ctor_native_view(context, target);
+        ctor_copy_name(output, input, target, if ctor_property(target, 3) == 0 { 1 } else { 0 });
+        return ctor_attach(output, op, input, target);
+    }
+    let output = if mode == 1 {
+        ctor_tensor(context, kind, ctor_extent(input, 0), ctor_extent(input, 1),
+            ctor_extent(input, 2), ctor_extent(input, 3))
+    } else { ctor_duplicate(context, input) };
+    ctor_copy_name(output, input, 0, if mode == 1 { 1 } else { 2 });
+    return ctor_attach(output, op, input, if mode == 1 { output } else { 0 });
+}
+
+export fn fg143_construct_flash_attention(context: i64, q: i64, k: i64, v: i64, mask: i64,
+        params: const i64[:], output_type: i64, mask_type: i64, op: i64) -> i64 {
+    assert(ctor_predicate(8, k, q) != 0);
+    assert(ctor_extent(q, 3) == ctor_extent(k, 3) && ctor_extent(q, 3) == ctor_extent(v, 3));
+    assert(params.len == 3);
+    if mask != 0 {
+        assert(ctor_property(mask, 0) == mask_type && ctor_predicate(0, mask, 0) != 0);
+        for axis in 2 .. 4 {
+            let extent = ctor_extent(mask, axis);
+            assert(extent > 0 && ctor_extent(q, axis) % extent == 0);
+        }
+    }
+    assert(mask != 0 || !(from_bits(params[1] as! u32) > 0.0));
+    let output = ctor_tensor(context, output_type, ctor_extent(v, 0),
+        ctor_extent(q, 2), ctor_extent(q, 1), ctor_extent(q, 3));
+    for i in 3 { ctor_set_parameter(output, i, params[i]); }
+    ctor_set_source(output, 2, v);
+    if mask != 0 { ctor_set_source(output, 3, mask); }
+    return ctor_attach(output, op, q, k);
+}
+
+export fn fg143_construct_rope(context: i64, input: i64, positions: i64, factors: i64,
+        config: const i64[:], scales: const i64[:], sections: const i64[:]) -> i64 {
+    let dims = config[0];
+    let mode = config[1];
+    let multi = (mode & config[3]) != 0;
+    assert((mode & 1) == 0);
+    assert(ctor_predicate(14, positions, 0) != 0 && ctor_property(positions, 0) == config[4]);
+    let per_token = if multi { 4 } else { 1 };
+    assert(ctor_extent(input, 2) * per_token == ctor_extent(positions, 0));
+    if factors != 0 {
+        assert(ctor_property(factors, 0) == config[5] && ctor_extent(factors, 0) >= dims / 2);
+    }
+    let output = ctor_duplicate(context, input);
+    ctor_set_parameter(output, 1, dims);
+    ctor_set_parameter(output, 2, mode);
+    ctor_set_parameter(output, 4, config[2]);
+    for i in 6 { ctor_set_parameter(output, 5 + i, scales[i]); }
+    if multi && sections.len == 4 {
+        for i in 4 { ctor_set_parameter(output, 11 + i, sections[i]); }
+    }
+    if factors != 0 { ctor_set_source(output, 2, factors); }
+    return ctor_attach(output, config[6], input, positions);
+}
+
+export fn fg143_construct_rows(context: i64, a: i64, b: i64, ids: i64,
+        types: const i64[:], op: i64) -> i64 {
+    if ids == 0 {
+        assert(ctor_extent(a, 2) == ctor_extent(b, 1) && ctor_extent(a, 3) == ctor_extent(b, 2));
+        assert(ctor_extent(b, 3) == 1 && ctor_property(b, 0) == types[2]);
+        let kind = if ctor_property(a, 0) == types[2] { types[2] } else { types[0] };
+        let output = ctor_tensor(context, kind, ctor_extent(a, 0), ctor_extent(b, 0),
+            ctor_extent(b, 1), ctor_extent(b, 2));
+        return ctor_attach(output, op, a, b);
+    }
+    assert(ctor_extent(a, 0) == ctor_extent(b, 0));
+    for axis in 2 .. 4 { assert(ctor_extent(a, axis) == ctor_extent(b, axis)); }
+    assert(ctor_extent(b, 1) == ctor_extent(ids, 0) && ctor_extent(ids, 3) == 1);
+    for axis in 2 .. 4 {
+        let divisor = ctor_extent(ids, axis - 1);
+        assert(divisor > 0 && ctor_extent(b, axis) % divisor == 0);
+    }
+    let values_type = ctor_property(b, 0);
+    let indices_type = ctor_property(ids, 0);
+    assert(values_type == types[0] || values_type == types[1]);
+    assert(indices_type == types[2] || indices_type == types[3]);
+    assert(ctor_predicate(1, a, 0) != 0 && ctor_predicate(1, b, 0) != 0);
+    let output = ctor_native_view(context, a);
+    ctor_set_source(output, 2, a);
+    return ctor_attach(output, op, b, ids);
+}
+
+export fn fg143_construct_glu(context: i64, a: i64, b: i64, op: i64,
+        subtype: i64, swapped: bool, limit: const i64[:]) -> i64 {
+    assert(ctor_predicate(7, a, 0) != 0);
+    if b != 0 {
+        assert(ctor_predicate(7, b, 0) != 0 && ctor_predicate(3, a, b) != 0);
+        assert(ctor_property(a, 0) == ctor_property(b, 0));
+    }
+    let width = if b != 0 { ctor_extent(a, 0) } else { ctor_extent(a, 0) / 2 };
+    let output = ctor_tensor(context, ctor_property(a, 0), width, ctor_extent(a, 1),
+        ctor_extent(a, 2), ctor_extent(a, 3));
+    ctor_set_parameter(output, 0, subtype);
+    ctor_set_parameter(output, 1, if swapped { 1 } else { 0 });
+    if limit.len != 0 { ctor_set_parameter(output, 3, limit[0]); }
+    return ctor_attach(output, op, a, b);
+}
+
+export fn fg143_construct_tile(context: i64, a: i64, b: i64, axis: i64,
+        shape: const i64[:], op: i64) -> i64 {
+    var extents: i64[4] = [0; 4];
+    let kind = ctor_property(a, 0);
+    if b == 0 {
+        assert(shape.len == 4);
+        let empty = ctor_predicate(12, a, 0) != 0;
+        for i in 4 {
+            if !empty { assert(shape[i] % ctor_extent(a, i) == 0); }
+            extents[i] = shape[i];
+        }
+    } else {
+        assert(axis >= 0 && axis < 4 && kind == ctor_property(b, 0));
+        for i in 4 {
+            let extent = ctor_extent(a, i);
+            let other = ctor_extent(b, i);
+            if i == axis { extents[i] = extent + other; }
+            else { assert(extent == other); extents[i] = extent; }
+        }
+    }
+    let output = ctor_tensor(context, kind, extents[0], extents[1], extents[2], extents[3]);
+    if b != 0 { ctor_set_parameter(output, 0, axis); }
+    return ctor_attach(output, op, a, b);
+}
+
+fn ctor_attach_sources(output: i64, op: i64, inputs: const i64[:]) -> i64 {
+    ctor_set_op(output, op);
+    for i in inputs.len { ctor_set_source(output, i, inputs[i]); }
+    return output;
+}
+
+export fn fg143_construct_ssm_conv(context: i64, x: i64, kernel: i64,
+        output_type: i64, op: i64) -> i64 {
+    assert(ctor_extent(x, 3) == 1 && ctor_predicate(11, kernel, 0) != 0);
+    let channels = ctor_extent(kernel, 1);
+    let tokens = ctor_extent(x, 0) - ctor_extent(kernel, 0) + 1;
+    assert(ctor_extent(x, 1) == channels && tokens >= 0);
+    let output = ctor_tensor(context, output_type, channels, tokens, ctor_extent(x, 2), 1);
+    return ctor_attach(output, op, x, kernel);
+}
+
+fn ctor_scan_rows(tensor: i64) -> bool {
+    var geometry: u64[8] = [0; 8];
+    let kind = ctor_property(tensor, 0);
+    if !ab_range(kind) { return false; }
+    ctor_geometry(tensor, geometry[..], false);
+    return geometry[4] == (AB_SIZE[kind] as u64) && geometry[5] == geometry[0] * geometry[4];
+}
+
+export fn fg143_construct_ssm_scan(context: i64, inputs: const i64[:], snapshots: i64,
+        output_type: i64, indices_type: i64, op: i64) -> i64 {
+    assert(inputs.len == 7 && snapshots >= 1 && snapshots <= 2147483647);
+    let state = inputs[0];
+    let x = inputs[1];
+    let delta = inputs[2];
+    let decay = inputs[3];
+    let b = inputs[4];
+    let c = inputs[5];
+    let ids = inputs[6];
+    assert(ctor_predicate(0, state, 0) != 0 && ctor_predicate(0, delta, 0) != 0 &&
+        ctor_predicate(0, decay, 0) != 0);
+    assert(ctor_scan_rows(x) && ctor_scan_rows(b) && ctor_scan_rows(c));
+    assert(ctor_predicate(3, b, c) != 0 && ctor_property(ids, 0) == indices_type);
+    let state_width = ctor_extent(state, 0);
+    let head_width = ctor_extent(x, 0);
+    let heads = ctor_extent(x, 1);
+    let tokens = ctor_extent(x, 2);
+    let sequences = ctor_extent(x, 3);
+    assert(ctor_extent(delta, 0) == heads && ctor_extent(delta, 1) == tokens &&
+        ctor_extent(delta, 2) == sequences && ctor_extent(delta, 3) == 1);
+    assert(ctor_extent(state, 1) == head_width && ctor_extent(state, 2) == heads);
+    assert(ctor_extent(b, 0) == state_width && ctor_extent(b, 2) == tokens &&
+        ctor_extent(b, 3) == sequences);
+    assert(ctor_extent(ids, 0) == sequences && ctor_predicate(14, ids, 0) != 0);
+    assert(ctor_extent(decay, 1) == heads && ctor_predicate(11, decay, 0) != 0);
+    let decay_width = ctor_extent(decay, 0);
+    assert(decay_width == 1 || (decay_width == state_width && snapshots == 1));
+    let size = ctor_predicate(13, x, 0) + snapshots * state_width * head_width * heads * sequences;
+    let output = ctor_tensor(context, output_type, size, 1, 1, 1);
+    ctor_set_parameter(output, 0, snapshots);
+    return ctor_attach_sources(output, op, inputs);
+}
+
+export fn fg143_construct_gated_delta(context: i64, inputs: const i64[:], snapshots: i64,
+        output_type: i64, op: i64) -> i64 {
+    assert(inputs.len == 6 && snapshots >= 1);
+    for i in inputs.len {
+        let contiguous = if i < 3 { 1 } else { 0 };
+        assert(ctor_predicate(contiguous, inputs[i], 0) != 0);
+        assert(ctor_property(inputs[i], 0) == output_type);
+    }
+    let v = inputs[2];
+    let g = inputs[3];
+    let state = inputs[5];
+    let width = ctor_extent(v, 0);
+    let heads = ctor_extent(v, 1);
+    let tokens = ctor_extent(v, 2);
+    let sequences = ctor_extent(v, 3);
+    assert((ctor_extent(g, 0) == 1 || ctor_extent(g, 0) == width) && ctor_extent(inputs[4], 0) == 1);
+    assert(ctor_extent(state, 0) == width && ctor_extent(state, 1) == width &&
+        ctor_extent(state, 2) == heads && ctor_extent(state, 3) == sequences);
+    let output = ctor_tensor(context, output_type, width * heads,
+        tokens * sequences + snapshots * width * sequences, 1, 1);
+    ctor_set_parameter(output, 0, snapshots);
+    return ctor_attach_sources(output, op, inputs);
+}
+
+export fn fg143_construct_indexer(context: i64, inputs: const i64[:], output_type: i64,
+        mask_type: i64, op: i64) -> i64 {
+    assert(inputs.len == 4);
+    let q = inputs[0];
+    let k = inputs[1];
+    let weights = inputs[2];
+    let mask = inputs[3];
+    assert(ctor_property(q, 0) == output_type && ctor_property(weights, 0) == output_type &&
+        ctor_property(mask, 0) == mask_type);
+    let cells = ctor_extent(k, 2);
+    let tokens = ctor_extent(q, 2);
+    let streams = ctor_extent(q, 3);
+    assert(ctor_extent(q, 0) == ctor_extent(k, 0) && ctor_extent(mask, 0) == cells);
+    assert(ctor_extent(q, 1) == ctor_extent(weights, 0) && ctor_extent(k, 1) == 1);
+    assert(ctor_extent(mask, 1) == tokens && ctor_extent(weights, 1) == tokens);
+    assert(ctor_extent(weights, 2) == 1 && ctor_extent(mask, 2) == 1);
+    assert(ctor_extent(k, 3) == streams && ctor_extent(weights, 3) == streams);
+    let mask_streams = ctor_extent(mask, 3);
+    assert(mask_streams > 0 && streams % mask_streams == 0);
+    let output = ctor_tensor(context, output_type, cells, tokens, 1, streams);
+    return ctor_attach_sources(output, op, inputs);
+}
+
+export fn fg143_construct_softmax(context: i64, input: i64, mask: i64, params: const i64[:],
+        f32_type: i64, f16_type: i64, op: i64) -> i64 {
+    assert(ctor_predicate(0, input, 0) != 0 && params.len == 2);
+    if mask != 0 {
+        let kind = ctor_property(mask, 0);
+        assert((kind == f32_type || kind == f16_type) && ctor_predicate(0, mask, 0) != 0);
+        assert(ctor_extent(mask, 0) == ctor_extent(input, 0));
+        assert(ctor_extent(mask, 1) >= ctor_extent(input, 1));
+        for axis in 2 .. 4 {
+            let divisor = ctor_extent(mask, axis);
+            assert(divisor > 0 && ctor_extent(input, axis) % divisor == 0);
+        }
+    }
+    assert(mask != 0 || !(from_bits(params[1] as! u32) > 0.0));
+    return fg143_construct_elementwise(context, input, mask, op, 0, params);
+}
+
+export fn fg143_construct_fill(context: i64, input: i64, value: i64,
+        f32_type: i64, f16_type: i64, op: i64) -> i64 {
+    let kind = ctor_property(input, 0);
+    assert((kind == f32_type || kind == f16_type) && ctor_predicate(0, input, 0) != 0);
+    var params: i64[1] = [value];
+    return fg143_construct_elementwise(context, input, 0, op, 0, params[..]);
+}
+
+export fn fg143_construct_sort(context: i64, input: i64, limit: i64, order: i64,
+        mode: i64, kind: i64, op: i64, view_op: i64) -> i64 {
+    let width = ctor_extent(input, 0);
+    assert(mode == 0 || (limit >= 0 && limit <= width));
+    assert(mode == 2 || width <= 2147483647);
+    let output_width = if mode == 2 { limit } else { width };
+    let output = ctor_tensor(context, kind, output_width, ctor_extent(input, 1),
+        ctor_extent(input, 2), ctor_extent(input, 3));
+    if mode != 2 { ctor_set_parameter(output, 0, order); }
+    let sorted = ctor_attach(output, op, input, 0);
+    if mode != 1 { return sorted; }
+    var shape: i64[4] = [limit, ctor_extent(input, 1), ctor_extent(input, 2), ctor_extent(input, 3)];
+    var geometry: u64[8] = [0; 8];
+    ctor_geometry(sorted, geometry[..], false);
+    return fg143_construct_view(context, sorted, shape[..], geometry[5..8], 0, view_op);
+}
+
+export fn fg143_geometry_product(shape: const i64[:], first: i64) -> i64 {
+    var count: i64 = 1;
+    for axis in first .. shape.len { count *= shape[axis]; }
+    return count;
+}
+
+export fn fg143_geometry_unit_from(shape: const i64[:], first: i64) -> bool {
+    for axis in first .. shape.len { if shape[axis] != 1 { return false; } }
+    return true;
+}
+
+export fn fg143_geometry_rank(shape: const i64[:]) -> i64 {
+    var rank = shape.len;
+    while rank > 1 {
+        if shape[rank - 1] > 1 { break; }
+        rank -= 1;
+    }
+    return rank;
+}
+
+export fn fg143_geometry_empty(shape: const i64[:]) -> bool {
+    for axis in shape.len { if shape[axis] == 0 { return true; } }
+    return false;
+}
+
+export fn fg143_geometry_equal(a: const i64[:], b: const i64[:]) -> bool {
+    if a.len != b.len { return false; }
+    for axis in a.len { if a[axis] != b[axis] { return false; } }
+    return true;
+}
+
+export fn fg143_geometry_repeat(a: const i64[:], b: const i64[:]) -> bool {
+    if a.len != b.len { return false; }
+    if fg143_geometry_empty(a) { return fg143_geometry_empty(b); }
+    for axis in a.len { if b[axis] % a[axis] != 0 { return false; } }
+    return true;
+}
+
+export fn fg143_geometry_contiguous(kind: i64, layout: const i64[:], loose: i64) -> bool {
+    if !ab_range(kind) || layout.len != 8 { return false; }
+    let quant_block = AB_BLCK[kind];
+    let unit = AB_SIZE[kind];
+    if quant_block <= 0 || (layout[0] != quant_block && layout[4] != unit) { return false; }
+    var expected = unit * (layout[0] / quant_block);
+    for axis in 1 .. 4 {
+        if axis > loose {
+            if layout[axis] != 1 && layout[4 + axis] != expected { return false; }
+            expected *= layout[axis];
+        } else {
+            expected = layout[axis] * layout[4 + axis];
+        }
+    }
+    return true;
+}
+
+export fn fg143_geometry_rows(kind: i64, first_extent: i64, first_stride: i64) -> bool {
+    return ab_range(kind) && (first_extent == AB_BLCK[kind] || first_stride == AB_SIZE[kind]);
+}
+
+const GRAPH_HASH_PRIMES: u64[32] = [
+    2, 3, 5, 11, 17, 37, 67, 131, 257, 521, 1031,
+    2053, 4099, 8209, 16411, 32771, 65537, 131101,
+    262147, 524309, 1048583, 2097169, 4194319, 8388617,
+    16777259, 33554467, 67108879, 134217757, 268435459,
+    536870923, 1073741827, 2147483659
+];
+
+export fn fg143_graph_hash_size(minimum: u64) -> u64 {
+    var low: i64 = 0;
+    var high: i64 = GRAPH_HASH_PRIMES.len;
+    while low < high {
+        let mid = (low + high) / 2;
+        if GRAPH_HASH_PRIMES[mid] < minimum { low = mid + 1; } else { high = mid; }
+    }
+    return if low < GRAPH_HASH_PRIMES.len { GRAPH_HASH_PRIMES[low] } else { minimum | 1 };
+}
+
+export fn fg143_graph_hash_find(keys: const u8[:], used: const u32[:], key: u64) -> i64 {
+    let slots = keys.len / 8;
+    if slots <= 0 || used.len < (slots + 31) / 32 { return -1; }
+    let home = ((key >> 4) % (slots as u64)) as i64;
+    var slot = home;
+    loop {
+        let bit = (1 as u32) << ((slot % 32) as u32);
+        if (used[slot / 32] & bit) == 0 || graph_pointer(keys, slot) == key { return slot; }
+        slot += 1;
+        if slot == slots { slot = 0; }
+        if slot == home { return -1; }
+    }
+}
+
 struct Tensor {
     ne: i64[4], nb: i64[4], kind: i64, bytes: i64
 }
@@ -5296,4 +5836,25 @@ fn try_giga_dsa_graph(nodes: const u8[:], step: i64, deadlines: const i64[:], sc
     var config: i64[6] = [cells, rows, k.nb[2], q.nb[2], weights.nb[1], mask.nb[1]];
     let status = certified_dsa(config[..], ptr[..], span[..], out, ids.bytes);
     return if status > 0 { 2 } else { status };
+}
+
+extern "fg143_graph_visit_info" fn graph_visit_info(graph: u64, node: u64, count_use: bool, info: u64[:]) -> i64;
+extern "fg143_graph_visit_append" fn graph_visit_append(graph: u64, node: u64, leaf: bool) -> bool;
+extern "fg143_graph_visit_is_tail" fn graph_visit_is_tail(graph: u64, node: u64) -> bool;
+
+recursive fn graph_visit_forward(graph: u64, node: u64, count_use: bool) -> bool {
+    var info = default<u64[12]>();
+    let parents = graph_visit_info(graph, node, count_use, info[..]);
+    if parents < 0 { return false; }
+    let first_visit = info[10] != 0;
+    for i in parents {
+        if !graph_visit_forward(graph, info[i], first_visit) { return false; }
+    }
+    return !first_visit || graph_visit_append(graph, node, info[11] != 0);
+}
+
+export fn fg143_graph_expand_forward(graph: u64, node: u64) {
+    let old_nodes = graph_nodes(graph);
+    assert(graph_visit_forward(graph, node, false));
+    assert(graph_nodes(graph) == old_nodes || graph_visit_is_tail(graph, node));
 }

@@ -15,6 +15,5 @@ int bonsai_session_reset(struct bonsai_session *session);
 /* If requested, logits receives one row for the final input token. */
 int bonsai_session_step(struct bonsai_session *session, const uint32_t *tokens,
     unsigned count, float logits[BONSAI_SESSION_VOCAB]);
-int bonsai_session_is_eog(const struct bonsai_session *session, uint32_t token);
 
 #endif

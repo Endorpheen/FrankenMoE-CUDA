@@ -62,6 +62,5 @@ void fg_vk_free_buffer(fg_vk_device *vk, fg_vk_buffer *buffer);
 VkResult fg_vk_access_buffer(fg_vk_device *vk, const fg_vk_buffer *buffer,
     VkDeviceSize offset, void *data, size_t size, int write);
 int fg_vk_submit_wait(fg_vk_device *vk, VkCommandBuffer cmd, VkSemaphore done, uint64_t value);
-int fg_vk_roundtrip(fg_vk_device *vk, const void *input, void *output, size_t size);
 
 #endif

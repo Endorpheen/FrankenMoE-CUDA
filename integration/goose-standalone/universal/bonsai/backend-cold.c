@@ -1051,80 +1051,6 @@ static int evaluate_batch(model *m, const unsigned *tokens, unsigned count, floa
     return evaluate_batch_output(m, tokens, count, logits, 0);
 }
 
-static double seconds(void) {
-    struct timespec now;
-    clock_gettime(CLOCK_MONOTONIC, &now);
-    return (double)now.tv_sec + (double)now.tv_nsec / 1000000000;
-}
-
-int main(int argc, char **argv) {
-    if (argc < 7) {
-        fprintf(stderr, "usage: %s model.gguf bonsai.cubin frozen.ptx context generate [--ignore-eos] input_id ...\n", argv[0]);
-        return 2;
-    }
-    const unsigned context = (unsigned)strtoul(argv[4], NULL, 10);
-    const unsigned generate = (unsigned)strtoul(argv[5], NULL, 10);
-    const int ignore_eos = strcmp(argv[6], "--ignore-eos") == 0;
-    const int first = 6 + ignore_eos;
-    if (argc <= first || !generate || (uint64_t)(argc - first) + generate - 1 > context) return 2;
-    const char *env = getenv("BONSAI_UBATCH");
-    char *end = NULL;
-    const unsigned long ubatch = env ? strtoul(env, &end, 10) : 128;
-    if (ubatch < 1 || ubatch > UBATCH_MAX || (end && (*end || end == env))) return 2;
-    goose_init(0, NULL);
-    model *m = bonsai_open(argv[1], argv[2], argv[3], context, (unsigned)ubatch);
-    if (!m) return 1;
-    float *logits = malloc(VOCAB * sizeof(*logits));
-    int status = logits ? 0 : 1;
-    const unsigned prompt = (unsigned)(argc - first);
-    unsigned *ids = malloc(prompt * sizeof(*ids));
-    if (!ids) status = 1;
-    for (unsigned i = 0; i < prompt && !status; ++i) {
-        const char *arg = argv[first+i];
-        unsigned long token = strtoul(arg, &end, 10);
-        if (*end || end == arg || token >= VOCAB) status = 1;
-        else ids[i] = (unsigned)token;
-    }
-    const double start = seconds();
-    for (unsigned at = 0; at < prompt && !status;) {
-        const unsigned remaining = prompt - at;
-        const unsigned count = remaining == 1 ? 1 : (remaining-1 < ubatch ? remaining-1 : (unsigned)ubatch);
-        if (evaluate_batch(m, ids + at, count, remaining == 1 ? logits : NULL)) status = 1;
-        at += count;
-        if (!status && at % 4096 == 0) {
-            if (check(bonsai_cuda.fn_cuCtxSynchronize(), "prefill milestone")) status = 1;
-            else fprintf(stderr, "Prefill %u/%u, %.3f s\n", at, prompt, seconds() - start);
-        }
-    }
-    const double prefill = seconds() - start;
-    m->in_decode = 1;
-    const double decoding = seconds();
-    unsigned generated = 0;
-    for (unsigned i = 0; i < generate && !status; ++i) {
-        for (unsigned id = 0; id < VOCAB; ++id) if (!isfinite(logits[id])) status = 1;
-        if (status) break;
-        if (ignore_eos) {
-            for (int64_t j = 0; j < m->eog_count; ++j) logits[m->eog[j]] = -INFINITY;
-        }
-        unsigned best = 0;
-        for (unsigned id = 1; id < VOCAB; ++id) if (logits[id] > logits[best]) best = id;
-        int stop = 0;
-        for (int64_t j = 0; j < m->eog_count; ++j) if (m->eog[j] == best) stop = 1;
-        printf("{\"step\":%u,\"token\":%u,\"logit\":%.9g}\n", i, best, logits[best]);
-        ++generated;
-        if (stop) break;
-        if (i+1 < generate && evaluate_batch(m, &best, 1, logits)) status = 1;
-    }
-    if (!status) fprintf(stderr,
-        "prompt_n=%u prefill_ms=%.3f decode_n=%u decode_ms=%.3f ubatch=%lu\n",
-        prompt, 1000 * prefill, generated, 1000 * (seconds()-decoding), ubatch);
-    free(ids);
-    free(logits);
-    bonsai_cuda.fn_cuCtxDestroy(m->cuda);
-    free(m);
-    return status;
-}
-
 #include "session.h"
 
 struct bonsai_session {
@@ -1218,14 +1144,6 @@ int bonsai_session_step(struct bonsai_session *session, const uint32_t *tokens,
     status = finish_session_call(session, status);
     if (!status && logits && m->position == 32768) fputs("[bench-cold] prefill position=32768\n", stderr);
     return status;
-}
-
-int bonsai_session_is_eog(const struct bonsai_session *session, uint32_t token) {
-    if (!session) return 0;
-    for (int64_t i = 0; i < session->runtime->eog_count; ++i) {
-        if (session->runtime->eog[i] == token) return 1;
-    }
-    return 0;
 }
 
 int bonsai_session_step_phase(struct bonsai_session *session, const uint32_t *ids,

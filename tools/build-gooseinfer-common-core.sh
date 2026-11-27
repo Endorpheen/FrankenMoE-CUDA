@@ -22,7 +22,8 @@ sed -e "s/@GGML_VERSION@/$version/g" -e "s/@GGML_BUILD_COMMIT@/$revision/g" \
     "$ggml/src/ggml-version.h.in" > "$out/ggml-version.h"
 printf '#include "main.h"\n' > "$out/goose-unit.h"
 python3 "$root/tools/embed-gooseinfer-type-metadata.py" \
-    "$root/goose/misc/ggml-type-table.goose" "$out/gooseinfer-type-metadata.h"
+    "$root/goose/misc/ggml-type-table.goose" "$out/gooseinfer-type-metadata.h" \
+    "$root/goose/misc/ggml-op-names.goose" "$out/gooseinfer-op-names.h"
 
 flags=(-std=c11 -D_GNU_SOURCE -ffunction-sections -fdata-sections
        -DGOOSEINFER_TYPE_METADATA_ONLY "-fmacro-prefix-map=$root=$source_prefix"

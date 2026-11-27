@@ -148,11 +148,3 @@ void i2_bridge_mix(__global const float *past, __global const float *current,
     sum += (double)term;
     output[i] = (float)sum;
 }
-
-#ifdef I2_EXPF_TEST
-__kernel __attribute__((reqd_work_group_size(LANES, 1, 1)))
-void i2_check_depth_expf(__global uint *output, uint base, uint count) {
-    const uint i = block_id() * LANES + lane_id();
-    if (i < count) output[i] = as_uint(depth_expf(as_float(0x80000000U | (base + i))));
-}
-#endif

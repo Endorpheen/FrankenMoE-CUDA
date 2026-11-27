@@ -31,7 +31,7 @@ while read -r header symbol entries prelude; do
     options=(-Xclang -mlink-builtin-bitcode -Xclang "$cuda/nvvm/libdevice/libdevice.10.bc")
     frontend=(-march=sm_80 -cl-std=CL2.0 -nocudainc -Xclang -finclude-default-header)
     case "$stem" in
-        bridge-image) options=(-DI2_EXPF_TEST) ;;
+        bridge-image) options=() ;;
         flash-native-image|flash-tiles-image) options+=(-I"$scratch") ;;
         attention-image)
             "$goose" --standalone --emit-provenance "$scratch/inkling-attention.c" "$src/inkling-attention.goose"

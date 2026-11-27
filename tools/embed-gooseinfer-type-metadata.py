@@ -15,7 +15,25 @@ def read_array(text, name):
     return json.loads("[" + rows + "]")
 
 
-source, output = map(Path, sys.argv[1:])
+def write_operations(source, output):
+    text = source.read_text()
+    with output.open("w") as header:
+        for label, limit in (("GGML_OP_NAME", "GGML_OP_COUNT"),
+                             ("GGML_UNARY_OP_NAME", "GGML_UNARY_OP_COUNT"),
+                             ("GGML_GLU_OP_NAME", "GGML_GLU_OP_COUNT")):
+            entries = read_array(text, label)
+            if any(not isinstance(e, str) for e in entries):
+                raise ValueError(f"Non-string operation name in {label}")
+            print(f"_Static_assert({limit} == {len(entries)}, \"Goose operation name count\");", file=header)
+            print(f"static const char * {label}[{limit}] = {{", file=header)
+            for name in entries:
+                print("    " + json.dumps(name, ensure_ascii=True) + ",", file=header)
+            print("};", file=header)
+
+
+source, output = map(Path, sys.argv[1:3])
+if len(sys.argv) == 5:
+    write_operations(Path(sys.argv[3]), Path(sys.argv[4]))
 text = source.read_text()
 names, blocks, sizes, quantized = (
     read_array(text, field) for field in ("AB_NAME", "AB_BLCK", "AB_SIZE", "AB_ISQ")

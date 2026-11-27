@@ -187,7 +187,5 @@ __kernel void ENTRY(__global const uchar *weight, __global const ushort *packed,
     grouped_mmq_many(weight, packed, output, jobs, tiles, stride, width, rows, TYPE, GROUPS); \
 }
 
-MOE_MMQ_MANY(goose_i2_xs_mmq24, 23, 3)
-MOE_MMQ_MANY(goose_i2_nl_mmq24, 20, 3)
 MOE_MMQ_MANY(goose_i2_xs_mmq32, 23, 4)
 MOE_MMQ_MANY(goose_i2_nl_mmq32, 20, 4)

@@ -159,16 +159,6 @@ void i2_cuda_attention_stats(void) {
 #include "native-kv-driver.h"
 
 #ifdef INKLING_KV_TEST
-int inkling_test_q4_read(int slot_id, void *keys, void *values, size_t count) {
-    if (start_context() != 1) return -1;
-    struct native_kv_slot *slot = &nk.slots[slot_id];
-    const size_t row = nk_row_bytes(INKLING_KV_Q4_0);
-    const struct native_kv_rows cache = nk_rows(slot->cache.address, slot->rows, row);
-    int error = slot->format != INKLING_KV_Q4_0 || count > slot->rows * row ? -1 :
-        cuda.download(keys, cache.keys, count);
-    if (!error) error = cuda.download(values, cache.values, count);
-    return finish_context() == 0 && !error ? 0 : -1;
-}
 #endif
 
 #include "tanh-driver.h"

@@ -173,11 +173,6 @@ static void i2_q8_packed16_rows(__global const uchar *weights, __global const fl
     *(__global float *)(output + jobs[30] + 4 * row) = d.w;
 }
 
-__kernel void i2_q8_packed16w8(__global const uchar *weights, __global const float4 *packed,
-    __global uchar *output, __global const ulong *jobs, ulong stride, uint width) {
-    i2_q8_packed16_rows(weights, packed, output, jobs, stride, width, 8);
-}
-
 __kernel void i2_q8_packed16w2(__global const uchar *weights, __global const float4 *packed,
     __global uchar *output, __global const ulong *jobs, ulong stride, uint width) {
     i2_q8_packed16_rows(weights, packed, output, jobs, stride, width, 2);
@@ -260,8 +255,4 @@ __kernel void i2_q8_fp32w2(__global const float *weights, __global const float4 
 __kernel void i2_q8_fp32w4(__global const float *weights, __global const float4 *packed,
     __global uchar *output, __global const ulong *jobs, ulong stride, uint width) {
     i2_q8_fp32_rows(weights, packed, output, jobs, stride, width, 4);
-}
-__kernel void i2_q8_fp32w8(__global const float *weights, __global const float4 *packed,
-    __global uchar *output, __global const ulong *jobs, ulong stride, uint width) {
-    i2_q8_fp32_rows(weights, packed, output, jobs, stride, width, 8);
 }

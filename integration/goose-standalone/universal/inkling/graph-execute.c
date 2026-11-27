@@ -822,3 +822,54 @@ enum ggml_status fg_q35_checkpoint_compute(struct fg_standalone_graph_plan *plan
     return fg_standalone_graph_plan_compute(plan);
 }
 #endif
+
+int64_t fg143_graph_visit_info(uint64_t address, uint64_t tensor, bool count_use, sl_u64 info) {
+    enum { SOURCE_COUNT = 10 };
+    _Static_assert(GGML_MAX_SRC == SOURCE_COUNT, "Graph visit packet source count");
+    struct ggml_cgraph *graph = (void *)(uintptr_t)address;
+    struct ggml_tensor *node = (void *)(uintptr_t)tensor;
+    struct ggml_hash_set *table = &graph->visited_hash_set;
+    const size_t slot = ggml_hash_find(table, node);
+    if (slot == GGML_HASHSET_FULL) return -1;
+
+    if (node->op != GGML_OP_NONE) node->flags |= GGML_TENSOR_FLAG_COMPUTE;
+    const bool first = !ggml_bitset_get(table->used, slot);
+    info.data[SOURCE_COUNT] = first;
+    info.data[SOURCE_COUNT + 1] = node->op == GGML_OP_NONE && !(node->flags & GGML_TENSOR_FLAG_PARAM);
+    if (first) {
+        table->keys[slot] = node;
+        ggml_bitset_set(table->used, slot);
+        graph->use_counts[slot] = 0;
+    }
+    graph->use_counts[slot] += count_use;
+    const bool reverse = first && graph->order == GGML_CGRAPH_EVAL_ORDER_RIGHT_TO_LEFT;
+    int parents = 0;
+    for (int i = 0; i < SOURCE_COUNT; ++i) {
+        const struct ggml_tensor *parent = node->src[i];
+        if (parent && (first || !(parent->flags & GGML_TENSOR_FLAG_COMPUTE)))
+            info.data[parents++] = (uint64_t)(uintptr_t)parent;
+    }
+    if (reverse) {
+        for (int i = 0; i < parents / 2; ++i) {
+            const uint64_t parent = info.data[i];
+            info.data[i] = info.data[parents - 1 - i];
+            info.data[parents - 1 - i] = parent;
+        }
+    }
+    return parents;
+}
+
+bool fg143_graph_visit_append(uint64_t address, uint64_t tensor, bool leaf) {
+    struct ggml_cgraph *graph = (void *)(uintptr_t)address;
+    struct ggml_tensor *node = (void *)(uintptr_t)tensor;
+    int *count = leaf ? &graph->n_leafs : &graph->n_nodes;
+    if (*count >= graph->size) return false;
+    if (!node->name[0]) ggml_format_name(node, leaf ? "leaf_%d" : "node_%d", *count);
+    (leaf ? graph->leafs : graph->nodes)[(*count)++] = node;
+    return true;
+}
+
+bool fg143_graph_visit_is_tail(uint64_t address, uint64_t tensor) {
+    const struct ggml_cgraph *graph = (const void *)(uintptr_t)address;
+    return (uint64_t)(uintptr_t)graph->nodes[graph->n_nodes - 1] == tensor;
+}

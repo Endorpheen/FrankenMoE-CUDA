@@ -29,7 +29,6 @@
 
 void ggml_print_backtrace(void);
 
-uint64_t ggml_graph_next_uid(void);
 
 #ifndef MIN
 #    define MIN(a, b) ((a) < (b) ? (a) : (b))
@@ -53,10 +52,6 @@ uint64_t ggml_graph_next_uid(void);
             #define static_assert(cond, msg) struct global_scope_noop_trick
         #endif
     #endif
-
-static inline int ggml_up32(int n) {
-    return (n + 31) & ~31;
-}
 
 //static inline int ggml_up64(int n) {
 //    return (n + 63) & ~63;
@@ -101,9 +96,6 @@ static inline bool ggml_impl_is_view(const struct ggml_tensor * t) {
     return t->view_src != NULL;
 }
 
-static inline float ggml_compute_softplus_f32(float input) {
-    return (input > 20.0f) ? input : logf(1 + expf(input));
-}
 //
 // logging
 //
@@ -152,11 +144,6 @@ static int32_t ggml_get_op_params_i32(const struct ggml_tensor * tensor, uint32_
     return ((const int32_t *)(tensor->op_params))[i];
 }
 
-static float ggml_get_op_params_f32(const struct ggml_tensor * tensor, uint32_t i) {
-    assert(i < GGML_MAX_OP_PARAMS / sizeof(float));
-    return ((const float *)(tensor->op_params))[i];
-}
-
 // [TAG_GGML_PREC]
 // - GGML_OP_MUL_MAT
 //   0 - acc
@@ -197,10 +184,6 @@ static inline void ggml_bitset_set(ggml_bitset_t * bitset, size_t i) {
     bitset[i >> BITSET_SHR] |= (1u << (i & BITSET_MASK));
 }
 
-static inline void ggml_bitset_clear(ggml_bitset_t * bitset, size_t i) {
-    bitset[i >> BITSET_SHR] &= ~(1u << (i & BITSET_MASK));
-}
-
 // hash set
 
 #define GGML_HASHSET_FULL ((size_t)-1)
@@ -221,85 +204,16 @@ size_t ggml_hash_size(size_t min_sz);
 // remove all elements from the hash set
 void ggml_hash_set_reset(struct ggml_hash_set * hash_set);
 
-// returns true if key is in the hash set
-static bool ggml_hash_contains(const struct ggml_hash_set * hash_set, struct ggml_tensor * key);
+#ifdef GOOSEINFER_TYPE_METADATA_ONLY
+size_t ggml_hash_find(const struct ggml_hash_set *table, const struct ggml_tensor *key);
 
-// returns GGML_HASHSET_FULL if table is full, otherwise the current index of the key or where it should be inserted
-static size_t ggml_hash_find(const struct ggml_hash_set * hash_set, const struct ggml_tensor * key);
-
-// returns GGML_HASHSET_ALREADY_EXISTS if key already exists, index otherwise, asserts if table is full
-static size_t ggml_hash_insert(struct ggml_hash_set * hash_set, struct ggml_tensor * key);
-
-// return index, asserts if table is full
-static size_t ggml_hash_find_or_insert(struct ggml_hash_set * hash_set, struct ggml_tensor * key);
-
-// hash function for ggml_tensor
-static inline size_t ggml_hash(const struct ggml_tensor * p) {
-    // the last 4 bits are always zero due to alignment
-    return (size_t)(uintptr_t)p >> 4;
+static bool ggml_hash_contains(const struct ggml_hash_set *table, struct ggml_tensor *key) {
+    const size_t slot = ggml_hash_find(table, key);
+    return slot != GGML_HASHSET_FULL && ggml_bitset_get(table->used, slot);
 }
-
-static size_t ggml_hash_find(const struct ggml_hash_set * hash_set, const struct ggml_tensor * key) {
-    size_t h = ggml_hash(key) % hash_set->size;
-
-    // linear probing
-    size_t i = h;
-    while (ggml_bitset_get(hash_set->used, i) && hash_set->keys[i] != key) {
-        i = (i + 1) % hash_set->size;
-        if (i == h) {
-            // visited all hash table entries -> not found
-            return GGML_HASHSET_FULL;
-        }
-    }
-    return i;
-}
-
-static bool ggml_hash_contains(const struct ggml_hash_set * hash_set, struct ggml_tensor * key) {
-    size_t i = ggml_hash_find(hash_set, key);
-    return i != GGML_HASHSET_FULL && ggml_bitset_get(hash_set->used, i);
-}
-
-static size_t ggml_hash_insert(struct ggml_hash_set * hash_set, struct ggml_tensor * key) {
-    size_t h = ggml_hash(key) % hash_set->size;
-
-    // linear probing
-    size_t i = h;
-    do {
-        if (!ggml_bitset_get(hash_set->used, i)) {
-            ggml_bitset_set(hash_set->used, i);
-            hash_set->keys[i] = key;
-            return i;
-        }
-        if (hash_set->keys[i] == key) {
-            return GGML_HASHSET_ALREADY_EXISTS;
-        }
-        i = (i + 1) % hash_set->size;
-    } while (i != h);
-
-    // visited all hash table entries -> not found
-    GGML_ABORT("fatal error");
-}
-
-static size_t ggml_hash_find_or_insert(struct ggml_hash_set * hash_set, struct ggml_tensor * key) {
-    size_t h = ggml_hash(key) % hash_set->size;
-
-    // linear probing
-    size_t i = h;
-    do {
-        if (!ggml_bitset_get(hash_set->used, i)) {
-            ggml_bitset_set(hash_set->used, i);
-            hash_set->keys[i] = key;
-            return i;
-        }
-        if (hash_set->keys[i] == key) {
-            return i;
-        }
-        i = (i + 1) % hash_set->size;
-    } while (i != h);
-
-    // visited all hash table entries -> not found
-    GGML_ABORT("fatal error");
-}
+#else
+#include "ggml-hash-reference.inc"
+#endif
 
 // computation graph
 
@@ -329,10 +243,6 @@ struct ggml_cgraph {
     uint64_t uid;
 };
 
-// returns a slice of cgraph with nodes [i0, i1)
-// the slice does not have leafs or gradients
-// if you need the gradients, get them from the original graph
-struct ggml_cgraph ggml_graph_view(struct ggml_cgraph * cgraph, int i0, int i1);
 
 // ggml-alloc.c: true if the operation can reuse memory from its sources
 GGML_API bool ggml_op_can_inplace(enum ggml_op op);

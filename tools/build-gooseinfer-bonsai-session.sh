@@ -16,7 +16,7 @@ esac
 mkdir -p -- "$out"
 
 "$cc" -O2 -Wall -Wextra -Werror -ffunction-sections -fdata-sections \
-    -I"$standalone" -I"$cuda/include" -Dmain=bonsai_diagnostic_main \
+    -I"$standalone" -I"$cuda/include" \
     -c "$src/backend-cold.c" -o "$out/session-unlinked.o"
 "$objcopy" --redefine-syms="$src/session-symbols.txt" "$out/session-unlinked.o" "$out/bonsai-session.o"
 

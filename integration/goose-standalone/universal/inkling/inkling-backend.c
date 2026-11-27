@@ -1023,12 +1023,3 @@ int64_t inkling_backend_eval(struct decoder *d, const int32_t *tokens, int64_t c
         (sl_i32){draft->tokens, i2_draft_max}, d->position, draft->count != 0,
         draft->used, d->retain_decode_graphs);
 }
-
-void inkling_backend_report(void) {
-    int64_t stats[6] = {0};
-    fg_cuda_expert_stats(ints(stats, 6));
-    printf("Expert statistics: hits=%" PRId64 " fills=%" PRId64 " evictions=%" PRId64
-           " bytes=%" PRId64 " pinned=%" PRId64 " ranges=%" PRId64 "\n",
-           stats[0], stats[1], stats[2], stats[3], stats[4], stats[5]);
-    inkling_attention_report();
-}
