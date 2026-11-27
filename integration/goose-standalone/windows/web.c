@@ -89,7 +89,8 @@ uint8_t fg_http_windows_asset(int64_t fd, sl_u8 request) {
     size_t i = 0;
     for (; relative[i]; ++i) name[i] = relative[i] == '/' ? L'\\' : relative[i];
     name[i] = 0;
-    const DWORD n = GetEnvironmentVariableW(L"FRANKENMOE_WEB_ROOT", root, 4096);
+    DWORD n = GetEnvironmentVariableW(L"GOOSEINFER_WEB_ROOT", root, 4096);
+    if (!n) n = GetEnvironmentVariableW(L"FRANKENMOE_WEB_ROOT", root, 4096);
     if (!n || n >= 4096 || swprintf(path, 4608, L"%ls\\%ls", root, name) < 0) return 0;
     HANDLE file = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
                              FILE_ATTRIBUTE_NORMAL, NULL);
@@ -111,7 +112,8 @@ uint8_t fg_http_windows_asset(int64_t fd, sl_u8 request) {
     }
     CloseHandle(file);
 #else
-    const char *root = getenv("FRANKENMOE_WEB_ROOT");
+    const char *root = getenv("GOOSEINFER_WEB_ROOT");
+    if (!root) root = getenv("FRANKENMOE_WEB_ROOT");
     if (!root || !*root) return 0;
     int directory = open(root, O_RDONLY | O_DIRECTORY | O_CLOEXEC);
     if (directory < 0) return 0;
@@ -160,9 +162,9 @@ void fg_http_windows_sse(int64_t fd, sl_u8 body) {
 
 static FILE *open_http_log(void) {
 #ifdef _WIN32
-    return _wfopen(L"frankenmoe-http.log", L"ab");
+    return _wfopen(L"gooseinfer-http.log", L"ab");
 #else
-    return fopen("frankenmoe-http.log", "ab");
+    return fopen("gooseinfer-http.log", "ab");
 #endif
 }
 
@@ -205,7 +207,7 @@ void fg_http_windows_ignored(int64_t field) {
     if (warned & bit) return;
     warned |= bit;
     const char *name = field == 1 ? "tools" : field == 2 ? "tool_choice" : "response_format";
-    fprintf(stderr, "FrankenMoE HTTP: %s is unsupported and ignored\n", name);
+    fprintf(stderr, "GooseInfer HTTP: %s is unsupported and ignored\n", name);
     FILE *log = open_http_log();
     if (log) {
         fprintf(log, "warning: %s is unsupported and ignored\n", name);

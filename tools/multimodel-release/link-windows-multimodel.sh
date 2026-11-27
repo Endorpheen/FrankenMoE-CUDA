@@ -45,4 +45,5 @@ cut -d' ' -f2 "$http/rename.txt" > "$out/bonsai-exports.txt"
 "$cc" -static -municode -Wl,--gc-sections,--no-insert-timestamp "$out/"{infer-main,model-host,bonsai-session,bonsai-goose,tokenizer}.o \
     "$obj/"{cuda-driver,graph-execute,inkling-backend,inkling-model-visible,numeric,lfu,prior,bucket,sampler-scan}.o "$chat/main-windows.o" \
     "$base/"{cpu,graph-bindings,libc-forwards,slru-shim,goose-host,ggml,ggml-quants,ggml-system,probability,probability-pipeline,platform,planner-link,sampler-scan}.o \
-    "$chat/web.o" -lws2_32 -lpsapi -lwinpthread -lm -o "$out/frankenmoe-multimodel.exe"
+    "$chat/web.o" -lws2_32 -lpsapi -lwinpthread -lm -o "$out/gooseinfer-multimodel.exe"
+cp "$out/gooseinfer-multimodel.exe" "$out/frankenmoe-multimodel.exe"

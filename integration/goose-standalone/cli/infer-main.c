@@ -182,14 +182,15 @@ static void apply_runtime_defaults(void) {
 static int run_cli(int argc, char **argv);
 
 static void default_web_root(void) {
-    if (GetEnvironmentVariableW(L"FRANKENMOE_WEB_ROOT", NULL, 0)) return;
+    if (GetEnvironmentVariableW(L"GOOSEINFER_WEB_ROOT", NULL, 0) ||
+        GetEnvironmentVariableW(L"FRANKENMOE_WEB_ROOT", NULL, 0)) return;
     wchar_t path[4096];
     const DWORD size = GetModuleFileNameW(NULL, path, 4096);
     if (!size || size >= 4096) return;
     wchar_t *name = wcsrchr(path, L'\\');
     if (!name || (size_t)(name - path) + 5 > 4096) return;
     wcscpy(name + 1, L"web");
-    SetEnvironmentVariableW(L"FRANKENMOE_WEB_ROOT", path);
+    SetEnvironmentVariableW(L"GOOSEINFER_WEB_ROOT", path);
 }
 
 int wmain(int argc, wchar_t **wide) {

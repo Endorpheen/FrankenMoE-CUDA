@@ -46,8 +46,8 @@ static bool cuda_probe(struct gpu_probe *result) {
 }
 
 static int fail(const wchar_t *message) {
-    fwprintf(stderr, L"FrankenMoE: %ls\n", message);
-    MessageBoxW(NULL, message, L"FrankenMoE Windows Alpha", MB_OK | MB_ICONERROR);
+    fwprintf(stderr, L"GooseInfer: %ls\n", message);
+    MessageBoxW(NULL, message, L"GooseInfer Windows Alpha", MB_OK | MB_ICONERROR);
     return 1;
 }
 
@@ -149,7 +149,7 @@ static bool choose_model(wchar_t *selected) {
     OPENFILENAMEW picker = {.lStructSize = sizeof(picker),
         .lpstrFilter = L"GGUF model (*.gguf)\0*.gguf\0",
         .lpstrFile = selected, .nMaxFile = CAP,
-        .lpstrTitle = L"Choose an Apex GGUF model for FrankenMoE",
+        .lpstrTitle = L"Choose an Apex GGUF model for GooseInfer",
         .Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR | OFN_DONTADDTORECENT};
     return GetOpenFileNameW(&picker);
 }
@@ -244,7 +244,7 @@ static INT_PTR CALLBACK settings_window(HWND window, UINT message, WPARAM comman
             wchar_t selected[CAP], path[CAP];
             if (!choose_model(selected)) return TRUE;
             if (!verify_model(selected) || !locate_settings(path, CAP)) {
-                MessageBoxW(window, L"Choose a readable GGUF file.", L"FrankenMoE", MB_OK | MB_ICONERROR);
+                MessageBoxW(window, L"Choose a readable GGUF file.", L"GooseInfer", MB_OK | MB_ICONERROR);
                 return TRUE;
             }
             save_model(path, selected);
@@ -252,7 +252,7 @@ static INT_PTR CALLBACK settings_window(HWND window, UINT message, WPARAM comman
         }
         case IDOK:
             if (!save_profile(settings->profile)) {
-                MessageBoxW(window, L"Cannot save your profile.", L"FrankenMoE", MB_OK | MB_ICONERROR);
+                MessageBoxW(window, L"Cannot save your profile.", L"GooseInfer", MB_OK | MB_ICONERROR);
                 return TRUE;
             }
             EndDialog(window, IDOK);
@@ -278,7 +278,7 @@ static bool port_free(void) {
 }
 
 static bool ready(void) {
-    HINTERNET session = WinHttpOpen(L"FrankenMoE Windows Alpha", WINHTTP_ACCESS_TYPE_NO_PROXY,
+    HINTERNET session = WinHttpOpen(L"GooseInfer Windows Alpha", WINHTTP_ACCESS_TYPE_NO_PROXY,
                                      WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
     if (!session) return false;
     WinHttpSetTimeouts(session, 500, 500, 500, 1000);
@@ -299,7 +299,7 @@ static bool ready(void) {
 }
 
 static void diagnostics(FILE *out, const struct gpu_probe *gpu, const char *stage, DWORD status) {
-    fprintf(out, "runtime=FrankenMoE-Pure-Goose-Windows-Alpha\nplatform=windows-x64\n"
+    fprintf(out, "runtime=GooseInfer-Pure-Goose-Windows-Alpha\nplatform=windows-x64\n"
         "cuda_driver_api=%d\ncompute_capability=%d.%d\ncuda_status=%d\n"
         "vram_total_mib=%" PRIu64 "\nvram_free_mib=%" PRIu64 "\n"
         "ram_available_mib=%" PRIu64 "\nstage=%s\nstatus=%lu\n",
@@ -317,19 +317,19 @@ int wmain(int argc, wchar_t **argv) {
                                NULL, settings_window, (LPARAM)&settings) == -1 ? 1 : 0;
     }
     if (argc == 2 && wcscmp(argv[1], L"--diagnostics") == 0) {
-        FILE *report = _wfopen(L"frankenmoe-diagnostics.txt", L"wb");
+        FILE *report = _wfopen(L"gooseinfer-diagnostics.txt", L"wb");
         if (!report) return fail(L"Cannot write the diagnostic report in this folder.");
         diagnostics(report, &gpu, "manual-probe", 0);
         report_startup_status(report);
         if (fclose(report) != 0) return fail(L"Cannot save the diagnostic report.");
-        puts("Saved frankenmoe-diagnostics.txt. Review it before sharing.");
+        puts("Saved gooseinfer-diagnostics.txt. Review it before sharing.");
         return 0;
     }
     if (!cuda || gpu.major < 8 || gpu.driver_version < 12040) {
         remember_status(STARTUP_DRIVER, (DWORD)gpu.status);
         return fail(
         L"This preview requires an NVIDIA RTX GPU with CUDA 12.4 driver support. "
-        L"Install or update the driver from nvidia.com, then start FrankenMoE again.");
+        L"Install or update the driver from nvidia.com, then start GooseInfer again.");
     }
     if (gpu.free_bytes / MIB < 8192) {
         remember_status(STARTUP_VRAM, (DWORD)(gpu.free_bytes / MIB));
@@ -342,7 +342,7 @@ int wmain(int argc, wchar_t **argv) {
 
     wchar_t root[CAP], executable[CAP], site[CAP], settings[CAP], model[CAP];
     if (!directory(root, CAP) ||
-        FAILED(StringCchPrintfW(executable, CAP, L"%ls\\frankenmoe-server.exe", root)) ||
+        FAILED(StringCchPrintfW(executable, CAP, L"%ls\\gooseinfer-server.exe", root)) ||
         FAILED(StringCchPrintfW(site, CAP, L"%ls\\web\\index.html", root)) ||
         GetFileAttributesW(executable) == INVALID_FILE_ATTRIBUTES ||
         GetFileAttributesW(site) == INVALID_FILE_ATTRIBUTES)
@@ -371,6 +371,7 @@ int wmain(int argc, wchar_t **argv) {
     wchar_t *separator = wcsrchr(site, L'\\');
     if (!separator) return fail(L"Cannot locate web assets.");
     *separator = 0;
+    SetEnvironmentVariableW(L"GOOSEINFER_WEB_ROOT", site);
     SetEnvironmentVariableW(L"FRANKENMOE_WEB_ROOT", site);
     STARTUPINFOW startup = {.cb = sizeof(startup)};
     PROCESS_INFORMATION child;
@@ -392,7 +393,7 @@ int wmain(int argc, wchar_t **argv) {
             remember_status(STARTUP_READY, 0);
             if ((INT_PTR)ShellExecuteW(NULL, L"open", L"http://localhost:8080/",
                                         NULL, NULL, SW_SHOWNORMAL) <= 32)
-                puts("FrankenMoE is ready at http://localhost:8080/.");
+                puts("GooseInfer is ready at http://localhost:8080/.");
             opened = true;
             break;
         }

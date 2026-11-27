@@ -70,7 +70,7 @@ if [ -n "$MANIFEST" ]; then
     cp "$MANIFEST" "$OUT/MANIFEST.md"
 else
     {
-        printf '# FrankenMoE CUDA runtime - %s\n\n' "$TAG"
+        printf '# GooseInfer CUDA runtime - %s\n\n' "$TAG"
         printf 'Assembled from an accepted set. Source revision `%s`.\n\n' "$REV"
         printf 'Every file here is listed in SHA256SUMS. Weights are not included.\n'
     } > "$OUT/MANIFEST.md"

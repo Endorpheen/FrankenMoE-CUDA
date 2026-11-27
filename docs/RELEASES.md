@@ -1,6 +1,6 @@
 # FrankenMoE releases
 
-The [v0.13.0-alpha release](https://github.com/Endorpheen/FrankenMoE-CUDA/releases/tag/v0.13.0-alpha)
+The [v0.13.0-alpha release](https://github.com/Endorpheen/GooseInfer/releases/tag/v0.13.0-alpha)
 provides Linux and Windows x64 archives and SHA-256 checksums. See the
 [multi-model guide](MULTIMODEL-ALPHA.md) for verified model profiles and
 platform coverage.
@@ -31,7 +31,7 @@ with an accurate platform and architecture matrix.
 
 ## Standalone chat release history
 
-The published [v0.12.1-chat-alpha](https://github.com/Endorpheen/FrankenMoE-CUDA/releases/tag/v0.12.1-chat-alpha)
+The published [v0.12.1-chat-alpha](https://github.com/Endorpheen/GooseInfer/releases/tag/v0.12.1-chat-alpha)
 adds OpenCode tool continuation and separate reasoning accounting on Linux
 and Windows. The [v0.12.0 build record](../experiments/EXP-2026-11-23-1805-route-prefetch/release/README.md)
 documents the Windows CUDA host inputs. The cumulative Linux checkpoint

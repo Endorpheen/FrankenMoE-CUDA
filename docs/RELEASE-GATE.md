@@ -1,6 +1,6 @@
 # Release Gate
 
-Every FrankenMoE package release uses the same
+Every GooseInfer package release uses the same
 [architecture and backend matrix](../tools/multimodel-release/release-matrix.json)
 and [runner](../tools/multimodel-release/release-gate.py). Extend the existing
 matrix when a model or backend enters release scope. Vulkan is planned. Add

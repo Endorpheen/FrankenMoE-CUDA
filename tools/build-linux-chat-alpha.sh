@@ -22,8 +22,8 @@ driver_flags=(-O1 -std=c11 -D_GNU_SOURCE -D_FORTIFY_SOURCE=3 -fstack-protector-s
               -I "$root/vendor/flint/ggml/include" -I "$root/vendor/flint/ggml/src"
               -I "$root/integration/m1/host" -I "$src")
 "$cc" "${driver_flags[@]}" -c "$src/apex-checkpoint/cuda-driver.c" -o "$out/cuda-driver.o"
-cp "$checkpoint/libfranken-inference.a" "$out/libfranken-inference.a"
-"${AR:-ar}" rcs "$out/libfranken-inference.a" "$out/cuda-driver.o"
+cp "$checkpoint/libfranken-inference.a" "$out/libgooseinfer.a"
+"${AR:-ar}" rcs "$out/libgooseinfer.a" "$out/cuda-driver.o"
 
 python3 "$root/tools/compose-alpha-runtime.py" "$unit/main.goose" \
  "$root/goose/server/inference-http.goose" "$out/main.goose"
@@ -34,7 +34,10 @@ flags=(-O1 -std=c11 -D_GNU_SOURCE -ffunction-sections -fdata-sections -I "$out"
 "$cc" "${flags[@]}" -w -c "$out/main.c" -o "$out/main.o"
 "$cc" "${flags[@]}" -DFG_CHAT_ALPHA -DFG_APEX_CUMULATIVE -c "$src/cli/infer-main.c" -o "$out/infer-main.o"
 "$cc" "${flags[@]}" -c "$src/windows/web.c" -o "$out/web.o"
-"$cc" -Wl,--gc-sections "$out"/{infer-main,main,web}.o "$out/libfranken-inference.a" \
- -lm -ldl -pthread -o "$out/frankenmoe-server.bin"
-install -m 0755 "$root/tools/frankenmoe-server-launch.sh" "$out/frankenmoe-server"
-install -m 0644 "$root/tools/frankenmoe-console.py" "$out/"
+"$cc" -Wl,--gc-sections "$out"/{infer-main,main,web}.o "$out/libgooseinfer.a" \
+ -lm -ldl -pthread -o "$out/gooseinfer-server.bin"
+install -m 0755 "$root/tools/gooseinfer-server-launch.sh" "$out/gooseinfer-server"
+ln -sfn gooseinfer-server "$out/frankenmoe-server"
+ln -sfn gooseinfer-server.bin "$out/frankenmoe-server.bin"
+ln -sfn libgooseinfer.a "$out/libfranken-inference.a"
+install -m 0644 "$root/tools/gooseinfer-console.py" "$root/tools/frankenmoe-console.py" "$out/"

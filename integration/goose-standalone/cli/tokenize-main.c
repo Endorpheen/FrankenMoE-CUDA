@@ -1,4 +1,4 @@
-// frankenmoe-tokenize: the standalone runtime's tokenizer entry point.
+// gooseinfer-tokenize: the standalone runtime's tokenizer entry point.
 //
 // The decisions around tokenization are Goose (goose/cli/tokenize-cli.goose:
 // tz_source, tz_add_bos, tz_fmt_ids) and tokenization itself is the Goose engine
@@ -10,8 +10,8 @@
 // program the user runs.
 //
 // Usage:
-//   frankenmoe-tokenize <model.gguf> --prompt TEXT [--ids] [--no-bos]
-//   frankenmoe-tokenize <model.gguf> --stdin     [--ids] [--no-bos]
+//   gooseinfer-tokenize <model.gguf> --prompt TEXT [--ids] [--no-bos]
+//   gooseinfer-tokenize <model.gguf> --stdin     [--ids] [--no-bos]
 #include <fcntl.h>
 #include <stdint.h>
 #include <stdio.h>

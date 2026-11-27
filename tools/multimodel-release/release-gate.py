@@ -239,7 +239,10 @@ def probe(row, spec, model, root, logs, weights, prefix, gpu_index):
     env.update(FRANKENMOE_CONSOLE="0", CUDA_VISIBLE_DEVICES=str(gpu_index))
     if kind == "linux-cuda":
         env["GOOSE_CUDA"] = "1"
-        command = [str(root / "frankenmoe"), spec["model"], str(weight), str(port)]
+        launcher = root / "gooseinfer"
+        if not launcher.is_file():
+            launcher = root / "frankenmoe"
+        command = [str(launcher), spec["model"], str(weight), str(port)]
     else:
         profile = spec.get("profile", ["--ctx-size", "256", "--batch-size", "32", "--ubatch-size", "32",
                                       "--threads", "8", "--threads-batch", "8"])

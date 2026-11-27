@@ -25,10 +25,11 @@ for source in "${entries[@]}"; do
     entry=${entry%-main.c}
     "$CC" "${COMMON_FLAGS[@]}" -c "$source" -o "$OUT/$entry.o"
     "$CC" -Wl,--gc-sections "$OUT/$entry.o" "$UNIT/main.o" "$OUT/host.o" \
-        "$OUT/libc-forwards.o" -lm -pthread -o "$OUT/frankenmoe-$entry"
-    if readelf -d "$OUT/frankenmoe-$entry" | grep -Eq 'NEEDED.*(libstdc\+\+|libllama|libggml)'; then
-        printf 'Unexpected native runtime dependency in frankenmoe-%s\n' "$entry" >&2
+        "$OUT/libc-forwards.o" -lm -pthread -o "$OUT/gooseinfer-$entry"
+    if readelf -d "$OUT/gooseinfer-$entry" | grep -Eq 'NEEDED.*(libstdc\+\+|libllama|libggml)'; then
+        printf 'Unexpected native runtime dependency in gooseinfer-%s\n' "$entry" >&2
         exit 1
     fi
-    printf 'Built %s/frankenmoe-%s\n' "$OUT" "$entry"
+    ln -sfn "gooseinfer-$entry" "$OUT/frankenmoe-$entry"
+    printf 'Built %s/gooseinfer-%s\n' "$OUT" "$entry"
 done

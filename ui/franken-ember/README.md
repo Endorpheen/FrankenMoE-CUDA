@@ -1,8 +1,8 @@
-# FrankenMoE Ember Goose
+# GooseInfer Ember Goose
 
 **Historical reference.** This theme and its legacy preview recipes were prepared for llama-ui. See [the standalone chat packaging guide](../../docs/BUILD.md) for the current web asset layout.
 
-A dark theme for the llama-ui that ships with this runtime, plus the FrankenMoE mark. It is a skin: the interface, its layout,
+A dark theme for the llama-ui that ships with this runtime, plus the GooseInfer mark. It is a skin: the interface, its layout,
 its controls and its behaviour are the original ones. Nothing in this directory changes JavaScript, the API, the server or any
 accepted build.
 
@@ -48,7 +48,7 @@ text `#E6E6E3`, secondary `#93999F`, copper `#C87942`, ember `#DF7138`, borders 
 The interface draws its logo as the only `svg` without a class, 16×16, inside the navigation button. The theme paints the goose
 into that same box as a background and hides the original paths, so the box, the button and the row keep their original size.
 
-`FrankenMoE` is written beside the emblem by an `::after` on the header row: absolutely positioned, pointer-transparent, clipped
+`GooseInfer` is written beside the emblem by an `::after` on the header row: absolutely positioned, pointer-transparent, clipped
 by the sidebar. It appears when the panel is wide enough and disappears into the clip when collapsed; below 768 px only the
 emblem is shown, which the specification allows.
 

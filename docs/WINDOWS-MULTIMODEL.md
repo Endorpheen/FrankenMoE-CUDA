@@ -1,4 +1,6 @@
-# FrankenMoE Windows x64 multi-model package
+# GooseInfer Windows x64 multi-model package
+
+Published FrankenMoE archives retain their original executable names.
 
 The package includes the existing Apex HTTP server, the multi-model HTTP
 server for Inkling and Bonsai, and a separate Bonsai MTP command-line build.
@@ -29,7 +31,7 @@ CUDA absent. It reads GGUF metadata and prints the recognized architecture,
 vocabulary size and token IDs after verifying the text round trip:
 
 ```powershell
-.\frankenmoe-multimodel.exe --model-check 'C:\Models\Inkling-2-Mini-AD-IQ4_XS.gguf' 'Hello Goose'
+.\gooseinfer-multimodel.exe --model-check 'C:\Models\Inkling-2-Mini-AD-IQ4_XS.gguf' 'Hello Goose'
 ```
 
 A model check and Wine transport check are separate from native GPU generation.

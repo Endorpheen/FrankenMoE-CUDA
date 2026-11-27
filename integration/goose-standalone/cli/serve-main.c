@@ -1,14 +1,14 @@
-// frankenmoe-serve: the standalone runtime's HTTP entry point.
+// gooseinfer-serve: the standalone runtime's HTTP entry point.
 //
 // Every decision is Goose (goose/server/http-*.goose): request parsing, routing,
 // the API-key policy, CORS, the response format and keep-alive. This file owns
 // argv, the socket loop and nothing else - it decides no header and no status.
 //
 // No libllama. The listener binds an ephemeral port by default, because port 9101
-// belongs to the FrankenMoE runtime server and a second process there would be a
+// belongs to the GooseInfer runtime server and a second process there would be a
 // conflict, not a test (rule 21).
 //
-//   frankenmoe-serve [--port N] [--key K]... [--origin O]... [--credentials] [--once]
+//   gooseinfer-serve [--port N] [--key K]... [--origin O]... [--credentials] [--once]
 #include <errno.h>
 #include <signal.h>
 #include <stdint.h>
@@ -32,7 +32,7 @@ static void mark_signal(int sig) {
 
 static void usage(void) {
     fprintf(stderr,
-            "usage: frankenmoe-serve [--port N] [--key K]... [--origin O]...\n"
+            "usage: gooseinfer-serve [--port N] [--key K]... [--origin O]...\n"
             "                        [--credentials] [--once]\n"
             "\n"
             "  --port N        listen on N; 0 (the default) asks the kernel for one\n"
@@ -41,7 +41,7 @@ static void usage(void) {
             "  --credentials   send Access-Control-Allow-Credentials\n"
             "  --once          serve one connection and exit\n"
             "\n"
-            "Port 9101 belongs to the FrankenMoE runtime server; the default here is\n"
+            "Port 9101 belongs to the GooseInfer runtime server; the default here is\n"
             "an ephemeral port so this process cannot collide with it.\n");
 }
 
@@ -86,7 +86,7 @@ int main(int argc, char ** argv) {
             usage();
             return 0;
         } else {
-            fprintf(stderr, "frankenmoe-serve: unknown argument %s\n", argv[i]);
+            fprintf(stderr, "gooseinfer-serve: unknown argument %s\n", argv[i]);
             usage();
             return 2;
         }
@@ -94,7 +94,7 @@ int main(int argc, char ** argv) {
     keys_off[keys_n] = (int64_t) keys_len;
 
     if (port == 9101) {
-        fprintf(stderr, "frankenmoe-serve: 9101 belongs to the FrankenMoE runtime server;"
+        fprintf(stderr, "gooseinfer-serve: 9101 belongs to the GooseInfer runtime server;"
                         " choose another port (rule 21)\n");
         return 2;
     }
@@ -103,10 +103,10 @@ int main(int argc, char ** argv) {
     want[0] = port;
     const int64_t fd = hl_open((sl_i64){ want, 1 });
     if (fd < 0) {
-        fprintf(stderr, "frankenmoe-serve: cannot listen: %s\n", strerror(errno));
+        fprintf(stderr, "gooseinfer-serve: cannot listen: %s\n", strerror(errno));
         return 1;
     }
-    printf("frankenmoe-serve: listening on port %lld\n", (long long) want[0]);
+    printf("gooseinfer-serve: listening on port %lld\n", (long long) want[0]);
     fflush(stdout);
 
     signal(SIGINT, mark_signal);
@@ -132,7 +132,7 @@ int main(int argc, char ** argv) {
                 on_signal(interrupting, 1, (uint64_t) (uintptr_t) decision);
                 if (decision[0] == 2) {
                     if (decision[2] != 0) {
-                        fprintf(stderr, "frankenmoe-serve: second interrupt, forcing exit\n");
+                        fprintf(stderr, "gooseinfer-serve: second interrupt, forcing exit\n");
                     }
                     hl_close(fd);
                     return decision[1] != 0 ? (int) decision[1] : 1;
@@ -149,6 +149,6 @@ int main(int argc, char ** argv) {
     }
 
     hl_close(fd);
-    printf("frankenmoe-serve: served %d request(s)\n", served);
+    printf("gooseinfer-serve: served %d request(s)\n", served);
     return 0;
 }

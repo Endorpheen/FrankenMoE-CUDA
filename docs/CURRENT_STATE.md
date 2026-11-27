@@ -1,6 +1,6 @@
 # Current state
 
-The standalone FrankenMoE chat runtime runs Apex-35B-V1.0 Q4_K_M and provides
+The standalone GooseInfer chat runtime runs Apex-35B-V1.0 Q4_K_M and provides
 a bundled web UI and an OpenAI-compatible API for OpenCode. Goose owns the model
 execution and HTTP decisions; C adapters provide system and CUDA driver calls.
 

@@ -1,4 +1,4 @@
-name: ci
+name: GooseInfer CI
 
 # Integrity gate for pull requests into main. No weights, no inference, no GPU,
 # no benchmark. Every check below runs from a clean checkout.
@@ -32,7 +32,9 @@ jobs:
       - name: Edge0 pack validation
         run: python3 tools/tests/test_edge0_preflight.py
       - name: Terminal logging fallback
-        run: python3 tools/tests/test_frankenmoe_console.py
+        run: |
+          python3 tools/tests/test_gooseinfer_console.py
+          python3 tools/tests/test_gooseinfer_launcher.py
       - name: Release Gate fixture tests
         run: python3 tools/multimodel-release/test-release-gate.py
       - name: Generated artefacts policy

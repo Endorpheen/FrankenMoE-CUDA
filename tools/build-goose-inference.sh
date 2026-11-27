@@ -32,10 +32,14 @@ FLAGS=(-O1 -std=c11 -D_GNU_SOURCE -ffunction-sections -fdata-sections -I "$OUT"
 "$CC" "${FLAGS[@]}" -DFG_SLRU_SHARED_UNIT -c "$ROOT/integration/goose-standalone/slru-runtime-shim.c" -o "$OUT/slru-shim.o"
 "$CC" "${FLAGS[@]}" -c "$ROOT/integration/m1/host/goose_host.c" -o "$OUT/goose-host.o"
 
-"$AR" rcs "$OUT/libfranken-inference.a" "$UNIT/main.o" "$OUT/cpu.o" \
-    "$OUT/graph-execute.o" "$OUT/cuda-driver.o" "$OUT/graph-bindings.o" "$OUT/model-host.o" \
+"$CC" "${FLAGS[@]}" -c "$ROOT/integration/goose-standalone/windows/web.c" -o "$OUT/web.o"
+
+"$AR" rcs "$OUT/libgooseinfer.a" "$UNIT/main.o" "$OUT/cpu.o" \
+    "$OUT/graph-execute.o" "$OUT/web.o" "$OUT/cuda-driver.o" "$OUT/graph-bindings.o" "$OUT/model-host.o" \
     "$OUT/libc-forwards.o" "$OUT/slru-shim.o" "$OUT/goose-host.o" "$OUT/ggml.o" "$OUT/ggml-quants.o" "$OUT/ggml-system.o"
 "$CC" "${FLAGS[@]}" -I "$ROOT/integration/goose-standalone" -Wl,--gc-sections \
-    "$ROOT/integration/goose-standalone/cli/infer-main.c" "$OUT/libfranken-inference.a" \
-    -lm -ldl -pthread -o "$OUT/frankenmoe-infer"
-printf '%s/libfranken-inference.a\n%s/frankenmoe-infer\n' "$OUT" "$OUT"
+    "$ROOT/integration/goose-standalone/cli/infer-main.c" "$OUT/libgooseinfer.a" \
+    -lm -ldl -pthread -o "$OUT/gooseinfer-infer"
+ln -sfn libgooseinfer.a "$OUT/libfranken-inference.a"
+ln -sfn gooseinfer-infer "$OUT/frankenmoe-infer"
+printf '%s/libgooseinfer.a\n%s/gooseinfer-infer\n' "$OUT" "$OUT"

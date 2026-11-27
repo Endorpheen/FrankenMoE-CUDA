@@ -14,7 +14,8 @@ if [[ -f "$out/README.md" && ! -f "$out/README-Apex.md" ]]; then
     mv "$out/README.md" "$out/README-Apex.md"
 fi
 mkdir -p "$out/"{bonsai,cuda,profiles}
-install -m 755 "$server" "$out/frankenmoe-multimodel.exe"
+install -m 755 "$server" "$out/gooseinfer-multimodel.exe"
+cp "$out/gooseinfer-multimodel.exe" "$out/frankenmoe-multimodel.exe"
 install -m 755 "$mtp" "$out/bonsai/bonsai-mtp.exe"
 install -m 644 "$src/start-windows.ps1" "$out/Start-Model.ps1"
 install -m 644 "$linux/profiles/inkling.env" "$out/profiles/inkling.env"

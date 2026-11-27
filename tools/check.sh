@@ -1,5 +1,5 @@
 #!/bin/bash
-# Three-level verification for the FrankenMoE-CUDA migration.
+# Three-level verification for the GooseInfer migration.
 #
 #   bash tools/check.sh fast          changed code only: compose + typecheck the
 #                                     unit, compile it, run the gates whose

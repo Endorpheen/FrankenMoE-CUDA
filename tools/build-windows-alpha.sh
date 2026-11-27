@@ -48,7 +48,9 @@ build "$prob/probability.c" probability -Dgoose_init=fg_probability_init -Dgg_in
 build "$prob/probability-pipeline.c" probability-pipeline -I "$prob"
 "$cc" -municode -static -Wl,--gc-sections \
  "$out"/{infer-main,main-windows,cpu,graph-execute,cuda-driver,graph-bindings,model-host,libc-forwards,slru-shim,goose-host,ggml,ggml-quants,ggml-system,probability,probability-pipeline,platform,web}.o \
- -lws2_32 -lpsapi -lwinpthread -o "$out/frankenmoe-server.exe"
+ -lws2_32 -lpsapi -lwinpthread -o "$out/gooseinfer-server.exe"
+cp "$out/gooseinfer-server.exe" "$out/frankenmoe-server.exe"
 "${WINDOWS_WINDRES:-x86_64-w64-mingw32-windres}" "$src/windows/launcher.rc" "$out/launcher-resources.o"
 "$cc" "${flags[@]}" -static -municode "$src/windows/launcher.c" "$out/platform.o" "$out/launcher-resources.o" \
- -lcomdlg32 -lshell32 -lwinhttp -lws2_32 -lpsapi -ladvapi32 -o "$out/frankenmoe-launcher.exe"
+ -lcomdlg32 -lshell32 -lwinhttp -lws2_32 -lpsapi -ladvapi32 -o "$out/gooseinfer-launcher.exe"
+cp "$out/gooseinfer-launcher.exe" "$out/frankenmoe-launcher.exe"
