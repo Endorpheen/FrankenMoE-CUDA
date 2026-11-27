@@ -394,7 +394,7 @@ def render(t, cols, rows):
     vram_pct = 100 * vram_used / vram_total if vram_total else 0
     cuda = f"  {GREEN()}CUDA {t.cuda_version}{RESET()}" if t.cuda_version else ""
     info = [
-        f"{WHITE()}Apex Runtime (Goose){RESET()}",
+        f"{WHITE()}GooseInfer Runtime{RESET()}",
         f"{WHITE()}Build  : {t.build}{RESET()}",
         f"{WHITE()}GPU    : {gpu_label(g)}{RESET()}{cuda}",
         f"{WHITE()}VRAM   : {vram_used:.2f} / {vram_total:.2f} GB  {GREEN()}({vram_pct:.1f}%){RESET()}",

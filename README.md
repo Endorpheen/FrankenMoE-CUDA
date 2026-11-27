@@ -6,7 +6,7 @@ models larger than consumer GPU memory. GooseInfer provides CUDA and
 experimental Vulkan builds. See the [Goose language repository](https://github.com/aardappel/goose)
 for language documentation.
 
-![Goose on Fire terminal dashboard with Apex startup logs](docs/assets/goose-on-fire.png)
+![GooseInfer terminal dashboard showing GigaChat4 inference](docs/assets/gooseinfer-console.png)
 
 ## Downloads and verified models
 
