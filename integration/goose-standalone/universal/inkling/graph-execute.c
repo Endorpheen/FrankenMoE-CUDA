@@ -201,14 +201,6 @@ float fg143_codec_from_bits(uint32_t bits) {
     return fg143_from_bits(bits);
 }
 
-float fg143_half(uint16_t bits) {
-    return ggml_fp16_to_fp32(bits);
-}
-
-float fg141_half(uint16_t bits) {
-    return fg143_half(bits);
-}
-
 uint16_t fg143_to_half(float value) {
     return ggml_fp32_to_fp16(value);
 }

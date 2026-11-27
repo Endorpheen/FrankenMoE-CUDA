@@ -1,6 +1,7 @@
 namespace decode;
 
 import.packed_simd;
+import.half;
 struct Plan {
     mode: i64, kind: i64, first: i64, stride: i64, start: i64, count: i64, nk: i64, row0: i64, col0: i64, out0: i64, slab: i64, route_first: i64, slots: i64, blocks: i64, y_stride: i64, origin: i64, input_first: i64, output_base: i64, dense: i64, defer_bias: i64, width: i64, output_rows: i64, ith: i64, nth: i64, enabled: i64, forced: i64, out_stride1: i64, out_stride2: i64, out_stride3: i64, n11: i64, n12: i64, n13: i64, n02: i64, n03: i64, nb02: i64, nb03: i64, context: i64, need_quant: i64, src_nb0: i64, src_nb1: i64, src_nb2: i64, src_nb3: i64, workspace_mod: i64, wdata_bytes: i64
 }
@@ -22,7 +23,7 @@ struct ActivationTile {
 struct Workspace {
     a: WeightTile, b: ActivationTile, acc: f32[8][8192]
 }
-extern "fg141_half" fn half(x: u16) -> f32;
+fn half(x: u16) -> f32 { return half_codec :: expand_half(x); }
 extern "fmaf" fn fma(x: f32, y: f32, z: f32) -> f32;
 extern "fg141_witness" fn witness(stage: i64, kind: i64, units: i64);
 

@@ -43,6 +43,7 @@ this workload.
 | v0.15.0 | 3 | 13,871 | 182 | 63,712 |
 | EXP-2214 | 3 | 13,871 | 182 | 63,712 |
 | EXP-2215 | 3 | 13,871 | 180 | 63,581 |
+| EXP-2216 | 3 | 13,871 | 179 | 63,497 |
 
 The C inputs are `ggml.c`, `ggml-quants.c` and `ggml-system.c`. Source
 lines include all three files. Retained text counts non-empty input sections
@@ -52,3 +53,7 @@ byte. Both measurements exclude headers and other C adapters. A section
 count is not a function count. EXP-2215 removed 131 bytes by eliminating all linked calls to the two GGML
 graph node accessors. The arithmetic microbenchmark savings above are kept
 separate from this reduction in linked code.
+
+EXP-2216 removed 84 more bytes by replacing scalar FP16 expansion with
+Goose. The scalar microbenchmark improved from 2.43–2.51 to 1.85–1.86
+ns/value. The row conversion remains linked.

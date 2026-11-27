@@ -1,4 +1,5 @@
 import.codec.decode;
+import.codec.half;
 
 const CV_ADD: i64 = 1;
 const CV_SUB: i64 = 2;
@@ -53,7 +54,7 @@ struct Node {
 }
 extern "fg143_bits" fn bits(x: f32) -> u32;
 extern "fg143_from_bits" fn from_bits(x: u32) -> f32;
-extern "fg143_half" fn half(x: u16) -> f32;
+fn half(x: u16) -> f32 { return half_codec :: expand_half(x); }
 extern "fg143_to_half" fn to_half(x: f32) -> u16;
 extern "fabsf" fn abs32(x: f32) -> f32;
 extern "expf" fn exp32(x: f32) -> f32;
