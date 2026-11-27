@@ -31,8 +31,9 @@ test -r "$headers/vulkan/vulkan.h"
 mkdir -p "$out/vulkan-headers"
 cp -R "$headers/vulkan" "$out/vulkan-headers/"
 if [[ -d "$headers/vk_video" ]]; then cp -R "$headers/vk_video" "$out/vulkan-headers/"; fi
+cat "$source_dir/queue.goose" "$source_dir/upload.goose" > "$out/queue.goose"
 "${GOOSE_CUDA_DRIVER_BIN:?Set GOOSE_CUDA_DRIVER_BIN to Fried Goose KeelWing v0.3.1-dev.1}" --standalone \
-    -o "$out/queue.c" "$source_dir/queue.goose"
+    -o "$out/queue.c" "$out/queue.goose"
 "$cc" -O2 -std=c11 -ffunction-sections -fdata-sections -w \
     -Dgoose_init=fg_vk_queue_init -Dgg_init_globals=fg_vk_queue_globals -c "$out/queue.c" -o "$out/queue.o"
 "$cc" "${flags[@]}" -isystem "$out/vulkan-headers" \
@@ -50,7 +51,7 @@ if [[ "$mode" != probe ]]; then
     done
     python3 "$root/tools/embed-vulkan-shaders.py" "$out"
     "$cc" "${flags[@]}" -isystem "$out/vulkan-headers" -I"$out" -I"$source_dir" \
-        "$source_dir/"{loader,device,memory,graph,upload,bonsai-layer,moe-bank}.c "$out/queue.o" \
+        "$source_dir/"{loader,device,memory,graph,bonsai-layer,moe-bank}.c "$out/queue.o" \
         "$root/integration/goose-standalone/tests/vulkan/"{compute,attention,projection,moe-quant,moe-router,apex-experts,bonsai,recurrent,bonsai-layer,inkling-attention}.c \
         "${libs[@]}" -lm -o "$out/frankenmoe-vulkan-compute-test$suffix"
 fi
@@ -124,7 +125,7 @@ PY
             objcopy=${WINDOWS_OBJCOPY:-x86_64-w64-mingw32-objcopy}
         fi
         objects=("$out/queue.o")
-        for source in "$source_dir/"{loader,device,memory,graph,upload,gguf,qwen2,bonsai-layer,bonsai-model,moe-bank,apex-model,inkling-model,tokenizer,http,infer-main}.c \
+        for source in "$source_dir/"{loader,device,memory,graph,gguf,qwen2,bonsai-layer,bonsai-model,moe-bank,apex-model,inkling-model,tokenizer,http,infer-main}.c \
                      "${socket[@]}" "$standalone/json-strtod-provider.c"; do
             name=$(basename -- "$source" .c)
             options=()
@@ -138,7 +139,7 @@ PY
         exit 0
     fi
     "$cc" "${flags[@]}" -isystem "$out/vulkan-headers" -I"$out" -Wl,--gc-sections \
-        "$source_dir/"{loader,device,memory,graph,upload,gguf,qwen2,bonsai-layer,bonsai-model,moe-bank,apex-model,inkling-model,tokenizer,http,infer-main}.c "$out/qwen2_unit.o" "$out/queue.o" \
+        "$source_dir/"{loader,device,memory,graph,gguf,qwen2,bonsai-layer,bonsai-model,moe-bank,apex-model,inkling-model,tokenizer,http,infer-main}.c "$out/qwen2_unit.o" "$out/queue.o" \
         "${socket[@]}" "$standalone/json-strtod-provider.c" \
         "${libs[@]}" -lm -pthread -o "$out/frankenmoe-vulkan$suffix"
 fi
