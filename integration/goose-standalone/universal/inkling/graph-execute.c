@@ -201,10 +201,6 @@ float fg143_codec_from_bits(uint32_t bits) {
     return fg143_from_bits(bits);
 }
 
-uint16_t fg143_to_half(float value) {
-    return ggml_fp32_to_fp16(value);
-}
-
 void fg143_witness(int64_t op, int64_t values) {
     (void) op;
     atomic_fetch_add_explicit(&cpu_values, (uint64_t) values, memory_order_relaxed);

@@ -55,7 +55,7 @@ struct Node {
 extern "fg143_bits" fn bits(x: f32) -> u32;
 extern "fg143_from_bits" fn from_bits(x: u32) -> f32;
 fn half(x: u16) -> f32 { return half_codec :: expand_half(x); }
-extern "fg143_to_half" fn to_half(x: f32) -> u16;
+fn to_half(x: f32) -> u16 { return half_codec :: narrow_half(x); }
 extern "fabsf" fn abs32(x: f32) -> f32;
 extern "expf" fn exp32(x: f32) -> f32;
 extern "expm1f" fn expm132(x: f32) -> f32;
