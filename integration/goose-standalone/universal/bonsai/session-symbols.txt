@@ -9,3 +9,6 @@ gr_find_kv bonsai_gr_find_kv
 gr_meta_f32_bits bonsai_gr_meta_f32_bits
 gr_meta_int bonsai_gr_meta_int
 gr_parse bonsai_gr_parse
+bonsai_gdn_packet bonsai_bonsai_gdn_packet
+bonsai_flash_schedule bonsai_bonsai_flash_schedule
+bonsai_flash_launch_raw bonsai_bonsai_flash_launch_raw

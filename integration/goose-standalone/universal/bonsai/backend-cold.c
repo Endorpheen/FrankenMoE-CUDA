@@ -179,27 +179,15 @@ static uint32_t f32_bits(float x) {
     return bits;
 }
 
+typedef struct { const uint64_t *data; int64_t len; } bonsai_const_words;
+typedef struct { uint64_t *data; int64_t len; } bonsai_words;
+extern uint8_t bonsai_gdn_packet(bonsai_const_words input, uint32_t tokens, bonsai_words packet);
+
 static int gdn(model *m, const CUdeviceptr p[8], unsigned tokens) {
     uint64_t packet[57];
-    memcpy(packet, p, 8 * sizeof(*p));
-    uint64_t config[49] = {
-        1, 128, 2048, 2048, 1, 128, 2048, 2048, 1, 128, 6144, 6144,
-        1, 1, 48, 48, 1, 1, 48, 48, 1, 128, 16384, GDN_STATE,
-        128, 48, 1, 1, 0, 0, 1, 0, 0, 0, 8, 32, 4, 32, 1, GDN_STATE,
-        0, f32_bits(1.0f / sqrtf(128.0f)), 1, 4, 16, 1, 0, 1, 6144,
-    };
-    if (tokens > 1) {
-        const uint64_t count = tokens;
-        config[2] = config[6] = 4096;
-        config[3] = config[7] = 4096 * count;
-        config[10] = 10240;
-        config[11] = 10240 * count;
-        config[15] = config[19] = 48 * count;
-        config[26] = count;
-        config[38] = 0;
-        config[48] = 6144 * count;
-    }
-    memcpy(packet + 8, config, sizeof(config));
+    _Static_assert(sizeof(CUdeviceptr) == sizeof(uint64_t), "Bonsai GDN packet ABI");
+    if (!bonsai_gdn_packet((bonsai_const_words){(const uint64_t *)p, 8}, tokens,
+                          (bonsai_words){packet, 57})) return -1;
     if (m->gdn_prefill_v32 && tokens >= 64) {
         return check(bonsai_cuda.fn_cuLaunchKernel(m->kernel[GDN_V32], 192, 1, 1, 256, 1, 1, 38016, NULL,
                     (void *[]){ packet }, NULL), "Bonsai GDN V32");
@@ -210,59 +198,37 @@ static int gdn(model *m, const CUdeviceptr p[8], unsigned tokens) {
 #include "transaction.inc"
 #include "verify-ops.inc"
 
+extern int32_t bonsai_flash_schedule(uint64_t context, uint64_t position, uint64_t count,
+                                     uint64_t partial_bytes, uint64_t stage_capacity, uint64_t flags,
+                                     bonsai_const_words pointers);
+
+int32_t bonsai_flash_launch_raw(uint64_t context, uint32_t role, uint32_t x, uint32_t y,
+                                uint32_t threads, uint32_t shared, uint64_t args) {
+    model *m = (void *)(uintptr_t)context;
+    static const enum kernel roles[] = {
+        FLASH_K_FP8, FLASH_V_ONLY, FLASH_FP8_QK, FLASH_STAGE_KV, FLASH_FUSED_ORDERED,
+        FLASH_TILE_F32, FLASH_KV_PANEL, FLASH_GROUP4, FLASH_GROUP2, FLASH_TILE_ASYNC,
+        FLASH_TILE_COMPACT, FLASH_TILE_STAGED, FLASH_MERGE_COMPACT_ORDERED, FLASH_MERGE_COMPACT,
+        FLASH_MERGE_ORDERED, FLASH_MERGE_F32,
+    };
+    if (role >= sizeof(roles) / sizeof(*roles)) return -1;
+    enum kernel kernel = roles[role];
+    if (m->flash_fp8_pv && role == 1) kernel = FLASH_V_FP8;
+    if (m->flash_fp8_pv && role == 2) kernel = FLASH_FP8_QKPV;
+    void **parameters = (void *)(uintptr_t)args;
+    if (role == 2 || role == 4) return check(bonsai_cuda.fn_cuLaunchKernel(m->kernel[kernel],
+        x, y, 1, threads, 1, 1, shared, NULL, parameters, NULL),
+        role == 2 ? "Bonsai FP8 QK" : "Bonsai ordered fused Flash");
+    return launch(m, kernel, x, y, 1, threads, parameters);
+}
+
 static int flash_f32(model *m, CUdeviceptr q, CUdeviceptr k, CUdeviceptr v, CUdeviceptr dst) {
-    unsigned count = m->count, keys = m->position + count, first = m->position + 1;
-    unsigned tiles = (keys+127)/128;
-    const size_t group_bytes = (size_t)tiles * 16 * 258 * sizeof(float);
-    unsigned wave = (unsigned)(m->partial_capacity / group_bytes);
-    if (wave == 0) return 1;
-    unsigned chunks = (keys+31)/32;
-    const int staged = m->stage_kv && chunks <= m->stage_capacity_chunks;
-    const int ordered = staged && m->ordered_merge && keys >= 2048;
-    const int compact = staged && m->compact_heads;
-    const unsigned groups_per_head = compact ? (count*6+15)/16 : (count+1)/2;
-    const int panel = compact && m->async_fragments && m->flash_grouped && m->flash_panel &&
-        keys >= 8192 && wave >= 2 && groups_per_head % 2 == 0;
-    if (panel) wave &= ~1u;
-    const unsigned grouping = panel ? 2 : compact && m->async_fragments && m->flash_grouped ?
-        (keys >= 16384 ? 4 : 2) : 1;
-    const enum kernel tile_kind = panel ? FLASH_KV_PANEL : grouping == 4 ? FLASH_GROUP4 : grouping == 2 ? FLASH_GROUP2 : compact
-        ? (m->async_fragments ? FLASH_TILE_ASYNC : FLASH_TILE_COMPACT) : FLASH_TILE_STAGED;
-    const unsigned groups = 4*groups_per_head;
-    const enum kernel merge = compact
-        ? (ordered ? FLASH_MERGE_COMPACT_ORDERED : FLASH_MERGE_COMPACT)
-        : (ordered ? FLASH_MERGE_ORDERED : FLASH_MERGE_F32);
-    if (panel && ordered && m->flash_fused_ordered && m->flash_fp8_qk &&
-            count >= 512 && keys >= 16384) {
-        if (launch(m, FLASH_K_FP8, chunks, 4, 1, 128,
-                (void *[]){&k,&m->stage_k,&keys,&chunks}) ||
-            launch(m, m->flash_fp8_pv ? FLASH_V_FP8 : FLASH_V_ONLY, chunks, 4, 1, 128,
-                (void *[]){&v,&m->stage_v,&keys,&chunks})) return -1;
-        return check(bonsai_cuda.fn_cuLaunchKernel(m->kernel[m->flash_fp8_pv ? FLASH_FP8_QKPV : FLASH_FP8_QK],
-            groups/2, 1, 1, 256, 1, 1, 41472, NULL,
-            (void *[]){&q,&m->stage_k,&m->stage_v,&dst,&count,&keys,&first,&tiles,&(unsigned){0},&chunks},
-            NULL), "Bonsai FP8 QK");
-    }
-    if (staged && launch(m, FLASH_STAGE_KV, chunks, 4, 1, 128,
-        (void *[]){&k,&v,&m->stage_k,&m->stage_v,&keys,&chunks})) return -1;
-    if (panel && ordered && m->flash_fused_ordered && count >= 512) {
-        return check(bonsai_cuda.fn_cuLaunchKernel(m->kernel[FLASH_FUSED_ORDERED],
-            groups/2, 1, 1, 256, 1, 1, 50176, NULL,
-            (void *[]){&q,&m->stage_k,&m->stage_v,&dst,&count,&keys,&first,&tiles,&(unsigned){0},&chunks},
-            NULL), "Bonsai ordered fused Flash");
-    }
-    for (unsigned start = 0; start < groups; start += wave) {
-        const unsigned remaining = groups - start;
-        const unsigned active = remaining < wave ? remaining : wave;
-        const int tile_rc = staged
-            ? launch(m, tile_kind, panel ? active/2 : active, (tiles+grouping-1)/grouping, 1, panel ? 256 : 128,
-                (void *[]){&q,&m->stage_k,&m->stage_v,&m->partial,&count,&keys,&first,&tiles,&start,&chunks})
-            : launch(m, FLASH_TILE_F32, active, tiles, 1, 128,
-                (void *[]){&q,&k,&v,&m->partial,&count,&keys,&first,&tiles,&start});
-        if (tile_rc || launch(m, merge, active*(compact ? 16 : 12), 1, 1, ordered ? 128 : 32,
-            (void *[]){&m->partial,&dst,&count,&first,&tiles,&start})) return -1;
-    }
-    return 0;
+    const uint64_t pointers[] = {q, k, v, dst, m->stage_k, m->stage_v, m->partial};
+    const uint64_t flags = (m->stage_kv ? 1 : 0) | (m->ordered_merge ? 2 : 0) | (m->compact_heads ? 4 : 0) |
+        (m->async_fragments ? 8 : 0) | (m->flash_grouped ? 16 : 0) | (m->flash_panel ? 32 : 0) |
+        (m->flash_fused_ordered ? 64 : 0) | (m->flash_fp8_qk ? 128 : 0);
+    return bonsai_flash_schedule((uintptr_t)m, m->position, m->count, m->partial_capacity,
+                                  m->stage_capacity_chunks, flags, (bonsai_const_words){pointers, 7});
 }
 
 int64_t bonsai_ffn_tail_launch(uint64_t context,int64_t g,int64_t u,int64_t s,int64_t owner) {

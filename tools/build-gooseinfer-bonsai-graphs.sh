@@ -15,8 +15,15 @@ mkdir -p -- "$out"
 cd -- "$root"
 flags=(-O2 "${pic[@]}" -ffunction-sections -fdata-sections -w)
 
+cat "$src/ffn-tail.goose" "$src/session-plans.goose" > "$out/ffn-tail.goose"
 for module in prefix ffn-tail; do
-    "$goose" --standalone -o "$out/$module.c" "$src/$module.goose"
+    source="$src/$module.goose"
+    compiler="$goose"
+    if [[ $module == ffn-tail ]]; then
+        source="$out/ffn-tail.goose"
+        compiler=${GOOSE_CUDA_DRIVER_BIN:?Set GOOSE_CUDA_DRIVER_BIN to Fried Goose KeelWing v0.3.1-dev.1}
+    fi
+    "$compiler" --standalone -o "$out/$module.c" "$source"
     "$cc" "${flags[@]}" -c "$out/$module.c" -o "$out/$module.o"
 done
 awk '{print $1}' "$src/session-symbols.txt" > "$out/exports.txt"
