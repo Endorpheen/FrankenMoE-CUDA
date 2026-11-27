@@ -55,7 +55,7 @@ mark(s,'graph-bindings slru-runtime-shim ggml-system json-strtod-provider','.c',
 mark(s,'libc-forwards','.c','Host Linux','C library and socket forwards')
 mark(s/'windows','platform socket-forwards web','.c','Host Windows','Windows platform, sockets and web adapter')
 mark(s/'gigachat4','server-adapter','.c',both,'GigaChat4 ABI, request state or HTTP')
-mark(s/'vulkan','loader device memory queue graph upload gguf qwen2 bonsai-layer bonsai-model moe-bank apex-model inkling-model tokenizer http infer-main','.c',both,'Vulkan backend: corresponding loader, compute, model or HTTP component')
+mark(s/'vulkan','loader device memory graph upload gguf qwen2 bonsai-layer bonsai-model moe-bank apex-model inkling-model tokenizer http infer-main','.c',both,'Vulkan backend: corresponding loader, compute, model or HTTP component')
 mark(Path('integration/m1/host'),'goose_host','.c',both,'Goose ABI, platform and quantization helpers')
 mark(g/'src','ggml','.c',both,'GGML tensor and graph core')
 images=d/'images'
