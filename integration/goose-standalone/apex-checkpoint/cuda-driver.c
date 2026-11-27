@@ -4925,6 +4925,18 @@ void fg_cuda_take_position(uint64_t * ropes, uint64_t * convs) {
     cuda_convs = 0;
 }
 
+uint8_t fg_cuda_giga_kv_write_enabled(void) {
+    return 0;
+}
+
+int64_t fg_cuda_giga_dsa_top_wide(sl_u8 scores, sl_u8 ids, int64_t cells, int64_t rows) {
+    (void) scores;
+    (void) ids;
+    (void) cells;
+    (void) rows;
+    return 0;
+}
+
 int64_t fg_cuda_routing(sl_i64 config, sl_u8 x, sl_u8 y, sl_u8 out) {
     if (config.len != 22 || config.data[0] < 0 || config.data[0] >= 5 ||
         config.data[1] <= 0 || config.data[1] > INT_MAX ||

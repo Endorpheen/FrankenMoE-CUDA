@@ -16,6 +16,7 @@ broader migration inventory.
 | Qwen4Exp / Edge0 | Partial | [Qwen4Exp slices](C1-02-QWEN4EXP-STATE.md) and [Edge0 preflight](EDGE0-120B-ADAPTATION.md) have scoped evidence. Independent full-model acceptance is pending. |
 | Maxwell-V1-Flash | Historically qualified | [The production audit](PRODUCTION-CPP-AUDIT-20261120.md) records nine historic responses and the factory gap. A reproducible independent control is required before another architecture is accepted. |
 | Inkling-2-Mini | Planned | Next after Apex speed recovery. Preferred AD-IQ4_XS. Pin the artifact before classifying its effective GGUF layout, quantized operations or CUDA/KV requirements. |
+| GigaChat4-37B-A4B (`gigachat4`) | Source integration candidate | EXP-2189 verified Q4_K_M at 32K/512 on RTX 4070. See the [runtime guide](../../integration/goose-standalone/gigachat4/README.md) for the frozen reference and CUDA scope. |
 
 ## Required acceptance procedure
 

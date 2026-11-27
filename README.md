@@ -88,5 +88,9 @@ ZIP for the Bonsai MTP CLI.
 - [Vulkan roadmap](docs/roadmap/VULKAN-BACKEND.md) records the experimental Vulkan
   backend and its remaining validation work.
 
+For the GigaChat4 source build, see the
+[GigaChat4 GooseInfer runtime guide](integration/goose-standalone/gigachat4/README.md).
+The GigaChat4 build has its own model adapter and uses the shared runtime.
+
 Run `bash tools/check.sh fast` to compose and compile the source-tree Goose
 unit without model weights.

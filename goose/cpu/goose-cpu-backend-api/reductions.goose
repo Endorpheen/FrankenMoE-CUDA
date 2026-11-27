@@ -153,6 +153,59 @@ fn normalize(p: const Node &, x: const u8[:], y: const u8[:], dst: u8[:]) -> boo
     return true;
 }
 
+fn topk_key(data: const u8[:], base: i64, index: i64, descending: bool) -> i64 {
+    var bits = read32(data, base + 4 * index);
+    if bits & 0x7fffffff == 0 { bits = 0; }
+    var order: u32 = if bits & 0x80000000 != 0 { bits ^ 0xffffffff } else { bits ^ 0x80000000 };
+    if !descending { order = order ^ 0xffffffff; }
+    let key = ((order as u64) << 32) | (0xffffffff - (index as u64));
+    return (key ^ 0x8000000000000000) as! i64;
+}
+
+fn topk_key_sift(heap: i64[:], size: i64, root: i64, value: i64) {
+    var position = root;
+    while 2 * position + 1 < size {
+        var child = 2 * position + 1;
+        if child + 1 < size && heap[child + 1] < heap[child] { child += 1; }
+        if heap[child] >= value { break; }
+        heap[position] = heap[child];
+        position = child;
+    }
+    heap[position] = value;
+}
+
+fn topk_wide(p: const Node &, x: const u8[:], dst: u8[:], indices: i64[:]) -> bool {
+    let n = p.x.ne[0];
+    let count = p.d.ne[0];
+    let start = p.ith * n;
+    let heap = indices[start .. start + count];
+    let descending = p.ip[0] != 0;
+    var row = thread_first(p);
+    while row < rows(p.x) {
+        let base = offset(p.x, row * n);
+        for i in count { heap[i] = topk_key(x, base, i, descending); }
+        var parent = count / 2;
+        while parent > 0 {
+            parent -= 1;
+            topk_key_sift(heap, count, parent, heap[parent]);
+        }
+        for i in count .. n {
+            let key = topk_key(x, base, i, descending);
+            if key > heap[0] { topk_key_sift(heap, count, 0, key); }
+        }
+        let output = offset(p.d, row * count);
+        var remaining = count;
+        while remaining > 0 {
+            remaining -= 1;
+            let index = 0xffffffff - ((heap[0] as! u64) & 0xffffffff);
+            write32(dst, output + 4 * remaining, index as u32);
+            if remaining > 0 { topk_key_sift(heap, remaining, 0, heap[remaining]); }
+        }
+        row += p.nth;
+    }
+    return true;
+}
+
 fn sort_rows(p: const Node &, x: const u8[:], dst: u8[:], indices: i64[:]) -> bool {
     if p.op != OP_ARGSORT && p.op != OP_TOP_K {
         return false;
@@ -160,6 +213,10 @@ fn sort_rows(p: const Node &, x: const u8[:], dst: u8[:], indices: i64[:]) -> bo
     let n = p.x.ne[0];
     assert(p.d.kind == 26 && p.d.ne[0] <= n);
     assert(indices.len >= mul_size(n, p.nth));
+    if p.op == OP_TOP_K && p.ip[13] == 1 && n > 4096 && p.x.kind == 0 &&
+       p.x.nb[0] == 4 && p.d.nb[0] == 4 && p.d.ne[0] > 0 {
+        return topk_wide(p, x, dst, indices);
+    }
     var row = thread_first(p);
     let base = p.ith * n;
 

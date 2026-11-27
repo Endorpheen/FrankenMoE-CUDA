@@ -127,6 +127,12 @@ if module == "vector":
     # address through a device call would copy the plan to per-thread memory.
     fragment = fragment.replace("static GS_NOINLINE void cv_norm_g(",
                                 "static __attribute__((always_inline)) void cv_norm_g(")
+if module == "q4-attention":
+    fragment = fragment.replace("static void giga_mla_mma_pv_tile_g(",
+                                "static __attribute__((always_inline)) void giga_mla_mma_pv_tile_g(")
+if module == "q4-attention":
+    fragment = fragment.replace("static void giga_mla_mma_pv_indexed_g(",
+                                "static __attribute__((always_inline)) void giga_mla_mma_pv_indexed_g(")
 if module == "mmq":
     fragment = fragment.replace("static void fg_device_mmq_q4_large_g(",
                                 "static __attribute__((always_inline)) void fg_device_mmq_q4_large_g(")
@@ -175,6 +181,7 @@ if module == "mmq-quant":
     (out / "mmq-quant-types.h").write_text(types[start:end] + "\n")
 PY
 done
+sed -i 's/\ba16_f32\b/mla_a16_f32/g' "$OUT/q4-attention-device.h"
 "$CLANG" -target nvptx64-nvidia-cuda -Xclang -target-cpu -Xclang sm_70 \
     -nocudalib -O2 -x cl -cl-std=CL1.2 -I "$OUT" -S \
     "$ROOT/integration/goose-standalone/cuda-device.cl" -o "$OUT/goose-cuda.ptx"

@@ -4091,8 +4091,8 @@
       "experiment": "EXP-2026-11-21-1603-vector-parameters",
       "task": "P3-04",
       "status": "slice",
-      "sha256": "46ece50019958465e30de18fb6cf7e1189577d7a2805b00c418a36b87a1fcab7",
-      "integration_commit": "59a8418e7c5f258b384df9b67ca18c89624eed95",
+      "sha256": "b15fe2bee3a81055df9a34560c2525ebab4d88c368da14a887541eb204ce0564",
+      "integration_commit": "6a46a6be0f7cc03767cbcf642e65176ac5333990",
       "gate": "EXP-1603 strided vector differential, windowed multiply, CUDA memcheck and exact Apex 32K/512 pairs; EXP-1665 builds both CUDA images with KeelWing and completes Apex 32K/512"
     },
     {
@@ -4200,7 +4200,8 @@
       "experiment": "EXP-2026-11-07-145-goose-cpu-backend-api",
       "task": "P1-10",
       "status": "slice",
-      "sha256": "3a9f8da71271c5bc39521b19bef26342bde054c0593cb821465db7d6f6a78eed"
+      "sha256": "3c8eaa2d8dc097cb02d24b0be7de15153b66a841c1b27c056181955fd12d1238",
+      "integration_commit": "6a46a6be0f7cc03767cbcf642e65176ac5333990"
     },
     {
       "goose": "cpu/goose-cpu-backend-api/rejected-01-integer-float-initializer.goose",
@@ -13589,8 +13590,8 @@
       "experiment": "",
       "task": "",
       "status": "slice",
-      "sha256": "a5d7780ccc709a5127709defbee36160a48931de169378a29327aa60ce4ed135",
-      "integration_commit": "0dd239207130382465ea0aaea9b28f0faa60213f"
+      "sha256": "4ac98879da79d472cbdfdcd4892bda67bfe136929e6fbb2e80b34e129f08a7e3",
+      "integration_commit": "6a46a6be0f7cc03767cbcf642e65176ac5333990"
     },
     {
       "goose": "cpu/goose-cpu-backend-api/cuda-transform.goose",
@@ -13609,8 +13610,8 @@
       "experiment": "",
       "task": "",
       "status": "slice",
-      "sha256": "74cde5572b313f45dce361abcf7dbaf97186d13eb564f174be87428fa7f2eb5d",
-      "integration_commit": "debf22de29e4bd21c6a1e5eb7f689c908d32610f"
+      "sha256": "3c49b068644af5275ce1b5f5bbca695dcd5a6107240017da4a298c2ed6622fbf",
+      "integration_commit": "6a46a6be0f7cc03767cbcf642e65176ac5333990"
     },
     {
       "goose": "cpu/goose-cpu-backend-api/flash-attention.goose",
@@ -13619,8 +13620,8 @@
       "experiment": "",
       "task": "",
       "status": "slice",
-      "sha256": "873a8a88ffb110ae0a12321140ba32ace2f2f2cd43bca48e2448b69d713ac16a",
-      "integration_commit": "ff4e7da9ac56b9d5aa7cbed5444aaa9f962593a2"
+      "sha256": "983c7c8ee9e0a8f7070a021ea056c3a09d9a882db4754a116c4de9430d94a4c3",
+      "integration_commit": "6a46a6be0f7cc03767cbcf642e65176ac5333990"
     },
     {
       "goose": "cpu/goose-cpu-backend-api/graph-lifetimes.goose",
@@ -13659,8 +13660,8 @@
       "experiment": "",
       "task": "",
       "status": "slice",
-      "sha256": "b3861328c8277a483557eb35f0d7fa5471409395d3b94aef1d85576279f0ea83",
-      "integration_commit": "0dd239207130382465ea0aaea9b28f0faa60213f"
+      "sha256": "d0997c48f1854e601c0256138805f5a08dba55d514b26c101f8c47258c8d5302",
+      "integration_commit": "6a46a6be0f7cc03767cbcf642e65176ac5333990"
     },
     {
       "goose": "cuda/standalone-dense-mma.goose",
@@ -13709,8 +13710,8 @@
       "experiment": "",
       "task": "",
       "status": "slice",
-      "sha256": "02dba892303472ffa0d6e15fa821d8f87f60b1ba631d73157248e7b0e27aca75",
-      "integration_commit": "f1aa281b6d6f22e90f74044548b54aca4c536978"
+      "sha256": "990dd0899ba44364cf50823a0767223815ed3320e5ef6c504ce9ef2e187c5188",
+      "integration_commit": "6a46a6be0f7cc03767cbcf642e65176ac5333990"
     },
     {
       "goose": "cuda/standalone-rope.goose",
@@ -13739,8 +13740,8 @@
       "experiment": "",
       "task": "",
       "status": "slice",
-      "sha256": "2e6d503dc23139da3341526336a68c603a031853e7267d5a9e6c05473c6d42ef",
-      "integration_commit": "00d5bd50ced90cf9f5eca510a3195a1f9c9907e9"
+      "sha256": "39f55ab99ed56f81aeeb6f7a8f90414446458ca9d0dc556f367817ff9a5d4d63",
+      "integration_commit": "6a46a6be0f7cc03767cbcf642e65176ac5333990"
     },
     {
       "goose": "model/qwen35-generation.goose",

@@ -2,6 +2,7 @@ const CV_ADD: i64 = 1;
 const CV_SUB: i64 = 2;
 const CV_MUL: i64 = 3;
 const CV_DIV: i64 = 4;
+const CV_LOGIT_TANH: i64 = 18;
 const CV_SCALE: i64 = 5;
 const CV_CLAMP: i64 = 6;
 const CV_SIGMOID: i64 = 7;
@@ -13,6 +14,8 @@ const CV_L2: i64 = 12;
 const CV_SIGMOID_REFERENCE: i64 = 13;
 const CV_SILU_REFERENCE: i64 = 14;
 const CV_SWIGLU_REFERENCE: i64 = 15;
+const CV_SWIGLU_CLAMPED: i64 = 16;
+const CV_SWIGLU_CLAMPED_EXACT: i64 = 17;
 const CV_FLAT_PLAN: i64 = 8;
 
 extern "fg_vector_word" fn cv_word(cfg: u64, i: i64) -> i64;
@@ -82,7 +85,50 @@ fn cv_norm(x: u64, y: u64, dst: u64, cfg: u64, op: i64, row: i64, lane: i64, eps
     }
 }
 
+extern "fg_glu_pow2_int" fn cv_pow2_int(exponent: i64) -> f64;
+extern "fg_glu_round" fn cv_round_exponent(x: f64) -> i64;
+extern "fg_glu_div_rn" fn cv_div_rn(x: f32, y: f32) -> f32;
+
+fn cv_clamp_silu(x: f32) -> f32 {
+    if x < -90.0 { return cv_div_rn(x, cv_pow2_int(1023) as f32); }
+    let argument = -(x as f64);
+    let scaled = argument * 1.4426950408889634074;
+    let exponent = cv_round_exponent(scaled);
+    let z = argument - (exponent as f64) * 0.69314718055994530942;
+    var polynomial: f64 = 0.00000000208767569878681;
+    polynomial = 0.0000000250521083854417 + z * polynomial;
+    polynomial = 0.000000275573192239859 + z * polynomial;
+    polynomial = 0.00000275573192239859 + z * polynomial;
+    polynomial = 0.0000248015873015873 + z * polynomial;
+    polynomial = 0.000198412698412698 + z * polynomial;
+    polynomial = 0.00138888888888889 + z * polynomial;
+    polynomial = 0.00833333333333333 + z * polynomial;
+    polynomial = 0.0416666666666667 + z * polynomial;
+    polynomial = 0.166666666666667 + z * polynomial;
+    polynomial = 0.5 + z * polynomial;
+    polynomial = 1.0 + z * polynomial;
+    polynomial = 1.0 + z * polynomial;
+    let exponential = (polynomial * cv_pow2_int(exponent)) as f32;
+    return cv_div_rn(x, 1.0 + exponential);
+}
+
 fn cv_value(op: i64, a: f32, b: f32, param0: f32, param1: f32) -> f32 {
+    if op == CV_LOGIT_TANH {
+        let magnitude = if a < 0.0 { -a } else { a };
+        if magnitude < 0.125 {
+            let square = a * a;
+            return a + (a * square) * (-0.3333333333333333 +
+                square * (0.1333333333333333 - square * 0.053968253968254));
+        }
+        let exponential = exp32(-2.0 * magnitude);
+        let value = (1.0 - exponential) / (1.0 + exponential);
+        return if a < 0.0 { -value } else { value };
+    }
+    if op == CV_SWIGLU_CLAMPED || op == CV_SWIGLU_CLAMPED_EXACT {
+        let gate = cv_min(a, param1);
+        let activation = if op == CV_SWIGLU_CLAMPED_EXACT { cv_clamp_silu(gate) } else { silu(gate) };
+        return activation * cv_min(cv_max(b, -param1), param1);
+    }
     if op == CV_SIGMOID_REFERENCE || op == CV_SILU_REFERENCE || op == CV_SWIGLU_REFERENCE {
         let s = cv_reciprocal(1.0 + exp32(-a));
         return if op == CV_SIGMOID_REFERENCE { s }

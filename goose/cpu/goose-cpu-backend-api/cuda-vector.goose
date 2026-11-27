@@ -8,11 +8,23 @@ fn cv_operation(p: const Node &) -> i64 {
     if p.op == OP_MUL { return CV_MUL; }
     if p.op == OP_DIV { return CV_DIV; }
     if p.op == OP_SCALE { return CV_SCALE; }
+    if p.op == OP_REPEAT && p.ip[13] == 2143 && p.x.ne[0] == 128 && p.x.ne[1] == 1 &&
+       p.x.ne[2] == 16 && (p.x.ne[3] == 1 || p.x.ne[3] >= 16) && p.d.ne[0] == 128 &&
+       p.d.ne[1] == 2 && p.d.ne[2] == 16 && p.d.ne[3] == p.x.ne[3] {
+        return CV_SCALE;
+    }
     if p.op == OP_CLAMP { return CV_CLAMP; }
     if p.op == OP_RMS_NORM { return CV_RMS; }
     if p.op == OP_L2_NORM { return CV_L2; }
     if p.op == OP_GLU && p.ip[0] == GLU_OP_SWIGLU && p.ip[12] == 0 { return CV_SWIGLU; }
+    if p.op == OP_GLU && p.ip[0] == GLU_OP_SWIGLU_CLAMP && p.ip[13] == 1 && p.ip[2] == 1 &&
+       p.fp[1] > 0.0 && p.fp[1] <= 3.4028234663852886e38 {
+        let routed_batch = p.d.ne[2] > 1;
+        let dense_batch = p.d.ne[1] >= 16;
+        return if routed_batch || dense_batch { CV_SWIGLU_CLAMPED_EXACT } else { CV_SWIGLU_CLAMPED };
+    }
     if p.op == OP_UNARY {
+        if p.ip[0] == UNARY_OP_TANH && p.ip[13] == 2144 { return CV_LOGIT_TANH; }
         if p.ip[0] == UNARY_OP_SIGMOID { return CV_SIGMOID; }
         if p.ip[0] == UNARY_OP_SILU { return CV_SILU; }
         if p.ip[0] == UNARY_OP_SOFTPLUS { return CV_SOFTPLUS; }
@@ -60,10 +72,10 @@ fn cv_try(p: const Node &, x: const u8[:], y: const u8[:], dst: u8[:], addresses
     }
     let norm = op == CV_RMS || op == CV_L2;
     let packed = op == CV_SWIGLU && p.ip[2] == 0;
-    let pair = op <= CV_DIV || (op == CV_SWIGLU && !packed) || (op == CV_RMS && p.ip[14] != 0);
+    let pair = op <= CV_DIV || (op == CV_SWIGLU_CLAMPED || op == CV_SWIGLU_CLAMPED_EXACT) || (op == CV_SWIGLU && !packed) || (op == CV_RMS && p.ip[14] != 0);
     if pair && !cv_layout(p.y, y.len) { return 0; }
     if norm && !same_shape(p.x, p.d) { return 0; }
-    if op == CV_SWIGLU && !packed && (!same_shape(p.x, p.d) || !same_shape(p.y, p.d)) { return 0; }
+    if ((op == CV_SWIGLU_CLAMPED || op == CV_SWIGLU_CLAMPED_EXACT) || (op == CV_SWIGLU && !packed)) && (!same_shape(p.x, p.d) || !same_shape(p.y, p.d)) { return 0; }
     for axis in 4 {
         if packed {
             let extent = if axis == 0 { mul_size(p.d.ne[axis], 2) } else { p.d.ne[axis] };
@@ -105,5 +117,7 @@ fn cv_try(p: const Node &, x: const u8[:], y: const u8[:], dst: u8[:], addresses
        !cv_wide_ready(addresses[0] as! u64, addresses[1] as! u64, addresses[2] as! u64, p.d.bytes) {
         return cv_multiply_windows(p, x, y, dst, config[..]);
     }
-    return cuda_vector(config, x[0 .. p.x.bytes], y[0 .. y_bytes], dst[0 .. p.d.bytes], p.fp[0], p.fp[1]);
+    let scale = if p.op == OP_REPEAT { 1.0 } else { p.fp[0] };
+    let bias = if p.op == OP_REPEAT { 0.0 } else { p.fp[1] };
+    return cuda_vector(config, x[0 .. p.x.bytes], y[0 .. y_bytes], dst[0 .. p.d.bytes], scale, bias);
 }

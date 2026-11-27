@@ -204,7 +204,7 @@ static struct {
     void * library;
     Context context;
     Module module;
-    Function kernel, attention_tiles, attention_merge, gdn, gdn_decode, q4_rows, vector, vector_flat, vector_flat4, rms_reference;
+    Function kernel, attention_tiles, attention_merge, mla_attention_tiles, mla_attention_merge, mla_attention_pair, mla_attention_batch_pair, mla_attention_batch_merge, mla_mma_tile, dsa_score, dsa_shared_q, dsa_top_wide, dsa_mask_clear, dsa_mask_scatter, gdn, gdn_decode, q4_rows, vector, vector_flat, vector_flat4, rms_reference;
     Function mmq_pack, mmq_pack_shared, mmq_pack_glu, mmq_matrix, mmq_q4_matrix, mmq_q6_matrix;
     Function mmq_pack_k_major, mmq_q6_dense_half_k, mmq_q6_dense_pipeline;
     Function mmq_q4_dense_shared, mmq_q4_routed_shared;
@@ -218,6 +218,7 @@ static struct {
     Function mmq_q4_routed_x128, mmq_q6_routed_x128, mmq_q6_routed_pipeline;
     Function mmq_q4_routed_m128, mmq_q4_routed_down_m128;
     Function mmvq_pack, mmvq;
+    Function giga_dense_mma, mla_visibility_tile, mla_visibility_build, mla_compact_mask, mla_indexed_tile, mla_indexed_merge;
     Function dense_mma, dense_mma_reference, gdn_mma, gdn_mma_v32, flash_mma, flash_stage, flash_vec, flash_vec_merge;
     Function flash_vec_pack, flash_vec_packed;
     Function mmq_stream, mmq_stream_fixup;
@@ -228,7 +229,7 @@ static struct {
     Function route_reduce, route_sort, route_topk, route_gather, route_norm, blit, blit_transpose, fwht, fwht_q4, moe_weighted;
     struct device_buffer input, output, weight, jobs;
     struct device_buffer mmq_packed, mmq_tiles, mmq_partials;
-    struct device_buffer attention_value, attention_scratch, attention_config;
+    struct device_buffer attention_value, attention_scratch, attention_config, mla_visibility, mla_indices;
     struct device_buffer gdn_beta;
     struct device_buffer activations;
     size_t activation_capacity;
@@ -848,11 +849,11 @@ static int release_vmm(struct device_buffer * buffer) {
     return error;
 }
 
-static void init_vmm(int device) {
+static void init_vmm(int device, bool force_lazy) {
     enum { vmm_attribute = 102, allocation_pinned = 1, location_device = 1, minimum_granularity = 0 };
     const char * setting = getenv("GOOSE_CUDA_VMM");
     const bool scratch = setting && strcmp(setting, "1") == 0;
-    const bool lazy = fg_standalone_option_enabled("GOOSE_KV_LAZY_VMM");
+    const bool lazy = force_lazy || fg_standalone_option_enabled("GOOSE_KV_LAZY_VMM");
     int available = 0;
     if ((!scratch && !lazy) ||
         cuda.device_attribute(&available, vmm_attribute, device) != 0 || !available) return;
@@ -1144,7 +1145,7 @@ static void load_cuda(void) {
     }
     int error = cuda.create(&cuda.context, 0, device);
     if (error == 0) {
-        init_vmm(device);
+        init_vmm(device, false);
         init_expert_stream();
         error = cuda.module_load(&cuda.module, mma_image ? goose_cuda_mmq_image : goose_cuda_image);
         if (error == 0) error = cuda.function_get(&cuda.kernel, cuda.module, "goose_quantized_matmul");
@@ -1243,11 +1244,55 @@ static void load_cuda(void) {
         if (error == 0 && stream_k) error = cuda.function_get(&cuda.mmq_stream, cuda.module, "goose_mmq_stream");
         if (error == 0 && stream_k) error = cuda.function_get(&cuda.mmq_stream_fixup, cuda.module, "goose_mmq_stream_fixup");
         if (error == 0 && dense_mma) error = cuda.function_get(&cuda.dense_mma, cuda.module, "goose_dense_mma");
+        if (error == 0 && !dense_setting && sm80_image) {
+            (void) cuda.function_get(&cuda.giga_dense_mma, cuda.module, "goose_dense_mma");
+        }
         if (error == 0 && reference_arch && dense_reference) {
             error = cuda.function_get(&cuda.dense_mma_reference, cuda.module, "goose_dense_mma_reference");
         }
         if (error == 0) error = cuda.function_get(&cuda.attention_tiles, cuda.module, "goose_q4_attention_tiles");
         if (error == 0) error = cuda.function_get(&cuda.attention_merge, cuda.module, "goose_q4_attention_merge");
+        if (error == 0) error = cuda.function_get(&cuda.mla_attention_tiles, cuda.module, "goose_mla_attention_tiles");
+        if (error == 0) error = cuda.function_get(&cuda.mla_attention_merge, cuda.module, "goose_mla_attention_merge");
+        const char * mla_pair_setting = getenv("GOOSE_GIGA_MLA_PAIR");
+        if (error == 0 && (!mla_pair_setting || strcmp(mla_pair_setting, "0") != 0))
+            (void) cuda.function_get(&cuda.mla_attention_pair, cuda.module, "goose_mla_attention_pair");
+        const char * mla_batch_pair_setting = getenv("GOOSE_GIGA_MLA_BATCH_PAIR");
+        if (error == 0 && (!mla_batch_pair_setting || strcmp(mla_batch_pair_setting, "0") != 0)) {
+            (void) cuda.function_get(&cuda.mla_attention_batch_pair, cuda.module, "goose_mla_attention_batch_pair");
+            (void) cuda.function_get(&cuda.mla_attention_batch_merge, cuda.module, "goose_mla_attention_batch_merge");
+        }
+        const char * mla_mma_setting = getenv("GOOSE_GIGA_MLA_MMA");
+        if (error == 0 && sm80_image && (!mla_mma_setting || strcmp(mla_mma_setting, "0") != 0)) {
+            const char * pv_mma_setting = getenv("GOOSE_GIGA_MLA_PV_MMA");
+            if (!pv_mma_setting || strcmp(pv_mma_setting, "0") != 0)
+                (void) cuda.function_get(&cuda.mla_mma_tile, cuda.module, "goose_giga_mla_mma_pv_tile");
+            const char * visibility = getenv("GOOSE_GIGA_MLA_VISIBILITY");
+            if (cuda.mla_mma_tile && (!visibility || strcmp(visibility, "0") != 0)) {
+                (void) cuda.function_get(&cuda.mla_visibility_tile, cuda.module, "goose_giga_mla_mma_pv_visible_tile");
+                (void) cuda.function_get(&cuda.mla_visibility_build, cuda.module, "goose_giga_mla_visibility");
+            }
+            const char * indexed = getenv("GOOSE_GIGA_MLA_INDEXED");
+            if (cuda.mla_mma_tile && (!indexed || strcmp(indexed, "0") != 0)) {
+                (void) cuda.function_get(&cuda.mla_compact_mask, cuda.module, "goose_giga_mla_compact_mask");
+                (void) cuda.function_get(&cuda.mla_indexed_tile, cuda.module, "goose_giga_mla_mma_pv_indexed");
+                (void) cuda.function_get(&cuda.mla_indexed_merge, cuda.module, "goose_giga_mla_indexed_merge");
+            }
+            if (!cuda.mla_mma_tile)
+                (void) cuda.function_get(&cuda.mla_mma_tile, cuda.module, "goose_giga_mla_mma_tile");
+        }
+        if (error == 0) error = cuda.function_get(&cuda.dsa_score, cuda.module, "goose_dsa_score");
+        const char * dsa_top_wide_setting = getenv("GOOSE_GIGA_DSA_TOP_WIDE");
+        if (error == 0 && (!dsa_top_wide_setting || strcmp(dsa_top_wide_setting, "0") != 0))
+            (void) cuda.function_get(&cuda.dsa_top_wide, cuda.module, "goose_giga_dsa_top_wide");
+        const char * dsa_shared_q_setting = getenv("GOOSE_GIGA_DSA_SHARED_Q");
+        if (error == 0 && (!dsa_shared_q_setting || strcmp(dsa_shared_q_setting,"0") != 0))
+            (void) cuda.function_get(&cuda.dsa_shared_q, cuda.module, "goose_giga_dsa_score_shared_q");
+        const char * dsa_mask_setting = getenv("GOOSE_GIGA_DSA_MASK");
+        if (error == 0 && (!dsa_mask_setting || strcmp(dsa_mask_setting, "0") != 0)) {
+            (void) cuda.function_get(&cuda.dsa_mask_clear, cuda.module, "goose_giga_mask_clear");
+            (void) cuda.function_get(&cuda.dsa_mask_scatter, cuda.module, "goose_giga_mask_scatter");
+        }
         if (error == 0 && flash_mma) error = cuda.function_get(&cuda.flash_mma, cuda.module, "goose_flash_causal_mma");
         if (error == 0 && flash_mma) error = cuda.function_get(&cuda.flash_stage, cuda.module, "goose_flash_q4_stage");
         if (error == 0 && flash_stream) error = cuda.function_get(&cuda.flash_stream, cuda.module, "goose_flash_stream_mma");
@@ -1664,10 +1709,32 @@ static int activation_reserve_output(size_t bytes) {
     return reserve(&cuda.output, bytes);
 }
 
+static _Thread_local bool giga_small_expert_wave;
+
+static size_t activation_growth_capacity(void) {
+    if (!giga_small_expert_wave) return WIDE_ACTIVATION_BYTES;
+    const char * setting = getenv("GOOSE_GIGA_WIDE_ACTIVATION");
+    if (setting && strcmp(setting, "0") == 0) return WIDE_ACTIVATION_BYTES;
+    const size_t giga_bytes = 768 * MIB_BYTES;
+    const size_t giga_large_bytes = 1024 * MIB_BYTES;
+    const size_t headroom = (size_t) 2048 * MIB_BYTES;
+    size_t available = 0, total = 0;
+    if (cuda.memory_info && cuda.memory_info(&available, &total) == 0) {
+        if (available >= giga_large_bytes + headroom) return giga_large_bytes;
+        if (available >= giga_bytes + headroom) return giga_bytes;
+    }
+    return WIDE_ACTIVATION_BYTES;
+}
+
 static int activation_widen(void) {
     cuda.adapt_activation_capacity = false;
     struct device_buffer larger = {0};
-    int error = reserve(&larger, WIDE_ACTIVATION_BYTES);
+    size_t capacity = activation_growth_capacity();
+    int error = reserve(&larger, capacity);
+    while (error == 2 && capacity > WIDE_ACTIVATION_BYTES) {
+        capacity = capacity > 768 * MIB_BYTES ? 768 * MIB_BYTES : WIDE_ACTIVATION_BYTES;
+        error = reserve(&larger, capacity);
+    }
     if (error == 2) return 0;
     if (error != 0) return error;
     error = activation_download_all();
@@ -1679,7 +1746,9 @@ static int activation_widen(void) {
     activations.count = 0;
     activations.used = 0;
     cuda.activations = larger;
-    cuda.activation_capacity = WIDE_ACTIVATION_BYTES;
+    cuda.activation_capacity = capacity;
+    if (getenv("GOOSE_GIGA_ARENA_REPORT") && giga_small_expert_wave)
+        fprintf(stderr, "GigaChat4 CUDA activation arena: %zu MiB\n", capacity / MIB_BYTES);
     return 0;
 }
 
@@ -2311,9 +2380,16 @@ static void init_expert_host_ring(void) {
     ring->storage = storage;
 }
 
+static _Thread_local bool giga_stage_prefill;
+
+void fg_cuda_gigachat4_small_expert_wave(uint8_t enabled) {
+    giga_small_expert_wave = enabled != 0;
+}
+
 uint8_t fg_cuda_expert_stage_enabled(int64_t active_experts, uint8_t stage_all) {
+    giga_stage_prefill = giga_small_expert_wave && !stage_all && active_experts > 8;
     const size_t planes = stage_all ? 3 : 2;
-    if (active_experts <= 0 || (!stage_all && active_experts <= 8) ||
+    if (active_experts <= 0 || (!stage_all && active_experts <= 8 && !giga_small_expert_wave) ||
         !activations.active || !activations.defer_waits ||
         !cuda.defer_matrix_waits || !cuda.expert_stream ||
         (uint64_t) active_experts > SIZE_MAX / planes / sizeof(*cuda.expert_upload_jobs)) return false;
@@ -2446,12 +2522,40 @@ static int submit_parallel_experts(const struct expert_upload_job * jobs, size_t
     return error;
 }
 
+static int submit_giga_pipelined_experts(const struct expert_upload_job * jobs,
+                                        size_t count, size_t bytes) {
+    uint8_t * storage;
+    int error = reserve_expert_host_slot(bytes, cuda.expert_stream, &storage);
+    if (error != 0) return error;
+    const size_t first_bytes = jobs[0].bytes;
+    pthread_mutex_lock(&expert_copy_worker.lock);
+    expert_copy_worker.task = (struct expert_copy_task) {jobs + 1, count - 1, storage + first_bytes};
+    pthread_cond_signal(&expert_copy_worker.ready);
+    pthread_mutex_unlock(&expert_copy_worker.lock);
+
+    memcpy(storage, jobs[0].source, first_bytes);
+    error = cuda.upload_async(jobs[0].destination, storage, first_bytes, cuda.expert_stream);
+    pthread_mutex_lock(&expert_copy_worker.lock);
+    while (expert_copy_worker.task.count != 0) pthread_cond_wait(&expert_copy_worker.done, &expert_copy_worker.lock);
+    pthread_mutex_unlock(&expert_copy_worker.lock);
+    storage += first_bytes;
+    for (size_t i = 1; error == 0 && i < count; ++i) {
+        error = cuda.upload_async(jobs[i].destination, storage, jobs[i].bytes, cuda.expert_stream);
+        storage += jobs[i].bytes;
+    }
+    if (error == 0) ++activations.expert_parallel_batches;
+    return error;
+}
+
 static int submit_expert_stage(void) {
     if (cuda.expert_upload_count == 0) return 0;
     // Existing readers release cache slots before this stream writes them.
     // Consumers wait on the recorded completion event.
     int status = cuda.stream_wait_event(cuda.expert_stream, cuda.expert_slots_ready, 0);
     const bool parallel = expert_copy_worker.running && cuda.expert_upload_count >= 32;
+    const char * pipeline_setting = parallel && giga_stage_prefill ? getenv("GOOSE_GIGA_STAGE_PIPELINE") : NULL;
+    const bool pipeline = parallel && giga_stage_prefill &&
+        (!pipeline_setting || strcmp(pipeline_setting, "0") != 0);
     for (size_t i = 0; status == 0 && i < cuda.expert_upload_count;) {
         const struct expert_upload_job * job = &cuda.expert_upload_jobs[i];
         activations.pending = true;
@@ -2460,7 +2564,10 @@ static int submit_expert_stage(void) {
             while (i + count < cuda.expert_upload_count && job[count].pageable &&
                 job[count].bytes <= EXPERT_HOST_SLOT_BYTES - bytes) bytes += job[count++].bytes;
         }
-        if (count >= 4) {
+        if (pipeline && count >= 2) {
+            status = submit_giga_pipelined_experts(job, count, bytes);
+            i += count;
+        } else if (count >= 4) {
             status = submit_parallel_experts(job, count, bytes);
             i += count;
         } else {
@@ -3015,7 +3122,17 @@ static int launch_matrix(DevicePtr weight, int64_t row_stride, int64_t extent,
          (cuda.mmvq_dense_tail && job_words == 2 && count <= 8))) {
         return launch_mmvq(weight, (uint64_t) row_stride, (int) extent, (int) kind, (int) rows, count, job_words);
     }
-    if (error == 0 && cuda.dense_mma && kind == 0 && job_words == 2 && rows >= 16 && count >= 16 && count <= 8 * 65535) {
+    bool giga_mla_projection = false;
+    if (giga_small_expert_wave && kind == 0 && job_words == 2 && (count == 2048 || count == 4096)) {
+        const bool key = extent == 128 && rows == 512, value = extent == 512 && rows == 128;
+        if (key || value) {
+            const char * mode = getenv("GOOSE_GIGA_MLA_PROJECTION_MMA");
+            giga_mla_projection = !mode || strcmp(mode, "0") != 0;
+        }
+    }
+    const Function dense_matrix = giga_small_expert_wave && (extent == 16 || giga_mla_projection) && cuda.giga_dense_mma ?
+        cuda.giga_dense_mma : cuda.dense_mma;
+    if (error == 0 && dense_matrix && kind == 0 && job_words == 2 && rows >= 16 && count >= 16 && count <= 8 * 65535) {
         int32_t k = (int32_t) extent, m = (int32_t) rows;
         int32_t jobs_count = count;
         // These SM89 router geometries were traced in the frozen reference.
@@ -3024,7 +3141,7 @@ static int launch_matrix(DevicePtr weight, int64_t row_stride, int64_t extent,
             if (count == 124) partitions = 4;
             if (count == 4096) partitions = 1;
         }
-        Function matrix = partitions > 0 ? cuda.dense_mma_reference : cuda.dense_mma;
+        Function matrix = partitions > 0 ? cuda.dense_mma_reference : dense_matrix;
         void * args[] = {&weight, &matrix_input, &matrix_output, &cuda.jobs.address, &row_stride, &k, &m, &jobs_count,
             &partitions};
         error = cuda.launch(matrix, 1u + ((unsigned) rows - 1) / 64, 1u + ((unsigned) count - 1) / 8, 1,
@@ -3596,8 +3713,82 @@ static int launch_flash_mma(const int64_t * c, DevicePtr * staged, DevicePtr out
     return error;
 }
 
+int64_t fg_cuda_giga_dsa_mask(sl_u8 mask, sl_u8 picks, sl_u8 out, int64_t cells, int64_t count, int64_t rows, int64_t prefix) {
+    if (!cuda.dsa_mask_clear || !cuda.dsa_mask_scatter || !giga_small_expert_wave || rows > 4096) return 0;
+    if (cells < 1 || cells > 1048576 || count < 1 || count > cells || rows < 1 || rows > 4096 ||
+        prefix < 0 || prefix >= rows || mask.len != cells * rows * 2 || picks.len != count * (rows - prefix) * 4 || out.len != mask.len) return -1;
+    const int active = start_context();
+    if (active != 1) return active;
+    DevicePtr device_mask = 0, device_picks = 0, output = 0;
+    const uint64_t host = (uint64_t)(uintptr_t)out.data;
+    const int64_t items = cells * rows, kept = count * (rows - prefix), prefix_items = cells * prefix;
+    int error = activation_output(host, out.len, &output);
+    if (error == 0) error = activation_input(mask, &cuda.input, &device_mask);
+    if (error == 0) error = activation_input(picks, &cuda.jobs, &device_picks);
+    void *clear_args[] = {&device_mask, &output, (void *)&items, (void *)&prefix_items};
+    void *scatter_args[] = {&device_mask, &device_picks, &output, &cells, &count, (void *)&kept, &prefix};
+    if (error == 0) error = cuda.launch(cuda.dsa_mask_clear, (unsigned)((items+255)/256), 1, 1, 256, 1, 1, 0, NULL, clear_args, NULL);
+    if (error == 0) error = cuda.launch(cuda.dsa_mask_scatter, (unsigned)((kept+255)/256), 1, 1, 256, 1, 1, 0, NULL, scatter_args, NULL);
+    if (error == 0) error = activation_publish(host, out.len, output, false);
+    if (finish_context() != 0 || error != 0) return -1;
+    if (getenv("GOOSE_GRAPH_LOG")) fprintf(stderr, "GigaChat4 CUDA DSA mask rows=%" PRId64 " cells=%" PRId64 "\n", rows, cells);
+    return 1;
+}
+
+int64_t fg_cuda_giga_dsa_top_wide(sl_u8 scores, sl_u8 ids, int64_t cells, int64_t rows) {
+    if (!cuda.dsa_top_wide || !giga_small_expert_wave || rows < 128) return 0;
+    if (cells <= 4096 || cells > 1048576 || rows < 1 || rows > 4096 ||
+        scores.len != cells*rows*4 || ids.len != rows*2048*4) return -1;
+    const int active = start_context();
+    if (active != 1) return active;
+    DevicePtr input = 0, output = 0;
+    const uint64_t host = (uint64_t)(uintptr_t)ids.data;
+    int error = activation_output(host, ids.len, &output);
+    if (error == 0) error = activation_input(scores, &cuda.input, &input);
+    void *args[] = {&input,&output,&cells};
+    if (error == 0) error = cuda.launch(cuda.dsa_top_wide, (unsigned)rows, 1, 1, 256, 1, 1, 0, NULL, args, NULL);
+    if (error == 0) error = activation_publish(host, ids.len, output, false);
+    if (finish_context() != 0 || error != 0) return -1;
+    if (getenv("GOOSE_GRAPH_LOG")) fprintf(stderr, "GigaChat4 CUDA wide top-k: %" PRId64 "x%" PRId64 "\n",rows,cells);
+    return 1;
+}
+
+int64_t fg_cuda_dsa_score(sl_i64 config, sl_u8 q, sl_u8 k, sl_u8 weights, sl_u8 mask, sl_u8 out) {
+    if (config.len != 6 || config.data[0] < 1 || config.data[0] > 1048576 ||
+        config.data[1] < 1 || config.data[1] > 4096 ||
+        q.len <= 0 || k.len <= 0 || weights.len <= 0 || mask.len <= 0 || out.len <= 0) return -1;
+    const int active = start_context();
+    if (active != 1) return active;
+
+    DevicePtr key = 0;
+    int error = map_state_address((uint64_t)(uintptr_t) k.data, k.len, 0, &key);
+    const sl_u8 inputs[] = {q, key ? (sl_u8){0} : k, weights, mask,
+        {(uint8_t *)config.data, config.len * (int64_t)sizeof(*config.data)}};
+    struct device_buffer *buffers[] = {&cuda.input, &cuda.weight, &cuda.attention_value,
+        &cuda.jobs, &cuda.attention_config};
+    DevicePtr staged[5] = {0, key}, output = 0;
+    const uint64_t host = (uint64_t)(uintptr_t)out.data;
+    if (error == 0) error = activation_output(host, out.len, &output);
+    if (error == 0) error = upload_inputs(inputs, buffers, staged, sizeof(inputs) / sizeof(*inputs));
+    if (error == 0) {
+        void *args[] = {&staged[0], &staged[1], &staged[2], &staged[3], &output, &staged[4]};
+        const bool shared_q = giga_small_expert_wave && cuda.dsa_shared_q && config.data[1] >= 128;
+        error = cuda.launch(shared_q ? cuda.dsa_shared_q : cuda.dsa_score,
+            shared_q ? (unsigned)((config.data[0] + 15) / 16) : (unsigned)((config.data[0] + 3) / 4),
+            (unsigned)config.data[1], 1, 128, 1, 1, 0, NULL, args, NULL);
+        if (error == 0 && shared_q && getenv("GOOSE_GRAPH_LOG"))
+            fprintf(stderr, "GigaChat4 DSA shared Q: cells=%" PRId64 " rows=%" PRId64 "\n",config.data[0],config.data[1]);
+    }
+    if (error == 0) error = activation_publish(host, out.len, output, false);
+    if (finish_context() != 0 || error != 0) return -1;
+    return 1;
+}
+
 int64_t fg_cuda_q4_attention(sl_i64 config, sl_u8 q, sl_u8 k, sl_u8 v, sl_u8 mask, sl_u8 out, float scale) {
-    if (config.len != 22 || config.data[17] <= 0 || config.data[17] > 65535 ||
+    const bool mla = config.len == 23 && config.data[22] == 1;
+    const char *mla_setting = mla ? getenv("GOOSE_GIGACHAT4_MLA_ATTENTION") : NULL;
+    if (mla_setting && strcmp(mla_setting, "0") == 0) return 0;
+    if ((config.len != 22 && !mla) || config.data[17] <= 0 || config.data[17] > 65535 ||
         config.data[18] <= 0 || config.data[18] > INT_MAX ||
         config.data[19] <= 0 || config.data[19] > config.data[18] || config.data[20] <= 0 ||
         config.data[20] % config.data[19] != 0 || (uint64_t) config.data[20] > SIZE_MAX ||
@@ -3618,11 +3809,11 @@ int64_t fg_cuda_q4_attention(sl_i64 config, sl_u8 q, sl_u8 k, sl_u8 v, sl_u8 mas
     if (error == 0) error = upload_inputs(data, buffers, staged, sizeof(data) / sizeof(*data));
 
     bool mma = false;
-    if (error == 0 && flash_mma_shape(config.data, mask.len)) {
+    if (error == 0 && !mla && flash_mma_shape(config.data, mask.len)) {
         error = launch_flash_mma(config.data, staged, output, scale, &mma);
     }
     bool vector = false;
-    if (error == 0 && flash_vec_shape(config.data, mask.len)) {
+    if (error == 0 && !mla && flash_vec_shape(config.data, mask.len)) {
         error = launch_flash_vec(config.data, staged, output, scale, &vector);
     }
     const bool tiled = mma || vector;
@@ -3641,16 +3832,72 @@ int64_t fg_cuda_q4_attention(sl_i64 config, sl_u8 q, sl_u8 k, sl_u8 v, sl_u8 mas
         }
     }
     const unsigned tiles = (unsigned) config.data[17];
+    const int64_t positions = config.data[2];
+    const int64_t pair_rows = positions > 0 && positions <= INT_MAX / 2 ? 2 * positions : 0;
+    const bool paired_shape = mla && giga_small_expert_wave && cuda.mla_attention_pair &&
+        config.data[0] == 576 && config.data[1] == 512 && config.data[4] == 1 && config.data[5] == 1 &&
+        pair_rows > 0 && tasks % pair_rows == 0 && (positions == 1 ||
+        (cuda.mla_attention_batch_pair && cuda.mla_attention_batch_merge && capacity >= 2));
+    const bool mla_mma = mla && giga_small_expert_wave && cuda.mla_mma_tile && config.data[0] == 576 &&
+        config.data[1] == 512 && positions >= 8 && positions % 8 == 0 && config.data[6] % 16 == 0 &&
+        config.data[4] == 1 && config.data[5] == 1 && config.data[16] == 256 && tasks % 8 == 0 && capacity >= 8;
+    if (mla_mma) capacity -= capacity % 8;
+    else if (paired_shape && capacity >= 2) capacity -= capacity % 2;
+    bool indexed = false;
+    if (error == 0 && mla_mma && staged[3] && positions <= 4096 &&
+        config.data[6] >= 8192 && config.data[3] == 32 &&
+        cuda.mla_compact_mask && cuda.mla_indexed_tile && cuda.mla_indexed_merge) {
+        const size_t key_bytes = (size_t)positions * 2048 * sizeof(int32_t);
+        const size_t length_bytes = (size_t)positions * sizeof(int32_t);
+        const int admitted = reserve(&cuda.mla_indices, key_bytes + length_bytes);
+        if (admitted == 0) {
+            DevicePtr lengths = cuda.mla_indices.address + key_bytes;
+            void * args[] = {&staged[3], &cuda.mla_indices.address, &lengths, &staged[4]};
+            error = cuda.launch(cuda.mla_compact_mask, (unsigned)((positions + 3) / 4),
+                1, 1, 128, 1, 1, 0, NULL, args, NULL);
+            int32_t counts[4096];
+            if (error == 0) error = cuda.download(counts, lengths, length_bytes);
+            indexed = error == 0;
+            for (int64_t row = 0; indexed && row < positions; ++row)
+                indexed = counts[row] == 2048;
+            if (indexed) {
+                size_t cap = (task_bytes * (size_t)capacity) / (8 * 514 * sizeof(float));
+                capacity = cap < (size_t) tasks ? (int)cap : tasks;
+                capacity -= capacity % 8;
+            }
+        } else if (admitted != 2) error = admitted;
+    }
+    bool visible = false;
+    if (error == 0 && mla_mma && !indexed && staged[3] && cuda.mla_visibility_build && cuda.mla_visibility_tile) {
+        const size_t flag_bytes = (size_t) (positions / 8) * tiles * sizeof(float);
+        const int admitted = reserve(&cuda.mla_visibility, flag_bytes);
+        if (admitted == 0) {
+            void * args[] = {&staged[3], &cuda.mla_visibility.address, &staged[4]};
+            error = cuda.launch(cuda.mla_visibility_build, (unsigned) (positions / 8), tiles,
+                1, 256, 1, 1, 0, NULL, args, NULL);
+            visible = error == 0;
+        } else if (admitted != 2) error = admitted;
+    }
     int start = 0;
+    DevicePtr flags = indexed ? cuda.mla_indices.address : cuda.mla_visibility.address;
     void * tile_args[] = {&staged[0], &staged[1], &staged[2],
-        &staged[3], &cuda.attention_scratch.address, &staged[4], &scale, &start};
+        &staged[3], &cuda.attention_scratch.address, &staged[4], &scale, &start, &flags};
     void * merge_args[] = {&cuda.attention_scratch.address, &output, &staged[4], &start};
     while (error == 0 && !tiled && start < tasks) {
         const int count = tasks - start < capacity ? tasks - start : capacity;
-        error = cuda.launch(cuda.attention_tiles, (unsigned) count, tiles, 1, 32, 1, 1, 0, NULL, tile_args, NULL);
-        if (error == 0) error = cuda.launch(cuda.attention_merge, (unsigned) count, 1, 1, 32, 1, 1, 0, NULL, merge_args, NULL);
+        const bool pair = !mla_mma && paired_shape && count % 2 == 0 && start % 2 == 0;
+        const Function tile = indexed ? cuda.mla_indexed_tile : visible ? cuda.mla_visibility_tile : mla_mma ? cuda.mla_mma_tile : pair ? (positions == 1 ? cuda.mla_attention_pair : cuda.mla_attention_batch_pair) :
+            mla ? cuda.mla_attention_tiles : cuda.attention_tiles;
+        error = cuda.launch(tile, (unsigned) count / (mla_mma ? 8 : pair ? 2 : 1), indexed ? 8 : tiles, 1, mla_mma ? 256 : 32, 1, 1, 0, NULL, tile_args, NULL);
+        const Function merge = indexed ? cuda.mla_indexed_merge : pair && positions > 1 ? cuda.mla_attention_batch_merge :
+            mla ? cuda.mla_attention_merge : cuda.attention_merge;
+        if (error == 0) error = cuda.launch(merge, (unsigned) count, 1, 1, 32, 1, 1, 0, NULL, merge_args, NULL);
         start += count;
     }
+    if (error == 0 && indexed && getenv("GOOSE_GRAPH_LOG"))
+        fprintf(stderr, "GigaChat4 indexed MLA: positions=%" PRId64 " cells=%" PRId64 "\n", positions, config.data[6]);
+    if (error == 0 && mla_mma && getenv("GOOSE_GRAPH_LOG"))
+        fprintf(stderr, "GigaChat4 MLA MMA: positions=%" PRId64 " cells=%" PRId64 "\n", positions, config.data[6]);
     if (error == 0) error = activation_publish(host, out.len, output, false);
     if (error != 0 && start > 0) (void) cuda.sync();
     const int popped = finish_context();
@@ -4187,4 +4434,33 @@ uint64_t fg_cuda_take_moe_weighted(void) {
     const uint64_t count = cuda_moe_weighted_tiles;
     cuda_moe_weighted_tiles = 0;
     return count;
+}
+
+uint8_t fg_cuda_giga_partial_pin(void) {
+    const char * setting = getenv("GOOSE_GIGA_PARTIAL_PIN");
+    return !setting || strcmp(setting, "0") != 0;
+}
+
+static bool giga_kv_resident;
+
+uint8_t fg_cuda_giga_kv_configure(int64_t capacity) {
+    const char * mode = getenv("GOOSE_GIGA_KV_RESIDENT");
+    const bool explicit_resident = mode && strcmp(mode, "1") == 0;
+    if ((mode && !explicit_resident) || (!explicit_resident && capacity > 36864)) return 0;
+    const char * lazy = getenv("GOOSE_KV_LAZY_VMM");
+    const bool allow_lazy = !lazy || strcmp(lazy, "0") != 0;
+    if (!allow_lazy && !explicit_resident) return 0;
+    if (start_context() != 1) return 0;
+    int device;
+    size_t available = 0, total = 0;
+    if (allow_lazy && !cuda.lazy_kv && cuda.device_get(&device, 0) == 0) init_vmm(device, true);
+    const bool admitted = cuda.memory_info(&available, &total) == 0 &&
+        available >= (size_t) 2048 * MIB_BYTES && (cuda.lazy_kv || explicit_resident);
+    const int popped = finish_context();
+    giga_kv_resident = admitted && popped == 0;
+    return giga_kv_resident;
+}
+
+uint8_t fg_cuda_giga_kv_write_enabled(void) {
+    return giga_small_expert_wave && giga_kv_resident;
 }
