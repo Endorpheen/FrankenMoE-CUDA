@@ -262,6 +262,44 @@ build.
 Measurements are manual and strictly one at a time: no scripts, no parallel
 runs, no background work alongside benchmarks.
 
+## Mandatory runtime architecture principles
+
+These rules apply to every agent, backend, and supported model
+architecture. GooseInfer is one stable, high-performance inference
+runtime with independent architecture modules. Work on one model must
+preserve the correctness, throughput, and memory use of other models.
+
+1. Keep the shared runtime core stable, fast, and independent of specific
+   model architectures. Adapt new models to the core's interfaces and
+   execution contracts.
+2. Keep architecture-dependent computation graphs, dispatch decisions,
+   configuration, memory policies, specialized kernels, and optimization
+   eligibility in the owning architecture module wherever possible.
+3. Reuse verified shared components through stable interfaces. Preserve
+   their existing behavior when the optimization can be implemented
+   inside the owning architecture module.
+4. Activate a specialization only for its intended architecture. Check
+   architecture identity and the required shape, layout, and backend
+   capabilities at the dispatch boundary. Keep shared flags, common
+   defaults, and existing execution paths free from implicit effects.
+5. Change the shared core only with a documented technical reason.
+   Keep the change minimal and backward compatible. Before acceptance,
+   run regression tests for every affected architecture and record output
+   correctness, prefill, decode, RAM, and VRAM against its reference.
+6. For a fully isolated change, routine testing can cover the target
+   architecture alone when a recorded dependency analysis establishes
+   that other architectures are unaffected. Run the full cross-architecture
+   regression suite before merging development branches or publishing releases.
+7. Audit existing architecture dependencies and reduce hazardous coupling
+   incrementally. A broad runtime redesign requires evidence that smaller
+   changes cannot solve the demonstrated problem.
+8. Preserve performance when isolating modules. Reuse common mechanisms
+   and avoid redundant implementations, data copies, and synchronization.
+9. Record verified optimizations and their applicability in the shared
+   [optimization registry](experiments/EXPERIMENTS.md). Reuse or adapt
+   them through stable interfaces after validating the receiving
+   architecture's layout, arithmetic, and performance.
+
 ## Model architecture integration
 
 Maintain `docs/goose-migration/model-architectures.json` as the permanent
@@ -285,11 +323,12 @@ shape, layout and capability checks with a maintained supported path.
 Architecture integration must preserve independence from C++ and libggml
 and keep previously supported architectures covered by their own references.
 
-Until Apex speed recovery, routine optimization uses the Apex 32K/512
-reference on RTX 4070. Run another architecture's tests when the change
-directly affects it. Run the complete registry for architecture acceptance
-and general releases. Record missing references without delaying routine
-Apex optimization. The current speed target is Optimized Hybrid.
+Use the Apex 32K/512 reference on RTX 4070 for Apex speed recovery and
+for shared changes that affect Apex. Apply the mandatory runtime
+architecture principles to select other routine checks. Run the complete
+registry for architecture acceptance, development branch merges, and
+releases. Record missing references in the integration registry.
+The current Apex speed target is Optimized Hybrid.
 
 ## Fried Goose compiler optimization registry
 
