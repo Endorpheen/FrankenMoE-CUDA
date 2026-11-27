@@ -2332,77 +2332,7 @@
 #define GGML_N_TASKS_MAX (-1)
     // n_tasks == GGML_N_TASKS_MAX means to use max number of tasks
 
-    GGML_API struct ggml_tensor * ggml_map_custom1(
-            struct ggml_context   * ctx,
-            struct ggml_tensor    * a,
-            ggml_custom1_op_t       fun,
-            int                     n_tasks,
-            void                  * userdata);
-
-    GGML_API struct ggml_tensor * ggml_map_custom1_inplace(
-            struct ggml_context   * ctx,
-            struct ggml_tensor    * a,
-            ggml_custom1_op_t       fun,
-            int                     n_tasks,
-            void                  * userdata);
-
-    GGML_API struct ggml_tensor * ggml_map_custom2(
-            struct ggml_context   * ctx,
-            struct ggml_tensor    * a,
-            struct ggml_tensor    * b,
-            ggml_custom2_op_t       fun,
-            int                     n_tasks,
-            void                  * userdata);
-
-    GGML_API struct ggml_tensor * ggml_map_custom2_inplace(
-            struct ggml_context   * ctx,
-            struct ggml_tensor    * a,
-            struct ggml_tensor    * b,
-            ggml_custom2_op_t       fun,
-            int                     n_tasks,
-            void                  * userdata);
-
-    GGML_API struct ggml_tensor * ggml_map_custom3(
-            struct ggml_context   * ctx,
-            struct ggml_tensor    * a,
-            struct ggml_tensor    * b,
-            struct ggml_tensor    * c,
-            ggml_custom3_op_t       fun,
-            int                     n_tasks,
-            void                  * userdata);
-
-    GGML_API struct ggml_tensor * ggml_map_custom3_inplace(
-            struct ggml_context   * ctx,
-            struct ggml_tensor    * a,
-            struct ggml_tensor    * b,
-            struct ggml_tensor    * c,
-            ggml_custom3_op_t       fun,
-            int                     n_tasks,
-            void                  * userdata);
-
     typedef void (*ggml_custom_op_t)(struct ggml_tensor * dst , int ith, int nth, void * userdata);
-
-    GGML_API struct ggml_tensor * ggml_custom_4d(
-            struct ggml_context * ctx,
-            enum ggml_type        type,
-            int64_t               ne0,
-            int64_t               ne1,
-            int64_t               ne2,
-            int64_t               ne3,
-            struct ggml_tensor ** args,
-            int                   n_args,
-            ggml_custom_op_t      fun,
-            int                   n_tasks,
-            void                * userdata);
-
-    GGML_API struct ggml_tensor * ggml_custom_inplace(
-            struct ggml_context * ctx,
-            struct ggml_tensor  * a,
-            struct ggml_tensor ** args,
-            int                   n_args,
-            ggml_custom_op_t      fun,
-            int                   n_tasks,
-            void                * userdata);
 
     // build forward multiple tensors and select one of them for computing
     // this is useful for creating graphs that have constant topology but compute different things based on the input
