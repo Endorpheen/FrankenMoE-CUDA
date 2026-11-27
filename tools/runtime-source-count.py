@@ -65,17 +65,17 @@ gpu='GPU image input'
 mark(images,names,'.cl',gpu,'Inkling CUDA kernels or device ABI')
 mark(d/'apex-routing','route softmax mailbox prediction','.cl',gpu,'Apex routing and softmax device code')
 frozen=u/'bonsai-frozen-cuda'
-mark(frozen/'glue','cuda-device','.cl',gpu,'Shared CUDA and Bonsai image source')
 mark(frozen,'device-prelude','.cl',gpu,'Device compilation prelude')
-mark(d/'gigachat4-images','cuda-device','.cl',gpu,'GigaChat4 device image source')
-mark(s,'cuda-device','.cl',gpu,'Shared device source for GigaChat4')
+mark(s,'cuda-device','.cl',gpu,'Shared device source for GigaChat4, Apex and Bonsai')
 mark(d/'apex-extra','epilogue','.cl',gpu,'Apex MoE device epilogue')
 for f in sorted(files):
     if f.name.endswith('.cl.patch') and f.is_relative_to(d/'apex-extra'):
         marks[f]=('GPU source overlay','Patch for copied CUDA device source')
 mark(s / "vulkan/shaders", "reference", ".comp", gpu, "Vulkan GLSL shader source")
 direct=set(marks)
-todo = sorted(direct)
+mark(frozen / "glue", "cuda-flash-vec cuda-mmvq cuda-rms-reference", ".cl",
+     "Source include (Bonsai/Apex staging)", "Platform-specific CUDA device ABI variant")
+todo = sorted(marks)
 visited = set()
 missing = {}
 include_dirs=[s,u,d,d/'images',u/'inkling',u/'inkling/host',s/'gigachat4',frozen/'glue',g/'include',g/'src',g/'src/ggml-cpu',Path('integration/m1/host')]

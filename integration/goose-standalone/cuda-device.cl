@@ -210,6 +210,7 @@ static float fg_attn_neg_inf(void) {
     return as_float(0xff800000u);
 }
 
+#ifndef GOOSE_CUDA_FROZEN_ABI
 static void fg_dsa_store_u16(uint64_t base, int64_t index, uint32_t value) {
     ((__global uint16_t *)base)[index] = (uint16_t)value;
 }
@@ -296,7 +297,9 @@ static uint32_t fg_mla_mask_popcount(uint32_t word) {
 static void fg_mla_store_index(uint64_t base, int64_t index, int32_t value) {
     ((__global int32_t *)base)[index] = value;
 }
+#endif
 #include "q4-attention-device.h"
+#ifndef GOOSE_CUDA_FROZEN_ABI
 __kernel void goose_giga_dsa_top_wide(__global const float *x, __global int32_t *out, int64_t cells) {
     __local uint32_t bins[16];
     __local uint64_t keys[2048];
@@ -408,6 +411,7 @@ __kernel void goose_giga_mask_scatter(__global const uint16_t * mask, __global c
     giga_device_mask_scatter_g((uint64_t)mask, (uint64_t)picks, (uint64_t)out,
         cells, count, total, prefix, fg_dsa_mask_index());
 }
+#endif
 
 __kernel void goose_q4_attention_tiles(__global uint8_t * q, __global uint8_t * k,
     __global uint8_t * v, __global uint8_t * mask, __global float * scratch,
@@ -427,6 +431,7 @@ __kernel void goose_q4_attention_merge(__global float * scratch, __global uint8_
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
     fg_attn_merge_g((uint64_t) scratch, (uint64_t) output, (uint64_t) cfg,
         task, (int64_t) query_base + task, lane);
+#ifndef GOOSE_CUDA_FROZEN_ABI
 }
 
 __kernel void goose_mla_attention_tiles(__global uint8_t * q, __global uint8_t * k,
@@ -506,6 +511,7 @@ __kernel void goose_giga_dsa_score_shared_q(__global uint8_t *q, __global uint8_
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(tid));
     giga_dsa_score_shared_q_g((uint64_t)q,(uint64_t)k,(uint64_t)weights,(uint64_t)mask,
         (uint64_t)out,(uint64_t)cfg,16*tile+4*(tid/32),token,tid%32);
+#endif
 }
 
 static float fg174s_load(uint64_t address, uint64_t index) {
@@ -661,6 +667,7 @@ static void fg_vector_store4(uint64_t address, CVVec4_g v) {
     *(__global float4 *) address = (float4) (v.x_g, v.y_g, v.z_g, v.w_g);
 }
 
+#ifndef GOOSE_CUDA_FROZEN_ABI
 static double fg_glu_pow2_int(int64_t exponent) {
     return as_double((uint64_t)(exponent + 1023) << 52);
 }
@@ -677,6 +684,7 @@ static float fg_glu_div_rn(float a, float b) {
     return result;
 }
 
+#endif
 #include "vector-device.h"
 #include "cuda-rms-reference.cl"
 
@@ -705,6 +713,18 @@ __kernel void goose_vector_flat4(__global const uint8_t * x, __global const uint
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
     fg_vector_flat4_g((uint64_t) x, (uint64_t) y, (uint64_t) out,
         op, vectors, param0, param1, (int64_t) group * 128 + lane);
+#ifdef GOOSE_CUDA_FROZEN_ABI
+}
+
+__kernel void goose_moe_add_shared_residual(__global const uint8_t * routed,
+    __global const uint8_t * shared, __global const uint8_t * gate,
+    __global const uint8_t * residual, __global uint8_t * output) {
+    uint32_t block, lane;
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(block));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
+    fg_moe_add_shared_residual_g((uint64_t) routed, (uint64_t) shared, (uint64_t) gate,
+        (uint64_t) residual, (uint64_t) output, (uint64_t) block * 128 + lane);
+#endif
 }
 
 static float fg_rope_float(uint64_t cfg, int64_t i) {
