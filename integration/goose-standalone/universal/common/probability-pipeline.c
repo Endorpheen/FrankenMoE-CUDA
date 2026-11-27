@@ -3,6 +3,7 @@
 #include <pthread.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 typedef struct { uint64_t *data; int64_t len; } probability_words;
 
@@ -79,4 +80,24 @@ uint8_t fg_prob_pipeline_submit(sl_f32 logits, int64_t selected) {
 
 uint8_t fg_prob_pipeline_finish(int64_t count, sl_i64 ids, sl_f32 logp) {
     return request_pipeline ? fg_prob_finish(count, ids, logp) : 0;
+}
+
+uint8_t fg_q35_topk_scan_enabled(void) {
+#if defined(__x86_64__) && (defined(__GNUC__) || defined(__clang__))
+    const char *setting = getenv("GOOSE_CPU_TOPK_SCAN");
+    if ((setting && strcmp(setting, "0") == 0) || !__builtin_cpu_supports("avx2")) return 0;
+    fg_probability_init(0, NULL);
+    return 1;
+#else
+    return 0;
+#endif
+}
+
+extern uint8_t fg_cuda_inkling_quants_enabled(void);
+
+uint8_t fg_i2_sampler_scan_enabled(int64_t count) {
+    const char *mode = getenv("I2_SAMPLER_SCAN");
+    if (count < 1024 || !mode || strcmp(mode, "1") != 0 || !fg_cuda_inkling_quants_enabled()) return 0;
+    fg_probability_init(0, NULL);
+    return 1;
 }

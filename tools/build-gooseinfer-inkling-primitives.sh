@@ -28,9 +28,3 @@ done
     -c "$out/tokenizer.c" -o "$out/tokenizer-unlinked.o"
 "$objcopy" --keep-global-symbol=inkling_tokenizer_init --keep-global-symbol=bt_tokenize_inkling2 \
     "$out/tokenizer-unlinked.o" "$out/tokenizer.o"
-
-if [[ $target == windows ]]; then
-    model_headers=$(realpath -- "${3:?Missing directory containing main.h}")
-    "$cc" -O3 -std=c11 -ffunction-sections -fdata-sections -I"$model_headers" \
-        -c "$source_dir/sampler-scan.c" -o "$out/inkling-sampler-scan.o"
-fi
