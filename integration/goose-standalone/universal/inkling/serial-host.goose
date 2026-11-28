@@ -594,3 +594,32 @@ export fn fg_i2_prefill_resident_moe(decoder: u64, core: u64, aux: u64, tokens: 
     }
     return retain;
 }
+
+extern fn inkling_loop_storage() -> u64;
+extern fn inkling_loop_save(storage: u64, previous: u64) -> bool;
+extern fn inkling_arena_boundary_read(output: u64, index: i32, last_only: bool) -> bool;
+
+export fn i2_prefill_save_rewind(work: u64, pass: i64, resident: bool) {
+    let staging = i2d_read(work + 16);
+    if !resident {
+        let tokens = i2d_read(work + 8);
+        for index in i2d_int(work + 32) as! i64 {
+            let row = index as! u64;
+            i2d_transfer(staging + row * 9216, tokens + row * 285708, 9216);
+        }
+    }
+    assert(inkling_loop_save(inkling_loop_storage(), if resident { 0 } else { staging }));
+    if resident {
+        i2d_log(str("Inkling resident rewind begin=", i2d_int(work + 36), " pass=", pass as! i32, "\n"));
+    }
+}
+
+export fn i2_prefill_read_boundary(work: u64) {
+    let staging = i2d_read(work + 16);
+    let tokens = i2d_read(work + 8);
+    assert(inkling_arena_boundary_read(staging, 2, false));
+    for index in i2d_int(work + 32) as! i64 {
+        let row = index as! u64;
+        i2d_transfer(tokens + row * 285708 + 46080, staging + row * 9216, 9216);
+    }
+}

@@ -381,24 +381,10 @@ struct i2_prefill_visits {
     int count, begin;
 };
 
-void i2_prefill_save_rewind(uint64_t address, int64_t pass, uint8_t current) {
-    struct i2_prefill_visits *work = (void *)(uintptr_t)address;
-    float (*inputs)[model_width] = work->scratch->inputs[0];
-    if (!current) {
-        for (int t = 0; t < work->count; ++t)
-            memcpy(inputs[t], work->tokens[t].current, sizeof work->tokens[t].current);
-    }
-    assert(inkling_loop_save(inkling_loop_storage(), current ? NULL : inputs[0]));
-    if (current) fprintf(stderr, "Inkling resident rewind begin=%d pass=%d\n", work->begin, (int)pass);
-}
-
-void i2_prefill_read_boundary(uint64_t address) {
-    struct i2_prefill_visits *work = (void *)(uintptr_t)address;
-    float (*inputs)[model_width] = work->scratch->inputs[0];
-    assert(inkling_arena_boundary_read(inputs[0], 2, false));
-    for (int t = 0; t < work->count; ++t)
-        memcpy(work->tokens[t].blocks + 2 * model_width, inputs[t], sizeof work->tokens[t].current);
-}
+_Static_assert(offsetof(struct i2_prefill_visits, tokens) == 8 &&
+    offsetof(struct i2_prefill_visits, scratch) == 16 && offsetof(struct i2_prefill_visits, count) == 32 &&
+    offsetof(struct i2_prefill_visits, begin) == 36 && offsetof(struct prefill_workspace, inputs) == 0,
+    "Goose prefill visit ABI");
 
 void i2_prefill_run_visit(uint64_t address, int64_t index, sl_i64 device, uint8_t retain,
                          uint64_t slot, uint8_t loop_live, uint8_t prelude_live) {
