@@ -65,6 +65,8 @@ if [[ ${GOOSE_APEX_UP_GATE_IMAGE:-0} == 1 ]]; then defines+=(-DGOOSE_APEX_UP_GAT
 
 python3 "$root/tools/emit-gooseinfer-cuda-entries.py" \
     "$standalone/cuda-attention-entries.json" "$scratch/cuda-attention-entries.h"
+python3 "$root/tools/emit-gooseinfer-cuda-entries.py" \
+    "$standalone/cuda-mmq-entries.json" "$scratch/cuda-mmq-entries.h"
 
 "${CLANG:-clang-18}" -target nvptx64-nvidia-cuda -nocudalib -O2 -x cl -cl-std=CL1.2 \
     -include "$source_dir/device-prelude.cl" -I"$scratch" -I"$standalone" -S -Xclang -target-cpu \

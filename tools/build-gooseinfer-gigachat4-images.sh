@@ -40,6 +40,8 @@ sed -i -E 's/static void (giga_mla_mma_pv_(tile|indexed)_g\()/static __attribute
 python3 "$root/tools/emit-gooseinfer-cuda-entries.py" \
     "$standalone/cuda-attention-entries.json" "$scratch/cuda-attention-entries.h"
 python3 "$root/tools/emit-gooseinfer-cuda-entries.py" \
+    "$standalone/cuda-mmq-entries.json" "$scratch/cuda-mmq-entries.h"
+python3 "$root/tools/emit-gooseinfer-cuda-entries.py" \
     "$standalone/gigachat4/cuda-dsa-entries.json" "$scratch/cuda-dsa-entries.h"
 compile_device "$standalone/cuda-device.cl"
 for variant in dense vector dsa mla certified-dsa; do
