@@ -33,16 +33,19 @@ flags=(-std=c11 -D_GNU_SOURCE -ffunction-sections -fdata-sections
 "$cc" "${flags[@]}" -x c -fsyntax-only "$standalone/graph-bindings-layout.h"
 printf 'extern fn host_quant_lround(value: f32) -> %s;\n' "$native_long" > "$out/common-core.goose"
 cat "$out/metadata.goose" "$standalone/"{graph-bindings,common-memory,graph-metadata,graph-arena-abi}.goose \
-    "$host/"{host-quant,host-runtime}.goose "$host/host-io-$target.goose" >> "$out/common-core.goose"
+    "$host/"{host-quant,host-runtime,host-conversion}.goose "$host/host-io-$target.goose" >> "$out/common-core.goose"
 "${GOOSE_CUDA_DRIVER_BIN:?Set GOOSE_CUDA_DRIVER_BIN to Fried Goose KeelWing v0.3.1-dev.1}" --standalone \
     -o "$out/graph-bindings.c" "$out/common-core.goose"
 "$cc" -O2 "${flags[@]}" -Dgoose_init=fg_graph_bindings_init -Dgg_init_globals=fg_graph_bindings_globals \
     -c "$out/graph-bindings.c" -o "$out/graph-bindings.o"
 if [[ "$target" == linux ]]; then
-    io_symbols=(--redefine-sym=host_runtime_read=read --redefine-sym=host_runtime_write=write --redefine-sym=host_runtime_close=close)
+    io_symbols=(--redefine-sym=host_runtime_read=read --redefine-sym=host_runtime_write=write --redefine-sym=host_runtime_close=close
+        --redefine-sym=host_conv_time=time --redefine-sym=host_conv_localtime=localtime)
 else
-    io_symbols=(--redefine-sym=host_runtime_recv=recv --redefine-sym=host_runtime_send=send --redefine-sym=host_runtime_close=closesocket)
+    io_symbols=(--redefine-sym=host_runtime_recv=recv --redefine-sym=host_runtime_send=send --redefine-sym=host_runtime_close=closesocket
+        --redefine-sym=host_conv_time=_time64 --redefine-sym=host_conv_localtime=_localtime64)
 fi
-"$objcopy" --redefine-sym=graph_crt_getenv=getenv --redefine-sym=host_quant_lround=lroundf     "${io_symbols[@]}" "$out/graph-bindings.o"
+"$objcopy" --redefine-sym=graph_crt_getenv=getenv --redefine-sym=host_quant_lround=lroundf \
+    --redefine-sym=host_conv_strtod=strtod --redefine-sym=host_conv_strftime=strftime "${io_symbols[@]}" "$out/graph-bindings.o"
 "$cc" -O1 "${flags[@]}" -c "$host/goose_host.c" -o "$out/goose-host.o"
 CC="$cc" WINDOWS_CC="$cc" bash "$root/tools/build-gooseinfer-socket.sh" "$target" "$out/socket-forwards.o"

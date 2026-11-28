@@ -82,7 +82,7 @@ while todo:
             f == s / "ggml-system.c" and name in {"ggml-backend-impl.h", "ggml-system-reference.inc"}
         ) or (f == g / "src/ggml-impl.h" and name in {"gguf.h", "ggml-impl-reference.inc", "ggml-hash-reference.inc"}):
             continue
-        if f == Path("integration/m1/host/goose_host.c") and name in {"host-quant-reference.inc", "host-runtime-reference.inc"}:
+        if f == Path("integration/m1/host/goose_host.c") and name in {"host-quant-reference.inc", "host-runtime-reference.inc", "host-conversion-reference.inc"}:
             continue
         candidates=[]
         if name not in {'main.h','cpu.h','goose-unit.h','qwen2_unit.h'} and (name != 'graph.h' or f.is_relative_to(s/'vulkan')):
