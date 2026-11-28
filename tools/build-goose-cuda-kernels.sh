@@ -51,6 +51,7 @@ extern "fg170s_fma" fn ssm_long_acc(x: f32, weight: f32, sum: f32) -> f32;
 extern "fg_device_reciprocal" fn ssm_long_reciprocal(value: f32) -> f32;
 fn ssm_long_silu(x: f32) -> f32 { return x * ssm_long_reciprocal(1.0 + expf(-x)); }
 GOOSE_SOURCE
+cat "$ROOT/goose/cuda/standalone-ssm-launch.goose" >> "$OUT/ssm-conv.goose"
 cp "$ROOT/goose/cuda/standalone-routing.goose" "$OUT/routing.goose"
 sed -n '/^fn warp_max(/,/^}/p' "$ROOT/goose/chat/goose-cuda-softmax/device.goose" >> "$OUT/routing.goose"
 sed -n '/^fn cv_warp_sum(/,/^}/p' "$ROOT/goose/cuda/standalone-vector.goose" >> "$OUT/routing.goose"

@@ -14,6 +14,10 @@ mkdir -p -- "$out"
 for source in "$src"/goose/*.goose "$root/goose/cuda/standalone-matmul.goose"; do
     module=$(basename -- "$source" .goose)
     module=${module#standalone-}
+    if [[ "$module" == ssm-conv ]]; then
+        cat "$source" "$root/goose/cuda/standalone-ssm-launch.goose" > "$scratch/ssm-conv.goose"
+        source="$scratch/ssm-conv.goose"
+    fi
     "$goose" --standalone -o "$scratch/$module.c" --header "$scratch/$module.h" "$source"
     python3 "$src/extract-device.py" "$scratch" "$module"
 done

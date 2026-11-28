@@ -812,8 +812,8 @@ __kernel void goose_ssm_conv_direct(__global float *history, __global float *mix
     __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(group));
     __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(time));
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
-    ssm_conv_direct_g((uint64_t) history, (uint64_t) mixed, (uint64_t) weights, (uint64_t) output,
-        channels, tokens, (uint64_t) group * 128 + lane, (uint64_t) time * 32, silu != 0);
+    ssm_launch_direct_g((uint64_t)history, (uint64_t)mixed, (uint64_t)weights, (uint64_t)output,
+        channels, tokens, group, time, lane, silu != 0);
 }
 
 __kernel void goose_ssm_conv_save_tail(__global float *history, __global float *mixed, uint64_t channels, uint64_t tokens) {
@@ -826,11 +826,7 @@ __kernel void goose_ssm_conv(__global uint8_t * x, __global uint8_t * weights,
     __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(sequence));
     __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(group));
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
-    if ((int64_t) group * 128 + lane >= cfg[5]) return;
-    ssm_conv_serial_g((uint64_t) x, (uint64_t) weights, 0, (uint64_t) out,
-        (int32_t) cfg[8], (int32_t) cfg[9], (int32_t) cfg[10], (int32_t) cfg[11],
-        (int32_t) cfg[12], (int32_t) cfg[13], (int32_t) cfg[14],
-        (int32_t) cfg[7], (int32_t) cfg[6], cfg[15] != 0, 0, lane, sequence, group);
+    ssm_launch_serial_g((uint64_t)x, (uint64_t)weights, (uint64_t)out, (uint64_t)cfg, lane, sequence, group);
 }
 
 __kernel void goose_ssm_conv_decode(__global uint8_t * x, __global uint8_t * weights,
@@ -839,10 +835,7 @@ __kernel void goose_ssm_conv_decode(__global uint8_t * x, __global uint8_t * wei
     __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(sequence));
     __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(group));
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
-    const uint64_t channel = (uint64_t) group * 128 + lane;
-    if (channel >= (uint64_t) cfg[5]) return;
-    ssm_conv_decode_g((uint64_t) x + sequence * (uint64_t) cfg[10], (uint64_t) weights,
-        (uint64_t) out + sequence * (uint64_t) cfg[14], cfg[9], cfg[11], channel, cfg[15] != 0);
+    ssm_launch_decode_g((uint64_t)x, (uint64_t)weights, (uint64_t)out, (uint64_t)cfg, lane, sequence, group);
 }
 
 __kernel void goose_ssm_conv_long(__global uint8_t * x, __global uint8_t * weights,
@@ -854,10 +847,8 @@ __kernel void goose_ssm_conv_long(__global uint8_t * x, __global uint8_t * weigh
     __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(group));
     __asm__("mov.u32 %0, %%ctaid.z;" : "=r"(tokens));
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
-    ssm_conv_long_g((uint64_t) x, (uint64_t) weights, 0, (uint64_t) out, (uint64_t) shared,
-        (int32_t) cfg[8], (int32_t) cfg[9], (int32_t) cfg[10], (int32_t) cfg[11],
-        (int32_t) cfg[12], (int32_t) cfg[13], (int32_t) cfg[14],
-        (int32_t) cfg[7], taps, cfg[15] != 0, 0, 1, lane, sequence, group, tokens);
+    ssm_launch_long_g((uint64_t)x, (uint64_t)weights, (uint64_t)out, (uint64_t)cfg,
+        (uint64_t)shared, lane, sequence, group, tokens);
 }
 
 static float fg283d_ld_f32(uint64_t src, uint64_t offset) {
