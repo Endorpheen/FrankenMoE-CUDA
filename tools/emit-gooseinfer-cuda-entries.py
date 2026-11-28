@@ -38,10 +38,16 @@ with output.open("w") as stream:
     for symbol, alignment in dynamic_symbols.items():
         print(f'__asm__(".extern .shared .align {alignment} .b8 {symbol}[];");', file=stream)
     for entry in entries:
+        condition = entry.get("condition")
         if entry.get("nonfrozen"):
-            print("#ifndef GOOSE_CUDA_FROZEN_ABI", file=stream)
+            condition = "!GOOSE_CUDA_FROZEN_ABI"
         elif entry.get("frozen"):
-            print("#ifdef GOOSE_CUDA_FROZEN_ABI", file=stream)
+            condition = "GOOSE_CUDA_FROZEN_ABI"
+        if condition:
+            if condition.startswith("!"):
+                print(f"#ifndef {condition[1:]}", file=stream)
+            else:
+                print(f"#ifdef {condition}", file=stream)
         parameters = ", ".join(entry["parameters"])
         print(f'__kernel void {entry["name"]}({parameters}) {{', file=stream)
         for kind, name, length, align in entry.get("shared", []):
@@ -60,5 +66,5 @@ with output.open("w") as stream:
                   file=stream)
         arguments = ", ".join(argument(arg) for arg in entry["arguments"])
         print(f'    {entry["function"]}({arguments});\n}}', file=stream)
-        if entry.get("nonfrozen") or entry.get("frozen"):
+        if condition:
             print("#endif", file=stream)

@@ -14,21 +14,4 @@ static void input_half(uint64_t base, int64_t i, float value) {
 }
 #include "i2-attention-input-device.h"
 
-__kernel void goose_i2_prepare_attention(__global const float *raw, __global const float *coeff,
-    __global const float *history, __global ushort *q, __global float *r, __global float *k,
-    __global float *v, int count, int first, int sliding) {
-    uint head, row, lane;
-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(head));
-    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(row));
-    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
-    __local double sum[128];
-    attention_input_g((uint64_t)raw,(uint64_t)coeff,(uint64_t)history,(uint64_t)q,(uint64_t)r,(uint64_t)k,
-        (uint64_t)v,count,first,sliding,(uint64_t)sum,head,row,lane);
-}
-
-__kernel void goose_i2_update_history(__global const float *raw, __global float *history, int count) {
-    uint block, lane;
-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(block));
-    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
-    attention_update_history_g((uint64_t)raw,(uint64_t)history,count,block,lane);
-}
+#include "attention-input-image-entries.h"

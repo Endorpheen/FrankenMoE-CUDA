@@ -33,6 +33,10 @@ for function in ("i2_native_flash_g", entry[1]):
     body = body.replace(f"static void {function}(", f"static __attribute__((always_inline)) void {function}(")
 (scratch / "inkling-native-flash-device.h").write_text(types + "\n" + body)
 PY_FRAGMENT
+for abi in "$src/"*-entries.json; do
+    name=${abi##*/}
+    python3 "$root/tools/emit-gooseinfer-cuda-entries.py" "$abi" "$scratch/${name%.json}.h"
+done
 while read -r header symbol entries prelude; do
     stem=${header%.h}
     device_source="$src/$stem.cl"

@@ -223,3 +223,13 @@ export fn matrix_launch_projections(input_q: u64, input_k: u64, input_v: u64, ou
     else if index >= 3072 { row -= 3072; weight = weight_k; input = input_k; }
     i2_matrix_one(weight + ((row * 2448) as! u64), input, output + ((index * 4) as! u64), 72, 8, (thread % 32) as! u64);
 }
+
+export fn matrix_entry(weights: u64, input: u64, output: u64, jobs: u64, stride: u64, width: i64,
+    rows: i64, count: i64, base: i64, words: i64, kind: i64, group_x: u32, group_y: u32,
+    thread: u32, job_tile: i32) {
+    let tile = job_tile as! u32;
+    let row = 4 * group_x + (thread >> 5);
+    let first = tile * group_y;
+    matrix_launch(weights, input, output, jobs, stride, width, rows, count, base, words,
+        kind, row as i64, first as i64, (thread & 31) as u64, tile as i64);
+}

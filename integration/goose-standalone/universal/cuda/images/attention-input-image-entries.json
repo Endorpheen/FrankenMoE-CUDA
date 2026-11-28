@@ -1,0 +1,4 @@
+[
+  {"name": "goose_i2_prepare_attention", "parameters": ["__global const float *raw", "__global const float *coeff", "__global const float *history", "__global ushort *q", "__global float *r", "__global float *k", "__global float *v", "int count", "int first", "int sliding"], "function": "attention_input_g", "arguments": ["@raw", "@coeff", "@history", "@q", "@r", "@k", "@v", "count", "first", "sliding", "@sum", "head", "row", "lane"], "registers": {"head": "block_x", "row": "block_y", "lane": "thread_x"}, "shared": [["double", "sum", 128, 0]]},
+  {"name": "goose_i2_update_history", "parameters": ["__global const float *raw", "__global float *history", "int count"], "function": "attention_update_history_g", "arguments": ["@raw", "@history", "count", "block", "lane"], "registers": {"block": "block_x", "lane": "thread_x"}}
+]

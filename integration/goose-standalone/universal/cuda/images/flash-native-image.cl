@@ -78,47 +78,4 @@ static uint i2_flash_q4_product(uint encoded, uint scale_pair) {
 
 #include "inkling-native-flash-device.h"
 
-__kernel void goose_i2_pack_f16(__global const float *source, __global ushort *dest, int count) {
-    uint x, thread;
-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(x));
-    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
-    native_pack_f16_g((uint64_t)source, (uint64_t)dest, count, x, thread);
-}
-
-// One CTA consumes up to 16 queries and one key partition. The host
-// keeps this workspace bounded by chunking the attention query axis.
-#define INKLING_FLASH_ENTRY(name, decode, prefill, all_softmax) \
-__kernel void name(__global const ushort *q, __global const ushort *k, \
-    __global const ushort *v, __global const float *relative, __global const float *bias, \
-    __global const float *sinks, __global const int64_t *key_pos, __global const int64_t *query_pos, \
-    __global float *partials, __global float *metadata, int64_t keys, int64_t queries, \
-    int64_t parts, int64_t window, float scale, int q4) { \
-    uint query_tile, head, part, thread; \
-    __local float scores[16*32], maxval[16], sum[16], alpha[16]; \
-    __local ushort probs[16*32]; \
-    if (decode) query_tile = 0; \
-    else __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(query_tile)); \
-    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(head)); \
-    __asm__("mov.u32 %0, %%ctaid.z;" : "=r"(part)); \
-    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread)); \
-    i2_native_flash_g((uint64_t)q,(uint64_t)k,(uint64_t)v,(uint64_t)relative,(uint64_t)bias, \
-        (uint64_t)sinks,(uint64_t)key_pos,(uint64_t)query_pos,(uint64_t)partials,(uint64_t)metadata, \
-        (uint64_t)scores,(uint64_t)maxval,(uint64_t)sum,(uint64_t)alpha,(uint64_t)probs, \
-        keys,queries,parts,window,scale,q4,query_tile,head,part,thread,decode,prefill,all_softmax); \
-}
-
-INKLING_FLASH_ENTRY(goose_i2_flash_mma, false, false, false)
-INKLING_FLASH_ENTRY(goose_i2_flash_mma_decode, true, false, false)
-INKLING_FLASH_ENTRY(goose_i2_flash_mma_prefill, false, true, false)
-#ifdef GOOSE_INKLING_FLASH_TILES_IMAGE
-INKLING_FLASH_ENTRY(i2_flash_prefill_all_softmax, false, true, true)
-#endif
-#undef INKLING_FLASH_ENTRY
-
-__kernel void goose_i2_flash_mma_merge(__global const float *partial,
-     __global const float *meta, __global float *out, int64_t parts) {
-    uint head, channel;
-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(head));
-    __asm__("mov.u32 %0, %%tid.x;" : "=r"(channel));
-    native_flash_merge_g((uint64_t)partial, (uint64_t)meta, (uint64_t)out, parts, head, channel);
-}
+#include "flash-native-image-entries.h"

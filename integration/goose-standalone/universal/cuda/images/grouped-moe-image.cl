@@ -56,29 +56,4 @@ static float4 moe_mma(float4 acc, uint2 a, uint2 b, uint lo, uint hi) {
 })
 #include "i2-grouped-moe-device.h"
 
-__kernel void goose_i2_moe_pack(__global const uchar *input, __global const ulong *jobs,
-    __global ushort *packed, int width, int count) {
-    uint group, job, lane;
-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(group));
-    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(job));
-    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
-    i2_moe_pack_g((uint64_t)input,(uint64_t)jobs,(uint64_t)packed,width,count,group,job,lane);
-}
-
-#define MOE_MMQ(ENTRY, TYPE, GROUPS) \
-__kernel void ENTRY(__global const uchar *weight, __global const ushort *packed, \
-    __global uchar *output, __global const ulong *jobs, __global const ulong *tiles, \
-    ulong stride, int width, int rows) { \
-    uint group, tile, thread; \
-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(group)); \
-    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(tile)); \
-    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread)); \
-    i2_grouped_moe_g((uint64_t)weight,(uint64_t)packed,(uint64_t)output,(uint64_t)jobs, \
-        (uint64_t)tiles,stride,width,rows,TYPE,GROUPS,group,tile,thread); \
-}
-MOE_MMQ(goose_i2_xs_mmq, 23, 1)
-MOE_MMQ(goose_i2_nl_mmq, 20, 1)
-MOE_MMQ(goose_i2_xs_mmq16, 23, 2)
-MOE_MMQ(goose_i2_nl_mmq16, 20, 2)
-MOE_MMQ(goose_i2_xs_mmq32, 23, 4)
-MOE_MMQ(goose_i2_nl_mmq32, 20, 4)
+#include "grouped-moe-image-entries.h"
