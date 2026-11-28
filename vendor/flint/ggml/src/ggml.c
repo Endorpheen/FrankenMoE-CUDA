@@ -72,9 +72,10 @@
 void fg_ggml_allow_debugger(int child) { prctl(PR_SET_PTRACER, child); }
 #endif
 
-static ggml_abort_callback_t g_abort_callback = NULL;
+#ifdef GOOSEINFER_TYPE_METADATA_ONLY
+extern void fg_ggml_abort_message(uint64_t address);
+#endif
 
-// Set the abort callback (passing null will restore original abort functionality: printing a message to stdout)
 void ggml_abort(const char * file, int line, const char * fmt, ...) {
     fflush(stdout);
 
@@ -86,14 +87,12 @@ void ggml_abort(const char * file, int line, const char * fmt, ...) {
     vsnprintf(message + offset, sizeof(message) - offset, fmt, args);
     va_end(args);
 
-    if (g_abort_callback) {
-        g_abort_callback(message);
-    } else {
-        // default: print error and backtrace to stderr
-        fprintf(stderr, "%s\n", message);
-        ggml_print_backtrace();
-    }
-
+#ifdef GOOSEINFER_TYPE_METADATA_ONLY
+    fg_ggml_abort_message((uintptr_t)message);
+#else
+    fprintf(stderr, "%s\n", message);
+    ggml_print_backtrace();
+#endif
     abort();
 }
 
@@ -106,13 +105,6 @@ void ggml_abort(const char * file, int line, const char * fmt, ...) {
 #ifndef GOOSEINFER_TYPE_METADATA_ONLY
 #include "ggml-logging-reference.inc"
 #endif
-
-void ggml_log_callback_default(enum ggml_log_level level, const char * text, void * user_data) {
-    (void) level;
-    (void) user_data;
-    fputs(text, stderr);
-    fflush(stderr);
-}
 
 //
 // end of logging block

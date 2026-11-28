@@ -39,3 +39,10 @@ void ggml_log_internal(enum ggml_log_level level, const char * format, ...) {
     ggml_log_internal_v(level, format, args);
     va_end(args);
 }
+
+void ggml_log_callback_default(enum ggml_log_level level, const char * text, void * user_data) {
+    (void) level;
+    (void) user_data;
+    fputs(text, stderr);
+    fflush(stderr);
+}

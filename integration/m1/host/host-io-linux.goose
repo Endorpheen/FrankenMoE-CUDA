@@ -133,3 +133,12 @@ export fn ggml_print_backtrace() {
     host_runtime_close(lock[0]);
     if child > 0 { trace_wait(child, 0, 0); }
 }
+
+fn ggml_stderr_write(address: u64, bytes: u64) {
+    var written: u64 = 0;
+    while written < bytes {
+        let count = host_runtime_write(2, address + written, bytes - written);
+        if count <= 0 { return; }
+        written += count as! u64;
+    }
+}

@@ -22,3 +22,16 @@ export fn ggml_aligned_malloc(bytes: u64) -> u64 { return host_win_aligned_mallo
 export fn ggml_aligned_free(address: u64, bytes: u64) { host_win_aligned_free(address); }
 
 export fn ggml_print_backtrace() {}
+
+extern fn ggml_crt_write(fd: i32, address: u64, bytes: u32) -> i32;
+
+fn ggml_stderr_write(address: u64, bytes: u64) {
+    var written: u64 = 0;
+    while written < bytes {
+        let left = bytes - written;
+        let chunk: u32 = if left > 2147483647 { 2147483647 } else { left as! u32 };
+        let count = ggml_crt_write(2, address + written, chunk);
+        if count <= 0 { return; }
+        written += count as! u64;
+    }
+}

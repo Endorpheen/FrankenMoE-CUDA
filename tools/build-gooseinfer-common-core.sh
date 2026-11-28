@@ -49,9 +49,9 @@ if [[ "$target" == linux ]]; then
 else
     io_symbols=(--redefine-sym=host_runtime_recv=recv --redefine-sym=host_runtime_send=send --redefine-sym=host_runtime_close=closesocket
         --redefine-sym=host_win_aligned_malloc=_aligned_malloc --redefine-sym=host_win_aligned_free=_aligned_free
-        --redefine-sym=host_conv_time=_time64 --redefine-sym=host_conv_localtime=_localtime64)
+        --redefine-sym=ggml_crt_write=_write --redefine-sym=host_conv_time=_time64 --redefine-sym=host_conv_localtime=_localtime64)
 fi
-"$objcopy" --redefine-sym=graph_crt_getenv=getenv --redefine-sym=host_quant_lround=lroundf \
+"$objcopy" --redefine-sym=ggml_diagnostic_strlen=strlen --redefine-sym=graph_crt_getenv=getenv --redefine-sym=host_quant_lround=lroundf \
     --redefine-sym=host_conv_strtod=strtod --redefine-sym=host_conv_strftime=strftime "${io_symbols[@]}" "$out/graph-bindings.o"
 "$cc" -O1 "${flags[@]}" -c "$host/goose_host.c" -o "$out/goose-host.o"
 CC="$cc" WINDOWS_CC="$cc" bash "$root/tools/build-gooseinfer-socket.sh" "$target" "$out/socket-forwards.o"

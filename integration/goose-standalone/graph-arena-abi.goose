@@ -89,7 +89,25 @@ export fn ggml_flash_attn_ext_set_n_kv_max(address: i64, maximum: i32) {
 
 type GgmlLogCallback = c_fnptr(i32, c_ptr<const u8>, u64) -> void;
 
-extern fn ggml_log_callback_default(level: i32, text: c_ptr<const u8>, data: u64);
+extern fn ggml_diagnostic_strlen(text: c_ptr<const u8>) -> u64;
+
+fn ggml_diagnostic_write(text: c_ptr<const u8>) {
+    var address: u64 = 0;
+    arena_error_copy(unsafe_c_address<c_ptr<void>>(address), unsafe_c_address<c_ptr<const void>>(text), 8);
+    let bytes = ggml_diagnostic_strlen(text);
+    if bytes != 0 { ggml_stderr_write(address, bytes); }
+}
+
+export fn ggml_log_callback_default(level: i32, address: u64, data: u64) {
+    ggml_diagnostic_write(unsafe_c_ptr<c_ptr<const u8>>(address));
+}
+
+export fn fg_ggml_abort_message(address: u64) {
+    ggml_diagnostic_write(unsafe_c_ptr<c_ptr<const u8>>(address));
+    common_memory_error("\n");
+    ggml_print_backtrace();
+    common_memory_abort();
+}
 
 var ggml_log_callback: u64;
 var ggml_log_data: u64;
@@ -99,13 +117,9 @@ export fn ggml_log_set(callback: u64, data: u64) {
     ggml_log_data = data;
 }
 
-export fn fg_ggml_log_message(level: i32, address: u64) {
-    ggml_log_message(level, unsafe_c_ptr<c_ptr<const u8>>(address));
-}
-
 fn ggml_log_message(level: i32, text: c_ptr<const u8>) {
     if ggml_log_callback == 0 {
-        ggml_log_callback_default(level, text, ggml_log_data);
+        ggml_diagnostic_write(text);
     } else {
         unsafe_c_fnptr<GgmlLogCallback>(ggml_log_callback)(level, text, ggml_log_data);
     }
