@@ -493,3 +493,7 @@ fn memory_fg_cuda_store_shared_u16(ptr: gpu_ptr<shared, u16>, index: u64, value:
 fn memory_fg_cuda_load_shared_u16(ptr: gpu_ptr<shared, const u16>, index: u64) -> u16 {
     return ptr[index];
 }
+
+fn memory_inkling_shared_u32(ptr: gpu_ptr<shared, const u32>) -> u32 {
+    return *ptr;
+}

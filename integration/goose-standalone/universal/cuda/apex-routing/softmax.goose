@@ -1,7 +1,9 @@
 extern "route_raw" fn load(base: u64, index: i32) -> f32;
 extern "route_soft_store" fn store(base: u64, index: i32, value: f32);
 extern "route_max" fn maximum(a: f32, b: f32) -> f32;
-extern "route_exponent" fn exponent(a: f32) -> f32;
+extern fn route_log2e_scale(value: f32) -> f32;
+extern fn route_ex2_ftz(value: f32) -> f32;
+fn exponent(value: f32) -> f32 { return route_ex2_ftz(route_log2e_scale(value)); }
 extern "route_fail" fn fail();
 
 export fn goose_router_softmax_256(input: u64, output: u64, scale: f32, lane: i32) {

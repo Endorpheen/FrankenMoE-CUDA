@@ -2,9 +2,9 @@ extern "i2o_load" fn load(address: u64, index: i64) -> f32;
 extern "i2o_position" fn position(address: u64, index: i64) -> i64;
 extern "i2o_shared_read" fn shared_read(address: u64, index: i64) -> f32;
 extern "i2o_shared_write" fn shared_write(address: u64, index: i64, value: f32);
-extern "i2o_probability_write" fn probability_write(address: u64, index: i64, value: f32);
-extern "i2o_exp" fn exp(value: f32) -> f32;
-extern "i2o_neg_inf" fn neg_inf() -> f32;
+extern "inkling_write_probability_g" fn probability_write(address: u64, index: i64, value: f32);
+extern "__nv_expf" fn exp(value: f32) -> f32;
+extern "inkling_negative_infinity_g" fn neg_inf() -> f32;
 
 fn adjusted_score(score: f32, query_position: i64, key_position: i64,
     window: i64, relative: u64, bias: u64, sink: f32, relative_index: i64, scale: f32) -> f32 {

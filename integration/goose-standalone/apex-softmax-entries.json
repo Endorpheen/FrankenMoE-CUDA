@@ -1,0 +1,3 @@
+[
+  {"name": "goose_router_softmax_fixed", "function": "goose_router_softmax_256_g", "parameters": ["__global float *input", "__global float *output", "float scale"], "arguments": ["@input", "@output", "scale", "lane"], "registers": {"lane": "thread_x"}}
+]

@@ -142,5 +142,94 @@
     ["include", "cuda-dsa-certified-ptx-0.h"],
     ["include", "dsa-certified-device.h"],
     ["include", "cuda-dsa-entries.h"]
+  ],
+  "inkling-device-io.h": [
+    ["extern_float", "__nv_expf", "__nv_tanhf"],
+    ["include", "inkling-device-io-ptx.h"],
+    ["include", "inkling-device-io-device.h"]
+  ],
+  "attention-image.cl": [
+    ["fp64"],
+    ["include", "attention-image-ptx-0.h"],
+    ["include", "inkling-attention-device.h"],
+    ["include", "attention-image-entries.h"]
+  ],
+  "attention-input-image.cl": [
+    ["fp64"],
+    ["extern_float", "__nv_sqrtf", "__nv_logf"],
+    ["include", "attention-input-image-ptx-0.h"],
+    ["include", "i2-attention-input-device.h"],
+    ["include", "attention-input-image-entries.h"]
+  ],
+  "flash-native-image.cl": [
+    ["fp64"],
+    ["include", "flash-native-image-ptx-0.h"],
+    ["include", "flash-native-image-matrix-ptx-0.h"],
+    ["include", "flash-native-image-ptx-1.h"],
+    ["inkling_mma", "i2_native_mma", "mma", "attention"],
+    ["vector_load_ptx", "relative_load4"],
+    ["vector_load_view", "i2_relative_load", "relative_load4", false, null],
+    ["include", "inkling-native-flash-device.h"],
+    ["include", "flash-native-image-entries.h"]
+  ],
+  "grouped-moe-image.cl": [
+    ["include", "grouped-moe-image-ptx-0.h"],
+    ["include", "grouped-moe-image-matrix-ptx-0.h"],
+    ["inkling_mma", "moe_dot", "moe_mma", "experts"],
+    ["include", "i2-grouped-moe-device.h"],
+    ["include", "grouped-moe-image-entries.h"]
+  ],
+  "i2-lazy-prelude-image.cl": [
+    ["include", "i2-lazy-prelude-image-ptx-0.h"],
+    ["include", "i2-lazy-prelude-image-ptx-1.h"],
+    ["include", "i2-lazy-prelude-device.h"],
+    ["include", "i2-lazy-prelude-image-entries.h"]
+  ],
+  "matrix-image.cl": [
+    ["include", "matrix-image-ptx-0.h"],
+    ["include", "inkling-matrix-device.h"],
+    ["include", "matrix-image-entries.h"]
+  ],
+  "q8-packed-image.cl": [
+    ["include", "q8-packed-image-ptx-0.h"],
+    ["vector_load_ptx", "q8_read4"],
+    ["vector_load_view", "q8_vector", "q8_read4", true, "I2Q8Vec_g"],
+    ["vector_store_view", "q8_store_vector"],
+    ["include", "i2-q8-packed-device.h"],
+    ["include", "q8-packed-image-entries.h"]
+  ],
+  "inkling-epilogue-primitives.h": [
+    ["alias", "i2_epilogue_tanh", "__nv_tanhf"],
+    ["alias", "i2_epilogue_exp", "__nv_expf"]
+  ],
+  "apex-route.cl": [
+    ["legacy_route_arithmetic"],
+    ["include", "apex-route-ptx.h"],
+    ["include", "device-goose.h"],
+    ["include", "apex-route-entries.h"]
+  ],
+  "apex-mailbox.cl": [
+    ["legacy_route_arithmetic"],
+    ["include", "apex-route-ptx.h"],
+    ["apex_mailbox_store", "apex_mailbox_publish", 2, 4],
+    ["include", "device-goose.h"],
+    ["include", "apex-mailbox-entries.h"]
+  ],
+  "apex-softmax.cl": [
+    ["legacy_route_arithmetic"],
+    ["include", "apex-route-ptx.h"],
+    ["include", "softmax-ptx-0.h"],
+    ["include", "softmax-ptx-1.h"],
+    ["include", "softmax-device.h"],
+    ["include", "apex-softmax-entries.h"]
+  ],
+  "apex-prediction.cl": [
+    ["legacy_route_arithmetic"],
+    ["prediction_volatile", "pred_load_logit", "f32", false],
+    ["prediction_volatile", "pred_store_logit", "f32", true],
+    ["prediction_volatile", "pred_publish", "i32", true],
+    ["prediction_nvvm"],
+    ["include", "prediction-device.h"],
+    ["include", "apex-prediction-entries.h"]
   ]
 }

@@ -5,7 +5,7 @@ extern "lazy_local_read" fn local_read(base: u64, index: i64) -> f32;
 extern "lazy_local_write" fn local_write(base: u64, index: i64, value: f32);
 extern "lazy_sum_read" fn sum_read(base: u64, index: i64) -> f64;
 extern "lazy_sum_write" fn sum_write(base: u64, index: i64, value: f64);
-extern "lazy_float_bits" fn float_bits(value: f32) -> u32;
+extern "as_uint" fn float_bits(value: f32) -> u32;
 extern "block_barrier" fn barrier();
 extern "divide_rn" fn divide(a: f32, b: f32) -> f32;
 extern "sqrt_rn" fn sqrt(value: f32) -> f32;
@@ -18,8 +18,8 @@ extern "sqrt_rn" fn sqrt(value: f32) -> f32;
  * https://github.com/ARM-software/optimized-routines/blob/master/math/exp2f_data.c
  */
 extern fn depth_fma(a: f64, b: f64, c: f64) -> f64;
-extern fn depth_bits(value: f64) -> u64;
-extern fn depth_value(bits: u64) -> f64;
+extern "as_ulong" fn depth_bits(value: f64) -> u64;
+extern "as_double" fn depth_value(bits: u64) -> f64;
 
 fn depth_exp2_word(index: u64) -> u64 {
     if index == 0 { return 0x3ff0000000000000; }

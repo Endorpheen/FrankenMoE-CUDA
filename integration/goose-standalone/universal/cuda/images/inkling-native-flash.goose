@@ -1,15 +1,21 @@
 struct I2NativeAcc { x: f32, y: f32, z: f32, w: f32 }
 
-extern "i2_native_pair" fn native_pair(address: u64, offset: i64) -> u32;
-extern "i2_native_shared_pair" fn native_shared_pair(address: u64, offset: i64) -> u32;
+extern "inkling_read_half_pair_g" fn native_pair(address: u64, offset: i64) -> u32;
+extern "inkling_read_shared_half_pair_g" fn native_shared_pair(address: u64, offset: i64) -> u32;
 extern "i2_native_mma" fn native_mma(acc: I2NativeAcc, a0: u32, a1: u32, a2: u32, a3: u32, b0: u32, b1: u32) -> I2NativeAcc;
 extern "sync_group" fn native_sync();
 extern "i2_native_warp_sync" fn native_warp_sync();
 extern "i2_native_shuffle" fn native_shuffle(value: f32, distance: i32) -> f32;
 extern "i2_native_store" fn native_store(address: u64, index: i64, value: f32);
 
-extern "i2_relative_products" fn relative_products(acc: I2NativeAcc, relative: u64, bias: u64) -> I2NativeAcc;
-extern "i2_flash_store_half" fn flash_store_half(address: u64, value: f32);
+extern "i2_relative_load" fn relative_load(acc: I2NativeAcc, address: u64) -> I2NativeAcc;
+
+fn relative_products(acc: I2NativeAcc, relative: u64, bias: u64) -> I2NativeAcc {
+    let left = relative_load(acc, relative);
+    let right = relative_load(acc, bias);
+    return I2NativeAcc { left.x * right.x, left.y * right.y, left.z * right.z, left.w * right.w };
+}
+extern "inkling_write_half_g" fn flash_store_half(address: u64, value: f32);
 
 export fn native_pack_f16(source: u64, dest: u64, count: u32, group: u32, thread: u32) {
     let index = group * 256 + thread;
@@ -37,9 +43,9 @@ fn native_relative(score: f32, query: i64, key: i64, window: i64,
 
 extern "i2_flash_load_byte" fn flash_q4_byte(address: u64) -> u32;
 extern "i2_flash_load_half_bits" fn flash_half_bits(address: u64) -> u32;
-extern "i2_flash_half_value" fn flash_half_value(bits: u32) -> f32;
-extern "i2_flash_to_half_bits" fn flash_to_half(value: f32) -> u32;
-extern "i2_flash_q4_product" fn flash_q4_product(encoded: u32, scale: u32) -> u32;
+extern "inkling_half_value_g" fn flash_half_value(bits: u32) -> f32;
+extern "inkling_half_bits_g" fn flash_to_half(value: f32) -> u32;
+extern "inkling_q4_product_g" fn flash_q4_product(encoded: u32, scale: u32) -> u32;
 
 fn native_load_half(data: u64, element: i64, q4: i32) -> u32 {
     if q4 == 0 { return flash_half_bits(data + ((element * 2) as u64)); }

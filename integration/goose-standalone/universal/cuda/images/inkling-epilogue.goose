@@ -2,7 +2,7 @@ extern fn i2_epilogue_read(base: u64, index: i64) -> f32;
 extern fn i2_epilogue_write(base: u64, index: i64, value: f32);
 extern fn i2_epilogue_tanh(value: f32) -> f32;
 extern fn i2_epilogue_exp(value: f32) -> f32;
-extern fn i2_epilogue_exp_approx(value: f32) -> f32;
+extern "inkling_fast_exp_g" fn i2_epilogue_exp_approx(value: f32) -> f32;
 extern fn i2_epilogue_rcp_approx(value: f32) -> f32;
 
 

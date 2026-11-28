@@ -1,7 +1,7 @@
 extern "i2m_load_u8" fn load_byte(address: u64) -> u32;
 extern "i2m_load_i8" fn load_signed_byte(address: u64) -> i32;
 extern "i2m_load_u16" fn load_word(address: u64) -> u32;
-extern "i2m_load_half" fn load_half(address: u64) -> f32;
+extern "inkling_half_g" fn load_half(address: u64) -> f32;
 extern "i2m_load" fn load(address: u64) -> f32;
 extern "i2m_store" fn store(address: u64, value: f32);
 extern "i2m_fma" fn multiply_add(a: f32, b: f32, sum: f32) -> f32;

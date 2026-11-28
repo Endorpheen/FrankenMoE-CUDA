@@ -1,11 +1,21 @@
 struct I2Q8Vec { x: f32, y: f32, z: f32, w: f32 }
 extern "q8_vector" fn vector(base: u64, index: i64) -> I2Q8Vec;
 extern "q8_load_f32" fn load(base: u64, index: i64) -> f32;
-extern "q8_load_quant" fn quant(base: u64, lane: u32) -> f32;
+extern "inkling_q8_value_g" fn quant(base: u64, lane: u32) -> f32;
 extern "q8_job_word" fn job_word(base: u64, index: i64) -> u64;
 extern "q8_store_f32" fn store(base: u64, value: f32);
 extern "madd" fn fma(a: f32, b: f32, c: f32) -> f32;
-extern "reduce" fn reduce(value: f32) -> f32;
+extern fn butterfly(value: f32, distance: i32) -> f32;
+
+fn reduce(value: f32) -> f32 {
+    var v = value;
+    v += butterfly(v, 16);
+    v += butterfly(v, 8);
+    v += butterfly(v, 4);
+    v += butterfly(v, 2);
+    v += butterfly(v, 1);
+    return v;
+}
 
 fn update(acc: I2Q8Vec, val: f32, row: I2Q8Vec) -> I2Q8Vec {
     return I2Q8Vec {x:fma(val,row.x,acc.x), y:fma(val,row.y,acc.y), z:fma(val,row.z,acc.z), w:fma(val,row.w,acc.w)};

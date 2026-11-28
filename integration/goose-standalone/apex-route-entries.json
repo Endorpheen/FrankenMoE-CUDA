@@ -1,0 +1,3 @@
+[
+  {"name": "goose_route_compact8", "function": "goose_compact_route_g", "parameters": ["__global float *probabilities", "__global int *ids", "__global float *weights", "float scale"], "arguments": ["@probabilities", "@ids", "@weights", "scale", "lane"], "registers": {"lane": "thread_x"}}
+]

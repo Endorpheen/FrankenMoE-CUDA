@@ -1,0 +1,3 @@
+[
+  {"name": "goose_route_compact8", "function": "apex_route_mailbox_g", "parameters": ["__global float *probabilities", "__global int *ids", "__global float *weights", "float scale", "ulong mailbox", "uint sequence"], "arguments": ["@probabilities", "@ids", "@weights", "scale", "mailbox", "sequence", "lane"], "registers": {"lane": "thread_x"}}
+]

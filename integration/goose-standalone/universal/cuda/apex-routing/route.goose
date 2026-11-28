@@ -1,9 +1,14 @@
 extern "route_score" fn load(base: u64, index: i32) -> f32;
 extern "route_write_score" fn write_score(base: u64, index: i32, value: f32);
 extern "route_write_id" fn write_id(base: u64, index: i32, value: i32);
-extern "route_neg_inf" fn neg_inf() -> f32;
+fn neg_inf() -> f32 { return word_float(0xff800000); }
 extern "route_clamp" fn clamp(value: f32) -> f32;
-extern "route_scaled" fn scaled(value: f32, scale: f32) -> f32;
+extern fn route_mul_rn(a: f32, b: f32) -> f32;
+extern fn route_add_positive_zero(value: f32) -> f32;
+
+fn scaled(value: f32, scale: f32) -> f32 {
+    return route_add_positive_zero(route_mul_rn(value, scale));
+}
 
 export fn goose_compact_route(x: u64, ids: u64, weights: u64, scale: f32, lane: i32) {
     var scores: f32[8] = [0.0; 8];

@@ -1,8 +1,8 @@
 extern "i2d_load_f32" fn load(address: u64, index: i64) -> f32;
 extern "i2d_load_i64" fn position_at(address: u64, index: i64) -> i64;
 extern "i2d_store_f32" fn store(address: u64, index: i64, value: f32);
-extern "i2d_expf" fn weight_exponential(value: f32) -> f32;
-extern "i2d_negative_infinity" fn negative_infinity() -> f32;
+extern "__nv_expf" fn weight_exponential(value: f32) -> f32;
+extern "inkling_negative_infinity_g" fn negative_infinity() -> f32;
 
 fn ordered_dot(a: u64, ai: i64, b: u64, bi: i64, width: i64) -> f32 {
     var total: f64 = 0.0;

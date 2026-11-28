@@ -42,56 +42,59 @@ python3 "$shared/frankenmoe-fragment.py" "$scratch" inkling-epilogue
 python3 "$root/tools/emit-gooseinfer-cuda-ptx-primitives.py" \
     "$root/integration/goose-standalone/cuda-ptx-primitives.json" "$scratch"
 bash "$root/tools/build-gooseinfer-cuda-memory.sh" "$scratch"
+"${GOOSE_CUDA_DRIVER_BIN:?Set GOOSE_CUDA_DRIVER_BIN to KeelWing dev.5}" --standalone --emit-provenance \
+    "$scratch/inkling-device-io.c" "$src/inkling-device-io.goose"
+python3 "$shared/frankenmoe-fragment.py" "$scratch" inkling-device-io
 while read -r header symbol entries prelude; do
     stem=${header%.h}
-    device_source="$src/$stem.cl"
+    device_source="$scratch/$stem.cl"
     options=(-Xclang -mlink-builtin-bitcode -Xclang "$cuda/nvvm/libdevice/libdevice.10.bc")
     frontend=(-march=sm_80 -cl-std=CL2.0 -nocudainc -Xclang -finclude-default-header)
     case "$stem" in
-        flash-native-image) options+=(-I"$scratch" -include "$scratch/cuda-device-prelude.h") ;;
+        flash-native-image) options+=(-I"$scratch") ;;
         flash-tiles-image)
-            device_source="$src/flash-native-image.cl"
-            options+=(-I"$scratch" -include "$scratch/cuda-device-prelude.h" -DGOOSE_INKLING_FLASH_TILES_IMAGE)
+            device_source="$scratch/flash-native-image.cl"
+            options+=(-I"$scratch" -DGOOSE_INKLING_FLASH_TILES_IMAGE)
             ;;
         i2-parallel-conv-image|i2-probe-moe-image|attention-gate-image|situ-image|tanh-image)
             device_source="$scratch/$stem-entries.h"
-            options+=(-I"$scratch" -include "$scratch/cuda-device-prelude.h"
-                -include "$src/inkling-epilogue-primitives.h" -include "$scratch/inkling-epilogue-device.h")
+            options+=(-I"$scratch"
+                -include "$scratch/inkling-epilogue-primitives.h" -include "$scratch/inkling-epilogue-device.h")
             ;;
         attention-input-image)
             "$goose" --standalone --emit-provenance "$scratch/i2-attention-input.c" "$src/i2-attention-input.goose"
             python3 "$shared/frankenmoe-fragment.py" "$scratch" i2-attention-input
-            options+=(-I"$scratch" -include "$scratch/cuda-device-prelude.h")
+            options+=(-I"$scratch")
             ;;
         q8-packed-image)
             "$goose" --standalone --emit-provenance "$scratch/i2-q8-packed.c" "$src/i2-q8-packed.goose"
             python3 "$shared/frankenmoe-fragment.py" "$scratch" i2-q8-packed
-            options+=(-I"$scratch" -include "$scratch/cuda-device-prelude.h")
+            options+=(-I"$scratch")
             ;;
         grouped-moe-image)
             "$goose" --standalone --emit-provenance "$scratch/i2-grouped-moe.c" "$src/i2-grouped-moe.goose"
             python3 "$shared/frankenmoe-fragment.py" "$scratch" i2-grouped-moe
-            options+=(-I"$scratch" -include "$scratch/cuda-device-prelude.h")
+            options+=(-I"$scratch")
             ;;
         i2-lazy-prelude-image|bridge-image)
             if [[ "$stem" == bridge-image ]]; then
-                device_source="$src/i2-lazy-prelude-image.cl"
+                device_source="$scratch/i2-lazy-prelude-image.cl"
                 options=(-DGOOSE_INKLING_BRIDGE)
             fi
             "$goose" --standalone --emit-provenance "$scratch/i2-lazy-prelude.c" "$src/i2-lazy-prelude.goose"
             python3 "$shared/frankenmoe-fragment.py" "$scratch" i2-lazy-prelude
-            options+=(-I"$scratch" -include "$scratch/cuda-device-prelude.h")
+            options+=(-I"$scratch")
             ;;
         attention-image)
             "$goose" --standalone --emit-provenance "$scratch/inkling-attention.c" "$src/inkling-attention.goose"
             python3 "$shared/frankenmoe-fragment.py" "$scratch" inkling-attention
-            frontend=(-Xclang -target-cpu -Xclang sm_80 -cl-std=CL1.2 -include "$scratch/cuda-device-prelude.h" -I"$scratch")
+            frontend=(-Xclang -target-cpu -Xclang sm_80 -cl-std=CL1.2 -I"$scratch")
             ;;
         i2-decode-q8-image|matrix-image)
             "$goose" --standalone -o "$scratch/inkling-matrix.c" "$src/matrix-image.goose"
             (cd -- "$scratch" && python3 "$src/inkling-matrix-fragment.py")
-            device_source="$src/matrix-image.cl"
-            options=(-DGG_ALIGN1= -DGG_UNALIGNED= -I"$scratch" -include "$scratch/cuda-device-prelude.h")
+            device_source="$scratch/matrix-image.cl"
+            options=(-DGG_ALIGN1= -DGG_UNALIGNED= -I"$scratch")
             if [[ "$stem" == i2-decode-q8-image ]]; then options+=(-DGOOSE_INKLING_DECODE_MATRIX); fi
             ;;
     esac
@@ -99,7 +102,9 @@ while read -r header symbol entries prelude; do
     assembler=(-arch=sm_89)
     if [[ -n $entries && $entries != - ]]; then assembler+=(--entry "$entries"); fi
     "${CLANG:-clang-18}" -target nvptx64-nvidia-cuda "${frontend[@]}" -x cl -O3 -ffp-contract=off \
-        -nocudalib -include "$scratch/typed-memory.h" -include "$scratch/typed-memory-bridge.h" "${options[@]}" \
+        -nocudalib -I"$scratch" -include "$scratch/cuda-device-prelude.h" \
+        -include "$scratch/typed-memory.h" -include "$scratch/typed-memory-bridge.h" \
+        -include "$scratch/inkling-device-io.h" "${options[@]}" \
         -S "$device_source" -o "$scratch/$stem.ptx"
     "$cuda/bin/ptxas" "${assembler[@]}" "$scratch/$stem.ptx" -o "$scratch/$stem.cubin"
     python3 - "$scratch/$stem.cubin" "$out/$header" "$symbol" <<'PY'

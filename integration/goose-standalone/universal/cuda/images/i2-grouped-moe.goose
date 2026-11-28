@@ -2,10 +2,38 @@ struct I2MoePair { x: u32, y: u32 }
 struct I2MoeAcc { x: f32, y: f32, z: f32, w: f32 }
 
 extern "moe_word" fn word(base: u64, index: i64) -> u64;
-extern "moe_pair" fn pair(base: u64, index: i64) -> u32;
+extern "inkling_read_half_pair_g" fn pair(base: u64, index: i64) -> u32;
 extern "moe_store" fn store(base: u64, index: i64, value: f32);
-extern "moe_pack" fn pack(src: u64, dst: u64, index: i64, output: i64);
-extern "moe_iq_pairs" fn iq_pairs(base: u64, k: i32, col: u32, kind: i32) -> I2MoePair;
+extern "inkling_pack_element_g" fn pack(src: u64, dst: u64, index: i64, output: i64);
+extern "inkling_half_g" fn iq4_half(address: u64) -> f32;
+extern "inkling_pack_half_pair_g" fn iq4_pack(lo: f32, hi: f32) -> u32;
+extern "fg248d_ld_u8" fn iq4_byte(address: u64) -> u32;
+extern "fg185q_ld_u16" fn iq4_u16(address: u64, offset: u64) -> u32;
+
+fn iq4_level(index: u32) -> f32 {
+    let codes: u64 = if index < 8 { 0xf6eaddcfbfad9881 } else { 0x7159453526190d01 };
+    return (((codes >> (8 * (index & 7))) as! i8) as f32);
+}
+
+fn iq_pairs(base: u64, k: i32, column: u32, kind: i32) -> I2MoePair {
+    let offset = if kind == 23 { (k >> 8) * 136 } else { (k >> 5) * 18 };
+    let tile = base + (offset as! u64);
+    var scale = iq4_half(tile);
+    var values = tile + 2 + (column as u64);
+    if kind == 23 {
+        let sub = ((k as! u32) >> 5) & 7;
+        let low = (iq4_byte(tile + 4 + ((sub >> 1) as u64)) >> (4 * (sub & 1))) & 15;
+        let high = (iq4_u16(tile, 2) >> (2 * sub)) & 3;
+        scale *= (((low + 16 * high) as i32) - 32) as f32;
+        values += 6 + (16 * (sub as u64));
+    }
+    let shift = ((k as! u32) & 16) >> 2;
+    let a = scale * iq4_level((iq4_byte(values) >> shift) & 15);
+    let b = scale * iq4_level((iq4_byte(values + 1) >> shift) & 15);
+    let c = scale * iq4_level((iq4_byte(values + 8) >> shift) & 15);
+    let d = scale * iq4_level((iq4_byte(values + 9) >> shift) & 15);
+    return I2MoePair { iq4_pack(a, b), iq4_pack(c, d) };
+}
 extern "moe_dot" fn dot(acc: I2MoeAcc, low: I2MoePair, high: I2MoePair, lo: u32, hi: u32) -> I2MoeAcc;
 
 export fn i2_moe_pack(input: u64, jobs: u64, packed: u64, width: i64, count: i64, group: i64, job: i64, lane: i64) {

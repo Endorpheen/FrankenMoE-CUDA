@@ -1,6 +1,6 @@
 extern "input_load" fn load(base: u64, index: i64) -> f32;
 extern "input_store" fn store(base: u64, index: i64, value: f32);
-extern "input_half" fn half(base: u64, index: i64, value: f32);
+extern "inkling_write_half_at_g" fn half(base: u64, index: i64, value: f32);
 extern "input_sum" fn sum_at(base: u64, index: i64) -> f64;
 extern "input_set_sum" fn sum_set(base: u64, index: i64, value: f64);
 extern "input_sync" fn sync();

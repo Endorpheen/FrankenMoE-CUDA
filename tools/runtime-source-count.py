@@ -46,19 +46,10 @@ def mark(base,names,ext,status,reason):
             raise SystemExit(f"Universal input missing: {f}. Check the inventory against the build recipe.")
         marks[f]=(status,reason)
 both='Host Linux + Windows'
-images=d/'images'
-names=' '.join(line.split()[0].removesuffix('.h') for line in (root/images/'inkling-images.txt').read_text().splitlines() if line.strip())
 gpu='GPU image input'
-generated_inkling_entries = {
-    'flash-tiles-image', 'bridge-image', 'i2-decode-q8-image',
-    'i2-parallel-conv-image', 'i2-probe-moe-image', 'attention-gate-image',
-    'situ-image', 'tanh-image',
-}
-mark(images, ' '.join(name for name in names.split() if name not in generated_inkling_entries),
-     '.cl', gpu, 'Inkling CUDA kernels or device ABI')
-mark(images, 'inkling-epilogue-primitives', '.h', gpu, 'Inkling epilogue device intrinsics')
-mark(d/'apex-routing','route softmax mailbox prediction','.cl',gpu,'Apex routing and softmax device code')
 frozen=u/'bonsai-frozen-cuda'
+mark(frozen, 'mtp-mvq pipeline-main pipeline-flash pipeline-unpack', '.cl', gpu,
+     'Compiled by the universal Bonsai MTP and pipeline image recipes')
 for f in sorted(files):
     if f.name.endswith('.cl.patch') and f.is_relative_to(d/'apex-extra'):
         marks[f]=('GPU source overlay','Patch for copied CUDA device source')

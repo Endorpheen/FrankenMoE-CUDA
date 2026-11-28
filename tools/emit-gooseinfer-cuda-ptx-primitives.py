@@ -10,7 +10,7 @@ def matrix_declaration(entry):
     name, result = entry["name"], entry["result"]
     value = entry["value"]
     instruction = entry["instruction"]
-    if not re.fullmatch(r"(?:mma|ldmatrix)\.sync[\w.]*[\s{}\[\],%0-9a-z.\-]*;", instruction):
+    if not re.fullmatch(r"(?:mma|ldmatrix)\.sync[\w.]*[\s{}\[\],%0-9a-zA-F.\-]*;", instruction):
         raise ValueError(f"Invalid matrix instruction for {name}")
     params = entry["parameters"]
     signature = ", ".join(f"{kind} {param}" for kind, param in params)
@@ -36,7 +36,7 @@ def declaration(kernel):
     if isinstance(kernel, dict):
         return matrix_declaration(kernel)
     name, result, params, instruction, results, registers, volatile, barrier = kernel
-    if not re.fullmatch(r"[a-z][\w.]*[\s\[\],%0-9a-z.\-]*;", instruction):
+    if not re.fullmatch(r"[a-z][\w.]*[\s\[\],%0-9a-zA-F.\-]*;", instruction):
         raise ValueError(f"Invalid instruction for {name}")
     signature = ", ".join(f"{kind} {param}" for kind, param in params) or "void"
     output = f'"{results[0]}"(result)' if results else ""

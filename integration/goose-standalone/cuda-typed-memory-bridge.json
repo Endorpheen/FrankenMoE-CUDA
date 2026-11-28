@@ -122,5 +122,6 @@
   ["route_write_id", ["address", "index", "value"], [["global", "i32", false, "address", null], ["index"], ["value"]]],
   ["fg_cuda_store_u16", ["address", "value"], [["global", "u16", false, "address", null], ["value"]]],
   ["fg_cuda_store_shared_u16", ["address", "index", "value"], [["shared", "u16", false, "address", null], ["index"], ["value"]]],
-  ["fg_cuda_load_shared_u16", ["address", "index"], [["shared", "u16", true, "address", null], ["index"]]]
+  ["fg_cuda_load_shared_u16", ["address", "index"], [["shared", "u16", true, "address", null], ["index"]]],
+  ["inkling_shared_u32", ["address"], [["shared", "u32", true, "address", null]]]
 ]

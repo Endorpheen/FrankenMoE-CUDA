@@ -1,0 +1,3 @@
+[
+  {"name": "goose_pred_route", "function": "apex_predict_route_g", "parameters": ["__global const float * restrict w", "__global const float * restrict x", "__global float * logits", "__global unsigned * counter", "__global volatile int * host", "int width", "int k", "int seq"], "arguments": ["@w", "@x", "@logits", "@counter", "@host", "@part", "@v", "@&last", "width", "k", "seq", "row", "t"], "registers": {"row": "block_x", "t": "thread_x"}, "shared": [["float", "part", 8, 0], ["float", "v", 256, 0], ["int", "last", 0, 0]]}
+]

@@ -107,6 +107,90 @@ def section(commands):
             yield "#else"
             yield f"#define fg_mla_mma_f16({arguments}) (acc)"
             yield "#endif"
+        elif operation == "fp64":
+            yield "#pragma OPENCL EXTENSION cl_khr_fp64 : enable"
+        elif operation == "extern_float":
+            for name in args:
+                yield f"extern float {name}(float);"
+        elif operation == "vector_load_ptx":
+            name, = args
+            yield f"static float4 {name}(uint64_t address) {{"
+            yield "    float4 value;"
+            yield ('    __asm__("ld.global.v4.f32 {%0, %1, %2, %3}, [%4];"'
+                   ' : "=f"(value.x), "=f"(value.y), "=f"(value.z), "=f"(value.w)'
+                   ' : "l"(address));')
+            yield "    return value;"
+            yield "}"
+        elif operation == "vector_load_view":
+            name, callee, indexed, result = args
+            parameters = "base,index" if indexed else "acc,address"
+            address = "(uint64_t)(base) + 16ul * (uint64_t)(index)" if indexed else "(uint64_t)(address)"
+            kind = result or "__typeof__(acc)"
+            parts = [f"#define {name}({parameters}) ({{",
+                     f"float4 value = {callee}({address});", f"({kind}){{value.x,value.y,value.z,value.w}}; }})"]
+            yield (" " + chr(92) + "\n").join(parts)
+        elif operation == "vector_store_view":
+            name, = args
+            yield (f"#define {name}(base,index,v) (((__global float4 *)(base))[index] = "
+                   "(float4)((v).x_g,(v).y_g,(v).z_g,(v).w_g))")
+        elif operation == "inkling_mma":
+            name, callee, mode = args
+            if mode == "attention":
+                params = "acc,a0,a1,a2,a3,b0,b1"
+                call = "((float4)((acc).f0,(acc).f1,(acc).f2,(acc).f3),(uint4)(a0,a1,a2,a3),(uint2)(b0,b1))"
+            elif mode == "experts":
+                params = "acc,a,b,lo,hi"
+                call = "((float4)((acc).x_g,(acc).y_g,(acc).z_g,(acc).w_g),(uint2)((a).x_g,(a).y_g),(uint2)((b).x_g,(b).y_g),lo,hi)"
+            else:
+                raise ValueError(f"Unsupported Inkling MMA mode {mode}")
+            parts = [f"#define {name}({params}) ({{", f"float4 value = {callee}{call};",
+                     "(__typeof__(acc)){value.x,value.y,value.z,value.w}; })"]
+            yield (" " + chr(92) + "\n").join(parts)
+        elif operation == "legacy_route_arithmetic":
+            yield "typedef float float32_t;"
+            for name, operator, params in (("gs_add_i64", "+", "a,b,file,line"),
+                    ("gs_mul_i64", "*", "a,b,file,line"), ("gs_add_i32", "+", "a,b,file,line"),
+                    ("gs_mul_i32", "*", "a,b,file,line"), ("gs_shr_i32", ">>", "a,b,..."),
+                    ("gs_shr_u64", ">>", "a,b,..."), ("gs_shl_u64", "<<", "a,b,...")):
+                yield f"#define {name}({params}) ((a){operator}(b))"
+            yield "#define GS_RANGE(a,low,high,type,file,line) (a)"
+            yield "#define GS_RANGE_U(value, high, type, file, line) (value)"
+            yield '#define GS_UNREACHABLE(file, line) __asm__("trap;")'
+        elif operation == "apex_mailbox_store":
+            name, vectors, lanes = args
+            if vectors != 2 or lanes != 4:
+                raise ValueError("The Apex mailbox ABI stores two four-lane vectors")
+            packs = ("a,b,c,d", "e,f,g,h")
+            yield f"static void {name}(uint64_t ids, uint64_t mailbox, uint32_t sequence) {{"
+            yield "    __asm__ volatile("
+            yield f'        "{{ .reg .u32 {",".join(packs)}; "'
+            for vector, values in enumerate(packs):
+                offset = f"+{16 * vector}" if vector else ""
+                yield f'        "ld.global.v4.u32 {{{values}}}, [%0{offset}]; "'
+            for vector, values in enumerate(packs):
+                offset = f"+{16 * vector}" if vector else ""
+                yield f'        "st.global.wt.v4.u32 [%1{offset}], {{{values}}}; "'
+            yield '        "st.release.sys.global.u32 [%1+32], %2; }"'
+            yield '        :: "l"(ids), "l"(mailbox), "r"(sequence) : "memory");'
+            yield "}"
+        elif operation == "prediction_volatile":
+            name, element, write = args
+            kind = type_name(element)
+            if write:
+                yield (f"static void {name}(uint64_t address, int32_t index, {kind} value) {{ "
+                       f"((__global volatile {kind} *)address)[index] = value; }}")
+            else:
+                yield (f"static {kind} {name}(uint64_t address, int32_t index) {{ "
+                       f"return ((__global volatile {kind} *)address)[index]; }}")
+        elif operation == "prediction_nvvm":
+            yield ("static float pred_shuffle(float value, int32_t offset) { "
+                   "return __nvvm_shfl_sync_bfly_f32(0xffffffffu, value, offset, 31); }")
+            for name, instruction in (("pred_sync","bar_sync(0)"),
+                                      ("pred_fence_gpu","membar_gl()"), ("pred_fence_system","membar_sys()")):
+                yield f"static void {name}(void) {{ __nvvm_{instruction}; }}"
+            yield ("static int32_t pred_mark_done(uint64_t address) { "
+                   "return __nvvm_atom_add_gen_i((__global int *)address, 1); }")
+            yield "static void pred_reset(uint64_t address) { *(__global unsigned *)address = 0; }"
         elif operation == "record":
             name, *fields = args
             members = " ".join(f"{type_name(kind)} {field};" for kind, field in fields)
