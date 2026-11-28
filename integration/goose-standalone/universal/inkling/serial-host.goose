@@ -45,7 +45,6 @@ export fn fg_i2_embed_prefill(decoder: u64, ids: u64, count: i32, output: u64, s
     }
     return true;
 }
-extern fn fg_i2_serial_finish(decoder: u64, position: i32, current: u64, history: u64, count: i32, logits: bool);
 extern fn i2_walk_serial_token(decoder: u64, visits: I2DraftSpan, position: i32,
     current: I2DraftSpan, history: I2DraftSpan, prelude: I2DraftSpan, bank_output: I2DraftSpan,
     bank: I2DraftSpan, messages: I2DraftSpan, trace: bool) -> i32;
@@ -68,12 +67,12 @@ export fn fg_i2_backend_token(decoder: u64, token: i32, position: i32, logits: b
     let count = i2_walk_serial_token(decoder, i2d_span(decoder + 81456, 192), position, active, blocks,
         i2_serial_span(prelude), i2_serial_span(bank_output), i2_serial_span(bank), i2_serial_span(messages), trace);
     i2d_log(str("Pure Goose visited 48 layers for token ", token as! i64, " at position ", position as! i64, "\n"));
-    fg_i2_serial_finish(decoder, position, active.address, blocks.address, count, logits);
+    i2_check_state("residual", position, active.address, 2304);
+    if logits { fg_i2_read_token_logits(decoder, position, active.address, blocks.address, count, true); }
 }
 
 
 extern fn fg_i2_softcap_logits(logits: I2DraftSpan);
-extern fn fg_i2_validate_logits(position: i32, logits: u64, handled: bool);
 
 export fn fg_i2_read_token_logits(decoder: u64, absolute: i32, current: u64, history: u64, count: i32, decode: bool) {
     var normalized: f32[2304];
@@ -87,7 +86,8 @@ export fn fg_i2_read_token_logits(decoder: u64, absolute: i32, current: u64, his
     fg_i2_host_project(decoder, i2d_read(global_weights + 16) as! i64, output.address, 2304, logits, 201024);
     let handled = decode && fg_i2_parallel_logits(decoder, logits);
     if !handled { fg_i2_softcap_logits(i2d_span(logits, 201024)); }
-    fg_i2_validate_logits(absolute, logits, handled);
+    i2_check_state("logits", absolute, logits, 201024);
+    if !handled { i2_check_finite(logits, 200058); }
 }
 
 fn fg_i2_prepare_layer_inputs(decoder: u64, aux: u64, sliding: bool, current: u64,
@@ -623,7 +623,6 @@ export fn i2_prefill_read_boundary(work: u64) {
 extern "calloc" fn i2_prefill_calloc(count: u64, bytes: u64) -> c_ptr<void>;
 extern fn fg_cuda_inkling_prefill_readback(bytes: u64) -> u64;
 extern fn fg_i2_prefill_set_readback(output: u64, elements: u64);
-extern fn fg_i2_prefill_check_residual(position: i32, current: u64);
 extern fn inkling_arena_window(enabled: bool, begin: i32);
 extern fn inkling_prelude_clear();
 extern fn inkling_prefill_final_rows(current: u64, prelude: u64) -> bool;
@@ -713,7 +712,7 @@ export fn fg_i2_backend_prefill(decoder: u64, ids: u64, begin: i32, count: i32, 
     inkling_prelude_clear();
     inkling_arena_window(false, begin);
     if workers != 0 { prefill_team_close(workers); }
-    for index in count as! i64 { fg_i2_prefill_check_residual(begin + (index as! i32), tokens + (index as! u64) * 285708); }
+    for index in count as! i64 { i2_check_state("residual", begin + (index as! i32), tokens + (index as! u64) * 285708, 2304); }
     if need_logits {
         let draft_count = i2d_int(decoder + I2D_DRAFT + I2D_COUNT);
         let draft = draft_count > 1 && draft_count == count;
@@ -734,7 +733,6 @@ export fn fg_i2_backend_prefill(decoder: u64, ids: u64, begin: i32, count: i32, 
 }
 
 extern fn fg_standalone_cpu_batch_threads() -> i64;
-extern fn fg_i2_prefill_trace_visit(visit: i32, current: u64);
 
 export fn fg_i2_prefill_task_count(count: i32) -> i32 {
     if count < 64 || i2d_env_is("I2_PARALLEL_PREP", 48) { return 1; }
@@ -761,7 +759,7 @@ export fn i2_prefill_run_visit(work: u64, index: i64, device: I2DraftSpan, retai
         base + 1, base + 2, loop_enabled, prelude);
     for field in 3 { i2d_set(device.address + (field as! u64) * 8, state[field] as! u64); }
     if begin == 4096 && count > 1 && i2_prefill_env_pointer("I2_DRAFT_PARITY\0") != 0 {
-        fg_i2_prefill_trace_visit(index as! i32, tokens + 285708);
+        i2_check_state("draft-batch-visit", index as! i32, tokens + 285708, 2304);
     }
 }
 
@@ -870,7 +868,6 @@ export fn fg_i2_prepare_device_mix(decoder: u64, aux: u64, input: u64, count: i3
 }
 
 extern fn fg_i2_direct_output_active() -> bool;
-extern fn fg_i2_prefill_trace_work(count: i32, residual: u64, moe: u64);
 
 fn i2_prefill_flag(address: u64, value: bool) {
     i2d_set_byte(address, if value { 1 } else { 0 });
@@ -965,7 +962,8 @@ fn fg_i2_prefill_layer(decoder: u64, tokens: u64, scratch: u64, count: i32, begi
         i2d_log(str("Inkling pruned host prep begin=", begin, " layer=", layer, " pass=", pass, " attention=", a, " moe=", m, "\n"));
     }
     if begin == 4096 && count > 1 && slot == 0 && i2_prefill_env_pointer("I2_DRAFT_PARITY\0") != 0 {
-        fg_i2_prefill_trace_work(count, residual + 9216, host_ffn + 9216);
+        i2_check_state("draft-postconv", count, residual + 9216, 2304);
+        i2_check_state("draft-moe-input", count, host_ffn + 9216, 2304);
     }
     if direct_mix { fg_i2_prefill_depthmix(decoder, aux, tokens, count, layer % 6 == 0, resident, scratch, residual, host_ffn); }
     if fg_i2_resident_moe() {
@@ -1071,11 +1069,7 @@ export fn fg_i2_prefill_partition(work: u64, begin: i64, end: i64) {
         let output = logits + (begin as! u64) * 4;
         let count = end - begin;
         assert(inkling_row_major_i2_text_logits(i2d_span(output, count), count, 30.0) == count);
-        let values = fg_cuda_host_view_f32(output, count);
-        for index in count {
-            let value = values[index];
-            assert(value <= 3.402823466e38 && value >= -3.402823466e38);
-        }
+        i2_check_finite(output, count);
         return;
     }
     let postconv = i2d_int(work + 88);

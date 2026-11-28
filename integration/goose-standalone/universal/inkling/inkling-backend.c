@@ -48,16 +48,6 @@ extern int64_t fg143_graph_nodes(uint64_t graph);
 #include <string.h>
 #include <time.h>
 
-static void check_state(const char *name, int token, const float *values, size_t length) {
-    if (!getenv("I2_CHECK_STATE")) return;
-    const unsigned char *bytes = (const unsigned char *)values;
-    uint64_t value = UINT64_C(14695981039346656037);
-    for (size_t i = 0; i < length * sizeof(*values); ++i) {
-        value = (value ^ bytes[i]) * UINT64_C(1099511628211);
-    }
-    fprintf(stderr, "I2 state %s token %d %016llx\n", name, token, (unsigned long long)value);
-}
-
 static double now(void);
 static _Thread_local double call_seconds[9];
 static _Thread_local unsigned call_count[9];
@@ -385,35 +375,14 @@ void fg_i2_evaluate_attention_inputs(struct ggml_context *ctx, int64_t *output, 
     evaluate(ctx, roots, matrices, projected, count);
 }
 
-extern void fg_i2_read_token_logits(struct decoder *d, int absolute, float *current, float *history, int count, bool decode);
-
 void fg_i2_softcap_logits(sl_f32 logits) {
     assert(i2_text_logits(logits, vocabulary, 30.0f) == vocabulary);
-}
-
-void fg_i2_validate_logits(int absolute, const float *logits, bool handled) {
-    check_state("logits", absolute, logits, out_width);
-    if (!handled) for (int i = 0; i < vocabulary; ++i) assert(isfinite(logits[i]));
-}
-
-void i2_serial_trace(int32_t visit, sl_f32 current) {
-    check_state("draft-serial-visit", visit, current.data, (size_t)current.len);
 }
 
 _Static_assert(offsetof(struct decoder, visits) == 81456 && logical == 48 && model_width == 2304,
     "Goose serial token ABI");
 
 _Static_assert(GGML_TYPE_Q8_0 == 8 && offsetof(struct decoder, data) == 0, "Goose embedding ABI");
-extern bool fg_i2_embed_prefill(struct decoder *d, const int32_t *ids, int count, void *output, size_t stride);
-
-void fg_i2_serial_finish(struct decoder *d, int absolute, float *current, float *history, int count, bool logits) {
-    check_state("residual", absolute, current, model_width);
-    if (logits) fg_i2_read_token_logits(d, absolute, current, history, count, true);
-}
-
-extern void fg_i2_prepare_prefill_rows(struct decoder *d, const struct native_attention_inputs *args,
-    const int64_t *aux, int slot, int begin, int count, bool sliding, const float *projections, int packed);
-
 #include "prefill.h"
 
 static double now(void) {

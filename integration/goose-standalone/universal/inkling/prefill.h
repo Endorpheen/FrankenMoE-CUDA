@@ -90,11 +90,6 @@ _Static_assert(sizeof(struct i2_prefill_work) == 112 &&
     offsetof(struct i2_prefill_work, device_prelude) == 109 &&
     offsetof(struct i2_prefill_work, poison_host) == 110, "Goose prefill layer ABI");
 
-void fg_i2_prefill_trace_work(int count, const float *residual, const float *moe) {
-    check_state("draft-postconv", count, residual, model_width);
-    check_state("draft-moe-input", count, moe, model_width);
-}
-
 struct i2_prefill_visits {
     struct decoder *decoder;
     struct prefill_token *tokens;
@@ -108,10 +103,6 @@ _Static_assert(offsetof(struct i2_prefill_visits, tokens) == 8 &&
     offsetof(struct i2_prefill_visits, begin) == 36 && offsetof(struct prefill_workspace, inputs) == 0,
     "Goose prefill visit ABI");
 
-void fg_i2_prefill_trace_visit(int visit, const float *current) {
-    check_state("draft-batch-visit", visit, current, model_width);
-}
-
 _Static_assert(sizeof(struct prefill_workspace) == 646316040 &&
     offsetof(struct prefill_workspace, linear) == 343277568 &&
     offsetof(struct prefill_workspace, linear_storage) == 343277576 &&
@@ -121,8 +112,4 @@ _Static_assert(sizeof(struct prefill_workspace) == 646316040 &&
 void fg_i2_prefill_set_readback(float *output, size_t elements) {
     prefill_direct_output = output;
     prefill_direct_output_size = elements;
-}
-
-void fg_i2_prefill_check_residual(int position, const float *current) {
-    check_state("residual", position, current, model_width);
 }
