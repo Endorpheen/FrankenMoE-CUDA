@@ -113,8 +113,6 @@ _Static_assert(offsetof(model, capture) == 15288 &&
 extern int32_t fg_bonsai_verify_launch(model *m, enum kernel kernel, uint32_t x, uint32_t y, uint32_t z,
                                        uint32_t threads, void **args);
 #define launch fg_bonsai_verify_launch
-extern int32_t fg_bonsai_launch_gdn(model *m, const CUdeviceptr *args, unsigned tokens);
-extern int32_t fg_bonsai_attention_tiles(model *m, const CUdeviceptr *args, unsigned end);
 
 _Static_assert(sizeof(CUdeviceptr) == 8 &&
     offsetof(model, kernel) == 4824 && offsetof(model, gdn_prefill_v32) == 14688 &&
@@ -157,6 +155,14 @@ _Static_assert(VERIFY_CONV_FIVE == 96 && VERIFY_CONV_FOUR == 92 && VERIFY_CONV =
 
 _Static_assert(offsetof(model, down_q8) == 4756 && FFN_TAIL == 36 && FFN_TAIL_Q8_PANEL == 75, "Bonsai FFN tail ABI");
 
+_Static_assert(
+    ADD == 3 && DECAY == 4 && CONV == 5 && GDN == 6 &&
+    SPLIT == 7 && ROPE == 8 && Q4 == 9 && TILES == 10 &&
+    GATE == 11 && EMBED == 12 && SWIGLU == 13 && DECAY_STAGE256 == 51 &&
+    DECAY_WARPPACK == 52 && DECAY_REUSE8 == 35 && DECAY_REUSE4 == 34 && CONV_BATCH == 19 &&
+    ROPE_PHASES == 16 && ROPE_APPLY == 17 && EMBED_BATCH == 18, "Bonsai elementary kernel IDs");
+extern int32_t fg_bonsai_elementary(model *m, int64_t op, const CUdeviceptr *args, int64_t c, int64_t e);
+
 int64_t bonsai_launch(uint64_t context, int64_t op, int64_t a, int64_t b, int64_t c,
                       int64_t d, int64_t e, int64_t f, int64_t g, int64_t h) {
     model *m = (model *)(uintptr_t)context;
@@ -164,7 +170,7 @@ int64_t bonsai_launch(uint64_t context, int64_t op, int64_t a, int64_t b, int64_
     unsigned n = (unsigned)e, rows = (unsigned)f, mode = (unsigned)g;
     const unsigned count = m->count;
     unsigned stride = mode == 1 ? 10240 : n * rows;
-    unsigned out_width = 0, in_width = 0, heads = 0;
+    unsigned out_width = 0, in_width = 0;
     if (m->txn.phase == TXN_RUNNING) {
         if (op == CONV) return fg_bonsai_transaction_conv(m, p);
         if (op == GDN) return fg_bonsai_transaction_gdn(m, p);
@@ -307,72 +313,9 @@ int64_t bonsai_launch(uint64_t context, int64_t op, int64_t a, int64_t b, int64_
             return launch(m, projection, (out_width+tile-1)/tile,
                 (count+tokens_per_tile-1)/tokens_per_tile, 1, wide ? 256 : 128,
                 (void *[]){ &p[0], &m->packed, &p[2], &in_width, &out_width, &tokens });
-        case ADD: {
-            const int status = launch(m, ADD, 20 * count, 1, 1, 256,
-                (void *[]){ &p[0], &p[1], &p[2] });
-            if (status || !m->capture.phase) return status;
-            if (p[0] != (CUdeviceptr)m->b[13] || p[1] != (CUdeviceptr)m->b[18] ||
-                    p[2] != (CUdeviceptr)m->b[0]) return -1;
-            return bonsai_capture_finish((uintptr_t)&m->capture);
-        }
-        case DECAY:
-            if (m->decay_small && count == 1) {
-                return launch(m, DECAY_STAGE256, 48, 1, 1, 256,
-                    (void *[]){ &p[0], &p[1], &p[2], &p[3], &p[4], &p[5], &p[6] });
-            }
-            if (m->decay_small && count < 32) {
-                unsigned tokens=count;
-                return launch(m, DECAY_WARPPACK, 12 * count, 1, 1, 128,
-                    (void *[]){ &p[0], &p[1], &p[2], &p[3], &p[4], &p[5], &p[6], &tokens });
-            }
-            if (m->decay_reuse && count>=32) {
-                unsigned tokens=count;
-                const unsigned tile=count>=256 ? 8 : 4;
-                return launch(m,tile==8 ? DECAY_REUSE8 : DECAY_REUSE4,12*((count+tile-1)/tile),
-                    1,1,128,(void *[]){&p[0],&p[1],&p[2],&p[3],&p[4],&p[5],&p[6],&tokens});
-            }
-            return launch(m, DECAY, 48 * count, 1, 1, 32, (void *[]){ &p[0], &p[1], &p[2], &p[3], &p[4], &p[5], &p[6] });
-        case CONV: {
-            unsigned tokens = count;
-            if (count > 1) {
-                return launch(m, CONV_BATCH, 40, 1, 1, 256, (void *[]){ &p[0], &p[1], &p[2], &p[3], &tokens });
-            }
-            return launch(m, CONV, 40, 1, 1, 256, (void *[]){ &p[0], &p[1], &p[2], &p[3] });
-        }
-        case GDN:
-            return fg_bonsai_launch_gdn(m, p, count);
-        case SPLIT:
-            return launch(m, SPLIT, 24 * count, 1, 1, 256, (void *[]){ &p[0], &p[1], &p[2] });
-        case ROPE: {
-            heads = (unsigned)c;
-            CUdeviceptr config = heads == 24 ? m->rope_q : m->rope_k, no_factors = 0;
-            if (count == 1) {
-                return launch(m, ROPE, heads, 1, 1, 128, (void *[]){ &p[0], &m->positions, &no_factors, &p[1], &config });
-            }
-            if (launch(m, ROPE_PHASES, (count+127)/128, 1, 1, 128,
-                (void *[]){ &m->positions, &no_factors, &m->phases, &config })) return -1;
-            return launch(m, ROPE_APPLY, heads * count, 1, 1, 128,
-                (void *[]){ &p[0], &p[1], &m->phases, &config });
-        }
-        case Q4: {
-            uint64_t stride = 4096, tasks = 32 * count;
-            unsigned blocks = 32;
-            return launch(m, Q4, (tasks+127)/128, 1, 1, 128, (void *[]){ &p[0], &p[1], &stride, &blocks, &tasks });
-        }
-        case TILES:
-            return fg_bonsai_attention_tiles(m, p, (unsigned)e);
-        case GATE:
-            return launch(m, GATE, 24 * count, 1, 1, 256, (void *[]){ &p[0], &p[1], &p[2] });
-        case EMBED: {
-            if (count > 1) {
-                return launch(m, EMBED_BATCH, 20, count, 1, 256, (void *[]){ &p[0], &p[1], &m->token_ids });
-            }
-            unsigned id = (unsigned)c, width = 5120;
-            return launch(m, EMBED, 20, 1, 1, 256, (void *[]){ &p[0], &p[1], &width, &id });
-        }
-        case SWIGLU:
-            out_width = 17408 * count;
-            return launch(m, SWIGLU, 68 * count, 1, 1, 256, (void *[]){ &p[0], &p[1], &p[2], &out_width });
+        case ADD: case DECAY: case CONV: case GDN: case SPLIT: case ROPE:
+        case Q4: case TILES: case GATE: case EMBED: case SWIGLU:
+            return fg_bonsai_elementary(m, op, p, c, e);
         default:
             return -1;
     }

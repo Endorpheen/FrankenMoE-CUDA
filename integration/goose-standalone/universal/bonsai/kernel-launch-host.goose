@@ -31,7 +31,7 @@ export fn fg_bonsai_verify_launch(model: u64, kernel: i32, x: u32, y: u32, z: u3
     return launch_cuda(model, kernel, x, y, z, threads, if kernel == 53 { 50176 } else { 0 }, stream, args, "kernel launch");
 }
 
-export fn fg_bonsai_launch_gdn(model: u64, input: u64, tokens: u32) -> i32 {
+fn fg_bonsai_launch_gdn(model: u64, input: u64, tokens: u32) -> i32 {
     var packet: u64[57] = [0; 57];
     let base = vocab_address(unsafe_c_address<c_ptr<const void>>(packet[0]));
     if !bonsai_bonsai_gdn_packet(vocab_span(input, 8), tokens, vocab_span(base, 57)) { return -1; }
@@ -103,7 +103,7 @@ export fn bonsai_ffn_tail_launch(model: u64, gate: i64, up: i64, signs: i64, own
     return 1;
 }
 
-export fn fg_bonsai_attention_tiles(model: u64, input: u64, end: u32) -> i32 {
+fn fg_bonsai_attention_tiles(model: u64, input: u64, end: u32) -> i32 {
     let count = batch_u32(model + BATCH_COUNT);
     if batch_u32(model + 14664) != 0 && count >= 8 {
         let status = fg_bonsai_flash_f32(model, vocab_word(input), vocab_word(input + 8),
@@ -155,4 +155,87 @@ export fn fg_bonsai_attention_tiles(model: u64, input: u64, end: u32) -> i32 {
         start += wave as! i32;
     }
     return 0;
+}
+
+extern fn bonsai_bonsai_capture_finish(capture: u64) -> i32;
+
+fn elementary_launch(model: u64, kernel: i32, x: u32, y: u32, threads: u32, args: const u64[:]) -> i32 {
+    return fg_bonsai_verify_launch(model, kernel, x, y, 1, threads,
+        vocab_address(unsafe_c_slice_data<c_ptr<const void>>(args)));
+}
+
+export fn fg_bonsai_elementary(model: u64, op: i64, input: u64, c: i64, e: i64) -> i32 {
+    let count = batch_u32(model + BATCH_COUNT);
+    let third = input + 16;
+    let args: u64[3] = [input, input + 8, third];
+    if op == 3 {
+        let status = elementary_launch(model, 3, 20 * count, 1, 256, args);
+        if status != 0 || batch_u32(model + BATCH_CAPTURE_PHASE) == 0 { return status; }
+        if vocab_word(input) != vocab_word(model + BATCH_B + 104) ||
+            vocab_word(input + 8) != vocab_word(model + BATCH_B + 144) ||
+            vocab_word(third) != vocab_word(model + BATCH_B) { return -1; }
+        return bonsai_bonsai_capture_finish(model + BONSAI_CAPTURE_STREAM);
+    }
+    if op == 4 {
+        let packet: u64[8] = [input, input + 8, third, input + 24, input + 32, input + 40, input + 48,
+            vocab_address(unsafe_c_address<c_ptr<const void>>(count))];
+        let small = batch_u32(model + 4780) != 0;
+        if small && count == 1 { return elementary_launch(model, 51, 48, 1, 256, packet); }
+        if small && count < 32 { return elementary_launch(model, 52, 12 * count, 1, 128, packet); }
+        if batch_u32(model + 14696) != 0 && count >= 32 {
+            let tile: u32 = if count >= 256 { 8 } else { 4 };
+            return elementary_launch(model, if tile == 8 { 35 } else { 34 },
+                12 * ((count + tile - 1) / tile), 1, 128, packet);
+        }
+        return elementary_launch(model, 4, 48 * count, 1, 32, packet);
+    }
+    if op == 5 {
+        let packet: u64[5] = [input, input + 8, third, input + 24, vocab_address(unsafe_c_address<c_ptr<const void>>(count))];
+        return elementary_launch(model, if count > 1 { 19 } else { 5 }, 40, 1, 256, packet);
+    }
+    if op == 6 { return fg_bonsai_launch_gdn(model, input, count); }
+    if op == 7 || op == 11 { return elementary_launch(model, op as! i32, 24 * count, 1, 256, args); }
+    if op == 8 {
+        let heads = c as! u32;
+        let config = vocab_word(model + (if heads == 24 { BATCH_ROPE_Q } else { BATCH_ROPE_K }));
+        let no_factors: u64 = 0;
+        let config_arg = vocab_address(unsafe_c_address<c_ptr<const void>>(config));
+        let factors_arg = vocab_address(unsafe_c_address<c_ptr<const void>>(no_factors));
+        let positions = model + BATCH_POSITIONS;
+        let phases = model + 14632;
+        if count == 1 {
+            let step: u64[5] = [input, positions, factors_arg, input + 8, config_arg];
+            return elementary_launch(model, 8, heads, 1, 128, step);
+        }
+        let prepare: u64[4] = [positions, factors_arg, phases, config_arg];
+        if elementary_launch(model, 16, (count + 127) / 128, 1, 128, prepare) != 0 { return -1; }
+        let apply: u64[4] = [input, input + 8, phases, config_arg];
+        return elementary_launch(model, 17, heads * count, 1, 128, apply);
+    }
+    if op == 9 {
+        let stride: u64 = 4096;
+        let tasks: u64 = (32 * count) as! u64;
+        let blocks: u32 = 32;
+        let packet: u64[5] = [input, input + 8, vocab_address(unsafe_c_address<c_ptr<const void>>(stride)),
+            vocab_address(unsafe_c_address<c_ptr<const void>>(blocks)), vocab_address(unsafe_c_address<c_ptr<const void>>(tasks))];
+        return elementary_launch(model, 9, ((tasks + 127) / 128) as! u32, 1, 128, packet);
+    }
+    if op == 10 { return fg_bonsai_attention_tiles(model, input, e as! u32); }
+    if op == 12 {
+        if count > 1 {
+            let batch: u64[3] = [input, input + 8, model + BATCH_TOKEN_IDS];
+            return elementary_launch(model, 18, 20, count, 256, batch);
+        }
+        let id = c as! u32;
+        let width: u32 = 5120;
+        let row: u64[4] = [input, input + 8, vocab_address(unsafe_c_address<c_ptr<const void>>(width)),
+            vocab_address(unsafe_c_address<c_ptr<const void>>(id))];
+        return elementary_launch(model, 12, 20, 1, 256, row);
+    }
+    if op == 13 {
+        let width: u32 = 17408 * count;
+        let packet: u64[4] = [input, input + 8, third, vocab_address(unsafe_c_address<c_ptr<const void>>(width))];
+        return elementary_launch(model, 13, 68 * count, 1, 256, packet);
+    }
+    return -1;
 }
