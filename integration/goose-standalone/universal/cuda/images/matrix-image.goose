@@ -151,3 +151,75 @@ export fn i2_matrix_xs_blocks(weights: u64, input: u64, output: u64, blocks: i64
     sum = reduce_lane(sum);
     if lane == 0 { store(output, sum); }
 }
+
+extern "i2m_job_word" fn job_word(base: u64, index: i64) -> u64;
+
+fn matrix_plane(jobs: u64, index: i64, words: i64) -> u64 {
+    return if words == 3 { job_word(jobs, index + 2) } else { 0 };
+}
+
+export fn matrix_launch(weights: u64, input: u64, output: u64, jobs: u64, stride: u64, width: i64,
+    rows: i64, count: i64, base: i64, words: i64, kind: i64, row: i64, first: i64, lane: u64, tile: i64) {
+    if row >= rows { return; }
+    let groups = width / 32;
+    let first_job = words * (base + first);
+    let plane = matrix_plane(jobs, first_job, words);
+    let weight = weights + (row as! u64) * stride;
+    let target = output + ((4 * row) as! u64);
+    if kind == 8 && words == 2 && tile == 8 && first + 7 < count {
+        i2_matrix_eight(weight,
+            input + job_word(jobs, first_job), input + job_word(jobs, first_job + 2),
+            input + job_word(jobs, first_job + 4), input + job_word(jobs, first_job + 6),
+            input + job_word(jobs, first_job + 8), input + job_word(jobs, first_job + 10),
+            input + job_word(jobs, first_job + 12), input + job_word(jobs, first_job + 14),
+            target + job_word(jobs, first_job + 1), target + job_word(jobs, first_job + 3),
+            target + job_word(jobs, first_job + 5), target + job_word(jobs, first_job + 7),
+            target + job_word(jobs, first_job + 9), target + job_word(jobs, first_job + 11),
+            target + job_word(jobs, first_job + 13), target + job_word(jobs, first_job + 15), groups, kind, lane);
+        return;
+    }
+    if tile == 4 && first + 3 < count && matrix_plane(jobs, first_job + words, words) == plane &&
+        matrix_plane(jobs, first_job + 2 * words, words) == plane && matrix_plane(jobs, first_job + 3 * words, words) == plane {
+        i2_matrix_four(weight + plane, input + job_word(jobs, first_job),
+            input + job_word(jobs, first_job + words), input + job_word(jobs, first_job + 2 * words),
+            input + job_word(jobs, first_job + 3 * words), target + job_word(jobs, first_job + 1),
+            target + job_word(jobs, first_job + words + 1), target + job_word(jobs, first_job + 2 * words + 1),
+            target + job_word(jobs, first_job + 3 * words + 1), groups, kind, lane);
+        return;
+    }
+    var route = first;
+    var job = first_job;
+    while route < count && route < first + tile {
+        i2_matrix_one(weight + matrix_plane(jobs, job, words), input + job_word(jobs, job),
+            target + job_word(jobs, job + 1), groups, kind, lane);
+        route += 1;
+        job += words;
+    }
+}
+
+export fn matrix_launch_xs(weights: u64, input: u64, output: u64, jobs: u64, stride: u64,
+    width: i64, rows: i64, count: i64, base: i64, words: i64, group: i64, route: i64, thread: i64) {
+    let row = 4 * group + thread / 32;
+    if row >= rows || route >= count { return; }
+    let job = words * (base + route);
+    let weight = weights + (row as! u64) * stride + matrix_plane(jobs, job, words);
+    i2_matrix_xs_blocks(weight, input + job_word(jobs, job),
+        output + job_word(jobs, job + 1) + ((4 * row) as! u64), width / 256, (thread % 32) as! u64);
+}
+
+export fn matrix_launch_projections(input_q: u64, input_k: u64, input_v: u64, output: u64,
+    weight_q: u64, weight_k: u64, weight_v: u64, weight_r: u64, weight_sink: u64,
+    weight_gate: u64, weight_key_taps: u64, weight_value_taps: u64, group: i64, thread: i64) {
+    let index = group * 4 + thread / 32;
+    var row = index;
+    var weight = weight_q;
+    var input = input_q;
+    if index >= 8632 { row -= 8632; weight = weight_value_taps; input = input_v; }
+    else if index >= 8600 { row -= 8600; weight = weight_key_taps; input = input_k; }
+    else if index >= 5528 { row -= 5528; weight = weight_gate; }
+    else if index >= 5504 { row -= 5504; weight = weight_sink; }
+    else if index >= 5120 { row -= 5120; weight = weight_r; }
+    else if index >= 4096 { row -= 4096; weight = weight_v; input = input_v; }
+    else if index >= 3072 { row -= 3072; weight = weight_k; input = input_k; }
+    i2_matrix_one(weight + ((row * 2448) as! u64), input, output + ((index * 4) as! u64), 72, 8, (thread % 32) as! u64);
+}

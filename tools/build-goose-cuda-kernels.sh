@@ -104,6 +104,8 @@ sed -n '/^fn scale_min(/,/^}/ { s/^fn scale_min(/fn mmq_scale_min(/; p; }' \
 sed -n '/^fn q4_mmq_nibbles(/,/^}/p' "$ROOT/goose/cuda/goose-mmq-load-q4k/device.goose" >> "$OUT/mmq.goose"
 sed -n '/^fn vsub4(/,/^}/p; /^fn q6_mmq_bytes(/,/^}/p' \
     "$ROOT/goose/cuda/goose-mmq-load-q6k/device.goose" >> "$OUT/mmq.goose"
+cat "$ROOT/goose/cuda/standalone-mmq-launch.goose" >> "$OUT/mmq.goose"
+cat "$ROOT/goose/cuda/standalone-mmq-pack-launch.goose" >> "$OUT/mmq-quant.goose"
 for module in q4k q6k matmul q4-attention gdn gdn-mma q4-set-rows vector rms-reference rope ssm-conv routing transform fwht moe-weighted mmq-quant mmq mmvq-q4 mmvq-q6 mmvq-pack mmvq dense-mma flash-mma flash-vec flash-load flash-stage; do
     "$GOOSE" --standalone -o "$OUT/$module.c" --header "$OUT/$module.h" "$OUT/$module.goose"
     python3 - "$OUT" "$module" <<'PY'

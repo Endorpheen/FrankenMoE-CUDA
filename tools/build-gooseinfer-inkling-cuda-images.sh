@@ -74,9 +74,11 @@ while read -r header symbol entries prelude; do
             frontend=(-Xclang -target-cpu -Xclang sm_80 -cl-std=CL1.2 -include "$shared/device-prelude.cl" -I"$scratch")
             ;;
         i2-decode-q8-image|matrix-image)
-            "$goose" --standalone -o "$scratch/inkling-matrix.c" "$src/$stem.goose"
+            "$goose" --standalone -o "$scratch/inkling-matrix.c" "$src/matrix-image.goose"
             (cd -- "$scratch" && python3 "$src/inkling-matrix-fragment.py")
-            options=(-DGG_ALIGN1= -DGG_UNALIGNED= -I"$scratch")
+            device_source="$src/matrix-image.cl"
+            options=(-DGG_ALIGN1= -DGG_UNALIGNED= -I"$scratch" -include "$shared/device-prelude.cl")
+            if [[ "$stem" == i2-decode-q8-image ]]; then options+=(-DGOOSE_INKLING_DECODE_MATRIX); fi
             ;;
     esac
     if [[ -n $prelude ]]; then options+=(-include "$src/$prelude"); fi

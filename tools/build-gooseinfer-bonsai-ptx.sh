@@ -25,6 +25,14 @@ for source in "$source_dir"/goose/*.goose "$root/goose/cuda/standalone-matmul.go
     module=$(basename -- "$source" .goose)
     module=${module#standalone-}
     if [[ -d $overlay && -f $overlay/$module.goose ]]; then source="$overlay/$module.goose"; fi
+    if [[ "$module" == mmq ]]; then
+        cat "$source" "$root/goose/cuda/standalone-mmq-launch.goose" > "$scratch/mmq.goose"
+        source="$scratch/mmq.goose"
+    fi
+    if [[ "$module" == mmq-quant ]]; then
+        cat "$source" "$root/goose/cuda/standalone-mmq-pack-launch.goose" > "$scratch/mmq-quant.goose"
+        source="$scratch/mmq-quant.goose"
+    fi
     if [[ "$module" == ssm-conv ]]; then
         cat "$source" "$root/goose/cuda/standalone-ssm-launch.goose" > "$scratch/ssm-conv.goose"
         source="$scratch/ssm-conv.goose"
