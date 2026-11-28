@@ -114,10 +114,7 @@ PY
     "${GOOSE_CC:-$cc}" -std=c11 -O2 -w -ffunction-sections -fdata-sections -c "$out/qwen2_unit.c" -o "$out/qwen2_unit.o"
     standalone="$root/integration/goose-standalone"
     if [[ "$target" == windows ]]; then
-        socket=("$standalone/windows/platform.c")
         libs+=(-lws2_32 -lpsapi)
-    else
-        socket=()
     fi
     CC="$cc" WINDOWS_CC="$cc" bash "$root/tools/build-gooseinfer-socket.sh" "$target" "$out/socket-forwards.o"
     if [[ "$mode" == embedded ]]; then
@@ -127,7 +124,7 @@ PY
         fi
         objects=("$out/queue.o" "$out/socket-forwards.o")
         for source in "$source_dir/"{loader,device,graph,gguf,qwen2,bonsai-layer,bonsai-model,moe-bank,apex-model,inkling-model,tokenizer,http,infer-main}.c \
-                     "${socket[@]}" "$standalone/json-strtod-provider.c"; do
+                     "$standalone/json-strtod-provider.c"; do
             name=$(basename -- "$source" .c)
             options=()
             if [[ "$name" == infer-main ]]; then options=(-Dmain=gooseinfer_vulkan_entry); fi
@@ -141,6 +138,6 @@ PY
     fi
     "$cc" "${flags[@]}" -isystem "$out/vulkan-headers" -I"$out" -Wl,--gc-sections \
         "$source_dir/"{loader,device,graph,gguf,qwen2,bonsai-layer,bonsai-model,moe-bank,apex-model,inkling-model,tokenizer,http,infer-main}.c "$out/qwen2_unit.o" "$out/queue.o" "$out/socket-forwards.o" \
-        "${socket[@]}" "$standalone/json-strtod-provider.c" \
+        "$standalone/json-strtod-provider.c" \
         "${libs[@]}" -lm -pthread -o "$out/frankenmoe-vulkan$suffix"
 fi

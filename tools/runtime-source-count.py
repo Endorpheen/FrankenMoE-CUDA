@@ -50,7 +50,7 @@ mark(u/'inkling','graph-execute inkling-backend','.c',both,'Graph ABI, execution
 mark(u/'bonsai','backend-cold model-host','.c',both,'Bonsai session and model host')
 mark(u/'common','probability-pipeline','.c',both,'Probability platform adapter')
 mark(s,'json-strtod-provider','.c',both,'Common graph, cache, GGML system or Vulkan JSON bridge')
-mark(s/'windows','platform web','.c','Host Windows','Windows platform, sockets and web adapter')
+mark(s/'windows','web','.c','Host Windows','Windows platform, sockets and web adapter')
 mark(s/'vulkan','loader device graph gguf qwen2 bonsai-layer bonsai-model moe-bank apex-model inkling-model tokenizer http infer-main','.c',both,'Vulkan backend: corresponding loader, compute, model or HTTP component')
 mark(Path('integration/m1/host'),'goose_host','.c',both,'Goose ABI, platform and quantization helpers')
 mark(g/'src','ggml','.c',both,'GGML tensor and graph core')

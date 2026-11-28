@@ -41,7 +41,5 @@ cat "$standalone/graph-bindings.goose" "$standalone/common-memory.goose" > "$out
 "$cc" -O1 "${flags[@]}" -c "$host/goose_host.c" -o "$out/goose-host.o"
 CC="$cc" WINDOWS_CC="$cc" bash "$root/tools/build-gooseinfer-socket.sh" "$target" "$out/socket-forwards.o"
 if [[ $target == windows ]]; then
-    for unit in platform web; do
-        "$cc" -O2 "${flags[@]}" -c "$standalone/windows/$unit.c" -o "$out/$unit.o"
-    done
+    "$cc" -O2 "${flags[@]}" -c "$standalone/windows/web.c" -o "$out/web.o"
 fi
