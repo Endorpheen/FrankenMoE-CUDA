@@ -1,14 +1,8 @@
 typedef struct { float a_g, b_g, c_g, d_g; } DenseDot_g;
 typedef struct { uint32_t hi_g, lo_g; } DenseParts_g;
 
-static uint64_t fg_dense_job(uint64_t address) { return *(__global const uint64_t *) address; }
 
-static uint32_t fg_dense_tf32(float value) {
-    uint32_t bits;
-    __asm__("cvt.rna.tf32.f32 %0, %1;" : "=r"(bits) : "f"(value));
-    return bits;
-}
-
+#include "cuda-dense-mma-ptx-0.h"
 static DenseDot_g fg_dense_mma8(uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3,
                               uint32_t b0, uint32_t b1, DenseDot_g c) {
     DenseDot_g d;

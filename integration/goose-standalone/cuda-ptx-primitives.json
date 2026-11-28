@@ -1,0 +1,21 @@
+{
+  "cuda-dense-mma-ptx-0.h": [["fg_dense_tf32", "uint32_t", [["float", "value"]], "cvt.rna.tf32.f32 %0, %1;", ["=r"], [["f", "value"]], false, false]],
+  "cuda-device-ptx-0.h": [["fg_device_barrier", "void", [], "bar.sync 0;", [], [], true, true], ["fg_device_fma", "float", [["float", "a"], ["float", "b"], ["float", "sum"]], "fma.rn.f32 %0, %1, %2, %3;", ["=f"], [["f", "a"], ["f", "b"], ["f", "sum"]], false, false], ["fg_device_fma_ftz", "float", [["float", "a"], ["float", "b"], ["float", "sum"]], "fma.rn.ftz.f32 %0, %1, %2, %3;", ["=f"], [["f", "a"], ["f", "b"], ["f", "sum"]], false, false]],
+  "cuda-device-ptx-1.h": [["fg_device_mul_rn", "float", [["float", "a"], ["float", "b"]], "mul.rn.f32 %0, %1, %2;", ["=f"], [["f", "a"], ["f", "b"]], false, false]],
+  "cuda-device-ptx-2.h": [["fg_device_reciprocal", "float", [["float", "value"]], "rcp.approx.ftz.f32 %0, %1;", ["=f"], [["f", "value"]], false, false]],
+  "cuda-device-ptx-3.h": [["fg_mla_score_sync", "void", [], "bar.sync 0;", [], [], true, true]],
+  "cuda-device-ptx-4.h": [["fg_mla_mask_popcount", "uint32_t", [["uint32_t", "word"]], "popc.b32 %0, %1;", ["=r"], [["r", "word"]], false, false]],
+  "cuda-device-ptx-5.h": [["fg_vector_sqrt", "float", [["float", "value"]], "sqrt.rn.f32 %0, %1;", ["=f"], [["f", "value"]], false, false], ["fg_vector_min", "float", [["float", "a"], ["float", "b"]], "min.f32 %0, %1, %2;", ["=f"], [["f", "a"], ["f", "b"]], false, false], ["fg_vector_max", "float", [["float", "a"], ["float", "b"]], "max.f32 %0, %1, %2;", ["=f"], [["f", "a"], ["f", "b"]], false, false]],
+  "cuda-device-ptx-6.h": [["fg_glu_round", "int64_t", [["double", "value"]], "cvt.rni.s64.f64 %0, %1;", ["=l"], [["d", "value"]], false, false], ["fg_glu_div_rn", "float", [["float", "a"], ["float", "b"]], "div.rn.f32 %0, %1, %2;", ["=f"], [["f", "a"], ["f", "b"]], false, false]],
+  "cuda-device-ptx-7.h": [["fg_rope_round", "int64_t", [["double", "value"]], "cvt.rni.s64.f64 %0, %1;", ["=l"], [["d", "value"]], false, false], ["fg_rope_fma64", "double", [["double", "a"], ["double", "b"], ["double", "sum"]], "fma.rn.f64 %0, %1, %2, %3;", ["=d"], [["d", "a"], ["d", "b"], ["d", "sum"]], false, false], ["fg_rope_sin", "float", [["float", "theta"]], "sin.approx.f32 %0, %1;", ["=f"], [["f", "theta"]], false, false], ["fg_rope_cos", "float", [["float", "theta"]], "cos.approx.f32 %0, %1;", ["=f"], [["f", "theta"]], false, false]],
+  "cuda-device-ptx-8.h": [["fg_fwht_warp_sync", "void", [], "bar.warp.sync -1;", [], [], true, true]],
+  "cuda-device-ptx-9.h": [["fg_cuda_cpwait", "void", [], "cp.async.wait_all;", [], [], true, true]],
+  "cuda-flash-mma-ptx-0.h": [["fg175c_fg176i_mulh2", "uint32_t", [["uint32_t", "a"], ["uint32_t", "b"]], "mul.rn.f16x2 %0, %1, %2;", ["=r"], [["r", "a"], ["r", "b"]], false, false]],
+  "cuda-flash-vec-ptx-0.h": [["fg175v_syncwarp", "void", [], "bar.warp.sync -1;", [], [], true, true]],
+  "cuda-gdn-mma-ptx-0.h": [["fg174m_cvt2", "uint32_t", [["float", "a"], ["float", "b"]], "cvt.rn.bf16x2.f32 %0, %2, %1;", ["=r"], [["f", "a"], ["f", "b"]], false, false]],
+  "cuda-mmq-ptx-0.h": [["mmq_half_bits", "uint16_t", [["float", "value"]], "cvt.rn.f16.f32 %0, %1;", ["=h"], [["f", "value"]], false, false]],
+  "cuda-mmq-ptx-1.h": [["fg180q_i32", "int32_t", [["float", "value"]], "cvt.rzi.s32.f32 %0, %1;", ["=r"], [["f", "value"]], false, false]],
+  "cuda-mmvq-ptx-0.h": [["mmvq_dp4a", "int32_t", [["int32_t", "a"], ["int32_t", "b"], ["int32_t", "c"]], "dp4a.s32.s32 %0, %1, %2, %3;", ["=r"], [["r", "a"], ["r", "b"], ["r", "c"]], false, false]],
+  "cuda-mmvq-ptx-1.h": [["fg178q_mulhi", "uint32_t", [["uint32_t", "a"], ["uint32_t", "b"]], "mul.hi.u32 %0, %1, %2;", ["=r"], [["r", "a"], ["r", "b"]], false, false]],
+  "cuda-rms-reference-ptx-0.h": [["fg168_rsqrt", "float", [["float", "v"]], "rsqrt.approx.f32 %0, %1;", ["=f"], [["f", "v"]], false, false]]
+}

@@ -16,9 +16,6 @@ static float fg174m_shfl(float v, int32_t lane) {
     __asm__ volatile("shfl.sync.idx.b32 %0, %1, %2, 31, -1;" : "=r"(r) : "r"(as_uint(v)), "r"(lane));
     return as_float(r);
 }
-static void fg174m_sm_store_u32(uint64_t p, uint64_t i, uint32_t v) { ((__local uint32_t *) p)[i] = v; }
-static float fg174m_sm_f32(uint64_t p, uint64_t i) { return ((__local float *) p)[i]; }
-static void fg174m_sm_store_f32(uint64_t p, uint64_t i, float v) { ((__local float *) p)[i] = v; }
 static float fg174m_sm_bf16(uint64_t p, uint64_t i) {
     return as_float((uint32_t) ((__local uint16_t *) p)[i] << 16);
 }
@@ -27,11 +24,7 @@ static void fg174m_sm_store_bf16(uint64_t p, uint64_t i, float v) {
     __asm__("cvt.rn.bf16.f32 %0, %1;" : "=h"(bits) : "f"(v));
     ((__local uint16_t *) p)[i] = bits;
 }
-static uint32_t fg174m_cvt2(float a, float b) {
-    uint32_t bits;
-    __asm__("cvt.rn.bf16x2.f32 %0, %2, %1;" : "=r"(bits) : "f"(a), "f"(b));
-    return bits;
-}
+#include "cuda-gdn-mma-ptx-0.h"
 static float fg174m_wlo(uint32_t w) { return as_float(w << 16); }
 static float fg174m_whi(uint32_t w) { return as_float(w & 0xffff0000u); }
 

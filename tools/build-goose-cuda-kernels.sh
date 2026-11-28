@@ -201,6 +201,8 @@ python3 "$ROOT/tools/emit-gooseinfer-cuda-entries.py" \
     "$ROOT/integration/goose-standalone/cuda-activation-entries.json" "$OUT/cuda-activation-entries.h"
 python3 "$ROOT/tools/emit-gooseinfer-cuda-entries.py" \
     "$ROOT/integration/goose-standalone/cuda-intrinsic-aliases.json" "$OUT/cuda-intrinsic-aliases.h"
+python3 "$ROOT/tools/emit-gooseinfer-cuda-ptx-primitives.py" "$ROOT/integration/goose-standalone/cuda-ptx-primitives.json" "$OUT"
+bash "$ROOT/tools/build-gooseinfer-cuda-memory.sh" "$OUT"
 for abi in "$ROOT/integration/goose-standalone/"cuda-{dense-mma,flash-mma,gdn-mma,flash-vec,mmvq,rms-reference,fwht,up-gate,apex-epilogue}-entries.json; do
     name=${abi##*/}
     python3 "$ROOT/tools/emit-gooseinfer-cuda-entries.py" "$abi" "$OUT/${name%.json}.h"

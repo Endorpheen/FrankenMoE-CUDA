@@ -86,6 +86,8 @@ python3 "$root/tools/emit-gooseinfer-cuda-entries.py" \
     "$standalone/cuda-activation-entries.json" "$scratch/cuda-activation-entries.h"
 python3 "$root/tools/emit-gooseinfer-cuda-entries.py" \
     "$standalone/cuda-intrinsic-aliases.json" "$scratch/cuda-intrinsic-aliases.h"
+python3 "$root/tools/emit-gooseinfer-cuda-ptx-primitives.py" "$standalone/cuda-ptx-primitives.json" "$scratch"
+bash "$root/tools/build-gooseinfer-cuda-memory.sh" "$scratch"
 for abi in "$standalone/"cuda-{dense-mma,flash-mma,gdn-mma,flash-vec,mmvq,rms-reference,fwht,up-gate,apex-epilogue}-entries.json; do
     name=${abi##*/}
     python3 "$root/tools/emit-gooseinfer-cuda-entries.py" "$abi" "$scratch/${name%.json}.h"

@@ -2,21 +2,12 @@
 
 static float fg175v_ld_f32(uint64_t p, uint64_t off) { return fg_device_global_load(p + off); }
 static void fg175v_st_f32(uint64_t p, uint64_t off, float v) { fg_device_global_store(p + off, v); }
-static int32_t fg175v_ld_i32(uint64_t p, uint64_t off) { return *(__global int32_t *) (p + off); }
-static void fg175v_st_i32(uint64_t p, uint64_t off, int32_t v) { *(__global int32_t *) (p + off) = v; }
 static float fg175v_powf(float base, int32_t exp) { return fg_attn_exp(fg_vector_log(base) * (float) exp); }
 static int32_t fg175v_round_i8(float v) { return fg180q_i32(fg180q_round(v)); }
-static void fg175v_syncwarp(void) { __asm__ volatile("bar.warp.sync -1;" ::: "memory"); }
+#include "cuda-flash-vec-ptx-0.h"
 static void fg175v_lc(void) {}
 static void fg175v_sync(void) {}
-static float fg175v_sm_f32(uint64_t p, uint64_t i) { return ((__local float *) p)[i]; }
-static void fg175v_sm_st_f32(uint64_t p, uint64_t i, float v) { ((__local float *) p)[i] = v; }
-static int32_t fg175v_sm_i32(uint64_t p, uint64_t i) { return ((__local int32_t *) p)[i]; }
-static void fg175v_sm_st_i32(uint64_t p, uint64_t i, int32_t v) { ((__local int32_t *) p)[i] = v; }
 
-static int64_t flash_vector_plan_word(uint64_t address, int32_t index) {
-    return ((__global const int64_t *) address)[index];
-}
 
 #include "flash-vec-device.h"
 

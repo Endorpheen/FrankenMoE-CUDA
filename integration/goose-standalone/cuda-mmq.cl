@@ -8,19 +8,9 @@ typedef struct { int64_t work_g, workers_g, start_g; } MmqPartition_g;
 typedef struct { int64_t route_g, live_g; uint64_t group_g, col0_g, col1_g; } MmqOperand_g;
 #define gs_shl_i32(a, b) as_int((uint32_t) (a) << ((b) & 31))
 
-static uint32_t fg_mmq_aligned_word(uint64_t address) { return *(__global uint32_t *)address; }
-static uint32_t fg_mmq_half_word(uint64_t address) { return *(__global uint16_t *)address; }
 
-static uint64_t fg_mmq_index(uint64_t address, int64_t index) {
-    return ((__global const uint64_t *) address)[index];
-}
 
-static uint16_t mmq_half_bits(float value) {
-    uint16_t bits;
-    __asm__("cvt.rn.f16.f32 %0, %1;" : "=h"(bits) : "f"(value));
-    return bits;
-}
-
+#include "cuda-mmq-ptx-0.h"
 static float fg_mmq_half_round(float value) {
     const uint16_t bits = mmq_half_bits(value);
     float rounded;
@@ -62,17 +52,7 @@ static MmqWords_g fg_mmq_ldm16(uint64_t address) {
     return words;
 }
 
-static void fg_mmq_shared_store(uint64_t address, uint32_t word) {
-    *(__local uint32_t *) address = word;
-}
-static void fg_mmq_global_store_word(uint64_t address, uint32_t word) {
-    *(__global uint32_t *) address = word;
-}
 
-static float fg_mmq_shared_float(uint64_t address) { return *(__local float *) address; }
-static int32_t fg_mmq_shared_i8(uint64_t address) { return *(__local int8_t *) address; }
-static void fg_mmq_shared_store_float(uint64_t address, float value) { *(__local float *) address = value; }
-static uint32_t fg_mmq_shared_word(uint64_t address) { return *(__local uint32_t *) address; }
 static float fg_mmq_half_value(uint32_t bits) {
     float value;
     __asm__("cvt.f32.f16 %0, %1;" : "=f"(value) : "h"((uint16_t) bits));
@@ -87,8 +67,6 @@ static float fg180q_ld_f4x(uint64_t src, uint64_t off) { return fg_device_global
 static float fg180q_ld_f4y(uint64_t src, uint64_t off) { return fg_device_global_load(src + off + 4); }
 static float fg180q_ld_f4z(uint64_t src, uint64_t off) { return fg_device_global_load(src + off + 8); }
 static float fg180q_ld_f4w(uint64_t src, uint64_t off) { return fg_device_global_load(src + off + 12); }
-static int64_t fg180q_ld_i32(uint64_t src, uint64_t off) { return *(__global int32_t *) (src + off); }
-static void fg180q_st_i32(uint64_t dst, uint64_t off, int32_t value) { *(__global int32_t *) (dst + off) = value; }
 static void fg180q_st_f32(uint64_t dst, uint64_t off, float value) { fg_device_global_store(dst + off, value); }
 static void fg180q_st_half2(uint64_t dst, uint64_t off, float d, float sum) {
     __global uint16_t * output = (__global uint16_t *) (dst + off);
@@ -101,11 +79,7 @@ static float fg180q_shfl_xor(float value, uint32_t mask, int32_t delta) {
                      : "=r"(result) : "r"(as_uint(value)), "r"(delta), "r"(mask));
     return as_float(result);
 }
-static int32_t fg180q_i32(float value) {
-    int32_t result;
-    __asm__("cvt.rzi.s32.f32 %0, %1;" : "=r"(result) : "f"(value));
-    return result;
-}
+#include "cuda-mmq-ptx-1.h"
 static float fg180q_round(float value) {
     if ((as_uint(value) & 0x7f800000u) == 0x7f800000u) return 0.0f;
     const int32_t integral = fg180q_i32(value);
