@@ -1,6 +1,5 @@
 type HostIqLookup = c_fnptr(u64, i64, i64) -> i64;
 
-extern fn fg_goose_host_iq_tables_pointer() -> u64;
 
 fn host_iq_lookup(slot: u64, label: const u8[:], group: i64, index: i64) -> i64 {
     let descriptor = fg_goose_host_iq_tables_pointer();
