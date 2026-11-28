@@ -14,7 +14,6 @@ extern fn fg_bonsai_session_draft(model: u64, tokens: u64, count: u32) -> i32;
 extern fn fg_bonsai_session_choice(model: u64, ignore_eos: i32, result: u64) -> i32;
 
 extern fn fg_bonsai_model_open(path: u64, image: u64, frozen: u64, context: u32, batch: u32) -> u64;
-extern fn fg_bonsai_ffn_dispatch() -> u64;
 extern fn bonsai_bonsai_capture_abort(capture: u64);
 
 fn session_context(operation: u64, argument: u64) -> i32 {
@@ -35,13 +34,12 @@ fn session_close_capture(model: u64) {
     let stream = vocab_word(capture);
     if stream == 0 || session_context(32, vocab_word(model)) != 0 { return; }
     bonsai_bonsai_capture_abort(capture);
-    let dispatch = fg_bonsai_ffn_dispatch();
-    let destroy = unsafe_c_fnptr<BonsaiContext>(vocab_word(dispatch + 64));
+    let destroy = unsafe_c_fnptr<BonsaiContext>(bonsai_ffn_driver[8]);
     for layer in 64 {
         let graph = vocab_word(capture + 8 + (layer as! u64) * 8);
         if graph != 0 { destroy(graph); }
     }
-    unsafe_c_fnptr<BonsaiContext>(vocab_word(dispatch + 8))(stream);
+    unsafe_c_fnptr<BonsaiContext>(bonsai_ffn_driver[1])(stream);
     session_pop();
 }
 

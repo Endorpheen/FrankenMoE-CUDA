@@ -18,12 +18,6 @@
 #include <unistd.h>
 #include <time.h>
 
-#ifdef _WIN32
-#define dlsym(module, name) ((void *)GetProcAddress((HMODULE)(module), (name)))
-#define dlclose(module) FreeLibrary((HMODULE)(module))
-#else
-#include <dlfcn.h>
-#endif
 #include <pthread.h>
 
 #ifdef _WIN32
@@ -160,7 +154,32 @@ static int check(CUresult status, const char *where) {
     return -1;
 }
 
-#include "graph.inc"
+static const enum kernel ffn_graph_nodes[] = {
+    NORM_WIDE_SMALL, ROTATE, MV_PACK_Q8, MV_Q8_2, MV_Q8_2,
+    SWIGLU, ROTATE, MV_PACK_Q8, MV_Q8_2, ADD,
+};
+
+_Static_assert(offsetof(struct bonsai_ffn_capture, stream) == 0 &&
+    offsetof(struct bonsai_ffn_capture, graphs) == 8 && offsetof(struct bonsai_ffn_capture, norm) == 520 &&
+    offsetof(struct bonsai_ffn_capture, phase) == 1032 && offsetof(struct bonsai_ffn_capture, layer) == 1036 &&
+    offsetof(struct bonsai_ffn_capture, next) == 1040 && offsetof(struct bonsai_ffn_capture, enabled) == 1044 &&
+    LAYERS == 64, "Bonsai FFN capture ABI");
+
+extern void bonsai_capture_abort(uint64_t capture);
+extern int32_t bonsai_capture_begin(uint64_t capture, uint64_t norm);
+extern int32_t bonsai_capture_finish(uint64_t capture);
+
+extern void fg_bonsai_bind_ffn_graph(void);
+extern void fg_bonsai_ffn_graph_open(model *m);
+int32_t fg_bonsai_ffn_bind_once(void) {
+    static pthread_once_t once = PTHREAD_ONCE_INIT;
+    return pthread_once(&once, fg_bonsai_bind_ffn_graph);
+}
+
+_Static_assert(offsetof(struct bonsai_cuda_api, library) == 152 && offsetof(model, capture) == 15288 &&
+    offsetof(model, q8_mode) == 4712 && offsetof(model, norm_wide) == 4720 &&
+    CU_STREAM_NON_BLOCKING == 1 && CU_STREAM_CAPTURE_MODE_THREAD_LOCAL == 1, "Bonsai FFN driver ABI");
+
 
 static int launch(model *m, enum kernel id, unsigned x, unsigned y, unsigned z,
                   unsigned threads, void **args) {
@@ -316,7 +335,7 @@ int64_t bonsai_launch(uint64_t context, int64_t op, int64_t a, int64_t b, int64_
         case NORM:
             if (m->capture.enabled && m->in_decode && count == 1 &&
                     p[0] == (CUdeviceptr)m->b[13] && p[3] == (CUdeviceptr)m->b[1] &&
-                    ffn_graph_begin(m, p[1])) return -1;
+                    bonsai_capture_begin((uintptr_t)&m->capture, p[1])) return -1;
             if (m->norm_wide && mode == 0 && n == 5120 && rows == 1 && stride == n) {
                 const int small = count <= 512;
                 return launch(m, small ? NORM_WIDE_SMALL : NORM_WIDE_LARGE, count, 1, 1,
@@ -453,7 +472,7 @@ int64_t bonsai_launch(uint64_t context, int64_t op, int64_t a, int64_t b, int64_
             if (status || !m->capture.phase) return status;
             if (p[0] != (CUdeviceptr)m->b[13] || p[1] != (CUdeviceptr)m->b[18] ||
                     p[2] != (CUdeviceptr)m->b[0]) return -1;
-            return ffn_graph_finish(m);
+            return bonsai_capture_finish((uintptr_t)&m->capture);
         }
         case DECAY:
             if (m->decay_small && count == 1) {
@@ -891,7 +910,7 @@ model *fg_bonsai_model_open(const char *gguf, const char *cubin, const char *fro
         bonsai_mtp_goose_init(0, NULL);
         if (!m->choice_mask || draft_open(m)) goto error;
     }
-    ffn_graph_open(m);
+    fg_bonsai_ffn_graph_open(m);
     size_t available = 0, total = 0;
     if (!check(bonsai_cuda.fn_cuMemGetInfo(&available, &total), "free VRAM")) {
         fprintf(stderr, "Device free: " BONSAI_SIZE_FMT " / " BONSAI_SIZE_FMT " bytes\n", available, total);
@@ -932,7 +951,7 @@ int32_t fg_bonsai_batch_verify(model *m, uint32_t count) { return exact_verify(m
 int32_t fg_bonsai_batch_init_verify(model *m) { return init_verify_batch(m); }
 
 void fg_bonsai_batch_graph_error(model *m, int64_t status) {
-    if (m->capture.stream) ffn_graph_abort(m);
+    if (m->capture.stream) bonsai_capture_abort((uintptr_t)&m->capture);
     fprintf(stderr, "Goose graph failed: %lld\n", (long long)status);
 }
 
@@ -960,5 +979,3 @@ int fg_bonsai_session_draft(model *m, const uint32_t *tokens, unsigned count) { 
 int fg_bonsai_session_choice(model *m, int ignore_eos, struct token_choice *choice) { return choose_device(m, ignore_eos, choice); }
 _Static_assert(offsetof(model, mtp_pending) == 24 && offsetof(model, verify_rows) == 52 &&
     offsetof(model, draft_chain) == 296 && VERIFY_ROWS == 5, "Bonsai MTP session ABI");
-
-_Static_assert(offsetof(model, capture) == 15288, "Bonsai session capture ABI");
