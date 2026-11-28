@@ -13,10 +13,6 @@ const VK_HTTP_QWEN_RECORDING: u64 = 2768;
 const VK_HTTP_FIRST_TOKEN: u64 = 0xffffffff;
 const VK_HTTP_MARK_COUNT: i64 = 5;
 
-extern fn fg_vk_bonsai_open(path: u64, capacity: u32, index: u32, cpu: i32) -> u64;
-extern fn fg_vk_bonsai_close(model: u64);
-extern fn fg_vk_bonsai_step(model: u64, id: u32, logits: u64) -> i32;
-extern fn fg_vk_bonsai_reset(model: u64) -> i32;
 extern fn fg_vk_apex_open(path: u64, capacity: u32, index: u32, cpu: i32) -> u64;
 extern fn fg_vk_apex_close(model: u64);
 extern fn fg_vk_apex_step(model: u64, id: u32, logits: u64) -> i32;

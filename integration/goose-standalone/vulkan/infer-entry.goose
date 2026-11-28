@@ -6,7 +6,6 @@ extern fn fg_vk_queue_init(argc: i32, argv: u64);
 extern fn fg_vk_bank_init(argc: i32, argv: u64);
 extern fn fg_socket_init(argc: i32, argv: u64);
 extern fn goose_init(argc: i32, argv: u64);
-extern fn fg_vk_bonsai_is_eog(model: u64, token: u32) -> i32;
 extern fn fg_vk_cli_crt_write(address: u64, size: u64, count: u64, file: u64) -> u64;
 extern fn fg_vk_cli_crt_ferror(file: u64) -> i32;
 
@@ -91,12 +90,6 @@ fn vk_cli_detect(path: u64) -> i64 {
     return result;
 }
 
-fn vk_cli_byte(address: u64) -> u8 {
-    var value: u8 = 0;
-    vk_gguf_copy(unsafe_c_address<c_ptr<void>>(value), unsafe_c_ptr<c_ptr<const void>>(address), 1);
-    return value;
-}
-
 fn vk_cli_read_prompt(path: u64) -> VkGgufSlice {
     let empty = vk_tok_slice(0, 0);
     let mode: u8[3] = [114,98,0];
@@ -108,7 +101,7 @@ fn vk_cli_read_prompt(path: u64) -> VkGgufSlice {
         size = fg_vk_crt_read(buffer, 1, 65537, file);
         if size > 65536 || fg_vk_cli_crt_ferror(file) != 0 { size = 0; }
         for i in (size as! i64) {
-            if vk_cli_byte(buffer + (i as! u64)) == 0 { size = 0; break; }
+            if vk_gguf_read_byte(buffer + (i as! u64)) == 0 { size = 0; break; }
         }
     }
     fg_vk_tok_fclose(file);
@@ -181,7 +174,7 @@ fn vk_cli_infer(path: u64, opts: VkCliOptions, ids: u64, prompt: u32, tokenizer:
         var name: u8[>..] = [];
         var i: u64 = 0;
         while i < 256 {
-            let byte = vk_cli_byte(model + VK_CLI_QWEN_DEVICE_NAME + i);
+            let byte = vk_gguf_read_byte(model + VK_CLI_QWEN_DEVICE_NAME + i);
             if byte == 0 { break; }
             name.push(byte);
             i += 1;

@@ -24,6 +24,12 @@ const VK_GGUF_TENSOR_SLOTS: u64 = 118864;
 const VK_GGUF_STAGING_SIZE: u64 = 32;
 const VK_GGUF_MAX_PREFIX: i64 = 67108864;
 
+fn vk_gguf_read_byte(address: u64) -> u8 {
+    var value: u8 = 0;
+    vk_gguf_copy(unsafe_c_address<c_ptr<void>>(value), unsafe_c_ptr<c_ptr<const void>>(address), 1);
+    return value;
+}
+
 fn vk_gguf_read_word(address: u64) -> u64 {
     var value: u64 = 0;
     vk_gguf_copy(unsafe_c_address<c_ptr<void>>(value), unsafe_c_ptr<c_ptr<const void>>(address), 8);
