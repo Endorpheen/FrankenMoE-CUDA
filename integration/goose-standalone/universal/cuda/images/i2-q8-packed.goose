@@ -67,6 +67,61 @@ export fn i2_q8_rows16(weights: u64, packed: u64, output: u64, jobs: u64, stride
     if wide { scatter(target, jobs, first + 16, c); scatter(target, jobs, first + 24, d); }
 }
 
+export fn i2_q8_fp32_pair(weights: u64, packed: u64, output: u64, jobs: u64,
+    width: i64, warps: i64, block_row: i64, tile: i64, thread: i64) {
+    let lane = thread % 32;
+    let row = 2 * (block_row * warps + thread / 32);
+    let base = 4 * tile * width + lane;
+    let weight = row * width + lane;
+    let zero = I2Q8Vec {x:0.0,y:0.0,z:0.0,w:0.0};
+    var a0 = zero;
+    var b0 = zero;
+    var c0 = zero;
+    var d0 = zero;
+    var a1 = zero;
+    var b1 = zero;
+    var c1 = zero;
+    var d1 = zero;
+    var at: i64 = 0;
+    while at < width {
+        let w0 = load(weights, weight + at);
+        let w1 = load(weights, weight + width + at);
+        let index = base + at;
+        let a = vector(packed, index);
+        a0 = update(a0, w0, a);
+        a1 = update(a1, w1, a);
+        let b = vector(packed, index + width);
+        b0 = update(b0, w0, b);
+        b1 = update(b1, w1, b);
+        let c = vector(packed, index + 2 * width);
+        c0 = update(c0, w0, c);
+        c1 = update(c1, w1, c);
+        let d = vector(packed, index + 3 * width);
+        d0 = update(d0, w0, d);
+        d1 = update(d1, w1, d);
+        at += 32;
+    }
+    a0 = reduce_vector(a0);
+    b0 = reduce_vector(b0);
+    c0 = reduce_vector(c0);
+    d0 = reduce_vector(d0);
+    a1 = reduce_vector(a1);
+    b1 = reduce_vector(b1);
+    c1 = reduce_vector(c1);
+    d1 = reduce_vector(d1);
+    if lane != 0 { return; }
+    let target = output + ((4 * row) as! u64);
+    let first = tile * 32 + 1;
+    scatter(target, jobs, first, a0);
+    scatter(target, jobs, first + 8, b0);
+    scatter(target, jobs, first + 16, c0);
+    scatter(target, jobs, first + 24, d0);
+    scatter(target + 4, jobs, first, a1);
+    scatter(target + 4, jobs, first + 8, b1);
+    scatter(target + 4, jobs, first + 16, c1);
+    scatter(target + 4, jobs, first + 24, d1);
+}
+
 extern "q8_store_vector" fn store_vector(base: u64, index: i64, value: I2Q8Vec);
 
 fn pack_vector(input: u64, jobs: u64, first: i64, channel: i64) -> I2Q8Vec {

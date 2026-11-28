@@ -60,8 +60,8 @@ var cuda_saved_i2_packed_q8_narrow4: u64;
 var cuda_saved_i2_packed_q8_wide2: u64;
 var cuda_saved_i2_packed_q8_wide4: u64;
 var cuda_saved_i2_packed_q8_expand: u64;
-var cuda_saved_i2_packed_q8_fp32w2: u64;
-var cuda_saved_i2_packed_q8_fp32w4: u64;
+var cuda_saved_i2_packed_q8_fp32_pair_w2: u64;
+var cuda_saved_i2_packed_q8_fp32_pair_w4: u64;
 var cuda_saved_i2_launch_matrix_module: u64;
 var cuda_saved_i2_launch_matrix_kernels: u64[4];
 var cuda_saved_giga_dense_matrix_module: u64;
@@ -5436,8 +5436,8 @@ fn i2_packed_q8(weight: u64, stride: u64, width: i32, rows: i32, count: i32, job
     var wide2 .= cuda_saved_i2_packed_q8_wide2;
     var wide4 .= cuda_saved_i2_packed_q8_wide4;
     var expand .= cuda_saved_i2_packed_q8_expand;
-    var fp32w2 .= cuda_saved_i2_packed_q8_fp32w2;
-    var fp32w4 .= cuda_saved_i2_packed_q8_fp32w4;
+    var fp32_pair_w2 .= cuda_saved_i2_packed_q8_fp32_pair_w2;
+    var fp32_pair_w4 .= cuda_saved_i2_packed_q8_fp32_pair_w4;
     var error = cuda_ensure_module(module, fg_cuda_image_q8_packed_cubin());
     if error == 0 { error = cuda_ensure_kernel(pack, module, "i2_pack_q8_input8"); }
     if error == 0 { error = cuda_ensure_kernel(multiply, module, "i2_q8_packed8"); }
@@ -5445,8 +5445,8 @@ fn i2_packed_q8(weight: u64, stride: u64, width: i32, rows: i32, count: i32, job
     if error == 0 && wide && warps == 2 { error = cuda_ensure_kernel(wide2, module, "i2_q8_packed16w2"); }
     if error == 0 && wide && warps == 4 { error = cuda_ensure_kernel(wide4, module, "i2_q8_packed16w4"); }
     if error == 0 && expanded { error = cuda_ensure_kernel(expand, module, "i2_q8_expand_f32"); }
-    if error == 0 && expanded && warps == 2 { error = cuda_ensure_kernel(fp32w2, module, "i2_q8_fp32w2"); }
-    if error == 0 && expanded && warps == 4 { error = cuda_ensure_kernel(fp32w4, module, "i2_q8_fp32w4"); }
+    if error == 0 && expanded && warps == 2 { error = cuda_ensure_kernel(fp32_pair_w2, module, "i2_q8_fp32_pair_w2"); }
+    if error == 0 && expanded && warps == 4 { error = cuda_ensure_kernel(fp32_pair_w4, module, "i2_q8_fp32_pair_w4"); }
     if error != 0 { return -1; }
 
     // The regular and grouped matrix launches reuse this work buffer on
@@ -5468,12 +5468,13 @@ fn i2_packed_q8(weight: u64, stride: u64, width: i32, rows: i32, count: i32, job
             1, 128, 1, 1, 0, 0, cuda_slice_address(args), 0);
     }
     let kernel = if expanded {
-        if warps == 2 { fp32w2 } else { fp32w4 }
+        if warps == 2 { fp32_pair_w2 } else { fp32_pair_w4 }
     } else if wide {
         if warps == 2 { wide2 } else { wide4 }
     } else if extra == 2 { narrow } else { multiply };
     if error == 0 {
-        error = cuda_capture_launch(kernel, (rows / warps) as! u32, (count / tile) as! u32, 1,
+        let rows_per_block = if expanded { 2 * warps } else { warps };
+        error = cuda_capture_launch(kernel, (rows / rows_per_block) as! u32, (count / tile) as! u32, 1,
             (32 * warps) as! u32, 1, 1, 0, 0, cuda_slice_address(matrix_args), 0);
     }
     if error == 0 { error = finish_matrix_launches(error); }
