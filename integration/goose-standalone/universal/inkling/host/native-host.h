@@ -19,16 +19,6 @@ extern void fg_i2_native_submit(struct decoder *d, const struct native_attention
 extern void fg_i2_native_project(struct decoder *d, const struct native_attention_inputs *args,
     const int64_t *aux, int slot, int begin, int count, bool sliding, int64_t weight_id, float *out);
 
-static bool use_resident_attention_projection(void) {
-    const char *setting = getenv("I2_ATTENTION_RESIDENT");
-    return !setting || strcmp(setting, "0") != 0;
-}
-
-static bool use_device_attention_input(void) {
-    const char *setting = getenv("I2_ATTENTION_DEVICE_INPUT");
-    return use_resident_attention_projection() && (!setting || strcmp(setting, "0") != 0);
-}
-
 extern void fg_i2_host_bind_attention(struct decoder *d, const int64_t *core, const int64_t *aux,
     int slot, int begin, int count, bool sliding, struct inkling_attention_graph_call *call);
 extern void fg_i2_native_resident(struct decoder *d, const int64_t *core, const int64_t *aux,

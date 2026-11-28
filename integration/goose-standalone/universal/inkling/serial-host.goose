@@ -134,7 +134,7 @@ fn fg_i2_finish_attention(decoder: u64, aux: u64, physical: i32, slot: i32, curr
 
 fn fg_i2_serial_moe(decoder: u64, core: u64, aux: u64, slot: i32, absolute: i32,
     ffn: u64, message: u64, next: u64, current: u64, projection: u64, work: u64) {
-    if fg_i2_host_resident_plan() && !i2d_env_is("I2_RESIDENT_MOE", 48) {
+    if fg_i2_resident_moe() {
         fg_i2_host_moe_resident(decoder, core, aux, slot, absolute, 1, ffn, message, next, current);
         return;
     }
@@ -167,7 +167,6 @@ fn fg_i2_serial_moe(decoder: u64, core: u64, aux: u64, slot: i32, absolute: i32,
     }
 }
 
-extern fn fg_i2_serial_graph_enabled() -> bool;
 extern fn fg_i2_serial_native_attention(decoder: u64, core: u64, aux: u64, slot: i32, absolute: i32,
     sliding: bool, inputs: u64, output: u64, work: u64);
 
@@ -188,8 +187,8 @@ export fn i2_serial_layer(decoder: u64, physical: i32, slot: i32, absolute: i32,
     if fg_i2_serial_graph_enabled() {
         let rows: u64[3] = [input, input + 9216, input + 18432];
         let row_table = i2d_address(unsafe_c_address<c_ptr<const void>>(rows[0]));
-        if i2d_byte(decoder + I2D_RETAIN) != 0 && i2d_env_is("I2_JOIN_ATTENTION_MOE", 49) &&
-            fg_i2_host_cached_history() && fg_i2_host_resident_plan() && !i2d_env_is("I2_RESIDENT_MOE", 48) {
+        if i2d_byte(decoder + I2D_RETAIN) != 0 && i2_joined_bridge_enabled() &&
+            fg_i2_host_cached_history() && fg_i2_resident_moe() {
             let add_residual = physical % 6 != 0;
             var saved_count = count;
             if !add_residual {

@@ -21,7 +21,6 @@ const I2D_VOCAB: i64 = 200058;
 
 struct I2DraftSpan { address: u64, len: i64 }
 
-extern fn fg_i2_backend_draft_features() -> bool;
 extern fn inkling_attention_reset() -> i32;
 
 fn fg_i2_backend_reset_attention(decoder: u64) -> i32 {

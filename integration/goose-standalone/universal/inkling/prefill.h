@@ -67,7 +67,7 @@ static void prefill_control(struct decoder *d, const int64_t *aux, int which, in
                             struct prefill_token *tokens, float (*current)[model_width],
                             struct prefill_workspace *scratch) {
     const int at = 18 + which * 3;
-    if (use_resident_controller()) {
+    if (fg_i2_host_resident_control()) {
         for (int t = 0; t < count; ++t) {
             memcpy(scratch->gain[t], tokens[t].messages[which], sizeof scratch->gain[t]);
         }
@@ -81,7 +81,7 @@ static void prefill_control(struct decoder *d, const int64_t *aux, int which, in
         assert(i2_rms_gain(vec(tokens[t].messages[which], model_width), vec(NULL, 0), 1e-6f,
             vec(input + model_width, model_width)) == model_width);
     }
-    if (uses_resident_plan()) {
+    if (fg_i2_host_resident_plan()) {
         project_control_group(d, aux, at, scratch->control_input[0], count, scratch->combined[0]);
         for (int t = 0; t < count; ++t) {
             memcpy(scratch->gain[t], scratch->combined[t], sizeof scratch->gain[t]);
@@ -250,7 +250,7 @@ static void prefill_layer(struct decoder *d, struct prefill_token *tokens, struc
     const bool sliding = visit[3] != 0;
     const int64_t *core = d->core + 10 * layer;
     const int64_t *aux = d->aux + 30 * layer;
-    const bool resident_attention = use_attention_graph();
+    const bool resident_attention = fg_i2_serial_graph_enabled();
     const char *conv_setting = getenv("I2_PARALLEL_CUDA_POSTCONV");
     const bool device_postconv = resident_attention && count > 1 &&
         (!conv_setting || strcmp(conv_setting, "0") != 0);
@@ -259,7 +259,7 @@ static void prefill_layer(struct decoder *d, struct prefill_token *tokens, struc
     struct i2_prefill_work setup = {d, tokens, scratch, aux, layer, pass, sliding,
         resident_attention && pass > 0 ? message : NULL, false};
     const bool direct_depthmix = count == 4096 && device_postconv &&
-        use_cached_history() && use_resident_moe() && prefill_direct_output;
+        use_cached_history() && fg_i2_resident_moe() && prefill_direct_output;
     setup.shared_attention_input = resident_attention && share_attention_inputs(sliding, aux);
     const char *mix_setting = getenv("I2_SLIDING_DEVICE_DEPTHMIX");
     const char *full_setting = getenv("I2_FULL_DEVICE_DEPTHMIX");
@@ -353,7 +353,7 @@ static void prefill_layer(struct decoder *d, struct prefill_token *tokens, struc
             }
         }
 
-        if (use_device_attention_input()) {
+        if (fg_i2_device_attention_input()) {
             native_attention_resident(d, core, aux, slot, begin, count, sliding,
                 scratch->inputs[0][0], scratch->inputs[1][0], scratch->inputs[2][0], scratch->linear[0]);
         } else {
@@ -362,7 +362,7 @@ static void prefill_layer(struct decoder *d, struct prefill_token *tokens, struc
             struct native_attention_inputs args;
             fg_i2_native_workspace(d, count, &args);
             fg_i2_prepare_prefill_rows(d, &args, aux, slot, begin, count, sliding, scratch->projections, packed);
-            if (use_resident_attention_projection()) {
+            if (fg_i2_resident_attention_projection()) {
                 fg_i2_native_project(d, &args, aux, slot, begin, count, sliding, core[3], scratch->linear[0]);
             } else {
                 fg_i2_native_submit(d, &args, aux, slot, begin, count, sliding, scratch->attention[0]);
@@ -407,7 +407,7 @@ static void prefill_layer(struct decoder *d, struct prefill_token *tokens, struc
         assert(inkling_arena_depthmix(*device_current ? NULL : stage[0], scratch->residual[0],
                                     coefficients(d, aux[9], model_width).data, scratch->ff[0], rows, save_history, 0));
     }
-    if (use_resident_moe()) {
+    if (fg_i2_resident_moe()) {
         float *messages = NULL;
         if (pass > 0) {
             for (int t = 0; t < count; ++t) {
@@ -537,7 +537,7 @@ static void prefill(struct decoder *d, const int32_t *ids, int begin, int count,
     assert(tokens && scratch);
     scratch->linear = scratch->linear_storage;
     const char *readback = getenv("I2_DIRECT_PREFILL_READBACK");
-    if (count >= 512 && use_attention_graph() && use_resident_moe() &&
+    if (count >= 512 && fg_i2_serial_graph_enabled() && fg_i2_resident_moe() &&
         (!readback || strcmp(readback, "0") != 0)) {
         const size_t elements = (size_t)count * model_width;
         if (readback && strcmp(readback, "pinned") == 0) {
@@ -573,7 +573,7 @@ static void prefill(struct decoder *d, const int32_t *ids, int begin, int count,
     const bool extend = (!extend_setting || strcmp(extend_setting, "0") != 0) && boundary_enabled && loop_enabled;
     const char *edges = getenv("I2_DEVICE_PREFILL_EDGES");
     const char *postconv = getenv("I2_PARALLEL_CUDA_POSTCONV");
-    const bool use_edges = extend && count == 4096 && prefill_direct_output && use_resident_moe() &&
+    const bool use_edges = extend && count == 4096 && prefill_direct_output && fg_i2_resident_moe() &&
         use_cached_history() && (!edges || strcmp(edges, "0") != 0) &&
         (!postconv || strcmp(postconv, "0") != 0) && !getenv("I2_CHECK_STATE");
     const bool keep_intermediate = count == 4096 && (!keep || strcmp(keep, "0") != 0);

@@ -112,14 +112,12 @@ static sl_f32 float_weights(weight w, int64_t count) {
     return (sl_f32){(float *)(uintptr_t)w.data,count};
 }
 
-static bool uses_resident_plan(void) {
-    static int resident_plan = -1;
-    if (resident_plan < 0) {
-        const char *config = getenv("I2_RESIDENT_PLAN");
-        resident_plan = config && strcmp(config, "1") == 0;
-    }
-    return resident_plan != 0;
-}
+extern bool fg_i2_host_resident_plan(void);
+extern bool fg_i2_host_resident_control(void);
+extern bool fg_i2_resident_moe(void);
+extern bool fg_i2_serial_graph_enabled(void);
+extern bool fg_i2_resident_attention_projection(void);
+extern bool fg_i2_device_attention_input(void);
 
 static _Thread_local float *prefill_direct_output;
 static _Thread_local size_t prefill_direct_output_size;
@@ -155,7 +153,7 @@ static void evaluate(struct ggml_context *ctx, struct ggml_tensor **nodes, int c
     for(int i=0;i<count;i++)ggml_build_forward_expand(graph,nodes[i]);
     void *storage = NULL;
     struct fg_standalone_graph_plan *plan = NULL;
-    if (uses_resident_plan() && count == 1 && fg143_graph_nodes((uint64_t)(uintptr_t)graph) > 2) {
+    if (fg_i2_host_resident_plan() && count == 1 && fg143_graph_nodes((uint64_t)(uintptr_t)graph) > 2) {
         plan = fg_standalone_graph_plan_alloc(graph, nodes[0]);
         assert(plan && MEASURE(8, fg_standalone_graph_plan_compute(plan)) == GGML_STATUS_SUCCESS);
     } else {
@@ -280,13 +278,6 @@ extern void fg_i2_host_control(struct decoder *, const int64_t *, int, float *, 
 #define control_resident fg_i2_host_control_resident
 #define control fg_i2_host_control
 
-static bool use_resident_controller(void) {
-    const char *setting = getenv("I2_RESIDENT_CONTROL");
-    return uses_resident_plan() && (!setting || strcmp(setting, "0") != 0);
-}
-
-bool fg_i2_host_resident_plan(void) { return uses_resident_plan(); }
-bool fg_i2_host_resident_control(void) { return use_resident_controller(); }
 struct ggml_context *fg_i2_host_context(void) { return context(); }
 struct ggml_tensor *fg_i2_host_weight(struct ggml_context *ctx, struct decoder *d, int64_t id) {
     return load(ctx, named(d, id));
@@ -309,11 +300,6 @@ int64_t fg_i2_host_measured_blend(sl_f32 current, sl_f32 message, sl_f32 gain, s
 
 _Static_assert(offsetof(struct ggml_tensor, data) == 248 && GGML_TYPE_F32 == 0 &&
     GGML_UNARY_OP_TANH == 4, "Goose Inkling control graph ABI");
-
-static bool use_resident_moe(void) {
-    const char *setting = getenv("I2_RESIDENT_MOE");
-    return uses_resident_plan() && (!setting || strcmp(setting, "0") != 0);
-}
 
 extern struct ggml_tensor *fg_i2_host_moe_node(struct ggml_context *, struct decoder *,
     const int64_t *, const int64_t *, int, int, int, struct ggml_tensor *, float *,
@@ -366,17 +352,6 @@ _Static_assert(offsetof(struct decoder, decode_attention) == 887280 &&
     GGML_OP_CUSTOM == 95 && INKLING_MOE_SITU == 0x49325354 && INKLING_MOE_EPILOGUE == 0x49324d45 &&
     INKLING_ATTENTION_GRAPH == 0x49324147, "Goose Inkling graph node ABI");
 
-static bool use_attention_graph(void) {
-    const char *setting = getenv("I2_ATTENTION_GRAPH");
-    return use_device_attention_input() && uses_resident_plan() &&
-        (!setting || strcmp(setting, "0") != 0);
-}
-
-static bool use_joined_bridge(void) {
-    const char *setting = getenv("I2_JOIN_ATTENTION_MOE");
-    return setting && strcmp(setting, "1") == 0;
-}
-
 _Static_assert(offsetof(struct inkling_decode_graph, bridge) == 312 && sizeof(struct inkling_bridge) == 48 &&
     offsetof(struct inkling_bridge, postconv) == 0 && offsetof(struct inkling_bridge, query) == 8 &&
     offsetof(struct inkling_bridge, initial_history) == 16 && offsetof(struct inkling_bridge, input) == 24 &&
@@ -390,7 +365,6 @@ int64_t fg_i2_measured_postconv(sl_f32 input, sl_f32 weight, sl_f32 history, sl_
 }
 
 _Static_assert(offsetof(struct decoder, hf) == 887144, "Goose serial MoE history ABI");
-bool fg_i2_serial_graph_enabled(void) { return use_attention_graph(); }
 
 extern int fg_i2_project_attention_inputs(struct decoder *d, const int64_t *core, const int64_t *aux,
     bool sliding, float **rows, int count, float *projected, int64_t *work);
@@ -408,7 +382,7 @@ void fg_i2_evaluate_attention_inputs(struct ggml_context *ctx, int64_t *output, 
 
 void fg_i2_serial_native_attention(struct decoder *d, const int64_t *core, const int64_t *aux,
     int slot, int absolute, bool sliding, float (*inputs)[model_width], float *proj, int64_t *work) {
-    if (use_device_attention_input()) {
+    if (fg_i2_device_attention_input()) {
         native_attention_resident(d, core, aux, slot, absolute, 1, sliding, inputs[0], inputs[1], inputs[2], proj);
     } else {
         float *rows[] = {inputs[0], inputs[1], inputs[2]};
@@ -418,7 +392,7 @@ void fg_i2_serial_native_attention(struct decoder *d, const int64_t *core, const
         struct native_attention_inputs args;
         fg_i2_native_workspace(d, 1, &args);
         fg_i2_prepare_native_row(d, &args, aux, slot, absolute, 0, sliding, projected, packed);
-        if (use_resident_attention_projection()) {
+        if (fg_i2_resident_attention_projection()) {
             fg_i2_native_project(d, &args, aux, slot, absolute, 1, sliding, core[3], proj);
         } else {
             fg_i2_native_submit(d, &args, aux, slot, absolute, 1, sliding, attn);
@@ -532,10 +506,6 @@ _Static_assert(offsetof(struct decoder, capacity) == 82992 &&
     sizeof(struct inkling_decode_graph) == 368 &&
     logical == 48 && model_width == 2304 && max_prefill_batch == 4096 &&
     i2_draft_max == 16 && vocabulary == 200058 && INKLING_KV_Q4_0 == 1, "Goose Inkling draft ABI");
-
-bool fg_i2_backend_draft_features(void) {
-    return use_attention_graph() && use_cached_history() && use_resident_moe() && use_joined_bridge();
-}
 
 void fg_i2_backend_prefill(uint64_t address, uint64_t tokens, int position, int count, bool logits) {
     prefill((struct decoder *)(uintptr_t)address, (const int32_t *)(uintptr_t)tokens, position, count, logits);
