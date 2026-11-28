@@ -50,7 +50,7 @@ mark(u/'inkling','graph-platform inkling-backend','.c',both,'Graph ABI, executio
 mark(u/'bonsai','backend-cold model-host','.c',both,'Bonsai session and model host')
 mark(u/'common','probability-platform','.c',both,'Probability platform adapter')
 mark(Path('integration/m1/host'),'goose_host','.c',both,'Goose ABI, platform and quantization helpers')
-mark(g/'src','ggml','.c','Host Linux','Linux debugger binding and tensor ABI checks')
+mark(Path('integration/m1/host'),'debugger-linux','.c','Host Linux','Linux debugger system call binding')
 images=d/'images'
 names=' '.join(line.split()[0].removesuffix('.h') for line in (root/images/'inkling-images.txt').read_text().splitlines() if line.strip())
 gpu='GPU image input'
@@ -104,6 +104,9 @@ for path in sorted(files):
     if path in direct:
         status, purpose = marks[path]
         bucket = "runtime_host" if status.startswith("Host") else "runtime_gpu"
+    elif path == g / "src/ggml.c":
+        bucket = "build_abi_only"
+        status, purpose = "Syntax-only", "Universal tensor ABI assertions"
     elif path in marks:
         status, purpose = marks[path]
         bucket = "runtime_include"

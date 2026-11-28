@@ -67,9 +67,6 @@
 
 #ifndef GOOSEINFER_TYPE_METADATA_ONLY
 #include "ggml-backtrace-reference.inc"
-#elif defined(__linux__)
-#include <sys/prctl.h>
-void fg_ggml_allow_debugger(int child) { prctl(PR_SET_PTRACER, child); }
 #endif
 
 #ifndef GOOSEINFER_TYPE_METADATA_ONLY
