@@ -3,6 +3,8 @@ extern "gs_os_arg" fn entry_arg(index: i64, output: u8[>..]&);
 extern "gs_os_write_stderr" fn entry_error(text: const u8[:]);
 extern "memcpy" fn entry_copy(destination: c_ptr<void>, source: c_ptr<const void>, bytes: u64) -> c_ptr<void>;
 extern "exit" fn entry_exit(status: i32);
+extern fn goose_cuda_init(argc: i32, argv: u64);
+extern fn gooseinfer_cuda_entry_init(argc: i32, argv: u64);
 extern fn gooseinfer_cuda_entry(argc: i32, argv: u64) -> i32;
 extern fn gooseinfer_vulkan_entry(argc: i32, argv: u64) -> i32;
 
@@ -47,6 +49,12 @@ fn main() {
     argv.push(0);
     let address = entry_address(unsafe_c_address<c_ptr<const void>>(argv[0]));
     let count = (argc - skip) as! i32;
-    let status = if vulkan { gooseinfer_vulkan_entry(count, address) } else { gooseinfer_cuda_entry(count, address) };
+    if vulkan {
+        entry_exit(gooseinfer_vulkan_entry(count, address));
+        return;
+    }
+    goose_cuda_init(count, address);
+    gooseinfer_cuda_entry_init(count, address);
+    let status = gooseinfer_cuda_entry(count, address);
     entry_exit(status);
 }

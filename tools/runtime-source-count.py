@@ -46,7 +46,6 @@ def mark(base,names,ext,status,reason):
             raise SystemExit(f"Universal input missing: {f}. Check the inventory against the build recipe.")
         marks[f]=(status,reason)
 both='Host Linux + Windows'
-mark(d,'infer-main','.c',both,'CUDA inference entry')
 mark(u/'inkling','graph-execute inkling-backend','.c',both,'Graph ABI, execution and Inkling backend')
 mark(u/'bonsai','backend-cold model-host','.c',both,'Bonsai session and model host')
 mark(u/'common','probability-pipeline','.c',both,'Probability platform adapter')
