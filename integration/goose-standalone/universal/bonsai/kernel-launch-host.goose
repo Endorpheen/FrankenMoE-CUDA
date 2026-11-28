@@ -75,3 +75,30 @@ export fn fg_bonsai_flash_f32(model: u64, q: u64, k: u64, v: u64, dst: u64) -> i
         batch_u32(model + BATCH_COUNT) as! u64, vocab_word(model + 14656), batch_u32(model + 14728) as! u64,
         flags, vocab_span(vocab_address(unsafe_c_address<c_ptr<const void>>(pointers[0])), 7));
 }
+
+export fn bonsai_ffn_tail_launch(model: u64, gate: i64, up: i64, signs: i64, owner: i64) -> i64 {
+    let count = batch_u32(model + BATCH_COUNT);
+    if batch_u32(model + 14700) == 0 || count < 32 { return 0; }
+    let width: u32 = 17408;
+    let width_address = vocab_address(unsafe_c_address<c_ptr<const void>>(width));
+    let packed = model + 14640;
+    var args: u64[6] = [vocab_address(unsafe_c_address<c_ptr<const void>>(gate)),
+        vocab_address(unsafe_c_address<c_ptr<const void>>(up)),
+        vocab_address(unsafe_c_address<c_ptr<const void>>(signs)), packed, width_address, 0];
+    let address = vocab_address(unsafe_c_address<c_ptr<const void>>(args[0]));
+    vocab_set(model + BATCH_DOWN_Q8_OWNER, 0);
+    if batch_u32(model + 4756) != 0 && owner != 0 && count % 128 == 0 &&
+        (count as! u64) * 136 * 4 <= vocab_word(model + 14656) {
+        args[4] = model + 5696;
+        args[5] = width_address;
+        if fg_bonsai_verify_launch(model, 75, 17, count, 1, 256, address) != 0 { return -1; }
+        vocab_set(model + BATCH_DOWN_Q8_OWNER, owner as! u64);
+        vocab_set(model + BATCH_PACKED_SOURCE, 0);
+        vocab_set(model + BATCH_FFN_Q8_INPUT, 0);
+        return 1;
+    }
+    if fg_bonsai_verify_launch(model, 36, 17, count, 1, 256, address) != 0 { return -1; }
+    // The next projection is the only consumer of the rotation output.
+    vocab_set(model + BATCH_PACKED_SOURCE, owner as! u64);
+    return 1;
+}

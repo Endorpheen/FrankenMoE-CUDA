@@ -155,26 +155,7 @@ _Static_assert(VERIFY_CONV_FIVE == 96 && VERIFY_CONV_FOUR == 92 && VERIFY_CONV =
     DECODE_GQA3 == 40 && DECODE_GQA2 == 39 && TILES == 10 && DECODE_ORDERED_MERGE == 73,
     "Bonsai verify kernel IDs");
 
-int64_t bonsai_ffn_tail_launch(uint64_t context,int64_t g,int64_t u,int64_t s,int64_t owner) {
-    model *m=(model *)(uintptr_t)context;
-    if (!m->ffn_tail || m->count<32) return 0;
-    CUdeviceptr gate=g,up=u,signs=s;
-    unsigned width=17408;
-    m->down_q8_owner = 0;
-    if (m->down_q8 && owner && m->count % 128 == 0 &&
-            (size_t)m->count * (width / 128) * sizeof(float) <= m->partial_capacity) {
-        if (launch(m,FFN_TAIL_Q8_PANEL,17,m->count,1,256,
-                (void *[]){&gate,&up,&signs,&m->packed,&m->partial,&width})) return -1;
-        m->down_q8_owner=(CUdeviceptr)owner;
-        m->packed_source=0;
-        m->ffn_q8_input=0;
-        return 1;
-    }
-    if (launch(m,FFN_TAIL,17,m->count,1,256,(void *[]){&gate,&up,&signs,&m->packed,&width})) return -1;
-    // The next projection is the only consumer of this rotation output.
-    m->packed_source=(CUdeviceptr)owner;
-    return 1;
-}
+_Static_assert(offsetof(model, down_q8) == 4756 && FFN_TAIL == 36 && FFN_TAIL_Q8_PANEL == 75, "Bonsai FFN tail ABI");
 
 int64_t bonsai_launch(uint64_t context, int64_t op, int64_t a, int64_t b, int64_t c,
                       int64_t d, int64_t e, int64_t f, int64_t g, int64_t h) {
