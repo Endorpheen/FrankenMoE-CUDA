@@ -160,7 +160,7 @@ PY_TOKENIZER
     seek_symbol=fseeko
     tell_symbol=ftello
     if [[ "$target" == windows ]]; then seek_symbol=_fseeki64; tell_symbol=_ftelli64; fi
-    cat "$source_dir/"{gguf,tokenizer,http-adapter,infer-entry}.goose \
+    cat "$source_dir/"{gguf,tokenizer,http-adapter,qwen2-model,infer-entry}.goose \
         "$source_dir/http-$target.goose" "$source_dir/infer-$target.goose" > "$out/gguf.goose"
     "${GOOSE_CUDA_DRIVER_BIN:?}" -o "$out/gguf.c" "$out/gguf.goose"
     entry_flags=()
@@ -180,7 +180,7 @@ PY_TOKENIZER
             objcopy=${WINDOWS_OBJCOPY:-x86_64-w64-mingw32-objcopy}
         fi
         objects=("$out/queue.o" "$out/socket-forwards.o" "$out/gguf.o" "$out/moe-bank.o" "$out/shader-words.o")
-        for source in "$source_dir/"{qwen2,bonsai-model,apex-model,inkling-model}.c; do
+        for source in "$source_dir/"{bonsai-model,apex-model,inkling-model}.c; do
             name=$(basename -- "$source" .c)
             "$cc" "${flags[@]}" -ffunction-sections -fdata-sections -isystem "$out/vulkan-headers" -I"$out" \
                 -c "$source" -o "$out/embedded-$name.o"
@@ -191,6 +191,6 @@ PY_TOKENIZER
         exit 0
     fi
     "$cc" "${flags[@]}" -isystem "$out/vulkan-headers" -I"$out" -Wl,--gc-sections \
-        "$source_dir/"{qwen2,bonsai-model,apex-model,inkling-model}.c "$out/qwen2_unit.o" "$out/queue.o" "$out/socket-forwards.o" "$out/gguf.o" "$out/moe-bank.o" "$out/shader-words.o" \
+        "$source_dir/"{bonsai-model,apex-model,inkling-model}.c "$out/qwen2_unit.o" "$out/queue.o" "$out/socket-forwards.o" "$out/gguf.o" "$out/moe-bank.o" "$out/shader-words.o" \
         "${libs[@]}" -lm -pthread -o "$out/frankenmoe-vulkan$suffix"
 fi

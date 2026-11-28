@@ -25,10 +25,6 @@ extern fn fg_vk_inkling_open(path: u64, capacity: u32, index: u32, cpu: i32) -> 
 extern fn fg_vk_inkling_close(model: u64);
 extern fn fg_vk_inkling_step(model: u64, id: u32, logits: u64) -> i32;
 extern fn fg_vk_inkling_reset(model: u64) -> i32;
-extern fn fg_vk_qwen2_open(model: u64, path: u64, capacity: u32, index: u32, cpu: i32) -> i32;
-extern fn fg_vk_qwen2_close(model: u64);
-extern fn fg_vk_qwen2_step(model: u64, id: u32, logits: u64) -> i32;
-extern fn fg_vk_choose(logits: u64, vocabulary: u32, ignore_eog: u64, token: u64) -> i32;
 extern fn fg_vk_http_serve(owner: u64, port: i64, requests: i64, capacity: i64, vocabulary: i64, kind: i64) -> i64;
 extern "gs_os_write_stderr" fn vk_http_error(text: const u8[:]);
 extern fn fg_vk_http_time(timer: u64) -> i64;
