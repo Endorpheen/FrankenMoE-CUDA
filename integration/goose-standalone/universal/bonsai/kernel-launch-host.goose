@@ -66,7 +66,7 @@ fn flash_flag(model: u64, offset: u64, flag: u64) -> u64 {
     return if batch_u32(model + offset) != 0 { flag } else { 0 };
 }
 
-export fn fg_bonsai_flash_f32(model: u64, q: u64, k: u64, v: u64, dst: u64) -> i32 {
+fn fg_bonsai_flash_f32(model: u64, q: u64, k: u64, v: u64, dst: u64) -> i32 {
     var pointers: u64[7] = [q, k, v, dst, vocab_word(model + 14712), vocab_word(model + 14720), vocab_word(model + 5696)];
     let flags = flash_flag(model, 14668, 1) | flash_flag(model, 14672, 2) | flash_flag(model, 14676, 4) |
         flash_flag(model, 14680, 8) | flash_flag(model, 14760, 16) | flash_flag(model, 4784, 32) |
@@ -101,4 +101,58 @@ export fn bonsai_ffn_tail_launch(model: u64, gate: i64, up: i64, signs: i64, own
     // The next projection is the only consumer of the rotation output.
     vocab_set(model + BATCH_PACKED_SOURCE, owner as! u64);
     return 1;
+}
+
+export fn fg_bonsai_attention_tiles(model: u64, input: u64, end: u32) -> i32 {
+    let count = batch_u32(model + BATCH_COUNT);
+    if batch_u32(model + 14664) != 0 && count >= 8 {
+        let status = fg_bonsai_flash_f32(model, vocab_word(input), vocab_word(input + 8),
+            vocab_word(input + 16), vocab_word(input + 24));
+        if status <= 0 { return status; }
+    }
+    let tiles = (end + count + 254) / 256;
+    let tasks: u32 = 24 * count;
+    let wave = batch_u32(model + BATCH_WAVE);
+    let partial = model + 5696;
+    let attention = model + BATCH_ATTENTION;
+    let scale: f32 = 0.0625;
+    let scale_arg = vocab_address(unsafe_c_address<c_ptr<const void>>(scale));
+    var start: i32 = 0;
+    let start_arg = vocab_address(unsafe_c_address<c_ptr<const void>>(start));
+    let merge: u64[4] = [partial, input + 24, attention, start_arg];
+    let merge_args = vocab_address(unsafe_c_address<c_ptr<const void>>(merge[0]));
+    if batch_u32(model + 14752) != 0 && count == 1 && wave >= tasks {
+        let keys = batch_u32(model + BATCH_POSITION) + 1;
+        let heads: u32 = if keys >= 32768 { 3 } else { 2 };
+        let mma = batch_u32(model + 4744);
+        let keys_arg = vocab_address(unsafe_c_address<c_ptr<const void>>(keys));
+        let tiles_arg = vocab_address(unsafe_c_address<c_ptr<const void>>(tiles));
+        let group: u64[7] = [input, input + 8, input + 16, partial, keys_arg, tiles_arg, scale_arg];
+        let args = vocab_address(unsafe_c_address<c_ptr<const void>>(group[0]));
+        if mma != 0 && (keys >= 32768 || mma == 2) {
+            let kernel: i32 = if batch_u32(model + 4752) != 0 { 74 } else { 72 };
+            if fg_bonsai_verify_launch(model, kernel, 4, tiles, 1, 128, args) != 0 { return -1; }
+        } else {
+            let kernel: i32 = if heads == 3 { 40 } else { 39 };
+            if fg_bonsai_verify_launch(model, kernel, 24 / heads, tiles, 1, 32, args) != 0 { return -1; }
+        }
+        if batch_u32(model + 4748) != 0 && keys >= 32768 {
+            let ordered: u64[4] = [partial, input + 24, keys_arg, tiles_arg];
+            return fg_bonsai_verify_launch(model, 73, tasks, 1, 1, 128,
+                vocab_address(unsafe_c_address<c_ptr<const void>>(ordered[0])));
+        }
+        return fg_bonsai_verify_launch(model, 14, tasks, 1, 1, 32, merge_args);
+    }
+    let no_mask: u64 = 0;
+    let tiled: u64[8] = [input, input + 8, input + 16, vocab_address(unsafe_c_address<c_ptr<const void>>(no_mask)),
+        partial, attention, scale_arg, start_arg];
+    let tiled_args = vocab_address(unsafe_c_address<c_ptr<const void>>(tiled[0]));
+    while (start as! u32) < tasks {
+        let left = tasks - (start as! u32);
+        let active = if left < wave { left } else { wave };
+        if fg_bonsai_verify_launch(model, 10, active, tiles, 1, 32, tiled_args) != 0 ||
+            fg_bonsai_verify_launch(model, 14, active, 1, 1, 32, merge_args) != 0 { return -1; }
+        start += wave as! i32;
+    }
+    return 0;
 }

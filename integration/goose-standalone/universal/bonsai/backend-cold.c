@@ -114,7 +114,7 @@ extern int32_t fg_bonsai_verify_launch(model *m, enum kernel kernel, uint32_t x,
                                        uint32_t threads, void **args);
 #define launch fg_bonsai_verify_launch
 extern int32_t fg_bonsai_launch_gdn(model *m, const CUdeviceptr *args, unsigned tokens);
-extern int32_t fg_bonsai_flash_f32(model *m, CUdeviceptr q, CUdeviceptr k, CUdeviceptr v, CUdeviceptr dst);
+extern int32_t fg_bonsai_attention_tiles(model *m, const CUdeviceptr *args, unsigned end);
 
 _Static_assert(sizeof(CUdeviceptr) == 8 &&
     offsetof(model, kernel) == 4824 && offsetof(model, gdn_prefill_v32) == 14688 &&
@@ -165,8 +165,6 @@ int64_t bonsai_launch(uint64_t context, int64_t op, int64_t a, int64_t b, int64_
     const unsigned count = m->count;
     unsigned stride = mode == 1 ? 10240 : n * rows;
     unsigned out_width = 0, in_width = 0, heads = 0;
-    float scale = 1.0f / 16.0f;
-    int start = 0;
     if (m->txn.phase == TXN_RUNNING) {
         if (op == CONV) return fg_bonsai_transaction_conv(m, p);
         if (op == GDN) return fg_bonsai_transaction_gdn(m, p);
@@ -361,42 +359,8 @@ int64_t bonsai_launch(uint64_t context, int64_t op, int64_t a, int64_t b, int64_
             unsigned blocks = 32;
             return launch(m, Q4, (tasks+127)/128, 1, 1, 128, (void *[]){ &p[0], &p[1], &stride, &blocks, &tasks });
         }
-        case TILES: {
-            if (m->use_flash_f32 && count >= 8) {
-                const int rc = fg_bonsai_flash_f32(m, p[0], p[1], p[2], p[3]);
-                if (rc <= 0) return rc;
-            }
-            CUdeviceptr no_mask = 0;
-            const unsigned tiles = ((unsigned)e + count + 254)/256;
-            const unsigned tasks = 24 * count;
-            if (m->grouped_decode && count == 1 && m->wave >= tasks) {
-                unsigned keys = m->position + 1;
-                unsigned n_tiles = tiles;
-                unsigned heads = keys >= 32768 ? 3 : 2;
-                if (m->decode_mma && (keys >= 32768 || m->decode_mma == 2)) {
-                    const enum kernel tile = m->decode_half2 ?
-                        DECODE_DIRECT_HALF2 : DECODE_DIRECT_MMA;
-                    if (launch(m, tile, 4, tiles, 1, 128,
-                        (void *[]){ &p[0], &p[1], &p[2], &m->partial, &keys, &n_tiles })) return -1;
-                } else if (launch(m, heads == 3 ? DECODE_GQA3 : DECODE_GQA2, 24 / heads, tiles, 1, 32,
-                    (void *[]){ &p[0], &p[1], &p[2], &m->partial, &keys, &n_tiles, &scale })) return -1;
-                if (m->decode_ordered_merge && keys >= 32768) {
-                    return launch(m, DECODE_ORDERED_MERGE, tasks, 1, 1, 128,
-                        (void *[]){ &m->partial, &p[3], &keys, &n_tiles });
-                }
-                return launch(m, MERGE, tasks, 1, 1, 32,
-                    (void *[]){ &m->partial, &p[3], &m->attention, &start });
-            }
-            for (; (unsigned)start < tasks; start += (int)m->wave) {
-                const unsigned left = tasks - (unsigned)start;
-                const unsigned active = left < m->wave ? left : m->wave;
-                if (launch(m, TILES, active, tiles, 1, 32, (void *[]){
-                    &p[0], &p[1], &p[2], &no_mask, &m->partial, &m->attention, &scale, &start }) ||
-                    launch(m, MERGE, active, 1, 1, 32,
-                        (void *[]){ &m->partial, &p[3], &m->attention, &start })) return -1;
-            }
-            return 0;
-        }
+        case TILES:
+            return fg_bonsai_attention_tiles(m, p, (unsigned)e);
         case GATE:
             return launch(m, GATE, 24 * count, 1, 1, 256, (void *[]){ &p[0], &p[1], &p[2] });
         case EMBED: {
