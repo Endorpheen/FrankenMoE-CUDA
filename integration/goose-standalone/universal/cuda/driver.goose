@@ -5265,7 +5265,7 @@ fn launch_mmvq(weight: u64, stride: u64, extent: i32, kind: i32, rows: i32, coun
                 cuda.mmq_packed.address, if dense_offsets.len != 0 { 0 } else { cuda.jobs.address },
                 ((extent as! u64) << 32) | (rows as! u64),
                 ((count as! u64) << 32) | (words as! u64), (kind as! u64)];
-            var key: u64[MMVQ_GRAPH_KEY_WORDS];
+            var key: u64[MMVQ_GRAPH_KEY_WORDS] = [0; MMVQ_GRAPH_KEY_WORDS];
             for key_index in key_prefix.len { key[key_index] = key_prefix[key_index]; }
             graph = cached_graph_for(key, kernels, 2);
         }
