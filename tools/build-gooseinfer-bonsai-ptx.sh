@@ -19,7 +19,6 @@ trap 'rm -rf -- "$scratch"' EXIT
 overlay=${3:-}
 glue="$scratch/glue"
 mkdir -p -- "$glue"
-cp -- "$standalone/cuda-device.cl" "$glue/cuda-device.cl"
 
 for source in "$source_dir"/goose/*.goose "$root/goose/cuda/standalone-matmul.goose"; do
     module=$(basename -- "$source" .goose)
@@ -99,5 +98,5 @@ for abi in "$standalone/"cuda-*-bonsai-entries.json; do
 done
 "${CLANG:-clang-18}" -target nvptx64-nvidia-cuda -nocudalib -O2 -x cl -cl-std=CL1.2 \
     -include "$scratch/cuda-device-prelude.h" -I"$scratch" -I"$standalone" -S -Xclang -target-cpu \
-    -Xclang "$arch" -DGOOSE_CUDA_FROZEN_ABI "${defines[@]}" "$glue/cuda-device.cl" -o "$scratch/bonsai.ptx"
+    -Xclang "$arch" -DGOOSE_CUDA_FROZEN_ABI "${defines[@]}" "$scratch/cuda-device.cl" -o "$scratch/bonsai.ptx"
 mv -- "$scratch/bonsai.ptx" "$output"

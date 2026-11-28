@@ -53,6 +53,60 @@ def section(commands):
             yield "#ifdef GOOSE_CUDA_FROZEN_ABI"
             yield from section(args)
             yield "#endif"
+        elif operation == "unless_frozen":
+            yield "#ifndef GOOSE_CUDA_FROZEN_ABI"
+            yield from section(args)
+            yield "#endif"
+        elif operation == "mmq":
+            yield "#ifdef GOOSE_CUDA_MMQ_IMAGE"
+            yield from section(args)
+            yield "#endif"
+        elif operation == "contract":
+            enabled, = args
+            yield f"#pragma OPENCL FP_CONTRACT {'ON' if enabled else 'OFF'}"
+        elif operation == "packet":
+            name, kind, count = args
+            yield f"typedef struct {{ {type_name(kind)} words[{count}]; }} {name};"
+        elif operation == "packet_word":
+            name, address_type, element_type = args
+            a, element = type_name(address_type), type_name(element_type)
+            yield f"static {element} {name}({a} packet, int64_t index) {{"
+            yield f"    return ((const {element} *)packet)[index];"
+            yield "}"
+        elif operation == "fail_code":
+            name, = args
+            yield f"static void {name}(int64_t code) {{ (void)code; device_trap(); }}"
+        elif operation == "collective":
+            name, instruction, clobber = args
+            if instruction not in ("bar.red.popc.u32 %0, 0, active", "vote.sync.ballot.b32 %0, active, 0xffffffff"):
+                raise ValueError(f"Unsupported CUDA collective for {name}")
+            memory = ' : "memory"' if clobber else ""
+            yield f"static uint32_t {name}(uint32_t seen) {{"
+            yield "    uint32_t result;"
+            yield ('    __asm__ volatile("{ .reg .pred active; setp.ne.u32 active, %1, 0; '
+                   f'{instruction}; }}" : "=r"(result) : "r"(seen){memory});')
+            yield "}"
+        elif operation == "copy_async16":
+            name, = args
+            yield f"static void {name}(uint64_t dst, uint64_t src) {{"
+            yield ('    __asm__ volatile("cp.async.cg.shared.global [%0], [%1], 16;"'
+                   ' :: "r"((uint32_t)dst), "l"(src) : "memory");')
+            yield "}"
+        elif operation == "mla_mma":
+            yield "#ifdef GOOSE_CUDA_MMQ_IMAGE"
+            arguments = "acc,a0,a1,a2,a3,b0,b1"
+            lines = [
+                f"#define fg_mla_mma_f16({arguments}) ({{",
+                "__typeof__(acc) d = (acc);",
+                '__asm__ volatile("mma.sync.aligned.m16n8k16.row.col.f32.f16.f16.f32 '
+                '{%0,%1,%2,%3}, {%4,%5,%6,%7}, {%8,%9}, {%0,%1,%2,%3};"',
+                ': "+f"(d.a_g), "+f"(d.b_g), "+f"(d.c_g), "+f"(d.d_g)',
+                ': "r"(a0), "r"(a1), "r"(a2), "r"(a3), "r"(b0), "r"(b1)); d; })',
+            ]
+            yield (" " + chr(92) + "\n").join(lines)
+            yield "#else"
+            yield f"#define fg_mla_mma_f16({arguments}) (acc)"
+            yield "#endif"
         elif operation == "record":
             name, *fields = args
             members = " ".join(f"{type_name(kind)} {field};" for kind, field in fields)
@@ -83,6 +137,10 @@ def section(commands):
             yield f"#define {name} {target}"
         elif operation == "undef":
             yield f"#undef {args[0]}"
+        elif operation == "certified_arithmetic":
+            yield "#undef gs_shl_u64"
+            yield "#define gs_add_u32(a,b) ((a)+(b))"
+            yield "#define gs_shl_u64(a,b) ((a)<<(b))"
         elif operation == "pack_width":
             yield "#define gs_add_u32(a, b) ((uint32_t)((a) + (b)))"
         elif operation == "signed_shift":
@@ -96,7 +154,7 @@ def section(commands):
 def main():
     source, output = map(Path, sys.argv[1:])
     for name, commands in json.loads(source.read_text()).items():
-        if Path(name).name != name or not name.endswith(".h"):
+        if Path(name).name != name or not name.endswith((".h", ".cl")):
             raise ValueError(f"Invalid CUDA module name {name}")
         (output / name).write_text("\n".join(section(commands)) + "\n")
 

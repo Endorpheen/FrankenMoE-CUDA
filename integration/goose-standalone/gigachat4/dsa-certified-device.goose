@@ -1,7 +1,7 @@
 extern "fg_device_global_load" fn pack_f32(address: u64) -> f32;
-extern "fg_dsa_pack_f16" fn pack_f16(address: u64) -> f32;
-extern "fg_dsa_pack_bits" fn pack_bits(x: f32) -> u32;
-extern "fg_dsa_pack_float" fn pack_float(x: u32) -> f32;
+extern "cuda_load_half_g" fn pack_f16(address: u64) -> f32;
+extern "as_uint" fn pack_bits(x: f32) -> u32;
+extern "as_float" fn pack_float(x: u32) -> f32;
 extern "fg_dsa_pack_xor" fn pack_shuffle(x: u32, delta: u32) -> u32;
 extern "fg_dsa_pack_rni" fn pack_rni(x: f32) -> i32;
 extern "fg_device_mul_rn" fn pack_mul(a: f32, b: f32) -> f32;
@@ -136,9 +136,9 @@ extern "fg_dsa_bound_ceil_add" fn bound_add(a: f32, b: f32) -> f32;
 extern "fg_dsa_bound_ceil_mul" fn bound_mul(a: f32, b: f32) -> f32;
 extern "fg_device_shfl" fn bound_xor(v: f32, distance: i32) -> f32;
 extern "fg_device_global_load" fn bound_f32(address: u64) -> f32;
-extern "fg_dsa_pack_f16" fn bound_f16(address: u64) -> f32;
-extern "fg_dsa_pack_bits" fn bound_bits(x: f32) -> u32;
-extern "fg_dsa_pack_float" fn bound_float(x: u32) -> f32;
+extern "cuda_load_half_g" fn bound_f16(address: u64) -> f32;
+extern "as_uint" fn bound_bits(x: f32) -> u32;
+extern "as_float" fn bound_float(x: u32) -> f32;
 extern "fg_device_global_store" fn bound_store(address: u64, x: f32);
 extern "fg_dsa_bound_atomic_max" fn bound_atomic_max(address: u64, value: u32);
 

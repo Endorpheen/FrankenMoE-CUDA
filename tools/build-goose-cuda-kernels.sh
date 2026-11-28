@@ -209,10 +209,10 @@ for abi in "$ROOT/integration/goose-standalone/"cuda-{dense-mma,flash-mma,gdn-mm
 done
 "$CLANG" -target nvptx64-nvidia-cuda -Xclang -target-cpu -Xclang sm_70 \
     -nocudalib -O2 -x cl -cl-std=CL1.2 -I "$OUT" -S \
-    "$ROOT/integration/goose-standalone/cuda-device.cl" -o "$OUT/goose-cuda.ptx"
+    "$OUT/cuda-device.cl" -o "$OUT/goose-cuda.ptx"
 "$CLANG" -target nvptx64-nvidia-cuda -Xclang -target-cpu -Xclang sm_80 \
     -nocudalib -O2 -DGOOSE_CUDA_MMQ_IMAGE -x cl -cl-std=CL1.2 -I "$OUT" -S \
-    "$ROOT/integration/goose-standalone/cuda-device.cl" -o "$OUT/goose-cuda-mmq.ptx"
+    "$OUT/cuda-device.cl" -o "$OUT/goose-cuda-mmq.ptx"
 python3 - "$OUT" <<'PY'
 from pathlib import Path
 import re

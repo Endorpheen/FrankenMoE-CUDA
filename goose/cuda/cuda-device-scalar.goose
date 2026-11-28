@@ -207,3 +207,19 @@ export fn cuda_pow_integer(base: f32, exponent: i32) -> f32 {
 export fn cuda_round_i8(value: f32) -> i32 {
     return cuda_f32_to_i32_rz(cuda_round_mmq(value));
 }
+
+extern "fg_cuda_atomic_add_one" fn cuda_atomic_add_one(address: u32) -> u32;
+extern "fg_cuda_raw_load_f32" fn cuda_raw_load_f32(address: u64) -> f32;
+extern "fg_cuda_raw_store_f32" fn cuda_raw_store_f32(address: u64, value: f32);
+
+export fn cuda_atomic_bin_increment(base: u64, index: i64) -> u32 {
+    return cuda_atomic_add_one((base + ((4 * index) as! u64)) as! u32);
+}
+
+export fn cuda_raw_load_offset(address: u64, offset: u64) -> f32 {
+    return cuda_raw_load_f32(address + offset);
+}
+
+export fn cuda_raw_store_offset(address: u64, offset: u64, value: f32) {
+    cuda_raw_store_f32(address + offset, value);
+}

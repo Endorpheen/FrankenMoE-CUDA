@@ -62,7 +62,7 @@ for abi in "$standalone/"cuda-{dense-mma,flash-mma,gdn-mma,flash-vec,mmvq,rms-re
 done
 python3 "$root/tools/emit-gooseinfer-cuda-entries.py" \
     "$standalone/gigachat4/cuda-dsa-entries.json" "$scratch/cuda-dsa-entries.h"
-compile_device "$standalone/cuda-device.cl"
+compile_device "$scratch/cuda-device.cl"
 for variant in dense vector dsa mla certified-dsa; do
     case "$variant" in
         dense) entries=goose_dense_mma ;;
@@ -78,9 +78,7 @@ for variant in dense vector dsa mla certified-dsa; do
         certified-dsa)
             "$goose" --standalone -o "$scratch/dsa-certified.c" --header "$scratch/dsa-certified.h" "$standalone/gigachat4/dsa-certified-device.goose"
             python3 "$src/extract-device.py" "$scratch" dsa-certified
-            cp "$standalone/cuda-device.cl" "$scratch/certified-device.cl"
-            printf '\n#include "gigachat4/cuda-dsa-certified.cl"\n' >> "$scratch/certified-device.cl"
-            compile_device "$scratch/certified-device.cl"
+            compile_device "$scratch/cuda-certified-device.cl"
             entries=goose_dsa_pack_power2,goose_dsa_bound_metadata,goose_dsa_bound_query,goose_dsa_integer_score,goose_dsa_score_cutoff,goose_dsa_compact,goose_dsa_replay,goose_dsa_finalize,goose_dsa_fallback_score,goose_dsa_fallback_top
             ;;
     esac
