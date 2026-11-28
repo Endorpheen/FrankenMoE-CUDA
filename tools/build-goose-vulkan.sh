@@ -31,11 +31,14 @@ test -r "$headers/vulkan/vulkan.h"
 mkdir -p "$out/vulkan-headers"
 cp -R "$headers/vulkan" "$out/vulkan-headers/"
 if [[ -d "$headers/vk_video" ]]; then cp -R "$headers/vk_video" "$out/vulkan-headers/"; fi
-cat "$source_dir/queue.goose" "$source_dir/upload.goose" "$source_dir/memory.goose" > "$out/queue.goose"
+cat "$source_dir/queue.goose" "$source_dir/upload.goose" "$source_dir/memory.goose" "$source_dir/json-number.goose" > "$out/queue.goose"
 "${GOOSE_CUDA_DRIVER_BIN:?Set GOOSE_CUDA_DRIVER_BIN to Fried Goose KeelWing v0.3.1-dev.1}" --standalone \
     -o "$out/queue.c" "$out/queue.goose"
 "$cc" -O2 -std=c11 -ffunction-sections -fdata-sections -w \
     -Dgoose_init=fg_vk_queue_init -Dgg_init_globals=fg_vk_queue_globals -c "$out/queue.c" -o "$out/queue.o"
+queue_objcopy=${OBJCOPY:-objcopy}
+if [[ "$target" == windows ]]; then queue_objcopy=${WINDOWS_OBJCOPY:-x86_64-w64-mingw32-objcopy}; fi
+"$queue_objcopy" --redefine-sym=fg_vulkan_crt_strtod=strtod "$out/queue.o"
 "$cc" "${flags[@]}" -isystem "$out/vulkan-headers" \
     "$source_dir/"{loader,device,probe}.c "$out/queue.o" \
     "${libs[@]}" -o "$out/$executable"
@@ -123,8 +126,7 @@ PY
             objcopy=${WINDOWS_OBJCOPY:-x86_64-w64-mingw32-objcopy}
         fi
         objects=("$out/queue.o" "$out/socket-forwards.o")
-        for source in "$source_dir/"{loader,device,graph,gguf,qwen2,bonsai-layer,bonsai-model,moe-bank,apex-model,inkling-model,tokenizer,http,infer-main}.c \
-                     "$standalone/json-strtod-provider.c"; do
+        for source in "$source_dir/"{loader,device,graph,gguf,qwen2,bonsai-layer,bonsai-model,moe-bank,apex-model,inkling-model,tokenizer,http,infer-main}.c; do
             name=$(basename -- "$source" .c)
             options=()
             if [[ "$name" == infer-main ]]; then options=(-Dmain=gooseinfer_vulkan_entry); fi
@@ -138,6 +140,5 @@ PY
     fi
     "$cc" "${flags[@]}" -isystem "$out/vulkan-headers" -I"$out" -Wl,--gc-sections \
         "$source_dir/"{loader,device,graph,gguf,qwen2,bonsai-layer,bonsai-model,moe-bank,apex-model,inkling-model,tokenizer,http,infer-main}.c "$out/qwen2_unit.o" "$out/queue.o" "$out/socket-forwards.o" \
-        "$standalone/json-strtod-provider.c" \
         "${libs[@]}" -lm -pthread -o "$out/frankenmoe-vulkan$suffix"
 fi
