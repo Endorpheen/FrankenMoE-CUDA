@@ -15,11 +15,13 @@ fn iq4_level(index: u32) -> f32 {
     return (((codes >> (8 * (index & 7))) as! i8) as f32);
 }
 
-fn iq_pairs(base: u64, k: i32, column: u32, kind: i32) -> I2MoePair {
+struct I2MoeCodes { first: u32, second: u32, scale: f32 }
+
+fn iq_codes(base: u64, k: i64, column: u64, kind: i32) -> I2MoeCodes {
     let offset = if kind == 23 { (k >> 8) * 136 } else { (k >> 5) * 18 };
     let tile = base + (offset as! u64);
     var scale = iq4_half(tile);
-    var values = tile + 2 + (column as u64);
+    var values = 2 + column;
     if kind == 23 {
         let sub = ((k as! u32) >> 5) & 7;
         let low = (iq4_byte(tile + 4 + ((sub >> 1) as u64)) >> (4 * (sub & 1))) & 15;
@@ -27,12 +29,16 @@ fn iq_pairs(base: u64, k: i32, column: u32, kind: i32) -> I2MoePair {
         scale *= (((low + 16 * high) as i32) - 32) as f32;
         values += 6 + (16 * (sub as u64));
     }
-    let shift = ((k as! u32) & 16) >> 2;
-    let a = scale * iq4_level((iq4_byte(values) >> shift) & 15);
-    let b = scale * iq4_level((iq4_byte(values + 1) >> shift) & 15);
-    let c = scale * iq4_level((iq4_byte(values + 8) >> shift) & 15);
-    let d = scale * iq4_level((iq4_byte(values + 9) >> shift) & 15);
-    return I2MoePair { iq4_pack(a, b), iq4_pack(c, d) };
+    return I2MoeCodes { iq4_u16(tile, values), iq4_u16(tile, values + 8), scale };
+}
+
+fn iq_pairs(codes: I2MoeCodes, shift: u32) -> I2MoePair {
+    let first = codes.first >> shift;
+    let second = codes.second >> shift;
+    let scale = codes.scale;
+    return I2MoePair {
+        iq4_pack(scale * iq4_level(first & 15), scale * iq4_level((first >> 8) & 15)),
+        iq4_pack(scale * iq4_level(second & 15), scale * iq4_level((second >> 8) & 15)) };
 }
 extern "moe_dot" fn dot(acc: I2MoeAcc, low: I2MoePair, high: I2MoePair, lo: u32, hi: u32) -> I2MoeAcc;
 
@@ -56,22 +62,30 @@ export fn i2_grouped_moe(weights: u64, packed: u64, output: u64, jobs: u64, tile
     let count = word(tiles, tile * 3 + 1) as! i64;
     let w0 = weights + word(tiles, tile * 3 + 2) + (row as! u64) * stride;
     let w1 = w0 + 8 * stride;
-    let zero = I2MoePair {x:0,y:0};
+    let no_codes = I2MoeCodes {first:0,second:0,scale:0.0};
     let acc_zero = I2MoeAcc {x:0.0,y:0.0,z:0.0,w:0.0};
     var acc: I2MoeAcc[4] = [acc_zero; 4];
     var k: i64 = 0;
     while k < width {
-        let low = if row < rows { iq_pairs(w0, k as! i32, column as! u32, kind) } else { zero };
-        let high = if row + 8 < rows { iq_pairs(w1, k as! i32, column as! u32, kind) } else { zero };
-        for g in groups {
-            if 8 * g >= count { continue; }
-            let index = 8 * g + lane / 4;
-            let offset = (first + index) * width + k + column;
-            let lo = if index < count { pair(packed, offset) } else { 0 };
-            let hi = if index < count { pair(packed, offset + 8) } else { 0 };
-            acc[g] = dot(acc[g], low, high, lo, hi);
+        let low_codes = if row < rows { iq_codes(w0, k, column as! u64, kind) } else { no_codes };
+        let high_codes = if row + 8 < rows { iq_codes(w1, k, column as! u64, kind) } else { no_codes };
+        for half in 2 {
+            let position = k + 16 * half;
+            if position >= width { break; }
+            let shift = (4 * half) as! u32;
+            let zero = I2MoePair {x:0,y:0};
+            let low = if row < rows { iq_pairs(low_codes, shift) } else { zero };
+            let high = if row + 8 < rows { iq_pairs(high_codes, shift) } else { zero };
+            for g in groups {
+                if 8 * g >= count { continue; }
+                let index = 8 * g + lane / 4;
+                let offset = (first + index) * width + position + column;
+                let lo = if index < count { pair(packed, offset) } else { 0 };
+                let hi = if index < count { pair(packed, offset + 8) } else { 0 };
+                acc[g] = dot(acc[g], low, high, lo, hi);
+            }
         }
-        k += 16;
+        k += 32;
     }
     for g in groups {
         let col = column + 8 * g;
