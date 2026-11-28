@@ -95,7 +95,6 @@ _Static_assert(offsetof(struct bonsai_ffn_capture, stream) == 0 &&
     LAYERS == 64, "Bonsai FFN capture ABI");
 
 extern void bonsai_capture_abort(uint64_t capture);
-extern int32_t bonsai_capture_begin(uint64_t capture, uint64_t norm);
 extern int32_t bonsai_capture_finish(uint64_t capture);
 
 extern void fg_bonsai_bind_ffn_graph(void);
@@ -161,15 +160,15 @@ _Static_assert(
     GATE == 11 && EMBED == 12 && SWIGLU == 13 && DECAY_STAGE256 == 51 &&
     DECAY_WARPPACK == 52 && DECAY_REUSE8 == 35 && DECAY_REUSE4 == 34 && CONV_BATCH == 19 &&
     ROPE_PHASES == 16 && ROPE_APPLY == 17 && EMBED_BATCH == 18, "Bonsai elementary kernel IDs");
+_Static_assert(NORM == 0 && NORM_WIDE_LARGE == 48, "Bonsai normalization kernel IDs");
+extern int32_t fg_bonsai_norm_rotate(model *m, int64_t op, const CUdeviceptr *args);
 extern int32_t fg_bonsai_elementary(model *m, int64_t op, const CUdeviceptr *args, int64_t c, int64_t e);
 
 int64_t bonsai_launch(uint64_t context, int64_t op, int64_t a, int64_t b, int64_t c,
                       int64_t d, int64_t e, int64_t f, int64_t g, int64_t h) {
     model *m = (model *)(uintptr_t)context;
     CUdeviceptr p[] = { a, b, c, d, e, f, g, h };
-    unsigned n = (unsigned)e, rows = (unsigned)f, mode = (unsigned)g;
     const unsigned count = m->count;
-    unsigned stride = mode == 1 ? 10240 : n * rows;
     unsigned out_width = 0, in_width = 0;
     if (m->txn.phase == TXN_RUNNING) {
         if (op == CONV) return fg_bonsai_transaction_conv(m, p);
@@ -179,26 +178,8 @@ int64_t bonsai_launch(uint64_t context, int64_t op, int64_t a, int64_t b, int64_
         ((op == MATRIX && e == 1024) || op == DECAY || op == ROPE || op == TILES))
         return fg_bonsai_launch_verify_rows(m, (enum kernel)op, p);
     switch (op) {
-        case NORM:
-            if (m->capture.enabled && m->in_decode && count == 1 &&
-                    p[0] == (CUdeviceptr)m->b[13] && p[3] == (CUdeviceptr)m->b[1] &&
-                    bonsai_capture_begin((uintptr_t)&m->capture, p[1])) return -1;
-            if (m->norm_wide && mode == 0 && n == 5120 && rows == 1 && stride == n) {
-                const int small = count <= 512;
-                return launch(m, small ? NORM_WIDE_SMALL : NORM_WIDE_LARGE, count, 1, 1,
-                    small ? 512 : 128, (void *[]){ &p[0], &p[1], &p[3], &m->epsilon });
-            }
-            return launch(m, NORM, rows * count, 1, 1, 32,
-                (void *[]){ &p[0], &p[1], &p[2], &p[3], &n, &m->epsilon, &mode, &rows, &stride });
-        case ROTATE: {
-            unsigned width = (unsigned)d, inverse = (unsigned)e;
-            unsigned head = f ? 128 : 0, keys = f ? 16 : 0, repeat = f ? 3 : 1;
-            m->packed_source = 0;
-            m->q8_input = 0;
-            m->ffn_q8_input = 0;
-            return launch(m, ROTATE, width/1024, count, 1, 256,
-                (void *[]){ &p[0], &p[1], &p[2], &inverse, &head, &keys, &repeat, &width });
-        }
+        case NORM: case ROTATE:
+            return fg_bonsai_norm_rotate(m, op, p);
         case MATRIX:
             in_width = (unsigned)d; out_width = (unsigned)e;
             if (count == 1) {

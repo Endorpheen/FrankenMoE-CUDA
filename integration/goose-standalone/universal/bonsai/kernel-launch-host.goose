@@ -239,3 +239,45 @@ export fn fg_bonsai_elementary(model: u64, op: i64, input: u64, c: i64, e: i64) 
     }
     return -1;
 }
+
+extern fn bonsai_bonsai_capture_begin(capture: u64, norm: u64) -> i32;
+
+export fn fg_bonsai_norm_rotate(model: u64, operation: i64, input: u64) -> i32 {
+    let count = batch_u32(model + BATCH_COUNT);
+    if operation == 0 {
+        let n = vocab_word(input + 32) as! u32;
+        let rows = vocab_word(input + 40) as! u32;
+        let mode = vocab_word(input + 48) as! u32;
+        let stride: u32 = if mode == 1 { 10240 } else { n * rows };
+        let buffers = model + BATCH_B;
+        let epsilon = model + 16336;
+        if batch_u32(model + BATCH_CAPTURE_ENABLED) != 0 && batch_u32(model + BATCH_IN_DECODE) != 0 &&
+            count == 1 && vocab_word(input) == vocab_word(buffers + 104) && vocab_word(input + 24) == vocab_word(buffers + 8) &&
+            bonsai_bonsai_capture_begin(model + BONSAI_CAPTURE_STREAM, vocab_word(input + 8)) != 0 { return -1; }
+        if batch_u32(model + 4720) != 0 && mode == 0 && n == 5120 && rows == 1 && stride == n {
+            let small = count <= 512;
+            let args: u64[4] = [input, input + 8, input + 24, epsilon];
+            return elementary_launch(model, if small { 47 } else { 48 }, count, 1, if small { 512 } else { 128 }, args);
+        }
+        let args: u64[9] = [input, input + 8, input + 16, input + 24,
+            vocab_address(unsafe_c_address<c_ptr<const void>>(n)), epsilon,
+            vocab_address(unsafe_c_address<c_ptr<const void>>(mode)),
+            vocab_address(unsafe_c_address<c_ptr<const void>>(rows)),
+            vocab_address(unsafe_c_address<c_ptr<const void>>(stride))];
+        return elementary_launch(model, 0, rows * count, 1, 32, args);
+    }
+    let width = vocab_word(input + 24) as! u32;
+    let inverse = vocab_word(input + 32) as! u32;
+    let special = vocab_word(input + 40) != 0;
+    let head: u32 = if special { 128 } else { 0 };
+    let keys: u32 = if special { 16 } else { 0 };
+    let repeat: u32 = if special { 3 } else { 1 };
+    vocab_set(model + BATCH_PACKED_SOURCE, 0);
+    vocab_set(model + BATCH_Q8_INPUT, 0);
+    vocab_set(model + BATCH_FFN_Q8_INPUT, 0);
+    let args: u64[8] = [input, input + 8, input + 16,
+        vocab_address(unsafe_c_address<c_ptr<const void>>(inverse)), vocab_address(unsafe_c_address<c_ptr<const void>>(head)),
+        vocab_address(unsafe_c_address<c_ptr<const void>>(keys)), vocab_address(unsafe_c_address<c_ptr<const void>>(repeat)),
+        vocab_address(unsafe_c_address<c_ptr<const void>>(width))];
+    return elementary_launch(model, 1, width / 1024, count, 256, args);
+}
