@@ -22,7 +22,16 @@ const I2D_VOCAB: i64 = 200058;
 struct I2DraftSpan { address: u64, len: i64 }
 
 extern fn fg_i2_backend_draft_features() -> bool;
-extern fn fg_i2_backend_reset_attention(decoder: u64) -> i32;
+extern fn inkling_attention_reset() -> i32;
+
+fn fg_i2_backend_reset_attention(decoder: u64) -> i32 {
+    if inkling_attention_reset() != 0 { return -1; }
+    i2_node_clear(unsafe_c_ptr<c_ptr<void>>(i2d_read(decoder + 887120)), 0, 589824);
+    i2_node_clear(unsafe_c_ptr<c_ptr<void>>(i2d_read(decoder + 887128)), 0, 589824);
+    i2_node_clear(unsafe_c_ptr<c_ptr<void>>(i2d_read(decoder + I2D_HA)), 0, I2D_HISTORY_BYTES);
+    i2_node_clear(unsafe_c_ptr<c_ptr<void>>(i2d_read(decoder + 887144)), 0, I2D_HISTORY_BYTES);
+    return 0;
+}
 extern fn fg_i2_backend_prefill(decoder: u64,tokens: u64,pos: i32,count: i32,logits: bool);
 extern fn fg_cuda_host_getenv(name: u64) -> u64;
 extern fn fg_cuda_expert_stats(out: I2DraftSpan);

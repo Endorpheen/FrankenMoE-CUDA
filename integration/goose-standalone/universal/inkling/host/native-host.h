@@ -50,12 +50,3 @@ _Static_assert(sizeof(struct inkling_attention_batch) == 80 &&
     sizeof(struct inkling_attention_projection) == 32 && offsetof(struct inkling_attention_projection, weights) == 8 &&
     offsetof(struct inkling_attention_projection, weight_bytes) == 16 &&
     offsetof(struct inkling_attention_projection, rows) == 24, "Goose native attention binding ABI");
-
-static int reset_inkling_attention(struct decoder *d) {
-    if (inkling_attention_reset() != 0) return -1;
-    memset(d->kh, 0, logical * 3 * key_width * sizeof(float));
-    memset(d->vh, 0, logical * 3 * key_width * sizeof(float));
-    memset(d->ha, 0, logical * 3 * model_width * sizeof(float));
-    memset(d->hf, 0, logical * 3 * model_width * sizeof(float));
-    return 0;
-}

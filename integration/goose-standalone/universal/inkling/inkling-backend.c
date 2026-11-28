@@ -245,11 +245,6 @@ static void execute_decode_graph(struct inkling_decode_graph *entry, float *outp
     memcpy(output, entry->output->data, model_width * sizeof(*output));
 }
 
-static void drop_decode_graph(struct inkling_decode_graph *entry) {
-    fg_standalone_graph_plan_free(entry->plan);
-    if (entry->context) ggml_free(entry->context);
-}
-
 static struct ggml_context *context(void) {
     struct ggml_context *ctx=ggml_init((struct ggml_init_params){2*1024*1024,NULL,true});
     assert(ctx);
@@ -509,17 +504,10 @@ _Static_assert(sizeof(struct decoder) == 940272 && offsetof(struct decoder, data
     offsetof(struct decoder, hf) == 887144 && INKLING_CONTEXT_LIMIT == 1048576 &&
     INKLING_WINDOW == 1024, "Goose Inkling open ABI");
 
-void fg_i2_backend_open_cleanup(uint64_t address) {
-    struct decoder *d = (struct decoder *)(uintptr_t)address;
-    if (d->logits_team) {
-        prefill_team_close(d->logits_team);
-        free(d->logits_team);
-    }
-    for (int i = 0; i < logical; ++i) {
-        drop_decode_graph(&d->decode_attention[i]);
-        drop_decode_graph(&d->decode_moe[i]);
-        drop_decode_graph(&d->decode_joined[i]);
-    }
+_Static_assert(offsetof(struct decoder, logits_team) == 887272, "Goose Inkling cleanup ABI");
+
+void fg_i2_close_logits_team(struct i2_prefill_team *team) {
+    prefill_team_close(team);
 }
 
 _Static_assert(offsetof(struct decoder, capacity) == 82992 &&
@@ -547,10 +535,6 @@ _Static_assert(offsetof(struct decoder, capacity) == 82992 &&
 
 bool fg_i2_backend_draft_features(void) {
     return use_attention_graph() && use_cached_history() && use_resident_moe() && use_joined_bridge();
-}
-
-int fg_i2_backend_reset_attention(uint64_t address) {
-    return reset_inkling_attention((struct decoder *)(uintptr_t)address);
 }
 
 void fg_i2_backend_prefill(uint64_t address, uint64_t tokens, int position, int count, bool logits) {

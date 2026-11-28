@@ -19,7 +19,28 @@ extern fn i2_place_weights(tensors: I2DraftSpan,core: I2DraftSpan,data: i64,excl
 extern fn i2_candidate_init(argc: i32,argv: u64);
 extern fn fg_cuda_free_bytes() -> i64;
 extern fn fg_cuda_enable_inkling_quants(enabled: bool);
-extern fn fg_i2_backend_open_cleanup(decoder: u64);
+extern fn fg_i2_close_logits_team(team: u64);
+extern fn fg_standalone_graph_plan_free(plan: u64);
+
+fn i2_open_drop_graph(entry: u64) {
+    fg_standalone_graph_plan_free(i2d_read(entry + 8));
+    let ctx = i2d_read(entry);
+    if ctx != 0 { ggml_free(ctx); }
+}
+
+fn fg_i2_backend_open_cleanup(decoder: u64) {
+    let team = i2d_read(decoder + 887272);
+    if team != 0 {
+        fg_i2_close_logits_team(team);
+        i2d_free(unsafe_c_ptr<c_ptr<void>>(team));
+    }
+    for index in 48 {
+        let offset = (index as! u64) * 368;
+        i2_open_drop_graph(decoder + I2_ENTRY_ATTN_BASE + offset);
+        i2_open_drop_graph(decoder + I2_ENTRY_MOE_BASE + offset);
+        i2_open_drop_graph(decoder + I2D_JOINED + offset);
+    }
+}
 extern fn fg637_fmt2(out: I2DraftSpan,value: f64) -> i64;
 extern "calloc" fn i2_open_calloc(count: u64,size: u64) -> c_ptr<void>;
 extern "gs_os_write_stdout" fn i2_open_print(text: const u8[:]);
