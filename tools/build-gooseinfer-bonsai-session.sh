@@ -25,9 +25,15 @@ ggml="$root/vendor/flint/ggml"
     -ffunction-sections -fdata-sections -I"$model_headers" -I"$standalone" \
     -I"$standalone/universal/inkling" -I"$standalone/gigachat4" -I"$root/integration/m1/host" \
     -I"$ggml/include" -I"$ggml/src" -c "$src/model-host.c" -o "$out/model-host-native.o"
+cat "$src/host-vocab.goose" "$src/host-lifecycle.goose" "$src/host-map-$target.goose" > "$out/host-vocab.goose"
 "${GOOSE_CUDA_DRIVER_BIN:?Set GOOSE_CUDA_DRIVER_BIN to Fried Goose KeelWing v0.3.1-dev.1}" \
-    --standalone -o "$out/host-vocab.c" "$src/host-vocab.goose"
+    --standalone -o "$out/host-vocab.c" "$out/host-vocab.goose"
 "$cc" -O2 -std=c11 -ffunction-sections -fdata-sections -Dgoose_init=fg_model_vocab_init \
     -Dgg_init_globals=fg_model_vocab_globals -c "$out/host-vocab.c" -o "$out/host-vocab.o"
-"$objcopy" --redefine-sym=vocab_strlen=strlen "$out/host-vocab.o"
+native=(--redefine-sym=vocab_strlen=strlen --redefine-sym=fg_cuda_model_getenv=getenv)
+if [[ "$target" == linux ]]; then
+    native+=(--redefine-sym=vocab_unix_open=open --redefine-sym=vocab_unix_fstat=fstat
+        --redefine-sym=vocab_unix_sysconf=sysconf --redefine-sym=vocab_unix_mmap=mmap --redefine-sym=vocab_unix_close=close)
+fi
+"$objcopy" "${native[@]}" "$out/host-vocab.o"
 "$cc" -r -nostdlib "$out/model-host-native.o" "$out/host-vocab.o" -o "$out/model-host.o"

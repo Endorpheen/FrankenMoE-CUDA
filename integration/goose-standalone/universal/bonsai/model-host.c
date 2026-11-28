@@ -42,11 +42,9 @@ extern void bonsai_goose_init(int argc, char **argv);
 #define MAX_REQ   262144
 
 extern bool fg_q35_checkpoint_enabled(void);
-extern void fg_cuda_gigachat4_select_profile(void);
 
 extern __typeof__(bt_tokenize) bt_tokenize_inkling2;
 extern void inkling_tokenizer_init(int argc, char **argv);
-extern void inkling_model_init(int argc, char **argv);
 
 const char * die(const char * what) { fprintf(stderr, "GENERATE %s\n", what); exit(1); }
 
@@ -118,6 +116,28 @@ _Static_assert(offsetof(host_t, base) == 0 &&
     offsetof(host_t, scratch_info) == 744 &&
     offsetof(host_t, scratch_enc) == 752 && MAX_REQ == 262144, "Goose CUDA vocabulary ABI");
 
+_Static_assert(offsetof(host_t, page_size) == 16 &&
+    offsetof(host_t, owner) == 24 &&
+    offsetof(host_t, layer_count) == 368 &&
+    offsetof(host_t, expert_cache_limit) == 376 &&
+    offsetof(host_t, acfg) == 384 &&
+    offsetof(host_t, gcfg) == 496 &&
+    offsetof(host_t, mcfg) == 552 &&
+    offsetof(host_t, kv_state) == 576 &&
+    offsetof(host_t, handles) == 624 &&
+    offsetof(host_t, records) == 656 &&
+    offsetof(host_t, inkling) == 664 &&
+    offsetof(host_t, gigachat4) == 672 &&
+    offsetof(host_t, bonsai) == 680 &&
+    offsetof(host_t, kv_format) == 696 && HOSE_DEFAULT_CONTEXT == 2048 &&
+    BONSAI_SESSION_VOCAB == 248320 && INKLING_TEXT_VOCAB == 200058 &&
+    INKLING_KV_F16 == 0 && INKLING_KV_Q4_0 == 1, "Goose CUDA model host ABI");
+#ifndef _WIN32
+_Static_assert(sizeof(struct stat) == 144 && offsetof(struct stat, st_mode) == 24 &&
+    offsetof(struct stat, st_size) == 48 && _SC_PAGESIZE == 30 && O_CLOEXEC == 524288 &&
+    S_IFREG == 0x8000 && PROT_READ == 1 && MAP_PRIVATE == 2, "Goose Linux model mapping ABI");
+#endif
+
 host_t H;
 uint64_t fg_cuda_model_host_address(void) { return (uintptr_t)&H; }
 
@@ -125,26 +145,7 @@ static int64_t prefill_batch = HOSE_DEFAULT_PREFILL_BATCH;
 static int64_t prefill_ubatch = HOSE_DEFAULT_PREFILL_BATCH;
 static int64_t expert_cache_request;
 
-enum { HOST_KV_Q4_0 = 1, HOST_KV_F16 = 2 };
-static int64_t requested_kv[2];
-
-int64_t hose_configure_kv(bool value, const char *format) {
-    int64_t type;
-    if (strcmp(format, "q4_0") == 0) type = HOST_KV_Q4_0;
-    else if (strcmp(format, "f16") == 0) type = HOST_KV_F16;
-    else return -1;
-    requested_kv[value] = type;
-    return 0;
-}
-
-int64_t hose_kv_format(void) {
-    return H.kv_format;
-}
-
-static bool kv_compatible(int64_t type) {
-    return (!requested_kv[0] || requested_kv[0] == type) &&
-           (!requested_kv[1] || requested_kv[1] == type);
-}
+int64_t fg_cuda_model_expert_request(void) { return expert_cache_request; }
 
 int64_t fg_model_mincore(uint64_t address, int64_t bytes, sl_u8 flags) {
     #ifdef _WIN32
@@ -195,60 +196,11 @@ int64_t fg_model_zero_host_pages(uint64_t address, int64_t length) {
 #endif
 }
 
-int64_t hose_model_residency(int64_t out[4]) {
-    return dw_ram_residency((uint64_t) (uintptr_t) H.base, (int64_t) H.size, H.page_size,
-        (sl_i64) { out, 4 });
-}
-
-static int64_t warm_model(int64_t out[4]) {
-    return dw_ram_warm((uint64_t) (uintptr_t) H.base, (int64_t) H.size, H.page_size,
-        (sl_i64) { out, 4 });
-}
-
-int64_t fg_q35_generation_prepare(void) {
-    if (H.bonsai) return 0;
-    int64_t residency[4] = {0};
-    if (hose_model_residency(residency) != 0) return -1;
-    if (residency[1] == residency[0]) return 0;
-    return warm_model(residency);
-}
-
 extern int64_t find_key(const char *key);
 extern bool metadata_is(const char *key, const char *value);
 extern void load_vocab(void);
 extern int64_t tokenize(const unsigned char *text, int64_t len, int64_t *ids, int64_t capacity);
 extern int64_t detokenize(const int64_t *ids, int64_t count, unsigned char *out, int64_t capacity);
-
-static void init_trunk(int64_t capacity) {
-    const int64_t hdr = H.size < 67108864 ? (int64_t) H.size : 67108864;
-    const int64_t layer_slots = 128 * 32;
-    const int64_t scratch_slots = H.state[3] + 4;
-    H.records = calloc((size_t) layer_slots, sizeof(int64_t));
-    int64_t *scratch = calloc((size_t) scratch_slots, sizeof(int64_t));
-    if (!H.records || !scratch) die("model loader workspaces");
-    int64_t sections[4] = {0};
-    uint8_t name[128] = {0};
-    H.layer_count = qr_model_open((sl_u8){ H.base, hdr }, (uint64_t) (uintptr_t) H.base,
-        (int64_t) H.size, (sl_i64){ H.state, 8 }, (sl_i64){ H.kv, 256 * 8 },
-        (sl_i64){ H.tens, 2048 * 12 }, (sl_i64){ H.kvsl, 512 }, (sl_i64){ H.tensl, 8192 },
-        capacity, INT32_MAX, (sl_i64){ H.owner, 13 }, (sl_i64){ H.records, layer_slots },
-        (sl_i64){ H.handles, 4 }, (sl_i64){ H.acfg, 14 }, (sl_i64){ H.gcfg, 7 },
-        (sl_i64){ H.mcfg, 3 }, (sl_i64){ sections, 4 }, (sl_i64){ H.kv_state, 6 },
-        (sl_u8){ name, sizeof name }, (sl_i64){ scratch, scratch_slots });
-    free(scratch);
-    if (H.layer_count <= 0) {
-        fprintf(stderr, "Goose model loader returned %lld\n", (long long) H.layer_count);
-        die("model loader");
-    }
-    if (H.owner[8] != H.n_tok) die("model vocabulary size");
-}
-
-// Start a request from zero: KV bookkeeping plus every recurrent/KV cell buffer.
-static void reset_state(void) {
-    if (H.gigachat4) { giga_server_reset(); return; }
-    if (qr_reset_state((sl_i64) { H.owner, 13 }, (sl_i64) { H.records, H.layer_count * 32 },
-        (sl_i64) { H.kv_state, 6 }) != 0) die("model state reset");
-}
 
 void fg_q35_write_ids(uint64_t address, sl_i32 tokens) {
     memcpy((void *) (uintptr_t) address, tokens.data, (size_t) tokens.len * sizeof(*tokens.data));
@@ -262,112 +214,7 @@ void fg_q35_release_graph(uint64_t address) {
     free((void *) (uintptr_t) address);
 }
 
-static int64_t model_step(sl_i32 tokens, int64_t logit_rows, sl_f32 output) {
-    if (!tokens.data || (output.len != 0 && !output.data)) return -1;
-    if (H.gigachat4) return giga_server_step(tokens.data, tokens.len, logit_rows, output.data, output.len);
-    const int64_t result = q35_model_step((sl_i64) { H.owner, 13 }, (sl_i64) { H.handles, 4 },
-        (sl_i64) { H.records, H.layer_count * 32 }, (sl_i64) { H.acfg, 14 },
-        (sl_i64) { H.gcfg, 7 }, (sl_i64) { H.mcfg, 3 }, (sl_i64) { H.kv_state, 6 },
-        tokens, logit_rows, output);
-    if (result == -2) die("model step recovery");
-    return result;
-}
-
-
-// ---- API ---------------------------------------------------------------
-
-void hose_host_load_context(const char * path, int64_t capacity) {
-#ifdef _WIN32
-    H.page_size = (int64_t)fg_win_page_size();
-    H.base = fg_win_map_model(path, &H.size);
-    if (!H.base) die("model open or mapping");
-#else
-    struct stat st;
-    const int fd = open(path, O_RDONLY | O_CLOEXEC);
-    if (fd < 0 || fstat(fd, &st) != 0 || !S_ISREG(st.st_mode) || st.st_size <= 0) die("model open");
-    H.size = (size_t) st.st_size;
-    H.page_size = sysconf(_SC_PAGESIZE);
-    if (H.page_size <= 0) die("model page size");
-    H.base = mmap(NULL, H.size, PROT_READ, MAP_PRIVATE, fd, 0);
-    close(fd);
-    if (H.base == MAP_FAILED) die("model mmap");
-#endif
-    load_vocab();
-    if (H.bonsai_layout) {
-        if (capacity <= 0 || capacity > 262144 || prefill_ubatch <= 0 ||
-                prefill_ubatch > 1024 || !kv_compatible(HOST_KV_Q4_0) ||
-                H.n_tok != BONSAI_SESSION_VOCAB) die("Bonsai context, ubatch, KV or vocabulary");
-        const char *image = getenv("BONSAI_CUDA_IMAGE");
-        const char *frozen = getenv("BONSAI_FROZEN_PTX");
-        H.bonsai = bonsai_session_open(path, image, frozen, (unsigned)capacity, (unsigned)prefill_ubatch);
-        if (!H.bonsai) die("Bonsai model or CUDA placement");
-        H.kv_format = HOST_KV_Q4_0;
-        H.owner[10] = capacity;
-        H.layer_count = 64;
-        return;
-    }
-    if (metadata_is("general.architecture", "inkling2_loop")) {
-        inkling_model_init(0, NULL);
-        H.kv_format = requested_kv[0] ? requested_kv[0] :
-            requested_kv[1] ? requested_kv[1] : HOST_KV_Q4_0;
-        if (!kv_compatible(H.kv_format)) die("Inkling requires matching formats for K and V");
-        if (H.n_tok != INKLING_TEXT_VOCAB || !H.inkling_tokenizer) die("Inkling vocabulary");
-        const enum inkling_kv_format format = H.kv_format == HOST_KV_Q4_0 ? INKLING_KV_Q4_0 : INKLING_KV_F16;
-        H.inkling = inkling_backend_open(H.base, H.size, capacity, expert_cache_request, format);
-        if (!H.inkling) die("Inkling model loading or CUDA placement");
-        H.layer_count = 24;
-        H.owner[10] = capacity;
-        H.expert_cache_limit = expert_cache_request;
-        return;
-    }
-    if (metadata_is("general.architecture", "gigachat4")) {
-        fg_cuda_gigachat4_select_profile();
-        if (fg_q35_generation_prepare() != 0) die("GigaChat4 model RAM residency");
-        giga_goose_init(0, NULL);
-        if (H.n_tok != 128256 || giga_server_open((uintptr_t)H.base, H.size, capacity) != 0)
-            die("GigaChat4 model loader");
-        H.gigachat4 = true;
-        H.owner[10] = capacity;
-        H.layer_count = 32;
-        return;
-    }
-    if (!kv_compatible(HOST_KV_Q4_0)) die("Apex requires q4_0 for both KV caches");
-    H.kv_format = HOST_KV_Q4_0;
-    init_trunk(capacity);
-    int64_t residency[4] = {0};
-    const int64_t status = warm_model(residency);
-    if (status != 0) {
-        fprintf(stderr, "Goose model RAM: %lld of %lld pages resident, status %lld\n",
-            (long long) residency[3], (long long) residency[2], (long long) status);
-        die("model RAM residency");
-    }
-    const int64_t state_bytes = qr_cuda_state((sl_i64) { H.owner, 13 },
-        (sl_i64) { H.records, H.layer_count * 32 }, H.handles[1]);
-    if (state_bytes < 0) die("model CUDA state");
-    const int64_t device_bytes = qr_cuda_dense((sl_i64) { H.owner, 13 },
-        (sl_i64) { H.records, H.layer_count * 32 }, H.handles[1], H.handles[2]);
-    if (device_bytes < 0) die("model CUDA placement");
-    int64_t expert_capacity[2] = {0};
-    const int64_t expert_bytes = qr_cuda_experts((sl_i64) { H.owner, 13 },
-        (sl_i64) { H.records, H.layer_count * 32 }, H.handles[1], expert_cache_request,
-        (sl_i64) { expert_capacity, 2 });
-    if (expert_bytes == -2) die("requested GPU expert cache requires an available CUDA device");
-    if (expert_bytes == -3) {
-        fprintf(stderr, "Goose GPU expert cache: requested %" PRId64
-                " MiB, available %" PRId64 " bytes after model allocations\n",
-                expert_cache_request / (1024 * 1024), expert_capacity[0]);
-        exit(1);
-    }
-    if (expert_bytes == -4) die("requested GPU expert cache cannot hold one layer of experts per group");
-    if (expert_bytes == -5) die("model has no supported GPU expert cache groups");
-    if (expert_bytes < 0) die("model CUDA expert cache");
-    H.expert_cache_limit = expert_capacity[1];
-    if (fg_q35_generation_prepare() != 0) die("model RAM residency after CUDA placement");
-}
-
-void hose_host_load(const char * path) {
-    hose_host_load_context(path, HOSE_DEFAULT_CONTEXT);
-}
+extern int64_t fg_cuda_model_step(sl_i32 tokens, int64_t rows, sl_f32 output);
 
 int64_t hose_tokenize(const unsigned char * text, int64_t len, int64_t * ids, int64_t cap) {
     return tokenize(text, len, ids, cap);
@@ -375,46 +222,6 @@ int64_t hose_tokenize(const unsigned char * text, int64_t len, int64_t * ids, in
 
 int64_t hose_detokenize(const int64_t * ids, int64_t n, unsigned char * out, int64_t cap) {
     return detokenize(ids, n, out, cap);
-}
-
-void hose_reset_state(void) {
-    if (H.bonsai) {
-        if (bonsai_session_reset(H.bonsai) != 0) die("Bonsai model state reset");
-        return;
-    }
-    if (H.inkling) {
-        if (inkling_backend_reset(H.inkling) != 0) die("Inkling model state reset");
-        return;
-    }
-    reset_state();
-}
-
-int64_t hose_step(const int32_t * tokens, int64_t count, float ** logits) {
-    if (!logits) return -1;
-    *logits = NULL;
-    if (H.bonsai) {
-        if (count != 1) return -1;
-        float *row = malloc((size_t)H.n_tok * sizeof(*row));
-        if (!row) return -1;
-        if (bonsai_session_step(H.bonsai, (const uint32_t *)tokens, 1, row) != 0) {
-            free(row);
-            return -1;
-        }
-        *logits = row;
-        return H.n_tok;
-    }
-    if (H.inkling && count != 1) return -1;
-    if (count <= 0 || count > 4096 || H.n_tok <= 0 || (uint64_t) H.n_tok > SIZE_MAX / sizeof(float) / count) {
-        return -1;
-    }
-    const int64_t capacity = count * H.n_tok;
-    float * buffer = malloc((size_t) capacity * sizeof(*buffer));
-    if (!buffer) return -1;
-    const int64_t n = H.inkling ? inkling_backend_eval(H.inkling, tokens, count, false, buffer, capacity) :
-        model_step((sl_i32) { (int32_t *) tokens, count }, -1, (sl_f32) { buffer, capacity });
-    if (n < 0) free(buffer);
-    else *logits = buffer;
-    return n;
 }
 
 int64_t hose_eog_is(int64_t id) {
@@ -527,7 +334,7 @@ void fg_q35_generation_scope_leave(void) {
 static int64_t generation_step(sl_i32 tokens, sl_f32 logits, bool prefill) {
     if (H.gigachat4 || prefill || tokens.len != 1 || logits.len != H.n_tok ||
         decode_plan.depth != 1 || !decode_plan.enabled) {
-        return model_step(tokens, logits.len != 0, logits);
+        return fg_cuda_model_step(tokens, logits.len != 0, logits);
     }
     const int64_t result = q35_model_step_cached((sl_i64) { H.owner, 13 },
         (sl_i64) { H.handles, 4 }, (sl_i64) { H.records, H.layer_count * 32 },
