@@ -35,43 +35,16 @@ struct prefill_workspace {
     float combined[max_prefill_batch][2 * model_width];
 };
 
+_Static_assert(sizeof(struct prefill_token) == 285708, "Goose prefill token stride ABI");
+extern void fg_i2_prefill_control(struct decoder *d, const int64_t *aux, int which, int count,
+    struct prefill_token *tokens, float *current, const uintptr_t *buffers);
+
 static void prefill_control(struct decoder *d, const int64_t *aux, int which, int count,
                             struct prefill_token *tokens, float (*current)[model_width],
                             struct prefill_workspace *scratch) {
-    const int at = 18 + which * 3;
-    if (fg_i2_host_resident_control()) {
-        for (int t = 0; t < count; ++t) {
-            memcpy(scratch->gain[t], tokens[t].messages[which], sizeof scratch->gain[t]);
-        }
-        control_resident(d, aux, at, current[0], scratch->gain[0], count);
-        return;
-    }
-    for (int t = 0; t < count; ++t) {
-        float *const input = scratch->control_input[t];
-        assert(i2_rms_gain(vec(current[t], model_width), vec(NULL, 0), 1e-6f,
-            vec(input, model_width)) == model_width);
-        assert(i2_rms_gain(vec(tokens[t].messages[which], model_width), vec(NULL, 0), 1e-6f,
-            vec(input + model_width, model_width)) == model_width);
-    }
-    if (fg_i2_host_resident_plan()) {
-        project_control_group(d, aux, at, scratch->control_input[0], count, scratch->combined[0]);
-        for (int t = 0; t < count; ++t) {
-            memcpy(scratch->gain[t], scratch->combined[t], sizeof scratch->gain[t]);
-            memcpy(scratch->forget[t], scratch->combined[t] + model_width, sizeof scratch->forget[t]);
-        }
-    } else {
-        prefill_projection(d, aux[at], scratch->control_input[0], 2 * model_width,
-            scratch->control_hidden[0], 64, count);
-        prefill_projection(d, aux[at + 1], scratch->control_hidden[0], 64,
-            scratch->forget[0], model_width, count);
-        prefill_projection(d, aux[at + 2], scratch->control_hidden[0], 64,
-            scratch->gain[0], model_width, count);
-    }
-    for (int t = 0; t < count; ++t) {
-        assert(i2_loop_blend(vec(current[t], model_width), vec(tokens[t].messages[which], model_width),
-            vec(scratch->gain[t], model_width), vec(scratch->forget[t], model_width),
-            vec(current[t], model_width)) == model_width);
-    }
+    const uintptr_t buffers[] = {(uintptr_t)scratch->control_input, (uintptr_t)scratch->control_hidden,
+        (uintptr_t)scratch->gain, (uintptr_t)scratch->forget, (uintptr_t)scratch->combined};
+    fg_i2_prefill_control(d, aux, which, count, tokens, current[0], buffers);
 }
 
 struct i2_prefill_work {

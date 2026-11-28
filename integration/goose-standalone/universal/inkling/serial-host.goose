@@ -452,3 +452,47 @@ export fn prefill_loop_inputs(decoder: u64, token: u64, layer: i32, pass: i32, d
         fg_i2_host_mix(bank, bank_count, previous, i2d_span(query, 9216), 4, token + 248832);
     }
 }
+
+export fn fg_i2_prefill_control(decoder: u64, aux: u64, which: i32, count: i32, tokens: u64, current: u64, buffers: u64) {
+    let at = 18 + which * 3;
+    let normalized = i2d_read(buffers);
+    let hidden = i2d_read(buffers + 8);
+    let gain = i2d_read(buffers + 16);
+    let forget = i2d_read(buffers + 24);
+    let combined = i2d_read(buffers + 32);
+    let messages = tokens + 248832 + (which as! u64) * 9216;
+    if fg_i2_host_resident_control() {
+        for index in count as! i64 {
+            let row = index as! u64;
+            i2d_transfer(gain + row * 9216, messages + row * 285708, 9216);
+        }
+        fg_i2_host_control_resident(decoder, aux, at, current, gain, count);
+        return;
+    }
+    for index in count as! i64 {
+        let row = index as! u64;
+        let input = normalized + row * 18432;
+        i2_host_normalize(current + row * 9216, input);
+        i2_host_normalize(messages + row * 285708, input + 9216);
+    }
+    if fg_i2_host_resident_plan() {
+        fg_i2_host_control_group(decoder, aux, at, normalized, count, combined);
+        for index in count as! i64 {
+            let row = index as! u64;
+            let packet = combined + row * 18432;
+            i2d_transfer(gain + row * 9216, packet, 9216);
+            i2d_transfer(forget + row * 9216, packet + 9216, 9216);
+        }
+    } else {
+        prefill_projection(decoder, i2_host_aux(aux, at), normalized, 4608, hidden, 64, count);
+        prefill_projection(decoder, i2_host_aux(aux, at + 1), hidden, 64, forget, 2304, count);
+        prefill_projection(decoder, i2_host_aux(aux, at + 2), hidden, 64, gain, 2304, count);
+    }
+    for index in count as! i64 {
+        let row = index as! u64;
+        let offset = row * 9216;
+        let output = i2d_span(current + offset, 2304);
+        assert(fg_i2_host_measured_blend(output, i2d_span(messages + row * 285708, 2304),
+            i2d_span(gain + offset, 2304), i2d_span(forget + offset, 2304), output) == 2304);
+    }
+}
