@@ -31,15 +31,14 @@ flags=(-std=c11 -D_GNU_SOURCE -ffunction-sections -fdata-sections
        -I"$ggml/include" -I"$ggml/src" -I"$ggml/src/ggml-cpu")
 "$cc" -O1 "${flags[@]}" "${hardening[@]}" \
     -c "$ggml/src/ggml.c" -o "$out/ggml.o"
-"$cc" -O1 "${flags[@]}" "${hardening[@]}" -c "$standalone/ggml-system.c" -o "$out/ggml-system.o"
 "$cc" "${flags[@]}" -x c -fsyntax-only "$standalone/graph-bindings-layout.h"
+cat "$standalone/graph-bindings.goose" "$standalone/common-memory.goose" > "$out/common-core.goose"
 "${GOOSE_CUDA_DRIVER_BIN:?Set GOOSE_CUDA_DRIVER_BIN to Fried Goose KeelWing v0.3.1-dev.1}" --standalone \
-    -o "$out/graph-bindings.c" "$standalone/graph-bindings.goose"
+    -o "$out/graph-bindings.c" "$out/common-core.goose"
 "$cc" -O2 "${flags[@]}" -Dgoose_init=fg_graph_bindings_init -Dgg_init_globals=fg_graph_bindings_globals \
     -c "$out/graph-bindings.c" -o "$out/graph-bindings.o"
 "$objcopy" --redefine-sym=graph_crt_getenv=getenv "$out/graph-bindings.o"
 "$cc" -O1 "${flags[@]}" -c "$host/goose_host.c" -o "$out/goose-host.o"
-"$cc" -O1 "${flags[@]}" -DFG_SLRU_SHARED_UNIT -c "$standalone/slru-runtime-shim.c" -o "$out/slru-shim.o"
 if [[ $target == linux ]]; then
     "$cc" -O1 "${flags[@]}" -c "$standalone/libc-forwards.c" -o "$out/libc-forwards.o"
 else
