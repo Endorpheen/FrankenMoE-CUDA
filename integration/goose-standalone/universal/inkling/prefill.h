@@ -199,6 +199,9 @@ extern void fg_i2_prefill_native_attention(struct decoder *d, const int64_t *cor
     struct prefill_token *tokens, struct prefill_workspace *scratch, int slot, int begin, int pass, int count,
     bool sliding, int64_t *work);
 
+extern void fg_i2_prepare_device_mix(struct decoder *d, const int64_t *aux, float *input,
+    int count, int history_rows, bool sliding, bool resident, bool boundary, bool prune_host);
+
 void fg_i2_prefill_layer(struct decoder *d, struct prefill_token *tokens, struct prefill_workspace *scratch,
                           int count, int begin, const int64_t *visit, struct i2_prefill_team *team,
                           bool *device_current, bool retain_current, uint64_t output_slot,
@@ -243,21 +246,9 @@ void fg_i2_prefill_layer(struct decoder *d, struct prefill_token *tokens, struct
     const bool skip_attention_prep = prune_host && device_attention_mix && *device_current &&
         layer != 6 && (!setup.message || device_loop);
     if (!skip_attention_prep) prepare_prefill(team, &setup, count);
-    if (device_attention_mix) {
-        float *input = scratch->inputs[0][0];
-        const size_t values = (size_t)count * model_width;
-        const int queries = sliding ? 1 : 3;
-        const uint64_t full_outputs = sliding ? 0 : inkling_prefill_full_scratch(queries * values * sizeof(float));
-        assert(sliding || full_outputs);
-        assert(inkling_arena_depthmix(*device_current ? NULL : input, NULL,
-                                    coefficients(d, aux[10], queries * model_width).data,
-                                    input, tokens[0].count, device_boundary, full_outputs));
-        if (!prune_host)
-            for (int q = 0; q < queries; ++q)
-                for (int t = 0; t < count; ++t)
-                    for (int c = 0; c < model_width; ++c) scratch->inputs[q][t][c] = NAN;
-    }
-    struct ggml_context *ctx;
+    if (device_attention_mix)
+        fg_i2_prepare_device_mix(d, aux, scratch->inputs[0][0], count, tokens[0].count,
+            sliding, *device_current, device_boundary, prune_host);
     int64_t work[16] = {0};
     if (resident_attention) {
         fg_i2_prefill_resident_attention(d, core, aux, slot, begin, layer, pass, count, sliding,

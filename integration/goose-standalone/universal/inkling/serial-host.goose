@@ -861,3 +861,18 @@ export fn fg_i2_prefill_native_attention(decoder: u64, core: u64, aux: u64, toke
         prefill_projection(decoder, weight, attention, 3072, output, 2304, count);
     }
 }
+
+extern fn inkling_prefill_full_scratch(bytes: u64) -> u64;
+
+export fn fg_i2_prepare_device_mix(decoder: u64, aux: u64, input: u64, count: i32,
+    history_rows: i32, sliding: bool, resident: bool, boundary: bool, prune_host: bool) {
+    let queries: i64 = if sliding { 1 } else { 3 };
+    let full = if sliding { 0 } else { inkling_prefill_full_scratch((queries as! u64) * (count as! u64) * 9216) };
+    assert(sliding || full != 0);
+    let weight = i2_native_weight(decoder, aux, 10, queries * 2304);
+    assert(inkling_arena_depthmix(if resident { 0 } else { input }, 0, weight.address,
+        input, history_rows, boundary, full));
+    if !prune_host {
+        for index in queries { i2_poison_prefill_rows(input + (index as! u64) * 37748736, count); }
+    }
+}
