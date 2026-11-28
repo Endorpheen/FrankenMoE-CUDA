@@ -85,7 +85,7 @@ static void bonsai_bind_cuda(void) {
     else fputs("Bonsai CUDA driver unavailable\n", stderr);
 }
 
-static int bonsai_cuda_ready(void) {
+int32_t fg_bonsai_cuda_ready(void) {
     static pthread_once_t once = PTHREAD_ONCE_INIT;
     return pthread_once(&once, bonsai_bind_cuda) == 0 && bonsai_cuda.library != NULL;
 }
@@ -584,52 +584,33 @@ _Static_assert(
     offsetof(model, verify_native) == 56 && offsetof(model, verify_q8) == 60 &&
     offsetof(model, verify_rows) == 52 && offsetof(model, wide_mmq) == 14692,
     "Bonsai profile ABI");
-extern int32_t fg_bonsai_profile(model *m, const char *mtp_image);
+_Static_assert(sizeof(model) == 16344 && CONTEXT_MIN == 1 && POSITIONS_MAX == 262144 &&
+    offsetof(struct bonsai_cuda_api, fn_cuMemGetInfo) == 88, "Bonsai model loader ABI");
 
-model *fg_bonsai_model_open(const char *gguf, const char *cubin, const char *frozen, unsigned context, unsigned ubatch) {
-    if (context < CONTEXT_MIN || context > POSITIONS_MAX) return NULL;
-    if (!bonsai_cuda_ready()) return NULL;
-    model *m = calloc(1, sizeof(*m));
-    if (!m) return NULL;
-    m->context = context; m->ubatch = ubatch;
-    const char *mtp_image = getenv("BONSAI_HTTP_MTP_IMAGE");
-    if (fg_bonsai_profile(m, mtp_image) != 0) goto error;
-    if (fg_bonsai_load_images(m, cubin, frozen, mtp_image, gooseinfer_bonsai_pipeline_image,
-        gooseinfer_bonsai_frozen_image, gooseinfer_bonsai_mtp_image) != 0) goto error;
+int32_t fg_bonsai_embedded_images(model *m, const char *cubin, const char *frozen, const char *mtp_image) {
+    return fg_bonsai_load_images(m, cubin, frozen, mtp_image, gooseinfer_bonsai_pipeline_image,
+        gooseinfer_bonsai_frozen_image, gooseinfer_bonsai_mtp_image);
+}
+
+int32_t fg_bonsai_map_weights(model *m, const char *gguf) {
 #ifdef _WIN32
     size_t model_bytes = 0;
     uint8_t *mapping = fg_win_map_model(gguf, &model_bytes);
-    if (!mapping) goto error;
+    if (!mapping) return -1;
     const int loaded = model_bytes < 24 ? -1 : load_weights(m, mapping, model_bytes);
     UnmapViewOfFile(mapping);
 #else
     int fd = open(gguf, O_RDONLY);
-    if (fd < 0) { perror(gguf); goto error; }
+    if (fd < 0) { perror(gguf); return -1; }
     struct stat info;
-    if (fstat(fd, &info) != 0 || info.st_size < 24) { close(fd); goto error; }
+    if (fstat(fd, &info) != 0 || info.st_size < 24) { close(fd); return -1; }
     uint8_t *mapping = mmap(NULL, info.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
     close(fd);
-    if (mapping == MAP_FAILED) { perror("mmap"); goto error; }
+    if (mapping == MAP_FAILED) { perror("mmap"); return -1; }
     const int loaded = load_weights(m, mapping, (size_t)info.st_size);
     munmap(mapping, info.st_size);
 #endif
-    if (loaded != 0) goto error;
-    const char *device_choice = getenv("BONSAI_HTTP_DEVICE_CHOICE");
-    if (device_choice && !strcmp(device_choice, "1") && fg_bonsai_choice_open(m) != 0) goto error;
-    if (m->mtp_enabled) {
-        bonsai_mtp_goose_init(0, NULL);
-        if (!m->choice_mask || fg_bonsai_draft_open(m)) goto error;
-    }
-    fg_bonsai_ffn_graph_open(m);
-    size_t available = 0, total = 0;
-    if (!check(bonsai_cuda.fn_cuMemGetInfo(&available, &total), "free VRAM")) {
-        fprintf(stderr, "Device free: " BONSAI_SIZE_FMT " / " BONSAI_SIZE_FMT " bytes\n", available, total);
-    }
-    return m;
-error:
-    if (m->cuda) bonsai_cuda.fn_cuCtxDestroy(m->cuda);
-    free(m);
-    return NULL;
+    return loaded;
 }
 
 _Static_assert(

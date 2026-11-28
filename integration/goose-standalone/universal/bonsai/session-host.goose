@@ -11,7 +11,6 @@ const SESSION_EOG_COUNT: u64 = 15280;
 type BonsaiContext = c_fnptr(u64) -> i32;
 type BonsaiMemset = c_fnptr(u64, u8, u64) -> i32;
 
-extern fn fg_bonsai_model_open(path: u64, image: u64, frozen: u64, context: u32, batch: u32) -> u64;
 extern fn bonsai_bonsai_capture_abort(capture: u64);
 
 fn session_context(operation: u64, argument: u64) -> i32 {
@@ -57,7 +56,7 @@ export fn bonsai_session_open(path: u64, image: u64, frozen: u64, context: u32, 
     vocab_memcpy(unsafe_c_address<c_ptr<void>>(session), unsafe_c_address<c_ptr<const void>>(allocation), 8);
     if session == 0 { return 0; }
     bonsai_goose_init(0, 0);
-    let model = fg_bonsai_model_open(path, image, frozen, context, batch);
+    let model = bonsai_model_open(path, image, frozen, context, batch);
     if model == 0 {
         vocab_free(allocation);
         return 0;
