@@ -301,3 +301,37 @@ export fn fg_i2_prepare_prefill_rows(decoder: u64, args: u64, aux: u64, slot: i3
         fg_i2_prepare_native_row(decoder, args, aux, slot, begin + position, position, sliding, output, packed);
     }
 }
+
+const I2_NATIVE_WORKSPACE_COUNT: u64 = 887104;
+const I2_NATIVE_WORKSPACE: u64 = 887112;
+
+extern fn i2_finish_native(gate: I2DraftSpan, output: I2DraftSpan) -> i64;
+extern "realloc" fn i2_native_realloc(base: c_ptr<void>, bytes: u64) -> c_ptr<void>;
+
+export fn fg_i2_native_workspace(decoder: u64, count: i32, args: u64) {
+    let rows = count as! u64;
+    let floats = rows * 8600;
+    var storage = i2d_read(decoder + I2_NATIVE_WORKSPACE);
+    if i2d_read(decoder + I2_NATIVE_WORKSPACE_COUNT) < floats {
+        let allocation = i2_native_realloc(unsafe_c_ptr<c_ptr<void>>(storage), floats * 4);
+        i2d_copy(unsafe_c_address<c_ptr<void>>(storage), unsafe_c_address<c_ptr<const void>>(allocation), 8);
+        assert(storage != 0);
+        i2d_set(decoder + I2_NATIVE_WORKSPACE, storage);
+        i2d_set(decoder + I2_NATIVE_WORKSPACE_COUNT, floats);
+    }
+    let widths: u64[5] = [3072, 1024, 1024, 384, 24];
+    var address = storage;
+    for index in 5 {
+        i2d_set(args + (index as! u64) * 8, address);
+        address += widths[index] * rows * 4;
+    }
+    i2d_set(args + 40, address);
+}
+
+export fn fg_i2_native_finish(args: u64, count: i32, output: u64) {
+    let gate = i2d_read(args + 40);
+    for index in count as! i64 {
+        let offset = (index as! u64) * 12288;
+        assert(i2_finish_native(i2d_span(gate + offset, 3072), i2d_span(output + offset, 3072)) == 3072);
+    }
+}

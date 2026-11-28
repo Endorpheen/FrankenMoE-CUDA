@@ -411,7 +411,8 @@ void fg_i2_serial_native_attention(struct decoder *d, const int64_t *core, const
         float projected[8664], attn[attn_width];
         int packed = fg_i2_project_attention_inputs(d, core, aux, sliding, rows, 1, projected, work);
 
-        struct native_attention_inputs args = native_attention_inputs(d, 1);
+        struct native_attention_inputs args;
+        fg_i2_native_workspace(d, 1, &args);
         fg_i2_prepare_native_row(d, &args, aux, slot, absolute, 0, sliding, projected, packed);
         if (use_resident_attention_projection()) {
             native_attention_project(d, args, aux, slot, absolute, 1, sliding, named(d, core[3]), proj);

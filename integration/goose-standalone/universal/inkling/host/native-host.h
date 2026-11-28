@@ -1,27 +1,12 @@
-extern int64_t i2_finish_native(sl_f32 gate, sl_f32 output);
-
 struct native_attention_inputs {
     float *q, *k, *v, *relative, *sinks, *gates;
 };
 
-static struct native_attention_inputs native_attention_inputs(struct decoder *d, int count) {
-    const size_t floats = (size_t)count * (2 * attn_width + 2 * key_width + 384 + 24);
-    if (d->flash_floats < floats) {
-        float *storage = realloc(d->flash_workspace, floats * sizeof(float));
-        assert(storage);
-        d->flash_workspace = storage;
-        d->flash_floats = floats;
-    }
-    float *q = d->flash_workspace;
-    float *k = q + count * attn_width;
-    float *v = k + count * key_width;
-    float *r = v + count * key_width;
-    float *s = r + count * 384;
-    float *g = s + count * 24;
-    return (struct native_attention_inputs){q, k, v, r, s, g};
-}
+extern void fg_i2_native_workspace(struct decoder *d, int count, struct native_attention_inputs *args);
+extern void fg_i2_native_finish(const struct native_attention_inputs *args, int count, float *output);
 
-_Static_assert(offsetof(struct decoder, kh) == 887120 && offsetof(struct decoder, vh) == 887128 &&
+_Static_assert(offsetof(struct decoder, flash_floats) == 887104 && offsetof(struct decoder, flash_workspace) == 887112 &&
+    offsetof(struct decoder, kh) == 887120 && offsetof(struct decoder, vh) == 887128 &&
     offsetof(struct native_attention_inputs, q) == 0 && offsetof(struct native_attention_inputs, k) == 8 &&
     offsetof(struct native_attention_inputs, v) == 16 && offsetof(struct native_attention_inputs, relative) == 24 &&
     offsetof(struct native_attention_inputs, sinks) == 32 && offsetof(struct native_attention_inputs, gates) == 40,
@@ -40,10 +25,7 @@ static void native_attention_submit(struct decoder *d, struct native_attention_i
     assert(inkling_attention_execute(&request) == 0);
     call_seconds[0] += now() - start;
     ++call_count[0];
-    for (int i = 0; i < count; ++i) {
-        assert(i2_finish_native(vec(args.gates + i * attn_width, attn_width),
-                                vec(out + i * attn_width, attn_width)) == attn_width);
-    }
+    fg_i2_native_finish(&args, count, out);
 }
 
 static bool use_resident_attention_projection(void) {
