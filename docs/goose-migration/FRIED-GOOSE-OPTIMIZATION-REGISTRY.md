@@ -47,6 +47,7 @@ optimization and release sequence.
 | Reuse aligned packed weight loads across consecutive MMA steps | Inkling grouped IQ4_XS and IQ4_NL prefill projections | Large-shape kernel time −11.42% and −7.28%. At 32K/512, prefill +2.75%, observed decode +0.65%, all 512 IDs exact, and peak process VRAM held at 9822 MiB. | [EXP-2429](../../experiments/EXP-2026-11-28-2429-inkling-moe-pairload/README.md) |
 | Reuse the CPU row team for short exact verifier batches | Inkling, 8–16 exact verification rows with independent host activation prep | At 32K/512, decode +6.61%, prefill −0.08%, all 512 IDs exact and peak process VRAM held at 9822 MiB. | [EXP-2430](../../experiments/EXP-2026-11-28-2430-inkling-verifier-cpu-team/README.md) |
 | Use paired Q4 loads and explicit V accumulators in grouped sliding attention | Inkling grouped Q4 sliding prefill | 1024-query attention and merge time −5.97%. At 32K/512, prefill +0.69%, all 512 IDs exact and peak process VRAM held at 9822 MiB. | [EXP-2431](../../experiments/EXP-2026-11-28-2431-inkling-sliding-prefill-packed/README.md) |
+| Use FP16 leading terms and scaled residuals for tiled Tensor Core projections | Inkling expanded Q8_0 prefill shapes, 4096 input rows | Pack and projection time −30–41%. At 32K/512, prefill +9.51%, observed decode +2.08%, all 512 IDs exact and peak process VRAM held at 9822 MiB. Intermediate outputs and expert traffic differ. | [EXP-2437](../../experiments/EXP-2026-11-28-2437-inkling-q8-split-half-mma/README.md) |
 
 Keep the FMA and warp reduction sequence independent for each output row.
 Reuse this mapping for projections with the same shared input layout
@@ -79,6 +80,12 @@ check output equivalence, host memory and the full request before
 enabling another dispatch. EXP-2430 applies the same team to short verifier
 batches where blocking transfer boundaries expose CPU preparation.
 Measure dispatch and barrier overhead at the receiving batch size.
+
+For split-half projection reuse, verify the receiving input range,
+the component error, scaling and the full request under its own
+correctness policy. Explicit accumulators avoided a 128-byte local
+stack in EXP-2437. The four-byte packing budget is the same as the
+previous FP32 buffer. The original quantized weight storage is retained.
 
 ## KeelWing ownership scopes in the Apex sampler
 

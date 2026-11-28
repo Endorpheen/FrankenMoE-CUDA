@@ -5408,6 +5408,42 @@ fn cuda_ensure_kernel(kernel: u64&, module: u64, name: const u8[:]) -> i32 {
     return cuda_lookup_kernel(cuda_kernel_argument_address(kernel), module, name);
 }
 
+var inkling_split_q8_inputs: u64;
+var inkling_split_q8_weights: u64;
+var inkling_split_q8_mma: u64;
+
+fn i2_split_q8_launch(weight: u64, stride: u64, width: i32, rows: i32, count: i32,
+        jobs: u64, expanded: u64) -> i32 {
+    let tls = cuda_thread_state();
+    var status = cuda_ensure_module(&cuda_saved_launch_grouped_iq4_mmq_module, fg_cuda_image_grouped_moe_cubin());
+    let module = cuda_saved_launch_grouped_iq4_mmq_module;
+    if status == 0 { status = cuda_ensure_kernel(&inkling_split_q8_inputs, module, "goose_i2_dense_split_inputs"); }
+    if status == 0 { status = cuda_ensure_kernel(&inkling_split_q8_weights, module, "goose_i2_dense_split_weights"); }
+    if status == 0 { status = cuda_ensure_kernel(&inkling_split_q8_mma, module, "goose_i2_dense_split_mma"); }
+    let packed = cuda.mmq_packed.address;
+    let columns = (width / 128) as! u32;
+    if status == 0 {
+        var args: u64[5] = [cuda_kernel_argument_address(tls[0].matrix_input), cuda_kernel_argument_address(jobs),
+            cuda_kernel_argument_address(packed), cuda_kernel_argument_address(width), cuda_kernel_argument_address(count)];
+        status = cuda_capture_launch(inkling_split_q8_inputs, columns, count as! u32,
+            1, 128, 1, 1, 0, 0, cuda_slice_address(args), 0);
+    }
+    if status == 0 {
+        var args: u64[5] = [cuda_kernel_argument_address(weight), cuda_kernel_argument_address(expanded),
+            cuda_kernel_argument_address(stride), cuda_kernel_argument_address(width), cuda_kernel_argument_address(rows)];
+        status = cuda_capture_launch(inkling_split_q8_weights, columns, rows as! u32,
+            1, 128, 1, 1, 0, 0, cuda_slice_address(args), 0);
+    }
+    if status == 0 {
+        var args: u64[7] = [cuda_kernel_argument_address(expanded), cuda_kernel_argument_address(packed),
+            cuda_kernel_argument_address(tls[0].matrix_output), cuda_kernel_argument_address(jobs),
+            cuda_kernel_argument_address(width), cuda_kernel_argument_address(rows), cuda_kernel_argument_address(count)];
+        status = cuda_capture_launch(inkling_split_q8_mma, (rows / 64) as! u32, (count / 32) as! u32,
+            1, 128, 1, 1, 0, 0, cuda_slice_address(args), 0);
+    }
+    return status;
+}
+
 fn i2_packed_q8(weight: u64, stride: u64, width: i32, rows: i32, count: i32, jobs: u64) -> i32 {
     var tls = cuda_thread_state();
     let shape: bool = (width == 2304 && (rows == 1024 || rows == 2304 || rows == 3072)) ||
@@ -5459,6 +5495,15 @@ fn i2_packed_q8(weight: u64, stride: u64, width: i32, rows: i32, count: i32, job
     if tls[0].activations.active && tls[0].activations.defer_waits { tls[0].activations.pending = true; }
     var pack_args: u64[4] = [cuda_kernel_argument_address(tls[0].matrix_input), cuda_kernel_argument_address(jobs), cuda_kernel_argument_address(cuda.mmq_packed.address), cuda_kernel_argument_address(width)];
     var weights_device: u64 = if expanded { cuda.mmq_packed.address + pack_bytes } else { weight };
+    if expanded && width % 128 == 0 && rows % 64 == 0 && count % 32 == 0 &&
+        !cuda_env_equal(cuda_env("I2_Q8_SPLIT_HALF"), "0") {
+        error = i2_split_q8_launch(weight, stride, width, rows, count, jobs, weights_device);
+        if error == 0 { error = finish_matrix_launches(error); }
+        if error != 0 { return -1; }
+        tls[0].cuda_matrix_launches += 1;
+        tls[0].cuda_matrix_kind = 8;
+        return 0;
+    }
     var matrix_args: u64[6] = [cuda_kernel_argument_address(weights_device), cuda_kernel_argument_address(cuda.mmq_packed.address), cuda_kernel_argument_address(tls[0].matrix_output), cuda_kernel_argument_address(jobs), cuda_kernel_argument_address(stride), cuda_kernel_argument_address(width)];
     error = cuda_capture_launch(pack, ((width + 127) / 128) as! u32, (count / 8) as! u32,
         1, 128, 1, 1, 0, 0, cuda_slice_address(pack_args), 0);

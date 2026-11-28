@@ -93,3 +93,92 @@ export fn i2_grouped_moe(weights: u64, packed: u64, output: u64, jobs: u64, tile
         if col + 1 < count { moe_scatter(output, jobs, first + col + 1, row, rows, acc[g].y, acc[g].w); }
     }
 }
+
+extern "fg_device_global_load" fn dense_input_load(address: u64) -> f32;
+extern "inkling_q8_value_g" fn dense_q8_value(base: u64, lane: u32) -> f32;
+extern "inkling_f16_bits" fn dense_half_bits(value: f32) -> u16;
+extern "inkling_f16_value" fn dense_half_value(bits: u16) -> f32;
+extern "fg_cuda_store_u16" fn dense_half_store(address: u64, value: u16);
+
+fn dense_store_split(output: u64, index: i64, plane: i64, value: f32) {
+    let high = dense_half_bits(value);
+    let low = dense_half_bits((value - dense_half_value(high)) * 4096.0);
+    dense_half_store(output + ((2 * index) as! u64), high);
+    dense_half_store(output + ((2 * (index + plane)) as! u64), low);
+}
+
+export fn i2_dense_split_inputs(input: u64, jobs: u64, output: u64, width: i64,
+    tokens: i64, group: i64, token: i64, lane: i64) {
+    let k = group * 128 + lane;
+    if k >= width { return; }
+    let value = dense_input_load(input + word(jobs, 2 * token) + ((4 * k) as! u64));
+    dense_store_split(output, token * width + k, tokens * width, value);
+}
+
+export fn i2_dense_split_weights(input: u64, output: u64, stride: u64, width: i64,
+    rows: i64, group: i64, row: i64, lane: i64) {
+    let k = group * 128 + lane;
+    if k >= width { return; }
+    let quant = input + (row as! u64) * stride + ((k / 32 * 34) as! u64);
+    let value = dense_q8_value(quant, (k % 32) as! u32);
+    dense_store_split(output, row * width + k, rows * width, value);
+}
+
+struct I2DenseAcc { main: I2MoeAcc, correction: I2MoeAcc }
+
+fn dense_split_step(acc: I2DenseAcc, packed: u64, lo: i64, source: i64,
+        w0: I2MoePair, w1: I2MoePair, l0: I2MoePair, l1: I2MoePair) -> I2DenseAcc {
+    let x0 = pair(packed,source);
+    let x1 = pair(packed,source+8);
+    let y0 = pair(packed,lo+source);
+    let y1 = pair(packed,lo+source+8);
+    let main = dot(acc.main,w0,w1,x0,x1);
+    let cross = dot(acc.correction,w0,w1,y0,y1);
+    return I2DenseAcc {main:main, correction:dot(cross,l0,l1,x0,x1)};
+}
+
+fn dense_split_scatter(output: u64, jobs: u64, token: i64, row: i64, acc: I2DenseAcc) {
+    let first = output + word(jobs,2*token+1);
+    let second = output + word(jobs,2*token+3);
+    let a = acc.main;
+    let b = acc.correction;
+    store(first, row, a.x + b.x * 0.000244140625);
+    store(second, row, a.y + b.y * 0.000244140625);
+    store(first, row+8, a.z + b.z * 0.000244140625);
+    store(second, row+8, a.w + b.w * 0.000244140625);
+}
+
+export fn i2_dense_split_mma(weights: u64, packed: u64, output: u64, jobs: u64,
+    width: i64, rows: i64, tokens: i64, group: i64, tile: i64, thread: i64) {
+    let lane = thread % 32;
+    let row = 64 * group + 16 * (thread / 32) + lane / 4;
+    let column = 2 * (lane % 4);
+    let weight_lo = rows * width;
+    let packed_lo = tokens * width;
+    let zero = I2MoeAcc {x:0.0,y:0.0,z:0.0,w:0.0};
+    var a = I2DenseAcc {main:zero,correction:zero};
+    var b = a;
+    var c = a;
+    var d = a;
+    let row0 = row * width + column;
+    let row1 = row0 + 8 * width;
+    let base = (tile * 32 + lane / 4) * width + column;
+    var k: i64 = 0;
+    while k < width {
+        let w0 = I2MoePair {pair(weights,row0+k),pair(weights,row0+k+8)};
+        let w1 = I2MoePair {pair(weights,row1+k),pair(weights,row1+k+8)};
+        let l0 = I2MoePair {pair(weights,weight_lo+row0+k),pair(weights,weight_lo+row0+k+8)};
+        let l1 = I2MoePair {pair(weights,weight_lo+row1+k),pair(weights,weight_lo+row1+k+8)};
+        let source = base + k;
+        a = dense_split_step(a,packed,packed_lo,source,w0,w1,l0,l1);
+        b = dense_split_step(b,packed,packed_lo,source+8*width,w0,w1,l0,l1);
+        c = dense_split_step(c,packed,packed_lo,source+16*width,w0,w1,l0,l1);
+        d = dense_split_step(d,packed,packed_lo,source+24*width,w0,w1,l0,l1);
+        k += 16;
+    }
+    let token = tile * 32 + column;
+    dense_split_scatter(output,jobs,token,row,a);
+    dense_split_scatter(output,jobs,token+8,row,b);
+    dense_split_scatter(output,jobs,token+16,row,c);
+    dense_split_scatter(output,jobs,token+24,row,d);
+}
