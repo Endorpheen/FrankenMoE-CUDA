@@ -1,106 +1,11 @@
 #include "typed-memory.h"
+#ifndef GOOSE_CUDA_FROZEN_ABI
+#include "checked-device-arithmetic.h"
+#endif
 #pragma OPENCL FP_CONTRACT ON
 #include "typed-memory-bridge.h"
 #include "cuda-intrinsic-aliases.h"
-// OpenCL C bindings for operations required by the Goose-emitted device code.
-typedef uchar uint8_t;
-typedef ushort uint16_t;
-typedef uint uint32_t;
-typedef ulong uint64_t;
-typedef char int8_t;
-typedef int int32_t;
-typedef long int64_t;
-
-static void device_trap(void) {
-    __asm__ volatile("trap;");
-    __builtin_unreachable();
-}
-
-static int64_t device_range(int64_t value, int64_t lo, int64_t hi) {
-    if (value < lo || value > hi) device_trap();
-    return value;
-}
-
-static uint64_t device_range_u(uint64_t value, uint64_t hi) {
-    if (value > hi) device_trap();
-    return value;
-}
-
-static uint64_t device_udiv(uint64_t a, uint64_t b) {
-    if (b == 0) device_trap();
-    return a / b;
-}
-
-static uint64_t device_umod(uint64_t a, uint64_t b) {
-    if (b == 0) device_trap();
-    return a % b;
-}
-
-static int64_t device_add(int64_t a, int64_t b) {
-    int64_t result;
-    if (__builtin_add_overflow(a, b, &result)) device_trap();
-    return result;
-}
-
-static int64_t device_sub(int64_t a, int64_t b) {
-    int64_t result;
-    if (__builtin_sub_overflow(a, b, &result)) device_trap();
-    return result;
-}
-
-static int64_t device_mul(int64_t a, int64_t b) {
-    int64_t result;
-    if (__builtin_mul_overflow(a, b, &result)) device_trap();
-    return result;
-}
-
-static uint64_t device_uadd(uint64_t a, uint64_t b) {
-    uint64_t result;
-    if (__builtin_add_overflow(a, b, &result)) device_trap();
-    return result;
-}
-
-static int64_t device_div(int64_t a, int64_t b) {
-    if (a < 0 || b <= 0) device_trap();
-    return a / b;
-}
-
-static int64_t device_mod(int64_t a, int64_t b) {
-    if (a < 0 || b <= 0) device_trap();
-    return a % b;
-}
-
-#define GS_RANGE(value, lo, hi, type, file, line) device_range(value, lo, hi)
-#define GS_RANGE_U(value, hi, type, file, line) device_range_u(value, hi)
-#define GS_IDX(value, size, file, line) device_range(value, 0, (size) - 1)
-#define GS_MEMZERO(at, bytes) __builtin_memset(at, 0, bytes)
-#define GS_NOINLINE __attribute__((noinline))
-#define GS_UNREACHABLE(file, line) device_trap()
-#define gs_add_i64(a, b, file, line) device_add(a, b)
-#define gs_sub_i64(a, b, file, line) device_sub(a, b)
-#define gs_mul_i64(a, b, file, line) device_mul(a, b)
-#define gs_add_u64(a, b) device_uadd(a, b)
-#define gs_div_i64(a, b, file, line) device_div(a, b)
-#define gs_mod_i64(q, a, b, file, line) device_mod(a, b)
-#define gs_div_u64(a, b, file, line) device_udiv(a, b)
-#define gs_mod_u64(a, b, file, line) device_umod(a, b)
-#define gs_sub_u64(a, b) ((uint64_t)(a) - (uint64_t)(b))
-#define gs_mul_u64(a, b) ((uint64_t)(a) * (uint64_t)(b))
-#define gs_mul_u32(a, b) ((uint32_t)(a) * (uint32_t)(b))
-#define gs_sub_u32(a, b) ((uint32_t)(a) - (uint32_t)(b))
-#define gs_div_i32(a, b, file, line) ((int32_t)device_div(a, b))
-#define gs_mod_i32(q, a, b, file, line) ((int32_t)device_mod(a, b))
-#define gs_add_i32(a, b, file, line) ((int32_t)((int64_t)(a) + (int64_t)(b)))
-#define gs_sub_i32(a, b, file, line) ((int32_t)((int64_t)(a) - (int64_t)(b)))
-#define gs_mul_i32(a, b, file, line) ((int32_t)((int64_t)(a) * (int64_t)(b)))
-#define gs_shl_i64(a,b) ((int64_t)((uint64_t)(a) << ((b)&63)))
-#define gs_shr_i64(a,b) ((a) >> ((b)&63))
-#define gs_shr_i32(a,b) ((a) >> ((b)&31))
-#define gs_shr_u64(a,b) ((a) >> ((b)&63))
-#define gs_shl_u64(a,b) ((a) << ((b)&63))
-#define gs_shr_u32(a,b) ((a) >> ((b)&31))
-#define gs_shl_u32(a,b) ((a) << ((b)&31))
-
+#include "cuda-checked-abi.h"
 
 static float fg248d_ld_half(uint64_t address) {
     const uint16_t bits = *(__global uint16_t *) address;

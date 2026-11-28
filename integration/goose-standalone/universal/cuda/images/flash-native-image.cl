@@ -6,14 +6,7 @@ static void i2o_probability_write(uint64_t address, int64_t index, float value) 
 static float i2o_exp(float value) { return __nv_expf(value); }
 static float i2o_neg_inf(void) { return as_float(0xff800000u); }
 
-static float4 mma(float4 d, uint4 a, uint2 b) {
-    __asm__ volatile("mma.sync.aligned.m16n8k16.row.col.f32.f16.f16.f32 "
-        "{%0,%1,%2,%3}, {%4,%5,%6,%7}, {%8,%9}, {%0,%1,%2,%3};"
-        : "+f"(d.x), "+f"(d.y), "+f"(d.z), "+f"(d.w)
-        : "r"(a.x), "r"(a.y), "r"(a.z), "r"(a.w), "r"(b.x), "r"(b.y));
-    return d;
-}
-
+#include "flash-native-image-matrix-ptx-0.h"
 static void i2_flash_store_half(uint64_t address, float value) {
     *(__global ushort *)address = half_bits(value);
 }

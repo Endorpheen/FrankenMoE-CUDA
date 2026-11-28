@@ -98,6 +98,6 @@ for abi in "$standalone/"cuda-*-bonsai-entries.json; do
     python3 "$root/tools/emit-gooseinfer-cuda-entries.py" "$abi" "$scratch/${name%.json}.h"
 done
 "${CLANG:-clang-18}" -target nvptx64-nvidia-cuda -nocudalib -O2 -x cl -cl-std=CL1.2 \
-    -include "$source_dir/device-prelude.cl" -I"$scratch" -I"$standalone" -S -Xclang -target-cpu \
+    -include "$scratch/cuda-device-prelude.h" -I"$scratch" -I"$standalone" -S -Xclang -target-cpu \
     -Xclang "$arch" -DGOOSE_CUDA_FROZEN_ABI "${defines[@]}" "$glue/cuda-device.cl" -o "$scratch/bonsai.ptx"
 mv -- "$scratch/bonsai.ptx" "$output"

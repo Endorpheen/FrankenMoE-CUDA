@@ -25,22 +25,7 @@ static Flash_U4_g fg175c_fg176i_ldm4t(uint64_t address) {
     const U4_g r = fg174m_ldm4t(address);
     return (Flash_U4_g) {r.a_g, r.b_g, r.c_g, r.d_g};
 }
-static Flash_F4_g fg175c_fg176i_mma_f32(Flash_F4_g d, uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3,
-                                       uint32_t b0, uint32_t b1) {
-    __asm__ volatile("mma.sync.aligned.m16n8k16.row.col.f32.f16.f16.f32 "
-                     "{%0,%1,%2,%3}, {%4,%5,%6,%7}, {%8,%9}, {%0,%1,%2,%3};"
-        : "+f"(d.x_g), "+f"(d.y_g), "+f"(d.z_g), "+f"(d.w_g)
-        : "r"(a0), "r"(a1), "r"(a2), "r"(a3), "r"(b0), "r"(b1));
-    return d;
-}
-static Flash_U2_g fg175c_fg176i_mma_f16(Flash_U2_g d, uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3,
-                                       uint32_t b0, uint32_t b1) {
-    __asm__ volatile("mma.sync.aligned.m16n8k16.row.col.f16.f16.f16.f16 "
-                     "{%0,%1}, {%2,%3,%4,%5}, {%6,%7}, {%0,%1};"
-        : "+r"(d.a_g), "+r"(d.b_g) : "r"(a0), "r"(a1), "r"(a2), "r"(a3), "r"(b0), "r"(b1));
-    return d;
-}
-
+#include "cuda-flash-mma-matrix-ptx-0.h"
 static float fg175c_fg175p_gload(uint64_t p, uint64_t i) { return fg_device_global_load(p + 4 * i); }
 static void fg175c_fg175p_gstore(uint64_t p, uint64_t i, float v) { fg_device_global_store(p + 4 * i, v); }
 static float fg168f_ld_f32(uint64_t p, uint64_t off) { return fg_device_global_load(p + off); }

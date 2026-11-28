@@ -59,7 +59,6 @@ mark(images, ' '.join(name for name in names.split() if name not in generated_in
 mark(images, 'inkling-epilogue-primitives', '.h', gpu, 'Inkling epilogue device intrinsics')
 mark(d/'apex-routing','route softmax mailbox prediction','.cl',gpu,'Apex routing and softmax device code')
 frozen=u/'bonsai-frozen-cuda'
-mark(frozen,'device-prelude','.cl',gpu,'Device compilation prelude')
 mark(s,'cuda-device','.cl',gpu,'Shared device source for GigaChat4, Apex and Bonsai')
 mark(s / "gigachat4", "cuda-dsa-certified", ".cl", gpu, "Experimental GigaChat4 DSA image adapter")
 for f in sorted(files):

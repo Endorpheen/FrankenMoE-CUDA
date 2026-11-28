@@ -17,41 +17,7 @@ static float fg_mmq_half_round(float value) {
     return rounded;
 }
 
-static MmqDot_g fg_mmq_mma32(uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3,
-                            uint32_t b0, uint32_t b1) {
-    MmqDot_g r;
-    __asm__ volatile("mma.sync.aligned.m16n8k32.row.col.s32.s8.s8.s32 "
-                     "{%0, %1, %2, %3}, {%4, %5, %6, %7}, {%8, %9}, {%10, %10, %10, %10};"
-                     : "=r"(r.a_g), "=r"(r.b_g), "=r"(r.c_g), "=r"(r.d_g)
-                     : "r"(a0), "r"(a1), "r"(a2), "r"(a3), "r"(b0), "r"(b1), "r"(0u));
-    return r;
-}
-
-static MmqDot_g fg_mmq_mma16(uint32_t a0, uint32_t a1, uint32_t b0) {
-    MmqDot_g r;
-    __asm__ volatile("mma.sync.aligned.m16n8k16.row.col.s32.s8.s8.s32 "
-                     "{%0, %1, %2, %3}, {%4, %5}, {%6}, {%7, %7, %7, %7};"
-                     : "=r"(r.a_g), "=r"(r.b_g), "=r"(r.c_g), "=r"(r.d_g)
-                     : "r"(a0), "r"(a1), "r"(b0), "r"(0u));
-    return r;
-}
-
-static MmqWords_g fg_mmq_ldm32(uint64_t address) {
-    MmqWords_g words;
-    __asm__ volatile("ldmatrix.sync.aligned.m8n8.x4.shared.b16 {%0, %1, %2, %3}, [%4];"
-        : "=r"(words.a_g), "=r"(words.b_g), "=r"(words.c_g), "=r"(words.d_g)
-        : "r"((uint32_t) address) : "memory");
-    return words;
-}
-
-static MmqWords_g fg_mmq_ldm16(uint64_t address) {
-    MmqWords_g words = {0};
-    __asm__ volatile("ldmatrix.sync.aligned.m8n8.x2.shared.b16 {%0, %1}, [%2];"
-        : "=r"(words.a_g), "=r"(words.b_g) : "r"((uint32_t) address) : "memory");
-    return words;
-}
-
-
+#include "cuda-mmq-matrix-ptx-0.h"
 static float fg_mmq_half_value(uint32_t bits) {
     float value;
     __asm__("cvt.f32.f16 %0, %1;" : "=f"(value) : "h"((uint16_t) bits));

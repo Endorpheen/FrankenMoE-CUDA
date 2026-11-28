@@ -31,13 +31,7 @@ static uint moe_pair(uint64_t base, int64_t index) { return *(__global const uin
 static void moe_pack(uint64_t src, uint64_t dst, int64_t i, int64_t j) {
     ((__global ushort *)dst)[j] = half_bits(((__global const float *)src)[i]);
 }
-static float4 moe_mma(float4 acc, uint2 a, uint2 b, uint lo, uint hi) {
-    __asm__ volatile("mma.sync.aligned.m16n8k16.row.col.f32.f16.f16.f32 "
-        "{%0,%1,%2,%3}, {%4,%5,%6,%7}, {%8,%9}, {%0,%1,%2,%3};"
-        : "+f"(acc.x), "+f"(acc.y), "+f"(acc.z), "+f"(acc.w)
-        : "r"(a.x), "r"(b.x), "r"(a.y), "r"(b.y), "r"(lo), "r"(hi));
-    return acc;
-}
+#include "grouped-moe-image-matrix-ptx-0.h"
 #define moe_iq_pairs(base,k,column,kind) ({ \
     uint2 pair = iq4_pairs((__global const uchar *)(base),k,column,kind); \
     (I2MoePair_g){pair.x,pair.y}; \
