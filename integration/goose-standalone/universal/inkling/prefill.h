@@ -637,7 +637,7 @@ static void prefill(struct decoder *d, const int32_t *ids, int begin, int count,
         const int from = draft ? 0 : count - 1;
         for (int t = from; t < count; ++t) {
             struct prefill_token *row = tokens + t;
-            read_token_logits(d, begin + t, row->current, row->blocks, row->count, draft);
+            fg_i2_read_token_logits(d, begin + t, row->current, row->blocks, row->count, draft);
             if (draft) memcpy(d->draft.scores + (size_t)t * vocabulary, d->logits,
                               (size_t)vocabulary * sizeof(float));
         }

@@ -51,3 +51,23 @@ export fn fg_i2_backend_token(decoder: u64, token: i32, position: i32, logits: b
     i2d_log(str("Pure Goose visited 48 layers for token ", token as! i64, " at position ", position as! i64, "\n"));
     fg_i2_serial_finish(decoder, position, active.address, blocks.address, count, logits);
 }
+
+
+extern fn fg_i2_parallel_logits(decoder: u64, logits: u64) -> bool;
+extern fn fg_i2_softcap_logits(logits: I2DraftSpan);
+extern fn fg_i2_validate_logits(position: i32, logits: u64, handled: bool);
+
+export fn fg_i2_read_token_logits(decoder: u64, absolute: i32, current: u64, history: u64, count: i32, decode: bool) {
+    var normalized: f32[2304];
+    let output = i2_serial_span(normalized);
+    let global_weights = decoder + I2_OPEN_GLOBALS;
+    let queries = fg_i2_host_coefficients(decoder, i2d_read(global_weights + 32) as! i64, 2304);
+    fg_i2_host_mix(history, count, current, i2d_span(queries, 2304), 1, output.address);
+    let gains = fg_i2_host_coefficients(decoder, i2d_read(global_weights + 24) as! i64, 2304);
+    if fg_i2_host_measured_rms(output, i2d_span(gains, 2304), 0.000001, output) != 2304 { i2_embedding_abort(); }
+    let logits = decoder + I2D_LOGITS;
+    fg_i2_host_project(decoder, i2d_read(global_weights + 16) as! i64, output.address, 2304, logits, 201024);
+    let handled = decode && fg_i2_parallel_logits(decoder, logits);
+    if !handled { fg_i2_softcap_logits(i2d_span(logits, 201024)); }
+    fg_i2_validate_logits(absolute, logits, handled);
+}

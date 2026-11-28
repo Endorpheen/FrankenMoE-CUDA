@@ -490,18 +490,17 @@ static void layer(struct decoder *d,int physical_layer,int slot,int absolute,int
 
 static bool parallel_decode_logits(struct decoder *d, float *logits);
 
-static void read_token_logits(struct decoder *d, int absolute, float *cur, float *blocks, int count, bool decode) {
-    float normalized[model_width];
-    mix(blocks,count,cur,coefficients(d,d->globals[4],model_width),1,normalized);
-    assert(i2_rms_gain(vec(normalized,model_width),coefficients(d,d->globals[3],model_width),
-                      1e-6f,vec(normalized,model_width))==model_width);
-    float *logits = d->logits;
-    project(d,d->globals[2],normalized,model_width,logits,out_width);
-    const bool handled = decode && parallel_decode_logits(d, logits);
-    if (!handled) assert(i2_text_logits(vec(logits,out_width),vocabulary,30.0f)==vocabulary);
+extern void fg_i2_read_token_logits(struct decoder *d, int absolute, float *current, float *history, int count, bool decode);
+
+bool fg_i2_parallel_logits(struct decoder *d, float *logits) { return parallel_decode_logits(d, logits); }
+
+void fg_i2_softcap_logits(sl_f32 logits) {
+    assert(i2_text_logits(logits, vocabulary, 30.0f) == vocabulary);
+}
+
+void fg_i2_validate_logits(int absolute, const float *logits, bool handled) {
     check_state("logits", absolute, logits, out_width);
     if (!handled) for (int i = 0; i < vocabulary; ++i) assert(isfinite(logits[i]));
-
 }
 
 int32_t i2_serial_layer(uint64_t decoder, int32_t physical, int32_t slot, int32_t absolute,
@@ -531,7 +530,7 @@ extern bool fg_i2_embed_prefill(struct decoder *d, const int32_t *ids, int count
 
 void fg_i2_serial_finish(struct decoder *d, int absolute, float *current, float *history, int count, bool logits) {
     check_state("residual", absolute, current, model_width);
-    if (logits) read_token_logits(d, absolute, current, history, count, true);
+    if (logits) fg_i2_read_token_logits(d, absolute, current, history, count, true);
 }
 
 #include "prefill.h"
