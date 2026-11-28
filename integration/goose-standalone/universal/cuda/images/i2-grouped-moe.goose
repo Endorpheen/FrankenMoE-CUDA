@@ -182,3 +182,80 @@ export fn i2_dense_split_mma(weights: u64, packed: u64, output: u64, jobs: u64,
     dense_split_scatter(output,jobs,token+16,row,c);
     dense_split_scatter(output,jobs,token+24,row,d);
 }
+
+extern "fg_cuda_cp16" fn dense_split_copy(destination: u64, source: u64);
+extern "fg_cuda_cpwait" fn dense_split_wait();
+extern "input_sync" fn dense_split_sync();
+extern "inkling_read_shared_half_pair_g" fn inkling_shared_pair(address: u64, index: i64) -> u32;
+
+fn dense_split_stage(shared: u64, packed: u64, low: i64, width: i64, tile: i64, channel: i64, thread: i64) {
+    for page in 4 {
+        let vector = thread + page * 128;
+        let plane = vector / 256;
+        let token = (vector % 256) / 8;
+        let col = 8 * (vector % 8);
+        let src = plane * low + (tile * 32 + token) * width + channel + col;
+        let dst = (plane * 32 + token) * 72 + col;
+        dense_split_copy(shared + ((2 * dst) as! u64), packed + ((2 * src) as! u64));
+    }
+}
+fn dense_split_shared_step(acc: I2DenseAcc, packed: u64, lo: i64, source: i64,
+        w0: I2MoePair, w1: I2MoePair, l0: I2MoePair, l1: I2MoePair) -> I2DenseAcc {
+    let x0 = inkling_shared_pair(packed,source);
+    let x1 = inkling_shared_pair(packed,source+8);
+    let y0 = inkling_shared_pair(packed,lo+source);
+    let y1 = inkling_shared_pair(packed,lo+source+8);
+    let main = dot(acc.main,w0,w1,x0,x1);
+    let cross = dot(acc.correction,w0,w1,y0,y1);
+    return I2DenseAcc {main:main, correction:dot(cross,l0,l1,x0,x1)};
+}
+
+
+export fn i2_dense_split_mma_shared(weights: u64, packed: u64, output: u64, jobs: u64,
+    width: i64, rows: i64, tokens: i64, group: i64, tile: i64, thread: i64, shared: u64) {
+    let lane = thread % 32;
+    let row = 64 * group + 16 * (thread / 32) + lane / 4;
+    let column = 2 * (lane % 4);
+    let weight_lo = rows * width;
+    let packed_lo = tokens * width;
+    let zero = I2MoeAcc {x:0.0,y:0.0,z:0.0,w:0.0};
+    var a = I2DenseAcc {main:zero,correction:zero};
+    var b = a;
+    var c = a;
+    var d = a;
+    let row0 = row * width + column;
+    let row1 = row0 + 8 * width;
+    let base = (lane / 4) * 72 + column;
+    var channel: i64 = 0;
+    var current: u64 = shared;
+    var next: u64 = shared + 9216;
+    dense_split_stage(current, packed, packed_lo, width, tile, 0, thread);
+    dense_split_wait();
+    dense_split_sync();
+    while channel < width {
+        if channel + 64 < width { dense_split_stage(next, packed, packed_lo, width, tile, channel + 64, thread); }
+        for step in 4 {
+            let k = channel + 16 * step;
+            let w0 = I2MoePair {pair(weights,row0+k),pair(weights,row0+k+8)};
+            let w1 = I2MoePair {pair(weights,row1+k),pair(weights,row1+k+8)};
+            let l0 = I2MoePair {pair(weights,weight_lo+row0+k),pair(weights,weight_lo+row0+k+8)};
+            let l1 = I2MoePair {pair(weights,weight_lo+row1+k),pair(weights,weight_lo+row1+k+8)};
+            let source = base + 16 * step;
+            a = dense_split_shared_step(a,current,2304,source,w0,w1,l0,l1);
+            b = dense_split_shared_step(b,current,2304,source+576,w0,w1,l0,l1);
+            c = dense_split_shared_step(c,current,2304,source+1152,w0,w1,l0,l1);
+            d = dense_split_shared_step(d,current,2304,source+1728,w0,w1,l0,l1);
+        }
+        dense_split_wait();
+        dense_split_sync();
+        channel += 64;
+        let previous = current;
+        current = next;
+        next = previous;
+    }
+    let token = tile * 32 + column;
+    dense_split_scatter(output,jobs,token,row,a);
+    dense_split_scatter(output,jobs,token+8,row,b);
+    dense_split_scatter(output,jobs,token+16,row,c);
+    dense_split_scatter(output,jobs,token+24,row,d);
+}

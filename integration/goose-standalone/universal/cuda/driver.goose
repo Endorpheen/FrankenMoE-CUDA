@@ -5411,6 +5411,7 @@ fn cuda_ensure_kernel(kernel: u64&, module: u64, name: const u8[:]) -> i32 {
 var inkling_split_q8_inputs: u64;
 var inkling_split_q8_weights: u64;
 var inkling_split_q8_mma: u64;
+var inkling_split_q8_mma_shared: u64;
 
 fn i2_split_q8_launch(weight: u64, stride: u64, width: i32, rows: i32, count: i32,
         jobs: u64, expanded: u64) -> i32 {
@@ -5419,7 +5420,14 @@ fn i2_split_q8_launch(weight: u64, stride: u64, width: i32, rows: i32, count: i3
     let module = cuda_saved_launch_grouped_iq4_mmq_module;
     if status == 0 { status = cuda_ensure_kernel(&inkling_split_q8_inputs, module, "goose_i2_dense_split_inputs"); }
     if status == 0 { status = cuda_ensure_kernel(&inkling_split_q8_weights, module, "goose_i2_dense_split_weights"); }
-    if status == 0 { status = cuda_ensure_kernel(&inkling_split_q8_mma, module, "goose_i2_dense_split_mma"); }
+    let shared_tiles = !cuda_env_equal(cuda_env("I2_Q8_SHARED_TILES"), "0");
+    var kernel .= inkling_split_q8_mma;
+    var name: const u8[:] = "goose_i2_dense_split_mma";
+    if shared_tiles {
+        kernel .= inkling_split_q8_mma_shared;
+        name = "goose_i2_dense_split_mma_shared";
+    }
+    if status == 0 { status = cuda_ensure_kernel(kernel, module, name); }
     let packed = cuda.mmq_packed.address;
     let columns = (width / 128) as! u32;
     if status == 0 {
@@ -5438,7 +5446,7 @@ fn i2_split_q8_launch(weight: u64, stride: u64, width: i32, rows: i32, count: i3
         var args: u64[7] = [cuda_kernel_argument_address(expanded), cuda_kernel_argument_address(packed),
             cuda_kernel_argument_address(tls[0].matrix_output), cuda_kernel_argument_address(jobs),
             cuda_kernel_argument_address(width), cuda_kernel_argument_address(rows), cuda_kernel_argument_address(count)];
-        status = cuda_capture_launch(inkling_split_q8_mma, (rows / 64) as! u32, (count / 32) as! u32,
+        status = cuda_capture_launch(kernel, (rows / 64) as! u32, (count / 32) as! u32,
             1, 128, 1, 1, 0, 0, cuda_slice_address(args), 0);
     }
     return status;
