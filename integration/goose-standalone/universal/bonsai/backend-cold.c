@@ -131,10 +131,6 @@ _Static_assert(NORM_WIDE_SMALL == 47 && ROTATE == 1 && MV_PACK_Q8 == 44 && MV_Q8
     FLASH_MERGE_COMPACT == 28 && FLASH_MERGE_ORDERED == 26 && FLASH_MERGE_F32 == 23 &&
     FLASH_V_FP8 == 66 && FLASH_FP8_QKPV == 67 && FLASH_PANEL_SHARED == 50176, "Bonsai launch kernel IDs");
 
-extern int32_t fg_bonsai_batch_verify(model *m, uint32_t count);
-extern int32_t fg_bonsai_launch_verify_rows(model *m, enum kernel op, const CUdeviceptr *args);
-extern int32_t fg_bonsai_transaction_conv(model *m, const CUdeviceptr *args);
-extern int32_t fg_bonsai_transaction_gdn(model *m, const CUdeviceptr *args);
 
 _Static_assert(offsetof(model, txn.layer_ids) == 328 && offsetof(model, txn.prefix) == 584 &&
     offsetof(model, verify_native) == 56 && offsetof(model, verify_q8) == 60 &&
@@ -161,146 +157,19 @@ _Static_assert(
     DECAY_WARPPACK == 52 && DECAY_REUSE8 == 35 && DECAY_REUSE4 == 34 && CONV_BATCH == 19 &&
     ROPE_PHASES == 16 && ROPE_APPLY == 17 && EMBED_BATCH == 18, "Bonsai elementary kernel IDs");
 _Static_assert(NORM == 0 && NORM_WIDE_LARGE == 48, "Bonsai normalization kernel IDs");
-extern int32_t fg_bonsai_norm_rotate(model *m, int64_t op, const CUdeviceptr *args);
-extern int32_t fg_bonsai_elementary(model *m, int64_t op, const CUdeviceptr *args, int64_t c, int64_t e);
-
-int64_t bonsai_launch(uint64_t context, int64_t op, int64_t a, int64_t b, int64_t c,
-                      int64_t d, int64_t e, int64_t f, int64_t g, int64_t h) {
-    model *m = (model *)(uintptr_t)context;
-    CUdeviceptr p[] = { a, b, c, d, e, f, g, h };
-    const unsigned count = m->count;
-    unsigned out_width = 0, in_width = 0;
-    if (m->txn.phase == TXN_RUNNING) {
-        if (op == CONV) return fg_bonsai_transaction_conv(m, p);
-        if (op == GDN) return fg_bonsai_transaction_gdn(m, p);
-    }
-    if (fg_bonsai_batch_verify(m, count) &&
-        ((op == MATRIX && e == 1024) || op == DECAY || op == ROPE || op == TILES))
-        return fg_bonsai_launch_verify_rows(m, (enum kernel)op, p);
-    switch (op) {
-        case NORM: case ROTATE:
-            return fg_bonsai_norm_rotate(m, op, p);
-        case MATRIX:
-            in_width = (unsigned)d; out_width = (unsigned)e;
-            if (count == 1) {
-                const int ffn = p[2] == (CUdeviceptr)m->b[14] ||
-                    p[2] == (CUdeviceptr)m->b[15] || p[2] == (CUdeviceptr)m->b[18];
-                const int use_q8 = m->in_decode && out_width > 1024 &&
-                    (m->q8_mode == 1 || (m->q8_mode == 2 && ffn) ||
-                     (m->q8_mode == 3 && out_width == VOCAB));
-                if (use_q8) {
-                    if (m->q8_input != p[1]) {
-                        unsigned groups = in_width / 32;
-                        if (launch(m, MV_PACK_Q8, (groups+3)/4, 1, 1, 128,
-                            (void *[]){ &p[1], &m->packed, &groups })) return -1;
-                        m->q8_input = p[1];
-                    }
-                    const int vocabulary = out_width == VOCAB;
-                    unsigned rows_per_cta = vocabulary ? 4 : 8;
-                    return launch(m, vocabulary ? MV_Q8_1 : MV_Q8_2,
-                        (out_width+rows_per_cta-1)/rows_per_cta, 1, 1, 128,
-                        (void *[]){ &p[0], &m->packed, &p[2], &in_width, &out_width });
-                }
-                const int grouped = m->matvec_rows2 && out_width > 1024;
-                const unsigned rows_per_cta = grouped ? 8 : 4;
-                return launch(m, grouped ? MATRIX_ROWS2 : MATRIX,
-                    (out_width + rows_per_cta - 1) / rows_per_cta, 1, 1, 128,
-                    (void *[]){ &p[0], &p[1], &p[2], &in_width, &out_width });
-            }
-            if (fg_bonsai_batch_verify(m, count) &&
-                out_width > 1024) {
-                if (m->q8_input != p[1]) {
-                    unsigned groups = count * (in_width / 32);
-                    if (launch(m, MV_PACK_Q8, (groups + 3) / 4, 1, 1, 128,
-                               (void *[]){ &p[1], &m->packed, &groups })) return -1;
-                    m->q8_input = p[1];
-                }
-                const int vocabulary = out_width == VOCAB;
-                unsigned rows_per_cta = vocabulary ? 4 : 8;
-                enum kernel projection = vocabulary ? VERIFY_Q8_1 : VERIFY_Q8_2;
-                if (count == 4) {
-                    projection = vocabulary ? VERIFY_Q8_FOUR_1 : VERIFY_Q8_FOUR_2;
-                    if (m->mtp_enabled) {
-                        projection = vocabulary ? VERIFY_MVQ_FOUR_PAIR : VERIFY_MVQ_FOUR_QUAD;
-                        rows_per_cta = vocabulary ? 8 : 16;
-                    }
-                }
-                if (count == 5) {
-                    projection = vocabulary ? VERIFY_Q8_FIVE_1 : VERIFY_Q8_FIVE_2;
-                    if (m->mtp_enabled) {
-                        projection = VERIFY_MVQ_FIVE_QUAD;
-                        rows_per_cta = 16;
-                    }
-                }
-                return launch(m, projection,
-                    (out_width + rows_per_cta - 1) / rows_per_cta, 1, 1, 128,
-                    (void *[]){ &p[0], &m->packed, &p[2], &in_width, &out_width });
-            }
-            unsigned pairs = count * in_width / 2, tokens = count;
-            if (m->down_q8_owner && p[1] == m->down_q8_owner) {
-                m->down_q8_owner = 0;
-                if (in_width != 17408 || out_width != 5120 || count % 128 != 0 ||
-                    p[2] != (CUdeviceptr)m->b[18]) return -1;
-                return launch(m, FFN_DOWN_Q8_PANEL, out_width/64, count/128, 1, 256,
-                    (void *[]){ &p[0], &m->packed, &m->partial, &p[2], &in_width, &out_width, &tokens });
-            }
-            const size_t scale_bytes = (size_t)count * (in_width / 128) * sizeof(float);
-            const int ffn_gate = count >= 128 && in_width == 5120 && out_width == 17408 &&
-                p[2] == (CUdeviceptr)m->b[14];
-            const int ffn_up = count >= 128 && in_width == 5120 && out_width == 17408 &&
-                p[2] == (CUdeviceptr)m->b[15];
-            if (ffn_gate) ++m->ffn_layer;
-            if (m->ffn_q8 && (ffn_gate || ffn_up) && scale_bytes <= m->partial_capacity &&
-                (m->ffn_q8 == 1 || m->ffn_layer > (unsigned)(LAYERS - m->ffn_q8))) {
-                const int full_q8 = m->q8_full && count % 128 == 0;
-                const int panel = full_q8 && m->q8_pairload && m->q8_panel;
-                unsigned groups = count * (in_width / 128);
-                if (m->ffn_q8_input != p[1]) {
-                    if (launch(m, panel ? FFN_Q8_PANEL_PACK : FFN_Q8_PACK, (groups + 3) / 4, 1, 1, 128,
-                        (void *[]){ &p[1], &m->packed, &m->partial, &groups })) return -1;
-                    m->ffn_q8_input = p[1];
-                    m->packed_source = 0;
-                }
-                const unsigned tokens_per_tile = full_q8 ? 128 : 64;
-                const enum kernel kernel = panel ?
-                    (m->q8_spread ? FFN_Q8_SPREAD : FFN_Q8_PANEL) : full_q8 ?
-                    (m->q8_pairload ? FFN_Q8_PAIRLOAD : FFN_Q8_FULL128) : FFN_Q8_MMQ;
-                return launch(m, kernel,
-                    (out_width+63)/64, (count+tokens_per_tile-1)/tokens_per_tile, 1, 256,
-                    (void *[]){ &p[0], &m->packed, &m->partial, &p[2], &in_width, &out_width, &tokens });
-            }
-            if (m->packed_source != p[1]) {
-                if (launch(m, PACK_HALF, (pairs+255)/256, 1, 1, 256,
-                    (void *[]){ &p[1], &m->packed, &pairs })) return -1;
-                m->packed_source = p[1];
-            }
-            const int wide = m->async_mmq && m->wide_mmq && count >= 128;
-            const unsigned tile = wide ? 64 : 32;
-            const int k64 = wide && m->k64_mmq;
-            const int partial_half = k64 && m->mmq_cached && m->mmq_half_acc;
-            const unsigned tokens_per_tile = k64 && (count >= 512 || partial_half) ? 128 : tile;
-            enum kernel projection = partial_half ? MMQ_HALF_ACC32 : k64
-                ? (m->mmq_cached ? (tokens_per_tile == 128 ? MMQ_CACHE128 : MMQ_CACHE64)
-                                 : (tokens_per_tile == 128 ? MMQ_K64_128 : MMQ_K64_64))
-                : (wide ? MMQ_WIDE : m->async_mmq ? MMQ_ASYNC : MMQ);
-            if (partial_half && m->mmq_half_full && out_width % 64 == 0 && count % 128 == 0) {
-                if (in_width == 5120) projection = MMQ_HALF_FULL5120;
-                if (in_width == 17408) {
-                    projection = m->mmq_half2_down && out_width == 5120 &&
-                        p[2] == (CUdeviceptr)m->b[18] ? MMQ_HALF_FULL_DOWN_HALF2 : MMQ_HALF_FULL17408;
-                }
-                if (in_width == 6144 && m->mmq_half_full6144) projection = MMQ_HALF_FULL6144;
-            }
-            return launch(m, projection, (out_width+tile-1)/tile,
-                (count+tokens_per_tile-1)/tokens_per_tile, 1, wide ? 256 : 128,
-                (void *[]){ &p[0], &m->packed, &p[2], &in_width, &out_width, &tokens });
-        case ADD: case DECAY: case CONV: case GDN: case SPLIT: case ROPE:
-        case Q4: case TILES: case GATE: case EMBED: case SWIGLU:
-            return fg_bonsai_elementary(m, op, p, c, e);
-        default:
-            return -1;
-    }
-}
+_Static_assert(
+    NORM == 0 && ROTATE == 1 && MATRIX == 2 && DECAY == 4 &&
+    CONV == 5 && GDN == 6 && ROPE == 8 && TILES == 10 &&
+    PACK_HALF == 20 && MMQ == 21 && MMQ_ASYNC == 31 && MMQ_WIDE == 33 &&
+    MMQ_K64_64 == 37 && MMQ_K64_128 == 38 && MATRIX_ROWS2 == 41 && MV_PACK_Q8 == 44 &&
+    MV_Q8_1 == 45 && MV_Q8_2 == 46 && FFN_Q8_PACK == 49 && FFN_Q8_MMQ == 50 &&
+    MMQ_CACHE64 == 54 && MMQ_CACHE128 == 55 && MMQ_HALF_ACC32 == 57 && MMQ_HALF_FULL5120 == 58 &&
+    MMQ_HALF_FULL17408 == 59 && MMQ_HALF_FULL6144 == 60 && MMQ_HALF_FULL_DOWN_HALF2 == 64 && FFN_Q8_FULL128 == 65 &&
+    FFN_Q8_PAIRLOAD == 68 && FFN_Q8_PANEL_PACK == 69 && FFN_Q8_PANEL == 70 && FFN_Q8_SPREAD == 71 &&
+    FFN_DOWN_Q8_PANEL == 76 && VERIFY_Q8_1 == 81 && VERIFY_Q8_2 == 82 && VERIFY_Q8_FOUR_1 == 89 &&
+    VERIFY_Q8_FOUR_2 == 90 && VERIFY_Q8_FIVE_1 == 93 && VERIFY_Q8_FIVE_2 == 94 && VERIFY_MVQ_FOUR_PAIR == 97 &&
+    VERIFY_MVQ_FOUR_QUAD == 98 && VERIFY_MVQ_FIVE_QUAD == 99, "Bonsai matrix dispatch IDs");
+_Static_assert(offsetof(model, matvec_rows2) == 14756 && offsetof(model, ffn_q8) == 4724, "Bonsai matrix dispatch ABI");
 
 _Static_assert(offsetof(model, use_flash_f32) == 14664 && offsetof(model, memory) == 5656 &&
     offsetof(model, phases) == 14632 && offsetof(model, packed) == 14640 && offsetof(model, weights) == 5648,
