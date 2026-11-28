@@ -8,6 +8,8 @@ import re
 
 # The OpenCL glue references these source types by their legacy C ABI names.
 SHARED_TYPES = {
+    "i2-q8-packed": {"I2Q8Vec": "I2Q8Vec_g"},
+    "i2-grouped-moe": {"I2MoePair": "I2MoePair_g", "I2MoeAcc": "I2MoeAcc_g"},
     "q4-attention": {"F2": "F2_g"},
     "rms-reference": {"RmsVec": "RmsVec_g"},
     "vector": {"CVVec4": "CVVec4_g"},

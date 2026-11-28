@@ -45,6 +45,16 @@ while read -r header symbol entries prelude; do
             device_source="$src/flash-native-image.cl"
             options+=(-I"$scratch" -include "$shared/device-prelude.cl" -DGOOSE_INKLING_FLASH_TILES_IMAGE)
             ;;
+        q8-packed-image)
+            "$goose" --standalone --emit-provenance "$scratch/i2-q8-packed.c" "$src/i2-q8-packed.goose"
+            python3 "$shared/frankenmoe-fragment.py" "$scratch" i2-q8-packed
+            options+=(-I"$scratch" -include "$shared/device-prelude.cl")
+            ;;
+        grouped-moe-image)
+            "$goose" --standalone --emit-provenance "$scratch/i2-grouped-moe.c" "$src/i2-grouped-moe.goose"
+            python3 "$shared/frankenmoe-fragment.py" "$scratch" i2-grouped-moe
+            options+=(-I"$scratch" -include "$shared/device-prelude.cl")
+            ;;
         i2-lazy-prelude-image)
             "$goose" --standalone --emit-provenance "$scratch/i2-lazy-prelude.c" "$src/i2-lazy-prelude.goose"
             python3 "$shared/frankenmoe-fragment.py" "$scratch" i2-lazy-prelude
