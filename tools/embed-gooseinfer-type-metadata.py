@@ -52,6 +52,8 @@ def write_goose_metadata(types, ops, output):
     ]
     with output.open("w") as file:
         print("const GGML_META_TYPE_COUNT: i64 = 43;", file=file)
+        op_index = read_array(ops_text, "GGML_OP_NAME").index("FLASH_ATTN_EXT")
+        print(f"const GGML_ABI_FLASH_ATTN_EXT: i32 = {op_index};", file=file)
         for name, type_name, values, expected in fields:
             if len(values) != expected:
                 raise ValueError(f"{name}: expected {expected} entries")

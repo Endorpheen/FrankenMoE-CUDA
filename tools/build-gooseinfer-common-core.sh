@@ -31,7 +31,7 @@ flags=(-std=c11 -D_GNU_SOURCE -ffunction-sections -fdata-sections
 "$cc" -O1 "${flags[@]}" "${hardening[@]}" \
     -c "$ggml/src/ggml.c" -o "$out/ggml.o"
 "$cc" "${flags[@]}" -x c -fsyntax-only "$standalone/graph-bindings-layout.h"
-cat "$out/metadata.goose" "$standalone/"{graph-bindings,common-memory,graph-metadata}.goose > "$out/common-core.goose"
+cat "$out/metadata.goose" "$standalone/"{graph-bindings,common-memory,graph-metadata,graph-arena-abi}.goose > "$out/common-core.goose"
 "${GOOSE_CUDA_DRIVER_BIN:?Set GOOSE_CUDA_DRIVER_BIN to Fried Goose KeelWing v0.3.1-dev.1}" --standalone \
     -o "$out/graph-bindings.c" "$out/common-core.goose"
 "$cc" -O2 "${flags[@]}" -Dgoose_init=fg_graph_bindings_init -Dgg_init_globals=fg_graph_bindings_globals \

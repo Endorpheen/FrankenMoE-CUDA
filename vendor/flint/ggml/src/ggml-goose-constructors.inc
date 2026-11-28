@@ -11,8 +11,10 @@ static_assert(offsetof(struct ggml_tensor, buffer) == 8 &&
               offsetof(struct ggml_tensor, data) == 248 &&
               sizeof(struct ggml_tensor) == 336, "Goose tensor geometry ABI");
 
+#ifndef GOOSEINFER_GOOSE_METADATA
 void fg143_ctor_caption(int64_t address, int64_t source, int64_t kind) {
     const char *suffix[] = {"reshaped", "view", "permuted", "transposed"};
     const struct ggml_tensor *input = (const void *)(intptr_t)source;
     ggml_format_name((void *)(intptr_t)address, "%s (%s)", input->name, suffix[kind]);
 }
+#endif

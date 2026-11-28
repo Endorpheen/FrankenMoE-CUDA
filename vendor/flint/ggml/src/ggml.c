@@ -532,68 +532,9 @@ extern uint8_t fg143_graph_arena_layout(uint64_t size, uint64_t hash_size, uint6
     uint64_t pointer_size, uint64_t bitset_size, uint8_t grads, ggml_layout_slice layout);
 #endif
 
-#ifdef GOOSEINFER_TYPE_METADATA_ONLY
-extern uint64_t fg143_tensor_overhead(void);
-
-size_t ggml_tensor_overhead(void) {
-    fg143_cpu_init(0, NULL);
-    return fg143_tensor_overhead();
-}
+#ifndef GOOSEINFER_GOOSE_METADATA
+#include "ggml-context-api-reference.inc"
 #endif
-
-#ifdef GOOSEINFER_TYPE_METADATA_ONLY
-extern uint64_t fg143_arena_init(uint64_t capacity, uint64_t buffer, uint8_t no_alloc);
-#endif
-
-struct ggml_context * ggml_init(struct ggml_init_params params) {
-    static bool is_first_call = true;
-
-    ggml_critical_section_start();
-
-    if (is_first_call) {
-#ifdef GOOSEINFER_TYPE_METADATA_ONLY
-        fg143_cpu_init(0, NULL);
-#else
-        ggml_time_init();
-#endif
-
-        is_first_call = false;
-    }
-
-    ggml_critical_section_end();
-
-#ifdef GOOSEINFER_TYPE_METADATA_ONLY
-    return (void *)(uintptr_t)fg143_arena_init(params.mem_size, (uintptr_t)params.mem_buffer, params.no_alloc);
-#else
-    struct ggml_context * ctx = GGML_MALLOC(sizeof(struct ggml_context));
-
-    // allow to call ggml_init with 0 size
-    if (params.mem_size == 0) {
-        params.mem_size = GGML_MEM_ALIGN;
-    }
-
-    const size_t mem_size = params.mem_buffer ? params.mem_size : GGML_PAD(params.mem_size, GGML_MEM_ALIGN);
-
-    *ctx = (struct ggml_context) {
-        /*.mem_size           =*/ mem_size,
-        /*.mem_buffer         =*/ params.mem_buffer ? params.mem_buffer : ggml_aligned_malloc(mem_size),
-        /*.mem_buffer_owned   =*/ params.mem_buffer ? false : true,
-        /*.no_alloc           =*/ params.no_alloc,
-        /*.n_objects          =*/ 0,
-        /*.objects_begin      =*/ NULL,
-        /*.objects_end        =*/ NULL,
-    };
-
-    GGML_ASSERT(ctx->mem_buffer != NULL);
-
-    GGML_ASSERT_ALIGNED(ctx->mem_buffer);
-
-    GGML_PRINT_DEBUG("%s: context initialized\n", __func__);
-
-    return ctx;
-#endif
-}
-
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -650,119 +591,9 @@ struct ggml_tensor * ggml_format_name(struct ggml_tensor * tensor, const char * 
 #include "ggml-operator-reference.inc"
 #endif
 
-struct ggml_tensor * ggml_softplus(
-        struct ggml_context * ctx,
-        struct ggml_tensor  * a) {
-    return ggml_unary(ctx, a, GGML_UNARY_OP_SOFTPLUS);
-}
-
-// ggml_tanh
-
-struct ggml_tensor * ggml_tanh(
-        struct ggml_context * ctx,
-        struct ggml_tensor  * a) {
-    return ggml_unary(ctx, a, GGML_UNARY_OP_TANH);
-}
-
-// ggml_relu
-
-struct ggml_tensor * ggml_relu(
-        struct ggml_context * ctx,
-        struct ggml_tensor  * a) {
-    return ggml_unary(ctx, a, GGML_UNARY_OP_RELU);
-}
-
-// ggml_sigmoid
-
-struct ggml_tensor * ggml_sigmoid(
-        struct ggml_context * ctx,
-        struct ggml_tensor  * a) {
-    return ggml_unary(ctx, a, GGML_UNARY_OP_SIGMOID);
-}
-
-// ggml_silu
-
-struct ggml_tensor * ggml_silu(
-        struct ggml_context * ctx,
-        struct ggml_tensor  * a) {
-    return ggml_unary(ctx, a, GGML_UNARY_OP_SILU);
-}
-
-// ggml hardswish
-
-// ggml hardsigmoid
-
-// ggml exp
-
-// ggml_glu
-
-// ggml_prec
-
-bool ggml_prec_set_acc(
-        struct ggml_tensor * a,
-        enum ggml_prec       prec) {
-    switch (a->op) {
-        case GGML_OP_MUL_MAT:
-        case GGML_OP_MUL_MAT_ID:
-            {
-                const int32_t prec_i32 = (int32_t) prec;
-                ggml_set_op_params_i32(a, 0, prec_i32);
-            }
-            break;
-        case GGML_OP_FLASH_ATTN_EXT:
-            {
-                const int32_t prec_i32 = (int32_t) prec;
-                ggml_set_op_params_i32(a, 3, prec_i32);
-            }
-            break;
-        default:
-            return false;
-    };
-
-    return true;
-}
-
-// ggml_mul_mat
-
-void ggml_mul_mat_set_hint(
-        struct ggml_tensor * a,
-        enum ggml_op_hint    hint) {
-    GGML_ASSERT(a->op == GGML_OP_MUL_MAT);
-
-    const int32_t hint_i32 = (int32_t) hint;
-
-    ggml_set_op_params_i32(a, 1, hint_i32);
-}
-
-// ggml_get_rows
-
-// Apparently solving `n_rot = 2pi * x * base^((2 * max_pos_emb) / n_dims)` for x, we get
-// `corr_dim(n_rot) = n_dims * log(max_pos_emb / (n_rot * 2pi)) / (2 * log(base))`
-static float ggml_rope_yarn_corr_dim(int n_dims, int n_ctx_orig, float n_rot, float base) {
-    return n_dims * logf(n_ctx_orig / (n_rot * 2 * (float)M_PI)) / (2 * logf(base));
-}
-
-void ggml_rope_yarn_corr_dims(
-    int n_dims, int n_ctx_orig, float freq_base, float beta_fast, float beta_slow, float dims[2]
-) {
-    // start and end correction dims
-    float start = floorf(ggml_rope_yarn_corr_dim(n_dims, n_ctx_orig, beta_fast, freq_base));
-    float end   =  ceilf(ggml_rope_yarn_corr_dim(n_dims, n_ctx_orig, beta_slow, freq_base));
-    dims[0] = MAX(0, start);
-    dims[1] = MIN(n_dims - 1, end);
-}
-
-// ggml_flash_attn_ext
-
-void ggml_flash_attn_ext_set_n_kv_max(
-        struct ggml_tensor * a,
-        int32_t              n_kv_max) {
-    GGML_ASSERT(a->op == GGML_OP_FLASH_ATTN_EXT);
-    GGML_ASSERT(n_kv_max >= 0);
-
-    ggml_set_op_params_i32(a, 4, n_kv_max);
-}
-
+#ifndef GOOSEINFER_GOOSE_METADATA
+#include "ggml-helper-api-reference.inc"
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -772,24 +603,8 @@ void ggml_hash_set_reset(struct ggml_hash_set * hash_set) {
 }
 #endif
 
-#ifdef GOOSEINFER_TYPE_METADATA_ONLY
-extern uint64_t fg143_graph_hash_size(uint64_t minimum);
-size_t ggml_hash_size(size_t minimum) {
-    fg143_cpu_init(0, NULL);
-    return fg143_graph_hash_size(minimum);
-}
-#else
-#include "ggml-hash-size-reference.inc"
-#endif
-
-#ifdef GOOSEINFER_TYPE_METADATA_ONLY
-extern void fg143_graph_expand_forward(uint64_t graph, uint64_t tensor);
-
-void ggml_build_forward_expand(struct ggml_cgraph *graph, struct ggml_tensor *tensor) {
-    fg143_graph_expand_forward((uintptr_t)graph, (uintptr_t)tensor);
-}
-#else
-#include "ggml-graph-reference.inc"
+#ifndef GOOSEINFER_GOOSE_METADATA
+#include "ggml-graph-api-reference.inc"
 #endif
 
 #ifdef GOOSEINFER_TYPE_METADATA_ONLY
@@ -808,12 +623,9 @@ static_assert(sizeof(struct ggml_cgraph) == 96 &&
               sizeof(ggml_bitset_t) == 4 && GGML_OBJECT_TYPE_GRAPH == 1 &&
               GGML_CGRAPH_EVAL_ORDER_LEFT_TO_RIGHT == 0, "Goose graph ABI");
 
-extern uint64_t fg143_graph_overhead_custom(uint64_t size, uint8_t grads);
-
-size_t ggml_graph_overhead_custom(size_t size, bool grads) {
-    fg143_cpu_init(0, NULL);
-    return fg143_graph_overhead_custom(size, grads);
-}
+#ifndef GOOSEINFER_GOOSE_METADATA
+#include "ggml-graph-overhead-reference.inc"
+#endif
 #else
 #include "ggml-graph-storage-reference.inc"
 #endif
