@@ -20,7 +20,11 @@ const PROB_NOTIFY: i32 = 3;
 const PROB_JOIN: i32 = 4;
 const PROB_DESTROY: i32 = 5;
 
-extern fn fg_prob_platform_payload(address: u64) -> u64[:];
+extern "fg_cuda_host_view_u64" fn prob_platform_words(address: u64, length: i64) -> u64[:];
+
+fn fg_prob_platform_payload(address: u64) -> u64[:] {
+    return prob_platform_words(address + 136, 14);
+}
 extern "fg_cuda_host_malloc" fn prob_malloc(bytes: u64) -> u64;
 extern "fg_cuda_host_free" fn prob_free(address: u64);
 extern "fg_cuda_host_view_i64" fn prob_i64(address: u64, length: i64) -> i64[:];

@@ -8,7 +8,6 @@ _Static_assert(sizeof(pthread_mutex_t) <= 64 && _Alignof(pthread_mutex_t) <= 8 &
     sizeof(pthread_t) == 8 && _Alignof(pthread_t) <= 8 && sizeof(pthread_key_t) == 4,
     "Goose probability platform ABI");
 
-typedef struct { uint64_t *data; int64_t len; } probability_words;
 extern void fg_probability_init(int argc, char **argv);
 
 static void *probability_thread(void *arg) {
@@ -19,10 +18,6 @@ static void *probability_thread(void *arg) {
 
 int32_t fg_prob_platform_launch(uint64_t worker, uint64_t address) {
     return pthread_create((pthread_t *)(uintptr_t)worker, NULL, probability_thread, (void *)(uintptr_t)address);
-}
-
-probability_words fg_prob_platform_payload(uint64_t address) {
-    return (probability_words){(uint64_t *)(uintptr_t)(address + 136), 14};
 }
 
 uint8_t fg_prob_native_avx2(void) {
