@@ -7,8 +7,6 @@ const CKPT_OFF_OFFSET: u64 = 40;
 const CKPT_I64_MAX: i64 = 9223372036854775807;
 const CKPT_U64_MAX: u64 = 0xffffffffffffffff;
 
-extern fn fg_graph_native_trace_get() -> u64;
-extern fn fg_graph_native_trace_set(address: u64);
 extern fn fg_cuda_state_read(address: u64, span: i64) -> i64;
 extern fn fg_cuda_activation_read_address(address: u64, span: i64) -> i64;
 extern fn ggml_nbytes(tensor: u64) -> u64;

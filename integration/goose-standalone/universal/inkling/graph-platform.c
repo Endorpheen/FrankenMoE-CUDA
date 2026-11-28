@@ -6,7 +6,6 @@
 
 #include "cpu.h"
 #include "ggml-impl.h"
-#include "goose-host.h"
 
 #include <pthread.h>
 #ifdef _WIN32
@@ -14,58 +13,15 @@
 #else
 #include <sched.h>
 #endif
-#include <stdatomic.h>
 #include <stddef.h>
 #include <stdint.h>
 
-extern void fg143_cpu_init(int argc, char ** argv);
-static pthread_once_t cpu_init = PTHREAD_ONCE_INIT;
-static atomic_uint_fast64_t cpu_values;
-static atomic_int_fast64_t cpu_batch_threads = 1;
-static atomic_int_fast64_t cpu_decode_threads = 1;
-static _Thread_local bool cpu_prefill = true;
 #ifdef _WIN32
 _Static_assert(sizeof(cpu_set_t) == 8, "Goose Windows affinity ABI");
 #else
 _Static_assert(sizeof(cpu_set_t) == 128, "Goose Linux affinity ABI");
 #endif
 _Static_assert(offsetof(struct ggml_cgraph, n_nodes) == 4 && GGML_STATUS_FAILED == -1, "Goose graph execution ABI");
-
-static _Thread_local uint64_t checkpoint_address;
-
-static void init_cpu(void) {
-    fg_goose_host_ensure_init();
-    fg143_cpu_init(0, NULL);
-}
-
-void fg_graph_native_cpu_init(void) { pthread_once(&cpu_init, init_cpu); }
-
-int64_t fg_graph_native_threads(bool prefill, int64_t value) {
-    atomic_int_fast64_t *setting = prefill ? &cpu_batch_threads : &cpu_decode_threads;
-    if (value) atomic_store_explicit(setting, value, memory_order_relaxed);
-    return atomic_load_explicit(setting, memory_order_relaxed);
-}
-
-bool fg_graph_native_set_prefill(bool prefill) {
-    const bool previous = cpu_prefill;
-    cpu_prefill = prefill;
-    return previous;
-}
-
-bool fg_graph_native_prefill(void) { return cpu_prefill; }
-bool fg_graph_native_checkpoint(void) { return checkpoint_address != 0; }
-uint64_t fg_graph_native_trace_get(void) { return checkpoint_address; }
-void fg_graph_native_trace_set(uint64_t address) { checkpoint_address = address; }
-
-void fg143_witness(int64_t op, int64_t values) {
-    (void) op;
-    atomic_fetch_add_explicit(&cpu_values, (uint64_t) values, memory_order_relaxed);
-}
-
-void fg141_witness(int64_t stage, int64_t kind, int64_t values) {
-    (void) stage;
-    fg143_witness(kind, values);
-}
 
 struct q35_decode_attention {
     struct ggml_tensor *attention;
@@ -109,10 +65,6 @@ _Static_assert(sizeof(struct inkling_attention_graph_call) == 232 &&
         INKLING_BRIDGE_GRAPH == 0x49324252 && INKLING_ATTENTION_GRAPH == 0x49324147 &&
         INKLING_MOE_EPILOGUE == 0x49324d45 && INKLING_MOE_SITU == 0x49325354 &&
         GGML_UNARY_OP_TANH == 4, "Goose Inkling graph ABI");
-
-uint64_t fg143_graph_take_cpu_values(void) {
-    return atomic_exchange_explicit(&cpu_values, 0, memory_order_relaxed);
-}
 
 _Static_assert(GGML_MAX_SRC == 10 && offsetof(struct ggml_tensor, src) == 152 &&
         GGML_TENSOR_FLAG_PARAM == 4 && GGML_TENSOR_FLAG_COMPUTE == 16 &&

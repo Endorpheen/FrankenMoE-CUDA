@@ -10,11 +10,6 @@ extern fn graph_host_getaffinity(pid: i32, size: u64, out: u64) -> i32;
 extern fn graph_host_setaffinity(pid: i32, size: u64, mask: u64) -> i32;
 extern fn graph_host_getcpu() -> i32;
 
-extern fn fg_graph_native_cpu_init();
-extern fn fg_graph_native_threads(prefill: bool, threads: i64) -> i64;
-extern fn fg_graph_native_set_prefill(prefill: bool) -> bool;
-extern fn fg_graph_native_prefill() -> bool;
-extern fn fg_graph_native_checkpoint() -> bool;
 extern fn fg143_cpu_batch_supported(threads: i64) -> bool;
 extern fn fg143_storage_allocate(graph: u64) -> u64;
 extern fn fg143_graph_plan_alloc(graph: u64, output: u64) -> u64;
