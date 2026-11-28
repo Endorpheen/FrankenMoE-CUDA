@@ -90,3 +90,20 @@ export fn fg_i2_read_token_logits(decoder: u64, absolute: i32, current: u64, his
     if !handled { fg_i2_softcap_logits(i2d_span(logits, 201024)); }
     fg_i2_validate_logits(absolute, logits, handled);
 }
+
+export fn fg_i2_prepare_layer_inputs(decoder: u64, aux: u64, sliding: bool, current: u64,
+    history: u64, count: i32, inputs: u64) {
+    let query = i2d_read(aux + 80) as! i64;
+    if query >= 0 {
+        let queries: i32 = if sliding { 1 } else { 3 };
+        let weights = (queries as! i64) * 2304;
+        let coefficients = fg_i2_host_coefficients(decoder, query, weights);
+        fg_i2_host_mix(history, count, current, i2d_span(coefficients, weights), queries, inputs);
+        if sliding {
+            i2d_transfer(inputs + 9216, inputs, 9216);
+            i2d_transfer(inputs + 18432, inputs, 9216);
+        }
+    } else {
+        for index in 3 { i2d_transfer(inputs + (index as! u64) * 9216, current, 9216); }
+    }
+}

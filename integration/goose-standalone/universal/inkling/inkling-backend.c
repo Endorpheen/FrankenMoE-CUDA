@@ -385,17 +385,14 @@ extern void fg_i2_host_joined_layer(struct decoder *, const int64_t *, const int
     int, int, bool, bool, float **, float (*)[model_width], float *, float *, int);
 #define joined_layer fg_i2_host_joined_layer
 
+extern void fg_i2_prepare_layer_inputs(struct decoder *d, const int64_t *aux, bool sliding,
+    float *current, float *history, int count, void *inputs);
+
 static void layer(struct decoder *d,int physical_layer,int slot,int absolute,int sliding,
                   float *cur,float *blocks,int *count,float (*messages)[model_width]) {
     const int64_t *core=d->core+10*physical_layer, *aux=d->aux+30*physical_layer;
     float inputs[3][model_width];
-    if(aux[10]>=0) {
-        const int n=sliding?1:3;
-        mix(blocks,*count,cur,coefficients(d,aux[10],n*model_width),n,inputs[0]);
-        if(sliding){memcpy(inputs[1],inputs[0],sizeof inputs[0]);memcpy(inputs[2],inputs[0],sizeof inputs[0]);}
-    } else {
-        for(int i=0;i<3;i++)memcpy(inputs[i],cur,model_width*sizeof(float));
-    }
+    fg_i2_prepare_layer_inputs(d, aux, sliding, cur, blocks, *count, inputs);
     float proj[model_width], next[model_width], ffn[model_width];
     int64_t work[16] = {0};
     struct ggml_context *ctx;
