@@ -127,7 +127,10 @@ static int create_device(fg_vk_device *vk, const fg_vk_instance_api *api) {
     return 1;
 }
 
+extern void fg_vk_queue_init(int argc, char **argv);
+
 int fg_vk_open(fg_vk_device *vk, uint32_t index, int allow_cpu) {
+    fg_vk_queue_init(0, NULL);
     *vk = (fg_vk_device){0};
     if (!fg_vk_load(vk)) {
         fg_vk_error("load Vulkan or resolve vkGetInstanceProcAddr", VK_ERROR_INITIALIZATION_FAILED);

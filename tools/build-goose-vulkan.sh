@@ -31,16 +31,19 @@ test -r "$headers/vulkan/vulkan.h"
 mkdir -p "$out/vulkan-headers"
 cp -R "$headers/vulkan" "$out/vulkan-headers/"
 if [[ -d "$headers/vk_video" ]]; then cp -R "$headers/vk_video" "$out/vulkan-headers/"; fi
-cat "$source_dir/queue.goose" "$source_dir/upload.goose" "$source_dir/memory.goose" "$source_dir/json-number.goose" > "$out/queue.goose"
+"$cc" "${flags[@]}" -isystem "$out/vulkan-headers" -x c -fsyntax-only "$source_dir/driver-layout.h"
+cat "$source_dir/"{queue,upload,memory,json-number,loader}.goose "$source_dir/loader-$target.goose" > "$out/queue.goose"
 "${GOOSE_CUDA_DRIVER_BIN:?Set GOOSE_CUDA_DRIVER_BIN to Fried Goose KeelWing v0.3.1-dev.1}" --standalone \
     -o "$out/queue.c" "$out/queue.goose"
 "$cc" -O2 -std=c11 -ffunction-sections -fdata-sections -w \
     -Dgoose_init=fg_vk_queue_init -Dgg_init_globals=fg_vk_queue_globals -c "$out/queue.c" -o "$out/queue.o"
 queue_objcopy=${OBJCOPY:-objcopy}
 if [[ "$target" == windows ]]; then queue_objcopy=${WINDOWS_OBJCOPY:-x86_64-w64-mingw32-objcopy}; fi
-"$queue_objcopy" --redefine-sym=fg_vulkan_crt_strtod=strtod "$out/queue.o"
+sed -nE 's/^extern "(fg_vk_loader_api_([[:alnum:]_]+))".*/\1 \2/p' \
+    "$source_dir/loader-$target.goose" > "$out/loader.symbols"
+"$queue_objcopy" --redefine-sym=fg_vulkan_crt_strtod=strtod --redefine-syms="$out/loader.symbols" "$out/queue.o"
 "$cc" "${flags[@]}" -isystem "$out/vulkan-headers" \
-    "$source_dir/"{loader,device,probe}.c "$out/queue.o" \
+    "$source_dir/"{device,probe}.c "$out/queue.o" \
     "${libs[@]}" -o "$out/$executable"
 
 if [[ "$mode" != probe ]]; then
@@ -54,7 +57,7 @@ if [[ "$mode" != probe ]]; then
     done
     python3 "$root/tools/embed-vulkan-shaders.py" "$out"
     "$cc" "${flags[@]}" -isystem "$out/vulkan-headers" -I"$out" -I"$source_dir" \
-        "$source_dir/"{loader,device,graph,bonsai-layer,moe-bank}.c "$out/queue.o" \
+        "$source_dir/"{device,graph,bonsai-layer,moe-bank}.c "$out/queue.o" \
         "$root/integration/goose-standalone/tests/vulkan/"{compute,attention,projection,moe-quant,moe-router,apex-experts,bonsai,recurrent,bonsai-layer,inkling-attention}.c \
         "${libs[@]}" -lm -o "$out/frankenmoe-vulkan-compute-test$suffix"
 fi
@@ -135,7 +138,7 @@ PY
             objcopy=${WINDOWS_OBJCOPY:-x86_64-w64-mingw32-objcopy}
         fi
         objects=("$out/queue.o" "$out/socket-forwards.o" "$out/gguf.o")
-        for source in "$source_dir/"{loader,device,graph,qwen2,bonsai-layer,bonsai-model,moe-bank,apex-model,inkling-model,tokenizer,http,infer-main}.c; do
+        for source in "$source_dir/"{device,graph,qwen2,bonsai-layer,bonsai-model,moe-bank,apex-model,inkling-model,tokenizer,http,infer-main}.c; do
             name=$(basename -- "$source" .c)
             options=()
             if [[ "$name" == infer-main ]]; then options=(-Dmain=gooseinfer_vulkan_entry); fi
@@ -148,6 +151,6 @@ PY
         exit 0
     fi
     "$cc" "${flags[@]}" -isystem "$out/vulkan-headers" -I"$out" -Wl,--gc-sections \
-        "$source_dir/"{loader,device,graph,qwen2,bonsai-layer,bonsai-model,moe-bank,apex-model,inkling-model,tokenizer,http,infer-main}.c "$out/qwen2_unit.o" "$out/queue.o" "$out/socket-forwards.o" "$out/gguf.o" \
+        "$source_dir/"{device,graph,qwen2,bonsai-layer,bonsai-model,moe-bank,apex-model,inkling-model,tokenizer,http,infer-main}.c "$out/qwen2_unit.o" "$out/queue.o" "$out/socket-forwards.o" "$out/gguf.o" \
         "${libs[@]}" -lm -pthread -o "$out/frankenmoe-vulkan$suffix"
 fi

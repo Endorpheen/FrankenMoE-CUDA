@@ -1,17 +1,5 @@
 #include "upload.h"
 
-#include <stddef.h>
-
-#ifdef _WIN32
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#include <windows.h>
-#undef CreateSemaphore
-#else
-#include <dlfcn.h>
-#endif
-
 _Static_assert(sizeof(VkCommandBufferSubmitInfo) == 32 &&
     offsetof(VkCommandBufferSubmitInfo, commandBuffer) == 16 &&
     sizeof(VkSemaphoreSubmitInfo) == 48 && offsetof(VkSemaphoreSubmitInfo, semaphore) == 16 &&
@@ -110,32 +98,5 @@ _Static_assert(sizeof(VkMemoryType) == 8 && sizeof(VkBufferCreateInfo) == 56 &&
     "Goose Vulkan memory ABI");
 #undef FG_VK_ABI_OFFSET
 _Static_assert(sizeof(fg_vk_upload) == 72 && sizeof(fg_vk_buffer) == 32, "Goose Vulkan upload ABI");
-
-extern void fg_vk_queue_init(int argc, char **argv);
-
-int fg_vk_load(fg_vk_device *vk) {
-    fg_vk_queue_init(0, NULL);
-#ifdef _WIN32
-    HMODULE loader = LoadLibraryExW(L"vulkan-1.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
-    vk->loader = loader;
-    if (loader) {
-        FARPROC symbol = GetProcAddress(loader, "vkGetInstanceProcAddr");
-        vk->get_instance_proc = (PFN_vkGetInstanceProcAddr)(void (*)(void))symbol;
-    }
-#else
-    vk->loader = dlopen("libvulkan.so.1", RTLD_NOW | RTLD_LOCAL);
-    if (vk->loader) {
-        vk->get_instance_proc = (PFN_vkGetInstanceProcAddr)dlsym(vk->loader, "vkGetInstanceProcAddr");
-    }
-#endif
-    return vk->get_instance_proc != NULL;
-}
-
-void fg_vk_unload(fg_vk_device *vk) {
-    if (!vk->loader) return;
-#ifdef _WIN32
-    FreeLibrary((HMODULE)vk->loader);
-#else
-    dlclose(vk->loader);
-#endif
-}
+_Static_assert(offsetof(fg_vk_device, loader) == 0 && offsetof(fg_vk_device, get_instance_proc) == 8,
+    "Goose Vulkan loader ABI");
