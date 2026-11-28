@@ -15,7 +15,7 @@ cp "$ROOT/goose/cuda/standalone-matmul.goose" "$OUT/matmul.goose"
 sed -n '/^struct F2 {/,/^}/p; /^fn dequant_q4_0(/,/^}/p' \
     "$ROOT/goose/cuda/goose-cuda-flash-attention/staging-device.goose" |
     sed 's/^fn dequant_q4_0(/export fn dequant_q4_0(/' > "$OUT/q4-attention.goose"
-cat "$ROOT/goose/cuda/"{standalone-q4-attention,standalone-mla-launch}.goose >> "$OUT/q4-attention.goose"
+cat "$ROOT/goose/cuda/"{standalone-q4-attention,standalone-q4-attention-entry,standalone-mla-launch}.goose >> "$OUT/q4-attention.goose"
 sed '/^fn main()/,$d; s/^fn \(gdn\|gdn_decode\)(/export fn \1(/' \
     "$ROOT/goose/cuda/goose-cuda-gdn/scalar-device.goose" > "$OUT/gdn.goose"
 sed '/^fn main()/,$d; s/^fn \(gdn_v32\|gdn_v128\)(/export fn \1(/' \
@@ -190,6 +190,8 @@ if module == "mmq-quant":
 PY
 done
 sed -i 's/\ba16_f32\b/mla_a16_f32/g' "$OUT/q4-attention-device.h"
+python3 "$ROOT/tools/emit-gooseinfer-cuda-entries.py" \
+    "$ROOT/integration/goose-standalone/cuda-attention-entries.json" "$OUT/cuda-attention-entries.h"
 "$CLANG" -target nvptx64-nvidia-cuda -Xclang -target-cpu -Xclang sm_70 \
     -nocudalib -O2 -x cl -cl-std=CL1.2 -I "$OUT" -S \
     "$ROOT/integration/goose-standalone/cuda-device.cl" -o "$OUT/goose-cuda.ptx"

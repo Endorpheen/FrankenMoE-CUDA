@@ -32,11 +32,15 @@ compile_device() {
         "$1" -o "$scratch/device.ptx"
 }
 
-cat "$src/dsa-mla.goose" "$root/goose/cuda/standalone-mla-launch.goose" > "$scratch/q4-attention.goose"
+cat "$src/dsa-mla.goose" "$root/goose/cuda/"standalone-{q4-attention-entry,mla-launch}.goose > "$scratch/q4-attention.goose"
 "$goose" --standalone -o "$scratch/q4-attention.c" --header "$scratch/q4-attention.h" "$scratch/q4-attention.goose"
 python3 "$src/extract-device.py" "$scratch" q4-attention
 sed -i -E 's/static void (giga_mla_mma_pv_(tile|indexed)_g\()/static __attribute__((always_inline)) void \1/' \
     "$scratch/q4-attention-device.h"
+python3 "$root/tools/emit-gooseinfer-cuda-entries.py" \
+    "$standalone/cuda-attention-entries.json" "$scratch/cuda-attention-entries.h"
+python3 "$root/tools/emit-gooseinfer-cuda-entries.py" \
+    "$standalone/gigachat4/cuda-dsa-entries.json" "$scratch/cuda-dsa-entries.h"
 compile_device "$standalone/cuda-device.cl"
 for variant in dense vector dsa mla certified-dsa; do
     case "$variant" in

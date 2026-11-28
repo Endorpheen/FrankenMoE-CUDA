@@ -26,6 +26,10 @@ for source in "$source_dir"/goose/*.goose "$root/goose/cuda/standalone-matmul.go
     module=${module#standalone-}
     if [[ -d $overlay && -f $overlay/$module.goose ]]; then source="$overlay/$module.goose"; fi
     case "$module" in
+        q4-attention)
+            cat "$source" "$root/goose/cuda/standalone-q4-attention-entry.goose" > "$scratch/$module.goose"
+            source="$scratch/$module.goose"
+            ;;
         mmq|mmq-quant|mmvq|mmvq-pack|ssm-conv|gdn|gdn-mma|q4-set-rows|flash-mma|flash-vec)
             launcher=$module
             if [[ "$module" == mmq-quant ]]; then launcher=mmq-pack; fi
@@ -58,6 +62,9 @@ fi
 
 if [[ ${overlay##*/} == rms-onevec ]]; then defines+=(-DGOOSE_APEX_RMS_ONEVEC_IMAGE); fi
 if [[ ${GOOSE_APEX_UP_GATE_IMAGE:-0} == 1 ]]; then defines+=(-DGOOSE_APEX_UP_GATE_IMAGE); fi
+
+python3 "$root/tools/emit-gooseinfer-cuda-entries.py" \
+    "$standalone/cuda-attention-entries.json" "$scratch/cuda-attention-entries.h"
 
 "${CLANG:-clang-18}" -target nvptx64-nvidia-cuda -nocudalib -O2 -x cl -cl-std=CL1.2 \
     -include "$source_dir/device-prelude.cl" -I"$scratch" -I"$standalone" -S -Xclang -target-cpu \

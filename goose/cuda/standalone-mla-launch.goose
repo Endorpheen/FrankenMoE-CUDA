@@ -39,3 +39,43 @@ export fn giga_mla_launch_indexed_merge(scratch: u64, output: u64, cfg: u64, que
     let query = (8 * (group / positions) + absolute % 8) * positions + group % positions;
     giga_mla_indexed_merge(scratch, output, cfg, task, query, lane);
 }
+
+export fn giga_mla_mma_tile_entry(q: u64, k: u64, v: u64, mask: u64, scratch: u64, cfg: u64, scores: u64, scale: f32, tile: i64, task: i64, query_base: i64, thread: i64) {
+    giga_mla_mma_tile(q, k, v, mask, scratch, cfg, scores, scale, 8 * task, query_base + 8 * task, tile, thread / 32, thread % 32);
+}
+
+export fn giga_mla_mma_pv_tile_entry(q: u64, k: u64, v: u64, mask: u64, scratch: u64, cfg: u64, scores: u64, scale: f32, tile: i64, task: i64, query_base: i64, thread: i64) {
+    giga_mla_mma_pv_tile(q, k, v, mask, scratch, cfg, scores, scale, 8 * task, query_base + 8 * task, tile, thread / 32, thread % 32);
+}
+
+export fn giga_mla_mma_pv_indexed_entry(q: u64, k: u64, v: u64, mask: u64, scratch: u64, cfg: u64, scores: u64, scale: f32, tile: i64, keys: u64, task: i64, query_base: i64, thread: i64) {
+    giga_mla_mma_pv_indexed(q, k, v, mask, scratch, cfg, scores, scale, 8 * task, query_base / 8 + task, tile, thread / 32, thread % 32, keys);
+}
+
+export fn giga_mask_clear_entry(mask: u64, out: u64, total: i64, prefix: i64, group: i64, lane: i64) {
+    giga_device_mask_clear(mask, out, total, prefix, group * 256 + lane);
+}
+
+export fn giga_mask_scatter_entry(mask: u64, picks: u64, out: u64, cells: i64, count: i64, total: i64, prefix: i64, group: i64, lane: i64) {
+    giga_device_mask_scatter(mask, picks, out, cells, count, total, prefix, group * 256 + lane);
+}
+
+export fn mla_attention_tiles_entry(q: u64, k: u64, v: u64, mask: u64, scratch: u64, cfg: u64, scale: f32, task: i64, tile: i64, lane: i64, query_base: i64) {
+    fg_mla_attn_tiles(q, k, v, mask, scratch, cfg, scale, task, query_base + task, tile, lane);
+}
+
+export fn mla_attention_pair_entry(q: u64, k: u64, v: u64, mask: u64, scratch: u64, cfg: u64, scale: f32, tile: i64, lane: i64, task: i64, query_base: i64) {
+    fg_mla_attn_pair(q, k, v, mask, scratch, cfg, scale, 2 * task, query_base + 2 * task, tile, lane);
+}
+
+export fn mla_attention_merge_entry(scratch: u64, output: u64, cfg: u64, task: i64, lane: i64, query_base: i64) {
+    fg_mla_attn_merge(scratch, output, cfg, task, query_base + task, lane);
+}
+
+export fn dsa_score_entry(q: u64, k: u64, weights: u64, mask: u64, out: u64, cfg: u64, token: i64, tile: i64, tid: i64) {
+    fg_dsa_score(q, k, weights, mask, out, cfg, 4 * tile + tid / 32, token, tid % 32);
+}
+
+export fn giga_dsa_score_shared_q_entry(q: u64, k: u64, weights: u64, mask: u64, out: u64, cfg: u64, token: i64, tile: i64, tid: i64) {
+    giga_dsa_score_shared_q(q, k, weights, mask, out, cfg, 16 * tile + 4 * (tid / 32), token, tid % 32);
+}
