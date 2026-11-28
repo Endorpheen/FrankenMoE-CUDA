@@ -506,7 +506,3 @@ _Static_assert(offsetof(struct decoder, capacity) == 82992 &&
     sizeof(struct inkling_decode_graph) == 368 &&
     logical == 48 && model_width == 2304 && max_prefill_batch == 4096 &&
     i2_draft_max == 16 && vocabulary == 200058 && INKLING_KV_Q4_0 == 1, "Goose Inkling draft ABI");
-
-void fg_i2_backend_prefill(uint64_t address, uint64_t tokens, int position, int count, bool logits) {
-    prefill((struct decoder *)(uintptr_t)address, (const int32_t *)(uintptr_t)tokens, position, count, logits);
-}

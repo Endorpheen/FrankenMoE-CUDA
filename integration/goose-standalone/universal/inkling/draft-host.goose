@@ -31,7 +31,6 @@ fn fg_i2_backend_reset_attention(decoder: u64) -> i32 {
     i2_node_clear(unsafe_c_ptr<c_ptr<void>>(i2d_read(decoder + 887144)), 0, I2D_HISTORY_BYTES);
     return 0;
 }
-extern fn fg_i2_backend_prefill(decoder: u64,tokens: u64,pos: i32,count: i32,logits: bool);
 extern fn fg_cuda_host_getenv(name: u64) -> u64;
 extern fn fg_cuda_expert_stats(out: I2DraftSpan);
 extern fn fg_cuda_inkling_expert_phase(prefill: bool,pos: i32,count: i32);

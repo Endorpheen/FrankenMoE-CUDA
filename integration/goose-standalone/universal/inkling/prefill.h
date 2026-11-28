@@ -366,13 +366,6 @@ static void prefill_layer(struct decoder *d, struct prefill_token *tokens, struc
         scratch->linear[0], scratch->residual[0], tokens, work);
 }
 
-extern void i2_prefill_edge_plan(sl_i64 visits, sl_i64 aux, uint8_t use_edges,
-    uint8_t boundary_enabled, uint8_t extend, uint8_t use_full, uint8_t keep_intermediate,
-    sl_i64 ordinary, sl_i64 boundary);
-
-extern void i2_run_prefill_visits(uint64_t work, sl_i64 visits, sl_i64 ordinary,
-    sl_i64 boundary, sl_i64 device, uint8_t loop_enabled);
-
 struct i2_prefill_visits {
     struct decoder *decoder;
     struct prefill_token *tokens;
@@ -402,93 +395,24 @@ void i2_prefill_run_visit(uint64_t address, int64_t index, sl_i64 device, uint8_
         check_state("draft-batch-visit", (int)index, work->tokens[1].current, model_width);
 }
 
-static void prefill(struct decoder *d, const int32_t *ids, int begin, int count, bool need_logits) {
-    assert(count > 0 && count <= max_prefill_batch);
-    struct prefill_token *tokens = calloc((size_t)count, sizeof *tokens);
-    struct prefill_workspace *scratch = malloc(sizeof *scratch);
-    assert(tokens && scratch);
-    scratch->linear = scratch->linear_storage;
-    const char *readback = getenv("I2_DIRECT_PREFILL_READBACK");
-    if (count >= 512 && fg_i2_serial_graph_enabled() && fg_i2_resident_moe() &&
-        (!readback || strcmp(readback, "0") != 0)) {
-        const size_t elements = (size_t)count * model_width;
-        if (readback && strcmp(readback, "pinned") == 0) {
-            float (*pinned)[model_width] = fg_cuda_inkling_prefill_readback(elements * sizeof(float));
-            if (pinned) scratch->linear = pinned;
-        }
-        prefill_direct_output = scratch->linear[0];
-        prefill_direct_output_size = elements;
-    }
-    _Static_assert(offsetof(struct prefill_token, current) == 0, "Goose prefill embedding stride ABI");
-    assert(fg_i2_embed_prefill(d, ids, count, tokens, sizeof(*tokens)));
-    struct i2_prefill_team team = {0};
-    struct i2_prefill_team *workers = NULL;
+_Static_assert(sizeof(struct prefill_workspace) == 646316040 &&
+    offsetof(struct prefill_workspace, linear) == 343277568 &&
+    offsetof(struct prefill_workspace, linear_storage) == 343277576 &&
+    offsetof(struct prefill_token, current) == 0 && sizeof(struct i2_prefill_team) <= 296 &&
+    _Alignof(struct i2_prefill_team) <= 8, "Goose prefill driver ABI");
+
+bool fg_i2_prefill_team_start(struct i2_prefill_team *team, int count) {
     const int tasks = prefill_task_count(count);
-    const char *team_setting = getenv("I2_PREFILL_TEAM");
-    if (tasks > 1 && (!team_setting || strcmp(team_setting, "0") != 0)) {
-        (void)use_cached_history();
-        if (prefill_team_open(&team, tasks, true)) workers = &team;
-    }
-    inkling_arena_window(count == 4096, begin);
-    const char *loop_setting = getenv("I2_DEVICE_LOOP_MESSAGES");
-    const bool loop_enabled = !loop_setting || strcmp(loop_setting, "0") != 0;
-    const char *boundary_setting = getenv("I2_DEVICE_BLOCK_HISTORY");
-    const char *sliding_setting = getenv("I2_SLIDING_DEVICE_DEPTHMIX");
-    const char *full_setting = getenv("I2_FULL_DEVICE_DEPTHMIX");
-    const bool boundary_enabled = (!boundary_setting || strcmp(boundary_setting, "0") != 0) &&
-        (!sliding_setting || strcmp(sliding_setting, "0") != 0) &&
-        (!full_setting || strcmp(full_setting, "0") != 0);
-    const char *keep = getenv("I2_RETAIN_PREFILL_MOE");
-    const char *full = getenv("I2_FULL_DEVICE_DEPTHMIX");
-    const bool use_full = !full || strcmp(full, "0") != 0;
-    const char *extend_setting = getenv("I2_DEVICE_REWIND_TAIL");
-    const bool extend = (!extend_setting || strcmp(extend_setting, "0") != 0) && boundary_enabled && loop_enabled;
-    const char *edges = getenv("I2_DEVICE_PREFILL_EDGES");
-    const char *postconv = getenv("I2_PARALLEL_CUDA_POSTCONV");
-    const bool use_edges = extend && count == 4096 && prefill_direct_output && fg_i2_resident_moe() &&
-        use_cached_history() && (!edges || strcmp(edges, "0") != 0) &&
-        (!postconv || strcmp(postconv, "0") != 0) && !getenv("I2_CHECK_STATE");
-    const bool keep_intermediate = count == 4096 && (!keep || strcmp(keep, "0") != 0);
-    int64_t ordinary_edges[logical], boundary_edges[logical];
-    i2_prefill_edge_plan(ints(d->visits, logical * 4), ints(d->aux, physical * 30),
-        use_edges, boundary_enabled, extend, use_full, keep_intermediate,
-        ints(ordinary_edges, logical), ints(boundary_edges, logical));
-    struct i2_prefill_visits work = {d, tokens, scratch, workers, count, begin};
-    int64_t device[4] = {0};
-    inkling_prelude_clear();
-    i2_run_prefill_visits((uintptr_t)&work, ints(d->visits, logical * 4),
-        ints(ordinary_edges, logical), ints(boundary_edges, logical), ints(device, 4), loop_enabled);
-    const bool device_current = device[0] != 0, boundary_history = device[1] != 0;
-    const bool tail_history = device[2] != 0, device_prelude = device[3] != 0;
-    if (boundary_history && need_logits)
-        assert(inkling_arena_boundary_read(tokens[count - 1].blocks + 2 * model_width, 2, true));
-    if (tail_history && need_logits)
-        assert(inkling_arena_boundary_read(tokens[count - 1].blocks + 3 * model_width, 3, true));
-    if (need_logits && (device_current || device_prelude)) {
-        struct prefill_token *last = tokens + count - 1;
-        assert(inkling_prefill_final_rows(device_current ? last->current : NULL,
-                                         device_prelude ? last->blocks + model_width : NULL));
-    }
-    if (device_prelude) fprintf(stderr, "Inkling resident prelude begin=%d\n", begin);
-    if (device_current) fprintf(stderr, "Inkling final activation retained begin=%d logits=%d\n", begin, need_logits);
-    inkling_prelude_clear();
-    inkling_arena_window(false, begin);
-    if (workers) prefill_team_close(workers);
-    for (int t = 0; t < count; ++t) {
-        check_state("residual", begin + t, tokens[t].current, model_width);
-    }
-    if (need_logits) {
-        const bool draft = d->draft.count > 1 && d->draft.count == count;
-        const int from = draft ? 0 : count - 1;
-        for (int t = from; t < count; ++t) {
-            struct prefill_token *row = tokens + t;
-            fg_i2_read_token_logits(d, begin + t, row->current, row->blocks, row->count, draft);
-            if (draft) memcpy(d->draft.scores + (size_t)t * vocabulary, d->logits,
-                              (size_t)vocabulary * sizeof(float));
-        }
-    }
-    prefill_direct_output = NULL;
-    prefill_direct_output_size = 0;
-    free(scratch);
-    free(tokens);
+    if (tasks <= 1) return false;
+    (void)use_cached_history();
+    return prefill_team_open(team, tasks, true);
+}
+
+void fg_i2_prefill_set_readback(float *output, size_t elements) {
+    prefill_direct_output = output;
+    prefill_direct_output_size = elements;
+}
+
+void fg_i2_prefill_check_residual(int position, const float *current) {
+    check_state("residual", position, current, model_width);
 }

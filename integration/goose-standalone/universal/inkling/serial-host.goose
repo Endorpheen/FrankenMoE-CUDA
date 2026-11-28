@@ -623,3 +623,117 @@ export fn i2_prefill_read_boundary(work: u64) {
         i2d_transfer(tokens + row * 285708 + 46080, staging + row * 9216, 9216);
     }
 }
+
+extern "calloc" fn i2_prefill_calloc(count: u64, bytes: u64) -> c_ptr<void>;
+extern fn fg_cuda_inkling_prefill_readback(bytes: u64) -> u64;
+extern fn fg_i2_prefill_team_start(team: u64, count: i32) -> bool;
+extern fn fg_i2_prefill_set_readback(output: u64, elements: u64);
+extern fn fg_i2_prefill_check_residual(position: i32, current: u64);
+extern fn inkling_arena_window(enabled: bool, begin: i32);
+extern fn inkling_prelude_clear();
+extern fn inkling_prefill_final_rows(current: u64, prelude: u64) -> bool;
+extern fn i2_prefill_edge_plan(visits: I2DraftSpan, aux: I2DraftSpan, edges: bool,
+    boundary_enabled: bool, extend: bool, full: bool, keep: bool, ordinary: I2DraftSpan, boundary: I2DraftSpan);
+extern fn i2_run_prefill_visits(work: u64, visits: I2DraftSpan, ordinary: I2DraftSpan,
+    boundary: I2DraftSpan, device: I2DraftSpan, loop_enabled: bool);
+
+fn i2_prefill_env_pointer(name: const u8[:]) -> u64 {
+    return fg_cuda_host_getenv(i2d_address(unsafe_c_slice_data<c_ptr<const void>>(name)));
+}
+
+fn i2_prefill_env_equal(value: u64, text: const u8[:]) -> bool {
+    if value == 0 { return false; }
+    for index in text.len {
+        if i2d_byte(value + (index as! u64)) != text[index] { return false; }
+    }
+    return i2d_byte(value + (text.len as! u64)) == 0;
+}
+
+fn i2_prefill_bind_readback(scratch: u64, count: i32) -> bool {
+    var output = scratch + 343277576;
+    let elements = (count as! u64) * 2304;
+    let config = i2_prefill_env_pointer("I2_DIRECT_PREFILL_READBACK\0");
+    let direct = count >= 512 && fg_i2_serial_graph_enabled() && fg_i2_resident_moe() && !i2_prefill_env_equal(config, "0");
+    if direct && i2_prefill_env_equal(config, "pinned") {
+        let pinned = fg_cuda_inkling_prefill_readback(elements * 4);
+        if pinned != 0 { output = pinned; }
+    }
+    i2d_set(scratch + 343277568, output);
+    if direct { fg_i2_prefill_set_readback(output, elements); }
+    return direct;
+}
+
+fn i2_prefill_finish_rows(decoder: u64, tokens: u64, begin: i32, count: i32, need_logits: bool, device: const i64[:]) {
+    let last = tokens + ((count - 1) as! u64) * 285708;
+    let resident = device[0] != 0;
+    let prelude = device[3] != 0;
+    if device[1] != 0 && need_logits { assert(inkling_arena_boundary_read(last + 46080, 2, true)); }
+    if device[2] != 0 && need_logits { assert(inkling_arena_boundary_read(last + 55296, 3, true)); }
+    if need_logits && (resident || prelude) {
+        assert(inkling_prefill_final_rows(if resident { last } else { 0 }, if prelude { last + 36864 } else { 0 }));
+    }
+    if prelude { i2d_log(str("Inkling resident prelude begin=", begin, "\n")); }
+    if resident {
+        let logits: i32 = if need_logits { 1 } else { 0 };
+        i2d_log(str("Inkling final activation retained begin=", begin, " logits=", logits, "\n"));
+    }
+}
+
+export fn fg_i2_backend_prefill(decoder: u64, ids: u64, begin: i32, count: i32, need_logits: bool) {
+    assert(count > 0 && count <= 4096);
+    let allocation = i2_prefill_calloc(count as! u64, 285708);
+    var tokens: u64 = 0;
+    i2d_copy(unsafe_c_address<c_ptr<void>>(tokens), unsafe_c_address<c_ptr<const void>>(allocation), 8);
+    let scratch = i2d_alloc(646316040);
+    assert(tokens != 0 && scratch != 0);
+    let direct = i2_prefill_bind_readback(scratch, count);
+    assert(fg_i2_embed_prefill(decoder, ids, count, tokens, 285708));
+    var team_storage: u64[37] = [0; 37];
+    let team = i2d_address(unsafe_c_address<c_ptr<const void>>(team_storage[0]));
+    let workers = if !i2d_env_is("I2_PREFILL_TEAM", 48) && fg_i2_prefill_team_start(team, count) { team } else { 0 };
+    let full_batch = count == 4096;
+    inkling_arena_window(full_batch, begin);
+    let loop_enabled = !i2d_env_is("I2_DEVICE_LOOP_MESSAGES", 48);
+    let full = !i2d_env_is("I2_FULL_DEVICE_DEPTHMIX", 48);
+    let boundary_enabled = !i2d_env_is("I2_DEVICE_BLOCK_HISTORY", 48) &&
+        !i2d_env_is("I2_SLIDING_DEVICE_DEPTHMIX", 48) && full;
+    let extend = boundary_enabled && loop_enabled && !i2d_env_is("I2_DEVICE_REWIND_TAIL", 48);
+    let edges = extend && full_batch && direct && fg_i2_resident_moe() && fg_i2_host_cached_history() &&
+        !i2d_env_is("I2_DEVICE_PREFILL_EDGES", 48) && !i2d_env_is("I2_PARALLEL_CUDA_POSTCONV", 48) &&
+        i2_prefill_env_pointer("I2_CHECK_STATE\0") == 0;
+    let keep = full_batch && !i2d_env_is("I2_RETAIN_PREFILL_MOE", 48);
+    var ordinary: i64[48];
+    var boundary: i64[48];
+    let visits = i2d_span(decoder + I2_OPEN_VISITS, 192);
+    let ordinary_span = i2d_span(i2d_address(unsafe_c_address<c_ptr<const void>>(ordinary[0])), 48);
+    let boundary_span = i2d_span(i2d_address(unsafe_c_address<c_ptr<const void>>(boundary[0])), 48);
+    i2_prefill_edge_plan(visits, i2d_span(decoder + I2_OPEN_AUX, 720), edges, boundary_enabled, extend, full,
+        keep, ordinary_span, boundary_span);
+    let work: u64[5] = [decoder, tokens, scratch, workers, (count as! u64) | ((begin as! u32 as! u64) << 32)];
+    var device: i64[4] = [0; 4];
+    inkling_prelude_clear();
+    i2_run_prefill_visits(i2d_address(unsafe_c_address<c_ptr<const void>>(work[0])), visits, ordinary_span, boundary_span,
+        i2d_span(i2d_address(unsafe_c_address<c_ptr<const void>>(device[0])), 4), loop_enabled);
+    i2_prefill_finish_rows(decoder, tokens, begin, count, need_logits, device);
+    inkling_prelude_clear();
+    inkling_arena_window(false, begin);
+    if workers != 0 { fg_i2_close_logits_team(workers); }
+    for index in count as! i64 { fg_i2_prefill_check_residual(begin + (index as! i32), tokens + (index as! u64) * 285708); }
+    if need_logits {
+        let draft_count = i2d_int(decoder + I2D_DRAFT + I2D_COUNT);
+        let draft = draft_count > 1 && draft_count == count;
+        var index = if draft { 0 } else { count - 1 };
+        while index < count {
+            let row = tokens + (index as! u64) * 285708;
+            fg_i2_read_token_logits(decoder, begin + index, row, row + 27648, i2d_int(row + 285696), draft);
+            if draft {
+                let scores = i2d_read(decoder + I2D_DRAFT + I2D_SCORES);
+                i2d_transfer(scores + (index as! u64) * 800232, decoder + I2D_LOGITS, 800232);
+            }
+            index += 1;
+        }
+    }
+    fg_i2_prefill_set_readback(0, 0);
+    i2d_free(unsafe_c_ptr<c_ptr<void>>(scratch));
+    i2d_free(allocation);
+}
