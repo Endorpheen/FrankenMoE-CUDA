@@ -187,9 +187,6 @@ export fn fg_i2_prefill_moe(decoder: u64, core: u64, aux: u64, slot: i32, count:
     }
 }
 
-extern fn fg_i2_serial_native_attention(decoder: u64, core: u64, aux: u64, slot: i32, absolute: i32,
-    sliding: bool, inputs: u64, output: u64, work: u64);
-
 export fn i2_serial_layer(decoder: u64, physical: i32, slot: i32, absolute: i32,
     sliding_mode: i32, current: I2DraftSpan, history: I2DraftSpan, count: i32, message_rows: I2DraftSpan) -> i32 {
     let sliding = sliding_mode != 0;
@@ -1092,4 +1089,31 @@ export fn fg_i2_prefill_partition(work: u64, begin: i64, end: i64) {
     }
     if i2d_byte(work + 56) != 0 { i2_prefill_partition_after(work, begin, end); }
     else { i2_prefill_partition_before(work, begin, end); }
+}
+
+
+fn fg_i2_serial_native_attention(decoder: u64, core: u64, aux: u64, slot: i32, absolute: i32,
+    sliding: bool, inputs: u64, output: u64, work: u64) {
+    let rows: u64[3] = [inputs, inputs + 9216, inputs + 18432];
+    if fg_i2_device_attention_input() {
+        fg_i2_native_resident(decoder, core, aux, slot, absolute, 1, sliding, rows[0], rows[1], rows[2], output);
+        return;
+    }
+    var projections: f32[8664];
+    let data = i2_serial_span(projections).address;
+    let packed = fg_i2_project_attention_inputs(decoder, core, aux, sliding,
+        i2d_address(unsafe_c_address<c_ptr<const void>>(rows[0])), 1, data, work);
+    var storage: u64[6];
+    let args = i2d_address(unsafe_c_address<c_ptr<const void>>(storage[0]));
+    fg_i2_native_workspace(decoder, 1, args);
+    fg_i2_prepare_native_row(decoder, args, aux, slot, absolute, 0, sliding, data, packed);
+    let weight = i2_host_aux(core, 3);
+    if fg_i2_resident_attention_projection() {
+        fg_i2_native_project(decoder, args, aux, slot, absolute, 1, sliding, weight, output);
+    } else {
+        var attention: f32[3072];
+        let intermediate = i2_serial_span(attention).address;
+        fg_i2_native_submit(decoder, args, aux, slot, absolute, 1, sliding, intermediate);
+        fg_i2_host_project(decoder, weight, intermediate, 3072, output, 2304);
+    }
 }

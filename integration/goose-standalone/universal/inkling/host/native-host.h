@@ -2,28 +2,12 @@ struct native_attention_inputs {
     float *q, *k, *v, *relative, *sinks, *gates;
 };
 
-extern void fg_i2_native_workspace(struct decoder *d, int count, struct native_attention_inputs *args);
-extern void fg_i2_native_finish(const struct native_attention_inputs *args, int count, float *output);
-
 _Static_assert(offsetof(struct decoder, flash_floats) == 887104 && offsetof(struct decoder, flash_workspace) == 887112 &&
     offsetof(struct decoder, kh) == 887120 && offsetof(struct decoder, vh) == 887128 &&
     offsetof(struct native_attention_inputs, q) == 0 && offsetof(struct native_attention_inputs, k) == 8 &&
     offsetof(struct native_attention_inputs, v) == 16 && offsetof(struct native_attention_inputs, relative) == 24 &&
     offsetof(struct native_attention_inputs, sinks) == 32 && offsetof(struct native_attention_inputs, gates) == 40,
     "Goose native attention row ABI");
-extern void fg_i2_prepare_native_row(struct decoder *d, const struct native_attention_inputs *args,
-    const int64_t *aux, int slot, int position, int index, bool sliding, float *projected, int packed);
-
-extern void fg_i2_native_submit(struct decoder *d, const struct native_attention_inputs *args,
-    const int64_t *aux, int slot, int begin, int count, bool sliding, float *out);
-extern void fg_i2_native_project(struct decoder *d, const struct native_attention_inputs *args,
-    const int64_t *aux, int slot, int begin, int count, bool sliding, int64_t weight_id, float *out);
-
-extern void fg_i2_host_bind_attention(struct decoder *d, const int64_t *core, const int64_t *aux,
-    int slot, int begin, int count, bool sliding, struct inkling_attention_graph_call *call);
-extern void fg_i2_native_resident(struct decoder *d, const int64_t *core, const int64_t *aux,
-    int slot, int begin, int count, bool sliding, const float *q, const float *k, const float *v, float *out);
-#define native_attention_resident fg_i2_native_resident
 
 _Static_assert(sizeof(struct inkling_attention_batch) == 80 &&
     offsetof(struct inkling_attention_batch, sliding) == 16 && offsetof(struct inkling_attention_batch, format) == 20 &&

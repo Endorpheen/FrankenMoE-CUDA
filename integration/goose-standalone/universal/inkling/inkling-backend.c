@@ -374,9 +374,6 @@ int64_t fg_i2_measured_postconv(sl_f32 input, sl_f32 weight, sl_f32 history, sl_
 
 _Static_assert(offsetof(struct decoder, hf) == 887144, "Goose serial MoE history ABI");
 
-extern int fg_i2_project_attention_inputs(struct decoder *d, const int64_t *core, const int64_t *aux,
-    bool sliding, float **rows, int count, float *projected, int64_t *work);
-
 int64_t fg_i2_measured_attention_projections(int64_t ctx, sl_i64 input, sl_i64 weights, bool sliding,
     sl_i64 work, sl_i64 output) {
     return i2_attention_projections(ctx, input, weights, sliding, work, output);
@@ -386,27 +383,6 @@ void fg_i2_evaluate_attention_inputs(struct ggml_context *ctx, int64_t *output, 
     struct ggml_tensor *roots[8];
     for (int index = 0; index < matrices; ++index) roots[index] = (struct ggml_tensor *)(intptr_t)output[index];
     evaluate(ctx, roots, matrices, projected, count);
-}
-
-void fg_i2_serial_native_attention(struct decoder *d, const int64_t *core, const int64_t *aux,
-    int slot, int absolute, bool sliding, float (*inputs)[model_width], float *proj, int64_t *work) {
-    if (fg_i2_device_attention_input()) {
-        native_attention_resident(d, core, aux, slot, absolute, 1, sliding, inputs[0], inputs[1], inputs[2], proj);
-    } else {
-        float *rows[] = {inputs[0], inputs[1], inputs[2]};
-        float projected[8664], attn[attn_width];
-        int packed = fg_i2_project_attention_inputs(d, core, aux, sliding, rows, 1, projected, work);
-
-        struct native_attention_inputs args;
-        fg_i2_native_workspace(d, 1, &args);
-        fg_i2_prepare_native_row(d, &args, aux, slot, absolute, 0, sliding, projected, packed);
-        if (fg_i2_resident_attention_projection()) {
-            fg_i2_native_project(d, &args, aux, slot, absolute, 1, sliding, core[3], proj);
-        } else {
-            fg_i2_native_submit(d, &args, aux, slot, absolute, 1, sliding, attn);
-            project(d, core[3], attn, attn_width, proj, model_width);
-        }
-    }
 }
 
 extern void fg_i2_read_token_logits(struct decoder *d, int absolute, float *current, float *history, int count, bool decode);
