@@ -561,6 +561,31 @@ _Static_assert(offsetof(model, module) == 4680 && offsetof(model, frozen) == 468
     offsetof(struct bonsai_cuda_api, fn_cuFuncSetAttribute) == 128 &&
     KERNEL_COUNT == 100 && CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES == 8, "Bonsai image loader ABI");
 
+_Static_assert(
+    offsetof(model, async_fragments) == 14680 && offsetof(model, async_mmq) == 14684 &&
+    offsetof(model, compact_heads) == 14676 && offsetof(model, decay_reuse) == 14696 &&
+    offsetof(model, decay_small) == 4780 && offsetof(model, decode_half2) == 4752 &&
+    offsetof(model, decode_kernel) == 4696 && offsetof(model, decode_mma) == 4744 &&
+    offsetof(model, decode_ordered_merge) == 4748 && offsetof(model, device_commit) == 76 &&
+    offsetof(model, down_q8) == 4756 && offsetof(model, draft_q8_head) == 84 &&
+    offsetof(model, ffn_q8) == 4724 && offsetof(model, ffn_tail) == 14700 &&
+    offsetof(model, flash_grouped) == 14760 && offsetof(model, flash_panel) == 4784 &&
+    offsetof(model, gdn_prefill_v32) == 14688 && offsetof(model, grouped_decode) == 14752 &&
+    offsetof(model, k64_mmq) == 14704 && offsetof(model, matvec_rows2) == 14756 &&
+    offsetof(model, mmq_cached) == 4788 && offsetof(model, mmq_half2_down) == 4812 &&
+    offsetof(model, mmq_half_acc) == 4796 && offsetof(model, mmq_half_full) == 4800 &&
+    offsetof(model, mmq_half_full6144) == 4804 && offsetof(model, mtp_enabled) == 16 &&
+    offsetof(model, norm_wide) == 4720 && offsetof(model, ordered_merge) == 14672 &&
+    offsetof(model, q8_full) == 4728 && offsetof(model, q8_mode) == 4712 &&
+    offsetof(model, q8_pairload) == 4732 && offsetof(model, q8_panel) == 4736 &&
+    offsetof(model, q8_spread) == 4740 && offsetof(model, stage_kv) == 14668 &&
+    offsetof(model, use_flash_f32) == 14664 && offsetof(model, verify_attention) == 64 &&
+    offsetof(model, verify_attn_tail) == 72 && offsetof(model, verify_merge) == 68 &&
+    offsetof(model, verify_native) == 56 && offsetof(model, verify_q8) == 60 &&
+    offsetof(model, verify_rows) == 52 && offsetof(model, wide_mmq) == 14692,
+    "Bonsai profile ABI");
+extern int32_t fg_bonsai_profile(model *m, const char *mtp_image);
+
 model *fg_bonsai_model_open(const char *gguf, const char *cubin, const char *frozen, unsigned context, unsigned ubatch) {
     if (context < CONTEXT_MIN || context > POSITIONS_MAX) return NULL;
     if (!bonsai_cuda_ready()) return NULL;
@@ -568,122 +593,7 @@ model *fg_bonsai_model_open(const char *gguf, const char *cubin, const char *fro
     if (!m) return NULL;
     m->context = context; m->ubatch = ubatch;
     const char *mtp_image = getenv("BONSAI_HTTP_MTP_IMAGE");
-    if (!mtp_image || *mtp_image) {
-        m->mtp_enabled = m->verify_native = m->verify_q8 = m->device_commit = 1;
-        m->verify_attention = m->verify_merge = m->verify_attn_tail = m->draft_q8_head = 1;
-        m->verify_rows = 4;
-    }
-    const char *flag = getenv("BONSAI_FLASH_F32");
-    m->use_flash_f32 = flag && strcmp(flag, "1") == 0;
-    const char *stage = getenv("BONSAI_FLASH_REUSE");
-    m->stage_kv = m->use_flash_f32 && stage && strcmp(stage, "1") == 0;
-    const char *merge = getenv("BONSAI_FLASH_ORDERED_MERGE");
-    m->ordered_merge = m->stage_kv && merge && strcmp(merge, "1") == 0;
-    const char *compact = getenv("BONSAI_FLASH_COMPACT");
-    m->compact_heads = m->stage_kv && compact && strcmp(compact, "1") == 0;
-    const char *frags = getenv("BONSAI_FLASH_ASYNC");
-    m->async_fragments = m->compact_heads && frags && strcmp(frags, "1") == 0;
-    if (m->async_fragments) fputs("Flash fragments: async staging and ldmatrix\n", stderr);
-    const char *panel = getenv("BONSAI_FLASH_KV_PANEL");
-    m->flash_panel = !panel || strcmp(panel, "1") == 0;
-    const char *reuse = getenv("BONSAI_FLASH_TILE_REUSE");
-    m->flash_grouped = !reuse || strcmp(reuse, "1") == 0;
-    if (m->async_fragments && m->flash_grouped) fputs("Flash: reuse Q across KV tiles\n", stderr);
-    const char *mmq = getenv("BONSAI_PQ2_MMQ_ASYNC");
-    m->async_mmq = !mmq || strcmp(mmq,"1") == 0;
-    if (m->async_mmq) fputs("PQ2 MMQ: async activation and warp fragment loads\n",stderr);
-    const char *gdn_mode = getenv("BONSAI_GDN_V32");
-    m->gdn_prefill_v32 = !gdn_mode || strcmp(gdn_mode,"1") == 0;
-    if (m->gdn_prefill_v32) fputs("Prefill GDN: frozen Goose MMA V32\n",stderr);
-    const char *wide = getenv("BONSAI_PQ2_MMQ_WIDE");
-    m->wide_mmq = !wide || strcmp(wide,"1") == 0;
-    if (m->wide_mmq) fputs("PQ2 MMQ: wide tiles for 128 or more tokens\n",stderr);
-    const char *kchunk=getenv("BONSAI_PQ2_MMQ_K64");
-    m->k64_mmq=!kchunk || strcmp(kchunk,"1")==0;
-    if (m->k64_mmq) fputs("PQ2 MMQ: K64 exact wide tiles\n",stderr);
-    const char *half2_down = getenv("BONSAI_MMQ_HALF2_DOWN");
-    m->mmq_half2_down = !half2_down || strcmp(half2_down,"0") != 0;
-    const char *full6144 = getenv("BONSAI_MMQ_HALF_FULL6144");
-    m->mmq_half_full6144 = !full6144 || strcmp(full6144,"0") != 0;
-    const char *full = getenv("BONSAI_MMQ_HALF_FULL");
-    m->mmq_half_full = !full || strcmp(full,"0") != 0;
-    const char *half_acc = getenv("BONSAI_MMQ_HALF_ACC");
-    m->mmq_half_acc = half_acc && strcmp(half_acc,"1") == 0;
-    const char *cached = getenv("BONSAI_MMQ_CACHED_PQ2");
-    m->mmq_cached = !cached || strcmp(cached, "1") == 0;
-    if (m->k64_mmq && m->mmq_cached) fputs("PQ2 MMQ: reuse packed weight scales\n", stderr);
-    const char *small=getenv("BONSAI_DECAY_SMALL");
-    m->decay_small=!small || strcmp(small,"1")==0;
-    if (m->decay_small) fputs("Bonsai decay: staged single-token products\n",stderr);
-    const char *decay=getenv("BONSAI_DECAY_REUSE");
-    m->decay_reuse=!decay || strcmp(decay,"1")==0;
-    if (m->decay_reuse) fputs("Batch decay: reuse alpha/beta weights\n",stderr);
-    const char *tail=getenv("BONSAI_FFN_TAIL");
-    m->ffn_tail=!tail || strcmp(tail,"1")==0;
-    if (m->ffn_tail) fputs("FFN tail: fused SwiGLU, FWHT and FP16 packing\n",stderr);
-    if (m->compact_heads) fputs("Flash query layout: compact 6:1\n", stderr);
-    if (m->ordered_merge) fputs("Flash merge: ordered parallel coefficients\n", stderr);
-    fprintf(stderr, "Prefill attention: %s\n", !m->use_flash_f32 ? "tiled Q4" :
-        m->stage_kv ? "staged Bonsai FP32 Flash" : "direct Bonsai FP32 Flash");
-    const char *decode_merge = getenv("BONSAI_DECODE_ORDERED_MERGE");
-    m->decode_ordered_merge = decode_merge && !strcmp(decode_merge, "1");
-    const char *decode_half2 = getenv("BONSAI_DECODE_DIRECT_HALF2");
-    m->decode_half2 = decode_half2 && !strcmp(decode_half2, "1");
-    const char *mma = getenv("BONSAI_DECODE_DIRECT_MMA");
-    m->decode_mma = !mma ? 0 : !strcmp(mma, "1") ? 1 : !strcmp(mma, "diagnostic") ? 2 : 0;
-    if (m->decode_mma) fputs("Bonsai single-query attention: direct Q4 MMA\n", stderr);
-    const char *grouped = getenv("BONSAI_DECODE_GQA");
-    m->grouped_decode = !grouped || strcmp(grouped, "1") == 0;
-    if (m->grouped_decode) fputs("Decode attention: grouped Q4 K/V\n", stderr);
-    const char *q8 = getenv("BONSAI_DECODE_Q8");
-    m->q8_mode = 1;
-    if (q8) {
-        if (strcmp(q8, "off") == 0) m->q8_mode = 0;
-        else if (strcmp(q8, "full") == 0) m->q8_mode = 1;
-        else if (strcmp(q8, "ffn") == 0) m->q8_mode = 2;
-        else if (strcmp(q8, "vocab") == 0) m->q8_mode = 3;
-        else goto error;
-    }
-    if (m->q8_mode) fprintf(stderr, "Bonsai Q8 decode: %s\n", q8 ? q8 : "full");
-    const char *norm = getenv("BONSAI_WIDE_NORM");
-    m->norm_wide = !norm || strcmp(norm, "1") == 0;
-    if (m->norm_wide) fputs("Bonsai RMSNorm: parallel width 5120\n", stderr);
-    const char *full_q8 = getenv("BONSAI_FFN_Q8_FULL128");
-    m->q8_full = !full_q8 || strcmp(full_q8,"0") != 0;
-    const char *spread = getenv("BONSAI_FFN_Q8_SPREAD");
-    m->q8_spread = spread && strcmp(spread, "1") == 0;
-    const char *down_q8 = getenv("BONSAI_FFN_DOWN_Q8_FUSED");
-    m->down_q8 = down_q8 && !strcmp(down_q8, "1");
-    if (m->down_q8) fputs("Bonsai prefill: fused Q8 FFN down\n", stderr);
-    const char *q8_panel = getenv("BONSAI_FFN_Q8_PANEL");
-    m->q8_panel = q8_panel && strcmp(q8_panel, "1") == 0;
-    if (m->q8_panel) fputs("Bonsai prefill: panel-major Q8 activations\n", stderr);
-    const char *pairload = getenv("BONSAI_FFN_Q8_PAIRLOAD");
-    m->q8_pairload = pairload && strcmp(pairload, "1") == 0;
-    if (m->q8_pairload) fputs("Bonsai prefill: paired Q8 weight loads\n", stderr);
-    const char *ffn_q8 = getenv("BONSAI_FFN_Q8_PREFILL");
-    m->ffn_q8 = 16;
-    if (ffn_q8) {
-        if (strcmp(ffn_q8, "0") == 0) m->ffn_q8 = 0;
-        else if (strcmp(ffn_q8, "1") == 0) m->ffn_q8 = 1;
-        else if (strcmp(ffn_q8, "last16") == 0) m->ffn_q8 = 16;
-        else if (strcmp(ffn_q8, "last32") == 0) m->ffn_q8 = 32;
-        else goto error;
-    }
-    if (m->ffn_q8) fputs("Bonsai prefill: Q8 FFN gate/up\n", stderr);
-    const char *mode = getenv("BONSAI_MATVEC");
-    m->matvec_rows2 = !mode || strcmp(mode, "rows2") == 0;
-    if (m->matvec_rows2 || strcmp(mode, "ordered") == 0) {
-        m->decode_kernel = "bonsai_pq2_matvec_ordered";
-    } else if (strcmp(mode, "exchange") == 0) {
-        m->decode_kernel = "bonsai_pq2_matvec_exchange";
-    } else if (strcmp(mode, "scalar") == 0) {
-        m->decode_kernel = "bonsai_pq2_matvec";
-    } else {
-        fprintf(stderr, "Invalid BONSAI_MATVEC mode\n");
-        goto error;
-    }
-    fprintf(stderr, "Decode matrix: %s\n", m->matvec_rows2 ? "bonsai_pq2_matvec_rows2" : m->decode_kernel);
+    if (fg_bonsai_profile(m, mtp_image) != 0) goto error;
     if (fg_bonsai_load_images(m, cubin, frozen, mtp_image, gooseinfer_bonsai_pipeline_image,
         gooseinfer_bonsai_frozen_image, gooseinfer_bonsai_mtp_image) != 0) goto error;
 #ifdef _WIN32
