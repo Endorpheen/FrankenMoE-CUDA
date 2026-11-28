@@ -12,7 +12,7 @@ typedef struct {
     int64_t state[8], metadata[8 * 256], tensors[12 * 1024], meta_slots[512], tensor_slots[2048];
 } fg_gguf;
 
-_Static_assert(sizeof(sl_u8) == 16 && sizeof(sl_i64) == 16 &&
+_Static_assert(sizeof(fg_gguf) == 135248 && sizeof(sl_u8) == 16 && sizeof(sl_i64) == 16 &&
     offsetof(fg_gguf, state) == 16 && offsetof(fg_gguf, metadata) == 80 &&
     offsetof(fg_gguf, tensors) == 16464 && offsetof(fg_gguf, meta_slots) == 114768 &&
     offsetof(fg_gguf, tensor_slots) == 118864 &&
