@@ -48,6 +48,7 @@ optimization and release sequence.
 | Reuse the CPU row team for short exact verifier batches | Inkling, 8–16 exact verification rows with independent host activation prep | At 32K/512, decode +6.61%, prefill −0.08%, all 512 IDs exact and peak process VRAM held at 9822 MiB. | [EXP-2430](../../experiments/EXP-2026-11-28-2430-inkling-verifier-cpu-team/README.md) |
 | Use paired Q4 loads and explicit V accumulators in grouped sliding attention | Inkling grouped Q4 sliding prefill | 1024-query attention and merge time −5.97%. At 32K/512, prefill +0.69%, all 512 IDs exact and peak process VRAM held at 9822 MiB. | [EXP-2431](../../experiments/EXP-2026-11-28-2431-inkling-sliding-prefill-packed/README.md) |
 | Use FP16 leading terms and scaled residuals for tiled Tensor Core projections | Inkling expanded Q8_0 prefill shapes, 4096 input rows | Pack and projection time −30–41%. At 32K/512, prefill +9.51%, observed decode +2.08%, all 512 IDs exact and peak process VRAM held at 9822 MiB. Intermediate outputs and expert traffic differ. | [EXP-2437](../../experiments/EXP-2026-11-28-2437-inkling-q8-split-half-mma/README.md) |
+| Compute resident expert jobs while the transfer stream loads misses | Inkling exact 16-token verifier with staged expert transfers | At 32K/512, decode +5.56%, observed prefill +0.46%, identical expert transfer bytes and 512 IDs, peak process VRAM 9822 MiB. | [EXP-2438](../../experiments/EXP-2026-11-28-2438-inkling-verifier-expert-overlap/README.md) |
 
 Keep the FMA and warp reduction sequence independent for each output row.
 Reuse this mapping for projections with the same shared input layout
@@ -86,6 +87,12 @@ the component error, scaling and the full request under its own
 correctness policy. Explicit accumulators avoided a 128-byte local
 stack in EXP-2437. The four-byte packing budget is the same as the
 previous FP32 buffer. The original quantized weight storage is retained.
+
+For expert compute during DMA, classify by the weight address range
+that each job will read. Keep the previous-reader fence before each
+DMA wave and wait for completion before issuing consumers of those
+weights. Compare the request and transfer volume. Smaller split
+launches can lose enough kernel efficiency to offset the overlap.
 
 ## KeelWing ownership scopes in the Apex sampler
 

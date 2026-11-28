@@ -4029,7 +4029,7 @@ export fn fg_cuda_gigachat4_small_expert_wave(enabled: u8) {
 
 export fn fg_cuda_expert_stage_enabled(active_experts: i64, stage_all: u8) -> u8 {
     var thread_storage = cuda_thread_state();
-    let planes: u64 = if stage_all != 0 { 3 } else { 2 };
+    let planes: u64 = if stage_all != 0 || thread_storage[0].inkling_decode_overlap { 3 } else { 2 };
     if cuda_local_fg_cuda_expert_stage_enabled_small_enabled_3445 < 0 && thread_storage[0].cuda_inkling_quants && active_experts <= 8 {
         cuda_local_fg_cuda_expert_stage_enabled_small_enabled_3445 = if cuda_option("I2_STAGE_SMALL_EXPERTS") { 1 } else { 0 };
     }
@@ -6187,7 +6187,8 @@ export fn fg_cuda_inkling_expert_phase(prefill: bool, position: i32, count: i32)
     thread_storage[0].i2_expert_trace.active = (cuda_local_fg_cuda_inkling_expert_phase_trace_enabled_5378 != 0) && !prefill && count == 1;
     thread_storage[0].i2_expert_trace.position = position;
     thread_storage[0].i2_expert_trace.visit = 0;
-    thread_storage[0].inkling_decode_overlap = !prefill && count == 1 &&
+    let verify_overlap = count == 16 && cuda_option("I2_VERIFY_EXPERT_HIT_OVERLAP");
+    thread_storage[0].inkling_decode_overlap = !prefill && (count == 1 || verify_overlap) &&
         cuda_option("I2_DECODE_EXPERT_HIT_OVERLAP");
     if thread_storage[0].inkling_overlap_groups != 0 && (cuda_env("I2_DECODE_EXPERT_HIT_OVERLAP_LOG") != 0) {
         fg_cuda_host_diagnostic_71((thread_storage[0].inkling_overlap_groups as! u64), (thread_storage[0].inkling_overlap_resident as! u64), (thread_storage[0].inkling_overlap_missing as! u64));
@@ -6227,7 +6228,7 @@ export fn fg_cuda_inkling_expert_phase(prefill: bool, position: i32, count: i32)
 }
 
 // Driver dependency: expert-decode-overlap
-const EXPERT_OVERLAP_ROUTES: i64 = 8;
+const EXPERT_OVERLAP_ROUTES: i64 = 16 * 8;
 const EXPERT_OVERLAP_JOB_WORDS: i64 = 3;
 
 fn launch_expert_overlap(bank: u64, weight_bytes: i64, row_stride: i64, extent: i64, kind: i64, rows: i64, jobs: i64[:], shared_rows: i64, input_stride: i64) -> i32 {
@@ -6260,14 +6261,17 @@ fn launch_expert_overlap(bank: u64, weight_bytes: i64, row_stride: i64, extent: 
                         n += 1;
                     }
                 };
+                let weight = jobs[at + 2];
+                var stop = at + words;
+                while stop < jobs.len && jobs[stop + 2] == weight { stop += words; }
                 if pending_source {
-                    for word in words { awaiting[miss_words + word] = jobs[at + word]; }
-                    miss_words += words;
+                    for word in stop - at { awaiting[miss_words + word] = jobs[at + word]; }
+                    miss_words += stop - at;
                 } else {
-                    for word in words { resident[hit_words + word] = jobs[at + word]; }
-                    hit_words += words;
+                    for word in stop - at { resident[hit_words + word] = jobs[at + word]; }
+                    hit_words += stop - at;
                 }
-                at += words;
+                at = stop;
             }
         };
     }
