@@ -26,7 +26,9 @@ case "$target" in
 esac
 mkdir -p -- "$out"
 
-"$entry_cc" -O2 -c "$standalone/universal/main.c" -o "$out/entry.o"
+"${GOOSE_CUDA_DRIVER_BIN:?Set GOOSE_CUDA_DRIVER_BIN to Fried Goose KeelWing v0.3.1-dev.1}" \
+    -o "$out/entry.c" "$standalone/universal/main.goose"
+"$entry_cc" -O2 -std=c11 -ffunction-sections -fdata-sections -Dgg_init_globals=gooseinfer_entry_globals -c "$out/entry.c" -o "$out/entry.o"
 CC="$giga_cc" OBJCOPY="${prefix}objcopy" NM="${prefix}nm" AR="${prefix}ar" \
     bash "$standalone/gigachat4/build-graph.sh" "$out/gigachat4"
 CC="$entry_cc" WINDOWS_CC="$entry_cc" GOOSE_CC="$vulkan_goose_cc" bash "$tools/build-goose-vulkan.sh" "$out/vulkan" "$target" embedded
