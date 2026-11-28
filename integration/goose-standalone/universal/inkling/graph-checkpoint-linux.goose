@@ -15,12 +15,10 @@ extern fn ggml_nbytes(tensor: u64) -> u64;
 extern fn ggml_row_size(kind: i32, elements: i64) -> u64;
 extern fn ggml_is_contiguous(tensor: u64) -> bool;
 extern fn ggml_type_name(kind: i32) -> u64;
-extern fn fg_cuda_host_getenv(address: u64) -> u64;
 extern fn graph_ckpt_unix_open(path: u64, flags: i32) -> i32;
 extern fn graph_ckpt_unix_openat(directory: i32, name: u64, flags: i32, mode: u32) -> i32;
 extern fn graph_ckpt_fdopen(fd: i32, mode: u64) -> u64;
 extern fn graph_ckpt_close(fd: i32) -> i32;
-extern fn graph_ckpt_fclose(file: u64) -> i32;
 extern fn graph_ckpt_fwrite(data: u64, size: u64, count: u64, file: u64) -> u64;
 
 fn ckpt_word(address: u64, value: u64) {
@@ -36,26 +34,6 @@ fn ckpt_cstring(value: const u8[:], bytes: u8[:]) -> u64 {
 fn ckpt_path() -> u64 {
     var name: u8[24];
     return fg_cuda_host_getenv(ckpt_cstring("GOOSE_APEX_TRACE_DIR",name));
-}
-
-fn ckpt_byte(address: u64) -> u8 {
-    var value: u8=0;
-    graph_host_copy(unsafe_c_address<c_ptr<void>>(value),unsafe_c_ptr<c_ptr<const void>>(address),1);
-    return value;
-}
-
-fn ckpt_dtype(kind: i32) -> u8[>..] {
-    let address=ggml_type_name(kind);
-    var text: u8[>..]=[];
-    if address==0 { return text; }
-    var at: u64=0;
-    loop {
-        let value=ckpt_byte(address+at);
-        if value==0 { break; }
-        text.push(value);
-        at+=1;
-    }
-    return text;
 }
 
 fn ckpt_row_count(tensor: u64) -> i64 { return graph_host_word(tensor+24) as! i64; }
@@ -96,7 +74,7 @@ fn ckpt_write(trace: u64,tensor: u64,role: const u8[:],layer: i64,row: i64,rows:
             if graph_ckpt_fwrite(source+(i as! u64)*stride,1,width,file)!=width { return false; }
         }
     }
-    let line=str("{\"role\":\"",role,"\",\"layer\":",layer,",\"dtype\":\"",ckpt_dtype(kind),
+    let line=str("{\"role\":\"",role,"\",\"layer\":",layer,",\"dtype\":\"",graph_host_text(ggml_type_name(kind)),
         "\",\"shape\":[",graph_host_word(tensor+16) as! i64,",",total_rows,",",
         graph_host_word(tensor+32) as! i64,",",graph_host_word(tensor+40) as! i64,
         "],\"row\":",row,",\"rows\":",rows,",\"offset\":",offset,",\"bytes\":",bytes,"}\n");
@@ -130,7 +108,7 @@ export fn fg143_graph_observe(address: u64) -> bool {
 
 export fn fg_q35_checkpoint_enabled() -> bool {
     let path=ckpt_path();
-    return path!=0 && ckpt_byte(path)!=0;
+    return path!=0 && graph_host_byte(path)!=0;
 }
 
 fn ckpt_file(directory: i32,prefix: i64,suffix: const u8[:]) -> u64 {
@@ -164,7 +142,7 @@ fn ckpt_persistent(trace: u64,layers: const i64[:],count: i64,tokens: i64) -> bo
 export fn fg_q35_checkpoint_compute(plan: u64,frames: const i64[:],layers: const i64[:],prefix: i64,tokens: i64) -> i32 {
     let path=ckpt_path();
     let count=layers.len/32;
-    if path==0 || ckpt_byte(path)==0 || plan==0 || fg_graph_native_trace_get()!=0 || prefix<0 || tokens<=0 ||
+    if path==0 || graph_host_byte(path)==0 || plan==0 || fg_graph_native_trace_get()!=0 || prefix<0 || tokens<=0 ||
         prefix>CKPT_I64_MAX-tokens || count<1 || count>128 || layers.len%32!=0 || frames.len!=4*count+4 { return -1; }
     let directory=graph_ckpt_unix_open(path,589824);
     if directory<0 { return -1; }
@@ -172,7 +150,7 @@ export fn fg_q35_checkpoint_compute(plan: u64,frames: const i64[:],layers: const
     let manifest: u64=if data!=0 { ckpt_file(directory,prefix,"jsonl") } else { 0 };
     graph_ckpt_close(directory);
     if data==0 || manifest==0 {
-        if data!=0 { graph_ckpt_fclose(data); }
+        if data!=0 { graph_storage_fclose(data); }
         graph_host_log(str("Goose: cannot create numerical checkpoint for prefix ",prefix,"\n"));
         return -1;
     }
@@ -183,9 +161,9 @@ export fn fg_q35_checkpoint_compute(plan: u64,frames: const i64[:],layers: const
     fg_graph_native_trace_set(address);
     var valid=fg_standalone_graph_plan_compute(plan)==0 && ckpt_persistent(address,layers,count,prefix+tokens);
     fg_graph_native_trace_set(0);
-    if graph_ckpt_fclose(data)!=0 { valid=false; }
+    if graph_storage_fclose(data)!=0 { valid=false; }
     if valid && !ckpt_text(manifest,str("{\"complete\":true,\"prefix\":",prefix,",\"tokens\":",tokens,"}\n")) { valid=false; }
-    if graph_ckpt_fclose(manifest)!=0 { valid=false; }
+    if graph_storage_fclose(manifest)!=0 { valid=false; }
     if !valid { graph_host_log(str("Goose: numerical checkpoint failed for prefix ",prefix,"\n")); }
     return if valid { 0 } else { -1 };
 }

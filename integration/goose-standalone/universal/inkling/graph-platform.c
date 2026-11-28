@@ -9,8 +9,6 @@
 #include "goose-host.h"
 
 #include <pthread.h>
-#include <fcntl.h>
-#include <inttypes.h>
 #ifdef _WIN32
 #include "windows/platform.h"
 #else
@@ -19,10 +17,6 @@
 #include <stdatomic.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
 
 extern void fg143_cpu_init(int argc, char ** argv);
 static pthread_once_t cpu_init = PTHREAD_ONCE_INIT;
@@ -63,12 +57,6 @@ bool fg_graph_native_checkpoint(void) { return checkpoint_address != 0; }
 uint64_t fg_graph_native_trace_get(void) { return checkpoint_address; }
 void fg_graph_native_trace_set(uint64_t address) { checkpoint_address = address; }
 
-void fg143_gather_witness(int64_t rows, int64_t tasks) {
-    if (getenv("GOOSE_GRAPH_LOG")) {
-        fprintf(stderr, "Goose CPU GET_ROWS: %" PRId64 " rows over %" PRId64 " threads\n", rows, tasks);
-    }
-}
-
 void fg143_witness(int64_t op, int64_t values) {
     (void) op;
     atomic_fetch_add_explicit(&cpu_values, (uint64_t) values, memory_order_relaxed);
@@ -77,44 +65,6 @@ void fg143_witness(int64_t op, int64_t values) {
 void fg141_witness(int64_t stage, int64_t kind, int64_t values) {
     (void) stage;
     fg143_witness(kind, values);
-}
-
-uint64_t fg143_storage_alloc(uint64_t bytes) {
-    if (bytes > SIZE_MAX) return 0;
-#ifdef _WIN32
-    _Static_assert(GGML_MEM_ALIGN <= 16, "Win64 CRT heap alignment");
-    return (uint64_t)(uintptr_t)malloc((size_t)bytes);
-#else
-    return (uint64_t) (uintptr_t) aligned_alloc(GGML_MEM_ALIGN, (size_t) bytes);
-#endif
-}
-
-uint64_t fg143_storage_ram_available(void) {
-#ifdef _WIN32
-    return fg_win_memory(true);
-#else
-    FILE * file = fopen("/proc/meminfo", "r");
-    if (!file) return 0;
-    uint64_t kib = 0;
-    char line[128];
-    while (fgets(line, sizeof(line), file)) {
-        if (sscanf(line, "MemAvailable: %" SCNu64 " kB", &kib) == 1) break;
-    }
-    fclose(file);
-    return kib <= UINT64_MAX / 1024 ? kib * 1024 : 0;
-#endif
-}
-
-void fg143_storage_ram_error(uint64_t required, uint64_t available) {
-    fprintf(stderr, "Goose graph allocation refused: need %" PRIu64 " bytes, RAM available %" PRIu64 " bytes\n",
-        required, available);
-}
-
-void fg143_storage_report(uint64_t bytes, int64_t blocks, int64_t reused) {
-    if (getenv("GOOSE_ARENA_LOG")) {
-        fprintf(stderr, "Goose tensor arena: %" PRIu64 " bytes, %" PRId64 " blocks, %" PRId64 " reuses\n",
-            bytes, blocks, reused);
-    }
 }
 
 struct q35_decode_attention {
@@ -136,10 +86,6 @@ struct fg_standalone_graph_plan {
     struct q35_decode_bindings *decode;
     int64_t deadlines[];
 };
-
-void fg143_graph_plan_log_replays(uint64_t replays) {
-    fprintf(stderr, "Goose decode plan reuses: %zu\n", (size_t)replays);
-}
 
 _Static_assert(offsetof(struct fg_standalone_graph_plan, graph) == 0 &&
     offsetof(struct fg_standalone_graph_plan, output) == 8 &&
@@ -164,35 +110,14 @@ _Static_assert(sizeof(struct inkling_attention_graph_call) == 232 &&
         INKLING_MOE_EPILOGUE == 0x49324d45 && INKLING_MOE_SITU == 0x49325354 &&
         GGML_UNARY_OP_TANH == 4, "Goose Inkling graph ABI");
 
-void fg143_graph_log_failure(int64_t index, int32_t op) {
-    fprintf(stderr, "Goose graph: node %lld (%s) failed\n",
-            (long long) index, ggml_op_name(op));
-}
-
-uint8_t fg143_graph_log_enabled(void) { return getenv("GOOSE_GRAPH_LOG") != NULL; }
-
 uint64_t fg143_graph_take_cpu_values(void) {
     return atomic_exchange_explicit(&cpu_values, 0, memory_order_relaxed);
-}
-
-void fg143_graph_log_count(sl_u8 label, uint64_t count, sl_u8 unit) {
-    fprintf(stderr, "%.*s: %" PRIu64 "%.*s\n", (int)label.len, label.data, count, (int)unit.len, unit.data);
-}
-
-void fg143_graph_log_pair(sl_u8 label, uint64_t count, sl_u8 unit, uint64_t next, sl_u8 next_unit) {
-    fprintf(stderr, "%.*s: %" PRIu64 "%.*s, %" PRIu64 "%.*s\n",
-        (int)label.len, label.data, count, (int)unit.len, unit.data,
-        next, (int)next_unit.len, next_unit.data);
 }
 
 _Static_assert(GGML_MAX_SRC == 10 && offsetof(struct ggml_tensor, src) == 152 &&
         GGML_TENSOR_FLAG_PARAM == 4 && GGML_TENSOR_FLAG_COMPUTE == 16 &&
         offsetof(struct ggml_cgraph, order) == 80 &&
         offsetof(struct ggml_tensor, ne) == 16 && offsetof(struct ggml_tensor, nb) == 48 &&
-        offsetof(struct ggml_tensor, data) == 248 &&
+        offsetof(struct ggml_tensor, data) == 248 && offsetof(struct ggml_tensor, name) == 256 &&
+        GGML_MAX_NAME >= 17 && GGML_MEM_ALIGN == 16 &&
         GGML_CGRAPH_EVAL_ORDER_RIGHT_TO_LEFT == 1, "Goose graph visitation ABI");
-
-void fg143_graph_name_unnamed(uint64_t address, bool leaf, int index) {
-    struct ggml_tensor *node = (void *)(uintptr_t)address;
-    if (!node->name[0]) ggml_format_name(node, leaf ? "leaf_%d" : "node_%d", index);
-}

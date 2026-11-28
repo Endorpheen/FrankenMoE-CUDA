@@ -15,18 +15,17 @@ case "$target" in
 esac
 mkdir -p -- "$out"
 
-for module in graph-execute inkling-backend; do
-    object=$module
-    if [[ "$module" == graph-execute ]]; then object=graph-native; fi
+for module in graph-platform inkling-backend; do
     "$cc" -O2 -std=gnu11 -D_GNU_SOURCE -DI2_NUMERIC_MODULE -DGOOSEINFER_TYPE_METADATA_ONLY -Werror=implicit-function-declaration \
         -ffunction-sections -fdata-sections "-fmacro-prefix-map=$root=." \
         -I"$source_dir/host" -I"$model_headers" -I"$cpu_headers" \
         -I"$root/vendor/flint/ggml/include" -I"$root/vendor/flint/ggml/src" \
         -I"$standalone" -I"$root/integration/m1/host" \
-        -c "$source_dir/$module.c" -o "$out/$object.o"
+        -c "$source_dir/$module.c" -o "$out/$module.o"
 done
 printf 'const CPU_AFFINITY_WORDS: i64 = %s;\n' "$affinity_words" > "$out/graph-host.goose"
-cat "$source_dir/graph-host.goose" "$source_dir/graph-checkpoint-$target.goose" >> "$out/graph-host.goose"
+cat "$source_dir/"{graph-host,graph-diagnostics}.goose "$source_dir/graph-checkpoint-$target.goose" \
+    "$source_dir/graph-storage-$target.goose" >> "$out/graph-host.goose"
 "${GOOSE_CUDA_DRIVER_BIN:?Set GOOSE_CUDA_DRIVER_BIN to Fried Goose KeelWing v0.3.1-dev.1}" \
     --standalone -o "$out/graph-host.c" "$out/graph-host.goose"
 "$cc" -O2 -std=c11 -ffunction-sections -fdata-sections -Dgoose_init=fg_graph_host_init \
@@ -37,6 +36,8 @@ cat "$source_dir/graph-host.goose" "$source_dir/graph-checkpoint-$target.goose" 
 if [[ "$target" == linux ]]; then
     "$objcopy" --redefine-sym=graph_ckpt_unix_open=open --redefine-sym=graph_ckpt_unix_openat=openat \
         --redefine-sym=graph_ckpt_fdopen=fdopen --redefine-sym=graph_ckpt_close=close \
-        --redefine-sym=graph_ckpt_fclose=fclose --redefine-sym=graph_ckpt_fwrite=fwrite "$out/graph-host.o"
+        --redefine-sym=graph_ckpt_fwrite=fwrite \
+        --redefine-sym=graph_storage_fopen=fopen --redefine-sym=graph_storage_fgets=fgets \
+        --redefine-sym=graph_storage_fclose=fclose "$out/graph-host.o"
 fi
-"$cc" -r -nostdlib "$out/graph-native.o" "$out/graph-host.o" -o "$out/graph-execute.o"
+"$cc" -r -nostdlib "$out/graph-platform.o" "$out/graph-host.o" -o "$out/graph-execute.o"

@@ -46,7 +46,7 @@ def mark(base,names,ext,status,reason):
             raise SystemExit(f"Universal input missing: {f}. Check the inventory against the build recipe.")
         marks[f]=(status,reason)
 both='Host Linux + Windows'
-mark(u/'inkling','graph-execute inkling-backend','.c',both,'Graph ABI, execution and Inkling backend')
+mark(u/'inkling','graph-platform inkling-backend','.c',both,'Graph ABI, execution and Inkling backend')
 mark(u/'bonsai','backend-cold model-host','.c',both,'Bonsai session and model host')
 mark(u/'common','probability-platform','.c',both,'Probability platform adapter')
 mark(Path('integration/m1/host'),'goose_host','.c',both,'Goose ABI, platform and quantization helpers')
