@@ -1,8 +1,6 @@
 #include "graph.h"
 #include "shader_words.h"
 
-#include <math.h>
-
 _Static_assert(sizeof(fg_vk_shape) == 36, "Vulkan push constant layout");
 enum { FG_VK_BINDINGS = 4 };
 
@@ -168,25 +166,7 @@ static int overlap(fg_vk_view a, fg_vk_view b) {
     return a.buffer->buffer == b.buffer->buffer && a.offset < b.offset + b.size && b.offset < a.offset + a.size;
 }
 
-static VkDeviceSize packed_matrix_bytes(uint32_t width, uint32_t rows, fg_vk_op op) {
-    unsigned block_width = 32, block_size = 34;
-    switch (op) {
-    case FG_VK_Q4_K:
-    case FG_VK_GATHER_Q4_K: block_width = 256; block_size = 144; break;
-    case FG_VK_Q6_K: block_width = 256; block_size = 210; break;
-    case FG_VK_IQ4_XS: block_width = 256; block_size = 136; break;
-    case FG_VK_Q4_0:
-    case FG_VK_IQ4_NL:
-    case FG_VK_GATHER_Q4_0: block_size = 18; break;
-    case FG_VK_PQ2_0:
-    case FG_VK_GATHER_PQ2_0: block_width = 128; break;
-    default: break;
-    }
-    if (width % block_width || !rows) return 0;
-    const uint64_t blocks = (uint64_t)(width / block_width) * rows;
-    if (blocks > (UINT32_MAX - 3u) / block_size) return 0;
-    return (blocks * block_size + 3u) & ~(VkDeviceSize)3;
-}
+extern int fg_vk_dispatch_plan(fg_vk_op op, fg_vk_shape shape, int aliased_state, uint64_t plan[6]);
 
 static void compute_barrier(fg_vk_graph *graph, VkPipelineStageFlags2 stage, VkAccessFlags2 access) {
     const VkMemoryBarrier2 memory = {
@@ -203,185 +183,13 @@ static void compute_barrier(fg_vk_graph *graph, VkPipelineStageFlags2 stage, VkA
 static int record(fg_vk_graph *graph, fg_vk_op op, fg_vk_shape shape, fg_vk_view input,
     fg_vk_view weight, fg_vk_view output, fg_vk_view values) {
     if (!graph->recording || graph->used >= graph->capacity || (unsigned)op >= FG_VK_OP_COUNT) return 0;
-    const uint64_t elements = (uint64_t)shape.width * shape.batch;
-    if (!elements || elements > UINT32_MAX) return 0;
-    VkDeviceSize input_bytes = elements * 4, weight_bytes, output_bytes = input_bytes, value_bytes = 4;
-    const uint64_t stride = (uint64_t)shape.width * shape.rows;
-    const uint64_t end = (uint64_t)shape.position + shape.batch;
-    uint32_t x, y = 1;
-    switch (op) {
-    case FG_VK_RMSNORM:
-    case FG_VK_GATED_RMS:
-        if (!isfinite(shape.epsilon) || shape.epsilon <= 0.0f) return 0;
-        x = shape.batch;
-        weight_bytes = (VkDeviceSize)shape.width * 4;
-        if (op == FG_VK_GATED_RMS) value_bytes = input_bytes;
-        break;
-    case FG_VK_Q4_0:
-    case FG_VK_Q4_K:
-    case FG_VK_Q6_K:
-    case FG_VK_IQ4_NL:
-    case FG_VK_IQ4_XS:
-    case FG_VK_F32_PROJECT:
-    case FG_VK_PQ2_0:
-    case FG_VK_Q8_0: {
-        const uint32_t output_stride = shape.context ? shape.context : shape.rows;
-        if ((uint64_t)shape.position + shape.rows > output_stride ||
-            (uint64_t)output_stride * shape.batch > UINT32_MAX) return 0;
-        x = shape.rows;
-        y = shape.batch;
-        if (op == FG_VK_F32_PROJECT && stride > UINT32_MAX) return 0;
-        weight_bytes = op == FG_VK_F32_PROJECT ? stride * 4 : packed_matrix_bytes(shape.width, shape.rows, op);
-        if (!weight_bytes) return 0;
-        output_bytes = (uint64_t)output_stride * shape.batch * 4;
-        break;
-    }
-    case FG_VK_MOE_ROUTE:
-    case FG_VK_INKLING_ROUTE:
-        if (shape.width > 4096 || shape.rows > shape.width || !shape.rows || shape.rows > 64 ||
-            !isfinite(shape.theta) || shape.theta < 0.0f ||
-            (uint64_t)shape.rows * shape.batch > UINT32_MAX / 2) return 0;
-        weight_bytes = op == FG_VK_INKLING_ROUTE ? (uint64_t)shape.width * sizeof(float) : 4;
-        output_bytes = (uint64_t)shape.rows * shape.batch * 8;
-        x = shape.batch;
-        break;
-    case FG_VK_MOE_WEIGHTED:
-        if (!shape.rows || shape.rows > 64 || elements * shape.rows > UINT32_MAX) return 0;
-        input_bytes = elements * shape.rows * 4;
-        weight_bytes = (uint64_t)shape.rows * shape.batch * 8;
-        x = (uint32_t)((elements + 63) / 64);
-        break;
-    case FG_VK_GATHER_Q4_0:
-    case FG_VK_GATHER_Q4_K:
-    case FG_VK_GATHER_Q8_0:
-    case FG_VK_GATHER_PQ2_0:
-        if ((uint64_t)shape.position + shape.rows > UINT32_MAX) return 0;
-        weight_bytes = packed_matrix_bytes(shape.width, shape.rows, op);
-        if (!weight_bytes) return 0;
-        input_bytes = (uint64_t)shape.batch * 4;
-        x = shape.batch;
-        break;
-    case FG_VK_FWHT:
-        if (shape.width % 1024 || shape.position > 1) return 0;
-        if (shape.context > 1 && (shape.position || !shape.rows || !shape.kv_heads ||
-            (uint64_t)shape.rows * shape.kv_heads != shape.width / shape.context ||
-            shape.width % shape.context)) return 0;
-        x = shape.width / 1024;
-        y = shape.batch;
-        weight_bytes = (VkDeviceSize)shape.width * sizeof(int32_t);
-        break;
-    case FG_VK_KV_FWHT:
-        if ((shape.rows != 64 && shape.rows != 256) || shape.width % shape.rows) return 0;
-        x = shape.width / shape.rows;
-        y = shape.batch;
-        weight_bytes = 4;
-        break;
-    case FG_VK_CAUSAL_CONV:
-        if (shape.batch != 1 || overlap(input, values) || overlap(weight, values)) return 0;
-        x = (uint32_t)((elements + 63) / 64);
-        weight_bytes = elements * 16;
-        value_bytes = elements * 12;
-        break;
-    case FG_VK_QK_NORM:
-    case FG_VK_APEX_QK_NORM:
-        if (shape.batch != 1 || !shape.rows || !shape.kv_heads || shape.kv_heads > shape.rows ||
-            stride > UINT32_MAX || shape.kv_heads > shape.rows - shape.kv_heads ||
-            !isfinite(shape.epsilon) || shape.epsilon <= 0.0f) return 0;
-        input_bytes = output_bytes = stride * 4;
-        weight_bytes = 4;
-        x = shape.rows;
-        break;
-    case FG_VK_GDN:
-        if (shape.batch != 1 || shape.width > 256 || !shape.rows || !shape.kv_heads ||
-            shape.rows % shape.kv_heads || stride > UINT32_MAX / shape.width ||
-            stride * 3 > UINT32_MAX || overlap(input, weight) || overlap(weight, values)) return 0;
-        x = shape.rows;
-        y = shape.width;
-        input_bytes = (uint64_t)shape.width * (shape.rows + 2ull * shape.kv_heads) * 4;
-        weight_bytes = stride * shape.width * 4;
-        output_bytes = stride * 4;
-        value_bytes = (uint64_t)shape.rows * 8;
-        break;
-    case FG_VK_GDN_GATES:
-        if (shape.batch != 1 || !shape.rows || stride > UINT32_MAX / 2) return 0;
-        x = shape.rows;
-        weight_bytes = stride * 8;
-        value_bytes = output_bytes = (uint64_t)shape.rows * 8;
-        break;
-    case FG_VK_GDN_APPLY:
-        if (shape.batch != 1 || shape.width > UINT32_MAX / 2) return 0;
-        x = (uint32_t)((elements + 63) / 64);
-        weight_bytes = input_bytes;
-        value_bytes = output_bytes = input_bytes * 2;
-        break;
-    case FG_VK_BIAS:
-        x = (uint32_t)((elements + 63) / 64);
-        weight_bytes = (uint64_t)shape.width * 4;
-        break;
-    case FG_VK_ADD:
-    case FG_VK_SIGMOID_GATE:
-    case FG_VK_SWIGLU:
-    case FG_VK_INKLING_SITU:
-        x = (uint32_t)((elements + 63) / 64);
-        weight_bytes = input_bytes;
-        break;
-    case FG_VK_SIGMOID_GATE_SCALAR:
-        x = (uint32_t)((elements + 63) / 64);
-        weight_bytes = (uint64_t)shape.batch * 4;
-        break;
-    case FG_VK_HEAD_SLICE:
-        if (shape.position > 1 || !stride || stride > UINT32_MAX / 2 || stride * shape.batch > UINT32_MAX / 2) return 0;
-        input_bytes = stride * shape.batch * 8;
-        output_bytes = stride * shape.batch * 4;
-        weight_bytes = 4;
-        x = (uint32_t)((stride * shape.batch + 63) / 64);
-        break;
-    case FG_VK_ROPE:
-        if (shape.width % 2 || !stride || stride > UINT32_MAX || stride * shape.batch > UINT32_MAX ||
-            end > UINT32_MAX || shape.rotary > shape.width || shape.rotary % 2 ||
-            !isfinite(shape.theta) || shape.theta <= 0.0f) return 0;
-        input_bytes = output_bytes = stride * shape.batch * 4;
-        weight_bytes = 4;
-        x = shape.rows;
-        y = shape.batch;
-        break;
-    case FG_VK_KV_STORE:
-    case FG_VK_KV_STORE_Q4: {
-        if (!stride || stride > UINT32_MAX || end > shape.context || stride * shape.context > UINT32_MAX) return 0;
-        const uint64_t count = stride * shape.batch;
-        input_bytes = count * 4;
-        const int q4 = op == FG_VK_KV_STORE_Q4;
-        if (q4 && stride % 64) return 0;
-        output_bytes = q4 ? stride / 32 * shape.context * 18 : stride * shape.context * 4;
-        weight_bytes = 4;
-        x = q4 ? (uint32_t)((count / 64 + 63) / 64) : (uint32_t)((count + 63) / 64);
-        break;
-    }
-    case FG_VK_ATTENTION:
-    case FG_VK_ATTENTION_Q4: {
-        if (shape.width > 256 || !shape.rows || !shape.kv_heads || shape.rows % shape.kv_heads ||
-            stride > UINT32_MAX || stride * shape.batch > UINT32_MAX || end > shape.context ||
-            (uint64_t)shape.width * shape.kv_heads * shape.context > UINT32_MAX) return 0;
-        input_bytes = output_bytes = stride * shape.batch * 4;
-        const uint64_t cache_elements = (uint64_t)shape.width * shape.kv_heads * shape.context;
-        if (op == FG_VK_ATTENTION_Q4 && shape.width % 64) return 0;
-        weight_bytes = value_bytes = op == FG_VK_ATTENTION_Q4 ? cache_elements / 32 * 18 : cache_elements * 4;
-        x = shape.rows;
-        y = shape.batch;
-        break;
-    }
-    case FG_VK_INKLING_ATTENTION:
-        if (shape.width != 128 || shape.rows != 24 || shape.kv_heads != 8 || shape.batch != 1 ||
-            !shape.context || shape.context > 1048576u || shape.position >= 1048576u ||
-            shape.rotary > shape.context || (!shape.rotary && end > shape.context)) return 0;
-        input_bytes = (24 * 128 + 24 * 16 + 24 + 16 * 1024) * sizeof(float);
-        output_bytes = 24 * 128 * sizeof(float);
-        weight_bytes = value_bytes = (uint64_t)shape.context * (128 * 8 / 32 * 18);
-        x = shape.rows;
-        break;
-    default:
-        return 0;
-    }
+    const int aliased_state =
+        (op == FG_VK_CAUSAL_CONV && (overlap(input, values) || overlap(weight, values))) ||
+        (op == FG_VK_GDN && (overlap(input, weight) || overlap(weight, values)));
+    uint64_t plan[6];
+    if (!fg_vk_dispatch_plan(op, shape, aliased_state, plan)) return 0;
+    const uint64_t input_bytes = plan[0], weight_bytes = plan[1], output_bytes = plan[2], value_bytes = plan[3];
+    const uint32_t x = (uint32_t)plan[4], y = (uint32_t)plan[5];
     fg_vk_device *vk = graph->vk;
     if (x > vk->properties.limits.maxComputeWorkGroupCount[0] || y > vk->properties.limits.maxComputeWorkGroupCount[1] ||
         !valid_view(vk, input, input_bytes) || !valid_view(vk, weight, weight_bytes) ||

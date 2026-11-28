@@ -51,7 +51,7 @@ sed -nE 's/^extern "(fg_vk_loader_api_([[:alnum:]_]+))".*/\1 \2/p' \
 if [[ "$mode" != probe ]]; then
     seek_symbol=fseeko
     if [[ "$target" == windows ]]; then seek_symbol=_fseeki64; fi
-    cat "$source_dir/moe-bank.goose" "$source_dir/bonsai-layer.goose" > "$out/moe-bank.goose"
+    cat "$source_dir/"{moe-bank,bonsai-layer,graph-plan}.goose > "$out/moe-bank.goose"
     "${GOOSE_CUDA_DRIVER_BIN:?}" --standalone -o "$out/moe-bank.c" "$out/moe-bank.goose"
     "$cc" -O2 -std=c11 -ffunction-sections -fdata-sections -Dgoose_init=fg_vk_bank_init \
         -Dgg_init_globals=fg_vk_bank_globals -c "$out/moe-bank.c" -o "$out/moe-bank.o"
