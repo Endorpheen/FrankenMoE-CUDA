@@ -2,76 +2,15 @@
 
 layout(local_size_x = 64) in;
 layout(set = 0, binding = 0, std430) readonly buffer Input { float x[]; };
-#if defined(OP_ATTENTION_Q4)
-layout(set = 0, binding = 1, std430) readonly buffer Keys { uint packed_keys[]; };
-#else
 layout(set = 0, binding = 1, std430) readonly buffer Weights { float w[]; };
-#endif
-#if defined(OP_KV_STORE_Q4)
-layout(set = 0, binding = 2, std430) writeonly buffer Cache { uint cache[]; };
-#else
 layout(set = 0, binding = 2, std430) writeonly buffer Output { float y[]; };
-#endif
-#if defined(OP_ATTENTION)
-layout(set = 0, binding = 3, std430) readonly buffer Values { float v[]; };
-#elif defined(OP_ATTENTION_Q4)
-layout(set = 0, binding = 3, std430) readonly buffer Values { uint packed_values[]; };
-#endif
 layout(push_constant) uniform Params {
     uint width; uint rows; uint batch; float epsilon;
     uint position; uint kv_heads; uint context; float theta;
     uint rotary;
 } p;
 
-shared float partial[64];
-
-float sum_group(float value) {
-    uint lane = gl_LocalInvocationID.x;
-    partial[lane] = value;
-    barrier();
-    for (uint step = 32; step != 0; step >>= 1) {
-        if (lane < step) partial[lane] += partial[lane + step];
-        barrier();
-    }
-    float total = partial[0];
-    barrier();
-    return total;
-}
-
-#if defined(OP_ATTENTION_Q4)
-uint cache_byte(uint offset, bool value) {
-    uint word = value ? packed_values[offset >> 2u] : packed_keys[offset >> 2u];
-    return (word >> ((offset & 3u) * 8u)) & 255u;
-}
-
-float cache_value(uint index, bool value) {
-    uint block = (index >> 5u) * 18u, j = index & 31u;
-    uint data = cache_byte(block + 2u + (j & 15u), value);
-    int quant = int((data >> ((j >> 4u) * 4u)) & 15u) - 8;
-    uint half_bits = cache_byte(block, value) | (cache_byte(block + 1u, value) << 8u);
-    return float(quant) * unpackHalf2x16(half_bits).x;
-}
-#endif
-
 void main() {
-    uint lane = gl_LocalInvocationID.x;
-#if defined(OP_SIGMOID_GATE) || defined(OP_SIGMOID_GATE_SCALAR)
-    uint index = gl_GlobalInvocationID.x;
-#if defined(OP_SIGMOID_GATE_SCALAR)
-    uint gate = index / p.width;
-#else
-    uint gate = index;
-#endif
-    if (index < p.width * p.batch) y[index] = x[index] / (1.0 + exp(-w[gate]));
-#elif defined(OP_HEAD_SLICE)
-    uint i = gl_GlobalInvocationID.x;
-    if (i < p.rows * p.width * p.batch) {
-        y[i] = x[(i / p.width * 2u + p.position) * p.width + i % p.width];
-    }
-#elif defined(OP_SWIGLU)
-    uint index = gl_GlobalInvocationID.x;
-    if (index < p.width * p.batch) y[index] = (x[index] / (1.0 + exp(-x[index]))) * w[index];
-#elif defined(OP_INKLING_SITU)
     uint index = gl_GlobalInvocationID.x;
     if (index < p.width * p.batch) {
         float gate = x[index];
@@ -80,69 +19,4 @@ void main() {
         precise float clipped_up = tanh(w[index] * (1.0 / 25.0)) * 25.0;
         y[index] = (clipped_gate * sigmoid) * clipped_up;
     }
-#elif defined(OP_KV_STORE)
-    uint i = gl_GlobalInvocationID.x;
-    uint stride = p.rows * p.width;
-    if (i < stride * p.batch) y[p.position * stride + i] = x[i];
-#elif defined(OP_KV_STORE_Q4)
-    uint pair = gl_GlobalInvocationID.x;
-    uint pairs_per_row = (p.rows * p.width) / 64u;
-    if (pair < pairs_per_row * p.batch) {
-        uint words[9] = uint[9](0, 0, 0, 0, 0, 0, 0, 0, 0);
-        for (uint b = 0u; b < 2u; ++b) {
-            uint offset = pair * 64u + b * 32u;
-            float largest = 0.0;
-            for (uint i = 0u; i < 32u; ++i) {
-                if (abs(x[offset + i]) > abs(largest)) largest = x[offset + i];
-            }
-            float scale = largest / -8.0;
-            float inv = scale != 0.0 ? 1.0 / scale : 0.0;
-            uint half_bits = packHalf2x16(vec2(scale, 0.0));
-            uint start = b * 18u;
-            words[start >> 2u] |= half_bits << ((start & 3u) * 8u);
-            for (uint i = 0u; i < 16u; ++i) {
-                precise float lo = x[offset + i] * inv + 8.5;
-                precise float hi = x[offset + 16u + i] * inv + 8.5;
-                uint code = uint(clamp(int(lo), 0, 15)) | (uint(clamp(int(hi), 0, 15)) << 4u);
-                uint at = start + i + 2u;
-                words[at >> 2u] |= code << ((at & 3u) * 8u);
-            }
-        }
-        uint start = (p.position * pairs_per_row + pair) * 9u;
-        for (uint i = 0u; i < 9u; ++i) cache[start + i] = words[i];
-    }
-#elif defined(OP_ATTENTION) || defined(OP_ATTENTION_Q4)
-    uint head = gl_WorkGroupID.x, token = gl_WorkGroupID.y;
-    uint kv_head = head / (p.rows / p.kv_heads);
-    uint query = (token * p.rows + head) * p.width;
-    float peak = uintBitsToFloat(0xff800000u), denominator = 0.0;
-    float output_row[4] = float[4](0.0, 0.0, 0.0, 0.0);
-    float scale = inversesqrt(float(p.width));
-    for (uint k = 0; k <= p.position + token; ++k) {
-        uint kv = (k * p.kv_heads + kv_head) * p.width;
-        precise float dot = 0.0;
-        for (uint i = lane; i < p.width; i += 64u) {
-#if defined(OP_ATTENTION_Q4)
-            dot += x[query + i] * cache_value(kv + i, false);
-#else
-            dot += x[query + i] * w[kv + i];
-#endif
-        }
-        float score = sum_group(dot) * scale;
-        float next = max(peak, score);
-        float old_weight = exp(peak - next), weight = exp(score - next);
-        denominator = denominator * old_weight + weight;
-        for (uint i = lane; i < p.width; i += 64u) {
-            uint j = i / 64u;
-#if defined(OP_ATTENTION_Q4)
-            float value = cache_value(kv + i, true);
-#else
-            float value = v[kv + i];
-#endif
-            output_row[j] = output_row[j] * old_weight + value * weight;
-        }
-        peak = next;
-    }
-    for (uint i = lane; i < p.width; i += 64u) y[query + i] = output_row[i / 64u] / denominator;
-#endif
 }
