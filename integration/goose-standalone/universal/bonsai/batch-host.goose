@@ -26,8 +26,13 @@ const BATCH_CAPTURE_PHASE: u64 = 16320;
 const BATCH_CAPTURE_ENABLED: u64 = 16332;
 const BATCH_IN_DECODE: u64 = 4716;
 
-extern fn fg_bonsai_batch_rope(q: u64, k: u64, count: u32) -> i32;
-extern fn fg_bonsai_batch_upload(dst: u64, src: u64, size: u64, role: u32) -> i32;
+const BONSAI_CUDA_UPLOAD: u64 = 96;
+const BONSAI_CUDA_DOWNLOAD: u64 = 112;
+type BonsaiCudaCopy = c_fnptr(u64, u64, u64) -> i32;
+
+extern fn fg_bonsai_cuda_dispatch() -> u64;
+extern fn fg_bonsai_cuda_check(status: i32, label: u64) -> i32;
+extern fn powf(x: f32, y: f32) -> f32;
 extern fn fg_bonsai_batch_verify(model: u64, count: u32) -> i32;
 extern fn fg_bonsai_batch_init_verify(model: u64) -> i32;
 extern fn bonsai_bonsai_graph(model: u64, weights: VocabSpan, states: VocabSpan, globals: VocabSpan, buffers: VocabSpan,
@@ -35,7 +40,6 @@ extern fn bonsai_bonsai_graph(model: u64, weights: VocabSpan, states: VocabSpan,
 extern fn bonsai_mtp_target_graph(model: u64, weights: VocabSpan, states: VocabSpan, globals: VocabSpan, buffers: VocabSpan,
     token: i64, position: i64, output: i64) -> i64;
 extern fn fg_bonsai_batch_graph_error(model: u64, status: i64);
-extern fn fg_bonsai_batch_download(output: u64, source: u64) -> i32;
 
 fn batch_u32(address: u64) -> u32 {
     var value: u32 = 0;
@@ -45,6 +49,25 @@ fn batch_u32(address: u64) -> u32 {
 
 fn batch_set(address: u64, value: u32) {
     vocab_memcpy(unsafe_c_ptr<c_ptr<void>>(address), unsafe_c_address<c_ptr<const void>>(value), 4);
+}
+
+fn batch_copy(dispatch: u64, operation: u64, dst: u64, src: u64, bytes: u64, label: const u8[:]) -> i32 {
+    let status = unsafe_c_fnptr<BonsaiCudaCopy>(vocab_word(dispatch + operation))(dst, src, bytes);
+    if status == 0 { return 0; }
+    var message: u8[32];
+    for index in label.len { message[index] = label[index]; }
+    message[label.len] = 0;
+    return fg_bonsai_cuda_check(status, vocab_address(unsafe_c_address<c_ptr<const void>>(message[0])));
+}
+
+export fn bonsai_rope_config(destination: u64, heads: i64, tokens: i64) -> i32 {
+    let frequency = powf(10000000.0, -0.03125);
+    let bits = batch_u32(vocab_address(unsafe_c_address<c_ptr<const void>>(frequency))) as! i64;
+    var config: i64[27] = [if tokens == 1 { 2 } else { 0 }, heads * tokens, 1, (tokens + 127) / 128, 1024 * tokens,
+        256, heads, tokens, 1, 64, 40, 0, 11, 11, 10, 0, 4, 1024, heads * 1024, tokens * heads * 1024, 1,
+        bits, 1065353216, 0, 1065353216, 0, 0];
+    return batch_copy(fg_bonsai_cuda_dispatch(), BONSAI_CUDA_UPLOAD, destination,
+        vocab_address(unsafe_c_address<c_ptr<const void>>(config[0])), 216, "RoPE configuration");
 }
 
 export fn evaluate_batch_output(model: u64, tokens: u64, count: u32, logits: u64, device_only: i32) -> i32 {
@@ -59,8 +82,9 @@ export fn evaluate_batch_output(model: u64, tokens: u64, count: u32, logits: u64
     let maximum_wave = 33554432 / per_task;
     let wave = if maximum_wave > tasks { tasks } else { maximum_wave };
     batch_set(model + BATCH_WAVE, wave as! u32);
-    if batch_u32(model + BATCH_COUNT) != count && fg_bonsai_batch_rope(
-        vocab_word(model + BATCH_ROPE_Q), vocab_word(model + BATCH_ROPE_K), count) != 0 { return -1; }
+    if batch_u32(model + BATCH_COUNT) != count &&
+        (bonsai_rope_config(vocab_word(model + BATCH_ROPE_Q), 24, count as! i64) != 0 ||
+         bonsai_rope_config(vocab_word(model + BATCH_ROPE_K), 4, count as! i64) != 0) { return -1; }
     batch_set(model + BATCH_COUNT, count);
     vocab_set(model + BATCH_PACKED_SOURCE, 0);
     vocab_set(model + BATCH_Q8_INPUT, 0);
@@ -80,11 +104,13 @@ export fn evaluate_batch_output(model: u64, tokens: u64, count: u32, logits: u64
     }
     var config: i64[22] = [256, 256, n, 24, 4, 4, keys, 24576, 1024, 576, 144, 576, 144,
         0, 1024, 24576, 256, tiles, tasks, wave, wave * per_task, (position as! i64) + 1];
-    if fg_bonsai_batch_upload(vocab_word(model + BATCH_POSITIONS),
-        vocab_address(unsafe_c_address<c_ptr<const void>>(positions[0])), 16 * (count as! u64), 0) != 0 ||
-        fg_bonsai_batch_upload(vocab_word(model + BATCH_ATTENTION),
-        vocab_address(unsafe_c_address<c_ptr<const void>>(config[0])), 176, 1) != 0 ||
-        (count > 1 && fg_bonsai_batch_upload(vocab_word(model + BATCH_TOKEN_IDS), tokens, 4 * (count as! u64), 2) != 0) { return -1; }
+    let dispatch = fg_bonsai_cuda_dispatch();
+    if batch_copy(dispatch, BONSAI_CUDA_UPLOAD, vocab_word(model + BATCH_POSITIONS),
+        vocab_address(unsafe_c_address<c_ptr<const void>>(positions[0])), 16 * (count as! u64), "positions") != 0 ||
+        batch_copy(dispatch, BONSAI_CUDA_UPLOAD, vocab_word(model + BATCH_ATTENTION),
+        vocab_address(unsafe_c_address<c_ptr<const void>>(config[0])), 176, "attention configuration") != 0 ||
+        (count > 1 && batch_copy(dispatch, BONSAI_CUDA_UPLOAD, vocab_word(model + BATCH_TOKEN_IDS),
+            tokens, 4 * (count as! u64), "token ids") != 0) { return -1; }
 
     batch_set(model + BATCH_CAPTURE_LAYER, 0);
     let verify = fg_bonsai_batch_verify(model, count);
@@ -116,6 +142,8 @@ export fn evaluate_batch_output(model: u64, tokens: u64, count: u32, logits: u64
     }
     if verify != 0 { batch_set(model + BATCH_TXN_PHASE, 2); }
     else { batch_set(model + BATCH_POSITION, position + count); }
-    if logits != 0 { return fg_bonsai_batch_download(logits, vocab_word(model + BATCH_B + 152)); }
+    if logits != 0 {
+        return batch_copy(dispatch, BONSAI_CUDA_DOWNLOAD, logits, vocab_word(model + BATCH_B + 152), 248320 * 4, "logits");
+    }
     return 0;
 }

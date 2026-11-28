@@ -175,12 +175,6 @@ static int launch(model *m, enum kernel id, unsigned x, unsigned y, unsigned z,
     return check(bonsai_cuda.fn_cuLaunchKernel(m->kernel[id], x, y, z, threads, 1, 1, shared, stream, args, NULL), "kernel launch");
 }
 
-static uint32_t f32_bits(float x) {
-    uint32_t bits;
-    memcpy(&bits, &x, sizeof(bits));
-    return bits;
-}
-
 extern uint8_t bonsai_gdn_packet(bonsai_const_words input, uint32_t tokens, bonsai_words packet);
 
 static int gdn(model *m, const CUdeviceptr p[8], unsigned tokens) {
@@ -562,15 +556,7 @@ static sl_i64 slice(int64_t *data, int64_t len) {
     return (sl_i64){ data, len };
 }
 
-static int rope_config(CUdeviceptr dest, int64_t heads, int64_t tokens) {
-    const int64_t conf[27] = {
-        tokens == 1 ? 2 : 0, heads * tokens, 1, (tokens+127)/128, 1024 * tokens,
-        256, heads, tokens, 1, 64, 40, 0, 11, 11, 10, 0,
-        4, 1024, heads * 1024, tokens * heads * 1024, 1,
-        f32_bits(powf(1e7f, -1.0f / 32)), f32_bits(1), 0, f32_bits(1), 0, 0,
-    };
-    return check(bonsai_cuda.fn_cuMemcpyHtoD(dest, conf, sizeof(conf)), "RoPE configuration");
-}
+extern int32_t bonsai_rope_config(uint64_t destination, int64_t heads, int64_t tokens);
 
 typedef struct { uint32_t *data; int64_t len; } bonsai_mutable_indices;
 extern uint8_t bonsai_workspace_plan(uint64_t context, uint64_t batch, uint64_t rows, uint64_t flags,
@@ -600,7 +586,7 @@ static int workspace(model *m, const int32_t *sign) {
     m->rope_q = values[7]; m->rope_k = values[8]; m->attention = values[9]; m->partial = values[10];
     if (m->verify_native) {
         m->verify_rope_q = values[11]; m->verify_rope_k = values[12]; m->verify_positions = values[13];
-        if (rope_config(m->verify_rope_q, 24, 1) || rope_config(m->verify_rope_k, 4, 1)) return -1;
+        if (bonsai_rope_config(m->verify_rope_q, 24, 1) || bonsai_rope_config(m->verify_rope_k, 4, 1)) return -1;
     }
     m->stage_capacity_chunks = values[14]; m->stage_k = values[15]; m->stage_v = values[16];
     const unsigned signs[] = {5120, 6144, 17408};
@@ -936,14 +922,11 @@ _Static_assert(
 _Static_assert(TXN_IDLE == 0 && TXN_RUNNING == 1 && TXN_READY == 2 && LAYERS == 64 &&
     VOCAB == 248320 && UBATCH_MAX == 1024 && KV_BYTES == 576 && ATTENTION_BYTES == 33554432, "Bonsai batch constants");
 
-int32_t fg_bonsai_batch_rope(uint64_t q, uint64_t k, uint32_t count) {
-    return rope_config(q, 24, count) || rope_config(k, 4, count);
-}
+_Static_assert(offsetof(struct bonsai_cuda_api, fn_cuMemcpyHtoD) == 96 &&
+    offsetof(struct bonsai_cuda_api, fn_cuMemcpyDtoH) == 112, "Bonsai CUDA copy dispatch layout");
 
-int32_t fg_bonsai_batch_upload(uint64_t destination, const void *source, size_t size, uint32_t role) {
-    const char *messages[] = {"positions", "attention configuration", "token ids"};
-    return check(bonsai_cuda.fn_cuMemcpyHtoD(destination, source, size), messages[role]);
-}
+const void *fg_bonsai_cuda_dispatch(void) { return &bonsai_cuda; }
+int32_t fg_bonsai_cuda_check(CUresult status, const char *where) { return check(status, where); }
 
 int32_t fg_bonsai_batch_verify(model *m, uint32_t count) { return exact_verify(m, count); }
 int32_t fg_bonsai_batch_init_verify(model *m) { return init_verify_batch(m); }
@@ -951,10 +934,6 @@ int32_t fg_bonsai_batch_init_verify(model *m) { return init_verify_batch(m); }
 void fg_bonsai_batch_graph_error(model *m, int64_t status) {
     if (m->capture.stream) ffn_graph_abort(m);
     fprintf(stderr, "Goose graph failed: %lld\n", (long long)status);
-}
-
-int32_t fg_bonsai_batch_download(void *output, uint64_t source) {
-    return check(bonsai_cuda.fn_cuMemcpyDtoH(output, source, VOCAB * sizeof(float)), "logits");
 }
 
 extern int evaluate_batch_output(model *m, const unsigned *tokens, unsigned count, float *logits, int device_only);

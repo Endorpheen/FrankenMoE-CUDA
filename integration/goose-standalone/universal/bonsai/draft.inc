@@ -151,7 +151,7 @@ static int draft_prefill_block(model *m, const unsigned *tokens, unsigned start,
     const CUdeviceptr target_rope_k = m->rope_k;
     m->rope_k = m->draft_rope_k;
     m->count = count;
-    const int rc = rope_config(m->rope_k, 4, count) ||
+    const int rc = bonsai_rope_config(m->rope_k, 4, count) ||
         check(bonsai_cuda.fn_cuMemcpyHtoD(m->positions, positions, 16 * count), "draft positions") ||
         check(bonsai_cuda.fn_cuMemcpyHtoD(m->token_ids, tokens, 4 * count), "draft token ids") ||
         bonsai_mtp_kv_batch((uintptr_t)m, slice(m->mtp_layer, 15), slice(m->draft_kv, 2),
