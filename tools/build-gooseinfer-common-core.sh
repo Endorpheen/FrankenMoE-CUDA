@@ -40,9 +40,11 @@ cat "$out/metadata.goose" "$standalone/"{graph-bindings,common-memory,graph-meta
     -c "$out/graph-bindings.c" -o "$out/graph-bindings.o"
 if [[ "$target" == linux ]]; then
     io_symbols=(--redefine-sym=host_runtime_read=read --redefine-sym=host_runtime_write=write --redefine-sym=host_runtime_close=close
+        --redefine-sym=host_posix_memalign=posix_memalign --redefine-sym=host_pool_free=free
         --redefine-sym=host_conv_time=time --redefine-sym=host_conv_localtime=localtime)
 else
     io_symbols=(--redefine-sym=host_runtime_recv=recv --redefine-sym=host_runtime_send=send --redefine-sym=host_runtime_close=closesocket
+        --redefine-sym=host_win_aligned_malloc=_aligned_malloc --redefine-sym=host_win_aligned_free=_aligned_free
         --redefine-sym=host_conv_time=_time64 --redefine-sym=host_conv_localtime=_localtime64)
 fi
 "$objcopy" --redefine-sym=graph_crt_getenv=getenv --redefine-sym=host_quant_lround=lroundf \

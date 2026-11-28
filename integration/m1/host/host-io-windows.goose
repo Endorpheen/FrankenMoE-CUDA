@@ -13,3 +13,10 @@ export fn qz_wr(fd: i64, buffer: u64, bytes: i64) -> i64 {
 }
 
 export fn qz_cl(fd: i64) -> i64 { return host_runtime_close(fd as! u64) as! i64; }
+
+extern fn host_win_aligned_malloc(bytes: u64, alignment: u64) -> u64;
+extern fn host_win_aligned_free(address: u64);
+
+export fn ggml_aligned_malloc(bytes: u64) -> u64 { return host_win_aligned_malloc(bytes, 64); }
+
+export fn ggml_aligned_free(address: u64, bytes: u64) { host_win_aligned_free(address); }
