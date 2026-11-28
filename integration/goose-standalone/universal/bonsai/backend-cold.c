@@ -229,7 +229,7 @@ static int launch_transaction_gdn(model *m, const CUdeviceptr p[8]) {
     return 0;
 }
 
-static int commit_target(model *m, unsigned kept) {
+int bonsai_commit_target(model *m, unsigned kept) {
     if (m->txn.phase != TXN_READY) return -1;
     const int64_t position = bonsai_verify_commit((sl_i64){m->states, 2 * LAYERS},
         (bonsai_words){(uint64_t *)m->txn.prefix, 8 * LAYERS},
@@ -983,8 +983,5 @@ _Static_assert(GDN_STATE * 4 == 3145728 && GDN_HISTORY * 4 == 122880 && DRAFT_HI
 
 int fg_bonsai_session_draft(model *m, const uint32_t *tokens, unsigned count) { return draft_prefill(m, tokens, count); }
 int fg_bonsai_session_choice(model *m, int ignore_eos, struct token_choice *choice) { return choose_device(m, ignore_eos, choice); }
-extern int evaluate_batch_output(model *m, const unsigned *tokens, unsigned count, float *logits, int device_only);
-extern int64_t bonsai_session_choose_next(struct bonsai_session *session, uint32_t id, int ignore_eos);
-extern int fg_bonsai_session_finish(struct bonsai_session *session, int status);
-
-#include "http-mtp.inc"
+_Static_assert(offsetof(model, mtp_pending) == 24 && offsetof(model, verify_rows) == 52 &&
+    offsetof(model, draft_chain) == 296 && VERIFY_ROWS == 5, "Bonsai MTP session ABI");

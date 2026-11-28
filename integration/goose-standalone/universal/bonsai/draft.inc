@@ -1,4 +1,4 @@
-static int choose_mtp_rows(model *m, unsigned rows, int ignore_eos, struct token_choice result[VERIFY_ROWS]) {
+int bonsai_choose_mtp_rows(model *m, unsigned rows, int ignore_eos, struct token_choice result[VERIFY_ROWS]) {
     CUdeviceptr logits = m->b[19], mask = ignore_eos ? m->choice_mask : 0;
     unsigned width = VOCAB, jobs = CHOICE_JOBS;
     return launch(m, CHOICE_TILES, jobs, rows, 1, 256,
@@ -58,11 +58,11 @@ static int draft_open(model *m) {
     return check(bonsai_cuda.fn_cuMemsetD8(m->draft_carry, 0, DRAFT_HIDDEN_BYTES), "draft zero seed");
 }
 
-static int save_conditioning(CUdeviceptr out, CUdeviceptr in) {
+int bonsai_save_conditioning(CUdeviceptr out, CUdeviceptr in) {
     return check(bonsai_cuda.fn_cuMemcpyDtoDAsync(out, in, DRAFT_HIDDEN_BYTES, NULL), "draft conditioning");
 }
 
-static int draft_forward(model *m, unsigned token, unsigned pos, CUdeviceptr hidden,
+int bonsai_draft_forward(model *m, unsigned token, unsigned pos, CUdeviceptr hidden,
                          float *logits, int want_logits) {
     if (m->txn.phase != TXN_IDLE || pos >= m->context || token >= VOCAB) return -1;
     const unsigned target_pos = m->position, target_count = m->count, target_wave = m->wave;
@@ -97,20 +97,20 @@ static int draft_forward(model *m, unsigned token, unsigned pos, CUdeviceptr hid
 }
 
 static int draft_step(model *m, unsigned token, unsigned pos, CUdeviceptr hidden, float *logits) {
-    return draft_forward(m, token, pos, hidden, logits, logits != NULL);
+    return bonsai_draft_forward(m, token, pos, hidden, logits, logits != NULL);
 }
 
-static int draft_catchup(model *m, const unsigned *ids, unsigned rows, unsigned already_written) {
+int bonsai_draft_catchup(model *m, const unsigned *ids, unsigned rows, unsigned already_written) {
     const unsigned start = m->position - rows;
     const CUdeviceptr output = (CUdeviceptr)m->b[0];
     for (unsigned row = already_written; row < rows; ++row) {
         const CUdeviceptr state = row == 0 ? m->draft_carry : output + (size_t)(row - 1) * DRAFT_HIDDEN_BYTES;
         if (draft_step(m, ids[row], start + row, state, NULL)) return -1;
     }
-    return save_conditioning(m->draft_carry, output + (size_t)(rows - 1) * DRAFT_HIDDEN_BYTES);
+    return bonsai_save_conditioning(m->draft_carry, output + (size_t)(rows - 1) * DRAFT_HIDDEN_BYTES);
 }
 
-static int is_eog(model *m, unsigned token) {
+int bonsai_is_eog(model *m, unsigned token) {
     for (int64_t j = 0; j < m->eog_count; ++j) {
         if (m->eog[j] == token) return 1;
     }
@@ -138,7 +138,7 @@ static int draft_prefill_block(model *m, const unsigned *tokens, unsigned start,
     enum { DRAFT_BATCH_ROWS = 128 };
     if (count < 2 || count > DRAFT_BATCH_ROWS) return -1;
     const CUdeviceptr states = m->b[13];
-    if (save_conditioning(states, previous) ||
+    if (bonsai_save_conditioning(states, previous) ||
         check(bonsai_cuda.fn_cuMemcpyDtoDAsync(states + DRAFT_HIDDEN_BYTES,
             (CUdeviceptr)m->b[0] + (size_t)(start - (m->position - m->count)) * DRAFT_HIDDEN_BYTES,
             (size_t)(count - 1) * DRAFT_HIDDEN_BYTES, NULL), "shifted prompt hidden rows")) return -1;
@@ -162,7 +162,7 @@ static int draft_prefill_block(model *m, const unsigned *tokens, unsigned start,
 }
 
 static int draft_prefill(model *m, const unsigned *ids, unsigned rows) {
-    if (!m->draft_batch || rows < 2) return draft_catchup(m, ids, rows, 0);
+    if (!m->draft_batch || rows < 2) return bonsai_draft_catchup(m, ids, rows, 0);
     const unsigned start = m->position - rows;
     const CUdeviceptr hidden = m->b[0];
     for (unsigned at = 0; at < rows;) {
@@ -174,6 +174,6 @@ static int draft_prefill(model *m, const unsigned *ids, unsigned rows) {
         if (rc) return -1;
         at += count;
     }
-    return save_conditioning(m->draft_carry, hidden + (size_t)(rows - 1) * DRAFT_HIDDEN_BYTES);
+    return bonsai_save_conditioning(m->draft_carry, hidden + (size_t)(rows - 1) * DRAFT_HIDDEN_BYTES);
 }
 

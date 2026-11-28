@@ -13,8 +13,6 @@ extern fn q35_model_step_cached(owner: VocabSpan, handles: VocabSpan, records: V
     gcfg: VocabSpan, mcfg: VocabSpan, kv: VocabSpan, tokens: VocabSpan, logits: VocabSpan, plan: VocabSpan) -> i64;
 extern fn q35_generate(prompt: VocabSpan, vocab: i64, capacity: i64, eog: VocabSpan,
     limit: i64, ignore_eos: bool, ids: VocabSpan, timing: VocabSpan) -> i64;
-extern fn bonsai_session_mtp_next(model: u64, token: u32, ignore_eos: i32, remaining: i64) -> i64;
-extern fn bonsai_session_mtp_prepare(model: u64, enabled: i32);
 extern fn fg_q35_topk_scan_enabled() -> bool;
 
 var model_prefill_batch: i64 = 128;
