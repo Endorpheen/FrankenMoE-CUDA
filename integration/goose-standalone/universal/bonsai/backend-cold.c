@@ -154,11 +154,6 @@ static int check(CUresult status, const char *where) {
     return -1;
 }
 
-static const enum kernel ffn_graph_nodes[] = {
-    NORM_WIDE_SMALL, ROTATE, MV_PACK_Q8, MV_Q8_2, MV_Q8_2,
-    SWIGLU, ROTATE, MV_PACK_Q8, MV_Q8_2, ADD,
-};
-
 _Static_assert(offsetof(struct bonsai_ffn_capture, stream) == 0 &&
     offsetof(struct bonsai_ffn_capture, graphs) == 8 && offsetof(struct bonsai_ffn_capture, norm) == 520 &&
     offsetof(struct bonsai_ffn_capture, phase) == 1032 && offsetof(struct bonsai_ffn_capture, layer) == 1036 &&
@@ -181,46 +176,34 @@ _Static_assert(offsetof(struct bonsai_cuda_api, library) == 152 && offsetof(mode
     CU_STREAM_NON_BLOCKING == 1 && CU_STREAM_CAPTURE_MODE_THREAD_LOCAL == 1, "Bonsai FFN driver ABI");
 
 
-static int launch(model *m, enum kernel id, unsigned x, unsigned y, unsigned z,
-                  unsigned threads, void **args) {
-    CUstream stream = NULL;
-    if (m->capture.phase) {
-        if (m->capture.next >= sizeof(ffn_graph_nodes)/sizeof(*ffn_graph_nodes) ||
-            ffn_graph_nodes[m->capture.next++] != id) return -1;
-        if (m->capture.phase == 2) return 0;
-        stream = m->capture.stream;
-    }
-    const unsigned shared = id == FLASH_KV_PANEL ? FLASH_PANEL_SHARED : 0;
-    return check(bonsai_cuda.fn_cuLaunchKernel(m->kernel[id], x, y, z, threads, 1, 1, shared, stream, args, NULL), "kernel launch");
-}
+extern int32_t fg_bonsai_verify_launch(model *m, enum kernel kernel, uint32_t x, uint32_t y, uint32_t z,
+                                       uint32_t threads, void **args);
+#define launch fg_bonsai_verify_launch
+extern int32_t fg_bonsai_launch_gdn(model *m, const CUdeviceptr *args, unsigned tokens);
+extern int32_t fg_bonsai_flash_f32(model *m, CUdeviceptr q, CUdeviceptr k, CUdeviceptr v, CUdeviceptr dst);
 
-extern uint8_t bonsai_gdn_packet(bonsai_const_words input, uint32_t tokens, bonsai_words packet);
-
-static int gdn(model *m, const CUdeviceptr p[8], unsigned tokens) {
-    uint64_t packet[57];
-    _Static_assert(sizeof(CUdeviceptr) == sizeof(uint64_t), "Bonsai GDN packet ABI");
-    if (!bonsai_gdn_packet((bonsai_const_words){(const uint64_t *)p, 8}, tokens,
-                          (bonsai_words){packet, 57})) return -1;
-    if (m->gdn_prefill_v32 && tokens >= 64) {
-        return check(bonsai_cuda.fn_cuLaunchKernel(m->kernel[GDN_V32], 192, 1, 1, 256, 1, 1, 38016, NULL,
-                    (void *[]){ packet }, NULL), "Bonsai GDN V32");
-    }
-    return launch(m, tokens > 1 ? GDN_BATCH : GDN, 48, 1, 8, 128, (void *[]){ packet });
-}
+_Static_assert(offsetof(struct bonsai_cuda_api, fn_cuLaunchKernel) == 144 && sizeof(CUdeviceptr) == 8 &&
+    offsetof(model, kernel) == 4824 && offsetof(model, gdn_prefill_v32) == 14688 &&
+    offsetof(model, capture.next) == 16328 && offsetof(model, flash_fp8_pv) == 4816 &&
+    offsetof(model, stage_k) == 14712 && offsetof(model, stage_v) == 14720 &&
+    offsetof(model, stage_kv) == 14668 && offsetof(model, ordered_merge) == 14672 &&
+    offsetof(model, compact_heads) == 14676 && offsetof(model, async_fragments) == 14680 &&
+    offsetof(model, flash_grouped) == 14760 && offsetof(model, flash_panel) == 4784 &&
+    offsetof(model, flash_fused_ordered) == 4792 && offsetof(model, flash_fp8_qk) == 4808 &&
+    offsetof(model, stage_capacity_chunks) == 14728, "Bonsai launch ABI");
+_Static_assert(NORM_WIDE_SMALL == 47 && ROTATE == 1 && MV_PACK_Q8 == 44 && MV_Q8_2 == 46 &&
+    SWIGLU == 13 && ADD == 3 && GDN_V32 == 32 && GDN_BATCH == 15 && GDN == 6 &&
+    FLASH_K_FP8 == 61 && FLASH_V_ONLY == 62 && FLASH_FP8_QK == 63 && FLASH_STAGE_KV == 25 &&
+    FLASH_FUSED_ORDERED == 56 && FLASH_TILE_F32 == 22 && FLASH_KV_PANEL == 53 &&
+    FLASH_GROUP4 == 43 && FLASH_GROUP2 == 42 && FLASH_TILE_ASYNC == 30 &&
+    FLASH_TILE_COMPACT == 27 && FLASH_TILE_STAGED == 24 && FLASH_MERGE_COMPACT_ORDERED == 29 &&
+    FLASH_MERGE_COMPACT == 28 && FLASH_MERGE_ORDERED == 26 && FLASH_MERGE_F32 == 23 &&
+    FLASH_V_FP8 == 66 && FLASH_FP8_QKPV == 67 && FLASH_PANEL_SHARED == 50176, "Bonsai launch kernel IDs");
 
 extern int32_t fg_bonsai_batch_verify(model *m, uint32_t count);
 extern int32_t fg_bonsai_launch_verify_rows(model *m, enum kernel op, const CUdeviceptr *args);
 extern int32_t fg_bonsai_transaction_conv(model *m, const CUdeviceptr *args);
 extern int32_t fg_bonsai_transaction_gdn(model *m, const CUdeviceptr *args);
-
-int32_t fg_bonsai_verify_launch(model *m, enum kernel kernel, uint32_t x, uint32_t y, uint32_t z,
-                                uint32_t threads, void **args) {
-    return launch(m, kernel, x, y, z, threads, args);
-}
-
-int32_t bonsai_verify_emit_gdn(uint64_t context, bonsai_const_words args) {
-    return gdn((model *)(uintptr_t)context, (const CUdeviceptr *)args.data, 1);
-}
 
 _Static_assert(offsetof(model, txn.layer_ids) == 328 && offsetof(model, txn.prefix) == 584 &&
     offsetof(model, verify_native) == 56 && offsetof(model, verify_q8) == 60 &&
@@ -237,39 +220,6 @@ _Static_assert(VERIFY_CONV_FIVE == 96 && VERIFY_CONV_FOUR == 92 && VERIFY_CONV =
     CONV == 5 && ROPE == 8 && DECODE_DIRECT_HALF2 == 74 && DECODE_DIRECT_MMA == 72 &&
     DECODE_GQA3 == 40 && DECODE_GQA2 == 39 && TILES == 10 && DECODE_ORDERED_MERGE == 73,
     "Bonsai verify kernel IDs");
-
-extern int32_t bonsai_flash_schedule(uint64_t context, uint64_t position, uint64_t count,
-                                     uint64_t partial_bytes, uint64_t stage_capacity, uint64_t flags,
-                                     bonsai_const_words pointers);
-
-int32_t bonsai_flash_launch_raw(uint64_t context, uint32_t role, uint32_t x, uint32_t y,
-                                uint32_t threads, uint32_t shared, uint64_t args) {
-    model *m = (void *)(uintptr_t)context;
-    static const enum kernel roles[] = {
-        FLASH_K_FP8, FLASH_V_ONLY, FLASH_FP8_QK, FLASH_STAGE_KV, FLASH_FUSED_ORDERED,
-        FLASH_TILE_F32, FLASH_KV_PANEL, FLASH_GROUP4, FLASH_GROUP2, FLASH_TILE_ASYNC,
-        FLASH_TILE_COMPACT, FLASH_TILE_STAGED, FLASH_MERGE_COMPACT_ORDERED, FLASH_MERGE_COMPACT,
-        FLASH_MERGE_ORDERED, FLASH_MERGE_F32,
-    };
-    if (role >= sizeof(roles) / sizeof(*roles)) return -1;
-    enum kernel kernel = roles[role];
-    if (m->flash_fp8_pv && role == 1) kernel = FLASH_V_FP8;
-    if (m->flash_fp8_pv && role == 2) kernel = FLASH_FP8_QKPV;
-    void **parameters = (void *)(uintptr_t)args;
-    if (role == 2 || role == 4) return check(bonsai_cuda.fn_cuLaunchKernel(m->kernel[kernel],
-        x, y, 1, threads, 1, 1, shared, NULL, parameters, NULL),
-        role == 2 ? "Bonsai FP8 QK" : "Bonsai ordered fused Flash");
-    return launch(m, kernel, x, y, 1, threads, parameters);
-}
-
-static int flash_f32(model *m, CUdeviceptr q, CUdeviceptr k, CUdeviceptr v, CUdeviceptr dst) {
-    const uint64_t pointers[] = {q, k, v, dst, m->stage_k, m->stage_v, m->partial};
-    const uint64_t flags = (m->stage_kv ? 1 : 0) | (m->ordered_merge ? 2 : 0) | (m->compact_heads ? 4 : 0) |
-        (m->async_fragments ? 8 : 0) | (m->flash_grouped ? 16 : 0) | (m->flash_panel ? 32 : 0) |
-        (m->flash_fused_ordered ? 64 : 0) | (m->flash_fp8_qk ? 128 : 0);
-    return bonsai_flash_schedule((uintptr_t)m, m->position, m->count, m->partial_capacity,
-                                  m->stage_capacity_chunks, flags, (bonsai_const_words){pointers, 7});
-}
 
 int64_t bonsai_ffn_tail_launch(uint64_t context,int64_t g,int64_t u,int64_t s,int64_t owner) {
     model *m=(model *)(uintptr_t)context;
@@ -477,7 +427,7 @@ int64_t bonsai_launch(uint64_t context, int64_t op, int64_t a, int64_t b, int64_
             return launch(m, CONV, 40, 1, 1, 256, (void *[]){ &p[0], &p[1], &p[2], &p[3] });
         }
         case GDN:
-            return gdn(m, p, count);
+            return fg_bonsai_launch_gdn(m, p, count);
         case SPLIT:
             return launch(m, SPLIT, 24 * count, 1, 1, 256, (void *[]){ &p[0], &p[1], &p[2] });
         case ROPE: {
@@ -498,7 +448,7 @@ int64_t bonsai_launch(uint64_t context, int64_t op, int64_t a, int64_t b, int64_
         }
         case TILES: {
             if (m->use_flash_f32 && count >= 8) {
-                const int rc = flash_f32(m, p[0], p[1], p[2], p[3]);
+                const int rc = fg_bonsai_flash_f32(m, p[0], p[1], p[2], p[3]);
                 if (rc <= 0) return rc;
             }
             CUdeviceptr no_mask = 0;

@@ -9,7 +9,6 @@ extern fn bonsai_bonsai_verify_conv_args(input: VocabSpan, prefix: VocabSpan, ro
 extern fn bonsai_bonsai_verify_gdn_rows(model: u64, input: VocabSpan, prefix: VocabSpan, state: u64, rows: u32) -> i32;
 extern fn bonsai_bonsai_verify_commit(states: VocabSpan, prefix: VocabSpan, layers: VocabSpan,
     start: u32, rows: u32, kept: u32) -> i64;
-extern fn fg_bonsai_verify_launch(model: u64, kernel: i32, x: u32, y: u32, z: u32, threads: u32, args: u64) -> i32;
 
 export fn fg_bonsai_batch_verify(model: u64, count: u32) -> i32 {
     return if batch_u32(model + 56) != 0 && batch_u32(model + 60) != 0 &&
