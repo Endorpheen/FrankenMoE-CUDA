@@ -122,6 +122,8 @@ extern bool fg_i2_device_attention_input(void);
 static _Thread_local float *prefill_direct_output;
 static _Thread_local size_t prefill_direct_output_size;
 
+bool fg_i2_direct_output_active(void) { return prefill_direct_output != NULL; }
+
 float *fg_i2_swap_direct_output(float *output) {
     float *old = prefill_direct_output;
     if (old) prefill_direct_output = output;

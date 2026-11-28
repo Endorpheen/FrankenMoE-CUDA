@@ -178,122 +178,41 @@ static void prepare_prefill(struct i2_prefill_team *team, struct i2_prefill_work
     }
 }
 
-extern void fg_i2_prefill_moe(struct decoder *d, const int64_t *core, const int64_t *aux, int slot, int count,
-    float *ffn, float *projection, float *residual, struct prefill_token *tokens, int64_t *work);
+_Static_assert(sizeof(struct i2_prefill_work) == 112 &&
+    offsetof(struct prefill_workspace, ff) == 305528832 && offsetof(struct prefill_workspace, residual) == 381026312 &&
+    sizeof(((struct prefill_workspace *)0)->inputs[0]) == 37748736 &&
+    offsetof(struct i2_prefill_work, decoder) == 0 &&
+    offsetof(struct i2_prefill_work, tokens) == 8 &&
+    offsetof(struct i2_prefill_work, scratch) == 16 &&
+    offsetof(struct i2_prefill_work, aux) == 24 &&
+    offsetof(struct i2_prefill_work, layer) == 32 &&
+    offsetof(struct i2_prefill_work, pass) == 36 &&
+    offsetof(struct i2_prefill_work, sliding) == 40 &&
+    offsetof(struct i2_prefill_work, message) == 48 &&
+    offsetof(struct i2_prefill_work, after_attention) == 56 &&
+    offsetof(struct i2_prefill_work, shared_attention_input) == 57 &&
+    offsetof(struct i2_prefill_work, postconv_weights) == 58 &&
+    offsetof(struct i2_prefill_work, postconv_history) == 80 &&
+    offsetof(struct i2_prefill_work, postconv_rows) == 88 &&
+    offsetof(struct i2_prefill_work, skip_host_mix) == 104 &&
+    offsetof(struct i2_prefill_work, device_attention_mix) == 105 &&
+    offsetof(struct i2_prefill_work, device_current) == 106 &&
+    offsetof(struct i2_prefill_work, device_boundary) == 107 &&
+    offsetof(struct i2_prefill_work, device_loop) == 108 &&
+    offsetof(struct i2_prefill_work, device_prelude) == 109 &&
+    offsetof(struct i2_prefill_work, poison_host) == 110, "Goose prefill layer ABI");
 
-extern void fg_i2_prefill_postconv(struct decoder *d, const int64_t *aux, int slot, int count, float *input, float *output);
-extern void fg_i2_prefill_depthmix(struct decoder *d, const int64_t *aux, struct prefill_token *tokens,
-    int count, bool save_history, bool resident, float *staging, float *residual, float *output);
+void fg_i2_prefill_prepare(struct i2_prefill_team *team, struct i2_prefill_work *work, int count) {
+    prepare_prefill(team, work, count);
+}
 
-extern bool fg_i2_prefill_resident_moe(struct decoder *d, const int64_t *core, const int64_t *aux,
-    struct prefill_token *tokens, int slot, int begin, int layer, int pass, int count,
-    bool device_loop, bool prune_host, bool retain, bool direct_depthmix, uint64_t output_slot,
-    float *ffn, float *residual, float *output, float *gain);
+void fg_i2_prefill_postconv_team(struct i2_prefill_team *team, struct i2_prefill_work *work) {
+    prefill_team_run(team, work, model_width);
+}
 
-_Static_assert(sizeof(((struct prefill_workspace *)0)->inputs[0]) == 37748736, "Goose prefill attention input stride");
-extern void fg_i2_prefill_resident_attention(struct decoder *d, const int64_t *core, const int64_t *aux,
-    int slot, int begin, int layer, int pass, int count, bool sliding, bool device_postconv,
-    bool direct_depthmix, bool prune_host, bool device_loop, bool attention_mix, float *inputs, float **messages, float *output);
-
-extern void fg_i2_prefill_native_attention(struct decoder *d, const int64_t *core, const int64_t *aux,
-    struct prefill_token *tokens, struct prefill_workspace *scratch, int slot, int begin, int pass, int count,
-    bool sliding, int64_t *work);
-
-extern void fg_i2_prepare_device_mix(struct decoder *d, const int64_t *aux, float *input,
-    int count, int history_rows, bool sliding, bool resident, bool boundary, bool prune_host);
-
-void fg_i2_prefill_layer(struct decoder *d, struct prefill_token *tokens, struct prefill_workspace *scratch,
-                          int count, int begin, const int64_t *visit, struct i2_prefill_team *team,
-                          bool *device_current, bool retain_current, uint64_t output_slot,
-                          bool *boundary_history, bool *tail_history, bool device_loop, bool device_prelude) {
-    const int layer = (int)visit[0], slot = (int)visit[1], pass = (int)visit[2];
-    const bool sliding = visit[3] != 0;
-    const int64_t *core = d->core + 10 * layer;
-    const int64_t *aux = d->aux + 30 * layer;
-    const bool resident_attention = fg_i2_serial_graph_enabled();
-    const char *conv_setting = getenv("I2_PARALLEL_CUDA_POSTCONV");
-    const bool device_postconv = resident_attention && count > 1 &&
-        (!conv_setting || strcmp(conv_setting, "0") != 0);
-    float *message[] = {scratch->control_input[0],
-        scratch->control_input[0] + count * model_width, scratch->gain[0]};
-    struct i2_prefill_work setup = {d, tokens, scratch, aux, layer, pass, sliding,
-        resident_attention && pass > 0 ? message : NULL, false};
-    const bool direct_depthmix = count == 4096 && device_postconv &&
-        use_cached_history() && fg_i2_resident_moe() && prefill_direct_output;
-    setup.shared_attention_input = resident_attention && share_attention_inputs(sliding, aux);
-    const char *mix_setting = getenv("I2_SLIDING_DEVICE_DEPTHMIX");
-    const char *full_setting = getenv("I2_FULL_DEVICE_DEPTHMIX");
-    const bool mixed_path = sliding ? setup.shared_attention_input && (!mix_setting || strcmp(mix_setting, "0") != 0) :
-                                      (!full_setting || strcmp(full_setting, "0") != 0);
-    const bool device_attention_mix = direct_depthmix && layer != 0 && aux[10] >= 0 && mixed_path;
-    setup.device_attention_mix = device_attention_mix;
-    setup.device_current = *device_current;
-    setup.device_loop = device_loop;
-    setup.device_prelude = device_prelude;
-    const bool device_boundary = *device_current && (layer == 12 || layer == 18 || (layer == 6 && device_prelude));
-    setup.device_boundary = device_boundary;
-    assert(!*device_current || (device_attention_mix && (layer % 6 != 0 || device_boundary)));
-    if (device_boundary) {
-        if (layer != 6) assert(tokens[0].count == layer / 6);
-        if (layer == 12) *boundary_history = true;
-        else if (layer == 18) *tail_history = true;
-        fprintf(stderr, "Inkling resident block history begin=%d layer=%d pass=%d\n", begin, layer, pass);
-    }
-    retain_current = retain_current && direct_depthmix && (!mix_setting || strcmp(mix_setting, "0") != 0);
-    const char *prune = getenv("I2_PRUNE_PREFILL_HOST_STAGING");
-    const bool prune_host = !getenv("I2_CHECK_STATE") && (!prune || strcmp(prune, "0") != 0);
-    setup.poison_host = !prune_host;
-    const bool skip_attention_prep = prune_host && device_attention_mix && *device_current &&
-        layer != 6 && (!setup.message || device_loop);
-    if (!skip_attention_prep) prepare_prefill(team, &setup, count);
-    if (device_attention_mix)
-        fg_i2_prepare_device_mix(d, aux, scratch->inputs[0][0], count, tokens[0].count,
-            sliding, *device_current, device_boundary, prune_host);
-    int64_t work[16] = {0};
-    if (resident_attention) {
-        fg_i2_prefill_resident_attention(d, core, aux, slot, begin, layer, pass, count, sliding,
-            device_postconv, direct_depthmix, prune_host, device_loop, device_attention_mix,
-            scratch->inputs[0][0], message, device_postconv ? scratch->residual[0] : scratch->linear[0]);
-    } else {
-        fg_i2_prefill_native_attention(d, core, aux, tokens, scratch, slot, begin, pass, count, sliding, work);
-    }
-    const char *postconv_batch = getenv("I2_PREFILL_POSTCONV_BATCH");
-    if (!device_postconv && team && (!postconv_batch || strcmp(postconv_batch, "0") != 0)) {
-        setup.postconv_weights = coefficients(d, aux[2], 4 * model_width);
-        setup.postconv_history = d->ha + slot * 3 * model_width;
-        setup.postconv_rows = count;
-        prefill_team_run(team, &setup, model_width);
-        setup.postconv_rows = 0;
-    } else if (!device_postconv) {
-        fg_i2_prefill_postconv(d, aux, slot, count, scratch->linear[0], scratch->residual[0]);
-    }
-    setup.after_attention = true;
-    setup.message = NULL;
-    setup.skip_host_mix = direct_depthmix;
-    const bool skip_moe_prep = prune_host && direct_depthmix && layer % 6 != 0;
-    if (!skip_moe_prep) prepare_prefill(team, &setup, count);
-    if (skip_attention_prep || skip_moe_prep)
-        fprintf(stderr, "Inkling pruned host prep begin=%d layer=%d pass=%d attention=%d moe=%d\n",
-                begin, layer, pass, skip_attention_prep, skip_moe_prep);
-    if (begin == 4096 && count > 1 && slot == 0 && getenv("I2_DRAFT_PARITY")) {
-        check_state("draft-postconv", count, scratch->residual[1], model_width);
-        check_state("draft-moe-input", count, scratch->ff[1], model_width);
-    }
-    if (direct_depthmix) {
-        fg_i2_prefill_depthmix(d, aux, tokens, count, layer % 6 == 0, *device_current,
-            scratch->inputs[0][0], scratch->residual[0], scratch->ff[0]);
-    }
-    if (fg_i2_resident_moe()) {
-        *device_current = fg_i2_prefill_resident_moe(d, core, aux, tokens, slot, begin, layer, pass, count,
-            device_loop, prune_host, retain_current, direct_depthmix, output_slot,
-            scratch->ff[0], scratch->residual[0], scratch->linear[0], scratch->gain[0]);
-        return;
-    }
-    if (pass > 0) {
-        fg_i2_prefill_control(d, aux, 3, count, tokens, scratch->ff[0], scratch);
-    }
-    fg_i2_prefill_moe(d, core, aux, slot, count, scratch->ff[0],
-        scratch->linear[0], scratch->residual[0], tokens, work);
+void fg_i2_prefill_trace_work(int count, const float *residual, const float *moe) {
+    check_state("draft-postconv", count, residual, model_width);
+    check_state("draft-moe-input", count, moe, model_width);
 }
 
 struct i2_prefill_visits {

@@ -739,9 +739,6 @@ export fn fg_i2_backend_prefill(decoder: u64, ids: u64, begin: i32, count: i32, 
 }
 
 extern fn fg_standalone_cpu_batch_threads() -> i64;
-extern fn fg_i2_prefill_layer(decoder: u64, tokens: u64, scratch: u64, count: i32, begin: i32,
-    visit: u64, workers: u64, current: u64, retain: bool, slot: u64, boundary: u64, tail: u64,
-    loop_enabled: bool, prelude: bool);
 extern fn fg_i2_prefill_trace_visit(visit: i32, current: u64);
 
 export fn fg_i2_prefill_task_count(count: i32) -> i32 {
@@ -875,4 +872,114 @@ export fn fg_i2_prepare_device_mix(decoder: u64, aux: u64, input: u64, count: i3
     if !prune_host {
         for index in queries { i2_poison_prefill_rows(input + (index as! u64) * 37748736, count); }
     }
+}
+
+extern fn fg_i2_direct_output_active() -> bool;
+extern fn fg_i2_prefill_prepare(team: u64, work: u64, count: i32);
+extern fn fg_i2_prefill_postconv_team(team: u64, work: u64);
+extern fn fg_i2_prefill_trace_work(count: i32, residual: u64, moe: u64);
+
+fn i2_prefill_flag(address: u64, value: bool) {
+    i2d_set_byte(address, if value { 1 } else { 0 });
+}
+
+fn fg_i2_prefill_layer(decoder: u64, tokens: u64, scratch: u64, count: i32, begin: i32,
+    visit: u64, workers: u64, current: u64, retain: bool, slot_address: u64, boundary: u64, tail: u64,
+    loop_enabled: bool, prelude: bool) {
+    let layer = i2d_read(visit) as! i32;
+    let slot = i2d_read(visit + 8) as! i32;
+    let pass = i2d_read(visit + 16) as! i32;
+    let sliding = i2d_read(visit + 24) != 0;
+    let core = decoder + I2_OPEN_CORE + (layer as! u64) * 80;
+    let aux = decoder + I2_OPEN_AUX + (layer as! u64) * 240;
+    let host_ffn = scratch + 305528832;
+    let residual = scratch + 381026312;
+    let linear = i2d_read(scratch + 343277568);
+    let gain = scratch + 533069832;
+    let attention = fg_i2_serial_graph_enabled();
+    let device_postconv = attention && count > 1 && !i2d_env_is("I2_PARALLEL_CUDA_POSTCONV", 48);
+    let messages: u64[3] = [scratch + 418775048, scratch + 418775048 + (count as! u64) * 9216, gain];
+    let message_table = i2d_address(unsafe_c_address<c_ptr<const void>>(messages[0]));
+    let use_messages = attention && pass > 0;
+    let direct_mix = count == 4096 && device_postconv && fg_i2_host_cached_history() &&
+        fg_i2_resident_moe() && fg_i2_direct_output_active();
+    let shared = attention && fg_i2_host_share_attention(sliding, aux);
+    let sliding_mix = !i2d_env_is("I2_SLIDING_DEVICE_DEPTHMIX", 48);
+    let mixed_path = if sliding { shared && sliding_mix } else { !i2d_env_is("I2_FULL_DEVICE_DEPTHMIX", 48) };
+    let attention_mix = direct_mix && layer != 0 && i2_host_aux(aux, 10) >= 0 && mixed_path;
+    let resident = i2d_byte(current) != 0;
+    let device_boundary = resident && (layer == 12 || layer == 18 || (layer == 6 && prelude));
+    assert(!resident || (attention_mix && (layer % 6 != 0 || device_boundary)));
+    if device_boundary {
+        if layer != 6 { assert(i2d_int(tokens + 285696) == layer / 6); }
+        if layer == 12 { i2d_set_byte(boundary, 1); }
+        else if layer == 18 { i2d_set_byte(tail, 1); }
+        i2d_log(str("Inkling resident block history begin=", begin, " layer=", layer, " pass=", pass, "\n"));
+    }
+    let retain_output = retain && direct_mix && sliding_mix;
+    let prune = i2_prefill_env_pointer("I2_CHECK_STATE\0") == 0 && !i2d_env_is("I2_PRUNE_PREFILL_HOST_STAGING", 48);
+    var setup: u64[14] = [0; 14];
+    let job = i2d_address(unsafe_c_address<c_ptr<const void>>(setup[0]));
+    i2d_set(job, decoder);
+    i2d_set(job + 8, tokens);
+    i2d_set(job + 16, scratch);
+    i2d_set(job + 24, aux);
+    i2d_set_int(job + 32, layer);
+    i2d_set_int(job + 36, pass);
+    i2_prefill_flag(job + 40, sliding);
+    i2d_set(job + 48, if use_messages { message_table } else { 0 });
+    i2_prefill_flag(job + 57, shared);
+    i2_prefill_flag(job + 105, attention_mix);
+    i2_prefill_flag(job + 106, resident);
+    i2_prefill_flag(job + 107, device_boundary);
+    i2_prefill_flag(job + 108, loop_enabled);
+    i2_prefill_flag(job + 109, prelude);
+    i2_prefill_flag(job + 110, !prune);
+    let skip_attention = prune && attention_mix && resident && layer != 6 && (!use_messages || loop_enabled);
+    if !skip_attention { fg_i2_prefill_prepare(workers, job, count); }
+    if attention_mix {
+        fg_i2_prepare_device_mix(decoder, aux, scratch, count, i2d_int(tokens + 285696), sliding, resident, device_boundary, prune);
+    }
+    var work: i64[16] = [0; 16];
+    let scratch_graph = i2d_address(unsafe_c_address<c_ptr<const void>>(work[0]));
+    if attention {
+        fg_i2_prefill_resident_attention(decoder, core, aux, slot, begin, layer, pass, count, sliding,
+            device_postconv, direct_mix, prune, loop_enabled, attention_mix, scratch, message_table,
+            if device_postconv { residual } else { linear });
+    } else {
+        fg_i2_prefill_native_attention(decoder, core, aux, tokens, scratch, slot, begin, pass, count, sliding, scratch_graph);
+    }
+    if !device_postconv {
+        if workers != 0 && !i2d_env_is("I2_PREFILL_POSTCONV_BATCH", 48) {
+            i2d_set(job + 58, i2_native_weight(decoder, aux, 2, 9216).address);
+            i2d_set(job + 66, 9216);
+            i2d_set(job + 80, i2d_read(decoder + I2D_HA) + (slot as! u64) * 27648);
+            i2d_set_int(job + 88, count);
+            fg_i2_prefill_postconv_team(workers, job);
+            i2d_set_int(job + 88, 0);
+        } else {
+            fg_i2_prefill_postconv(decoder, aux, slot, count, linear, residual);
+        }
+    }
+    i2d_set_byte(job + 56, 1);
+    i2d_set(job + 48, 0);
+    i2_prefill_flag(job + 104, direct_mix);
+    let skip_moe = prune && direct_mix && layer % 6 != 0;
+    if !skip_moe { fg_i2_prefill_prepare(workers, job, count); }
+    if skip_attention || skip_moe {
+        let a: i32 = if skip_attention { 1 } else { 0 };
+        let m: i32 = if skip_moe { 1 } else { 0 };
+        i2d_log(str("Inkling pruned host prep begin=", begin, " layer=", layer, " pass=", pass, " attention=", a, " moe=", m, "\n"));
+    }
+    if begin == 4096 && count > 1 && slot == 0 && i2_prefill_env_pointer("I2_DRAFT_PARITY\0") != 0 {
+        fg_i2_prefill_trace_work(count, residual + 9216, host_ffn + 9216);
+    }
+    if direct_mix { fg_i2_prefill_depthmix(decoder, aux, tokens, count, layer % 6 == 0, resident, scratch, residual, host_ffn); }
+    if fg_i2_resident_moe() {
+        i2_prefill_flag(current, fg_i2_prefill_resident_moe(decoder, core, aux, tokens, slot, begin, layer, pass, count,
+            loop_enabled, prune, retain_output, direct_mix, slot_address, host_ffn, residual, linear, gain));
+        return;
+    }
+    if pass > 0 { fg_i2_prefill_control(decoder, aux, 3, count, tokens, host_ffn, scratch); }
+    fg_i2_prefill_moe(decoder, core, aux, slot, count, host_ffn, linear, residual, tokens, scratch_graph);
 }
