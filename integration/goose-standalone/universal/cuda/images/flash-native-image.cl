@@ -78,6 +78,82 @@ static void i2_native_store(uint64_t address, int64_t index, float value) {
     float4 value = mma((float4)((acc).f0,(acc).f1,(acc).f2,(acc).f3),(uint4)(a0,a1,a2,a3),(uint2)(b0,b1)); \
     (__typeof__(acc)){value.x,value.y,value.z,value.w}; \
 })
+static float4 relative_load4(__global const float *address) {
+    float4 value;
+    __asm__("ld.global.v4.f32 {%0, %1, %2, %3}, [%4];"
+        : "=f"(value.x), "=f"(value.y), "=f"(value.z), "=f"(value.w)
+        : "l"((ulong)address));
+    return value;
+}
+
+static float relative_adjust_vector(float score, int64_t query, int64_t key,
+    int64_t window, __global const float *relative, __global const float *bias,
+    float sink, float scale) {
+    const int64_t distance = query - key;
+    if (key < 0 || distance < 0 || (window && distance >= window)) return i2o_neg_inf();
+    double dot = 0.0;
+    if (distance < 1024) {
+        const __global float *entry = bias + distance * 16;
+        #pragma unroll
+        for (int i = 0; i < 16; i += 4) {
+            const float4 products = relative_load4(relative + i) * relative_load4(entry + i);
+            dot += (double)products.x;
+            dot += (double)products.y;
+            dot += (double)products.z;
+            dot += (double)products.w;
+        }
+    }
+    return scale * score + ((float)dot - sink);
+}
+
+static uint q4_pair_product(uint nibble_pair, uint scale_pair) {
+    const uint encoded = 0x64006400u | (nibble_pair & 15u) | ((nibble_pair & 0xf00u) << 8);
+    uint integers, values;
+    __asm__("sub.rn.f16x2 %0, %1, %2;" : "=r"(integers) : "r"(encoded), "r"(0x64086408u));
+    __asm__("mul.rn.f16x2 %0, %1, %2;" : "=r"(values) : "r"(integers), "r"(scale_pair));
+    return values;
+}
+
+static uint load_q4_pair_columns(__global const uchar *data, int64_t element) {
+    const __global uchar *at = data + (element >> 5) * 18;
+    const uint channel = (uint)element & 31;
+    const uint pair = *(__global const ushort *)(at + 2 + (channel & 15));
+    const uint scale = *(__global const ushort *)at;
+    return q4_pair_product(pair >> (channel >= 16 ? 4 : 0), scale | (scale << 16));
+}
+
+static uint load_q4_pair_rows(__global const uchar *data, int64_t a, int64_t b,
+                               int64_t end, int64_t channel) {
+    uint first_scale = 0, second_scale = 0, first = 0, second = 0;
+    const uint offset = 2 + ((uint)channel & 15);
+    const uint shift = (channel & 16) ? 4 : 0;
+    const int64_t group = channel >> 5;
+    if (a < end) {
+        const __global uchar *block = data + (a * 32 + group) * 18;
+        first_scale = *(__global const ushort *)block;
+        first = ((uint)block[offset] >> shift) & 15;
+    }
+    if (b < end) {
+        const __global uchar *block = data + (b * 32 + group) * 18;
+        second_scale = *(__global const ushort *)block;
+        second = ((uint)block[offset] >> shift) & 15;
+    }
+    const uint result = q4_pair_product(first | (second << 8), first_scale | (second_scale << 16));
+    return result & ((a < end ? 0xffffu : 0u) | (b < end ? 0xffff0000u : 0u));
+}
+
+static float i2_native_relative(float score, int64_t query, int64_t key, int64_t window,
+    uint64_t relative, uint64_t bias, float sink, float scale) {
+    return relative_adjust_vector(score, query, key, window,
+        (__global const float *)relative, (__global const float *)bias, sink, scale);
+}
+static uint i2_native_tiles_columns(uint64_t data, int64_t element) {
+    return load_q4_pair_columns((__global const uchar *)data, element);
+}
+static uint i2_native_tiles_rows(uint64_t data, int64_t a, int64_t b, int64_t end, int64_t channel) {
+    return load_q4_pair_rows((__global const uchar *)data, a, b, end, channel);
+}
+
 #include "inkling-native-flash-device.h"
 
 // One CTA consumes up to 16 queries and one key partition. The host
@@ -97,7 +173,7 @@ __kernel void goose_i2_flash_mma(__global const ushort *q, __global const ushort
     i2_native_flash_g((uint64_t)q,(uint64_t)k,(uint64_t)v,(uint64_t)relative,(uint64_t)bias,
         (uint64_t)sinks,(uint64_t)key_pos,(uint64_t)query_pos,(uint64_t)partials,(uint64_t)metadata,
         (uint64_t)scores,(uint64_t)maxval,(uint64_t)sum,(uint64_t)alpha,(uint64_t)probs,
-        keys,queries,parts,window,scale,q4,query_tile,head,part,thread,false,false);
+        keys,queries,parts,window,scale,q4,query_tile,head,part,thread,false,false,false);
 }
 
 __kernel void goose_i2_flash_mma_merge(__global const float *partial,
@@ -135,7 +211,7 @@ __kernel void goose_i2_flash_mma_decode(__global const ushort *q, __global const
     i2_native_flash_g((uint64_t)q,(uint64_t)k,(uint64_t)v,(uint64_t)relative,(uint64_t)bias,
         (uint64_t)sinks,(uint64_t)key_pos,(uint64_t)query_pos,(uint64_t)partials,(uint64_t)metadata,
         (uint64_t)scores,(uint64_t)maxval,(uint64_t)sum,(uint64_t)alpha,(uint64_t)probs,
-        keys,queries,parts,window,scale,q4,0,head,part,thread,true,false);
+        keys,queries,parts,window,scale,q4,0,head,part,thread,true,false,false);
 }
 
 __kernel void goose_i2_flash_mma_prefill(__global const ushort *q, __global const ushort *k,
@@ -153,5 +229,25 @@ __kernel void goose_i2_flash_mma_prefill(__global const ushort *q, __global cons
     i2_native_flash_g((uint64_t)q,(uint64_t)k,(uint64_t)v,(uint64_t)relative,(uint64_t)bias,
         (uint64_t)sinks,(uint64_t)key_pos,(uint64_t)query_pos,(uint64_t)partials,(uint64_t)metadata,
         (uint64_t)scores,(uint64_t)maxval,(uint64_t)sum,(uint64_t)alpha,(uint64_t)probs,
-        keys,queries,parts,window,scale,q4,query_tile,head,part,thread,false,true);
+        keys,queries,parts,window,scale,q4,query_tile,head,part,thread,false,true,false);
 }
+
+#ifdef GOOSE_INKLING_FLASH_TILES_IMAGE
+__kernel void i2_flash_prefill_all_softmax(__global const ushort *q, __global const ushort *k,
+    __global const ushort *v, __global const float *relative, __global const float *bias,
+    __global const float *sinks, __global const int64_t *key_pos, __global const int64_t *query_pos,
+    __global float *partials, __global float *metadata, int64_t keys, int64_t queries,
+    int64_t parts, int64_t window, float scale, int q4) {
+    uint query_tile, head, part, thread;
+    __local float scores[16*32], maxval[16], sum[16], alpha[16];
+    __local ushort probs[16*32];
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(query_tile));
+    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(head));
+    __asm__("mov.u32 %0, %%ctaid.z;" : "=r"(part));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
+    i2_native_flash_g((uint64_t)q,(uint64_t)k,(uint64_t)v,(uint64_t)relative,(uint64_t)bias,
+        (uint64_t)sinks,(uint64_t)key_pos,(uint64_t)query_pos,(uint64_t)partials,(uint64_t)metadata,
+        (uint64_t)scores,(uint64_t)maxval,(uint64_t)sum,(uint64_t)alpha,(uint64_t)probs,
+        keys,queries,parts,window,scale,q4,query_tile,head,part,thread,false,true,true);
+}
+#endif

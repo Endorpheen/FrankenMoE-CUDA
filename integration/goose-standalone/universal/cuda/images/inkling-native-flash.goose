@@ -9,10 +9,15 @@ extern "i2_native_warp_sync" fn native_warp_sync();
 extern "i2_native_shuffle" fn native_shuffle(value: f32, distance: i32) -> f32;
 extern "i2_native_store" fn native_store(address: u64, index: i64, value: f32);
 
+extern "i2_native_relative" fn native_relative(score: f32, query: i64, key: i64, window: i64,
+    relative: u64, bias: u64, sink: f32, scale: f32) -> f32;
+extern "i2_native_tiles_columns" fn native_tiles_columns(data: u64, element: i64) -> u32;
+extern "i2_native_tiles_rows" fn native_tiles_rows(data: u64, a: i64, b: i64, end: i64, channel: i64) -> u32;
+
 fn native_zero() -> I2NativeAcc { return I2NativeAcc {x:0.0,y:0.0,z:0.0,w:0.0}; }
 
 fn native_q_fragment(q: u64, k: u64, query: i64, key: i64, dim: i64, tail: i64,
-    group: i64, col: i64, end: i64, q4: i32, key_column: i64, acc: I2NativeAcc) -> I2NativeAcc {
+    group: i64, col: i64, end: i64, q4: i32, key_column: i64, packed: bool, acc: I2NativeAcc) -> I2NativeAcc {
     let a0 = if group < tail { native_pair(q, query + dim + col) } else { 0 };
     let a2 = if group < tail { native_pair(q, query + dim + col + 8) } else { 0 };
     let a1 = if group + 8 < tail { native_pair(q, query + 24576 + dim + col) } else { 0 };
@@ -21,7 +26,10 @@ fn native_q_fragment(q: u64, k: u64, query: i64, key: i64, dim: i64, tail: i64,
     var b1: u32 = 0;
     if key < end {
         let offset = key * 1024 + key_column + dim + col;
-        if q4 != 0 {
+        if packed {
+            b0 = native_tiles_columns(k, offset);
+            b1 = native_tiles_columns(k, offset + 8);
+        } else if q4 != 0 {
             b0 = native_kv_pair(k, offset, offset + 1, q4);
             b1 = native_kv_pair(k, offset + 8, offset + 9, q4);
         } else {
@@ -60,7 +68,7 @@ fn native_decode_softmax(scores: u64, probabilities: u64, maxima: u64, totals: u
 export fn i2_native_flash(q: u64, k: u64, v: u64, relative: u64, bias: u64, sinks: u64,
     key_pos: u64, query_pos: u64, partials: u64, metadata: u64, scores: u64, maxima: u64, totals: u64, rescale: u64,
     probabilities: u64, keys: i64, queries: i64, parts: i64, window: i64, scale: f32,
-    flags: i32, query_tile: i64, head: i64, part: i64, thread: i64, decode: bool, prefill: bool) {
+    flags: i32, query_tile: i64, head: i64, part: i64, thread: i64, decode: bool, prefill: bool, packed: bool) {
     let warp = thread / 32;
     let lane = thread % 32;
     let group = lane / 4;
@@ -87,15 +95,33 @@ export fn i2_native_flash(q: u64, k: u64, v: u64, relative: u64, bias: u64, sink
         }
     }
     native_sync();
+    let earliest_query = if packed { position(query_pos, query) } else { 0 };
+    let latest_query = if packed { position(query_pos, query + tail - 1) } else { 0 };
     var start = begin;
     while start < end {
         let missing = if end - start < 32 { end - start } else { 32 };
+        var no_relative = false;
+        if packed {
+            let first_key = position(key_pos, start);
+            let last_key = position(key_pos, start + missing - 1);
+            if first_key > latest_query || (window != 0 && earliest_query - last_key >= window) {
+                start += 32;
+                continue;
+            }
+            no_relative = window == 0 && earliest_query - last_key >= 1024 && missing == 32;
+        }
         let key = start + warp * 8 + group;
         let query_address = (qhead + group * 24) * 128;
         var qk = native_zero();
         for dimension in 8 {
             qk = native_q_fragment(q, k, query_address, key, dimension * 16, tail, group, col, end,
-                q4, group_column, qk);
+                q4, group_column, packed, qk);
+        }
+        if no_relative {
+            let sink0 = if group < tail { load(sinks, qhead + group * 24) } else { 0.0 };
+            let sink1 = if group + 8 < tail { load(sinks, qhead + (group + 8) * 24) } else { 0.0 };
+            qk = I2NativeAcc {x:scale*qk.x+(0.0-sink0),y:scale*qk.y+(0.0-sink0),
+                z:scale*qk.z+(0.0-sink1),w:scale*qk.w+(0.0-sink1)};
         }
         let index = group * 32 + warp * 8 + col;
         shared_write(scores, index, qk.x);
@@ -111,7 +137,10 @@ export fn i2_native_flash(q: u64, k: u64, v: u64, relative: u64, bias: u64, sink
             }
             if !decode { native_sync(); }
         }
-        if prefill {
+        if packed {
+            native_tiles_softmax(scores, probabilities, maxima, totals, rescale, relative, bias, sinks,
+                key_pos, query_pos, query, qhead, missing, start, tail, window, scale, thread, no_relative);
+        } else if prefill {
             var at = thread;
             while at < tail * 32 {
                 let row = at / 32;
@@ -121,7 +150,7 @@ export fn i2_native_flash(q: u64, k: u64, v: u64, relative: u64, bias: u64, sink
             }
             native_sync();
         }
-        if !decode && thread < 16 {
+        if !packed && !decode && thread < 16 {
             if thread < tail {
                 if prefill { i2_online_prepared_row_at(scores, probabilities, maxima, totals, rescale, thread); }
                 else if parallel_scores { i2_online_prepared_row(scores, probabilities, maxima, totals, rescale); }
@@ -134,7 +163,7 @@ export fn i2_native_flash(q: u64, k: u64, v: u64, relative: u64, bias: u64, sink
                 for column in 32 { probability_write(probabilities, thread * 32 + column, 0.0); }
             }
         }
-        native_sync();
+        if !packed { native_sync(); }
         let w0 = shared_read(rescale, group);
         let w1 = shared_read(rescale, group + 8);
         for index in 4 {
@@ -154,8 +183,8 @@ export fn i2_native_flash(q: u64, k: u64, v: u64, relative: u64, bias: u64, sink
                 let k1 = first + 1;
                 let k2 = first + 8;
                 let k3 = first + 9;
-                let b0 = native_value_pair(v, k0, k1, column, end, q4);
-                let b1 = native_value_pair(v, k2, k3, column, end, q4);
+                let b0 = if packed { native_tiles_rows(v, k0, k1, end, column) } else { native_value_pair(v, k0, k1, column, end, q4) };
+                let b1 = if packed { native_tiles_rows(v, k2, k3, end, column) } else { native_value_pair(v, k2, k3, column, end, q4) };
                 acc[index] = native_mma(acc[index], a0, a1, a2, a3, b0, b1);
             }
         }
@@ -189,4 +218,54 @@ fn native_value_pair(v: u64, first: i64, second: i64, column: i64, end: i64, q4:
     let low = if first < end { native_load_half(v, first * 1024 + column, q4) } else { 0 };
     let high = if second < end { native_load_half(v, second * 1024 + column, q4) } else { 0 };
     return low | (high << 16);
+}
+
+fn native_tiles_softmax(scores: u64, probabilities: u64, maxima: u64, totals: u64, rescale: u64,
+    relative: u64, bias: u64, sinks: u64, key_pos: u64, query_pos: u64,
+    query: i64, qhead: i64, missing: i64, start: i64, tail: i64, window: i64, scale: f32,
+    thread: i64, no_relative: bool) {
+    var at = thread;
+    if !no_relative {
+        while at < tail * 32 {
+            let row = at / 32;
+            let lane = at % 32;
+            let head = qhead + row * 24;
+            let score = if lane < missing {
+                native_relative(shared_read(scores, at), position(query_pos, query + row), position(key_pos, start + lane),
+                    window, relative + ((head * 64) as u64), bias, load(sinks, head), scale)
+            } else { neg_inf() };
+            shared_write(scores, at, score);
+            at += 128;
+        }
+        native_sync();
+    }
+    if thread < 16 {
+        if thread < tail {
+            let before = shared_read(maxima, thread);
+            var maximum = before;
+            for index in 32 {
+                let score = shared_read(scores, thread * 32 + index);
+                if score > maximum { maximum = score; }
+            }
+            let alpha = exp(before - maximum);
+            shared_write(rescale, thread, alpha);
+            shared_write(maxima, thread, maximum);
+            shared_write(totals, thread, shared_read(totals, thread) * alpha);
+        } else { shared_write(rescale, thread, 0.0); }
+    }
+    native_sync();
+    at = thread;
+    while at < 512 {
+        let row = at / 32;
+        let weight = if row < tail { exp(shared_read(scores, at) - shared_read(maxima, row)) } else { 0.0 };
+        shared_write(scores, at, weight);
+        probability_write(probabilities, at, weight);
+        at += 128;
+    }
+    native_sync();
+    if thread < tail {
+        var total = shared_read(totals, thread);
+        for index in 32 { total += shared_read(scores, thread * 32 + index); }
+        shared_write(totals, thread, total);
+    }
 }

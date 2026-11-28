@@ -11,22 +11,6 @@ scratch=$(mktemp -d)
 trap 'rm -rf -- "$scratch"' EXIT
 mkdir -p -- "$out"
 cat "$src/inkling-online.goose" "$src/inkling-native-flash.goose" > "$scratch/inkling-native-flash.goose"
-"$goose" --standalone -o "$scratch/inkling-online.c" --header "$scratch/inkling-online.h" \
-    "$src/inkling-online.goose"
-python3 - "$scratch" <<'PY_FRAGMENT'
-from pathlib import Path
-import sys
-
-scratch = Path(sys.argv[1])
-source = (scratch / "inkling-online.c").read_text()
-body = source.split("/* ---- prototypes ---- */", 1)[1].split("/* ---- host ---- */", 1)[0]
-if "gs_sp" in body or "i2_online_adjust_key_g" not in body:
-    raise ValueError("Unexpected Inkling online attention fragment")
-types = source.split("/* ---- types ---- */", 1)[1].split("/* ---- data ---- */", 1)[0]
-types = "\n".join(line for line in types.splitlines()
-                  if not line.endswith(("gs_rhdr;", "gs_rref;", "gs_pref;", "sl_u8;")))
-(scratch / "inkling-online-device.h").write_text(types + "\n" + body)
-PY_FRAGMENT
 "$goose" --standalone -o "$scratch/inkling-native-flash.c" --header "$scratch/inkling-native-flash.h" \
     "$scratch/inkling-native-flash.goose"
 python3 - "$scratch" <<'PY_FRAGMENT'
@@ -51,12 +35,16 @@ for function in ("i2_native_flash_g", entry[1]):
 PY_FRAGMENT
 while read -r header symbol entries prelude; do
     stem=${header%.h}
+    device_source="$src/$stem.cl"
     options=(-Xclang -mlink-builtin-bitcode -Xclang "$cuda/nvvm/libdevice/libdevice.10.bc")
     frontend=(-march=sm_80 -cl-std=CL2.0 -nocudainc -Xclang -finclude-default-header)
     case "$stem" in
         bridge-image) options=() ;;
         flash-native-image) options+=(-I"$scratch" -include "$shared/device-prelude.cl") ;;
-        flash-tiles-image) options+=(-I"$scratch") ;;
+        flash-tiles-image)
+            device_source="$src/flash-native-image.cl"
+            options+=(-I"$scratch" -include "$shared/device-prelude.cl" -DGOOSE_INKLING_FLASH_TILES_IMAGE)
+            ;;
         attention-image)
             "$goose" --standalone --emit-provenance "$scratch/inkling-attention.c" "$src/inkling-attention.goose"
             python3 "$shared/frankenmoe-fragment.py" "$scratch" inkling-attention
@@ -73,7 +61,7 @@ while read -r header symbol entries prelude; do
     if [[ -n $entries && $entries != - ]]; then assembler+=(--entry "$entries"); fi
     "${CLANG:-clang-18}" -target nvptx64-nvidia-cuda "${frontend[@]}" -x cl -O3 -ffp-contract=off \
         -nocudalib "${options[@]}" \
-        -S "$src/$stem.cl" -o "$scratch/$stem.ptx"
+        -S "$device_source" -o "$scratch/$stem.ptx"
     "$cuda/bin/ptxas" "${assembler[@]}" "$scratch/$stem.ptx" -o "$scratch/$stem.cubin"
     python3 - "$scratch/$stem.cubin" "$out/$header" "$symbol" <<'PY'
 from pathlib import Path
