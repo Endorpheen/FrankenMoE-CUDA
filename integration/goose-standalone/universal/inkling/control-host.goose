@@ -5,10 +5,6 @@ extern fn fg_i2_host_measured_rms(source: I2DraftSpan,weight: I2DraftSpan,eps: f
 extern fn fg_i2_host_measured_depth(states: I2DraftSpan,width: i64,query: I2DraftSpan,norm: I2DraftSpan,p: I2DraftSpan,out: I2DraftSpan) -> i64;
 extern fn fg_i2_host_measured_blend(cur: I2DraftSpan,msg: I2DraftSpan,gain: I2DraftSpan,forget: I2DraftSpan,out: I2DraftSpan) -> i64;
 extern fn i2_depth_mix_cached(history: I2DraftSpan,cur: I2DraftSpan,query: I2DraftSpan,p: I2DraftSpan,out: I2DraftSpan) -> i64;
-extern fn fg_i2_host_context() -> u64;
-extern fn fg_i2_host_weight(ctx: u64,decoder: u64,id: i64) -> u64;
-extern fn fg_i2_host_evaluate_one(ctx: u64,tensor: u64,out: u64,count: i32);
-extern fn fg_i2_host_project(decoder: u64,id: i64,in_addr: u64,n: i32,out: u64,rows: i32);
 extern fn ggml_new_tensor_2d(ctx: u64,kind: i32,width: i64,count: i64) -> u64;
 extern fn ggml_mul_mat(ctx: u64,a: u64,b: u64) -> u64;
 extern fn ggml_rms_norm(ctx: u64,input: u64,eps: f32) -> u64;

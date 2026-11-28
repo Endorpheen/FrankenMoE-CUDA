@@ -75,33 +75,6 @@ extern void i2_cuda_attention_stats(void);
 extern int64_t fg_cuda_free_bytes(void);
 
 enum { model_width=2304, ff=1152, experts=128, active=8 };
-typedef struct {
-    const uint8_t *data;
-    int64_t kind;
-    int64_t shape[4];
-} weight;
-
-static weight bind(const uint8_t *file, const int64_t *tensors, int64_t index) {
-    assert(index >= 0 && index < 704);
-    const int64_t *record=tensors+12*index;
-    weight w={ .data=file+record[10], .kind=record[2] };
-    memcpy(w.shape,record+4,sizeof w.shape);
-    return w;
-}
-
-static struct ggml_tensor * load(struct ggml_context * ctx, weight w) {
-    struct ggml_tensor *t=ggml_new_tensor(ctx,(enum ggml_type)w.kind,4,w.shape);
-    assert(t);
-    t->data=(void *)(uintptr_t) w.data;
-    return t;
-}
-
-static sl_f32 float_weights(weight w, int64_t count) {
-    assert(w.kind == GGML_TYPE_F32);
-    assert(w.shape[0]*w.shape[1]*w.shape[2]*w.shape[3]==count);
-    return (sl_f32){(float *)(uintptr_t)w.data,count};
-}
-
 extern bool fg_i2_host_resident_plan(void);
 extern bool fg_i2_host_resident_control(void);
 extern bool fg_i2_resident_moe(void);
@@ -139,39 +112,16 @@ extern void inkling_prelude_clear(void);
 extern bool inkling_prelude_use(bool capture);
 extern bool inkling_prefill_final_rows(float *current, float *prelude);
 
-static void evaluate(struct ggml_context *ctx, struct ggml_tensor **nodes, int count,
-                     float *output, int size) {
-    if (output == prefill_direct_output && count == 1 && nodes[0] &&
-        !nodes[0]->data && !nodes[0]->view_src && nodes[0]->type == GGML_TYPE_F32 &&
-        (size_t)size == prefill_direct_output_size && ggml_nelements(nodes[0]) == size) {
-        nodes[0]->data = output;
-    }
-    struct ggml_cgraph *graph=ggml_new_graph_custom(ctx,256,false);
-    assert(graph);
-    for(int i=0;i<count;i++)ggml_build_forward_expand(graph,nodes[i]);
-    void *storage = NULL;
-    struct fg_standalone_graph_plan *plan = NULL;
-    if (fg_i2_host_resident_plan() && count == 1 && fg143_graph_nodes((uint64_t)(uintptr_t)graph) > 2) {
-        plan = fg_standalone_graph_plan_alloc(graph, nodes[0]);
-        assert(plan && MEASURE(8, fg_standalone_graph_plan_compute(plan)) == GGML_STATUS_SUCCESS);
-    } else {
-        storage = fg_standalone_graph_alloc(graph);
-        assert(storage && fg_standalone_graph_compute(graph) == GGML_STATUS_SUCCESS);
-    }
-    int at=0;
-    for(int i=0;i<count;i++) {
-        assert(nodes[i]);
-        int64_t n=ggml_nelements(nodes[i]);
-        assert(at+n<=size);
-        if (output + at != nodes[i]->data)
-            memcpy(output + at, nodes[i]->data, (size_t)n * sizeof(float));
-        at+=(int)n;
-    }
-    assert(at==size);
-    fg_standalone_graph_plan_free(plan);
-    free(storage);
+bool fg_i2_readback_matches(float *output, size_t elements) {
+    return output == prefill_direct_output && elements == prefill_direct_output_size;
 }
 
+int32_t fg_i2_measure_graph_plan(struct fg_standalone_graph_plan *plan) {
+    return MEASURE(8, fg_standalone_graph_plan_compute(plan));
+}
+
+_Static_assert(offsetof(struct ggml_tensor, type) == 0 && offsetof(struct ggml_tensor, view_src) == 232,
+    "Goose graph readback ABI");
 
 // Test driver for the shared Goose graph executor. Each component's
 // floating-point operations and expert decisions are in the runtime.
@@ -213,49 +163,7 @@ struct decoder {
     struct inkling_decode_graph decode_attention[logical], decode_moe[logical], decode_joined[logical];
 };
 
-static sl_f32 vec(float *p,int64_t n) { return (sl_f32){p,n}; }
-static sl_i64 ints(int64_t *p,int64_t n) { return (sl_i64){p,n}; }
-static weight named(struct decoder *d,int64_t id) { return bind(d->data,d->tensor,id); }
-static sl_f32 coefficients(struct decoder *d,int64_t id,int64_t n) {
-    return float_weights(named(d,id),n);
-}
-
 #include "native-host.h"
-
-static struct ggml_tensor *input_tensor(struct ggml_context *ctx,float *values,int n) {
-    struct ggml_tensor *t=ggml_new_tensor_2d(ctx,GGML_TYPE_F32,n,1);
-    assert(t);
-    t->data=values;
-    return t;
-}
-
-static void execute_decode_graph(struct inkling_decode_graph *entry, float *output) {
-    if (!entry->plan) {
-        struct ggml_cgraph *graph = ggml_new_graph_custom(entry->context, 256, false);
-        assert(graph);
-        ggml_build_forward_expand(graph, entry->output);
-        entry->plan = fg_standalone_graph_plan_alloc(graph, entry->output);
-        assert(entry->plan);
-    }
-    assert(MEASURE(8, fg_standalone_graph_plan_compute(entry->plan)) == GGML_STATUS_SUCCESS);
-    memcpy(output, entry->output->data, model_width * sizeof(*output));
-}
-
-static struct ggml_context *context(void) {
-    struct ggml_context *ctx=ggml_init((struct ggml_init_params){2*1024*1024,NULL,true});
-    assert(ctx);
-    return ctx;
-}
-
-static void project(struct decoder *d,int64_t id,float *input,int n,float *output,int rows) {
-    struct ggml_context *ctx=context();
-    struct ggml_tensor *w=load(ctx,named(d,id)), *x=input_tensor(ctx,input,n);
-    struct ggml_tensor *result=ggml_mul_mat(ctx,w,x);
-    assert(result);
-    struct ggml_tensor *nodes[]={result};
-    evaluate(ctx,nodes,1,output,rows);
-    ggml_free(ctx);
-}
 
 extern bool fg_i2_host_cached_history(void);
 extern void fg_i2_host_save_history(float *row, float *current);
@@ -276,16 +184,6 @@ extern void fg_i2_host_control(struct decoder *, const int64_t *, int, float *, 
 #define control_resident fg_i2_host_control_resident
 #define control fg_i2_host_control
 
-struct ggml_context *fg_i2_host_context(void) { return context(); }
-struct ggml_tensor *fg_i2_host_weight(struct ggml_context *ctx, struct decoder *d, int64_t id) {
-    return load(ctx, named(d, id));
-}
-void fg_i2_host_evaluate_one(struct ggml_context *ctx, struct ggml_tensor *tensor, float *out, int count) {
-    evaluate(ctx, &tensor, 1, out, count);
-}
-void fg_i2_host_project(struct decoder *d, int64_t id, float *input, int n, float *out, int rows) {
-    project(d, id, input, n, out, rows);
-}
 int64_t fg_i2_host_measured_rms(sl_f32 input, sl_f32 weight, float eps, sl_f32 out) {
     return i2_rms_gain(input, weight, eps, out);
 }
@@ -319,10 +217,6 @@ extern void fg_i2_host_attention_graph(struct decoder *, const int64_t *, const 
 
 int64_t fg_i2_host_measured_moe(int64_t ctx, int64_t input, sl_i64 weights, sl_i64 work, sl_i64 nodes) {
     return i2_moe_ffn(ctx, input, weights, work, nodes);
-}
-
-void fg_i2_host_execute_entry(struct inkling_decode_graph *entry, float *out) {
-    execute_decode_graph(entry, out);
 }
 
 void fg_i2_measure_native_attention(const struct inkling_attention_batch *batch,
@@ -367,12 +261,6 @@ _Static_assert(offsetof(struct decoder, hf) == 887144, "Goose serial MoE history
 int64_t fg_i2_measured_attention_projections(int64_t ctx, sl_i64 input, sl_i64 weights, bool sliding,
     sl_i64 work, sl_i64 output) {
     return i2_attention_projections(ctx, input, weights, sliding, work, output);
-}
-
-void fg_i2_evaluate_attention_inputs(struct ggml_context *ctx, int64_t *output, int matrices, float *projected, int count) {
-    struct ggml_tensor *roots[8];
-    for (int index = 0; index < matrices; ++index) roots[index] = (struct ggml_tensor *)(intptr_t)output[index];
-    evaluate(ctx, roots, matrices, projected, count);
 }
 
 void fg_i2_softcap_logits(sl_f32 logits) {

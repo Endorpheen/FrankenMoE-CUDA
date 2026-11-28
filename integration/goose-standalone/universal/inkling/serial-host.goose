@@ -244,7 +244,6 @@ export fn i2_serial_layer(decoder: u64, physical: i32, slot: i32, absolute: i32,
 
 extern fn fg_i2_measured_attention_projections(ctx: i64, input: I2DraftSpan, weights: I2DraftSpan, sliding: bool,
     work: I2DraftSpan, output: I2DraftSpan) -> i64;
-extern fn fg_i2_evaluate_attention_inputs(ctx: u64, output: u64, matrices: i32, projected: u64, count: i32);
 
 export fn fg_i2_project_attention_inputs(decoder: u64, core: u64, aux: u64, sliding: bool,
     rows: u64, count: i32, projected: u64, work: u64) -> i32 {
