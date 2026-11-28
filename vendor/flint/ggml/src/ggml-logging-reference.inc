@@ -46,3 +46,19 @@ void ggml_log_callback_default(enum ggml_log_level level, const char * text, voi
     fputs(text, stderr);
     fflush(stderr);
 }
+
+void ggml_abort(const char * file, int line, const char * fmt, ...) {
+    fflush(stdout);
+
+    char message[2048];
+    int offset = snprintf(message, sizeof(message), "%s:%d: ", file, line);
+
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(message + offset, sizeof(message) - offset, fmt, args);
+    va_end(args);
+
+    fprintf(stderr, "%s\n", message);
+    ggml_print_backtrace();
+    abort();
+}

@@ -32,6 +32,11 @@ flags=(-std=c11 -D_GNU_SOURCE -ffunction-sections -fdata-sections
     -c "$ggml/src/ggml.c" -o "$out/ggml.o"
 "$cc" "${flags[@]}" -x c -fsyntax-only "$standalone/graph-bindings-layout.h"
 printf 'extern fn host_quant_lround(value: f32) -> %s;\n' "$native_long" > "$out/common-core.goose"
+if "$cc" "${flags[@]}" -dM -E -x c /dev/null | awk '$2 == "NDEBUG" { seen = 1 } END { exit !seen }'; then
+    printf 'const GGML_ARENA_DEBUG: bool = false;\n' >> "$out/common-core.goose"
+else
+    printf 'const GGML_ARENA_DEBUG: bool = true;\n' >> "$out/common-core.goose"
+fi
 cat "$out/metadata.goose" "$standalone/"{graph-bindings,common-memory,graph-metadata,graph-arena-abi}.goose \
     "$host/"{host-quant,host-runtime,host-conversion}.goose "$host/host-io-$target.goose" >> "$out/common-core.goose"
 "${GOOSE_CUDA_DRIVER_BIN:?Set GOOSE_CUDA_DRIVER_BIN to Fried Goose KeelWing v0.3.1-dev.1}" --standalone \
@@ -51,7 +56,7 @@ else
         --redefine-sym=host_win_aligned_malloc=_aligned_malloc --redefine-sym=host_win_aligned_free=_aligned_free
         --redefine-sym=ggml_crt_write=_write --redefine-sym=host_conv_time=_time64 --redefine-sym=host_conv_localtime=_localtime64)
 fi
-"$objcopy" --redefine-sym=ggml_diagnostic_strlen=strlen --redefine-sym=graph_crt_getenv=getenv --redefine-sym=host_quant_lround=lroundf \
+"$objcopy" --redefine-sym=ggml_flush_all=fflush --redefine-sym=ggml_diagnostic_strlen=strlen --redefine-sym=graph_crt_getenv=getenv --redefine-sym=host_quant_lround=lroundf \
     --redefine-sym=host_conv_strtod=strtod --redefine-sym=host_conv_strftime=strftime "${io_symbols[@]}" "$out/graph-bindings.o"
 "$cc" -O1 "${flags[@]}" -c "$host/goose_host.c" -o "$out/goose-host.o"
 CC="$cc" WINDOWS_CC="$cc" bash "$root/tools/build-gooseinfer-socket.sh" "$target" "$out/socket-forwards.o"

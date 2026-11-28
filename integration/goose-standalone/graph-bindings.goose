@@ -11,7 +11,6 @@ const B_CUSTOM: i64 = 95;
 
 extern "memcpy" fn builder_copy(dst: c_ptr<void>, src: c_ptr<const void>, n: u64) -> c_ptr<void>;
 extern fn graph_crt_getenv(name: i64) -> i64;
-extern fn ggml_abort(file: i64, line: i32, message: i64);
 extern fn ggml_new_tensor(c: i64, kind: i32, dims: i32, ne: i64) -> i64;
 extern fn ggml_new_tensor_2d(c: i64, kind: i32, n0: i64, n1: i64) -> i64;
 extern fn ggml_new_tensor_3d(c: i64, kind: i32, n0: i64, n1: i64, n2: i64) -> i64;
@@ -65,12 +64,7 @@ fn builder_write_i32(address: i64, value: i64) {
 }
 
 fn builder_abort(message: const u8[:]) {
-    let name: u8[21] = [103,114,97,112,104,45,98,105,110,100,105,110,103,115,46,103,111,111,115,101,0];
-    var text: u8[128];
-    for i in message.len { text[i] = message[i]; }
-    text[message.len] = 0;
-    ggml_abort(builder_address(unsafe_c_address<c_ptr<const void>>(name[0])), 0,
-        builder_address(unsafe_c_address<c_ptr<const void>>(text[0])));
+    ggml_abort_text(str("graph-bindings.goose:0: ", message));
 }
 
 export fn fg_standalone_option_enabled(name: i64) -> bool {

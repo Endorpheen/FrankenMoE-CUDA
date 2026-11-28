@@ -72,36 +72,6 @@
 void fg_ggml_allow_debugger(int child) { prctl(PR_SET_PTRACER, child); }
 #endif
 
-#ifdef GOOSEINFER_TYPE_METADATA_ONLY
-extern void fg_ggml_abort_message(uint64_t address);
-#endif
-
-void ggml_abort(const char * file, int line, const char * fmt, ...) {
-    fflush(stdout);
-
-    char message[2048];
-    int offset = snprintf(message, sizeof(message), "%s:%d: ", file, line);
-
-    va_list args;
-    va_start(args, fmt);
-    vsnprintf(message + offset, sizeof(message) - offset, fmt, args);
-    va_end(args);
-
-#ifdef GOOSEINFER_TYPE_METADATA_ONLY
-    fg_ggml_abort_message((uintptr_t)message);
-#else
-    fprintf(stderr, "%s\n", message);
-    ggml_print_backtrace();
-#endif
-    abort();
-}
-
-// ggml_print_backtrace is registered with std::set_terminate by ggml.cpp
-
-//
-// logging
-//
-
 #ifndef GOOSEINFER_TYPE_METADATA_ONLY
 #include "ggml-logging-reference.inc"
 #endif
@@ -247,12 +217,6 @@ extern struct ggml_object * ggml_new_object(struct ggml_context *, enum ggml_obj
 
 _Static_assert(GGML_LOG_LEVEL_WARN == 3, "Goose GGML logging ABI");
 
-void fg143_arena_abort(int status) {
-    GGML_ASSERT(status != -1);
-#ifndef NDEBUG
-    if (status == -4) GGML_ABORT("not enough space in the context's memory pool");
-#endif
-}
 #else
 #include "ggml-arena-reference.inc"
 #endif

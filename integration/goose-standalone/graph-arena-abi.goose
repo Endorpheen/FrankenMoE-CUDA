@@ -102,8 +102,11 @@ export fn ggml_log_callback_default(level: i32, address: u64, data: u64) {
     ggml_diagnostic_write(unsafe_c_ptr<c_ptr<const u8>>(address));
 }
 
-export fn fg_ggml_abort_message(address: u64) {
-    ggml_diagnostic_write(unsafe_c_ptr<c_ptr<const u8>>(address));
+extern fn ggml_flush_all(stream: c_ptr<void>) -> i32;
+
+fn ggml_abort_text(message: const u8[:]) {
+    ggml_flush_all(null);
+    common_memory_error(message);
     common_memory_error("\n");
     ggml_print_backtrace();
     common_memory_abort();
@@ -124,7 +127,6 @@ fn ggml_log_message(level: i32, text: c_ptr<const u8>) {
         unsafe_c_fnptr<GgmlLogCallback>(ggml_log_callback)(level, text, ggml_log_data);
     }
 }
-extern fn fg143_arena_abort(status: i32);
 extern "memcpy" fn arena_error_copy(dst: c_ptr<void>, src: c_ptr<const void>, size: u64) -> c_ptr<void>;
 
 fn arena_warn_text(message: const u8[:]) {
@@ -137,11 +139,11 @@ fn arena_warn_text(message: const u8[:]) {
 
 export fn fg143_arena_failure(status: i32, needed: u64, capacity: u64) {
     if status == -1 {
-        fg143_arena_abort(status);
+        ggml_abort_text("ggml.c: GGML_ASSERT(status != -1) failed");
     } else if status == -4 {
         arena_warn_text(str("ggml_new_object: not enough space in the context's memory pool (needed ", needed,
             ", available ", capacity, ")\n"));
-        fg143_arena_abort(status);
+        if GGML_ARENA_DEBUG { ggml_abort_text("ggml.c: not enough space in the context's memory pool"); }
     } else {
         arena_warn_text("ggml_new_object: overflow detected in context allocation\n");
     }
