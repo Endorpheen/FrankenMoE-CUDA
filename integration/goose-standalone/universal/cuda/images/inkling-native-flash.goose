@@ -269,3 +269,21 @@ fn native_tiles_softmax(scores: u64, probabilities: u64, maxima: u64, totals: u6
         shared_write(totals, thread, total);
     }
 }
+
+export fn native_flash_merge(partial: u64, metadata: u64, output: u64, parts: i64, head: i64, channel: i64) {
+    let first = head * parts;
+    var maximum: f32 = 0.0;
+    for index in parts {
+        let value = load(metadata, (first + index) * 2);
+        if value > maximum { maximum = value; }
+    }
+    var total = exp(-maximum) as! f64;
+    var sum: f64 = 0.0;
+    for index in parts {
+        let slot = first + index;
+        let weight = exp(load(metadata, slot * 2) - maximum) as! f64;
+        total += weight * (load(metadata, slot * 2 + 1) as! f64);
+        sum += weight * (load(partial, slot * 128 + channel) as! f64);
+    }
+    native_store(output, head * 128 + channel, (sum / total) as! f32);
+}

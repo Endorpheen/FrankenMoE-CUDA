@@ -181,20 +181,7 @@ __kernel void goose_i2_flash_mma_merge(__global const float *partial,
     uint head, channel;
     __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(head));
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(channel));
-    const int64_t first = (int64_t)head*parts;
-    float maxval = 0.0f;
-    for (int64_t i=0; i<parts; ++i) {
-        const float m = meta[(first+i)*2];
-        if (m > maxval) maxval = m;
-    }
-    double total = __nv_expf(-maxval), sum = 0;
-    for (int64_t i=0; i<parts; ++i) {
-        const int64_t slot = first+i;
-        const double w = __nv_expf(meta[slot*2]-maxval);
-        total += w*meta[slot*2+1];
-        sum += w*partial[slot*128+channel];
-    }
-    out[(int64_t)head*128+channel] = (float)(sum/total);
+    native_flash_merge_g((uint64_t)partial, (uint64_t)meta, (uint64_t)out, parts, head, channel);
 }
 
 __kernel void goose_i2_flash_mma_decode(__global const ushort *q, __global const ushort *k,
