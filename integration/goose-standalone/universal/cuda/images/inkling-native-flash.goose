@@ -340,7 +340,7 @@ export fn native_sliding_prefill_group(q: u64, k: u64, v: u64, relative: u64, bi
     i2_native_flash(q + row * 6144, k + key_row * 576, v + key_row * 576,
         relative + row * 1536, bias, sinks + row * 96, key_pos + key_row * 8, query_pos + row * 8,
         partials + slots * 512, metadata + slots * 8, scores, maxima, totals, rescale, probabilities,
-        available - skip + count, count, 1, window, scale, flags, query_tile % 8, head, 0, thread, false, true, false);
+        available - skip + count, count, 1, window, scale, flags, query_tile % 8, head, 0, thread, false, true, true);
 }
 
 fn native_value_pair(v: u64, first: i64, second: i64, column: i64, end: i64, q4: i32) -> u32 {
