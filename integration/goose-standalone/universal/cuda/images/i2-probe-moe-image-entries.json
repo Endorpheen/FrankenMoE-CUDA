@@ -1,0 +1,3 @@
+[
+  {"name": "goose_i2_moe_epilogue", "parameters": ["__global const float *input", "__global const float *residual", "__global const float *weights", "__global float *history", "__global float *output", "int rows"], "function": "inkling_moe_epilogue_g", "arguments": ["@input", "@residual", "@weights", "@history", "@output", "rows", "group", "lane"], "registers": {"group": "block_x", "lane": "thread_x"}}
+]

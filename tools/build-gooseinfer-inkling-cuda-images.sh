@@ -37,6 +37,8 @@ for abi in "$src/"*-entries.json; do
     name=${abi##*/}
     python3 "$root/tools/emit-gooseinfer-cuda-entries.py" "$abi" "$scratch/${name%.json}.h"
 done
+"$goose" --standalone --emit-provenance "$scratch/inkling-epilogue.c" "$src/inkling-epilogue.goose"
+python3 "$shared/frankenmoe-fragment.py" "$scratch" inkling-epilogue
 while read -r header symbol entries prelude; do
     stem=${header%.h}
     device_source="$src/$stem.cl"
@@ -47,6 +49,11 @@ while read -r header symbol entries prelude; do
         flash-tiles-image)
             device_source="$src/flash-native-image.cl"
             options+=(-I"$scratch" -include "$shared/device-prelude.cl" -DGOOSE_INKLING_FLASH_TILES_IMAGE)
+            ;;
+        i2-parallel-conv-image|i2-probe-moe-image|attention-gate-image|situ-image|tanh-image)
+            device_source="$scratch/$stem-entries.h"
+            options+=(-I"$scratch" -include "$shared/device-prelude.cl"
+                -include "$src/inkling-epilogue-primitives.h" -include "$scratch/inkling-epilogue-device.h")
             ;;
         attention-input-image)
             "$goose" --standalone --emit-provenance "$scratch/i2-attention-input.c" "$src/i2-attention-input.goose"

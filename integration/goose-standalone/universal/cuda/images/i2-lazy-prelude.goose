@@ -9,7 +9,66 @@ extern "lazy_float_bits" fn float_bits(value: f32) -> u32;
 extern "block_barrier" fn barrier();
 extern "divide_rn" fn divide(a: f32, b: f32) -> f32;
 extern "sqrt_rn" fn sqrt(value: f32) -> f32;
-extern "depth_expf" fn exp(value: f32) -> f32;
+/*
+ * Adapted from the range reduction and exp2 table of Arm optimized-routines.
+ * Copyright (c) 2017-2026, Arm Limited.
+ * SPDX-License-Identifier: MIT
+ *
+ * https://github.com/ARM-software/optimized-routines/blob/master/math/expf.c
+ * https://github.com/ARM-software/optimized-routines/blob/master/math/exp2f_data.c
+ */
+extern fn depth_fma(a: f64, b: f64, c: f64) -> f64;
+extern fn depth_bits(value: f64) -> u64;
+extern fn depth_value(bits: u64) -> f64;
+
+fn depth_exp2_word(index: u64) -> u64 {
+    if index == 0 { return 0x3ff0000000000000; }
+    if index == 1 { return 0x3fefd9b0d3158574; }
+    if index == 2 { return 0x3fefb5586cf9890f; }
+    if index == 3 { return 0x3fef9301d0125b51; }
+    if index == 4 { return 0x3fef72b83c7d517b; }
+    if index == 5 { return 0x3fef54873168b9aa; }
+    if index == 6 { return 0x3fef387a6e756238; }
+    if index == 7 { return 0x3fef1e9df51fdee1; }
+    if index == 8 { return 0x3fef06fe0a31b715; }
+    if index == 9 { return 0x3feef1a7373aa9cb; }
+    if index == 10 { return 0x3feedea64c123422; }
+    if index == 11 { return 0x3feece086061892d; }
+    if index == 12 { return 0x3feebfdad5362a27; }
+    if index == 13 { return 0x3feeb42b569d4f82; }
+    if index == 14 { return 0x3feeab07dd485429; }
+    if index == 15 { return 0x3feea47eb03a5585; }
+    if index == 16 { return 0x3feea09e667f3bcd; }
+    if index == 17 { return 0x3fee9f75e8ec5f74; }
+    if index == 18 { return 0x3feea11473eb0187; }
+    if index == 19 { return 0x3feea589994cce13; }
+    if index == 20 { return 0x3feeace5422aa0db; }
+    if index == 21 { return 0x3feeb737b0cdc5e5; }
+    if index == 22 { return 0x3feec49182a3f090; }
+    if index == 23 { return 0x3feed503b23e255d; }
+    if index == 24 { return 0x3feee89f995ad3ad; }
+    if index == 25 { return 0x3feeff76f2fb5e47; }
+    if index == 26 { return 0x3fef199bdd85529c; }
+    if index == 27 { return 0x3fef3720dcef9069; }
+    if index == 28 { return 0x3fef5818dcfba487; }
+    if index == 29 { return 0x3fef7c97337b9b5f; }
+    if index == 30 { return 0x3fefa4afa2a490da; }
+    return 0x3fefd0765b6e4540;
+}
+
+fn exp(value: f32) -> f32 {
+    if value < -103.97207641601562 { return 0.0; }
+    let x = value as f64;
+    let multiplier: f64 = 46.16624130844683;
+    let shift: f64 = 6755399441055744.0;
+    let rounded = depth_fma(x, multiplier, shift);
+    let encoded = depth_bits(rounded);
+    let residue = depth_fma(x, multiplier, shift - rounded);
+    let high = depth_fma(1.6938359250920212e-06, residue, 0.00023459809789509004);
+    let low = depth_fma(0.021660849396613134, residue, 1.0);
+    let scale = depth_value(depth_exp2_word(encoded & 31) + (encoded << 47));
+    return (depth_fma(high, residue * residue, low) * scale) as f32;
+}
 
 fn ordered_result(products: u64, total: f64, magnitude: f64, divisor: f64) -> f32 {
     // Use the parallel sum only if the whole error interval rounds identically.

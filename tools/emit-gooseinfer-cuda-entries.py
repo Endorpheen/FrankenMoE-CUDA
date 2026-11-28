@@ -49,7 +49,12 @@ with output.open("w") as stream:
             else:
                 print(f"#ifdef {condition}", file=stream)
         parameters = ", ".join(entry["parameters"])
-        print(f'__kernel void {entry["name"]}({parameters}) {{', file=stream)
+        workgroup = entry.get("workgroup")
+        qualifier = "__kernel"
+        if workgroup:
+            shape = ", ".join(map(str, workgroup))
+            qualifier += f" __attribute__((reqd_work_group_size({shape})))"
+        print(f'{qualifier} void {entry["name"]}({parameters}) {{', file=stream)
         for kind, name, length, align in entry.get("shared", []):
             extent = f"[{length}]" if length else ""
             alignment = f" __attribute__((aligned({align})))" if align else ""

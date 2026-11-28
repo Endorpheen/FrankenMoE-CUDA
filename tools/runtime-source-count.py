@@ -52,7 +52,14 @@ mark(Path('integration/m1/host'),'debugger-linux','.c','Host Linux','Linux debug
 images=d/'images'
 names=' '.join(line.split()[0].removesuffix('.h') for line in (root/images/'inkling-images.txt').read_text().splitlines() if line.strip())
 gpu='GPU image input'
-mark(images,' '.join(name for name in names.split() if name not in {'flash-tiles-image', 'bridge-image', 'i2-decode-q8-image'}),'.cl',gpu,'Inkling CUDA kernels or device ABI')
+generated_inkling_entries = {
+    'flash-tiles-image', 'bridge-image', 'i2-decode-q8-image',
+    'i2-parallel-conv-image', 'i2-probe-moe-image', 'attention-gate-image',
+    'situ-image', 'tanh-image',
+}
+mark(images, ' '.join(name for name in names.split() if name not in generated_inkling_entries),
+     '.cl', gpu, 'Inkling CUDA kernels or device ABI')
+mark(images, 'inkling-epilogue-primitives', '.h', gpu, 'Inkling epilogue device intrinsics')
 mark(d/'apex-routing','route softmax mailbox prediction','.cl',gpu,'Apex routing and softmax device code')
 frozen=u/'bonsai-frozen-cuda'
 mark(frozen,'device-prelude','.cl',gpu,'Device compilation prelude')

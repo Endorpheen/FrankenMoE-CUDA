@@ -1,0 +1,3 @@
+[
+  {"name": "goose_i2_moe_situ", "parameters": ["__global const float *gate_up", "__global float *output", "uint elements", "uint activation_reference"], "function": "inkling_moe_situ_g", "arguments": ["@gate_up", "@output", "elements", "activation_reference", "block", "lane"], "registers": {"block": "block_x", "lane": "thread_x"}}
+]

@@ -1,0 +1,3 @@
+[
+  {"name": "goose_tanh_f32", "parameters": ["__global const float *src", "__global float *dst", "uint count"], "function": "inkling_tanh_g", "arguments": ["@src", "@dst", "count", "group", "lane"], "registers": {"group": "block_x", "lane": "thread_x"}}
+]

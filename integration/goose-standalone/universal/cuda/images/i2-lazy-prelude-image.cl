@@ -1,20 +1,10 @@
-#include "depth-expf.h"
-
-#define WIDTH 2304
-#define LANES 128
-#define MAX_HISTORY 11
-
-static uint lane_id(void) {
-    uint id;
-    __asm__("mov.u32 %0, %%tid.x;" : "=r"(id));
-    return id;
+static double depth_fma(double a, double b, double c) {
+    double result;
+    __asm__("fma.rn.f64 %0, %1, %2, %3;" : "=d"(result) : "d"(a), "d"(b), "d"(c));
+    return result;
 }
-
-static uint block_id(void) {
-    uint id;
-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(id));
-    return id;
-}
+static uint64_t depth_bits(double value) { return as_ulong(value); }
+static double depth_value(uint64_t bits) { return as_double(bits); }
 
 static void block_barrier(void) {
     __asm__ volatile("bar.sync 0;" ::: "memory");
@@ -43,64 +33,4 @@ static uint lazy_float_bits(float value) { return as_uint(value); }
 
 #include "i2-lazy-prelude-device.h"
 
-#ifndef GOOSE_INKLING_BRIDGE
-__kernel __attribute__((reqd_work_group_size(LANES, 1, 1)))
-void i2_lazy_prepare(__global const float *attention, __global const float *residual,
-    __global float *next, __global float *normalized, __global float *scales, int add_residual) {
-    __local float squares[WIDTH], inverse;
-    __local double sums[LANES], magnitudes[LANES];
-    lazy_prepare_g((uint64_t)attention, (uint64_t)residual, (uint64_t)next, (uint64_t)normalized,
-        (uint64_t)scales, add_residual != 0, (uint64_t)squares, (uint64_t)sums, (uint64_t)magnitudes,
-        (uint64_t)&inverse, block_id(), lane_id());
-}
-
-__kernel __attribute__((reqd_work_group_size(LANES, 1, 1)))
-void i2_plane_score(__global const ulong *planes, __global const float *current,
-    __global const float *query, __global float *scores, int rows, int lazy_index, __global const float *scales) {
-    __local float products[WIDTH];
-    __local double sums[LANES], magnitudes[LANES];
-    uint token;
-    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(token));
-    lazy_score_g((uint64_t)planes, (uint64_t)current, (uint64_t)query, (uint64_t)scores, rows, lazy_index,
-        (uint64_t)scales, (uint64_t)products, (uint64_t)sums, (uint64_t)magnitudes, token, block_id(), lane_id(), false);
-}
-
-__kernel __attribute__((reqd_work_group_size(LANES, 1, 1)))
-void i2_plane_mix(__global const ulong *planes, __global const float *current,
-    __global const float *scores, __global float *output, int rows, int lazy_index, __global const float *scales) {
-    __local float weights[MAX_HISTORY + 1];
-    uint token;
-    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(token));
-    lazy_mix_g((uint64_t)planes, (uint64_t)current, (uint64_t)scores, (uint64_t)output,
-        rows, lazy_index, (uint64_t)scales, (uint64_t)weights, token, block_id(), lane_id(), false);
-}
-
-#else
-__kernel __attribute__((reqd_work_group_size(LANES, 1, 1)))
-void i2_bridge_prepare(__global const float *attention, __global const float *weights,
-    __global float *history, __global const float *residual, __global float *next,
-    __global float *normalized, int add_residual) {
-    __local float squares[WIDTH], inverse;
-    __local double sums[LANES], magnitudes[LANES];
-    bridge_prepare_g((uint64_t)attention, (uint64_t)weights, (uint64_t)history, (uint64_t)residual,
-        (uint64_t)next, (uint64_t)normalized, add_residual != 0, (uint64_t)squares,
-        (uint64_t)sums, (uint64_t)magnitudes, (uint64_t)&inverse, lane_id());
-}
-
-__kernel __attribute__((reqd_work_group_size(LANES, 1, 1)))
-void i2_bridge_score(__global const float *past, __global const float *current,
-    __global const float *query, __global float *scores, int rows) {
-    __local float products[WIDTH];
-    __local double sums[LANES], magnitudes[LANES];
-    lazy_score_g((uint64_t)past, (uint64_t)current, (uint64_t)query, (uint64_t)scores, rows, -1,
-        0, (uint64_t)products, (uint64_t)sums, (uint64_t)magnitudes, 0, block_id(), lane_id(), true);
-}
-
-__kernel __attribute__((reqd_work_group_size(LANES, 1, 1)))
-void i2_bridge_mix(__global const float *past, __global const float *current,
-    __global const float *scores, __global float *output, int rows) {
-    __local float weights[MAX_HISTORY + 1];
-    lazy_mix_g((uint64_t)past, (uint64_t)current, (uint64_t)scores, (uint64_t)output,
-        rows, -1, 0, (uint64_t)weights, 0, block_id(), lane_id(), true);
-}
-#endif
+#include "i2-lazy-prelude-image-entries.h"

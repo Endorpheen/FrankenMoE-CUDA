@@ -1,0 +1,3 @@
+[
+  {"name": "goose_i2_attention_gate", "parameters": ["__global float *output", "__global const float *gate", "uint count"], "function": "inkling_attention_gate_g", "arguments": ["@output", "@gate", "count", "group", "lane"], "registers": {"group": "block_x", "lane": "thread_x"}}
+]

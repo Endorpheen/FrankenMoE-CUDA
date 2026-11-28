@@ -1,0 +1,4 @@
+[
+  {"name": "i2_postconv_parallel", "parameters": ["__global const float *input", "__global const float *weights", "__global const float *history", "__global float *output", "const int rows"], "function": "inkling_postconv_g", "arguments": ["@input", "@weights", "@history", "@output", "rows", "group", "row", "lane"], "registers": {"group": "block_x", "lane": "thread_x", "row": "block_y"}},
+  {"name": "i2_postconv_commit", "parameters": ["__global const float *input", "__global float *history", "const int rows"], "function": "inkling_postconv_commit_g", "arguments": ["@input", "@history", "rows", "group", "lane"], "registers": {"group": "block_x", "lane": "thread_x"}}
+]
