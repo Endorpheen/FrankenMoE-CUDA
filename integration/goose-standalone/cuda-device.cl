@@ -463,11 +463,8 @@ __kernel void goose_mla_attention_batch_pair(__global uint8_t * q, __global uint
     __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(task));
     __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(tile));
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
-    const int64_t positions = cfg[2];
-    const int64_t pair = (int64_t)query_base / 2 + task;
-    const int64_t first_query = (pair / positions) * 2 * positions + pair % positions;
-    fg_mla_attn_batch_pair_g((uint64_t) q, (uint64_t) k, (uint64_t) v, (uint64_t) mask,
-        (uint64_t) scratch, (uint64_t) cfg, scale, 2 * task, first_query, tile, lane);
+    fg_mla_launch_batch_pair_g((uint64_t)q, (uint64_t)k, (uint64_t)v, (uint64_t)mask,
+        (uint64_t)scratch, (uint64_t)cfg, scale, query_base, task, tile, lane);
 }
 
 __kernel void goose_mla_attention_merge(__global float * scratch, __global uint8_t * output,
@@ -484,12 +481,7 @@ __kernel void goose_mla_attention_batch_merge(__global float * scratch, __global
     uint32_t task, lane;
     __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(task));
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
-    const int64_t positions = cfg[2];
-    const int64_t slot = (int64_t)query_base + task;
-    const int64_t pair = slot / 2;
-    const int64_t query = (pair / positions * 2 + slot % 2) * positions + pair % positions;
-    fg_mla_attn_merge_g((uint64_t) scratch, (uint64_t) output, (uint64_t) cfg,
-        task, query, lane);
+    fg_mla_launch_batch_merge_g((uint64_t)scratch, (uint64_t)output, (uint64_t)cfg, query_base, task, lane);
 }
 
 __kernel void goose_dsa_score(__global uint8_t * q, __global uint8_t * k,
