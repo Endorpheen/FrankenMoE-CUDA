@@ -46,7 +46,7 @@ def mark(base,names,ext,status,reason):
             raise SystemExit(f"Universal input missing: {f}. Check the inventory against the build recipe.")
         marks[f]=(status,reason)
 both='Host Linux + Windows'
-mark(u/'inkling','graph-platform inkling-backend','.c',both,'Graph ABI, execution and Inkling backend')
+mark(u/'inkling','graph-platform','.c',both,'Graph ABI, execution and Inkling backend')
 mark(u/'bonsai','backend-cold model-host','.c',both,'Bonsai session and model host')
 mark(u/'common','probability-platform','.c',both,'Probability platform adapter')
 mark(Path('integration/m1/host'),'goose_host','.c',both,'Goose ABI, platform and quantization helpers')
@@ -104,9 +104,9 @@ for path in sorted(files):
     if path in direct:
         status, purpose = marks[path]
         bucket = "runtime_host" if status.startswith("Host") else "runtime_gpu"
-    elif path == g / "src/ggml.c":
+    elif path in {g / "src/ggml.c", u / "inkling/inkling-backend.c"}:
         bucket = "build_abi_only"
-        status, purpose = "Syntax-only", "Universal tensor ABI assertions"
+        status, purpose = "Syntax-only", "Universal tensor and model ABI assertions"
     elif path in marks:
         status, purpose = marks[path]
         bucket = "runtime_include"

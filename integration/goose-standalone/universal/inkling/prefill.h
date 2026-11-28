@@ -88,11 +88,13 @@ struct i2_prefill_visits {
     struct prefill_workspace *scratch;
     struct i2_prefill_team *workers;
     int count, begin;
+    uint64_t readback_elements;
 };
 
 _Static_assert(offsetof(struct i2_prefill_visits, tokens) == 8 &&
     offsetof(struct i2_prefill_visits, scratch) == 16 && offsetof(struct i2_prefill_visits, count) == 32 &&
-    offsetof(struct i2_prefill_visits, begin) == 36 && offsetof(struct prefill_workspace, inputs) == 0,
+    offsetof(struct i2_prefill_visits, begin) == 36 &&
+    offsetof(struct i2_prefill_visits, readback_elements) == 40 && offsetof(struct prefill_workspace, inputs) == 0,
     "Goose prefill visit ABI");
 
 _Static_assert(sizeof(struct prefill_workspace) == 646316040 &&

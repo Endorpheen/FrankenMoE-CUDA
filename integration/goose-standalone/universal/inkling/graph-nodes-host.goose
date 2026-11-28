@@ -72,8 +72,8 @@ export fn fg_i2_host_moe_node(ctx: u64,decoder: u64,core: u64,aux: u64,slot: i32
     return epilogue;
 }
 
-export fn fg_i2_host_moe_resident(decoder: u64,core: u64,aux: u64,slot: i32,position: i32,count: i32,
-        ffn: u64,message: u64,residual: u64,out: u64) {
+fn fg_i2_host_moe_resident(decoder: u64,core: u64,aux: u64,slot: i32,position: i32,count: i32,
+        ffn: u64,message: u64,residual: u64,out: u64,readback_elements: u64) {
     let entry=i2_node_entry(decoder,I2_ENTRY_MOE_BASE,slot,count);
     if entry!=0 && i2d_read(entry+I2_ENTRY_PLAN)!=0 {
         let memory=i2d_read(entry+I2_ENTRY_MESSAGES);
@@ -97,7 +97,7 @@ export fn fg_i2_host_moe_resident(decoder: u64,core: u64,aux: u64,slot: i32,posi
         fg_i2_host_execute_entry(entry,out);
         return;
     }
-    fg_i2_host_evaluate_one(ctx,epilogue,out,count*2304);
+    i2_evaluate_one(ctx,epilogue,out,count*2304,readback_elements);
     ggml_free(ctx);
 }
 
@@ -140,8 +140,8 @@ export fn fg_i2_host_attention_node(ctx: u64,decoder: u64,aux: u64,count: i32,sl
     return node;
 }
 
-export fn fg_i2_host_attention_graph(decoder: u64,core: u64,aux: u64,slot: i32,begin: i32,count: i32,
-        sliding: bool,input: u64,message: u64,out: u64) {
+fn fg_i2_host_attention_graph(decoder: u64,core: u64,aux: u64,slot: i32,begin: i32,count: i32,
+        sliding: bool,input: u64,message: u64,out: u64,readback_elements: u64) {
     var raw: u64[29];
     let call=i2d_address(unsafe_c_address<c_ptr<const void>>(raw[0]));
     fg_i2_host_bind_attention(decoder,core,aux,slot,begin,count,sliding,call);
@@ -171,6 +171,6 @@ export fn fg_i2_host_attention_graph(decoder: u64,core: u64,aux: u64,slot: i32,b
         fg_i2_host_execute_entry(entry,out);
         return;
     }
-    fg_i2_host_evaluate_one(ctx,node,out,count*2304);
+    i2_evaluate_one(ctx,node,out,count*2304,readback_elements);
     ggml_free(ctx);
 }

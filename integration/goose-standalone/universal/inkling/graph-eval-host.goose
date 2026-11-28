@@ -10,26 +10,6 @@ extern fn fg_standalone_graph_plan_alloc(graph: u64, output: u64) -> u64;
 extern fn fg_standalone_graph_alloc(graph: u64) -> u64;
 extern fn fg_standalone_graph_compute(graph: u64) -> i32;
 extern fn fg_standalone_graph_plan_compute(plan: u64) -> i32;
-extern fn fg_i2_readback_state() -> u64;
-
-fn fg_i2_readback_matches(output: u64, elements: u64) -> bool {
-    let state = fg_i2_readback_state();
-    return output == i2d_read(state) && elements == i2d_read(state + 8);
-}
-
-fn i2_prefill_set_readback(output: u64, elements: u64) {
-    let state = fg_i2_readback_state();
-    i2d_set(state, output);
-    i2d_set(state + 8, elements);
-}
-
-fn i2_swap_direct_output(output: u64) -> u64 {
-    let state = fg_i2_readback_state();
-    let previous = i2d_read(state);
-    if previous != 0 { i2d_set(state, output); }
-    return previous;
-}
-
 fn fg_i2_host_context() -> u64 {
     let ctx = ggml_init(InklingArenaParams {size: 2097152, buffer: 0, no_alloc: true});
     assert(ctx != 0);
@@ -44,9 +24,9 @@ fn fg_i2_host_weight(ctx: u64, decoder: u64, id: i64) -> u64 {
     return tensor;
 }
 
-fn i2_evaluate(ctx: u64, nodes: u64, count: i32, output: u64, size: i32) {
+fn i2_evaluate(ctx: u64, nodes: u64, count: i32, output: u64, size: i32, readback_elements: u64) {
     let first = i2d_read(nodes);
-    if count == 1 && first != 0 && fg_i2_readback_matches(output, size as! u64) &&
+    if count == 1 && first != 0 && readback_elements != 0 && (size as! u64) == readback_elements &&
         i2d_read(first + 248) == 0 && i2d_read(first + 232) == 0 && i2d_int(first) == 0 &&
         ggml_nelements(first) == size as! i64 {
         i2d_set(first + 248, output);
@@ -79,12 +59,16 @@ fn i2_evaluate(ctx: u64, nodes: u64, count: i32, output: u64, size: i32) {
     i2d_free(unsafe_c_ptr<c_ptr<void>>(storage));
 }
 
+fn i2_evaluate_one(ctx: u64, tensor: u64, output: u64, count: i32, readback_elements: u64) {
+    i2_evaluate(ctx, i2d_address(unsafe_c_address<c_ptr<const void>>(tensor)), 1, output, count, readback_elements);
+}
+
 fn fg_i2_host_evaluate_one(ctx: u64, tensor: u64, output: u64, count: i32) {
-    i2_evaluate(ctx, i2d_address(unsafe_c_address<c_ptr<const void>>(tensor)), 1, output, count);
+    i2_evaluate_one(ctx, tensor, output, count, 0);
 }
 
 fn fg_i2_evaluate_attention_inputs(ctx: u64, nodes: u64, matrices: i32, output: u64, count: i32) {
-    i2_evaluate(ctx, nodes, matrices, output, count);
+    i2_evaluate(ctx, nodes, matrices, output, count, 0);
 }
 
 fn fg_i2_host_project(decoder: u64, id: i64, input: u64, width: i32, output: u64, rows: i32) {

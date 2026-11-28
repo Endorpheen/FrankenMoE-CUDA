@@ -11,10 +11,6 @@
 #include <pthread.h>
 #include <stdint.h>
 
-static _Thread_local uint64_t prefill_readback[2];
-
-uint64_t fg_i2_readback_state(void) { return (uintptr_t)prefill_readback; }
-
 _Static_assert(offsetof(struct ggml_tensor, type) == 0 && offsetof(struct ggml_tensor, view_src) == 232,
     "Goose graph readback ABI");
 

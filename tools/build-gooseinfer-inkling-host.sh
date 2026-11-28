@@ -15,16 +15,12 @@ case "$target" in
 esac
 mkdir -p -- "$out"
 
-for module in graph-platform inkling-backend; do
-    object=$module
-    if [[ "$module" == inkling-backend ]]; then object=inkling-backend-native; fi
-    "$cc" -O2 -std=gnu11 -D_GNU_SOURCE -DI2_NUMERIC_MODULE -DGOOSEINFER_TYPE_METADATA_ONLY -Werror=implicit-function-declaration \
-        -ffunction-sections -fdata-sections "-fmacro-prefix-map=$root=." \
-        -I"$source_dir/host" -I"$model_headers" -I"$cpu_headers" \
-        -I"$root/vendor/flint/ggml/include" -I"$root/vendor/flint/ggml/src" \
-        -I"$standalone" -I"$root/integration/m1/host" \
-        -c "$source_dir/$module.c" -o "$out/$object.o"
-done
+native_flags=(-std=gnu11 -D_GNU_SOURCE -DI2_NUMERIC_MODULE -DGOOSEINFER_TYPE_METADATA_ONLY
+    -Werror=implicit-function-declaration -ffunction-sections -fdata-sections "-fmacro-prefix-map=$root=."
+    -I"$source_dir/host" -I"$model_headers" -I"$cpu_headers"
+    -I"$root/vendor/flint/ggml/include" -I"$root/vendor/flint/ggml/src" -I"$standalone" -I"$root/integration/m1/host")
+"$cc" -O2 "${native_flags[@]}" -c "$source_dir/graph-platform.c" -o "$out/graph-platform.o"
+"$cc" "${native_flags[@]}" -fsyntax-only "$source_dir/inkling-backend.c"
 printf 'const CPU_AFFINITY_WORDS: i64 = %s;\n' "$affinity_words" > "$out/graph-host.goose"
 cat "$source_dir/"{graph-host,graph-diagnostics}.goose "$source_dir/graph-checkpoint-$target.goose" \
     "$source_dir/graph-storage-$target.goose" >> "$out/graph-host.goose"
@@ -46,8 +42,7 @@ fi
 cat "$source_dir/"{draft-host,open-host,control-host,graph-nodes-host,joined-host,profile-host,serial-host,team-host,state-diagnostics,graph-eval-host}.goose "$source_dir/team-layout-$target.goose" > "$out/draft-host.goose"
 "${GOOSE_CUDA_DRIVER_BIN:?}" --standalone -o "$out/draft-host.c" "$out/draft-host.goose"
 "$cc" -O2 -std=c11 -ffunction-sections -fdata-sections -Dgoose_init=fg_i2_backend_host_init \
-    -Dgg_init_globals=fg_i2_backend_host_globals -c "$out/draft-host.c" -o "$out/draft-host.o"
+    -Dgg_init_globals=fg_i2_backend_host_globals -c "$out/draft-host.c" -o "$out/inkling-backend.o"
 for name in mutex_init mutex_destroy mutex_lock mutex_unlock cond_init cond_destroy cond_wait cond_signal cond_broadcast; do
-    "$objcopy" --redefine-sym="i2_team_$name=pthread_$name" "$out/draft-host.o"
+    "$objcopy" --redefine-sym="i2_team_$name=pthread_$name" "$out/inkling-backend.o"
 done
-"$cc" -r -nostdlib "$out/inkling-backend-native.o" "$out/draft-host.o" -o "$out/inkling-backend.o"
