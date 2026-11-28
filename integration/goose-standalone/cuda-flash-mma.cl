@@ -1,7 +1,5 @@
 #include "flash-mma-types.h"
 
-__asm__(".extern .shared .align 16 .b8 goose_flash_shared[];");
-
 static void fg175l_cp16(uint64_t dst, uint64_t src) {
     fg_cuda_cp16(dst, src);
 }
@@ -87,57 +85,4 @@ static void fg168f_lc(void) {}
 #undef fg175c_fg175p_h2mul
 #undef fg175c_fg175p_h2pack
 
-__kernel void goose_flash_q4_stage(__global const uint8_t * src, __global uint16_t * dst,
-    int64_t keys, int64_t padded, int64_t row_stride, int64_t head_stride) {
-    uint32_t row, head, lane;
-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(row));
-    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(head));
-    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
-    fg_flash_stage_g((uint64_t) src, (uint64_t) dst, keys, padded, row_stride, head_stride, row, head, lane);
-}
-
-__kernel void goose_flash_causal_mma(__global const float * q, __global const uint16_t * k,
-    __global const uint16_t * v, __global float * out, __global const int64_t * cfg, float scale) {
-    uint32_t tile, head, thread;
-    uint64_t shared;
-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(tile));
-    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(head));
-    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
-    __asm__("mov.u64 %0, goose_flash_shared;" : "=l"(shared));
-    fg_flash_causal_mma_g((uint64_t) q, (uint64_t) k, (uint64_t) v, (uint64_t) out,
-        (uint64_t) cfg, scale, tile, head, thread % 32, thread / 32, shared);
-}
-
-__kernel void goose_flash_stream_mma(__global const float * q, __global const uint16_t * k,
-    __global const uint16_t * v, __global float * out, __global float * fix,
-    __global const int64_t * cfg, float scale) {
-    uint32_t worker, workers, thread;
-    uint64_t shared;
-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(worker));
-    __asm__("mov.u32 %0, %%nctaid.x;" : "=r"(workers));
-    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
-    __asm__("mov.u64 %0, goose_flash_shared;" : "=l"(shared));
-    fg_flash_stream_mma_g((uint64_t) q, (uint64_t) k, (uint64_t) v, (uint64_t) out,
-        (uint64_t) fix, (uint64_t) cfg, scale, worker, workers, thread % 32, thread / 32, shared);
-}
-
-__kernel void goose_flash_fixup_uniform(__global float * out, __global const float * fix,
-    int32_t queries, int32_t heads, int32_t workers, int32_t blocks_per_tile) {
-    uint32_t tile, query, head, lane;
-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(tile));
-    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(query));
-    __asm__("mov.u32 %0, %%ctaid.z;" : "=r"(head));
-    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
-    flash_launch_uniform_g((uint64_t)out, (uint64_t)fix, queries, heads, workers, blocks_per_tile, tile, query, head, lane);
-}
-
-__kernel void goose_flash_fixup_general(__global float * out, __global const float * fix,
-    int32_t queries, int32_t heads, int32_t keys) {
-    uint32_t worker, workers, query, head, lane;
-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(worker));
-    __asm__("mov.u32 %0, %%nctaid.x;" : "=r"(workers));
-    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(query));
-    __asm__("mov.u32 %0, %%ctaid.z;" : "=r"(head));
-    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
-    flash_launch_general_g((uint64_t)out, (uint64_t)fix, queries, heads, keys, worker, query, head, workers, lane);
-}
+#include "cuda-flash-mma-entries.h"

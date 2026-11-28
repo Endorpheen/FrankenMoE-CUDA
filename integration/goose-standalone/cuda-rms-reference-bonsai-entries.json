@@ -1,0 +1,3 @@
+[
+  {"name": "goose_rms_decode_2048", "parameters": ["__global const uint8_t * x", "__global const uint8_t * weights", "__global uint8_t * out", "float eps"], "function": "fg_rms_decode_2048_g", "arguments": ["@x", "@weights", "@out", "@shared", "thread", "eps"], "registers": {"thread": "thread_x"}, "shared": [["float", "shared", 32, 0]]}
+]

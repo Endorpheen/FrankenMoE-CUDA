@@ -83,7 +83,7 @@ sed '/^fn main()/,$d; s/^fn fg178q_quant(/export fn fg178q_quant(/;
     "$ROOT/goose/cuda/goose-cuda-quantize/device.goose" > "$OUT/mmvq-pack.goose"
 cat "$ROOT/goose/cuda/standalone-mmvq-pack-launch.goose" >> "$OUT/mmvq-pack.goose"
 cat "$ROOT/goose/cuda/"standalone-mmvq{,-launch}.goose > "$OUT/mmvq.goose"
-cp "$ROOT/goose/cuda/standalone-dense-mma.goose" "$OUT/dense-mma.goose"
+cat "$ROOT/goose/cuda/"standalone-dense-mma{,-launch}.goose > "$OUT/dense-mma.goose"
 sed '/^fn main()/,$d' "$ROOT/goose/cuda/goose-cuda-flash-attention/value-prefill-device.goose" > "$OUT/flash-mma.goose"
 cat "$ROOT/goose/cuda/standalone-flash-mma.goose" >> "$OUT/flash-mma.goose"
 sed -n '/^fn ftz_thresh(/,/^}/p; /^extern "fg168f_\(ld_f32\|st_f32\|sync\|lc\|expf\|fmaxf\)"/p;
@@ -196,6 +196,10 @@ python3 "$ROOT/tools/emit-gooseinfer-cuda-entries.py" \
     "$ROOT/integration/goose-standalone/cuda-mmq-entries.json" "$OUT/cuda-mmq-entries.h"
 python3 "$ROOT/tools/emit-gooseinfer-cuda-entries.py" \
     "$ROOT/integration/goose-standalone/cuda-activation-entries.json" "$OUT/cuda-activation-entries.h"
+for abi in "$ROOT/integration/goose-standalone/"cuda-{dense-mma,flash-mma,gdn-mma,flash-vec,mmvq,rms-reference}-entries.json; do
+    name=${abi##*/}
+    python3 "$ROOT/tools/emit-gooseinfer-cuda-entries.py" "$abi" "$OUT/${name%.json}.h"
+done
 "$CLANG" -target nvptx64-nvidia-cuda -Xclang -target-cpu -Xclang sm_70 \
     -nocudalib -O2 -x cl -cl-std=CL1.2 -I "$OUT" -S \
     "$ROOT/integration/goose-standalone/cuda-device.cl" -o "$OUT/goose-cuda.ptx"

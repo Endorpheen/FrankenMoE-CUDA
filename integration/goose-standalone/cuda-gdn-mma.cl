@@ -1,7 +1,5 @@
 #include "gdn-mma-types.h"
 
-__asm__(".extern .shared .align 16 .b8 goose_gdn_shared[];");
-
 static float fg174m_load(uint64_t p, uint64_t i) { return fg_device_global_load(p + 4 * i); }
 static void fg174m_store(uint64_t p, uint64_t i, float v) { fg_device_global_store(p + 4 * i, v); }
 static F4_g fg174m_load4(uint64_t p, uint64_t i) {
@@ -70,16 +68,4 @@ static F4_g fg174m_mma(F4_g d, uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a
 
 #include "gdn-mma-device.h"
 
-#define GDN_MMA_ENTRY(name, narrow) \
-__kernel void name(gdn_launch_packet arguments) { \
-    const uint64_t * packet = arguments.words; \
-    uint32_t task, thread; \
-    uint64_t shared; \
-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(task)); \
-    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread)); \
-    __asm__("mov.u64 %0, goose_gdn_shared;" : "=l"(shared)); \
-    gdn_mma_launch_g((int64_t)packet, shared, task, thread, narrow); \
-}
-GDN_MMA_ENTRY(goose_gdn_mma, false)
-GDN_MMA_ENTRY(goose_gdn_mma_v32, true)
-#undef GDN_MMA_ENTRY
+#include "cuda-gdn-mma-entries.h"

@@ -29,39 +29,4 @@ static int64_t flash_vector_plan_word(uint64_t address, int32_t index) {
 
 #include "flash-vec-device.h"
 
-__kernel void goose_flash_vec_pack_query(__global const uint8_t * q, __global uint8_t * packed,
-    __global const int64_t * cfg, float scale) {
-    uint32_t head, lane;
-    __local uint32_t shared[80];
-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(head));
-    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
-    flash_vector_launch_pack_g((uint64_t) q, (uint64_t) packed, (uint64_t) cfg, scale, head, lane, (uint64_t) shared);
-}
-
-#define FLASH_VEC_Q4(name, mode) \
-__kernel void name(__global const uint8_t * q, __global const uint8_t * k, \
-    __global const uint8_t * v, __global uint8_t * parts, __global uint8_t * meta, \
-    __global const int64_t * cfg, int32_t keys, float scale) { \
-    uint32_t head, tile, tiles, thread; \
-    __local uint32_t shared[1152]; \
-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(head)); \
-    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(tile)); \
-    __asm__("mov.u32 %0, %%nctaid.y;" : "=r"(tiles)); \
-    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread)); \
-    flash_vector_launch_q4_g((uint64_t) q, (uint64_t) k, (uint64_t) v, (uint64_t) parts, \
-        (uint64_t) meta, (uint64_t) cfg, keys, scale, mode, tile, head, tiles, thread, (uint64_t) shared); \
-}
-
-FLASH_VEC_Q4(goose_flash_vec_q4, 1)
-FLASH_VEC_Q4(goose_flash_vec_q4_packed, 0)
-#undef FLASH_VEC_Q4
-
-__kernel void goose_flash_vec_combine(__global const uint8_t * parts, __global const uint8_t * meta,
-    __global uint8_t * output, int32_t tiles, int32_t heads) {
-    uint32_t head, thread;
-    __local float shared[128];
-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(head));
-    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
-    fv_combine_g((uint64_t) parts, (uint64_t) meta, (uint64_t) output,
-        tiles, 0, head, 0, 1, heads, thread, (uint64_t) shared);
-}
+#include "cuda-flash-vec-entries.h"

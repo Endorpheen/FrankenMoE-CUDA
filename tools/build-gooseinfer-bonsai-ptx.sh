@@ -30,7 +30,7 @@ for source in "$source_dir"/goose/*.goose "$root/goose/cuda/standalone-matmul.go
             cat "$source" "$root/goose/cuda/standalone-q4-attention-entry.goose" > "$scratch/$module.goose"
             source="$scratch/$module.goose"
             ;;
-        mmq|mmq-quant|mmvq|mmvq-pack|ssm-conv|gdn|gdn-mma|q4-set-rows|flash-mma|flash-vec)
+        mmq|mmq-quant|dense-mma|mmvq|mmvq-pack|ssm-conv|gdn|gdn-mma|q4-set-rows|flash-mma|flash-vec)
             launcher=$module
             if [[ "$module" == mmq-quant ]]; then launcher=mmq-pack; fi
             if [[ "$module" == ssm-conv ]]; then launcher=ssm; fi
@@ -69,7 +69,15 @@ python3 "$root/tools/emit-gooseinfer-cuda-entries.py" \
     "$standalone/cuda-mmq-entries.json" "$scratch/cuda-mmq-entries.h"
 python3 "$root/tools/emit-gooseinfer-cuda-entries.py" \
     "$standalone/cuda-activation-entries.json" "$scratch/cuda-activation-entries.h"
+for abi in "$standalone/"cuda-{dense-mma,flash-mma,gdn-mma,flash-vec,mmvq,rms-reference}-entries.json; do
+    name=${abi##*/}
+    python3 "$root/tools/emit-gooseinfer-cuda-entries.py" "$abi" "$scratch/${name%.json}.h"
+done
 
+for abi in "$standalone/"cuda-*-bonsai-entries.json; do
+    name=${abi##*/}
+    python3 "$root/tools/emit-gooseinfer-cuda-entries.py" "$abi" "$scratch/${name%.json}.h"
+done
 "${CLANG:-clang-18}" -target nvptx64-nvidia-cuda -nocudalib -O2 -x cl -cl-std=CL1.2 \
     -include "$source_dir/device-prelude.cl" -I"$scratch" -I"$standalone" -S -Xclang -target-cpu \
     -Xclang "$arch" -DGOOSE_CUDA_FROZEN_ABI "${defines[@]}" "$glue/cuda-device.cl" -o "$scratch/bonsai.ptx"

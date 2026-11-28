@@ -7,7 +7,7 @@ import sys
 source, output = map(Path, sys.argv[1:])
 entries = json.loads(source.read_text())
 registers = {"block_x": "ctaid.x", "block_y": "ctaid.y", "block_z": "ctaid.z",
-             "thread_x": "tid.x", "block_width": "ntid.x", "grid_x": "nctaid.x"}
+             "thread_x": "tid.x", "block_width": "ntid.x", "grid_x": "nctaid.x", "grid_y": "nctaid.y"}
 
 def argument(value):
     if isinstance(value, str):

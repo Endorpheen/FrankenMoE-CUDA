@@ -15,7 +15,7 @@ for source in "$src"/goose/*.goose "$root/goose/cuda/standalone-matmul.goose"; d
     module=$(basename -- "$source" .goose)
     module=${module#standalone-}
     case "$module" in
-        mmq|mmq-quant|mmvq|mmvq-pack|ssm-conv|gdn|gdn-mma|q4-set-rows|flash-mma|flash-vec)
+        mmq|mmq-quant|dense-mma|mmvq|mmvq-pack|ssm-conv|gdn|gdn-mma|q4-set-rows|flash-mma|flash-vec)
             launcher=$module
             if [[ "$module" == mmq-quant ]]; then launcher=mmq-pack; fi
             if [[ "$module" == ssm-conv ]]; then launcher=ssm; fi
@@ -43,6 +43,10 @@ python3 "$root/tools/emit-gooseinfer-cuda-entries.py" \
     "$standalone/cuda-mmq-entries.json" "$scratch/cuda-mmq-entries.h"
 python3 "$root/tools/emit-gooseinfer-cuda-entries.py" \
     "$standalone/cuda-activation-entries.json" "$scratch/cuda-activation-entries.h"
+for abi in "$standalone/"cuda-{dense-mma,flash-mma,gdn-mma,flash-vec,mmvq,rms-reference}-entries.json; do
+    name=${abi##*/}
+    python3 "$root/tools/emit-gooseinfer-cuda-entries.py" "$abi" "$scratch/${name%.json}.h"
+done
 python3 "$root/tools/emit-gooseinfer-cuda-entries.py" \
     "$standalone/gigachat4/cuda-dsa-entries.json" "$scratch/cuda-dsa-entries.h"
 compile_device "$standalone/cuda-device.cl"

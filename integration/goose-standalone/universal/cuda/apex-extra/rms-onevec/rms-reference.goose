@@ -289,3 +289,12 @@ export fn fg_rms_decode_2048(x: u64, weights: u64, out: u64, shared: u64,
     }
     store4(out, tid, result);
 }
+
+export fn rms_launch_one_warp4(x: u64, weights: u64, out: u64, cfg: u64, eps: f32,
+    postscale: f32, block_index: u32, thread: u32) {
+    let row = 4 * block_index + thread / 32;
+    if (row as i64) < rms_word(cfg, 24) {
+        fg_reference_rms_one(x, weights, out, cfg, eps, 0, row as i64,
+            (thread % 32) as i32, 32, postscale);
+    }
+}

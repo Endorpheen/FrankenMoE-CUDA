@@ -1,0 +1,4 @@
+[
+  {"name": "goose_gdn_mma", "parameters": ["gdn_launch_packet arguments"], "function": "gdn_mma_launch_g", "arguments": [{"signed_address": "arguments.words"}, "shared", "task", "thread", "false"], "registers": {"task": "block_x", "thread": "thread_x"}, "dynamic_shared": [["shared", "goose_gdn_shared", 16]]},
+  {"name": "goose_gdn_mma_v32", "parameters": ["gdn_launch_packet arguments"], "function": "gdn_mma_launch_g", "arguments": [{"signed_address": "arguments.words"}, "shared", "task", "thread", "true"], "registers": {"task": "block_x", "thread": "thread_x"}, "dynamic_shared": [["shared", "goose_gdn_shared", 16]]}
+]

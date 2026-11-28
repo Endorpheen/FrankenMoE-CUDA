@@ -47,23 +47,4 @@ static uint64_t mmvq_job_word(uint64_t jobs, uint64_t index) {
 #undef gs_add_u32
 #include "mmvq-device.h"
 
-__kernel void goose_mmvq_quantize(__global const uint8_t * input, __global uint8_t * packed,
-    __global const uint64_t * jobs, int32_t extent, int32_t words) {
-    uint32_t block, route, thread;
-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(block));
-    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(route));
-    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
-    mmvq_launch_quantize_g((uint64_t) input, (uint64_t) packed, (uint64_t) jobs, extent, words, block, route, thread);
-}
-
-__kernel void goose_mmvq_matvec(__global const uint8_t * weights, __global const uint8_t * packed,
-    __global uint8_t * output, __global const uint64_t * jobs, uint64_t stride,
-    int32_t extent, int32_t kind, int32_t words) {
-    uint32_t row, route, thread;
-    __local float shared[96];
-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(row));
-    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(route));
-    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
-    mmvq_launch_matvec_g((uint64_t) weights, (uint64_t) packed, (uint64_t) output,
-        (uint64_t) jobs, stride, extent, kind, words, row, route, thread, (uint64_t) shared);
-}
+#include "cuda-mmvq-entries.h"
