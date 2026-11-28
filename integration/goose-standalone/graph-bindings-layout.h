@@ -1,3 +1,4 @@
+#include "goose-iq-tables.h"
 #include "ggml.h"
 #include <pthread.h>
 
@@ -26,3 +27,9 @@ _Static_assert(sizeof(struct ggml_init_params) == 24 &&
     GGML_UNARY_OP_TANH == 4 && GGML_UNARY_OP_RELU == 6 &&
     GGML_UNARY_OP_SIGMOID == 7 && GGML_UNARY_OP_SILU == 10 &&
     GGML_UNARY_OP_SOFTPLUS == 15, "Goose arena entry ABI");
+
+_Static_assert(sizeof(fg_goose_iq_tables) == 64 &&
+    offsetof(fg_goose_iq_tables, ctx) == 8 && offsetof(fg_goose_iq_tables, iq2_grid) == 16 &&
+    offsetof(fg_goose_iq_tables, iq3_grid) == 24 && offsetof(fg_goose_iq_tables, iq2_map) == 32 &&
+    offsetof(fg_goose_iq_tables, iq2_nb) == 40 && offsetof(fg_goose_iq_tables, iq3_map) == 48 &&
+    offsetof(fg_goose_iq_tables, iq3_nb) == 56, "Goose IQ table provider ABI");
