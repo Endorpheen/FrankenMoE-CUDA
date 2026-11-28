@@ -30,8 +30,6 @@ const BONSAI_CUDA_UPLOAD: u64 = 96;
 const BONSAI_CUDA_DOWNLOAD: u64 = 112;
 type BonsaiCudaCopy = c_fnptr(u64, u64, u64) -> i32;
 
-extern fn fg_bonsai_cuda_dispatch() -> u64;
-extern fn fg_bonsai_cuda_check(status: i32, label: u64) -> i32;
 extern fn powf(x: f32, y: f32) -> f32;
 extern fn bonsai_bonsai_graph(model: u64, weights: VocabSpan, states: VocabSpan, globals: VocabSpan, buffers: VocabSpan,
     token: i64, position: i64, output: i64) -> i64;

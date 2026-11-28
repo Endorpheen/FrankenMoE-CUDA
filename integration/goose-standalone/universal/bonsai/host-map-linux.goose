@@ -87,3 +87,5 @@ fn bonsai_map_weights(model: u64, path: u64) -> i32 {
     bonsai_munmap(base, bytes);
     return result;
 }
+
+fn bonsai_open_cuda_library() -> u64 { return unsafe_c_library_open("libcuda.so.1"); }

@@ -1,6 +1,5 @@
 type BonsaiMemInfo = c_fnptr(u64, u64) -> i32;
 
-extern fn fg_bonsai_cuda_ready() -> i32;
 extern fn fg_bonsai_embedded_images(model: u64, image: u64, frozen: u64, mtp_image: u64) -> i32;
 extern fn bonsai_mtp_goose_init(argc: i32, argv: u64);
 
@@ -43,7 +42,7 @@ fn bonsai_open_initialize(model: u64, path: u64, image: u64, frozen: u64, mtp_im
 }
 
 fn bonsai_model_open(path: u64, image: u64, frozen: u64, context: u32, batch: u32) -> u64 {
-    if context == 0 || context > 262144 || fg_bonsai_cuda_ready() == 0 { return 0; }
+    if context == 0 || context > 262144 || !bonsai_cuda_ready() { return 0; }
     let allocation = vocab_calloc(1, 16344);
     var model: u64 = 0;
     vocab_memcpy(unsafe_c_address<c_ptr<void>>(model), unsafe_c_address<c_ptr<const void>>(allocation), 8);

@@ -26,68 +26,10 @@
 #define BONSAI_SIZE_FMT "%zu"
 #endif
 
-#define BONSAI_CUDA_API(X) \
-    X(cuInit) \
-    X(cuDeviceGet) \
-    X(cuCtxCreate) \
-    X(cuCtxDestroy) \
-    X(cuCtxPushCurrent) \
-    X(cuCtxPopCurrent) \
-    X(cuCtxSynchronize) \
-    X(cuModuleLoad) \
-    X(cuModuleLoadData) \
-    X(cuModuleGetFunction) \
-    X(cuMemAlloc) \
-    X(cuMemGetInfo) \
-    X(cuMemcpyHtoD) \
-    X(cuMemcpyDtoDAsync) \
-    X(cuMemcpyDtoH) \
-    X(cuMemsetD8) \
-    X(cuFuncSetAttribute) \
-    X(cuGetErrorString) \
-    X(cuLaunchKernel)
-
-static struct bonsai_cuda_api {
-#define BONSAI_DECLARE(name) __typeof__(name) *fn_##name;
-    BONSAI_CUDA_API(BONSAI_DECLARE)
-#undef BONSAI_DECLARE
-    void *library;
-} bonsai_cuda;
-
-#define BONSAI_STRING_(name) #name
-#define BONSAI_STRING(name) BONSAI_STRING_(name)
-
-typedef struct { const uint64_t *data; int64_t len; } bonsai_const_words;
-typedef struct { uint64_t *data; int64_t len; } bonsai_words;
-extern int32_t bonsai_resolve_cuda_driver(uint8_t windows, bonsai_const_words names, bonsai_words addresses);
-
-static void bonsai_bind_cuda(void) {
-#define BONSAI_SYMBOL(name) {(uint8_t *)BONSAI_STRING(name), sizeof(BONSAI_STRING(name)) - 1},
-    static const sl_u8 names[] = {BONSAI_CUDA_API(BONSAI_SYMBOL)};
-#undef BONSAI_SYMBOL
-    enum { COUNT = sizeof(names) / sizeof(*names) };
-    uint64_t addresses[COUNT + 1], symbol_names[2 * COUNT];
-    for (unsigned i = 0; i < COUNT; ++i) {
-        symbol_names[2 * i] = (uintptr_t)names[i].data;
-        symbol_names[2 * i + 1] = names[i].len;
-    }
-    _Static_assert(offsetof(struct bonsai_cuda_api, library) == COUNT * sizeof(uint64_t) &&
-        sizeof(struct bonsai_cuda_api) == sizeof(addresses), "Bonsai CUDA dispatch ABI");
-#ifdef _WIN32
-    const uint8_t windows = 1;
-#else
-    const uint8_t windows = 0;
-#endif
-    const int32_t status = bonsai_resolve_cuda_driver(windows, (bonsai_const_words){symbol_names, 2 * COUNT},
-                                                     (bonsai_words){addresses, COUNT + 1});
-    if (status == -1) memcpy(&bonsai_cuda, addresses, sizeof(addresses));
-    else if (status >= 0) fprintf(stderr, "Bonsai CUDA driver missing %s\n", (const char *)names[status].data);
-    else fputs("Bonsai CUDA driver unavailable\n", stderr);
-}
-
-int32_t fg_bonsai_cuda_ready(void) {
+extern void fg_bonsai_bind_cuda(void);
+int32_t fg_bonsai_bind_cuda_once(void) {
     static pthread_once_t once = PTHREAD_ONCE_INIT;
-    return pthread_once(&once, bonsai_bind_cuda) == 0 && bonsai_cuda.library != NULL;
+    return pthread_once(&once, fg_bonsai_bind_cuda);
 }
 
 enum { LAYERS = 64, POSITIONS_MAX = 262144, VOCAB = 248320, KV_BYTES = 576,
@@ -146,14 +88,6 @@ typedef struct {
     float epsilon;
 } model;
 
-static int check(CUresult status, const char *where) {
-    if (status == CUDA_SUCCESS) return 0;
-    const char *message = NULL;
-    (void) bonsai_cuda.fn_cuGetErrorString(status, &message);
-    fprintf(stderr, "%s: CUDA %d (%s)\n", where, status, message ? message : "unknown");
-    return -1;
-}
-
 _Static_assert(offsetof(struct bonsai_ffn_capture, stream) == 0 &&
     offsetof(struct bonsai_ffn_capture, graphs) == 8 && offsetof(struct bonsai_ffn_capture, norm) == 520 &&
     offsetof(struct bonsai_ffn_capture, phase) == 1032 && offsetof(struct bonsai_ffn_capture, layer) == 1036 &&
@@ -171,7 +105,7 @@ int32_t fg_bonsai_ffn_bind_once(void) {
     return pthread_once(&once, fg_bonsai_bind_ffn_graph);
 }
 
-_Static_assert(offsetof(struct bonsai_cuda_api, library) == 152 && offsetof(model, capture) == 15288 &&
+_Static_assert(offsetof(model, capture) == 15288 &&
     offsetof(model, q8_mode) == 4712 && offsetof(model, norm_wide) == 4720 &&
     CU_STREAM_NON_BLOCKING == 1 && CU_STREAM_CAPTURE_MODE_THREAD_LOCAL == 1, "Bonsai FFN driver ABI");
 
@@ -182,7 +116,7 @@ extern int32_t fg_bonsai_verify_launch(model *m, enum kernel kernel, uint32_t x,
 extern int32_t fg_bonsai_launch_gdn(model *m, const CUdeviceptr *args, unsigned tokens);
 extern int32_t fg_bonsai_flash_f32(model *m, CUdeviceptr q, CUdeviceptr k, CUdeviceptr v, CUdeviceptr dst);
 
-_Static_assert(offsetof(struct bonsai_cuda_api, fn_cuLaunchKernel) == 144 && sizeof(CUdeviceptr) == 8 &&
+_Static_assert(sizeof(CUdeviceptr) == 8 &&
     offsetof(model, kernel) == 4824 && offsetof(model, gdn_prefill_v32) == 14688 &&
     offsetof(model, capture.next) == 16328 && offsetof(model, flash_fp8_pv) == 4816 &&
     offsetof(model, stage_k) == 14712 && offsetof(model, stage_v) == 14720 &&
@@ -521,9 +455,7 @@ _Static_assert(offsetof(model, choice_tiles) == 5632 && offsetof(model, choice_r
     offsetof(model, mtp) == 96 && offsetof(model, mtp_layer) == 128 && offsetof(model, draft_kv) == 248 &&
     offsetof(model, draft_rope_k) == 304 && offsetof(model, draft_q8_head) == 84 &&
     offsetof(model, draft_batch) == 88 && offsetof(model, device_commit) == 76, "Bonsai draft ABI");
-_Static_assert(offsetof(struct bonsai_cuda_api, fn_cuMemAlloc) == 80 &&
-    offsetof(struct bonsai_cuda_api, fn_cuMemcpyDtoDAsync) == 104 &&
-    CHOICE_TILES == 77 && CHOICE_FINAL == 78 && CHOICE_JOBS == 243 &&
+_Static_assert(CHOICE_TILES == 77 && CHOICE_FINAL == 78 && CHOICE_JOBS == 243 &&
     MTP_EH == 79 && MTP_MAT == 80 && DRAFT_CONCAT == 84 && DRAFT_MAT_BATCH == 85, "Bonsai draft launch ABI");
 
 extern const unsigned char gooseinfer_bonsai_pipeline_image[];
@@ -534,10 +466,6 @@ extern int32_t fg_bonsai_load_images(model *m, const char *cubin, const char *fr
     const void *pipeline_image, const void *frozen_image, const void *draft_image);
 _Static_assert(offsetof(model, module) == 4680 && offsetof(model, frozen) == 4688 &&
     offsetof(model, mtp_module) == 8 && offsetof(model, decode_kernel) == 4696 &&
-    offsetof(struct bonsai_cuda_api, fn_cuInit) == 0 && offsetof(struct bonsai_cuda_api, fn_cuDeviceGet) == 8 &&
-    offsetof(struct bonsai_cuda_api, fn_cuCtxCreate) == 16 && offsetof(struct bonsai_cuda_api, fn_cuModuleLoad) == 56 &&
-    offsetof(struct bonsai_cuda_api, fn_cuModuleLoadData) == 64 && offsetof(struct bonsai_cuda_api, fn_cuModuleGetFunction) == 72 &&
-    offsetof(struct bonsai_cuda_api, fn_cuFuncSetAttribute) == 128 &&
     KERNEL_COUNT == 100 && CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES == 8, "Bonsai image loader ABI");
 
 _Static_assert(
@@ -563,8 +491,7 @@ _Static_assert(
     offsetof(model, verify_native) == 56 && offsetof(model, verify_q8) == 60 &&
     offsetof(model, verify_rows) == 52 && offsetof(model, wide_mmq) == 14692,
     "Bonsai profile ABI");
-_Static_assert(sizeof(model) == 16344 && offsetof(model, epsilon) == 16336 && CONTEXT_MIN == 1 && POSITIONS_MAX == 262144 &&
-    offsetof(struct bonsai_cuda_api, fn_cuMemGetInfo) == 88, "Bonsai model loader ABI");
+_Static_assert(sizeof(model) == 16344 && offsetof(model, epsilon) == 16336 && CONTEXT_MIN == 1 && POSITIONS_MAX == 262144, "Bonsai model loader ABI");
 
 int32_t fg_bonsai_embedded_images(model *m, const char *cubin, const char *frozen, const char *mtp_image) {
     return fg_bonsai_load_images(m, cubin, frozen, mtp_image, gooseinfer_bonsai_pipeline_image,
@@ -590,11 +517,6 @@ _Static_assert(
 _Static_assert(TXN_IDLE == 0 && TXN_RUNNING == 1 && TXN_READY == 2 && LAYERS == 64 &&
     VOCAB == 248320 && UBATCH_MAX == 1024 && KV_BYTES == 576 && ATTENTION_BYTES == 33554432, "Bonsai batch constants");
 
-_Static_assert(offsetof(struct bonsai_cuda_api, fn_cuMemcpyHtoD) == 96 &&
-    offsetof(struct bonsai_cuda_api, fn_cuMemcpyDtoH) == 112, "Bonsai CUDA copy dispatch layout");
-
-const void *fg_bonsai_cuda_dispatch(void) { return &bonsai_cuda; }
-int32_t fg_bonsai_cuda_check(CUresult status, const char *where) { return check(status, where); }
 
 
 void fg_bonsai_batch_graph_error(model *m, int64_t status) {
@@ -615,10 +537,6 @@ _Static_assert(sizeof(struct bonsai_session) == 16 && UBATCH_MAX == 1024 &&
     offsetof(model, mtp_end) == 48 && offsetof(model, mtp_request) == 20 && offsetof(model, mtp_enabled) == 16 &&
     offsetof(model, choice_mask) == 5624 && offsetof(model, eog_count) == 15280 && offsetof(model, eog) == 14768,
     "Bonsai session field layout");
-_Static_assert(offsetof(struct bonsai_cuda_api, fn_cuCtxDestroy) == 24 &&
-    offsetof(struct bonsai_cuda_api, fn_cuCtxPushCurrent) == 32 &&
-    offsetof(struct bonsai_cuda_api, fn_cuCtxPopCurrent) == 40 &&
-    offsetof(struct bonsai_cuda_api, fn_cuMemsetD8) == 120, "Bonsai session CUDA dispatch layout");
 _Static_assert(GDN_STATE * 4 == 3145728 && GDN_HISTORY * 4 == 122880 &&
     offsetof(struct token_choice, token) == 0 && offsetof(struct token_choice, invalid) == 8, "Bonsai session state ABI");
 

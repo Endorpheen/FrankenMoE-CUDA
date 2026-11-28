@@ -36,3 +36,5 @@ fn bonsai_map_weights(model: u64, path: u64) -> i32 {
     bonsai_win_unmap(base);
     return result;
 }
+
+fn bonsai_open_cuda_library() -> u64 { return unsafe_c_library_open("nvcuda.dll"); }
