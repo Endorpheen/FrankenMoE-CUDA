@@ -177,12 +177,6 @@ _Static_assert(offsetof(model, choice_tiles) == 5632 && offsetof(model, choice_r
 _Static_assert(CHOICE_TILES == 77 && CHOICE_FINAL == 78 && CHOICE_JOBS == 243 &&
     MTP_EH == 79 && MTP_MAT == 80 && DRAFT_CONCAT == 84 && DRAFT_MAT_BATCH == 85, "Bonsai draft launch ABI");
 
-extern const unsigned char gooseinfer_bonsai_pipeline_image[];
-extern const unsigned char gooseinfer_bonsai_frozen_image[];
-extern const unsigned char gooseinfer_bonsai_mtp_image[];
-
-extern int32_t fg_bonsai_load_images(model *m, const char *cubin, const char *frozen, const char *mtp_image,
-    const void *pipeline_image, const void *frozen_image, const void *draft_image);
 _Static_assert(offsetof(model, module) == 4680 && offsetof(model, frozen) == 4688 &&
     offsetof(model, mtp_module) == 8 && offsetof(model, decode_kernel) == 4696 &&
     KERNEL_COUNT == 100 && CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES == 8, "Bonsai image loader ABI");
@@ -211,11 +205,6 @@ _Static_assert(
     offsetof(model, verify_rows) == 52 && offsetof(model, wide_mmq) == 14692,
     "Bonsai profile ABI");
 _Static_assert(sizeof(model) == 16344 && offsetof(model, epsilon) == 16336 && CONTEXT_MIN == 1 && POSITIONS_MAX == 262144, "Bonsai model loader ABI");
-
-int32_t fg_bonsai_embedded_images(model *m, const char *cubin, const char *frozen, const char *mtp_image) {
-    return fg_bonsai_load_images(m, cubin, frozen, mtp_image, gooseinfer_bonsai_pipeline_image,
-        gooseinfer_bonsai_frozen_image, gooseinfer_bonsai_mtp_image);
-}
 
 _Static_assert(
     offsetof(model, ubatch) == 14740 && offsetof(model, context) == 14732 &&

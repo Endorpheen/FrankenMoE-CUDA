@@ -47,7 +47,7 @@ def mark(base,names,ext,status,reason):
         marks[f]=(status,reason)
 both='Host Linux + Windows'
 mark(u/'inkling','graph-platform','.c',both,'Graph ABI, execution and Inkling backend')
-mark(u/'bonsai','backend-cold model-host','.c',both,'Bonsai session and model host')
+mark(u/'bonsai','model-host','.c',both,'Bonsai session and model host')
 mark(u/'common','probability-platform','.c',both,'Probability platform adapter')
 mark(Path('integration/m1/host'),'goose_host','.c',both,'Goose ABI, platform and quantization helpers')
 mark(Path('integration/m1/host'),'debugger-linux','.c','Host Linux','Linux debugger system call binding')
@@ -104,7 +104,7 @@ for path in sorted(files):
     if path in direct:
         status, purpose = marks[path]
         bucket = "runtime_host" if status.startswith("Host") else "runtime_gpu"
-    elif path in {g / "src/ggml.c", u / "inkling/inkling-backend.c"}:
+    elif path in {g / "src/ggml.c", u / "inkling/inkling-backend.c", u / "bonsai/backend-cold.c"}:
         bucket = "build_abi_only"
         status, purpose = "Syntax-only", "Universal tensor and model ABI assertions"
     elif path in marks:

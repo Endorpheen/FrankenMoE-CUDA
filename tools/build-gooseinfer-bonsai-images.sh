@@ -24,6 +24,12 @@ for name, filename in zip(("pipeline", "mtp", "frozen"), sys.argv[2:], strict=Tr
     lines.extend([".balign 16", f".globl {symbol}", f"{symbol}:", f".incbin {json.dumps(str(path), ensure_ascii=False)}"])
     if name == "frozen":
         lines.append(".byte 0")
+# Image storage and address accessors stay in the same object on both ABIs.
+lines.append(".text")
+for name in ("pipeline", "mtp", "frozen"):
+    accessor = f"gooseinfer_bonsai_{name}_address"
+    image = f"gooseinfer_bonsai_{name}_image"
+    lines.extend([".balign 16", f".globl {accessor}", f"{accessor}:", f"lea {image}(%rip), %rax", "ret"])
 lines.extend(['#ifndef _WIN32', '.section .note.GNU-stack,"",@progbits', '#endif'])
 assembly.write_text("\n".join(lines) + "\n")
 PY

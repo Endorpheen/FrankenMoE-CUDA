@@ -17,7 +17,7 @@ inputs=(
     "$out/inkling/numeric.o" "$out/bonsai/model-host.o" "$out/gigachat4/$giga"
     "$out/cpu/cpu.o" "$out/cuda/cuda-driver.o" "$out/inkling/graph-execute.o"
     "$out/inkling/inkling-backend.o" "$out/inkling/lfu.o" "$out/bonsai-model/main.o"
-    "$out/bonsai/bonsai-session.o" "$out/bonsai/mtp-goose.o" "$out/bonsai/bonsai-goose.o"
+    "$out/bonsai/mtp-goose.o" "$out/bonsai/bonsai-goose.o"
 )
 if [[ $target == linux ]]; then
     archive="$out/common/libgooseinfer-common.a"

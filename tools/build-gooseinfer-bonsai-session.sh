@@ -17,8 +17,7 @@ mkdir -p -- "$out"
 
 "$cc" -O2 -Wall -Wextra -Werror -ffunction-sections -fdata-sections \
     -I"$standalone" -I"$cuda/include" \
-    -c "$src/backend-cold.c" -o "$out/session-unlinked.o"
-"$objcopy" --redefine-syms="$src/session-symbols.txt" "$out/session-unlinked.o" "$out/bonsai-session.o"
+    -fsyntax-only "$src/backend-cold.c"
 
 ggml="$root/vendor/flint/ggml"
 "$cc" -O2 -std=gnu11 -D_GNU_SOURCE -DI2_NUMERIC_MODULE -Werror=implicit-function-declaration \

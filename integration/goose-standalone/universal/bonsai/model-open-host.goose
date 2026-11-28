@@ -1,6 +1,8 @@
 type BonsaiMemInfo = c_fnptr(u64, u64) -> i32;
 
-extern fn fg_bonsai_embedded_images(model: u64, image: u64, frozen: u64, mtp_image: u64) -> i32;
+extern fn gooseinfer_bonsai_pipeline_address() -> u64;
+extern fn gooseinfer_bonsai_frozen_address() -> u64;
+extern fn gooseinfer_bonsai_mtp_address() -> u64;
 extern fn bonsai_mtp_goose_init(argc: i32, argv: u64);
 
 extern fn bonsai_bonsai_load_weights_plan(model: u64, file: VocabSpan, mapping: u64, bytes: u64,
@@ -21,7 +23,8 @@ fn bonsai_load_weights(model: u64, mapping: u64, bytes: u64) -> i32 {
 
 fn bonsai_open_initialize(model: u64, path: u64, image: u64, frozen: u64, mtp_image: u64) -> i32 {
     if fg_bonsai_profile(model, mtp_image) != 0 ||
-        fg_bonsai_embedded_images(model, image, frozen, mtp_image) != 0 ||
+        fg_bonsai_load_images(model, image, frozen, mtp_image, gooseinfer_bonsai_pipeline_address(),
+            gooseinfer_bonsai_frozen_address(), gooseinfer_bonsai_mtp_address()) != 0 ||
         bonsai_map_weights(model, path) != 0 { return -1; }
     let choice = bonsai_profile_env("BONSAI_HTTP_DEVICE_CHOICE\0");
     if bonsai_profile_is(choice, "1") && fg_bonsai_choice_open(model) != 0 { return -1; }
