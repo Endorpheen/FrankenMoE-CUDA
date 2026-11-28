@@ -40,6 +40,3 @@ cat "$standalone/graph-bindings.goose" "$standalone/common-memory.goose" > "$out
 "$objcopy" --redefine-sym=graph_crt_getenv=getenv "$out/graph-bindings.o"
 "$cc" -O1 "${flags[@]}" -c "$host/goose_host.c" -o "$out/goose-host.o"
 CC="$cc" WINDOWS_CC="$cc" bash "$root/tools/build-gooseinfer-socket.sh" "$target" "$out/socket-forwards.o"
-if [[ $target == windows ]]; then
-    "$cc" -O2 "${flags[@]}" -c "$standalone/windows/web.c" -o "$out/web.o"
-fi
