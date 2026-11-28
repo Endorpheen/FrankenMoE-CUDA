@@ -37,15 +37,13 @@ struct prefill_workspace {
 
 _Static_assert(sizeof(struct prefill_token) == 285708, "Goose prefill token stride ABI");
 extern void fg_i2_prefill_control(struct decoder *d, const int64_t *aux, int which, int count,
-    struct prefill_token *tokens, float *current, const uintptr_t *buffers);
-
-static void prefill_control(struct decoder *d, const int64_t *aux, int which, int count,
-                            struct prefill_token *tokens, float (*current)[model_width],
-                            struct prefill_workspace *scratch) {
-    const uintptr_t buffers[] = {(uintptr_t)scratch->control_input, (uintptr_t)scratch->control_hidden,
-        (uintptr_t)scratch->gain, (uintptr_t)scratch->forget, (uintptr_t)scratch->combined};
-    fg_i2_prefill_control(d, aux, which, count, tokens, current[0], buffers);
-}
+    struct prefill_token *tokens, float *current, struct prefill_workspace *scratch);
+_Static_assert(offsetof(struct prefill_workspace, projections) == 113246208 &&
+    offsetof(struct prefill_workspace, attention) == 255197184 &&
+    offsetof(struct prefill_workspace, control_input) == 418775048 &&
+    offsetof(struct prefill_workspace, control_hidden) == 494272520 &&
+    offsetof(struct prefill_workspace, gain) == 533069832 && offsetof(struct prefill_workspace, forget) == 495321096 &&
+    offsetof(struct prefill_workspace, combined) == 570818568, "Goose prefill scratch ABI");
 
 struct i2_prefill_work {
     struct decoder *decoder;
@@ -197,6 +195,10 @@ extern void fg_i2_prefill_resident_attention(struct decoder *d, const int64_t *c
     int slot, int begin, int layer, int pass, int count, bool sliding, bool device_postconv,
     bool direct_depthmix, bool prune_host, bool device_loop, bool attention_mix, float *inputs, float **messages, float *output);
 
+extern void fg_i2_prefill_native_attention(struct decoder *d, const int64_t *core, const int64_t *aux,
+    struct prefill_token *tokens, struct prefill_workspace *scratch, int slot, int begin, int pass, int count,
+    bool sliding, int64_t *work);
+
 void fg_i2_prefill_layer(struct decoder *d, struct prefill_token *tokens, struct prefill_workspace *scratch,
                           int count, int begin, const int64_t *visit, struct i2_prefill_team *team,
                           bool *device_current, bool retain_current, uint64_t output_slot,
@@ -262,33 +264,7 @@ void fg_i2_prefill_layer(struct decoder *d, struct prefill_token *tokens, struct
             device_postconv, direct_depthmix, prune_host, device_loop, device_attention_mix,
             scratch->inputs[0][0], message, device_postconv ? scratch->residual[0] : scratch->linear[0]);
     } else {
-        for (int i = 0; i < 3; ++i) {
-            if (pass > 0) {
-                prefill_control(d, aux, i, count, tokens, scratch->inputs[i], scratch);
-            }
-            for (int t = 0; t < count; ++t) {
-                float *row = scratch->inputs[i][t];
-                assert(i2_rms_gain(vec(row, model_width), coefficients(d, aux[sliding ? 11 : 12 + i], model_width),
-                    1e-6f, vec(row, model_width)) == model_width);
-            }
-        }
-
-        if (fg_i2_device_attention_input()) {
-            native_attention_resident(d, core, aux, slot, begin, count, sliding,
-                scratch->inputs[0][0], scratch->inputs[1][0], scratch->inputs[2][0], scratch->linear[0]);
-        } else {
-            float *rows[] = {scratch->inputs[0][0], scratch->inputs[1][0], scratch->inputs[2][0]};
-            const int packed = fg_i2_project_attention_inputs(d, core, aux, sliding, rows, count, scratch->projections, work);
-            struct native_attention_inputs args;
-            fg_i2_native_workspace(d, count, &args);
-            fg_i2_prepare_prefill_rows(d, &args, aux, slot, begin, count, sliding, scratch->projections, packed);
-            if (fg_i2_resident_attention_projection()) {
-                fg_i2_native_project(d, &args, aux, slot, begin, count, sliding, core[3], scratch->linear[0]);
-            } else {
-                fg_i2_native_submit(d, &args, aux, slot, begin, count, sliding, scratch->attention[0]);
-                prefill_projection(d, core[3], scratch->attention[0], attn_width, scratch->linear[0], model_width, count);
-            }
-        }
+        fg_i2_prefill_native_attention(d, core, aux, tokens, scratch, slot, begin, pass, count, sliding, work);
     }
     const char *postconv_batch = getenv("I2_PREFILL_POSTCONV_BATCH");
     if (!device_postconv && team && (!postconv_batch || strcmp(postconv_batch, "0") != 0)) {
@@ -323,7 +299,7 @@ void fg_i2_prefill_layer(struct decoder *d, struct prefill_token *tokens, struct
         return;
     }
     if (pass > 0) {
-        prefill_control(d, aux, 3, count, tokens, scratch->ff, scratch);
+        fg_i2_prefill_control(d, aux, 3, count, tokens, scratch->ff[0], scratch);
     }
     fg_i2_prefill_moe(d, core, aux, slot, count, scratch->ff[0],
         scratch->linear[0], scratch->residual[0], tokens, work);

@@ -474,13 +474,13 @@ export fn prefill_loop_inputs(decoder: u64, token: u64, layer: i32, pass: i32, d
     }
 }
 
-export fn fg_i2_prefill_control(decoder: u64, aux: u64, which: i32, count: i32, tokens: u64, current: u64, buffers: u64) {
+export fn fg_i2_prefill_control(decoder: u64, aux: u64, which: i32, count: i32, tokens: u64, current: u64, scratch: u64) {
     let at = 18 + which * 3;
-    let normalized = i2d_read(buffers);
-    let hidden = i2d_read(buffers + 8);
-    let gain = i2d_read(buffers + 16);
-    let forget = i2d_read(buffers + 24);
-    let combined = i2d_read(buffers + 32);
+    let normalized = scratch + 418775048;
+    let hidden = scratch + 494272520;
+    let gain = scratch + 533069832;
+    let forget = scratch + 495321096;
+    let combined = scratch + 570818568;
     let messages = tokens + 248832 + (which as! u64) * 9216;
     if fg_i2_host_resident_control() {
         for index in count as! i64 {
@@ -824,5 +824,40 @@ export fn fg_i2_prefill_resident_attention(decoder: u64, core: u64, aux: u64,
     if device_postconv {
         fg_cuda_i2_prefill_conv(0, 0);
         fg_i2_swap_direct_output(saved_output);
+    }
+}
+
+export fn fg_i2_prefill_native_attention(decoder: u64, core: u64, aux: u64, tokens: u64, scratch: u64,
+    slot: i32, begin: i32, pass: i32, count: i32, sliding: bool, work: u64) {
+    let rows: u64[3] = [scratch, scratch + 37748736, scratch + 75497472];
+    let output = i2d_read(scratch + 343277568);
+    for projection in 3 {
+        let input = rows[projection];
+        if pass > 0 { fg_i2_prefill_control(decoder, aux, projection as! i32, count, tokens, input, scratch); }
+        let gain_index: i32 = if sliding { 11 } else { 12 + (projection as! i32) };
+        let gain = i2_native_weight(decoder, aux, gain_index, 2304);
+        for index in count as! i64 {
+            let row = i2d_span(input + (index as! u64) * 9216, 2304);
+            assert(fg_i2_host_measured_rms(row, gain, 0.000001, row) == 2304);
+        }
+    }
+    if fg_i2_device_attention_input() {
+        fg_i2_native_resident(decoder, core, aux, slot, begin, count, sliding, rows[0], rows[1], rows[2], output);
+        return;
+    }
+    let projections = scratch + 113246208;
+    let packed = fg_i2_project_attention_inputs(decoder, core, aux, sliding,
+        i2d_address(unsafe_c_address<c_ptr<const void>>(rows[0])), count, projections, work);
+    var storage: u64[6];
+    let args = i2d_address(unsafe_c_address<c_ptr<const void>>(storage[0]));
+    fg_i2_native_workspace(decoder, count, args);
+    fg_i2_prepare_prefill_rows(decoder, args, aux, slot, begin, count, sliding, projections, packed);
+    let weight = i2_host_aux(core, 3);
+    if fg_i2_resident_attention_projection() {
+        fg_i2_native_project(decoder, args, aux, slot, begin, count, sliding, weight, output);
+    } else {
+        let attention = scratch + 255197184;
+        fg_i2_native_submit(decoder, args, aux, slot, begin, count, sliding, attention);
+        prefill_projection(decoder, weight, attention, 3072, output, 2304, count);
     }
 }
