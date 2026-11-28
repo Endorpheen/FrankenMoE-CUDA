@@ -60,3 +60,30 @@ export fn fg_model_zero_host_pages(address: u64,length: i64) -> i64 {
     vocab_memset(unsafe_c_ptr<c_ptr<void>>(address+leading+whole),0,bytes-leading-whole);
     return 1;
 }
+
+extern fn bonsai_munmap(base: u64, size: u64) -> i32;
+extern fn bonsai_perror(label: u64);
+
+fn bonsai_map_weights(model: u64, path: u64) -> i32 {
+    let fd = vocab_unix_open(path, 0);
+    if fd < 0 {
+        bonsai_perror(path);
+        return -1;
+    }
+    var status: u64[18];
+    if vocab_unix_fstat(fd, vocab_address(unsafe_c_address<c_ptr<const void>>(status[0]))) != 0 ||
+        (status[6] as! i64) < 24 {
+        vocab_unix_close(fd);
+        return -1;
+    }
+    let bytes = status[6];
+    let base = vocab_unix_mmap(0, bytes, 1, 2, fd, 0);
+    vocab_unix_close(fd);
+    if base == 0xffffffffffffffff {
+        bonsai_perror(vocab_text("mmap\0").address);
+        return -1;
+    }
+    let result = bonsai_load_weights(model, base, bytes);
+    bonsai_munmap(base, bytes);
+    return result;
+}

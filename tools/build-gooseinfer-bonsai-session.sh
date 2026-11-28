@@ -41,9 +41,10 @@ native=(--redefine-sym=vocab_strlen=strlen --redefine-sym=fg_cuda_model_getenv=g
 if [[ "$target" == linux ]]; then
     native+=(--redefine-sym=vocab_clock_gettime=clock_gettime --redefine-sym=vocab_unix_open=open --redefine-sym=vocab_unix_fstat=fstat
         --redefine-sym=vocab_unix_sysconf=sysconf --redefine-sym=vocab_unix_mmap=mmap --redefine-sym=vocab_unix_close=close
+        --redefine-sym=bonsai_munmap=munmap --redefine-sym=bonsai_perror=perror
         --redefine-sym=vocab_unix_mincore=mincore --redefine-sym=vocab_unix_madvise=madvise --redefine-sym=vocab_unix_errno=__errno_location)
 else
-    native+=(--redefine-sym=vocab_clock_gettime=clock_gettime64)
+    native+=(--redefine-sym=vocab_clock_gettime=clock_gettime64 --redefine-sym=bonsai_win_unmap=UnmapViewOfFile)
 fi
 "$objcopy" "${native[@]}" "$out/host-vocab.o"
 "$cc" -r -nostdlib "$out/model-host-native.o" "$out/host-vocab.o" -o "$out/model-host.o"

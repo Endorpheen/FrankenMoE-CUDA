@@ -25,3 +25,14 @@ export fn fg_model_mincore(address: u64,bytes: i64,flags: u8[:]) -> i64 {
 
 export fn fg_model_populate(address: u64,bytes: i64) -> i64 { return 1; }
 export fn fg_model_zero_host_pages(address: u64,length: i64) -> i64 { return 0; }
+
+extern fn bonsai_win_unmap(base: u64) -> i32;
+
+fn bonsai_map_weights(model: u64, path: u64) -> i32 {
+    var bytes: u64 = 0;
+    let base = fg_win_map_model(path, vocab_address(unsafe_c_address<c_ptr<const void>>(bytes)));
+    if base == 0 { return -1; }
+    let result = if bytes < 24 { -1 } else { bonsai_load_weights(model, base, bytes) };
+    bonsai_win_unmap(base);
+    return result;
+}

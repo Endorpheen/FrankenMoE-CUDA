@@ -499,30 +499,9 @@ int64_t bonsai_launch(uint64_t context, int64_t op, int64_t a, int64_t b, int64_
     }
 }
 
-static sl_i64 slice(int64_t *data, int64_t len) {
-    return (sl_i64){ data, len };
-}
-
-extern int32_t bonsai_rope_config(uint64_t destination, int64_t heads, int64_t tokens);
-
 _Static_assert(offsetof(model, use_flash_f32) == 14664 && offsetof(model, memory) == 5656 &&
     offsetof(model, phases) == 14632 && offsetof(model, packed) == 14640 && offsetof(model, weights) == 5648,
     "Bonsai workspace ABI");
-
-extern int32_t bonsai_load_weights_plan(uint64_t context, sl_u8 file, uint64_t mapping, uint64_t length,
-    uint8_t mtp_enabled, sl_i64 globals, sl_i64 bound, sl_i64 draft, sl_i64 draft_layer,
-    sl_i64 eog, sl_f32 epsilon, sl_i64 result);
-
-void bonsai_log_gguf_parse(int64_t status) {
-    fprintf(stderr, "GGUF parse: %lld\n", (long long)status);
-}
-
-static int load_weights(model *m, uint8_t *mapping, size_t length) {
-    const sl_u8 file = {mapping, length > 67108864 ? 67108864 : (int64_t)length};
-    return bonsai_load_weights_plan((uintptr_t)m, file, (uintptr_t)mapping, length, m->mtp_enabled != 0,
-        slice(m->globals, 3), slice(m->bound, LAYERS * 15), slice(m->mtp, 4),
-        slice(m->mtp_layer, 15), slice(m->eog, 64), (sl_f32){&m->epsilon, 1}, slice(&m->eog_count, 1));
-}
 
 struct token_choice {
     uint32_t token;
@@ -584,33 +563,12 @@ _Static_assert(
     offsetof(model, verify_native) == 56 && offsetof(model, verify_q8) == 60 &&
     offsetof(model, verify_rows) == 52 && offsetof(model, wide_mmq) == 14692,
     "Bonsai profile ABI");
-_Static_assert(sizeof(model) == 16344 && CONTEXT_MIN == 1 && POSITIONS_MAX == 262144 &&
+_Static_assert(sizeof(model) == 16344 && offsetof(model, epsilon) == 16336 && CONTEXT_MIN == 1 && POSITIONS_MAX == 262144 &&
     offsetof(struct bonsai_cuda_api, fn_cuMemGetInfo) == 88, "Bonsai model loader ABI");
 
 int32_t fg_bonsai_embedded_images(model *m, const char *cubin, const char *frozen, const char *mtp_image) {
     return fg_bonsai_load_images(m, cubin, frozen, mtp_image, gooseinfer_bonsai_pipeline_image,
         gooseinfer_bonsai_frozen_image, gooseinfer_bonsai_mtp_image);
-}
-
-int32_t fg_bonsai_map_weights(model *m, const char *gguf) {
-#ifdef _WIN32
-    size_t model_bytes = 0;
-    uint8_t *mapping = fg_win_map_model(gguf, &model_bytes);
-    if (!mapping) return -1;
-    const int loaded = model_bytes < 24 ? -1 : load_weights(m, mapping, model_bytes);
-    UnmapViewOfFile(mapping);
-#else
-    int fd = open(gguf, O_RDONLY);
-    if (fd < 0) { perror(gguf); return -1; }
-    struct stat info;
-    if (fstat(fd, &info) != 0 || info.st_size < 24) { close(fd); return -1; }
-    uint8_t *mapping = mmap(NULL, info.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
-    close(fd);
-    if (mapping == MAP_FAILED) { perror("mmap"); return -1; }
-    const int loaded = load_weights(m, mapping, (size_t)info.st_size);
-    munmap(mapping, info.st_size);
-#endif
-    return loaded;
 }
 
 _Static_assert(
