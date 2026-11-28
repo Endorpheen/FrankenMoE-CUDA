@@ -504,10 +504,6 @@ static void read_token_logits(struct decoder *d, int absolute, float *cur, float
 
 }
 
-extern int32_t i2_walk_serial_token(uint64_t decoder, sl_i64 visits, int32_t absolute,
-    sl_f32 current, sl_f32 history, sl_f32 prelude, sl_f32 bank_output, sl_f32 bank,
-    sl_f32 messages, uint8_t trace);
-
 int32_t i2_serial_layer(uint64_t decoder, int32_t physical, int32_t slot, int32_t absolute,
     int32_t sliding, sl_f32 current, sl_f32 history, int32_t count, sl_f32 messages) {
     int history_count = count;
@@ -527,20 +523,19 @@ void i2_serial_trace(int32_t visit, sl_f32 current) {
     check_state("draft-serial-visit", visit, current.data, (size_t)current.len);
 }
 
-static void token(struct decoder *d, int32_t input, int absolute, bool need_logits) {
-    float cur[model_width], prelude[model_width], bank_output[model_width], blocks[12*model_width];
-    float bank[12*model_width], messages[4][model_width];
-    weight emb=named(d,d->globals[0]);
-    int64_t row=ggml_row_size(GGML_TYPE_Q8_0,model_width);
-    assert(i2_embed_row((sl_u8){(uint8_t *)(uintptr_t)(emb.data+row*input),row},
-                        coefficients(d,d->globals[1],model_width),1e-6f,vec(cur,model_width))==model_width);
-    const int count = i2_walk_serial_token((uintptr_t)d, ints(d->visits, logical * 4), absolute,
-        vec(cur, model_width), vec(blocks, 12 * model_width), vec(prelude, model_width),
-        vec(bank_output, model_width), vec(bank, 12 * model_width), vec(messages[0], 4 * model_width),
-        absolute == 4097 && getenv("I2_DRAFT_PARITY"));
-    fprintf(stderr,"Pure Goose visited 48 layers for token %d at position %d\n",input,absolute);
-    check_state("residual", absolute, cur, model_width);
-    if (need_logits) read_token_logits(d, absolute, cur, blocks, count, true);
+_Static_assert(offsetof(struct decoder, visits) == 81456 && logical == 48 && model_width == 2304,
+    "Goose serial token ABI");
+
+void fg_i2_serial_embed(struct decoder *d, int32_t input, sl_f32 current) {
+    weight emb = named(d, d->globals[0]);
+    int64_t row = ggml_row_size(GGML_TYPE_Q8_0, model_width);
+    assert(i2_embed_row((sl_u8){(uint8_t *)(uintptr_t)(emb.data + row * input), row},
+        coefficients(d, d->globals[1], model_width), 1e-6f, current) == model_width);
+}
+
+void fg_i2_serial_finish(struct decoder *d, int absolute, float *current, float *history, int count, bool logits) {
+    check_state("residual", absolute, current, model_width);
+    if (logits) read_token_logits(d, absolute, current, history, count, true);
 }
 
 #include "prefill.h"
@@ -633,8 +628,4 @@ int fg_i2_backend_reset_attention(uint64_t address) {
 
 void fg_i2_backend_prefill(uint64_t address, uint64_t tokens, int position, int count, bool logits) {
     prefill((struct decoder *)(uintptr_t)address, (const int32_t *)(uintptr_t)tokens, position, count, logits);
-}
-
-void fg_i2_backend_token(uint64_t address, int32_t id, int position, bool logits) {
-    token((struct decoder *)(uintptr_t)address, id, position, logits);
 }

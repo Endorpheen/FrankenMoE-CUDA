@@ -24,7 +24,6 @@ struct I2DraftSpan { address: u64, len: i64 }
 extern fn fg_i2_backend_draft_features() -> bool;
 extern fn fg_i2_backend_reset_attention(decoder: u64) -> i32;
 extern fn fg_i2_backend_prefill(decoder: u64,tokens: u64,pos: i32,count: i32,logits: bool);
-extern fn fg_i2_backend_token(decoder: u64,token: i32,pos: i32,logits: bool);
 extern fn fg_cuda_host_getenv(name: u64) -> u64;
 extern fn fg_cuda_expert_stats(out: I2DraftSpan);
 extern fn fg_cuda_inkling_expert_phase(prefill: bool,pos: i32,count: i32);
