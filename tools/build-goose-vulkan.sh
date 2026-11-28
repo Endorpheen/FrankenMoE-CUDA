@@ -76,18 +76,13 @@ if [[ "$mode" != probe ]]; then
                 cat "${parts[@]}" "$quant/${shader#gather_}.goose" "$quant/$mode.goose" > "$shader_source"
                 ;;
         esac
-        if [[ -f $shader_source ]]; then
-            if [[ $shader == moe_route || $shader == inkling_route ]]; then
-                cat "$shader_dir/route-interface.goose" "$shader_source" "$shader_dir/route-dispatch.goose" \
-                    > "$out/$shader.goose"
-                shader_source="$out/$shader.goose"
-            fi
-            GLSLANG_VALIDATOR="$glslang" "${GOOSE_VULKAN_BIN:-$GOOSE_CUDA_DRIVER_BIN}" \
-                --emit-spirv "$out/$shader.spv" --target-env vulkan1.2 "$shader_source"
-        else
-            "$glslang" -V --target-env vulkan1.2 -S comp "-DOP_${shader^^}" \
-                "$shader_dir/reference.comp" -o "$out/$shader.spv"
+        if [[ $shader == moe_route || $shader == inkling_route ]]; then
+            cat "$shader_dir/route-interface.goose" "$shader_source" "$shader_dir/route-dispatch.goose" \
+                > "$out/$shader.goose"
+            shader_source="$out/$shader.goose"
         fi
+        GLSLANG_VALIDATOR="$glslang" "${GOOSE_VULKAN_BIN:-$GOOSE_CUDA_DRIVER_BIN}" \
+            --emit-spirv "$out/$shader.spv" --target-env vulkan1.2 "$shader_source"
         "$spirv_val" --target-env vulkan1.2 "$out/$shader.spv"
     done
     python3 "$root/tools/embed-vulkan-shaders.py" "$out"
