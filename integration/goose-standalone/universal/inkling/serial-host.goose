@@ -544,3 +544,53 @@ export fn fg_i2_prefill_depthmix(decoder: u64, aux: u64, tokens: u64, count: i32
     assert(inkling_arena_depthmix(if resident { 0 } else { staging }, residual,
         i2_native_weight(decoder, aux, 9, 2304).address, output, rows, save_history, 0));
 }
+
+extern fn inkling_moe_retain_output(host: u64, device: u64);
+extern fn inkling_loop_bind(queries: u64, q: u64, k: u64, v: u64, messages: u64);
+extern fn inkling_loop_generated() -> u32;
+extern fn inkling_arena_depthmix_close() -> u32;
+
+export fn fg_i2_prefill_resident_moe(decoder: u64, core: u64, aux: u64, tokens: u64,
+    slot: i32, begin: i32, layer: i32, pass: i32, count: i32, device_loop: bool,
+    prune_host: bool, retain: bool, direct_depthmix: bool, output_slot: u64,
+    ffn: u64, residual: u64, output: u64, gain: u64) -> bool {
+    let rows = count as! i64;
+    var messages: u64 = 0;
+    if pass > 0 {
+        if device_loop {
+            if !prune_host {
+                for index in rows * 2304 { i2d_set_int(gain + (index as! u64) * 4, 0x7fc00000); }
+            }
+            inkling_loop_bind(i2_native_weight(decoder, aux, 17, 9216).address, 0, 0, 0, gain);
+        } else {
+            for index in rows {
+                let row = index as! u64;
+                i2d_transfer(gain + row * 9216, tokens + row * 285708 + 276480, 9216);
+            }
+        }
+        messages = gain;
+    }
+    if retain { inkling_moe_retain_output(output, output_slot); }
+    fg_i2_host_moe_resident(decoder, core, aux, slot, begin, count, ffn, messages, residual, output);
+    inkling_moe_retain_output(0, 0);
+    if device_loop {
+        assert(inkling_loop_generated() == 8);
+        inkling_loop_bind(0, 0, 0, 0, 0);
+        i2d_log(str("Inkling device loop messages begin=", begin, " layer=", layer, " pass=", pass, "\n"));
+    }
+    if direct_depthmix {
+        let reads = inkling_arena_depthmix_close();
+        assert(reads != 0);
+        i2d_log(str("Inkling direct DepthMix begin=", begin, " layer=", layer, " pass=", pass, " rows=", count,
+            " device_reads=", reads, "\n"));
+    }
+    if retain {
+        i2d_log(str("Inkling resident MoE handoff begin=", begin, " layer=", layer, " pass=", pass, "\n"));
+    } else {
+        for index in rows {
+            let row = index as! u64;
+            i2d_transfer(tokens + row * 285708, output + row * 9216, 9216);
+        }
+    }
+    return retain;
+}

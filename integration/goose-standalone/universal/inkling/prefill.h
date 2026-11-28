@@ -194,6 +194,11 @@ extern void fg_i2_prefill_postconv(struct decoder *d, const int64_t *aux, int sl
 extern void fg_i2_prefill_depthmix(struct decoder *d, const int64_t *aux, struct prefill_token *tokens,
     int count, bool save_history, bool resident, float *staging, float *residual, float *output);
 
+extern bool fg_i2_prefill_resident_moe(struct decoder *d, const int64_t *core, const int64_t *aux,
+    struct prefill_token *tokens, int slot, int begin, int layer, int pass, int count,
+    bool device_loop, bool prune_host, bool retain, bool direct_depthmix, uint64_t output_slot,
+    float *ffn, float *residual, float *output, float *gain);
+
 static void prefill_layer(struct decoder *d, struct prefill_token *tokens, struct prefill_workspace *scratch,
                           int count, int begin, const int64_t *visit, struct i2_prefill_team *team,
                           bool *device_current, bool retain_current, uint64_t output_slot,
@@ -349,42 +354,9 @@ static void prefill_layer(struct decoder *d, struct prefill_token *tokens, struc
             scratch->inputs[0][0], scratch->residual[0], scratch->ff[0]);
     }
     if (fg_i2_resident_moe()) {
-        float *messages = NULL;
-        if (pass > 0) {
-            for (int t = 0; t < count; ++t) {
-                if (device_loop) {
-                    if (!prune_host)
-                        for (int c = 0; c < model_width; ++c) scratch->gain[t][c] = NAN;
-                } else {
-                    memcpy(scratch->gain[t], tokens[t].messages[3], sizeof scratch->gain[t]);
-                }
-            }
-            messages = scratch->gain[0];
-            if (device_loop) inkling_loop_bind(coefficients(d, aux[17], 4 * model_width).data,
-                                                NULL, NULL, NULL, messages);
-        }
-        if (retain_current) inkling_moe_retain_output(scratch->linear[0], output_slot);
-        moe_resident(d, core, aux, slot, begin, count, scratch->ff[0], messages,
-                     scratch->residual[0], scratch->linear[0]);
-        inkling_moe_retain_output(NULL, 0);
-        if (device_loop) {
-            assert(inkling_loop_generated() == 8);
-            inkling_loop_bind(NULL, NULL, NULL, NULL, NULL);
-            fprintf(stderr, "Inkling device loop messages begin=%d layer=%d pass=%d\n", begin, layer, pass);
-        }
-        if (direct_depthmix) {
-            const unsigned reads = inkling_arena_depthmix_close();
-            assert(reads);
-            fprintf(stderr, "Inkling direct DepthMix begin=%d layer=%d pass=%d rows=%d device_reads=%u\n", begin, layer, pass, count, reads);
-        }
-        if (retain_current) {
-            fprintf(stderr, "Inkling resident MoE handoff begin=%d layer=%d pass=%d\n", begin, layer, pass);
-        } else {
-            for (int t = 0; t < count; ++t) {
-                memcpy(tokens[t].current, scratch->linear[t], sizeof tokens[t].current);
-            }
-        }
-        *device_current = retain_current;
+        *device_current = fg_i2_prefill_resident_moe(d, core, aux, tokens, slot, begin, layer, pass, count,
+            device_loop, prune_host, retain_current, direct_depthmix, output_slot,
+            scratch->ff[0], scratch->residual[0], scratch->linear[0], scratch->gain[0]);
         return;
     }
     if (pass > 0) {
