@@ -388,25 +388,28 @@ int64_t fg_i2_measured_postconv(sl_f32 input, sl_f32 weight, sl_f32 history, sl_
 _Static_assert(offsetof(struct decoder, hf) == 887144, "Goose serial MoE history ABI");
 bool fg_i2_serial_graph_enabled(void) { return use_attention_graph(); }
 
+extern int fg_i2_project_attention_inputs(struct decoder *d, const int64_t *core, const int64_t *aux,
+    bool sliding, float **rows, int count, float *projected, int64_t *work);
+
+int64_t fg_i2_measured_attention_projections(int64_t ctx, sl_i64 input, sl_i64 weights, bool sliding,
+    sl_i64 work, sl_i64 output) {
+    return i2_attention_projections(ctx, input, weights, sliding, work, output);
+}
+
+void fg_i2_evaluate_attention_inputs(struct ggml_context *ctx, int64_t *output, int matrices, float *projected, int count) {
+    struct ggml_tensor *roots[8];
+    for (int index = 0; index < matrices; ++index) roots[index] = (struct ggml_tensor *)(intptr_t)output[index];
+    evaluate(ctx, roots, matrices, projected, count);
+}
+
 void fg_i2_serial_native_attention(struct decoder *d, const int64_t *core, const int64_t *aux,
     int slot, int absolute, bool sliding, float (*inputs)[model_width], float *proj, int64_t *work) {
     if (use_device_attention_input()) {
         native_attention_resident(d, core, aux, slot, absolute, 1, sliding, inputs[0], inputs[1], inputs[2], proj);
     } else {
-        struct ggml_context *ctx = context();
-        int64_t in[3], projection[8]={0}, wp[8]={0};
-        for(int i=0;i<3;i++)in[i]=(intptr_t)input_tensor(ctx,inputs[i],model_width);
-        int64_t ids[]={core[0],core[1],core[2],aux[5],aux[8],core[4],aux[15],aux[16]};
-        const int count_proj=sliding?6:8;
-        for (int i=0;i<count_proj;i++)wp[i]=(intptr_t)load(ctx,named(d,ids[i]));
-        assert(i2_attention_projections((intptr_t)ctx,ints(in,3),ints(wp,8),sliding,
-                                        ints(work,16),ints(projection,8))==count_proj);
-        struct ggml_tensor *roots[8];
-        for(int i=0;i<count_proj;i++)roots[i]=(struct ggml_tensor *)(intptr_t)projection[i];
+        float *rows[] = {inputs[0], inputs[1], inputs[2]};
         float projected[8664], attn[attn_width];
-        int packed=sliding?8600:8664;
-        evaluate(ctx,roots,count_proj,projected,packed);
-        ggml_free(ctx);
+        int packed = fg_i2_project_attention_inputs(d, core, aux, sliding, rows, 1, projected, work);
 
         struct native_attention_inputs args = native_attention_inputs(d, 1);
         native_attention_prepare(d, args, aux, slot, absolute, 0, sliding, projected, packed);

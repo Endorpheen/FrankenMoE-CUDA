@@ -225,3 +225,31 @@ export fn i2_serial_layer(decoder: u64, physical: i32, slot: i32, absolute: i32,
         if messages == 0 { 0 } else { messages + 27648 }, next_address, current.address, proj, scratch);
     return result;
 }
+
+extern fn fg_i2_measured_attention_projections(ctx: i64, input: I2DraftSpan, weights: I2DraftSpan, sliding: bool,
+    work: I2DraftSpan, output: I2DraftSpan) -> i64;
+extern fn fg_i2_evaluate_attention_inputs(ctx: u64, output: u64, matrices: i32, projected: u64, count: i32);
+
+export fn fg_i2_project_attention_inputs(decoder: u64, core: u64, aux: u64, sliding: bool,
+    rows: u64, count: i32, projected: u64, work: u64) -> i32 {
+    let ctx = fg_i2_host_context();
+    var inputs: u64[3];
+    var outputs: u64[8] = [0; 8];
+    var weights: u64[8] = [0; 8];
+    for index in 3 {
+        inputs[index] = fg_i2_host_rows_input(ctx, i2d_read(rows + (index as! u64) * 8), 2304, count);
+    }
+    let ids: i64[8] = [i2_host_aux(core, 0), i2_host_aux(core, 1), i2_host_aux(core, 2),
+        i2_host_aux(aux, 5), i2_host_aux(aux, 8), i2_host_aux(core, 4), i2_host_aux(aux, 15), i2_host_aux(aux, 16)];
+    let matrices: i32 = if sliding { 6 } else { 8 };
+    let packed: i32 = if sliding { 8600 } else { 8664 };
+    for index in matrices as! i64 { weights[index] = fg_i2_host_weight(ctx, decoder, ids[index]); }
+    let output = i2d_address(unsafe_c_address<c_ptr<const void>>(outputs[0]));
+    assert(fg_i2_measured_attention_projections(ctx as! i64,
+        i2d_span(i2d_address(unsafe_c_address<c_ptr<const void>>(inputs[0])), 3),
+        i2d_span(i2d_address(unsafe_c_address<c_ptr<const void>>(weights[0])), 8),
+        sliding, i2d_span(work, 16), i2d_span(output, 8)) == matrices as! i64);
+    fg_i2_evaluate_attention_inputs(ctx, output, matrices, projected, packed * count);
+    ggml_free(ctx);
+    return packed;
+}

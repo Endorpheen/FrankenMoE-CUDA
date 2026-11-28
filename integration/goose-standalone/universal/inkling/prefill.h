@@ -357,26 +357,10 @@ static void prefill_layer(struct decoder *d, struct prefill_token *tokens, struc
             native_attention_resident(d, core, aux, slot, begin, count, sliding,
                 scratch->inputs[0][0], scratch->inputs[1][0], scratch->inputs[2][0], scratch->linear[0]);
         } else {
-            ctx = context();
-            int64_t in[3], output[8] = {0}, weight[8] = {0};
-            for (int i = 0; i < 3; ++i) {
-                in[i] = (intptr_t)prefill_input(ctx, scratch->inputs[i][0], model_width, count);
-            }
-            const int64_t ids[] = {core[0], core[1], core[2], aux[5], aux[8], core[4], aux[15], aux[16]};
+            float *rows[] = {scratch->inputs[0][0], scratch->inputs[1][0], scratch->inputs[2][0]};
             const int widths[] = {3072, 1024, 1024, 384, 24, 3072, 32, 32};
             const int matrices = sliding ? 6 : 8;
-            const int packed = sliding ? 8600 : 8664;
-            for (int i = 0; i < matrices; ++i) {
-                weight[i] = (intptr_t)load(ctx, named(d, ids[i]));
-            }
-            assert(i2_attention_projections((intptr_t)ctx, ints(in, 3), ints(weight, 8), sliding,
-                                            ints(work, 16), ints(output, 8)) == matrices);
-            struct ggml_tensor *roots[8];
-            for (int i = 0; i < matrices; ++i) {
-                roots[i] = (struct ggml_tensor *)(intptr_t)output[i];
-            }
-            evaluate(ctx, roots, matrices, scratch->projections, packed * count);
-            ggml_free(ctx);
+            const int packed = fg_i2_project_attention_inputs(d, core, aux, sliding, rows, count, scratch->projections, work);
 
             struct native_attention_inputs args = native_attention_inputs(d,count);
             for (int t = 0; t < count; ++t) {
