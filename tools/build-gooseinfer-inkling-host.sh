@@ -43,7 +43,8 @@ if [[ "$target" == linux ]]; then
         --redefine-sym=graph_storage_fclose=fclose "$out/graph-host.o"
 fi
 "$cc" -r -nostdlib "$out/graph-platform.o" "$out/graph-host.o" -o "$out/graph-execute.o"
-"${GOOSE_CUDA_DRIVER_BIN:?}" --standalone -o "$out/draft-host.c" "$source_dir/draft-host.goose"
+cat "$source_dir/"{draft-host,open-host}.goose > "$out/draft-host.goose"
+"${GOOSE_CUDA_DRIVER_BIN:?}" --standalone -o "$out/draft-host.c" "$out/draft-host.goose"
 "$cc" -O2 -std=c11 -ffunction-sections -fdata-sections -Dgoose_init=fg_i2_backend_host_init \
     -Dgg_init_globals=fg_i2_backend_host_globals -c "$out/draft-host.c" -o "$out/draft-host.o"
 "$cc" -r -nostdlib "$out/inkling-backend-native.o" "$out/draft-host.o" -o "$out/inkling-backend.o"

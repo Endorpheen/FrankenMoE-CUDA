@@ -739,31 +739,6 @@ static void token(struct decoder *d, int32_t input, int absolute, bool need_logi
     if (need_logits) read_token_logits(d, absolute, cur, blocks, count, true);
 }
 
-extern int64_t i2_place_expert_bank(sl_i64 tensors, sl_i64 core, int64_t data, int64_t budget);
-extern int64_t i2_place_weights(sl_i64 tensors, sl_i64 core, int64_t data, int64_t excluded,
-    int64_t budget, uint8_t adaptive, uint8_t keep_routers, sl_i64 ranges, sl_i64 totals);
-extern void fg_cuda_expert_stats(sl_i64 stats);
-
-static int64_t load_inkling_expert_bank(struct decoder *d, int64_t budget) {
-    return i2_place_expert_bank(ints(d->tensor, sizeof(d->tensor) / sizeof(*d->tensor)),
-        ints(d->core, physical * 10), (intptr_t)d->data, budget);
-}
-
-static int64_t place_inkling_weights(struct decoder *d, int64_t tensor_count, int64_t budget, bool adaptive) {
-    const int64_t capacity = (tensor_count + physical * experts * 2) * 3;
-    int64_t *ranges = calloc((size_t)capacity, sizeof(*ranges));
-    assert(ranges);
-    const char *config = getenv("I2_RESIDENT_ROUTERS");
-    int64_t totals[2];
-    const int64_t used = i2_place_weights(ints(d->tensor, tensor_count * 12), ints(d->core, physical * 10),
-        (intptr_t)d->data, d->globals[0], budget, adaptive, adaptive && (!config || strcmp(config, "0") != 0),
-        ints(ranges, capacity), ints(totals, 2));
-    free(ranges);
-    printf("Resident weights: %.2f MiB, dense %.2f MiB\n", used / 1048576.0, totals[0] / 1048576.0);
-    printf("Resident router weights: %" PRId64 " bytes\n", totals[1]);
-    return used;
-}
-
 #include "prefill.h"
 
 extern int64_t fg_standalone_cpu_decode_threads(void);
@@ -800,7 +775,16 @@ static double now(void) {
 }
 
 
-static void free_decoder(struct decoder *d) {
+_Static_assert(sizeof(struct decoder) == 940272 && offsetof(struct decoder, data) == 0 &&
+    offsetof(struct decoder, tensor) == 8 && offsetof(struct decoder, globals) == 73736 &&
+    offsetof(struct decoder, core) == 73776 && offsetof(struct decoder, aux) == 75696 &&
+    offsetof(struct decoder, visits) == 81456 && offsetof(struct decoder, flash_workspace) == 887112 &&
+    offsetof(struct decoder, kh) == 887120 && offsetof(struct decoder, vh) == 887128 &&
+    offsetof(struct decoder, hf) == 887144 && INKLING_CONTEXT_LIMIT == 1048576 &&
+    INKLING_WINDOW == 1024, "Goose Inkling open ABI");
+
+void fg_i2_backend_open_cleanup(uint64_t address) {
+    struct decoder *d = (struct decoder *)(uintptr_t)address;
     if (d->logits_team) {
         prefill_team_close(d->logits_team);
         free(d->logits_team);
@@ -810,78 +794,6 @@ static void free_decoder(struct decoder *d) {
         drop_decode_graph(&d->decode_moe[i]);
         drop_decode_graph(&d->decode_joined[i]);
     }
-    free(d->draft.history);
-    free(d->draft.scores);
-    free(d->draft.saved_history);
-    free(d->hf);
-    free(d->ha);
-    free(d->vh);
-    free(d->kh);
-    free(d->flash_workspace);
-    free(d);
-}
-
-struct decoder *inkling_backend_open(const uint8_t *image, size_t bytes, int64_t capacity,
-                                     int64_t expert_limit, enum inkling_kv_format format) {
-    if (!image || bytes > INT64_MAX || capacity <= 0 || capacity > INKLING_CONTEXT_LIMIT ||
-        expert_limit < 0) return NULL;
-
-    struct decoder *d = calloc(1, sizeof(*d));
-    if (!d) return NULL;
-    d->data = image;
-    d->capacity = capacity;
-    d->format = format;
-    int64_t st[8] = {0}, kv[256*8] = {0}, key_slots[512] = {0},
-        tensor_slots[2048] = {0}, layout[9] = {0};
-    const int64_t header_bytes = bytes < 64 * 1024 * 1024 ? (int64_t)bytes : 64 * 1024 * 1024;
-    sl_u8 header = {(uint8_t *)(uintptr_t)image, header_bytes};
-    if (gr_parse(header, bytes, ints(st, 8), ints(kv, 256*8), ints(d->tensor, 768*12),
-                 ints(key_slots, 512), ints(tensor_slots, 2048)) != 0 ||
-        i2_read_layout(header, ints(st, 8), ints(kv, 256*8), ints(key_slots, 512),
-                       ints(layout, 9), ints(d->visits, logical*4)) != logical ||
-        i2_bind_text_weights(header, ints(st, 8), ints(kv, 256*8), ints(key_slots, 512),
-                            ints(d->tensor, 768*12), ints(tensor_slots, 2048), ints(layout, 9),
-                            ints(d->globals, 5), ints(d->core, physical*10)) != physical ||
-        i2_bind_text_aux(header, ints(st, 8), ints(kv, 256*8), ints(key_slots, 512),
-                        ints(d->tensor, 768*12), ints(tensor_slots, 2048), ints(layout, 9),
-                        ints(d->aux, physical*30)) != physical) {
-        free_decoder(d);
-        return NULL;
-    }
-
-    d->kh = calloc(logical * 3 * key_width, sizeof(float));
-    d->vh = calloc(logical * 3 * key_width, sizeof(float));
-    d->ha = calloc(logical * 3 * model_width, sizeof(float));
-    d->hf = calloc(logical * 3 * model_width, sizeof(float));
-    if (!d->kh || !d->vh || !d->ha || !d->hf) {
-        free_decoder(d);
-        return NULL;
-    }
-
-#ifdef I2_NUMERIC_MODULE
-    i2_candidate_init(0, NULL);
-#endif
-    const int64_t free_bytes = fg_cuda_free_bytes();
-    const int64_t local_rows = capacity < INKLING_WINDOW ? capacity : INKLING_WINDOW;
-    const int64_t kv_rows = 8 * capacity + 40 * local_rows;
-    const int64_t row_bytes = format == INKLING_KV_Q4_0 ? key_width / 32 * 18 : key_width * sizeof(uint16_t);
-    const int64_t reserve = 1024LL*1024*1024 + kv_rows*(2*row_bytes + sizeof(int64_t));
-    if (free_bytes <= reserve || (expert_limit > 0 && expert_limit > free_bytes - reserve)) {
-        free_decoder(d);
-        return NULL;
-    }
-    const int64_t cap = 7168LL*1024*1024;
-    const int64_t available = free_bytes - reserve;
-    const int64_t budget = expert_limit > 0 ? available : (available < cap ? available : cap);
-    fg_cuda_enable_inkling_quants(true);
-    const int64_t resident = place_inkling_weights(d, st[3], budget, true);
-    const int64_t expert_budget = expert_limit > 0 ? expert_limit : budget - resident;
-    if (resident <= 0 || expert_budget > available - resident ||
-        load_inkling_expert_bank(d, expert_budget) <= 0) {
-        free_decoder(d);
-        return NULL;
-    }
-    return d;
 }
 
 _Static_assert(offsetof(struct decoder, capacity) == 82992 &&
