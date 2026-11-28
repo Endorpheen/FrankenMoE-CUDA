@@ -164,21 +164,14 @@ void fg_i2_prefill_partition(uint64_t address, int64_t begin, int64_t end) {
 
 extern int64_t i2_parallel_prefill(uint64_t work, int64_t rows, int64_t tasks);
 
-static int prefill_task_count(int count) {
-    const char *setting = getenv("I2_PARALLEL_PREP");
-    if (count < 64 || (setting && strcmp(setting, "0") == 0)) return 1;
-    int64_t tasks = fg_standalone_cpu_batch_threads();
-    if (tasks > 16) tasks = 16;
-    if (tasks > count / 32) tasks = count / 32;
-    return tasks > 1 ? tasks : 1;
-}
+extern int fg_i2_prefill_task_count(int count);
 
 static void prepare_prefill(struct i2_prefill_team *team, struct i2_prefill_work *work, int count) {
     if (team) {
         prefill_team_run(team, work, count);
         return;
     }
-    const int tasks = prefill_task_count(count);
+    const int tasks = fg_i2_prefill_task_count(count);
     if (tasks > 1) {
         (void)use_cached_history();
         assert(i2_parallel_prefill((uint64_t)(uintptr_t)work, count, tasks) == count);
@@ -199,7 +192,7 @@ extern bool fg_i2_prefill_resident_moe(struct decoder *d, const int64_t *core, c
     bool device_loop, bool prune_host, bool retain, bool direct_depthmix, uint64_t output_slot,
     float *ffn, float *residual, float *output, float *gain);
 
-static void prefill_layer(struct decoder *d, struct prefill_token *tokens, struct prefill_workspace *scratch,
+void fg_i2_prefill_layer(struct decoder *d, struct prefill_token *tokens, struct prefill_workspace *scratch,
                           int count, int begin, const int64_t *visit, struct i2_prefill_team *team,
                           bool *device_current, bool retain_current, uint64_t output_slot,
                           bool *boundary_history, bool *tail_history, bool device_loop, bool device_prelude) {
@@ -379,20 +372,8 @@ _Static_assert(offsetof(struct i2_prefill_visits, tokens) == 8 &&
     offsetof(struct i2_prefill_visits, begin) == 36 && offsetof(struct prefill_workspace, inputs) == 0,
     "Goose prefill visit ABI");
 
-void i2_prefill_run_visit(uint64_t address, int64_t index, sl_i64 device, uint8_t retain,
-                         uint64_t slot, uint8_t loop_live, uint8_t prelude_live) {
-    struct i2_prefill_visits *work = (void *)(uintptr_t)address;
-    bool current = device.data[0] != 0;
-    bool boundary = device.data[1] != 0;
-    bool tail = device.data[2] != 0;
-    prefill_layer(work->decoder, work->tokens, work->scratch, work->count, work->begin,
-                  work->decoder->visits + index * 4, work->workers, &current, retain, slot,
-                  &boundary, &tail, loop_live, prelude_live);
-    device.data[0] = current;
-    device.data[1] = boundary;
-    device.data[2] = tail;
-    if (work->begin == 4096 && work->count > 1 && getenv("I2_DRAFT_PARITY"))
-        check_state("draft-batch-visit", (int)index, work->tokens[1].current, model_width);
+void fg_i2_prefill_trace_visit(int visit, const float *current) {
+    check_state("draft-batch-visit", visit, current, model_width);
 }
 
 _Static_assert(sizeof(struct prefill_workspace) == 646316040 &&
@@ -402,7 +383,7 @@ _Static_assert(sizeof(struct prefill_workspace) == 646316040 &&
     _Alignof(struct i2_prefill_team) <= 8, "Goose prefill driver ABI");
 
 bool fg_i2_prefill_team_start(struct i2_prefill_team *team, int count) {
-    const int tasks = prefill_task_count(count);
+    const int tasks = fg_i2_prefill_task_count(count);
     if (tasks <= 1) return false;
     (void)use_cached_history();
     return prefill_team_open(team, tasks, true);

@@ -737,3 +737,38 @@ export fn fg_i2_backend_prefill(decoder: u64, ids: u64, begin: i32, count: i32, 
     i2d_free(unsafe_c_ptr<c_ptr<void>>(scratch));
     i2d_free(allocation);
 }
+
+extern fn fg_standalone_cpu_batch_threads() -> i64;
+extern fn fg_i2_prefill_layer(decoder: u64, tokens: u64, scratch: u64, count: i32, begin: i32,
+    visit: u64, workers: u64, current: u64, retain: bool, slot: u64, boundary: u64, tail: u64,
+    loop_enabled: bool, prelude: bool);
+extern fn fg_i2_prefill_trace_visit(visit: i32, current: u64);
+
+export fn fg_i2_prefill_task_count(count: i32) -> i32 {
+    if count < 64 || i2d_env_is("I2_PARALLEL_PREP", 48) { return 1; }
+    let configured = fg_standalone_cpu_batch_threads();
+    let limit = (count / 32) as! i64;
+    let workers = if configured > 16 { 16 } else { configured };
+    let bounded = if workers > limit { limit } else { workers };
+    return if bounded > 1 { bounded as! i32 } else { 1 };
+}
+
+export fn i2_prefill_run_visit(work: u64, index: i64, device: I2DraftSpan, retain: bool,
+    slot: u64, loop_enabled: bool, prelude: bool) {
+    let decoder = i2d_read(work);
+    let tokens = i2d_read(work + 8);
+    let count = i2d_int(work + 32);
+    let begin = i2d_int(work + 36);
+    var state: u8[3];
+    for field in 3 {
+        state[field] = if i2d_read(device.address + (field as! u64) * 8) != 0 { 1 } else { 0 };
+    }
+    let base = i2d_address(unsafe_c_address<c_ptr<const void>>(state[0]));
+    fg_i2_prefill_layer(decoder, tokens, i2d_read(work + 16), count, begin,
+        decoder + I2_OPEN_VISITS + (index as! u64) * 32, i2d_read(work + 24), base, retain, slot,
+        base + 1, base + 2, loop_enabled, prelude);
+    for field in 3 { i2d_set(device.address + (field as! u64) * 8, state[field] as! u64); }
+    if begin == 4096 && count > 1 && i2_prefill_env_pointer("I2_DRAFT_PARITY\0") != 0 {
+        fg_i2_prefill_trace_visit(index as! i32, tokens + 285708);
+    }
+}
