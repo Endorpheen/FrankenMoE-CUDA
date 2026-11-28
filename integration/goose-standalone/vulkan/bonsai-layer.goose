@@ -60,11 +60,6 @@ const BONSAI_KV: u32 = 1024;
 const BONSAI_WEIGHTS_BYTES: u64 = 360;
 const BONSAI_ATTENTION_BYTES: u64 = 144;
 
-extern fn fg_vk_graph_conv(graph: u64, channels: u32, input: BankView, coeff: BankView, history: BankView, output: BankView) -> i32;
-extern fn fg_vk_graph_gdn(graph: u64, shape: BankShape, qkv: BankView, state: BankView, gates: BankView, output: BankView) -> i32;
-extern fn fg_vk_graph_gdn_gates(graph: u64, shape: BankShape, input: BankView, weight: BankView, bias: BankView, output: BankView) -> i32;
-extern fn fg_vk_graph_gated_rms(graph: u64, shape: BankShape, input: BankView, weight: BankView, gate: BankView, output: BankView) -> i32;
-extern fn fg_vk_graph_attention_q4(graph: u64, shape: BankShape, query: BankView, keys: BankView, values: BankView, output: BankView) -> i32;
 
 fn bonsai_view(base: u64, index: u64) -> BankView { return bank_view(base + index * 24); }
 

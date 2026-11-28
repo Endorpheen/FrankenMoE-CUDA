@@ -26,7 +26,6 @@ extern fn fg_vk_free_buffer(vk: u64, buffer: u64);
 extern fn fg_vk_upload_open(upload: u64, vk: u64, capacity: u64) -> i32;
 extern fn fg_vk_upload_close(upload: u64);
 extern fn fg_vk_upload_write(upload: u64, dest: u64, offset: u64, data: u64, size: u64) -> i32;
-extern fn fg_vk_graph_record(graph: u64, op: u32, shape: BankShape, input: BankView, weight: BankView, output: BankView) -> i32;
 
 fn bank_word(address: u64) -> u64 {
     var value: u64 = 0;
