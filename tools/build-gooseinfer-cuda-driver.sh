@@ -9,8 +9,14 @@ standalone="$root/integration/goose-standalone"
 source_dir="$standalone/universal/cuda"
 goose=${GOOSE_CUDA_DRIVER_BIN:-${GOOSE_BIN:?Set GOOSE_CUDA_DRIVER_BIN to Fried Goose KeelWing v0.3.1-dev.1}}
 case "$target" in
-    linux) cc=${CC:-gcc-13} ;;
-    windows) cc=${WINDOWS_CC:-x86_64-w64-mingw32-gcc} ;;
+    linux)
+        cc=${CC:-gcc-13}
+        goose_opt=-O2
+        ;;
+    windows)
+        cc=${WINDOWS_CC:-x86_64-w64-mingw32-gcc}
+        goose_opt=-O1
+        ;;
     *) printf 'Unknown GooseInfer target: %s\n' "$target" >&2; exit 2 ;;
 esac
 mkdir -p -- "$out"
@@ -23,10 +29,10 @@ cat "$out/driver-abi.goose" "$source_dir/driver-replay.goose" "$source_dir/drive
     --image-output "$out/driver-host.c" \
     --diagnostics "$source_dir/driver-diagnostics.json" --diagnostics-output "$out/driver-diagnostics.c"
 
-flags=(-O1 -std=gnu11 -D_GNU_SOURCE -ffunction-sections -fdata-sections -Werror=implicit-function-declaration)
-"$cc" "${flags[@]}" -Dgoose_init=goose_cuda_init -Dgg_init_globals=goose_cuda_globals \
+flags=(-std=gnu11 -D_GNU_SOURCE -ffunction-sections -fdata-sections -Werror=implicit-function-declaration)
+"$cc" "$goose_opt" "${flags[@]}" -Dgoose_init=goose_cuda_init -Dgg_init_globals=goose_cuda_globals \
     -c "$out/driver-tls.c" -o "$out/driver-tls.o"
-"$cc" "${flags[@]}" -I"$images" -I"$standalone" -c "$out/driver-host.c" -o "$out/driver-host.o"
-"$cc" "${flags[@]}" -c "$out/driver-diagnostics.c" -o "$out/driver-diagnostics.o"
+"$cc" -O1 "${flags[@]}" -I"$images" -I"$standalone" -c "$out/driver-host.c" -o "$out/driver-host.o"
+"$cc" -O1 "${flags[@]}" -c "$out/driver-diagnostics.c" -o "$out/driver-diagnostics.o"
 "$cc" -c "$out/driver-abi.S" -o "$out/driver-abi.o"
 "$cc" -r "$out/"{driver-tls,driver-host,driver-diagnostics,driver-abi}.o -o "$out/cuda-driver.o"
