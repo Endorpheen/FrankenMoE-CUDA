@@ -51,6 +51,7 @@ optimization and release sequence.
 | Compute resident expert jobs while the transfer stream loads misses | Inkling exact 16-token verifier with staged expert transfers | At 32K/512, decode +5.56%, observed prefill +0.46%, identical expert transfer bytes and 512 IDs, peak process VRAM 9822 MiB. | [EXP-2438](../../experiments/EXP-2026-11-28-2438-inkling-verifier-expert-overlap/README.md) |
 | Share activation tiles across warps with asynchronous CUDA copies | Inkling split-half Q8 prefill, 64-channel staged tiles | Pack-plus-projection time −17–26%. At 32K/512, prefill +5.01%, observed decode −1.34%, all 512 IDs and expert bytes exact, peak process VRAM 9822 MiB. | [EXP-2439](../../experiments/EXP-2026-11-28-2439-inkling-q8-shared-tiles/README.md) |
 | Reuse decoded IQ4_NL weights across adjacent verifier jobs | Inkling exact verifier, 1152 inputs and at least 64 jobs | At 32K/512, decode +3.31%, observed prefill −0.40%, exact 512 IDs and expert transfer bytes, peak process VRAM 9822 MiB. | [EXP-2441](../../experiments/EXP-2026-11-28-2441-inkling-iq4-nl-verifier-pairs/README.md) |
+| Share and asynchronously stage grouped IQ4 activation tiles | Inkling grouped IQ4_XS and IQ4_NL prefill, 32-job by 64-row full tiles | Large-kernel time −33.25% and −45.79%. At 32K/512, prefill +10.53%, observed decode +2.36%, all 512 IDs and expert traffic exact, peak process VRAM 9822 MiB. | [EXP-2442](../../experiments/EXP-2026-11-28-2442-inkling-iq4-shared-tiles/README.md) |
 
 Keep the FMA and warp reduction sequence independent for each output row.
 Reuse this mapping for projections with the same shared input layout
@@ -100,6 +101,28 @@ that each job will read. Keep the previous-reader fence before each
 DMA wave and wait for completion before issuing consumers of those
 weights. Compare the request and transfer volume. Smaller split
 launches can lose enough kernel efficiency to offset the overlap.
+
+### Matrix kernel reuse review
+
+Check each accepted matrix optimization against every compatible
+GooseInfer matrix kernel. Use the CUDA dispatch and workload traces
+to enumerate the real kernels and shapes for each model, phase and
+backend. For each receiving kernel evaluate shared activation reuse,
+asynchronous next-tile loading, paired quantized unpacking,
+local-stack elimination, Tensor Core execution and kernel fusion.
+
+Record the matrix dimensions, quant and activation formats, GPU
+architecture, input layout and overlap or occupancy preconditions.
+Check full and partial tiles and preserve the supported paths when
+those conditions differ. Record the status and evidence per receiving
+path, including cases where the mechanism was deferred. Verify
+numerics, workspace and the complete request before promotion.
+Measure combinations on the current accepted build so earlier
+improvements remain in the comparison.
+
+EXP-2442 is a verified transfer of EXP-2439 from Q8 projections to
+grouped IQ4 experts. Review the same mechanisms on Apex, GigaChat4
+and Bonsai in their model test order.
 
 ## KeelWing ownership scopes in the Apex sampler
 

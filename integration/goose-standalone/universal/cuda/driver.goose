@@ -52,7 +52,7 @@ var cuda_saved_inkling_loop_materialize_score: u64;
 var cuda_saved_inkling_loop_materialize_mix: u64;
 var cuda_saved_launch_grouped_iq4_mmq_module: u64;
 var cuda_saved_launch_grouped_iq4_mmq_pack: u64;
-var cuda_saved_launch_grouped_iq4_mmq_multiply: u64[6];
+var cuda_saved_launch_grouped_iq4_mmq_multiply: u64[8];
 var cuda_saved_i2_packed_q8_module: u64;
 var cuda_saved_i2_packed_q8_pack: u64;
 var cuda_saved_i2_packed_q8_multiply: u64;
@@ -5323,10 +5323,12 @@ fn launch_grouped_iq4_mmq(weight: u64, stride: u64, width: i32, rows: i32, kind:
     let wide: bool = cuda_option("I2_MOE_TILE16");
     let tile32: bool = wide && count >= 4096 && cuda_option("I2_MOE_TILE32");
     let quant_index: i64 = if kind == 23 { 0 } else { 1 };
-    let tile_index: i64 = if tile32 { 4 } else if wide { 2 } else { 0 };
+    let shared_tiles = tile32 && width % 64 == 0 && rows >= 64 && cuda_option("I2_MOE_SHARED_TILES");
+    let tile_index: i64 = if shared_tiles { 6 } else if tile32 { 4 } else if wide { 2 } else { 0 };
     let entry = quant_index + tile_index;
     let kernels = ["goose_i2_xs_mmq", "goose_i2_nl_mmq",
-        "goose_i2_xs_mmq16", "goose_i2_nl_mmq16", "goose_i2_xs_mmq32", "goose_i2_nl_mmq32"];
+        "goose_i2_xs_mmq16", "goose_i2_nl_mmq16", "goose_i2_xs_mmq32", "goose_i2_nl_mmq32",
+        "goose_i2_xs_mmq32_shared", "goose_i2_nl_mmq32_shared"];
     let tiles_address = fg_cuda_host_malloc(24 * (count as! u64));
     if tiles_address == 0 { return -1; }
     var tiles = fg_cuda_host_view_i64(tiles_address, 3 * (count as! i64));

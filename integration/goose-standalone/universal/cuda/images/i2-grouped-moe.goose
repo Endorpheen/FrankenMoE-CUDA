@@ -259,3 +259,79 @@ export fn i2_dense_split_mma_shared(weights: u64, packed: u64, output: u64, jobs
     dense_split_scatter(output,jobs,token+16,row,c);
     dense_split_scatter(output,jobs,token+24,row,d);
 }
+
+fn moe_stage_activations(shared: u64, packed: u64, width: i64, first: i64, channel: i64, thread: i64) {
+    for page in 2 {
+        let vector = thread + page * 128;
+        let token = vector / 8;
+        let col = 8 * (vector % 8);
+        let source = (first + token) * width + channel + col;
+        let destination = token * 72 + col;
+        dense_split_copy(shared + ((2 * destination) as! u64), packed + ((2 * source) as! u64));
+    }
+}
+
+fn moe_shared_step(acc: I2MoeAcc, shared: u64, offset: i64, low: I2MoePair, high: I2MoePair) -> I2MoeAcc {
+    return dot(acc, low, high, inkling_shared_pair(shared, offset), inkling_shared_pair(shared, offset + 8));
+}
+
+fn moe_scatter_pair(output: u64, jobs: u64, first: i64, row: i64, rows: i64, acc: I2MoeAcc) {
+    moe_scatter(output, jobs, first, row, rows, acc.x, acc.z);
+    moe_scatter(output, jobs, first + 1, row, rows, acc.y, acc.w);
+}
+
+export fn i2_grouped_moe_shared(weights: u64, packed: u64, output: u64, jobs: u64, tiles: u64, stride: u64,
+    width: i64, rows: i64, kind: i32, group: i64, tile: i64, thread: i64, shared: u64) {
+    if word(tiles, tile * 3 + 1) != 32 || width % 64 != 0 || 64 * (group + 1) > rows {
+        i2_grouped_moe(weights, packed, output, jobs, tiles, stride, width, rows, kind, 4, group, tile, thread);
+        return;
+    }
+    let lane = thread % 32;
+    let row = 64 * group + 16 * (thread / 32) + lane / 4;
+    let column = 2 * (lane % 4);
+    let first = word(tiles, tile * 3) as! i64;
+    let w0 = weights + word(tiles, tile * 3 + 2) + (row as! u64) * stride;
+    let w1 = w0 + 8 * stride;
+    var a = I2MoeAcc {x:0.0,y:0.0,z:0.0,w:0.0};
+    var b = a;
+    var c = a;
+    var d = a;
+    let base = (lane / 4) * 72 + column;
+    var current = shared;
+    var next = shared + 4608;
+    var channel: i64 = 0;
+    moe_stage_activations(current, packed, width, first, 0, thread);
+    dense_split_wait();
+    dense_split_sync();
+    while channel < width {
+        if channel + 64 < width {
+            moe_stage_activations(next, packed, width, first, channel + 64, thread);
+        }
+        for step in 2 {
+            let k = channel + 32 * step;
+            let low_codes = iq_codes(w0, k, column as! u64, kind);
+            let high_codes = iq_codes(w1, k, column as! u64, kind);
+            for half in 2 {
+                let shift = (4 * half) as! u32;
+                let low = iq_pairs(low_codes, shift);
+                let high = iq_pairs(high_codes, shift);
+                let offset = base + 32 * step + 16 * half;
+                a = moe_shared_step(a, current, offset, low, high);
+                b = moe_shared_step(b, current, offset + 576, low, high);
+                c = moe_shared_step(c, current, offset + 1152, low, high);
+                d = moe_shared_step(d, current, offset + 1728, low, high);
+            }
+        }
+        dense_split_wait();
+        dense_split_sync();
+        channel += 64;
+        let previous = current;
+        current = next;
+        next = previous;
+    }
+    let token = first + column;
+    moe_scatter_pair(output, jobs, token, row, rows, a);
+    moe_scatter_pair(output, jobs, token + 8, row, rows, b);
+    moe_scatter_pair(output, jobs, token + 16, row, rows, c);
+    moe_scatter_pair(output, jobs, token + 24, row, rows, d);
+}
