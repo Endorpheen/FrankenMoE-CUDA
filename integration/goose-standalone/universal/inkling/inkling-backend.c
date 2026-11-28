@@ -381,84 +381,42 @@ _Static_assert(offsetof(struct inkling_decode_graph, bridge) == 312 && sizeof(st
     offsetof(struct inkling_bridge, add_residual) == 45 && INKLING_BRIDGE_GRAPH == 0x49324252 &&
     INKLING_BRIDGE_ROWS == 11, "Goose Inkling joined bridge ABI");
 
-extern void fg_i2_host_joined_layer(struct decoder *, const int64_t *, const int64_t *,
-    int, int, bool, bool, float **, float (*)[model_width], float *, float *, int);
-#define joined_layer fg_i2_host_joined_layer
-
-extern void fg_i2_prepare_layer_inputs(struct decoder *d, const int64_t *aux, bool sliding,
-    float *current, float *history, int count, void *inputs);
-
-extern int fg_i2_finish_attention(struct decoder *d, const int64_t *aux, int physical_layer, int slot,
-    float *current, float *history, int count, float *projection, float *next, float *ffn);
-
 int64_t fg_i2_measured_postconv(sl_f32 input, sl_f32 weight, sl_f32 history, sl_f32 output) {
     return i2_postconv_token(input, weight, history, output);
 }
 
 _Static_assert(offsetof(struct decoder, hf) == 887144, "Goose serial MoE history ABI");
-extern void fg_i2_serial_moe(struct decoder *d, const int64_t *core, const int64_t *aux, int slot, int absolute,
-    float *ffn, float *message, float *next, float *current, float *projection, int64_t *work);
+bool fg_i2_serial_graph_enabled(void) { return use_attention_graph(); }
 
-static void layer(struct decoder *d,int physical_layer,int slot,int absolute,int sliding,
-                  float *cur,float *blocks,int *count,float (*messages)[model_width]) {
-    const int64_t *core=d->core+10*physical_layer, *aux=d->aux+30*physical_layer;
-    float inputs[3][model_width];
-    fg_i2_prepare_layer_inputs(d, aux, sliding, cur, blocks, *count, inputs);
-    float proj[model_width], next[model_width], ffn[model_width];
-    int64_t work[16] = {0};
-    struct ggml_context *ctx;
-    if (use_attention_graph()) {
-        float *input[] = {inputs[0], inputs[1], inputs[2]};
-        float *message[] = {messages ? messages[0] : NULL, messages ? messages[1] : NULL,
-                            messages ? messages[2] : NULL};
-        if (d->retain_decode_graphs && use_joined_bridge() && use_cached_history() && use_resident_moe()) {
-            const bool add_residual = physical_layer % 6 != 0;
-            if (!add_residual) {
-                assert(*count < INKLING_BRIDGE_ROWS);
-                save_history_row(blocks + (*count) * model_width, cur);
-                ++*count;
-            }
-            joined_layer(d, core, aux, slot, absolute, sliding, add_residual, input, messages, cur, blocks, *count);
-            return;
-        }
-        attention_graph(d, core, aux, slot, absolute, 1, sliding, input, messages ? message : NULL, proj);
+void fg_i2_serial_native_attention(struct decoder *d, const int64_t *core, const int64_t *aux,
+    int slot, int absolute, bool sliding, float (*inputs)[model_width], float *proj, int64_t *work) {
+    if (use_device_attention_input()) {
+        native_attention_resident(d, core, aux, slot, absolute, 1, sliding, inputs[0], inputs[1], inputs[2], proj);
     } else {
-        for(int i=0;i<3;i++){
-            if(messages)control(d,aux,i,inputs[i],messages[i]);
-            assert(i2_rms_gain(vec(inputs[i],model_width),coefficients(d,aux[sliding?11:12+i],model_width),
-                               1e-6f,vec(inputs[i],model_width))==model_width);
-        }
+        struct ggml_context *ctx = context();
+        int64_t in[3], projection[8]={0}, wp[8]={0};
+        for(int i=0;i<3;i++)in[i]=(intptr_t)input_tensor(ctx,inputs[i],model_width);
+        int64_t ids[]={core[0],core[1],core[2],aux[5],aux[8],core[4],aux[15],aux[16]};
+        const int count_proj=sliding?6:8;
+        for (int i=0;i<count_proj;i++)wp[i]=(intptr_t)load(ctx,named(d,ids[i]));
+        assert(i2_attention_projections((intptr_t)ctx,ints(in,3),ints(wp,8),sliding,
+                                        ints(work,16),ints(projection,8))==count_proj);
+        struct ggml_tensor *roots[8];
+        for(int i=0;i<count_proj;i++)roots[i]=(struct ggml_tensor *)(intptr_t)projection[i];
+        float projected[8664], attn[attn_width];
+        int packed=sliding?8600:8664;
+        evaluate(ctx,roots,count_proj,projected,packed);
+        ggml_free(ctx);
 
-        if (use_device_attention_input()) {
-            native_attention_resident(d, core, aux, slot, absolute, 1, sliding, inputs[0], inputs[1], inputs[2], proj);
+        struct native_attention_inputs args = native_attention_inputs(d, 1);
+        native_attention_prepare(d, args, aux, slot, absolute, 0, sliding, projected, packed);
+        if (use_resident_attention_projection()) {
+            native_attention_project(d, args, aux, slot, absolute, 1, sliding, named(d, core[3]), proj);
         } else {
-            ctx = context();
-            int64_t in[3], projection[8]={0}, wp[8]={0};
-            for(int i=0;i<3;i++)in[i]=(intptr_t)input_tensor(ctx,inputs[i],model_width);
-            int64_t ids[]={core[0],core[1],core[2],aux[5],aux[8],core[4],aux[15],aux[16]};
-            const int count_proj=sliding?6:8;
-            for (int i=0;i<count_proj;i++)wp[i]=(intptr_t)load(ctx,named(d,ids[i]));
-            assert(i2_attention_projections((intptr_t)ctx,ints(in,3),ints(wp,8),sliding,
-                                            ints(work,16),ints(projection,8))==count_proj);
-            struct ggml_tensor *roots[8];
-            for(int i=0;i<count_proj;i++)roots[i]=(struct ggml_tensor *)(intptr_t)projection[i];
-            float projected[8664], attn[attn_width];
-            int packed=sliding?8600:8664;
-            evaluate(ctx,roots,count_proj,projected,packed);
-            ggml_free(ctx);
-
-            struct native_attention_inputs args = native_attention_inputs(d, 1);
-            native_attention_prepare(d, args, aux, slot, absolute, 0, sliding, projected, packed);
-            if (use_resident_attention_projection()) {
-                native_attention_project(d, args, aux, slot, absolute, 1, sliding, named(d, core[3]), proj);
-            } else {
-                native_attention_submit(d, args, aux, slot, absolute, 1, sliding, attn);
-                project(d, core[3], attn, attn_width, proj, model_width);
-            }
+            native_attention_submit(d, args, aux, slot, absolute, 1, sliding, attn);
+            project(d, core[3], attn, attn_width, proj, model_width);
         }
     }
-    *count = fg_i2_finish_attention(d, aux, physical_layer, slot, cur, blocks, *count, proj, next, ffn);
-    fg_i2_serial_moe(d, core, aux, slot, absolute, ffn, messages ? messages[3] : NULL, next, cur, proj, work);
 }
 
 static bool parallel_decode_logits(struct decoder *d, float *logits);
@@ -474,14 +432,6 @@ void fg_i2_softcap_logits(sl_f32 logits) {
 void fg_i2_validate_logits(int absolute, const float *logits, bool handled) {
     check_state("logits", absolute, logits, out_width);
     if (!handled) for (int i = 0; i < vocabulary; ++i) assert(isfinite(logits[i]));
-}
-
-int32_t i2_serial_layer(uint64_t decoder, int32_t physical, int32_t slot, int32_t absolute,
-    int32_t sliding, sl_f32 current, sl_f32 history, int32_t count, sl_f32 messages) {
-    int history_count = count;
-    layer((void *)(uintptr_t)decoder, physical, slot, absolute, sliding,
-          current.data, history.data, &history_count, messages.len ? (void *)messages.data : NULL);
-    return history_count;
 }
 
 void i2_serial_trace(int32_t visit, sl_f32 current) {

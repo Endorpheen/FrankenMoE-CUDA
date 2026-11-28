@@ -91,7 +91,7 @@ export fn fg_i2_read_token_logits(decoder: u64, absolute: i32, current: u64, his
     fg_i2_validate_logits(absolute, logits, handled);
 }
 
-export fn fg_i2_prepare_layer_inputs(decoder: u64, aux: u64, sliding: bool, current: u64,
+fn fg_i2_prepare_layer_inputs(decoder: u64, aux: u64, sliding: bool, current: u64,
     history: u64, count: i32, inputs: u64) {
     let query = i2d_read(aux + 80) as! i64;
     if query >= 0 {
@@ -111,7 +111,7 @@ export fn fg_i2_prepare_layer_inputs(decoder: u64, aux: u64, sliding: bool, curr
 extern fn fg_i2_measured_postconv(input: I2DraftSpan, weight: I2DraftSpan, history: I2DraftSpan, output: I2DraftSpan) -> i64;
 extern fn fg_cuda_host_view_f32(address: u64, length: i64) -> f32[:];
 
-export fn fg_i2_finish_attention(decoder: u64, aux: u64, physical: i32, slot: i32, current: u64,
+fn fg_i2_finish_attention(decoder: u64, aux: u64, physical: i32, slot: i32, current: u64,
     history: u64, count: i32, projection: u64, next: u64, ffn: u64) -> i32 {
     let weights = fg_i2_host_coefficients(decoder, i2d_read(aux + 16) as! i64, 9216);
     let convolution = i2d_read(decoder + I2D_HA) + (slot as! u64) * 27648;
@@ -132,7 +132,7 @@ export fn fg_i2_finish_attention(decoder: u64, aux: u64, physical: i32, slot: i3
     return count_after;
 }
 
-export fn fg_i2_serial_moe(decoder: u64, core: u64, aux: u64, slot: i32, absolute: i32,
+fn fg_i2_serial_moe(decoder: u64, core: u64, aux: u64, slot: i32, absolute: i32,
     ffn: u64, message: u64, next: u64, current: u64, projection: u64, work: u64) {
     if fg_i2_host_resident_plan() && !i2d_env_is("I2_RESIDENT_MOE", 48) {
         fg_i2_host_moe_resident(decoder, core, aux, slot, absolute, 1, ffn, message, next, current);
@@ -165,4 +165,63 @@ export fn fg_i2_serial_moe(decoder: u64, core: u64, aux: u64, slot: i32, absolut
         values[index] = value;
         assert(value <= 3.402823466e38 && value >= -3.402823466e38);
     }
+}
+
+extern fn fg_i2_serial_graph_enabled() -> bool;
+extern fn fg_i2_serial_native_attention(decoder: u64, core: u64, aux: u64, slot: i32, absolute: i32,
+    sliding: bool, inputs: u64, output: u64, work: u64);
+
+export fn i2_serial_layer(decoder: u64, physical: i32, slot: i32, absolute: i32,
+    sliding_mode: i32, current: I2DraftSpan, history: I2DraftSpan, count: i32, message_rows: I2DraftSpan) -> i32 {
+    let sliding = sliding_mode != 0;
+    let layer = physical as! u64;
+    let core = decoder + I2_OPEN_CORE + layer * 80;
+    let aux = decoder + I2_OPEN_AUX + layer * 240;
+    let messages = if message_rows.len == 0 { 0 } else { message_rows.address };
+    var inputs: f32[6912];
+    let input = i2_serial_span(inputs).address;
+    fg_i2_prepare_layer_inputs(decoder, aux, sliding, current.address, history.address, count, input);
+    var projection: f32[2304];
+    let proj = i2_serial_span(projection).address;
+    var work: i64[16] = [0; 16];
+    let scratch = i2d_address(unsafe_c_address<c_ptr<const void>>(work[0]));
+    if fg_i2_serial_graph_enabled() {
+        let rows: u64[3] = [input, input + 9216, input + 18432];
+        let row_table = i2d_address(unsafe_c_address<c_ptr<const void>>(rows[0]));
+        if i2d_byte(decoder + I2D_RETAIN) != 0 && i2d_env_is("I2_JOIN_ATTENTION_MOE", 49) &&
+            fg_i2_host_cached_history() && fg_i2_host_resident_plan() && !i2d_env_is("I2_RESIDENT_MOE", 48) {
+            let add_residual = physical % 6 != 0;
+            var saved_count = count;
+            if !add_residual {
+                assert(count < 11);
+                fg_i2_host_save_history(history.address + (count as! u64) * 9216, current.address);
+                saved_count += 1;
+            }
+            fg_i2_host_joined_layer(decoder, core, aux, slot, absolute, sliding, add_residual,
+                row_table, messages, current.address, history.address, saved_count);
+            return saved_count;
+        }
+        let signals: u64[3] = [messages, messages + 9216, messages + 18432];
+        let signal_table = if messages == 0 { 0 } else { i2d_address(unsafe_c_address<c_ptr<const void>>(signals[0])) };
+        fg_i2_host_attention_graph(decoder, core, aux, slot, absolute, 1, sliding, row_table, signal_table, proj);
+    } else {
+        for index in 3 {
+            let offset = (index as! u64) * 9216;
+            if messages != 0 { fg_i2_host_control(decoder, aux, index as! i32, input + offset, messages + offset); }
+            let gain_index: i32 = if sliding { 11 } else { 12 + (index as! i32) };
+            let gain = fg_i2_host_coefficients(decoder, i2_host_aux(aux, gain_index), 2304);
+            let row = i2d_span(input + offset, 2304);
+            assert(fg_i2_host_measured_rms(row, i2d_span(gain, 2304), 0.000001, row) == 2304);
+        }
+        fg_i2_serial_native_attention(decoder, core, aux, slot, absolute, sliding, input, proj, scratch);
+    }
+    var next: f32[2304];
+    var ffn: f32[2304];
+    let next_address = i2_serial_span(next).address;
+    let ffn_address = i2_serial_span(ffn).address;
+    let result = fg_i2_finish_attention(decoder, aux, physical, slot, current.address, history.address,
+        count, proj, next_address, ffn_address);
+    fg_i2_serial_moe(decoder, core, aux, slot, absolute, ffn_address,
+        if messages == 0 { 0 } else { messages + 27648 }, next_address, current.address, proj, scratch);
+    return result;
 }
