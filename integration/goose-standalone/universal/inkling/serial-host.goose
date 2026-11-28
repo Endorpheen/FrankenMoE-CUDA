@@ -416,3 +416,39 @@ export fn fg_i2_native_resident(decoder: u64, core: u64, aux: u64, slot: i32, be
     i2d_set(call + 96, v);
     fg_i2_measure_native_attention(call, call + 80, call + 200);
 }
+
+export fn prefill_projection(decoder: u64, id: i64, input: u64, width: i32, output: u64, rows: i32, count: i32) {
+    let ctx = fg_i2_host_context();
+    let weight = fg_i2_host_weight(ctx, decoder, id);
+    let input_tensor = fg_i2_host_rows_input(ctx, input, width, count);
+    fg_i2_host_evaluate_one(ctx, ggml_mul_mat(ctx, weight, input_tensor), output, rows * count);
+    ggml_free(ctx);
+}
+
+export fn prefill_loop_inputs(decoder: u64, token: u64, layer: i32, pass: i32, device_loop: bool, device_prelude: bool) {
+    let prelude = token + 9216;
+    let previous = token + 18432;
+    let bank = token + 138240;
+    let count = i2d_int(token + 285696);
+    let saved = i2d_int(token + 285700);
+    var bank_count = i2d_int(token + 285704);
+    if layer == 6 && pass == 0 {
+        if !device_prelude { i2d_transfer(prelude, token, 9216); }
+        i2d_set_int(token + 285700, count);
+    } else if layer == 6 {
+        bank_count = count - saved - 1;
+        assert(bank_count >= 0 && bank_count < 11);
+        i2d_set_int(token + 285704, bank_count);
+        if !device_loop {
+            i2d_transfer(bank, token + 27648 + ((saved + 1) as! u64) * 9216, (bank_count as! u64) * 9216);
+            i2d_transfer(previous, token, 9216);
+        }
+        if !device_prelude { i2d_transfer(token, prelude, 9216); }
+        i2d_set_int(token + 285696, saved);
+    }
+    if pass > 0 && !device_loop {
+        let index = decoder + I2_OPEN_AUX + ((layer as! u64) * 30 + 17) * 8;
+        let query = fg_i2_host_coefficients(decoder, i2d_read(index) as! i64, 9216);
+        fg_i2_host_mix(bank, bank_count, previous, i2d_span(query, 9216), 4, token + 248832);
+    }
+}

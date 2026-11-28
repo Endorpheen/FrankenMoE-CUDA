@@ -10,43 +10,15 @@ struct prefill_token {
     int count, prelude_count, bank_count;
 };
 
-static struct ggml_tensor *prefill_input(struct ggml_context *ctx, float *rows, int width, int count) {
-    struct ggml_tensor *tensor = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, width, count);
-    assert(tensor);
-    tensor->data = rows;
-    return tensor;
-}
+_Static_assert(offsetof(struct prefill_token, prelude) == 9216 && offsetof(struct prefill_token, previous) == 18432 &&
+    offsetof(struct prefill_token, blocks) == 27648 && offsetof(struct prefill_token, bank) == 138240 &&
+    offsetof(struct prefill_token, messages) == 248832 && offsetof(struct prefill_token, count) == 285696 &&
+    offsetof(struct prefill_token, prelude_count) == 285700 && offsetof(struct prefill_token, bank_count) == 285704,
+    "Goose prefill repeat input ABI");
 
-static void prefill_projection(struct decoder *d, int64_t id, float *input, int width,
-                               float *output, int rows, int count) {
-    struct ggml_context *ctx = context();
-    struct ggml_tensor *w = load(ctx, named(d, id));
-    struct ggml_tensor *x = prefill_input(ctx, input, width, count);
-    struct ggml_tensor *nodes[] = {ggml_mul_mat(ctx, w, x)};
-    evaluate(ctx, nodes, 1, output, rows * count);
-    ggml_free(ctx);
-}
-
-static void prefill_loop_inputs(struct decoder *d, struct prefill_token *token, int layer, int pass, bool device_loop, bool device_prelude) {
-    if (layer == 6 && pass == 0) {
-        if (!device_prelude) memcpy(token->prelude, token->current, sizeof token->prelude);
-        token->prelude_count = token->count;
-    } else if (layer == 6) {
-        token->bank_count = token->count - token->prelude_count - 1;
-        assert(token->bank_count >= 0 && token->bank_count < 11);
-        if (!device_loop) {
-            memcpy(token->bank, token->blocks + (token->prelude_count + 1) * model_width,
-                   (size_t)token->bank_count * model_width * sizeof(float));
-            memcpy(token->previous, token->current, sizeof token->previous);
-        }
-        if (!device_prelude) memcpy(token->current, token->prelude, sizeof token->current);
-        token->count = token->prelude_count;
-    }
-    if (pass > 0 && !device_loop) {
-        mix(token->bank, token->bank_count, token->previous,
-            coefficients(d, d->aux[layer * 30 + 17], 4 * model_width), 4, token->messages[0]);
-    }
-}
+extern struct ggml_tensor *fg_i2_host_rows_input(struct ggml_context *ctx, float *rows, int width, int count);
+extern void prefill_projection(struct decoder *d, int64_t id, float *input, int width, float *output, int rows, int count);
+extern void prefill_loop_inputs(struct decoder *d, struct prefill_token *token, int layer, int pass, bool device_loop, bool device_prelude);
 
 struct prefill_workspace {
     float inputs[3][max_prefill_batch][model_width];
@@ -463,7 +435,7 @@ static void prefill_layer(struct decoder *d, struct prefill_token *tokens, struc
     }
     int64_t nodes[8] = {0};
     struct ggml_tensor *result = (struct ggml_tensor *)(intptr_t)i2_moe_ffn((intptr_t)ctx,
-        (intptr_t)prefill_input(ctx, scratch->ff[0], model_width, count), ints(moe_weights, 4),
+        (intptr_t)fg_i2_host_rows_input(ctx, scratch->ff[0], model_width, count), ints(moe_weights, 4),
         ints(work, 16), ints(nodes, 8));
     assert(result);
     struct ggml_tensor *moe_root[] = {result};
