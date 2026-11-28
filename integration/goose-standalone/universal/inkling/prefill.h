@@ -187,6 +187,9 @@ static void prepare_prefill(struct i2_prefill_team *team, struct i2_prefill_work
     }
 }
 
+extern void fg_i2_prefill_moe(struct decoder *d, const int64_t *core, const int64_t *aux, int slot, int count,
+    float *ffn, float *projection, float *residual, struct prefill_token *tokens, int64_t *work);
+
 static void prefill_layer(struct decoder *d, struct prefill_token *tokens, struct prefill_workspace *scratch,
                           int count, int begin, const int64_t *visit, struct i2_prefill_team *team,
                           bool *device_current, bool retain_current, uint64_t output_slot,
@@ -394,35 +397,8 @@ static void prefill_layer(struct decoder *d, struct prefill_token *tokens, struc
     if (pass > 0) {
         prefill_control(d, aux, 3, count, tokens, scratch->ff, scratch);
     }
-    for (int t = 0; t < count; ++t) {
-        float *ffn = scratch->ff[t];
-        assert(i2_rms_gain(vec(ffn, model_width), coefficients(d, core[9], model_width),
-            1e-6f, vec(ffn, model_width)) == model_width);
-    }
-
-    ctx = context();
-    int64_t moe_weights[4];
-    const int64_t moe_ids[] = {core[5], core[8], core[6], core[7]};
-    for (int i = 0; i < 4; ++i) {
-        moe_weights[i] = (intptr_t)load(ctx, named(d, moe_ids[i]));
-    }
-    int64_t nodes[8] = {0};
-    struct ggml_tensor *result = (struct ggml_tensor *)(intptr_t)i2_moe_ffn((intptr_t)ctx,
-        (intptr_t)fg_i2_host_rows_input(ctx, scratch->ff[0], model_width, count), ints(moe_weights, 4),
-        ints(work, 16), ints(nodes, 8));
-    assert(result);
-    struct ggml_tensor *moe_root[] = {result};
-    evaluate(ctx, moe_root, 1, scratch->linear[0], count * model_width);
-    ggml_free(ctx);
-    for (int t = 0; t < count; ++t) {
-        float *current = tokens[t].current;
-        assert(i2_postconv_token(vec(scratch->linear[t], model_width), coefficients(d, aux[3], 4 * model_width),
-            vec(d->hf + slot * 3 * model_width, 3 * model_width), vec(current, model_width)) == model_width);
-        for (int i = 0; i < model_width; ++i) {
-            current[i] += scratch->residual[t][i];
-            assert(isfinite(current[i]));
-        }
-    }
+    fg_i2_prefill_moe(d, core, aux, slot, count, scratch->ff[0],
+        scratch->linear[0], scratch->residual[0], tokens, work);
 }
 
 extern void i2_prefill_edge_plan(sl_i64 visits, sl_i64 aux, uint8_t use_edges,
