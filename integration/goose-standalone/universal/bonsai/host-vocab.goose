@@ -38,7 +38,7 @@ const VOCAB_SCRATCH: i64 = 262145;
 
 struct VocabSpan { address: u64, len: i64 }
 
-extern fn fg_cuda_model_host_address() -> u64;
+
 extern fn vocab_strlen(text: u64) -> u64;
 extern "calloc" fn vocab_calloc(n: u64, size: u64) -> c_ptr<void>;
 extern "malloc" fn vocab_malloc(size: u64) -> c_ptr<void>;
@@ -80,6 +80,13 @@ fn vocab_address(pointer: c_ptr<const void>) -> u64 {
     var address: u64=0;
     vocab_memcpy(unsafe_c_address<c_ptr<void>>(address),unsafe_c_address<c_ptr<const void>>(pointer),8);
     return address;
+}
+
+// One aligned backing store for the vocabulary, model handles and trunk state.
+var model_host_storage: u64[95];
+
+export fn fg_cuda_model_host_address() -> u64 {
+    return vocab_address(unsafe_c_address<c_ptr<const void>>(model_host_storage[0]));
 }
 
 fn vocab_word(address: u64) -> u64 {

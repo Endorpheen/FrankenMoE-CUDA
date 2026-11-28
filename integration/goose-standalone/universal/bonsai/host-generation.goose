@@ -2,7 +2,11 @@ extern fn fg_cuda_decode_exchange_address() -> u64;
 extern fn fg_cuda_decode_cleanup_ready() -> bool;
 extern fn fg_cuda_decode_track_buffer(address: u64) -> i32;
 extern fn fg_cuda_decode_plan_address() -> u64;
-extern fn fg_cuda_generation_ids_address() -> u64;
+var generation_ids: i64[262144];
+
+export fn fg_cuda_generation_ids_address() -> u64 {
+    return vocab_address(unsafe_c_address<c_ptr<const void>>(generation_ids[0]));
+}
 extern fn fg_goose_host_ensure_init();
 extern fn fg_standalone_set_cpu_prefill(prefill: bool) -> bool;
 extern fn fg_q35_checkpoint_enabled() -> bool;
