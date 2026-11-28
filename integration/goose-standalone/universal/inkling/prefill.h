@@ -62,101 +62,7 @@ struct i2_prefill_work {
     bool skip_host_mix, device_attention_mix, device_current, device_boundary, device_loop, device_prelude, poison_host;
 };
 
-extern int64_t inkling_row_major_i2_postconv_batch(sl_f32 input, sl_f32 weights,
-    sl_f32 history, sl_f32 out, int64_t width, int64_t from_channel, int64_t to_channel);
-
-void fg_i2_prefill_partition(uint64_t address, int64_t begin, int64_t end) {
-    const struct i2_prefill_work *work = (const void *)(uintptr_t)address;
-    if (work->logits) {
-        float *values = work->logits + begin;
-        const int64_t count = end - begin;
-        assert(I2_CALL(i2_text_logits)(vec(values, count), count, 30.0f) == count);
-        for (int64_t i = 0; i < count; ++i) assert(isfinite(values[i]));
-        return;
-    }
-    struct decoder *d = work->decoder;
-    struct prefill_token *tokens = work->tokens;
-    struct prefill_workspace *scratch = work->scratch;
-    const int64_t *aux = work->aux;
-    int layer = work->layer, pass = work->pass;
-    const bool sliding = work->sliding;
-    float **message = work->message;
-    if (work->postconv_rows) {
-        const int64_t items = (int64_t)work->postconv_rows * model_width;
-        assert(inkling_row_major_i2_postconv_batch(
-            vec(scratch->linear[0], items),
-            work->postconv_weights,
-            vec(work->postconv_history, 3 * model_width),
-            vec(scratch->residual[0], items), model_width, begin, end) == end - begin);
-        return;
-    }
-    if (work->after_attention) {
-        for (int t = begin; t < end; ++t) {
-            struct prefill_token *token = tokens + t;
-            float *next = scratch->residual[t];
-            float *ffn = scratch->ff[t];
-            if (layer % 6 == 0) {
-                assert(token->count < 11);
-                float *history = token->blocks + token->count++ * model_width;
-                if (!work->device_boundary) save_history_row(history, token->current);
-            } else if (!work->skip_host_mix) {
-                for (int i = 0; i < model_width; ++i) {
-                    next[i] += token->current[i];
-                }
-            }
-            if (!work->skip_host_mix) {
-                mix(token->blocks, token->count, next, coefficients(d, aux[9], model_width), 1, ffn);
-            } else if (work->poison_host) {
-                for (int i = 0; i < model_width; ++i) ffn[i] = NAN;
-            }
-        }
-        return;
-    }
-    for (int t = begin; t < end; ++t) {
-        struct prefill_token *token = tokens + t;
-        prefill_loop_inputs(d, token, layer, pass, work->device_loop, work->device_prelude);
-        if (work->shared_attention_input) {
-            if (aux[10] >= 0 && !work->device_attention_mix) {
-                mix(token->blocks, token->count, token->current,
-                    coefficients(d, aux[10], model_width), 1, scratch->inputs[0][t]);
-            } else if (!work->device_current) {
-                memcpy(scratch->inputs[0][t], token->current, sizeof token->current);
-            }
-            if (message && !work->device_loop) {
-                for (int i = 0; i < 3; ++i) {
-                    memcpy(message[i] + t * model_width, token->messages[i], sizeof token->current);
-                }
-            }
-            continue;
-        }
-        if (work->device_attention_mix) {
-            if (!work->device_current) memcpy(scratch->inputs[0][t], token->current, sizeof token->current);
-            if (message && !work->device_loop) {
-                for (int i = 0; i < 3; ++i)
-                    memcpy(message[i] + t * model_width, token->messages[i], sizeof token->current);
-            }
-            continue;
-        }
-        float selected[3][model_width];
-        if (aux[10] >= 0) {
-            const int projections = sliding ? 1 : 3;
-            mix(token->blocks, token->count, token->current,
-                coefficients(d, aux[10], projections * model_width), projections, selected[0]);
-            if (sliding) {
-                memcpy(selected[1], selected[0], sizeof selected[0]);
-                memcpy(selected[2], selected[0], sizeof selected[0]);
-            }
-        } else {
-            for (int i = 0; i < 3; ++i) {
-                memcpy(selected[i], token->current, sizeof selected[i]);
-            }
-        }
-        for (int i = 0; i < 3; ++i) {
-            memcpy(scratch->inputs[i][t], selected[i], sizeof selected[i]);
-            if (message && !work->device_loop) memcpy(message[i] + t * model_width, token->messages[i], sizeof selected[i]);
-        }
-    }
-}
+extern void fg_i2_prefill_partition(uint64_t address, int64_t begin, int64_t end);
 
 #include "prefill-team.h"
 
@@ -193,7 +99,7 @@ _Static_assert(sizeof(struct i2_prefill_work) == 112 &&
     offsetof(struct i2_prefill_work, shared_attention_input) == 57 &&
     offsetof(struct i2_prefill_work, postconv_weights) == 58 &&
     offsetof(struct i2_prefill_work, postconv_history) == 80 &&
-    offsetof(struct i2_prefill_work, postconv_rows) == 88 &&
+    offsetof(struct i2_prefill_work, postconv_rows) == 88 && offsetof(struct i2_prefill_work, logits) == 96 &&
     offsetof(struct i2_prefill_work, skip_host_mix) == 104 &&
     offsetof(struct i2_prefill_work, device_attention_mix) == 105 &&
     offsetof(struct i2_prefill_work, device_current) == 106 &&

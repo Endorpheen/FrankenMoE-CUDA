@@ -983,3 +983,117 @@ fn fg_i2_prefill_layer(decoder: u64, tokens: u64, scratch: u64, count: i32, begi
     if pass > 0 { fg_i2_prefill_control(decoder, aux, 3, count, tokens, host_ffn, scratch); }
     fg_i2_prefill_moe(decoder, core, aux, slot, count, host_ffn, linear, residual, tokens, scratch_graph);
 }
+
+extern fn inkling_row_major_i2_postconv_batch(input: I2DraftSpan, weights: I2DraftSpan, history: I2DraftSpan,
+    output: I2DraftSpan, width: i64, first_channel: i64, end_channel: i64) -> i64;
+extern fn inkling_row_major_i2_text_logits(values: I2DraftSpan, count: i64, cap: f32) -> i64;
+
+fn i2_prefill_partition_after(work: u64, begin: i64, end: i64) {
+    let decoder = i2d_read(work);
+    let tokens = i2d_read(work + 8);
+    let scratch = i2d_read(work + 16);
+    let aux = i2d_read(work + 24);
+    let layer = i2d_int(work + 32);
+    let skip_mix = i2d_byte(work + 104) != 0;
+    let boundary = i2d_byte(work + 107) != 0;
+    let poison = i2d_byte(work + 110) != 0;
+    var index = begin;
+    while index < end {
+        let row = index as! u64;
+        let token = tokens + row * 285708;
+        let history_base = token + 27648;
+        let next = scratch + 381026312 + row * 9216;
+        let ffn = scratch + 305528832 + row * 9216;
+        var count = i2d_int(token + 285696);
+        if layer % 6 == 0 {
+            assert(count < 11);
+            let history = history_base + (count as! u64) * 9216;
+            count += 1;
+            i2d_set_int(token + 285696, count);
+            if !boundary { fg_i2_host_save_history(history, token); }
+        } else if !skip_mix {
+            var output = fg_cuda_host_view_f32(next, 2304);
+            let current = fg_cuda_host_view_f32(token, 2304);
+            for channel in 2304 { output[channel] += current[channel]; }
+        }
+        if !skip_mix {
+            let query = i2_native_weight(decoder, aux, 9, 2304);
+            fg_i2_host_mix(history_base, count, next, query, 1, ffn);
+        } else if poison {
+            i2_poison_prefill_rows(ffn, 1);
+        }
+        index += 1;
+    }
+}
+
+fn i2_prefill_partition_before(work: u64, begin: i64, end: i64) {
+    let decoder = i2d_read(work);
+    let tokens = i2d_read(work + 8);
+    let scratch = i2d_read(work + 16);
+    let aux = i2d_read(work + 24);
+    let layer = i2d_int(work + 32);
+    let pass = i2d_int(work + 36);
+    let sliding = i2d_byte(work + 40) != 0;
+    let messages = i2d_read(work + 48);
+    let shared = i2d_byte(work + 57) != 0;
+    let device_mix = i2d_byte(work + 105) != 0;
+    let resident = i2d_byte(work + 106) != 0;
+    let device_loop = i2d_byte(work + 108) != 0;
+    let device_prelude = i2d_byte(work + 109) != 0;
+    var selected: f32[6912];
+    let rows = i2_serial_span(selected).address;
+    var index = begin;
+    while index < end {
+        let row = index as! u64;
+        let token = tokens + row * 285708;
+        prefill_loop_inputs(decoder, token, layer, pass, device_loop, device_prelude);
+        let input = scratch + row * 9216;
+        if shared || device_mix {
+            if shared && i2_host_aux(aux, 10) >= 0 && !device_mix {
+                let query = i2_native_weight(decoder, aux, 10, 2304);
+                fg_i2_host_mix(token + 27648, i2d_int(token + 285696), token, query, 1, input);
+            } else if !resident {
+                i2d_transfer(input, token, 9216);
+            }
+        } else {
+            fg_i2_prepare_layer_inputs(decoder, aux, sliding, token, token + 27648, i2d_int(token + 285696), rows);
+            for projection in 3 {
+                let field = projection as! u64;
+                i2d_transfer(input + field * 37748736, rows + field * 9216, 9216);
+            }
+        }
+        if messages != 0 && !device_loop {
+            for projection in 3 {
+                let field = projection as! u64;
+                i2d_transfer(i2d_read(messages + field * 8) + row * 9216, token + 248832 + field * 9216, 9216);
+            }
+        }
+        index += 1;
+    }
+}
+
+export fn fg_i2_prefill_partition(work: u64, begin: i64, end: i64) {
+    let logits = i2d_read(work + 96);
+    if logits != 0 {
+        let output = logits + (begin as! u64) * 4;
+        let count = end - begin;
+        assert(inkling_row_major_i2_text_logits(i2d_span(output, count), count, 30.0) == count);
+        let values = fg_cuda_host_view_f32(output, count);
+        for index in count {
+            let value = values[index];
+            assert(value <= 3.402823466e38 && value >= -3.402823466e38);
+        }
+        return;
+    }
+    let postconv = i2d_int(work + 88);
+    if postconv != 0 {
+        let scratch = i2d_read(work + 16);
+        let items = (postconv as! i64) * 2304;
+        assert(inkling_row_major_i2_postconv_batch(i2d_span(i2d_read(scratch + 343277568), items),
+            i2d_span(i2d_read(work + 58), i2d_read(work + 66) as! i64), i2d_span(i2d_read(work + 80), 6912),
+            i2d_span(scratch + 381026312, items), 2304, begin, end) == end - begin);
+        return;
+    }
+    if i2d_byte(work + 56) != 0 { i2_prefill_partition_after(work, begin, end); }
+    else { i2_prefill_partition_before(work, begin, end); }
+}
