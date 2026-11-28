@@ -33,8 +33,6 @@ type BonsaiCudaCopy = c_fnptr(u64, u64, u64) -> i32;
 extern fn fg_bonsai_cuda_dispatch() -> u64;
 extern fn fg_bonsai_cuda_check(status: i32, label: u64) -> i32;
 extern fn powf(x: f32, y: f32) -> f32;
-extern fn fg_bonsai_batch_verify(model: u64, count: u32) -> i32;
-extern fn fg_bonsai_batch_init_verify(model: u64) -> i32;
 extern fn bonsai_bonsai_graph(model: u64, weights: VocabSpan, states: VocabSpan, globals: VocabSpan, buffers: VocabSpan,
     token: i64, position: i64, output: i64) -> i64;
 extern fn bonsai_mtp_target_graph(model: u64, weights: VocabSpan, states: VocabSpan, globals: VocabSpan, buffers: VocabSpan,

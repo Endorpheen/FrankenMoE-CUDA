@@ -6,7 +6,6 @@ extern fn bonsai_draft_forward(model: u64, token: u32, pos: u32, hidden: u64, lo
 extern fn bonsai_choose_mtp_rows(model: u64, rows: u32, ignore_eos: i32, result: u64) -> i32;
 extern fn bonsai_save_conditioning(dst: u64, src: u64) -> i32;
 extern fn bonsai_is_eog(model: u64, token: u32) -> i32;
-extern fn bonsai_commit_target(model: u64, kept: u32) -> i32;
 extern fn bonsai_draft_catchup(model: u64, ids: u64, rows: u32, already_written: u32) -> i32;
 
 export fn bonsai_ffn_prefix_launch(context: u64, hidden: i64, branch: i64,

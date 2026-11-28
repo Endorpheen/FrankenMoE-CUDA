@@ -208,57 +208,35 @@ static int gdn(model *m, const CUdeviceptr p[8], unsigned tokens) {
     return launch(m, tokens > 1 ? GDN_BATCH : GDN, 48, 1, 8, 128, (void *[]){ packet });
 }
 
-typedef struct { const uint32_t *data; int64_t len; } bonsai_indices;
-extern int32_t bonsai_verify_conv_args(bonsai_const_words input, bonsai_const_words prefix,
-                                       uint32_t rows, bonsai_words output);
-extern int32_t bonsai_verify_gdn_rows(uint64_t context, bonsai_const_words input, bonsai_const_words prefix,
-                                      uint64_t state, uint32_t rows);
-extern int64_t bonsai_verify_commit(sl_i64 states, bonsai_words prefix, bonsai_indices layers,
-                                    uint32_t start, uint32_t rows, uint32_t kept);
+extern int32_t fg_bonsai_batch_verify(model *m, uint32_t count);
+extern int32_t fg_bonsai_launch_verify_rows(model *m, enum kernel op, const CUdeviceptr *args);
+extern int32_t fg_bonsai_transaction_conv(model *m, const CUdeviceptr *args);
+extern int32_t fg_bonsai_transaction_gdn(model *m, const CUdeviceptr *args);
 
-int64_t bonsai_gdn_defer_state_swap(uint64_t context) {
-    return ((const model *)(uintptr_t)context)->txn.phase == TXN_RUNNING;
+int32_t fg_bonsai_verify_launch(model *m, enum kernel kernel, uint32_t x, uint32_t y, uint32_t z,
+                                uint32_t threads, void **args) {
+    return launch(m, kernel, x, y, z, threads, args);
 }
 
 int32_t bonsai_verify_emit_gdn(uint64_t context, bonsai_const_words args) {
     return gdn((model *)(uintptr_t)context, (const CUdeviceptr *)args.data, 1);
 }
 
-static int launch_transaction_conv(model *m, const CUdeviceptr p[8]) {
-    const unsigned i = m->txn.next_layer;
-    if (i >= m->txn.layers) return -1;
-    uint64_t args[8];
-    const int32_t count = bonsai_verify_conv_args((bonsai_const_words){(const uint64_t *)p, 8},
-        (bonsai_const_words){(const uint64_t *)m->txn.prefix[i], 8}, m->verify_rows, (bonsai_words){args, 8});
-    if (count < 0) return -1;
-    void *params[8];
-    for (int32_t a = 0; a < count; ++a) params[a] = args + a;
-    const enum kernel kernel = count == 8 ? VERIFY_CONV_FIVE : count == 7 ? VERIFY_CONV_FOUR : VERIFY_CONV;
-    return launch(m, kernel, 40, 1, 1, 256, params);
-}
-
-static int launch_transaction_gdn(model *m, const CUdeviceptr p[8]) {
-    const unsigned i = m->txn.next_layer;
-    if (i >= m->txn.layers) return -1;
-    const unsigned layer = m->txn.layer_ids[i];
-    if (bonsai_verify_gdn_rows((uintptr_t)m, (bonsai_const_words){(const uint64_t *)p, 8},
-            (bonsai_const_words){(const uint64_t *)m->txn.prefix[i], 8},
-            (uint64_t)m->states[2 * layer + 1], m->verify_rows) != 0) return -1;
-    ++m->txn.next_layer;
-    return 0;
-}
-
-int bonsai_commit_target(model *m, unsigned kept) {
-    if (m->txn.phase != TXN_READY) return -1;
-    const int64_t position = bonsai_verify_commit((sl_i64){m->states, 2 * LAYERS},
-        (bonsai_words){(uint64_t *)m->txn.prefix, 8 * LAYERS},
-        (bonsai_indices){m->txn.layer_ids, m->txn.layers}, m->txn.start, m->verify_rows, kept);
-    if (position < 0) return -1;
-    m->position = (unsigned)position;
-    m->txn.phase = TXN_IDLE;
-    return 0;
-}
-#include "verify-ops.inc"
+_Static_assert(offsetof(model, txn.layer_ids) == 328 && offsetof(model, txn.prefix) == 584 &&
+    offsetof(model, verify_native) == 56 && offsetof(model, verify_q8) == 60 &&
+    offsetof(model, partial_capacity) == 14656 && offsetof(model, partial) == 5696 &&
+    offsetof(model, verify_positions) == 280 && offsetof(model, verify_rope_q) == 264 &&
+    offsetof(model, verify_rope_k) == 272 && offsetof(model, decay_small) == 4780 &&
+    offsetof(model, grouped_decode) == 14752 && offsetof(model, decode_mma) == 4744 &&
+    offsetof(model, decode_half2) == 4752 && offsetof(model, decode_ordered_merge) == 4748 &&
+    offsetof(model, verify_attention) == 64 && offsetof(model, verify_attn_tail) == 72 &&
+    offsetof(model, verify_merge) == 68, "Bonsai verify ABI");
+_Static_assert(VERIFY_CONV_FIVE == 96 && VERIFY_CONV_FOUR == 92 && VERIFY_CONV == 83 &&
+    VERIFY_ATTN == 86 && VERIFY_ATTN_TAIL == 88 && VERIFY_ATTN_FOUR == 91 && VERIFY_ATTN_FIVE == 95 &&
+    VERIFY_MERGE == 87 && MERGE == 14 && MATRIX == 2 && DECAY_STAGE256 == 51 && DECAY == 4 &&
+    CONV == 5 && ROPE == 8 && DECODE_DIRECT_HALF2 == 74 && DECODE_DIRECT_MMA == 72 &&
+    DECODE_GQA3 == 40 && DECODE_GQA2 == 39 && TILES == 10 && DECODE_ORDERED_MERGE == 73,
+    "Bonsai verify kernel IDs");
 
 extern int32_t bonsai_flash_schedule(uint64_t context, uint64_t position, uint64_t count,
                                      uint64_t partial_bytes, uint64_t stage_capacity, uint64_t flags,
@@ -325,12 +303,12 @@ int64_t bonsai_launch(uint64_t context, int64_t op, int64_t a, int64_t b, int64_
     float scale = 1.0f / 16.0f;
     int start = 0;
     if (m->txn.phase == TXN_RUNNING) {
-        if (op == CONV) return launch_transaction_conv(m, p);
-        if (op == GDN) return launch_transaction_gdn(m, p);
+        if (op == CONV) return fg_bonsai_transaction_conv(m, p);
+        if (op == GDN) return fg_bonsai_transaction_gdn(m, p);
     }
-    if (exact_verify(m, count) &&
+    if (fg_bonsai_batch_verify(m, count) &&
         ((op == MATRIX && e == 1024) || op == DECAY || op == ROPE || op == TILES))
-        return launch_verify_rows(m, (enum kernel)op, p);
+        return fg_bonsai_launch_verify_rows(m, (enum kernel)op, p);
     switch (op) {
         case NORM:
             if (m->capture.enabled && m->in_decode && count == 1 &&
@@ -379,7 +357,7 @@ int64_t bonsai_launch(uint64_t context, int64_t op, int64_t a, int64_t b, int64_
                     (out_width + rows_per_cta - 1) / rows_per_cta, 1, 1, 128,
                     (void *[]){ &p[0], &p[1], &p[2], &in_width, &out_width });
             }
-            if (exact_verify(m, count) &&
+            if (fg_bonsai_batch_verify(m, count) &&
                 out_width > 1024) {
                 if (m->q8_input != p[1]) {
                     unsigned groups = count * (in_width / 32);
@@ -586,7 +564,7 @@ extern void bonsai_workspace_rebase(uint64_t base, uint64_t rows, uint64_t flags
 
 static int workspace(model *m, const int32_t *sign) {
     _Static_assert(LAYERS == 64 && VERIFY_ROWS == 5 && KV_BYTES == 576 && VOCAB == 248320 &&
-        ATTENTION_BYTES == 32 * 1024 * 1024 && sizeof(struct verify_position) == 192, "Bonsai workspace ABI");
+        ATTENTION_BYTES == 32 * 1024 * 1024, "Bonsai workspace ABI");
     const uint64_t flags = (m->use_flash_f32 ? 1 : 0) | (m->mtp_enabled ? 2 : 0) |
         (m->device_commit ? 4 : 0) | (m->verify_native ? 8 : 0) | (m->stage_kv ? 16 : 0);
     uint64_t values[17] = {0};
@@ -947,8 +925,6 @@ _Static_assert(offsetof(struct bonsai_cuda_api, fn_cuMemcpyHtoD) == 96 &&
 const void *fg_bonsai_cuda_dispatch(void) { return &bonsai_cuda; }
 int32_t fg_bonsai_cuda_check(CUresult status, const char *where) { return check(status, where); }
 
-int32_t fg_bonsai_batch_verify(model *m, uint32_t count) { return exact_verify(m, count); }
-int32_t fg_bonsai_batch_init_verify(model *m) { return init_verify_batch(m); }
 
 void fg_bonsai_batch_graph_error(model *m, int64_t status) {
     if (m->capture.stream) bonsai_capture_abort((uintptr_t)&m->capture);
