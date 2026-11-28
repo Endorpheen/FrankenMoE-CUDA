@@ -526,12 +526,8 @@ void i2_serial_trace(int32_t visit, sl_f32 current) {
 _Static_assert(offsetof(struct decoder, visits) == 81456 && logical == 48 && model_width == 2304,
     "Goose serial token ABI");
 
-void fg_i2_serial_embed(struct decoder *d, int32_t input, sl_f32 current) {
-    weight emb = named(d, d->globals[0]);
-    int64_t row = ggml_row_size(GGML_TYPE_Q8_0, model_width);
-    assert(i2_embed_row((sl_u8){(uint8_t *)(uintptr_t)(emb.data + row * input), row},
-        coefficients(d, d->globals[1], model_width), 1e-6f, current) == model_width);
-}
+_Static_assert(GGML_TYPE_Q8_0 == 8 && offsetof(struct decoder, data) == 0, "Goose embedding ABI");
+extern bool fg_i2_embed_prefill(struct decoder *d, const int32_t *ids, int count, void *output, size_t stride);
 
 void fg_i2_serial_finish(struct decoder *d, int absolute, float *current, float *history, int count, bool logits) {
     check_state("residual", absolute, current, model_width);

@@ -574,13 +574,8 @@ static void prefill(struct decoder *d, const int32_t *ids, int begin, int count,
         prefill_direct_output = scratch->linear[0];
         prefill_direct_output_size = elements;
     }
-    weight embedding = named(d, d->globals[0]);
-    const int64_t row = ggml_row_size(GGML_TYPE_Q8_0, model_width);
-    for (int t = 0; t < count; ++t) {
-        assert(i2_embed_row((sl_u8){(uint8_t *)(uintptr_t)(embedding.data + row * ids[t]), row},
-                            coefficients(d, d->globals[1], model_width), 1e-6f,
-                            vec(tokens[t].current, model_width)) == model_width);
-    }
+    _Static_assert(offsetof(struct prefill_token, current) == 0, "Goose prefill embedding stride ABI");
+    assert(fg_i2_embed_prefill(d, ids, count, tokens, sizeof(*tokens)));
     struct i2_prefill_team team = {0};
     struct i2_prefill_team *workers = NULL;
     const int tasks = prefill_task_count(count);
