@@ -47,42 +47,20 @@ _Static_assert(MADV_POPULATE_READ == 22, "Goose Linux populate ABI");
 #endif
 #endif
 
-static pthread_once_t exchange_once = PTHREAD_ONCE_INIT;
-static pthread_key_t exchange_key;
-static bool exchange_key_available;
-static _Thread_local struct {
+struct decode_exchange_abi {
     uint8_t *data;
     size_t capacity;
     bool borrowed;
-} decode_exchange;
+};
 
-static void init_exchange_key(void) {
-    exchange_key_available = pthread_key_create(&exchange_key, free) == 0;
-}
-
-_Static_assert(offsetof(__typeof__(decode_exchange), data) == 0 &&
-    offsetof(__typeof__(decode_exchange), capacity) == 8 &&
-    offsetof(__typeof__(decode_exchange), borrowed) == 16, "Goose decode exchange ABI");
-
-uint64_t fg_cuda_decode_exchange_address(void) { return (uintptr_t)&decode_exchange; }
-
-bool fg_cuda_decode_cleanup_ready(void) {
-    return pthread_once(&exchange_once, init_exchange_key) == 0 && exchange_key_available;
-}
-
-int fg_cuda_decode_track_buffer(uint64_t address) {
-    return pthread_setspecific(exchange_key, (void *)(uintptr_t)address);
-}
-
-enum { Q35_DECODE_PLAN_WORDS = 10 };
-static _Thread_local struct {
+struct decode_plan_abi {
     unsigned depth;
     bool enabled;
-    int64_t words[Q35_DECODE_PLAN_WORDS];
-} decode_plan;
+    int64_t words[10];
+};
 
-_Static_assert(offsetof(__typeof__(decode_plan), enabled) == 4 &&
-    offsetof(__typeof__(decode_plan), words) == 8 &&
-    Q35_DECODE_PLAN_WORDS == 10 && HOSE_DEFAULT_PREFILL_BATCH == 128, "Goose decode state ABI");
-
-uint64_t fg_cuda_decode_plan_address(void) { return (uintptr_t)&decode_plan; }
+_Static_assert(sizeof(struct decode_exchange_abi) == 24 &&
+    offsetof(struct decode_exchange_abi, borrowed) == 16 &&
+    sizeof(struct decode_plan_abi) == 88 && offsetof(struct decode_plan_abi, enabled) == 4 &&
+    offsetof(struct decode_plan_abi, words) == 8 && sizeof(pthread_key_t) == 4 &&
+    HOSE_DEFAULT_PREFILL_BATCH == 128, "Goose decode state ABI");

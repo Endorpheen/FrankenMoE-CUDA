@@ -1,7 +1,28 @@
-extern fn fg_cuda_decode_exchange_address() -> u64;
-extern fn fg_cuda_decode_cleanup_ready() -> bool;
-extern fn fg_cuda_decode_track_buffer(address: u64) -> i32;
-extern fn fg_cuda_decode_plan_address() -> u64;
+extern fn fg_host_decode_tls_address() -> u64;
+extern fn fg_host_create_free_key(key: u64) -> i32;
+extern fn vocab_decode_setspecific(key: u32, data: u64) -> i32;
+
+var decode_free_key: u32;
+var decode_cleanup_attempted: bool;
+var decode_cleanup_available: bool;
+
+fn fg_cuda_decode_exchange_address() -> u64 { return fg_host_decode_tls_address(); }
+fn fg_cuda_decode_plan_address() -> u64 { return fg_host_decode_tls_address() + 24; }
+
+fn fg_cuda_decode_cleanup_ready() -> bool {
+    if !bonsai_init_lock() { return false; }
+    if !decode_cleanup_attempted {
+        let key = vocab_address(unsafe_c_address<c_ptr<const void>>(decode_free_key));
+        decode_cleanup_available = fg_host_create_free_key(key) == 0;
+        decode_cleanup_attempted = true;
+    }
+    let available = decode_cleanup_available;
+    return bonsai_init_unlock() && available;
+}
+
+fn fg_cuda_decode_track_buffer(address: u64) -> i32 {
+    return vocab_decode_setspecific(decode_free_key, address);
+}
 var generation_ids: i64[262144];
 
 export fn fg_cuda_generation_ids_address() -> u64 {
