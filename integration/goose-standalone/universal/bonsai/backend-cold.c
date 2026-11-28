@@ -20,17 +20,16 @@
 
 #include <pthread.h>
 
+_Static_assert(sizeof(pthread_mutex_t) <= 40 && _Alignof(pthread_mutex_t) <= 8, "Bonsai initialization mutex ABI");
+#ifdef _WIN32
+_Static_assert(PTHREAD_MUTEX_INITIALIZER == -1 && sizeof(pthread_mutex_t) == 8, "Bonsai Windows mutex initializer");
+#endif
+
 #ifdef _WIN32
 #define BONSAI_SIZE_FMT "%llu"
 #else
 #define BONSAI_SIZE_FMT "%zu"
 #endif
-
-extern void fg_bonsai_bind_cuda(void);
-int32_t fg_bonsai_bind_cuda_once(void) {
-    static pthread_once_t once = PTHREAD_ONCE_INIT;
-    return pthread_once(&once, fg_bonsai_bind_cuda);
-}
 
 enum { LAYERS = 64, POSITIONS_MAX = 262144, VOCAB = 248320, KV_BYTES = 576,
        VERIFY_ROWS = 5, GDN_STATE = 48 * 128 * 128, GDN_HISTORY = 3 * 10240, CONTEXT_MIN = 1, UBATCH_MAX = 1024, FLASH_PANEL_SHARED = 50176, ATTENTION_BYTES = 32 * 1024 * 1024 };
@@ -93,12 +92,6 @@ _Static_assert(offsetof(struct bonsai_ffn_capture, stream) == 0 &&
     offsetof(struct bonsai_ffn_capture, phase) == 1032 && offsetof(struct bonsai_ffn_capture, layer) == 1036 &&
     offsetof(struct bonsai_ffn_capture, next) == 1040 && offsetof(struct bonsai_ffn_capture, enabled) == 1044 &&
     LAYERS == 64, "Bonsai FFN capture ABI");
-
-extern void fg_bonsai_bind_ffn_graph(void);
-int32_t fg_bonsai_ffn_bind_once(void) {
-    static pthread_once_t once = PTHREAD_ONCE_INIT;
-    return pthread_once(&once, fg_bonsai_bind_ffn_graph);
-}
 
 _Static_assert(offsetof(model, capture) == 15288 &&
     offsetof(model, q8_mode) == 4712 && offsetof(model, norm_wide) == 4720 &&

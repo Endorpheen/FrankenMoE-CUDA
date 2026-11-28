@@ -2,14 +2,26 @@ const BONSAI_DRIVER_LIBRARY: i64 = 19;
 var bonsai_cuda_table: u64[20];
 
 type BonsaiErrorString = c_fnptr(i32, u64) -> i32;
-extern fn fg_bonsai_bind_cuda_once() -> i32;
+extern fn bonsai_mutex_lock(mutex: c_ptr<void>) -> i32;
+extern fn bonsai_mutex_unlock(mutex: c_ptr<void>) -> i32;
+
+var bonsai_init_mutex: u64[5] = [BONSAI_MUTEX_INITIAL, 0, 0, 0, 0];
+var bonsai_cuda_bind_attempted: bool;
+
+fn bonsai_init_lock() -> bool {
+    return bonsai_mutex_lock(unsafe_c_address<c_ptr<void>>(bonsai_init_mutex[0])) == 0;
+}
+
+fn bonsai_init_unlock() -> bool {
+    return bonsai_mutex_unlock(unsafe_c_address<c_ptr<void>>(bonsai_init_mutex[0])) == 0;
+}
 extern "fg_cuda_host_view_u8" fn bonsai_driver_text(address: u64, length: i64) -> u8[:];
 
 fn bonsai_driver_string(address: u64) -> const u8[:] {
     return bonsai_driver_text(address, vocab_strlen(address) as! i64);
 }
 
-export fn fg_bonsai_bind_cuda() {
+fn bonsai_bind_cuda() {
     let library = bonsai_open_cuda_library();
     if library == 0 {
         vocab_log("Bonsai CUDA driver unavailable\n");
@@ -32,7 +44,13 @@ export fn fg_bonsai_bind_cuda() {
 }
 
 fn bonsai_cuda_ready() -> bool {
-    return fg_bonsai_bind_cuda_once() == 0 && bonsai_cuda_table[BONSAI_DRIVER_LIBRARY] != 0;
+    if !bonsai_init_lock() { return false; }
+    if !bonsai_cuda_bind_attempted {
+        bonsai_bind_cuda();
+        bonsai_cuda_bind_attempted = true;
+    }
+    let ready = bonsai_cuda_table[BONSAI_DRIVER_LIBRARY] != 0;
+    return bonsai_init_unlock() && ready;
 }
 
 fn fg_bonsai_cuda_dispatch() -> u64 {

@@ -6,9 +6,9 @@ type BonsaiGraphTriple = c_fnptr(u64, u64, u64) -> i32;
 
 var bonsai_ffn_driver: u64[9];
 var bonsai_ffn_ready: bool;
-extern fn fg_bonsai_ffn_bind_once() -> i32;
+var bonsai_ffn_bind_attempted: bool;
 
-export fn fg_bonsai_bind_ffn_graph() {
+fn bonsai_bind_ffn_graph() {
     let library = vocab_word(fg_bonsai_cuda_dispatch() + 152);
     bonsai_ffn_driver[0] = unsafe_c_library_symbol(library, "cuStreamCreate");
     bonsai_ffn_driver[1] = unsafe_c_library_symbol(library, "cuStreamDestroy_v2");
@@ -29,7 +29,13 @@ export fn fg_bonsai_ffn_graph_open(model: u64) {
     let enabled = fg_cuda_model_getenv(vocab_text("BONSAI_HTTP_FFN_GRAPH\0").address);
     if enabled == 0 || vocab_byte(enabled) != 49 || vocab_byte(enabled + 1) != 0 ||
         batch_u32(model + 4712) != 1 || batch_u32(model + 4720) == 0 { return; }
-    if fg_bonsai_ffn_bind_once() != 0 || !bonsai_ffn_ready { return; }
+    if !bonsai_init_lock() { return; }
+    if !bonsai_ffn_bind_attempted {
+        bonsai_bind_ffn_graph();
+        bonsai_ffn_bind_attempted = true;
+    }
+    let ready = bonsai_ffn_ready;
+    if !bonsai_init_unlock() || !ready { return; }
     let capture = model + 15288;
     let status = unsafe_c_fnptr<BonsaiGraphFlags>(bonsai_ffn_driver[0])(capture, 1);
     if bonsai_cuda_status(status, "Bonsai FFN graph stream") == 0 { batch_set(capture + 1044, 1); }
