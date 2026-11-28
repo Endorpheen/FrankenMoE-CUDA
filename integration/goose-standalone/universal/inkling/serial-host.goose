@@ -96,20 +96,52 @@ export fn fg_i2_backend_token(decoder: u64, token: i32, position: i32, logits: b
 
 
 
-export fn fg_i2_read_token_logits(decoder: u64, absolute: i32, current: u64, history: u64, count: i32, decode: bool) {
-    var normalized: f32[2304];
-    let output = i2_serial_span(normalized);
+fn i2_prepare_logits_row(decoder: u64, current: u64, history: u64, count: i32, output: I2DraftSpan) {
     let global_weights = decoder + I2_OPEN_GLOBALS;
     let queries = fg_i2_host_coefficients(decoder, i2d_read(global_weights + 32) as! i64, 2304);
     fg_i2_host_mix(history, count, current, i2d_span(queries, 2304), 1, output.address);
     let gains = fg_i2_host_coefficients(decoder, i2d_read(global_weights + 24) as! i64, 2304);
     if inkling_row_major_i2_rms_gain(output, i2d_span(gains, 2304), 0.000001, output) != 2304 { i2_embedding_abort(); }
-    let logits = decoder + I2D_LOGITS;
-    fg_i2_host_project(decoder, i2d_read(global_weights + 16) as! i64, output.address, 2304, logits, 201024);
+}
+
+fn i2_finalize_logits_row(decoder: u64, absolute: i32, logits: u64, decode: bool) {
     let handled = decode && fg_i2_parallel_logits(decoder, logits);
     if !handled { assert(inkling_row_major_i2_text_logits(i2d_span(logits, 201024), 200058, 30.0) == 200058); }
     i2_check_state("logits", absolute, logits, 201024);
     if !handled { i2_check_finite(logits, 200058); }
+}
+
+export fn fg_i2_read_token_logits(decoder: u64, absolute: i32, current: u64, history: u64, count: i32, decode: bool) {
+    var normalized: f32[2304];
+    let output = i2_serial_span(normalized);
+    i2_prepare_logits_row(decoder, current, history, count, output);
+    let weight = i2d_read(decoder + I2_OPEN_GLOBALS + 16) as! i64;
+    let logits = decoder + I2D_LOGITS;
+    fg_i2_host_project(decoder, weight, output.address, 2304, logits, 201024);
+    i2_finalize_logits_row(decoder, absolute, logits, decode);
+}
+
+fn i2_batch_verifier_logits(decoder: u64, begin: i32, count: i32, tokens: u64, scratch: u64) -> bool {
+    if count != 16 || i2d_env_is("I2_VERIFY_BATCH_LOGITS", 48) { return false; }
+    let weight = i2d_read(decoder + I2_OPEN_GLOBALS + 16);
+    if i2d_read(i2_tensor_record(decoder, weight) + 16) != 8 { return false; }
+    let logits = scratch + ((count as! u64) * 9216);
+    let scores = i2d_read(decoder + I2D_DRAFT + I2D_SCORES);
+    for index in count as! i64 {
+        let i = index as! u64;
+        let row = tokens + i * 285708;
+        i2_prepare_logits_row(decoder, row, row + 27648, i2d_int(row + 285696),
+            i2d_span(scratch + i * 9216, 2304));
+    }
+    prefill_projection(decoder, weight as! i64, scratch, 2304, logits, 201024, count);
+    for index in count as! i64 {
+        let i = index as! u64;
+        let row = logits + i * 804096;
+        i2_finalize_logits_row(decoder, begin + (index as! i32), row, true);
+        i2d_transfer(scores + i * 800232, row, 800232);
+    }
+    i2d_transfer(decoder + I2D_LOGITS, logits + (((count - 1) as! u64) * 804096), 804096);
+    return true;
 }
 
 fn fg_i2_prepare_layer_inputs(decoder: u64, aux: u64, sliding: bool, current: u64,
@@ -738,7 +770,7 @@ export fn fg_i2_backend_prefill(decoder: u64, ids: u64, begin: i32, count: i32, 
     inkling_arena_window(false, begin);
     if workers != 0 { prefill_team_close(workers); }
     for index in count as! i64 { i2_check_state("residual", begin + (index as! i32), tokens + (index as! u64) * 285708, 2304); }
-    if need_logits {
+    if need_logits && !(verify && i2_batch_verifier_logits(decoder, begin, count, tokens, scratch)) {
         var index = if verify { 0 } else { count - 1 };
         while index < count {
             let row = tokens + (index as! u64) * 285708;
