@@ -69,6 +69,8 @@ static int detect_model_kind(const char *path, fg_vk_model_kind *kind) {
     return recognized;
 }
 
+extern void fg_socket_init(int argc, char **argv);
+
 int main(int argc, char **argv) {
     uint32_t device = FG_VK_AUTO_DEVICE, predict = 1;
     uint32_t port = 0, requests = 0, server_context = 0;
@@ -110,6 +112,7 @@ int main(int argc, char **argv) {
         if (start != argc || text_mode || dump || special || tokenize_only || predict != 1 ||
             (cpu && device == FG_VK_AUTO_DEVICE)) goto usage;
         goose_init(0, NULL);
+        fg_socket_init(0, NULL);
         return fg_vk_http_run(argv[1], server_context ? server_context : 512, device, cpu, port, requests, kind) ? 0 : 1;
     }
     if (requests || server_context) goto usage;

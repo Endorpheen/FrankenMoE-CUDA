@@ -39,10 +39,9 @@ cat "$standalone/graph-bindings.goose" "$standalone/common-memory.goose" > "$out
     -c "$out/graph-bindings.c" -o "$out/graph-bindings.o"
 "$objcopy" --redefine-sym=graph_crt_getenv=getenv "$out/graph-bindings.o"
 "$cc" -O1 "${flags[@]}" -c "$host/goose_host.c" -o "$out/goose-host.o"
-if [[ $target == linux ]]; then
-    "$cc" -O1 "${flags[@]}" -c "$standalone/libc-forwards.c" -o "$out/libc-forwards.o"
-else
-    for unit in platform socket-forwards web; do
+CC="$cc" WINDOWS_CC="$cc" bash "$root/tools/build-gooseinfer-socket.sh" "$target" "$out/socket-forwards.o"
+if [[ $target == windows ]]; then
+    for unit in platform web; do
         "$cc" -O2 "${flags[@]}" -c "$standalone/windows/$unit.c" -o "$out/$unit.o"
     done
 fi

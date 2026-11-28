@@ -3,6 +3,7 @@ extern "gs_os_arg" fn entry_arg(index: i64, output: u8[>..]&);
 extern "gs_os_write_stderr" fn entry_error(text: const u8[:]);
 extern "memcpy" fn entry_copy(destination: c_ptr<void>, source: c_ptr<const void>, bytes: u64) -> c_ptr<void>;
 extern "exit" fn entry_exit(status: i32);
+extern fn fg_socket_init(argc: i32, argv: u64);
 extern fn fg_common_memory_init() -> i32;
 extern fn fg_graph_bindings_init(argc: i32, argv: u64);
 extern fn goose_cuda_init(argc: i32, argv: u64);
@@ -61,6 +62,7 @@ fn main() {
         entry_exit(1);
         return;
     }
+    fg_socket_init(count, address);
     goose_cuda_init(count, address);
     gooseinfer_cuda_entry_init(count, address);
     let status = gooseinfer_cuda_entry(count, address);
