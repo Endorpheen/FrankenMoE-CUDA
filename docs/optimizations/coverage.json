@@ -1,0 +1,45 @@
+{
+  "methods": {
+    "EXP-1603": {"pattern": "matrix|mmq|vector|flash", "condition": "CUDA parameters can be read directly without exposing their address."},
+    "EXP-1609": {"pattern": "flash|gdn|matrix", "condition": "The call site fixes the device mode."},
+    "Apex sampler": {"pattern": "sampl|sort", "condition": "The scalar loop borrows its data and has no ownership work."},
+    "EXP-1719": {"pattern": "gdn|ssm", "condition": "Fixed sizes and a nonescaping accumulator."},
+    "EXP-2423": {"pattern": "q8|dense|matrix", "condition": "Output rows share the same input layout.", "verified": ["i2_q8_fp32_pair_w2", "i2_q8_fp32_pair_w4"]},
+    "EXP-2424": {"pattern": "flash|attention|verify", "condition": "Independent queries have compatible partitions and scratch.", "verified": ["goose_i2_flash_mma_verify"]},
+    "EXP-2425": {"pattern": "embed|gather", "condition": "Independent rows fit the CPU worker team's budget.", "verified": ["fg_i2_embed_prefill"]},
+    "EXP-2426": {"pattern": "flash|attention|sliding", "condition": "Keep each original chunk's K/V window.", "verified": ["goose_i2_flash_mma_prefill_group"]},
+    "EXP-2427": {"pattern": "iq4_xs|xs_mmq|expert", "condition": "Adjacent jobs share a weight plane.", "verified": ["goose_i2_matrix_iq4_xs_pair"]},
+    "EXP-2429": {"pattern": "iq[234]|mmq", "condition": "Adjacent MMA steps reuse the same packed bytes.", "verified": ["goose_i2_xs_mmq32", "goose_i2_nl_mmq32"]},
+    "EXP-2430": {"pattern": "prefill_partition|verify", "condition": "Independent rows offset dispatch and barrier cost.", "verified": ["fg_i2_prefill_partition"]},
+    "EXP-2431": {"pattern": "flash|attention", "condition": "Q4 input and the established V accumulation order.", "verified": ["goose_i2_flash_mma_prefill_group"]},
+    "EXP-2437": {"pattern": "q8|dense|matrix", "condition": "Check input range and numerical error.", "verified": ["goose_i2_dense_split_mma"]},
+    "EXP-2438": {"pattern": "expert|moe|mmq", "condition": "Fences protect earlier readers and missing weights.", "verified": ["launch_expert_overlap"]},
+    "EXP-2439": {"pattern": "q8|matrix|dense|mmq", "condition": "Align shared rows and check occupancy.", "verified": ["goose_i2_dense_split_mma_shared"]},
+    "EXP-2441": {"pattern": "iq4_nl|nl_mmq|expert", "condition": "Adjacent jobs share a weight plane.", "verified": ["goose_i2_matrix_iq4_nl_pair"]},
+    "EXP-2442": {"pattern": "iq4|mmq|expert", "condition": "Full 32-job by 64-row tiles retain their existing tails.", "verified": ["goose_i2_xs_mmq32_shared", "goose_i2_nl_mmq32_shared"]},
+    "EXP-2443": {"pattern": "logit|matrix_q8|verify", "condition": "Independent verifier rows share one Q8 output head.", "verified": ["i2_batch_verifier_logits"]}
+  },
+  "potential": [
+    {"id": "SHARED", "name": "Shared tiles across warps", "pattern": "flash|attention|gdn|rms|rope|topk|matrix|mmq", "condition": "Several warps read the same data."},
+    {"id": "DOUBLE", "name": "Double buffering", "pattern": "flash|attention|gdn|matrix|mmq", "condition": "Current tile compute can hide the next load."},
+    {"id": "TRIPLE", "name": "Triple buffering", "pattern": "flash|matrix|mmq", "condition": "Measure occupancy and the added overlap."},
+    {"id": "REG", "name": "Register reuse", "pattern": "matrix|mmq|gdn|softmax|norm|rope", "condition": "Check register pressure and spills."},
+    {"id": "FUSE", "name": "Kernel fusion", "pattern": "flash|moe|route|matrix|kv|gdn|gate|norm", "condition": "An intermediate has a local consumer."}
+  ],
+  "directions": [
+    ["Q8 projections", "Share activation tiles and stage the next tile", "Verified on Inkling", "EXP-2439"],
+    ["IQ4_XS and IQ4_NL", "Share staged activations within expert tiles", "Verified on Inkling", "EXP-2442"],
+    ["Q4_K and Q6_K", "Reuse matrix tiles", "Potential", "Check input layout, alignment and occupancy"],
+    ["IQ2 and IQ3", "Reuse activations and decoded weight fragments", "Potential", "Check quant blocks and route shape"],
+    ["MoE and Gate/Up", "Share input rows or intermediate values", "Potential", "Preserve route and gate arithmetic"],
+    ["Attention and KV", "Reuse blocks of Q/K/V across warps", "Potential", "Preserve causal masks and windows"],
+    ["FlashAttention", "Pipeline next-tile loads in shared memory", "Potential", "Account for staging time and occupancy"],
+    ["QKV projections", "Reuse activations across projections", "Potential", "Check layout and end-to-end launch cost"],
+    ["MTP verifier", "Group independent queries or projection rows", "Potential", "Preserve verification and rollback"],
+    ["Gated DeltaNet", "Reuse intermediate state on device", "Potential", "Check recurrence and lifetime"],
+    ["Ternary Bonsai", "Share activations across warps", "Potential", "Check packing and working shape"],
+    ["RMSNorm and softmax", "Reuse a local reduction", "Potential", "Measure the synchronization cost"],
+    ["RoPE", "Reuse positional coefficients", "Potential", "Check position indexing"],
+    ["MoE Top-K", "Keep selection and normalized weights on device", "Potential", "Preserve tie order and weight arithmetic"]
+  ]
+}

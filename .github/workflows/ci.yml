@@ -39,6 +39,8 @@ jobs:
         run: python3 tools/multimodel-release/test-release-gate.py
       - name: Generated artefacts policy
         run: python3 tools/check-generated-files.py
+      - name: Published optimization documentation
+        run: python3 tools/update-optimization-docs.py --check
       - name: Tracked python tools compile
         run: |
           files=$(git ls-files 'tools/*.py' 'experiments/*/tests/*.py')

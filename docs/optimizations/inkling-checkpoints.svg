@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="850" height="300" viewBox="0 0 850 300" role="img" aria-labelledby="title desc">
+<title id="title">Inkling 2 Mini accepted checkpoints</title>
+<desc id="desc">Warm single-request prefill and decode on RTX 4070, 32K prompt and 512 output tokens.</desc>
+<rect width="850" height="300" rx="12" fill="#f6f8fb"/>
+<g font-family="system-ui, sans-serif"><text x="24" y="33" font-size="18" font-weight="700" fill="#172b40">Inkling 2 Mini on RTX 4070</text>
+<text x="24" y="54" font-size="12" fill="#4b5d70">32K/512 · accepted development checkpoints · tok/s</text>
+<text x="62" y="82" fill="#196455" font-size="13" font-weight="700">Prefill</text>
+<line x1="62" y1="247.0" x2="382" y2="247.0" stroke="#cfd9e3"/>
+<text x="55" y="250.0" text-anchor="end" font-size="10" fill="#4b5d70">550</text>
+<line x1="62" y1="210.0" x2="382" y2="210.0" stroke="#cfd9e3"/>
+<text x="55" y="213.0" text-anchor="end" font-size="10" fill="#4b5d70">600</text>
+<line x1="62" y1="173.0" x2="382" y2="173.0" stroke="#cfd9e3"/>
+<text x="55" y="176.0" text-anchor="end" font-size="10" fill="#4b5d70">650</text>
+<line x1="62" y1="136.0" x2="382" y2="136.0" stroke="#cfd9e3"/>
+<text x="55" y="139.0" text-anchor="end" font-size="10" fill="#4b5d70">700</text>
+<line x1="62" y1="99.0" x2="382" y2="99.0" stroke="#cfd9e3"/>
+<text x="55" y="102.0" text-anchor="end" font-size="10" fill="#4b5d70">750</text>
+<text x="62.0" y="266" text-anchor="middle" font-size="10" fill="#4b5d70">2431</text>
+<text x="115.3" y="266" text-anchor="middle" font-size="10" fill="#4b5d70">2437</text>
+<text x="168.7" y="266" text-anchor="middle" font-size="10" fill="#4b5d70">2438</text>
+<text x="222.0" y="266" text-anchor="middle" font-size="10" fill="#4b5d70">2439</text>
+<text x="275.3" y="266" text-anchor="middle" font-size="10" fill="#4b5d70">2441</text>
+<text x="328.7" y="266" text-anchor="middle" font-size="10" fill="#4b5d70">2442</text>
+<text x="382.0" y="266" text-anchor="middle" font-size="10" fill="#4b5d70">2443</text>
+<polyline points="62.0,234.1 115.3,194.5 168.7,192.7 222.0,173.3 275.3,173.1 328.7,120.6 382.0,121.7" fill="none" stroke="#196455" stroke-width="2"/>
+<circle cx="62.0" cy="234.1" r="3" fill="#196455"><title>567.43 tok/s</title></circle>
+<circle cx="115.3" cy="194.5" r="3" fill="#196455"><title>620.91 tok/s</title></circle>
+<circle cx="168.7" cy="192.7" r="3" fill="#196455"><title>623.44 tok/s</title></circle>
+<circle cx="222.0" cy="173.3" r="3" fill="#196455"><title>649.58 tok/s</title></circle>
+<circle cx="275.3" cy="173.1" r="3" fill="#196455"><title>649.83 tok/s</title></circle>
+<circle cx="328.7" cy="120.6" r="3" fill="#196455"><title>720.83 tok/s</title></circle>
+<circle cx="382.0" cy="121.7" r="3" fill="#196455"><title>719.27 tok/s</title></circle>
+<text x="485" y="82" fill="#244b85" font-size="13" font-weight="700">Decode</text>
+<line x1="485" y1="247.0" x2="805" y2="247.0" stroke="#cfd9e3"/>
+<text x="478" y="250.0" text-anchor="end" font-size="10" fill="#4b5d70">45</text>
+<line x1="485" y1="197.7" x2="805" y2="197.7" stroke="#cfd9e3"/>
+<text x="478" y="200.7" text-anchor="end" font-size="10" fill="#4b5d70">50</text>
+<line x1="485" y1="148.3" x2="805" y2="148.3" stroke="#cfd9e3"/>
+<text x="478" y="151.3" text-anchor="end" font-size="10" fill="#4b5d70">55</text>
+<line x1="485" y1="99.0" x2="805" y2="99.0" stroke="#cfd9e3"/>
+<text x="478" y="102.0" text-anchor="end" font-size="10" fill="#4b5d70">60</text>
+<text x="485.0" y="266" text-anchor="middle" font-size="10" fill="#4b5d70">2431</text>
+<text x="538.3" y="266" text-anchor="middle" font-size="10" fill="#4b5d70">2437</text>
+<text x="591.7" y="266" text-anchor="middle" font-size="10" fill="#4b5d70">2438</text>
+<text x="645.0" y="266" text-anchor="middle" font-size="10" fill="#4b5d70">2439</text>
+<text x="698.3" y="266" text-anchor="middle" font-size="10" fill="#4b5d70">2441</text>
+<text x="751.7" y="266" text-anchor="middle" font-size="10" fill="#4b5d70">2442</text>
+<text x="805.0" y="266" text-anchor="middle" font-size="10" fill="#4b5d70">2443</text>
+<polyline points="485.0,206.2 538.3,199.2 591.7,172.9 645.0,174.7 698.3,156.5 751.7,154.5 805.0,135.3" fill="none" stroke="#244b85" stroke-width="2"/>
+<circle cx="485.0" cy="206.2" r="3" fill="#244b85"><title>49.14 tok/s</title></circle>
+<circle cx="538.3" cy="199.2" r="3" fill="#244b85"><title>49.84 tok/s</title></circle>
+<circle cx="591.7" cy="172.9" r="3" fill="#244b85"><title>52.51 tok/s</title></circle>
+<circle cx="645.0" cy="174.7" r="3" fill="#244b85"><title>52.33 tok/s</title></circle>
+<circle cx="698.3" cy="156.5" r="3" fill="#244b85"><title>54.17 tok/s</title></circle>
+<circle cx="751.7" cy="154.5" r="3" fill="#244b85"><title>54.38 tok/s</title></circle>
+<circle cx="805.0" cy="135.3" r="3" fill="#244b85"><title>56.32 tok/s</title></circle>
+</g></svg>
