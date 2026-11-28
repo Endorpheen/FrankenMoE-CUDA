@@ -917,54 +917,47 @@ error:
     return NULL;
 }
 
-static int evaluate_batch_output(model *m, const unsigned *tokens, unsigned count,
-                                 float *logits, int device_only) {
-    if (count == 0 || count > m->ubatch || count > m->context - m->position || (logits && count != 1)) return -1;
-    const int pos = (int)m->position, keys = pos + (int)count;
-    const int64_t tiles = (keys + 255)/256, per_task = tiles * 258 * 4;
-    const int64_t tasks = 24 * count;
-    m->wave = (unsigned)(ATTENTION_BYTES / per_task);
-    if (m->wave > tasks) m->wave = (unsigned)tasks;
-    if (m->count != count && (rope_config(m->rope_q, 24, count) || rope_config(m->rope_k, 4, count))) return -1;
-    m->count = count;
-    m->packed_source = 0;
-    m->q8_input = 0;
-    m->ffn_q8_input = 0;
-    m->ffn_layer = 0;
-    m->down_q8_owner = 0;
-    int32_t positions[4 * UBATCH_MAX];
-    for (unsigned t = 0; t < count; ++t) {
-        if (tokens[t] >= VOCAB) return -1;
-        positions[t] = positions[count+t] = positions[2*count+t] = pos + (int)t;
-        positions[3*count+t] = 0;
-    }
-    const int64_t cfg[22] = {
-        256, 256, count, 24, 4, 4, keys, 24576, 1024, KV_BYTES, 144, KV_BYTES, 144,
-        0, 1024, 24576, 256, tiles, tasks, m->wave, m->wave * per_task, pos+1,
-    };
-    if (check(bonsai_cuda.fn_cuMemcpyHtoD(m->positions, positions, 16 * count), "positions") ||
-        check(bonsai_cuda.fn_cuMemcpyHtoD(m->attention, cfg, sizeof(cfg)), "attention configuration") ||
-        (count > 1 && check(bonsai_cuda.fn_cuMemcpyHtoD(m->token_ids, tokens, 4 * count), "token ids"))) return -1;
-    m->capture.layer = 0;
-    const int verify = exact_verify(m, count);
-    if (m->txn.phase != TXN_IDLE || (verify && (logits || !device_only || init_verify_batch(m)))) return -1;
-    if (verify) {
-        m->txn.phase = TXN_RUNNING;
-        m->txn.start = m->position;
-        m->txn.next_layer = 0;
-    }
-    const int64_t result = (verify ? bonsai_mtp_target_graph : bonsai_graph)((uintptr_t)m, slice(m->bound, LAYERS*15), slice(m->states, LAYERS*2),
-        slice(m->globals, 3), slice(m->b, 24), tokens[0], pos, logits != NULL || device_only);
-    if (result != 0 || (verify && m->txn.next_layer != m->txn.layers) || m->capture.phase ||
-            (m->capture.enabled && m->in_decode && count == 1 && m->capture.layer != LAYERS)) {
-        if (m->capture.stream) ffn_graph_abort(m);
-        fprintf(stderr, "Goose graph failed: %lld\n", (long long)result);
-        return -1;
-    }
-    if (verify) m->txn.phase = TXN_READY;
-    else m->position += count;
-    return logits ? check(bonsai_cuda.fn_cuMemcpyDtoH(logits, m->b[19], VOCAB * sizeof(float)), "logits") : 0;
+_Static_assert(
+    offsetof(model, ubatch) == 14740 && offsetof(model, context) == 14732 &&
+    offsetof(model, position) == 14736 && offsetof(model, wave) == 14748 &&
+    offsetof(model, count) == 14744 && offsetof(model, rope_q) == 5672 &&
+    offsetof(model, rope_k) == 5680 && offsetof(model, packed_source) == 14648 &&
+    offsetof(model, q8_input) == 4704 && offsetof(model, ffn_q8_input) == 4760 &&
+    offsetof(model, ffn_layer) == 4776 && offsetof(model, down_q8_owner) == 4768 &&
+    offsetof(model, positions) == 5664 && offsetof(model, attention) == 5688 &&
+    offsetof(model, token_ids) == 14624 && offsetof(model, capture.layer) == 16324 &&
+    offsetof(model, txn.phase) == 312 && offsetof(model, txn.start) == 316 &&
+    offsetof(model, txn.next_layer) == 324 && offsetof(model, txn.layers) == 320 &&
+    offsetof(model, bound) == 5704 && offsetof(model, states) == 13384 &&
+    offsetof(model, globals) == 14408 && offsetof(model, b) == 14432 &&
+    offsetof(model, capture.phase) == 16320 && offsetof(model, capture.enabled) == 16332 &&
+    offsetof(model, in_decode) == 4716,
+    "Bonsai batch field layout");
+_Static_assert(TXN_IDLE == 0 && TXN_RUNNING == 1 && TXN_READY == 2 && LAYERS == 64 &&
+    VOCAB == 248320 && UBATCH_MAX == 1024 && KV_BYTES == 576 && ATTENTION_BYTES == 33554432, "Bonsai batch constants");
+
+int32_t fg_bonsai_batch_rope(uint64_t q, uint64_t k, uint32_t count) {
+    return rope_config(q, 24, count) || rope_config(k, 4, count);
 }
+
+int32_t fg_bonsai_batch_upload(uint64_t destination, const void *source, size_t size, uint32_t role) {
+    const char *messages[] = {"positions", "attention configuration", "token ids"};
+    return check(bonsai_cuda.fn_cuMemcpyHtoD(destination, source, size), messages[role]);
+}
+
+int32_t fg_bonsai_batch_verify(model *m, uint32_t count) { return exact_verify(m, count); }
+int32_t fg_bonsai_batch_init_verify(model *m) { return init_verify_batch(m); }
+
+void fg_bonsai_batch_graph_error(model *m, int64_t status) {
+    if (m->capture.stream) ffn_graph_abort(m);
+    fprintf(stderr, "Goose graph failed: %lld\n", (long long)status);
+}
+
+int32_t fg_bonsai_batch_download(void *output, uint64_t source) {
+    return check(bonsai_cuda.fn_cuMemcpyDtoH(output, source, VOCAB * sizeof(float)), "logits");
+}
+
+extern int evaluate_batch_output(model *m, const unsigned *tokens, unsigned count, float *logits, int device_only);
 
 static int evaluate_batch(model *m, const unsigned *tokens, unsigned count, float *logits) {
     return evaluate_batch_output(m, tokens, count, logits, 0);
