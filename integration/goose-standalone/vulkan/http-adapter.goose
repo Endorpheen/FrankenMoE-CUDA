@@ -13,10 +13,6 @@ const VK_HTTP_QWEN_RECORDING: u64 = 2768;
 const VK_HTTP_FIRST_TOKEN: u64 = 0xffffffff;
 const VK_HTTP_MARK_COUNT: i64 = 5;
 
-extern fn fg_vk_inkling_open(path: u64, capacity: u32, index: u32, cpu: i32) -> u64;
-extern fn fg_vk_inkling_close(model: u64);
-extern fn fg_vk_inkling_step(model: u64, id: u32, logits: u64) -> i32;
-extern fn fg_vk_inkling_reset(model: u64) -> i32;
 extern fn fg_vk_http_serve(owner: u64, port: i64, requests: i64, capacity: i64, vocabulary: i64, kind: i64) -> i64;
 extern "gs_os_write_stderr" fn vk_http_error(text: const u8[:]);
 extern fn fg_vk_http_time(timer: u64) -> i64;
