@@ -20,6 +20,17 @@ typedef struct {
     uint32_t slots, loaded;
 } fg_vk_expert_bank;
 
+_Static_assert(sizeof(fg_vk_expert_bank) == 4728 && sizeof(fg_vk_view) == 24 &&
+    sizeof(fg_vk_shape) == 36 && offsetof(fg_vk_expert_bank, upload) == 0 &&
+    offsetof(fg_vk_expert_bank, device) == 72 && offsetof(fg_vk_expert_bank, host) == 104 &&
+    offsetof(fg_vk_expert_bank, plane) == 112 && offsetof(fg_vk_expert_bank, slots) == 4720 &&
+    offsetof(fg_vk_expert_bank, loaded) == 4724 && offsetof(fg_vk_graph, vk) == 0 &&
+    offsetof(fg_vk_device, properties.limits.minStorageBufferOffsetAlignment) == 664 &&
+    offsetof(fg_vk_device, properties.limits.maxStorageBufferRange) == 364 &&
+    FG_VK_SWIGLU == 2 && FG_VK_IQ4_NL == 25 && FG_VK_IQ4_XS == 26 && FG_VK_INKLING_SITU == 36,
+    "Goose Vulkan expert bank ABI");
+
+void fg_vk_bank_init(int argc, char **argv);
 int fg_vk_expert_bank_open(fg_vk_expert_bank *bank, fg_vk_device *vk, uint32_t slots,
     const uint64_t max_bytes[FG_VK_EXPERT_PLANES]);
 void fg_vk_expert_bank_close(fg_vk_expert_bank *bank);

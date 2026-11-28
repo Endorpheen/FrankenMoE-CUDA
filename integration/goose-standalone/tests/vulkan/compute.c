@@ -1,4 +1,5 @@
 #include "graph.h"
+#include "moe-bank.h"
 
 #include <inttypes.h>
 #include <math.h>
@@ -100,6 +101,7 @@ int test_bonsai_attention_layer(fg_vk_graph *graph, const char *path);
 
 int main(int argc, char **argv) {
     fg_vk_queue_init(0, NULL);
+    fg_vk_bank_init(0, NULL);
     if (argc < 3 || argc > 6) {
         fputs("Usage: frankenmoe-vulkan-compute-test DEVICE_INDEX ALLOW_CPU_0_OR_1 "
               "[FFN_FIXTURE [GDN_FIXTURE [ATTENTION_FIXTURE]] | --moe-quant FIXTURE [ROUTER_FIXTURE] | "

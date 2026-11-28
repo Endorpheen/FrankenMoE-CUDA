@@ -1,4 +1,5 @@
 #include "qwen2.h"
+#include "moe-bank.h"
 #include "gguf.h"
 #include "qwen2_unit.h"
 #include "tokenizer.h"
@@ -74,6 +75,7 @@ extern void fg_socket_init(int argc, char **argv);
 
 int main(int argc, char **argv) {
     fg_vk_queue_init(0, NULL);
+    fg_vk_bank_init(0, NULL);
     fg_vk_gguf_init(0, NULL);
     uint32_t device = FG_VK_AUTO_DEVICE, predict = 1;
     uint32_t port = 0, requests = 0, server_context = 0;

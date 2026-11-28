@@ -49,6 +49,12 @@ sed -nE 's/^extern "(fg_vk_loader_api_([[:alnum:]_]+))".*/\1 \2/p' \
     "${libs[@]}" -o "$out/$executable"
 
 if [[ "$mode" != probe ]]; then
+    seek_symbol=fseeko
+    if [[ "$target" == windows ]]; then seek_symbol=_fseeki64; fi
+    "${GOOSE_CUDA_DRIVER_BIN:?}" --standalone -o "$out/moe-bank.c" "$source_dir/moe-bank.goose"
+    "$cc" -O2 -std=c11 -ffunction-sections -fdata-sections -Dgoose_init=fg_vk_bank_init \
+        -Dgg_init_globals=fg_vk_bank_globals -c "$out/moe-bank.c" -o "$out/moe-bank.o"
+    "$queue_objcopy" --redefine-sym="fg_vk_bank_seek=$seek_symbol" --redefine-sym=fg_vk_bank_read=fread "$out/moe-bank.o"
     glslang=${GLSLANG_VALIDATOR:-glslangValidator}
     spirv_val=${SPIRV_VAL:-spirv-val}
     suffix=${executable#frankenmoe-vulkan-probe}
@@ -59,7 +65,7 @@ if [[ "$mode" != probe ]]; then
     done
     python3 "$root/tools/embed-vulkan-shaders.py" "$out"
     "$cc" "${flags[@]}" -isystem "$out/vulkan-headers" -I"$out" -I"$source_dir" \
-        "$source_dir/"{graph,bonsai-layer,moe-bank}.c "$out/queue.o" \
+        "$source_dir/"{graph,bonsai-layer}.c "$out/queue.o" "$out/moe-bank.o" \
         "$root/integration/goose-standalone/tests/vulkan/"{compute,attention,projection,moe-quant,moe-router,apex-experts,bonsai,recurrent,bonsai-layer,inkling-attention}.c \
         "${libs[@]}" -lm -o "$out/frankenmoe-vulkan-compute-test$suffix"
 fi
@@ -139,8 +145,8 @@ PY
         if [[ "$target" == windows ]]; then
             objcopy=${WINDOWS_OBJCOPY:-x86_64-w64-mingw32-objcopy}
         fi
-        objects=("$out/queue.o" "$out/socket-forwards.o" "$out/gguf.o")
-        for source in "$source_dir/"{graph,qwen2,bonsai-layer,bonsai-model,moe-bank,apex-model,inkling-model,tokenizer,http,infer-main}.c; do
+        objects=("$out/queue.o" "$out/socket-forwards.o" "$out/gguf.o" "$out/moe-bank.o")
+        for source in "$source_dir/"{graph,qwen2,bonsai-layer,bonsai-model,apex-model,inkling-model,tokenizer,http,infer-main}.c; do
             name=$(basename -- "$source" .c)
             options=()
             if [[ "$name" == infer-main ]]; then options=(-Dmain=gooseinfer_vulkan_entry); fi
@@ -153,6 +159,6 @@ PY
         exit 0
     fi
     "$cc" "${flags[@]}" -isystem "$out/vulkan-headers" -I"$out" -Wl,--gc-sections \
-        "$source_dir/"{graph,qwen2,bonsai-layer,bonsai-model,moe-bank,apex-model,inkling-model,tokenizer,http,infer-main}.c "$out/qwen2_unit.o" "$out/queue.o" "$out/socket-forwards.o" "$out/gguf.o" \
+        "$source_dir/"{graph,qwen2,bonsai-layer,bonsai-model,apex-model,inkling-model,tokenizer,http,infer-main}.c "$out/qwen2_unit.o" "$out/queue.o" "$out/socket-forwards.o" "$out/gguf.o" "$out/moe-bank.o" \
         "${libs[@]}" -lm -pthread -o "$out/frankenmoe-vulkan$suffix"
 fi
