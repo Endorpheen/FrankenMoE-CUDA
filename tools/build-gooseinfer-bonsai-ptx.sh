@@ -21,8 +21,9 @@ glue="$scratch/glue"
 cp -R -- "$source_dir/glue" "$glue"
 cp -- "$standalone/cuda-device.cl" "$glue/cuda-device.cl"
 
-for source in "$source_dir"/goose/*.goose; do
+for source in "$source_dir"/goose/*.goose "$root/goose/cuda/standalone-matmul.goose"; do
     module=$(basename -- "$source" .goose)
+    module=${module#standalone-}
     if [[ -d $overlay && -f $overlay/$module.goose ]]; then source="$overlay/$module.goose"; fi
     "$goose" --standalone --emit-provenance "$scratch/$module.c" "$source"
     python3 "$source_dir/frankenmoe-fragment.py" "$scratch" "$module"

@@ -70,3 +70,13 @@ export fn fg_device_matmul(weights: u64, input: u64, output: u64, scratch: u64,
     }
     if lane == 0 { global_store(output, shared_load(scratch)); }
 }
+
+extern "fg_device_matmul_job_word" fn matmul_job_word(jobs: u64, index: u64) -> u64;
+
+export fn fg_device_matmul_launch(weights: u64, input: u64, output: u64, jobs: u64, scratch: u64,
+    row_stride: u64, extent: i64, kind: i64, job_base: u64, job_words: u64, row: u64, job: u64, lane: i64, lanes: i64) {
+    let at = job_words * (job_base + job);
+    let plane = if job_words == 3 { matmul_job_word(jobs, at + 2) } else { 0 };
+    fg_device_matmul(weights + plane + row * row_stride, input + matmul_job_word(jobs, at),
+        output + matmul_job_word(jobs, at + 1) + 4 * row, scratch, extent, kind, lane, lanes);
+}

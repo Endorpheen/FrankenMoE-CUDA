@@ -11,8 +11,9 @@ scratch=$(mktemp -d)
 trap 'rm -rf -- "$scratch"' EXIT
 mkdir -p -- "$out"
 
-for source in "$src"/goose/*.goose; do
+for source in "$src"/goose/*.goose "$root/goose/cuda/standalone-matmul.goose"; do
     module=$(basename -- "$source" .goose)
+    module=${module#standalone-}
     "$goose" --standalone -o "$scratch/$module.c" --header "$scratch/$module.h" "$source"
     python3 "$src/extract-device.py" "$scratch" "$module"
 done

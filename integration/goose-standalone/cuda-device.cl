@@ -153,6 +153,10 @@ static float fg_device_mul_rn(float a, float b) {
     return result;
 }
 
+static uint64_t fg_device_matmul_job_word(uint64_t jobs, uint64_t index) {
+    return ((__global const uint64_t *)jobs)[index];
+}
+
 #include "matmul-device.h"
 
 __kernel void goose_quantized_matmul(
@@ -165,11 +169,8 @@ __kernel void goose_quantized_matmul(
     __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(job));
     __asm__("mov.u32 %0, %%ntid.x;" : "=r"(lanes));
     __local float scratch[256];
-    const uint64_t at = (uint64_t) job_words * ((uint64_t) job_base + job);
-    const uint64_t plane = job_words == 3 ? jobs[at + 2] : 0;
-    fg_device_matmul_g((uint64_t) weights + plane + row * row_stride, (uint64_t) input + jobs[at],
-        (uint64_t) output + jobs[at + 1] + 4 * (uint64_t) row, (uint64_t) scratch,
-        extent, kind, lane, lanes);
+    fg_device_matmul_launch_g((uint64_t)weights, (uint64_t)input, (uint64_t)output, (uint64_t)jobs,
+        (uint64_t)scratch, row_stride, extent, kind, (uint64_t)job_base, (uint64_t)job_words, row, job, lane, lanes);
 }
 
 static uint32_t fg175q_ld_u8(uint64_t at, uint64_t offset) {
