@@ -476,17 +476,15 @@ static_assert(GGML_MEM_ALIGN == 16 && sizeof(struct ggml_object) == 32 &&
 
 extern struct ggml_object * ggml_new_object(struct ggml_context *, enum ggml_object_type, size_t);
 
-void fg143_arena_failure(int status, uint64_t needed, uint64_t capacity) {
+void fg143_arena_warn(const char *message) {
+    g_logger_state.log_callback(GGML_LOG_LEVEL_WARN, message, g_logger_state.log_callback_user_data);
+}
+
+void fg143_arena_abort(int status) {
     GGML_ASSERT(status != -1);
-    if (status == -4) {
-        GGML_LOG_WARN("ggml_new_object: not enough space in the context's memory pool (needed %zu, available %zu)\n",
-                (size_t)needed, (size_t)capacity);
 #ifndef NDEBUG
-        GGML_ABORT("not enough space in the context's memory pool");
+    if (status == -4) GGML_ABORT("not enough space in the context's memory pool");
 #endif
-    } else {
-        GGML_LOG_WARN("ggml_new_object: overflow detected in context allocation\n");
-    }
 }
 #else
 #include "ggml-arena-reference.inc"

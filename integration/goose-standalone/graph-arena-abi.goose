@@ -86,3 +86,27 @@ export fn ggml_flash_attn_ext_set_n_kv_max(address: i64, maximum: i32) {
     assert(builder_i32(address + B_OP) == GGML_ABI_FLASH_ATTN_EXT && maximum >= 0);
     fg158_set_param(address, 4, maximum as! i64);
 }
+
+extern fn fg143_arena_warn(message: c_ptr<const u8>);
+extern fn fg143_arena_abort(status: i32);
+extern "memcpy" fn arena_error_copy(dst: c_ptr<void>, src: c_ptr<const void>, size: u64) -> c_ptr<void>;
+
+fn arena_warn_text(message: const u8[:]) {
+    var buffer: u8[192];
+    let size = message.len;
+    arena_error_copy(unsafe_c_address<c_ptr<void>>(buffer[0]), unsafe_c_slice_data<c_ptr<const void>>(message), size as! u64);
+    buffer[size] = 0;
+    fg143_arena_warn(unsafe_c_address<c_ptr<const u8>>(buffer[0]));
+}
+
+export fn fg143_arena_failure(status: i32, needed: u64, capacity: u64) {
+    if status == -1 {
+        fg143_arena_abort(status);
+    } else if status == -4 {
+        arena_warn_text(str("ggml_new_object: not enough space in the context's memory pool (needed ", needed,
+            ", available ", capacity, ")\n"));
+        fg143_arena_abort(status);
+    } else {
+        arena_warn_text("ggml_new_object: overflow detected in context allocation\n");
+    }
+}
