@@ -6,11 +6,13 @@ runtime and qualification status.
 ## Required work sequence
 
 1. **Restore and improve model performance.** Work in order on Inkling 2
-   Mini, Bonsai, then GigaChat4. Compare each migrated runtime against its
+   Mini, GigaChat4, then Bonsai. Compare each migrated runtime against its
    strongest reproducible pre-migration checkpoint under identical hardware,
    model, settings, workload, and cache conditions. Restore and then exceed
-   the recorded prefill and decode performance while protecting correctness,
-   stability, and memory. Use the [experiment registry](experiments/EXPERIMENTS.md)
+   the recorded prefill and decode performance by at least 25% in both phases
+   while protecting correctness, stability, and memory. Inkling acceptance
+   uses EXP-2128 with 32K/512, at least 545.73 prefill tok/s and an unrounded
+   decode floor of 44.99365101086784 tok/s. Use the [experiment registry](experiments/EXPERIMENTS.md)
    and [optimization registry](docs/goose-migration/FRIED-GOOSE-OPTIMIZATION-REGISTRY.md)
    to combine verified improvements and transfer reusable mechanisms. Rotate
    approaches when profiling or repeated trials show limited headroom. Keep

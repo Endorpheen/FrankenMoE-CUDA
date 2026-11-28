@@ -2439,16 +2439,21 @@ fn reserve(buffer: device_buffer&, bytes: u64) -> i32 {
     }
     var error: i32 = release_buffer(buffer);
     if error != 0 { return error; }
-    error = cuda_capture_alloc(cuda_kernel_argument_address(buffer.address), bytes);
+    var address: u64 = 0;
+    let address_out = cuda_kernel_argument_address(address);
+    error = cuda_capture_alloc(address_out, bytes);
     // A completed MMQ projection has no live users of its packing buffers.
     // Reclaim them under pressure before admitting the next operator.
     if error == 2 && buffer .!= &cuda.mmq_packed && buffer .!= &cuda.mmq_tiles &&
         (cuda.mmq_packed.address != 0 || cuda.mmq_tiles.address != 0) {
         error = release_buffer(&cuda.mmq_packed);
         if error == 0 { error = release_buffer(&cuda.mmq_tiles); }
-        if error == 0 { error = cuda_capture_alloc(cuda_kernel_argument_address(buffer.address), bytes); }
+        if error == 0 { error = cuda_capture_alloc(address_out, bytes); }
     }
-    if error == 0 { buffer.bytes = bytes; }
+    if error == 0 {
+        buffer.address = address;
+        buffer.bytes = bytes;
+    }
     if error == 2 {
         var available: u64 = 0;
         var total: u64 = 0;

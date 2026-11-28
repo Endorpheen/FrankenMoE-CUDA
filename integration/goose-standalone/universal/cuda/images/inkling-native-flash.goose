@@ -162,6 +162,7 @@ export fn i2_native_flash(q: u64, k: u64, v: u64, relative: u64, bias: u64, sink
     let qhead = query * 24 + head;
     let parallel_scores = !prefill && (flags & 2) != 0 && queries == 1;
     let q4 = if decode || prefill { 1 } else { flags & 1 };
+    let paired_q4 = packed || decode;
     let group_column = head / 3 * 128;
     var acc: I2NativeAcc[4] = [native_zero(); 4];
     if thread < 16 {
@@ -197,7 +198,7 @@ export fn i2_native_flash(q: u64, k: u64, v: u64, relative: u64, bias: u64, sink
         var qk = native_zero();
         for dimension in 8 {
             qk = native_q_fragment(q, k, query_address, key, dimension * 16, tail, group, col, end,
-                q4, group_column, packed, qk);
+                q4, group_column, paired_q4, qk);
         }
         if no_relative {
             let sink0 = if group < tail { load(sinks, qhead + group * 24) } else { 0.0 };
@@ -265,8 +266,8 @@ export fn i2_native_flash(q: u64, k: u64, v: u64, relative: u64, bias: u64, sink
                 let k1 = first + 1;
                 let k2 = first + 8;
                 let k3 = first + 9;
-                let b0 = if packed { native_tiles_rows(v, k0, k1, end, column) } else { native_value_pair(v, k0, k1, column, end, q4) };
-                let b1 = if packed { native_tiles_rows(v, k2, k3, end, column) } else { native_value_pair(v, k2, k3, column, end, q4) };
+                let b0 = if paired_q4 { native_tiles_rows(v, k0, k1, end, column) } else { native_value_pair(v, k0, k1, column, end, q4) };
+                let b1 = if paired_q4 { native_tiles_rows(v, k2, k3, end, column) } else { native_value_pair(v, k2, k3, column, end, q4) };
                 acc[index] = native_mma(acc[index], a0, a1, a2, a3, b0, b1);
             }
         }
