@@ -89,6 +89,14 @@ export fn fg_cuda_model_host_address() -> u64 {
     return vocab_address(unsafe_c_address<c_ptr<const void>>(model_host_storage[0]));
 }
 
+extern fn vocab_touch_copy(dst: c_ptr<void>, source: c_ptr<const void>, bytes: u64) -> c_ptr<void>;
+
+export fn fg_model_touch_page(address: u64) {
+    var byte: u8 = 0;
+    // The out-of-line call preserves the page read even though its value is unused.
+    vocab_touch_copy(unsafe_c_address<c_ptr<void>>(byte), unsafe_c_ptr<c_ptr<const void>>(address), 1);
+}
+
 fn vocab_word(address: u64) -> u64 {
     var value: u64=0;
     vocab_memcpy(unsafe_c_address<c_ptr<void>>(value),unsafe_c_ptr<c_ptr<const void>>(address),8);

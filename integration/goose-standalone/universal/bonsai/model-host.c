@@ -6,13 +6,9 @@
 
 #include <errno.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <math.h>
 #include <pthread.h>
 #include <fcntl.h>
-#include <inttypes.h>
 #ifdef _WIN32
 #include "windows/platform.h"
 #else
@@ -28,25 +24,8 @@
 #include "main.h"
 #endif
 #include "goose-host-llm.h"
-#include "goose-host.h"
-#include "graph-execute.h"
-#include "apex-cached-decode.h"
 #include "inkling-backend.h"
-#include "server-adapter.h"
 #include "session.h"
-int bonsai_session_step_phase(struct bonsai_session *, const uint32_t *, unsigned, float *, int);
-
-extern __typeof__(gr_parse) bonsai_gr_parse;
-extern void bonsai_goose_init(int argc, char **argv);
-
-
-extern bool fg_q35_checkpoint_enabled(void);
-
-extern __typeof__(bt_tokenize) bt_tokenize_inkling2;
-extern void inkling_tokenizer_init(int argc, char **argv);
-
-const char * die(const char * what) { fprintf(stderr, "GENERATE %s\n", what); exit(1); }
-
 _Static_assert(HOSE_DEFAULT_CONTEXT == 2048 && BONSAI_SESSION_VOCAB == 248320 && INKLING_TEXT_VOCAB == 200058 &&
     INKLING_KV_F16 == 0 && INKLING_KV_Q4_0 == 1, "Goose CUDA model host constants");
 
@@ -67,10 +46,6 @@ _Static_assert(sizeof(((struct timespec *)0)->tv_nsec) == 8 && MADV_DONTNEED == 
 _Static_assert(MADV_POPULATE_READ == 22, "Goose Linux populate ABI");
 #endif
 #endif
-
-void fg_model_touch_page(uint64_t address) {
-    (void) *(const volatile uint8_t *) (uintptr_t) address;
-}
 
 static pthread_once_t exchange_once = PTHREAD_ONCE_INIT;
 static pthread_key_t exchange_key;

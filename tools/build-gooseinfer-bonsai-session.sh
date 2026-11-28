@@ -38,7 +38,7 @@ cat "$src/"{host-vocab,driver-host,batch-host,kernel-launch-host,verify-host,mat
     --standalone -o "$out/host-vocab.c" "$out/host-vocab.goose"
 "$cc" -O2 -std=c11 -ffunction-sections -fdata-sections -Dgoose_init=fg_model_vocab_init \
     -Dgg_init_globals=fg_model_vocab_globals -c "$out/host-vocab.c" -o "$out/host-vocab.o"
-native=(--redefine-sym=vocab_strlen=strlen --redefine-sym=fg_cuda_model_getenv=getenv
+native=(--redefine-sym=vocab_touch_copy=memcpy --redefine-sym=vocab_strlen=strlen --redefine-sym=fg_cuda_model_getenv=getenv
     --redefine-sym=bonsai_mutex_lock=pthread_mutex_lock --redefine-sym=bonsai_mutex_unlock=pthread_mutex_unlock)
 if [[ "$target" == linux ]]; then
     native+=(--redefine-sym=vocab_clock_gettime=clock_gettime --redefine-sym=vocab_unix_open=open --redefine-sym=vocab_unix_fstat=fstat
