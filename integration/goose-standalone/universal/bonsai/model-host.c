@@ -83,7 +83,43 @@ typedef struct {
     uint8_t * scratch_enc;
 } host_t;
 
+_Static_assert(offsetof(host_t, base) == 0 &&
+    offsetof(host_t, size) == 8 &&
+    offsetof(host_t, state) == 128 &&
+    offsetof(host_t, kv) == 192 &&
+    offsetof(host_t, kvsl) == 200 &&
+    offsetof(host_t, tens) == 208 &&
+    offsetof(host_t, tensl) == 216 &&
+    offsetof(host_t, blob) == 224 &&
+    offsetof(host_t, tok_off) == 232 &&
+    offsetof(host_t, tok_len) == 240 &&
+    offsetof(host_t, tok_slots) == 248 &&
+    offsetof(host_t, mrg_off) == 256 &&
+    offsetof(host_t, mrg_len) == 264 &&
+    offsetof(host_t, mrg_slots) == 272 &&
+    offsetof(host_t, attr) == 280 &&
+    offsetof(host_t, order) == 288 &&
+    offsetof(host_t, n_tok) == 296 &&
+    offsetof(host_t, n_mrg) == 304 &&
+    offsetof(host_t, n_special) == 312 &&
+    offsetof(host_t, n_tok_slots) == 320 &&
+    offsetof(host_t, n_mrg_slots) == 328 &&
+    offsetof(host_t, blob_len) == 336 &&
+    offsetof(host_t, eog) == 344 &&
+    offsetof(host_t, n_eog) == 352 &&
+    offsetof(host_t, eos) == 360 &&
+    offsetof(host_t, bonsai_layout) == 688 &&
+    offsetof(host_t, inkling_tokenizer) == 689 &&
+    offsetof(host_t, scratch_cpts) == 704 &&
+    offsetof(host_t, scratch_seg) == 712 &&
+    offsetof(host_t, scratch_sym) == 720 &&
+    offsetof(host_t, scratch_heap) == 728 &&
+    offsetof(host_t, scratch_hc) == 736 &&
+    offsetof(host_t, scratch_info) == 744 &&
+    offsetof(host_t, scratch_enc) == 752 && MAX_REQ == 262144, "Goose CUDA vocabulary ABI");
+
 host_t H;
+uint64_t fg_cuda_model_host_address(void) { return (uintptr_t)&H; }
 
 static int64_t prefill_batch = HOSE_DEFAULT_PREFILL_BATCH;
 static int64_t prefill_ubatch = HOSE_DEFAULT_PREFILL_BATCH;
@@ -177,159 +213,11 @@ int64_t fg_q35_generation_prepare(void) {
     return warm_model(residency);
 }
 
-int64_t find_key(const char * key) {
-    int64_t n = 0;
-    while (key[n]) n++;
-    const int64_t hdr = H.size < 67108864 ? (int64_t) H.size : 67108864;
-    return gr_find_kv((sl_u8){ H.base, hdr }, (sl_i64){ H.state, 8 }, (sl_i64){ H.kv, 256 * 8 },
-                      (sl_i64){ H.kvsl, 512 }, (sl_u8){ (unsigned char *) key, n });
-}
-
-static bool metadata_is(const char *key, const char *value) {
-    const int64_t index = find_key(key);
-    if (index < 0) return false;
-    uint8_t name[32] = {0};
-    const int64_t bytes = H.size < 67108864 ? (int64_t)H.size : 67108864;
-    const int64_t length = gr_kv_to_str((sl_u8){H.base, bytes}, (sl_i64){H.state, 8},
-        (sl_i64){H.kv, 256*8}, index, sizeof(name), (sl_u8){name, sizeof(name)});
-    const size_t expected = strlen(value);
-    return length >= 0 && (size_t)length == expected && !memcmp(name, value, expected);
-}
-
-void load_vocab(void) {
-    const int64_t hdr = H.size < 67108864 ? (int64_t) H.size : 67108864;
-    H.kv = calloc(256 * 8, sizeof(int64_t));
-    H.kvsl = calloc(512, sizeof(int64_t));
-    H.tens = calloc(2048 * 12, sizeof(int64_t));
-    H.tensl = calloc(8192, sizeof(int64_t));
-    const sl_u8 file = {H.base, hdr};
-    const sl_i64 state_slice = {H.state, 8};
-    const sl_i64 metadata = {H.kv, 256 * 8};
-    const sl_i64 tensors = {H.tens, 2048 * 12};
-    const sl_i64 metadata_slots = {H.kvsl, 512};
-    const sl_i64 tensor_slots = {H.tensl, 8192};
-    if (gr_parse(file, H.size, state_slice, metadata, tensors, metadata_slots, tensor_slots) != 0) {
-        memset(H.state, 0, sizeof H.state);
-        memset(H.kv, 0, (size_t)metadata.len * sizeof(int64_t));
-        memset(H.tens, 0, (size_t)tensors.len * sizeof(int64_t));
-        memset(H.kvsl, 0, (size_t)metadata_slots.len * sizeof(int64_t));
-        memset(H.tensl, 0, (size_t)tensor_slots.len * sizeof(int64_t));
-        bonsai_goose_init(0, NULL);
-        if (bonsai_gr_parse(file, H.size, state_slice, metadata, tensors, metadata_slots, tensor_slots) != 0) {
-            die("reader");
-        }
-        H.bonsai_layout = true;
-        if (!metadata_is("general.architecture", "qwen35")) die("Bonsai architecture");
-    }
-    H.inkling_tokenizer = metadata_is("tokenizer.ggml.pre", "inkling2");
-    if (H.inkling_tokenizer) inkling_tokenizer_init(0, NULL);
-    const int64_t ti = find_key("tokenizer.ggml.tokens");
-    const int64_t mi = find_key("tokenizer.ggml.merges");
-    const int64_t yi = find_key("tokenizer.ggml.token_type");
-    if (ti < 0 || mi < 0 || yi < 0) die("tokenizer keys");
-
-    int64_t need[5] = {0};
-    if (bt_prepare_need((sl_u8){ H.base, hdr }, (sl_i64){ H.state, 8 }, (sl_i64){ H.kv, 256 * 8 },
-                        ti, mi, (sl_i64){ need, 5 }) != 0) die("prepare_need");
-    H.n_tok = need[1];
-    H.n_mrg = need[2];
-    H.n_tok_slots = need[3];
-    H.n_mrg_slots = need[4];
-    H.blob_len = need[0];
-    H.blob = malloc((size_t) H.blob_len);
-    H.tok_off = calloc((size_t) H.n_tok, sizeof(int64_t));
-    H.tok_len = calloc((size_t) H.n_tok, sizeof(int64_t));
-    H.tok_slots = calloc((size_t) H.n_tok_slots, sizeof(int64_t));
-    H.mrg_off = calloc((size_t) H.n_mrg, sizeof(int64_t));
-    H.mrg_len = calloc((size_t) H.n_mrg, sizeof(int64_t));
-    H.mrg_slots = calloc((size_t) H.n_mrg_slots, sizeof(int64_t));
-    if (bt_prepare_from_gguf((sl_u8){ H.base, hdr }, (sl_i64){ H.state, 8 }, (sl_i64){ H.kv, 256 * 8 }, ti, mi,
-                             (sl_u8){ H.blob, H.blob_len },
-                             (sl_i64){ H.tok_off, H.n_tok }, (sl_i64){ H.tok_len, H.n_tok },
-                             (sl_i64){ H.tok_slots, H.n_tok_slots },
-                             (sl_i64){ H.mrg_off, H.n_mrg }, (sl_i64){ H.mrg_len, H.n_mrg },
-                             (sl_i64){ H.mrg_slots, H.n_mrg_slots }, (sl_i64){ need, 5 }) != 0) die("prepare");
-
-    H.attr = calloc((size_t) H.n_tok, sizeof(int64_t));
-    int64_t * ttype = calloc((size_t) H.n_tok, sizeof(int64_t));
-    if (!H.attr || !ttype) die("token type workspaces");
-    const sl_i64 state = { H.state, 8 };
-    const sl_i64 kv = { H.kv, 256 * 8 };
-    if (gr_arr_n(state, kv, yi) != H.n_tok) die("token type count");
-    for (int64_t i = 0; i < H.n_tok; ++i) {
-        if (gr_array_int((sl_u8){ H.base, hdr }, state, kv, yi, i, (sl_i64){ &ttype[i], 1 }) != 0) {
-            die("token type value");
-        }
-    }
-    if (bt_attrs((sl_u8){ H.blob, H.blob_len }, (sl_i64){ H.tok_off, H.n_tok }, (sl_i64){ H.tok_len, H.n_tok },
-                 (sl_i64){ ttype, H.n_tok }, (sl_i64){ H.attr, H.n_tok }) != 0) die("attrs");
-    free(ttype);
-    int64_t stats[4] = {0};
-    if (bt_build((sl_u8){ H.blob, H.blob_len }, (sl_i64){ H.tok_off, H.n_tok }, (sl_i64){ H.tok_len, H.n_tok },
-                 (sl_i64){ H.tok_slots, H.n_tok_slots }, (sl_i64){ H.mrg_off, H.n_mrg }, (sl_i64){ H.mrg_len, H.n_mrg },
-                 (sl_i64){ H.mrg_slots, H.n_mrg_slots }, (sl_i64){ stats, 4 }) != 0) die("bt_build");
-    H.order = calloc((size_t) H.n_tok, sizeof(int64_t));
-    H.n_special = bt_special_order((sl_u8){ H.blob, H.blob_len }, (sl_i64){ H.tok_off, H.n_tok },
-                                   (sl_i64){ H.tok_len, H.n_tok }, (sl_i64){ H.attr, H.n_tok },
-                                   (sl_i64){ H.order, H.n_tok });
-    if (H.n_special < 0) H.n_special = 0;
-
-    // End-of-generation set, decided by Goose from the token texts.
-    H.eos = -1;
-    {
-        const int64_t ei = find_key("tokenizer.ggml.eos_token_id");
-        if (ei >= 0) {
-            int64_t one = 0;
-            gr_meta_int((sl_u8){ H.base, hdr }, (sl_i64){ H.state, 8 }, (sl_i64){ H.kv, 256 * 8 },
-                        ei, (sl_i64){ &one, 1 });
-            H.eos = one;
-        }
-    }
-    H.eog = calloc((size_t) H.n_tok, sizeof(int64_t));
-    H.n_eog = bt_eog_ids((sl_u8){ H.blob, H.blob_len }, (sl_i64){ H.tok_off, H.n_tok },
-                         (sl_i64){ H.tok_len, H.n_tok }, H.eos, -1, -1, (sl_i64){ H.eog, H.n_tok });
-    if (H.n_eog < 0) H.n_eog = 0;
-
-    const int64_t cap = MAX_REQ + 1;
-    H.scratch_cpts = calloc((size_t) cap, sizeof(int64_t));
-    H.scratch_seg = calloc(4 * (size_t) cap, sizeof(int64_t));
-    H.scratch_enc = calloc(8 * (size_t) cap, 1);
-    H.scratch_sym = calloc(24 * (size_t) cap, sizeof(int64_t));
-    H.scratch_heap = calloc(15 * (size_t) cap + 40, sizeof(int64_t));
-    H.scratch_hc = calloc(2, sizeof(int64_t));
-    H.scratch_info = calloc(8, sizeof(int64_t));
-}
-
-int64_t tokenize(const unsigned char * text, int64_t len, int64_t * ids, int64_t cap) {
-    if (!text || len < 0 || len > MAX_REQ || !ids || cap < 0) return -1;
-    __typeof__(&bt_tokenize) encode = H.inkling_tokenizer ? bt_tokenize_inkling2 : bt_tokenize;
-    return encode((sl_u8){ H.blob, H.blob_len },
-                       (sl_i64){ H.tok_off, H.n_tok }, (sl_i64){ H.tok_len, H.n_tok },
-                       (sl_i64){ H.tok_slots, H.n_tok_slots },
-                       (sl_i64){ H.mrg_off, H.n_mrg }, (sl_i64){ H.mrg_len, H.n_mrg },
-                       (sl_i64){ H.mrg_slots, H.n_mrg_slots },
-                       (sl_i64){ H.order, H.n_tok }, H.n_special,
-                       (sl_u8){ (unsigned char *) text, len }, (sl_i64){ ids, cap }, 1,
-                       (sl_i64){ H.scratch_cpts, MAX_REQ + 1 }, (sl_i64){ H.scratch_seg, 4 * (MAX_REQ + 1) },
-                       (sl_u8){ H.scratch_enc, 8 * (MAX_REQ + 1) },
-                       (sl_i64){ H.scratch_sym, 24 * (MAX_REQ + 1) },
-                       (sl_i64){ H.scratch_heap, 15 * (MAX_REQ + 1) + 40 },
-                       (sl_i64){ H.scratch_hc, 2 }, (sl_i64){ H.scratch_info, 8 });
-}
-
-int64_t detokenize(const int64_t * ids, int64_t n, unsigned char * out, int64_t cap) {
-    int64_t at = 0;
-    for (int64_t i = 0; i < n; ++i) {
-        if (ids[i] < 0 || ids[i] >= H.n_tok || at >= cap) return -1;
-        const int64_t got = bt_token_to_piece((sl_u8){ H.blob, H.blob_len },
-                                             (sl_i64){ H.tok_off, H.n_tok }, (sl_i64){ H.tok_len, H.n_tok },
-                                             (sl_i64){ H.attr, H.n_tok }, ids[i],
-                                             (sl_u8){ out + at, cap - at }, 0, 0, 1, 0);
-        if (got < 0) return -1;
-        at += got;
-    }
-    return at;
-}
+extern int64_t find_key(const char *key);
+extern bool metadata_is(const char *key, const char *value);
+extern void load_vocab(void);
+extern int64_t tokenize(const unsigned char *text, int64_t len, int64_t *ids, int64_t capacity);
+extern int64_t detokenize(const int64_t *ids, int64_t count, unsigned char *out, int64_t capacity);
 
 static void init_trunk(int64_t capacity) {
     const int64_t hdr = H.size < 67108864 ? (int64_t) H.size : 67108864;

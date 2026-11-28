@@ -24,4 +24,10 @@ ggml="$root/vendor/flint/ggml"
 "$cc" -O2 -std=gnu11 -D_GNU_SOURCE -DI2_NUMERIC_MODULE -Werror=implicit-function-declaration \
     -ffunction-sections -fdata-sections -I"$model_headers" -I"$standalone" \
     -I"$standalone/universal/inkling" -I"$standalone/gigachat4" -I"$root/integration/m1/host" \
-    -I"$ggml/include" -I"$ggml/src" -c "$src/model-host.c" -o "$out/model-host.o"
+    -I"$ggml/include" -I"$ggml/src" -c "$src/model-host.c" -o "$out/model-host-native.o"
+"${GOOSE_CUDA_DRIVER_BIN:?Set GOOSE_CUDA_DRIVER_BIN to Fried Goose KeelWing v0.3.1-dev.1}" \
+    --standalone -o "$out/host-vocab.c" "$src/host-vocab.goose"
+"$cc" -O2 -std=c11 -ffunction-sections -fdata-sections -Dgoose_init=fg_model_vocab_init \
+    -Dgg_init_globals=fg_model_vocab_globals -c "$out/host-vocab.c" -o "$out/host-vocab.o"
+"$objcopy" --redefine-sym=vocab_strlen=strlen "$out/host-vocab.o"
+"$cc" -r -nostdlib "$out/model-host-native.o" "$out/host-vocab.o" -o "$out/model-host.o"
