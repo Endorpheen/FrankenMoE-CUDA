@@ -159,20 +159,6 @@ static uint64_t fg_device_matmul_job_word(uint64_t jobs, uint64_t index) {
 
 #include "matmul-device.h"
 
-__kernel void goose_quantized_matmul(
-    __global uint8_t * weights, __global uint8_t * input, __global uint8_t * output,
-    __global uint64_t * jobs, uint64_t row_stride, int32_t extent, int32_t kind, int32_t job_base,
-    int32_t job_words) {
-    uint32_t lane, row, job, lanes;
-    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(row));
-    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(job));
-    __asm__("mov.u32 %0, %%ntid.x;" : "=r"(lanes));
-    __local float scratch[256];
-    fg_device_matmul_launch_g((uint64_t)weights, (uint64_t)input, (uint64_t)output, (uint64_t)jobs,
-        (uint64_t)scratch, row_stride, extent, kind, (uint64_t)job_base, (uint64_t)job_words, row, job, lane, lanes);
-}
-
 static uint32_t fg175q_ld_u8(uint64_t at, uint64_t offset) {
     return fg248d_ld_u8(at + offset);
 }
@@ -351,25 +337,6 @@ static void fg174s_sync(void) { fg_device_barrier(); }
 
 #include "gdn-device.h"
 
-__kernel void goose_gated_delta_net(gdn_launch_packet arguments) {
-    const uint64_t * packet = arguments.words;
-    uint32_t head, sequence, segment, lane;
-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(head));
-    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(sequence));
-    __asm__("mov.u32 %0, %%ctaid.z;" : "=r"(segment));
-    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
-    gdn_launch_g((int64_t)packet, head, sequence, segment, lane, false);
-}
-
-__kernel void goose_gdn_decode(gdn_launch_packet arguments) {
-    uint32_t head, sequence, segment, lane;
-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(head));
-    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(sequence));
-    __asm__("mov.u32 %0, %%ctaid.z;" : "=r"(segment));
-    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
-    gdn_launch_g((int64_t)arguments.words, head, sequence, segment, lane, true);
-}
-
 static float fg176r_ld_f32(uint64_t src, uint64_t at) {
     float value;
     __asm__ volatile("ld.f32 %0, [%1];" : "=f"(value) : "l"(src + at) : "memory");
@@ -395,14 +362,6 @@ static int32_t fg176r_i8trunc(float value) {
 
 #pragma OPENCL FP_CONTRACT OFF
 #include "q4-set-rows-device.h"
-
-__kernel void goose_set_q4_rows(__global uint8_t * src, __global uint8_t * dst,
-    uint64_t stride, uint32_t blocks, uint64_t tasks) {
-    uint32_t group, lane;
-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(group));
-    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
-    q4_set_rows_launch_g((uint64_t)src, (uint64_t)dst, stride, blocks, tasks, group, lane);
-}
 
 static float fg_vector_log(float value) {
     float result;
@@ -472,45 +431,6 @@ static float fg_glu_div_rn(float a, float b) {
 #include "vector-device.h"
 #include "cuda-rms-reference.cl"
 
-__kernel void goose_vector_ops(__global uint8_t * x, __global uint8_t * y,
-    __global uint8_t * out, vector_launch_packet cfg, float param0, float param1) {
-    uint32_t group, lane;
-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(group));
-    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
-    fg_vector_ops_g((uint64_t) x, (uint64_t) y, (uint64_t) out,
-        (uint64_t) cfg.words, param0, param1, group, lane);
-}
-
-__kernel void goose_vector_flat(__global uint8_t * x, __global uint8_t * y,
-    __global uint8_t * out, int64_t op, int64_t count, float param0, float param1) {
-    uint32_t group, lane;
-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(group));
-    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
-    fg_vector_flat_g((uint64_t) x, (uint64_t) y, (uint64_t) out,
-        op, count, param0, param1, (int64_t) group * 128 + lane);
-}
-
-__kernel void goose_vector_flat4(__global const uint8_t * x, __global const uint8_t * y,
-    __global uint8_t * out, int64_t op, int64_t vectors, float param0, float param1) {
-    uint32_t group, lane;
-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(group));
-    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
-    fg_vector_flat4_g((uint64_t) x, (uint64_t) y, (uint64_t) out,
-        op, vectors, param0, param1, (int64_t) group * 128 + lane);
-#ifdef GOOSE_CUDA_FROZEN_ABI
-}
-
-__kernel void goose_moe_add_shared_residual(__global const uint8_t * routed,
-    __global const uint8_t * shared, __global const uint8_t * gate,
-    __global const uint8_t * residual, __global uint8_t * output) {
-    uint32_t block, lane;
-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(block));
-    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
-    fg_moe_add_shared_residual_g((uint64_t) routed, (uint64_t) shared, (uint64_t) gate,
-        (uint64_t) residual, (uint64_t) output, (uint64_t) block * 128 + lane);
-#endif
-}
-
 static float fg_rope_float(uint64_t cfg, int64_t i) {
     return as_float((uint32_t) fg_attn_word(cfg, i));
 }
@@ -566,33 +486,6 @@ static float fg_rope_cos(float theta) {
 
 #include "rope-device.h"
 
-static int64_t position_thread(void) {
-    uint32_t group, lane;
-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(group));
-    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
-    return (int64_t) group * 128 + lane;
-}
-
-__kernel void goose_rope_phases(__global uint8_t * positions, __global uint8_t * factors,
-    __global float * table, __global int64_t * cfg) {
-    fg_rope_phases_g((uint64_t) positions, (uint64_t) factors, (uint64_t) table,
-        (uint64_t) cfg, position_thread());
-}
-
-__kernel void goose_rope_apply(__global uint8_t * x, __global uint8_t * out,
-    __global float * table, __global int64_t * cfg) {
-    fg_rope_apply_g((uint64_t) x, (uint64_t) out, (uint64_t) table, (uint64_t) cfg, position_thread());
-}
-
-__kernel void goose_rope_decode(__global uint8_t * x, __global uint8_t * positions,
-    __global uint8_t * factors, __global uint8_t * out, __global int64_t * cfg) {
-    uint32_t head, lane;
-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(head));
-    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
-    fg_rope_decode_g((uint64_t) x, (uint64_t) positions, (uint64_t) factors,
-        (uint64_t) out, (uint64_t) cfg, head, lane);
-}
-
 static float fg170s_load(uint64_t address, uint64_t i) { return fg_device_global_load(address + 4 * i); }
 static void fg170s_store(uint64_t address, uint64_t i, float value) { fg_device_global_store(address + 4 * i, value); }
 static float fg170s_expf(float value) { return fg_attn_exp(value); }
@@ -608,51 +501,6 @@ static float fg170s_fma(float x, float w, float sum) {
 }
 
 #include "ssm-conv-device.h"
-
-__kernel void goose_ssm_conv_direct(__global float *history, __global float *mixed, __global float *weights,
-    __global float *output, uint64_t channels, uint64_t tokens, int32_t silu) {
-    uint32_t group, time, lane;
-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(group));
-    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(time));
-    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
-    ssm_launch_direct_g((uint64_t)history, (uint64_t)mixed, (uint64_t)weights, (uint64_t)output,
-        channels, tokens, group, time, lane, silu != 0);
-}
-
-__kernel void goose_ssm_conv_save_tail(__global float *history, __global float *mixed, uint64_t channels, uint64_t tokens) {
-    ssm_conv_save_tail_g((uint64_t) history, (uint64_t) mixed, channels, tokens, position_thread());
-}
-
-__kernel void goose_ssm_conv(__global uint8_t * x, __global uint8_t * weights,
-    __global uint8_t * out, __global int64_t * cfg) {
-    uint32_t sequence, group, lane;
-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(sequence));
-    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(group));
-    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
-    ssm_launch_serial_g((uint64_t)x, (uint64_t)weights, (uint64_t)out, (uint64_t)cfg, lane, sequence, group);
-}
-
-__kernel void goose_ssm_conv_decode(__global uint8_t * x, __global uint8_t * weights,
-    __global uint8_t * out, __global int64_t * cfg) {
-    uint32_t sequence, group, lane;
-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(sequence));
-    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(group));
-    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
-    ssm_launch_decode_g((uint64_t)x, (uint64_t)weights, (uint64_t)out, (uint64_t)cfg, lane, sequence, group);
-}
-
-__kernel void goose_ssm_conv_long(__global uint8_t * x, __global uint8_t * weights,
-    __global uint8_t * out, __global int64_t * cfg) {
-    enum { taps = 4, tile = 32, channels = 128 };
-    __local float shared[channels * (tile + taps - 1)];
-    uint32_t sequence, group, lane, tokens;
-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(sequence));
-    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(group));
-    __asm__("mov.u32 %0, %%ctaid.z;" : "=r"(tokens));
-    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
-    ssm_launch_long_g((uint64_t)x, (uint64_t)weights, (uint64_t)out, (uint64_t)cfg,
-        (uint64_t)shared, lane, sequence, group, tokens);
-}
 
 static float fg283d_ld_f32(uint64_t src, uint64_t offset) {
     return fg_device_global_load(src + offset);
@@ -670,47 +518,6 @@ static int32_t fg169t_ishuffle(int32_t value, int32_t offset) {
 }
 
 #include "routing-device.h"
-
-__kernel void goose_route_reduce(__global uint8_t * x, __global uint8_t * y,
-    __global uint8_t * out, __global int64_t * cfg) {
-    uint32_t row, lane;
-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(row));
-    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
-    fg_route_reduce_g((uint64_t) x, (uint64_t) out, (uint64_t) cfg, row, lane);
-}
-
-__kernel void goose_route_sort(__global uint8_t * x, __global uint8_t * y,
-    __global uint8_t * out, __global int64_t * cfg) {
-    uint32_t row, lane, lanes;
-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(row));
-    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
-    __asm__("mov.u32 %0, %%ntid.x;" : "=r"(lanes));
-    __local int32_t scratch[4096], flags[128];
-    fg_route_sort_g((uint64_t) x, (uint64_t) out, (uint64_t) cfg, row, lane, lanes,
-        (uint64_t) scratch, (uint64_t) flags);
-}
-
-__kernel void goose_route_topk(__global uint8_t * x, __global uint8_t * y,
-    __global uint8_t * out, __global int64_t * cfg) {
-    uint32_t group, thread;
-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(group));
-    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
-    fg_route_topk_g((uint64_t) x, (uint64_t) out, (uint64_t) cfg,
-        (int64_t) group * 4 + thread / 32, thread % 32);
-}
-
-__kernel void goose_route_gather(__global uint8_t * x, __global uint8_t * y,
-    __global uint8_t * out, __global int64_t * cfg) {
-    fg_route_gather_g((uint64_t) x, (uint64_t) y, (uint64_t) out, (uint64_t) cfg, position_thread());
-}
-
-__kernel void goose_route_norm(__global uint8_t * x, __global uint8_t * y,
-    __global uint8_t * out, __global int64_t * cfg) {
-    uint32_t row, lane;
-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(row));
-    __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
-    fg_route_norm_g((uint64_t) x, (uint64_t) y, (uint64_t) out, (uint64_t) cfg, row, lane);
-}
 
 static void fg_device_copy_u32(uint64_t src, uint64_t dst) {
     *(__global uint32_t *) dst = *(__global uint32_t *) src;
@@ -787,33 +594,7 @@ static void fg179w_st_f32(uint64_t base, uint64_t byte, float value) {
 #undef fg179w_ld_f32
 #undef fg179w_fail
 
-__kernel void goose_moe_weighted(__global const float * experts, __global const float * weights,
-                                __global float * dst, int64_t width, int64_t used) {
-    uint32_t token, tile, thread;
-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(token));
-    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(tile));
-    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
-    fg179w_reduce_g((uint64_t) experts, 0, (uint64_t) weights, (uint64_t) dst, width, used,
-                    token, tile, thread, 256);
-}
-
-__kernel void goose_tensor_blit(__global uint8_t * x, __global uint8_t * y,
-    __global uint8_t * out, __global int64_t * cfg) {
-    fg_tensor_blit_g((uint64_t) x, (uint64_t) y, (uint64_t) out, (uint64_t) cfg, position_thread());
-}
-
-__kernel void goose_tensor_transpose_concat(__global const uint8_t * x, __global const uint8_t * y,
-    __global uint8_t * out, __global const int64_t * cfg) {
-    __local float tile[32 * 33] __attribute__((aligned(16)));
-    uint32_t bx, by, thread;
-    uint64_t shared;
-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(bx));
-    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(by));
-    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
-    __asm__("cvta.shared.u64 %0, %1;" : "=l"(shared) : "l"((uint64_t) tile));
-    fg_tensor_transpose_concat_g((uint64_t) x, (uint64_t) y, (uint64_t) out, (uint64_t) cfg,
-        bx, by, thread % 32, thread / 32, shared);
-}
+#include "cuda-activation-entries.h"
 
 #ifdef GOOSE_CUDA_MMQ_IMAGE
 static void fg_cuda_cp16(uint64_t dst, uint64_t src) {

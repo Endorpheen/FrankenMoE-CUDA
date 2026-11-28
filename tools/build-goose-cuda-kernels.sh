@@ -194,6 +194,8 @@ python3 "$ROOT/tools/emit-gooseinfer-cuda-entries.py" \
     "$ROOT/integration/goose-standalone/cuda-attention-entries.json" "$OUT/cuda-attention-entries.h"
 python3 "$ROOT/tools/emit-gooseinfer-cuda-entries.py" \
     "$ROOT/integration/goose-standalone/cuda-mmq-entries.json" "$OUT/cuda-mmq-entries.h"
+python3 "$ROOT/tools/emit-gooseinfer-cuda-entries.py" \
+    "$ROOT/integration/goose-standalone/cuda-activation-entries.json" "$OUT/cuda-activation-entries.h"
 "$CLANG" -target nvptx64-nvidia-cuda -Xclang -target-cpu -Xclang sm_70 \
     -nocudalib -O2 -x cl -cl-std=CL1.2 -I "$OUT" -S \
     "$ROOT/integration/goose-standalone/cuda-device.cl" -o "$OUT/goose-cuda.ptx"

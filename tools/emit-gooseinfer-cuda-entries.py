@@ -7,7 +7,26 @@ import sys
 source, output = map(Path, sys.argv[1:])
 entries = json.loads(source.read_text())
 registers = {"block_x": "ctaid.x", "block_y": "ctaid.y", "block_z": "ctaid.z",
-             "thread_x": "tid.x", "grid_x": "nctaid.x"}
+             "thread_x": "tid.x", "block_width": "ntid.x", "grid_x": "nctaid.x"}
+
+def argument(value):
+    if isinstance(value, str):
+        return "(uint64_t)" + value[1:] if value.startswith("@") else value
+    (operation, operands), = value.items()
+    if operation == "signed_address":
+        return f"(int64_t){operands}"
+    if operation == "nonzero":
+        return f"({operands} != 0)"
+    if operation in ("linear", "linear_u64"):
+        group, width, lane = operands
+        cast = "uint64_t" if operation == "linear_u64" else "int64_t"
+        return f"(({cast}){group} * {width} + {argument(lane)})"
+    if operation in ("div", "rem"):
+        index, width = operands
+        operator = "/" if operation == "div" else "%"
+        return f"({index} {operator} {width})"
+    raise ValueError(f"Unsupported CUDA argument operation {operation}")
+
 
 with output.open("w") as stream:
     print("/* Generated from the GooseInfer CUDA launch ABI. */", file=stream)
@@ -21,6 +40,8 @@ with output.open("w") as stream:
     for entry in entries:
         if entry.get("nonfrozen"):
             print("#ifndef GOOSE_CUDA_FROZEN_ABI", file=stream)
+        elif entry.get("frozen"):
+            print("#ifdef GOOSE_CUDA_FROZEN_ABI", file=stream)
         parameters = ", ".join(entry["parameters"])
         print(f'__kernel void {entry["name"]}({parameters}) {{', file=stream)
         for kind, name, length, align in entry.get("shared", []):
@@ -33,8 +54,11 @@ with output.open("w") as stream:
         for name, register in entry.get("registers", {}).items():
             print(f"    uint32_t {name};", file=stream)
             print(f'    __asm__("mov.u32 %0, %%{registers[register]};" : "=r"({name}));', file=stream)
-        arguments = ", ".join("(uint64_t)" + arg[1:] if arg.startswith("@") else arg
-                              for arg in entry["arguments"])
+        for name, array in entry.get("shared_addresses", {}).items():
+            print(f"    uint64_t {name};", file=stream)
+            print(f'    __asm__("cvta.shared.u64 %0, %1;" : "=l"({name}) : "l"((uint64_t){array}));',
+                  file=stream)
+        arguments = ", ".join(argument(arg) for arg in entry["arguments"])
         print(f'    {entry["function"]}({arguments});\n}}', file=stream)
-        if entry.get("nonfrozen"):
+        if entry.get("nonfrozen") or entry.get("frozen"):
             print("#endif", file=stream)

@@ -42,6 +42,8 @@ python3 "$root/tools/emit-gooseinfer-cuda-entries.py" \
 python3 "$root/tools/emit-gooseinfer-cuda-entries.py" \
     "$standalone/cuda-mmq-entries.json" "$scratch/cuda-mmq-entries.h"
 python3 "$root/tools/emit-gooseinfer-cuda-entries.py" \
+    "$standalone/cuda-activation-entries.json" "$scratch/cuda-activation-entries.h"
+python3 "$root/tools/emit-gooseinfer-cuda-entries.py" \
     "$standalone/gigachat4/cuda-dsa-entries.json" "$scratch/cuda-dsa-entries.h"
 compile_device "$standalone/cuda-device.cl"
 for variant in dense vector dsa mla certified-dsa; do
