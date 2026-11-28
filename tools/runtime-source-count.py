@@ -49,7 +49,7 @@ both='Host Linux + Windows'
 mark(u/'inkling','graph-execute inkling-backend','.c',both,'Graph ABI, execution and Inkling backend')
 mark(u/'bonsai','backend-cold model-host','.c',both,'Bonsai session and model host')
 mark(u/'common','probability-pipeline','.c',both,'Probability platform adapter')
-mark(s/'vulkan','graph qwen2 bonsai-layer bonsai-model apex-model inkling-model tokenizer http infer-main','.c',both,'Vulkan backend: corresponding loader, compute, model or HTTP component')
+mark(s/'vulkan','graph qwen2 bonsai-model apex-model inkling-model tokenizer http infer-main','.c',both,'Vulkan backend: corresponding loader, compute, model or HTTP component')
 mark(Path('integration/m1/host'),'goose_host','.c',both,'Goose ABI, platform and quantization helpers')
 mark(g/'src','ggml','.c',both,'GGML tensor and graph core')
 images=d/'images'

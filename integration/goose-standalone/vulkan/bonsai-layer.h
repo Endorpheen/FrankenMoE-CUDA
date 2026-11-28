@@ -32,6 +32,13 @@ typedef struct {
     fg_vk_view keys, values;
 } fg_vk_bonsai_attention;
 
+_Static_assert(offsetof(fg_vk_bonsai_layer, history) == 360 &&
+    offsetof(fg_vk_bonsai_layer, state) == 384 && offsetof(fg_vk_bonsai_attention, attention) == 360 &&
+    offsetof(fg_vk_bonsai_attention, keys) == 504 && offsetof(fg_vk_bonsai_attention, values) == 528 &&
+    FG_VK_RMSNORM == 0 && FG_VK_SWIGLU == 2 && FG_VK_ROPE == 3 && FG_VK_ADD == 9 &&
+    FG_VK_PQ2_0 == 10 && FG_VK_FWHT == 12 && FG_VK_QK_NORM == 14 && FG_VK_HEAD_SLICE == 18 &&
+    FG_VK_SIGMOID_GATE == 19 && FG_VK_KV_STORE_Q4 == 20, "Goose Vulkan Bonsai layer ABI");
+
 int fg_vk_bonsai_recurrent_layer(fg_vk_graph *graph, const fg_vk_bonsai_layer *layer,
     const fg_vk_view scratch[BS_COUNT], fg_vk_view input, fg_vk_view output, float epsilon);
 int fg_vk_bonsai_attention_prepare(fg_vk_graph *graph, const fg_vk_bonsai_attention *layer,
