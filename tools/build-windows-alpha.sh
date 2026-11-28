@@ -33,7 +33,7 @@ build "$out/main-windows.c" main-windows -w
 build "$cpu/cpu.c" cpu -Dgoose_init=fg143_cpu_init -Dgg_init_globals=fg143_cpu_globals
 build "$src/graph-execute.c" graph-execute
 build "$src/cuda-driver.c" cuda-driver
-build "$src/graph-bindings.c" graph-bindings
+build "$src/legacy/graph-bindings.c" graph-bindings
 build "$src/goose-host-llm.c" model-host
 build "$src/windows/socket-forwards.c" libc-forwards
 build "$src/windows/platform.c" platform

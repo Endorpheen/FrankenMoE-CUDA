@@ -10,8 +10,8 @@ ggml="$root/vendor/flint/ggml"
 host="$root/integration/m1/host"
 source_prefix=${GOOSEINFER_SOURCE_PREFIX:-.}
 case "$target" in
-    linux) cc=${CC:-gcc-13}; hardening=(-D_FORTIFY_SOURCE=3 -fstack-protector-strong) ;;
-    windows) cc=${WINDOWS_CC:-x86_64-w64-mingw32-gcc}; hardening=() ;;
+    linux) cc=${CC:-gcc-13}; objcopy=${OBJCOPY:-objcopy}; hardening=(-D_FORTIFY_SOURCE=3 -fstack-protector-strong) ;;
+    windows) cc=${WINDOWS_CC:-x86_64-w64-mingw32-gcc}; objcopy=${WINDOWS_OBJCOPY:-x86_64-w64-mingw32-objcopy}; hardening=() ;;
     *) printf 'Unknown GooseInfer target: %s\n' "$target" >&2; exit 2 ;;
 esac
 mkdir -p -- "$out"
@@ -31,9 +31,13 @@ flags=(-std=c11 -D_GNU_SOURCE -ffunction-sections -fdata-sections
        -I"$ggml/include" -I"$ggml/src" -I"$ggml/src/ggml-cpu")
 "$cc" -O1 "${flags[@]}" "${hardening[@]}" \
     -c "$ggml/src/ggml.c" -o "$out/ggml.o"
-for unit in ggml-system graph-bindings; do
-    "$cc" -O1 "${flags[@]}" "${hardening[@]}" -c "$standalone/$unit.c" -o "$out/$unit.o"
-done
+"$cc" -O1 "${flags[@]}" "${hardening[@]}" -c "$standalone/ggml-system.c" -o "$out/ggml-system.o"
+"$cc" "${flags[@]}" -x c -fsyntax-only "$standalone/graph-bindings-layout.h"
+"${GOOSE_CUDA_DRIVER_BIN:?Set GOOSE_CUDA_DRIVER_BIN to Fried Goose KeelWing v0.3.1-dev.1}" --standalone \
+    -o "$out/graph-bindings.c" "$standalone/graph-bindings.goose"
+"$cc" -O2 "${flags[@]}" -Dgoose_init=fg_graph_bindings_init -Dgg_init_globals=fg_graph_bindings_globals \
+    -c "$out/graph-bindings.c" -o "$out/graph-bindings.o"
+"$objcopy" --redefine-sym=graph_crt_getenv=getenv "$out/graph-bindings.o"
 "$cc" -O1 "${flags[@]}" -c "$host/goose_host.c" -o "$out/goose-host.o"
 "$cc" -O1 "${flags[@]}" -DFG_SLRU_SHARED_UNIT -c "$standalone/slru-runtime-shim.c" -o "$out/slru-shim.o"
 if [[ $target == linux ]]; then

@@ -26,7 +26,7 @@ FLAGS=(-O1 -std=c11 -D_GNU_SOURCE -ffunction-sections -fdata-sections -I "$OUT"
        -I "$UNIT" -I "$BASE/include" -I "$BASE/src" -I "$ROOT/integration/m1/host")
 "$CC" "${FLAGS[@]}" -c "$ROOT/integration/goose-standalone/graph-execute.c" -o "$OUT/graph-execute.o"
 "$CC" "${FLAGS[@]}" -c "$ROOT/integration/goose-standalone/cuda-driver.c" -o "$OUT/cuda-driver.o"
-"$CC" "${FLAGS[@]}" -c "$ROOT/integration/goose-standalone/graph-bindings.c" -o "$OUT/graph-bindings.o"
+"$CC" "${FLAGS[@]}" -c "$ROOT/integration/goose-standalone/legacy/graph-bindings.c" -o "$OUT/graph-bindings.o"
 "$CC" "${FLAGS[@]}" -c "$ROOT/integration/goose-standalone/goose-host-llm.c" -o "$OUT/model-host.o"
 "$CC" "${FLAGS[@]}" -c "$ROOT/integration/goose-standalone/libc-forwards.c" -o "$OUT/libc-forwards.o"
 "$CC" "${FLAGS[@]}" -DFG_SLRU_SHARED_UNIT -c "$ROOT/integration/goose-standalone/slru-runtime-shim.c" -o "$OUT/slru-shim.o"
