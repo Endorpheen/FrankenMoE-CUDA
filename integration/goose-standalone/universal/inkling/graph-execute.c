@@ -25,8 +25,6 @@
 #include <unistd.h>
 
 extern void fg143_cpu_init(int argc, char ** argv);
-extern uint8_t q35_cpumask_parse(sl_u8 text, sl_i64 mask);
-extern int64_t th_cpumask_next(sl_i64 mask, int64_t strict, int64_t first, sl_i64 local);
 extern int64_t fg_cuda_activation_read_address(uint64_t host, int64_t bytes);
 extern int64_t fg_cuda_state_read(uint64_t host, int64_t bytes);
 static pthread_once_t cpu_init = PTHREAD_ONCE_INIT;
@@ -34,12 +32,12 @@ static atomic_uint_fast64_t cpu_values;
 static atomic_int_fast64_t cpu_batch_threads = 1;
 static atomic_int_fast64_t cpu_decode_threads = 1;
 static _Thread_local bool cpu_prefill = true;
-enum { CPU_PROFILE_MASK_BITS = 512 };
-struct cpu_affinity_profile {
-    cpu_set_t placement[CPU_PROFILE_MASK_BITS];
-    int64_t count;
-};
-static struct cpu_affinity_profile cpu_affinity[2];
+#ifdef _WIN32
+_Static_assert(sizeof(cpu_set_t) == 8, "Goose Windows affinity ABI");
+#else
+_Static_assert(sizeof(cpu_set_t) == 128, "Goose Linux affinity ABI");
+#endif
+_Static_assert(offsetof(struct ggml_cgraph, n_nodes) == 4 && GGML_STATUS_FAILED == -1, "Goose graph execution ABI");
 
 struct numerical_checkpoint {
     FILE * data;
@@ -56,86 +54,22 @@ static void init_cpu(void) {
     fg143_cpu_init(0, NULL);
 }
 
-static int64_t configure_cpu_threads(atomic_int_fast64_t * setting, int64_t threads) {
-    if (threads <= 0 || threads > CPU_PROFILE_MASK_BITS) return -1;
-    pthread_once(&cpu_init, init_cpu);
-    if (!fg143_cpu_batch_supported(threads)) return -1;
-    atomic_store_explicit(setting, threads, memory_order_relaxed);
-    return 0;
+void fg_graph_native_cpu_init(void) { pthread_once(&cpu_init, init_cpu); }
+
+int64_t fg_graph_native_threads(bool prefill, int64_t value) {
+    atomic_int_fast64_t *setting = prefill ? &cpu_batch_threads : &cpu_decode_threads;
+    if (value) atomic_store_explicit(setting, value, memory_order_relaxed);
+    return atomic_load_explicit(setting, memory_order_relaxed);
 }
 
-int64_t fg_standalone_configure_cpu_batch(int64_t threads) {
-    return configure_cpu_threads(&cpu_batch_threads, threads);
-}
-
-int64_t fg_standalone_configure_cpu_decode(int64_t threads) {
-    return configure_cpu_threads(&cpu_decode_threads, threads);
-}
-
-int64_t fg_standalone_cpu_batch_threads(void) {
-    return atomic_load_explicit(&cpu_batch_threads, memory_order_relaxed);
-}
-
-int64_t fg_standalone_cpu_decode_threads(void) {
-    return atomic_load_explicit(&cpu_decode_threads, memory_order_relaxed);
-}
-
-bool fg_standalone_set_cpu_prefill(bool prefill) {
+bool fg_graph_native_set_prefill(bool prefill) {
     const bool previous = cpu_prefill;
     cpu_prefill = prefill;
     return previous;
 }
 
-int64_t fg_standalone_configure_cpu_affinity(const char * text, bool strict, bool prefill) {
-    int64_t mask[CPU_PROFILE_MASK_BITS], local[CPU_PROFILE_MASK_BITS];
-    cpu_set_t allowed;
-    if (!text || sched_getaffinity(0, sizeof allowed, &allowed) != 0) return -1;
-    pthread_once(&cpu_init, init_cpu);
-    if (!q35_cpumask_parse((sl_u8) {(void *) text, (int64_t) strlen(text)},
-                         (sl_i64) {mask, CPU_PROFILE_MASK_BITS})) return -1;
-    for (int cpu = 0; cpu < CPU_PROFILE_MASK_BITS; ++cpu) {
-        if (mask[cpu] && !CPU_ISSET(cpu, &allowed)) return -1;
-    }
-    struct cpu_affinity_profile * profile = &cpu_affinity[prefill ? 0 : 1];
-    const int64_t threads = prefill ? fg_standalone_cpu_batch_threads() : fg_standalone_cpu_decode_threads();
-    int64_t next = 0;
-    for (int64_t worker = 0; worker < threads; ++worker) {
-        next = th_cpumask_next((sl_i64) {mask, CPU_PROFILE_MASK_BITS}, strict, next,
-                              (sl_i64) {local, CPU_PROFILE_MASK_BITS});
-        CPU_ZERO(&profile->placement[worker]);
-        for (int cpu = 0; cpu < CPU_PROFILE_MASK_BITS; ++cpu) {
-            if (local[cpu]) CPU_SET(cpu, &profile->placement[worker]);
-        }
-    }
-    profile->count = threads;
-    return 0;
-}
-
-uint8_t fg143_cpu_prefill(void) {
-    return cpu_prefill;
-}
-
-int64_t fg143_cpu_gather_threads(void) {
-    return cpu_prefill ? fg_standalone_cpu_batch_threads() : fg_standalone_cpu_decode_threads();
-}
-
-int64_t fg143_gather_affinity(uint8_t prefill, int64_t worker) {
-    const struct cpu_affinity_profile * profile = &cpu_affinity[prefill ? 0 : 1];
-    if (profile->count == 0) return 0;
-    if (worker < 0 || worker >= profile->count ||
-        sched_setaffinity(0, sizeof(cpu_set_t), &profile->placement[worker]) != 0) {
-        fprintf(stderr, "Goose CPU affinity failed for %s worker %" PRId64 "\n",
-                prefill ? "prefill" : "decode", worker);
-        return -1;
-    }
-    if (getenv("GOOSE_GRAPH_LOG")) {
-        cpu_set_t effective;
-        if (sched_getaffinity(0, sizeof effective, &effective) != 0) return -1;
-        fprintf(stderr, "Goose CPU affinity: %s worker %" PRId64 " cpu %d allowed %d\n",
-                prefill ? "prefill" : "decode", worker, sched_getcpu(), CPU_COUNT(&effective));
-    }
-    return 0;
-}
+bool fg_graph_native_prefill(void) { return cpu_prefill; }
+bool fg_graph_native_checkpoint(void) { return checkpoint != NULL; }
 
 void fg143_gather_witness(int64_t rows, int64_t tasks) {
     if (getenv("GOOSE_GRAPH_LOG")) {
@@ -161,11 +95,6 @@ uint64_t fg143_storage_alloc(uint64_t bytes) {
 #else
     return (uint64_t) (uintptr_t) aligned_alloc(GGML_MEM_ALIGN, (size_t) bytes);
 #endif
-}
-
-void * fg_standalone_graph_alloc(struct ggml_cgraph * graph) {
-    pthread_once(&cpu_init, init_cpu);
-    return (void *) (uintptr_t) fg143_storage_allocate((uint64_t) (uintptr_t) graph);
 }
 
 uint64_t fg143_storage_ram_available(void) {
@@ -215,14 +144,6 @@ struct fg_standalone_graph_plan {
     struct q35_decode_bindings *decode;
     int64_t deadlines[];
 };
-
-extern uint64_t fg143_graph_plan_alloc(uint64_t graph, uint64_t output);
-
-struct fg_standalone_graph_plan * fg_standalone_graph_plan_alloc(struct ggml_cgraph *graph, const struct ggml_tensor *output) {
-    if (!graph || graph->n_nodes < 0) return NULL;
-    pthread_once(&cpu_init, init_cpu);
-    return (void *)(uintptr_t)fg143_graph_plan_alloc((uintptr_t)graph, (uintptr_t)output);
-}
 
 void fg143_graph_plan_log_replays(uint64_t replays) {
     fprintf(stderr, "Goose decode plan reuses: %zu\n", (size_t)replays);
@@ -306,14 +227,6 @@ uint8_t fg143_graph_observe(uint64_t address) {
     return 1;
 }
 
-uint8_t fg143_graph_restore_affinity(uint64_t address) {
-    if (!address) return true;
-    const cpu_set_t *previous = (const void *)(uintptr_t)address;
-    if (sched_setaffinity(0, sizeof *previous, previous) == 0) return true;
-    perror("Goose CPU affinity restore");
-    return false;
-}
-
 void fg143_graph_log_failure(int64_t index, int32_t op) {
     fprintf(stderr, "Goose graph: node %lld (%s) failed\n",
             (long long) index, ggml_op_name(op));
@@ -333,32 +246,6 @@ void fg143_graph_log_pair(sl_u8 label, uint64_t count, sl_u8 unit, uint64_t next
     fprintf(stderr, "%.*s: %" PRIu64 "%.*s, %" PRIu64 "%.*s\n",
         (int)label.len, label.data, count, (int)unit.len, unit.data,
         next, (int)next_unit.len, next_unit.data);
-}
-
-static enum ggml_status compute_graph(struct ggml_cgraph *graph, bool all,
-                                      const struct ggml_tensor *output, sl_i64 deadlines) {
-    pthread_once(&cpu_init, init_cpu);
-    const bool pin = cpu_affinity[cpu_prefill ? 0 : 1].count != 0;
-    cpu_set_t previous;
-    if (pin && sched_getaffinity(0, sizeof previous, &previous) != 0) {
-        perror("Goose CPU affinity snapshot");
-        return GGML_STATUS_FAILED;
-    }
-    return fg143_graph_execute((uintptr_t)graph, (uintptr_t)output, all, deadlines,
-                               checkpoint != NULL, cpu_prefill, pin ? (uintptr_t)&previous : 0);
-}
-
-enum ggml_status fg_standalone_graph_compute(struct ggml_cgraph * graph) {
-    return compute_graph(graph, true, NULL, (sl_i64) {0});
-}
-
-enum ggml_status fg_standalone_graph_compute_output(struct ggml_cgraph * graph, const struct ggml_tensor * output) {
-    return compute_graph(graph, false, output, (sl_i64) {0});
-}
-
-enum ggml_status fg_standalone_graph_plan_compute(struct fg_standalone_graph_plan * plan) {
-    if (!plan || plan->nodes != plan->graph->n_nodes) return GGML_STATUS_FAILED;
-    return compute_graph(plan->graph, false, plan->output, (sl_i64) {plan->deadlines, plan->nodes});
 }
 
 #ifndef _WIN32
