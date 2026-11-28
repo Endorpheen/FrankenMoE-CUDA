@@ -48,12 +48,6 @@ extern void inkling_tokenizer_init(int argc, char **argv);
 
 const char * die(const char * what) { fprintf(stderr, "GENERATE %s\n", what); exit(1); }
 
-double fg_q35_generation_now(void) {
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    return (double) ts.tv_sec + (double) ts.tv_nsec / 1e9;
-}
-
 typedef struct {
     uint8_t * base;
     size_t size;
@@ -141,53 +135,20 @@ _Static_assert(sizeof(struct stat) == 144 && offsetof(struct stat, st_mode) == 2
 host_t H;
 uint64_t fg_cuda_model_host_address(void) { return (uintptr_t)&H; }
 
-int64_t fg_model_mincore(uint64_t address, int64_t bytes, sl_u8 flags) {
-    #ifdef _WIN32
-    return fg_win_resident((void *)(uintptr_t)address, (size_t)bytes, flags.data);
-    #else
-    return mincore((void *) (uintptr_t) address, (size_t) bytes, flags.data);
-    #endif
-}
-
-int64_t fg_model_populate(uint64_t address, int64_t bytes) {
-#ifdef MADV_POPULATE_READ
-    if (madvise((void *) (uintptr_t) address, (size_t) bytes, MADV_POPULATE_READ) == 0) return 0;
-    if (errno != EINVAL && errno != ENOSYS && errno != EOPNOTSUPP) return -errno;
+_Static_assert(sizeof(struct timespec) == 16 && offsetof(struct timespec, tv_sec) == 0 &&
+    offsetof(struct timespec, tv_nsec) == 8 && CLOCK_MONOTONIC == 1, "Goose monotonic time ABI");
+#ifdef _WIN32
+_Static_assert(sizeof(((struct timespec *)0)->tv_nsec) == 4, "Goose Windows time ABI");
 #else
-    (void) address;
-    (void) bytes;
+_Static_assert(sizeof(((struct timespec *)0)->tv_nsec) == 8 && MADV_DONTNEED == 4 &&
+    EINVAL == 22 && ENOSYS == 38 && EOPNOTSUPP == 95, "Goose Linux residency ABI");
+#ifdef MADV_POPULATE_READ
+_Static_assert(MADV_POPULATE_READ == 22, "Goose Linux populate ABI");
 #endif
-    return 1;
-}
+#endif
 
 void fg_model_touch_page(uint64_t address) {
     (void) *(const volatile uint8_t *) (uintptr_t) address;
-}
-
-extern bool fg_standalone_option_enabled(const char * name);
-
-// The caller owns this span in a private anonymous tensor arena. Only discard
-// pages entirely inside the span, as boundary pages may contain other objects.
-int64_t fg_model_zero_host_pages(uint64_t address, int64_t length) {
-#if defined(__linux__) && defined(MADV_DONTNEED)
-    if (!fg_standalone_option_enabled("GOOSE_HOST_KV_DECOMMIT") ||
-        !address || length <= 0 || (uint64_t) length > UINTPTR_MAX - address) return 0;
-    const long page = sysconf(_SC_PAGESIZE);
-    if (page <= 0) return 0;
-    const size_t bytes = (size_t) length;
-    const size_t leading = ((size_t) page - address % (size_t) page) % (size_t) page;
-    if (leading >= bytes) return 0;
-    const size_t whole = (bytes - leading) / (size_t) page * (size_t) page;
-    uint8_t * const start = (void *) (uintptr_t) address;
-    if (!whole || madvise(start + leading, whole, MADV_DONTNEED) != 0) return 0;
-    memset(start, 0, leading);
-    memset(start + leading + whole, 0, bytes - leading - whole);
-    return 1;
-#else
-    (void) address;
-    (void) length;
-    return 0;
-#endif
 }
 
 static pthread_once_t exchange_once = PTHREAD_ONCE_INIT;
@@ -203,22 +164,18 @@ static void init_exchange_key(void) {
     exchange_key_available = pthread_key_create(&exchange_key, free) == 0;
 }
 
-static uint8_t *borrow_decode_exchange(size_t bytes) {
-    if (decode_exchange.borrowed) return NULL;
-    if (decode_exchange.capacity < bytes) {
-        if (pthread_once(&exchange_once, init_exchange_key) != 0 || !exchange_key_available) return NULL;
-        uint8_t *data = malloc(bytes);
-        if (!data) return NULL;
-        if (pthread_setspecific(exchange_key, data) != 0) {
-            free(data);
-            return NULL;
-        }
-        free(decode_exchange.data);
-        decode_exchange.data = data;
-        decode_exchange.capacity = bytes;
-    }
-    decode_exchange.borrowed = true;
-    return decode_exchange.data;
+_Static_assert(offsetof(__typeof__(decode_exchange), data) == 0 &&
+    offsetof(__typeof__(decode_exchange), capacity) == 8 &&
+    offsetof(__typeof__(decode_exchange), borrowed) == 16, "Goose decode exchange ABI");
+
+uint64_t fg_cuda_decode_exchange_address(void) { return (uintptr_t)&decode_exchange; }
+
+bool fg_cuda_decode_cleanup_ready(void) {
+    return pthread_once(&exchange_once, init_exchange_key) == 0 && exchange_key_available;
+}
+
+int fg_cuda_decode_track_buffer(uint64_t address) {
+    return pthread_setspecific(exchange_key, (void *)(uintptr_t)address);
 }
 
 enum { Q35_DECODE_PLAN_WORDS = 10 };
@@ -232,8 +189,6 @@ _Static_assert(offsetof(__typeof__(decode_plan), enabled) == 4 &&
     offsetof(__typeof__(decode_plan), words) == 8 &&
     Q35_DECODE_PLAN_WORDS == 10 && HOSE_DEFAULT_PREFILL_BATCH == 128, "Goose decode state ABI");
 
-uint64_t fg_cuda_decode_borrow(size_t bytes) { return (uintptr_t)borrow_decode_exchange(bytes); }
-void fg_cuda_decode_release(void) { decode_exchange.borrowed = false; }
 uint64_t fg_cuda_decode_plan_address(void) { return (uintptr_t)&decode_plan; }
 
 uint64_t fg_cuda_generation_ids_address(void) {

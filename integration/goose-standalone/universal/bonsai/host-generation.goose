@@ -1,5 +1,6 @@
-extern fn fg_cuda_decode_borrow(bytes: u64) -> u64;
-extern fn fg_cuda_decode_release();
+extern fn fg_cuda_decode_exchange_address() -> u64;
+extern fn fg_cuda_decode_cleanup_ready() -> bool;
+extern fn fg_cuda_decode_track_buffer(address: u64) -> i32;
 extern fn fg_cuda_decode_plan_address() -> u64;
 extern fn fg_cuda_generation_ids_address() -> u64;
 extern fn fg_goose_host_ensure_init();
@@ -44,6 +45,27 @@ fn generation_alloc(bytes: u64) -> u64 {
     let pointer=vocab_malloc(bytes);
     var address: u64=0;
     vocab_memcpy(unsafe_c_address<c_ptr<void>>(address),unsafe_c_address<c_ptr<const void>>(pointer),8);
+    return address;
+}
+
+fn generation_borrow(bytes: u64) -> u64 {
+    let state=fg_cuda_decode_exchange_address();
+    if vocab_byte(state+16)!=0 { return 0; }
+    var address=vocab_word(state);
+    if vocab_word(state+8)<bytes {
+        if !fg_cuda_decode_cleanup_ready() { return 0; }
+        let replacement=generation_alloc(bytes);
+        if replacement==0 { return 0; }
+        if fg_cuda_decode_track_buffer(replacement)!=0 {
+            vocab_free(unsafe_c_ptr<c_ptr<void>>(replacement));
+            return 0;
+        }
+        vocab_free(unsafe_c_ptr<c_ptr<void>>(address));
+        vocab_set(state,replacement);
+        vocab_set(state+8,bytes);
+        address=replacement;
+    }
+    vocab_set_byte(state+16,1);
     return address;
 }
 
@@ -191,7 +213,7 @@ export fn fg_q35_generation_eval(tokens: const i32[:],output: f32[:],prefill: bo
 
     // Keep caller-owned slices outside the runtime arena through nested exports.
     let bytes=token_bytes+logit_bytes;
-    var exchange: u64=if !prefill && count==1 { fg_cuda_decode_borrow(bytes) } else { 0 };
+    var exchange: u64=if !prefill && count==1 { generation_borrow(bytes) } else { 0 };
     let borrowed=exchange!=0;
     if !borrowed { exchange=generation_alloc(bytes); }
     if exchange==0 { return -1; }
@@ -213,7 +235,7 @@ export fn fg_q35_generation_eval(tokens: const i32[:],output: f32[:],prefill: bo
         fg_standalone_set_cpu_prefill(previous);
     }
     if result>0 { generation_copy(destination,output_address,logit_bytes); }
-    if borrowed { fg_cuda_decode_release(); }
+    if borrowed { vocab_set_byte(fg_cuda_decode_exchange_address()+16,0); }
     else { vocab_free(unsafe_c_ptr<c_ptr<void>>(exchange)); }
     return result;
 }
