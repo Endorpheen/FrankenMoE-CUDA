@@ -66,24 +66,6 @@ extern void fg_i2_prefill_partition(uint64_t address, int64_t begin, int64_t end
 
 #include "prefill-team.h"
 
-extern int64_t i2_parallel_prefill(uint64_t work, int64_t rows, int64_t tasks);
-
-extern int fg_i2_prefill_task_count(int count);
-
-static void prepare_prefill(struct i2_prefill_team *team, struct i2_prefill_work *work, int count) {
-    if (team) {
-        prefill_team_run(team, work, count);
-        return;
-    }
-    const int tasks = fg_i2_prefill_task_count(count);
-    if (tasks > 1) {
-        (void)use_cached_history();
-        assert(i2_parallel_prefill((uint64_t)(uintptr_t)work, count, tasks) == count);
-    } else {
-        fg_i2_prefill_partition((uint64_t)(uintptr_t)work, 0, count);
-    }
-}
-
 _Static_assert(sizeof(struct i2_prefill_work) == 112 &&
     offsetof(struct prefill_workspace, ff) == 305528832 && offsetof(struct prefill_workspace, residual) == 381026312 &&
     sizeof(((struct prefill_workspace *)0)->inputs[0]) == 37748736 &&
@@ -107,14 +89,6 @@ _Static_assert(sizeof(struct i2_prefill_work) == 112 &&
     offsetof(struct i2_prefill_work, device_loop) == 108 &&
     offsetof(struct i2_prefill_work, device_prelude) == 109 &&
     offsetof(struct i2_prefill_work, poison_host) == 110, "Goose prefill layer ABI");
-
-void fg_i2_prefill_prepare(struct i2_prefill_team *team, struct i2_prefill_work *work, int count) {
-    prepare_prefill(team, work, count);
-}
-
-void fg_i2_prefill_postconv_team(struct i2_prefill_team *team, struct i2_prefill_work *work) {
-    prefill_team_run(team, work, model_width);
-}
 
 void fg_i2_prefill_trace_work(int count, const float *residual, const float *moe) {
     check_state("draft-postconv", count, residual, model_width);
@@ -143,13 +117,6 @@ _Static_assert(sizeof(struct prefill_workspace) == 646316040 &&
     offsetof(struct prefill_workspace, linear_storage) == 343277576 &&
     offsetof(struct prefill_token, current) == 0 && sizeof(struct i2_prefill_team) <= 296 &&
     _Alignof(struct i2_prefill_team) <= 8, "Goose prefill driver ABI");
-
-bool fg_i2_prefill_team_start(struct i2_prefill_team *team, int count) {
-    const int tasks = fg_i2_prefill_task_count(count);
-    if (tasks <= 1) return false;
-    (void)use_cached_history();
-    return prefill_team_open(team, tasks, true);
-}
 
 void fg_i2_prefill_set_readback(float *output, size_t elements) {
     prefill_direct_output = output;

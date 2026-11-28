@@ -19,7 +19,6 @@ extern fn i2_place_weights(tensors: I2DraftSpan,core: I2DraftSpan,data: i64,excl
 extern fn i2_candidate_init(argc: i32,argv: u64);
 extern fn fg_cuda_free_bytes() -> i64;
 extern fn fg_cuda_enable_inkling_quants(enabled: bool);
-extern fn fg_i2_close_logits_team(team: u64);
 extern fn fg_standalone_graph_plan_free(plan: u64);
 
 fn i2_open_drop_graph(entry: u64) {
@@ -31,7 +30,7 @@ fn i2_open_drop_graph(entry: u64) {
 fn fg_i2_backend_open_cleanup(decoder: u64) {
     let team = i2d_read(decoder + 887272);
     if team != 0 {
-        fg_i2_close_logits_team(team);
+        prefill_team_close(team);
         i2d_free(unsafe_c_ptr<c_ptr<void>>(team));
     }
     for index in 48 {

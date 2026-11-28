@@ -9,3 +9,4 @@ const I2_TEAM_GENERATION: u64 = 168;
 const I2_TEAM_STOP: u64 = 176;
 const I2_TEAM_FAILED: u64 = 177;
 const I2_TEAM_PREFILL: u64 = 178;
+const I2_TEAM_BYTES: u64 = 184;

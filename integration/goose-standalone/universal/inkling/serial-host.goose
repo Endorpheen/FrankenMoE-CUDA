@@ -72,7 +72,6 @@ export fn fg_i2_backend_token(decoder: u64, token: i32, position: i32, logits: b
 }
 
 
-extern fn fg_i2_parallel_logits(decoder: u64, logits: u64) -> bool;
 extern fn fg_i2_softcap_logits(logits: I2DraftSpan);
 extern fn fg_i2_validate_logits(position: i32, logits: u64, handled: bool);
 
@@ -626,7 +625,6 @@ export fn i2_prefill_read_boundary(work: u64) {
 
 extern "calloc" fn i2_prefill_calloc(count: u64, bytes: u64) -> c_ptr<void>;
 extern fn fg_cuda_inkling_prefill_readback(bytes: u64) -> u64;
-extern fn fg_i2_prefill_team_start(team: u64, count: i32) -> bool;
 extern fn fg_i2_prefill_set_readback(output: u64, elements: u64);
 extern fn fg_i2_prefill_check_residual(position: i32, current: u64);
 extern fn inkling_arena_window(enabled: bool, begin: i32);
@@ -717,7 +715,7 @@ export fn fg_i2_backend_prefill(decoder: u64, ids: u64, begin: i32, count: i32, 
     i2_prefill_finish_rows(decoder, tokens, begin, count, need_logits, device);
     inkling_prelude_clear();
     inkling_arena_window(false, begin);
-    if workers != 0 { fg_i2_close_logits_team(workers); }
+    if workers != 0 { prefill_team_close(workers); }
     for index in count as! i64 { fg_i2_prefill_check_residual(begin + (index as! i32), tokens + (index as! u64) * 285708); }
     if need_logits {
         let draft_count = i2d_int(decoder + I2D_DRAFT + I2D_COUNT);
@@ -875,8 +873,6 @@ export fn fg_i2_prepare_device_mix(decoder: u64, aux: u64, input: u64, count: i3
 }
 
 extern fn fg_i2_direct_output_active() -> bool;
-extern fn fg_i2_prefill_prepare(team: u64, work: u64, count: i32);
-extern fn fg_i2_prefill_postconv_team(team: u64, work: u64);
 extern fn fg_i2_prefill_trace_work(count: i32, residual: u64, moe: u64);
 
 fn i2_prefill_flag(address: u64, value: bool) {
@@ -955,7 +951,7 @@ fn fg_i2_prefill_layer(decoder: u64, tokens: u64, scratch: u64, count: i32, begi
             i2d_set(job + 66, 9216);
             i2d_set(job + 80, i2d_read(decoder + I2D_HA) + (slot as! u64) * 27648);
             i2d_set_int(job + 88, count);
-            fg_i2_prefill_postconv_team(workers, job);
+            prefill_team_run(workers, job, 2304);
             i2d_set_int(job + 88, 0);
         } else {
             fg_i2_prefill_postconv(decoder, aux, slot, count, linear, residual);

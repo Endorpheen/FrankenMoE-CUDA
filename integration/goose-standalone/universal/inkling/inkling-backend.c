@@ -409,11 +409,7 @@ void fg_i2_serial_native_attention(struct decoder *d, const int64_t *core, const
     }
 }
 
-static bool parallel_decode_logits(struct decoder *d, float *logits);
-
 extern void fg_i2_read_token_logits(struct decoder *d, int absolute, float *current, float *history, int count, bool decode);
-
-bool fg_i2_parallel_logits(struct decoder *d, float *logits) { return parallel_decode_logits(d, logits); }
 
 void fg_i2_softcap_logits(sl_f32 logits) {
     assert(i2_text_logits(logits, vocabulary, 30.0f) == vocabulary);
@@ -444,33 +440,6 @@ extern void fg_i2_prepare_prefill_rows(struct decoder *d, const struct native_at
 
 #include "prefill.h"
 
-extern int64_t fg_standalone_cpu_decode_threads(void);
-
-static bool parallel_decode_logits(struct decoder *d, float *logits) {
-    static int enabled = -1;
-    if (enabled < 0) {
-        const char *setting = getenv("I2_PARALLEL_LOGITS");
-        enabled = setting && strcmp(setting, "1") == 0;
-    }
-    if (!enabled) return false;
-    if (!d->logits_team) {
-        const int64_t configured = fg_standalone_cpu_decode_threads();
-        const int tasks = configured > 4 ? 4 : configured;
-        if (tasks < 2) return false;
-        struct i2_prefill_team *team = calloc(1, sizeof(*team));
-        if (!team) return false;
-        if (!prefill_team_open(team, tasks, false)) {
-            free(team);
-            return false;
-        }
-        d->logits_team = team;
-    }
-    const struct i2_prefill_work work = {.logits = logits};
-    prefill_team_run(d->logits_team, &work, vocabulary);
-    return true;
-}
-
-
 static double now(void) {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC,&ts);
@@ -487,10 +456,6 @@ _Static_assert(sizeof(struct decoder) == 940272 && offsetof(struct decoder, data
     INKLING_WINDOW == 1024, "Goose Inkling open ABI");
 
 _Static_assert(offsetof(struct decoder, logits_team) == 887272, "Goose Inkling cleanup ABI");
-
-void fg_i2_close_logits_team(struct i2_prefill_team *team) {
-    prefill_team_close(team);
-}
 
 _Static_assert(offsetof(struct decoder, capacity) == 82992 &&
     offsetof(struct decoder, position) == 82996 &&

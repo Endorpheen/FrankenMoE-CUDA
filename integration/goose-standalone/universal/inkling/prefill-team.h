@@ -9,7 +9,7 @@ struct i2_prefill_team {
 };
 
 #ifdef _WIN32
-_Static_assert(
+_Static_assert(sizeof(struct i2_prefill_team) == 184 &&
     offsetof(struct i2_prefill_team, job_ready) == 8 &&
     offsetof(struct i2_prefill_team, job_done) == 16 &&
     offsetof(struct i2_prefill_team, work) == 24 &&
@@ -22,7 +22,7 @@ _Static_assert(
     offsetof(struct i2_prefill_team, failed) == 177 &&
     offsetof(struct i2_prefill_team, prefill) == 178, "Goose team ABI");
 #else
-_Static_assert(
+_Static_assert(sizeof(struct i2_prefill_team) == 296 &&
     offsetof(struct i2_prefill_team, job_ready) == 40 &&
     offsetof(struct i2_prefill_team, job_done) == 88 &&
     offsetof(struct i2_prefill_team, work) == 136 &&
