@@ -54,5 +54,6 @@
   "fg_flash_unpack": "dequant_q4_0_g",
   "fg_fwht_quantize_shared": "fg176r_quant_q4_0_g",
   "fg_mmq_barrier": "fg_device_barrier",
-  "fg_mmq_swiglu_reference": "fg_vector_swiglu_reference_g"
+  "fg_mmq_swiglu_reference": "fg_vector_swiglu_reference_g",
+  "mmq_half_bits": "fg_device_half_bits"
 }

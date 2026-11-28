@@ -1,15 +1,4 @@
-static float madd(float a, float b, float c) {
-    float v;
-    __asm__("fma.rn.f32 %0, %1, %2, %3;" : "=f"(v) : "f"(a), "f"(b), "f"(c));
-    return v;
-}
-
-static float butterfly(float value, int distance) {
-    float v;
-    __asm__("shfl.sync.bfly.b32 %0, %1, %2, 31, -1;" : "=f"(v) : "f"(value), "r"(distance));
-    return v;
-}
-
+#include "q8-packed-image-ptx-0.h"
 static float reduce(float v) {
     v += butterfly(v, 16);
     v += butterfly(v, 8);
@@ -32,10 +21,7 @@ static float4 read4(__global const float4 *p) {
     return value;
 }
 
-static float q8_load_f32(uint64_t base, int64_t index) { return ((__global const float *)base)[index]; }
 static float q8_load_quant(uint64_t base, uint lane) { return q8_value((__global const uchar *)base, lane); }
-static uint64_t q8_job_word(uint64_t base, int64_t index) { return ((__global const ulong *)base)[index]; }
-static void q8_store_f32(uint64_t base, float value) { *(__global float *)base = value; }
 #define q8_vector(base,index) ({ \
     float4 vector = read4((__global const float4 *)(base) + (index)); \
     (I2Q8Vec_g){vector.x,vector.y,vector.z,vector.w}; \

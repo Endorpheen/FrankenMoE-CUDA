@@ -273,3 +273,211 @@ fn memory_fg_rms_shared_load(p: gpu_ptr<shared, f32>, p_index: u64) -> f32 {
 fn memory_fg_rms_shared_store(p: gpu_ptr<shared, f32>, p_index: u64, value: f32) {
     p[p_index] = value;
 }
+
+fn memory_fg_dsa_int_word(ptr: gpu_ptr<global, const u32>) -> u32 {
+    return *ptr;
+}
+
+fn memory_fg_dsa_pack_byte(ptr: gpu_ptr<global, i8>, value: i32) {
+    *ptr = value as i8;
+}
+
+fn memory_i2d_load_f32(ptr: gpu_ptr<global, const f32>, index: i64) -> f32 {
+    return ptr[index];
+}
+
+fn memory_i2d_load_i64(ptr: gpu_ptr<global, const i64>, index: i64) -> i64 {
+    return ptr[index];
+}
+
+fn memory_i2d_store_f32(ptr: gpu_ptr<global, f32>, index: i64, value: f32) {
+    ptr[index] = value;
+}
+
+fn memory_i2d_shared_f32(ptr: gpu_ptr<shared, f32>, index: i64) -> f32 {
+    return ptr[index];
+}
+
+fn memory_i2d_set_shared_f32(ptr: gpu_ptr<shared, f32>, index: i64, value: f32) {
+    ptr[index] = value;
+}
+
+fn memory_i2d_shared_f64(ptr: gpu_ptr<shared, f64>, index: i64) -> f64 {
+    return ptr[index];
+}
+
+fn memory_i2d_set_shared_f64(ptr: gpu_ptr<shared, f64>, index: i64, value: f64) {
+    ptr[index] = value;
+}
+
+fn memory_i2d_store_f64(ptr: gpu_ptr<global, f64>, index: i64, value: f64) {
+    ptr[index] = value;
+}
+
+fn memory_i2d_load_f64(ptr: gpu_ptr<global, const f64>, index: i64) -> f64 {
+    return ptr[index];
+}
+
+fn memory_input_load(ptr: gpu_ptr<global, const f32>, index: i64) -> f32 {
+    return ptr[index];
+}
+
+fn memory_input_store(ptr: gpu_ptr<global, f32>, index: i64, value: f32) {
+    ptr[index] = value;
+}
+
+fn memory_input_sum(ptr: gpu_ptr<shared, const f64>, index: i64) -> f64 {
+    return ptr[index];
+}
+
+fn memory_input_set_sum(ptr: gpu_ptr<shared, f64>, index: i64, value: f64) {
+    ptr[index] = value;
+}
+
+fn memory_i2o_load(ptr: gpu_ptr<global, f32>, index: i64) -> f32 {
+    return ptr[index];
+}
+
+fn memory_i2o_position(ptr: gpu_ptr<global, i64>, index: i64) -> i64 {
+    return ptr[index];
+}
+
+fn memory_i2o_shared_read(ptr: gpu_ptr<shared, f32>, index: i64) -> f32 {
+    return ptr[index];
+}
+
+fn memory_i2o_shared_write(ptr: gpu_ptr<shared, f32>, index: i64, value: f32) {
+    ptr[index] = value;
+}
+
+fn memory_i2_flash_load_byte(ptr: gpu_ptr<global, const u8>) -> u32 {
+    return *ptr as u32;
+}
+
+fn memory_i2_flash_load_half_bits(ptr: gpu_ptr<global, const u16>) -> u32 {
+    return *ptr as u32;
+}
+
+fn memory_i2_native_store(ptr: gpu_ptr<global, f32>, index: i64, value: f32) {
+    ptr[index] = value;
+}
+
+fn memory_moe_word(ptr: gpu_ptr<global, const u64>, index: i64) -> u64 {
+    return ptr[index];
+}
+
+fn memory_moe_store(ptr: gpu_ptr<global, f32>, index: i64, value: f32) {
+    ptr[index] = value;
+}
+
+fn memory_lazy_load(ptr: gpu_ptr<global, const f32>, index: i64) -> f32 {
+    return ptr[index];
+}
+
+fn memory_lazy_store(ptr: gpu_ptr<global, f32>, index: i64, value: f32) {
+    ptr[index] = value;
+}
+
+fn memory_lazy_plane(ptr: gpu_ptr<global, const u64>, index: i64) -> u64 {
+    return ptr[index];
+}
+
+fn memory_lazy_local_read(ptr: gpu_ptr<shared, const f32>, index: i64) -> f32 {
+    return ptr[index];
+}
+
+fn memory_lazy_local_write(ptr: gpu_ptr<shared, f32>, index: i64, value: f32) {
+    ptr[index] = value;
+}
+
+fn memory_lazy_sum_read(ptr: gpu_ptr<shared, const f64>, index: i64) -> f64 {
+    return ptr[index];
+}
+
+fn memory_lazy_sum_write(ptr: gpu_ptr<shared, f64>, index: i64, value: f64) {
+    ptr[index] = value;
+}
+
+fn memory_i2m_load_u8(ptr: gpu_ptr<global, const u8>) -> u32 {
+    return *ptr as u32;
+}
+
+fn memory_i2m_load_i8(ptr: gpu_ptr<global, const i8>) -> i32 {
+    return *ptr as i32;
+}
+
+fn memory_i2m_load_u16(ptr: gpu_ptr<global, const u16>) -> u32 {
+    return *ptr as u32;
+}
+
+fn memory_i2m_load(ptr: gpu_ptr<global, const f32>) -> f32 {
+    return *ptr;
+}
+
+fn memory_i2m_store(ptr: gpu_ptr<global, f32>, value: f32) {
+    *ptr = value;
+}
+
+fn memory_i2m_job_word(ptr: gpu_ptr<global, const u64>, index: i64) -> u64 {
+    return ptr[index];
+}
+
+fn memory_q8_load_f32(ptr: gpu_ptr<global, const f32>, index: i64) -> f32 {
+    return ptr[index];
+}
+
+fn memory_q8_job_word(ptr: gpu_ptr<global, const u64>, index: i64) -> u64 {
+    return ptr[index];
+}
+
+fn memory_q8_store_f32(ptr: gpu_ptr<global, f32>, value: f32) {
+    *ptr = value;
+}
+
+fn memory_i2_epilogue_read(ptr: gpu_ptr<global, const f32>, index: i64) -> f32 {
+    return ptr[index];
+}
+
+fn memory_i2_epilogue_write(ptr: gpu_ptr<global, f32>, index: i64, value: f32) {
+    ptr[index] = value;
+}
+
+fn memory_pred_load(ptr: gpu_ptr<global, const f32>, index: i64) -> f32 {
+    return ptr[index];
+}
+
+fn memory_pred_shared_load(ptr: gpu_ptr<shared, f32>, index: i32) -> f32 {
+    return ptr[index];
+}
+
+fn memory_pred_shared_store(ptr: gpu_ptr<shared, f32>, index: i32, value: f32) {
+    ptr[index] = value;
+}
+
+fn memory_pred_save_last(ptr: gpu_ptr<shared, i32>, value: i32) {
+    *ptr = value;
+}
+
+fn memory_pred_load_last(ptr: gpu_ptr<shared, i32>) -> i32 {
+    return *ptr;
+}
+
+fn memory_route_raw(ptr: gpu_ptr<global, f32>, index: i32) -> f32 {
+    return ptr[index];
+}
+
+fn memory_route_soft_store(ptr: gpu_ptr<global, f32>, index: i32, value: f32) {
+    ptr[index] = value;
+}
+
+fn memory_route_score(ptr: gpu_ptr<global, const f32>, index: i32) -> f32 {
+    return ptr[index];
+}
+
+fn memory_route_write_score(ptr: gpu_ptr<global, f32>, index: i32, value: f32) {
+    ptr[index] = value;
+}
+
+fn memory_route_write_id(ptr: gpu_ptr<global, i32>, index: i32, value: i32) {
+    ptr[index] = value;
+}

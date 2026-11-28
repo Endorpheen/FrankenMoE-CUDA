@@ -9,11 +9,8 @@ typedef uchar uint8_t;
 #define gs_shr_i32(a,b,...) ((a)>>(b))
 #define GS_RANGE(a,low,high,type,file,line) (a)
 
-static float pred_load(uint64_t address, int64_t i) { return ((__global const float *)address)[i]; }
 static float pred_load_logit(uint64_t address, int32_t i) { return ((__global volatile float *)address)[i]; }
 static void pred_store_logit(uint64_t address, int32_t i, float v) { ((__global volatile float *)address)[i] = v; }
-static float pred_shared_load(uint64_t address, int32_t i) { return ((__local float *)address)[i]; }
-static void pred_shared_store(uint64_t address, int32_t i, float v) { ((__local float *)address)[i] = v; }
 static float pred_shuffle(float value, int32_t offset) { return __nvvm_shfl_sync_bfly_f32(0xffffffffu, value, offset, 31); }
 static void pred_sync(void) { __nvvm_bar_sync(0); }
 static void pred_fence_gpu(void) { __nvvm_membar_gl(); }
@@ -21,8 +18,6 @@ static void pred_fence_system(void) { __nvvm_membar_sys(); }
 static int32_t pred_mark_done(uint64_t address) { return __nvvm_atom_add_gen_i((__global int *)address, 1); }
 static void pred_reset(uint64_t address) { *(__global unsigned *)address = 0; }
 static void pred_publish(uint64_t address, int32_t i, int32_t v) { ((__global volatile int *)address)[i] = v; }
-static void pred_save_last(uint64_t address, int32_t v) { *(__local int *)address = v; }
-static int32_t pred_load_last(uint64_t address) { return *(__local int *)address; }
 
 #include "prediction-device.h"
 

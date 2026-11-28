@@ -97,6 +97,7 @@ static int64_t device_mod(int64_t a, int64_t b) {
 #define gs_shr_i64(a,b) ((a) >> ((b)&63))
 #define gs_shr_i32(a,b) ((a) >> ((b)&31))
 #define gs_shr_u64(a,b) ((a) >> ((b)&63))
+#define gs_shl_u64(a,b) ((a) << ((b)&63))
 #define gs_shr_u32(a,b) ((a) >> ((b)&31))
 #define gs_shl_u32(a,b) ((a) << ((b)&31))
 
@@ -159,14 +160,9 @@ static float fg_attn_neg_inf(void) {
     return as_float(0xff800000u);
 }
 
+#include "cuda-half-ptx.h"
+
 #ifndef GOOSE_CUDA_FROZEN_ABI
-static uint32_t fg_mla_mma_qpair(uint64_t base) {
-    const __global float *p = (const __global float *)base;
-    uint16_t a, b;
-    __asm__("cvt.rn.f16.f32 %0, %1;" : "=h"(a) : "f"(p[0]));
-    __asm__("cvt.rn.f16.f32 %0, %1;" : "=h"(b) : "f"(p[1]));
-    return (uint32_t)a | ((uint32_t)b << 16);
-}
 #ifdef GOOSE_CUDA_MMQ_IMAGE
 #define fg_mla_mma_f16(acc,a0,a1,a2,a3,b0,b1) ({ \
     __typeof__(acc) d = (acc); \
@@ -178,13 +174,6 @@ static uint32_t fg_mla_mma_qpair(uint64_t base) {
 #define fg_mla_mma_f16(acc,a0,a1,a2,a3,b0,b1) (acc)
 #endif
 #include "cuda-device-ptx-3.h"
-static uint32_t fg_mla_pack_probability(float a, float b) {
-    uint16_t lo, hi;
-    __asm__("cvt.rn.f16.f32 %0, %1;" : "=h"(lo) : "f"(a));
-    __asm__("cvt.rn.f16.f32 %0, %1;" : "=h"(hi) : "f"(b));
-    return (uint32_t)lo | ((uint32_t)hi << 16);
-}
-static uint64_t fg_dsa_top_shift(uint64_t value, int64_t bits) { return value << bits; }
 static uint32_t fg_dsa_bins_add(uint64_t base, int64_t index) {
     uint32_t old;
     __asm__ volatile("atom.shared.add.u32 %0, [%1], 1;" : "=r"(old) :

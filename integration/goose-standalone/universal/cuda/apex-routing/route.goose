@@ -1,9 +1,6 @@
 extern "route_score" fn load(base: u64, index: i32) -> f32;
 extern "route_write_score" fn write_score(base: u64, index: i32, value: f32);
 extern "route_write_id" fn write_id(base: u64, index: i32, value: i32);
-extern "route_swap_f32" fn swap_f32(value: f32, offset: i32) -> f32;
-extern "route_swap_i32" fn swap_i32(value: i32, offset: i32) -> i32;
-extern "route_swap_f64" fn swap_f64(value: f64, offset: i32) -> f64;
 extern "route_neg_inf" fn neg_inf() -> f32;
 extern "route_clamp" fn clamp(value: f32) -> f32;
 extern "route_scaled" fn scaled(value: f32, scale: f32) -> f32;

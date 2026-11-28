@@ -39,6 +39,9 @@ for abi in "$src/"*-entries.json; do
 done
 "$goose" --standalone --emit-provenance "$scratch/inkling-epilogue.c" "$src/inkling-epilogue.goose"
 python3 "$shared/frankenmoe-fragment.py" "$scratch" inkling-epilogue
+python3 "$root/tools/emit-gooseinfer-cuda-ptx-primitives.py" \
+    "$root/integration/goose-standalone/cuda-ptx-primitives.json" "$scratch"
+bash "$root/tools/build-gooseinfer-cuda-memory.sh" "$scratch"
 while read -r header symbol entries prelude; do
     stem=${header%.h}
     device_source="$src/$stem.cl"
@@ -96,7 +99,7 @@ while read -r header symbol entries prelude; do
     assembler=(-arch=sm_89)
     if [[ -n $entries && $entries != - ]]; then assembler+=(--entry "$entries"); fi
     "${CLANG:-clang-18}" -target nvptx64-nvidia-cuda "${frontend[@]}" -x cl -O3 -ffp-contract=off \
-        -nocudalib "${options[@]}" \
+        -nocudalib -include "$scratch/typed-memory.h" -include "$scratch/typed-memory-bridge.h" "${options[@]}" \
         -S "$device_source" -o "$scratch/$stem.ptx"
     "$cuda/bin/ptxas" "${assembler[@]}" "$scratch/$stem.ptx" -o "$scratch/$stem.cubin"
     python3 - "$scratch/$stem.cubin" "$out/$header" "$symbol" <<'PY'

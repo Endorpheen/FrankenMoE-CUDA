@@ -1,8 +1,6 @@
 extern float __nv_tanhf(float);
 extern float __nv_expf(float);
 
-static float i2_epilogue_read(uint64_t base, int64_t index) { return ((__global const float *)base)[index]; }
-static void i2_epilogue_write(uint64_t base, int64_t index, float value) { ((__global float *)base)[index] = value; }
 #define i2_epilogue_tanh __nv_tanhf
 #define i2_epilogue_exp __nv_expf
 static float i2_epilogue_exp_approx(float value) {

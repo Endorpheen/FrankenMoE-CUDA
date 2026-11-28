@@ -10,6 +10,11 @@ scratch=$(mktemp -d)
 trap 'rm -rf -- "$scratch"' EXIT
 mkdir -p -- "$out"
 
+python3 "$root/tools/emit-gooseinfer-cuda-ptx-primitives.py" \
+    "$root/integration/goose-standalone/cuda-ptx-primitives.json" "$scratch"
+bash "$root/tools/build-gooseinfer-cuda-memory.sh" "$scratch"
+printf '#include "typed-memory.h"\n#pragma OPENCL FP_CONTRACT ON\n#include "typed-memory-bridge.h"\n' > "$scratch/typed-routing-memory.h"
+
 for module in route softmax mailbox; do
     goose_module=$module
     assembler=$ptxas
@@ -24,10 +29,11 @@ for module in route softmax mailbox; do
             assembler="${CUDA_HOME:-/usr/local/cuda}/bin/ptxas"
             ;;
     esac
-    "$goose" -o "$scratch/$module.c" --standalone --header "$scratch/$module.h" "$source_dir/$goose_module.goose"
+    cat "$source_dir/warp-shuffle.goose" "$source_dir/$goose_module.goose" > "$scratch/$module.goose"
+    "$goose" -o "$scratch/$module.c" --standalone --header "$scratch/$module.h" "$scratch/$module.goose"
     python3 "$source_dir/extract-device.py" "$scratch/$module.c" "$scratch/$fragment"
     "${CLANG:-clang-18}" -target nvptx64-nvidia-cuda -nocudalib -O2 -x cl -cl-std=CL1.2 \
-        -I"$scratch" -Xclang -target-cpu -Xclang sm_80 -S "$source_dir/$module.cl" -o "$scratch/$module.ptx"
+        -I"$scratch" -include "$scratch/typed-routing-memory.h" -Xclang -target-cpu -Xclang sm_80 -S "$source_dir/$module.cl" -o "$scratch/$module.ptx"
     "$assembler" -arch=sm_89 "$scratch/$module.ptx" -o "$scratch/$module.cubin"
     python3 - "$scratch/$module.cubin" "$out/$header" "$symbol" "$alignment" <<'PY'
 from pathlib import Path
@@ -49,7 +55,7 @@ python3 "$source_dir/extract-device.py" "$scratch/prediction.c" "$scratch/predic
 "$goose" -o "$scratch/prediction.c" --standalone --header "$scratch/prediction.h" "$source_dir/prediction.goose"
 python3 "$source_dir/extract-device.py" "$scratch/prediction.c" "$scratch/prediction-device.h"
 "${CLANG:-clang-18}" -target nvptx64-nvidia-cuda -nocudalib -O2 -ffp-contract=on \
-    -x cl -cl-std=CL1.2 -I"$scratch" -S -Xclang -target-cpu -Xclang sm_89 \
+    -x cl -cl-std=CL1.2 -I"$scratch" -include "$scratch/typed-routing-memory.h" -S -Xclang -target-cpu -Xclang sm_89 \
     "$source_dir/prediction.cl" -o "$scratch/prediction.ptx"
 "$ptxas" -arch=sm_89 "$scratch/prediction.ptx" -o "$scratch/prediction.cubin"
 python3 - "$scratch/prediction.cubin" "$out/pred-image.h" <<'PY'

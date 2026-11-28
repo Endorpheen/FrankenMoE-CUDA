@@ -10,22 +10,7 @@ typedef uchar uint8_t;
 #define gs_shr_i32(a,b) ((a)>>(b))
 #define GS_RANGE(a,low,high,type,file,line) (a)
 
-static float route_score(ulong address, int index) { return ((__global const float *)address)[index]; }
-static void route_write_score(ulong address, int index, float value) { ((__global float *)address)[index] = value; }
-static void route_write_id(ulong address, int index, int value) { ((__global int *)address)[index] = value; }
-static uint route_shuffle(uint input, int offset) {
-    uint output;
-    __asm__("shfl.sync.bfly.b32 %0, %1, %2, 31, -1;" : "=r"(output) : "r"(input), "r"(offset));
-    return output;
-}
-static float route_swap_f32(float input, int offset) { return as_float(route_shuffle(as_uint(input), offset)); }
-static int route_swap_i32(int input, int offset) { return as_int(route_shuffle(as_uint(input), offset)); }
-static double route_swap_f64(double input, int offset) {
-    ulong bits = as_ulong(input);
-    uint low = route_shuffle((uint)bits, offset);
-    uint high = route_shuffle((uint)(bits >> 32), offset);
-    return as_double(((ulong)high << 32) | low);
-}
+#include "warp-shuffle.h"
 static float route_neg_inf(void) { return as_float(0xff800000u); }
 static float route_clamp(float input) {
     float output;

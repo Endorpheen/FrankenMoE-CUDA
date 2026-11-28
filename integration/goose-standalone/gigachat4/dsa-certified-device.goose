@@ -63,7 +63,11 @@ extern "fg_device_fma" fn score_fma(a: f32, b: f32, acc: f32) -> f32;
 extern "fg_mla_score_put" fn score_put(address: u64, at: i64, x: f32);
 extern "fg_mla_score_get" fn score_get(address: u64, at: i64) -> f32;
 extern "fg_mla_score_sync" fn score_sync();
-extern "fg_dsa_integer_to_float" fn score_convert(dot: i64, a: f32, b: f32) -> f32;
+extern "fg_dsa_integer_to_float" fn score_round(dot: i64) -> f32;
+
+fn score_convert(dot: i64, a: f32, b: f32) -> f32 {
+    return pack_mul(pack_mul(score_round(dot), a), b);
+}
 extern "fg175q_ld_u16" fn score_mask(address: u64, offset: u64) -> u32;
 extern "fg175q_h2f" fn score_half(bits: u32) -> f32;
 
@@ -130,7 +134,7 @@ export fn dsa_integer_score_tile(khi: u64, klo: u64, qhi: u64, qlo: u64,
 
 extern "fg_dsa_bound_ceil_add" fn bound_add(a: f32, b: f32) -> f32;
 extern "fg_dsa_bound_ceil_mul" fn bound_mul(a: f32, b: f32) -> f32;
-extern "fg_dsa_bound_xor" fn bound_xor(v: f32, distance: i32) -> f32;
+extern "fg_device_shfl" fn bound_xor(v: f32, distance: i32) -> f32;
 extern "fg_device_global_load" fn bound_f32(address: u64) -> f32;
 extern "fg_dsa_pack_f16" fn bound_f16(address: u64) -> f32;
 extern "fg_dsa_pack_bits" fn bound_bits(x: f32) -> u32;

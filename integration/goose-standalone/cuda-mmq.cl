@@ -10,7 +10,6 @@ typedef struct { int64_t route_g, live_g; uint64_t group_g, col0_g, col1_g; } Mm
 
 
 
-#include "cuda-mmq-ptx-0.h"
 static float fg_mmq_half_round(float value) {
     const uint16_t bits = mmq_half_bits(value);
     float rounded;

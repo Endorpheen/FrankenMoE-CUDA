@@ -415,7 +415,15 @@ export fn giga_device_mask_scatter(mask: u64, picks: u64, out: u64,
 }
 
 struct MlaMma4 { a: f32, b: f32, c: f32, d: f32 }
-extern "fg_mla_mma_qpair" fn mla_mma_qpair(base: u64) -> u32;
+extern "fg_device_half_bits" fn mla_half_bits(value: f32) -> u16;
+
+fn mla_pack_probability(a: f32, b: f32) -> u32 {
+    return (mla_half_bits(a) as u32) | ((mla_half_bits(b) as u32) << 16);
+}
+
+fn mla_mma_qpair(base: u64) -> u32 {
+    return mla_pack_probability(attn_load(base), attn_load(base + 4));
+}
 extern "fg_mla_mma_kpair" fn mla_mma_kpair(base: u64) -> u32;
 extern "fg_mla_mma_f16" fn mla_mma_f16(acc: MlaMma4, a0: u32, a1: u32, a2: u32,
     a3: u32, b0: u32, b1: u32) -> MlaMma4;
@@ -494,7 +502,6 @@ export fn giga_mla_mma_tile(q: u64, k: u64, v: u64, mask: u64, scratch: u64, cfg
     }
 }
 
-extern "fg_mla_pack_probability" fn mla_pack_probability(a: f32, b: f32) -> u32;
 
 fn mla_pv_rescale(acc: MlaMma4, p0: f32, p1: f32) -> MlaMma4 {
     return MlaMma4 {acc.a*p0, acc.b*p1, acc.c*p0, acc.d*p1};
@@ -925,7 +932,7 @@ export fn giga_dsa_score_shared_q(q: u64, k: u64, weights: u64, mask: u64, out: 
     }
 }
 
-extern "fg_dsa_top_shift" fn dsa_top_shift(value: u64, bits: i64) -> u64;
+fn dsa_top_shift(value: u64, bits: i64) -> u64 { return value << bits; }
 extern "fg_dsa_top_bits" fn dsa_top_bits(x: u64, index: i64) -> u32;
 extern "fg_dsa_bins_clear" fn dsa_bins_clear(bins: u64, index: i64);
 extern "fg_dsa_bins_get" fn dsa_bins_get(bins: u64, index: i64) -> u32;

@@ -1,8 +1,6 @@
 extern "route_raw" fn load(base: u64, index: i32) -> f32;
 extern "route_soft_store" fn store(base: u64, index: i32, value: f32);
 extern "route_max" fn maximum(a: f32, b: f32) -> f32;
-extern "route_f32_xor" fn shuffle_f32(a: f32, delta: i32) -> f32;
-extern "route_f64_xor" fn shuffle_f64(a: f64, delta: i32) -> f64;
 extern "route_exponent" fn exponent(a: f32) -> f32;
 extern "route_fail" fn fail();
 
@@ -23,11 +21,11 @@ export fn goose_router_softmax_256(input: u64, output: u64, scale: f32, lane: i3
     peak = maximum(peak, score5);
     peak = maximum(peak, score6);
     peak = maximum(peak, score7);
-    peak = maximum(peak, shuffle_f32(peak, 16));
-    peak = maximum(peak, shuffle_f32(peak, 8));
-    peak = maximum(peak, shuffle_f32(peak, 4));
-    peak = maximum(peak, shuffle_f32(peak, 2));
-    peak = maximum(peak, shuffle_f32(peak, 1));
+    peak = maximum(peak, swap_f32(peak, 16));
+    peak = maximum(peak, swap_f32(peak, 8));
+    peak = maximum(peak, swap_f32(peak, 4));
+    peak = maximum(peak, swap_f32(peak, 2));
+    peak = maximum(peak, swap_f32(peak, 1));
     var sum: f64 = 0.0;
     let e0 = exponent(score0 - peak);
     sum += e0 as f64;
@@ -45,11 +43,11 @@ export fn goose_router_softmax_256(input: u64, output: u64, scale: f32, lane: i3
     sum += e6 as f64;
     let e7 = exponent(score7 - peak);
     sum += e7 as f64;
-    sum += shuffle_f64(sum, 16);
-    sum += shuffle_f64(sum, 8);
-    sum += shuffle_f64(sum, 4);
-    sum += shuffle_f64(sum, 2);
-    sum += shuffle_f64(sum, 1);
+    sum += swap_f64(sum, 16);
+    sum += swap_f64(sum, 8);
+    sum += swap_f64(sum, 4);
+    sum += swap_f64(sum, 2);
+    sum += swap_f64(sum, 1);
     if !(sum > 0.0) { fail(); return; }
     let inv = (1.0 / sum) as f32;
     store(output, lane + 0, e0 * inv);

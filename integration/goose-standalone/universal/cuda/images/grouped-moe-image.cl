@@ -1,9 +1,4 @@
-static ushort half_bits(float f) {
-    ushort h;
-    __asm__("cvt.rn.f16.f32 %0, %1;" : "=h"(h) : "f"(f));
-    return h;
-}
-
+#include "grouped-moe-image-ptx-0.h"
 static uint half_pair(float lo, float hi) {
     return (uint)half_bits(lo) | ((uint)half_bits(hi) << 16);
 }
@@ -32,9 +27,7 @@ static uint2 iq4_pairs(__global const uchar *row, int k, uint col, int kind) {
         half_pair(scale * iq4_code((qs[8] >> shift) & 15), scale * iq4_code((qs[9] >> shift) & 15)));
 }
 
-static uint64_t moe_word(uint64_t base, int64_t index) { return ((__global const ulong *)base)[index]; }
 static uint moe_pair(uint64_t base, int64_t index) { return *(__global const uint *)((__global const ushort *)base + index); }
-static void moe_store(uint64_t base, int64_t index, float value) { ((__global float *)base)[index] = value; }
 static void moe_pack(uint64_t src, uint64_t dst, int64_t i, int64_t j) {
     ((__global ushort *)dst)[j] = half_bits(((__global const float *)src)[i]);
 }

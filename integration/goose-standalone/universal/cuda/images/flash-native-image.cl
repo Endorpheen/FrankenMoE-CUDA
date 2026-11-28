@@ -1,18 +1,7 @@
 #pragma OPENCL EXTENSION cl_khr_fp64 : enable
 extern float __nv_expf(float);
 
-static ushort half_bits(float value) {
-    ushort result;
-    __asm__("cvt.rn.f16.f32 %0, %1;" : "=h"(result) : "f"(value));
-    return result;
-}
-static void sync_group(void) {
-    __asm__ volatile("bar.sync 0;" ::: "memory");
-}
-static float i2o_load(uint64_t address, int64_t index) { return ((__global float *)address)[index]; }
-static int64_t i2o_position(uint64_t address, int64_t index) { return ((__global int64_t *)address)[index]; }
-static float i2o_shared_read(uint64_t address, int64_t index) { return ((__local float *)address)[index]; }
-static void i2o_shared_write(uint64_t address, int64_t index, float value) { ((__local float *)address)[index] = value; }
+#include "flash-native-image-ptx-0.h"
 static void i2o_probability_write(uint64_t address, int64_t index, float value) { ((__local ushort *)address)[index] = half_bits(value); }
 static float i2o_exp(float value) { return __nv_expf(value); }
 static float i2o_neg_inf(void) { return as_float(0xff800000u); }
@@ -29,8 +18,6 @@ static void i2_flash_store_half(uint64_t address, float value) {
     *(__global ushort *)address = half_bits(value);
 }
 
-static uint i2_flash_load_byte(uint64_t address) { return *(__global const uchar *)address; }
-static uint i2_flash_load_half_bits(uint64_t address) { return *(__global const ushort *)address; }
 static float i2_flash_half_value(uint32_t bits) {
     float value;
     __asm__("cvt.f32.f16 %0, %1;" : "=f"(value) : "h"((ushort)bits));
@@ -43,15 +30,7 @@ static uint i2_native_pair(uint64_t address, int64_t offset) {
 static uint i2_native_shared_pair(uint64_t address, int64_t offset) {
     return *(__local const uint *)((__local const ushort *)address + offset);
 }
-static float i2_native_shuffle(float value, int32_t distance) {
-    float result;
-    __asm__("shfl.sync.bfly.b32 %0, %1, %2, 31, 0xffffffff;" : "=f"(result) : "f"(value), "r"(distance));
-    return result;
-}
-static void i2_native_warp_sync(void) { __asm__ volatile("bar.warp.sync 0xffffffff;" ::: "memory"); }
-static void i2_native_store(uint64_t address, int64_t index, float value) {
-    ((__global float *)address)[index] = value;
-}
+#include "flash-native-image-ptx-1.h"
 #define i2_native_mma(acc,a0,a1,a2,a3,b0,b1) ({ \
     float4 value = mma((float4)((acc).f0,(acc).f1,(acc).f2,(acc).f3),(uint4)(a0,a1,a2,a3),(uint2)(b0,b1)); \
     (__typeof__(acc)){value.x,value.y,value.z,value.w}; \
