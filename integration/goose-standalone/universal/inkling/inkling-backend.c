@@ -1,26 +1,7 @@
-#include <inttypes.h>
 #include "main.h"
 #ifdef I2_NUMERIC_MODULE
-void i2_candidate_init(int argc, char **argv);
-int64_t inkling_row_major_i2_situ(sl_f32 gs_export_arg0, sl_f32 gs_export_arg1, float gs_export_arg2, float gs_export_arg3, sl_f32 gs_export_arg4);
-#define i2_situ inkling_row_major_i2_situ
-int64_t inkling_row_major_i2_relative_positions(int64_t gs_export_arg0, sl_i64 gs_export_arg1, int64_t gs_export_arg2, sl_i32 gs_export_arg3);
-#define i2_relative_positions inkling_row_major_i2_relative_positions
-int64_t inkling_row_major_i2_shortconv_decode(sl_f32 gs_export_arg0, sl_f32 gs_export_arg1, sl_f32 gs_export_arg2, sl_f32 gs_export_arg3, sl_f32 gs_export_arg4);
-#define i2_shortconv_decode inkling_row_major_i2_shortconv_decode
-int64_t inkling_row_major_i2_attention_decode(sl_f32 gs_export_arg0, sl_f32 gs_export_arg1, sl_f32 gs_export_arg2, sl_f32 gs_export_arg3, sl_f32 gs_export_arg4, sl_f32 gs_export_arg5, sl_i64 gs_export_arg6, int64_t gs_export_arg7, int64_t gs_export_arg8, sl_f32 gs_export_arg9, sl_f32 gs_export_arg10);
-#define i2_attention_decode inkling_row_major_i2_attention_decode
-int64_t inkling_row_major_i2_cache_layout(sl_i64 gs_export_arg0, int64_t gs_export_arg1, int64_t gs_export_arg2, int64_t gs_export_arg3, int64_t gs_export_arg4, int64_t gs_export_arg5, int64_t gs_export_arg6, sl_i64 gs_export_arg7);
-#define i2_cache_layout inkling_row_major_i2_cache_layout
-int64_t inkling_row_major_i2_cache_row(int64_t gs_export_arg0, int64_t gs_export_arg1, int64_t gs_export_arg2, uint8_t gs_export_arg3);
-#define i2_cache_row inkling_row_major_i2_cache_row
-void inkling_row_major_i2_reset_cache_positions(sl_i64 gs_export_arg0);
-#define i2_reset_cache_positions inkling_row_major_i2_reset_cache_positions
-int64_t inkling_row_major_i2_store_kv(int64_t gs_export_arg0, int64_t gs_export_arg1, uint8_t gs_export_arg2, sl_i64 gs_export_arg3, sl_f32 gs_export_arg4, sl_f32 gs_export_arg5, sl_f32 gs_export_arg6, sl_f32 gs_export_arg7);
-#define i2_store_kv inkling_row_major_i2_store_kv
 int64_t inkling_row_major_i2_depth_mix(sl_f32 gs_export_arg0, int64_t gs_export_arg1, sl_f32 gs_export_arg2, sl_f32 gs_export_arg3, sl_f32 gs_export_arg4, sl_f32 gs_export_arg5);
 int64_t inkling_row_major_i2_loop_blend(sl_f32 gs_export_arg0, sl_f32 gs_export_arg1, sl_f32 gs_export_arg2, sl_f32 gs_export_arg3, sl_f32 gs_export_arg4);
-int64_t inkling_row_major_i2_attention_token(sl_f32 gs_export_arg0, sl_f32 gs_export_arg1, sl_f32 gs_export_arg2, sl_f32 gs_export_arg3, sl_f32 gs_export_arg4, sl_f32 gs_export_arg5, int64_t gs_export_arg6, int64_t gs_export_arg7, uint8_t gs_export_arg8, sl_i64 gs_export_arg9, sl_f32 gs_export_arg10, sl_f32 gs_export_arg11, sl_f32 gs_export_arg12, sl_f32 gs_export_arg13, sl_f32 gs_export_arg14, sl_f32 gs_export_arg15);
 int64_t inkling_row_major_i2_rms_gain(sl_f32 gs_export_arg0, sl_f32 gs_export_arg1, float gs_export_arg2, sl_f32 gs_export_arg3);
 int64_t inkling_row_major_i2_postconv_token(sl_f32 gs_export_arg0, sl_f32 gs_export_arg1, sl_f32 gs_export_arg2, sl_f32 gs_export_arg3);
 int64_t inkling_row_major_i2_text_logits(sl_f32 gs_export_arg0, int64_t gs_export_arg1, float gs_export_arg2);
@@ -32,7 +13,6 @@ int64_t inkling_row_major_i2_text_logits(sl_f32 gs_export_arg0, int64_t gs_expor
 #include "graph-execute.h"
 #include "ggml.h"
 
-extern int64_t fg143_graph_nodes(uint64_t graph);
 #include "native-kv.h"
 #include "moe-epilogue.h"
 #include "situ.h"
@@ -40,12 +20,8 @@ extern int64_t fg143_graph_nodes(uint64_t graph);
 #include "inkling-backend.h"
 
 #include <assert.h>
-#include <math.h>
 #include <pthread.h>
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <time.h>
 
 static double now(void);
@@ -59,7 +35,6 @@ static _Thread_local unsigned call_count[9];
     ++call_count[index]; \
     result; \
 })
-#define i2_attention_token(...) MEASURE(0, I2_CALL(i2_attention_token)(__VA_ARGS__))
 #define i2_depth_mix(...) MEASURE(1, I2_CALL(i2_depth_mix)(__VA_ARGS__))
 #define i2_rms_gain(...) MEASURE(2, I2_CALL(i2_rms_gain)(__VA_ARGS__))
 #define i2_loop_blend(...) MEASURE(3, I2_CALL(i2_loop_blend)(__VA_ARGS__))
@@ -67,20 +42,6 @@ static _Thread_local unsigned call_count[9];
 #define i2_text_logits(...) MEASURE(5, I2_CALL(i2_text_logits)(__VA_ARGS__))
 #define i2_attention_projections(...) MEASURE(6, i2_attention_projections(__VA_ARGS__))
 #define i2_moe_ffn(...) MEASURE(7, i2_moe_ffn(__VA_ARGS__))
-#define fg_standalone_graph_compute(...) MEASURE(8, fg_standalone_graph_compute(__VA_ARGS__))
-
-extern void fg_cuda_enable_inkling_quants(bool enabled);
-extern void fg_cuda_inkling_expert_phase(bool prefill, int position, int count);
-extern void i2_cuda_attention_stats(void);
-extern int64_t fg_cuda_free_bytes(void);
-
-enum { model_width=2304, ff=1152, experts=128, active=8 };
-extern bool fg_i2_host_resident_plan(void);
-extern bool fg_i2_host_resident_control(void);
-extern bool fg_i2_resident_moe(void);
-extern bool fg_i2_serial_graph_enabled(void);
-extern bool fg_i2_resident_attention_projection(void);
-extern bool fg_i2_device_attention_input(void);
 
 static _Thread_local float *prefill_direct_output;
 static _Thread_local size_t prefill_direct_output_size;
@@ -92,26 +53,6 @@ float *fg_i2_swap_direct_output(float *output) {
     if (old) prefill_direct_output = output;
     return old;
 }
-extern void *fg_cuda_inkling_prefill_readback(size_t bytes);
-extern void fg_cuda_i2_prefill_conv(const float *weights, float *history);
-extern void inkling_arena_window(bool active, int begin);
-extern bool inkling_arena_depthmix(const float *past, const float *next, const float *query, float *output, int rows, bool save_history, uint64_t full_outputs);
-extern unsigned inkling_arena_depthmix_close(void);
-extern unsigned inkling_arena_depthmix_reads(void);
-extern void inkling_arena_residual_open(float *host);
-extern void inkling_moe_retain_output(float *host, uint64_t device);
-extern uint64_t inkling_prefill_full_scratch(size_t bytes);
-extern bool inkling_arena_boundary_read(float *output, int index, bool last_only);
-extern uint64_t inkling_loop_storage(void);
-extern bool inkling_loop_save(uint64_t storage, const float *previous);
-extern void inkling_loop_bind(const float *queries, const float *q, const float *k,
-                              const float *v, const float *ffn);
-extern unsigned inkling_loop_generated(void);
-extern void inkling_loop_release(void);
-extern void inkling_prelude_clear(void);
-extern bool inkling_prelude_use(bool capture);
-extern bool inkling_prefill_final_rows(float *current, float *prelude);
-
 bool fg_i2_readback_matches(float *output, size_t elements) {
     return output == prefill_direct_output && elements == prefill_direct_output_size;
 }
@@ -123,10 +64,7 @@ int32_t fg_i2_measure_graph_plan(struct fg_standalone_graph_plan *plan) {
 _Static_assert(offsetof(struct ggml_tensor, type) == 0 && offsetof(struct ggml_tensor, view_src) == 232,
     "Goose graph readback ABI");
 
-// Test driver for the shared Goose graph executor. Each component's
-// floating-point operations and expert decisions are in the runtime.
-enum { physical=24, logical=INKLING_VISITS, key_width=1024, attn_width=3072,
-       vocabulary=INKLING_TEXT_VOCAB, out_width=201024 };
+enum { logical=INKLING_VISITS, model_width=2304, attn_width=3072, vocabulary=INKLING_TEXT_VOCAB, out_width=201024 };
 
 struct inkling_decode_graph {
     struct ggml_context *context;
@@ -165,25 +103,6 @@ struct decoder {
 
 #include "native-host.h"
 
-extern bool fg_i2_host_cached_history(void);
-extern void fg_i2_host_save_history(float *row, float *current);
-extern void fg_i2_host_mix(float *history, int count, float *current, sl_f32 queries, int queries_count, float *out);
-extern void fg_i2_host_control_group(struct decoder *, const int64_t *, int, float *, int, float *);
-extern struct ggml_tensor *fg_i2_host_rows_input(struct ggml_context *, float *, int, int);
-extern struct ggml_tensor *fg_i2_host_controller_node(struct ggml_context *, struct decoder *,
-    const int64_t *, int, struct ggml_tensor *, struct ggml_tensor *, struct ggml_tensor *);
-extern void fg_i2_host_control_resident(struct decoder *, const int64_t *, int, float *, float *, int);
-extern void fg_i2_host_control(struct decoder *, const int64_t *, int, float *, float *);
-
-#define use_cached_history fg_i2_host_cached_history
-#define save_history_row fg_i2_host_save_history
-#define mix fg_i2_host_mix
-#define project_control_group fg_i2_host_control_group
-#define rows_input fg_i2_host_rows_input
-#define controller_node fg_i2_host_controller_node
-#define control_resident fg_i2_host_control_resident
-#define control fg_i2_host_control
-
 int64_t fg_i2_host_measured_rms(sl_f32 input, sl_f32 weight, float eps, sl_f32 out) {
     return i2_rms_gain(input, weight, eps, out);
 }
@@ -196,24 +115,6 @@ int64_t fg_i2_host_measured_blend(sl_f32 current, sl_f32 message, sl_f32 gain, s
 
 _Static_assert(offsetof(struct ggml_tensor, data) == 248 && GGML_TYPE_F32 == 0 &&
     GGML_UNARY_OP_TANH == 4, "Goose Inkling control graph ABI");
-
-extern struct ggml_tensor *fg_i2_host_moe_node(struct ggml_context *, struct decoder *,
-    const int64_t *, const int64_t *, int, int, int, struct ggml_tensor *, float *,
-    struct ggml_tensor *, struct inkling_decode_graph *);
-extern void fg_i2_host_moe_resident(struct decoder *, const int64_t *, const int64_t *,
-    int, int, int, float *, float *, float *, float *);
-extern bool fg_i2_host_share_attention(bool, const int64_t *);
-extern struct ggml_tensor *fg_i2_host_attention_node(struct ggml_context *, struct decoder *,
-    const int64_t *, int, bool, float **, float **, const struct inkling_attention_graph_call *,
-    struct inkling_decode_graph *);
-extern void fg_i2_host_attention_graph(struct decoder *, const int64_t *, const int64_t *,
-    int, int, int, bool, float **, float **, float *);
-
-#define moe_node fg_i2_host_moe_node
-#define moe_resident fg_i2_host_moe_resident
-#define share_attention_inputs fg_i2_host_share_attention
-#define attention_node fg_i2_host_attention_node
-#define attention_graph fg_i2_host_attention_graph
 
 int64_t fg_i2_host_measured_moe(int64_t ctx, int64_t input, sl_i64 weights, sl_i64 work, sl_i64 nodes) {
     return i2_moe_ffn(ctx, input, weights, work, nodes);

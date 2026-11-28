@@ -17,9 +17,6 @@ _Static_assert(offsetof(struct prefill_token, prelude) == 9216 && offsetof(struc
     "Goose prefill repeat input ABI");
 
 extern struct ggml_tensor *fg_i2_host_rows_input(struct ggml_context *ctx, float *rows, int width, int count);
-extern void prefill_projection(struct decoder *d, int64_t id, float *input, int width, float *output, int rows, int count);
-extern void prefill_loop_inputs(struct decoder *d, struct prefill_token *token, int layer, int pass, bool device_loop, bool device_prelude);
-
 struct prefill_workspace {
     float inputs[3][max_prefill_batch][model_width];
     float projections[max_prefill_batch * 8664];
@@ -61,8 +58,6 @@ struct i2_prefill_work {
     float *logits;
     bool skip_host_mix, device_attention_mix, device_current, device_boundary, device_loop, device_prelude, poison_host;
 };
-
-extern void fg_i2_prefill_partition(uint64_t address, int64_t begin, int64_t end);
 
 #include "prefill-team.h"
 

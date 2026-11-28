@@ -37,6 +37,3 @@ _Static_assert(sizeof(struct i2_prefill_team) == 296 &&
 #endif
 
 _Static_assert(offsetof(struct i2_prefill_team, lock) == 0, "Goose team mutex ABI");
-extern bool prefill_team_open(struct i2_prefill_team *team, int tasks, bool prefill);
-extern void prefill_team_close(struct i2_prefill_team *team);
-extern void prefill_team_run(struct i2_prefill_team *team, const struct i2_prefill_work *work, int count);
