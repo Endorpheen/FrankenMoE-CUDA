@@ -363,9 +363,9 @@ static void prefill_layer(struct decoder *d, struct prefill_token *tokens, struc
             fg_i2_native_workspace(d, count, &args);
             fg_i2_prepare_prefill_rows(d, &args, aux, slot, begin, count, sliding, scratch->projections, packed);
             if (use_resident_attention_projection()) {
-                native_attention_project(d, args, aux, slot, begin, count, sliding, named(d, core[3]), scratch->linear[0]);
+                fg_i2_native_project(d, &args, aux, slot, begin, count, sliding, core[3], scratch->linear[0]);
             } else {
-                native_attention_submit(d, args, aux, slot, begin, count, sliding, scratch->attention[0]);
+                fg_i2_native_submit(d, &args, aux, slot, begin, count, sliding, scratch->attention[0]);
                 prefill_projection(d, core[3], scratch->attention[0], attn_width, scratch->linear[0], model_width, count);
             }
         }

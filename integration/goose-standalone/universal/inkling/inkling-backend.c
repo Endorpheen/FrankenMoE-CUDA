@@ -346,9 +346,18 @@ void fg_i2_host_execute_entry(struct inkling_decode_graph *entry, float *out) {
     execute_decode_graph(entry, out);
 }
 
-void fg_i2_host_bind_attention(struct decoder *d, const int64_t *core, const int64_t *aux,
-    int slot, int begin, int count, bool sliding, struct inkling_attention_graph_call *metadata) {
-    *metadata = bind_attention_graph(d, core, aux, slot, begin, count, sliding);
+void fg_i2_measure_native_attention(const struct inkling_attention_batch *batch,
+    const struct inkling_attention_input_projections *inputs, const struct inkling_attention_projection *output) {
+    const double start = now();
+    if (inputs) {
+        assert(inkling_attention_execute_resident(batch, inputs, output) == 0);
+    } else if (output) {
+        assert(inkling_attention_execute_project(batch, output) == 0);
+    } else {
+        assert(inkling_attention_execute(batch) == 0);
+    }
+    call_seconds[0] += now() - start;
+    ++call_count[0];
 }
 
 _Static_assert(offsetof(struct decoder, decode_attention) == 887280 &&
@@ -415,9 +424,9 @@ void fg_i2_serial_native_attention(struct decoder *d, const int64_t *core, const
         fg_i2_native_workspace(d, 1, &args);
         fg_i2_prepare_native_row(d, &args, aux, slot, absolute, 0, sliding, projected, packed);
         if (use_resident_attention_projection()) {
-            native_attention_project(d, args, aux, slot, absolute, 1, sliding, named(d, core[3]), proj);
+            fg_i2_native_project(d, &args, aux, slot, absolute, 1, sliding, core[3], proj);
         } else {
-            native_attention_submit(d, args, aux, slot, absolute, 1, sliding, attn);
+            fg_i2_native_submit(d, &args, aux, slot, absolute, 1, sliding, attn);
             project(d, core[3], attn, attn_width, proj, model_width);
         }
     }

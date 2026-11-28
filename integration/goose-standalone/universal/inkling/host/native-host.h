@@ -14,43 +14,14 @@ _Static_assert(offsetof(struct decoder, flash_floats) == 887104 && offsetof(stru
 extern void fg_i2_prepare_native_row(struct decoder *d, const struct native_attention_inputs *args,
     const int64_t *aux, int slot, int position, int index, bool sliding, float *projected, int packed);
 
-static void native_attention_submit(struct decoder *d, struct native_attention_inputs args,
-    const int64_t *aux, int slot, int begin, int count, bool sliding, float *out) {
-    const struct inkling_attention_batch request = {
-        .slot = slot, .capacity = d->capacity, .first = begin, .count = count, .sliding = sliding,
-        .format = d->format, .q = args.q, .k = args.k, .v = args.v, .relative = args.relative, .sinks = args.sinks,
-        .bias = coefficients(d, aux[6], 16384).data, .output = out,
-    };
-    const double start = now();
-    assert(inkling_attention_execute(&request) == 0);
-    call_seconds[0] += now() - start;
-    ++call_count[0];
-    fg_i2_native_finish(&args, count, out);
-}
+extern void fg_i2_native_submit(struct decoder *d, const struct native_attention_inputs *args,
+    const int64_t *aux, int slot, int begin, int count, bool sliding, float *out);
+extern void fg_i2_native_project(struct decoder *d, const struct native_attention_inputs *args,
+    const int64_t *aux, int slot, int begin, int count, bool sliding, int64_t weight_id, float *out);
 
 static bool use_resident_attention_projection(void) {
     const char *setting = getenv("I2_ATTENTION_RESIDENT");
     return !setting || strcmp(setting, "0") != 0;
-}
-
-static void native_attention_project(struct decoder *d, struct native_attention_inputs args,
-    const int64_t *aux, int slot, int begin, int count, bool sliding, weight weights, float *out) {
-    assert(weights.kind == GGML_TYPE_Q8_0 && weights.shape[0] == attn_width &&
-           weights.shape[1] == model_width && weights.shape[2] == 1 && weights.shape[3] == 1);
-    const struct inkling_attention_batch batch = {
-        .slot = slot, .capacity = d->capacity, .first = begin, .count = count, .sliding = sliding,
-        .format = d->format, .q = args.q, .k = args.k, .v = args.v, .relative = args.relative, .sinks = args.sinks,
-        .bias = coefficients(d, aux[6], 16384).data, .output = out,
-    };
-    const struct inkling_attention_projection projection = {
-        .gate = args.gates, .weights = weights.data,
-        .weight_bytes = model_width * ggml_row_size(GGML_TYPE_Q8_0, attn_width),
-        .rows = model_width,
-    };
-    const double start = now();
-    assert(inkling_attention_execute_project(&batch, &projection) == 0);
-    call_seconds[0] += now() - start;
-    ++call_count[0];
 }
 
 static bool use_device_attention_input(void) {
@@ -58,49 +29,27 @@ static bool use_device_attention_input(void) {
     return use_resident_attention_projection() && (!setting || strcmp(setting, "0") != 0);
 }
 
-static struct inkling_attention_graph_call bind_attention_graph(struct decoder *d, const int64_t *core, const int64_t *aux,
-    int slot, int begin, int count, bool sliding) {
-    const int64_t ids[] = {core[0], core[1], core[2], aux[5], aux[8], core[4], aux[15], aux[16]};
-    const int widths[] = {3072, 1024, 1024, 384, 24, 3072, 32, 32};
-    struct inkling_attention_input_projections inputs = {
-        .q_clip = coefficients(d, aux[4], 3072).data,
-        .r_clip = coefficients(d, aux[7], 384).data,
-        .key_kernel = coefficients(d, aux[0], 4096).data,
-        .value_kernel = coefficients(d, aux[1], 4096).data,
-    };
-    for (int i = 0; i < (sliding ? 6 : 8); ++i) {
-        weight w = named(d, ids[i]);
-        assert(w.kind == GGML_TYPE_Q8_0 && w.shape[0] == model_width &&
-               w.shape[1] == widths[i] && w.shape[2] == 1 && w.shape[3] == 1);
-        inputs.weights[i] = w.data;
-    }
-    weight w = named(d, core[3]);
-    assert(w.kind == GGML_TYPE_Q8_0 && w.shape[0] == attn_width &&
-           w.shape[1] == model_width && w.shape[2] == 1 && w.shape[3] == 1);
-    const struct inkling_attention_projection projection = {
-        .weights = w.data, .weight_bytes = model_width * ggml_row_size(GGML_TYPE_Q8_0, attn_width),
-        .rows = model_width,
-    };
-    const struct inkling_attention_batch batch = {
-        .slot = slot, .capacity = d->capacity, .first = begin, .count = count,
-        .sliding = sliding, .format = d->format, .bias = coefficients(d, aux[6], 16384).data,
-    };
-    return (struct inkling_attention_graph_call){batch, inputs, projection};
-}
+extern void fg_i2_host_bind_attention(struct decoder *d, const int64_t *core, const int64_t *aux,
+    int slot, int begin, int count, bool sliding, struct inkling_attention_graph_call *call);
+extern void fg_i2_native_resident(struct decoder *d, const int64_t *core, const int64_t *aux,
+    int slot, int begin, int count, bool sliding, const float *q, const float *k, const float *v, float *out);
+#define native_attention_resident fg_i2_native_resident
 
-static void native_attention_resident(struct decoder *d, const int64_t *core, const int64_t *aux,
-    int slot, int begin, int count, bool sliding, const float *q, const float *k, const float *v, float *out) {
-    struct inkling_attention_graph_call call = bind_attention_graph(d, core, aux, slot, begin, count, sliding);
-    call.inputs.input[0] = q;
-    call.inputs.input[1] = k;
-    call.inputs.input[2] = v;
-    call.batch.output = out;
-    const double start = now();
-
-    assert(inkling_attention_execute_resident(&call.batch, &call.inputs, &call.output) == 0);
-    call_seconds[0] += now() - start;
-    ++call_count[0];
-}
+_Static_assert(sizeof(struct inkling_attention_batch) == 80 &&
+    offsetof(struct inkling_attention_batch, sliding) == 16 && offsetof(struct inkling_attention_batch, format) == 20 &&
+    offsetof(struct inkling_attention_batch, q) == 24 && offsetof(struct inkling_attention_batch, k) == 32 &&
+    offsetof(struct inkling_attention_batch, v) == 40 && offsetof(struct inkling_attention_batch, relative) == 48 &&
+    offsetof(struct inkling_attention_batch, bias) == 56 && offsetof(struct inkling_attention_batch, sinks) == 64 &&
+    offsetof(struct inkling_attention_batch, output) == 72 &&
+    offsetof(struct inkling_attention_graph_call, inputs) == 80 && offsetof(struct inkling_attention_graph_call, output) == 200 &&
+    offsetof(struct inkling_attention_input_projections, weights) == 24 &&
+    offsetof(struct inkling_attention_input_projections, q_clip) == 88 &&
+    offsetof(struct inkling_attention_input_projections, r_clip) == 96 &&
+    offsetof(struct inkling_attention_input_projections, key_kernel) == 104 &&
+    offsetof(struct inkling_attention_input_projections, value_kernel) == 112 &&
+    sizeof(struct inkling_attention_projection) == 32 && offsetof(struct inkling_attention_projection, weights) == 8 &&
+    offsetof(struct inkling_attention_projection, weight_bytes) == 16 &&
+    offsetof(struct inkling_attention_projection, rows) == 24, "Goose native attention binding ABI");
 
 static int reset_inkling_attention(struct decoder *d) {
     if (inkling_attention_reset() != 0) return -1;

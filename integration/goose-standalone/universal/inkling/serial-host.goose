@@ -335,3 +335,85 @@ export fn fg_i2_native_finish(args: u64, count: i32, output: u64) {
         assert(i2_finish_native(i2d_span(gate + offset, 3072), i2d_span(output + offset, 3072)) == 3072);
     }
 }
+
+extern fn fg_i2_measure_native_attention(batch: u64, inputs: u64, output: u64);
+
+fn i2_native_batch(decoder: u64, aux: u64, slot: i32, begin: i32, count: i32, sliding: bool,
+    args: u64, output: u64, batch: u64) {
+    i2d_set_int(batch, slot);
+    i2d_set_int(batch + 4, i2d_int(decoder + I2D_CAP));
+    i2d_set_int(batch + 8, begin);
+    i2d_set_int(batch + 12, count);
+    i2d_set_byte(batch + 16, if sliding { 1 } else { 0 });
+    i2d_set_int(batch + 20, i2d_int(decoder + I2D_FMT));
+    if args != 0 {
+        i2d_transfer(batch + 24, args, 32);
+        i2d_set(batch + 64, i2d_read(args + 32));
+    }
+    i2d_set(batch + 56, i2_native_weight(decoder, aux, 6, 16384).address);
+    i2d_set(batch + 72, output);
+}
+
+fn i2_native_q8_weight(decoder: u64, id: i64, width: u64, rows: u64) -> u64 {
+    let record = i2_tensor_record(decoder, id as! u64);
+    assert(i2d_read(record + 16) == 8 && i2d_read(record + 32) == width &&
+        i2d_read(record + 40) == rows && i2d_read(record + 48) == 1 && i2d_read(record + 56) == 1);
+    return i2d_read(decoder) + i2d_read(record + 80);
+}
+
+fn i2_native_projection(decoder: u64, weight_id: i64, gate: u64, output: u64) {
+    i2d_set(output, gate);
+    i2d_set(output + 8, i2_native_q8_weight(decoder, weight_id, 3072, 2304));
+    i2d_set(output + 16, 2304 * ggml_row_size(8, 3072));
+    i2d_set_int(output + 24, 2304);
+}
+
+export fn fg_i2_native_submit(decoder: u64, args: u64, aux: u64, slot: i32, begin: i32, count: i32, sliding: bool, output: u64) {
+    var batch: u64[10] = [0; 10];
+    let packet = i2d_address(unsafe_c_address<c_ptr<const void>>(batch[0]));
+    i2_native_batch(decoder, aux, slot, begin, count, sliding, args, output, packet);
+    fg_i2_measure_native_attention(packet, 0, 0);
+    fg_i2_native_finish(args, count, output);
+}
+
+export fn fg_i2_native_project(decoder: u64, args: u64, aux: u64, slot: i32, begin: i32, count: i32,
+    sliding: bool, weight_id: i64, output: u64) {
+    var batch: u64[10] = [0; 10];
+    var projection: u64[4] = [0; 4];
+    let packet = i2d_address(unsafe_c_address<c_ptr<const void>>(batch[0]));
+    let projected = i2d_address(unsafe_c_address<c_ptr<const void>>(projection[0]));
+    i2_native_batch(decoder, aux, slot, begin, count, sliding, args, output, packet);
+    i2_native_projection(decoder, weight_id, i2d_read(args + 40), projected);
+    fg_i2_measure_native_attention(packet, 0, projected);
+}
+
+export fn fg_i2_host_bind_attention(decoder: u64, core: u64, aux: u64, slot: i32, begin: i32, count: i32,
+    sliding: bool, call: u64) {
+    i2_node_clear(unsafe_c_ptr<c_ptr<void>>(call), 0, 232);
+    i2_native_batch(decoder, aux, slot, begin, count, sliding, 0, 0, call);
+    let input = call + 80;
+    let ids: i64[8] = [i2_host_aux(core, 0), i2_host_aux(core, 1), i2_host_aux(core, 2),
+        i2_host_aux(aux, 5), i2_host_aux(aux, 8), i2_host_aux(core, 4), i2_host_aux(aux, 15), i2_host_aux(aux, 16)];
+    let widths: u64[8] = [3072, 1024, 1024, 384, 24, 3072, 32, 32];
+    let matrices: i64 = if sliding { 6 } else { 8 };
+    for index in matrices {
+        i2d_set(input + 24 + (index as! u64) * 8, i2_native_q8_weight(decoder, ids[index], 2304, widths[index]));
+    }
+    i2d_set(input + 88, i2_native_weight(decoder, aux, 4, 3072).address);
+    i2d_set(input + 96, i2_native_weight(decoder, aux, 7, 384).address);
+    i2d_set(input + 104, i2_native_weight(decoder, aux, 0, 4096).address);
+    i2d_set(input + 112, i2_native_weight(decoder, aux, 1, 4096).address);
+    i2_native_projection(decoder, i2_host_aux(core, 3), 0, call + 200);
+}
+
+export fn fg_i2_native_resident(decoder: u64, core: u64, aux: u64, slot: i32, begin: i32, count: i32,
+    sliding: bool, q: u64, k: u64, v: u64, output: u64) {
+    var storage: u64[29];
+    let call = i2d_address(unsafe_c_address<c_ptr<const void>>(storage[0]));
+    fg_i2_host_bind_attention(decoder, core, aux, slot, begin, count, sliding, call);
+    i2d_set(call + 72, output);
+    i2d_set(call + 80, q);
+    i2d_set(call + 88, k);
+    i2d_set(call + 96, v);
+    fg_i2_measure_native_attention(call, call + 80, call + 200);
+}

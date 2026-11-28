@@ -15,7 +15,6 @@ const I2_ENTRY_BYTES: u64 = 368;
 
 extern fn fg_i2_host_measured_moe(ctx: i64,input: i64,weights: I2DraftSpan,work: I2DraftSpan,nodes: I2DraftSpan) -> i64;
 extern fn fg_i2_host_execute_entry(entry: u64,output: u64);
-extern fn fg_i2_host_bind_attention(decoder: u64,core: u64,aux: u64,slot: i32,begin: i32,count: i32,sliding: bool,metadata: u64);
 extern fn ggml_dup_tensor(ctx: u64,tensor: u64) -> u64;
 extern "memset" fn i2_node_clear(dst: c_ptr<void>,byte: i32,bytes: u64) -> c_ptr<void>;
 
