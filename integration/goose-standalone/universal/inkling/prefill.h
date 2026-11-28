@@ -192,6 +192,11 @@ extern bool fg_i2_prefill_resident_moe(struct decoder *d, const int64_t *core, c
     bool device_loop, bool prune_host, bool retain, bool direct_depthmix, uint64_t output_slot,
     float *ffn, float *residual, float *output, float *gain);
 
+_Static_assert(sizeof(((struct prefill_workspace *)0)->inputs[0]) == 37748736, "Goose prefill attention input stride");
+extern void fg_i2_prefill_resident_attention(struct decoder *d, const int64_t *core, const int64_t *aux,
+    int slot, int begin, int layer, int pass, int count, bool sliding, bool device_postconv,
+    bool direct_depthmix, bool prune_host, bool device_loop, bool attention_mix, float *inputs, float **messages, float *output);
+
 void fg_i2_prefill_layer(struct decoder *d, struct prefill_token *tokens, struct prefill_workspace *scratch,
                           int count, int begin, const int64_t *visit, struct i2_prefill_team *team,
                           bool *device_current, bool retain_current, uint64_t output_slot,
@@ -253,44 +258,9 @@ void fg_i2_prefill_layer(struct decoder *d, struct prefill_token *tokens, struct
     struct ggml_context *ctx;
     int64_t work[16] = {0};
     if (resident_attention) {
-        float *input[] = {scratch->inputs[0][0], scratch->inputs[1][0], scratch->inputs[2][0]};
-        float *output = device_postconv ? scratch->residual[0] : scratch->linear[0];
-        float *const old_direct_output = prefill_direct_output;
-        if (device_postconv) {
-            fg_cuda_i2_prefill_conv(coefficients(d, aux[2], 4 * model_width).data,
-                                    d->ha + slot * 3 * model_width);
-            if (old_direct_output) prefill_direct_output = output;
-            if (direct_depthmix) {
-                if (!prune_host)
-                    for (int t = 0; t < count; ++t)
-                        for (int c = 0; c < model_width; ++c) scratch->residual[t][c] = NAN;
-                inkling_arena_residual_open(output);
-            }
-        }
-        const float *queries = device_loop ? coefficients(d, aux[17], 4 * model_width).data : NULL;
-        if (device_loop) {
-            if (!prune_host)
-                for (int q = 0; q < 3; ++q)
-                    for (int t = 0; t < count; ++t)
-                        for (int c = 0; c < model_width; ++c) message[q][t * model_width + c] = NAN;
-            inkling_loop_bind(queries, message[0], message[1], message[2], NULL);
-        }
-        attention_graph(d, core, aux, slot, begin, count, sliding, input, pass > 0 ? message : NULL,
-                        output);
-        if (device_loop) {
-            assert(inkling_loop_generated() == 7);
-            inkling_loop_bind(NULL, NULL, NULL, NULL, NULL);
-        }
-        if (device_attention_mix) {
-            const unsigned reads = inkling_arena_depthmix_reads();
-            assert(reads);
-            fprintf(stderr, "Inkling %s DepthMix begin=%d layer=%d pass=%d reads=%u\n",
-                    sliding ? "sliding" : "full", begin, layer, pass, reads);
-        }
-        if (device_postconv) {
-            fg_cuda_i2_prefill_conv(NULL, NULL);
-            prefill_direct_output = old_direct_output;
-        }
+        fg_i2_prefill_resident_attention(d, core, aux, slot, begin, layer, pass, count, sliding,
+            device_postconv, direct_depthmix, prune_host, device_loop, device_attention_mix,
+            scratch->inputs[0][0], message, device_postconv ? scratch->residual[0] : scratch->linear[0]);
     } else {
         for (int i = 0; i < 3; ++i) {
             if (pass > 0) {

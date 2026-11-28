@@ -772,3 +772,57 @@ export fn i2_prefill_run_visit(work: u64, index: i64, device: I2DraftSpan, retai
         fg_i2_prefill_trace_visit(index as! i32, tokens + 285708);
     }
 }
+
+extern fn fg_i2_swap_direct_output(output: u64) -> u64;
+extern fn fg_cuda_i2_prefill_conv(weights: u64, history: u64);
+extern fn inkling_arena_residual_open(output: u64);
+extern fn inkling_arena_depthmix_reads() -> u32;
+
+fn i2_poison_prefill_rows(output: u64, count: i32) {
+    for index in (count as! i64) * 2304 { i2d_set_int(output + (index as! u64) * 4, 0x7fc00000); }
+}
+
+export fn fg_i2_prefill_resident_attention(decoder: u64, core: u64, aux: u64,
+    slot: i32, begin: i32, layer: i32, pass: i32, count: i32, sliding: bool, device_postconv: bool,
+    direct_depthmix: bool, prune_host: bool, device_loop: bool, attention_mix: bool,
+    inputs: u64, messages: u64, output: u64) {
+    let rows: u64[3] = [inputs, inputs + 37748736, inputs + 75497472];
+    let row_table = i2d_address(unsafe_c_address<c_ptr<const void>>(rows[0]));
+    var saved_output: u64 = 0;
+    if device_postconv {
+        let history = i2d_read(decoder + I2D_HA) + (slot as! u64) * 27648;
+        fg_cuda_i2_prefill_conv(i2_native_weight(decoder, aux, 2, 9216).address, history);
+        saved_output = fg_i2_swap_direct_output(output);
+        if direct_depthmix {
+            if !prune_host { i2_poison_prefill_rows(output, count); }
+            inkling_arena_residual_open(output);
+        }
+    }
+    if device_loop {
+        let q = i2d_read(messages);
+        let k = i2d_read(messages + 8);
+        let v = i2d_read(messages + 16);
+        if !prune_host {
+            i2_poison_prefill_rows(q, count);
+            i2_poison_prefill_rows(k, count);
+            i2_poison_prefill_rows(v, count);
+        }
+        inkling_loop_bind(i2_native_weight(decoder, aux, 17, 9216).address, q, k, v, 0);
+    }
+    fg_i2_host_attention_graph(decoder, core, aux, slot, begin, count, sliding,
+        row_table, if pass > 0 { messages } else { 0 }, output);
+    if device_loop {
+        assert(inkling_loop_generated() == 7);
+        inkling_loop_bind(0, 0, 0, 0, 0);
+    }
+    if attention_mix {
+        let reads = inkling_arena_depthmix_reads();
+        assert(reads != 0);
+        let kind = if sliding { "sliding" } else { "full" };
+        i2d_log(str("Inkling ", kind, " DepthMix begin=", begin, " layer=", layer, " pass=", pass, " reads=", reads, "\n"));
+    }
+    if device_postconv {
+        fg_cuda_i2_prefill_conv(0, 0);
+        fg_i2_swap_direct_output(saved_output);
+    }
+}

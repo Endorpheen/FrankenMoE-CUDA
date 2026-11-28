@@ -121,6 +121,12 @@ extern bool fg_i2_device_attention_input(void);
 
 static _Thread_local float *prefill_direct_output;
 static _Thread_local size_t prefill_direct_output_size;
+
+float *fg_i2_swap_direct_output(float *output) {
+    float *old = prefill_direct_output;
+    if (old) prefill_direct_output = output;
+    return old;
+}
 extern void *fg_cuda_inkling_prefill_readback(size_t bytes);
 extern void fg_cuda_i2_prefill_conv(const float *weights, float *history);
 extern void inkling_arena_window(bool active, int begin);
