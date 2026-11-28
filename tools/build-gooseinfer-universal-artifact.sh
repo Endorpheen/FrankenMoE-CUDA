@@ -30,7 +30,7 @@ if [[ $target == linux ]]; then
     inputs+=("$archive" "$out/bonsai-images.o")
 else
     inputs+=("$out/bonsai-images.o"
-             "$out/common/"{socket-forwards,graph-bindings,goose-host,ggml,probability,probability-pipeline,planner-link}.o
+             "$out/common/"{socket-forwards,graph-bindings,goose-host,probability,probability-pipeline,planner-link}.o
              "$out/inkling-model/inkling-model.o" "$out/inkling/"{prior,bucket,tokenizer}.o)
 fi
 printf '%s\n' "${inputs[@]}" > "$out/link-inputs.argv"

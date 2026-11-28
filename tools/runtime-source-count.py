@@ -50,7 +50,7 @@ mark(u/'inkling','graph-platform inkling-backend','.c',both,'Graph ABI, executio
 mark(u/'bonsai','backend-cold model-host','.c',both,'Bonsai session and model host')
 mark(u/'common','probability-platform','.c',both,'Probability platform adapter')
 mark(Path('integration/m1/host'),'goose_host','.c',both,'Goose ABI, platform and quantization helpers')
-mark(g/'src','ggml','.c',both,'GGML tensor and graph core')
+mark(g/'src','ggml','.c','Host Linux','Linux debugger binding and tensor ABI checks')
 images=d/'images'
 names=' '.join(line.split()[0].removesuffix('.h') for line in (root/images/'inkling-images.txt').read_text().splitlines() if line.strip())
 gpu='GPU image input'

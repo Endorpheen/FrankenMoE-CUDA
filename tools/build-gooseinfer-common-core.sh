@@ -28,8 +28,11 @@ flags=(-std=c11 -D_GNU_SOURCE -ffunction-sections -fdata-sections
        -DGOOSEINFER_TYPE_METADATA_ONLY -DGOOSEINFER_GOOSE_METADATA -DGOOSEINFER_GOOSE_HOST_QUANT "-fmacro-prefix-map=$root=$source_prefix"
        -I"$out" -I"$model_headers" -I"$standalone" -I"$host"
        -I"$ggml/include" -I"$ggml/src" -I"$ggml/src/ggml-cpu")
-"$cc" -O1 "${flags[@]}" "${hardening[@]}" \
-    -c "$ggml/src/ggml.c" -o "$out/ggml.o"
+if [[ "$target" == linux ]]; then
+    "$cc" -O1 "${flags[@]}" "${hardening[@]}" -c "$ggml/src/ggml.c" -o "$out/ggml.o"
+else
+    "$cc" "${flags[@]}" -fsyntax-only "$ggml/src/ggml.c"
+fi
 "$cc" "${flags[@]}" -x c -fsyntax-only "$standalone/graph-bindings-layout.h"
 printf 'extern fn host_quant_lround(value: f32) -> %s;\n' "$native_long" > "$out/common-core.goose"
 if "$cc" "${flags[@]}" -dM -E -x c /dev/null | awk '$2 == "NDEBUG" { seen = 1 } END { exit !seen }'; then
