@@ -517,3 +517,30 @@ export fn fg_i2_prefill_control(decoder: u64, aux: u64, which: i32, count: i32, 
             i2d_span(gain + offset, 2304), i2d_span(forget + offset, 2304), output) == 2304);
     }
 }
+
+extern fn inkling_arena_depthmix(past: u64, next: u64, query: u64, output: u64, rows: i32, save_history: bool, full: u64) -> bool;
+
+export fn fg_i2_prefill_postconv(decoder: u64, aux: u64, slot: i32, count: i32, input: u64, output: u64) {
+    let weight = i2_native_weight(decoder, aux, 2, 9216);
+    let history = i2d_span(i2d_read(decoder + I2D_HA) + (slot as! u64) * 27648, 6912);
+    for index in count as! i64 {
+        let offset = (index as! u64) * 9216;
+        assert(fg_i2_measured_postconv(i2d_span(input + offset, 2304), weight, history,
+            i2d_span(output + offset, 2304)) == 2304);
+    }
+}
+
+export fn fg_i2_prefill_depthmix(decoder: u64, aux: u64, tokens: u64, count: i32, save_history: bool,
+    resident: bool, staging: u64, residual: u64, output: u64) {
+    let rows = i2d_int(tokens + 285696);
+    for index in count as! i64 {
+        let token = tokens + (index as! u64) * 285708;
+        assert(i2d_int(token + 285696) == rows);
+        if !resident {
+            let source = if save_history { token + 27648 + ((rows - 1) as! u64) * 9216 } else { token };
+            i2d_transfer(staging + (index as! u64) * 9216, source, 9216);
+        }
+    }
+    assert(inkling_arena_depthmix(if resident { 0 } else { staging }, residual,
+        i2_native_weight(decoder, aux, 9, 2304).address, output, rows, save_history, 0));
+}

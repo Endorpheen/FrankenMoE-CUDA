@@ -190,6 +190,10 @@ static void prepare_prefill(struct i2_prefill_team *team, struct i2_prefill_work
 extern void fg_i2_prefill_moe(struct decoder *d, const int64_t *core, const int64_t *aux, int slot, int count,
     float *ffn, float *projection, float *residual, struct prefill_token *tokens, int64_t *work);
 
+extern void fg_i2_prefill_postconv(struct decoder *d, const int64_t *aux, int slot, int count, float *input, float *output);
+extern void fg_i2_prefill_depthmix(struct decoder *d, const int64_t *aux, struct prefill_token *tokens,
+    int count, bool save_history, bool resident, float *staging, float *residual, float *output);
+
 static void prefill_layer(struct decoder *d, struct prefill_token *tokens, struct prefill_workspace *scratch,
                           int count, int begin, const int64_t *visit, struct i2_prefill_team *team,
                           bool *device_current, bool retain_current, uint64_t output_slot,
@@ -326,10 +330,7 @@ static void prefill_layer(struct decoder *d, struct prefill_token *tokens, struc
         prefill_team_run(team, &setup, model_width);
         setup.postconv_rows = 0;
     } else if (!device_postconv) {
-        for (int t = 0; t < count; ++t) {
-            assert(i2_postconv_token(vec(scratch->linear[t], model_width), coefficients(d, aux[2], 4 * model_width),
-                vec(d->ha + slot * 3 * model_width, 3 * model_width), vec(scratch->residual[t], model_width)) == model_width);
-        }
+        fg_i2_prefill_postconv(d, aux, slot, count, scratch->linear[0], scratch->residual[0]);
     }
     setup.after_attention = true;
     setup.message = NULL;
@@ -344,16 +345,8 @@ static void prefill_layer(struct decoder *d, struct prefill_token *tokens, struc
         check_state("draft-moe-input", count, scratch->ff[1], model_width);
     }
     if (direct_depthmix) {
-        float (*stage)[model_width] = scratch->inputs[0];
-        const int rows = tokens[0].count;
-        const bool save_history = layer % 6 == 0;
-        for (int t = 0; t < count; ++t) {
-            assert(tokens[t].count == rows);
-            const float *source = save_history ? tokens[t].blocks + (rows - 1) * model_width : tokens[t].current;
-            if (!*device_current) memcpy(stage[t], source, sizeof stage[t]);
-        }
-        assert(inkling_arena_depthmix(*device_current ? NULL : stage[0], scratch->residual[0],
-                                    coefficients(d, aux[9], model_width).data, scratch->ff[0], rows, save_history, 0));
+        fg_i2_prefill_depthmix(d, aux, tokens, count, layer % 6 == 0, *device_current,
+            scratch->inputs[0][0], scratch->residual[0], scratch->ff[0]);
     }
     if (fg_i2_resident_moe()) {
         float *messages = NULL;
