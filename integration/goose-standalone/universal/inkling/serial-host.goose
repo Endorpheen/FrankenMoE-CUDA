@@ -37,13 +37,36 @@ fn i2_embed_token(embedding: InklingEmbedding, token: i32, output: I2DraftSpan) 
     return i2_embed_row(i2d_span(row, embedding.row_bytes as! i64), i2d_span(embedding.gains, 2304), 0.000001, output) == 2304;
 }
 
-export fn fg_i2_embed_prefill(decoder: u64, ids: u64, count: i32, output: u64, stride: u64) -> bool {
-    let embedding = i2_embedding(decoder);
-    for index in count as! i64 {
+const I2_PREFILL_EMBED_JOB: u64 = 111;
+
+fn i2_embed_range(embedding: InklingEmbedding, ids: u64, output: u64, stride: u64, begin: i64, end: i64) -> bool {
+    for index in begin .. end {
         let slot = index as! u64;
         if !i2_embed_token(embedding, i2d_int(ids + slot * 4), i2d_span(output + slot * stride, 2304)) { return false; }
     }
     return true;
+}
+
+export fn fg_i2_embed_prefill(decoder: u64, ids: u64, count: i32, output: u64, stride: u64) -> bool {
+    return i2_embed_range(i2_embedding(decoder), ids, output, stride, 0, count as! i64);
+}
+
+fn i2_prefill_embed_rows(decoder: u64, ids: u64, count: i32, output: u64, stride: u64, team: u64) {
+    if team == 0 {
+        assert(fg_i2_embed_prefill(decoder, ids, count, output, stride));
+        return;
+    }
+    let embedding = i2_embedding(decoder);
+    var job: u64[14] = [0; 14];
+    job[0] = embedding.base;
+    job[1] = embedding.row_bytes;
+    job[2] = embedding.gains;
+    job[3] = ids;
+    job[4] = output;
+    job[5] = stride;
+    let work = i2d_address(unsafe_c_address<c_ptr<const void>>(job[0]));
+    i2d_set_byte(work + I2_PREFILL_EMBED_JOB, 1);
+    prefill_team_run(team, work, count);
 }
 extern fn i2_walk_serial_token(decoder: u64, visits: I2DraftSpan, position: i32,
     current: I2DraftSpan, history: I2DraftSpan, prelude: I2DraftSpan, bank_output: I2DraftSpan,
@@ -679,10 +702,10 @@ export fn fg_i2_backend_prefill(decoder: u64, ids: u64, begin: i32, count: i32, 
     let scratch = i2d_alloc(646316040);
     assert(tokens != 0 && scratch != 0);
     let direct = i2_prefill_bind_readback(scratch, count);
-    assert(fg_i2_embed_prefill(decoder, ids, count, tokens, 285708));
     var team_storage: u64[37] = [0; 37];
     let team = i2d_address(unsafe_c_address<c_ptr<const void>>(team_storage[0]));
     let workers = if !i2d_env_is("I2_PREFILL_TEAM", 48) && fg_i2_prefill_team_start(team, count) { team } else { 0 };
+    i2_prefill_embed_rows(decoder, ids, count, tokens, 285708, workers);
     let full_batch = count == 4096;
     inkling_arena_window(full_batch, begin);
     let loop_enabled = !i2d_env_is("I2_DEVICE_LOOP_MESSAGES", 48);
@@ -1058,6 +1081,11 @@ fn i2_prefill_partition_before(work: u64, begin: i64, end: i64) {
 }
 
 export fn fg_i2_prefill_partition(work: u64, begin: i64, end: i64) {
+    if i2d_byte(work + I2_PREFILL_EMBED_JOB) != 0 {
+        let embedding = InklingEmbedding {base: i2d_read(work), row_bytes: i2d_read(work + 8), gains: i2d_read(work + 16)};
+        assert(i2_embed_range(embedding, i2d_read(work + 24), i2d_read(work + 32), i2d_read(work + 40), begin, end));
+        return;
+    }
     let logits = i2d_read(work + 96);
     if logits != 0 {
         let output = logits + (begin as! u64) * 4;
