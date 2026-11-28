@@ -152,6 +152,37 @@ export fn i2_matrix_xs_blocks(weights: u64, input: u64, output: u64, blocks: i64
     if lane == 0 { store(output, sum); }
 }
 
+fn i2_matrix_xs_pair(weights: u64, input: u64, second_input: u64, output: u64, second_output: u64, blocks: i64, lane: u64) {
+    var sum: f32 = 0.0;
+    var second: f32 = 0.0;
+    let lane_byte = lane & 15;
+    let shift = 4 * (lane >> 4);
+    for tile in blocks {
+        let at = weights + (tile as u64) * 136;
+        let scale = load_half(at);
+        let high_bits = load_word(at + 2);
+        let low01 = load_word(at + 4);
+        let low23 = load_word(at + 6);
+        for sub in 8 {
+            let low_bits = if sub < 4 { low01 } else { low23 };
+            let low = (low_bits >> (4 * (sub & 3))) & 15;
+            let high = (high_bits >> (2 * sub)) & 3;
+            let adjusted = scale * (((low + 16 * high) as i32 - 32) as f32);
+            let packed = load_byte(at + 8 + (sub as u64) * 16 + lane_byte);
+            let value = adjusted * iq4_code((packed >> shift) & 15);
+            let position = 4 * ((tile as u64) * 256 + (sub as u64) * 32 + lane);
+            sum = multiply_add(value, load(input + position), sum);
+            second = multiply_add(value, load(second_input + position), second);
+        }
+    }
+    sum = reduce_lane(sum);
+    second = reduce_lane(second);
+    if lane == 0 {
+        store(output, sum);
+        store(second_output, second);
+    }
+}
+
 extern "i2m_job_word" fn job_word(base: u64, index: i64) -> u64;
 
 fn matrix_plane(jobs: u64, index: i64, words: i64) -> u64 {
@@ -205,6 +236,33 @@ export fn matrix_launch_xs(weights: u64, input: u64, output: u64, jobs: u64, str
     let weight = weights + (row as! u64) * stride + matrix_plane(jobs, job, words);
     i2_matrix_xs_blocks(weight, input + job_word(jobs, job),
         output + job_word(jobs, job + 1) + ((4 * row) as! u64), width / 256, (thread % 32) as! u64);
+}
+
+export fn matrix_launch_xs_pair(weights: u64, input: u64, output: u64, jobs: u64, stride: u64,
+    width: i64, rows: i64, count: i64, base: i64, words: i64, group: i64, pair: i64, thread: i64) {
+    let row = 4 * group + thread / 32;
+    let route = 2 * pair;
+    if row >= rows || route >= count { return; }
+    let lane = (thread % 32) as! u64;
+    let job = words * (base + route);
+    let plane = matrix_plane(jobs, job, words);
+    let row_weight = weights + (row as! u64) * stride;
+    let row_output = output + ((4 * row) as! u64);
+    let first_input = input + job_word(jobs, job);
+    let first_output = row_output + job_word(jobs, job + 1);
+    let blocks = width / 256;
+    if route + 1 < count {
+        let next_job = job + words;
+        let next_plane = matrix_plane(jobs, next_job, words);
+        let next_input = input + job_word(jobs, next_job);
+        let next_output = row_output + job_word(jobs, next_job + 1);
+        if next_plane == plane {
+            i2_matrix_xs_pair(row_weight + plane, first_input, next_input, first_output, next_output, blocks, lane);
+            return;
+        }
+        i2_matrix_xs_blocks(row_weight + next_plane, next_input, next_output, blocks, lane);
+    }
+    i2_matrix_xs_blocks(row_weight + plane, first_input, first_output, blocks, lane);
 }
 
 export fn matrix_launch_projections(input_q: u64, input_k: u64, input_v: u64, output: u64,

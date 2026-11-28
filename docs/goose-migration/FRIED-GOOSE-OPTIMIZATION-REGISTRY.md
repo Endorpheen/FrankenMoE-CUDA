@@ -43,6 +43,7 @@ optimization and release sequence.
 | Batch independent verifier attention queries and their merges | Inkling exact Q4 verifier, up to 16 queries with equal partition counts and existing scratch capacity | At 32K/512, decode +19.61%, prefill −0.89%, all 512 IDs exact and peak process VRAM held at 9822 MiB. | [EXP-2424](../../experiments/EXP-2026-11-28-2424-inkling-batched-verifier-attention/README.md) |
 | Prepare independent embedding rows on the existing prefill CPU team | Inkling Q8_0 embedding and per-row RMS at the configured parallel prefill sizes | At 32K/512, prefill +15.90%, observed decode +0.79%, all 512 IDs exact and peak process VRAM held at 9822 MiB. | [EXP-2425](../../experiments/EXP-2026-11-28-2425-inkling-parallel-embedding/README.md) |
 | Batch independent sliding prefill chunks and their merges | Inkling Q4 sliding prefill, grouping 128-query chunks within existing scratch capacity | At 32K/512, prefill +2.27%, decode −0.78%, all 512 IDs exact and peak process VRAM held at 9822 MiB. | [EXP-2426](../../experiments/EXP-2026-11-28-2426-inkling-sliding-prefill-group/README.md) |
+| Reuse a warp's decoded IQ4_XS weights for jobs sharing an expert plane | Inkling exact verifier, 2304-input IQ4_XS and at least 64 jobs | At 32K/512, decode +5.03%, observed prefill +0.20%, all 512 IDs exact and peak process VRAM held at 9822 MiB. | [EXP-2427](../../experiments/EXP-2026-11-28-2427-inkling-iq4-verifier-pairs/README.md) |
 
 Keep the FMA and warp reduction sequence independent for each output row.
 Reuse this mapping for projections with the same shared input layout
@@ -50,6 +51,9 @@ when the launch covers full row pairs. Verify exact scattered outputs
 and measure register pressure and whole-request performance on the
 target. EXP-2423 raises the register count from 54 to 80 per thread
 without a local stack. The evidence covers the Inkling SM89 dispatch.
+EXP-2427 applies the same operand reuse to decoded weights. Reuse only
+within a common plane and measure the rate of matching pairs on the
+receiving workload. The synthetic all-distinct case is 1.5% slower.
 
 For grouped exact attention, keep each query's K/V bounds, partition
 boundaries and accumulation order. Use an independent block range per
