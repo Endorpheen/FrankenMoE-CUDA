@@ -26,7 +26,7 @@ for module in graph-execute inkling-backend; do
         -c "$source_dir/$module.c" -o "$out/$object.o"
 done
 printf 'const CPU_AFFINITY_WORDS: i64 = %s;\n' "$affinity_words" > "$out/graph-host.goose"
-cat "$source_dir/graph-host.goose" >> "$out/graph-host.goose"
+cat "$source_dir/graph-host.goose" "$source_dir/graph-checkpoint-$target.goose" >> "$out/graph-host.goose"
 "${GOOSE_CUDA_DRIVER_BIN:?Set GOOSE_CUDA_DRIVER_BIN to Fried Goose KeelWing v0.3.1-dev.1}" \
     --standalone -o "$out/graph-host.c" "$out/graph-host.goose"
 "$cc" -O2 -std=c11 -ffunction-sections -fdata-sections -Dgoose_init=fg_graph_host_init \
@@ -34,4 +34,9 @@ cat "$source_dir/graph-host.goose" >> "$out/graph-host.goose"
 "$objcopy" --redefine-sym=graph_host_strlen=strlen --redefine-sym=graph_host_perror=perror \
     --redefine-sym=graph_host_getaffinity=sched_getaffinity --redefine-sym=graph_host_setaffinity=sched_setaffinity \
     --redefine-sym=graph_host_getcpu=sched_getcpu "$out/graph-host.o"
+if [[ "$target" == linux ]]; then
+    "$objcopy" --redefine-sym=graph_ckpt_unix_open=open --redefine-sym=graph_ckpt_unix_openat=openat \
+        --redefine-sym=graph_ckpt_fdopen=fdopen --redefine-sym=graph_ckpt_close=close \
+        --redefine-sym=graph_ckpt_fclose=fclose --redefine-sym=graph_ckpt_fwrite=fwrite "$out/graph-host.o"
+fi
 "$cc" -r -nostdlib "$out/graph-native.o" "$out/graph-host.o" -o "$out/graph-execute.o"
