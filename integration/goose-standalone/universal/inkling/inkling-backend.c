@@ -452,6 +452,14 @@ void fg_i2_serial_finish(struct decoder *d, int absolute, float *current, float 
     if (logits) fg_i2_read_token_logits(d, absolute, current, history, count, true);
 }
 
+extern void fg_i2_prepare_prefill_rows(struct decoder *d, const struct native_attention_inputs *args,
+    const int64_t *aux, int slot, int begin, int count, bool sliding, const float *projections, int packed);
+
+void fg_i2_prepare_native_row(struct decoder *d, const struct native_attention_inputs *args,
+    const int64_t *aux, int slot, int position, int index, bool sliding, float *projected, int packed) {
+    native_attention_prepare(d, *args, aux, slot, position, index, sliding, projected, packed);
+}
+
 #include "prefill.h"
 
 extern int64_t fg_standalone_cpu_decode_threads(void);

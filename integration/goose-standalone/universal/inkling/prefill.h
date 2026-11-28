@@ -358,21 +358,9 @@ static void prefill_layer(struct decoder *d, struct prefill_token *tokens, struc
                 scratch->inputs[0][0], scratch->inputs[1][0], scratch->inputs[2][0], scratch->linear[0]);
         } else {
             float *rows[] = {scratch->inputs[0][0], scratch->inputs[1][0], scratch->inputs[2][0]};
-            const int widths[] = {3072, 1024, 1024, 384, 24, 3072, 32, 32};
-            const int matrices = sliding ? 6 : 8;
             const int packed = fg_i2_project_attention_inputs(d, core, aux, sliding, rows, count, scratch->projections, work);
-
             struct native_attention_inputs args = native_attention_inputs(d,count);
-            for (int t = 0; t < count; ++t) {
-                float projected[8664];
-                size_t src = 0, dst = 0;
-                for (int i = 0; i < matrices; ++i) {
-                    memcpy(projected + dst, scratch->projections + src + t * widths[i], widths[i] * sizeof(float));
-                    src += (size_t)count * widths[i];
-                    dst += widths[i];
-                }
-                native_attention_prepare(d, args, aux, slot, begin + t, t, sliding, projected, packed);
-            }
+            fg_i2_prepare_prefill_rows(d, &args, aux, slot, begin, count, sliding, scratch->projections, packed);
             if (use_resident_attention_projection()) {
                 native_attention_project(d, args, aux, slot, begin, count, sliding, named(d, core[3]), scratch->linear[0]);
             } else {

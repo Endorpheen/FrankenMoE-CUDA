@@ -253,3 +253,26 @@ export fn fg_i2_project_attention_inputs(decoder: u64, core: u64, aux: u64, slid
     ggml_free(ctx);
     return packed;
 }
+
+extern fn fg_i2_prepare_native_row(decoder: u64, args: u64, aux: u64, slot: i32, position: i32, index: i32,
+    sliding: bool, row: u64, packed: i32);
+
+export fn fg_i2_prepare_prefill_rows(decoder: u64, args: u64, aux: u64, slot: i32, begin: i32, count: i32,
+    sliding: bool, projections: u64, packed: i32) {
+    let sizes: u64[8] = [12288, 4096, 4096, 1536, 96, 12288, 128, 128];
+    let matrices: i64 = if sliding { 6 } else { 8 };
+    var row: f32[8664];
+    let output = i2_serial_span(row).address;
+    for index in count as! i64 {
+        var source = projections;
+        var destination = output;
+        for matrix in matrices {
+            let bytes = sizes[matrix];
+            i2d_transfer(destination, source + (index as! u64) * bytes, bytes);
+            source += (count as! u64) * bytes;
+            destination += bytes;
+        }
+        let position = index as! i32;
+        fg_i2_prepare_native_row(decoder, args, aux, slot, begin + position, position, sliding, output, packed);
+    }
+}
