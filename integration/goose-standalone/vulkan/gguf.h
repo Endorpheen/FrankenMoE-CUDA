@@ -12,6 +12,13 @@ typedef struct {
     int64_t state[8], metadata[8 * 256], tensors[12 * 1024], meta_slots[512], tensor_slots[2048];
 } fg_gguf;
 
+_Static_assert(sizeof(sl_u8) == 16 && sizeof(sl_i64) == 16 &&
+    offsetof(fg_gguf, state) == 16 && offsetof(fg_gguf, metadata) == 80 &&
+    offsetof(fg_gguf, tensors) == 16464 && offsetof(fg_gguf, meta_slots) == 114768 &&
+    offsetof(fg_gguf, tensor_slots) == 118864 &&
+    offsetof(fg_vk_upload, staging) + offsetof(fg_vk_buffer, size) == 32,
+    "Goose Vulkan GGUF ABI");
+
 static inline sl_u8 fg_gguf_key(const char *text) {
     return (sl_u8){(uint8_t *)text, (int64_t)strlen(text)};
 }

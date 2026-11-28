@@ -120,13 +120,22 @@ PY
         libs+=(-lws2_32 -lpsapi)
     fi
     CC="$cc" WINDOWS_CC="$cc" bash "$root/tools/build-gooseinfer-socket.sh" "$target" "$out/socket-forwards.o"
+    seek_symbol=fseeko
+    tell_symbol=ftello
+    if [[ "$target" == windows ]]; then seek_symbol=_fseeki64; tell_symbol=_ftelli64; fi
+    "${GOOSE_CUDA_DRIVER_BIN:?}" --standalone -o "$out/gguf.c" "$source_dir/gguf.goose"
+    "$cc" -O2 -std=c11 -ffunction-sections -fdata-sections -Dgoose_init=fg_vk_gguf_init \
+        -Dgg_init_globals=fg_vk_gguf_globals -c "$out/gguf.c" -o "$out/gguf.o"
+    "$queue_objcopy" --redefine-sym="fg_vk_crt_seek=$seek_symbol" --redefine-sym="fg_vk_crt_tell=$tell_symbol" \
+        --redefine-sym=fg_vk_crt_read=fread --redefine-sym=fg_vk_crt_strlen=strlen \
+        --redefine-sym=fg_vk_crt_memcmp=memcmp "$out/gguf.o"
     if [[ "$mode" == embedded ]]; then
         objcopy=${OBJCOPY:-objcopy}
         if [[ "$target" == windows ]]; then
             objcopy=${WINDOWS_OBJCOPY:-x86_64-w64-mingw32-objcopy}
         fi
-        objects=("$out/queue.o" "$out/socket-forwards.o")
-        for source in "$source_dir/"{loader,device,graph,gguf,qwen2,bonsai-layer,bonsai-model,moe-bank,apex-model,inkling-model,tokenizer,http,infer-main}.c; do
+        objects=("$out/queue.o" "$out/socket-forwards.o" "$out/gguf.o")
+        for source in "$source_dir/"{loader,device,graph,qwen2,bonsai-layer,bonsai-model,moe-bank,apex-model,inkling-model,tokenizer,http,infer-main}.c; do
             name=$(basename -- "$source" .c)
             options=()
             if [[ "$name" == infer-main ]]; then options=(-Dmain=gooseinfer_vulkan_entry); fi
@@ -139,6 +148,6 @@ PY
         exit 0
     fi
     "$cc" "${flags[@]}" -isystem "$out/vulkan-headers" -I"$out" -Wl,--gc-sections \
-        "$source_dir/"{loader,device,graph,gguf,qwen2,bonsai-layer,bonsai-model,moe-bank,apex-model,inkling-model,tokenizer,http,infer-main}.c "$out/qwen2_unit.o" "$out/queue.o" "$out/socket-forwards.o" \
+        "$source_dir/"{loader,device,graph,qwen2,bonsai-layer,bonsai-model,moe-bank,apex-model,inkling-model,tokenizer,http,infer-main}.c "$out/qwen2_unit.o" "$out/queue.o" "$out/socket-forwards.o" "$out/gguf.o" \
         "${libs[@]}" -lm -pthread -o "$out/frankenmoe-vulkan$suffix"
 fi

@@ -69,10 +69,12 @@ static int detect_model_kind(const char *path, fg_vk_model_kind *kind) {
     return recognized;
 }
 
+extern void fg_vk_gguf_init(int argc, char **argv);
 extern void fg_vk_queue_init(int argc, char **argv);
 extern void fg_socket_init(int argc, char **argv);
 
 int main(int argc, char **argv) {
+    fg_vk_gguf_init(0, NULL);
     uint32_t device = FG_VK_AUTO_DEVICE, predict = 1;
     uint32_t port = 0, requests = 0, server_context = 0;
     int cpu = 0, special = 0, tokenize_only = 0;
