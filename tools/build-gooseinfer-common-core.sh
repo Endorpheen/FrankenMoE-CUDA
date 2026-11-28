@@ -10,8 +10,8 @@ ggml="$root/vendor/flint/ggml"
 host="$root/integration/m1/host"
 source_prefix=${GOOSEINFER_SOURCE_PREFIX:-.}
 case "$target" in
-    linux) cc=${CC:-gcc-13}; objcopy=${OBJCOPY:-objcopy}; hardening=(-D_FORTIFY_SOURCE=3 -fstack-protector-strong) ;;
-    windows) cc=${WINDOWS_CC:-x86_64-w64-mingw32-gcc}; objcopy=${WINDOWS_OBJCOPY:-x86_64-w64-mingw32-objcopy}; hardening=() ;;
+    linux) cc=${CC:-gcc-13}; objcopy=${OBJCOPY:-objcopy}; hardening=(-D_FORTIFY_SOURCE=3 -fstack-protector-strong); native_long=i64 ;;
+    windows) cc=${WINDOWS_CC:-x86_64-w64-mingw32-gcc}; objcopy=${WINDOWS_OBJCOPY:-x86_64-w64-mingw32-objcopy}; hardening=(); native_long=i32 ;;
     *) printf 'Unknown GooseInfer target: %s\n' "$target" >&2; exit 2 ;;
 esac
 mkdir -p -- "$out"
@@ -25,17 +25,19 @@ python3 "$root/tools/embed-gooseinfer-type-metadata.py" --goose \
     "$root/goose/misc/ggml-type-table.goose" "$root/goose/misc/ggml-op-names.goose" "$out/metadata.goose"
 
 flags=(-std=c11 -D_GNU_SOURCE -ffunction-sections -fdata-sections
-       -DGOOSEINFER_TYPE_METADATA_ONLY -DGOOSEINFER_GOOSE_METADATA "-fmacro-prefix-map=$root=$source_prefix"
+       -DGOOSEINFER_TYPE_METADATA_ONLY -DGOOSEINFER_GOOSE_METADATA -DGOOSEINFER_GOOSE_HOST_QUANT "-fmacro-prefix-map=$root=$source_prefix"
        -I"$out" -I"$model_headers" -I"$standalone" -I"$host"
        -I"$ggml/include" -I"$ggml/src" -I"$ggml/src/ggml-cpu")
 "$cc" -O1 "${flags[@]}" "${hardening[@]}" \
     -c "$ggml/src/ggml.c" -o "$out/ggml.o"
 "$cc" "${flags[@]}" -x c -fsyntax-only "$standalone/graph-bindings-layout.h"
-cat "$out/metadata.goose" "$standalone/"{graph-bindings,common-memory,graph-metadata,graph-arena-abi}.goose > "$out/common-core.goose"
+printf 'extern fn host_quant_lround(value: f32) -> %s;\n' "$native_long" > "$out/common-core.goose"
+cat "$out/metadata.goose" "$standalone/"{graph-bindings,common-memory,graph-metadata,graph-arena-abi}.goose \
+    "$host/host-quant.goose" >> "$out/common-core.goose"
 "${GOOSE_CUDA_DRIVER_BIN:?Set GOOSE_CUDA_DRIVER_BIN to Fried Goose KeelWing v0.3.1-dev.1}" --standalone \
     -o "$out/graph-bindings.c" "$out/common-core.goose"
 "$cc" -O2 "${flags[@]}" -Dgoose_init=fg_graph_bindings_init -Dgg_init_globals=fg_graph_bindings_globals \
     -c "$out/graph-bindings.c" -o "$out/graph-bindings.o"
-"$objcopy" --redefine-sym=graph_crt_getenv=getenv "$out/graph-bindings.o"
+"$objcopy" --redefine-sym=graph_crt_getenv=getenv --redefine-sym=host_quant_lround=lroundf "$out/graph-bindings.o"
 "$cc" -O1 "${flags[@]}" -c "$host/goose_host.c" -o "$out/goose-host.o"
 CC="$cc" WINDOWS_CC="$cc" bash "$root/tools/build-gooseinfer-socket.sh" "$target" "$out/socket-forwards.o"
