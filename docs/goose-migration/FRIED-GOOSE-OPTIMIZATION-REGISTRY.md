@@ -28,6 +28,7 @@ moving independently and retain its tested production path.
 | Optimization | Applicable path | Measured effect | Evidence |
 |---|---|---|---|
 | Reuse a warp's packed activation loads for two output rows | Inkling expanded FP32 Q8 projections with 4096 input rows | 13–29% lower projection kernel time, 5.41% higher 32K/512 prefill and 0.92% lower decode in the immediate comparison. All 512 IDs exact and peak process VRAM held at 9822 MiB. | [EXP-2423](../../experiments/EXP-2026-11-28-2423-inkling-q8-row-pair/README.md) |
+| Batch independent verifier attention queries and their merges | Inkling exact Q4 verifier, up to 16 queries with equal partition counts and existing scratch capacity | At 32K/512, decode +19.61%, prefill −0.89%, all 512 IDs exact and peak process VRAM held at 9822 MiB. | [EXP-2424](../../experiments/EXP-2026-11-28-2424-inkling-batched-verifier-attention/README.md) |
 
 Keep the FMA and warp reduction sequence independent for each output row.
 Reuse this mapping for projections with the same shared input layout
@@ -35,6 +36,13 @@ when the launch covers full row pairs. Verify exact scattered outputs
 and measure register pressure and whole-request performance on the
 target. EXP-2423 raises the register count from 54 to 80 per thread
 without a local stack. The evidence covers the Inkling SM89 dispatch.
+
+For grouped exact attention, keep each query's K/V bounds, partition
+boundaries and accumulation order. Use an independent block range per
+query and combine the merge launches while retaining the per-query
+merge arithmetic. Reuse bounded scratch and retain the serial dispatch
+for unsupported groups. Verify partials, metadata, merged output and
+full-request IDs before enabling the scheme on a different path.
 
 ## KeelWing ownership scopes in the Apex sampler
 

@@ -8804,7 +8804,7 @@ struct InklingNativeKvSlot {
 
 struct InklingNativeKvState {
     module: u64,
-    pack: u64, attention: u64, attention_decode: u64, attention_prefill: u64, merge: u64,
+    pack: u64, attention: u64, attention_decode: u64, attention_prefill: u64, attention_verify: u64, merge: u64,
     slots: InklingNativeKvSlot[INKLING_EPILOGUE_VISITS],
     window: device_buffer, input: device_buffer, staging: device_buffer,
     partials: device_buffer, projection: device_buffer, raw: device_buffer,
@@ -9022,7 +9022,17 @@ fn inkling_native_compute(cache: InklingNativeRows, history: i32, total: i32, co
     let row_bytes = inkling_native_row_bytes(format);
     let scale: f32 = 0.0883883461356163 as! f32;
     let exact_tail = count > 1 && count <= 16 && tls[0].i2_exact_verify;
-    let chunk: i32 = if exact_tail { 1 } else { 128 };
+    let first_available = (history as! i64) + 1;
+    let last_available = (history as! i64) + (count as! i64);
+    let first_keys = if sliding && first_available > window { window } else { first_available };
+    let last_keys = if sliding && last_available > window { window } else { last_available };
+    let first_parts = (first_keys + key_part - 1) / key_part;
+    let last_parts = (last_keys + key_part - 1) / key_part;
+    let verify_bytes = (count as! u64) * (heads as! u64) * (last_parts as! u64) * 130 * 4;
+    let grouped_verify = exact_tail && format == INKLING_NATIVE_KV_Q4 &&
+        first_parts == last_parts && verify_bytes <= inkling_native_kv.partials.bytes &&
+        cuda_option("I2_FLASH_PARALLEL_SCORES") && cuda_option("I2_DECODE_WARP_SOFTMAX");
+    let chunk: i32 = if exact_tail && !grouped_verify { 1 } else { 128 };
     var first: i32 = 0;
     while first < count {
         let remaining = count - first;
@@ -9031,7 +9041,7 @@ fn inkling_native_compute(cache: InklingNativeRows, history: i32, total: i32, co
         let last = prior + queries;
         if last > (total as! i64) { return -1; }
         let lower = if sliding && prior >= window { prior - window + 1 } else { 0 };
-        let keys = last - lower;
+        let keys = if grouped_verify { first_keys } else { last - lower };
         let parts = (keys + key_part - 1) / key_part;
         let slots = (queries as! u64) * (heads as! u64) * (parts as! u64);
         var status = reserve(&inkling_native_kv.partials, slots * 130 * 4);
@@ -9050,7 +9060,7 @@ fn inkling_native_compute(cache: InklingNativeRows, history: i32, total: i32, co
         let qp = query_pos + row * 8;
         let out = output + row * 3072 * 4;
         var q4: i32 = if format == INKLING_NATIVE_KV_Q4 { 1 } else { 0 };
-        if queries == 1 && (count == 1 || exact_tail) && cuda_option("I2_FLASH_PARALLEL_SCORES") { q4 |= 2; }
+        if grouped_verify || (queries == 1 && (count == 1 || exact_tail) && cuda_option("I2_FLASH_PARALLEL_SCORES")) { q4 |= 2; }
         var args: u64[16] = [
             cuda_kernel_argument_address(q), cuda_kernel_argument_address(k), cuda_kernel_argument_address(v),
             cuda_kernel_argument_address(r), cuda_kernel_argument_address(bias), cuda_kernel_argument_address(s),
@@ -9063,7 +9073,10 @@ fn inkling_native_compute(cache: InklingNativeRows, history: i32, total: i32, co
             cuda_kernel_argument_address(out), cuda_kernel_argument_address(parts)];
         var kernel = inkling_native_kv.attention;
         let module = inkling_native_kv.module;
-        if (q4 & 3) == 3 && cuda_option("I2_DECODE_WARP_SOFTMAX") {
+        if grouped_verify {
+            status = cuda_ensure_kernel(&inkling_native_kv.attention_verify, module, "goose_i2_flash_mma_verify");
+            kernel = inkling_native_kv.attention_verify;
+        } else if (q4 & 3) == 3 && cuda_option("I2_DECODE_WARP_SOFTMAX") {
             status = cuda_ensure_kernel(&inkling_native_kv.attention_decode, module, "goose_i2_flash_mma_decode");
             kernel = inkling_native_kv.attention_decode;
         } else if queries > 1 && q4 == 1 && cuda_option("I2_PREFILL_PARALLEL_RELATIVE") {
@@ -9085,7 +9098,8 @@ fn inkling_native_compute(cache: InklingNativeRows, history: i32, total: i32, co
             }
         }
         if status != 0 { return status; }
-        status = fg_cuda_driver_launch(kernel, ((queries + 15) / 16) as! u32, heads, parts as! u32,
+        let query_blocks = if grouped_verify { queries } else { (queries + 15) / 16 };
+        status = fg_cuda_driver_launch(kernel, query_blocks as! u32, heads, parts as! u32,
                                        128, 1, 1, 0, 0, fg_cuda_driver_words_address(args), 0);
         if status == 0 {
             status = fg_cuda_driver_launch(inkling_native_kv.merge, (queries as! u32) * heads, 1, 1,
