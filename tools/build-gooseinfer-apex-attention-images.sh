@@ -16,20 +16,8 @@ for variant in tail first-row unroll; do
         unroll) header=attention-unroll-image.h; symbol=attention_unroll_image ;;
     esac
     bash "$tools/build-gooseinfer-bonsai-ptx.sh" "$scratch/all.ptx" mmq "$source_dir/$variant.patch"
-    python3 - "$scratch/all.ptx" "$scratch/attention.ptx" <<'PY'
-from pathlib import Path
-import re
-import sys
-
-source, output = map(Path, sys.argv[1:])
-ptx = source.read_text()
-header = ptx.split("\n\n", 2)[:2]
-entry = re.search(r"^\.visible \.entry goose_flash_vec_q4_packed_quad\(.*?^}", ptx, re.M | re.S)
-if entry is None:
-    raise ValueError("Missing Apex Q4 packed attention entry")
-output.write_text("\n\n".join((*header, entry[0])) + "\n")
-PY
-    "$cuda/bin/ptxas" -arch=sm_89 "$scratch/attention.ptx" -o "$scratch/attention.cubin"
+    "$cuda/bin/ptxas" -arch=sm_89 --entry goose_flash_vec_q4_packed_quad \
+        "$scratch/all.ptx" -o "$scratch/attention.cubin"
     python3 - "$scratch/attention.cubin" "$out/$header" "$symbol" <<'PY'
 from pathlib import Path
 import sys
