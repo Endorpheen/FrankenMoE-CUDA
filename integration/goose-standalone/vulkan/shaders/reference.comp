@@ -1,14 +1,11 @@
 #version 450
 
 layout(local_size_x = 64) in;
-#if defined(OP_GATHER_Q4_0) || defined(OP_GATHER_PQ2_0) || defined(OP_GATHER_Q4_K) || defined(OP_GATHER_Q8_0)
+#if defined(OP_GATHER_PQ2_0) || defined(OP_GATHER_Q4_K) || defined(OP_GATHER_Q8_0)
 #define QUANT_GATHER
 #endif
 #if defined(OP_Q4_0) || defined(OP_Q8_0) || defined(OP_PQ2_0) || defined(OP_Q4_K) || defined(OP_Q6_K) || defined(OP_IQ4_NL) || defined(OP_IQ4_XS)
 #define QUANT_PROJECT
-#endif
-#if defined(OP_MOE_ROUTE) || defined(OP_INKLING_ROUTE)
-#define MOE_ROUTE
 #endif
 #if defined(QUANT_GATHER)
 layout(set = 0, binding = 0, std430) readonly buffer Tokens { uint ids[]; };
@@ -17,9 +14,7 @@ layout(set = 0, binding = 0, std430) readonly buffer Input { float x[]; };
 #endif
 #if defined(QUANT_PROJECT) || defined(QUANT_GATHER)
 layout(set = 0, binding = 1, std430) readonly buffer Weights { uint packed[]; };
-#elif defined(OP_MOE_WEIGHTED)
-layout(set = 0, binding = 1, std430) readonly buffer Routes { uint routes[]; };
-#elif defined(OP_ATTENTION_Q4) || defined(OP_INKLING_ATTENTION)
+#elif defined(OP_ATTENTION_Q4)
 layout(set = 0, binding = 1, std430) readonly buffer Keys { uint packed_keys[]; };
 #elif defined(OP_FWHT)
 layout(set = 0, binding = 1, std430) readonly buffer Signs { int signs[]; };
@@ -30,21 +25,15 @@ layout(set = 0, binding = 1, std430) readonly buffer Weights { float w[]; };
 #endif
 #if defined(OP_KV_STORE_Q4)
 layout(set = 0, binding = 2, std430) writeonly buffer Cache { uint cache[]; };
-#elif defined(MOE_ROUTE)
-layout(set = 0, binding = 2, std430) writeonly buffer Routes { uint routes[]; };
 #else
 layout(set = 0, binding = 2, std430) writeonly buffer Output { float y[]; };
 #endif
 #if defined(OP_ATTENTION)
 layout(set = 0, binding = 3, std430) readonly buffer Values { float v[]; };
-#elif defined(OP_ATTENTION_Q4) || defined(OP_INKLING_ATTENTION)
+#elif defined(OP_ATTENTION_Q4)
 layout(set = 0, binding = 3, std430) readonly buffer Values { uint packed_values[]; };
-#elif defined(OP_CAUSAL_CONV)
-layout(set = 0, binding = 3, std430) buffer History { float history[]; };
 #elif defined(OP_GDN)
 layout(set = 0, binding = 3, std430) readonly buffer Gates { float gates[]; };
-#elif defined(OP_GDN_GATES) || defined(OP_GDN_APPLY) || defined(OP_GATED_RMS)
-layout(set = 0, binding = 3, std430) readonly buffer Parameters { float parameters[]; };
 #endif
 layout(push_constant) uniform Params {
     uint width; uint rows; uint batch; float epsilon;
@@ -53,15 +42,6 @@ layout(push_constant) uniform Params {
 } p;
 
 shared float partial[64];
-#if defined(MOE_ROUTE)
-shared uint candidates[64], selected[64];
-shared float picked[64];
-#if defined(OP_INKLING_ROUTE)
-float inkling_probability(float logit) {
-    return 1.0 / (1.0 + exp(-logit));
-}
-#endif
-#endif
 #if defined(OP_FWHT)
 shared float tile[1024];
 #elif defined(OP_KV_FWHT)
@@ -164,7 +144,7 @@ float decode_weight(uint row, uint column) {
 }
 #endif
 
-#if defined(OP_ATTENTION_Q4) || defined(OP_INKLING_ATTENTION)
+#if defined(OP_ATTENTION_Q4)
 uint cache_byte(uint offset, bool value) {
     uint word = value ? packed_values[offset >> 2u] : packed_keys[offset >> 2u];
     return (word >> ((offset & 3u) * 8u)) & 255u;
@@ -181,42 +161,7 @@ float cache_value(uint index, bool value) {
 
 void main() {
     uint lane = gl_LocalInvocationID.x;
-#if defined(OP_RMSNORM) || defined(OP_GATED_RMS)
-    uint offset = gl_WorkGroupID.x * p.width;
-    precise float sum = 0.0;
-    for (uint i = lane; i < p.width; i += 64) sum += x[offset + i] * x[offset + i];
-    float scale = inversesqrt(sum_group(sum) / float(p.width) + p.epsilon);
-    for (uint i = lane; i < p.width; i += 64) {
-        float result = x[offset + i] * scale * w[i];
-#if defined(OP_GATED_RMS)
-        float gate = parameters[offset + i];
-        result *= gate / (1.0 + exp(-gate));
-#endif
-        y[offset + i] = result;
-    }
-#elif defined(OP_GDN_GATES)
-    uint head = gl_WorkGroupID.x;
-    precise float alpha_dot = 0.0, beta_dot = 0.0;
-    for (uint i = lane; i < p.width; i += 64u) {
-        alpha_dot += x[i] * w[head * p.width + i];
-        beta_dot += x[i] * w[(p.rows + head) * p.width + i];
-    }
-    float alpha = sum_group(alpha_dot) + parameters[head];
-    float beta = sum_group(beta_dot);
-    if (lane == 0) {
-        float softplus = alpha < -16.0 ? exp(alpha) : max(alpha, 0.0) + log(1.0 + exp(-abs(alpha)));
-        y[head] = parameters[p.rows + head] * softplus;
-        y[p.rows + head] = 1.0 / (1.0 + exp(-beta));
-    }
-#elif defined(OP_GDN_APPLY)
-    uint head = gl_GlobalInvocationID.x;
-    if (head < p.width) {
-        float alpha = x[head] + parameters[head];
-        float softplus = alpha < -16.0 ? exp(alpha) : max(alpha, 0.0) + log(1.0 + exp(-abs(alpha)));
-        y[head] = parameters[p.width + head] * softplus;
-        y[p.width + head] = 1.0 / (1.0 + exp(-w[head]));
-    }
-#elif defined(QUANT_PROJECT) || defined(OP_F32_PROJECT)
+#if defined(QUANT_PROJECT) || defined(OP_F32_PROJECT)
     uint row = gl_WorkGroupID.x;
     uint token = gl_WorkGroupID.y;
     precise float sum = 0.0;
@@ -231,97 +176,6 @@ void main() {
     float result = sum_group(sum);
     uint stride = p.context == 0 ? p.rows : p.context;
     if (lane == 0) y[token * stride + p.position + row] = result;
-#elif defined(MOE_ROUTE)
-    uint token = gl_WorkGroupID.x, base = token * p.width, out_base = token * (2u * p.rows);
-    float neg_inf = uintBitsToFloat(0xff800000u);
-    float local_max = neg_inf, bad = 0.0;
-    for (uint i = lane; i < p.width; i += 64u) {
-        float score = x[base + i];
-        if (isnan(score) || isinf(score)
-#if defined(OP_INKLING_ROUTE)
-            || isnan(w[i]) || isinf(w[i])
-#endif
-            ) bad = 1.0;
-        else local_max = max(local_max, score);
-    }
-    if (sum_group(bad) != 0.0) {
-        if (lane < p.rows) {
-            routes[out_base + lane] = 0xffffffffu;
-            routes[out_base + p.rows + lane] = 0u;
-        }
-        return;
-    }
-#if !defined(OP_INKLING_ROUTE)
-    partial[lane] = local_max;
-    barrier();
-    for (uint step = 32u; step != 0u; step >>= 1u) {
-        if (lane < step) partial[lane] = max(partial[lane], partial[lane + step]);
-        barrier();
-    }
-    float peak = partial[0];
-    barrier();
-    float local_sum = 0.0;
-    for (uint i = lane; i < p.width; i += 64u) local_sum += exp(x[base + i] - peak);
-    float denominator = sum_group(local_sum);
-#endif
-    for (uint slot = 0u; slot < p.rows; ++slot) {
-        float best = neg_inf;
-        uint id = 0xffffffffu;
-        for (uint i = lane; i < p.width; i += 64u) {
-            bool used = false;
-            for (uint k = 0u; k < slot; ++k) used = used || selected[k] == i;
-#if defined(OP_INKLING_ROUTE)
-            float rank = inkling_probability(x[base + i]) + w[i];
-#else
-            float rank = exp(x[base + i] - peak) / denominator;
-#endif
-            if (!used && rank > best) {
-                best = rank;
-                id = i;
-            }
-        }
-        partial[lane] = best;
-        candidates[lane] = id;
-        barrier();
-        for (uint step = 32u; step != 0u; step >>= 1u) {
-            if (lane < step) {
-                float other = partial[lane + step];
-                uint other_id = candidates[lane + step];
-                if (other > partial[lane] || (other == partial[lane] && other_id < candidates[lane])) {
-                    partial[lane] = other;
-                    candidates[lane] = other_id;
-                }
-            }
-            barrier();
-        }
-        if (lane == 0) {
-            selected[slot] = candidates[0];
-#if defined(OP_INKLING_ROUTE)
-            picked[slot] = inkling_probability(x[base + candidates[0]]);
-#else
-            picked[slot] = partial[0];
-#endif
-        }
-        barrier();
-    }
-    float selected_sum = max(sum_group(lane < p.rows ? picked[lane] : 0.0), 0.00006103515625);
-    if (lane < p.rows) {
-        float scale = p.theta == 0.0 ? 1.0 : p.theta;
-        routes[out_base + lane] = selected[lane];
-        routes[out_base + p.rows + lane] = floatBitsToUint((picked[lane] / selected_sum) * scale);
-    }
-#elif defined(OP_MOE_WEIGHTED)
-    uint i = gl_GlobalInvocationID.x;
-    if (i < p.width * p.batch) {
-        uint token = i / p.width, column = i % p.width;
-        uint source = token * p.rows * p.width + column;
-        uint coefficients = token * (2u * p.rows) + p.rows;
-        precise float sum = 0.0;
-        for (uint slot = 0u; slot < p.rows; ++slot) {
-            sum += x[source + slot * p.width] * uintBitsToFloat(routes[coefficients + slot]);
-        }
-        y[i] = sum;
-    }
 #elif defined(QUANT_GATHER)
     uint token = gl_WorkGroupID.x;
     uint id = ids[token];
@@ -371,34 +225,6 @@ void main() {
         float value = tile[i] * 0.03125;
         y[token + base + i] = inverse ? value * float(signs[base + i]) : value;
     }
-#elif defined(OP_CAUSAL_CONV)
-    uint c = gl_GlobalInvocationID.x;
-    if (c < p.width) {
-        float a = history[c], b = history[p.width + c], d = history[2u * p.width + c];
-        float sample_value = x[c];
-        uint tap = c * 4u;
-        precise float conv = a * w[tap] + b * w[tap + 1u] + d * w[tap + 2u] + sample_value * w[tap + 3u];
-        y[c] = conv / (1.0 + exp(-conv));
-        history[c] = b;
-        history[p.width + c] = d;
-        history[2u * p.width + c] = sample_value;
-    }
-#elif defined(OP_QK_NORM) || defined(OP_APEX_QK_NORM)
-    uint head = gl_WorkGroupID.x;
-    uint row = head * p.width;
-    if (head < 2u * p.kv_heads) {
-        precise float square = 0.0;
-        for (uint i = lane; i < p.width; i += 64u) square += x[row + i] * x[row + i];
-        float sum = sum_group(square);
-#if defined(OP_APEX_QK_NORM)
-        float inv = inversesqrt(sum / float(p.width) + p.epsilon / float(p.width)) * inversesqrt(float(p.width));
-#else
-        float inv = 1.0 / max(sqrt(sum), p.epsilon);
-#endif
-        for (uint i = lane; i < p.width; i += 64u) y[row + i] = x[row + i] * inv;
-    } else {
-        for (uint i = lane; i < p.width; i += 64u) y[row + i] = x[row + i];
-    }
 #elif defined(OP_GDN)
     uint head = gl_WorkGroupID.x, row = gl_WorkGroupID.y;
     uint q = (head % p.kv_heads) * p.width, k = q + p.kv_heads * p.width;
@@ -417,13 +243,9 @@ void main() {
     }
     float result = sum_group(score) * inversesqrt(float(p.width));
     if (lane == 0) y[out_index] = result;
-#elif defined(OP_BIAS) || defined(OP_ADD)
+#elif defined(OP_BIAS)
     uint index = gl_GlobalInvocationID.x;
-#if defined(OP_BIAS)
     uint other = index % p.width;
-#else
-    uint other = index;
-#endif
     if (index < p.width * p.batch) y[index] = x[index] + w[other];
 #elif defined(OP_SIGMOID_GATE) || defined(OP_SIGMOID_GATE_SCALAR)
     uint index = gl_GlobalInvocationID.x;
@@ -496,34 +318,6 @@ void main() {
         uint start = (p.position * pairs_per_row + pair) * 9u;
         for (uint i = 0u; i < 9u; ++i) cache[start + i] = words[i];
     }
-#elif defined(OP_INKLING_ATTENTION)
-    uint head = gl_WorkGroupID.x, qbase = head * 128u, rbase = 3072u + head * 16u;
-    uint kvhead = head / 3u;
-    float sink = x[3456u + head];
-    float peak = 0.0, denominator = 1.0;
-    float output_lo = 0.0, output_hi = 0.0;
-    uint first = p.rotary == 0u ? 0u : (max(p.position + 1u, p.rotary) - p.rotary);
-    for (uint key = first; key <= p.position; ++key) {
-        uint kv = ((key % p.context) * 8u + kvhead) * 128u;
-        uint distance = p.position - key;
-        precise float dot = x[qbase + lane] * cache_value(kv + lane, false)
-            + x[qbase + lane + 64u] * cache_value(kv + lane + 64u, false);
-        float score = sum_group(dot) * 0.08838834765;
-        float relative = 0.0;
-        if (distance < 1024u) {
-            uint bias = 3480u + distance * 16u;
-            relative = sum_group(lane < 16u ? x[rbase + lane] * x[bias + lane] : 0.0);
-        }
-        score += relative - sink;
-        float next = max(peak, score);
-        float old_weight = exp(peak - next), weight = exp(score - next);
-        denominator = denominator * old_weight + weight;
-        output_lo = output_lo * old_weight + weight * cache_value(kv + lane, true);
-        output_hi = output_hi * old_weight + weight * cache_value(kv + lane + 64u, true);
-        peak = next;
-    }
-    y[qbase + lane] = output_lo / denominator;
-    y[qbase + lane + 64u] = output_hi / denominator;
 #elif defined(OP_ATTENTION) || defined(OP_ATTENTION_Q4)
     uint head = gl_WorkGroupID.x, token = gl_WorkGroupID.y;
     uint kv_head = head / (p.rows / p.kv_heads);

@@ -60,8 +60,20 @@ if [[ "$mode" != probe ]]; then
     spirv_val=${SPIRV_VAL:-spirv-val}
     suffix=${executable#frankenmoe-vulkan-probe}
     for shader in rmsnorm q4_0 swiglu rope kv_store attention q8_0 gather_q4_0 bias add pq2_0 gather_pq2_0 fwht causal_conv qk_norm gdn gdn_gates gated_rms head_slice sigmoid_gate kv_store_q4 attention_q4 q4_k q6_k gather_q4_k iq4_nl iq4_xs gather_q8_0 f32_project moe_route moe_weighted apex_qk_norm gdn_apply sigmoid_gate_scalar kv_fwht inkling_route inkling_situ inkling_attention; do
-        "$glslang" -V --target-env vulkan1.2 -S comp "-DOP_${shader^^}" \
-            "$source_dir/shaders/reference.comp" -o "$out/$shader.spv"
+        shader_dir="$source_dir/shaders"
+        shader_source="$shader_dir/$shader.goose"
+        if [[ -f $shader_source ]]; then
+            if [[ $shader == moe_route || $shader == inkling_route ]]; then
+                cat "$shader_dir/route-interface.goose" "$shader_source" "$shader_dir/route-dispatch.goose" \
+                    > "$out/$shader.goose"
+                shader_source="$out/$shader.goose"
+            fi
+            GLSLANG_VALIDATOR="$glslang" "${GOOSE_VULKAN_BIN:-$GOOSE_CUDA_DRIVER_BIN}" \
+                --emit-spirv "$out/$shader.spv" --target-env vulkan1.2 "$shader_source"
+        else
+            "$glslang" -V --target-env vulkan1.2 -S comp "-DOP_${shader^^}" \
+                "$shader_dir/reference.comp" -o "$out/$shader.spv"
+        fi
         "$spirv_val" --target-env vulkan1.2 "$out/$shader.spv"
     done
     python3 "$root/tools/embed-vulkan-shaders.py" "$out"
