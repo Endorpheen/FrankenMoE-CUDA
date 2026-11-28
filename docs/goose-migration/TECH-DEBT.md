@@ -4,6 +4,53 @@ Working notes for the Goose migration. Each item is a reproducible observation
 with a location and a reproduction, so it can be handed to whoever owns the
 relevant component without a conversation.
 
+## Remaining non-Goose runtime inputs
+
+The four Bonsai MTP and Pipeline OpenCL C sources were added by
+`1599aed9239b61354d73e67d8aba08003c4431d9` on 2026-11-27. Their original
+physical line counts were verified against the sources before consolidation.
+
+| Original runtime source | Lines | Purpose |
+| --- | ---: | --- |
+| `integration/goose-standalone/universal/bonsai-frozen-cuda/mtp-mvq.cl` | 6816 | Bonsai MTP |
+| `integration/goose-standalone/universal/bonsai-frozen-cuda/pipeline-main.cl` | 5425 | Bonsai Pipeline main kernels |
+| `integration/goose-standalone/universal/bonsai-frozen-cuda/pipeline-flash.cl` | 4566 | Bonsai Pipeline attention kernels |
+| `integration/goose-standalone/universal/bonsai-frozen-cuda/pipeline-unpack.cl` | 5053 | Bonsai Pipeline unpack kernels |
+| **Original Bonsai total** | **21860** | |
+
+The first 4011 lines match byte for byte in all four files. Their three
+redundant copies account for 12033 lines, leaving 9827 after accounting for
+that prefix alone. The three Pipeline files share another 161 lines, and
+`pipeline-main.cl` and `pipeline-unpack.cl` share a further 371 lines.
+Consolidating those verified prefixes removes 12726 repeated source lines
+in total. The seven resulting input files contain 9142 physical lines,
+including six include directives and two additional separator lines. The
+underlying source text totals 9134 lines after these extractions.
+
+The shared prefixes now reside in these runtime inputs.
+
+- `integration/goose-standalone/universal/bonsai-frozen-cuda/bonsai-common.clh`
+- `integration/goose-standalone/universal/bonsai-frozen-cuda/pipeline-common.clh`
+- `integration/goose-standalone/universal/bonsai-frozen-cuda/pipeline-mma-common.clh`
+
+Expanding the includes reproduces all four original sources byte for byte.
+The standard `tools/build-gooseinfer-bonsai-mtp.sh` and
+`tools/build-gooseinfer-bonsai-pipeline.sh` recipes produce byte-identical
+SM89 cubins before and after the extraction. Their respective SHA-256 hashes
+are `8c56c4e79e9afee837188324c66419c49fbef050b83c3f599978afa32313a0ec`
+and `2a18d1857ecb4067e30eb9ab6cc4f9c61cab7d6c46985b02c59cb57616b5c7cd`.
+
+The separate Inkling Flash C ABI source is
+`integration/goose-standalone/universal/cuda/images/device-types.h`.
+It contains **10 physical lines** of type aliases and ABI macros and was
+added in the same integration commit.
+
+After the next qualified Linux and Windows release, audit remaining
+duplication, reuse universal Goose kernels, and port the remaining unique
+Bonsai OpenCL C compute and Inkling ABI source. Follow the
+[required sequence](../../ROADMAP.md#required-work-sequence) through the
+final runtime and build audit.
+
 ## TD-S1: a function result stored in an f64 local reads as zero
 
 Observed while porting `dist` and `temp_ext`.

@@ -1,0 +1,373 @@
+#include "pipeline-common.clh"
+
+
+static uint2 bonsai_mma_half_acc(uint2 acc, uint4 a, uint2 b) {
+    uint lo=acc.x,hi=acc.y;
+    __asm__("mma.sync.aligned.m16n8k16.row.col.f16.f16.f16.f16 "
+            "{%0,%1}, {%2,%3,%4,%5}, {%6,%7}, {%0,%1};"
+            : "+r"(lo),"+r"(hi)
+            : "r"(a.x),"r"(a.y),"r"(a.z),"r"(a.w),"r"(b.x),"r"(b.y));
+    return (uint2)(lo,hi);
+}
+
+static float bonsai_unpack_half(ushort x) {
+    float out;
+    __asm__("cvt.f32.f16 %0,%1;" : "=f"(out) : "h"(x));
+    return out;
+}
+
+static float4 bonsai_widen_partial(uint2 acc) {
+    return (float4)(bonsai_unpack_half((ushort)acc.x),bonsai_unpack_half((ushort)(acc.x>>16)),
+                    bonsai_unpack_half((ushort)acc.y),bonsai_unpack_half((ushort)(acc.y>>16)));
+}
+__kernel void bonsai_pq2_cached_fp16_acc_k32(__global const uchar *weights,
+    __global const uint *input,__global float *output,uint width,uint rows,uint tokens) {
+    __local __attribute__((aligned(16))) uint w[64][36];
+    __local __attribute__((aligned(16))) uint x[128][36];
+    const uint row_base=64*work_group(), token_base=128*flash_grid_y();
+    const uint thread=local_id(),warp=thread/32,lane=thread%32;
+    const uint warp_row=16*(warp/2),warp_token=64*(warp%2);
+    const uint blocks=width/128;
+    float4 acc[8];
+    #pragma unroll
+    for (uint i=0;i<8;++i) acc[i]=(float4)(0.0f);
+    uint raw[4];
+    for (uint step=0;step<2*blocks;++step) {
+        if ((step&1)==0) {
+            #pragma unroll
+            for (uint lane_row=0;lane_row<4;++lane_row) {
+                const uint index=thread+256*lane_row;
+                const uint row=row_base+index/16, quad=index%16;
+                uint bits=0,low=0,high=0;
+                if (row<rows) {
+                    const __global uchar *q=weights+((ulong)row*blocks+step/2)*34;
+                    bits=*(__global const ushort *)q;
+                    low=q[2+quad];
+                    high=q[18+quad];
+                }
+                raw[lane_row]=bits|(low<<16)|(high<<24);
+            }
+        }
+        for (uint packed=thread*4;packed<128*32;packed+=1024) {
+            const uint token=token_base+packed/32,col=packed%32;
+            const uint valid=token<tokens ? 16 : 0;
+            const ulong source=valid ? (ulong)token*(width/2)+step*32+col : 0;
+            bonsai_copy16(&x[packed/32][col],input+source,valid);
+        }
+        #pragma unroll
+        for (uint lane_row=0;lane_row<4;++lane_row) {
+            const uint index=thread+256*lane_row, quad=index%16;
+            const uint entry=raw[lane_row];
+            const uint codes=(entry >> (16+8*(step&1))) & 255;
+            const uint2 pair=bonsai_ffn_unpack_cached((ushort)entry,codes);
+            w[index/16][quad*2]=pair.x;
+            w[index/16][quad*2+1]=pair.y;
+        }
+        bonsai_copy_complete();
+        sync_threads();
+        #pragma unroll
+        for (uint segment=0;segment<32;segment+=16) {
+            uint2 partial[8];
+            #pragma unroll
+            for (uint i=0;i<8;++i) partial[i]=(uint2)(0);
+            #pragma unroll
+            for (uint sub=0;sub<2;++sub) {
+                const uint k=segment+8*sub;
+                const uint4 a=bonsai_load_a(&w[warp_row][0],36,k,lane);
+                #pragma unroll
+                for (uint i=0;i<8;++i) {
+                    const uint2 b=bonsai_load_b(&x[warp_token+8*i][0],36,k,lane);
+                    partial[i]=bonsai_mma_half_acc(partial[i],a,b);
+                }
+            }
+            #pragma unroll
+            for (uint i=0;i<8;++i) acc[i]+=bonsai_widen_partial(partial[i]);
+        }
+        sync_threads();
+    }
+    const uint row=row_base+warp_row+lane/4,token=token_base+warp_token+2*(lane%4);
+    #pragma unroll
+    for (uint i=0;i<8;++i) bonsai_store_mma(output,acc[i],rows,tokens,row,token+8*i);
+}
+
+__kernel void bonsai_pq2_cached_fp16_acc_k64(__global const uchar *weights,
+    __global const uint *input,__global float *output,uint width,uint rows,uint tokens) {
+    __local __attribute__((aligned(16))) uint w[64][36];
+    __local __attribute__((aligned(16))) uint x[128][36];
+    const uint row_base=64*work_group(), token_base=128*flash_grid_y();
+    const uint thread=local_id(),warp=thread/32,lane=thread%32;
+    const uint warp_row=16*(warp/2),warp_token=64*(warp%2);
+    const uint blocks=width/128;
+    float4 acc[8];
+    #pragma unroll
+    for (uint i=0;i<8;++i) acc[i]=(float4)(0.0f);
+    uint raw[4];
+    for (uint step=0;step<2*blocks;++step) {
+        if ((step&1)==0) {
+            #pragma unroll
+            for (uint lane_row=0;lane_row<4;++lane_row) {
+                const uint index=thread+256*lane_row;
+                const uint row=row_base+index/16, quad=index%16;
+                uint bits=0,low=0,high=0;
+                if (row<rows) {
+                    const __global uchar *q=weights+((ulong)row*blocks+step/2)*34;
+                    bits=*(__global const ushort *)q;
+                    low=q[2+quad];
+                    high=q[18+quad];
+                }
+                raw[lane_row]=bits|(low<<16)|(high<<24);
+            }
+        }
+        for (uint packed=thread*4;packed<128*32;packed+=1024) {
+            const uint token=token_base+packed/32,col=packed%32;
+            const uint valid=token<tokens ? 16 : 0;
+            const ulong source=valid ? (ulong)token*(width/2)+step*32+col : 0;
+            bonsai_copy16(&x[packed/32][col],input+source,valid);
+        }
+        #pragma unroll
+        for (uint lane_row=0;lane_row<4;++lane_row) {
+            const uint index=thread+256*lane_row, quad=index%16;
+            const uint entry=raw[lane_row];
+            const uint codes=(entry >> (16+8*(step&1))) & 255;
+            const uint2 pair=bonsai_ffn_unpack_cached((ushort)entry,codes);
+            w[index/16][quad*2]=pair.x;
+            w[index/16][quad*2+1]=pair.y;
+        }
+        bonsai_copy_complete();
+        sync_threads();
+        #pragma unroll
+        for (uint segment=0;segment<32;segment+=32) {
+            uint2 partial[8];
+            #pragma unroll
+            for (uint i=0;i<8;++i) partial[i]=(uint2)(0);
+            #pragma unroll
+            for (uint sub=0;sub<4;++sub) {
+                const uint k=segment+8*sub;
+                const uint4 a=bonsai_load_a(&w[warp_row][0],36,k,lane);
+                #pragma unroll
+                for (uint i=0;i<8;++i) {
+                    const uint2 b=bonsai_load_b(&x[warp_token+8*i][0],36,k,lane);
+                    partial[i]=bonsai_mma_half_acc(partial[i],a,b);
+                }
+            }
+            #pragma unroll
+            for (uint i=0;i<8;++i) acc[i]+=bonsai_widen_partial(partial[i]);
+        }
+        sync_threads();
+    }
+    const uint row=row_base+warp_row+lane/4,token=token_base+warp_token+2*(lane%4);
+    #pragma unroll
+    for (uint i=0;i<8;++i) bonsai_store_mma(output,acc[i],rows,tokens,row,token+8*i);
+}
+__kernel void bonsai_pq2_half_full_5120(__global const uchar *weights,
+    __global const uint *input,__global float *output,uint width,uint rows,uint tokens) {
+    __local __attribute__((aligned(16))) uint w[64][36];
+    __local __attribute__((aligned(16))) uint x[128][36];
+    const uint row_base=64*work_group(), token_base=128*flash_grid_y();
+    const uint thread=local_id(),warp=thread/32,lane=thread%32;
+    const uint warp_row=16*(warp/2),warp_token=64*(warp%2);
+    const uint blocks=40;
+    float4 acc[8];
+    #pragma unroll
+    for (uint i=0;i<8;++i) acc[i]=(float4)(0.0f);
+    uint raw[4];
+    for (uint step=0;step<2*blocks;++step) {
+        if ((step&1)==0) {
+            #pragma unroll
+            for (uint lane_row=0;lane_row<4;++lane_row) {
+                const uint index=thread+256*lane_row;
+                const uint row=row_base+index/16, quad=index%16;
+                const __global uchar *q=weights+((ulong)row*blocks+step/2)*34;
+                const uint bits=*(__global const ushort *)q;
+                const uint low=q[2+quad],high=q[18+quad];
+                raw[lane_row]=bits|(low<<16)|(high<<24);
+            }
+        }
+        for (uint packed=thread*4;packed<128*32;packed+=1024) {
+            const uint token=token_base+packed/32,col=packed%32;
+            const ulong source=(ulong)token*2560+step*32+col;
+            bonsai_copy16(&x[packed/32][col],input+source,16);
+        }
+        #pragma unroll
+        for (uint lane_row=0;lane_row<4;++lane_row) {
+            const uint index=thread+256*lane_row, quad=index%16;
+            const uint entry=raw[lane_row];
+            const uint codes=(entry >> (16+8*(step&1))) & 255;
+            const uint2 pair=bonsai_ffn_unpack_cached((ushort)entry,codes);
+            w[index/16][quad*2]=pair.x;
+            w[index/16][quad*2+1]=pair.y;
+        }
+        bonsai_copy_complete();
+        sync_threads();
+        #pragma unroll
+        for (uint segment=0;segment<32;segment+=16) {
+            uint2 partial[8];
+            #pragma unroll
+            for (uint i=0;i<8;++i) partial[i]=(uint2)(0);
+            #pragma unroll
+            for (uint sub=0;sub<2;++sub) {
+                const uint k=segment+8*sub;
+                const uint4 a=bonsai_load_a(&w[warp_row][0],36,k,lane);
+                #pragma unroll
+                for (uint i=0;i<8;++i) {
+                    const uint2 b=bonsai_load_b(&x[warp_token+8*i][0],36,k,lane);
+                    partial[i]=bonsai_mma_half_acc(partial[i],a,b);
+                }
+            }
+            #pragma unroll
+            for (uint i=0;i<8;++i) acc[i]+=bonsai_widen_partial(partial[i]);
+        }
+        sync_threads();
+    }
+    const uint row=row_base+warp_row+lane/4,token=token_base+warp_token+2*(lane%4);
+    #pragma unroll
+    for (uint i=0;i<8;++i) {
+        const ulong offset=(ulong)(token+8*i)*rows+row;
+        output[offset]=acc[i].x;
+        output[offset+8]=acc[i].z;
+        output[offset+rows]=acc[i].y;
+        output[offset+rows+8]=acc[i].w;
+    }
+}
+
+__kernel void bonsai_pq2_half_full_17408(__global const uchar *weights,
+    __global const uint *input,__global float *output,uint width,uint rows,uint tokens) {
+    __local __attribute__((aligned(16))) uint w[64][36];
+    __local __attribute__((aligned(16))) uint x[128][36];
+    const uint row_base=64*work_group(), token_base=128*flash_grid_y();
+    const uint thread=local_id(),warp=thread/32,lane=thread%32;
+    const uint warp_row=16*(warp/2),warp_token=64*(warp%2);
+    const uint blocks=136;
+    float4 acc[8];
+    #pragma unroll
+    for (uint i=0;i<8;++i) acc[i]=(float4)(0.0f);
+    uint raw[4];
+    for (uint step=0;step<2*blocks;++step) {
+        if ((step&1)==0) {
+            #pragma unroll
+            for (uint lane_row=0;lane_row<4;++lane_row) {
+                const uint index=thread+256*lane_row;
+                const uint row=row_base+index/16, quad=index%16;
+                const __global uchar *q=weights+((ulong)row*blocks+step/2)*34;
+                const uint bits=*(__global const ushort *)q;
+                const uint low=q[2+quad],high=q[18+quad];
+                raw[lane_row]=bits|(low<<16)|(high<<24);
+            }
+        }
+        for (uint packed=thread*4;packed<128*32;packed+=1024) {
+            const uint token=token_base+packed/32,col=packed%32;
+            const ulong source=(ulong)token*8704+step*32+col;
+            bonsai_copy16(&x[packed/32][col],input+source,16);
+        }
+        #pragma unroll
+        for (uint lane_row=0;lane_row<4;++lane_row) {
+            const uint index=thread+256*lane_row, quad=index%16;
+            const uint entry=raw[lane_row];
+            const uint codes=(entry >> (16+8*(step&1))) & 255;
+            const uint2 pair=bonsai_ffn_unpack_cached((ushort)entry,codes);
+            w[index/16][quad*2]=pair.x;
+            w[index/16][quad*2+1]=pair.y;
+        }
+        bonsai_copy_complete();
+        sync_threads();
+        #pragma unroll
+        for (uint segment=0;segment<32;segment+=16) {
+            uint2 partial[8];
+            #pragma unroll
+            for (uint i=0;i<8;++i) partial[i]=(uint2)(0);
+            #pragma unroll
+            for (uint sub=0;sub<2;++sub) {
+                const uint k=segment+8*sub;
+                const uint4 a=bonsai_load_a(&w[warp_row][0],36,k,lane);
+                #pragma unroll
+                for (uint i=0;i<8;++i) {
+                    const uint2 b=bonsai_load_b(&x[warp_token+8*i][0],36,k,lane);
+                    partial[i]=bonsai_mma_half_acc(partial[i],a,b);
+                }
+            }
+            #pragma unroll
+            for (uint i=0;i<8;++i) acc[i]+=bonsai_widen_partial(partial[i]);
+        }
+        sync_threads();
+    }
+    const uint row=row_base+warp_row+lane/4,token=token_base+warp_token+2*(lane%4);
+    #pragma unroll
+    for (uint i=0;i<8;++i) {
+        const ulong offset=(ulong)(token+8*i)*rows+row;
+        output[offset]=acc[i].x;
+        output[offset+8]=acc[i].z;
+        output[offset+rows]=acc[i].y;
+        output[offset+rows+8]=acc[i].w;
+    }
+}
+
+__kernel void bonsai_pq2_half_full_6144(__global const uchar *weights,
+    __global const uint *input,__global float *output,uint width,uint rows,uint tokens) {
+    __local __attribute__((aligned(16))) uint w[64][36];
+    __local __attribute__((aligned(16))) uint x[128][36];
+    const uint row_base=64*work_group(), token_base=128*flash_grid_y();
+    const uint thread=local_id(),warp=thread/32,lane=thread%32;
+    const uint warp_row=16*(warp/2),warp_token=64*(warp%2);
+    const uint blocks=48;
+    float4 acc[8];
+    #pragma unroll
+    for (uint i=0;i<8;++i) acc[i]=(float4)(0.0f);
+    uint raw[4];
+    for (uint step=0;step<2*blocks;++step) {
+        if ((step&1)==0) {
+            #pragma unroll
+            for (uint lane_row=0;lane_row<4;++lane_row) {
+                const uint index=thread+256*lane_row;
+                const uint row=row_base+index/16, quad=index%16;
+                const __global uchar *q=weights+((ulong)row*blocks+step/2)*34;
+                const uint bits=*(__global const ushort *)q;
+                const uint low=q[2+quad],high=q[18+quad];
+                raw[lane_row]=bits|(low<<16)|(high<<24);
+            }
+        }
+        for (uint packed=thread*4;packed<128*32;packed+=1024) {
+            const uint token=token_base+packed/32,col=packed%32;
+            const ulong source=(ulong)token*3072+step*32+col;
+            bonsai_copy16(&x[packed/32][col],input+source,16);
+        }
+        #pragma unroll
+        for (uint lane_row=0;lane_row<4;++lane_row) {
+            const uint index=thread+256*lane_row, quad=index%16;
+            const uint entry=raw[lane_row];
+            const uint codes=(entry >> (16+8*(step&1))) & 255;
+            const uint2 pair=bonsai_ffn_unpack_cached((ushort)entry,codes);
+            w[index/16][quad*2]=pair.x;
+            w[index/16][quad*2+1]=pair.y;
+        }
+        bonsai_copy_complete();
+        sync_threads();
+        #pragma unroll
+        for (uint segment=0;segment<32;segment+=16) {
+            uint2 partial[8];
+            #pragma unroll
+            for (uint i=0;i<8;++i) partial[i]=(uint2)(0);
+            #pragma unroll
+            for (uint sub=0;sub<2;++sub) {
+                const uint k=segment+8*sub;
+                const uint4 a=bonsai_load_a(&w[warp_row][0],36,k,lane);
+                #pragma unroll
+                for (uint i=0;i<8;++i) {
+                    const uint2 b=bonsai_load_b(&x[warp_token+8*i][0],36,k,lane);
+                    partial[i]=bonsai_mma_half_acc(partial[i],a,b);
+                }
+            }
+            #pragma unroll
+            for (uint i=0;i<8;++i) acc[i]+=bonsai_widen_partial(partial[i]);
+        }
+        sync_threads();
+    }
+    const uint row=row_base+warp_row+lane/4,token=token_base+warp_token+2*(lane%4);
+    #pragma unroll
+    for (uint i=0;i<8;++i) {
+        const ulong offset=(ulong)(token+8*i)*rows+row;
+        output[offset]=acc[i].x;
+        output[offset+8]=acc[i].z;
+        output[offset+rows]=acc[i].y;
+        output[offset+rows+8]=acc[i].w;
+    }
+}

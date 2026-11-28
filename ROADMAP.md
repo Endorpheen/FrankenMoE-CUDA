@@ -3,6 +3,39 @@
 The [current state](docs/CURRENT_STATE.md) records the release, cumulative
 runtime and qualification status.
 
+## Required work sequence
+
+1. **Restore and improve model performance.** Work in order on Inkling 2
+   Mini, Bonsai, then GigaChat4. Compare each migrated runtime against its
+   strongest reproducible pre-migration checkpoint under identical hardware,
+   model, settings, workload, and cache conditions. Restore and then exceed
+   the recorded prefill and decode performance while protecting correctness,
+   stability, and memory. Use the [experiment registry](experiments/EXPERIMENTS.md)
+   and [optimization registry](docs/goose-migration/FRIED-GOOSE-OPTIMIZATION-REGISTRY.md)
+   to combine verified improvements and transfer reusable mechanisms. Rotate
+   approaches when profiling or repeated trials show limited headroom. Keep
+   the Apex EXP-2411 checkpoint and evidence available for regression checks
+   and later optimization.
+2. **Complete release acceptance.** Cover every supported model, mode, and
+   compute backend on the relevant platforms. Verify functionality,
+   correctness, stability, performance, and memory against the architecture
+   gates and the [release gate](docs/RELEASE-GATE.md).
+3. **Publish the Linux and Windows release.** Publish after acceptance.
+   Include current usage documentation, qualification results, and archive
+   checksums. Label every configuration that could not be verified.
+4. **Resolve the remaining technical debt after publication.** Maintain the
+   [source inventory](docs/goose-migration/TECH-DEBT.md#remaining-non-goose-runtime-inputs)
+   during performance work. The verified identical Bonsai prefixes were
+   consolidated ahead of release as a separately scoped exception. After
+   publication, remove remaining duplication, reuse generic Goose kernels
+   wherever applicable, and port the unique compute paths to Goose.
+5. **Verify full runtime independence.** Audit the repository, build system,
+   and every executable path. The runtime implementation must be 100% Goose,
+   with zero C, C++, OpenCL C, or other implementation languages and zero hidden
+   external compute or fallback implementations. Retain only the required OS
+   and hardware driver interfaces. Confirm functionality, correctness,
+   stability, and performance across the supported configurations.
+
 - **Apex performance.** Use Apex 32K/512, a 262144-token context and a 6290 MiB
   expert cache on RTX 4070 for comparisons against the recorded checkpoint.
   Keep the archived checkpoint and paired correctness, prefill, decode and

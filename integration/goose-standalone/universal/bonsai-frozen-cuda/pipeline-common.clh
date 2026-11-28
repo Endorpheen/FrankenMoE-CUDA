@@ -1,0 +1,162 @@
+#include "bonsai-common.clh"
+
+
+__kernel void bonsai_flash_kv_fused_ordered(__global const float *query, __global const uint *keys,
+                                   __global const uint *values, __global float *output,
+                                   uint queries, uint key_count, uint first_visible,
+                                   uint tile_count, uint group_start, uint chunks) {
+    __local __attribute__((aligned(16))) uint panel_scratch[12544];
+    const uint physical_thread = local_id();
+    const uint panel = physical_thread / 128;
+    __local uint (*query_half)[132] = (__local uint (*)[132])(panel_scratch + panel * 2112);
+    __local uint (*score)[FLASH_KEYS] = (__local uint (*)[FLASH_KEYS])(panel_scratch + 4224 + panel * 2048);
+    __local uint (*probability)[FLASH_KEYS] = score;
+    __local uint *staging = panel_scratch + 8320;
+
+    const uint group = work_group() * 2 + panel;
+    const uint work = group + group_start;
+    const uint groups_per_head = (queries*6 + FLASH_ROWS-1)/FLASH_ROWS;
+    const uint kv_head = work / groups_per_head;
+    const uint first_row = (work % groups_per_head)*FLASH_ROWS;
+    const uint pair_last = flash_min(first_row+(2-panel)*FLASH_ROWS, queries*6)-1;
+
+    const uint thread = physical_thread % 128, warp = thread / 32, lane = thread % 32;
+    const uint lane_row = lane / 4, lane_pair = lane % 4;
+    const float neg_inf = as_float(0xff800000u);
+
+
+    for (uint index = thread; index < FLASH_ROWS * 128; index += 128) {
+        const uint r = index / 128, col = (index % 128)*2;
+        const uint original = first_row+r, token = original/6, h = original%6;
+        uint packed = 0;
+        if (token < queries) {
+            const __global float *q = query + ((ulong)token * 24 + kv_head*6 + h)*256 + col;
+            packed = bonsai_half_pair(q[0], q[1]);
+        }
+        query_half[r][index%128] = packed;
+    }
+    if (thread < FLASH_ROWS) {
+        query_half[thread][128] = as_uint(neg_inf);
+        query_half[thread][129] = 0;
+    }
+    sync_threads();
+
+    float4 values_acc[8];
+    #pragma unroll
+    for (uint r = 0; r < 8; ++r) values_acc[r] = (float4)(0.0f);
+    const uint visible_end = flash_min(key_count, first_visible + pair_last/6);
+    for (uint tile = 0; tile < tile_count; ++tile) {
+        const uint key_start = tile * FLASH_KEYS;
+        if (key_start >= visible_end) break;
+        for (uint kb = 0; kb < FLASH_KEYS; kb += 32) {
+            const uint chunk = (key_start+kb)/32, available = chunk < chunks ? 16 : 0;
+            const ulong base = available ? ((ulong)kv_head*chunks+chunk)*4096 : 0;
+            for (uint index = physical_thread*4; index < 32*128; index += 1024) {
+                bonsai_copy16(staging+(index/128)*132+index%128,keys+base+index,available);
+            }
+            bonsai_copy_complete();
+            sync_threads();
+            float4 acc = (float4)(0.0f);
+            #pragma unroll 8
+            for (uint k = 0; k < 128; k += 8) {
+                const uint4 a = bonsai_load_a(&query_half[0][0],132,k,lane);
+                const uint2 b = bonsai_load_b(staging+warp*8*132,132,k,lane);
+                acc = bonsai_mma16x8(acc,a.x,a.y,a.z,a.w,b.x,b.y);
+            }
+            const uint key_col = kb + warp*8 + 2*lane_pair;
+            score[lane_row][key_col] = as_uint(acc.x * 0.0625f);
+            score[lane_row][key_col+1] = as_uint(acc.y * 0.0625f);
+            score[lane_row+8][key_col] = as_uint(acc.z * 0.0625f);
+            score[lane_row+8][key_col+1] = as_uint(acc.w * 0.0625f);
+            sync_threads();
+        }
+
+        for (uint r = warp; r < FLASH_ROWS; r += 4) {
+            const uint token = (first_row+r)/6;
+            const uint visible = flash_min(key_count, first_visible + token);
+            const uint count = token < queries && visible > key_start ? flash_min(FLASH_KEYS, visible-key_start) : 0;
+            float mx = neg_inf;
+            for (uint z = lane; z < count; z += 32) mx = flash_max(mx,as_float(score[r][z]));
+            for (uint bit = 16; bit; bit /= 2) mx = flash_max(mx,flash_shuffle(mx,bit));
+            float sum = 0.0f;
+            uint probabilities[2];
+            for (uint z = lane*2; z < FLASH_KEYS; z += 64) {
+                const float lo = z < count ? flash_exp(as_float(score[r][z])-mx) : 0.0f;
+                const float hi = z+1 < count ? flash_exp(as_float(score[r][z+1])-mx) : 0.0f;
+                sum += lo + hi;
+                probabilities[z/64] = bonsai_half_pair(lo,hi);
+            }
+            for (uint bit = 16; bit; bit /= 2) sum += flash_shuffle(sum,bit);
+            __asm__ volatile("bar.warp.sync 0xffffffff;" ::: "memory");
+            probability[r][lane] = probabilities[0];
+            probability[r][lane+32] = probabilities[1];
+            if (lane == 0) {
+                if (count != 0) {
+                    const float prior = as_float(query_half[r][128]), seen = flash_max(prior,mx);
+                    const float keep = flash_exp(prior-seen);
+                    const float add = flash_exp(mx-seen);
+                    query_half[r][128] = as_uint(seen);
+                    query_half[r][129] = as_uint(as_float(query_half[r][129])*keep + sum*add);
+                    query_half[r][130] = as_uint(keep);
+                    query_half[r][131] = as_uint(add);
+                }
+            }
+        }
+        sync_threads();
+
+        float4 acc[8];
+        #pragma unroll
+        for (uint result = 0; result < 8; ++result) acc[result] = (float4)(0.0f);
+        for (uint vb = 0; vb < FLASH_KEYS; vb += 32) {
+            const uint chunk = (key_start+vb)/32, available = chunk < chunks ? 16 : 0;
+            const ulong base = available ? ((ulong)kv_head*chunks+chunk)*4096 : 0;
+            for (uint index = physical_thread*4; index < 32*128; index += 1024) {
+                bonsai_copy16(staging+(index/16)*16+index%16,values+base+index,available);
+            }
+            bonsai_copy_complete();
+            sync_threads();
+            #pragma unroll
+            for (uint ksub = 0; ksub < 16; ksub += 8) {
+                const uint4 a = bonsai_load_a(&probability[0][0],FLASH_KEYS,vb/2+ksub,lane);
+                #pragma unroll
+                for (uint result = 0; result < 8; ++result) {
+                    const uint feature_block = (32*result + 8*warp)*16;
+                    const uint2 b = bonsai_load_b(staging+feature_block,16,ksub,lane);
+                    acc[result] = bonsai_mma16x8(acc[result],a.x,a.y,a.z,a.w,b.x,b.y);
+                }
+            }
+            sync_threads();
+        }
+        const uint token0 = (first_row+lane_row)/6, token1 = (first_row+lane_row+8)/6;
+        const int valid0 = token0 < queries && first_visible+token0 > key_start;
+        const int valid1 = token1 < queries && first_visible+token1 > key_start;
+        #pragma unroll
+        for (uint result = 0; result < 8; ++result) {
+            if (valid0) {
+                values_acc[result].xy = values_acc[result].xy*as_float(query_half[lane_row][130]) + acc[result].xy*as_float(query_half[lane_row][131]);
+            }
+            if (valid1) {
+                values_acc[result].zw = values_acc[result].zw*as_float(query_half[lane_row+8][130]) + acc[result].zw*as_float(query_half[lane_row+8][131]);
+            }
+        }
+        sync_threads();
+    }
+
+    if (thread < FLASH_ROWS) {
+        float inv;
+        __asm__("rcp.approx.ftz.f32 %0, %1;" : "=f"(inv) : "f"(as_float(query_half[thread][129])));
+        query_half[thread][129] = as_uint(inv);
+    }
+    sync_threads();
+    const uint row0 = first_row+lane_row, row1 = row0+8;
+    const ulong offset0 = ((ulong)(row0/6)*24 + kv_head*6 + row0%6)*256;
+    const ulong offset1 = ((ulong)(row1/6)*24 + kv_head*6 + row1%6)*256;
+    #pragma unroll
+    for (uint result = 0; result < 8; ++result) {
+        const uint col = 32*result + 8*warp + 2*lane_pair;
+        if (row0/6 < queries)
+            *(__global float2 *)(output+offset0+col) = values_acc[result].xy*as_float(query_half[lane_row][129]);
+        if (row1/6 < queries)
+            *(__global float2 *)(output+offset1+col) = values_acc[result].zw*as_float(query_half[lane_row+8][129]);
+    }
+}
