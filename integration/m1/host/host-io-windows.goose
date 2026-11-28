@@ -20,3 +20,5 @@ extern fn host_win_aligned_free(address: u64);
 export fn ggml_aligned_malloc(bytes: u64) -> u64 { return host_win_aligned_malloc(bytes, 64); }
 
 export fn ggml_aligned_free(address: u64, bytes: u64) { host_win_aligned_free(address); }
+
+export fn ggml_print_backtrace() {}

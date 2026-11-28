@@ -78,7 +78,7 @@ while todo:
         continue
     visited.add(f)
     for name in re.findall(r'^\s*#\s*include\s+"([^"]+)"',(root/f).read_text(errors='replace'),re.M):
-        if (f == g / "src/ggml.c" and name in {"ggml-quants.h", "ggml-backend.h", "ggml-cpu.h", "ggml-quantization-reference.inc", "ggml-graph-reference.inc", "ggml-operator-reference.inc", "ggml-geometry-reference.inc", "ggml-op-names-reference.inc", "ggml-metadata-reference.inc", "ggml-context-api-reference.inc", "ggml-helper-api-reference.inc", "ggml-graph-api-reference.inc", "ggml-graph-overhead-reference.inc", "ggml-hash-size-reference.inc", "ggml-runtime-reference.inc", "ggml-arena-reference.inc", "ggml-aligned-storage-reference.inc", "ggml-graph-storage-reference.inc"}) or (
+        if (f == g / "src/ggml.c" and name in {"ggml-quants.h", "ggml-backend.h", "ggml-cpu.h", "ggml-quantization-reference.inc", "ggml-graph-reference.inc", "ggml-operator-reference.inc", "ggml-geometry-reference.inc", "ggml-op-names-reference.inc", "ggml-metadata-reference.inc", "ggml-context-api-reference.inc", "ggml-helper-api-reference.inc", "ggml-graph-api-reference.inc", "ggml-graph-overhead-reference.inc", "ggml-hash-size-reference.inc", "ggml-runtime-reference.inc", "ggml-arena-reference.inc", "ggml-aligned-storage-reference.inc", "ggml-backtrace-reference.inc", "ggml-graph-storage-reference.inc"}) or (
             f == s / "ggml-system.c" and name in {"ggml-backend-impl.h", "ggml-system-reference.inc"}
         ) or (f == g / "src/ggml-impl.h" and name in {"gguf.h", "ggml-impl-reference.inc", "ggml-hash-reference.inc"}):
             continue

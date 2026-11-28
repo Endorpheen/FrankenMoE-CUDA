@@ -41,6 +41,10 @@ cat "$out/metadata.goose" "$standalone/"{graph-bindings,common-memory,graph-meta
 if [[ "$target" == linux ]]; then
     io_symbols=(--redefine-sym=host_runtime_read=read --redefine-sym=host_runtime_write=write --redefine-sym=host_runtime_close=close
         --redefine-sym=host_posix_memalign=posix_memalign --redefine-sym=host_pool_free=free
+        --redefine-sym=trace_open=fopen --redefine-sym=trace_line=fgets --redefine-sym=trace_close=fclose
+        --redefine-sym=trace_pipe=pipe --redefine-sym=trace_pid=getpid --redefine-sym=trace_fork=fork
+        --redefine-sym=trace_wait=waitpid --redefine-sym=trace_exec=execvp --redefine-sym=trace_exit=_Exit
+        --redefine-sym=trace_frames=backtrace --redefine-sym=trace_symbols=backtrace_symbols_fd
         --redefine-sym=host_conv_time=time --redefine-sym=host_conv_localtime=localtime)
 else
     io_symbols=(--redefine-sym=host_runtime_recv=recv --redefine-sym=host_runtime_send=send --redefine-sym=host_runtime_close=closesocket
