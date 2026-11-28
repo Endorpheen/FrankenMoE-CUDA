@@ -388,6 +388,13 @@ extern void fg_i2_host_joined_layer(struct decoder *, const int64_t *, const int
 extern void fg_i2_prepare_layer_inputs(struct decoder *d, const int64_t *aux, bool sliding,
     float *current, float *history, int count, void *inputs);
 
+extern int fg_i2_finish_attention(struct decoder *d, const int64_t *aux, int physical_layer, int slot,
+    float *current, float *history, int count, float *projection, float *next, float *ffn);
+
+int64_t fg_i2_measured_postconv(sl_f32 input, sl_f32 weight, sl_f32 history, sl_f32 output) {
+    return i2_postconv_token(input, weight, history, output);
+}
+
 static void layer(struct decoder *d,int physical_layer,int slot,int absolute,int sliding,
                   float *cur,float *blocks,int *count,float (*messages)[model_width]) {
     const int64_t *core=d->core+10*physical_layer, *aux=d->aux+30*physical_layer;
@@ -446,16 +453,7 @@ static void layer(struct decoder *d,int physical_layer,int slot,int absolute,int
             }
         }
     }
-    assert(i2_postconv_token(vec(proj,model_width),coefficients(d,aux[2],4*model_width),
-                            vec(d->ha+slot*3*model_width,3*model_width),vec(next,model_width))==model_width);
-    if(physical_layer%6==0){
-        assert(*count < 11);
-        save_history_row(blocks + (*count) * model_width, cur);
-        (*count)++;
-    }else{
-        for(int i=0;i<model_width;i++)next[i]+=cur[i];
-    }
-    mix(blocks,*count,next,coefficients(d,aux[9],model_width),1,ffn);
+    *count = fg_i2_finish_attention(d, aux, physical_layer, slot, cur, blocks, *count, proj, next, ffn);
     if (use_resident_moe()) {
         moe_resident(d, core, aux, slot, absolute, 1, ffn, messages ? messages[3] : NULL, next, cur);
         return;

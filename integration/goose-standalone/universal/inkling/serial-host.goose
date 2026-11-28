@@ -107,3 +107,27 @@ export fn fg_i2_prepare_layer_inputs(decoder: u64, aux: u64, sliding: bool, curr
         for index in 3 { i2d_transfer(inputs + (index as! u64) * 9216, current, 9216); }
     }
 }
+
+extern fn fg_i2_measured_postconv(input: I2DraftSpan, weight: I2DraftSpan, history: I2DraftSpan, output: I2DraftSpan) -> i64;
+extern fn fg_cuda_host_view_f32(address: u64, length: i64) -> f32[:];
+
+export fn fg_i2_finish_attention(decoder: u64, aux: u64, physical: i32, slot: i32, current: u64,
+    history: u64, count: i32, projection: u64, next: u64, ffn: u64) -> i32 {
+    let weights = fg_i2_host_coefficients(decoder, i2d_read(aux + 16) as! i64, 9216);
+    let convolution = i2d_read(decoder + I2D_HA) + (slot as! u64) * 27648;
+    assert(fg_i2_measured_postconv(i2d_span(projection, 2304), i2d_span(weights, 9216),
+        i2d_span(convolution, 6912), i2d_span(next, 2304)) == 2304);
+    var count_after = count;
+    if physical % 6 == 0 {
+        assert(count < 11);
+        fg_i2_host_save_history(history + (count as! u64) * 9216, current);
+        count_after += 1;
+    } else {
+        let residual = fg_cuda_host_view_f32(current, 2304);
+        var output = fg_cuda_host_view_f32(next, 2304);
+        for index in 2304 { output[index] += residual[index]; }
+    }
+    let query = fg_i2_host_coefficients(decoder, i2d_read(aux + 72) as! i64, 2304);
+    fg_i2_host_mix(history, count_after, next, i2d_span(query, 2304), 1, ffn);
+    return count_after;
+}
