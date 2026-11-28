@@ -611,7 +611,15 @@ static int choose_device(model *m, int ignore_eos, struct token_choice *result) 
 }
 
 #include "mtp-abi.h"
-#include "draft.inc"
+extern int32_t fg_bonsai_draft_open(model *m);
+_Static_assert(offsetof(model, choice_tiles) == 5632 && offsetof(model, choice_result) == 5640 &&
+    offsetof(model, mtp) == 96 && offsetof(model, mtp_layer) == 128 && offsetof(model, draft_kv) == 248 &&
+    offsetof(model, draft_rope_k) == 304 && offsetof(model, draft_q8_head) == 84 &&
+    offsetof(model, draft_batch) == 88 && offsetof(model, device_commit) == 76, "Bonsai draft ABI");
+_Static_assert(offsetof(struct bonsai_cuda_api, fn_cuMemAlloc) == 80 &&
+    offsetof(struct bonsai_cuda_api, fn_cuMemcpyDtoDAsync) == 104 &&
+    CHOICE_TILES == 77 && CHOICE_FINAL == 78 && CHOICE_JOBS == 243 &&
+    MTP_EH == 79 && MTP_MAT == 80 && DRAFT_CONCAT == 84 && DRAFT_MAT_BATCH == 85, "Bonsai draft launch ABI");
 
 extern const unsigned char gooseinfer_bonsai_pipeline_image[];
 extern const unsigned char gooseinfer_bonsai_frozen_image[];
@@ -836,7 +844,7 @@ model *fg_bonsai_model_open(const char *gguf, const char *cubin, const char *fro
     if (device_choice && !strcmp(device_choice, "1") && choice_open(m) != 0) goto error;
     if (m->mtp_enabled) {
         bonsai_mtp_goose_init(0, NULL);
-        if (!m->choice_mask || draft_open(m)) goto error;
+        if (!m->choice_mask || fg_bonsai_draft_open(m)) goto error;
     }
     fg_bonsai_ffn_graph_open(m);
     size_t available = 0, total = 0;
@@ -898,10 +906,9 @@ _Static_assert(offsetof(struct bonsai_cuda_api, fn_cuCtxDestroy) == 24 &&
     offsetof(struct bonsai_cuda_api, fn_cuCtxPushCurrent) == 32 &&
     offsetof(struct bonsai_cuda_api, fn_cuCtxPopCurrent) == 40 &&
     offsetof(struct bonsai_cuda_api, fn_cuMemsetD8) == 120, "Bonsai session CUDA dispatch layout");
-_Static_assert(GDN_STATE * 4 == 3145728 && GDN_HISTORY * 4 == 122880 && DRAFT_HIDDEN_BYTES == 20480 &&
+_Static_assert(GDN_STATE * 4 == 3145728 && GDN_HISTORY * 4 == 122880 &&
     offsetof(struct token_choice, token) == 0 && offsetof(struct token_choice, invalid) == 8, "Bonsai session state ABI");
 
-int fg_bonsai_session_draft(model *m, const uint32_t *tokens, unsigned count) { return draft_prefill(m, tokens, count); }
 int fg_bonsai_session_choice(model *m, int ignore_eos, struct token_choice *choice) { return choose_device(m, ignore_eos, choice); }
 _Static_assert(offsetof(model, mtp_pending) == 24 && offsetof(model, verify_rows) == 52 &&
     offsetof(model, draft_chain) == 296 && VERIFY_ROWS == 5, "Bonsai MTP session ABI");

@@ -10,7 +10,6 @@ const SESSION_EOG_COUNT: u64 = 15280;
 
 type BonsaiContext = c_fnptr(u64) -> i32;
 type BonsaiMemset = c_fnptr(u64, u8, u64) -> i32;
-extern fn fg_bonsai_session_draft(model: u64, tokens: u64, count: u32) -> i32;
 extern fn fg_bonsai_session_choice(model: u64, ignore_eos: i32, result: u64) -> i32;
 
 extern fn fg_bonsai_model_open(path: u64, image: u64, frozen: u64, context: u32, batch: u32) -> u64;
