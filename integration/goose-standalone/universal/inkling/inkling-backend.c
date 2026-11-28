@@ -381,10 +381,6 @@ _Static_assert(offsetof(struct inkling_decode_graph, bridge) == 312 && sizeof(st
     offsetof(struct inkling_bridge, add_residual) == 45 && INKLING_BRIDGE_GRAPH == 0x49324252 &&
     INKLING_BRIDGE_ROWS == 11, "Goose Inkling joined bridge ABI");
 
-const float *fg_i2_host_coefficients(struct decoder *d, int64_t id, int64_t count) {
-    return coefficients(d, id, count).data;
-}
-
 extern void fg_i2_host_joined_layer(struct decoder *, const int64_t *, const int64_t *,
     int, int, bool, bool, float **, float (*)[model_width], float *, float *, int);
 #define joined_layer fg_i2_host_joined_layer
@@ -509,13 +505,6 @@ int32_t i2_serial_layer(uint64_t decoder, int32_t physical, int32_t slot, int32_
     layer((void *)(uintptr_t)decoder, physical, slot, absolute, sliding,
           current.data, history.data, &history_count, messages.len ? (void *)messages.data : NULL);
     return history_count;
-}
-
-void i2_serial_mix(uint64_t decoder, int32_t physical, sl_f32 history, int32_t count,
-    sl_f32 output, sl_f32 messages) {
-    struct decoder *d = (void *)(uintptr_t)decoder;
-    mix(history.data, count, output.data, coefficients(d, d->aux[physical * 30 + 17], 4 * model_width),
-        4, messages.data);
 }
 
 void i2_serial_trace(int32_t visit, sl_f32 current) {

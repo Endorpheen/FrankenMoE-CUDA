@@ -1,7 +1,6 @@
 const I2_JOINED_BRIDGE: u64 = 312;
 const I2_JOINED_STARTED: u64 = 360;
 
-extern fn fg_i2_host_coefficients(decoder: u64,id: i64,count: i64) -> u64;
 extern fn ggml_view_1d(ctx: u64,tensor: u64,count: i64,offset: u64) -> u64;
 
 fn i2_joined_bind(entry: u64,decoder: u64,aux: u64,slot: i32,position: i32,input: u64,

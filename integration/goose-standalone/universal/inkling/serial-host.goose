@@ -4,10 +4,29 @@ extern "abort" fn i2_embedding_abort();
 
 struct InklingEmbedding { base: u64, row_bytes: u64, gains: u64 }
 
+fn i2_tensor_record(decoder: u64, id: u64) -> u64 {
+    if id >= 704 { i2_embedding_abort(); }
+    return decoder + I2_OPEN_TENSOR + id * 96;
+}
+
+fn fg_i2_host_coefficients(decoder: u64, id: i64, count: i64) -> u64 {
+    let record = i2_tensor_record(decoder, id as! u64);
+    let elements = i2d_read(record + 32) * i2d_read(record + 40) *
+        i2d_read(record + 48) * i2d_read(record + 56);
+    if i2d_read(record + 16) != 0 || elements != (count as! u64) { i2_embedding_abort(); }
+    return i2d_read(decoder) + i2d_read(record + 80);
+}
+
+export fn i2_serial_mix(decoder: u64, physical: i32, history: I2DraftSpan, count: i32,
+    output: I2DraftSpan, messages: I2DraftSpan) {
+    let index = decoder + I2_OPEN_AUX + ((physical as! u64) * 30 + 17) * 8;
+    let query = fg_i2_host_coefficients(decoder, i2d_read(index) as! i64, 9216);
+    fg_i2_host_mix(history.address, count, output.address, i2d_span(query, 9216), 4, messages.address);
+}
+
 fn i2_embedding(decoder: u64) -> InklingEmbedding {
     let id = i2d_read(decoder + I2_OPEN_GLOBALS);
-    if id >= 704 { i2_embedding_abort(); }
-    let record = decoder + I2_OPEN_TENSOR + id * 96;
+    let record = i2_tensor_record(decoder, id);
     let base = i2d_read(decoder) + i2d_read(record + 80);
     let gains = fg_i2_host_coefficients(decoder, i2d_read(decoder + I2_OPEN_GLOBALS + 8) as! i64, 2304);
     return InklingEmbedding {base: base, row_bytes: ggml_row_size(8, 2304), gains: gains};
