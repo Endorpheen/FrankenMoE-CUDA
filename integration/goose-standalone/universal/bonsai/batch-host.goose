@@ -35,7 +35,7 @@ extern fn bonsai_bonsai_graph(model: u64, weights: VocabSpan, states: VocabSpan,
     token: i64, position: i64, output: i64) -> i64;
 extern fn bonsai_mtp_target_graph(model: u64, weights: VocabSpan, states: VocabSpan, globals: VocabSpan, buffers: VocabSpan,
     token: i64, position: i64, output: i64) -> i64;
-extern fn fg_bonsai_batch_graph_error(model: u64, status: i64);
+extern fn bonsai_bonsai_capture_abort(capture: u64);
 
 fn batch_u32(address: u64) -> u32 {
     var value: u32 = 0;
@@ -137,7 +137,9 @@ export fn evaluate_batch_output(model: u64, tokens: u64, count: u32, logits: u64
         batch_u32(model + BATCH_CAPTURE_PHASE) != 0 ||
         (batch_u32(model + BATCH_CAPTURE_ENABLED) != 0 && batch_u32(model + BATCH_IN_DECODE) != 0 &&
          count == 1 && batch_u32(model + BATCH_CAPTURE_LAYER) != 64) {
-        fg_bonsai_batch_graph_error(model, result);
+        let capture = model + BONSAI_CAPTURE_STREAM;
+        if vocab_word(capture) != 0 { bonsai_bonsai_capture_abort(capture); }
+        vocab_log(str("Goose graph failed: ", result, "\n"));
         return -1;
     }
     if verify != 0 { batch_set(model + BATCH_TXN_PHASE, 2); }

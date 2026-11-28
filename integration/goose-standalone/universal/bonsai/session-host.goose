@@ -11,7 +11,6 @@ const SESSION_EOG_COUNT: u64 = 15280;
 type BonsaiContext = c_fnptr(u64) -> i32;
 type BonsaiMemset = c_fnptr(u64, u8, u64) -> i32;
 
-extern fn bonsai_bonsai_capture_abort(capture: u64);
 
 fn session_context(operation: u64, argument: u64) -> i32 {
     return unsafe_c_fnptr<BonsaiContext>(vocab_word(fg_bonsai_cuda_dispatch() + operation))(argument);

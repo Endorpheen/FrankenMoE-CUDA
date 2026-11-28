@@ -94,11 +94,7 @@ _Static_assert(offsetof(struct bonsai_ffn_capture, stream) == 0 &&
     offsetof(struct bonsai_ffn_capture, next) == 1040 && offsetof(struct bonsai_ffn_capture, enabled) == 1044 &&
     LAYERS == 64, "Bonsai FFN capture ABI");
 
-extern void bonsai_capture_abort(uint64_t capture);
-extern int32_t bonsai_capture_finish(uint64_t capture);
-
 extern void fg_bonsai_bind_ffn_graph(void);
-extern void fg_bonsai_ffn_graph_open(model *m);
 int32_t fg_bonsai_ffn_bind_once(void) {
     static pthread_once_t once = PTHREAD_ONCE_INIT;
     return pthread_once(&once, fg_bonsai_bind_ffn_graph);
@@ -107,11 +103,6 @@ int32_t fg_bonsai_ffn_bind_once(void) {
 _Static_assert(offsetof(model, capture) == 15288 &&
     offsetof(model, q8_mode) == 4712 && offsetof(model, norm_wide) == 4720 &&
     CU_STREAM_NON_BLOCKING == 1 && CU_STREAM_CAPTURE_MODE_THREAD_LOCAL == 1, "Bonsai FFN driver ABI");
-
-
-extern int32_t fg_bonsai_verify_launch(model *m, enum kernel kernel, uint32_t x, uint32_t y, uint32_t z,
-                                       uint32_t threads, void **args);
-#define launch fg_bonsai_verify_launch
 
 _Static_assert(sizeof(CUdeviceptr) == 8 &&
     offsetof(model, kernel) == 4824 && offsetof(model, gdn_prefill_v32) == 14688 &&
@@ -130,7 +121,6 @@ _Static_assert(NORM_WIDE_SMALL == 47 && ROTATE == 1 && MV_PACK_Q8 == 44 && MV_Q8
     FLASH_TILE_COMPACT == 27 && FLASH_TILE_STAGED == 24 && FLASH_MERGE_COMPACT_ORDERED == 29 &&
     FLASH_MERGE_COMPACT == 28 && FLASH_MERGE_ORDERED == 26 && FLASH_MERGE_F32 == 23 &&
     FLASH_V_FP8 == 66 && FLASH_FP8_QKPV == 67 && FLASH_PANEL_SHARED == 50176, "Bonsai launch kernel IDs");
-
 
 _Static_assert(offsetof(model, txn.layer_ids) == 328 && offsetof(model, txn.prefix) == 584 &&
     offsetof(model, verify_native) == 56 && offsetof(model, verify_q8) == 60 &&
@@ -184,11 +174,9 @@ _Static_assert(sizeof(struct token_choice) == 12, "CUDA token choice ABI");
 enum { CHOICE_JOBS = (VOCAB + 1023) / 1024, CHOICE_MASK_WORDS = (VOCAB + 31) / 32 };
 _Static_assert(CHOICE_JOBS <= 256, "one final block covers all partials");
 
-extern int32_t fg_bonsai_choice_open(model *m);
 _Static_assert(CHOICE_MASK_WORDS == 7760 && CHOICE_JOBS == 243, "Bonsai choice workspace ABI");
 
 #include "mtp-abi.h"
-extern int32_t fg_bonsai_draft_open(model *m);
 _Static_assert(offsetof(model, choice_tiles) == 5632 && offsetof(model, choice_result) == 5640 &&
     offsetof(model, mtp) == 96 && offsetof(model, mtp_layer) == 128 && offsetof(model, draft_kv) == 248 &&
     offsetof(model, draft_rope_k) == 304 && offsetof(model, draft_q8_head) == 84 &&
@@ -254,13 +242,6 @@ _Static_assert(
     "Bonsai batch field layout");
 _Static_assert(TXN_IDLE == 0 && TXN_RUNNING == 1 && TXN_READY == 2 && LAYERS == 64 &&
     VOCAB == 248320 && UBATCH_MAX == 1024 && KV_BYTES == 576 && ATTENTION_BYTES == 33554432, "Bonsai batch constants");
-
-
-
-void fg_bonsai_batch_graph_error(model *m, int64_t status) {
-    if (m->capture.stream) bonsai_capture_abort((uintptr_t)&m->capture);
-    fprintf(stderr, "Goose graph failed: %lld\n", (long long)status);
-}
 
 #include "session.h"
 
