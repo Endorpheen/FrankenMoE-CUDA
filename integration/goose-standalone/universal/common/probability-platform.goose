@@ -15,8 +15,7 @@ extern fn pthread_cond_wait(condition: c_ptr<void>, mutex: c_ptr<void>) -> i32;
 extern fn pthread_cond_broadcast(condition: c_ptr<void>) -> i32;
 extern fn pthread_join(thread: u64, result: c_ptr<void>) -> i32;
 extern "memset" fn prob_platform_fill(dst: c_ptr<void>, value: i32, size: u64) -> c_ptr<void>;
-extern fn fg_prob_platform_launch(worker: u64, address: u64) -> i32;
-extern fn fg_prob_native_avx2() -> bool;
+extern "gs_simd_cpu_features" fn prob_cpu_features() -> u64;
 extern fn fg_cuda_inkling_quants_enabled() -> bool;
 
 var prob_request_key: u32;
@@ -60,7 +59,7 @@ fn fg_prob_platform_current(detach: bool) -> u64 {
 
 fn fg_prob_platform_start(address: u64) -> bool {
     if pthread_setspecific(prob_request_key, unsafe_c_ptr<c_ptr<const void>>(address)) != 0 { return false; }
-    if fg_prob_platform_launch(address + PROB_PLATFORM_THREAD, address) == 0 { return true; }
+    if prob_platform_launch(address + PROB_PLATFORM_THREAD, address) == 0 { return true; }
     pthread_setspecific(prob_request_key, null);
     return false;
 }
@@ -106,9 +105,26 @@ fn prob_env_is(name: const u8[:], value: u8) -> bool {
 }
 
 export fn fg_q35_topk_scan_enabled() -> bool {
-    return !prob_env_is("GOOSE_CPU_TOPK_SCAN", 48) && fg_prob_native_avx2();
+    return !prob_env_is("GOOSE_CPU_TOPK_SCAN", 48) && (prob_cpu_features() & 2) != 0;
 }
 
 export fn fg_i2_sampler_scan_enabled(count: i64) -> bool {
     return count >= 1024 && prob_env_is("I2_SAMPLER_SCAN", 49) && fg_cuda_inkling_quants_enabled();
+}
+
+type ProbabilityWorker = c_fnptr(c_ptr<void>) -> c_ptr<void>;
+
+extern fn pthread_create(thread: c_ptr<u64>, attributes: c_ptr<const void>,
+    callback: ProbabilityWorker, payload: c_ptr<void>) -> i32;
+
+export fn prob_worker_callback(payload: c_ptr<void>) -> c_ptr<void> {
+    var address: u64 = 0;
+    prob_copy(unsafe_c_address<c_ptr<void>>(address), unsafe_c_address<c_ptr<const void>>(payload), 8);
+    fg_prob_worker_run(address);
+    return null;
+}
+
+fn prob_platform_launch(worker: u64, address: u64) -> i32 {
+    let callback = unsafe_c_callback<ProbabilityWorker>(prob_worker_callback);
+    return pthread_create(unsafe_c_ptr<c_ptr<u64>>(worker), null, callback, prob_platform_pointer(address));
 }

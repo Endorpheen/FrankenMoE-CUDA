@@ -29,9 +29,6 @@ flags=(-std=c11 -D_GNU_SOURCE -ffunction-sections -fdata-sections
        -I"$out" -I"$model_headers" -I"$standalone" -I"$host"
        -I"$ggml/include" -I"$ggml/src" -I"$ggml/src/ggml-cpu")
 "$cc" "${flags[@]}" -fsyntax-only "$ggml/src/ggml.c"
-if [[ "$target" == linux ]]; then
-    "$cc" -O1 "${flags[@]}" "${hardening[@]}" -c "$host/debugger-linux.c" -o "$out/debugger-linux.o"
-fi
 "$cc" "${flags[@]}" -x c -fsyntax-only "$standalone/graph-bindings-layout.h"
 printf 'extern fn host_quant_lround(value: f32) -> %s;\n' "$native_long" > "$out/common-core.goose"
 if "$cc" "${flags[@]}" -dM -E -x c /dev/null | awk '$2 == "NDEBUG" { seen = 1 } END { exit !seen }'; then
@@ -41,7 +38,7 @@ else
 fi
 printf 'const HOST_INIT_MUTEX: u64 = %s;\n' "$mutex" >> "$out/common-core.goose"
 cat "$out/metadata.goose" "$standalone/"{graph-bindings,common-memory,graph-metadata,graph-arena-abi}.goose \
-    "$host/"{host-quant,host-runtime,host-conversion,host-init}.goose "$host/host-io-$target.goose" >> "$out/common-core.goose"
+    "$host/"{host-quant,host-runtime,host-conversion,host-init,host-format}.goose "$host/host-io-$target.goose" >> "$out/common-core.goose"
 "${GOOSE_CUDA_DRIVER_BIN:?Set GOOSE_CUDA_DRIVER_BIN to Fried Goose KeelWing v0.3.1-dev.1}" --standalone \
     -o "$out/graph-bindings.c" "$out/common-core.goose"
 "$cc" -O2 "${flags[@]}" -Dgoose_init=fg_graph_bindings_init -Dgg_init_globals=fg_graph_bindings_globals \
@@ -61,5 +58,15 @@ else
 fi
 "$objcopy" --redefine-sym=fg_host_model_initialize=goose_init --redefine-sym=ggml_flush_all=fflush --redefine-sym=ggml_diagnostic_strlen=strlen --redefine-sym=graph_crt_getenv=getenv --redefine-sym=host_quant_lround=lroundf \
     --redefine-sym=host_conv_strtod=strtod --redefine-sym=host_conv_strftime=strftime "${io_symbols[@]}" "$out/graph-bindings.o"
-"$cc" -O1 "${flags[@]}" -c "$host/goose_host.c" -o "$out/goose-host.o"
+{
+    printf '#include <stdint.h>\n#include <stdio.h>\n'
+    printf 'uint64_t fg_host_snprintf_address(void) { return (uintptr_t)&snprintf; }\n'
+    if [[ "$target" == linux ]]; then
+        printf '#include <sys/prctl.h>\n'
+        printf 'uint64_t fg_host_prctl_address(void) { return (uintptr_t)&prctl; }\n'
+    fi
+} > "$out/host-abi-addresses.c"
+"$cc" -O1 "${flags[@]}" "${hardening[@]}" -c "$out/host-abi-addresses.c" -o "$out/host-abi-addresses.o"
+"$objcopy" --wildcard --localize-symbol='gg_c_callback_*' "$out/graph-bindings.o"
+"$cc" -O1 "${flags[@]}" -fsyntax-only "$host/goose_host.c"
 CC="$cc" WINDOWS_CC="$cc" bash "$root/tools/build-gooseinfer-socket.sh" "$target" "$out/socket-forwards.o"

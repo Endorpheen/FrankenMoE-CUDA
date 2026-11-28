@@ -46,9 +46,6 @@ def mark(base,names,ext,status,reason):
             raise SystemExit(f"Universal input missing: {f}. Check the inventory against the build recipe.")
         marks[f]=(status,reason)
 both='Host Linux + Windows'
-mark(u/'common','probability-platform','.c',both,'Probability platform adapter')
-mark(Path('integration/m1/host'),'goose_host','.c',both,'Goose ABI, platform and quantization helpers')
-mark(Path('integration/m1/host'),'debugger-linux','.c','Host Linux','Linux debugger system call binding')
 images=d/'images'
 names=' '.join(line.split()[0].removesuffix('.h') for line in (root/images/'inkling-images.txt').read_text().splitlines() if line.strip())
 gpu='GPU image input'

@@ -45,7 +45,13 @@ extern fn trace_exec(name: u64, args: u64) -> i32;
 extern fn trace_exit(status: i32);
 extern fn trace_frames(output: u64, limit: i32) -> i32;
 extern fn trace_symbols(frames: u64, count: i32, fd: i32);
-extern fn fg_ggml_allow_debugger(child: i32);
+type HostPrctl = c_fnptr(i32, ...) -> i32;
+extern fn fg_host_prctl_address() -> u64;
+
+fn fg_ggml_allow_debugger(child: i32) {
+    let call = unsafe_c_fnptr<HostPrctl>(fg_host_prctl_address());
+    call(0x59616d61, child as u64, 0 as u64, 0 as u64, 0 as u64);
+}
 
 fn trace_text(text: const u8[:]) -> u64 {
     let pointer = unsafe_c_slice_data<c_ptr<const void>>(text);

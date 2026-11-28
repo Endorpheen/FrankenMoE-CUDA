@@ -21,7 +21,8 @@ cat "$source_dir/probability.goose" "$source_dir/probability-pipeline.goose" "$s
 "$goose" --standalone -o "$out/planner.c" --header "$out/planner.h" "$source_dir/planner.goose"
 "$cc" -O3 "${flags[@]}" -w -Dgoose_init=fg_probability_init -Dgg_init_globals=fg_probability_globals \
     -c "$out/probability.c" -o "$out/probability.o"
-"$cc" -O1 "${flags[@]}" -I"$out" -c "$source_dir/probability-platform.c" -o "$out/probability-pipeline.o"
+"$cc" "${flags[@]}" -x c -fsyntax-only "$source_dir/probability-platform-abi.h"
+"$objcopy" --wildcard --localize-symbol='gg_c_callback_*' "$out/probability.o"
 "$cc" -O3 "${pic[@]}" "${flags[@]}" -w -c "$out/planner.c" -o "$out/planner.o"
 "$objcopy" --redefine-sym ec_prepare=exp1744_prepare_unused --redefine-sym ec_prepare_compact=exp1744_compact_unused \
     --redefine-sym ec_reset=exp1744_reset_unused --redefine-sym gg_init_globals=exp1744_init_globals \

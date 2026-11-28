@@ -24,13 +24,13 @@ if [[ $target == linux ]]; then
     archive_tmp=$(mktemp -d "$out/common/.gooseinfer-common.XXXXXX")
     trap 'rm -rf -- "$archive_tmp"' EXIT
     "${AR:-ar}" rcs "$archive_tmp/libgooseinfer-common.a" \
-        "$out/common/"{graph-bindings,socket-forwards,goose-host,debugger-linux,probability,probability-pipeline,planner-link}.o \
+        "$out/common/"{graph-bindings,socket-forwards,host-abi-addresses,probability,planner-link}.o \
         "$out/inkling-model/inkling-model.o" "$out/inkling/"{prior,bucket,tokenizer}.o
     mv -- "$archive_tmp/libgooseinfer-common.a" "$archive"
     inputs+=("$archive" "$out/bonsai-images.o")
 else
     inputs+=("$out/bonsai-images.o"
-             "$out/common/"{socket-forwards,graph-bindings,goose-host,probability,probability-pipeline,planner-link}.o
+             "$out/common/"{socket-forwards,graph-bindings,host-abi-addresses,probability,planner-link}.o
              "$out/inkling-model/inkling-model.o" "$out/inkling/"{prior,bucket,tokenizer}.o)
 fi
 printf '%s\n' "${inputs[@]}" > "$out/link-inputs.argv"
