@@ -98,6 +98,13 @@ fn native_tiles_rows(data: u64, a: i64, b: i64, end: i64, channel: i64) -> u32 {
 
 fn native_zero() -> I2NativeAcc { return I2NativeAcc {x:0.0,y:0.0,z:0.0,w:0.0}; }
 
+inline fn native_packed_value_mma(acc: I2NativeAcc, v: u64, first: i64, end: i64, column: i64,
+    a0: u32, a1: u32, a2: u32, a3: u32) -> I2NativeAcc {
+    let b0 = native_tiles_rows(v, first, first + 1, end, column);
+    let b1 = native_tiles_rows(v, first + 8, first + 9, end, column);
+    return native_mma(acc, a0, a1, a2, a3, b0, b1);
+}
+
 fn native_q_fragment(q: u64, k: u64, query: i64, key: i64, dim: i64, tail: i64,
     group: i64, col: i64, end: i64, q4: i32, key_column: i64, packed: bool, acc: I2NativeAcc) -> I2NativeAcc {
     let a0 = if group < tail { native_pair(q, query + dim + col) } else { 0 };
@@ -260,15 +267,23 @@ export fn i2_native_flash(q: u64, k: u64, v: u64, relative: u64, bias: u64, sink
             let a2 = native_shared_pair(probabilities, row + 8);
             let a3 = native_shared_pair(probabilities, row + 264);
             let first = start + tile * 16 + col;
-            for index in 4 {
-                let column = group_column + 32 * warp + 8 * index + group;
-                let k0 = first;
-                let k1 = first + 1;
-                let k2 = first + 8;
-                let k3 = first + 9;
-                let b0 = if paired_q4 { native_tiles_rows(v, k0, k1, end, column) } else { native_value_pair(v, k0, k1, column, end, q4) };
-                let b1 = if paired_q4 { native_tiles_rows(v, k2, k3, end, column) } else { native_value_pair(v, k2, k3, column, end, q4) };
-                acc[index] = native_mma(acc[index], a0, a1, a2, a3, b0, b1);
+            let columns = group_column + 32 * warp + group;
+            if packed {
+                acc[0] = native_packed_value_mma(acc[0], v, first, end, columns, a0, a1, a2, a3);
+                acc[1] = native_packed_value_mma(acc[1], v, first, end, columns + 8, a0, a1, a2, a3);
+                acc[2] = native_packed_value_mma(acc[2], v, first, end, columns + 16, a0, a1, a2, a3);
+                acc[3] = native_packed_value_mma(acc[3], v, first, end, columns + 24, a0, a1, a2, a3);
+            } else {
+                for index in 4 {
+                    let column = columns + 8 * index;
+                    let k0 = first;
+                    let k1 = first + 1;
+                    let k2 = first + 8;
+                    let k3 = first + 9;
+                    let b0 = if paired_q4 { native_tiles_rows(v, k0, k1, end, column) } else { native_value_pair(v, k0, k1, column, end, q4) };
+                    let b1 = if paired_q4 { native_tiles_rows(v, k2, k3, end, column) } else { native_value_pair(v, k2, k3, column, end, q4) };
+                    acc[index] = native_mma(acc[index], a0, a1, a2, a3, b0, b1);
+                }
             }
         }
         native_sync();

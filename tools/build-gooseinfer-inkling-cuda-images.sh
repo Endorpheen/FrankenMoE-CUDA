@@ -31,6 +31,7 @@ if entry is None:
     raise ValueError("Missing generated native attention device entry")
 for function in ("i2_native_flash_g", entry[1]):
     body = body.replace(f"static void {function}(", f"static __attribute__((always_inline)) void {function}(")
+body = body.replace("static GG_INLINE ", "static inline __attribute__((always_inline)) ")
 (scratch / "inkling-native-flash-device.h").write_text(types + "\n" + body)
 PY_FRAGMENT
 for abi in "$src/"*-entries.json; do
