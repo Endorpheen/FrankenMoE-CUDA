@@ -343,15 +343,8 @@ __kernel void goose_giga_mla_mma_pv_visible_tile(__global const float *q, __glob
     __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(task));
     __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(tile));
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
-    const int64_t query = (int64_t)query_base + 8 * task;
-    const int64_t tiles = cfg[17];
-    if (visible[((query % cfg[2]) / 8) * tiles + tile] == 0.0f) {
-        giga_mla_tile_empty_g((uint64_t)scratch, 8 * task, tiles, tile, thread);
-        return;
-    }
-    giga_mla_mma_pv_tile_g((uint64_t)q,(uint64_t)k,(uint64_t)v,(uint64_t)mask,
-        (uint64_t)scratch,(uint64_t)cfg,(uint64_t)scores,scale,8*task,
-        (int64_t)query_base+8*task,tile,thread/32,thread%32);
+    giga_mla_launch_visible_g((uint64_t)q, (uint64_t)k, (uint64_t)v, (uint64_t)mask,
+        (uint64_t)scratch, (uint64_t)cfg, (uint64_t)scores, scale, query_base, task, tile, thread, (uint64_t)visible);
 }
 __kernel void goose_giga_mla_visibility(__global const uint16_t *mask,
     __global float *visible, __global const int64_t *cfg) {
@@ -367,9 +360,7 @@ __kernel void goose_giga_mla_compact_mask(__global const uint16_t *mask,
     uint32_t group, thread;
     __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(group));
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
-    const uint32_t query = group * 4 + thread / 32;
-    if (query < cfg[2]) giga_mla_compact_mask_g((uint64_t)mask,
-        (uint64_t)keys, (uint64_t)lengths, (uint64_t)cfg, query, thread % 32);
+    giga_mla_launch_compact_g((uint64_t)mask, (uint64_t)keys, (uint64_t)lengths, (uint64_t)cfg, group, thread);
 }
 
 __kernel void goose_giga_mla_mma_pv_indexed(__global const float *q, __global const uint16_t *k,
@@ -390,10 +381,7 @@ __kernel void goose_giga_mla_indexed_merge(__global float *scratch, __global uin
     uint32_t task, lane;
     __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(task));
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
-    const int64_t absolute = (int64_t)query_base + task;
-    const int64_t group = absolute / 8;
-    const int64_t query = (8 * (group / cfg[2]) + (absolute % 8)) * cfg[2] + (group % cfg[2]);
-    giga_mla_indexed_merge_g((uint64_t)scratch, (uint64_t)output, (uint64_t)cfg, task, query, lane);
+    giga_mla_launch_indexed_merge_g((uint64_t)scratch, (uint64_t)output, (uint64_t)cfg, query_base, task, lane);
 }
 
 #undef fg_mla_mma_f16
