@@ -50,72 +50,6 @@ static float4 read4(__global const float4 *p) {
     return value;
 }
 
-// Each tile stores two contiguous planes with four input rows per channel.
-__kernel void i2_pack_q8_input8(__global const uchar *input, __global const ulong *jobs,
-                                __global float4 *packed, uint width) {
-    const uint channel = block_x() * 128 + lane_index();
-    if (channel >= width) return;
-    const uint tile = block_y();
-    jobs += tile * 16;
-    const float4 lo = (float4)(
-        ((__global const float *)(input + jobs[0]))[channel],
-        ((__global const float *)(input + jobs[2]))[channel],
-        ((__global const float *)(input + jobs[4]))[channel],
-        ((__global const float *)(input + jobs[6]))[channel]);
-    const float4 hi = (float4)(
-        ((__global const float *)(input + jobs[8]))[channel],
-        ((__global const float *)(input + jobs[10]))[channel],
-        ((__global const float *)(input + jobs[12]))[channel],
-        ((__global const float *)(input + jobs[14]))[channel]);
-    packed[2 * tile * width + channel] = lo;
-    packed[(2 * tile + 1) * width + channel] = hi;
-}
-
-static void i2_q8_packed_rows(__global const uchar *weights, __global const float4 *packed,
-    __global uchar *output, __global const ulong *jobs, ulong stride, uint width,
-    uint warps) {
-    const uint thread = lane_index(), lane = thread & 31;
-    const uint row = block_x() * warps + (thread >> 5), tile = block_y();
-    const __global uchar *weight = weights + row * stride;
-    const __global float4 *lo = packed + 2 * tile * width + lane;
-    const __global float4 *hi = lo + width;
-    float4 a = (float4)(0.0f), b = (float4)(0.0f);
-    for (uint at = 0; at < width; at += 32, weight += 34) {
-        const float value = q8_value(weight, lane);
-        const float4 l = read4(lo + at);
-        const float4 h = read4(hi + at);
-        a.x = madd(value, l.x, a.x);
-        a.y = madd(value, l.y, a.y);
-        a.z = madd(value, l.z, a.z);
-        a.w = madd(value, l.w, a.w);
-        b.x = madd(value, h.x, b.x);
-        b.y = madd(value, h.y, b.y);
-        b.z = madd(value, h.z, b.z);
-        b.w = madd(value, h.w, b.w);
-    }
-    a = (float4)(reduce(a.x), reduce(a.y), reduce(a.z), reduce(a.w));
-    b = (float4)(reduce(b.x), reduce(b.y), reduce(b.z), reduce(b.w));
-    if (lane != 0) return;
-    jobs += tile * 16 + 1;
-    *(__global float *)(output + jobs[0] + 4 * row) = a.x;
-    *(__global float *)(output + jobs[2] + 4 * row) = a.y;
-    *(__global float *)(output + jobs[4] + 4 * row) = a.z;
-    *(__global float *)(output + jobs[6] + 4 * row) = a.w;
-    *(__global float *)(output + jobs[8] + 4 * row) = b.x;
-    *(__global float *)(output + jobs[10] + 4 * row) = b.y;
-    *(__global float *)(output + jobs[12] + 4 * row) = b.z;
-    *(__global float *)(output + jobs[14] + 4 * row) = b.w;
-}
-
-#define Q8_PACKED_KERNEL(ENTRY, WARPS) \
-__kernel void ENTRY(__global const uchar *weights, __global const float4 *packed, \
-    __global uchar *output, __global const ulong *jobs, ulong stride, uint width) { \
-    i2_q8_packed_rows(weights, packed, output, jobs, stride, width, WARPS); \
-}
-
-Q8_PACKED_KERNEL(i2_q8_packed4, 4)
-Q8_PACKED_KERNEL(i2_q8_packed8, 8)
-
 static float q8_load_f32(uint64_t base, int64_t index) { return ((__global const float *)base)[index]; }
 static float q8_load_quant(uint64_t base, uint lane) { return q8_value((__global const uchar *)base, lane); }
 static uint64_t q8_job_word(uint64_t base, int64_t index) { return ((__global const ulong *)base)[index]; }
@@ -124,35 +58,49 @@ static void q8_store_f32(uint64_t base, float value) { *(__global float *)base =
     float4 vector = read4((__global const float4 *)(base) + (index)); \
     (I2Q8Vec_g){vector.x,vector.y,vector.z,vector.w}; \
 })
+#define q8_store_vector(base,index,v) (((__global float4 *)(base))[index] = (float4)((v).x_g,(v).y_g,(v).z_g,(v).w_g))
 #include "i2-q8-packed-device.h"
+
+// Each tile stores two contiguous planes with four input rows per channel.
+__kernel void i2_pack_q8_input8(__global const uchar *input, __global const ulong *jobs,
+                                __global float4 *packed, uint width) {
+    i2_q8_pack8_g((uint64_t)input, (uint64_t)jobs, (uint64_t)packed, width, block_x(), block_y(), lane_index());
+}
+
+#define Q8_PACKED_KERNEL(ENTRY, WARPS) \
+__kernel void ENTRY(__global const uchar *weights, __global const float4 *packed, \
+    __global uchar *output, __global const ulong *jobs, ulong stride, uint width) { \
+    i2_q8_rows16_g((uint64_t)weights,(uint64_t)packed,(uint64_t)output,(uint64_t)jobs, \
+        stride,width,WARPS,block_x(),block_y(),lane_index(),false,false); \
+}
+Q8_PACKED_KERNEL(i2_q8_packed4, 4)
+Q8_PACKED_KERNEL(i2_q8_packed8, 8)
+
+
 
 __kernel void i2_q8_packed16w2(__global const uchar *weights, __global const float4 *packed,
     __global uchar *output, __global const ulong *jobs, ulong stride, uint width) {
     i2_q8_rows16_g((uint64_t)weights,(uint64_t)packed,(uint64_t)output,(uint64_t)jobs,
-        stride,width,2,block_x(),block_y(),lane_index(),false);
+        stride,width,2,block_x(),block_y(),lane_index(),false,true);
 }
 
 __kernel void i2_q8_packed16w4(__global const uchar *weights, __global const float4 *packed,
     __global uchar *output, __global const ulong *jobs, ulong stride, uint width) {
     i2_q8_rows16_g((uint64_t)weights,(uint64_t)packed,(uint64_t)output,(uint64_t)jobs,
-        stride,width,4,block_x(),block_y(),lane_index(),false);
+        stride,width,4,block_x(),block_y(),lane_index(),false,true);
 }
 
 __kernel void i2_q8_expand_f32(__global const uchar *weight,
     __global float *output, ulong stride, uint width) {
-    const uint row = block_y();
-    const uint channel = block_x() * 128 + lane_index();
-    if (channel >= width) return;
-    output[row * width + channel] =
-        q8_value(weight + row * stride + (channel / 32) * 34, channel & 31);
+    i2_q8_expand_g((uint64_t)weight, (uint64_t)output, stride, width, block_x(), block_y(), lane_index());
 }
 __kernel void i2_q8_fp32w2(__global const float *weights, __global const float4 *packed,
     __global uchar *output, __global const ulong *jobs, ulong stride, uint width) {
     i2_q8_rows16_g((uint64_t)weights,(uint64_t)packed,(uint64_t)output,(uint64_t)jobs,
-        stride,width,2,block_x(),block_y(),lane_index(),true);
+        stride,width,2,block_x(),block_y(),lane_index(),true,true);
 }
 __kernel void i2_q8_fp32w4(__global const float *weights, __global const float4 *packed,
     __global uchar *output, __global const ulong *jobs, ulong stride, uint width) {
     i2_q8_rows16_g((uint64_t)weights,(uint64_t)packed,(uint64_t)output,(uint64_t)jobs,
-        stride,width,4,block_x(),block_y(),lane_index(),true);
+        stride,width,4,block_x(),block_y(),lane_index(),true,true);
 }

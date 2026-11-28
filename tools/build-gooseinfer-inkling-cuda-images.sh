@@ -39,11 +39,15 @@ while read -r header symbol entries prelude; do
     options=(-Xclang -mlink-builtin-bitcode -Xclang "$cuda/nvvm/libdevice/libdevice.10.bc")
     frontend=(-march=sm_80 -cl-std=CL2.0 -nocudainc -Xclang -finclude-default-header)
     case "$stem" in
-        bridge-image) options=() ;;
         flash-native-image) options+=(-I"$scratch" -include "$shared/device-prelude.cl") ;;
         flash-tiles-image)
             device_source="$src/flash-native-image.cl"
             options+=(-I"$scratch" -include "$shared/device-prelude.cl" -DGOOSE_INKLING_FLASH_TILES_IMAGE)
+            ;;
+        attention-input-image)
+            "$goose" --standalone --emit-provenance "$scratch/i2-attention-input.c" "$src/i2-attention-input.goose"
+            python3 "$shared/frankenmoe-fragment.py" "$scratch" i2-attention-input
+            options+=(-I"$scratch" -include "$shared/device-prelude.cl")
             ;;
         q8-packed-image)
             "$goose" --standalone --emit-provenance "$scratch/i2-q8-packed.c" "$src/i2-q8-packed.goose"
@@ -55,7 +59,11 @@ while read -r header symbol entries prelude; do
             python3 "$shared/frankenmoe-fragment.py" "$scratch" i2-grouped-moe
             options+=(-I"$scratch" -include "$shared/device-prelude.cl")
             ;;
-        i2-lazy-prelude-image)
+        i2-lazy-prelude-image|bridge-image)
+            if [[ "$stem" == bridge-image ]]; then
+                device_source="$src/i2-lazy-prelude-image.cl"
+                options=(-DGOOSE_INKLING_BRIDGE)
+            fi
             "$goose" --standalone --emit-provenance "$scratch/i2-lazy-prelude.c" "$src/i2-lazy-prelude.goose"
             python3 "$shared/frankenmoe-fragment.py" "$scratch" i2-lazy-prelude
             options+=(-I"$scratch" -include "$shared/device-prelude.cl")

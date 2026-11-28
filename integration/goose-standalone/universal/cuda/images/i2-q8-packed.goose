@@ -23,10 +23,10 @@ fn scatter(output: u64, jobs: u64, index: i64, value: I2Q8Vec) {
 }
 
 export fn i2_q8_rows16(weights: u64, packed: u64, output: u64, jobs: u64, stride: u64,
-    width: i64, warps: i64, block_row: i64, tile: i64, thread: i64, fp32: bool) {
+    width: i64, warps: i64, block_row: i64, tile: i64, thread: i64, fp32: bool, wide: bool) {
     let lane = thread % 32;
     let row = block_row * warps + thread / 32;
-    let base = 4 * tile * width + lane;
+    let base = (if wide { 4 } else { 2 }) * tile * width + lane;
     let weight = weights + (row as! u64) * stride;
     let zero = I2Q8Vec {x:0.0,y:0.0,z:0.0,w:0.0};
     var a = zero;
@@ -40,19 +40,47 @@ export fn i2_q8_rows16(weights: u64, packed: u64, output: u64, jobs: u64, stride
         let index = base + at;
         a = update(a, val, vector(packed, index));
         b = update(b, val, vector(packed, index + width));
-        c = update(c, val, vector(packed, index + 2 * width));
-        d = update(d, val, vector(packed, index + 3 * width));
+        if wide {
+            c = update(c, val, vector(packed, index + 2 * width));
+            d = update(d, val, vector(packed, index + 3 * width));
+        }
         at += 32;
     }
     a = reduce_vector(a);
     b = reduce_vector(b);
-    c = reduce_vector(c);
-    d = reduce_vector(d);
+    if wide { c = reduce_vector(c); d = reduce_vector(d); }
     if lane != 0 { return; }
     let target = output + ((4 * row) as! u64);
-    let first = tile * 32 + 1;
+    let first = tile * (if wide { 32 } else { 16 }) + 1;
     scatter(target, jobs, first, a);
     scatter(target, jobs, first + 8, b);
-    scatter(target, jobs, first + 16, c);
-    scatter(target, jobs, first + 24, d);
+    if wide { scatter(target, jobs, first + 16, c); scatter(target, jobs, first + 24, d); }
+}
+
+extern "q8_store_vector" fn store_vector(base: u64, index: i64, value: I2Q8Vec);
+
+fn pack_vector(input: u64, jobs: u64, first: i64, channel: i64) -> I2Q8Vec {
+    return I2Q8Vec {x:load(input + job_word(jobs, first), channel),
+        y:load(input + job_word(jobs, first + 2), channel),
+        z:load(input + job_word(jobs, first + 4), channel),
+        w:load(input + job_word(jobs, first + 6), channel)};
+}
+
+export fn i2_q8_pack8(input: u64, jobs: u64, packed: u64, width: i64, group: i64, tile: i64, lane: i64) {
+    let channel = group * 128 + lane;
+    if channel >= width { return; }
+    let first = tile * 16;
+    let lo = pack_vector(input, jobs, first, channel);
+    let hi = pack_vector(input, jobs, first + 8, channel);
+    let output = 2 * tile * width + channel;
+    store_vector(packed, output, lo);
+    store_vector(packed, output + width, hi);
+}
+
+export fn i2_q8_expand(weights: u64, output: u64, stride: u64, width: i64, group: i64, row: i64, lane: i64) {
+    let channel = group * 128 + lane;
+    if channel < width {
+        let weight = weights + (row as! u64) * stride + ((channel / 32 * 34) as! u64);
+        store(output + ((4 * (row * width + channel)) as! u64), quant(weight, (channel % 32) as! u32));
+    }
 }

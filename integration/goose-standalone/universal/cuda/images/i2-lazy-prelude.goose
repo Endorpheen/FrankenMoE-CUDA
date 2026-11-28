@@ -76,17 +76,18 @@ export fn lazy_prepare(attention: u64, residual: u64, next: u64, normalized: u64
     }
 }
 
-fn history_value(planes: u64, scales: u64, token: i64, index: i64, lazy: i64, channel: i64) -> f32 {
+fn history_value(planes: u64, scales: u64, token: i64, index: i64, lazy: i64, channel: i64, linear: bool) -> f32 {
+    if linear { return load(planes, index * 2304 + channel); }
     let value = load(plane(planes, index), token * 2304 + channel);
     return if index == lazy { value * load(scales, token) } else { value };
 }
 
 export fn lazy_score(planes: u64, current: u64, query: u64, scores: u64, rows: i64, lazy: i64,
-    scales: u64, products: u64, sums: u64, magnitudes: u64, token: i64, row: i64, lane: i64) {
+    scales: u64, products: u64, sums: u64, magnitudes: u64, token: i64, row: i64, lane: i64, linear: bool) {
     var index = lane;
     while index < 2304 {
         let value = if row == rows { load(current, token * 2304 + index) }
-            else { history_value(planes, scales, token, rows - 1 - row, lazy, index) };
+            else { history_value(planes, scales, token, rows - 1 - row, lazy, index, linear) };
         local_write(products, index, value * load(query, index));
         index += 128;
     }
@@ -99,7 +100,7 @@ export fn lazy_score(planes: u64, current: u64, query: u64, scores: u64, rows: i
 }
 
 export fn lazy_mix(planes: u64, current: u64, scores: u64, output: u64, rows: i64, lazy: i64,
-    scales: u64, weights: u64, token: i64, group: i64, lane: i64) {
+    scales: u64, weights: u64, token: i64, group: i64, lane: i64, linear: bool) {
     if lane == 0 {
         let base = token * (rows + 1);
         var maximum: f32 = -3.4028234663852886e38;
@@ -121,10 +122,50 @@ export fn lazy_mix(planes: u64, current: u64, scores: u64, output: u64, rows: i6
     let index = token * 2304 + channel;
     var sum: f64 = 0.0;
     for row in rows {
-        let term = local_read(weights, row) * history_value(planes, scales, token, rows - 1 - row, lazy, channel);
+        let term = local_read(weights, row) * history_value(planes, scales, token, rows - 1 - row, lazy, channel, linear);
         sum += term as! f64;
     }
     let term = local_read(weights, rows) * load(current, index);
     sum += term as! f64;
     store(output, index, sum as! f32);
+}
+
+export fn bridge_prepare(attention: u64, weights: u64, history: u64, residual: u64,
+    next: u64, normalized: u64, add_residual: bool, squares: u64, sums: u64,
+    magnitudes: u64, inverse: u64, lane: i64) {
+    var index = lane;
+    while index < 2304 {
+        let h = 3 * index;
+        let w = 4 * index;
+        let current = load(attention, index);
+        let h0 = load(history, h);
+        let h1 = load(history, h + 1);
+        let h2 = load(history, h + 2);
+        var sum: f32 = 0.0;
+        sum += h0 * load(weights, w);
+        sum += h1 * load(weights, w + 1);
+        sum += h2 * load(weights, w + 2);
+        sum += current * load(weights, w + 3);
+        var value = (current + sum) * 0.4472135901451111;
+        if add_residual { value += load(residual, index); }
+        store(history, h, h1);
+        store(history, h + 1, h2);
+        store(history, h + 2, current);
+        store(next, index, value);
+        local_write(squares, index, value * value);
+        index += 128;
+    }
+    barrier();
+    sum_local(squares, sums, magnitudes, lane);
+    if lane == 0 {
+        let mean = ordered_result(squares, sum_read(sums, 0), sum_read(magnitudes, 0), 2304.0);
+        local_write(inverse, 0, divide(1.0, sqrt(mean + 0.000001)));
+    }
+    barrier();
+    let factor = local_read(inverse, 0);
+    index = lane;
+    while index < 2304 {
+        store(normalized, index, load(next, index) * factor);
+        index += 128;
+    }
 }
