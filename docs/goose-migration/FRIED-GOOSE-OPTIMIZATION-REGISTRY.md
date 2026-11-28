@@ -25,7 +25,19 @@ moving independently and retain its tested production path.
 
 ## Accepted GooseInfer runtime optimizations
 
-| Optimization | Applicable path | Measured effect | Evidence |
+Every accepted optimization becomes a reuse candidate across the
+GooseInfer runtime. The model and backend in the verified-path column
+identify where the evidence was collected. Evaluate the underlying
+mechanism on other models, modes and backends whenever the same work
+or bottleneck is present. For each plausible target, record its
+preconditions and the evidence for applying or deferring the change.
+
+Confirm correctness, end-to-end benefit and memory against the receiving
+path's own reference before enabling the optimization there. Record the
+new coverage in this registry and keep model runs in the current
+optimization and release sequence.
+
+| Optimization | Verified path | Measured effect | Evidence |
 |---|---|---|---|
 | Reuse a warp's packed activation loads for two output rows | Inkling expanded FP32 Q8 projections with 4096 input rows | 13–29% lower projection kernel time, 5.41% higher 32K/512 prefill and 0.92% lower decode in the immediate comparison. All 512 IDs exact and peak process VRAM held at 9822 MiB. | [EXP-2423](../../experiments/EXP-2026-11-28-2423-inkling-q8-row-pair/README.md) |
 | Batch independent verifier attention queries and their merges | Inkling exact Q4 verifier, up to 16 queries with equal partition counts and existing scratch capacity | At 32K/512, decode +19.61%, prefill −0.89%, all 512 IDs exact and peak process VRAM held at 9822 MiB. | [EXP-2424](../../experiments/EXP-2026-11-28-2424-inkling-batched-verifier-attention/README.md) |
