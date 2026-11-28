@@ -18,7 +18,7 @@ trap 'rm -rf -- "$scratch"' EXIT
 
 overlay=${3:-}
 glue="$scratch/glue"
-cp -R -- "$source_dir/glue" "$glue"
+mkdir -p -- "$glue"
 cp -- "$standalone/cuda-device.cl" "$glue/cuda-device.cl"
 
 for source in "$source_dir"/goose/*.goose "$root/goose/cuda/standalone-matmul.goose"; do

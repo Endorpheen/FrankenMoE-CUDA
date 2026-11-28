@@ -1,0 +1,82 @@
+{
+  "cuda-mmq-abi.h": [
+    ["record", "MmqDot_g", ["i32", "a_g"], ["i32", "b_g"], ["i32", "c_g"], ["i32", "d_g"]],
+    ["record", "MmqSum_g", ["f32", "a_g"], ["f32", "b_g"], ["f32", "c_g"], ["f32", "d_g"]],
+    ["record", "MmqWords_g", ["u32", "a_g"], ["u32", "b_g"], ["u32", "c_g"], ["u32", "d_g"]],
+    ["record", "MmqScales_g", ["f32", "d0_g"], ["f32", "d1_g"], ["f32", "m0_g"], ["f32", "m1_g"]],
+    ["record", "MmqQ6Scales_g", ["i32", "a_g"], ["i32", "b_g"], ["i32", "c_g"], ["i32", "d_g"]],
+    ["record", "MmqPairSum_g", ["MmqSum_g", "left_g"], ["MmqSum_g", "right_g"]],
+    ["record", "MmqPartition_g", ["i64", "work_g"], ["i64", "workers_g"], ["i64", "start_g"]],
+    ["record", "MmqOperand_g", ["i64", "route_g"], ["i64", "live_g"], ["u64", "group_g"], ["u64", "col0_g"], ["u64", "col1_g"]],
+    ["signed_shift"],
+    ["include", "cuda-mmq-matrix-ptx-0.h"],
+    ["copy16", "fg_mmq_copy_16"],
+    ["include", "cuda-mmq-ptx-1.h"],
+    ["include", "mmq-quant-types.h"],
+    ["include", "mmq-quant-device.h"],
+    ["include", "mmq-device.h"],
+    ["include", "cuda-mmq-entries.h"]
+  ],
+  "cuda-mmvq-abi.h": [
+    ["record", "MmvqFastDiv_g", ["u32", "mp_g"], ["u32", "shift_g"], ["u32", "divisor_g"]],
+    ["include", "cuda-mmvq-ptx-0.h"],
+    ["include", "cuda-mmvq-ptx-1.h"],
+    ["include", "mmvq-q4-device.h"],
+    ["include", "mmvq-q6-device.h"],
+    ["pack_width"],
+    ["include", "mmvq-pack-device.h"],
+    ["undef", "gs_add_u32"],
+    ["include", "mmvq-device.h"],
+    ["include", "cuda-mmvq-entries.h"],
+    ["frozen", ["include", "cuda-mmvq-bonsai-entries.h"]]
+  ],
+  "cuda-dense-mma-abi.h": [
+    ["record", "DenseDot_g", ["f32", "a_g"], ["f32", "b_g"], ["f32", "c_g"], ["f32", "d_g"]],
+    ["record", "DenseParts_g", ["u32", "hi_g"], ["u32", "lo_g"]],
+    ["include", "cuda-dense-mma-ptx-0.h"],
+    ["include", "cuda-dense-mma-matrix-ptx-0.h"],
+    ["include", "dense-mma-device.h"],
+    ["include", "cuda-dense-mma-entries.h"]
+  ],
+  "cuda-gdn-mma-abi.h": [
+    ["include", "gdn-mma-types.h"],
+    ["vector", "fg174m_load4", null, "F4_g", ["x_g", "y_g", "z_g", "w_g"], "scalars"],
+    ["include", "cuda-gdn-mma-ptx-0.h"],
+    ["include", "cuda-gdn-mma-matrix-ptx-0.h"],
+    ["include", "gdn-mma-device.h"],
+    ["include", "cuda-gdn-mma-entries.h"]
+  ],
+  "cuda-flash-mma-abi.h": [
+    ["include", "flash-mma-types.h"],
+    ["include", "flash-load-device.h"],
+    ["include", "flash-stage-device.h"],
+    ["forward", "fg175l_load_mask", "fg_flash_load_causal_g", [["u64", "first"], ["u64", "dst"], ["i64", "stride"], ["i64", "row"], ["i64", "query"], ["i64", "queries"], ["i32", "cols"], ["i32", "lane"], ["i32", "warp"]], ["first", "dst", "row", "query", "queries", "cols", "lane", "warp"], ["stride"]],
+    ["include", "cuda-flash-mma-ptx-0.h"],
+    ["register_view", "fg175c_fg176i_ldm4", "fg174m_ldm4", "U4_g", "Flash_U4_g", ["a_g", "b_g", "c_g", "d_g"]],
+    ["register_view", "fg175c_fg176i_ldm4t", "fg174m_ldm4t", "U4_g", "Flash_U4_g", ["a_g", "b_g", "c_g", "d_g"]],
+    ["include", "cuda-flash-mma-matrix-ptx-0.h"],
+    ["alias", "fg175c_fg175p_h2mul", "fg175c_fg176i_mulh2"],
+    ["alias", "fg175c_fg175p_h2pack", "fg175c_fg176i_h2"],
+    ["noinline"],
+    ["include", "flash-mma-device.h"],
+    ["undef", "GS_NOINLINE"],
+    ["undef", "fg175c_fg175p_h2mul"],
+    ["undef", "fg175c_fg175p_h2pack"],
+    ["include", "cuda-flash-mma-entries.h"]
+  ],
+  "cuda-flash-vec-abi.h": [
+    ["include", "flash-vec-types.h"],
+    ["include", "cuda-flash-vec-ptx-0.h"],
+    ["include", "flash-vec-device.h"],
+    ["include", "cuda-flash-vec-entries.h"],
+    ["frozen", ["include", "cuda-flash-vec-bonsai-entries.h"]]
+  ],
+  "cuda-rms-reference-abi.h": [
+    ["include", "rms-reference-types.h"],
+    ["vector", "fg168_load4", "fg168_store4", "RmsVec_g", ["x_g", "y_g", "z_g", "w_g"], "elements"],
+    ["include", "cuda-rms-reference-ptx-0.h"],
+    ["include", "rms-reference-device.h"],
+    ["include", "cuda-rms-reference-entries.h"],
+    ["frozen", ["include", "cuda-rms-reference-bonsai-entries.h"]]
+  ]
+}

@@ -65,8 +65,6 @@ for f in sorted(files):
     if f.name.endswith('.cl.patch') and f.is_relative_to(d/'apex-extra'):
         marks[f]=('GPU source overlay','Patch for copied CUDA device source')
 direct=set(marks)
-mark(frozen / "glue", "cuda-flash-vec cuda-mmvq cuda-rms-reference", ".cl",
-     "Source include (Bonsai/Apex staging)", "Platform-specific CUDA device ABI variant")
 todo = sorted(marks)
 visited = set()
 missing = {}

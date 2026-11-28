@@ -32,7 +32,10 @@ def shared_division(name, trap_name):
 
 def checked_device():
     yield from types()
+    yield from alignment_and_constants()
+    yield "#ifndef GOOSE_CUDA_FROZEN_ABI\n#define gg_double_bits(bits) as_double((ulong)(bits))\n#endif"
     yield trap("device_trap")
+    yield "static void fg_device_noop(void) {}"
     yield checked_call("device_range", "int64_t", [( "int64_t", v) for v in ("value", "lo", "hi")],
                        "fg_device_range_valid(value, lo, hi)", "value", "device_trap")
     yield checked_call("device_range_u", "uint64_t", [("uint64_t", v) for v in ("value", "hi")],
@@ -77,11 +80,15 @@ def checked_device():
         yield f"#define gs_shl_u{width}(a,b) ((a) << ((b)&{width - 1}))"
 
 
-def frozen_prelude():
-    yield from types(include_size=True)
+def alignment_and_constants():
     yield "#ifndef GG_ALIGN1\n#define GG_ALIGN1\n#define GG_UNALIGNED\n#define _Alignas(x)\n#endif"
     for macro, suffix in (("UINT64", "UL"), ("INT64", "L"), ("UINT32", "U"), ("INT32", "")):
         yield f"#define {macro}_C(x) x{f'##{suffix}' if suffix else ''}"
+
+
+def frozen_prelude():
+    yield from types(include_size=True)
+    yield from alignment_and_constants()
     yield "#define memset(dst, value, count) __builtin_memset(dst, value, count)"
     yield '#include "checked-device-arithmetic.h"'
     yield trap("gg_device_trap")

@@ -6,19 +6,13 @@
 #include "typed-memory-bridge.h"
 #include "cuda-intrinsic-aliases.h"
 #include "cuda-checked-abi.h"
+#include "cuda-scalar-ptx.h"
+#include "cuda-half-ptx.h"
+#include "cuda-device-scalar-device.h"
 
-static float fg248d_ld_half(uint64_t address) {
-    const uint16_t bits = *(__global uint16_t *) address;
-    float result;
-    __asm__("cvt.f32.f16 %0, %1;" : "=f"(result) : "h"(bits));
-    return result;
-}
 
 static void fg248d_fail(int64_t code) { (void) code; device_trap(); }
 
-static uint32_t fg182d_ld_u8(uint64_t address, uint64_t offset) { return fg248d_ld_u8(address + offset); }
-static float fg182d_ld_half(uint64_t address, uint64_t offset) { return fg248d_ld_half(address + offset); }
-static void fg182d_st_f32(uint64_t address, uint64_t offset, float value) { fg248d_st_f32(address + offset, value); }
 
 #include "q4k-device.h"
 #include "q6k-device.h"
@@ -30,42 +24,19 @@ static void fg_device_decode_q6(uint64_t w, uint64_t scratch, int64_t lane) {
     q6_K_g(w, scratch, 0, lane);
 }
 #include "cuda-device-ptx-0.h"
-static float fg_device_shfl(float value, int32_t delta) {
-    uint32_t result;
-    __asm__ volatile("shfl.sync.bfly.b32 %0, %1, %2, 31, -1;"
-                     : "=r"(result) : "r"(as_uint(value)), "r"(delta));
-    return as_float(result);
-}
 
 #include "cuda-device-ptx-1.h"
 
 #include "matmul-device.h"
 
-static uint32_t fg175q_ld_u8(uint64_t at, uint64_t offset) {
-    return fg248d_ld_u8(at + offset);
-}
-
-
-static float fg175q_h2f(uint32_t bits) {
-    float result;
-    __asm__("cvt.f32.f16 %0, %1;" : "=f"(result) : "h"((uint16_t) bits));
-    return result;
-}
 
 
 
-static float fg_attn_exp(float value) {
-    float result;
-    __asm__("ex2.approx.ftz.f32 %0, %1;" : "=f"(result) : "f"(value * 1.4426950408889634f));
-    return result;
-}
+
+
 
 #include "cuda-device-ptx-2.h"
-static float fg_attn_neg_inf(void) {
-    return as_float(0xff800000u);
-}
 
-#include "cuda-half-ptx.h"
 
 #ifndef GOOSE_CUDA_FROZEN_ABI
 #ifdef GOOSE_CUDA_MMQ_IMAGE
@@ -106,13 +77,6 @@ static uint32_t fg_mla_visible_ballot(uint32_t seen) {
 
 
 
-static float fg174s_shfl_xor(float value, int32_t delta, int32_t width) {
-    uint32_t result;
-    const int32_t bound = ((32 - width) << 8) | 31;
-    __asm__ volatile("shfl.sync.bfly.b32 %0, %1, %2, %3, -1;"
-                     : "=r"(result) : "r"(as_uint(value)), "r"(delta), "r"(bound));
-    return as_float(result);
-}
 
 // Eight pointer words precede the Goose-generated strides and launch plan.
 typedef struct { uint64_t words[57]; } gdn_launch_packet;
@@ -130,36 +94,15 @@ static float fg176r_ld_f32(uint64_t src, uint64_t at) {
     return value;
 }
 
-static void fg176r_st_f16(uint64_t dst, uint64_t at, float value) {
-    uint16_t bits;
-    __asm__("cvt.rn.f16.f32 %0, %1;" : "=h"(bits) : "f"(value));
-    *(__global uint16_t *) (dst + at) = bits;
-}
 
 
-static float fg176r_fabs(float value) { return as_float(as_uint(value) & 0x7fffffffu); }
 
-static int32_t fg176r_i8trunc(float value) {
-    if (!(value >= -2147483648.0f && value < 2147483648.0f)) return 0;
-    return (int8_t) (int32_t) value;
-}
 
 #pragma OPENCL FP_CONTRACT OFF
 #include "q4-set-rows-device.h"
 
-static float fg_vector_log(float value) {
-    float result;
-    __asm__("lg2.approx.f32 %0, %1;" : "=f"(result) : "f"(value));
-    return result * 0.6931471805599453f;
-}
 
 #include "cuda-device-ptx-5.h"
-static double fg_vector_shuffle_f64(double value, int32_t delta) {
-    uint64_t bits = as_ulong(value);
-    const uint32_t lo = as_uint(fg_device_shfl(as_float((uint32_t) bits), delta));
-    const uint32_t hi = as_uint(fg_device_shfl(as_float((uint32_t) (bits >> 32)), delta));
-    return as_double(((uint64_t) hi << 32) | lo);
-}
 
 // Keep the validated shape words in CUDA parameter space. Both vector entries
 // consume the same plan layout without a separate upload to device memory.
@@ -178,36 +121,22 @@ static void fg_vector_store4(uint64_t address, CVVec4_g v) {
 }
 
 #ifndef GOOSE_CUDA_FROZEN_ABI
-static double fg_glu_pow2_int(int64_t exponent) {
-    return as_double((uint64_t)(exponent + 1023) << 52);
-}
 
 #include "cuda-device-ptx-6.h"
 #endif
 #include "vector-device.h"
-#include "cuda-rms-reference.cl"
+#include "cuda-rms-reference-abi.h"
 
-static float fg_rope_float(uint64_t cfg, int64_t i) {
-    return as_float((uint32_t) fg_attn_word(cfg, i));
-}
 
 
 #include "cuda-device-ptx-7.h"
 #include "rope-device.h"
 
-static float fg170s_load(uint64_t address, uint64_t i) { return fg_device_global_load(address + 4 * i); }
-static void fg170s_store(uint64_t address, uint64_t i, float value) { fg_device_global_store(address + 4 * i, value); }
 static void fg170s_lc(void) {}
 static void fg170s_sync(void) {}
 
 #include "ssm-conv-device.h"
 
-static float fg283d_ld_f32(uint64_t src, uint64_t offset) {
-    return fg_device_global_load(src + offset);
-}
-static int32_t fg169t_ishuffle(int32_t value, int32_t offset) {
-    return as_int(fg_device_shfl(as_float(value), offset));
-}
 
 #include "routing-device.h"
 
@@ -230,11 +159,6 @@ static void fg183f_st_f32(uint64_t base, uint64_t byte, float value) {
     __asm__ volatile("st.f32 [%0], %1;" :: "l"(base + byte), "f"(value) : "memory");
 }
 
-static float fg183f_shfl_xor(float value, uint32_t mask, int32_t delta, int32_t width) {
-    (void) mask;
-    (void) width;
-    return fg_device_shfl(value, delta);
-}
 
 static void fg183f_fail(int64_t code) {
     (void) code;
@@ -247,9 +171,6 @@ static void fg183f_fail(int64_t code) {
 #include "cuda-fwht-entries.h"
 
 #define fg179w_ld_f32 fg183f_ld_f32
-static void fg179w_st_f32(uint64_t base, uint64_t byte, float value) {
-    fg_device_global_store(base + byte, value);
-}
 #define fg179w_fail fg183f_fail
 #pragma OPENCL FP_CONTRACT OFF
 #include "moe-weighted-device.h"
@@ -265,14 +186,12 @@ static void fg_cuda_cp16(uint64_t dst, uint64_t src) {
     __asm__ volatile("cp.async.cg.shared.global [%0], [%1], 16;" :: "r"((uint32_t) dst), "l"(src) : "memory");
 }
 #include "cuda-device-ptx-9.h"
-#include "cuda-mmq.cl"
-#if defined(GOOSE_APEX_UP_GATE_IMAGE)
-#endif
-#include "cuda-mmvq.cl"
-#include "cuda-dense-mma.cl"
-#include "cuda-gdn-mma.cl"
-#include "cuda-flash-mma.cl"
-#include "cuda-flash-vec.cl"
+#include "cuda-mmq-abi.h"
+#include "cuda-mmvq-abi.h"
+#include "cuda-dense-mma-abi.h"
+#include "cuda-gdn-mma-abi.h"
+#include "cuda-flash-mma-abi.h"
+#include "cuda-flash-vec-abi.h"
 #endif
 
 #include "cuda-up-gate-entries.h"

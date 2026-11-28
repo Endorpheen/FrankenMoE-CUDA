@@ -481,3 +481,15 @@ fn memory_route_write_score(ptr: gpu_ptr<global, f32>, index: i32, value: f32) {
 fn memory_route_write_id(ptr: gpu_ptr<global, i32>, index: i32, value: i32) {
     ptr[index] = value;
 }
+
+fn memory_fg_cuda_store_u16(ptr: gpu_ptr<global, u16>, value: u16) {
+    *ptr = value;
+}
+
+fn memory_fg_cuda_store_shared_u16(ptr: gpu_ptr<shared, u16>, index: u64, value: u16) {
+    ptr[index] = value;
+}
+
+fn memory_fg_cuda_load_shared_u16(ptr: gpu_ptr<shared, const u16>, index: u64) -> u16 {
+    return ptr[index];
+}
