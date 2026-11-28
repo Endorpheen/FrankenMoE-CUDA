@@ -50,6 +50,7 @@ optimization and release sequence.
 | Use FP16 leading terms and scaled residuals for tiled Tensor Core projections | Inkling expanded Q8_0 prefill shapes, 4096 input rows | Pack and projection time −30–41%. At 32K/512, prefill +9.51%, observed decode +2.08%, all 512 IDs exact and peak process VRAM held at 9822 MiB. Intermediate outputs and expert traffic differ. | [EXP-2437](../../experiments/EXP-2026-11-28-2437-inkling-q8-split-half-mma/README.md) |
 | Compute resident expert jobs while the transfer stream loads misses | Inkling exact 16-token verifier with staged expert transfers | At 32K/512, decode +5.56%, observed prefill +0.46%, identical expert transfer bytes and 512 IDs, peak process VRAM 9822 MiB. | [EXP-2438](../../experiments/EXP-2026-11-28-2438-inkling-verifier-expert-overlap/README.md) |
 | Share activation tiles across warps with asynchronous CUDA copies | Inkling split-half Q8 prefill, 64-channel staged tiles | Pack-plus-projection time −17–26%. At 32K/512, prefill +5.01%, observed decode −1.34%, all 512 IDs and expert bytes exact, peak process VRAM 9822 MiB. | [EXP-2439](../../experiments/EXP-2026-11-28-2439-inkling-q8-shared-tiles/README.md) |
+| Reuse decoded IQ4_NL weights across adjacent verifier jobs | Inkling exact verifier, 1152 inputs and at least 64 jobs | At 32K/512, decode +3.31%, observed prefill −0.40%, exact 512 IDs and expert transfer bytes, peak process VRAM 9822 MiB. | [EXP-2441](../../experiments/EXP-2026-11-28-2441-inkling-iq4-nl-verifier-pairs/README.md) |
 
 Keep the FMA and warp reduction sequence independent for each output row.
 Reuse this mapping for projections with the same shared input layout
@@ -60,6 +61,8 @@ without a local stack. The evidence covers the Inkling SM89 dispatch.
 EXP-2427 applies the same operand reuse to decoded weights. Reuse only
 within a common plane and measure the rate of matching pairs on the
 receiving workload. The synthetic all-distinct case is 1.5% slower.
+EXP-2441 validates transfer to IQ4_NL in the same verifier. Its
+all-distinct case is 6.2% slower, so benchmark the actual routing mix.
 EXP-2429 reuses the packed operand across adjacent steps when the
 quant layout uses the same bytes and scale for both. Preserve nibble
 selection and accumulation order. Check load alignment, register

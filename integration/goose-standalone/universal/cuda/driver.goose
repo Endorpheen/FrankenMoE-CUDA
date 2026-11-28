@@ -63,7 +63,7 @@ var cuda_saved_i2_packed_q8_expand: u64;
 var cuda_saved_i2_packed_q8_fp32_pair_w2: u64;
 var cuda_saved_i2_packed_q8_fp32_pair_w4: u64;
 var cuda_saved_i2_launch_matrix_module: u64;
-var cuda_saved_i2_launch_matrix_kernels: u64[5];
+var cuda_saved_i2_launch_matrix_kernels: u64[6];
 var cuda_saved_giga_dense_matrix_module: u64;
 var cuda_saved_giga_dense_matrix_kernel: u64;
 var cuda_saved_launch_matrix_zero_job: device_buffer;
@@ -5574,18 +5574,21 @@ fn i2_launch_matrix(weight: u64, stride: u64, width: i32, kind: i32, rows: i32,
     let xs_blocks = kind == 23 && (count <= 8 || verify) && width % 256 == 0 &&
         cuda_option("I2_DECODE_IQ4_XS_BLOCKS");
     let xs_pairs = xs_blocks && verify && count >= 64 && width == 2304;
-    let index: i32 = if xs_pairs { 4 } else if xs_blocks { 3 } else if kind == 8 { 0 } else if kind == 20 { 1 } else { 2 };
+    let nl_pairs = kind == 20 && verify && count >= 64 && width == 1152 &&
+        cuda_option("I2_VERIFY_IQ4_NL_PAIR");
+    let index: i32 = if nl_pairs { 5 } else if xs_pairs { 4 } else if xs_blocks { 3 } else if kind == 8 { 0 } else if kind == 20 { 1 } else { 2 };
     let name: const u8[:] = if index == 0 { "goose_i2_matrix_q8_0" }
         else if index == 1 { "goose_i2_matrix_iq4_nl" }
         else if index == 2 { "goose_i2_matrix_iq4_xs" }
         else if index == 3 { "goose_i2_matrix_iq4_xs_blocks" }
-        else { "goose_i2_matrix_iq4_xs_pair" };
+        else if index == 4 { "goose_i2_matrix_iq4_xs_pair" }
+        else { "goose_i2_matrix_iq4_nl_pair" };
     var module .= cuda_saved_i2_launch_matrix_module;
     var kernel .= cuda_saved_i2_launch_matrix_kernels[index];
     var status = cuda_ensure_module(module, fg_cuda_image_matrix_cubin());
     if status == 0 { status = cuda_ensure_kernel(kernel, module, name); }
 
-    var tile: i32 = if xs_pairs { 2 } else if count >= 16 && !verify { 4 } else { 1 };
+    var tile: i32 = if xs_pairs || nl_pairs { 2 } else if count >= 16 && !verify { 4 } else { 1 };
     if kind == 8 && words == 2 && count >= 16 && cuda_env_equal(cuda_env("I2_Q8_TILE8"), "1") { tile = 8; }
     var base: i32 = 0;
     while base < count && status == 0 {

@@ -57,6 +57,24 @@ export fn i2_matrix_one(weights: u64, input: u64, output: u64, groups: i64,
     }
 }
 
+fn i2_matrix_two(weights: u64, input0: u64, input1: u64, output0: u64, output1: u64,
+        groups: i64, kind: i64, lane: u64) {
+    var a: f32 = 0.0;
+    var b: f32 = 0.0;
+    for group in groups {
+        let at = 4 * (32 * (group as u64) + lane);
+        let value = quant_value(weights, group as u64, lane, kind);
+        a = multiply_add(value, load(input0 + at), a);
+        b = multiply_add(value, load(input1 + at), b);
+    }
+    a = reduce_lane(a);
+    b = reduce_lane(b);
+    if lane == 0 {
+        store(output0, a);
+        store(output1, b);
+    }
+}
+
 export fn i2_matrix_four(weights: u64, input0: u64, input1: u64, input2: u64, input3: u64,
                          output0: u64, output1: u64, output2: u64, output3: u64,
                          groups: i64, kind: i64, lane: u64) {
@@ -190,7 +208,7 @@ fn matrix_plane(jobs: u64, index: i64, words: i64) -> u64 {
 }
 
 export fn matrix_launch(weights: u64, input: u64, output: u64, jobs: u64, stride: u64, width: i64,
-    rows: i64, count: i64, base: i64, words: i64, kind: i64, row: i64, first: i64, lane: u64, tile: i64) {
+    rows: i64, count: i64, base: i64, words: i64, kind: i64, row: i64, first: i64, lane: u64, tile: i64, paired: bool) {
     if row >= rows { return; }
     let groups = width / 32;
     let first_job = words * (base + first);
@@ -207,6 +225,12 @@ export fn matrix_launch(weights: u64, input: u64, output: u64, jobs: u64, stride
             target + job_word(jobs, first_job + 5), target + job_word(jobs, first_job + 7),
             target + job_word(jobs, first_job + 9), target + job_word(jobs, first_job + 11),
             target + job_word(jobs, first_job + 13), target + job_word(jobs, first_job + 15), groups, kind, lane);
+        return;
+    }
+    if paired && first + 1 < count && matrix_plane(jobs, first_job + words, words) == plane {
+        i2_matrix_two(weight + plane, input + job_word(jobs, first_job),
+            input + job_word(jobs, first_job + words), target + job_word(jobs, first_job + 1),
+            target + job_word(jobs, first_job + words + 1), groups, kind, lane);
         return;
     }
     if tile == 4 && first + 3 < count && matrix_plane(jobs, first_job + words, words) == plane &&
@@ -284,10 +308,10 @@ export fn matrix_launch_projections(input_q: u64, input_k: u64, input_v: u64, ou
 
 export fn matrix_entry(weights: u64, input: u64, output: u64, jobs: u64, stride: u64, width: i64,
     rows: i64, count: i64, base: i64, words: i64, kind: i64, group_x: u32, group_y: u32,
-    thread: u32, job_tile: i32) {
+    thread: u32, job_tile: i32, paired: bool) {
     let tile = job_tile as! u32;
     let row = 4 * group_x + (thread >> 5);
     let first = tile * group_y;
     matrix_launch(weights, input, output, jobs, stride, width, rows, count, base, words,
-        kind, row as i64, first as i64, (thread & 31) as u64, tile as i64);
+        kind, row as i64, first as i64, (thread & 31) as u64, tile as i64, paired);
 }
