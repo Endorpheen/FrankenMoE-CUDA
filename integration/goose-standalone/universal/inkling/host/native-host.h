@@ -1,6 +1,3 @@
-extern int64_t i2_prepare_native(sl_f32 projected, sl_f32 q_clip, sl_f32 r_clip,
-    sl_f32 key_kernel, sl_f32 value_kernel, int64_t position, uint8_t sliding,
-    sl_f32 key_history, sl_f32 value_history, sl_f32 q, sl_f32 r, sl_f32 k, sl_f32 v);
 extern int64_t i2_finish_native(sl_f32 gate, sl_f32 output);
 
 struct native_attention_inputs {
@@ -24,17 +21,13 @@ static struct native_attention_inputs native_attention_inputs(struct decoder *d,
     return (struct native_attention_inputs){q, k, v, r, s, g};
 }
 
-static void native_attention_prepare(struct decoder *d, struct native_attention_inputs args,
-    const int64_t *aux, int slot, int position, int index, bool sliding, float *projected, int packed) {
-    assert(i2_prepare_native(vec(projected, packed), coefficients(d, aux[4], 3072),
-        coefficients(d, aux[7], 384), coefficients(d, aux[0], 4096),
-        coefficients(d, aux[1], 4096), position, sliding,
-        vec(d->kh + slot * 3 * key_width, 3 * key_width), vec(d->vh + slot * 3 * key_width, 3 * key_width),
-        vec(args.q + index * attn_width, attn_width), vec(args.relative + index * 384, 384),
-        vec(args.k + index * key_width, key_width), vec(args.v + index * key_width, key_width)) == 1);
-    memcpy(args.sinks + index * 24, projected + 5504, 24 * sizeof(float));
-    memcpy(args.gates + index * attn_width, projected + 5528, attn_width * sizeof(float));
-}
+_Static_assert(offsetof(struct decoder, kh) == 887120 && offsetof(struct decoder, vh) == 887128 &&
+    offsetof(struct native_attention_inputs, q) == 0 && offsetof(struct native_attention_inputs, k) == 8 &&
+    offsetof(struct native_attention_inputs, v) == 16 && offsetof(struct native_attention_inputs, relative) == 24 &&
+    offsetof(struct native_attention_inputs, sinks) == 32 && offsetof(struct native_attention_inputs, gates) == 40,
+    "Goose native attention row ABI");
+extern void fg_i2_prepare_native_row(struct decoder *d, const struct native_attention_inputs *args,
+    const int64_t *aux, int slot, int position, int index, bool sliding, float *projected, int packed);
 
 static void native_attention_submit(struct decoder *d, struct native_attention_inputs args,
     const int64_t *aux, int slot, int begin, int count, bool sliding, float *out) {

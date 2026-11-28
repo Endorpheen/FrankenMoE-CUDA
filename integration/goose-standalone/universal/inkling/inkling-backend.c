@@ -412,7 +412,7 @@ void fg_i2_serial_native_attention(struct decoder *d, const int64_t *core, const
         int packed = fg_i2_project_attention_inputs(d, core, aux, sliding, rows, 1, projected, work);
 
         struct native_attention_inputs args = native_attention_inputs(d, 1);
-        native_attention_prepare(d, args, aux, slot, absolute, 0, sliding, projected, packed);
+        fg_i2_prepare_native_row(d, &args, aux, slot, absolute, 0, sliding, projected, packed);
         if (use_resident_attention_projection()) {
             native_attention_project(d, args, aux, slot, absolute, 1, sliding, named(d, core[3]), proj);
         } else {
@@ -454,11 +454,6 @@ void fg_i2_serial_finish(struct decoder *d, int absolute, float *current, float 
 
 extern void fg_i2_prepare_prefill_rows(struct decoder *d, const struct native_attention_inputs *args,
     const int64_t *aux, int slot, int begin, int count, bool sliding, const float *projections, int packed);
-
-void fg_i2_prepare_native_row(struct decoder *d, const struct native_attention_inputs *args,
-    const int64_t *aux, int slot, int position, int index, bool sliding, float *projected, int packed) {
-    native_attention_prepare(d, *args, aux, slot, position, index, sliding, projected, packed);
-}
 
 #include "prefill.h"
 

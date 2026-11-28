@@ -254,8 +254,33 @@ export fn fg_i2_project_attention_inputs(decoder: u64, core: u64, aux: u64, slid
     return packed;
 }
 
-extern fn fg_i2_prepare_native_row(decoder: u64, args: u64, aux: u64, slot: i32, position: i32, index: i32,
-    sliding: bool, row: u64, packed: i32);
+extern fn i2_prepare_native(projected: I2DraftSpan, q_clip: I2DraftSpan, r_clip: I2DraftSpan,
+    key_kernel: I2DraftSpan, value_kernel: I2DraftSpan, position: i64, sliding: bool,
+    key_history: I2DraftSpan, value_history: I2DraftSpan, q: I2DraftSpan, r: I2DraftSpan,
+    k: I2DraftSpan, v: I2DraftSpan) -> i64;
+
+fn i2_native_weight(decoder: u64, aux: u64, index: i32, count: i64) -> I2DraftSpan {
+    return i2d_span(fg_i2_host_coefficients(decoder, i2_host_aux(aux, index), count), count);
+}
+
+export fn fg_i2_prepare_native_row(decoder: u64, args: u64, aux: u64, slot: i32, position: i32, index: i32,
+    sliding: bool, row: u64, packed: i32) {
+    let token = index as! u64;
+    let offset = (slot as! u64) * 12288;
+    let key_history = i2d_read(decoder + 887120) + offset;
+    let value_history = i2d_read(decoder + 887128) + offset;
+    let q = i2d_read(args) + token * 12288;
+    let k = i2d_read(args + 8) + token * 4096;
+    let v = i2d_read(args + 16) + token * 4096;
+    let r = i2d_read(args + 24) + token * 1536;
+    assert(i2_prepare_native(i2d_span(row, packed as! i64),
+        i2_native_weight(decoder, aux, 4, 3072), i2_native_weight(decoder, aux, 7, 384),
+        i2_native_weight(decoder, aux, 0, 4096), i2_native_weight(decoder, aux, 1, 4096),
+        position as! i64, sliding, i2d_span(key_history, 3072), i2d_span(value_history, 3072),
+        i2d_span(q, 3072), i2d_span(r, 384), i2d_span(k, 1024), i2d_span(v, 1024)) == 1);
+    i2d_transfer(i2d_read(args + 32) + token * 96, row + 22016, 96);
+    i2d_transfer(i2d_read(args + 40) + token * 12288, row + 22112, 12288);
+}
 
 export fn fg_i2_prepare_prefill_rows(decoder: u64, args: u64, aux: u64, slot: i32, begin: i32, count: i32,
     sliding: bool, projections: u64, packed: i32) {
