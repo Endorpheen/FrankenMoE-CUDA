@@ -21,18 +21,17 @@ revision=${GGML_BUILD_COMMIT:-$(git -C "$root" rev-parse --short HEAD)}
 sed -e "s/@GGML_VERSION@/$version/g" -e "s/@GGML_BUILD_COMMIT@/$revision/g" \
     "$ggml/src/ggml-version.h.in" > "$out/ggml-version.h"
 printf '#include "main.h"\n' > "$out/goose-unit.h"
-python3 "$root/tools/embed-gooseinfer-type-metadata.py" \
-    "$root/goose/misc/ggml-type-table.goose" "$out/gooseinfer-type-metadata.h" \
-    "$root/goose/misc/ggml-op-names.goose" "$out/gooseinfer-op-names.h"
+python3 "$root/tools/embed-gooseinfer-type-metadata.py" --goose \
+    "$root/goose/misc/ggml-type-table.goose" "$root/goose/misc/ggml-op-names.goose" "$out/metadata.goose"
 
 flags=(-std=c11 -D_GNU_SOURCE -ffunction-sections -fdata-sections
-       -DGOOSEINFER_TYPE_METADATA_ONLY "-fmacro-prefix-map=$root=$source_prefix"
+       -DGOOSEINFER_TYPE_METADATA_ONLY -DGOOSEINFER_GOOSE_METADATA "-fmacro-prefix-map=$root=$source_prefix"
        -I"$out" -I"$model_headers" -I"$standalone" -I"$host"
        -I"$ggml/include" -I"$ggml/src" -I"$ggml/src/ggml-cpu")
 "$cc" -O1 "${flags[@]}" "${hardening[@]}" \
     -c "$ggml/src/ggml.c" -o "$out/ggml.o"
 "$cc" "${flags[@]}" -x c -fsyntax-only "$standalone/graph-bindings-layout.h"
-cat "$standalone/graph-bindings.goose" "$standalone/common-memory.goose" > "$out/common-core.goose"
+cat "$out/metadata.goose" "$standalone/"{graph-bindings,common-memory,graph-metadata}.goose > "$out/common-core.goose"
 "${GOOSE_CUDA_DRIVER_BIN:?Set GOOSE_CUDA_DRIVER_BIN to Fried Goose KeelWing v0.3.1-dev.1}" --standalone \
     -o "$out/graph-bindings.c" "$out/common-core.goose"
 "$cc" -O2 "${flags[@]}" -Dgoose_init=fg_graph_bindings_init -Dgg_init_globals=fg_graph_bindings_globals \

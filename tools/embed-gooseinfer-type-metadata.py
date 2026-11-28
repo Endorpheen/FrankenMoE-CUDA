@@ -31,6 +31,42 @@ def write_operations(source, output):
             print("};", file=header)
 
 
+def write_goose_metadata(types, ops, output):
+    def emit_array(file, name, type_name, rows):
+        print(f"const {name}: {type_name}[{len(rows)}] = [", file=file)
+        for row in rows:
+            value = json.dumps(row, ensure_ascii=True)[:-1] + r'\x00"' if isinstance(row, str) else str(row)
+            print(f"    {value},", file=file)
+        print("];", file=file)
+
+    types_text = types.read_text()
+    ops_text = ops.read_text()
+    fields = [
+        ("GGML_META_TYPE_NAME", "const u8[:]", read_array(types_text, "AB_NAME"), 43),
+        ("GGML_META_BLOCK", "i64", read_array(types_text, "AB_BLCK"), 43),
+        ("GGML_META_SIZE", "u64", read_array(types_text, "AB_SIZE"), 43),
+        ("GGML_META_QUANTIZED", "i64", read_array(types_text, "AB_ISQ"), 43),
+        ("GGML_META_OP_NAME", "const u8[:]", read_array(ops_text, "GGML_OP_NAME"), 101),
+        ("GGML_META_UNARY_NAME", "const u8[:]", read_array(ops_text, "GGML_UNARY_OP_NAME"), 22),
+        ("GGML_META_GLU_NAME", "const u8[:]", read_array(ops_text, "GGML_GLU_OP_NAME"), 7),
+    ]
+    with output.open("w") as file:
+        print("const GGML_META_TYPE_COUNT: i64 = 43;", file=file)
+        for name, type_name, values, expected in fields:
+            if len(values) != expected:
+                raise ValueError(f"{name}: expected {expected} entries")
+            if type_name == "const u8[:]":
+                if any(not isinstance(value, str) or not value.isascii() or "\x00" in value for value in values):
+                    raise ValueError(f"{name}: expected ASCII names without embedded NULs")
+            elif any(type(value) is not int or value < 0 for value in values):
+                raise ValueError(f"{name}: invalid numeric metadata")
+            emit_array(file, name, type_name, values)
+
+
+if sys.argv[1] == "--goose":
+    write_goose_metadata(*map(Path, sys.argv[2:5]))
+    sys.exit(0)
+
 source, output = map(Path, sys.argv[1:3])
 if len(sys.argv) == 5:
     write_operations(Path(sys.argv[3]), Path(sys.argv[4]))

@@ -12,8 +12,6 @@ const B_CUSTOM: i64 = 95;
 extern "memcpy" fn builder_copy(dst: c_ptr<void>, src: c_ptr<const void>, n: u64) -> c_ptr<void>;
 extern fn graph_crt_getenv(name: i64) -> i64;
 extern fn ggml_abort(file: i64, line: i32, message: i64);
-extern fn ggml_type_size(kind: i32) -> i64;
-extern fn ggml_is_quantized(kind: i32) -> bool;
 extern fn ggml_new_tensor(c: i64, kind: i32, dims: i32, ne: i64) -> i64;
 extern fn ggml_new_tensor_2d(c: i64, kind: i32, n0: i64, n1: i64) -> i64;
 extern fn ggml_new_tensor_3d(c: i64, kind: i32, n0: i64, n1: i64, n2: i64) -> i64;
@@ -240,7 +238,7 @@ export fn fg158_pred(which: i64, a: i64, b: i64) -> i64 {
     if which == 13 { return ggml_nelements(a); }
     if which == 14 { return if ggml_is_vector(a) { 1 } else { 0 }; }
     if which == 2 {
-        return if builder_nb(a, 0) == ggml_type_size(builder_kind(a)) &&
+        return if builder_nb(a, 0) == (ggml_type_size(builder_kind(a)) as! i64) &&
             builder_nb(a, 2) == builder_nb(a, 1) * fg158_ne(a, 1) &&
             builder_nb(a, 3) == builder_nb(a, 2) * fg158_ne(a, 2) { 1 } else { 0 };
     }
