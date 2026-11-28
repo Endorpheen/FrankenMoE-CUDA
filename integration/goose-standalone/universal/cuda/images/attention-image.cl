@@ -22,34 +22,11 @@ static float i2d_negative_infinity(void) {
 }
 
 
-static float i2d_max_shared(uint64_t address, float value, int64_t lane) {
-    __local float *slots = (__local float *) address;
-    slots[lane] = value;
-    __asm__ volatile("bar.sync 0;" ::: "memory");
-    for (int offset = 64; offset > 0; offset /= 2) {
-        if (lane < offset) {
-            const float other = slots[lane + offset];
-            if (other > slots[lane]) {
-                slots[lane] = other;
-            }
-        }
-        __asm__ volatile("bar.sync 0;" ::: "memory");
-    }
-    return slots[0];
-}
-
-static double i2d_sum_shared(uint64_t address, double value, int64_t lane) {
-    __local double *slots = (__local double *) address;
-    slots[lane] = value;
-    __asm__ volatile("bar.sync 0;" ::: "memory");
-    for (int offset = 64; offset > 0; offset /= 2) {
-        if (lane < offset) {
-            slots[lane] += slots[lane + offset];
-        }
-        __asm__ volatile("bar.sync 0;" ::: "memory");
-    }
-    return slots[0];
-}
+static float i2d_shared_f32(uint64_t base, int64_t index) { return ((__local float *)base)[index]; }
+static void i2d_set_shared_f32(uint64_t base, int64_t index, float value) { ((__local float *)base)[index] = value; }
+static double i2d_shared_f64(uint64_t base, int64_t index) { return ((__local double *)base)[index]; }
+static void i2d_set_shared_f64(uint64_t base, int64_t index, double value) { ((__local double *)base)[index] = value; }
+static void i2d_sync(void) { __asm__ volatile("bar.sync 0;" ::: "memory"); }
 
 static void i2d_store_f64(uint64_t address, int64_t index, double value) {
     ((__global double *) address)[index] = value;
@@ -70,8 +47,7 @@ __kernel void goose_i2_attention_score(__global const float *query, __global con
     __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(y));
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
     i2_device_score_g((uint64_t)query, (uint64_t)keys, (uint64_t)relative, (uint64_t)bias,
-        (uint64_t)sink, (uint64_t)positions, (uint64_t)scores, rows, absolute, window, y,
-        (int64_t)x * 128 + lane, scale);
+        (uint64_t)sink, (uint64_t)positions, (uint64_t)scores, rows, absolute, window, y, x, lane, scale);
 }
 
 
@@ -93,7 +69,7 @@ __kernel void goose_i2_attention_value(__global const float *values, __global co
     __asm__("mov.u32 %0, %%ctaid.z;" : "=r"(tile));
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
     i2_device_value_g((uint64_t)values, (uint64_t)scores, (uint64_t)inverse,
-        (uint64_t)partials, rows, y, 32 * x + lane, tile);
+        (uint64_t)partials, rows, y, x, lane, tile);
 }
 
 __kernel void goose_i2_attention_merge(__global const double *partials, __global float *output,
@@ -101,5 +77,5 @@ __kernel void goose_i2_attention_merge(__global const double *partials, __global
     uint32_t x, lane;
     __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(x));
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
-    i2_device_merge_g((uint64_t)partials, (uint64_t)output, tiles, 128 * x + lane);
+    i2_device_merge_g((uint64_t)partials, (uint64_t)output, tiles, x, lane);
 }

@@ -44,8 +44,12 @@ with header.open("w") as stream:
 PY
 done
 
+"$goose" -o "$scratch/prediction.c" --standalone --header "$scratch/prediction.h" "$source_dir/prediction.goose"
+python3 "$source_dir/extract-device.py" "$scratch/prediction.c" "$scratch/prediction-device.h"
+"$goose" -o "$scratch/prediction.c" --standalone --header "$scratch/prediction.h" "$source_dir/prediction.goose"
+python3 "$source_dir/extract-device.py" "$scratch/prediction.c" "$scratch/prediction-device.h"
 "${CLANG:-clang-18}" -target nvptx64-nvidia-cuda -nocudalib -O2 -ffp-contract=on \
-    -x cl -cl-std=CL1.2 -S -Xclang -target-cpu -Xclang sm_89 \
+    -x cl -cl-std=CL1.2 -I"$scratch" -S -Xclang -target-cpu -Xclang sm_89 \
     "$source_dir/prediction.cl" -o "$scratch/prediction.ptx"
 "$ptxas" -arch=sm_89 "$scratch/prediction.ptx" -o "$scratch/prediction.cubin"
 python3 - "$scratch/prediction.cubin" "$out/pred-image.h" <<'PY'

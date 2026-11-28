@@ -6,7 +6,8 @@ struct MmqQ6Scales { a: i32, b: i32, c: i32, d: i32 }
 struct MmqPairSum { left: MmqSum, right: MmqSum }
 struct MmqPartition { work: i64, workers: i64, start: i64 }
 
-extern "fg_mmq_word" fn mmq_word(address: u64) -> u32;
+extern "fg_mmq_aligned_word" fn mmq_aligned_word(address: u64) -> u32;
+extern "fg_mmq_half_word" fn mmq_half_word(address: u64) -> u32;
 extern "fg248d_ld_half" fn mmq_half(address: u64) -> f32;
 extern "fg248d_ld_i8" fn mmq_i8(address: u64) -> i32;
 extern "fg_device_global_load" fn mmq_float(address: u64) -> f32;
@@ -18,8 +19,6 @@ extern "fg_mmq_mma32" fn mmq_mma32(a0: u32, a1: u32, a2: u32, a3: u32, b0: u32, 
 extern "fg_mmq_mma16" fn mmq_mma16(a0: u32, a1: u32, b0: u32) -> MmqDot;
 extern "fg_mmq_ldm32" fn mmq_ldm32(address: u64) -> MmqWords;
 extern "fg_mmq_ldm16" fn mmq_ldm16(address: u64) -> MmqWords;
-extern "fg_mmq_mma32_shared" fn mmq_mma32_shared(address: u64, b0: u32, b1: u32) -> MmqDot;
-extern "fg_mmq_mma16_shared" fn mmq_mma16_shared(address: u64, b0: u32) -> MmqDot;
 extern "fg_mmq_shared_store" fn mmq_shared_store(address: u64, word: u32);
 extern "fg_mmq_global_store_word" fn mmq_global_store_word(address: u64, word: u32);
 extern "fg_mmq_shared_i8" fn mmq_shared_i8(address: u64) -> i32;
@@ -33,6 +32,21 @@ extern "fg_cuda_cpwait" fn mmq_copy_wait();
 extern "fg_mmq_barrier" fn mmq_barrier();
 extern "fg182d_ld_u8" fn ld_u8(src: u64, byte: u64) -> u32;
 extern "fg_mmq_index" fn mmq_index(address: u64, index: i64) -> u64;
+
+fn mmq_word(address: u64) -> u32 {
+    if (address & 3) == 0 { return mmq_aligned_word(address); }
+    return mmq_half_word(address) | (mmq_half_word(address + 2) << 16);
+}
+
+fn mmq_mma32_shared(address: u64, b0: u32, b1: u32) -> MmqDot {
+    let fragment = mmq_ldm32(address);
+    return mmq_mma32(fragment.a, fragment.b, fragment.c, fragment.d, b0, b1);
+}
+
+fn mmq_mma16_shared(address: u64, b0: u32) -> MmqDot {
+    let fragment = mmq_ldm16(address);
+    return mmq_mma16(fragment.a, fragment.b, b0);
+}
 
 fn mmq_q4_fragment(weight_block: u64, group: i64, lane_word: i64) -> u32 {
     let addr = weight_block + ((16 + 32 * (group / 2) + 4 * lane_word) as u64);

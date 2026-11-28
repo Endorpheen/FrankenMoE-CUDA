@@ -34,7 +34,8 @@ fn convolve(input: u64, past: u64, filter: u64, taps: u64, token: i64, channel: 
 }
 
 export fn attention_input(raw: u64, coeff: u64, history: u64, q: u64, r: u64, k: u64, v: u64,
-    count: i64, first: i64, sliding: bool, shared: u64, head: i64, row: i64, lane: i64) {
+    count: i64, first: i64, sliding_mode: i32, shared: u64, head: i64, row: i64, lane: i64) {
+    let sliding = sliding_mode != 0;
     let relative = head >= 24 && head < 48;
     let width = if relative { 16 } else { 128 };
     let offset = if head < 24 { head * 128 } else { if relative { (head - 24) * 16 } else { ((head - 48) & 7) * 128 } };

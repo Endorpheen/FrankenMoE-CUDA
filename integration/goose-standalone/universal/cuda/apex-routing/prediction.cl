@@ -1,3 +1,31 @@
+typedef uint uint32_t;
+typedef int int32_t;
+typedef ulong uint64_t;
+typedef long int64_t;
+typedef uchar uint8_t;
+#define gs_mul_i64(a,b,file,line) ((a)*(b))
+#define gs_add_i64(a,b,file,line) ((a)+(b))
+#define gs_add_i32(a,b,file,line) ((a)+(b))
+#define gs_shr_i32(a,b,...) ((a)>>(b))
+#define GS_RANGE(a,low,high,type,file,line) (a)
+
+static float pred_load(uint64_t address, int64_t i) { return ((__global const float *)address)[i]; }
+static float pred_load_logit(uint64_t address, int32_t i) { return ((__global volatile float *)address)[i]; }
+static void pred_store_logit(uint64_t address, int32_t i, float v) { ((__global volatile float *)address)[i] = v; }
+static float pred_shared_load(uint64_t address, int32_t i) { return ((__local float *)address)[i]; }
+static void pred_shared_store(uint64_t address, int32_t i, float v) { ((__local float *)address)[i] = v; }
+static float pred_shuffle(float value, int32_t offset) { return __nvvm_shfl_sync_bfly_f32(0xffffffffu, value, offset, 31); }
+static void pred_sync(void) { __nvvm_bar_sync(0); }
+static void pred_fence_gpu(void) { __nvvm_membar_gl(); }
+static void pred_fence_system(void) { __nvvm_membar_sys(); }
+static int32_t pred_mark_done(uint64_t address) { return __nvvm_atom_add_gen_i((__global int *)address, 1); }
+static void pred_reset(uint64_t address) { *(__global unsigned *)address = 0; }
+static void pred_publish(uint64_t address, int32_t i, int32_t v) { ((__global volatile int *)address)[i] = v; }
+static void pred_save_last(uint64_t address, int32_t v) { *(__local int *)address = v; }
+static int32_t pred_load_last(uint64_t address) { return *(__local int *)address; }
+
+#include "prediction-device.h"
+
 // Fused route prediction for expert prefetch: 256 blocks compute one logit each
 // (W row . x, F32); the last block to finish ranks the 256 logits and writes the
 // K largest indices (ties to the lower index) and then `seq` into host-mapped
@@ -8,34 +36,6 @@ __kernel void goose_pred_route(__global const float * restrict w, __global const
     __local float v[256];
     __local int last;
     const int row = __nvvm_read_ptx_sreg_ctaid_x(), t = __nvvm_read_ptx_sreg_tid_x();
-    __global const float * r = w + (long) row * width;
-    float s = 0.f;
-    for (int i = t * 4; i < width; i += 256 * 4)
-        s += r[i] * x[i] + r[i + 1] * x[i + 1] + r[i + 2] * x[i + 2] + r[i + 3] * x[i + 3];
-    for (int o = 16; o; o >>= 1) s += __nvvm_shfl_sync_bfly_f32(0xffffffffu, s, o, 31);
-    if ((t & 31) == 0) part[t >> 5] = s;
-    __nvvm_bar_sync(0);
-    if (t == 0) {
-        float a = 0.f;
-        for (int i = 0; i < 8; ++i) a += part[i];
-        ((__global volatile float *) logits)[row] = a;
-        __nvvm_membar_gl();
-        last = __nvvm_atom_add_gen_i((__global int *) counter, 1) == 255;
-    }
-    __nvvm_bar_sync(0);
-    if (!last) return;
-    __nvvm_membar_gl();
-    v[t] = ((__global volatile float *) logits)[t];
-    __nvvm_bar_sync(0);
-    const float me = v[t];
-    int rank = 0;
-    for (int j = 0; j < 256; ++j) rank += (v[j] > me) | ((v[j] == me) & (j < t));
-    if (rank < k) host[1 + rank] = t;
-    __nvvm_membar_sys();
-    __nvvm_bar_sync(0);
-    if (t == 0) {
-        *counter = 0;
-        host[0] = seq;
-        __nvvm_membar_sys();
-    }
+    apex_predict_route_g((uint64_t)w, (uint64_t)x, (uint64_t)logits, (uint64_t)counter, (uint64_t)host,
+        (uint64_t)part, (uint64_t)v, (uint64_t)&last, width, k, seq, row, t);
 }

@@ -35,3 +35,19 @@ export fn fg_mmvq_short_row(weights: u64, packed: u64, out: u64,
     let sum = mmvq_warp_sum(partial + 0.0);
     if lane == 0 { mmvq_store(out, sum); }
 }
+
+extern "mmvq_job_word" fn bonsai_mmvq_job(jobs: u64, index: u64) -> u64;
+
+export fn bonsai_mmvq_short(weights: u64, packed: u64, output: u64, jobs: u64,
+    stride: u64, extent: i64, kind: i64, words: u64, block_index: u64, route: u64, thread: u64) {
+    let row = block_index * 4 + thread / 32;
+    let job = route * words;
+    let plane = if words == 3 { bonsai_mmvq_job(jobs, job + 2) } else { 0 };
+    fg_mmvq_short_row(weights + plane + row * stride, packed + route * (extent as u64) * 288,
+        output + bonsai_mmvq_job(jobs, job + 1) + row * 4, extent, kind, (thread % 32) as i64);
+}
+
+export fn bonsai_mmvq_dense(weights: u64, packed: u64, output: u64,
+    stride: u64, extent: i64, kind: i64, row: u64, thread: i64, shared: u64) {
+    fg_mmvq_row(weights + row * stride, packed, output + row * 4, shared, extent, kind, thread);
+}

@@ -8,11 +8,8 @@ typedef struct { int64_t work_g, workers_g, start_g; } MmqPartition_g;
 typedef struct { int64_t route_g, live_g; uint64_t group_g, col0_g, col1_g; } MmqOperand_g;
 #define gs_shl_i32(a, b) as_int((uint32_t) (a) << ((b) & 31))
 
-static uint32_t fg_mmq_word(uint64_t address) {
-    if ((address & 3u) == 0) return *(__global uint32_t *) address;
-    __global uint16_t * halfwords = (__global uint16_t *) address;
-    return (uint32_t) halfwords[0] | ((uint32_t) halfwords[1] << 16);
-}
+static uint32_t fg_mmq_aligned_word(uint64_t address) { return *(__global uint32_t *)address; }
+static uint32_t fg_mmq_half_word(uint64_t address) { return *(__global uint16_t *)address; }
 
 static uint64_t fg_mmq_index(uint64_t address, int64_t index) {
     return ((__global const uint64_t *) address)[index];
@@ -58,21 +55,11 @@ static MmqWords_g fg_mmq_ldm32(uint64_t address) {
     return words;
 }
 
-static MmqDot_g fg_mmq_mma32_shared(uint64_t address, uint32_t b0, uint32_t b1) {
-    const MmqWords_g words = fg_mmq_ldm32(address);
-    return fg_mmq_mma32(words.a_g, words.b_g, words.c_g, words.d_g, b0, b1);
-}
-
 static MmqWords_g fg_mmq_ldm16(uint64_t address) {
     MmqWords_g words = {0};
     __asm__ volatile("ldmatrix.sync.aligned.m8n8.x2.shared.b16 {%0, %1}, [%2];"
         : "=r"(words.a_g), "=r"(words.b_g) : "r"((uint32_t) address) : "memory");
     return words;
-}
-
-static MmqDot_g fg_mmq_mma16_shared(uint64_t address, uint32_t b0) {
-    const MmqWords_g words = fg_mmq_ldm16(address);
-    return fg_mmq_mma16(words.a_g, words.b_g, b0);
 }
 
 static void fg_mmq_shared_store(uint64_t address, uint32_t word) {

@@ -15,7 +15,8 @@ fn ordered_dot(a: u64, ai: i64, b: u64, bi: i64, width: i64) -> f32 {
 
 export fn i2_device_score(query: u64, keys: u64, relative: u64, bias: u64, sink: u64,
                           positions: u64, scores: u64, rows: i64, absolute: i64, window: i64,
-                          head: i64, row: i64, qk_scale: f32) {
+                          head: i64, group: i64, lane: i64, qk_scale: f32) {
+    let row = group * 128 + lane;
     if row >= rows {
         return;
     }
@@ -37,8 +38,40 @@ export fn i2_device_score(query: u64, keys: u64, relative: u64, bias: u64, sink:
     store(scores, head * rows + row, score);
 }
 
-extern "i2d_max_shared" fn max_shared(address: u64, value: f32, lane: i64) -> f32;
-extern "i2d_sum_shared" fn sum_shared(address: u64, value: f64, lane: i64) -> f64;
+extern "i2d_shared_f32" fn shared_float(base: u64, index: i64) -> f32;
+extern "i2d_set_shared_f32" fn set_shared_float(base: u64, index: i64, value: f32);
+extern "i2d_shared_f64" fn shared_double(base: u64, index: i64) -> f64;
+extern "i2d_set_shared_f64" fn set_shared_double(base: u64, index: i64, value: f64);
+extern "i2d_sync" fn sync_attention();
+
+fn max_shared(address: u64, value: f32, lane: i64) -> f32 {
+    set_shared_float(address, lane, value);
+    sync_attention();
+    var offset: i64 = 64;
+    while offset > 0 {
+        if lane < offset {
+            let other = shared_float(address, lane + offset);
+            if other > shared_float(address, lane) { set_shared_float(address, lane, other); }
+        }
+        sync_attention();
+        offset /= 2;
+    }
+    return shared_float(address, 0);
+}
+
+fn sum_shared(address: u64, value: f64, lane: i64) -> f64 {
+    set_shared_double(address, lane, value);
+    sync_attention();
+    var offset: i64 = 64;
+    while offset > 0 {
+        if lane < offset {
+            set_shared_double(address, lane, shared_double(address, lane) + shared_double(address, lane + offset));
+        }
+        sync_attention();
+        offset /= 2;
+    }
+    return shared_double(address, 0);
+}
 extern "i2d_store_f64" fn store_double(address: u64, index: i64, value: f64);
 extern "i2d_load_f64" fn load_double(address: u64, index: i64) -> f64;
 
@@ -70,7 +103,8 @@ export fn i2_device_softmax(scores: u64, inverse: u64, head: i64, rows: i64,
 }
 
 export fn i2_device_value(values: u64, scores: u64, inverse: u64, partials: u64,
-                          rows: i64, head: i64, channel: i64, tile: i64) {
+                          rows: i64, head: i64, group: i64, lane: i64, tile: i64) {
+    let channel = group * 32 + lane;
     let weights = head * rows;
     let value_offset = (head / 3) * 128 + channel;
     let inverse_total = load(inverse, head);
@@ -85,7 +119,8 @@ export fn i2_device_value(values: u64, scores: u64, inverse: u64, partials: u64,
     store_double(partials, tile * 3072 + head * 128 + channel, result);
 }
 
-export fn i2_device_merge(partials: u64, output: u64, tiles: i64, index: i64) {
+export fn i2_device_merge(partials: u64, output: u64, tiles: i64, group: i64, lane: i64) {
+    let index = group * 128 + lane;
     var total: f64 = 0.0;
     for tile in tiles {
         total += load_double(partials, tile * 3072 + index);

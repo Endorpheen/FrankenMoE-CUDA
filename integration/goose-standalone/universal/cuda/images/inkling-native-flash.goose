@@ -1,7 +1,6 @@
 struct I2NativeAcc { x: f32, y: f32, z: f32, w: f32 }
 
 extern "i2_native_pair" fn native_pair(address: u64, offset: i64) -> u32;
-extern "i2_native_q4_pair" fn native_kv_pair(address: u64, first: i64, second: i64, q4: i32) -> u32;
 extern "i2_native_shared_pair" fn native_shared_pair(address: u64, offset: i64) -> u32;
 extern "i2_native_mma" fn native_mma(acc: I2NativeAcc, a0: u32, a1: u32, a2: u32, a3: u32, b0: u32, b1: u32) -> I2NativeAcc;
 extern "sync_group" fn native_sync();
@@ -9,10 +8,87 @@ extern "i2_native_warp_sync" fn native_warp_sync();
 extern "i2_native_shuffle" fn native_shuffle(value: f32, distance: i32) -> f32;
 extern "i2_native_store" fn native_store(address: u64, index: i64, value: f32);
 
-extern "i2_native_relative" fn native_relative(score: f32, query: i64, key: i64, window: i64,
-    relative: u64, bias: u64, sink: f32, scale: f32) -> f32;
-extern "i2_native_tiles_columns" fn native_tiles_columns(data: u64, element: i64) -> u32;
-extern "i2_native_tiles_rows" fn native_tiles_rows(data: u64, a: i64, b: i64, end: i64, channel: i64) -> u32;
+extern "i2_relative_products" fn relative_products(acc: I2NativeAcc, relative: u64, bias: u64) -> I2NativeAcc;
+extern "i2_flash_store_half" fn flash_store_half(address: u64, value: f32);
+
+export fn native_pack_f16(source: u64, dest: u64, count: u32, group: u32, thread: u32) {
+    let index = group * 256 + thread;
+    if index < count { flash_store_half(dest + (index as u64) * 2, load(source, index as i64)); }
+}
+
+fn native_relative(score: f32, query: i64, key: i64, window: i64,
+    relative: u64, bias: u64, sink: f32, scale: f32) -> f32 {
+    let distance = query - key;
+    if key < 0 || distance < 0 || (window != 0 && distance >= window) { return neg_inf(); }
+    var dot: f64 = 0.0;
+    if distance < 1024 {
+        let entry = bias + ((64 * distance) as u64);
+        for group in 4 {
+            let offset = (group * 16) as u64;
+            let product = relative_products(native_zero(), relative + offset, entry + offset);
+            dot += product.x as f64;
+            dot += product.y as f64;
+            dot += product.z as f64;
+            dot += product.w as f64;
+        }
+    }
+    return scale * score + ((dot as f32) - sink);
+}
+
+extern "i2_flash_load_byte" fn flash_q4_byte(address: u64) -> u32;
+extern "i2_flash_load_half_bits" fn flash_half_bits(address: u64) -> u32;
+extern "i2_flash_half_value" fn flash_half_value(bits: u32) -> f32;
+extern "i2_flash_to_half_bits" fn flash_to_half(value: f32) -> u32;
+extern "i2_flash_q4_product" fn flash_q4_product(encoded: u32, scale: u32) -> u32;
+
+fn native_load_half(data: u64, element: i64, q4: i32) -> u32 {
+    if q4 == 0 { return flash_half_bits(data + ((element * 2) as u64)); }
+    let tile = data + (((element >> 5) * 18) as u64);
+    let lane = element & 31;
+    let packed = flash_q4_byte(tile + ((2 + (lane & 15)) as u64));
+    let shift: u32 = if lane >= 16 { 4 } else { 0 };
+    let quant = (((packed >> shift) & 15) as i32) - 8;
+    return flash_to_half(flash_half_value(flash_half_bits(tile)) * (quant as f32));
+}
+
+fn native_kv_pair(data: u64, first: i64, second: i64, q4: i32) -> u32 {
+    return native_load_half(data, first, q4) | (native_load_half(data, second, q4) << 16);
+}
+
+fn native_q4_product(nibbles: u32, scales: u32) -> u32 {
+    return flash_q4_product(0x64006400 | (nibbles & 15) | ((nibbles & 0xf00) << 8), scales);
+}
+
+fn native_tiles_columns(data: u64, element: i64) -> u32 {
+    let tile = data + (((element >> 5) * 18) as u64);
+    let lane = element & 31;
+    let shift: u32 = if lane >= 16 { 4 } else { 0 };
+    let pair = flash_half_bits(tile + ((2 + (lane & 15)) as u64));
+    let scale = flash_half_bits(tile);
+    return native_q4_product(pair >> shift, scale | (scale << 16));
+}
+
+fn native_tiles_rows(data: u64, a: i64, b: i64, end: i64, channel: i64) -> u32 {
+    let offset = (2 + (channel & 15)) as u64;
+    let shift: u32 = if (channel & 16) != 0 { 4 } else { 0 };
+    let tile = channel >> 5;
+    var scales: u32 = 0;
+    var nibbles: u32 = 0;
+    var valid: u32 = 0;
+    if a < end {
+        let address = data + (((a * 32 + tile) * 18) as u64);
+        scales = flash_half_bits(address);
+        nibbles = (flash_q4_byte(address + offset) >> shift) & 15;
+        valid = 0xffff;
+    }
+    if b < end {
+        let address = data + (((b * 32 + tile) * 18) as u64);
+        scales |= flash_half_bits(address) << 16;
+        nibbles |= ((flash_q4_byte(address + offset) >> shift) & 15) << 8;
+        valid |= 0xffff0000;
+    }
+    return native_q4_product(nibbles, scales) & valid;
+}
 
 fn native_zero() -> I2NativeAcc { return I2NativeAcc {x:0.0,y:0.0,z:0.0,w:0.0}; }
 
@@ -212,7 +288,6 @@ export fn i2_native_flash(q: u64, k: u64, v: u64, relative: u64, bias: u64, sink
     }
 }
 
-extern "i2_native_load_half" fn native_load_half(address: u64, offset: i64, q4: i32) -> u32;
 
 fn native_value_pair(v: u64, first: i64, second: i64, column: i64, end: i64, q4: i32) -> u32 {
     let low = if first < end { native_load_half(v, first * 1024 + column, q4) } else { 0 };

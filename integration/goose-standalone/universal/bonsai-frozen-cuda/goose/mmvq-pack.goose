@@ -133,3 +133,8 @@ export fn fg178q_quant(
 // Retained entry; the parent never executes main. ne0=0 makes the body return
 // before any memory effect.
 
+export fn bonsai_mmvq_quantize(input: u64, packed: u64, extent: i32, block_index: i32, thread: i32) {
+    let width = (extent as i64) * 256;
+    let divisor = MmvqFastDiv { 0 as u32, 0 as u32, 1 as u32 };
+    fg178q_quant(input, packed, width, 0, 0, 0, width, 1, 1, divisor, block_index, 0, 0, thread, 128);
+}

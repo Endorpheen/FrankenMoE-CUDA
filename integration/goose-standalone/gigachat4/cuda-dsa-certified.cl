@@ -4,8 +4,6 @@ static uint32_t fg_dsa_int_word(uint64_t address) {
 #define gs_add_u32(a,b) ((a)+(b))
 #define gs_shl_u64(a,b) ((a)<<(b))
 
-static float fg_dsa_pack_f32(uint64_t a) { return *((__global const float *)a); }
-
 static float fg_dsa_pack_f16(uint64_t a) { return fg175q_h2f(*((__global const uint16_t *)a)); }
 
 static uint32_t fg_dsa_pack_bits(float x) { return as_uint(x); }
@@ -24,20 +22,12 @@ static int32_t fg_dsa_pack_rni(float x) {
     return result;
 }
 
-static float fg_dsa_pack_scale(float a, float b) {
-    float x;
-    __asm__("mul.rn.f32 %0, %1, %2;" : "=f"(x) : "f"(a), "f"(b));
-    return x;
-}
-
 static void fg_dsa_pack_byte(uint64_t p, int32_t x) { *((__global int8_t *)p) = (int8_t)x; }
-
-static void fg_dsa_pack_save_scale(uint64_t p, float x) { *((__global float *)p) = x; }
 
 static float fg_dsa_integer_to_float(int64_t dot, float a, float b) {
     float x;
     __asm__("cvt.rn.f32.s64 %0, %1;" : "=f"(x) : "l"(dot));
-    return fg_dsa_pack_scale(fg_dsa_pack_scale(x, a), b);
+    return fg_device_mul_rn(fg_device_mul_rn(x, a), b);
 }
 
 static float fg_dsa_bound_ceil_add(float a, float b) {
@@ -60,18 +50,6 @@ static void fg_dsa_bound_atomic_max(uint64_t p, uint32_t v) {
     __asm__ volatile("red.global.max.u32 [%0], %1;" :: "l"(p), "r"(v) : "memory");
 }
 
-static void fg_dsa_cutoff_sync(void) {
-    __asm__ volatile("bar.sync 0;" ::: "memory");
-}
-
-static float fg_compact_f32(uint64_t base, int64_t i) {
-    return ((__global const float *)base)[i];
-}
-
-static uint32_t fg_compact_mask(uint64_t base, int64_t i) {
-    return ((__global const uint16_t *)base)[i];
-}
-
 #include "dsa-certified-device.h"
 
 __kernel void goose_dsa_pack_power2(__global const uint8_t *input, __global int8_t *hi,
@@ -80,7 +58,7 @@ __kernel void goose_dsa_pack_power2(__global const uint8_t *input, __global int8
     __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(row));
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
     dsa_pack_power2_g((uint64_t)input, (uint64_t)hi, (uint64_t)lo,
-        (uint64_t)scales, stride, row, lane, half_input != 0);
+        (uint64_t)scales, stride, row, lane, half_input);
 }
 
 __kernel void goose_dsa_integer_score(__global const int8_t *khi, __global const int8_t *klo,
@@ -94,7 +72,7 @@ __kernel void goose_dsa_integer_score(__global const int8_t *khi, __global const
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
     dsa_integer_score_tile_g((uint64_t)khi, (uint64_t)klo, (uint64_t)qhi, (uint64_t)qlo,
         (uint64_t)kscale, (uint64_t)qscale, (uint64_t)weights, (uint64_t)mask,
-        (uint64_t)out, (uint64_t)dots, cells, query, tile, thread/32, thread%32);
+        (uint64_t)out, (uint64_t)dots, cells, query, tile, thread);
 }
 
 __kernel void goose_dsa_bound_metadata(__global const uint8_t *input, __global const float *scales,
@@ -103,7 +81,7 @@ __kernel void goose_dsa_bound_metadata(__global const uint8_t *input, __global c
     __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(row));
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
     dsa_bound_metadata_g((uint64_t)input, (uint64_t)scales, (uint64_t)l1,
-        (uint64_t)key_max, stride, row, lane, keys != 0);
+        (uint64_t)key_max, stride, row, lane, keys);
 }
 
 __kernel void goose_dsa_bound_query(__global const float *q_l1, __global const float *q_scales,
@@ -145,7 +123,7 @@ __kernel void goose_dsa_replay(__global const uint8_t *q, __global const uint8_t
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(tid));
     dsa_replay_g((uint64_t)q, (uint64_t)k, (uint64_t)weights, (uint64_t)mask,
         (uint64_t)out, (uint64_t)cfg, (uint64_t)band, (uint64_t)counts, capacity,
-        row, 4 * tile + tid / 32, tid % 32);
+        row, tile, tid);
 }
 
 __kernel void goose_dsa_finalize(__global const float *scores, __global const uint32_t *band,

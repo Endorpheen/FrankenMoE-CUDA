@@ -9,14 +9,9 @@ __kernel void goose_flash_vec_q4_packed_pair(__global const uint8_t * q, __globa
     __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(part));
     __asm__("mov.u32 %0, %%nctaid.y;" : "=r"(tiles));
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
-    const uint32_t head = pair * 2;
-    const uint32_t group = head / ((uint32_t) cfg[3] / (uint32_t) cfg[4]);
-    const uint64_t o0 = (uint64_t) head * tiles + part, o1 = o0 + tiles;
-    (void) scale;
-    fv_packed_heads_pair_g((uint64_t) q + (uint64_t) head * 320, (uint64_t) k + group * cfg[10],
-        (uint64_t) v + group * cfg[12], (uint64_t) parts + o0 * 1024, (uint64_t) parts + o1 * 1024,
-        (uint64_t) meta + o0 * 8, (uint64_t) meta + o1 * 8, keys, cfg[9], cfg[11],
-        part, tiles, thread % 32, thread / 32, (uint64_t) shared);
+    bonsai_flash_packed_g((uint64_t) q, (uint64_t) k, (uint64_t) v, (uint64_t) parts,
+        (uint64_t) meta, (uint64_t) cfg, keys, pair, part, tiles, thread, (uint64_t) shared,
+        2);
 }
 
 __kernel void goose_flash_vec_q4_packed_quad(__global const uint8_t * q, __global const uint8_t * k,
@@ -28,11 +23,7 @@ __kernel void goose_flash_vec_q4_packed_quad(__global const uint8_t * q, __globa
     __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(part));
     __asm__("mov.u32 %0, %%nctaid.y;" : "=r"(tiles));
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
-    const uint32_t head = group_of_heads * 4;
-    const uint32_t group = head / ((uint32_t) cfg[3] / (uint32_t) cfg[4]);
-    const uint64_t output = (uint64_t) head * tiles + part;
-    (void) scale;
-    fv_packed_heads_quad_g((uint64_t) q + (uint64_t) head * 320, (uint64_t) k + group * cfg[10],
-        (uint64_t) v + group * cfg[12], (uint64_t) parts + output * 1024, (uint64_t) meta + output * 8,
-        keys, cfg[9], cfg[11], part, tiles, thread % 32, thread / 32, (uint64_t) shared);
+    bonsai_flash_packed_g((uint64_t) q, (uint64_t) k, (uint64_t) v, (uint64_t) parts,
+        (uint64_t) meta, (uint64_t) cfg, keys, group_of_heads, part, tiles, thread, (uint64_t) shared,
+        4);
 }

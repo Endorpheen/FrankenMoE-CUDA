@@ -971,3 +971,28 @@ export fn fv_packed_heads_quad(q: u64, k: u64, v: u64, out: u64, meta: u64,
     fv_pair_finish(out + (3072 * (parts as u64)), meta + (24 * (parts as u64)),
         low3, high3, max3, sum3, lane, warp, smem);
 }
+
+extern "flash_vector_plan_word" fn bonsai_flash_plan(address: u64, index: i32) -> i64;
+
+export fn bonsai_flash_packed(query: u64, key: u64, value: u64, parts: u64, metadata: u64,
+    plan: u64, keys: i64, head_group: u32, part: i32, tiles: i32, thread: i32, shared: u64, heads_per_group: u32) {
+    let head = head_group * heads_per_group;
+    let group = head / ((bonsai_flash_plan(plan, 3) as! u32) / (bonsai_flash_plan(plan, 4) as! u32));
+    let slot = (head as u64) * (tiles as u64) + (part as u64);
+    let query_address = query + (head as u64) * 320;
+    let key_address = key + (group as u64) * (bonsai_flash_plan(plan, 10) as! u64);
+    let value_address = value + (group as u64) * (bonsai_flash_plan(plan, 12) as! u64);
+    let key_stride = bonsai_flash_plan(plan, 9);
+    let value_stride = bonsai_flash_plan(plan, 11);
+    let lane = thread % 32;
+    let warp = thread / 32;
+    if heads_per_group == 2 {
+        let next = slot + (tiles as u64);
+        fv_packed_heads_pair(query_address, key_address, value_address, parts + slot * 1024,
+            parts + next * 1024, metadata + slot * 8, metadata + next * 8, keys, key_stride,
+            value_stride, part, tiles, lane, warp, shared);
+    } else {
+        fv_packed_heads_quad(query_address, key_address, value_address, parts + slot * 1024,
+            metadata + slot * 8, keys, key_stride, value_stride, part, tiles, lane, warp, shared);
+    }
+}

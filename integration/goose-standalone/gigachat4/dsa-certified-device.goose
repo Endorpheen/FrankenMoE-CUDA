@@ -1,15 +1,16 @@
-extern "fg_dsa_pack_f32" fn pack_f32(address: u64) -> f32;
+extern "fg_device_global_load" fn pack_f32(address: u64) -> f32;
 extern "fg_dsa_pack_f16" fn pack_f16(address: u64) -> f32;
 extern "fg_dsa_pack_bits" fn pack_bits(x: f32) -> u32;
 extern "fg_dsa_pack_float" fn pack_float(x: u32) -> f32;
 extern "fg_dsa_pack_xor" fn pack_shuffle(x: u32, delta: u32) -> u32;
 extern "fg_dsa_pack_rni" fn pack_rni(x: f32) -> i32;
-extern "fg_dsa_pack_scale" fn pack_mul(a: f32, b: f32) -> f32;
+extern "fg_device_mul_rn" fn pack_mul(a: f32, b: f32) -> f32;
 extern "fg_dsa_pack_byte" fn pack_byte(address: u64, x: i32);
-extern "fg_dsa_pack_save_scale" fn pack_save_scale(address: u64, x: f32);
+extern "fg_device_global_store" fn pack_save_scale(address: u64, x: f32);
 
 export fn dsa_pack_power2(input: u64, hi: u64, lo: u64, scales: u64,
-    stride: i64, row: i64, lane: i64, half: bool) {
+    stride: i64, row: i64, lane: i64, half_input: i32) {
+    let half = half_input != 0;
     let source = input + (row * stride) as u64;
     let width: i64 = if half { 2 } else { 4 };
     var values: f32[4] = [0.0; 4];
@@ -81,7 +82,9 @@ fn score_join(hh: i32, hl: i32, lh: i32, ll: i32) -> i64 {
 
 export fn dsa_integer_score_tile(khi: u64, klo: u64, qhi: u64, qlo: u64,
     kscale: u64, qscale: u64, weights: u64, mask: u64, output: u64,
-    shared: u64, cells: i64, query: i64, tile: i64, warp: i64, lane: i64) {
+    shared: u64, cells: i64, query: i64, tile: i64, thread_index: i64) {
+    let warp = thread_index / 32;
+    let lane = thread_index % 32;
     let group = lane / 4;
     let thread = lane % 4;
     let krow = tile * 16;
@@ -128,15 +131,16 @@ export fn dsa_integer_score_tile(khi: u64, klo: u64, qhi: u64, qlo: u64,
 extern "fg_dsa_bound_ceil_add" fn bound_add(a: f32, b: f32) -> f32;
 extern "fg_dsa_bound_ceil_mul" fn bound_mul(a: f32, b: f32) -> f32;
 extern "fg_dsa_bound_xor" fn bound_xor(v: f32, distance: i32) -> f32;
-extern "fg_dsa_pack_f32" fn bound_f32(address: u64) -> f32;
+extern "fg_device_global_load" fn bound_f32(address: u64) -> f32;
 extern "fg_dsa_pack_f16" fn bound_f16(address: u64) -> f32;
 extern "fg_dsa_pack_bits" fn bound_bits(x: f32) -> u32;
 extern "fg_dsa_pack_float" fn bound_float(x: u32) -> f32;
-extern "fg_dsa_pack_save_scale" fn bound_store(address: u64, x: f32);
+extern "fg_device_global_store" fn bound_store(address: u64, x: f32);
 extern "fg_dsa_bound_atomic_max" fn bound_atomic_max(address: u64, value: u32);
 
 export fn dsa_bound_metadata(input: u64, scales: u64, l1: u64, key_max: u64,
-    stride: i64, row: i64, lane: i64, keys: bool) {
+    stride: i64, row: i64, lane: i64, key_input: i32) {
+    let keys = key_input != 0;
     let source = input + (row * stride) as u64;
     let width: i64 = if keys { 2 } else { 4 };
     var norm: f32 = 0.0;
@@ -216,7 +220,7 @@ extern "fg_dsa_bins_clear" fn clear_bin(bins: u64, index: i64);
 extern "fg_dsa_bins_get" fn read_bin(bins: u64, index: i64) -> u32;
 extern "fg_dsa_bins_add" fn add_bin(bins: u64, index: i64) -> u32;
 extern "fg_dsa_top_store" fn write_cutoff(out: u64, row: i64, bits: u32);
-extern "fg_dsa_cutoff_sync" fn sync_cutoff();
+extern "fg_device_barrier" fn sync_cutoff();
 
 fn ordered_score(bits: u32) -> u32 {
     if bits & 0x7fffffff == 0 { return 0x80000000; }
@@ -265,9 +269,9 @@ export fn dsa_score_cutoff(scores: u64, out: u64, cells: i64, row: i64,
 
 extern "fg_dsa_top_bits" fn read_word(base: u64, index: i64) -> u32;
 extern "fg_dsa_top_store" fn write_word(base: u64, index: i64, value: u32);
-extern "fg_dsa_cutoff_sync" fn sync_block();
-extern "fg_compact_f32" fn read_float(base: u64, index: i64) -> f32;
-extern "fg_compact_mask" fn read_mask(base: u64, index: i64) -> u32;
+extern "fg_device_barrier" fn sync_block();
+fn read_float(base: u64, index: i64) -> f32 { return score_load(base + ((index * 4) as u64)); }
+fn read_mask(base: u64, index: i64) -> u32 { return score_mask(base, (index * 2) as u64); }
 
 export fn dsa_compact(scores: u64, mask: u64, cutoffs: u64, errors: u64,
     fixed: u64, band: u64, counts: u64, bins: u64, cells: i64, row: i64,
@@ -372,7 +376,9 @@ fn exact_key_score(q: u64, k: u64, weights: u64, mask: u64, out: u64,
 extern "fg_dsa_top_bits" fn read_id(base: u64, index: i64) -> u32;
 
 export fn dsa_replay(q: u64, k: u64, weights: u64, mask: u64, out: u64, cfg: u64,
-    band: u64, counts: u64, capacity: i64, row: i64, slot: i64, lane: i64) {
+    band: u64, counts: u64, capacity: i64, row: i64, tile: i64, thread_index: i64) {
+    let slot = 4 * tile + thread_index / 32;
+    let lane = thread_index % 32;
     if slot >= capacity || read_id(counts, 2 * row) == 0xffffffff { return; }
     let count: i64 = read_id(counts, 2 * row + 1);
     if slot >= count { return; }

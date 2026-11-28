@@ -23,7 +23,7 @@ __kernel void goose_i2_prepare_attention(__global const float *raw, __global con
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
     __local double sum[128];
     attention_input_g((uint64_t)raw,(uint64_t)coeff,(uint64_t)history,(uint64_t)q,(uint64_t)r,(uint64_t)k,
-        (uint64_t)v,count,first,sliding != 0,(uint64_t)sum,head,row,lane);
+        (uint64_t)v,count,first,sliding,(uint64_t)sum,head,row,lane);
 }
 
 __kernel void goose_i2_update_history(__global const float *raw, __global float *history, int count) {
