@@ -266,94 +266,54 @@ static void project(struct decoder *d,int64_t id,float *input,int n,float *outpu
     ggml_free(ctx);
 }
 
-extern int64_t i2_depth_mix_cached(sl_f32 history, sl_f32 normalized_current, sl_f32 queries,
-                                   sl_f32 probabilities, sl_f32 output);
+extern bool fg_i2_host_cached_history(void);
+extern void fg_i2_host_save_history(float *row, float *current);
+extern void fg_i2_host_mix(float *history, int count, float *current, sl_f32 queries, int queries_count, float *out);
+extern void fg_i2_host_control_group(struct decoder *, const int64_t *, int, float *, int, float *);
+extern struct ggml_tensor *fg_i2_host_rows_input(struct ggml_context *, float *, int, int);
+extern struct ggml_tensor *fg_i2_host_controller_node(struct ggml_context *, struct decoder *,
+    const int64_t *, int, struct ggml_tensor *, struct ggml_tensor *, struct ggml_tensor *);
+extern void fg_i2_host_control_resident(struct decoder *, const int64_t *, int, float *, float *, int);
+extern void fg_i2_host_control(struct decoder *, const int64_t *, int, float *, float *);
 
-static bool use_cached_history(void) {
-    static int enabled = -1;
-    if (enabled < 0) {
-        const char *setting = getenv("I2_DEPTH_HISTORY_CACHE");
-        enabled = !setting || strcmp(setting, "0") != 0;
-    }
-    return enabled != 0;
-}
-
-static void save_history_row(float *row, float *current) {
-    if (use_cached_history()) {
-        assert(i2_rms_gain(vec(current, model_width), vec(NULL, 0), 1e-6f,
-                           vec(row, model_width)) == model_width);
-    } else {
-        memcpy(row, current, model_width * sizeof(float));
-    }
-}
-
-static void mix(float *blocks,int count,float *cur,sl_f32 query,int queries,float *out) {
-    assert(count>=0 && count<12);
-    if (use_cached_history()) {
-        float normalized[model_width], probabilities[12];
-        assert(i2_rms_gain(vec(cur, model_width), vec(NULL, 0), 1e-6f,
-                           vec(normalized, model_width)) == model_width);
-        assert(i2_depth_mix_cached(vec(blocks, count * model_width), vec(normalized, model_width),
-            query, vec(probabilities, count + 1), vec(out, queries * model_width)) == queries);
-        return;
-    }
-    float states[12*model_width], norm[12*model_width], p[12];
-    for(int i=0;i<count;i++) memcpy(states+i*model_width,blocks+(count-1-i)*model_width,model_width*sizeof(float));
-    memcpy(states+count*model_width,cur,model_width*sizeof(float));
-    int n=(count+1)*model_width;
-    assert(i2_depth_mix(vec(states,n),model_width,query,vec(norm,n),vec(p,count+1),vec(out,queries*model_width))==queries);
-}
-
-static void project_control_group(struct decoder *d, const int64_t *aux, int at, float *norm,
-                                  int count, float *combined) {
-    struct ggml_context *ctx = context();
-    struct ggml_tensor *input = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, 2 * model_width, count);
-    assert(input);
-    input->data = norm;
-    struct ggml_tensor *h = ggml_mul_mat(ctx, load(ctx, named(d, aux[at])), input);
-    struct ggml_tensor *forget = ggml_mul_mat(ctx, load(ctx, named(d, aux[at + 1])), h);
-    struct ggml_tensor *gain = ggml_mul_mat(ctx, load(ctx, named(d, aux[at + 2])), h);
-    struct ggml_tensor *results[] = {ggml_concat(ctx, gain, forget, 0)};
-    evaluate(ctx, results, 1, combined, 2 * count * model_width);
-    ggml_free(ctx);
-}
+#define use_cached_history fg_i2_host_cached_history
+#define save_history_row fg_i2_host_save_history
+#define mix fg_i2_host_mix
+#define project_control_group fg_i2_host_control_group
+#define rows_input fg_i2_host_rows_input
+#define controller_node fg_i2_host_controller_node
+#define control_resident fg_i2_host_control_resident
+#define control fg_i2_host_control
 
 static bool use_resident_controller(void) {
     const char *setting = getenv("I2_RESIDENT_CONTROL");
     return uses_resident_plan() && (!setting || strcmp(setting, "0") != 0);
 }
 
-static struct ggml_tensor *controller_node(struct ggml_context *ctx, struct decoder *d,
-    const int64_t *aux, int at, struct ggml_tensor *signal, struct ggml_tensor *memory,
-    struct ggml_tensor *normalized_signal) {
-    const float eps = 1e-6f;
-    struct ggml_tensor *x = normalized_signal ? normalized_signal : ggml_rms_norm(ctx, signal, eps);
-    struct ggml_tensor *y = ggml_rms_norm(ctx, memory, eps);
-    struct ggml_tensor *xy = ggml_concat(ctx, x, y, 0);
-    struct ggml_tensor *hidden = ggml_mul_mat(ctx, load(ctx, named(d, aux[at])), xy);
-    struct ggml_tensor *forget = ggml_mul_mat(ctx, load(ctx, named(d, aux[at + 1])), hidden);
-    struct ggml_tensor *gain = ggml_mul_mat(ctx, load(ctx, named(d, aux[at + 2])), hidden);
-    struct ggml_tensor *keep = ggml_scale_bias(ctx, ggml_unary(ctx, forget, GGML_UNARY_OP_TANH), -1.0f, 1.0f);
-    struct ggml_tensor *add = ggml_unary(ctx, gain, GGML_UNARY_OP_TANH);
-    return ggml_add(ctx, ggml_mul(ctx, signal, keep), ggml_mul(ctx, memory, add));
+bool fg_i2_host_resident_plan(void) { return uses_resident_plan(); }
+bool fg_i2_host_resident_control(void) { return use_resident_controller(); }
+struct ggml_context *fg_i2_host_context(void) { return context(); }
+struct ggml_tensor *fg_i2_host_weight(struct ggml_context *ctx, struct decoder *d, int64_t id) {
+    return load(ctx, named(d, id));
+}
+void fg_i2_host_evaluate_one(struct ggml_context *ctx, struct ggml_tensor *tensor, float *out, int count) {
+    evaluate(ctx, &tensor, 1, out, count);
+}
+void fg_i2_host_project(struct decoder *d, int64_t id, float *input, int n, float *out, int rows) {
+    project(d, id, input, n, out, rows);
+}
+int64_t fg_i2_host_measured_rms(sl_f32 input, sl_f32 weight, float eps, sl_f32 out) {
+    return i2_rms_gain(input, weight, eps, out);
+}
+int64_t fg_i2_host_measured_depth(sl_f32 states, int64_t width, sl_f32 query, sl_f32 norm, sl_f32 prob, sl_f32 out) {
+    return i2_depth_mix(states, width, query, norm, prob, out);
+}
+int64_t fg_i2_host_measured_blend(sl_f32 current, sl_f32 message, sl_f32 gain, sl_f32 forget, sl_f32 out) {
+    return i2_loop_blend(current, message, gain, forget, out);
 }
 
-static struct ggml_tensor *rows_input(struct ggml_context *ctx, float *values, int width, int count) {
-    struct ggml_tensor *tensor = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, width, count);
-    assert(tensor);
-    tensor->data = values;
-    return tensor;
-}
-
-static void control_resident(struct decoder *d, const int64_t *aux, int at,
-                             float *current, float *message, int count) {
-    struct ggml_context *ctx = context();
-    struct ggml_tensor *signal = rows_input(ctx, current, model_width, count);
-    struct ggml_tensor *memory = rows_input(ctx, message, model_width, count);
-    struct ggml_tensor *result[] = {controller_node(ctx, d, aux, at, signal, memory, NULL)};
-    evaluate(ctx, result, 1, current, count * model_width);
-    ggml_free(ctx);
-}
+_Static_assert(offsetof(struct ggml_tensor, data) == 248 && GGML_TYPE_F32 == 0 &&
+    GGML_UNARY_OP_TANH == 4, "Goose Inkling control graph ABI");
 
 static bool use_resident_moe(void) {
     const char *setting = getenv("I2_RESIDENT_MOE");
@@ -428,29 +388,6 @@ static void moe_resident(struct decoder *d, const int64_t *core, const int64_t *
     struct ggml_tensor *result[] = {epilogue};
     evaluate(ctx, result, 1, out, count * model_width);
     ggml_free(ctx);
-}
-
-static void control(struct decoder *d,const int64_t *aux,int which,float *current,float *message) {
-    if (use_resident_controller()) {
-        control_resident(d, aux, 18 + which*3, current, message, 1);
-        return;
-    }
-    float norm[2*model_width], h[64], gain[model_width], forget[model_width];
-    assert(i2_rms_gain(vec(current,model_width),vec(NULL,0),1e-6f,vec(norm,model_width))==model_width);
-    assert(i2_rms_gain(vec(message,model_width),vec(NULL,0),1e-6f,vec(norm+model_width,model_width))==model_width);
-    const int at=18+which*3;
-    if (uses_resident_plan()) {
-        float combined[2 * model_width];
-        project_control_group(d, aux, at, norm, 1, combined);
-        memcpy(gain, combined, sizeof gain);
-        memcpy(forget, combined + model_width, sizeof forget);
-    } else {
-        project(d,aux[at],norm,2*model_width,h,64);
-        project(d,aux[at+1],h,64,forget,model_width);
-        project(d,aux[at+2],h,64,gain,model_width);
-    }
-    assert(i2_loop_blend(vec(current,model_width),vec(message,model_width),vec(gain,model_width),
-                         vec(forget,model_width),vec(current,model_width))==model_width);
 }
 
 static bool use_attention_graph(void) {
