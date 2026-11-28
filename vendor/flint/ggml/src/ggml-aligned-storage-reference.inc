@@ -81,3 +81,35 @@ void ggml_aligned_free(void * ptr, size_t size) {
     free(ptr);
 #endif
 }
+
+inline static void * ggml_malloc(size_t size) {
+    if (size == 0) {
+        GGML_LOG_WARN("Behavior may be unexpected when allocating 0 bytes for ggml_malloc!\n");
+        return NULL;
+    }
+    void * result = malloc(size);
+    if (result == NULL) {
+        GGML_LOG_ERROR("%s: failed to allocate %6.2f MB\n", __func__, size/(1024.0*1024.0));
+        GGML_ABORT("fatal error");
+    }
+    return result;
+}
+
+// calloc
+inline static void * ggml_calloc(size_t num, size_t size) {
+    if (num == 0 || size == 0) {
+        GGML_LOG_WARN("Behavior may be unexpected when allocating 0 bytes for ggml_calloc!\n");
+        return NULL;
+    }
+    void * result = calloc(num, size);
+    if (result == NULL) {
+        GGML_LOG_ERROR("%s: failed to allocate %6.2f MB\n", __func__, size/(1024.0*1024.0));
+        GGML_ABORT("fatal error");
+    }
+    return result;
+}
+
+#define GGML_MALLOC(size)      ggml_malloc(size)
+#define GGML_CALLOC(num, size) ggml_calloc(num, size)
+
+#define GGML_FREE(ptr) free(ptr)

@@ -313,45 +313,6 @@ void ggml_log_callback_default(enum ggml_log_level level, const char * text, voi
 #include "ggml-aligned-storage-reference.inc"
 #endif
 
-inline static void * ggml_malloc(size_t size) {
-    if (size == 0) {
-        GGML_LOG_WARN("Behavior may be unexpected when allocating 0 bytes for ggml_malloc!\n");
-        return NULL;
-    }
-    void * result = malloc(size);
-    if (result == NULL) {
-        GGML_LOG_ERROR("%s: failed to allocate %6.2f MB\n", __func__, size/(1024.0*1024.0));
-        GGML_ABORT("fatal error");
-    }
-    return result;
-}
-
-// calloc
-inline static void * ggml_calloc(size_t num, size_t size) {
-    if (num == 0 || size == 0) {
-        GGML_LOG_WARN("Behavior may be unexpected when allocating 0 bytes for ggml_calloc!\n");
-        return NULL;
-    }
-    void * result = calloc(num, size);
-    if (result == NULL) {
-        GGML_LOG_ERROR("%s: failed to allocate %6.2f MB\n", __func__, size/(1024.0*1024.0));
-        GGML_ABORT("fatal error");
-    }
-    return result;
-}
-
-#define GGML_MALLOC(size)      ggml_malloc(size)
-#define GGML_CALLOC(num, size) ggml_calloc(num, size)
-
-#define GGML_FREE(ptr) free(ptr)
-
-//
-// cross-platform UTF-8 file paths
-//
-
-#ifdef _WIN32
-#endif
-
 #if defined(GOOSEINFER_GOOSE_METADATA)
 static_assert(GGML_TYPE_COUNT == 43, "Goose quantization type ABI");
 #elif defined(GOOSEINFER_TYPE_METADATA_ONLY)
@@ -491,6 +452,7 @@ void fg143_arena_abort(int status) {
 #endif
 
 
+#ifndef GOOSEINFER_GOOSE_METADATA
 struct ggml_tensor * ggml_format_name(struct ggml_tensor * tensor, const char * fmt, ...) {
     va_list args;
     va_start(args, fmt);
@@ -498,7 +460,7 @@ struct ggml_tensor * ggml_format_name(struct ggml_tensor * tensor, const char * 
     va_end(args);
     return tensor;
 }
-
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 
