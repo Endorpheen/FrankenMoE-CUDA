@@ -29,9 +29,6 @@ type VkUploadBarrier = c_fnptr(u64, u64) -> void;
 type VkUploadCopy = c_fnptr(u64, u64, u64, u32, u64) -> void;
 type VkUploadFill = c_fnptr(u64, u64, u64, u64, u32) -> void;
 
-extern fn fg_vk_alloc_buffer(vk: u64, buffer: u64, size: u64, usage: u32, required: u32, preferred: u32) -> i32;
-extern fn fg_vk_free_buffer(vk: u64, buffer: u64);
-extern fn fg_vk_access_buffer(vk: u64, buffer: u64, offset: u64, data: u64, size: u64, write: i32) -> i32;
 
 fn vk_upload_put(address: u64, value: u64) {
     vk_queue_memcpy(unsafe_c_ptr<c_ptr<void>>(address), unsafe_c_address<c_ptr<const void>>(value), 8);

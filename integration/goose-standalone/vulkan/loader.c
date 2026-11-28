@@ -76,6 +76,38 @@ FG_VK_ABI_OFFSET(VkDependencyInfo, pBufferMemoryBarriers, 40);
 FG_VK_ABI_OFFSET(VkBufferCopy, srcOffset, 0);
 FG_VK_ABI_OFFSET(VkBufferCopy, dstOffset, 8);
 FG_VK_ABI_OFFSET(VkBufferCopy, size, 16);
+FG_VK_ABI_OFFSET(fg_vk_device, memory, 864);
+FG_VK_ABI_OFFSET(fg_vk_device, CreateBuffer, 2064);
+FG_VK_ABI_OFFSET(fg_vk_device, GetBufferMemoryRequirements, 2072);
+FG_VK_ABI_OFFSET(fg_vk_device, AllocateMemory, 2080);
+FG_VK_ABI_OFFSET(fg_vk_device, BindBufferMemory, 2088);
+FG_VK_ABI_OFFSET(fg_vk_device, DestroyBuffer, 2096);
+FG_VK_ABI_OFFSET(fg_vk_device, FreeMemory, 2104);
+FG_VK_ABI_OFFSET(fg_vk_device, MapMemory, 2112);
+FG_VK_ABI_OFFSET(fg_vk_device, UnmapMemory, 2120);
+FG_VK_ABI_OFFSET(fg_vk_device, FlushMappedMemoryRanges, 2128);
+FG_VK_ABI_OFFSET(fg_vk_device, InvalidateMappedMemoryRanges, 2136);
+FG_VK_ABI_OFFSET(fg_vk_buffer, memory, 8);
+FG_VK_ABI_OFFSET(fg_vk_buffer, properties, 16);
+FG_VK_ABI_OFFSET(VkPhysicalDeviceMemoryProperties, memoryTypeCount, 0);
+FG_VK_ABI_OFFSET(VkPhysicalDeviceMemoryProperties, memoryTypes, 4);
+FG_VK_ABI_OFFSET(VkMemoryType, propertyFlags, 0);
+FG_VK_ABI_OFFSET(VkBufferCreateInfo, size, 24);
+FG_VK_ABI_OFFSET(VkBufferCreateInfo, usage, 32);
+FG_VK_ABI_OFFSET(VkBufferCreateInfo, sharingMode, 36);
+FG_VK_ABI_OFFSET(VkBufferCreateInfo, pQueueFamilyIndices, 48);
+FG_VK_ABI_OFFSET(VkMemoryRequirements, size, 0);
+FG_VK_ABI_OFFSET(VkMemoryRequirements, memoryTypeBits, 16);
+FG_VK_ABI_OFFSET(VkMemoryAllocateInfo, allocationSize, 16);
+FG_VK_ABI_OFFSET(VkMemoryAllocateInfo, memoryTypeIndex, 24);
+FG_VK_ABI_OFFSET(VkMappedMemoryRange, memory, 16);
+FG_VK_ABI_OFFSET(VkMappedMemoryRange, offset, 24);
+FG_VK_ABI_OFFSET(VkMappedMemoryRange, size, 32);
+_Static_assert(sizeof(VkMemoryType) == 8 && sizeof(VkBufferCreateInfo) == 56 &&
+    sizeof(VkMemoryRequirements) == 24 && sizeof(VkMemoryAllocateInfo) == 32 &&
+    sizeof(VkMappedMemoryRange) == 40 && VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO == 12 &&
+    VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO == 5 && VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE == 6,
+    "Goose Vulkan memory ABI");
 #undef FG_VK_ABI_OFFSET
 _Static_assert(sizeof(fg_vk_upload) == 72 && sizeof(fg_vk_buffer) == 32, "Goose Vulkan upload ABI");
 
