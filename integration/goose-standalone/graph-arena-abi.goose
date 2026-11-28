@@ -87,7 +87,29 @@ export fn ggml_flash_attn_ext_set_n_kv_max(address: i64, maximum: i32) {
     fg158_set_param(address, 4, maximum as! i64);
 }
 
-extern fn fg143_arena_warn(message: c_ptr<const u8>);
+type GgmlLogCallback = c_fnptr(i32, c_ptr<const u8>, u64) -> void;
+
+extern fn ggml_log_callback_default(level: i32, text: c_ptr<const u8>, data: u64);
+
+var ggml_log_callback: u64;
+var ggml_log_data: u64;
+
+export fn ggml_log_set(callback: u64, data: u64) {
+    ggml_log_callback = callback;
+    ggml_log_data = data;
+}
+
+export fn fg_ggml_log_message(level: i32, address: u64) {
+    ggml_log_message(level, unsafe_c_ptr<c_ptr<const u8>>(address));
+}
+
+fn ggml_log_message(level: i32, text: c_ptr<const u8>) {
+    if ggml_log_callback == 0 {
+        ggml_log_callback_default(level, text, ggml_log_data);
+    } else {
+        unsafe_c_fnptr<GgmlLogCallback>(ggml_log_callback)(level, text, ggml_log_data);
+    }
+}
 extern fn fg143_arena_abort(status: i32);
 extern "memcpy" fn arena_error_copy(dst: c_ptr<void>, src: c_ptr<const void>, size: u64) -> c_ptr<void>;
 
@@ -96,7 +118,7 @@ fn arena_warn_text(message: const u8[:]) {
     let size = message.len;
     arena_error_copy(unsafe_c_address<c_ptr<void>>(buffer[0]), unsafe_c_slice_data<c_ptr<const void>>(message), size as! u64);
     buffer[size] = 0;
-    fg143_arena_warn(unsafe_c_address<c_ptr<const u8>>(buffer[0]));
+    ggml_log_message(3, unsafe_c_address<c_ptr<const u8>>(buffer[0]));
 }
 
 export fn fg143_arena_failure(status: i32, needed: u64, capacity: u64) {

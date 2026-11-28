@@ -103,11 +103,11 @@ void ggml_abort(const char * file, int line, const char * fmt, ...) {
 // logging
 //
 
-struct ggml_logger_state {
-    ggml_log_callback log_callback;
-    void * log_callback_user_data;
-};
-static struct ggml_logger_state g_logger_state = {ggml_log_callback_default, NULL};
+#ifdef GOOSEINFER_TYPE_METADATA_ONLY
+extern void fg_ggml_log_message(enum ggml_log_level level, uint64_t text);
+#else
+#include "ggml-logging-reference.inc"
+#endif
 
 static void ggml_log_internal_v(enum ggml_log_level level, const char * format, va_list args) {
     if (format == NULL) {
@@ -118,12 +118,12 @@ static void ggml_log_internal_v(enum ggml_log_level level, const char * format, 
     char buffer[128];
     int len = vsnprintf(buffer, 128, format, args);
     if (len < 128) {
-        g_logger_state.log_callback(level, buffer, g_logger_state.log_callback_user_data);
+        fg_ggml_log_message(level, (uintptr_t)buffer);
     } else {
         char * buffer2 = (char *) calloc(len + 1, sizeof(char));
         vsnprintf(buffer2, len + 1, format, args_copy);
         buffer2[len] = 0;
-        g_logger_state.log_callback(level, buffer2, g_logger_state.log_callback_user_data);
+        fg_ggml_log_message(level, (uintptr_t)buffer2);
         free(buffer2);
     }
     va_end(args_copy);
@@ -282,9 +282,7 @@ static_assert(GGML_MEM_ALIGN == 16 && sizeof(struct ggml_object) == 32 &&
 
 extern struct ggml_object * ggml_new_object(struct ggml_context *, enum ggml_object_type, size_t);
 
-void fg143_arena_warn(const char *message) {
-    g_logger_state.log_callback(GGML_LOG_LEVEL_WARN, message, g_logger_state.log_callback_user_data);
-}
+_Static_assert(GGML_LOG_LEVEL_WARN == 3, "Goose GGML logging ABI");
 
 void fg143_arena_abort(int status) {
     GGML_ASSERT(status != -1);
@@ -362,11 +360,6 @@ static_assert(sizeof(struct ggml_cgraph) == 96 &&
 
 
 ////////////////////////////////////////////////////////////////////////////////
-
-void ggml_log_set(ggml_log_callback log_callback, void * user_data) {
-    g_logger_state.log_callback = log_callback ? log_callback : ggml_log_callback_default;
-    g_logger_state.log_callback_user_data = user_data;
-}
 
 #ifndef GOOSEINFER_TYPE_METADATA_ONLY
 #include "ggml-runtime-reference.inc"
