@@ -66,14 +66,14 @@ if [[ "$mode" != probe ]]; then
             f32_project|q4_0|q8_0|pq2_0|q4_k|q6_k|iq4_nl|iq4_xs|gather_q8_0|gather_pq2_0|gather_q4_k)
                 quant="$shader_dir/quant"
                 parts=("$quant/interface.goose")
-                mode=project
-                if [[ $shader == gather_* ]]; then mode=gather; fi
+                quant_mode=project
+                if [[ $shader == gather_* ]]; then quant_mode=gather; fi
                 case "$shader" in
                     f32_project) parts=() ;;
                     iq4_*) parts+=("$quant/iq4-table.goose") ;;
                 esac
                 shader_source="$out/$shader.goose"
-                cat "${parts[@]}" "$quant/${shader#gather_}.goose" "$quant/$mode.goose" > "$shader_source"
+                cat "${parts[@]}" "$quant/${shader#gather_}.goose" "$quant/$quant_mode.goose" > "$shader_source"
                 ;;
         esac
         if [[ $shader == moe_route || $shader == inkling_route ]]; then

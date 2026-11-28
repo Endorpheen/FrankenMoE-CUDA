@@ -26,7 +26,7 @@ export fn bonsai_gdn_packet(input: const u64[:], tokens: u32, packet: u64[:]) ->
     return true;
 }
 
-extern fn bonsai_flash_launch_raw(context: u64, role: u32, x: u32, y: u32,
+extern "bonsai_bonsai_flash_launch_raw" fn bonsai_flash_launch_raw(context: u64, role: u32, x: u32, y: u32,
                                   threads: u32, shared: u32, args: u64) -> i32;
 extern "memcpy" fn bonsai_flash_copy(destination: c_ptr<void>, source: c_ptr<const void>,
                                      bytes: u64) -> c_ptr<void>;
@@ -125,7 +125,7 @@ export fn bonsai_flash_schedule(context: u64, position: u64, count: u64,
     return 0;
 }
 
-extern fn bonsai_verify_emit_gdn(context: u64, args: const u64[:]) -> i32;
+extern "bonsai_bonsai_verify_emit_gdn" fn bonsai_verify_emit_gdn(context: u64, args: const u64[:]) -> i32;
 
 export fn bonsai_verify_conv_args(input: const u64[:], prefix: const u64[:], rows: u32, output: u64[:]) -> i32 {
     if input.len != 8 || prefix.len != 8 || output.len != 8 || prefix[0] == 0 || rows < 3 || rows > 5 { return -1; }
@@ -227,7 +227,7 @@ export fn bonsai_verify_row(op: i32, index: u64, input: const u64[:], row: u64[:
     return true;
 }
 
-extern fn bonsai_verify_attn_launch(context: u64, role: u32, x: u32, y: u32, z: u32,
+extern "bonsai_bonsai_verify_attn_launch" fn bonsai_verify_attn_launch(context: u64, role: u32, x: u32, y: u32, z: u32,
                                    threads: u32, args: u64) -> i32;
 
 export fn bonsai_verify_attention(context: u64, pointers: const u64[:], rows: u32,
@@ -455,9 +455,9 @@ export fn bonsai_workspace_rebase(base: u64, rows: u64, flags: u64, states: i64[
     if (flags & 16) != 0 { for i in 15 .. 17 { layout[i] += base; } }
 }
 
-extern fn bonsai_upload_weights(context: u64, mapping: u64, bytes: u64) -> u64;
-extern fn bonsai_bind_weight_workspace(context: u64, bytes: u64, signs: const i32[:]) -> i32;
-extern fn bonsai_log_gguf_parse(status: i64);
+extern "bonsai_bonsai_upload_weights" fn bonsai_upload_weights(context: u64, mapping: u64, bytes: u64) -> u64;
+extern "bonsai_bonsai_bind_weight_workspace" fn bonsai_bind_weight_workspace(context: u64, bytes: u64, signs: const i32[:]) -> i32;
+extern "bonsai_bonsai_log_gguf_parse" fn bonsai_log_gguf_parse(status: i64);
 extern "malloc" fn bonsai_load_alloc(bytes: u64) -> c_ptr<void>;
 extern "free" fn bonsai_load_free(memory: c_ptr<void>);
 extern "fg_cuda_host_view_i64" fn bonsai_load_i64(address: u64, length: i64) -> i64[:];
@@ -571,7 +571,7 @@ const BONSAI_CAPTURE_GRAPHS: u64 = 8;
 const BONSAI_CAPTURE_NORM: u64 = 520;
 const BONSAI_CAPTURE_NODES: u64 = 10;
 
-extern fn bonsai_capture_driver(op: u32, first: u64, second: u64) -> i32;
+extern "bonsai_bonsai_capture_driver" fn bonsai_capture_driver(op: u32, first: u64, second: u64) -> i32;
 
 fn bonsai_capture_read_word(address: u64) -> u64 {
     var word: u64 = 0;
