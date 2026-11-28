@@ -156,28 +156,30 @@ PY_TOKENIZER
     seek_symbol=fseeko
     tell_symbol=ftello
     if [[ "$target" == windows ]]; then seek_symbol=_fseeki64; tell_symbol=_ftelli64; fi
-    cat "$source_dir/"{gguf,tokenizer,http-adapter}.goose "$source_dir/http-$target.goose" > "$out/gguf.goose"
-    "${GOOSE_CUDA_DRIVER_BIN:?}" --standalone -o "$out/gguf.c" "$out/gguf.goose"
-    "$cc" -O2 -std=c11 -ffunction-sections -fdata-sections -Dgoose_init=fg_vk_gguf_init \
+    cat "$source_dir/"{gguf,tokenizer,http-adapter,infer-entry}.goose \
+        "$source_dir/http-$target.goose" "$source_dir/infer-$target.goose" > "$out/gguf.goose"
+    "${GOOSE_CUDA_DRIVER_BIN:?}" -o "$out/gguf.c" "$out/gguf.goose"
+    entry_flags=()
+    if [[ "$mode" == embedded ]]; then entry_flags=(-Dmain=gooseinfer_vulkan_entry); fi
+    "$cc" -O2 -std=c11 -ffunction-sections -fdata-sections "${entry_flags[@]}" \
         -Dgg_init_globals=fg_vk_gguf_globals -c "$out/gguf.c" -o "$out/gguf.o"
     time_symbol=time
     if [[ "$target" == windows ]]; then time_symbol=_time64; fi
     "$queue_objcopy" --redefine-sym="fg_vk_http_time=$time_symbol" --redefine-sym="fg_vk_crt_seek=$seek_symbol" --redefine-sym="fg_vk_crt_tell=$tell_symbol" \
         --redefine-sym=fg_vk_crt_read=fread --redefine-sym=fg_vk_crt_strlen=strlen \
         --redefine-sym=fg_vk_crt_memcmp=memcmp --redefine-sym=fg_vk_tok_fopen=fopen \
-        --redefine-sym=fg_vk_tok_fclose=fclose --redefine-sym=fg_vk_tok_perror=perror "$out/gguf.o"
+        --redefine-sym=fg_vk_tok_fclose=fclose --redefine-sym=fg_vk_tok_perror=perror \
+        --redefine-sym=fg_vk_cli_crt_write=fwrite --redefine-sym=fg_vk_cli_crt_ferror=ferror "$out/gguf.o"
     if [[ "$mode" == embedded ]]; then
         objcopy=${OBJCOPY:-objcopy}
         if [[ "$target" == windows ]]; then
             objcopy=${WINDOWS_OBJCOPY:-x86_64-w64-mingw32-objcopy}
         fi
         objects=("$out/queue.o" "$out/socket-forwards.o" "$out/gguf.o" "$out/moe-bank.o")
-        for source in "$source_dir/"{graph,qwen2,bonsai-model,apex-model,inkling-model,infer-main}.c; do
+        for source in "$source_dir/"{graph,qwen2,bonsai-model,apex-model,inkling-model}.c; do
             name=$(basename -- "$source" .c)
-            options=()
-            if [[ "$name" == infer-main ]]; then options=(-Dmain=gooseinfer_vulkan_entry); fi
             "$cc" "${flags[@]}" -ffunction-sections -fdata-sections -isystem "$out/vulkan-headers" -I"$out" \
-                "${options[@]}" -c "$source" -o "$out/embedded-$name.o"
+                -c "$source" -o "$out/embedded-$name.o"
             objects+=("$out/embedded-$name.o")
         done
         "$cc" -r -nostdlib "${objects[@]}" "$out/qwen2_unit.o" -o "$out/vulkan-global.o"
@@ -185,6 +187,6 @@ PY_TOKENIZER
         exit 0
     fi
     "$cc" "${flags[@]}" -isystem "$out/vulkan-headers" -I"$out" -Wl,--gc-sections \
-        "$source_dir/"{graph,qwen2,bonsai-model,apex-model,inkling-model,infer-main}.c "$out/qwen2_unit.o" "$out/queue.o" "$out/socket-forwards.o" "$out/gguf.o" "$out/moe-bank.o" \
+        "$source_dir/"{graph,qwen2,bonsai-model,apex-model,inkling-model}.c "$out/qwen2_unit.o" "$out/queue.o" "$out/socket-forwards.o" "$out/gguf.o" "$out/moe-bank.o" \
         "${libs[@]}" -lm -pthread -o "$out/frankenmoe-vulkan$suffix"
 fi
