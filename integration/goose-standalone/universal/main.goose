@@ -3,6 +3,7 @@ extern "gs_os_arg" fn entry_arg(index: i64, output: u8[>..]&);
 extern "gs_os_write_stderr" fn entry_error(text: const u8[:]);
 extern "memcpy" fn entry_copy(destination: c_ptr<void>, source: c_ptr<const void>, bytes: u64) -> c_ptr<void>;
 extern "exit" fn entry_exit(status: i32);
+extern fn fg_i2_backend_host_init(argc: i32, argv: u64);
 extern fn fg_model_vocab_init(argc: i32, argv: u64);
 extern fn fg_graph_host_init(argc: i32, argv: u64);
 extern fn fg_probability_init(argc: i32, argv: u64);
@@ -66,6 +67,7 @@ fn main() {
         entry_exit(1);
         return;
     }
+    fg_i2_backend_host_init(count, address);
     fg_model_vocab_init(count, address);
     fg_graph_host_init(count, address);
     fg_probability_init(count, address);

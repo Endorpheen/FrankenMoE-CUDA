@@ -16,12 +16,14 @@ esac
 mkdir -p -- "$out"
 
 for module in graph-platform inkling-backend; do
+    object=$module
+    if [[ "$module" == inkling-backend ]]; then object=inkling-backend-native; fi
     "$cc" -O2 -std=gnu11 -D_GNU_SOURCE -DI2_NUMERIC_MODULE -DGOOSEINFER_TYPE_METADATA_ONLY -Werror=implicit-function-declaration \
         -ffunction-sections -fdata-sections "-fmacro-prefix-map=$root=." \
         -I"$source_dir/host" -I"$model_headers" -I"$cpu_headers" \
         -I"$root/vendor/flint/ggml/include" -I"$root/vendor/flint/ggml/src" \
         -I"$standalone" -I"$root/integration/m1/host" \
-        -c "$source_dir/$module.c" -o "$out/$module.o"
+        -c "$source_dir/$module.c" -o "$out/$object.o"
 done
 printf 'const CPU_AFFINITY_WORDS: i64 = %s;\n' "$affinity_words" > "$out/graph-host.goose"
 cat "$source_dir/"{graph-host,graph-diagnostics}.goose "$source_dir/graph-checkpoint-$target.goose" \
@@ -41,3 +43,7 @@ if [[ "$target" == linux ]]; then
         --redefine-sym=graph_storage_fclose=fclose "$out/graph-host.o"
 fi
 "$cc" -r -nostdlib "$out/graph-platform.o" "$out/graph-host.o" -o "$out/graph-execute.o"
+"${GOOSE_CUDA_DRIVER_BIN:?}" --standalone -o "$out/draft-host.c" "$source_dir/draft-host.goose"
+"$cc" -O2 -std=c11 -ffunction-sections -fdata-sections -Dgoose_init=fg_i2_backend_host_init \
+    -Dgg_init_globals=fg_i2_backend_host_globals -c "$out/draft-host.c" -o "$out/draft-host.o"
+"$cc" -r -nostdlib "$out/inkling-backend-native.o" "$out/draft-host.o" -o "$out/inkling-backend.o"

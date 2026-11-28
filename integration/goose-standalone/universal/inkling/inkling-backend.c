@@ -884,142 +884,41 @@ struct decoder *inkling_backend_open(const uint8_t *image, size_t bytes, int64_t
     return d;
 }
 
-int inkling_backend_reset(struct decoder *d) {
-    if (!d || reset_inkling_attention(d) != 0) return -1;
-    d->position = 0;
-    if (d->draft.groups) {
-        fprintf(stderr, "Inkling speculation groups=%u cached=%u rejects=%u\n",
-                d->draft.groups, d->draft.accepted, d->draft.rejects);
-    }
-    d->draft.count = d->draft.used = 0;
-    d->draft.groups = d->draft.accepted = d->draft.rejects = 0;
-    for (int i = 0; i < logical; ++i) d->decode_joined[i].bridge_started = false;
-    return 0;
+_Static_assert(offsetof(struct decoder, capacity) == 82992 &&
+    offsetof(struct decoder, position) == 82996 &&
+    offsetof(struct decoder, format) == 83000 &&
+    offsetof(struct decoder, retain_decode_graphs) == 887152 &&
+    offsetof(struct decoder, ha) == 887136 &&
+    offsetof(struct decoder, decode_joined) == 922608 &&
+    offsetof(struct decoder, logits) == 83004 &&
+    offsetof(struct decoder, draft) == 887160 &&
+    offsetof(struct i2_draft_state, history) == 0 &&
+    offsetof(struct i2_draft_state, scores) == 8 &&
+    offsetof(struct i2_draft_state, saved_history) == 16 &&
+    offsetof(struct i2_draft_state, tokens) == 24 &&
+    offsetof(struct i2_draft_state, begin) == 88 &&
+    offsetof(struct i2_draft_state, count) == 92 &&
+    offsetof(struct i2_draft_state, used) == 96 &&
+    offsetof(struct i2_draft_state, groups) == 100 &&
+    offsetof(struct i2_draft_state, accepted) == 104 &&
+    offsetof(struct i2_draft_state, rejects) == 108 &&
+    offsetof(struct inkling_decode_graph, bridge_started) == 360 &&
+    sizeof(struct inkling_decode_graph) == 368 &&
+    logical == 48 && model_width == 2304 && max_prefill_batch == 4096 &&
+    i2_draft_max == 16 && vocabulary == 200058 && INKLING_KV_Q4_0 == 1, "Goose Inkling draft ABI");
+
+bool fg_i2_backend_draft_features(void) {
+    return use_attention_graph() && use_cached_history() && use_resident_moe() && use_joined_bridge();
 }
 
-extern void inkling_draft_verification(bool active);
-extern bool inkling_draft_native_snapshot(bool restore, int position);
-extern bool inkling_draft_moe_snapshot(bool restore, int position);
-extern bool inkling_draft_bridge_history(float *destination, int position);
-
-static bool draft_init(struct decoder *d) {
-    struct i2_draft_state *draft = &d->draft;
-    if (draft->history) return true;
-    const char *enabled = getenv("I2_NGRAM_VERIFY");
-    if (!enabled || strcmp(enabled, "1") != 0 || d->position != 0 ||
-        d->format != INKLING_KV_Q4_0 || !use_attention_graph() ||
-        !use_cached_history() || !use_resident_moe() || !use_joined_bridge()) return false;
-    draft->history = malloc((size_t)d->capacity * sizeof(*draft->history));
-    draft->scores = malloc((size_t)i2_draft_max * vocabulary * sizeof(float));
-    draft->saved_history = malloc((size_t)logical * 3 * model_width * sizeof(float));
-    if (draft->history && draft->scores && draft->saved_history) return true;
-    free(draft->history);
-    free(draft->scores);
-    free(draft->saved_history);
-    draft->history = NULL;
-    draft->scores = draft->saved_history = NULL;
-    return false;
+int fg_i2_backend_reset_attention(uint64_t address) {
+    return reset_inkling_attention((struct decoder *)(uintptr_t)address);
 }
 
-static bool draft_start(struct decoder *d, int count) {
-    struct i2_draft_state *draft = &d->draft;
-    const size_t bytes = (size_t)logical * 3 * model_width * sizeof(float);
-    const int position = d->position;
-    memcpy(draft->saved_history, d->ha, bytes);
-    if ((d->decode_joined[0].bridge_started && !inkling_draft_bridge_history(d->ha, position)) ||
-        !inkling_draft_native_snapshot(false, position) ||
-        !inkling_draft_moe_snapshot(false, position)) {
-        memcpy(d->ha, draft->saved_history, bytes);
-        return false;
-    }
-    const char *lfu = getenv("I2_VERIFY_LFU");
-    const bool preserve_lfu = !lfu || strcmp(lfu, "0") != 0;
-    int64_t stats_before[6] = {0}, stats_after[6] = {0};
-    fg_cuda_expert_stats(ints(stats_before, 6));
-    fg_cuda_inkling_expert_phase(!preserve_lfu, position, count);
-    d->draft.count = count;
-    inkling_draft_verification(true);
-    prefill(d, draft->tokens, position, count, true);
-    inkling_draft_verification(false);
-    draft->begin = position;
-    draft->used = 0;
-    ++draft->groups;
-    fg_cuda_expert_stats(ints(stats_after, 6));
-    fprintf(stderr, "Inkling speculation start position=%d count=%d lfu=%d fills=%" PRId64 " h2d=%" PRId64 "\n",
-            position, count, preserve_lfu, stats_after[1] - stats_before[1], stats_after[3] - stats_before[3]);
-    return true;
+void fg_i2_backend_prefill(uint64_t address, uint64_t tokens, int position, int count, bool logits) {
+    prefill((struct decoder *)(uintptr_t)address, (const int32_t *)(uintptr_t)tokens, position, count, logits);
 }
 
-static bool draft_reject(struct decoder *d) {
-    struct i2_draft_state *draft = &d->draft;
-    const int position = draft->begin;
-    if (!inkling_draft_native_snapshot(true, position) || !inkling_draft_moe_snapshot(true, position)) return false;
-    memcpy(d->ha, draft->saved_history, (size_t)logical * 3 * model_width * sizeof(float));
-    const bool retain = d->retain_decode_graphs;
-    d->retain_decode_graphs = true;
-    for (int i = 0; i < draft->used; ++i) {
-        fg_cuda_inkling_expert_phase(false, position + i, 1);
-        token(d, draft->tokens[i], position + i, false);
-    }
-    d->retain_decode_graphs = retain;
-    fprintf(stderr, "Inkling speculation rejected position=%d used=%d count=%d\n", position, draft->used, draft->count);
-    ++draft->rejects;
-    draft->count = draft->used = 0;
-    return true;
-}
-
-static void draft_take(struct decoder *d, float *logits, int64_t count) {
-    struct i2_draft_state *draft = &d->draft;
-    if (count) memcpy(logits, draft->scores + (size_t)draft->used * vocabulary, (size_t)count * sizeof(float));
-    if (draft->used) ++draft->accepted;
-    ++draft->used;
-    ++d->position;
-    if (draft->used == draft->count) {
-        fprintf(stderr, "Inkling speculation committed position=%d count=%d\n", draft->begin, draft->count);
-        for (int i = 0; i < logical; ++i) d->decode_joined[i].bridge_started = false;
-        draft->count = draft->used = 0;
-    }
-}
-
-extern int64_t i2_eval_prepared(uint64_t decoder, sl_i32 tokens, uint8_t prompt, sl_f32 logits,
-    sl_i32 history, sl_i32 proposals, int64_t position, uint8_t pending, int32_t used, uint8_t retain);
-
-uint8_t i2_adapter_draft_start(uint64_t decoder, int32_t count) {
-    return draft_start((void *)(uintptr_t)decoder, count);
-}
-
-uint8_t i2_adapter_draft_reject(uint64_t decoder) {
-    return draft_reject((void *)(uintptr_t)decoder);
-}
-
-void i2_adapter_draft_take(uint64_t decoder, sl_f32 logits) {
-    draft_take((void *)(uintptr_t)decoder, logits.data, logits.len);
-}
-
-void i2_adapter_run_step(uint64_t decoder, sl_i32 tokens, uint8_t prompt, sl_f32 logits) {
-    struct decoder *d = (void *)(uintptr_t)decoder;
-    fg_cuda_inkling_expert_phase(prompt, d->position, tokens.len);
-    if (prompt) prefill(d, tokens.data, d->position, tokens.len, logits.len != 0);
-    else token(d, tokens.data[0], d->position, logits.len != 0);
-    d->position += tokens.len;
-    if (logits.len) memcpy(logits.data, d->logits, (size_t)logits.len * sizeof(float));
-}
-
-int64_t inkling_backend_eval(struct decoder *d, const int32_t *tokens, int64_t count,
-                             bool prompt, float *logits, int64_t logits_count) {
-    if (!d || !tokens || count <= 0 || count > max_prefill_batch ||
-        (!prompt && count != 1) || count > d->capacity - d->position ||
-        (logits_count != 0 && (logits_count != vocabulary || !logits))) return -1;
-    for (int64_t i = 0; i < count; ++i) {
-        if (tokens[i] < 0 || tokens[i] >= vocabulary) return -1;
-    }
-
-    const char *retain = getenv("I2_RETAIN_DECODE_GRAPHS");
-    d->retain_decode_graphs = !prompt && (!retain || strcmp(retain, "0") != 0);
-    const bool draft_ready = draft_init(d);
-    struct i2_draft_state *draft = &d->draft;
-    return i2_eval_prepared((uintptr_t)d, (sl_i32){(int32_t *)tokens, count}, prompt,
-        vec(logits, logits_count), (sl_i32){draft->history, draft_ready ? d->capacity : 0},
-        (sl_i32){draft->tokens, i2_draft_max}, d->position, draft->count != 0,
-        draft->used, d->retain_decode_graphs);
+void fg_i2_backend_token(uint64_t address, int32_t id, int position, bool logits) {
+    token((struct decoder *)(uintptr_t)address, id, position, logits);
 }
