@@ -551,10 +551,15 @@ extern const unsigned char gooseinfer_bonsai_pipeline_image[];
 extern const unsigned char gooseinfer_bonsai_frozen_image[];
 extern const unsigned char gooseinfer_bonsai_mtp_image[];
 
-static CUresult bonsai_load_module(CUmodule *module, const char *path, const unsigned char *image) {
-    return path && *path ? bonsai_cuda.fn_cuModuleLoad(module, path) :
-        bonsai_cuda.fn_cuModuleLoadData(module, image);
-}
+extern int32_t fg_bonsai_load_images(model *m, const char *cubin, const char *frozen, const char *mtp_image,
+    const void *pipeline_image, const void *frozen_image, const void *draft_image);
+_Static_assert(offsetof(model, module) == 4680 && offsetof(model, frozen) == 4688 &&
+    offsetof(model, mtp_module) == 8 && offsetof(model, decode_kernel) == 4696 &&
+    offsetof(struct bonsai_cuda_api, fn_cuInit) == 0 && offsetof(struct bonsai_cuda_api, fn_cuDeviceGet) == 8 &&
+    offsetof(struct bonsai_cuda_api, fn_cuCtxCreate) == 16 && offsetof(struct bonsai_cuda_api, fn_cuModuleLoad) == 56 &&
+    offsetof(struct bonsai_cuda_api, fn_cuModuleLoadData) == 64 && offsetof(struct bonsai_cuda_api, fn_cuModuleGetFunction) == 72 &&
+    offsetof(struct bonsai_cuda_api, fn_cuFuncSetAttribute) == 128 &&
+    KERNEL_COUNT == 100 && CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES == 8, "Bonsai image loader ABI");
 
 model *fg_bonsai_model_open(const char *gguf, const char *cubin, const char *frozen, unsigned context, unsigned ubatch) {
     if (context < CONTEXT_MIN || context > POSITIONS_MAX) return NULL;
@@ -666,7 +671,6 @@ model *fg_bonsai_model_open(const char *gguf, const char *cubin, const char *fro
         else goto error;
     }
     if (m->ffn_q8) fputs("Bonsai prefill: Q8 FFN gate/up\n", stderr);
-    CUdevice device;
     const char *mode = getenv("BONSAI_MATVEC");
     m->matvec_rows2 = !mode || strcmp(mode, "rows2") == 0;
     if (m->matvec_rows2 || strcmp(mode, "ordered") == 0) {
@@ -680,74 +684,8 @@ model *fg_bonsai_model_open(const char *gguf, const char *cubin, const char *fro
         goto error;
     }
     fprintf(stderr, "Decode matrix: %s\n", m->matvec_rows2 ? "bonsai_pq2_matvec_rows2" : m->decode_kernel);
-    const char *names[KERNEL_COUNT] = {
-        "bonsai_norm", "bonsai_fwht1024", m->decode_kernel, "bonsai_residual", "bonsai_decay",
-        "bonsai_conv_step", "goose_gdn_decode", "bonsai_split_q_gate", "goose_rope_decode",
-        "goose_set_q4_rows", "goose_q4_attention_tiles", "bonsai_attention_gate", "bonsai_pq2_row",
-        "bonsai_swiglu", "goose_q4_attention_merge", "goose_gated_delta_net",
-        "goose_rope_phases", "goose_rope_apply", "bonsai_embed_batch", "bonsai_conv_batch",
-        "bonsai_pack_half", "bonsai_pq2_mmq", "bonsai_flash_f32_tile", "bonsai_flash_f32_merge",
-        "bonsai_flash_staged_tile", "bonsai_flash_stage_kv", "bonsai_flash_ordered_merge",
-        "bonsai_flash_compact_tile", "bonsai_flash_compact_merge", "bonsai_flash_compact_ordered_merge", "bonsai_flash_async_tile", "bonsai_pq2_mmq_async", "goose_gdn_mma_v32", "bonsai_pq2_mmq_64x64", "bonsai_decay_reuse4", "bonsai_decay_reuse8", "bonsai_ffn_tail", "bonsai_pq2_mmq_64x64_k64", "bonsai_pq2_mmq_64x128_k64", "bonsai_decode_gqa2", "bonsai_decode_gqa3", "bonsai_pq2_matvec_rows2", "bonsai_flash_tile_group2", "bonsai_flash_tile_group4",
-        "bonsai_mv_pack_q8", "bonsai_pq2_mvq_q8_1", "bonsai_pq2_mvq_q8_2", "bonsai_norm_wide_512_1", "bonsai_norm_wide_128_0", "bonsai_pack_q8_128", "bonsai_pq2_mmq_int8", "bonsai_decay_stage_256_0", "bonsai_decay_warp_pack", "bonsai_flash_kv_lean2", "bonsai_pq2_cached_64x64_k64", "bonsai_pq2_cached_64x128_k64", "bonsai_flash_kv_fused_ordered", "bonsai_pq2_cached_fp16_acc_k32", "bonsai_pq2_half_full_5120", "bonsai_pq2_half_full_17408", "bonsai_pq2_half_full_6144", "bonsai_flash_stage_k_fp8", "bonsai_flash_stage_v_only", "bonsai_flash_fp8_qk", "bonsai_pq2_half_unpack_half2_17408", "bonsai_pq2_mmq_int8_full_n128", "bonsai_flash_stage_v_fp8", "bonsai_flash_fp8_qkpv", "bonsai_pq2_mmq_int8_full_n128_pairload", "bonsai_pack_q8_panel128", "bonsai_pq2_mmq_int8_full_n128_panel", "bonsai_pq2_mmq_int8_full_n128_spread", "bonsai_decode_direct_q4_mma", "bonsai_verify_merge_parallel", "bonsai_decode_direct_q4_mma_half2", "bonsai_ffn_tail_q8_panel", "bonsai_pq2_mmq_int8_down_n128_spread", "bonsai_choice_tiles", "bonsai_choice_final",
-    };
-    if (check(bonsai_cuda.fn_cuInit(0), "driver") || check(bonsai_cuda.fn_cuDeviceGet(&device, 0), "device") ||
-        check(bonsai_cuda.fn_cuCtxCreate(&m->cuda, 0, device), "context") ||
-        check(bonsai_load_module(&m->module, cubin, gooseinfer_bonsai_pipeline_image), "Bonsai CUDA image") ||
-        check(bonsai_load_module(&m->frozen, frozen, gooseinfer_bonsai_frozen_image), "frozen Goose CUDA image")) goto error;
-    if (m->mtp_enabled &&
-        check(bonsai_load_module(&m->mtp_module, mtp_image, gooseinfer_bonsai_mtp_image), "Bonsai MTP CUDA image")) goto error;
-    const char *mtp_names[KERNEL_COUNT] = {
-        [MTP_EH] = "bonsai_mtp_eh_q4",
-         [MTP_MAT] = "bonsai_mtp_mat_q4",
-         [VERIFY_Q8_1] = "bonsai_pq2_mvq_q8_three_1",
-         [VERIFY_Q8_2] = "bonsai_pq2_mvq_q8_three_2",
-         [VERIFY_CONV] = "bonsai_conv_verify_prefix",
-         [DRAFT_CONCAT] = "bonsai_mtp_concat",
-         [DRAFT_MAT_BATCH] = "bonsai_mtp_q4_four",
-         [VERIFY_ATTN] = "bonsai_verify_q4_gqa2",
-         [VERIFY_MERGE] = "bonsai_verify_merge_parallel",
-         [VERIFY_ATTN_TAIL] = "bonsai_verify_q4_tail",
-         [VERIFY_Q8_FOUR_1] = "bonsai_pq2_mvq_q8_four_1",
-         [VERIFY_Q8_FOUR_2] = "bonsai_pq2_mvq_q8_four_2",
-         [VERIFY_ATTN_FOUR] = "bonsai_verify_pair_tail3",
-         [VERIFY_CONV_FOUR] = "bonsai_conv_verify_prefix_four",
-         [VERIFY_Q8_FIVE_1] = "bonsai_pq2_mvq_q8_five_1",
-         [VERIFY_Q8_FIVE_2] = "bonsai_pq2_mvq_q8_five_2",
-         [VERIFY_ATTN_FIVE] = "bonsai_verify_five_32",
-         [VERIFY_CONV_FIVE] = "bonsai_conv_verify_prefix_five",
-         [VERIFY_MVQ_FOUR_PAIR] = "bonsai_mvq_4_permutation_2",
-         [VERIFY_MVQ_FOUR_QUAD] = "bonsai_mvq_4_permutation_4",
-         [VERIFY_MVQ_FIVE_QUAD] = "bonsai_mvq_5_spread_4",
-    };
-    for (unsigned i = 0; i < KERNEL_COUNT; ++i) {
-        if (i > CHOICE_FINAL) {
-            if (m->mtp_enabled && check(bonsai_cuda.fn_cuModuleGetFunction(&m->kernel[i],
-                m->mtp_module, mtp_names[i]), mtp_names[i])) goto error;
-            continue;
-        }
-        CUmodule module = strncmp(names[i], "goose_", 6) == 0 ? m->frozen : m->module;
-        if (check(bonsai_cuda.fn_cuModuleGetFunction(&m->kernel[i], module, names[i]), names[i])) goto error;
-    }
-    const char *pv = getenv("BONSAI_FLASH_FP8_PV");
-    m->flash_fp8_pv = pv && strcmp(pv,"1") == 0 &&
-        bonsai_cuda.fn_cuFuncSetAttribute(m->kernel[FLASH_FP8_QKPV],
-            CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES, 41472) == CUDA_SUCCESS;
-    const char *fp8 = getenv("BONSAI_FLASH_FP8_QK");
-    m->flash_fp8_qk = fp8 && strcmp(fp8,"1") == 0 &&
-        bonsai_cuda.fn_cuFuncSetAttribute(m->kernel[FLASH_FP8_QK],
-            CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES, 41472) == CUDA_SUCCESS;
-    const char *fused = getenv("BONSAI_FLASH_FUSED_ORDERED");
-    m->flash_fused_ordered = (!fused || strcmp(fused, "0") != 0) &&
-        bonsai_cuda.fn_cuFuncSetAttribute(m->kernel[FLASH_FUSED_ORDERED],
-            CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES, 50176) == CUDA_SUCCESS;
-    if (m->flash_panel) {
-        m->flash_panel = bonsai_cuda.fn_cuFuncSetAttribute(m->kernel[FLASH_KV_PANEL],
-            CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES, FLASH_PANEL_SHARED) == CUDA_SUCCESS;
-        if (m->flash_panel) fputs("Bonsai Flash: shared K/V query panels\n",stderr);
-    }
-    if (m->gdn_prefill_v32 && check(bonsai_cuda.fn_cuFuncSetAttribute(m->kernel[GDN_V32],
-        CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES,38016),"GDN V32 shared memory")) goto error;
+    if (fg_bonsai_load_images(m, cubin, frozen, mtp_image, gooseinfer_bonsai_pipeline_image,
+        gooseinfer_bonsai_frozen_image, gooseinfer_bonsai_mtp_image) != 0) goto error;
 #ifdef _WIN32
     size_t model_bytes = 0;
     uint8_t *mapping = fg_win_map_model(gguf, &model_bytes);
