@@ -20,11 +20,7 @@ const PROB_NOTIFY: i32 = 3;
 const PROB_JOIN: i32 = 4;
 const PROB_DESTROY: i32 = 5;
 
-extern fn fg_prob_platform_create() -> u64;
 extern fn fg_prob_platform_payload(address: u64) -> u64[:];
-extern fn fg_prob_platform_start(address: u64) -> bool;
-extern fn fg_prob_platform_current(detach: bool) -> u64;
-extern fn fg_prob_platform_event(address: u64, event: i32);
 extern "fg_cuda_host_malloc" fn prob_malloc(bytes: u64) -> u64;
 extern "fg_cuda_host_free" fn prob_free(address: u64);
 extern "fg_cuda_host_view_i64" fn prob_i64(address: u64, length: i64) -> i64[:];
@@ -39,15 +35,7 @@ fn prob_address(pointer: c_ptr<const void>) -> u64 {
     return address;
 }
 
-fn prob_enabled() -> bool {
-    let setting = "GOOSE_CPU_PROBABILITY_PIPELINE";
-    var key: u8[32];
-    for i in setting.len { key[i] = setting[i]; }
-    let one: u8[2] = [49, 0];
-    return fg_cuda_host_env_equal(
-        fg_cuda_host_getenv(prob_address(unsafe_c_address<c_ptr<const void>>(key[0]))),
-        prob_address(unsafe_c_address<c_ptr<const void>>(one[0])));
-}
+fn prob_enabled() -> bool { return prob_env_is("GOOSE_CPU_PROBABILITY_PIPELINE", 49); }
 
 fn prob_destroy(address: u64, data: const u64[:]) {
     for i in 4 { prob_free(data[i]); }

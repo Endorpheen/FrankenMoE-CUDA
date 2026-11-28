@@ -48,7 +48,7 @@ def mark(base,names,ext,status,reason):
 both='Host Linux + Windows'
 mark(u/'inkling','graph-execute inkling-backend','.c',both,'Graph ABI, execution and Inkling backend')
 mark(u/'bonsai','backend-cold model-host','.c',both,'Bonsai session and model host')
-mark(u/'common','probability-pipeline','.c',both,'Probability platform adapter')
+mark(u/'common','probability-platform','.c',both,'Probability platform adapter')
 mark(Path('integration/m1/host'),'goose_host','.c',both,'Goose ABI, platform and quantization helpers')
 mark(g/'src','ggml','.c',both,'GGML tensor and graph core')
 images=d/'images'
