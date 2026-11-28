@@ -81,7 +81,8 @@ sed -n '/^extern "fg186q_\(ld_\|dp4a\)/p;
 sed '/^fn main()/,$d; s/^fn fg178q_quant(/export fn fg178q_quant(/;
     s/\bFastDiv\b/MmvqFastDiv/g; s/\b\(ensure\|red_max\|red_sum\)\b/mmvq_pack_\1/g' \
     "$ROOT/goose/cuda/goose-cuda-quantize/device.goose" > "$OUT/mmvq-pack.goose"
-cp "$ROOT/goose/cuda/standalone-mmvq.goose" "$OUT/mmvq.goose"
+cat "$ROOT/goose/cuda/standalone-mmvq-pack-launch.goose" >> "$OUT/mmvq-pack.goose"
+cat "$ROOT/goose/cuda/"standalone-mmvq{,-launch}.goose > "$OUT/mmvq.goose"
 cp "$ROOT/goose/cuda/standalone-dense-mma.goose" "$OUT/dense-mma.goose"
 sed '/^fn main()/,$d' "$ROOT/goose/cuda/goose-cuda-flash-attention/value-prefill-device.goose" > "$OUT/flash-mma.goose"
 cat "$ROOT/goose/cuda/standalone-flash-mma.goose" >> "$OUT/flash-mma.goose"
@@ -96,6 +97,7 @@ sed '/^fn fattn_vec_2(/,/^fn combine(/ { /^fn combine(/!d; }
     s/\b\(negmax\|absf\|wr_sum\|wr_max\|alibi_slope\|q4_word\|vec_dot_kq4\|dequant_v4\|quant_q8\|quant_q8_head\|pack_query\|fattn_vec_1\|combine\)\b/fv_\1/g
     s/\bV4\b/VecFlash4/g' \
     "$ROOT/goose/cuda/goose-cuda-flash-attention/vector-device.goose" > "$OUT/flash-vec.goose"
+cat "$ROOT/goose/cuda/standalone-flash-vec-launch.goose" >> "$OUT/flash-vec.goose"
 sed '/^fn load_mask(/,$d; s/^fn load_kv(/export fn fg_flash_load_kv(/' \
     "$ROOT/goose/cuda/goose-cuda-flash-attention/loaders-device.goose" > "$OUT/flash-load.goose"
 cp "$ROOT/goose/cuda/standalone-flash-stage.goose" "$OUT/flash-stage.goose"
@@ -106,6 +108,9 @@ sed -n '/^fn vsub4(/,/^}/p; /^fn q6_mmq_bytes(/,/^}/p' \
     "$ROOT/goose/cuda/goose-mmq-load-q6k/device.goose" >> "$OUT/mmq.goose"
 cat "$ROOT/goose/cuda/standalone-mmq-launch.goose" >> "$OUT/mmq.goose"
 cat "$ROOT/goose/cuda/standalone-mmq-pack-launch.goose" >> "$OUT/mmq-quant.goose"
+for module in gdn gdn-mma q4-set-rows flash-mma; do
+    cat "$ROOT/goose/cuda/standalone-$module-launch.goose" >> "$OUT/$module.goose"
+done
 for module in q4k q6k matmul q4-attention gdn gdn-mma q4-set-rows vector rms-reference rope ssm-conv routing transform fwht moe-weighted mmq-quant mmq mmvq-q4 mmvq-q6 mmvq-pack mmvq dense-mma flash-mma flash-vec flash-load flash-stage; do
     "$GOOSE" --standalone -o "$OUT/$module.c" --header "$OUT/$module.h" "$OUT/$module.goose"
     python3 - "$OUT" "$module" <<'PY'

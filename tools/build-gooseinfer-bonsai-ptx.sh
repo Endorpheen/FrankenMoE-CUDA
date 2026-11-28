@@ -25,17 +25,18 @@ for source in "$source_dir"/goose/*.goose "$root/goose/cuda/standalone-matmul.go
     module=$(basename -- "$source" .goose)
     module=${module#standalone-}
     if [[ -d $overlay && -f $overlay/$module.goose ]]; then source="$overlay/$module.goose"; fi
-    if [[ "$module" == mmq ]]; then
-        cat "$source" "$root/goose/cuda/standalone-mmq-launch.goose" > "$scratch/mmq.goose"
-        source="$scratch/mmq.goose"
-    fi
-    if [[ "$module" == mmq-quant ]]; then
-        cat "$source" "$root/goose/cuda/standalone-mmq-pack-launch.goose" > "$scratch/mmq-quant.goose"
-        source="$scratch/mmq-quant.goose"
-    fi
-    if [[ "$module" == ssm-conv ]]; then
-        cat "$source" "$root/goose/cuda/standalone-ssm-launch.goose" > "$scratch/ssm-conv.goose"
-        source="$scratch/ssm-conv.goose"
+    case "$module" in
+        mmq|mmq-quant|mmvq|mmvq-pack|ssm-conv|gdn|gdn-mma|q4-set-rows|flash-mma|flash-vec)
+            launcher=$module
+            if [[ "$module" == mmq-quant ]]; then launcher=mmq-pack; fi
+            if [[ "$module" == ssm-conv ]]; then launcher=ssm; fi
+            cat "$source" "$root/goose/cuda/standalone-$launcher-launch.goose" > "$scratch/$module.goose"
+            source="$scratch/$module.goose"
+            ;;
+    esac
+    if [[ ${GOOSE_APEX_UP_GATE_IMAGE:-0} == 1 && "$module" == mmvq-q4 ]]; then
+        cat "$source" "$root/goose/cuda/apex-up-gate.goose" > "$scratch/$module.goose"
+        source="$scratch/$module.goose"
     fi
     "$goose" --standalone --emit-provenance "$scratch/$module.c" "$source"
     python3 "$source_dir/frankenmoe-fragment.py" "$scratch" "$module"
@@ -54,6 +55,9 @@ if [[ -d $overlay ]]; then
 elif [[ -n $overlay ]]; then
     patch --batch --forward --silent "$scratch/flash-vec-device.h" < "$overlay"
 fi
+
+if [[ ${overlay##*/} == rms-onevec ]]; then defines+=(-DGOOSE_APEX_RMS_ONEVEC_IMAGE); fi
+if [[ ${GOOSE_APEX_UP_GATE_IMAGE:-0} == 1 ]]; then defines+=(-DGOOSE_APEX_UP_GATE_IMAGE); fi
 
 "${CLANG:-clang-18}" -target nvptx64-nvidia-cuda -nocudalib -O2 -x cl -cl-std=CL1.2 \
     -include "$source_dir/device-prelude.cl" -I"$scratch" -I"$standalone" -S -Xclang -target-cpu \

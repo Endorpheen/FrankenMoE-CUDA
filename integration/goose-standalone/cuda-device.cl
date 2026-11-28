@@ -550,8 +550,7 @@ __kernel void goose_gated_delta_net(gdn_launch_packet arguments) {
     __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(sequence));
     __asm__("mov.u32 %0, %%ctaid.z;" : "=r"(segment));
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
-    const uint32_t effective = (uint32_t) packet[43];
-    gdn_g((int64_t) packet, head, sequence, segment, lane % effective, lane / effective);
+    gdn_launch_g((int64_t)packet, head, sequence, segment, lane, false);
 }
 
 __kernel void goose_gdn_decode(gdn_launch_packet arguments) {
@@ -560,7 +559,7 @@ __kernel void goose_gdn_decode(gdn_launch_packet arguments) {
     __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(sequence));
     __asm__("mov.u32 %0, %%ctaid.z;" : "=r"(segment));
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
-    gdn_decode_g((int64_t) arguments.words, head, sequence, segment, lane % 32, lane / 32);
+    gdn_launch_g((int64_t)arguments.words, head, sequence, segment, lane, true);
 }
 
 static float fg176r_ld_f32(uint64_t src, uint64_t at) {
@@ -594,11 +593,7 @@ __kernel void goose_set_q4_rows(__global uint8_t * src, __global uint8_t * dst,
     uint32_t group, lane;
     __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(group));
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
-    const uint64_t work = (uint64_t) group * 128 + lane;
-    if (work >= tasks) return;
-    const uint64_t row = work / blocks;
-    const uint64_t src_at = row * stride + (work % blocks) * 128;
-    fg176r_quant_q4_0_g((uint64_t) src, src_at, (uint64_t) dst, work * 18);
+    q4_set_rows_launch_g((uint64_t)src, (uint64_t)dst, stride, blocks, tasks, group, lane);
 }
 
 static float fg_vector_log(float value) {
@@ -1019,9 +1014,39 @@ static void fg_cuda_cp16(uint64_t dst, uint64_t src) {
 static void fg_cuda_cpwait(void) { __asm__ volatile("cp.async.wait_all;" ::: "memory"); }
 
 #include "cuda-mmq.cl"
+#if defined(GOOSE_APEX_UP_GATE_IMAGE)
+static uint64_t apex_up_gate_word(uint64_t jobs, int64_t index) {
+    return ((__global const uint64_t *)jobs)[index];
+}
+#endif
 #include "cuda-mmvq.cl"
 #include "cuda-dense-mma.cl"
 #include "cuda-gdn-mma.cl"
 #include "cuda-flash-mma.cl"
 #include "cuda-flash-vec.cl"
+#endif
+
+#if defined(GOOSE_APEX_UP_GATE_IMAGE)
+__kernel void goose_mmvq_up_gate_glu(__global const uint8_t *weights,
+    __global const uint8_t *packed, __global uint8_t *output,
+    __global const uint64_t *up_jobs, __global const uint64_t *gate_jobs,
+    uint64_t stride, int32_t extent) {
+    uint32_t row, route, thread;
+    __local float sums[192];
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(row));
+    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(route));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
+    apex_up_gate_launch_g((uint64_t)weights,(uint64_t)packed,(uint64_t)output,(uint64_t)up_jobs,
+        (uint64_t)gate_jobs,stride,extent,row,route,thread,(uint64_t)sums);
+}
+
+__kernel void goose_mmvq_shared_up_gate_glu(__global const uint8_t *weights_up, __global const uint8_t *weights_gate,
+    __global const uint8_t *packed, __global uint8_t *output, uint64_t stride, int32_t extent) {
+    uint32_t row, thread;
+    __local float sums[192];
+    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(row));
+    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
+    apex_up_gate_reduce_g((uint64_t)weights_up + row * stride,(uint64_t)weights_gate + row * stride,
+        (uint64_t)packed,(uint64_t)output + (uint64_t)row * 4,extent,thread,(uint64_t)sums);
+}
 #endif

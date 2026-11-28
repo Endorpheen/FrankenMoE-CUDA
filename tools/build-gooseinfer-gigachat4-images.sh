@@ -14,18 +14,15 @@ mkdir -p -- "$out"
 for source in "$src"/goose/*.goose "$root/goose/cuda/standalone-matmul.goose"; do
     module=$(basename -- "$source" .goose)
     module=${module#standalone-}
-    if [[ "$module" == mmq ]]; then
-        cat "$source" "$root/goose/cuda/standalone-mmq-launch.goose" > "$scratch/mmq.goose"
-        source="$scratch/mmq.goose"
-    fi
-    if [[ "$module" == mmq-quant ]]; then
-        cat "$source" "$root/goose/cuda/standalone-mmq-pack-launch.goose" > "$scratch/mmq-quant.goose"
-        source="$scratch/mmq-quant.goose"
-    fi
-    if [[ "$module" == ssm-conv ]]; then
-        cat "$source" "$root/goose/cuda/standalone-ssm-launch.goose" > "$scratch/ssm-conv.goose"
-        source="$scratch/ssm-conv.goose"
-    fi
+    case "$module" in
+        mmq|mmq-quant|mmvq|mmvq-pack|ssm-conv|gdn|gdn-mma|q4-set-rows|flash-mma|flash-vec)
+            launcher=$module
+            if [[ "$module" == mmq-quant ]]; then launcher=mmq-pack; fi
+            if [[ "$module" == ssm-conv ]]; then launcher=ssm; fi
+            cat "$source" "$root/goose/cuda/standalone-$launcher-launch.goose" > "$scratch/$module.goose"
+            source="$scratch/$module.goose"
+            ;;
+    esac
     "$goose" --standalone -o "$scratch/$module.c" --header "$scratch/$module.h" "$source"
     python3 "$src/extract-device.py" "$scratch" "$module"
 done

@@ -128,11 +128,7 @@ __kernel void goose_flash_fixup_uniform(__global float * out, __global const flo
     __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(query));
     __asm__("mov.u32 %0, %%ctaid.z;" : "=r"(head));
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
-    const int32_t columns = queries == 4 ? 4 : 8;
-    const int64_t per_head = (queries + columns - 1l) / columns;
-    const int32_t groups = heads / 8;
-    flash_fixup_uniform_g((uint64_t) out, (uint64_t) fix, queries, heads, groups, workers, 8,
-        blocks_per_tile, per_head * groups, per_head, per_head, columns, 8, tile, query, head, lane);
+    flash_launch_uniform_g((uint64_t)out, (uint64_t)fix, queries, heads, workers, blocks_per_tile, tile, query, head, lane);
 }
 
 __kernel void goose_flash_fixup_general(__global float * out, __global const float * fix,
@@ -143,10 +139,5 @@ __kernel void goose_flash_fixup_general(__global float * out, __global const flo
     __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(query));
     __asm__("mov.u32 %0, %%ctaid.z;" : "=r"(head));
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
-    const int64_t key_tiles = (keys + 31l) / 32;
-    const int32_t columns = queries == 4 ? 4 : 8;
-    const int64_t per_head = ((queries + columns - 1l) / columns) * key_tiles;
-    const int64_t work = per_head * (heads / 8);
-    flash_fixup_general_g((uint64_t) out, (uint64_t) fix, queries, heads, 8, (int32_t) work,
-        work, per_head, per_head, key_tiles, columns, 8, worker, query, head, workers, lane);
+    flash_launch_general_g((uint64_t)out, (uint64_t)fix, queries, heads, keys, worker, query, head, workers, lane);
 }

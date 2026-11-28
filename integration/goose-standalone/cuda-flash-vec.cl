@@ -23,6 +23,10 @@ static void fg175v_sm_st_f32(uint64_t p, uint64_t i, float v) { ((__local float 
 static int32_t fg175v_sm_i32(uint64_t p, uint64_t i) { return ((__local int32_t *) p)[i]; }
 static void fg175v_sm_st_i32(uint64_t p, uint64_t i, int32_t v) { ((__local int32_t *) p)[i] = v; }
 
+static int64_t flash_vector_plan_word(uint64_t address, int32_t index) {
+    return ((__global const int64_t *) address)[index];
+}
+
 #include "flash-vec-device.h"
 
 __kernel void goose_flash_vec_pack_query(__global const uint8_t * q, __global uint8_t * packed,
@@ -31,8 +35,7 @@ __kernel void goose_flash_vec_pack_query(__global const uint8_t * q, __global ui
     __local uint32_t shared[80];
     __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(head));
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(lane));
-    fv_pack_query_g((uint64_t) q + (uint64_t) head * cfg[8], (uint64_t) packed + (uint64_t) head * 320,
-        scale, lane, (uint64_t) shared);
+    flash_vector_launch_pack_g((uint64_t) q, (uint64_t) packed, (uint64_t) cfg, scale, head, lane, (uint64_t) shared);
 }
 
 #define FLASH_VEC_Q4(name, mode) \
@@ -45,11 +48,8 @@ __kernel void name(__global const uint8_t * q, __global const uint8_t * k, \
     __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(tile)); \
     __asm__("mov.u32 %0, %%nctaid.y;" : "=r"(tiles)); \
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread)); \
-    fv_fattn_vec_1_g((uint64_t) q, (uint64_t) k, (uint64_t) v, 0, 0, 0, \
-        (uint64_t) parts, (uint64_t) meta, scale, 0.0f, 0.0f, 0.0f, 0, 0.0f, \
-        256, 1, (int32_t) cfg[3], 1, cfg[7], cfg[8], 0, 256, keys, (int32_t) cfg[4], 1, \
-        cfg[9], cfg[10], 0, cfg[11], cfg[12], 0, 1, 1, 1, 0, 0, 0, \
-        mode, 0, tile, head, 1, tiles, thread % 32, thread / 32, (uint64_t) shared); \
+    flash_vector_launch_q4_g((uint64_t) q, (uint64_t) k, (uint64_t) v, (uint64_t) parts, \
+        (uint64_t) meta, (uint64_t) cfg, keys, scale, mode, tile, head, tiles, thread, (uint64_t) shared); \
 }
 
 FLASH_VEC_Q4(goose_flash_vec_q4, 1)
