@@ -16,7 +16,6 @@ _Static_assert(offsetof(struct prefill_token, prelude) == 9216 && offsetof(struc
     offsetof(struct prefill_token, prelude_count) == 285700 && offsetof(struct prefill_token, bank_count) == 285704,
     "Goose prefill repeat input ABI");
 
-extern struct ggml_tensor *fg_i2_host_rows_input(struct ggml_context *ctx, float *rows, int width, int count);
 struct prefill_workspace {
     float inputs[3][max_prefill_batch][model_width];
     float projections[max_prefill_batch * 8664];
@@ -33,8 +32,6 @@ struct prefill_workspace {
 };
 
 _Static_assert(sizeof(struct prefill_token) == 285708, "Goose prefill token stride ABI");
-extern void fg_i2_prefill_control(struct decoder *d, const int64_t *aux, int which, int count,
-    struct prefill_token *tokens, float *current, struct prefill_workspace *scratch);
 _Static_assert(offsetof(struct prefill_workspace, projections) == 113246208 &&
     offsetof(struct prefill_workspace, attention) == 255197184 &&
     offsetof(struct prefill_workspace, control_input) == 418775048 &&
@@ -103,8 +100,3 @@ _Static_assert(sizeof(struct prefill_workspace) == 646316040 &&
     offsetof(struct prefill_workspace, linear_storage) == 343277576 &&
     offsetof(struct prefill_token, current) == 0 && sizeof(struct i2_prefill_team) <= 296 &&
     _Alignof(struct i2_prefill_team) <= 8, "Goose prefill driver ABI");
-
-void fg_i2_prefill_set_readback(float *output, size_t elements) {
-    prefill_direct_output = output;
-    prefill_direct_output_size = elements;
-}

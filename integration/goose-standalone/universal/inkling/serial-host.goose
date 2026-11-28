@@ -72,7 +72,6 @@ export fn fg_i2_backend_token(decoder: u64, token: i32, position: i32, logits: b
 }
 
 
-extern fn fg_i2_softcap_logits(logits: I2DraftSpan);
 
 export fn fg_i2_read_token_logits(decoder: u64, absolute: i32, current: u64, history: u64, count: i32, decode: bool) {
     var normalized: f32[2304];
@@ -81,11 +80,11 @@ export fn fg_i2_read_token_logits(decoder: u64, absolute: i32, current: u64, his
     let queries = fg_i2_host_coefficients(decoder, i2d_read(global_weights + 32) as! i64, 2304);
     fg_i2_host_mix(history, count, current, i2d_span(queries, 2304), 1, output.address);
     let gains = fg_i2_host_coefficients(decoder, i2d_read(global_weights + 24) as! i64, 2304);
-    if fg_i2_host_measured_rms(output, i2d_span(gains, 2304), 0.000001, output) != 2304 { i2_embedding_abort(); }
+    if inkling_row_major_i2_rms_gain(output, i2d_span(gains, 2304), 0.000001, output) != 2304 { i2_embedding_abort(); }
     let logits = decoder + I2D_LOGITS;
     fg_i2_host_project(decoder, i2d_read(global_weights + 16) as! i64, output.address, 2304, logits, 201024);
     let handled = decode && fg_i2_parallel_logits(decoder, logits);
-    if !handled { fg_i2_softcap_logits(i2d_span(logits, 201024)); }
+    if !handled { assert(inkling_row_major_i2_text_logits(i2d_span(logits, 201024), 200058, 30.0) == 200058); }
     i2_check_state("logits", absolute, logits, 201024);
     if !handled { i2_check_finite(logits, 200058); }
 }
@@ -107,14 +106,14 @@ fn fg_i2_prepare_layer_inputs(decoder: u64, aux: u64, sliding: bool, current: u6
     }
 }
 
-extern fn fg_i2_measured_postconv(input: I2DraftSpan, weight: I2DraftSpan, history: I2DraftSpan, output: I2DraftSpan) -> i64;
+extern fn inkling_row_major_i2_postconv_token(input: I2DraftSpan, weight: I2DraftSpan, history: I2DraftSpan, output: I2DraftSpan) -> i64;
 extern fn fg_cuda_host_view_f32(address: u64, length: i64) -> f32[:];
 
 fn fg_i2_finish_attention(decoder: u64, aux: u64, physical: i32, slot: i32, current: u64,
     history: u64, count: i32, projection: u64, next: u64, ffn: u64) -> i32 {
     let weights = fg_i2_host_coefficients(decoder, i2d_read(aux + 16) as! i64, 9216);
     let convolution = i2d_read(decoder + I2D_HA) + (slot as! u64) * 27648;
-    assert(fg_i2_measured_postconv(i2d_span(projection, 2304), i2d_span(weights, 9216),
+    assert(inkling_row_major_i2_postconv_token(i2d_span(projection, 2304), i2d_span(weights, 9216),
         i2d_span(convolution, 6912), i2d_span(next, 2304)) == 2304);
     var count_after = count;
     if physical % 6 == 0 {
@@ -148,7 +147,7 @@ fn i2_run_host_moe(decoder: u64, core: u64, ffn: u64, count: i32, projection: u6
     let gain = fg_i2_host_coefficients(decoder, i2_host_aux(core, 9), 2304);
     for index in count as! i64 {
         let row = i2d_span(ffn + (index as! u64) * 9216, 2304);
-        assert(fg_i2_host_measured_rms(row, i2d_span(gain, 2304), 0.000001, row) == 2304);
+        assert(inkling_row_major_i2_rms_gain(row, i2d_span(gain, 2304), 0.000001, row) == 2304);
     }
     let ctx = fg_i2_host_context();
     let order: i32[4] = [5, 8, 6, 7];
@@ -156,7 +155,7 @@ fn i2_run_host_moe(decoder: u64, core: u64, ffn: u64, count: i32, projection: u6
     var nodes: u64[8] = [0; 8];
     for index in 4 { weights[index] = fg_i2_host_weight(ctx, decoder, i2_host_aux(core, order[index])); }
     let tensor = fg_i2_host_rows_input(ctx, ffn, 2304, count);
-    let output = fg_i2_host_measured_moe(ctx as! i64, tensor as! i64,
+    let output = i2_moe_ffn(ctx as! i64, tensor as! i64,
         i2d_span(i2d_address(unsafe_c_address<c_ptr<const void>>(weights[0])), 4), i2d_span(work, 16),
         i2d_span(i2d_address(unsafe_c_address<c_ptr<const void>>(nodes[0])), 8));
     assert(output != 0);
@@ -165,7 +164,7 @@ fn i2_run_host_moe(decoder: u64, core: u64, ffn: u64, count: i32, projection: u6
 }
 
 fn i2_finish_host_moe(projection: u64, weights_conv: u64, history: u64, next: u64, current: u64) {
-    assert(fg_i2_measured_postconv(i2d_span(projection, 2304), i2d_span(weights_conv, 9216),
+    assert(inkling_row_major_i2_postconv_token(i2d_span(projection, 2304), i2d_span(weights_conv, 9216),
         i2d_span(history, 6912), i2d_span(current, 2304)) == 2304);
     let residual = fg_cuda_host_view_f32(next, 2304);
     var values = fg_cuda_host_view_f32(current, 2304);
@@ -227,7 +226,7 @@ export fn i2_serial_layer(decoder: u64, physical: i32, slot: i32, absolute: i32,
             let gain_index: i32 = if sliding { 11 } else { 12 + (index as! i32) };
             let gain = fg_i2_host_coefficients(decoder, i2_host_aux(aux, gain_index), 2304);
             let row = i2d_span(input + offset, 2304);
-            assert(fg_i2_host_measured_rms(row, i2d_span(gain, 2304), 0.000001, row) == 2304);
+            assert(inkling_row_major_i2_rms_gain(row, i2d_span(gain, 2304), 0.000001, row) == 2304);
         }
         fg_i2_serial_native_attention(decoder, core, aux, slot, absolute, sliding, input, proj, scratch);
     }
@@ -242,7 +241,7 @@ export fn i2_serial_layer(decoder: u64, physical: i32, slot: i32, absolute: i32,
     return result;
 }
 
-extern fn fg_i2_measured_attention_projections(ctx: i64, input: I2DraftSpan, weights: I2DraftSpan, sliding: bool,
+extern fn i2_attention_projections(ctx: i64, input: I2DraftSpan, weights: I2DraftSpan, sliding: bool,
     work: I2DraftSpan, output: I2DraftSpan) -> i64;
 
 export fn fg_i2_project_attention_inputs(decoder: u64, core: u64, aux: u64, sliding: bool,
@@ -260,7 +259,7 @@ export fn fg_i2_project_attention_inputs(decoder: u64, core: u64, aux: u64, slid
     let packed: i32 = if sliding { 8600 } else { 8664 };
     for index in matrices as! i64 { weights[index] = fg_i2_host_weight(ctx, decoder, ids[index]); }
     let output = i2d_address(unsafe_c_address<c_ptr<const void>>(outputs[0]));
-    assert(fg_i2_measured_attention_projections(ctx as! i64,
+    assert(i2_attention_projections(ctx as! i64,
         i2d_span(i2d_address(unsafe_c_address<c_ptr<const void>>(inputs[0])), 3),
         i2d_span(i2d_address(unsafe_c_address<c_ptr<const void>>(weights[0])), 8),
         sliding, i2d_span(work, 16), i2d_span(output, 8)) == matrices as! i64);
@@ -351,7 +350,9 @@ export fn fg_i2_native_finish(args: u64, count: i32, output: u64) {
     }
 }
 
-extern fn fg_i2_measure_native_attention(batch: u64, inputs: u64, output: u64);
+extern fn inkling_attention_execute(batch: u64) -> i32;
+extern fn inkling_attention_execute_project(batch: u64, output: u64) -> i32;
+extern fn inkling_attention_execute_resident(batch: u64, inputs: u64, output: u64) -> i32;
 
 fn i2_native_batch(decoder: u64, aux: u64, slot: i32, begin: i32, count: i32, sliding: bool,
     args: u64, output: u64, batch: u64) {
@@ -387,7 +388,7 @@ export fn fg_i2_native_submit(decoder: u64, args: u64, aux: u64, slot: i32, begi
     var batch: u64[10] = [0; 10];
     let packet = i2d_address(unsafe_c_address<c_ptr<const void>>(batch[0]));
     i2_native_batch(decoder, aux, slot, begin, count, sliding, args, output, packet);
-    fg_i2_measure_native_attention(packet, 0, 0);
+    assert(inkling_attention_execute(packet) == 0);
     fg_i2_native_finish(args, count, output);
 }
 
@@ -399,7 +400,7 @@ export fn fg_i2_native_project(decoder: u64, args: u64, aux: u64, slot: i32, beg
     let projected = i2d_address(unsafe_c_address<c_ptr<const void>>(projection[0]));
     i2_native_batch(decoder, aux, slot, begin, count, sliding, args, output, packet);
     i2_native_projection(decoder, weight_id, i2d_read(args + 40), projected);
-    fg_i2_measure_native_attention(packet, 0, projected);
+    assert(inkling_attention_execute_project(packet, projected) == 0);
 }
 
 export fn fg_i2_host_bind_attention(decoder: u64, core: u64, aux: u64, slot: i32, begin: i32, count: i32,
@@ -430,7 +431,7 @@ export fn fg_i2_native_resident(decoder: u64, core: u64, aux: u64, slot: i32, be
     i2d_set(call + 80, q);
     i2d_set(call + 88, k);
     i2d_set(call + 96, v);
-    fg_i2_measure_native_attention(call, call + 80, call + 200);
+    assert(inkling_attention_execute_resident(call, call + 80, call + 200) == 0);
 }
 
 export fn prefill_projection(decoder: u64, id: i64, input: u64, width: i32, output: u64, rows: i32, count: i32) {
@@ -508,7 +509,7 @@ export fn fg_i2_prefill_control(decoder: u64, aux: u64, which: i32, count: i32, 
         let row = index as! u64;
         let offset = row * 9216;
         let output = i2d_span(current + offset, 2304);
-        assert(fg_i2_host_measured_blend(output, i2d_span(messages + row * 285708, 2304),
+        assert(inkling_row_major_i2_loop_blend(output, i2d_span(messages + row * 285708, 2304),
             i2d_span(gain + offset, 2304), i2d_span(forget + offset, 2304), output) == 2304);
     }
 }
@@ -520,7 +521,7 @@ export fn fg_i2_prefill_postconv(decoder: u64, aux: u64, slot: i32, count: i32, 
     let history = i2d_span(i2d_read(decoder + I2D_HA) + (slot as! u64) * 27648, 6912);
     for index in count as! i64 {
         let offset = (index as! u64) * 9216;
-        assert(fg_i2_measured_postconv(i2d_span(input + offset, 2304), weight, history,
+        assert(inkling_row_major_i2_postconv_token(i2d_span(input + offset, 2304), weight, history,
             i2d_span(output + offset, 2304)) == 2304);
     }
 }
@@ -621,7 +622,6 @@ export fn i2_prefill_read_boundary(work: u64) {
 
 extern "calloc" fn i2_prefill_calloc(count: u64, bytes: u64) -> c_ptr<void>;
 extern fn fg_cuda_inkling_prefill_readback(bytes: u64) -> u64;
-extern fn fg_i2_prefill_set_readback(output: u64, elements: u64);
 extern fn inkling_arena_window(enabled: bool, begin: i32);
 extern fn inkling_prelude_clear();
 extern fn inkling_prefill_final_rows(current: u64, prelude: u64) -> bool;
@@ -652,7 +652,7 @@ fn i2_prefill_bind_readback(scratch: u64, count: i32) -> bool {
         if pinned != 0 { output = pinned; }
     }
     i2d_set(scratch + 343277568, output);
-    if direct { fg_i2_prefill_set_readback(output, elements); }
+    if direct { i2_prefill_set_readback(output, elements); }
     return direct;
 }
 
@@ -726,7 +726,7 @@ export fn fg_i2_backend_prefill(decoder: u64, ids: u64, begin: i32, count: i32, 
             index += 1;
         }
     }
-    fg_i2_prefill_set_readback(0, 0);
+    i2_prefill_set_readback(0, 0);
     i2d_free(unsafe_c_ptr<c_ptr<void>>(scratch));
     i2d_free(allocation);
 }
@@ -762,7 +762,6 @@ export fn i2_prefill_run_visit(work: u64, index: i64, device: I2DraftSpan, retai
     }
 }
 
-extern fn fg_i2_swap_direct_output(output: u64) -> u64;
 extern fn fg_cuda_i2_prefill_conv(weights: u64, history: u64);
 extern fn inkling_arena_residual_open(output: u64);
 extern fn inkling_arena_depthmix_reads() -> u32;
@@ -781,7 +780,7 @@ export fn fg_i2_prefill_resident_attention(decoder: u64, core: u64, aux: u64,
     if device_postconv {
         let history = i2d_read(decoder + I2D_HA) + (slot as! u64) * 27648;
         fg_cuda_i2_prefill_conv(i2_native_weight(decoder, aux, 2, 9216).address, history);
-        saved_output = fg_i2_swap_direct_output(output);
+        saved_output = i2_swap_direct_output(output);
         if direct_depthmix {
             if !prune_host { i2_poison_prefill_rows(output, count); }
             inkling_arena_residual_open(output);
@@ -812,7 +811,7 @@ export fn fg_i2_prefill_resident_attention(decoder: u64, core: u64, aux: u64,
     }
     if device_postconv {
         fg_cuda_i2_prefill_conv(0, 0);
-        fg_i2_swap_direct_output(saved_output);
+        i2_swap_direct_output(saved_output);
     }
 }
 
@@ -827,7 +826,7 @@ export fn fg_i2_prefill_native_attention(decoder: u64, core: u64, aux: u64, toke
         let gain = i2_native_weight(decoder, aux, gain_index, 2304);
         for index in count as! i64 {
             let row = i2d_span(input + (index as! u64) * 9216, 2304);
-            assert(fg_i2_host_measured_rms(row, gain, 0.000001, row) == 2304);
+            assert(inkling_row_major_i2_rms_gain(row, gain, 0.000001, row) == 2304);
         }
     }
     if fg_i2_device_attention_input() {
@@ -866,7 +865,6 @@ export fn fg_i2_prepare_device_mix(decoder: u64, aux: u64, input: u64, count: i3
     }
 }
 
-extern fn fg_i2_direct_output_active() -> bool;
 
 fn i2_prefill_flag(address: u64, value: bool) {
     i2d_set_byte(address, if value { 1 } else { 0 });
@@ -891,7 +889,7 @@ fn fg_i2_prefill_layer(decoder: u64, tokens: u64, scratch: u64, count: i32, begi
     let message_table = i2d_address(unsafe_c_address<c_ptr<const void>>(messages[0]));
     let use_messages = attention && pass > 0;
     let direct_mix = count == 4096 && device_postconv && fg_i2_host_cached_history() &&
-        fg_i2_resident_moe() && fg_i2_direct_output_active();
+        fg_i2_resident_moe() && i2d_read(fg_i2_readback_state()) != 0;
     let shared = attention && fg_i2_host_share_attention(sliding, aux);
     let sliding_mix = !i2d_env_is("I2_SLIDING_DEVICE_DEPTHMIX", 48);
     let mixed_path = if sliding { shared && sliding_mix } else { !i2d_env_is("I2_FULL_DEVICE_DEPTHMIX", 48) };

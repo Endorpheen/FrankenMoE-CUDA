@@ -9,8 +9,26 @@ extern fn fg143_graph_nodes(graph: u64) -> i64;
 extern fn fg_standalone_graph_plan_alloc(graph: u64, output: u64) -> u64;
 extern fn fg_standalone_graph_alloc(graph: u64) -> u64;
 extern fn fg_standalone_graph_compute(graph: u64) -> i32;
-extern fn fg_i2_measure_graph_plan(plan: u64) -> i32;
-extern fn fg_i2_readback_matches(output: u64, elements: u64) -> bool;
+extern fn fg_standalone_graph_plan_compute(plan: u64) -> i32;
+extern fn fg_i2_readback_state() -> u64;
+
+fn fg_i2_readback_matches(output: u64, elements: u64) -> bool {
+    let state = fg_i2_readback_state();
+    return output == i2d_read(state) && elements == i2d_read(state + 8);
+}
+
+fn i2_prefill_set_readback(output: u64, elements: u64) {
+    let state = fg_i2_readback_state();
+    i2d_set(state, output);
+    i2d_set(state + 8, elements);
+}
+
+fn i2_swap_direct_output(output: u64) -> u64 {
+    let state = fg_i2_readback_state();
+    let previous = i2d_read(state);
+    if previous != 0 { i2d_set(state, output); }
+    return previous;
+}
 
 fn fg_i2_host_context() -> u64 {
     let ctx = ggml_init(InklingArenaParams {size: 2097152, buffer: 0, no_alloc: true});
@@ -40,7 +58,7 @@ fn i2_evaluate(ctx: u64, nodes: u64, count: i32, output: u64, size: i32) {
     var plan: u64 = 0;
     if fg_i2_host_resident_plan() && count == 1 && fg143_graph_nodes(graph) > 2 {
         plan = fg_standalone_graph_plan_alloc(graph, first);
-        assert(plan != 0 && fg_i2_measure_graph_plan(plan) == 0);
+        assert(plan != 0 && fg_standalone_graph_plan_compute(plan) == 0);
     } else {
         storage = fg_standalone_graph_alloc(graph);
         assert(storage != 0 && fg_standalone_graph_compute(graph) == 0);
@@ -90,6 +108,6 @@ fn fg_i2_host_execute_entry(entry: u64, output: u64) {
         i2d_set(entry + 8, plan);
         assert(plan != 0);
     }
-    assert(fg_i2_measure_graph_plan(plan) == 0);
+    assert(fg_standalone_graph_plan_compute(plan) == 0);
     i2d_transfer(output, i2d_read(tensor + 248), 9216);
 }

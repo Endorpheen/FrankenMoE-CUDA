@@ -1,15 +1,4 @@
 #include "main.h"
-#ifdef I2_NUMERIC_MODULE
-int64_t inkling_row_major_i2_depth_mix(sl_f32 gs_export_arg0, int64_t gs_export_arg1, sl_f32 gs_export_arg2, sl_f32 gs_export_arg3, sl_f32 gs_export_arg4, sl_f32 gs_export_arg5);
-int64_t inkling_row_major_i2_loop_blend(sl_f32 gs_export_arg0, sl_f32 gs_export_arg1, sl_f32 gs_export_arg2, sl_f32 gs_export_arg3, sl_f32 gs_export_arg4);
-int64_t inkling_row_major_i2_rms_gain(sl_f32 gs_export_arg0, sl_f32 gs_export_arg1, float gs_export_arg2, sl_f32 gs_export_arg3);
-int64_t inkling_row_major_i2_postconv_token(sl_f32 gs_export_arg0, sl_f32 gs_export_arg1, sl_f32 gs_export_arg2, sl_f32 gs_export_arg3);
-int64_t inkling_row_major_i2_text_logits(sl_f32 gs_export_arg0, int64_t gs_export_arg1, float gs_export_arg2);
-#define I2_CALL(name) inkling_row_major_ ## name
-#else
-#define I2_CALL(name) name
-#endif
-
 #include "graph-execute.h"
 #include "ggml.h"
 
@@ -19,47 +8,12 @@ int64_t inkling_row_major_i2_text_logits(sl_f32 gs_export_arg0, int64_t gs_expor
 #include "bridge.h"
 #include "inkling-backend.h"
 
-#include <assert.h>
 #include <pthread.h>
 #include <stdint.h>
-#include <time.h>
 
-static double now(void);
-static _Thread_local double call_seconds[9];
-static _Thread_local unsigned call_count[9];
+static _Thread_local uint64_t prefill_readback[2];
 
-#define MEASURE(index, expression) ({ \
-    const double start = now(); \
-    __auto_type result = (expression); \
-    call_seconds[index] += now() - start; \
-    ++call_count[index]; \
-    result; \
-})
-#define i2_depth_mix(...) MEASURE(1, I2_CALL(i2_depth_mix)(__VA_ARGS__))
-#define i2_rms_gain(...) MEASURE(2, I2_CALL(i2_rms_gain)(__VA_ARGS__))
-#define i2_loop_blend(...) MEASURE(3, I2_CALL(i2_loop_blend)(__VA_ARGS__))
-#define i2_postconv_token(...) MEASURE(4, I2_CALL(i2_postconv_token)(__VA_ARGS__))
-#define i2_text_logits(...) MEASURE(5, I2_CALL(i2_text_logits)(__VA_ARGS__))
-#define i2_attention_projections(...) MEASURE(6, i2_attention_projections(__VA_ARGS__))
-#define i2_moe_ffn(...) MEASURE(7, i2_moe_ffn(__VA_ARGS__))
-
-static _Thread_local float *prefill_direct_output;
-static _Thread_local size_t prefill_direct_output_size;
-
-bool fg_i2_direct_output_active(void) { return prefill_direct_output != NULL; }
-
-float *fg_i2_swap_direct_output(float *output) {
-    float *old = prefill_direct_output;
-    if (old) prefill_direct_output = output;
-    return old;
-}
-bool fg_i2_readback_matches(float *output, size_t elements) {
-    return output == prefill_direct_output && elements == prefill_direct_output_size;
-}
-
-int32_t fg_i2_measure_graph_plan(struct fg_standalone_graph_plan *plan) {
-    return MEASURE(8, fg_standalone_graph_plan_compute(plan));
-}
+uint64_t fg_i2_readback_state(void) { return (uintptr_t)prefill_readback; }
 
 _Static_assert(offsetof(struct ggml_tensor, type) == 0 && offsetof(struct ggml_tensor, view_src) == 232,
     "Goose graph readback ABI");
@@ -103,36 +57,8 @@ struct decoder {
 
 #include "native-host.h"
 
-int64_t fg_i2_host_measured_rms(sl_f32 input, sl_f32 weight, float eps, sl_f32 out) {
-    return i2_rms_gain(input, weight, eps, out);
-}
-int64_t fg_i2_host_measured_depth(sl_f32 states, int64_t width, sl_f32 query, sl_f32 norm, sl_f32 prob, sl_f32 out) {
-    return i2_depth_mix(states, width, query, norm, prob, out);
-}
-int64_t fg_i2_host_measured_blend(sl_f32 current, sl_f32 message, sl_f32 gain, sl_f32 forget, sl_f32 out) {
-    return i2_loop_blend(current, message, gain, forget, out);
-}
-
 _Static_assert(offsetof(struct ggml_tensor, data) == 248 && GGML_TYPE_F32 == 0 &&
     GGML_UNARY_OP_TANH == 4, "Goose Inkling control graph ABI");
-
-int64_t fg_i2_host_measured_moe(int64_t ctx, int64_t input, sl_i64 weights, sl_i64 work, sl_i64 nodes) {
-    return i2_moe_ffn(ctx, input, weights, work, nodes);
-}
-
-void fg_i2_measure_native_attention(const struct inkling_attention_batch *batch,
-    const struct inkling_attention_input_projections *inputs, const struct inkling_attention_projection *output) {
-    const double start = now();
-    if (inputs) {
-        assert(inkling_attention_execute_resident(batch, inputs, output) == 0);
-    } else if (output) {
-        assert(inkling_attention_execute_project(batch, output) == 0);
-    } else {
-        assert(inkling_attention_execute(batch) == 0);
-    }
-    call_seconds[0] += now() - start;
-    ++call_count[0];
-}
 
 _Static_assert(offsetof(struct decoder, decode_attention) == 887280 &&
     offsetof(struct decoder, decode_moe) == 904944 && sizeof(struct inkling_decode_graph) == 368 &&
@@ -153,33 +79,8 @@ _Static_assert(offsetof(struct inkling_decode_graph, bridge) == 312 && sizeof(st
     offsetof(struct inkling_bridge, add_residual) == 45 && INKLING_BRIDGE_GRAPH == 0x49324252 &&
     INKLING_BRIDGE_ROWS == 11, "Goose Inkling joined bridge ABI");
 
-int64_t fg_i2_measured_postconv(sl_f32 input, sl_f32 weight, sl_f32 history, sl_f32 output) {
-    return i2_postconv_token(input, weight, history, output);
-}
-
-_Static_assert(offsetof(struct decoder, hf) == 887144, "Goose serial MoE history ABI");
-
-int64_t fg_i2_measured_attention_projections(int64_t ctx, sl_i64 input, sl_i64 weights, bool sliding,
-    sl_i64 work, sl_i64 output) {
-    return i2_attention_projections(ctx, input, weights, sliding, work, output);
-}
-
-void fg_i2_softcap_logits(sl_f32 logits) {
-    assert(i2_text_logits(logits, vocabulary, 30.0f) == vocabulary);
-}
-
-_Static_assert(offsetof(struct decoder, visits) == 81456 && logical == 48 && model_width == 2304,
-    "Goose serial token ABI");
-
 _Static_assert(GGML_TYPE_Q8_0 == 8 && offsetof(struct decoder, data) == 0, "Goose embedding ABI");
 #include "prefill.h"
-
-static double now(void) {
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC,&ts);
-    return (double)ts.tv_sec+(double)ts.tv_nsec*1e-9;
-}
-
 
 _Static_assert(sizeof(struct decoder) == 940272 && offsetof(struct decoder, data) == 0 &&
     offsetof(struct decoder, tensor) == 8 && offsetof(struct decoder, globals) == 73736 &&

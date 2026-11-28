@@ -1,9 +1,9 @@
 const I2_HOST_WIDTH: i64 = 2304;
 const I2_HOST_ROW: u64 = 9216;
 
-extern fn fg_i2_host_measured_rms(source: I2DraftSpan,weight: I2DraftSpan,eps: f32,out: I2DraftSpan) -> i64;
-extern fn fg_i2_host_measured_depth(states: I2DraftSpan,width: i64,query: I2DraftSpan,norm: I2DraftSpan,p: I2DraftSpan,out: I2DraftSpan) -> i64;
-extern fn fg_i2_host_measured_blend(cur: I2DraftSpan,msg: I2DraftSpan,gain: I2DraftSpan,forget: I2DraftSpan,out: I2DraftSpan) -> i64;
+extern fn inkling_row_major_i2_rms_gain(source: I2DraftSpan,weight: I2DraftSpan,eps: f32,out: I2DraftSpan) -> i64;
+extern fn inkling_row_major_i2_depth_mix(states: I2DraftSpan,width: i64,query: I2DraftSpan,norm: I2DraftSpan,p: I2DraftSpan,out: I2DraftSpan) -> i64;
+extern fn inkling_row_major_i2_loop_blend(cur: I2DraftSpan,msg: I2DraftSpan,gain: I2DraftSpan,forget: I2DraftSpan,out: I2DraftSpan) -> i64;
 extern fn i2_depth_mix_cached(history: I2DraftSpan,cur: I2DraftSpan,query: I2DraftSpan,p: I2DraftSpan,out: I2DraftSpan) -> i64;
 extern fn ggml_new_tensor_2d(ctx: u64,kind: i32,width: i64,count: i64) -> u64;
 extern fn ggml_mul_mat(ctx: u64,a: u64,b: u64) -> u64;
@@ -25,7 +25,7 @@ export fn fg_i2_host_cached_history() -> bool {
 }
 
 fn i2_host_normalize(src: u64,dst: u64) {
-    assert(fg_i2_host_measured_rms(i2d_span(src,I2_HOST_WIDTH),i2d_span(0,0),0.000001 as! f32,
+    assert(inkling_row_major_i2_rms_gain(i2d_span(src,I2_HOST_WIDTH),i2d_span(0,0),0.000001 as! f32,
         i2d_span(dst,I2_HOST_WIDTH))==I2_HOST_WIDTH);
 }
 
@@ -57,7 +57,7 @@ export fn fg_i2_host_mix(history: u64,raw_count: i32,current: u64,query: I2Draft
     }
     i2d_transfer(address+(count as! u64)*I2_HOST_ROW,current,I2_HOST_ROW);
     let size=(count+1)*I2_HOST_WIDTH;
-    assert(fg_i2_host_measured_depth(i2d_span(address,size),I2_HOST_WIDTH,query,
+    assert(inkling_row_major_i2_depth_mix(i2d_span(address,size),I2_HOST_WIDTH,query,
         i2d_span(i2d_address(unsafe_c_address<c_ptr<const void>>(norm[0])),size),p,output)==queries);
 }
 
@@ -133,6 +133,6 @@ export fn fg_i2_host_control(decoder: u64,aux: u64,which: i32,current: u64,messa
         fg_i2_host_project(decoder,i2_host_aux(aux,at+1),h,64,f,2304);
         fg_i2_host_project(decoder,i2_host_aux(aux,at+2),h,64,g,2304);
     }
-    assert(fg_i2_host_measured_blend(i2d_span(current,I2_HOST_WIDTH),i2d_span(message,I2_HOST_WIDTH),
+    assert(inkling_row_major_i2_loop_blend(i2d_span(current,I2_HOST_WIDTH),i2d_span(message,I2_HOST_WIDTH),
         i2d_span(g,I2_HOST_WIDTH),i2d_span(f,I2_HOST_WIDTH),i2d_span(current,I2_HOST_WIDTH))==I2_HOST_WIDTH);
 }

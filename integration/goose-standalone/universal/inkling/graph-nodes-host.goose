@@ -13,7 +13,7 @@ const I2_ENTRY_MOE_BASE: u64 = 904944;
 const I2_ENTRY_ATTN_BASE: u64 = 887280;
 const I2_ENTRY_BYTES: u64 = 368;
 
-extern fn fg_i2_host_measured_moe(ctx: i64,input: i64,weights: I2DraftSpan,work: I2DraftSpan,nodes: I2DraftSpan) -> i64;
+extern fn i2_moe_ffn(ctx: i64,input: i64,weights: I2DraftSpan,work: I2DraftSpan,nodes: I2DraftSpan) -> i64;
 extern fn ggml_dup_tensor(ctx: u64,tensor: u64) -> u64;
 extern "memset" fn i2_node_clear(dst: c_ptr<void>,byte: i32,bytes: u64) -> c_ptr<void>;
 
@@ -45,7 +45,7 @@ export fn fg_i2_host_moe_node(ctx: u64,decoder: u64,core: u64,aux: u64,slot: i32
     var work: i64[16]=[0;16];
     var nodes: i64[8]=[0;8];
     for i in order.len { weights[i]=fg_i2_host_weight(ctx,decoder,i2_host_aux(core,order[i])) as! i64; }
-    let moe=fg_i2_host_measured_moe(ctx as! i64,scaled as! i64,
+    let moe=i2_moe_ffn(ctx as! i64,scaled as! i64,
         i2d_span(i2d_address(unsafe_c_address<c_ptr<const void>>(weights[0])),4),
         i2d_span(i2d_address(unsafe_c_address<c_ptr<const void>>(work[0])),16),
         i2d_span(i2d_address(unsafe_c_address<c_ptr<const void>>(nodes[0])),8)) as! u64;
