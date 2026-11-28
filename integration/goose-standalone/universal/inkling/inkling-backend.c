@@ -373,54 +373,21 @@ static bool use_joined_bridge(void) {
     return setting && strcmp(setting, "1") == 0;
 }
 
-static void joined_layer(struct decoder *d, const int64_t *core, const int64_t *aux,
-        int slot, int position, bool sliding, bool add_residual, float *input[3],
-        float (*messages)[model_width], float *cur, float *history, int rows) {
-    struct inkling_decode_graph *entry = &d->decode_joined[slot];
-    float bridge_input[(INKLING_BRIDGE_ROWS + 1) * model_width];
-    assert(rows >= 0 && rows <= INKLING_BRIDGE_ROWS);
-    memcpy(bridge_input, cur, model_width * sizeof(float));
-    memcpy(bridge_input + model_width, history, rows * model_width * sizeof(float));
-    entry->bridge = (struct inkling_bridge) {
-        .postconv = coefficients(d, aux[2], 4 * model_width).data,
-        .query = coefficients(d, aux[9], model_width).data,
-        .initial_history = d->ha + slot * 3 * model_width,
-        .input = bridge_input, .slot = slot, .rows = rows, .position = position,
-        .restart = !entry->bridge_started, .add_residual = add_residual,
-    };
-    if (entry->plan) {
-        entry->attention.batch.first = position;
-        for (int i = 0; i < 3; ++i) {
-            if (entry->inputs[i]) entry->inputs[i]->data = input[i];
-            if (messages) entry->messages[i]->data = messages[i];
-        }
-        if (messages) entry->residual->data = messages[3];
-        entry->output->op_params[2] = position;
-    } else {
-        struct ggml_context *ctx = context();
-        entry->context = ctx;
-        entry->attention = bind_attention_graph(d, core, aux, slot, position, 1, sliding);
-        float *attn_messages[3];
-        for (int i = 0; i < 3; ++i) attn_messages[i] = messages ? messages[i] : NULL;
-        struct ggml_tensor *attention = attention_node(ctx, d, aux, 1, sliding,
-            input, messages ? attn_messages : NULL, &entry->attention, entry);
-        struct ggml_tensor *bridge = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, model_width, 2);
-        assert(bridge);
-        bridge->op = GGML_OP_CUSTOM;
-        bridge->op_params[0] = INKLING_BRIDGE_GRAPH;
-        const struct inkling_bridge *metadata = &entry->bridge;
-        memcpy(bridge->op_params + 2, &metadata, sizeof metadata);
-        bridge->src[0] = attention;
-        struct ggml_tensor *ffn = ggml_view_1d(ctx, bridge, model_width, 0);
-        struct ggml_tensor *next = ggml_view_1d(ctx, bridge, model_width, model_width * sizeof(float));
-        struct inkling_decode_graph moe = {0};
-        entry->output = moe_node(ctx, d, core, aux, slot, position, 1,
-            ffn, messages ? messages[3] : NULL, next, &moe);
-        entry->residual = moe.messages[0];
-    }
-    execute_decode_graph(entry, cur);
-    entry->bridge_started = true;
+_Static_assert(offsetof(struct inkling_decode_graph, bridge) == 312 && sizeof(struct inkling_bridge) == 48 &&
+    offsetof(struct inkling_bridge, postconv) == 0 && offsetof(struct inkling_bridge, query) == 8 &&
+    offsetof(struct inkling_bridge, initial_history) == 16 && offsetof(struct inkling_bridge, input) == 24 &&
+    offsetof(struct inkling_bridge, slot) == 32 && offsetof(struct inkling_bridge, rows) == 36 &&
+    offsetof(struct inkling_bridge, position) == 40 && offsetof(struct inkling_bridge, restart) == 44 &&
+    offsetof(struct inkling_bridge, add_residual) == 45 && INKLING_BRIDGE_GRAPH == 0x49324252 &&
+    INKLING_BRIDGE_ROWS == 11, "Goose Inkling joined bridge ABI");
+
+const float *fg_i2_host_coefficients(struct decoder *d, int64_t id, int64_t count) {
+    return coefficients(d, id, count).data;
 }
+
+extern void fg_i2_host_joined_layer(struct decoder *, const int64_t *, const int64_t *,
+    int, int, bool, bool, float **, float (*)[model_width], float *, float *, int);
+#define joined_layer fg_i2_host_joined_layer
 
 static void layer(struct decoder *d,int physical_layer,int slot,int absolute,int sliding,
                   float *cur,float *blocks,int *count,float (*messages)[model_width]) {
