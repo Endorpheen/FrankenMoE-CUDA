@@ -16,9 +16,7 @@ const MODEL_KV_FORMAT: u64 = 696;
 const MODEL_Q4_0: i64 = 1;
 const MODEL_F16: i64 = 2;
 
-extern fn fg_cuda_model_expert_request() -> i64;
 extern fn fg_cuda_model_getenv(key: u64) -> u64;
-extern fn hose_prefill_profile(profile: u64);
 extern fn fg_cuda_gigachat4_select_profile();
 extern fn giga_goose_init(argc: i32, argv: u64);
 extern fn giga_server_open(base: u64, size: u64, capacity: i64) -> i32;

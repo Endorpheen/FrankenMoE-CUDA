@@ -25,7 +25,7 @@ ggml="$root/vendor/flint/ggml"
     -ffunction-sections -fdata-sections -I"$model_headers" -I"$standalone" \
     -I"$standalone/universal/inkling" -I"$standalone/gigachat4" -I"$root/integration/m1/host" \
     -I"$ggml/include" -I"$ggml/src" -c "$src/model-host.c" -o "$out/model-host-native.o"
-cat "$src/host-vocab.goose" "$src/host-lifecycle.goose" "$src/host-map-$target.goose" > "$out/host-vocab.goose"
+cat "$src/"{host-vocab,host-lifecycle,host-generation}.goose "$src/host-map-$target.goose" > "$out/host-vocab.goose"
 "${GOOSE_CUDA_DRIVER_BIN:?Set GOOSE_CUDA_DRIVER_BIN to Fried Goose KeelWing v0.3.1-dev.1}" \
     --standalone -o "$out/host-vocab.c" "$out/host-vocab.goose"
 "$cc" -O2 -std=c11 -ffunction-sections -fdata-sections -Dgoose_init=fg_model_vocab_init \

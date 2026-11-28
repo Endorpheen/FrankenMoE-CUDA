@@ -141,12 +141,6 @@ _Static_assert(sizeof(struct stat) == 144 && offsetof(struct stat, st_mode) == 2
 host_t H;
 uint64_t fg_cuda_model_host_address(void) { return (uintptr_t)&H; }
 
-static int64_t prefill_batch = HOSE_DEFAULT_PREFILL_BATCH;
-static int64_t prefill_ubatch = HOSE_DEFAULT_PREFILL_BATCH;
-static int64_t expert_cache_request;
-
-int64_t fg_cuda_model_expert_request(void) { return expert_cache_request; }
-
 int64_t fg_model_mincore(uint64_t address, int64_t bytes, sl_u8 flags) {
     #ifdef _WIN32
     return fg_win_resident((void *)(uintptr_t)address, (size_t)bytes, flags.data);
@@ -196,86 +190,6 @@ int64_t fg_model_zero_host_pages(uint64_t address, int64_t length) {
 #endif
 }
 
-extern int64_t find_key(const char *key);
-extern bool metadata_is(const char *key, const char *value);
-extern void load_vocab(void);
-extern int64_t tokenize(const unsigned char *text, int64_t len, int64_t *ids, int64_t capacity);
-extern int64_t detokenize(const int64_t *ids, int64_t count, unsigned char *out, int64_t capacity);
-
-void fg_q35_write_ids(uint64_t address, sl_i32 tokens) {
-    memcpy((void *) (uintptr_t) address, tokens.data, (size_t) tokens.len * sizeof(*tokens.data));
-}
-
-void fg_q35_read_logits(uint64_t address, sl_f32 output) {
-    memcpy(output.data, (const void *) (uintptr_t) address, (size_t) output.len * sizeof(*output.data));
-}
-
-void fg_q35_release_graph(uint64_t address) {
-    free((void *) (uintptr_t) address);
-}
-
-extern int64_t fg_cuda_model_step(sl_i32 tokens, int64_t rows, sl_f32 output);
-
-int64_t hose_tokenize(const unsigned char * text, int64_t len, int64_t * ids, int64_t cap) {
-    return tokenize(text, len, ids, cap);
-}
-
-int64_t hose_detokenize(const int64_t * ids, int64_t n, unsigned char * out, int64_t cap) {
-    return detokenize(ids, n, out, cap);
-}
-
-int64_t hose_eog_is(int64_t id) {
-    return bt_is_eog((sl_i64){ H.eog, H.n_eog }, H.n_eog, id);
-}
-
-void hose_stats(int64_t * out5) {
-    out5[0] = H.n_tok;
-    out5[1] = H.n_special;
-    out5[2] = H.n_eog;
-    out5[3] = H.eos;
-    out5[4] = H.layer_count;
-}
-
-int64_t hose_context_capacity(void) { return H.owner[10]; }
-
-int64_t hose_configure_prefill(int64_t batch, int64_t ubatch) {
-    fg_goose_host_ensure_init();
-    if (!q35_prefill_valid(batch, ubatch)) return -1;
-    prefill_batch = batch;
-    prefill_ubatch = ubatch;
-    return 0;
-}
-
-void hose_prefill_profile(int64_t profile[2]) {
-    profile[0] = prefill_batch;
-    profile[1] = prefill_ubatch;
-}
-
-int64_t hose_configure_expert_cache(int64_t mib) {
-    const int64_t mib_bytes = 1024 * 1024;
-    if (mib <= 0 || mib > INT64_MAX / mib_bytes) return -1;
-    expert_cache_request = mib * mib_bytes;
-    return 0;
-}
-
-int64_t hose_expert_cache_limit(void) {
-    return H.expert_cache_limit;
-}
-
-void fg_q35_generation_profile(sl_i64 profile) {
-    hose_prefill_profile(profile.data);
-    if (profile.len >= 3) {
-        const char * tail = getenv("GOOSE_PREFILL_CHECKPOINT_TAIL");
-        profile.data[2] = !H.bonsai && !H.inkling && !H.gigachat4 && tail && strcmp(tail, "1") == 0;
-    }
-}
-
-int64_t fg_http_eog(sl_i64 ids) {
-    if (ids.len < H.n_eog) return -1;
-    if (H.n_eog) memcpy(ids.data, H.eog, (size_t) H.n_eog * sizeof(*ids.data));
-    return H.n_eog;
-}
-
 static pthread_once_t exchange_once = PTHREAD_ONCE_INIT;
 static pthread_key_t exchange_key;
 static bool exchange_key_available;
@@ -314,132 +228,15 @@ static _Thread_local struct {
     int64_t words[Q35_DECODE_PLAN_WORDS];
 } decode_plan;
 
-void fg_q35_generation_scope_enter(void) {
-    if (H.bonsai || H.inkling || H.gigachat4) return;
-    if (decode_plan.depth++ == 0) {
-        const char *reuse = getenv("GOOSE_DECODE_PLAN_REUSE");
-        decode_plan.enabled = (!reuse || strcmp(reuse, "0") != 0) && !fg_q35_checkpoint_enabled();
-    }
-}
+_Static_assert(offsetof(__typeof__(decode_plan), enabled) == 4 &&
+    offsetof(__typeof__(decode_plan), words) == 8 &&
+    Q35_DECODE_PLAN_WORDS == 10 && HOSE_DEFAULT_PREFILL_BATCH == 128, "Goose decode state ABI");
 
-void fg_q35_generation_scope_leave(void) {
-    if (H.bonsai || H.inkling || H.gigachat4) return;
-    if (--decode_plan.depth == 0 &&
-        q35_decode_plan_close((sl_i64) { H.owner, 13 },
-            (sl_i64) { decode_plan.words, Q35_DECODE_PLAN_WORDS }) != 0) {
-        die("decode plan release");
-    }
-}
+uint64_t fg_cuda_decode_borrow(size_t bytes) { return (uintptr_t)borrow_decode_exchange(bytes); }
+void fg_cuda_decode_release(void) { decode_exchange.borrowed = false; }
+uint64_t fg_cuda_decode_plan_address(void) { return (uintptr_t)&decode_plan; }
 
-static int64_t generation_step(sl_i32 tokens, sl_f32 logits, bool prefill) {
-    if (H.gigachat4 || prefill || tokens.len != 1 || logits.len != H.n_tok ||
-        decode_plan.depth != 1 || !decode_plan.enabled) {
-        return fg_cuda_model_step(tokens, logits.len != 0, logits);
-    }
-    const int64_t result = q35_model_step_cached((sl_i64) { H.owner, 13 },
-        (sl_i64) { H.handles, 4 }, (sl_i64) { H.records, H.layer_count * 32 },
-        (sl_i64) { H.acfg, 14 }, (sl_i64) { H.gcfg, 7 }, (sl_i64) { H.mcfg, 3 },
-        (sl_i64) { H.kv_state, 6 }, tokens, logits, (sl_i64) { decode_plan.words, Q35_DECODE_PLAN_WORDS });
-    if (result == -2) die("model step recovery");
-    return result;
-}
-
-int64_t fg_q35_generation_eval(sl_i32 tokens, sl_f32 output, uint8_t prefill) {
-    if (!tokens.data || tokens.len <= 0 || output.len < 0 ||
-        (output.len != 0 && !output.data) ||
-        (uint64_t) tokens.len > SIZE_MAX / sizeof(int32_t) ||
-        (uint64_t) output.len > SIZE_MAX / sizeof(float)) return -1;
-    const size_t token_bytes = (size_t) tokens.len * sizeof(int32_t);
-    const size_t logit_bytes = (size_t) output.len * sizeof(float);
-    if (token_bytes > SIZE_MAX - logit_bytes) return -1;
-    // Nested Goose exports start at frame zero and can reuse the caller's
-    // arena slots. Pin both borrowed slices outside that arena until return.
-    const size_t total_bytes = token_bytes + logit_bytes;
-    uint8_t * exchange = !prefill && tokens.len == 1 ?
-        borrow_decode_exchange(total_bytes) : NULL;
-    const bool reused = exchange != NULL;
-    if (!reused) exchange = malloc(total_bytes);
-    if (!exchange) return -1;
-    memcpy(exchange, tokens.data, token_bytes);
-    int64_t result;
-    if (H.bonsai) {
-        float *row = output.len == H.n_tok ? (float *)(exchange + token_bytes) : NULL;
-        const int status = (row || !output.len) && tokens.len <= UINT32_MAX ?
-            bonsai_session_step_phase(H.bonsai, (const uint32_t *)exchange, (unsigned)tokens.len, row, !prefill) : -1;
-        result = status == 0 ? output.len : -1;
-    } else if (H.inkling) {
-        result = inkling_backend_eval(H.inkling, (const int32_t *)exchange, tokens.len,
-            prefill != 0, (float *)(exchange + token_bytes), output.len);
-    } else {
-        const bool previous = fg_standalone_set_cpu_prefill(prefill != 0);
-        result = generation_step((sl_i32) { (int32_t *) exchange, tokens.len },
-            (sl_f32) { (float *) (exchange + token_bytes), output.len }, prefill != 0);
-        fg_standalone_set_cpu_prefill(previous);
-    }
-    if (result > 0) memcpy(output.data, exchange + token_bytes, logit_bytes);
-    if (reused) decode_exchange.borrowed = false;
-    else free(exchange);
-    return result;
-}
-
-int64_t hose_generate_ids(const int64_t * prompt, int64_t count, int64_t max_tokens,
-                          bool ignore_eos, int64_t * out_ids, double * timing) {
-    if (!prompt || count <= 0 || !out_ids || max_tokens <= 0) return -1;
-    return q35_generate((sl_i64) { (int64_t *) prompt, count }, H.n_tok, H.owner[10],
-        (sl_i64) { H.eog, H.n_eog }, max_tokens, ignore_eos, (sl_i64) { out_ids, max_tokens },
-        (sl_f64) { timing, timing ? 3 : 0 });
-}
-
-int64_t hose_generate_text(const unsigned char * text, int64_t len, int64_t max_tokens,
-                           bool ignore_eos, int64_t * out_ids, double * timing) {
-    if (timing) { timing[0] = 0.0; timing[1] = 0.0; timing[2] = 0.0; }
-    if (!text || len <= 0 || len > MAX_REQ || max_tokens <= 0 || !out_ids) return -1;
+uint64_t fg_cuda_generation_ids_address(void) {
     static int64_t ids[MAX_REQ];
-    const int64_t n_ids = hose_tokenize(text, len, ids, MAX_REQ);
-    return hose_generate_ids(ids, n_ids, max_tokens, ignore_eos, out_ids, timing);
-}
-
-int64_t hose_generate(const unsigned char * text, int64_t len, int64_t max_tokens,
-                      int64_t * out_ids, unsigned char * out_text, int64_t text_cap,
-                      double * timing) {
-    const int64_t produced = hose_generate_text(text, len, max_tokens, false, out_ids, timing);
-    if (produced >= 0 && out_text && detokenize(out_ids, produced, out_text, text_cap) < 0) return -1;
-    return produced;
-}
-
-extern int bonsai_session_choice_available(const struct bonsai_session *, const int64_t *, int64_t);
-extern int64_t bonsai_session_choose_next(struct bonsai_session *, uint32_t, int);
-extern int bonsai_session_read_choice_logits(struct bonsai_session *, float *);
-
-uint8_t fg_bonsai_choice_available(sl_i64 eog) {
-    return H.bonsai && bonsai_session_choice_available(H.bonsai, eog.data, eog.len);
-}
-
-extern int64_t bonsai_session_mtp_next(struct bonsai_session *, uint32_t, int, int64_t);
-
-int64_t fg_bonsai_choose_next(int32_t token, sl_f32 output, uint8_t ignore_eos, int64_t remaining) {
-    if (!H.bonsai || token < 0 || !output.data || output.len != H.n_tok) return -1;
-    const int64_t id = bonsai_session_mtp_next(H.bonsai, (uint32_t)token, ignore_eos != 0, remaining);
-    if (id != -2) return id;
-    const size_t bytes = (size_t)output.len * sizeof(float);
-    float *safe = malloc(bytes);
-    if (!safe) return -1;
-    const int status = bonsai_session_read_choice_logits(H.bonsai, safe);
-    if (!status) memcpy(output.data, safe, bytes);
-    free(safe);
-    return status ? -1 : -2;
-}
-extern uint8_t fg_q35_topk_scan_enabled(void);
-
-uint8_t fg_bonsai_host_scan_enabled(void) {
-    if (!H.bonsai) return 0;
-    const char *enabled = getenv("BONSAI_HTTP_HOST_SCAN");
-    return enabled && !strcmp(enabled, "1") && fg_q35_topk_scan_enabled();
-}
-
-extern void bonsai_session_mtp_prepare(struct bonsai_session *, int);
-extern int64_t bonsai_session_mtp_next(struct bonsai_session *, uint32_t, int, int64_t);
-
-void fg_bonsai_mtp_prepare(uint8_t allowed) {
-    if (H.bonsai) bonsai_session_mtp_prepare(H.bonsai, allowed);
+    return (uintptr_t)ids;
 }
