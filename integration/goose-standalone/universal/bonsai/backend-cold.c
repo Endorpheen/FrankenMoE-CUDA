@@ -936,12 +936,6 @@ void fg_bonsai_batch_graph_error(model *m, int64_t status) {
     fprintf(stderr, "Goose graph failed: %lld\n", (long long)status);
 }
 
-extern int evaluate_batch_output(model *m, const unsigned *tokens, unsigned count, float *logits, int device_only);
-
-static int evaluate_batch(model *m, const unsigned *tokens, unsigned count, float *logits) {
-    return evaluate_batch_output(m, tokens, count, logits, 0);
-}
-
 #include "session.h"
 
 struct bonsai_session {
@@ -976,104 +970,21 @@ void bonsai_session_close(struct bonsai_session *session) {
     free(session);
 }
 
-static int finish_session_call(struct bonsai_session *session, int status) {
-    CUcontext current;
-    if (check(bonsai_cuda.fn_cuCtxPopCurrent(&current), "restore caller context")) status = -1;
-    session->needs_reset = status != 0;
-    return status;
-}
+_Static_assert(offsetof(struct bonsai_session, runtime) == 0 && offsetof(struct bonsai_session, needs_reset) == 8 &&
+    offsetof(model, cuda) == 0 && offsetof(model, draft_carry) == 288 && offsetof(model, mtp_next) == 44 &&
+    offsetof(model, mtp_end) == 48 && offsetof(model, mtp_request) == 20 && offsetof(model, mtp_enabled) == 16 &&
+    offsetof(model, choice_mask) == 5624 && offsetof(model, eog_count) == 15280 && offsetof(model, eog) == 14768,
+    "Bonsai session field layout");
+_Static_assert(offsetof(struct bonsai_cuda_api, fn_cuCtxPushCurrent) == 32 &&
+    offsetof(struct bonsai_cuda_api, fn_cuCtxPopCurrent) == 40 &&
+    offsetof(struct bonsai_cuda_api, fn_cuMemsetD8) == 120, "Bonsai session CUDA dispatch layout");
+_Static_assert(GDN_STATE * 4 == 3145728 && GDN_HISTORY * 4 == 122880 && DRAFT_HIDDEN_BYTES == 20480 &&
+    offsetof(struct token_choice, token) == 0 && offsetof(struct token_choice, invalid) == 8, "Bonsai session state ABI");
 
-int bonsai_session_reset(struct bonsai_session *session) {
-    if (!session) return -1;
-    model *m = session->runtime;
-    if (check(bonsai_cuda.fn_cuCtxPushCurrent(m->cuda), "bind Bonsai context")) return -1;
-    int status = 0;
-    for (unsigned layer = 0; layer < LAYERS && !status; ++layer) {
-        if (m->bound[15 * layer] == 0) continue;
-        status = check(bonsai_cuda.fn_cuMemsetD8(m->states[2 * layer], 0, 4 * GDN_HISTORY), "reset convolution");
-        if (!status) {
-            status = check(bonsai_cuda.fn_cuMemsetD8(m->states[2 * layer + 1], 0, 4 * GDN_STATE), "reset GDN");
-        }
-    }
-    if (!status) status = check(bonsai_cuda.fn_cuMemsetD8(m->b[23], 0, 4 * GDN_STATE), "reset GDN scratch");
-    if (!status && m->mtp_enabled) {
-        status = check(bonsai_cuda.fn_cuMemsetD8(m->draft_carry, 0, DRAFT_HIDDEN_BYTES), "reset draft seed");
-    }
-    if (!status) {
-        m->mtp_next = m->mtp_end = 0;
-        m->mtp_request = 0;
-        m->txn.phase = TXN_IDLE;
-        /* Attention writes new rows before reading only the active prefix. */
-        m->in_decode = 0;
-        m->position = 0;
-        m->count = 0;
-        m->packed_source = 0;
-    }
-    status = finish_session_call(session, status);
-    if (!status && m->position == 0) fputs("[bench-cold] reset position=0\n", stderr);
-    return status;
-}
-
-int bonsai_session_step(struct bonsai_session *session, const uint32_t *tokens,
-    unsigned count, float logits[BONSAI_SESSION_VOCAB]) {
-    if (!session || session->needs_reset || !tokens || !count) return -1;
-    model *m = session->runtime;
-    if (count > m->context - m->position) return -1;
-    for (unsigned i = 0; i < count; ++i) {
-        if (tokens[i] >= VOCAB) return -1;
-    }
-    if (check(bonsai_cuda.fn_cuCtxPushCurrent(m->cuda), "bind Bonsai context")) return -1;
-    int status = 0;
-    for (unsigned at = 0; at < count && !status;) {
-        const unsigned remaining = count - at;
-        const unsigned available = remaining - (logits && remaining > 1);
-        const unsigned batch = available < m->ubatch ? available : m->ubatch;
-        status = evaluate_batch(m, tokens + at, batch, remaining == 1 ? logits : NULL);
-        if (!status && m->mtp_request && !m->in_decode) status = draft_prefill(m, tokens + at, batch);
-        at += batch;
-    }
-    status = finish_session_call(session, status);
-    if (!status && logits && m->position == 32768) fputs("[bench-cold] prefill position=32768\n", stderr);
-    return status;
-}
-
-int bonsai_session_step_phase(struct bonsai_session *session, const uint32_t *ids,
-    unsigned count, float *logits, int decode) {
-    session->runtime->in_decode = decode;
-    const int status = bonsai_session_step(session, ids, count, logits);
-    session->runtime->in_decode = 0;
-    return status;
-}
-
-int bonsai_session_choice_available(const struct bonsai_session *session, const int64_t *eog, int64_t n) {
-    if (!session || !session->runtime->choice_mask || !eog || n != session->runtime->eog_count) return 0;
-    const model *m = session->runtime;
-    for (int64_t i = 0; i < n; ++i) {
-        if (eog[i] != m->eog[i]) return 0;
-    }
-    return 1;
-}
-
-int64_t bonsai_session_choose_next(struct bonsai_session *session, uint32_t id, int ignore_eos) {
-    if (!session || session->needs_reset || !session->runtime->choice_mask || id >= VOCAB) return -1;
-    model *m = session->runtime;
-    if (m->position >= m->context ||
-        check(bonsai_cuda.fn_cuCtxPushCurrent(m->cuda), "bind Bonsai choice context")) return -1;
-    m->in_decode = 1;
-    struct token_choice choice;
-    const int status = evaluate_batch_output(m, &id, 1, NULL, 1) ||
-                       choose_device(m, ignore_eos, &choice);
-    m->in_decode = 0;
-    if (finish_session_call(session, status)) return -1;
-    return choice.invalid || choice.token >= VOCAB ? -2 : (int64_t)choice.token;
-}
-
-int bonsai_session_read_choice_logits(struct bonsai_session *session, float *logits) {
-    if (!session || session->needs_reset || !logits) return -1;
-    model *m = session->runtime;
-    if (check(bonsai_cuda.fn_cuCtxPushCurrent(m->cuda), "bind Bonsai fallback context")) return -1;
-    return finish_session_call(session, check(
-        bonsai_cuda.fn_cuMemcpyDtoH(logits, m->b[19], VOCAB * sizeof(float)), "fallback logits"));
-}
+int fg_bonsai_session_draft(model *m, const uint32_t *tokens, unsigned count) { return draft_prefill(m, tokens, count); }
+int fg_bonsai_session_choice(model *m, int ignore_eos, struct token_choice *choice) { return choose_device(m, ignore_eos, choice); }
+extern int evaluate_batch_output(model *m, const unsigned *tokens, unsigned count, float *logits, int device_only);
+extern int64_t bonsai_session_choose_next(struct bonsai_session *session, uint32_t id, int ignore_eos);
+extern int fg_bonsai_session_finish(struct bonsai_session *session, int status);
 
 #include "http-mtp.inc"

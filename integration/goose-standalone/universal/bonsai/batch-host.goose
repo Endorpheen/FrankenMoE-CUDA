@@ -53,6 +53,10 @@ fn batch_set(address: u64, value: u32) {
 
 fn batch_copy(dispatch: u64, operation: u64, dst: u64, src: u64, bytes: u64, label: const u8[:]) -> i32 {
     let status = unsafe_c_fnptr<BonsaiCudaCopy>(vocab_word(dispatch + operation))(dst, src, bytes);
+    return bonsai_cuda_status(status, label);
+}
+
+fn bonsai_cuda_status(status: i32, label: const u8[:]) -> i32 {
     if status == 0 { return 0; }
     var message: u8[32];
     for index in label.len { message[index] = label[index]; }

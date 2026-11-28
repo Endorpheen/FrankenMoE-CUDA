@@ -32,7 +32,7 @@ if [[ "$target" == linux ]]; then
 else
     : > "$out/host-vocab.goose"
 fi
-cat "$src/"{host-vocab,host-lifecycle,host-generation,batch-host}.goose "$src/host-map-$target.goose" >> "$out/host-vocab.goose"
+cat "$src/"{host-vocab,batch-host,session-host,host-lifecycle,host-generation}.goose "$src/host-map-$target.goose" >> "$out/host-vocab.goose"
 "${GOOSE_CUDA_DRIVER_BIN:?Set GOOSE_CUDA_DRIVER_BIN to Fried Goose KeelWing v0.3.1-dev.1}" \
     --standalone -o "$out/host-vocab.c" "$out/host-vocab.goose"
 "$cc" -O2 -std=c11 -ffunction-sections -fdata-sections -Dgoose_init=fg_model_vocab_init \

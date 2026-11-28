@@ -69,6 +69,6 @@ int64_t bonsai_session_mtp_next(struct bonsai_session *session, uint32_t token,
     }
     if (check(bonsai_cuda.fn_cuCtxPushCurrent(m->cuda), "bind Bonsai MTP context")) return -1;
     const int status = verify_mtp_block(m, token, ignore_eos);
-    if (finish_session_call(session, status)) return -1;
+    if (fg_bonsai_session_finish(session, status)) return -1;
     return m->mtp_pending[m->mtp_next++];
 }
