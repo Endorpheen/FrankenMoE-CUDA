@@ -28,29 +28,6 @@ static float4 mma(float4 d, uint4 a, uint2 b) {
     return d;
 }
 
-static uint4 load_q(__global const ushort *q, int64_t head0, int64_t head1,
-                   int tail, uint group, uint col, uint chunk) {
-    const uint at = 128 * chunk + col;
-    const uint2 zero = (uint2)(0);
-    const uint2 x0 = group < (uint)tail ? (uint2)(*(__global uint *)(q + head0 + at),
-                                    *(__global uint *)(q + head0 + at + 8)) : zero;
-    const uint2 x1 = group + 8 < (uint)tail ? (uint2)(*(__global uint *)(q + head1 + at),
-                                         *(__global uint *)(q + head1 + at + 8)) : zero;
-    return (uint4)(x0.x,x1.x,x0.y,x1.y);
-}
-
-static void save_fragment(__global float *out, int64_t slot, int64_t row_stride, int tail,
-                          uint group, uint col, float4 value) {
-    if (group < (uint)tail) {
-        out[slot + col] = value.x;
-        out[slot + col + 1] = value.y;
-    }
-    if (group + 8 < (uint)tail) {
-        out[slot + 8 * row_stride + col] = value.z;
-        out[slot + 8 * row_stride + col + 1] = value.w;
-    }
-}
-
 __kernel void goose_i2_pack_f16(__global const float *source, __global ushort *dest, int count) {
     uint x, thread;
     __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(x));
@@ -120,7 +97,7 @@ __kernel void goose_i2_flash_mma(__global const ushort *q, __global const ushort
     i2_native_flash_g((uint64_t)q,(uint64_t)k,(uint64_t)v,(uint64_t)relative,(uint64_t)bias,
         (uint64_t)sinks,(uint64_t)key_pos,(uint64_t)query_pos,(uint64_t)partials,(uint64_t)metadata,
         (uint64_t)scores,(uint64_t)maxval,(uint64_t)sum,(uint64_t)alpha,(uint64_t)probs,
-        keys,queries,parts,window,scale,q4,query_tile,head,part,thread,false);
+        keys,queries,parts,window,scale,q4,query_tile,head,part,thread,false,false);
 }
 
 __kernel void goose_i2_flash_mma_merge(__global const float *partial,
@@ -158,7 +135,7 @@ __kernel void goose_i2_flash_mma_decode(__global const ushort *q, __global const
     i2_native_flash_g((uint64_t)q,(uint64_t)k,(uint64_t)v,(uint64_t)relative,(uint64_t)bias,
         (uint64_t)sinks,(uint64_t)key_pos,(uint64_t)query_pos,(uint64_t)partials,(uint64_t)metadata,
         (uint64_t)scores,(uint64_t)maxval,(uint64_t)sum,(uint64_t)alpha,(uint64_t)probs,
-        keys,queries,parts,window,scale,q4,0,head,part,thread,true);
+        keys,queries,parts,window,scale,q4,0,head,part,thread,true,false);
 }
 
 __kernel void goose_i2_flash_mma_prefill(__global const ushort *q, __global const ushort *k,
@@ -173,96 +150,8 @@ __kernel void goose_i2_flash_mma_prefill(__global const ushort *q, __global cons
     __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(head));
     __asm__("mov.u32 %0, %%ctaid.z;" : "=r"(part));
     __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
-    const uint warp = thread >> 5, lane = thread & 31, group = lane >> 2, col = 2 * (lane & 3);
-    const int64_t query = 16 * (int64_t)query_tile;
-    const int64_t begin = (int64_t)part*2048;
-    const int64_t end = (keys < begin + 2048 ? keys : begin + 2048);
-    const int tail = (int)(queries - query < 16 ? queries - query : 16);
-    const int64_t qhead = query*24 + head;
-    q4 = 1;
-    const int64_t g = (head/3)*128;
-    float4 acc[4];
-    #pragma unroll
-    for (int i=0; i<4; ++i) acc[i] = (float4)(0);
-    if (thread < 16) {
-        maxval[thread] = 0;
-        sum[thread] = 0;
-    }
-    sync_group();
-
-    for (int64_t start=begin; start<end; start+=32) {
-        int missing = (end-start < 32 ? (int)(end-start) : 32);
-        const int64_t krow = start + warp*8 + group;
-        const int64_t qa0 = (qhead + group*24)*128;
-        const int64_t qa1 = qa0 + 8*3072;
-        float4 qk = (float4)(0);
-        #pragma unroll
-        for (int dim=0; dim<128; dim+=16) {
-            const uint4 a = load_q(q,qa0+dim,qa1+dim,tail,group,col,0);
-            const int64_t offset = krow*1024 + g + dim + col;
-            uint2 b = (uint2)(0);
-            if (krow < end) {
-                if (q4) {
-                    b = (uint2)(pair_bits(load_q4((__global const uchar *)k, offset),
-                                          load_q4((__global const uchar *)k, offset + 1)),
-                                pair_bits(load_q4((__global const uchar *)k, offset + 8),
-                                          load_q4((__global const uchar *)k, offset + 9)));
-                } else {
-                    b = (uint2)(*(__global const uint *)(k + offset),
-                                *(__global const uint *)(k + offset + 8));
-                }
-            }
-            qk = mma(qk,a,b);
-        }
-        const uint idx = group*32 + warp*8 + col;
-        scores[idx] = qk.x;
-        scores[idx+1] = qk.y;
-        scores[idx+8*32] = qk.z;
-        scores[idx+8*32+1] = qk.w;
-        sync_group();
-        for (uint at = thread; at < (uint)(tail * 32); at += 128) {
-            const uint row = at >> 5;
-            i2_online_adjust_key_g((uint64_t)(scores + row * 32), (uint64_t)key_pos,
-                (uint64_t)relative, (uint64_t)bias, (uint64_t)sinks, missing, start,
-                query_pos[query + row], qhead + row * 24, at & 31, window, scale);
-        }
-        sync_group();
-        if (thread < 16) {
-            if ((int)thread < tail) {
-                i2_online_prepared_row_at_g((uint64_t)scores, (uint64_t)probs,
-                    (uint64_t)maxval, (uint64_t)sum, (uint64_t)alpha, thread);
-            } else {
-                alpha[thread] = 0;
-                for (int j=0; j<32; ++j) probs[thread*32+j] = 0;
-            }
-        }
-        sync_group();
-        const float4 weights = (float4)(alpha[group],alpha[group],alpha[group+8],alpha[group+8]);
-        #pragma unroll
-        for (int i=0; i<4; ++i) acc[i] *= weights;
-        #pragma unroll
-        for (int j=0; j<32; j+=16) {
-            const __local uint *r0 = (__local const uint *)(probs+group*32+j+col);
-            const __local uint *r1 = r0 + 8*16;
-            uint4 a = (uint4)(r0[0],r1[0],r0[4],r1[4]);
-            const int64_t i0=start+j+col, i1=i0+1, i2=i0+8, i3=i0+9;
-            #pragma unroll
-            for (int i=0; i<4; ++i) {
-                int64_t c = g+32*warp+8*i+group;
-                ushort v0=i0<end ? load_kv(v, i0*1024+c, q4) : 0, v1=i1<end ? load_kv(v, i1*1024+c, q4) : 0;
-                ushort v2=i2<end ? load_kv(v, i2*1024+c, q4) : 0, v3=i3<end ? load_kv(v, i3*1024+c, q4) : 0;
-                acc[i] = mma(acc[i],a,(uint2)(pair_bits(v0,v1),pair_bits(v2,v3)));
-            }
-        }
-        sync_group();
-    }
-    const int64_t slot = ((qhead+group*24)*parts+part)*128;
-    #pragma unroll
-    for (int i=0; i<4; ++i) {
-        save_fragment(partials,slot,24*parts*128,tail,group,warp*32+i*8+col,acc[i]);
-    }
-    if (thread < (uint)tail) {
-        const int64_t idx = ((qhead+thread*24)*parts+part)*2;
-        metadata[idx]=maxval[thread]; metadata[idx+1]=sum[thread];
-    }
+    i2_native_flash_g((uint64_t)q,(uint64_t)k,(uint64_t)v,(uint64_t)relative,(uint64_t)bias,
+        (uint64_t)sinks,(uint64_t)key_pos,(uint64_t)query_pos,(uint64_t)partials,(uint64_t)metadata,
+        (uint64_t)scores,(uint64_t)maxval,(uint64_t)sum,(uint64_t)alpha,(uint64_t)probs,
+        keys,queries,parts,window,scale,q4,query_tile,head,part,thread,false,true);
 }

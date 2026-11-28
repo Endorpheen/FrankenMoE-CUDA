@@ -60,7 +60,7 @@ fn native_decode_softmax(scores: u64, probabilities: u64, maxima: u64, totals: u
 export fn i2_native_flash(q: u64, k: u64, v: u64, relative: u64, bias: u64, sinks: u64,
     key_pos: u64, query_pos: u64, partials: u64, metadata: u64, scores: u64, maxima: u64, totals: u64, rescale: u64,
     probabilities: u64, keys: i64, queries: i64, parts: i64, window: i64, scale: f32,
-    flags: i32, query_tile: i64, head: i64, part: i64, thread: i64, decode: bool) {
+    flags: i32, query_tile: i64, head: i64, part: i64, thread: i64, decode: bool, prefill: bool) {
     let warp = thread / 32;
     let lane = thread % 32;
     let group = lane / 4;
@@ -70,8 +70,8 @@ export fn i2_native_flash(q: u64, k: u64, v: u64, relative: u64, bias: u64, sink
     let end = if keys < begin + 2048 { keys } else { begin + 2048 };
     let tail = if decode { 1 } else { if queries - query < 16 { queries - query } else { 16 } };
     let qhead = query * 24 + head;
-    let parallel_scores = (flags & 2) != 0 && queries == 1;
-    let q4 = if decode { 1 } else { flags & 1 };
+    let parallel_scores = !prefill && (flags & 2) != 0 && queries == 1;
+    let q4 = if decode || prefill { 1 } else { flags & 1 };
     let group_column = head / 3 * 128;
     var acc: I2NativeAcc[4] = [native_zero(); 4];
     if thread < 16 {
@@ -111,9 +111,20 @@ export fn i2_native_flash(q: u64, k: u64, v: u64, relative: u64, bias: u64, sink
             }
             if !decode { native_sync(); }
         }
+        if prefill {
+            var at = thread;
+            while at < tail * 32 {
+                let row = at / 32;
+                i2_online_adjust_key(scores + ((row * 128) as u64), key_pos, relative, bias, sinks, missing, start,
+                    position(query_pos, query + row), qhead + row * 24, at % 32, window, scale);
+                at += 128;
+            }
+            native_sync();
+        }
         if !decode && thread < 16 {
             if thread < tail {
-                if parallel_scores { i2_online_prepared_row(scores, probabilities, maxima, totals, rescale); }
+                if prefill { i2_online_prepared_row_at(scores, probabilities, maxima, totals, rescale, thread); }
+                else if parallel_scores { i2_online_prepared_row(scores, probabilities, maxima, totals, rescale); }
                 else {
                     i2_online_row(scores, probabilities, maxima, totals, rescale, key_pos, relative, bias, sinks,
                         missing, start, position(query_pos, query + thread), qhead + thread * 24, thread, window, scale);
