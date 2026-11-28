@@ -1,0 +1,11 @@
+const I2_TEAM_JOB_READY: u64 = 40;
+const I2_TEAM_JOB_DONE: u64 = 88;
+const I2_TEAM_WORK: u64 = 136;
+const I2_TEAM_HANDLES: u64 = 144;
+const I2_TEAM_TASKS: u64 = 264;
+const I2_TEAM_COUNT: u64 = 268;
+const I2_TEAM_PENDING: u64 = 272;
+const I2_TEAM_GENERATION: u64 = 280;
+const I2_TEAM_STOP: u64 = 288;
+const I2_TEAM_FAILED: u64 = 289;
+const I2_TEAM_PREFILL: u64 = 290;

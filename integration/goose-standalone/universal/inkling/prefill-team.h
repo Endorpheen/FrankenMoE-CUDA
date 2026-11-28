@@ -8,78 +8,35 @@ struct i2_prefill_team {
     bool stop, failed, prefill;
 };
 
-extern int64_t i2_prefill_team_start(uint64_t team, int64_t tasks, sl_i64 handles);
-extern int64_t i2_prefill_team_join(sl_i64 handles);
-extern int64_t fg143_gather_affinity(uint8_t prefill, int64_t task);
+#ifdef _WIN32
+_Static_assert(
+    offsetof(struct i2_prefill_team, job_ready) == 8 &&
+    offsetof(struct i2_prefill_team, job_done) == 16 &&
+    offsetof(struct i2_prefill_team, work) == 24 &&
+    offsetof(struct i2_prefill_team, handles) == 32 &&
+    offsetof(struct i2_prefill_team, tasks) == 152 &&
+    offsetof(struct i2_prefill_team, count) == 156 &&
+    offsetof(struct i2_prefill_team, pending) == 160 &&
+    offsetof(struct i2_prefill_team, generation) == 168 &&
+    offsetof(struct i2_prefill_team, stop) == 176 &&
+    offsetof(struct i2_prefill_team, failed) == 177 &&
+    offsetof(struct i2_prefill_team, prefill) == 178, "Goose team ABI");
+#else
+_Static_assert(
+    offsetof(struct i2_prefill_team, job_ready) == 40 &&
+    offsetof(struct i2_prefill_team, job_done) == 88 &&
+    offsetof(struct i2_prefill_team, work) == 136 &&
+    offsetof(struct i2_prefill_team, handles) == 144 &&
+    offsetof(struct i2_prefill_team, tasks) == 264 &&
+    offsetof(struct i2_prefill_team, count) == 268 &&
+    offsetof(struct i2_prefill_team, pending) == 272 &&
+    offsetof(struct i2_prefill_team, generation) == 280 &&
+    offsetof(struct i2_prefill_team, stop) == 288 &&
+    offsetof(struct i2_prefill_team, failed) == 289 &&
+    offsetof(struct i2_prefill_team, prefill) == 290, "Goose team ABI");
+#endif
 
-void fg_i2_prefill_team_worker(uint64_t handle, int64_t task) {
-    struct i2_prefill_team *team = (void *)(uintptr_t)handle;
-    const int affinity_error = fg143_gather_affinity(team->prefill, task);
-    pthread_mutex_lock(&team->lock);
-    if (affinity_error) {
-        team->failed = true;
-        pthread_cond_signal(&team->job_done);
-        pthread_mutex_unlock(&team->lock);
-        return;
-    }
-    uint64_t observed = 0;
-    while (!team->stop) {
-        if (observed == team->generation) {
-            pthread_cond_wait(&team->job_ready, &team->lock);
-            continue;
-        }
-        observed = team->generation;
-        const struct i2_prefill_work *work = team->work;
-        const int count = team->count, tasks = team->tasks;
-        pthread_mutex_unlock(&team->lock);
-        fg_i2_prefill_partition((uint64_t)(uintptr_t)work, count * task / tasks, count * (task + 1) / tasks);
-        pthread_mutex_lock(&team->lock);
-        if (--team->pending == 0) pthread_cond_signal(&team->job_done);
-    }
-    pthread_mutex_unlock(&team->lock);
-}
-
-static bool prefill_team_open(struct i2_prefill_team *team, int tasks, bool prefill) {
-    if (pthread_mutex_init(&team->lock, NULL) != 0) return false;
-    if (pthread_cond_init(&team->job_ready, NULL) != 0) {
-        pthread_mutex_destroy(&team->lock);
-        return false;
-    }
-    if (pthread_cond_init(&team->job_done, NULL) != 0) {
-        pthread_cond_destroy(&team->job_ready);
-        pthread_mutex_destroy(&team->lock);
-        return false;
-    }
-    team->tasks = tasks;
-    team->prefill = prefill;
-    assert(i2_prefill_team_start((uint64_t)(uintptr_t)team, tasks, ints(team->handles, tasks - 1)) == tasks - 1);
-    return true;
-}
-
-static void prefill_team_close(struct i2_prefill_team *team) {
-    pthread_mutex_lock(&team->lock);
-    team->stop = true;
-    pthread_cond_broadcast(&team->job_ready);
-    pthread_mutex_unlock(&team->lock);
-    assert(i2_prefill_team_join(ints(team->handles, team->tasks - 1)) == 0);
-    pthread_cond_destroy(&team->job_done);
-    pthread_cond_destroy(&team->job_ready);
-    pthread_mutex_destroy(&team->lock);
-}
-
-static void prefill_team_run(struct i2_prefill_team *team, const struct i2_prefill_work *work, int count) {
-    pthread_mutex_lock(&team->lock);
-    assert(!team->failed && team->pending == 0);
-    team->work = work;
-    team->count = count;
-    team->pending = team->tasks - 1;
-    ++team->generation;
-    pthread_cond_broadcast(&team->job_ready);
-    pthread_mutex_unlock(&team->lock);
-
-    fg_i2_prefill_partition((uint64_t)(uintptr_t)work, 0, count / team->tasks);
-    pthread_mutex_lock(&team->lock);
-    while (team->pending && !team->failed) pthread_cond_wait(&team->job_done, &team->lock);
-    assert(!team->failed);
-    pthread_mutex_unlock(&team->lock);
-}
+_Static_assert(offsetof(struct i2_prefill_team, lock) == 0, "Goose team mutex ABI");
+extern bool prefill_team_open(struct i2_prefill_team *team, int tasks, bool prefill);
+extern void prefill_team_close(struct i2_prefill_team *team);
+extern void prefill_team_run(struct i2_prefill_team *team, const struct i2_prefill_work *work, int count);
