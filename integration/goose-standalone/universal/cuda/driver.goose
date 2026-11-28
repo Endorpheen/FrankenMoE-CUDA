@@ -364,6 +364,7 @@ struct kernel_node_params {
     function: u64 = 0,
     grid_x: u32 = 0, grid_y: u32 = 0, grid_z: u32 = 0,
     block_x: u32 = 0, block_y: u32 = 0, block_z: u32 = 0, shared_bytes: u32 = 0,
+    padding: u32 = 0,
     params: u64 = 0, extra: u64 = 0,
     kernel: u64 = 0,
     context: u64 = 0,
@@ -902,6 +903,8 @@ var replay_buffer: CudaReplayBuffer;
 // Host boundary: return the zero-initialized state for the calling thread.
 // The address remains stable until thread exit.
 struct CudaThreadState {
+    matrix_input: u64,
+    matrix_output: u64,
     i2_expert_trace: CudaState_i2_expert_trace,
     i2_lfu: CudaState_i2_lfu,
     i2_prior: CudaState_i2_prior,
@@ -927,8 +930,6 @@ struct CudaThreadState {
     i2_arena_probe: CudaState_i2_arena_probe,
     i2_depthmix_input: CudaState_i2_depthmix_input,
     i2_device_loop: CudaState_i2_device_loop,
-    matrix_input: u64,
-    matrix_output: u64,
     matrix_reusable_host: u64,
     matrix_glu_active: bool,
     matrix_input_bytes: i64,
@@ -980,22 +981,22 @@ struct CudaThreadState {
 }
 
 fn cuda_zero_CudaState_decode_capture() -> CudaState_decode_capture {
-    var value: CudaState_decode_capture;
+    var value: CudaState_decode_capture = default<CudaState_decode_capture>();
     return value;
 }
 
 fn cuda_zero_CudaState_i2_depthmix_input() -> CudaState_i2_depthmix_input {
-    var value: CudaState_i2_depthmix_input;
+    var value: CudaState_i2_depthmix_input = default<CudaState_i2_depthmix_input>();
     return value;
 }
 
 fn cuda_zero_CudaState_i2_device_loop() -> CudaState_i2_device_loop {
-    var value: CudaState_i2_device_loop;
+    var value: CudaState_i2_device_loop = default<CudaState_i2_device_loop>();
     return value;
 }
 
 fn cuda_zero_CudaState_i2_prior() -> CudaState_i2_prior {
-    var value: CudaState_i2_prior;
+    var value: CudaState_i2_prior = default<CudaState_i2_prior>();
     return value;
 }
 
@@ -1028,7 +1029,7 @@ fn replay_layout_for(function: u64) -> i64 {
     else { args = fg_cuda_kernel_arg_count(name[0]); }
     if args < 0 || args > REPLAY_ARGS { return -1; }
 
-    var layout: replay_layout;
+    var layout: replay_layout = default<replay_layout>();
     layout.function = function;
     layout.count = args as! u64;
     for i in args {
@@ -3157,7 +3158,7 @@ fn activation_growth_capacity() -> u64 {
 fn activation_widen() -> i32 {
     var thread_storage = cuda_thread_state();
     cuda.adapt_activation_capacity = false;
-    var larger: device_buffer;
+    var larger: device_buffer = default<device_buffer>();
     var capacity: u64 = activation_growth_capacity();
     var error: i32 = reserve(&larger, capacity);
     while error == 2 && capacity > (WIDE_ACTIVATION_BYTES as! u64) {
@@ -3501,7 +3502,7 @@ export fn fg_cuda_load_model_state(ranges: i64[:], bytes: i64) -> i64 {
     if records == 0 { return -1; }
     fg_cuda_host_memcpy(records, cuda_slice_address(ranges), metadata_bytes);
     if start_context() != 1 { fg_cuda_host_free(records); return -1; }
-    var staging: device_buffer;
+    var staging: device_buffer = default<device_buffer>();
     var views = fg_cuda_host_view_device_buffers(0, 0);
     var error: i32 = if (cuda.state_logical_bytes != 0) { -1 } else { 0 };
     if error == 0 && cuda.lazy_kv {
@@ -3758,7 +3759,7 @@ export fn fg_cuda_load_dense(ranges: i64[:], bytes: i64) -> i64 {
         fg_cuda_host_free(records_address);
         return -1;
     }
-    var staging: device_buffer;
+    var staging: device_buffer = default<device_buffer>();
     var status = reserve(staging, bytes as! u64);
     block {
         var i: i64 = 0;
@@ -4250,7 +4251,7 @@ fn submit_expert_stage_range(begin: u64, end: u64, batch_enabled: bool) -> i32 {
                 i += 1;
             }
         };
-        var attributes: memcpy_batch_attributes;
+        var attributes: memcpy_batch_attributes = default<memcpy_batch_attributes>();
         attributes.source_access_order = stream_order as! i32;
         var first: u64 = 0;
         thread_storage[0].activations.pending = true;
@@ -4413,7 +4414,7 @@ fn i2_lfu_phase(prefill: bool, position: i32, count: i32) {
     var setting: u64 = cuda_env("I2_PREFILL_LFU");
     let use_prefill = prefill && count == 4096 && !cuda_env_equal(setting, "0");
     if (prefill && position == 0) || (!use_prefill && thread_storage[0].cuda_local_i2_lfu_phase_prefill_trained_3805) {
-        var cleared: CudaState_i2_lfu;
+        var cleared: CudaState_i2_lfu = default<CudaState_i2_lfu>();
         thread_storage[0].i2_lfu = cleared;
     }
     if use_prefill && !thread_storage[0].cuda_local_i2_lfu_phase_prefill_trained_3805 {
@@ -4597,7 +4598,7 @@ fn prepare_prefill_plane(tensor: u64, bytes: i64, active: i64[:], offsets: i64[:
         active.len < TEMP_PREFILL_MIN_EXPERTS || (cache.prefill_wait_decode && !cache.decode_seen) { return 0; }
     if bytes <= 0 || offsets.len < active.len { return -1; }
 
-    var active_bits: u64[64];
+    var active_bits: u64[64] = [0;64];
     let pipeline = cache.prefill_double && active.len <= 4096;
     var selected: i64 = 0;
     for i in active.len {
@@ -5766,7 +5767,7 @@ struct CudaExpertPrefetch {
     ns_submit: u64,
 }
 fn cuda_expert_prefetch_state() -> CudaExpertPrefetch {
-    var state: CudaExpertPrefetch;
+    var state: CudaExpertPrefetch = default<CudaExpertPrefetch>();
     state.pending = -1;
     return state;
 }
@@ -6613,6 +6614,7 @@ export fn fg_cuda_routed_graph(plan: i64[:], glu: i64[:], norm: i64[:], shared: 
                     r += 1;
                 }
             };
+            p += 1;
         }
         if stage_all && error == 0 {
             if cuda.expert_split_planes {
@@ -6712,7 +6714,7 @@ export fn fg_cuda_routed_graph(plan: i64[:], glu: i64[:], norm: i64[:], shared: 
             var f32: i32 = 0;
             var first: i32 = 0;
             var shared_rows: i32 = (shared_hidden as! i32);
-            var plans: i64[5][26];
+            var plans: i64[26][5];
             if full {
                 for row in 5 {
                     for column in 26 { plans[row][column] = shared[8 + row * 26 + column]; }
@@ -7574,7 +7576,7 @@ export fn fg_cuda_vector(config: i64[:], x: u8[:], y: u8[:], out: u8[:], param0:
         if plan[0] == silu_operation { plan[0] = silu_reference_operation; }
         if plan[0] == swiglu_operation { plan[0] = swiglu_reference_operation; }
     }
-    var staged: u64[2];
+    var staged: u64[2] = [0, 0];
     var output: u64 = 0;
     let host: u64 = ((cuda_slice_address(out)) as! u64);
     var error: i32 = 0;
@@ -7761,7 +7763,7 @@ export fn fg_cuda_position(config: i64[:], x: u8[:], y: u8[:], z: u8[:], out: u8
     if rope && (config[3] <= 0 || config[3] > INT_MAX || config[4] <= 0) { return -1; }
     let active: i32 = start_context();
     if active != 1 { return active; }
-    var staged: u64[4];
+    var staged: u64[4] = [0, 0, 0, 0];
     var output: u64 = 0;
     let resident: bool = cuda.decode_graph_enabled && !rope &&
         dense_weight(((cuda_slice_address(y)) as! u64), y.len, &staged[1]);

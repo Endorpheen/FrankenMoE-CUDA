@@ -190,6 +190,7 @@ struct CudaReplayKernelNode {
     function: u64,
     grid_x: u32, grid_y: u32, grid_z: u32,
     block_x: u32, block_y: u32, block_z: u32, shared_bytes: u32,
+    padding: u32,
     parameters: u64, extra: u64,
     kernel: u64, context: u64
 }
@@ -199,7 +200,7 @@ fn cuda_replay_set_kernel(executable: u64, node: u64, commands: const u64[:], at
         function: commands[at + 1],
         grid_x: commands[at + 2] as u32, grid_y: commands[at + 3] as u32, grid_z: commands[at + 4] as u32,
         block_x: commands[at + 5] as u32, block_y: commands[at + 6] as u32, block_z: commands[at + 7] as u32,
-        shared_bytes: commands[at + 8] as u32, parameters: commands[at + 9],
+        shared_bytes: commands[at + 8] as u32, padding: 0, parameters: commands[at + 9],
         extra: 0, kernel: 0, context: 0
     };
     return fg_cuda_driver_graph_set_kernel_typed(unsafe_c_ptr<c_ptr<void>>(executable),
