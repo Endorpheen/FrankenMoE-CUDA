@@ -37,3 +37,9 @@ export fn apex_up_gate_launch(weights: u64, packed: u64, output: u64, up_jobs: u
         weights + job_word(gate_jobs, job + 2) + row_offset, input,
         output + job_word(up_jobs, job + 1) + ((4 * row) as! u64), extent, thread, sums);
 }
+
+export fn apex_up_gate_shared(up: u64, gate: u64, packed: u64, output: u64, stride: u64,
+    extent: i64, row: u64, thread: i64, sums: u64) {
+    let offset = row * stride;
+    apex_up_gate_reduce(up + offset, gate + offset, packed, output + row * 4, extent, thread, sums);
+}

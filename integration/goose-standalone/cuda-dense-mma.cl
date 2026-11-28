@@ -1,10 +1,7 @@
 typedef struct { float a_g, b_g, c_g, d_g; } DenseDot_g;
 typedef struct { uint32_t hi_g, lo_g; } DenseParts_g;
 
-static float fg_dense_load(uint64_t address) { return fg_device_global_load(address); }
 static uint64_t fg_dense_job(uint64_t address) { return *(__global const uint64_t *) address; }
-static float fg_dense_f32(uint32_t bits) { return as_float(bits); }
-static void fg_dense_store(uint64_t address, float value) { fg_device_global_store(address, value); }
 
 static uint32_t fg_dense_tf32(float value) {
     uint32_t bits;

@@ -1,3 +1,4 @@
+#include "cuda-intrinsic-aliases.h"
 // OpenCL C bindings for operations required by the Goose-emitted device code.
 typedef uchar uint8_t;
 typedef ushort uint16_t;
@@ -112,7 +113,6 @@ static void fg248d_fail(int64_t code) { (void) code; device_trap(); }
 static uint32_t fg182d_ld_u8(uint64_t address, uint64_t offset) { return fg248d_ld_u8(address + offset); }
 static float fg182d_ld_half(uint64_t address, uint64_t offset) { return fg248d_ld_half(address + offset); }
 static void fg182d_st_f32(uint64_t address, uint64_t offset, float value) { fg248d_st_f32(address + offset, value); }
-static void fg182d_fail(int64_t code) { fg248d_fail(code); }
 
 #include "q4k-device.h"
 #include "q6k-device.h"
@@ -177,9 +177,6 @@ static int64_t fg_attn_word(uint64_t config, int64_t index) {
     return ((__global int64_t *) config)[index];
 }
 
-static float fg_attn_shfl(float value, int32_t delta) {
-    return fg_device_shfl(value, delta);
-}
 
 static float fg_attn_exp(float value) {
     float result;
@@ -289,21 +286,8 @@ static void fg_mla_store_index(uint64_t base, int64_t index, int32_t value) {
 #undef fg_mla_mma_f16
 #include "cuda-attention-entries.h"
 
-static float fg174s_load(uint64_t address, uint64_t index) {
-    return fg_device_global_load(address + 4 * index);
-}
 
-static void fg174s_store(uint64_t address, uint64_t index, float value) {
-    fg_device_global_store(address + 4 * index, value);
-}
 
-static float fg174s_expf(float value) { return fg_attn_exp(value); }
-
-static float fg174s_fma(float a, float b, float sum) { return fg_device_fma(a, b, sum); }
-
-static float fg174s_mul_rn(float a, float b) {
-    return fg_device_mul_rn(a, b);
-}
 
 static float fg174s_shfl_xor(float value, int32_t delta, int32_t width) {
     uint32_t result;
@@ -313,27 +297,13 @@ static float fg174s_shfl_xor(float value, int32_t delta, int32_t width) {
     return as_float(result);
 }
 
-static uint32_t fg174s_umulhi(uint32_t a, uint32_t b) {
-    return (uint32_t) (((uint64_t) a * b) >> 32);
-}
-
 // Eight pointer words precede the Goose-generated strides and launch plan.
 typedef struct { uint64_t words[57]; } gdn_launch_packet;
 
-static uint64_t fg174s_dget(int64_t packet, int64_t table, int64_t index) {
-    const uint64_t * data = (const uint64_t *) packet;
-    return data[(table == 0 ? 0 : table == 2 ? 8 : 32) + index];
+static uint64_t fg_gdn_read_word(int64_t packet, int64_t index) {
+    return ((const uint64_t *)packet)[index];
 }
 
-static float fg174s_df(int64_t packet, int64_t index) {
-    return as_float((uint32_t) ((const uint64_t *) packet)[49 + index]);
-}
-
-static uint32_t fg174s_dm(int64_t packet, int64_t row, int64_t index) {
-    return (uint32_t) ((const uint64_t *) packet)[50 + 3 * row + index];
-}
-
-static void fg174s_sync(void) { fg_device_barrier(); }
 
 #include "gdn-device.h"
 
@@ -439,48 +409,28 @@ static int32_t fg_rope_position(uint64_t positions, int64_t i) {
     return ((__global int32_t *) positions)[i];
 }
 
-static float fg_rope_load(uint64_t address, int64_t size) {
-    return size == 4 ? fg_device_global_load(address) : fg248d_ld_half(address);
+static void fg_rope_copy32(uint64_t src, uint64_t dst) { *(__global uint32_t *)dst = *(__global uint32_t *)src; }
+static void fg_rope_copy16(uint64_t src, uint64_t dst) { *(__global uint16_t *)dst = *(__global uint16_t *)src; }
+static int64_t fg_rope_round(double value) {
+    int64_t result;
+    __asm__("cvt.rni.s64.f64 %0, %1;" : "=l"(result) : "d"(value));
+    return result;
 }
-
-static void fg_rope_store(uint64_t address, int64_t size, float value) {
-    if (size == 4) fg_device_global_store(address, value);
-    else fg176r_st_f16(address, 0, value);
-}
-
-static void fg_rope_copy_pair(uint64_t src, uint64_t dst, int64_t size) {
-    if (size == 4) {
-        ((__global uint32_t *) dst)[0] = ((__global uint32_t *) src)[0];
-        ((__global uint32_t *) dst)[1] = ((__global uint32_t *) src)[1];
-    } else {
-        ((__global uint16_t *) dst)[0] = ((__global uint16_t *) src)[0];
-        ((__global uint16_t *) dst)[1] = ((__global uint16_t *) src)[1];
-    }
-}
-
-// Reduce angles before the PTX trigonometric instructions. Split 2*pi
-// into two doubles so long contexts keep the small remainder accurately.
-static float fg_rope_reduce(float theta) {
-    if ((as_uint(theta) & 0x7f800000u) == 0x7f800000u) return as_float(0x7fc00000u);
-    const double scaled = (double) theta * 0.15915494309189533577;
-    int64_t n;
-    __asm__("cvt.rni.s64.f64 %0, %1;" : "=l"(n) : "d"(scaled));
-    double rem = (double) theta;
-    const double neg = -(double) n;
-    __asm__("fma.rn.f64 %0, %1, %2, %0;" : "+d"(rem) : "d"(neg), "d"(6.283185307179586));
-    __asm__("fma.rn.f64 %0, %1, %2, %0;" : "+d"(rem) : "d"(neg), "d"(2.4492935982947064e-16));
-    return (float) rem;
+static double fg_rope_fma64(double a, double b, double sum) {
+    double result;
+    __asm__("fma.rn.f64 %0, %1, %2, %3;" : "=d"(result) : "d"(a), "d"(b), "d"(sum));
+    return result;
 }
 
 static float fg_rope_sin(float theta) {
     float result;
-    __asm__("sin.approx.f32 %0, %1;" : "=f"(result) : "f"(fg_rope_reduce(theta)));
+    __asm__("sin.approx.f32 %0, %1;" : "=f"(result) : "f"(theta));
     return result;
 }
 
 static float fg_rope_cos(float theta) {
     float result;
-    __asm__("cos.approx.f32 %0, %1;" : "=f"(result) : "f"(fg_rope_reduce(theta)));
+    __asm__("cos.approx.f32 %0, %1;" : "=f"(result) : "f"(theta));
     return result;
 }
 
@@ -488,16 +438,11 @@ static float fg_rope_cos(float theta) {
 
 static float fg170s_load(uint64_t address, uint64_t i) { return fg_device_global_load(address + 4 * i); }
 static void fg170s_store(uint64_t address, uint64_t i, float value) { fg_device_global_store(address + 4 * i, value); }
-static float fg170s_expf(float value) { return fg_attn_exp(value); }
 static void fg170s_lc(void) {}
 static void fg170s_sync(void) {}
-static void fg170s_barrier(void) { fg_device_barrier(); }
 static float fg170s_shared_load(uint64_t address, uint64_t i) { return ((__local float *) address)[i]; }
 static void fg170s_shared_store(uint64_t address, uint64_t i, float value) {
     ((__local float *) address)[i] = value;
-}
-static float fg170s_fma(float x, float w, float sum) {
-    return fg_device_fma_ftz(x, w, sum);
 }
 
 #include "ssm-conv-device.h"
@@ -510,9 +455,6 @@ static void fg283d_st_i32(uint64_t out, uint64_t offset, int32_t value) {
 }
 static int32_t fg283d_sload_i32(uint64_t at) { return *(__local int32_t *) at; }
 static void fg283d_sstore_i32(uint64_t at, int32_t value) { *(__local int32_t *) at = value; }
-static void fg283d_sync(void) { fg_device_barrier(); }
-static void fg283d_fail(int64_t code) { fg248d_fail(code); }
-static float fg169t_shuffle(float value, int32_t offset) { return fg_device_shfl(value, offset); }
 static int32_t fg169t_ishuffle(int32_t value, int32_t offset) {
     return as_int(fg_device_shfl(as_float(value), offset));
 }
@@ -533,7 +475,6 @@ static void fg434c_st_f32(uint64_t base, uint64_t offset, float value) {
     __asm__ volatile("st.f32 [%0], %1;" :: "l"(base + offset), "f"(value) : "memory");
 }
 
-static void fg434c_sync(void) { fg_device_barrier(); }
 
 #include "transform-device.h"
 
@@ -556,32 +497,10 @@ static void fg183f_fail(int64_t code) {
     device_trap();
 }
 
-static void fg_fwht_quantize_shared(uint64_t src, uint64_t sb, uint64_t dst, uint64_t db) {
-    fg176r_quant_q4_0_g(src, sb, dst, db);
-}
 static void fg_fwht_warp_sync(void) { __asm__ volatile("bar.warp.sync -1;" ::: "memory"); }
 #include "fwht-device.h"
 
-__kernel void goose_kv_fwht(__global const float * src, __global float * dst,
-                           int32_t width, int64_t rows, float scale) {
-    uint32_t block, thread;
-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(block));
-    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
-    fg183f_row_g((uint64_t) src, (uint64_t) dst, width, rows, scale, block, 4, thread / 32, thread % 32, 32);
-}
-
-__kernel void goose_fwht_q4(__global const float *src, __global uchar *dst,
-    int32_t width, int64_t rows, float scale) {
-    __local float tile[4 * 256] __attribute__((aligned(16)));
-    uint32_t block, thread;
-    uint64_t shared;
-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(block));
-    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
-    __asm__("cvta.shared.u64 %0, %1;" : "=l"(shared) : "l"((uint64_t) tile));
-    const uint32_t warp = thread / 32;
-    fwht_q4_write_g((uint64_t) src, (uint64_t) dst, shared + 4ul * warp * width,
-        width, rows, scale, 4l * block + warp, thread % 32);
-}
+#include "cuda-fwht-entries.h"
 
 #define fg179w_ld_f32 fg183f_ld_f32
 static void fg179w_st_f32(uint64_t base, uint64_t byte, float value) {
@@ -595,6 +514,7 @@ static void fg179w_st_f32(uint64_t base, uint64_t byte, float value) {
 #undef fg179w_fail
 
 #include "cuda-activation-entries.h"
+#include "cuda-apex-epilogue-entries.h"
 
 #ifdef GOOSE_CUDA_MMQ_IMAGE
 static void fg_cuda_cp16(uint64_t dst, uint64_t src) {
@@ -615,27 +535,4 @@ static uint64_t apex_up_gate_word(uint64_t jobs, int64_t index) {
 #include "cuda-flash-vec.cl"
 #endif
 
-#if defined(GOOSE_APEX_UP_GATE_IMAGE)
-__kernel void goose_mmvq_up_gate_glu(__global const uint8_t *weights,
-    __global const uint8_t *packed, __global uint8_t *output,
-    __global const uint64_t *up_jobs, __global const uint64_t *gate_jobs,
-    uint64_t stride, int32_t extent) {
-    uint32_t row, route, thread;
-    __local float sums[192];
-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(row));
-    __asm__("mov.u32 %0, %%ctaid.y;" : "=r"(route));
-    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
-    apex_up_gate_launch_g((uint64_t)weights,(uint64_t)packed,(uint64_t)output,(uint64_t)up_jobs,
-        (uint64_t)gate_jobs,stride,extent,row,route,thread,(uint64_t)sums);
-}
-
-__kernel void goose_mmvq_shared_up_gate_glu(__global const uint8_t *weights_up, __global const uint8_t *weights_gate,
-    __global const uint8_t *packed, __global uint8_t *output, uint64_t stride, int32_t extent) {
-    uint32_t row, thread;
-    __local float sums[192];
-    __asm__("mov.u32 %0, %%ctaid.x;" : "=r"(row));
-    __asm__("mov.u32 %0, %%tid.x;" : "=r"(thread));
-    apex_up_gate_reduce_g((uint64_t)weights_up + row * stride,(uint64_t)weights_gate + row * stride,
-        (uint64_t)packed,(uint64_t)output + (uint64_t)row * 4,extent,thread,(uint64_t)sums);
-}
-#endif
+#include "cuda-up-gate-entries.h"

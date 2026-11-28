@@ -6,8 +6,6 @@ static F4_g fg174m_load4(uint64_t p, uint64_t i) {
     const float4 v = *(__global const float4 *) (p + 4 * i);
     return (F4_g) {v.x, v.y, v.z, v.w};
 }
-static float fg174m_expf(float v) { return fg_attn_exp(v); }
-static void fg174m_barrier(void) { fg_device_barrier(); }
 static float fg174m_shfl_up(float v, int32_t delta) {
     uint32_t r;
     __asm__ volatile("shfl.sync.up.b32 %0, %1, %2, 0, -1;" : "=r"(r) : "r"(as_uint(v)), "r"(delta));

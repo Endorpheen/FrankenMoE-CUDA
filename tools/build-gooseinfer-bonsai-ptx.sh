@@ -26,20 +26,33 @@ for source in "$source_dir"/goose/*.goose "$root/goose/cuda/standalone-matmul.go
     module=${module#standalone-}
     if [[ -d $overlay && -f $overlay/$module.goose ]]; then source="$overlay/$module.goose"; fi
     case "$module" in
+        rope)
+            cat "$source" "$root/goose/cuda/standalone-rope-device.goose" > "$scratch/$module.goose"
+            source="$scratch/$module.goose"
+            ;;
         q4-attention)
             cat "$source" "$root/goose/cuda/standalone-q4-attention-entry.goose" > "$scratch/$module.goose"
             source="$scratch/$module.goose"
             ;;
-        mmq|mmq-quant|dense-mma|mmvq|mmvq-pack|ssm-conv|gdn|gdn-mma|q4-set-rows|flash-mma|flash-vec)
+        mmq|mmq-quant|dense-mma|fwht|mmvq|mmvq-pack|ssm-conv|gdn|gdn-mma|q4-set-rows|flash-mma|flash-vec)
             launcher=$module
             if [[ "$module" == mmq-quant ]]; then launcher=mmq-pack; fi
             if [[ "$module" == ssm-conv ]]; then launcher=ssm; fi
-            cat "$source" "$root/goose/cuda/standalone-$launcher-launch.goose" > "$scratch/$module.goose"
+            if [[ "$module" == gdn ]]; then
+                cat "$source" "$root/goose/cuda/standalone-gdn-packet.goose" \
+                    "$root/goose/cuda/standalone-gdn-launch.goose" > "$scratch/$module.goose"
+            else
+                cat "$source" "$root/goose/cuda/standalone-$launcher-launch.goose" > "$scratch/$module.goose"
+            fi
             source="$scratch/$module.goose"
             ;;
     esac
     if [[ ${GOOSE_APEX_UP_GATE_IMAGE:-0} == 1 && "$module" == mmvq-q4 ]]; then
         cat "$source" "$root/goose/cuda/apex-up-gate.goose" > "$scratch/$module.goose"
+        source="$scratch/$module.goose"
+    fi
+    if [[ ${overlay##*/} == moe-epilogue && "$module" == vector ]]; then
+        cat "$source" "$overlay/launch.goose" > "$scratch/$module.goose"
         source="$scratch/$module.goose"
     fi
     "$goose" --standalone --emit-provenance "$scratch/$module.c" "$source"
@@ -60,6 +73,8 @@ elif [[ -n $overlay ]]; then
     patch --batch --forward --silent "$scratch/flash-vec-device.h" < "$overlay"
 fi
 
+if [[ ${overlay##*/} == moe-epilogue ]]; then defines+=(-DGOOSE_APEX_MOE_EPILOGUE_IMAGE); fi
+if [[ ${overlay##*/} == fwht-fixed ]]; then defines+=(-DGOOSE_APEX_FWHT_FIXED_IMAGE); fi
 if [[ ${overlay##*/} == rms-onevec ]]; then defines+=(-DGOOSE_APEX_RMS_ONEVEC_IMAGE); fi
 if [[ ${GOOSE_APEX_UP_GATE_IMAGE:-0} == 1 ]]; then defines+=(-DGOOSE_APEX_UP_GATE_IMAGE); fi
 
@@ -69,7 +84,9 @@ python3 "$root/tools/emit-gooseinfer-cuda-entries.py" \
     "$standalone/cuda-mmq-entries.json" "$scratch/cuda-mmq-entries.h"
 python3 "$root/tools/emit-gooseinfer-cuda-entries.py" \
     "$standalone/cuda-activation-entries.json" "$scratch/cuda-activation-entries.h"
-for abi in "$standalone/"cuda-{dense-mma,flash-mma,gdn-mma,flash-vec,mmvq,rms-reference}-entries.json; do
+python3 "$root/tools/emit-gooseinfer-cuda-entries.py" \
+    "$standalone/cuda-intrinsic-aliases.json" "$scratch/cuda-intrinsic-aliases.h"
+for abi in "$standalone/"cuda-{dense-mma,flash-mma,gdn-mma,flash-vec,mmvq,rms-reference,fwht,up-gate,apex-epilogue}-entries.json; do
     name=${abi##*/}
     python3 "$root/tools/emit-gooseinfer-cuda-entries.py" "$abi" "$scratch/${name%.json}.h"
 done

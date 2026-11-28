@@ -1,5 +1,5 @@
-extern "fg174s_dget" fn gdn_mma_word(packet: i64, table: i64, index: i64) -> u64;
-extern "fg174s_df" fn gdn_mma_scale(packet: i64, index: i64) -> f32;
+extern "gdn_packet_word_g" fn gdn_mma_word(packet: i64, table: i64, index: i64) -> u64;
+extern "gdn_packet_scale_g" fn gdn_mma_scale(packet: i64, index: i64) -> f32;
 fn gdn_mma_signed(packet: i64, index: i64) -> i64 { return gdn_mma_word(packet, 0, index) as i64; }
 export fn gdn_mma_launch(packet: i64, shared: u64, task: i32, thread: i32, narrow: bool) {
     if narrow {

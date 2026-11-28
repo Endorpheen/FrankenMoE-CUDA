@@ -17,13 +17,7 @@ for variant in fwht-fixed rms-onevec flash-interior moe-epilogue; do
         flash-interior) entries=goose_flash_causal_mma ;;
         moe-epilogue) entries=goose_moe_shared_residual_prefill ;;
     esac
-    if [[ "$variant" == moe-epilogue ]]; then
-        "${CLANG:-clang-18}" -target nvptx64-nvidia-cuda -nocudalib -O2 -x cl -cl-std=CL1.2 \
-            -include "$standalone/bonsai-frozen-cuda/device-prelude.cl" -S -Xclang -target-cpu -Xclang sm_80 \
-            "$src/epilogue.cl" -o "$scratch/module.ptx"
-    else
-        bash "$tools/build-gooseinfer-bonsai-ptx.sh" "$scratch/module.ptx" mmq "$src/$variant"
-    fi
+    bash "$tools/build-gooseinfer-bonsai-ptx.sh" "$scratch/module.ptx" mmq "$src/$variant"
     "$cuda/bin/ptxas" -arch=sm_89 --entry "$entries" "$scratch/module.ptx" -o "$scratch/module.cubin"
     python3 - "$scratch/module.cubin" "$out/$variant-image.h" "${variant//-/_}_image" <<'PY'
 from pathlib import Path

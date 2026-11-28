@@ -1,30 +1,20 @@
 #include "flash-mma-types.h"
 
-static void fg175l_cp16(uint64_t dst, uint64_t src) {
-    fg_cuda_cp16(dst, src);
-}
 
 static void fg_flash_mask_half(uint64_t dst, uint32_t bits) { *(__local uint16_t *) dst = (uint16_t) bits; }
 static void fg_flash_half_store(uint64_t dst, float v) { *(__global uint16_t *) dst = mmq_half_bits(v); }
-static F2_g fg_flash_unpack(uint64_t block, int64_t pair) { return dequant_q4_0_g(block, pair); }
 
 #include "flash-load-device.h"
 #include "flash-stage-device.h"
 
-static void fg175l_load_kv(uint64_t src, uint64_t dst, int64_t stride, int64_t row, int32_t lane, int32_t warp) {
-    fg_flash_load_kv_g(src, dst, stride, row, lane, warp);
-}
 static void fg175l_load_mask(uint64_t first, uint64_t dst, int64_t stride, int64_t row, int64_t query,
                             int64_t queries, int32_t cols, int32_t lane, int32_t warp) {
     (void) stride;
     fg_flash_load_causal_g(first, dst, row, query, queries, cols, lane, warp);
 }
 
-static uint32_t fg175c_fg176i_bits(float v) { return as_uint(v); }
-static float fg175c_fg176i_frombits(uint32_t v) { return as_float(v); }
 static uint32_t fg175c_fg176i_ldu(uint64_t p) { return *(__local uint32_t *) p; }
 static void fg175c_fg176i_stu(uint64_t p, uint32_t v) { *(__local uint32_t *) p = v; }
-static float fg175c_fg176i_hlo(uint32_t w) { return fg175q_h2f(w); }
 static float fg175c_fg176i_hhi(uint32_t w) { return fg175q_h2f(w >> 16); }
 static uint32_t fg175c_fg176i_h2(float a, float b) {
     return (uint32_t) mmq_half_bits(a) | ((uint32_t) mmq_half_bits(b) << 16);
@@ -34,11 +24,6 @@ static uint32_t fg175c_fg176i_mulh2(uint32_t a, uint32_t b) {
     __asm__("mul.rn.f16x2 %0, %1, %2;" : "=r"(out) : "r"(a), "r"(b));
     return out;
 }
-static float fg175c_fg176i_expf(float v) { return fg_attn_exp(v); }
-static float fg175c_fg176i_fmaf(float a, float b, float c) { return fg_device_fma(a, b, c); }
-static float fg175c_fg176i_shflx(float x, int32_t d) { return fg_device_shfl(x, d); }
-static void fg175c_fg176i_cpwait(void) { fg_cuda_cpwait(); }
-static void fg175c_fg176i_barrier(void) { fg_device_barrier(); }
 
 static Flash_U4_g fg175c_fg176i_ldm4(uint64_t address) {
     const U4_g r = fg174m_ldm4(address);
@@ -72,8 +57,6 @@ static float fg175c_fg175p_smldf(uint64_t p, uint64_t i) { return ((__local floa
 static void fg175c_fg175p_smstf(uint64_t p, uint64_t i, float v) { ((__local float *) p)[i] = v; }
 static float fg168f_ld_f32(uint64_t p, uint64_t off) { return fg_device_global_load(p + off); }
 static void fg168f_st_f32(uint64_t p, uint64_t off, float v) { fg_device_global_store(p + off, v); }
-static float fg168f_expf(float v) { return fg_attn_exp(v); }
-static float fg168f_fmaxf(float a, float b) { return fg_vector_max(a, b); }
 static void fg168f_sync(void) {}
 static void fg168f_lc(void) {}
 #define fg175c_fg175p_h2mul fg175c_fg176i_mulh2

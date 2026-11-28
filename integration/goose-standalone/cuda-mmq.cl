@@ -82,7 +82,6 @@ static void fg_mmq_copy_16(uint64_t dst, uint64_t src) {
     *(__local uint4 *) dst = *(__global const uint4 *) src;
 }
 
-static void fg_mmq_barrier(void) { fg_device_barrier(); }
 
 static float fg180q_ld_f4x(uint64_t src, uint64_t off) { return fg_device_global_load(src + off); }
 static float fg180q_ld_f4y(uint64_t src, uint64_t off) { return fg_device_global_load(src + off + 4); }
@@ -115,11 +114,7 @@ static float fg180q_round(float value) {
 }
 static float fg180q_fabs(float value) { return as_float(as_uint(value) & 0x7fffffffu); }
 static void fg180q_pdl_sync(void) {}
-static void fg180q_fail(int64_t code) { fg248d_fail(code); }
 
-static float fg_mmq_swiglu_reference(float gate, float up) {
-    return fg_vector_swiglu_reference_g(gate, up);
-}
 
 #include "mmq-quant-types.h"
 #include "mmq-quant-device.h"

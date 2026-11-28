@@ -10,24 +10,16 @@ static int32_t fg185q_ld_i32(uint64_t p, uint64_t off) { return *(__global int32
 static uint32_t fg185q_ld_u16(uint64_t p, uint64_t off) { return *(__global uint16_t *) (p + off); }
 static float fg185q_ld_h2(uint64_t p, uint64_t off) { return fg248d_ld_half(p + off); }
 static float fg185q_ld_h2b(uint64_t p, uint64_t off) { return fg248d_ld_half(p + off + 2); }
-static int32_t fg185q_dp4a(int32_t a, int32_t b, int32_t c) { return mmvq_dp4a(a, b, c); }
 static float fg185q_shfl_xor(float v, int32_t delta, int32_t width) {
     return fg_device_shfl(v, delta);
 }
 
-static int32_t fg186q_ld_i32(uint64_t p, uint64_t off) { return fg185q_ld_i32(p, off); }
-static uint32_t fg186q_ld_i16(uint64_t p, uint64_t off) { return fg185q_ld_u16(p, off); }
 static int32_t fg186q_ld_i8(uint64_t p, uint64_t off) { return fg248d_ld_i8(p + off); }
 static float fg186q_ld_half(uint64_t p, uint64_t off) { return fg248d_ld_half(p + off); }
-static int32_t fg186q_dp4a(int32_t a, int32_t b, int32_t c) { return mmvq_dp4a(a, b, c); }
 
 static float fg178q_ld_f32(uint64_t p, uint64_t off) { return fg_device_global_load(p + off); }
 static void fg178q_st_i8(uint64_t p, uint64_t off, int32_t v) { *(__global uint8_t *) (p + off) = (uint8_t) v; }
 static void fg178q_st_f16(uint64_t p, uint64_t off, float v) { *(__global uint16_t *) (p + off) = mmq_half_bits(v); }
-static float fg178q_shfl_xor(float v, uint32_t mask, int32_t delta) { return fg180q_shfl_xor(v, mask, delta); }
-static float fg178q_round(float v) { return fg180q_round(v); }
-static int32_t fg178q_trunc_i32(float v) { return fg180q_i32(v); }
-static float fg178q_fabs(float v) { return fg180q_fabs(v); }
 static uint32_t fg178q_mulhi(uint32_t a, uint32_t b) {
     uint32_t high;
     __asm__("mul.hi.u32 %0, %1, %2;" : "=r"(high) : "r"(a), "r"(b));
@@ -35,7 +27,6 @@ static uint32_t fg178q_mulhi(uint32_t a, uint32_t b) {
 }
 static void fg178q_pdl_sync(void) {}
 static void fg178q_pdl_lc(void) {}
-static void fg178q_fail(int64_t code) { fg248d_fail(code); }
 
 #include "mmvq-q4-device.h"
 #include "mmvq-q6-device.h"

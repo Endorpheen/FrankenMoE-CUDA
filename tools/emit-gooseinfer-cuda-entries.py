@@ -1,11 +1,21 @@
 """Emit CUDA entry points for Goose device functions from their launch ABI."""
 
 import json
+import re
 from pathlib import Path
 import sys
 
 source, output = map(Path, sys.argv[1:])
 entries = json.loads(source.read_text())
+if isinstance(entries, dict):
+    lines = []
+    for alias, name in entries.items():
+        if not re.fullmatch(r"\w+", alias) or not re.fullmatch(r"\w+", name):
+            raise ValueError("Invalid CUDA intrinsic alias")
+        lines.append(f"#define {alias} {name}")
+    output.write_text("\n".join(lines) + "\n")
+    sys.exit(0)
+
 registers = {"block_x": "ctaid.x", "block_y": "ctaid.y", "block_z": "ctaid.z",
              "thread_x": "tid.x", "block_width": "ntid.x", "grid_x": "nctaid.x", "grid_y": "nctaid.y"}
 

@@ -310,3 +310,21 @@ export fn fwht_q4_write256(src: u64, dst: u64, scratch: u64, rows: i64, scale: f
         quantize_shared(scratch, (128 * lane) as u64, dst, (18 * (row * 8 + (lane as i64))) as u64);
     }
 }
+
+export fn apex_fwht_row64(src: u64, dst: u64, rows: i64, scale: f32, block_index: i64, thread: i64) {
+    fwht_row64(src, dst, rows, scale, 4 * block_index + thread / 32, (thread % 32) as i32);
+}
+
+export fn apex_fwht_row256(src: u64, dst: u64, rows: i64, scale: f32, block_index: i64, thread: i64) {
+    fwht_row256(src, dst, rows, scale, 4 * block_index + thread / 32, (thread % 32) as i32);
+}
+
+export fn apex_fwht_q4_64(src: u64, dst: u64, rows: i64, scale: f32, block_index: i64, thread: i64, scratch: u64) {
+    let warp = thread / 32;
+    fwht_q4_write64(src, dst, scratch + 256 * (warp as u64), rows, scale, 4 * block_index + warp, (thread % 32) as i32);
+}
+
+export fn apex_fwht_q4_256(src: u64, dst: u64, rows: i64, scale: f32, block_index: i64, thread: i64, scratch: u64) {
+    let warp = thread / 32;
+    fwht_q4_write256(src, dst, scratch + 1024 * (warp as u64), rows, scale, 4 * block_index + warp, (thread % 32) as i32);
+}

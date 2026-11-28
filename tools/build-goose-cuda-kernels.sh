@@ -16,8 +16,9 @@ sed -n '/^struct F2 {/,/^}/p; /^fn dequant_q4_0(/,/^}/p' \
     "$ROOT/goose/cuda/goose-cuda-flash-attention/staging-device.goose" |
     sed 's/^fn dequant_q4_0(/export fn dequant_q4_0(/' > "$OUT/q4-attention.goose"
 cat "$ROOT/goose/cuda/"{standalone-q4-attention,standalone-q4-attention-entry,standalone-mla-launch}.goose >> "$OUT/q4-attention.goose"
-sed '/^fn main()/,$d; s/^fn \(gdn\|gdn_decode\)(/export fn \1(/' \
-    "$ROOT/goose/cuda/goose-cuda-gdn/scalar-device.goose" > "$OUT/gdn.goose"
+sed '/^extern "fg174s_\(load\|store\|umulhi\|dget\|df\|dm\)"/d; /^fn main()/,$d; s/^fn \(gdn\|gdn_decode\)(/export fn \1(/' \
+    "$ROOT/goose/cuda/goose-cuda-gdn/scalar-device.goose" | \
+    sed -E 's/\bload\(/gdn_load(/g; s/\bstore\(/gdn_store(/g; s/\bmulhi\(/gdn_mulhi(/g; s/\bget\(/gdn_packet_word(/g; s/\bfl\(/gdn_packet_scale(/g; s/\bcoeff\(/gdn_packet_coefficient(/g' > "$OUT/gdn.goose"
 sed '/^fn main()/,$d; s/^fn \(gdn_v32\|gdn_v128\)(/export fn \1(/' \
     "$ROOT/goose/cuda/goose-cuda-gdn/mma-device.goose" > "$OUT/gdn-mma.goose"
 sed -n '/^extern "fg176r_ld_f32"/p; /^extern "fg176r_st_f16"/p; /^extern "fg176r_st_u8"/p;
@@ -35,7 +36,7 @@ sed -n '/^struct F4 {/,/^}/p; /^extern "fg168_\(load\|store\|load4\|store4\|shuf
 cat "$ROOT/goose/cuda/standalone-rms-reference.goose" >> "$OUT/rms-reference.goose"
 sed -n '/^fn silu(/,/^}/p; /^fn sigmoid(/,/^}/p; /^fn softplus(/,/^}/p' \
     "$ROOT/goose/cpu/goose-cpu-backend-api/pointwise.goose" >> "$OUT/vector.goose"
-cp "$ROOT/goose/cuda/standalone-rope.goose" "$OUT/rope.goose"
+cat "$ROOT/goose/cuda/"standalone-rope{,-device}.goose > "$OUT/rope.goose"
 sed -n '/^fn yarn_pair(/,/^}/p; /^fn rope_sector_axis(/,/^}/p; /^fn rope_reset_axis(/,/^}/p' \
     "$ROOT/goose/cpu/goose-cpu-backend-api/rope.goose" >> "$OUT/rope.goose"
 sed -n '/^extern "fg170s_load"/p; /^extern "fg170s_store"/p; /^extern "fg170s_expf"/p;
@@ -63,6 +64,7 @@ cat "$ROOT/goose/cuda/standalone-transform.goose" >> "$OUT/transform.goose"
 sed '/^fn main()/,$d; s/^fn fg183f_row(/export fn fg183f_row(/' \
     "$ROOT/goose/cuda/goose-cuda-fwht/device.goose" > "$OUT/fwht.goose"
 cat "$ROOT/goose/cuda/standalone-fwht-q4.goose" >> "$OUT/fwht.goose"
+cat "$ROOT/goose/cuda/standalone-fwht-launch.goose" >> "$OUT/fwht.goose"
 sed '/^fn main()/,$d; s/^fn fg179w_reduce(/export fn fg179w_reduce(/' \
     "$ROOT/goose/cuda/goose-cuda-moe-weighted/device.goose" > "$OUT/moe-weighted.goose"
 sed '/^fn main()/,$d; s/^fn fg180q_mmq(/export fn fg180q_mmq(/;
@@ -108,6 +110,7 @@ sed -n '/^fn vsub4(/,/^}/p; /^fn q6_mmq_bytes(/,/^}/p' \
     "$ROOT/goose/cuda/goose-mmq-load-q6k/device.goose" >> "$OUT/mmq.goose"
 cat "$ROOT/goose/cuda/standalone-mmq-launch.goose" >> "$OUT/mmq.goose"
 cat "$ROOT/goose/cuda/standalone-mmq-pack-launch.goose" >> "$OUT/mmq-quant.goose"
+cat "$ROOT/goose/cuda/standalone-gdn-packet.goose" >> "$OUT/gdn.goose"
 for module in gdn gdn-mma q4-set-rows flash-mma; do
     cat "$ROOT/goose/cuda/standalone-$module-launch.goose" >> "$OUT/$module.goose"
 done
@@ -196,7 +199,9 @@ python3 "$ROOT/tools/emit-gooseinfer-cuda-entries.py" \
     "$ROOT/integration/goose-standalone/cuda-mmq-entries.json" "$OUT/cuda-mmq-entries.h"
 python3 "$ROOT/tools/emit-gooseinfer-cuda-entries.py" \
     "$ROOT/integration/goose-standalone/cuda-activation-entries.json" "$OUT/cuda-activation-entries.h"
-for abi in "$ROOT/integration/goose-standalone/"cuda-{dense-mma,flash-mma,gdn-mma,flash-vec,mmvq,rms-reference}-entries.json; do
+python3 "$ROOT/tools/emit-gooseinfer-cuda-entries.py" \
+    "$ROOT/integration/goose-standalone/cuda-intrinsic-aliases.json" "$OUT/cuda-intrinsic-aliases.h"
+for abi in "$ROOT/integration/goose-standalone/"cuda-{dense-mma,flash-mma,gdn-mma,flash-vec,mmvq,rms-reference,fwht,up-gate,apex-epilogue}-entries.json; do
     name=${abi##*/}
     python3 "$ROOT/tools/emit-gooseinfer-cuda-entries.py" "$abi" "$OUT/${name%.json}.h"
 done
