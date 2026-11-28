@@ -1,25 +1,9 @@
 #version 450
 
 layout(local_size_x = 64) in;
-#if defined(OP_GATHER_PQ2_0) || defined(OP_GATHER_Q4_K) || defined(OP_GATHER_Q8_0)
-#define QUANT_GATHER
-#endif
-#if defined(OP_Q4_0) || defined(OP_Q8_0) || defined(OP_PQ2_0) || defined(OP_Q4_K) || defined(OP_Q6_K) || defined(OP_IQ4_NL) || defined(OP_IQ4_XS)
-#define QUANT_PROJECT
-#endif
-#if defined(QUANT_GATHER)
-layout(set = 0, binding = 0, std430) readonly buffer Tokens { uint ids[]; };
-#else
 layout(set = 0, binding = 0, std430) readonly buffer Input { float x[]; };
-#endif
-#if defined(QUANT_PROJECT) || defined(QUANT_GATHER)
-layout(set = 0, binding = 1, std430) readonly buffer Weights { uint packed[]; };
-#elif defined(OP_ATTENTION_Q4)
+#if defined(OP_ATTENTION_Q4)
 layout(set = 0, binding = 1, std430) readonly buffer Keys { uint packed_keys[]; };
-#elif defined(OP_FWHT)
-layout(set = 0, binding = 1, std430) readonly buffer Signs { int signs[]; };
-#elif defined(OP_GDN)
-layout(set = 0, binding = 1, std430) buffer State { float state[]; };
 #else
 layout(set = 0, binding = 1, std430) readonly buffer Weights { float w[]; };
 #endif
@@ -32,8 +16,6 @@ layout(set = 0, binding = 2, std430) writeonly buffer Output { float y[]; };
 layout(set = 0, binding = 3, std430) readonly buffer Values { float v[]; };
 #elif defined(OP_ATTENTION_Q4)
 layout(set = 0, binding = 3, std430) readonly buffer Values { uint packed_values[]; };
-#elif defined(OP_GDN)
-layout(set = 0, binding = 3, std430) readonly buffer Gates { float gates[]; };
 #endif
 layout(push_constant) uniform Params {
     uint width; uint rows; uint batch; float epsilon;
@@ -42,11 +24,6 @@ layout(push_constant) uniform Params {
 } p;
 
 shared float partial[64];
-#if defined(OP_FWHT)
-shared float tile[1024];
-#elif defined(OP_KV_FWHT)
-shared float tile[256];
-#endif
 
 float sum_group(float value) {
     uint lane = gl_LocalInvocationID.x;
@@ -60,89 +37,6 @@ float sum_group(float value) {
     barrier();
     return total;
 }
-
-#if defined(QUANT_PROJECT) || defined(QUANT_GATHER)
-uint read_byte(uint offset) {
-    return (packed[offset >> 2] >> ((offset & 3u) * 8u)) & 255u;
-}
-
-#if defined(OP_Q4_K) || defined(OP_GATHER_Q4_K) || defined(OP_Q6_K) || defined(OP_IQ4_XS)
-float read_half(uint offset) {
-    return unpackHalf2x16(read_byte(offset) | (read_byte(offset + 1u) << 8u)).x;
-}
-#endif
-
-#if defined(OP_IQ4_NL) || defined(OP_IQ4_XS)
-const int iq4_values[16] = int[16](-127, -104, -83, -65, -49, -35, -22, -10,
-    1, 13, 25, 38, 53, 69, 89, 113);
-#endif
-
-float decode_weight(uint row, uint column) {
-#if defined(OP_Q4_K) || defined(OP_GATHER_Q4_K)
-    uint block = (row * (p.width >> 8u) + (column >> 8u)) * 144u;
-    uint index = column & 255u, group = index >> 5u, scales = block + 4u;
-    uint d, m;
-    if (group < 4u) {
-        d = read_byte(scales + group) & 63u;
-        m = read_byte(scales + group + 4u) & 63u;
-    } else {
-        uint lower = read_byte(scales + group + 4u);
-        d = (lower & 15u) | ((read_byte(scales + group - 4u) >> 6u) << 4u);
-        m = (lower >> 4u) | ((read_byte(scales + group) >> 6u) << 4u);
-    }
-    uint quants = read_byte(block + 16u + (index >> 6u) * 32u + (index & 31u));
-    uint quant = (quants >> ((group & 1u) * 4u)) & 15u;
-    precise float decoded = (read_half(block) * float(d)) * float(quant) - read_half(block + 2u) * float(m);
-    return decoded;
-#elif defined(OP_Q6_K)
-    uint block = (row * (p.width >> 8u) + (column >> 8u)) * 210u;
-    uint index = column & 255u, half_block = index >> 7u, group = (index >> 5u) & 3u;
-    uint lane = index & 31u;
-    uint low = read_byte(block + half_block * 64u + (group & 1u) * 32u + lane);
-    uint high = read_byte(block + 128u + half_block * 32u + lane);
-    uint quant = ((low >> ((group >> 1u) * 4u)) & 15u) | (((high >> (group * 2u)) & 3u) << 4u);
-    int scale = int(read_byte(block + 192u + (index >> 4u)) ^ 128u) - 128;
-    return (read_half(block + 208u) * float(scale)) * float(int(quant) - 32);
-#elif defined(OP_IQ4_XS)
-    uint block = (row * (p.width >> 8u) + (column >> 8u)) * 136u;
-    uint index = column & 255u, group = index >> 5u;
-    uint high = read_byte(block + 2u + (group >> 2u)) >> ((group & 3u) * 2u);
-    uint low = read_byte(block + 4u + (group >> 1u)) >> ((group & 1u) * 4u);
-    int scale = int(((high & 3u) << 4u) | (low & 15u)) - 32;
-    uint pair = read_byte(block + 8u + group * 16u + (index & 15u));
-    uint code = (pair >> (((index >> 4u) & 1u) * 4u)) & 15u;
-    return (read_half(block) * float(scale)) * float(iq4_values[code]);
-#elif defined(OP_PQ2_0) || defined(OP_GATHER_PQ2_0)
-    uint block = (row * (p.width / 128u) + (column >> 7)) * 34u;
-    uint index = column & 127u;
-    uint code = (read_byte(block + 2u + (index >> 2)) >> (2u * (index & 3u))) & 3u;
-    float scale = unpackHalf2x16(read_byte(block) | (read_byte(block + 1u) << 8u)).x;
-    return float(int(code) - 1) * scale;
-#else
-#if defined(OP_Q8_0) || defined(OP_GATHER_Q8_0)
-    uint block_size = 34u;
-#else
-    uint block_size = 18u;
-#endif
-    uint block = (row * (p.width / 32u) + (column >> 5)) * block_size;
-    uint index = column & 31u;
-    float scale = unpackHalf2x16(read_byte(block) | (read_byte(block + 1u) << 8u)).x;
-#if defined(OP_Q8_0) || defined(OP_GATHER_Q8_0)
-    uint raw = read_byte(block + 2u + index);
-    int code = int(raw ^ 128u) - 128;
-#else
-    uint raw = read_byte(block + 2u + (index & 15u));
-    uint nibble = (raw >> ((index >> 4) * 4u)) & 15u;
-#if defined(OP_IQ4_NL)
-    int code = iq4_values[nibble];
-#else
-    int code = int(nibble) - 8;
-#endif
-#endif
-    return float(code) * scale;
-#endif
-}
-#endif
 
 #if defined(OP_ATTENTION_Q4)
 uint cache_byte(uint offset, bool value) {
@@ -161,93 +55,7 @@ float cache_value(uint index, bool value) {
 
 void main() {
     uint lane = gl_LocalInvocationID.x;
-#if defined(QUANT_PROJECT) || defined(OP_F32_PROJECT)
-    uint row = gl_WorkGroupID.x;
-    uint token = gl_WorkGroupID.y;
-    precise float sum = 0.0;
-    for (uint i = lane; i < p.width; i += 64u) {
-#if defined(OP_F32_PROJECT)
-        float weight = w[row * p.width + i];
-#else
-        float weight = decode_weight(row, i);
-#endif
-        sum += weight * x[token * p.width + i];
-    }
-    float result = sum_group(sum);
-    uint stride = p.context == 0 ? p.rows : p.context;
-    if (lane == 0) y[token * stride + p.position + row] = result;
-#elif defined(QUANT_GATHER)
-    uint token = gl_WorkGroupID.x;
-    uint id = ids[token];
-    uint row = id - p.position;
-    for (uint i = lane; i < p.width; i += 64u) {
-        y[token * p.width + i] = id >= p.position && row < p.rows ? decode_weight(row, i) : 0.0;
-    }
-#elif defined(OP_KV_FWHT)
-    uint base = gl_WorkGroupID.y * p.width + gl_WorkGroupID.x * p.rows;
-    float scale = p.rows == 64u ? 0.125 : 0.0625;
-    for (uint i = lane; i < p.rows; i += 64u) tile[i] = x[base + i] * scale;
-    barrier();
-    for (uint span = 1u; span < p.rows; span *= 2u) {
-        for (uint i = lane; i < p.rows / 2u; i += 64u) {
-            uint a = (i / span) * (2u * span) + i % span;
-            float left = tile[a], right = tile[a + span];
-            tile[a] = left + right;
-            tile[a + span] = left - right;
-        }
-        barrier();
-    }
-    for (uint i = lane; i < p.rows; i += 64u) y[base + i] = tile[i];
-#elif defined(OP_FWHT)
-    uint base = gl_WorkGroupID.x * 1024u, token = gl_WorkGroupID.y * p.width;
-    bool inverse = p.position != 0u;
-    for (uint i = lane; i < 1024u; i += 64u) {
-        uint column = base + i;
-        uint source = column;
-        if (p.context > 1u) {
-            uint head = column / p.rows;
-            source = (head % p.context * p.kv_heads + head / p.context) * p.rows + column % p.rows;
-        }
-        float value = x[token + source];
-        tile[i] = inverse ? value : value * float(signs[column]);
-    }
-    barrier();
-    for (uint span = 1u; span < 1024u; span *= 2u) {
-        for (uint i = lane; i < 512u; i += 64u) {
-            uint a = (i / span) * (2u * span) + i % span;
-            float left = tile[a], right = tile[a + span];
-            tile[a] = left + right;
-            tile[a + span] = left - right;
-        }
-        barrier();
-    }
-    for (uint i = lane; i < 1024u; i += 64u) {
-        float value = tile[i] * 0.03125;
-        y[token + base + i] = inverse ? value * float(signs[base + i]) : value;
-    }
-#elif defined(OP_GDN)
-    uint head = gl_WorkGroupID.x, row = gl_WorkGroupID.y;
-    uint q = (head % p.kv_heads) * p.width, k = q + p.kv_heads * p.width;
-    uint out_index = head * p.width + row;
-    uint value_index = 2u * p.kv_heads * p.width + out_index;
-    uint base = out_index * p.width;
-    float decay = exp(gates[head]);
-    precise float dot = 0.0;
-    for (uint i = lane; i < p.width; i += 64u) dot += (state[base + i] * decay) * x[k + i];
-    float delta = (x[value_index] - sum_group(dot)) * gates[p.rows + head];
-    precise float score = 0.0;
-    for (uint i = lane; i < p.width; i += 64u) {
-        precise float updated = state[base + i] * decay + delta * x[k + i];
-        state[base + i] = updated;
-        score += updated * x[q + i];
-    }
-    float result = sum_group(score) * inversesqrt(float(p.width));
-    if (lane == 0) y[out_index] = result;
-#elif defined(OP_BIAS)
-    uint index = gl_GlobalInvocationID.x;
-    uint other = index % p.width;
-    if (index < p.width * p.batch) y[index] = x[index] + w[other];
-#elif defined(OP_SIGMOID_GATE) || defined(OP_SIGMOID_GATE_SCALAR)
+#if defined(OP_SIGMOID_GATE) || defined(OP_SIGMOID_GATE_SCALAR)
     uint index = gl_GlobalInvocationID.x;
 #if defined(OP_SIGMOID_GATE_SCALAR)
     uint gate = index / p.width;
@@ -272,21 +80,6 @@ void main() {
         precise float clipped_up = tanh(w[index] * (1.0 / 25.0)) * 25.0;
         y[index] = (clipped_gate * sigmoid) * clipped_up;
     }
-#elif defined(OP_ROPE)
-    uint token = gl_WorkGroupID.y;
-    uint head = gl_WorkGroupID.x;
-    uint base = (token * p.rows + head) * p.width;
-    uint rotated = p.rotary == 0u ? p.width : p.rotary;
-    uint half_width = rotated / 2u;
-    for (uint i = lane; i < half_width; i += 64u) {
-        float frequency = pow(p.theta, -float(i) / float(half_width));
-        float angle = float(p.position + token) * frequency;
-        float a = x[base + i], b = x[base + i + half_width];
-        float c = cos(angle), s = sin(angle);
-        y[base + i] = a * c - b * s;
-        y[base + i + half_width] = b * c + a * s;
-    }
-    for (uint i = rotated + lane; i < p.width; i += 64u) y[base + i] = x[base + i];
 #elif defined(OP_KV_STORE)
     uint i = gl_GlobalInvocationID.x;
     uint stride = p.rows * p.width;

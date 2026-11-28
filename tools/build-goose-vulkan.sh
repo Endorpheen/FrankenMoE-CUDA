@@ -62,6 +62,20 @@ if [[ "$mode" != probe ]]; then
     for shader in rmsnorm q4_0 swiglu rope kv_store attention q8_0 gather_q4_0 bias add pq2_0 gather_pq2_0 fwht causal_conv qk_norm gdn gdn_gates gated_rms head_slice sigmoid_gate kv_store_q4 attention_q4 q4_k q6_k gather_q4_k iq4_nl iq4_xs gather_q8_0 f32_project moe_route moe_weighted apex_qk_norm gdn_apply sigmoid_gate_scalar kv_fwht inkling_route inkling_situ inkling_attention; do
         shader_dir="$source_dir/shaders"
         shader_source="$shader_dir/$shader.goose"
+        case "$shader" in
+            f32_project|q4_0|q8_0|pq2_0|q4_k|q6_k|iq4_nl|iq4_xs|gather_q8_0|gather_pq2_0|gather_q4_k)
+                quant="$shader_dir/quant"
+                parts=("$quant/interface.goose")
+                mode=project
+                if [[ $shader == gather_* ]]; then mode=gather; fi
+                case "$shader" in
+                    f32_project) parts=() ;;
+                    iq4_*) parts+=("$quant/iq4-table.goose") ;;
+                esac
+                shader_source="$out/$shader.goose"
+                cat "${parts[@]}" "$quant/${shader#gather_}.goose" "$quant/$mode.goose" > "$shader_source"
+                ;;
+        esac
         if [[ -f $shader_source ]]; then
             if [[ $shader == moe_route || $shader == inkling_route ]]; then
                 cat "$shader_dir/route-interface.goose" "$shader_source" "$shader_dir/route-dispatch.goose" \
