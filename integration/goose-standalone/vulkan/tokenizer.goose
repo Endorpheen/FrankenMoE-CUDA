@@ -72,12 +72,12 @@ fn vk_tok_cstring(text: const u8[:], out: u8[:]) -> u64 {
 }
 
 fn vk_tok_meta(header: u64, name: const u8[:]) -> i64 {
-    var key: u8[40];
+    var key: u8[96];
     return fg_gguf_metadata(header, vk_tok_cstring(name, key));
 }
 
 fn vk_tok_meta_is(header: u64, name: const u8[:], value: const u8[:]) -> bool {
-    var key: u8[40];
+    var key: u8[96];
     var val: u8[32];
     return fg_gguf_metadata_is(header, vk_tok_cstring(name, key), vk_tok_cstring(value, val)) != 0;
 }

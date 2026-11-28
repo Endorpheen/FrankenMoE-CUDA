@@ -35,7 +35,7 @@ extern fn fg_vk_bonsai_recurrent_layer(graph: u64, layer: u64, scratch: u64,
     input: QvView, output: QvView, epsilon: f32) -> i32;
 extern fn fg_vk_bonsai_forward(model: u64, logits: i64) -> i64;
 
-struct BvLoader { file: u64, header: u64, upload: u64, chunk: u64, alignment: u64 }
+struct VkWeightLoader { file: u64, header: u64, upload: u64, chunk: u64, alignment: u64 }
 struct BvPlan { end: u64, count: i64, parts: u64[69] }
 
 fn bv_layer(model: u64, index: i64) -> u64 { return model + BV_LAYERS + (index as! u64) * BV_SLOT_BYTES; }
@@ -60,7 +60,7 @@ fn bv_plan_part(header: u64, id: i64, plan: BvPlan&, start: u64) -> i64 {
     return info[7];
 }
 
-fn bv_plan_tensor(loader: BvLoader, plan: BvPlan&, buffer: u64, view: u64, first: i64, second: i64) -> bool {
+fn bv_plan_tensor(loader: VkWeightLoader, plan: BvPlan&, buffer: u64, view: u64, first: i64, second: i64) -> bool {
     let parts: i64 = if second >= 0 { 2 } else { 1 };
     if plan.count + parts > 23 { return false; }
     let start = qv_align(plan.end, loader.alignment);
@@ -77,7 +77,7 @@ fn bv_plan_tensor(loader: BvLoader, plan: BvPlan&, buffer: u64, view: u64, first
     return true;
 }
 
-fn bv_materialize(model: u64, loader: BvLoader, buffer: u64, plan: BvPlan&) -> bool {
+fn bv_materialize(model: u64, loader: VkWeightLoader, buffer: u64, plan: BvPlan&) -> bool {
     if !bv_alloc(model, buffer, plan.end, false, true) { return false; }
     for i in plan.count {
         let at = i * 3;
@@ -87,7 +87,7 @@ fn bv_materialize(model: u64, loader: BvLoader, buffer: u64, plan: BvPlan&) -> b
     return true;
 }
 
-fn bv_load_layer(model: u64, loader: BvLoader, slot: u64, t: const i64[:]) -> bool {
+fn bv_load_layer(model: u64, loader: VkWeightLoader, slot: u64, t: const i64[:]) -> bool {
     var plan = BvPlan { end: 0, count: 0, parts: [0;69] };
     if t[0] != 0 && t[0] != 1 { return false; }
     let attention = t[0] == 0;
@@ -178,7 +178,7 @@ fn bv_meta(header: u64, model: u64, signs: i32[:]) -> bool {
     return bv_load_eog(header,model);
 }
 
-fn bv_weight_data(model: u64, loader: BvLoader) -> bool {
+fn bv_weight_data(model: u64, loader: VkWeightLoader) -> bool {
     let header = loader.header;
     var signs: i32[28672];
     var globals: i64[3];
@@ -224,7 +224,7 @@ fn bv_weight_data(model: u64, loader: BvLoader) -> bool {
 fn bv_load_weights(model: u64, file: u64, upload: u64) -> bool {
     let header = vk_tok_table(1,TK_HEADER_BYTES).address;
     let chunk = vk_tok_table(BV_CHUNK as! i64,1).address;
-    let loader = BvLoader { file: file, header: header, upload: upload,
+    let loader = VkWeightLoader { file: file, header: header, upload: upload,
         chunk: chunk, alignment: vk_gguf_read_word(model+664) };
     let ok = header != 0 && chunk != 0 && bv_weight_data(model,loader);
     if header != 0 { vk_tok_release(vk_gguf_read_word(header)); }
