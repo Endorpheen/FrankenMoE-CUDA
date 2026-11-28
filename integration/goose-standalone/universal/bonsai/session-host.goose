@@ -13,15 +13,69 @@ type BonsaiMemset = c_fnptr(u64, u8, u64) -> i32;
 extern fn fg_bonsai_session_draft(model: u64, tokens: u64, count: u32) -> i32;
 extern fn fg_bonsai_session_choice(model: u64, ignore_eos: i32, result: u64) -> i32;
 
+extern fn fg_bonsai_model_open(path: u64, image: u64, frozen: u64, context: u32, batch: u32) -> u64;
+extern fn fg_bonsai_ffn_dispatch() -> u64;
+extern fn bonsai_bonsai_capture_abort(capture: u64);
+
+fn session_context(operation: u64, argument: u64) -> i32 {
+    return unsafe_c_fnptr<BonsaiContext>(vocab_word(fg_bonsai_cuda_dispatch() + operation))(argument);
+}
+
 fn session_bind(model: u64, label: const u8[:]) -> i32 {
-    let status = unsafe_c_fnptr<BonsaiContext>(vocab_word(fg_bonsai_cuda_dispatch() + 32))(vocab_word(model));
-    return bonsai_cuda_status(status, label);
+    return bonsai_cuda_status(session_context(32, vocab_word(model)), label);
+}
+
+fn session_pop() -> i32 {
+    var current: u64 = 0;
+    return session_context(40, vocab_address(unsafe_c_address<c_ptr<const void>>(current)));
+}
+
+fn session_close_capture(model: u64) {
+    let capture = model + 15288;
+    let stream = vocab_word(capture);
+    if stream == 0 || session_context(32, vocab_word(model)) != 0 { return; }
+    bonsai_bonsai_capture_abort(capture);
+    let dispatch = fg_bonsai_ffn_dispatch();
+    let destroy = unsafe_c_fnptr<BonsaiContext>(vocab_word(dispatch + 64));
+    for layer in 64 {
+        let graph = vocab_word(capture + 8 + (layer as! u64) * 8);
+        if graph != 0 { destroy(graph); }
+    }
+    unsafe_c_fnptr<BonsaiContext>(vocab_word(dispatch + 8))(stream);
+    session_pop();
+}
+
+export fn bonsai_session_close(session: u64) {
+    if session == 0 { return; }
+    let model = vocab_word(session);
+    session_close_capture(model);
+    bonsai_cuda_status(session_context(24, vocab_word(model)), "destroy Bonsai context");
+    vocab_free(unsafe_c_ptr<c_ptr<void>>(model));
+    vocab_free(unsafe_c_ptr<c_ptr<void>>(session));
+}
+
+export fn bonsai_session_open(path: u64, image: u64, frozen: u64, context: u32, batch: u32) -> u64 {
+    if path == 0 || batch == 0 || batch > 1024 { return 0; }
+    let allocation = vocab_calloc(1, 16);
+    var session: u64 = 0;
+    vocab_memcpy(unsafe_c_address<c_ptr<void>>(session), unsafe_c_address<c_ptr<const void>>(allocation), 8);
+    if session == 0 { return 0; }
+    bonsai_goose_init(0, 0);
+    let model = fg_bonsai_model_open(path, image, frozen, context, batch);
+    if model == 0 {
+        vocab_free(allocation);
+        return 0;
+    }
+    vocab_set(session, model);
+    if bonsai_cuda_status(session_pop(), "detach Bonsai context") != 0 {
+        bonsai_session_close(session);
+        return 0;
+    }
+    return session;
 }
 
 export fn fg_bonsai_session_finish(session: u64, status: i32) -> i32 {
-    var current: u64 = 0;
-    let restored = unsafe_c_fnptr<BonsaiContext>(vocab_word(fg_bonsai_cuda_dispatch() + 40))(
-        vocab_address(unsafe_c_address<c_ptr<const void>>(current)));
+    let restored = session_pop();
     let result = if bonsai_cuda_status(restored, "restore caller context") != 0 { -1 } else { status };
     batch_set(session + SESSION_NEEDS_RESET, if result != 0 { 1 } else { 0 });
     return result;

@@ -26,7 +26,6 @@ extern fn inkling_model_init(argc: i32, argv: u64);
 extern fn inkling_backend_open(base: u64, size: u64, capacity: i64, expert_cache: i64, format: i32) -> u64;
 extern fn inkling_backend_eval(model: u64, tokens: u64, count: i64, prefill: bool, output: u64, limit: i64) -> i64;
 extern fn inkling_backend_reset(model: u64) -> i32;
-extern fn bonsai_session_open(path: u64, image: u64, frozen: u64, capacity: u32, batch: u32) -> u64;
 extern fn dw_ram_residency(base: u64, bytes: i64, page: i64, out: VocabSpan) -> i64;
 extern fn dw_ram_warm(base: u64, bytes: i64, page: i64, out: VocabSpan) -> i64;
 

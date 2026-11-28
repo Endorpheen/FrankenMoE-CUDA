@@ -73,17 +73,9 @@ int32_t bonsai_capture_driver(uint32_t op, uint64_t first, uint64_t second) {
 
 static void ffn_graph_abort(model *m) { bonsai_capture_abort((uintptr_t)&m->capture); }
 
-static void ffn_graph_close(model *m) {
-    if (!m->capture.stream) return;
-    CUcontext current;
-    if (bonsai_cuda.fn_cuCtxPushCurrent(m->cuda) != CUDA_SUCCESS) return;
-    ffn_graph_abort(m);
-    for (unsigned i = 0; i < LAYERS; ++i) {
-        if (m->capture.graphs[i]) (void)ffn_driver.exec_destroy(m->capture.graphs[i]);
-    }
-    (void)ffn_driver.destroy(m->capture.stream);
-    (void)bonsai_cuda.fn_cuCtxPopCurrent(&current);
-}
+_Static_assert(offsetof(__typeof__(ffn_driver), destroy) == 8 &&
+    offsetof(__typeof__(ffn_driver), exec_destroy) == 64, "Bonsai FFN destruction dispatch layout");
+const void *fg_bonsai_ffn_dispatch(void) { return &ffn_driver; }
 
 static int ffn_graph_begin(model *m, CUdeviceptr norm_weight) {
     return bonsai_capture_begin((uintptr_t)&m->capture, norm_weight);

@@ -675,7 +675,7 @@ static CUresult bonsai_load_module(CUmodule *module, const char *path, const uns
         bonsai_cuda.fn_cuModuleLoadData(module, image);
 }
 
-static model *bonsai_open(const char *gguf, const char *cubin, const char *frozen, unsigned context, unsigned ubatch) {
+model *fg_bonsai_model_open(const char *gguf, const char *cubin, const char *frozen, unsigned context, unsigned ubatch) {
     if (context < CONTEXT_MIN || context > POSITIONS_MAX) return NULL;
     if (!bonsai_cuda_ready()) return NULL;
     model *m = calloc(1, sizeof(*m));
@@ -943,39 +943,14 @@ struct bonsai_session {
     int needs_reset;
 };
 
-struct bonsai_session *bonsai_session_open(const char *gguf, const char *cubin,
-    const char *frozen_ptx, unsigned context, unsigned ubatch) {
-    if (!gguf || ubatch == 0 || ubatch > UBATCH_MAX) return NULL;
-    struct bonsai_session *session = calloc(1, sizeof(*session));
-    if (!session) return NULL;
-    goose_init(0, NULL);
-    session->runtime = bonsai_open(gguf, cubin, frozen_ptx, context, ubatch);
-    if (!session->runtime) {
-        free(session);
-        return NULL;
-    }
-    CUcontext current;
-    if (check(bonsai_cuda.fn_cuCtxPopCurrent(&current), "detach Bonsai context")) {
-        bonsai_session_close(session);
-        return NULL;
-    }
-    return session;
-}
-
-void bonsai_session_close(struct bonsai_session *session) {
-    if (!session) return;
-    ffn_graph_close(session->runtime);
-    (void) check(bonsai_cuda.fn_cuCtxDestroy(session->runtime->cuda), "destroy Bonsai context");
-    free(session->runtime);
-    free(session);
-}
-
-_Static_assert(offsetof(struct bonsai_session, runtime) == 0 && offsetof(struct bonsai_session, needs_reset) == 8 &&
+_Static_assert(sizeof(struct bonsai_session) == 16 && UBATCH_MAX == 1024 &&
+    offsetof(struct bonsai_session, runtime) == 0 && offsetof(struct bonsai_session, needs_reset) == 8 &&
     offsetof(model, cuda) == 0 && offsetof(model, draft_carry) == 288 && offsetof(model, mtp_next) == 44 &&
     offsetof(model, mtp_end) == 48 && offsetof(model, mtp_request) == 20 && offsetof(model, mtp_enabled) == 16 &&
     offsetof(model, choice_mask) == 5624 && offsetof(model, eog_count) == 15280 && offsetof(model, eog) == 14768,
     "Bonsai session field layout");
-_Static_assert(offsetof(struct bonsai_cuda_api, fn_cuCtxPushCurrent) == 32 &&
+_Static_assert(offsetof(struct bonsai_cuda_api, fn_cuCtxDestroy) == 24 &&
+    offsetof(struct bonsai_cuda_api, fn_cuCtxPushCurrent) == 32 &&
     offsetof(struct bonsai_cuda_api, fn_cuCtxPopCurrent) == 40 &&
     offsetof(struct bonsai_cuda_api, fn_cuMemsetD8) == 120, "Bonsai session CUDA dispatch layout");
 _Static_assert(GDN_STATE * 4 == 3145728 && GDN_HISTORY * 4 == 122880 && DRAFT_HIDDEN_BYTES == 20480 &&
@@ -985,3 +960,5 @@ int fg_bonsai_session_draft(model *m, const uint32_t *tokens, unsigned count) { 
 int fg_bonsai_session_choice(model *m, int ignore_eos, struct token_choice *choice) { return choose_device(m, ignore_eos, choice); }
 _Static_assert(offsetof(model, mtp_pending) == 24 && offsetof(model, verify_rows) == 52 &&
     offsetof(model, draft_chain) == 296 && VERIFY_ROWS == 5, "Bonsai MTP session ABI");
+
+_Static_assert(offsetof(model, capture) == 15288, "Bonsai session capture ABI");
