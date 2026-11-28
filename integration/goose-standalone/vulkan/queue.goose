@@ -31,6 +31,7 @@ fn vk_queue_word(address: u64) -> u64 {
 fn vk_queue_error(action: const u8[:], status: i32) -> i32 {
     var text: u8[32];
     for i in action.len { text[i] = action[i]; }
+    text[action.len] = 0;
     let address = vk_queue_address(unsafe_c_address<c_ptr<const void>>(text[0]));
     return fg_vk_error(unsafe_c_ptr<c_ptr<const i8>>(address), status);
 }

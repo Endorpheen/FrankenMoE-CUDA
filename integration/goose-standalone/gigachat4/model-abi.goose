@@ -79,6 +79,7 @@ fn giga_env_value(name: const u8[:]) -> u64 {
     var key: u8[32];
     if name.len >= key.len { return 0; }
     for i in name.len { key[i] = name[i]; }
+    key[name.len] = 0;
     return fg_cuda_host_getenv(giga_pointer_address(unsafe_c_address<c_ptr<const void>>(key[0])));
 }
 
@@ -86,6 +87,7 @@ fn giga_env_is(value: u64, expected: const u8[:]) -> bool {
     var key: u8[16];
     if expected.len >= key.len { return false; }
     for i in expected.len { key[i] = expected[i]; }
+    key[expected.len] = 0;
     return fg_cuda_host_env_equal(value, giga_pointer_address(unsafe_c_address<c_ptr<const void>>(key[0])));
 }
 
