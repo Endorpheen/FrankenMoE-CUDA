@@ -45,6 +45,7 @@ optimization and release sequence.
 | Batch independent sliding prefill chunks and their merges | Inkling Q4 sliding prefill, grouping 128-query chunks within existing scratch capacity | At 32K/512, prefill +2.27%, decode −0.78%, all 512 IDs exact and peak process VRAM held at 9822 MiB. | [EXP-2426](../../experiments/EXP-2026-11-28-2426-inkling-sliding-prefill-group/README.md) |
 | Reuse a warp's decoded IQ4_XS weights for jobs sharing an expert plane | Inkling exact verifier, 2304-input IQ4_XS and at least 64 jobs | At 32K/512, decode +5.03%, observed prefill +0.20%, all 512 IDs exact and peak process VRAM held at 9822 MiB. | [EXP-2427](../../experiments/EXP-2026-11-28-2427-inkling-iq4-verifier-pairs/README.md) |
 | Reuse aligned packed weight loads across consecutive MMA steps | Inkling grouped IQ4_XS and IQ4_NL prefill projections | Large-shape kernel time −11.42% and −7.28%. At 32K/512, prefill +2.75%, observed decode +0.65%, all 512 IDs exact, and peak process VRAM held at 9822 MiB. | [EXP-2429](../../experiments/EXP-2026-11-28-2429-inkling-moe-pairload/README.md) |
+| Reuse the CPU row team for short exact verifier batches | Inkling, 8–16 exact verification rows with independent host activation prep | At 32K/512, decode +6.61%, prefill −0.08%, all 512 IDs exact and peak process VRAM held at 9822 MiB. | [EXP-2430](../../experiments/EXP-2026-11-28-2430-inkling-verifier-cpu-team/README.md) |
 
 Keep the FMA and warp reduction sequence independent for each output row.
 Reuse this mapping for projections with the same shared input layout
@@ -74,7 +75,9 @@ are disjoint and normalization is local to each row. Reuse the existing
 affinity-aware worker team and measure the time before GPU submission
 at representative batch sizes. Retain the same per-row arithmetic and
 check output equivalence, host memory and the full request before
-enabling another dispatch.
+enabling another dispatch. EXP-2430 applies the same team to short verifier
+batches where blocking transfer boundaries expose CPU preparation.
+Measure dispatch and barrier overhead at the receiving batch size.
 
 ## KeelWing ownership scopes in the Apex sampler
 

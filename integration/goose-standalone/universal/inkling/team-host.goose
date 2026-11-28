@@ -97,8 +97,14 @@ extern fn fg_standalone_cpu_decode_threads() -> i64;
 
 var i2_parallel_logits: i32 = -1;
 
-fn fg_i2_prefill_team_start(team: u64, count: i32) -> bool {
-    let tasks = fg_i2_prefill_task_count(count);
+fn fg_i2_prefill_team_start(team: u64, count: i32, verify: bool) -> bool {
+    if i2d_env_is("I2_PARALLEL_PREP", 48) { return false; }
+    var tasks = fg_i2_prefill_task_count(count);
+    if verify && count >= 8 && count <= 16 {
+        let configured = fg_standalone_cpu_batch_threads();
+        let partitions = (count / 4) as! i64;
+        tasks = (if configured < partitions { configured } else { partitions }) as! i32;
+    }
     if tasks <= 1 { return false; }
     fg_i2_host_cached_history();
     return prefill_team_open(team, tasks, true);

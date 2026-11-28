@@ -704,7 +704,9 @@ export fn fg_i2_backend_prefill(decoder: u64, ids: u64, begin: i32, count: i32, 
     let direct = i2_prefill_bind_readback(scratch, count);
     var team_storage: u64[37] = [0; 37];
     let team = i2d_address(unsafe_c_address<c_ptr<const void>>(team_storage[0]));
-    let workers = if !i2d_env_is("I2_PREFILL_TEAM", 48) && fg_i2_prefill_team_start(team, count) { team } else { 0 };
+    let draft_count = i2d_int(decoder + I2D_DRAFT + I2D_COUNT);
+    let verify = draft_count > 1 && draft_count == count;
+    let workers = if !i2d_env_is("I2_PREFILL_TEAM", 48) && fg_i2_prefill_team_start(team, count, verify) { team } else { 0 };
     i2_prefill_embed_rows(decoder, ids, count, tokens, 285708, workers);
     let full_batch = count == 4096;
     inkling_arena_window(full_batch, begin);
@@ -737,13 +739,11 @@ export fn fg_i2_backend_prefill(decoder: u64, ids: u64, begin: i32, count: i32, 
     if workers != 0 { prefill_team_close(workers); }
     for index in count as! i64 { i2_check_state("residual", begin + (index as! i32), tokens + (index as! u64) * 285708, 2304); }
     if need_logits {
-        let draft_count = i2d_int(decoder + I2D_DRAFT + I2D_COUNT);
-        let draft = draft_count > 1 && draft_count == count;
-        var index = if draft { 0 } else { count - 1 };
+        var index = if verify { 0 } else { count - 1 };
         while index < count {
             let row = tokens + (index as! u64) * 285708;
-            fg_i2_read_token_logits(decoder, begin + index, row, row + 27648, i2d_int(row + 285696), draft);
-            if draft {
+            fg_i2_read_token_logits(decoder, begin + index, row, row + 27648, i2d_int(row + 285696), verify);
+            if verify {
                 let scores = i2d_read(decoder + I2D_DRAFT + I2D_SCORES);
                 i2d_transfer(scores + (index as! u64) * 800232, decoder + I2D_LOGITS, 800232);
             }
