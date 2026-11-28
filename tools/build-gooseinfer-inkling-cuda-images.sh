@@ -10,6 +10,7 @@ cuda=${CUDA_HOME:-/usr/local/cuda}
 scratch=$(mktemp -d)
 trap 'rm -rf -- "$scratch"' EXIT
 mkdir -p -- "$out"
+cat "$src/inkling-online.goose" "$src/inkling-native-flash.goose" > "$scratch/inkling-native-flash.goose"
 "$goose" --standalone -o "$scratch/inkling-online.c" --header "$scratch/inkling-online.h" \
     "$src/inkling-online.goose"
 python3 - "$scratch" <<'PY_FRAGMENT'
@@ -26,13 +27,36 @@ types = "\n".join(line for line in types.splitlines()
                   if not line.endswith(("gs_rhdr;", "gs_rref;", "gs_pref;", "sl_u8;")))
 (scratch / "inkling-online-device.h").write_text(types + "\n" + body)
 PY_FRAGMENT
+"$goose" --standalone -o "$scratch/inkling-native-flash.c" --header "$scratch/inkling-native-flash.h" \
+    "$scratch/inkling-native-flash.goose"
+python3 - "$scratch" <<'PY_FRAGMENT'
+from pathlib import Path
+import re
+import sys
+
+scratch = Path(sys.argv[1])
+source = (scratch / "inkling-native-flash.c").read_text()
+body = source.split("/* ---- prototypes ---- */", 1)[1].split("/* ---- host ---- */", 1)[0]
+if "gs_sp" in body or "i2_online_adjust_key_g" not in body:
+    raise ValueError("Unexpected Inkling online attention fragment")
+types = source.split("/* ---- types ---- */", 1)[1].split("/* ---- data ---- */", 1)[0]
+types = "\n".join(line for line in types.splitlines()
+                  if not line.endswith(("gs_rhdr;", "gs_rref;", "gs_pref;", "sl_u8;")))
+entry = re.search(r"static void i2_native_flash_g\([^\n]+\) \{ (gg_function_\d+)\(", body)
+if entry is None:
+    raise ValueError("Missing generated native attention device entry")
+for function in ("i2_native_flash_g", entry[1]):
+    body = body.replace(f"static void {function}(", f"static __attribute__((always_inline)) void {function}(")
+(scratch / "inkling-native-flash-device.h").write_text(types + "\n" + body)
+PY_FRAGMENT
 while read -r header symbol entries prelude; do
     stem=${header%.h}
     options=(-Xclang -mlink-builtin-bitcode -Xclang "$cuda/nvvm/libdevice/libdevice.10.bc")
     frontend=(-march=sm_80 -cl-std=CL2.0 -nocudainc -Xclang -finclude-default-header)
     case "$stem" in
         bridge-image) options=() ;;
-        flash-native-image|flash-tiles-image) options+=(-I"$scratch") ;;
+        flash-native-image) options+=(-I"$scratch" -include "$shared/device-prelude.cl") ;;
+        flash-tiles-image) options+=(-I"$scratch") ;;
         attention-image)
             "$goose" --standalone --emit-provenance "$scratch/inkling-attention.c" "$src/inkling-attention.goose"
             python3 "$shared/frankenmoe-fragment.py" "$scratch" inkling-attention
