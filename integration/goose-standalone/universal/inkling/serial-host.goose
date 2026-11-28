@@ -131,3 +131,38 @@ export fn fg_i2_finish_attention(decoder: u64, aux: u64, physical: i32, slot: i3
     fg_i2_host_mix(history, count_after, next, i2d_span(query, 2304), 1, ffn);
     return count_after;
 }
+
+export fn fg_i2_serial_moe(decoder: u64, core: u64, aux: u64, slot: i32, absolute: i32,
+    ffn: u64, message: u64, next: u64, current: u64, projection: u64, work: u64) {
+    if fg_i2_host_resident_plan() && !i2d_env_is("I2_RESIDENT_MOE", 48) {
+        fg_i2_host_moe_resident(decoder, core, aux, slot, absolute, 1, ffn, message, next, current);
+        return;
+    }
+    if message != 0 { fg_i2_host_control(decoder, aux, 3, ffn, message); }
+    let ffn_row = i2d_span(ffn, 2304);
+    let gain = fg_i2_host_coefficients(decoder, i2_host_aux(core, 9), 2304);
+    assert(fg_i2_host_measured_rms(ffn_row, i2d_span(gain, 2304), 0.000001, ffn_row) == 2304);
+    let ctx = fg_i2_host_context();
+    let order: i32[4] = [5, 8, 6, 7];
+    var weights: u64[4];
+    var nodes: u64[8] = [0; 8];
+    for index in 4 { weights[index] = fg_i2_host_weight(ctx, decoder, i2_host_aux(core, order[index])); }
+    let tensor = fg_i2_host_rows_input(ctx, ffn, 2304, 1);
+    let output = fg_i2_host_measured_moe(ctx as! i64, tensor as! i64,
+        i2d_span(i2d_address(unsafe_c_address<c_ptr<const void>>(weights[0])), 4), i2d_span(work, 16),
+        i2d_span(i2d_address(unsafe_c_address<c_ptr<const void>>(nodes[0])), 8));
+    assert(output != 0);
+    fg_i2_host_evaluate_one(ctx, output as! u64, projection, 2304);
+    ggml_free(ctx);
+    let weights_conv = fg_i2_host_coefficients(decoder, i2_host_aux(aux, 3), 9216);
+    let history = i2d_read(decoder + 887144) + (slot as! u64) * 27648;
+    assert(fg_i2_measured_postconv(i2d_span(projection, 2304), i2d_span(weights_conv, 9216),
+        i2d_span(history, 6912), i2d_span(current, 2304)) == 2304);
+    let residual = fg_cuda_host_view_f32(next, 2304);
+    var values = fg_cuda_host_view_f32(current, 2304);
+    for index in 2304 {
+        let value = values[index] + residual[index];
+        values[index] = value;
+        assert(value <= 3.402823466e38 && value >= -3.402823466e38);
+    }
+}

@@ -395,6 +395,10 @@ int64_t fg_i2_measured_postconv(sl_f32 input, sl_f32 weight, sl_f32 history, sl_
     return i2_postconv_token(input, weight, history, output);
 }
 
+_Static_assert(offsetof(struct decoder, hf) == 887144, "Goose serial MoE history ABI");
+extern void fg_i2_serial_moe(struct decoder *d, const int64_t *core, const int64_t *aux, int slot, int absolute,
+    float *ffn, float *message, float *next, float *current, float *projection, int64_t *work);
+
 static void layer(struct decoder *d,int physical_layer,int slot,int absolute,int sliding,
                   float *cur,float *blocks,int *count,float (*messages)[model_width]) {
     const int64_t *core=d->core+10*physical_layer, *aux=d->aux+30*physical_layer;
@@ -454,29 +458,7 @@ static void layer(struct decoder *d,int physical_layer,int slot,int absolute,int
         }
     }
     *count = fg_i2_finish_attention(d, aux, physical_layer, slot, cur, blocks, *count, proj, next, ffn);
-    if (use_resident_moe()) {
-        moe_resident(d, core, aux, slot, absolute, 1, ffn, messages ? messages[3] : NULL, next, cur);
-        return;
-    }
-    if(messages)control(d,aux,3,ffn,messages[3]);
-    assert(i2_rms_gain(vec(ffn,model_width),coefficients(d,core[9],model_width),1e-6f,vec(ffn,model_width))==model_width);
-    ctx=context();
-    int64_t moe_weights[4];
-    const int64_t mid[]={core[5],core[8],core[6],core[7]};
-    for(int i=0;i<4;i++)moe_weights[i]=(intptr_t)load(ctx,named(d,mid[i]));
-    int64_t nodes[8]={0};
-    struct ggml_tensor *y=(struct ggml_tensor *)(intptr_t)i2_moe_ffn((intptr_t)ctx,
-       (intptr_t)input_tensor(ctx,ffn,model_width),ints(moe_weights,4),ints(work,16),ints(nodes,8));
-    assert(y);
-    struct ggml_tensor *moe_root[]={y};
-    evaluate(ctx,moe_root,1,proj,model_width);
-    ggml_free(ctx);
-    assert(i2_postconv_token(vec(proj,model_width),coefficients(d,aux[3],4*model_width),
-                            vec(d->hf+slot*3*model_width,3*model_width),vec(cur,model_width))==model_width);
-    for(int i=0;i<model_width;i++){
-        cur[i]+=next[i];
-        assert(isfinite(cur[i]));
-    }
+    fg_i2_serial_moe(d, core, aux, slot, absolute, ffn, messages ? messages[3] : NULL, next, cur, proj, work);
 }
 
 static bool parallel_decode_logits(struct decoder *d, float *logits);
