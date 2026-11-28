@@ -14,7 +14,6 @@ type VkWaitSemaphores = c_fnptr(c_ptr<void>, c_ptr<const void>, u64) -> i32;
 type VkDeviceWait = c_fnptr(c_ptr<void>) -> i32;
 
 extern "memcpy" fn vk_queue_memcpy(destination: c_ptr<void>, source: c_ptr<const void>, bytes: u64) -> c_ptr<void>;
-extern fn fg_vk_error(action: c_ptr<const i8>, status: i32) -> i32;
 
 fn vk_queue_address(pointer: c_ptr<const void>) -> u64 {
     var address: u64 = 0;
@@ -29,11 +28,7 @@ fn vk_queue_word(address: u64) -> u64 {
 }
 
 fn vk_queue_error(action: const u8[:], status: i32) -> i32 {
-    var text: u8[32];
-    for i in action.len { text[i] = action[i]; }
-    text[action.len] = 0;
-    let address = vk_queue_address(unsafe_c_address<c_ptr<const void>>(text[0]));
-    return fg_vk_error(unsafe_c_ptr<c_ptr<const i8>>(address), status);
+    return vk_device_message(action, status);
 }
 
 export fn fg_vk_submit_wait(vk: u64, cmd: u64, done: u64, value: u64) -> i32 {

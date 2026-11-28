@@ -50,6 +50,7 @@ typedef struct {
     VkDeviceSize size;
 } fg_vk_buffer;
 
+void fg_vk_queue_init(int argc, char **argv);
 int fg_vk_load(fg_vk_device *vk);
 void fg_vk_unload(fg_vk_device *vk);
 int fg_vk_open(fg_vk_device *vk, uint32_t index, int allow_cpu);

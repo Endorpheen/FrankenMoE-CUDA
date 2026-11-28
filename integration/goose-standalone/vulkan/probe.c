@@ -127,6 +127,7 @@ static int check_transfer(fg_vk_device *vk) {
 }
 
 int main(int argc, char **argv) {
+    fg_vk_queue_init(0, NULL);
     uint32_t index = FG_VK_AUTO_DEVICE;
     int allow_cpu = 0, transfer = 0;
     for (int i = 1; i < argc; ++i) {

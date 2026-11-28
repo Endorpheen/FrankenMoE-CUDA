@@ -100,3 +100,51 @@ _Static_assert(sizeof(VkMemoryType) == 8 && sizeof(VkBufferCreateInfo) == 56 &&
 _Static_assert(sizeof(fg_vk_upload) == 72 && sizeof(fg_vk_buffer) == 32, "Goose Vulkan upload ABI");
 _Static_assert(offsetof(fg_vk_device, loader) == 0 && offsetof(fg_vk_device, get_instance_proc) == 8,
     "Goose Vulkan loader ABI");
+
+_Static_assert(sizeof(fg_vk_device) == 2392, "Goose Vulkan device ABI: fg_vk_device");
+_Static_assert(offsetof(fg_vk_device, instance) == 16, "Goose Vulkan device ABI: fg_vk_device.instance");
+_Static_assert(offsetof(fg_vk_device, DestroyInstance) == 24, "Goose Vulkan device ABI: fg_vk_device.DestroyInstance");
+_Static_assert(offsetof(fg_vk_device, physical) == 32, "Goose Vulkan device ABI: fg_vk_device.physical");
+_Static_assert(offsetof(fg_vk_device, properties) == 40, "Goose Vulkan device ABI: fg_vk_device.properties");
+_Static_assert(offsetof(fg_vk_device, driver) == 1384, "Goose Vulkan device ABI: fg_vk_device.driver");
+_Static_assert(offsetof(fg_vk_device, id) == 1920, "Goose Vulkan device ABI: fg_vk_device.id");
+_Static_assert(offsetof(fg_vk_device, subgroup) == 1984, "Goose Vulkan device ABI: fg_vk_device.subgroup");
+_Static_assert(offsetof(fg_vk_device, DestroyDevice) == 2024, "Goose Vulkan device ABI: fg_vk_device.DestroyDevice");
+_Static_assert(sizeof(VkApplicationInfo) == 48, "Goose Vulkan device ABI: VkApplicationInfo");
+_Static_assert(offsetof(VkApplicationInfo, pApplicationName) == 16, "Goose Vulkan device ABI: VkApplicationInfo.pApplicationName");
+_Static_assert(offsetof(VkApplicationInfo, apiVersion) == 44, "Goose Vulkan device ABI: VkApplicationInfo.apiVersion");
+_Static_assert(sizeof(VkInstanceCreateInfo) == 64, "Goose Vulkan device ABI: VkInstanceCreateInfo");
+_Static_assert(offsetof(VkInstanceCreateInfo, pApplicationInfo) == 24, "Goose Vulkan device ABI: VkInstanceCreateInfo.pApplicationInfo");
+_Static_assert(sizeof(VkPhysicalDeviceProperties) == 824, "Goose Vulkan device ABI: VkPhysicalDeviceProperties");
+_Static_assert(offsetof(VkPhysicalDeviceProperties, apiVersion) == 0, "Goose Vulkan device ABI: VkPhysicalDeviceProperties.apiVersion");
+_Static_assert(offsetof(VkPhysicalDeviceProperties, vendorID) == 8, "Goose Vulkan device ABI: VkPhysicalDeviceProperties.vendorID");
+_Static_assert(offsetof(VkPhysicalDeviceProperties, deviceType) == 16, "Goose Vulkan device ABI: VkPhysicalDeviceProperties.deviceType");
+_Static_assert(sizeof(VkPhysicalDeviceProperties2) == 840, "Goose Vulkan device ABI: VkPhysicalDeviceProperties2");
+_Static_assert(offsetof(VkPhysicalDeviceProperties2, properties) == 16, "Goose Vulkan device ABI: VkPhysicalDeviceProperties2.properties");
+_Static_assert(sizeof(VkPhysicalDeviceDriverProperties) == 536, "Goose Vulkan device ABI: VkPhysicalDeviceDriverProperties");
+_Static_assert(sizeof(VkPhysicalDeviceIDProperties) == 64, "Goose Vulkan device ABI: VkPhysicalDeviceIDProperties");
+_Static_assert(sizeof(VkPhysicalDeviceSubgroupProperties) == 32, "Goose Vulkan device ABI: VkPhysicalDeviceSubgroupProperties");
+_Static_assert(sizeof(VkPhysicalDeviceVulkan12Features) == 208, "Goose Vulkan device ABI: VkPhysicalDeviceVulkan12Features");
+_Static_assert(offsetof(VkPhysicalDeviceVulkan12Features, timelineSemaphore) == 164, "Goose Vulkan device ABI: VkPhysicalDeviceVulkan12Features.timelineSemaphore");
+_Static_assert(sizeof(VkPhysicalDeviceVulkan13Features) == 80, "Goose Vulkan device ABI: VkPhysicalDeviceVulkan13Features");
+_Static_assert(offsetof(VkPhysicalDeviceVulkan13Features, synchronization2) == 52, "Goose Vulkan device ABI: VkPhysicalDeviceVulkan13Features.synchronization2");
+_Static_assert(sizeof(VkPhysicalDeviceFeatures2) == 240, "Goose Vulkan device ABI: VkPhysicalDeviceFeatures2");
+_Static_assert(sizeof(VkQueueFamilyProperties) == 24, "Goose Vulkan device ABI: VkQueueFamilyProperties");
+_Static_assert(offsetof(VkQueueFamilyProperties, timestampValidBits) == 8, "Goose Vulkan device ABI: VkQueueFamilyProperties.timestampValidBits");
+_Static_assert(sizeof(VkDeviceQueueCreateInfo) == 40, "Goose Vulkan device ABI: VkDeviceQueueCreateInfo");
+_Static_assert(offsetof(VkDeviceQueueCreateInfo, queueFamilyIndex) == 20, "Goose Vulkan device ABI: VkDeviceQueueCreateInfo.queueFamilyIndex");
+_Static_assert(offsetof(VkDeviceQueueCreateInfo, queueCount) == 24, "Goose Vulkan device ABI: VkDeviceQueueCreateInfo.queueCount");
+_Static_assert(offsetof(VkDeviceQueueCreateInfo, pQueuePriorities) == 32, "Goose Vulkan device ABI: VkDeviceQueueCreateInfo.pQueuePriorities");
+_Static_assert(sizeof(VkDeviceCreateInfo) == 72, "Goose Vulkan device ABI: VkDeviceCreateInfo");
+_Static_assert(offsetof(VkDeviceCreateInfo, queueCreateInfoCount) == 20, "Goose Vulkan device ABI: VkDeviceCreateInfo.queueCreateInfoCount");
+_Static_assert(offsetof(VkDeviceCreateInfo, pQueueCreateInfos) == 24, "Goose Vulkan device ABI: VkDeviceCreateInfo.pQueueCreateInfos");
+_Static_assert(VK_API_VERSION_1_3 == 4206592 &&
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2 == 1000059001 &&
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2 == 1000059000 &&
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES == 51 &&
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES == 53 &&
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES == 1000094000 &&
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES == 1000071004 &&
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES == 1000196000 &&
+    VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU == 2 && VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU == 1 &&
+    VK_PHYSICAL_DEVICE_TYPE_CPU == 4, "Goose Vulkan device constants");
