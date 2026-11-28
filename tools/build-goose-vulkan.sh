@@ -72,6 +72,7 @@ if [[ "$mode" != probe ]]; then
 fi
 
 if [[ "$mode" == qwen2 || "$mode" == embedded ]]; then
+    "$cc" "${flags[@]}" -isystem "$out/vulkan-headers" -x c -fsyntax-only "$source_dir/qwen2-layout.h"
     goose=${GOOSE_BIN:-goose}
     python3 - "$root/goose/misc/pretokenizer-qwen35.goose" "$out/pretokenizer-vulkan.goose" <<'PY'
 from pathlib import Path
