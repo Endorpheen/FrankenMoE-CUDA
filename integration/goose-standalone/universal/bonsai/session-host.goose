@@ -10,7 +10,6 @@ const SESSION_EOG_COUNT: u64 = 15280;
 
 type BonsaiContext = c_fnptr(u64) -> i32;
 type BonsaiMemset = c_fnptr(u64, u8, u64) -> i32;
-extern fn fg_bonsai_session_choice(model: u64, ignore_eos: i32, result: u64) -> i32;
 
 extern fn fg_bonsai_model_open(path: u64, image: u64, frozen: u64, context: u32, batch: u32) -> u64;
 extern fn bonsai_bonsai_capture_abort(capture: u64);
@@ -175,7 +174,7 @@ export fn bonsai_session_choose_next(session: u64, token: u32, ignore_eos: i32) 
     var status = evaluate_batch_output(model,
         vocab_address(unsafe_c_address<c_ptr<const void>>(token)), 1, 0, 1);
     if status == 0 {
-        status = fg_bonsai_session_choice(model, ignore_eos, vocab_address(unsafe_c_address<c_ptr<const void>>(choice[0])));
+        status = bonsai_choice_rows(model, 1, ignore_eos, vocab_address(unsafe_c_address<c_ptr<const void>>(choice[0])), "token choice");
     }
     batch_set(model + BATCH_IN_DECODE, 0);
     if fg_bonsai_session_finish(session, if status != 0 { 1 } else { 0 }) != 0 { return -1; }

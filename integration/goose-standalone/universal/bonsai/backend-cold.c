@@ -505,63 +505,13 @@ static sl_i64 slice(int64_t *data, int64_t len) {
 
 extern int32_t bonsai_rope_config(uint64_t destination, int64_t heads, int64_t tokens);
 
-typedef struct { uint32_t *data; int64_t len; } bonsai_mutable_indices;
-extern uint8_t bonsai_workspace_plan(uint64_t context, uint64_t batch, uint64_t rows, uint64_t flags,
-    sl_i64 bound, sl_i64 states, sl_i64 scratch, bonsai_words prefix,
-    bonsai_mutable_indices layer_ids, bonsai_words layout);
-extern void bonsai_workspace_rebase(uint64_t base, uint64_t rows, uint64_t flags,
-    sl_i64 states, sl_i64 scratch, bonsai_words prefix, bonsai_words layout);
+_Static_assert(offsetof(model, use_flash_f32) == 14664 && offsetof(model, memory) == 5656 &&
+    offsetof(model, phases) == 14632 && offsetof(model, packed) == 14640 && offsetof(model, weights) == 5648,
+    "Bonsai workspace ABI");
 
-static int workspace(model *m, const int32_t *sign) {
-    _Static_assert(LAYERS == 64 && VERIFY_ROWS == 5 && KV_BYTES == 576 && VOCAB == 248320 &&
-        ATTENTION_BYTES == 32 * 1024 * 1024, "Bonsai workspace ABI");
-    const uint64_t flags = (m->use_flash_f32 ? 1 : 0) | (m->mtp_enabled ? 2 : 0) |
-        (m->device_commit ? 4 : 0) | (m->verify_native ? 8 : 0) | (m->stage_kv ? 16 : 0);
-    uint64_t values[17] = {0};
-    const bonsai_words layout = {values, 17};
-    const sl_i64 states = {m->states, 2 * LAYERS}, scratch = {m->b, 24};
-    const bonsai_words prefix = {(uint64_t *)m->txn.prefix, 8 * LAYERS};
-    if (!bonsai_workspace_plan(m->context, m->ubatch, m->verify_rows, flags,
-            (sl_i64){m->bound, 15 * LAYERS}, states, scratch, prefix,
-            (bonsai_mutable_indices){m->txn.layer_ids, LAYERS}, layout)) return -1;
-    m->partial_capacity = values[1];
-    m->txn.layers = values[2];
-    if (check(bonsai_cuda.fn_cuMemAlloc(&m->memory, values[0]), "state and scratch") ||
-        check(bonsai_cuda.fn_cuMemsetD8(m->memory, 0, values[0]), "state initialization")) return -1;
-    bonsai_workspace_rebase(m->memory, m->verify_rows, flags, states, scratch, prefix, layout);
-    m->positions = values[3]; m->phases = values[4]; m->token_ids = values[5]; m->packed = values[6];
-    m->rope_q = values[7]; m->rope_k = values[8]; m->attention = values[9]; m->partial = values[10];
-    if (m->verify_native) {
-        m->verify_rope_q = values[11]; m->verify_rope_k = values[12]; m->verify_positions = values[13];
-        if (bonsai_rope_config(m->verify_rope_q, 24, 1) || bonsai_rope_config(m->verify_rope_k, 4, 1)) return -1;
-    }
-    m->stage_capacity_chunks = values[14]; m->stage_k = values[15]; m->stage_v = values[16];
-    const unsigned signs[] = {5120, 6144, 17408};
-    for (unsigned i = 0; i < 3; ++i) {
-        if (check(bonsai_cuda.fn_cuMemcpyHtoD(m->b[20 + i], sign, signs[i] * sizeof(*sign)), "Hadamard signs")) return -1;
-        sign += signs[i];
-    }
-    fprintf(stderr, "Device workspace: %llu bytes (Q4_0 K/V, GDN, activations)\n", (unsigned long long)values[0]);
-    return 0;
-}
-
-typedef struct { const int32_t *data; int64_t len; } bonsai_const_i32;
 extern int32_t bonsai_load_weights_plan(uint64_t context, sl_u8 file, uint64_t mapping, uint64_t length,
     uint8_t mtp_enabled, sl_i64 globals, sl_i64 bound, sl_i64 draft, sl_i64 draft_layer,
     sl_i64 eog, sl_f32 epsilon, sl_i64 result);
-
-uint64_t bonsai_upload_weights(uint64_t context, uint64_t source, uint64_t bytes) {
-    model *m = (void *)(uintptr_t)context;
-    if (check(bonsai_cuda.fn_cuMemAlloc(&m->weights, bytes), "resident GGUF weights") ||
-        check(bonsai_cuda.fn_cuMemcpyHtoD(m->weights, (const void *)(uintptr_t)source, bytes),
-              "resident GGUF upload")) return 0;
-    return m->weights;
-}
-
-int32_t bonsai_bind_weight_workspace(uint64_t context, uint64_t bytes, bonsai_const_i32 signs) {
-    fprintf(stderr, "Device GGUF payload: " BONSAI_SIZE_FMT " bytes (includes inactive MTP tensors)\n", (size_t)bytes);
-    return workspace((model *)(uintptr_t)context, signs.data);
-}
 
 void bonsai_log_gguf_parse(int64_t status) {
     fprintf(stderr, "GGUF parse: %lld\n", (long long)status);
@@ -583,32 +533,8 @@ _Static_assert(sizeof(struct token_choice) == 12, "CUDA token choice ABI");
 enum { CHOICE_JOBS = (VOCAB + 1023) / 1024, CHOICE_MASK_WORDS = (VOCAB + 31) / 32 };
 _Static_assert(CHOICE_JOBS <= 256, "one final block covers all partials");
 
-static int choice_open(model *m) {
-    uint32_t tokens[CHOICE_MASK_WORDS] = {0};
-    for (int64_t j = 0; j < m->eog_count; ++j) {
-        const uint32_t id = (uint32_t)m->eog[j];
-        if (id >= VOCAB) return -1;
-        tokens[id / 32] |= 1U << (id % 32);
-    }
-    const unsigned choice_rows = m->mtp_enabled ? m->verify_rows : 1;
-    const size_t partial_bytes = choice_rows * CHOICE_JOBS * sizeof(struct token_choice);
-    const size_t bytes = sizeof(tokens) + partial_bytes + choice_rows * sizeof(struct token_choice);
-    if (check(bonsai_cuda.fn_cuMemAlloc(&m->choice_mask, bytes), "choice workspace") ||
-        check(bonsai_cuda.fn_cuMemcpyHtoD(m->choice_mask, tokens, sizeof(tokens)), "choice EOG mask")) return -1;
-    m->choice_tiles = m->choice_mask + sizeof(tokens);
-    m->choice_result = m->choice_tiles + partial_bytes;
-    return 0;
-}
-
-static int choose_device(model *m, int ignore_eos, struct token_choice *result) {
-    CUdeviceptr logits = m->b[19], mask = ignore_eos ? m->choice_mask : 0;
-    unsigned width = VOCAB, jobs = CHOICE_JOBS;
-    return launch(m, CHOICE_TILES, jobs, 1, 1, 256,
-                  (void *[]){ &logits, &mask, &m->choice_tiles, &width, &jobs }) ||
-           launch(m, CHOICE_FINAL, 1, 1, 1, 256,
-                  (void *[]){ &m->choice_tiles, &m->choice_result, &jobs }) ||
-           check(bonsai_cuda.fn_cuMemcpyDtoH(result, m->choice_result, sizeof(*result)), "token choice");
-}
+extern int32_t fg_bonsai_choice_open(model *m);
+_Static_assert(CHOICE_MASK_WORDS == 7760 && CHOICE_JOBS == 243, "Bonsai choice workspace ABI");
 
 #include "mtp-abi.h"
 extern int32_t fg_bonsai_draft_open(model *m);
@@ -841,7 +767,7 @@ model *fg_bonsai_model_open(const char *gguf, const char *cubin, const char *fro
 #endif
     if (loaded != 0) goto error;
     const char *device_choice = getenv("BONSAI_HTTP_DEVICE_CHOICE");
-    if (device_choice && !strcmp(device_choice, "1") && choice_open(m) != 0) goto error;
+    if (device_choice && !strcmp(device_choice, "1") && fg_bonsai_choice_open(m) != 0) goto error;
     if (m->mtp_enabled) {
         bonsai_mtp_goose_init(0, NULL);
         if (!m->choice_mask || fg_bonsai_draft_open(m)) goto error;
@@ -909,6 +835,5 @@ _Static_assert(offsetof(struct bonsai_cuda_api, fn_cuCtxDestroy) == 24 &&
 _Static_assert(GDN_STATE * 4 == 3145728 && GDN_HISTORY * 4 == 122880 &&
     offsetof(struct token_choice, token) == 0 && offsetof(struct token_choice, invalid) == 8, "Bonsai session state ABI");
 
-int fg_bonsai_session_choice(model *m, int ignore_eos, struct token_choice *choice) { return choose_device(m, ignore_eos, choice); }
 _Static_assert(offsetof(model, mtp_pending) == 24 && offsetof(model, verify_rows) == 52 &&
     offsetof(model, draft_chain) == 296 && VERIFY_ROWS == 5, "Bonsai MTP session ABI");

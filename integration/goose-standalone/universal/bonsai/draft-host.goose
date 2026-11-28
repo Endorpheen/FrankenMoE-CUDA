@@ -4,7 +4,6 @@ const DRAFT_KV: u64 = 248;
 const DRAFT_TENSORS: u64 = 96;
 const DRAFT_BATCH: u64 = 88;
 
-type DraftAllocate = c_fnptr(u64, u64) -> i32;
 type DraftCopy = c_fnptr(u64, u64, u64, u64) -> i32;
 
 extern fn bonsai_mtp_head(model: u64, weights: VocabSpan, kv: VocabSpan, draft: VocabSpan,
@@ -20,10 +19,8 @@ export fn fg_bonsai_draft_open(model: u64) -> i32 {
     let plane = (batch_u32(model + BATCH_CONTEXT) as! u64) * 576;
     batch_set(model + DRAFT_BATCH, 1);
     let bytes = 2 * plane + 2 * DRAFT_HIDDEN + 216;
-    var memory: u64 = 0;
-    let status = unsafe_c_fnptr<DraftAllocate>(vocab_word(fg_bonsai_cuda_dispatch() + 80))(
-        vocab_address(unsafe_c_address<c_ptr<const void>>(memory)), bytes);
-    if bonsai_cuda_status(status, "draft KV and conditioning") != 0 { return -1; }
+    let memory = bonsai_allocate(bytes, "draft KV and conditioning");
+    if memory == 0 { return -1; }
     let carry = memory + 2 * plane;
     vocab_set(model + DRAFT_KV, memory);
     vocab_set(model + DRAFT_KV + 8, memory + plane);
@@ -182,23 +179,6 @@ fn fg_bonsai_session_draft(model: u64, ids: u64, rows: u32) -> i32 {
 
 fn draft_args(args: const u64[:]) -> u64 {
     return vocab_address(unsafe_c_slice_data<c_ptr<const void>>(args));
-}
-
-fn bonsai_choose_mtp_rows(model: u64, rows: u32, ignore_eos: i32, result: u64) -> i32 {
-    let logits = vocab_word(model + BATCH_B + 152);
-    let mask = if ignore_eos != 0 { vocab_word(model + 5624) } else { 0 };
-    let width: u32 = 248320;
-    let jobs: u32 = 243;
-    let job_address = vocab_address(unsafe_c_address<c_ptr<const void>>(jobs));
-    let tiles: u64[5] = [vocab_address(unsafe_c_address<c_ptr<const void>>(logits)),
-        vocab_address(unsafe_c_address<c_ptr<const void>>(mask)), model + 5632,
-        vocab_address(unsafe_c_address<c_ptr<const void>>(width)), job_address];
-    let finish: u64[3] = [model + 5632, model + 5640, job_address];
-    if fg_bonsai_verify_launch(model, 77, jobs, rows, 1, 256, draft_args(tiles)) != 0 ||
-        fg_bonsai_verify_launch(model, 78, rows, 1, 1, 256, draft_args(finish)) != 0 ||
-        batch_copy(fg_bonsai_cuda_dispatch(), BONSAI_CUDA_DOWNLOAD, result, vocab_word(model + 5640),
-            (rows as! u64) * 12, "token choices") != 0 { return 1; }
-    return 0;
 }
 
 export fn bonsai_mtp_eh(model: u64, weights: i64, input: i64, output: i64) -> i64 {

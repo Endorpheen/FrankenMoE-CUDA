@@ -27,7 +27,7 @@ fn mtp_verify_block(model: u64, anchor: u32, ignore_eos: i32, rows: u32) -> i32 
     while index + 1 < rows {
         let hidden = if index == 0 { vocab_word(model + SESSION_DRAFT_CARRY) } else { chain };
         if bonsai_draft_forward(model, tokens[index as! i64], start + index, hidden, 0, 1) != 0 ||
-            bonsai_choose_mtp_rows(model, 1, ignore_eos, result) != 0 || choices[2] != 0 || choices[0] >= 248320 { return -1; }
+            bonsai_choice_rows(model, 1, ignore_eos, result, "token choices") != 0 || choices[2] != 0 || choices[0] >= 248320 { return -1; }
         tokens[(index + 1) as! i64] = choices[0];
         if index + 2 < rows && bonsai_save_conditioning(chain, vocab_word(model + BATCH_B + 8)) != 0 { return -1; }
         index += 1;
@@ -35,7 +35,7 @@ fn mtp_verify_block(model: u64, anchor: u32, ignore_eos: i32, rows: u32) -> i32 
 
     batch_set(model + BATCH_IN_DECODE, 1);
     let failed = evaluate_batch_output(model, ids, rows, 0, 1) != 0 ||
-        bonsai_choose_mtp_rows(model, rows, ignore_eos, result) != 0;
+        bonsai_choice_rows(model, rows, ignore_eos, result, "token choices") != 0;
     batch_set(model + BATCH_IN_DECODE, 0);
     if failed { return -1; }
 
