@@ -326,6 +326,23 @@ export fn native_verify_flash(q: u64, k: u64, v: u64, relative: u64, bias: u64, 
         available - skip, 1, parts, window, scale, flags, 0, head, part, thread, true, false, false);
 }
 
+export fn native_sliding_prefill_group(q: u64, k: u64, v: u64, relative: u64, bias: u64, sinks: u64,
+    key_pos: u64, query_pos: u64, partials: u64, metadata: u64, scores: u64, maxima: u64, totals: u64, rescale: u64,
+    probabilities: u64, history: i64, queries: i64, window: i64, scale: f32, flags: i32,
+    query_tile: i64, head: i64, thread: i64) {
+    let first = (query_tile / 8) * 128;
+    let available = history + first;
+    let skip = if available >= window { available - window + 1 } else { 0 };
+    let count = if queries - first < 128 { queries - first } else { 128 };
+    let row = first as! u64;
+    let key_row = skip as! u64;
+    let slots = row * 24;
+    i2_native_flash(q + row * 6144, k + key_row * 576, v + key_row * 576,
+        relative + row * 1536, bias, sinks + row * 96, key_pos + key_row * 8, query_pos + row * 8,
+        partials + slots * 512, metadata + slots * 8, scores, maxima, totals, rescale, probabilities,
+        available - skip + count, count, 1, window, scale, flags, query_tile % 8, head, 0, thread, false, true, false);
+}
+
 fn native_value_pair(v: u64, first: i64, second: i64, column: i64, end: i64, q4: i32) -> u32 {
     let low = if first < end { native_load_half(v, first * 1024 + column, q4) } else { 0 };
     let high = if second < end { native_load_half(v, second * 1024 + column, q4) } else { 0 };

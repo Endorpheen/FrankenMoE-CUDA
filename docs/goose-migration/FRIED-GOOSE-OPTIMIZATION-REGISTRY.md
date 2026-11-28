@@ -42,6 +42,7 @@ optimization and release sequence.
 | Reuse a warp's packed activation loads for two output rows | Inkling expanded FP32 Q8 projections with 4096 input rows | 13–29% lower projection kernel time, 5.41% higher 32K/512 prefill and 0.92% lower decode in the immediate comparison. All 512 IDs exact and peak process VRAM held at 9822 MiB. | [EXP-2423](../../experiments/EXP-2026-11-28-2423-inkling-q8-row-pair/README.md) |
 | Batch independent verifier attention queries and their merges | Inkling exact Q4 verifier, up to 16 queries with equal partition counts and existing scratch capacity | At 32K/512, decode +19.61%, prefill −0.89%, all 512 IDs exact and peak process VRAM held at 9822 MiB. | [EXP-2424](../../experiments/EXP-2026-11-28-2424-inkling-batched-verifier-attention/README.md) |
 | Prepare independent embedding rows on the existing prefill CPU team | Inkling Q8_0 embedding and per-row RMS at the configured parallel prefill sizes | At 32K/512, prefill +15.90%, observed decode +0.79%, all 512 IDs exact and peak process VRAM held at 9822 MiB. | [EXP-2425](../../experiments/EXP-2026-11-28-2425-inkling-parallel-embedding/README.md) |
+| Batch independent sliding prefill chunks and their merges | Inkling Q4 sliding prefill, grouping 128-query chunks within existing scratch capacity | At 32K/512, prefill +2.27%, decode −0.78%, all 512 IDs exact and peak process VRAM held at 9822 MiB. | [EXP-2426](../../experiments/EXP-2026-11-28-2426-inkling-sliding-prefill-group/README.md) |
 
 Keep the FMA and warp reduction sequence independent for each output row.
 Reuse this mapping for projections with the same shared input layout
@@ -55,7 +56,9 @@ boundaries and accumulation order. Use an independent block range per
 query and combine the merge launches while retaining the per-query
 merge arithmetic. Reuse bounded scratch and retain the serial dispatch
 for unsupported groups. Verify partials, metadata, merged output and
-full-request IDs before enabling the scheme on a different path.
+full-request IDs before enabling the scheme on a different path. The
+EXP-2426 prefill transfer preserves each original chunk window and
+sets group size from existing scratch capacity.
 
 Apply host row parallelism when inputs are read-only, output ranges
 are disjoint and normalization is local to each row. Reuse the existing

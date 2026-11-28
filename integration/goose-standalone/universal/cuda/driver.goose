@@ -8804,7 +8804,8 @@ struct InklingNativeKvSlot {
 
 struct InklingNativeKvState {
     module: u64,
-    pack: u64, attention: u64, attention_decode: u64, attention_prefill: u64, attention_verify: u64, merge: u64,
+    pack: u64, attention: u64, attention_decode: u64, attention_prefill: u64, merge: u64,
+    attention_verify: u64, attention_sliding_group: u64,
     slots: InklingNativeKvSlot[INKLING_EPILOGUE_VISITS],
     window: device_buffer, input: device_buffer, staging: device_buffer,
     partials: device_buffer, projection: device_buffer, raw: device_buffer,
@@ -9032,7 +9033,13 @@ fn inkling_native_compute(cache: InklingNativeRows, history: i32, total: i32, co
     let grouped_verify = exact_tail && format == INKLING_NATIVE_KV_Q4 &&
         first_parts == last_parts && verify_bytes <= inkling_native_kv.partials.bytes &&
         cuda_option("I2_FLASH_PARALLEL_SCORES") && cuda_option("I2_DECODE_WARP_SOFTMAX");
-    let chunk: i32 = if exact_tail && !grouped_verify { 1 } else { 128 };
+    var chunk: i32 = if exact_tail && !grouped_verify { 1 } else { 128 };
+    if sliding && format == INKLING_NATIVE_KV_Q4 && count >= 512 && count % 128 == 0 &&
+        cuda_option("I2_PREFILL_PARALLEL_RELATIVE") {
+        let capacity = inkling_native_kv.partials.bytes / ((heads as! u64) * 130 * 4);
+        if capacity >= 1024 { chunk = 1024; }
+        else if capacity >= 512 { chunk = 512; }
+    }
     var first: i32 = 0;
     while first < count {
         let remaining = count - first;
@@ -9041,8 +9048,9 @@ fn inkling_native_compute(cache: InklingNativeRows, history: i32, total: i32, co
         let last = prior + queries;
         if last > (total as! i64) { return -1; }
         let lower = if sliding && prior >= window { prior - window + 1 } else { 0 };
-        let keys = if grouped_verify { first_keys } else { last - lower };
-        let parts = (keys + key_part - 1) / key_part;
+        let grouped_sliding = queries > 128;
+        let keys = if grouped_sliding { prior - lower } else { if grouped_verify { first_keys } else { last - lower } };
+        let parts = if grouped_sliding { 1 } else { (keys + key_part - 1) / key_part };
         let slots = (queries as! u64) * (heads as! u64) * (parts as! u64);
         var status = reserve(&inkling_native_kv.partials, slots * 130 * 4);
         if status != 0 { return status; }
@@ -9073,7 +9081,10 @@ fn inkling_native_compute(cache: InklingNativeRows, history: i32, total: i32, co
             cuda_kernel_argument_address(out), cuda_kernel_argument_address(parts)];
         var kernel = inkling_native_kv.attention;
         let module = inkling_native_kv.module;
-        if grouped_verify {
+        if grouped_sliding {
+            status = cuda_ensure_kernel(&inkling_native_kv.attention_sliding_group, module, "goose_i2_flash_mma_prefill_group");
+            kernel = inkling_native_kv.attention_sliding_group;
+        } else if grouped_verify {
             status = cuda_ensure_kernel(&inkling_native_kv.attention_verify, module, "goose_i2_flash_mma_verify");
             kernel = inkling_native_kv.attention_verify;
         } else if (q4 & 3) == 3 && cuda_option("I2_DECODE_WARP_SOFTMAX") {
